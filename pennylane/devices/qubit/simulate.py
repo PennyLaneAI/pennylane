@@ -13,12 +13,11 @@
 # limitations under the License.
 """Simulate a quantum script."""
 import logging
-import sys
 
 # pylint: disable=protected-access
 from collections import Counter
 from functools import partial, singledispatch
-from typing import Optional
+from typing import Optional, Sequence
 
 import numpy as np
 from numpy.random import default_rng
@@ -314,13 +313,7 @@ def simulate(
     has_mcm = any(isinstance(op, MidMeasureMP) for op in circuit.operations)
     if circuit.shots and has_mcm:
         if execution_kwargs.get("mcm_method", None) == "tree-traversal":
-            n_mcms = sum(isinstance(op, MidMeasureMP) for op in circuit.operations)
-            recursionlimit = sys.getrecursionlimit()
-            if 2 * n_mcms + 100 > recursionlimit:
-                sys.setrecursionlimit(2 * n_mcms + 100)
-            results = simulate_tree_mcm(circuit, prng_key=prng_key, **execution_kwargs)
-            sys.setrecursionlimit(recursionlimit)
-            return results
+            return simulate_tree_mcm(circuit, prng_key=prng_key, **execution_kwargs)
 
         results = []
         aux_circ = qml.tape.QuantumScript(
@@ -361,12 +354,10 @@ def simulate(
     )
 
 
-# pylint: disable=too-many-arguments
+# pylint: disable=too-many-branches,too-many-statements
 def simulate_tree_mcm(
     circuit: qml.tape.QuantumScript,
     debugger=None,
-    mcm_active=None,
-    mcm_samples=None,
     **execution_kwargs,
 ) -> Result:
     """Simulate a single quantum script with native mid-circuit measurements using the tree-traversal algorithm.
@@ -387,8 +378,6 @@ def simulate_tree_mcm(
             generated. Only for simulation using JAX.
         debugger (_Debugger): The debugger to use
         interface (str): The machine learning interface to create the initial state with
-        mcm_active (dict): Mid-circuit measurement values or all parent circuits of ``circuit``
-        mcm_samples (dict): Mid-circuit measurement samples or all parent circuits of ``circuit``
 
     Returns:
         tuple(TensorLike): The results of the simulation
@@ -416,72 +405,176 @@ def simulate_tree_mcm(
     #######################
     # main implementation #
     #######################
-
-    # mcm_active is analogous to one-shot's mid_measurements dictionary,
-    # i.e. for each MCM in the circuit, there is a MidMeasureMP key with a value
-    # corresponding to the MCM. It is used in get_final_state to evaluate cond operations.
-    # Unlike the one-shot case, the value is not stochastically determined,
-    # it is fixed by the branch we're on, and hence the variable name mcm_active
-    mcm_active = mcm_active or {}
-    # mcm_active is the vector version of one-shot's mid_measurements dictionary,
-    # i.e. for each MCM in the circuit, there is a MidMeasureMP key with a value
-    # corresponding to all samples at that MCM. This is used to evaluate terminal
-    # measurements of MCMs. Update and pruning of invalid samples are performed by
-    # update_mcm_samples and prune_mcm_samples respectively.
-    mcm_samples = mcm_samples or {}
-
-    circuit_base, circuit_next, op = circuit_up_to_first_mcm(circuit)
-    circuit_base = prepend_state_prep(circuit_base, interface, circuit.wires)
-    state, is_state_batched = get_final_state(
-        circuit_base,
-        debugger=debugger,
-        mid_measurements=mcm_active,
-        **execution_kwargs,
+    # Parse MCM info
+    mcms = tuple([None] + [op for op in circuit.operations if isinstance(op, MidMeasureMP)])
+    n_mcms = len(mcms) - 1
+    mcm_current = qml.math.zeros(n_mcms + 1, dtype=bool)
+    measured_mcms = set(
+        op
+        for op in circuit.operations
+        if isinstance(op, MidMeasureMP) and op.postselect is not None
     )
-    measurements = measure_final_state(circuit_base, state, is_state_batched, **execution_kwargs)
+    for m in circuit.measurements:
+        if isinstance(m.mv, Sequence):
+            for mv in m.mv:
+                measured_mcms = measured_mcms | set(mv.measurements)
+        elif m.mv:
+            measured_mcms = measured_mcms | set(m.mv.measurements)
+    measured_mcms_indices = [i for i, mcm in enumerate(mcms[1:]) if mcm in measured_mcms]
+    mcm_samples = dict(
+        (k + 1, qml.math.empty((circuit.shots.total_shots,), dtype=bool))
+        for k in measured_mcms_indices
+    )
+    # This is used by `get_final_state::apply_operation` for `Conditional` operations
+    mid_measurements = dict((k, v) for k, v in zip(mcms[1:], mcm_current[1:].tolist()))
+    # Split circuit into segments
+    circuits = []
+    circuit_right = circuit
+    for _ in mcms[1:]:
+        circuit_left, circuit_right, _ = circuit_up_to_first_mcm(circuit_right)
+        circuits.append(circuit_left)
+    circuits.append(circuit_right)
+    circuits[0] = prepend_state_prep(circuits[0], None, interface, circuit.wires)
+    # Initialize stacks
+    counts = [None] * (n_mcms + 1)
+    cumcounts = [0] * (n_mcms + 1)
+    probs = [None] * (n_mcms + 1)
+    # TODO: combine these two (possibly more) stacks into a list to handle non-binary trees
+    results_0 = [None] * (n_mcms + 1)
+    results_1 = [None] * (n_mcms + 1)
+    states = [None] * (n_mcms + 1)
 
-    # Simply return measurements when ``circuit_base`` does not have an MCM
-    if circuit_next is None:
-        return measurements
+    # The goal is to obtain the measurements of the zero-branch and one-branch
+    # and to combine them into the final result. Exit the loop once the
+    # zero-branch and one-branch measurements are available.
+    depth = 0
+    while results_0[1] is None or results_1[1] is None:
 
-    # For 1-shot measurements as 1-D arrays
-    if op.postselect is not None and postselect_mode == "fill-shots":
-        samples = op.postselect * qml.math.ones_like(measurements)
-    else:
-        samples = qml.math.atleast_1d(measurements)
-    update_mcm_samples(op, samples, mcm_active, mcm_samples)
-
-    counts = samples_to_counts(samples)
-    measurements = [{} for _ in circuit_next.measurements]
-    single_measurement = len(circuit_next.measurements) == 1
-    prng_key = execution_kwargs.pop("prng_key", None)
-    for branch, count in counts.items():
-        if op.postselect is not None and branch != op.postselect:
-            prune_mcm_samples(op, branch, mcm_active, mcm_samples)
+        # Combine two leaves once measurements are available
+        if results_0[depth] is not None and results_1[depth] is not None:
+            # Call `combine_measurements` to count-average measurements
+            measurement_dicts = get_measurement_dicts(
+                circuits[-1], probs[depth], (results_0[depth], results_1[depth])
+            )
+            measurements = combine_measurements(circuits[-1], measurement_dicts, mcm_samples)
+            # Reset current branch
+            mcm_current[depth:] = False
+            # Clear stacks
+            counts[depth] = None
+            probs[depth] = None
+            results_0[depth] = None
+            results_1[depth] = None
+            states[depth] = None
+            # Go up one level to explore alternate subtree of the same depth
+            depth -= 1
+            if not mcm_current[depth]:
+                results_0[depth] = measurements
+                mcm_current[depth] = True
+            else:
+                results_1[depth] = measurements
+                mcm_current[depth] = False
+            # Update MCM values
+            mid_measurements.update(
+                (k, v) for k, v in zip(mcms[depth:], mcm_current[depth:].tolist())
+            )
             continue
-        prng_key, key = jax_random_split(prng_key)
-        mcm_active[op] = branch
-        new_state = branch_state(state, branch, op)
-        circuit_branch = qml.tape.QuantumScript(
-            [qml.StatePrep(new_state.ravel(), wires=circuit.wires)] + circuit_next.operations,
-            circuit_next.measurements,
-            shots=qml.measurements.Shots(count),
-            trainable_params=circuit_next.trainable_params,
+
+        # Parse shots for the current branch
+        if counts[depth]:
+            shots = counts[depth][mcm_current[depth]]
+        else:
+            shots = circuits[depth].shots.total_shots
+        # Update active branch dict
+        no_shots = not bool(shots)
+        invalid_postselect = (
+            depth > 0
+            and mcms[depth].postselect is not None
+            and mcm_current[depth] != mcms[depth].postselect
         )
-        meas = simulate_tree_mcm(
-            circuit_branch,
-            debugger=debugger,
-            mcm_active=mcm_active,
-            mcm_samples=mcm_samples,
-            prng_key=key,
-            **execution_kwargs,
-        )
+        # If num_shots is zero or postselecting on the wrong branch, update measurements with an empty tuple
+        if no_shots or invalid_postselect:
+            # Adjust counts if `invalid_postselect`
+            if invalid_postselect:
+                # Bump downstream cumulative counts before zeroing-out counts
+                for d in range(depth + 1, n_mcms + 1):
+                    cumcounts[d] += counts[depth][mcm_current[depth]]
+                counts[depth][mcm_current[depth]] = 0
+            measurements = tuple()
+        else:
+            # If num_shots is non-zero, simulate the current depth circuit segment
+            if depth == 0:
+                initial_state = states[0]
+            else:
+                initial_state = branch_state(states[depth], mcm_current[depth], mcms[depth])
+            circtmp = qml.tape.QuantumScript(
+                circuits[depth].operations,
+                circuits[depth].measurements,
+                qml.measurements.shots.Shots(shots),
+                trainable_params=circuits[depth].trainable_params,
+            )
+            circtmp = prepend_state_prep(circtmp, initial_state, interface, circuit.wires)
+            state, is_state_batched = get_final_state(
+                circtmp,
+                debugger=debugger,
+                mid_measurements=mid_measurements,
+                **execution_kwargs,
+            )
+            measurements = measure_final_state(circtmp, state, is_state_batched, **execution_kwargs)
+        # If not at a leaf, project on the zero-branch and increase depth by one
+        if depth < n_mcms and (not no_shots and not invalid_postselect):
+            depth += 1
+            # Update the active branch samples with `update_mcm_samples`
+            if (
+                mcms[depth]
+                and mcms[depth].postselect is not None
+                and postselect_mode == "fill-shots"
+            ):
+                samples = mcms[depth].postselect * qml.math.ones_like(measurements)
+            else:
+                samples = qml.math.atleast_1d(measurements)
+            counts[depth] = samples_to_counts(samples)
+            probs[depth] = counts_to_probs(counts[depth])
+            # Store a copy of the state-vector to project on the one-branch
+            states[depth] = state
+            mcm_samples, cumcounts = update_mcm_samples(samples, mcm_samples, depth, cumcounts)
+            continue
+
+        # If at a zero-branch leaf, update measurements and switch to the one-branch
+        if not mcm_current[depth]:
+            results_0[depth] = measurements
+            mcm_current[depth] = True
+            mid_measurements[mcms[depth]] = True
+            continue
+        # If at a one-branch leaf, update measurements
+        results_1[depth] = measurements
+
+    # Combine first two branches
+    measurement_dicts = get_measurement_dicts(
+        circuits[-1], probs[depth], (results_0[depth], results_1[depth])
+    )
+    mcm_samples = dict((mcms[i], v) for i, v in mcm_samples.items())
+    mcm_samples = prune_mcm_samples(mcm_samples)
+    return combine_measurements(circuit, measurement_dicts, mcm_samples)
+
+
+def get_measurement_dicts(circuit, probs, results):
+    """Combine a probs dictionary and two tuples of measurements into a
+    tuple of dictionaries storing the probs and measurements of both branches."""
+    # We use `circuits[-1].measurements` since it contains the
+    # target measurements (this is the only tape segment with
+    # unmodified measurements)
+    results_0, results_1 = results
+    measurement_dicts = [{} for _ in circuit.measurements]
+    # Special treatment for single measurements
+    single_measurement = len(circuit.measurements) == 1
+    # Store each measurement in a dictionary `{branch: (prob, measure)}`
+    for branch, prob in probs.items():
+        meas = results_0 if branch == 0 else results_1
         if single_measurement:
             meas = [meas]
         for i, m in enumerate(meas):
-            measurements[i][branch] = (count, m)
-
-    return combine_measurements(circuit, measurements, mcm_samples)
+            measurement_dicts[i][branch] = (prob, m)
+    return measurement_dicts
 
 
 def branch_state(state, branch, mcm):
@@ -495,8 +588,19 @@ def branch_state(state, branch, mcm):
     Returns:
         TensorLike: The collapsed state
     """
-    state = apply_operation(qml.Projector([branch], mcm.wires), state)
-    state = state / qml.math.norm(state)
+    if isinstance(state, np.ndarray):
+        # FASTER
+        state = state.copy()
+        slices = [slice(None)] * qml.math.ndim(state)
+        axis = mcm.wires.toarray()[0]
+        slices[axis] = int(not branch)
+        state[tuple(slices)] = 0.0
+        state /= qml.math.norm(state)
+    else:
+        # SLOWER
+        state = apply_operation(qml.Projector([branch], mcm.wires), state)
+        state = state / qml.math.norm(state)
+
     if mcm.reset and branch == 1:
         state = apply_operation(qml.PauliX(mcm.wires), state)
     return state
@@ -507,75 +611,78 @@ def samples_to_counts(samples):
 
     This function forces integer keys and values which are required by ``simulate_tree_mcm``.
     """
-    counts = qml.math.unique(samples, return_counts=True)
-    return dict((int(x), int(y)) for x, y in zip(*counts))
+    counts_1 = int(qml.math.count_nonzero(samples))
+    return {0: samples.size - counts_1, 1: counts_1}
 
 
-def prepend_state_prep(circuit, interface, wires):
+def counts_to_probs(counts):
+    """Converts counts to probs."""
+    probs = qml.math.array(list(counts.values()))
+    probs = probs / qml.math.sum(probs)
+    return dict((k, v) for k, v in zip(counts.keys(), probs))
+
+
+def prepend_state_prep(circuit, state, interface, wires):
     """Prepend a ``StatePrep`` operation with the prescribed ``wires`` to the circuit.
 
     ``get_final_state`` executes a circuit on a subset of wires found in operations
     or measurements. This function makes sure that an initial state with the correct size is created
     on the first invocation of ``simulate_tree_mcm``. ``wires`` should be the wires attribute
     of the original circuit (which included all wires)."""
-    if isinstance(circuit[0], qml.operation.StatePrepBase):
+    if len(circuit) > 0 and isinstance(circuit[0], qml.operation.StatePrepBase):
         return circuit
-    new_state = create_initial_state(wires, None, like=INTERFACE_TO_LIKE[interface])
+    state = (
+        create_initial_state(wires, None, like=INTERFACE_TO_LIKE[interface])
+        if state is None
+        else state
+    )
     return qml.tape.QuantumScript(
-        [qml.StatePrep(new_state.ravel(), wires=wires)] + circuit.operations,
+        [qml.StatePrep(state.ravel(), wires=wires, skip_norm_validation=True)] + circuit.operations,
         circuit.measurements,
         shots=circuit.shots,
         trainable_params=circuit.trainable_params,
     )
 
 
-def prune_mcm_samples(op, branch, mcm_active, mcm_samples):
-    """Removes samples from mid-measurement sample dictionary given a MidMeasureMP and branch.
+def prune_mcm_samples(mcm_samples):
+    """Removes invalid mid-measurement samples.
 
     Post-selection on a given mid-circuit measurement leads to ignoring certain branches
     of the tree and samples. The corresponding samples in all other mid-circuit measurement
     must be deleted accordingly. We need to find which samples are
     corresponding to the current branch by looking at all parent nodes.
     """
-    mask = mcm_samples[op] == branch
-    for k, v in mcm_active.items():
-        if k == op:
-            break
-        mask = np.logical_and(mask, mcm_samples[k] == v)
-    for k in mcm_samples.keys():
-        mcm_samples[k] = mcm_samples[k][np.logical_not(mask)]
+    if not mcm_samples:
+        return mcm_samples
+    mask = qml.math.ones(list(mcm_samples.values())[0].shape, dtype=bool)
+    for mcm, s in mcm_samples.items():
+        if mcm.postselect is None:
+            continue
+        mask = qml.math.logical_and(mask, s == mcm.postselect)
+    return dict((k, v[mask]) for k, v in mcm_samples.items())
 
 
-def update_mcm_samples(op, samples, mcm_active, mcm_samples):
-    """Updates the mid-measurement sample dictionary given a MidMeasureMP and samples.
-
-    If the ``mcm_active`` dictionary is empty, we are at the root and ``mcm_samples`
-    is simply updated with ``samples``.
-
-    If the ``mcm_active`` dictionary is not empty, we need to find which samples are
-    corresponding to the current branch by looking at all parent nodes. ``mcm_samples`
-    is then updated with samples at indices corresponding to parent nodes.
+def update_mcm_samples(samples, mcm_samples, depth, cumcounts):
+    """Updates the depth-th mid-measurement samples.
 
     To illustrate how the function works, let's take an example. Suppose there are
     ``2**20`` shots in total and the computation is midway through the circuit at the
     7th MCM, the active branch is ``[0,1,1,0,0,1]`` and each MCM everything happened to
-    split the counts 50/50 so there are `2**14` samples to update.
-    These samples are not contiguous in general and they are correlated with the parent
-    branches, so where do they go? They must update the `2**14` elements whose parent
-    sequence corresponds to `[0,1,1,0,0,1]`.
+    split the counts 50/50 so there are ``2**14`` samples to update.
+    These samples are correlated with the parent
+    branches, so where do they go? They must update the ``2**14`` elements whose parent
+    sequence corresponds to ``[0,1,1,0,0,1]``. ``cumcounts`` is used for this job and
+    increased by the size of ``samples`` each time this function is called.
     """
-    if mcm_active:
-        shape = next(iter(mcm_samples.values())).shape
-        mask = np.ones(shape, dtype=bool)
-        for k, v in mcm_active.items():
-            if k == op:
-                break
-            mask = np.logical_and(mask, mcm_samples[k] == v)
-        if op not in mcm_samples:
-            mcm_samples[op] = np.empty(shape, dtype=samples.dtype)
-        mcm_samples[op][mask] = samples
-    else:
-        mcm_samples[op] = samples
+    if depth not in mcm_samples:
+        return mcm_samples, cumcounts
+    count1 = qml.math.sum(samples)
+    count0 = samples.size - count1
+    mcm_samples[depth][cumcounts[depth] : cumcounts[depth] + count0] = 0
+    cumcounts[depth] += count0
+    mcm_samples[depth][cumcounts[depth] : cumcounts[depth] + count1] = 1
+    cumcounts[depth] += count1
+    return mcm_samples, cumcounts
 
 
 def circuit_up_to_first_mcm(circuit):
@@ -635,25 +742,27 @@ def circuit_up_to_first_mcm(circuit):
 def measurement_with_no_shots(measurement):
     """Returns a NaN scalar or array of the correct size when executing an all-invalid-shot circuit."""
     if isinstance(measurement, ProbabilityMP):
-        return np.nan * np.ones(2 ** len(measurement.wires))
+        return np.nan * qml.math.ones(2 ** len(measurement.wires))
     return np.nan
 
 
 def combine_measurements(circuit, measurements, mcm_samples):
     """Returns combined measurement values of various types."""
-    empty_mcm_samples = len(next(iter(mcm_samples.values()))) == 0
-    if empty_mcm_samples and any(len(m) != 0 for m in mcm_samples.values()):  # pragma: no cover
-        raise ValueError("mcm_samples have inconsistent shapes.")
-    # loop over measurements
+    empty_mcm_samples = False
+    need_mcm_samples = any(circ_meas.mv for circ_meas in circuit.measurements)
+    if need_mcm_samples:
+        empty_mcm_samples = len(next(iter(mcm_samples.values()))) == 0
+        if empty_mcm_samples and any(len(m) != 0 for m in mcm_samples.values()):  # pragma: no cover
+            raise ValueError("mcm_samples have inconsistent shapes.")
     final_measurements = []
     for circ_meas in circuit.measurements:
-        if circ_meas.mv and empty_mcm_samples:  # pragma: no cover
+        if circ_meas.mv and empty_mcm_samples:
             comb_meas = measurement_with_no_shots(circ_meas)
         elif circ_meas.mv:
             mcm_samples = dict((k, v.reshape((-1, 1))) for k, v in mcm_samples.items())
             is_valid = qml.math.ones(list(mcm_samples.values())[0].shape[0], dtype=bool)
             comb_meas = gather_mcm(circ_meas, mcm_samples, is_valid)
-        elif not measurements or not measurements[0]:  # pragma: no cover
+        elif not measurements or not measurements[0]:
             if len(measurements) > 0:
                 _ = measurements.pop(0)
             comb_meas = measurement_with_no_shots(circ_meas)
@@ -683,6 +792,8 @@ def _(original_measurement: CountsMP, measures):  # pylint: disable=unused-argum
     keys = list(measures.keys())
     new_counts = Counter()
     for k in keys:
+        if not measures[k][0]:
+            continue
         new_counts.update(measures[k][1])
     return dict(sorted(new_counts.items()))
 
@@ -693,6 +804,8 @@ def _(original_measurement: ExpectationMP, measures):  # pylint: disable=unused-
     cum_value = 0
     total_counts = 0
     for v in measures.values():
+        if not v[0] or v[1] is tuple():
+            continue
         cum_value += v[0] * v[1]
         total_counts += v[0]
     return cum_value / total_counts
@@ -704,6 +817,8 @@ def _(original_measurement: ProbabilityMP, measures):  # pylint: disable=unused-
     cum_value = 0
     total_counts = 0
     for v in measures.values():
+        if not v[0] or v[1] is tuple():
+            continue
         cum_value += v[0] * v[1]
         total_counts += v[0]
     return cum_value / total_counts
@@ -712,16 +827,20 @@ def _(original_measurement: ProbabilityMP, measures):  # pylint: disable=unused-
 @combine_measurements_core.register
 def _(original_measurement: SampleMP, measures):  # pylint: disable=unused-argument
     """The combined samples of two branches is obtained by concatenating the sample if each branch.."""
-    new_sample = tuple(qml.math.atleast_1d(m[1]) for m in measures.values())
-    return np.squeeze(np.concatenate(new_sample))
+    new_sample = tuple(
+        qml.math.atleast_1d(m[1]) for m in measures.values() if m[0] and not m[1] is tuple()
+    )
+    return qml.math.squeeze(qml.math.concatenate(new_sample))
 
 
 @combine_measurements_core.register
 def _(original_measurement: VarianceMP, measures):  # pylint: disable=unused-argument
     """Intermediate ``VarianceMP`` measurements are in fact ``SampleMP`` measurements,
     and hence the implementation is the same as for ``SampleMP``."""
-    new_sample = tuple(qml.math.atleast_1d(m[1]) for m in measures.values())
-    return np.squeeze(np.concatenate(new_sample))
+    new_sample = tuple(
+        qml.math.atleast_1d(m[1]) for m in measures.values() if m[0] and not m[1] is tuple()
+    )
+    return qml.math.squeeze(qml.math.concatenate(new_sample))
 
 
 @debug_logger

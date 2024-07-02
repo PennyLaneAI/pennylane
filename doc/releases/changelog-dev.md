@@ -8,6 +8,13 @@
   
 <h3>Improvements 🛠</h3>
 
+<h4>Mid-circuit measurements and dynamic circuits</h4>
+
+* The `tree-traversal` algorithm implemented in `default.qubit` is refactored
+  into an iterative instead of recursive implementation, doing away with
+  potential stack overflow for deep circuits.
+  [(#5868)](https://github.com/PennyLaneAI/pennylane/pull/5868)
+
 <h3>Breaking changes 💔</h3>
 
 <h3>Deprecations 👋</h3>
@@ -20,4 +27,5 @@
 
 This release contains contributions from (in alphabetical order):
 
-Yushao Chen.
+Yushao Chen,
+Vincent Michaud-Rioux.
