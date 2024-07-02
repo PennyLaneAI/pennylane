@@ -125,6 +125,26 @@ class TestFermiWord:
         with pytest.raises(ValueError, match="The operator indices must belong to the set"):
             FermiWord(operator)
 
+    fw_to_mat_cases = [
+        (
+            fw1,
+            np.array(
+                [
+                    [0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j],
+                    [0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j],
+                    [0.0 + 0.0j, 1.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j],
+                    [0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j],
+                ]
+            ),
+        ),
+    ]
+
+    @pytest.mark.parametrize("fw, expected_mat", fw_to_mat_cases)
+    def test_to_mat(self, fw, expected_mat):
+        """Test that the matrix representation of FermiWord is correct."""
+        mat = fw.to_mat()
+        assert np.allclose(mat, expected_mat)
+
 
 class TestFermiWordArithmetic:
     WORDS_MUL = (
@@ -442,6 +462,7 @@ fs2_hamiltonian = FermiSentence({fw1: -1.23, fw2: -4, fw3: 0.5})
 fs3 = FermiSentence({fw3: -0.5, fw4: 1})
 fs4 = FermiSentence({fw4: 1})
 fs5 = FermiSentence({})
+fs6 = FermiSentence({fw1: 1.2, fw2: 3.1})
 
 fs1_x_fs2 = FermiSentence(  # fs1 * fs1, computed by hand
     {
@@ -599,6 +620,26 @@ class TestFermiSentence:
         serialization = pickle.dumps(fs)
         new_fs = pickle.loads(serialization)
         assert fs == new_fs
+
+    fs_to_mat_cases = [
+        (
+            fs6,
+            np.array(
+                [
+                    [0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j],
+                    [0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j],
+                    [0.0 + 0.0j, 1.2 + 0.0j, 3.1 + 0.0j, 0.0 + 0.0j],
+                    [0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, 3.1 + 0.0j],
+                ]
+            ),
+        ),
+    ]
+
+    @pytest.mark.parametrize("fs, expected_mat", fs_to_mat_cases)
+    def test_to_mat(self, fs, expected_mat):
+        """Test that the matrix representation of FermiSentence is correct."""
+        mat = fs.to_mat()
+        assert np.allclose(mat, expected_mat)
 
 
 class TestFermiSentenceArithmetic:
