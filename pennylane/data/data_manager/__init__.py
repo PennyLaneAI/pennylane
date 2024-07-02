@@ -16,21 +16,21 @@ Contains functions for querying available datasets and downloading
 them.
 """
 
-import typing
 import urllib.parse
-from concurrent.futures import FIRST_EXCEPTION, ThreadPoolExecutor, wait
+from concurrent.futures import ThreadPoolExecutor
 from functools import lru_cache
 from pathlib import Path
 from time import sleep
-from typing import List, Optional, Union
+from typing import List, Optional, Union, Tuple, Iterable, Mapping
 
-from requests import get
+from requests import get, head
 
 from pennylane.data.base import Dataset
 from pennylane.data.base.hdf5 import open_hdf5_s3
 
 from .foldermap import DataPath, FolderMapView, ParamArg
 from .params import DEFAULT, FULL, format_params
+from .progress_bar import Progress, progress
 
 S3_URL = "https://datasets.cloud.pennylane.ai/datasets/h5"
 FOLDERMAP_URL = f"{S3_URL}/foldermap.json"
@@ -58,7 +58,7 @@ def _get_data_struct():
 def _download_partial(
     s3_url: str,
     dest: Path,
-    attributes: Optional[typing.Iterable[str]],
+    attributes: Optional[Iterable[str]],
     overwrite: bool,
     block_size: int,
 ) -> None:
@@ -109,12 +109,13 @@ def _download_full(s3_url: str, dest: Path):
         f.write(resp.content)
 
 
-def _download_dataset(
+def _download_dataset(  # pylint:disable=too-many-arguments
     data_path: DataPath,
     dest: Path,
-    attributes: Optional[typing.Iterable[str]],
+    attributes: Optional[Iterable[str]],
     block_size: int,
     force: bool = False,
+    progress_data: Optional[Tuple[Progress, int, float]] = None,
 ) -> None:
     """Downloads the dataset at ``data_path`` to ``dest``, optionally downloading
     only requested attributes. If ``attributes`` is not provided, every attribute
@@ -122,6 +123,9 @@ def _download_dataset(
 
     If any of the attributes of the remote dataset are already downloaded locally,
     they will not be overwritten unless ``force`` is True.
+
+    If a progress tuple is provided, it will update a progress bar. The kwarg is
+    of the format (Progress, TaskID, file_size)
     """
 
     # URL-escape special characters like '+', '$', and '%' in the data path
@@ -135,8 +139,12 @@ def _download_dataset(
     else:
         _download_full(s3_url, dest=dest)
 
+    if progress_data:
+        pbar, task, size = progress_data
+        pbar.update(task, advance=size)
 
-def _validate_attributes(data_struct: dict, data_name: str, attributes: typing.Iterable[str]):
+
+def _validate_attributes(data_struct: dict, data_name: str, attributes: Iterable[str]):
     """Checks that ``attributes`` contains only valid attributes for the given
     ``data_name``. If any attributes do not exist, raise a ValueError."""
     invalid_attributes = [
@@ -155,7 +163,7 @@ def _validate_attributes(data_struct: dict, data_name: str, attributes: typing.I
 
 def load(  # pylint: disable=too-many-arguments
     data_name: str,
-    attributes: Optional[typing.Iterable[str]] = None,
+    attributes: Optional[Iterable[str]] = None,
     folder_path: Path = Path("./datasets/"),
     force: bool = False,
     num_threads: int = 50,
@@ -261,22 +269,30 @@ def load(  # pylint: disable=too-many-arguments
     for path_parents in set(path.parent for path in dest_paths):
         path_parents.mkdir(parents=True, exist_ok=True)
 
-    with ThreadPoolExecutor(min(num_threads, len(dest_paths))) as pool:
-        futures = [
-            pool.submit(
-                _download_dataset,
+    file_sizes = [
+        int(head(f"{S3_URL}/{urllib.parse.quote(str(p))}").headers["Content-Length"]) / 1000
+        for p in data_paths
+    ]
+    total_size = sum(file_sizes)
+
+    with progress() as pbar:
+        pbar_task = pbar.add_task(f"{data_name} data:", total=total_size)
+
+        def download_fn(data_path, dest_path, file_size):
+            _download_dataset(
                 data_path,
                 dest_path,
-                attributes,
+                attributes=attributes,
                 force=force,
                 block_size=block_size,
+                progress_data=(pbar, pbar_task, file_size),
             )
-            for data_path, dest_path in zip(data_paths, dest_paths)
-        ]
-        results = wait(futures, return_when=FIRST_EXCEPTION)
-        for result in results.done:
-            if result.exception() is not None:
-                raise result.exception()
+
+        with ThreadPoolExecutor(min(num_threads, len(dest_paths))) as pool:
+            _ = list(pool.map(download_fn, data_paths, dest_paths, file_sizes))
+        # sometimes the last updates aren't registered
+        pbar.update(pbar_task, completed=total_size)
+        sleep(0.01)
 
     return [Dataset.open(Path(dest_path), "a") for dest_path in dest_paths]
 
@@ -314,7 +330,7 @@ def list_datasets() -> dict:
         to Paths to a list of the parameters."""
         value = next(iter(foldermap.values()))
 
-        if not isinstance(value, typing.Mapping):
+        if not isinstance(value, Mapping):
             return sorted(foldermap.keys())
 
         return {param: remove_paths(foldermap[param]) for param in foldermap.keys()}
