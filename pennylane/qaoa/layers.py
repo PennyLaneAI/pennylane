@@ -96,10 +96,9 @@ def cost_layer(gamma, hamiltonian):
         1: ──H───────────╰RZZ(1.00)─┤  <Z>
 
     """
-    op = qml.templates.ApproxTimeEvolution(hamiltonian, gamma, 1)
     if not _diagonal_terms(hamiltonian):
         raise ValueError("hamiltonian must be written only in terms of PauliZ and Identity gates")
-    return op
+    return qml.templates.ApproxTimeEvolution(hamiltonian, gamma, 1)
 
 
 def mixer_layer(alpha, hamiltonian):
