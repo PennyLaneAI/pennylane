@@ -368,18 +368,7 @@ class PauliRot(Operation):
 
         # Simplest case is if the Pauli is the identity matrix
         if set(pauli_word) == {"I"}:
-            exp = qml.math.exp(-0.5j * theta)
-            iden = qml.math.eye(2 ** len(pauli_word), like=theta)
-            if qml.math.get_interface(theta) == "tensorflow":
-                iden = qml.math.cast_like(iden, 1j)
-            if qml.math.get_interface(theta) == "torch":
-                td = exp.device
-                iden = iden.to(td)
-
-            if qml.math.ndim(theta) == 0:
-                return exp * iden
-
-            return qml.math.stack([e * iden for e in exp])
+            return qml.GlobalPhase.compute_matrix(0.5 * theta, n_wires=len(pauli_word))
 
         # We first generate the matrix excluding the identity parts and expand it afterwards.
         # To this end, we have to store on which wires the non-identity parts act
@@ -445,15 +434,7 @@ class PauliRot(Operation):
 
         # Identity must be treated specially because its eigenvalues are all the same
         if set(pauli_word) == {"I"}:
-            exp = qml.math.exp(-0.5j * theta)
-            ones = qml.math.ones(2 ** len(pauli_word), like=theta)
-            if qml.math.get_interface(theta) == "tensorflow":
-                ones = qml.math.cast_like(ones, 1j)
-
-            if qml.math.ndim(theta) == 0:
-                return exp * ones
-
-            return qml.math.tensordot(exp, ones, axes=0)
+            return qml.GlobalPhase.compute_eigvals(0.5 * theta, n_wires=len(pauli_word))
 
         return MultiRZ.compute_eigvals(theta, len(pauli_word))
 

@@ -3,10 +3,14 @@
 # Release 0.38.0-dev (development release)
 
 <h3>New features since last release</h3>
+
 * A new method `process_density_matrix` has been added to the `ProbabilityMP` and `DensityMatrixMP` classes, allowing for more efficient handling of quantum density matrices, particularly with batch processing support. This method simplifies the calculation of probabilities from quantum states represented as density matrices.
   [(#5830)](https://github.com/PennyLaneAI/pennylane/pull/5830)
   
 <h3>Improvements 🛠</h3>
+
+* `GlobalPhase` now supports parameter broadcasting.
+  [(#5923)](https://github.com/PennyLaneAI/pennylane/pull/5923)
 
 <h3>Breaking changes 💔</h3>
 
@@ -16,8 +20,12 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fix a bug where the global phase returned by `one_qubit_decomposition` gained a broadcasting dimension.
+  [(#5923)](https://github.com/PennyLaneAI/pennylane/pull/5923)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
 
-Yushao Chen.
+Yushao Chen,
+David Wierichs,
