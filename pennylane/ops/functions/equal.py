@@ -176,7 +176,7 @@ def assert_equal(
     rtol=1e-5,
     atol=1e-9,
 ) -> None:
-    """Function to assert that two operators are equal with the requested configuration.
+    """Function to assert that two operators, measurements, or tapes are equal
 
     Args:
         op1 (.Operator or .MeasurementProcess or .QuantumTape): First object to compare
