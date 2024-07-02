@@ -25,7 +25,7 @@ frozenlist==1.4.1
 fsspec==2024.6.1
 future==1.0.0
 gast==0.4.0
-google-auth==2.30.0
+google-auth==2.31.0
 google-auth-oauthlib==0.4.6
 google-pasta==0.2.0
 graphviz==0.20.3
@@ -104,7 +104,7 @@ tensorboard-data-server==0.6.1
 tensorboard-plugin-wit==1.8.1
 tensorflow==2.11.1
 tensorflow-estimator==2.11.0
-tensorflow-io-gcs-filesystem==0.37.0
+tensorflow-io-gcs-filesystem==0.37.1
 tensornetwork==0.3.0
 termcolor==2.4.0
 toml==0.10.2
