@@ -103,6 +103,21 @@ def apply_operation_einsum(kraus, wires, state):
     return jnp.einsum(einsum_indices, kraus, state, kraus_dagger)
 
 
-def apply_operation(state, op_info, qudit_dim):
-    op = jax.lax.switch()
+def apply_single_qudit_unitary():
+    pass
+
+
+def apply_two_qudit_unitary():
+    pass
+
+
+def apply_single_qudit_channel():
+    pass
+
+
+def apply_operation(state, qudit_dim, op_info):
+    # TODO may have to rewrite to return different functions for qubits and qutrits
+    op_i = op_info["type_index"]
+    op_class = op_i // first_index + op_i // second_index + op_i // third_index
+    state = jax.lax.switch(op_class, [], qudit_dim, op_info)
     return state, None

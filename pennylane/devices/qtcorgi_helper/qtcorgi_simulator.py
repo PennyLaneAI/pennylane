@@ -59,7 +59,7 @@ def get_final_state_from_initial(operations, initial_state, qudit_dim):
         "wires": [jnp.array(ops_wires[0]), jnp.array(ops_wires[1])],
         "params": [jnp.array(ops_params[0]), jnp.array(ops_params[1]), jnp.array(ops_params[2])]
     }
-    return jax.lax.scan(functools.partial(apply_operation, qudit_dim), initial_state, ops_info)[0]
+    return jax.lax.scan(apply_operation, initial_state, qudit_dim, ops_info)[0]
 
 
 def get_final_state(circuit):
