@@ -87,15 +87,11 @@ class TestVonNeumannEntropy:
             qml.CNOT(wires=[0, 1])
             return qml.state()
 
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning,
-            match=DEP_WARNING_MESSAGE_VN_ENTROPY,
-        ):
-            with pytest.raises(ValueError, match="Cannot provide a 'device' value"):
-                _ = qml.qinfo.vn_entropy(circuit, wires=[0], device=dev)
+        with pytest.raises(ValueError, match="Cannot provide a 'device' value"):
+            _ = qml.qinfo.vn_entropy(circuit, wires=[0], device=dev)
 
-            with pytest.raises(ValueError, match="Cannot provide a 'device_wires' value"):
-                _ = qml.qinfo.vn_entropy(circuit, wires=[0], device_wires=dev.wires)
+        with pytest.raises(ValueError, match="Cannot provide a 'device_wires' value"):
+            _ = qml.qinfo.vn_entropy(circuit, wires=[0], device_wires=dev.wires)
 
     @pytest.mark.parametrize("wires", single_wires_list)
     @pytest.mark.parametrize("param", parameters)
