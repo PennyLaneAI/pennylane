@@ -394,8 +394,8 @@ class TritFlip(Channel):
         p_01 (float): The probability that a :math:`|0 \rangle \leftrightarrow |1 \rangle` trit flip error occurs.
         p_02 (float): The probability that a :math:`|0 \rangle \leftrightarrow |2 \rangle` trit flip error occurs.
         p_12 (float): The probability that a :math:`|1 \rangle \leftrightarrow |2 \rangle` trit flip error occurs.
-        wires (Sequence[int] or int): The wire the channel acts on
-        id (str or None): String representing the operation (optional)
+        wires (Sequence[int] or int): The wire the channel acts on.
+        id (str or None): String representing the operation (optional).
     """
 
     num_params = 3
