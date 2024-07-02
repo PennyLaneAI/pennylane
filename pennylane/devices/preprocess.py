@@ -477,7 +477,9 @@ def validate_measurements(
         and not isinstance(meas := op.hyperparameters["measurement"], qml.measurements.StateMP)
     ]
 
-    if tape.shots:
+    shots = qml.measurements.Shots(tape.shots)
+
+    if shots.total_shots is not None:
         for m in chain(snapshot_measurements, tape.measurements):
             if not sample_measurements(m):
                 raise DeviceError(f"Measurement {m} not accepted with finite shots on {name}")

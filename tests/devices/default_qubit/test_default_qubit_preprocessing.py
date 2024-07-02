@@ -288,6 +288,53 @@ class TestPreprocessing:
         batch, _ = program((tape4,))
         assert batch[0].circuit == tape4.circuit
 
+    @pytest.mark.parametrize(
+        "shots, measurements, supported",
+        [
+            # Supported measurements in analytic mode
+            (None, [qml.state()], True),
+            (None, [qml.expval(qml.X(0))], True),
+            (None, [qml.expval(qml.RX(0.123, 0))], False),
+            (None, [qml.expval(qml.SparseHamiltonian(qml.X.compute_sparse_matrix(), 0))], True),
+            (None, [qml.expval(qml.Hermitian(np.diag([1, 2]), wires=0))], True),
+            (None, [qml.var(qml.SparseHamiltonian(qml.X.compute_sparse_matrix(), 0))], False),
+            (None, [qml.expval(qml.X(0) @ qml.Hermitian(np.diag([1, 2]), wires=1))], True),
+            (
+                None,
+                [
+                    qml.expval(
+                        qml.Hamiltonian(
+                            [0.1, 0.2],
+                            [qml.Z(0), qml.SparseHamiltonian(qml.X.compute_sparse_matrix(), 1)],
+                        )
+                    )
+                ],
+                True,
+            ),
+            (None, [qml.expval(qml.Hamiltonian([0.1, 0.2], [qml.RZ(0.234, 0), qml.X(0)]))], False),
+            # Supported measurements in finite shots mode
+            (100, [qml.state()], False),
+            (100, [qml.expval(qml.X(0))], True),
+            (100, [qml.expval(qml.RX(0.123, 0))], False),
+            (100, [qml.expval(qml.X(0) @ qml.RX(0.123, 1))], False),
+            (100, [qml.expval(qml.X(0) @ qml.Y(1))], True),
+            (100, [qml.expval(qml.Hamiltonian([0.1, 0.2], [qml.Z(0), qml.X(1)]))], True),
+            (100, [qml.expval(qml.Hamiltonian([0.1, 0.2], [qml.RZ(0.123, 0), qml.X(1)]))], False),
+        ],
+    )
+    def test_validate_measurements(self, shots, measurements, supported):
+        """Tests that preprocess correctly validates measurements."""
+
+        device = qml.device("default.qubit")
+        tape = qml.tape.QuantumScript(measurements=measurements, shots=shots)
+        program, _ = device.preprocess()
+
+        if not supported:
+            with pytest.raises(qml.DeviceError):
+                program([tape])
+        else:
+            program([tape])
+
 
 class TestPreprocessingIntegration:
     """Test preprocess produces output that can be executed by the device."""
