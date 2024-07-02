@@ -22,10 +22,10 @@ exceptiongroup==1.2.1
 flatbuffers==24.3.25
 fonttools==4.53.0
 frozenlist==1.4.1
-fsspec==2024.6.0
+fsspec==2024.6.1
 future==1.0.0
 gast==0.4.0
-google-auth==2.30.0
+google-auth==2.31.0
 google-auth-oauthlib==0.4.6
 google-pasta==0.2.0
 graphviz==0.20.3
@@ -33,7 +33,7 @@ grpcio==1.64.1
 h5py==3.11.0
 idna==3.7
 imagesize==1.4.1
-importlib_metadata==7.2.1
+importlib_metadata==8.0.0
 importlib_resources==6.4.0
 iniconfig==2.0.0
 jax==0.4.16
@@ -61,7 +61,7 @@ packaging==24.1
 pandas==2.2.2
 pennylane-sphinx-theme==0.5.7
 PennyLane_Lightning==0.36.0
-pillow==10.3.0
+pillow==10.4.0
 pluggy==1.5.0
 protobuf==3.19.6
 PubChemPy==1.0.4
@@ -104,7 +104,7 @@ tensorboard-data-server==0.6.1
 tensorboard-plugin-wit==1.8.1
 tensorflow==2.11.1
 tensorflow-estimator==2.11.0
-tensorflow-io-gcs-filesystem==0.37.0
+tensorflow-io-gcs-filesystem==0.37.1
 tensornetwork==0.3.0
 termcolor==2.4.0
 toml==0.10.2
