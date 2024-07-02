@@ -21,6 +21,7 @@ from functools import partial
 
 import numpy as np
 import pytest
+from scipy.stats import ttest_ind
 
 import pennylane as qml
 from pennylane.transforms import split_non_commuting
@@ -80,6 +81,20 @@ def _convert_obs_to_legacy_opmath(obs):
         return [_convert_obs_to_legacy_opmath(o) for o in obs]
 
     return obs
+
+
+def _extract_non_id_terms_and_coefficients(meas, sampling_technique):
+    terms, coeffs = tuple(
+        zip(*[(term, coeff) for coeff, term in zip(*meas.terms()) if not isinstance(term, qml.I)])
+    )
+
+    probs = (
+        np.ones(len(coeffs)) / len(coeffs)
+        if sampling_technique == "uniform"
+        else np.abs(coeffs) / np.sum(np.abs(coeffs))
+    )
+
+    return terms, probs
 
 
 def complex_no_grouping_processing_fn(results):
@@ -578,6 +593,125 @@ class TestUnits:
         assert len(tapes) == 1
         assert tapes[0] == tape
         assert post_processing_fn(tapes) == tape
+
+
+@pytest.mark.parametrize("sampling_technique", ("uniform", "weighted"))
+class TestTermSampling:
+    def test_term_sampling_fails_with_analytical(self, sampling_technique):
+        tape = qml.tape.QuantumScript([qml.RY(0.5, 0)], [])
+
+        with pytest.raises(ValueError, match="only supported by finite-shot devices"):
+            split_non_commuting(tape, term_sampling=sampling_technique, grouping_strategy=None)
+
+    def test_term_sampling_fails_with_grouping(self, sampling_technique):
+        tape = qml.tape.QuantumScript([qml.RY(0.5, 0)], [])
+
+        with pytest.raises(ValueError, match="only supported with no grouping"):
+            split_non_commuting(tape, term_sampling=sampling_technique, grouping_strategy="qwc")
+
+    # pylint:disable=unused-argument
+    def test_term_sampling_fails_with_wrong_input(self, sampling_technique):
+        tape = qml.tape.QuantumScript([qml.RY(0.5, 0)], [])
+
+        with pytest.raises(ValueError, match="are 'uniform' and 'weighted'"):
+            split_non_commuting(tape, term_sampling="blabla", grouping_strategy=None)
+
+    @pytest.mark.parametrize(
+        "measurement",
+        [*complex_obs_list, (complex_obs_list[-2], complex_obs_list[-2][0] + qml.X(0))],
+    )
+    @pytest.mark.parametrize("shots", ([100], [100, (200, 2)], [2], [3, (200, 2)], [3, 7]))
+    def test_term_sampling_returns_correct_number_of_shots(
+        self, sampling_technique, measurement, shots
+    ):
+        shots = qml.measurements.Shots(shots)
+        measurement = (measurement,) if not isinstance(measurement, tuple) else measurement
+
+        tape = qml.tape.QuantumScript(
+            [qml.RY(0.5, 0)],
+            [qml.expval(meas) for meas in measurement],
+            shots=shots,
+        )
+
+        out, post_fn = split_non_commuting(
+            tape, term_sampling=sampling_technique, grouping_strategy=None
+        )
+        post_fn_dict = post_fn.keywords["single_term_obs_mps"]
+
+        if not isinstance(measurement[0], qml.ops.op_math.Sum):
+            # Non-sum instances have no len function so we just test quickly
+            # for the two cases of identity and non-identity
+            meas = measurement[0]
+            if isinstance(getattr(meas, "base", None) or meas, qml.Identity):
+                assert len(out) == 0
+            else:
+                assert len(out) == 1
+                assert out[0].shots == shots
+        else:
+            assert len(out) == len(post_fn_dict)
+            num_identities = sum(meas.obs.terms()[1].count(qml.I()) for meas in tape.measurements)
+            common_terms_count = sum(([1 for val in post_fn_dict.values() if len(val[0]) > 1]))
+
+            terms, probs = tuple(
+                zip(
+                    *(
+                        _extract_non_id_terms_and_coefficients(meas.obs, sampling_technique)
+                        for meas in tape.measurements
+                    )
+                )
+            )
+
+            # We need to check the single_term_obs_mps dictionary to make sure
+            # it has the correct keys and all tape.measurements correspond to the
+            # ones in the dictionary
+            assert (
+                len(out)
+                <= sum(len(meas) for meas in measurement) - common_terms_count - num_identities
+            )
+
+            # Re-gather the shot information from the tapes for statistical verification
+            out_shots = [
+                np.zeros((len(shots.shot_vector), len(prob)))
+                for _, prob in zip(tape.measurements, probs)
+            ]
+            for tp in out:
+                # Determine which ShotCopies from the original tape are used in the current tape
+                # using the flags attribute
+                inds, _, flags = post_fn_dict[tp.measurements[0]]
+
+                shot_iter = iter(tp.shots.shot_vector)
+                for ind, flag in zip(inds, flags):
+                    term_idx = terms[ind].index(tp.measurements[0].obs)
+
+                    tmp = [next(shot_iter).shots for _ in range(np.count_nonzero(flag))]
+                    out_shots[ind][flag, term_idx] = tmp
+
+            # Need this check to avoid `zip` silently ignoring a size mismatch
+            assert all(
+                len(out_shot) == len([vct.shots for vct in shots.shot_vector])
+                for out_shot in out_shots
+            )
+            for out_shot, prob in zip(out_shots, probs):
+                for i, cpy in enumerate(shots.shot_vector):
+                    # Verify that the shape of the output shots and probabilities match
+                    assert len(out_shot[i]) == len(prob)
+
+                    # Verify that the sum of shots is consistent after the split
+                    assert out_shot[i].sum() == cpy.shots
+
+                    # A minor preprocessing fo the probabilities and output shots is required
+                    # to avoid catastrophic cancellation in `ttest_ind`. Basically, if all the
+                    # values in an array are equal, concern yourself that common value instead
+                    exp_shots = (prob[0] if np.all(prob == prob[0]) else prob) * cpy.shots
+                    actual_shots = (
+                        out_shot[i][0] if np.all(out_shot[i] == out_shot[i][0]) else out_shot[i]
+                    )
+
+                    # If np.allclose is sufficient, avoid doing the statistical test
+                    assert (
+                        np.allclose(actual_shots, exp_shots)
+                        or ttest_ind(actual_shots, exp_shots).pvalue > 0.95
+                    )
 
 
 class TestIntegration:
