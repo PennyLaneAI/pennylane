@@ -127,17 +127,21 @@ class TestCaching:
         assert expected_runs_ideal < expected_runs
 
 
+legacy_dev = qml.devices.LegacyDeviceFacade(
+    qml.device("default.qubit.legacy", wires=(0, 1, 2, "a", "b"))
+)
+
 # add tests for lightning 2 when possible
 # set rng for device when possible
 test_matrix = [
-    ({"gradient_fn": param_shift}, Shots(100000), DefaultQubit(seed=42)),
-    ({"gradient_fn": param_shift}, Shots((100000, 100000)), DefaultQubit(seed=42)),
-    ({"gradient_fn": param_shift}, Shots(None), DefaultQubit()),
-    ({"gradient_fn": "backprop"}, Shots(None), DefaultQubit()),
+    ({"gradient_fn": param_shift}, Shots(100000), DefaultQubit(seed=42)),  # 0
+    ({"gradient_fn": param_shift}, Shots((100000, 100000)), DefaultQubit(seed=42)),  # 1
+    ({"gradient_fn": param_shift}, Shots(None), DefaultQubit()),  # 2
+    ({"gradient_fn": "backprop"}, Shots(None), DefaultQubit()),  # 3
     (
         {"gradient_fn": "adjoint", "grad_on_execution": True, "device_vjp": False},
         Shots(None),
-        DefaultQubit(),
+        DefaultQubit(),  # 4
     ),
     (
         {
@@ -146,18 +150,36 @@ test_matrix = [
             "device_vjp": False,
         },
         Shots(None),
-        DefaultQubit(),
+        DefaultQubit(),  # 5
     ),
-    ({"gradient_fn": "adjoint", "device_vjp": True}, Shots(None), DefaultQubit()),
+    ({"gradient_fn": "adjoint", "device_vjp": True}, Shots(None), DefaultQubit()),  # 6
     (
         {"gradient_fn": "device", "device_vjp": False},
         Shots((100000, 100000)),
-        ParamShiftDerivativesDevice(),
+        ParamShiftDerivativesDevice(),  # 7
     ),
     (
         {"gradient_fn": "device", "device_vjp": True},
         Shots((100000, 100000)),
-        ParamShiftDerivativesDevice(),
+        ParamShiftDerivativesDevice(),  # 8
+    ),
+    ({"gradient_fn": param_shift}, Shots(100000), legacy_dev),  # 9
+    ({"gradient_fn": param_shift}, Shots((100000, 100000)), legacy_dev),  # 10
+    ({"gradient_fn": param_shift}, Shots(None), legacy_dev),  # 11
+    ({"gradient_fn": "backprop"}, Shots(None), legacy_dev),  # 12
+    (
+        {"gradient_fn": "adjoint", "grad_on_execution": True, "device_vjp": False},
+        Shots(None),
+        legacy_dev,  # 13
+    ),
+    (
+        {
+            "gradient_fn": "adjoint",
+            "grad_on_execution": False,
+            "device_vjp": False,
+        },
+        Shots(None),
+        legacy_dev,  # 14
     ),
 ]
 
@@ -225,16 +247,17 @@ class TestTorchExecuteIntegration:
         tape = qml.tape.QuantumScript([qml.RY(a, wires=0)], [qml.expval(qml.PauliZ(0))])
         tape.trainable_params = [0]
         tapes, fn = param_shift(tape)
+        tapes = qml.transforms.convert_to_numpy_parameters(tapes)[0]
         expected = fn(device.execute(tapes))
 
         assert expected.shape == ()
         if shots.has_partitioned_shots:
             for i in range(shots.num_copies):
-                assert torch.allclose(res[i], expected, atol=atol_for_shots(shots), rtol=0)
-                assert torch.allclose(res[i], -torch.sin(a), atol=atol_for_shots(shots))
+                assert qml.math.allclose(res[i], expected, atol=atol_for_shots(shots), rtol=0)
+                assert qml.math.allclose(res[i], -torch.sin(a), atol=atol_for_shots(shots))
         else:
-            assert torch.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
-            assert torch.allclose(res, -torch.sin(a), atol=atol_for_shots(shots))
+            assert qml.math.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
+            assert qml.math.allclose(res, -torch.sin(a), atol=atol_for_shots(shots))
 
     def test_jacobian(self, execute_kwargs, shots, device):
         """Test jacobian calculation"""
@@ -283,6 +306,9 @@ class TestTorchExecuteIntegration:
     def test_tape_no_parameters(self, execute_kwargs, shots, device):
         """Test that a tape with no parameters is correctly
         ignored during the gradient computation"""
+
+        if device.name == "default.qubit.legacy" and execute_kwargs["gradient_fn"] == "adjoint":
+            pytest.xfail("adjoint does not support probabilities with default.qubit.legacy")
 
         def cost(params):
             tape1 = qml.tape.QuantumScript(
@@ -562,6 +588,9 @@ class TestTorchExecuteIntegration:
         """Tests correct output shape and evaluation for a tape
         with prob outputs"""
 
+        if device.name == "default.qubit.legacy" and execute_kwargs["gradient_fn"] == "adjoint":
+            pytest.xfail("adjoint does not support probabilities with default.qubit.legacy")
+
         def cost(x, y):
             ops = [qml.RX(x, 0), qml.RY(y, 1), qml.CNOT((0, 1))]
             m = [qml.probs(wires=0), qml.probs(wires=1)]
@@ -613,6 +642,9 @@ class TestTorchExecuteIntegration:
     def test_ragged_differentiation(self, execute_kwargs, device, shots):
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
+
+        if device.name == "default.qubit.legacy" and execute_kwargs["gradient_fn"] == "adjoint":
+            pytest.xfail("adjoint does not support probabilities with default.qubit.legacy")
 
         def cost(x, y):
             ops = [qml.RX(x, wires=0), qml.RY(y, 1), qml.CNOT((0, 1))]
@@ -794,11 +826,17 @@ class TestHamiltonianWorkflows:
             ]
         )
 
-    def test_multiple_hamiltonians_not_trainable(self, execute_kwargs, cost_fn, shots):
+    def test_multiple_hamiltonians_not_trainable(self, device, execute_kwargs, cost_fn, shots):
         """Test hamiltonian with no trainable parameters."""
 
         if execute_kwargs["gradient_fn"] == "adjoint" and not qml.operation.active_new_opmath():
             pytest.skip("adjoint differentiation does not suppport hamiltonians.")
+        if device.name == "default.qubit.legacy" and shots:
+            pytest.xfail(
+                "default.qubit.legacy cannot have multiple hamiltonians with finite shots."
+            )
+        if device.name == "default.qubit.legacy" and execute_kwargs["gradient_fn"] == "adjoint":
+            pytest.xfail("need to figure this out")
 
         coeffs1 = torch.tensor([0.1, 0.2, 0.3], requires_grad=False)
         coeffs2 = torch.tensor([0.7], requires_grad=False)
@@ -820,12 +858,16 @@ class TestHamiltonianWorkflows:
         else:
             assert torch.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
 
-    def test_multiple_hamiltonians_trainable(self, execute_kwargs, cost_fn, shots):
+    def test_multiple_hamiltonians_trainable(self, device, execute_kwargs, cost_fn, shots):
         """Test hamiltonian with trainable parameters."""
         if execute_kwargs["gradient_fn"] == "adjoint":
             pytest.skip("trainable hamiltonians not supported with adjoint")
         if qml.operation.active_new_opmath():
             pytest.skip("parameter shift derivatives do not yet support sums.")
+        if device.name == "default.qubit.legacy" and shots:
+            pytest.xfail(
+                "default.qubit.legacy cannot have multiple hamiltonians with finite shots."
+            )
 
         coeffs1 = torch.tensor([0.1, 0.2, 0.3], requires_grad=True)
         coeffs2 = torch.tensor([0.7], requires_grad=True)
