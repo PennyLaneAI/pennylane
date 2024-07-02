@@ -200,7 +200,7 @@ class TestUpdate:
         m = [qml.expval(qml.Hermitian(2 * np.eye(2), wires=0))]
         qs = QuantumScript(ops, m)
         assert qs.wires == qml.wires.Wires((0,))
-        qs.par_info  # trigger caching # pylint: disable=pointless-statement
+        assert isinstance(qs.par_info, list) and len(qs.par_info) > 0
         qs.hash  # trigger caching # pylint: disable=pointless-statement
         assert qs.trainable_params == [0, 1, 2, 3, 4, 5, 6, 7]
 
@@ -208,7 +208,7 @@ class TestUpdate:
         qs._measurements = []
         qs._update()
         assert qs.wires == qml.wires.Wires([])
-        assert isinstance(qs.par_info, list) and len(qs.par_info) == 0
+        assert qs.par_info == []
         assert QuantumScript([], []).hash == qs.hash
         assert qs.trainable_params == []
 
