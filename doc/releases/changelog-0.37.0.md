@@ -450,11 +450,11 @@
 
 <h3>Documentation 📝</h3>
 
-* The `qml.qchem` docs have been updated with the new `qml.qchem` improvements.
+* The `qml.qchem` docs have been updated to showcase the new improvements.
   [(#5758)](https://github.com/PennyLaneAI/pennylane/pull/5758/)
   [(#5638)](https://github.com/PennyLaneAI/pennylane/pull/5638/)
 
-* Move information about mid-circuit measurements from the measurements quickstart page to its own
+* Information about mid-circuit measurements has been moved from the measurements quickstart page to its own
   [mid-circuit measurements quickstart page](https://docs.pennylane.ai/en/stable/introduction/mid_circuit_measurements.html)
   [(#5870)](https://github.com/PennyLaneAI/pennylane/pull/5870)
 
@@ -464,16 +464,18 @@
 * A small typo was fixed in the docstring for `qml.sample`.
   [(#5685)](https://github.com/PennyLaneAI/pennylane/pull/5685)
 
-* Typesetting for some of the documentation was fixed, (use of left/right delimiters, fractions, and fix of incorrectly set up commands)
+* Typesetting for some of the documentation was fixed, (use of left/right delimiters, fractions, and fixing incorrectly set up commands)
   [(#5804)](https://github.com/PennyLaneAI/pennylane/pull/5804)
 
-* The `qml.Tracker` examples are updated.
+* The `qml.Tracker` examples have been updated.
   [(#5803)](https://github.com/PennyLaneAI/pennylane/pull/5803)
 
-* The input types for `coupling_map` in `qml.transpile` are updated to reflect all the allowed input types by `nx.to_networkx_graph`.
+* The input types for `coupling_map` in `qml.transpile` have been updated to reflect all the allowed 
+  input types by `nx.to_networkx_graph`.
   [(#5864)](https://github.com/PennyLaneAI/pennylane/pull/5864)
 
-* The text in the `qml.data` module and datasets quickstart have been slightly modified to lead to the quickstart first and highlight `list_datasets`.
+* The text in the `qml.data` module and datasets quickstart has been slightly modified to lead to the 
+  quickstart first and highlight `list_datasets`.
   [(5484)](https://github.com/PennyLaneAI/pennylane/pull/5484)
 
 <h3>Bug fixes 🐛</h3>
@@ -481,27 +483,27 @@
 * The `default.tensor` device now preserves the order of wires if the initial MPS is created from a dense state vector.
   [(#5892)](https://github.com/PennyLaneAI/pennylane/pull/5892)
 
-* Fixes a bug where `hadamard_grad` returned a wrong shape for `qml.probs()` without wires.
+* Fixed a bug where `hadamard_grad` returned a wrong shape for `qml.probs()` without wires.
   [(#5860)](https://github.com/PennyLaneAI/pennylane/pull/5860)
 
 * An error is now raised on processing an `AnnotatedQueue` into a `QuantumScript` if the queue
   contains something other than an `Operator`, `MeasurementProcess`, or `QuantumScript`.
   [(#5866)](https://github.com/PennyLaneAI/pennylane/pull/5866)
 
-* Fixes a bug in the wire handling on special controlled ops.
+* Fixed a bug in the wire handling on special controlled ops.
   [(#5856)](https://github.com/PennyLaneAI/pennylane/pull/5856)
 
-* Fixes a bug where `Sum`'s with repeated identical operations ended up with the same hash as
+* Fixed a bug where `Sum`'s with repeated identical operations ended up with the same hash as
   `Sum`'s with different numbers of repeats.
   [(#5851)](https://github.com/PennyLaneAI/pennylane/pull/5851)
 
 * `qml.qaoa.cost_layer` and `qml.qaoa.mixer_layer` can now be used with `Sum` operators.
   [(#5846)](https://github.com/PennyLaneAI/pennylane/pull/5846)
 
-* Fixes a bug where `MottonenStatePreparation` produces wrong derivatives at special parameter values.
+* Fixed a bug where `qml.MottonenStatePreparation` produces wrong derivatives at special parameter values.
   [(#5774)](https://github.com/PennyLaneAI/pennylane/pull/5774)
 
-* Fixes a bug where fractional powers and adjoints of operators were commuted, which is
+* Fixed a bug where fractional powers and adjoints of operators were commuted, which is
   not well-defined/correct in general. Adjoints of fractional powers can no longer be evaluated.
   [(#5835)](https://github.com/PennyLaneAI/pennylane/pull/5835)
 
@@ -511,10 +513,10 @@
 * An error is now raised if a transform is applied to a catalyst qjit object.
   [(#5826)](https://github.com/PennyLaneAI/pennylane/pull/5826)
 
-* `KerasLayer` and `TorchLayer` no longer mutate the input `QNode`'s interface.
+* `qml.qnn.KerasLayer` and `qml.qnn.TorchLayer` no longer mutate the input `QNode`'s interface.
   [(#5800)](https://github.com/PennyLaneAI/pennylane/pull/5800)
 
-* Disable Docker builds on PR merge.
+* Docker builds on PR merging has been disabled.
   [(#5777)](https://github.com/PennyLaneAI/pennylane/pull/5777)
 
 * The validation of the adjoint method in `DefaultQubit` correctly handles device wires now.
@@ -523,7 +525,7 @@
 * `QuantumPhaseEstimation.map_wires` on longer modifies the original operation instance.
   [(#5698)](https://github.com/PennyLaneAI/pennylane/pull/5698)
 
-* The decomposition of `AmplitudeAmplification` now correctly queues all operations.
+* The decomposition of `qml.AmplitudeAmplification` now correctly queues all operations.
   [(#5698)](https://github.com/PennyLaneAI/pennylane/pull/5698)
 
 * Replaced `semantic_version` with `packaging.version.Version`, since the former cannot
@@ -542,20 +544,21 @@
 * The legacy `Tensor` class can now handle a `Projector` with abstract tracer input.
   [(#5720)](https://github.com/PennyLaneAI/pennylane/pull/5720)
 
-* Fixed a bug that raised an error regarding expected vs actual `dtype` when using `JAX-JIT` on a circuit that
+* Fixed a bug that raised an error regarding expected versus actual `dtype` when using `JAX-JIT` on a circuit that
   returned samples of observables containing the `qml.Identity` operator.
   [(#5607)](https://github.com/PennyLaneAI/pennylane/pull/5607)
 
 * The signature of `CaptureMeta` objects (like `Operator`) now match the signature of the `__init__` call.
   [(#5727)](https://github.com/PennyLaneAI/pennylane/pull/5727)
 
-* Use vanilla NumPy arrays in `test_projector_expectation` to avoid differentiating `qml.Projector` with respect to the state attribute.
+* Vanilla NumPy arrays are now used in `test_projector_expectation` to avoid differentiating `qml.Projector` 
+  with respect to the state attribute.
   [(#5683)](https://github.com/PennyLaneAI/pennylane/pull/5683)
 
-* `qml.Projector` is now compatible with jax-jit.
+* `qml.Projector` is now compatible with `jax.jit`.
   [(#5595)](https://github.com/PennyLaneAI/pennylane/pull/5595)
 
-* Finite shot circuits with a `qml.probs` measurement, both with a `wires` or `op` argument, can now be compiled with `jax.jit`.
+* Finite-shot circuits with a `qml.probs` measurement, both with a `wires` or `op` argument, can now be compiled with `jax.jit`.
   [(#5619)](https://github.com/PennyLaneAI/pennylane/pull/5619)
 
 * `param_shift`, `finite_diff`, `compile`, `insert`, `merge_rotations`, and `transpile` now
@@ -563,47 +566,52 @@
   [(#5424)](https://github.com/PennyLaneAI/pennylane/pull/5424)
   [(#5681)](https://github.com/PennyLaneAI/pennylane/pull/5681)
 
-* A correction is added to `bravyi_kitaev` to call the correct function for a FermiSentence input.
+* A correction has been added to `qml.bravyi_kitaev` to call the correct function for a `qml.FermiSentence` input.
   [(#5671)](https://github.com/PennyLaneAI/pennylane/pull/5671)
 
-* Fixes a bug where `sum_expand` produces incorrect result dimensions when combining shot vectors,
+* Fixed a bug where `sum_expand` produces incorrect result dimensions when combined with shot vectors,
   multiple measurements, and parameter broadcasting.
   [(#5702)](https://github.com/PennyLaneAI/pennylane/pull/5702)
 
-* Fixes a bug in `qml.math.dot` that raises an error when only one of the operands is a scalar.
+* Fixed a bug in `qml.math.dot` that raises an error when only one of the operands is a scalar.
   [(#5702)](https://github.com/PennyLaneAI/pennylane/pull/5702)
 
-* `qml.matrix` is now compatible with qnodes compiled by catalyst.qjit.
+* `qml.matrix` is now compatible with QNodes compiled by `qml.qjit`.
   [(#5753)](https://github.com/PennyLaneAI/pennylane/pull/5753)
 
-* `qml.snapshots` raises an error when a measurement other than `qml.state` is requested from `default.qubit.legacy` instead of silently returning the statevector.
+* `qml.snapshots` raises an error when a measurement other than `qml.state` is requested from `default.qubit.legacy` 
+  instead of silently returning the statevector.
   [(#5805)](https://github.com/PennyLaneAI/pennylane/pull/5805)
 
-* Fixes a bug where `default.qutrit` is falsely determined to be natively compatible with `qml.snapshots`.
+* Fixed a bug where `default.qutrit` was falsely determined to be natively compatible with `qml.snapshots`.
   [(#5805)](https://github.com/PennyLaneAI/pennylane/pull/5805)
 
-* Fixes a bug where the measurement of a `qml.Snapshot` instance is not passed on during the `qml.adjoint` and `qml.ctrl` operations.
+* Fixed a bug where the measurement of a `qml.Snapshot` instance was not passed on during the `qml.adjoint` and `qml.ctrl` operations.
   [(#5805)](https://github.com/PennyLaneAI/pennylane/pull/5805)
 
-* `CNOT` and `Toffoli` now have an `arithmetic_depth` of `1`, as they are controlled operations.
+* `qml.CNOT` and `qml.Toffoli` now have an `arithmetic_depth` of `1`, as they are controlled operations.
   [(#5797)](https://github.com/PennyLaneAI/pennylane/pull/5797)
 
-* Fixes a bug where the gradient of `ControlledSequence`, `Reflection`, `AmplitudeAmplification`, and `Qubitization` is incorrect on `default.qubit.legacy` with `parameter_shift`.
+* Fixed a bug where the gradient of `ControlledSequence`, `Reflection`, `AmplitudeAmplification`, and `Qubitization` was incorrect on `default.qubit.legacy` with `parameter_shift`.
   [(#5806)](https://github.com/PennyLaneAI/pennylane/pull/5806)
 
-* Fixed a bug where `split_non_commuting` raises an error when the circuit contains measurements of observables that are not pauli words.
+* Fixed a bug where `split_non_commuting` raises an error when the circuit contains measurements of 
+  observables that are not Pauli words.
   [(#5827)](https://github.com/PennyLaneAI/pennylane/pull/5827)
 
-* Simplify method for `Exp` now returns an operator with the correct number of Trotter steps, i.e. equal to the one from the pre-simplified operator.
+* The `simplify` method for `qml.Exp` now returns an operator with the correct number of Trotter steps, 
+  i.e. equal to the one from the pre-simplified operator.
   [(#5831)](https://github.com/PennyLaneAI/pennylane/pull/5831)
 
-* Fix bug where `CompositeOp.overlapping_ops` sometimes puts overlapping ops in different groups, leading to incorrect results returned by `LinearCombination.eigvals()`
+* Fixed a bug where `CompositeOp.overlapping_ops` would put overlapping operators in different groups, 
+  leading to incorrect results returned by `LinearCombination.eigvals()`.
   [(#5847)](https://github.com/PennyLaneAI/pennylane/pull/5847)
 
-* Implement the correct decomposition for a `qml.PauliRot` with an identity as `pauli_word`, i.e. returns a `qml.GlobalPhase` with half the angle.
+* The correct decomposition for a `qml.PauliRot` with an identity as `pauli_word` has been implemented, 
+  i.e. returns a `qml.GlobalPhase` with half the angle.
   [(#5875)](https://github.com/PennyLaneAI/pennylane/pull/5875)
 
-* `qml.pauli_decompose` now works in a jit-ted context, such as `jax.jit` and `catalyst.qjit`.
+* `qml.pauli_decompose` now works in a jit-ted context, such as `jax.jit` and `qml.qjit`.
   [(#5878)](https://github.com/PennyLaneAI/pennylane/pull/5878)
 
 <h3>Contributors ✍️</h3>
@@ -616,6 +624,7 @@ Utkarsh Azad,
 Lillian M. A. Frederiksen,
 Ludmila Botelho,
 Gabriel Bottrill,
+Thomas Bromley,
 Jack Brown,
 Astral Cai,
 Ahmed Darwish,
