@@ -8,6 +8,9 @@
   
 <h3>Improvements 🛠</h3>
 
+* `QNGOptimizer` now supports functions with multiple arguments, updating each argument independently.
+  [(#5926)](https://github.com/PennyLaneAI/pennylane/pull/5926)
+
 <h3>Breaking changes 💔</h3>
 
 <h3>Deprecations 👋</h3>
@@ -20,4 +23,5 @@
 
 This release contains contributions from (in alphabetical order):
 
-Yushao Chen.
+Yushao Chen,
+David Wierichs,
