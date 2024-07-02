@@ -46,7 +46,7 @@ flatbuffers==24.3.25
 fonttools==4.53.0
 fqdn==1.5.1
 future==1.0.0
-gast==0.5.5
+gast==0.6.0
 google-pasta==0.2.0
 grpcio==1.64.1
 h11==0.14.0
@@ -58,7 +58,7 @@ idna==3.7
 importlib_metadata==8.0.0
 importlib_resources==6.4.0
 iniconfig==2.0.0
-ipykernel==6.29.4
+ipykernel==6.29.5
 ipython==8.18.1
 ipython-genutils==0.2.0
 ipywidgets==7.8.1
@@ -120,7 +120,7 @@ pathspec==0.12.1
 PennyLane-Catalyst==0.6.0
 PennyLane_Lightning==0.36.0
 pexpect==4.9.0
-pillow==10.3.0
+pillow==10.4.0
 platformdirs==4.2.2
 pluggy==1.5.0
 pre-commit==3.7.1
@@ -156,9 +156,9 @@ rfc3339-validator==0.1.4
 rfc3986-validator==0.1.1
 rich==13.7.1
 rpds-py==0.18.1
-rustworkx==0.14.2
+rustworkx==0.15.1
 scipy==1.12.0
-scs==3.2.4.post3
+scs==3.2.5
 semantic-version==2.10.0
 Send2Trash==1.8.3
 six==1.16.0
@@ -168,8 +168,8 @@ stack-data==0.6.3
 stim==1.13.0
 tensorboard==2.16.2
 tensorboard-data-server==0.7.2
-tensorflow==2.16.1
-tensorflow-io-gcs-filesystem==0.37.0
+tensorflow==2.16.2
+tensorflow-io-gcs-filesystem==0.37.1
 termcolor==2.4.0
 terminado==0.18.1
 tf_keras==2.16.0

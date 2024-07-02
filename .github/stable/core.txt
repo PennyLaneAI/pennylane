@@ -39,7 +39,7 @@ osqp==0.6.7.post0
 packaging==24.1
 pathspec==0.12.1
 PennyLane_Lightning==0.37.0
-pillow==10.3.0
+pillow==10.4.0
 platformdirs==4.2.2
 pluggy==1.5.0
 pre-commit==3.7.1
@@ -58,9 +58,9 @@ python-dateutil==2.9.0.post0
 PyYAML==6.0.1
 qdldl==0.1.7.post4
 requests==2.32.3
-rustworkx==0.14.2
+rustworkx==0.15.1
 scipy==1.11.4
-scs==3.2.4.post3
+scs==3.2.5
 semantic-version==2.10.0
 six==1.16.0
 toml==0.10.2
