@@ -117,6 +117,10 @@ class LegacyDeviceFacade(Device):
 
     # pylint: disable=super-init-not-called
     def __init__(self, device: "qml.devices.LegacyDevice"):
+        if not isinstance(device, qml.devices.LegacyDevice):
+            raise ValueError(
+                "The LegacyDeviceFacade only accepts a device of type qml.devices.LegacyDevice."
+            )
         self._device = device
 
     @property
@@ -214,7 +218,7 @@ class LegacyDeviceFacade(Device):
         return replace(execution_config, **updated_values)
 
     def supports_derivatives(self, execution_config=None, circuit=None) -> bool:
-        circuit = circuit or qml.tape.QuantumScript([], [], shots=self.shots)
+        circuit = qml.tape.QuantumScript([], [], shots=self.shots) if circuit is None else circuit
 
         if execution_config is None or execution_config.gradient_method == "best":
             validation_methods = (
@@ -323,7 +327,6 @@ class LegacyDeviceFacade(Device):
 
         if not supported_device:
             return False
-
         return not bool(tape.shots)
 
     def _validate_device_method(self, _):

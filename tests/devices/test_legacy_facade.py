@@ -27,6 +27,7 @@ from pennylane.devices.legacy_facade import (
 
 
 class DummyDevice(qml.devices.LegacyDevice):
+    """A minimal device that does not do"""
 
     author = "some string"
     name = "my legacy device"
@@ -40,9 +41,11 @@ class DummyDevice(qml.devices.LegacyDevice):
     def reset(self):
         pass
 
+    # pylint: disable=unused-argument
     def apply(self, operation, wires, par):
         return 0.0
 
+    # pylint: disable=unused-argument
     def expval(self, observable, wires, par):
         return 0.0
 
@@ -91,6 +94,7 @@ def test_batch_transform_supports_hamiltonian():
     hamiltonian expansion."""
 
     class HamiltonianDev(DummyDevice):
+        """A device that supports a hamiltonian."""
 
         observables = {"Hamiltonian"}
 
@@ -124,9 +128,11 @@ def test_preprocessing_program():
     dev = DummyDevice(wires=(0, 1))
     program, _ = LegacyDeviceFacade(dev).preprocess()
 
-    assert program[0].transform == legacy_device_batch_transform.transform
-    assert program[1].transform == legacy_device_expand_fn.transform
-    assert program[2].transform == qml.defer_measurements.transform
+    assert (
+        program[0].transform == legacy_device_batch_transform.transform
+    )  # pylint: disable=no-member
+    assert program[1].transform == legacy_device_expand_fn.transform  # pylint: disable=no-member
+    assert program[2].transform == qml.defer_measurements.transform  # pylint: disable=no-member
 
     m0 = qml.measure(0)
     tape = qml.tape.QuantumScript(
@@ -152,6 +158,7 @@ def test_preprocessing_program_supports_mid_measure():
     """Test that if the device natively supports mid measure, defer_measurements wont be applied."""
 
     class MidMeasureDev(DummyDevice):
+        """A dummy device that supports mid circuit measurements."""
 
         _capabilities = {"supports_mid_measure": True}
 
@@ -168,6 +175,7 @@ class TestGradientSupport:
 
         # pylint: disable=unnecessary-lambda-assignment
         class AdjointDev(DummyDevice):
+            """A dummy device that supports adjoitn diff"""
 
             _capabilities = {"returns_state": True}
 
@@ -187,20 +195,25 @@ class TestGradientSupport:
         assert dev.supports_derivatives(config, tape)
         assert not dev.supports_derivatives(config, tape_shots)
         config2 = qml.devices.ExecutionConfig(gradient_method="adjoint")
-        assert dev.supports_derivatvies(config2, tape)
+        assert dev.supports_derivatives(config2, tape)
         assert not dev.supports_derivatives(config2, tape_shots)
 
         program, processed_config = dev.preprocess(config2)
 
-        tape = qml.tape.QuantumScript([qml.Rot(1.2, 2.3, 3.4)], [qml.expval(qml.Z(0))])
+        tape = qml.tape.QuantumScript(
+            [qml.Rot(qml.numpy.array(1.2), 2.3, 3.4, 0)], [qml.expval(qml.Z(0))]
+        )
         (new_tape,), _ = program((tape,))
         expected = qml.tape.QuantumScript(
-            [qml.RZ(1.2, 0), qml.RY(2.3, 0), qml.RZ(3.4, 0)], [qml.expval(qml.Z(0))]
+            [qml.RZ(qml.numpy.array(1.2), 0), qml.RY(2.3, 0), qml.RZ(3.4, 0)],
+            [qml.expval(qml.Z(0))],
         )
+        print(new_tape.circuit)
+        print(expected.circuit)
         assert qml.equal(new_tape, expected)
 
         assert processed_config.use_device_gradient is True
-        assert processed_config.gradient_keyword_argument == {
+        assert processed_config.gradient_keyword_arguments == {
             "use_device_state": True,
             "method": "adjoint_jacobian",
         }
@@ -214,8 +227,10 @@ class TestGradientSupport:
         assert jac == "a"
 
     def test_device_derivatives(self):
+        """Test that a device that provides a derivative processed the config correctly."""
 
         class DeviceDerivatives(DummyDevice):
+            """A dummy device with a jacobian."""
 
             _capabilities = {"provides_jacobian": True}
 
@@ -225,7 +240,7 @@ class TestGradientSupport:
         assert dev.supports_derivatives()
         assert dev._validate_device_method(qml.tape.QuantumScript())
 
-        config = qml.devices.DefaultExecutionConfig(gradient_method="best")
+        config = qml.devices.ExecutionConfig(gradient_method="best")
         _, processed_config = dev.preprocess(config)
         assert processed_config.use_device_gradient is True
         assert processed_config.grad_on_execution is True
