@@ -770,6 +770,7 @@ unsupported_templates = [
     qml.CVNeuralNetLayers,
     qml.DisplacementEmbedding,
     qml.Interferometer,
+    qml.PrepSelPrep,
     qml.QutritBasisStatePreparation,
     qml.SqueezingEmbedding,
 ]
