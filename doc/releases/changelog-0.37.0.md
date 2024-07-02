@@ -395,7 +395,6 @@
 
 * The `qml.Snapshot` operator now accepts sample-based measurements for finite-shot devices.
   [(#5805)](https://github.com/PennyLaneAI/pennylane/pull/5805)
-
 * Transforms applied to callables now use `functools.wraps` to preserve the docstring and call signature of the original function.
   [(#5857)](https://github.com/PennyLaneAI/pennylane/pull/5857)
 
