@@ -15,6 +15,8 @@
 <h3>Documentation 📝</h3>
 
 <h3>Bug fixes 🐛</h3>
+* Fix `jax.grad` + `jax.jit` not working for `AmplitudeEmbedding`, `StatePrep` and `MottonenStatePreparation`.
+  [(#5620)](https://github.com/PennyLaneAI/pennylane/pull/5620) 
 
 <h3>Contributors ✍️</h3>
 
