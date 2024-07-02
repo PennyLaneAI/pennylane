@@ -405,14 +405,16 @@
 
 <h3>Breaking changes 💔</h3>
 
-* Passing `shots` as a keyword argument to a `QNode` initialization now raises an error, instead of ignoring the input.
+* Passing `shots` as a keyword argument to a `QNode` initialization now raises an error instead of ignoring 
+  the input.
   [(#5748)](https://github.com/PennyLaneAI/pennylane/pull/5748)
 
-* A custom decomposition can no longer be provided to `QDrift`. Instead, apply the operations in your custom
-  operation directly with `qml.apply`.
+* A custom decomposition can no longer be provided to `qml.QDrift`. Instead, apply the operations in 
+  your custom operation directly with `qml.apply`.
   [(#5698)](https://github.com/PennyLaneAI/pennylane/pull/5698)
 
-* Sampling observables composed of `X`, `Y`, `Z` and `Hadamard` now returns values of type `float` instead of `int`.
+* Sampling observables composed of `X`, `Y`, `Z` and `Hadamard` now returns values of type `float` instead 
+  of `int`.
   [(#5607)](https://github.com/PennyLaneAI/pennylane/pull/5607)
 
 * `qml.is_commuting` no longer accepts the `wire_map` argument, which does not bring any functionality.
@@ -434,14 +436,15 @@
 
 <h3>Deprecations 👋</h3>
 
-* The `simplify` argument in `qml.Hamiltonian` and `qml.ops.LinearCombination` is deprecated.
+* The `simplify` argument in `qml.Hamiltonian` and `qml.ops.LinearCombination` has been deprecated.
   Instead, `qml.simplify()` can be called on the constructed operator.
   [(#5677)](https://github.com/PennyLaneAI/pennylane/pull/5677)
 
-* `qml.transforms.map_batch_transform` is deprecated, since a transform can be applied directly to a batch of tapes.
+* `qml.transforms.map_batch_transform` has been deprecated, since a transform can be applied directly to a batch of tapes.
   [(#5676)](https://github.com/PennyLaneAI/pennylane/pull/5676)
 
-* The default behaviour of `qml.from_qasm()` to remove measurements in the QASM code is deprecated. Use `measurements=[]` to keep this behaviour or `measurements=None` to keep the measurements from the QASM code.
+* The default behaviour of `qml.from_qasm()` to remove measurements in the QASM code has been deprecated. 
+  Use `measurements=[]` to keep this behaviour or `measurements=None` to keep the measurements from the QASM code.
   [(#5882)](https://github.com/PennyLaneAI/pennylane/pull/5882)
   [(#5904)](https://github.com/PennyLaneAI/pennylane/pull/5904)
 
