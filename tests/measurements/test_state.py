@@ -129,6 +129,24 @@ class TestStateMP:
         with pytest.raises(WireError, match=r"Unexpected unique wires <Wires = \[0, 1, 2\]> found"):
             StateMP(wires=[0, 1]).process_state([1, 0], wire_order=Wires(2))
 
+    @pytest.mark.parametrize(
+        "dm",
+        [(np.array([[1, 0, 1, 23], [0, 0, 0, 0], [1, 0, 1, 23], [23, 0, 23, 529]]) / 531 + 0.0j)],
+    )
+    def test_process_density_matrix(self, dm):
+        """Test the processing of a state vector."""
+
+        mp = StateMP(wires=None)
+        assert mp.return_type == State
+        assert mp.numeric_type is complex
+
+        # Expecting a NotImplementedError to be raised when process_density_matrix is called
+
+        with pytest.raises(
+            ValueError, match="Processing from density matrix to state is not supported."
+        ):
+            mp.process_density_matrix(dm, [0, 1])
+
 
 class TestDensityMatrixMP:
     """Tests for the DensityMatrix measurement process"""
@@ -158,9 +176,6 @@ class TestDensityMatrixMP:
             exp = reduce_statevector(vec, wires)
         assert qml.math.allclose(processed, exp)
 
-    @pytest.mark.xfail(
-        reason="DensityMatrixMP.process_state no longer supports density matrix parameters"
-    )
     @pytest.mark.parametrize(
         "mat, wires",
         [
@@ -181,7 +196,7 @@ class TestDensityMatrixMP:
 
         num_wires = int(np.log2(len(mat)))
         order = list(range(num_wires))
-        processed = mp.process_state(mat, order)
+        processed = mp.process_density_matrix(mat, order)
         assert qml.math.shape(processed) == (2 ** len(wires), 2 ** len(wires))
         if len(wires) == num_wires:
             exp = _permute_dense_matrix(mat, wires, order, None)
