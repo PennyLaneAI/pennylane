@@ -266,7 +266,8 @@ class DefaultTensor(Device):
             setting the maximum bond dimension to 100 and the cutoff to the machine epsilon.
 
             We set ``"auto-mps"`` as the contraction technique to apply gates. With this option, ``quimb`` turns 3-qubit gates and 4-qubit gates
-            into Matrix Product Operators (MPO) and applies them directly to the MPS. On the other hand, qubits involved in 2-qubit gates may be temporarily swapped to adjacent positions before applying the gate and then returned to their original positions.
+            into Matrix Product Operators (MPO) and applies them directly to the MPS. On the other hand, qubits involved in 2-qubit gates may be
+            temporarily swapped to adjacent positions before applying the gate and then returned to their original positions.
 
             .. code-block:: python
 
@@ -348,7 +349,8 @@ class DefaultTensor(Device):
             The execution time for this circuit with the above parameters is around 0.8 seconds on a standard laptop.
 
             The tensor network method can be faster than MPS and state vector methods in some cases.
-            As a comparison, the time for the exact calculation (i.e., with ``max_bond_dim = None``) of the same circuit using the MPS method with the ``default.qubit`` device is approximately three orders of magnitude slower.
+            As a comparison, the time for the exact calculation (i.e., with ``max_bond_dim = None``) of the same circuit using the MPS method with the ``default.qubit``
+            device is approximately three orders of magnitude slower.
     """
 
     # pylint: disable=too-many-instance-attributes
