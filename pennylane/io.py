@@ -465,7 +465,7 @@ def from_qasm(quantum_circuit: str, measurements=False):
                          'measure q -> c;'
 
         dev = qml.device("default.qubit")
-        loaded_circuit = qml.from_qasm(hadamard_qasm)
+        loaded_circuit = qml.from_qasm(hadamard_qasm, measurements=None)
 
         @qml.qnode(dev)
         def circuit():
