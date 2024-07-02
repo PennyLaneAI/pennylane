@@ -219,12 +219,6 @@
   2: ──RX(0.00)────╰X─╰●──RX(0.03)────╰X─╰●─┤     
   ```
 
-* Circuits can now be plotted at any specific point of the transform program through the `level` keyword argument in `draw()` and `draw_mpl()`.
-  
-
-* `specs()` can now be requested at any specific point of the transform program through the `level` keyword argument.
-  
-
 <h3>Improvements 🛠</h3>
 
 <h4>Community contributions, including UnitaryHACK 💛</h4>
