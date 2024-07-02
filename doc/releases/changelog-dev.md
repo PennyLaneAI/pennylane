@@ -9,6 +9,9 @@
   
 <h3>Improvements 🛠</h3>
 
+* `QuantumScript.hash` is now cached, leading to performance improvements.
+  [(#5919)](https://github.com/PennyLaneAI/pennylane/pull/5919)
+
 * Observable validation for `default.qubit` is now based on execution mode (analytic vs. finite shots) and measurement type (sample measurement vs. state measurement).
   [(#5890)](https://github.com/PennyLaneAI/pennylane/pull/5890)
 
@@ -25,4 +28,5 @@
 This release contains contributions from (in alphabetical order):
 
 Astral Cai,
-Yushao Chen.
+Yushao Chen,
+Christina Lee,
