@@ -139,31 +139,19 @@ class TestCircuitGraph:
         assert len(graph.node_indexes()) == 9
         assert len(graph.edges()) == 9
 
-        queue = ops + obs
+        a = {(graph.get_node_data(e[0]), graph.get_node_data(e[1])) for e in graph.edge_list()}
 
-        # all ops should be nodes in the graph
-        for k in queue:
-            assert k in graph.nodes()
-
-        # all nodes in the graph should be ops
-        # for k in graph.nodes:
-        for k in graph.nodes():
-            assert k is queue[k.queue_idx]
-        a = set((graph.get_node_data(e[0]), graph.get_node_data(e[1])) for e in graph.edge_list())
-        b = set(
-            (queue[a], queue[b])
-            for a, b in [
-                (0, 3),
-                (1, 3),
-                (2, 4),
-                (3, 5),
-                (3, 6),
-                (4, 5),
-                (5, 7),
-                (5, 8),
-                (6, 8),
-            ]
-        )
+        b = {
+            (0, 3),
+            (1, 3),
+            (2, 4),
+            (3, 5),
+            (3, 6),
+            (4, 5),
+            (5, 7),
+            (5, 8),
+            (6, 8),
+        }
         assert a == b
 
     def test_ancestors_and_descendants_example(self, ops, obs):
@@ -182,25 +170,44 @@ class TestCircuitGraph:
         descendants = circuit.descendants([queue[6]])
         assert descendants == [queue[8]]
 
-    def test_in_topological_order_example(self, ops, obs):
-        """
-        Test ``_in_topological_order`` method returns the expected result.
-        """
-        circuit = CircuitGraph(ops, obs, Wires([0, 1, 2]))
+    def test_ancestors_and_descendents_repeated_op(self):
+        """Test ancestors and descendents raises a ValueError is the requested operation occurs more than once."""
 
-        to = circuit._in_topological_order(ops)
+        op = qml.X(0)
+        ops = [op, qml.Y(0), op, qml.Z(0), op]
+        graph = CircuitGraph(ops, [], [0, 1, 2])
 
-        to_expected = [
-            qml.RZ(0.35, wires=[2]),
-            qml.Hadamard(wires=[2]),
-            qml.RY(0.35, wires=[1]),
-            qml.RX(0.43, wires=[0]),
-            qml.CNOT(wires=[0, 1]),
-            qml.PauliX(wires=[1]),
-            qml.CNOT(wires=[2, 0]),
-        ]
+        with pytest.raises(ValueError, match=r"operator that occurs multiple times."):
+            graph.ancestors([op])
+        with pytest.raises(ValueError, match=r"operator that occurs multiple times."):
+            graph.descendants([op])
+        with pytest.raises(ValueError, match=r"operator that occurs multiple times."):
+            graph.ancestors_in_order([op])
+        with pytest.raises(ValueError, match=r"operator that occurs multiple times."):
+            graph.descendants_in_order([op])
 
-        assert str(to) == str(to_expected)
+    def test_ancestors_and_descendents_single_op_error(self):
+        """Test ancestors and descendents raises a ValueError is the requested operation occurs more than once."""
+
+        op = qml.Z(0)
+        graph = CircuitGraph([op], [], [0, 1, 2])
+
+        with pytest.raises(
+            ValueError, match=r"CircuitGraph.ancestors accepts an iterable of operators"
+        ):
+            graph.ancestors(op)
+        with pytest.raises(
+            ValueError, match=r"CircuitGraph.descendants accepts an iterable of operators"
+        ):
+            graph.descendants(op)
+        with pytest.raises(
+            ValueError, match=r"CircuitGraph.ancestors accepts an iterable of operators"
+        ):
+            graph.ancestors_in_order(op)
+        with pytest.raises(
+            ValueError, match=r"CircuitGraph.descendants accepts an iterable of operators"
+        ):
+            graph.descendants_in_order(op)
 
     def test_update_node(self, ops, obs):
         """Changing nodes in the graph."""
@@ -209,6 +216,9 @@ class TestCircuitGraph:
         new = qml.RX(0.1, wires=0)
         circuit.update_node(ops[0], new)
         assert circuit.operations[0] is new
+        new_mp = qml.var(qml.Y(0))
+        circuit.update_node(obs[0], new_mp)
+        assert circuit.observables[0] is new_mp
 
     def test_update_node_error(self, ops, obs):
         """Test that changing nodes in the graph may raise an error."""
@@ -300,43 +310,6 @@ class TestCircuitGraph:
         circuit = qnode.qtape.graph
         assert circuit.max_simultaneous_measurements == expected
 
-    def test_grid_when_sample_no_wires(self):
-        """A test to ensure the sample operation applies to all wires on the
-        `CircuitGraph`s grid when none are explicitly provided."""
-
-        ops = [qml.Hadamard(wires=0), qml.CNOT(wires=[0, 1])]
-        obs_no_wires = [qml.sample(op=None, wires=None)]
-        obs_w_wires = [qml.sample(op=None, wires=[0, 1, 2])]
-
-        circuit_no_wires = CircuitGraph(ops, obs_no_wires, wires=Wires([0, 1, 2]))
-        circuit_w_wires = CircuitGraph(ops, obs_w_wires, wires=Wires([0, 1, 2]))
-
-        sample_w_wires_op = qml.sample(op=None, wires=[0, 1, 2])
-        expected_grid_w_wires = {
-            0: [ops[0], ops[1], sample_w_wires_op],
-            1: [ops[1], sample_w_wires_op],
-            2: [sample_w_wires_op],
-        }
-
-        sample_no_wires_op = qml.sample(op=None, wires=None)
-        expected_grid_no_wires = {
-            0: [ops[0], ops[1], sample_no_wires_op],
-            1: [ops[1], sample_no_wires_op],
-            2: [sample_no_wires_op],
-        }
-
-        for key in range(3):
-            lst_w_wires = circuit_w_wires._grid[key]
-            lst_no_wires = circuit_no_wires._grid[key]
-            lst_expected_w_wires = expected_grid_w_wires[key]
-            lst_expected_no_wires = expected_grid_no_wires[key]
-
-            for el1, el2 in zip(lst_w_wires, lst_expected_w_wires):
-                qml.assert_equal(el1, el2)
-
-            for el1, el2 in zip(lst_no_wires, lst_expected_no_wires):
-                qml.assert_equal(el1, el2)
-
     def test_print_contents(self):
         """Tests if the circuit prints correct."""
         ops = [qml.Hadamard(wires=0), qml.CNOT(wires=[0, 1])]
@@ -354,6 +327,7 @@ class TestCircuitGraph:
 
     tape_depth = (
         ([qml.PauliZ(0), qml.CNOT([0, 1]), qml.RX(1.23, 2)], 2),
+        ([qml.X(0)] * 4, 4),
         ([qml.Hadamard(0), qml.CNOT([0, 1]), CustomOpDepth3(wires=[1, 0])], 5),
         (
             [
@@ -381,3 +355,34 @@ class TestCircuitGraph:
         """Test that depth is computed correctly for operations that define a custom depth > 1"""
         cg = CircuitGraph(ops, [], wires=[0, 1, 2, 3, 4])
         assert cg.get_depth() == true_depth
+
+
+def test_has_path():
+    """Test has_path and has_path_idx."""
+
+    ops = [qml.X(0), qml.X(3), qml.CNOT((0, 1)), qml.X(1), qml.X(3)]
+    graph = CircuitGraph(ops, [], wires=[0, 1, 2, 3, 4, 5])
+
+    assert graph.has_path(ops[0], ops[2])
+    assert graph.has_path_idx(0, 2)
+    assert not graph.has_path(ops[0], ops[4])
+    assert not graph.has_path_idx(0, 4)
+
+
+def test_has_path_repeated_ops():
+    """Test has_path and has_path_idx when an operation is repeated."""
+
+    op = qml.X(0)
+    ops = [op, qml.CNOT((0, 1)), op, qml.Y(1)]
+
+    graph = CircuitGraph(ops, [], [0, 1, 2, 3])
+
+    assert graph.has_path_idx(0, 3)
+    assert graph.has_path_idx(1, 2)
+    with pytest.raises(ValueError, match="does not work with operations that have been repeated. "):
+        graph.has_path(op, ops[3])
+    with pytest.raises(ValueError, match="does not work with operations that have been repeated. "):
+        graph.has_path(ops[1], op)
+
+    # still works if they are the same operation.
+    assert graph.has_path(op, op)

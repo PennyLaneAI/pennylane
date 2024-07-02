@@ -149,8 +149,12 @@ def _try_zero_grad_from_graph_or_get_grad_method(tape, param_index, use_graph=Tr
     par_info = tape.par_info[param_index]
 
     if use_graph:
-        op_or_mp = tape[par_info["op_idx"]]
-        if not any(tape.graph.has_path(op_or_mp, mp) for mp in tape.measurements):
+        op_or_mp_idx = par_info["op_idx"]
+        n_ops = len(tape.operations)
+        if not any(
+            tape.graph.has_path_idx(op_or_mp_idx, n_ops + i)
+            for i, _ in enumerate(tape.measurements)
+        ):
             # there is no influence of this operation on any of the observables
             return "0"
 
