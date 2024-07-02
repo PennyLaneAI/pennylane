@@ -274,54 +274,46 @@
 
 <h4>Quantum chemistry</h4>
 
-* The `qml.qchem.Molecule` object is now the central object used by all qchem functions.
-  [(#5571)](https://github.com/PennyLaneAI/pennylane/pull/5571)
-
-* The `qml.qchem.Molecule` class now supports Angstrom as a unit.
-  [(#5694)](https://github.com/PennyLaneAI/pennylane/pull/5694)
-
-* The `qml.qchem.Molecule` class now supports open-shell systems.
-  [(#5655)](https://github.com/PennyLaneAI/pennylane/pull/5655)
+* The `qml.qchem.Molecule` object received a few improvements:
+  * `qml.qchem.Molecule` is now the central object used by all qchem functions.
+    [(#5571)](https://github.com/PennyLaneAI/pennylane/pull/5571)
+  * `qml.qchem.Molecule` now supports Angstrom as a unit.
+    [(#5694)](https://github.com/PennyLaneAI/pennylane/pull/5694)
+  * `qml.qchem.Molecule` now supports open-shell systems.
+    [(#5655)](https://github.com/PennyLaneAI/pennylane/pull/5655)
 
 * The `qml.qchem.molecular_hamiltonian` function now supports parity and Bravyi-Kitaev mappings.
   [(#5657)](https://github.com/PennyLaneAI/pennylane/pull/5657/)
 
-* The qchem docs are updated with the new qchem improvements.
-  [(#5758)](https://github.com/PennyLaneAI/pennylane/pull/5758/)
-  [(#5638)](https://github.com/PennyLaneAI/pennylane/pull/5638/)
-
-* `qml.qchem.molecular_dipole` function is added for calculating the dipole operator using "dhf" and "openfermion" backends.
+* `qml.qchem.molecular_dipole` function has been added for calculating the dipole operator using the 
+  `"dhf"` and `"openfermion"` backends.
   [(#5764)](https://github.com/PennyLaneAI/pennylane/pull/5764)
 
-* The qchem module has dedicated functions for calling `pyscf` and `openfermion` backends. The
-  ``molecular_hamiltonian`` and ``molecular_dipole`` functions are moved to ``hamiltonian`` and
-  ``dipole`` modules.
+* The qchem module now has dedicated functions for calling the `pyscf` and `openfermion` backends and 
+  the `molecular_hamiltonian` and `molecular_dipole` functions have been moved to `hamiltonian` and
+  `dipole` modules.
   [(#5553)](https://github.com/PennyLaneAI/pennylane/pull/5553)
   [(#5863)](https://github.com/PennyLaneAI/pennylane/pull/5863)
 
-* Add more fermionic-to-qubit tests to cover cases when the mapped operator is different for various mapping schemes.
+* More fermionic-to-qubit tests have been added to cover cases when the mapped operator is different 
+  for various mapping schemes.
   [(#5873)](https://github.com/PennyLaneAI/pennylane/pull/5873)
-
-<h4>Decompositions and global phase</h4>
-
-* `MultiControlledX` can now be decomposed even when no `work_wires` are provided. The implementation returns $\mathcal{O}(\text{len(control\_wires)}^2)$ operations, and is applicable for any multi controlled unitary gate.
-  [(#5735)](https://github.com/PennyLaneAI/pennylane/pull/5735)
-
-* Single control unitary now includes the correct global phase.
-  [(#5735)](https://github.com/PennyLaneAI/pennylane/pull/5735)
-
-* Single control `GlobalPhase` has now a decomposition, i.e. relative phase on control wire.
-  [(#5735)](https://github.com/PennyLaneAI/pennylane/pull/5735)
 
 <h4>Easier development</h4>
 
-* Logging now allows for an easier opt-in across the stack, and also extends control support to `catalyst`.
+* Logging now allows for an easier opt-in across the stack and support has been extended to Catalyst.
   [(#5528)](https://github.com/PennyLaneAI/pennylane/pull/5528)
 
-* Add support for 3 new pytest markers: `unit`, `integration` and `system`.
+* Three new Pytest markers have been added for easier management of our test suite: `unit`, `integration` 
+  and `system`.
   [(#5517)](https://github.com/PennyLaneAI/pennylane/pull/5517)
 
 <h4>Other improvements</h4>
+
+* `qml.MultiControlledX` can now be decomposed even when no `work_wires` are provided. The implementation 
+  returns $\mathcal{O}(\text{len(control\_wires)}^2)$ operations and is applicable for any multi-controlled 
+  unitary gate. This decomposition is provided in [arXiv:quant-ph/9503016](https://arxiv.org/abs/quant-ph/9503016).
+  [(#5735)](https://github.com/PennyLaneAI/pennylane/pull/5735)
 
 * `expectation_value` was added to `qml.math` to calculate the expectation value of a matrix for pure states.
   [(#4484)](https://github.com/PennyLaneAI/pennylane/pull/4484)
@@ -445,6 +437,10 @@
   [(#5904)](https://github.com/PennyLaneAI/pennylane/pull/5904)
 
 <h3>Documentation 📝</h3>
+
+* The `qml.qchem` docs have been updated with the new `qml.qchem` improvements.
+  [(#5758)](https://github.com/PennyLaneAI/pennylane/pull/5758/)
+  [(#5638)](https://github.com/PennyLaneAI/pennylane/pull/5638/)
 
 * Move information about mid-circuit measurements from the measurements quickstart page to its own
   [mid-circuit measurements quickstart page](https://docs.pennylane.ai/en/stable/introduction/mid_circuit_measurements.html)
