@@ -103,16 +103,20 @@
 * `default.clifford` now supports arbitrary state-based measurements with `qml.Snapshot`.
   [(#5794)](https://github.com/PennyLaneAI/pennylane/pull/5794)
 
-* `qml.equal` now properly handles `Pow`, `Adjoint`, `Exp`, and `SProd` operators as arugments across different interfaces and tolerances with the addition of four new keyword arguments: `check_interface`, `check_trainability`, `atol` and `rtol`.
+* `qml.equal` now properly handles `Pow`, `Adjoint`, `Exp`, and `SProd` operators as arugments across 
+  different interfaces and tolerances with the addition of four new keyword arguments: `check_interface`, 
+  `check_trainability`, `atol` and `rtol`.
   [(#5668)](https://github.com/PennyLaneAI/pennylane/pull/5668)
   
-* The implementation for `qml.assert_equal` has been updated for `Operator`, `Controlled`, `Adjoint`, `Pow`, `Exp`, `SProd`, `ControlledSequence`, `Prod`, `Sum`, `Tensor` and `Hamiltonian` instances.
+* The implementation for `qml.assert_equal` has been updated for `Operator`, `Controlled`, `Adjoint`, 
+  `Pow`, `Exp`, `SProd`, `ControlledSequence`, `Prod`, `Sum`, `Tensor` and `Hamiltonian` instances.
   [(#5780)](https://github.com/PennyLaneAI/pennylane/pull/5780)
   [(#5877)](https://github.com/PennyLaneAI/pennylane/pull/5877)
  
-* `qml.from_qasm` now supports the ability to convert mid-circuit measurements from `OpenQASM 2` code, and it can now also take an
-   optional argument to specify a list of measurements to be performed at the end of the circuit, just like `qml.from_qiskit`.
-   [(#5818)](https://github.com/PennyLaneAI/pennylane/pull/5818)
+* `qml.from_qasm` now supports the ability to convert mid-circuit measurements from `OpenQASM 2` code, 
+  and it can now also take an optional argument to specify a list of measurements to be performed at 
+  the end of the circuit, just like `qml.from_qiskit`.
+  [(#5818)](https://github.com/PennyLaneAI/pennylane/pull/5818)
 
 * Four new operators have been added for simulating noise on the `default.qutrit.mixed` device:
   [(#5502)](https://github.com/PennyLaneAI/pennylane/pull/5502)
@@ -127,49 +131,51 @@
   * `qml.QutritAmplitudeDamping`: a channel that adds noise processes modelled by amplitude damping.
   * `qml.TritFlip`: a channel that adds trit flip errors, such as misclassification.
 
-<h4>Faster and flexible mid-circuit measurements</h4>
+<h4>Faster and more flexible mid-circuit measurements</h4>
 
-* The `default.qubit` device implements a depth-first tree-traversal algorithm to
-  accelerate native mid-circuit measurement execution. The new implementation
-  supports classical control, collecting statistics, and post-selection, along
-  with all measurements enabled with `qml.dynamic_one_shot`.
+* The `default.qubit` device supports a depth-first tree-traversal algorithm to accelerate native mid-circuit 
+  measurement execution. The new implementation supports classical control, collecting statistics, and 
+  post-selection, along with all measurements enabled with `qml.dynamic_one_shot`. More information 
+  about this new mid-circuit measurement method can be found on our 
+  [measurement documentation page](https://docs.pennylane.ai/en/stable/introduction/measurements.html).
   [(#5180)](https://github.com/PennyLaneAI/pennylane/pull/5180)
 
-* `qml.QNode` and `qml.qnode` now accept two new keyword arguments: `postselect_mode` and `mcm_method`.
-  These keyword arguments can be used to configure how the device should behave when running circuits with
-  mid-circuit measurements.
+* `qml.QNode` and the `@qml.qnode` decorator now accept two new keyword arguments: `postselect_mode` 
+  and `mcm_method`. These keyword arguments can be used to configure how the device should behave when 
+  running circuits with mid-circuit measurements.
   [(#5679)](https://github.com/PennyLaneAI/pennylane/pull/5679)
   [(#5833)](https://github.com/PennyLaneAI/pennylane/pull/5833)
   [(#5850)](https://github.com/PennyLaneAI/pennylane/pull/5850)
 
-  * `postselect_mode="hw-like"` will indicate to devices to discard invalid shots when postselecting
+  * `postselect_mode="hw-like"` indicates to devices to discard invalid shots when postselecting
     mid-circuit measurements. Use `postselect_mode="fill-shots"` to unconditionally sample the postselected
     value, thus making all samples valid. This is equivalent to sampling until the number of valid samples
     matches the total number of shots.
   * `mcm_method` will indicate which strategy to use for running circuits with mid-circuit measurements.
     Use `mcm_method="deferred"` to use the deferred measurements principle, or `mcm_method="one-shot"`
-    to execute once for each shot. If using `qml.jit` with the Catalyst compiler, `mcm_method="single-branch-statistics"`
+    to execute once for each shot. If `qml.qjit` is being used (the Catalyst compiler), `mcm_method="single-branch-statistics"`
     is also available. Using this method, a single branch of the execution tree will be randomly explored.
 
-* The `dynamic_one_shot` transform is made compatible with the Catalyst compiler.
-  [(#5766)](https://github.com/PennyLaneAI/pennylane/pull/5766)
-  [(#5888)](https://github.com/PennyLaneAI/pennylane/pull/5888)
+* The `dynamic_one_shot` transform received a few improvements:
   
-* Rationalize MCM tests, removing most end-to-end tests from the native MCM test file,
-  but keeping one that validates multiple mid-circuit measurements with any allowed return
-  and interface end-to-end tests.
+  * `dynamic_one_shot` is now compatible with `qml.qjit` (the Catalyst compiler).
+    [(#5766)](https://github.com/PennyLaneAI/pennylane/pull/5766)
+    [(#5888)](https://github.com/PennyLaneAI/pennylane/pull/5888)
+  * `dynamic_one_shot` now uses a single auxiliary tape with a shot vector and `default.qubit` implements 
+    the loop over shots with `jax.vmap`.
+    [(#5617)](https://github.com/PennyLaneAI/pennylane/pull/5617)
+  * `dynamic_one_shot` is now compatible with `jax.jit`.
+    [(#5557)](https://github.com/PennyLaneAI/pennylane/pull/5557)
+
+* Mid-circuit measurement tests have been streamlined and refactored, removing most end-to-end tests 
+  from the native MCM test file, but keeping one that validates multiple mid-circuit measurements with 
+  any allowed return and interface end-to-end tests.
   [(#5787)](https://github.com/PennyLaneAI/pennylane/pull/5787)
 
-* The `dynamic_one_shot` transform uses a single auxiliary tape with a shot vector and `default.qubit` implements the loop over shots with `jax.vmap`.
-  [(#5617)](https://github.com/PennyLaneAI/pennylane/pull/5617)
-
-* The `dynamic_one_shot` transform can be compiled with `jax.jit`.
-  [(#5557)](https://github.com/PennyLaneAI/pennylane/pull/5557)
-
-* When using `defer_measurements` with postselecting mid-circuit measurements, operations
-  that will never be active due to the postselected state are skipped in the transformed
-  quantum circuit. In addition, postselected controls are skipped, as they are evaluated
-  at transform time. This optimization feature can be turned off by setting `reduce_postselected=False`
+* When using `defer_measurements` with postselection, operations that will never be active due to the 
+  postselected state are skipped in the transformed quantum circuit. In addition, postselected controls 
+  are skipped, as they are evaluated when the transform is applied. This optimization feature can be 
+  turned off by setting `reduce_postselected=False`.
   [(#5558)](https://github.com/PennyLaneAI/pennylane/pull/5558)
 
   Consider a simple circuit with three mid-circuit measurements, two of which are postselecting,
@@ -184,13 +190,13 @@
       mcm0 = qml.measure(0, postselect=0, reset=False)
       mcm1 = qml.measure(1, postselect=None, reset=True)
       mcm2 = qml.measure(2, postselect=1, reset=False)
-      qml.cond(mcm0+mcm1+mcm2==1, qml.RX)(0.5, 3)
+      qml.cond(mcm0 + mcm1 + mcm2 == 1, qml.RX)(0.5, 3)
       return qml.expval(qml.Z(0) @ qml.Z(3))
   ```
 
   Without the new optimization, we obtain three gates, each controlled on the three measured
   qubits. They correspond to the combinations of controls that satisfy the condition
-  `mcm0+mcm1+mcm2==1`:
+  `mcm0 + mcm1 + mcm2 == 1`:
 
   ```pycon
   >>> print(qml.draw(qml.defer_measurements(node, reduce_postselected=False))(0.6))
@@ -218,19 +224,17 @@
 
 <h4>Access to QROM</h4>
 
-* QROM template is added. This template allows you to enter classic data in the form of bitstrings.
+* [The QROM algorithm](https://arxiv.org/abs/1812.00954) is now available in PennyLane with `qml.QROM`. 
+  This template allows you to enter classical data in the form of bitstrings.
   [(#5688)](https://github.com/PennyLaneAI/pennylane/pull/5688)
 
   ```python
-  # a list of bitstrings is defined
   bitstrings = ["010", "111", "110", "000"]
 
   dev = qml.device("default.qubit", shots = 1)
 
   @qml.qnode(dev)
   def circuit():
-
-      # the third index is encoded in the control wires [0, 1]
       qml.BasisEmbedding(2, wires = [0,1])
 
       qml.QROM(bitstrings = bitstrings,
@@ -240,7 +244,8 @@
 
       return qml.sample(wires = [2,3,4])
   ```
-   ```pycon
+  
+  ```pycon
   >>> print(circuit())
   [1 1 0]
   ```
@@ -250,7 +255,8 @@
 * A number of templates have been updated to be valid pytrees and PennyLane operations.
   [(#5698)](https://github.com/PennyLaneAI/pennylane/pull/5698)
 
-* PennyLane operators, measurements, and QNodes can now automatically be captured as instructions in JAXPR.
+* PennyLane operators, measurements, and QNodes can now automatically be captured as instructions in 
+  JAXPR.
   [(#5564)](https://github.com/PennyLaneAI/pennylane/pull/5564)
   [(#5511)](https://github.com/PennyLaneAI/pennylane/pull/5511)
   [(#5708)](https://github.com/PennyLaneAI/pennylane/pull/5708)
@@ -261,7 +267,7 @@
 * The `qml.pytrees` module now has `flatten` and `unflatten` methods for serializing pytrees.
   [(#5701)](https://github.com/PennyLaneAI/pennylane/pull/5701)
 
-* `qml.sample` can now be used on Boolean values representing mid-circuit measurement results in
+* `qml.sample` can now be used on boolean values representing mid-circuit measurement results in
   traced quantum functions. This feature is used with Catalyst to enable the pattern
   `m = measure(0); qml.sample(m)`.
   [(#5673)](https://github.com/PennyLaneAI/pennylane/pull/5673)
