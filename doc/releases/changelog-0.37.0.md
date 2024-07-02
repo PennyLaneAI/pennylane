@@ -252,7 +252,7 @@
 
 <h4>Capturing and representing hybrid programs</h4>
 
-* A number of templates have been updated to be valid pytrees and PennyLane operations.
+* A number of templates have been updated to be valid PyTrees and PennyLane operations.
   [(#5698)](https://github.com/PennyLaneAI/pennylane/pull/5698)
 
 * PennyLane operators, measurements, and QNodes can now automatically be captured as instructions in 
@@ -264,7 +264,7 @@
   [(#5686)](https://github.com/PennyLaneAI/pennylane/pull/5686)
   [(#5889)](https://github.com/PennyLaneAI/pennylane/pull/5889)
 
-* The `qml.pytrees` module now has `flatten` and `unflatten` methods for serializing pytrees.
+* The `qml.PyTrees` module now has `flatten` and `unflatten` methods for serializing PyTrees.
   [(#5701)](https://github.com/PennyLaneAI/pennylane/pull/5701)
 
 * `qml.sample` can now be used on boolean values representing mid-circuit measurement results in
@@ -315,7 +315,8 @@
   unitary gate. This decomposition is provided in [arXiv:quant-ph/9503016](https://arxiv.org/abs/quant-ph/9503016).
   [(#5735)](https://github.com/PennyLaneAI/pennylane/pull/5735)
 
-* `expectation_value` was added to `qml.math` to calculate the expectation value of a matrix for pure states.
+* A new function called `expectation_value` has been added to `qml.math` to calculate the expectation 
+  value of a matrix for pure states.
   [(#4484)](https://github.com/PennyLaneAI/pennylane/pull/4484)
 
   ```pycon
@@ -331,16 +332,18 @@
 * `qml.TrotterProduct` is now compatible with resource tracking by inheriting from `ResourcesOperation`. 
    [(#5680)](https://github.com/PennyLaneAI/pennylane/pull/5680)
 
-* Added `packaging` in the required list of packages.
+* `packaging` is now a required package in PennyLane.
   [(#5769)](https://github.com/PennyLaneAI/pennylane/pull/5769)
 
-* `ctrl` now works with tuple-valued `control_values` when applied to any already controlled operation.
+* `qml.ctrl` now works with tuple-valued `control_values` when applied to any already controlled operation.
   [(#5725)](https://github.com/PennyLaneAI/pennylane/pull/5725)
 
-* The sorting order of parameter-shift terms is now guaranteed to resolve ties in the absolute value with the sign of the shifts.
+* The sorting order of parameter-shift terms is now guaranteed to resolve ties in the absolute value 
+  with the sign of the shifts.
   [(#5582)](https://github.com/PennyLaneAI/pennylane/pull/5582)
 
-* `qml.transforms.split_non_commuting` can now handle circuits containing measurements of multi-term observables.
+* `qml.transforms.split_non_commuting` can now handle circuits containing measurements of multi-term 
+  observables.
   [(#5729)](https://github.com/PennyLaneAI/pennylane/pull/5729)
   [(#5838)](https://github.com/PennyLaneAI/pennylane/pull/5838)
   [(#5828)](https://github.com/PennyLaneAI/pennylane/pull/5828)
@@ -350,48 +353,54 @@
   `qml.devices.Device`, which follows the new device API.
   [(#5581)](https://github.com/PennyLaneAI/pennylane/pull/5581)
 
-* The `dtype` for `eigvals` of `X`, `Y`, `Z` and `Hadamard` is changed from `int` to `float`, making them
-  consistent with the other observables. The `dtype` of the returned values when sampling these observables
-  (e.g. `qml.sample(X(0))`) is also changed to `float`.
+* The `dtype` for `eigvals` of `X`, `Y`, `Z` and `Hadamard` is changed from `int` to `float`, making 
+  them consistent with the other observables. The `dtype` of the returned values when sampling these 
+  observables (e.g. `qml.sample(X(0))`) is also changed to `float`.
   [(#5607)](https://github.com/PennyLaneAI/pennylane/pull/5607)
 
-* Sets up the framework for the development of an `assert_equal` function for testing operator comparison.
+* The framework for the development of an `assert_equal` function for testing operator comparison has been set up.
   [(#5634)](https://github.com/PennyLaneAI/pennylane/pull/5634)
   [(#5858)](https://github.com/PennyLaneAI/pennylane/pull/5858)
 
-* The `decompose` transform has an `error` kwarg to specify the type of error that should be raised,
-  allowing error types to be more consistent with the context the `decompose` function is used in.
+* The `decompose` transform has an `error` keyword argument to specify the type of error that should 
+  be raised, allowing error types to be more consistent with the context the `decompose` function is 
+  used in.
   [(#5669)](https://github.com/PennyLaneAI/pennylane/pull/5669)
 
 * Empty initialization of `PauliVSpace` is permitted.
   [(#5675)](https://github.com/PennyLaneAI/pennylane/pull/5675)
 
-* `QuantumScript` properties are only calculated when needed, instead of on initialization. This decreases the classical overhead by >20%.
-  `par_info`, `obs_sharing_wires`, and `obs_sharing_wires_id` are now public attributes.
+* `qml.tape.QuantumScript` properties are only calculated when needed, instead of on initialization. 
+  This decreases the classical overhead by over 20%. Also, `par_info`, `obs_sharing_wires`, and `obs_sharing_wires_id` 
+  are now public attributes.
   [(#5696)](https://github.com/PennyLaneAI/pennylane/pull/5696)
   
 * The `qml.data` module now supports PyTree data types as dataset attributes
   [(#5732)](https://github.com/PennyLaneAI/pennylane/pull/5732)
 
-* `qml.ops.Conditional` now inherits from `qml.ops.SymbolicOp`, thus it inherits several useful common functionalities. Other properties such as adjoint and diagonalizing gates have been added using the `base` properties.
+* `qml.ops.Conditional` now inherits from `qml.ops.SymbolicOp`, thus it inherits several useful common 
+  functionalities. Other properties such as adjoint and diagonalizing gates have been added using the 
+  `base` properties.
   [(##5772)](https://github.com/PennyLaneAI/pennylane/pull/5772)
 
 * New dispatches for `qml.ops.Conditional` and `qml.MeasurementValue` have been added to `qml.equal`.
   [(##5772)](https://github.com/PennyLaneAI/pennylane/pull/5772)
 
-* The `qml.snapshots` transform now supports arbitrary devices by running a separate tape for each snapshot for unsupported devices.
+* The `qml.snapshots` transform now supports arbitrary devices by running a separate tape for each snapshot 
+  for unsupported devices.
   [(#5805)](https://github.com/PennyLaneAI/pennylane/pull/5805)
 
 * The `qml.Snapshot` operator now accepts sample-based measurements for finite-shot devices.
   [(#5805)](https://github.com/PennyLaneAI/pennylane/pull/5805)
 
-* Device preprocess transforms now happen inside the ml boundary.
+* Device preprocess transforms now happen inside the ML boundary.
   [(#5791)](https://github.com/PennyLaneAI/pennylane/pull/5791)
 
-* Transforms applied to callables now use `functools.wraps` to preserve the docstring and call signature of the original function.
+* Transforms applied to callables now use `functools.wraps` to preserve the docstring and call signature 
+  of the original function.
   [(#5857)](https://github.com/PennyLaneAI/pennylane/pull/5857)
 
-* `qml.qsvt()` now supports jax arrays with angle conversions. 
+* `qml.qsvt()` now supports JAX arrays with angle conversions. 
   [(#5853)](https://github.com/PennyLaneAI/pennylane/pull/5853)
 
 <h3>Breaking changes 💔</h3>
