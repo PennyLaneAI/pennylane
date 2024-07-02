@@ -227,14 +227,8 @@ class DefaultQutritMixed(Device):
         which apply an error channel to the state after it has
         been diagonalized for the measurement:
 
-        * ``readout_relaxation_probs``: Defines the readout error inputs of :class:`qml.QutritAmplitudeDamping`
-        channel. This error models state relaxation error that occur during readout of transmon
-        based qutrits. The motivation for this readout error is decribed in
-        [`1 <https://arxiv.org/abs/2003.03307>`_] (Sec II.A).
-        
-        * ``readout_misclassification_probs``: Defines the inputs of :class:`qml.TritFlip` channel.
-        This error models misclassification events in readout. An example of this readout error
-        can be seen in [`2 <https://arxiv.org/abs/2309.11303>`_] (Fig 1a).
+        * ``readout_relaxation_probs``: Defines the readout error inputs of :class:`qml.QutritAmplitudeDamping` channel. This error models state relaxation error that occur during readout of transmon based qutrits. The motivation for this readout error is decribed in [`1 <https://arxiv.org/abs/2003.03307>`_] (Sec II.A).
+        * ``readout_misclassification_probs``: Defines the inputs of :class:`qml.TritFlip` channel. This error models misclassification events in readout. An example of this readout error can be seen in [`2 <https://arxiv.org/abs/2309.11303>`_] (Fig 1a).
 
         .. note::
             The readout errors will be applied based on the state after diagonalizing gates. This
@@ -250,8 +244,7 @@ class DefaultQutritMixed(Device):
         * ``executions``: the number of unique circuits that would be required on quantum hardware
         * ``shots``: the number of shots
         * ``resources``: the :class:`~.resource.Resources` for the executed circuit.
-        * ``simulations``: the number of simulations performed. One simulation can cover multiple
-        QPU executions, such as for non-commuting measurements and batched parameters.
+        * ``simulations``: the number of simulations performed. One simulation can cover multiple QPU executions, such as for non-commuting measurements and batched parameters.
         * ``batches``: The number of times :meth:`~.execute` is called.
         * ``results``: The results of each call of :meth:`~.execute`
 
