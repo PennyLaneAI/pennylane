@@ -16,7 +16,7 @@
 Contains the tape transform that splits a tape into tapes measuring commuting observables.
 """
 
-# pylint: disable=too-many-arguments
+# pylint: disable=too-many-arguments,too-many-boolean-expressions
 
 from functools import partial
 from typing import Callable, Dict, List, Optional, Sequence, Tuple
