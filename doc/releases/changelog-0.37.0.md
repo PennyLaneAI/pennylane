@@ -26,8 +26,8 @@
   [(#5684)](https://github.com/PennyLaneAI/pennylane/pull/5684)
   [(#5718)](https://github.com/PennyLaneAI/pennylane/pull/5718)
 
-  Under the hood, PennyLane's approach to noise models is insertion-based, meaning that noise is simulated
-  by *inserting* additional operators (gates) that describe the noise into the quantum circuit itself. 
+  Under the hood, PennyLane's approach to noise models is insertion-based, meaning that noise is included
+  by *inserting* additional operators (gates or channels) that describe the noise into the quantum circuit itself. 
   Creating a `NoiseModel` boils down to defining Boolean conditions under which specific noisy operations 
   are inserted. There are several ways to specify conditions for adding noisy operations: 
 
@@ -50,16 +50,16 @@
   * `qml.noise.partial_wires(op)`: insert `op` on the wires that are specified by the condition that triggers adding this noise
   * custom noise operations: custom noise can be specified by defining a standard quantum function like below.
   
-  ```python
-  def n0(op, **kwargs):
-      qml.RY(op.parameters[0] * 0.05, wires=op.wires)
-  ```
+    ```python
+    def n0(op, **kwargs):
+        qml.RY(op.parameters[0] * 0.05, wires=op.wires)
+    ```
 
   With that, we can create a `qml.NoiseModel` object whose argument must be a dictionary mapping conditions
   to noise:
 
   ```python
-  c1 = qml.noise.op_eq(qml.X) | qml.noise.wires_in([0, 1])
+  c1 = qml.noise.op_eq(qml.X) & qml.noise.wires_in([0, 1])
   n1 = qml.noise.partial_wires(qml.AmplitudeDamping, 0.4)
 
   noise_model = qml.NoiseModel({c0: n0, c1: n1})
@@ -99,7 +99,7 @@
   2: ──RY(0.30)──RY(0.01)────────────────────────────┤  State
   ```
 
-  To learn more about this new functionality, check out our [`noise` module documentation](https://docs.pennylane.ai/en/stable/code/qml_noise.html)
+  To learn more about this new functionality, check out our [noise module documentation](https://docs.pennylane.ai/en/stable/code/qml_noise.html)
   and keep your eyes peeled for an in-depth demo!
 
 <h4>Identify mistakes in your code with the PennyLane debugger 🚫🐞</h4>
