@@ -55,10 +55,10 @@ class PLDB(pdb.Pdb):
         """
 
         if not qml.queuing.QueuingManager.recording() or not cls.has_active_dev():
-            raise RuntimeError("Can't call breakpoint outside of a qnode execution")
+            raise RuntimeError("Can't call breakpoint outside of a qnode execution.")
 
         if cls.get_active_device().name not in ("default.qubit", "lightning.qubit"):
-            raise TypeError("Breakpoints not supported on this device")
+            raise TypeError("Breakpoints not supported on this device.")
 
     @classmethod
     def add_device(cls, dev):
