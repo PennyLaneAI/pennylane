@@ -156,6 +156,7 @@
 * The `dynamic_one_shot` transform is made compatible with the Catalyst compiler.
   [(#5766)](https://github.com/PennyLaneAI/pennylane/pull/5766)
   [(#5888)](https://github.com/PennyLaneAI/pennylane/pull/5888)
+  [(#5930)](https://github.com/PennyLaneAI/pennylane/pull/5930)
   
 * Rationalize MCM tests, removing most end-to-end tests from the native MCM test file,
   but keeping one that validates multiple mid-circuit measurements with any allowed return
@@ -349,6 +350,7 @@
   [(#5838)](https://github.com/PennyLaneAI/pennylane/pull/5838)
   [(#5828)](https://github.com/PennyLaneAI/pennylane/pull/5828)
   [(#5869)](https://github.com/PennyLaneAI/pennylane/pull/5869)
+  [(#5939)](https://github.com/PennyLaneAI/pennylane/pull/5939)
 
 * `qml.devices.LegacyDevice` is now an alias for `qml.Device`, so it is easier to distinguish it from
   `qml.devices.Device`, which follows the new device API.
