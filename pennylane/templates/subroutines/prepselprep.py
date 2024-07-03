@@ -42,8 +42,7 @@ def _get_new_terms(lcu):
 
 
 class PrepSelPrep(Operation):
-    """Implements a block-encoding of a linear combination of unitaries using the Prepare,
-    Select, Prepare method.
+    """Implements a block-encoding of a linear combination of unitaries.
 
     Args:
         lcu (Union[.Hamiltonian, .Sum, .Prod, .SProd, .LinearCombination]): The operator
