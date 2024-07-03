@@ -62,7 +62,6 @@
   The `default.tensor` device is instantiated with a `max_bond_dim` value:
 
   ```python
-
   dev_dq = qml.device("default.qubit")
   value_dq = qml.QNode(f, dev_dq)()
 
