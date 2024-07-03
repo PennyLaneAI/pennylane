@@ -61,7 +61,7 @@ class PrepSelPrep(Operation):
     ...     qml.PrepSelPrep(lcu, control)
     ...     return qml.state()
 
-    We can see that the operaor matrix, up to a normalization constant, is block encoded in the
+    We can see that the operator matrix, up to a normalization constant, is block encoded in the
     circuit matrix:
 
     >>> matrix_psp = qml.matrix(circuit, wire_order = [0, 1, 2])(lcu, control = control)
@@ -70,7 +70,7 @@ class PrepSelPrep(Operation):
      [ 0.75  0.25]]
 
     >>> matrix_lcu = qml.matrix(lcu)
-    >>> print(qml.matrix(lcu).real / sum(abs(np.array(lcu.coeffs))))
+    >>> print(qml.matrix(lcu).real / sum(abs(np.array(lcu.terms()[0]))))
     [[-0.25  0.75]
      [ 0.75  0.25]]
     """
