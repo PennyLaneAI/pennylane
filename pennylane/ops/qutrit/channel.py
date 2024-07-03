@@ -256,7 +256,7 @@ class QutritAmplitudeDamping(Channel):
                 \end{bmatrix}
 
     where :math:`\gamma_{10}, \gamma_{20}, \gamma_{21} \in [0, 1]` are the amplitude damping
-    probabilities for subspaces (0,1), (0,2), and (1,2) respectively.
+    probabilities for subspaces :math:`(0, 1)`, :math:`(0, 2)`, and :math:`(1, 2)` respectively.
 
     .. note::
 
