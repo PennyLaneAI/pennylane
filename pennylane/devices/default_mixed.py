@@ -48,6 +48,7 @@ from pennylane.ops.qubit.attributes import diagonal_in_z_basis
 from pennylane.wires import Wires
 
 from .._version import __version__
+from .qtcorgi_helper.qtcorgi_simulator import get_qubit_final_state_from_initial
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -781,9 +782,17 @@ class DefaultMixed(QubitDevice):
                     f"on a {self.short_name} device."
                 )
 
-        for operation in operations:
-            self._apply_operation(operation)
+        prep = False
+        if len(operations) > 0:
+            if (
+                isinstance(operations[0], StatePrep)
+                or isinstance(operations[0], BasisState)
+                or isinstance(operations[0], QubitDensityMatrix)
+            ):
+                prep = True
+                self._apply_operation(operation)
 
+        self._state = get_qubit_final_state_from_initial(operations[prep:], self._state)
         # store the pre-rotated state
         self._pre_rotated_state = self._state
 

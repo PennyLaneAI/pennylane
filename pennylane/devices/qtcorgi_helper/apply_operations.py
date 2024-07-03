@@ -2,13 +2,16 @@ import time
 import jax
 import jax.numpy as jnp
 from jax.lax import scan
+
 jax.config.update("jax_enable_x64", True)
 jax.config.update("jax_platforms", "cpu")
 import pennylane as qml
 from string import ascii_letters as alphabet
 
 import numpy as np
+
 alphabet_array = np.array(list(alphabet))
+
 
 def get_einsum_mapping(wires, state):
     r"""Finds the indices for einsum to apply kraus operators to a mixed state
@@ -52,9 +55,8 @@ def get_einsum_mapping(wires, state):
         state_indices=state_indices,
     )
     # index mapping for einsum, e.g., '...iga,...abcdef,...idh->...gbchef'
-    return (
-        f"...{op_1_indices},...{state_indices},...{op_2_indices}->...{new_state_indices}"
-    )
+    return f"...{op_1_indices},...{state_indices},...{op_2_indices}->...{new_state_indices}"
+
 
 def get_new_state_einsum_indices(old_indices, new_indices, state_indices):
     """Retrieves the einsum indices string for the new state
@@ -73,7 +75,10 @@ def get_new_state_einsum_indices(old_indices, new_indices, state_indices):
         state_indices,
     )
 
+
 QUDIT_DIM = 3
+
+
 def apply_operation_einsum(kraus, wires, state):
     r"""Apply a quantum channel specified by a list of Kraus operators to subsystems of the
     quantum state. For a unitary gate, there is a single Kraus operator.
@@ -108,15 +113,17 @@ def get_two_qubit_unitary_matrix():
 
 
 def get_CNOT_matrix(params):
-    return jnp.array([[1,0,0,0],
-                           [0,1,0,0],
-                           [0,0,0,1],
-                           [0,0,1,0]])
+    return jnp.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])
 
 
 single_qubit_ops = [qml.RX.compute_matrix, qml.RY.compute_matrix, qml.RZ.compute_matrix]
 two_qubit_ops = [get_CNOT_matrix, get_two_qubit_unitary_matrix]
-single_qubit_channels = [qml.DepolarizingChannel.compute_kraus_matrices, qml.AmplitudeDamping.compute_kraus_matrices, qml.BitFlip.compute_kraus_matrices]
+single_qubit_channels = [
+    qml.DepolarizingChannel.compute_kraus_matrices,
+    qml.AmplitudeDamping.compute_kraus_matrices,
+    qml.BitFlip.compute_kraus_matrices,
+]
+
 
 def apply_single_qubit_unitary(state, op_info):
     wire, param = op_info["wires"][0], op_info["params"][0]
@@ -136,6 +143,9 @@ def apply_single_qubit_channel(state, op_info):
     pass
 
 
+qubit_branches = [apply_single_qubit_unitary, apply_two_qubit_unitary, apply_single_qubit_channel]
+
+
 single_qutrit_ops = [qml.TRX.compute_matrix, qml.TRY.compute_matrix, qml.TRZ.compute_matrix]
 single_qutrit_channels = [
     lambda params: qml.QutritDepolarizingChannel.compute_kraus_matrices(params[0]),
@@ -152,15 +162,19 @@ def apply_single_qutrit_unitary(state, op_info):
 
 def apply_two_qutrit_unitary(state, op_info):
     wires = op_info["wires"]
-    kraus_mat = jnp.array([[1,0,0,0,0,0,0,0,0],
-                           [0,1,0,0,0,0,0,0,0],
-                           [0,0,1,0,0,0,0,0,0],
-                           [0,0,0,0,0,1,0,0,0],
-                           [0,0,0,1,0,0,0,0,0],
-                           [0,0,0,0,1,0,0,0,0],
-                           [0,0,0,0,0,0,0,1,0],
-                           [0,0,0,0,0,0,0,0,1],
-                           [0,0,0,0,0,0,1,0,0]])
+    kraus_mat = jnp.array(
+        [
+            [1, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 1, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 1, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 1, 0, 0, 0],
+            [0, 0, 0, 1, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 1, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 1, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 1],
+            [0, 0, 0, 0, 0, 0, 1, 0, 0],
+        ]
+    )
     pass
 
 
@@ -170,25 +184,8 @@ def apply_single_qutrit_channel(state, op_info):
     pass
 
 
-def get_operation_applier(qudit_dim):
-    qubit_type_branches = [apply_single_qubit_unitary, apply_two_qubit_unitary,
-                           apply_single_qubit_channel]
-    qutrit_type_branches = [apply_single_qutrit_unitary, apply_two_qutrit_unitary,
-                            apply_single_qutrit_channel]
-    if qudit_dim == 2:
-        def operation_applier(state, op_info):
-            index_cutoffs = [0, 0, 0]
-            op_i = op_info["type_index"]
-            op_class = op_i // index_cutoffs[0] + op_i // index_cutoffs[1] + op_i // index_cutoffs[2]
-            return jax.lax.switch(op_class, qubit_type_branches, state, op_info), None
-    elif qudit_dim == 3:
-        def operation_applier(state, op_info):
-            index_cutoffs = [0, 0, 0]
-            op_i = op_info["type_index"]
-            op_class = op_i // index_cutoffs[0] + op_i // index_cutoffs[1] + op_i // index_cutoffs[2]
-            return jax.lax.switch(op_class, qutrit_type_branches, state, op_info), None
-    else:
-        raise ValueError("Only qubit and qutrit simulators are allowed")
-
-    return operation_applier
-
+qutrit_branches = [
+    apply_single_qutrit_unitary,
+    apply_two_qutrit_unitary,
+    apply_single_qutrit_channel,
+]
