@@ -573,11 +573,11 @@ def simulate_tree_mcm(
         results_1[depth] = measurements
 
     # Combine first two branches
-    if finite_shots:
-        terminal_measurements = circuit.measurements
     measurement_dicts = get_measurement_dicts(
         terminal_measurements, probs[depth], (results_0[depth], results_1[depth])
     )
+    if finite_shots:
+        terminal_measurements = circuit.measurements
     mcm_samples = dict((mcms[i], v) for i, v in mcm_samples.items())
     mcm_samples = prune_mcm_samples(mcm_samples)
     return combine_measurements(terminal_measurements, measurement_dicts, mcm_samples)
