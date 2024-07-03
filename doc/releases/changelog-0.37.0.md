@@ -379,7 +379,7 @@
 * A number of templates have been updated to be valid PyTrees and PennyLane operations.
   [(#5698)](https://github.com/PennyLaneAI/pennylane/pull/5698)
 
-* PennyLane operators, measurements, and QNodes can now automatically be captured as instructions in 
+* PennyLane operators, measurements, and QNodes can now automatically be captured as instructions in
   JAXPR.
   [(#5564)](https://github.com/PennyLaneAI/pennylane/pull/5564)
   [(#5511)](https://github.com/PennyLaneAI/pennylane/pull/5511)
