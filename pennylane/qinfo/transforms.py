@@ -77,6 +77,7 @@ def reduced_dm(tape: QuantumTape, wires, **kwargs) -> (Sequence[QuantumTape], Ca
 
     .. seealso:: :func:`pennylane.density_matrix` and :func:`pennylane.math.reduce_dm`
     """
+
     # device_wires is provided by the custom QNode transform
     all_wires = kwargs.get("device_wires", tape.wires)
     wire_map = {w: i for i, w in enumerate(all_wires)}
@@ -174,6 +175,7 @@ def purity(tape: QuantumTape, wires, **kwargs) -> (Sequence[QuantumTape], Callab
 
     .. seealso:: :func:`pennylane.math.purity`
     """
+
     # device_wires is provided by the custom QNode transform
     all_wires = kwargs.get("device_wires", tape.wires)
     wire_map = {w: i for i, w in enumerate(all_wires)}
@@ -228,6 +230,11 @@ def vn_entropy(
     .. math::
         S( \rho ) = -\text{Tr}( \rho \log ( \rho ))
 
+    .. warning::
+
+        The qml.qinfo.vn_entropy transform is deprecated and will be removed in 0.40. Instead include
+        the :func:`pennylane.vn_entropy` measurement process in the return line of your QNode.
+
     Args:
         tape (QNode or QuantumTape or Callable): A quantum circuit returning a :func:`~pennylane.state`.
         wires (Sequence(int)): List of wires in the considered subsystem.
@@ -262,6 +269,14 @@ def vn_entropy(
 
     .. seealso:: :func:`pennylane.math.vn_entropy` and :func:`pennylane.vn_entropy`
     """
+
+    warnings.warn(
+        "The qml.qinfo.vn_entropy transform is deprecated and will be removed "
+        "in 0.40. Instead include the qml.vn_entropy measurement process in the "
+        "return line of your QNode.",
+        qml.PennyLaneDeprecationWarning,
+    )
+
     # device_wires is provided by the custom QNode transform
     all_wires = kwargs.get("device_wires", tape.wires)
     wire_map = {w: i for i, w in enumerate(all_wires)}
@@ -414,7 +429,7 @@ def mutual_info(
         "return line of your QNode.",
         qml.PennyLaneDeprecationWarning,
     )
-
+    
     return _bipartite_qinfo_transform(qml.math.mutual_info, tape, wires0, wires1, base, **kwargs)
 
 
@@ -467,6 +482,7 @@ def vn_entanglement_entropy(
         will provide the entanglement entropy in the form of a tensor.
 
     """
+
     return _bipartite_qinfo_transform(
         qml.math.vn_entanglement_entropy, tape, wires0, wires1, base, **kwargs
     )
