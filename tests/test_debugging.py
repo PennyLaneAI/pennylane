@@ -604,6 +604,24 @@ class TestSnapshotSupportedQNode:
 
 
 class TestSnapshotUnsupportedQNode:
+    """Unit tests for qml.snapshots when using with qnodes with unsupported devices"""
+
+    def test_unsupported_device_warning(self):
+        """Test that a warning is raised when the device being used by a qnode does not natively support
+        qml.Snapshot"""
+
+        dev = qml.device("lightning.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.Hadamard(0)
+            qml.Snapshot()
+            qml.CNOT([0, 1])
+            return qml.expval(qml.Z(1))
+
+        with pytest.warns(UserWarning, match="Snapshots are not supported"):
+            _ = qml.snapshots(circuit)
+
     @flaky(max_runs=3)
     def test_lightning_qubit_finite_shots(self):
         dev = qml.device("lightning.qubit", wires=2, shots=500)
