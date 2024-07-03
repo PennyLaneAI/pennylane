@@ -42,7 +42,7 @@ def test_flatten_unflatten():
     assert hash(metadata)
 
     new_op = op._unflatten(*op._flatten())
-    assert qml.equal(op, new_op)
+    qml.assert_equal(op, new_op)
     assert op is not new_op
 
 

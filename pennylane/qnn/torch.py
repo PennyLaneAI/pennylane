@@ -186,7 +186,7 @@ class TorchLayer(Module):
 
             init_method = {
                 "weights_0": torch.nn.init.normal_,
-                "weights_1": torch.nn.init.uniform,
+                "weights_1": torch.nn.init.uniform_,
                 "weights_2": torch.tensor([1., 2., 3.]),
                 "weight_3": torch.tensor(1.),  # scalar when shape is not an iterable and is <= 1
                 "weight_4": torch.tensor([1.]),
@@ -261,7 +261,7 @@ class TorchLayer(Module):
             def qnode(inputs, weights):
                 qml.templates.AngleEmbedding(inputs, wires=range(n_qubits))
                 qml.templates.StronglyEntanglingLayers(weights, wires=range(n_qubits))
-                return qml.expval(qml.Z(0)), qml.expval(qml.Z(1))
+                return [qml.expval(qml.Z(0)), qml.expval(qml.Z(1))]
 
             weight_shapes = {"weights": (3, n_qubits, 3)}
 
@@ -458,7 +458,7 @@ class TorchLayer(Module):
         x = args[0]
         kwargs = {
             self.input_arg: x,
-            **{arg: weight.data.to(x) for arg, weight in self.qnode_weights.items()},
+            **{arg: weight.to(x) for arg, weight in self.qnode_weights.items()},
         }
         self.qnode.construct((), kwargs)
 

@@ -19,6 +19,7 @@ that they are supported for execution by a device."""
 import os
 import warnings
 from copy import copy
+from itertools import chain
 from typing import Callable, Generator, Optional, Sequence, Union
 
 import pennylane as qml
@@ -166,6 +167,8 @@ def mid_circuit_measurements(
 
     if mcm_method == "one-shot":
         return qml.dynamic_one_shot(tape, interface=interface)
+    if mcm_method == "tree-traversal":
+        return (tape,), null_postprocessing
     return qml.defer_measurements(tape, device=device)
 
 
@@ -423,7 +426,7 @@ def validate_observables(
 @transform
 def validate_measurements(
     tape: qml.tape.QuantumTape, analytic_measurements=None, sample_measurements=None, name="device"
-) -> tuple[Sequence[qml.tape.QuantumTape], Callable]:
+) -> tuple[Sequence[qml.tape.QuantumTape], Callable[[ResultBatch], Result]]:
     """Validates the supported state and sample based measurement processes.
 
     Args:
@@ -431,7 +434,7 @@ def validate_measurements(
         analytic_measurements (Callable[[MeasurementProcess], bool]): a function from a measurement process
             to whether or not it is accepted in analytic simulations.
         sample_measurements (Callable[[MeasurementProcess], bool]): a function from a measurement process
-            to whether or not it accepted for finite shot siutations
+            to whether or not it accepted for finite shot simulations.
         name (str): the name to use in error messages.
 
     Returns:
@@ -464,13 +467,23 @@ def validate_measurements(
         def sample_measurements(m):
             return isinstance(m, SampleMeasurement)
 
+    # Gather all the measurements present in the snapshot operations with the
+    # exception of `qml.state` as this is supported for any supported simulator regardless
+    # of its configuration
+    snapshot_measurements = [
+        meas
+        for op in tape.operations
+        if isinstance(op, qml.Snapshot)
+        and not isinstance(meas := op.hyperparameters["measurement"], qml.measurements.StateMP)
+    ]
+
     if tape.shots:
-        for m in tape.measurements:
+        for m in chain(snapshot_measurements, tape.measurements):
             if not sample_measurements(m):
                 raise DeviceError(f"Measurement {m} not accepted with finite shots on {name}")
 
     else:
-        for m in tape.measurements:
+        for m in chain(snapshot_measurements, tape.measurements):
             if not analytic_measurements(m):
                 raise DeviceError(
                     f"Measurement {m} not accepted for analytic simulation on {name}."

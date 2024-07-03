@@ -108,8 +108,8 @@ def _to_qfunc_output_type(
 class QNode:
     """Represents a quantum node in the hybrid computational graph.
 
-    A *quantum node* contains a :ref:`quantum function <intro_vcirc_qfunc>`
-    (corresponding to a :ref:`variational circuit <glossary_variational_circuit>`)
+    A *quantum node* contains a :ref:`quantum function <intro_vcirc_qfunc>` (corresponding to
+    a `variational circuit <https://pennylane.ai/qml/glossary/variational_circuit>`)
     and the computational device it is executed on.
 
     The QNode calls the quantum function to construct a :class:`~.QuantumTape` instance representing
@@ -227,7 +227,9 @@ class QNode:
             usage details, please refer to the :doc:`main measurements page </introduction/measurements>`.
         mcm_method (str): Strategy to use when executing circuits with mid-circuit measurements. Use ``"deferred"``
             to apply the deferred measurements principle (using the :func:`~pennylane.defer_measurements` transform),
-            or ``"one-shot"`` if using finite shots to execute the circuit for each shot separately. If not provided,
+            or ``"one-shot"`` if using finite shots to execute the circuit for each shot separately.
+            ``default.qubit`` also supports ``"tree-traversal"`` which visits the tree of possible MCM sequences
+            as the name suggests. If not provided,
             the device will determine the best choice automatically. For usage details, please refer to the
             :doc:`main measurements page </introduction/measurements>`.
 
@@ -1042,13 +1044,13 @@ class QNode:
         )
         self._tape_cached = using_custom_cache and self.tape.hash in cache
 
-        mcm_config = self.execute_kwargs["mcm_config"]
+        mcm_config = copy.copy(self.execute_kwargs["mcm_config"])
         finite_shots = _get_device_shots if override_shots is False else override_shots
         if not finite_shots:
             mcm_config.postselect_mode = None
-            if mcm_config.mcm_method == "one-shot":
+            if mcm_config.mcm_method in ("one-shot", "tree-traversal"):
                 raise ValueError(
-                    "Cannot use the 'one-shot' method for mid-circuit measurements with analytic mode."
+                    f"Cannot use the '{mcm_config.mcm_method}' method for mid-circuit measurements with analytic mode."
                 )
         if mcm_config.mcm_method == "single-branch-statistics":
             raise ValueError("Cannot use mcm_method='single-branch-statistics' without qml.qjit.")

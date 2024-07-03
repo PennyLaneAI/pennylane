@@ -124,7 +124,7 @@ class TestTranspile:
         [out], _ = qml.transforms.transpile(tape, coupling_map=((0, 1), (1, 2)))
 
         expected = qml.tape.QuantumScript((qml.SWAP((1, 2)), qml.CRX(0.1, (0, 1))), ms, shots=50)
-        assert qml.equal(out, expected)
+        qml.assert_equal(out, expected)
 
     def test_transpile_qfunc_transpiled_mmt_obs(self):
         """test that transpile does not alter output for expectation value of an observable"""
@@ -237,8 +237,8 @@ class TestTranspile:
 
         original_ops = list(transpiled_qnode.qtape)
         transpiled_ops = list(transpiled_qnode.qtape)
-        assert qml.equal(transpiled_ops[0], original_ops[0])
-        assert qml.equal(transpiled_ops[1], original_ops[1])
+        qml.assert_equal(transpiled_ops[0], original_ops[0])
+        qml.assert_equal(transpiled_ops[1], original_ops[1])
 
         # SWAP to ensure connectivity
         assert isinstance(transpiled_ops[2], qml.SWAP)
@@ -280,8 +280,8 @@ class TestTranspile:
 
         original_ops = list(transpiled_qnode.qtape)
         transpiled_ops = list(transpiled_qnode.qtape)
-        assert qml.equal(transpiled_ops[0], original_ops[0])
-        assert qml.equal(transpiled_ops[1], original_ops[1])
+        qml.assert_equal(transpiled_ops[0], original_ops[0])
+        qml.assert_equal(transpiled_ops[1], original_ops[1])
 
         # SWAP to ensure connectivity
         assert isinstance(transpiled_ops[2], qml.SWAP)

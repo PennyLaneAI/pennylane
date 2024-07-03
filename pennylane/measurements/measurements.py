@@ -676,6 +676,22 @@ class StateMeasurement(MeasurementProcess):
                 dimension :math:`2^n` acts on a subspace of :math:`n` wires
         """
 
+    def process_density_matrix(self, density_matrix: TensorLike, wire_order: Wires):
+        """
+        Process the given density matrix.
+
+        Args:
+            density_matrix (TensorLike): The density matrix representing the (mixed) quantum state,
+                which may be single or batched. For a single matrix, the shape should be ``(2^n, 2^n)``
+                where `n` is the number of wires the matrix acts upon. For batched matrices, the shape
+                should be ``(batch_size, 2^n, 2^n)``.
+            wire_order (Wires): The wires determining the subspace that the ``density_matrix`` acts on.
+                A matrix of dimension :math:`2^n` acts on a subspace of :math:`n` wires. This parameter specifies
+                the mapping of matrix dimensions to physical qubits, allowing the function to correctly
+                trace out the subsystems not involved in the measurement or operation.
+        """
+        raise NotImplementedError
+
 
 class MeasurementTransform(MeasurementProcess):
     """Measurement process that applies a transform into the given quantum tape. This transform

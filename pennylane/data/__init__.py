@@ -15,7 +15,7 @@
 
 .. note::
 
-    For more details on using datasets, please see the
+    To start using datasets, please first see the
     :doc:`quantum datasets quickstart guide </introduction/data>`.
 
 Overview
@@ -211,6 +211,7 @@ from .attributes import (
     DatasetSparseArray,
     DatasetString,
     DatasetTuple,
+    DatasetPyTree,
 )
 from .base import DatasetNotWriteableError
 from .base.attribute import AttributeInfo, DatasetAttribute, attribute
@@ -225,6 +226,7 @@ __all__ = (
     "DatasetAttribute",
     "DatasetNotWriteableError",
     "DatasetArray",
+    "DatasetPyTree",
     "DatasetScalar",
     "DatasetString",
     "DatasetList",

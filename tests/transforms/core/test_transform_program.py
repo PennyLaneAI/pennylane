@@ -615,7 +615,7 @@ class TestTransformProgramCall:
         assert len(new_batch) == 1
         expected = [qml.S(0), qml.SX(2), qml.expval(qml.PauliZ(0))]
         for op1, op2 in zip(expected, new_batch[0]):
-            assert qml.equal(op1, op2)
+            qml.assert_equal(op1, op2)
         assert new_batch[0].shots == qml.measurements.Shots(100)
 
         assert fn.func is _apply_postprocessing_stack
