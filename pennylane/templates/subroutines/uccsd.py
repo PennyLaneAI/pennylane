@@ -105,7 +105,7 @@ class UCCSD(Operation):
 
         #. The vector of parameters ``weights`` is a two-dimensional array of size
            ``(n_repeats, len(s_wires)+len(d_wires))``.
-        #. If ``n_repeats=1``, then `weights`` can also be a one-dimensional array of size
+        #. If ``n_repeats=1``, then ``weights`` can also be a one-dimensional array of size
            ``len(s_wires)+len(d_wires)``.
 
 
