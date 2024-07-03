@@ -15,9 +15,9 @@
   [(#5786)](https://github.com/PennyLaneAI/pennylane/pull/5786)
   [(#5795)](https://github.com/PennyLaneAI/pennylane/pull/5795)
 
-  Either method can be selected when instantiating the `default.tensor` device by fixing the
+  Either method can be selected when instantiating the `default.tensor` device by setting the
   `method` keyword argument to `"tn"` (tensor network) or `"mps"` (matrix product state). This
-  device can allow a large number of qubits to be simulated:
+  device can simulate a large number of qubits:
 
   ```python
   import pennylane as qml
