@@ -70,8 +70,8 @@ def equal(
     .. Warning::
 
         The interfaces and trainability of data within some observables including ``Tensor``,
-        ``Hamiltonian``, ``Prod``, ``Sum`` are ignored, regardless of what the user specifies
-        for ``check_interface`` and ``check_trainability``.
+        ``Hamiltonian``, ``Prod``, ``Sum`` are sometimes ignored, regardless of what the user
+        specifies for ``check_interface`` and ``check_trainability``.
 
     Args:
         op1 (.Operator or .MeasurementProcess or .QuantumTape): First object to compare
