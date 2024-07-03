@@ -20,8 +20,8 @@
 
 <h4>Add noise models to your quantum circuits 📺</h4>
 
-* A new `qml.noise` module has been added, which contains utilities for building `NoiseModel`s 
-  and an `add_noise` transform for adding it to quantum circuits.
+* Support for building noise models and applying them to a quantum circuit has been added
+via the `NoiseModel` class and an `add_noise` transform.
   [(#5674)](https://github.com/PennyLaneAI/pennylane/pull/5674)
   [(#5684)](https://github.com/PennyLaneAI/pennylane/pull/5684)
   [(#5718)](https://github.com/PennyLaneAI/pennylane/pull/5718)
