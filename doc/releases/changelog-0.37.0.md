@@ -18,7 +18,8 @@
 
   Either method can be selected when instantiating the `default.tensor` device by setting the
   `method` keyword argument to `"tn"` (tensor network) or `"mps"` (matrix product state). This
-  device can simulate a large number of qubits:
+  device can simulate a large number of qubits with sensible approximations. Take this example with
+  1000 qubits!
 
   ```python
   import pennylane as qml
@@ -32,14 +33,17 @@
       for i in range(num_qubits - 1):
           qml.CNOT([i, i + 1])
       return qml.expval(qml.Z(num_qubits - 1))
+  ```
 
-  circuit()
+  ```pycon
+  >>> circuit()
+  tensor(0., requires_grad=True)
   ```
 
   Additional configuration settings like the matrix product state bond dimension can be specified
-  when instantiating `default.tensor`, see the
+  when instantiating `default.tensor` (see the
   [device's documentation](https://docs.pennylane.ai/en/stable/code/api/pennylane.devices.default_tensor.DefaultTensor.html)
-  for more details.
+  for more details).
   These settings have implications for the speed and accuracy of the simulation, as shown in the
   following example. First, set up the circuit:
 
