@@ -78,8 +78,8 @@
   tensor(0.0253213, requires_grad=True)
   ```
 
-  Learn more about `default.tensor` and how to configure it by visiting the
-  [how-to guide](https://pennylane.ai/qml/demos/tutorial_How_to_simulate_quantum_circuits_with_tensor_networks/).
+  Learn more about `default.tensor` and how to configure it by 
+  [visiting the how-to guide](https://pennylane.ai/qml/demos/tutorial_How_to_simulate_quantum_circuits_with_tensor_networks/).
 
 <h4>Add noise models to your quantum circuits 📺</h4>
 
