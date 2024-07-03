@@ -99,6 +99,9 @@ via the `NoiseModel` class and an `add_noise` transform.
   2: ──RY(0.30)──RY(0.01)────────────────────────────┤  State
   ```
 
+  If more than one transform is applied to a QNode, control over when/where the `add_noise` transform is applied 
+  in relation to the other transforms can be specified with the `level` keyword argument. By default, `add_noise` is applied
+  after all the transforms that have been manually applied to the QNode until that point.
   To learn more about this new functionality, check out our [noise module documentation](https://docs.pennylane.ai/en/stable/code/qml_noise.html)
   and keep your eyes peeled for an in-depth demo!
 
