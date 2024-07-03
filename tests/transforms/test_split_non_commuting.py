@@ -993,6 +993,26 @@ class TestDifferentiability:
 
         assert qml.math.allclose(actual, [-0.5, np.cos(np.pi / 4)], rtol=0.05)
 
+    @pytest.mark.autograd
+    @pytest.mark.parametrize("grouping_strategy", [None, "default", "qwc", "wires"])
+    def test_non_trainable_obs_autograd(self, grouping_strategy):
+        """Test that we can measure a hamiltonian with non-trainable autograd coefficients."""
+        dev = qml.device("default.qubit")
+
+        @partial(split_non_commuting, grouping_strategy=grouping_strategy)
+        @qml.qnode(dev, diff_method="adjoint")
+        def circuit(x):
+            qml.RX(x, 0)
+            c1 = qml.numpy.array(0.1, requires_grad=False)
+            c2 = qml.numpy.array(0.2, requires_grad=False)
+            H = c1 * qml.Z(0) + c2 * qml.X(0)
+            return qml.expval(H)
+
+        x = qml.numpy.array(0.5)
+        actual = qml.grad(circuit)(x)
+
+        assert qml.math.allclose(actual, -0.1 * np.sin(x))
+
     @pytest.mark.jax
     @pytest.mark.parametrize("use_jit", [False, True])
     @pytest.mark.parametrize("grouping_strategy", [None, "default", "qwc", "wires"])

@@ -97,6 +97,21 @@ logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
 
+# pylint: disable=no-member
+def _to_autograd(result: qml.typing.ResultBatch) -> qml.typing.ResultBatch:
+    """Converts an arbitrary result batch to one with jax arrays.
+    Args:
+        result (ResultBatch): a nested structure of lists, tuples, dicts, and numpy arrays
+    Returns:
+        ResultBatch: a nested structure of tuples, dicts, and jax arrays
+    """
+    if isinstance(result, dict):
+        return result
+    if isinstance(result, (list, tuple, autograd.builtins.tuple, autograd.builtins.list)):
+        return tuple(_to_autograd(r) for r in result)
+    return qml.numpy.array(result)
+
+
 # pylint: disable=unused-argument
 def autograd_execute(
     tapes: Batch,
@@ -165,7 +180,7 @@ def _execute(
             for the input tapes.
 
     """
-    return execute_fn(tapes)
+    return _to_autograd(execute_fn(tapes))
 
 
 # pylint: disable=unused-argument
