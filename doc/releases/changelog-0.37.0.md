@@ -6,6 +6,14 @@
 
 <h4>Execute faster with Default Tensor 🔗</h4>
 
+* Added a quantum debugger (`PLDB`) which interfaces via `qml.breakpoint()` and provides tools for 
+  debugging quantum circuits. Users can step through the quantum circuit operations, dynamically
+  queue operations and make measurements using (`qml.debug_state()`, `qml.debug_probs()`, 
+  `qml.debug_expval()`, and `qml.debug_tape()`).
+  [(#5680)](https://github.com/PennyLaneAI/pennylane/pull/5680)
+  [(#5749)](https://github.com/PennyLaneAI/pennylane/pull/5749)
+  [(#5789)](https://github.com/PennyLaneAI/pennylane/pull/5789)
+
 * The `default.tensor` device now supports the `tn` method to simulate quantum circuits using exact tensor networks.
   [(#5786)](https://github.com/PennyLaneAI/pennylane/pull/5786)
 
