@@ -973,9 +973,16 @@ def fidelity(qnode0, qnode1, wires0, wires1):
     .. seealso:: :func:`pennylane.math.fidelity`
     """
 
+    warnings.warn(
+        "The qml.qinfo.fidelity transform is deprecated and will be removed "
+        "in 0.40. Use qml.math.fidelity instead.",
+        qml.PennyLaneDeprecationWarning,
+    )
+
     if len(wires0) != len(wires1):
         raise qml.QuantumFunctionError("The two states must have the same number of wires.")
 
+    warnings.filterwarnings("ignore")
     state_qnode0 = qml.qinfo.reduced_dm(qnode0, wires=wires0)
     state_qnode1 = qml.qinfo.reduced_dm(qnode1, wires=wires1)
 
