@@ -167,35 +167,133 @@ via the `NoiseModel` class and an `add_noise` transform.
   To learn more about this new functionality, check out our [noise module documentation](https://docs.pennylane.ai/en/stable/code/qml_noise.html)
   and keep your eyes peeled for an in-depth demo!
 
-<h4>Identify mistakes in your code with the PennyLane debugger 🚫🐞</h4>
+<h4>Catch bugs with the PennyLane debugger 🚫🐞</h4>
 
-* Added a quantum debugger (`PLDB`) which interfaces via `qml.breakpoint()` and provides tools for 
-  debugging quantum circuits. Users can step through the quantum circuit operations, dynamically
-  queue operations and make measurements using (`qml.debug_state()`, `qml.debug_probs()`, 
-  `qml.debug_expval()`, and `qml.debug_tape()`).
+* The new PennyLane quantum debugger (`PLDB`) allows pausing simulation via the `qml.breakpoint()` command and provides tools for 
+  analyzing quantum circuits during execution.
   [(#5680)](https://github.com/PennyLaneAI/pennylane/pull/5680)
   [(#5749)](https://github.com/PennyLaneAI/pennylane/pull/5749)
   [(#5789)](https://github.com/PennyLaneAI/pennylane/pull/5789)
+  
+  This includes monitoring the circuit via measurements using `qml.debug_state()`, `qml.debug_probs()`, 
+  `qml.debug_expval()`, and `qml.debug_tape()`, stepping through the operations in a quantum circuit, and interactively
+  adding operations during execution.
+
+  Including `qml.breakpoint()` in a circuit will cause the simulation to pause during execution and bring up the `[pldb]` interactive console:
+
+  ```python
+  @qml.qnode(qml.device('default.qubit', wires=(0,1,2)))
+  def circuit(x):
+      qml.Hadamard(wires=0)
+      qml.CNOT(wires=(0,2))
+      qml.breakpoint()
+
+      qml.RX(-x, wires=1)
+      qml.RY(-x, wires=2)
+      qml.breakpoint()
+
+      return qml.sample()
+
+  circuit(1.2345)
+  ```
+  Upon execution, the simulation pauses at the first breakpoint:
+  ```pycon
+  > /Users/your/path/to/script.py(8)circuit()
+  -> qml.RX(-x, wires=1)
+  [pldb]:
+  ```
+  While debugging, we can access circuit information:
+  - `qml.debug_tape()` - returns the tape of the circuit, giving access to its operations and drawing.
+    ```pycon
+    [pldb]: tape = qml.debug_tape()
+    [pldb]: print(tape.draw(wire_order=[0,1,2]))
+    0: ──H─╭●─────┤  
+    1: ────│───RX─┤  
+    2: ────╰X──RY─┤ 
+    [pldb]: tape.operations
+    [Hadamard(wires=[0]), CNOT(wires=[0, 2])]
+    ```
+  - `qml.debug_state()` - equivalent to `qml.state()`, gives the current state.
+    ```pycon
+    [pldb]: print(qml.debug_state())
+    [0.70710678+0.j 0.        +0.j 0.        +0.j 0.        +0.j
+     1.        +0.j 0.70710678+0.j 0.        +0.j 0.        +0.j]
+    ```
+  Other debugger functions like `qml.debug_probs()` and `qml.debug_expval()` also function like their simulation counterparts and are described in more detail in the [debugger documentation](https://docs.pennylane.ai/en/stable/code/qml_debugging.html)
+  
+  Additionally, standard debugging commands are available to navigate through code:
+  - `list` or `longlist` - view the current position and surrounding code.
+    ```pycon
+    [pldb]: longlist
+     2     @qml.qnode(qml.device('default.qubit', wires=(0,1,2)))
+     3     def circuit(x):
+     4         qml.Hadamard(wires=0)
+     5         qml.CNOT(wires=(0,2))
+     6         qml.breakpoint()
+     7  
+     8  ->     qml.RX(-x, wires=1)
+     9         qml.RY(-x, wires=2)
+    10         qml.breakpoint()
+    11  
+    12         return qml.sample()
+    ```
+  - `next` - apply the next operation in the circuit.
+    ```pycon
+    [pldb]: next
+    > /Users/your/path/to/script.py(9)circuit()
+    -> qml.RY(-x, wires=2)
+    ```
+  - `continue` - continue to execute the code until another breakpoint is reached.
+    ```pycon
+    [pldb]: continue
+    > /Users/your/path/to/script.py(12)circuit()
+    -> return qml.sample()
+    ```
+  - `quit` - exit debugging.
+  
+  Finally, to modify a circuit mid-run, simply call the desired PennyLane operations:
+
+  ```pycon
+  > /Users/your/path/to/script.py(12)circuit()
+  -> return qml.sample()
+  [pldb] qml.CNOT(wires=(0,2))
+  CNOT(wires=[0, 2])
+  [pldb]: print(qml.debug_tape().draw(wire_order=[0,1,2]))
+  0: ──H─╭●─────╭●─┤  
+  1: ────│───RX─│──┤  
+  2: ────╰X──RY─╰X─┤ 
+  ```
 
 <h4>Convert between OpenFermion and PennyLane 🤝</h4>
 
-* The ``from_openfermion`` and ``to_openfermion`` functions are added to convert between 
-  OpenFermion and PennyLane objects.
+* The ``from_openfermion`` and ``to_openfermion`` are now available to convert between 
+  OpenFermion and PennyLane objects. This includes both fermionic and qubit operators.
   [(#5773)](https://github.com/PennyLaneAI/pennylane/pull/5773)
   [(#5808)](https://github.com/PennyLaneAI/pennylane/pull/5808)
   [(#5881)](https://github.com/PennyLaneAI/pennylane/pull/5881)
 
-  ```python
-  of_op = openfermion.FermionOperator('0^ 2')
-  pl_op = qml.from_openfermion(of_op)
-  of_op_new = qml.to_openfermion(pl_op)
-  ```
-
+  For qubit operators:
   ```pycon
-  >>> print(pl_op)
+  >>> of_qubit = 0.5*openfermion.QubitOperator('X0 X5')
+  >>> type(of_qubit)
+  <class 'openfermion.ops.operators.qubit_operator.QubitOperator'>
+  >>> pl_qubit = qml.from_openfermion(of_qubit)
+  >>> type(pl_qubit)
+  <class 'pennylane.ops.op_math.linear_combination.LinearCombination'>
+  >>> print(pl_qubit)
+  0.5 * (X(0) @ X(5))
+  ```
+  
+  And for Fermionic operators:
+  ```pycon
+  >>> of_fermionic = openfermion.FermionOperator('0^ 2')
+  >>> type(of_fermionic)
+  <class 'openfermion.ops.operators.fermion_operator.FermionOperator'>
+  >>> pl_fermionic = qml.from_openfermion(of_fermionic)
+  >>> type(pl_fermionic)
+  <class 'pennylane.fermi.fermionic.FermiWord'>
+  >>> print(pl_fermionic)
   a⁺(0) a(2)
-  >>> print(of_op_new)
-  1.0 [0^ 2]
   ```
 
 <h4>Better control over when drawing and specs take place 🎚️</h4>
