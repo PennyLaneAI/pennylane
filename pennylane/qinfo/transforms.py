@@ -13,6 +13,7 @@
 # limitations under the License.
 """QNode transforms for the quantum information quantities."""
 # pylint: disable=import-outside-toplevel, not-callable
+import warnings
 from functools import partial
 from typing import Callable, Sequence
 
@@ -358,6 +359,11 @@ def mutual_info(
 
         I(A, B) = S(\rho^A) + S(\rho^B) - S(\rho^{AB})
 
+    .. warning::
+
+        The qml.qinfo.mutual_info transform is deprecated and will be removed in 0.40. Instead include
+        the :func:`pennylane.mutual_info` measurement process in the return line of your QNode.
+
     where :math:`S` is the von Neumann entropy.
 
     The mutual information is a measure of correlation between two subsystems.
@@ -401,6 +407,14 @@ def mutual_info(
 
     .. seealso:: :func:`~.qinfo.vn_entropy`, :func:`pennylane.math.mutual_info` and :func:`pennylane.mutual_info`
     """
+
+    warnings.warn(
+        "The qml.qinfo.mutual_info transform is deprecated and will be removed "
+        "in 0.40. Instead include the qml.mutual_info measurement process in the "
+        "return line of your QNode.",
+        qml.PennyLaneDeprecationWarning,
+    )
+
     return _bipartite_qinfo_transform(qml.math.mutual_info, tape, wires0, wires1, base, **kwargs)
 
 
