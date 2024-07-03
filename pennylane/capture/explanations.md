@@ -178,7 +178,7 @@ Great!👍
 
 Now you can see that the problem is that we lied in our definition of abstract evaluation.  Jax thinks that `PrimitiveClass` returns something of shape `(1,)` and type `float32`.
 
-But jax doesn't have an abstract type that really describes "PrimitiveClass".  So we need to define an register our own.
+But jax doesn't have an abstract type that really describes "PrimitiveClass".  So we need to define and register our own.
 
 
 ```python
