@@ -82,42 +82,90 @@
 
 <h4>Add noise models to your quantum circuits 📺</h4>
 
-* A new `qml.noise` module which contains utility function for building `NoiseModels` 
-  and an `add_noise` tranform for addding it to quantum circuits.
+* Support for building noise models and applying them to a quantum circuit has been added
+via the `NoiseModel` class and an `add_noise` transform.
   [(#5674)](https://github.com/PennyLaneAI/pennylane/pull/5674)
   [(#5684)](https://github.com/PennyLaneAI/pennylane/pull/5684)
   [(#5718)](https://github.com/PennyLaneAI/pennylane/pull/5718)
 
-  ```pycon
-  >>> fcond1 = qml.noise.op_eq(qml.RX) & qml.noise.wires_in([0, 1])
-  >>> noise1 = qml.noise.partial_wires(qml.PhaseDamping, 0.4)
-  >>> fcond2 = qml.noise.op_in([qml.RY, qml.RZ])
-  >>> def noise2(op, **kwargs):
-  ...     qml.ThermalRelaxationError(op.parameters[0] * 0.05, kwargs["t1"], 0.2, 0.6, op.wires)
-  >>> noise_model = qml.NoiseModel({fcond1: noise1, fcond2: noise2}, t1=2.0)
-  >>> noise_model
-  NoiseModel({
-      OpEq(RX) & WiresIn([0, 1]) = PhaseDamping(gamma=0.4)
-      OpIn(['RY', 'RZ']) = noise2
-  }, t1 = 2.0)
+  Under the hood, PennyLane's approach to noise models is insertion-based, meaning that noise is included
+  by *inserting* additional operators (gates or channels) that describe the noise into the quantum circuit itself. 
+  Creating a `NoiseModel` boils down to defining Boolean conditions under which specific noisy operations 
+  are inserted. There are several ways to specify conditions for adding noisy operations: 
+
+  * `qml.noise.op_eq(op)`: if the operator `op` is encountered in the circuit, add noise.
+  * `qml.noise.op_in(ops)`: if any operators in `ops` are encountered in the circuit, add noise.
+  * `qml.noise.wires_eq(wires)`: if an operator is applied to `wires`, add noise.
+  * `qml.noise.wires_in(wires)`: if an operator is applied to any wire in `wires`, add noise.
+  * custom noise conditions: custom conditions can be defined as functions decorated with `qml.BooleanFn` that return a Boolean value. For example, the following function will insert noise if a `qml.RY` operator is encountered with an angle of rotation that is less than `0.5`:
+
+    ```python
+    @qml.BooleanFn
+    def c0(op):
+        return isinstance(op, qml.RY) and op.parameters[0] < 0.5
+    ```
+
+  `op_eq`, `op_in`, `wires_eq`, and `wires_in` can also be combined together with `&`, `and`, `|`, etc.
+  Once the conditions under which noise is to be inserted have been stated, we can specify exactly what 
+  noise is inserted with the following:
+
+  * `qml.noise.partial_wires(op)`: insert `op` on the wires that are specified by the condition that triggers adding this noise
+  * custom noise operations: custom noise can be specified by defining a standard quantum function like below.
+  
+    ```python
+    def n0(op, **kwargs):
+        qml.RY(op.parameters[0] * 0.05, wires=op.wires)
+    ```
+
+  With that, we can create a `qml.NoiseModel` object whose argument must be a dictionary mapping conditions
+  to noise:
+
+  ```python
+  c1 = qml.noise.op_eq(qml.X) & qml.noise.wires_in([0, 1])
+  n1 = qml.noise.partial_wires(qml.AmplitudeDamping, 0.4)
+
+  noise_model = qml.NoiseModel({c0: n0, c1: n1})
   ```
 
   ```pycon
-  >>> @partial(qml.transforms.add_noise, noise_model=noise_model)
-  ... @qml.qnode(dev)
-  ... def circuit(w, x, y, z):
-  ...    qml.RX(w, wires=0)
-  ...    qml.RY(x, wires=1)
-  ...    qml.CNOT(wires=[0, 1])
-  ...    qml.RY(y, wires=0)
-  ...    qml.RX(z, wires=1)
-  ...    return qml.expval(qml.Z(0) @ qml.Z(1))
-  >>> print(qml.draw(circuit)(0.9, 0.4, 0.5, 0.6))
-  0: ──RX(0.90)──PhaseDamping(0.40)──────────────────────────╭●──RY(0.50)
-  1: ──RY(0.40)──ThermalRelaxationError(0.02,2.00,0.20,0.60)─╰X──RX(0.60)
-  ───ThermalRelaxationError(0.03,2.00,0.20,0.60)─┤ ╭<Z@Z>
-  ───PhaseDamping(0.40)──────────────────────────┤ ╰<Z@Z>
+  >>> noise_model
+  NoiseModel({
+      BooleanFn(c0): n0
+      OpEq(PauliX) | WiresIn([0, 1]): AmplitudeDamping(gamma=0.4)
+  })
   ```
+
+  The noise model created can then be added to a QNode with `qml.add_noise`:
+
+  ```python
+  dev = qml.device("lightning.qubit", wires=3)
+
+  @qml.qnode(dev)
+  def circuit():
+      qml.Y(0)
+      qml.CNOT([0, 1])
+      qml.RY(0.3, wires=2) # triggers c0
+      qml.X(1) # triggers c1
+      return qml.state()
+  ```
+
+  ```pycon
+  >>> print(qml.draw(circuit)())
+  0: ──Y────────╭●────┤  State
+  1: ───────────╰X──X─┤  State
+  2: ──RY(0.30)───────┤  State
+  >>> circuit = qml.add_noise(circuit, noise_model)
+  >>> print(qml.draw(circuit)())
+  0: ──Y────────╭●───────────────────────────────────┤  State
+  1: ───────────╰X─────────X──AmplitudeDamping(0.40)─┤  State
+  2: ──RY(0.30)──RY(0.01)────────────────────────────┤  State
+  ```
+
+  If more than one transform is applied to a QNode, control over when/where the `add_noise` transform is applied 
+  in relation to the other transforms can be specified with the `level` keyword argument. By default, `add_noise` is applied
+  after all the transforms that have been manually applied to the QNode until that point.
+  To learn more about this new functionality, check out our [noise module documentation](https://docs.pennylane.ai/en/stable/code/qml_noise.html)
+  and keep your eyes peeled for an in-depth demo!
 
 <h4>Identify mistakes in your code with the PennyLane debugger 🚫🐞</h4>
 
