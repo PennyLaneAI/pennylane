@@ -231,6 +231,12 @@ class DefaultQutritMixed(Device):
         * ``readout_misclassification_probs``: Defines the inputs of :class:`qml.TritFlip` channel. This error models misclassification events in readout. An example of this readout error can be seen in [`2 <https://arxiv.org/abs/2309.11303>`_] (Fig 1a).
 
         .. note::
+            Relaxation Error, defined by `readout_relaxation_probs` and implemented with
+            class:`qml.QutritAmplitudeDamping`, is applied first. Then Misclassification, defined
+            by `readout_misclassification_probs` and implemented with :class:`qml.TritFlip`,
+            is applied.
+
+        .. note::
             The readout errors will be applied based on the state after diagonalizing gates. This
             may give different results depending on how an observable is inputted. For example,
             measuring :class:`~.THermitian` with a GellMann matrix may result in a different
@@ -276,7 +282,9 @@ class DefaultQutritMixed(Device):
             self._rng = np.random.default_rng(seed)
         self._debugger = None
 
-        self.readout_errors = get_readout_errors(readout_relaxation_probs, readout_misclassification_probs)
+        self.readout_errors = get_readout_errors(
+            readout_relaxation_probs, readout_misclassification_probs
+        )
 
     @debug_logger
     def supports_derivatives(
