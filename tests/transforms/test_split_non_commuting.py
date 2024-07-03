@@ -438,7 +438,7 @@ class TestUnits:
         """Tests that a single Hamiltonian with non-pauli words is split correctly"""
 
         tape = qml.tape.QuantumScript([], [qml.expval(H)], shots=100)
-        tapes, fn = split_non_commuting(tape)
+        tapes, _ = split_non_commuting(tape)
         expected_tapes = [
             qml.tape.QuantumScript([], [qml.expval(qml.X(0)), qml.expval(qml.Y(1))], shots=100),
             qml.tape.QuantumScript([], [qml.expval(qml.Hadamard(1) @ qml.Z(0))], shots=100),
@@ -452,7 +452,7 @@ class TestUnits:
 
         H = qml.Hamiltonian([1, 2, 3], [qml.X(0), qml.Hadamard(1) @ qml.Z(0), qml.Y(1)])
         tape = qml.tape.QuantumScript([], [qml.expval(H)], shots=100)
-        tapes, fn = split_non_commuting(tape)
+        tapes, _ = split_non_commuting(tape)
         expected_tapes = [
             qml.tape.QuantumScript([], [qml.expval(qml.X(0)), qml.expval(qml.Y(1))], shots=100),
             qml.tape.QuantumScript([], [qml.expval(qml.Hadamard(1) @ qml.Z(0))], shots=100),
