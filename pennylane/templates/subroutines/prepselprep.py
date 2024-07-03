@@ -13,8 +13,6 @@
 # limitations under the License.
 """
 Contains the PrepSelPrep template.
-This template contains a decomposition for performing a block-encoding on a
-linear combination of unitaries using the Prepare, Select, Prepare method.
 """
 # pylint: disable=arguments-differ,import-outside-toplevel,too-many-arguments
 import copy
@@ -44,8 +42,38 @@ def _get_new_terms(lcu):
 
 
 class PrepSelPrep(Operation):
-    """This class implements a block-encoding of a linear combination of unitaries
-    using the Prepare, Select, Prepare method"""
+    """Implements a block-encoding of a linear combination of unitaries using the Prepare,
+    Select, Prepare method.
+
+    Args:
+        lcu (Union[.Hamiltonian, .Sum, .Prod, .SProd, .LinearCombination]): The operator
+            written as a linear combination of unitaries.
+        control (Iterable[Any], Wires): The control qubits for the PrepSelPrep operator.
+
+    **Example**
+
+    We define an operator and a block-encoding circuit as:
+
+    >>> lcu = qml.dot([0.3, -0.1], [qml.X(2), qml.Z(2)])
+    >>> control = [0, 1]
+    >>> @qml.qnode(qml.device("default.qubit"))
+    ... def circuit(lcu, control):
+    ...     qml.PrepSelPrep(lcu, control)
+    ...     return qml.state()
+
+    We can see that the operaor matrix, up to a normalization constant, is block encoded in the
+    circuit matrix:
+
+    >>> matrix_psp = qml.matrix(circuit, wire_order = [0, 1, 2])(lcu, control = control)
+    >>> print(matrix_psp.real[0:2, 0:2])
+    [[-0.25  0.75]
+     [ 0.75  0.25]]
+
+    >>> matrix_lcu = qml.matrix(lcu)
+    >>> print(qml.matrix(lcu).real / sum(abs(np.array(lcu.coeffs))))
+    [[-0.25  0.75]
+     [ 0.75  0.25]]
+    """
 
     def __init__(self, lcu, control=None, id=None):
         coeffs, ops = lcu.terms()
