@@ -1344,8 +1344,8 @@ class TestReadoutError:
         dev = qml.device(
             "default.qutrit.mixed",
             wires=nr_wires,
-            readout_relaxations=relax_and_misclass[0],
-            readout_misclassifications=relax_and_misclass[1],
+            readout_relaxation_probs=relax_and_misclass[0],
+            readout_misclassification_probs=relax_and_misclass[1],
         )
 
         @qml.qnode(dev)
@@ -1380,8 +1380,8 @@ class TestReadoutError:
         dev = qml.device(
             "default.qutrit.mixed",
             wires=nr_wires,
-            readout_relaxations=relax_and_misclass[0],
-            readout_misclassifications=relax_and_misclass[1],
+            readout_relaxation_probs=relax_and_misclass[0],
+            readout_misclassification_probs=relax_and_misclass[1],
         )
 
         @qml.qnode(dev)
@@ -1421,8 +1421,8 @@ class TestReadoutError:
         dev = qml.device(
             "default.qutrit.mixed",
             wires=nr_wires,
-            readout_relaxations=relax_and_misclass[0],
-            readout_misclassifications=relax_and_misclass[1],
+            readout_relaxation_probs=relax_and_misclass[0],
+            readout_misclassification_probs=relax_and_misclass[1],
         )
         # Create matrices for the observables with diagonalizing matrix :math:`THadamard^\dag`
         inv_sqrt_3_i = 1j / np.sqrt(3)
@@ -1471,8 +1471,8 @@ class TestReadoutError:
         dev = qml.device(
             "default.qutrit.mixed",
             wires=nr_wires,
-            readout_relaxations=relaxations,
-            readout_misclassifications=misclassifications,
+            readout_relaxation_probs=relaxations,
+            readout_misclassification_probs=misclassifications,
         )
 
         @qml.qnode(dev)
@@ -1489,8 +1489,8 @@ class TestReadoutError:
         dev = qml.device(
             "default.qutrit.mixed",
             wires=nr_wires,
-            readout_relaxations=relaxations,
-            readout_misclassifications=misclassifications,
+            readout_relaxation_probs=relaxations,
+            readout_misclassification_probs=misclassifications,
         )
 
         @qml.qnode(dev)
@@ -1517,8 +1517,8 @@ class TestReadoutError:
             "default.qutrit.mixed",
             shots=2,
             wires=nr_wires,
-            readout_relaxations=relaxations,
-            readout_misclassifications=misclassifications,
+            readout_relaxation_probs=relaxations,
+            readout_misclassification_probs=misclassifications,
         )
 
         @qml.qnode(dev)
@@ -1545,8 +1545,8 @@ class TestReadoutError:
             "default.qutrit.mixed",
             shots=100,
             wires=nr_wires,
-            readout_relaxations=relaxations,
-            readout_misclassifications=misclassifications,
+            readout_relaxation_probs=relaxations,
+            readout_misclassification_probs=misclassifications,
         )
 
         @qml.qnode(dev)
@@ -1571,17 +1571,19 @@ class TestReadoutError:
             qml.device(
                 "default.qutrit.mixed",
                 wires=nr_wires,
-                readout_relaxations=relaxations,
-                readout_misclassifications=misclassifications,
+                readout_relaxation_probs=relaxations,
+                readout_misclassification_probs=misclassifications,
             )
 
     def test_prob_type(self, nr_wires):
         """Tests that an error is raised for wrong data type in readout errors"""
         with pytest.raises(qml.DeviceError, match="results in error:"):
             qml.device(
-                "default.qutrit.mixed", wires=nr_wires, readout_relaxations=[0.1, 0.2, "0.3"]
+                "default.qutrit.mixed", wires=nr_wires, readout_relaxation_probs=[0.1, 0.2, "0.3"]
             )
         with pytest.raises(qml.DeviceError, match="results in error:"):
             qml.device(
-                "default.qutrit.mixed", wires=nr_wires, readout_misclassifications=[0.1, 0.2, "0.3"]
+                "default.qutrit.mixed",
+                wires=nr_wires,
+                readout_misclassification_probs=[0.1, 0.2, "0.3"],
             )

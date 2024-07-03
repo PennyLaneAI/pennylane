@@ -302,7 +302,7 @@ class TestPreprocessingIntegration:
             ),
         ]
         device = DefaultQutritMixed(
-            readout_relaxations=relaxations, readout_misclassifications=misclassifications
+            readout_relaxation_probs=relaxations, readout_misclassification_probs=misclassifications
         )
         program, _ = device.preprocess()
 
