@@ -313,7 +313,9 @@ def simulate(
     has_mcm = any(isinstance(op, MidMeasureMP) for op in circuit.operations)
     if has_mcm:
         if not circuit.shots or execution_kwargs.get("mcm_method", None) == "tree-traversal":
-            return simulate_tree_mcm(circuit, prng_key=prng_key, **execution_kwargs)
+            circtmp = variance_transform(circuit)
+            results = simulate_tree_mcm(circtmp, prng_key=prng_key, **execution_kwargs)
+            return variance_post_processing(circuit, results)
 
         results = []
         aux_circ = qml.tape.QuantumScript(
@@ -485,8 +487,8 @@ def simulate_tree_mcm(
             continue
 
         # Parse shots for the current branch
-        if not circuit.shots:
-            shots = circuit.shots
+        if not finite_shots:
+            shots = None
         elif counts[depth]:
             shots = counts[depth][mcm_current[depth]]
         else:
@@ -511,7 +513,10 @@ def simulate_tree_mcm(
                 # Bump downstream cumulative counts before zeroing-out counts
                 for d in range(depth + 1, n_mcms + 1):
                     cumcounts[d] += counts[depth][mcm_current[depth]]
-                counts[depth][mcm_current[depth]] = 0
+                if finite_shots:
+                    counts[depth][mcm_current[depth]] = 0
+                else:
+                    probs[depth][int(mcm_current[depth])] = 0
             measurements = tuple()
         else:
             # If num_shots is non-zero, simulate the current depth circuit segment
@@ -556,7 +561,8 @@ def simulate_tree_mcm(
             mcm_samples, cumcounts = update_mcm_samples(samples, mcm_samples, depth, cumcounts)
             continue
 
-        measurements = insert_mcms(circuit, measurements, mid_measurements)
+        if not skip_subtree and not invalid_postselect:
+            measurements = insert_mcms(circuit, measurements, mid_measurements)
         # If at a zero-branch leaf, update measurements and switch to the one-branch
         if not mcm_current[depth]:
             results_0[depth] = measurements
@@ -567,7 +573,8 @@ def simulate_tree_mcm(
         results_1[depth] = measurements
 
     # Combine first two branches
-    terminal_measurements = circuit.measurements
+    if finite_shots:
+        terminal_measurements = circuit.measurements
     measurement_dicts = get_measurement_dicts(
         terminal_measurements, probs[depth], (results_0[depth], results_1[depth])
     )
@@ -582,6 +589,7 @@ def insert_mcms(circuit, results, mid_measurements):
         return results
     if not any(m.mv for m in circuit.measurements):
         return results
+    results = list(results)
     new_results = []
     mid_measurements = dict((k, qml.math.array([[v]])) for k, v in mid_measurements.items())
     for m in circuit.measurements:
@@ -720,6 +728,44 @@ def update_mcm_samples(samples, mcm_samples, depth, cumcounts):
     return mcm_samples, cumcounts
 
 
+def variance_transform(circuit):
+    """Replace variance measurements by expectation value measurements of both the observable and the observable square.
+
+    This is necessary since computing the variance requires the global expectation value which is not available from measurements on subtrees.
+    """
+    if circuit.shots or not any(isinstance(m, VarianceMP) for m in circuit.measurements):
+        return circuit
+    new_measurements = []
+    extra_measurements = []
+    for m in circuit.measurements:
+        if isinstance(m, VarianceMP):
+            obs2 = m.mv * m.mv if m.mv else m.obs @ m.obs
+            new_measurements.append(ExpectationMP(obs=obs2))
+            extra_measurements.append(ExpectationMP(obs=m.mv if m.mv else m.obs))
+        else:
+            new_measurements.append(m)
+    new_measurements.extend(extra_measurements)
+    return qml.tape.QuantumScript(
+        circuit.operations,
+        new_measurements,
+        shots=circuit.shots,
+        trainable_params=circuit.trainable_params,
+    )
+
+
+def variance_post_processing(circuit, results):
+    """Compute the global variance from expectation value measurements of both the observable and the observable square."""
+    if circuit.shots or not any(isinstance(m, VarianceMP) for m in circuit.measurements):
+        return results
+    new_results = list(results)
+    offset = len(circuit.measurements)
+    for i, (r, m) in enumerate(zip(new_results, circuit.measurements)):
+        if isinstance(m, VarianceMP):
+            expval = new_results.pop(offset)
+            new_results[i] = r - expval**2
+    return new_results
+
+
 def circuit_up_to_first_mcm(circuit):
     """Returns two circuits; one that runs up-to the next mid-circuit measurement and one that runs beyond it.
 
@@ -768,7 +814,9 @@ def circuit_up_to_first_mcm(circuit):
                 if circuit.shots:
                     new_measurements.append(SampleMP(obs=m.obs))
                 else:
-                    new_measurements.append(ExpectationMP(obs=m.obs @ m.obs))
+                    raise TypeError(
+                        "VarianceMP measurements should be replace by variance_transform."
+                    )
             else:
                 new_measurements.append(m)
     circuit_next = qml.tape.QuantumScript(

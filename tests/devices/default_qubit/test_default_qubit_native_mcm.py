@@ -172,7 +172,7 @@ def obs_tape(x, y, z, reset=False, postselect=None):
 
 
 @pytest.mark.parametrize("mcm_method", ["one-shot", "tree-traversal"])
-@pytest.mark.parametrize("shots", [5500, [5500, 5501]])
+@pytest.mark.parametrize("shots", [None, 5500, [5500, 5501]])
 @pytest.mark.parametrize("postselect", [None, 0, 1])
 @pytest.mark.parametrize("measure_f", [qml.counts, qml.expval, qml.probs, qml.sample, qml.var])
 @pytest.mark.parametrize(
@@ -191,10 +191,16 @@ def test_simple_dynamic_circuit(mcm_method, shots, measure_f, postselect, meas_o
     The above combinations should work for finite shots, shot vectors and post-selecting of either the 0 or 1 branch.
     """
 
+    if mcm_method == "one-shot" and shots is None:
+        pytest.skip("`mcm_method='one-shot'` is incompatible with analytic mode (`shots=None`)")
+
     if measure_f in (qml.expval, qml.var) and (
         isinstance(meas_obj, list) or meas_obj == "mcm_list"
     ):
         pytest.skip("Can't use wires/mcm lists with var or expval")
+
+    if measure_f in (qml.counts, qml.sample) and shots is None:
+        pytest.skip("Can't measure counts/sample in analytic mode (`shots=None`)")
 
     dev = get_device(shots=shots)
     params = [np.pi / 2.5, np.pi / 3, -np.pi / 3.5]
@@ -215,13 +221,17 @@ def test_simple_dynamic_circuit(mcm_method, shots, measure_f, postselect, meas_o
 
 
 @pytest.mark.parametrize("mcm_method", ["one-shot", "tree-traversal"])
+@pytest.mark.parametrize("shots", [None, 5000])
 @pytest.mark.parametrize("postselect", [None, 0, 1])
 @pytest.mark.parametrize("reset", [False, True])
-def test_multiple_measurements_and_reset(mcm_method, postselect, reset):
+def test_multiple_measurements_and_reset(mcm_method, shots, postselect, reset):
     """Tests that DefaultQubit handles a circuit with a single mid-circuit measurement with reset
     and a conditional gate. Multiple measurements of the mid-circuit measurement value are
     performed. This function also tests `reset` parametrizing over the parameter."""
-    shots = 5000
+
+    if mcm_method == "one-shot" and shots is None:
+        pytest.skip("`mcm_method='one-shot'` is incompatible with analytic mode (`shots=None`)")
+
     dev = get_device(shots=shots)
     params = [np.pi / 2.5, np.pi / 3, -np.pi / 3.5]
     obs = qml.PauliY(1)
@@ -232,23 +242,38 @@ def test_multiple_measurements_and_reset(mcm_method, postselect, reset):
         qml.StatePrep(state, wires=[0, 1])
         mcms = obs_tape(x, y, z, reset=reset, postselect=postselect)
         return (
-            qml.counts(op=obs),
-            qml.expval(op=mcms[0]),
-            qml.probs(op=obs),
-            qml.sample(op=mcms[0]),
-            qml.var(op=obs),
+            (
+                qml.expval(op=mcms[0]),
+                qml.probs(op=obs),
+                qml.var(op=obs),
+                qml.expval(op=obs),
+                qml.probs(op=obs),
+                qml.var(op=mcms[0]),
+            )
+            if shots is None
+            else (
+                qml.counts(op=obs),
+                qml.expval(op=mcms[0]),
+                qml.probs(op=obs),
+                qml.sample(op=mcms[0]),
+                qml.var(op=obs),
+            )
         )
 
     results0 = qml.QNode(func, dev, mcm_method=mcm_method)(*params)
     results1 = qml.QNode(func, dev, mcm_method="deferred")(*params)
 
-    for measure_f, r1, r0 in zip(
-        [qml.counts, qml.expval, qml.probs, qml.sample, qml.var], results1, results0
-    ):
+    measurements = (
+        [qml.expval, qml.probs, qml.var, qml.expval, qml.probs, qml.var]
+        if shots is None
+        else [qml.counts, qml.expval, qml.probs, qml.sample, qml.var]
+    )
+    for measure_f, r1, r0 in zip(measurements, results1, results0):
         mcm_utils.validate_measurements(measure_f, shots, r1, r0)
 
 
 @pytest.mark.parametrize("mcm_method", ["one-shot", "tree-traversal"])
+@pytest.mark.parametrize("shots", [None, 3000])
 @pytest.mark.parametrize(
     "mcm_f",
     [
@@ -263,10 +288,16 @@ def test_multiple_measurements_and_reset(mcm_method, postselect, reset):
     ],
 )
 @pytest.mark.parametrize("measure_f", [qml.counts, qml.expval, qml.probs, qml.sample, qml.var])
-def test_composite_mcms(mcm_method, mcm_f, measure_f):
+def test_composite_mcms(mcm_method, shots, mcm_f, measure_f):
     """Tests that DefaultQubit handles a circuit with a composite mid-circuit measurement and a
     conditional gate. A single measurement of a composite mid-circuit measurement is performed
     at the end."""
+
+    if mcm_method == "one-shot" and shots is None:
+        pytest.skip("`mcm_method='one-shot'` is incompatible with analytic mode (`shots=None`)")
+
+    if measure_f in (qml.counts, qml.sample) and shots is None:
+        pytest.skip("Can't measure counts/sample in analytic mode (`shots=None`)")
 
     if measure_f in (qml.expval, qml.var) and (mcm_f in ("list", "mix")):
         pytest.skip(
@@ -277,8 +308,6 @@ def test_composite_mcms(mcm_method, mcm_f, measure_f):
         pytest.skip(
             "Cannot use qml.probs() when measuring multiple mid-circuit measurements collected using arithmetic operators."
         )
-
-    shots = 3000
 
     dev = get_device(shots=shots)
     param = np.pi / 3
@@ -316,6 +345,7 @@ def test_composite_mcms(mcm_method, mcm_f, measure_f):
 )
 def test_counts_return_type(mcm_method, mcm_f):
     """Tests that DefaultQubit returns the same keys for ``qml.counts`` measurements with ``dynamic_one_shot`` and ``defer_measurements``."""
+
     shots = 500
 
     dev = get_device(shots=shots)
@@ -374,12 +404,19 @@ def composite_mcm_gradient_measure_obs(shots, postselect, reset, measure_f):
 
 
 @pytest.mark.parametrize("mcm_method", ["one-shot", "tree-traversal"])
-@pytest.mark.parametrize("shots", [5500, [5500, 5501]])
+@pytest.mark.parametrize("shots", [None, 5500, [5500, 5501]])
 @pytest.mark.parametrize("postselect", [None, 0])
-@pytest.mark.parametrize("measure_fn", [qml.counts, qml.expval, qml.probs, qml.sample])
-def test_broadcasting_qnode(mcm_method, shots, postselect, measure_fn):
+@pytest.mark.parametrize("measure_f", [qml.counts, qml.expval, qml.probs, qml.sample])
+def test_broadcasting_qnode(mcm_method, shots, postselect, measure_f):
     """Test that executing qnodes with broadcasting works as expected"""
-    if measure_fn is qml.sample and postselect is not None:
+
+    if mcm_method == "one-shot" and shots is None:
+        pytest.skip("`mcm_method='one-shot'` is incompatible with analytic mode (`shots=None`)")
+
+    if measure_f in (qml.counts, qml.sample) and shots is None:
+        pytest.skip("Can't measure counts/sample in analytic mode (`shots=None`)")
+
+    if measure_f is qml.sample and postselect is not None:
         pytest.skip("Postselection with samples doesn't work with broadcasting")
 
     dev = get_device(shots=shots)
@@ -388,14 +425,14 @@ def test_broadcasting_qnode(mcm_method, shots, postselect, measure_fn):
 
     def func(x, y):
         obs_tape(x, y, None, postselect=postselect)
-        return measure_fn(op=obs)
+        return measure_f(op=obs)
 
     results0 = qml.QNode(func, dev, mcm_method=mcm_method)(*param)
     results1 = qml.QNode(func, dev, mcm_method="deferred")(*param)
 
-    mcm_utils.validate_measurements(measure_fn, shots, results1, results0, batch_size=2)
+    mcm_utils.validate_measurements(measure_f, shots, results1, results0, batch_size=2)
 
-    if measure_fn is qml.sample and postselect is None:
+    if measure_f is qml.sample and postselect is None:
         for i in range(2):  # batch_size
             if isinstance(shots, list):
                 for s, r1, r2 in zip(shots, results1, results0):
