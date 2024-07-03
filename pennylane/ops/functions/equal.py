@@ -674,6 +674,9 @@ def _equal_measurements(
         if isinstance(op1.mv, MeasurementValue) and isinstance(op2.mv, MeasurementValue):
             return qml.equal(op1.mv, op2.mv)
 
+        if qml.math.is_abstract(op1.mv) or qml.math.is_abstract(op2.mv):
+            return op1.mv is op2.mv
+
         if isinstance(op1.mv, Iterable) and isinstance(op2.mv, Iterable):
             if len(op1.mv) == len(op2.mv):
                 return all(mv1.measurements == mv2.measurements for mv1, mv2 in zip(op1.mv, op2.mv))
