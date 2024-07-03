@@ -91,9 +91,9 @@ def draw(
     .. note::
 
         At most, one of ``level`` or ``expansion_strategy`` needs to be provided. If neither is provided,
-        ``qnode.expansion_strategy`` would be used instead. Users are encouraged to predominantly use ``level``,
-        as it allows for the same values as ``expansion_strategy``, and allows for more flexibility choosing
-        the wanted transforms/expansions.
+        ``qnode.expansion_strategy`` will be used instead. Users are encouraged to predominantly use ``level``,
+        as it allows for the same values as ``expansion_strategy`` and offers more flexibility in choosing
+        the desired transforms/expansions.
 
 
     **Example**
@@ -173,23 +173,19 @@ def draw(
                 qml.StronglyEntanglingLayers(params, wires=range(3))
                 return [qml.expval(qml.Z(i)) for i in range(3)]
 
-            print(qml.draw(longer_circuit, max_length=60)(params))
-
-        .. code-block:: none
-
-            0: ──Rot(0.77,0.44,0.86)─╭●────╭X──Rot(0.45,0.37,0.93)─╭●─╭X
-            1: ──Rot(0.70,0.09,0.98)─╰X─╭●─│───Rot(0.64,0.82,0.44)─│──╰●
-            2: ──Rot(0.76,0.79,0.13)────╰X─╰●──Rot(0.23,0.55,0.06)─╰X───
-
-            ───Rot(0.83,0.63,0.76)──────────────────────╭●────╭X─┤  <Z>
-            ──╭X────────────────────Rot(0.35,0.97,0.89)─╰X─╭●─│──┤  <Z>
-            ──╰●────────────────────Rot(0.78,0.19,0.47)────╰X─╰●─┤  <Z>
+        >>> print(qml.draw(longer_circuit, max_length=60, expansion_strategy="device")(params))
+        0: ──Rot(0.77,0.44,0.86)─╭●────╭X──Rot(0.45,0.37,0.93)─╭●─╭X
+        1: ──Rot(0.70,0.09,0.98)─╰X─╭●─│───Rot(0.64,0.82,0.44)─│──╰●
+        2: ──Rot(0.76,0.79,0.13)────╰X─╰●──Rot(0.23,0.55,0.06)─╰X───
+        ───Rot(0.83,0.63,0.76)──────────────────────╭●────╭X─┤  <Z>
+        ──╭X────────────────────Rot(0.35,0.97,0.89)─╰X─╭●─│──┤  <Z>
+        ──╰●────────────────────Rot(0.78,0.19,0.47)────╰X─╰●─┤  <Z>
 
         The ``wire_order`` keyword specifies the order of the wires from
         top to bottom:
 
         >>> print(qml.draw(circuit, wire_order=[1,0])(a=2.3, w=[1.2, 3.2, 0.7]))
-        1: ────╭RX(2.30)──Rot(1.20,3.20,0.70)─╭RX(-2.30)─┤ ╭<Z@Z>
+        1: ────╭RX(2.30)──Rot(1.20,3.20,0.70,"arbitrary")─╭RX(-2.30)─┤ ╭<Z@Z>
         0: ──H─╰●─────────────────────────────╰●─────────┤ ╰<Z@Z>
 
         If the device or ``wire_order`` has wires not used by operations, those wires are omitted
@@ -207,6 +203,7 @@ def draw(
         .. code-block:: python
 
             from functools import partial
+            from pennylane import numpy as pnp
 
             @partial(qml.gradients.param_shift, shifts=[(0.1,)])
             @qml.qnode(qml.device('default.qubit', wires=1))
@@ -214,13 +211,9 @@ def draw(
                 qml.RX(x, wires=0)
                 return qml.expval(qml.Z(0))
 
-            print(qml.draw(transformed_circuit)(np.array(1.0, requires_grad=True)))
-
-        .. code-block:: none
-
-            0: ──RX(1.10)─┤  <Z>
-
-            0: ──RX(0.90)─┤  <Z>
+        >>> print(qml.draw(transformed_circuit)(pnp.array(1.0, requires_grad=True)))
+        0: ──RX(1.10)─┤  <Z>
+        0: ──RX(0.90)─┤  <Z>
 
         The function also accepts quantum functions rather than QNodes. This can be especially
         helpful if you want to visualize only a part of a circuit that may not be convertible into
@@ -236,7 +229,7 @@ def draw(
         **Levels:**
 
         The ``level`` keyword argument allows one to select a subset of the transforms to apply on the ``QNode``
-        before carrying out any drawing. Take for example this circuit:
+        before carrying out any drawing. Take, for example, this circuit:
 
         .. code-block:: python
 
@@ -271,7 +264,7 @@ def draw(
         1: ─╰RandomLayers(M0)─├Permute─┤
         2: ───────────────────╰Permute─┤
 
-        To apply all of the transforms, including those carried out by the differentitation method and the device, use ``level=None``:
+        To apply all of the transforms, including those carried out by the differentiation method and the device, use ``level=None``:
 
         >>> print(qml.draw(circ, level=None, show_matrices=False)(weights, order))
         0: ──RY(1.00)──╭SWAP─┤  <X>
@@ -446,9 +439,9 @@ def draw_mpl(
     .. note::
 
         At most, one of ``level`` or ``expansion_strategy`` needs to be provided. If neither is provided,
-        ``qnode.expansion_strategy`` would be used instead. Users are encouraged to predominantly use ``level``,
-        as it allows for the same values as ``expansion_strategy``, and allows for more flexibility choosing
-        the wanted transforms/expansions.
+        ``qnode.expansion_strategy`` will be used instead. Users are encouraged to predominantly use ``level``,
+        as it allows for the same values as ``expansion_strategy`` and offers more flexibility in choosing
+        the desired transforms/expansions.
 
     .. warning::
 
