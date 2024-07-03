@@ -260,7 +260,10 @@ def split_non_commuting(
         and isinstance(tape.measurements[0], ExpectationMP)
         and isinstance(tape.measurements[0].obs, (Hamiltonian, Sum))
         and (
-            grouping_strategy in ("default", "qwc")
+            (
+                grouping_strategy in ("default", "qwc")
+                and all(qml.pauli.is_pauli_word(o) for o in tape.measurements[0].obs.terms()[1])
+            )
             or tape.measurements[0].obs.grouping_indices is not None
         )
     ):
