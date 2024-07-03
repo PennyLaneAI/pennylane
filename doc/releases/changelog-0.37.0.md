@@ -8,8 +8,9 @@
 
 * A new `default.tensor` device is now available for performing
   [tensor network](https://en.wikipedia.org/wiki/Tensor_network) and
-  [matrix product state](https://en.wikipedia.org/wiki/Matrix_product_state) simulations using the
-  [`quimb` backend](https://quimb.readthedocs.io/en/latest/).
+  [matrix product state](https://en.wikipedia.org/wiki/Matrix_product_state) simulations
+  of quantum circuits using the
+  [quimb backend](https://quimb.readthedocs.io/en/latest/).
   [(#5699)](https://github.com/PennyLaneAI/pennylane/pull/5699)
   [(#5744)](https://github.com/PennyLaneAI/pennylane/pull/5744)
   [(#5786)](https://github.com/PennyLaneAI/pennylane/pull/5786)
