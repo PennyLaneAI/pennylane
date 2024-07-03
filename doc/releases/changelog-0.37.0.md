@@ -179,7 +179,8 @@ via the `NoiseModel` class and an `add_noise` transform.
   `qml.debug_expval()`, and `qml.debug_tape()`, stepping through the operations in a quantum circuit, and interactively
   adding operations during execution.
 
-  Including `qml.breakpoint()` in a circuit will cause the simulation to pause during execution and bring up the `[pldb]` interactive console:
+  Including `qml.breakpoint()` in a circuit will cause the simulation to pause during execution and bring up the `[pldb]` interactive console.
+  For example, consider the following code in a Python file called `script.py`:
 
   ```python
   @qml.qnode(qml.device('default.qubit', wires=(0,1,2)))
@@ -196,7 +197,7 @@ via the `NoiseModel` class and an `add_noise` transform.
 
   circuit(1.2345)
   ```
-  Upon execution, the simulation pauses at the first breakpoint:
+  Upon executing `script.py`, the simulation pauses at the first breakpoint:
   ```pycon
   > /Users/your/path/to/script.py(8)circuit()
   -> qml.RX(-x, wires=1)
@@ -219,7 +220,7 @@ via the `NoiseModel` class and an `add_noise` transform.
     [0.70710678+0.j 0.        +0.j 0.        +0.j 0.        +0.j
      1.        +0.j 0.70710678+0.j 0.        +0.j 0.        +0.j]
     ```
-  Other debugger functions like `qml.debug_probs()` and `qml.debug_expval()` also function like their simulation counterparts and are described in more detail in the [debugger documentation](https://docs.pennylane.ai/en/stable/code/qml_debugging.html)
+  Other debugger functions like `qml.debug_probs()` and `qml.debug_expval()` also function like their simulation counterparts (`qml.probs` and `qml.expval`, respectively) and are described in more detail in the [debugger documentation](https://docs.pennylane.ai/en/stable/code/qml_debugging.html)
   
   Additionally, standard debugging commands are available to navigate through code:
   - `list` or `longlist` - view the current position and surrounding code.
@@ -266,7 +267,7 @@ via the `NoiseModel` class and an `add_noise` transform.
 
 <h4>Convert between OpenFermion and PennyLane 🤝</h4>
 
-* The ``from_openfermion`` and ``to_openfermion`` are now available to convert between 
+* Two new functions called `qml.from_openfermion` and `qml.to_openfermion` are now available to convert between 
   OpenFermion and PennyLane objects. This includes both fermionic and qubit operators.
   [(#5773)](https://github.com/PennyLaneAI/pennylane/pull/5773)
   [(#5808)](https://github.com/PennyLaneAI/pennylane/pull/5808)
@@ -274,7 +275,8 @@ via the `NoiseModel` class and an `add_noise` transform.
 
   For qubit operators:
   ```pycon
-  >>> of_qubit = 0.5*openfermion.QubitOperator('X0 X5')
+  >>> import openfermion
+  >>> of_qubit = 0.5 * openfermion.QubitOperator('X0 X5')
   >>> type(of_qubit)
   <class 'openfermion.ops.operators.qubit_operator.QubitOperator'>
   >>> pl_qubit = qml.from_openfermion(of_qubit)
@@ -284,7 +286,7 @@ via the `NoiseModel` class and an `add_noise` transform.
   0.5 * (X(0) @ X(5))
   ```
   
-  And for Fermionic operators:
+  And for fermionic operators:
   ```pycon
   >>> of_fermionic = openfermion.FermionOperator('0^ 2')
   >>> type(of_fermionic)
