@@ -622,7 +622,7 @@ def draw_mpl(
         **Levels:**
 
         The ``level`` keyword argument allows one to select a subset of the transforms to apply on the ``QNode``
-        before carrying out any drawing. Take for example this circuit:
+        before carrying out any drawing. Take, for example, this circuit:
 
         .. code-block:: python
 
@@ -655,14 +655,14 @@ def draw_mpl(
         .. code-block:: python
 
             fig, ax = qml.draw_mpl(circ, level="user")()
-            fog.show()
+            fig.show()
 
         .. figure:: ../../_static/draw_mpl/level_user.png
             :align: center
             :width: 60%
             :target: javascript:void(0);
 
-        To apply all of the transforms, including those carried out by the differentitation method and the device, use ``level=None``:
+        To apply all of the transforms, including those carried out by the differentiation method and the device, use ``level=None``:
 
         .. code-block:: python
 

@@ -145,21 +145,39 @@ def specs(qnode, **kwargs):
         First, we can check the resource information of the ``QNode`` without any modifications. Note that ``level=top`` would
         return the same results:
 
-        >>> qml.specs(circuit, level=0)(0.1)["resources"]
-        Resources(num_wires=2, num_gates=6, gate_types=defaultdict(<class 'int'>, {'RandomLayers': 1, 'RX': 2, 'SWAP': 1, 'PauliX': 2}),
-        gate_sizes=defaultdict(<class 'int'>, {2: 2, 1: 4}), depth=6, shots=Shots(total_shots=None, shot_vector=()))
+        >>> print(qml.specs(circuit, level=0)(0.1)["resources"])
+        wires: 2
+        gates: 6
+        depth: 6
+        shots: Shots(total=None)
+        gate_types:
+        {'RandomLayers': 1, 'RX': 2, 'SWAP': 1, 'PauliX': 2}
+        gate_sizes:
+        {2: 2, 1: 4}
 
         We then check the resources after applying all transforms:
 
-        >>> qml.specs(circuit, level=None)(0.1)["resources"]
-        Resources(num_wires=2, num_gates=2, gate_types=defaultdict(<class 'int'>, {'RY': 1, 'RX': 1}),
-        gate_sizes=defaultdict(<class 'int'>, {1: 2}), depth=1, shots=Shots(total_shots=None, shot_vector=()))
+        >>> print(qml.specs(circuit, level=None)(0.1)["resources"])
+        wires: 2
+        gates: 2
+        depth: 1
+        shots: Shots(total=None)
+        gate_types:
+        {'RY': 1, 'RX': 1}
+        gate_sizes:
+        {1: 2}
 
         We can also notice that ``SWAP`` and ``PauliX`` are not present in the circuit if we set ``level=2``:
 
-        >>> qml.specs(circuit, level=2)(0.1)["resources"]
-        Resources(num_wires=2, num_gates=3, gate_types=defaultdict(<class 'int'>, {'RandomLayers': 1, 'RX': 2}),
-        gate_sizes=defaultdict(<class 'int'>, {2: 1, 1: 2}), depth=3, shots=Shots(total_shots=None, shot_vector=()))
+        >>> print(qml.specs(circuit, level=2)(0.1)["resources"])
+        wires: 2
+        gates: 3
+        depth: 3
+        shots: Shots(total=None)
+        gate_types:
+        {'RandomLayers': 1, 'RX': 2}
+        gate_sizes:
+        {2: 1, 1: 2}
 
         If we attempt to only apply the ``merge_rotations`` transform, we would end with only one trainable object, which is in ``RandomLayers``:
 
