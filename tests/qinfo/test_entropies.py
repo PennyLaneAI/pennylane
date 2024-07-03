@@ -22,6 +22,11 @@ from pennylane import numpy as np
 DEP_WARNING_MESSAGE_VN_ENTROPY = (
     "The qml.qinfo.vn_entropy transform is deprecated and will be removed "
     "in 0.40. Instead include the qml.vn_entropy measurement process in the "
+)
+
+DEP_WARNING_MESSAGE_MUTUAL_INFO = (
+    "The qml.qinfo.mutual_info transform is deprecated and will be removed "
+    "in 0.40. Instead include the qml.mutual_info measurement process in the "
     "return line of your QNode."
 )
 
@@ -942,7 +947,12 @@ class TestBroadcasting:
             return qml.state()
 
         x = np.array([0.4, 0.6, 0.8])
-        minfo = qml.qinfo.mutual_info(circuit_state, wires0=[0], wires1=[1])(x)
+
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match=DEP_WARNING_MESSAGE_MUTUAL_INFO,
+        ):
+            minfo = qml.qinfo.mutual_info(circuit_state, wires0=[0], wires1=[1])(x)
 
         expected = [2 * expected_entropy_ising_xx(_x) for _x in x]
         assert qml.math.allclose(minfo, expected)

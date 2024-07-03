@@ -4,6 +4,9 @@ qml.qinfo
 Overview
 --------
 
+.. warning:: 
+    The `qinfo` module is deprecated and scheduled to be removed in v0.40. 
+
 This module provides a collection of methods to return quantum information quantities from :class:`~.QNode`
 returning :func:`~pennylane.state`.
 
