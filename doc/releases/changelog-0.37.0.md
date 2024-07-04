@@ -200,6 +200,7 @@ via the `NoiseModel` class and an `add_noise` transform.
 
   Upon executing `script.py`, the simulation pauses at the first breakpoint:
 
+
   ```pycon
   > /Users/your/path/to/script.py(8)circuit()
   -> qml.RX(-x, wires=1)
