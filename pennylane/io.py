@@ -505,8 +505,8 @@ def from_qasm(quantum_circuit: str, measurements=False):
     """
     try:
         plugin_converter = plugin_converters["qasm"].load()
-    except Exception as e:
-        raise RuntimeError(
+    except Exception as e:  # pragma: no cover
+        raise RuntimeError(  # pragma: no cover
             "Failed to load the qasm plugin. Please ensure that the pennylane-qiskit package is installed."
         ) from e
 
