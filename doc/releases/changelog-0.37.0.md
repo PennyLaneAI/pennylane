@@ -350,6 +350,7 @@
   [(#5838)](https://github.com/PennyLaneAI/pennylane/pull/5838)
   [(#5828)](https://github.com/PennyLaneAI/pennylane/pull/5828)
   [(#5869)](https://github.com/PennyLaneAI/pennylane/pull/5869)
+  [(#5939)](https://github.com/PennyLaneAI/pennylane/pull/5939)
 
 * `qml.devices.LegacyDevice` is now an alias for `qml.Device`, so it is easier to distinguish it from
   `qml.devices.Device`, which follows the new device API.
@@ -442,6 +443,9 @@
   [(#5904)](https://github.com/PennyLaneAI/pennylane/pull/5904)
 
 <h3>Documentation 📝</h3>
+
+* Several links to other functions in measurement process docstrings have been fixed.
+  [(#5913)](https://github.com/PennyLaneAI/pennylane/pull/5913)
 
 * Move information about mid-circuit measurements from the measurements quickstart page to its own
   [mid-circuit measurements quickstart page](https://docs.pennylane.ai/en/stable/introduction/mid_circuit_measurements.html)
