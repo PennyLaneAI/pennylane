@@ -1712,13 +1712,12 @@ class TestMCMConfiguration:
     """Tests for MCM configuration arguments"""
 
     @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.legacy"])
-    @pytest.mark.parametrize("mcm_method", ["one-shot", "tree-traversal"])
-    def test_one_shot_error_without_shots(self, dev_name, mcm_method):
-        """Test that an error is raised if mcm_method="one-shot"/"tree-traversal" with no shots"""
+    def test_one_shot_error_without_shots(self, dev_name):
+        """Test that an error is raised if mcm_method="one-shot" with no shots"""
         dev = qml.device(dev_name, wires=3)
         param = np.pi / 4
 
-        @qml.qnode(dev, mcm_method=mcm_method)
+        @qml.qnode(dev, mcm_method="one-shot")
         def f(x):
             qml.RX(x, 0)
             _ = qml.measure(0)
@@ -1726,7 +1725,7 @@ class TestMCMConfiguration:
 
         with pytest.raises(
             ValueError,
-            match=f"Cannot use the '{mcm_method}' method for mid-circuit measurements with",
+            match="Cannot use the 'one-shot' method for mid-circuit measurements with",
         ):
             _ = f(param)
 
