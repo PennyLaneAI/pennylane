@@ -4,7 +4,7 @@
 
 <h3>New features since last release</h3>
 
-<h4>Execute faster with Default Tensor 🔗</h4>
+<h4>Execute wide circuits with Default Tensor 🔗</h4>
 
 * A new `default.tensor` device is now available for performing
   [tensor network](https://en.wikipedia.org/wiki/Tensor_network) and
@@ -18,8 +18,8 @@
 
   Either method can be selected when instantiating the `default.tensor` device by setting the
   `method` keyword argument to `"tn"` (tensor network) or `"mps"` (matrix product state). This
-  device can simulate a large number of qubits with sensible approximations. Take this example that
-  can simulate 1000 qubits in a few seconds!
+  device can simulate a large number of qubits. Take this example that
+  simulates 1000 qubits with a shallow circuit in a few seconds!
 
   ```python
   import pennylane as qml
@@ -40,11 +40,10 @@
   tensor(0., requires_grad=True)
   ```
 
-  Additional configuration settings like the matrix product state bond dimension can be specified
-  when instantiating `default.tensor` (see the
+  For matrix product state simulations (`method="mps"`), we can make the exeuction approximate by setting `max_bond_dim` (see the
   [device's documentation](https://docs.pennylane.ai/en/stable/code/api/pennylane.devices.default_tensor.DefaultTensor.html)
   for more details).
-  These settings have implications for the speed and accuracy of the simulation, as shown in the
+  The maximum bond dimension lets us control the degree of the approximation and has implications for the speed of the simulation, as shown in the
   following example. First, set up the circuit:
 
   ```python
@@ -524,6 +523,7 @@ via the `NoiseModel` class and an `add_noise` transform.
   [(#5838)](https://github.com/PennyLaneAI/pennylane/pull/5838)
   [(#5828)](https://github.com/PennyLaneAI/pennylane/pull/5828)
   [(#5869)](https://github.com/PennyLaneAI/pennylane/pull/5869)
+  [(#5939)](https://github.com/PennyLaneAI/pennylane/pull/5939)
 
 * `qml.devices.LegacyDevice` is now an alias for `qml.Device`, so it is easier to distinguish it from
   `qml.devices.Device`, which follows the new device API.
@@ -629,6 +629,9 @@ via the `NoiseModel` class and an `add_noise` transform.
 * The `qml.qchem` docs have been updated to showcase the new improvements.
   [(#5758)](https://github.com/PennyLaneAI/pennylane/pull/5758/)
   [(#5638)](https://github.com/PennyLaneAI/pennylane/pull/5638/)
+
+* Several links to other functions in measurement process docstrings have been fixed.
+  [(#5913)](https://github.com/PennyLaneAI/pennylane/pull/5913)
 
 * Information about mid-circuit measurements has been moved from the measurements quickstart page to its own
   [mid-circuit measurements quickstart page](https://docs.pennylane.ai/en/stable/introduction/mid_circuit_measurements.html)
