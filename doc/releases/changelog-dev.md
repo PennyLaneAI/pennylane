@@ -12,7 +12,8 @@
 
 * The `tree-traversal` algorithm implemented in `default.qubit` is refactored
   into an iterative instead of recursive implementation, doing away with
-  potential stack overflow for deep circuits.
+  potential stack overflow for deep circuits. `tree-traversal` is compatible with
+  analytic-mode execution (`shots=None`).
   [(#5868)](https://github.com/PennyLaneAI/pennylane/pull/5868)
 
 <h3>Breaking changes 💔</h3>
