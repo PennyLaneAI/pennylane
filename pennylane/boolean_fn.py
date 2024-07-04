@@ -22,7 +22,7 @@ import functools
 # pylint: disable=unnecessary-lambda
 class BooleanFn:
     r"""Wrapper for simple callables with Boolean output that can be
-    manipulated and combined with bit-wise operators.
+    manipulated and combined with bitwise operators.
 
     Args:
         fn (callable): Function to be wrapped. It can accept any number
@@ -103,7 +103,7 @@ class BooleanFn:
 
     @property
     def bitwise(self):
-        """Determine whether wrapped callable performs a bit-wise operation or not.
+        """Determine whether wrapped callable performs a bitwise operation or not.
         This checks for the ``operands`` attribute that should be defined by it."""
         return bool(getattr(self, "operands", tuple()))
 
@@ -115,12 +115,12 @@ class BooleanFn:
 
 
 class And(BooleanFn):
-    """Developer facing class for implemeting bit-wise ``AND`` for callables
+    """Developer facing class for implemeting bitwise ``AND`` for callables
     wrapped up with :class:`BooleanFn <pennylane.BooleanFn>`.
 
     Args:
-        left (~.BooleanFn): Left operand in the bit-wise expression.
-        right (~.BooleanFn): Right operand in the bit-wise expression.
+        left (~.BooleanFn): Left operand in the bitwise expression.
+        right (~.BooleanFn): Right operand in the bitwise expression.
     """
 
     def __init__(self, left, right):
@@ -139,12 +139,12 @@ class And(BooleanFn):
 
 
 class Or(BooleanFn):
-    """Developer facing class for implemeting bit-wise ``OR`` for callables
+    """Developer facing class for implemeting bitwise ``OR`` for callables
     wrapped up with :class:`BooleanFn <pennylane.BooleanFn>`.
 
     Args:
-        left (~.BooleanFn): Left operand in the bit-wise expression.
-        right (~.BooleanFn): Right operand in the bit-wise expression.
+        left (~.BooleanFn): Left operand in the bitwise expression.
+        right (~.BooleanFn): Right operand in the bitwise expression.
     """
 
     def __init__(self, left, right):
@@ -163,12 +163,12 @@ class Or(BooleanFn):
 
 
 class Xor(BooleanFn):
-    """Developer facing class for implemeting bit-wise ``XOR`` for callables
+    """Developer facing class for implemeting bitwise ``XOR`` for callables
     wrapped up with :class:`BooleanFn <pennylane.BooleanFn>`.
 
     Args:
-        left (~.BooleanFn): Left operand in the bit-wise expression.
-        right (~.BooleanFn): Right operand in the bit-wise expression.
+        left (~.BooleanFn): Left operand in the bitwise expression.
+        right (~.BooleanFn): Right operand in the bitwise expression.
     """
 
     def __init__(self, left, right):
@@ -187,11 +187,11 @@ class Xor(BooleanFn):
 
 
 class Not(BooleanFn):
-    """Developer facing class for implemeting bit-wise ``NOT`` for callables
+    """Developer facing class for implemeting bitwise ``NOT`` for callables
     wrapped up with :class:`BooleanFn <pennylane.BooleanFn>`.
 
     Args:
-        left (~.BooleanFn): Left operand in the bit-wise expression.
+        left (~.BooleanFn): Left operand in the bitwise expression.
     """
 
     def __init__(self, left):
