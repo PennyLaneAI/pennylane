@@ -81,12 +81,13 @@ def fermionic_observable(constant, one=None, two=None, cutoff=1.0e-12):
         coeffs = qml.math.concatenate((coeffs, coeffs_two))
         operators = operators + operators_two
 
-    indices_sort = [operators.index(i) for i in sorted(operators)]
+    operators_sort = sorted(operators, key=lambda x: x[0:])
+    indices_sort = [operators.index(i) for i in operators_sort]
     if indices_sort:
         indices_sort = qml.math.array(indices_sort)
 
     sentence = FermiSentence({FermiWord({}): constant[0]})
-    for c, o in zip(coeffs[indices_sort], sorted(operators)):
+    for c, o in zip(coeffs[indices_sort], operators_sort):
         if len(o) == 2:
             sentence.update({FermiWord({(0, o[0]): "+", (1, o[1]): "-"}): c})
         if len(o) == 4:
