@@ -157,6 +157,7 @@ def ctrl_decomp_zyz(target_operation: Operator, control_wires: Wires):
     decomposed controlled version of using `qml.ctrl_decomp_zyz`.
 
     .. code-block:: python
+
         import pennylane as qml
 
         dev = qml.device("default.qubit", wires=2)
