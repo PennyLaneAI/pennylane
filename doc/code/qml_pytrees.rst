@@ -11,4 +11,3 @@ qml.utils
 .. automodapi:: pennylane.pytrees
     :no-heading:
     :include-all-objects:
-    :skip: Iterable

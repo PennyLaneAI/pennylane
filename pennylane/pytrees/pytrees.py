@@ -233,7 +233,7 @@ def flatten(obj: Any) -> tuple[list[Any], PyTreeStructure]:
     >>> structure
     <PyTree(AdjointOperation, (), (<PyTree(Rot, (<Wires = [0]>, ()), (Leaf, Leaf, Leaf))>,))>
 
-    See also :function:`~.unflatten`.
+    See also :func:`~.unflatten`.
 
     """
     flatten_fn = flatten_registrations.get(type(obj), None)
@@ -262,7 +262,7 @@ def unflatten(data: list[Any], structure: PyTreeStructure) -> Any:
     Returns:
         A repacked pytree.
 
-    .. seealso:: :function:`~.flatten`
+    .. seealso:: :func:`~.flatten`
 
     >>> op = qml.adjoint(qml.Rot(1.2, 2.3, 3.4, wires=0))
     >>> data, structure = flatten(op)
