@@ -907,7 +907,6 @@ def param_shift(
 
     .. code-block:: python
 
-        import pennylane as qml
         from pennylane import numpy as pnp
 
         dev = qml.device("default.qubit")
