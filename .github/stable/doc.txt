@@ -10,7 +10,7 @@ autograd==1.6.2
 autoray==0.6.12
 Babel==2.15.0
 cachetools==5.3.3
-certifi==2024.6.2
+certifi==2024.7.4
 charset-normalizer==3.3.2
 cirq-core==1.3.0
 contourpy==1.2.1
