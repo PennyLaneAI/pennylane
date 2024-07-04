@@ -523,6 +523,7 @@ via the `NoiseModel` class and an `add_noise` transform.
   [(#5838)](https://github.com/PennyLaneAI/pennylane/pull/5838)
   [(#5828)](https://github.com/PennyLaneAI/pennylane/pull/5828)
   [(#5869)](https://github.com/PennyLaneAI/pennylane/pull/5869)
+  [(#5939)](https://github.com/PennyLaneAI/pennylane/pull/5939)
 
 * `qml.devices.LegacyDevice` is now an alias for `qml.Device`, so it is easier to distinguish it from
   `qml.devices.Device`, which follows the new device API.
@@ -628,6 +629,9 @@ via the `NoiseModel` class and an `add_noise` transform.
 * The `qml.qchem` docs have been updated to showcase the new improvements.
   [(#5758)](https://github.com/PennyLaneAI/pennylane/pull/5758/)
   [(#5638)](https://github.com/PennyLaneAI/pennylane/pull/5638/)
+
+* Several links to other functions in measurement process docstrings have been fixed.
+  [(#5913)](https://github.com/PennyLaneAI/pennylane/pull/5913)
 
 * Information about mid-circuit measurements has been moved from the measurements quickstart page to its own
   [mid-circuit measurements quickstart page](https://docs.pennylane.ai/en/stable/introduction/mid_circuit_measurements.html)
