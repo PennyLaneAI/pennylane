@@ -81,11 +81,7 @@ def fermionic_observable(constant, one=None, two=None, cutoff=1.0e-12):
         coeffs = qml.math.concatenate((coeffs, coeffs_two))
         operators = operators + operators_two
 
-    operators_sort = (
-        operators[0]
-        + sorted(operators_one, key=lambda x: x[0:])
-        + sorted(operators_two, key=lambda x: x[0:])
-    )
+    operators_sort = sorted(operators)
     indices_sort = [operators.index(i) for i in operators_sort]
     if indices_sort:
         indices_sort = qml.math.array(indices_sort)
@@ -146,6 +142,10 @@ def qubit_observable(o_ferm, cutoff=1.0e-12, mapping="jordan_wigner"):
     elif mapping == "bravyi_kitaev":
         qubits = len(o_ferm.wires)
         h = qml.bravyi_kitaev(o_ferm, qubits, ps=True, tol=cutoff)
+
+    hwires = h.wires.tolist()
+    if hwires != sorted(hwires):
+        h = h.map_wires(dict(zip(hwires, sorted(hwires))))
 
     h.simplify(tol=cutoff)
 
