@@ -351,6 +351,7 @@
   [(#5828)](https://github.com/PennyLaneAI/pennylane/pull/5828)
   [(#5869)](https://github.com/PennyLaneAI/pennylane/pull/5869)
   [(#5939)](https://github.com/PennyLaneAI/pennylane/pull/5939)
+  [(#5945)](https://github.com/PennyLaneAI/pennylane/pull/5945)
 
 * `qml.devices.LegacyDevice` is now an alias for `qml.Device`, so it is easier to distinguish it from
   `qml.devices.Device`, which follows the new device API.
