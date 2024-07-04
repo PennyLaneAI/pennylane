@@ -4,7 +4,7 @@
 
 <h3>New features since last release</h3>
 
-<h4>Execute faster with Default Tensor 🔗</h4>
+<h4>Execute wide circuits with Default Tensor 🔗</h4>
 
 * A new `default.tensor` device is now available for performing
   [tensor network](https://en.wikipedia.org/wiki/Tensor_network) and
@@ -40,11 +40,10 @@
   tensor(0., requires_grad=True)
   ```
 
-  Additional configuration settings like the matrix product state bond dimension can be specified
-  when instantiating `default.tensor` (see the
+  For matrix product state simulations (`method="mps"`), we can make the exeuction approximate by setting `max_bond_dim` (see the
   [device's documentation](https://docs.pennylane.ai/en/stable/code/api/pennylane.devices.default_tensor.DefaultTensor.html)
   for more details).
-  These settings have implications for the speed and accuracy of the simulation, as shown in the
+  The maximum bond dimension lets us control the degree of the approximation and has implications for the speed of the simulation, as shown in the
   following example. First, set up the circuit:
 
   ```python
