@@ -179,7 +179,7 @@ via the `NoiseModel` class and an `add_noise` transform.
   `qml.debug_expval()`, and `qml.debug_tape()`, stepping through the operations in a quantum circuit, and interactively
   adding operations during execution.
 
-  Including `qml.breakpoint()` in a circuit will cause the simulation to pause during execution and bring up the `[pldb]` interactive console.
+  Including `qml.breakpoint()` in a circuit will cause the simulation to pause during execution and bring up the interactive console.
   For example, consider the following code in a Python file called `script.py`:
 
   ```python
@@ -197,30 +197,31 @@ via the `NoiseModel` class and an `add_noise` transform.
 
   circuit(1.2345)
   ```
+
   Upon executing `script.py`, the simulation pauses at the first breakpoint:
+
   ```pycon
   > /Users/your/path/to/script.py(8)circuit()
   -> qml.RX(-x, wires=1)
-  [pldb]:
+  (pldb):
   ```
 
   While debugging, we can access circuit information.
   `qml.debug_tape()` returns the tape of the circuit, giving access to its operations and drawing:
-  
-  ```
-  [pldb] tape = qml.debug_tape()
-  [pldb]: print(tape.draw(wire_order=[0,1,2]))
-  0: ──H─╭●─────┤  
-  1: ────│───RX─┤  
-  2: ────╰X──RY─┤ 
-  [pldb]: tape.operations
+
+  ```pycon
+  (pldb): tape = qml.debug_tape()
+  (pldb): print(tape.draw(wire_order=[0,1,2]))
+  0: ──H─╭●─┤  
+  2: ────╰X─┤  
+  (pldb): tape.operations
   [Hadamard(wires=[0]), CNOT(wires=[0, 2])]
   ```
 
-  A `qml.debug_state()` is equivalent to `qml.state()` and gives the current state:
+  `qml.debug_state()` is equivalent to `qml.state()` and gives the current state:
 
   ```pycon
-  [pldb]: print(qml.debug_state())
+  (pldb): print(qml.debug_state())
   [0.70710678+0.j 0.        +0.j 0.        +0.j 0.        +0.j
     1.        +0.j 0.70710678+0.j 0.        +0.j 0.        +0.j]
   ```
@@ -232,14 +233,11 @@ via the `NoiseModel` class and an `add_noise` transform.
   Finally, to modify a circuit mid-run, simply call the desired PennyLane operations:
 
   ```pycon
-  > /Users/your/path/to/script.py(12)circuit()
-  -> return qml.sample()
-  [pldb] qml.CNOT(wires=(0,2))
+  (pldb) qml.CNOT(wires=(0,2))
   CNOT(wires=[0, 2])
-  [pldb]: print(qml.debug_tape().draw(wire_order=[0,1,2]))
-  0: ──H─╭●─────╭●─┤  
-  1: ────│───RX─│──┤  
-  2: ────╰X──RY─╰X─┤ 
+  (pldb): print(qml.debug_tape().draw(wire_order=[0,1,2]))
+  0: ──H─╭●─╭●─┤  
+  2: ────╰X─╰X─┤  
   ```
 
 <h4>Convert between OpenFermion and PennyLane 🤝</h4>
@@ -249,21 +247,9 @@ via the `NoiseModel` class and an `add_noise` transform.
   [(#5773)](https://github.com/PennyLaneAI/pennylane/pull/5773)
   [(#5808)](https://github.com/PennyLaneAI/pennylane/pull/5808)
   [(#5881)](https://github.com/PennyLaneAI/pennylane/pull/5881)
-
-  For qubit operators:
-  ```pycon
-  >>> import openfermion
-  >>> of_qubit = 0.5 * openfermion.QubitOperator('X0 X5')
-  >>> type(of_qubit)
-  <class 'openfermion.ops.operators.qubit_operator.QubitOperator'>
-  >>> pl_qubit = qml.from_openfermion(of_qubit)
-  >>> type(pl_qubit)
-  <class 'pennylane.ops.op_math.linear_combination.LinearCombination'>
-  >>> print(pl_qubit)
-  0.5 * (X(0) @ X(5))
-  ```
   
-  And for fermionic operators:
+  For fermionic operators:
+
   ```pycon
   >>> of_fermionic = openfermion.FermionOperator('0^ 2')
   >>> type(of_fermionic)
@@ -273,6 +259,16 @@ via the `NoiseModel` class and an `add_noise` transform.
   <class 'pennylane.fermi.fermionic.FermiWord'>
   >>> print(pl_fermionic)
   a⁺(0) a(2)
+  ```
+
+  And for qubit operators:
+
+  ```pycon
+  >>> import openfermion
+  >>> of_qubit = 0.5 * openfermion.QubitOperator('X0 X5')
+  >>> pl_qubit = qml.from_openfermion(of_qubit)
+  >>> print(pl_qubit)
+  0.5 * (X(0) @ X(5))
   ```
 
 <h4>Better control over when drawing and specs take place 🎚️</h4>
