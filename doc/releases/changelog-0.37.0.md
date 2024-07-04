@@ -205,6 +205,7 @@ via the `NoiseModel` class and an `add_noise` transform.
   ```
   While debugging, we can access circuit information:
   - `qml.debug_tape()` - returns the tape of the circuit, giving access to its operations and drawing.
+
     ```pycon
     [pldb]: tape = qml.debug_tape()
     [pldb]: print(tape.draw(wire_order=[0,1,2]))
@@ -214,12 +215,15 @@ via the `NoiseModel` class and an `add_noise` transform.
     [pldb]: tape.operations
     [Hadamard(wires=[0]), CNOT(wires=[0, 2])]
     ```
+
   - `qml.debug_state()` - equivalent to `qml.state()`, gives the current state.
+
     ```pycon
     [pldb]: print(qml.debug_state())
     [0.70710678+0.j 0.        +0.j 0.        +0.j 0.        +0.j
      1.        +0.j 0.70710678+0.j 0.        +0.j 0.        +0.j]
     ```
+
   Other debugger functions like `qml.debug_probs()` and `qml.debug_expval()` also function like their simulation counterparts (`qml.probs` and `qml.expval`, respectively) and are described in more detail in the [debugger documentation](https://docs.pennylane.ai/en/stable/code/qml_debugging.html)
   
   Additionally, standard debugging commands are available to navigate through code:
