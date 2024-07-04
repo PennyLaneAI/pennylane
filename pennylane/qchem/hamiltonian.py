@@ -363,7 +363,7 @@ def molecular_hamiltonian(*args, **kwargs):
             from pennylane import qchem
 
             symbols = ["H", "H"]
-            geometry = [[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]
+            geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])
 
             H, qubit = qchem.molecular_hamiltonian(symbols, geometry, charge=0)
 
