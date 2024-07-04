@@ -82,7 +82,7 @@ class TreeTraversalStack:
         self.results_1 = [None] * n
         self.states = [None] * n
 
-    def is_empty(self, depth):
+    def any_is_empty(self, depth):
         """Return True if any result at ``depth`` is ``None`` and False otherwise."""
         return self.results_0[depth] is None or self.results_1[depth] is None
 
@@ -467,7 +467,7 @@ def simulate_tree_mcm(
     # and to combine them into the final result. Exit the loop once the
     # zero-branch and one-branch measurements are available.
     depth = 0
-    while stack.is_empty(1):
+    while stack.any_is_empty(1):
 
         # Combine two leaves once measurements are available
         if stack.is_full(depth):
