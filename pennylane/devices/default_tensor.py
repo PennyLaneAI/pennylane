@@ -54,6 +54,9 @@ QuantumTape_or_Batch = Union[QuantumTape, QuantumTapeBatch]
 PostprocessingFn = Callable[[ResultBatch], Result_or_ResultBatch]
 
 has_quimb = True
+
+warnings.filterwarnings("ignore", message=".*kahypar")
+
 try:
     import quimb.tensor as qtn
 except (ModuleNotFoundError, ImportError) as import_error:  # pragma: no cover
