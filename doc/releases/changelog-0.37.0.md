@@ -443,6 +443,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Skip `Projector`-measurement tests on devices that do not support it.
+  [(#5951)](https://github.com/PennyLaneAI/pennylane/pull/5951)
+
 * Fixes a bug where `hadamard_grad` returned a wrong shape for `qml.probs()` without wires.
   [(#5860)](https://github.com/PennyLaneAI/pennylane/pull/5860)
 
