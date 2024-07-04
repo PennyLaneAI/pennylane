@@ -197,14 +197,17 @@ via the `NoiseModel` class and an `add_noise` transform.
 
   circuit(1.2345)
   ```
+  
   Upon executing `script.py`, the simulation pauses at the first breakpoint:
+
   ```pycon
   > /Users/your/path/to/script.py(8)circuit()
   -> qml.RX(-x, wires=1)
   [pldb]:
   ```
+
   While debugging, we can access circuit information:
-  - `qml.debug_tape()` - returns the tape of the circuit, giving access to its operations and drawing.
+  * `qml.debug_tape()` - returns the tape of the circuit, giving access to its operations and drawing.
 
     ```pycon
     [pldb]: tape = qml.debug_tape()
@@ -216,7 +219,7 @@ via the `NoiseModel` class and an `add_noise` transform.
     [Hadamard(wires=[0]), CNOT(wires=[0, 2])]
     ```
 
-  - `qml.debug_state()` - equivalent to `qml.state()`, gives the current state.
+  * `qml.debug_state()` - equivalent to `qml.state()`, gives the current state.
 
     ```pycon
     [pldb]: print(qml.debug_state())
@@ -227,7 +230,8 @@ via the `NoiseModel` class and an `add_noise` transform.
   Other debugger functions like `qml.debug_probs()` and `qml.debug_expval()` also function like their simulation counterparts (`qml.probs` and `qml.expval`, respectively) and are described in more detail in the [debugger documentation](https://docs.pennylane.ai/en/stable/code/qml_debugging.html)
   
   Additionally, standard debugging commands are available to navigate through code:
-  - `list` or `longlist` - view the current position and surrounding code.
+  * `list` or `longlist` - view the current position and surrounding code.
+
     ```pycon
     [pldb]: longlist
      2     @qml.qnode(qml.device('default.qubit', wires=(0,1,2)))
@@ -242,19 +246,24 @@ via the `NoiseModel` class and an `add_noise` transform.
     11  
     12         return qml.sample()
     ```
-  - `next` - apply the next operation in the circuit.
+
+  * `next` - apply the next operation in the circuit.
+
     ```pycon
     [pldb]: next
     > /Users/your/path/to/script.py(9)circuit()
     -> qml.RY(-x, wires=2)
     ```
-  - `continue` - continue to execute the code until another breakpoint is reached.
+
+  * `continue` - continue to execute the code until another breakpoint is reached.
+  
     ```pycon
     [pldb]: continue
     > /Users/your/path/to/script.py(12)circuit()
     -> return qml.sample()
     ```
-  - `quit` - exit debugging.
+
+  * `quit` - exit debugging.
   
   Finally, to modify a circuit mid-run, simply call the desired PennyLane operations:
 
