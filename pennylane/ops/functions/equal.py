@@ -56,38 +56,33 @@ def equal(
     rtol=1e-5,
     atol=1e-9,
 ) -> bool:
-    r"""Function for determining operator or measurement equality.
+    r"""Function for determining operator, measurement, and tape equality.
 
     .. Warning::
 
-        The ``qml.equal`` function is based on a comparison of the type and attributes
-        of the measurement or operator, not a mathematical representation. While
-        comparisons between some classes, such as ``Tensor`` and ``Hamiltonian``, are
-        supported, mathematically equivalent operators defined via different classes
-        may return False when compared via ``qml.equal``.
-
-        To be more thorough would require the matrix forms to be calculated, which may
-        drastically increase runtime.
+        The ``qml.equal`` function is based on a comparison of the types and attributes of the
+        measurements or operators, not their mathematical representations. While mathematical
+        comparisons between some classes, such as ``Tensor`` and ``Hamiltonian``,  are supported,
+        mathematically equivalent operators defined via different classes may return False when
+        compared via ``qml.equal``. To be more thorough would require the matrix forms to be
+        calculated, which may drastically increase runtime.
 
     .. Warning::
 
-        The kwargs ``check_interface`` and ``check_trainability`` can only be set when
-        comparing ``Operation`` objects. Comparisons of ``MeasurementProcess``
-        or ``Observable`` objects will use the default value of ``True`` for both, regardless
-        of what the user specifies when calling the function. For subclasses of ``SymbolicOp``
-        or ``CompositeOp`` with an ``Operation`` as a base, the kwargs will be applied to the base
-        comparison.
+        The interfaces and trainability of data within some observables including ``Tensor``,
+        ``Hamiltonian``, ``Prod``, ``Sum`` are sometimes ignored, regardless of what the user
+        specifies for ``check_interface`` and ``check_trainability``.
 
     Args:
         op1 (.Operator or .MeasurementProcess or .QuantumTape): First object to compare
         op2 (.Operator or .MeasurementProcess or .QuantumTape): Second object to compare
-        check_interface (bool, optional): Whether to compare interfaces. Default: ``True``. Not used for comparing ``MeasurementProcess``, ``Hamiltonian`` or ``Tensor`` objects.
-        check_trainability (bool, optional): Whether to compare trainability status. Default: ``True``. Not used for comparing ``MeasurementProcess``, ``Hamiltonian`` or ``Tensor`` objects.
-        rtol (float, optional): Relative tolerance for parameters. Not used for comparing ``MeasurementProcess``, ``Hamiltonian`` or ``Tensor`` objects.
-        atol (float, optional): Absolute tolerance for parameters. Not used for comparing ``MeasurementProcess``, ``Hamiltonian`` or ``Tensor`` objects.
+        check_interface (bool, optional): Whether to compare interfaces. Default: ``True``.
+        check_trainability (bool, optional): Whether to compare trainability status. Default: ``True``.
+        rtol (float, optional): Relative tolerance for parameters.
+        atol (float, optional): Absolute tolerance for parameters.
 
     Returns:
-        bool: ``True`` if the operators or measurement processes are equal, else ``False``
+        bool: ``True`` if the operators, measurement processes, or tapes are equal, else ``False``
 
     **Example**
 
@@ -131,13 +126,7 @@ def equal(
     .. details::
         :title: Usage Details
 
-        You can use the optional arguments to get more specific results. Additionally, they are
-        applied when comparing the base of ``SymbolicOp`` and ``CompositeOp`` operators such as
-        ``Controlled``, ``Pow``, ``SProd``, ``Prod``, etc., if the base is an ``Operation``. These arguments
-        are, however, not used for comparing ``MeasurementProcess``, ``Hamiltonian`` or ``Tensor``
-        objects.
-
-        Consider the following comparisons:
+        You can use the optional arguments to get more specific results:
 
         >>> op1 = qml.RX(torch.tensor(1.2), wires=0)
         >>> op2 = qml.RX(jax.numpy.array(1.2), wires=0)
@@ -160,6 +149,7 @@ def equal(
 
         >>> qml.equal(Controlled(op3, control_wires=1), Controlled(op4, control_wires=1), check_trainability=False)
         True
+
     """
 
     if isinstance(op2, (Hamiltonian, Tensor)):
@@ -186,17 +176,15 @@ def assert_equal(
     rtol=1e-5,
     atol=1e-9,
 ) -> None:
-    """Function to assert that two operators are equal with the requested configuration.
+    """Function to assert that two operators, measurements, or tapes are equal
 
     Args:
         op1 (.Operator or .MeasurementProcess or .QuantumTape): First object to compare
         op2 (.Operator or .MeasurementProcess or .QuantumTape): Second object to compare
         check_interface (bool, optional): Whether to compare interfaces. Default: ``True``.
-            Not used for comparing ``MeasurementProcess``, ``Hamiltonian`` or ``Tensor`` objects.
         check_trainability (bool, optional): Whether to compare trainability status. Default: ``True``.
-            Not used for comparing ``MeasurementProcess``, ``Hamiltonian`` or ``Tensor`` objects.
-        rtol (float, optional): Relative tolerance for parameters. Not used for comparing ``MeasurementProcess``, ``Hamiltonian`` or ``Tensor`` objects.
-        atol (float, optional): Absolute tolerance for parameters. Not used for comparing ``MeasurementProcess``, ``Hamiltonian`` or ``Tensor`` objects.
+        rtol (float, optional): Relative tolerance for parameters.
+        atol (float, optional): Absolute tolerance for parameters.
 
     Returns:
         None
@@ -673,6 +661,9 @@ def _equal_measurements(
     if op1.mv is not None and op2.mv is not None:
         if isinstance(op1.mv, MeasurementValue) and isinstance(op2.mv, MeasurementValue):
             return qml.equal(op1.mv, op2.mv)
+
+        if qml.math.is_abstract(op1.mv) or qml.math.is_abstract(op2.mv):
+            return op1.mv is op2.mv
 
         if isinstance(op1.mv, Iterable) and isinstance(op2.mv, Iterable):
             if len(op1.mv) == len(op2.mv):

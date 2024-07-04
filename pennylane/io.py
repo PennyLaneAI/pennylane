@@ -465,7 +465,7 @@ def from_qasm(quantum_circuit: str, measurements=False):
                          'measure q -> c;'
 
         dev = qml.device("default.qubit")
-        loaded_circuit = qml.from_qasm(hadamard_qasm)
+        loaded_circuit = qml.from_qasm(hadamard_qasm, measurements=None)
 
         @qml.qnode(dev)
         def circuit():
@@ -503,16 +503,23 @@ def from_qasm(quantum_circuit: str, measurements=False):
         function: the PennyLane template created based on the QASM string
 
     """
-    plugin_converter = plugin_converters["qasm"].load()
+    try:
+        plugin_converter = plugin_converters["qasm"].load()
+    except Exception as e:  # pragma: no cover
+        raise RuntimeError(  # pragma: no cover
+            "Failed to load the qasm plugin. Please ensure that the pennylane-qiskit package is installed."
+        ) from e
+
     if measurements is False:
-        warnings.warn(
-            "The current default behaviour of removing measurements in the QASM code is "
-            "deprecated. Set measurements=None to keep the existing measurements in the QASM "
-            "code or set measurements=[] to remove them from the returned circuit. Starting "
-            "in version 0.38, measurements=None will be the new default.",
-            qml.PennyLaneDeprecationWarning,
-        )
         measurements = []
+        if "measure" in quantum_circuit:
+            warnings.warn(
+                "The current default behaviour of removing measurements in the QASM code "
+                "is deprecated. Set measurements=None to keep existing measurements in the QASM "
+                "code or set measurements=[] to remove them from the returned circuit. Starting "
+                "in version 0.38, measurements=None will be the new default.",
+                qml.PennyLaneDeprecationWarning,
+            )
     return plugin_converter(quantum_circuit, measurements=measurements)
 
 

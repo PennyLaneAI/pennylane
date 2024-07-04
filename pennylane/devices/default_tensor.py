@@ -54,6 +54,9 @@ QuantumTape_or_Batch = Union[QuantumTape, QuantumTapeBatch]
 PostprocessingFn = Callable[[ResultBatch], Result_or_ResultBatch]
 
 has_quimb = True
+
+warnings.filterwarnings("ignore", message=".*kahypar")
+
 try:
     import quimb.tensor as qtn
 except (ModuleNotFoundError, ImportError) as import_error:  # pragma: no cover
@@ -669,13 +672,19 @@ class DefaultTensor(Device):
             self._quimb_circuit = self._initial_quimb_circuit(
                 wires,
                 psi0=self._initial_mps(
-                    op.wires, basis_state="".join(str(int(b)) for b in op.parameters[0])
+                    op.wires,
+                    basis_state="".join(
+                        str(int(b)) for b in op.parameters[0].astype(self._c_dtype)
+                    ),
                 ),
             )
         elif operations and isinstance(operations[0], qml.StatePrep):
             op = operations.pop(0)
             self._quimb_circuit = self._initial_quimb_circuit(
-                wires, psi0=qtn.MatrixProductState.from_dense(op.state_vector())
+                wires,
+                psi0=qtn.MatrixProductState.from_dense(
+                    op.state_vector(wire_order=wires).astype(self._c_dtype)
+                ),
             )
         else:
             self._quimb_circuit = self._initial_quimb_circuit(wires)
