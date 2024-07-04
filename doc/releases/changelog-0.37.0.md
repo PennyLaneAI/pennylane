@@ -144,7 +144,7 @@
   [(#5517)](https://github.com/PennyLaneAI/pennylane/pull/5517)
 
 * The sorting order of parameter-shift terms is now guaranteed to resolve ties in the absolute value with the sign of the shifts.
-  [(#5582)](https://github.com/PennyLaneAI/pennylane/pull/5582)
+  [(#5583)](https://github.com/PennyLaneAI/pennylane/pull/5582)
 
 * `qml.transforms.split_non_commuting` can now handle circuits containing measurements of multi-term observables.
   [(#5729)](https://github.com/PennyLaneAI/pennylane/pull/5729)
