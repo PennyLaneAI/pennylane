@@ -53,7 +53,7 @@ quantum circuit. One can construct standard Boolean functions using the followin
 For example, a Boolean function that checks of an operation is on wire ``0`` can be created
 like so:
 
->>> fn = wires_eq(0)
+>>> fn = qml.noise.wires_eq(0)
 >>> op1, op2 = qml.PauliX(0), qml.PauliX(1)
 >>> fn(op1)
 False

@@ -192,10 +192,6 @@ def assert_equal(
     Raises:
         AssertionError: An ``AssertionError`` is raised if the two operators are not equal.
 
-    .. warning::
-
-        This function is still under developement.
-
     .. seealso::
 
         :func:`~.equal`
@@ -204,7 +200,7 @@ def assert_equal(
 
     >>> op1 = qml.RX(np.array(0.12), wires=0)
     >>> op2 = qml.RX(np.array(1.23), wires=0)
-    >>> qml.assert_equal(op1, op1)
+    >>> qml.assert_equal(op1, op2)
     AssertionError: op1 and op2 have different data.
     Got (array(0.12),) and (array(1.23),)
 
