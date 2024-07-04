@@ -14,8 +14,8 @@
 """
 This submodule defines the symbolic operation that indicates the adjoint of an operator.
 """
-from functools import wraps
-from typing import Callable
+from functools import lru_cache, partial, wraps
+from typing import Callable, overload
 
 import pennylane as qml
 from pennylane.compiler import compiler
@@ -27,7 +27,10 @@ from pennylane.tape import make_qscript
 from .symbolicop import SymbolicOp
 
 
-# pylint: disable=no-member
+@overload
+def adjoint(fn: Operator, lazy: bool = True) -> Operator: ...
+@overload
+def adjoint(fn: Callable, lazy: bool = True) -> Callable: ...
 def adjoint(fn, lazy=True):
     """Create the adjoint of an Operator or a function that applies the adjoint of the provided function.
     :func:`~.qjit` compatible.
@@ -163,17 +166,19 @@ def adjoint(fn, lazy=True):
         available_eps = compiler.AvailableCompilers.names_entrypoints
         ops_loader = available_eps[active_jit]["ops"].load()
         return ops_loader.adjoint(fn, lazy=lazy)
-    if qml.math.is_abstract(fn):
-        return Adjoint(fn)
     return create_adjoint_op(fn, lazy)
 
 
 def create_adjoint_op(fn, lazy):
     """Main logic for qml.adjoint, but allows bypassing the compiler dispatch if needed."""
+    if qml.math.is_abstract(fn):
+        return Adjoint(fn)
     if isinstance(fn, Operator):
         return Adjoint(fn) if lazy else _single_op_eager(fn, update_queue=True)
     if callable(fn):
-        return adjoint_transform(fn, lazy=lazy)
+        if qml.capture.enabled():
+            return _capture_adjoint_transform(fn, lazy=lazy)
+        return _adjoint_transform(fn, lazy=lazy)
     raise ValueError(
         f"The object {fn} of type {type(fn)} is not callable. "
         "This error might occur if you apply adjoint to a list "
@@ -181,8 +186,58 @@ def create_adjoint_op(fn, lazy):
     )
 
 
-@qml.capture.bind_nested_plxpr
-def adjoint_transform(qfunc: Callable, lazy=True) -> Callable:
+@lru_cache  # only create the first time requested
+def _get_adjoint_qfunc_prim():
+    """See capture/explanations.md Higher Order primitives for more information on this code."""
+    # if capture is enabled, jax should be installed
+    import jax  # pylint: disable=import-outside-toplevel
+
+    AbstractOperator = qml.capture.AbstractOperator
+
+    adjoint_prim = jax.core.Primitive("adjoint_transform")
+    adjoint_prim.multiple_results = True
+
+    @adjoint_prim.def_impl
+    def _(*args, jaxpr, lazy=True):
+        with qml.queuing.AnnotatedQueue() as q:
+            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *args)
+        qscript = qml.tape.QuantumScript.from_queue(q)
+        return [adjoint(op, lazy=lazy) for op in qscript.operations]
+
+    def _is_queued_outvar(outvars):
+        if not outvars:
+            return False
+        return isinstance(outvars[0].aval, AbstractOperator) and isinstance(
+            outvars[0], jax.core.DropVar
+        )
+
+    @adjoint_prim.def_abstract_eval
+    def _(*_, jaxpr, **__):
+        # all queued drop var operators
+        outvars = [AbstractOperator() for eqn in jaxpr.eqns if _is_queued_outvar(eqn.outvars)]
+        # operators that are not dropped var because they are returned
+        outvars += [
+            AbstractOperator() for aval in jaxpr.out_avals if isinstance(aval, AbstractOperator)
+        ]
+        return outvars
+
+    return adjoint_prim
+
+
+def _capture_adjoint_transform(qfunc: Callable, lazy=True) -> Callable:
+    import jax  # pylint: disable=import-outside-toplevel
+
+    qnode_prim = _get_adjoint_qfunc_prim()
+
+    def new_qfunc(*args, **kwargs):
+        jaxpr = jax.make_jaxpr(partial(qfunc, **kwargs))(*args)
+        return qnode_prim.bind(*args, jaxpr=jaxpr, lazy=lazy)
+
+    return new_qfunc
+
+
+def _adjoint_transform(qfunc: Callable, lazy=True) -> Callable:
+
     @wraps(qfunc)
     def wrapper(*args, **kwargs):
         qscript = make_qscript(qfunc)(*args, **kwargs)

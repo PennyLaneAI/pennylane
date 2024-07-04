@@ -235,3 +235,8 @@ Now in our jaxpr, we can see thet `PrimitiveClass2` returns something of type `A
 >>> jax.make_jaxpr(PrimitiveClass2)(0.1)
 { lambda ; a:f32[]. let b:AbstractPrimitiveClass() = PrimitiveClass2 a in (b,) }
 ```
+
+# Higher Order Primitives and nested jaxpr
+
+
+
