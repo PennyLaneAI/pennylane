@@ -105,6 +105,38 @@ def test_debugger():
     assert qml.math.allclose(res["execution_results"], 0)
 
 
+def test_shot_distribution():
+    """Test that different numbers of shots in a batch all get executed."""
+
+    class DummyJacobianDevice(DummyDevice):
+
+        _capabilities = {"provides_jacobian": True}
+
+        def jacobian(self, circuit):  # pylint: disable=unused-argument
+            return 0
+
+    dev = LegacyDeviceFacade(DummyJacobianDevice())
+
+    tape1 = qml.tape.QuantumScript([], [qml.expval(qml.Z(0))], shots=5)
+    tape2 = qml.tape.QuantumScript([], [qml.expval(qml.Z(0))], shots=100)
+
+    with dev.tracker:
+        dev.execute((tape1, tape2))
+    assert dev.tracker.history["shots"] == [5, 100]
+
+    with dev.tracker:
+        dev.compute_derivatives((tape1, tape2))
+
+    assert dev.tracker.history["derivatives"] == [1, 1]  # two calls
+
+    with dev.tracker:
+        dev.execute_and_compute_derivatives((tape1, tape2))
+
+    assert dev.tracker.history["batches"] == [1, 1]  # broken up into multiple calls
+    assert dev.tracker.history["shots"] == [5, 100]
+    assert dev.tracker.history["derivatives"] == [1, 1]
+
+
 def test_legacy_device_expand_fn():
     """Test that legacy_device_expand_fn expands operations to the target gateset."""
 
@@ -328,10 +360,28 @@ class TestGradientSupport:
 
             _capabilities = {"passthru_devices": {"autograd": "default.qubit.autograd"}}
 
-        dev = LegacyDeviceFacade(BackpropDevice())
+        dev = LegacyDeviceFacade(BackpropDevice(shots=None))
 
         x = qml.numpy.array(0.1)
         tape = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.Z(0))])
         assert dev.supports_derivatives()
         assert dev.supports_derivatives(ExecutionConfig(gradient_method="backprop"))
         assert dev.supports_derivatives(ExecutionConfig(gradient_method="backprop"), tape)
+
+    def test_backprop_device_substitution(self):
+        """Test that default.qubit.legacy is substituted for a backprop device during backprop execution."""
+
+        dq_legacy = qml.devices.DefaultQubitLegacy(wires=2)
+        dev = LegacyDeviceFacade(dq_legacy)
+
+        def f(x):
+            tape = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.Z(0))])
+            return dev.execute(tape, qml.devices.ExecutionConfig(gradient_method="backprop"))
+
+        assert qml.math.allclose(dq_legacy.state, np.array([1, 0, 0, 0]))
+
+        with dev.tracker:
+            g = qml.grad(f)(qml.numpy.array(0.5))
+        assert qml.math.allclose(g, -np.sin(0.5))
+        assert dev.tracker.totals["executions"] == 1
+        assert not qml.math.allclose(dq_legacy.state, np.array([1, 0, 0, 0]))

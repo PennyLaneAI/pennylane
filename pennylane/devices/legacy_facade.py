@@ -318,6 +318,8 @@ class LegacyDeviceFacade(Device):
 
         if tape and any(isinstance(m.obs, qml.SparseHamiltonian) for m in tape.measurements):
             return False
+        if interface == "numpy":
+            interface = None
         mapped_interface = qml.workflow.execution.INTERFACE_MAP.get(interface, interface)
 
         # determine if the device supports backpropagation
@@ -325,14 +327,13 @@ class LegacyDeviceFacade(Device):
 
         if backprop_interface is not None:
             # device supports backpropagation natively
-            return mapped_interface == backprop_interface
+            return mapped_interface in [backprop_interface, "Numpy"]
         # determine if the device has any child devices that support backpropagation
         backprop_devices = self._device.capabilities().get("passthru_devices", None)
 
         if backprop_devices is None:
             return False
-
-        return mapped_interface in backprop_devices
+        return mapped_interface in backprop_devices or mapped_interface == "Numpy"
 
     def _validate_adjoint_method(self, tape):
         # The conditions below provide a minimal set of requirements that we can likely improve upon in
@@ -363,7 +364,7 @@ class LegacyDeviceFacade(Device):
         if all(t.shots == first_shot for t in circuits):
             results = set_shots(dev, first_shot)(dev.batch_execute)(circuits)
         else:
-            results = tuple(set_shots(dev, t.shots)(dev.execute)(t) for t in circuits)
+            results = tuple(set_shots(dev, t.shots)(dev.batch_execute)((t,))[0] for t in circuits)
 
         if dev is not self._device:
             self._update_original_device(dev)
