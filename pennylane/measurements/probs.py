@@ -135,7 +135,7 @@ def probs(wires=None, op=None) -> "ProbabilityMP":
 class ProbabilityMP(SampleMeasurement, StateMeasurement):
     """Measurement process that computes the probability of each computational basis state.
 
-    Please refer to :func:`probs` for detailed documentation.
+    Please refer to :func:`pennylane.probs` for detailed documentation.
 
     Args:
         obs (Union[.Operator, .MeasurementValue]): The observable that is to be measured

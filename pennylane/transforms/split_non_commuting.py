@@ -130,7 +130,7 @@ def split_non_commuting(
 
     .. code-block:: python3
 
-        @functools.partial(qml.transforms.split_non_commuting, grouping="wires")
+        @functools.partial(qml.transforms.split_non_commuting, grouping_strategy="wires")
         @qml.qnode(dev)
         def circuit(x):
             qml.RY(x[0], wires=0)
