@@ -50,7 +50,7 @@ def specs(qnode, **kwargs):
     about the circuit after applying the specified amount of transforms/expansions first.
 
     Args:
-        qnode (.QNode): the QNode to calculate the specifications for
+        qnode (.QNode): the QNode to calculate the specifications for.
 
     Keyword Args:
         level (None, str, int, slice): An indication of what transforms to apply before computing the resource information.
@@ -77,9 +77,9 @@ def specs(qnode, **kwargs):
     .. note::
 
         At most, one of ``level`` or ``expansion_strategy`` needs to be provided. If neither is provided,
-        ``qnode.expansion_strategy`` would be used instead. Users are encouraged to predominantly use ``level``,
-        as it allows for the same values as ``expansion_strategy``, and allows for more flexibility choosing
-        the wanted transforms/expansions.
+        ``qnode.expansion_strategy`` will be used instead. Users are encouraged to predominantly use ``level``,
+        as it allows for the same values as ``expansion_strategy`` and offers more flexibility in choosing
+        the desired transforms/expansions.
 
     .. warning::
 
@@ -91,11 +91,13 @@ def specs(qnode, **kwargs):
 
     .. code-block:: python3
 
-        x = np.array([0.1, 0.2])
+        from pennylane import numpy as pnp
+
+        x = pnp.array([0.1, 0.2])
         hamiltonian = qml.dot([1.0, 0.5], [qml.X(0), qml.Y(0)])
 
         dev = qml.device('default.qubit', wires=2)
-        @qml.qnode(dev, diff_method="parameter-shift", shifts=np.pi / 4)
+        @qml.qnode(dev, diff_method="parameter-shift", shifts=pnp.pi / 4)
         def circuit(x, add_ry=True):
             qml.RX(x[0], wires=0)
             qml.CNOT(wires=(0,1))
@@ -106,15 +108,15 @@ def specs(qnode, **kwargs):
             return qml.probs(wires=(0,1))
 
     >>> qml.specs(circuit)(x, add_ry=False)
-    {'resources': Resources(num_wires=2, num_gates=4, gate_types=defaultdict(<class 'int'>, {'RX': 1, 'CNOT': 1, 'TrotterPro
-    duct': 2}}), gate_sizes=defaultdict(<class 'int'>, {1: 3, 2: 1}), depth=4, shots=Shots(total_shots=None, shot_vector=())),
+    {'resources': Resources(num_wires=2, num_gates=98, gate_types=defaultdict(<class 'int'>, {'RX': 1, 'CNOT': 1, 'Exp': 96}), gate_sizes=defaultdict(<class 'int'>, {1: 97, 2: 1}), depth=98, shots=Shots(total_shots=None, shot_vector=())),
     'errors': {'SpectralNormError': SpectralNormError(0.42998560822421455)},
     'num_observables': 1,
     'num_diagonalizing_gates': 0,
     'num_trainable_params': 1,
     'num_device_wires': 2,
+    'num_tape_wires': 2,
     'device_name': 'default.qubit',
-    'expansion_strategy': 'gradient',
+    'level': 'gradient',
     'gradient_options': {'shifts': 0.7853981633974483},
     'interface': 'auto',
     'diff_method': 'parameter-shift',
@@ -179,18 +181,18 @@ def specs(qnode, **kwargs):
         gate_sizes:
         {2: 1, 1: 2}
 
-        If we attempt to only apply the ``merge_rotations`` transform, we would end with only one trainable object, which is in ``RandomLayers``:
+        If we attempt to apply only the ``merge_rotations`` transform, we end up with only one trainable object, which is in ``RandomLayers``:
 
         >>> qml.specs(circuit, level=slice(2, 3))(0.1)["num_trainable_params"]
         1
 
-        However, if we apply all transforms, ``RandomLayers`` would be decomposed to an ``RY`` and an ``RX``, giving us two trainable objects:
+        However, if we apply all transforms, ``RandomLayers`` is decomposed into an ``RY`` and an ``RX``, giving us two trainable objects:
 
         >>> qml.specs(circuit, level=None)(0.1)["num_trainable_params"]
         2
 
         If a ``QNode`` with a tape-splitting transform is supplied to the function, with the transform included in the desired transforms, a dictionary
-        would be returned for each resulting tapes:
+        is returned for each resulting tape:
 
         .. code-block:: python3
 

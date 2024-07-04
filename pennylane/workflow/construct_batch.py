@@ -223,13 +223,13 @@ def construct_batch(
         qnode (QNode): the qnode we want to get the tapes and post-processing for.
         level (None, str, int, slice): And indication of what transforms to use from the full program.
 
-            * ``None``: use the full transform program
-            * ``str``: Acceptable keys are ``"top"``, ``"user"``, ``"device"``, and ``"gradient"``
-            * ``int``: How many transforms to include, starting from the front of the program
+            * ``None``: use the full transform program.
+            * ``str``: Acceptable keys are ``"top"``, ``"user"``, ``"device"``, and ``"gradient"``.
+            * ``int``: How many transforms to include, starting from the front of the program.
             * ``slice``: a slice to select out components of the transform program.
 
     Returns:
-        Callable:  a function with the same call signature as the initial quantum function. This function returns
+        Callable:  A function with the same call signature as the initial quantum function. This function returns
         a batch (tuple) of tapes and postprocessing function.
 
     .. seealso:: :func:`pennylane.workflow.get_transform_program` to inspect the contents of the transform program for a specified level.
@@ -241,6 +241,8 @@ def construct_batch(
         Suppose we have a QNode with several user transforms.
 
         .. code-block:: python
+
+            from pennylane.workflow import construct_batch
 
             @qml.transforms.undo_swaps
             @qml.transforms.merge_rotations
@@ -263,8 +265,8 @@ def construct_batch(
          RX(tensor(2., requires_grad=True), wires=[0]),
          expval(X(0) + Y(0))]
 
-        These tapes can be natively executed by the device, though with non-backprop devices the parameters
-        will need to be converted to numpy with :func:`~.convert_to_numpy_parameters`.
+        These tapes can be natively executed by the device. However, with non-backprop devices the parameters
+        will need to be converted to NumPy with :func:`~.convert_to_numpy_parameters`.
 
         >>> fn(dev.execute(batch))
         (tensor(-0.90929743, requires_grad=True),)
