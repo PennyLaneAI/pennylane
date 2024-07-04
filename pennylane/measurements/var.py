@@ -69,7 +69,7 @@ def var(op: Union[Operator, MeasurementValue]) -> "VarianceMP":
 class VarianceMP(SampleMeasurement, StateMeasurement):
     """Measurement process that computes the variance of the supplied observable.
 
-    Please refer to :func:`var` for detailed documentation.
+    Please refer to :func:`pennylane.var` for detailed documentation.
 
     Args:
         obs (Union[.Operator, .MeasurementValue]): The observable that is to be measured
