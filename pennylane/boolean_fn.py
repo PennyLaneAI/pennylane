@@ -30,7 +30,7 @@ class BooleanFn:
 
     **Example**
 
-    Consider functions that filter numbers to lie in a certain domain.
+    Consider functions that filter numbers to lie within a certain domain.
     We may wrap them using ``BooleanFn``:
 
     >>> bigger_than_4 = qml.BooleanFn(lambda x: x > 4)
@@ -44,7 +44,7 @@ class BooleanFn:
     False
 
     These can then be combined into a single callable using boolean operators,
-    such as ``&``, logical and:
+    such as ``&`` (logical and):
 
     >>> between_4_and_10 = bigger_than_4 & smaller_than_10
     >>> between_4_and_10(-3.2)
@@ -54,7 +54,7 @@ class BooleanFn:
     >>> between_4_and_10(19.7)
     False
 
-    Other supported operators are ``|``, logical or, and ``~``, logical not:
+    Other supported operators are ``|`` (logical or) and ``~`` (logical not):
 
     >>> smaller_equal_than_4 = ~bigger_than_4
     >>> smaller_than_10_or_int = smaller_than_10 | is_int
@@ -103,13 +103,13 @@ class BooleanFn:
 
     @property
     def bitwise(self):
-        """Determine whether wrapped callable performs a bitwise operation or not.
+        """Determine whether the wrapped callable performs a bitwise operation or not.
         This checks for the ``operands`` attribute that should be defined by it."""
         return bool(getattr(self, "operands", tuple()))
 
     @property
     def conditional(self):
-        """Determine whether wrapped callable is for a conditional or not.
+        """Determine whether the wrapped callable is for a conditional or not.
         This checks for the ``condition`` attribute that should be defined by it."""
         return bool(getattr(self, "condition", None))
 
