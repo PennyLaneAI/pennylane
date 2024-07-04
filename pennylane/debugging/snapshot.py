@@ -127,6 +127,7 @@ def snapshots(tape: QuantumTape) -> tuple[Sequence[QuantumTape], Callable[[Resul
     is raised along with the results:
 
     .. code-block:: python3
+
         dev = qml.device("lightning.qubit", shots=100, wires=2)
 
         @qml.snapshots

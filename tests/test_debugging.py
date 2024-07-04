@@ -201,7 +201,7 @@ class TestSnapshotGeneral:
 
         phi = 0.1
         with (
-            pytest.warns(UserWarning, match="resulting in a total of 5 executions.")
+            pytest.warns(UserWarning, match="Snapshots are not supported for the given device")
             if "lightning" in dev.name
             else nullcontext()
         ):
@@ -677,7 +677,6 @@ class TestSnapshotUnsupportedQNode:
 
         assert not qml.debugging.snapshot._is_snapshot_compatible(dev)
 
-        @qml.snapshots
         @qml.qnode(dev, diff_method=method)
         def circuit():
             qml.THadamard(wires=0)
@@ -685,9 +684,10 @@ class TestSnapshotUnsupportedQNode:
             qml.TSWAP(wires=[0, 1])
             return qml.counts()
 
-        with pytest.warns(UserWarning, match="total of 2 executions."):
-            result = circuit()
+        with pytest.warns(UserWarning, match="Snapshots are not supported for the given device"):
+            circuit = qml.snapshots(circuit)
 
+        result = circuit()
         expected = {
             0: np.array([0.27, 0.0, 0.0, 0.38, 0.0, 0.0, 0.35, 0.0, 0.0]),
             "execution_results": {"00": 39, "01": 31, "02": 30},

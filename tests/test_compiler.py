@@ -265,6 +265,7 @@ class TestCatalyst:
 
         assert jnp.allclose(workflow_cl(0.1, [1]), workflow_pl(0.1, [1]))
 
+    @pytest.mark.xfail(reason="supported once catalyst #768 is merged")
     def test_qjit_adjoint_lazy(self):
         """Test that the lazy kwarg is supported."""
         dev = qml.device("lightning.qubit", wires=2)
