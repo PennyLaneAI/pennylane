@@ -343,11 +343,6 @@ via the `NoiseModel` class and an `add_noise` transform.
   * `dynamic_one_shot` is now compatible with `jax.jit`.
     [(#5557)](https://github.com/PennyLaneAI/pennylane/pull/5557)
 
-* Mid-circuit measurement tests have been streamlined and refactored, removing most end-to-end tests 
-  from the native MCM test file, but keeping one that validates multiple mid-circuit measurements with 
-  any allowed return and interface end-to-end tests.
-  [(#5787)](https://github.com/PennyLaneAI/pennylane/pull/5787)
-
 * When using `defer_measurements` with postselection, operations that will never be active due to the 
   postselected state are skipped in the transformed quantum circuit. In addition, postselected controls 
   are skipped, as they are evaluated when the transform is applied. This optimization feature can be 
@@ -397,6 +392,11 @@ via the `NoiseModel` class and an `add_noise` transform.
   ```
 
   There is only one controlled gate with only one control wire.
+
+* Mid-circuit measurement tests have been streamlined and refactored, removing most end-to-end tests 
+  from the native MCM test file, but keeping one that validates multiple mid-circuit measurements with 
+  any allowed return and interface end-to-end tests.
+  [(#5787)](https://github.com/PennyLaneAI/pennylane/pull/5787)
 
 <h4>Access to QROM</h4>
 
