@@ -27,6 +27,7 @@ test_data_decomposition = [
         [[0, 1, 2]],
         [],
         np.array([3.815]),
+        1,
         [
             [0, qml.BasisState, [0, 1, 2, 3, 4, 5], [np.array([1, 1, 0, 0, 0, 0])]],
             [1, qml.RX, [0], [-np.pi / 2]],
@@ -38,6 +39,7 @@ test_data_decomposition = [
         [[0, 1, 2], [1, 2, 3]],
         [],
         np.array([3.815, 4.866]),
+        1,
         [
             [2, qml.Hadamard, [2], []],
             [8, qml.RX, [0], [np.pi / 2]],
@@ -51,6 +53,7 @@ test_data_decomposition = [
         [],
         [[[0, 1], [2, 3, 4, 5]]],
         np.array([3.815]),
+        1,
         [
             [3, qml.RX, [2], [-np.pi / 2]],
             [29, qml.RZ, [5], [0.476875]],
@@ -64,6 +67,7 @@ test_data_decomposition = [
         [],
         [[[0, 1], [2, 3]], [[0, 1], [4, 5]]],
         np.array([3.815, 4.866]),
+        1,
         [
             [4, qml.Hadamard, [3], []],
             [16, qml.RX, [0], [-np.pi / 2]],
@@ -80,6 +84,7 @@ test_data_decomposition = [
         [[0, 1, 2, 3, 4], [1, 2, 3]],
         [[[0, 1], [2, 3]], [[0, 1], [4, 5]]],
         np.array([3.815, 4.866, 1.019, 0.639]),
+        1,
         [
             [16, qml.RX, [0], [-np.pi / 2]],
             [47, qml.Hadamard, [1], []],
@@ -92,11 +97,38 @@ test_data_decomposition = [
             [235, qml.CNOT, [1, 4], []],
         ],
     ),
+    (
+        [[0, 1, 2]],
+        [],
+        np.array([[3.815]]),
+        1,
+        [
+            [0, qml.BasisState, [0, 1, 2, 3, 4, 5], [np.array([1, 1, 0, 0, 0, 0])]],
+            [1, qml.RX, [0], [-np.pi / 2]],
+            [5, qml.RZ, [2], [1.9075]],
+            [6, qml.CNOT, [1, 2], []],
+        ],
+    ),
+    (
+        [[0, 1, 2]],
+        [],
+        np.array([[3.815], [1.019]]),
+        2,
+        [
+            [0, qml.BasisState, [0, 1, 2, 3, 4, 5], [np.array([1, 1, 0, 0, 0, 0])]],
+            [1, qml.RX, [0], [-np.pi / 2]],
+            [5, qml.RZ, [2], [1.9075]],
+            [6, qml.CNOT, [1, 2], []],
+            [19, qml.RX, [0], [-np.pi / 2]],
+            [23, qml.RZ, [2], [0.5095]],
+            [24, qml.CNOT, [1, 2], []],
+        ],
+    ),
 ]
 
 
-@pytest.mark.parametrize("s_wires, d_wires, weights, _", test_data_decomposition)
-def test_standard_validity(s_wires, d_wires, weights, _):
+@pytest.mark.parametrize("s_wires, d_wires, weights, n_repeats, _", test_data_decomposition)
+def test_standard_validity(s_wires, d_wires, weights, n_repeats, _):
     """Test standard validity criteria using assert_valid."""
     cnots = 0
     for s_wires_ in s_wires:
@@ -104,25 +136,37 @@ def test_standard_validity(s_wires, d_wires, weights, _):
 
     for d_wires_ in d_wires:
         cnots += 16 * (len(d_wires_[0]) - 1 + len(d_wires_[1]) - 1 + 1)
+
+    cnots *= n_repeats
+
     N = 6
     wires = range(N)
 
     ref_state = np.array([1, 1, 0, 0, 0, 0])
 
-    op = qml.UCCSD(weights, wires, s_wires=s_wires, d_wires=d_wires, init_state=ref_state)
+    op = qml.UCCSD(
+        weights,
+        wires,
+        s_wires=s_wires,
+        d_wires=d_wires,
+        init_state=ref_state,
+        n_repeats=n_repeats,
+    )
     qml.ops.functions.assert_valid(op)
 
 
 class TestDecomposition:
     """Tests that the template defines the correct decomposition."""
 
-    @pytest.mark.parametrize("s_wires, d_wires, weights, ref_gates", test_data_decomposition)
-    def test_uccsd_operations(self, s_wires, d_wires, weights, ref_gates):
+    @pytest.mark.parametrize(
+        "s_wires, d_wires, weights, n_repeats, ref_gates", test_data_decomposition
+    )
+    def test_uccsd_operations(self, s_wires, d_wires, weights, n_repeats, ref_gates):
         """Test the correctness of the UCCSD template including the gate count
         and order, the wires the operation acts on and the correct use of parameters
         in the circuit."""
 
-        sqg = 10 * len(s_wires) + 72 * len(d_wires)
+        sqg = (10 * len(s_wires) + 72 * len(d_wires)) * n_repeats
 
         cnots = 0
         for s_wires_ in s_wires:
@@ -130,12 +174,22 @@ class TestDecomposition:
 
         for d_wires_ in d_wires:
             cnots += 16 * (len(d_wires_[0]) - 1 + len(d_wires_[1]) - 1 + 1)
+
+        cnots *= n_repeats
+
         N = 6
         wires = range(N)
 
         ref_state = np.array([1, 1, 0, 0, 0, 0])
 
-        op = qml.UCCSD(weights, wires, s_wires=s_wires, d_wires=d_wires, init_state=ref_state)
+        op = qml.UCCSD(
+            weights,
+            wires,
+            s_wires=s_wires,
+            d_wires=d_wires,
+            init_state=ref_state,
+            n_repeats=n_repeats,
+        )
         raw_queue = op.expand().operations
 
         # hack to avoid updating the test data:
@@ -205,13 +259,14 @@ class TestInputs:
     """Test inputs and pre-processing."""
 
     @pytest.mark.parametrize(
-        ("weights", "s_wires", "d_wires", "init_state", "msg_match"),
+        ("weights", "s_wires", "d_wires", "init_state", "n_repeats", "msg_match"),
         [
             (
                 np.array([-2.8]),
                 [[0, 1, 2]],
                 [],
                 np.array([1.2, 1, 0, 0]),
+                1,
                 "Elements of 'init_state' must be integers",
             ),
             (
@@ -219,6 +274,7 @@ class TestInputs:
                 [],
                 [],
                 np.array([1, 1, 0, 0]),
+                1,
                 "s_wires and d_wires lists can not be both empty",
             ),
             (
@@ -226,6 +282,7 @@ class TestInputs:
                 [],
                 [[[0, 1, 2, 3]]],
                 np.array([1, 1, 0, 0]),
+                1,
                 "expected entries of d_wires to be of size 2",
             ),
             (
@@ -233,6 +290,7 @@ class TestInputs:
                 [[0, 2]],
                 [],
                 np.array([1, 1, 0, 0, 0]),
+                1,
                 "Basis states must be of length 4",
             ),
             (
@@ -240,25 +298,60 @@ class TestInputs:
                 [[0, 1, 2]],
                 [],
                 np.array([1, 1, 0, 0]),
-                "Weights tensor must be of",
+                1,
+                "For one-dimensional weights tensor",
             ),
             (
                 np.array([-2.8, 1.6]),
                 [],
                 [[[0, 1], [2, 3]]],
                 np.array([1, 1, 0, 0]),
-                "Weights tensor must be of",
+                1,
+                "For one-dimensional weights tensor",
             ),
             (
                 np.array([-2.8, 1.6]),
                 [[0, 1, 2], [1, 2, 3]],
                 [[[0, 1], [2, 3]]],
                 np.array([1, 1, 0, 0]),
+                1,
+                "For one-dimensional weights tensor",
+            ),
+            (
+                np.array([-2.8]),
+                [[0, 1, 2]],
+                [],
+                np.array([1, 1, 0, 0]),
+                0,
+                "Requires n_repeats to be at least 1",
+            ),
+            (
+                np.array([-2.8]),
+                [[0, 1, 2]],
+                [],
+                np.array([1, 1, 0, 0]),
+                -1,
+                "Requires n_repeats to be at least 1",
+            ),
+            (
+                np.array([-2.8]),
+                [[0, 1, 2]],
+                [],
+                np.array([1, 1, 0, 0]),
+                2,
+                "For one-dimensional weights tensor",
+            ),
+            (
+                np.array([[-2.8], [-1.8]]),
+                [[0, 1, 2]],
+                [],
+                np.array([1, 1, 0, 0]),
+                3,
                 "Weights tensor must be of",
             ),
         ],
     )
-    def test_uccsd_xceptions(self, weights, s_wires, d_wires, init_state, msg_match):
+    def test_uccsd_xceptions(self, weights, s_wires, d_wires, init_state, n_repeats, msg_match):
         """Test that UCCSD throws an exception if the parameters have illegal
         shapes, types or values."""
         N = 4
@@ -266,7 +359,12 @@ class TestInputs:
         dev = qml.device("default.qubit", wires=N)
 
         def circuit(
-            weights=weights, wires=wires, s_wires=s_wires, d_wires=d_wires, init_state=init_state
+            weights=weights,
+            wires=wires,
+            s_wires=s_wires,
+            d_wires=d_wires,
+            init_state=init_state,
+            n_repeats=n_repeats,
         ):
             qml.UCCSD(
                 weights=weights,
@@ -274,6 +372,7 @@ class TestInputs:
                 s_wires=s_wires,
                 d_wires=d_wires,
                 init_state=init_state,
+                n_repeats=n_repeats,
             )
             return qml.expval(qml.PauliZ(0))
 
@@ -286,6 +385,7 @@ class TestInputs:
                 s_wires=s_wires,
                 d_wires=d_wires,
                 init_state=init_state,
+                n_repeats=n_repeats,
             )
 
     def test_id(self):
@@ -301,21 +401,27 @@ class TestInputs:
         assert template.id == "a"
 
 
-def circuit_template(weights):
+def circuit_template(weights, n_repeats=1):
     qml.UCCSD(
         weights,
         wires=range(4),
         s_wires=[[0, 1]],
         d_wires=[[[0, 1], [2, 3]]],
         init_state=np.array([1, 0, 0, 0]),
+        n_repeats=n_repeats,
     )
     return qml.expval(qml.PauliZ(0))
 
 
-def circuit_decomposed(weights):
+def circuit_decomposed(weights, n_repeats=1):
     qml.BasisState(np.array([1, 0, 0, 0]), wires=range(4))
-    qml.FermionicDoubleExcitation(weights[1], wires1=[0, 1], wires2=[2, 3])
-    qml.FermionicSingleExcitation(weights[0], wires=[0, 1])
+
+    if n_repeats == 1 and len(qml.math.shape(weights)) == 1:
+        weights = qml.math.expand_dims(weights, 0)
+
+    for layer in range(n_repeats):
+        qml.FermionicDoubleExcitation(weights[layer][1], wires1=[0, 1], wires2=[2, 3])
+        qml.FermionicSingleExcitation(weights[layer][0], wires=[0, 1])
     return qml.expval(qml.PauliZ(0))
 
 
@@ -335,6 +441,12 @@ class TestInterfaces:
 
         res = circuit(weights)
         res2 = circuit2(weights)
+        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+
+        # Test with n_repeats=2
+        weights = [list(range(2)), list(range(2))]
+        res = circuit(weights, n_repeats=2)
+        res2 = circuit2(weights, n_repeats=2)
         assert qml.math.allclose(res, res2, atol=tol, rtol=0)
 
     @pytest.mark.autograd
@@ -357,6 +469,28 @@ class TestInterfaces:
 
         grad_fn2 = qml.grad(circuit2)
         grads2 = grad_fn2(weights)
+
+        assert np.allclose(grads, grads2, atol=tol, rtol=0)
+
+        # Test with n_repeats=2
+        weights = pnp.array(
+            np.random.random(
+                size=(
+                    2,
+                    2,
+                )
+            ),
+            requires_grad=True,
+        )
+        res = circuit(weights, n_repeats=2)
+        res2 = circuit2(weights, n_repeats=2)
+        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+
+        grad_fn = qml.grad(circuit)
+        grads = grad_fn(weights, n_repeats=2)
+
+        grad_fn2 = qml.grad(circuit2)
+        grads2 = grad_fn2(weights, n_repeats=2)
 
         assert np.allclose(grads, grads2, atol=tol, rtol=0)
 
@@ -386,6 +520,27 @@ class TestInterfaces:
 
         assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
 
+        # Test with n_repeats=2
+        weights = jnp.array(
+            np.random.random(
+                size=(
+                    2,
+                    2,
+                )
+            )
+        )
+        res = circuit(weights, n_repeats=2)
+        res2 = circuit2(weights, n_repeats=2)
+        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+
+        grad_fn = jax.grad(circuit)
+        grads = grad_fn(weights, n_repeats=2)
+
+        grad_fn2 = jax.grad(circuit2)
+        grads2 = grad_fn2(weights, n_repeats=2)
+
+        assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
+
     @pytest.mark.tf
     def test_tf(self, tol):
         """Tests the tf interface."""
@@ -412,6 +567,29 @@ class TestInterfaces:
 
         assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
 
+        # Test with n_repeats=2
+        weights = tf.Variable(
+            np.random.random(
+                size=(
+                    2,
+                    2,
+                )
+            )
+        )
+        res = circuit(weights, n_repeats=2)
+        res2 = circuit2(weights, n_repeats=2)
+        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+
+        with tf.GradientTape() as tape:
+            res = circuit(weights, n_repeats=2)
+        grads = tape.gradient(res, [weights])
+
+        with tf.GradientTape() as tape2:
+            res2 = circuit2(weights, n_repeats=2)
+        grads2 = tape2.gradient(res2, [weights])
+
+        assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
+
     @pytest.mark.torch
     def test_torch(self, tol):
         """Tests the torch interface."""
@@ -434,6 +612,33 @@ class TestInterfaces:
         grads = [weights.grad]
 
         res2 = circuit2(weights)
+        res2.backward()
+        grads2 = [weights.grad]
+
+        assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
+
+        # Test with n_repeats=2
+        weights = torch.tensor(
+            np.random.random(
+                size=(
+                    2,
+                    2,
+                )
+            ),
+            requires_grad=True,
+        )
+        circuit = qml.QNode(circuit_template, dev)
+        circuit2 = qml.QNode(circuit_decomposed, dev)
+
+        res = circuit(weights, n_repeats=2)
+        res2 = circuit2(weights, n_repeats=2)
+        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+
+        res = circuit(weights, n_repeats=2)
+        res.backward()
+        grads = [weights.grad]
+
+        res2 = circuit2(weights, n_repeats=2)
         res2.backward()
         grads2 = [weights.grad]
 
