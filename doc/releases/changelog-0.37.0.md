@@ -18,8 +18,8 @@
 
   Either method can be selected when instantiating the `default.tensor` device by setting the
   `method` keyword argument to `"tn"` (tensor network) or `"mps"` (matrix product state). This
-  device can simulate a large number of qubits with sensible approximations. Take this example that
-  can simulate 1000 qubits in a few seconds!
+  device can simulate a large number of qubits. Take this example that
+  simulates 1000 qubits with a shallow circuit in a few seconds!
 
   ```python
   import pennylane as qml
