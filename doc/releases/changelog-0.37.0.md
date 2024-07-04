@@ -422,7 +422,7 @@
   [(#5654)](https://github.com/PennyLaneAI/pennylane/pull/5654)
 
 * `qml.transforms.convert_to_numpy_parameters` is now a proper transform and its output signature has changed,
-  returning a list of `QuantumTape`s and a post-processing function instead of simply the transformed circuit.
+  returning a list of `QuantumScript`s and a post-processing function instead of simply the transformed circuit.
   [(#5693)](https://github.com/PennyLaneAI/pennylane/pull/5693)
 
 * `Controlled.wires` does not include `self.work_wires` anymore. That can be accessed separately through `Controlled.work_wires`.
@@ -443,6 +443,9 @@
   [(#5904)](https://github.com/PennyLaneAI/pennylane/pull/5904)
 
 <h3>Documentation 📝</h3>
+
+* Several links to other functions in measurement process docstrings have been fixed.
+  [(#5913)](https://github.com/PennyLaneAI/pennylane/pull/5913)
 
 * Move information about mid-circuit measurements from the measurements quickstart page to its own
   [mid-circuit measurements quickstart page](https://docs.pennylane.ai/en/stable/introduction/mid_circuit_measurements.html)
