@@ -1,6 +1,5 @@
 qml.pytrees
-
-=========
+===========
 
 .. currentmodule:: pennylane.pytrees
 
