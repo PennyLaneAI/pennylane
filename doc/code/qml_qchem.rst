@@ -6,7 +6,9 @@ Overview
 
 The quantum chemistry module provides the functionality to perform Hartree-Fock calculations
 and construct observables such as molecular Hamiltonians as well as dipole moment, spin and particle
-number observables.
+number observables. It also includes functionalities to convert to and from Openfermion's 
+`QubitOperator <https://quantumai.google/reference/python/openfermion/ops/QubitOperator>`__ and 
+`FermionOperator <https://quantumai.google/reference/python/openfermion/ops/FermionOperator>`__.
 
 .. currentmodule:: pennylane.qchem
 
