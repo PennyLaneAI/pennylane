@@ -144,7 +144,7 @@ class Wires(Sequence):
 
     def __repr__(self):
         """Method defining the string representation of this class."""
-        return f"Wires({list(self._labels)})"
+        return f"<Wires({list(self._labels)})>"
 
     def __eq__(self, other):
         """Method to support the '==' operator.
