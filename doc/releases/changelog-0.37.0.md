@@ -355,6 +355,9 @@ via the `NoiseModel` class and an `add_noise` transform.
   `check_trainability`, `atol` and `rtol`.
   [(#5668)](https://github.com/PennyLaneAI/pennylane/pull/5668)
   
+* The sorting order of parameter-shift terms is now guaranteed to resolve ties in the absolute value with the sign of the shifts.
+  [(#5583)](https://github.com/PennyLaneAI/pennylane/pull/5583)
+  
 * The implementation for `qml.assert_equal` has been updated for `Operator`, `Controlled`, `Adjoint`, 
   `Pow`, `Exp`, `SProd`, `ControlledSequence`, `Prod`, `Sum`, `Tensor` and `Hamiltonian` instances.
   [(#5780)](https://github.com/PennyLaneAI/pennylane/pull/5780)
@@ -597,6 +600,7 @@ via the `NoiseModel` class and an `add_noise` transform.
   [(#5828)](https://github.com/PennyLaneAI/pennylane/pull/5828)
   [(#5869)](https://github.com/PennyLaneAI/pennylane/pull/5869)
   [(#5939)](https://github.com/PennyLaneAI/pennylane/pull/5939)
+  [(#5945)](https://github.com/PennyLaneAI/pennylane/pull/5945)
 
 * `qml.devices.LegacyDevice` is now an alias for `qml.Device`, so it is easier to distinguish it from
   `qml.devices.Device`, which follows the new device API.
