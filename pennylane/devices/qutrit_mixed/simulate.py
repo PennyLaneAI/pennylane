@@ -23,7 +23,7 @@ from .initialize_state import create_initial_state
 from .measure import measure
 from .sampling import measure_with_samples
 from .utils import QUDIT_DIM
-from ..qtcorgi_helper.qtcorgi_simulator import get_qutrit_final_state
+from ..qtcorgi_helper.qtcorgi_simulator import get_qutrit_final_state_from_initial
 
 INTERFACE_TO_LIKE = {
     # map interfaces known by autoray to themselves
@@ -99,6 +99,29 @@ def measure_final_state(circuit, state, is_state_batched, rng=None, prng_key=Non
     return results
 
 
+def get_final_state_qutrit(circuit, **kwargs):
+    """
+    TODO
+
+    Args:
+        circuit (.QuantumScript): The single circuit to simulate
+
+    Returns:
+        Tuple[TensorLike, bool]: A tuple containing the final state of the quantum script and
+            whether the state has a batch dimension.
+
+    """
+
+    circuit = circuit.map_to_standard_wires()
+
+    prep = None
+    if len(circuit) > 0 and isinstance(circuit[0], qml.operation.StatePrepBase):
+        prep = circuit[0]
+
+    state = create_initial_state(sorted(circuit.op_wires), prep, like="jax")
+    return get_qutrit_final_state_from_initial(circuit.operations[bool(prep) :], state), False
+
+
 def simulate(
     circuit: qml.tape.QuantumScript, rng=None, prng_key=None, debugger=None, interface=None
 ) -> Result:
@@ -130,7 +153,7 @@ def simulate(
     tensor([0.68117888, 0.        , 0.        , 0.31882112, 0.        , 0.        ], requires_grad=True))
 
     """
-    state = get_qutrit_final_state(
+    state = get_final_state_qutrit(
         circuit, debugger=debugger, interface=interface, rng=rng, prng_key=prng_key
     )
     return measure_final_state(circuit, state, False, rng=rng, prng_key=prng_key)
