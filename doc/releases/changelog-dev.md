@@ -9,6 +9,10 @@
 * The `qml.PrepSelPrep` template is added. The template implements a block-encoding of a linear 
   combination of unitaries.
   [(#5756)](https://github.com/PennyLaneAI/pennylane/pull/5756)
+
+* A new method `qml.registers` has been added, enabling the creation of registers, which are
+  implemented as a dictionary of Wires instances.
+  [(#5957)](https://github.com/PennyLaneAI/pennylane/pull/5957)
   
 <h3>Improvements 🛠</h3>
 
@@ -34,5 +38,6 @@ This release contains contributions from (in alphabetical order):
 
 Yushao Chen,
 Christina Lee,
+Austin Huang,
 William Maxwell,
 Erik Schultheis.
