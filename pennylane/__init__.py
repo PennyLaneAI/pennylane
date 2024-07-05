@@ -63,7 +63,7 @@ from pennylane.circuit_graph import CircuitGraph
 from pennylane.configuration import Configuration
 from pennylane.drawer import draw, draw_mpl
 from pennylane.tracker import Tracker
-from pennylane.wires import registers
+from pennylane.registers import registers
 from pennylane.io import *
 from pennylane.measurements import (
     counts,
