@@ -40,7 +40,7 @@
   tensor(0., requires_grad=True)
   ```
 
-  For matrix product state simulations (`method="mps"`), we can make the exeuction approximate by setting `max_bond_dim` (see the
+  For matrix product state simulations (`method="mps"`), we can make the execution be approximate by setting `max_bond_dim` (see the
   [device's documentation](https://docs.pennylane.ai/en/stable/code/api/pennylane.devices.default_tensor.DefaultTensor.html)
   for more details).
   The maximum bond dimension has implications for the speed of the simulation and lets us control the degree of the approximation, as shown in the
@@ -92,7 +92,7 @@ via the `NoiseModel` class and an `add_noise` transform.
   [(#5718)](https://github.com/PennyLaneAI/pennylane/pull/5718)
 
   Under the hood, PennyLane's approach to noise models is insertion-based, meaning that noise is included
-  by *inserting* additional operators (gates or channels) that describe the noise into the quantum circuit itself. 
+  by *inserting* additional operators (gates or channels) that describe the noise into the quantum circuit.
   Creating a `NoiseModel` boils down to defining Boolean conditions under which specific noisy operations 
   are inserted. There are several ways to specify conditions for adding noisy operations: 
 
@@ -108,7 +108,7 @@ via the `NoiseModel` class and an `add_noise` transform.
         return isinstance(op, qml.RY) and op.parameters[0] < 0.5
     ```
 
-  `op_eq`, `op_in`, `wires_eq`, and `wires_in` can also be combined together with `&`, `and`, `|`, etc.
+  Conditions can also be combined together with `&`, `and`, `|`, etc.
   Once the conditions under which noise is to be inserted have been stated, we can specify exactly what 
   noise is inserted with the following:
 
@@ -254,6 +254,7 @@ via the `NoiseModel` class and an `add_noise` transform.
   For fermionic operators:
 
   ```pycon
+  >>> import openfermion
   >>> of_fermionic = openfermion.FermionOperator('0^ 2')
   >>> type(of_fermionic)
   <class 'openfermion.ops.operators.fermion_operator.FermionOperator'>
@@ -267,7 +268,6 @@ via the `NoiseModel` class and an `add_noise` transform.
   And for qubit operators:
 
   ```pycon
-  >>> import openfermion
   >>> of_qubit = 0.5 * openfermion.QubitOperator('X0 X5')
   >>> pl_qubit = qml.from_openfermion(of_qubit)
   >>> print(pl_qubit)
@@ -314,7 +314,7 @@ via the `NoiseModel` class and an `add_noise` transform.
   ```
 
   The
-  [`qml.workflow.get_transform_program()` function](https://docs.pennylane.ai/en/latest/code/api/pennylane.workflow.get_transform_program.html)
+  [qml.workflow.get_transform_program function](https://docs.pennylane.ai/en/latest/code/api/pennylane.workflow.get_transform_program.html)
   can be used to see the full transform program.
 
   ```pycon
