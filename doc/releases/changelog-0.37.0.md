@@ -43,7 +43,7 @@
   For matrix product state simulations (`method="mps"`), we can make the exeuction approximate by setting `max_bond_dim` (see the
   [device's documentation](https://docs.pennylane.ai/en/stable/code/api/pennylane.devices.default_tensor.DefaultTensor.html)
   for more details).
-  The maximum bond dimension lets us control the degree of the approximation and has implications for the speed of the simulation, as shown in the
+  The maximum bond dimension has implications for the speed of the simulation and lets us control the degree of the approximation, as shown in the
   following example. First, set up the circuit:
 
   ```python
