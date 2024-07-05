@@ -35,6 +35,7 @@ from pennylane.measurements import (
     CountsMP,
     DensityMatrixMP,
     ExpectationMP,
+    MidMeasureMP,
     MutualInfoMP,
     ProbabilityMP,
     PurityMP,
@@ -44,6 +45,7 @@ from pennylane.measurements import (
     VnEntropyMP,
 )
 from pennylane.operation import Channel
+from pennylane.ops import Conditional
 from pennylane.ops.qubit.attributes import diagonal_in_z_basis
 from pennylane.wires import Wires
 
@@ -159,6 +161,7 @@ class DefaultMixed(QubitDevice):
         "ECR",
         "ParametrizedEvolution",
         "GlobalPhase",
+        "Conditional",
     }
 
     _reshape = staticmethod(qnp.reshape)
@@ -237,11 +240,24 @@ class DefaultMixed(QubitDevice):
         rho[index, index] = 1
         return qnp.reshape(rho, [2] * (2 * self.num_wires))
 
+    @property
+    def stopping_condition(self):
+        """.BooleanFn: Returns the stopping condition for the device. The returned
+        function accepts a queueable object (including a PennyLane operation
+        and observable) and returns ``True`` if supported by the device."""
+        fun = super().stopping_condition
+
+        def accepts_obj(obj):
+            return fun(obj) or isinstance(obj, (MidMeasureMP, Conditional))
+
+        return qml.BooleanFn(accepts_obj)
+
     @classmethod
     def capabilities(cls):
         capabilities = super().capabilities().copy()
         capabilities.update(
             returns_state=True,
+            supports_mid_measure=True,
             passthru_devices={
                 "autograd": "default.mixed",
                 "tf": "default.mixed",
@@ -672,45 +688,15 @@ class DefaultMixed(QubitDevice):
             else:
                 self._debugger.snapshots[len(self._debugger.snapshots)] = snapshot_result
 
-    def _apply_operation(self, operation):
+    def _apply_operation(self, operation, mid_measurements=None, postselect_mode=None):
         """Applies operations to the internal device state.
 
         Args:
             operation (.Operation): operation to apply on the device
         """
-        wires = operation.wires
-        if operation.name == "Identity":
-            return
-
-        if isinstance(operation, StatePrep):
-            self._apply_state_vector(operation.parameters[0], wires)
-            return
-
-        if isinstance(operation, BasisState):
-            self._apply_basis_state(operation.parameters[0], wires)
-            return
-
-        if isinstance(operation, QubitDensityMatrix):
-            self._apply_density_matrix(operation.parameters[0], wires)
-            return
-
-        if isinstance(operation, Snapshot):
-            self._apply_snapshot(operation)
-            return
-
-        matrices = self._get_kraus(operation)
-
-        if operation in diagonal_in_z_basis:
-            self._apply_diagonal_unitary(matrices, wires)
-        else:
-            num_op_wires = len(wires)
-            interface = qml.math.get_interface(self._state, *matrices)
-            # Use tensordot for Autograd and Numpy if there are more than 2 wires
-            # Use tensordot in any case for more than 7 wires, as einsum does not support this case
-            if (num_op_wires > 2 and interface in {"autograd", "numpy"}) or num_op_wires > 7:
-                self._apply_channel_tensordot(matrices, wires)
-            else:
-                self._apply_channel(matrices, wires)
+        _apply_operation_core(
+            operation, self, mid_measurements=mid_measurements, postselect_mode=postselect_mode
+        )
 
     # pylint: disable=arguments-differ
 
@@ -772,7 +758,8 @@ class DefaultMixed(QubitDevice):
     @debug_logger
     def apply(self, operations, rotations=None, **kwargs):
         rotations = rotations or []
-
+        mid_measurements = kwargs.get("mid_measurements", None)
+        postselect_mode = kwargs.get("postselect_mode", None)
         # apply the circuit operations
         for i, operation in enumerate(operations):
             if i > 0 and isinstance(operation, (StatePrep, BasisState)):
@@ -782,16 +769,96 @@ class DefaultMixed(QubitDevice):
                 )
 
         for operation in operations:
-            self._apply_operation(operation)
+            self._apply_operation(
+                operation, mid_measurements=mid_measurements, postselect_mode=postselect_mode
+            )
 
         # store the pre-rotated state
         self._pre_rotated_state = self._state
 
         # apply the circuit rotations
         for operation in rotations:
-            self._apply_operation(operation)
+            self._apply_operation(
+                operation, mid_measurements=mid_measurements, postselect_mode=postselect_mode
+            )
 
         if self.readout_err:
             for k in self.measured_wires:
                 bit_flip = qml.BitFlip(self.readout_err, wires=k)
                 self._apply_operation(bit_flip)
+
+
+# pylint: disable=protected-access,unused-argument
+@functools.singledispatch
+def _apply_operation_core(operation, device, **_):
+    """Applies operations to the internal device state.
+
+    Args:
+        operation (.Operation): operation to apply on the device
+    """
+    wires = operation.wires
+
+    matrices = device._get_kraus(operation)
+
+    if operation in diagonal_in_z_basis:
+        device._apply_diagonal_unitary(matrices, wires)
+    else:
+        num_op_wires = len(wires)
+        interface = qml.math.get_interface(device._state, *matrices)
+        # Use tensordot for Autograd and Numpy if there are more than 2 wires
+        # Use tensordot in any case for more than 7 wires, as einsum does not support this case
+        if (num_op_wires > 2 and interface in {"autograd", "numpy"}) or num_op_wires > 7:
+            device._apply_channel_tensordot(matrices, wires)
+        else:
+            device._apply_channel(matrices, wires)
+
+
+@_apply_operation_core.register
+def _apply_operation_identity(operation: qml.Identity, device, **_):
+    return
+
+
+@_apply_operation_core.register
+def _apply_operation_stateprep(operation: StatePrep, device, **_):
+    wires = operation.wires
+    device._apply_state_vector(operation.parameters[0], wires)
+
+
+@_apply_operation_core.register
+def _apply_operation_basisstate(operation: BasisState, device, **_):
+    wires = operation.wires
+    device._apply_basis_state(operation.parameters[0], wires)
+
+
+@_apply_operation_core.register
+def _apply_operation_qubitdensitymatrix(operation: QubitDensityMatrix, device, **_):
+    wires = operation.wires
+    device._apply_density_matrix(operation.parameters[0], wires)
+
+
+@_apply_operation_core.register
+def _apply_operation_snapshot(operation: Snapshot, device, **_):
+    device._apply_snapshot(operation)
+
+
+@_apply_operation_core.register
+def _apply_operation_conditional(operation: Conditional, device, mid_measurements, **_):
+    if operation.meas_val.concretize(mid_measurements):
+        device._apply_operation(operation.base)
+
+
+@_apply_operation_core.register
+def _apply_operation_midmeasuremp(
+    operation: MidMeasureMP, device, mid_measurements, postselect_mode, **_
+):
+    wires = device.wires.indices(operation.wires)
+    wire = list(wires)[0]
+    if postselect_mode == "fill-shots" and operation.postselect is not None:
+        sample = operation.postselect
+    else:
+        sample = qml.math.reshape(device.generate_samples(shots=1), (-1,))[wire]
+    mid_measurements[operation] = sample
+    device._apply_operation(qml.Projector([sample], wire))
+    device._state = device._state / qml.math.trace(device._state)
+    if operation.reset and bool(sample):
+        device._apply_operation([qml.PauliX(operation.wires)])
