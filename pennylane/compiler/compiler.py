@@ -15,6 +15,7 @@
 
 import dataclasses
 import re
+import sys
 from collections import defaultdict
 from importlib import metadata, reload
 from sys import version_info
@@ -245,5 +246,6 @@ def active() -> bool:
     >>> qml.qjit(circuit)(np.pi, np.pi / 2)
     -1.0
     """
-
+    if "catalyst" not in sys.modules:
+        return False
     return active_compiler() is not None
