@@ -18,10 +18,13 @@ Tests for capturing nested plxpr.
 import pytest
 
 import pennylane as qml
+from pennylane.ops.op_math.adjoint import _get_adjoint_qfunc_prim
 
 pytestmark = pytest.mark.jax
 
 jax = pytest.importorskip("jax")
+
+adjoint_prim = _get_adjoint_qfunc_prim()
 
 
 @pytest.fixture(autouse=True)
@@ -31,71 +34,103 @@ def enable_disable_plxpr():
     qml.capture.disable()
 
 
-def test_adjoint_qfunc():
-    """Test that the adjoint qfunc transform can be captured."""
+class TestAdjointQfunc:
+    """Tests for the adjoint transform."""
 
-    def workflow(x):
-        qml.adjoint(qml.PauliRot)(x, pauli_word="XY", wires=(0, 1))
+    def test_adjoint_qfunc(self):
+        """Test that the adjoint qfunc transform can be captured."""
 
-    plxpr = jax.make_jaxpr(workflow)(0.5)
+        def workflow(x):
+            qml.adjoint(qml.PauliRot)(x, pauli_word="XY", wires=(0, 1))
 
-    assert len(plxpr.eqns) == 1
-    # assert plxpr.eqns[0].primitive == adjoint_transform.primitive
+        plxpr = jax.make_jaxpr(workflow)(0.5)
 
-    nested_jaxpr = plxpr.eqns[0].params["jaxpr"]
-    assert nested_jaxpr.eqns[0].primitive == qml.PauliRot._primitive
-    assert nested_jaxpr.eqns[0].params == {"id": None, "n_wires": 2, "pauli_word": "XY"}
+        assert len(plxpr.eqns) == 1
+        assert plxpr.eqns[0].primitive == adjoint_prim
 
-    assert plxpr.eqns[0].params["lazy"] is True
+        nested_jaxpr = plxpr.eqns[0].params["jaxpr"]
+        assert nested_jaxpr.eqns[0].primitive == qml.PauliRot._primitive
+        assert nested_jaxpr.eqns[0].params == {"id": None, "n_wires": 2, "pauli_word": "XY"}
 
-    with qml.queuing.AnnotatedQueue() as q:
-        jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, 1.2)
+        assert plxpr.eqns[0].params["lazy"] is True
 
-    assert len(q) == 1
-    qml.assert_equal(q.queue[0], qml.adjoint(qml.PauliRot(1.2, "XY", wires=(0, 1))))
+        with qml.queuing.AnnotatedQueue() as q:
+            jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, 1.2)
 
+        assert len(q) == 1
+        qml.assert_equal(q.queue[0], qml.adjoint(qml.PauliRot(1.2, "XY", wires=(0, 1))))
 
-def test_adjoint_qfunc_eager():
-    """Test eager execution can be captured by the qfunc transform."""
+    def test_adjoint_qfunc_eager(self):
+        """Test eager execution can be captured by the qfunc transform."""
 
-    def workflow(x, y, z):
-        qml.adjoint(qml.Rot, lazy=False)(x, y, z, 0)
+        def workflow(x, y, z):
+            qml.adjoint(qml.Rot, lazy=False)(x, y, z, 0)
 
-    plxpr = jax.make_jaxpr(workflow)(0.5, 0.7, 0.8)
+        plxpr = jax.make_jaxpr(workflow)(0.5, 0.7, 0.8)
 
-    assert len(plxpr.eqns) == 1
-    # assert plxpr.eqns[0].primitive == adjoint_transform.primitive
+        assert len(plxpr.eqns) == 1
+        assert plxpr.eqns[0].primitive == adjoint_prim
 
-    nested_jaxpr = plxpr.eqns[0].params["jaxpr"]
-    assert nested_jaxpr.eqns[0].primitive == qml.Rot._primitive
-    assert nested_jaxpr.eqns[0].params == {"n_wires": 1}
+        nested_jaxpr = plxpr.eqns[0].params["jaxpr"]
+        assert nested_jaxpr.eqns[0].primitive == qml.Rot._primitive
+        assert nested_jaxpr.eqns[0].params == {"n_wires": 1}
 
-    assert plxpr.eqns[0].params["lazy"] is False
+        assert plxpr.eqns[0].params["lazy"] is False
 
-    with qml.queuing.AnnotatedQueue() as q:
-        jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, -1.0, -2.0, -3.0)
+        with qml.queuing.AnnotatedQueue() as q:
+            jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, -1.0, -2.0, -3.0)
 
-    assert len(q) == 1
-    qml.assert_equal(q.queue[0], qml.Rot(3.0, 2.0, 1.0, 0))
+        assert len(q) == 1
+        qml.assert_equal(q.queue[0], qml.Rot(3.0, 2.0, 1.0, 0))
 
+    def test_multiple_ops_and_classical_processing(self):
+        """Tests applying the adjoint transform with multiple operations and classical procesing."""
 
-def test_nested_adjoint():
-    """Test that adjoint can be nested multiple times."""
+        def func(x, w):
+            qml.X(w)
+            qml.IsingXX(2 * x + 1, (w, w + 1))
+            return 2  # should be ignored by transform
 
-    def workflow(w):
-        return qml.adjoint(qml.adjoint(qml.X))(w)
+        def workflow(x):
+            qml.adjoint(func)(x, 5)
 
-    plxpr = jax.make_jaxpr(workflow)(10)
+        plxpr = jax.make_jaxpr(workflow)(0.5)
 
-    # assert plxpr.eqns[0].primitive == adjoint_transform.primitive
-    # assert plxpr.eqns[0].params["jaxpr"].eqns[0].primitive == adjoint_transform.primitive
-    assert (
-        plxpr.eqns[0].params["jaxpr"].eqns[0].params["jaxpr"].eqns[0].primitive
-        == qml.PauliX._primitive
-    )
+        with qml.queuing.AnnotatedQueue() as q:
+            out = jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, 1.2)
 
-    with qml.queuing.AnnotatedQueue() as q:
-        out = jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, 10)[0]
+        expected_op1 = qml.adjoint(qml.X(5))
+        qml.assert_equal(out[0], expected_op1)
+        qml.assert_equal(q.queue[0], expected_op1)
+        expected_op2 = qml.Adjoint(qml.IsingXX(2 * 1.2 + 1, wires=(5, 6)))
+        qml.assert_equal(out[1], expected_op2)
+        qml.assert_equal(q.queue[1], expected_op2)
 
-    qml.assert_equal(out, qml.adjoint(qml.adjoint(qml.X(10))))
-    qml.assert_equal(q.queue[0], out)
+        assert len(out) == len(q.queue) == 2
+
+        assert plxpr.eqns[0].primitive == adjoint_prim
+        assert plxpr.eqns[0].params["lazy"] is True
+
+        inner_plxpr = plxpr.eqns[0].params["jaxpr"]
+        assert len(inner_plxpr.eqns) == 5
+
+    def test_nested_adjoint(self):
+        """Test that adjoint can be nested multiple times."""
+
+        def workflow(w):
+            return qml.adjoint(qml.adjoint(qml.X))(w)
+
+        plxpr = jax.make_jaxpr(workflow)(10)
+
+        assert plxpr.eqns[0].primitive == adjoint_prim
+        assert plxpr.eqns[0].params["jaxpr"].eqns[0].primitive == adjoint_prim
+        assert (
+            plxpr.eqns[0].params["jaxpr"].eqns[0].params["jaxpr"].eqns[0].primitive
+            == qml.PauliX._primitive
+        )
+
+        with qml.queuing.AnnotatedQueue() as q:
+            out = jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, 10)[0]
+
+        qml.assert_equal(out, qml.adjoint(qml.adjoint(qml.X(10))))
+        qml.assert_equal(q.queue[0], out)

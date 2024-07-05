@@ -33,7 +33,6 @@ quantum-classical programs.
     ~create_measurement_obs_primitive
     ~create_measurement_wires_primitive
     ~create_measurement_mcm_primitive
-    ~bind_nested_plxpr
     ~qnode_call
 
 To activate and deactivate the new PennyLane program capturing mechanism, use
@@ -134,7 +133,6 @@ from .primitives import (
     create_measurement_wires_primitive,
     create_measurement_mcm_primitive,
 )
-from .bind_nested_plxpr import bind_nested_plxpr
 from .capture_qnode import qnode_call
 
 # by defining this here, we avoid

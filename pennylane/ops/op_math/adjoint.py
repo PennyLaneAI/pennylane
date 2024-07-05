@@ -188,7 +188,7 @@ def create_adjoint_op(fn, lazy):
 
 @lru_cache  # only create the first time requested
 def _get_adjoint_qfunc_prim():
-    """See capture/explanations.md Higher Order primitives for more information on this code."""
+    """See capture/explanations.md : Higher Order primitives for more information on this code."""
     # if capture is enabled, jax should be installed
     import jax  # pylint: disable=import-outside-toplevel
 
@@ -201,8 +201,8 @@ def _get_adjoint_qfunc_prim():
     def _(*args, jaxpr, lazy=True):
         with qml.queuing.AnnotatedQueue() as q:
             jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *args)
-        qscript = qml.tape.QuantumScript.from_queue(q)
-        return [adjoint(op, lazy=lazy) for op in qscript.operations]
+        ops, _ = qml.queuing.process_queue(q)
+        return [adjoint(op, lazy=lazy) for op in ops]
 
     def _is_queued_outvar(outvars):
         if not outvars:
@@ -225,10 +225,13 @@ def _get_adjoint_qfunc_prim():
 
 
 def _capture_adjoint_transform(qfunc: Callable, lazy=True) -> Callable:
+    """Capture compatible way of performing an adjoint transform."""
+    # note that this logic is tested in `tests/capture/test_nested_plxpr.py`
     import jax  # pylint: disable=import-outside-toplevel
 
     qnode_prim = _get_adjoint_qfunc_prim()
 
+    @wraps(qfunc)
     def new_qfunc(*args, **kwargs):
         jaxpr = jax.make_jaxpr(partial(qfunc, **kwargs))(*args)
         return qnode_prim.bind(*args, jaxpr=jaxpr, lazy=lazy)
@@ -237,7 +240,7 @@ def _capture_adjoint_transform(qfunc: Callable, lazy=True) -> Callable:
 
 
 def _adjoint_transform(qfunc: Callable, lazy=True) -> Callable:
-
+    # default adjoint transform when capture is not enabled.
     @wraps(qfunc)
     def wrapper(*args, **kwargs):
         qscript = make_qscript(qfunc)(*args, **kwargs)
@@ -251,7 +254,7 @@ def _adjoint_transform(qfunc: Callable, lazy=True) -> Callable:
     return wrapper
 
 
-def _single_op_eager(op, update_queue=False):
+def _single_op_eager(op: Operator, update_queue: bool = False) -> Operator:
     if op.has_adjoint:
         adj = op.adjoint()
         if update_queue:
