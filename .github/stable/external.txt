@@ -16,7 +16,7 @@ beautifulsoup4==4.12.3
 black==24.4.2
 bleach==6.1.0
 cachetools==5.3.3
-certifi==2024.6.2
+certifi==2024.7.4
 cffi==1.16.0
 cfgv==3.4.0
 charset-normalizer==3.3.2
@@ -43,7 +43,7 @@ fastjsonschema==2.20.0
 filelock==3.15.4
 flaky==3.8.1
 flatbuffers==24.3.25
-fonttools==4.53.0
+fonttools==4.53.1
 fqdn==1.5.1
 future==1.0.0
 gast==0.6.0
@@ -61,7 +61,7 @@ iniconfig==2.0.0
 ipykernel==6.29.5
 ipython==8.18.1
 ipython-genutils==0.2.0
-ipywidgets==7.8.1
+ipywidgets==7.8.2
 isoduration==20.11.0
 isort==5.13.2
 jax==0.4.23
@@ -79,9 +79,9 @@ jupyter_core==5.7.2
 jupyter_server==2.14.1
 jupyter_server_terminals==0.5.3
 jupyterlab==4.2.3
-jupyterlab-widgets==1.1.7
 jupyterlab_pygments==0.3.0
 jupyterlab_server==2.27.2
+jupyterlab_widgets==1.1.8
 keras==3.4.1
 kiwisolver==1.4.5
 lark==1.1.9
@@ -91,7 +91,7 @@ llvmlite==0.43.0
 Markdown==3.6
 markdown-it-py==3.0.0
 MarkupSafe==2.1.5
-matplotlib==3.9.0
+matplotlib==3.9.1
 matplotlib-inline==0.1.7
 mccabe==0.6.1
 mdurl==0.1.2
@@ -110,7 +110,7 @@ notebook_shim==0.2.4
 numba==0.60.0
 numpy==1.26.4
 opt-einsum==3.3.0
-optree==0.11.0
+optree==0.12.0
 osqp==0.6.7.post0
 overrides==7.7.0
 packaging==24.1
@@ -191,6 +191,6 @@ webcolors==24.6.0
 webencodings==0.5.1
 websocket-client==1.8.0
 Werkzeug==3.0.3
-widgetsnbextension==3.6.6
+widgetsnbextension==3.6.7
 wrapt==1.12.1
 zipp==3.19.2

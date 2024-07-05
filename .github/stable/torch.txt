@@ -4,7 +4,7 @@ autograd==1.6.2
 autoray==0.6.12
 black==24.4.2
 cachetools==5.3.3
-certifi==2024.6.2
+certifi==2024.7.4
 cfgv==3.4.0
 charset-normalizer==3.3.2
 clarabel==0.9.0
@@ -20,7 +20,7 @@ exceptiongroup==1.2.1
 execnet==2.1.1
 filelock==3.15.4
 flaky==3.8.1
-fonttools==4.53.0
+fonttools==4.53.1
 fsspec==2024.6.1
 future==1.0.0
 identify==2.5.36
@@ -32,7 +32,7 @@ Jinja2==3.1.4
 kiwisolver==1.4.5
 lazy-object-proxy==1.10.0
 MarkupSafe==2.1.5
-matplotlib==3.9.0
+matplotlib==3.9.1
 mccabe==0.6.1
 mpmath==1.3.0
 mypy-extensions==1.0.0

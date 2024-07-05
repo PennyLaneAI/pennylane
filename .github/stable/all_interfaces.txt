@@ -6,7 +6,7 @@ autograd==1.6.2
 autoray==0.6.12
 black==24.4.2
 cachetools==5.3.3
-certifi==2024.6.2
+certifi==2024.7.4
 cfgv==3.4.0
 charset-normalizer==3.3.2
 clarabel==0.9.0
@@ -23,7 +23,7 @@ execnet==2.1.1
 filelock==3.15.4
 flaky==3.8.1
 flatbuffers==24.3.25
-fonttools==4.53.0
+fonttools==4.53.1
 fsspec==2024.6.1
 future==1.0.0
 gast==0.6.0
@@ -46,7 +46,7 @@ libclang==18.1.1
 Markdown==3.6
 markdown-it-py==3.0.0
 MarkupSafe==2.1.5
-matplotlib==3.9.0
+matplotlib==3.9.1
 mccabe==0.6.1
 mdurl==0.1.2
 ml-dtypes==0.3.2
@@ -57,7 +57,7 @@ networkx==3.2.1
 nodeenv==1.9.1
 numpy==1.26.4
 opt-einsum==3.3.0
-optree==0.11.0
+optree==0.12.0
 osqp==0.6.7.post0
 packaging==24.1
 pathspec==0.12.1
