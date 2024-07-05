@@ -352,7 +352,9 @@ class DefaultTensor(Device):
             The execution time for this circuit with the above parameters is around 0.8 seconds on a standard laptop.
 
             The tensor network method can be faster than MPS and state vector methods in some cases.
-            As a comparison, the time for the exact calculation (i.e., with ``max_bond_dim = None``) of the same circuit with the `default.tensor` device using the MPS method is approximately three orders of magnitude slower. Using the ``default.qubit`` device also results in a much slower simulation.
+            As a comparison, the time for the exact calculation (i.e., with ``max_bond_dim = None``) of the same circuit
+            using the ``MPS`` method of the ``default.tensor`` device is approximately three orders of magnitude slower.
+            Similarly, using the ``default.qubit`` device results in a much slower simulation.
     """
 
     # pylint: disable=too-many-instance-attributes
