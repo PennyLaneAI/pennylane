@@ -144,7 +144,7 @@ class Wires(Sequence):
 
     def __repr__(self):
         """Method defining the string representation of this class."""
-        return f"<Wires = {list(self._labels)}>"
+        return f"Wires({list(self._labels)})"
 
     def __eq__(self, other):
         """Method to support the '==' operator.
@@ -492,6 +492,28 @@ class Wires(Sequence):
                     unique.append(wire)
 
         return Wires(tuple(unique), _override=True)
+    
+def registers(register_dict, _start_wire_index=0):
+    all_reg = {}
+    for register_name, register_wires in register_dict.items():
+        if isinstance(register_wires, dict):
+            inner_register_dict = registers(register_wires, _start_wire_index=_start_wire_index)
+            wire_vals = []
+            for inner_register_name, register_wires in inner_register_dict.items():
+                wire_vals.extend(register_wires.tolist())
+                all_reg[inner_register_name] = register_wires
+
+            wires = Wires(range(_start_wire_index, all_reg[inner_register_name]._labels[-1] + 1))
+
+            all_reg[register_name] = wires
+            _start_wire_index = wire_vals[-1] + 1
+        elif isinstance(register_wires, int):
+            wires = Wires(range(_start_wire_index, register_wires + _start_wire_index))
+
+            _start_wire_index += register_wires
+            all_reg[register_name] = wires
+
+    return all_reg
 
 
 # Register Wires as a PyTree-serializable class
