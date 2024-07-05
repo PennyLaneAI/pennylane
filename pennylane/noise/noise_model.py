@@ -124,7 +124,7 @@ class NoiseModel:
         return model_str
 
     @staticmethod
-    def check_model(model):
+    def check_model(model: dict) -> None:
         """Method to validate the ``model`` map for constructing a NoiseModel."""
         for condition, noise in model.items():
             if not isinstance(condition, qml.BooleanFn):
