@@ -103,6 +103,9 @@
 * `default.clifford` now supports arbitrary state-based measurements with `qml.Snapshot`.
   [(#5794)](https://github.com/PennyLaneAI/pennylane/pull/5794)
 
+* The sorting order of parameter-shift terms is now guaranteed to resolve ties in the absolute value with the sign of the shifts.
+  [(#5583)](https://github.com/PennyLaneAI/pennylane/pull/5583)
+
 * Implemented kwargs (`check_interface`, `check_trainability`, `rtol` and `atol`) support in `qml.equal` for the operators `Pow`, `Adjoint`, `Exp`, and `SProd`.
   [(#5668)](https://github.com/PennyLaneAI/pennylane/issues/5668)
   
@@ -351,6 +354,7 @@
   [(#5828)](https://github.com/PennyLaneAI/pennylane/pull/5828)
   [(#5869)](https://github.com/PennyLaneAI/pennylane/pull/5869)
   [(#5939)](https://github.com/PennyLaneAI/pennylane/pull/5939)
+  [(#5945)](https://github.com/PennyLaneAI/pennylane/pull/5945)
 
 * `qml.devices.LegacyDevice` is now an alias for `qml.Device`, so it is easier to distinguish it from
   `qml.devices.Device`, which follows the new device API.
@@ -470,6 +474,9 @@
   [(5484)](https://github.com/PennyLaneAI/pennylane/pull/5484)
 
 <h3>Bug fixes 🐛</h3>
+
+* The `__invert__` dunder method of the `MeasurementValue` class uses an array-valued function.
+  [(#5955)](https://github.com/PennyLaneAI/pennylane/pull/5955)
 
 * Skip `Projector`-measurement tests on devices that do not support it.
   [(#5951)](https://github.com/PennyLaneAI/pennylane/pull/5951)
