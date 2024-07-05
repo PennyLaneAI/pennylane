@@ -207,6 +207,8 @@ def active_compiler() -> Optional[str]:
     """
 
     for name, eps in AvailableCompilers.names_entrypoints.items():
+        if name not in sys.modules:
+            continue
         tracer_loader = eps["context"].load()
         if tracer_loader.is_tracing():
             return name
@@ -246,6 +248,4 @@ def active() -> bool:
     >>> qml.qjit(circuit)(np.pi, np.pi / 2)
     -1.0
     """
-    if "catalyst" not in sys.modules:
-        return False
     return active_compiler() is not None
