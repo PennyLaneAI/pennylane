@@ -323,13 +323,15 @@ def construct_batch(
 
         context_fn = nullcontext
 
-        if isinstance(qnode, qml.qnn.KerasLayer):
+        if type(qnode).__name__ == "KerasLayer":
+            # note that calling qml.qnn.KerasLayer pulls in a tf import
             # pylint: disable=import-outside-toplevel
             import tensorflow as tf
 
             context_fn = tf.GradientTape
 
-        if isinstance(qnode, qml.qnn.TorchLayer):
+        elif type(qnode).__name__ == "TorchLayer":
+            # avoid triggering import of torch if its not needed.
             x = args[0]
             kwargs = {
                 **{arg: weight.to(x) for arg, weight in qnode.qnode_weights.items()},
