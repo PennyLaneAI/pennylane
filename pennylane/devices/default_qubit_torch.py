@@ -321,7 +321,7 @@ class DefaultQubitTorch(DefaultQubitLegacy):
             return self._asarray(unitary.eigvals(), dtype=self.C_DTYPE)
         return self._asarray(unitary.matrix(), dtype=self.C_DTYPE)
 
-    def sample_basis_states(self, number_of_states, state_probability):
+    def sample_basis_states(self, number_of_states, state_probability, shots: int = None):
         """Sample from the computational basis states based on the state
         probability.
 
@@ -330,10 +330,11 @@ class DefaultQubitTorch(DefaultQubitLegacy):
         Args:
             number_of_states (int): the number of basis states to sample from
             state_probability (torch.Tensor[float]): the computational basis probability vector
+            shots (int, None): number of shots if ``shots`` is of type ``int``, the device attribute ``shots`` is used otherwise
 
         Returns:
             List[int]: the sampled basis states
         """
         return super().sample_basis_states(
-            number_of_states, state_probability.cpu().detach().numpy()
+            number_of_states, state_probability.cpu().detach().numpy(), shots=shots
         )

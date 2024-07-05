@@ -50,7 +50,7 @@ def test_parse_native_mid_circuit_measurements_unsupported_meas(measurement):
 
 def test_postselection_error_with_wrong_device():
     """Test that an error is raised when a device does not support native execution."""
-    dev = qml.device("default.mixed", wires=2)
+    dev = qml.device("default.qutrit", wires=2)
 
     with pytest.raises(TypeError, match="does not support mid-circuit measurements natively"):
 

@@ -849,7 +849,7 @@ class QubitDevice(Device):
 
         return state
 
-    def generate_samples(self, shots=None):
+    def generate_samples(self, shots: int = None):
         r"""Returns the computational basis samples generated for all wires.
 
         Note that PennyLane uses the convention :math:`|q_0,q_1,\dots,q_{N-1}\rangle` where
