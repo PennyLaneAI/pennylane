@@ -91,7 +91,7 @@ def mutual_info(wires0, wires1, log_base=None):
 class MutualInfoMP(StateMeasurement):
     """Measurement process that computes the mutual information between the provided wires.
 
-    Please refer to :func:`mutual_info` for detailed documentation.
+    Please refer to :func:`pennylane.mutual_info` for detailed documentation.
 
     Args:
         wires (Sequence[.Wires]): The wires the measurement process applies to.
