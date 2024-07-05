@@ -492,8 +492,32 @@ class Wires(Sequence):
                     unique.append(wire)
 
         return Wires(tuple(unique), _override=True)
-    
+
+
 def registers(register_dict, _start_wire_index=0):
+    """Returns the registers for the given dictionary of registers. The registers are a dictionary
+    of Wires objects where the key is the register name and the value is the Wires object. The
+    ordering of the Wires objects in the dictionary is based on appearance order first, then on
+    nestedness.
+
+    Args:
+        register_dict (dict[str, int]): dictionary of registers where the keys are the name of the
+        registers and the values are the number of qubits for said register
+
+    Returns:
+        dict (Wires): dictionary of Wires objects (value) belonging to registers (keys)
+
+    **Example**
+
+    >>> wire_dict = qml.registers({"alice": 3, "bob": {"nest1": 3, "nest2": 3}, "cleo": 3})
+    >>> wire_dict
+    {'alice': Wires([0, 1, 2]),
+    'nest1': Wires([3, 4, 5]),
+    'nest2': Wires([6, 7, 8]),
+    'bob': Wires([3, 4, 5, 6, 7, 8]),
+    'cleo': Wires([9, 10, 11])}
+    """
+
     all_reg = {}
     for register_name, register_wires in register_dict.items():
         if isinstance(register_wires, dict):
