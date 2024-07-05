@@ -561,7 +561,7 @@ Stay tuned for an in-depth demonstration on using this feature with real-world e
 <h4>Other improvements</h4>
 
 * `qml.MultiControlledX` can now be decomposed even when no `work_wires` are provided. The implementation 
-  returns :math:`\mathcal{O}(\text{len(control\_wires)}^2)` operations and is applicable for any multi-controlled 
+  returns :math:`\mathcal{O}(\mbox{len(control\_wires)}^2)` operations and is applicable for any multi-controlled 
   unitary gate. This decomposition is provided in [arXiv:quant-ph/9503016](https://arxiv.org/abs/quant-ph/9503016).
   [(#5735)](https://github.com/PennyLaneAI/pennylane/pull/5735)
 
