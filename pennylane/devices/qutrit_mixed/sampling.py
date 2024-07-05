@@ -120,7 +120,7 @@ def _measure_with_samples_diagonalizing_gates(
             If no value is provided, a default RNG will be used.
         prng_key (Optional[jax.random.PRNGKey]): An optional ``jax.random.PRNGKey``. This is
             the key to the JAX pseudo random number generator. Only for simulation using JAX.
-        readout_errors (List[Callable]): List of operators to apply to each wire being measured
+        readout_errors (List[Callable]): List of channels to apply to each wire being measured
         to simulate readout errors.
 
     Returns:
@@ -243,7 +243,7 @@ def _sample_state_jax(
             the key to the JAX pseudo random number generator.
         is_state_batched (bool): whether the state is batched or not
         wires (Sequence[int]): The wires to sample
-        readout_errors (List[Callable]): List of operators to apply to each wire being measured
+        readout_errors (List[Callable]): List of channels to apply to each wire being measured
         to simulate readout errors.
 
     Returns:
@@ -307,7 +307,7 @@ def sample_state(
             If no value is provided, a default RNG will be used
         prng_key (Optional[jax.random.PRNGKey]): An optional ``jax.random.PRNGKey``. This is
             the key to the JAX pseudo random number generator. Only for simulation using JAX.
-        readout_errors (List[Callable]): List of operators to apply to each wire being measured
+        readout_errors (List[Callable]): List of channels to apply to each wire being measured
         to simulate readout errors.
 
     Returns:
@@ -370,7 +370,7 @@ def measure_with_samples(
             If no value is provided, a default RNG will be used.
         prng_key (Optional[jax.random.PRNGKey]): An optional ``jax.random.PRNGKey``. This is
             the key to the JAX pseudo random number generator. Only for simulation using JAX.
-        readout_errors (List[Callable]): List of operators to apply to each wire being measured
+        readout_errors (List[Callable]): List of channels to apply to each wire being measured
         to simulate readout errors.
 
     Returns:

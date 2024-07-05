@@ -114,12 +114,12 @@ def get_readout_errors(readout_relaxation_probs, readout_misclassification_probs
     r"""Get the list of readout errors that should be applied to each measured wire.
 
     Args:
-        readout_relaxation_probs (List[float]): Inputs for qml.QutritAmplitudeDamping channel
-            of the form :math:`[\gamma_{10}, \gamma_{20}, \gamma_{21}]`. This error models the expected
-            amplitude damping from longer readout with shorter relaxation time associated with
-            transmon based qudits.
-        s (List[float]): Inputs for qml.TritFlip channel
-            of the form :math:`[\p_{01}, \p_{02}, \p_{12}]`. This error models misclassification events
+        readout_relaxation_probs (List[float]): Inputs for :class:`~.QutritAmplitudeDamping` channel
+            of the form :math:`[\gamma_{10}, \gamma_{20}, \gamma_{21}]`. This error models
+            amplitude damping associated with longer readout and varying relaxation times of 
+            transmon-based qudits.
+        readout_misclassification_probs (List[float]): Inputs for :class:`~.TritFlip` channel
+            of the form :math:`[p_{01}, p_{02}, p_{12}]`. This error models misclassification events
             in readout.
 
     Returns:
@@ -164,12 +164,12 @@ class DefaultQutritMixed(Device):
             If a ``jax.random.PRNGKey`` is passed as the seed, a JAX-specific sampling function using
             ``jax.random.choice`` and the ``PRNGKey`` will be used for sampling rather than
             ``numpy.random.default_rng``.
-        readout_relaxation_probs (List[float]): Input probabilities for relation input errors implemented
+        readout_relaxation_probs (List[float]): Input probabilities for relaxation errors implemented
             with the :class:`~.QutritAmplitudeDamping` channel. The input defines the
             channel's parameters :math:`[\gamma_{10}, \gamma_{20}, \gamma_{21}]`.
         readout_misclassification_probs (List[float]):  Input probabilities for state readout
             misclassification events implemented with the :class:`~.TritFlip` channel. The input defines the
-            channel's parameters :math:`[\p_{01}, \p_{02}, \p_{12}]`.
+            channel's parameters :math:`[p_{01}, p_{02}, p_{12}]`.
 
     **Example:**
 
@@ -223,17 +223,16 @@ class DefaultQutritMixed(Device):
     .. details::
         :title: Readout Error
 
-        ``DefaultQutritMixed`` includes readout error support. There are two readout error inputs
-        which apply an error channel to the state after it has
-        been diagonalized for the measurement:
+        ``DefaultQutritMixed`` includes readout error support. Two input arguments control
+        the effect of error channels applied to the state after it has been diagonalized for measurement:
 
-        * ``readout_relaxation_probs``: Defines the readout error inputs of :class:`qml.QutritAmplitudeDamping` channel. This error models state relaxation error that occur during readout of transmon based qutrits. The motivation for this readout error is decribed in [`1 <https://arxiv.org/abs/2003.03307>`_] (Sec II.A).
-        * ``readout_misclassification_probs``: Defines the inputs of :class:`qml.TritFlip` channel. This error models misclassification events in readout. An example of this readout error can be seen in [`2 <https://arxiv.org/abs/2309.11303>`_] (Fig 1a).
+        * ``readout_relaxation_probs``:  Input parameters of a :class:`~.QutritAmplitudeDamping` channel. This error models state relaxation error that occurs during readout of transmon-based qutrits. The motivation for this readout error is described in [`1 <https://arxiv.org/abs/2003.03307>`_] (Sec II.A).
+        * ``readout_misclassification_probs``: Input parameters of a :class:`~.TritFlip` channel. This error models misclassification events in readout. An example of this readout error can be seen in [`2 <https://arxiv.org/abs/2309.11303>`_] (Fig 1a).
 
         .. note::
-            Relaxation Error, defined by `readout_relaxation_probs` and implemented with
-            class:`qml.QutritAmplitudeDamping`, is applied first. Then Misclassification, defined
-            by `readout_misclassification_probs` and implemented with :class:`qml.TritFlip`,
+            Relaxation error, defined by `readout_relaxation_probs` and implemented with
+            class:`~.QutritAmplitudeDamping`, is applied first. Then misclassification, defined
+            by `readout_misclassification_probs` and implemented with :class:` `~qml.TritFlip`,
             is applied.
 
         .. note::

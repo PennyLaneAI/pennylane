@@ -117,7 +117,7 @@ def measure_final_state(  # pylint: disable=too-many-arguments
             the key to the JAX pseudo random number generator. Only for simulation using JAX.
             If None, the default ``sample_state`` function and a ``numpy.random.default_rng``
             will be for sampling.
-        readout_errors (List[Callable]): List of operators to apply to each wire being measured
+        readout_errors (List[Callable]): List of channels to apply to each wire being measured
         to simulate readout errors.
 
     Returns:
@@ -179,7 +179,7 @@ def simulate(  # pylint: disable=too-many-arguments
             generated. Only for simulation using JAX.
         debugger (_Debugger): The debugger to use
         interface (str): The machine learning interface to create the initial state with
-        readout_errors (List[Callable]): List of operators to apply to each wire being measured
+        readout_errors (List[Callable]): List of channels to apply to each wire being measured
         to simulate readout errors.
 
     Returns:

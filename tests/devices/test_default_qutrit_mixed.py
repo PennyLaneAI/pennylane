@@ -1339,7 +1339,7 @@ class TestReadoutError:
     @pytest.mark.parametrize(
         "relax_and_misclass, expected", zip(relax_and_misclass, expected_probs)
     )
-    def test_readout_probs(self, nr_wires, relax_and_misclass, expected):
+    def test_probs_with_readout_error(self, nr_wires, relax_and_misclass, expected):
         """Tests the measurement results for probs"""
         dev = qml.device(
             "default.qutrit.mixed",
@@ -1356,7 +1356,7 @@ class TestReadoutError:
         res = circuit()
         assert np.allclose(res, expected)
 
-    # Expected expval list from circuit with diagonal observables after the readouts errors
+    # Expected expval list from circuit with diagonal observables after the readout errors
     # defined by relax_and_misclass are applied.
     expected_commuting_expvals = [
         [1 / 6, 1 / (2 * np.sqrt(3)), 1 / 6],

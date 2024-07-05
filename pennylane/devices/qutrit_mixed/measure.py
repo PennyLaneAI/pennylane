@@ -47,7 +47,7 @@ def calculate_expval(
         measurementprocess (ExpectationMP): measurement process to apply to the state.
         state (TensorLike): the state to measure.
         is_state_batched (bool): whether the state is batched or not.
-        readout_errors (List[Callable]): List of operators to apply to each wire being measured
+        readout_errors (List[Callable]): List of chanels to apply to each wire being measured
         to simulate readout errors.
 
     Returns:
@@ -109,7 +109,7 @@ def calculate_probability(
         measurementprocess (StateMeasurement): measurement to apply to the state.
         state (TensorLike): state to apply the measurement to.
         is_state_batched (bool): whether the state is batched or not.
-        readout_errors (List[Callable]): List of operators to apply to each wire being measured
+        readout_errors (List[Callable]): List of channels to apply to each wire being measured
         to simulate readout errors.
 
     Returns:
@@ -212,7 +212,7 @@ def calculate_expval_sum_of_terms(
         measurementprocess (ExpectationMP): measurement process to apply to the state.
         state (TensorLike): the state to measure.
         is_state_batched (bool): whether the state is batched or not.
-        readout_errors (List[Callable]): List of operators to apply to each wire being measured
+        readout_errors (List[Callable]): List of channels to apply to each wire being measured
         to simulate readout errors.
 
     Returns:
@@ -286,7 +286,7 @@ def measure(
         measurementprocess (MeasurementProcess): measurement process to apply to the state.
         state (TensorLike): the state to measure.
         is_state_batched (bool): whether the state is batched or not.
-        readout_errors (List[Callable]): List of operators to apply to each wire being measured
+        readout_errors (List[Callable]): List of channels to apply to each wire being measured
         to simulate readout errors.
 
     Returns:
