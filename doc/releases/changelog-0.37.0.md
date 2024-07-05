@@ -356,8 +356,6 @@ Stay tuned for an in-depth demonstration on using this feature with real-world e
   `check_trainability`, `atol` and `rtol`.
   [(#5668)](https://github.com/PennyLaneAI/pennylane/pull/5668)
   
-* The sorting order of parameter-shift terms is now guaranteed to resolve ties in the absolute value with the sign of the shifts.
-  [(#5583)](https://github.com/PennyLaneAI/pennylane/pull/5583)
   
 * The implementation for `qml.assert_equal` has been updated for `Operator`, `Controlled`, `Adjoint`, 
   `Pow`, `Exp`, `SProd`, `ControlledSequence`, `Prod`, `Sum`, `Tensor` and `Hamiltonian` instances.
