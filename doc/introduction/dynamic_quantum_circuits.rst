@@ -323,11 +323,11 @@ before and after applying the transform:
 
 .. code-block:: pycon
 
-    >>> qml.draw(my_qnode)(*pars)
+    >>> print(qml.draw(my_qnode)(*pars))
     0: ──RY(0.64)─╭●───────RY(0.25)─┤  Probs
     1: ───────────╰X──┤↗├──║────────┤
                        ╚═══╩════════╡  <MCM>
-    >>> qml.draw(deferred_qnode)(*pars)
+    >>> print(qml.draw(deferred_qnode)(*pars))
     0: ──RY(0.64)─╭●────╭RY(0.25)─┤  Probs
     1: ───────────╰X─╭●─│─────────┤
     2: ──────────────╰X─╰●────────┤  <None>
