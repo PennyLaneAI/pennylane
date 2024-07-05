@@ -474,8 +474,8 @@
 
 <h3>Bug fixes 🐛</h3>
 
-* The ``__invert__`` dunder method of the `MeasurementValue` class uses an array-valued function.
-  [(#5954)](https://github.com/PennyLaneAI/pennylane/pull/5954)
+* The `__invert__` dunder method of the `MeasurementValue` class uses an array-valued function.
+  [(#5955)](https://github.com/PennyLaneAI/pennylane/pull/5955)
 
 * Skip `Projector`-measurement tests on devices that do not support it.
   [(#5951)](https://github.com/PennyLaneAI/pennylane/pull/5951)
