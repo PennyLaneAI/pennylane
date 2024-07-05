@@ -422,7 +422,7 @@
   [(#5654)](https://github.com/PennyLaneAI/pennylane/pull/5654)
 
 * `qml.transforms.convert_to_numpy_parameters` is now a proper transform and its output signature has changed,
-  returning a list of `QuantumTape`s and a post-processing function instead of simply the transformed circuit.
+  returning a list of `QuantumScript`s and a post-processing function instead of simply the transformed circuit.
   [(#5693)](https://github.com/PennyLaneAI/pennylane/pull/5693)
 
 * `Controlled.wires` does not include `self.work_wires` anymore. That can be accessed separately through `Controlled.work_wires`.
@@ -471,6 +471,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Skip `Projector`-measurement tests on devices that do not support it.
+  [(#5951)](https://github.com/PennyLaneAI/pennylane/pull/5951)
+
 * The `default.tensor` device now preserves the order of wires if the initial MPS is created from a dense state vector.
   [(#5892)](https://github.com/PennyLaneAI/pennylane/pull/5892)
 
@@ -504,7 +507,7 @@
 * An error is now raised if a transform is applied to a catalyst qjit object.
   [(#5826)](https://github.com/PennyLaneAI/pennylane/pull/5826)
 
-* `KerasLayer` and `TorchLayer` no longer mutate the input `QNode`'s interface.
+* `qml.qnn.KerasLayer` and `qml.qnn.TorchLayer` no longer mutate the input `qml.QNode`'s interface.
   [(#5800)](https://github.com/PennyLaneAI/pennylane/pull/5800)
 
 * Disable Docker builds on PR merge.

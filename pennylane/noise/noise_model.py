@@ -61,7 +61,7 @@ class NoiseModel:
 
     >>> noise_model
     NoiseModel({
-        OpEq(PauliX) | OpEq(PauliY): n1
+        OpEq(PauliX) | OpEq(PauliY): n0
         OpEq(Hadamard) & WiresIn([0, 1]): AmplitudeDamping(0.4, wires),
     }, t1=0.04)
     """
