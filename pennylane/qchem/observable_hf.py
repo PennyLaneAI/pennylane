@@ -136,6 +136,9 @@ def qubit_observable(o_ferm, cutoff=1.0e-12, mapping="jordan_wigner"):
     """
     if mapping == "jordan_wigner":
         h = qml.jordan_wigner(o_ferm, ps=True, tol=cutoff)
+        if list(h.wires) != sorted(list(h.wires)):
+            h = sum(i * h[i] for i in sorted(h.keys(), key=lambda x: list(x.wires)))
+
     elif mapping == "parity":
         qubits = len(o_ferm.wires)
         h = qml.parity_transform(o_ferm, qubits, ps=True, tol=cutoff)
