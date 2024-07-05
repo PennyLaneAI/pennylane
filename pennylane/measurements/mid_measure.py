@@ -419,7 +419,7 @@ class MeasurementValue(Generic[T]):
     def __invert__(self):
         """Return a copy of the measurement value with an inverted control
         value."""
-        return self._apply(lambda v: not v)
+        return self._apply(qml.math.logical_not)
 
     def __eq__(self, other):
         return self._transform_bin_op(lambda a, b: a == b, other)
