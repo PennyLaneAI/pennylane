@@ -64,6 +64,7 @@ class BooleanFn:
     Other supported operators are ``|`` (logical or) and ``~`` (logical not):
 
     .. code-block:: python
+
         smaller_equal_than_4 = ~bigger_than_4
         smaller_than_10_or_int = smaller_than_10 | is_int
 
