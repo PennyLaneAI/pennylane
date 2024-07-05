@@ -103,6 +103,9 @@
 * `default.clifford` now supports arbitrary state-based measurements with `qml.Snapshot`.
   [(#5794)](https://github.com/PennyLaneAI/pennylane/pull/5794)
 
+* The sorting order of parameter-shift terms is now guaranteed to resolve ties in the absolute value with the sign of the shifts.
+  [(#5583)](https://github.com/PennyLaneAI/pennylane/pull/5583)
+
 * Implemented kwargs (`check_interface`, `check_trainability`, `rtol` and `atol`) support in `qml.equal` for the operators `Pow`, `Adjoint`, `Exp`, and `SProd`.
   [(#5668)](https://github.com/PennyLaneAI/pennylane/issues/5668)
   
