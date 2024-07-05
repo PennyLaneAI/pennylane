@@ -21,7 +21,7 @@
   [(#5919)](https://github.com/PennyLaneAI/pennylane/pull/5919)
 
 * The representation for `Wires` has now changed to be more copy-paste friendly.
-  [(#5919)](https://github.com/PennyLaneAI/pennylane/pull/5919)
+  [(#5958)](https://github.com/PennyLaneAI/pennylane/pull/5958)
 
 <h3>Breaking changes 💔</h3>
 
