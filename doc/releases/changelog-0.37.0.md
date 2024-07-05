@@ -582,7 +582,7 @@ Stay tuned for an in-depth demonstration on using this feature with real-world e
   [(#5667)](https://github.com/PennyLaneAI/pennylane/pull/5667)
 
 * `qml.TrotterProduct` is now compatible with resource tracking by inheriting from `ResourcesOperation`. 
-   [(#5680)](https://github.com/PennyLaneAI/pennylane/pull/5680)
+  [(#5680)](https://github.com/PennyLaneAI/pennylane/pull/5680)
 
 * `packaging` is now a required package in PennyLane.
   [(#5769)](https://github.com/PennyLaneAI/pennylane/pull/5769)
