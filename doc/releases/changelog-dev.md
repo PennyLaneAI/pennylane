@@ -10,8 +10,7 @@
   combination of unitaries.
   [(#5756)](https://github.com/PennyLaneAI/pennylane/pull/5756)
 
-* A new method `qml.registers` has been added, enabling the creation of registers, which are
-  implemented as a dictionary of Wires instances.
+* A new method `qml.registers` has been added, enabling the creation of registers, which are implemented as a dictionary of Wires instances.
   [(#5957)](https://github.com/PennyLaneAI/pennylane/pull/5957)
   
 <h3>Improvements 🛠</h3>
