@@ -16,7 +16,7 @@
 Contains the tape transform that splits a tape into tapes measuring commuting observables.
 """
 
-# pylint: disable=too-many-arguments
+# pylint: disable=too-many-arguments,too-many-boolean-expressions
 
 from functools import partial
 from typing import Callable, Dict, List, Optional, Sequence, Tuple
@@ -130,7 +130,7 @@ def split_non_commuting(
 
     .. code-block:: python3
 
-        @functools.partial(qml.transforms.split_non_commuting, grouping="wires")
+        @functools.partial(qml.transforms.split_non_commuting, grouping_strategy="wires")
         @qml.qnode(dev)
         def circuit(x):
             qml.RY(x[0], wires=0)
@@ -260,7 +260,10 @@ def split_non_commuting(
         and isinstance(tape.measurements[0], ExpectationMP)
         and isinstance(tape.measurements[0].obs, (Hamiltonian, Sum))
         and (
-            grouping_strategy in ("default", "qwc")
+            (
+                grouping_strategy in ("default", "qwc")
+                and all(qml.pauli.is_pauli_word(o) for o in tape.measurements[0].obs.terms()[1])
+            )
             or tape.measurements[0].obs.grouping_indices is not None
         )
     ):

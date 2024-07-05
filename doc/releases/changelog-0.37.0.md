@@ -358,6 +358,7 @@
   [(#5838)](https://github.com/PennyLaneAI/pennylane/pull/5838)
   [(#5828)](https://github.com/PennyLaneAI/pennylane/pull/5828)
   [(#5869)](https://github.com/PennyLaneAI/pennylane/pull/5869)
+  [(#5939)](https://github.com/PennyLaneAI/pennylane/pull/5939)
 
 * `qml.devices.LegacyDevice` is now an alias for `qml.Device`, so it is easier to distinguish it from
   `qml.devices.Device`, which follows the new device API.
@@ -429,7 +430,7 @@
   [(#5654)](https://github.com/PennyLaneAI/pennylane/pull/5654)
 
 * `qml.transforms.convert_to_numpy_parameters` is now a proper transform and its output signature has changed,
-  returning a list of `QuantumTape`s and a post-processing function instead of simply the transformed circuit.
+  returning a list of `QuantumScript`s and a post-processing function instead of simply the transformed circuit.
   [(#5693)](https://github.com/PennyLaneAI/pennylane/pull/5693)
 
 * `Controlled.wires` does not include `self.work_wires` anymore. That can be accessed separately through `Controlled.work_wires`.
@@ -450,6 +451,9 @@
   [(#5904)](https://github.com/PennyLaneAI/pennylane/pull/5904)
 
 <h3>Documentation 📝</h3>
+
+* Several links to other functions in measurement process docstrings have been fixed.
+  [(#5913)](https://github.com/PennyLaneAI/pennylane/pull/5913)
 
 * Move information about mid-circuit measurements from the measurements quickstart page to its own
   [mid-circuit measurements quickstart page](https://docs.pennylane.ai/en/stable/introduction/mid_circuit_measurements.html)
@@ -508,7 +512,7 @@
 * An error is now raised if a transform is applied to a catalyst qjit object.
   [(#5826)](https://github.com/PennyLaneAI/pennylane/pull/5826)
 
-* `KerasLayer` and `TorchLayer` no longer mutate the input `QNode`'s interface.
+* `qml.qnn.KerasLayer` and `qml.qnn.TorchLayer` no longer mutate the input `qml.QNode`'s interface.
   [(#5800)](https://github.com/PennyLaneAI/pennylane/pull/5800)
 
 * Disable Docker builds on PR merge.
