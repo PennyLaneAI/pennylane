@@ -243,6 +243,7 @@ via the `NoiseModel` class and an `add_noise` transform.
   2: ────╰X─╰X─┤  
   ```
 
+Stay tuned for an in-depth demonstration on using this feature with real-world examples!
 <h4>Convert between OpenFermion and PennyLane 🤝</h4>
 
 * Two new functions called `qml.from_openfermion` and `qml.to_openfermion` are now available to convert between 
