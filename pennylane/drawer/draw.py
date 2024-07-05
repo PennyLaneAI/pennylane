@@ -186,7 +186,7 @@ def draw(
 
         >>> print(qml.draw(circuit, wire_order=[1,0])(a=2.3, w=[1.2, 3.2, 0.7]))
         1: ────╭RX(2.30)──Rot(1.20,3.20,0.70,"arbitrary")─╭RX(-2.30)─┤ ╭<Z@Z>
-        0: ──H─╰●─────────────────────────────╰●─────────┤ ╰<Z@Z>
+        0: ──H─╰●─────────────────────────────────────────╰●─────────┤ ╰<Z@Z>
 
         If the device or ``wire_order`` has wires not used by operations, those wires are omitted
         unless requested with ``show_all_wires=True``

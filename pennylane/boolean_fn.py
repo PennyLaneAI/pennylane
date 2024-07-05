@@ -33,13 +33,18 @@ class BooleanFn:
     Consider functions that filter numbers to lie within a certain domain.
     We may wrap them using ``BooleanFn``:
 
-    >>> bigger_than_4 = qml.BooleanFn(lambda x: x > 4)
-    >>> smaller_than_10 = qml.BooleanFn(lambda x: x < 10)
-    >>> is_int = qml.BooleanFn(lambda x: isinstance(x, int))
+    .. code-block:: python
+
+        bigger_than_4 = qml.BooleanFn(lambda x: x > 4)
+        smaller_than_10 = qml.BooleanFn(lambda x: x < 10)
+        is_int = qml.BooleanFn(lambda x: isinstance(x, int))
+
     >>> bigger_than_4(5.2)
     True
+
     >>> smaller_than_10(20.1)
     False
+
     >>> is_int(2.3)
     False
 
@@ -49,15 +54,18 @@ class BooleanFn:
     >>> between_4_and_10 = bigger_than_4 & smaller_than_10
     >>> between_4_and_10(-3.2)
     False
+
     >>> between_4_and_10(9.9)
     True
+
     >>> between_4_and_10(19.7)
     False
 
     Other supported operators are ``|`` (logical or) and ``~`` (logical not):
 
-    >>> smaller_equal_than_4 = ~bigger_than_4
-    >>> smaller_than_10_or_int = smaller_than_10 | is_int
+    .. code-block:: python
+        smaller_equal_than_4 = ~bigger_than_4
+        smaller_than_10_or_int = smaller_than_10 | is_int
 
     .. warning::
 
@@ -71,8 +79,10 @@ class BooleanFn:
         >>> has_bit_length_3 = qml.BooleanFn(lambda x: x.bit_length()==3)
         >>> (is_int & has_bit_length_3)(4)
         True
+
         >>> (is_int & has_bit_length_3)(2.3)
         False
+
         >>> (has_bit_length_3 & is_int)(2.3)
         AttributeError: 'float' object has no attribute 'bit_length'
 

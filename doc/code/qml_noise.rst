@@ -53,10 +53,11 @@ quantum circuit. One can construct standard Boolean functions using the followin
 For example, a Boolean function that checks if an operation is on wire ``0`` can be created
 as follows:
 
->>> fn = wires_eq(0)
+>>> fn = qml.noise.wires_eq(0)
 >>> op1, op2 = qml.PauliX(0), qml.PauliX(1)
 >>> fn(op1)
 True
+
 >>> fn(op2)
 False
 
@@ -117,6 +118,7 @@ For example, a constant-valued over-rotation can be created using:
 >>> rx_constant = qml.noise.partial_wires(qml.RX(0.1, wires=[0]))
 >>> rx_constant(2)
 RX(0.1, 2)
+
 >>> qml.NoiseModel({rx_condition: rx_constant})
 NoiseModel({
     BooleanFn(rx_condition): RX(phi=0.1)

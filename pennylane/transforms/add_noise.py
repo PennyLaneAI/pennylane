@@ -90,6 +90,7 @@ def add_noise(tape, noise_model, level=None):
 
     >>> circuit(0.9, 0.4, 0.5, 0.6)
     array(0.60722291)
+
     >>> print(qml.draw(circuit, max_length=150)(0.9, 0.4, 0.5, 0.6))
     0: ──RX(0.90)──PhaseDamping(0.40)──────────────────────────╭●──RY(0.50)──ThermalRelaxationError(0.25,2.00,0.20,0.60)─┤ ╭<Z@Z>
     1: ──RY(0.40)──ThermalRelaxationError(0.20,2.00,0.20,0.60)─╰X──RX(0.60)──PhaseDamping(0.40)──────────────────────────┤ ╰<Z@Z>
@@ -123,6 +124,7 @@ def add_noise(tape, noise_model, level=None):
 
         >>> qml.workflow.get_transform_program(circuit)
         TransformProgram(cancel_inverses, merge_rotations, undo_swaps, _expand_metric_tensor, batch_transform, expand_fn, metric_tensor)
+
         >>> qml.workflow.get_transform_program(noisy_circuit)
         TransformProgram(cancel_inverses, merge_rotations, undo_swaps, _expand_metric_tensor, add_noise, batch_transform, expand_fn, metric_tensor)
 
@@ -139,8 +141,10 @@ def add_noise(tape, noise_model, level=None):
 
         >>> qml.transforms.add_noise(circuit, noise_model, level="top").transform_program
         TransformProgram(add_noise)
+
         >>> qml.transforms.add_noise(circuit, noise_model, level="user").transform_program
         TransformProgram(cancel_inverses, merge_rotations, undo_swaps, _expand_metric_tensor, add_noise, metric_tensor)
+
         >>> qml.transforms.add_noise(circuit, noise_model, level="device").transform_program
         TransformProgram(cancel_inverses, merge_rotations, undo_swaps, _expand_metric_tensor, batch_transform, expand_fn, add_noise, metric_tensor)
 
@@ -148,6 +152,7 @@ def add_noise(tape, noise_model, level=None):
 
         >>> qml.transforms.add_noise(circuit, noise_model, level=2).transform_program
         TransformProgram(cancel_inverses, merge_rotations, add_noise)
+
         >>> qml.transforms.add_noise(circuit, noise_model, level=slice(1,3)).transform_program
         TransformProgram(merge_rotations, undo_swaps, add_noise)
 

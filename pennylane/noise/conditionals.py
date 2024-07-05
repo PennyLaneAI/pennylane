@@ -109,6 +109,7 @@ def wires_in(wires):
     >>> cond_func = qml.noise.wires_in([0, 1])
     >>> cond_func(qml.X(0))
     True
+
     >>> cond_func(qml.X(3))
     False
 
@@ -118,6 +119,7 @@ def wires_in(wires):
     >>> cond_func = qml.noise.wires_in(qml.CNOT(["alice", "bob"]))
     >>> cond_func("alice")
     True
+
     >>> cond_func("eve")
     False
     """
@@ -148,6 +150,7 @@ def wires_eq(wires):
     >>> cond_func = qml.noise.wires_eq(0)
     >>> cond_func(qml.X(0))
     True
+
     >>> cond_func(qml.RY(1.23, wires=[3]))
     False
 
@@ -157,6 +160,7 @@ def wires_eq(wires):
     >>> cond_func = qml.noise.wires_eq(qml.RX(1.0, "dino"))
     >>> cond_func(qml.RZ(1.23, wires="dino"))
     True
+
     >>> cond_func("eve")
     False
     """
@@ -350,8 +354,10 @@ def op_in(ops):
     >>> cond_func = qml.noise.op_in(["RX", "RY"])
     >>> cond_func(qml.RX(1.23, wires=[0]))
     True
+
     >>> cond_func(qml.RZ(1.23, wires=[3]))
     False
+
     >>> cond_func([qml.RX(1.23, wires=[1]), qml.RY(4.56, wires=[2])])
     True
 
@@ -361,8 +367,10 @@ def op_in(ops):
     >>> cond_func = qml.noise.op_in([qml.RX(1.0, "dino"), qml.RY(2.0, "rhino")])
     >>> cond_func(qml.RX(1.23, wires=["eve"]))
     True
+
     >>> cond_func(qml.RY(1.23, wires=["dino"]))
     True
+
     >>> cond_func([qml.RX(1.23, wires=[1]), qml.RZ(4.56, wires=[2])])
     False
     """
@@ -391,8 +399,10 @@ def op_eq(ops):
     >>> cond_func = qml.noise.op_eq("RX")
     >>> cond_func(qml.RX(1.23, wires=[0]))
     True
+
     >>> cond_func(qml.RZ(1.23, wires=[3]))
     False
+
     >>> cond_func("CNOT")
     False
 
@@ -402,6 +412,7 @@ def op_eq(ops):
     >>> cond_func = qml.noise.op_eq(qml.RX(1.0, "dino"))
     >>> cond_func(qml.RX(1.23, wires=["eve"]))
     True
+
     >>> cond_func(qml.RY(1.23, wires=["dino"]))
     False
     """
