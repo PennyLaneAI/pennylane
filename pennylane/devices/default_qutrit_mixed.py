@@ -231,15 +231,18 @@ class DefaultQutritMixed(Device):
 
         .. note::
             Relaxation error, defined by `readout_relaxation_probs` and implemented with
-            class:`~.QutritAmplitudeDamping`, is applied first. Then misclassification, defined
-            by `readout_misclassification_probs` and implemented with :class:` `~qml.TritFlip`,
-            is applied.
+            class:`~.QutritAmplitudeDamping`, is applied to every measured wire. After that
+            misclassification error, defined by `readout_misclassification_probs` and implemented
+            with :class:` `~qml.TritFlip`, is then applied to each measured wire.
 
         .. note::
-            The readout errors will be applied based on the state after diagonalizing gates. This
-            may give different results depending on how an observable is inputted. For example,
-            measuring :class:`~.THermitian` with a GellMann matrix may result in a different
-            measurement result then measuring the equivalent :class:`~.GellMann` observable.
+            The readout errors will be applied to the state after it has been diagonalized for each
+            measurement. This may give different results depending on how the observable is defined.
+            This is because diagonalizing gates for the same observable may return d.fferent orders
+            for their eigenvalues. For example, measuring :class:`~.THermitian` with a non-diagonal
+            GellMann matrix will result in a different measurement result then measuring the
+            equivalent :class:`~.GellMann` observable as the THermitian eigenvalues are ordered by
+            value while non-diagonal GellMann's will be [1, -1, 0].
 
     .. details::
         :title: Tracking
