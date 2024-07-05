@@ -471,6 +471,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Skip `Projector`-measurement tests on devices that do not support it.
+  [(#5951)](https://github.com/PennyLaneAI/pennylane/pull/5951)
+
 * The `default.tensor` device now preserves the order of wires if the initial MPS is created from a dense state vector.
   [(#5892)](https://github.com/PennyLaneAI/pennylane/pull/5892)
 
