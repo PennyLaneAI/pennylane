@@ -48,17 +48,18 @@ class TestQNodeIntegration:
         cap = dev.capabilities()
         capabilities = {
             "model": "qubit",
-            "supports_finite_shots": True,
-            "supports_tensor_observables": True,
-            "supports_broadcasting": False,
-            "returns_probs": True,
-            "returns_state": True,
             "passthru_devices": {
                 "autograd": "default.mixed",
                 "tf": "default.mixed",
                 "torch": "default.mixed",
                 "jax": "default.mixed",
             },
+            "returns_probs": True,
+            "returns_state": True,
+            "supports_broadcasting": False,
+            "supports_finite_shots": True,
+            "supports_mid_measure": True,
+            "supports_tensor_observables": True,
         }
 
         assert cap == capabilities

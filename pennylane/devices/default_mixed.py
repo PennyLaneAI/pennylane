@@ -859,6 +859,9 @@ def _apply_operation_midmeasuremp(
         sample = qml.math.reshape(device.generate_samples(shots=1), (-1,))[wire]
     mid_measurements[operation] = sample
     device._apply_operation(qml.Projector([sample], wire))
-    device._state = device._state / qml.math.trace(device._state)
+
+    device._state = device._state / qml.math.trace(
+        qml.math.reshape(device._state, (2**device.num_wires, 2**device.num_wires))
+    )
     if operation.reset and bool(sample):
         device._apply_operation([qml.PauliX(operation.wires)])
