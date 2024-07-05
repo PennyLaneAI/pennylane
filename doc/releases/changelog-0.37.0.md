@@ -655,6 +655,9 @@ Stay tuned for an in-depth demonstration on using this feature with real-world e
 * `qml.qsvt()` now supports JAX arrays with angle conversions. 
   [(#5853)](https://github.com/PennyLaneAI/pennylane/pull/5853)
 
+* The sorting order of parameter-shift terms is now guaranteed to resolve ties in the absolute value with the sign of the shifts.
+  [(#5583)](https://github.com/PennyLaneAI/pennylane/pull/5583)
+
 <h3>Breaking changes 💔</h3>
 
 * Passing `shots` as a keyword argument to a `QNode` initialization now raises an error instead of ignoring 
