@@ -521,6 +521,10 @@ def registers(register_dict, _start_wire_index=0):
     all_reg = {}
     for register_name, register_wires in register_dict.items():
         if isinstance(register_wires, dict):
+            if len(register_wires) == 0:
+                raise ValueError(
+                    f"Expected a dictionary but got an empty dictionary '{register_wires}'"
+                )
             inner_register_dict = registers(register_wires, _start_wire_index=_start_wire_index)
             wire_vals = []
             for inner_register_name, register_wires in inner_register_dict.items():
@@ -532,10 +536,21 @@ def registers(register_dict, _start_wire_index=0):
             all_reg[register_name] = wires
             _start_wire_index = wire_vals[-1] + 1
         elif isinstance(register_wires, int):
+            if register_wires < 1:
+                raise ValueError(
+                    f"Expected '{register_wires}' to be greater than 0. Please ensure that "
+                    "the number of wires for the register is a positive integer"
+                )
             wires = Wires(range(_start_wire_index, register_wires + _start_wire_index))
 
             _start_wire_index += register_wires
             all_reg[register_name] = wires
+        else:  # Not a dict nor an int
+            raise ValueError(
+                f"Expected '{register_wires}' to be either a dict or an int but got neither. "
+                "Please double check and ensure that all objects in the dictionary have values "
+                "that are either a dictionary or an integer"
+            )
 
     return all_reg
 
