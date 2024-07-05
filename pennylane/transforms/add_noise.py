@@ -22,25 +22,25 @@ from pennylane.transforms.core import TransformContainer, transform
 def add_noise(tape, noise_model, level=None):
     """Insert operations according to a provided noise model.
 
-    Circuits passed through this transform will be updated to apply the
+    Circuits passed through this quantum transform will be updated to apply the
     insertion-based :class:`~.NoiseModel`, which contains a mapping
     ``{BooleanFn: Callable}`` from conditions to the corresponding noise
-    gates. Each condition of the noise model will be evaluated on the
+    gates. Each condition in the noise model will be evaluated on the
     operations contained within the given circuit. For conditions that
     evaluate to ``True``, the noisy gates contained within the ``Callable``
     will be inserted after the operation under consideration.
 
     Args:
         tape (QNode or QuantumTape or Callable or pennylane.devices.Device): the input circuit or
-            device to be transformed
-        noise_model (~pennylane.NoiseModel): noise model according to which noise has to be inserted
+            device to be transformed.
+        noise_model (~pennylane.NoiseModel): noise model according to which noise has to be inserted.
         level (None, str, int, slice): An indication of which stage in the transform program the
             noise model should be applied to. Only relevant when transforming a ``QNode``. More details
             on the following permissible values can be found in the :func:`~.workflow.get_transform_program` -
 
             * ``None``: expands the tape to have no ``Adjoint`` and ``Templates``.
-            * ``str``: acceptable keys are ``"top"``, ``"user"``, ``"device"``, and ``"gradient"``
-            * ``int``: how many transforms to include, starting from the front of the program
+            * ``str``: acceptable keys are ``"top"``, ``"user"``, ``"device"``, and ``"gradient"``.
+            * ``int``: how many transforms to include, starting from the front of the program.
             * ``slice``: a slice to select out components of the transform program.
 
     Returns:
@@ -89,10 +89,11 @@ def add_noise(tape, noise_model, level=None):
     Executions of this circuit will differ from the noise-free value:
 
     >>> circuit(0.9, 0.4, 0.5, 0.6)
-    tensor(0.60722291, requires_grad=True)
-    >>> print(qml.draw(f)(0.9, 0.4, 0.5, 0.6))
-    0: ──RX(0.9)──PhaseDamping(0.4)───────────────────────╭●──RY(0.5)───ThermalRelaxationError(0.2,2.0,0.2,0.6)─┤ ╭<Z@Z>
-    1: ──RY(0.4)──ThermalRelaxationError(0.2,2.0,0.2,0.6)─╰X──RX(0.6)───PhaseDamping(0.4)───────────────────────┤ ╰<Z@Z>
+    array(0.60722291)
+
+    >>> print(qml.draw(circuit, max_length=150)(0.9, 0.4, 0.5, 0.6))
+    0: ──RX(0.90)──PhaseDamping(0.40)──────────────────────────╭●──RY(0.50)──ThermalRelaxationError(0.25,2.00,0.20,0.60)─┤ ╭<Z@Z>
+    1: ──RY(0.40)──ThermalRelaxationError(0.20,2.00,0.20,0.60)─╰X──RX(0.60)──PhaseDamping(0.40)──────────────────────────┤ ╰<Z@Z>
 
     .. details::
         :title: Tranform Levels
@@ -100,7 +101,7 @@ def add_noise(tape, noise_model, level=None):
 
         When transforming an already constructed ``QNode``, the ``add_noise`` transform will be
         added at the end of the "user" transforms by default, i.e., after all the transforms
-        that have been manually applied to the QNode until that point.
+        that have been manually applied to the QNode up to that point.
 
         .. code-block:: python3
 
@@ -123,33 +124,35 @@ def add_noise(tape, noise_model, level=None):
 
         >>> qml.workflow.get_transform_program(circuit)
         TransformProgram(cancel_inverses, merge_rotations, undo_swaps, _expand_metric_tensor, batch_transform, expand_fn, metric_tensor)
+
         >>> qml.workflow.get_transform_program(noisy_circuit)
         TransformProgram(cancel_inverses, merge_rotations, undo_swaps, _expand_metric_tensor, add_noise, batch_transform, expand_fn, metric_tensor)
 
-        However, one can request inserting it at any specific point of the transform program. Specifying the ``level`` keyword argument while
-        transforming a ``QNode``, will allow addition of the transform at the end of the transform program extracted at a designated level via
-        :func:`get_transform_program <pennylane.workflow.get_transform_program>`. For example, one could specify ``None`` to add it at the end,
-        which will also ensure that the tape is expanded to have no ``Adjoint`` and ``Templates``:
+        However, one can request to insert the ``add_noise`` transform at any specific point in the transform program. By specifying the ``level`` keyword argument while
+        transforming a ``QNode``, this transform can be added at a designated level within the transform program, as determined using the
+        :func:`get_transform_program <pennylane.workflow.get_transform_program>`. For example, specifying ``None`` will add it at the end, ensuring that the tape is expanded to have no ``Adjoint`` and ``Templates``:
 
         >>> qml.transforms.add_noise(circuit, noise_model, level=None).transform_program
         TransformProgram(cancel_inverses, merge_rotations, undo_swaps, _expand_metric_tensor, batch_transform, expand_fn, add_noise, metric_tensor)
 
-        Other, acceptable values for the level are ``"top"``, ``"user"``, ``"device"``, and ``"gradient"``. Among these, `"top"` will allow addition
-        to an empty transform program, `"user"` will allow addition at the end of user specified transforms, `"device"` will allow addition at the
-        end of device-specific transforms, and `"gradient"` will allow addition at the end of transform that expands trainable operations. For example:
+        Other acceptable values for ``level`` are ``"top"``, ``"user"``, ``"device"``, and ``"gradient"``. Among these, `"top"` will allow addition
+        to an empty transform program, `"user"` will allow addition at the end of user-specified transforms, `"device"` will allow addition at the
+        end of device-specific transforms, and `"gradient"` will allow addition at the end of transforms that expand trainable operations. For example:
 
         >>> qml.transforms.add_noise(circuit, noise_model, level="top").transform_program
         TransformProgram(add_noise)
+
         >>> qml.transforms.add_noise(circuit, noise_model, level="user").transform_program
         TransformProgram(cancel_inverses, merge_rotations, undo_swaps, _expand_metric_tensor, add_noise, metric_tensor)
+
         >>> qml.transforms.add_noise(circuit, noise_model, level="device").transform_program
         TransformProgram(cancel_inverses, merge_rotations, undo_swaps, _expand_metric_tensor, batch_transform, expand_fn, add_noise, metric_tensor)
 
-        Finally, more precise control over the insertion of the transform can be achieved by specifying
-        an integer or slice for indexing for extracting the transform program. For example, one can do:
+        Finally, more precise control over the insertion of the transform can be achieved by specifying an integer or slice for indexing when extracting the transform program. For example, one can do:
 
         >>> qml.transforms.add_noise(circuit, noise_model, level=2).transform_program
         TransformProgram(cancel_inverses, merge_rotations, add_noise)
+
         >>> qml.transforms.add_noise(circuit, noise_model, level=slice(1,3)).transform_program
         TransformProgram(merge_rotations, undo_swaps, add_noise)
 

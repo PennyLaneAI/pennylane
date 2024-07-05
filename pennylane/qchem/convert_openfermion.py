@@ -48,15 +48,15 @@ def from_openfermion(openfermion_op, wires=None, tol=1e-16):
     to PennyLane :class:`~.LinearCombination`.
 
     Args:
-        openfermion_op (FermionOperator, QubitOperator): OpenFermion operator
+        openfermion_op (FermionOperator, QubitOperator): OpenFermion operator.
         wires (dict): Custom wire mapping used to convert the external qubit
             operator to a PennyLane operator.
             Only dictionaries with integer keys (for qubit-to-wire conversion) are accepted.
             If ``None``, the identity map (e.g., ``0->0, 1->1, ...``) will be used.
-        tol (float): tolerance for discarding negligible coefficients
+        tol (float): Tolerance for discarding negligible coefficients.
 
     Returns:
-        Union[FermiWord, FermiSentence, LinearCombination]: PennyLane operator
+        Union[FermiWord, FermiSentence, LinearCombination]: PennyLane operator.
 
     **Example**
 

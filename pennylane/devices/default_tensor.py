@@ -204,16 +204,16 @@ class DefaultTensor(Device):
     The backend uses the ``quimb`` library to perform the tensor network operations, and different methods can be used to simulate the quantum circuit.
     The supported methods are Matrix Product State (MPS) and Tensor Network (TN).
 
-    This device does not currently support finite shots or differentiation. At present, the supported measurement types are expectation values, variances and state measurements.
+    This device does not currently support finite-shots or differentiation. At present, the supported measurement types are expectation values, variances and state measurements.
     Finally, ``UserWarnings`` from the ``cotengra`` package may appear when using this device.
 
     Args:
         wires (int, Iterable[Number, str]): Number of wires present on the device, or iterable that
-            contains unique labels for the wires as numbers (i.e., ``[-1, 0, 2]``) or strings
-            (``['aux_wire', 'q1', 'q2']``).
+            contains unique labels for the wires as numbers (e.g., ``[-1, 0, 2]``) or strings
+            (e.g., ``['aux_wire', 'q1', 'q2']``).
         method (str): Supported method. The supported methods are ``"mps"`` (Matrix Product State) and ``"tn"`` (Tensor Network).
         c_dtype (type): Complex data type for the tensor representation. Must be one of ``numpy.complex64`` or ``numpy.complex128``.
-        **kwargs: keyword arguments for the device, passed to the ``quimb`` backend.
+        **kwargs: Keyword arguments for the device, passed to the ``quimb`` backend.
 
     Keyword Args:
         max_bond_dim (int): Maximum bond dimension for the MPS method.
@@ -269,8 +269,8 @@ class DefaultTensor(Device):
             setting the maximum bond dimension to 100 and the cutoff to the machine epsilon.
 
             We set ``"auto-mps"`` as the contraction technique to apply gates. With this option, ``quimb`` turns 3-qubit gates and 4-qubit gates
-            into Matrix Product Operators (MPO) and applies them directly to the MPS. On the other hand, qubits in 2-qubit gates are possibly
-            swapped to be adjacent before applying the gate, then swapped back.
+            into Matrix Product Operators (MPO) and applies them directly to the MPS. On the other hand, qubits involved in 2-qubit gates may be
+            temporarily swapped to adjacent positions before applying the gate and then returned to their original positions.
 
             .. code-block:: python
 
@@ -352,8 +352,9 @@ class DefaultTensor(Device):
             The execution time for this circuit with the above parameters is around 0.8 seconds on a standard laptop.
 
             The tensor network method can be faster than MPS and state vector methods in some cases.
-            As a comparison, the time for the exact calculation of the same circuit with the MPS method and with the ``default.qubit``
-            device is about three orders of magnitude slower.
+            As a comparison, the time for the exact calculation (i.e., with ``max_bond_dim = None``) of the same circuit
+            using the ``MPS`` method of the ``default.tensor`` device is approximately three orders of magnitude slower.
+            Similarly, using the ``default.qubit`` device results in a much slower simulation.
     """
 
     # pylint: disable=too-many-instance-attributes
