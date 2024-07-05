@@ -528,9 +528,9 @@ def registers(register_dict, _start_wire_index=0):
             inner_register_dict = registers(register_wires, _start_wire_index=_start_wire_index)
             wire_vals = []
             inner_register_name = None
-            for inner_register_name, register_wires in inner_register_dict.items():
-                wire_vals.extend(register_wires.tolist())
-                all_reg[inner_register_name] = register_wires
+            for inner_register_name, inner_register_wires in inner_register_dict.items():
+                wire_vals.extend(inner_register_wires.tolist())
+                all_reg[inner_register_name] = inner_register_wires
 
             wires = Wires(range(_start_wire_index, all_reg[inner_register_name].labels[-1] + 1))
 
