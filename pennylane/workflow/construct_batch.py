@@ -330,7 +330,8 @@ def construct_batch(
 
             context_fn = tf.GradientTape
 
-        if isinstance(qnode, qml.qnn.TorchLayer):
+        elif type(qnode).__name__ == "TorchLayer":
+            # avoid triggering import of torch if its not needed.
             x = args[0]
             kwargs = {
                 **{arg: weight.to(x) for arg, weight in qnode.qnode_weights.items()},
