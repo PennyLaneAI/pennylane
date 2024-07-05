@@ -258,6 +258,18 @@ def test_warning_useless_kwargs():
         qml.device("default.tensor", method="tn", cutoff=1e-16)
 
 
+def test_kahypar_warning_not_raised(recwarn):
+    """Test that a warning is not raised if the user does not have kahypar installed when initializing the
+    default.tensor device"""
+    try:
+        import kahypar  # pylint: disable=import-outside-toplevel, unused-import
+
+        pytest.skip(reason="Test is for when kahypar is not installed")
+    except ImportError:
+        _ = qml.device("default.tensor", wires=1)
+        assert len(recwarn) == 0
+
+
 @pytest.mark.parametrize("method", ["mps", "tn"])
 class TestSupportedGatesAndObservables:
     """Test that the DefaultTensor device supports all gates and observables that it claims to support."""

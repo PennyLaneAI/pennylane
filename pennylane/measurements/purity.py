@@ -66,7 +66,7 @@ def purity(wires) -> "PurityMP":
 class PurityMP(StateMeasurement):
     """Measurement process that computes the purity of the system prior to measurement.
 
-    Please refer to :func:`purity` for detailed documentation.
+    Please refer to :func:`pennylane.purity` for detailed documentation.
 
     Args:
         wires (.Wires): The wires the measurement process applies to.
