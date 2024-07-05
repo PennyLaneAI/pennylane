@@ -424,6 +424,10 @@ def from_qasm(quantum_circuit: str, measurements=False):
     Returns:
         function: the PennyLane template created based on the QASM string
 
+    By default, ``from_qasm`` will remove any measurements that are present in the QASM code.
+    If the QASM code contains measurements, set ``measurements=None`` to keep them in the
+    output of ``from_qasm``.
+
     .. warning::
 
         The current default behaviour of removing measurements in the QASM code is deprecated
@@ -439,11 +443,10 @@ def from_qasm(quantum_circuit: str, measurements=False):
         ...                 'include "qelib1.inc";' \\
         ...                 'qreg q[1];' \\
         ...                 'creg c[1];' \\
-        ...                 'h q[0];' \\
-        ...                 'measure q -> c;'
+        ...                 'h q[0];'
         >>> my_circuit = qml.from_qasm(hadamard_qasm)
         >>> my_circuit()
-        (MeasurementValue(wires=[0]),)
+        []
 
     The measurements can also be passed directly to the function when creating the
     quantum function, making it possible to create a PennyLane circuit with

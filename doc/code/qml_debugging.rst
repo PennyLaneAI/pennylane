@@ -73,7 +73,7 @@ debugger.
 
 .. code-block:: console
 
-    [pldb] p x
+    [pldb] print(x)
     1.2345
 
 The ``list`` (and ``longlist``) command will print a section of code around the 
