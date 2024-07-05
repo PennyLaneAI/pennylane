@@ -1,5 +1,9 @@
 from .wires import Wires
 
+"""
+This module contains the :func:`registers` function to build the registers for a given dictionary of registers
+"""
+
 
 def registers(register_dict, _start_wire_index=0):
     """Returns the registers for the given dictionary of registers. The registers are a dictionary
