@@ -193,8 +193,15 @@ Bitwise operations like `And` and `Or` are represented with the following classe
 Class Inheritence Diagram
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Note all child classes inherit from the same parent :class:`~.BooleanFn`,
+but are just located in different modules.
+
+**Noise Conditionals:**
+
 .. inheritance-diagram:: pennylane.noise.conditionals
     :parts: 1
+
+**Boolean Fn conditionals:**
 
 .. inheritance-diagram:: pennylane.boolean_fn
     :parts: 1
