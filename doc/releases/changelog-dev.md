@@ -20,6 +20,9 @@
 * `QuantumScript.hash` is now cached, leading to performance improvements.
   [(#5919)](https://github.com/PennyLaneAI/pennylane/pull/5919)
 
+* The representation for `Wires` has now changed to be more copy-paste friendly.
+  [(#5919)](https://github.com/PennyLaneAI/pennylane/pull/5919)
+
 <h3>Breaking changes 💔</h3>
 
 <h3>Deprecations 👋</h3>
