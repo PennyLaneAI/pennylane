@@ -172,7 +172,7 @@ via the `NoiseModel` class and an `add_noise` transform.
 
 <h4>Catch bugs with the PennyLane debugger 🚫🐞</h4>
 
-* The new PennyLane quantum debugger (`PLDB`) allows pausing simulation via the `qml.breakpoint()` command and provides tools for 
+* The new PennyLane quantum debugger allows pausing simulation via the `qml.breakpoint()` command and provides tools for 
   analyzing quantum circuits during execution.
   [(#5680)](https://github.com/PennyLaneAI/pennylane/pull/5680)
   [(#5749)](https://github.com/PennyLaneAI/pennylane/pull/5749)
@@ -203,15 +203,14 @@ via the `NoiseModel` class and an `add_noise` transform.
 
   Upon executing `script.py`, the simulation pauses at the first breakpoint:
 
-
   ```pycon
   > /Users/your/path/to/script.py(8)circuit()
-  -> qml.RX(-x, wires=1)
+  -> qml.RX(x, wires=1)
   (pldb):
   ```
 
   While debugging, we can access circuit information.
-  `qml.debug_tape()` returns the tape of the circuit, giving access to its operations and drawing:
+  For example, `qml.debug_tape()` returns the tape of the circuit, giving access to its operations and drawing:
 
   ```pycon
   (pldb): tape = qml.debug_tape()
@@ -222,7 +221,7 @@ via the `NoiseModel` class and an `add_noise` transform.
   [Hadamard(wires=[0]), CNOT(wires=[0, 2])]
   ```
 
-  `qml.debug_state()` is equivalent to `qml.state()` and gives the current state:
+  While `qml.debug_state()` is equivalent to `qml.state()` and gives the current state:
 
   ```pycon
   (pldb): print(qml.debug_state())
@@ -232,7 +231,7 @@ via the `NoiseModel` class and an `add_noise` transform.
 
   Other debugger functions like `qml.debug_probs()` and `qml.debug_expval()` also function like their simulation counterparts (`qml.probs` and `qml.expval`, respectively) and are described in more detail in the [debugger documentation](https://docs.pennylane.ai/en/stable/code/qml_debugging.html)
   
-  Additionally, standard debugging commands are available to navigate through code, including `list`, `longlist`, `next`, `continue`, and `quit` as described in [the debugging documentation](https://docs.pennylane.ai/en/stable/code/qml_debugging.html#controlling-code-execution-in-the-debugging-context).
+  Additionally, standard debugging commands are available to navigate through code, including `list`, `longlist`, `next`, `continue`, and `quit`, as described in [the debugging documentation](https://docs.pennylane.ai/en/stable/code/qml_debugging.html#controlling-code-execution-in-the-debugging-context).
   
   Finally, to modify a circuit mid-run, simply call the desired PennyLane operations:
 
