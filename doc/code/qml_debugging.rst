@@ -119,7 +119,7 @@ line to be executed. In this example, the next operation to execute is the ``CNO
      13  	    qml.breakpoint()
 
 Alternatively, the ``continue`` command allows for jumping between breakpoints. This command resumes
-the code execution until the next breakpoint is reached, or termination if there is none. Finally, 
+code execution until the next breakpoint is reached, or termination if there is none. Finally, 
 the ``quit`` command ends the debugging prompt and terminates the execution altogether.
 
 .. code-block:: console
