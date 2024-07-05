@@ -103,6 +103,9 @@
 * `default.clifford` now supports arbitrary state-based measurements with `qml.Snapshot`.
   [(#5794)](https://github.com/PennyLaneAI/pennylane/pull/5794)
 
+* The sorting order of parameter-shift terms is now guaranteed to resolve ties in the absolute value with the sign of the shifts.
+  [(#5583)](https://github.com/PennyLaneAI/pennylane/pull/5583)
+
 * Implemented kwargs (`check_interface`, `check_trainability`, `rtol` and `atol`) support in `qml.equal` for the operators `Pow`, `Adjoint`, `Exp`, and `SProd`.
   [(#5668)](https://github.com/PennyLaneAI/pennylane/issues/5668)
   
@@ -471,6 +474,9 @@
   [(5484)](https://github.com/PennyLaneAI/pennylane/pull/5484)
 
 <h3>Bug fixes 🐛</h3>
+
+* Skip `Projector`-measurement tests on devices that do not support it.
+  [(#5951)](https://github.com/PennyLaneAI/pennylane/pull/5951)
 
 * The `default.tensor` device now preserves the order of wires if the initial MPS is created from a dense state vector.
   [(#5892)](https://github.com/PennyLaneAI/pennylane/pull/5892)
