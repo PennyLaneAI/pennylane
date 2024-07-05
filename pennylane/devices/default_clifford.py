@@ -18,7 +18,7 @@ This module contains the Clifford simulator using ``stim``.
 import concurrent.futures
 from dataclasses import replace
 from functools import partial
-from typing import Sequence, Tuple, Union
+from typing import Sequence, Union
 
 import numpy as np
 
@@ -451,7 +451,7 @@ class DefaultClifford(Device):
     def preprocess(
         self,
         execution_config: ExecutionConfig = DefaultExecutionConfig,
-    ) -> Tuple[TransformProgram, ExecutionConfig]:
+    ) -> tuple[TransformProgram, ExecutionConfig]:
         """This function defines the device transform program to be applied and an updated device configuration.
 
         Args:

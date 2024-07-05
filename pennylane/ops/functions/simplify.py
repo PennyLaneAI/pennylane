@@ -15,13 +15,14 @@
 This module contains the qml.simplify function.
 """
 from copy import copy
-from typing import Callable, Sequence, Union
+from typing import Callable, Union
 
 import pennylane as qml
 from pennylane.measurements import MeasurementProcess
 from pennylane.operation import Operator
 from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumScript, QuantumTape
+from pennylane.typing import PostprocessingFn, TapeBatch
 from pennylane.workflow import QNode
 
 
@@ -98,7 +99,7 @@ def simplify(input: Union[Operator, MeasurementProcess, QuantumTape, QNode, Call
 
 
 @qml.transform
-def _simplify_transform(tape: QuantumTape) -> (Sequence[QuantumTape], Callable):
+def _simplify_transform(tape: QuantumTape) -> tuple[TapeBatch, PostprocessingFn]:
     with qml.QueuingManager.stop_recording():
         new_operations = [op.simplify() for op in tape.operations]
         new_measurements = [m.simplify() for m in tape.measurements]

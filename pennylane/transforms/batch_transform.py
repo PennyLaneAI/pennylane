@@ -15,18 +15,17 @@
 # pylint: disable=too-few-public-methods
 
 import warnings
-from typing import Callable, Tuple
+from typing import Callable
 
 import pennylane as qml
-from pennylane.typing import ResultBatch
+from pennylane.typing import ResultBatch, TapeBatch
 
 PostprocessingFn = Callable[[ResultBatch], ResultBatch]
-QuantumTapeBatch = Tuple[qml.tape.QuantumScript]
 
 
 def map_batch_transform(
-    transform: Callable, tapes: QuantumTapeBatch
-) -> Tuple[QuantumTapeBatch, PostprocessingFn]:
+    transform: Callable, tapes: TapeBatch
+) -> tuple[TapeBatch, PostprocessingFn]:
     """Map a transform over multiple tapes.
 
     Args:

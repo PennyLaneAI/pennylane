@@ -14,17 +14,17 @@
 """
 A transform for decomposing arbitrary single-qubit QubitUnitary gates into elementary gates.
 """
-from typing import Callable, Sequence
 
 import pennylane as qml
 from pennylane.ops.op_math.decompositions import one_qubit_decomposition, two_qubit_decomposition
 from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumTape
 from pennylane.transforms import transform
+from pennylane.typing import PostprocessingFn, TapeBatch
 
 
 @transform
-def unitary_to_rot(tape: QuantumTape) -> (Sequence[QuantumTape], Callable):
+def unitary_to_rot(tape: QuantumTape) -> tuple[TapeBatch, PostprocessingFn]:
     r"""Quantum function transform to decomposes all instances of single-qubit and
     select instances of two-qubit :class:`~.QubitUnitary` operations to
     parametrized single-qubit operations.

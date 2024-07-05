@@ -20,7 +20,7 @@ import pytest
 
 import pennylane as qml
 from pennylane.transforms.core import TransformContainer, TransformError, transform
-from pennylane.typing import TensorLike
+from pennylane.typing import PostprocessingFn, TapeBatch, TensorLike
 
 dev = qml.device("default.qubit", wires=2)
 
@@ -49,7 +49,7 @@ non_callable = tape_circuit
 
 def no_tape_transform(
     circuit: qml.tape.QuantumTape, index: int
-) -> (Sequence[qml.tape.QuantumTape], Callable):
+) -> tuple[Sequence[qml.tape.QuantumTape], Callable]:
     """Transform without tape."""
     circuit = circuit.copy()
     circuit._ops.pop(index)  # pylint:disable=protected-access
@@ -58,27 +58,29 @@ def no_tape_transform(
 
 def no_quantum_tape_transform(
     tape: qml.operation.Operator, index: int
-) -> (Sequence[qml.tape.QuantumTape], Callable):
+) -> tuple[TapeBatch, Callable]:
     """Transform with wrong hinting."""
     tape = tape.copy()
     tape._ops.pop(index)  # pylint:disable=protected-access
     return [tape], lambda x: x
 
 
-def no_processing_fn_transform(tape: qml.tape.QuantumTape) -> Sequence[qml.tape.QuantumTape]:
+def no_processing_fn_transform(tape: qml.tape.QuantumTape) -> TapeBatch:
     """Transform without processing fn."""
     tape_copy = tape.copy()
     return [tape, tape_copy]
 
 
-def no_tape_sequence_transform(tape: qml.tape.QuantumTape) -> (qml.tape.QuantumTape, Callable):
+def no_tape_sequence_transform(
+    tape: qml.tape.QuantumTape,
+) -> tuple[qml.tape.QuantumTape, PostprocessingFn]:
     """Transform wihtout Sequence return."""
     return tape, lambda x: x
 
 
 def no_callable_return(
     tape: qml.tape.QuantumTape,
-) -> (Sequence[qml.tape.QuantumTape], qml.tape.QuantumTape):
+) -> tuple[TapeBatch, qml.tape.QuantumTape]:
     """Transform without callable return."""
     return list(tape), tape
 
@@ -99,7 +101,7 @@ non_valid_transforms = [
 
 def first_valid_transform(
     tape: qml.tape.QuantumTape, index: int
-) -> (Sequence[qml.tape.QuantumTape], Callable):
+) -> tuple[TapeBatch, PostprocessingFn]:
     """A valid transform."""
     tape = tape.copy()
     tape._ops.pop(index)  # pylint:disable=protected-access
@@ -109,7 +111,7 @@ def first_valid_transform(
 
 def second_valid_transform(
     tape: qml.tape.QuantumTape, index: int
-) -> (Sequence[qml.tape.QuantumTape], Callable):
+) -> tuple[TapeBatch, PostprocessingFn]:
     """A valid trasnform."""
     tape1 = tape.copy()
     tape2 = tape.copy()
@@ -126,9 +128,7 @@ valid_transforms = [first_valid_transform, second_valid_transform]
 
 ##########################################
 # Valid expand transform
-def expand_transform(
-    tape: qml.tape.QuantumTape, index: int
-) -> (Sequence[qml.tape.QuantumTape], Callable):
+def expand_transform(tape: qml.tape.QuantumTape, index: int) -> tuple[TapeBatch, PostprocessingFn]:
     """Multiple args expand fn."""
     tape._ops.pop(index)  # pylint:disable=protected-access
     return [tape], lambda x: x
@@ -137,14 +137,14 @@ def expand_transform(
 # Non-valid expand transform
 def non_valid_expand_transform(
     tape: qml.tape.QuantumTape,
-) -> (Sequence[qml.tape.QuantumTape], Callable):
+) -> tuple[TapeBatch, PostprocessingFn]:
     """A valid expand transform."""
     return [tape], lambda x: x
 
 
 ##########################################
 # Valid informative transform
-def informative_transform(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTape], Callable):
+def informative_transform(tape: qml.tape.QuantumTape) -> tuple[TapeBatch, PostprocessingFn]:
     """A valid informative transform"""
 
     def fn(results):
@@ -717,7 +717,7 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
             @qml.transforms.core.transform
             def custom_transform(  # pylint:disable=unused-variable
                 tape: qml.tape.QuantumTape, index: int
-            ) -> (Sequence[qml.tape.QuantumTape], Callable):
+            ) -> tuple[TapeBatch, PostprocessingFn]:
                 """A valid transform."""
                 tape = tape.copy()
                 tape._ops.pop(index)  # pylint:disable=protected-access

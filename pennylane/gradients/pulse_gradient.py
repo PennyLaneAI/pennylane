@@ -17,13 +17,13 @@ of pulse sequences in a qubit-based quantum tape.
 """
 import warnings
 from functools import partial
-from typing import Callable, Sequence
 
 import numpy as np
 
 import pennylane as qml
 from pennylane import transform
 from pennylane.pulse import HardwareHamiltonian, ParametrizedEvolution
+from pennylane.typing import PostprocessingFn, TapeBatch
 
 from .general_shift_rules import eigvals_to_frequencies, generate_shift_rule
 from .gradient_transform import (
@@ -291,7 +291,7 @@ def stoch_pulse_grad(
     num_split_times=1,
     sampler_seed=None,
     use_broadcasting=False,
-) -> (Sequence[qml.tape.QuantumTape], Callable):
+) -> tuple[TapeBatch, PostprocessingFn]:
     r"""Compute the gradient of a quantum circuit composed of pulse sequences by applying the
     stochastic parameter shift rule.
 

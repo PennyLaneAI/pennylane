@@ -17,7 +17,6 @@ A transform to obtain the commutation DAG of a quantum circuit.
 import heapq
 from collections import OrderedDict
 from functools import partial
-from typing import Callable, Sequence
 
 import networkx as nx
 from networkx.drawing.nx_pydot import to_pydot
@@ -25,11 +24,12 @@ from networkx.drawing.nx_pydot import to_pydot
 import pennylane as qml
 from pennylane.tape import QuantumTape
 from pennylane.transforms import transform
+from pennylane.typing import PostprocessingFn, TapeBatch
 from pennylane.wires import Wires
 
 
 @partial(transform, is_informative=True)
-def commutation_dag(tape: QuantumTape) -> (Sequence[QuantumTape], Callable):
+def commutation_dag(tape: QuantumTape) -> tuple[TapeBatch, PostprocessingFn]:
     r"""Construct the pairwise-commutation DAG (directed acyclic graph) representation of a quantum circuit.
 
     In the DAG, each node represents a quantum operation, and edges represent

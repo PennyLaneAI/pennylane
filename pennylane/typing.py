@@ -14,12 +14,14 @@
 """This file contains different PennyLane types."""
 import contextlib
 
-# pylint: disable=import-outside-toplevel, too-few-public-methods
+# pylint: disable=import-outside-toplevel, too-few-public-methods, unused-import
 import sys
-from typing import Dict, Tuple, TypeVar, Union
+from typing import Callable, Sequence, TypeVar, Union
 
 import numpy as np
 from autograd.numpy.numpy_boxes import ArrayBox
+
+import pennylane as qml
 
 _TensorLike = Union[int, float, bool, complex, bytes, list, tuple, np.ndarray, ArrayBox, np.generic]
 
@@ -119,8 +121,12 @@ def _is_torch(other, subclass=False):
     return False
 
 
-Result = TypeVar("Result", Dict, Tuple, TensorLike)
+TapeBatch = Sequence["qml.tape.QuantumTape"]
 
-ResultBatch = Tuple[Result]
+Result = TypeVar("Result", dict, tuple, TensorLike)
+
+ResultBatch = Sequence[Result]
+
+PostprocessingFn = Callable[[ResultBatch], Result]
 
 JSON = Union[None, int, str, bool, list["JSON"], dict[str, "JSON"]]

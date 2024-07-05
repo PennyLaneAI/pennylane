@@ -15,7 +15,7 @@
 computations."""
 import logging
 from dataclasses import replace
-from typing import Callable, Optional, Sequence, Tuple, Union
+from typing import Optional, Union
 
 import numpy as np
 
@@ -24,7 +24,7 @@ from pennylane.logging import debug_logger, debug_logger_init
 from pennylane.ops import _qutrit__channel__ops__ as channels
 from pennylane.tape import QuantumTape
 from pennylane.transforms.core import TransformProgram
-from pennylane.typing import Result, ResultBatch
+from pennylane.typing import Result, ResultBatch, TapeBatch
 
 from . import Device
 from .default_qutrit import DefaultQutrit
@@ -43,11 +43,8 @@ logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
 Result_or_ResultBatch = Union[Result, ResultBatch]
-QuantumTapeBatch = Sequence[QuantumTape]
-QuantumTape_or_Batch = Union[QuantumTape, QuantumTapeBatch]
+QuantumTape_or_Batch = Union[QuantumTape, TapeBatch]
 
-# always a function from a resultbatch to either a result or a result batch
-PostprocessingFn = Callable[[ResultBatch], Result_or_ResultBatch]
 
 observables = {
     "THermitian",
@@ -244,7 +241,7 @@ class DefaultQutritMixed(Device):
     def preprocess(
         self,
         execution_config: ExecutionConfig = DefaultExecutionConfig,
-    ) -> Tuple[TransformProgram, ExecutionConfig]:
+    ) -> tuple[TransformProgram, ExecutionConfig]:
         """This function defines the device transform program to be applied and an updated device
         configuration.
 

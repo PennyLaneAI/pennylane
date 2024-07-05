@@ -17,15 +17,13 @@ of a quantum tape.
 """
 from functools import partial
 
-# pylint: disable=protected-access,too-many-arguments,too-many-branches,too-many-statements,unused-argument
-from typing import Callable, Sequence
-
 import numpy as np
 
 import pennylane as qml
 from pennylane import transform
 from pennylane.gradients.gradient_transform import _contract_qjac_with_cjac
 from pennylane.transforms.tape_expand import expand_invalid_trainable
+from pennylane.typing import PostprocessingFn, TapeBatch
 
 from .finite_difference import _processing_fn, finite_diff_coeffs
 from .general_shift_rules import generate_multishifted_tapes
@@ -36,6 +34,8 @@ from .gradient_transform import (
     choose_trainable_params,
     find_and_validate_gradient_methods,
 )
+
+# pylint: disable=protected-access,too-many-arguments,too-many-branches,too-many-statements,unused-argument
 
 
 def _rademacher_sampler(indices, num_params, *args, rng):
@@ -72,7 +72,7 @@ def _expand_transform_spsa(
     num_directions=1,
     sampler=_rademacher_sampler,
     sampler_rng=None,
-) -> (Sequence[qml.tape.QuantumTape], Callable):
+) -> tuple[TapeBatch, PostprocessingFn]:
     """Expand function to be applied before spsa gradient."""
     expanded_tape = expand_invalid_trainable(tape)
 
@@ -103,7 +103,7 @@ def spsa_grad(
     num_directions=1,
     sampler=_rademacher_sampler,
     sampler_rng=None,
-) -> (Sequence[qml.tape.QuantumTape], Callable):
+) -> tuple[TapeBatch, PostprocessingFn]:
     r"""Transform a circuit to compute the SPSA gradient of all gate
     parameters with respect to its inputs. This estimator shifts all parameters
     simultaneously and approximates the gradient based on these shifts and a

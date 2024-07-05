@@ -28,7 +28,6 @@ from typing import (
     Iterator,
     Literal,
     Optional,
-    Tuple,
     Type,
     TypeVar,
     Union,
@@ -192,7 +191,7 @@ class DatasetAttribute(ABC, Generic[HDF5, ValueType, InitValueType]):
         value: Union[InitValueType, Literal[UNSET]] = UNSET,
         info: Optional[AttributeInfo] = None,
         *,
-        parent_and_key: Optional[Tuple[HDF5Group, str]] = None,
+        parent_and_key: Optional[tuple[HDF5Group, str]] = None,
     ):
         """Initialize a new dataset attribute from ``value``.
 
@@ -220,7 +219,7 @@ class DatasetAttribute(ABC, Generic[HDF5, ValueType, InitValueType]):
         info: Optional[AttributeInfo] = None,
         *,
         bind: Optional[HDF5] = None,
-        parent_and_key: Optional[Tuple[HDF5Group, str]] = None,
+        parent_and_key: Optional[tuple[HDF5Group, str]] = None,
     ) -> None:
         """
         Initialize a new dataset attribute, or load from an existing
@@ -260,7 +259,7 @@ class DatasetAttribute(ABC, Generic[HDF5, ValueType, InitValueType]):
         self,
         value: Union[InitValueType, Literal[UNSET]],
         info: Optional[AttributeInfo],
-        parent_and_key: Optional[Tuple[HDF5Group, str]],
+        parent_and_key: Optional[tuple[HDF5Group, str]],
     ):
         """Constructor for value initialization. See __init__()."""
 

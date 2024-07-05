@@ -20,7 +20,7 @@ import copy
 import functools
 from abc import ABC, abstractmethod
 from enum import Enum
-from typing import Optional, Sequence, Tuple, Union
+from typing import Optional, Sequence, Union
 
 import pennylane as qml
 from pennylane.math.utils import is_abstract
@@ -288,7 +288,7 @@ class MeasurementProcess(ABC, metaclass=qml.capture.ABCCaptureMeta):
             f"The numeric type of the measurement {self.__class__.__name__} is not defined."
         )
 
-    def shape(self, device, shots: Shots) -> Tuple:
+    def shape(self, device, shots: Shots) -> tuple:
         """The expected output shape of the MeasurementProcess.
 
         Note that the output shape is dependent on the shots or device when:
@@ -604,7 +604,7 @@ class SampleMeasurement(MeasurementProcess):
         self,
         samples: Sequence[complex],
         wire_order: Wires,
-        shot_range: Tuple[int] = None,
+        shot_range: tuple[int] = None,
         bin_size: int = None,
     ):
         """Process the given samples.

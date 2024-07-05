@@ -25,14 +25,14 @@ import inspect
 import logging
 import warnings
 from functools import partial
-from typing import Callable, MutableMapping, Optional, Sequence, Tuple, Union
+from typing import Callable, MutableMapping, Optional, Sequence, Union
 
 from cachetools import Cache, LRUCache
 
 import pennylane as qml
 from pennylane.tape import QuantumTape
 from pennylane.transforms import transform
-from pennylane.typing import ResultBatch
+from pennylane.typing import PostprocessingFn, Result, ResultBatch, TapeBatch
 
 from .jacobian_products import (
     DeviceDerivatives,
@@ -185,7 +185,7 @@ def _batch_transform(
     config: "qml.devices.ExecutionConfig",
     override_shots: Union[bool, int, Sequence[int]] = False,
     device_batch_transform: bool = True,
-) -> Tuple[Sequence[QuantumTape], Callable, "qml.devices.ExecutionConfig"]:
+) -> tuple[TapeBatch, PostprocessingFn, "qml.devices.ExecutionConfig"]:
     """Apply the device batch transform unless requested not to.
 
     Args:
@@ -331,7 +331,7 @@ def _cache_transform(tape: QuantumTape, cache: MutableMapping):
         This function makes use of :attr:`.QuantumTape.hash` to identify unique tapes.
     """
 
-    def cache_hit_postprocessing(_results: Tuple[Tuple]) -> Tuple:
+    def cache_hit_postprocessing(_results: ResultBatch) -> Result:
         result = cache[tape.hash]
         if result is not None:
             if tape.shots and getattr(cache, "_persistent_cache", True):
@@ -346,7 +346,7 @@ def _cache_transform(tape: QuantumTape, cache: MutableMapping):
     if tape.hash in cache:
         return [], cache_hit_postprocessing
 
-    def cache_miss_postprocessing(results: Tuple[Tuple]) -> Tuple:
+    def cache_miss_postprocessing(results: ResultBatch) -> Result:
         result = results[0]
         cache[tape.hash] = result
         return result
@@ -710,7 +710,7 @@ def execute(
 
         else:
 
-            def execute_fn(internal_tapes) -> Tuple[ResultBatch, Tuple]:
+            def execute_fn(internal_tapes) -> tuple[ResultBatch, tuple]:
                 """A wrapper around device.execute that adds an empty tuple instead of derivatives.
 
                 Closure Variables:

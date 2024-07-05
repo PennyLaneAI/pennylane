@@ -17,7 +17,7 @@ of Dataset attributes."""
 
 import typing
 from collections.abc import Mapping
-from typing import Dict, Generic, Union
+from typing import Generic, Union
 
 from pennylane.data.base.attribute import DatasetAttribute
 from pennylane.data.base.hdf5 import HDF5Any, HDF5Group
@@ -41,7 +41,7 @@ class DatasetDict(  # pylint: disable=too-many-ancestors
         self.update(value)
 
     @classmethod
-    def default_value(cls) -> Dict:
+    def default_value(cls) -> dict:
         return {}
 
     def hdf5_to_value(self, bind: HDF5Group) -> typing.MutableMapping[str, T]:
@@ -52,10 +52,10 @@ class DatasetDict(  # pylint: disable=too-many-ancestors
 
         return grp
 
-    def copy_value(self) -> Dict[str, T]:
+    def copy_value(self) -> dict[str, T]:
         return {key: attr.copy_value() for key, attr in self._mapper.items()}
 
-    def copy(self) -> Dict[str, T]:
+    def copy(self) -> dict[str, T]:
         """Returns a copy of this mapping as a builtin ``dict``, with all
         elements copied."""
         return self.copy_value()

@@ -72,9 +72,9 @@ def transform(
 
     .. code-block:: python
 
-        from typing import Sequence, Callable
+        from pennylane.typing import TapeBatch, PostprocessingFn
 
-        def my_quantum_transform(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTape], Callable):
+        def my_quantum_transform(tape: qml.tape.QuantumTape) -> tuple[TapeBatch, PostprocessingFn]:
             tape1 = tape
             tape2 = tape.copy()
 

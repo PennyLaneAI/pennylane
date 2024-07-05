@@ -14,7 +14,7 @@
 """
 This module contains the qml.probs measurement.
 """
-from typing import Sequence, Tuple
+from typing import Optional, Sequence
 
 import numpy as np
 
@@ -177,8 +177,8 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
         self,
         samples: Sequence[complex],
         wire_order: Wires,
-        shot_range: Tuple[int] = None,
-        bin_size: int = None,
+        shot_range: Optional[tuple[int, ...]] = None,
+        bin_size: Optional[int] = None,
     ):
         wire_map = dict(zip(wire_order, range(len(wire_order))))
         mapped_wires = [wire_map[w] for w in self.wires]

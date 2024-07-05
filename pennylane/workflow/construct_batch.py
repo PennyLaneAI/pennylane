@@ -17,7 +17,7 @@
 import inspect
 from contextlib import nullcontext
 from functools import wraps
-from typing import Callable, Literal, Optional, Tuple, Union
+from typing import Callable, Literal, Optional, Union
 
 import pennylane as qml
 
@@ -314,7 +314,7 @@ def construct_batch(
     """
 
     # pylint: disable=protected-access
-    def batch_constructor(*args, **kwargs) -> Tuple[Tuple["qml.tape.QuantumTape", Callable]]:
+    def batch_constructor(*args, **kwargs) -> tuple[tuple["qml.tape.QuantumTape", Callable]]:
         """Create a batch of tapes and a post processing function."""
         if "shots" in inspect.signature(qnode.func).parameters:
             shots = _get_device_shots(qnode.device)

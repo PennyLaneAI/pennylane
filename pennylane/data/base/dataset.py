@@ -27,7 +27,6 @@ from typing import (
     List,
     Literal,
     Optional,
-    Tuple,
     Type,
     TypeVar,
     Union,
@@ -154,7 +153,7 @@ class Dataset(MapperMixin, _DatasetTransform):
     """
 
     __data_name__: ClassVar[str]
-    __identifiers__: ClassVar[Tuple[str, ...]]
+    __identifiers__: ClassVar[tuple[str, ...]]
 
     fields: ClassVar[typing.Mapping[str, Field]]
     """
@@ -171,7 +170,7 @@ class Dataset(MapperMixin, _DatasetTransform):
         bind: Optional[HDF5Group] = None,
         *,
         data_name: Optional[str] = None,
-        identifiers: Optional[Tuple[str, ...]] = None,
+        identifiers: Optional[tuple[str, ...]] = None,
         **attrs: Any,
     ):
         """
@@ -345,7 +344,7 @@ class Dataset(MapperMixin, _DatasetTransform):
             hdf5.copy_all(self.bind, dest.bind, *missing_identifiers)
 
     def _init_bind(
-        self, data_name: Optional[str] = None, identifiers: Optional[Tuple[str, ...]] = None
+        self, data_name: Optional[str] = None, identifiers: Optional[tuple[str, ...]] = None
     ):
         if self.bind.file.mode == "r+":
             if "type_id" not in self.info:
@@ -400,7 +399,7 @@ class Dataset(MapperMixin, _DatasetTransform):
         return f"<{type(self).__name__} = {repr_items}>"
 
     def __init_subclass__(
-        cls, *, data_name: Optional[str] = None, identifiers: Optional[Tuple[str, ...]] = None
+        cls, *, data_name: Optional[str] = None, identifiers: Optional[tuple[str, ...]] = None
     ) -> None:
         """Initializes the ``fields`` dict of a Dataset subclass using
         the declared ``Attributes`` and their type annotations."""

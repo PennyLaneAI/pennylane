@@ -13,7 +13,7 @@
 """
 Batch transformation for multiple (non-trainable) input examples following issue #2037
 """
-from typing import Callable, Sequence, Union
+from typing import Sequence, Union
 
 import numpy as np
 
@@ -21,13 +21,14 @@ import pennylane as qml
 from pennylane.tape import QuantumTape
 from pennylane.transforms.batch_params import _nested_stack, _split_operations
 from pennylane.transforms.core import transform
+from pennylane.typing import PostprocessingFn, TapeBatch
 
 
 @transform
 def batch_input(
     tape: QuantumTape,
     argnum: Union[Sequence[int], int],
-) -> (Sequence[QuantumTape], Callable):
+) -> tuple[TapeBatch, PostprocessingFn]:
     """
     Transform a circuit to support an initial batch dimension for gate inputs.
 

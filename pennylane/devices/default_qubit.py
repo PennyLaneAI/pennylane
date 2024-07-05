@@ -20,7 +20,7 @@ import logging
 from dataclasses import replace
 from functools import partial
 from numbers import Number
-from typing import Callable, Optional, Sequence, Tuple, Union
+from typing import Optional, Union
 
 import numpy as np
 
@@ -31,7 +31,7 @@ from pennylane.ops.op_math.condition import Conditional
 from pennylane.tape import QuantumTape
 from pennylane.transforms import convert_to_numpy_parameters
 from pennylane.transforms.core import TransformProgram
-from pennylane.typing import Result, ResultBatch
+from pennylane.typing import PostprocessingFn, Result, ResultBatch, TapeBatch
 
 from . import Device
 from .execution_config import DefaultExecutionConfig, ExecutionConfig
@@ -53,11 +53,7 @@ from .qubit.simulate import get_final_state, measure_final_state, simulate
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
-Result_or_ResultBatch = Union[Result, ResultBatch]
-QuantumTapeBatch = Sequence[QuantumTape]
-QuantumTape_or_Batch = Union[QuantumTape, QuantumTapeBatch]
-# always a function from a resultbatch to either a result or a result batch
-PostprocessingFn = Callable[[ResultBatch], Result_or_ResultBatch]
+QuantumTape_or_Batch = Union[QuantumTape, TapeBatch]
 
 
 observables = {
@@ -129,7 +125,7 @@ def all_state_postprocessing(results, measurements, wire_order):
 @qml.transform
 def adjoint_state_measurements(
     tape: QuantumTape, device_vjp=False
-) -> Tuple[Tuple[QuantumTape], Callable]:
+) -> tuple[TapeBatch, PostprocessingFn]:
     """Perform adjoint measurement preprocessing.
 
     * Allows a tape with only expectation values through unmodified
@@ -482,7 +478,7 @@ class DefaultQubit(Device):
     def preprocess(
         self,
         execution_config: ExecutionConfig = DefaultExecutionConfig,
-    ) -> Tuple[TransformProgram, ExecutionConfig]:
+    ) -> tuple[TransformProgram, ExecutionConfig]:
         """This function defines the device transform program to be applied and an updated device configuration.
 
         Args:
@@ -581,7 +577,7 @@ class DefaultQubit(Device):
         self,
         circuits: QuantumTape_or_Batch,
         execution_config: ExecutionConfig = DefaultExecutionConfig,
-    ) -> Result_or_ResultBatch:
+    ) -> Union[Result, ResultBatch]:
         self.reset_prng_key()
 
         max_workers = execution_config.device_options.get("max_workers", self._max_workers)
@@ -698,7 +694,7 @@ class DefaultQubit(Device):
     def compute_jvp(
         self,
         circuits: QuantumTape_or_Batch,
-        tangents: Tuple[Number],
+        tangents: tuple[Number, ...],
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ):
         max_workers = execution_config.device_options.get("max_workers", self._max_workers)
@@ -718,7 +714,7 @@ class DefaultQubit(Device):
     def execute_and_compute_jvp(
         self,
         circuits: QuantumTape_or_Batch,
-        tangents: Tuple[Number],
+        tangents: tuple[Number, ...],
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ):
         self.reset_prng_key()
@@ -766,7 +762,7 @@ class DefaultQubit(Device):
     def compute_vjp(
         self,
         circuits: QuantumTape_or_Batch,
-        cotangents: Tuple[Number],
+        cotangents: tuple[Number, ...],
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ):
         r"""The vector jacobian product used in reverse-mode differentiation. ``DefaultQubit`` uses the
@@ -834,7 +830,7 @@ class DefaultQubit(Device):
     def execute_and_compute_vjp(
         self,
         circuits: QuantumTape_or_Batch,
-        cotangents: Tuple[Number],
+        cotangents: tuple[Number, ...],
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ):
         self.reset_prng_key()

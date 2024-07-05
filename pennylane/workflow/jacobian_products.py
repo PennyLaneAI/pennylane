@@ -17,7 +17,7 @@ Defines classes that take the vjps, jvps, and jacobians of circuits.
 import abc
 import inspect
 import logging
-from typing import Callable, Optional, Tuple, Union
+from typing import Callable, Optional, Sequence, Union
 
 import numpy as np
 from cachetools import LRUCache
@@ -26,7 +26,7 @@ import pennylane as qml
 from pennylane.tape import QuantumScript
 from pennylane.typing import ResultBatch, TensorLike
 
-Batch = Tuple[QuantumScript]
+Batch = tuple[QuantumScript]
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -77,8 +77,8 @@ class JacobianProductCalculator(abc.ABC):
 
     @abc.abstractmethod
     def execute_and_compute_jvp(
-        self, tapes: Batch, tangents: Tuple[Tuple[TensorLike]]
-    ) -> Tuple[ResultBatch, Tuple]:
+        self, tapes: Batch, tangents: tuple[Sequence[TensorLike]]
+    ) -> tuple[ResultBatch, tuple]:
         """Calculate both the results for a batch of tapes and the jvp.
 
         This method is required to compute JVPs in the JAX interface.
@@ -118,7 +118,7 @@ class JacobianProductCalculator(abc.ABC):
         """
 
     @abc.abstractmethod
-    def compute_vjp(self, tapes: Batch, dy: Tuple[Tuple[TensorLike]]) -> Tuple:
+    def compute_vjp(self, tapes: Batch, dy: tuple[Sequence[TensorLike]]) -> tuple:
         """Compute the vjp for a given batch of tapes.
 
         This method is used by autograd, torch, and tensorflow to compute VJPs.
@@ -158,7 +158,7 @@ class JacobianProductCalculator(abc.ABC):
         """
 
     @abc.abstractmethod
-    def compute_jacobian(self, tapes: Batch) -> Tuple:
+    def compute_jacobian(self, tapes: Batch) -> tuple:
         """Compute the full Jacobian for a batch of tapes.
 
         This method is required to compute Jacobians in the ``tensorflow`` interface
@@ -182,7 +182,7 @@ class JacobianProductCalculator(abc.ABC):
         """
 
     @abc.abstractmethod
-    def execute_and_compute_jacobian(self, tapes: Batch) -> Tuple:
+    def execute_and_compute_jacobian(self, tapes: Batch) -> tuple:
         """Compute the results and the full Jacobian for a batch of tapes.
 
         This method is required to compute Jacobians in the ``jax-jit`` interface
@@ -241,7 +241,7 @@ class TransformJacobianProducts(JacobianProductCalculator):
     def __init__(
         self,
         inner_execute: Callable,
-        gradient_transform: "pennylane.transforms.core.TransformDispatcher",
+        gradient_transform: "qml.transforms.core.TransformDispatcher",
         gradient_kwargs: Optional[dict] = None,
         cache_full_jacobian: bool = False,
     ):
@@ -265,7 +265,7 @@ class TransformJacobianProducts(JacobianProductCalculator):
         self._cache_full_jacobian = cache_full_jacobian
         self._cache = LRUCache(maxsize=10)
 
-    def execute_and_compute_jvp(self, tapes: Batch, tangents: Tuple[Tuple[TensorLike]]):
+    def execute_and_compute_jvp(self, tapes: Batch, tangents: tuple[Sequence[TensorLike]]):
         if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
             logger.debug("execute_and_compute_jvp called with (%s, %s)", tapes, tangents)
 
@@ -288,7 +288,7 @@ class TransformJacobianProducts(JacobianProductCalculator):
         jvps = jvp_processing_fn(jvp_results)
         return tuple(results), tuple(jvps)
 
-    def compute_vjp(self, tapes: Batch, dy: Tuple[Tuple[TensorLike]]):
+    def compute_vjp(self, tapes: Batch, dy: tuple[Sequence[TensorLike]]):
         if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
             logger.debug("compute_vjp called with (%s, %s)", tapes, dy)
 
@@ -665,15 +665,15 @@ class DeviceJacobianProducts(JacobianProductCalculator):
         self._execution_config = execution_config
 
     def execute_and_compute_jvp(
-        self, tapes: Batch, tangents: Tuple[Tuple[TensorLike]]
-    ) -> Tuple[ResultBatch, Tuple]:
+        self, tapes: Batch, tangents: tuple[Sequence[TensorLike]]
+    ) -> tuple[ResultBatch, tuple]:
         if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
             logger.debug("execute_and_compute_jvp called with (%s, %s)", tapes, tangents)
         numpy_tapes, _ = qml.transforms.convert_to_numpy_parameters(tapes)
         tangents = qml.math.unwrap(tangents)
         return self._device.execute_and_compute_jvp(numpy_tapes, tangents, self._execution_config)
 
-    def compute_vjp(self, tapes: Batch, dy: Tuple[Tuple[TensorLike]]) -> Tuple:
+    def compute_vjp(self, tapes: Batch, dy: tuple[Sequence[TensorLike]]) -> tuple:
         if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
             logger.debug("compute_vjp called with (%s, %s)", tapes, dy)
         numpy_tapes, _ = qml.transforms.convert_to_numpy_parameters(tapes)
@@ -693,7 +693,7 @@ class DeviceJacobianProducts(JacobianProductCalculator):
         numpy_tapes, _ = qml.transforms.convert_to_numpy_parameters(tapes)
         return self._device.compute_derivatives(numpy_tapes, self._execution_config)
 
-    def execute_and_compute_jacobian(self, tapes: Batch) -> Tuple:
+    def execute_and_compute_jacobian(self, tapes: Batch) -> tuple:
         if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
             logger.debug("execute_and_compute_jacobian called with %s", tapes)
         numpy_tapes, _ = qml.transforms.convert_to_numpy_parameters(tapes)

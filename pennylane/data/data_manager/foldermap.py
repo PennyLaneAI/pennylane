@@ -20,7 +20,7 @@ datasets bucket.
 import typing
 from collections.abc import Mapping
 from pathlib import PurePosixPath
-from typing import Any, List, Literal, Optional, Tuple, Union
+from typing import Any, Literal, Optional, Union
 
 from .params import Description, ParamArg, ParamVal
 
@@ -94,7 +94,7 @@ class FolderMapView(typing.Mapping[str, Union["FolderMapView", DataPath]]):
         data_name: str,
         missing_default: Optional[ParamArg] = ParamArg.DEFAULT,
         **params: Union[typing.Iterable[ParamVal], ParamArg],
-    ) -> List[Tuple[Description, DataPath]]:
+    ) -> list[tuple[Description, DataPath]]:
         """Returns a 2-tuple of dataset description and paths, for each dataset that
         matches ``params``."""
 
@@ -104,15 +104,15 @@ class FolderMapView(typing.Mapping[str, Union["FolderMapView", DataPath]]):
             raise RuntimeError("Can only call find() from top level of foldermap") from exc
 
         try:
-            param_names: List[str] = data_names_to_params[data_name]
+            param_names: list[str] = data_names_to_params[data_name]
         except KeyError as exc:
             raise ValueError(f"No datasets with data name: '{data_name}'") from exc
 
-        curr: List[Tuple[Description, Union[FolderMapView, DataPath]]] = [
+        curr: list[tuple[Description, Union[FolderMapView, DataPath]]] = [
             (Description(()), self[data_name])
         ]
-        todo: List[Tuple[Description, Union[FolderMapView, DataPath]]] = []
-        done: List[Tuple[Description, DataPath]] = []
+        todo: list[tuple[Description, Union[FolderMapView, DataPath]]] = []
+        done: list[tuple[Description, DataPath]] = []
 
         for param_name in param_names:
             param_arg = params.get(param_name, missing_default)

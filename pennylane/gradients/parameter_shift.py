@@ -17,14 +17,12 @@ of a qubit-based quantum tape.
 """
 from functools import partial
 
-# pylint: disable=protected-access,too-many-arguments,too-many-statements,unused-argument
-from typing import Callable, Sequence
-
 import numpy as np
 
 import pennylane as qml
 from pennylane import transform
 from pennylane.measurements import VarianceMP
+from pennylane.typing import PostprocessingFn, TapeBatch
 
 from .finite_difference import finite_diff
 from .general_shift_rules import (
@@ -45,6 +43,9 @@ from .gradient_transform import (
     find_and_validate_gradient_methods,
     reorder_grads,
 )
+
+# pylint: disable=protected-access,too-many-arguments,too-many-statements,unused-argument
+
 
 NONINVOLUTORY_OBS = {
     "Hermitian": lambda obs: obs.__class__(obs.matrix() @ obs.matrix(), wires=obs.wires),
@@ -772,7 +773,7 @@ def _expand_transform_param_shift(
     fallback_fn=finite_diff,
     f0=None,
     broadcast=False,
-) -> (Sequence[qml.tape.QuantumTape], Callable):
+) -> tuple[TapeBatch, PostprocessingFn]:
     """Expand function to be applied before parameter shift."""
     [new_tape], postprocessing = qml.devices.preprocess.decompose(
         tape,
@@ -802,7 +803,7 @@ def param_shift(
     fallback_fn=finite_diff,
     f0=None,
     broadcast=False,
-) -> (Sequence[qml.tape.QuantumTape], Callable):
+) -> tuple[TapeBatch, PostprocessingFn]:
     r"""Transform a circuit to compute the parameter-shift gradient of all gate
     parameters with respect to its inputs.
 

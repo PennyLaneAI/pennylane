@@ -15,9 +15,9 @@
 Contains the batch dimension transform.
 """
 # pylint: disable=import-outside-toplevel
-from typing import Callable, Sequence
 
 import pennylane as qml
+from pennylane.typing import PostprocessingFn, TapeBatch
 
 from .core import transform
 
@@ -82,7 +82,7 @@ def _split_operations(ops, params, split_indices, num_tapes):
 @transform
 def batch_params(
     tape: qml.tape.QuantumTape, all_operations=False
-) -> (Sequence[qml.tape.QuantumTape], Callable):
+) -> tuple[TapeBatch, PostprocessingFn]:
     """Transform a QNode to support an initial batch dimension
     for operation parameters.
 

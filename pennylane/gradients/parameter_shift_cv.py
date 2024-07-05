@@ -19,9 +19,6 @@ import itertools
 import warnings
 from functools import partial
 
-# pylint: disable=protected-access,too-many-arguments,too-many-statements,too-many-branches,unused-argument
-from typing import Callable, Sequence
-
 import numpy as np
 
 import pennylane as qml
@@ -39,11 +36,14 @@ from pennylane.measurements import (
     VarianceMP,
 )
 from pennylane.transforms.tape_expand import expand_invalid_trainable
+from pennylane.typing import PostprocessingFn, TapeBatch
 
 from .finite_difference import finite_diff
 from .general_shift_rules import generate_shifted_tapes, process_shifts
 from .gradient_transform import _no_trainable_grad
 from .parameter_shift import _get_operation_recipe, expval_param_shift
+
+# pylint: disable=protected-access,too-many-arguments,too-many-statements,too-many-branches,unused-argument
 
 
 def _grad_method_cv(tape, idx):
@@ -501,7 +501,7 @@ def _expand_transform_param_shift_cv(
     fallback_fn=finite_diff,
     f0=None,
     force_order2=False,
-) -> (Sequence[qml.tape.QuantumTape], Callable):
+) -> tuple[TapeBatch, PostprocessingFn]:
     """Expand function to be applied before parameter shift CV."""
     expanded_tape = expand_invalid_trainable(tape)
 
@@ -529,7 +529,7 @@ def param_shift_cv(
     fallback_fn=finite_diff,
     f0=None,
     force_order2=False,
-) -> (Sequence[qml.tape.QuantumTape], Callable):
+) -> tuple[TapeBatch, PostprocessingFn]:
     r"""Transform a continuous-variable QNode to compute the parameter-shift gradient of all gate
     parameters with respect to its inputs.
 

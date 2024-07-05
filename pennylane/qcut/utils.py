@@ -18,7 +18,7 @@ Support functions for cut_circuit and cut_circuit_mc.
 
 import uuid
 import warnings
-from typing import Any, Callable, Sequence, Tuple
+from typing import Any, Callable, Sequence
 
 import numpy as np
 from networkx import MultiDiGraph, has_path, weakly_connected_components
@@ -466,7 +466,7 @@ def replace_wire_cut_nodes(graph: MultiDiGraph):
 
 
 def place_wire_cuts(
-    graph: MultiDiGraph, cut_edges: Sequence[Tuple[Operation, Operation, Any]]
+    graph: MultiDiGraph, cut_edges: Sequence[tuple[Operation, Operation, Any]]
 ) -> MultiDiGraph:
     """Inserts a :class:`~.WireCut` node for each provided cut edge into a circuit graph.
 
@@ -571,7 +571,7 @@ def _remove_existing_cuts(graph: MultiDiGraph) -> MultiDiGraph:
 
 
 # pylint: disable=too-many-branches
-def fragment_graph(graph: MultiDiGraph) -> Tuple[Tuple[MultiDiGraph], MultiDiGraph]:
+def fragment_graph(graph: MultiDiGraph) -> tuple[tuple[MultiDiGraph], MultiDiGraph]:
     """
     Fragments a graph into a collection of subgraphs as well as returning
     the communication (`quotient <https://en.wikipedia.org/wiki/Quotient_graph>`__)

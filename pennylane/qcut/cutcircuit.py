@@ -16,12 +16,13 @@ Function cut_circuit for cutting a quantum circuit into smaller circuit fragment
 """
 
 from functools import partial
-from typing import Callable, Optional, Sequence, Union
+from typing import Callable, Optional, Union
 
 import pennylane as qml
 from pennylane.measurements import ExpectationMP
 from pennylane.tape import QuantumTape
 from pennylane.transforms import transform
+from pennylane.typing import PostprocessingFn, TapeBatch
 from pennylane.wires import Wires
 
 from .cutstrategy import CutStrategy
@@ -38,7 +39,7 @@ def _cut_circuit_expand(
     max_depth: int = 1,
     auto_cutter: Union[bool, Callable] = False,
     **kwargs,
-) -> (Sequence[QuantumTape], Callable):
+) -> tuple[TapeBatch, PostprocessingFn]:
     """Main entry point for expanding operations until reaching a depth that
     includes :class:`~.WireCut` operations."""
     # pylint: disable=unused-argument
@@ -76,7 +77,7 @@ def cut_circuit(
     device_wires: Optional[Wires] = None,
     max_depth: int = 1,
     **kwargs,
-) -> (Sequence[QuantumTape], Callable):
+) -> tuple[TapeBatch, PostprocessingFn]:
     """
     Cut up a quantum circuit into smaller circuit fragments.
 

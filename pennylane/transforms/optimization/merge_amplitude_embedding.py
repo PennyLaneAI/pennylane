@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Transform for merging AmplitudeEmbedding gates in a quantum circuit."""
-from typing import Callable, Sequence
 
 from pennylane import AmplitudeEmbedding
 from pennylane._device import DeviceError
@@ -20,10 +19,11 @@ from pennylane.math import flatten, reshape
 from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumTape
 from pennylane.transforms import transform
+from pennylane.typing import PostprocessingFn, TapeBatch
 
 
 @transform
-def merge_amplitude_embedding(tape: QuantumTape) -> (Sequence[QuantumTape], Callable):
+def merge_amplitude_embedding(tape: QuantumTape) -> tuple[TapeBatch, PostprocessingFn]:
     r"""Quantum function transform to combine amplitude embedding templates that act on different qubits.
 
     Args:

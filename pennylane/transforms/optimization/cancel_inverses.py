@@ -13,7 +13,6 @@
 # limitations under the License.
 """Transform for cancelling adjacent inverse gates in quantum circuits."""
 # pylint: disable=too-many-branches
-from typing import Callable, Sequence
 
 from pennylane.ops.op_math import Adjoint
 from pennylane.ops.qubit.attributes import (
@@ -23,6 +22,7 @@ from pennylane.ops.qubit.attributes import (
 )
 from pennylane.tape import QuantumTape
 from pennylane.transforms import transform
+from pennylane.typing import PostprocessingFn, TapeBatch
 from pennylane.wires import Wires
 
 from .optimization_utils import find_next_gate
@@ -64,7 +64,7 @@ def _are_inverses(op1, op2):
 
 
 @transform
-def cancel_inverses(tape: QuantumTape) -> (Sequence[QuantumTape], Callable):
+def cancel_inverses(tape: QuantumTape) -> tuple[TapeBatch, PostprocessingFn]:
     """Quantum function transform to remove any operations that are applied next to their
     (self-)inverses or adjoint.
 

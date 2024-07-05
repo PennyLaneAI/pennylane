@@ -17,7 +17,7 @@ Function cut_circuit_mc for cutting a quantum circuit into smaller circuit fragm
 
 import inspect
 from functools import partial
-from typing import Callable, List, Optional, Sequence, Tuple, Union
+from typing import Callable, Optional, Sequence, Union
 
 import numpy as np
 from networkx import MultiDiGraph
@@ -26,6 +26,7 @@ import pennylane as qml
 from pennylane.measurements import SampleMP
 from pennylane.tape import QuantumScript, QuantumTape
 from pennylane.transforms import transform
+from pennylane.typing import PostprocessingFn, TapeBatch
 from pennylane.wires import Wires
 
 from .cutstrategy import CutStrategy
@@ -55,7 +56,7 @@ def _cut_circuit_mc_expand(
     device_wires: Optional[Wires] = None,
     auto_cutter: Union[bool, Callable] = False,
     **kwargs,
-) -> (Sequence[QuantumTape], Callable):
+) -> tuple[TapeBatch, PostprocessingFn]:
     """Main entry point for expanding operations in sample-based tapes until
     reaching a depth that includes :class:`~.WireCut` operations."""
     # pylint: disable=unused-argument, too-many-arguments
@@ -75,7 +76,7 @@ def cut_circuit_mc(
     shots: Optional[int] = None,
     device_wires: Optional[Wires] = None,
     **kwargs,
-) -> (Sequence[QuantumTape], Callable):
+) -> tuple[TapeBatch, PostprocessingFn]:
     """
     Cut up a circuit containing sample measurements into smaller fragments using a
     Monte Carlo method.
@@ -592,7 +593,7 @@ MC_MEASUREMENTS = [
 
 def expand_fragment_tapes_mc(
     tapes: Sequence[QuantumTape], communication_graph: MultiDiGraph, shots: int
-) -> Tuple[List[QuantumTape], np.ndarray]:
+) -> tuple[list[QuantumTape], np.ndarray]:
     """
     Expands fragment tapes into a sequence of random configurations of the contained pairs of
     :class:`MeasureNode` and :class:`PrepareNode` operations.

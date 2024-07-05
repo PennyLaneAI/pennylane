@@ -13,7 +13,6 @@
 # limitations under the License.
 """Riemannian gradient optimizer"""
 import warnings
-from typing import Callable, Sequence
 
 import numpy as np
 from scipy.sparse.linalg import expm
@@ -22,12 +21,13 @@ import pennylane as qml
 from pennylane import transform
 from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumTape
+from pennylane.typing import PostprocessingFn, TapeBatch
 
 
 @transform
 def append_time_evolution(
     tape: QuantumTape, riemannian_gradient, t, n, exact=False
-) -> (Sequence[QuantumTape], Callable):
+) -> tuple[TapeBatch, PostprocessingFn]:
     r"""Append an approximate time evolution, corresponding to a Riemannian
     gradient on the Lie group, to an existing circuit.
 

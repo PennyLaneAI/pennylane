@@ -15,10 +15,10 @@
 of a quantum circuit, that is the frequencies without considering
 preprocessing in the QNode."""
 from functools import partial
-from typing import Callable, Sequence
 
 from pennylane import transform
 from pennylane.tape import QuantumTape
+from pennylane.typing import PostprocessingFn, TapeBatch
 
 from .utils import get_spectrum, join_spectra
 
@@ -26,7 +26,7 @@ from .utils import get_spectrum, join_spectra
 @partial(transform, is_informative=True)
 def circuit_spectrum(
     tape: QuantumTape, encoding_gates=None, decimals=8
-) -> (Sequence[QuantumTape], Callable):
+) -> tuple[TapeBatch, PostprocessingFn]:
     r"""Compute the frequency spectrum of the Fourier representation of
     simple quantum circuits ignoring classical preprocessing.
 

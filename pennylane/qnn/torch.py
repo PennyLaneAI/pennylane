@@ -19,7 +19,7 @@ import functools
 import inspect
 import math
 from collections.abc import Iterable
-from typing import Any, Callable, Dict, Union
+from typing import Any, Callable, Union
 
 from pennylane import QNode
 
@@ -328,7 +328,7 @@ class TorchLayer(Module):
         self,
         qnode: QNode,
         weight_shapes: dict,
-        init_method: Union[Callable, Dict[str, Union[Callable, Any]]] = None,
+        init_method: Union[Callable, dict[str, Union[Callable, Any]]] = None,
         # FIXME: Cannot change type `Any` to `torch.Tensor` in init_method because it crashes the
         # tests that don't use torch module.
     ):
@@ -354,7 +354,7 @@ class TorchLayer(Module):
         if self.qnode.interface not in ("auto", "torch", "pytorch"):
             raise ValueError(f"Invalid interface '{self.qnode.interface}' for TorchLayer")
 
-        self.qnode_weights: Dict[str, torch.nn.Parameter] = {}
+        self.qnode_weights: dict[str, torch.nn.Parameter] = {}
 
         self._init_weights(init_method=init_method, weight_shapes=weight_shapes)
         self._initialized = True
@@ -480,8 +480,8 @@ class TorchLayer(Module):
 
     def _init_weights(
         self,
-        weight_shapes: Dict[str, tuple],
-        init_method: Union[Callable, Dict[str, Union[Callable, Any]], None],
+        weight_shapes: dict[str, tuple],
+        init_method: Union[Callable, dict[str, Union[Callable, Any]], None],
     ):
         r"""Initialize and register the weights with the given init_method. If init_method is not
         specified, weights are randomly initialized from the uniform distribution on the interval
