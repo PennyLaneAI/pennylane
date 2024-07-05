@@ -50,15 +50,16 @@ quantum circuit. One can construct standard Boolean functions using the followin
     ~wires_eq
     ~wires_in
 
-For example, a Boolean function that checks of an operation is on wire ``0`` can be created
-like so:
+For example, a Boolean function that checks if an operation is on wire ``0`` can be created
+as follows:
 
 >>> fn = qml.noise.wires_eq(0)
 >>> op1, op2 = qml.PauliX(0), qml.PauliX(1)
 >>> fn(op1)
-False
->>> fn(op2)
 True
+
+>>> fn(op2)
+False
 
 Arbitrary Boolean functions can also be defined by wrapping the functional form
 of custom conditions with the following decorator:
@@ -79,7 +80,7 @@ with a maximum parameter value:
     def rx_condition(op, **metadata):
         return isinstance(op, qml.RX) and op.parameters[0] < 1.0
 
-Boolean functions can be combined using standard bit-wise operators, such as
+Boolean functions can be combined using standard bitwise operators, such as
 ``&``, ``|``, ``^``, or ``~``. The result will be another Boolean function. It
 is important to note that as Python will evaluate the expression in the order
 of their combination, i.e., left to right, the order of composition could matter,
@@ -117,6 +118,7 @@ For example, a constant-valued over-rotation can be created using:
 >>> rx_constant = qml.noise.partial_wires(qml.RX(0.1, wires=[0]))
 >>> rx_constant(2)
 RX(0.1, 2)
+
 >>> qml.NoiseModel({rx_condition: rx_constant})
 NoiseModel({
     BooleanFn(rx_condition): RX(phi=0.1)
@@ -177,7 +179,7 @@ above, such as :func:`~.op_eq`. These objects do not need to be instantiated dir
     ~WiresEq
     ~WiresIn
 
-Bitwise operations like `And` and `Or` are represented with the following classes in the
+Bitwise operations like ``And`` and ``Or`` are represented with the following classes in the
 :mod:`boolean_fn` module:
 
 .. currentmodule:: pennylane.boolean_fn
