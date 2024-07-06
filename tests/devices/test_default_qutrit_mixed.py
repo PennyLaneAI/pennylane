@@ -1558,6 +1558,34 @@ class TestReadoutError:
         assert res == expected
 
     @pytest.mark.parametrize(
+        "relaxations, misclassifications, expected_results",
+        [None, (0.1, 0.2, 0.4), []],
+        [(0.2, 0.1, 0.3), None, []],
+        [(0.2, 0.1, 0.4), (0.1, 0.2, 0.5), []],
+    )
+    def test_approximate_readout_counts(self, num_wires, relaxations, misclassifications, expected_results):
+        """Tests the counts output with readout error"""
+        num_shots = 10000
+        dev = qml.device(
+            "default.qutrit.mixed",
+            shots=num_shots,
+            wires=num_wires,
+            readout_relaxation_probs=relaxations,
+            readout_misclassification_probs=misclassifications,
+        )
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.QutritBasisState([2] * num_wires, wires=range(num_wires))
+            return qml.counts(wires=[0, 1])
+
+        res = circuit()
+        assert isinstance(res, dict)
+        cases = ["00", "01", "02", "10", "11", "12", "20", "21", "22"]
+        for case, expected_result in zip(cases, expected_results):
+            assert np.isclose(res["02"] / num_shots, 1 / 3, atol=0.05)
+
+    @pytest.mark.parametrize(
         "relaxations,misclassifications",
         [
             [(0.1, 0.2), None],
