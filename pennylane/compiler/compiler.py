@@ -15,6 +15,7 @@
 
 import dataclasses
 import re
+import sys
 from collections import defaultdict
 from importlib import metadata, reload
 from sys import version_info
@@ -206,6 +207,8 @@ def active_compiler() -> Optional[str]:
     """
 
     for name, eps in AvailableCompilers.names_entrypoints.items():
+        if name not in sys.modules:
+            continue
         tracer_loader = eps["context"].load()
         if tracer_loader.is_tracing():
             return name
@@ -245,5 +248,4 @@ def active() -> bool:
     >>> qml.qjit(circuit)(np.pi, np.pi / 2)
     -1.0
     """
-
     return active_compiler() is not None

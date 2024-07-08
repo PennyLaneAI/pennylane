@@ -712,7 +712,7 @@ class TestPLDB:
     def test_pldb_init(self):
         """Test that PLDB initializes correctly"""
         debugger = PLDB()
-        assert debugger.prompt == "[pldb]: "
+        assert debugger.prompt == "[pldb] "
         assert getattr(debugger, "_PLDB__active_dev") is None
 
     def test_valid_context_outside_qnode(self):
