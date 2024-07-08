@@ -1226,13 +1226,15 @@ class TestMultiControlledXKernel:
 class TestLargeTFCornerCases:
     """Test large corner cases for tensorflow."""
 
-    @pytest.mark.parametrize("op", (qml.PauliZ(8), qml.CNOT((5, 6))))
+    @pytest.mark.parametrize(
+        "op", (qml.PauliZ(8), qml.PhaseShift(1.0, 8), qml.S(8), qml.T(8), qml.CNOT((5, 6)))
+    )
     def test_tf_large_state(self, op):
         """Tests that custom kernels that use slicing fall back to a different method when
         the state has a large number of wires."""
         import tensorflow as tf
 
-        state = np.zeros([2] * 10)
+        state = np.zeros([2] * 10, dtype=complex)
         state = tf.Variable(state)
         new_state = apply_operation(op, state)
 

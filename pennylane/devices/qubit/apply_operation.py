@@ -413,7 +413,7 @@ def apply_phaseshift(op: qml.PhaseShift, state, is_state_batched: bool = False, 
 
     n_dim = math.ndim(state)
 
-    if n_dim >= 9 and math.get_interface(state) == "tensorflow":  # pragma: no cover
+    if n_dim >= 9 and math.get_interface(state) == "tensorflow":
         return apply_operation_tensordot(op, state, is_state_batched=is_state_batched)
 
     axis = op.wires[0] + is_state_batched
@@ -425,7 +425,7 @@ def apply_phaseshift(op: qml.PhaseShift, state, is_state_batched: bool = False, 
     state0 = state[sl_0]
     state1 = state[sl_1]
     if op.batch_size is not None and len(params) > 1:
-        interface = math.get_deep_interface(state)
+        interface = math.get_interface(state)
         if interface == "torch":
             params = math.array(params, like=interface)
         if is_state_batched:
@@ -449,7 +449,7 @@ def apply_T(op: qml.T, state, is_state_batched: bool = False, debugger=None, **_
     axis = op.wires[0] + is_state_batched
     n_dim = math.ndim(state)
 
-    if n_dim >= 9 and math.get_interface(state) == "tensorflow":  # pragma: no cover
+    if n_dim >= 9 and math.get_interface(state) == "tensorflow":
         return apply_operation_tensordot(op, state, is_state_batched=is_state_batched)
 
     sl_0 = _get_slice(0, axis, n_dim)
@@ -466,7 +466,7 @@ def apply_S(op: qml.S, state, is_state_batched: bool = False, debugger=None, **_
     axis = op.wires[0] + is_state_batched
     n_dim = math.ndim(state)
 
-    if n_dim >= 9 and math.get_interface(state) == "tensorflow":  # pragma: no cover
+    if n_dim >= 9 and math.get_interface(state) == "tensorflow":
         return apply_operation_tensordot(op, state, is_state_batched=is_state_batched)
 
     sl_0 = _get_slice(0, axis, n_dim)
@@ -483,7 +483,7 @@ def apply_cnot(op: qml.CNOT, state, is_state_batched: bool = False, debugger=Non
     control_axes = op.wires[0] + is_state_batched
     n_dim = math.ndim(state)
 
-    if n_dim >= 9 and math.get_interface(state) == "tensorflow":  # pragma: no cover
+    if n_dim >= 9 and math.get_interface(state) == "tensorflow":
         return apply_operation_tensordot(op, state, is_state_batched=is_state_batched)
 
     sl_0 = _get_slice(0, control_axes, n_dim)
