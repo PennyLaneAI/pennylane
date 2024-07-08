@@ -15,8 +15,7 @@
 of Dataset attributes."""
 
 
-import typing
-from collections.abc import Mapping
+from collections.abc import Iterator, Mapping, MutableMapping
 from typing import Generic, Union
 
 from pennylane.data.base.attribute import DatasetAttribute
@@ -27,8 +26,8 @@ from pennylane.data.base.typing_util import T
 
 class DatasetDict(  # pylint: disable=too-many-ancestors
     Generic[T],
-    DatasetAttribute[HDF5Group, typing.Mapping[str, T], typing.Mapping[str, T]],
-    typing.MutableMapping[str, T],
+    DatasetAttribute[HDF5Group, Mapping[str, T], Mapping[str, T]],
+    MutableMapping[str, T],
     MapperMixin,
 ):
     """Provides a dict-like collection for Dataset attribute types. Keys must
@@ -36,7 +35,7 @@ class DatasetDict(  # pylint: disable=too-many-ancestors
 
     type_id = "dict"
 
-    def __post_init__(self, value: typing.Mapping[str, T]):
+    def __post_init__(self, value: Mapping[str, T]):
         super().__post_init__(value)
         self.update(value)
 
@@ -44,7 +43,7 @@ class DatasetDict(  # pylint: disable=too-many-ancestors
     def default_value(cls) -> dict:
         return {}
 
-    def hdf5_to_value(self, bind: HDF5Group) -> typing.MutableMapping[str, T]:
+    def hdf5_to_value(self, bind: HDF5Group) -> MutableMapping[str, T]:
         return self
 
     def value_to_hdf5(self, bind_parent: HDF5Group, key: str, value: None) -> HDF5Group:
@@ -93,7 +92,7 @@ class DatasetDict(  # pylint: disable=too-many-ancestors
 
         return all(__value[key] == self[key] for key in __value.keys())
 
-    def __iter__(self) -> typing.Iterator[str]:
+    def __iter__(self) -> Iterator[str]:
         return (key for key in self.bind.keys())
 
     def __str__(self) -> str:

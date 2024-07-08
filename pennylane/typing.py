@@ -16,7 +16,8 @@ import contextlib
 
 # pylint: disable=import-outside-toplevel, too-few-public-methods, unused-import
 import sys
-from typing import Callable, Sequence, TypeVar, Union
+from collections.abc import Callable, Sequence
+from typing import TypeVar, Union
 
 import numpy as np
 from autograd.numpy.numpy_boxes import ArrayBox

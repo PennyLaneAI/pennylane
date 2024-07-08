@@ -15,8 +15,9 @@
 This submodule defines the abstract classes and primitives for capture.
 """
 
+from collections.abc import Callable
 from functools import lru_cache
-from typing import Callable, Optional, Type
+from typing import Optional, Type
 
 import pennylane as qml
 

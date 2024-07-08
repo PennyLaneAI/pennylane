@@ -15,11 +15,13 @@
 
 """
 import inspect
+from collections.abc import Callable
 from contextlib import nullcontext
 from functools import wraps
-from typing import Callable, Literal, Optional, Union
+from typing import Literal, Optional, Union
 
 import pennylane as qml
+from pennylane.typing import PostprocessingFn, TapeBatch
 
 from .qnode import QNode, _get_device_shots, _make_execution_config
 
@@ -316,7 +318,7 @@ def construct_batch(
     """
 
     # pylint: disable=protected-access
-    def batch_constructor(*args, **kwargs) -> tuple[BatchTape, PostprocessingFn]:
+    def batch_constructor(*args, **kwargs) -> tuple[TapeBatch, PostprocessingFn]:
         """Create a batch of tapes and a post processing function."""
         if "shots" in inspect.signature(qnode.func).parameters:
             shots = _get_device_shots(qnode.device)

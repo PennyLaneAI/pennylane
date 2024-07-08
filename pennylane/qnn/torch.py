@@ -18,8 +18,8 @@ import contextlib
 import functools
 import inspect
 import math
-from collections.abc import Iterable
-from typing import Any, Callable, Union
+from collections.abc import Callable, Iterable
+from typing import Any, Union
 
 from pennylane import QNode
 

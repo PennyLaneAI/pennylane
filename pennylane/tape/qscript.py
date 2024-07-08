@@ -20,8 +20,9 @@ executed by a device.
 import contextlib
 import copy
 from collections import Counter
+from collections.abc import Sequence
 from functools import cached_property
-from typing import List, Optional, Sequence, Union
+from typing import Optional, Union
 
 import pennylane as qml
 from pennylane.measurements import MeasurementProcess, ProbabilityMP, Shots, StateMP
@@ -243,7 +244,7 @@ class QuantumScript:
         return self.operations + self.measurements
 
     @property
-    def operations(self) -> List[Operator]:
+    def operations(self) -> list[Operator]:
         """Returns the state preparations and operations on the quantum script.
 
         Returns:
@@ -257,7 +258,7 @@ class QuantumScript:
         return self._ops
 
     @property
-    def observables(self) -> List[Union[MeasurementProcess, Observable]]:
+    def observables(self) -> list[Union[MeasurementProcess, Observable]]:
         """Returns the observables on the quantum script.
 
         Returns:
@@ -284,7 +285,7 @@ class QuantumScript:
         return obs
 
     @property
-    def measurements(self) -> List[MeasurementProcess]:
+    def measurements(self) -> list[MeasurementProcess]:
         """Returns the measurements on the quantum script.
 
         Returns:
@@ -331,7 +332,7 @@ class QuantumScript:
         return self._output_dim
 
     @property
-    def diagonalizing_gates(self) -> List[Operation]:
+    def diagonalizing_gates(self) -> list[Operation]:
         """Returns the gates that diagonalize the measured wires such that they
         are in the eigenbasis of the circuit observables.
 

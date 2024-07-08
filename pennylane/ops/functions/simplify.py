@@ -14,8 +14,9 @@
 """
 This module contains the qml.simplify function.
 """
+from collections.abc import Callable
 from copy import copy
-from typing import Callable, Union
+from typing import Union
 
 import pennylane as qml
 from pennylane.measurements import MeasurementProcess

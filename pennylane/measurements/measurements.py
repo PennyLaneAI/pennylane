@@ -19,8 +19,9 @@ and measurement samples using AnnotatedQueues.
 import copy
 import functools
 from abc import ABC, abstractmethod
+from collections.abc import Sequence
 from enum import Enum
-from typing import Optional, Sequence, Union
+from typing import Optional, Union
 
 import pennylane as qml
 from pennylane.math.utils import is_abstract

@@ -12,8 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Provides transforms for mitigating quantum circuits."""
+from collections.abc import Sequence
 from copy import copy
-from typing import Any, Callable, Optional, Sequence
+from typing import Any, Optional
 
 import pennylane as qml
 from pennylane import adjoint, apply
@@ -21,13 +22,11 @@ from pennylane.math import mean, round, shape
 from pennylane.queuing import AnnotatedQueue
 from pennylane.tape import QuantumScript, QuantumTape
 from pennylane.transforms import transform
-from pennylane.typing import Result, ResultBatch
+from pennylane.typing import PostprocessingFn, TapeBatch
 
 
 @transform
-def fold_global(
-    tape: QuantumTape, scale_factor
-) -> tuple[Sequence[QuantumTape], Callable[[ResultBatch], Result]]:
+def fold_global(tape: QuantumTape, scale_factor) -> tuple[TapeBatch, PostprocessingFn]:
     r"""Differentiable circuit folding of the global unitary ``circuit``.
 
     For a unitary circuit :math:`U = L_d .. L_1`, where :math:`L_i` can be either a gate or layer, ``fold_global`` constructs

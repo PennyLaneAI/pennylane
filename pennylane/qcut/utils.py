@@ -18,7 +18,8 @@ Support functions for cut_circuit and cut_circuit_mc.
 
 import uuid
 import warnings
-from typing import Any, Callable, Sequence
+from collections.abc import Callable, Sequence
+from typing import Any
 
 import numpy as np
 from networkx import MultiDiGraph, has_path, weakly_connected_components

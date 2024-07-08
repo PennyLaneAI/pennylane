@@ -12,9 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """QNode transforms for the quantum information quantities."""
+from collections.abc import Callable, Sequence
+
 # pylint: disable=import-outside-toplevel, not-callable
 from functools import partial
-from typing import Callable, Sequence
 
 import pennylane as qml
 from pennylane import transform

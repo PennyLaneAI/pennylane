@@ -15,9 +15,9 @@
 of operators."""
 
 import json
-import typing
+from collections.abc import Sequence
 from functools import lru_cache
-from typing import FrozenSet, Generic, List, Type, TypeVar
+from typing import Generic, Type, TypeVar
 
 import numpy as np
 
@@ -52,7 +52,7 @@ class DatasetOperator(Generic[Op], DatasetAttribute[HDF5Group, Op, Op]):
 
     @classmethod
     @lru_cache(1)
-    def supported_ops(cls) -> FrozenSet[Type[Operator]]:
+    def supported_ops(cls) -> frozenset[Type[Operator]]:
         """Set of supported operators."""
         return frozenset(
             (
@@ -198,7 +198,7 @@ class DatasetOperator(Generic[Op], DatasetAttribute[HDF5Group, Op, Op]):
         return self._hdf5_to_ops(bind)[0]
 
     def _ops_to_hdf5(
-        self, bind_parent: HDF5Group, key: str, value: typing.Sequence[Operator]
+        self, bind_parent: HDF5Group, key: str, value: Sequence[Operator]
     ) -> HDF5Group:
         """Serialize op sequence ``value``, and create nested sequences for any
         composite ops in ``value``.
@@ -247,7 +247,7 @@ class DatasetOperator(Generic[Op], DatasetAttribute[HDF5Group, Op, Op]):
 
         return bind
 
-    def _hdf5_to_ops(self, bind: HDF5Group) -> List[Operator]:
+    def _hdf5_to_ops(self, bind: HDF5Group) -> list[Operator]:
         """Load list of serialized ops from ``bind``."""
         ops = []
 

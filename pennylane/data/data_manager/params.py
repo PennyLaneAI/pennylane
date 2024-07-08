@@ -17,8 +17,9 @@ Contains types and functions for dataset parameters.
 
 
 import enum
+from collections.abc import Iterable, Iterator, Mapping
 from functools import lru_cache
-from typing import Any, FrozenSet, Iterable, Iterator, Mapping, Union
+from typing import Any, Union
 
 
 class ParamArg(enum.Enum):
@@ -33,7 +34,7 @@ class ParamArg(enum.Enum):
 
     @classmethod
     @lru_cache(maxsize=1)
-    def values(cls) -> FrozenSet[str]:
+    def values(cls) -> frozenset[str]:
         """Returns all values."""
         return frozenset(arg.value for arg in cls)
 

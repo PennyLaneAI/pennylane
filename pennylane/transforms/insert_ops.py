@@ -14,8 +14,9 @@
 """
 Provides transforms for inserting operations into quantum circuits.
 """
+from collections.abc import Sequence
 from types import FunctionType
-from typing import Sequence, Type, Union
+from typing import Type, Union
 
 import pennylane as qml
 from pennylane.operation import Operation

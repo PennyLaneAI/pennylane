@@ -127,7 +127,7 @@ import dataclasses
 
 # pylint: disable=unused-argument
 import logging
-from typing import Callable
+from collections.abc import Callable
 
 import jax
 import jax.numpy as jnp

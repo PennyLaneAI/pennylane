@@ -14,12 +14,12 @@
 """
 This module contains the ``TransformProgram`` class.
 """
+from collections.abc import Callable, Sequence
 from functools import partial
-from typing import Callable, Optional, Sequence, Union
+from typing import Optional, Union
 
 import pennylane as qml
-from pennylane.tape import QuantumTape
-from pennylane.typing import PostprocessingFn, ResultBatch
+from pennylane.typing import PostprocessingFn, ResultBatch, TapeBatch
 
 from .transform_dispatcher import TransformContainer, TransformDispatcher, TransformError
 

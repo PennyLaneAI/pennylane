@@ -14,12 +14,12 @@
 """Unit tests for the specs transform"""
 from collections import defaultdict
 from contextlib import nullcontext
-from typing import Callable, Sequence
 
 import pytest
 
 import pennylane as qml
 from pennylane import numpy as pnp
+from pennylane.typing import PostprocessingFn, TapeBatch
 
 
 class TestSpecsTransform:
@@ -304,7 +304,7 @@ class TestSpecsTransform:
         @qml.transforms.core.transform
         def my_transform(
             tape: qml.tape.QuantumTape,
-        ) -> tuple[Sequence[qml.tape.QuantumTape], Callable]:
+        ) -> tuple[TapeBatch, PostprocessingFn]:
             return tape, None
 
         @qml.qnode(dev, diff_method=my_transform)

@@ -14,8 +14,9 @@
 """
 This module contains the qml.map_wires function.
 """
+from collections.abc import Callable
 from functools import partial
-from typing import Callable, Union
+from typing import Union
 
 import pennylane as qml
 from pennylane import transform

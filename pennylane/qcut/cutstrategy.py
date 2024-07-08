@@ -16,9 +16,9 @@ Class CutStrategy, for executing (large) circuits on available (comparably small
 """
 
 import warnings
-from collections.abc import Sequence as SequenceType
+from collections.abc import Sequence
 from dataclasses import InitVar, dataclass
-from typing import Any, ClassVar, Sequence, Union
+from typing import Any, ClassVar, Union
 
 from networkx import MultiDiGraph
 
@@ -129,7 +129,7 @@ class CutStrategy:
             devices = (devices,)
 
         if devices is not None:
-            if not isinstance(devices, SequenceType) or any(
+            if not isinstance(devices, Sequence) or any(
                 (not isinstance(d, (qml.devices.LegacyDevice, qml.devices.Device)) for d in devices)
             ):
                 raise ValueError(

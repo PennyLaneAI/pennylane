@@ -17,10 +17,11 @@ This module contains the default.tensor device to perform tensor network simulat
 # pylint: disable=protected-access
 import copy
 import warnings
+from collections.abc import Callable
 from dataclasses import replace
 from functools import singledispatch
 from numbers import Number
-from typing import Callable, Optional, Union
+from typing import Optional, Union
 
 import numpy as np
 

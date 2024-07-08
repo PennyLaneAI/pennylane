@@ -13,7 +13,8 @@
 """
 Batch transformation for multiple (non-trainable) input examples following issue #2037
 """
-from typing import Sequence, Union
+from collections.abc import Sequence
+from typing import Union
 
 import numpy as np
 

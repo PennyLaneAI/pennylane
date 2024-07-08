@@ -14,7 +14,8 @@
 """
 This module contains the qml.expval measurement.
 """
-from typing import Optional, Sequence, Union
+from collections.abc import Sequence
+from typing import Optional, Union
 
 import pennylane as qml
 from pennylane.operation import Operator

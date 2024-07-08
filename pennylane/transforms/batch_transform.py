@@ -15,12 +15,10 @@
 # pylint: disable=too-few-public-methods
 
 import warnings
-from typing import Callable
+from collections.abc import Callable
 
 import pennylane as qml
-from pennylane.typing import ResultBatch, TapeBatch
-
-PostprocessingFn = Callable[[ResultBatch], ResultBatch]
+from pennylane.typing import PostprocessingFn, ResultBatch, TapeBatch
 
 
 def map_batch_transform(

@@ -16,10 +16,10 @@ Functions for partitioning a graph using KaHyPar.
 """
 
 
-from collections.abc import Sequence as SequenceType
+from collections.abc import Sequence
 from itertools import compress
 from pathlib import Path
-from typing import Any, Sequence, Union
+from typing import Any, Union
 
 import numpy as np
 from networkx import MultiDiGraph
@@ -141,7 +141,7 @@ def kahypar_cut(
 
     if isinstance(imbalance, float):
         context.setEpsilon(imbalance)
-    if isinstance(fragment_weights, SequenceType) and (len(fragment_weights) == num_fragments):
+    if isinstance(fragment_weights, Sequence) and (len(fragment_weights) == num_fragments):
         context.setCustomTargetBlockWeights(fragment_weights)
     if not verbose:
         context.suppressOutput(True)

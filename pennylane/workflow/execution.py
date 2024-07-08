@@ -24,8 +24,9 @@ differentiation support.
 import inspect
 import logging
 import warnings
+from collections.abc import Callable, MutableMapping, Sequence
 from functools import partial
-from typing import Callable, MutableMapping, Optional, Sequence, Union
+from typing import Optional, Union
 
 from cachetools import Cache, LRUCache
 
@@ -95,7 +96,7 @@ _CACHED_EXECUTION_WITH_FINITE_SHOTS_WARNINGS = (
 
 
 def _adjoint_jacobian_expansion(
-    tapes: Sequence[QuantumTape], grad_on_execution: bool, interface: str, max_expansion: int
+    tapes: TapeBatch, grad_on_execution: bool, interface: str, max_expansion: int
 ):
     """Performs adjoint jacobian specific expansion.  Expands so that every
     trainable operation has a generator.
@@ -180,7 +181,7 @@ def _get_ml_boundary_execute(
 
 
 def _batch_transform(
-    tapes: Sequence[QuantumTape],
+    tapes: TapeBatch,
     device: device_type,
     config: "qml.devices.ExecutionConfig",
     override_shots: Union[bool, int, Sequence[int]] = False,
@@ -288,7 +289,7 @@ def _make_inner_execute(
     else:
         device_execution = partial(device.execute, execution_config=execution_config)
 
-    def inner_execute(tapes: Sequence[QuantumTape], **_) -> ResultBatch:
+    def inner_execute(tapes: TapeBatch, **_) -> ResultBatch:
         """Execution that occurs within a machine learning framework boundary.
 
         Closure Variables:
@@ -409,7 +410,7 @@ def _get_interface_name(tapes, interface):
 
 
 def execute(
-    tapes: Sequence[QuantumTape],
+    tapes: TapeBatch,
     device: device_type,
     gradient_fn: Optional[Union[Callable, str]] = None,
     interface="auto",

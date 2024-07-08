@@ -16,9 +16,10 @@ This module contains the Clifford simulator using ``stim``.
 """
 
 import concurrent.futures
+from collections.abc import Sequence
 from dataclasses import replace
 from functools import partial
-from typing import Sequence, Union
+from typing import Union
 
 import numpy as np
 
@@ -42,7 +43,7 @@ from pennylane.ops.qubit.observables import BasisStateProjector
 from pennylane.tape import QuantumTape
 from pennylane.transforms import convert_to_numpy_parameters
 from pennylane.transforms.core import TransformProgram
-from pennylane.typing import Result, ResultBatch
+from pennylane.typing import Result, ResultBatch, TapeBatch
 
 from . import Device
 from .default_qubit import accepted_sample_measurement
@@ -64,8 +65,6 @@ try:
 except (ModuleNotFoundError, ImportError) as import_error:  # pragma: no cover
     has_stim = False
 
-Result_or_ResultBatch = Union[Result, ResultBatch]
-QuantumTape_or_Batch = Union[QuantumTape, Sequence[QuantumTape]]
 
 # Updated observable list
 _OBSERVABLES_MAP = {
@@ -499,9 +498,9 @@ class DefaultClifford(Device):
 
     def execute(
         self,
-        circuits: QuantumTape_or_Batch,
+        circuits: Union[QuantumTape, TapeBatch],
         execution_config: ExecutionConfig = DefaultExecutionConfig,
-    ) -> Result_or_ResultBatch:
+    ) -> Union[Result, ResultBatch]:
         max_workers = execution_config.device_options.get("max_workers", self._max_workers)
         if max_workers is None:
             seeds = self._rng.integers(2**31 - 1, size=len(circuits))

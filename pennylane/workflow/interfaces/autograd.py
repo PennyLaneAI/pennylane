@@ -83,7 +83,7 @@ Other interfaces are capable of calculating the full jacobian in one call, so th
 """
 # pylint: disable=too-many-arguments, unused-argument
 import logging
-from typing import Callable
+from collections.abc import Callable
 
 import autograd
 from autograd.numpy.numpy_boxes import ArrayBox

@@ -14,8 +14,8 @@
 """This module contains methods to expand the matrix representation of an operator
 to a higher hilbert space with re-ordered wires."""
 import itertools
+from collections.abc import Callable, Generator, Iterable
 from functools import reduce
-from typing import Callable, Generator, Iterable
 
 import numpy as np
 from scipy.sparse import csr_matrix, eye, kron

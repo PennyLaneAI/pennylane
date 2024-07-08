@@ -14,9 +14,10 @@
 """
 Contains the hamiltonian expand tape transform
 """
+from collections.abc import Sequence
+
 # pylint: disable=protected-access
 from functools import partial
-from typing import Sequence
 
 import pennylane as qml
 from pennylane.measurements import ExpectationMP, MeasurementProcess, Shots

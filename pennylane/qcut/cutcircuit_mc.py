@@ -16,8 +16,9 @@ Function cut_circuit_mc for cutting a quantum circuit into smaller circuit fragm
     Monte Carlo method, at its auxillary functions"""
 
 import inspect
+from collections.abc import Callable
 from functools import partial
-from typing import Callable, Optional, Sequence, Union
+from typing import Optional, Union
 
 import numpy as np
 from networkx import MultiDiGraph
@@ -592,8 +593,8 @@ MC_MEASUREMENTS = [
 
 
 def expand_fragment_tapes_mc(
-    tapes: Sequence[QuantumTape], communication_graph: MultiDiGraph, shots: int
-) -> tuple[list[QuantumTape], np.ndarray]:
+    tapes: TapeBatch, communication_graph: MultiDiGraph, shots: int
+) -> tuple[TapeBatch, np.ndarray]:
     """
     Expands fragment tapes into a sequence of random configurations of the contained pairs of
     :class:`MeasureNode` and :class:`PrepareNode` operations.
@@ -618,7 +619,7 @@ def expand_fragment_tapes_mc(
         shots (int): number of shots
 
     Returns:
-        Tuple[List[QuantumTape], np.ndarray]: the tapes corresponding to each configuration and the
+        Tuple[Sequence[QuantumTape], np.ndarray]: the tapes corresponding to each configuration and the
         settings that track each configuration pair
 
     **Example**

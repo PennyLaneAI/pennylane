@@ -13,8 +13,8 @@
 # limitations under the License.
 """Unit and integration tests for the transform dispatcher."""
 import inspect
+from collections.abc import Callable, Sequence
 from functools import partial
-from typing import Callable, Sequence
 
 import pytest
 
@@ -49,7 +49,7 @@ non_callable = tape_circuit
 
 def no_tape_transform(
     circuit: qml.tape.QuantumTape, index: int
-) -> tuple[Sequence[qml.tape.QuantumTape], Callable]:
+) -> tuple[TapeBatch, PostprocessingFn]:
     """Transform without tape."""
     circuit = circuit.copy()
     circuit._ops.pop(index)  # pylint:disable=protected-access

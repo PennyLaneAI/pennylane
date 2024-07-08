@@ -45,7 +45,7 @@ def transform(
               returns a sequence of :class:`~.QuantumTape` and a processing function.
 
             * The transform must have the following structure (type hinting is optional): ``my_quantum_transform(tape:
-              qml.tape.QuantumTape, ...) -> ( Sequence[qml.tape.QuantumTape], Callable)``
+              qml.tape.QuantumTape, ...) -> tuple[qml.typing.TapeBatch, qml.typing.PostprocessingFn]``
 
     Keyword Args:
         expand_transform=None (Optional[Callable]): An optional expand transform is applied directly before the input

@@ -17,7 +17,8 @@ Defines classes that take the vjps, jvps, and jacobians of circuits.
 import abc
 import inspect
 import logging
-from typing import Callable, Optional, Sequence, Union
+from collections.abc import Callable, Sequence
+from typing import Optional, Union
 
 import numpy as np
 from cachetools import LRUCache
@@ -179,7 +180,7 @@ class JacobianProductCalculator(abc.ABC):
         """
 
     @abc.abstractmethod
-    def execute_and_compute_jacobian(self, tapes: TapeBatch) -> tuple:
+    def execute_and_compute_jacobian(self, tapes: TapeBatch) -> tuple[ResultBatch, tuple]:
         """Compute the results and the full Jacobian for a batch of tapes.
 
         This method is required to compute Jacobians in the ``jax-jit`` interface
