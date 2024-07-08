@@ -236,7 +236,7 @@ via the `NoiseModel` class and an `add_noise` transform.
   Finally, to modify a circuit mid-run, simply call the desired PennyLane operations:
 
   ```pycon
-  (pldb) qml.CNOT(wires=(0,2))
+  (pldb): qml.CNOT(wires=(0,2))
   CNOT(wires=[0, 2])
   (pldb): print(qml.debug_tape().draw(wire_order=[0,1,2]))
   0: ──H─╭●─╭●─┤  
