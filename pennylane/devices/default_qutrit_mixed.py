@@ -116,7 +116,7 @@ def get_readout_errors(readout_relaxation_probs, readout_misclassification_probs
     Args:
         readout_relaxation_probs (List[float]): Inputs for :class:`~.QutritAmplitudeDamping` channel
             of the form :math:`[\gamma_{10}, \gamma_{20}, \gamma_{21}]`. This error models
-            amplitude damping associated with longer readout and varying relaxation times of 
+            amplitude damping associated with longer readout and varying relaxation times of
             transmon-based qudits.
         readout_misclassification_probs (List[float]): Inputs for :class:`~.TritFlip` channel
             of the form :math:`[p_{01}, p_{02}, p_{12}]`. This error models misclassification events

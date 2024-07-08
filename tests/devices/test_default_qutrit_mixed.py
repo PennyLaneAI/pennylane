@@ -1558,12 +1558,14 @@ class TestReadoutError:
         assert res == expected
 
     @pytest.mark.parametrize(
-        "relaxations, misclassifications, expected_results",
-        [None, (0.1, 0.2, 0.4), []],
-        [(0.2, 0.1, 0.3), None, []],
-        [(0.2, 0.1, 0.4), (0.1, 0.2, 0.5), []],
+        "relaxations, misclassifications, expected",
+        [
+            [None, (0.1, 0.2, 0.4), [5 / 12, 17 / 60, 0.3]],
+            [(0.2, 0.1, 0.3), None, [7 / 12, 19 / 60, 0.1]],
+            [(0.2, 0.1, 0.4), (0.1, 0.2, 0.5), [11 / 24, 7 / 30, 37 / 120]],
+        ],
     )
-    def test_approximate_readout_counts(self, num_wires, relaxations, misclassifications, expected_results):
+    def test_approximate_readout_counts(self, num_wires, relaxations, misclassifications, expected):
         """Tests the counts output with readout error"""
         num_shots = 10000
         dev = qml.device(
@@ -1572,18 +1574,20 @@ class TestReadoutError:
             wires=num_wires,
             readout_relaxation_probs=relaxations,
             readout_misclassification_probs=misclassifications,
+            seed=221349,
         )
 
         @qml.qnode(dev)
         def circuit():
-            qml.QutritBasisState([2] * num_wires, wires=range(num_wires))
-            return qml.counts(wires=[0, 1])
+            self.setup_state(num_wires)
+            return qml.counts(wires=[0])
 
         res = circuit()
         assert isinstance(res, dict)
-        cases = ["00", "01", "02", "10", "11", "12", "20", "21", "22"]
-        for case, expected_result in zip(cases, expected_results):
-            assert np.isclose(res["02"] / num_shots, 1 / 3, atol=0.05)
+        assert len(res) == 3
+        cases = ["0", "1", "2"]
+        for case, expected_result in zip(cases, expected):
+            assert np.isclose(res[case] / num_shots, expected_result, atol=0.05)
 
     @pytest.mark.parametrize(
         "relaxations,misclassifications",
@@ -1594,7 +1598,7 @@ class TestReadoutError:
         ],
     )
     def test_measurement_error_validation(self, relaxations, misclassifications, num_wires):
-        """Tests that an error is raised for wrong number of arguments inputted in readout errors."""
+        """Ensure error is raised for wrong number of arguments inputted in readout errors."""
         with pytest.raises(qml.DeviceError, match="results in error:"):
             qml.device(
                 "default.qutrit.mixed",
