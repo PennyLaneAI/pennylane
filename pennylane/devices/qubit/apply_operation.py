@@ -424,15 +424,16 @@ def apply_phaseshift(op: qml.PhaseShift, state, is_state_batched: bool = False, 
     params = math.cast(op.parameters[0], dtype=complex)
     state0 = state[sl_0]
     state1 = state[sl_1]
-    if not is_state_batched and params.size > 1:
-        params = qml.math.expand_dims(params, tuple(range(1, n_dim)))
-        state0 = qml.math.expand_dims(state0, 0)
-        state0 = qml.math.repeat(state0, params.size, axis=0)
-        state1 = qml.math.expand_dims(state1, 0)
-        axis = axis + 1
-    elif params.size > 1:
-        params = qml.math.expand_dims(params, tuple(range(1, n_dim - 1)))
-    state1 = math.multiply(math.cast(state1, dtype=complex), math.exp(1j * params))
+    if op.batch_size is not None and len(params) > 1:
+        params = math.array(params, like=math.get_deep_interface(state))
+        if is_state_batched:
+            params = qml.math.reshape(params, (-1,) + (1,) * (n_dim - 2))
+        else:
+            axis = axis + 1
+            params = qml.math.reshape(params, (-1,) + (1,) * (n_dim - 1))
+            state0 = qml.math.expand_dims(state0, 0) + math.zeros_like(params)
+            state1 = qml.math.expand_dims(state1, 0)
+    state1 = math.multiply(math.cast(state1, dtype=complex), math.exp(1.0j * params))
     state = math.stack([state0, state1], axis=axis)
     if not is_state_batched and op.batch_size == 1:
         state = math.stack([state], axis=0)
