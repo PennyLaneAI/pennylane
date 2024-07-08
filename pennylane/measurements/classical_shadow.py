@@ -216,7 +216,7 @@ class ClassicalShadowMP(MeasurementTransform):
     """Represents a classical shadow measurement process occurring at the end of a
     quantum variational circuit.
 
-    Please refer to :func:`classical_shadow` for detailed documentation.
+    Please refer to :func:`pennylane.classical_shadow` for detailed documentation.
 
 
     Args:
