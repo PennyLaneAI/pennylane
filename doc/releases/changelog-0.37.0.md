@@ -17,11 +17,13 @@
   [(#5795)](https://github.com/PennyLaneAI/pennylane/pull/5795)
 
   Either method can be selected when instantiating the `default.tensor` device by setting the
-  `method` keyword argument to `"tn"` (tensor network) or `"mps"` (matrix product state). This
-  device can simulate a large number of qubits.
+  `method` keyword argument to `"tn"` (tensor network) or `"mps"` (matrix product state).
 
-  The following example shows how a circuit can be simulated using the tensor network method
-  (`method="tn"`):
+  There are
+  [several templates in PennyLane](https://docs.pennylane.ai/en/stable/introduction/templates.html#tensor-networks)
+  that are tensor-network focused, which are excellent candidates for the `"tn"` method for
+  `default.tensor`. The following example shows how a circuit comprising gates in a tree tensor
+  network architecture can be efficiently simulated using `method="tn"`.
 
   ```python
   import pennylane as qml
