@@ -316,7 +316,7 @@ def construct_batch(
     """
 
     # pylint: disable=protected-access
-    def batch_constructor(*args, **kwargs) -> tuple[tuple["qml.tape.QuantumTape", Callable]]:
+    def batch_constructor(*args, **kwargs) -> tuple[BatchTape, PostprocessingFn]:
         """Create a batch of tapes and a post processing function."""
         if "shots" in inspect.signature(qnode.func).parameters:
             shots = _get_device_shots(qnode.device)
