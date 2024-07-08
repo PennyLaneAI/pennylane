@@ -414,30 +414,15 @@ def from_qasm(quantum_circuit: str, measurements=False):
     """Loads quantum circuits from a QASM string using the converter in the
     PennyLane-Qiskit plugin.
 
-    **Example:**
+    Args:
+        quantum_circuit (str): a QASM string containing a valid quantum circuit
+        measurements (None | MeasurementProcess | list[MeasurementProcess]): an optional PennyLane
+            measurement or list of PennyLane measurements that overrides any terminal measurements
+            that may be present in the input circuit. If set to ``None``, existing measurements
+            in the input circuit will be used.
 
-    .. code-block:: python
-
-        >>> hadamard_qasm = 'OPENQASM 2.0;' \\
-        ...                 'include "qelib1.inc";' \\
-        ...                 'qreg q[1];' \\
-        ...                 'h q[0];'
-        >>> my_circuit = qml.from_qasm(hadamard_qasm)
-
-    The measurements can also be passed directly to the function when creating the
-    quantum function, making it possible to create a PennyLane circuit with
-    :class:`qml.QNode <pennylane.QNode>`:
-
-    >>> measurements = [qml.var(qml.Y(0))]
-    >>> circuit = qml.QNode(qml.from_qasm(hadamard_qasm, measurements), dev)
-    >>> circuit()
-    [tensor(1., requires_grad=True)]
-
-    .. note::
-
-        The ``measurements`` keyword allows one to add a list of PennyLane measurements
-        that will **override** any terminal measurements present in the QASM code,
-        so that they are not performed before the operations specified in ``measurements``.
+    Returns:
+        function: the PennyLane template created based on the QASM string
 
     By default, ``from_qasm`` will remove any measurements that are present in the QASM code.
     If the QASM code contains measurements, set ``measurements=None`` to keep them in the
@@ -449,6 +434,28 @@ def from_qasm(quantum_circuit: str, measurements=False):
         and will be changed in a future release. Starting in version ``0.38``, ``from_qasm``
         will keep the measurements from the QASM code by default. To remove all measurements,
         set ``measurements=[]`` which overrides the existing measurements with an empty list.
+
+    **Example:**
+
+    .. code-block:: python
+
+        >>> hadamard_qasm = 'OPENQASM 2.0;' \\
+        ...                 'include "qelib1.inc";' \\
+        ...                 'qreg q[1];' \\
+        ...                 'creg c[1];' \\
+        ...                 'h q[0];'
+        >>> my_circuit = qml.from_qasm(hadamard_qasm)
+        >>> my_circuit()
+        []
+
+    The measurements can also be passed directly to the function when creating the
+    quantum function, making it possible to create a PennyLane circuit with
+    :class:`qml.QNode <pennylane.QNode>`:
+
+    >>> measurements = [qml.var(qml.Y(0))]
+    >>> circuit = qml.QNode(qml.from_qasm(hadamard_qasm, measurements), dev)
+    >>> circuit()
+    [tensor(1., requires_grad=True)]
 
     Mid-circuit measurements inside the QASM code can also be interpreted.
 
@@ -491,16 +498,6 @@ def from_qasm(quantum_circuit: str, measurements=False):
     >>>     qml.RX(x, wires=1)
     >>>     my_circuit(wires=(1, 0))
     >>>     return qml.expval(qml.Z(0))
-
-    Args:
-        quantum_circuit (str): a QASM string containing a valid quantum circuit
-        measurements (None | MeasurementProcess | list[MeasurementProcess]): an optional PennyLane
-            measurement or list of PennyLane measurements that overrides any terminal measurements
-            that may be present in the input circuit. If set to ``None``, existing measurements
-            in the input circuit will be used.
-
-    Returns:
-        function: the PennyLane template created based on the QASM string
 
     """
     try:
