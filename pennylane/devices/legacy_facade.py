@@ -37,7 +37,7 @@ from .preprocess import (
 
 
 @contextmanager
-def set_shots(device, shots):
+def _set_shots(device, shots):
     """Context manager to temporarily change the shots
     of a device.
 
@@ -46,7 +46,7 @@ def set_shots(device, shots):
     As a standard context manager:
 
     >>> dev = qml.device("default.qubit.legacy", wires=2, shots=None)
-    >>> with set_shots(dev, shots=100):
+    >>> with _set_shots(dev, shots=100):
     ...     print(dev.shots)
     100
     >>> print(dev.shots)
@@ -54,9 +54,13 @@ def set_shots(device, shots):
 
     Or as a decorator that acts on a function that uses the device:
 
-    >>> set_shots(dev, shots=100)(lambda: dev.shots)()
+    >>> _set_shots(dev, shots=100)(lambda: dev.shots)()
     100
     """
+    # note, this function duplicates qml.workflow.set_shots
+    # duplicated here to avoid circular dependency issues
+    # qml.workflow.set_shots can be independently deprecated soon
+    # this version of the function is private to LegacyDeviceFacade
     shots = qml.measurements.Shots(shots)
     shots = shots.shot_vector if shots.has_partitioned_shots else shots.total_shots
     if shots == device.shots:
@@ -82,14 +86,14 @@ def null_postprocessing(results):
 @qml.transform
 def legacy_device_expand_fn(tape, device):
     """Turn the ``expand_fn`` from the legacy device interface into a transform."""
-    new_tape = set_shots(device, tape.shots)(device.expand_fn)(tape)
+    new_tape = _set_shots(device, tape.shots)(device.expand_fn)(tape)
     return (new_tape,), null_postprocessing
 
 
 @qml.transform
 def legacy_device_batch_transform(tape, device):
     """Turn the ``batch_transform`` from the legacy device interface into a transform."""
-    return set_shots(device, tape.shots)(device.batch_transform)(tape)
+    return _set_shots(device, tape.shots)(device.batch_transform)(tape)
 
 
 def _add_adjoint_transforms(program: TransformProgram, name="adjoint"):
@@ -113,6 +117,24 @@ def _add_adjoint_transforms(program: TransformProgram, name="adjoint"):
 class LegacyDeviceFacade(Device):
     """
     A Facade that converts a device from the old ``qml.Device`` interface into the new interface.
+
+    Args:
+        device (qml.device.LegacyDevice): a device that follows the legacy device interface.
+
+    >>> from pennylane.devices import DefaultMixed, LegacyDeviceFacade
+    >>> legacy_dev = DefaultMixed(wires=2)
+    >>> new_dev = LegacyDeviceFacade(dev)
+    >>> new_dev.preprocess()
+    (TransformProgram(legacy_device_batch_transform, legacy_device_expand_fn, defer_measurements),
+    ExecutionConfig(grad_on_execution=None, use_device_gradient=None, use_device_jacobian_product=None,
+    gradient_method=None, gradient_keyword_arguments={}, device_options={}, interface=None,
+    derivative_order=1, mcm_config=MCMConfig(mcm_method=None, postselect_mode=None)))
+    >>> new_dev.shots
+    Shots(total_shots=None, shot_vector=())
+    >>> tape = qml.tape.QuantumScript([], [qml.sample(wires=0)], shots=5)
+    >>> new_dev.execute(tape)
+    array([0., 0., 0., 0., 0.])
+
     """
 
     # pylint: disable=super-init-not-called
@@ -194,11 +216,10 @@ class LegacyDeviceFacade(Device):
         tape = qml.tape.QuantumScript([], [])
         if not self._validate_adjoint_method(tape):
             raise qml.DeviceError("device does not support device derivatives")
-        updated_values = {}
-        updated_values["gradient_keyword_arguments"] = {
-            "use_device_state": True,
-            "method": "adjoint_jacobian",
+        updated_values = {
+            "gradient_keyword_arguments": {"use_device_state": True, "method": "adjoint_jacobian"}
         }
+
         if execution_config.use_device_gradient is None:
             updated_values["use_device_gradient"] = True
         if execution_config.grad_on_execution is None:
@@ -260,6 +281,7 @@ class LegacyDeviceFacade(Device):
 
     # pylint: disable=protected-access
     def _create_temp_device(self, batch):
+        """Create a temporary device for use in a backprop execution."""
         params = []
         for t in batch:
             params.extend(t.get_parameters(trainable_only=False))
@@ -276,7 +298,7 @@ class LegacyDeviceFacade(Device):
         backprop_devices = self._device.capabilities().get("passthru_devices", None)
 
         if backprop_devices is None:
-            raise qml.DeviceError
+            raise qml.DeviceError(f"Device {self} does not support backpropagation.")
 
         if backprop_devices[mapped_interface] == self._device.short_name:
             return self._device
@@ -284,7 +306,10 @@ class LegacyDeviceFacade(Device):
         # create new backprop device
         expand_fn = self._device.expand_fn
         batch_transform = self._device.batch_transform
-        debugger = self._device._debugger
+        if hasattr(self._device, "_debugger"):
+            debugger = self._device._debugger
+        else:
+            debugger = "No debugger"
         tracker = self._device.tracker
 
         backprop_devices = self._device.capabilities().get("passthru_devices", None)
@@ -294,13 +319,15 @@ class LegacyDeviceFacade(Device):
         )
         new_device.expand_fn = expand_fn
         new_device.batch_transform = batch_transform
-        new_device._debugger = debugger
+        if debugger != "No debugger":
+            new_device._debugger = debugger
         new_device.tracker = tracker
 
         return new_device
 
     # pylint: disable=protected-access
     def _update_original_device(self, temp_device):
+        """After performing an execution with a backprop device, update the state of the original device."""
         # Update for state vector simulators that have the _pre_rotated_state attribute
         if hasattr(self._device, "_pre_rotated_state"):
             self._device._pre_rotated_state = temp_device._pre_rotated_state
@@ -310,13 +337,15 @@ class LegacyDeviceFacade(Device):
             self._device._state = temp_device._state
 
     def _validate_backprop_method(self, tape):
+        print("in _valdiate_backprop_method")
         if tape.shots:
+            print("has shots")
             return False
-
         params = tape.get_parameters(trainable_only=False)
         interface = qml.math.get_interface(*params)
 
         if tape and any(isinstance(m.obs, qml.SparseHamiltonian) for m in tape.measurements):
+            print("sparse hamiltonian")
             return False
         if interface == "numpy":
             interface = None
@@ -324,9 +353,11 @@ class LegacyDeviceFacade(Device):
 
         # determine if the device supports backpropagation
         backprop_interface = self._device.capabilities().get("passthru_interface", None)
-
+        print("im here")
         if backprop_interface is not None:
             # device supports backpropagation natively
+            print("backprop_interface", backprop_interface)
+            print("mapped_interface: ", mapped_interface)
             return mapped_interface in [backprop_interface, "Numpy"]
         # determine if the device has any child devices that support backpropagation
         backprop_devices = self._device.capabilities().get("passthru_devices", None)
@@ -362,9 +393,9 @@ class LegacyDeviceFacade(Device):
 
         first_shot = circuits[0].shots
         if all(t.shots == first_shot for t in circuits):
-            results = set_shots(dev, first_shot)(dev.batch_execute)(circuits)
+            results = _set_shots(dev, first_shot)(dev.batch_execute)(circuits)
         else:
-            results = tuple(set_shots(dev, t.shots)(dev.batch_execute)((t,))[0] for t in circuits)
+            results = tuple(_set_shots(dev, t.shots)(dev.batch_execute)((t,))[0] for t in circuits)
 
         if dev is not self._device:
             self._update_original_device(dev)
@@ -374,7 +405,7 @@ class LegacyDeviceFacade(Device):
     def execute_and_compute_derivatives(self, circuits, execution_config=DefaultExecutionConfig):
         first_shot = circuits[0].shots
         if all(t.shots == first_shot for t in circuits):
-            return set_shots(self._device, first_shot)(self._device.execute_and_gradients)(
+            return _set_shots(self._device, first_shot)(self._device.execute_and_gradients)(
                 circuits, **execution_config.gradient_keyword_arguments
             )
         batched_res = tuple(
@@ -385,7 +416,7 @@ class LegacyDeviceFacade(Device):
     def compute_derivatives(self, circuits, execution_config=DefaultExecutionConfig):
         first_shot = circuits[0].shots
         if all(t.shots == first_shot for t in circuits):
-            return set_shots(self._device, first_shot)(self._device.gradients)(
+            return _set_shots(self._device, first_shot)(self._device.gradients)(
                 circuits, **execution_config.gradient_keyword_arguments
             )
         return tuple(self.compute_derivatives((c,), execution_config) for c in circuits)

@@ -20,12 +20,12 @@ import numpy as np
 import pytest
 
 import pennylane as qml
+from pennylane.devices.default_qubit_autograd import DefaultQubitAutograd
 from pennylane.devices.execution_config import ExecutionConfig
 from pennylane.devices.legacy_facade import (
     LegacyDeviceFacade,
     legacy_device_batch_transform,
     legacy_device_expand_fn,
-    set_shots,
 )
 
 
@@ -67,9 +67,6 @@ def test_shots():
     dev = LegacyDeviceFacade(legacy_dev)
 
     assert dev.shots == qml.measurements.Shots((100, 100))
-
-    with set_shots(legacy_dev, 50):
-        assert legacy_dev.shots == 50
 
     assert legacy_dev._shot_vector == list(qml.measurements.Shots((100, 100)).shot_vector)
     assert legacy_dev.shots == 200
@@ -261,12 +258,13 @@ class TestGradientSupport:
         with pytest.raises(qml.DeviceError):
             dev.preprocess(ExecutionConfig(gradient_method="backprop"))
 
-    def test_adjoint_support(self):
+    @pytest.mark.parametrize("gradient_method", ("best", "adjoint"))
+    def test_adjoint_support(self, gradient_method):
         """Test that the facade can handle devices that support adjoint."""
 
         # pylint: disable=unnecessary-lambda-assignment
         class AdjointDev(DummyDevice):
-            """A dummy device that supports adjoitn diff"""
+            """A dummy device that supports adjoint diff"""
 
             _capabilities = {"returns_state": True}
 
@@ -282,14 +280,17 @@ class TestGradientSupport:
         tape_shots = qml.tape.QuantumScript([], [], shots=50)
         assert not dev._validate_adjoint_method(tape_shots)
 
-        config = qml.devices.ExecutionConfig(gradient_method="best")
+        config = qml.devices.ExecutionConfig(gradient_method=gradient_method)
         assert dev.supports_derivatives(config, tape)
         assert not dev.supports_derivatives(config, tape_shots)
-        config2 = qml.devices.ExecutionConfig(gradient_method="adjoint")
-        assert dev.supports_derivatives(config2, tape)
-        assert not dev.supports_derivatives(config2, tape_shots)
 
-        program, processed_config = dev.preprocess(config2)
+        program, processed_config = dev.preprocess(config)
+        assert processed_config.use_device_gradient is True
+        assert processed_config.gradient_keyword_arguments == {
+            "use_device_state": True,
+            "method": "adjoint_jacobian",
+        }
+        assert processed_config.grad_on_execution is True
 
         tape = qml.tape.QuantumScript(
             [qml.Rot(qml.numpy.array(1.2), 2.3, 3.4, 0)], [qml.expval(qml.Z(0))]
@@ -299,16 +300,7 @@ class TestGradientSupport:
             [qml.RZ(qml.numpy.array(1.2), 0), qml.RY(2.3, 0), qml.RZ(3.4, 0)],
             [qml.expval(qml.Z(0))],
         )
-        print(new_tape.circuit)
-        print(expected.circuit)
-        assert qml.equal(new_tape, expected)
-
-        assert processed_config.use_device_gradient is True
-        assert processed_config.gradient_keyword_arguments == {
-            "use_device_state": True,
-            "method": "adjoint_jacobian",
-        }
-        assert processed_config.grad_on_execution is True
+        qml.assert_equal(new_tape, expected)
 
         out = dev.compute_derivatives(tape, processed_config)
         assert out == "a"  # the output of adjoint_jacobian
@@ -353,6 +345,21 @@ class TestGradientSupport:
         tape2 = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.Z(0))])
         assert dev.supports_derivatives(ExecutionConfig(gradient_method="backprop"), tape2)
 
+    def test_passthru_interface_no_substitution(self):
+        """Test that if the passthru interface is set, no substitution occurs."""
+
+        class BackpropDevice(DummyDevice):
+
+            _capabilities = {"passthru_interface": "autograd"}
+
+        dev = LegacyDeviceFacade(BackpropDevice(wires=2, shots=None))
+
+        x = qml.numpy.array(0.1)
+        tape = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.Z(0))])
+
+        assert dev.supports_derivatives(qml.devices.ExecutionConfig(gradient_method="backprop"))
+        assert dev._create_temp_device((tape,)) is dev.target_device
+
     def test_backprop_has_passthru_devices(self):
         """Test that backprop is supported if the device has passthru devices."""
 
@@ -368,10 +375,41 @@ class TestGradientSupport:
         assert dev.supports_derivatives(ExecutionConfig(gradient_method="backprop"))
         assert dev.supports_derivatives(ExecutionConfig(gradient_method="backprop"), tape)
 
-    def test_backprop_device_substitution(self):
+        tmp_device = dev._create_temp_device((tape,))
+        assert tmp_device.short_name == "default.qubit.autograd"
+
+    def test_backprop_passthru_device_self(self):
+        """Test that the temporary device is the original device if the passthru device is itself."""
+
+        class BackpropSelfDevice(DummyDevice):
+
+            short_name = "BackpropSelfDevice"
+
+            _capabilities = {"passthru_devices": {"autograd": "BackpropSelfDevice"}}
+
+        dev = LegacyDeviceFacade(BackpropSelfDevice(wires=2))
+
+        x = qml.numpy.array(0.1)
+        tape = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.Z(0))])
+        tmp_dev = dev._create_temp_device((tape,))
+        assert tmp_dev is dev.target_device
+
+    def test_passthru_device_does_not_exist(self):
+        """Test that if backprop is requested for a device that does not support it, a device error is raised."""
+
+        x = qml.numpy.array(0.1)
+        tape = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.Z(0))])
+
+        dev = LegacyDeviceFacade(DummyDevice(wires=2))
+        config = qml.devices.ExecutionConfig(gradient_method="backprop")
+        with pytest.raises(qml.DeviceError, match=r"does not support backpropagation"):
+            dev.execute(tape, config)
+
+    @pytest.mark.parametrize("dev_class", (qml.devices.DefaultQubitLegacy, DefaultQubitAutograd))
+    def test_backprop_device_substitution(self, dev_class):
         """Test that default.qubit.legacy is substituted for a backprop device during backprop execution."""
 
-        dq_legacy = qml.devices.DefaultQubitLegacy(wires=2)
+        dq_legacy = dev_class(wires=2)
         dev = LegacyDeviceFacade(dq_legacy)
 
         def f(x):
