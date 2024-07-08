@@ -851,8 +851,7 @@ def _apply_operation_conditional(operation: Conditional, device, mid_measurement
 def _apply_operation_midmeasuremp(
     operation: MidMeasureMP, device, mid_measurements, postselect_mode, **_
 ):
-    wires = device.wires.indices(operation.wires)
-    wire = list(wires)[0]
+    wire = list(operation.wires)[0]
     if postselect_mode == "fill-shots" and operation.postselect is not None:
         sample = operation.postselect
     else:
@@ -864,4 +863,4 @@ def _apply_operation_midmeasuremp(
         qml.math.reshape(device._state, (2**device.num_wires, 2**device.num_wires))
     )
     if operation.reset and bool(sample):
-        device._apply_operation([qml.PauliX(operation.wires)])
+        device._apply_operation(qml.PauliX(operation.wires))
