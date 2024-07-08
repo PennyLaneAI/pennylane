@@ -28,7 +28,7 @@
 
 <h3>Bug fixes 🐛</h3>
 
-* `qml.QSVT` was not storing the order of the wires correctly.
+* `qml.QSVT` is updated to store wire order correctly.
   [(#5959)](https://github.com/PennyLaneAI/pennylane/pull/5959)
 
 
