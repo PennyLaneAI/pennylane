@@ -165,6 +165,8 @@ class AmplitudeEmbedding(StatePrep):
         * If normalize is false, check that last dimension of features is normalised to one. Else, normalise the
           features tensor.
         """
+        if isinstance(features, (list, tuple)):
+            features = qml.math.array(features)
         shape = qml.math.shape(features)
 
         # check shape
@@ -197,19 +199,17 @@ class AmplitudeEmbedding(StatePrep):
                 features = qml.math.hstack([features, padding])
 
         # normalize
+        if "int" in str(features.dtype):
+            features = qml.math.cast_like(features, 0.0)
         norm = qml.math.norm(features, axis=-1)
 
         if qml.math.is_abstract(norm):
             if normalize or pad_with:
-                features = qml.math.cast_like(features, norm) / qml.math.reshape(
-                    norm, (*shape[:-1], 1)
-                )
+                features = features / qml.math.reshape(norm, (*shape[:-1], 1))
 
         elif not qml.math.allclose(norm, 1.0, atol=TOLERANCE):
             if normalize or pad_with:
-                features = qml.math.cast_like(features, norm) / qml.math.reshape(
-                    norm, (*shape[:-1], 1)
-                )
+                features = features / qml.math.reshape(norm, (*shape[:-1], 1))
             else:
                 raise ValueError(
                     f"Features must be a vector of norm 1.0; got norm {norm}. "

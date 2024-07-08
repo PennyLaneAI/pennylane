@@ -306,9 +306,12 @@ def circuit_decomposed(features, pad_with=None, normalize=False):
     """AmplitudeEmbedding circuit reexpressed as manual state preparation.
     This function expects the length of the features to match."""
     num_wires = 3 if pad_with is None else 4
+    if not isinstance(features, (list, tuple)):
+        features = qml.math.cast_like(features, 1.0) if "int" in str(features.dtype) else features
     if pad_with is not None:
         # and need to pad manually in order to double the size of the vector
         # from 8 (3 qubits) to 16 (4 qubits). Also, normalize
+        pad_with = qml.math.cast_like(pad_with, features)
         features = qml.math.hstack([features, qml.math.ones_like(features) * pad_with])
     if pad_with is not None or normalize:
         shape = qml.math.shape(features)
@@ -395,7 +398,7 @@ class TestInterfaces:
         dev = qml.device("default.qubit")
 
         circuit = jax.jit(qml.QNode(circuit_template, dev, interface="jax"), static_argnums=[1, 2])
-        circuit2 = jax.jit(qml.QNode(circuit_decomposed, dev), static_argnums=[1])
+        circuit2 = jax.jit(qml.QNode(circuit_decomposed, dev), static_argnums=[1, 2])
 
         res = circuit(features, pad_with, normalize)
         res2 = circuit2(features, pad_with)
@@ -459,9 +462,9 @@ class TestInterfaces:
 int_features = [
     [10, 0, 2, 35, 0, 41, 56, 0],
     [
-        [10, 0, 2, 35, 0, 41, 156, 0],
-        [10, 0, 2, 35, 0, 41, 156, 0],
-        [10, 0, 2, 35, 0, 41, 156, 0],
+        [10, 0, 2, 35, 0, 41, 56, 0],
+        [10, 0, 2, 35, 0, 41, 56, 0],
+        [10, 0, 2, 35, 0, 41, 56, 0],
     ],
 ]
 
@@ -519,7 +522,7 @@ class TestInterfaceDtypes:
         dev = qml.device("default.qubit")
 
         circuit = jax.jit(qml.QNode(circuit_template, dev, interface="jax"), static_argnums=[1, 2])
-        circuit2 = jax.jit(qml.QNode(circuit_decomposed, dev), static_argnums=[1])
+        circuit2 = jax.jit(qml.QNode(circuit_decomposed, dev), static_argnums=[1, 2])
 
         res = circuit(features, pad_with, normalize=True)
         res2 = circuit2(features, pad_with, normalize=True)
