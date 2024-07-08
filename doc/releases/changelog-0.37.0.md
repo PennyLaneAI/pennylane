@@ -213,18 +213,18 @@ via the `NoiseModel` class and an `add_noise` transform.
   For example, `qml.debug_tape()` returns the tape of the circuit, giving access to its operations and drawing:
 
   ```pycon
-  (pldb): tape = qml.debug_tape()
-  (pldb): print(tape.draw(wire_order=[0,1,2]))
+  [pldb] tape = qml.debug_tape()
+  [pldb] print(tape.draw(wire_order=[0,1,2]))
   0: ──H─╭●─┤  
   2: ────╰X─┤  
-  (pldb): tape.operations
+  [pldb] tape.operations
   [Hadamard(wires=[0]), CNOT(wires=[0, 2])]
   ```
 
   While `qml.debug_state()` is equivalent to `qml.state()` and gives the current state:
 
   ```pycon
-  (pldb): print(qml.debug_state())
+  [pldb] print(qml.debug_state())
   [0.70710678+0.j 0.        +0.j 0.        +0.j 0.        +0.j
     1.        +0.j 0.70710678+0.j 0.        +0.j 0.        +0.j]
   ```
@@ -236,9 +236,9 @@ via the `NoiseModel` class and an `add_noise` transform.
   Finally, to modify a circuit mid-run, simply call the desired PennyLane operations:
 
   ```pycon
-  (pldb): qml.CNOT(wires=(0,2))
+  [pldb] qml.CNOT(wires=(0,2))
   CNOT(wires=[0, 2])
-  (pldb): print(qml.debug_tape().draw(wire_order=[0,1,2]))
+  [pldb] print(qml.debug_tape().draw(wire_order=[0,1,2]))
   0: ──H─╭●─╭●─┤  
   2: ────╰X─╰X─┤  
   ```
