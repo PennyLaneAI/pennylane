@@ -4,6 +4,8 @@
 
 <h3>New features since last release</h3>
 
+<h4>Execute faster with Default Tensor 🔗</h4>
+
 <h4>Execute wide circuits with Default Tensor 🔗</h4>
 
 * A new `default.tensor` device is now available for performing
@@ -338,10 +340,10 @@ Stay tuned for an in-depth demonstration on using this feature with real-world e
   ```
 
   ```pycon
-  >>> print(qml.draw(f, level="device")())
-  0: ──RX(0.28)─╭●────╭X──RX(0.70)─╭●────╭X─┤  <X>
-  1: ──RX(0.52)─╰X─╭●─│───RX(0.65)─╰X─╭●─│──┤     
-  2: ──RX(0.00)────╰X─╰●──RX(0.03)────╰X─╰●─┤     
+  >>> print(pl_op)
+  a⁺(0) a(2)
+  >>> print(of_op_new)
+  1.0 [0^ 2]
   ```
 
 <h3>Improvements 🛠</h3>
@@ -635,8 +637,7 @@ Stay tuned for an in-depth demonstration on using this feature with real-world e
   `base` properties.
   [(##5772)](https://github.com/PennyLaneAI/pennylane/pull/5772)
 
-* New dispatches for `qml.ops.Conditional` and `qml.MeasurementValue` have been added to `qml.equal`.
-  [(##5772)](https://github.com/PennyLaneAI/pennylane/pull/5772)
+<h4>Quantum chemistry</h4>
 
 * The `qml.snapshots` transform now supports arbitrary devices by running a separate tape for each snapshot 
   for unsupported devices.
