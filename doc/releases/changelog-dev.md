@@ -21,6 +21,7 @@
   [(#5919)](https://github.com/PennyLaneAI/pennylane/pull/5919)
 
 * Applying `adjoint` to a quantum function can now be captured into plxpr.
+  [(#5966)](https://github.com/PennyLaneAI/pennylane/pull/5966)
 
 <h3>Breaking changes 💔</h3>
 
