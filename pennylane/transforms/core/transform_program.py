@@ -490,7 +490,7 @@ class TransformProgram:
 
         qnode.construct(args, kwargs)
 
-    def __call__(self, tapes: tuple[QuantumTape]) -> tuple[ResultBatch, BatchPostProcessingFn]:
+    def __call__(self, tapes: TapeBatch) -> tuple[TapeBatch, BatchPostProcessingFn]:
         if not self:
             return tapes, null_postprocessing
 
