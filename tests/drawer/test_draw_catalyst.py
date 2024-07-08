@@ -17,7 +17,7 @@ import pytest
 
 import pennylane as qml
 
-pytest.skip(allow_module_level=True)
+pytest.skip(allow_module_level=True)  # temporary, revert once PL is released
 
 catalyst = pytest.importorskip("catalyst")
 mpl = pytest.importorskip("matplotlib")
