@@ -186,6 +186,7 @@ class FolderMapView(Mapping[str, Union["FolderMapView", DataPath]]):
         return (key for key in self.__curr_level.keys() if key not in self.__PRIVATE_KEYS)
 
     def keys(self) -> frozenset[str]:
+        """Keys of the folder view"""
         return frozenset(iter(self))
 
     def __len__(self) -> int:
