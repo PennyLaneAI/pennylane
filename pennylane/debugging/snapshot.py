@@ -123,12 +123,15 @@ def snapshots(tape: QuantumTape) -> tuple[Sequence[QuantumTape], Callable[[Resul
     {0: array([0.70710678+0.j, 0.        +0.j, 0.70710678+0.j, 0.        +0.j]),
     'execution_results': {'00': 101, '11': 99}}
 
-    Here one can see how a device that does not natively support snapshots executes two different circuits:
+    Here one can see how a device that does not natively support snapshots executes two different circuits. Additionally, a warning
+    is raised along with the results:
 
     .. code-block:: python3
 
+        dev = qml.device("lightning.qubit", shots=100, wires=2)
+
         @qml.snapshots
-        @qml.qnode(qml.device("lightning.qubit", shots=100, wires=2), diff_method="parameter-shift")
+        @qml.qnode(dev)
         def circuit():
             qml.Hadamard(wires=0),
             qml.Snapshot(qml.counts())
@@ -139,10 +142,18 @@ def snapshots(tape: QuantumTape) -> tuple[Sequence[QuantumTape], Callable[[Resul
             out = circuit()
 
     >>> circuit.device.tracker.totals
-    {'batches': 1, 'simulations': 2, 'executions': 2, 'results': 0.0}
+    UserWarning: Snapshots are not supported for the given device. Therefore, a tape will be created for each snapshot, resulting in a total of n_snapshots + 1 executions.
+      warnings.warn(
+    {'batches': 1,
+     'simulations': 2,
+     'executions': 2,
+     'shots': 200,
+     'results': -0.16}
 
     >>> out
-    {0: {'00': tensor(51, requires_grad=True), '10': tensor(49, requires_grad=True)}, 'execution_results': tensor(0., requires_grad=True)}
+    {0: {'00': tensor(52, requires_grad=True),
+      '10': tensor(48, requires_grad=True)},
+     'execution_results': tensor(-0.1, requires_grad=True)}
 
     Here you can see the default behaviour of the transform for unsupported devices and you can see how the amount of wires included
     in each resulting tape is minimal:
@@ -194,13 +205,6 @@ def snapshots(tape: QuantumTape) -> tuple[Sequence[QuantumTape], Callable[[Resul
     def postprocessing_fn(results, snapshot_tags):
         return dict(zip(snapshot_tags, results))
 
-    if len(new_tapes) > 1:
-        warnings.warn(
-            "Snapshots are not supported for the given device. Therefore, a tape will be "
-            f"created for each snapshot, resulting in a total of {len(new_tapes)} executions.",
-            UserWarning,
-        )
-
     return new_tapes, partial(postprocessing_fn, snapshot_tags=snapshot_tags)
 
 
@@ -239,5 +243,11 @@ def snapshots_qnode(self, qnode, targs, tkwargs):
 
     if _is_snapshot_compatible(qnode.device):
         return get_snapshots
+
+    warnings.warn(
+        "Snapshots are not supported for the given device. Therefore, a tape will be "
+        "created for each snapshot, resulting in a total of n_snapshots + 1 executions.",
+        UserWarning,
+    )
 
     return self.default_qnode_transform(qnode, targs, tkwargs)
