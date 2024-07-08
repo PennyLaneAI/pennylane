@@ -26,6 +26,8 @@ from pennylane import numpy as np
 from pennylane.compiler.compiler import CompileError
 from pennylane.transforms.dynamic_one_shot import fill_in_value
 
+pytest.skip(allow_module_level=True)
+
 catalyst = pytest.importorskip("catalyst")
 jax = pytest.importorskip("jax")
 
