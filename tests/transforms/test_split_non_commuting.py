@@ -441,6 +441,40 @@ class TestUnits:
         expected = 0.52 if not qml.operation.active_new_opmath() else 1.12
         assert qml.math.allclose(fn([[0.1, 0.2], [0.3, 0.4, 0.5]]), expected)
 
+    @pytest.mark.usefixtures("new_opmath_only")
+    @pytest.mark.parametrize(
+        "H",
+        [
+            qml.sum(qml.X(0), qml.Hadamard(1) @ qml.Z(0), qml.Y(1)),
+            qml.Hamiltonian([1, 2, 3], [qml.X(0), qml.Hadamard(1) @ qml.Z(0), qml.Y(1)]),
+        ],
+    )
+    def test_single_hamiltonian_non_pauli_words(self, H):
+        """Tests that a single Hamiltonian with non-pauli words is split correctly"""
+
+        tape = qml.tape.QuantumScript([], [qml.expval(H)], shots=100)
+        tapes, _ = split_non_commuting(tape)
+        expected_tapes = [
+            qml.tape.QuantumScript([], [qml.expval(qml.X(0)), qml.expval(qml.Y(1))], shots=100),
+            qml.tape.QuantumScript([], [qml.expval(qml.Hadamard(1) @ qml.Z(0))], shots=100),
+        ]
+        for actual_tape, expected_tape in zip(tapes, expected_tapes):
+            qml.assert_equal(actual_tape, expected_tape)
+
+    @pytest.mark.usefixtures("legacy_opmath_only")
+    def test_single_hamiltonian_non_pauli_words_legacy(self):
+        """Tests that a single Hamiltonian with non-pauli words is split correctly"""
+
+        H = qml.Hamiltonian([1, 2, 3], [qml.X(0), qml.Hadamard(1) @ qml.Z(0), qml.Y(1)])
+        tape = qml.tape.QuantumScript([], [qml.expval(H)], shots=100)
+        tapes, _ = split_non_commuting(tape)
+        expected_tapes = [
+            qml.tape.QuantumScript([], [qml.expval(qml.X(0)), qml.expval(qml.Y(1))], shots=100),
+            qml.tape.QuantumScript([], [qml.expval(qml.Hadamard(1) @ qml.Z(0))], shots=100),
+        ]
+        for actual_tape, expected_tape in zip(tapes, expected_tapes):
+            qml.assert_equal(actual_tape, expected_tape)
+
     @pytest.mark.parametrize(
         "grouping_strategy, expected_tapes, processing_fn, mock_results",
         [
@@ -1126,6 +1160,27 @@ class TestDifferentiability:
         actual = qml.jacobian(circuit)(*params)
 
         assert qml.math.allclose(actual, [-0.5, np.cos(np.pi / 4)], rtol=0.05)
+
+    @pytest.mark.autograd
+    @pytest.mark.parametrize("grouping_strategy", [None, "default", "qwc", "wires"])
+    def test_non_trainable_obs_autograd(self, grouping_strategy):
+        """Test that we can measure a hamiltonian with non-trainable autograd coefficients."""
+
+        dev = qml.device("default.qubit")
+
+        @partial(split_non_commuting, grouping_strategy=grouping_strategy)
+        @qml.qnode(dev, diff_method="adjoint")
+        def circuit(x):
+            qml.RX(x, 0)
+            c1 = qml.numpy.array(0.1, requires_grad=False)
+            c2 = qml.numpy.array(0.2, requires_grad=False)
+            H = c1 * qml.Z(0) + c2 * qml.X(0)
+            return qml.expval(H)
+
+        x = qml.numpy.array(0.5)
+        actual = qml.grad(circuit)(x)
+
+        assert qml.math.allclose(actual, -0.1 * np.sin(x))
 
     @pytest.mark.jax
     @pytest.mark.parametrize("use_jit", [False, True])
