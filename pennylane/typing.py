@@ -129,4 +129,5 @@ ResultBatch = Sequence[Result]
 
 PostprocessingFn = Callable[[ResultBatch], Result]
 
+
 JSON = Union[None, int, str, bool, list["JSON"], dict[str, "JSON"]]

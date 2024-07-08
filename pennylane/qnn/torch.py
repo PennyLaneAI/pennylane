@@ -106,7 +106,7 @@ class TorchLayer(Module):
 
         **Output shape**
 
-        If the QNode returns a single measurement, then the output of the ``KerasLayer`` will have
+        If the QNode returns a single measurement, then the output of the ``TorchLayer`` will have
         shape ``(batch_dim, *measurement_shape)``, where ``measurement_shape`` is the output shape
         of the measurement:
 
