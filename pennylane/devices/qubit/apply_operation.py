@@ -425,7 +425,9 @@ def apply_phaseshift(op: qml.PhaseShift, state, is_state_batched: bool = False, 
     state0 = state[sl_0]
     state1 = state[sl_1]
     if op.batch_size is not None and len(params) > 1:
-        params = math.array(params, like=math.get_deep_interface(state))
+        interface = math.get_deep_interface(state)
+        if interface == "torch":
+            params = math.array(params, like=interface)
         if is_state_batched:
             params = qml.math.reshape(params, (-1,) + (1,) * (n_dim - 2))
         else:
