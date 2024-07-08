@@ -153,8 +153,6 @@ array([-1.5, -0.5,  0.5,  1.5])
 For more details on reading and writing custom datasets, including metadata, please
 see the :mod:`~.data` module documentation.
 
-:html:`<div class="summary-table">`
-
 Quantum Datasets Functions and Classes
 --------------------------------------
 
