@@ -331,7 +331,7 @@ def mitigate_with_zne(
     folding_kwargs: Optional[dict[str, Any]] = None,
     extrapolate_kwargs: Optional[dict[str, Any]] = None,
     reps_per_factor=1,
-) -> tuple[Sequence[QuantumTape], Callable[[ResultBatch], Result]]:
+) -> tuple[TapeBatch, PostprocessingFn]:
     r"""Mitigate an input circuit using zero-noise extrapolation.
 
     Error mitigation is a precursor to error correction and is compatible with near-term quantum
