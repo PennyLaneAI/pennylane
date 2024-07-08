@@ -51,8 +51,6 @@ def split_to_single_terms(tape):
         tape.operations, measurements=list(single_term_obs_mps), shots=tape.shots
     )
 
-    print(new_tape.measurements)
-
     def post_processing_fn(res):
 
         process_shot_copy = partial(
@@ -64,7 +62,10 @@ def split_to_single_terms(tape):
         )
 
         if tape.shots.has_partitioned_shots:
-            return tuple(process_shot_copy(c) for c in res)
+            res_for_each_mp = [
+                tuple(res[j][i] for j in range(len(res))) for i in range(tape.shots.num_copies)
+            ]
+            return tuple(process_shot_copy(c) for c in res_for_each_mp)
         return process_shot_copy(res)
 
     return (new_tape,), post_processing_fn
