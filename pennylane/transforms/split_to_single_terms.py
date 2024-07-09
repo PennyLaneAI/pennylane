@@ -19,16 +19,12 @@ between different tapes.
 """
 
 from functools import partial
-from typing import Dict, List, Tuple
 
-from pennylane.measurements import MeasurementProcess, Shots
 from pennylane.transforms import transform
 from pennylane.transforms.split_non_commuting import (
-    _infer_result_shape,
+    _processing_fn_no_grouping,
     _split_all_multi_term_obs_mps,
-    _sum_terms,
 )
-from pennylane.typing import ResultBatch
 
 
 def null_postprocessing(results):
@@ -46,64 +42,46 @@ def split_to_single_terms(tape):
         return [tape], null_postprocessing
 
     single_term_obs_mps, offsets = _split_all_multi_term_obs_mps(tape)
+    new_measurements = list(single_term_obs_mps)
 
-    new_tape = tape.__class__(
-        tape.operations, measurements=list(single_term_obs_mps), shots=tape.shots
-    )
+    if new_measurements == tape.measurements:
+        # measurements are unmodified by the transform
+        return [tape], null_postprocessing
+
+    new_tape = tape.__class__(tape.operations, measurements=new_measurements, shots=tape.shots)
 
     def post_processing_fn(res):
+        """We results are the same as those produced by split_non_commuting with
+        grouping_strategy=None, except that we return them all on a single tape,
+        reorganizing the shape of the results. In post-processing, we remove the
+        extra dimension added by (tape,), and swap the order of MPs vs shot copies
+        to get results in a format identical to the split_non_commuting transform,
+        and then use the same post-processing function on the transformed results."""
 
-        process_shot_copy = partial(
-            process_tape_results_from_shot_copy,
+        process = partial(
+            _processing_fn_no_grouping,
             single_term_obs_mps=single_term_obs_mps,
             offsets=offsets,
             shots=tape.shots,
             batch_size=tape.batch_size,
         )
 
+        # something about offsets and only a single measurement ends up different
+        # what is going on here?
+        if len(new_tape.measurements) == 1:
+            return process(res)
+
+        # we go from ((mp1_res, mp2_res, mp3_res),) as result output
+        # to (mp1_res, mp2_res, mp3_res) as expected by post-processing
+        res = res[0]
         if tape.shots.has_partitioned_shots:
-            res_for_each_mp = [
-                tuple(res[j][i] for j in range(len(res))) for i in range(tape.shots.num_copies)
+            print(res)
+            # swap dimension order of mps vs shot copies for _processing_fn_no_grouping
+            res = [
+                tuple(res[j][i] for j in range(tape.shots.num_copies))
+                for i in range(len(new_tape.measurements))
             ]
-            return tuple(process_shot_copy(c) for c in res_for_each_mp)
-        return process_shot_copy(res)
 
-    return (new_tape,), post_processing_fn
+        return process(res)
 
-
-def process_tape_results_from_shot_copy(
-    res: ResultBatch,
-    single_term_obs_mps: Dict[MeasurementProcess, Tuple[List[int], List[float]]],
-    offsets: List[float],
-    shots: Shots,
-    batch_size: int,
-):
-    """Placeholder docstring for pylint"""
-
-    # remove the extra dimension added by nesting the single tape as (tape,)
-    res = res[0]
-
-    # res dimensions are: (len(new_measurements), tape.batch_size, shots), or with
-    # partitioned shots: (tape.shots.num_copies, len(new_measurements), tape.batch_size, shots)
-
-    res_batch_for_each_mp = [[] for _ in offsets]
-    coeffs_for_each_mp = [[] for _ in offsets]
-
-    for smp_idx, (_, (mp_indices, coeffs)) in enumerate(single_term_obs_mps.items()):
-        for mp_idx, coeff in zip(mp_indices, coeffs):
-            res_batch_for_each_mp[mp_idx].append(res[smp_idx])
-            coeffs_for_each_mp[mp_idx].append(coeff)
-
-    result_shape = _infer_result_shape(shots, batch_size)
-
-    # Sum up the results for each original measurement
-    res_for_each_mp = [
-        _sum_terms(_sub_res, coeffs, offset, result_shape)
-        for _sub_res, coeffs, offset in zip(res_batch_for_each_mp, coeffs_for_each_mp, offsets)
-    ]
-
-    # res_for_each_mp should have shape (n_mps, [,batch_size] [,n_shots] )
-    if len(res_for_each_mp) == 1:
-        return res_for_each_mp[0]
-
-    return tuple(res_for_each_mp)
+    return [new_tape], post_processing_fn

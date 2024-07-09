@@ -70,16 +70,16 @@ def _convert_obs_to_legacy_opmath(obs):
     return obs
 
 
-def complex_no_grouping_processing_fn(results):
-    """The expected processing function without grouping of complex_obs_list"""
-
-    return (
-        results[0],
-        0.5 * results[1],
-        results[0] + results[2] + 2.0 * results[3] + 1.0,
-        0.1 * results[4] + 0.2 * results[5] + 0.3 * results[2] + 0.4,
-        1.5,
-    )
+# def complex_no_grouping_processing_fn(results):
+#     """The expected processing function without grouping of complex_obs_list"""
+#
+#     return (
+#         results[0],
+#         0.5 * results[1],
+#         results[0] + results[2] + 2.0 * results[3] + 1.0,
+#         0.1 * results[4] + 0.2 * results[5] + 0.3 * results[2] + 0.4,
+#         1.5,
+#     )
 
 
 class TestUnits:
@@ -382,8 +382,10 @@ class TestIntegration:
             expected_results = expected_results[:-1]  # exclude the identity term
 
         if isinstance(shots, list):
-            # print(expected_results)
-
+            print(params)
+            print(expected_results)
+            print(res)
+            print(qml.math.shape(res[0]))
             assert qml.math.shape(res) == (3, *np.shape(expected_results))
             for i in range(3):
                 print("")
@@ -519,7 +521,7 @@ class TestIntegration:
         res = circuit()
         assert qml.math.allclose(res, 1.5 + 2.5)
 
-    @pytest.mark.parametrize("shots", [None])  # , 20000, [20000, 30000, 40000]])
+    @pytest.mark.parametrize("shots", [None, 20000, [20000, 30000, 40000]])
     def test_sum_with_identity_and_observable(self, shots):
         """Tests that split_to_single_terms can handle a combination Identity observables (these
         are treated separately as offsets in the transform) and other observables"""
