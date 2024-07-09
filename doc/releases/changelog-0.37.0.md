@@ -4,8 +4,6 @@
 
 <h3>New features since last release</h3>
 
-<h4>Execute faster with Default Tensor 🔗</h4>
-
 <h4>Execute wide circuits with Default Tensor 🔗</h4>
 
 * A new `default.tensor` device is now available for performing
@@ -19,27 +17,41 @@
   [(#5795)](https://github.com/PennyLaneAI/pennylane/pull/5795)
 
   Either method can be selected when instantiating the `default.tensor` device by setting the
-  `method` keyword argument to `"tn"` (tensor network) or `"mps"` (matrix product state). This
-  device can simulate a large number of qubits. Take this example that
-  simulates 1000 qubits with a shallow circuit in a few seconds!
+  `method` keyword argument to `"tn"` (tensor network) or `"mps"` (matrix product state).
+
+  There are
+  [several templates in PennyLane](https://docs.pennylane.ai/en/stable/introduction/templates.html#tensor-networks)
+  that are tensor-network focused, which are excellent candidates for the `"tn"` method for
+  `default.tensor`. The following example shows how a circuit comprising gates in a tree tensor
+  network architecture can be efficiently simulated using `method="tn"`.
 
   ```python
   import pennylane as qml
 
-  num_qubits = 1000
-  dev = qml.device("default.tensor", method="mps")
+  n_wires = 16
+  dev = qml.device("default.tensor", method="tn")
+
+  def block(weights, wires):
+      qml.CNOT(wires=[wires[0], wires[1]])
+      qml.RY(weights[0], wires=wires[0])
+      qml.RY(weights[1], wires=wires[1])
+
+  n_block_wires = 2
+  n_params_block = 2
+  n_blocks = qml.TTN.get_n_blocks(range(n_wires), n_block_wires)
+  template_weights = [[0.1, -0.3]] * n_blocks
 
   @qml.qnode(dev)
-  def circuit():
-      qml.Hadamard(0)
-      for i in range(num_qubits - 1):
-          qml.CNOT([i, i + 1])
-      return qml.expval(qml.Z(num_qubits - 1))
+  def circuit(template_weights):
+      for i in range(n_wires):
+          qml.Hadamard(i)
+      qml.TTN(range(n_wires), n_block_wires, block, n_params_block, template_weights)
+      return qml.expval(qml.Z(n_wires - 1))
   ```
 
   ```pycon
-  >>> circuit()
-  tensor(0., requires_grad=True)
+  >>> circuit(template_weights)
+  0.3839174759751649
   ```
 
   For matrix product state simulations (`method="mps"`), we can make the execution be approximate by setting `max_bond_dim` (see the
@@ -215,18 +227,18 @@ via the `NoiseModel` class and an `add_noise` transform.
   For example, `qml.debug_tape()` returns the tape of the circuit, giving access to its operations and drawing:
 
   ```pycon
-  (pldb): tape = qml.debug_tape()
-  (pldb): print(tape.draw(wire_order=[0,1,2]))
+  [pldb] tape = qml.debug_tape()
+  [pldb] print(tape.draw(wire_order=[0,1,2]))
   0: ──H─╭●─┤  
   2: ────╰X─┤  
-  (pldb): tape.operations
+  [pldb] tape.operations
   [Hadamard(wires=[0]), CNOT(wires=[0, 2])]
   ```
 
   While `qml.debug_state()` is equivalent to `qml.state()` and gives the current state:
 
   ```pycon
-  (pldb): print(qml.debug_state())
+  [pldb] print(qml.debug_state())
   [0.70710678+0.j 0.        +0.j 0.        +0.j 0.        +0.j
     1.        +0.j 0.70710678+0.j 0.        +0.j 0.        +0.j]
   ```
@@ -238,9 +250,9 @@ via the `NoiseModel` class and an `add_noise` transform.
   Finally, to modify a circuit mid-run, simply call the desired PennyLane operations:
 
   ```pycon
-  (pldb) qml.CNOT(wires=(0,2))
+  [pldb] qml.CNOT(wires=(0,2))
   CNOT(wires=[0, 2])
-  (pldb): print(qml.debug_tape().draw(wire_order=[0,1,2]))
+  [pldb] print(qml.debug_tape().draw(wire_order=[0,1,2]))
   0: ──H─╭●─╭●─┤  
   2: ────╰X─╰X─┤  
   ```
@@ -340,10 +352,10 @@ Stay tuned for an in-depth demonstration on using this feature with real-world e
   ```
 
   ```pycon
-  >>> print(pl_op)
-  a⁺(0) a(2)
-  >>> print(of_op_new)
-  1.0 [0^ 2]
+  >>> print(qml.draw(f, level="device")())
+  0: ──RX(0.28)─╭●────╭X──RX(0.70)─╭●────╭X─┤  <X>
+  1: ──RX(0.52)─╰X─╭●─│───RX(0.65)─╰X─╭●─│──┤     
+  2: ──RX(0.00)────╰X─╰●──RX(0.03)────╰X─╰●─┤     
   ```
 
 <h3>Improvements 🛠</h3>
@@ -637,7 +649,8 @@ Stay tuned for an in-depth demonstration on using this feature with real-world e
   `base` properties.
   [(##5772)](https://github.com/PennyLaneAI/pennylane/pull/5772)
 
-<h4>Quantum chemistry</h4>
+* New dispatches for `qml.ops.Conditional` and `qml.MeasurementValue` have been added to `qml.equal`.
+  [(##5772)](https://github.com/PennyLaneAI/pennylane/pull/5772)
 
 * The `qml.snapshots` transform now supports arbitrary devices by running a separate tape for each snapshot 
   for unsupported devices.
