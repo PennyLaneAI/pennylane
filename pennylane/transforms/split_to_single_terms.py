@@ -36,100 +36,100 @@ def null_postprocessing(results):
 
 @transform
 def split_to_single_terms(tape):
-    r"""Splits any expectation values of multi-term observables in a circuit into single terms.
+    """Splits any expectation values of multi-term observables in a circuit into single terms.
     For devices that don't natively support measuring expectation values of sums of observables.
 
-     Args:
-         tape (QNode or QuantumScript or Callable): The quantum circuit to modify the measurements of.
+    Args:
+        tape (QNode or QuantumScript or Callable): The quantum circuit to modify the measurements of.
 
-     Returns:
-         qnode (QNode) or tuple[List[QuantumScript], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
+    Returns:
+        qnode (QNode) or tuple[List[QuantumScript], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
 
-     **Examples:**
+    **Examples:**
 
-     This transform allows us to transform a QNode measuring multi-term observables into individual measurements,
-     each a single term.
+    This transform allows us to transform a QNode measuring multi-term observables into individual measurements,
+    each a single term.
 
-     .. code-block:: python3
+    .. code-block:: python3
 
-         dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit", wires=2)
 
-         @qml.transforms.split_to_single_terms
-         @qml.qnode(dev)
-         def circuit(x):
-             qml.RY(x[0], wires=0)
-             qml.RX(x[1], wires=1)
-             return [qml.expval(qml.X(0) @ qml.Z(1) + 0.5 * qml.Y(1) + qml.Z(0)),
-                    qml.expval(qml.X(1) + qml.Y(1))]
+        @qml.transforms.split_to_single_terms
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.RY(x[0], wires=0)
+            qml.RX(x[1], wires=1)
+            return [qml.expval(qml.X(0) @ qml.Z(1) + 0.5 * qml.Y(1) + qml.Z(0)),
+                   qml.expval(qml.X(1) + qml.Y(1))]
 
-     Instead of decorating the QNode, we can also create a new function that yields the same
-     result in the following way:
+    Instead of decorating the QNode, we can also create a new function that yields the same
+    result in the following way:
 
-     .. code-block:: python3
+    .. code-block:: python3
 
-         @qml.qnode(dev)
-         def circuit(x):
-             qml.RY(x[0], wires=0)
-             qml.RX(x[1], wires=1)
-             return [qml.expval(qml.X(0) @ qml.Z(1) + 0.5 * qml.Y(1) + qml.Z(0)),
-                    qml.expval(qml.X(1) + qml.Y(1))]
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.RY(x[0], wires=0)
+            qml.RX(x[1], wires=1)
+            return [qml.expval(qml.X(0) @ qml.Z(1) + 0.5 * qml.Y(1) + qml.Z(0)),
+                   qml.expval(qml.X(1) + qml.Y(1))]
 
-         circuit = qml.transforms.split_to_single_terms(circuit)
+        circuit = qml.transforms.split_to_single_terms(circuit)
 
-     Internally, the QNode measures the individual measurements
+    Internally, the QNode measures the individual measurements
 
-     >>> print(qml.draw(circuit)([np.pi/4, np.pi/4]))
-     0: ──RY(0.79)─┤ ╭<X@Z>  <Z>
-     1: ──RX(0.79)─┤ ╰<X@Z>  <Y>  <X>
+    >>> print(qml.draw(circuit)([np.pi/4, np.pi/4]))
+    0: ──RY(0.79)─┤ ╭<X@Z>  <Z>
+    1: ──RX(0.79)─┤ ╰<X@Z>  <Y>  <X>
 
-     Note that the observable ``Y(1)`` occurs twice in the original QNode, but only once in the
-     transformed circuits. When there are multiple expecatation value measurements that rely on
-     the same observable, this observable is measured only once, and the result is copied to each
-     original measurement.
+    Note that the observable ``Y(1)`` occurs twice in the original QNode, but only once in the
+    transformed circuits. When there are multiple expecatation value measurements that rely on
+    the same observable, this observable is measured only once, and the result is copied to each
+    original measurement.
 
-     While internally the execution is split into single terms, the end result has the same ordering
-     as the user provides in the return statement.
+    While internally the execution is split into single terms, the end result has the same ordering
+    as the user provides in the return statement.
 
-     >>> circuit([np.pi/4, np.pi/4])
-     [0.8638999999999999, -0.7032]
+    >>> circuit([np.pi/4, np.pi/4])
+    [0.8638999999999999, -0.7032]
 
-     .. details::
-         :title: Usage Details
+    .. details::
+        :title: Usage Details
 
-         Internally, this function works with tapes. We can create a tape that returns
-         expectation values of multi-term observables:
+        Internally, this function works with tapes. We can create a tape that returns
+        expectation values of multi-term observables:
 
-         .. code-block:: python3
+        .. code-block:: python3
 
-             measurements = [
-                 qml.expval(qml.Z(0) + qml.Z(1)),
-                 qml.expval(qml.X(0) + 0.2 * qml.X(1) + 2 * qml.Identity()),
-                 qml.expval(qml.X(1) + qml.Z(1)),
-             ]
-             tape = qml.tape.QuantumScript(measurements=measurements)
-             tapes, processing_fn = qml.transforms.split_to_single_terms(tape)
+            measurements = [
+                qml.expval(qml.Z(0) + qml.Z(1)),
+                qml.expval(qml.X(0) + 0.2 * qml.X(1) + 2 * qml.Identity()),
+                qml.expval(qml.X(1) + qml.Z(1)),
+            ]
+            tape = qml.tape.QuantumScript(measurements=measurements)
+            tapes, processing_fn = qml.transforms.split_to_single_terms(tape)
 
-         Now ``tapes`` is a tuple containing a single tape with the updated measurements,
-         which are now the single-term observables that the original sum observables are
-         composed of:
+        Now ``tapes`` is a tuple containing a single tape with the updated measurements,
+        which are now the single-term observables that the original sum observables are
+        composed of:
 
-         >>> tapes[0].measurements
-         [expval(Z(0)), expval(Z(1)), expval(X(0)), expval(X(1))]
+        >>> tapes[0].measurements
+        [expval(Z(0)), expval(Z(1)), expval(X(0)), expval(X(1))]
 
-         The processing function becomes important as the order of the inputs has been modified.
-         Instead of evaluating the observables in the returned expectation values directly, the
-         four single-term observables are measured, resulting in 4 return values for the execution:
+        The processing function becomes important as the order of the inputs has been modified.
+        Instead of evaluating the observables in the returned expectation values directly, the
+        four single-term observables are measured, resulting in 4 return values for the execution:
 
-         >>> dev = qml.device("default.qubit", wires=2)
-         >>> results = dev.execute(tapes)
-         >>> results
-         ((1.0, 1.0, 0.0, 0.0),)
+        >>> dev = qml.device("default.qubit", wires=2)
+        >>> results = dev.execute(tapes)
+        >>> results
+        ((1.0, 1.0, 0.0, 0.0),)
 
-         The processing function can be used to reorganize the results to get the 3 expectation
-         values returned by the circuit:
+        The processing function can be used to reorganize the results to get the 3 expectation
+        values returned by the circuit:
 
-         >>> processing_fn(results)
-         (2.0, 2.0, 1.0)
+        >>> processing_fn(results)
+        (2.0, 2.0, 1.0)
     """
 
     if len(tape.measurements) == 0:
