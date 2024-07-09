@@ -64,7 +64,7 @@ def _get_device_shots(device) -> Shots:
 
 
 def _make_execution_config(
-    circuit: Optional["QNode"], diff_method=None
+    circuit: Optional["QNode"], diff_method=None, mcm_config=None
 ) -> "qml.devices.ExecutionConfig":
     if diff_method is None or isinstance(diff_method, str):
         _gradient_method = diff_method
@@ -76,14 +76,13 @@ def _make_execution_config(
         grad_on_execution = False
     elif grad_on_execution == "best":
         grad_on_execution = None
-    mcm_config = execute_kwargs.get("mcm_config", {})
 
     return qml.devices.ExecutionConfig(
         interface=getattr(circuit, "interface", None),
         gradient_method=_gradient_method,
         grad_on_execution=grad_on_execution,
         use_device_jacobian_product=execute_kwargs.get("device_vjp", False),
-        mcm_config=mcm_config,
+        mcm_config=mcm_config or qml.devices.MCMConfig(),
     )
 
 
@@ -1061,7 +1060,7 @@ class QNode:
 
         if isinstance(self.device, qml.devices.Device):
 
-            config = _make_execution_config(self, self.gradient_fn)
+            config = _make_execution_config(self, self.gradient_fn, mcm_config)
             device_transform_program, config = self.device.preprocess(execution_config=config)
 
             if config.use_device_gradient:
@@ -1075,11 +1074,11 @@ class QNode:
             and self.device.capabilities().get("supports_mid_measure", False)
         )
         if has_mcm_support:
+            mcm_config.interface = qml.math.get_deep_interface(self.tape.data)
             inner_transform_program.add_transform(
                 qml.devices.preprocess.mid_circuit_measurements,
                 device=self.device,
                 mcm_config=mcm_config,
-                interface=self.interface,
             )
             override_shots = 1
         elif hasattr(self.device, "capabilities"):
