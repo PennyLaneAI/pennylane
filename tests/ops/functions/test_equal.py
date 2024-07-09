@@ -1430,6 +1430,31 @@ class TestMeasurementsEqual:
         assert qml.equal(mp1, mp3)
         assert not qml.equal(mp1, mp4)
 
+    @pytest.mark.jax
+    @pytest.mark.parametrize("mp_fn", [qml.expval, qml.var, qml.sample, qml.counts, qml.probs])
+    def test_abstract_mv_equality(self, mp_fn):
+        """Test that equality is verified correctly for measurements collecting statistics for
+        abstract mid-circuit measurement values"""
+        import jax  # pylint: disable=import-outside-toplevel
+
+        m1 = True
+        m2 = False
+
+        @jax.jit
+        def eq_traced(a, b):
+            assert qml.math.is_abstract(a)
+            assert qml.math.is_abstract(b)
+
+            mp1 = mp_fn(op=a)
+            mp2 = mp_fn(op=a)
+            mp3 = mp_fn(op=b)
+
+            return qml.equal(mp1, mp2), qml.equal(mp1, mp3)
+
+        res = eq_traced(m1, m2)
+        assert res[0]
+        assert not res[1]
+
     def test_shadow_expval_list_versus_operator(self):
         """Check that if one shadow expval has an operator and the other has a list, they are not equal."""
 
