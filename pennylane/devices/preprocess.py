@@ -151,13 +151,14 @@ def mid_circuit_measurements(
     tape: qml.tape.QuantumTape,
     device,
     mcm_config=MCMConfig(),
+    interface=None,
 ) -> tuple[Sequence[qml.tape.QuantumTape], Callable]:
     """Provide the transform to handle mid-circuit measurements.
 
     If the tape or device uses finite-shot, use the native implementation (i.e. no transform),
     and use the ``qml.defer_measurements`` transform otherwise.
     """
-
+    # pylint: disable=unused-argument
     if isinstance(mcm_config, dict):
         mcm_config = MCMConfig(**mcm_config)
     mcm_method = mcm_config.mcm_method
