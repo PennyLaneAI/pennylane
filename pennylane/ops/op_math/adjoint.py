@@ -213,6 +213,8 @@ def _get_adjoint_qfunc_prim():
 
     @adjoint_prim.def_abstract_eval
     def _(*_, jaxpr, **__):
+        # note that this approximation may fail when we have nested qfuncs like for and while
+        # the do not return variables for all operators they queue
         # all queued drop var operators
         outvars = [AbstractOperator() for eqn in jaxpr.eqns if _is_queued_outvar(eqn.outvars)]
         # operators that are not dropped var because they are returned

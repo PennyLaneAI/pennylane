@@ -92,7 +92,7 @@ class TestAdjointQfunc:
             return 2  # should be ignored by transform
 
         def workflow(x):
-            qml.adjoint(func)(x, 5)
+            return qml.adjoint(func)(x, 5)
 
         plxpr = jax.make_jaxpr(workflow)(0.5)
 
@@ -102,7 +102,7 @@ class TestAdjointQfunc:
         expected_op1 = qml.adjoint(qml.X(5))
         qml.assert_equal(out[0], expected_op1)
         qml.assert_equal(q.queue[0], expected_op1)
-        expected_op2 = qml.Adjoint(qml.IsingXX(2 * 1.2 + 1, wires=(5, 6)))
+        expected_op2 = qml.adjoint(qml.IsingXX(jax.numpy.array(2 * 1.2 + 1), wires=(5, 6)))
         qml.assert_equal(out[1], expected_op2)
         qml.assert_equal(q.queue[1], expected_op2)
 
