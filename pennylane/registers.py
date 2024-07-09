@@ -6,17 +6,20 @@ from .wires import Wires
 
 
 def registers(register_dict, _start_wire_index=0):
-    """Returns the registers for the given dictionary of registers. The registers are a dictionary
-    of Wires objects where the key is the register name and the value is the Wires object. The
-    ordering of the Wires objects in the dictionary is based on appearance order first, then on
+    """Returns a collection of wire registers when given a dictionary of register names
+    and sizes (number of qubits in the register).
+    
+    The registers are a dictionary
+    of :class:`~.Wires` objects where the key is the register name and the value is the ``Wires`` object. The
+    individual wire labels are integers, where the ordering is based on appearance first, then on
     nestedness.
 
     Args:
-        register_dict (dict[str, int]): dictionary of registers where the keys are the name of the
-        registers and the values are the number of qubits for said register
+        register_dict (dict): a dictionary of registers where the keys are the names (str) of the
+        registers and the values are either nested dictionaries of more registers or integers (int). At the most nested level for each register key, the value must be an int.
 
     Returns:
-        dict (Wires): dictionary of Wires objects (value) belonging to registers (keys)
+        dict (Wires): dictionary of Wires objects (value) belonging to register names (keys)
 
     **Example**
 
