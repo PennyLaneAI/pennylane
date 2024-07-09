@@ -38,4 +38,5 @@ This release contains contributions from (in alphabetical order):
 Yushao Chen,
 Christina Lee,
 William Maxwell,
+Mudit Pandey,
 Erik Schultheis.
