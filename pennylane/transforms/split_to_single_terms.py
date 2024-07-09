@@ -159,8 +159,6 @@ def split_to_single_terms(tape):
             batch_size=tape.batch_size,
         )
 
-        # something about offsets and only a single measurement ends up different
-        # what is going on here?
         if len(new_tape.measurements) == 1:
             return process(res)
 
