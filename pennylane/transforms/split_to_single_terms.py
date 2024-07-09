@@ -133,7 +133,7 @@ def split_to_single_terms(tape):
     """
 
     if len(tape.measurements) == 0:
-        return [tape], null_postprocessing
+        return (tape,), null_postprocessing
 
     single_term_obs_mps, offsets = _split_all_multi_term_obs_mps(tape)
     new_measurements = list(single_term_obs_mps)
