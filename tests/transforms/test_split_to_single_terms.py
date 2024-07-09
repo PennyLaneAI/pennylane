@@ -217,9 +217,17 @@ class TestUnits:
         result = [[0.1, 0.2, 0.3, 0.4, 0.5]]
         assert fn(result) == ((0.1 + 0.2 + 0.3), (0.4 + 0.5))
 
-    def test_splitting_sums_in_unsupported_mps_raises_error(self):
+    @pytest.mark.parametrize(
+        "observable",
+        [
+            qml.X(0) + qml.Y(1),
+            2 * (qml.X(0) + qml.Y(1)),
+            3 * (2 * (qml.X(0) + qml.Y(1)) + qml.X(1)),
+        ],
+    )
+    def test_splitting_sums_in_unsupported_mps_raises_error(self, observable):
 
-        tape = qml.tape.QuantumScript([qml.X(0)], measurements=[qml.counts(qml.X(0) + qml.Y(1))])
+        tape = qml.tape.QuantumScript([qml.X(0)], measurements=[qml.counts(observable)])
         with pytest.raises(
             RuntimeError, match="Cannot split up terms in sums for MeasurementProcess"
         ):
