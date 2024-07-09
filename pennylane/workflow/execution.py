@@ -595,6 +595,9 @@ def execute(
                 "mcm_method='deferred'."
             )
         config.mcm_config.postselect_mode = "fill-shots"
+    mcm_interface = "tensorflow" if "tf" in mcm_interface else mcm_interface
+    mcm_interface = "jax" if "jax" in mcm_interface else mcm_interface
+    config.mcm_config.interface = mcm_interface
 
     is_gradient_transform = isinstance(gradient_fn, qml.transforms.core.TransformDispatcher)
     transform_program, inner_transform = _make_transform_programs(

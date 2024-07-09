@@ -151,7 +151,6 @@ def mid_circuit_measurements(
     tape: qml.tape.QuantumTape,
     device,
     mcm_config=MCMConfig(),
-    interface=None,
 ) -> tuple[Sequence[qml.tape.QuantumTape], Callable]:
     """Provide the transform to handle mid-circuit measurements.
 
@@ -166,7 +165,7 @@ def mid_circuit_measurements(
         mcm_method = "one-shot" if tape.shots else "deferred"
 
     if mcm_method == "one-shot":
-        return qml.dynamic_one_shot(tape, interface=interface)
+        return qml.dynamic_one_shot(tape, interface=mcm_config.interface)
     if mcm_method == "tree-traversal":
         return (tape,), null_postprocessing
     return qml.defer_measurements(tape, device=device)

@@ -124,7 +124,7 @@ def dynamic_one_shot(
 
     aux_tapes = [init_auxiliary_tape(t) for t in tapes]
 
-    interface = kwargs.get("interface", None)
+    interface = kwargs.get("interface", None) or "numpy"
 
     def reshape_data(array):
         return qml.math.squeeze(qml.math.vstack(array))
@@ -252,9 +252,9 @@ def parse_native_mid_circuit_measurements(
             else np.nan
         )
 
-    interface = interface or qml.math.get_deep_interface(circuit.data)
-    interface = "numpy" if interface == "builtins" else interface
-    interface = "tensorflow" if interface == "tf" else interface
+    results_interface = qml.math.get_deep_interface(results)
+    results_interface = "numpy" if results_interface == "builtins" else results_interface
+    results_interface = "tensorflow" if results_interface == "tf" else results_interface
     active_qjit = qml.compiler.active()
 
     all_mcms = [op for op in aux_tapes[0].operations if is_mcm(op)]
@@ -262,16 +262,16 @@ def parse_native_mid_circuit_measurements(
     mcm_samples = qml.math.hstack(
         tuple(qml.math.reshape(res, (-1, 1)) for res in results[-n_mcms:])
     )
-    mcm_samples = qml.math.array(mcm_samples, like=interface)
+    mcm_samples = qml.math.array(mcm_samples, like=results_interface)
     # Can't use boolean dtype array with tf, hence why conditionally setting items to 0 or 1
     has_postselect = qml.math.array(
         [[int(op.postselect is not None) for op in all_mcms]],
-        like=interface,
+        like=results_interface,
         dtype=mcm_samples.dtype,
     )
     postselect = qml.math.array(
         [[0 if op.postselect is None else op.postselect for op in all_mcms]],
-        like=interface,
+        like=results_interface,
         dtype=mcm_samples.dtype,
     )
     is_valid = qml.math.all(mcm_samples * has_postselect == postselect, axis=1)
@@ -289,9 +289,11 @@ def parse_native_mid_circuit_measurements(
         if interface != "jax" and m.mv and not has_valid:
             meas = measurement_with_no_shots(m)
         elif m.mv and active_qjit:
-            meas = gather_mcm_qjit(m, mcm_samples, is_valid)  # pragma: no cover
+            meas = gather_mcm_qjit(
+                m, mcm_samples, is_valid, interface=interface
+            )  # pragma: no cover
         elif m.mv:
-            meas = gather_mcm(m, mcm_samples, is_valid)
+            meas = gather_mcm(m, mcm_samples, is_valid, interface=interface)
         elif interface != "jax" and not has_valid:
             meas = measurement_with_no_shots(m)
             m_count += 1
@@ -301,7 +303,7 @@ def parse_native_mid_circuit_measurements(
                 # We don't need to cast to arrays when using qml.counts. qml.math.array is not viable
                 # as it assumes all elements of the input are of builtin python types and not belonging
                 # to any particular interface
-                result = qml.math.array(result, like=interface)
+                result = qml.math.array(result, like=results_interface)
             if active_qjit:  # pragma: no cover
                 # `result` contains (bases, counts) need to return (basis, sum(counts)) where `is_valid`
                 # Any row of `result[0]` contains basis, so we return `result[0][0]`
@@ -316,7 +318,7 @@ def parse_native_mid_circuit_measurements(
                     m_count += 1
                     continue
                 result = qml.math.squeeze(result)
-            meas = gather_non_mcm(m, result, is_valid)
+            meas = gather_non_mcm(m, result, is_valid, interface=interface)
             m_count += 1
         if isinstance(m, SampleMP):
             meas = qml.math.squeeze(meas)
@@ -325,7 +327,7 @@ def parse_native_mid_circuit_measurements(
     return tuple(normalized_meas) if len(normalized_meas) > 1 else normalized_meas[0]
 
 
-def gather_mcm_qjit(measurement, samples, is_valid):  # pragma: no cover
+def gather_mcm_qjit(measurement, samples, is_valid, interface=None):  # pragma: no cover
     """Process MCM measurements when the Catalyst compiler is active.
 
     Args:
@@ -346,20 +348,20 @@ def gather_mcm_qjit(measurement, samples, is_valid):  # pragma: no cover
         raise LookupError("MCM not found")
     meas = qml.math.squeeze(meas)
     if isinstance(measurement, (CountsMP, ProbabilityMP)):
-        interface = qml.math.get_interface(is_valid)
+        results_interface = qml.math.get_interface(is_valid)
         sum_valid = qml.math.sum(is_valid)
         count_1 = qml.math.sum(meas * is_valid)
         if isinstance(measurement, CountsMP):
-            return qml.math.array([0, 1], like=interface), qml.math.array(
-                [sum_valid - count_1, count_1], like=interface
+            return qml.math.array([0, 1], like=results_interface), qml.math.array(
+                [sum_valid - count_1, count_1], like=results_interface
             )
         if isinstance(measurement, ProbabilityMP):
-            counts = qml.math.array([sum_valid - count_1, count_1], like=interface)
+            counts = qml.math.array([sum_valid - count_1, count_1], like=results_interface)
             return counts / sum_valid
-    return gather_non_mcm(measurement, meas, is_valid)
+    return gather_non_mcm(measurement, meas, is_valid, interface=interface)
 
 
-def gather_non_mcm(measurement, samples, is_valid):
+def gather_non_mcm(measurement, samples, is_valid, interface=None):
     """Combines, gathers and normalizes several measurements with trivial measurement values.
 
     Args:
@@ -381,7 +383,7 @@ def gather_non_mcm(measurement, samples, is_valid):
             tmp = Counter({k: v for k, v in tmp.items() if v > 0})
         return dict(sorted(tmp.items()))
 
-    if (interface := qml.math.get_interface(is_valid)) == "tensorflow" and not isinstance(
+    if (results_interface := qml.math.get_interface(is_valid)) == "tensorflow" and not isinstance(
         measurement, SampleMP
     ):
         # Tensorflow requires arrays that are used for arithmetic with each other to have the
@@ -406,14 +408,14 @@ def gather_non_mcm(measurement, samples, is_valid):
         )
     # VarianceMP
     expval = qml.math.sum(samples * is_valid) / qml.math.sum(is_valid)
-    if interface == "tensorflow":
+    if results_interface == "tensorflow":
         # Casting needed for tensorflow
         samples = qml.math.cast_like(samples, expval)
         is_valid = qml.math.cast_like(is_valid, expval)
     return qml.math.sum((samples - expval) ** 2 * is_valid) / qml.math.sum(is_valid)
 
 
-def gather_mcm(measurement, samples, is_valid):
+def gather_mcm(measurement, samples, is_valid, interface=None):
     """Combines, gathers and normalizes several measurements with non-trivial measurement values.
 
     Args:
@@ -425,7 +427,7 @@ def gather_mcm(measurement, samples, is_valid):
     Returns:
         TensorLike: The combined measurement outcome
     """
-    interface = qml.math.get_deep_interface(is_valid)
+    results_interface = qml.math.get_deep_interface(is_valid)
     mv = measurement.mv
     # The following block handles measurement value lists, like ``qml.counts(op=[mcm0, mcm1, mcm2])``.
     if isinstance(measurement, (CountsMP, ProbabilityMP, SampleMP)) and isinstance(mv, Sequence):
@@ -434,7 +436,9 @@ def gather_mcm(measurement, samples, is_valid):
         if isinstance(measurement, ProbabilityMP):
             values = [list(m.branches.values()) for m in mv]
             values = list(itertools.product(*values))
-            values = [qml.math.array([v], like=interface, dtype=mcm_samples.dtype) for v in values]
+            values = [
+                qml.math.array([v], like=results_interface, dtype=mcm_samples.dtype) for v in values
+            ]
             # Need to use boolean functions explicitly as Tensorflow does not allow integer math
             # on boolean arrays
             counts = [
@@ -443,12 +447,12 @@ def gather_mcm(measurement, samples, is_valid):
                 )
                 for v in values
             ]
-            counts = qml.math.array(counts, like=interface)
+            counts = qml.math.array(counts, like=results_interface)
             return counts / qml.math.sum(counts)
         if isinstance(measurement, CountsMP):
             mcm_samples = [{"".join(str(int(v)) for v in tuple(s)): 1} for s in mcm_samples]
         return gather_non_mcm(measurement, mcm_samples, is_valid)
-    mcm_samples = qml.math.ravel(qml.math.array(mv.concretize(samples), like=interface))
+    mcm_samples = qml.math.ravel(qml.math.array(mv.concretize(samples), like=results_interface))
     if isinstance(measurement, ProbabilityMP):
         # Need to use boolean functions explicitly as Tensorflow does not allow integer math
         # on boolean arrays
@@ -456,8 +460,8 @@ def gather_mcm(measurement, samples, is_valid):
             qml.math.count_nonzero(qml.math.logical_and((mcm_samples == v), is_valid))
             for v in list(mv.branches.values())
         ]
-        counts = qml.math.array(counts, like=interface)
+        counts = qml.math.array(counts, like=results_interface)
         return counts / qml.math.sum(counts)
     if isinstance(measurement, CountsMP):
         mcm_samples = [{float(s): 1} for s in mcm_samples]
-    return gather_non_mcm(measurement, mcm_samples, is_valid)
+    return gather_non_mcm(measurement, mcm_samples, is_valid, interface=interface)

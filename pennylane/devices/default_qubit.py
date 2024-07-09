@@ -505,7 +505,6 @@ class DefaultQubit(Device):
             mid_circuit_measurements,
             device=self,
             mcm_config=config.mcm_config,
-            interface=config.interface,
         )
         transform_program.add_transform(
             decompose,

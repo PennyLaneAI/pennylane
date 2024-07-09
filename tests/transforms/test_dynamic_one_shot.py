@@ -270,14 +270,17 @@ def generate_dummy_raw_results(measure_f, n_mcms, shots, postselect, interface):
 
 # pylint: disable=too-many-arguments, import-outside-toplevel
 @pytest.mark.all_interfaces
-@pytest.mark.parametrize("interface", ["autograd", "jax", "tensorflow", "torch"])
+@pytest.mark.parametrize("interface", ["autograd", "jax", "tensorflow", "torch", "numpy", None])
+@pytest.mark.parametrize("use_interface_for_results", [True, False])
 class TestInterfaces:
     """Unit tests for ML interfaces with dynamic_one_shot"""
 
     @pytest.mark.parametrize("measure_f", (qml.expval, qml.probs, qml.sample, qml.var))
     @pytest.mark.parametrize("shots", [20, [20, 21]])
     @pytest.mark.parametrize("n_mcms", [1, 3])
-    def test_interface_tape_results(self, shots, n_mcms, measure_f, interface):
+    def test_interface_tape_results(
+        self, shots, n_mcms, measure_f, interface, use_interface_for_results
+    ):  # pylint: disable=unused-argument
         """Test that the simulation results of a tape are correct with interface parameters"""
         if interface == "jax":
             from jax.random import PRNGKey
@@ -298,7 +301,7 @@ class TestInterfaces:
             shots=shots,
         )
 
-        tapes, _ = qml.dynamic_one_shot(tape)
+        tapes, _ = qml.dynamic_one_shot(tape, interface=interface)
         results = dev.execute(tapes)[0]
 
         # The transformed tape never has a shot vector
@@ -325,7 +328,7 @@ class TestInterfaces:
     @pytest.mark.parametrize("shots", [20, [20, 21]])
     @pytest.mark.parametrize("n_mcms", [1, 3])
     def test_interface_results_processing(
-        self, shots, n_mcms, measure_f, expected1, expected2, interface
+        self, shots, n_mcms, measure_f, expected1, expected2, interface, use_interface_for_results
     ):
         """Test that the results of tapes are processed correctly for tapes with interface
         parameters"""
@@ -337,7 +340,7 @@ class TestInterfaces:
         tape = qml.tape.QuantumScript(
             ops, [measure_f(op=qml.PauliZ(0)), measure_f(op=mv)], shots=shots
         )
-        _, fn = qml.dynamic_one_shot(tape)
+        _, fn = qml.dynamic_one_shot(tape, interface=interface)
         total_shots = sum(shots) if isinstance(shots, list) else shots
 
         raw_results = generate_dummy_raw_results(
@@ -345,7 +348,7 @@ class TestInterfaces:
             n_mcms=n_mcms,
             shots=total_shots,
             postselect=None,
-            interface=interface,
+            interface=interface if use_interface_for_results else None,
         )
         processed_results = fn(raw_results)
 
@@ -360,6 +363,12 @@ class TestInterfaces:
         else:
             expected1 = [expected1 for _ in shots] if isinstance(shots, list) else expected1
             expected2 = [expected2 for _ in shots] if isinstance(shots, list) else expected2
+
+        if use_interface_for_results:
+            expected_interface = "numpy" if interface in (None, "autograd") else interface
+            assert qml.math.get_deep_interface(processed_results) == expected_interface
+        else:
+            assert qml.math.get_deep_interface(processed_results) == "numpy"
 
         if isinstance(shots, list):
             assert len(processed_results) == len(shots)
@@ -387,7 +396,7 @@ class TestInterfaces:
     )
     @pytest.mark.parametrize("shots", [20, [20, 22]])
     def test_interface_results_postselection_processing(
-        self, shots, measure_f, expected1, expected2, interface
+        self, shots, measure_f, expected1, expected2, interface, use_interface_for_results
     ):
         """Test that the results of tapes are processed correctly for tapes with interface
         parameters when postselecting"""
@@ -401,7 +410,7 @@ class TestInterfaces:
             [measure_f(op=qml.PauliZ(0)), measure_f(op=mv)],
             shots=shots,
         )
-        _, fn = qml.dynamic_one_shot(tape)
+        _, fn = qml.dynamic_one_shot(tape, interface=interface)
         total_shots = sum(shots) if isinstance(shots, list) else shots
 
         raw_results = generate_dummy_raw_results(
@@ -409,7 +418,7 @@ class TestInterfaces:
             n_mcms=2,
             shots=total_shots,
             postselect=postselect,
-            interface=interface,
+            interface=interface if use_interface_for_results else None,
         )
         processed_results = fn(raw_results)
 
@@ -434,6 +443,12 @@ class TestInterfaces:
         else:
             expected1 = [expected1 for _ in shots] if isinstance(shots, list) else expected1
             expected2 = [expected2 for _ in shots] if isinstance(shots, list) else expected2
+
+        if use_interface_for_results:
+            expected_interface = "numpy" if interface in (None, "autograd") else interface
+            assert qml.math.get_deep_interface(processed_results) == expected_interface
+        else:
+            assert qml.math.get_deep_interface(processed_results) == "numpy"
 
         if isinstance(shots, list):
             assert len(processed_results) == len(shots)
