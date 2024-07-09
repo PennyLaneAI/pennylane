@@ -23,7 +23,12 @@ from packaging import version
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.tape import QuantumScript
-from pennylane.transforms import fold_global, mitigate_with_zne, richardson_extrapolate
+from pennylane.transforms import (
+    exponential_extrapolate,
+    fold_global,
+    mitigate_with_zne,
+    richardson_extrapolate,
+)
 
 with qml.queuing.AnnotatedQueue() as q_tape:
     qml.BasisState([1], wires=0)
@@ -576,7 +581,7 @@ class TestDifferentiableZNE:
         scale_factors = [1.0, 2.0, 3.0]
 
         mitigated_qnode = jax.jit(
-            mitigate_with_zne(qnode_noisy, scale_factors, fold_global, richardson_extrapolate)
+            mitigate_with_zne(qnode_noisy, scale_factors, fold_global, exponential_extrapolate)
         )
 
         theta = jnp.array(
