@@ -201,7 +201,7 @@ class AmplitudeEmbedding(StatePrep):
         # normalize
         if "int" in str(features.dtype):
             features = qml.math.cast_like(features, 0.0)
-        norm = qml.math.norm(features, axis=-1)
+        norm = qml.math.linalg.norm(features, axis=-1)
 
         if qml.math.is_abstract(norm):
             if normalize or pad_with:
