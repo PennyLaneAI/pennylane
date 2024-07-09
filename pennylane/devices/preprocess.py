@@ -260,7 +260,7 @@ def validate_adjoint_trainable_params(
 
 @transform
 def decompose(
-    tape: qml.tape.QuantumTape,
+    tape: qml.tape.QuantumScript,
     stopping_condition: Callable[[qml.operation.Operator], bool],
     stopping_condition_shots: Callable[[qml.operation.Operator], bool] = None,
     skip_initial_state_prep: bool = True,
@@ -274,34 +274,36 @@ def decompose(
     """Decompose operations until the stopping condition is met.
 
     Args:
-        tape (QuantumTape or QNode or Callable): a quantum circuit.
-        stopping_condition (Callable): a function from an operator to a boolean. If ``False``, the operator
-            should be decomposed. If an operator cannot be decomposed and is not accepted by ``stopping_condition``,
-            an ``Exception`` will be raised (of a type specified by the ``error`` kwarg).
+        tape (QuantumScript or QNode or Callable): a quantum circuit.
+        stopping_condition (Callable): a function from an operator to a boolean. If ``False``,
+            the operator should be decomposed. If an operator cannot be decomposed and is not
+            accepted by ``stopping_condition``, an ``Exception`` will be raised (of a type
+            specified by the ``error`` keyward argument).
 
     Keyword Args:
-        stopping_condition_shots (Callable): a function from an operator to a boolean. If ``False``, the operator
-            should be decomposed. If an operator cannot be decomposed and is not accepted by ``stopping_condition``,
-            an ``Exception`` will be raised (of a type specified by the ``error`` kwarg). This replaces stopping_condition if and only if the tape has shots.
-        skip_initial_state_prep (bool): If ``True``, the first operator will not be decomposed if it inherits
-            from :class:`~.StatePrepBase`. Defaults to ``True``.
-        decomposer (Callable): an optional callable that takes an operator and implements the relevant decomposition.
-            If None, defaults to using a callable returning ``op.decomposition()`` for any :class:`~.Operator` .
+        stopping_condition_shots (Callable): a function from an operator to a boolean. If
+            ``False``, the operator should be decomposed. This replaces ``stopping_condition``
+            if and only if the tape has shots.
+        skip_initial_state_prep (bool): If ``True``, the first operator will not be decomposed if
+            it inherits from :class:`~.StatePrepBase`. Defaults to ``True``.
+        decomposer (Callable): an optional callable that takes an operator and implements the
+            relevant decomposition. If ``None``, defaults to using a callable returning
+            ``op.decomposition()`` for any :class:`~.Operator` .
         max_expansion (int): The maximum depth of the expansion. Defaults to None.
-        name (str): The name of the transform, process or device using decompose. Used in the error message. Defaults to "device".
-        error (Error): An error type to raise if it is not possible to obtain a decomposition that fulfills
-            the ``stopping_condition``. Defaults to ``DeviceError``.
-
+        name (str): The name of the transform, process or device using decompose. Used in the
+            error message. Defaults to "device".
+        error (type): An error type to raise if it is not possible to obtain a decomposition that
+            fulfills the ``stopping_condition``. Defaults to ``DeviceError``.
 
     Returns:
-        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]:
+        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumScript], function]:
 
         The decomposed circuit. The output type is explained in :func:`qml.transform <pennylane.transform>`.
 
     Raises:
-        Exception: Type defaults to ``DeviceError`` but can be modified via keyword argument. Raised if
-            an operator is not accepted and does not define a decomposition, or if the decomposition
-            enters an infinite loop and raises a ``RecursionError``.
+        Exception: Type defaults to ``DeviceError`` but can be modified via keyword argument.
+            Raised if an operator is not accepted and does not define a decomposition, or if
+            the decomposition enters an infinite loop and raises a ``RecursionError``.
 
     **Example:**
 
@@ -320,7 +322,7 @@ def decompose(
     >>> decompose(tape, lambda obj: obj.name == "S")
     DeviceError: Operator CNOT(wires=[0, 1]) not supported on device and does not provide a decomposition.
 
-    The ``skip_initial_state_prep`` specifies whether or not the device supports state prep operations
+    The ``skip_initial_state_prep`` specifies whether the device supports state prep operations
     at the beginning of the circuit.
 
     >>> tape = qml.tape.QuantumScript([qml.BasisState([1], wires=0), qml.BasisState([1], wires=1)])

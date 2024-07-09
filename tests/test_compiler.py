@@ -105,6 +105,14 @@ class TestCatalyst:
         assert jnp.allclose(circuit(jnp.pi, jnp.pi / 2), 1.0)
         assert jnp.allclose(qml.qjit(circuit)(jnp.pi, jnp.pi / 2), -1.0)
 
+    @pytest.mark.parametrize("jax_enable_x64", [False, True])
+    def test_jax_enable_x64(self, jax_enable_x64):
+        """Test whether `qml.compiler.active` changes `jax_enable_x64`."""
+        jax.config.update("jax_enable_x64", jax_enable_x64)
+        assert jax.config.jax_enable_x64 is jax_enable_x64
+        qml.compiler.active()
+        assert jax.config.jax_enable_x64 is jax_enable_x64
+
     def test_qjit_circuit(self):
         """Test JIT compilation of a circuit with 2-qubit"""
         dev = qml.device("lightning.qubit", wires=2)
@@ -241,7 +249,6 @@ class TestCatalyst:
         result_header = "func.func private @circuit(%arg0: tensor<f64>) -> tensor<f64>"
         assert result_header in mlir_str
 
-    @pytest.mark.xfail(reason="supported once catalyst #768 is merged")
     def test_qjit_adjoint(self):
         """Test JIT compilation with adjoint support"""
         dev = qml.device("lightning.qubit", wires=2)
@@ -265,7 +272,6 @@ class TestCatalyst:
 
         assert jnp.allclose(workflow_cl(0.1, [1]), workflow_pl(0.1, [1]))
 
-    @pytest.mark.xfail(reason="supported once catalyst #768 is merged")
     def test_qjit_adjoint_lazy(self):
         """Test that the lazy kwarg is supported."""
         dev = qml.device("lightning.qubit", wires=2)
@@ -724,7 +730,6 @@ class TestCatalystGrad:
 class TestCatalystSample:
     """Test qml.sample with Catalyst."""
 
-    @pytest.mark.xfail(reason="requires simultaneous catalyst pr")
     def test_sample_measure(self):
         """Test that qml.sample can be used with catalyst.measure."""
 
