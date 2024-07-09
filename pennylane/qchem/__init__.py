@@ -12,12 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This subpackage provides the functionality to perform quantum chemistry calculations.
+This submodule provides the functionality to perform quantum chemistry calculations.
 """
 from .basis_data import load_basisset
 from .basis_set import BasisFunction, atom_basis_data, mol_basis_data
 from .convert import import_operator, import_state
-from .convert_openfermion import from_openfermion
+from .convert_openfermion import from_openfermion, to_openfermion
 from .dipole import dipole_integrals, dipole_moment, fermionic_dipole, molecular_dipole
 from .factorization import basis_rotation, factorize
 from .givens_decomposition import givens_decomposition

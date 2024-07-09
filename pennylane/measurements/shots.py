@@ -11,8 +11,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """This module contains the Shots class to hold shot-related information."""
+from collections.abc import Sequence
+
 # pylint:disable=inconsistent-return-statements
-from typing import NamedTuple, Sequence, Tuple
+from typing import NamedTuple
 
 
 class ShotCopies(NamedTuple):
@@ -39,7 +41,7 @@ def valid_int(s):
 
 def valid_tuple(s):
     """Returns True if s is a tuple of the form (shots, copies)."""
-    return isinstance(s, tuple) and len(s) == 2 and valid_int(s[0]) and valid_int(s[1])
+    return isinstance(s, Sequence) and len(s) == 2 and valid_int(s[0]) and valid_int(s[1])
 
 
 class Shots:
@@ -136,7 +138,7 @@ class Shots:
     total_shots: int = None
     """The total number of shots to be executed."""
 
-    shot_vector: Tuple[ShotCopies] = None
+    shot_vector: tuple[ShotCopies] = None
     """The tuple of :class:`~ShotCopies` to be executed. Each element is of the form ``(shots, copies)``."""
 
     _SHOT_ERROR = ValueError(
@@ -167,7 +169,7 @@ class Shots:
         elif isinstance(shots, Sequence):
             if not all(valid_int(s) or valid_tuple(s) for s in shots):
                 raise self._SHOT_ERROR
-            self.__all_tuple_init__([s if isinstance(s, tuple) else (s, 1) for s in shots])
+            self.__all_tuple_init__([s if isinstance(s, Sequence) else (s, 1) for s in shots])
         elif isinstance(shots, self.__class__):
             return  # self already _is_ shots as defined by __new__
         else:
@@ -211,7 +213,7 @@ class Shots:
             for _ in range(shot_copy.copies):
                 yield shot_copy.shots
 
-    def __all_tuple_init__(self, shots: Sequence[Tuple]):
+    def __all_tuple_init__(self, shots: Sequence[tuple]):
         res = []
         total_shots = 0
         current_shots, current_copies = shots[0]

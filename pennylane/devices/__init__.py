@@ -57,6 +57,7 @@ accessible from the ``pennylane.devices`` submodule.
     MCMConfig
     Device
     DefaultQubit
+    DefaultTensor
     NullQubit
     DefaultQutritMixed
 
@@ -160,6 +161,7 @@ from .default_qubit_legacy import DefaultQubitLegacy
 from .default_gaussian import DefaultGaussian
 from .default_mixed import DefaultMixed
 from .default_clifford import DefaultClifford
+from .default_tensor import DefaultTensor
 from .null_qubit import NullQubit
 from .default_qutrit_mixed import DefaultQutritMixed
 from .._device import Device as LegacyDevice

@@ -20,6 +20,7 @@ from operator import matmul
 from typing import Tuple, Union
 
 import pennylane as qml
+from pennylane.math.utils import is_abstract
 from pennylane.operation import Tensor
 from pennylane.ops import (
     Hamiltonian,
@@ -206,15 +207,17 @@ def _generalized_pauli_decompose(
         ).T
         coefficient = term_mat[tuple(int("".join(map(str, x)), 2) for x in bit_array)]
 
-        if not qml.math.allclose(coefficient, 0):
-            observables = (
-                [(o, w) for w, o in zip(wire_order, pauli_rep) if o != I]
-                if hide_identity and not all(t == I for t in pauli_rep)
-                else [(o, w) for w, o in zip(wire_order, pauli_rep)]
-            )
-            if observables:
-                coeffs.append(coefficient)
-                obs.append(observables)
+        if not is_abstract(matrix) and qml.math.allclose(coefficient, 0):
+            continue
+
+        observables = (
+            [(o, w) for w, o in zip(wire_order, pauli_rep) if o != I]
+            if hide_identity and not all(t == I for t in pauli_rep)
+            else [(o, w) for w, o in zip(wire_order, pauli_rep)]
+        )
+        if observables:
+            coeffs.append(coefficient)
+            obs.append(observables)
 
     coeffs = qml.math.stack(coeffs)
 
@@ -249,6 +252,8 @@ def pauli_decompose(
     We can use this function to compute the Pauli operator decomposition of an arbitrary Hermitian
     matrix:
 
+    >>> import pennylane as qml
+    >>> import numpy as np
     >>> A = np.array(
     ... [[-2, -2+1j, -2, -2], [-2-1j,  0,  0, -1], [-2,  0, -2, -1], [-2, -1, -1,  0]])
     >>> H = qml.pauli_decompose(A)
@@ -317,7 +322,7 @@ def pauli_decompose(
         if shape != (N, N):
             raise ValueError("The matrix should have shape (2**n, 2**n), for any qubit number n>=1")
 
-        if not qml.math.allclose(H, qml.math.conj(qml.math.transpose(H))):
+        if not is_abstract(H) and not qml.math.allclose(H, qml.math.conj(qml.math.transpose(H))):
             raise ValueError("The matrix is not Hermitian")
 
     coeffs, obs = _generalized_pauli_decompose(

@@ -134,14 +134,14 @@ def sample(
            [0, 0]])
 
     """
-    return SampleMP(obs=op, wires=wires)
+    return SampleMP(obs=op, wires=None if wires is None else qml.wires.Wires(wires))
 
 
 class SampleMP(SampleMeasurement):
     """Measurement process that returns the samples of a given observable. If no observable is
     provided then basis state samples are returned directly from the device.
 
-    Please refer to :func:`sample` for detailed documentation.
+    Please refer to :func:`pennylane.sample` for detailed documentation.
 
     Args:
         obs (Union[.Operator, .MeasurementValue]): The observable that is to be measured

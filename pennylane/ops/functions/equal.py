@@ -56,38 +56,33 @@ def equal(
     rtol=1e-5,
     atol=1e-9,
 ) -> bool:
-    r"""Function for determining operator or measurement equality.
+    r"""Function for determining operator, measurement, and tape equality.
 
     .. Warning::
 
-        The ``qml.equal`` function is based on a comparison of the type and attributes
-        of the measurement or operator, not a mathematical representation. While
-        comparisons between some classes, such as ``Tensor`` and ``Hamiltonian``, are
-        supported, mathematically equivalent operators defined via different classes
-        may return False when compared via ``qml.equal``.
-
-        To be more thorough would require the matrix forms to be calculated, which may
-        drastically increase runtime.
+        The ``qml.equal`` function is based on a comparison of the types and attributes of the
+        measurements or operators, not their mathematical representations. While mathematical
+        comparisons between some classes, such as ``Tensor`` and ``Hamiltonian``,  are supported,
+        mathematically equivalent operators defined via different classes may return False when
+        compared via ``qml.equal``. To be more thorough would require the matrix forms to be
+        calculated, which may drastically increase runtime.
 
     .. Warning::
 
-        The kwargs ``check_interface`` and ``check_trainability`` can only be set when
-        comparing ``Operation`` objects. Comparisons of ``MeasurementProcess``
-        or ``Observable`` objects will use the default value of ``True`` for both, regardless
-        of what the user specifies when calling the function. For subclasses of ``SymbolicOp``
-        or ``CompositeOp`` with an ``Operation`` as a base, the kwargs will be applied to the base
-        comparison.
+        The interfaces and trainability of data within some observables including ``Tensor``,
+        ``Hamiltonian``, ``Prod``, ``Sum`` are sometimes ignored, regardless of what the user
+        specifies for ``check_interface`` and ``check_trainability``.
 
     Args:
         op1 (.Operator or .MeasurementProcess or .QuantumTape): First object to compare
         op2 (.Operator or .MeasurementProcess or .QuantumTape): Second object to compare
-        check_interface (bool, optional): Whether to compare interfaces. Default: ``True``. Not used for comparing ``MeasurementProcess``, ``Hamiltonian`` or ``Tensor`` objects.
-        check_trainability (bool, optional): Whether to compare trainability status. Default: ``True``. Not used for comparing ``MeasurementProcess``, ``Hamiltonian`` or ``Tensor`` objects.
-        rtol (float, optional): Relative tolerance for parameters. Not used for comparing ``MeasurementProcess``, ``Hamiltonian`` or ``Tensor`` objects.
-        atol (float, optional): Absolute tolerance for parameters. Not used for comparing ``MeasurementProcess``, ``Hamiltonian`` or ``Tensor`` objects.
+        check_interface (bool, optional): Whether to compare interfaces. Default: ``True``.
+        check_trainability (bool, optional): Whether to compare trainability status. Default: ``True``.
+        rtol (float, optional): Relative tolerance for parameters.
+        atol (float, optional): Absolute tolerance for parameters.
 
     Returns:
-        bool: ``True`` if the operators or measurement processes are equal, else ``False``
+        bool: ``True`` if the operators, measurement processes, or tapes are equal, else ``False``
 
     **Example**
 
@@ -131,13 +126,7 @@ def equal(
     .. details::
         :title: Usage Details
 
-        You can use the optional arguments to get more specific results. Additionally, they are
-        applied when comparing the base of ``SymbolicOp`` and ``CompositeOp`` operators such as
-        ``Controlled``, ``Pow``, ``SProd``, ``Prod``, etc., if the base is an ``Operation``. These arguments
-        are, however, not used for comparing ``MeasurementProcess``, ``Hamiltonian`` or ``Tensor``
-        objects.
-
-        Consider the following comparisons:
+        You can use the optional arguments to get more specific results:
 
         >>> op1 = qml.RX(torch.tensor(1.2), wires=0)
         >>> op2 = qml.RX(jax.numpy.array(1.2), wires=0)
@@ -160,6 +149,7 @@ def equal(
 
         >>> qml.equal(Controlled(op3, control_wires=1), Controlled(op4, control_wires=1), check_trainability=False)
         True
+
     """
 
     if isinstance(op2, (Hamiltonian, Tensor)):
@@ -186,59 +176,38 @@ def assert_equal(
     rtol=1e-5,
     atol=1e-9,
 ) -> None:
-    """Function to assert that two operators are equal with the requested configuration.
+    """Function to assert that two operators, measurements, or tapes are equal
 
     Args:
         op1 (.Operator or .MeasurementProcess or .QuantumTape): First object to compare
         op2 (.Operator or .MeasurementProcess or .QuantumTape): Second object to compare
         check_interface (bool, optional): Whether to compare interfaces. Default: ``True``.
-            Not used for comparing ``MeasurementProcess``, ``Hamiltonian`` or ``Tensor`` objects.
         check_trainability (bool, optional): Whether to compare trainability status. Default: ``True``.
-            Not used for comparing ``MeasurementProcess``, ``Hamiltonian`` or ``Tensor`` objects.
-        rtol (float, optional): Relative tolerance for parameters. Not used for comparing ``MeasurementProcess``, ``Hamiltonian`` or ``Tensor`` objects.
-        atol (float, optional): Absolute tolerance for parameters. Not used for comparing ``MeasurementProcess``, ``Hamiltonian`` or ``Tensor`` objects.
+        rtol (float, optional): Relative tolerance for parameters.
+        atol (float, optional): Absolute tolerance for parameters.
 
     Returns:
         None
 
     Raises:
-
         AssertionError: An ``AssertionError`` is raised if the two operators are not equal.
 
-    .. warning::
-
-        This function is still under developement.
-
-    .. see-also::
+    .. seealso::
 
         :func:`~.equal`
 
-    >>> mat1 = qml.IsingXX.compute_matrix(0.1)
-    >>> op1 = qml.BasisRotation(wires=(0,1), unitary_matrix = mat1)
-    >>> mat2 = qml.IsingXX.compute_matrix(0.2)
-    >>> op2 = qml.BasisRotation(wires=(0,1), unitary_matrix = mat2)
-    >>> assert_equal(op1, op2)
-    AssertionError: The hyperparameter unitary_matrix is not equal for op1 and op2.
-    Got [[0.99875026+0.j         0.        +0.j         0.        +0.j
-    0.        -0.04997917j]
-    [0.        +0.j         0.99875026+0.j         0.        -0.04997917j
-    0.        +0.j        ]
-    [0.        +0.j         0.        -0.04997917j 0.99875026+0.j
-    0.        +0.j        ]
-    [0.        -0.04997917j 0.        +0.j         0.        +0.j
-    0.99875026+0.j        ]]
-    and [[0.99500417+0.j         0.        +0.j         0.        +0.j
-    0.        -0.09983342j]
-    [0.        +0.j         0.99500417+0.j         0.        -0.09983342j
-    0.        +0.j        ]
-    [0.        +0.j         0.        -0.09983342j 0.99500417+0.j
-    0.        +0.j        ]
-    [0.        -0.09983342j 0.        +0.j         0.        +0.j
-    0.99500417+0.j        ]].
-    >>> mat3 = qml.numpy.array(0.3)
-    >>> op3 = qml.BasisRotation(wires=(0,1), unitary_matrix = mat3)
-    >>> assert_equal(op1, op3)
-    AssertionError: The hyperparameter unitary_matrix has different interfaces for op1 and op2. Got numpy and autograd.
+    **Example**
+
+    >>> op1 = qml.RX(np.array(0.12), wires=0)
+    >>> op2 = qml.RX(np.array(1.23), wires=0)
+    >>> qml.assert_equal(op1, op2)
+    AssertionError: op1 and op2 have different data.
+    Got (array(0.12),) and (array(1.23),)
+
+    >>> h1 = qml.Hamiltonian([1, 2], [qml.PauliX(0), qml.PauliY(1)])
+    >>> h2 = qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliY(1)])
+    >>> qml.assert_equal(h1, h2)
+    AssertionError: op1 and op2 have different operands because op1 and op2 have different scalars. Got 2 and 1
 
     """
 
@@ -612,31 +581,33 @@ def _equal_sprod(op1: SProd, op2: SProd, **kwargs):
 # pylint: disable=unused-argument
 def _equal_tensor(op1: Tensor, op2: Observable, **kwargs):
     """Determine whether a Tensor object is equal to a Hamiltonian/Tensor"""
+
     if not isinstance(op2, Observable):
         return f"{op2} is not of type Observable"
 
     if isinstance(op2, (Hamiltonian, LinearCombination, Hermitian)):
-        if not op2.compare(op1):
-            return f"'{op1}' and '{op2}' are not same"
+        return (
+            op2.compare(op1) or f"'{op1}' and '{op2}' are not the same for an unspecified reason."
+        )
 
     if isinstance(op2, Tensor):
-        if not op1._obs_data() == op2._obs_data():  # pylint: disable=protected-access
-            return "op1 and op2 have different _obs_data outputs"
+        return (
+            op1._obs_data() == op2._obs_data()  # pylint: disable=protected-access
+            or f"{op1} and {op2} have different _obs_data outputs"
+        )
 
-    return True
+    return f"{op1} is of type {type(op1)} and {op2} is of type {type(op2)}"
 
 
 @_equal_dispatch.register
 # pylint: disable=unused-argument
 def _equal_hamiltonian(op1: Hamiltonian, op2: Observable, **kwargs):
     """Determine whether a Hamiltonian object is equal to a Hamiltonian/Tensor objects"""
+
     if not isinstance(op2, Observable):
         return f"{op2} is not of type Observable"
 
-    if not op1.compare(op2):
-        return f"'{op1}' and '{op2}' are not same"
-
-    return True
+    return op1.compare(op2) or f"'{op1}' and '{op2}' are not the same for an unspecified reason"
 
 
 @_equal_dispatch.register
@@ -686,6 +657,9 @@ def _equal_measurements(
     if op1.mv is not None and op2.mv is not None:
         if isinstance(op1.mv, MeasurementValue) and isinstance(op2.mv, MeasurementValue):
             return qml.equal(op1.mv, op2.mv)
+
+        if qml.math.is_abstract(op1.mv) or qml.math.is_abstract(op2.mv):
+            return op1.mv is op2.mv
 
         if isinstance(op1.mv, Iterable) and isinstance(op2.mv, Iterable):
             if len(op1.mv) == len(op2.mv):

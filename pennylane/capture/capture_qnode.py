@@ -61,7 +61,7 @@ def _get_qnode_prim():
     qnode_prim.multiple_results = True
 
     @qnode_prim.def_impl
-    def _(*args, shots, device, qnode_kwargs, qfunc_jaxpr):
+    def _(*args, qnode, shots, device, qnode_kwargs, qfunc_jaxpr):
         def qfunc(*inner_args):
             return jax.core.eval_jaxpr(qfunc_jaxpr.jaxpr, qfunc_jaxpr.consts, *inner_args)
 
@@ -70,7 +70,7 @@ def _get_qnode_prim():
 
     # pylint: disable=unused-argument
     @qnode_prim.def_abstract_eval
-    def _(*args, shots, device, qnode_kwargs, qfunc_jaxpr):
+    def _(*args, qnode, shots, device, qnode_kwargs, qfunc_jaxpr):
         mps = qfunc_jaxpr.out_avals
         return _get_shapes_for(*mps, shots=shots, num_device_wires=len(device.wires))
 
@@ -94,7 +94,7 @@ def qnode_call(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
         args: the arguments the QNode is called with
 
     Keyword Args:
-        Any keyword arguments accepted by the quantum function
+        kwargs (Any): Any keyword arguments accepted by the quantum function
 
     Returns:
         qml.typing.Result: the result of a qnode execution
@@ -103,14 +103,16 @@ def qnode_call(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
 
     .. code-block:: python
 
+        qml.capture.enable()
+
         @qml.qnode(qml.device('lightning.qubit', wires=1))
         def circuit(x):
             qml.RX(x, wires=0)
             return qml.expval(qml.Z(0)), qml.probs()
 
         def f(x):
-            expval_z, probs = circuit(np.pi * x, shots=50)
-            return 2*expval_z + probs
+            expval_z, probs = circuit(np.pi * x, shots=50000)
+            return 2 * expval_z + probs
 
         jaxpr = jax.make_jaxpr(f)(0.1)
         print("jaxpr:")
@@ -128,22 +130,23 @@ def qnode_call(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
         { lambda ; a:f32[]. let
             b:f32[] = mul 3.141592653589793 a
             c:f32[] d:f32[2] = qnode[
-            device=<lightning.qubit device (wires=1) at 0x107639010>
-            qfunc_jaxpr={ lambda ; e:f32[]. let
-                _:AbstractOperator() = RX[n_wires=1] e 0
-                f:AbstractOperator() = PauliZ[n_wires=1] 0
-                g:AbstractMeasurement(n_wires=None) = expval_obs f
-                h:AbstractMeasurement(n_wires=0) = probs_wires
+              device=<lightning.qubit device (wires=1) at 0x10557a070>
+              qfunc_jaxpr={ lambda ; e:f32[]. let
+                  _:AbstractOperator() = RX[n_wires=1] e 0
+                  f:AbstractOperator() = PauliZ[n_wires=1] 0
+                  g:AbstractMeasurement(n_wires=None) = expval_obs f
+                  h:AbstractMeasurement(n_wires=0) = probs_wires
                 in (g, h) }
-            qnode_kwargs={'diff_method': 'best', 'grad_on_execution': 'best', 'cache': False, 'cachesize': 10000, 'max_diff': 1, 'max_expansion': 10, 'device_vjp': False}
-            shots=Shots(total=50)
+              qnode=<QNode: device='<lightning.qubit device (wires=1) at 0x10557a070>', interface='auto', diff_method='best'>
+              qnode_kwargs={'diff_method': 'best', 'grad_on_execution': 'best', 'cache': False, 'cachesize': 10000, 'max_diff': 1, 'max_expansion': 10, 'device_vjp': False, 'mcm_method': None, 'postselect_mode': None}
+              shots=Shots(total=50000)
             ] b
             i:f32[] = mul 2.0 c
             j:f32[2] = add i d
-        in (j,) }
+          in (j,) }
 
         result:
-        [Array([-1.3 , -0.74], dtype=float32)]
+        [Array([-0.96939224, -0.38207346], dtype=float32)]
 
 
     """
@@ -166,6 +169,12 @@ def qnode_call(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
     qnode_kwargs = {"diff_method": qnode.diff_method, **execute_kwargs, **mcm_config}
     qnode_prim = _get_qnode_prim()
 
-    return qnode_prim.bind(
-        *args, shots=shots, device=qnode.device, qnode_kwargs=qnode_kwargs, qfunc_jaxpr=qfunc_jaxpr
+    res = qnode_prim.bind(
+        *args,
+        shots=shots,
+        qnode=qnode,
+        device=qnode.device,
+        qnode_kwargs=qnode_kwargs,
+        qfunc_jaxpr=qfunc_jaxpr,
     )
+    return res[0] if len(res) == 1 else res

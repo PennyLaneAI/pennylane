@@ -14,8 +14,11 @@
 """
 An internal module for working with pytrees.
 """
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Any, Callable, List, Optional, Tuple
+from typing import Any, Optional
+
+import pennylane.queuing
 
 has_jax = True
 try:
@@ -26,7 +29,7 @@ except ImportError:
 Leaves = Any
 Metadata = Any
 
-FlattenFn = Callable[[Any], Tuple[Leaves, Metadata]]
+FlattenFn = Callable[[Any], tuple[Leaves, Metadata]]
 UnflattenFn = Callable[[Leaves, Metadata], Any]
 
 
@@ -73,10 +76,21 @@ unflatten_registrations: dict[type, UnflattenFn] = {
     dict: unflatten_dict,
 }
 
+type_to_typename: dict[type, str] = {
+    list: "builtins.list",
+    dict: "builtins.dict",
+    tuple: "builtins.tuple",
+}
+
+typename_to_type: dict[str, type] = {name: type_ for type_, name in type_to_typename.items()}
+
 
 def _register_pytree_with_pennylane(
-    pytree_type: type, flatten_fn: FlattenFn, unflatten_fn: UnflattenFn
+    pytree_type: type, typename: str, flatten_fn: FlattenFn, unflatten_fn: UnflattenFn
 ):
+    type_to_typename[pytree_type] = typename
+    typename_to_type[typename] = pytree_type
+
     flatten_registrations[pytree_type] = flatten_fn
     unflatten_registrations[pytree_type] = unflatten_fn
 
@@ -88,7 +102,9 @@ def _register_pytree_with_jax(pytree_type: type, flatten_fn: FlattenFn, unflatte
     jax_tree_util.register_pytree_node(pytree_type, flatten_fn, jax_unflatten)
 
 
-def register_pytree(pytree_type: type, flatten_fn: FlattenFn, unflatten_fn: UnflattenFn):
+def register_pytree(
+    pytree_type: type, flatten_fn: FlattenFn, unflatten_fn: UnflattenFn, *, namespace: str = "qml"
+):
     """Register a type with all available pytree backends.
 
     Current backends are jax and pennylane.
@@ -97,6 +113,7 @@ def register_pytree(pytree_type: type, flatten_fn: FlattenFn, unflatten_fn: Unfl
         pytree_type (type): the type to register, such as ``qml.RX``
         flatten_fn (Callable): a function that splits an object into trainable leaves and hashable metadata.
         unflatten_fn (Callable): a function that reconstructs an object from its leaves and metadata.
+        namespace (str): A prefix for the name under which this type will be registered.
 
     Returns:
         None
@@ -108,10 +125,55 @@ def register_pytree(pytree_type: type, flatten_fn: FlattenFn, unflatten_fn: Unfl
 
     """
 
-    _register_pytree_with_pennylane(pytree_type, flatten_fn, unflatten_fn)
+    typename = f"{namespace}.{pytree_type.__qualname__}"
+    _register_pytree_with_pennylane(pytree_type, typename, flatten_fn, unflatten_fn)
 
     if has_jax:
         _register_pytree_with_jax(pytree_type, flatten_fn, unflatten_fn)
+
+
+def is_pytree(type_: type[Any]) -> bool:
+    """Returns True if ``type_`` is a registered Pytree."""
+    return type_ in type_to_typename
+
+
+def get_typename(pytree_type: type[Any]) -> str:
+    """Return the typename under which ``pytree_type``
+    was registered.
+
+    Raises:
+        TypeError: If ``pytree_type`` is not a Pytree.
+
+    >>> get_typename(list)
+    'builtins.list'
+    >>> import pennylane
+    >>> get_typename(pennylane.PauliX)
+    'qml.PauliX'
+    """
+
+    try:
+        return type_to_typename[pytree_type]
+    except KeyError as exc:
+        raise TypeError(f"{repr(pytree_type)} is not a Pytree type") from exc
+
+
+def get_typename_type(typename: str) -> type[Any]:
+    """Return the Pytree type with given ``typename``.
+
+    Raises:
+        ValueError: If ``typename`` is not the name of a
+            pytree type.
+
+    >>> import pennylane
+    >>> get_typename_type("builtins.list")
+    <class 'list'>
+    >>> get_typename_type("qml.PauliX")
+    <class 'pennylane.ops.qubit.non_parametric_ops.PauliX'>
+    """
+    try:
+        return typename_to_type[typename]
+    except KeyError as exc:
+        raise ValueError(f"{repr(typename)} is not the name of a Pytree type.") from exc
 
 
 @dataclass(repr=False)
@@ -123,10 +185,10 @@ class PyTreeStructure:
     >>> structure
     PyTree(AdjointOperation, (), [PyTree(RX, (<Wires = [0]>, ()), [Leaf])])
 
-    A leaf is defined as just a ``PyTreeStructure`` with ``type=None``.
+    A leaf is defined as just a ``PyTreeStructure`` with ``type_=None``.
     """
 
-    type: Optional[type] = None
+    type_: Optional[type[Any]] = None
     """The type corresponding to the node. If ``None``, then the structure is a leaf."""
 
     metadata: Metadata = ()
@@ -138,24 +200,24 @@ class PyTreeStructure:
     @property
     def is_leaf(self) -> bool:
         """Whether or not the structure is a leaf."""
-        return self.type is None
+        return self.type_ is None
 
     def __repr__(self):
         if self.is_leaf:
             return "PyTreeStructure()"
-        return f"PyTreeStructure({self.type.__name__}, {self.metadata}, {self.children})"
+        return f"PyTreeStructure({self.type_.__name__}, {self.metadata}, {self.children})"
 
     def __str__(self):
         if self.is_leaf:
             return "Leaf"
         children_string = ", ".join(str(c) for c in self.children)
-        return f"PyTree({self.type.__name__}, {self.metadata}, [{children_string}])"
+        return f"PyTree({self.type_.__name__}, {self.metadata}, [{children_string}])"
 
 
 leaf = PyTreeStructure(None, (), [])
 
 
-def flatten(obj) -> tuple[list[Any], PyTreeStructure]:
+def flatten(obj: Any) -> tuple[list[Any], PyTreeStructure]:
     """Flattens a pytree into leaves and a structure.
 
     Args:
@@ -164,15 +226,17 @@ def flatten(obj) -> tuple[list[Any], PyTreeStructure]:
     Returns:
         List[Any], Union[Structure, Leaf]: a list of leaves and a structure representing the object
 
+    See also :func:`~.unflatten`.
+
+    **Example**
+
     >>> op = qml.adjoint(qml.Rot(1.2, 2.3, 3.4, wires=0))
     >>> data, structure = flatten(op)
     >>> data
     [1.2, 2.3, 3.4]
+
     >>> structure
     <PyTree(AdjointOperation, (), (<PyTree(Rot, (<Wires = [0]>, ()), (Leaf, Leaf, Leaf))>,))>
-
-    See also :function:`~.unflatten`.
-
     """
     flatten_fn = flatten_registrations.get(type(obj), None)
     if flatten_fn is None:
@@ -190,7 +254,7 @@ def flatten(obj) -> tuple[list[Any], PyTreeStructure]:
     return flattened_leaves, structure
 
 
-def unflatten(data: List[Any], structure: PyTreeStructure) -> Any:
+def unflatten(data: list[Any], structure: PyTreeStructure) -> Any:
     """Bind data to a structure to reconstruct a pytree object.
 
     Args:
@@ -200,7 +264,9 @@ def unflatten(data: List[Any], structure: PyTreeStructure) -> Any:
     Returns:
         A repacked pytree.
 
-    .. see-also:: :function:`~.flatten`
+    .. seealso:: :func:`~.flatten`
+
+    **Example**
 
     >>> op = qml.adjoint(qml.Rot(1.2, 2.3, 3.4, wires=0))
     >>> data, structure = flatten(op)
@@ -208,11 +274,12 @@ def unflatten(data: List[Any], structure: PyTreeStructure) -> Any:
     Adjoint(Rot(-2, -3, -4, wires=[0]))
 
     """
-    return _unflatten(iter(data), structure)
+    with pennylane.queuing.QueuingManager.stop_recording():
+        return _unflatten(iter(data), structure)
 
 
 def _unflatten(new_data, structure):
     if structure.is_leaf:
         return next(new_data)
     children = tuple(_unflatten(new_data, s) for s in structure.children)
-    return unflatten_registrations[structure.type](children, structure.metadata)
+    return unflatten_registrations[structure.type_](children, structure.metadata)

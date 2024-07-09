@@ -21,6 +21,14 @@ Pending deprecations
   - Deprecated in v0.37
   - Will be removed in v0.38
 
+* ``qml.from_qasm`` will no longer remove measurements from the QASM code. Calling ``qml.from_qasm``
+  on a circuit containing measurements without specifying ``measurements`` will raise a deprecation 
+  warning in v0.37, and in v0.38, the default behaviour will be changed to keeping measurements. Use 
+  ``measurements=[]`` to remove measurements from the original circuit.
+
+  - Deprecated in v0.37
+  - Default behaviour will be changed in v0.38
+
 New operator arithmetic deprecations
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
