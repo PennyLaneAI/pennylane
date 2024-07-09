@@ -211,6 +211,8 @@ class TestNoiseFunctions:
             (qml.RX(0, 1), qml.RY(1.0, 1), False),
             ("RX", qml.RX(0, 1), True),
             ([qml.RX, qml.RY], qml.RX, False),
+            (qml.measure(1, reset=True), qml.measure(2, reset=True), True),
+            (qml.measure(1, reset=True), qml.measure(1, reset=False), False),
             ([qml.RX, qml.RY], [qml.RX(1.0, 1), qml.RY(2.0, 2)], True),
             (["CZ", "RY"], [qml.CZ([0, 1]), qml.RY(1.0, [1])], True),
             (qml.Z(0) @ qml.Z(1), qml.Z("b") @ qml.Z("a"), True),
@@ -229,7 +231,7 @@ class TestNoiseFunctions:
 
         assert isinstance(func, qml.BooleanFn)
 
-        op_repr = [getattr(op, "__name__") for op in _get_ops(obj)]
+        op_repr = [getattr(op, "__name__", op) for op in _get_ops(obj)]
         assert str(func) == f"OpEq({op_repr if len(op_repr) > 1 else op_repr[0]})"
         assert func(op) == result
 
