@@ -237,7 +237,7 @@ def cond(condition, true_fn, false_fn=None, elifs=()):
 
         .. code-block:: python3
 
-            dev = qml.device("default.qubit", wires=2)
+            dev = qml.device("default.qubit")
 
             def qfunc(par, wires):
                 qml.Hadamard(wires[0])
@@ -255,6 +255,26 @@ def cond(condition, true_fn, false_fn=None, elifs=()):
             >>> par = np.array(0.3, requires_grad=True)
             >>> qnode(par)
             tensor(0.3522399, requires_grad=True)
+
+        **Postprocessing multiple measurements into a condition**
+
+        The Boolean condition for ``cond`` may consist of arithmetic expressions
+        of one or multiple mid-circuit measurements:
+
+        .. code-block:: python3
+
+            def cond_fn(mcms):
+                first_term = np.prod(mcms)
+                second_term = (2 ** np.arange(len(mcms))) @ mcms
+                return (1 - first_term) * (second_term > 3)
+
+            @qml.qnode(dev)
+            def qnode(x):
+                ...
+                mcms = [qml.measure(w) for w in range(4)]
+                qml.cond(cond_fn(mcms), qml.RX)(x, wires=4)
+                ...
+                return qml.expval(qml.Z(1))
 
         **Passing two quantum functions**
 

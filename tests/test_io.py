@@ -114,7 +114,6 @@ class TestLoad:
         [
             (qml.from_qiskit, "qiskit"),
             (qml.from_qiskit_op, "qiskit_op"),
-            (qml.from_qasm, "qasm"),
             (qml.from_pyquil, "pyquil_program"),
             (qml.from_quil, "quil"),
             (qml.from_quil_file, "quil_file"),
@@ -135,11 +134,38 @@ class TestLoad:
             if mock_plugin_converters[plugin_converter].called:
                 raise RuntimeError(f"The other plugin converter {plugin_converter} was called.")
 
+    def test_from_qasm(self, mock_plugin_converters):
+        """Tests that the correct entry point is called for from_qasm."""
+
+        qml.from_qasm("Test")
+        assert mock_plugin_converters["qasm"].called
+        assert mock_plugin_converters["qasm"].last_args == ("Test",)
+
+        for plugin_converter in mock_plugin_converters:
+            if mock_plugin_converters[plugin_converter].called and plugin_converter != "qasm":
+                raise RuntimeError(f"The other plugin converter {plugin_converter} was called.")
+
+    def test_from_qasm_deprecated(self, mock_plugin_converters):
+        """Tests that the current default behaviour of from_qasm is deprecated."""
+
+        with pytest.warns(qml.PennyLaneDeprecationWarning, match="The current default behaviour"):
+            qml.from_qasm("measure q[i] -> c[i];")
+
+        called_args, called_kwargs = mock_plugin_converters["qasm"].call_args
+        assert called_args == ("measure q[i] -> c[i];",)
+        assert called_kwargs == {"measurements": []}
+
     @pytest.mark.parametrize(
         "method, entry_point_name, args, kwargs",
         [
             (qml.from_qiskit, "qiskit", ("Circuit",), {"measurements": []}),
             (qml.from_qiskit_op, "qiskit_op", ("Op",), {"params": [1, 2], "wires": [3, 4]}),
+            (
+                qml.from_qasm,
+                "qasm",
+                ("Circuit",),
+                {"measurements": []},
+            ),
         ],
     )
     def test_convenience_function_arguments(

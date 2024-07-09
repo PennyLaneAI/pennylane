@@ -89,7 +89,10 @@ class TestControlledDecompositionZYZ:
 
     def test_invalid_num_controls(self):
         """Tests that an error is raised when an invalid number of control wires is passed"""
-        with pytest.raises(ValueError, match="The control_wires should be a single wire"):
+        with pytest.raises(
+            ValueError,
+            match="The control_wires should be a single wire, instead got: 2",
+        ):
             _ = ctrl_decomp_zyz(qml.X([1]), [0, 1])
 
     su2_ops = [

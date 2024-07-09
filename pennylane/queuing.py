@@ -569,7 +569,7 @@ def process_queue(
         The list of tape operations, the list of tape measurements
 
     Raises:
-        QueuingError: if the queue contains objects that cannot be processed into a QuantumScript
+        QueuingError: If the queue contains objects that cannot be processed into a QuantumScript
 
     """
     lists = {"_ops": [], "_measurements": []}

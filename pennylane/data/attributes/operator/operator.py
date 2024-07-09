@@ -52,7 +52,8 @@ class DatasetOperator(Generic[Op], DatasetAttribute[HDF5Group, Op, Op]):
 
     @classmethod
     @lru_cache(1)
-    def consumes_types(cls) -> FrozenSet[Type[Operator]]:
+    def supported_ops(cls) -> FrozenSet[Type[Operator]]:
+        """Set of supported operators."""
         return frozenset(
             (
                 # pennylane/operation/Tensor
@@ -214,7 +215,7 @@ class DatasetOperator(Generic[Op], DatasetAttribute[HDF5Group, Op, Op]):
             op_key = f"op_{i}"
             if isinstance(op, (qml.ops.Prod, qml.ops.SProd, qml.ops.Sum)):
                 op = op.simplify()
-            if type(op) not in self.consumes_types():
+            if type(op) not in self.supported_ops():
                 raise TypeError(
                     f"Serialization of operator type '{type(op).__name__}' is not supported."
                 )
@@ -254,6 +255,7 @@ class DatasetOperator(Generic[Op], DatasetAttribute[HDF5Group, Op, Op]):
         wires_bind = bind["op_wire_labels"]
         op_class_names = [] if names_bind.shape == (0,) else names_bind.asstr()
         op_wire_labels = [] if wires_bind.shape == (0,) else wires_bind.asstr()
+
         with qml.QueuingManager.stop_recording():
             for i, op_class_name in enumerate(op_class_names):
                 op_key = f"op_{i}"
@@ -293,4 +295,4 @@ class DatasetOperator(Generic[Op], DatasetAttribute[HDF5Group, Op, Op]):
     @lru_cache(1)
     def _supported_ops_dict(cls) -> Dict[str, Type[Operator]]:
         """Returns a dict mapping ``Operator`` subclass names to the class."""
-        return {op.__name__: op for op in cls.consumes_types()}
+        return {op.__name__: op for op in cls.supported_ops()}

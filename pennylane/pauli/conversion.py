@@ -252,6 +252,8 @@ def pauli_decompose(
     We can use this function to compute the Pauli operator decomposition of an arbitrary Hermitian
     matrix:
 
+    >>> import pennylane as qml
+    >>> import numpy as np
     >>> A = np.array(
     ... [[-2, -2+1j, -2, -2], [-2-1j,  0,  0, -1], [-2,  0, -2, -1], [-2, -1, -1,  0]])
     >>> H = qml.pauli_decompose(A)
