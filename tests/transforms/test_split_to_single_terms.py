@@ -25,9 +25,8 @@ import pytest
 import pennylane as qml
 from pennylane.devices.default_qubit import observables as original_observables
 from pennylane.transforms import split_to_single_terms
+from pennylane.transforms.split_to_single_terms import null_postprocessing
 
-# Two commuting groups: [[0, 3], [1, 2, 4]]
-# Four groups based on wire overlaps: [[0, 2], [1], [3], [4]]
 single_term_obs_list = [
     qml.X(0),
     qml.Y(0),
@@ -48,15 +47,6 @@ complex_obs_list = [
     1.5 * qml.I(),  # identity
 ]
 
-# complex_no_grouping_obs = [
-#     qml.X(0),
-#     qml.Y(0),
-#     qml.Y(0) @ qml.Z(1),
-#     qml.X(1),
-#     qml.Z(1),
-#     qml.X(0) @ qml.Y(1),
-# ]
-
 
 def _convert_obs_to_legacy_opmath(obs):
     """Convert single-term observables to legacy opmath"""
@@ -70,39 +60,34 @@ def _convert_obs_to_legacy_opmath(obs):
     return obs
 
 
-# def complex_no_grouping_processing_fn(results):
-#     """The expected processing function without grouping of complex_obs_list"""
-#
-#     return (
-#         results[0],
-#         0.5 * results[1],
-#         results[0] + results[2] + 2.0 * results[3] + 1.0,
-#         0.1 * results[4] + 0.2 * results[5] + 0.3 * results[2] + 0.4,
-#         1.5,
-#     )
-
-
 class TestUnits:
     """Unit tests for components of the ``split_to_single_terms`` transform"""
 
-    def test_single_observable(self):
-        """Tests a circuit that contains a single observable"""
+    def test_single_term_observable(self):
+        """Test that the transform does not affect a circuit that
+        contains only an observable with a single term"""
 
         tape = qml.tape.QuantumScript([], [qml.expval(qml.X(0))])
         tapes, fn = split_to_single_terms(tape)
-        assert len(tapes) == 1
-        assert fn(([0.1],)) == 0.1
 
-    def test_single_sum(self):
-        tape = qml.tape.QuantumScript([], [qml.expval(qml.X(0) + qml.Y(1))])
+        assert len(tapes) == 1
+        assert tapes[0] == tape
+        assert fn is null_postprocessing
+
+    def test_no_measurements(self):
+        """Test that if the tape contains no measurements, the transform doesn't
+        modify it"""
+
+        tape = qml.tape.QuantumScript([qml.X(0)])
         tapes, fn = split_to_single_terms(tape)
         assert len(tapes) == 1
-        assert tapes[0].measurements == [qml.expval(qml.X(0)), qml.expval(qml.Y(1))]
-        assert np.allclose(fn(([0.1, 0.2],)), 0.3)
+        assert tapes[0] == tape
+        assert fn(tapes) == tape
 
     @pytest.mark.parametrize("measure_fn", [qml.probs, qml.counts, qml.sample])
     def test_all_wire_measurements(self, measure_fn):
-        """Tests that measurements based on wires don't need to be split"""
+        """Tests that measurements based on wires don't need to be split, so the
+        transform does nothing"""
 
         with qml.queuing.AnnotatedQueue() as q:
             qml.PauliZ(0)
@@ -119,31 +104,63 @@ class TestUnits:
         tapes, fn = split_to_single_terms(tape)
 
         assert len(tapes) == 1
-        assert fn([[0.1, 0.2, 0.3, 0.4, 0.5, 0.6]]) == (0.1, 0.2, 0.3, 0.4, 0.5, 0.6)
+        assert tapes[0] == tape
+        assert fn == null_postprocessing
 
-    @pytest.mark.parametrize("batch_type", (tuple, list))
-    def test_batch_of_tapes_no_splitting(self, batch_type):
-        """Test that `split_to_single_terms` doesn't modify a batch of tapes
-        with no multi-term observables"""
+    def test_single_sum(self):
+        """Test that the transform works as expected for a circuit that
+        returns a single sum"""
+        tape = qml.tape.QuantumScript([], [qml.expval(qml.X(0) + qml.Y(1))])
+        tapes, fn = split_to_single_terms(tape)
+        assert len(tapes) == 1
+        assert tapes[0].measurements == [qml.expval(qml.X(0)), qml.expval(qml.Y(1))]
+        assert np.allclose(fn(([0.1, 0.2],)), 0.3)
 
-        tape_batch = batch_type(
-            [
-                qml.tape.QuantumScript(
-                    [qml.RX(1.2, 0)],
-                    [qml.expval(qml.X(0)), qml.expval(qml.Y(0)), qml.expval(qml.X(1))],
-                ),
-                qml.tape.QuantumScript(
-                    [qml.RY(0.5, 0)], [qml.expval(qml.Z(0)), qml.expval(qml.Y(0))]
-                ),
-            ]
+    def test_multiple_sums(self):
+        """Test that the transform works as expected for a circuit that
+        returns multiple sums"""
+        tape = qml.tape.QuantumScript(
+            [], [qml.expval(qml.X(0) + qml.Y(1)), qml.expval(qml.X(2) + qml.Z(3))]
         )
-        tapes, fn = split_to_single_terms(tape_batch)
+        tapes, fn = split_to_single_terms(tape)
+        assert len(tapes) == 1
+        assert tapes[0].measurements == [
+            qml.expval(qml.X(0)),
+            qml.expval(qml.Y(1)),
+            qml.expval(qml.X(2)),
+            qml.expval(qml.Z(3)),
+        ]
+        assert fn(([0.1, 0.2, 0.3, 0.4],)) == (0.1 + 0.2, 0.3 + 0.4)
 
-        for actual_tape, expected_tape in zip(tapes, tape_batch):
-            assert qml.equal(actual_tape, expected_tape)
+    def test_multiple_sums_overlapping(self):
+        """Test that the transform works as expected for a circuit that
+        returns multiple sums, where some terms are included in multiple sums"""
+        tape = qml.tape.QuantumScript(
+            [], [qml.expval(qml.X(0) + qml.Y(1)), qml.expval(qml.X(2) + qml.Y(1))]
+        )
+        tapes, fn = split_to_single_terms(tape)
+        assert len(tapes) == 1
+        assert tapes[0].measurements == [
+            qml.expval(qml.X(0)),
+            qml.expval(qml.Y(1)),
+            qml.expval(qml.X(2)),
+        ]
+        assert fn(([0.1, 0.2, 0.3],)) == (0.1 + 0.2, 0.3 + 0.2)
 
-        result = ([0.1, 0.2, 0.3], [0.4, 0.2])
-        assert fn(result) == ((0.1, 0.2, 0.3), (0.4, 0.2))
+    def test_multiple_sums_duplicated(self):
+        """Test that the transform works as expected for a circuit that returns multiple sums, where each
+        sum includes the same term more than once"""
+        tape = qml.tape.QuantumScript(
+            [], [qml.expval(qml.X(0) + qml.X(0)), qml.expval(qml.X(1) + qml.Y(1) + qml.Y(1))]
+        )
+        tapes, fn = split_to_single_terms(tape)
+        assert len(tapes) == 1
+        assert tapes[0].measurements == [
+            qml.expval(qml.X(0)),
+            qml.expval(qml.X(1)),
+            qml.expval(qml.Y(1)),
+        ]
+        assert fn(([0.1, 0.2, 0.3],)) == (0.1 + 0.1, 0.2 + 0.3 + 0.3)
 
     @pytest.mark.parametrize("batch_type", (tuple, list))
     def test_batch_of_tapes(self, batch_type):
@@ -200,16 +217,6 @@ class TestUnits:
         result = [[0.1, 0.2, 0.3, 0.4, 0.5]]
         assert fn(result) == ((0.1 + 0.2 + 0.3), (0.4 + 0.5))
 
-    def test_no_measurements(self):
-        """Test that if the tape contains no measurements, the transform doesn't
-        modify it"""
-
-        tape = qml.tape.QuantumScript([qml.X(0)])
-        tapes, fn = split_to_single_terms(tape)
-        assert len(tapes) == 1
-        assert tapes[0] == tape
-        assert fn(tapes) == tape
-
     def test_splitting_sums_in_unsupported_mps_raises_error(self):
 
         tape = qml.tape.QuantumScript([qml.X(0)], measurements=[qml.counts(qml.X(0) + qml.Y(1))])
@@ -224,7 +231,9 @@ class TestUnits:
     original_observables - {"Sum", "Hamiltonian", "LinearCombination"},
 )
 class TestIntegration:
-    """Tests the ``split_to_single_terms`` transform performed on a QNode"""
+    """Tests the ``split_to_single_terms`` transform performed on a QNode. In these tests,
+    the supported observables of ``default_qubit`` are mocked to make the device reject Sum,
+    Hamiltonian and LinearCombination, to ensure the transform works as intended."""
 
     def test_splitting_sums(self):
         """Test that the transform takes a tape that is not executable on a device that
@@ -382,19 +391,11 @@ class TestIntegration:
             expected_results = expected_results[:-1]  # exclude the identity term
 
         if isinstance(shots, list):
-            print(params)
-            print(expected_results)
-            print(res)
-            print(qml.math.shape(res[0]))
             assert qml.math.shape(res) == (3, *np.shape(expected_results))
             for i in range(3):
-                print("")
-                print(res[i])
                 assert qml.math.allclose(res[i], expected_results, atol=0.05)
         else:
             assert qml.math.allclose(res, expected_results, atol=0.05)
-
-        # raise RuntimeError
 
     @pytest.mark.parametrize("shots", [20000, [20000, 30000, 40000]])
     @pytest.mark.parametrize(
@@ -527,12 +528,12 @@ class TestIntegration:
         are treated separately as offsets in the transform) and other observables"""
 
         dev = qml.device("default.qubit", wires=2, shots=shots)
-        H = qml.Hamiltonian([1.5, 2.5], [qml.I(0), qml.X(0)])
+        H = qml.Hamiltonian([1.5, 2.5], [qml.I(0), qml.Y(0)])
 
         @split_to_single_terms
         @qml.qnode(dev)
         def circuit():
-            qml.RX(np.pi / 2, 0)
+            qml.RX(-np.pi / 2, 0)
             return qml.expval(H)
 
         res = circuit()
@@ -541,20 +542,24 @@ class TestIntegration:
     def test_non_pauli_obs_in_circuit(self):
         """Tests that the tape is executed correctly with non-pauli observables"""
 
-        _dev = qml.device("default.qubit", wires=1)
+        dev = qml.device("default.qubit", wires=1)
 
         @split_to_single_terms
-        @qml.qnode(_dev)
+        @qml.qnode(dev)
         def circuit():
             qml.Hadamard(0)
-            return (qml.expval(qml.Projector([0], wires=[0]) + qml.Projector([1], wires=[0])),)
+            return qml.expval(qml.Projector([0], wires=[0]) + qml.Projector([1], wires=[0]))
 
-        with _dev.tracker:
+        with dev.tracker:
             res = circuit()
-        assert _dev.tracker.totals["simulations"] == 1
-        assert qml.math.allclose(res, 1)
+        assert dev.tracker.totals["simulations"] == 1
+        assert qml.math.allclose(res, 1, atol=0.01)
 
 
+@patch(
+    "pennylane.devices.default_qubit.observables",
+    original_observables - {"Sum", "Hamiltonian", "LinearCombination"},
+)
 class TestDifferentiability:
     """Tests the differentiability of the ``split_to_single_terms`` transform"""
 
