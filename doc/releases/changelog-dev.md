@@ -26,6 +26,8 @@
 
 <h3>Documentation 📝</h3>
 
+* Improves the docstring for `QuantumScript.expand` and `qml.tape.tape.expand_tape`.
+
 <h3>Bug fixes 🐛</h3>
 
 <h3>Contributors ✍️</h3>
