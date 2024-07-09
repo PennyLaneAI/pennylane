@@ -141,8 +141,6 @@ def breakpoint():
 
     .. seealso:: :doc:`/code/qml_debugging`
 
-    .. seealso:: :doc:`/code/qml_debugging`
-
     **Example**
 
     Consider the following python script containing the quantum circuit with breakpoints.
