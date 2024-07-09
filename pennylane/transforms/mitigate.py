@@ -15,6 +15,9 @@
 from copy import copy
 from typing import Any, Callable, Dict, Optional, Sequence
 
+import jax.numpy as jnp
+import jax.scipy.optimize as jopt
+
 import pennylane as qml
 from pennylane import adjoint, apply
 from pennylane.math import mean, round, shape
@@ -316,6 +319,41 @@ def richardson_extrapolate(x, y):
 
     """
     return poly_extrapolate(x, y, len(x) - 1)
+
+
+def exponential_extrapolate(x, y, asymptote=None):
+    r"""Exponential fitting
+
+    Args:
+        x (Array): Data in x
+        y (Array): Data in y = f(x)
+        asymptote (float): Infinite noise limit.
+
+    Returns:
+        float: Extrapolated value at f(0).
+
+    **Example:**
+
+    >>> x = np.linspace(1, 10, 5)
+    >>> y = np.exp(-x) + np.random.normal(scale=0.2, size=len(x))
+    >>> qml.transforms.exponential_extrapolate(x, y)
+    Array(8.001553, dtype=float32)
+    """
+
+    def exponential(x, a, b, c) -> float:
+        return a * jnp.exp(-b * x) + c
+
+    def objective(params: tuple[float, float, float]) -> float:
+        a, b, c = params
+        return jnp.sum((y - exponential(x, *params)) ** 2)
+
+    if asymptote is None:
+        asymptote = 0.0
+
+    initial_guess = jnp.array([1, 1, asymptote])
+    result = jopt.minimize(objective, initial_guess, method="BFGS")
+
+    return exponential(0, *result.x)
 
 
 # pylint: disable=too-many-arguments, protected-access

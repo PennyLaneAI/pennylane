@@ -93,6 +93,7 @@ Transforms for error mitigation
     ~transforms.fold_global
     ~transforms.poly_extrapolate
     ~transforms.richardson_extrapolate
+    ~transforms.exponential_extrapolate
 
 Other transforms
 ~~~~~~~~~~~~~~~~
@@ -295,7 +296,13 @@ from .hamiltonian_expand import hamiltonian_expand, sum_expand
 from .split_non_commuting import split_non_commuting
 from .insert_ops import insert
 
-from .mitigate import mitigate_with_zne, fold_global, poly_extrapolate, richardson_extrapolate
+from .mitigate import (
+    mitigate_with_zne,
+    fold_global,
+    poly_extrapolate,
+    richardson_extrapolate,
+    exponential_extrapolate,
+)
 from .optimization import (
     cancel_inverses,
     commute_controlled,
