@@ -77,7 +77,7 @@ def expval(
 class ExpectationMP(SampleMeasurement, StateMeasurement):
     """Measurement process that computes the expectation value of the supplied observable.
 
-    Please refer to :func:`expval` for detailed documentation.
+    Please refer to :func:`pennylane.expval` for detailed documentation.
 
     Args:
         obs (Union[.Operator, .MeasurementValue]): The observable that is to be measured

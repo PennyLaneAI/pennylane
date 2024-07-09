@@ -60,7 +60,7 @@ def dynamic_one_shot(
     """Transform a QNode to into several one-shot tapes to support dynamic circuit execution.
 
     Args:
-        tape (QNode or QuantumTape or Callable): a quantum circuit to add a batch dimension to
+        tape (QNode or QuantumTape or Callable): a quantum circuit to add a batch dimension to.
 
     Returns:
         qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]:
@@ -209,16 +209,10 @@ def init_auxiliary_tape(circuit: qml.tape.QuantumScript):
             else:
                 new_measurements.append(m)
     for op in circuit.operations:
-        if isinstance(op, MidMeasureMP):
-            new_measurements.append(
-                qml.sample(
-                    op=(
-                        op.mcm_tracer
-                        if op.name == "MidCircuitMeasure"
-                        else MeasurementValue([op], processing_fn=lambda v: v)
-                    )
-                )
-            )
+        if "MidCircuitMeasure" in str(type(op)):  # pragma: no cover
+            new_measurements.append(qml.sample(op.out_classical_tracers[0]))
+        elif isinstance(op, MidMeasureMP):
+            new_measurements.append(qml.sample(MeasurementValue([op], lambda res: res)))
     return qml.tape.QuantumScript(
         circuit.operations,
         new_measurements,
@@ -237,12 +231,12 @@ def parse_native_mid_circuit_measurements(
     """Combines, gathers and normalizes the results of native mid-circuit measurement runs.
 
     Args:
-        circuit (QuantumTape): The original ``QuantumScript``
-        aux_tapes (List[QuantumTape]): List of auxiliary ``QuantumScript`` objects
-        results (TensorLike): Array of measurement results
+        circuit (QuantumTape): The original ``QuantumScript``.
+        aux_tapes (List[QuantumTape]): List of auxiliary ``QuantumScript`` objects.
+        results (TensorLike): Array of measurement results.
 
     Returns:
-        tuple(TensorLike): The results of the simulation
+        tuple(TensorLike): The results of the simulation.
     """
 
     def measurement_with_no_shots(measurement):
@@ -341,7 +335,7 @@ def gather_mcm_qjit(measurement, samples, is_valid, interface=None):  # pragma: 
     """
     found, meas = False, None
     for k, meas in samples.items():
-        if measurement.mv is k.mcm_tracer:
+        if measurement.mv is k.out_classical_tracers[0]:
             found = True
             break
     if not found:
