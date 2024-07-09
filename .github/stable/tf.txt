@@ -29,7 +29,7 @@ gast==0.6.0
 google-pasta==0.2.0
 grpcio==1.64.1
 h5py==3.11.0
-identify==2.5.36
+identify==2.6.0
 idna==3.7
 importlib_metadata==8.0.0
 importlib_resources==6.4.0
@@ -52,11 +52,11 @@ networkx==3.2.1
 nodeenv==1.9.1
 numpy==1.26.4
 opt-einsum==3.3.0
-optree==0.12.0
+optree==0.12.1
 osqp==0.6.7.post0
 packaging==24.1
 pathspec==0.12.1
-PennyLane_Lightning==0.37.0
+PennyLane_Lightning==0.38.0
 pillow==10.4.0
 platformdirs==4.2.2
 pluggy==1.5.0
@@ -81,7 +81,7 @@ requests==2.32.3
 rich==13.7.1
 rustworkx==0.15.1
 scipy==1.11.4
-scs==3.2.5
+scs==3.2.6
 semantic-version==2.10.0
 six==1.16.0
 tensorboard==2.16.2
