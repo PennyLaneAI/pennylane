@@ -25,6 +25,10 @@
 
 <h3>Breaking changes 💔</h3>
 
+* ``qml.from_qasm`` no longer removes measurements from the QASM code. Use 
+  ``measurements=[]`` to remove measurements from the original circuit.
+  [(#5982)](https://github.com/PennyLaneAI/pennylane/pull/5982)
+
 <h3>Deprecations 👋</h3>
 
 <h3>Documentation 📝</h3>
@@ -35,6 +39,7 @@
 
 This release contains contributions from (in alphabetical order):
 Yushao Chen,
+Emiliano Godinez,
 Christina Lee,
 William Maxwell,
 Vincent Michaud-Rioux,
