@@ -123,7 +123,7 @@ def get_readout_errors(readout_relaxation_probs, readout_misclassification_probs
             in readout.
 
     Returns:
-        readout_errors (List[Callable]): List of readout error functions that should be
+        readout_errors (List[Callable]): List of readout error channels that should be
         applied to each measured wire.
     """
     measure_funcs = []
@@ -231,18 +231,19 @@ class DefaultQutritMixed(Device):
 
         .. note::
             Relaxation error, defined by `readout_relaxation_probs` and implemented with
-            class:`~.QutritAmplitudeDamping`, is applied to every measured wire. After that
+            :class:`~.QutritAmplitudeDamping`, is applied to every measured wire. After that,
             misclassification error, defined by `readout_misclassification_probs` and implemented
-            with :class:` `~qml.TritFlip`, is then applied to each measured wire.
+            with :class:`~.TritFlip`, is then applied to each measured wire.
 
         .. note::
             The readout errors will be applied to the state after it has been diagonalized for each
             measurement. This may give different results depending on how the observable is defined.
-            This is because diagonalizing gates for the same observable may return d.fferent orders
-            for their eigenvalues. For example, measuring :class:`~.THermitian` with a non-diagonal
+            This is because diagonalizing gates for the same observable may return eigenvalues in
+            different orders. For example, measuring :class:`~.THermitian` with a non-diagonal
             GellMann matrix will result in a different measurement result then measuring the
-            equivalent :class:`~.GellMann` observable as the THermitian eigenvalues are ordered by
-            value while non-diagonal GellMann's will be [1, -1, 0].
+            equivalent :class:`~.GellMann` observable, as the THermitian eigenvalues are returned
+            in increasing order when explicitly diagonalized (i.e., [-1, 0, 1]), while non-diagonal GellManns provided
+            in PennyLane have their eigenvalues hardcoded (i.e., [1, -1, 0]).
 
     .. details::
         :title: Tracking
