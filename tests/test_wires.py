@@ -377,3 +377,132 @@ class TestWires:
         wires2 = tree_unflatten(tree, wires_flat)
         assert isinstance(wires2, Wires), f"{wires2} is not Wires"
         assert wires == wires2, f"{wires} != {wires2}"
+
+    @pytest.mark.parametrize(
+        "wire_a, wire_b, expected",
+        [
+            (Wires([0, 1]), Wires([2, 3]), Wires([0, 1, 2, 3])),
+            (Wires([]), Wires([1, 2, 3]), Wires([1, 2, 3])),
+            (Wires([1, 2]), Wires([1, 2, 3]), Wires([1, 2, 3])),
+        ],
+    )
+    def test_union(self, wire_a, wire_b, expected):
+        """
+        Test the union operation (|) between two Wires objects.
+        """
+        assert wire_a | wire_b == expected
+
+    @pytest.mark.parametrize(
+        "wire_a, wire_b, expected",
+        [
+            (Wires([0, 1, 2]), Wires([2, 3, 4]), Wires([2])),
+            (Wires([1, 2, 3]), Wires([]), Wires([])),
+            (Wires([1, 2, 3]), Wires([1, 2, 3, 4]), Wires([1, 2, 3])),
+        ],
+    )
+    def test_intersection(self, wire_a, wire_b, expected):
+        """
+        Test the intersection operation (&) between two Wires objects.
+        """
+        assert wire_a & wire_b == expected
+
+    @pytest.mark.parametrize(
+        "wire_a, wire_b, expected",
+        [
+            (Wires([0, 1, 2, 3]), Wires([2, 3, 4]), Wires([0, 1])),
+            (Wires([1, 2, 3]), Wires([]), Wires([1, 2, 3])),
+            (Wires([1, 2, 3]), Wires([1, 2, 3, 4]), Wires([])),
+        ],
+    )
+    def test_difference(self, wire_a, wire_b, expected):
+        """
+        Test the difference operation (-) between two Wires objects.
+        """
+        assert wire_a - wire_b == expected
+
+    @pytest.mark.parametrize(
+        "wire_a, wire_b, expected",
+        [
+            (Wires([0, 1, 2]), Wires([2, 3, 4]), Wires([0, 1, 3, 4])),
+            (Wires([]), Wires([1, 2, 3]), Wires([1, 2, 3])),
+            (Wires([1, 2, 3]), Wires([1, 2, 3]), Wires([])),
+        ],
+    )
+    def test_symmetric_difference(self, wire_a, wire_b, expected):
+        """
+        Test the symmetric difference operation (^) between two Wires objects.
+        """
+        assert wire_a ^ wire_b == expected
+
+    @pytest.mark.parametrize(
+        "wire_a, wire_b, wire_c, wire_d, expected",
+        [
+            (
+                Wires([0, 1]),
+                Wires([2, 3]),
+                Wires([4, 5]),
+                Wires([6, 7]),
+                Wires([0, 1, 2, 3, 4, 5, 6, 7]),
+            ),
+            (Wires([0, 1]), Wires([1, 2]), Wires([2, 3]), Wires([3, 4]), Wires([0, 1, 2, 3, 4])),
+            (Wires([]), Wires([1, 2]), Wires([2, 3]), Wires([3, 4, 5]), Wires([1, 2, 3, 4, 5])),
+        ],
+    )
+    def test_multiple_union(self, wire_a, wire_b, wire_c, wire_d, expected):
+        """
+        Test the union operation (|) with multiple Wires objects.
+        """
+        result = wire_a | wire_b | wire_c | wire_d
+        assert result == expected
+
+    def test_complex_operation(self):
+        """
+        Test a complex operation involving multiple set operations.
+        This test combines union, intersection, difference, and symmetric difference operations.
+        """
+        wire_a = Wires([0, 1, 2, 3])
+        wire_b = Wires([2, 3, 4, 5])
+        wire_c = Wires([4, 5, 6, 7])
+        wire_d = Wires([6, 7, 8, 9])
+
+        # ((A ∪ B) ∩ (C ∪ D)) ^ ((A - D) ∪ (C - B))
+        result = ((wire_a | wire_b) & (wire_c | wire_d)) ^ ((wire_a - wire_d) | (wire_c - wire_b))
+        assert (wire_a | wire_b) & (wire_c | wire_d) == Wires([4, 5])
+        assert (wire_a - wire_d) | (wire_c - wire_b) == Wires([0, 1, 2, 3, 6, 7])
+
+        expected = Wires([0, 1, 2, 3, 4, 5, 6, 7])
+        assert result == expected
+
+    @pytest.mark.parametrize(
+        "operation, error_message",
+        [
+            (lambda a, b: a | b, "Can only do the union of Wires with Wires"),
+            (lambda a, b: a & b, "Can only do the intersection of Wires with Wires"),
+            (lambda a, b: a - b, "Can only do the difference of Wires with other Wires"),
+            (lambda a, b: a ^ b, "Can only the symmetric difference of Wires with other Wires"),
+        ],
+    )
+    def test_type_error_raised(self, operation, error_message):
+        """
+        Test that TypeError is raised with the correct error message when performing
+        set operations between a Wires object and an incompatible type.
+
+        This test covers union (|), intersection (&), difference (-),
+        and symmetric difference (^) operations.
+        """
+        wire = Wires([1, 2, 3])
+        invalid_operands = [
+            42,
+            "string",
+            [1, 2, 3],
+            {1, 2, 3},
+            (1, 2, 3),
+        ]
+
+        for invalid_operand in invalid_operands:
+            with pytest.raises(TypeError) as excinfo:
+                operation(wire, invalid_operand)
+            assert str(excinfo.value) == error_message
+
+            with pytest.raises(TypeError, match="unsupported operand") as excinfo:
+                operation(invalid_operand, wire)

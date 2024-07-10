@@ -493,6 +493,30 @@ class Wires(Sequence):
 
         return Wires(tuple(unique), _override=True)
 
+    def __or__(self, other):
+        """The union operation (|)"""
+        if not isinstance(other, Wires):
+            raise TypeError("Can only do the union of Wires with Wires")
+        return Wires(set(self._labels) | set(other._labels))
+
+    def __and__(self, other):
+        """The intersection operation (&)"""
+        if not isinstance(other, Wires):
+            raise TypeError("Can only do the intersection of Wires with Wires")
+        return Wires(set(self._labels) & set(other._labels))
+
+    def __sub__(self, other):
+        """The difference operation (-)"""
+        if not isinstance(other, Wires):
+            raise TypeError("Can only do the difference of Wires with other Wires")
+        return Wires(set(self._labels) - set(other._labels))
+
+    def __xor__(self, other):
+        """The symmetric difference operation (^)"""
+        if not isinstance(other, Wires):
+            raise TypeError("Can only the symmetric difference of Wires with other Wires")
+        return Wires(set(self._labels) ^ set(other._labels))
+
 
 # Register Wires as a PyTree-serializable class
 register_pytree(Wires, Wires._flatten, Wires._unflatten)  # pylint: disable=protected-access
