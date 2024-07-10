@@ -616,8 +616,7 @@ class TestRelativeEntropy:
             match=DEP_WARNING_MESSAGE_RELATIVE_ENTROPY,
         ):
             rel_ent_circuit = qml.qinfo.relative_entropy(circuit1, circuit2, [0], [1])
-
-        actual = jax.jit(rel_ent_circuit)((param[0],), (param[1],))
+            actual = jax.jit(rel_ent_circuit)((param[0],), (param[1],))
 
         # compare transform results with analytic results
         first_term = (
