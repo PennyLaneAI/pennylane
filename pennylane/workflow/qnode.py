@@ -526,9 +526,10 @@ class QNode:
         self.diff_method = diff_method
         self.expansion_strategy = expansion_strategy
         self.max_expansion = max_expansion
+        self.mcm_config = qml.devices.MCMConfig(
+            mcm_method=mcm_method, postselect_mode=postselect_mode
+        )
         cache = (max_diff > 1) if cache == "auto" else cache
-
-        mcm_config = qml.devices.MCMConfig(mcm_method=mcm_method, postselect_mode=postselect_mode)
 
         # execution keyword arguments
         self.execute_kwargs = {
@@ -538,7 +539,6 @@ class QNode:
             "max_diff": max_diff,
             "max_expansion": max_expansion,
             "device_vjp": device_vjp,
-            "mcm_config": mcm_config,
         }
 
         if self.expansion_strategy == "device":
@@ -1043,7 +1043,7 @@ class QNode:
         )
         self._tape_cached = using_custom_cache and self.tape.hash in cache
 
-        mcm_config = copy.copy(self.execute_kwargs["mcm_config"])
+        mcm_config = copy.copy(self.mcm_config)
         finite_shots = _get_device_shots if override_shots is False else override_shots
         if not finite_shots:
             mcm_config.postselect_mode = None
@@ -1074,7 +1074,6 @@ class QNode:
             and self.device.capabilities().get("supports_mid_measure", False)
         )
         if has_mcm_support:
-            mcm_config.interface = qml.math.get_deep_interface(self.tape.data)
             inner_transform_program.add_transform(
                 qml.devices.preprocess.mid_circuit_measurements,
                 device=self.device,
@@ -1109,6 +1108,7 @@ class QNode:
             config=config,
             gradient_kwargs=self.gradient_kwargs,
             override_shots=override_shots,
+            mcm_config=mcm_config,
             **self.execute_kwargs,
         )
         res = res[0]

@@ -585,7 +585,7 @@ def execute(
     )
 
     # Mid-circuit measurement configuration validation
-    mcm_interface = _get_interface_name(tapes, "auto") if interface is None else interface
+    mcm_interface = interface or _get_interface_name(tapes, "auto")
     if mcm_interface == "jax-jit" and config.mcm_config.mcm_method == "deferred":
         # This is a current limitation of defer_measurements. "hw-like" behaviour is
         # not yet accessible.
