@@ -17,13 +17,11 @@
 # pylint: disable=import-outside-toplevel,unnecessary-lambda
 
 from functools import partial
-from unittest.mock import patch
 
 import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.devices.default_qubit import observables as original_observables
 from pennylane.transforms import split_to_single_terms
 from pennylane.transforms.split_to_single_terms import null_postprocessing
 
@@ -58,6 +56,20 @@ def _convert_obs_to_legacy_opmath(obs):
         return [_convert_obs_to_legacy_opmath(o) for o in obs]
 
     return obs
+
+
+@qml.devices.modifiers.single_tape_support
+class NoTermsDevice(qml.devices.DefaultQubit):
+    """A device that builds on default.qubit, but won't accept Hamiltonian, LinearCombination and Sum"""
+
+    def execute(self, circuits, execution_config=qml.devices.DefaultExecutionConfig):
+        for t in circuits:
+            for mp in t.measurements:
+                if mp.obs and isinstance(mp.obs, (qml.ops.Hamiltonian, qml.ops.Sum)):
+                    raise ValueError(
+                        "no terms device does not accept observables with multiple terms"
+                    )
+        return super().execute(circuits, execution_config)
 
 
 class TestUnits:
@@ -234,10 +246,6 @@ class TestUnits:
             _, _ = split_to_single_terms(tape)
 
 
-@patch(
-    "pennylane.devices.default_qubit.observables",
-    original_observables - {"Sum", "Hamiltonian", "LinearCombination"},
-)
 class TestIntegration:
     """Tests the ``split_to_single_terms`` transform performed on a QNode. In these tests,
     the supported observables of ``default_qubit`` are mocked to make the device reject Sum,
@@ -252,7 +260,7 @@ class TestIntegration:
         if not qml.operation.active_new_opmath():
             obs = _convert_obs_to_legacy_opmath(obs)
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = NoTermsDevice(wires=2)
 
         @qml.qnode(dev)
         def circuit():
@@ -265,12 +273,12 @@ class TestIntegration:
             qml.RX(1.2, wires=0)
             return qml.expval(qml.Hamiltonian(coeffs, obs))
 
-        with pytest.raises(qml.DeviceError, match="not supported on default.qubit"):
+        with pytest.raises(ValueError, match="does not accept observables with multiple terms"):
             circuit()
 
         with dev.tracker:
             circuit_split()
-        assert dev.tracker.totals['simulations'] == 1
+        assert dev.tracker.totals["simulations"] == 1
 
     @pytest.mark.parametrize("shots", [None, 20000, [20000, 30000, 40000]])
     @pytest.mark.parametrize(
@@ -310,7 +318,7 @@ class TestIntegration:
             # test constant offset with new opmath
             coeffs, obs = coeffs + [0.6], obs + [qml.I()]
 
-        dev = qml.device("default.qubit", wires=2, shots=shots)
+        dev = NoTermsDevice(wires=2, shots=shots)
 
         @qml.qnode(dev)
         def circuit(angles):
@@ -380,7 +388,7 @@ class TestIntegration:
     def test_multiple_expval(self, shots, params, expected_results):
         """Tests that a QNode with multiple expval measurements is executed correctly"""
 
-        dev = qml.device("default.qubit", wires=2, shots=shots)
+        dev = NoTermsDevice(wires=2, shots=shots)
 
         obs_list = complex_obs_list
         if not qml.operation.active_new_opmath():
@@ -451,7 +459,7 @@ class TestIntegration:
     def test_mixed_measurement_types(self, shots, params, expected_results):
         """Tests that a QNode with mixed measurement types is executed correctly"""
 
-        dev = qml.device("default.qubit", wires=2, shots=shots)
+        dev = NoTermsDevice(wires=2, shots=shots)
 
         obs_list = complex_obs_list
         if not qml.operation.active_new_opmath():
@@ -521,7 +529,7 @@ class TestIntegration:
         """Tests that split_to_single_terms can handle Identity observables (these
         are treated separately as offsets in the transform)"""
 
-        dev = qml.device("default.qubit", wires=2, shots=shots)
+        dev = NoTermsDevice(wires=2, shots=shots)
         H = qml.Hamiltonian([1.5, 2.5], [qml.I(), qml.I()])
 
         @split_to_single_terms
@@ -537,7 +545,7 @@ class TestIntegration:
         """Tests that split_to_single_terms can handle a combination Identity observables (these
         are treated separately as offsets in the transform) and other observables"""
 
-        dev = qml.device("default.qubit", wires=2, shots=shots)
+        dev = NoTermsDevice(wires=2, shots=shots)
         H = qml.Hamiltonian([1.5, 2.5], [qml.I(0), qml.Y(0)])
 
         @split_to_single_terms
@@ -552,7 +560,7 @@ class TestIntegration:
     def test_non_pauli_obs_in_circuit(self):
         """Tests that the tape is executed correctly with non-pauli observables"""
 
-        dev = qml.device("default.qubit", wires=1)
+        dev = NoTermsDevice(wires=1)
 
         @split_to_single_terms
         @qml.qnode(dev)
@@ -566,10 +574,6 @@ class TestIntegration:
         assert qml.math.allclose(res, 1, atol=0.01)
 
 
-@patch(
-    "pennylane.devices.default_qubit.observables",
-    original_observables - {"Sum", "Hamiltonian", "LinearCombination"},
-)
 class TestDifferentiability:
     """Tests the differentiability of the ``split_to_single_terms`` transform"""
 
@@ -579,7 +583,7 @@ class TestDifferentiability:
 
         import pennylane.numpy as pnp
 
-        dev = qml.device("default.qubit", wires=2, shots=50000)
+        dev = NoTermsDevice(wires=2, shots=50000)
 
         @split_to_single_terms
         @qml.qnode(dev)
@@ -601,7 +605,7 @@ class TestDifferentiability:
         import jax
         import jax.numpy as jnp
 
-        dev = qml.device("default.qubit", wires=2, shots=50000)
+        dev = NoTermsDevice(wires=2, shots=50000)
 
         @partial(split_to_single_terms)
         @qml.qnode(dev)
@@ -625,7 +629,7 @@ class TestDifferentiability:
         import torch
         from torch.autograd.functional import jacobian
 
-        dev = qml.device("default.qubit", wires=2, shots=50000)
+        dev = NoTermsDevice(wires=2, shots=50000)
 
         @split_to_single_terms
         @qml.qnode(dev)
@@ -645,7 +649,7 @@ class TestDifferentiability:
 
         import tensorflow as tf
 
-        dev = qml.device("default.qubit", wires=2, shots=50000)
+        dev = NoTermsDevice(wires=2, shots=50000)
 
         @qml.qnode(dev)
         def circuit(coeff1, coeff2):
