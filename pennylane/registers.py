@@ -8,7 +8,7 @@ from .wires import Wires
 def registers(register_dict, _start_wire_index=0):
     """Returns a collection of wire registers when given a dictionary of register names
     and sizes (number of qubits in the register).
-    
+
     The registers are a dictionary
     of :class:`~.Wires` objects where the key is the register name and the value is the ``Wires`` object. The
     individual wire labels are integers, where the ordering is based on appearance first, then on
