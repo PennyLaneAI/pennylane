@@ -504,5 +504,6 @@ class TestWires:
                 operation(wire, invalid_operand)
             assert str(excinfo.value) == error_message
 
+            # Ensure the reverse also has a TypeError
             with pytest.raises(TypeError, match="unsupported operand") as excinfo:
                 operation(invalid_operand, wire)

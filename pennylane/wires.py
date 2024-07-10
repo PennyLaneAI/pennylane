@@ -493,29 +493,101 @@ class Wires(Sequence):
 
         return Wires(tuple(unique), _override=True)
 
-    def __or__(self, other):
-        """The union operation (|)"""
-        if not isinstance(other, Wires):
-            raise TypeError("Can only do the union of Wires with Wires")
-        return Wires(set(self._labels) | set(other._labels))
 
-    def __and__(self, other):
-        """The intersection operation (&)"""
-        if not isinstance(other, Wires):
-            raise TypeError("Can only do the intersection of Wires with Wires")
-        return Wires(set(self._labels) & set(other._labels))
+def __or__(self, other):
+    """Return the union of the current Wires object and another Wires object.
 
-    def __sub__(self, other):
-        """The difference operation (-)"""
-        if not isinstance(other, Wires):
-            raise TypeError("Can only do the difference of Wires with other Wires")
-        return Wires(set(self._labels) - set(other._labels))
+    Args:
+        other (Wires): Another Wires object to perform the union with.
 
-    def __xor__(self, other):
-        """The symmetric difference operation (^)"""
-        if not isinstance(other, Wires):
-            raise TypeError("Can only the symmetric difference of Wires with other Wires")
-        return Wires(set(self._labels) ^ set(other._labels))
+    Returns:
+        Wires: A new Wires object representing the union of the two Wires objects.
+
+    Raises:
+        TypeError: If 'other' is not an instance of Wires.
+
+    **Example**
+
+    >>> wires1 = Wires([1, 2, 3])
+    >>> wires2 = Wires([3, 4, 5])
+    >>> wires1 | wires2
+    Wires([1, 2, 3, 4, 5])
+    """
+    if not isinstance(other, Wires):
+        raise TypeError("Can only do the union of Wires with Wires")
+    return Wires(set(self._labels) | set(other._labels))
+
+
+def __and__(self, other):
+    """Return the intersection of the current Wires object and another Wires object.
+
+    Args:
+        other (Wires): Another Wires object to perform the intersection with.
+
+    Returns:
+        Wires: A new Wires object representing the intersection of the two Wires objects.
+
+    Raises:
+        TypeError: If 'other' is not an instance of Wires.
+
+    **Example**
+
+    >>> wires1 = Wires([1, 2, 3])
+    >>> wires2 = Wires([2, 3, 4])
+    >>> wires1 & wires2
+    Wires([2, 3])
+    """
+    if not isinstance(other, Wires):
+        raise TypeError("Can only do the intersection of Wires with Wires")
+    return Wires(set(self._labels) & set(other._labels))
+
+
+def __sub__(self, other):
+    """Return the difference of the current Wires object and another Wires object.
+
+    Args:
+        other (Wires): Another Wires object to perform the difference with.
+
+    Returns:
+        Wires: A new Wires object representing the difference of the two Wires objects.
+
+    Raises:
+        TypeError: If 'other' is not an instance of Wires.
+
+    **Example**
+
+    >>> wires1 = Wires([1, 2, 3])
+    >>> wires2 = Wires([2, 3, 4])
+    >>> wires1 - wires2
+    Wires([1])
+    """
+    if not isinstance(other, Wires):
+        raise TypeError("Can only do the difference of Wires with other Wires")
+    return Wires(set(self._labels) - set(other._labels))
+
+
+def __xor__(self, other):
+    """Return the symmetric difference of the current Wires object and another Wires object.
+
+    Args:
+        other (Wires): Another Wires object to perform the symmetric difference with.
+
+    Returns:
+        Wires: A new Wires object representing the symmetric difference of the two Wires objects.
+
+    Raises:
+        TypeError: If 'other' is not an instance of Wires.
+
+    **Example**
+
+    >>> wires1 = Wires([1, 2, 3])
+    >>> wires2 = Wires([3, 4, 5])
+    >>> wires1 ^ wires2
+    Wires([1, 2, 4, 5])
+    """
+    if not isinstance(other, Wires):
+        raise TypeError("Can only the symmetric difference of Wires with other Wires")
+    return Wires(set(self._labels) ^ set(other._labels))
 
 
 # Register Wires as a PyTree-serializable class
