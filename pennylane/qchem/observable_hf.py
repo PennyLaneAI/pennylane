@@ -111,15 +111,18 @@ def qubit_observable(o_ferm, cutoff=1.0e-12, mapping="jordan_wigner"):
 
     **Example**
 
-    >>> qml.operation.enable_new_opmath()
     >>> w1 = qml.fermi.FermiWord({(0, 0) : '+', (1, 1) : '-'})
     >>> w2 = qml.fermi.FermiWord({(0, 0) : '+', (1, 1) : '-'})
     >>> s = qml.fermi.FermiSentence({w1 : 1.2, w2: 3.1})
     >>> print(qubit_observable(s))
     -0.775j * (Y(0) @ X(1)) + 0.775 * (Y(0) @ Y(1)) + 0.775 * (X(0) @ X(1)) + 0.775j * (X(0) @ Y(1))
 
-    If the new op-math is deactivated, a :class:`~Hamiltonian` instance is returned.
+    If the new op-math is deactivated, a legacy :class:`~pennylane.ops.Hamiltonian` instance is returned.
 
+    >>> qml.operation.disable_new_opmath()
+    UserWarning: Disabling the new Operator arithmetic system for legacy support.
+    If you need help troubleshooting your code, please visit
+    https://docs.pennylane.ai/en/stable/news/new_opmath.html
     >>> w1 = qml.fermi.FermiWord({(0, 0) : '+', (1, 1) : '-'})
     >>> w2 = qml.fermi.FermiWord({(0, 1) : '+', (1, 2) : '-'})
     >>> s = qml.fermi.FermiSentence({w1 : 1.2, w2: 3.1})

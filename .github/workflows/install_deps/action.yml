@@ -95,6 +95,11 @@ runs:
         python setup.py bdist_wheel
         pip install dist/PennyLane*.whl
 
+    - name: Install Catalyst
+      shell: bash
+      if: inputs.install_catalyst_after_pennylane == 'true'
+      run: pip install --upgrade pennylane-catalyst
+
     - name: Install PennyLane-Lightning master
       shell: bash
       if: inputs.install_pennylane_lightning_master == 'true'

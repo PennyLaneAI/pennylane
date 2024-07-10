@@ -36,8 +36,8 @@ class NoiseModel:
 
         - The ``conditional`` should be either a function decorated with :class:`~.BooleanFn`,
           a callable object built via :ref:`constructor functions <intro_boolean_fn>` in
-          the ``qml.noise`` module, or their bit-wise combination.
-        - The definition of ``noise_fn(op, **kwargs)`` should have the operations in same the order
+          the ``qml.noise`` module, or their bitwise combination.
+        - The definition of ``noise_fn(op, **kwargs)`` should have the operations in the same the order
           in which they are to be queued for an operation ``op``, whenever the corresponding
           ``conditional`` evaluates to ``True``.
 
@@ -73,12 +73,12 @@ class NoiseModel:
 
     @property
     def model_map(self):
-        """Gives the conditional model for the noise model"""
+        """Gives the conditional model for the noise model."""
         return self._model_map
 
     @property
     def metadata(self):
-        """Gives the metadata for the noise model"""
+        """Gives the metadata for the noise model."""
         return self._metadata
 
     def __add__(self, data):
@@ -124,7 +124,7 @@ class NoiseModel:
         return model_str
 
     @staticmethod
-    def check_model(model):
+    def check_model(model: dict) -> None:
         """Method to validate the ``model`` map for constructing a NoiseModel."""
         for condition, noise in model.items():
             if not isinstance(condition, qml.BooleanFn):
