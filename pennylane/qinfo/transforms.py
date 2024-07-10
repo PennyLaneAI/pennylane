@@ -187,6 +187,7 @@ def purity(tape: QuantumTape, wires, **kwargs) -> (Sequence[QuantumTape], Callab
 
     .. seealso:: :func:`pennylane.math.purity`
     """
+
     # device_wires is provided by the custom QNode transform
     all_wires = kwargs.get("device_wires", tape.wires)
     wire_map = {w: i for i, w in enumerate(all_wires)}
@@ -241,6 +242,11 @@ def vn_entropy(
     .. math::
         S( \rho ) = -\text{Tr}( \rho \log ( \rho ))
 
+    .. warning::
+
+        The qml.qinfo.vn_entropy transform is deprecated and will be removed in 0.40. Instead include
+        the :func:`pennylane.vn_entropy` measurement process in the return line of your QNode.
+
     Args:
         tape (QNode or QuantumTape or Callable): A quantum circuit returning a :func:`~pennylane.state`.
         wires (Sequence(int)): List of wires in the considered subsystem.
@@ -275,6 +281,14 @@ def vn_entropy(
 
     .. seealso:: :func:`pennylane.math.vn_entropy` and :func:`pennylane.vn_entropy`
     """
+
+    warnings.warn(
+        "The qml.qinfo.vn_entropy transform is deprecated and will be removed "
+        "in 0.40. Instead include the qml.vn_entropy measurement process in the "
+        "return line of your QNode.",
+        qml.PennyLaneDeprecationWarning,
+    )
+
     # device_wires is provided by the custom QNode transform
     all_wires = kwargs.get("device_wires", tape.wires)
     wire_map = {w: i for i, w in enumerate(all_wires)}
@@ -372,6 +386,11 @@ def mutual_info(
 
         I(A, B) = S(\rho^A) + S(\rho^B) - S(\rho^{AB})
 
+    .. warning::
+
+        The qml.qinfo.mutual_info transform is deprecated and will be removed in 0.40. Instead include
+        the :func:`pennylane.mutual_info` measurement process in the return line of your QNode.
+
     where :math:`S` is the von Neumann entropy.
 
     The mutual information is a measure of correlation between two subsystems.
@@ -415,6 +434,14 @@ def mutual_info(
 
     .. seealso:: :func:`~.qinfo.vn_entropy`, :func:`pennylane.math.mutual_info` and :func:`pennylane.mutual_info`
     """
+
+    warnings.warn(
+        "The qml.qinfo.mutual_info transform is deprecated and will be removed "
+        "in 0.40. Instead include the qml.mutual_info measurement process in the "
+        "return line of your QNode.",
+        qml.PennyLaneDeprecationWarning,
+    )
+    
     return _bipartite_qinfo_transform(qml.math.mutual_info, tape, wires0, wires1, base, **kwargs)
 
 
@@ -467,6 +494,7 @@ def vn_entanglement_entropy(
         will provide the entanglement entropy in the form of a tensor.
 
     """
+
     return _bipartite_qinfo_transform(
         qml.math.vn_entanglement_entropy, tape, wires0, wires1, base, **kwargs
     )
