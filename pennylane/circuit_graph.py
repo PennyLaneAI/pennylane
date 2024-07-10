@@ -31,9 +31,7 @@ from pennylane.wires import Wires
 
 
 def _get_wires(obj, all_wires):
-    if isinstance(obj, MeasurementProcess) and len(obj.wires) == 0:
-        return all_wires
-    return obj.wires
+    return all_wires if len(obj.wires) == 0 else obj.wires
 
 
 Layer = namedtuple("Layer", ["ops", "param_inds"])

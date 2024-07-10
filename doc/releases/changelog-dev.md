@@ -25,6 +25,11 @@
 
 <h3>Breaking changes 💔</h3>
 
+* The `CircuitGraph.graph` rustworkx graph now stores indices into the circuit as the node labels,
+  instead of the operator/ measurement itself.  This allows the same operator to occur multiple times in
+  the circuit.
+  [(#5907)](https://github.com/PennyLaneAI/pennylane/pull/5907)
+
 <h3>Deprecations 👋</h3>
 
 <h3>Documentation 📝</h3>
