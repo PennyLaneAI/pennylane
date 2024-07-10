@@ -147,9 +147,11 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
         ``expand_measurements=False``.
 
         >>> from pennylane.tape.tape import expand_tape
-        >>> tape = qml.tape.QuantumScript([], [qml.expval(qml.X(0)), qml.expval(qml.Y(0))])
+        >>> mps = [qml.expval(qml.X(0)), qml.expval(qml.Y(0))]
+        >>> tape = qml.tape.QuantumScript([], mps)
         >>> expand_tape(tape)
-        QuantumFunctionError: Only observables that are qubit-wise commuting Pauli words can be returned on the same wire, some of the following measurements do not commute:
+        QuantumFunctionError: Only observables that are qubit-wise commuting Pauli words
+        can be returned on the same wire, some of the following measurements do not commute:
         [expval(X(0)), expval(Y(0))]
 
         Since commutation is determined by pauli word arithmetic, non-pauli words cannot share
@@ -158,7 +160,8 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
         >>> measurements = [qml.expval(qml.Projector([0], 0)), qml.probs(wires=0)]
         >>> tape = qml.tape.QuantumScript([], measurements)
         >>> expand_tape(tape)
-        QuantumFunctionError: Only observables that are qubit-wise commuting Pauli words can be returned on the same wire, some of the following measurements do not commute:
+        QuantumFunctionError: Only observables that are qubit-wise commuting Pauli words
+        can be returned on the same wire, some of the following measurements do not commute:
         [expval(Projector(array([0]), wires=[0])), probs(wires=[0])]
 
         For this reason, we recommend the use of :func:`~.pennylane.devices.preprocess.decompose` instead.
@@ -209,7 +212,8 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
         and the observable will be substituted for an analogous combination of ``qml.Z`` operators.
         This will happen even if ``expand_measurements=False``.
 
-        >>> tape = qml.tape.QuantumScript([], [qml.expval(qml.X(0)), qml.expval(qml.X(0) @ qml.X(1))])
+        >>> mps = [qml.expval(qml.X(0)), qml.expval(qml.X(0) @ qml.X(1))]
+        >>> tape = qml.tape.QuantumScript([], mps)
         >>> expanded_tape = expand_tape(tape)
         >>> print(expanded_tape.draw())
         0: ──RY─┤  <Z> ╭<Z@Z>
