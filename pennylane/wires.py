@@ -515,7 +515,7 @@ def __or__(self, other):
     """
     if not isinstance(other, Wires):
         raise TypeError("Can only do the union of Wires with Wires")
-    return Wires(set(self._labels) | set(other._labels))
+    return Wires(set(self.labels) | set(other.labels))
 
 
 def __and__(self, other):
@@ -539,7 +539,7 @@ def __and__(self, other):
     """
     if not isinstance(other, Wires):
         raise TypeError("Can only do the intersection of Wires with Wires")
-    return Wires(set(self._labels) & set(other._labels))
+    return Wires(set(self.labels) & set(other.labels))
 
 
 def __sub__(self, other):
@@ -563,7 +563,7 @@ def __sub__(self, other):
     """
     if not isinstance(other, Wires):
         raise TypeError("Can only do the difference of Wires with other Wires")
-    return Wires(set(self._labels) - set(other._labels))
+    return Wires(set(self.labels) - set(other.labels))
 
 
 def __xor__(self, other):
@@ -587,7 +587,7 @@ def __xor__(self, other):
     """
     if not isinstance(other, Wires):
         raise TypeError("Can only the symmetric difference of Wires with other Wires")
-    return Wires(set(self._labels) ^ set(other._labels))
+    return Wires(set(self.labels) ^ set(other.labels))
 
 
 # Register Wires as a PyTree-serializable class
