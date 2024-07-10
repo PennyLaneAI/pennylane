@@ -40,6 +40,7 @@
 
 This release contains contributions from (in alphabetical order):
 Yushao Chen,
+Lillian M. A. Frederiksen,
 Christina Lee,
 William Maxwell,
 Vincent Michaud-Rioux,
