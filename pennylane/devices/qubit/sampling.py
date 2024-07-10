@@ -65,6 +65,8 @@ def _group_measurements(mps: List[Union[SampleMeasurement, ClassicalShadowMP, Sh
     mp_no_obs_indices = []
 
     for i, mp in enumerate(mps):
+        if isinstance(mp.obs, Sum):
+            mps[i].obs = qml.simplify(mp.obs)
         if isinstance(mp, (ClassicalShadowMP, ShadowExpvalMP)):
             mp_other_obs.append([mp])
             mp_other_obs_indices.append([i])
@@ -245,11 +247,7 @@ def measure_with_samples(
             group[0].obs, (Hamiltonian, LinearCombination)
         ):
             measure_fn = _measure_hamiltonian_with_samples
-        elif (
-            isinstance(group[0], ExpectationMP)
-            and isinstance(group[0].obs, Sum)
-            and len(group) == 1
-        ):
+        elif isinstance(group[0], ExpectationMP) and isinstance(group[0].obs, Sum):
             measure_fn = _measure_sum_with_samples
         elif isinstance(group[0], (ClassicalShadowMP, ShadowExpvalMP)):
             measure_fn = _measure_classical_shadow
