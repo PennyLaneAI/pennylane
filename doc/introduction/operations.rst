@@ -60,7 +60,7 @@ Operator to Operator functions
     ~pennylane.map_wires
     ~pennylane.dot
     ~pennylane.evolve
-    ~pennylane.iterative_qpe
+    ~pennylane.simplify
 
 These operator functions act on operators to produce new operators.
 
@@ -80,7 +80,8 @@ Operator to Other functions
     ~pennylane.is_commuting
     ~pennylane.is_hermitian
     ~pennylane.is_unitary
-    ~pennylane.simplify
+    ~pennylane.iterative_qpe
+
 
 These operator functions act on operators and return other data types.
 All operator functions can be used on instantiated operators.

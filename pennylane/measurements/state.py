@@ -17,6 +17,7 @@ This module contains the qml.state measurement.
 from typing import Optional, Sequence
 
 import pennylane as qml
+from pennylane.typing import TensorLike
 from pennylane.wires import WireError, Wires
 
 from .measurements import State, StateMeasurement
@@ -128,7 +129,7 @@ def density_matrix(wires) -> "DensityMatrixMP":
 class StateMP(StateMeasurement):
     """Measurement process that returns the quantum state in the computational basis.
 
-    Please refer to :func:`state` for detailed documentation.
+    Please refer to :func:`pennylane.state` for detailed documentation.
 
     Args:
         wires (.Wires): The wires the measurement process applies to.
@@ -191,6 +192,10 @@ class StateMP(StateMeasurement):
         state = qml.math.reshape(state, flat_shape)
         return qml.math.cast(state, "complex128") if is_tf_interface else state + 0.0j
 
+    def process_density_matrix(self, density_matrix: Sequence[complex], wire_order: Wires):
+        # pylint:disable=redefined-outer-name
+        raise ValueError("Processing from density matrix to state is not supported.")
+
 
 class DensityMatrixMP(StateMP):
     """Measurement process that returns the quantum state in the computational basis.
@@ -238,3 +243,14 @@ class DensityMatrixMP(StateMP):
         if not qml.math.is_abstract(state) and qml.math.any(qml.math.iscomplex(state)):
             kwargs["c_dtype"] = state.dtype
         return qml.math.reduce_statevector(state, **kwargs)
+
+    def process_density_matrix(self, density_matrix: TensorLike, wire_order: Wires):
+        # pylint:disable=redefined-outer-name
+        wire_map = dict(zip(wire_order, range(len(wire_order))))
+        mapped_wires = [wire_map[w] for w in self.wires]
+        kwargs = {"indices": mapped_wires, "c_dtype": "complex128"}
+        if not qml.math.is_abstract(density_matrix) and qml.math.any(
+            qml.math.iscomplex(density_matrix)
+        ):
+            kwargs["c_dtype"] = density_matrix.dtype
+        return qml.math.reduce_dm(density_matrix, **kwargs)

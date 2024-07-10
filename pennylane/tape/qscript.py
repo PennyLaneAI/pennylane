@@ -188,7 +188,7 @@ class QuantumScript:
     def __repr__(self):
         return f"<{self.__class__.__name__}: wires={self.wires.tolist()}, params={self.num_params}>"
 
-    @property
+    @cached_property
     def hash(self):
         """int: returns an integer hash uniquely representing the quantum script"""
         fingerprint = []
@@ -378,11 +378,13 @@ class QuantumScript:
         """Update all internal metadata regarding processed operations and observables"""
         self._graph = None
         self._specs = None
+        self._trainable_params = None
 
         try:
             # Invalidate cached properties so they get recalculated
             del self.wires
             del self.par_info
+            del self.hash
         except AttributeError:
             pass
 
