@@ -268,7 +268,9 @@ class TestIntegration:
         with pytest.raises(qml.DeviceError, match="not supported on default.qubit"):
             circuit()
 
-        circuit_split()
+        with dev.tracker:
+            circuit_split()
+        assert dev.tracker.totals['simulations'] == 1
 
     @pytest.mark.parametrize("shots", [None, 20000, [20000, 30000, 40000]])
     @pytest.mark.parametrize(
