@@ -27,6 +27,9 @@
 
 <h3>Deprecations 👋</h3>
 
+* The ``expand_fn`` argument in ``qml.execute`` has been deprecated. 
+  Instead, add a transform to the ``decompose`` function of the device.
+
 <h3>Documentation 📝</h3>
 
 * Improves the docstring for `QuantumScript.expand` and `qml.tape.tape.expand_tape`.
@@ -42,6 +45,7 @@
 This release contains contributions from (in alphabetical order):
 Yushao Chen,
 Christina Lee,
+Emiliano Godinez,
 William Maxwell,
 Vincent Michaud-Rioux,
 Mudit Pandey,

@@ -166,3 +166,14 @@ def test_caching(gradient_fn):
     assert tracker.totals["batches"] == 1
     assert tracker.totals["executions"] == 1
     assert cache[qs.hash] == -1.0
+
+
+def test_expand_fn_is_deprecated():
+    """Test that expand_fn argument of qml.execute is deprecated."""
+    dev = DefaultQubit()
+    qs = qml.tape.QuantumScript([qml.PauliX(0)], [qml.expval(qml.PauliZ(0))])
+
+    with pytest.warns(
+        qml.PennyLaneDeprecationWarning, match="The expand_fn argument is deprecated"
+    ):
+        qml.execute([qs], dev, expand_fn=lambda qs: qs)

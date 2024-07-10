@@ -480,6 +480,11 @@ def execute(
         list[tensor_like[float]]: A nested list of tape results. Each element in
         the returned list corresponds in order to the provided tapes.
 
+    .. warning::
+
+        The following arguments are deprecated and will be removed in version 0.39:
+        ``expand_fn``, ...
+
     **Example**
 
     Consider the following cost function:
@@ -609,6 +614,13 @@ def execute(
     # Ensure that ``cache`` is not a Boolean to simplify downstream code.
     elif cache is False:
         cache = None
+
+    if expand_fn != "device":
+        warnings.warn(
+            "The expand_fn argument is deprecated and will be removed in version 0.39."
+            "Instead, please use qml.Device.preprocess.",
+            qml.PennyLaneDeprecationWarning,
+        )
 
     expand_fn = _preprocess_expand_fn(expand_fn, device, max_expansion)
 
