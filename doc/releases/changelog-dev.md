@@ -29,6 +29,7 @@
 
 * The ``expand_fn`` argument in ``qml.execute`` has been deprecated. 
   Instead, add a transform to the ``decompose`` function of the device.
+  [(#5984)](https://github.com/PennyLaneAI/pennylane/pull/5984)
 
 <h3>Documentation 📝</h3>
 
