@@ -951,7 +951,7 @@ class QuantumScript:
                 >>> def stop_at(obj):
                 ...     return getattr(obj, "name", "") in {"RX", "RY"}
                 >>> tape = qml.tape.QuantumScript([qml.RZ(0.1, 0)])
-                >>> tape.expand().circuit
+                >>> tape.expand(stop_at=stop_at).circuit
                 [RZ(0.1, wires=[0])]
 
             If more than one observable exists on a wire, the diagonalizing gates will be applied

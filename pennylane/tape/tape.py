@@ -166,10 +166,11 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
     .. details::
         :title: Usage Details
 
+        >>> from pennylane.tape.tape import expand_tape
         >>> ops = [qml.Permute((2,1,0), wires=(0,1,2)), qml.X(0)]
         >>> measurements = [qml.expval(qml.X(0))]
         >>> tape = qml.tape.QuantumScript(ops, measurements)
-        >>> expanded_tape = expand_tape(tape)
+        >>> expanded_tape = expand_Tape(tape)
         >>> print(expanded_tape.draw())
         0: ─╭SWAP──Rϕ──RX──Rϕ─┤  <X>
         2: ─╰SWAP─────────────┤
@@ -201,7 +202,7 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
             >>> def stop_at(obj):
             ...     return getattr(obj, "name", "") in {"RX", "RY"}
             >>> tape = qml.tape.QuantumScript([qml.RZ(0.1, 0)])
-            >>> expand_tape(tape).circuit
+            >>> expand_tape(tape, stop_at=stop_at).circuit
             [RZ(0.1, wires=[0])]
 
         If more than one observable exists on a wire, the diagonalizing gates will be applied
@@ -224,6 +225,7 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
         >>> tape = qml.tape.QuantumScript([], [qml.expval(qml.X(0))])
         >>> expand_tape(tape, expand_measurements=True).circuit
         [Hadamard(wires=[0]), expval(eigvals=[ 1. -1.], wires=[0])]
+
 
     """
     if depth == 0:
