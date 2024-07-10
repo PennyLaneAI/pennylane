@@ -895,7 +895,7 @@ class QuantumScript:
         .. warning::
 
             This method cannot be used with a tape with non-commuting measurements, even if
-            ``expand_measurments=False``.
+            ``expand_measurements=False``.
 
             >>> tape = qml.tape.QuantumScript([], [qml.expval(qml.X(0)), qml.expval(qml.Y(0))])
             >>> tape.expand()
@@ -911,7 +911,7 @@ class QuantumScript:
             QuantumFunctionError: Only observables that are qubit-wise commuting Pauli words can be returned on the same wire, some of the following measurements do not commute:
             [expval(Projector(array([0]), wires=[0])), probs(wires=[0])]
 
-            For this reason, we recommend use of :func:`~.pennylane.devices.preprocess.decompose` instead.
+            For this reason, we recommend the use of :func:`~.pennylane.devices.preprocess.decompose` instead.
 
         .. details::
             :title: Usage Details
@@ -946,7 +946,7 @@ class QuantumScript:
 
                 If an operator does not have a decomposition, it will not be decomposed, even if
                 ``stop_at(obj) == False``.  If you want to decompose to reach a certain gateset,
-                you will need an extra valiation pass to make sure you have actually reach the gateset.
+                you will need an extra validation pass to ensure you have reached the gateset.
 
                 >>> def stop_at(obj):
                 ...     return getattr(obj, "name", "") in {"RX", "RY"}
@@ -956,7 +956,7 @@ class QuantumScript:
 
             If more than one observable exists on a wire, the diagonalizing gates will be applied
             and the observable will be substituted for an analogous combination of ``qml.Z`` operators.
-            This will happen even if ``expand_measurments=False``.
+            This will happen even if ``expand_measurements=False``.
 
             >>> tape = qml.tape.QuantumScript([], [qml.expval(qml.X(0)), qml.expval(qml.X(0) @ qml.X(1))])
             >>> expanded_tape = tape.expand()
