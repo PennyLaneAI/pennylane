@@ -33,7 +33,13 @@
 
 <h3>Documentation 📝</h3>
 
+* Improves the docstring for `QuantumScript.expand` and `qml.tape.tape.expand_tape`.
+  [(#5974)](https://github.com/PennyLaneAI/pennylane/pull/5974)
+
 <h3>Bug fixes 🐛</h3>
+
+* `qml.AmplitudeEmbedding` has better support for features using low precision integer data types.
+[(#5969)](https://github.com/PennyLaneAI/pennylane/pull/5969)
 
 <h3>Contributors ✍️</h3>
 
@@ -44,4 +50,5 @@ Yushao Chen,
 Christina Lee,
 William Maxwell,
 Vincent Michaud-Rioux,
+Mudit Pandey,
 Erik Schultheis.
