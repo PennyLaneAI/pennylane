@@ -778,7 +778,7 @@ class TestBroadcasting:  # pylint: disable=too-few-public-methods
     @pytest.mark.parametrize("op", broadcasted_ops)
     def test_broadcasted_op(self, op, method, ml_framework):
         """Tests that batched operations are applied correctly to an unbatched state."""
-        state = np.ones((2, 2, 2)) / np.sqrt(8)
+        state = np.ones((2, 2, 2), dtype=complex) / np.sqrt(8)
 
         res = method(op, qml.math.asarray(state, like=ml_framework))
         missing_wires = 3 - len(op.wires)
@@ -796,7 +796,7 @@ class TestBroadcasting:  # pylint: disable=too-few-public-methods
     @pytest.mark.parametrize("op", unbroadcasted_ops)
     def test_broadcasted_state(self, op, method, ml_framework):
         """Tests that unbatched operations are applied correctly to a batched state."""
-        state = np.ones((3, 2, 2, 2)) / np.sqrt(8)
+        state = np.ones((3, 2, 2, 2), dtype=complex) / np.sqrt(8)
 
         res = method(op, qml.math.asarray(state, like=ml_framework), is_state_batched=True)
         missing_wires = 3 - len(op.wires)
@@ -813,7 +813,7 @@ class TestBroadcasting:  # pylint: disable=too-few-public-methods
         if method is apply_operation_tensordot:
             pytest.skip("Tensordot doesn't support batched operator and batched state.")
 
-        state = np.ones((3, 2, 2, 2)) / np.sqrt(8)
+        state = np.ones((3, 2, 2, 2), dtype=complex) / np.sqrt(8)
 
         res = method(op, qml.math.asarray(state, like=ml_framework), is_state_batched=True)
         missing_wires = 3 - len(op.wires)
@@ -1226,13 +1226,15 @@ class TestMultiControlledXKernel:
 class TestLargeTFCornerCases:
     """Test large corner cases for tensorflow."""
 
-    @pytest.mark.parametrize("op", (qml.PauliZ(8), qml.CNOT((5, 6))))
+    @pytest.mark.parametrize(
+        "op", (qml.PauliZ(8), qml.PhaseShift(1.0, 8), qml.S(8), qml.T(8), qml.CNOT((5, 6)))
+    )
     def test_tf_large_state(self, op):
         """Tests that custom kernels that use slicing fall back to a different method when
         the state has a large number of wires."""
         import tensorflow as tf
 
-        state = np.zeros([2] * 10)
+        state = np.zeros([2] * 10, dtype=complex)
         state = tf.Variable(state)
         new_state = apply_operation(op, state)
 

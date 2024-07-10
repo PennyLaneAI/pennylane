@@ -961,7 +961,7 @@ class QNode:
         # Before constructing the tape, we pass the device to the
         # debugger to ensure they are compatible if there are any
         # breakpoints in the circuit
-        with pldb_device_manager(self.device) as _:
+        with pldb_device_manager(self.device):
             with qml.queuing.AnnotatedQueue() as q:
                 self._qfunc_output = self.func(*args, **kwargs)
 
