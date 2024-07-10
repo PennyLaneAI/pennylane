@@ -234,8 +234,6 @@ def measure_with_samples(
     Returns:
         List[TensorLike[Any]]: Sample measurement results
     """
-    measurements = [qml.simplify(mp) for mp in measurements]
-
     # last N measurements are sampling MCMs in ``dynamic_one_shot`` execution mode
     mps = measurements[0 : -len(mid_measurements)] if mid_measurements else measurements
 
@@ -247,7 +245,11 @@ def measure_with_samples(
             group[0].obs, (Hamiltonian, LinearCombination)
         ):
             measure_fn = _measure_hamiltonian_with_samples
-        elif isinstance(group[0], ExpectationMP) and isinstance(group[0].obs, Sum):
+        elif (
+            isinstance(group[0], ExpectationMP)
+            and isinstance(group[0].obs, Sum)
+            and len(group) == 1
+        ):
             measure_fn = _measure_sum_with_samples
         elif isinstance(group[0], (ClassicalShadowMP, ShadowExpvalMP)):
             measure_fn = _measure_classical_shadow
