@@ -25,6 +25,9 @@
 
 <h3>Breaking changes 💔</h3>
 
+* ``qml.transforms.map_batch_transform`` has been removed, since transforms can be applied directly to a batch of tapes.
+  See :func:`~.pennylane.transform` for more information.
+
 <h3>Deprecations 👋</h3>
 
 <h3>Documentation 📝</h3>
@@ -34,6 +37,7 @@
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
+Ahmed Darwish
 Yushao Chen,
 Christina Lee,
 William Maxwell,
