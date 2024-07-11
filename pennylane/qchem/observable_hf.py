@@ -20,6 +20,7 @@ import numpy as np
 import pennylane as qml
 from pennylane.fermi import FermiSentence, FermiWord
 from pennylane.operation import active_new_opmath
+from pennylane.pauli import PauliSentence
 from pennylane.pauli.utils import simplify
 
 
@@ -81,13 +82,9 @@ def fermionic_observable(constant, one=None, two=None, cutoff=1.0e-12):
         coeffs = qml.math.concatenate((coeffs, coeffs_two))
         operators = operators + operators_two
 
-    operators_sort = sorted(operators)
-    indices_sort = [operators.index(i) for i in operators_sort]
-    if indices_sort:
-        indices_sort = qml.math.array(indices_sort)
-
     sentence = FermiSentence({FermiWord({}): constant[0]})
-    for c, o in zip(coeffs[indices_sort], operators_sort):
+    for c, o in sorted(zip(coeffs, operators), key=lambda item: item[1]):
+
         if len(o) == 2:
             sentence.update({FermiWord({(0, o[0]): "+", (1, o[1]): "-"}): c})
         if len(o) == 4:
@@ -145,7 +142,7 @@ def qubit_observable(o_ferm, cutoff=1.0e-12, mapping="jordan_wigner"):
         h = qml.bravyi_kitaev(o_ferm, qubits, ps=True, tol=cutoff)
 
     if list(h.wires) != sorted(list(h.wires)):
-        h = sum(i * h[i] for i in sorted(h.keys(), key=lambda x: list(x.wires)))
+        h = PauliSentence(sorted(h.items(), key=lambda item: item[0].wires.tolist()))
 
     h.simplify(tol=cutoff)
 
