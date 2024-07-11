@@ -56,8 +56,8 @@ def split_non_commuting(
         multiple executions if there are terms that do not commute with one another, so that each execution
         only includes commuting measurements. For state-based simulators that are able to handle non-commuting
         measurements in a single execution, but don't natively support sums of observables, consider
-        :func:`qml.transform.split_to_single_terms` instead. This transform will work but, may perform an
-        unneccessary number of executions.
+        :func:`qml.transform.split_to_single_terms` instead. The :func:`qml.transform.split_non_commuting`
+        transform will work but, may result in an unneccessary number of executions.
 
     **Examples:**
 
