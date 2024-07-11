@@ -45,6 +45,13 @@ def split_to_single_terms(tape):
     Returns:
         qnode (QNode) or tuple[List[QuantumScript], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
 
+    .. note::
+        This transform splits measurements like X(0) + Y(0) into separate terms, but doesn't split them
+        into multiple executions. It is only suitable for state-based simulators that can handle non-commuting
+        measurements in a single execution (but don't natively support sums of observables). For hardware or
+        hardware-like simulators based on projective measurements, :func:`qml.transform.split_non_commuting`
+        should be used instead.
+
     **Examples:**
 
     This transform allows us to transform a QNode measuring multi-term observables into individual measurements,
