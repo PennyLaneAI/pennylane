@@ -27,7 +27,17 @@
 * `QuantumScript.hash` is now cached, leading to performance improvements.
   [(#5919)](https://github.com/PennyLaneAI/pennylane/pull/5919)
 
+* Observable validation for `default.qubit` is now based on execution mode (analytic vs. finite shots) and measurement type (sample measurement vs. state measurement).
+  [(#5890)](https://github.com/PennyLaneAI/pennylane/pull/5890)
+
 <h3>Breaking changes 💔</h3>
+
+* ``qml.transforms.map_batch_transform`` has been removed, since transforms can be applied directly to a batch of tapes.
+  See :func:`~.pennylane.transform` for more information.
+  [(#5981)](https://github.com/PennyLaneAI/pennylane/pull/5981)
+
+* `QuantumScript.interface` has been removed.
+  [(#5980)](https://github.com/PennyLaneAI/pennylane/pull/5980)
 
 <h3>Deprecations 👋</h3>
 
@@ -45,6 +55,7 @@
 
 This release contains contributions from (in alphabetical order):
 
+Ahmed Darwish,
 Astral Cai,
 Yushao Chen,
 Christina Lee,
