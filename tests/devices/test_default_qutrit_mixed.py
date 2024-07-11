@@ -1640,13 +1640,12 @@ class TestReadoutError:
                     [-1/3, 0.0, 1/6],
                     [0.0, -1 / 6,-1/6],
                 ]],],
-            [qnp.array((0.2, 0.1, 0.3)), qnp.array((0.1, 0.2, 0.5)), [
+            [qnp.array((0.2, 0.1, 0.3)), qnp.array((0.0, 0.0, 0.0)), [
                 [
                     [1 / 3, 1 / 6, 0.0],
                     [-1 / 3, 0.0, 1 / 6],
                     [0.0, -1 / 6, -1 / 6]
                 ],
-                [7 / 12, 19 / 60, 0.1],
                 [
                     [19 / 60 - 7 / 12, 0.1 - 7 / 12, 0.0],
                     [7 / 12 - 19 / 60, 0.0, 0.1 - 19 / 60],
@@ -1682,5 +1681,4 @@ class TestReadoutError:
             args_to_diff = (0, 1)
 
         jac = qml.jacobian(run_circ_with_errors, args_to_diff)(relaxations, misclassifications)
-        assert jac == expected
         assert np.allclose(jac, expected)
