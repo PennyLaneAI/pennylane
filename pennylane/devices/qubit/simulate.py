@@ -676,7 +676,7 @@ def prepend_state_prep(circuit, state, interface, wires):
         else state
     )
     return qml.tape.QuantumScript(
-        [qml.StatePrep(state.ravel(), wires=wires, skip_norm_validation=True)] + circuit.operations,
+        [qml.StatePrep(state.ravel(), wires=wires, validate_norm=False)] + circuit.operations,
         circuit.measurements,
         shots=circuit.shots,
         trainable_params=circuit.trainable_params,
