@@ -408,6 +408,10 @@ def _get_interface_name(tapes, interface):
     return interface
 
 
+# Sentinel value used to check that variable was not provided by user
+DEFAULT_VALUE = object()
+
+
 def execute(
     tapes: Sequence[QuantumTape],
     device: device_type,
@@ -422,7 +426,7 @@ def execute(
     cachesize=10000,
     max_diff=1,
     override_shots: int = False,
-    expand_fn="device",  # type: ignore
+    expand_fn=DEFAULT_VALUE,  # type: ignore
     max_expansion=10,
     device_batch_transform=True,
     device_vjp=False,
@@ -484,6 +488,28 @@ def execute(
 
         The following arguments are deprecated and will be removed in version 0.39:
         ``expand_fn``, ...
+        Instead, please create a :class:`~.TransformProgram` with the desired preprocessing and pass it to the ``transform_program`` argument.
+
+        .. code-block:: python
+
+            from pennylane.devices.preprocess import decompose
+            from pennylane.transforms.core import TransformProgram
+
+            def stopping_condition(obj):
+                return obj.name in {"CNOT", "RX", "RZ"}
+
+            tape = qml.tape.QuantumScript([qml.IsingXX(1.2, wires=(0,1))], [qml.expval(qml.Z(0))])
+
+            program = TransformProgram()
+            program.add_transform(
+                decompose,
+                stopping_condition=stopping_condition,
+            )
+
+            dev = qml.device("default.qubit", wires=2)
+
+        >>> qml.execute([tape], dev, transform_program=program)
+        (0.36235775447667357,)
 
     **Example**
 
@@ -615,12 +641,14 @@ def execute(
     elif cache is False:
         cache = None
 
-    if expand_fn != "device":
+    if expand_fn != DEFAULT_VALUE:
         warnings.warn(
             "The expand_fn argument is deprecated and will be removed in version 0.39."
-            "Instead, please use qml.Device.preprocess.",
+            "Instead, please create a TransformProgram with the desired preprocessing and pass it to the transform_program argument.",
             qml.PennyLaneDeprecationWarning,
         )
+    else:
+        expand_fn = "device"
 
     expand_fn = _preprocess_expand_fn(expand_fn, device, max_expansion)
 

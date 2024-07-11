@@ -1099,19 +1099,21 @@ class QNode:
         full_transform_program.set_classical_component(self, args, kwargs)
         _prune_dynamic_transform(full_transform_program, inner_transform_program)
 
-        # pylint: disable=unexpected-keyword-arg
-        res = qml.execute(
-            (self._tape,),
-            device=self.device,
-            gradient_fn=self.gradient_fn,
-            interface=self.interface,
-            transform_program=full_transform_program,
-            inner_transform=inner_transform_program,
-            config=config,
-            gradient_kwargs=self.gradient_kwargs,
-            override_shots=override_shots,
-            **self.execute_kwargs,
-        )
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", qml.PennyLaneDeprecationWarning)
+            # pylint: disable=unexpected-keyword-arg
+            res = qml.execute(
+                (self._tape,),
+                device=self.device,
+                gradient_fn=self.gradient_fn,
+                interface=self.interface,
+                transform_program=full_transform_program,
+                inner_transform=inner_transform_program,
+                config=config,
+                gradient_kwargs=self.gradient_kwargs,
+                override_shots=override_shots,
+                **self.execute_kwargs,
+            )
         res = res[0]
 
         # convert result to the interface in case the qfunc has no parameters

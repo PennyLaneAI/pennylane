@@ -28,7 +28,7 @@
 <h3>Deprecations 👋</h3>
 
 * The ``expand_fn`` argument in ``qml.execute`` has been deprecated. 
-  Instead, add a transform to the ``decompose`` function of the device.
+  Instead, please create a ``qml.transforms.core.TransformProgram`` with the desired preprocessing and pass it to the ``transform_program`` argument.
   [(#5984)](https://github.com/PennyLaneAI/pennylane/pull/5984)
 
 <h3>Documentation 📝</h3>

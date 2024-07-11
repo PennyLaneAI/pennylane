@@ -10,7 +10,7 @@ Pending deprecations
 --------------------
 
 * The ``expand_fn`` argument in ``qml.execute`` is deprecated. 
-  Instead, add a transform to the ``decompose`` function of the device.
+  Instead, please create a ``qml.transforms.core.TransformProgram`` with the desired preprocessing and pass it to the ``transform_program`` argument.
 
   - Deprecated in v0.38
   - Will be removed in v0.39
