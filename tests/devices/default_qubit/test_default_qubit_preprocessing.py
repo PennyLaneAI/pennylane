@@ -20,6 +20,7 @@ import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane.devices import DefaultQubit, ExecutionConfig
 from pennylane.devices.default_qubit import stopping_condition
+from pennylane.operation import classproperty
 
 
 class NoMatOp(qml.operation.Operation):
@@ -43,6 +44,16 @@ class NoMatNoDecompOp(qml.operation.Operation):
     @property
     def has_matrix(self):
         return False
+
+
+# pylint: disable=too-few-public-methods
+class HasDiagonalizingGatesOp(qml.operation.Operator):
+    """Dummy observable that has diagonalizing gates."""
+
+    # pylint: disable=arguments-renamed, invalid-overridden-method
+    @classproperty
+    def has_diagonalizing_gates(cls):
+        return True
 
 
 def test_snapshot_multiprocessing_execute():
@@ -312,6 +323,11 @@ class TestPreprocessing:
                 True,
             ),
             (None, [qml.expval(qml.Hamiltonian([0.1, 0.2], [qml.RZ(0.234, 0), qml.X(0)]))], False),
+            (
+                None,
+                [qml.expval(qml.Hamiltonian([1, 1], [qml.Z(0), HasDiagonalizingGatesOp(1)]))],
+                True,
+            ),
             # Supported measurements in finite shots mode
             (100, [qml.state()], False),
             (100, [qml.expval(qml.X(0))], True),
