@@ -22,8 +22,8 @@ from pennylane import transform
 from pennylane.devices import DefaultMixed, DefaultQubit, DefaultQubitLegacy
 from pennylane.gradients import adjoint_metric_tensor, metric_tensor
 from pennylane.measurements import DensityMatrixMP, StateMP
-from pennylane.tape import QuantumTape
-from pennylane.typing import PostprocessingFn, TapeBatch
+from pennylane.tape import QuantumTape, TapeBatch
+from pennylane.typing import PostprocessingFn
 
 
 @partial(transform, final_transform=True)

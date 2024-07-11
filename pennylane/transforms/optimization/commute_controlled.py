@@ -13,9 +13,9 @@
 # limitations under the License.
 """Transforms for pushing commuting gates through targets/control qubits."""
 
-from pennylane.tape import QuantumTape
+from pennylane.tape import QuantumTape, TapeBatch
 from pennylane.transforms import transform
-from pennylane.typing import PostprocessingFn, TapeBatch
+from pennylane.typing import PostprocessingFn
 from pennylane.wires import Wires
 
 from .optimization_utils import find_next_gate

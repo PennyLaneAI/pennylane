@@ -27,7 +27,8 @@ import pennylane as qml
 from pennylane import DeviceError, Snapshot, transform
 from pennylane.measurements import SampleMeasurement, StateMeasurement
 from pennylane.operation import StatePrepBase, Tensor
-from pennylane.typing import PostprocessingFn, TapeBatch
+from pennylane.tape import TapeBatch
+from pennylane.typing import PostprocessingFn
 from pennylane.wires import WireError
 
 from .execution_config import MCMConfig

@@ -23,8 +23,9 @@ import pennylane as qml
 from pennylane import transform
 from pennylane.operation import Operator
 from pennylane.pauli import PauliSentence, PauliWord
+from pennylane.tape import TapeBatch
 from pennylane.transforms import TransformError
-from pennylane.typing import PostprocessingFn, TapeBatch, TensorLike
+from pennylane.typing import PostprocessingFn, TensorLike
 
 
 def catalyst_qjit(qnode):

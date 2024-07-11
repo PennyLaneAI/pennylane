@@ -24,8 +24,9 @@ from typing import Optional
 import pennylane as qml
 from pennylane.measurements import ExpectationMP, MeasurementProcess, Shots, StateMP
 from pennylane.ops import Hamiltonian, LinearCombination, Prod, SProd, Sum
+from pennylane.tape import TapeBatch
 from pennylane.transforms import transform
-from pennylane.typing import PostprocessingFn, Result, ResultBatch, TapeBatch
+from pennylane.typing import PostprocessingFn, Result, ResultBatch
 
 
 def null_postprocessing(results):

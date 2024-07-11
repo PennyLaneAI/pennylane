@@ -22,8 +22,9 @@ import numpy as np
 import pennylane as qml
 from pennylane import transform
 from pennylane.gradients.gradient_transform import _contract_qjac_with_cjac
+from pennylane.tape import TapeBatch
 from pennylane.transforms.tape_expand import expand_invalid_trainable
-from pennylane.typing import PostprocessingFn, TapeBatch
+from pennylane.typing import PostprocessingFn
 
 from .finite_difference import _processing_fn, finite_diff_coeffs
 from .general_shift_rules import generate_multishifted_tapes

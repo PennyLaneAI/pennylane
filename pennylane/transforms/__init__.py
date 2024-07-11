@@ -199,8 +199,8 @@ function in this scenario, we include a function that simply returns the first a
 
 .. code-block:: python
 
-    from pennylane.tape import QuantumTape
-    from pennylane.typing import TapeBatch, PostprocessingFn
+    from pennylane.tape import QuantumTape, TapeBatch
+    from pennylane.typing import PostprocessingFn
 
     def remove_rx(tape: QuantumTape) -> tuple[TapeBatch, PostprocessingFn]:
 
@@ -226,8 +226,8 @@ function into a quantum transform.
 
 .. code-block:: python
 
-    from pennylane.tape import QuantumTape
-    from pennylane.typing import TapeBatch, PostprocessingFn
+    from pennylane.tape import QuantumTape, TapeBatch
+    from pennylane.typing import PostprocessingFn
 
     @qml.transform
     def sum_circuit_and_adjoint(tape: QuantumTape) -> tuple[TapeBatch, PostprocessingFn]:

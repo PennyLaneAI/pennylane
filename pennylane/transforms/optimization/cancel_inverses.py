@@ -20,9 +20,9 @@ from pennylane.ops.qubit.attributes import (
     symmetric_over_all_wires,
     symmetric_over_control_wires,
 )
-from pennylane.tape import QuantumTape
+from pennylane.tape import QuantumTape, TapeBatch
 from pennylane.transforms import transform
-from pennylane.typing import PostprocessingFn, TapeBatch
+from pennylane.typing import PostprocessingFn
 from pennylane.wires import Wires
 
 from .optimization_utils import find_next_gate

@@ -43,10 +43,10 @@ from pennylane.measurements import (
 )
 from pennylane.operation import Observable, Operation, Tensor
 from pennylane.ops import LinearCombination, Prod, SProd, Sum
-from pennylane.tape import QuantumScript, QuantumTape
+from pennylane.tape import QuantumScript, QuantumTape, TapeBatch
 from pennylane.templates.subroutines.trotter import _recursive_expression
 from pennylane.transforms.core import TransformProgram
-from pennylane.typing import Result, ResultBatch, TapeBatch, TensorLike
+from pennylane.typing import Result, ResultBatch, TensorLike
 from pennylane.wires import WireError
 
 QuantumTape_or_Batch = Union[QuantumTape, TapeBatch]

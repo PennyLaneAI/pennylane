@@ -14,9 +14,9 @@
 """Transform for removing the Barrier gate from quantum circuits."""
 # pylint: disable=too-many-branches
 
-from pennylane.tape import QuantumTape
+from pennylane.tape import QuantumTape, TapeBatch
 from pennylane.transforms import transform
-from pennylane.typing import PostprocessingFn, TapeBatch
+from pennylane.typing import PostprocessingFn
 
 
 @transform

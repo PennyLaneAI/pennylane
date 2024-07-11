@@ -89,7 +89,7 @@ import autograd
 from autograd.numpy.numpy_boxes import ArrayBox
 
 import pennylane as qml
-from pennylane.typing import TapeBatch
+from pennylane.tape import TapeBatch
 
 ExecuteFn = Callable[[TapeBatch], qml.typing.ResultBatch]
 

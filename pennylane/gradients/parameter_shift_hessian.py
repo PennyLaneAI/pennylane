@@ -24,8 +24,9 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.measurements import ProbabilityMP, StateMP, VarianceMP
+from pennylane.tape import TapeBatch
 from pennylane.transforms import transform
-from pennylane.typing import PostprocessingFn, TapeBatch
+from pennylane.typing import PostprocessingFn
 
 from .general_shift_rules import (
     _combine_shift_rules,

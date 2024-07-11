@@ -133,8 +133,9 @@ import jax
 import jax.numpy as jnp
 
 import pennylane as qml
+from pennylane.tape import TapeBatch
 from pennylane.transforms import convert_to_numpy_parameters
-from pennylane.typing import ResultBatch, TapeBatch
+from pennylane.typing import ResultBatch
 
 dtype = jnp.float64
 

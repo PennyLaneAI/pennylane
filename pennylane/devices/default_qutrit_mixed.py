@@ -22,9 +22,9 @@ import numpy as np
 import pennylane as qml
 from pennylane.logging import debug_logger, debug_logger_init
 from pennylane.ops import _qutrit__channel__ops__ as channels
-from pennylane.tape import QuantumTape
+from pennylane.tape import QuantumTape, TapeBatch
 from pennylane.transforms.core import TransformProgram
-from pennylane.typing import Result, ResultBatch, TapeBatch
+from pennylane.typing import Result, ResultBatch
 
 from . import Device
 from .default_qutrit import DefaultQutrit

@@ -19,10 +19,10 @@ from typing import Union
 import numpy as np
 
 import pennylane as qml
-from pennylane.tape import QuantumTape
+from pennylane.tape import QuantumTape, TapeBatch
 from pennylane.transforms.batch_params import _nested_stack, _split_operations
 from pennylane.transforms.core import transform
-from pennylane.typing import PostprocessingFn, TapeBatch
+from pennylane.typing import PostprocessingFn
 
 
 @transform

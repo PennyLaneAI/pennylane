@@ -40,10 +40,10 @@ from pennylane.measurements import (
     VnEntropyMP,
 )
 from pennylane.ops.qubit.observables import BasisStateProjector
-from pennylane.tape import QuantumTape
+from pennylane.tape import QuantumTape, TapeBatch
 from pennylane.transforms import convert_to_numpy_parameters
 from pennylane.transforms.core import TransformProgram
-from pennylane.typing import Result, ResultBatch, TapeBatch
+from pennylane.typing import Result, ResultBatch
 
 from . import Device
 from .default_qubit import accepted_sample_measurement

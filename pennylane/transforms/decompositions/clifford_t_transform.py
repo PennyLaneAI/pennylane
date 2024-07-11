@@ -21,7 +21,7 @@ import pennylane as qml
 from pennylane.ops import Adjoint
 from pennylane.ops.op_math.decompositions.solovay_kitaev import sk_decomposition
 from pennylane.queuing import QueuingManager
-from pennylane.tape import QuantumTape
+from pennylane.tape import QuantumTape, TapeBatch
 from pennylane.transforms.core import transform
 from pennylane.transforms.optimization import (
     cancel_inverses,
@@ -30,7 +30,7 @@ from pennylane.transforms.optimization import (
     remove_barrier,
 )
 from pennylane.transforms.optimization.optimization_utils import _fuse_global_phases, find_next_gate
-from pennylane.typing import PostprocessingFn, TapeBatch
+from pennylane.typing import PostprocessingFn
 
 # Single qubits Clifford+T gates in PL
 _CLIFFORD_T_ONE_GATES = [

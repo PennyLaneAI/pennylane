@@ -22,7 +22,8 @@ import numpy as np
 import pennylane as qml
 from pennylane import transform
 from pennylane.measurements import VarianceMP
-from pennylane.typing import PostprocessingFn, TapeBatch
+from pennylane.tape import TapeBatch
+from pennylane.typing import PostprocessingFn
 
 from .finite_difference import finite_diff
 from .general_shift_rules import (

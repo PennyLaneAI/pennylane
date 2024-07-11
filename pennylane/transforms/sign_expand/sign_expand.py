@@ -19,8 +19,9 @@ from os import path
 import numpy as np
 
 import pennylane as qml
+from pennylane.tape import TapeBatch
 from pennylane.transforms import transform
-from pennylane.typing import PostprocessingFn, TapeBatch
+from pennylane.typing import PostprocessingFn
 
 
 def controlled_pauli_evolution(theta, wires, pauli_word, controls):

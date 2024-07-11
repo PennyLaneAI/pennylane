@@ -24,7 +24,8 @@ import numpy as np
 from cachetools import LRUCache
 
 import pennylane as qml
-from pennylane.typing import ResultBatch, TapeBatch, TensorLike
+from pennylane.tape import TapeBatch
+from pennylane.typing import ResultBatch, TensorLike
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())

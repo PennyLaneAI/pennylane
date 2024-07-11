@@ -19,7 +19,8 @@ from functools import partial
 from typing import Optional, Union
 
 import pennylane as qml
-from pennylane.typing import PostprocessingFn, ResultBatch, TapeBatch
+from pennylane.tape import TapeBatch
+from pennylane.typing import PostprocessingFn, ResultBatch
 
 from .transform_dispatcher import TransformContainer, TransformDispatcher, TransformError
 

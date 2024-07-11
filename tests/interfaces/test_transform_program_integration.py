@@ -22,7 +22,8 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.typing import PostprocessingFn, TapeBatch
+from pennylane.tape import TapeBatch
+from pennylane.typing import PostprocessingFn
 
 device_suite = (
     qml.device("default.qubit.legacy", wires=5),

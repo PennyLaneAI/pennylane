@@ -19,9 +19,9 @@ from pennylane.math import allclose, cast_like, get_interface, is_abstract, stac
 from pennylane.ops.op_math import Adjoint
 from pennylane.ops.qubit.attributes import composable_rotations
 from pennylane.queuing import QueuingManager
-from pennylane.tape import QuantumTape
+from pennylane.tape import QuantumTape, TapeBatch
 from pennylane.transforms import transform
-from pennylane.typing import PostprocessingFn, TapeBatch
+from pennylane.typing import PostprocessingFn
 
 from .optimization_utils import find_next_gate, fuse_rot_angles
 

@@ -33,7 +33,8 @@ from pennylane.measurements import (
     SampleMP,
     VarianceMP,
 )
-from pennylane.typing import PostprocessingFn, TapeBatch, TensorLike
+from pennylane.tape import TapeBatch
+from pennylane.typing import PostprocessingFn, TensorLike
 
 from .core import transform
 

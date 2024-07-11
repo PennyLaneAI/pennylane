@@ -18,7 +18,8 @@ import warnings
 from collections.abc import Callable
 
 import pennylane as qml
-from pennylane.typing import PostprocessingFn, ResultBatch, TapeBatch
+from pennylane.tape import TapeBatch
+from pennylane.typing import PostprocessingFn, ResultBatch
 
 
 def map_batch_transform(

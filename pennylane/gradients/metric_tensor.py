@@ -24,8 +24,9 @@ import numpy as np
 import pennylane as qml
 from pennylane.circuit_graph import LayerData
 from pennylane.queuing import WrappedObj
+from pennylane.tape import TapeBatch
 from pennylane.transforms import transform
-from pennylane.typing import PostprocessingFn, TapeBatch
+from pennylane.typing import PostprocessingFn
 
 
 def _contract_metric_tensor_with_cjac(mt, cjac, tape):  # pylint: disable=unused-argument

@@ -21,7 +21,8 @@ from functools import wraps
 from typing import Literal, Optional, Union
 
 import pennylane as qml
-from pennylane.typing import PostprocessingFn, TapeBatch
+from pennylane.tape import TapeBatch
+from pennylane.typing import PostprocessingFn
 
 from .qnode import QNode, _get_device_shots, _make_execution_config
 

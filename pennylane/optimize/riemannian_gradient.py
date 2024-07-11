@@ -20,8 +20,8 @@ from scipy.sparse.linalg import expm
 import pennylane as qml
 from pennylane import transform
 from pennylane.queuing import QueuingManager
-from pennylane.tape import QuantumTape
-from pennylane.typing import PostprocessingFn, TapeBatch
+from pennylane.tape import QuantumTape, TapeBatch
+from pennylane.typing import PostprocessingFn
 
 
 @transform

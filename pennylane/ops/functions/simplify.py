@@ -22,8 +22,8 @@ import pennylane as qml
 from pennylane.measurements import MeasurementProcess
 from pennylane.operation import Operator
 from pennylane.queuing import QueuingManager
-from pennylane.tape import QuantumScript, QuantumTape
-from pennylane.typing import PostprocessingFn, TapeBatch
+from pennylane.tape import QuantumScript, QuantumTape, TapeBatch
+from pennylane.typing import PostprocessingFn
 from pennylane.workflow import QNode
 
 

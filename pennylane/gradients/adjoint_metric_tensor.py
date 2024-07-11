@@ -23,8 +23,9 @@ import pennylane as qml
 
 # pylint: disable=too-many-statements,unused-argument
 from pennylane.gradients.metric_tensor import _contract_metric_tensor_with_cjac
+from pennylane.tape import TapeBatch
 from pennylane.transforms import transform
-from pennylane.typing import PostprocessingFn, TapeBatch
+from pennylane.typing import PostprocessingFn
 
 
 def _reshape_real_imag(state, dim):

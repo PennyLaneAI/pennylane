@@ -23,9 +23,9 @@ from typing import Optional, Union
 
 from pennylane import Tracker
 from pennylane.measurements import Shots
-from pennylane.tape import QuantumTape
+from pennylane.tape import QuantumTape, TapeBatch
 from pennylane.transforms.core import TransformProgram
-from pennylane.typing import Result, ResultBatch, TapeBatch
+from pennylane.typing import Result, ResultBatch
 from pennylane.wires import Wires
 
 from .execution_config import DefaultExecutionConfig, ExecutionConfig
@@ -255,7 +255,8 @@ class Device(abc.ABC):
 
         .. code-block:: python
 
-                from pennylane.typing import TapeBatch, PostprocessingFn
+                from pennylane.tape import TapeBatch
+                from pennylane.typing import PostprocessingFn
 
                 @transform
                 def my_preprocessing_transform(tape: qml.tape.QuantumTape) -> tuple[TapeBatch, PostprocessingFn]:

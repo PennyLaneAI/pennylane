@@ -22,8 +22,8 @@ import numpy as np
 import pennylane as qml
 from pennylane import transform
 from pennylane.measurements import ClassicalShadowMP
-from pennylane.tape import QuantumScript, QuantumTape
-from pennylane.typing import PostprocessingFn, TapeBatch
+from pennylane.tape import QuantumScript, QuantumTape, TapeBatch
+from pennylane.typing import PostprocessingFn
 
 
 @transform

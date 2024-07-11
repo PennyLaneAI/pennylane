@@ -18,9 +18,9 @@ import warnings
 from functools import partial
 
 import pennylane as qml
-from pennylane.tape import QuantumTape
+from pennylane.tape import QuantumTape, TapeBatch
 from pennylane.transforms import transform
-from pennylane.typing import PostprocessingFn, TapeBatch
+from pennylane.typing import PostprocessingFn
 
 
 def _is_snapshot_compatible(dev):

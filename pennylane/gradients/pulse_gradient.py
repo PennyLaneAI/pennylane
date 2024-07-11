@@ -23,7 +23,8 @@ import numpy as np
 import pennylane as qml
 from pennylane import transform
 from pennylane.pulse import HardwareHamiltonian, ParametrizedEvolution
-from pennylane.typing import PostprocessingFn, TapeBatch
+from pennylane.tape import TapeBatch
+from pennylane.typing import PostprocessingFn
 
 from .general_shift_rules import eigvals_to_frequencies, generate_shift_rule
 from .gradient_transform import (

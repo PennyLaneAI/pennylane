@@ -12,9 +12,9 @@ from pennylane.ops import Hamiltonian, LinearCombination
 from pennylane.ops import __all__ as all_ops
 from pennylane.ops.qubit import SWAP
 from pennylane.queuing import QueuingManager
-from pennylane.tape import QuantumTape
+from pennylane.tape import QuantumTape, TapeBatch
 from pennylane.transforms import transform
-from pennylane.typing import PostprocessingFn, TapeBatch
+from pennylane.typing import PostprocessingFn
 
 
 def state_transposition(results, mps, new_wire_order, original_wire_order):

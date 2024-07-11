@@ -17,7 +17,7 @@
 import pytest
 
 import pennylane as qml
-from pennylane.tape import QuantumScript
+from pennylane.tape import QuantumScript, TapeBatch
 from pennylane.transforms.core import (
     TransformContainer,
     TransformError,
@@ -29,7 +29,7 @@ from pennylane.transforms.core.transform_program import (
     _batch_postprocessing,
     null_postprocessing,
 )
-from pennylane.typing import PostprocessingFn, Result, ResultBatch, TapeBatch
+from pennylane.typing import PostprocessingFn, Result, ResultBatch
 
 
 def first_valid_transform(

@@ -23,7 +23,8 @@ import pennylane as qml
 from pennylane import transform
 from pennylane.ops.qubit.special_unitary import _pauli_decompose, pauli_basis_strings
 from pennylane.pulse import ParametrizedEvolution
-from pennylane.typing import PostprocessingFn, TapeBatch
+from pennylane.tape import TapeBatch
+from pennylane.typing import PostprocessingFn
 
 from .gradient_transform import (
     _all_zero_grad,

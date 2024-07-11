@@ -17,9 +17,9 @@
 from pennylane.math import allclose, is_abstract, stack
 from pennylane.ops.qubit import Rot
 from pennylane.queuing import QueuingManager
-from pennylane.tape import QuantumTape
+from pennylane.tape import QuantumTape, TapeBatch
 from pennylane.transforms import transform
-from pennylane.typing import PostprocessingFn, TapeBatch
+from pennylane.typing import PostprocessingFn
 
 from .optimization_utils import find_next_gate, fuse_rot_angles
 

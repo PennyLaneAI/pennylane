@@ -28,10 +28,10 @@ import pennylane as qml
 from pennylane.logging import debug_logger, debug_logger_init
 from pennylane.measurements.mid_measure import MidMeasureMP
 from pennylane.ops.op_math.condition import Conditional
-from pennylane.tape import QuantumTape
+from pennylane.tape import QuantumTape, TapeBatch
 from pennylane.transforms import convert_to_numpy_parameters
 from pennylane.transforms.core import TransformProgram
-from pennylane.typing import PostprocessingFn, Result, ResultBatch, TapeBatch
+from pennylane.typing import PostprocessingFn, Result, ResultBatch
 
 from . import Device
 from .execution_config import DefaultExecutionConfig, ExecutionConfig

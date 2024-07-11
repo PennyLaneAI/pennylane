@@ -22,9 +22,9 @@ from functools import partial
 import pennylane as qml
 from pennylane.measurements import ExpectationMP, MeasurementProcess, Shots
 from pennylane.ops import Prod, SProd, Sum
-from pennylane.tape import QuantumTape
+from pennylane.tape import QuantumTape, TapeBatch
 from pennylane.transforms import transform
-from pennylane.typing import PostprocessingFn, ResultBatch, TapeBatch
+from pennylane.typing import PostprocessingFn, ResultBatch
 
 
 def grouping_processing_fn(res_groupings, coeff_groupings, batch_size, offset):

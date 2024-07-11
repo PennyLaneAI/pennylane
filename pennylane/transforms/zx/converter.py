@@ -21,9 +21,9 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.operation import Operator
-from pennylane.tape import QuantumScript, QuantumTape
+from pennylane.tape import QuantumScript, QuantumTape, TapeBatch
 from pennylane.transforms import TransformError, transform
-from pennylane.typing import PostprocessingFn, TapeBatch
+from pennylane.typing import PostprocessingFn
 from pennylane.wires import Wires
 
 

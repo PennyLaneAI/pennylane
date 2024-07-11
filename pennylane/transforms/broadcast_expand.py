@@ -16,7 +16,8 @@ broadcasted tape into multiple tapes."""
 
 import pennylane as qml
 from pennylane.measurements import MidMeasureMP, SampleMP
-from pennylane.typing import PostprocessingFn, TapeBatch
+from pennylane.tape import TapeBatch
+from pennylane.typing import PostprocessingFn
 
 from .core import transform
 

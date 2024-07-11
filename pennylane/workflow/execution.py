@@ -31,9 +31,9 @@ from typing import Optional, Union
 from cachetools import Cache, LRUCache
 
 import pennylane as qml
-from pennylane.tape import QuantumTape
+from pennylane.tape import QuantumTape, TapeBatch
 from pennylane.transforms import transform
-from pennylane.typing import PostprocessingFn, Result, ResultBatch, TapeBatch
+from pennylane.typing import PostprocessingFn, Result, ResultBatch
 
 from .jacobian_products import (
     DeviceDerivatives,

@@ -17,9 +17,9 @@ from pennylane import AmplitudeEmbedding
 from pennylane._device import DeviceError
 from pennylane.math import flatten, reshape
 from pennylane.queuing import QueuingManager
-from pennylane.tape import QuantumTape
+from pennylane.tape import QuantumTape, TapeBatch
 from pennylane.transforms import transform
-from pennylane.typing import PostprocessingFn, TapeBatch
+from pennylane.typing import PostprocessingFn
 
 
 @transform

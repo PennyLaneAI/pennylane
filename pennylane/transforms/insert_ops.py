@@ -21,9 +21,9 @@ from typing import Type, Union
 import pennylane as qml
 from pennylane.operation import Operation
 from pennylane.ops.op_math import Adjoint
-from pennylane.tape import QuantumTape
+from pennylane.tape import QuantumTape, TapeBatch
 from pennylane.transforms import transform
-from pennylane.typing import PostprocessingFn, TapeBatch
+from pennylane.typing import PostprocessingFn
 
 # pylint: disable=too-many-branches
 

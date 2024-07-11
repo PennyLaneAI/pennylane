@@ -18,9 +18,9 @@ during execution.
 
 import pennylane as qml
 from pennylane import math
-from pennylane.tape import QuantumScript
+from pennylane.tape import QuantumScript, TapeBatch
 from pennylane.transforms import transform
-from pennylane.typing import PostprocessingFn, TapeBatch
+from pennylane.typing import PostprocessingFn
 
 
 # pylint: disable=no-member

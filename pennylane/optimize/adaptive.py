@@ -18,8 +18,8 @@ import copy
 import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane import transform
-from pennylane.tape import QuantumTape
-from pennylane.typing import PostprocessingFn, TapeBatch
+from pennylane.tape import QuantumTape, TapeBatch
+from pennylane.typing import PostprocessingFn
 
 
 @transform

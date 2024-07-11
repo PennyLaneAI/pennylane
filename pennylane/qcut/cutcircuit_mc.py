@@ -25,9 +25,9 @@ from networkx import MultiDiGraph
 
 import pennylane as qml
 from pennylane.measurements import SampleMP
-from pennylane.tape import QuantumScript, QuantumTape
+from pennylane.tape import QuantumScript, QuantumTape, TapeBatch
 from pennylane.transforms import transform
-from pennylane.typing import PostprocessingFn, TapeBatch
+from pennylane.typing import PostprocessingFn
 from pennylane.wires import Wires
 
 from .cutstrategy import CutStrategy

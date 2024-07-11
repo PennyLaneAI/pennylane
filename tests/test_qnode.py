@@ -27,8 +27,8 @@ import pennylane as qml
 from pennylane import QNode
 from pennylane import numpy as pnp
 from pennylane import qnode
-from pennylane.tape import QuantumScript
-from pennylane.typing import PostprocessingFn, TapeBatch
+from pennylane.tape import QuantumScript, TapeBatch
+from pennylane.typing import PostprocessingFn
 from pennylane.workflow.qnode import _prune_dynamic_transform
 
 

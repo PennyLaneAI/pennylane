@@ -18,7 +18,7 @@ from functools import partial
 import pennylane as qml
 from pennylane.ops import __all__ as all_ops
 from pennylane.queuing import QueuingManager
-from pennylane.tape import QuantumTape
+from pennylane.tape import QuantumTape, TapeBatch
 from pennylane.transforms.core import TransformDispatcher, transform
 from pennylane.transforms.optimization import (
     cancel_inverses,
@@ -26,7 +26,7 @@ from pennylane.transforms.optimization import (
     merge_rotations,
     remove_barrier,
 )
-from pennylane.typing import PostprocessingFn, TapeBatch
+from pennylane.typing import PostprocessingFn
 
 default_pipeline = [commute_controlled, cancel_inverses, merge_rotations, remove_barrier]
 

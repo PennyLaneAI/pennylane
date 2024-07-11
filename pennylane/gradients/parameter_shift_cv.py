@@ -35,8 +35,9 @@ from pennylane.measurements import (
     StateMP,
     VarianceMP,
 )
+from pennylane.tape import TapeBatch
 from pennylane.transforms.tape_expand import expand_invalid_trainable
-from pennylane.typing import PostprocessingFn, TapeBatch
+from pennylane.typing import PostprocessingFn
 
 from .finite_difference import finite_diff
 from .general_shift_rules import generate_shifted_tapes, process_shifts

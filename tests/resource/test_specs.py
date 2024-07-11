@@ -19,7 +19,8 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as pnp
-from pennylane.typing import PostprocessingFn, TapeBatch
+from pennylane.tape import TapeBatch
+from pennylane.typing import PostprocessingFn
 
 
 class TestSpecsTransform:

@@ -19,8 +19,9 @@ from functools import partial
 import pytest
 
 import pennylane as qml
+from pennylane.tape import TapeBatch
 from pennylane.transforms.core import TransformContainer, TransformError, transform
-from pennylane.typing import PostprocessingFn, TapeBatch, TensorLike
+from pennylane.typing import PostprocessingFn, TensorLike
 
 dev = qml.device("default.qubit", wires=2)
 

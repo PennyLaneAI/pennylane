@@ -17,9 +17,9 @@ import pennylane as qml
 from pennylane.measurements import CountsMP, MeasurementValue, MidMeasureMP, ProbabilityMP, SampleMP
 from pennylane.ops.op_math import ctrl
 from pennylane.queuing import QueuingManager
-from pennylane.tape import QuantumTape
+from pennylane.tape import QuantumTape, TapeBatch
 from pennylane.transforms import transform
-from pennylane.typing import PostprocessingFn, TapeBatch
+from pennylane.typing import PostprocessingFn
 from pennylane.wires import Wires
 
 # pylint: disable=too-many-branches, protected-access, too-many-statements

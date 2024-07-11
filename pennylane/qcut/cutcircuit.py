@@ -21,9 +21,9 @@ from typing import Optional, Union
 
 import pennylane as qml
 from pennylane.measurements import ExpectationMP
-from pennylane.tape import QuantumTape
+from pennylane.tape import QuantumTape, TapeBatch
 from pennylane.transforms import transform
-from pennylane.typing import PostprocessingFn, TapeBatch
+from pennylane.typing import PostprocessingFn
 from pennylane.wires import Wires
 
 from .cutstrategy import CutStrategy

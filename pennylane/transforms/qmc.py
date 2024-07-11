@@ -18,9 +18,10 @@ from copy import copy
 
 import pennylane as qml
 from pennylane import CZ, Hadamard, MultiControlledX, PauliX, adjoint
+from pennylane.tape import TapeBatch
 from pennylane.templates import QFT
 from pennylane.transforms.core import transform
-from pennylane.typing import PostprocessingFn, TapeBatch
+from pennylane.typing import PostprocessingFn
 from pennylane.wires import Wires
 
 

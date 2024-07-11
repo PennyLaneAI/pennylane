@@ -40,9 +40,9 @@ from pennylane.measurements import (
     Shots,
     StateMP,
 )
-from pennylane.tape import QuantumTape
+from pennylane.tape import QuantumTape, TapeBatch
 from pennylane.transforms.core import TransformProgram
-from pennylane.typing import Result, ResultBatch, TapeBatch
+from pennylane.typing import Result, ResultBatch
 
 from . import DefaultQubit, Device
 from .execution_config import DefaultExecutionConfig, ExecutionConfig

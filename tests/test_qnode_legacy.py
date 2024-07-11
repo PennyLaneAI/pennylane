@@ -27,8 +27,8 @@ from pennylane import QNode
 from pennylane import numpy as pnp
 from pennylane import qnode
 from pennylane.resource import Resources
-from pennylane.tape import QuantumScript
-from pennylane.typing import PostprocessingFn, TapeBatch
+from pennylane.tape import QuantumScript, TapeBatch
+from pennylane.typing import PostprocessingFn
 
 
 def dummyfunc():

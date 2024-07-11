@@ -18,9 +18,9 @@ A transform for decomposing arbitrary single-qubit QubitUnitary gates into eleme
 import pennylane as qml
 from pennylane.ops.op_math.decompositions import one_qubit_decomposition, two_qubit_decomposition
 from pennylane.queuing import QueuingManager
-from pennylane.tape import QuantumTape
+from pennylane.tape import QuantumTape, TapeBatch
 from pennylane.transforms import transform
-from pennylane.typing import PostprocessingFn, TapeBatch
+from pennylane.typing import PostprocessingFn
 
 
 @transform

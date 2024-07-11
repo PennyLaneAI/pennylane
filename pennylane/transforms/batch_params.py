@@ -17,7 +17,8 @@ Contains the batch dimension transform.
 # pylint: disable=import-outside-toplevel
 
 import pennylane as qml
-from pennylane.typing import PostprocessingFn, TapeBatch
+from pennylane.tape import TapeBatch
+from pennylane.typing import PostprocessingFn
 
 from .core import transform
 

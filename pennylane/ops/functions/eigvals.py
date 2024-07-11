@@ -23,8 +23,9 @@ import scipy
 
 import pennylane as qml
 from pennylane import transform
+from pennylane.tape import TapeBatch
 from pennylane.transforms import TransformError
-from pennylane.typing import PostprocessingFn, TapeBatch, TensorLike
+from pennylane.typing import PostprocessingFn, TensorLike
 
 
 def eigvals(op: qml.operation.Operator, k=1, which="SA") -> TensorLike:

@@ -20,9 +20,9 @@ import pennylane as qml
 from pennylane import adjoint, apply
 from pennylane.math import mean, round, shape
 from pennylane.queuing import AnnotatedQueue
-from pennylane.tape import QuantumScript, QuantumTape
+from pennylane.tape import QuantumScript, QuantumTape, TapeBatch
 from pennylane.transforms import transform
-from pennylane.typing import PostprocessingFn, TapeBatch
+from pennylane.typing import PostprocessingFn
 
 
 @transform

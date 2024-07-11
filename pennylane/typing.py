@@ -22,8 +22,6 @@ from typing import TypeVar, Union
 import numpy as np
 from autograd.numpy.numpy_boxes import ArrayBox
 
-import pennylane as qml
-
 _TensorLike = Union[int, float, bool, complex, bytes, list, tuple, np.ndarray, ArrayBox, np.generic]
 
 
@@ -121,8 +119,6 @@ def _is_torch(other, subclass=False):
             return check(other, torchTensor)
     return False
 
-
-TapeBatch = Sequence["qml.tape.QuantumTape"]
 
 Result = TypeVar("Result", dict, tuple, TensorLike)
 

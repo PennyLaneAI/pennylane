@@ -17,8 +17,8 @@ preprocessing in the QNode."""
 from functools import partial
 
 from pennylane import transform
-from pennylane.tape import QuantumTape
-from pennylane.typing import PostprocessingFn, TapeBatch
+from pennylane.tape import QuantumTape, TapeBatch
+from pennylane.typing import PostprocessingFn
 
 from .utils import get_spectrum, join_spectra
 
