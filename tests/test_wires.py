@@ -14,12 +14,12 @@
 """
 Unit tests for :mod:`pennylane.wires`.
 """
+from __future__ import annotations
 import numpy as np
 import pytest
 
 import pennylane as qml
 from pennylane.wires import WireError, Wires
-from __future__ import annotations
 
 
 # pylint: disable=too-many-public-methods
