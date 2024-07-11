@@ -58,7 +58,7 @@ def _convert_obs_to_legacy_opmath(obs):
     return obs
 
 
-@qml.devices.modifiers.single_tape_support
+# pylint: disable=too-few-public-methods
 class NoTermsDevice(qml.devices.DefaultQubit):
     """A device that builds on default.qubit, but won't accept Hamiltonian, LinearCombination and Sum"""
 
