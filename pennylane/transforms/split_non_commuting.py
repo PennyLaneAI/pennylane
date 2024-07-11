@@ -54,8 +54,8 @@ def split_non_commuting(
     .. note::
         This transform splits expectation values of sums into separate terms, and also distributes the terms into
         multiple executions if there are terms that do not commute with one another. For state-based simulators
-        that are able to handle non-commuting measurements in a single execution, but don't natively support
-        sums of observables, consider :func:`split_to_single_term <pennylane.transforms.split_to_single_term>` instead.
+        that are able to handle non-commuting measurements in a single execution, but don't natively support sums
+        of observables, consider :func:`split_to_single_terms <pennylane.transforms.split_to_single_terms>` instead.
 
     **Examples:**
 
