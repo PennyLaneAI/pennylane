@@ -189,6 +189,7 @@ class TestSampleState:
         assert np.allclose(reordered_probs, random_probs, atol=APPROX_ATOL)
 
 
+# pylint: disable=too-many-public-methods
 class TestMeasureSamples:
     """Test that the measure_with_samples function works as expected"""
 
