@@ -50,7 +50,7 @@ class NoMatNoDecompOp(qml.operation.Operation):
 class HasDiagonalizingGatesOp(qml.operation.Operator):
     """Dummy observable that has diagonalizing gates."""
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
+    # pylint: disable=arguments-renamed,invalid-overridden-method,no-self-argument
     @classproperty
     def has_diagonalizing_gates(cls):
         return True
