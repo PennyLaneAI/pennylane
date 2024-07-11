@@ -125,25 +125,19 @@ class TestFermiWord:
         with pytest.raises(ValueError, match="The operator indices must belong to the set"):
             FermiWord(operator)
 
-    fw_to_mat_cases = [
-        (
-            fw1,
-            np.array(
-                [
-                    [0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j],
-                    [0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j],
-                    [0.0 + 0.0j, 1.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j],
-                    [0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j],
-                ]
-            ),
-        ),
-    ]
-
-    @pytest.mark.parametrize("fw, expected_mat", fw_to_mat_cases)
-    def test_to_mat(self, fw, expected_mat):
+    def test_to_mat(self):
         """Test that the matrix representation of FermiWord is correct."""
+        fw = FermiWord({(0, 0): "+", (1, 1): "-"})
+        expected_mat = np.zeros((4, 4), dtype=complex)
+        expected_mat[2, 1] = 1.0
+
         mat = fw.to_mat()
         assert np.allclose(mat, expected_mat)
+
+        # check that the error is raised when the request matrix dimension is smaller
+        # than that determined by the largest index
+        with pytest.raises(ValueError, match="n_orbitals cannot be smaller than 2"):
+            fw.to_mat(n_orbitals=1)
 
 
 class TestFermiWordArithmetic:
@@ -621,25 +615,29 @@ class TestFermiSentence:
         new_fs = pickle.loads(serialization)
         assert fs == new_fs
 
-    fs_to_mat_cases = [
-        (
-            fs6,
-            np.array(
-                [
-                    [0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j],
-                    [0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j],
-                    [0.0 + 0.0j, 1.2 + 0.0j, 3.1 + 0.0j, 0.0 + 0.0j],
-                    [0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, 3.1 + 0.0j],
-                ]
-            ),
-        ),
-    ]
-
-    @pytest.mark.parametrize("fs, expected_mat", fs_to_mat_cases)
-    def test_to_mat(self, fs, expected_mat):
+    def test_to_mat(self):
         """Test that the matrix representation of FermiSentence is correct."""
+        fs = FermiSentence(
+            {
+                FermiWord({(0, 0): "+", (1, 1): "-"}): 1.23,  # a+(0) a(1)
+                FermiWord({(0, 0): "+", (1, 0): "-"}): 4.0j,  # a+(0) a(0) = n(0) (number operator)
+                FermiWord({(0, 0): "+", (1, 2): "-", (2, 1): "+"}): -0.5,  # a+(0) a(2) a+(1)
+            }
+        )
+        expected_mat = np.zeros((8, 8), dtype=complex)
+        expected_mat[4, 2] = 1.23 + 0j
+        expected_mat[5, 3] = 1.23 + 0j
+        for i in [4, 5, 6, 7]:
+            expected_mat[i, i] = 4.0j
+        expected_mat[6, 1] = 0.5 + 0j
+
         mat = fs.to_mat()
         assert np.allclose(mat, expected_mat)
+
+        # The error is raised when the request matrix dimension (2**(n_n_orbitals) by 2**(n_n_orbitals))
+        # is smaller than that determined by the largest index
+        with pytest.raises(ValueError, match="n_orbitals cannot be smaller than 3"):
+            fs.to_mat(n_orbitals=2)
 
 
 class TestFermiSentenceArithmetic:
