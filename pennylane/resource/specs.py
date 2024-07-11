@@ -94,6 +94,9 @@ def specs(qnode, **kwargs):
         ``max_expansion`` and ``qnode.max_expansion`` have no effect on the return of this function and will
         be ignored.
 
+    .. warning::
+        The ``expansion_strategy`` argument is deprecated and will be removed in version 0.39. Use the ``level``
+        argument instead to specify the resulting tape you want.
 
     **Example**
 

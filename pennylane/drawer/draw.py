@@ -103,6 +103,9 @@ def draw(
         as it allows for the same values as ``expansion_strategy`` and offers more flexibility in choosing
         the desired transforms/expansions.
 
+    .. warning::
+        The ``expansion_strategy`` argument is deprecated and will be removed in version 0.39. Use the ``level``
+        argument instead to specify the resulting tape you want.
 
     **Example**
 
@@ -181,7 +184,7 @@ def draw(
                 qml.StronglyEntanglingLayers(params, wires=range(3))
                 return [qml.expval(qml.Z(i)) for i in range(3)]
 
-        >>> print(qml.draw(longer_circuit, max_length=60, expansion_strategy="device")(params))
+        >>> print(qml.draw(longer_circuit, max_length=60, level="device")(params))
         0: ──Rot(0.77,0.44,0.86)─╭●────╭X──Rot(0.45,0.37,0.93)─╭●─╭X
         1: ──Rot(0.70,0.09,0.98)─╰X─╭●─│───Rot(0.64,0.82,0.44)─│──╰●
         2: ──Rot(0.76,0.79,0.13)────╰X─╰●──Rot(0.23,0.55,0.06)─╰X───
@@ -450,6 +453,10 @@ def draw_mpl(
         ``qnode.expansion_strategy`` will be used instead. Users are encouraged to predominantly use ``level``,
         as it allows for the same values as ``expansion_strategy`` and offers more flexibility in choosing
         the desired transforms/expansions.
+
+    .. warning::
+        The ``expansion_strategy`` argument is deprecated and will be removed in version 0.39. Use the ``level``
+        argument instead to specify the resulting tape you want.
 
     .. warning::
 

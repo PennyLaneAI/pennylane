@@ -136,10 +136,15 @@ class TestLevelExpansionStrategy:
     def test_expansion_strategy(self, device, strategy, initial_strategy, n_lines):
         """Test that the expansion strategy keyword controls what operations are drawn."""
 
-        @qml.qnode(device, expansion_strategy=initial_strategy)
-        def circuit():
-            qml.Permute([2, 0, 1], wires=(0, 1, 2))
-            return qml.expval(qml.PauliZ(0))
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match="'expansion_strategy' attribute is deprecated",
+        ):
+
+            @qml.qnode(device, expansion_strategy=initial_strategy)
+            def circuit():
+                qml.Permute([2, 0, 1], wires=(0, 1, 2))
+                return qml.expval(qml.PauliZ(0))
 
         with pytest.warns(
             qml.PennyLaneDeprecationWarning, match="'expansion_strategy' argument is deprecated"

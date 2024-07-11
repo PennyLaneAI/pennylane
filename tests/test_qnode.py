@@ -1984,10 +1984,15 @@ class TestTapeExpansion:
         dev = qml.device("default.qubit", wires=2)
         x = pnp.array(0.5, requires_grad=True)
 
-        @qnode(dev, diff_method="parameter-shift", expansion_strategy="device")
-        def circuit(x):
-            qml.SingleExcitation(x, wires=[0, 1])
-            return qml.expval(qml.PauliX(0))
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match="'expansion_strategy' attribute is deprecated",
+        ):
+
+            @qnode(dev, diff_method="parameter-shift", expansion_strategy="device")
+            def circuit(x):
+                qml.SingleExcitation(x, wires=[0, 1])
+                return qml.expval(qml.PauliX(0))
 
         assert circuit.expansion_strategy == "device"
         assert circuit.execute_kwargs["expand_fn"] is None
@@ -2019,10 +2024,15 @@ class TestTapeExpansion:
         dev = qml.device("default.qubit", wires=2)
         monkeypatch.setattr(dev, "preprocess", preprocess_with_batchtransform)
 
-        @qnode(dev, diff_method="parameter-shift", expansion_strategy="device")
-        def circuit(x):
-            qml.SingleExcitation(x, wires=[0, 1])
-            return qml.expval(qml.PauliX(0))
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match="'expansion_strategy' attribute is deprecated",
+        ):
+
+            @qnode(dev, diff_method="parameter-shift", expansion_strategy="device")
+            def circuit(x):
+                qml.SingleExcitation(x, wires=[0, 1])
+                return qml.expval(qml.PauliX(0))
 
         with pytest.raises(
             ValueError,

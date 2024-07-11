@@ -279,7 +279,10 @@ class TestSpecsTransform:
 
     def test_expansion_strategy(self):
         """Test that a user can calculate specs for different expansion strategies."""
-        circuit, params = self.make_qnode_and_params("gradient")
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match="'expansion_strategy' attribute is deprecated"
+        ):
+            circuit, params = self.make_qnode_and_params("gradient")
 
         assert circuit.expansion_strategy == "gradient"
 

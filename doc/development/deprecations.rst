@@ -9,6 +9,12 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
+* The ``expansion_strategy`` attribute of ``qml.QNode`` is deprecated. 
+  Users should make use ``qml.workflow.construct_batch``, should they require fine control over the output tape(s).
+
+  - Deprecated in v0.38
+  - Will be removed in v0.39
+
 * The ``expansion_strategy`` argument in ``qml.specs``, ``qml.draw``, and ``qml.draw_mpl`` is deprecated. 
   Instead, use the ``level`` argument which provides a superset of options.
 
