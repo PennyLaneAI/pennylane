@@ -25,7 +25,7 @@ from pennylane.measurements import (
     ShadowExpvalMP,
     Shots,
 )
-from pennylane.ops import Hamiltonian, LinearCombination, Sum, SProd
+from pennylane.ops import Hamiltonian, LinearCombination, SProd, Sum
 from pennylane.typing import TensorLike
 
 from .apply_operation import apply_operation

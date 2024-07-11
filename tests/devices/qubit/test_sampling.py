@@ -564,11 +564,14 @@ class TestMeasureSamples:
             [
                 np.array([[0.5, 0.5j], [-0.5j, 0.5]]),
                 [
-                    qml.expval(qml.Y(1)),
-                    qml.expval(qml.Y(0) + qml.Y(0) + qml.Y(0)),
-                    qml.expval(qml.Y(1) + qml.Y(1)),
+                    qml.expval(qml.Y(1) - qml.Y(1)),
+                    qml.expval(2 * (qml.Y(0) + qml.Y(0) - 5 * (qml.Y(0) + qml.Y(0)))),
+                    qml.expval(
+                        (2 * (qml.Y(0) + qml.Y(0)))
+                        @ ((5 * (qml.Y(0) + qml.Y(0)) + 3 * (qml.Y(0) + qml.Y(0))))
+                    ),
                 ],
-                (1.0, -3.0, 2.0),
+                (0.0, 16.0, 64.0),
             ],
         ],
     )
