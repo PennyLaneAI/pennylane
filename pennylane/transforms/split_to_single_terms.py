@@ -49,7 +49,7 @@ def split_to_single_terms(tape):
         This transform doesn't split non-commuting terms into multiple executions. It is suitable for state-based
         simulators that don't natively support sums of observables, but *can* handle non-commuting measurements.
         For hardware or hardware-like simulators based on projective measurements,
-        :func:`qml.transforms.split_non_commuting` should be used instead.
+        :func:`split_non_commuting <pennylane.transforms.split_non_commuting>` should be used instead.
 
     **Examples:**
 
