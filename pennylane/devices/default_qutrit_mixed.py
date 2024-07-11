@@ -224,7 +224,7 @@ class DefaultQutritMixed(Device):
         :title: Readout Error
 
         ``DefaultQutritMixed`` includes readout error support. Two input arguments control
-        the parameters of error channels applied to each measured wire of the state after 
+        the parameters of error channels applied to each measured wire of the state after
         it has been diagonalized for measurement:
 
         * ``readout_relaxation_probs``:  Input parameters of a :class:`~.QutritAmplitudeDamping` channel.
@@ -233,8 +233,8 @@ class DefaultQutritMixed(Device):
         * ``readout_misclassification_probs``: Input parameters of a :class:`~.TritFlip` channel.
           This error models misclassification events in readout. An example of this readout error
           can be seen in [`2 <https://arxiv.org/abs/2309.11303>`_] (Fig 1a).
-        In the case that both parameters are defined relaxtion error is applied first then 
-        misclassification error is applied       
+        In the case that both parameters are defined relaxtion error is applied first then
+        misclassification error is applied.
 
         .. note::
             The readout errors will be applied to the state after it has been diagonalized for each
