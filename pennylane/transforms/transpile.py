@@ -15,6 +15,7 @@ from pennylane.ops.qubit import SWAP
 from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumTape
 from pennylane.transforms import transform
+from pennylane.typing import Result, ResultBatch
 
 
 def state_transposition(results, mps, new_wire_order, original_wire_order):
@@ -60,7 +61,9 @@ def _process_measurements(expanded_tape, device_wires, is_default_mixed):
 
 
 @transform
-def transpile(tape: QuantumTape, coupling_map, device=None) -> (Sequence[QuantumTape], Callable):
+def transpile(
+    tape: QuantumTape, coupling_map, device=None
+) -> tuple[Sequence[QuantumTape], Callable[[ResultBatch], Result]]:
     """Transpile a circuit according to a desired coupling map
 
     .. warning::

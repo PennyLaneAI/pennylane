@@ -201,7 +201,7 @@ class TestSnapshotGeneral:
 
         phi = 0.1
         with (
-            pytest.warns(UserWarning, match="resulting in a total of 5 executions.")
+            pytest.warns(UserWarning, match="Snapshots are not supported for the given device")
             if "lightning" in dev.name
             else nullcontext()
         ):
@@ -604,6 +604,24 @@ class TestSnapshotSupportedQNode:
 
 
 class TestSnapshotUnsupportedQNode:
+    """Unit tests for qml.snapshots when using with qnodes with unsupported devices"""
+
+    def test_unsupported_device_warning(self):
+        """Test that a warning is raised when the device being used by a qnode does not natively support
+        qml.Snapshot"""
+
+        dev = qml.device("lightning.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.Hadamard(0)
+            qml.Snapshot()
+            qml.CNOT([0, 1])
+            return qml.expval(qml.Z(1))
+
+        with pytest.warns(UserWarning, match="Snapshots are not supported"):
+            _ = qml.snapshots(circuit)
+
     @flaky(max_runs=3)
     def test_lightning_qubit_finite_shots(self):
         dev = qml.device("lightning.qubit", wires=2, shots=500)
@@ -659,7 +677,6 @@ class TestSnapshotUnsupportedQNode:
 
         assert not qml.debugging.snapshot._is_snapshot_compatible(dev)
 
-        @qml.snapshots
         @qml.qnode(dev, diff_method=method)
         def circuit():
             qml.THadamard(wires=0)
@@ -667,9 +684,10 @@ class TestSnapshotUnsupportedQNode:
             qml.TSWAP(wires=[0, 1])
             return qml.counts()
 
-        with pytest.warns(UserWarning, match="total of 2 executions."):
-            result = circuit()
+        with pytest.warns(UserWarning, match="Snapshots are not supported for the given device"):
+            circuit = qml.snapshots(circuit)
 
+        result = circuit()
         expected = {
             0: np.array([0.27, 0.0, 0.0, 0.38, 0.0, 0.0, 0.35, 0.0, 0.0]),
             "execution_results": {"00": 39, "01": 31, "02": 30},
@@ -694,7 +712,7 @@ class TestPLDB:
     def test_pldb_init(self):
         """Test that PLDB initializes correctly"""
         debugger = PLDB()
-        assert debugger.prompt == "[pldb]: "
+        assert debugger.prompt == "[pldb] "
         assert getattr(debugger, "_PLDB__active_dev") is None
 
     def test_valid_context_outside_qnode(self):
