@@ -29,6 +29,10 @@
 
 <h3>Breaking changes 💔</h3>
 
+* ``qml.transforms.map_batch_transform`` has been removed, since transforms can be applied directly to a batch of tapes.
+  See :func:`~.pennylane.transform` for more information.
+  [(#5981)](https://github.com/PennyLaneAI/pennylane/pull/5981)
+
 * `QuantumScript.interface` has been removed.
   [(#5980)](https://github.com/PennyLaneAI/pennylane/pull/5980)
 
@@ -48,6 +52,7 @@
 
 This release contains contributions from (in alphabetical order):
 
+Ahmed Darwish
 Astral Cai,
 Yushao Chen,
 Christina Lee,
