@@ -63,8 +63,6 @@ def registers(register_dict, _start_wire_index=0):
         else:  # Not a dict nor an int
             raise ValueError(
                 f"Expected '{register_wires}' to be either a dict or an int but got neither. "
-                "Please double check and ensure that all objects in the dictionary have values "
-                "that are either a dictionary or an integer"
             )
 
     return all_reg
