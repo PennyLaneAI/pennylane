@@ -19,17 +19,17 @@ from .wires import Wires
 
 
 def registers(register_dict, _start_wire_index=0):
-    """Returns a collection of wire registers when given a dictionary of register names
-    and sizes (number of qubits in the register).
+    """Returns a collection of wire registers when given a dictionary of register names and sizes
+    (number of qubits in the register).
 
-    The registers are a dictionary
-    of :class:`~.Wires` objects where the key is the register name and the value is the ``Wires`` object. The
-    individual wire labels are integers, where the ordering is based on appearance first, then on
-    nestedness.
+    The registers are a dictionary of :class:`~.Wires` objects where the key is the register name
+    and the value is the ``Wires`` object. The individual wire labels are integers, where the
+    ordering is based on appearance first, then on nestedness.
 
     Args:
         register_dict (dict): a dictionary of registers where the keys are the names (str) of the
-        registers and the values are either nested dictionaries of more registers or integers (int). At the most nested level for each register key, the value must be an int.
+        registers and the values are either nested dictionaries of more registers or integers (int).
+        At the most nested level for each register key, the value must be an int.
 
     Returns:
         dict (Wires): dictionary of Wires objects (value) belonging to register names (keys)
@@ -74,8 +74,6 @@ def registers(register_dict, _start_wire_index=0):
             _start_wire_index += register_wires
             all_reg[register_name] = wires
         else:  # Not a dict nor an int
-            raise ValueError(
-                f"Expected '{register_wires}' to be either a dict or an int. "
-            )
+            raise ValueError(f"Expected '{register_wires}' to be either a dict or an int. ")
 
     return all_reg
