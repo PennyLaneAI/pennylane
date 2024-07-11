@@ -63,6 +63,7 @@ def calculate_reduced_density_matrix(
     measurementprocess: StateMeasurement,
     state: TensorLike,
     is_state_batched: bool = False,
+    _readout_errors: list[Callable] = None
 ) -> TensorLike:
     """Get the state or reduced density matrix.
 
@@ -70,6 +71,8 @@ def calculate_reduced_density_matrix(
         measurementprocess (StateMeasurement): measurement to apply to the state.
         state (TensorLike): state to apply the measurement to.
         is_state_batched (bool): whether the state is batched or not.
+        _readout_errors (List[Callable]): List of channels to apply to each wire being measured
+        to simulate readout errors. These are not applied on this type of measurement.
 
     Returns:
         TensorLike: state or reduced density matrix.
@@ -246,7 +249,7 @@ def calculate_expval_sum_of_terms(
 # pylint: disable=too-many-return-statements
 def get_measurement_function(
     measurementprocess: MeasurementProcess,
-) -> Callable[[MeasurementProcess, TensorLike], TensorLike]:
+) -> Callable[[MeasurementProcess, TensorLike, bool, list[Callable]], TensorLike]:
     """Get the appropriate method for performing a measurement.
 
     Args:
@@ -293,7 +296,4 @@ def measure(
         Tensorlike: the result of the measurement process being applied to the state.
     """
     measurement_function = get_measurement_function(measurementprocess)
-
-    if measurement_function is calculate_reduced_density_matrix:
-        return measurement_function(measurementprocess, state, is_state_batched)
     return measurement_function(measurementprocess, state, is_state_batched, readout_errors)
