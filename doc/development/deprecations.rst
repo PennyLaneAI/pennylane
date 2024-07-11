@@ -15,12 +15,6 @@ Pending deprecations
   - Deprecated in v0.37
   - Will be removed in v0.39
 
-* ``qml.transforms.map_batch_transform`` is deprecated, since transforms can be applied directly to a batch of tapes.
-  See :func:`~.pennylane.transform` for more information.
-
-  - Deprecated in v0.37
-  - Will be removed in v0.38
-
 * ``qml.from_qasm`` will no longer remove measurements from the QASM code. Calling ``qml.from_qasm``
   on a circuit containing measurements without specifying ``measurements`` will raise a deprecation 
   warning in v0.37, and in v0.38, the default behaviour will be changed to keeping measurements. Use 
@@ -72,6 +66,12 @@ Other deprecations
 
 Completed deprecation cycles
 ----------------------------
+
+* ``qml.transforms.map_batch_transform`` has been removed, since transforms can be applied directly to a batch of tapes.
+  See :func:`~.pennylane.transform` for more information.
+
+  - Deprecated in v0.37
+  - Removed in v0.38
 
 * ``qml.from_qasm_file`` has been removed. Instead, the user can open the file and then load its content using ``qml.from_qasm``.
 
