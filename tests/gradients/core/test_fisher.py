@@ -140,7 +140,7 @@ class TestIntegration:
             return qml.probs(wires=range(n_wires))
 
         params = pnp.zeros(n_params, requires_grad=True)
-        res = qml.qinfo.classical_fisher(circ)(params)
+        res = classical_fisher(circ)(params)
         assert np.allclose(res, n_wires * np.ones((n_params, n_params)), atol=1)
 
     @pytest.mark.parametrize(
@@ -280,7 +280,7 @@ class TestInterfacesClassicalFisher:
         x = jnp.pi / 8 * jnp.ones(2)
         y = jnp.pi / 8 * jnp.ones(10)
         z = jnp.ones(1)
-        cfim = qml.qinfo.classical_fisher(circ, argnums=(0, 1, 2))(x, y, z)
+        cfim = classical_fisher(circ, argnums=(0, 1, 2))(x, y, z)
         assert qml.math.allclose(cfim[0], 2.0 / 3.0 * np.ones((2, 2)))
         assert qml.math.allclose(cfim[1], 2.0 / 3.0 * np.ones((10, 10)))
         assert qml.math.allclose(cfim[2], np.zeros((1, 1)))
@@ -349,7 +349,7 @@ class TestInterfacesClassicalFisher:
         x = np.pi / 8 * torch.ones(2, requires_grad=True)
         y = np.pi / 8 * torch.ones(10, requires_grad=True)
         z = torch.ones(1, requires_grad=True)
-        cfim = qml.qinfo.classical_fisher(circ)(x, y, z)
+        cfim = classical_fisher(circ)(x, y, z)
         assert np.allclose(cfim[0].detach().numpy(), 2.0 / 3.0 * np.ones((2, 2)))
         assert np.allclose(cfim[1].detach().numpy(), 2.0 / 3.0 * np.ones((10, 10)))
         assert np.allclose(cfim[2].detach().numpy(), np.zeros((1, 1)))
@@ -418,7 +418,7 @@ class TestInterfacesClassicalFisher:
         x = tf.Variable(np.pi / 8 * np.ones(2), trainable=True)
         y = tf.Variable(np.pi / 8 * np.ones(10), trainable=True)
         z = tf.Variable([1.0], trainable=True)
-        cfim = qml.qinfo.classical_fisher(circ)(x, y, z)
+        cfim = classical_fisher(circ)(x, y, z)
         assert np.allclose(cfim[0], 2.0 / 3.0 * np.ones((2, 2)))
         assert np.allclose(cfim[1], 2.0 / 3.0 * np.ones((10, 10)))
         assert np.allclose(cfim[2], np.zeros((1, 1)))
@@ -439,10 +439,10 @@ class TestDiffCFIM:
 
         params = pnp.array(np.pi / 4, requires_grad=True)
 
-        assert np.allclose(qml.qinfo.classical_fisher(circ)(params), 1)
+        assert np.allclose(classical_fisher(circ)(params), 1)
 
         result = np.zeros((1, 1, 1), dtype="float64")
-        result_calc = qml.jacobian(qml.qinfo.classical_fisher(circ))(params)
+        result_calc = qml.jacobian(classical_fisher(circ))(params)
 
         assert np.allclose(result, result_calc, atol=1e-6)
 
@@ -464,10 +464,10 @@ class TestDiffCFIM:
 
         params = jnp.array(np.pi / 4)
 
-        assert qml.math.allclose(qml.qinfo.classical_fisher(circ)(params), 1.0)
+        assert qml.math.allclose(classical_fisher(circ)(params), 1.0)
 
         result = np.zeros((1, 1, 1), dtype="float64")
-        result_calc = jax.jacobian(qml.qinfo.classical_fisher(circ))(params)
+        result_calc = jax.jacobian(classical_fisher(circ))(params)
 
         assert np.allclose(result, result_calc, atol=1e-6)
 
@@ -486,11 +486,11 @@ class TestDiffCFIM:
 
         params = tf.Variable(np.pi / 4)
 
-        assert np.allclose(qml.qinfo.classical_fisher(circ)(params), 1)
+        assert np.allclose(classical_fisher(circ)(params), 1)
 
         result = np.zeros((1, 1, 1), dtype="float64")
         with tf.GradientTape() as tape:
-            loss = qml.qinfo.classical_fisher(circ)(params)
+            loss = classical_fisher(circ)(params)
 
         result_calc = tape.jacobian(loss, params)
 
@@ -510,10 +510,10 @@ class TestDiffCFIM:
 
         params = torch.tensor(np.pi / 4, requires_grad=True)
 
-        assert np.allclose(qml.qinfo.classical_fisher(circ)(params).detach().numpy(), 1)
+        assert np.allclose(classical_fisher(circ)(params).detach().numpy(), 1)
 
         result = np.zeros((1, 1, 1), dtype="float64")
-        result_calc = torch.autograd.functional.jacobian(qml.qinfo.classical_fisher(circ), params)
+        result_calc = torch.autograd.functional.jacobian(classical_fisher(circ), params)
 
         assert np.allclose(result, result_calc, atol=1e-6)
 
@@ -548,22 +548,20 @@ class TestDiffCFIM:
         weights = torch.tensor(
             [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0], requires_grad=True
         )
-        grad_torch = torch.autograd.functional.jacobian(
-            qml.qinfo.classical_fisher(circuit), weights
-        )
+        grad_torch = torch.autograd.functional.jacobian(classical_fisher(circuit), weights)
 
         circuit = qml.QNode(qfunc, dev)
         weights = pnp.array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0], requires_grad=True)
-        grad_autograd = qml.jacobian(qml.qinfo.classical_fisher(circuit))(weights)
+        grad_autograd = qml.jacobian(classical_fisher(circuit))(weights)
 
         circuit = qml.QNode(qfunc, dev)
         weights = jnp.array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0])
-        grad_jax = jax.jacobian(qml.qinfo.classical_fisher(circuit))(weights)
+        grad_jax = jax.jacobian(classical_fisher(circuit))(weights)
 
         circuit = qml.QNode(qfunc, dev)
         weights = tf.Variable([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0])
         with tf.GradientTape() as tape:
-            loss = qml.qinfo.classical_fisher(circuit)(weights)
+            loss = classical_fisher(circuit)(weights)
         grad_tf = tape.jacobian(loss, weights)
 
         # Evaluate and compare

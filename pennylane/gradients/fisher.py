@@ -19,7 +19,7 @@ from functools import partial
 import pennylane as qml
 from pennylane import transform
 from pennylane.devices import DefaultQubit, DefaultQubitLegacy
-from pennylane.gradients import adjoint_metric_tensor, metric_tensor
+from pennylane.gradients import adjoint_metric_tensor
 
 
 # TODO: create qml.math.jacobian and replace it here
@@ -365,7 +365,7 @@ def quantum_fisher(
     """
 
     if device.shots or not isinstance(device, (DefaultQubitLegacy, DefaultQubit)):
-        tapes, processing_fn = metric_tensor(tape, *args, **kwargs)
+        tapes, processing_fn = qml.gradients.metric_tensor(tape, *args, **kwargs)
 
         def processing_fn_multiply(res):
             res = qml.execute(res, device=device)
