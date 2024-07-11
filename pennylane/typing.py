@@ -125,6 +125,6 @@ Result = TypeVar("Result", dict, tuple, TensorLike)
 ResultBatch = Sequence[Result]
 
 PostprocessingFn = Callable[[ResultBatch], Result]
-
+BatchPostprocessingFn = Callable[[ResultBatch], ResultBatch]
 
 JSON = Union[None, int, str, bool, list["JSON"], dict[str, "JSON"]]

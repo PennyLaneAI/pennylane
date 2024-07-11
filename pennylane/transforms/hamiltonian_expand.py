@@ -22,7 +22,7 @@ from functools import partial
 import pennylane as qml
 from pennylane.measurements import ExpectationMP, MeasurementProcess, Shots
 from pennylane.ops import Prod, SProd, Sum
-from pennylane.tape import QuantumTape, TapeBatch
+from pennylane.tape import QuantumTape, QuantumTapeBatch
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn, ResultBatch
 
@@ -138,7 +138,9 @@ def _naive_hamiltonian_expand(tape):
 
 
 @transform
-def hamiltonian_expand(tape: QuantumTape, group: bool = True) -> tuple[TapeBatch, PostprocessingFn]:
+def hamiltonian_expand(
+    tape: QuantumTape, group: bool = True
+) -> tuple[QuantumTapeBatch, PostprocessingFn]:
     r"""
     Splits a tape measuring a Hamiltonian expectation into mutliple tapes of Pauli expectations,
     and provides a function to recombine the results.
@@ -370,7 +372,7 @@ def _sum_expand_processing_fn(
 
 
 @transform
-def sum_expand(tape: QuantumTape, group: bool = True) -> tuple[TapeBatch, PostprocessingFn]:
+def sum_expand(tape: QuantumTape, group: bool = True) -> tuple[QuantumTapeBatch, PostprocessingFn]:
     """Splits a quantum tape measuring a Sum expectation into multiple tapes of summand
     expectations, and provides a function to recombine the results.
 

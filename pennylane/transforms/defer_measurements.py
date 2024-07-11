@@ -17,7 +17,7 @@ import pennylane as qml
 from pennylane.measurements import CountsMP, MeasurementValue, MidMeasureMP, ProbabilityMP, SampleMP
 from pennylane.ops.op_math import ctrl
 from pennylane.queuing import QueuingManager
-from pennylane.tape import QuantumTape, TapeBatch
+from pennylane.tape import QuantumTape, QuantumTapeBatch
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
 from pennylane.wires import Wires
@@ -104,7 +104,7 @@ def null_postprocessing(results):
 @transform
 def defer_measurements(
     tape: QuantumTape, reduce_postselected: bool = True, **kwargs
-) -> tuple[TapeBatch, PostprocessingFn]:
+) -> tuple[QuantumTapeBatch, PostprocessingFn]:
     """Quantum function transform that substitutes operations conditioned on
     measurement outcomes to controlled operations.
 

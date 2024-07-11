@@ -22,7 +22,7 @@ import numpy as np
 import pennylane as qml
 from pennylane import transform
 from pennylane.measurements import VarianceMP
-from pennylane.tape import TapeBatch
+from pennylane.tape import QuantumTapeBatch
 from pennylane.typing import PostprocessingFn
 
 from .finite_difference import finite_diff
@@ -774,7 +774,7 @@ def _expand_transform_param_shift(
     fallback_fn=finite_diff,
     f0=None,
     broadcast=False,
-) -> tuple[TapeBatch, PostprocessingFn]:
+) -> tuple[QuantumTapeBatch, PostprocessingFn]:
     """Expand function to be applied before parameter shift."""
     [new_tape], postprocessing = qml.devices.preprocess.decompose(
         tape,
@@ -804,7 +804,7 @@ def param_shift(
     fallback_fn=finite_diff,
     f0=None,
     broadcast=False,
-) -> tuple[TapeBatch, PostprocessingFn]:
+) -> tuple[QuantumTapeBatch, PostprocessingFn]:
     r"""Transform a circuit to compute the parameter-shift gradient of all gate
     parameters with respect to its inputs.
 

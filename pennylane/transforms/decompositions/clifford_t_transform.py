@@ -21,7 +21,7 @@ import pennylane as qml
 from pennylane.ops import Adjoint
 from pennylane.ops.op_math.decompositions.solovay_kitaev import sk_decomposition
 from pennylane.queuing import QueuingManager
-from pennylane.tape import QuantumTape, TapeBatch
+from pennylane.tape import QuantumTape, QuantumTapeBatch
 from pennylane.transforms.core import transform
 from pennylane.transforms.optimization import (
     cancel_inverses,
@@ -314,7 +314,7 @@ def clifford_t_decomposition(
     max_expansion=6,
     method="sk",
     **method_kwargs,
-) -> tuple[TapeBatch, PostprocessingFn]:
+) -> tuple[QuantumTapeBatch, PostprocessingFn]:
     r"""Decomposes a circuit into the Clifford+T basis.
 
     This method first decomposes the gate operations to a basis comprised of Clifford, :class:`~.T`, :class:`~.RZ` and

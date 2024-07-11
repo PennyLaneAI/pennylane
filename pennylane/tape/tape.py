@@ -542,6 +542,6 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
         return QuantumScript.__hash__(self)
 
 
-TapeBatch = Sequence[QuantumTape]
+QuantumTapeBatch = Sequence[QuantumTape]
 
 register_pytree(QuantumTape, QuantumTape._flatten, QuantumTape._unflatten)

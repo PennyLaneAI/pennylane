@@ -21,7 +21,7 @@ from functools import wraps
 from typing import Literal, Optional, Union
 
 import pennylane as qml
-from pennylane.tape import TapeBatch
+from pennylane.tape import QuantumTapeBatch
 from pennylane.typing import PostprocessingFn
 
 from .qnode import QNode, _get_device_shots, _make_execution_config
@@ -319,7 +319,7 @@ def construct_batch(
     """
 
     # pylint: disable=protected-access
-    def batch_constructor(*args, **kwargs) -> tuple[TapeBatch, PostprocessingFn]:
+    def batch_constructor(*args, **kwargs) -> tuple[QuantumTapeBatch, PostprocessingFn]:
         """Create a batch of tapes and a post processing function."""
         if "shots" in inspect.signature(qnode.func).parameters:
             shots = _get_device_shots(qnode.device)

@@ -23,14 +23,14 @@ from typing import Optional, Union
 
 from pennylane import Tracker
 from pennylane.measurements import Shots
-from pennylane.tape import QuantumTape, TapeBatch
+from pennylane.tape import QuantumTape, QuantumTapeBatch
 from pennylane.transforms.core import TransformProgram
 from pennylane.typing import Result, ResultBatch
 from pennylane.wires import Wires
 
 from .execution_config import DefaultExecutionConfig, ExecutionConfig
 
-QuantumTape_or_Batch = Union[QuantumTape, TapeBatch]
+QuantumTape_or_Batch = Union[QuantumTape, QuantumTapeBatch]
 
 
 # pylint: disable=unused-argument, no-self-use

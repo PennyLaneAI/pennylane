@@ -29,7 +29,7 @@ import pennylane as qml
 from pennylane import transform
 from pennylane.gradients.gradient_transform import _contract_qjac_with_cjac
 from pennylane.measurements import ProbabilityMP
-from pennylane.tape import TapeBatch
+from pennylane.tape import QuantumTapeBatch
 from pennylane.typing import PostprocessingFn
 
 from .general_shift_rules import generate_shifted_tapes
@@ -197,7 +197,7 @@ def _expand_transform_finite_diff(
     strategy="forward",
     f0=None,
     validate_params=True,
-) -> tuple[TapeBatch, PostprocessingFn]:
+) -> tuple[QuantumTapeBatch, PostprocessingFn]:
     """Expand function to be applied before finite difference."""
     [new_tape], postprocessing = qml.devices.preprocess.decompose(
         tape,
@@ -228,7 +228,7 @@ def finite_diff(
     strategy="forward",
     f0=None,
     validate_params=True,
-) -> tuple[TapeBatch, PostprocessingFn]:
+) -> tuple[QuantumTapeBatch, PostprocessingFn]:
     r"""Transform a circuit to compute the finite-difference gradient of all gate parameters with respect to its inputs.
 
     Args:

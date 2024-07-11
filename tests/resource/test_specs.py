@@ -19,7 +19,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as pnp
-from pennylane.tape import TapeBatch
+from pennylane.tape import QuantumTapeBatch
 from pennylane.typing import PostprocessingFn
 
 
@@ -305,7 +305,7 @@ class TestSpecsTransform:
         @qml.transforms.core.transform
         def my_transform(
             tape: qml.tape.QuantumTape,
-        ) -> tuple[TapeBatch, PostprocessingFn]:
+        ) -> tuple[QuantumTapeBatch, PostprocessingFn]:
             return tape, None
 
         @qml.qnode(dev, diff_method=my_transform)

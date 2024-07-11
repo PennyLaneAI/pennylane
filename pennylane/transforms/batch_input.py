@@ -19,7 +19,7 @@ from typing import Union
 import numpy as np
 
 import pennylane as qml
-from pennylane.tape import QuantumTape, TapeBatch
+from pennylane.tape import QuantumTape, QuantumTapeBatch
 from pennylane.transforms.batch_params import _nested_stack, _split_operations
 from pennylane.transforms.core import transform
 from pennylane.typing import PostprocessingFn
@@ -29,7 +29,7 @@ from pennylane.typing import PostprocessingFn
 def batch_input(
     tape: QuantumTape,
     argnum: Union[Sequence[int], int],
-) -> tuple[TapeBatch, PostprocessingFn]:
+) -> tuple[QuantumTapeBatch, PostprocessingFn]:
     """
     Transform a circuit to support an initial batch dimension for gate inputs.
 

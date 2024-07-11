@@ -19,7 +19,7 @@ from os import path
 import numpy as np
 
 import pennylane as qml
-from pennylane.tape import TapeBatch
+from pennylane.tape import QuantumTapeBatch
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
 
@@ -200,7 +200,7 @@ def construct_sgn_circuit(  # pylint: disable=too-many-arguments
 @transform
 def sign_expand(  # pylint: disable=too-many-arguments
     tape: qml.tape.QuantumTape, circuit=False, J=10, delta=0.0, controls=("Hadamard", "Target")
-) -> tuple[TapeBatch, PostprocessingFn]:
+) -> tuple[QuantumTapeBatch, PostprocessingFn]:
     r"""
     Splits a tape measuring a (fast-forwardable) Hamiltonian expectation into mutliple tapes of
     the Xi or sgn decomposition, and provides a function to recombine the results.

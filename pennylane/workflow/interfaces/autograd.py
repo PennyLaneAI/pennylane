@@ -89,9 +89,9 @@ import autograd
 from autograd.numpy.numpy_boxes import ArrayBox
 
 import pennylane as qml
-from pennylane.tape import TapeBatch
+from pennylane.tape import QuantumTapeBatch
 
-ExecuteFn = Callable[[TapeBatch], qml.typing.ResultBatch]
+ExecuteFn = Callable[[QuantumTapeBatch], qml.typing.ResultBatch]
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -99,7 +99,7 @@ logger.addHandler(logging.NullHandler())
 
 # pylint: disable=unused-argument
 def autograd_execute(
-    tapes: TapeBatch,
+    tapes: QuantumTapeBatch,
     execute_fn: ExecuteFn,
     jpc: qml.workflow.jacobian_products.JacobianProductCalculator,
     device=None,

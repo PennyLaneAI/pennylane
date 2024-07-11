@@ -14,17 +14,15 @@
 """
 This module contains the ``TransformProgram`` class.
 """
-from collections.abc import Callable, Sequence
+from collections.abc import Sequence
 from functools import partial
 from typing import Optional, Union
 
 import pennylane as qml
-from pennylane.tape import TapeBatch
-from pennylane.typing import PostprocessingFn, ResultBatch
+from pennylane.tape import QuantumTapeBatch
+from pennylane.typing import BatchPostprocessingFn, PostprocessingFn, ResultBatch
 
 from .transform_dispatcher import TransformContainer, TransformDispatcher, TransformError
-
-BatchPostProcessingFn = Callable[[ResultBatch], ResultBatch]
 
 
 def _batch_postprocessing(
@@ -58,7 +56,7 @@ def _batch_postprocessing(
 
 def _apply_postprocessing_stack(
     results: ResultBatch,
-    postprocessing_stack: list[BatchPostProcessingFn],
+    postprocessing_stack: list[BatchPostprocessingFn],
 ) -> ResultBatch:
     """Applies the postprocessing and cotransform postprocessing functions in a Last-In-First-Out LIFO manner.
 
@@ -491,7 +489,7 @@ class TransformProgram:
 
         qnode.construct(args, kwargs)
 
-    def __call__(self, tapes: TapeBatch) -> tuple[TapeBatch, BatchPostProcessingFn]:
+    def __call__(self, tapes: QuantumTapeBatch) -> tuple[QuantumTapeBatch, BatchPostprocessingFn]:
         if not self:
             return tapes, null_postprocessing
 

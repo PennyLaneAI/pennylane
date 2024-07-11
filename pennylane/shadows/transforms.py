@@ -22,12 +22,14 @@ import numpy as np
 import pennylane as qml
 from pennylane import transform
 from pennylane.measurements import ClassicalShadowMP
-from pennylane.tape import QuantumScript, QuantumTape, TapeBatch
+from pennylane.tape import QuantumScript, QuantumTape, QuantumTapeBatch
 from pennylane.typing import PostprocessingFn
 
 
 @transform
-def _replace_obs(tape: QuantumTape, obs, *args, **kwargs) -> tuple[TapeBatch, PostprocessingFn]:
+def _replace_obs(
+    tape: QuantumTape, obs, *args, **kwargs
+) -> tuple[QuantumTapeBatch, PostprocessingFn]:
     """
     Tape transform to replace the measurement processes with the given one
     """
@@ -54,7 +56,7 @@ def _replace_obs(tape: QuantumTape, obs, *args, **kwargs) -> tuple[TapeBatch, Po
 
 
 @partial(transform, final_transform=True)
-def shadow_expval(tape: QuantumTape, H, k=1) -> tuple[TapeBatch, PostprocessingFn]:
+def shadow_expval(tape: QuantumTape, H, k=1) -> tuple[QuantumTapeBatch, PostprocessingFn]:
     """Transform a circuit returning a classical shadow into one that returns
     the approximate expectation values in a differentiable manner.
 
@@ -170,7 +172,9 @@ def _shadow_state_undiffable(tape, wires):
 
 
 @partial(transform, final_transform=True)
-def shadow_state(tape: QuantumTape, wires, diffable=False) -> tuple[TapeBatch, PostprocessingFn]:
+def shadow_state(
+    tape: QuantumTape, wires, diffable=False
+) -> tuple[QuantumTapeBatch, PostprocessingFn]:
     """Transform a circuit returning a classical shadow into one that returns
     the reconstructed state in a differentiable manner.
 

@@ -16,7 +16,7 @@ broadcasted tape into multiple tapes."""
 
 import pennylane as qml
 from pennylane.measurements import MidMeasureMP, SampleMP
-from pennylane.tape import TapeBatch
+from pennylane.tape import QuantumTapeBatch
 from pennylane.typing import PostprocessingFn
 
 from .core import transform
@@ -49,7 +49,7 @@ def _split_operations(ops, num_tapes):
 
 
 @transform
-def broadcast_expand(tape: qml.tape.QuantumTape) -> tuple[TapeBatch, PostprocessingFn]:
+def broadcast_expand(tape: qml.tape.QuantumTape) -> tuple[QuantumTapeBatch, PostprocessingFn]:
     r"""Expand a broadcasted tape into multiple tapes
     and a function that stacks and squeezes the results.
 

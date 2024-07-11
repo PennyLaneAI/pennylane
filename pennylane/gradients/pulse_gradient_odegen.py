@@ -23,7 +23,7 @@ import pennylane as qml
 from pennylane import transform
 from pennylane.ops.qubit.special_unitary import _pauli_decompose, pauli_basis_strings
 from pennylane.pulse import ParametrizedEvolution
-from pennylane.tape import TapeBatch
+from pennylane.tape import QuantumTapeBatch
 from pennylane.typing import PostprocessingFn
 
 from .gradient_transform import (
@@ -403,7 +403,7 @@ def _expval_pulse_odegen(tape, argnum, atol):
 @partial(transform, final_transform=True)
 def pulse_odegen(
     tape: qml.tape.QuantumTape, argnum=None, atol=1e-7
-) -> tuple[TapeBatch, PostprocessingFn]:
+) -> tuple[QuantumTapeBatch, PostprocessingFn]:
     r"""Transform a circuit to compute the pulse generator parameter-shift gradient of pulses
     in a pulse program with respect to their inputs.
     This method combines automatic differentiation of few-qubit operations with

@@ -22,7 +22,7 @@ import pennylane as qml
 from pennylane.measurements import MeasurementProcess
 from pennylane.operation import Operator
 from pennylane.queuing import QueuingManager
-from pennylane.tape import QuantumScript, QuantumTape, TapeBatch
+from pennylane.tape import QuantumScript, QuantumTape, QuantumTapeBatch
 from pennylane.typing import PostprocessingFn
 from pennylane.workflow import QNode
 
@@ -100,7 +100,7 @@ def simplify(input: Union[Operator, MeasurementProcess, QuantumTape, QNode, Call
 
 
 @qml.transform
-def _simplify_transform(tape: QuantumTape) -> tuple[TapeBatch, PostprocessingFn]:
+def _simplify_transform(tape: QuantumTape) -> tuple[QuantumTapeBatch, PostprocessingFn]:
     with qml.QueuingManager.stop_recording():
         new_operations = [op.simplify() for op in tape.operations]
         new_measurements = [m.simplify() for m in tape.measurements]

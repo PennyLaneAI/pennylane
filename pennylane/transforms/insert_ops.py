@@ -21,7 +21,7 @@ from typing import Type, Union
 import pennylane as qml
 from pennylane.operation import Operation
 from pennylane.ops.op_math import Adjoint
-from pennylane.tape import QuantumTape, TapeBatch
+from pennylane.tape import QuantumTape, QuantumTapeBatch
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
 
@@ -58,7 +58,7 @@ def insert(
     op_args: Union[tuple, float],
     position: Union[str, list, Type[Operation]] = "all",
     before: bool = False,
-) -> tuple[TapeBatch, PostprocessingFn]:
+) -> tuple[QuantumTapeBatch, PostprocessingFn]:
     """Insert an operation into specified points in an input circuit.
 
     Circuits passed through this transform will be updated to have the operation, specified by the

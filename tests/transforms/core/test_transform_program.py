@@ -17,7 +17,7 @@
 import pytest
 
 import pennylane as qml
-from pennylane.tape import QuantumScript, TapeBatch
+from pennylane.tape import QuantumScript, QuantumTapeBatch
 from pennylane.transforms.core import (
     TransformContainer,
     TransformError,
@@ -34,7 +34,7 @@ from pennylane.typing import PostprocessingFn, Result, ResultBatch
 
 def first_valid_transform(
     tape: qml.tape.QuantumTape, index: int
-) -> tuple[TapeBatch, PostprocessingFn]:
+) -> tuple[QuantumTapeBatch, PostprocessingFn]:
     """A valid transform."""
     tape = tape.copy()
     tape._ops.pop(index)  # pylint:disable=protected-access
@@ -43,14 +43,14 @@ def first_valid_transform(
 
 def expand_transform(
     tape: qml.tape.QuantumTape, index: int  # pylint:disable=unused-argument
-) -> tuple[TapeBatch, PostprocessingFn]:
+) -> tuple[QuantumTapeBatch, PostprocessingFn]:
     """A valid expand transform."""
     return [tape], lambda x: x
 
 
 def second_valid_transform(
     tape: qml.tape.QuantumTape, index: int
-) -> tuple[TapeBatch, PostprocessingFn]:
+) -> tuple[QuantumTapeBatch, PostprocessingFn]:
     """A valid trasnform."""
     tape1 = tape.copy()
     tape2 = tape.copy()
@@ -62,7 +62,7 @@ def second_valid_transform(
     return [tape1, tape2], fn
 
 
-def informative_transform(tape: qml.tape.QuantumTape) -> tuple[TapeBatch, PostprocessingFn]:
+def informative_transform(tape: qml.tape.QuantumTape) -> tuple[QuantumTapeBatch, PostprocessingFn]:
     """A valid informative transform"""
 
     def fn(results):
@@ -594,7 +594,7 @@ class TestTransformProgramCall:
 
         def remove_operation_at_index(
             tape: qml.tape.QuantumTape, index: int
-        ) -> tuple[TapeBatch, PostprocessingFn]:
+        ) -> tuple[QuantumTapeBatch, PostprocessingFn]:
             """A valid transform."""
             new_ops = list(tape.operations)
             new_ops.pop(index)  # pylint:disable=protected-access

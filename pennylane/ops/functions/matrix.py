@@ -23,7 +23,7 @@ import pennylane as qml
 from pennylane import transform
 from pennylane.operation import Operator
 from pennylane.pauli import PauliSentence, PauliWord
-from pennylane.tape import TapeBatch
+from pennylane.tape import QuantumTapeBatch
 from pennylane.transforms import TransformError
 from pennylane.typing import PostprocessingFn, TensorLike
 
@@ -234,7 +234,7 @@ def matrix(op: Union[Operator, PauliWord, PauliSentence], wire_order=None) -> Te
 @partial(transform, is_informative=True)
 def _matrix_transform(
     tape: qml.tape.QuantumTape, wire_order=None, **kwargs
-) -> tuple[TapeBatch, PostprocessingFn]:
+) -> tuple[QuantumTapeBatch, PostprocessingFn]:
     if not tape.wires:
         raise qml.operation.MatrixUndefinedError
 

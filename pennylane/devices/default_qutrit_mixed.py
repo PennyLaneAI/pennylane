@@ -22,7 +22,7 @@ import numpy as np
 import pennylane as qml
 from pennylane.logging import debug_logger, debug_logger_init
 from pennylane.ops import _qutrit__channel__ops__ as channels
-from pennylane.tape import QuantumTape, TapeBatch
+from pennylane.tape import QuantumTape, QuantumTapeBatch
 from pennylane.transforms.core import TransformProgram
 from pennylane.typing import Result, ResultBatch
 
@@ -43,7 +43,7 @@ logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
 Result_or_ResultBatch = Union[Result, ResultBatch]
-QuantumTape_or_Batch = Union[QuantumTape, TapeBatch]
+QuantumTape_or_Batch = Union[QuantumTape, QuantumTapeBatch]
 
 
 observables = {

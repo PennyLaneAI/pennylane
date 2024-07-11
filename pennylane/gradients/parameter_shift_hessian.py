@@ -24,7 +24,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.measurements import ProbabilityMP, StateMP, VarianceMP
-from pennylane.tape import TapeBatch
+from pennylane.tape import QuantumTapeBatch
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
 
@@ -441,7 +441,7 @@ def _contract_qjac_with_cjac(qhess, cjac, tape):
 @partial(transform, classical_cotransform=_contract_qjac_with_cjac, final_transform=True)
 def param_shift_hessian(
     tape: qml.tape.QuantumTape, argnum=None, diagonal_shifts=None, off_diagonal_shifts=None, f0=None
-) -> tuple[TapeBatch, PostprocessingFn]:
+) -> tuple[QuantumTapeBatch, PostprocessingFn]:
     r"""Transform a circuit to compute the parameter-shift Hessian with respect to its trainable
     parameters. This is the Hessian transform to replace the old one in the new return types system
 

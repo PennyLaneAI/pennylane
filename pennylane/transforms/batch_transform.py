@@ -18,13 +18,13 @@ import warnings
 from collections.abc import Callable
 
 import pennylane as qml
-from pennylane.tape import TapeBatch
+from pennylane.tape import QuantumTapeBatch
 from pennylane.typing import PostprocessingFn, ResultBatch
 
 
 def map_batch_transform(
-    transform: Callable, tapes: TapeBatch
-) -> tuple[TapeBatch, PostprocessingFn]:
+    transform: Callable, tapes: QuantumTapeBatch
+) -> tuple[QuantumTapeBatch, PostprocessingFn]:
     """Map a transform over multiple tapes.
 
     Args:

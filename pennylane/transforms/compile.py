@@ -18,7 +18,7 @@ from functools import partial
 import pennylane as qml
 from pennylane.ops import __all__ as all_ops
 from pennylane.queuing import QueuingManager
-from pennylane.tape import QuantumTape, TapeBatch
+from pennylane.tape import QuantumTape, QuantumTapeBatch
 from pennylane.transforms.core import TransformDispatcher, transform
 from pennylane.transforms.optimization import (
     cancel_inverses,
@@ -34,7 +34,7 @@ default_pipeline = [commute_controlled, cancel_inverses, merge_rotations, remove
 @transform
 def compile(
     tape: QuantumTape, pipeline=None, basis_set=None, num_passes=1, expand_depth=5
-) -> tuple[TapeBatch, PostprocessingFn]:
+) -> tuple[QuantumTapeBatch, PostprocessingFn]:
     """Compile a circuit by applying a series of transforms to a quantum function.
 
     The default set of transforms includes (in order):

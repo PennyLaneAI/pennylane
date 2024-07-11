@@ -13,7 +13,7 @@
 # limitations under the License.
 """Transforms for pushing commuting gates through targets/control qubits."""
 
-from pennylane.tape import QuantumTape, TapeBatch
+from pennylane.tape import QuantumTape, QuantumTapeBatch
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
 from pennylane.wires import Wires
@@ -153,7 +153,9 @@ def _commute_controlled_left(op_list):
 
 
 @transform
-def commute_controlled(tape: QuantumTape, direction="right") -> tuple[TapeBatch, PostprocessingFn]:
+def commute_controlled(
+    tape: QuantumTape, direction="right"
+) -> tuple[QuantumTapeBatch, PostprocessingFn]:
     """Quantum transform to move commuting gates past control and target qubits of controlled operations.
 
     Args:

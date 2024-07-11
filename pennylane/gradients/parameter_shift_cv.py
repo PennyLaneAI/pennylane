@@ -35,7 +35,7 @@ from pennylane.measurements import (
     StateMP,
     VarianceMP,
 )
-from pennylane.tape import TapeBatch
+from pennylane.tape import QuantumTapeBatch
 from pennylane.transforms.tape_expand import expand_invalid_trainable
 from pennylane.typing import PostprocessingFn
 
@@ -502,7 +502,7 @@ def _expand_transform_param_shift_cv(
     fallback_fn=finite_diff,
     f0=None,
     force_order2=False,
-) -> tuple[TapeBatch, PostprocessingFn]:
+) -> tuple[QuantumTapeBatch, PostprocessingFn]:
     """Expand function to be applied before parameter shift CV."""
     expanded_tape = expand_invalid_trainable(tape)
 
@@ -530,7 +530,7 @@ def param_shift_cv(
     fallback_fn=finite_diff,
     f0=None,
     force_order2=False,
-) -> tuple[TapeBatch, PostprocessingFn]:
+) -> tuple[QuantumTapeBatch, PostprocessingFn]:
     r"""Transform a continuous-variable QNode to compute the parameter-shift gradient of all gate
     parameters with respect to its inputs.
 

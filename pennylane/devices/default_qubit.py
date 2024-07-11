@@ -28,7 +28,7 @@ import pennylane as qml
 from pennylane.logging import debug_logger, debug_logger_init
 from pennylane.measurements.mid_measure import MidMeasureMP
 from pennylane.ops.op_math.condition import Conditional
-from pennylane.tape import QuantumTape, TapeBatch
+from pennylane.tape import QuantumTape, QuantumTapeBatch
 from pennylane.transforms import convert_to_numpy_parameters
 from pennylane.transforms.core import TransformProgram
 from pennylane.typing import PostprocessingFn, Result, ResultBatch
@@ -53,7 +53,7 @@ from .qubit.simulate import get_final_state, measure_final_state, simulate
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
-QuantumTape_or_Batch = Union[QuantumTape, TapeBatch]
+QuantumTape_or_Batch = Union[QuantumTape, QuantumTapeBatch]
 
 
 observables = {
@@ -125,7 +125,7 @@ def all_state_postprocessing(results, measurements, wire_order):
 @qml.transform
 def adjoint_state_measurements(
     tape: QuantumTape, device_vjp=False
-) -> tuple[TapeBatch, PostprocessingFn]:
+) -> tuple[QuantumTapeBatch, PostprocessingFn]:
     """Perform adjoint measurement preprocessing.
 
     * Allows a tape with only expectation values through unmodified

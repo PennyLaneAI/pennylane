@@ -25,7 +25,7 @@ from networkx import MultiDiGraph
 
 import pennylane as qml
 from pennylane.measurements import SampleMP
-from pennylane.tape import QuantumScript, QuantumTape, TapeBatch
+from pennylane.tape import QuantumScript, QuantumTape, QuantumTapeBatch
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
 from pennylane.wires import Wires
@@ -57,7 +57,7 @@ def _cut_circuit_mc_expand(
     device_wires: Optional[Wires] = None,
     auto_cutter: Union[bool, Callable] = False,
     **kwargs,
-) -> tuple[TapeBatch, PostprocessingFn]:
+) -> tuple[QuantumTapeBatch, PostprocessingFn]:
     """Main entry point for expanding operations in sample-based tapes until
     reaching a depth that includes :class:`~.WireCut` operations."""
     # pylint: disable=unused-argument, too-many-arguments
@@ -77,7 +77,7 @@ def cut_circuit_mc(
     shots: Optional[int] = None,
     device_wires: Optional[Wires] = None,
     **kwargs,
-) -> tuple[TapeBatch, PostprocessingFn]:
+) -> tuple[QuantumTapeBatch, PostprocessingFn]:
     """
     Cut up a circuit containing sample measurements into smaller fragments using a
     Monte Carlo method.
@@ -593,8 +593,8 @@ MC_MEASUREMENTS = [
 
 
 def expand_fragment_tapes_mc(
-    tapes: TapeBatch, communication_graph: MultiDiGraph, shots: int
-) -> tuple[TapeBatch, np.ndarray]:
+    tapes: QuantumTapeBatch, communication_graph: MultiDiGraph, shots: int
+) -> tuple[QuantumTapeBatch, np.ndarray]:
     """
     Expands fragment tapes into a sequence of random configurations of the contained pairs of
     :class:`MeasureNode` and :class:`PrepareNode` operations.

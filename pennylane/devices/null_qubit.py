@@ -40,7 +40,7 @@ from pennylane.measurements import (
     Shots,
     StateMP,
 )
-from pennylane.tape import QuantumTape, TapeBatch
+from pennylane.tape import QuantumTape, QuantumTapeBatch
 from pennylane.transforms.core import TransformProgram
 from pennylane.typing import Result, ResultBatch
 
@@ -51,7 +51,7 @@ from .preprocess import decompose
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
-QuantumTape_or_Batch = Union[QuantumTape, TapeBatch]
+QuantumTape_or_Batch = Union[QuantumTape, QuantumTapeBatch]
 
 
 @singledispatch

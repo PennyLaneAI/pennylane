@@ -31,7 +31,7 @@ from typing import Optional, Union
 from cachetools import Cache, LRUCache
 
 import pennylane as qml
-from pennylane.tape import QuantumTape, TapeBatch
+from pennylane.tape import QuantumTape, QuantumTapeBatch
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn, Result, ResultBatch
 
@@ -96,7 +96,7 @@ _CACHED_EXECUTION_WITH_FINITE_SHOTS_WARNINGS = (
 
 
 def _adjoint_jacobian_expansion(
-    tapes: TapeBatch, grad_on_execution: bool, interface: str, max_expansion: int
+    tapes: QuantumTapeBatch, grad_on_execution: bool, interface: str, max_expansion: int
 ):
     """Performs adjoint jacobian specific expansion.  Expands so that every
     trainable operation has a generator.
@@ -181,12 +181,12 @@ def _get_ml_boundary_execute(
 
 
 def _batch_transform(
-    tapes: TapeBatch,
+    tapes: QuantumTapeBatch,
     device: device_type,
     config: "qml.devices.ExecutionConfig",
     override_shots: Union[bool, int, Sequence[int]] = False,
     device_batch_transform: bool = True,
-) -> tuple[TapeBatch, PostprocessingFn, "qml.devices.ExecutionConfig"]:
+) -> tuple[QuantumTapeBatch, PostprocessingFn, "qml.devices.ExecutionConfig"]:
     """Apply the device batch transform unless requested not to.
 
     Args:
@@ -289,7 +289,7 @@ def _make_inner_execute(
     else:
         device_execution = partial(device.execute, execution_config=execution_config)
 
-    def inner_execute(tapes: TapeBatch, **_) -> ResultBatch:
+    def inner_execute(tapes: QuantumTapeBatch, **_) -> ResultBatch:
         """Execution that occurs within a machine learning framework boundary.
 
         Closure Variables:
@@ -410,7 +410,7 @@ def _get_interface_name(tapes, interface):
 
 
 def execute(
-    tapes: TapeBatch,
+    tapes: QuantumTapeBatch,
     device: device_type,
     gradient_fn: Optional[Union[Callable, str]] = None,
     interface="auto",

@@ -24,7 +24,7 @@ import numpy as np
 import pennylane as qml
 from pennylane.circuit_graph import LayerData
 from pennylane.queuing import WrappedObj
-from pennylane.tape import TapeBatch
+from pennylane.tape import QuantumTapeBatch
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
 
@@ -75,7 +75,7 @@ def _expand_metric_tensor(
     allow_nonunitary=True,
     aux_wire=None,
     device_wires=None,
-) -> tuple[TapeBatch, PostprocessingFn]:  # pylint: disable=too-many-arguments
+) -> tuple[QuantumTapeBatch, PostprocessingFn]:  # pylint: disable=too-many-arguments
     """Set the metric tensor based on whether non-unitary gates are allowed."""
     # pylint: disable=unused-argument,too-many-arguments
 
@@ -97,7 +97,7 @@ def metric_tensor(  # pylint:disable=too-many-arguments
     allow_nonunitary=True,
     aux_wire=None,
     device_wires=None,
-) -> tuple[TapeBatch, PostprocessingFn]:
+) -> tuple[QuantumTapeBatch, PostprocessingFn]:
     r"""Returns a function that computes the metric tensor of a given QNode or quantum tape.
 
     The metric tensor convention we employ here has the following form:

@@ -22,12 +22,12 @@ from pennylane import transform
 from pennylane.devices import DefaultMixed, DefaultQubit, DefaultQubitLegacy
 from pennylane.gradients import adjoint_metric_tensor, metric_tensor
 from pennylane.measurements import DensityMatrixMP, StateMP
-from pennylane.tape import QuantumTape, TapeBatch
+from pennylane.tape import QuantumTape, QuantumTapeBatch
 from pennylane.typing import PostprocessingFn
 
 
 @partial(transform, final_transform=True)
-def reduced_dm(tape: QuantumTape, wires, **kwargs) -> tuple[TapeBatch, PostprocessingFn]:
+def reduced_dm(tape: QuantumTape, wires, **kwargs) -> tuple[QuantumTapeBatch, PostprocessingFn]:
     """Compute the reduced density matrix from a :class:`~.QNode` returning
     :func:`~pennylane.state`.
 
@@ -124,7 +124,7 @@ def _reduced_dm_qnode(self, qnode, targs, tkwargs):
 
 
 @partial(transform, final_transform=True)
-def purity(tape: QuantumTape, wires, **kwargs) -> tuple[TapeBatch, PostprocessingFn]:
+def purity(tape: QuantumTape, wires, **kwargs) -> tuple[QuantumTapeBatch, PostprocessingFn]:
     r"""Compute the purity of a :class:`~.QuantumTape` returning :func:`~pennylane.state`.
 
     .. math::
@@ -223,7 +223,7 @@ def _purity_qnode(self, qnode, targs, tkwargs):
 @partial(transform, final_transform=True)
 def vn_entropy(
     tape: QuantumTape, wires: Sequence[int], base: float = None, **kwargs
-) -> tuple[TapeBatch, PostprocessingFn]:
+) -> tuple[QuantumTapeBatch, PostprocessingFn]:
     r"""Compute the Von Neumann entropy from a :class:`.QuantumTape` returning a :func:`~pennylane.state`.
 
     .. math::
@@ -353,7 +353,7 @@ def _bipartite_qinfo_transform(
 @partial(transform, final_transform=True)
 def mutual_info(
     tape: QuantumTape, wires0: Sequence[int], wires1: Sequence[int], base: float = None, **kwargs
-) -> tuple[TapeBatch, PostprocessingFn]:
+) -> tuple[QuantumTapeBatch, PostprocessingFn]:
     r"""Compute the mutual information from a :class:`.QuantumTape` returning a :func:`~pennylane.state`:
 
     .. math::
@@ -510,7 +510,7 @@ def _compute_cfim(p, dp):
 
 
 @transform
-def _make_probs(tape: qml.tape.QuantumTape) -> tuple[TapeBatch, PostprocessingFn]:
+def _make_probs(tape: qml.tape.QuantumTape) -> tuple[QuantumTapeBatch, PostprocessingFn]:
     """Ignores the return types of the provided circuit and creates a new one
     that outputs probabilities"""
     qscript = qml.tape.QuantumScript(tape.operations, [qml.probs(tape.wires)], shots=tape.shots)
@@ -714,7 +714,7 @@ def classical_fisher(qnode, argnums=0):
 @partial(transform, is_informative=True)
 def quantum_fisher(
     tape: qml.tape.QuantumTape, device, *args, **kwargs
-) -> tuple[TapeBatch, PostprocessingFn]:
+) -> tuple[QuantumTapeBatch, PostprocessingFn]:
     r"""Returns a function that computes the quantum fisher information matrix (QFIM) of a given :class:`.QNode`.
 
     Given a parametrized quantum state :math:`|\psi(\bm{\theta})\rangle`, the quantum fisher information matrix (QFIM) quantifies how changes to the parameters :math:`\bm{\theta}`

@@ -20,14 +20,14 @@ from scipy.sparse.linalg import expm
 import pennylane as qml
 from pennylane import transform
 from pennylane.queuing import QueuingManager
-from pennylane.tape import QuantumTape, TapeBatch
+from pennylane.tape import QuantumTape, QuantumTapeBatch
 from pennylane.typing import PostprocessingFn
 
 
 @transform
 def append_time_evolution(
     tape: QuantumTape, riemannian_gradient, t, n, exact=False
-) -> tuple[TapeBatch, PostprocessingFn]:
+) -> tuple[QuantumTapeBatch, PostprocessingFn]:
     r"""Append an approximate time evolution, corresponding to a Riemannian
     gradient on the Lie group, to an existing circuit.
 
