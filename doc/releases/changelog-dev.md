@@ -25,6 +25,9 @@
 
 <h3>Breaking changes 💔</h3>
 
+* `QuantumScript.interface` has been removed.
+  [(#5980)](https://github.com/PennyLaneAI/pennylane/pull/5980)
+
 <h3>Deprecations 👋</h3>
 
 * `pennylane.qinfo.classical_fisher` and `pennylane.qinfo.quantum_fisher` has been deprecated.
