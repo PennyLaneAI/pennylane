@@ -226,8 +226,12 @@ class DefaultQutritMixed(Device):
         ``DefaultQutritMixed`` includes readout error support. Two input arguments control
         the effect of error channels applied to the state after it has been diagonalized for measurement:
 
-        * ``readout_relaxation_probs``:  Input parameters of a :class:`~.QutritAmplitudeDamping` channel. This error models state relaxation error that occurs during readout of transmon-based qutrits. The motivation for this readout error is described in [`1 <https://arxiv.org/abs/2003.03307>`_] (Sec II.A).
-        * ``readout_misclassification_probs``: Input parameters of a :class:`~.TritFlip` channel. This error models misclassification events in readout. An example of this readout error can be seen in [`2 <https://arxiv.org/abs/2309.11303>`_] (Fig 1a).
+        * ``readout_relaxation_probs``:  Input parameters of a :class:`~.QutritAmplitudeDamping` channel.
+          This error models state relaxation error that occurs during readout of transmon-based qutrits.
+          The motivation for this readout error is described in [`1 <https://arxiv.org/abs/2003.03307>`_] (Sec II.A).
+        * ``readout_misclassification_probs``: Input parameters of a :class:`~.TritFlip` channel.
+          This error models misclassification events in readout. An example of this readout error
+          can be seen in [`2 <https://arxiv.org/abs/2309.11303>`_] (Fig 1a).
 
         .. note::
             Relaxation error, defined by `readout_relaxation_probs` and implemented with
