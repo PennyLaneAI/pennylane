@@ -15,8 +15,6 @@
 from copy import copy
 from typing import Any, Callable, Dict, Optional, Sequence
 
-import jax.numpy as jnp
-import jax.scipy.optimize as jopt
 
 import pennylane as qml
 from pennylane import adjoint, apply
@@ -24,6 +22,13 @@ from pennylane.math import mean, round, shape
 from pennylane.queuing import AnnotatedQueue
 from pennylane.tape import QuantumScript, QuantumTape
 from pennylane.transforms import transform
+
+has_jax = True
+try:
+    import jax.numpy as jnp
+    import jax.scipy.optimize as jopt
+except ImportError:
+    has_jax = False
 
 
 @transform
@@ -339,6 +344,9 @@ def exponential_extrapolate(x, y, asymptote=None):
     >>> qml.transforms.exponential_extrapolate(x, y)
     Array(8.001553, dtype=float32)
     """
+
+    if not has_jax:  # pragma: no cover
+        raise ImportError("Jax is required for exponential fitting.")  # pragma: no cover
 
     def exponential(x, a, b, c) -> float:
         return a * jnp.exp(-b * x) + c
