@@ -43,7 +43,7 @@ class PLDB(pdb.Pdb):
     def __init__(self, *args, **kwargs):
         """Initialize the debugger, and set custom prompt string."""
         super().__init__(*args, **kwargs)
-        self.prompt = "[pldb]: "
+        self.prompt = "[pldb] "
 
     @classmethod
     def valid_context(cls):
@@ -55,10 +55,10 @@ class PLDB(pdb.Pdb):
         """
 
         if not qml.queuing.QueuingManager.recording() or not cls.has_active_dev():
-            raise RuntimeError("Can't call breakpoint outside of a qnode execution")
+            raise RuntimeError("Can't call breakpoint outside of a qnode execution.")
 
         if cls.get_active_device().name not in ("default.qubit", "lightning.qubit"):
-            raise TypeError("Breakpoints not supported on this device")
+            raise TypeError("Breakpoints not supported on this device.")
 
     @classmethod
     def add_device(cls, dev):
@@ -136,8 +136,8 @@ def breakpoint():
 
     This function marks a location in a quantum circuit (QNode). When it is encountered during
     execution of the quantum circuit, an interactive debugging prompt is launched to step
-    throught the circuit execution using Pdb like commands (:code:`list`, :code:`next`,
-    :code:`continue`, :code:`quit`).
+    through the circuit execution. Since it is based on the `Python Debugger <https://docs.python.org/3/library/pdb.html>`_ (PDB), commands like
+    (:code:`list`, :code:`next`, :code:`continue`, :code:`quit`) can be used to navigate the code.
 
     .. seealso:: :doc:`/code/qml_debugging`
 
@@ -146,6 +146,9 @@ def breakpoint():
     Consider the following python script containing the quantum circuit with breakpoints.
 
     .. code-block:: python3
+        :linenos:
+
+        import pennylane as qml
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -163,21 +166,21 @@ def breakpoint():
 
         circuit(1.23)
 
-    Running the above python script opens up the interactive :code:`[pldb]:` prompt in the terminal.
+    Running the above python script opens up the interactive :code:`[pldb]` prompt in the terminal.
     The prompt specifies the path to the script along with the next line to be executed after the breakpoint.
 
     .. code-block:: console
 
-        > /Users/your/path/to/script.py(8)circuit()
+        > /Users/your/path/to/script.py(9)circuit()
         -> qml.RX(x, wires=0)
-        [pldb]:
+        [pldb]
 
     We can interact with the prompt using the commands: :code:`list` , :code:`next`,
     :code:`continue`, and :code:`quit`. Additionally, we can also access any variables defined in the function.
 
     .. code-block:: console
 
-        [pldb]: x
+        [pldb] x
         1.23
 
     The :code:`list` command will print a section of code around the breakpoint, highlighting the next line
@@ -185,28 +188,28 @@ def breakpoint():
 
     .. code-block:: console
 
-        [pldb]: list
-          3
-          4  	@qml.qnode(dev)
-          5  	def circuit(x):
-          6  	    qml.breakpoint()
-          7
-          8  ->	    qml.RX(x, wires=0)
-          9  	    qml.Hadamard(wires=1)
-         10
-         11  	    qml.breakpoint()
-         12
-         13  	    qml.CNOT(wires=[0, 1])
-        [pldb]:
+        [pldb] list
+        5     @qml.qnode(dev)
+        6     def circuit(x):
+        7         qml.breakpoint()
+        8
+        9  ->     qml.RX(x, wires=0)
+        10         qml.Hadamard(wires=1)
+        11
+        12         qml.breakpoint()
+        13
+        14         qml.CNOT(wires=[0, 1])
+        15         return qml.expval(qml.Z(0))
+        [pldb]
 
     The :code:`next` command will execute the next line of code, and print the new line to be executed.
 
     .. code-block:: console
 
-        [pldb]: next
-        > /Users/your/path/to/script.py(9)circuit()
+        [pldb] next
+        > /Users/your/path/to/script.py(10)circuit()
         -> qml.Hadamard(wires=1)
-        [pldb]:
+        [pldb]
 
     The :code:`continue` command will resume code execution until another breakpoint is reached. It will
     then print the new line to be executed. Finally, :code:`quit` will resume execution of the file and
@@ -214,10 +217,10 @@ def breakpoint():
 
     .. code-block:: console
 
-        [pldb]: continue
-        > /Users/your/path/to/script.py(13)circuit()
+        [pldb] continue
+        > /Users/your/path/to/script.py(14)circuit()
         -> qml.CNOT(wires=[0, 1])
-        [pldb]: quit
+        [pldb] quit
 
     """
     PLDB.valid_context()  # Ensure its being executed in a valid context
@@ -255,12 +258,12 @@ def debug_state():
 
         circuit(1.23)
 
-    Running the above python script opens up the interactive :code:`[pldb]:` prompt in the terminal.
+    Running the above python script opens up the interactive :code:`[pldb]` prompt in the terminal.
     We can query the state:
 
     .. code-block:: console
 
-        [pldb]: longlist
+        [pldb] longlist
           4  	@qml.qnode(dev)
           5  	def circuit(x):
           6  	    qml.RX(x, wires=0)
@@ -270,7 +273,7 @@ def debug_state():
          10
          11  ->	    qml.CNOT(wires=[0, 1])
          12  	    return qml.expval(qml.Z(0))
-        [pldb]: qml.debug_state()
+        [pldb] qml.debug_state()
         array([0.57754604+0.j        , 0.57754604+0.j        ,
         0.        -0.40797128j, 0.        -0.40797128j])
 
@@ -315,12 +318,12 @@ def debug_expval(op):
 
         circuit(1.23)
 
-    Running the above python script opens up the interactive :code:`[pldb]:` prompt in the terminal.
+    Running the above python script opens up the interactive :code:`[pldb]` prompt in the terminal.
     We can query the expectation value:
 
     .. code-block:: console
 
-        [pldb]: longlist
+        [pldb] longlist
           4  	@qml.qnode(dev)
           5  	def circuit(x):
           6  	    qml.RX(x, wires=0)
@@ -330,7 +333,7 @@ def debug_expval(op):
          10
          11  ->	    qml.CNOT(wires=[0, 1])
          12  	    return qml.state()
-        [pldb]: qml.debug_expval(qml.Z(0))
+        [pldb] qml.debug_expval(qml.Z(0))
         0.33423772712450256
     """
 
@@ -379,12 +382,12 @@ def debug_probs(wires=None, op=None):
 
         circuit(1.23)
 
-    Running the above python script opens up the interactive :code:`[pldb]:` prompt in the terminal.
+    Running the above python script opens up the interactive :code:`[pldb]` prompt in the terminal.
     We can query the probability distribution:
 
     .. code-block:: console
 
-        [pldb]: longlist
+        [pldb] longlist
           4  	@qml.qnode(dev)
           5  	def circuit(x):
           6  	    qml.RX(x, wires=0)
@@ -394,7 +397,7 @@ def debug_probs(wires=None, op=None):
          10
          11  ->	    qml.CNOT(wires=[0, 1])
          12  	    return qml.state()
-        [pldb]: qml.debug_probs()
+        [pldb] qml.debug_probs()
         array([0.33355943, 0.33355943, 0.16644057, 0.16644057])
 
     """
@@ -457,13 +460,13 @@ def debug_tape():
 
         circuit(1.23)
 
-    Running the above python script opens up the interactive :code:`[pldb]:` prompt in the terminal.
+    Running the above python script opens up the interactive :code:`[pldb]` prompt in the terminal.
     We can access the tape and draw it as follows:
 
     .. code-block:: console
 
-        [pldb]: t = qml.debug_tape()
-        [pldb]: print(t.draw())
+        [pldb] t = qml.debug_tape()
+        [pldb] print(t.draw())
         0: ──RX─╭●─┤
         1: ──H──╰X─┤
 
