@@ -242,8 +242,8 @@ class DefaultQutritMixed(Device):
             different orders. For example, measuring :class:`~.THermitian` with a non-diagonal
             GellMann matrix will result in a different measurement result then measuring the
             equivalent :class:`~.GellMann` observable, as the THermitian eigenvalues are returned
-            in increasing order when explicitly diagonalized (i.e., [-1, 0, 1]), while non-diagonal GellManns provided
-            in PennyLane have their eigenvalues hardcoded (i.e., [1, -1, 0]).
+            in increasing order when explicitly diagonalized (i.e., ``[-1, 0, 1]``), while non-diagonal GellManns provided
+            in PennyLane have their eigenvalues hardcoded (i.e., ``[1, -1, 0]``).
 
     .. details::
         :title: Tracking
