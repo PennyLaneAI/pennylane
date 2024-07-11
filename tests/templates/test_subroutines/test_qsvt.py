@@ -172,7 +172,7 @@ class TestQSVT:
     def test_wire_order(self):
         """Test that the wire order is preserved."""
 
-        op = qml.QFT(wires=[1, 0])
+        op = qml.QFT(wires=[2, 1])
         qsvt_wires = qml.QSVT(op, [op]).wires
         assert qsvt_wires == op.wires
 
