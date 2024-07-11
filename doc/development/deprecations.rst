@@ -9,6 +9,12 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
+* The ``expansion_strategy`` argument in ``qml.specs``, ``qml.draw``, and ``qml.draw_mpl`` is deprecated. 
+  Instead, use the ``level`` argument which provides a superset of options.
+
+  - Deprecated in v0.38
+  - Will be removed in v0.39
+
 * The ``simplify`` argument in ``qml.Hamiltonian`` and ``qml.ops.LinearCombination`` is deprecated. 
   Instead, ``qml.simplify()`` can be called on the constructed operator.
 

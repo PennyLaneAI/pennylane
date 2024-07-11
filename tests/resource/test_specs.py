@@ -257,7 +257,10 @@ class TestSpecsTransform:
         circuit, params = self.make_qnode_and_params("device")
 
         assert circuit.max_expansion == 10
-        info = qml.specs(circuit, max_expansion=0)(params)
+
+        with pytest.warns(UserWarning, match="'max_expansion' has no effect"):
+            info = qml.specs(circuit, max_expansion=0)(params)
+
         assert circuit.max_expansion == 10
 
         assert len(info) == 11
@@ -279,7 +282,12 @@ class TestSpecsTransform:
         circuit, params = self.make_qnode_and_params("gradient")
 
         assert circuit.expansion_strategy == "gradient"
-        info = qml.specs(circuit, expansion_strategy="device")(params)
+
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match="'expansion_strategy' argument is deprecated"
+        ):
+            info = qml.specs(circuit, expansion_strategy="device")(params)
+
         assert circuit.expansion_strategy == "gradient"
 
         assert len(info) == 13

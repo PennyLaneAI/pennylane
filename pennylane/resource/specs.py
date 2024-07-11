@@ -36,6 +36,14 @@ def _determine_spec_level(kwargs, qnode):
     if all(val != sentinel for val in (level, expansion_strategy)):
         raise ValueError("Either 'level' or 'expansion_strategy' need to be set, but not both.")
 
+    if expansion_strategy != sentinel:
+        warnings.warn(
+            "The 'expansion_strategy' argument is deprecated and will be removed in "
+            "version 0.39. Instead, use the 'level' argument which offers more flexibility "
+            "and options.",
+            qml.PennyLaneDeprecationWarning,
+        )
+
     if level == sentinel:
         if expansion_strategy == sentinel:
             return qnode.expansion_strategy
