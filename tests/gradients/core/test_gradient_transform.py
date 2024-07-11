@@ -31,10 +31,13 @@ def test_supported_gradient_kwargs():
     """Test that all keyword arguments of gradient transforms are
     registered as supported gradient kwargs, and no others."""
     # Collect all gradient transforms
+
+    # Non-diff_methods to skip
+    methods_to_skip = ("metric_tensor", "classical_fisher", "quantum_fisher")
+
     grad_transforms = []
     for attr in qml.gradients.__dir__():
-        if attr == "metric_tensor":
-            # Skip metric_tensor because it is not a diff_method
+        if attr in methods_to_skip:
             continue
         obj = getattr(qml.gradients, attr)
         if isinstance(obj, TransformDispatcher):
