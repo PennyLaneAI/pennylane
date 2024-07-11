@@ -15,7 +15,7 @@
 import re
 from copy import copy
 from numbers import Number
-from typing import Union, Optional
+from typing import Optional, Union
 
 from numpy import ndarray
 
@@ -692,7 +692,7 @@ def _to_mat(fermi_op: Union[FermiWord, FermiSentence], n_orbitals: Optional[int]
           [0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j]])
     """
     # prevent circular import
-    from .conversion import jordan_wigner
+    from .conversion import jordan_wigner  # pylint: disable=import-outside-toplevel
 
     # Get all orbital indices in a Fermi operator
     if isinstance(fermi_op, FermiWord):
