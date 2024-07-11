@@ -415,12 +415,12 @@ def from_qasm(quantum_circuit: str, measurements=None):
     Args:
         quantum_circuit (str): a QASM string containing a valid quantum circuit
         measurements (None | MeasurementProcess | list[MeasurementProcess]): an optional PennyLane
-            measurement or list of PennyLane measurements that overrides any terminal measurements
+            measurement or list of PennyLane measurements that overrides the terminal measurements
             that may be present in the input circuit. Defaults to ``None``, such that existing measurements
-            in the input circuit are kept.
+            in the input circuit are kept. Mid-circuit measurements are kept either way.
 
     Returns:
-        function: the PennyLane quantum function created based on the QASM string. This function itself returns the mid-circuit measurements plus the terminal measurements by default (``measurements=None``), and returns the ``measurements`` otherwise.
+        function: the PennyLane quantum function created based on the QASM string. This function itself returns the mid-circuit measurements plus the terminal measurements by default (``measurements=None``), and returns **only** the measurements from the ``measurements`` argument otherwise.
 
     **Example:**
 
@@ -478,7 +478,7 @@ def from_qasm(quantum_circuit: str, measurements=None):
     0: ──H──┤↗├──RZ(0.24)─╭●─┤  Var[Y]
     1: ───────────────────╰X─┤
 
-    We can also take advantage of the mid-circuit measurements inside the QASM code.
+    We can take advantage of the mid-circuit measurements inside the QASM code by calling the returned function.
 
     .. code-block:: python
 
@@ -495,7 +495,7 @@ def from_qasm(quantum_circuit: str, measurements=None):
     1: ──────║────────────╰X──┤↗├──║────────┤
              ╚═════════════════════╝
 
-    You can also load the contents of a QASM file:
+    We can also load the contents of a QASM file.
 
     .. code-block:: python
 
