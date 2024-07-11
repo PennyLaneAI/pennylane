@@ -38,6 +38,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* `qml.AmplitudeEmbedding` has better support for features using low precision integer data types.
+[(#5969)](https://github.com/PennyLaneAI/pennylane/pull/5969)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -46,4 +49,5 @@ Yushao Chen,
 Christina Lee,
 William Maxwell,
 Vincent Michaud-Rioux,
+Mudit Pandey,
 Erik Schultheis.
