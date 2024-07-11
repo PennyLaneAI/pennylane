@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Tests for the classical fisher information matrix in the pennylane.qinfo
+Tests for the classical and quantum fisher information matrix in the pennylane.qinfo
 """
 import numpy as np
 
@@ -21,8 +21,7 @@ import pytest
 
 import pennylane as qml
 import pennylane.numpy as pnp
-from pennylane.qinfo import classical_fisher, quantum_fisher
-from pennylane.qinfo.transforms import _compute_cfim, _make_probs
+from pennylane.gradients.fisher import _compute_cfim, _make_probs, classical_fisher, quantum_fisher
 
 
 class TestMakeProbs:
@@ -60,7 +59,7 @@ class TestMakeProbs:
         assert new_tape[0].shots == tape.shots
 
 
-class TestComputeclassicalFisher:
+class TestComputeClassicalFisher:
     """Testing that given p and dp, _compute_cfim() computes the correct outputs"""
 
     @pytest.mark.parametrize("n_params", np.arange(1, 10))

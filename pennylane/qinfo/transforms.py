@@ -13,6 +13,7 @@
 # limitations under the License.
 """QNode transforms for the quantum information quantities."""
 # pylint: disable=import-outside-toplevel, not-callable
+import warnings
 from functools import partial
 from typing import Callable, Sequence
 
@@ -547,6 +548,9 @@ def classical_fisher(qnode, argnums=0):
         returns a matrix of size ``(len(params), len(params))``. For multiple differentiable arguments ``x, y, z``,
         it returns a list of sizes ``[(len(x), len(x)), (len(y), len(y)), (len(z), len(z))]``.
 
+    .. warning::
+        ``pennylane.qinfo.classical_fisher`` is being migrated to a different module and will
+        removed in version 0.39. Instead, use ``pennylane.gradient.classical_fisher``.
 
     .. seealso:: :func:`~.pennylane.metric_tensor`, :func:`~.pennylane.qinfo.transforms.quantum_fisher`
 
@@ -663,6 +667,12 @@ def classical_fisher(qnode, argnums=0):
             [2.16840434e-18, 2.81967252e-01]]]))
 
     """
+    warnings.warn(
+        "pennylane.qinfo.classical_fisher is being migrated to a different module and will "
+        "removed in version 0.39. Instead, use pennylane.gradient.classical_fisher.",
+        qml.PennyLaneDeprecationWarning,
+    )
+
     new_qnode = _make_probs(qnode)
 
     def wrapper(*args, **kwargs):
@@ -739,6 +749,10 @@ def quantum_fisher(
         The transformed circuit as described in :func:`qml.transform <pennylane.transform>`. Executing this circuit
         will provide the quantum Fisher information in the form of a tensor.
 
+    .. warning::
+        ``pennylane.qinfo.quantum_fisher`` is being migrated to a different module and will
+        removed in version 0.39. Instead, use ``pennylane.gradient.quantum_fisher``.
+
     .. note::
 
         ``quantum_fisher`` coincides with the ``metric_tensor`` with a prefactor of :math:`4`. Internally, :func:`~.pennylane.adjoint_metric_tensor` is used when executing on a device with
@@ -799,6 +813,11 @@ def quantum_fisher(
     >>> qfim = qml.qinfo.quantum_fisher(circ, approx="block-diag")(params)
 
     """
+    warnings.warn(
+        "pennylane.qinfo.quantum_fisher is being migrated to a different module and will "
+        "removed in version 0.39. Instead, use pennylane.gradient.quantum_fisher.",
+        qml.PennyLaneDeprecationWarning,
+    )
 
     if device.shots or not isinstance(device, (DefaultQubitLegacy, DefaultQubit)):
         tapes, processing_fn = metric_tensor(tape, *args, **kwargs)

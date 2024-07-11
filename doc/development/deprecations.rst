@@ -9,6 +9,12 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
+* The functions ``qml.qinfo.classical_fisher`` and ``qml.qinfo.quantum_fisher`` are deprecated. Instead,
+  ``qml.gradients.classical_fisher`` and ``qml.gradients.quantum_fisher`` should be used.
+
+  - Deprecated in v0.38
+  - Will be removed in v0.39
+
 * The ``simplify`` argument in ``qml.Hamiltonian`` and ``qml.ops.LinearCombination`` is deprecated. 
   Instead, ``qml.simplify()`` can be called on the constructed operator.
 
