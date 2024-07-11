@@ -30,6 +30,7 @@ from typing import Callable, MutableMapping, Optional, Sequence, Tuple, Union
 from cachetools import Cache, LRUCache
 
 import pennylane as qml
+from pennylane.data.base.attribute import UNSET
 from pennylane.tape import QuantumTape
 from pennylane.transforms import transform
 from pennylane.typing import ResultBatch
@@ -408,10 +409,6 @@ def _get_interface_name(tapes, interface):
     return interface
 
 
-# Sentinel value used to check that variable was not provided by user
-DEFAULT_VALUE = object()
-
-
 def execute(
     tapes: Sequence[QuantumTape],
     device: device_type,
@@ -426,7 +423,7 @@ def execute(
     cachesize=10000,
     max_diff=1,
     override_shots: int = False,
-    expand_fn=DEFAULT_VALUE,  # type: ignore
+    expand_fn=UNSET,  # type: ignore
     max_expansion=10,
     device_batch_transform=True,
     device_vjp=False,
@@ -641,7 +638,7 @@ def execute(
     elif cache is False:
         cache = None
 
-    if expand_fn != DEFAULT_VALUE:
+    if expand_fn is not UNSET:
         warnings.warn(
             "The expand_fn argument is deprecated and will be removed in version 0.39."
             "Instead, please create a TransformProgram with the desired preprocessing and pass it to the transform_program argument.",
