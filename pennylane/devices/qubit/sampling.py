@@ -25,7 +25,7 @@ from pennylane.measurements import (
     ShadowExpvalMP,
     Shots,
 )
-from pennylane.ops import Hamiltonian, LinearCombination, Sum
+from pennylane.ops import Hamiltonian, LinearCombination, Sum, SProd
 from pennylane.typing import TensorLike
 
 from .apply_operation import apply_operation
@@ -65,7 +65,7 @@ def _group_measurements(mps: List[Union[SampleMeasurement, ClassicalShadowMP, Sh
     mp_no_obs_indices = []
 
     for i, mp in enumerate(mps):
-        if isinstance(mp.obs, Sum):
+        if isinstance(mp.obs, (Sum, SProd)):
             mps[i].obs = qml.simplify(mp.obs)
         if isinstance(mp, (ClassicalShadowMP, ShadowExpvalMP)):
             mp_other_obs.append([mp])
