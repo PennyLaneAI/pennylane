@@ -676,3 +676,19 @@ class TestBatchVJP:
         # list will correspond to a single input parameter of the combined
         # tapes.
         assert len(res) == sum(len(t.trainable_params) for t in tapes)
+
+    def test_batched_params_probs_jacobian(self):
+        """Test if jacobian gets calculated when inputs are batched, multiple
+        trainable parameters are used and the measurement has a shape (probs)"""
+
+        @qml.qnode(qml.device("default.qubit"), diff_method="parameter-shift")
+        def circuit(x, data):
+            qml.RX(x[0], 0)
+            qml.RX(x[1], 0)
+            qml.RY(data, 0)
+            return qml.probs(wires=0)
+
+        x = qml.numpy.array([0.5, 0.8], requires_grad=True)
+        data = qml.numpy.array([1.2, 2.3, 3.4], requires_grad=False)
+        circuit(x, data)
+        qml.jacobian(circuit)(x, data)
