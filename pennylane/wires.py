@@ -516,7 +516,6 @@ class Wires(Sequence):
             raise TypeError("Can only do the union of Wires with Wires")
         return Wires(set(self.labels) | set(other.labels))
 
-
     def __and__(self, other):
         """Return the intersection of the current Wires object and another Wires object.
 
@@ -540,7 +539,6 @@ class Wires(Sequence):
             raise TypeError("Can only do the intersection of Wires with Wires")
         return Wires(set(self.labels) & set(other.labels))
 
-
     def __sub__(self, other):
         """Return the difference of the current Wires object and another Wires object.
 
@@ -563,7 +561,6 @@ class Wires(Sequence):
         if not isinstance(other, Wires):
             raise TypeError("Can only do the difference of Wires with other Wires")
         return Wires(set(self.labels) - set(other.labels))
-
 
     def __xor__(self, other):
         """Return the symmetric difference of the current Wires object and another Wires object.
