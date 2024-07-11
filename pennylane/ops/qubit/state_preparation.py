@@ -169,7 +169,7 @@ class StatePrep(StatePrepBase):
     ndim_params = (1,)
     """int: Number of dimensions per trainable parameter of the operator."""
 
-    def __init__(self, state, wires, id=None, skip_norm_validation=False):
+    def __init__(self, state, wires, id=None, validate_norm=True):
         super().__init__(state, wires=wires, id=id)
         state = self.parameters[0]
 
@@ -177,7 +177,7 @@ class StatePrep(StatePrepBase):
             state = math.reshape(state, (1, state.shape[0]))
         if state.shape[1] != 2 ** len(self.wires):
             raise ValueError("State vector must have shape (2**wires,) or (batch_size, 2**wires).")
-        if not skip_norm_validation:
+        if validate_norm:
             param = math.cast(state, np.complex128)
             if not math.is_abstract(param):
                 norm = math.linalg.norm(param, axis=-1, ord=2)
