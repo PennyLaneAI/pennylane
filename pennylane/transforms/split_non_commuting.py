@@ -51,6 +51,14 @@ def split_non_commuting(
     Returns:
         qnode (QNode) or tuple[List[QuantumScript], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
 
+    .. note::
+        This transform splits expectation values of sums into separate terms, and distributes the terms into
+        multiple executions if there are terms that do not commute with one another, so that each execution
+        only includes commuting measurements. For state-based simulators that are able to handle non-commuting
+        measurements in a single execution, but don't natively support sums of observables, consider
+        :func:`qml.transform.split_to_single_terms` instead. This transform will work but, may perform an
+        unneccessary number of executions.
+
     **Examples:**
 
     This transform allows us to transform a QNode measuring multiple observables into multiple
