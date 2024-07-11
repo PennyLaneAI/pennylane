@@ -151,7 +151,7 @@ def compute_vjp_single(dy, jac, num=None):
 
         # Single measurement with dimension e.g. probs
         else:
-            jac = qml.math.reshape(qml.math.stack(jac), (-1, *dy_row.shape))
+            jac = qml.math.reshape(qml.math.stack(jac), (-1, num))
             try:
                 res = jac @ dy_row
             except Exception:  # pylint: disable=broad-except
