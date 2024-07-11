@@ -28,8 +28,8 @@ def registers(register_dict, _start_wire_index=0):
 
     Args:
         register_dict (dict): a dictionary of registers where the keys are the names (str) of the
-        registers and the values are either nested dictionaries of more registers or integers (int).
-        At the most nested level for each register key, the value must be an int.
+            registers and the values are either nested dictionaries of more registers or integers (int).
+            At the most nested level for each register key, the value must be an int.
 
     Returns:
         dict (Wires): dictionary of Wires objects (value) belonging to register names (keys)
