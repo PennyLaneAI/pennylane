@@ -671,7 +671,6 @@ class TestSnapshotUnsupportedQNode:
     @pytest.mark.parametrize("method", [None, "parameter-shift"])
     def test_default_qutrit(self, method):
         """Test that multiple snapshots are returned correctly on the pure qutrit simulator."""
-        np.random.seed(7)
 
         dev = qml.device("default.qutrit", wires=2, shots=100)
 

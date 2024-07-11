@@ -23,12 +23,6 @@ import pennylane as qml
 from pennylane import numpy as pnp
 
 
-@pytest.fixture(scope="function")
-def seed():
-    """Resets the random seed with every test"""
-    np.random.seed(0)
-
-
 def generate_cost_fn(ansatz, hamiltonian, device, **kwargs):
     """Generates a QNode and computes the expectation value of a cost Hamiltonian with respect
     to the parameters provided to an ansatz"""
@@ -342,7 +336,6 @@ class TestVQE:
             diff_method="parameter-shift",
         )
 
-        np.random.seed(1967)
         shape = qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=4)
         w = np.random.random(shape)
 
@@ -394,7 +387,6 @@ class TestVQE:
             diff_method="parameter-shift",
         )
 
-        np.random.seed(1967)
         shape = qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=4)
         w = np.random.random(shape)
 
@@ -444,7 +436,6 @@ class TestVQE:
             diff_method="parameter-shift",
         )
 
-        np.random.seed(1967)
         shape = qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=4)
         w = np.random.random(shape)
 
@@ -500,7 +491,6 @@ class TestVQE:
             diff_method="parameter-shift",
         )
 
-        np.random.seed(1967)
         shape = qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=5)
         w = np.random.random(shape)
 
@@ -556,7 +546,6 @@ class TestVQE:
             diff_method="parameter-shift",
         )
 
-        np.random.seed(1967)
         shape = qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=5)
         w = np.random.random(shape)
 
@@ -612,7 +601,6 @@ class TestVQE:
             diff_method="parameter-shift",
         )
 
-        np.random.seed(1967)
         shape = qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=5)
         w = np.random.random(shape)
 
@@ -654,7 +642,6 @@ class TestVQE:
             diff_method="parameter-shift",
         )
 
-        np.random.seed(1967)
         shape = qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=4)
         w = pnp.random.uniform(low=0, high=2 * np.pi, size=shape, requires_grad=True)
 
@@ -688,7 +675,6 @@ class TestVQE:
             diff_method="parameter-shift",
         )
 
-        np.random.seed(1967)
         shape = qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=4)
         w = pnp.random.random(shape, requires_grad=True)
 
@@ -714,7 +700,6 @@ class TestVQE:
             interface="torch",
         )
 
-        np.random.seed(1967)
         shape = qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=4)
         w = np.random.uniform(low=0, high=2 * np.pi, size=shape)
         w = torch.tensor(w, requires_grad=True)
@@ -741,7 +726,6 @@ class TestVQE:
             qml.templates.StronglyEntanglingLayers, hamiltonian, dev, interface="tf"
         )
 
-        np.random.seed(1967)
         shape = qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=4)
         w = np.random.uniform(low=0, high=2 * np.pi, size=shape)
         w = tf.Variable(w)
@@ -755,9 +739,9 @@ class TestVQE:
 
 
 # Test data
-np.random.seed(1967)
+rng = np.random.default_rng(1967)
 _shape = qml.templates.StronglyEntanglingLayers.shape(2, 4)
-PARAMS = np.random.uniform(low=0, high=2 * np.pi, size=_shape)
+PARAMS = rng.uniform(low=0, high=2 * np.pi, size=_shape)
 
 
 class TestNewVQE:
@@ -802,7 +786,7 @@ class TestNewVQE:
         """Tests a VQE circuit where the observable does not act on all wires."""
         dev = qml.device("default.qubit", wires=3)
         coeffs = [1.0, 1.0, 1.0]
-        np.random.seed(1967)
+
         w = np.random.random(qml.templates.StronglyEntanglingLayers.shape(n_layers=1, n_wires=2))
 
         observables1 = [qml.PauliZ(0), qml.PauliY(0), qml.PauliZ(1)]
@@ -1038,7 +1022,7 @@ class TestNewVQE:
 
         dev = qml.device("default.qubit", wires=4)
         H = big_hamiltonian
-        np.random.seed(1967)
+
         w = jnp.array(PARAMS)
 
         @qml.qnode(dev)
@@ -1219,7 +1203,6 @@ class TestInterfaces:
 
         H = qml.Hamiltonian(coeffs, observables)
 
-        np.random.seed(1)
         shape = qml.templates.StronglyEntanglingLayers.shape(3, 2)
         params = np.random.uniform(low=0, high=2 * np.pi, size=shape)
 

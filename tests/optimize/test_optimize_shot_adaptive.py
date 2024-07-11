@@ -674,7 +674,6 @@ class TestStepAndCost:
     def test_qnode_cost(self, tol):
         """Test that the cost is correctly returned
         when using a QNode as the cost function"""
-        np.random.seed(0)
 
         dev = qml.device("default.qubit", wires=1, shots=10)
 

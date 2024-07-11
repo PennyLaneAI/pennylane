@@ -113,8 +113,7 @@ class TestExpval:
     ):  # pylint: disable=too-many-arguments
         """Test that expectation values for mid-circuit measurement values
         are correct for a composite measurement value."""
-        np.random.seed(0)
-        dev = qml.device("default.qubit")
+        dev = qml.device("default.qubit", seed=123)
 
         @qml.qnode(dev)
         def circuit(phi):
@@ -203,8 +202,7 @@ class TestExpval:
     def test_projector_expval(self, state, shots):
         """Tests that the expectation of a ``Projector`` object is computed correctly for both of
         its subclasses."""
-        dev = qml.device("default.qubit", wires=3, shots=shots)
-        np.random.seed(42)
+        dev = qml.device("default.qubit", wires=3, shots=shots, seed=123)
 
         @qml.qnode(dev)
         def circuit():
