@@ -14,7 +14,6 @@
 """
 Unit tests for :mod:`pennylane.wires`.
 """
-from __future__ import annotations
 import numpy as np
 import pytest
 
