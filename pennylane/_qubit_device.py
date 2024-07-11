@@ -849,7 +849,7 @@ class QubitDevice(Device):
 
         return state
 
-    def generate_samples(self):
+    def generate_samples(self, shots: int = None):
         r"""Returns the computational basis samples generated for all wires.
 
         Note that PennyLane uses the convention :math:`|q_0,q_1,\dots,q_{N-1}\rangle` where
@@ -861,6 +861,9 @@ class QubitDevice(Device):
             generate their own computational basis samples, with the resulting
             computational basis samples stored as ``self._samples``.
 
+        Args:
+            shots (int, None): number of shots if ``shots`` is of type ``int``, the device attribute ``shots`` is used otherwise
+
         Returns:
              array[complex]: array of samples in the shape ``(dev.shots, dev.num_wires)``
         """
@@ -868,10 +871,10 @@ class QubitDevice(Device):
 
         rotated_prob = self.analytic_probability()
 
-        samples = self.sample_basis_states(number_of_states, rotated_prob)
+        samples = self.sample_basis_states(number_of_states, rotated_prob, shots=shots)
         return self.states_to_binary(samples, self.num_wires)
 
-    def sample_basis_states(self, number_of_states, state_probability):
+    def sample_basis_states(self, number_of_states, state_probability, shots: int = None):
         """Sample from the computational basis states based on the state
         probability.
 
@@ -880,6 +883,7 @@ class QubitDevice(Device):
         Args:
             number_of_states (int): the number of basis states to sample from
             state_probability (array[float]): the computational basis probability vector
+            shots (int, None): number of shots if ``shots`` is of type ``int``, the device attribute ``shots`` is used otherwise
 
         Returns:
             array[int]: the sampled basis states
@@ -890,7 +894,7 @@ class QubitDevice(Device):
                 "when using sample-based measurements."
             )
 
-        shots = self.shots
+        shots = self.shots if shots is None else shots
 
         basis_states = np.arange(number_of_states)
         # pylint:disable = import-outside-toplevel

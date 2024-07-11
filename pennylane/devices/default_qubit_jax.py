@@ -243,7 +243,7 @@ class DefaultQubitJax(DefaultQubitLegacy):
         new_array = new_array.at[indices].set(array)
         return new_array
 
-    def sample_basis_states(self, number_of_states, state_probability):
+    def sample_basis_states(self, number_of_states, state_probability, shots: int = None):
         """Sample from the computational basis states based on the state
         probability.
 
@@ -251,6 +251,8 @@ class DefaultQubitJax(DefaultQubitLegacy):
 
         Args:
             number_of_states (int): the number of basis states to sample from
+            state_probability (jax.array[float]): the computational basis probability vector
+            shots (int, None): number of shots if ``shots`` is of type ``int``, the device attribute ``shots`` is used otherwise
 
         Returns:
             List[int]: the sampled basis states
@@ -261,7 +263,7 @@ class DefaultQubitJax(DefaultQubitLegacy):
                 "when using sample-based measurements."
             )
 
-        shots = self.shots
+        shots = self.shots if shots is None else shots
 
         if self._prng_key is None:
             # Assuming op-by-op, so we'll just make one.

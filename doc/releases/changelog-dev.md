@@ -3,6 +3,10 @@
 # Release 0.38.0-dev (development release)
 
 <h3>New features since last release</h3>
+
+* `default.mixed` acquires `supports_mid_measure` capability and supports the `dynamic_one_shot` transform.
+  [(#5950)](https://github.com/PennyLaneAI/pennylane/pull/5950)
+  
 * A new method `process_density_matrix` has been added to the `ProbabilityMP` and `DensityMatrixMP` classes, allowing for more efficient handling of quantum density matrices, particularly with batch processing support. This method simplifies the calculation of probabilities from quantum states represented as density matrices.
   [(#5830)](https://github.com/PennyLaneAI/pennylane/pull/5830)
 

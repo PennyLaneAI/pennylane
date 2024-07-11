@@ -403,9 +403,13 @@ class TestGenerateSamples:
         dev = mock_qubit_device()
         number_of_states = 2**dev.num_wires
 
+        # pylint: disable=unused-argument
+        def sample_basis_states(self, number_of_states, state_probability, shots: int = None):
+            return number_of_states
+
         with monkeypatch.context() as m:
             # Mock the auxiliary methods such that they return the expected values
-            m.setattr(QubitDevice, "sample_basis_states", lambda self, wires, b: wires)
+            m.setattr(QubitDevice, "sample_basis_states", sample_basis_states)
             m.setattr(QubitDevice, "states_to_binary", staticmethod(lambda a, b: (a, b)))
             m.setattr(QubitDevice, "analytic_probability", lambda *args: None)
             m.setattr(QubitDevice, "shots", 1000)

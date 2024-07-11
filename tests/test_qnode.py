@@ -928,7 +928,7 @@ class TestIntegration:
         assert np.allclose(r2[1], mv_res(first_par))
         assert spy.call_count == 2
 
-    @pytest.mark.parametrize("dev_name", ["default.qubit.legacy", "default.mixed"])
+    @pytest.mark.parametrize("dev_name", ["default.qubit.legacy"])
     def test_dynamic_one_shot_if_mcm_unsupported(self, dev_name):
         """Test an error is raised if the dynamic one shot transform is a applied to a qnode with a device that
         does not support mid circuit measurements.
