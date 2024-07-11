@@ -29,6 +29,9 @@
   See :func:`~.pennylane.transform` for more information.
   [(#5981)](https://github.com/PennyLaneAI/pennylane/pull/5981)
 
+* `QuantumScript.interface` has been removed.
+  [(#5980)](https://github.com/PennyLaneAI/pennylane/pull/5980)
+
 <h3>Deprecations 👋</h3>
 
 <h3>Documentation 📝</h3>
