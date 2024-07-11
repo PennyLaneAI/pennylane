@@ -26,7 +26,7 @@ def test_qinfo_fisher_fns_raises_warning(fn):
     n_wires = 3
     n_params = 3
 
-    dev = qml.device("default.qubit", wires=n_wires, shots=10000)
+    dev = qml.device("default.qubit", shots=10000)
 
     @qml.qnode(dev)
     def circ(params):
@@ -43,5 +43,5 @@ def test_qinfo_fisher_fns_raises_warning(fn):
 
     params = pnp.zeros(n_params, requires_grad=True)
 
-    with pytest.raises(qml.PennyLaneDeprecationWarning, match=f"{fn.__name__} is being migrated"):
+    with pytest.warns(qml.PennyLaneDeprecationWarning, match=f"{fn.__name__} is being migrated"):
         fn(circ)(params)
