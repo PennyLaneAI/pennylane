@@ -62,7 +62,7 @@ def registers(register_dict, _start_wire_index=0):
             all_reg[register_name] = wires
         else:  # Not a dict nor an int
             raise ValueError(
-                f"Expected '{register_wires}' to be either a dict or an int but got neither. "
+                f"Expected '{register_wires}' to be either a dict or an int. "
             )
 
     return all_reg
