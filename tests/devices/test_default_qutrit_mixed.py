@@ -20,6 +20,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import math
+from pennylane import numpy as qnp
 from pennylane.devices import DefaultQutritMixed, ExecutionConfig
 
 np.random.seed(0)
@@ -1619,3 +1620,67 @@ class TestReadoutError:
                 wires=num_wires,
                 readout_misclassification_probs=[0.1, 0.2, "0.3"],
             )
+
+    @pytest.mark.autograd
+    @pytest.mark.parametrize(
+        "relaxations, misclassifications, expected",
+        [
+            [
+                None,
+                qnp.array((0.1, 0.2, 0.4)),[
+                [
+                    [1 / 3 -1/2, 1 / 6 -1/2 , 0.0],
+                    [1/2 - 1 / 3, 0.0, 1 / 6 - 1 / 3],
+                    [0.0, 1/2 -1 / 6,  1 / 3 -1/6],
+                ]],
+            ],
+            [qnp.array((0.2, 0.1, 0.3)), None,
+             [[
+                    [1/3, 1/6, 0.0],
+                    [-1/3, 0.0, 1/6],
+                    [0.0, -1 / 6,-1/6],
+                ]],],
+            [qnp.array((0.2, 0.1, 0.3)), qnp.array((0.1, 0.2, 0.5)), [
+                [
+                    [1 / 3, 1 / 6, 0.0],
+                    [-1 / 3, 0.0, 1 / 6],
+                    [0.0, -1 / 6, -1 / 6]
+                ],
+                [7 / 12, 19 / 60, 0.1],
+                [
+                    [19 / 60 - 7 / 12, 0.1 - 7 / 12, 0.0],
+                    [7 / 12 - 19 / 60, 0.0, 0.1 - 19 / 60],
+                    [0.0, 7 / 12 - 0.1, 19 / 60 - 0.1],
+                ]
+
+            ]],
+        ],
+    )
+    def test_differentiation(self, num_wires, relaxations, misclassifications, expected):
+        """Tests the differentiation of readout errors"""
+
+        def run_circ_with_errors(relaxations_ps, misclassifications_ps):
+            dev = qml.device(
+                "default.qutrit.mixed",
+                wires=num_wires,
+                readout_relaxation_probs=relaxations_ps,
+                readout_misclassification_probs=misclassifications_ps,
+            )
+
+            @qml.qnode(dev)
+            def circuit():
+                self.setup_state(num_wires)
+                return qml.probs(0)
+
+            return circuit()
+
+        if misclassifications is None:
+            args_to_diff = (0,)
+        elif relaxations is None:
+            args_to_diff = (1,)
+        else:
+            args_to_diff = (0, 1)
+
+        jac = qml.jacobian(run_circ_with_errors, args_to_diff)(relaxations, misclassifications)
+        assert jac == expected
+        assert np.allclose(jac, expected)
