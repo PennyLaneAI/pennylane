@@ -542,6 +542,41 @@ class TestMeasureSamples:
         [result] = measure_with_samples([mp], state, shots=qml.measurements.Shots(1))
         assert qml.math.allclose(result, 1)  # -1 + 2
 
+    @pytest.mark.parametrize(
+        "state, measurements, expected_results",
+        [
+            [
+                np.array([[0.5, 0.5j], [-0.5j, 0.5]]),
+                [qml.expval(qml.Y(0) + qml.Y(0)), qml.expval(qml.Y(1))],
+                (-2.0, 1.0),
+            ],
+            [
+                np.array([[0.5, -0.5j], [0.5j, 0.5]]),
+                [qml.expval(qml.Y(0) + qml.Y(0)), qml.expval(qml.Y(1))],
+                (2.0, -1.0),
+            ],
+            [
+                np.array([[0.5, 0.5j], [-0.5j, 0.5]]),
+                [qml.expval(qml.Y(1)), qml.expval(qml.Y(0) + qml.Y(0))],
+                (1.0, -2.0),
+            ],
+            [
+                np.array([[0.5, 0.5j], [-0.5j, 0.5]]),
+                [
+                    qml.expval(qml.Y(1)),
+                    qml.expval(qml.Y(0) + qml.Y(0) + qml.Y(0)),
+                    qml.expval(qml.Y(1) + qml.Y(1)),
+                ],
+                (1.0, -3.0, 2.0),
+            ],
+        ],
+    )
+    def test_sum_same_wires(self, state, measurements, expected_results):
+        """Test that the sum of observables acting on the same wires works as expected."""
+
+        results = measure_with_samples(measurements, state, qml.measurements.Shots(1000))
+        assert qml.math.allclose(results, expected_results)
+
 
 class TestInvalidStateSamples:
     """Tests for state vectors containing nan values or shot vectors with zero shots."""
