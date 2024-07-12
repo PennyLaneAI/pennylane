@@ -157,7 +157,8 @@ class TestIntegration:
 
         n_wires = 2
 
-        dev_hard = qml.device("default.qubit", wires=n_wires + 1, shots=1000)
+        rng = np.random.default_rng(200)
+        dev_hard = qml.device("default.qubit", wires=n_wires + 1, shots=1000, seed=rng)
 
         def qfunc(params):
             qml.RX(params[0], wires=0)
@@ -165,7 +166,7 @@ class TestIntegration:
             qml.CNOT(wires=(0, 1))
             return qml.probs(wires=[0, 1])
 
-        params = pnp.random.random(2)
+        params = rng.random(2)
 
         circ_hard = qml.QNode(qfunc, dev_hard)
         QFIM_hard = quantum_fisher(circ_hard)(params)

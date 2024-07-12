@@ -649,7 +649,8 @@ class TestOptimization:
             ansatz(params)
             return qml.expval(H)
 
-        params = np.random.random((4, 3), requires_grad=True)
+        rng = np.random.default_rng(123)
+        params = rng.random((4, 3), requires_grad=True)
         initial_loss = cost(params)
 
         min_shots = 10

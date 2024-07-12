@@ -410,9 +410,9 @@ class TestSpecialUnitary:
     def test_compute_matrix_random(self, n, seed, interface):
         """Test that ``compute_matrix`` returns a correctly-shaped
         unitary matrix for random input parameters."""
-        np.random.seed(seed)
+        rng = np.random.default_rng(seed)
         d = 4**n - 1
-        theta = np.random.random(d)
+        theta = rng.random(d)
         theta = self.interface_array(theta, interface)
         matrices = [
             qml.SpecialUnitary(theta, list(range(n))).matrix(),
@@ -430,10 +430,10 @@ class TestSpecialUnitary:
     def test_compute_matrix_random_many_wires(self, seed, interface):
         """Test that ``compute_matrix`` returns a correctly-shaped
         unitary matrix for random input parameters and more than 5 wires."""
-        np.random.seed(seed)
+        rng = np.random.default_rng(seed)
         n = 6
         d = 4**n - 1
-        theta = np.random.random(d)
+        theta = rng.random(d)
         theta = self.interface_array(theta, interface)
         matrices = [
             qml.SpecialUnitary(theta, list(range(n))).matrix(),
@@ -452,9 +452,9 @@ class TestSpecialUnitary:
     def test_compute_matrix_random_broadcasted(self, n, seed, interface):
         """Test that ``compute_matrix`` returns a correctly-shaped
         unitary matrix for broadcasted random input parameters."""
-        np.random.seed(seed)
+        rng = np.random.default_rng(seed)
         d = 4**n - 1
-        theta = np.random.random((2, d))
+        theta = rng.random((2, d))
         separate_matrices = [qml.SpecialUnitary.compute_matrix(t, n) for t in theta]
         theta = self.interface_array(theta, interface)
         matrices = [

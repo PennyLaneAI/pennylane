@@ -337,7 +337,8 @@ class TestVQE:
         )
 
         shape = qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=4)
-        w = np.random.random(shape)
+        rng = np.random.default_rng(1234)
+        w = rng.random(shape)
 
         with qml.Tracker(dev) as tracker:
             c1 = cost(w)
@@ -388,7 +389,8 @@ class TestVQE:
         )
 
         shape = qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=4)
-        w = np.random.random(shape)
+        rng = np.random.default_rng(1234)
+        w = rng.random(shape)
 
         with qml.Tracker(dev) as tracker:
             c1 = cost(w)
@@ -437,7 +439,8 @@ class TestVQE:
         )
 
         shape = qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=4)
-        w = np.random.random(shape)
+        rng = np.random.default_rng(1234)
+        w = rng.random(shape)
 
         with qml.Tracker(dev) as tracker:
             c1 = cost(w)
@@ -492,7 +495,8 @@ class TestVQE:
         )
 
         shape = qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=5)
-        w = np.random.random(shape)
+        rng = np.random.default_rng(1234)
+        w = rng.random(shape)
 
         with qml.Tracker(dev) as tracker:
             c1 = cost(w)
@@ -547,7 +551,8 @@ class TestVQE:
         )
 
         shape = qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=5)
-        w = np.random.random(shape)
+        rng = np.random.default_rng(1234)
+        w = rng.random(shape)
 
         with qml.Tracker(dev) as tracker:
             c1 = cost(w)
@@ -602,7 +607,8 @@ class TestVQE:
         )
 
         shape = qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=5)
-        w = np.random.random(shape)
+        rng = np.random.default_rng(1234)
+        w = rng.random(shape)
 
         with qml.Tracker(dev) as tracker:
             c1 = cost(w)
