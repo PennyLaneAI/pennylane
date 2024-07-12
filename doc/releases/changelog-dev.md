@@ -34,6 +34,10 @@
   the circuit.
   [(#5907)](https://github.com/PennyLaneAI/pennylane/pull/5907)
 
+* ``qml.transforms.map_batch_transform`` has been removed, since transforms can be applied directly to a batch of tapes.
+  See :func:`~.pennylane.transform` for more information.
+  [(#5981)](https://github.com/PennyLaneAI/pennylane/pull/5981)
+
 * `QuantumScript.interface` has been removed.
   [(#5980)](https://github.com/PennyLaneAI/pennylane/pull/5980)
 
@@ -49,6 +53,10 @@
 * `CircuitGraph` can now handle circuits with the same operation instance occuring multiple times.
   [(#5907)](https://github.com/PennyLaneAI/pennylane/pull/5907)
 
+* `qml.devices.qubit.measure_with_samples` now returns the correct result if the provided measurements
+  contain sum of operators acting on the same wire.
+  [(#5978)](https://github.com/PennyLaneAI/pennylane/pull/5978)
+
 * `qml.AmplitudeEmbedding` has better support for features using low precision integer data types.
 [(#5969)](https://github.com/PennyLaneAI/pennylane/pull/5969)
 
@@ -57,8 +65,10 @@
 
 This release contains contributions from (in alphabetical order):
 
+Ahmed Darwish
 Astral Cai,
 Yushao Chen,
+Pietropaolo Frisoni,
 Christina Lee,
 William Maxwell,
 Vincent Michaud-Rioux,
