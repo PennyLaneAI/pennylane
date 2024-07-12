@@ -1621,10 +1621,7 @@ class TestReadoutError:
                 readout_misclassification_probs=[0.1, 0.2, "0.3"],
             )
 
-    @pytest.mark.autograd
-    @pytest.mark.parametrize(
-        "relaxations, misclassifications, expected",
-        [
+    diff_parameters = [
             [
                 None,
                 qnp.array((0.1, 0.2, 0.4)),
@@ -1660,31 +1657,123 @@ class TestReadoutError:
                 ],
             ],
         ],
-    )
-    def test_differentiation(self, num_wires, relaxations, misclassifications, expected):
-        """Tests the differentiation of readout errors"""
 
-        def run_circ_with_errors(relaxations_ps, misclassifications_ps):
+    def get_diff_function(self, interface, num_wires):
+        """TODO"""
+        def dif_func(relaxations, misclassifications):
             dev = qml.device(
                 "default.qutrit.mixed",
                 wires=num_wires,
-                readout_relaxation_probs=relaxations_ps,
-                readout_misclassification_probs=misclassifications_ps,
+                readout_relaxation_probs=relaxations,
+                readout_misclassification_probs=misclassifications,
             )
 
-            @qml.qnode(dev)
+            @qml.qnode(dev, interface=interface)
             def circuit():
                 self.setup_state(num_wires)
                 return qml.probs(0)
 
             return circuit()
+        return dif_func
+
+    @pytest.mark.autograd
+    @pytest.mark.parametrize(
+        "relaxations, misclassifications, expected",
+        diff_parameters
+    )
+    def test_differentiation_autograd(self, num_wires, relaxations, misclassifications, expected):
+        """Tests the differentiation of readout errors"""
 
         if misclassifications is None:
             args_to_diff = (0,)
+            relaxations = qnp.array(relaxations)
         elif relaxations is None:
             args_to_diff = (1,)
+            misclassifications = qnp.array(misclassifications)
         else:
             args_to_diff = (0, 1)
+            relaxations = qnp.array(relaxations)
+            misclassifications = qnp.array(misclassifications)
 
-        jac = qml.jacobian(run_circ_with_errors, args_to_diff)(relaxations, misclassifications)
+        diff_func = self.get_diff_function("autograd", num_wires)
+        jac = qml.jacobian(diff_func, args_to_diff)(relaxations, misclassifications)
+        assert np.allclose(jac, expected)
+
+    #TODO deal with args to dif
+    @pytest.mark.jax
+    @pytest.mark.parametrize(
+        "relaxations, misclassifications, expected",
+        diff_parameters
+    )
+    @pytest.mark.parametrize("use_jit", (True, False))
+    def test_differentiation_jax(self, num_wires, relaxations, misclassifications, use_jit, expected):
+        """Tests the differentiation of readout errors using JAX"""
+        import jax
+
+        if misclassifications is None:
+            args_to_diff = (0,)
+            relaxations = jax.numpy.array(relaxations)
+        elif relaxations is None:
+            args_to_diff = (1,)
+            misclassifications = jax.numpy.array(misclassifications)
+        else:
+            args_to_diff = (0, 1)
+            relaxations = jax.numpy.array(relaxations)
+            misclassifications = jax.numpy.array(misclassifications)
+
+        diff_func = self.get_diff_function("jax", num_wires)
+        if use_jit:
+            diff_func = jax.jit(diff_func)
+        jac = jax.jacobian(diff_func, args_to_diff)(relaxations, misclassifications)
+        assert np.allclose(jac, expected)
+
+    @pytest.mark.torch
+    @pytest.mark.parametrize(
+        "relaxations, misclassifications, expected",
+        diff_parameters
+    )
+    def test_differentiation_torch(self, num_wires, relaxations, misclassifications, expected):
+        """Tests the differentiation of readout errors using PyTorch"""
+        import torch
+
+        if misclassifications is None:
+            args_to_diff = (0,) # TODO, how to deal with args to diff
+            relaxations = torch.tensor(relaxations, requires_grad=True)
+        elif relaxations is None:
+            args_to_diff = (1,)
+            misclassifications = torch.tensor(misclassifications, requires_grad=True)
+        else:
+            args_to_diff = (0, 1)
+            relaxations = torch.tensor(relaxations, requires_grad=True)
+            misclassifications = torch.tensor(misclassifications, requires_grad=True)
+
+        diff_func = self.get_diff_function("autograd", num_wires)
+        jac = torch.autograd.functional.jacobian(diff_func, relaxations, misclassifications)
+        jac = jac.detach().numpy()
+        assert np.allclose(jac, expected)
+
+    @pytest.mark.tf
+    @pytest.mark.parametrize(
+        "relaxations, misclassifications, expected",
+        diff_parameters
+    )
+    def test_differentiation_tensorflow(self, num_wires, relaxations, misclassifications, expected):
+        """Tests the differentiation of readout errors using TensorFlow"""
+        import tensorflow as tf
+
+        if misclassifications is None:
+            args_to_diff = (0,)
+            relaxations = tf.Variable(relaxations, dtype="float64")
+        elif relaxations is None:
+            args_to_diff = (1,)
+            misclassifications = tf.Variable(misclassifications, dtype="float64")
+        else:
+            args_to_diff = (0, 1)
+            relaxations = tf.Variable(relaxations, dtype="float64")
+            misclassifications = tf.Variable(misclassifications, dtype="float64")
+
+        diff_func = self.get_diff_function("autograd", num_wires)
+        with tf.GradientTape() as grad_tape:
+            probs = diff_func(relaxations, misclassifications)
+        jac = grad_tape.jacobian(probs, [relaxations, misclassifications][args_to_diff])
         assert np.allclose(jac, expected)
