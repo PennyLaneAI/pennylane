@@ -15,6 +15,9 @@
   into multiple single-term measurements on a single tape, providing better support for simulators 
   that can handle non-commuting observables but don't natively support multi-term observables.
   [(#5884)](https://github.com/PennyLaneAI/pennylane/pull/5884)
+
+* `SProd.terms` now flattens out the terms if the base is a multi-term observable.
+  [(#5885)](https://github.com/PennyLaneAI/pennylane/pull/5885)
   
 <h3>Improvements 🛠</h3>
 
@@ -64,7 +67,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Ahmed Darwish
+Ahmed Darwish,
 Astral Cai,
 Yushao Chen,
 Lillian M. A. Frederiksen,

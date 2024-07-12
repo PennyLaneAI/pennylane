@@ -543,10 +543,6 @@ def _split_all_multi_term_obs_mps(tape: qml.tape.QuantumScript):
         obs = mp.obs
         offset = 0
         if isinstance(mp, ExpectationMP) and isinstance(obs, (Hamiltonian, Sum, Prod, SProd)):
-            if isinstance(obs, SProd):
-                # This is necessary because SProd currently does not flatten into
-                # multiple terms if the base is a sum, which is needed here.
-                obs = obs.simplify()
             # Break the observable into terms, and construct an ExpectationMP with each term.
             for c, o in zip(*obs.terms()):
                 # If the observable is an identity, track it with a constant offset
