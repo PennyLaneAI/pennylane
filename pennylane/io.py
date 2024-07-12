@@ -416,7 +416,7 @@ def from_qasm(quantum_circuit: str, measurements=None):
         quantum_circuit (str): a QASM string containing a valid quantum circuit
         measurements (None | MeasurementProcess | list[MeasurementProcess]): an optional PennyLane
             measurement or list of PennyLane measurements that overrides the terminal measurements
-            that may be present in the input circuit. Defaults to ``None``, such that existing measurements
+            that may be present in the input circuit. Defaults to ``None``, such that all existing measurements
             in the input circuit are kept. Mid-circuit measurements are kept either way.
 
     Returns:
@@ -449,7 +449,7 @@ def from_qasm(quantum_circuit: str, measurements=None):
     MeasurementValue(wires=[0]),
     MeasurementValue(wires=[1]))
 
-    To remove all terminal measurements, set ``measurements=[]`` which removes the existing terminal measurements, while keeping the mid circuit measurements.
+    To remove all terminal measurements, set ``measurements=[]``, which removes the existing terminal measurements and keeps the mid-circuit measurements.
 
     .. code-block:: python
 
@@ -459,7 +459,7 @@ def from_qasm(quantum_circuit: str, measurements=None):
     0: ──H──┤↗├──RZ(0.24)─╭●─┤
     1: ───────────────────╰X─┤
 
-    Note that calling the quantum function returns the same empty list we passed.
+    Note that calling the quantum function returns the same empty list that we originally passed in.
 
     >>> loaded_circuit()
     []
@@ -472,7 +472,7 @@ def from_qasm(quantum_circuit: str, measurements=None):
 
         dev = qml.device("default.qubit")
         measurements = [qml.var(qml.Y(0))]
-        circuit = qml.QNode(qml.from_qasm(qasm_code, measurements), dev)
+        circuit = qml.QNode(qml.from_qasm(qasm_code, measurements = measurements), dev)
 
     >>> print(qml.draw(circuit)())
     0: ──H──┤↗├──RZ(0.24)─╭●─┤  Var[Y]
