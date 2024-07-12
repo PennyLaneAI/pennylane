@@ -81,6 +81,30 @@ def cost9(x):
     return (qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1)))
 
 
+def cost10(x):
+    """Cost function."""
+    qml.Rot(*x, wires=0)
+    qml.Hadamard(1)
+    qml.X(2)
+    return qml.probs()
+
+
+def cost11(x):
+    """Cost function."""
+    qml.Rot(*x, wires=0)
+    qml.Hadamard(1)
+    qml.X(2)
+    return qml.probs(), qml.probs([0, 2, 1, 4, 3])
+
+
+def cost12(x):
+    """Cost function."""
+    qml.Rot(*x, wires=0)
+    qml.Hadamard(1)
+    qml.X(2)
+    return qml.probs(op=qml.Hadamard(0) @ qml.Y(1) @ qml.Y(2))
+
+
 class TestHadamardGrad:
     """Unit tests for the hadamard_grad function"""
 
@@ -440,6 +464,7 @@ class TestHadamardGrad:
             qml.CNOT(wires=[0, 1])
             qml.expval(qml.PauliZ(0))
             qml.probs(wires=[0, 1])
+            qml.probs()
 
         tape = qml.tape.QuantumScript.from_queue(q)
 
@@ -448,7 +473,7 @@ class TestHadamardGrad:
         assert len(tapes) == 2
 
         assert isinstance(res_hadamard, tuple)
-        assert len(res_hadamard) == 2
+        assert len(res_hadamard) == 3
 
         assert isinstance(res_hadamard[0], tuple)
         assert len(res_hadamard[0]) == 2
@@ -458,13 +483,14 @@ class TestHadamardGrad:
         assert isinstance(res_hadamard[0][1], np.ndarray)
         assert res_hadamard[0][1].shape == ()
 
-        assert isinstance(res_hadamard[1], tuple)
-        assert len(res_hadamard[1]) == 2
+        for res in res_hadamard[1:]:
+            assert isinstance(res, tuple)
+            assert len(res) == 2
 
-        assert isinstance(res_hadamard[1][0], np.ndarray)
-        assert res_hadamard[1][0].shape == (4,)
-        assert isinstance(res_hadamard[1][1], np.ndarray)
-        assert res_hadamard[1][1].shape == (4,)
+            assert isinstance(res[0], np.ndarray)
+            assert res[0].shape == (4,)
+            assert isinstance(res[1], np.ndarray)
+            assert res[1].shape == (4,)
 
         expval_expected = [-2 * np.sin(x) / 2, 0]
         probs_expected = (
@@ -495,8 +521,9 @@ class TestHadamardGrad:
         assert np.allclose(res_hadamard[0][1], expval_expected[1], tol)
 
         # Probs
-        assert np.allclose(res_hadamard[1][0], probs_expected[:, 0], tol)
-        assert np.allclose(res_hadamard[1][1], probs_expected[:, 1], tol)
+        for res in res_hadamard[1:]:
+            assert np.allclose(res[0], probs_expected[:, 0], tol)
+            assert np.allclose(res[1], probs_expected[:, 1], tol)
 
     costs_and_expected_expval_scalar = [
         (cost7, (), np.ndarray),
@@ -549,6 +576,9 @@ class TestHadamardGrad:
         (cost4, [4, 3], np.ndarray),
         (cost5, [4, 3], list),
         (cost6, [2, 4, 3], tuple),
+        (cost10, [32, 3], np.ndarray),  # Note that the shape here depends on the device
+        (cost11, [2, 32, 3], tuple),
+        (cost12, [8, 3], np.ndarray),
     ]
 
     @pytest.mark.parametrize("cost, exp_shape, exp_type", costs_and_expected_probs)
@@ -565,19 +595,25 @@ class TestHadamardGrad:
             res_hadamard = res_hadamard[0]
         assert len(res_hadamard) == exp_shape[0]
 
-        if len(exp_shape) > 2:
-            for r in res_hadamard:
-                assert isinstance(r, np.ndarray)
-                assert len(r) == exp_shape[1]
+        # Also check on the tape level
+        circuit(x)
+        tapes, fn = qml.gradients.hadamard_grad(circuit.tape)
+        res_hadamard_tape = qml.math.moveaxis(qml.math.stack(fn(dev.execute(tapes))), -2, -1)
 
-                for r_ in r:
-                    assert isinstance(r_, np.ndarray)
-                    assert len(r_) == exp_shape[2]
+        for res in [res_hadamard, res_hadamard_tape]:
+            if len(exp_shape) > 2:
+                for r in res:
+                    assert isinstance(r, np.ndarray)
+                    assert len(r) == exp_shape[1]
 
-        elif len(exp_shape) > 1:
-            for r in res_hadamard:
-                assert isinstance(r, np.ndarray)
-                assert len(r) == exp_shape[1]
+                    for r_ in r:
+                        assert isinstance(r_, np.ndarray)
+                        assert len(r_) == exp_shape[2]
+
+            elif len(exp_shape) > 1:
+                for r in res:
+                    assert isinstance(r, np.ndarray)
+                    assert len(r) == exp_shape[1]
 
     @pytest.mark.parametrize("shots", [None, 100])
     def test_shots_attribute(self, shots):

@@ -153,7 +153,7 @@ def test_solovay_kitaev(op):
         gates = sk_decomposition(op, epsilon=1e-4, max_depth=5, basis_set=("T", "T*", "H"))
     assert q.queue == gates
 
-    matrix_sk = qml.prod(*reversed(gates)).matrix()
+    matrix_sk = qml.matrix(qml.tape.QuantumScript(gates))
 
     assert qml.math.allclose(qml.matrix(op), matrix_sk, atol=1e-2)
     assert qml.prod(*gates, lazy=False).wires == op.wires

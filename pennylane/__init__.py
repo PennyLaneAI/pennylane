@@ -18,7 +18,6 @@ PennyLane can be directly imported.
 from importlib import reload, metadata
 from sys import version_info
 
-
 import numpy as _np
 
 from packaging.specifiers import SpecifierSet
@@ -52,6 +51,8 @@ from pennylane.qchem import (
     paulix_ops,
     taper_operation,
     import_operator,
+    from_openfermion,
+    to_openfermion,
 )
 from pennylane._device import Device, DeviceError
 from pennylane._grad import grad, jacobian, vjp, jvp
@@ -94,7 +95,6 @@ from pennylane.transforms import (
     transform,
     batch_params,
     batch_input,
-    batch_transform,
     batch_partial,
     compile,
     defer_measurements,
@@ -105,11 +105,13 @@ from pennylane.transforms import (
     pattern_matching,
     pattern_matching_optimization,
     clifford_t_decomposition,
+    add_noise,
 )
 from pennylane.ops.functions import (
     dot,
     eigvals,
     equal,
+    assert_equal,
     evolve,
     generator,
     is_commuting,
@@ -124,7 +126,14 @@ from pennylane.ops.functions import (
 )
 from pennylane.ops.identity import I
 from pennylane.optimize import *
-from pennylane.debugging import snapshots, breakpoint
+from pennylane.debugging import (
+    snapshots,
+    breakpoint,
+    debug_expval,
+    debug_state,
+    debug_probs,
+    debug_tape,
+)
 from pennylane.shadows import ClassicalShadow
 from pennylane.qcut import cut_circuit, cut_circuit_mc
 import pennylane.pulse
@@ -141,7 +150,9 @@ from pennylane.compiler import qjit, while_loop, for_loop
 import pennylane.compiler
 
 import pennylane.data
+
 import pennylane.noise
+from pennylane.noise import NoiseModel
 
 # Look for an existing configuration file
 default_config = Configuration("config.toml")

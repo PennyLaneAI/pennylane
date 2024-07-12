@@ -22,6 +22,8 @@ repos:
           "black",
           "-l",
           "100",
+          "-o",
+          "autoray",
           "-p",
           "./pennylane",
           "--skip",

@@ -89,7 +89,10 @@ class TestControlledDecompositionZYZ:
 
     def test_invalid_num_controls(self):
         """Tests that an error is raised when an invalid number of control wires is passed"""
-        with pytest.raises(ValueError, match="The control_wires should be a single wire"):
+        with pytest.raises(
+            ValueError,
+            match="The control_wires should be a single wire, instead got: 2",
+        ):
             _ = ctrl_decomp_zyz(qml.X([1]), [0, 1])
 
     su2_ops = [
@@ -202,10 +205,8 @@ class TestControlledDecompositionZYZ:
             qml.CNOT(wires=control_wires + [0]),
             qml.RZ((0.789 - 0.123) / 2, wires=0),
         ]
-        assert all(
-            qml.equal(decomp_op, expected_op)
-            for decomp_op, expected_op in zip(decomps, expected_ops)
-        )
+        for decomp_op, expected_op in zip(decomps, expected_ops):
+            qml.assert_equal(decomp_op, expected_op)
         assert len(decomps) == 7
 
     @pytest.mark.parametrize("op", su2_ops + unitary_ops)
@@ -337,8 +338,8 @@ class TestControlledDecompositionZYZ:
         assert op.has_decomposition
         decomp = op.expand().circuit if test_expand else op.decomposition()
         assert len(decomp) == 3
-        assert qml.equal(qml.PauliX(0), decomp[0])
-        assert qml.equal(qml.PauliX(0), decomp[-1])
+        qml.assert_equal(qml.PauliX(0), decomp[0])
+        qml.assert_equal(qml.PauliX(0), decomp[-1])
         decomp = decomp[1]
         decomp = decomp.expand().circuit if test_expand else decomp.decomposition()
         expected = qml.ops.ctrl_decomp_zyz(base, (0,))
@@ -356,9 +357,8 @@ class TestControlledDecompositionZYZ:
         torch_decomp = ctrl_decomp_zyz(target_op1, 1)
         decomp = ctrl_decomp_zyz(target_op2, 1)
 
-        assert np.all(
-            [qml.equal(op1, op2, check_interface=False) for op1, op2 in zip(torch_decomp, decomp)]
-        )
+        for op1, op2 in zip(torch_decomp, decomp):
+            qml.assert_equal(op1, op2, check_interface=False)
 
 
 class TestControlledBisectOD:
@@ -474,12 +474,12 @@ class TestControlledBisectOD:
         assert len(op_seq) == 8
 
         mcx1 = qml.MultiControlledX(wires=Wires([1, 2, 3, 0]), work_wires=Wires([4, 5]))
-        assert qml.equal(mcx1, op_seq[0])
-        assert qml.equal(mcx1, op_seq[4])
+        qml.assert_equal(mcx1, op_seq[0])
+        qml.assert_equal(mcx1, op_seq[4])
 
         mcx2 = qml.Toffoli(wires=[4, 5, 0])
-        assert qml.equal(mcx2, op_seq[2])
-        assert qml.equal(mcx2, op_seq[6])
+        qml.assert_equal(mcx2, op_seq[2])
+        qml.assert_equal(mcx2, op_seq[6])
 
         a = op_seq[1].matrix()
         at = op_seq[3].matrix()

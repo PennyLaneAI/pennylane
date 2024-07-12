@@ -17,6 +17,7 @@ not depend on any parameters.
 """
 # pylint:disable=abstract-method,arguments-differ,protected-access,invalid-overridden-method, no-member
 from copy import copy
+from typing import Optional
 
 import pennylane as qml
 from pennylane.operation import AnyWires, Operation
@@ -156,22 +157,23 @@ class WireCut(Operation):
 
 class Snapshot(Operation):
     r"""
-    The Snapshot operation saves the internal simulator state at specific
-    execution steps of a quantum function. As such, it is a pseudo operation
+    The Snapshot operation saves the internal execution state of the quantum function
+    at a specific point in the execution pipeline. As such, it is a pseudo operation
     with no effect on the quantum state. Arbitrary measurements are supported
     in snapshots via the keyword argument ``measurement``.
 
     **Details:**
 
-    * Number of wires: AllWires
+    * Number of wires: AnyWires
     * Number of parameters: 0
 
     Args:
         tag (str or None): An optional custom tag for the snapshot, used to index it
             in the snapshots dictionary.
 
-        measurement (StateMeasurement or None): An optional argument to record arbitrary
-            measurements of a state.
+        measurement (MeasurementProcess or None): An optional argument to record arbitrary
+            measurements during execution. If None, the measurement defaults to `qml.state`
+            on the available wires.
 
     **Example**
 
@@ -181,7 +183,7 @@ class Snapshot(Operation):
 
         @qml.qnode(dev, interface=None)
         def circuit():
-            qml.Snapshot(measurement=qml.expval(qml.Z(0))
+            qml.Snapshot(measurement=qml.expval(qml.Z(0)))
             qml.Hadamard(wires=0)
             qml.Snapshot("very_important_state")
             qml.CNOT(wires=[0, 1])
@@ -190,8 +192,8 @@ class Snapshot(Operation):
 
     >>> qml.snapshots(circuit)()
     {0: 1.0,
-     'very_important_state': array([0.70710678, 0.        , 0.70710678, 0.        ]),
-     2: array([0.70710678, 0.        , 0.        , 0.70710678]),
+     'very_important_state': array([0.70710678+0.j, 0.        +0.j, 0.70710678+0.j, 0.        +0.j]),
+     2: array([0.70710678+0.j, 0.        +0.j, 0.        +0.j, 0.70710678+0.j]),
      'execution_results': 0.0}
 
     .. seealso:: :func:`~.snapshots`
@@ -207,18 +209,25 @@ class Snapshot(Operation):
             return cls._primitive.bind(measurement=measurement, tag=tag)
         return cls._primitive.bind(measurement, tag=tag)
 
-    def __init__(self, tag=None, measurement=None):
+    def __init__(self, tag: Optional[str] = None, measurement=None):
+        if tag and not isinstance(tag, str):
+            raise ValueError("Snapshot tags can only be of type 'str'")
         self.tag = tag
-        if measurement:
-            if isinstance(measurement, qml.measurements.StateMeasurement):
-                qml.queuing.QueuingManager.remove(measurement)
-            else:
-                raise ValueError(
-                    f"The measurement {measurement.__class__.__name__} is not supported as it is not "
-                    f"an instance of {qml.measurements.StateMeasurement}"
-                )
+
+        if measurement is None:
+            measurement = qml.state()
+
+        if isinstance(measurement, qml.measurements.MeasurementProcess):
+            if isinstance(measurement, qml.measurements.MidMeasureMP):
+                raise ValueError("Mid-circuit measurements can not be used in snapshots.")
+            qml.queuing.QueuingManager.remove(measurement)
+        else:
+            raise ValueError(
+                f"The measurement {measurement.__class__.__name__} is not supported as it is not "
+                f"an instance of {qml.measurements.MeasurementProcess}"
+            )
+
         self.hyperparameters["measurement"] = measurement
-        self.hyperparameters["tag"] = tag
         super().__init__(wires=[])
 
     def label(self, decimals=None, base_label=None, cache=None):
@@ -237,10 +246,10 @@ class Snapshot(Operation):
         return []
 
     def _controlled(self, _):
-        return Snapshot(tag=self.tag)
+        return Snapshot(tag=self.tag, measurement=self.hyperparameters["measurement"])
 
     def adjoint(self):
-        return Snapshot(tag=self.tag)
+        return Snapshot(tag=self.tag, measurement=self.hyperparameters["measurement"])
 
 
 # Since measurements are captured as variables in plxpr with the capture module,

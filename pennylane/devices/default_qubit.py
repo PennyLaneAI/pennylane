@@ -60,30 +60,6 @@ QuantumTape_or_Batch = Union[QuantumTape, QuantumTapeBatch]
 PostprocessingFn = Callable[[ResultBatch], Result_or_ResultBatch]
 
 
-observables = {
-    "PauliX",
-    "PauliY",
-    "PauliZ",
-    "Hadamard",
-    "Hermitian",
-    "Identity",
-    "Projector",
-    "SparseHamiltonian",
-    "Hamiltonian",
-    "LinearCombination",
-    "Sum",
-    "SProd",
-    "Prod",
-    "Exp",
-    "Evolution",
-}
-
-
-def observable_stopping_condition(obs: qml.operation.Operator) -> bool:
-    """Specifies whether or not an observable is accepted by DefaultQubit."""
-    return obs.name in observables
-
-
 def stopping_condition(op: qml.operation.Operator) -> bool:
     """Specify whether or not an Operator object is supported by the device."""
     if op.name == "QFT" and len(op.wires) >= 6:
@@ -103,16 +79,74 @@ def stopping_condition_shots(op: qml.operation.Operator) -> bool:
     return isinstance(op, (Conditional, MidMeasureMP)) or stopping_condition(op)
 
 
+def observable_accepts_sampling(obs: qml.operation.Operator) -> bool:
+    """Verifies whether an observable supports sample measurement"""
+
+    if isinstance(obs, qml.ops.CompositeOp):
+        return all(observable_accepts_sampling(o) for o in obs.operands)
+
+    if isinstance(obs, qml.ops.SymbolicOp):
+        return observable_accepts_sampling(obs.base)
+
+    if isinstance(obs, qml.ops.Hamiltonian):
+        return all(observable_accepts_sampling(o) for o in obs.ops)
+
+    if isinstance(obs, qml.operation.Tensor):
+        return all(observable_accepts_sampling(o) for o in obs.obs)
+
+    return obs.has_diagonalizing_gates
+
+
+def observable_accepts_analytic(obs: qml.operation.Operator, is_expval=False) -> bool:
+    """Verifies whether an observable supports analytic measurement"""
+
+    if isinstance(obs, qml.ops.CompositeOp):
+        return all(observable_accepts_analytic(o, is_expval) for o in obs.operands)
+
+    if isinstance(obs, qml.ops.SymbolicOp):
+        return observable_accepts_analytic(obs.base, is_expval)
+
+    if isinstance(obs, qml.ops.Hamiltonian):
+        return all(observable_accepts_analytic(o, is_expval) for o in obs.ops)
+
+    if isinstance(obs, qml.operation.Tensor):
+        return all(observable_accepts_analytic(o, is_expval) for o in obs.obs)
+
+    if is_expval and isinstance(obs, (qml.ops.SparseHamiltonian, qml.ops.Hermitian)):
+        return True
+
+    return obs.has_diagonalizing_gates
+
+
 def accepted_sample_measurement(m: qml.measurements.MeasurementProcess) -> bool:
-    """Specifies whether or not a measurement is accepted when sampling."""
-    return isinstance(
+    """Specifies whether a measurement is accepted when sampling."""
+
+    if not isinstance(
         m,
         (
             qml.measurements.SampleMeasurement,
             qml.measurements.ClassicalShadowMP,
             qml.measurements.ShadowExpvalMP,
         ),
-    )
+    ):
+        return False
+
+    if m.obs is not None:
+        return observable_accepts_sampling(m.obs)
+
+    return True
+
+
+def accepted_analytic_measurement(m: qml.measurements.MeasurementProcess) -> bool:
+    """Specifies whether a measurement is accepted when analytic."""
+
+    if not isinstance(m, qml.measurements.StateMeasurement):
+        return False
+
+    if m.obs is not None:
+        return observable_accepts_analytic(m.obs, isinstance(m, qml.measurements.ExpectationMP))
+
+    return True
 
 
 def null_postprocessing(results):
@@ -129,7 +163,7 @@ def all_state_postprocessing(results, measurements, wire_order):
 @qml.transform
 def adjoint_state_measurements(
     tape: QuantumTape, device_vjp=False
-) -> (Tuple[QuantumTape], Callable):
+) -> Tuple[Tuple[QuantumTape], Callable]:
     """Perform adjoint measurement preprocessing.
 
     * Allows a tape with only expectation values through unmodified
@@ -502,7 +536,10 @@ class DefaultQubit(Device):
 
         transform_program.add_transform(validate_device_wires, self.wires, name=self.name)
         transform_program.add_transform(
-            mid_circuit_measurements, device=self, mcm_config=config.mcm_config
+            mid_circuit_measurements,
+            device=self,
+            mcm_config=config.mcm_config,
+            interface=config.interface,
         )
         transform_program.add_transform(
             decompose,
@@ -511,12 +548,13 @@ class DefaultQubit(Device):
             name=self.name,
         )
         transform_program.add_transform(
-            validate_measurements, sample_measurements=accepted_sample_measurement, name=self.name
+            validate_measurements,
+            analytic_measurements=accepted_analytic_measurement,
+            sample_measurements=accepted_sample_measurement,
+            name=self.name,
         )
-        transform_program.add_transform(
-            validate_observables, stopping_condition=observable_stopping_condition, name=self.name
-        )
-
+        if config.mcm_config.mcm_method == "tree-traversal":
+            transform_program.add_transform(qml.transforms.broadcast_expand)
         # Validate multi processing
         max_workers = config.device_options.get("max_workers", self._max_workers)
         if max_workers:
@@ -599,6 +637,7 @@ class DefaultQubit(Device):
                         "interface": interface,
                         "state_cache": self._state_cache,
                         "prng_key": _key,
+                        "mcm_method": execution_config.mcm_config.mcm_method,
                         "postselect_mode": execution_config.mcm_config.postselect_mode,
                     },
                 )
@@ -611,6 +650,7 @@ class DefaultQubit(Device):
             {
                 "rng": _rng,
                 "prng_key": _key,
+                "mcm_method": execution_config.mcm_config.mcm_method,
                 "postselect_mode": execution_config.mcm_config.postselect_mode,
             }
             for _rng, _key in zip(seeds, prng_keys)

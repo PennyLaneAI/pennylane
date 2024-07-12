@@ -107,6 +107,7 @@ preprocessing, get information from a circuit and more.
     ~batch_params
     ~batch_input
     ~transforms.insert
+    ~transforms.add_noise
     ~defer_measurements
     ~transforms.split_non_commuting
     ~transforms.broadcast_expand
@@ -140,7 +141,6 @@ to help build custom QNode, quantum function, and tape transforms:
     :toctree: api
 
     ~transforms.make_tape
-    ~transforms.map_batch_transform
     ~transforms.create_expand_fn
     ~transforms.create_decomp_expand_fn
     ~transforms.expand_invalid_trainable
@@ -278,13 +278,12 @@ from pennylane.tape import make_qscript as make_tape
 
 # Import the decorators first to prevent circular imports when used in other transforms
 from .core import transform, TransformError
-from .batch_transform import map_batch_transform
 from .batch_params import batch_params
 from .batch_input import batch_input
 from .batch_partial import batch_partial
 from .convert_to_numpy_parameters import convert_to_numpy_parameters
 from .compile import compile
-
+from .add_noise import add_noise
 
 from .decompositions import clifford_t_decomposition
 from .defer_measurements import defer_measurements

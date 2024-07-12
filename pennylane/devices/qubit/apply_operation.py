@@ -177,6 +177,7 @@ def apply_operation(
         prng_key (Optional[jax.random.PRNGKey]): An optional ``jax.random.PRNGKey``. This is
             the key to the JAX pseudo random number generator. Only for simulation using JAX.
             If None, a ``numpy.random.default_rng`` will be used for sampling.
+        tape_shots (Shots): the shots object of the tape
 
     Returns:
         ndarray: output state
@@ -407,6 +408,75 @@ def apply_pauliz(op: qml.Z, state, is_state_batched: bool = False, debugger=None
 
 
 @apply_operation.register
+def apply_phaseshift(op: qml.PhaseShift, state, is_state_batched: bool = False, debugger=None, **_):
+    """Apply PhaseShift to state."""
+
+    n_dim = math.ndim(state)
+
+    if n_dim >= 9 and math.get_interface(state) == "tensorflow":
+        return apply_operation_tensordot(op, state, is_state_batched=is_state_batched)
+
+    axis = op.wires[0] + is_state_batched
+
+    sl_0 = _get_slice(0, axis, n_dim)
+    sl_1 = _get_slice(1, axis, n_dim)
+
+    params = math.cast(op.parameters[0], dtype=complex)
+    state0 = state[sl_0]
+    state1 = state[sl_1]
+    if op.batch_size is not None and len(params) > 1:
+        interface = math.get_interface(state)
+        if interface == "torch":
+            params = math.array(params, like=interface)
+        if is_state_batched:
+            params = math.reshape(params, (-1,) + (1,) * (n_dim - 2))
+        else:
+            axis = axis + 1
+            params = math.reshape(params, (-1,) + (1,) * (n_dim - 1))
+            state0 = math.expand_dims(state0, 0) + math.zeros_like(params)
+            state1 = math.expand_dims(state1, 0)
+    state1 = math.multiply(math.cast(state1, dtype=complex), math.exp(1.0j * params))
+    state = math.stack([state0, state1], axis=axis)
+    if not is_state_batched and op.batch_size == 1:
+        state = math.stack([state], axis=0)
+    return state
+
+
+@apply_operation.register
+def apply_T(op: qml.T, state, is_state_batched: bool = False, debugger=None, **_):
+    """Apply T to state."""
+
+    axis = op.wires[0] + is_state_batched
+    n_dim = math.ndim(state)
+
+    if n_dim >= 9 and math.get_interface(state) == "tensorflow":
+        return apply_operation_tensordot(op, state, is_state_batched=is_state_batched)
+
+    sl_0 = _get_slice(0, axis, n_dim)
+    sl_1 = _get_slice(1, axis, n_dim)
+
+    state1 = math.multiply(math.cast(state[sl_1], dtype=complex), math.exp(0.25j * np.pi))
+    return math.stack([state[sl_0], state1], axis=axis)
+
+
+@apply_operation.register
+def apply_S(op: qml.S, state, is_state_batched: bool = False, debugger=None, **_):
+    """Apply S to state."""
+
+    axis = op.wires[0] + is_state_batched
+    n_dim = math.ndim(state)
+
+    if n_dim >= 9 and math.get_interface(state) == "tensorflow":
+        return apply_operation_tensordot(op, state, is_state_batched=is_state_batched)
+
+    sl_0 = _get_slice(0, axis, n_dim)
+    sl_1 = _get_slice(1, axis, n_dim)
+
+    state1 = math.multiply(math.cast(state[sl_1], dtype=complex), 1j)
+    return math.stack([state[sl_0], state1], axis=axis)
+
+
+@apply_operation.register
 def apply_cnot(op: qml.CNOT, state, is_state_batched: bool = False, debugger=None, **_):
     """Apply cnot gate to state."""
     target_axes = (op.wires[1] - 1 if op.wires[1] > op.wires[0] else op.wires[1]) + is_state_batched
@@ -526,15 +596,27 @@ def _apply_grover_without_matrix(state, op_wires, is_state_batched):
 
 
 @apply_operation.register
-def apply_snapshot(op: qml.Snapshot, state, is_state_batched: bool = False, debugger=None, **_):
+def apply_snapshot(
+    op: qml.Snapshot, state, is_state_batched: bool = False, debugger=None, **execution_kwargs
+):
     """Take a snapshot of the state"""
     if debugger is not None and debugger.active:
         measurement = op.hyperparameters["measurement"]
-        if measurement:
-            snapshot = qml.devices.qubit.measure(measurement, state)
+
+        shots = execution_kwargs.get("tape_shots")
+
+        if isinstance(measurement, qml.measurements.StateMP) or not shots:
+            snapshot = qml.devices.qubit.measure(measurement, state, is_state_batched)
         else:
-            flat_shape = (math.shape(state)[0], -1) if is_state_batched else (-1,)
-            snapshot = math.cast(math.reshape(state, flat_shape), complex)
+            snapshot = qml.devices.qubit.measure_with_samples(
+                [measurement],
+                state,
+                shots,
+                is_state_batched,
+                execution_kwargs.get("rng"),
+                execution_kwargs.get("prng_key"),
+            )[0]
+
         if op.tag:
             debugger.snapshots[op.tag] = snapshot
         else:

@@ -30,7 +30,7 @@ requirements = [
     "appdirs",
     "autoray>=0.6.11",
     "cachetools",
-    "pennylane-lightning>=0.36",
+    "pennylane-lightning>=0.37",
     "requests",
     "typing_extensions",
     "packaging",

@@ -19,6 +19,7 @@ import pytest
 import pennylane as qml
 from pennylane.devices.qubit import get_final_state, measure_final_state, simulate
 from pennylane.devices.qubit.simulate import _FlexShots
+from tests.dummy_debugger import Debugger
 
 
 class TestCurrentlyUnsupportedCases:
@@ -437,20 +438,13 @@ class Test_FlexShots:
 class TestDebugger:
     """Tests that the debugger works for a simple circuit"""
 
-    class Debugger:
-        """A dummy debugger class"""
-
-        def __init__(self):
-            self.active = True
-            self.snapshots = {}
-
     def test_debugger_numpy(self):
         """Test debugger with numpy"""
         phi = np.array(0.397)
         ops = [qml.Snapshot(), qml.RX(phi, wires=0), qml.Snapshot("final_state")]
         qs = qml.tape.QuantumScript(ops, [qml.expval(qml.PauliY(0)), qml.expval(qml.PauliZ(0))])
 
-        debugger = self.Debugger()
+        debugger = Debugger()
         result = simulate(qs, debugger=debugger)
 
         assert isinstance(result, tuple)
@@ -469,7 +463,7 @@ class TestDebugger:
     def test_debugger_autograd(self):
         """Tests debugger with autograd"""
         phi = qml.numpy.array(-0.52)
-        debugger = self.Debugger()
+        debugger = Debugger()
 
         def f(x):
             ops = [qml.Snapshot(), qml.RX(x, wires=0), qml.Snapshot("final_state")]
@@ -492,7 +486,7 @@ class TestDebugger:
         import jax
 
         phi = jax.numpy.array(0.678)
-        debugger = self.Debugger()
+        debugger = Debugger()
 
         def f(x):
             ops = [qml.Snapshot(), qml.RX(x, wires=0), qml.Snapshot("final_state")]
@@ -516,7 +510,7 @@ class TestDebugger:
         import torch
 
         phi = torch.tensor(-0.526, requires_grad=True)
-        debugger = self.Debugger()
+        debugger = Debugger()
 
         def f(x):
             ops = [qml.Snapshot(), qml.RX(x, wires=0), qml.Snapshot("final_state")]
@@ -542,7 +536,7 @@ class TestDebugger:
         import tensorflow as tf
 
         phi = tf.Variable(4.873, dtype="float64")
-        debugger = self.Debugger()
+        debugger = Debugger()
 
         ops = [qml.Snapshot(), qml.RX(phi, wires=0), qml.Snapshot("final_state")]
         qs = qml.tape.QuantumScript(ops, [qml.expval(qml.PauliY(0)), qml.expval(qml.PauliZ(0))])

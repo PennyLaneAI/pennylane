@@ -16,7 +16,7 @@
 Contains the tape transform that splits a tape into tapes measuring commuting observables.
 """
 
-# pylint: disable=too-many-arguments
+# pylint: disable=too-many-arguments,too-many-boolean-expressions
 
 from functools import partial
 from typing import Callable, Dict, List, Optional, Sequence, Tuple
@@ -26,6 +26,13 @@ from pennylane.measurements import ExpectationMP, MeasurementProcess, Shots, Sta
 from pennylane.ops import Hamiltonian, LinearCombination, Prod, SProd, Sum
 from pennylane.transforms import transform
 from pennylane.typing import Result, ResultBatch
+
+
+def null_postprocessing(results):
+    """A postprocessing function returned by a transform that only converts the batch of results
+    into a result for a single ``QuantumTape``.
+    """
+    return results[0]
 
 
 @transform
@@ -123,7 +130,7 @@ def split_non_commuting(
 
     .. code-block:: python3
 
-        @functools.partial(qml.transforms.split_non_commuting, grouping="wires")
+        @functools.partial(qml.transforms.split_non_commuting, grouping_strategy="wires")
         @qml.qnode(dev)
         def circuit(x):
             qml.RY(x[0], wires=0)
@@ -243,6 +250,8 @@ def split_non_commuting(
         [[expval(X(0)), probs(wires=[1])], [probs(wires=[0, 1])]]
 
     """
+    if len(tape.measurements) == 0:
+        return [tape], null_postprocessing
 
     # Special case for a single measurement of a Sum or Hamiltonian, in which case
     # the grouping information can be computed and cached in the observable.
@@ -251,7 +260,10 @@ def split_non_commuting(
         and isinstance(tape.measurements[0], ExpectationMP)
         and isinstance(tape.measurements[0].obs, (Hamiltonian, Sum))
         and (
-            grouping_strategy in ("default", "qwc")
+            (
+                grouping_strategy in ("default", "qwc")
+                and all(qml.pauli.is_pauli_word(o) for o in tape.measurements[0].obs.terms()[1])
+            )
             or tape.measurements[0].obs.grouping_indices is not None
         )
     ):
@@ -689,11 +701,13 @@ def _sum_terms(res: ResultBatch, coeffs: List[float], offset: float, shape: Tupl
     # The shape of res at this point is (n_terms, [,n_shots] [,batch_size])
     dot_products = []
     for c, r in zip(coeffs, res):
+        if qml.math.get_interface(r) == "autograd":
+            r = qml.math.array(r)
         dot_products.append(qml.math.dot(qml.math.squeeze(r), c))
     if len(dot_products) == 0:
         return qml.math.ones(shape) * offset
     summed_dot_products = qml.math.sum(qml.math.stack(dot_products), axis=0)
-    return qml.math.convert_like(summed_dot_products + offset, res[0])
+    return summed_dot_products + offset
 
 
 def _mp_to_obs(mp: MeasurementProcess, tape: qml.tape.QuantumScript) -> qml.operation.Operator:

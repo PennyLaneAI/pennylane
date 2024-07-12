@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit and integration tests for the transform dispatcher."""
+import inspect
 from functools import partial
 from typing import Callable, Sequence
 
@@ -31,7 +32,7 @@ with qml.tape.QuantumTape() as tape_circuit:
     qml.expval(qml.PauliZ(wires=0))
 
 
-def qfunc_circuit(a):
+def qfunc_circuit(a: qml.typing.TensorLike):
     """Qfunc circuit/"""
     qml.Hadamard(wires=0)
     qml.CNOT(wires=[0, 1])
@@ -382,6 +383,8 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
         qfunc_transformed = dispatched_transform(qfunc_circuit, 0)
         assert callable(qfunc_transformed)
 
+        assert inspect.signature(qfunc_transformed) == inspect.signature(qfunc_circuit)
+
         with qml.tape.QuantumTape() as transformed_tape:
             qfunc_transformed(0.42)
 
@@ -554,7 +557,8 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
         tp2 = qml.tape.QuantumTape(fin_ops, [qml.expval(qml.PauliY(2) @ qml.PauliZ(1))])
         fin_batch = batch_type([tp1, tp2])
 
-        assert all(qml.equal(tapeA, tapeB) for tapeA, tapeB in zip(fin_batch, batch2))
+        for tapeA, tapeB in zip(fin_batch, batch2):
+            qml.assert_equal(tapeA, tapeB)
         assert abs(comb_postproc(result, fn1, fn2).item() - 0.5) < num_margin
 
     @pytest.mark.parametrize("valid_transform", valid_transforms)
@@ -635,8 +639,8 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
         assert isinstance(program, qml.transforms.core.TransformProgram)
         assert isinstance(new_program, qml.transforms.core.TransformProgram)
 
-        assert len(program) == 5
-        assert len(new_program) == 6
+        assert len(program) == 4
+        assert len(new_program) == 5
 
         assert new_program[-1].transform is valid_transform
 

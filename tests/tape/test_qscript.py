@@ -71,7 +71,7 @@ class TestInitialization:
         qs = QuantumScript(ops)
         assert len(qs.operations) == 1
         assert isinstance(qs.operations, list)
-        assert qml.equal(qs.operations[0], qml.S(0))
+        qml.assert_equal(qs.operations[0], qml.S(0))
 
     @pytest.mark.parametrize(
         "m",
@@ -199,11 +199,16 @@ class TestUpdate:
         ]
         m = [qml.expval(qml.Hermitian(2 * np.eye(2), wires=0))]
         qs = QuantumScript(ops, m)
+        assert qs.wires == qml.wires.Wires((0,))
+        assert isinstance(qs.par_info, list) and len(qs.par_info) > 0
+        old_hash = qs.hash
+        assert qs.trainable_params == [0, 1, 2, 3, 4, 5, 6, 7]
         qs._ops = []
         qs._measurements = []
         qs._update()
         assert qs.wires == qml.wires.Wires([])
         assert isinstance(qs.par_info, list) and len(qs.par_info) == 0
+        assert QuantumScript([], []).hash == qs.hash and qs.hash != old_hash
 
     # pylint: disable=unbalanced-tuple-unpacking
     def test_get_operation(self):
@@ -219,25 +224,32 @@ class TestUpdate:
         qs = QuantumScript(ops, m)
 
         op_0, op_id_0, p_id_0 = qs.get_operation(0)
-        assert qml.equal(op_0, ops[0]) and op_id_0 == 0 and p_id_0 == 0
+        qml.assert_equal(op_0, ops[0])
+        assert op_id_0 == 0 and p_id_0 == 0
 
         op_1, op_id_1, p_id_1 = qs.get_operation(1)
-        assert qml.equal(op_1, ops[1]) and op_id_1 == 1 and p_id_1 == 0
+        qml.assert_equal(op_1, ops[1])
+        assert op_id_1 == 1 and p_id_1 == 0
 
         op_2, op_id_2, p_id_2 = qs.get_operation(2)
-        assert qml.equal(op_2, ops[1]) and op_id_2 == 1 and p_id_2 == 1
+        qml.assert_equal(op_2, ops[1])
+        assert op_id_2 == 1 and p_id_2 == 1
 
         op_3, op_id_3, p_id_3 = qs.get_operation(3)
-        assert qml.equal(op_3, ops[1]) and op_id_3 == 1 and p_id_3 == 2
+        qml.assert_equal(op_3, ops[1])
+        assert op_id_3 == 1 and p_id_3 == 2
 
         op_4, op_id_4, p_id_4 = qs.get_operation(4)
-        assert qml.equal(op_4, ops[3]) and op_id_4 == 3 and p_id_4 == 0
+        qml.assert_equal(op_4, ops[3])
+        assert op_id_4 == 3 and p_id_4 == 0
 
         op_5, op_id_5, p_id_5 = qs.get_operation(5)
-        assert qml.equal(op_5, ops[4]) and op_id_5 == 4 and p_id_5 == 0
+        qml.assert_equal(op_5, ops[4])
+        assert op_id_5 == 4 and p_id_5 == 0
 
         op_6, op_id_6, p_id_6 = qs.get_operation(6)
-        assert qml.equal(op_6, ops[4]) and op_id_6 == 4 and p_id_6 == 1
+        qml.assert_equal(op_6, ops[4])
+        assert op_id_6 == 4 and p_id_6 == 1
 
         _, obs_id_0, p_id_0 = qs.get_operation(7)
         assert obs_id_0 == 5 and p_id_0 == 0
@@ -643,7 +655,7 @@ def test_adjoint():
 
     assert len(q.queue) == 0  # not queued
 
-    assert qml.equal(adj_qs.operations[0], qs.operations[0])
+    qml.assert_equal(adj_qs.operations[0], qs.operations[0])
     assert adj_qs.measurements == qs.measurements
     assert adj_qs.shots is qs.shots
 
@@ -947,7 +959,7 @@ class TestFromQueue:
 
         assert len(diag_ops) == 1
         # Hadamard is the diagonalizing gate for PauliX
-        assert qml.equal(diag_ops[0], qml.Hadamard(0))
+        qml.assert_equal(diag_ops[0], qml.Hadamard(0))
         assert len(q.queue) == 0
 
 

@@ -25,7 +25,7 @@ from pennylane.measurements import (
     ShadowExpvalMP,
     Shots,
 )
-from pennylane.ops import Hamiltonian, LinearCombination, Sum
+from pennylane.ops import Hamiltonian, LinearCombination, Prod, SProd, Sum
 from pennylane.typing import TensorLike
 
 from .apply_operation import apply_operation
@@ -65,6 +65,8 @@ def _group_measurements(mps: List[Union[SampleMeasurement, ClassicalShadowMP, Sh
     mp_no_obs_indices = []
 
     for i, mp in enumerate(mps):
+        if isinstance(mp.obs, (Sum, SProd, Prod)):
+            mps[i].obs = qml.simplify(mp.obs)
         if isinstance(mp, (ClassicalShadowMP, ShadowExpvalMP)):
             mp_other_obs.append([mp])
             mp_other_obs_indices.append([i])
@@ -103,7 +105,30 @@ def _get_num_executions_for_expval_H(obs):
     indices = obs.grouping_indices
     if indices:
         return len(indices)
-    return sum(int(not isinstance(o, qml.Identity)) for o in obs.terms()[1])
+    return _get_num_wire_groups_for_expval_H(obs)
+
+
+def _get_num_wire_groups_for_expval_H(obs):
+    _, obs_list = obs.terms()
+    wires_list = []
+    added_obs = []
+    num_groups = 0
+    for o in obs_list:
+        if o in added_obs:
+            continue
+        if isinstance(o, qml.Identity):
+            continue
+        added = False
+        for wires in wires_list:
+            if len(qml.wires.Wires.shared_wires([wires, o.wires])) == 0:
+                added_obs.append(o)
+                added = True
+                break
+        if not added:
+            added_obs.append(o)
+            wires_list.append(o.wires)
+            num_groups += 1
+    return num_groups
 
 
 def _get_num_executions_for_sum(obs):

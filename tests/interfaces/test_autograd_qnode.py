@@ -138,8 +138,6 @@ class TestQNode:
 
         res = circuit(a)
 
-        assert circuit.qtape.interface is None
-
         # without the interface, the QNode simply returns a scalar array
         assert isinstance(res, np.ndarray)
         assert res.shape == tuple()
@@ -167,6 +165,7 @@ class TestQNode:
 
         a = np.array(0.1, requires_grad=True)
         assert circuit.interface == interface
+
         # gradients should work
         grad = qml.grad(circuit)(a)
 
@@ -1666,7 +1665,7 @@ class TestTapeExpansion:
             gradient_kwargs = {"h": 0.05}
 
         dev = qml.device(dev_name, wires=3, shots=50000)
-        spy = mocker.spy(qml.transforms, "hamiltonian_expand")
+        spy = mocker.spy(qml.transforms, "split_non_commuting")
         obs = [qml.PauliX(0), qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliZ(1)]
 
         @qnode(
