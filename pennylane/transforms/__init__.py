@@ -110,6 +110,7 @@ preprocessing, getting information from a circuit, and more.
     ~transforms.add_noise
     ~defer_measurements
     ~transforms.split_non_commuting
+    ~transforms.split_to_single_terms
     ~transforms.broadcast_expand
     ~transforms.hamiltonian_expand
     ~transforms.sign_expand
@@ -312,6 +313,7 @@ from .dynamic_one_shot import dynamic_one_shot, is_mcm
 from .sign_expand import sign_expand
 from .hamiltonian_expand import hamiltonian_expand, sum_expand
 from .split_non_commuting import split_non_commuting
+from .split_to_single_terms import split_to_single_terms
 from .insert_ops import insert
 
 from .mitigate import mitigate_with_zne, fold_global, poly_extrapolate, richardson_extrapolate
