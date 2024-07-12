@@ -409,7 +409,7 @@ def _get_interface_name(tapes, interface):
     return interface
 
 
-def execute(
+def execute(  # noqa: C901
     tapes: Sequence[QuantumTape],
     device: device_type,
     gradient_fn: Optional[Union[Callable, str]] = None,
@@ -428,7 +428,7 @@ def execute(
     device_batch_transform=True,
     device_vjp=False,
     mcm_config=None,
-) -> ResultBatch:  # noqa: C901
+) -> ResultBatch:
     """New function to execute a batch of tapes on a device in an autodifferentiable-compatible manner. More cases will be added,
     during the project. The current version is supporting forward execution for NumPy and does not support shot vectors.
 
