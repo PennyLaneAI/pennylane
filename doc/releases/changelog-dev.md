@@ -9,7 +9,8 @@
 
 * The `qml.PrepSelPrep` template is added. The template implements a block-encoding of a linear 
   combination of unitaries.
-  [(#5756)](https://github.com/PennyLaneAI/pennylane/pull/5756), [(#5987)](https://github.com/PennyLaneAI/pennylane/pull/5987)
+  [(#5756)](https://github.com/PennyLaneAI/pennylane/pull/5756)
+  [(#5987)](https://github.com/PennyLaneAI/pennylane/pull/5987)
   
 <h3>Improvements 🛠</h3>
 
