@@ -265,6 +265,26 @@ passes on a QNode to maximize gate reduction before execution.
 In this example, inverses are canceled, leading to the removal of two Hadamard gates. Subsequently, rotations are
 merged into a single :class:`qml.Rot` gate. Consequently, two transforms are successfully applied to the circuit.
 
+
+Passing arguments to transforms
+-------------------------------
+
+We can decorate a QNode with ``@partial(transform_fn, **transform_kwargs)`` to provide additional keyword arguments to a transform function.
+In the following example, we pass the keyword argument ``grouping_strategy="wires"`` to the ``split_non_commuting`` quantum transform.
+
+.. code-block:: python
+
+        from functools import partial
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @partial(qml.transforms.split_non_commuting, grouping_strategy="wires")
+        @qml.qnode(dev)
+        def circuit(params):
+            qml.RX(params[0], wires=0)
+            qml.RZ(params[1], wires=1)
+            return [qml.expval(qml.X(0) @ qml.Y(1) + qml.Z(1))]
+
 Additional information
 ----------------------
 
