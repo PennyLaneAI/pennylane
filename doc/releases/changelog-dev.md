@@ -10,6 +10,14 @@
 * The `qml.PrepSelPrep` template is added. The template implements a block-encoding of a linear 
   combination of unitaries.
   [(#5756)](https://github.com/PennyLaneAI/pennylane/pull/5756)
+
+* The `split_to_single_terms` transform is added. This transform splits expectation values of sums 
+  into multiple single-term measurements on a single tape, providing better support for simulators 
+  that can handle non-commuting observables but don't natively support multi-term observables.
+  [(#5884)](https://github.com/PennyLaneAI/pennylane/pull/5884)
+
+* `SProd.terms` now flattens out the terms if the base is a multi-term observable.
+  [(#5885)](https://github.com/PennyLaneAI/pennylane/pull/5885)
   
 <h3>Improvements 🛠</h3>
 
@@ -24,6 +32,9 @@
 * `QuantumScript.hash` is now cached, leading to performance improvements.
   [(#5919)](https://github.com/PennyLaneAI/pennylane/pull/5919)
 
+* The representation for `Wires` has now changed to be more copy-paste friendly.
+  [(#5958)](https://github.com/PennyLaneAI/pennylane/pull/5958)
+  
 * Observable validation for `default.qubit` is now based on execution mode (analytic vs. finite shots) and measurement type (sample measurement vs. state measurement).
   [(#5890)](https://github.com/PennyLaneAI/pennylane/pull/5890)
 
@@ -59,11 +70,13 @@
 
 This release contains contributions from (in alphabetical order):
 Guillermo Alonso,
-Ahmed Darwish
+Ahmed Darwish,
 Astral Cai,
 Yushao Chen,
+Lillian M. A. Frederiksen,
 Pietropaolo Frisoni,
 Christina Lee,
+Austin Huang,
 William Maxwell,
 Vincent Michaud-Rioux,
 Mudit Pandey,
