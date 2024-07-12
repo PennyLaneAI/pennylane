@@ -188,3 +188,14 @@ def test_max_expansion_is_deprecated():
         qml.PennyLaneDeprecationWarning, match="The max_expansion argument is deprecated"
     ):
         qml.execute([qs], dev, max_expansion=5)
+
+
+def test_override_shots_is_deprecated():
+    """Test that override_shots argument of qml.execute is deprecated."""
+    dev = DefaultQubit()
+    qs = qml.tape.QuantumScript([qml.PauliX(0)], [qml.expval(qml.PauliZ(0))])
+
+    with pytest.warns(
+        qml.PennyLaneDeprecationWarning, match="The override_shots argument is deprecated"
+    ):
+        qml.execute([qs], dev, override_shots=1)

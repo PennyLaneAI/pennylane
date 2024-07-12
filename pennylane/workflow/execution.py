@@ -591,6 +591,22 @@ def execute(
             "::L".join(str(i) for i in inspect.getouterframes(inspect.currentframe(), 2)[1][1:3]),
         )
 
+    if override_shots is not False:
+        warnings.warn(
+            "The override_shots argument is deprecated and will be removed in version 0.39. "
+            "Instead, please add the shots to the QuantumTape's to be executed.",
+            qml.PennyLaneDeprecationWarning,
+        )
+        tapes = tuple(
+            qml.tape.QuantumScript(
+                t.operations,
+                t.measurements,
+                trainable_params=t.trainable_params,
+                shots=override_shots,
+            )
+            for t in tapes
+        )
+
     ### Specifying and preprocessing variables ####
 
     interface = _get_interface_name(tapes, interface)

@@ -57,6 +57,10 @@
   Instead, please use ``qml.devices.preprocess.decompose`` with the desired expansion level, add it to a ``TransformProgram`` and pass it to the ``transform_program`` argument of ``qml.execute``.
   [(#5984)](https://github.com/PennyLaneAI/pennylane/pull/5984)
 
+* The ``override_shots`` argument in ``qml.execute`` is deprecated. 
+  Instead, please add the shots to the ``QuantumTape``'s to be executed.
+  [(#5984)](https://github.com/PennyLaneAI/pennylane/pull/5984)
+
 <h3>Documentation 📝</h3>
 
 * Improves the docstring for `QuantumScript.expand` and `qml.tape.tape.expand_tape`.
