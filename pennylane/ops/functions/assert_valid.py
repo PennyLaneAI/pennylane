@@ -53,7 +53,7 @@ def _check_decomposition(op, skip_wire_mapping):
         with qml.queuing.AnnotatedQueue() as queued_decomp:
             op.decomposition()
         processed_queue = qml.tape.QuantumTape.from_queue(queued_decomp)
-        expand = op.expand()
+        expand = qml.tape.QuantumScript(op.decomposition())
 
         assert isinstance(decomp, list), "decomposition must be a list"
         assert isinstance(compute_decomp, list), "decomposition must be a list"
@@ -82,9 +82,6 @@ def _check_decomposition(op, skip_wire_mapping):
             op.decomposition,
             qml.operation.DecompositionUndefinedError,
             failure_comment=failure_comment,
-        )()
-        _assert_error_raised(
-            op.expand, qml.operation.DecompositionUndefinedError, failure_comment=failure_comment
         )()
         _assert_error_raised(
             op.compute_decomposition,

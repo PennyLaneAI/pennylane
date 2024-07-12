@@ -1502,6 +1502,12 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         Returns:
             .QuantumTape: quantum tape
         """
+        warnings.warn(
+            "'Operator.expand' is deprecated and will be removed in version 0.39. "
+            "The same behaviour can be achieved simply through 'qml.tape.QuantumScript(self.decomposition())'",
+            qml.PennyLaneDeprecationWarning,
+        )
+
         if not self.has_decomposition:
             raise DecompositionUndefinedError
 
