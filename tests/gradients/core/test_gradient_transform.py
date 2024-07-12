@@ -619,10 +619,14 @@ class TestGradientTransformIntegration:
         correctly when the QNode contains a template"""
         dev = qml.device("default.qubit", wires=3)
 
-        @qml.qnode(dev, expansion_strategy=strategy)
-        def circuit(weights):
-            qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1, 2])
-            return qml.probs(wires=[0, 1])
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match="'expansion_strategy' attribute is deprecated"
+        ):
+
+            @qml.qnode(dev, expansion_strategy=strategy)
+            def circuit(weights):
+                qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1, 2])
+                return qml.probs(wires=[0, 1])
 
         weights = np.ones([2, 3, 3], dtype=np.float64, requires_grad=True)
         res = qml.gradients.param_shift(circuit)(weights)
