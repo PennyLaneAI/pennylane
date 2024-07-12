@@ -557,7 +557,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
 
         >>> op = qml.PauliRot(1.2, "XY", wires=(0,1))
         >>> op._flatten()
-        ((1.2,), (<Wires = [0, 1]>, (('pauli_word', 'XY'),)))
+        ((1.2,), (Wires([0, 1]), (('pauli_word', 'XY'),)))
         >>> qml.PauliRot._unflatten(*op._flatten())
         PauliRot(1.2, XY, wires=[0, 1])
 
@@ -1639,7 +1639,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         >>> op = qml.ctrl(qml.U2(3.4, 4.5, wires="a"), ("b", "c") )
         >>> op._flatten()
         ((U2(3.4, 4.5, wires=['a']),),
-        (<Wires = ['b', 'c']>, (True, True), <Wires = []>))
+        (Wires(['b', 'c']), (True, True), Wires([])))
 
         """
         hashable_hyperparameters = tuple(
@@ -1662,11 +1662,11 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
 
         >>> op = qml.Rot(1.2, 2.3, 3.4, wires=0)
         >>> op._flatten()
-        ((1.2, 2.3, 3.4), (<Wires = [0]>, ()))
+        ((1.2, 2.3, 3.4), (Wires([0]), ()))
         >>> qml.Rot._unflatten(*op._flatten())
         >>> op = qml.PauliRot(1.2, "XY", wires=(0,1))
         >>> op._flatten()
-        ((1.2,), (<Wires = [0, 1]>, (('pauli_word', 'XY'),)))
+        ((1.2,), (Wires([0, 1]), (('pauli_word', 'XY'),)))
         >>> op = qml.ctrl(qml.U2(3.4, 4.5, wires="a"), ("b", "c") )
         >>> type(op)._unflatten(*op._flatten())
         Controlled(U2(3.4, 4.5, wires=['a']), control_wires=['b', 'c'])
@@ -1978,7 +1978,7 @@ class Observable(Operator):
 
         >>> tensor = qml.X(0) @ qml.Z(1)
         >>> print(tensor._obs_data())
-        {("PauliZ", <Wires = [1]>, ()), ("PauliX", <Wires = [0]>, ())}
+        {("PauliZ", Wires([1]), ()), ("PauliX", Wires([0]), ())}
         """
         obs = Tensor(self).non_identity_obs
         tensor = set()
