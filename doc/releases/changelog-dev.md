@@ -34,6 +34,10 @@
 
 <h3>Deprecations 👋</h3>
 
+* `Operator.expand` has been deprecated. Users should simply do `qml.tape.QuantumScript(op.decomposition())`
+  for an equivalent behaviour.
+  [(#5994)](https://github.com/PennyLaneAI/pennylane/pull/5994)
+
 <h3>Documentation 📝</h3>
 
 * Improves the docstring for `QuantumScript.expand` and `qml.tape.tape.expand_tape`.
