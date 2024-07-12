@@ -449,8 +449,22 @@ def from_qasm(quantum_circuit: str, measurements=None):
     MeasurementValue(wires=[0]),
     MeasurementValue(wires=[1]))
 
+    A list of measurements can also be passed directly to ``from_qasm`` using the ``measurements`` argument, making it possible to create a PennyLane circuit with
+        :class:`qml.QNode <pennylane.QNode>`.
+
+        .. code-block:: python
+
+            dev = qml.device("default.qubit")
+            measurements = [qml.var(qml.Y(0))]
+            circuit = qml.QNode(qml.from_qasm(qasm_code, measurements = measurements), dev)
+
+        >>> print(qml.draw(circuit)())
+        0: ──H──┤↗├──RZ(0.24)─╭●─┤  Var[Y]
+        1: ───────────────────╰X─┤
+
+    .. _removing-measuremenets:
+
     .. details::
-        .. _removing-measuremenets:
         :title: Removing terminal measurements
 
         To remove all terminal measurements, set ``measurements=[]``. This removes the existing terminal measurements and keeps the mid-circuit measurements.
@@ -470,20 +484,7 @@ def from_qasm(quantum_circuit: str, measurements=None):
 
         Note that mid-circuit measurements are always applied, but are only returned when ``measurements=None``.
 
-        :title: Creating a Quantum Node
-
-        A list of measurements can also be passed directly to ``from_qasm`` using the ``measurements`` argument, making it possible to create a PennyLane circuit with
-        :class:`qml.QNode <pennylane.QNode>`.
-
-        .. code-block:: python
-
-            dev = qml.device("default.qubit")
-            measurements = [qml.var(qml.Y(0))]
-            circuit = qml.QNode(qml.from_qasm(qasm_code, measurements = measurements), dev)
-
-        >>> print(qml.draw(circuit)())
-        0: ──H──┤↗├──RZ(0.24)─╭●─┤  Var[Y]
-        1: ───────────────────╰X─┤
+    .. details::
         :title: Using conditional operations
 
         We can take advantage of the mid-circuit measurements inside the QASM code by calling the returned function within a :class:`qml.QNode <pennylane.QNode>`.
@@ -503,6 +504,7 @@ def from_qasm(quantum_circuit: str, measurements=None):
         1: ──────║────────────╰X──┤↗├──║────────┤
                 ╚═════════════════════╝
 
+    .. details::
         :title: Importing from a QASM file
 
         We can also load the contents of a QASM file.
