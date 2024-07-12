@@ -151,7 +151,7 @@ class TestControlledDecompositionZYZ:
         rng = np.random.default_rng(1337)
 
         dev = qml.device("default.qubit", wires=n_qubits)
-        init_state = rng.rand(2**n_qubits) + 1.0j * rng.rand(2**n_qubits)
+        init_state = rng.random(2**n_qubits) + 1.0j * rng.random(2**n_qubits)
         init_state /= np.sqrt(np.dot(np.conj(init_state), init_state))
         init_state = np.array(init_state)
         target_wires = [0]
