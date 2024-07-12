@@ -815,7 +815,7 @@ def quantum_fisher(
     """
     warnings.warn(
         "pennylane.qinfo.quantum_fisher is being migrated to a different module and will "
-        "removed in version 0.39. Instead, use pennylane.gradient.quantum_fisher.",
+        "removed in version 0.39. Instead, use pennylane.gradients.quantum_fisher.",
         qml.PennyLaneDeprecationWarning,
     )
 
