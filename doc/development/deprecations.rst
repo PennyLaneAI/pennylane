@@ -10,7 +10,7 @@ Pending deprecations
 --------------------
 
 * The ``expansion_strategy`` attribute of ``qml.QNode`` is deprecated. 
-  Users should make use ``qml.workflow.construct_batch``, should they require fine control over the output tape(s).
+  Users should make use of ``qml.workflow.construct_batch``, should they require fine control over the output tape(s).
 
   - Deprecated in v0.38
   - Will be removed in v0.39
