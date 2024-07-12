@@ -417,7 +417,7 @@ def from_qasm(quantum_circuit: str, measurements=None):
         measurements (None | MeasurementProcess | list[MeasurementProcess]): an optional PennyLane
             measurement or list of PennyLane measurements that overrides the terminal measurements
             that may be present in the input circuit. Defaults to ``None``, such that all existing measurements
-            in the input circuit are kept. Mid-circuit measurements are kept either way.
+            in the input circuit are returned. See :ref:`removing-measuremenets` for details.
 
     Returns:
         function: the PennyLane quantum function created based on the QASM string. This function itself returns the mid-circuit measurements plus the terminal measurements by default (``measurements=None``), and returns **only** the measurements from the ``measurements`` argument otherwise.
@@ -444,85 +444,95 @@ def from_qasm(quantum_circuit: str, measurements=None):
 
     Calling the quantum function returns a tuple containing the mid-circuit measurements and the terminal measurements.
 
-    >>> my_circuit()
+    >>> loaded_circuit()
     (MeasurementValue(wires=[0]),
     MeasurementValue(wires=[0]),
     MeasurementValue(wires=[1]))
 
-    To remove all terminal measurements, set ``measurements=[]``, which removes the existing terminal measurements and keeps the mid-circuit measurements.
+    .. details::
+        .. _removing-measuremenets:
+        :title: Removing terminal measurements
 
-    .. code-block:: python
+        To remove all terminal measurements, set ``measurements=[]``. This removes the existing terminal measurements and keeps the mid-circuit measurements.
 
-        loaded_circuit = qml.from_qasm(qasm_code, measurements=[])
+        .. code-block:: python
 
-    >>> print(qml.draw(loaded_circuit)())
-    0: ──H──┤↗├──RZ(0.24)─╭●─┤
-    1: ───────────────────╰X─┤
+            loaded_circuit = qml.from_qasm(qasm_code, measurements=[])
 
-    Note that calling the quantum function returns the same empty list that we originally passed in.
+        >>> print(qml.draw(loaded_circuit)())
+        0: ──H──┤↗├──RZ(0.24)─╭●─┤
+        1: ───────────────────╰X─┤
 
-    >>> loaded_circuit()
-    []
+        Calling the quantum function returns the same empty list that we originally passed in.
 
-    The measurements can also be passed directly to the function when creating the
-    quantum function, making it possible to create a PennyLane circuit with
-    :class:`qml.QNode <pennylane.QNode>`.
+        >>> loaded_circuit()
+        []
 
-    .. code-block:: python
+        Note that mid-circuit measurements are always applied, but are only returned when ``measurements=None``.
 
-        dev = qml.device("default.qubit")
-        measurements = [qml.var(qml.Y(0))]
-        circuit = qml.QNode(qml.from_qasm(qasm_code, measurements = measurements), dev)
+        :title: Creating a Quantum Node
 
-    >>> print(qml.draw(circuit)())
-    0: ──H──┤↗├──RZ(0.24)─╭●─┤  Var[Y]
-    1: ───────────────────╰X─┤
+        A list of measurements can also be passed directly to ``from_qasm`` using the ``measurements`` argument, making it possible to create a PennyLane circuit with
+        :class:`qml.QNode <pennylane.QNode>`.
 
-    We can take advantage of the mid-circuit measurements inside the QASM code by calling the returned function.
+        .. code-block:: python
 
-    .. code-block:: python
+            dev = qml.device("default.qubit")
+            measurements = [qml.var(qml.Y(0))]
+            circuit = qml.QNode(qml.from_qasm(qasm_code, measurements = measurements), dev)
 
-        loaded_circuit = qml.from_qasm(qasm_code)
+        >>> print(qml.draw(circuit)())
+        0: ──H──┤↗├──RZ(0.24)─╭●─┤  Var[Y]
+        1: ───────────────────╰X─┤
+        :title: Using conditional operations
 
-        @qml.qnode(dev)
-        def circuit():
-            mid_measure, *_ = loaded_circuit()
-            qml.cond(mid_measure == 0, qml.RX)(np.pi / 2, 0)
-            return [qml.expval(qml.Z(0))]
+        We can take advantage of the mid-circuit measurements inside the QASM code by calling the returned function within a :class:`qml.QNode <pennylane.QNode>`.
 
-    >>> print(qml.draw(circuit)())
-    0: ──H──┤↗├──RZ(0.24)─╭●──┤↗├──RX(1.57)─┤  <Z>
-    1: ──────║────────────╰X──┤↗├──║────────┤
-             ╚═════════════════════╝
+        .. code-block:: python
 
-    We can also load the contents of a QASM file.
+            loaded_circuit = qml.from_qasm(qasm_code)
 
-    .. code-block:: python
+            @qml.qnode(dev)
+            def circuit():
+                mid_measure, *_ = loaded_circuit()
+                qml.cond(mid_measure == 0, qml.RX)(np.pi / 2, 0)
+                return [qml.expval(qml.Z(0))]
 
-        # save the qasm code in a file
-        import locale
-        from pathlib import Path
+        >>> print(qml.draw(circuit)())
+        0: ──H──┤↗├──RZ(0.24)─╭●──┤↗├──RX(1.57)─┤  <Z>
+        1: ──────║────────────╰X──┤↗├──║────────┤
+                ╚═════════════════════╝
 
-        filename = "circuit.qasm"
-        with Path(filename).open("w", encoding=locale.getpreferredencoding(False)) as f:
-            f.write(qasm_code)
+        :title: Importing from a QASM file
 
-        with open("circuit.qasm", "r") as f:
-            loaded_circuit = qml.from_qasm(f.read())
+        We can also load the contents of a QASM file.
 
-    The ``loaded_circuit`` function can now be used within a :class:`qml.QNode <pennylane.QNode>` as a two-wire quantum template.
+        .. code-block:: python
 
-    .. code-block:: python
+            # save the qasm code in a file
+            import locale
+            from pathlib import Path
 
-        @qml.qnode(dev)
-        def circuit(x):
-            qml.RX(x, wires=1)
-            loaded_circuit(wires=(0, 1))
-            return qml.expval(qml.Z(0))
+            filename = "circuit.qasm"
+            with Path(filename).open("w", encoding=locale.getpreferredencoding(False)) as f:
+                f.write(qasm_code)
 
-    >>> print(qml.draw(circuit)(1.23))
-    0: ──H─────────┤↗├──RZ(0.24)─╭●──┤↗├─┤  <Z>
-    1: ──RX(1.23)────────────────╰X──┤↗├─┤
+            with open("circuit.qasm", "r") as f:
+                loaded_circuit = qml.from_qasm(f.read())
+
+        The ``loaded_circuit`` function can now be used within a :class:`qml.QNode <pennylane.QNode>` as a two-wire quantum template.
+
+        .. code-block:: python
+
+            @qml.qnode(dev)
+            def circuit(x):
+                qml.RX(x, wires=1)
+                loaded_circuit(wires=(0, 1))
+                return qml.expval(qml.Z(0))
+
+        >>> print(qml.draw(circuit)(1.23))
+        0: ──H─────────┤↗├──RZ(0.24)─╭●──┤↗├─┤  <Z>
+        1: ──RX(1.23)────────────────╰X──┤↗├─┤
     """
 
     try:
