@@ -10,9 +10,6 @@
 * The `qml.PrepSelPrep` template is added. The template implements a block-encoding of a linear 
   combination of unitaries.
   [(#5756)](https://github.com/PennyLaneAI/pennylane/pull/5756)
-
-* `SProd.terms` now flattens out the terms if the base is a multi-term observable.
-  [(#5885)](https://github.com/PennyLaneAI/pennylane/pull/5885)
   
 <h3>Improvements 🛠</h3>
 
@@ -29,6 +26,10 @@
 
 * Observable validation for `default.qubit` is now based on execution mode (analytic vs. finite shots) and measurement type (sample measurement vs. state measurement).
   [(#5890)](https://github.com/PennyLaneAI/pennylane/pull/5890)
+  
+* The `.terms()` method of `Prod`, `SProd`, `Sum`, `LinearCombination` now recursively flattens nested
+  terms without doing any simplification. Use `obs.simplify().terms()` to obtain the simplified terms.
+  [(#5885)](https://github.com/PennyLaneAI/pennylane/pull/5885)
 
 <h3>Breaking changes 💔</h3>
 
