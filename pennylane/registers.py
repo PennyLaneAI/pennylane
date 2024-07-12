@@ -46,6 +46,18 @@ def registers(register_dict):
     """
 
     def _registers(register_dict, _start_wire_index=0):
+        """Recursively builds a dictionary of Wires objects from a nested dictionary of register names and sizes.
+
+        Args:
+            register_dict (dict): a dictionary where keys are register names and values are nested
+                dictionaries or integers indicating the number of qubits.
+            _start_wire_index (int): the starting index for the wire labels.
+
+        Returns:
+            dict: dictionary where the keys are the names (str) of the registers and the values are
+                the Wires objects.
+        """
+
         all_reg = {}
         for register_name, register_wires in register_dict.items():
             if isinstance(register_wires, dict):
