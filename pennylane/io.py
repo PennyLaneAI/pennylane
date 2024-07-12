@@ -408,7 +408,7 @@ def from_qiskit_op(qiskit_op, params=None, wires=None):
 
 
 def from_qasm(quantum_circuit: str, measurements=None):
-    """
+    r"""
     Loads quantum circuits from a QASM string using the converter in the
     PennyLane-Qiskit plugin.
 
@@ -417,7 +417,7 @@ def from_qasm(quantum_circuit: str, measurements=None):
         measurements (None | MeasurementProcess | list[MeasurementProcess]): an optional PennyLane
             measurement or list of PennyLane measurements that overrides the terminal measurements
             that may be present in the input circuit. Defaults to ``None``, such that all existing measurements
-            in the input circuit are returned. See :ref:`removing-measuremenets` for details.
+            in the input circuit are returned. See **Removing terminal measurements** for details.
 
     Returns:
         function: the PennyLane quantum function created based on the QASM string. This function itself returns the mid-circuit measurements plus the terminal measurements by default (``measurements=None``), and returns **only** the measurements from the ``measurements`` argument otherwise.
@@ -449,8 +449,7 @@ def from_qasm(quantum_circuit: str, measurements=None):
     MeasurementValue(wires=[0]),
     MeasurementValue(wires=[1]))
 
-    A list of measurements can also be passed directly to ``from_qasm`` using the ``measurements`` argument, making it possible to create a PennyLane circuit with
-        :class:`qml.QNode <pennylane.QNode>`.
+    A list of measurements can also be passed directly to ``from_qasm`` using the ``measurements`` argument, making it possible to create a PennyLane circuit with :class:`qml.QNode <pennylane.QNode>`.
 
         .. code-block:: python
 
@@ -461,8 +460,6 @@ def from_qasm(quantum_circuit: str, measurements=None):
         >>> print(qml.draw(circuit)())
         0: ──H──┤↗├──RZ(0.24)─╭●─┤  Var[Y]
         1: ───────────────────╰X─┤
-
-    .. _removing-measuremenets:
 
     .. details::
         :title: Removing terminal measurements
