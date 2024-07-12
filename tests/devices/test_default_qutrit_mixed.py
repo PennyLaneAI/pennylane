@@ -22,8 +22,6 @@ import pennylane as qml
 from pennylane import math
 from pennylane.devices import DefaultQutritMixed, ExecutionConfig
 
-np.random.seed(0)
-
 
 class TestDeviceProperties:
     """Tests for general device properties."""

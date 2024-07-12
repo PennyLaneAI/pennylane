@@ -453,7 +453,6 @@ class TestReturnShotVectorIntegration:
     ):
         """Tests correct output shape and evaluation for a tape
         with a single expval output"""
-        np.random.seed(215)
 
         x = tf.Variable(0.543)
         y = tf.Variable(-0.654)
@@ -487,7 +486,6 @@ class TestReturnShotVectorIntegration:
     ):
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
-        np.random.seed(214)
 
         x = tf.Variable(0.543)
         y = tf.Variable(-0.654)

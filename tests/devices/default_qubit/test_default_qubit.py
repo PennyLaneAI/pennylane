@@ -22,9 +22,6 @@ import pytest
 import pennylane as qml
 from pennylane.devices import DefaultQubit, ExecutionConfig
 
-np.random.seed(0)
-
-
 max_workers_list = [
     None,
     pytest.param(1, marks=pytest.mark.slow),
