@@ -29,6 +29,9 @@
 * `QuantumScript.hash` is now cached, leading to performance improvements.
   [(#5919)](https://github.com/PennyLaneAI/pennylane/pull/5919)
 
+* The representation for `Wires` has now changed to be more copy-paste friendly.
+  [(#5958)](https://github.com/PennyLaneAI/pennylane/pull/5958)
+  
 * Observable validation for `default.qubit` is now based on execution mode (analytic vs. finite shots) and measurement type (sample measurement vs. state measurement).
   [(#5890)](https://github.com/PennyLaneAI/pennylane/pull/5890)
 
@@ -50,6 +53,10 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* `qml.devices.qubit.measure_with_samples` now returns the correct result if the provided measurements
+  contain sum of operators acting on the same wire.
+  [(#5978)](https://github.com/PennyLaneAI/pennylane/pull/5978)
+
 * `qml.AmplitudeEmbedding` has better support for features using low precision integer data types.
 [(#5969)](https://github.com/PennyLaneAI/pennylane/pull/5969)
 
@@ -61,7 +68,9 @@ Ahmed Darwish
 Astral Cai,
 Yushao Chen,
 Lillian M. A. Frederiksen,
+Pietropaolo Frisoni,
 Christina Lee,
+Austin Huang,
 William Maxwell,
 Vincent Michaud-Rioux,
 Mudit Pandey,
