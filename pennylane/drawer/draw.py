@@ -20,23 +20,20 @@ import warnings
 from functools import wraps
 
 import pennylane as qml
+from pennylane.data.base.typing_util import UNSET
 
 from .tape_mpl import tape_mpl
 from .tape_text import tape_text
 
-_level_sentinel = object()
-
 
 def _determine_draw_level(kwargs, qnode=None):
-    sentinel = _level_sentinel
+    level = kwargs.get("level", UNSET)
+    expansion_strategy = kwargs.get("expansion_strategy", UNSET)
 
-    level = kwargs.get("level", sentinel)
-    expansion_strategy = kwargs.get("expansion_strategy", sentinel)
-
-    if all(val != sentinel for val in (level, expansion_strategy)):
+    if all(val != UNSET for val in (level, expansion_strategy)):
         raise ValueError("Either 'level' or 'expansion_strategy' need to be set, but not both.")
 
-    if expansion_strategy != sentinel:
+    if expansion_strategy != UNSET:
         warnings.warn(
             "The 'expansion_strategy' argument is deprecated and will be removed in "
             "version 0.39. Instead, use the 'level' argument which offers more flexibility "
@@ -44,9 +41,9 @@ def _determine_draw_level(kwargs, qnode=None):
             qml.PennyLaneDeprecationWarning,
         )
 
-    if level == sentinel:
-        if expansion_strategy == sentinel:
-            return qnode.expansion_strategy if qnode else sentinel
+    if level == UNSET:
+        if expansion_strategy == UNSET:
+            return qnode.expansion_strategy if qnode else UNSET
         return expansion_strategy
     return level
 
@@ -304,7 +301,7 @@ def draw(
             level=_determine_draw_level(kwargs, qnode),
         )
 
-    if _determine_draw_level(kwargs) != _level_sentinel:
+    if _determine_draw_level(kwargs) != UNSET:
         warnings.warn(
             "When the input to qml.draw is not a QNode, the expansion_strategy and level arguments are ignored.",
             UserWarning,
@@ -716,7 +713,7 @@ def draw_mpl(
             **kwargs,
         )
 
-    if _determine_draw_level(kwargs) != _level_sentinel:
+    if _determine_draw_level(kwargs) != UNSET:
         warnings.warn(
             "When the input to qml.draw is not a QNode, the expansion_strategy and level arguments are ignored.",
             UserWarning,
