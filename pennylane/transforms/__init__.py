@@ -249,9 +249,10 @@ passes on a QNode to maximize gate reduction before execution.
 .. code-block:: python
 
         dev = qml.device("default.qubit", wires=1)
+        
         @qml.transforms.merge_rotations
         @qml.transforms.cancel_inverses
-        @qml.qnode(device=dev):
+        @qml.qnode(device=dev)
         def circuit(x, y):
             qml.Hadamard(wires=0)
             qml.Hadamard(wires=0)
