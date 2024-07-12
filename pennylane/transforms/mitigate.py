@@ -15,7 +15,6 @@
 from copy import copy
 from typing import Any, Callable, Dict, Optional, Sequence
 
-
 import pennylane as qml
 from pennylane import adjoint, apply
 from pennylane.math import mean, round, shape
@@ -26,7 +25,6 @@ from pennylane.transforms import transform
 has_jax = True
 try:
     import jax.numpy as jnp
-    import jax.scipy.optimize as jopt
 except ImportError:
     has_jax = False
 
@@ -326,13 +324,15 @@ def richardson_extrapolate(x, y):
     return poly_extrapolate(x, y, len(x) - 1)
 
 
-def exponential_extrapolate(x, y, asymptote=None):
+def exponential_extrapolate(x, y, asymptote=None, eps=1.0e-6):
     r"""Exponential fitting
 
     Args:
         x (Array): Data in x
         y (Array): Data in y = f(x)
         asymptote (float): Infinite noise limit.
+        eps (float): Epsilon to regularize log(y - asymptote)
+            when the argument is to close to zero or negative.
 
     Returns:
         float: Extrapolated value at f(0).
@@ -348,20 +348,20 @@ def exponential_extrapolate(x, y, asymptote=None):
     if not has_jax:  # pragma: no cover
         raise ImportError("Jax is required for exponential fitting.")  # pragma: no cover
 
-    def exponential(x, a, b, c) -> float:
-        return a * jnp.exp(-b * x) + c
-
-    def objective(params: tuple[float, float, float]) -> float:
-        a, b, c = params
-        return jnp.sum((y - exponential(x, *params)) ** 2)
-
+    y = jnp.array(y)
+    slope, y_intercept = _polyfit(x, y, 1)
     if asymptote is None:
+        sign = jnp.sign(-slope)
         asymptote = 0.0
+    else:
+        sign = jnp.sign(-(asymptote - y_intercept))
 
-    initial_guess = jnp.array([1, 1, asymptote])
-    result = jopt.minimize(objective, initial_guess, method="BFGS")
+    y_shifted = sign * (y - asymptote)
+    y_shifted = jnp.where(y_shifted < eps, eps, y_shifted)
+    y_scaled = qml.math.log(y_shifted)
 
-    return exponential(0, *result.x)
+    zne_unscaled = poly_extrapolate(x, y_scaled, 1)
+    return sign * jnp.exp(zne_unscaled) + asymptote
 
 
 # pylint: disable=too-many-arguments, protected-access
