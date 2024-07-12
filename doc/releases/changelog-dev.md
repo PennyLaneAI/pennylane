@@ -56,6 +56,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* `qml.QSVT` is updated to store wire order correctly.
+  [(#5959)](https://github.com/PennyLaneAI/pennylane/pull/5959)
+
 * `qml.devices.qubit.measure_with_samples` now returns the correct result if the provided measurements
   contain sum of operators acting on the same wire.
   [(#5978)](https://github.com/PennyLaneAI/pennylane/pull/5978)
@@ -66,7 +69,7 @@
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
-
+Guillermo Alonso,
 Ahmed Darwish,
 Astral Cai,
 Yushao Chen,
