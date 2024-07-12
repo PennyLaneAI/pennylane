@@ -1522,7 +1522,7 @@ class TestIntegration:
             qml.PauliX(0)
             return qml.expval(prod_op)
 
-        with pytest.raises(NotImplementedError):
+        with pytest.raises(qml.DeviceError):
             my_circ()
 
     def test_operation_integration(self):
