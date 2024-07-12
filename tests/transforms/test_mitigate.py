@@ -132,7 +132,7 @@ class TestMitigateWithZNE:
             qml.transforms.mitigate_with_zne,
             scale_factors=[1, 2, 3],
             folding=fold_global,
-            extrapolate=richardson_extrapolate,
+            extrapolate=exponential_extrapolate,
         )
         @qml.qnode(dev)
         def mitigated_circuit(w1, w2):
@@ -146,6 +146,8 @@ class TestMitigateWithZNE:
 
         res_mitigated = mitigated_circuit(w1, w2)
         res_ideal = ideal_circuit(w1, w2)
+        print(res_ideal)
+        print(res_mitigated)  # 1e-6 too looooowww
 
         # check shapes
         assert isinstance(res_mitigated, tuple)
@@ -158,6 +160,9 @@ class TestMitigateWithZNE:
 
         res_mitigated = qml.math.stack(res_mitigated)
         res_ideal = qml.math.stack(res_ideal)
+
+        print(res_ideal)
+        print(res_mitigated)
 
         assert res_mitigated.shape == res_ideal.shape
         assert not np.allclose(res_mitigated, res_ideal)
@@ -518,6 +523,15 @@ class TestDifferentiableZNE:
         coeffs = qml.transforms.mitigate._polyfit(x, y, 2)
         assert qml.math.allclose(qml.math.squeeze(coeffs), [3, 2, 1])
 
+    def test_exponentialfit(self):
+        """Testing the exponential fit function"""
+        x = np.linspace(1, 4, 4)
+        A, B = 0.5, -2
+        asymptote = 2
+        y = A * np.exp(B * x) + asymptote
+        zne_val = qml.transforms.exponential_extrapolate(x, y, asymptote=asymptote)
+        assert qml.math.allclose(zne_val, A + asymptote, atol=1e-3)
+
     @pytest.mark.autograd
     def test_diffability_autograd(self):
         """Testing that the mitigated qnode can be differentiated and returns the correct gradient in autograd"""
@@ -542,7 +556,8 @@ class TestDifferentiableZNE:
 
     @pytest.mark.jax
     @pytest.mark.parametrize("interface", ["auto", "jax"])
-    def test_diffability_jax(self, interface):
+    @pytest.mark.parametrize("extrapolate", [richardson_extrapolate, exponential_extrapolate])
+    def test_diffability_jax(self, interface, extrapolate):
         """Testing that the mitigated qnode can be differentiated and returns the correct gradient in jax"""
         import jax
         import jax.numpy as jnp
@@ -552,9 +567,7 @@ class TestDifferentiableZNE:
 
         scale_factors = [1.0, 2.0, 3.0]
 
-        mitigated_qnode = mitigate_with_zne(
-            qnode_noisy, scale_factors, fold_global, richardson_extrapolate
-        )
+        mitigated_qnode = mitigate_with_zne(qnode_noisy, scale_factors, fold_global, extrapolate)
 
         theta = jnp.array(
             [np.pi / 4, np.pi / 4],
@@ -570,7 +583,8 @@ class TestDifferentiableZNE:
 
     @pytest.mark.jax
     @pytest.mark.parametrize("interface", ["auto", "jax", "jax-jit"])
-    def test_diffability_jaxjit(self, interface):
+    @pytest.mark.parametrize("extrapolate", [richardson_extrapolate, exponential_extrapolate])
+    def test_diffability_jaxjit(self, interface, extrapolate):
         """Testing that the mitigated qnode can be differentiated and returns the correct gradient in jax-jit"""
         import jax
         import jax.numpy as jnp
@@ -581,7 +595,7 @@ class TestDifferentiableZNE:
         scale_factors = [1.0, 2.0, 3.0]
 
         mitigated_qnode = jax.jit(
-            mitigate_with_zne(qnode_noisy, scale_factors, fold_global, exponential_extrapolate)
+            mitigate_with_zne(qnode_noisy, scale_factors, fold_global, extrapolate)
         )
 
         theta = jnp.array(
