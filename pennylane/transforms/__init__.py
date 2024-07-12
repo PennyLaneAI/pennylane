@@ -1,4 +1,4 @@
-# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2024 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -97,9 +97,9 @@ Transforms for error mitigation
 Other transforms
 ~~~~~~~~~~~~~~~~
 
-These transforms use the :func:`pennylane.transform` function / decorator and can be used on
+These transforms use the :func:`pennylane.transform` function/decorator and can be used on
 :class:`pennylane.tape.QuantumTape`, :class:`pennylane.QNode`. They fulfill multiple purposes like circuit
-preprocessing, get information from a circuit and more.
+preprocessing, getting information from a circuit, and more.
 
 .. autosummary::
     :toctree: api
@@ -152,9 +152,9 @@ to help build custom QNode, quantum function, and tape transforms:
 Transforms developer functions
 ------------------------------
 
-:class:`~.TransformContainer`, :class:`~.TransformDispatcher` and  :class:`~.TransformProgram` are
+:class:`~.TransformContainer`, :class:`~.TransformDispatcher`, and  :class:`~.TransformProgram` are
 developer-facing objects that allow the
-creation, dispatching and composability of transforms. If you would like to make a custom transform, refer
+creation, dispatching, and composability of transforms. If you would like to make a custom transform, refer
 instead to the documentation of :func:`qml.transform <pennylane.transform>`.
 
 .. autosummary::
@@ -188,7 +188,7 @@ various circuit abstractions in PennyLane, the
 :func:`pennylane.transform` is available.
 
 This decorator registers transforms that accept a :class:`~.QuantumTape`
-as its primary input, and returns a sequence of :class:`~.QuantumTape`
+as its primary input and returns a sequence of :class:`~.QuantumTape`
 and an associated processing function.
 
 To illustrate the process of creating a quantum transform, let's consider a straightforward example. Suppose we want
@@ -249,7 +249,7 @@ passes on a QNode to maximize gate reduction before execution.
 .. code-block:: python
 
         dev = qml.device("default.qubit", wires=1)
-        
+
         @qml.transforms.merge_rotations
         @qml.transforms.cancel_inverses
         @qml.qnode(device=dev)
@@ -269,7 +269,7 @@ Additional information
 ----------------------
 
 Explore practical examples of transforms focused on compiling circuits in the :doc:`compiling circuits documentation </introduction/compiling_circuits>`.
-For gradient transforms, refer to the examples in :doc:`gradients documentation <../code/qml_gradients>`.
+For gradient transforms, refer to the examples in the :doc:`gradients documentation <../code/qml_gradients>`.
 Discover quantum information transformations in the :doc:`quantum information documentation <../code/qml_qinfo>`. Finally,
 for a comprehensive overview of transforms and core functionalities, consult the :doc:`summary above <../code/qml_transforms>`.
 """
