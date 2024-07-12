@@ -499,7 +499,7 @@ def from_qasm(quantum_circuit: str, measurements=None):
         >>> print(qml.draw(circuit)())
         0: ──H──┤↗├──RZ(0.24)─╭●──┤↗├──RX(1.57)─┤  <Z>
         1: ──────║────────────╰X──┤↗├──║────────┤
-                ╚═════════════════════╝
+                 ╚═════════════════════╝
 
     .. details::
         :title: Importing from a QASM file
