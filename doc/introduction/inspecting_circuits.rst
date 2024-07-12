@@ -166,6 +166,97 @@ results.
 All snapshots are numbered with consecutive integers, and if no tag was provided,
 the number of a snapshot is used as a key in the output dictionary instead.
 
+Interactive Debugging on Simulators
+-----------------------------------
+
+PennyLane allows for more interactive debugging of quantum circuits in a programmatic 
+fashion using quantum breakpoints via :func:`~pennylane.breakpoint`. This feature is 
+currently supported on ``default.qubit`` and ``lightning.qubit`` devices. 
+
+Consider the following python script containing the quantum circuit with breakpoints.
+
+.. code-block:: python3
+    
+    dev = qml.device("default.qubit", wires=2)
+    
+    @qml.qnode(dev)
+    def circuit(x):
+        qml.breakpoint()
+
+        qml.RX(x, wires=0)
+        qml.Hadamard(wires=1)
+
+        qml.breakpoint()
+
+        qml.CNOT(wires=[0, 1])
+        return qml.expval(qml.Z(0))
+
+    circuit(1.23)
+
+Running the circuit above launches an interactive :code:`[pldb]` prompt. Here we can
+step through the circuit execution:
+
+.. code-block:: console
+
+    > /Users/your/path/to/script.py(8)circuit()
+    -> qml.RX(x, wires=0)
+    [pldb] list
+      3
+      4  	@qml.qnode(dev)
+      5  	def circuit(x):
+      6  	    qml.breakpoint()
+      7
+      8  ->	    qml.RX(x, wires=0)
+      9  	    qml.Hadamard(wires=1)
+     10
+     11  	    qml.breakpoint()
+     12
+     13  	    qml.CNOT(wires=[0, 1])
+    [pldb] next
+    > /Users/your/path/to/script.py(9)circuit()
+    -> qml.Hadamard(wires=1)
+
+We can extract information by making measurements which do not change the state of 
+the circuit in execution: 
+
+.. code-block:: console
+
+    [pldb] qml.debug_state()
+    array([0.81677345+0.j        , 0.        +0.j        ,
+           0.        -0.57695852j, 0.        +0.j        ])
+    [pldb] continue
+    > /Users/your/path/to/script.py(13)circuit()
+    -> qml.CNOT(wires=[0, 1])
+    [pldb] next
+    > /Users/your/path/to/script.py(14)circuit()
+    -> return qml.expval(qml.Z(0))
+    [pldb] list
+      8  	    qml.RX(x, wires=0)
+      9  	    qml.Hadamard(wires=1)
+     10  	
+     11  	    qml.breakpoint()
+     12  	
+     13  	    qml.CNOT(wires=[0, 1])
+     14  ->	    return qml.expval(qml.Z(0))
+     15  	
+     16  	circuit(1.23)
+    [EOF]
+
+We can also visualize the circuit and dynamically queue operations directly to the circuit:
+
+.. code-block:: console
+
+    [pldb] print(qml.debug_tape().draw())
+    0: ──RX─╭●─┤  
+    1: ──H──╰X─┤
+    [pldb] qml.RZ(-4.56, 1)
+    RZ(-4.56, wires=[1])
+    [pldb] print(qml.debug_tape().draw())
+    0: ──RX─╭●─────┤  
+    1: ──H──╰X──RZ─┤
+
+See :doc:`/code/qml_debugging` for more information and detailed examples.
+
 Graph representation
 --------------------
 
