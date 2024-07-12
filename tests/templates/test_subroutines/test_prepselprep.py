@@ -48,8 +48,7 @@ def test_repr():
 
     op = qml.PrepSelPrep(lcu, control)
     assert (
-        repr(op)
-        == "PrepSelPrep(coeffs=(0.25, 0.75), ops=(Z(2), X(1) @ X(2)), control=<Wires = [0]>)"
+        repr(op) == "PrepSelPrep(coeffs=(0.25, 0.75), ops=(Z(2), X(1) @ X(2)), control=Wires([0]))"
     )
 
 
