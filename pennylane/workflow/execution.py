@@ -428,7 +428,7 @@ def execute(
     device_batch_transform=True,
     device_vjp=False,
     mcm_config=None,
-) -> ResultBatch:
+) -> ResultBatch:  # noqa: C901
     """New function to execute a batch of tapes on a device in an autodifferentiable-compatible manner. More cases will be added,
     during the project. The current version is supporting forward execution for NumPy and does not support shot vectors.
 
