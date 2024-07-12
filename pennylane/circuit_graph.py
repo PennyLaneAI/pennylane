@@ -84,7 +84,7 @@ class CircuitGraph:
 
     Args:
         ops (Iterable[.Operator]): quantum operators constituting the circuit, in temporal order
-        obs (Iterable[.MeasurementProcess]): terminal measurements, in temporal order
+        obs (List[Union[MeasurementProcess, Observable]]): terminal measurements, in temporal order
         wires (.Wires): The addressable wire registers of the device that will be executing this graph
         par_info (Optional[list[dict]]): Parameter information. For each index, the entry is a dictionary containing an operation
         and an index into that operation's parameters.
@@ -97,7 +97,7 @@ class CircuitGraph:
     def __init__(
         self,
         ops: list[Union[Operator, MeasurementProcess]],
-        obs: list[MeasurementProcess],
+        obs: List[Union[MeasurementProcess, Observable]],
         wires: Wires,
         par_info: Optional[list[dict]] = None,
         trainable_params: Optional[set[int]] = None,
@@ -195,7 +195,7 @@ class CircuitGraph:
         Currently the topological order is determined by the queue index.
 
         Returns:
-            list[Observable]: observables
+            List[Union[MeasurementProcess, Observable]]: observables
         """
         return self._observables
 
