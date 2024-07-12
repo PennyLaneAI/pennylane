@@ -297,7 +297,7 @@ class TestSupportedGatesAndObservables:
         nwires = 4
         dq = qml.device("default.qubit", wires=nwires)
         dev = qml.device("default.tensor", wires=nwires, method=method)
-        np.random.seed(0)
+
         state = np.random.rand(2**nwires) + 1j * np.random.rand(2**nwires)
         state /= np.linalg.norm(state)
         wires = qml.wires.Wires(range(nwires))

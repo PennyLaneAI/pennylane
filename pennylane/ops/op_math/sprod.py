@@ -20,7 +20,7 @@ from typing import Union
 
 import pennylane as qml
 import pennylane.math as qnp
-from pennylane.operation import Operator, convert_to_opmath
+from pennylane.operation import Operator, TermsUndefinedError, convert_to_opmath
 from pennylane.ops.op_math.pow import Pow
 from pennylane.ops.op_math.sum import Sum
 from pennylane.queuing import QueuingManager
@@ -181,7 +181,7 @@ class SProd(ScalarSymbolicOp):
         """
         return 1 + self.base.num_params
 
-    def terms(self):  # is this method necessary for this class?
+    def terms(self):
         r"""Representation of the operator as a linear combination of other operators.
 
         .. math:: O = \sum_i c_i O_i
@@ -191,8 +191,13 @@ class SProd(ScalarSymbolicOp):
         Returns:
             tuple[list[tensor_like or float], list[.Operation]]: list of coefficients :math:`c_i`
             and list of operations :math:`O_i`
+
         """
-        return [self.scalar], [self.base]
+        try:
+            base_coeffs, base_ops = self.base.terms()
+            return [self.scalar * coeff for coeff in base_coeffs], base_ops
+        except TermsUndefinedError:
+            return [self.scalar], [self.base]
 
     @property
     def is_hermitian(self):

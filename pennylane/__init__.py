@@ -94,7 +94,6 @@ from pennylane.transforms import (
     transform,
     batch_params,
     batch_input,
-    batch_transform,
     batch_partial,
     compile,
     defer_measurements,

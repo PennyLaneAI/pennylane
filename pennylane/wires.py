@@ -144,7 +144,7 @@ class Wires(Sequence):
 
     def __repr__(self):
         """Method defining the string representation of this class."""
-        return f"<Wires = {list(self._labels)}>"
+        return f"Wires({list(self._labels)})"
 
     def __eq__(self, other):
         """Method to support the '==' operator.
@@ -286,7 +286,7 @@ class Wires(Sequence):
         >>> wires = Wires(['a', 'b', 'c'])
         >>> wire_map = {'a': 4, 'b':2, 'c': 3}
         >>> wires.map(wire_map)
-        <Wires = [4, 2, 3]>
+        Wires([4, 2, 3])
         """
         # Make sure wire_map has `Wires` keys and values so that the `in` operator always works
 
@@ -322,9 +322,9 @@ class Wires(Sequence):
 
         >>> wires = Wires([4, 0, 1, 5, 6])
         >>> wires.subset([2, 3, 0])
-        <Wires = [1, 5, 4]>
+        Wires([1, 5, 4])
         >>> wires.subset(1)
-        <Wires = [0]>
+        Wires([0])
 
         If ``periodic_boundary`` is True, the modulo of the number of wires of an index is used instead of an index,
         so that  ``wires.subset(i) == wires.subset(i % n_wires)`` where ``n_wires`` is the number of wires of this
@@ -332,7 +332,7 @@ class Wires(Sequence):
 
         >>> wires = Wires([4, 0, 1, 5, 6])
         >>> wires.subset([5, 1, 7], periodic_boundary=True)
-        <Wires = [4, 0, 1]>
+        Wires([4, 0, 1])
 
         """
 
@@ -389,9 +389,9 @@ class Wires(Sequence):
         >>> wires2 = Wires([3, 0, 4])
         >>> wires3 = Wires([4, 0])
         >>> Wires.shared_wires([wires1, wires2, wires3])
-        <Wires = [4, 0]>
+        Wires([4, 0])
         >>> Wires.shared_wires([wires2, wires1, wires3])
-        <Wires = [0, 4]>
+        Wires([0, 4])
         """
 
         for wires in list_of_wires:
@@ -431,7 +431,7 @@ class Wires(Sequence):
         >>> wires3 = Wires([5, 3])
         >>> list_of_wires = [wires1, wires2, wires3]
         >>> Wires.all_wires(list_of_wires)
-        <Wires = [4, 0, 1, 3, 5]>
+        Wires([4, 0, 1, 3, 5])
         """
         converted_wires = (
             wires if isinstance(wires, Wires) else Wires(wires) for wires in list_of_wires
@@ -463,7 +463,7 @@ class Wires(Sequence):
         >>> wires2 = Wires([0, 2, 3])
         >>> wires3 = Wires([5, 3])
         >>> Wires.unique_wires([wires1, wires2, wires3])
-        <Wires = [4, 1, 2, 5]>
+        Wires([4, 1, 2, 5])
         """
 
         for wires in list_of_wires:
