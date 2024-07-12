@@ -48,7 +48,7 @@ fqdn==1.5.1
 future==1.0.0
 gast==0.6.0
 google-pasta==0.2.0
-grpcio==1.65.0
+grpcio==1.64.1
 h11==0.14.0
 h5py==3.11.0
 httpcore==1.0.5
