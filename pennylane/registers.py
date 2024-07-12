@@ -13,7 +13,7 @@
 # limitations under the License.
 """
 This module contains the :func:`registers` function, which builds registers for a given dictionary
-of registers. Registers are a dictionary of :class:`~.Wires` objects, where the key is the name of 
+of registers. Registers are a dictionary of :class:`~.Wires` objects, where the key is the name of
 the register and the value is the ``Wires`` object.
 """
 
