@@ -12,68 +12,71 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains the :func:`registers` function to build the registers for a given dictionary of registers
+This module contains the :func:`registers` function, which builds registers for a given dictionary
+of registers. Registers are a dictionary of :class:`~.Wires` objects, where the key is the name of 
+the register and the value is the ``Wires`` object.
 """
 
 from .wires import Wires
 
 
-def registers(register_dict, _start_wire_index=0):
+def registers(register_dict):
     """Returns a collection of wire registers when given a dictionary of register names and sizes
     (number of qubits in the register).
 
     The registers are a dictionary of :class:`~.Wires` objects where the key is the register name
-    and the value is the ``Wires`` object. The individual wire labels are integers, where the
-    ordering is based on appearance first, then on nestedness.
+    and the value is the ``Wires`` object. The individual wire labels are integers, ordered on
+    appearance, and nestedness.
 
     Args:
         register_dict (dict): a dictionary of registers where the keys are the names (str) of the
-            registers and the values are either nested dictionaries of more registers or integers (int).
-            At the most nested level for each register key, the value must be an int.
+            registers and the values are either nested dictionaries of more registers or
+            integers (int). At the most nested level for each register key, the value must be an
+            int.
 
     Returns:
-        dict (Wires): dictionary of Wires objects (value) belonging to register names (keys)
+        dict (Wires): dictionary where the keys are the names (str) of the registers, and the
+            values are the Wires objects.
 
     **Example**
 
-    >>> wire_dict = qml.registers({"alice": 3, "bob": {"nest1": 3, "nest2": 3}, "cleo": 3})
+    >>> wire_dict = qml.registers({"alice": 1, "bob": {"nest1": 2, "nest2": 1}})
     >>> wire_dict
-    {'alice': Wires([0, 1, 2]),
-    'nest1': Wires([3, 4, 5]),
-    'nest2': Wires([6, 7, 8]),
-    'bob': Wires([3, 4, 5, 6, 7, 8]),
-    'cleo': Wires([9, 10, 11])}
+    {'alice': Wires([0]), 'nest1': Wires([1, 2]), 'nest2': Wires([3]), 'bob': Wires([1, 2, 3])}
     """
 
-    all_reg = {}
-    for register_name, register_wires in register_dict.items():
-        if isinstance(register_wires, dict):
-            if len(register_wires) == 0:
-                raise ValueError(
-                    f"Expected a dictionary but got an empty dictionary '{register_wires}'"
+    def _registers(register_dict, _start_wire_index=0):
+        all_reg = {}
+        for register_name, register_wires in register_dict.items():
+            if isinstance(register_wires, dict):
+                if len(register_wires) == 0:
+                    raise ValueError(f"Got an empty dictionary '{register_wires}'")
+                inner_register_dict = _registers(
+                    register_wires, _start_wire_index=_start_wire_index
                 )
-            inner_register_dict = registers(register_wires, _start_wire_index=_start_wire_index)
-            wire_vals = []
-            inner_register_name = None
-            for inner_register_name, inner_register_wires in inner_register_dict.items():
-                wire_vals.extend(inner_register_wires.tolist())
-                all_reg[inner_register_name] = inner_register_wires
+                wire_vals = []
+                inner_register_name = None
+                for inner_register_name, inner_register_wires in inner_register_dict.items():
+                    wire_vals.extend(inner_register_wires.tolist())
+                    all_reg[inner_register_name] = inner_register_wires
 
-            wires = Wires(range(_start_wire_index, all_reg[inner_register_name].labels[-1] + 1))
+                wires = Wires(range(_start_wire_index, all_reg[inner_register_name].labels[-1] + 1))
 
-            all_reg[register_name] = wires
-            _start_wire_index = wire_vals[-1] + 1
-        elif isinstance(register_wires, int):
-            if register_wires < 1:
-                raise ValueError(
-                    f"Expected '{register_wires}' to be greater than 0. Please ensure that "
-                    "the number of wires for the register is a positive integer"
-                )
-            wires = Wires(range(_start_wire_index, register_wires + _start_wire_index))
+                all_reg[register_name] = wires
+                _start_wire_index = wire_vals[-1] + 1
+            elif isinstance(register_wires, int):
+                if register_wires < 1:
+                    raise ValueError(
+                        f"Expected '{register_wires}' to be greater than 0. Please ensure that "
+                        "the number of wires for the register is a positive integer"
+                    )
+                wires = Wires(range(_start_wire_index, register_wires + _start_wire_index))
 
-            _start_wire_index += register_wires
-            all_reg[register_name] = wires
-        else:  # Not a dict nor an int
-            raise ValueError(f"Expected '{register_wires}' to be either a dict or an int. ")
+                _start_wire_index += register_wires
+                all_reg[register_name] = wires
+            else:  # Not a dict nor an int
+                raise ValueError(f"Expected '{register_wires}' to be either a dict or an int. ")
 
-    return all_reg
+        return all_reg
+
+    return _registers(register_dict)

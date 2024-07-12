@@ -69,7 +69,7 @@ class TestRegisters:
         [
             (
                 {"alice": 3, "bob": {"nest1": 3, "nest2": {}}, "cleo": 3},
-                "Expected a dictionary but got an empty dictionary",
+                "Got an empty dictionary",
             ),
             (
                 {"alice": 3, "bob": {"nest1": 0}, "cleo": 3},
@@ -77,7 +77,7 @@ class TestRegisters:
             ),
             (
                 {"alice": 3, "bob": {"nest1": {"nest2": {"nest3": {1}}}}, "cleo": 3},
-                r"Expected '\{1\}' to be either a dict or an int but got neither. Please double check and ensure that all objects in the dictionary have values that are either a dictionary or an integer",
+                r"Expected '\{1\}' to be either a dict or an int",
             ),
         ],
     )
