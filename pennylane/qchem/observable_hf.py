@@ -20,7 +20,7 @@ import numpy as np
 import pennylane as qml
 from pennylane.fermi import FermiSentence, FermiWord
 from pennylane.operation import active_new_opmath
-from pennylane.pauli import PauliSentence
+from pennylane.pauli import PauliWord, PauliSentence
 from pennylane.pauli.utils import simplify
 
 
@@ -145,6 +145,7 @@ def qubit_observable(o_ferm, cutoff=1.0e-12, mapping="jordan_wigner"):
         h = qml.bravyi_kitaev(o_ferm, qubits, ps=True, tol=cutoff)
 
     if list(h.wires) != sorted(list(h.wires)):
+        h = h + 0 * PauliWord(dict(zip(sorted(h.wires.tolist()), ['X'] * len(h.wires))))
         h = PauliSentence(sorted(h.items(), key=lambda item: item[0].wires.tolist()))
 
     h.simplify(tol=cutoff)
