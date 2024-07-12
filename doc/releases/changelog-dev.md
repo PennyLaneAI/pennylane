@@ -10,6 +10,9 @@
 * The `qml.PrepSelPrep` template is added. The template implements a block-encoding of a linear 
   combination of unitaries.
   [(#5756)](https://github.com/PennyLaneAI/pennylane/pull/5756)
+
+* `SProd.terms` now flattens out the terms if the base is a multi-term observable.
+  [(#5885)](https://github.com/PennyLaneAI/pennylane/pull/5885)
   
 <h3>Improvements 🛠</h3>
 
@@ -59,7 +62,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Ahmed Darwish
+Ahmed Darwish,
 Astral Cai,
 Yushao Chen,
 Pietropaolo Frisoni,
