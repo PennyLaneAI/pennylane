@@ -17,13 +17,13 @@ representation of a quantum circuit from an Operator queue.
 """
 from collections import defaultdict, namedtuple
 from functools import cached_property
-from typing import Optional, Union
+from typing import Optional, Union, List
 
 import numpy as np
 import rustworkx as rx
 
 from pennylane.measurements import MeasurementProcess
-from pennylane.operation import Operator
+from pennylane.operation import Operator, Observable
 from pennylane.ops.identity import I
 from pennylane.queuing import QueuingManager, WrappedObj
 from pennylane.resource import ResourcesOperation
