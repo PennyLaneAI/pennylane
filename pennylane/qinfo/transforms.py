@@ -669,7 +669,7 @@ def classical_fisher(qnode, argnums=0):
     """
     warnings.warn(
         "pennylane.qinfo.classical_fisher is being migrated to a different module and will "
-        "removed in version 0.39. Instead, use pennylane.gradient.classical_fisher.",
+        "removed in version 0.39. Instead, use pennylane.gradients.classical_fisher.",
         qml.PennyLaneDeprecationWarning,
     )
 
