@@ -409,7 +409,47 @@ def _get_interface_name(tapes, interface):
     return interface
 
 
-def execute(  # noqa: C901
+def _deprecated_arguments_warnings(tapes, override_shots, expand_fn, max_expansion):
+    """Helper function to raise exceptions and pass codefactor checks regarding the length of the function"""
+
+    if override_shots is not False:
+        warnings.warn(
+            "The override_shots argument is deprecated and will be removed in version 0.39. "
+            "Instead, please add the shots to the QuantumTape's to be executed.",
+            qml.PennyLaneDeprecationWarning,
+        )
+        tapes = tuple(
+            qml.tape.QuantumScript(
+                t.operations,
+                t.measurements,
+                trainable_params=t.trainable_params,
+                shots=override_shots,
+            )
+            for t in tapes
+        )
+
+    if expand_fn is not UNSET:
+        warnings.warn(
+            "The expand_fn argument is deprecated and will be removed in version 0.39. "
+            "Instead, please create a TransformProgram with the desired preprocessing and pass it to the transform_program argument.",
+            qml.PennyLaneDeprecationWarning,
+        )
+    else:
+        expand_fn = "device"
+
+    if max_expansion is not None:
+        warnings.warn(
+            "The max_expansion argument is deprecated and will be removed in version 0.39. "
+            "Instead, please use qml.devices.preprocess.decompose with the desired expansion level, add it to a TransformProgram and pass it to the transform_program argument of qml.execute.",
+            qml.PennyLaneDeprecationWarning,
+        )
+    else:
+        max_expansion = 10
+
+    return override_shots, expand_fn, max_expansion
+
+
+def execute(
     tapes: Sequence[QuantumTape],
     device: device_type,
     gradient_fn: Optional[Union[Callable, str]] = None,
@@ -591,21 +631,9 @@ def execute(  # noqa: C901
             "::L".join(str(i) for i in inspect.getouterframes(inspect.currentframe(), 2)[1][1:3]),
         )
 
-    if override_shots is not False:
-        warnings.warn(
-            "The override_shots argument is deprecated and will be removed in version 0.39. "
-            "Instead, please add the shots to the QuantumTape's to be executed.",
-            qml.PennyLaneDeprecationWarning,
-        )
-        tapes = tuple(
-            qml.tape.QuantumScript(
-                t.operations,
-                t.measurements,
-                trainable_params=t.trainable_params,
-                shots=override_shots,
-            )
-            for t in tapes
-        )
+    override_shots, expand_fn, max_expansion = _deprecated_arguments_warnings(
+        tapes, override_shots, expand_fn, max_expansion
+    )
 
     ### Specifying and preprocessing variables ####
 
@@ -654,24 +682,6 @@ def execute(  # noqa: C901
     # Ensure that ``cache`` is not a Boolean to simplify downstream code.
     elif cache is False:
         cache = None
-
-    if expand_fn is not UNSET:
-        warnings.warn(
-            "The expand_fn argument is deprecated and will be removed in version 0.39. "
-            "Instead, please create a TransformProgram with the desired preprocessing and pass it to the transform_program argument.",
-            qml.PennyLaneDeprecationWarning,
-        )
-    else:
-        expand_fn = "device"
-
-    if max_expansion is not None:
-        warnings.warn(
-            "The max_expansion argument is deprecated and will be removed in version 0.39. "
-            "Instead, please use qml.devices.preprocess.decompose with the desired expansion level, add it to a TransformProgram and pass it to the transform_program argument of qml.execute.",
-            qml.PennyLaneDeprecationWarning,
-        )
-    else:
-        max_expansion = 10
 
     expand_fn = _preprocess_expand_fn(expand_fn, device, max_expansion)
 
