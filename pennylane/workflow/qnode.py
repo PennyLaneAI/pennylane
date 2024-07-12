@@ -1100,6 +1100,7 @@ class QNode:
         _prune_dynamic_transform(full_transform_program, inner_transform_program)
 
         with warnings.catch_warnings():
+            # TODO: remove this once the cycle for the arguements have finished, i.e. 0.39.
             warnings.simplefilter("ignore", qml.PennyLaneDeprecationWarning)
             # pylint: disable=unexpected-keyword-arg
             res = qml.execute(
