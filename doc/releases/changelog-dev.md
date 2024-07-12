@@ -24,6 +24,9 @@
 * `QuantumScript.hash` is now cached, leading to performance improvements.
   [(#5919)](https://github.com/PennyLaneAI/pennylane/pull/5919)
 
+* The representation for `Wires` has now changed to be more copy-paste friendly.
+  [(#5958)](https://github.com/PennyLaneAI/pennylane/pull/5958)
+  
 * Observable validation for `default.qubit` is now based on execution mode (analytic vs. finite shots) and measurement type (sample measurement vs. state measurement).
   [(#5890)](https://github.com/PennyLaneAI/pennylane/pull/5890)
 
@@ -61,6 +64,7 @@ Astral Cai,
 Yushao Chen,
 Pietropaolo Frisoni,
 Christina Lee,
+Austin Huang,
 William Maxwell,
 Vincent Michaud-Rioux,
 Mudit Pandey,
