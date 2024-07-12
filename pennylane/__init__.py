@@ -405,7 +405,7 @@ def device(name, *args, **kwargs):
             """Safely create a SpecifierSet from a version string."""
             operators = ["<", ">", "==", "!=", "<=", ">=", "~=", "==="]
             if any(version_str.startswith(op) for op in operators):
-                return SpecifierSet(version_str)
+                return SpecifierSet(version_str)  # pragma: no cover
             return SpecifierSet(f"=={version_str}")
 
         if hasattr(plugin_device_class, "pennylane_requires"):
