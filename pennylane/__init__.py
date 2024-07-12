@@ -405,8 +405,9 @@ def device(name, *args, **kwargs):
             """Safely create a SpecifierSet from a version string."""
             operators = ["<", ">", "==", "!=", "<=", ">=", "~=", "==="]
             if any(version_str.startswith(op) for op in operators):
-                return SpecifierSet(version_str)  # pragma: no cover
-            return SpecifierSet(f"=={version_str}")
+                # This is tested in the plugin-test-matrix
+                return SpecifierSet(version_str, prereleases=True)  # pragma: no cover
+            return SpecifierSet(f"=={version_str}", prereleases=True)
 
         if hasattr(plugin_device_class, "pennylane_requires"):
             required_versions = _safe_specifier_set(plugin_device_class.pennylane_requires)
