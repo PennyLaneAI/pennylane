@@ -30,7 +30,7 @@
 
 <h3>Deprecations 👋</h3>
 
-* `pennylane.qinfo.classical_fisher` and `pennylane.qinfo.quantum_fisher` has been deprecated.
+* `pennylane.qinfo.classical_fisher` and `pennylane.qinfo.quantum_fisher` have been deprecated.
   Instead, use `pennylane.gradients.classical_fisher` and `pennylane.gradients.quantum_fisher`.
   [(#5985)](https://github.com/PennyLaneAI/pennylane/pull/5985)
 
