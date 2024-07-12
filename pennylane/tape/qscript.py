@@ -219,11 +219,6 @@ class QuantumScript:
     # ========================================================
 
     @property
-    def interface(self):
-        """str, None: automatic differentiation interface used by the quantum script (if any)"""
-        return None
-
-    @property
     def circuit(self):
         """Returns the underlying quantum circuit as a list of operations and measurements.
 

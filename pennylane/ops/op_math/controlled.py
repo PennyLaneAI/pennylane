@@ -321,11 +321,11 @@ class Controlled(SymbolicOp):
     >>> op.data
     (1.234,)
     >>> op.wires
-    <Wires = [0, 1]>
+    Wires([0, 1])
     >>> op.control_wires
-    <Wires = [0]>
+    Wires([0])
     >>> op.target_wires
-    <Wires = [1]>
+    Wires([1])
 
     Control values are lists of booleans, indicating whether or not to control on the
     ``0==False`` value or the ``1==True`` wire.

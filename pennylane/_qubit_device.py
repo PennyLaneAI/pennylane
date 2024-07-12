@@ -533,7 +533,7 @@ class QubitDevice(Device):
         >>> op.name # returns the operation name
         "RX"
         >>> op.wires # returns a Wires object representing the wires that the operation acts on
-        <Wires = [0]>
+        Wires([0])
         >>> op.parameters # returns a list of parameters
         [0.2]
 
