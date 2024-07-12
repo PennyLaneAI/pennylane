@@ -401,7 +401,6 @@ class TestReturnShotVectorIntegration:
     ):
         """Tests correct output shape and evaluation for a tape
         with a single expval output"""
-        np.random.seed(215)
         dev = qml.device(dev_name, wires=2, shots=shots)
         x = tf.Variable(0.543, dtype=tf.float64)
         y = tf.Variable(-0.654, dtype=tf.float64)
