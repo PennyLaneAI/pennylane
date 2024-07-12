@@ -192,7 +192,7 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
         (
             qml.prod(qml.Hadamard(0), X(1), qml.Identity(2)),
             [1.0],
-            [qml.prod(qml.Hadamard(0), X(1))],
+            [qml.prod(qml.Hadamard(0), X(1), qml.Identity(2))],
         ),
         (
             qml.prod(qml.Hadamard(0), qml.s_prod(4, X(1)), qml.s_prod(2, X(2))),
@@ -227,7 +227,8 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
         """Test that Prod.terms() is correct for operators that dont all have a pauli_rep"""
         coeffs, ops1 = op.terms()
         assert coeffs == coeffs_true
-        assert ops1 == ops_true
+        for exp, actual in zip(ops_true, ops1):
+            qml.assert_equal(actual, exp)
 
     PROD_TERMS_OP_PAIRS_PAULI = (  # all operands have pauli representation
         (qml.prod(X(0), X(1), X(2)), [1.0], [qml.prod(X(0), X(1), X(2))]),  # trivial product

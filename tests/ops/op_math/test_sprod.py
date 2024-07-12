@@ -164,6 +164,24 @@ class TestInitialization:
         for op1, op2 in zip(op2, [op]):
             qml.assert_equal(op1, op2)
 
+    @pytest.mark.parametrize(
+        "sprod_op, coeffs_exp, ops_exp",
+        [
+            (qml.s_prod(1.23, qml.sum(qml.X(0), qml.Y(0))), [1.23, 1.23], [qml.X(0), qml.Y(0)]),
+            (
+                qml.s_prod(1.23, qml.Hamiltonian([0.1, 0.2], [qml.X(0), qml.Y(0)])),
+                [0.123, 0.246],
+                [qml.X(0), qml.Y(0)],
+            ),
+        ],
+    )
+    def test_terms_nested(self, sprod_op, coeffs_exp, ops_exp):
+        """Tests that SProd.terms() flattens a nested structure."""
+        coeffs, ops_actual = sprod_op.terms()
+        assert coeffs == coeffs_exp
+        for op1, op2 in zip(ops_actual, ops_exp):
+            qml.assert_equal(op1, op2)
+
     def test_decomposition_raises_error(self):
         sprod_op = s_prod(3.14, qml.Identity(wires=1))
 

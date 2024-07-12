@@ -26,7 +26,7 @@ from typing import List
 
 import pennylane as qml
 from pennylane import math
-from pennylane.operation import Operator, convert_to_opmath
+from pennylane.operation import Operator, convert_to_opmath, TermsUndefinedError
 from pennylane.queuing import QueuingManager
 
 from .composite import CompositeOp
@@ -447,24 +447,14 @@ class Sum(CompositeOp):
         ([0.5, 1.0, 6.0], [PauliX(wires=[0]), PauliX(wires=[1]), PauliX(wires=[2])])
 
         """
-        # try using pauli_rep:
-        if pr := self.pauli_rep:
-            with qml.QueuingManager.stop_recording():
-                ops = [pauli.operation() for pauli in pr.keys()]
-            return list(pr.values()), ops
-
-        with qml.QueuingManager.stop_recording():
-            new_summands = self._simplify_summands(summands=self.operands).get_summands()
-
-        coeffs = []
-        ops = []
-        for factor in new_summands:
-            if isinstance(factor, qml.ops.SProd):
-                coeffs.append(factor.scalar)
-                ops.append(factor.base)
-            else:
-                coeffs.append(1.0)
-                ops.append(factor)
+        coeffs, ops = [], []
+        for summand in self.operands:
+            try:
+                coeffs_s, ops_s = summand.terms()
+            except TermsUndefinedError:
+                coeffs_s, ops_s = [1], [summand]
+            coeffs.extend(coeffs_s)
+            ops.extend(ops_s)
         return coeffs, ops
 
     def compute_grouping(self, grouping_type="qwc", method="rlf"):

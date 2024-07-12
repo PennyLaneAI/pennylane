@@ -26,7 +26,7 @@ from scipy.sparse import kron as sparse_kron
 
 import pennylane as qml
 from pennylane import math
-from pennylane.operation import Operator, convert_to_opmath
+from pennylane.operation import Operator, convert_to_opmath, TermsUndefinedError
 from pennylane.ops.op_math.pow import Pow
 from pennylane.ops.op_math.sprod import SProd
 from pennylane.ops.op_math.sum import Sum
@@ -442,36 +442,10 @@ class Prod(CompositeOp):
 
         >>> op = X(0) @ (0.5 * X(1) + X(2))
         >>> op.terms()
-        ([0.5, 1.0],
-         [X(1) @ X(0),
-          X(2) @ X(0)])
+        ([0.5, 1.0], [X(0) @ X(1), X(0) @ X(2)])
 
         """
-        # try using pauli_rep:
-        if pr := self.pauli_rep:
-            with qml.QueuingManager.stop_recording():
-                ops = [pauli.operation() for pauli in pr.keys()]
-            return list(pr.values()), ops
-
-        with qml.QueuingManager.stop_recording():
-            global_phase, factors = self._simplify_factors(factors=self.operands)
-            factors = list(itertools.product(*factors))
-
-            factors = [
-                Prod(*factor).simplify() if len(factor) > 1 else factor[0] for factor in factors
-            ]
-
-        # harvest coeffs and ops
-        coeffs = []
-        ops = []
-        for factor in factors:
-            if isinstance(factor, SProd):
-                coeffs.append(global_phase * factor.scalar)
-                ops.append(factor.base)
-            else:
-                coeffs.append(global_phase)
-                ops.append(factor)
-        return coeffs, ops
+        return _terms(self.operands)
 
     @property
     def coeffs(self):
@@ -531,6 +505,27 @@ def _swappable_ops(op1, op2, wire_map: dict = None) -> bool:
     wires2 = set(wires2)
     # compare strings of wire labels so that we can compare arbitrary wire labels like 0 and "a"
     return False if wires1 & wires2 else str(wires1.pop()) > str(wires2.pop())
+
+
+def _terms(operands: Tuple[Operator]) -> Tuple[List[complex], List[Operator]]:
+    """Recursively unwraps a list of operators in a product."""
+
+    try:
+        coeffs_in_first, obs_in_first = operands[0].terms()
+    except TermsUndefinedError:
+        coeffs_in_first, obs_in_first = [1], [operands[0]]
+
+    if len(operands) == 1:
+        return coeffs_in_first, obs_in_first
+
+    coeffs, obs = [], []
+    coeffs_in_rest, obs_in_rest = _terms(operands[1:])
+    for c_f, obs_f in zip(coeffs_in_first, obs_in_first):
+        for c_r, obs_r in zip(coeffs_in_rest, obs_in_rest):
+            coeffs.append(c_f * c_r)
+            obs.append(qml.prod(obs_f, obs_r, lazy=False))
+
+    return coeffs, obs
 
 
 class _ProductFactorsGrouping:

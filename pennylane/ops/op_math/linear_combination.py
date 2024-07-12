@@ -23,7 +23,7 @@ from copy import copy
 from typing import List
 
 import pennylane as qml
-from pennylane.operation import Observable, Operator, Tensor, convert_to_opmath
+from pennylane.operation import Observable, Operator, Tensor, convert_to_opmath, TermsUndefinedError
 
 from .sum import Sum
 
@@ -227,7 +227,15 @@ class LinearCombination(Sum):
         ([1.0, 2.0, 3.0], [X(0), X(0) @ X(1), X(1) @ X(2)])
 
         """
-        return self.coeffs, self.ops
+        coeffs, ops = [], []
+        for coeff, op in zip(self.coeffs, self.ops):
+            try:
+                sub_coeffs, sub_ops = op.terms()
+            except TermsUndefinedError:
+                sub_coeffs, sub_ops = [1], [op]
+            coeffs.extend([coeff * sub_coeff for sub_coeff in sub_coeffs])
+            ops.extend(sub_ops)
+        return coeffs, ops
 
     def compute_grouping(self, grouping_type="qwc", method="rlf"):
         """
