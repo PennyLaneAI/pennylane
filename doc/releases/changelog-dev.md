@@ -3,6 +3,7 @@
 # Release 0.38.0-dev (development release)
 
 <h3>New features since last release</h3>
+
 * A new method `process_density_matrix` has been added to the `ProbabilityMP` and `DensityMatrixMP` classes, allowing for more efficient handling of quantum density matrices, particularly with batch processing support. This method simplifies the calculation of probabilities from quantum states represented as density matrices.
   [(#5830)](https://github.com/PennyLaneAI/pennylane/pull/5830)
 
@@ -23,7 +24,17 @@
 * `QuantumScript.hash` is now cached, leading to performance improvements.
   [(#5919)](https://github.com/PennyLaneAI/pennylane/pull/5919)
 
+* Observable validation for `default.qubit` is now based on execution mode (analytic vs. finite shots) and measurement type (sample measurement vs. state measurement).
+  [(#5890)](https://github.com/PennyLaneAI/pennylane/pull/5890)
+
 <h3>Breaking changes 💔</h3>
+
+* ``qml.transforms.map_batch_transform`` has been removed, since transforms can be applied directly to a batch of tapes.
+  See :func:`~.pennylane.transform` for more information.
+  [(#5981)](https://github.com/PennyLaneAI/pennylane/pull/5981)
+
+* `QuantumScript.interface` has been removed.
+  [(#5980)](https://github.com/PennyLaneAI/pennylane/pull/5980)
 
 <h3>Deprecations 👋</h3>
 
@@ -37,6 +48,10 @@
 * `qml.QSVT` is updated to store wire order correctly.
   [(#5959)](https://github.com/PennyLaneAI/pennylane/pull/5959)
 
+* `qml.devices.qubit.measure_with_samples` now returns the correct result if the provided measurements
+  contain sum of operators acting on the same wire.
+  [(#5978)](https://github.com/PennyLaneAI/pennylane/pull/5978)
+
 * `qml.AmplitudeEmbedding` has better support for features using low precision integer data types.
 [(#5969)](https://github.com/PennyLaneAI/pennylane/pull/5969)
 
@@ -44,7 +59,10 @@
 
 This release contains contributions from (in alphabetical order):
 Guillermo Alonso,
+Ahmed Darwish
+Astral Cai,
 Yushao Chen,
+Pietropaolo Frisoni,
 Christina Lee,
 William Maxwell,
 Vincent Michaud-Rioux,
