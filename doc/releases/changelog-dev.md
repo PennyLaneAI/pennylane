@@ -31,6 +31,10 @@
   Instead, please create a ``qml.transforms.core.TransformProgram`` with the desired preprocessing and pass it to the ``transform_program`` argument.
   [(#5984)](https://github.com/PennyLaneAI/pennylane/pull/5984)
 
+* The ``max_expansion`` argument in ``qml.execute`` has been deprecated. 
+  Instead, please use ``qml.devices.preprocess.decompose`` with the desired expansion level, add it to a ``TransformProgram`` and pass it to the ``transform_program`` argument of ``qml.execute``.
+  [(#5984)](https://github.com/PennyLaneAI/pennylane/pull/5984)
+
 <h3>Documentation 📝</h3>
 
 * Improves the docstring for `QuantumScript.expand` and `qml.tape.tape.expand_tape`.

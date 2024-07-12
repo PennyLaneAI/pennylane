@@ -424,7 +424,7 @@ def execute(
     max_diff=1,
     override_shots: int = False,
     expand_fn=UNSET,  # type: ignore
-    max_expansion=10,
+    max_expansion=None,
     device_batch_transform=True,
     device_vjp=False,
     mcm_config=None,
@@ -484,8 +484,8 @@ def execute(
     .. warning::
 
         The following arguments are deprecated and will be removed in version 0.39:
-        ``expand_fn``, ...
-        Instead, please create a :class:`~.TransformProgram` with the desired preprocessing and pass it to the ``transform_program`` argument.
+        ``expand_fn``, ``max_expansion``.
+        Instead, please create a :class:`~.TransformProgram` with the desired preprocessing and pass it to the ``transform_program`` argument. For instance, we can create a program that uses the ``qml.devices.preprocess.decompose`` transform with the desired expansion level and pass it to the ``qml.execute`` function:
 
         .. code-block:: python
 
@@ -501,6 +501,7 @@ def execute(
             program.add_transform(
                 decompose,
                 stopping_condition=stopping_condition,
+                max_expansion=10,
             )
 
             dev = qml.device("default.qubit", wires=2)
@@ -640,12 +641,21 @@ def execute(
 
     if expand_fn is not UNSET:
         warnings.warn(
-            "The expand_fn argument is deprecated and will be removed in version 0.39."
+            "The expand_fn argument is deprecated and will be removed in version 0.39. "
             "Instead, please create a TransformProgram with the desired preprocessing and pass it to the transform_program argument.",
             qml.PennyLaneDeprecationWarning,
         )
     else:
         expand_fn = "device"
+
+    if max_expansion is not None:
+        warnings.warn(
+            "The max_expansion argument is deprecated and will be removed in version 0.39. "
+            "Instead, please use qml.devices.preprocess.decompose with the desired expansion level, add it to a TransformProgram and pass it to the transform_program argument of qml.execute.",
+            qml.PennyLaneDeprecationWarning,
+        )
+    else:
+        max_expansion = 10
 
     expand_fn = _preprocess_expand_fn(expand_fn, device, max_expansion)
 
