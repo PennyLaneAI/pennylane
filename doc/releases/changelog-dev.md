@@ -10,6 +10,10 @@
 * The `qml.PrepSelPrep` template is added. The template implements a block-encoding of a linear 
   combination of unitaries.
   [(#5756)](https://github.com/PennyLaneAI/pennylane/pull/5756)
+
+* New functionality has been added to natively support exponential extrapolation when using the `mitigate_with_zne`. This allows
+  users to have more control over the error mitigation protocol without needing to add further dependencies.
+  [(#5972)](https://github.com/PennyLaneAI/pennylane/pull/5972)
   
 <h3>Improvements 🛠</h3>
 
