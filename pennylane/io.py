@@ -410,6 +410,101 @@ def from_qiskit_op(qiskit_op, params=None, wires=None):
         raise RuntimeError(_MISSING_QISKIT_PLUGIN_MESSAGE) from e
 
 
+def from_qiskit_noise(noise_model, **kwargs):
+    """Converts a Qiskit `NoiseModel <https://qiskit.github.io/qiskit-aer/stubs/qiskit_aer.noise.NoiseModel.html>`__
+    into a PennyLane :class:`NoiseModel <pennylane.noise.NoiseModel>`.
+
+    .. note::
+
+        This function depends upon the PennyLane-Qiskit plugin. Follow the
+        `installation instructions <https://docs.pennylane.ai/projects/qiskit/en/latest/installation.html>`__
+        to get up and running. You may need to restart your kernel if you are running in a notebook
+        environment.
+
+    Args:
+        noise_model (qiskit_aer.noise.NoiseModel): a ``NoiseModel`` constructed in Qiskit
+        kwargs: Optional keyword arguments for conversion of the noise model.
+
+    Keyword Arguments:
+        thermal_relaxation (bool): prefer conversion of ``QiskitErrors`` to thermal relaxation errors
+            over damping errors. Default is ``False``.
+        readout_error (bool): include readout error in the converted noise model. Default is ``True``.
+        gate_times (Dict[Tuple(str, Tuple[int]), float]): a dictionary to provide gate times for building
+            thermal relaxation error. Each key will be a tuple of instruction name and qubit indices and
+            the corresponding value will be the time in seconds. If it is not provided or a gate/qubit
+            is missing, then a default value of `1.0 s`` will be used for the specific constructions.
+        optimize (bool): controls if a contraction order optimization is used for ``einsum`` while
+            transforming Kraus operators to a Choi matrix, wherever required. Default is ``False``.
+        kraus_shape (bool): use shape of the Kraus operators to display ``qml.QubitChannel``
+            instead of the complete list of matrices. Default is ``True``.
+        options (dict[str, Union[int, float]]): optional parameters related to tolerance and rounding:
+
+            - decimals (int): number of decimal places to round the Kraus matrices. Default is ``10``.
+            - atol (float): the relative tolerance parameter. Default value is ``1e-05``.
+            - rtol (float): the absolute tolernace parameters. Defualt value is ``1e-08``.
+
+    Returns:
+        qml.NoiseModel: An equivalent noise model constructed in PennyLane
+
+    Raises:
+        ValueError: When an encountered quantum error cannoted be converted.
+
+    .. note::
+
+        Currently, PennyLane noise models does not support readout errors, so those will be skipped during conversion.
+
+    **Example**
+
+    Consider the following noise model constructed in Qiskit:
+
+    .. code-block:: python
+
+        >>> import qiskit.providers.aer.noise as noise
+        >>> error_1 = noise.depolarizing_error(0.001, 1) # 1-qubit noise
+        >>> error_2 = noise.depolarizing_error(0.01, 2) # 2-qubit noise
+        >>> noise_model = noise.NoiseModel()
+        >>> noise_model.add_all_qubit_quantum_error(error_1, ['rz', 'ry']) # rz/ry gates get error_1
+        >>> noise_model.add_all_qubit_quantum_error(error_2, ['cx']) # cx gates get error_2
+        >>> load_noise_model(noise_model)
+        NoiseModel({
+            OpIn(['RZ', 'RY']): DepolarizingChannel(p=0.0007499999999999174)
+            OpIn(['CNOT']): QubitChannel(Klist=Tensor(16, 4, 4))
+        })
+
+    Equivalently, in PennyLane this will be:
+
+    .. code-block:: python
+
+        import numpy as np
+        import pennylane as qml
+        import itertools as it
+        import functools as ft
+
+        pauli_mats = [
+            ft.reduce(np.kron, prod, 1.0)
+            for prod in it.product(
+                map(qml.matrix, tuple(getattr(qml, i)(0) for i in ["I", "X", "Y", "Z"]))
+                repeat=2
+            )
+        ]
+        pauli_prob = error_2.probabilities
+        kraus_ops = [np.sqrt(prob) * kraus_op for prob, kraus_op in zip(pauli_prob, pauli_mats)]
+
+        c0 = qml.noise.op_eq(qml.RZ) | qml.noise.op_eq(qml.RY)
+        c1 = qml.noise.op_eq(qml.CNOT)
+
+        n0 = qml.noise.partial_wires(qml.DepolarizingChannel, 0.001)
+        n1 = qml.noise.partial_wires(qml.QubitChanel(kraus_ops))
+
+        equivalent_pl_noise_model = qml.NoiseModel({c0: n0, c1: n1})
+    """
+    try:
+        plugin_converter = plugin_converters["qiskit_noise"].load()
+        return plugin_converter(noise_model, **kwargs)
+    except KeyError as e:
+        raise RuntimeError(_MISSING_QISKIT_PLUGIN_MESSAGE) from e
+
+
 def from_qasm(quantum_circuit: str, measurements=False):
     """Loads quantum circuits from a QASM string using the converter in the
     PennyLane-Qiskit plugin.

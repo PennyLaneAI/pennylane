@@ -75,7 +75,11 @@ class TestLoad:
 
     @pytest.mark.parametrize(
         "method, entry_point_name",
-        [(qml.from_qiskit, "qiskit"), (qml.from_qiskit_op, "qiskit_op")],
+        [
+            (qml.from_qiskit, "qiskit"),
+            (qml.from_qiskit_op, "qiskit_op"),
+            (qml.from_qiskit_noise, "qiskit_noise"),
+        ],
     )
     def test_qiskit_converter_does_not_exist(self, monkeypatch, method, entry_point_name):
         """Test that a RuntimeError with an appropriate message is raised if a Qiskit convenience
@@ -94,7 +98,11 @@ class TestLoad:
 
     @pytest.mark.parametrize(
         "method, entry_point_name",
-        [(qml.from_qiskit, "qiskit"), (qml.from_qiskit_op, "qiskit_op")],
+        [
+            (qml.from_qiskit, "qiskit"),
+            (qml.from_qiskit_op, "qiskit_op"),
+            (qml.from_qiskit_noise, "qiskit_noise"),
+        ],
     )
     def test_qiskit_converter_load_fails(self, monkeypatch, method, entry_point_name):
         """Test that an exception which is raised while calling a Qiskit convenience method (but
@@ -114,6 +122,7 @@ class TestLoad:
         [
             (qml.from_qiskit, "qiskit"),
             (qml.from_qiskit_op, "qiskit_op"),
+            (qml.from_qiskit_noise, "qiskit_noise"),
             (qml.from_pyquil, "pyquil_program"),
             (qml.from_quil, "quil"),
             (qml.from_quil_file, "quil_file"),
@@ -166,6 +175,7 @@ class TestLoad:
                 ("Circuit",),
                 {"measurements": []},
             ),
+            (qml.from_qiskit_noise, "qiskit_noise", ("NoiseModel",), {}),
         ],
     )
     def test_convenience_function_arguments(
