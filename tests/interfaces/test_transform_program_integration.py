@@ -24,11 +24,12 @@ import pytest
 
 import pennylane as qml
 
-device_suite = (
-    qml.device("default.qubit.legacy", wires=5),
-    qml.devices.DefaultQubit(),
-    qml.device("lightning.qubit", wires=5),
-)
+with pytest.warns(qml.PennyLaneDeprecationWarning):
+    device_suite = (
+        qml.device("default.qubit.legacy", wires=5),
+        qml.devices.DefaultQubit(),
+        qml.device("lightning.qubit", wires=5),
+    )
 
 
 @pytest.mark.all_interfaces

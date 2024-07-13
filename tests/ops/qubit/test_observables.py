@@ -676,10 +676,10 @@ class TestBasisStateProjector:
         assert np.allclose(res_dynamic, expected, atol=tol)
         assert np.allclose(res_static, expected, atol=tol)
 
-    @pytest.mark.parametrize(
-        "dev", (qml.device("default.qubit"), qml.device("default.qubit.legacy", wires=1))
-    )
-    def test_integration_batched_state(self, dev):
+    @pytest.mark.parametrize("dev_name", ("default.qubit", "default.qubit.legacy"))
+    def test_integration_batched_state(self, dev_name):
+        dev = qml.device(dev_name, wires=1)
+
         @qml.qnode(dev)
         def circuit(x):
             qml.RX(x, wires=0)
