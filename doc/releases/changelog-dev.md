@@ -9,6 +9,10 @@
 * The `qml.PrepSelPrep` template is added. The template implements a block-encoding of a linear 
   combination of unitaries.
   [(#5756)](https://github.com/PennyLaneAI/pennylane/pull/5756)
+
+* A new `qml.from_qiskit_noise` method now allows one to convert a Qiskit ``NoiseModel`` to a
+  PennyLane ``NoiseModel`` via pennyalne-qiskit plugin.
+  [(#5996)](https://github.com/PennyLaneAI/pennylane/pull/5996)
   
 <h3>Improvements 🛠</h3>
 
@@ -32,6 +36,7 @@
 
 This release contains contributions from (in alphabetical order):
 
+Utkarsh Azad
 Yushao Chen,
 Christina Lee,
 William Maxwell,
