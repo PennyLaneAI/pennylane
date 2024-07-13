@@ -13,7 +13,7 @@
 # limitations under the License.
 """Tests for default qutrit mixed."""
 
-from functools import reduce
+from functools import reduce, partial
 
 import numpy as np
 import pytest
@@ -1624,7 +1624,7 @@ class TestReadoutError:
     diff_parameters = [
             [
                 None,
-                qnp.array((0.1, 0.2, 0.4)),
+                [0.1, 0.2, 0.4],
                 [
                     [
                         [1 / 3 - 1 / 2, 1 / 6 - 1 / 2, 0.0],
@@ -1634,7 +1634,7 @@ class TestReadoutError:
                 ],
             ],
             [
-                qnp.array((0.2, 0.1, 0.3)),
+                [0.2, 0.1, 0.3],
                 None,
                 [
                     [
@@ -1645,8 +1645,8 @@ class TestReadoutError:
                 ],
             ],
             [
-                qnp.array((0.2, 0.1, 0.3)),
-                qnp.array((0.0, 0.0, 0.0)),
+                [0.2, 0.1, 0.3],
+                [0.0, 0.0, 0.0],
                 [
                     [[1 / 3, 1 / 6, 0.0], [-1 / 3, 0.0, 1 / 6], [0.0, -1 / 6, -1 / 6]],
                     [
@@ -1656,7 +1656,7 @@ class TestReadoutError:
                     ],
                 ],
             ],
-        ],
+        ]
 
     def get_diff_function(self, interface, num_wires):
         """TODO"""
@@ -1691,6 +1691,8 @@ class TestReadoutError:
             args_to_diff = (1,)
             misclassifications = qnp.array(misclassifications)
         else:
+            print(relaxations)
+            print(misclassifications)
             args_to_diff = (0, 1)
             relaxations = qnp.array(relaxations)
             misclassifications = qnp.array(misclassifications)
@@ -1736,19 +1738,21 @@ class TestReadoutError:
         """Tests the differentiation of readout errors using PyTorch"""
         import torch
 
-        if misclassifications is None:
-            args_to_diff = (0,) # TODO, how to deal with args to diff
-            relaxations = torch.tensor(relaxations, requires_grad=True)
-        elif relaxations is None:
-            args_to_diff = (1,)
-            misclassifications = torch.tensor(misclassifications, requires_grad=True)
-        else:
-            args_to_diff = (0, 1)
-            relaxations = torch.tensor(relaxations, requires_grad=True)
-            misclassifications = torch.tensor(misclassifications, requires_grad=True)
-
         diff_func = self.get_diff_function("autograd", num_wires)
-        jac = torch.autograd.functional.jacobian(diff_func, relaxations, misclassifications)
+        if misclassifications is None:
+            relaxations = torch.tensor(relaxations, requires_grad=True)
+            diff_func = partial(diff_func, misclassifications=None)
+            diff_variables = (relaxations,)
+        elif relaxations is None:
+            misclassifications = torch.tensor(misclassifications, requires_grad=True)
+            diff_func = partial(diff_func, relaxations=None)
+            diff_variables = (misclassifications,)
+        else:
+            relaxations = torch.tensor(relaxations, requires_grad=True)
+            misclassifications = torch.tensor(misclassifications, requires_grad=True)
+            diff_variables = (relaxations, misclassifications)
+
+        jac = torch.autograd.functional.jacobian(diff_func, diff_variables)
         jac = jac.detach().numpy()
         assert np.allclose(jac, expected)
 
@@ -1762,18 +1766,18 @@ class TestReadoutError:
         import tensorflow as tf
 
         if misclassifications is None:
-            args_to_diff = (0,)
             relaxations = tf.Variable(relaxations, dtype="float64")
+            diff_variables = [relaxations]
         elif relaxations is None:
-            args_to_diff = (1,)
             misclassifications = tf.Variable(misclassifications, dtype="float64")
+            diff_variables = [misclassifications]
         else:
-            args_to_diff = (0, 1)
             relaxations = tf.Variable(relaxations, dtype="float64")
             misclassifications = tf.Variable(misclassifications, dtype="float64")
+            diff_variables = [relaxations, misclassifications]
 
-        diff_func = self.get_diff_function("autograd", num_wires)
+        diff_func = self.get_diff_function("tf", num_wires)
         with tf.GradientTape() as grad_tape:
             probs = diff_func(relaxations, misclassifications)
-        jac = grad_tape.jacobian(probs, [relaxations, misclassifications][args_to_diff])
+        jac = grad_tape.jacobian(probs, diff_variables)
         assert np.allclose(jac, expected)
