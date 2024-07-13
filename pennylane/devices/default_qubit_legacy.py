@@ -20,6 +20,7 @@ simulation of a qubit-based quantum circuit architecture.
 """
 import functools
 import itertools
+import warnings
 from string import ascii_letters as ABC
 from typing import List
 
@@ -82,8 +83,8 @@ class DefaultQubitLegacy(QubitDevice):
 
     .. warning::
 
-        This is the legacy implementation of DefaultQubit. It has been replaced by
-        ``qml.devices.DefaultQubit``, which can be accessed with the familiar constructor,
+        This is the legacy implementation of DefaultQubit and is deprecated. It has been replaced by
+        :class:`~.devices.DefaultQubit`, which can be accessed with the familiar constructor,
         ``qml.device("default.qubit")``.
 
         This change will not alter device behaviour for most workflows, but may have implications for
@@ -207,6 +208,13 @@ class DefaultQubitLegacy(QubitDevice):
     def __init__(
         self, wires, *, r_dtype=np.float64, c_dtype=np.complex128, shots=None, analytic=None
     ):
+        warnings.warn(
+            f"Use of '{self.short_name}' is deprecated. Instead, use 'default.qubit'. "
+            "If you experience issues, reach out to the PennyLane team on "
+            "the discussion forum: https://discuss.pennylane.ai/",
+            qml.PennyLaneDeprecationWarning,
+        )
+
         super().__init__(wires, shots, r_dtype=r_dtype, c_dtype=c_dtype, analytic=analytic)
         self._debugger = None
 

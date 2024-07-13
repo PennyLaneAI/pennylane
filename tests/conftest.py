@@ -49,6 +49,17 @@ def set_numpy_seed():
     yield
 
 
+@pytest.fixture(scope="function", autouse=True)
+def capture_legacy_device_deprecation_warnings(recwarn):
+    yield
+
+    for w in recwarn:
+        if isinstance(w.message, qml.PennyLaneDeprecationWarning):
+            assert "Use of 'default.qubit." in str(w.message)
+            assert "is deprecated" in str(w.message)
+            assert "use 'default.qubit'" in str(w.message)
+
+
 @pytest.fixture(scope="session")
 def tol():
     """Numerical tolerance for equality tests."""
