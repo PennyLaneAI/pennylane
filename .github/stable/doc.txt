@@ -18,7 +18,7 @@ cycler==0.12.1
 deprecation==2.1.0
 docutils==0.16
 duet==0.2.9
-exceptiongroup==1.2.1
+exceptiongroup==1.2.2
 flatbuffers==24.3.25
 fonttools==4.53.1
 frozenlist==1.4.1
