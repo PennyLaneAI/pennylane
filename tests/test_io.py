@@ -54,6 +54,7 @@ load_entry_points = [
     "qasm_file",
     "qasm",
     "qiskit_op",
+    "qiskit_noise",
     "qiskit",
     "quil_file",
     "quil",
