@@ -285,10 +285,10 @@ class QSVT(Operation):
             "projectors": projectors,
         }
 
-        ua_wires = UA.wires.toset()
-        proj_wires = set.union(*(proj.wires.toset() for proj in projectors))
+        total_wires = qml.wires.Wires(UA.wires) + qml.wires.Wires.all_wires(
+            [proj.wires for proj in projectors]
+        )
 
-        total_wires = ua_wires.union(proj_wires)
         super().__init__(wires=total_wires, id=id)
 
     def map_wires(self, wire_map: dict):

@@ -9,17 +9,17 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
+* The functions ``qml.qinfo.classical_fisher`` and ``qml.qinfo.quantum_fisher`` are deprecated since they are being migrated
+  to the ``qml.gradients`` module. Therefore, ``qml.gradients.classical_fisher`` and ``qml.gradients.quantum_fisher`` should be used instead.
+
+  - Deprecated and Duplicated in v0.38
+  - Will be removed in v0.39
+
 * The ``simplify`` argument in ``qml.Hamiltonian`` and ``qml.ops.LinearCombination`` is deprecated. 
   Instead, ``qml.simplify()`` can be called on the constructed operator.
 
   - Deprecated in v0.37
   - Will be removed in v0.39
-
-* ``qml.transforms.map_batch_transform`` is deprecated, since transforms can be applied directly to a batch of tapes.
-  See :func:`~.pennylane.transform` for more information.
-
-  - Deprecated in v0.37
-  - Will be removed in v0.38
 
 * ``qml.from_qasm`` will no longer remove measurements from the QASM code. Calling ``qml.from_qasm``
   on a circuit containing measurements without specifying ``measurements`` will raise a deprecation 
@@ -72,6 +72,12 @@ Other deprecations
 
 Completed deprecation cycles
 ----------------------------
+
+* ``qml.transforms.map_batch_transform`` has been removed, since transforms can be applied directly to a batch of tapes.
+  See :func:`~.pennylane.transform` for more information.
+
+  - Deprecated in v0.37
+  - Removed in v0.38
 
 * ``qml.from_qasm_file`` has been removed. Instead, the user can open the file and then load its content using ``qml.from_qasm``.
 

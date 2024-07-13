@@ -75,8 +75,6 @@ if torch.cuda.is_available():
     torch_devices.append("cuda")
 
 
-np.random.seed(42)
-
 #####################################################
 # Test matrices
 #####################################################
