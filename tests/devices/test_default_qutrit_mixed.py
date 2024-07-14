@@ -1622,44 +1622,45 @@ class TestReadoutError:
             )
 
     diff_parameters = [
+        [
+            None,
+            [0.1, 0.2, 0.4],
             [
-                None,
-                [0.1, 0.2, 0.4],
                 [
-                    [
-                        [1 / 3 - 1 / 2, 1 / 6 - 1 / 2, 0.0],
-                        [1 / 2 - 1 / 3, 0.0, 1 / 6 - 1 / 3],
-                        [0.0, 1 / 2 - 1 / 6, 1 / 3 - 1 / 6],
-                    ]
+                    [1 / 3 - 1 / 2, 1 / 6 - 1 / 2, 0.0],
+                    [1 / 2 - 1 / 3, 0.0, 1 / 6 - 1 / 3],
+                    [0.0, 1 / 2 - 1 / 6, 1 / 3 - 1 / 6],
+                ]
+            ],
+        ],
+        [
+            [0.2, 0.1, 0.3],
+            None,
+            [
+                [
+                    [1 / 3, 1 / 6, 0.0],
+                    [-1 / 3, 0.0, 1 / 6],
+                    [0.0, -1 / 6, -1 / 6],
+                ]
+            ],
+        ],
+        [
+            [0.2, 0.1, 0.3],
+            [0.0, 0.0, 0.0],
+            [
+                [[1 / 3, 1 / 6, 0.0], [-1 / 3, 0.0, 1 / 6], [0.0, -1 / 6, -1 / 6]],
+                [
+                    [19 / 60 - 7 / 12, 0.1 - 7 / 12, 0.0],
+                    [7 / 12 - 19 / 60, 0.0, 0.1 - 19 / 60],
+                    [0.0, 7 / 12 - 0.1, 19 / 60 - 0.1],
                 ],
             ],
-            [
-                [0.2, 0.1, 0.3],
-                None,
-                [
-                    [
-                        [1 / 3, 1 / 6, 0.0],
-                        [-1 / 3, 0.0, 1 / 6],
-                        [0.0, -1 / 6, -1 / 6],
-                    ]
-                ],
-            ],
-            [
-                [0.2, 0.1, 0.3],
-                [0.0, 0.0, 0.0],
-                [
-                    [[1 / 3, 1 / 6, 0.0], [-1 / 3, 0.0, 1 / 6], [0.0, -1 / 6, -1 / 6]],
-                    [
-                        [19 / 60 - 7 / 12, 0.1 - 7 / 12, 0.0],
-                        [7 / 12 - 19 / 60, 0.0, 0.1 - 19 / 60],
-                        [0.0, 7 / 12 - 0.1, 19 / 60 - 0.1],
-                    ],
-                ],
-            ],
-        ]
+        ],
+    ]
 
     def get_diff_function(self, interface, num_wires):
-        """TODO"""
+        """Get the function to differentiate for following differentiability interface tests"""
+
         def dif_func(relaxations, misclassifications):
             dev = qml.device(
                 "default.qutrit.mixed",
@@ -1674,13 +1675,11 @@ class TestReadoutError:
                 return qml.probs(0)
 
             return circuit()
+
         return dif_func
 
     @pytest.mark.autograd
-    @pytest.mark.parametrize(
-        "relaxations, misclassifications, expected",
-        diff_parameters
-    )
+    @pytest.mark.parametrize("relaxations, misclassifications, expected", diff_parameters)
     def test_differentiation_autograd(self, num_wires, relaxations, misclassifications, expected):
         """Tests the differentiation of readout errors"""
 
@@ -1701,14 +1700,12 @@ class TestReadoutError:
         jac = qml.jacobian(diff_func, args_to_diff)(relaxations, misclassifications)
         assert np.allclose(jac, expected)
 
-    #TODO deal with args to dif
     @pytest.mark.jax
-    @pytest.mark.parametrize(
-        "relaxations, misclassifications, expected",
-        diff_parameters
-    )
+    @pytest.mark.parametrize("relaxations, misclassifications, expected", diff_parameters)
     @pytest.mark.parametrize("use_jit", (True, False))
-    def test_differentiation_jax(self, num_wires, relaxations, misclassifications, use_jit, expected):
+    def test_differentiation_jax(
+        self, num_wires, relaxations, misclassifications, use_jit, expected
+    ):
         """Tests the differentiation of readout errors using JAX"""
         import jax
 
@@ -1730,37 +1727,41 @@ class TestReadoutError:
         assert np.allclose(jac, expected)
 
     @pytest.mark.torch
-    @pytest.mark.parametrize(
-        "relaxations, misclassifications, expected",
-        diff_parameters
-    )
+    @pytest.mark.parametrize("relaxations, misclassifications, expected", diff_parameters)
     def test_differentiation_torch(self, num_wires, relaxations, misclassifications, expected):
         """Tests the differentiation of readout errors using PyTorch"""
         import torch
 
-        diff_func = self.get_diff_function("autograd", num_wires)
         if misclassifications is None:
-            relaxations = torch.tensor(relaxations, requires_grad=True)
-            diff_func = partial(diff_func, misclassifications=None)
-            diff_variables = (relaxations,)
+            relaxations = torch.tensor(relaxations, requires_grad=True, dtype=torch.float64)
+            diff_func = partial(self.get_diff_function("torch", num_wires), misclassifications=None)
+            diff_variables = relaxations
         elif relaxations is None:
-            misclassifications = torch.tensor(misclassifications, requires_grad=True)
-            diff_func = partial(diff_func, relaxations=None)
-            diff_variables = (misclassifications,)
+            misclassifications = torch.tensor(
+                misclassifications, requires_grad=True, dtype=torch.float64
+            )
+
+            def diff_func(misclass):
+                return self.get_diff_function("torch", num_wires)(None, misclass)
+
+            diff_variables = misclassifications
         else:
-            relaxations = torch.tensor(relaxations, requires_grad=True)
-            misclassifications = torch.tensor(misclassifications, requires_grad=True)
+            relaxations = torch.tensor(relaxations, requires_grad=True, dtype=torch.float64)
+            misclassifications = torch.tensor(
+                misclassifications, requires_grad=True, dtype=torch.float64
+            )
             diff_variables = (relaxations, misclassifications)
+            diff_func = self.get_diff_function("torch", num_wires)
 
         jac = torch.autograd.functional.jacobian(diff_func, diff_variables)
-        jac = jac.detach().numpy()
-        assert np.allclose(jac, expected)
+        if isinstance(jac, tuple):
+            for j, expected_j in zip(jac, expected):
+                np.allclose(j.detach().numpy(), expected_j)
+        else:
+            assert np.allclose(jac.detach().numpy(), expected)
 
     @pytest.mark.tf
-    @pytest.mark.parametrize(
-        "relaxations, misclassifications, expected",
-        diff_parameters
-    )
+    @pytest.mark.parametrize("relaxations, misclassifications, expected", diff_parameters)
     def test_differentiation_tensorflow(self, num_wires, relaxations, misclassifications, expected):
         """Tests the differentiation of readout errors using TensorFlow"""
         import tensorflow as tf
