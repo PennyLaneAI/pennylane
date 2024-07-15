@@ -1681,7 +1681,7 @@ class TestReadoutError:
     @pytest.mark.autograd
     @pytest.mark.parametrize("relaxations, misclassifications, expected", diff_parameters)
     def test_differentiation_autograd(self, num_wires, relaxations, misclassifications, expected):
-        """Tests the differentiation of readout errors"""
+        """Tests the differentiation of readout errors using autograd"""
 
         if misclassifications is None:
             args_to_diff = (0,)
@@ -1690,8 +1690,6 @@ class TestReadoutError:
             args_to_diff = (1,)
             misclassifications = qnp.array(misclassifications)
         else:
-            print(relaxations)
-            print(misclassifications)
             args_to_diff = (0, 1)
             relaxations = qnp.array(relaxations)
             misclassifications = qnp.array(misclassifications)

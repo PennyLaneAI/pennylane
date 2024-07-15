@@ -234,7 +234,7 @@ class DefaultQutritMixed(Device):
           This error models misclassification events in readout. An example of this readout error
           can be seen in [`2 <https://arxiv.org/abs/2309.11303>`_] (Fig 1a).
 
-        In the case that both parameters are defined relaxtion error is applied first then
+        In the case that both parameters are defined, relaxation error is applied first then
         misclassification error is applied.
 
         .. note::
