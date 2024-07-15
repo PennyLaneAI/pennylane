@@ -595,9 +595,23 @@ def execute(
                 "mcm_method='deferred'."
             )
         config.mcm_config.postselect_mode = "fill-shots"
-    mcm_interface = "tensorflow" if "tf" in mcm_interface else mcm_interface
-    mcm_interface = "jax" if "jax" in mcm_interface else mcm_interface
-    config.mcm_config.interface = mcm_interface
+
+    finite_shots = (
+        (
+            qml.measurements.Shots(device.shots)
+            if isinstance(device, qml.devices.LegacyDevice)
+            else device.shots
+        )
+        if override_shots is False
+        else override_shots
+    )
+    if (
+        finite_shots
+        and "jax" in mcm_interface
+        and config.mcm_config.mcm_method in (None, "one-shot")
+        and config.mcm_config.postselect_mode in (None, "hw-like")
+    ):
+        config.mcm_config.postselect_mode = "pad-invalid-samples"
 
     is_gradient_transform = isinstance(gradient_fn, qml.transforms.core.TransformDispatcher)
     transform_program, inner_transform = _make_transform_programs(

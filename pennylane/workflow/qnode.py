@@ -1044,7 +1044,7 @@ class QNode:
         self._tape_cached = using_custom_cache and self.tape.hash in cache
 
         mcm_config = copy.copy(self.mcm_config)
-        finite_shots = _get_device_shots if override_shots is False else override_shots
+        finite_shots = _get_device_shots(self.device) if override_shots is False else override_shots
         if not finite_shots:
             mcm_config.postselect_mode = None
             if mcm_config.mcm_method in ("one-shot", "tree-traversal"):
@@ -1081,10 +1081,7 @@ class QNode:
             )
             override_shots = 1
         elif hasattr(self.device, "capabilities"):
-            inner_transform_program.add_transform(
-                qml.defer_measurements,
-                device=self.device,
-            )
+            inner_transform_program.add_transform(qml.defer_measurements, device=self.device)
 
         # Add the gradient expand to the program if necessary
         if getattr(self.gradient_fn, "expand_transform", False):

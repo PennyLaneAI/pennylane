@@ -301,7 +301,7 @@ class TestInterfaces:
             shots=shots,
         )
 
-        tapes, _ = qml.dynamic_one_shot(tape, interface=interface)
+        tapes, _ = qml.dynamic_one_shot(tape)
         results = dev.execute(tapes)[0]
 
         # The transformed tape never has a shot vector
@@ -340,7 +340,7 @@ class TestInterfaces:
         tape = qml.tape.QuantumScript(
             ops, [measure_f(op=qml.PauliZ(0)), measure_f(op=mv)], shots=shots
         )
-        _, fn = qml.dynamic_one_shot(tape, interface=interface)
+        _, fn = qml.dynamic_one_shot(tape)
         total_shots = sum(shots) if isinstance(shots, list) else shots
 
         raw_results = generate_dummy_raw_results(
@@ -410,7 +410,9 @@ class TestInterfaces:
             [measure_f(op=qml.PauliZ(0)), measure_f(op=mv)],
             shots=shots,
         )
-        _, fn = qml.dynamic_one_shot(tape, interface=interface)
+        _, fn = qml.dynamic_one_shot(
+            tape, postselect_mode="pad-invalid-samples" if interface == "jax" else None
+        )
         total_shots = sum(shots) if isinstance(shots, list) else shots
 
         raw_results = generate_dummy_raw_results(

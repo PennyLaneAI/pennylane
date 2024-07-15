@@ -36,9 +36,6 @@ class MCMConfig:
     be returned. If ``"fill-shots"``, results corresponding to the original number of
     shots will be returned. If not specified, the device will decide which mode to use."""
 
-    interface: Optional[str] = None
-    """Machine learning interface to be used for processing mid-circuit measurement results."""
-
     def __post_init__(self):
         """
         Validate the configured mid-circuit measurement options.
@@ -53,7 +50,7 @@ class MCMConfig:
             None,
         ):
             raise ValueError(f"Invalid mid-circuit measurements method '{self.mcm_method}'.")
-        if self.postselect_mode not in ("hw-like", "fill-shots", None):
+        if self.postselect_mode not in ("hw-like", "fill-shots", "pad-invalid-samples", None):
             raise ValueError(f"Invalid postselection mode '{self.postselect_mode}'.")
 
 

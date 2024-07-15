@@ -164,7 +164,6 @@ def qnode_call(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
 
     qfunc_jaxpr = jax.make_jaxpr(qfunc)(*args)
     mcm_config = asdict(qnode.mcm_config)
-    mcm_config.pop("interface")
     qnode_kwargs = {
         "diff_method": qnode.diff_method,
         **qnode.execute_kwargs,

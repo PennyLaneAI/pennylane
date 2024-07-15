@@ -148,17 +148,13 @@ def validate_device_wires(
 
 @transform
 def mid_circuit_measurements(
-    tape: qml.tape.QuantumTape,
-    device,
-    mcm_config=MCMConfig(),
-    interface=None,
+    tape: qml.tape.QuantumTape, device, mcm_config=MCMConfig()
 ) -> tuple[Sequence[qml.tape.QuantumTape], Callable]:
     """Provide the transform to handle mid-circuit measurements.
 
     If the tape or device uses finite-shot, use the native implementation (i.e. no transform),
     and use the ``qml.defer_measurements`` transform otherwise.
     """
-    # pylint: disable=unused-argument
     if isinstance(mcm_config, dict):
         mcm_config = MCMConfig(**mcm_config)
     mcm_method = mcm_config.mcm_method
@@ -166,7 +162,7 @@ def mid_circuit_measurements(
         mcm_method = "one-shot" if tape.shots else "deferred"
 
     if mcm_method == "one-shot":
-        return qml.dynamic_one_shot(tape, interface=mcm_config.interface)
+        return qml.dynamic_one_shot(tape, postselect_mode=mcm_config.postselect_mode)
     if mcm_method == "tree-traversal":
         return (tape,), null_postprocessing
     return qml.defer_measurements(tape, device=device)
