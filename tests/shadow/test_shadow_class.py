@@ -22,8 +22,6 @@ import pennylane as qml
 import pennylane.numpy as np
 from pennylane.shadows import ClassicalShadow, median_of_means, pauli_expval
 
-np.random.seed(777)
-
 wires = range(3)
 shots = 10000
 dev = qml.device("default.qubit", wires=wires, shots=shots)

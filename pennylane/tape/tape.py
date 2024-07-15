@@ -408,7 +408,7 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
     >>> tape.get_parameters()
     [0.432, 0.543, 0.133]
     >>> tape.wires
-    <Wires = [0, 'a']>
+    Wires([0, 'a'])
     >>> tape.num_params
     3
 
