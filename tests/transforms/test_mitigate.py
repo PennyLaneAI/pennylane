@@ -120,7 +120,6 @@ class TestMitigateWithZNE:
         n_layers = 2
 
         shapes = qml.SimplifiedTwoDesign.shape(n_layers, n_wires)
-        np.random.seed(0)
         w1, w2 = [np.random.random(s) for s in shapes]
 
         @partial(
@@ -242,7 +241,6 @@ class TestMitiqIntegration:
         n_layers = 2
 
         shapes = qml.SimplifiedTwoDesign.shape(n_layers, n_wires)
-        np.random.seed(0)
         w1, w2 = [np.random.random(s) for s in shapes]
 
         @partial(
@@ -292,7 +290,6 @@ class TestMitiqIntegration:
         n_layers = 2
 
         shapes = qml.SimplifiedTwoDesign.shape(n_layers, n_wires)
-        np.random.seed(0)
         w1, w2 = [np.random.random(s) for s in shapes]
 
         @partial(
@@ -332,7 +329,6 @@ class TestMitiqIntegration:
         n_layers = 2
 
         shapes = qml.SimplifiedTwoDesign.shape(n_layers, n_wires)
-        np.random.seed(0)
         w1, w2 = [np.random.random(s) for s in shapes]
 
         @partial(
@@ -372,7 +368,6 @@ class TestMitiqIntegration:
         n_layers = 2
 
         shapes = qml.SimplifiedTwoDesign.shape(n_layers, n_wires)
-        np.random.seed(0)
         w1, w2 = [np.random.random(s) for s in shapes]
 
         def circuit(w1, w2):
@@ -430,7 +425,6 @@ class TestMitiqIntegration:
         n_layers = 2
 
         shapes = qml.SimplifiedTwoDesign.shape(n_layers, n_wires)
-        np.random.seed(0)
         w1, w2 = [np.random.random(s, requires_grad=True) for s in shapes]
 
         @partial(
