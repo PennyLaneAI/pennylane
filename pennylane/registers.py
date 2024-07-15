@@ -19,18 +19,20 @@ from .wires import Wires
 
 
 def registers(register_dict):
-    """Returns a collection of wire registers when given a dictionary of register names and sizes
-    (number of qubits in the register).
+    """Returns registers of wire registers as a dictionary of register names and 
+    :class:`~pennylane.wires.Wires`.
 
     The registers are a dictionary of :class:`~.Wires` objects where the key is the register name
-    and the value is the ``Wires`` object. The values can also be another registers object. This allows creating a nested dictionary of registers.
+    and the value is the ``Wires`` object. The values can also be another registers object. This
+    allows creating a nested dictionary of registers.
 
     Args:
-        register_dict (dict): a dictionary where keys are register names and values are either integers indicating the number of qubits or nested dictionaries of more registers
+        register_dict (dict): a dictionary where keys are register names and values are either
+        integers indicating the number of qubits or nested dictionaries of more registers
 
     Returns:
         dict (Wires): dictionary where the keys are the names (str) of the registers, and the
-            values are the Wires objects.
+            values are either :class:`~.Wires` objects or other registers
 
     **Example**
 
@@ -40,16 +42,17 @@ def registers(register_dict):
     """
 
     def _registers(register_dict, _start_wire_index=0):
-        """Recursively builds a dictionary of Wires objects from a nested dictionary of register names and sizes.
+        """Recursively builds a dictionary of Wires objects from a nested dictionary of register
+        names and sizes.
 
         Args:
-            register_dict (dict): a dictionary where keys are register names and values are nested
-                dictionaries or integers indicating the number of qubits.
+            register_dict (dict): a dictionary where keys are register names and values are either
+            integers indicating the number of qubits or nested dictionaries of more registers
             _start_wire_index (int): the starting index for the wire labels.
 
         Returns:
-            dict: dictionary where the keys are the names (str) of the registers and the values are
-                the Wires objects.
+            dict (Wires): dictionary where the keys are the names (str) of the registers, and the
+                values are either :class:`~.Wires` objects or other registers
         """
 
         all_reg = {}
@@ -57,12 +60,15 @@ def registers(register_dict):
             if isinstance(register_wires, dict):
                 if len(register_wires) == 0:
                     raise ValueError(f"Got an empty dictionary '{register_wires}'")
-                inner_register_dict = _registers(
-                    register_wires, _start_wire_index
-                )
+                inner_register_dict = _registers(register_wires, _start_wire_index)
                 wire_vals = [w for reg in inner_register_dict.values() for w in reg.tolist()]
                 all_reg.update(inner_register_dict)
-                all_reg[register_name] = Wires(range(_start_wire_index, all_reg[next(reversed(inner_register_dict))].labels[-1] + 1))
+                all_reg[register_name] = Wires(
+                    range(
+                        _start_wire_index,
+                        all_reg[next(reversed(inner_register_dict))].labels[-1] + 1,
+                    )
+                )
                 _start_wire_index = wire_vals[-1] + 1
             elif isinstance(register_wires, int):
                 if register_wires < 1:
@@ -70,7 +76,9 @@ def registers(register_dict):
                         f"Expected '{register_wires}' to be greater than 0. Please ensure that "
                         "the number of wires for the register is a positive integer"
                     )
-                all_reg[register_name] = Wires(range(_start_wire_index, register_wires + _start_wire_index))
+                all_reg[register_name] = Wires(
+                    range(_start_wire_index, register_wires + _start_wire_index)
+                )
                 _start_wire_index += register_wires
             else:  # Not a dict nor an int
                 raise ValueError(f"Expected '{register_wires}' to be either a dict or an int. ")
