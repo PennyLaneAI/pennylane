@@ -271,7 +271,7 @@ Passing arguments to transforms
 -------------------------------
 
 We can decorate a QNode with ``@partial(transform_fn, **transform_kwargs)`` to provide additional keyword arguments to a transform function.
-In the following example, we pass the keyword argument ``grouping_strategy="wires"`` to the :func:`~.split_non_commuting` quantum transform, 
+In the following example, we pass the keyword argument ``grouping_strategy="wires"`` to the :func:`~.split_non_commuting` quantum transform,
 which splits a circuit into tapes measuring groups of commuting observables.
 
 .. code-block:: python
