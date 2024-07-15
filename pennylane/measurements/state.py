@@ -16,8 +16,6 @@ This module contains the qml.state measurement.
 """
 from typing import Optional, Sequence
 
-import numpy as np
-
 import pennylane as qml
 from pennylane.typing import TensorLike
 from pennylane.wires import WireError, Wires
@@ -170,15 +168,13 @@ class StateMP(StateMeasurement):
     def process_state(self, state: Sequence[complex], wire_order: Wires):
         # pylint:disable=redefined-outer-name
         def is_floating_single(state):
-            return hasattr(state, "dtype") and state.dtype in (np.float32, np.complex64)
+            dtype = str(state.dtype)
+            floating_single = "float32" in dtype or "complex64" in dtype
+            return floating_single and qml.math.get_interface(state) != "tensorflow"
 
         wires = self.wires
         if not wires or wire_order == wires:
-            if not qml.math.is_abstract(state) and qml.math.any(~qml.math.iscomplex(state)):
-                state = qml.math.cast(
-                    state, "complex64" if is_floating_single(state) else "complex128"
-                )
-            return state
+            return qml.math.cast(state, "complex64" if is_floating_single(state) else "complex128")
 
         if set(wires) != set(wire_order):
             raise WireError(
@@ -198,9 +194,7 @@ class StateMP(StateMeasurement):
         state = qml.math.reshape(state, shape)
         state = qml.math.transpose(state, desired_axes)
         state = qml.math.reshape(state, flat_shape)
-        if not qml.math.is_abstract(state) and qml.math.any(~qml.math.iscomplex(state)):
-            state = qml.math.cast(state, "complex64" if is_floating_single(state) else "complex128")
-        return state
+        return qml.math.cast(state, "complex64" if is_floating_single(state) else "complex128")
 
     def process_density_matrix(self, density_matrix: Sequence[complex], wire_order: Wires):
         # pylint:disable=redefined-outer-name
