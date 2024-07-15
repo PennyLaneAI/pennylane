@@ -79,13 +79,13 @@ def _get_slice(index, axis, num_axes):
 
 # pylint: disable=unused-argument
 class DefaultQubitLegacy(QubitDevice):
-    """Default qubit device for PennyLane.
+    r"""Default qubit device for PennyLane.
 
     .. warning::
 
         This is the legacy implementation of DefaultQubit and is deprecated. It has been replaced by
         :class:`~.devices.DefaultQubit`, which can be accessed with the familiar constructor,
-        ``qml.device("default.qubit")``.
+        ``qml.device("default.qubit")``, and now supports backpropagation.
 
         This change will not alter device behaviour for most workflows, but may have implications for
         plugin developers and users who directly interact with device methods. Please consult
@@ -209,7 +209,8 @@ class DefaultQubitLegacy(QubitDevice):
         self, wires, *, r_dtype=np.float64, c_dtype=np.complex128, shots=None, analytic=None
     ):
         warnings.warn(
-            f"Use of '{self.short_name}' is deprecated. Instead, use 'default.qubit'. "
+            f"Use of '{self.short_name}' is deprecated. Instead, use 'default.qubit', "
+            "which supports backpropagation. "
             "If you experience issues, reach out to the PennyLane team on "
             "the discussion forum: https://discuss.pennylane.ai/",
             qml.PennyLaneDeprecationWarning,

@@ -22,7 +22,7 @@ from pennylane.devices import DefaultQubitLegacy
 
 
 class DefaultQubitAutograd(DefaultQubitLegacy):
-    """Simulator plugin based on ``"default.qubit.legacy"``, written using Autograd.
+    r"""Simulator plugin based on ``"default.qubit.legacy"``, written using Autograd.
 
     **Short name:** ``default.qubit.autograd``
 
@@ -111,7 +111,8 @@ class DefaultQubitAutograd(DefaultQubitLegacy):
 
     def __init__(self, wires, *, shots=None, analytic=None):
         warnings.warn(
-            f"Use of '{self.short_name}' is deprecated. Instead, use 'default.qubit'. "
+            f"Use of '{self.short_name}' is deprecated. Instead, use 'default.qubit', "
+            "which supports backpropagation. "
             "If you experience issues, reach out to the PennyLane team on "
             "the discussion forum: https://discuss.pennylane.ai/",
             PennyLaneDeprecationWarning,

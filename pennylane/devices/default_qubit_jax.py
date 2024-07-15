@@ -36,7 +36,7 @@ except ImportError as e:  # pragma: no cover
 
 
 class DefaultQubitJax(DefaultQubitLegacy):
-    """Simulator plugin based on ``"default.qubit.legacy"``, written using jax.
+    r"""Simulator plugin based on ``"default.qubit.legacy"``, written using jax.
 
     **Short name:** ``default.qubit.jax``
 
@@ -52,7 +52,7 @@ class DefaultQubitJax(DefaultQubitLegacy):
         pip install jax jaxlib
 
     .. warning::
-        This device is deprecated. Use :class:`~.devices.DefaultQubit` instead; for example through ``qml.device("default.qubit")``.
+        This device is deprecated. Use :class:`~.devices.DefaultQubit` instead; for example through ``qml.device("default.qubit")``, which now supports backpropagation.
 
     **Example**
 
@@ -171,7 +171,8 @@ class DefaultQubitJax(DefaultQubitLegacy):
 
     def __init__(self, wires, *, shots=None, prng_key=None, analytic=None):
         warnings.warn(
-            f"Use of '{self.short_name}' is deprecated. Instead, use 'default.qubit'. "
+            f"Use of '{self.short_name}' is deprecated. Instead, use 'default.qubit', "
+            "which supports backpropagation. "
             "If you experience issues, reach out to the PennyLane team on "
             "the discussion forum: https://discuss.pennylane.ai/",
             qml.PennyLaneDeprecationWarning,
