@@ -92,7 +92,8 @@ def n_subsystems_fixture(request):
 
 @pytest.fixture(scope="session")
 def qubit_device(n_subsystems):
-    return qml.device("default.qubit.legacy", wires=n_subsystems)
+    with pytest.warns(qml.PennyLaneDeprecationWarning, match="Use of 'default.qubit.legacy'"):
+        return qml.device("default.qubit.legacy", wires=n_subsystems)
 
 
 @pytest.fixture(scope="function", params=[(np.float32, np.complex64), (np.float64, np.complex128)])
