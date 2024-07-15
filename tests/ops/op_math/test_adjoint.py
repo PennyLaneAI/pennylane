@@ -518,8 +518,12 @@ class TestAdjointOperation:
             base_angles = base.single_qubit_rot_angles()
             angles = op.single_qubit_rot_angles()
 
-        for angle1, angle2 in zip(angles, reversed(base_angles)):
-            assert angle1 == -angle2
+        # Test instead that the angles produce the correct matrix
+        matrix_base = qml.matrix(qml.Rot(*base_angles, 0))
+        matrix_adjoint = qml.matrix(qml.Rot(*angles, 0))
+        assert qml.math.allclose(matrix_base, matrix_adjoint.conj().T)
+        # for angle1, angle2 in zip(angles, reversed(base_angles)):
+        #     assert angle1 == -angle2
 
     @pytest.mark.parametrize(
         "base, basis",

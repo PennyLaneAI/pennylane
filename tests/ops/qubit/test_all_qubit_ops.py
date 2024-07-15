@@ -26,23 +26,22 @@ import pennylane as qml
 class TestOperations:
     """Tests for the operations"""
 
-    @pytest.mark.parametrize(
-        "op",
-        [
-            (qml.Hadamard(wires=0)),
-            (qml.PauliX(wires=0)),
-            (qml.PauliY(wires=0)),
-            (qml.PauliZ(wires=0)),
-            (qml.S(wires=0)),
-            (qml.T(wires=0)),
-            (qml.SX(wires=0)),
-            (qml.RX(0.3, wires=0)),
-            (qml.RY(0.3, wires=0)),
-            (qml.RZ(0.3, wires=0)),
-            (qml.PhaseShift(0.3, wires=0)),
-            (qml.Rot(0.3, 0.4, 0.5, wires=0)),
-        ],
-    )
+    OPS = [
+        (qml.Hadamard(wires=0)),
+        (qml.PauliX(wires=0)),
+        (qml.PauliY(wires=0)),
+        (qml.PauliZ(wires=0)),
+        (qml.S(wires=0)),
+        (qml.T(wires=0)),
+        (qml.SX(wires=0)),
+        (qml.RX(0.3, wires=0)),
+        (qml.RY(0.3, wires=0)),
+        (qml.RZ(0.3, wires=0)),
+        (qml.PhaseShift(0.3, wires=0)),
+        (qml.Rot(0.3, 0.4, 0.5, wires=0)),
+    ]
+
+    @pytest.mark.parametrize("op", OPS)
     def test_single_qubit_rot_angles(self, op):
         """Tests that the Rot gates yielded by single_qubit_rot_angles
         are equivalent to the true operations up to a global phase."""
@@ -58,3 +57,12 @@ class TestOperations:
         mat_product /= mat_product[0, 0]
 
         assert qml.math.allclose(mat_product, I)
+
+    @pytest.mark.parametrize("op", OPS)
+    def test_single_qubit_rot_angles_deprecated(self, op):
+        """Test that a warning is raised when calling the single_qubit_rot_angles method"""
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match="The single_qubit_rot_angles method is deprecated",
+        ):
+            op.single_qubit_rot_angles()

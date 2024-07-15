@@ -396,7 +396,7 @@ class AdjointOperation(Adjoint, Operation):
             "Instead, please calculate the angles using _get_single_qubit_rot_angles_via_matrix",
             qml.PennyLaneDeprecationWarning,
         )
-        omega, theta, phi, _ = _get_single_qubit_rot_angles_via_matrix(self.base)
+        omega, theta, phi, _ = _get_single_qubit_rot_angles_via_matrix(self.base.matrix())
         return [-phi, -theta, -omega]
 
     @property
