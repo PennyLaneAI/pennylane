@@ -271,7 +271,7 @@ Passing arguments to transforms
 -------------------------------
 
 We can decorate a QNode with ``@partial(transform_fn, **transform_kwargs)`` to provide additional keyword arguments to a transform function.
-In the following example, we pass the keyword argument ``grouping_strategy="wires"`` to the ``split_non_commuting`` quantum transform.
+In the following example, we pass the keyword argument ``grouping_strategy="wires"`` to the :func:`~.split_non_commuting` quantum transform.
 
 .. code-block:: python
 
@@ -284,7 +284,12 @@ In the following example, we pass the keyword argument ``grouping_strategy="wire
         def circuit(params):
             qml.RX(params[0], wires=0)
             qml.RZ(params[1], wires=1)
-            return [qml.expval(qml.X(0) @ qml.Y(1) + qml.Z(1))]
+            return [
+                qml.expval(qml.X(0)),
+                qml.expval(qml.Y(1)),
+                qml.expval(qml.Z(0) @ qml.Z(1)),
+                qml.expval(qml.X(0) @ qml.Z(1) + 0.5 * qml.Y(1) + qml.Z(0)),
+            ]
 
 Additional information
 ----------------------
