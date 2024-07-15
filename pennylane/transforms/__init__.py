@@ -192,7 +192,7 @@ This decorator registers transforms that accept a :class:`~.QuantumTape`
 as its primary input and returns a sequence of :class:`~.QuantumTape`
 and an associated processing function.
 
-To illustrate the process of creating a quantum transform, let's consider a straightforward example. Suppose we want
+To illustrate the process of creating a quantum transform, let's consider an example. Suppose we want
 a transform that removes all :class:`~.RX` operations from a given circuit. In this case, we merely need to filter the
 original :class:`~.QuantumTape` and return a new one without the filtered operations. As we don't require a specific processing
 function in this scenario, we include a function that simply returns the first and only result.
@@ -271,7 +271,8 @@ Passing arguments to transforms
 -------------------------------
 
 We can decorate a QNode with ``@partial(transform_fn, **transform_kwargs)`` to provide additional keyword arguments to a transform function.
-In the following example, we pass the keyword argument ``grouping_strategy="wires"`` to the :func:`~.split_non_commuting` quantum transform.
+In the following example, we pass the keyword argument ``grouping_strategy="wires"`` to the :func:`~.split_non_commuting` quantum transform, 
+which splits a circuit into tapes measuring groups of commuting observables.
 
 .. code-block:: python
 
