@@ -148,7 +148,7 @@ def validate_device_wires(
 
 @transform
 def mid_circuit_measurements(
-    tape: qml.tape.QuantumTape, device, mcm_config=MCMConfig()
+    tape: qml.tape.QuantumTape, device, mcm_config=MCMConfig(), **kwargs
 ) -> tuple[Sequence[qml.tape.QuantumTape], Callable]:
     """Provide the transform to handle mid-circuit measurements.
 
