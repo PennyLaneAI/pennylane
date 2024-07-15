@@ -417,7 +417,7 @@ def from_qasm(quantum_circuit: str, measurements=None):
         measurements (None | MeasurementProcess | list[MeasurementProcess]): an optional PennyLane
             measurement or list of PennyLane measurements that overrides the terminal measurements
             that may be present in the input circuit. Defaults to ``None``, such that all existing measurements
-            in the input circuit are returned. See **Removing terminal measurements** for details.
+            in the input circuit are returned. See *Removing terminal measurements* for details.
 
     Returns:
         function: the PennyLane quantum function created based on the QASM string. This function itself returns the mid-circuit measurements plus the terminal measurements by default (``measurements=None``), and returns **only** the measurements from the ``measurements`` argument otherwise.
@@ -426,15 +426,15 @@ def from_qasm(quantum_circuit: str, measurements=None):
 
     .. code-block:: python
 
-        qasm_code = 'OPENQASM 2.0;'\\
-                    'include "qelib1.inc";'\\
-                    'qreg q[2];'\\
-                    'creg c[2];'\\
-                    'h q[0];'\\
-                    'measure q[0] -> c[0];'\\
-                    'rz(0.24) q[0];'\\
-                    'cx q[0], q[1];'\\
-                    'measure q -> c;'
+        qasm_code = \"\"\"OPENQASM 2.0;
+        include "qelib1.inc";
+        qreg q[2];
+        creg c[2];
+        h q[0];
+        measure q[0] -> c[0];
+        rz(0.24) q[0];
+        cx q[0], q[1];
+        measure q -> c;\"\"\"
 
         loaded_circuit = qml.from_qasm(qasm_code)
 
@@ -451,15 +451,15 @@ def from_qasm(quantum_circuit: str, measurements=None):
 
     A list of measurements can also be passed directly to ``from_qasm`` using the ``measurements`` argument, making it possible to create a PennyLane circuit with :class:`qml.QNode <pennylane.QNode>`.
 
-        .. code-block:: python
+    .. code-block:: python
 
-            dev = qml.device("default.qubit")
-            measurements = [qml.var(qml.Y(0))]
-            circuit = qml.QNode(qml.from_qasm(qasm_code, measurements = measurements), dev)
+        dev = qml.device("default.qubit")
+        measurements = [qml.var(qml.Y(0))]
+        circuit = qml.QNode(qml.from_qasm(qasm_code, measurements = measurements), dev)
 
-        >>> print(qml.draw(circuit)())
-        0: ──H──┤↗├──RZ(0.24)─╭●─┤  Var[Y]
-        1: ───────────────────╰X─┤
+    >>> print(qml.draw(circuit)())
+    0: ──H──┤↗├──RZ(0.24)─╭●─┤  Var[Y]
+    1: ───────────────────╰X─┤
 
     .. details::
         :title: Removing terminal measurements
@@ -479,7 +479,21 @@ def from_qasm(quantum_circuit: str, measurements=None):
         >>> loaded_circuit()
         []
 
-        Note that mid-circuit measurements are always applied, but are only returned when ``measurements=None``.
+        Note that mid-circuit measurements are always applied, but are only returned when ``measurements=None``. This can be exemplified by using the ``loaded_circuit`` without the terminal measurements within a ``QNode``.
+
+        .. code-block:: python
+
+            dev = qml.device("default.qubit")
+
+            @qml.qnode(dev)
+            def circuit():
+                loaded_circuit()
+                return qml.expval(qml.Z(1))
+
+        >>> print(qml.draw(circuit)())
+        0: ──H──┤↗├──RZ(0.24)─╭●─┤
+        1: ───────────────────╰X─┤  <Z>
+
 
     .. details::
         :title: Using conditional operations
