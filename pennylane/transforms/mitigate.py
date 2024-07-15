@@ -351,17 +351,17 @@ def exponential_extrapolate(x, y, asymptote=None, eps=1.0e-6):
     y = jnp.array(y)
     slope, y_intercept = _polyfit(x, y, 1)
     if asymptote is None:
-        sign = jnp.sign(-slope)
+        sign = qml.math.sign(-slope)
         asymptote = 0.0
     else:
-        sign = jnp.sign(-(asymptote - y_intercept))
+        sign = qml.math.sign(-(asymptote - y_intercept))
 
     y_shifted = sign * (y - asymptote)
-    y_shifted = jnp.where(y_shifted < eps, eps, y_shifted)
+    y_shifted = qml.math.where(y_shifted < eps, eps, y_shifted)
     y_scaled = qml.math.log(y_shifted)
 
     zne_unscaled = poly_extrapolate(x, y_scaled, 1)
-    return sign * jnp.exp(zne_unscaled) + asymptote
+    return sign * qml.math.exp(zne_unscaled) + asymptote
 
 
 # pylint: disable=too-many-arguments, protected-access
