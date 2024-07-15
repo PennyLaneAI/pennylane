@@ -14,12 +14,16 @@
 """
 This submodule defines the symbolic operation that indicates the adjoint of an operator.
 """
+import warnings
 from functools import wraps
 
 import pennylane as qml
 from pennylane.compiler import compiler
 from pennylane.math import conj, moveaxis, transpose
 from pennylane.operation import Observable, Operation, Operator
+from pennylane.ops.op_math.decompositions.single_qubit_unitary import (
+    _get_single_qubit_rot_angles_via_matrix,
+)
 from pennylane.queuing import QueuingManager
 from pennylane.tape import make_qscript
 
@@ -387,7 +391,12 @@ class AdjointOperation(Adjoint, Operation):
         return self.base.control_wires
 
     def single_qubit_rot_angles(self):
-        omega, theta, phi = self.base.single_qubit_rot_angles()
+        warnings.warn(
+            "The single_qubit_rot_angles method is deprecated and will be removed in version 0.39. "
+            "Instead, please calculate the angles using _get_single_qubit_rot_angles_via_matrix",
+            qml.PennyLaneDeprecationWarning,
+        )
+        omega, theta, phi, _ = _get_single_qubit_rot_angles_via_matrix(self.base)
         return [-phi, -theta, -omega]
 
     @property

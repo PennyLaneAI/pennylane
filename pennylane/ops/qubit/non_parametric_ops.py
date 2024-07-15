@@ -17,6 +17,7 @@ not depend on any parameters.
 """
 # pylint:disable=abstract-method,arguments-differ,protected-access,invalid-overridden-method, no-member
 import cmath
+import warnings
 from copy import copy
 from functools import lru_cache
 
@@ -169,6 +170,11 @@ class Hadamard(Observable, Operation):
 
     def single_qubit_rot_angles(self):
         # H = RZ(\pi) RY(\pi/2) RZ(0)
+        warnings.warn(
+            "The single_qubit_rot_angles method is deprecated and will be removed in version 0.39. "
+            "Instead, please calculate the angles using _get_single_qubit_rot_angles_via_matrix",
+            qml.PennyLaneDeprecationWarning,
+        )
         return [np.pi, np.pi / 2, 0.0]
 
     def pow(self, z):
@@ -342,6 +348,11 @@ class PauliX(Observable, Operation):
 
     def single_qubit_rot_angles(self):
         # X = RZ(-\pi/2) RY(\pi) RZ(\pi/2)
+        warnings.warn(
+            "The single_qubit_rot_angles method is deprecated and will be removed in version 0.39. "
+            "Instead, please calculate the angles using _get_single_qubit_rot_angles_via_matrix",
+            qml.PennyLaneDeprecationWarning,
+        )
         return [np.pi / 2, np.pi, -np.pi / 2]
 
 
@@ -528,6 +539,11 @@ class PauliY(Observable, Operation):
 
     def single_qubit_rot_angles(self):
         # Y = RZ(0) RY(\pi) RZ(0)
+        warnings.warn(
+            "The single_qubit_rot_angles method is deprecated and will be removed in version 0.39. "
+            "Instead, please calculate the angles using _get_single_qubit_rot_angles_via_matrix",
+            qml.PennyLaneDeprecationWarning,
+        )
         return [0.0, np.pi, 0.0]
 
 
@@ -714,6 +730,11 @@ class PauliZ(Observable, Operation):
 
     def single_qubit_rot_angles(self):
         # Z = RZ(\pi) RY(0) RZ(0)
+        warnings.warn(
+            "The single_qubit_rot_angles method is deprecated and will be removed in version 0.39. "
+            "Instead, please calculate the angles using _get_single_qubit_rot_angles_via_matrix",
+            qml.PennyLaneDeprecationWarning,
+        )
         return [np.pi, 0.0, 0.0]
 
 
@@ -843,6 +864,11 @@ class S(Operation):
 
     def single_qubit_rot_angles(self):
         # S = RZ(\pi/2) RY(0) RZ(0)
+        warnings.warn(
+            "The single_qubit_rot_angles method is deprecated and will be removed in version 0.39. "
+            "Instead, please calculate the angles using _get_single_qubit_rot_angles_via_matrix",
+            qml.PennyLaneDeprecationWarning,
+        )
         return [np.pi / 2, 0.0, 0.0]
 
 
@@ -955,6 +981,11 @@ class T(Operation):
 
     def single_qubit_rot_angles(self):
         # T = RZ(\pi/4) RY(0) RZ(0)
+        warnings.warn(
+            "The single_qubit_rot_angles method is deprecated and will be removed in version 0.39. "
+            "Instead, please calculate the angles using _get_single_qubit_rot_angles_via_matrix",
+            qml.PennyLaneDeprecationWarning,
+        )
         return [np.pi / 4, 0.0, 0.0]
 
 
@@ -1068,6 +1099,11 @@ class SX(Operation):
 
     def single_qubit_rot_angles(self):
         # SX = RZ(-\pi/2) RY(\pi/2) RZ(\pi/2)
+        warnings.warn(
+            "The single_qubit_rot_angles method is deprecated and will be removed in version 0.39. "
+            "Instead, please calculate the angles using _get_single_qubit_rot_angles_via_matrix",
+            qml.PennyLaneDeprecationWarning,
+        )
         return [np.pi / 2, np.pi / 2, -np.pi / 2]
 
 

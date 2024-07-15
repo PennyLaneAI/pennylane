@@ -18,6 +18,7 @@ core parameterized gates.
 """
 # pylint:disable=abstract-method,arguments-differ,protected-access,invalid-overridden-method
 import functools
+import warnings
 
 import numpy as np
 
@@ -129,6 +130,11 @@ class RX(Operation):
 
     def single_qubit_rot_angles(self):
         # RX(\theta) = RZ(-\pi/2) RY(\theta) RZ(\pi/2)
+        warnings.warn(
+            "The single_qubit_rot_angles method is deprecated and will be removed in version 0.39. "
+            "Instead, please calculate the angles using _get_single_qubit_rot_angles_via_matrix",
+            qml.PennyLaneDeprecationWarning,
+        )
         pi_half = qml.math.ones_like(self.data[0]) * (np.pi / 2)
         return [pi_half, self.data[0], -pi_half]
 
@@ -225,6 +231,11 @@ class RY(Operation):
 
     def single_qubit_rot_angles(self):
         # RY(\theta) = RZ(0) RY(\theta) RZ(0)
+        warnings.warn(
+            "The single_qubit_rot_angles method is deprecated and will be removed in version 0.39. "
+            "Instead, please calculate the angles using _get_single_qubit_rot_angles_via_matrix",
+            qml.PennyLaneDeprecationWarning,
+        )
         return [0.0, self.data[0], 0.0]
 
 
@@ -361,6 +372,11 @@ class RZ(Operation):
 
     def single_qubit_rot_angles(self):
         # RZ(\theta) = RZ(\theta) RY(0) RZ(0)
+        warnings.warn(
+            "The single_qubit_rot_angles method is deprecated and will be removed in version 0.39. "
+            "Instead, please calculate the angles using _get_single_qubit_rot_angles_via_matrix",
+            qml.PennyLaneDeprecationWarning,
+        )
         return [self.data[0], 0.0, 0.0]
 
 
@@ -526,6 +542,11 @@ class PhaseShift(Operation):
 
     def single_qubit_rot_angles(self):
         # PhaseShift(\theta) = RZ(\theta) RY(0) RZ(0)
+        warnings.warn(
+            "The single_qubit_rot_angles method is deprecated and will be removed in version 0.39. "
+            "Instead, please calculate the angles using _get_single_qubit_rot_angles_via_matrix",
+            qml.PennyLaneDeprecationWarning,
+        )
         return [self.data[0], 0.0, 0.0]
 
 
@@ -671,6 +692,11 @@ class Rot(Operation):
         return qml.CRot(*self.parameters, wires=wire + self.wires)
 
     def single_qubit_rot_angles(self):
+        warnings.warn(
+            "The single_qubit_rot_angles method is deprecated and will be removed in version 0.39. "
+            "Instead, please calculate the angles using _get_single_qubit_rot_angles_via_matrix",
+            qml.PennyLaneDeprecationWarning,
+        )
         return self.data
 
     def simplify(self):

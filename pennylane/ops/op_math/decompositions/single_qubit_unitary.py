@@ -159,12 +159,8 @@ def _rot_decomposition(U, wire, return_global_phase=False):
     return operations
 
 
-def _get_single_qubit_rot_angles_via_matrix(
-    U, return_global_phase=False
-) -> tuple[float, float, float]:
-    """Returns a triplet of angles representing the single-qubit decomposition
-    of the matrix of the target operation using ZYZ rotations.
-    """
+def _get_single_qubit_rot_angles_via_matrix(U: qml.math.array) -> tuple[float, float, float, float]:
+    """Returns the angles corresponding to the ZYZ decomposition of the single qubit operator ``U`` and the global phase."""
     # Cast to batched format for more consistent code
     U = math.expand_dims(U, axis=0) if len(U.shape) == 2 else U
 
@@ -173,10 +169,8 @@ def _get_single_qubit_rot_angles_via_matrix(
 
     # Compute the zyz rotation angles
     phis, thetas, omegas = _zyz_get_rotation_angles(U_su2)
-    angles = (phis, thetas, omegas)
-    if return_global_phase:
-        angles += (global_phase,)
-    return angles
+
+    return (phis, thetas, omegas, global_phase)
 
 
 def _zyz_decomposition(U, wire, return_global_phase=False):
@@ -215,13 +209,10 @@ def _zyz_decomposition(U, wire, return_global_phase=False):
      GlobalPhase(1.1759220332464762, wires=[])]
 
     """
-    phis, thetas, omegas, *global_phase = _get_single_qubit_rot_angles_via_matrix(
-        U, return_global_phase=True
-    )
+    phis, thetas, omegas, global_phase = _get_single_qubit_rot_angles_via_matrix(U)
 
     operations = [qml.RZ(phis, wire), qml.RY(thetas, wire), qml.RZ(omegas, wire)]
     if return_global_phase:
-        global_phase = math.squeeze(global_phase)
         operations.append(qml.GlobalPhase(-global_phase))
 
     return operations

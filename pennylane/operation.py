@@ -1760,6 +1760,7 @@ class Operation(Operator):
         """
         return Wires([])
 
+    # pylint: disable=no-self-use
     def single_qubit_rot_angles(self) -> Tuple[float, float, float]:
         r"""The parameters required to implement a single-qubit gate as an
         equivalent ``Rot`` gate, up to a global phase.
@@ -1769,6 +1770,11 @@ class Operation(Operator):
             such that :math:`RZ(\omega) RY(\theta) RZ(\phi)` is equivalent to the
             original operation.
         """
+        warnings.warn(
+            "The single_qubit_rot_angles method is deprecated and will be removed in version 0.39. "
+            "Instead, please calculate the angles using _get_single_qubit_rot_angles_via_matrix",
+            qml.PennyLaneDeprecationWarning,
+        )
         raise NotImplementedError
 
     @property

@@ -46,7 +46,11 @@ class TestOperations:
     def test_single_qubit_rot_angles(self, op):
         """Tests that the Rot gates yielded by single_qubit_rot_angles
         are equivalent to the true operations up to a global phase."""
-        angles = op.single_qubit_rot_angles()
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match="The single_qubit_rot_angles method is deprecated",
+        ):
+            angles = op.single_qubit_rot_angles()
         obtained_mat = qml.Rot(*angles, wires=0).matrix()
 
         # Check whether the two matrices are each others conjugate transposes

@@ -16,6 +16,9 @@
 from typing import Callable, Sequence
 
 from pennylane.math import allclose, is_abstract, stack
+from pennylane.ops.op_math.decompositions.single_qubit_unitary import (
+    _get_single_qubit_rot_angles_via_matrix,
+)
 from pennylane.ops.qubit import Rot
 from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumTape
@@ -31,9 +34,9 @@ def single_qubit_fusion(
     r"""Quantum function transform to fuse together groups of single-qubit
     operations into a general single-qubit unitary operation (:class:`~.Rot`).
 
-    Fusion is performed only between gates that implement the property
-    ``single_qubit_rot_angles``. Any sequence of two or more single-qubit gates
-    (on the same qubit) with that property defined will be fused into one ``Rot``.
+    Fusion is performed only between single qubit gates that define a matrix representation
+    , i.e. gates whose ``single_qubit_rot_angles`` can be calculated from its matrix. Any sequence of two or more single-qubit gates
+    (on the same qubit) satisfying these conditions will be fused into one ``Rot``.
 
     Args:
         tape (QNode or QuantumTape or Callable): A quantum circuit.
@@ -49,11 +52,11 @@ def single_qubit_fusion(
 
     **Example**
 
-    >>> dev = qml.device('default.qubit', wires=1)
-
     You can apply the transform directly on :class:`QNode`:
 
     .. code-block:: python
+
+        dev = qml.device('default.qubit', wires=1)
 
         @single_qubit_fusion
         @qml.qnode(device=dev)
@@ -86,7 +89,7 @@ def single_qubit_fusion(
 
         >>> qnode = qml.QNode(qfunc, dev)
         >>> print(qml.draw(qnode)([0.1, 0.2, 0.3], [0.4, 0.5, 0.6]))
-        0: ──H──Rot(0.1, 0.2, 0.3)──Rot(0.4, 0.5, 0.6)──RZ(0.1)──RZ(0.4)──┤ ⟨X⟩
+        0: ──H──Rot(0.10,0.20,0.30)──Rot(0.40,0.50,0.60)──RZ(0.10)──RZ(0.40)─┤  <X>
 
         Full single-qubit gate fusion allows us to collapse this entire sequence into a
         single ``qml.Rot`` rotation gate.
@@ -94,8 +97,7 @@ def single_qubit_fusion(
         >>> optimized_qfunc = single_qubit_fusion(qfunc)
         >>> optimized_qnode = qml.QNode(optimized_qfunc, dev)
         >>> print(qml.draw(optimized_qnode)([0.1, 0.2, 0.3], [0.4, 0.5, 0.6]))
-        0: ──Rot(3.57, 2.09, 2.05)──┤ ⟨X⟩
-
+        0: ──Rot(-2.71,2.09,2.05)─┤  <X>
     """
     # Make a working copy of the list to traverse
     list_copy = tape.operations.copy()
@@ -111,11 +113,12 @@ def single_qubit_fusion(
                 list_copy.pop(0)
                 continue
 
-        # Look for single_qubit_rot_angles; if not available, queue and move on.
-        # If available, grab the angles and try to fuse.
-        try:
-            cumulative_angles = stack(current_gate.single_qubit_rot_angles())
-        except (NotImplementedError, AttributeError):
+        # Check if single_qubit_rot_angles can be calculated, else queue and move on.
+        # If possible, grab the angles and try to fuse.
+        if current_gate.has_matrix and len(current_gate.wires) == 1:
+            *angles, _ = _get_single_qubit_rot_angles_via_matrix(current_gate.matrix())
+            cumulative_angles = stack(angles)
+        else:
             new_operations.append(current_gate)
             list_copy.pop(0)
             continue
@@ -151,9 +154,10 @@ def single_qubit_fusion(
             # solely for single-qubit gates, and we used find_next_gate to obtain
             # the gate in question, only valid single-qubit gates on the same
             # wire as the current gate will be fused.
-            try:
-                next_gate_angles = stack(next_gate.single_qubit_rot_angles())
-            except (NotImplementedError, AttributeError):
+            if next_gate.has_matrix and len(next_gate.wires) == 1:
+                *angles, _ = _get_single_qubit_rot_angles_via_matrix(next_gate.matrix())
+                next_gate_angles = stack(angles)
+            else:
                 break
 
             cumulative_angles = fuse_rot_angles(cumulative_angles, stack(next_gate_angles))

@@ -22,7 +22,7 @@ import numpy.linalg as npl
 
 import pennylane as qml
 from pennylane import math
-from pennylane.operation import Operation, Operator
+from pennylane.operation import Operator
 from pennylane.ops.op_math.decompositions.single_qubit_unitary import (
     _get_single_qubit_rot_angles_via_matrix,
 )
@@ -197,17 +197,9 @@ def ctrl_decomp_zyz(target_operation: Operator, control_wires: Wires):
 
     target_wire = target_operation.wires
 
-    if isinstance(target_operation, Operation):
-        try:
-            phi, theta, omega = target_operation.single_qubit_rot_angles()
-        except NotImplementedError:
-            phi, theta, omega = _get_single_qubit_rot_angles_via_matrix(
-                qml.matrix(target_operation)
-            )
-    else:
-        phi, theta, omega = _get_single_qubit_rot_angles_via_matrix(qml.matrix(target_operation))
-
-    _, global_phase = _convert_to_su2(qml.matrix(target_operation), return_global_phase=True)
+    phi, theta, omega, global_phase = _get_single_qubit_rot_angles_via_matrix(
+        qml.matrix(target_operation)
+    )
 
     # We use the conditional statements to account when decomposition is ran within a queue
     decomp = []

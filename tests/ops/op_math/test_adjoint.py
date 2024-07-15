@@ -511,8 +511,12 @@ class TestAdjointOperation:
         base = qml.RX(param, wires=0)
         op = Adjoint(base)
 
-        base_angles = base.single_qubit_rot_angles()
-        angles = op.single_qubit_rot_angles()
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match="The single_qubit_rot_angles method is deprecated",
+        ):
+            base_angles = base.single_qubit_rot_angles()
+            angles = op.single_qubit_rot_angles()
 
         for angle1, angle2 in zip(angles, reversed(base_angles)):
             assert angle1 == -angle2
