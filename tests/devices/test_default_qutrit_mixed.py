@@ -1661,7 +1661,7 @@ class TestReadoutError:
     def get_diff_function(self, interface, num_wires):
         """Get the function to differentiate for following differentiability interface tests"""
 
-        def dif_func(relaxations, misclassifications):
+        def diff_func(relaxations, misclassifications):
             dev = qml.device(
                 "default.qutrit.mixed",
                 wires=num_wires,
@@ -1676,7 +1676,7 @@ class TestReadoutError:
 
             return circuit()
 
-        return dif_func
+        return diff_func
 
     @pytest.mark.autograd
     @pytest.mark.parametrize("relaxations, misclassifications, expected", diff_parameters)
