@@ -40,7 +40,7 @@
 
 <h4>Community contributions 🥳</h4>
 
-* `~.DefaultQutritMixed` readout error has been added using parameters `readout_relaxation_probs` and 
+* `DefaultQutritMixed` readout error has been added using parameters `readout_relaxation_probs` and 
   `readout_misclassification_probs` on the `default.qutrit.mixed` device. These parameters add a `~.QutritAmplitudeDamping`  and a `~.TritFlip` channel, respectively,
   after measurement diagonalization. The amplitude damping error represents the potential for
   relaxation to occur during longer measurements. The trit flip error represents misclassification during readout.
