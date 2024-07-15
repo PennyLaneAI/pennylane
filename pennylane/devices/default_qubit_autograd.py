@@ -38,7 +38,7 @@ class DefaultQubitAutograd(DefaultQubitLegacy):
         pip install autograd
 
     .. warning::
-        This device is deprecated. Use :class:`~.devices.DefaultQubit` instead; for example through ``qml.device("default.qubit")``.
+        This device is deprecated. Use :class:`~.devices.DefaultQubit` instead; for example through ``qml.device("default.qubit")``, which now supports backpropagation.
 
     **Example**
 
