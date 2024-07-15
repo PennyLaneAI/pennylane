@@ -24,7 +24,6 @@ def registers(register_dict):
 
     The registers are a dictionary of :class:`~.Wires` objects where the key is the register name
     and the value is the ``Wires`` object. The values can also be another registers object. This allows creating a nested dictionary of registers.
-    appearance, and nestedness.
 
     Args:
         register_dict (dict): a dictionary of registers where the keys are the names (str) of the
