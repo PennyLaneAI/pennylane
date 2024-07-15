@@ -147,8 +147,6 @@ class TestMitigateWithZNE:
 
         res_mitigated = mitigated_circuit(w1, w2)
         res_ideal = ideal_circuit(w1, w2)
-        print(res_ideal)
-        print(res_mitigated)  # 1e-6 too looooowww
 
         # check shapes
         assert isinstance(res_mitigated, tuple)
@@ -161,9 +159,6 @@ class TestMitigateWithZNE:
 
         res_mitigated = qml.math.stack(res_mitigated)
         res_ideal = qml.math.stack(res_ideal)
-
-        print(res_ideal)
-        print(res_mitigated)
 
         assert res_mitigated.shape == res_ideal.shape
         assert not np.allclose(res_mitigated, res_ideal)
