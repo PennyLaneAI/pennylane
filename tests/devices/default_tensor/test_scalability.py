@@ -35,7 +35,6 @@ class TestMultiQubitGates:
         wires = 16
         dev = qml.device("default.tensor", wires=wires, method=method)
 
-        np.random.seed(0)
         state = np.random.rand(2**wires) + 1j * np.random.rand(2**wires)
         state /= np.linalg.norm(state)
 
@@ -51,7 +50,6 @@ class TestMultiQubitGates:
         wires = 16
         dev = qml.device("default.tensor", wires=wires, method=method)
 
-        np.random.seed(0)
         state = np.random.rand(2**wires) + 1j * np.random.rand(2**wires)
         state /= np.linalg.norm(state)
 

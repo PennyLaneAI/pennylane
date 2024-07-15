@@ -23,8 +23,6 @@ from pennylane import math
 from pennylane import numpy as qnp
 from pennylane.devices import DefaultQutritMixed, ExecutionConfig
 
-np.random.seed(0)
-
 
 class TestDeviceProperties:
     """Tests for general device properties."""

@@ -209,7 +209,6 @@ def circuit_decomposed(*weights):
 def test_adjoint():
     """Test that the adjoint method works"""
     dev = DummyDevice(wires=2)
-    np.random.seed(42)
 
     shapes = qml.CVNeuralNetLayers.shape(n_layers=1, n_wires=2)
     weights = [np.random.random(shape) for shape in shapes]
