@@ -325,17 +325,22 @@ def richardson_extrapolate(x, y):
 
 
 def exponential_extrapolate(x, y, asymptote=None, eps=1.0e-6):
-    r"""Exponential fitting
+    r"""Extrapolate to the zero-noise limit using an exponential model (:math:`Ae^{Bx} + C`). This
+    is done by linearizing the data using a logarithm, whereupon a linear fit is performed. Once
+    the model parameter are found, they are transformed back to exponential parameters.
 
     Args:
         x (Array): Data in x
         y (Array): Data in y = f(x)
-        asymptote (float): Infinite noise limit.
-        eps (float): Epsilon to regularize log(y - asymptote)
-            when the argument is to close to zero or negative.
+        asymptote (float): Infinite noise limit expected for your circuit of interest. Defaults to
+            0 in the case an asymptote is not supplied.
+        eps (float): Epsilon to regularize log(y - asymptote) when the argument is to close to
+            zero or negative.
 
     Returns:
         float: Extrapolated value at f(0).
+
+    .. seealso:: :func:`~.pennylane.transforms.richardson_extrapolate`, :func:`~.pennylane.transforms.mitigate_with_zne`
 
     **Example:**
 
