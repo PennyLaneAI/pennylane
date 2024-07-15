@@ -503,7 +503,7 @@ class Wires(Sequence):
             Wires: A new Wires object representing the union of the two Wires objects.
 
         Raises:
-            TypeError: If 'other' is not an instance of Wires.
+            TypeError: If `other` is not an instance of Wires.
 
         **Example**
 
@@ -524,7 +524,7 @@ class Wires(Sequence):
             Wires: A new Wires object representing the union of the two Wires objects.
 
         Raises:
-            TypeError: If 'other' is not an instance of Wires.
+            TypeError: If `other` is not an instance of Wires.
 
         **Example**
 
@@ -547,7 +547,7 @@ class Wires(Sequence):
             Wires: A new Wires object representing the intersection of the two Wires objects.
 
         Raises:
-            TypeError: If 'other' is not an instance of Wires.
+            TypeError: If `other` is not an instance of Wires.
 
         **Example**
 
@@ -568,7 +568,7 @@ class Wires(Sequence):
             Wires: A new Wires object representing the intersection of the two Wires objects.
 
         Raises:
-            TypeError: If 'other' is not an instance of Wires.
+            TypeError: If `other` is not an instance of Wires.
 
         **Example**
 
@@ -591,7 +591,7 @@ class Wires(Sequence):
             Wires: A new Wires object representing the difference of the two Wires objects.
 
         Raises:
-            TypeError: If 'other' is not an instance of Wires.
+            TypeError: If `other` is not an instance of Wires.
 
         **Example**
 
@@ -612,7 +612,7 @@ class Wires(Sequence):
             Wires: A new Wires object representing the difference of the two Wires objects.
 
         Raises:
-            TypeError: If 'other' is not an instance of Wires.
+            TypeError: If `other` is not an instance of Wires.
 
         **Example**
 
@@ -637,7 +637,7 @@ class Wires(Sequence):
             Wires: A new Wires object representing the symmetric difference of the two Wires objects.
 
         Raises:
-            TypeError: If 'other' is not an instance of Wires.
+            TypeError: If `other` is not an instance of Wires.
 
         **Example**
 
@@ -658,7 +658,7 @@ class Wires(Sequence):
             Wires: A new Wires object representing the symmetric difference of the two Wires objects.
 
         Raises:
-            TypeError: If 'other' is not an instance of Wires.
+            TypeError: If `other` is not an instance of Wires.
 
         **Example**
 
