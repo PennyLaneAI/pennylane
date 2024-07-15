@@ -239,14 +239,13 @@ class TestControlledDecompositionZYZ:
         op = qml.RZ(np.pi, wires=0)
         decomp = ctrl_decomp_zyz(op, [1])
         expected = [
-            qml.RZ(np.pi, wires=0),
+            qml.RZ(np.pi / 2, wires=0),
             qml.CNOT(wires=[1, 0]),
             qml.RZ(-np.pi / 2, wires=0),
             qml.CNOT(wires=[1, 0]),
-            qml.RZ(-np.pi / 2, wires=0),
         ]
 
-        assert len(decomp) == 5
+        assert len(decomp) == 4
         assert decomp == expected
 
     @pytest.mark.parametrize(
