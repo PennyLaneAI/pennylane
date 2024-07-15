@@ -61,6 +61,10 @@
   Instead, please add the shots to the ``QuantumTape``'s to be executed.
   [(#5984)](https://github.com/PennyLaneAI/pennylane/pull/5984)
 
+* The ``device_batch_transform`` argument in ``qml.execute`` is deprecated. 
+  Instead, please create a ``qml.transforms.core.TransformProgram`` with the desired preprocessing and pass it to the ``transform_program`` argument of ``qml.execute``.
+  [(#5984)](https://github.com/PennyLaneAI/pennylane/pull/5984)
+
 * `pennylane.qinfo.classical_fisher` and `pennylane.qinfo.quantum_fisher` have been deprecated.
   Instead, use `pennylane.gradients.classical_fisher` and `pennylane.gradients.quantum_fisher`.
   [(#5985)](https://github.com/PennyLaneAI/pennylane/pull/5985)

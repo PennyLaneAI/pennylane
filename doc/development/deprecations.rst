@@ -25,6 +25,13 @@ Pending deprecations
   Instead, please add the shots to the ``QuantumTape``'s to be executed.
 
   - Deprecated in v0.38
+  - Will be removed in v0.39
+
+* The ``device_batch_transform`` argument in ``qml.execute`` is deprecated. 
+  Instead, please create a ``qml.transforms.core.TransformProgram`` with the desired preprocessing and pass it to the ``transform_program`` argument of ``qml.execute``.
+
+  - Deprecated in v0.38
+  - Will be removed in v0.39
 
 * The functions ``qml.qinfo.classical_fisher`` and ``qml.qinfo.quantum_fisher`` are deprecated since they are being migrated
   to the ``qml.gradients`` module. Therefore, ``qml.gradients.classical_fisher`` and ``qml.gradients.quantum_fisher`` should be used instead.

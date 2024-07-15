@@ -538,7 +538,7 @@ def execute(
     .. warning::
 
         The following arguments are deprecated and will be removed in version 0.39:
-        ``expand_fn``, ``max_expansion``.
+        ``expand_fn``, ``max_expansion``, and ``device_batch_transform``.
         Instead, please create a :class:`~.TransformProgram` with the desired preprocessing and pass it to the ``transform_program`` argument. For instance, we can create a program that uses the ``qml.devices.preprocess.decompose`` transform with the desired expansion level and pass it to the ``qml.execute`` function:
 
         .. code-block:: python
@@ -562,6 +562,22 @@ def execute(
 
         >>> qml.execute([tape], dev, transform_program=program)
         (0.36235775447667357,)
+
+    .. warning::
+
+        The ``override_shots`` argument is deprecated and will be removed in version 0.39.
+        Instead, please add the shots to the ``QuantumTape``'s to be executed. For instance:
+
+        .. code-block:: python
+
+            dev = qml.device("default.qubit", wires=1)
+            operations = [qml.PauliX(0)]
+            measurements = [qml.expval(qml.PauliZ(0))]
+            qs = qml.tape.QuantumTape(operations, measurements, shots=100)
+
+        >>> qml.execute([qs], dev)
+        (-1.0,)
+
 
     **Example**
 
