@@ -13,6 +13,14 @@
 
 * A new function `qml.registers` has been added, enabling the creation of registers, which are implemented as a dictionary of `Wires` instances.
   [(#5957)](https://github.com/PennyLaneAI/pennylane/pull/5957)
+
+* The `split_to_single_terms` transform is added. This transform splits expectation values of sums 
+  into multiple single-term measurements on a single tape, providing better support for simulators 
+  that can handle non-commuting observables but don't natively support multi-term observables.
+  [(#5884)](https://github.com/PennyLaneAI/pennylane/pull/5884)
+
+* `SProd.terms` now flattens out the terms if the base is a multi-term observable.
+  [(#5885)](https://github.com/PennyLaneAI/pennylane/pull/5885)
   
 <h3>Improvements 🛠</h3>
 
@@ -27,6 +35,9 @@
 * `QuantumScript.hash` is now cached, leading to performance improvements.
   [(#5919)](https://github.com/PennyLaneAI/pennylane/pull/5919)
 
+* The representation for `Wires` has now changed to be more copy-paste friendly.
+  [(#5958)](https://github.com/PennyLaneAI/pennylane/pull/5958)
+  
 * Observable validation for `default.qubit` is now based on execution mode (analytic vs. finite shots) and measurement type (sample measurement vs. state measurement).
   [(#5890)](https://github.com/PennyLaneAI/pennylane/pull/5890)
 
@@ -41,12 +52,19 @@
 
 <h3>Deprecations 👋</h3>
 
+* `pennylane.qinfo.classical_fisher` and `pennylane.qinfo.quantum_fisher` have been deprecated.
+  Instead, use `pennylane.gradients.classical_fisher` and `pennylane.gradients.quantum_fisher`.
+  [(#5985)](https://github.com/PennyLaneAI/pennylane/pull/5985)
+
 <h3>Documentation 📝</h3>
 
 * Improves the docstring for `QuantumScript.expand` and `qml.tape.tape.expand_tape`.
   [(#5974)](https://github.com/PennyLaneAI/pennylane/pull/5974)
 
 <h3>Bug fixes 🐛</h3>
+
+* `qml.QSVT` is updated to store wire order correctly.
+  [(#5959)](https://github.com/PennyLaneAI/pennylane/pull/5959)
 
 * `qml.devices.qubit.measure_with_samples` now returns the correct result if the provided measurements
   contain sum of operators acting on the same wire.
@@ -58,13 +76,14 @@
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
-
-Ahmed Darwish
+Guillermo Alonso,
+Ahmed Darwish,
 Astral Cai,
 Yushao Chen,
+Lillian M. A. Frederiksen,
 Pietropaolo Frisoni,
-Christina Lee,
 Austin Huang,
+Christina Lee,
 William Maxwell,
 Vincent Michaud-Rioux,
 Mudit Pandey,
