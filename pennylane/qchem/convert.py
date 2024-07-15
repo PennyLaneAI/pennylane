@@ -58,23 +58,23 @@ def _process_wires(wires, n_wires=None):
 
     >>> # consec int wires if no wires mapping provided, ie. identity map: 0<->0, 1<->1, 2<->2
     >>> _process_wires(None, 3)
-    <Wires = [0, 1, 2]>
+    Wires([0, 1, 2])
 
     >>> # List as mapping, qubit indices with wire label values: 0<->w0, 1<->w1, 2<->w2
     >>> _process_wires(['w0','w1','w2'])
-    <Wires = ['w0', 'w1', 'w2']>
+    Wires(['w0', 'w1', 'w2'])
 
     >>> # Wires as mapping, qubit indices with wire label values: 0<->w0, 1<->w1, 2<->w2
     >>> _process_wires(Wires(['w0', 'w1', 'w2']))
-    <Wires = ['w0', 'w1', 'w2']>
+    Wires(['w0', 'w1', 'w2'])
 
     >>> # Dict as partial mapping, int qubits keys to wire label values: 0->w0, 1 unchanged, 2->w2
     >>> _process_wires({0:'w0',2:'w2'})
-    <Wires = ['w0', 1, 'w2']>
+    Wires(['w0', 1, 'w2'])
 
     >>> # Dict as mapping, wires label keys to consec int qubit values: w2->2, w0->0, w1->1
     >>> _process_wires({'w2':2, 'w0':0, 'w1':1})
-    <Wires = ['w0', 'w1', 'w2']>
+    Wires(['w0', 'w1', 'w2'])
     """
 
     # infer from wires, or assume 1 if wires is not of accepted types.
