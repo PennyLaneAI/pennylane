@@ -19,7 +19,7 @@ from .wires import Wires
 
 
 def registers(register_dict):
-    """Returns registers of wire registers as a dictionary of register names and 
+    """Returns registers of wire registers as a dictionary of register names and
     :class:`~pennylane.wires.Wires`.
 
     The registers are a dictionary of :class:`~.Wires` objects where the key is the register name
