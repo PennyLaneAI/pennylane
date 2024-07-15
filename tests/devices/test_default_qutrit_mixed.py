@@ -13,7 +13,7 @@
 # limitations under the License.
 """Tests for default qutrit mixed."""
 
-from functools import reduce, partial
+from functools import partial, reduce
 
 import numpy as np
 import pytest
@@ -1758,7 +1758,9 @@ class TestReadoutError:
 
     @pytest.mark.tf
     @pytest.mark.parametrize("relaxations, misclassifications, expected", diff_parameters)
-    def test_differentiation_tensorflow(self, num_wires, relaxations, misclassifications, expected):
+    def test_differentiation_tensorflow(  # pylint: disable=too-many-arguments
+        self, num_wires, relaxations, misclassifications, expected
+    ):
         """Tests the differentiation of readout errors using TensorFlow"""
         import tensorflow as tf
 
