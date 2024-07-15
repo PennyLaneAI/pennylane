@@ -513,7 +513,7 @@ class Wires(Sequence):
         Wires([1, 2, 3, 4, 5])
         """
         if not isinstance(other, Wires):
-            raise TypeError("Can only do the union of Wires with Wires")
+            raise TypeError(f"Can only do the union of Wires with Wires. Got {type(other)}.")
         return Wires(set(self.labels) | set(other.labels))
 
     def __and__(self, other):
