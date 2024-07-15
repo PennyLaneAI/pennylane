@@ -23,7 +23,7 @@ def registers(register_dict):
     (number of qubits in the register).
 
     The registers are a dictionary of :class:`~.Wires` objects where the key is the register name
-    and the value is the ``Wires`` object. The individual wire labels are integers, ordered on
+    and the value is the ``Wires`` object. The values can also be another registers object. This allows creating a nested dictionary of registers.
     appearance, and nestedness.
 
     Args:
