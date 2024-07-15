@@ -582,7 +582,7 @@ class Wires(Sequence):
         Wires([1, 2, 4, 5])
         """
         if not isinstance(other, Wires):
-            raise TypeError("Can only the symmetric difference of Wires with other Wires")
+            raise TypeError(f"Can only the symmetric difference of Wires with other Wires. Got {type(other)}.")
         return Wires(set(self.labels) ^ set(other.labels))
 
 
