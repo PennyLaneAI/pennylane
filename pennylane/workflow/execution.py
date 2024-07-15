@@ -409,8 +409,19 @@ def _get_interface_name(tapes, interface):
     return interface
 
 
-def _deprecated_arguments_warnings(tapes, override_shots, expand_fn, max_expansion):
+def _deprecated_arguments_warnings(
+    tapes, override_shots, expand_fn, max_expansion, device_batch_transform
+):
     """Helper function to raise exceptions and pass codefactor checks regarding the length of the function"""
+
+    if device_batch_transform is not None:
+        warnings.warn(
+            "The device_batch_transform argument is deprecated and will be removed in version 0.39. "
+            "Instead, please create a TransformProgram with the desired preprocessing and pass it to the transform_program argument of qml.execute.",
+            qml.PennyLaneDeprecationWarning,
+        )
+    else:
+        device_batch_transform = True
 
     if override_shots is not UNSET:
         warnings.warn(
@@ -434,7 +445,7 @@ def _deprecated_arguments_warnings(tapes, override_shots, expand_fn, max_expansi
     if expand_fn is not UNSET:
         warnings.warn(
             "The expand_fn argument is deprecated and will be removed in version 0.39. "
-            "Instead, please create a TransformProgram with the desired preprocessing and pass it to the transform_program argument.",
+            "Instead, please create a TransformProgram with the desired preprocessing and pass it to the transform_program argument of qml.execute.",
             qml.PennyLaneDeprecationWarning,
         )
     else:
@@ -449,7 +460,7 @@ def _deprecated_arguments_warnings(tapes, override_shots, expand_fn, max_expansi
     else:
         max_expansion = 10
 
-    return override_shots, expand_fn, max_expansion, tapes
+    return tapes, override_shots, expand_fn, max_expansion, device_batch_transform
 
 
 def execute(
@@ -468,7 +479,7 @@ def execute(
     override_shots: int = UNSET,
     expand_fn=UNSET,  # type: ignore
     max_expansion=None,
-    device_batch_transform=True,
+    device_batch_transform=None,
     device_vjp=False,
     mcm_config=None,
 ) -> ResultBatch:
@@ -634,8 +645,10 @@ def execute(
             "::L".join(str(i) for i in inspect.getouterframes(inspect.currentframe(), 2)[1][1:3]),
         )
 
-    override_shots, expand_fn, max_expansion, tapes = _deprecated_arguments_warnings(
-        tapes, override_shots, expand_fn, max_expansion
+    tapes, override_shots, expand_fn, max_expansion, device_batch_transform = (
+        _deprecated_arguments_warnings(
+            tapes, override_shots, expand_fn, max_expansion, device_batch_transform
+        )
     )
 
     ### Specifying and preprocessing variables ####

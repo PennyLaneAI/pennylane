@@ -201,14 +201,26 @@ class TestBatchTransformExecution:
 
         if not qml.operation.active_new_opmath():
             with pytest.raises(AssertionError, match="Hamiltonian must be used with shots=None"):
-                _ = qml.execute([tape], dev, None, device_batch_transform=False)
+                with pytest.warns(
+                    qml.PennyLaneDeprecationWarning,
+                    match="The device_batch_transform argument is deprecated",
+                ):
+                    _ = qml.execute([tape], dev, None, device_batch_transform=False)
         else:
-            res = qml.execute([tape], dev, None, device_batch_transform=False)
+            with pytest.warns(
+                qml.PennyLaneDeprecationWarning,
+                match="The device_batch_transform argument is deprecated",
+            ):
+                res = qml.execute([tape], dev, None, device_batch_transform=False)
             assert np.allclose(res[0], np.cos(y), atol=0.1)
 
         spy.assert_not_called()
 
-        res = qml.execute([tape], dev, None, device_batch_transform=True)
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match="The device_batch_transform argument is deprecated",
+        ):
+            res = qml.execute([tape], dev, None, device_batch_transform=True)
         spy.assert_called()
 
         assert qml.math.shape(res[0]) == ()
