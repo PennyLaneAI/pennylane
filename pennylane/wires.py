@@ -512,6 +512,8 @@ class Wires(Sequence):
         >>> wires1.union(wires2)
         Wires([1, 2, 3, 4, 5])
         """
+        if not isinstance(other, Wires):
+            raise TypeError(f"Can only do the union of Wires with Wires. Got {type(other)}.")
         return Wires(set(self.labels) | set(other.labels))
 
     def __or__(self, other):
@@ -533,8 +535,6 @@ class Wires(Sequence):
         >>> wires1 | wires2
         Wires([1, 2, 3, 4, 5])
         """
-        if not isinstance(other, Wires):
-            raise TypeError(f"Can only do the union of Wires with Wires. Got {type(other)}.")
         return self.union(other)
 
     def intersection(self, other):
@@ -556,6 +556,8 @@ class Wires(Sequence):
         >>> wires1.intersection(wires2)
         Wires([2, 3])
         """
+        if not isinstance(other, Wires):
+            raise TypeError(f"Can only do the intersection of Wires with Wires. Got {type(other)}.")
         return Wires(set(self.labels) & set(other.labels))
 
     def __and__(self, other):
@@ -577,8 +579,6 @@ class Wires(Sequence):
         >>> wires1 & wires2
         Wires([2, 3])
         """
-        if not isinstance(other, Wires):
-            raise TypeError(f"Can only do the intersection of Wires with Wires. Got {type(other)}.")
         return self.intersection(other)
 
     def difference(self, other):
@@ -600,6 +600,10 @@ class Wires(Sequence):
         >>> wires1.difference(wires2)
         Wires([1])
         """
+        if not isinstance(other, Wires):
+            raise TypeError(
+                f"Can only do the difference of Wires with other Wires. Got {type(other)}."
+            )
         return Wires(set(self.labels) - set(other.labels))
 
     def __sub__(self, other):
@@ -621,10 +625,6 @@ class Wires(Sequence):
         >>> wires1 - wires2
         Wires([1])
         """
-        if not isinstance(other, Wires):
-            raise TypeError(
-                f"Can only do the difference of Wires with other Wires. Got {type(other)}."
-            )
         return self.difference(other)
 
     def symmetric_difference(self, other):
@@ -646,6 +646,10 @@ class Wires(Sequence):
         >>> wires1.symmetric_difference(wires2)
         Wires([1, 2, 4, 5])
         """
+        if not isinstance(other, Wires):
+            raise TypeError(
+                f"Can only the symmetric difference of Wires with other Wires. Got {type(other)}."
+            )
         return Wires(set(self.labels) ^ set(other.labels))
 
     def __xor__(self, other):
@@ -667,10 +671,6 @@ class Wires(Sequence):
         >>> wires1 ^ wires2
         Wires([1, 2, 4, 5])
         """
-        if not isinstance(other, Wires):
-            raise TypeError(
-                f"Can only the symmetric difference of Wires with other Wires. Got {type(other)}."
-            )
         return self.symmetric_difference(other)
 
 

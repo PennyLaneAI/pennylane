@@ -512,3 +512,36 @@ class TestWires:
             # Ensure the reverse also has a TypeError
             with pytest.raises(TypeError, match="unsupported operand"):
                 operation(invalid_operand, wire)
+
+    @pytest.mark.parametrize(
+        "operation, error_message",
+        [
+            (lambda a, b: a.union(b), "Can only do the union of Wires with Wires"),
+            (lambda a, b: a.intersection(b), "Can only do the intersection of Wires with Wires"),
+            (lambda a, b: a.difference(b), "Can only do the difference of Wires with other Wires"),
+            (
+                lambda a, b: a.symmetric_difference(b),
+                "Can only the symmetric difference of Wires with other Wires",
+            ),
+        ],
+    )
+    def test_type_error_raised_methods(self, operation, error_message):
+        """
+        Test that TypeError is raised with the correct error message when performing
+        set operations between a Wires object and an incompatible type.
+
+        This test covers union (|), intersection (&), difference (-),
+        and symmetric difference (^) operations.
+        """
+        wire = Wires([1, 2, 3])
+        invalid_operands = [
+            42,
+            "string",
+            [1, 2, 3],
+            {1, 2, 3},
+            (1, 2, 3),
+        ]
+
+        for invalid_operand in invalid_operands:
+            with pytest.raises(TypeError, match=error_message):
+                operation(wire, invalid_operand)
