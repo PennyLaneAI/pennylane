@@ -391,6 +391,7 @@ class TestWires:
         Test the union operation (|) between two Wires objects.
         """
         assert wire_a | wire_b == expected
+        assert wire_a.union(wire_b) == expected
 
     @pytest.mark.parametrize(
         "wire_a, wire_b, expected",
@@ -405,6 +406,7 @@ class TestWires:
         Test the intersection operation (&) between two Wires objects.
         """
         assert wire_a & wire_b == expected
+        assert wire_a.intersection(wire_b) == expected
 
     @pytest.mark.parametrize(
         "wire_a, wire_b, expected",
@@ -419,6 +421,7 @@ class TestWires:
         Test the difference operation (-) between two Wires objects.
         """
         assert wire_a - wire_b == expected
+        assert wire_a.difference(wire_b) == expected
 
     @pytest.mark.parametrize(
         "wire_a, wire_b, expected",
@@ -433,6 +436,7 @@ class TestWires:
         Test the symmetric difference operation (^) between two Wires objects.
         """
         assert wire_a ^ wire_b == expected
+        assert wire_a.symmetric_difference(wire_b) == expected
 
     @pytest.mark.parametrize(
         "wire_a, wire_b, wire_c, wire_d, expected",
@@ -455,6 +459,7 @@ class TestWires:
         """
         result = wire_a | wire_b | wire_c | wire_d
         assert result == expected
+        assert wire_a.union(wire_b.union(wire_c.union(wire_d))) == expected
 
     def test_complex_operation(self):
         """
@@ -501,10 +506,9 @@ class TestWires:
         ]
 
         for invalid_operand in invalid_operands:
-            with pytest.raises(TypeError) as excinfo:
+            with pytest.raises(TypeError, match=error_message):
                 operation(wire, invalid_operand)
-            assert str(excinfo.value) == error_message
 
             # Ensure the reverse also has a TypeError
-            with pytest.raises(TypeError, match="unsupported operand") as excinfo:
+            with pytest.raises(TypeError, match="unsupported operand"):
                 operation(invalid_operand, wire)
