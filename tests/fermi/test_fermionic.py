@@ -127,17 +127,19 @@ class TestFermiWord:
 
     def test_to_mat(self):
         """Test that the matrix representation of FermiWord is correct."""
-        fw = FermiWord({(0, 0): "+", (1, 1): "-"})
+
         expected_mat = np.zeros((4, 4), dtype=complex)
         expected_mat[2, 1] = 1.0
 
-        mat = fw.to_mat()
+        mat = fw1.to_mat()
         assert np.allclose(mat, expected_mat)
 
-        # check that the error is raised when the request matrix dimension is smaller
-        # than that determined by the largest index
+    def test_to_mat_error(self):
+        """Test that an error is raised if the request matrix dimension is too small
+        (smaller than the dimension inferred from the largest orbital index).
+        """
         with pytest.raises(ValueError, match="n_orbitals cannot be smaller than 2"):
-            fw.to_mat(n_orbitals=1)
+            fw1.to_mat(n_orbitals=1)
 
 
 class TestFermiWordArithmetic:
@@ -457,6 +459,13 @@ fs3 = FermiSentence({fw3: -0.5, fw4: 1})
 fs4 = FermiSentence({fw4: 1})
 fs5 = FermiSentence({})
 fs6 = FermiSentence({fw1: 1.2, fw2: 3.1})
+fs7 = FermiSentence(
+    {
+        FermiWord({(0, 0): "+", (1, 1): "-"}): 1.23,  # a+(0) a(1)
+        FermiWord({(0, 0): "+", (1, 0): "-"}): 4.0j,  # a+(0) a(0) = n(0) (number operator)
+        FermiWord({(0, 0): "+", (1, 2): "-", (2, 1): "+"}): -0.5,  # a+(0) a(2) a+(1)
+    }
+)
 
 fs1_x_fs2 = FermiSentence(  # fs1 * fs1, computed by hand
     {
@@ -617,13 +626,6 @@ class TestFermiSentence:
 
     def test_to_mat(self):
         """Test that the matrix representation of FermiSentence is correct."""
-        fs = FermiSentence(
-            {
-                FermiWord({(0, 0): "+", (1, 1): "-"}): 1.23,  # a+(0) a(1)
-                FermiWord({(0, 0): "+", (1, 0): "-"}): 4.0j,  # a+(0) a(0) = n(0) (number operator)
-                FermiWord({(0, 0): "+", (1, 2): "-", (2, 1): "+"}): -0.5,  # a+(0) a(2) a+(1)
-            }
-        )
         expected_mat = np.zeros((8, 8), dtype=complex)
         expected_mat[4, 2] = 1.23 + 0j
         expected_mat[5, 3] = 1.23 + 0j
@@ -631,13 +633,15 @@ class TestFermiSentence:
             expected_mat[i, i] = 4.0j
         expected_mat[6, 1] = 0.5 + 0j
 
-        mat = fs.to_mat()
+        mat = fs7.to_mat()
         assert np.allclose(mat, expected_mat)
 
-        # The error is raised when the request matrix dimension (2**(n_n_orbitals) by 2**(n_n_orbitals))
-        # is smaller than that determined by the largest index
+    def test_to_mat_error(self):
+        """Test that an error is raised if the request matrix dimension is too small
+        (smaller than the dimension inferred from the largest orbital index).
+        """
         with pytest.raises(ValueError, match="n_orbitals cannot be smaller than 3"):
-            fs.to_mat(n_orbitals=2)
+            fs7.to_mat(n_orbitals=2)
 
 
 class TestFermiSentenceArithmetic:

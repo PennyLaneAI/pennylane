@@ -15,7 +15,6 @@
 import re
 from copy import copy
 from numbers import Number
-from typing import Optional, Union
 
 from numpy import ndarray
 
@@ -293,7 +292,21 @@ class FermiWord(dict):
               [0.+0.j, 1.+0.j, 0.+0.j, 0.+0.j],
               [0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j])
         """
-        return _to_mat(self, n_orbitals)
+        # prevent circular import
+        from .conversion import jordan_wigner  # pylint: disable=import-outside-toplevel
+
+        # Get the largest orbital index (1-based indexing) in the Fermi word,
+        # which determines the minimum size of the matrix
+        largest_orb_id = max(key[1] for key in self.keys()) + 1
+        if n_orbitals and n_orbitals < largest_orb_id:
+            raise ValueError(
+                f"n_orbitals cannot be smaller than {largest_orb_id}, got: {n_orbitals}."
+            )
+
+        largest_order = n_orbitals or largest_orb_id
+        mat = jordan_wigner(self, ps=True).to_mat(wire_order=list(range(largest_order)))
+
+        return mat
 
 
 # pylint: disable=useless-super-delegation
@@ -504,7 +517,21 @@ class FermiSentence(dict):
               [0.0 + 0.0j, 1.2 + 0.0j, 3.1 + 0.0j, 0.0 + 0.0j],
               [0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, 3.1 + 0.0j])
         """
-        return _to_mat(self, n_orbitals)
+        # prevent circular import
+        from .conversion import jordan_wigner  # pylint: disable=import-outside-toplevel
+
+        # Obtain the largest orbital index (1-based indexing) in the Fermi sentence,
+        # which determines the minimum dimension of the matrix.
+        largest_orb_id = max(key[1] for fermi_word in self.keys() for key in fermi_word.keys()) + 1
+        if n_orbitals and n_orbitals < largest_orb_id:
+            raise ValueError(
+                f"n_orbitals cannot be smaller than {largest_orb_id}, got: {n_orbitals}."
+            )
+
+        largest_order = n_orbitals or largest_orb_id
+        mat = jordan_wigner(self, ps=True).to_mat(wire_order=list(range(largest_order)))
+
+        return mat
 
 
 def from_string(fermi_string):
@@ -669,45 +696,3 @@ class FermiA(FermiWord):
             )
         operator = {(0, orbital): "-"}
         super().__init__(operator)
-
-
-def _to_mat(fermi_op: Union[FermiWord, FermiSentence], n_orbitals: Optional[int] = None) -> ndarray:
-    r"""Return the matrix representation of a Fermi operator.
-
-    Args:
-        fermi_op (FermiWord or FermiSentence): the fermionic operator
-        n_orbitals (int or None): Number of orbitals. If not provided, it will be inferred from the largest orbital
-                                  index in the Fermi operator
-
-    Returns:
-        NumpyArray: Matrix representation of the Fermi operator
-
-    **Example**
-
-    >>> fop = FermiWord({(0, 0): '+', (1, 1): '-'})
-    >>> _to_mat(fop)
-    array([0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j],
-          [0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j],
-          [0.+0.j, 1.+0.j, 0.+0.j, 0.+0.j],
-          [0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j]])
-    """
-    # prevent circular import
-    from .conversion import jordan_wigner  # pylint: disable=import-outside-toplevel
-
-    # Get all orbital indices in a Fermi operator
-    if isinstance(fermi_op, FermiWord):
-        orb_ids = [key[1] for key in fermi_op.keys()]
-    elif isinstance(fermi_op, FermiSentence):
-        orb_ids = [key[1] for fermi_word in fermi_op.keys() for key in fermi_word.keys()]
-    else:
-        raise TypeError(f"Must be a FermiWord/FermiSentence instance, got: {type(fermi_op)}")
-
-    # Get the largest orbital index in a Fermi operator, and make it 1-based
-    largest_orb_id = max(orb_ids) + 1
-    if n_orbitals and n_orbitals < largest_orb_id:
-        raise ValueError(f"n_orbitals cannot be smaller than {largest_orb_id}, got: {n_orbitals}.")
-
-    largest_order = n_orbitals or largest_orb_id
-    mat = jordan_wigner(fermi_op, ps=True).to_mat(wire_order=list(range(largest_order)))
-
-    return mat
