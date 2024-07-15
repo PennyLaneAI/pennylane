@@ -1699,7 +1699,7 @@ class TestReadoutError:
     @pytest.mark.jax
     @pytest.mark.parametrize("relaxations, misclassifications, expected", diff_parameters)
     @pytest.mark.parametrize("use_jit", (True, False))
-    def test_differentiation_jax(
+    def test_differentiation_jax(  # pylint: disable=too-many-arguments
         self, num_wires, relaxations, misclassifications, use_jit, expected
     ):
         """Tests the differentiation of readout errors using JAX"""
@@ -1758,9 +1758,7 @@ class TestReadoutError:
 
     @pytest.mark.tf
     @pytest.mark.parametrize("relaxations, misclassifications, expected", diff_parameters)
-    def test_differentiation_tensorflow(  # pylint: disable=too-many-arguments
-        self, num_wires, relaxations, misclassifications, expected
-    ):
+    def test_differentiation_tensorflow(self, num_wires, relaxations, misclassifications, expected):
         """Tests the differentiation of readout errors using TensorFlow"""
         import tensorflow as tf
 
