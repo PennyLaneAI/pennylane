@@ -167,14 +167,18 @@ class StateMP(StateMeasurement):
 
     def process_state(self, state: Sequence[complex], wire_order: Wires):
         # pylint:disable=redefined-outer-name
-        def is_floating_single(state):
+        def cast_to_complex(state):
             dtype = str(state.dtype)
+            if "complex" in dtype:
+                return state
+            if qml.math.get_interface(state) == "tensorflow":
+                return qml.math.cast(state, "complex128")
             floating_single = "float32" in dtype or "complex64" in dtype
-            return floating_single and qml.math.get_interface(state) != "tensorflow"
+            return qml.math.cast(state, "complex64" if floating_single else "complex128")
 
         wires = self.wires
         if not wires or wire_order == wires:
-            return qml.math.cast(state, "complex64" if is_floating_single(state) else "complex128")
+            return cast_to_complex(state)
 
         if set(wires) != set(wire_order):
             raise WireError(
@@ -194,7 +198,7 @@ class StateMP(StateMeasurement):
         state = qml.math.reshape(state, shape)
         state = qml.math.transpose(state, desired_axes)
         state = qml.math.reshape(state, flat_shape)
-        return qml.math.cast(state, "complex64" if is_floating_single(state) else "complex128")
+        return cast_to_complex(state)
 
     def process_density_matrix(self, density_matrix: Sequence[complex], wire_order: Wires):
         # pylint:disable=redefined-outer-name
