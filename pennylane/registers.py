@@ -26,10 +26,7 @@ def registers(register_dict):
     and the value is the ``Wires`` object. The values can also be another registers object. This allows creating a nested dictionary of registers.
 
     Args:
-        register_dict (dict): a dictionary of registers where the keys are the names (str) of the
-            registers and the values are either nested dictionaries of more registers or
-            integers (int). At the most nested level for each register key, the value must be an
-            int.
+        register_dict (dict): a dictionary where keys are register names and values are either integers indicating the number of qubits or nested dictionaries of more registers
 
     Returns:
         dict (Wires): dictionary where the keys are the names (str) of the registers, and the
