@@ -559,7 +559,7 @@ class Wires(Sequence):
         Wires([1])
         """
         if not isinstance(other, Wires):
-            raise TypeError("Can only do the difference of Wires with other Wires")
+            raise TypeError(f"Can only do the difference of Wires with other Wires. Got {type(other)}.")
         return Wires(set(self.labels) - set(other.labels))
 
     def __xor__(self, other):
