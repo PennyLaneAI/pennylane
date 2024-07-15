@@ -412,21 +412,22 @@ def _get_interface_name(tapes, interface):
 def _deprecated_arguments_warnings(tapes, override_shots, expand_fn, max_expansion):
     """Helper function to raise exceptions and pass codefactor checks regarding the length of the function"""
 
-    if override_shots is not None:
+    if override_shots is not UNSET:
         warnings.warn(
             "The override_shots argument is deprecated and will be removed in version 0.39. "
             "Instead, please add the shots to the QuantumTape's to be executed.",
             qml.PennyLaneDeprecationWarning,
         )
-        tapes = tuple(
-            qml.tape.QuantumScript(
-                t.operations,
-                t.measurements,
-                trainable_params=t.trainable_params,
-                shots=override_shots,
+        if override_shots is not False:
+            tapes = tuple(
+                qml.tape.QuantumScript(
+                    t.operations,
+                    t.measurements,
+                    trainable_params=t.trainable_params,
+                    shots=override_shots,
+                )
+                for t in tapes
             )
-            for t in tapes
-        )
     else:
         override_shots = False
 
@@ -448,7 +449,7 @@ def _deprecated_arguments_warnings(tapes, override_shots, expand_fn, max_expansi
     else:
         max_expansion = 10
 
-    return override_shots, expand_fn, max_expansion
+    return override_shots, expand_fn, max_expansion, tapes
 
 
 def execute(
@@ -464,7 +465,7 @@ def execute(
     cache: Union[None, bool, dict, Cache] = True,
     cachesize=10000,
     max_diff=1,
-    override_shots: int = None,
+    override_shots: int = UNSET,
     expand_fn=UNSET,  # type: ignore
     max_expansion=None,
     device_batch_transform=True,
@@ -633,7 +634,7 @@ def execute(
             "::L".join(str(i) for i in inspect.getouterframes(inspect.currentframe(), 2)[1][1:3]),
         )
 
-    override_shots, expand_fn, max_expansion = _deprecated_arguments_warnings(
+    override_shots, expand_fn, max_expansion, tapes = _deprecated_arguments_warnings(
         tapes, override_shots, expand_fn, max_expansion
     )
 
