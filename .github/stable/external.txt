@@ -15,7 +15,7 @@ Babel==2.15.0
 beautifulsoup4==4.12.3
 black==24.4.2
 bleach==6.1.0
-cachetools==5.3.3
+cachetools==5.4.0
 certifi==2024.7.4
 cffi==1.16.0
 cfgv==3.4.0
@@ -33,10 +33,10 @@ cytoolz==0.12.3
 debugpy==1.8.2
 decorator==5.1.1
 defusedxml==0.7.1
-diastatic-malt==2.15.1
+diastatic-malt==2.15.2
 distlib==0.3.8
 ecos==2.0.14
-exceptiongroup==1.2.1
+exceptiongroup==1.2.2
 execnet==2.1.1
 executing==2.0.1
 fastjsonschema==2.20.0
@@ -76,7 +76,7 @@ jupyter-events==0.10.0
 jupyter-lsp==2.2.5
 jupyter_client==8.6.2
 jupyter_core==5.7.2
-jupyter_server==2.14.1
+jupyter_server==2.14.2
 jupyter_server_terminals==0.5.3
 jupyterlab==4.2.3
 jupyterlab_pygments==0.3.0

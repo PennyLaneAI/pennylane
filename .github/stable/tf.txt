@@ -5,7 +5,7 @@ astunparse==1.6.3
 autograd==1.6.2
 autoray==0.6.12
 black==24.4.2
-cachetools==5.3.3
+cachetools==5.4.0
 certifi==2024.7.4
 cfgv==3.4.0
 charset-normalizer==3.3.2
@@ -18,7 +18,7 @@ cvxpy==1.5.2
 cycler==0.12.1
 distlib==0.3.8
 ecos==2.0.14
-exceptiongroup==1.2.1
+exceptiongroup==1.2.2
 execnet==2.1.1
 filelock==3.15.4
 flaky==3.8.1
