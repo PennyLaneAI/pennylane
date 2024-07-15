@@ -318,7 +318,6 @@ class TestClassicalShadow:
         """Test that the distribution of the bits and recipes are correct for a circuit
         that prepares all qubits in a Pauli basis"""
         # high number of shots to prevent true negatives
-        np.random.seed(42)
         shots = 1000
 
         circuit = circuit_fn(wires, shots=shots, interface=interface)
