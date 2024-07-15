@@ -32,7 +32,7 @@ def registers(register_dict):
 
     Returns:
         dict (Wires): dictionary where the keys are the names (str) of the registers, and the
-            values are either :class:`~.Wires` objects or other registers.
+        values are either :class:`~.Wires` objects or other registers.
 
     **Example**
 
@@ -47,12 +47,12 @@ def registers(register_dict):
 
         Args:
             register_dict (dict): a dictionary where keys are register names and values are either
-            integers indicating the number of qubits or nested dictionaries of more registers
+                integers indicating the number of qubits or nested dictionaries of more registers
             _start_wire_index (int): the starting index for the wire labels.
 
         Returns:
             dict (Wires): dictionary where the keys are the names (str) of the registers, and the
-                values are either :class:`~.Wires` objects or other registers
+            values are either :class:`~.Wires` objects or other registers
         """
 
         all_reg = {}
