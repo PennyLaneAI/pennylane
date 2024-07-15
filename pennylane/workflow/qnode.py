@@ -1101,7 +1101,11 @@ class QNode:
 
         with warnings.catch_warnings():
             # TODO: remove this once the cycle for the arguements have finished, i.e. 0.39.
-            warnings.simplefilter("ignore", qml.PennyLaneDeprecationWarning)
+            warnings.filterwarnings(
+                action="ignore",
+                message=r".*argument is deprecated and will be removed in version 0.39.*",
+                category=qml.PennyLaneDeprecationWarning,
+            )
             # pylint: disable=unexpected-keyword-arg
             res = qml.execute(
                 (self._tape,),

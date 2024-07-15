@@ -412,7 +412,7 @@ def _get_interface_name(tapes, interface):
 def _deprecated_arguments_warnings(tapes, override_shots, expand_fn, max_expansion):
     """Helper function to raise exceptions and pass codefactor checks regarding the length of the function"""
 
-    if override_shots is not False:
+    if override_shots is not None:
         warnings.warn(
             "The override_shots argument is deprecated and will be removed in version 0.39. "
             "Instead, please add the shots to the QuantumTape's to be executed.",
@@ -427,6 +427,8 @@ def _deprecated_arguments_warnings(tapes, override_shots, expand_fn, max_expansi
             )
             for t in tapes
         )
+    else:
+        override_shots = False
 
     if expand_fn is not UNSET:
         warnings.warn(
@@ -462,7 +464,7 @@ def execute(
     cache: Union[None, bool, dict, Cache] = True,
     cachesize=10000,
     max_diff=1,
-    override_shots: int = False,
+    override_shots: int = None,
     expand_fn=UNSET,  # type: ignore
     max_expansion=None,
     device_batch_transform=True,
