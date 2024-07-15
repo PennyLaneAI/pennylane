@@ -114,7 +114,8 @@ class TestMitigateWithZNE:
         for t in tapes:
             same_tape(t, tape)
 
-    def test_multi_returns(self):
+    @pytest.mark.parametrize("extrapolate", [richardson_extrapolate, exponential_extrapolate])
+    def test_multi_returns(self, extrapolate):
         """Tests if the expected shape is returned when mitigating a circuit with two returns"""
         noise_strength = 0.05
 
@@ -132,7 +133,7 @@ class TestMitigateWithZNE:
             qml.transforms.mitigate_with_zne,
             scale_factors=[1, 2, 3],
             folding=fold_global,
-            extrapolate=exponential_extrapolate,
+            extrapolate=extrapolate,
         )
         @qml.qnode(dev)
         def mitigated_circuit(w1, w2):
