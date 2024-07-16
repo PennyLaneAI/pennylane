@@ -392,7 +392,7 @@ def stoch_pulse_grad(
 
         jax.config.update("jax_enable_x64", True)
 
-        dev = qml.device("default.qubit.jax")
+        dev = qml.device("default.qubit")
 
         def sin(p, t):
             return jax.numpy.sin(p * t)
