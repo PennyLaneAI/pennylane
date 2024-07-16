@@ -132,7 +132,7 @@ class RX(Operation):
         # RX(\theta) = RZ(-\pi/2) RY(\theta) RZ(\pi/2)
         warnings.warn(
             "The single_qubit_rot_angles method is deprecated and will be removed in version 0.39. "
-            "Instead, please calculate the angles using _get_single_qubit_rot_angles_via_matrix",
+            "Instead, please calculate the angles using _single_qubit_rot_angles_from_matrix",
             qml.PennyLaneDeprecationWarning,
         )
         pi_half = qml.math.ones_like(self.data[0]) * (np.pi / 2)
@@ -233,7 +233,7 @@ class RY(Operation):
         # RY(\theta) = RZ(0) RY(\theta) RZ(0)
         warnings.warn(
             "The single_qubit_rot_angles method is deprecated and will be removed in version 0.39. "
-            "Instead, please calculate the angles using _get_single_qubit_rot_angles_via_matrix",
+            "Instead, please calculate the angles using _single_qubit_rot_angles_from_matrix",
             qml.PennyLaneDeprecationWarning,
         )
         return [0.0, self.data[0], 0.0]
@@ -374,7 +374,7 @@ class RZ(Operation):
         # RZ(\theta) = RZ(\theta) RY(0) RZ(0)
         warnings.warn(
             "The single_qubit_rot_angles method is deprecated and will be removed in version 0.39. "
-            "Instead, please calculate the angles using _get_single_qubit_rot_angles_via_matrix",
+            "Instead, please calculate the angles using _single_qubit_rot_angles_from_matrix",
             qml.PennyLaneDeprecationWarning,
         )
         return [self.data[0], 0.0, 0.0]
@@ -544,7 +544,7 @@ class PhaseShift(Operation):
         # PhaseShift(\theta) = RZ(\theta) RY(0) RZ(0)
         warnings.warn(
             "The single_qubit_rot_angles method is deprecated and will be removed in version 0.39. "
-            "Instead, please calculate the angles using _get_single_qubit_rot_angles_via_matrix",
+            "Instead, please calculate the angles using _single_qubit_rot_angles_from_matrix",
             qml.PennyLaneDeprecationWarning,
         )
         return [self.data[0], 0.0, 0.0]
@@ -694,7 +694,7 @@ class Rot(Operation):
     def single_qubit_rot_angles(self):
         warnings.warn(
             "The single_qubit_rot_angles method is deprecated and will be removed in version 0.39. "
-            "Instead, please calculate the angles using _get_single_qubit_rot_angles_via_matrix",
+            "Instead, please calculate the angles using _single_qubit_rot_angles_from_matrix",
             qml.PennyLaneDeprecationWarning,
         )
         return self.data

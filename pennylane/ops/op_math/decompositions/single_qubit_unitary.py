@@ -91,6 +91,12 @@ def _zyz_get_rotation_angles(U):
     return phis, thetas, omegas
 
 
+def _wrap_angle(angle):
+    """Wrap an angle in radians to the range [-π, π)."""
+    # Cannot use fmod directly since we need the right end of interval to not be included.
+    return (angle + np.pi) % (2 * np.pi) - np.pi
+
+
 def _rot_decomposition(U, wire, return_global_phase=False):
     r"""Compute the decomposition of a single-qubit matrix :math:`U` in terms of
     elementary operations, as a single :class:`.RZ` gate or a :class:`.Rot` gate.
@@ -159,7 +165,7 @@ def _rot_decomposition(U, wire, return_global_phase=False):
     return operations
 
 
-def _get_single_qubit_rot_angles_via_matrix(U: qml.math.array) -> tuple[float, float, float, float]:
+def _single_qubit_rot_angles_from_matrix(U: qml.math.array) -> tuple[float, float, float, float]:
     """Returns the angles corresponding to the ZYZ decomposition of the single qubit operator ``U`` and the global phase."""
     # Cast to batched format for more consistent code
     U = math.expand_dims(U, axis=0) if len(U.shape) == 2 else U
@@ -170,7 +176,9 @@ def _get_single_qubit_rot_angles_via_matrix(U: qml.math.array) -> tuple[float, f
     # Compute the zyz rotation angles
     phis, thetas, omegas = _zyz_get_rotation_angles(U_su2)
 
-    return (phis, thetas, omegas, global_phase)
+    phis, thetas, omegas = (_wrap_angle(angle) for angle in [phis, thetas, omegas])
+
+    return (phis, thetas, omegas, global_phase[0])
 
 
 def _zyz_decomposition(U, wire, return_global_phase=False):
@@ -209,7 +217,7 @@ def _zyz_decomposition(U, wire, return_global_phase=False):
      GlobalPhase(1.1759220332464762, wires=[])]
 
     """
-    phis, thetas, omegas, global_phase = _get_single_qubit_rot_angles_via_matrix(U)
+    phis, thetas, omegas, global_phase = _single_qubit_rot_angles_from_matrix(U)
 
     operations = [qml.RZ(phis, wire), qml.RY(thetas, wire), qml.RZ(omegas, wire)]
     if return_global_phase:

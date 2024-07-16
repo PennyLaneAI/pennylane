@@ -17,7 +17,7 @@ from typing import Callable, Sequence
 
 from pennylane.math import allclose, is_abstract, stack
 from pennylane.ops.op_math.decompositions.single_qubit_unitary import (
-    _get_single_qubit_rot_angles_via_matrix,
+    _single_qubit_rot_angles_from_matrix,
 )
 from pennylane.ops.qubit import Rot
 from pennylane.queuing import QueuingManager
@@ -116,7 +116,7 @@ def single_qubit_fusion(
         # Check if single_qubit_rot_angles can be calculated, else queue and move on.
         # If possible, grab the angles and try to fuse.
         if current_gate.has_matrix and len(current_gate.wires) == 1:
-            *angles, _ = _get_single_qubit_rot_angles_via_matrix(current_gate.matrix())
+            *angles, _ = _single_qubit_rot_angles_from_matrix(current_gate.matrix())
             cumulative_angles = stack(angles)
         else:
             new_operations.append(current_gate)
@@ -155,7 +155,7 @@ def single_qubit_fusion(
             # the gate in question, only valid single-qubit gates on the same
             # wire as the current gate will be fused.
             if next_gate.has_matrix and len(next_gate.wires) == 1:
-                *angles, _ = _get_single_qubit_rot_angles_via_matrix(next_gate.matrix())
+                *angles, _ = _single_qubit_rot_angles_from_matrix(next_gate.matrix())
                 next_gate_angles = stack(angles)
             else:
                 break

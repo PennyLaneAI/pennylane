@@ -24,7 +24,7 @@ import pennylane as qml
 from pennylane import math
 from pennylane.operation import Operator
 from pennylane.ops.op_math.decompositions.single_qubit_unitary import (
-    _get_single_qubit_rot_angles_via_matrix,
+    _single_qubit_rot_angles_from_matrix,
 )
 from pennylane.wires import Wires
 
@@ -197,7 +197,7 @@ def ctrl_decomp_zyz(target_operation: Operator, control_wires: Wires):
 
     target_wire = target_operation.wires
 
-    phi, theta, omega, global_phase = _get_single_qubit_rot_angles_via_matrix(
+    phi, theta, omega, global_phase = _single_qubit_rot_angles_from_matrix(
         qml.matrix(target_operation)
     )
 

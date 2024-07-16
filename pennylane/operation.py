@@ -1772,7 +1772,7 @@ class Operation(Operator):
         """
         warnings.warn(
             "The single_qubit_rot_angles method is deprecated and will be removed in version 0.39. "
-            "Instead, please calculate the angles using _get_single_qubit_rot_angles_via_matrix",
+            "Instead, please calculate the angles using _single_qubit_rot_angles_from_matrix",
             qml.PennyLaneDeprecationWarning,
         )
         raise NotImplementedError
