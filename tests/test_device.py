@@ -642,7 +642,7 @@ class TestInternalFunctions:  # pylint:disable=too-many-public-methods
         prep = [op]
         ops = [qml.AngleEmbedding(features=[0.1], wires=[0], rotation="Z"), op, qml.PauliZ(wires=2)]
 
-        dev = qml.device("default.qubit.legacy", wires=3)
+        dev = qml.device("default.mixed", wires=3)
         tape = qml.tape.QuantumTape(ops=prep + ops, measurements=[], shots=100)
         new_tape = dev.default_expand_fn(tape)
 
@@ -998,7 +998,7 @@ class TestDeviceInit:
         with monkeypatch.context() as m:
             m.setattr(qml, "version", lambda: "0.0.1")
             with pytest.raises(DeviceError, match="plugin requires PennyLane versions"):
-                qml.device("default.qubit.legacy", wires=0)
+                qml.device("default.mixed", wires=0)
 
     def test_refresh_entrypoints(self, monkeypatch):
         """Test that new entrypoints are found by the refresh_devices function"""
@@ -1055,7 +1055,7 @@ class TestDeviceInit:
 
     def test_shot_vector_property(self):
         """Tests shot vector initialization."""
-        dev = qml.device("default.qubit.legacy", wires=1, shots=[1, 3, 3, 4, 4, 4, 3])
+        dev = qml.device("default.mixed", wires=1, shots=[1, 3, 3, 4, 4, 4, 3])
         shot_vector = dev.shot_vector
         assert len(shot_vector) == 4
         assert shot_vector[0].shots == 1
