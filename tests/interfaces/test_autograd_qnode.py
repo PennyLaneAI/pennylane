@@ -138,8 +138,6 @@ class TestQNode:
 
         res = circuit(a)
 
-        assert circuit.qtape.interface is None
-
         # without the interface, the QNode simply returns a scalar array
         assert isinstance(res, np.ndarray)
         assert res.shape == tuple()
@@ -167,6 +165,7 @@ class TestQNode:
 
         a = np.array(0.1, requires_grad=True)
         assert circuit.interface == interface
+
         # gradients should work
         grad = qml.grad(circuit)(a)
 
