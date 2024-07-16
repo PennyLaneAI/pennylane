@@ -339,9 +339,9 @@ def exponential_extrapolate(x, y, asymptote=None, eps=1.0e-6):
     **Example:**
 
     >>> x = np.linspace(1, 10, 5)
-    >>> y = np.exp(-x) + np.random.normal(scale=0.2, size=len(x))
+    >>> y = np.exp(-x) + np.random.normal(scale=0.1, size=len(x))
     >>> qml.transforms.exponential_extrapolate(x, y)
-    Array(8.001553, dtype=float32)
+    1.0955721717596099
     """
     y = qml.math.stack(y)
     slope, y_intercept = _polyfit(x, y, 1)
