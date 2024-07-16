@@ -426,14 +426,14 @@ def from_qasm(quantum_circuit: str, measurements=None):
 
     .. code-block:: python
 
-        qasm_code = 'OPENQASM 2.0;' \\
-                    'include "qelib1.inc";' \\
-                    'qreg q[2];' \\
-                    'creg c[2];' \\
-                    'h q[0];' \\
-                    'measure q[0] -> c[0];' \\
-                    'rz(0.24) q[0];' \\
-                    'cx q[0], q[1];' \\
+        qasm_code = 'OPENQASM 2.0;' \
+                    'include "qelib1.inc";' \
+                    'qreg q[2];' \
+                    'creg c[2];' \
+                    'h q[0];' \
+                    'measure q[0] -> c[0];' \
+                    'rz(0.24) q[0];' \
+                    'cx q[0], q[1];' \
                     'measure q -> c;'
 
         loaded_circuit = qml.from_qasm(qasm_code)
