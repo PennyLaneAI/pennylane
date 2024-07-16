@@ -40,7 +40,7 @@
 
 <h3>Breaking changes 💔</h3>
 
-* ``qml.transforms.map_batch_transform`` has been removed, since transforms can be applied directly to a batch of tapes.
+* `qml.transforms.map_batch_transform` has been removed, since transforms can be applied directly to a batch of tapes.
   See :func:`~.pennylane.transform` for more information.
   [(#5981)](https://github.com/PennyLaneAI/pennylane/pull/5981)
 
@@ -49,20 +49,20 @@
 
 <h3>Deprecations 👋</h3>
 
-* The ``expand_fn`` argument in ``qml.execute`` has been deprecated. 
-  Instead, please create a ``qml.transforms.core.TransformProgram`` with the desired preprocessing and pass it to the ``transform_program`` argument of ``qml.execute``.
+* The `expand_fn` argument in `qml.execute` has been deprecated. 
+  Instead, please create a `qml.transforms.core.TransformProgram` with the desired preprocessing and pass it to the `transform_program` argument of `qml.execute`.
   [(#5984)](https://github.com/PennyLaneAI/pennylane/pull/5984)
 
-* The ``max_expansion`` argument in ``qml.execute`` has been deprecated. 
-  Instead, please use ``qml.devices.preprocess.decompose`` with the desired expansion level, add it to a ``TransformProgram`` and pass it to the ``transform_program`` argument of ``qml.execute``.
+* The `max_expansion` argument in `qml.execute` has been deprecated. 
+  Instead, please use `qml.devices.preprocess.decompose` with the desired expansion level, add it to a `TransformProgram` and pass it to the `transform_program` argument of `qml.execute`.
   [(#5984)](https://github.com/PennyLaneAI/pennylane/pull/5984)
 
-* The ``override_shots`` argument in ``qml.execute`` is deprecated. 
-  Instead, please add the shots to the ``QuantumTape``'s to be executed.
+* The `override_shots` argument in `qml.execute` is deprecated. 
+  Instead, please add the shots to the `QuantumTape`'s to be executed.
   [(#5984)](https://github.com/PennyLaneAI/pennylane/pull/5984)
 
-* The ``device_batch_transform`` argument in ``qml.execute`` is deprecated. 
-  Instead, please create a ``qml.transforms.core.TransformProgram`` with the desired preprocessing and pass it to the ``transform_program`` argument of ``qml.execute``.
+* The `device_batch_transform` argument in `qml.execute` is deprecated. 
+  Instead, please create a `qml.transforms.core.TransformProgram` with the desired preprocessing and pass it to the `transform_program` argument of `qml.execute`.
   [(#5984)](https://github.com/PennyLaneAI/pennylane/pull/5984)
 
 * `pennylane.qinfo.classical_fisher` and `pennylane.qinfo.quantum_fisher` have been deprecated.

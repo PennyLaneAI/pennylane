@@ -417,7 +417,8 @@ def _deprecated_arguments_warnings(
     if device_batch_transform is not None:
         warnings.warn(
             "The device_batch_transform argument is deprecated and will be removed in version 0.39. "
-            "Instead, please create a TransformProgram with the desired preprocessing and pass it to the transform_program argument of qml.execute.",
+            "Instead, please create a TransformProgram with the desired preprocessing and pass "
+            "it to the transform_program argument of qml.execute.",
             qml.PennyLaneDeprecationWarning,
         )
     else:
@@ -445,7 +446,8 @@ def _deprecated_arguments_warnings(
     if expand_fn is not UNSET:
         warnings.warn(
             "The expand_fn argument is deprecated and will be removed in version 0.39. "
-            "Instead, please create a TransformProgram with the desired preprocessing and pass it to the transform_program argument of qml.execute.",
+            "Instead, please create a TransformProgram with the desired preprocessing and pass "
+            "it to the transform_program argument of qml.execute.",
             qml.PennyLaneDeprecationWarning,
         )
     else:
@@ -454,7 +456,8 @@ def _deprecated_arguments_warnings(
     if max_expansion is not None:
         warnings.warn(
             "The max_expansion argument is deprecated and will be removed in version 0.39. "
-            "Instead, please use qml.devices.preprocess.decompose with the desired expansion level, add it to a TransformProgram and pass it to the transform_program argument of qml.execute.",
+            "Instead, please use qml.devices.preprocess.decompose with the desired expansion level,"
+            "add it to a TransformProgram and pass it to the transform_program argument of qml.execute.",
             qml.PennyLaneDeprecationWarning,
         )
     else:
@@ -539,7 +542,10 @@ def execute(
 
         The following arguments are deprecated and will be removed in version 0.39:
         ``expand_fn``, ``max_expansion``, and ``device_batch_transform``.
-        Instead, please create a :class:`~.TransformProgram` with the desired preprocessing and pass it to the ``transform_program`` argument. For instance, we can create a program that uses the ``qml.devices.preprocess.decompose`` transform with the desired expansion level and pass it to the ``qml.execute`` function:
+        Instead, please create a :class:`~.TransformProgram` with the desired preprocessing and
+        pass it to the ``transform_program`` argument. For instance, we can create a program that uses
+        the ``qml.devices.preprocess.decompose`` transform with the desired expansion level and pass it
+        to the ``qml.execute`` function:
 
         .. code-block:: python
 
