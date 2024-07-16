@@ -12,7 +12,7 @@
   [(#5756)](https://github.com/PennyLaneAI/pennylane/pull/5756)
 
 * A new `qml.from_qiskit_noise` method now allows one to convert a Qiskit ``NoiseModel`` to a
-  PennyLane ``NoiseModel`` via pennyalne-qiskit plugin.
+  PennyLane ``NoiseModel`` via the Pennylane-Qiskit plugin.
   [(#5996)](https://github.com/PennyLaneAI/pennylane/pull/5996)
 
 * The `split_to_single_terms` transform is added. This transform splits expectation values of sums 
