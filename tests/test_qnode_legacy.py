@@ -636,9 +636,8 @@ class TestValidation:
 
         # Two warnings. One for the device and one for the interface
         assert len(record) == 2
-
-        print([w.message for w in record])
-        assert all(isinstance(w.message, qml.PennyLaneDeprecationWarning) for w in record)
+        for w in record:
+            assert isinstance(w.message, qml.PennyLaneDeprecationWarning)
 
     def test_not_giving_mode_kwarg_does_not_raise_warning(self):
         """Test that not providing a value for mode does not raise a warning
