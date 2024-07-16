@@ -22,12 +22,6 @@ from pennylane.queuing import AnnotatedQueue
 from pennylane.tape import QuantumScript, QuantumTape
 from pennylane.transforms import transform
 
-has_jax = True
-try:
-    import jax.numpy as jnp
-except ImportError:
-    has_jax = False
-
 
 @transform
 def fold_global(tape: QuantumTape, scale_factor) -> (Sequence[QuantumTape], Callable):
@@ -349,11 +343,7 @@ def exponential_extrapolate(x, y, asymptote=None, eps=1.0e-6):
     >>> qml.transforms.exponential_extrapolate(x, y)
     Array(8.001553, dtype=float32)
     """
-
-    if not has_jax:  # pragma: no cover
-        raise ImportError("Jax is required for exponential fitting.")  # pragma: no cover
-
-    y = jnp.array(y)
+    y = qml.math.stack(y)
     slope, y_intercept = _polyfit(x, y, 1)
     if asymptote is None:
         sign = qml.math.sign(-slope)
