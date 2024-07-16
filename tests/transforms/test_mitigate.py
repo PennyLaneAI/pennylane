@@ -523,6 +523,44 @@ class TestDifferentiableZNE:
         assert qml.math.allclose(zne_val, A + asymptote, atol=1e-3)
 
     @pytest.mark.autograd
+    def test_exponential_extrapolation_autograd(self):
+        scale_factors = [1, 3, 5]
+        noise_scaled_expvals = np.array([0.9, 0.8, 0.7])
+        zne_val = qml.transforms.exponential_extrapolate(scale_factors, noise_scaled_expvals)
+        assert isinstance(zne_val, np.ndarray)
+        assert zne_val.ndim == 0
+
+    # @pytest.mark.tf
+    def test_exponential_extrapolation_tf(self):
+        import tensorflow as tf
+
+        scale_factors = [1, 3, 5]
+        noise_scaled_expvals = tf.constant([0.9, 0.8, 0.7], dtype=tf.float32)
+        zne_val = qml.transforms.exponential_extrapolate(scale_factors, noise_scaled_expvals)
+        assert tf.is_tensor(zne_val)
+        assert zne_val.shape.ndims == 0
+
+    @pytest.mark.torch
+    def test_exponential_extrapolation_torch(self):
+        import torch
+
+        scale_factors = [1, 3, 5]
+        noise_scaled_expvals = torch.tensor([0.9, 0.8, 0.7])
+        zne_val = qml.transforms.exponential_extrapolate(scale_factors, noise_scaled_expvals)
+        assert torch.is_tensor(zne_val)
+        assert zne_val.ndimension() == 0
+
+    @pytest.mark.jax
+    def test_exponential_extrapolation_jax(self):
+        import jax.numpy as jnp
+
+        scale_factors = [1, 3, 5]
+        noise_scaled_expvals = jnp.array([0.9, 0.8, 0.7])
+        zne_val = qml.transforms.exponential_extrapolate(scale_factors, noise_scaled_expvals)
+        assert isinstance(zne_val, jnp.ndarray)
+        assert zne_val.ndim == 0
+
+    @pytest.mark.autograd
     def test_diffability_autograd(self):
         """Testing that the mitigated qnode can be differentiated and returns the correct gradient in autograd"""
         qnode_noisy = qml.QNode(qfunc, dev_noisy)
