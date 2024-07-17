@@ -862,8 +862,8 @@ class ThermalRelaxationError(Channel):
     num_wires = 1
     grad_method = "F"
 
-    def __init__(self, pe, t1, t2, tq, wires, id=None):
-        super().__init__(pe, t1, t2, tq, wires=wires, id=id)
+    def __init__(self, pe, t1, t2, tg, wires, id=None):
+        super().__init__(pe, t1, t2, tg, wires=wires, id=id)
 
     @staticmethod
     def compute_kraus_matrices(pe, t1, t2, tg):  # pylint:disable=arguments-differ
