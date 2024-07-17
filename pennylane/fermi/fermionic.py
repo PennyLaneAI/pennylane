@@ -15,8 +15,10 @@
 import re
 from copy import copy
 from numbers import Number
-from numpy import ndarray
+
 import pennylane as qml
+
+from numpy import ndarray
 
 
 class FermiWord(dict):
