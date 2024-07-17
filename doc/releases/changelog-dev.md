@@ -54,6 +54,10 @@
 
 <h3>Breaking changes 💔</h3>
 
+* ``qml.from_qasm`` no longer removes measurements from the QASM code. Use 
+  ``measurements=[]`` to remove measurements from the original circuit.
+  [(#5982)](https://github.com/PennyLaneAI/pennylane/pull/5982)
+  
 * ``qml.transforms.map_batch_transform`` has been removed, since transforms can be applied directly to a batch of tapes.
   See :func:`~.pennylane.transform` for more information.
   [(#5981)](https://github.com/PennyLaneAI/pennylane/pull/5981)
@@ -94,6 +98,7 @@ Gabriel Bottrill,
 Ahmed Darwish,
 Lillian M. A. Frederiksen,
 Pietropaolo Frisoni,
+Emiliano Godinez,
 Christina Lee,
 Austin Huang,
 William Maxwell,
