@@ -530,7 +530,7 @@ class TestDifferentiableZNE:
         assert isinstance(zne_val, np.ndarray)
         assert zne_val.ndim == 0
 
-    # @pytest.mark.tf
+    @pytest.mark.tf
     def test_exponential_extrapolation_tf(self):
         import tensorflow as tf
 
