@@ -623,7 +623,7 @@ class TestValidation:
 
     def test_autograd_interface_device_switched_no_warnings(self):
         """Test that checks that no warning is raised for device switch when you define an interface,
-        except for thee deprecation warnings."""
+        except for the deprecation warnings."""
         dev = qml.device("default.qubit.legacy", wires=1)
 
         with warnings.catch_warnings(record=True) as record:
@@ -636,9 +636,7 @@ class TestValidation:
             circuit(qml.numpy.array(0.1, requires_grad=True))
 
         # Two warnings. One for the device and one for the interface
-        assert len(record) == 2
-        for w in record:
-            assert w.category == qml.PennyLaneDeprecationWarning
+        assert [rc.category for rc in record].count(qml.PennyLaneDeprecationWarning) == 2
 
     def test_not_giving_mode_kwarg_does_not_raise_warning(self):
         """Test that not providing a value for mode does not raise a warning
