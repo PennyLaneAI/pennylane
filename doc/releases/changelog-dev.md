@@ -4,15 +4,18 @@
 
 <h3>New features since last release</h3>
 
+* Resolved the bug in `qml.ThermalRelaxationError` where there was a typo from `tq` to `tg`.
+  [(#5988)](https://github.com/PennyLaneAI/pennylane/issues/5988)
+
 * A new method `process_density_matrix` has been added to the `ProbabilityMP` and `DensityMatrixMP` classes, allowing for more efficient handling of quantum density matrices, particularly with batch processing support. This method simplifies the calculation of probabilities from quantum states represented as density matrices.
   [(#5830)](https://github.com/PennyLaneAI/pennylane/pull/5830)
 
-* The `qml.PrepSelPrep` template is added. The template implements a block-encoding of a linear 
+* The `qml.PrepSelPrep` template is added. The template implements a block-encoding of a linear
   combination of unitaries.
   [(#5756)](https://github.com/PennyLaneAI/pennylane/pull/5756)
 
-* The `split_to_single_terms` transform is added. This transform splits expectation values of sums 
-  into multiple single-term measurements on a single tape, providing better support for simulators 
+* The `split_to_single_terms` transform is added. This transform splits expectation values of sums
+  into multiple single-term measurements on a single tape, providing better support for simulators
   that can handle non-commuting observables but don't natively support multi-term observables.
   [(#5884)](https://github.com/PennyLaneAI/pennylane/pull/5884)
 
@@ -22,8 +25,11 @@
 * New functionality has been added to natively support exponential extrapolation when using the `mitigate_with_zne`. This allows
   users to have more control over the error mitigation protocol without needing to add further dependencies.
   [(#5972)](https://github.com/PennyLaneAI/pennylane/pull/5972)
-  
+
 <h3>Improvements 🛠</h3>
+
+* `StateMP.process_state` defines rules in `cast_to_complex` for complex casting, avoiding a superfluous state vector copy in Lightning simulations
+  [(#5995)](https://github.com/PennyLaneAI/pennylane/pull/5995)
 
 * Port the fast `apply_operation` implementation of `PauliZ` to `PhaseShift`, `S` and `T`.
   [(#5876)](https://github.com/PennyLaneAI/pennylane/pull/5876)
@@ -38,7 +44,7 @@
 
 * The representation for `Wires` has now changed to be more copy-paste friendly.
   [(#5958)](https://github.com/PennyLaneAI/pennylane/pull/5958)
-  
+
 * Observable validation for `default.qubit` is now based on execution mode (analytic vs. finite shots) and measurement type (sample measurement vs. state measurement).
   [(#5890)](https://github.com/PennyLaneAI/pennylane/pull/5890)
 
