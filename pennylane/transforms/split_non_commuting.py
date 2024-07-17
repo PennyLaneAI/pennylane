@@ -16,7 +16,7 @@
 Contains the tape transform that splits a tape into tapes measuring commuting observables.
 """
 
-# pylint: disable=too-many-arguments,too-many-boolean-expressions
+# pylint: disable=too-many-arguments,too-many-boolean-expressions,too-many-branches
 
 from functools import partial
 from typing import Callable, Dict, List, Literal, NamedTuple, Optional, Sequence, Tuple
@@ -735,7 +735,6 @@ def _processing_fn_no_grouping(
     coeffs_for_each_mp = [[] for _ in offsets]
 
     for res_item, (_, mps_dict_values) in zip(res, single_term_obs_mps.items()):
-
         res_iter = iter(res_item if isinstance(res_item, tuple) else (res_item,))
         for mps_dict_value in zip(*mps_dict_values):
             if term_sampling_used:
