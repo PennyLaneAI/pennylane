@@ -628,6 +628,22 @@ class TestUnits:
         assert tapes[0] == tape
         assert post_processing_fn(tapes) == tape
 
+    @pytest.mark.parametrize(
+        "observable",
+        [
+            qml.X(0) + qml.Y(1),
+            2 * (qml.X(0) + qml.Y(1)),
+            3 * (2 * (qml.X(0) + qml.Y(1)) + qml.X(1)),
+        ],
+    )
+    def test_splitting_sums_in_unsupported_mps_raises_error(self, observable):
+
+        tape = qml.tape.QuantumScript([qml.X(0)], measurements=[qml.counts(observable)])
+        with pytest.raises(
+            RuntimeError, match="Cannot split up terms in sums for MeasurementProcess"
+        ):
+            _, _ = split_non_commuting(tape)
+
 
 @pytest.mark.parametrize("sampling_technique", ("uniform", "weighted"))
 class TestTermSampling:
