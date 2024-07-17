@@ -690,5 +690,15 @@ class TestBatchVJP:
 
         x = qml.numpy.array([0.5, 0.8], requires_grad=True)
         data = qml.numpy.array([1.2, 2.3, 3.4], requires_grad=False)
-        circuit(x, data)
-        qml.jacobian(circuit)(x, data)
+
+        out = circuit(x, data)
+        jacobian = qml.jacobian(circuit)(x, data)
+
+        assert out.shape == (3, 2)
+        assert jacobian.shape == (3, 2, 2)
+
+        # Every element of batched output/jacobian is equal to every single
+        # output/jacobian over inputs
+        for i, d in enumerate(data):
+            assert np.allclose(out[i], circuit(x, d))
+            assert np.allclose(jacobian[i], qml.jacobian(circuit)(x, d))
