@@ -513,11 +513,11 @@ class TestDifferentiableZNE:
         coeffs = qml.transforms.mitigate._polyfit(x, y, 2)
         assert qml.math.allclose(qml.math.squeeze(coeffs), [3, 2, 1])
 
-    def test_exponential_extrapolation_accuracy(self):
+    @pytest.mark.parametrize("exp_params", [[0.5, -2, 2], [-9, -4, 0]])
+    def test_exponential_extrapolation_accuracy(self, exp_params):
         """Testing the exponential fit function"""
+        A, B, asymptote = exp_params
         x = np.linspace(1, 4, 4)
-        A, B = 0.5, -2
-        asymptote = 2
         y = A * np.exp(B * x) + asymptote
         zne_val = qml.transforms.exponential_extrapolate(x, y, asymptote=asymptote)
         assert qml.math.allclose(zne_val, A + asymptote, atol=1e-3)
