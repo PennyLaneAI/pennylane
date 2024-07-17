@@ -24,6 +24,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* `StateMP.process_state` defines rules in `cast_to_complex` for complex casting, avoiding a superfluous state vector copy in Lightning simulations
+  [(#5995)](https://github.com/PennyLaneAI/pennylane/pull/5995)
+
 * Port the fast `apply_operation` implementation of `PauliZ` to `PhaseShift`, `S` and `T`.
   [(#5876)](https://github.com/PennyLaneAI/pennylane/pull/5876)
 
@@ -40,6 +43,14 @@
 
 * Observable validation for `default.qubit` is now based on execution mode (analytic vs. finite shots) and measurement type (sample measurement vs. state measurement).
   [(#5890)](https://github.com/PennyLaneAI/pennylane/pull/5890)
+
+<h4>Community contributions 🥳</h4>
+
+* `DefaultQutritMixed` readout error has been added using parameters `readout_relaxation_probs` and 
+  `readout_misclassification_probs` on the `default.qutrit.mixed` device. These parameters add a `~.QutritAmplitudeDamping`  and a `~.TritFlip` channel, respectively,
+  after measurement diagonalization. The amplitude damping error represents the potential for
+  relaxation to occur during longer measurements. The trit flip error represents misclassification during readout.
+  [(#5842)](https://github.com/PennyLaneAI/pennylane/pull/5842)
 
 <h3>Breaking changes 💔</h3>
 
@@ -81,9 +92,10 @@
 
 This release contains contributions from (in alphabetical order):
 Guillermo Alonso,
-Ahmed Darwish,
 Astral Cai,
 Yushao Chen,
+Gabriel Bottrill,
+Ahmed Darwish,
 Lillian M. A. Frederiksen,
 Pietropaolo Frisoni,
 Emiliano Godinez,
