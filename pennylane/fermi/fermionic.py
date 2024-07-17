@@ -15,8 +15,8 @@
 import re
 from copy import copy
 from numbers import Number
-import pennylane as qml
 from numpy import ndarray
+import pennylane as qml
 
 
 class FermiWord(dict):
@@ -290,9 +290,6 @@ class FermiWord(dict):
               [0.+0.j, 1.+0.j, 0.+0.j, 0.+0.j],
               [0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j])
         """
-        # pylint: disable=import-outside-toplevel
-        from .conversion import jordan_wigner
-
         largest_orb_id = max(key[1] for key in self.keys()) + 1
         if n_orbitals and n_orbitals < largest_orb_id:
             raise ValueError(
@@ -300,7 +297,7 @@ class FermiWord(dict):
             )
 
         largest_order = n_orbitals or largest_orb_id
-        mat = jordan_wigner(self, ps=True).to_mat(wire_order=list(range(largest_order)))
+        mat = qml.jordan_wigner(self, ps=True).to_mat(wire_order=list(range(largest_order)))
 
         return mat
 
@@ -513,9 +510,6 @@ class FermiSentence(dict):
               [0.0 + 0.0j, 1.2 + 0.0j, 3.1 + 0.0j, 0.0 + 0.0j],
               [0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, 3.1 + 0.0j])
         """
-        # pylint: disable=import-outside-toplevel
-        from .conversion import jordan_wigner
-
         largest_orb_id = max(key[1] for fermi_word in self.keys() for key in fermi_word.keys()) + 1
         if n_orbitals and n_orbitals < largest_orb_id:
             raise ValueError(
@@ -523,7 +517,7 @@ class FermiSentence(dict):
             )
 
         largest_order = n_orbitals or largest_orb_id
-        mat = jordan_wigner(self, ps=True).to_mat(wire_order=list(range(largest_order)))
+        mat = qml.jordan_wigner(self, ps=True).to_mat(wire_order=list(range(largest_order)))
 
         return mat
 
