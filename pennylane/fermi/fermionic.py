@@ -18,6 +18,8 @@ from numbers import Number
 
 from numpy import ndarray
 
+from .conversion import jordan_wigner
+
 import pennylane as qml
 
 
@@ -292,11 +294,6 @@ class FermiWord(dict):
               [0.+0.j, 1.+0.j, 0.+0.j, 0.+0.j],
               [0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j])
         """
-        # prevent circular import
-        from .conversion import jordan_wigner  # pylint: disable=import-outside-toplevel
-
-        # Get the largest orbital index (1-based indexing) in the Fermi word,
-        # which determines the minimum size of the matrix
         largest_orb_id = max(key[1] for key in self.keys()) + 1
         if n_orbitals and n_orbitals < largest_orb_id:
             raise ValueError(
@@ -517,11 +514,6 @@ class FermiSentence(dict):
               [0.0 + 0.0j, 1.2 + 0.0j, 3.1 + 0.0j, 0.0 + 0.0j],
               [0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, 3.1 + 0.0j])
         """
-        # prevent circular import
-        from .conversion import jordan_wigner  # pylint: disable=import-outside-toplevel
-
-        # Obtain the largest orbital index (1-based indexing) in the Fermi sentence,
-        # which determines the minimum dimension of the matrix.
         largest_orb_id = max(key[1] for fermi_word in self.keys() for key in fermi_word.keys()) + 1
         if n_orbitals and n_orbitals < largest_orb_id:
             raise ValueError(

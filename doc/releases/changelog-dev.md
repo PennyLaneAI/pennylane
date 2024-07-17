@@ -19,7 +19,8 @@
 * `SProd.terms` now flattens out the terms if the base is a multi-term observable.
   [(#5885)](https://github.com/PennyLaneAI/pennylane/pull/5885)
   
-* A new method `to_mat` has been added to the `FermiWord` and `FermiSentence` class, which allows computing the matrix representation of a given Fermi operator.
+* A new method `to_mat` has been added to the `FermiWord` and `FermiSentence` classes, which allows
+  computing the matrix representation of these Fermi operators.
   [(#5920)](https://github.com/PennyLaneAI/pennylane/pull/5920)
 
 <h3>Improvements 🛠</h3>
@@ -82,6 +83,7 @@ Astral Cai,
 Yushao Chen,
 Lillian M. A. Frederiksen,
 Pietropaolo Frisoni,
+Renke Huang,
 Christina Lee,
 Austin Huang,
 William Maxwell,
