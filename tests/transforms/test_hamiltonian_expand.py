@@ -90,6 +90,14 @@ OUTPUTS = [-1.5, -6, -1.5, -8]
 class TestHamiltonianExpand:
     """Tests for the hamiltonian_expand transform"""
 
+    @pytest.fixture(scope="function", autouse=True)
+    def capture_warnings(self, recwarn):
+        yield
+        if len(recwarn) > 0:
+            for w in recwarn:
+                assert isinstance(w.message, qml.PennyLaneDeprecationWarning)
+                assert "'qml.transforms.hamiltonian_expand' is deprecated" in str(w.message)
+
     def test_ham_with_no_terms_raises(self):
         """Tests that the hamiltonian_expand transform raises an error for a Hamiltonian with no terms."""
         mps = [qml.expval(qml.Hamiltonian([], []))]
@@ -517,6 +525,14 @@ SUM_OUTPUTS = [
 
 class TestSumExpand:
     """Tests for the sum_expand transform"""
+
+    @pytest.fixture(scope="function", autouse=True)
+    def capture_warnings(self, recwarn):
+        yield
+        if len(recwarn) > 0:
+            for w in recwarn:
+                assert isinstance(w.message, qml.PennyLaneDeprecationWarning)
+                assert "'qml.transforms.sum_expand' is deprecated" in str(w.message)
 
     def test_observables_on_same_wires(self):
         """Test that even if the observables are on the same wires, if they are different operations, they are separated.

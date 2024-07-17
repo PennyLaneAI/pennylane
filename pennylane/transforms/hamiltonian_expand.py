@@ -15,6 +15,7 @@
 Contains the hamiltonian expand tape transform
 """
 # pylint: disable=protected-access
+import warnings
 from functools import partial
 from typing import Callable, List, Sequence, Tuple
 
@@ -151,6 +152,10 @@ def hamiltonian_expand(tape: QuantumTape, group: bool = True) -> (Sequence[Quant
     Returns:
         qnode (QNode) or tuple[List[QuantumTape], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
 
+    .. warning::
+        This function is deprecated and will be removed in version 0.39.
+        Instead, use :func:`~.transforms.split_non_commuting`.
+
     **Example**
 
     Given a Hamiltonian,
@@ -222,6 +227,12 @@ def hamiltonian_expand(tape: QuantumTape, group: bool = True) -> (Sequence[Quant
     >>> len(tapes)
     2
     """
+
+    warnings.warn(
+        "'qml.transforms.hamiltonian_expand' is deprecated and will be removed in version 0.39. "
+        "Instead, use 'qml.transforms.split_non_commuting', which can handle the same measurement type.",
+        qml.PennyLaneDeprecationWarning,
+    )
 
     if (
         len(tape.measurements) != 1
@@ -370,7 +381,7 @@ def _sum_expand_processing_fn(
 
 @transform
 def sum_expand(tape: QuantumTape, group: bool = True) -> (Sequence[QuantumTape], Callable):
-    """Splits a quantum tape measuring a Sum expectation into multiple tapes of summand
+    r"""Splits a quantum tape measuring a Sum expectation into multiple tapes of summand
     expectations, and provides a function to recombine the results.
 
     Args:
@@ -383,6 +394,10 @@ def sum_expand(tape: QuantumTape, group: bool = True) -> (Sequence[QuantumTape],
         tuple[Sequence[.QuantumTape], Callable]: Returns a tuple containing a list of
         quantum tapes to be evaluated, and a function to be applied to these
         tape executions to compute the expectation value.
+
+    .. warning::
+        This function is deprecated and will be removed in version 0.39.
+        Instead, use :func:`~.transforms.split_non_commuting`.
 
     **Example**
 
@@ -457,6 +472,12 @@ def sum_expand(tape: QuantumTape, group: bool = True) -> (Sequence[QuantumTape],
     [expval(X(0))]
 
     """
+
+    warnings.warn(
+        "'qml.transforms.sum_expand' is deprecated and will be removed in version 0.39. "
+        "Instead, use 'qml.transforms.split_non_commuting', which can handle the same measurement type.",
+        qml.PennyLaneDeprecationWarning,
+    )
 
     # The dictionary of all unique single-term observable measurements, and their indices
     # within the list of all single-term observable measurements.
