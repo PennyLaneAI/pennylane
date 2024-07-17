@@ -428,7 +428,7 @@ def from_qiskit_noise(noise_model, **kwargs):
     Keyword Arguments:
         kraus_shape (bool): use shape of the Kraus operators to display ``qml.QubitChannel``
             instead of the complete list of matrices. Default is ``True``.
-        decimals (int): number of decimal places to round the Kraus matrices. Default is ``10``.
+        decimal_places (int): number of decimal places to round the Kraus matrices. Default is ``10``.
 
     Returns:
         qml.NoiseModel: An equivalent noise model constructed in PennyLane
