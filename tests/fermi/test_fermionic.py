@@ -135,8 +135,8 @@ class TestFermiWord:
         assert np.allclose(mat, expected_mat)
 
     def test_to_mat_error(self):
-        """Test that an error is raised if the request matrix dimension is too small
-        (smaller than the dimension inferred from the largest orbital index).
+        """Test that an error is raised if the requested matrix dimension is smaller than the
+        dimension inferred from the largest orbital index.
         """
         with pytest.raises(ValueError, match="n_orbitals cannot be smaller than 2"):
             fw1.to_mat(n_orbitals=1)
@@ -637,8 +637,8 @@ class TestFermiSentence:
         assert np.allclose(mat, expected_mat)
 
     def test_to_mat_error(self):
-        """Test that an error is raised if the request matrix dimension is too small
-        (smaller than the dimension inferred from the largest orbital index).
+        """Test that an error is raised if the requested matrix dimension is smaller than the
+        dimension inferred from the largest orbital index.
         """
         with pytest.raises(ValueError, match="n_orbitals cannot be smaller than 3"):
             fs7.to_mat(n_orbitals=2)
