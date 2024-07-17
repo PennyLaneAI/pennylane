@@ -73,6 +73,11 @@ Other deprecations
 Completed deprecation cycles
 ----------------------------
 
+* ``queue_idx`` attribute has been removed from the ``Operator``, ``CompositeOp``, and ``SymboliOp`` classes. Instead, the index is now stored as the label of the ``CircuitGraph.graph`` nodes.
+
+  - Deprecated in v0.38
+  - Removed in v0.38
+
 * ``qml.transforms.map_batch_transform`` has been removed, since transforms can be applied directly to a batch of tapes.
   See :func:`~.pennylane.transform` for more information.
 
