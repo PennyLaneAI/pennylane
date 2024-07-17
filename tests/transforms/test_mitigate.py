@@ -515,7 +515,7 @@ class TestDifferentiableZNE:
 
     @pytest.mark.parametrize("exp_params", [[0.5, -2, 2], [-9, -4, 0]])
     def test_exponential_extrapolation_accuracy(self, exp_params):
-        """Testing the exponential fit function"""
+        """Testing the exponential extrapolation works as expected for known exponential models."""
         A, B, asymptote = exp_params
         x = np.linspace(1, 4, 4)
         y = A * np.exp(B * x) + asymptote
@@ -524,6 +524,7 @@ class TestDifferentiableZNE:
 
     @pytest.mark.autograd
     def test_exponential_extrapolation_autograd(self):
+        """Test exponential extrapolation works with expvals stored as a numpy array."""
         scale_factors = [1, 3, 5]
         noise_scaled_expvals = np.array([0.9, 0.8, 0.7])
         zne_val = qml.transforms.exponential_extrapolate(scale_factors, noise_scaled_expvals)
@@ -532,6 +533,7 @@ class TestDifferentiableZNE:
 
     @pytest.mark.tf
     def test_exponential_extrapolation_tf(self):
+        """Test exponential extrapolation works with expvals stored as a tensorflow tensor."""
         import tensorflow as tf
 
         scale_factors = [1, 3, 5]
@@ -542,6 +544,7 @@ class TestDifferentiableZNE:
 
     @pytest.mark.torch
     def test_exponential_extrapolation_torch(self):
+        """Test exponential extrapolation works with expvals stored as a torch tensor."""
         import torch
 
         scale_factors = [1, 3, 5]
@@ -552,6 +555,7 @@ class TestDifferentiableZNE:
 
     @pytest.mark.jax
     def test_exponential_extrapolation_jax(self):
+        """Test exponential extrapolation works with expvals stored as a jax array."""
         import jax.numpy as jnp
 
         scale_factors = [1, 3, 5]
