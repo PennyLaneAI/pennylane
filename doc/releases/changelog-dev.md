@@ -53,6 +53,10 @@
   for an equivalent behaviour.
   [(#5994)](https://github.com/PennyLaneAI/pennylane/pull/5994)
 
+* `pennylane.qinfo.classical_fisher` and `pennylane.qinfo.quantum_fisher` have been deprecated.
+  Instead, use `pennylane.gradients.classical_fisher` and `pennylane.gradients.quantum_fisher`.
+  [(#5985)](https://github.com/PennyLaneAI/pennylane/pull/5985)
+
 <h3>Documentation 📝</h3>
 
 * Improves the docstring for `QuantumScript.expand` and `qml.tape.tape.expand_tape`.
