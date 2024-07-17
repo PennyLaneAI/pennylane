@@ -1,0 +1,47 @@
+name: Build nightly PennyLane releases for TestPyPI
+
+on:
+  schedule:
+    # Run every weekday at 23:40 EDT (cron is in UTC)
+    - cron: "40 3 * * 2-6"
+  workflow_dispatch:
+
+jobs:
+  setup:
+    name: Setup the release
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout PennyLane repo
+      uses: actions/checkout@v4
+      with:
+        ssh-key: ${{ secrets.NIGHTLY_VERSION_UPDATE_DEPLOY_KEY }}
+
+    - name: Bump dev version
+      run: |
+        python $GITHUB_WORKSPACE/.github/workflows/scripts/set_nightly_version.py
+
+    - name: Push new version
+      run: |
+        git config --global user.email '${{ secrets.AUTO_UPDATE_VERSION_RINGO_EMAIL }}'
+        git config --global user.name "ringo-but-quantum"
+        git add $GITHUB_WORKSPACE/pennylane/_version.py
+        git commit -m "[no ci] bump nightly version"
+        git push
+
+  upload:
+    name: Upload wheels to TestPyPI
+    needs: [setup]
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write  # IMPORTANT: mandatory for trusted publishing
+
+    steps:
+    - name: Build wheels
+      run: |
+        python setup.py bdist_wheel --dist-dir dist
+
+    - name: Upload wheels
+      uses: pypa/gh-action-pypi-publish@release/v1
+      with:
+        repository-url: https://test.pypi.org/legacy/
+        packages-dir: dist
