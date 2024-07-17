@@ -476,6 +476,8 @@ def _get_cond_qfunc_prim():
             f"args={args}, condition={condition}, jaxpr_true={jaxpr_true}, jaxpr_false={jaxpr_false}, jaxpr_elifs={jaxpr_elifs}"
         )
 
+        # I don't think this function is necessary for the requirement of this epic
+
         def run_jaxpr(jaxpr, *args):
             return jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *args)
 
@@ -517,12 +519,33 @@ def _capture_cond(condition, true_fn, false_fn, elifs=()) -> Callable:
 
     cond_prim = _get_cond_qfunc_prim()
 
+    def handle_elifs(elifs):
+        if len(elifs) == 2 and isinstance(elifs[0], bool) and callable(elifs[1]):
+            # Case 2: single (condition, fn) tuple
+            return [(elifs[0], elifs[1])]
+        else:
+            # Case 1: tuple of (condition, fn) tuples
+            return list(elifs)
+
+    elifs = handle_elifs(elifs)
+
+    print(f"elifs={elifs}")
+
     @wraps(true_fn)
     def new_wrapper(*args, **kwargs):
         jaxpr_true = jax.make_jaxpr(true_fn)(*args)
         jaxpr_false = jax.make_jaxpr(false_fn)(*args) if false_fn else jaxpr_true
 
-        jaxpr_elifs = [(cond, jax.make_jaxpr(fn)(*args), []) for cond, fn in elifs]
+        # TODO: find a better way to distinguish the 2 cases
+        if len(elifs) == 2 and callable(elifs[1]):
+            print("elifs caso singolo")
+            jaxpr_elifs = [(elifs[0], jax.make_jaxpr(elifs[1])(*args), [])]
+
+        else:
+            print("elifs caso multiplo")
+            jaxpr_elifs = [(cond, jax.make_jaxpr(fn)(*args), []) for cond, fn in elifs]
+
+        print(f"jaxpr_elifs={jaxpr_elifs}")
 
         return cond_prim.bind(
             *args,
