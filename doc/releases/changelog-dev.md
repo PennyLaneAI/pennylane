@@ -4,6 +4,9 @@
 
 <h3>New features since last release</h3>
 
+* Resolved the bug in `qml.ThermalRelaxationError` where there was a typo from `tq` to `tg`.
+  [(#5988)](https://github.com/PennyLaneAI/pennylane/issues/5988)
+
 * A new method `process_density_matrix` has been added to the `ProbabilityMP` and `DensityMatrixMP` classes, allowing for more efficient handling of quantum density matrices, particularly with batch processing support. This method simplifies the calculation of probabilities from quantum states represented as density matrices.
   [(#5830)](https://github.com/PennyLaneAI/pennylane/pull/5830)
 
