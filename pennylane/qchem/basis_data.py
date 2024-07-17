@@ -21,6 +21,7 @@ numbers 1-10.
 import itertools
 
 # fmt: off
+# IUPAC Periodic Table of the Elements: https://iupac.org/what-we-do/periodic-table-of-elements/
 atomic_numbers = {
     'H': 1, 'He': 2, # Period 1
     'Li': 3, 'Be': 4, 'B': 5, 'C': 6, 'N': 7, 'O': 8, 'F': 9, 'Ne': 10, # Period 2

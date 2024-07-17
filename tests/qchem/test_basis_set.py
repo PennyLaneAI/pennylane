@@ -480,7 +480,7 @@ class TestBasis:
     def test_mol_basis_data_error(self):
         """Test that correct error is raised if the element is not present in the internal basis-sets"""
 
-        with pytest.raises(ValueError, match="Currently, internally supported basis sets"):
+        with pytest.raises(ValueError, match="The requested basis set is not available for"):
             qchem.basis_set.atom_basis_data(name="sto-3g", atom="Os")
 
         with pytest.raises(ValueError, match="Requested element Ox doesn't exist"):
