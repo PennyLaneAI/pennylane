@@ -445,8 +445,8 @@ class CircuitGraph:
         """Checks if a path exists between the two given nodes.
 
         Args:
-            a (int): initial node index
-            b (int): final node index
+            a_idx (int): initial node index
+            b_idx (int): final node index
 
         Returns:
             bool: returns ``True`` if a path exists
