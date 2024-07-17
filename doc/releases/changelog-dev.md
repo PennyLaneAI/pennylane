@@ -24,6 +24,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* `StateMP.process_state` defines rules in `cast_to_complex` for complex casting, avoiding a superfluous state vector copy in Lightning simulations
+  [(#5995)](https://github.com/PennyLaneAI/pennylane/pull/5995)
+
 * Port the fast `apply_operation` implementation of `PauliZ` to `PhaseShift`, `S` and `T`.
   [(#5876)](https://github.com/PennyLaneAI/pennylane/pull/5876)
 
