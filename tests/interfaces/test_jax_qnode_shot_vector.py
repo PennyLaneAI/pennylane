@@ -838,7 +838,6 @@ class TestReturnShotVectorIntegration:
     ):
         """Tests correct output shape and evaluation for a tape
         with a single expval output"""
-        np.random.seed(42)
         dev = qml.device(dev_name, wires=2, shots=shots)
         x = jax.numpy.array(0.543)
         y = jax.numpy.array(-0.654)
@@ -874,7 +873,6 @@ class TestReturnShotVectorIntegration:
     ):
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
-        np.random.seed(42)
         dev = qml.device(dev_name, wires=2, shots=shots)
         x = jax.numpy.array(0.543)
         y = jax.numpy.array(-0.654)
