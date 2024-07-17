@@ -399,7 +399,8 @@ def cond(condition, true_fn, false_fn=None, elifs=()):
 
         return cond_func
 
-    # This will not be the final place for this logic, but it is a start)
+    # This will not be the final place for this logic, but it is a start
+    # TODO: providing `elifs` raises an error at this stage
     if qml.capture.enabled():
         print("Capture mode for cond")
         return _capture_cond(condition, true_fn, false_fn, elifs)
@@ -462,13 +463,19 @@ def _get_cond_qfunc_prim():
     # if capture is enabled, jax should be installed
     import jax  # pylint: disable=import-outside-toplevel
 
-    AbstractOperator = qml.capture.AbstractOperator
+    print("Creating the cond primitive (executed only once)")
 
     cond_prim = jax.core.Primitive("cond")
     cond_prim.multiple_results = True
 
     @cond_prim.def_impl
-    def _(*args, n_elif, jaxpr_true, jaxpr_false, jaxprs_elif, condition):
+    def _(*args, condition, jaxpr_true, jaxpr_false, jaxpr_elifs):
+
+        print("We are in the cond primitive definition implementation")
+        print(
+            f"args={args}, condition={condition}, jaxpr_true={jaxpr_true}, jaxpr_false={jaxpr_false}, jaxpr_elifs={jaxpr_elifs}"
+        )
+
         def run_jaxpr(jaxpr, *args):
             return jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *args)
 
@@ -476,38 +483,35 @@ def _get_cond_qfunc_prim():
             return run_jaxpr(jaxpr_true, *args)
 
         def false_branch(args):
-            for cond, jaxpr in jaxprs_elif:
-
-                def elif_branch(args):
-                    return run_jaxpr(jaxpr, *args)
-
-                args = jax.lax.cond(cond, elif_branch, lambda x: x, args)
-            if jaxpr_false:
+            if not jaxpr_elifs:
                 return run_jaxpr(jaxpr_false, *args)
-            return args
+            else:
+                pred, elif_jaxpr, rest_jaxpr_elifs = jaxpr_elifs[0]
+                return jax.lax.cond(
+                    pred, lambda y: run_jaxpr(elif_jaxpr, *y), lambda y: false_branch(y), args
+                )
 
         return jax.lax.cond(condition, true_branch, false_branch, args)
 
-    def _is_queued_outvar(outvars):
-        if not outvars:
-            return False
-        return isinstance(outvars[0].aval, AbstractOperator) and isinstance(
-            outvars[0], jax.core.DropVar
-        )
-
     @cond_prim.def_abstract_eval
-    def _abstract(*args, **kwargs):
-        return [qml.capture.AbstractOperator()]
+    def _(*args, condition, jaxpr_true, jaxpr_false, jaxpr_elifs):
+        print("We are in the cond primitive abstract evaluation")
+        print(
+            f"args={args}, condition={condition}, jaxpr_true={jaxpr_true}, jaxpr_false={jaxpr_false}"
+        )
+        out_avals = jaxpr_true.out_avals
+        return out_avals
 
     return cond_prim
 
 
-# Vogliamo catturare la funzione 'true_fn', e probabilmente passare 'condition' e 'false_fn' come argomenti.
-def _capture_cond(condition, true_fn, false_fn, elifs) -> Callable:
-    """Capture compatible way to apply conditionally a ...."""
-    # note that this logic is tested in `tests/capture/test_...
+def _capture_cond(condition, true_fn, false_fn, elifs=()) -> Callable:
+    """Capture compatible way to apply conditionals."""
+    # TODO: implement tests
 
     print("Capture mode for cond")
+
+    print(f"condition={condition}, true_fn={true_fn}, false_fn={false_fn}, elifs={elifs}")
 
     import jax  # pylint: disable=import-outside-toplevel
 
@@ -515,67 +519,17 @@ def _capture_cond(condition, true_fn, false_fn, elifs) -> Callable:
 
     @wraps(true_fn)
     def new_wrapper(*args, **kwargs):
-        jaxpr_true = jax.make_jaxpr(functools.partial(true_fn, **kwargs))(*args)
-        jaxpr_false = (
-            jax.make_jaxpr(functools.partial(false_fn, **kwargs))(*args) if false_fn else None
-        )
-        jaxprs_elif = [
-            (cond_val, jax.make_jaxpr(functools.partial(elif_fn, **kwargs))(*args))
-            for cond_val, elif_fn in elifs
-        ]
+        jaxpr_true = jax.make_jaxpr(true_fn)(*args)
+        jaxpr_false = jax.make_jaxpr(false_fn)(*args) if false_fn else jaxpr_true
+
+        jaxpr_elifs = [(cond, jax.make_jaxpr(fn)(*args), []) for cond, fn in elifs]
+
         return cond_prim.bind(
             *args,
             condition=condition,
-            n_elif=len(elifs),
             jaxpr_true=jaxpr_true,
             jaxpr_false=jaxpr_false,
-            jaxprs_elif=jaxprs_elif,
+            jaxpr_elifs=jaxpr_elifs,
         )
 
     return new_wrapper
-
-
-def _cond(condition, true_fn, false_fn):
-
-    # We assume that the callable is an operation or a quantum function
-    with_meas_err = (
-        "Only quantum functions that contain no measurements can be applied conditionally."
-    )
-
-    @wraps(true_fn)
-    def wrapper(*args, **kwargs):
-        # We assume that the callable is a quantum function
-
-        recorded_ops = [a for a in args if isinstance(a, Operator)] + [
-            k for k in kwargs.values() if isinstance(k, Operator)
-        ]
-
-        # This will dequeue all operators passed in as arguments to the qfunc that is
-        # being conditioned. These are queued incorrectly due to be fully constructed
-        # before the wrapper function is called.
-        if recorded_ops and QueuingManager.recording():
-            for op in recorded_ops:
-                QueuingManager.remove(op)
-
-        # 1. Apply true_fn conditionally
-        qscript = make_qscript(true_fn)(*args, **kwargs)
-
-        if qscript.measurements:
-            raise ConditionalTransformError(with_meas_err)
-
-        for op in qscript.operations:
-            Conditional(condition, op)
-
-        if false_fn is not None:
-            # 2. Apply false_fn conditionally
-            else_qscript = make_qscript(false_fn)(*args, **kwargs)
-
-            if else_qscript.measurements:
-                raise ConditionalTransformError(with_meas_err)
-
-            inverted_condition = ~condition
-
-            for op in else_qscript.operations:
-                Conditional(inverted_condition, op)
-
-    return wrapper
