@@ -108,7 +108,6 @@ def atom_basis_data(name, atom, load_data=False):
                 "from the external library basis-set-exchange that can be installed with: "
                 "pip install basis-set-exchange."
             )
-        basis = basis_sets[name][atom]
 
     params = []
     sp_count = 0
