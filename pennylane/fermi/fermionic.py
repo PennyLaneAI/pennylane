@@ -17,7 +17,6 @@ from copy import copy
 from numbers import Number
 import pennylane as qml
 from numpy import ndarray
-from .conversion import jordan_wigner
 
 
 class FermiWord(dict):
@@ -291,6 +290,9 @@ class FermiWord(dict):
               [0.+0.j, 1.+0.j, 0.+0.j, 0.+0.j],
               [0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j])
         """
+        # pylint: disable=import-outside-toplevel
+        from .conversion import jordan_wigner
+
         largest_orb_id = max(key[1] for key in self.keys()) + 1
         if n_orbitals and n_orbitals < largest_orb_id:
             raise ValueError(
@@ -511,6 +513,9 @@ class FermiSentence(dict):
               [0.0 + 0.0j, 1.2 + 0.0j, 3.1 + 0.0j, 0.0 + 0.0j],
               [0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, 3.1 + 0.0j])
         """
+        # pylint: disable=import-outside-toplevel
+        from .conversion import jordan_wigner
+
         largest_orb_id = max(key[1] for fermi_word in self.keys() for key in fermi_word.keys()) + 1
         if n_orbitals and n_orbitals < largest_orb_id:
             raise ValueError(
