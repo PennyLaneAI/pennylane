@@ -4070,8 +4070,6 @@ class TestCutCircuitTransform:
 
         import torch
 
-        # TODO: this passes with default.qubit locally, but fails on CI
-        # possibly an architecture-specific issue
         dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev, interface="torch")
