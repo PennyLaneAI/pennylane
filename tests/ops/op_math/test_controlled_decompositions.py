@@ -89,7 +89,10 @@ class TestControlledDecompositionZYZ:
 
     def test_invalid_num_controls(self):
         """Tests that an error is raised when an invalid number of control wires is passed"""
-        with pytest.raises(ValueError, match="The control_wires should be a single wire"):
+        with pytest.raises(
+            ValueError,
+            match="The control_wires should be a single wire, instead got: 2",
+        ):
             _ = ctrl_decomp_zyz(qml.X([1]), [0, 1])
 
     su2_ops = [
@@ -145,10 +148,10 @@ class TestControlledDecompositionZYZ:
         """Tests that the controlled decomposition of a single-qubit operation
         behaves as expected in a quantum circuit"""
         n_qubits = 4
-        np.random.seed(1337)
+        rng = np.random.default_rng(1337)
 
         dev = qml.device("default.qubit", wires=n_qubits)
-        init_state = np.random.rand(2**n_qubits) + 1.0j * np.random.rand(2**n_qubits)
+        init_state = rng.random(2**n_qubits) + 1.0j * rng.random(2**n_qubits)
         init_state /= np.sqrt(np.dot(np.conj(init_state), init_state))
         init_state = np.array(init_state)
         target_wires = [0]

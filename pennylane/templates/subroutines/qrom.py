@@ -68,7 +68,7 @@ class QROM(Operation):
                     target_wires = [2,3,4],
                     work_wires = [5,6,7])
 
-          return qml.sample(wires = [2,3,4])
+            return qml.sample(wires = [2,3,4])
 
     .. code-block:: pycon
 

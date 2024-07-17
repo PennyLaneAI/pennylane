@@ -27,8 +27,6 @@ from pennylane.measurements import (
     StateMeasurement,
 )
 
-np.random.seed(0)
-
 
 def test_name():
     """Tests the name of NullQubit."""

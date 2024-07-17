@@ -16,7 +16,7 @@
 Contains the tape transform that splits a tape into tapes measuring commuting observables.
 """
 
-# pylint: disable=too-many-arguments
+# pylint: disable=too-many-arguments,too-many-boolean-expressions
 
 from functools import partial
 from typing import Callable, Dict, List, Optional, Sequence, Tuple
@@ -50,6 +50,12 @@ def split_non_commuting(
 
     Returns:
         qnode (QNode) or tuple[List[QuantumScript], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
+
+    .. note::
+        This transform splits expectation values of sums into separate terms, and also distributes the terms into
+        multiple executions if there are terms that do not commute with one another. For state-based simulators
+        that are able to handle non-commuting measurements in a single execution, but don't natively support sums
+        of observables, consider :func:`split_to_single_terms <pennylane.transforms.split_to_single_terms>` instead.
 
     **Examples:**
 
@@ -130,7 +136,7 @@ def split_non_commuting(
 
     .. code-block:: python3
 
-        @functools.partial(qml.transforms.split_non_commuting, grouping="wires")
+        @functools.partial(qml.transforms.split_non_commuting, grouping_strategy="wires")
         @qml.qnode(dev)
         def circuit(x):
             qml.RY(x[0], wires=0)
@@ -260,7 +266,10 @@ def split_non_commuting(
         and isinstance(tape.measurements[0], ExpectationMP)
         and isinstance(tape.measurements[0].obs, (Hamiltonian, Sum))
         and (
-            grouping_strategy in ("default", "qwc")
+            (
+                grouping_strategy in ("default", "qwc")
+                and all(qml.pauli.is_pauli_word(o) for o in tape.measurements[0].obs.terms()[1])
+            )
             or tape.measurements[0].obs.grouping_indices is not None
         )
     ):
@@ -534,10 +543,6 @@ def _split_all_multi_term_obs_mps(tape: qml.tape.QuantumScript):
         obs = mp.obs
         offset = 0
         if isinstance(mp, ExpectationMP) and isinstance(obs, (Hamiltonian, Sum, Prod, SProd)):
-            if isinstance(obs, SProd):
-                # This is necessary because SProd currently does not flatten into
-                # multiple terms if the base is a sum, which is needed here.
-                obs = obs.simplify()
             # Break the observable into terms, and construct an ExpectationMP with each term.
             for c, o in zip(*obs.terms()):
                 # If the observable is an identity, track it with a constant offset
@@ -554,6 +559,12 @@ def _split_all_multi_term_obs_mps(tape: qml.tape.QuantumScript):
                 else:
                     single_term_obs_mps[sm] = ([mp_idx], [c])
         else:
+            if isinstance(obs, SProd):
+                obs = obs.simplify()
+            if isinstance(obs, (Hamiltonian, Sum)):
+                raise RuntimeError(
+                    f"Cannot split up terms in sums for MeasurementProcess {type(mp)}"
+                )
             # For all other measurement types, simply add them to the list of measurements.
             if mp not in single_term_obs_mps:
                 single_term_obs_mps[mp] = ([mp_idx], [1])
@@ -698,6 +709,8 @@ def _sum_terms(res: ResultBatch, coeffs: List[float], offset: float, shape: Tupl
     # The shape of res at this point is (n_terms, [,n_shots] [,batch_size])
     dot_products = []
     for c, r in zip(coeffs, res):
+        if qml.math.get_interface(r) == "autograd":
+            r = qml.math.array(r)
         dot_products.append(qml.math.dot(qml.math.squeeze(r), c))
     if len(dot_products) == 0:
         return qml.math.ones(shape) * offset

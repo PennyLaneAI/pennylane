@@ -159,6 +159,7 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    introduction/interfaces
    introduction/operations
    introduction/measurements
+   introduction/dynamic_quantum_circuits
    introduction/templates
    introduction/inspecting_circuits
    introduction/compiling_circuits
@@ -224,6 +225,7 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    code/qml_capture
    code/qml_devices
    code/qml_measurements
+   code/qml_pytrees
    code/qml_operation
    code/qml_queuing
    code/qml_tape

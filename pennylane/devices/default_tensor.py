@@ -54,6 +54,9 @@ QuantumTape_or_Batch = Union[QuantumTape, QuantumTapeBatch]
 PostprocessingFn = Callable[[ResultBatch], Result_or_ResultBatch]
 
 has_quimb = True
+
+warnings.filterwarnings("ignore", message=".*kahypar")
+
 try:
     import quimb.tensor as qtn
 except (ModuleNotFoundError, ImportError) as import_error:  # pragma: no cover
@@ -201,16 +204,16 @@ class DefaultTensor(Device):
     The backend uses the ``quimb`` library to perform the tensor network operations, and different methods can be used to simulate the quantum circuit.
     The supported methods are Matrix Product State (MPS) and Tensor Network (TN).
 
-    This device does not currently support finite shots or differentiation. At present, the supported measurement types are expectation values, variances and state measurements.
+    This device does not currently support finite-shots or differentiation. At present, the supported measurement types are expectation values, variances and state measurements.
     Finally, ``UserWarnings`` from the ``cotengra`` package may appear when using this device.
 
     Args:
         wires (int, Iterable[Number, str]): Number of wires present on the device, or iterable that
-            contains unique labels for the wires as numbers (i.e., ``[-1, 0, 2]``) or strings
-            (``['aux_wire', 'q1', 'q2']``).
+            contains unique labels for the wires as numbers (e.g., ``[-1, 0, 2]``) or strings
+            (e.g., ``['aux_wire', 'q1', 'q2']``).
         method (str): Supported method. The supported methods are ``"mps"`` (Matrix Product State) and ``"tn"`` (Tensor Network).
         c_dtype (type): Complex data type for the tensor representation. Must be one of ``numpy.complex64`` or ``numpy.complex128``.
-        **kwargs: keyword arguments for the device, passed to the ``quimb`` backend.
+        **kwargs: Keyword arguments for the device, passed to the ``quimb`` backend.
 
     Keyword Args:
         max_bond_dim (int): Maximum bond dimension for the MPS method.
@@ -266,8 +269,8 @@ class DefaultTensor(Device):
             setting the maximum bond dimension to 100 and the cutoff to the machine epsilon.
 
             We set ``"auto-mps"`` as the contraction technique to apply gates. With this option, ``quimb`` turns 3-qubit gates and 4-qubit gates
-            into Matrix Product Operators (MPO) and applies them directly to the MPS. On the other hand, qubits in 2-qubit gates are possibly
-            swapped to be adjacent before applying the gate, then swapped back.
+            into Matrix Product Operators (MPO) and applies them directly to the MPS. On the other hand, qubits involved in 2-qubit gates may be
+            temporarily swapped to adjacent positions before applying the gate and then returned to their original positions.
 
             .. code-block:: python
 
@@ -349,8 +352,9 @@ class DefaultTensor(Device):
             The execution time for this circuit with the above parameters is around 0.8 seconds on a standard laptop.
 
             The tensor network method can be faster than MPS and state vector methods in some cases.
-            As a comparison, the time for the exact calculation of the same circuit with the MPS method and with the ``default.qubit``
-            device is about three orders of magnitude slower.
+            As a comparison, the time for the exact calculation (i.e., with ``max_bond_dim = None``) of the same circuit
+            using the ``MPS`` method of the ``default.tensor`` device is approximately three orders of magnitude slower.
+            Similarly, using the ``default.qubit`` device results in a much slower simulation.
     """
 
     # pylint: disable=too-many-instance-attributes
@@ -669,13 +673,19 @@ class DefaultTensor(Device):
             self._quimb_circuit = self._initial_quimb_circuit(
                 wires,
                 psi0=self._initial_mps(
-                    op.wires, basis_state="".join(str(int(b)) for b in op.parameters[0])
+                    op.wires,
+                    basis_state="".join(
+                        str(int(b)) for b in op.parameters[0].astype(self._c_dtype)
+                    ),
                 ),
             )
         elif operations and isinstance(operations[0], qml.StatePrep):
             op = operations.pop(0)
             self._quimb_circuit = self._initial_quimb_circuit(
-                wires, psi0=qtn.MatrixProductState.from_dense(op.state_vector())
+                wires,
+                psi0=qtn.MatrixProductState.from_dense(
+                    op.state_vector(wire_order=wires).astype(self._c_dtype)
+                ),
             )
         else:
             self._quimb_circuit = self._initial_quimb_circuit(wires)

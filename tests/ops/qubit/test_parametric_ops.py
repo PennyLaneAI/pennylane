@@ -2768,10 +2768,13 @@ class TestPauliRot:
         op = qml.PauliRot(theta, "II", wires=[0, 1])
         decomp_ops = op.decomposition()
 
-        assert np.allclose(op.eigvals(), np.exp(-1j * theta / 2) * np.ones(4))
-        assert np.allclose(op.matrix() / op.matrix()[0, 0], np.eye(4))
+        assert len(decomp_ops) == 1
 
-        assert len(decomp_ops) == 0
+        decomp_op = decomp_ops[0]
+
+        qml.assert_equal(decomp_op, qml.GlobalPhase(theta / 2))
+
+        assert qml.math.allclose(op.matrix(), decomp_op.matrix() * np.eye(4))
 
     def test_PauliRot_all_Identity_broadcasted(self):
         """Test handling of the broadcasted all-identity Pauli."""
@@ -2780,13 +2783,16 @@ class TestPauliRot:
         op = qml.PauliRot(theta, "II", wires=[0, 1])
         decomp_ops = op.decomposition()
 
-        phases = np.exp(-1j * theta / 2)
-        assert np.allclose(op.eigvals(), np.outer(phases, np.ones(4)))
-        mat = op.matrix()
-        for phase, sub_mat in zip(phases, mat):
-            assert np.allclose(sub_mat, phase * np.eye(4))
+        assert len(decomp_ops) == 1
 
-        assert len(decomp_ops) == 0
+        decomp_op = decomp_ops[0]
+        qml.assert_equal(decomp_op, qml.GlobalPhase(theta / 2))
+
+        op_matrices = op.matrix()
+        decomp_op_matrices = decomp_op.matrix().T
+        assert len(op_matrices) == len(decomp_op_matrices)
+        for op_matrix, decomp_phase in zip(op_matrices, decomp_op_matrices):
+            assert qml.math.allclose(op_matrix, decomp_phase * np.eye(4))
 
     @pytest.mark.parametrize("theta", [0.4, np.array([np.pi / 3, 0.1, -0.9])])
     def test_PauliRot_decomposition_ZZ(self, theta):
