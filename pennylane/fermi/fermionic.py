@@ -15,12 +15,9 @@
 import re
 from copy import copy
 from numbers import Number
-
-from numpy import ndarray
-
-from .conversion import jordan_wigner
-
 import pennylane as qml
+from numpy import ndarray
+from .conversion import jordan_wigner
 
 
 class FermiWord(dict):
