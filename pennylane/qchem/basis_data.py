@@ -20,6 +20,7 @@ numbers 1-10.
 
 import itertools
 
+# Note: Below marker are added to prevent reformatting of this dictionary by black
 # fmt: off
 # IUPAC Periodic Table of the Elements: https://iupac.org/what-we-do/periodic-table-of-elements/
 atomic_numbers = {
