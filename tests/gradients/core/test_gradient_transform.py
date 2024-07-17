@@ -31,10 +31,13 @@ def test_supported_gradient_kwargs():
     """Test that all keyword arguments of gradient transforms are
     registered as supported gradient kwargs, and no others."""
     # Collect all gradient transforms
+
+    # Non-diff_methods to skip
+    methods_to_skip = ("metric_tensor", "classical_fisher", "quantum_fisher")
+
     grad_transforms = []
     for attr in qml.gradients.__dir__():
-        if attr == "metric_tensor":
-            # Skip metric_tensor because it is not a diff_method
+        if attr in methods_to_skip:
             continue
         obj = getattr(qml.gradients, attr)
         if isinstance(obj, TransformDispatcher):
@@ -223,7 +226,6 @@ class TestGradientTransformIntegration:
     @pytest.mark.parametrize("prefactor", [1.0, 2.0])
     def test_acting_on_qnodes_single_param(self, shots, slicing, prefactor, atol):
         """Test that a gradient transform acts on QNodes with a single parameter correctly"""
-        np.random.seed(412)
         dev = qml.device("default.qubit", wires=2, shots=shots)
 
         @qml.qnode(dev)
@@ -252,7 +254,6 @@ class TestGradientTransformIntegration:
     @pytest.mark.parametrize("prefactor", [1.0, 2.0])
     def test_acting_on_qnodes_multi_param(self, shots, prefactor, atol):
         """Test that a gradient transform acts on QNodes with multiple parameters correctly"""
-        np.random.seed(412)
         dev = qml.device("default.qubit", wires=2, shots=shots)
 
         @qml.qnode(dev)
@@ -288,7 +289,6 @@ class TestGradientTransformIntegration:
     def test_acting_on_qnodes_multi_param_multi_arg(self, shots, atol):
         """Test that a gradient transform acts on QNodes with multiple parameters
         in both the tape and the QNode correctly"""
-        np.random.seed(234)
         dev = qml.device("default.qubit", wires=2, shots=shots)
 
         @qml.qnode(dev)

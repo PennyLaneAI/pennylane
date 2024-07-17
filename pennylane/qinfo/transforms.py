@@ -13,6 +13,7 @@
 # limitations under the License.
 """QNode transforms for the quantum information quantities."""
 # pylint: disable=import-outside-toplevel, not-callable
+import warnings
 from functools import partial
 from typing import Callable, Sequence
 
@@ -458,68 +459,6 @@ def vn_entanglement_entropy(
     )
 
 
-# TODO: create qml.math.jacobian and replace it here
-def _torch_jac(circ):
-    """Torch jacobian as a callable function"""
-    import torch
-
-    def wrapper(*args, **kwargs):
-        loss = partial(circ, **kwargs)
-        if len(args) > 1:
-            return torch.autograd.functional.jacobian(loss, args, create_graph=True)
-        return torch.autograd.functional.jacobian(loss, *args, create_graph=True)
-
-    return wrapper
-
-
-# TODO: create qml.math.jacobian and replace it here
-def _tf_jac(circ):
-    """TF jacobian as a callable function"""
-    import tensorflow as tf
-
-    def wrapper(*args, **kwargs):
-        with tf.GradientTape() as tape:
-            loss = circ(*args, **kwargs)
-        return tape.jacobian(loss, args)
-
-    return wrapper
-
-
-def _compute_cfim(p, dp):
-    r"""Computes the (num_params, num_params) classical fisher information matrix from the probabilities and its derivatives
-    I.e. it computes :math:`classical_fisher_{ij} = \sum_\ell (\partial_i p_\ell) (\partial_i p_\ell) / p_\ell`
-    """
-    # Exclude values where p=0 and calculate 1/p
-    nonzeros_p = qml.math.where(p > 0, p, qml.math.ones_like(p))
-    one_over_p = qml.math.where(p > 0, qml.math.ones_like(p), qml.math.zeros_like(p))
-    one_over_p = one_over_p / nonzeros_p
-
-    # Multiply dp and p
-    # Note that casting and being careful about dtypes is necessary as interfaces
-    # typically treat derivatives (dp) with float32, while standard execution (p) comes in float64
-    dp = qml.math.cast_like(dp, p)
-    dp = qml.math.reshape(
-        dp, (len(p), -1)
-    )  # Squeeze does not work, as you could have shape (num_probs, num_params) with num_params = 1
-    dp_over_p = qml.math.transpose(dp) * one_over_p  # creates (n_params, n_probs) array
-
-    # (n_params, n_probs) @ (n_probs, n_params) = (n_params, n_params)
-    return dp_over_p @ dp
-
-
-@transform
-def _make_probs(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTape], Callable):
-    """Ignores the return types of the provided circuit and creates a new one
-    that outputs probabilities"""
-    qscript = qml.tape.QuantumScript(tape.operations, [qml.probs(tape.wires)], shots=tape.shots)
-
-    def post_processing_fn(res):
-        # only a single probs measurement, so no stacking needed
-        return res[0]
-
-    return [qscript], post_processing_fn
-
-
 def classical_fisher(qnode, argnums=0):
     r"""Returns a function that computes the classical fisher information matrix (CFIM) of a given :class:`.QNode` or
     quantum tape.
@@ -547,6 +486,9 @@ def classical_fisher(qnode, argnums=0):
         returns a matrix of size ``(len(params), len(params))``. For multiple differentiable arguments ``x, y, z``,
         it returns a list of sizes ``[(len(x), len(x)), (len(y), len(y)), (len(z), len(z))]``.
 
+    .. warning::
+        ``pennylane.qinfo.classical_fisher`` is being migrated to a different module and will
+        removed in version 0.39. Instead, use :func:`pennylane.gradients.classical_fisher`.
 
     .. seealso:: :func:`~.pennylane.metric_tensor`, :func:`~.pennylane.qinfo.transforms.quantum_fisher`
 
@@ -663,50 +605,13 @@ def classical_fisher(qnode, argnums=0):
             [2.16840434e-18, 2.81967252e-01]]]))
 
     """
-    new_qnode = _make_probs(qnode)
+    warnings.warn(
+        "pennylane.qinfo.classical_fisher is being migrated to a different module and will "
+        "removed in version 0.39. Instead, use pennylane.gradients.classical_fisher.",
+        qml.PennyLaneDeprecationWarning,
+    )
 
-    def wrapper(*args, **kwargs):
-        old_interface = qnode.interface
-
-        if old_interface == "auto":
-            qnode.interface = qml.math.get_interface(*args, *list(kwargs.values()))
-
-        interface = qnode.interface
-
-        if interface in ("jax", "jax-jit"):
-            import jax
-
-            jac = jax.jacobian(new_qnode, argnums=argnums)
-
-        if interface == "torch":
-            jac = _torch_jac(new_qnode)
-
-        if interface == "autograd":
-            jac = qml.jacobian(new_qnode)
-
-        if interface == "tf":
-            jac = _tf_jac(new_qnode)
-
-        j = jac(*args, **kwargs)
-        p = new_qnode(*args, **kwargs)
-
-        if old_interface == "auto":
-            qnode.interface = "auto"
-
-        # In case multiple variables are used, we create a list of cfi matrices
-        if isinstance(j, tuple):
-            res = []
-            for j_i in j:
-                res.append(_compute_cfim(p, j_i))
-
-            if len(j) == 1:
-                return res[0]
-
-            return res
-
-        return _compute_cfim(p, j)
-
-    return wrapper
+    return qml.gradients.classical_fisher(qnode, argnums=argnums)
 
 
 @partial(transform, is_informative=True)
@@ -738,6 +643,10 @@ def quantum_fisher(
 
         The transformed circuit as described in :func:`qml.transform <pennylane.transform>`. Executing this circuit
         will provide the quantum Fisher information in the form of a tensor.
+
+    .. warning::
+        ``pennylane.qinfo.quantum_fisher`` is being migrated to a different module and will
+        removed in version 0.39. Instead, use :func:`pennylane.gradients.quantum_fisher`.
 
     .. note::
 
@@ -799,6 +708,11 @@ def quantum_fisher(
     >>> qfim = qml.qinfo.quantum_fisher(circ, approx="block-diag")(params)
 
     """
+    warnings.warn(
+        "pennylane.qinfo.quantum_fisher is being migrated to a different module and will "
+        "removed in version 0.39. Instead, use pennylane.gradients.quantum_fisher.",
+        qml.PennyLaneDeprecationWarning,
+    )
 
     if device.shots or not isinstance(device, (DefaultQubitLegacy, DefaultQubit)):
         tapes, processing_fn = metric_tensor(tape, *args, **kwargs)
