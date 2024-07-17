@@ -274,14 +274,14 @@ class FermiWord(dict):
         return operator
 
     def to_mat(self, n_orbitals=None):
-        r"""Return the matrix representation of a Fermi word.
+        r"""Return the matrix representation.
 
         Args:
-            n_orbitals (int or None): Number of orbitals. If not provided, it will be inferred from the largest orbital
-                                      index in the Fermi operator
+            n_orbitals (int or None): Number of orbitals. If not provided, it will be inferred from
+                the largest orbital index in the Fermi operator.
 
         Returns:
-            NumpyArray: Matrix representation of the Fermi word.
+            NumpyArray: Matrix representation of the :class:`~.FermiWord`.
 
         **Example**
 
@@ -499,14 +499,14 @@ class FermiSentence(dict):
                 del self[fw]
 
     def to_mat(self, n_orbitals=None):
-        r"""Return the matrix representation of a Fermi sentence.
+        r"""Return the matrix representation.
 
         Args:
-            n_orbitals (int or None): Number of orbitals. If not provided, it will be inferred from the largest orbital
-                                      index in the Fermi operator
+            n_orbitals (int or None): Number of orbitals. If not provided, it will be inferred from
+                the largest orbital index in the Fermi operator
 
         Returns:
-            NumpyArray: Matrix representation of the Fermi sentence.
+            NumpyArray: Matrix representation of the :class:`~.FermiSentence`.
 
         **Example**
 
