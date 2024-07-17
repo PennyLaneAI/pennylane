@@ -16,9 +16,9 @@ import re
 from copy import copy
 from numbers import Number
 
-import pennylane as qml
-
 from numpy import ndarray
+
+import pennylane as qml
 
 
 class FermiWord(dict):
