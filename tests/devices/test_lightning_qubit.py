@@ -32,7 +32,6 @@ def test_integration():
         qml.templates.StronglyEntanglingLayers(weights, wires=range(wires))
         return qml.expval(qml.PauliZ(0))
 
-    np.random.seed(1967)
     weights = np.random.random(
         qml.templates.StronglyEntanglingLayers.shape(layers, wires), requires_grad=True
     )

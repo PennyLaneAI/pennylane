@@ -34,7 +34,8 @@ def fixture_init_state():
 
     def _init_state(n):
         """random initial state"""
-        state = np.random.random([1 << n]) + np.random.random([1 << n]) * 1j
+        rng = np.random.default_rng(123)
+        state = rng.random([1 << n]) + rng.random([1 << n]) * 1j
         state /= np.linalg.norm(state)
         return state.reshape((2,) * n)
 
