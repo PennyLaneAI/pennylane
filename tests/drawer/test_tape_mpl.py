@@ -844,7 +844,7 @@ class TestClassicalControl:
             qml.cond(m0, qml.PauliY)(0)
 
         tape = qml.tape.QuantumScript.from_queue(q)
-        _, ax = qml.drawer.tape_mpl(tape)
+        _, ax = qml.drawer.tape_mpl(tape, style="black_white")
 
         assert len(ax.patches) == 5  # three for measure, two for boxes
 
@@ -857,11 +857,11 @@ class TestClassicalControl:
 
         # probably not a good way to test this, but the best I can figure out
         assert pe1._gc == {
-            "linewidth": 5 * plt.rcParams["lines.linewidth"],
+            "linewidth": 5 * 1.5,  # lines.linewidth for black white style
             "foreground": "black",  # lines.color for black white style
         }
         assert pe2._gc == {
-            "linewidth": 3 * plt.rcParams["lines.linewidth"],
+            "linewidth": 3 * 1.5,  # lines.linewidth for black white style
             "foreground": "white",  # figure.facecolor for black white sytle
         }
         plt.close()
@@ -875,7 +875,7 @@ class TestClassicalControl:
             qml.cond(m0 & m1, qml.PauliY)(0)
 
         tape = qml.tape.QuantumScript.from_queue(q)
-        _, ax = qml.drawer.tape_mpl(tape)
+        _, ax = qml.drawer.tape_mpl(tape, style="black_white")
 
         assert len(ax.patches) == 7  # three for 2 measurements, one for box
         [_, _, cwire1, cwire2, eraser] = ax.lines
@@ -891,11 +891,11 @@ class TestClassicalControl:
 
             # probably not a good way to test this, but the best I can figure out
             assert pe1._gc == {
-                "linewidth": 5 * plt.rcParams["lines.linewidth"],
+                "linewidth": 5 * 1.5,  # lines.linewidth for black white style
                 "foreground": "black",  # lines.color for black white style
             }
             assert pe2._gc == {
-                "linewidth": 3 * plt.rcParams["lines.linewidth"],
+                "linewidth": 3 * 1.5,  # lines.linewidth for black white style
                 "foreground": "white",  # figure.facecolor for black white sytle
             }
 
@@ -918,7 +918,7 @@ class TestClassicalControl:
             qml.cond(m1, qml.T)(1)
 
         tape = qml.tape.QuantumScript.from_queue(q)
-        _, ax = qml.drawer.tape_mpl(tape)
+        _, ax = qml.drawer.tape_mpl(tape, style="black_white")
 
         [_, _, cwire1, cwire2, eraser] = ax.lines
 
@@ -933,11 +933,11 @@ class TestClassicalControl:
 
             # probably not a good way to test this, but the best I can figure out
             assert pe1._gc == {
-                "linewidth": 5 * plt.rcParams["lines.linewidth"],
+                "linewidth": 5 * 1.5,  # lines.linewidth for black white style
                 "foreground": "black",  # lines.color for black white style
             }
             assert pe2._gc == {
-                "linewidth": 3 * plt.rcParams["lines.linewidth"],
+                "linewidth": 3 * 1.5,  # lines.linewidth for black white style
                 "foreground": "white",  # figure.facecolor for black white sytle
             }
 
@@ -950,11 +950,11 @@ class TestClassicalControl:
 
     def test_single_mcm_measure(self):
         """Test a final measurement of a mid circuit measurement."""
-
+        plt.rcParams["lines.linewidth"] = 20
         with qml.queuing.AnnotatedQueue() as q:
             m0 = qml.measure(0)
             qml.expval(m0)
-        _, ax = tape_mpl(qml.tape.QuantumScript.from_queue(q))
+        _, ax = tape_mpl(qml.tape.QuantumScript.from_queue(q), style="black_white")
 
         assert len(ax.patches) == 6  # two measurement boxes
         assert ax.patches[3].get_x() == 1 - 0.75 / 2 + 0.2  # 1 - box_length/2 + pad
@@ -974,11 +974,11 @@ class TestClassicalControl:
 
         # probably not a good way to test this, but the best I can figure out
         assert pe1._gc == {
-            "linewidth": 5 * plt.rcParams["lines.linewidth"],
+            "linewidth": 5 * 1.5,  # lines.linewidth for black white style
             "foreground": "black",  # lines.color for black white style
         }
         assert pe2._gc == {
-            "linewidth": 3 * plt.rcParams["lines.linewidth"],
+            "linewidth": 3 * 1.5,  # lines.linewidth for black white style
             "foreground": "white",  # figure.facecolor for black white sytle
         }
 
@@ -992,7 +992,7 @@ class TestClassicalControl:
             _ = qml.measure(0)
             qml.sample([m0, m1])
             qml.expval(m2)
-        _, ax = qml.drawer.tape_mpl(qml.tape.QuantumScript.from_queue(q))
+        _, ax = qml.drawer.tape_mpl(qml.tape.QuantumScript.from_queue(q), style="black_white")
 
         [_, cwire0, cwire1, cwire2] = ax.lines
         assert cwire0.get_xdata() == [0, 0, 0, 5, 5, 5]
