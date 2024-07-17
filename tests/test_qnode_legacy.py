@@ -626,12 +626,13 @@ class TestValidation:
         except for thee deprecation warnings."""
         dev = qml.device("default.qubit.legacy", wires=1)
 
-        @qml.qnode(dev, interface="autograd")
-        def circuit(params):
-            qml.RX(params, wires=0)
-            return qml.expval(qml.PauliZ(0))
-
         with warnings.catch_warnings(record=True) as record:
+
+            @qml.qnode(dev, interface="autograd")
+            def circuit(params):
+                qml.RX(params, wires=0)
+                return qml.expval(qml.PauliZ(0))
+
             circuit(qml.numpy.array(0.1, requires_grad=True))
 
         # Two warnings. One for the device and one for the interface
