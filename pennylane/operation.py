@@ -1089,7 +1089,6 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
 
         self._name = self.__class__.__name__  #: str: name of the operator
         self._id = id
-        self.queue_idx = None  #: int, None: index of the Operator in the circuit queue, or None if not in a queue
         self._pauli_rep = None  # Union[PauliSentence, None]: Representation of the operator as a pauli sentence, if applicable
 
         wires_from_args = False
