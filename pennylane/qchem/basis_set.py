@@ -103,8 +103,8 @@ def atom_basis_data(name, atom, load_data=False):
         basis = basis_sets[name].get(atom, None)
         if basis is None:
             raise ValueError(
-                f"The requested basis set is not available for {atom}. "
-                "Please consider using `load_data=True` to download the basis set"
+                f"The requested basis set data is not available for {atom}. "
+                "Please consider using `load_data=True` to download the basis set "
                 "from the external library basis-set-exchange that can be installed with: "
                 "pip install basis-set-exchange."
             )
