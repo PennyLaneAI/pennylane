@@ -28,21 +28,6 @@ except ImportError:
 
 
 @lru_cache
-def _get_measurement_value_class() -> type:
-    """Return a class to represent mid-circuit measurement values once in a way protected from lack of a jax install."""
-    if not has_jax:  # pragma: no cover
-        raise ImportError("Jax is required for plxpr.")
-
-    class CaptureMeasurementValue:  # pylint: disable=too-few-public-methods
-        """A mid-circuit measurement value."""
-
-        def __init__(self, mid_measure: "qml.measurements.MidMeasureMP"):
-            self.mid_measure = mid_measure
-
-    return CaptureMeasurementValue
-
-
-@lru_cache
 def create_mid_measure_primitive() -> Optional["jax.core.Primitive"]:
     """Create a primitive corresponding to an mid-circuit measurement type.
 
@@ -61,7 +46,6 @@ def create_mid_measure_primitive() -> Optional["jax.core.Primitive"]:
         return None
 
     primitive = jax.core.Primitive("mid_measure")
-    mv_class = _get_measurement_value_class()
 
     @primitive.def_impl
     def _(wires, reset=False, postselect=None):
@@ -72,7 +56,7 @@ def create_mid_measure_primitive() -> Optional["jax.core.Primitive"]:
             )
         # Do nothing with the MidMeasureMP. The MeasurementProcess primitive will handle that
         mp = qml.measurements.MidMeasureMP(wires=wires, reset=reset, postselect=postselect)
-        return mv_class(mp)
+        return qml.measurements.MeasurementValue([mp], processing_fn=lambda v: v)
 
     @primitive.def_abstract_eval
     def _(wires, **_):  # pylint: disable=unused-argument
