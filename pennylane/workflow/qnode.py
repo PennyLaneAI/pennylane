@@ -490,9 +490,9 @@ class QNode:
                 qml.PennyLaneDeprecationWarning,
             )
 
-        if expansion_strategy is None:
-            # Default to "gradient" to maintain default behaviour of "draw" and "specs"
-            expansion_strategy = "gradient"
+        # Default to "gradient" to maintain default behaviour of "draw" and "specs"
+        expansion_strategy = expansion_strategy or "gradient"
+
 
         if interface not in SUPPORTED_INTERFACES:
             raise qml.QuantumFunctionError(
