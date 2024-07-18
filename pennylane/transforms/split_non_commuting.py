@@ -687,6 +687,7 @@ def _split_all_multi_term_obs_mps(tape: qml.tape.QuantumScript):
                         single_term_obs_mps[sm][1].append(c)
                         coeff_sum += qml.math.abs(c)
                         non_id_obs_count += 1
+
                 # Otherwise, add this new measurement to the list of single-term measurements.
                 else:
                     single_term_obs_mps[sm] = ([mp_idx], [c])
@@ -717,7 +718,7 @@ def _processing_fn_no_grouping(
     offsets: List[float],
     shots: Shots,
     batch_size: int,
-    term_sampling_used: bool,
+    term_sampling_used: bool = False,
 ):
     """Postprocessing function for the split_non_commuting transform without grouping.
 

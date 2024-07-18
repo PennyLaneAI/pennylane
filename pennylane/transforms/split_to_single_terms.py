@@ -141,7 +141,7 @@ def split_to_single_terms(tape):
     if len(tape.measurements) == 0:
         return (tape,), null_postprocessing
 
-    single_term_obs_mps, offsets = _split_all_multi_term_obs_mps(tape)
+    single_term_obs_mps, metadata = _split_all_multi_term_obs_mps(tape)
     new_measurements = list(single_term_obs_mps)
 
     if new_measurements == tape.measurements:
@@ -160,7 +160,7 @@ def split_to_single_terms(tape):
         process = partial(
             _processing_fn_no_grouping,
             single_term_obs_mps=single_term_obs_mps,
-            offsets=offsets,
+            offsets=[meta.id_offset for meta in metadata],
             shots=tape.shots,
             batch_size=tape.batch_size,
         )
