@@ -229,7 +229,7 @@ def hamiltonian_expand(tape: QuantumTape, group: bool = True) -> (Sequence[Quant
     """
 
     warnings.warn(
-        "'qml.transforms.hamiltonian_expand' is deprecated and will be removed in version 0.39. "
+        "qml.transforms.hamiltonian_expand is deprecated and will be removed in version 0.39. "
         "Instead, use 'qml.transforms.split_non_commuting', which can handle the same measurement type.",
         qml.PennyLaneDeprecationWarning,
     )
