@@ -23,7 +23,7 @@ from inspect import isclass, signature
 import pennylane as qml
 from pennylane.boolean_fn import BooleanFn
 from pennylane.measurements import MeasurementValue, MidMeasureMP
-from pennylane.ops import Controlled
+from pennylane.ops import Adjoint, Controlled
 from pennylane.templates import ControlledSequence
 from pennylane.wires import WireError, Wires
 
@@ -286,8 +286,8 @@ def _check_arithmetic_ops(op1, op2):
     """Helper method for comparing two arithmetic operators based on type check of the bases"""
     # pylint: disable = unnecessary-lambda-assignment
 
-    if isinstance(op1, (Controlled, ControlledSequence)) or isinstance(
-        op2, (Controlled, ControlledSequence)
+    if isinstance(op1, (Adjoint, Controlled, ControlledSequence)) or isinstance(
+        op2, (Adjoint, Controlled, ControlledSequence)
     ):
         return (
             isinstance(op1, type(op2))
