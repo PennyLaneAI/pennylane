@@ -467,7 +467,7 @@ def _get_cond_qfunc_prim():
 
         print("We are in the cond primitive definition implementation")
         print(
-            f"args={args}, \ncondition={condition}, \njaxpr_true={jaxpr_true}, \njaxpr_false={jaxpr_false}, \njaxpr_elifs={jaxpr_elifs}"
+            f"args={args}, \ncondition={condition}, \njaxpr_true={jaxpr_true}, \njaxpr_false={jaxpr_false}, \njaxpr_elifs={jaxpr_elifs}\n"
         )
 
         def run_jaxpr(jaxpr, *args):
@@ -477,19 +477,15 @@ def _get_cond_qfunc_prim():
             print("We are in the true branch")
             return run_jaxpr(jaxpr_true, *args)
 
-        # pylint: disable=unused-variable
-        def false_branch(args):
-            print("We are in the false branch")
-            if not jaxpr_elifs:
-                return run_jaxpr(jaxpr_false, *args)
-
         def elif_branch(args, jaxpr_elifs):
             print("We are in the elif branch")
             print(f"jaxpr_elifs={jaxpr_elifs}")
             if not jaxpr_elifs:
                 return run_jaxpr(jaxpr_false, *args)
 
-            pred, jaxpr_elif, rest_jaxpr_elifs = jaxpr_elifs[0]
+            pred, jaxpr_elif = jaxpr_elifs[0]
+            rest_jaxpr_elifs = jaxpr_elifs[1:]
+
             return jax.lax.cond(
                 pred,
                 lambda y: run_jaxpr(jaxpr_elif, *y),
@@ -497,14 +493,18 @@ def _get_cond_qfunc_prim():
                 args,
             )
 
-        return jax.lax.cond(condition, true_branch, lambda y: elif_branch(y, jaxpr_elifs), args)
+        def false_branch(args):
+            print("We are in the false branch")
+            if not jaxpr_elifs:
+                return run_jaxpr(jaxpr_false, *args)
+            return elif_branch(args, jaxpr_elifs)
+
+        return jax.lax.cond(condition, true_branch, false_branch, args)
 
     @cond_prim.def_abstract_eval
     def _(*args, condition, jaxpr_true, jaxpr_false, jaxpr_elifs):
         print("We are in the cond primitive abstract evaluation")
-        print(
-            f"args={args}, \ncondition={condition}, \njaxpr_true={jaxpr_true}, \njaxpr_false={jaxpr_false}"
-        )
+
         out_avals = jaxpr_true.out_avals
         return out_avals
 
@@ -517,20 +517,9 @@ def _capture_cond(condition, true_fn, false_fn, elifs=()) -> Callable:
 
     print("Capture mode for cond")
 
-    print(f"condition={condition}, true_fn={true_fn}, false_fn={false_fn}, elifs={elifs}")
-
     import jax  # pylint: disable=import-outside-toplevel
 
     cond_prim = _get_cond_qfunc_prim()
-
-    def handle_elifs(elifs):
-        if len(elifs) == 2 and isinstance(elifs[0], bool) and callable(elifs[1]):
-            return [(elifs[0], elifs[1])]
-        return list(elifs)
-
-    elifs = handle_elifs(elifs)
-
-    print(f"elifs={elifs}")
 
     # pylint: disable=unused-argument
     # pylint: disable=unused-variable
@@ -538,23 +527,7 @@ def _capture_cond(condition, true_fn, false_fn, elifs=()) -> Callable:
     def new_wrapper(*args, **kwargs):
         jaxpr_true = jax.make_jaxpr(true_fn)(*args)
         jaxpr_false = jax.make_jaxpr(false_fn)(*args) if false_fn else jaxpr_true
-
-        # TODO: find a better way to distinguish the 2 cases
-        if len(elifs) == 2 and callable(elifs[1]):
-            print("elifs single case")
-            # this is the case where we only have one elif, like:
-            # elifs=((x == 1, elif_fn))
-            jaxpr_elifs = [(elifs[0], jax.make_jaxpr(elifs[1])(*args), [])]
-
-        else:
-            print("elifs multiple case")
-            # this is the case where we have multiple elifs, like:
-            # elifs=((x == 1, elif_fn), (x == 2, elif_fn2))
-            jaxpr_elifs = [(cond, jax.make_jaxpr(fn)(*args), []) for cond, fn in elifs]
-
-        # Create a nested structure for jaxpr_elifs
-        for i in range(len(jaxpr_elifs) - 1):
-            jaxpr_elifs[i] = (jaxpr_elifs[i][0], jaxpr_elifs[i][1], jaxpr_elifs[i + 1 :])
+        jaxpr_elifs = [(cond, jax.make_jaxpr(elif_fn)(*args)) for cond, elif_fn in elifs]
 
         print(f"jaxpr_elifs={jaxpr_elifs}")
 
