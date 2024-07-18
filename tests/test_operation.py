@@ -321,7 +321,7 @@ class TestOperatorConstruction:
         assert op._ndim_params == (ndim_params,)
         assert op.ndim_params == (0,)
 
-    def test_expand_fn_deprecated(self):
+    def test_expand_deprecated(self):
 
         class MyOp(qml.operation.Operation):
             num_wires = 1
