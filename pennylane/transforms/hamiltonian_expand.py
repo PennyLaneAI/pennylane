@@ -474,8 +474,8 @@ def sum_expand(tape: QuantumTape, group: bool = True) -> (Sequence[QuantumTape],
     """
 
     warnings.warn(
-        "'qml.transforms.sum_expand' is deprecated and will be removed in version 0.39. "
-        "Instead, use 'qml.transforms.split_non_commuting', which can handle the same measurement type.",
+        "qml.transforms.sum_expand is deprecated and will be removed in version 0.39. "
+        "Instead, use qml.transforms.split_non_commuting, which can handle the same measurement type.",
         qml.PennyLaneDeprecationWarning,
     )
 
