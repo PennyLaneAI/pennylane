@@ -70,8 +70,8 @@
 
 <h3>Deprecations 👋</h3>
 
-* `Operator.expand` has been deprecated. Users should simply do `qml.tape.QuantumScript(op.decomposition())`
-  for an equivalent behaviour.
+* `Operator.expand` has been deprecated. Users should simply use `qml.tape.QuantumScript(op.decomposition())`
+  for equivalent behaviour.
   [(#5994)](https://github.com/PennyLaneAI/pennylane/pull/5994)
 
 * `pennylane.qinfo.classical_fisher` and `pennylane.qinfo.quantum_fisher` have been deprecated.
