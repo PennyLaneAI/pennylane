@@ -5,7 +5,7 @@
 <h3>New features since last release</h3>
 
 * Mid-circuit measurements can now be captured with `qml.capture` enabled.
-  [(#)]()
+  [(#6015)](https://github.com/PennyLaneAI/pennylane/pull/6015)
 
 * A new method `process_density_matrix` has been added to the `ProbabilityMP` and `DensityMatrixMP` classes, allowing for more efficient handling of quantum density matrices, particularly with batch processing support. This method simplifies the calculation of probabilities from quantum states represented as density matrices.
   [(#5830)](https://github.com/PennyLaneAI/pennylane/pull/5830)
