@@ -27,8 +27,8 @@ Pending deprecations
   - Deprecated in v0.38
   - Will be removed in v0.39
 
-* The ``override_shots`` argument in ``qml.execute`` is deprecated. 
-  Instead, please add the shots to the ``QuantumTape``s to be executed.
+* The ``override_shots`` argument in ``qml.execute`` is deprecated.
+  Instead, please add the shots to the ``QuantumTape``\ s to be executed.
 
   - Deprecated in v0.38
   - Will be removed in v0.39
