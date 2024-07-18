@@ -33,6 +33,10 @@ class ShotCopies(NamedTuple):
         """The representation of the class"""
         return f"ShotCopies({self.shots} shots x {self.copies})"
 
+    def __iter__(self):
+        yield self.shots
+        yield self.copies
+
 
 def valid_int(s):
     """Returns True if s is a positive integer."""

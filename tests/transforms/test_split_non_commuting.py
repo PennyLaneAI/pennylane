@@ -721,6 +721,7 @@ class TestTermSampling:
 
         # Re-gather the shot information from the tapes for statistical verification
         out_shots = [np.zeros((len(shots.shot_vector), len(prob))) for prob in probs]
+        out_copies = [np.zeros((len(shots.shot_vector), len(prob))) for prob in probs]
 
         for tp in out:
             # Determine which ShotCopies from the original tape are used in the current tape
@@ -735,23 +736,36 @@ class TestTermSampling:
 
                 term_idx = terms[ind].index(tp.measurements[0].obs)
 
-                tmp = [next(shot_iter).shots if flg > 0 else 0 for flg in flag]
+                relevant_shot_vecs = []
+                for flg in flag:
+                    if flg > 0:
+                        relevant_shot_vecs.append((*next(shot_iter),))
+                    else:
+                        relevant_shot_vecs.append((0, 0))
 
-                out_shots[ind][:, term_idx] = tmp
+                shts, cpes = list(zip(*relevant_shot_vecs))
+
+                out_shots[ind][:, term_idx] = shts
+                out_copies[ind][:, term_idx] = cpes
 
         # Need this check to avoid `zip` silently ignoring a size mismatch
         assert all(out_shot.shape[0] == len(shots.shot_vector) for out_shot in out_shots)
+        assert all(out_copy.shape[0] == len(shots.shot_vector) for out_copy in out_copies)
 
         shots_count = np.array([vec.shots for vec in shots.shot_vector])
-        # TODO: Add equivalent for copies
+        copies_count = np.array([vec.copies for vec in shots.shot_vector])
 
-        for out_shot, prob in zip(out_shots, probs):
+        for out_shot, out_copy, prob in zip(out_shots, out_copies, probs):
 
             # Verify that the shape of the output shots and probabilities match
             assert out_shot.shape[-1] == len(prob)
 
             # Verify that the sum of shots is consistent after the split
             assert all(out_shot.sum(axis=1) == shots_count)
+            # Verify that the number of copies inherited from the original shot object
+            # is correct given that shots were allocated to a term in the first place
+            for i, (a, b) in enumerate(zip(out_copy, copies_count)):
+                assert np.all(a[np.nonzero(out_shot[i])] == b)
 
             exp_shot = prob[None, :] * shots_count[:, None]
 
