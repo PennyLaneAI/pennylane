@@ -25,7 +25,8 @@ def _get_absolute_import_path(fn):
 def _determine_spec_level(kwargs, qnode):
     if "max_expansion" in kwargs:
         warnings.warn(
-            "'max_expansion' has no effect on the output of 'specs()' and should not be used."
+            "'max_expansion' has no effect on the output of 'specs()' and should not be used.",
+            qml.PennyLaneDeprecationWarning,
         )
 
     sentinel = object()

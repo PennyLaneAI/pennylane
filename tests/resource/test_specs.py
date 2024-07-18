@@ -48,7 +48,7 @@ class TestSpecsTransform:
         def circ():
             return qml.expval(qml.PauliZ(0))
 
-        with pytest.warns(UserWarning, match="'max_expansion' has no effect"):
+        with pytest.warns(qml.PennyLaneDeprecationWarning, match="'max_expansion' has no effect"):
             qml.specs(circ, max_expansion=10)()
 
     def test_only_one_of_level_or_expansion_strategy_passed(self):
@@ -251,7 +251,7 @@ class TestSpecsTransform:
 
     @pytest.mark.xfail(reason="DefaultQubit2 does not support custom expansion depths")
     def test_max_expansion(self):
-        """Test that a user can calculation specifications for a different max
+        """Test that a user can calculate specifications for a different max
         expansion parameter."""
 
         circuit, params = self.make_qnode_and_params("device")
