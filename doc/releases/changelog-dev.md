@@ -57,6 +57,14 @@
 
 <h3>Breaking changes 💔</h3>
 
+* The `CircuitGraph.graph` rustworkx graph now stores indices into the circuit as the node labels,
+  instead of the operator/ measurement itself.  This allows the same operator to occur multiple times in
+  the circuit.
+  [(#5907)](https://github.com/PennyLaneAI/pennylane/pull/5907)
+
+* `queue_idx` attribute has been removed from the `Operator`, `CompositeOp`, and `SymboliOp` classes.
+  [(#6005)](https://github.com/PennyLaneAI/pennylane/pull/6005)
+
 * `qml.from_qasm` no longer removes measurements from the QASM code. Use 
   `measurements=[]` to remove measurements from the original circuit.
   [(#5982)](https://github.com/PennyLaneAI/pennylane/pull/5982)
@@ -97,6 +105,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* `CircuitGraph` can now handle circuits with the same operation instance occuring multiple times.
+  [(#5907)](https://github.com/PennyLaneAI/pennylane/pull/5907)
+
 * `qml.QSVT` is updated to store wire order correctly.
   [(#5959)](https://github.com/PennyLaneAI/pennylane/pull/5959)
 
@@ -106,6 +117,7 @@
 
 * `qml.AmplitudeEmbedding` has better support for features using low precision integer data types.
 [(#5969)](https://github.com/PennyLaneAI/pennylane/pull/5969)
+
 
 <h3>Contributors ✍️</h3>
 

@@ -72,7 +72,6 @@ class SymbolicOp(Operator):
     def __init__(self, base, id=None):
         self.hyperparameters["base"] = base
         self._id = id
-        self.queue_idx = None
         self._pauli_rep = None
         self.queue()
 

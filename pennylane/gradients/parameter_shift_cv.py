@@ -376,8 +376,10 @@ def second_order_param_shift(tape, dev_wires, argnum=None, shifts=None, gradient
         B_inv = B.copy()
 
         succ = tape.graph.descendants_in_order((op,))
-        operation_descendents = itertools.filterfalse(qml.circuit_graph._is_observable, succ)
-        observable_descendents = filter(qml.circuit_graph._is_observable, succ)
+        operation_descendents = itertools.filterfalse(
+            lambda obj: isinstance(obj, MeasurementProcess), succ
+        )
+        observable_descendents = filter(lambda obj: isinstance(obj, MeasurementProcess), succ)
 
         for BB in operation_descendents:
             if not BB.supports_heisenberg:
