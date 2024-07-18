@@ -532,7 +532,7 @@ class TestSumExpand:
         if len(recwarn) > 0:
             for w in recwarn:
                 assert isinstance(w.message, qml.PennyLaneDeprecationWarning)
-                assert "'qml.transforms.sum_expand' is deprecated" in str(w.message)
+                assert "qml.transforms.sum_expand is deprecated" in str(w.message)
 
     def test_observables_on_same_wires(self):
         """Test that even if the observables are on the same wires, if they are different operations, they are separated.
