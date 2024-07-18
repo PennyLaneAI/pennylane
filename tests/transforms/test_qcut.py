@@ -5883,7 +5883,7 @@ class TestCutCircuitWithHamiltonians:
 
         tape0 = qml.tape.QuantumScript.from_queue(q0)
         tape = tape0.expand()
-        tapes, _ = qml.transforms.hamiltonian_expand(tape, group=False)
+        tapes, _ = qml.transforms.split_non_commuting(tape, grouping_strategy=None)
 
         frag_lens = [5, 7]
         frag_ords = [[1, 6], [3, 6]]

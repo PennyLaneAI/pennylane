@@ -203,7 +203,7 @@ class TestSpecsTransform:
         obs = [qml.X(0) @ qml.Z(1), qml.Z(0) @ qml.Y(2), qml.Y(0) @ qml.X(2)]
         H = qml.Hamiltonian(coeffs, obs)
 
-        @qml.transforms.hamiltonian_expand
+        @qml.transforms.split_non_commuting
         @qml.transforms.merge_rotations
         @qml.qnode(qml.device("default.qubit"), diff_method="parameter-shift", shifts=pnp.pi / 4)
         def circuit(x):
