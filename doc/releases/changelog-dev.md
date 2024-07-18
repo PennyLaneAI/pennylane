@@ -79,7 +79,7 @@
 <h3>Deprecations 👋</h3>
 
 * `pennylane.transforms.sum_expand` and `pennylane.transforms.hamiltonian_expand` have been deprecated.
-  Users should instead use `pennylane.transforms.split_non_commuting` for an equivalent behaviour.
+  Users should instead use `pennylane.transforms.split_non_commuting` for equivalent behaviour.
   [(#6003)](https://github.com/PennyLaneAI/pennylane/pull/6003)
 
 
