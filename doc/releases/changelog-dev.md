@@ -44,6 +44,9 @@
 * Observable validation for `default.qubit` is now based on execution mode (analytic vs. finite shots) and measurement type (sample measurement vs. state measurement).
   [(#5890)](https://github.com/PennyLaneAI/pennylane/pull/5890)
 
+* Molecules and Hamiltonians can now be constructed for all the elements present in the periodic table.
+  [(#5821)](https://github.com/PennyLaneAI/pennylane/pull/5821)
+
 <h4>Community contributions 🥳</h4>
 
 * `DefaultQutritMixed` readout error has been added using parameters `readout_relaxation_probs` and 
@@ -92,6 +95,7 @@
 
 This release contains contributions from (in alphabetical order):
 Guillermo Alonso,
+Utkarsh Azad
 Astral Cai,
 Yushao Chen,
 Gabriel Bottrill,
