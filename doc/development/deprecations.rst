@@ -16,7 +16,7 @@ Pending deprecations
   - Will be removed in v0.39
 
 * The ``max_expansion`` argument in ``qml.execute`` is deprecated. 
-  Instead, please use ``qml.devices.preprocess.decompose`` with the desired expansion level, add it to a ``TransformProgram`` and pass it to the ``transform_program`` argument of ``qml.execute``.
+  Instead, please use ``qml.devices.preprocess.decompose`` with the desired expansion level, add it to a ``TransformProgram``, and pass it to the ``transform_program`` argument of ``qml.execute``.
 
   - Deprecated in v0.38
   - Will be removed in v0.39
