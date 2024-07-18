@@ -14,8 +14,9 @@
 """
 Contains the condition transform.
 """
+import functools
 from functools import wraps
-from typing import Type
+from typing import Callable, Optional, Tuple, Type, overload
 
 import pennylane as qml
 from pennylane import QueuingManager
@@ -101,19 +102,12 @@ class Conditional(SymbolicOp, Operation):
         return Conditional(self.meas_val, self.base.adjoint())
 
 
-from typing import Callable, Optional, overload, Union, Tuple
-
-from pennylane.measurements import MeasurementValue
-
-import functools
-
-
 @overload
 def cond(
-    condition: Union[MeasurementValue, bool],
+    condition: bool,
     true_fn: Callable,
     false_fn: Optional[Callable] = None,
-    elifs: Tuple[Tuple[bool, Callable], ...] = (),
+    elifs: Optional[Tuple[Tuple[bool, Callable], ...]] = (),
 ) -> Callable: ...
 def cond(condition, true_fn, false_fn=None, elifs=()):
     """Quantum-compatible if-else conditionals --- condition quantum operations
@@ -473,33 +467,43 @@ def _get_cond_qfunc_prim():
 
         print("We are in the cond primitive definition implementation")
         print(
-            f"args={args}, condition={condition}, jaxpr_true={jaxpr_true}, jaxpr_false={jaxpr_false}, jaxpr_elifs={jaxpr_elifs}"
+            f"args={args}, \ncondition={condition}, \njaxpr_true={jaxpr_true}, \njaxpr_false={jaxpr_false}, \njaxpr_elifs={jaxpr_elifs}"
         )
-
-        # I don't think this function is necessary for the requirement of this epic
 
         def run_jaxpr(jaxpr, *args):
             return jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *args)
 
         def true_branch(args):
+            print("We are in the true branch")
             return run_jaxpr(jaxpr_true, *args)
 
+        # pylint: disable=unused-variable
         def false_branch(args):
+            print("We are in the false branch")
             if not jaxpr_elifs:
                 return run_jaxpr(jaxpr_false, *args)
-            else:
-                pred, elif_jaxpr, rest_jaxpr_elifs = jaxpr_elifs[0]
-                return jax.lax.cond(
-                    pred, lambda y: run_jaxpr(elif_jaxpr, *y), lambda y: false_branch(y), args
-                )
 
-        return jax.lax.cond(condition, true_branch, false_branch, args)
+        def elif_branch(args, jaxpr_elifs):
+            print("We are in the elif branch")
+            print(f"jaxpr_elifs={jaxpr_elifs}")
+            if not jaxpr_elifs:
+                return run_jaxpr(jaxpr_false, *args)
+
+            pred, jaxpr_elif, rest_jaxpr_elifs = jaxpr_elifs[0]
+            return jax.lax.cond(
+                pred,
+                lambda y: run_jaxpr(jaxpr_elif, *y),
+                lambda y: elif_branch(y, rest_jaxpr_elifs),
+                args,
+            )
+
+        return jax.lax.cond(condition, true_branch, lambda y: elif_branch(y, jaxpr_elifs), args)
 
     @cond_prim.def_abstract_eval
     def _(*args, condition, jaxpr_true, jaxpr_false, jaxpr_elifs):
         print("We are in the cond primitive abstract evaluation")
         print(
-            f"args={args}, condition={condition}, jaxpr_true={jaxpr_true}, jaxpr_false={jaxpr_false}"
+            f"args={args}, \ncondition={condition}, \njaxpr_true={jaxpr_true}, \njaxpr_false={jaxpr_false}"
         )
         out_avals = jaxpr_true.out_avals
         return out_avals
@@ -521,16 +525,15 @@ def _capture_cond(condition, true_fn, false_fn, elifs=()) -> Callable:
 
     def handle_elifs(elifs):
         if len(elifs) == 2 and isinstance(elifs[0], bool) and callable(elifs[1]):
-            # Case 2: single (condition, fn) tuple
             return [(elifs[0], elifs[1])]
-        else:
-            # Case 1: tuple of (condition, fn) tuples
-            return list(elifs)
+        return list(elifs)
 
     elifs = handle_elifs(elifs)
 
     print(f"elifs={elifs}")
 
+    # pylint: disable=unused-argument
+    # pylint: disable=unused-variable
     @wraps(true_fn)
     def new_wrapper(*args, **kwargs):
         jaxpr_true = jax.make_jaxpr(true_fn)(*args)
@@ -538,12 +541,20 @@ def _capture_cond(condition, true_fn, false_fn, elifs=()) -> Callable:
 
         # TODO: find a better way to distinguish the 2 cases
         if len(elifs) == 2 and callable(elifs[1]):
-            print("elifs caso singolo")
+            print("elifs single case")
+            # this is the case where we only have one elif, like:
+            # elifs=((x == 1, elif_fn))
             jaxpr_elifs = [(elifs[0], jax.make_jaxpr(elifs[1])(*args), [])]
 
         else:
-            print("elifs caso multiplo")
+            print("elifs multiple case")
+            # this is the case where we have multiple elifs, like:
+            # elifs=((x == 1, elif_fn), (x == 2, elif_fn2))
             jaxpr_elifs = [(cond, jax.make_jaxpr(fn)(*args), []) for cond, fn in elifs]
+
+        # Create a nested structure for jaxpr_elifs
+        for i in range(len(jaxpr_elifs) - 1):
+            jaxpr_elifs[i] = (jaxpr_elifs[i][0], jaxpr_elifs[i][1], jaxpr_elifs[i + 1 :])
 
         print(f"jaxpr_elifs={jaxpr_elifs}")
 
