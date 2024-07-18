@@ -209,19 +209,26 @@ def measure(
               samples, leading to unexpected or incorrect results.
 
     """
-    wire = Wires(wires)
-    if len(wire) > 1:
+    if qml.capture.enabled():
+        primitive = qml.capture.create_mid_measure_primitive()
+        return primitive.bind(wires, reset=reset, postselect=postselect)
+
+    return _measure_impl(wires, reset=reset, postselect=postselect)
+
+
+def _measure_impl(
+    wires: Union[Hashable, Wires], reset: Optional[bool] = False, postselect: Optional[int] = None
+):
+    """qml.measure implementation for qml.capture.disabled()"""
+    wires = Wires(wires)
+    if len(wires) > 1:
         raise qml.QuantumFunctionError(
             "Only a single qubit can be measured in the middle of the circuit"
         )
 
     # Create a UUID and a map between MP and MV to support serialization
     measurement_id = str(uuid.uuid4())[:8]
-    mp = MidMeasureMP(wires=wire, reset=reset, postselect=postselect, id=measurement_id)
-    if qml.capture.enabled():
-        raise NotImplementedError(
-            "Capture cannot currently handle classical output from mid circuit measurements."
-        )
+    mp = MidMeasureMP(wires=wires, reset=reset, postselect=postselect, id=measurement_id)
     return MeasurementValue([mp], processing_fn=lambda v: v)
 
 
