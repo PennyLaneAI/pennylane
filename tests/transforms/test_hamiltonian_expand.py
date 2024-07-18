@@ -96,7 +96,7 @@ class TestHamiltonianExpand:
         if len(recwarn) > 0:
             for w in recwarn:
                 assert isinstance(w.message, qml.PennyLaneDeprecationWarning)
-                assert "'qml.transforms.hamiltonian_expand' is deprecated" in str(w.message)
+                assert "qml.transforms.hamiltonian_expand is deprecated" in str(w.message)
 
     def test_ham_with_no_terms_raises(self):
         """Tests that the hamiltonian_expand transform raises an error for a Hamiltonian with no terms."""
