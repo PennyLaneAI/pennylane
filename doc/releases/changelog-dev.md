@@ -70,10 +70,10 @@
 
 <h3>Deprecations 👋</h3>
 
-* `expansion_strategy` attribute in the `QNode` class is deprecated.
+* The `expansion_strategy` attribute in the `QNode` class is deprecated.
   [(#5989)](https://github.com/PennyLaneAI/pennylane/pull/5989)
 
-* `expansion_strategy` argument has been deprecated in all of `qml.draw`, `qml.draw_mpl` and `qml.specs`.
+* The `expansion_strategy` argument has been deprecated in all of `qml.draw`, `qml.draw_mpl`, and `qml.specs`.
   The `level` argument should be used instead.
   [(#5989)](https://github.com/PennyLaneAI/pennylane/pull/5989)
 
