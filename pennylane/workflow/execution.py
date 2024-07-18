@@ -457,7 +457,6 @@ def _deprecated_arguments_warnings(
         warnings.warn(
             "The max_expansion argument is deprecated and will be removed in version 0.39. "
             "Instead, please use qml.devices.preprocess.decompose with the desired expansion level, "
-
             "add it to a TransformProgram and pass it to the transform_program argument of qml.execute.",
             qml.PennyLaneDeprecationWarning,
         )
