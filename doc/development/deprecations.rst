@@ -65,6 +65,10 @@ Other deprecations
 Completed deprecation cycles
 ----------------------------
 
+* ``queue_idx`` attribute has been removed from the ``Operator``, ``CompositeOp``, and ``SymboliOp`` classes. Instead, the index is now stored as the label of the ``CircuitGraph.graph`` nodes.
+
+  - Deprecated in v0.38
+  - Removed in v0.38
 
 * ``qml.from_qasm`` no longer removes measurements from the QASM code. Use 
   ``measurements=[]`` to remove measurements from the original circuit.
