@@ -110,12 +110,6 @@ def test_counts_no_measure():
         qml.counts()._abstract_eval()
 
 
-def test_mid_measure_not_implemented():
-    """Test that measure raises a NotImplementedError if capture is enabled."""
-    with pytest.raises(NotImplementedError):
-        qml.measure(0)
-
-
 def test_primitive_none_behavior():
     """Test that if the obs primitive is None, the measurement can still
     be created, but it just won't be captured into jaxpr.
