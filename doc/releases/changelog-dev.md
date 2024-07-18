@@ -82,6 +82,10 @@
   for equivalent behaviour.
   [(#5994)](https://github.com/PennyLaneAI/pennylane/pull/5994)
 
+* `pennylane.transforms.sum_expand` and `pennylane.transforms.hamiltonian_expand` have been deprecated.
+  Users should instead use `pennylane.transforms.split_non_commuting` for equivalent behaviour.
+  [(#6003)](https://github.com/PennyLaneAI/pennylane/pull/6003)
+
 * The `expand_fn` argument in `qml.execute` has been deprecated.
   Instead, please create a `qml.transforms.core.TransformProgram` with the desired preprocessing and pass it to the `transform_program` argument of `qml.execute`.
   [(#5984)](https://github.com/PennyLaneAI/pennylane/pull/5984)

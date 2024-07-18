@@ -9,6 +9,12 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
+* The functions ``qml.transforms.sum_expand`` and ``qml.transforms.hamiltonian_expand`` are deprecated.
+  Instead, ``qml.transforms.split_non_commuting`` can be used for equivalent behaviour.
+
+  - Deprecated in v0.38
+  - Will be removed in v0.39
+
 * The ``expand_fn`` argument in ``qml.execute`` is deprecated. 
   Instead, please create a ``qml.transforms.core.TransformProgram`` with the desired preprocessing and pass it to the ``transform_program`` argument of ``qml.execute``.
 
@@ -21,8 +27,8 @@ Pending deprecations
   - Deprecated in v0.38
   - Will be removed in v0.39
 
-* The ``override_shots`` argument in ``qml.execute`` is deprecated. 
-  Instead, please add the shots to the ``QuantumTape``'s to be executed.
+* The ``override_shots`` argument in ``qml.execute`` is deprecated.
+  Instead, please add the shots to the ``QuantumTape``\ s to be executed.
 
   - Deprecated in v0.38
   - Will be removed in v0.39
