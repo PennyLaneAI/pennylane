@@ -493,7 +493,6 @@ class QNode:
         # Default to "gradient" to maintain default behaviour of "draw" and "specs"
         expansion_strategy = expansion_strategy or "gradient"
 
-
         if interface not in SUPPORTED_INTERFACES:
             raise qml.QuantumFunctionError(
                 f"Unknown interface {interface}. Interface must be "
