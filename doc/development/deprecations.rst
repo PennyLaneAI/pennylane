@@ -10,7 +10,7 @@ Pending deprecations
 --------------------
 
 * The functions ``qml.transforms.sum_expand`` and ``qml.transforms.hamiltonian_expand`` are deprecated.
-  Instead, ``qml.transforms.split_non_commuting`` can be used for an equivalent effect.
+  Instead, ``qml.transforms.split_non_commuting`` can be used for equivalent behaviour.
 
   - Deprecated in v0.38
   - Will be removed in v0.39
