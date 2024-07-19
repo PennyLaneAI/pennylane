@@ -24,6 +24,15 @@ import pennylane as qml
 from pennylane.wires import Wires
 
 
+@pytest.fixture(scope="function", autouse=True)
+def capture_warnings(recwarn):
+    yield
+    if len(recwarn) > 0:
+        for w in recwarn:
+            assert isinstance(w.message, qml.PennyLaneDeprecationWarning)
+            assert "'expansion_strategy' attribute is deprecated" in str(w.message)
+
+
 class TestCreateExpandFn:
     """Test creating expansion functions from stopping criteria."""
 

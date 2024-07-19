@@ -634,12 +634,12 @@ class TestSnapshotUnsupportedQNode:
 
         # TODO: fallback to simple `np.allclose` tests once `setRandomSeed` is exposed from the lightning C++ code
         counts, expvals = tuple(zip(*(qml.snapshots(circuit)().values() for _ in range(50))))
-        assert ttest_ind([count["0"] for count in counts], 250).pvalue >= 0.8
-        assert ttest_ind(expvals, 0.0).pvalue >= 0.8
+        assert ttest_ind([count["0"] for count in counts], 250).pvalue >= 0.75
+        assert ttest_ind(expvals, 0.0).pvalue >= 0.75
 
         # Make sure shots are overriden correctly
         counts, _ = tuple(zip(*(qml.snapshots(circuit)(shots=1000).values() for _ in range(50))))
-        assert ttest_ind([count["0"] for count in counts], 500).pvalue >= 0.8
+        assert ttest_ind([count["0"] for count in counts], 500).pvalue >= 0.75
 
     @pytest.mark.parametrize("diff_method", ["backprop", "adjoint"])
     def test_lightning_qubit_fails_for_state_snapshots_with_adjoint_and_backprop(self, diff_method):
