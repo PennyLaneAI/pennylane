@@ -2056,14 +2056,14 @@ def test_prune_dynamic_transform():
     program1 = qml.transforms.core.TransformProgram(
         [
             qml.transforms.dynamic_one_shot,
-            qml.transforms.sum_expand,
+            qml.transforms.split_non_commuting,
             qml.transforms.dynamic_one_shot,
         ]
     )
     program2 = qml.transforms.core.TransformProgram(
         [
             qml.transforms.dynamic_one_shot,
-            qml.transforms.sum_expand,
+            qml.transforms.split_non_commuting,
         ]
     )
 
@@ -2078,14 +2078,14 @@ def test_prune_dynamic_transform_with_mcm():
     program1 = qml.transforms.core.TransformProgram(
         [
             qml.transforms.dynamic_one_shot,
-            qml.transforms.sum_expand,
+            qml.transforms.split_non_commuting,
             qml.devices.preprocess.mid_circuit_measurements,
         ]
     )
     program2 = qml.transforms.core.TransformProgram(
         [
             qml.transforms.dynamic_one_shot,
-            qml.transforms.sum_expand,
+            qml.transforms.split_non_commuting,
         ]
     )
 
