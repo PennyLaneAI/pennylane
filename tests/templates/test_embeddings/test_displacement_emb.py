@@ -54,7 +54,7 @@ class TestDecomposition:
         """Checks the queue for the default settings."""
 
         op = qml.DisplacementEmbedding(features=features, wires=range(3))
-        tape = op.expand()
+        tape = qml.tape.QuantumScript(op.decomposition())
 
         assert len(tape.operations) == len(features)
         for idx, gate in enumerate(tape.operations):

@@ -313,7 +313,9 @@ class TestControlledDecompositionZYZ:
 
         assert op.has_decomposition
         decomp = (
-            op.expand().expand().circuit if test_expand else op.decomposition()[0].decomposition()
+            qml.tape.QuantumScript(op.decomposition()).expand().circuit
+            if test_expand
+            else op.decomposition()[0].decomposition()
         )
         expected = qml.ops.ctrl_decomp_zyz(base, (0,))  # pylint:disable=no-member
         assert equal_list(decomp, expected)
@@ -336,12 +338,20 @@ class TestControlledDecompositionZYZ:
         op = Controlled(base, (0,), control_values=[False])
 
         assert op.has_decomposition
-        decomp = op.expand().circuit if test_expand else op.decomposition()
+        decomp = (
+            qml.tape.QuantumScript(op.decomposition()).circuit
+            if test_expand
+            else op.decomposition()
+        )
         assert len(decomp) == 3
         qml.assert_equal(qml.PauliX(0), decomp[0])
         qml.assert_equal(qml.PauliX(0), decomp[-1])
         decomp = decomp[1]
-        decomp = decomp.expand().circuit if test_expand else decomp.decomposition()
+        decomp = (
+            qml.tape.QuantumScript(decomp.decomposition()).circuit
+            if test_expand
+            else decomp.decomposition()
+        )
         expected = qml.ops.ctrl_decomp_zyz(base, (0,))
         assert equal_list(decomp, expected)
 
