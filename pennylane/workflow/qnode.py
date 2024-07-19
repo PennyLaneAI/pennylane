@@ -1107,8 +1107,7 @@ class QNode:
         full_transform_program.set_classical_component(self, args, kwargs)
         _prune_dynamic_transform(full_transform_program, inner_transform_program)
 
-        orig_mcm_config = self.execute_kwargs["mcm_config"]
-        self.execute_kwargs["mcm_config"] = mcm_config
+        orig_mcm_config = self.execute_kwargs.pop("mcm_config")
         with warnings.catch_warnings():
             # TODO: remove this once the cycle for the arguements have finished, i.e. 0.39.
             warnings.filterwarnings(
@@ -1125,6 +1124,7 @@ class QNode:
                 transform_program=full_transform_program,
                 inner_transform=inner_transform_program,
                 config=config,
+                mcm_config=mcm_config,
                 gradient_kwargs=self.gradient_kwargs,
                 override_shots=override_shots,
                 **self.execute_kwargs,
