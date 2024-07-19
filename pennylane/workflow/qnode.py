@@ -1056,7 +1056,7 @@ class QNode:
         )
         self._tape_cached = using_custom_cache and self.tape.hash in cache
 
-        execute_kwargs = copy.copy(self.execute_kwargs)
+        execute_kwargs = copy.deepcopy(self.execute_kwargs)
         mcm_config = execute_kwargs["mcm_config"]
         finite_shots = _get_device_shots(self.device) if override_shots is False else override_shots
         if not finite_shots:
