@@ -65,7 +65,7 @@ def _cut_circuit_expand(
             tape.operations, [new_meas_op], shots=tape.shots, trainable_params=tape.trainable_params
         )
 
-        tapes, tapes_fn = qml.transforms.hamiltonian_expand(new_tape, group=False)
+        tapes, tapes_fn = qml.transforms.split_non_commuting(new_tape, grouping_strategy=None)
 
     return [_qcut_expand_fn(tape, max_depth, auto_cutter) for tape in tapes], tapes_fn
 

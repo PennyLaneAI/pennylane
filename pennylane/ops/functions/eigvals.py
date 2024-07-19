@@ -135,7 +135,7 @@ def eigvals(op: qml.operation.Operator, k=1, which="SA") -> TensorLike:
     try:
         return op.eigvals()
     except qml.operation.EigvalsUndefinedError:
-        return eigvals(op.expand(), k=k, which=which)
+        return eigvals(qml.tape.QuantumScript(op.decomposition()), k=k, which=which)
 
 
 @partial(transform, is_informative=True)

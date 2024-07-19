@@ -139,7 +139,7 @@ class TransformProgram:
     True
     >>> qml.compile in program
     True
-    >>> qml.transforms.hamiltonian_expand in program
+    >>> qml.transforms.split_non_commuting in program
     False
     >>> program + program
     TransformProgram(compile, cancel_inverses, compile, cancel_inverses)

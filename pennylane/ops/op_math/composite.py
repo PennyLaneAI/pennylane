@@ -59,7 +59,6 @@ class CompositeOp(Operator):
         self, *operands: Operator, id=None, _pauli_rep=None
     ):  # pylint: disable=super-init-not-called
         self._id = id
-        self.queue_idx = None
         self._name = self.__class__.__name__
 
         self.operands = operands

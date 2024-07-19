@@ -17,6 +17,7 @@ Contains the hamiltonian expand tape transform
 from collections.abc import Sequence
 
 # pylint: disable=protected-access
+import warnings
 from functools import partial
 
 import pennylane as qml
@@ -154,6 +155,10 @@ def hamiltonian_expand(
     Returns:
         qnode (QNode) or tuple[List[QuantumTape], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
 
+    .. warning::
+        This function is deprecated and will be removed in version 0.39.
+        Instead, use :func:`~.transforms.split_non_commuting`.
+
     **Example**
 
     Given a Hamiltonian,
@@ -225,6 +230,12 @@ def hamiltonian_expand(
     >>> len(tapes)
     2
     """
+
+    warnings.warn(
+        "qml.transforms.hamiltonian_expand is deprecated and will be removed in version 0.39. "
+        "Instead, use qml.transforms.split_non_commuting, which can handle the same measurement type.",
+        qml.PennyLaneDeprecationWarning,
+    )
 
     if (
         len(tape.measurements) != 1
@@ -387,6 +398,10 @@ def sum_expand(tape: QuantumTape, group: bool = True) -> tuple[QuantumTapeBatch,
         quantum tapes to be evaluated, and a function to be applied to these
         tape executions to compute the expectation value.
 
+    .. warning::
+        This function is deprecated and will be removed in version 0.39.
+        Instead, use :func:`~.transforms.split_non_commuting`.
+
     **Example**
 
     Given a Sum operator,
@@ -460,6 +475,12 @@ def sum_expand(tape: QuantumTape, group: bool = True) -> tuple[QuantumTapeBatch,
     [expval(X(0))]
 
     """
+
+    warnings.warn(
+        "qml.transforms.sum_expand is deprecated and will be removed in version 0.39. "
+        "Instead, use qml.transforms.split_non_commuting, which can handle the same measurement type.",
+        qml.PennyLaneDeprecationWarning,
+    )
 
     # The dictionary of all unique single-term observable measurements, and their indices
     # within the list of all single-term observable measurements.

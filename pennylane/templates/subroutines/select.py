@@ -56,7 +56,7 @@ class Select(Operation):
     >>>     qml.Select(ops, control=[0,1])
     >>>     return qml.state()
     ...
-    >>> print(qml.draw(circuit, expansion_strategy='device')())
+    >>> print(qml.draw(circuit, level='device')())
     0: ─╭○─╭○─╭●─╭●────┤  State
     1: ─├○─├●─├○─├●────┤  State
     2: ─╰X─│──╰Y─├SWAP─┤  State

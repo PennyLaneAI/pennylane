@@ -1519,7 +1519,7 @@ class TestTapeExpansion:
             }
             tol = TOL_FOR_SPSA
 
-        spy = mocker.spy(qml.transforms, "hamiltonian_expand")
+        spy = mocker.spy(qml.transforms, "split_non_commuting")
         obs = [qml.PauliX(0), qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliZ(1)]
 
         @jax.jit

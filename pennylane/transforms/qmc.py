@@ -337,7 +337,7 @@ def quantum_monte_carlo(
         It is also possible to explore the resources required to perform the quantum Monte Carlo
         algorithm
 
-        >>> qml.specs(qmc, expansion_strategy="device")()
+        >>> qml.specs(qmc, level="device")()
         {'resources': Resources(
             num_wires=12,
             num_gates=31882,

@@ -83,7 +83,7 @@ def _check_clifford_op(op, use_decomposition=False):
 
     # Check if matrix can be calculated for the operator
     if (not op.has_matrix and not use_decomposition) or (
-        use_decomposition and not op.expand().wires
+        use_decomposition and not qml.tape.QuantumScript(op.decomposition()).wires
     ):
         return False
 
