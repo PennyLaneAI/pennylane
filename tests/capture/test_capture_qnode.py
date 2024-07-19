@@ -121,8 +121,8 @@ def test_simple_qnode(x64_mode):
     expected_kwargs = {"diff_method": "best"}
     expected_kwargs.update(
         {
-            "mcm_method": circuit.mcm_config.mcm_method,
-            "postselect_mode": circuit.mcm_config.postselect_mode,
+            "mcm_method": circuit.execute_kwargs["mcm_config"].mcm_method,
+            "postselect_mode": circuit.execute_kwargs["mcm_config"].postselect_mode,
         }
     )
     expected_kwargs.update(circuit.execute_kwargs)

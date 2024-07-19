@@ -1851,14 +1851,14 @@ class TestMCMConfiguration:
             return mp(qml.PauliZ(0))
 
         _ = circuit(1.8, qml.expval, shots=10)
-        assert circuit.mcm_config == original_config
+        assert circuit.execute_kwargs["mcm_config"] == original_config
 
         if mcm_method != "one-shot":
             _ = circuit(1.8, qml.expval)
-            assert circuit.mcm_config == original_config
+            assert circuit.execute_kwargs["mcm_config"] == original_config
 
         _ = circuit(1.8, qml.expval, shots=10)
-        assert circuit.mcm_config == original_config
+        assert circuit.execute_kwargs["mcm_config"] == original_config
 
 
 class TestTapeExpansion:
