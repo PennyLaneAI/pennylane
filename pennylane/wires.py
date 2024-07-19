@@ -508,6 +508,7 @@ class Wires(Sequence):
 
         **Example**
 
+        >>> from pennylane.wires import Wires
         >>> wires1 = Wires([1, 2, 3])
         >>> wires2 = Wires([3, 4, 5])
         >>> wires1.union(wires2)
