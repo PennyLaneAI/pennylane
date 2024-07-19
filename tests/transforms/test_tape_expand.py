@@ -437,10 +437,10 @@ class TestCreateCustomDecompExpandFn:
             yield
 
         for w in record:
-            assert isinstance(w.message, qml.PennyLaneDeprecationWarning)
             if "'expansion_strategy' attribute is deprecated" not in str(w.message):
                 warnings.warn(w.message, w.category)
             else:
+                assert isinstance(w.message, qml.PennyLaneDeprecationWarning)
                 assert "'expansion_strategy' attribute is deprecated" in str(w.message)
 
     @pytest.mark.parametrize("device_name", ["default.qubit", "default.qubit.legacy"])
