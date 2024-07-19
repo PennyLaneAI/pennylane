@@ -36,7 +36,7 @@ def registers(register_dict):
 
     **Example**
 
-    >>> wire_dict = qml.registers({"alice": 1, "bob": {"nest1": 2, "nest2": 1}})
+    >>> wire_registers = qml.registers({"alice": 1, "bob": {"nest1": 2, "nest2": 1}})
     >>> wire_dict
     {'alice': Wires([0]), 'nest1': Wires([1, 2]), 'nest2': Wires([3]), 'bob': Wires([1, 2, 3])}
     """
