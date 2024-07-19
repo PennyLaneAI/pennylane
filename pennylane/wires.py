@@ -631,6 +631,7 @@ class Wires(Sequence):
 
         **Example**
 
+        >>> from pennylane.wires import Wires
         >>> wires1 = Wires([1, 2, 3])
         >>> wires2 = Wires([2, 3, 4])
         >>> wires1 - wires2
