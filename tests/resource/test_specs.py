@@ -48,7 +48,7 @@ class TestSpecsTransform:
         def circ():
             return qml.expval(qml.PauliZ(0))
 
-        with pytest.warns(UserWarning, match="'max_expansion' has no effect"):
+        with pytest.warns(qml.PennyLaneDeprecationWarning, match="'max_expansion' has no effect"):
             qml.specs(circ, max_expansion=10)()
 
     def test_only_one_of_level_or_expansion_strategy_passed(self):
@@ -203,7 +203,7 @@ class TestSpecsTransform:
         obs = [qml.X(0) @ qml.Z(1), qml.Z(0) @ qml.Y(2), qml.Y(0) @ qml.X(2)]
         H = qml.Hamiltonian(coeffs, obs)
 
-        @qml.transforms.hamiltonian_expand
+        @qml.transforms.split_non_commuting
         @qml.transforms.merge_rotations
         @qml.qnode(qml.device("default.qubit"), diff_method="parameter-shift", shifts=pnp.pi / 4)
         def circuit(x):
@@ -251,7 +251,7 @@ class TestSpecsTransform:
 
     @pytest.mark.xfail(reason="DefaultQubit2 does not support custom expansion depths")
     def test_max_expansion(self):
-        """Test that a user can calculation specifications for a different max
+        """Test that a user can calculate specifications for a different max
         expansion parameter."""
 
         circuit, params = self.make_qnode_and_params("device")

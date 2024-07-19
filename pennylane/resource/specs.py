@@ -25,7 +25,8 @@ def _get_absolute_import_path(fn):
 def _determine_spec_level(kwargs, qnode):
     if "max_expansion" in kwargs:
         warnings.warn(
-            "'max_expansion' has no effect on the output of 'specs()' and should not be used."
+            "'max_expansion' has no effect on the output of 'specs()' and should not be used.",
+            qml.PennyLaneDeprecationWarning,
         )
 
     sentinel = object()
@@ -209,7 +210,7 @@ def specs(qnode, **kwargs):
 
             H = qml.Hamiltonian([0.2, -0.543], [qml.X(0) @ qml.Z(1), qml.Z(0) @ qml.Y(2)])
 
-            @qml.transforms.hamiltonian_expand
+            @qml.transforms.split_non_commuting
             @qml.qnode(qml.device("default.qubit"), diff_method="parameter-shift", shifts=np.pi / 4)
             def circuit():
                 qml.RandomLayers(qml.numpy.array([[1.0, 2.0]]), wires=(0, 1))

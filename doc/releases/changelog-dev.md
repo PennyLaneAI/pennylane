@@ -57,11 +57,19 @@
 
 <h3>Breaking changes 💔</h3>
 
-* ``qml.from_qasm`` no longer removes measurements from the QASM code. Use 
-  ``measurements=[]`` to remove measurements from the original circuit.
+* The `CircuitGraph.graph` rustworkx graph now stores indices into the circuit as the node labels,
+  instead of the operator/ measurement itself.  This allows the same operator to occur multiple times in
+  the circuit.
+  [(#5907)](https://github.com/PennyLaneAI/pennylane/pull/5907)
+
+* `queue_idx` attribute has been removed from the `Operator`, `CompositeOp`, and `SymboliOp` classes.
+  [(#6005)](https://github.com/PennyLaneAI/pennylane/pull/6005)
+
+* `qml.from_qasm` no longer removes measurements from the QASM code. Use 
+  `measurements=[]` to remove measurements from the original circuit.
   [(#5982)](https://github.com/PennyLaneAI/pennylane/pull/5982)
-  
-* ``qml.transforms.map_batch_transform`` has been removed, since transforms can be applied directly to a batch of tapes.
+
+* `qml.transforms.map_batch_transform` has been removed, since transforms can be applied directly to a batch of tapes.
   See :func:`~.pennylane.transform` for more information.
   [(#5981)](https://github.com/PennyLaneAI/pennylane/pull/5981)
 
@@ -77,6 +85,30 @@
   The `level` argument should be used instead.
   [(#5989)](https://github.com/PennyLaneAI/pennylane/pull/5989)
 
+* `Operator.expand` has been deprecated. Users should simply use `qml.tape.QuantumScript(op.decomposition())`
+  for equivalent behaviour.
+  [(#5994)](https://github.com/PennyLaneAI/pennylane/pull/5994)
+
+* `pennylane.transforms.sum_expand` and `pennylane.transforms.hamiltonian_expand` have been deprecated.
+  Users should instead use `pennylane.transforms.split_non_commuting` for equivalent behaviour.
+  [(#6003)](https://github.com/PennyLaneAI/pennylane/pull/6003)
+
+* The `expand_fn` argument in `qml.execute` has been deprecated.
+  Instead, please create a `qml.transforms.core.TransformProgram` with the desired preprocessing and pass it to the `transform_program` argument of `qml.execute`.
+  [(#5984)](https://github.com/PennyLaneAI/pennylane/pull/5984)
+
+* The `max_expansion` argument in `qml.execute` has been deprecated.
+  Instead, please use `qml.devices.preprocess.decompose` with the desired expansion level, add it to a `TransformProgram` and pass it to the `transform_program` argument of `qml.execute`.
+  [(#5984)](https://github.com/PennyLaneAI/pennylane/pull/5984)
+
+* The `override_shots` argument in `qml.execute` is deprecated.
+  Instead, please add the shots to the `QuantumTape`'s to be executed.
+  [(#5984)](https://github.com/PennyLaneAI/pennylane/pull/5984)
+
+* The `device_batch_transform` argument in `qml.execute` is deprecated.
+  Instead, please create a `qml.transforms.core.TransformProgram` with the desired preprocessing and pass it to the `transform_program` argument of `qml.execute`.
+  [(#5984)](https://github.com/PennyLaneAI/pennylane/pull/5984)
+
 * `pennylane.qinfo.classical_fisher` and `pennylane.qinfo.quantum_fisher` have been deprecated.
   Instead, use `pennylane.gradients.classical_fisher` and `pennylane.gradients.quantum_fisher`.
   [(#5985)](https://github.com/PennyLaneAI/pennylane/pull/5985)
@@ -88,6 +120,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* `CircuitGraph` can now handle circuits with the same operation instance occuring multiple times.
+  [(#5907)](https://github.com/PennyLaneAI/pennylane/pull/5907)
+
 * `qml.QSVT` is updated to store wire order correctly.
   [(#5959)](https://github.com/PennyLaneAI/pennylane/pull/5959)
 
@@ -97,6 +132,7 @@
 
 * `qml.AmplitudeEmbedding` has better support for features using low precision integer data types.
 [(#5969)](https://github.com/PennyLaneAI/pennylane/pull/5969)
+
 
 <h3>Contributors ✍️</h3>
 
@@ -112,6 +148,7 @@ Pietropaolo Frisoni,
 Emiliano Godinez,
 Christina Lee,
 Austin Huang,
+Christina Lee,
 William Maxwell,
 Vincent Michaud-Rioux,
 Mudit Pandey,

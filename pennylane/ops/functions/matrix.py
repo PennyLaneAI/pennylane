@@ -227,7 +227,7 @@ def matrix(op: Union[Operator, PauliWord, PauliSentence], wire_order=None) -> Te
     try:
         return op.matrix(wire_order=wire_order)
     except:  # pylint: disable=bare-except
-        return matrix(op.expand(), wire_order=wire_order or op.wires)
+        return matrix(qml.tape.QuantumScript(op.decomposition()), wire_order=wire_order or op.wires)
 
 
 @partial(transform, is_informative=True)

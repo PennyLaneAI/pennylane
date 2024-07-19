@@ -1089,7 +1089,6 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
 
         self._name = self.__class__.__name__  #: str: name of the operator
         self._id = id
-        self.queue_idx = None  #: int, None: index of the Operator in the circuit queue, or None if not in a queue
         self._pauli_rep = None  # Union[PauliSentence, None]: Representation of the operator as a pauli sentence, if applicable
 
         wires_from_args = False
@@ -1499,9 +1498,19 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
     def expand(self):
         """Returns a tape that contains the decomposition of the operator.
 
+        .. warning::
+            This function is deprecated and will be removed in version 0.39.
+            The same behaviour can be achieved simply through 'qml.tape.QuantumScript(self.decomposition())'.
+
         Returns:
             .QuantumTape: quantum tape
         """
+        warnings.warn(
+            "'Operator.expand' is deprecated and will be removed in version 0.39. "
+            "The same behaviour can be achieved simply through 'qml.tape.QuantumScript(self.decomposition())'.",
+            qml.PennyLaneDeprecationWarning,
+        )
+
         if not self.has_decomposition:
             raise DecompositionUndefinedError
 
