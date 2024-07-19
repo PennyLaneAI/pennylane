@@ -78,23 +78,27 @@
 
 <h3>Deprecations 👋</h3>
 
+* `Operator.expand` has been deprecated. Users should simply use `qml.tape.QuantumScript(op.decomposition())`
+  for equivalent behaviour.
+  [(#5994)](https://github.com/PennyLaneAI/pennylane/pull/5994)
+
 * `pennylane.transforms.sum_expand` and `pennylane.transforms.hamiltonian_expand` have been deprecated.
   Users should instead use `pennylane.transforms.split_non_commuting` for equivalent behaviour.
   [(#6003)](https://github.com/PennyLaneAI/pennylane/pull/6003)
 
-* The `expand_fn` argument in `qml.execute` has been deprecated. 
+* The `expand_fn` argument in `qml.execute` has been deprecated.
   Instead, please create a `qml.transforms.core.TransformProgram` with the desired preprocessing and pass it to the `transform_program` argument of `qml.execute`.
   [(#5984)](https://github.com/PennyLaneAI/pennylane/pull/5984)
 
-* The `max_expansion` argument in `qml.execute` has been deprecated. 
+* The `max_expansion` argument in `qml.execute` has been deprecated.
   Instead, please use `qml.devices.preprocess.decompose` with the desired expansion level, add it to a `TransformProgram` and pass it to the `transform_program` argument of `qml.execute`.
   [(#5984)](https://github.com/PennyLaneAI/pennylane/pull/5984)
 
-* The `override_shots` argument in `qml.execute` is deprecated. 
+* The `override_shots` argument in `qml.execute` is deprecated.
   Instead, please add the shots to the `QuantumTape`'s to be executed.
   [(#5984)](https://github.com/PennyLaneAI/pennylane/pull/5984)
 
-* The `device_batch_transform` argument in `qml.execute` is deprecated. 
+* The `device_batch_transform` argument in `qml.execute` is deprecated.
   Instead, please create a `qml.transforms.core.TransformProgram` with the desired preprocessing and pass it to the `transform_program` argument of `qml.execute`.
   [(#5984)](https://github.com/PennyLaneAI/pennylane/pull/5984)
 
