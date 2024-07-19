@@ -565,16 +565,15 @@ class TestDifferentiableZNE:
         assert zne_val.ndim == 0
 
     @pytest.mark.autograd
-    def test_diffability_autograd(self):
+    @pytest.mark.parametrize("extrapolate", [richardson_extrapolate, exponential_extrapolate])
+    def test_diffability_autograd(self, extrapolate):
         """Testing that the mitigated qnode can be differentiated and returns the correct gradient in autograd"""
         qnode_noisy = qml.QNode(qfunc, dev_noisy)
         qnode_ideal = qml.QNode(qfunc, dev_ideal)
 
         scale_factors = [1.0, 2.0, 3.0]
 
-        mitigated_qnode = mitigate_with_zne(
-            qnode_noisy, scale_factors, fold_global, richardson_extrapolate
-        )
+        mitigated_qnode = mitigate_with_zne(qnode_noisy, scale_factors, fold_global, extrapolate)
 
         theta = np.array([np.pi / 4, np.pi / 4], requires_grad=True)
 
@@ -644,7 +643,8 @@ class TestDifferentiableZNE:
 
     @pytest.mark.torch
     @pytest.mark.parametrize("interface", ["auto", "torch"])
-    def test_diffability_torch(self, interface):
+    @pytest.mark.parametrize("extrapolate", [richardson_extrapolate, exponential_extrapolate])
+    def test_diffability_torch(self, interface, extrapolate):
         """Testing that the mitigated qnode can be differentiated and returns the correct gradient in torch"""
         import torch
 
@@ -653,9 +653,7 @@ class TestDifferentiableZNE:
 
         scale_factors = [1.0, 2.0, 3.0]
 
-        mitigated_qnode = mitigate_with_zne(
-            qnode_noisy, scale_factors, fold_global, richardson_extrapolate
-        )
+        mitigated_qnode = mitigate_with_zne(qnode_noisy, scale_factors, fold_global, extrapolate)
 
         theta = torch.tensor([np.pi / 4, np.pi / 4], requires_grad=True)
 
@@ -673,7 +671,8 @@ class TestDifferentiableZNE:
 
     @pytest.mark.tf
     @pytest.mark.parametrize("interface", ["auto", "tf"])
-    def test_diffability_tf(self, interface):
+    @pytest.mark.parametrize("extrapolate", [richardson_extrapolate, exponential_extrapolate])
+    def test_diffability_tf(self, interface, extrapolate):
         """Testing that the mitigated qnode can be differentiated and returns the correct gradient in tf"""
         import tensorflow as tf
 
@@ -682,9 +681,7 @@ class TestDifferentiableZNE:
 
         scale_factors = [1.0, 2.0, 3.0]
 
-        mitigated_qnode = mitigate_with_zne(
-            qnode_noisy, scale_factors, fold_global, richardson_extrapolate
-        )
+        mitigated_qnode = mitigate_with_zne(qnode_noisy, scale_factors, fold_global, extrapolate)
 
         theta = tf.Variable([np.pi / 4, np.pi / 4])
 
@@ -702,7 +699,8 @@ class TestDifferentiableZNE:
         assert qml.math.allclose(grad, grad_ideal, atol=1e-2)
 
     @pytest.mark.autograd
-    def test_diffability_autograd_multi(self):
+    @pytest.mark.parametrize("extrapolate", [richardson_extrapolate, exponential_extrapolate])
+    def test_diffability_autograd_multi(self, extrapolate):
         """Testing that the mitigated qnode can be differentiated and returns
         the correct gradient in autograd for multiple measurements"""
         qnode_noisy = qml.QNode(qfunc_multi, dev_noisy)
@@ -710,9 +708,7 @@ class TestDifferentiableZNE:
 
         scale_factors = [1.0, 2.0, 3.0]
 
-        mitigated_qnode = mitigate_with_zne(
-            qnode_noisy, scale_factors, fold_global, richardson_extrapolate
-        )
+        mitigated_qnode = mitigate_with_zne(qnode_noisy, scale_factors, fold_global, extrapolate)
 
         theta = np.array([np.pi / 4, np.pi / 6], requires_grad=True)
 
@@ -726,7 +722,8 @@ class TestDifferentiableZNE:
 
     @pytest.mark.jax
     @pytest.mark.parametrize("interface", ["auto", "jax"])
-    def test_diffability_jax_multi(self, interface):
+    @pytest.mark.parametrize("extrapolate", [richardson_extrapolate, exponential_extrapolate])
+    def test_diffability_jax_multi(self, interface, extrapolate):
         """Testing that the mitigated qnode can be differentiated and returns
         the correct gradient in jax for multiple measurements"""
         import jax
@@ -737,9 +734,7 @@ class TestDifferentiableZNE:
 
         scale_factors = [1.0, 2.0, 3.0]
 
-        mitigated_qnode = mitigate_with_zne(
-            qnode_noisy, scale_factors, fold_global, richardson_extrapolate
-        )
+        mitigated_qnode = mitigate_with_zne(qnode_noisy, scale_factors, fold_global, extrapolate)
 
         theta = jnp.array(
             [np.pi / 4, np.pi / 6],
@@ -755,7 +750,8 @@ class TestDifferentiableZNE:
 
     @pytest.mark.jax
     @pytest.mark.parametrize("interface", ["auto", "jax", "jax-jit"])
-    def test_diffability_jaxjit_multi(self, interface):
+    @pytest.mark.parametrize("extrapolate", [richardson_extrapolate, exponential_extrapolate])
+    def test_diffability_jaxjit_multi(self, interface, extrapolate):
         """Testing that the mitigated qnode can be differentiated and
         returns the correct gradient in jax-jit for multiple measurements"""
         import jax
@@ -767,7 +763,7 @@ class TestDifferentiableZNE:
         scale_factors = [1.0, 2.0, 3.0]
 
         mitigated_qnode = jax.jit(
-            mitigate_with_zne(qnode_noisy, scale_factors, fold_global, richardson_extrapolate)
+            mitigate_with_zne(qnode_noisy, scale_factors, fold_global, extrapolate)
         )
 
         theta = jnp.array(
@@ -784,7 +780,8 @@ class TestDifferentiableZNE:
 
     @pytest.mark.torch
     @pytest.mark.parametrize("interface", ["auto", "torch"])
-    def test_diffability_torch_multi(self, interface):
+    @pytest.mark.parametrize("extrapolate", [richardson_extrapolate, exponential_extrapolate])
+    def test_diffability_torch_multi(self, interface, extrapolate):
         """Testing that the mitigated qnode can be differentiated and returns
         the correct gradient in torch for multiple measurements"""
         import torch
@@ -794,9 +791,7 @@ class TestDifferentiableZNE:
 
         scale_factors = [1.0, 2.0, 3.0]
 
-        mitigated_qnode = mitigate_with_zne(
-            qnode_noisy, scale_factors, fold_global, richardson_extrapolate
-        )
+        mitigated_qnode = mitigate_with_zne(qnode_noisy, scale_factors, fold_global, extrapolate)
 
         theta = torch.tensor([np.pi / 4, np.pi / 6], requires_grad=True)
 
@@ -813,7 +808,8 @@ class TestDifferentiableZNE:
         assert qml.math.allclose(grad, grad_ideal, atol=1e-2)
 
     @pytest.mark.tf
-    def test_diffability_tf_multi(self):
+    @pytest.mark.parametrize("extrapolate", [richardson_extrapolate, exponential_extrapolate])
+    def test_diffability_tf_multi(self, extrapolate):
         """Testing that the mitigated qnode can be differentiated and returns
         the correct gradient in tf for multiple measurements"""
         import tensorflow as tf
@@ -823,9 +819,7 @@ class TestDifferentiableZNE:
 
         scale_factors = [1.0, 2.0, 3.0]
 
-        mitigated_qnode = mitigate_with_zne(
-            qnode_noisy, scale_factors, fold_global, richardson_extrapolate
-        )
+        mitigated_qnode = mitigate_with_zne(qnode_noisy, scale_factors, fold_global, extrapolate)
 
         theta = tf.Variable([np.pi / 4, np.pi / 6])
 
