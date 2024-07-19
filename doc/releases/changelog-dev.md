@@ -57,7 +57,7 @@
   [(#5985)](https://github.com/PennyLaneAI/pennylane/pull/5985)
 
 * The legacy devices `default.qubit.{default.qubit.{legacy,autograd,torch,tf,jax}}` are deprecated.
-  Instead, use ``default.qubit`` as it now supports backpropagation through the several backends.
+  Instead, use `default.qubit` as it now supports backpropagation through the several backends.
   [(#5997)](https://github.com/PennyLaneAI/pennylane/pull/5997)
 
 <h3>Documentation 📝</h3>
