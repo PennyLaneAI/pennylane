@@ -14,10 +14,10 @@
 """
 Contains the hamiltonian expand tape transform
 """
-from collections.abc import Sequence
 
 # pylint: disable=protected-access
 import warnings
+from collections.abc import Sequence
 from functools import partial
 
 import pennylane as qml

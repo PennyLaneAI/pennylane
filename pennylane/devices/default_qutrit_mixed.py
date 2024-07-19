@@ -17,8 +17,8 @@ import logging
 import warnings
 from collections.abc import Callable, Sequence
 from dataclasses import replace
-from typing import Optional, Union
 from functools import partial
+from typing import Optional, Union
 
 import numpy as np
 

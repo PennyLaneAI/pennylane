@@ -31,8 +31,8 @@ from typing import Optional, Union
 from cachetools import Cache, LRUCache
 
 import pennylane as qml
-from pennylane.tape import QuantumTape, QuantumTapeBatch
 from pennylane.data.base.attribute import UNSET
+from pennylane.tape import QuantumTape, QuantumTapeBatch
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn, Result, ResultBatch
 
