@@ -16,7 +16,7 @@ This module contains the functions needed for performing basis transformations d
 """
 
 import numpy as np
-
+import jax.numpy as jnp
 import pennylane as qml
 
 
@@ -41,21 +41,24 @@ def _givens_matrix(a, b, left=True, tol=1e-8):
         np.ndarray (or tensor): Givens rotation matrix
 
     """
-    abs_a, abs_b = np.abs(a), np.abs(b)
-    if abs_a < tol:
-        cosine, sine, phase = 1.0, 0.0, 1.0
-    elif abs_b < tol:
-        cosine, sine, phase = 0.0, 1.0, 1.0
-    else:
-        hypot = np.hypot(abs_a, abs_b)
-        cosine = abs_b / hypot
-        sine = abs_a / hypot
-        phase = 1.0 * b / abs_b * a.conjugate() / abs_a
+    abs_a, abs_b = jnp.abs(a), jnp.abs(b)
+    hypot = jnp.hypot(abs_a, abs_b)
 
-    if left:
-        return np.array([[phase * cosine, -sine], [phase * sine, cosine]])
+    cosine = jnp.where(jnp.logical_and(jnp.greater(abs_a, tol), jnp.greater(abs_b, tol)), 
+                    abs_b / hypot, 
+                    jnp.where(jnp.less(abs_a, tol), 1.0, 0.0))
+    
+    sine = jnp.where(jnp.logical_and(jnp.greater(abs_a, tol), jnp.greater(abs_b, tol)),
+                    abs_a / hypot, 
+                    jnp.where(jnp.less(abs_b, tol), 1.0, 0.0))
+    
+    phase = jnp.where(jnp.logical_and(abs_a > tol, abs_b > tol), 
+                    1.0 * b / abs_b * a.conjugate() / abs_a, 
+                    1.0)
 
-    return np.array([[phase * sine, cosine], [-phase * cosine, sine]])
+    L = jnp.array([[phase * cosine, -sine], [phase * sine, cosine]])
+    R = jnp.array([[phase * sine, cosine], [-phase * cosine, sine]])
+    return jnp.where(left, L, R)
 
 
 def givens_decomposition(unitary):
@@ -148,7 +151,7 @@ def givens_decomposition(unitary):
 
     """
 
-    unitary, (M, N) = qml.math.toarray(unitary).copy(), unitary.shape
+    unitary, (M, N) = jnp.copy(unitary), unitary.shape
     if M != N:
         raise ValueError(f"The unitary matrix should be of shape NxN, got {unitary.shape}")
 
@@ -158,32 +161,33 @@ def givens_decomposition(unitary):
             for j in range(0, i):
                 indices = [i - j - 1, i - j]
                 grot_mat = _givens_matrix(*unitary[N - j - 1, indices].T, left=True)
-                unitary[:, indices] = unitary[:, indices] @ grot_mat.T
+                unitary = unitary.at[:, indices].set(unitary[:, indices] @ grot_mat.T)
                 right_givens.append((grot_mat.conj(), indices))
         else:
             for j in range(1, i + 1):
                 indices = [N + j - i - 2, N + j - i - 1]
                 grot_mat = _givens_matrix(*unitary[indices, j - 1], left=False)
-                unitary[indices] = grot_mat @ unitary[indices]
+                unitary = unitary.at[indices, :].set(grot_mat @ unitary[indices, :])
                 left_givens.append((grot_mat, indices))
 
     nleft_givens = []
     for grot_mat, (i, j) in reversed(left_givens):
-        sphase_mat = np.diag(np.diag(unitary)[[i, j]])
+        sphase_mat = jnp.diag(jnp.diag(unitary)[jnp.array([i, j])])
         decomp_mat = grot_mat.conj().T @ sphase_mat
         givens_mat = _givens_matrix(*decomp_mat[1, :].T)
         nphase_mat = decomp_mat @ givens_mat.T
 
         # check for T_{m,n}^{-1} x D = D x T.
-        if not np.allclose(nphase_mat @ givens_mat.conj(), decomp_mat):  # pragma: no cover
+        if not jnp.allclose(nphase_mat @ givens_mat.conj(), decomp_mat):  # pragma: no cover
             raise ValueError("Failed to shift phase transposition.")
 
-        unitary[i, i], unitary[j, j] = np.diag(nphase_mat)
+        unitary = unitary.at[i, i].set(jnp.diag(nphase_mat)[0])
+        unitary = unitary.at[j, j].set(jnp.diag(nphase_mat)[1])
         nleft_givens.append((givens_mat.conj(), (i, j)))
 
-    phases, ordered_rotations = np.diag(unitary), []
+    phases, ordered_rotations = jnp.diag(unitary), []
     for grot_mat, (i, j) in list(reversed(nleft_givens)) + list(reversed(right_givens)):
-        if not np.all(np.isreal(grot_mat[0, 1]) and np.isreal(grot_mat[1, 1])):  # pragma: no cover
+        if not jnp.all(jnp.isreal(grot_mat[0, 1]) and jnp.isreal(grot_mat[1, 1])):  # pragma: no cover
             raise ValueError(f"Incorrect Givens Rotation encountered, {grot_mat}")
         ordered_rotations.append((grot_mat, (i, j)))
 
