@@ -327,7 +327,7 @@ def exponential_extrapolate(x, y, asymptote=None, eps=1.0e-6):
         x (Array): Data in x axis.
         y (Array): Data in y axis such that :math:`y = f(x)`.
         asymptote (float): Infinite noise limit expected for your circuit of interest (:math:`C`
-        in the equation above). Defaults to 0 in the case an asymptote is not supplied.
+            in the equation above). Defaults to 0 in the case an asymptote is not supplied.
         eps (float): Epsilon to regularize :math:`\log(y - C)` when the argument is to close to
             zero or negative.
 
