@@ -1115,7 +1115,7 @@ class QNode:
                 message=r".*argument is deprecated and will be removed in version 0.39.*",
                 category=qml.PennyLaneDeprecationWarning,
             )
-            # pylint: disable=unexpected-keyword-arg
+            # pylint: disable=unexpected-keyword-arg, repeated-keyword
             res = qml.execute(
                 (self._tape,),
                 device=self.device,
