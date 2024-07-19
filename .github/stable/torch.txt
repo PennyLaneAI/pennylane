@@ -67,7 +67,7 @@ scipy==1.11.4
 scs==3.2.6
 semantic-version==2.10.0
 six==1.16.0
-sympy==1.13.0
+sympy==1.13.1
 toml==0.10.2
 tomli==2.0.1
 torch==2.3.0+rocm6.0
