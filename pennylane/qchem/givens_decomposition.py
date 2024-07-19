@@ -41,21 +41,26 @@ def _givens_matrix(a, b, left=True, tol=1e-8):
         np.ndarray (or tensor): Givens rotation matrix
 
     """
-    abs_a, abs_b = np.abs(a), np.abs(b)
-    if abs_a < tol:
-        cosine, sine, phase = 1.0, 0.0, 1.0
-    elif abs_b < tol:
-        cosine, sine, phase = 0.0, 1.0, 1.0
-    else:
-        hypot = np.hypot(abs_a, abs_b)
-        cosine = abs_b / hypot
-        sine = abs_a / hypot
-        phase = 1.0 * b / abs_b * a.conjugate() / abs_a
+    abs_a, abs_b = qml.math.abs(a), qml.math.abs(b)
+    hypot = qml.math.hypot(abs_a, abs_b)
+    # cosine = 1.0 * int(abs_a < tol) + 0.0 * int(not abs_a < tol and abs_b < tol) + abs_a / hypot * int(not abs_a < tol and not abs_b < tol)
+    # if abs_a < tol:
+    #     cosine, sine, phase = 1.0, 0.0, 1.0
+    # elif abs_b < tol:
+    #     cosine, sine, phase = 0.0, 1.0, 1.0
+    # else:
+    cosine = abs_b / hypot
+    sine = abs_a / hypot
+    phase = 1.0 * b / abs_b * a.conjugate() / abs_a
 
     if left:
-        return np.array([[phase * cosine, -sine], [phase * sine, cosine]])
+        return qml.math.array(
+            [[phase * cosine, -sine], [phase * sine, cosine]], like=qml.math.get_interface(a)
+        )
 
-    return np.array([[phase * sine, cosine], [-phase * cosine, sine]])
+    return qml.math.array(
+        [[phase * sine, cosine], [-phase * cosine, sine]], like=qml.math.get_interface(a)
+    )
 
 
 def givens_decomposition(unitary):
@@ -148,7 +153,7 @@ def givens_decomposition(unitary):
 
     """
 
-    unitary, (M, N) = qml.math.toarray(unitary).copy(), unitary.shape
+    unitary, (M, N) = qml.math.array(unitary).copy(), unitary.shape
     if M != N:
         raise ValueError(f"The unitary matrix should be of shape NxN, got {unitary.shape}")
 
@@ -156,35 +161,45 @@ def givens_decomposition(unitary):
     for i in range(1, N):
         if i % 2:
             for j in range(0, i):
-                indices = [i - j - 1, i - j]
+                indices = tuple([i - j - 1, i - j])
                 grot_mat = _givens_matrix(*unitary[N - j - 1, indices].T, left=True)
-                unitary[:, indices] = unitary[:, indices] @ grot_mat.T
+                unitary = unitary.at[:, indices].set(unitary[:, indices] @ grot_mat.T)
                 right_givens.append((grot_mat.conj(), indices))
         else:
             for j in range(1, i + 1):
-                indices = [N + j - i - 2, N + j - i - 1]
+                indices = tuple([N + j - i - 2, N + j - i - 1])
                 grot_mat = _givens_matrix(*unitary[indices, j - 1], left=False)
-                unitary[indices] = grot_mat @ unitary[indices]
+                unitary = unitary.at[indices, :].set(grot_mat @ unitary[indices, :])
                 left_givens.append((grot_mat, indices))
 
     nleft_givens = []
-    for grot_mat, (i, j) in reversed(left_givens):
-        sphase_mat = np.diag(np.diag(unitary)[[i, j]])
+    for grot_mat, indices in reversed(left_givens):
+        # diagonal = qml.math.array([unitary[k,k] for k in range(unitary.shape[0])], like=qml.math.get_interface(unitary))
+        diagonal = qml.math.diag(unitary)
+        sphase_mat = qml.math.diag(diagonal[(indices,)])
         decomp_mat = grot_mat.conj().T @ sphase_mat
         givens_mat = _givens_matrix(*decomp_mat[1, :].T)
         nphase_mat = decomp_mat @ givens_mat.T
 
         # check for T_{m,n}^{-1} x D = D x T.
-        if not np.allclose(nphase_mat @ givens_mat.conj(), decomp_mat):  # pragma: no cover
+        if not qml.math.is_abstract(unitary) and not qml.math.allclose(
+            nphase_mat @ givens_mat.conj(), decomp_mat
+        ):  # pragma: no cover
             raise ValueError("Failed to shift phase transposition.")
 
-        unitary[i, i], unitary[j, j] = np.diag(nphase_mat)
-        nleft_givens.append((givens_mat.conj(), (i, j)))
+        # unitary[i, i], unitary[j, j] = qml.math.diag(nphase_mat)
+        diagonal = qml.math.diag(nphase_mat)
+        unitary = unitary.at[i, i].set(diagonal[0])
+        unitary = unitary.at[j, j].set(diagonal[1])
 
-    phases, ordered_rotations = np.diag(unitary), []
-    for grot_mat, (i, j) in list(reversed(nleft_givens)) + list(reversed(right_givens)):
-        if not np.all(np.isreal(grot_mat[0, 1]) and np.isreal(grot_mat[1, 1])):  # pragma: no cover
+        nleft_givens.append((givens_mat.conj(), indices))
+
+    phases, ordered_rotations = qml.math.diag(unitary), []
+    for grot_mat, indices in list(reversed(nleft_givens)) + list(reversed(right_givens)):
+        if not qml.math.is_abstract(unitary) and not qml.math.all(
+            qml.math.isreal(grot_mat[0, 1]) and qml.math.isreal(grot_mat[1, 1])
+        ):  # pragma: no cover
             raise ValueError(f"Incorrect Givens Rotation encountered, {grot_mat}")
-        ordered_rotations.append((grot_mat, (i, j)))
+        ordered_rotations.append((grot_mat, indices))
 
     return phases, ordered_rotations
