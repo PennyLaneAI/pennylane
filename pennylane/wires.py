@@ -539,9 +539,7 @@ class Wires(Sequence):
         """
         return self.union(other)
 
-    def __ror__(self, other):
-        """Right-hand version of __or__."""
-        return self.union(other)
+    __ror__ = __or__
 
     def intersection(self, other):
         """Return the intersection of the current Wires object and either another Wires object or
@@ -590,9 +588,7 @@ class Wires(Sequence):
         """
         return self.intersection(other)
 
-    def __rand__(self, other):
-        """Right-hand version of __and__."""
-        return self.intersection(other)
+    __rand__ = __and__
 
     def difference(self, other):
         """Return the difference of the current Wires object and either another Wires object or
