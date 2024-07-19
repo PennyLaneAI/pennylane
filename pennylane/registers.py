@@ -28,7 +28,7 @@ def registers(register_dict):
 
     Args:
         register_dict (dict): a dictionary where keys are register names and values are either
-            integers indicating the number of qubits or nested dictionaries of more registers.
+            positive integers indicating the number of qubits or nested dictionaries of more registers.
 
     Returns:
         dict (Wires): dictionary where the keys are the names (str) of the registers, and the
