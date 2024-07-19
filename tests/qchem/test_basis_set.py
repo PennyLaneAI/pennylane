@@ -477,6 +477,15 @@ class TestBasis:
 
         assert np.allclose(params, params_ref)
 
+    def test_mol_basis_data_error(self):
+        """Test that correct error is raised if the element is not present in the internal basis-sets"""
+
+        with pytest.raises(ValueError, match="The requested basis set data is not available for"):
+            qchem.basis_set.atom_basis_data(name="sto-3g", atom="Os")
+
+        with pytest.raises(ValueError, match="Requested element Ox doesn't exist"):
+            qchem.basis_data.load_basisset(basis="sto-3g", element="Ox")
+
 
 class TestLoadBasis:
     """Tests for loading data from external libraries."""

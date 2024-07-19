@@ -80,7 +80,7 @@ class TestDecomposition:
         op = qml.templates.TwoLocalSwapNetwork(
             wire_order, acquaintances, weights, fermionic=fermionic, shift=shift
         )
-        queue = op.expand().operations
+        queue = op.decomposition()
 
         # number of gates
         assert len(queue) == sum(
