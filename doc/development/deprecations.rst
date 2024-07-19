@@ -9,7 +9,7 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
-* All of the legacy devices (any with the name ``default.qubit.{legacy,autograd,torch,tf,jax}``) are deprecated. Use ``default.qubit`` instead,
+* All of the legacy devices (any with the name ``default.qubit.{autograd,torch,tf,jax,legacy}``) are deprecated. Use ``default.qubit`` instead,
   as it supports backpropagation for the many backends the legacy devices support.
 
   - Deprecated in v0.38
