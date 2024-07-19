@@ -951,8 +951,8 @@ class TestLevelExpansionStrategy:
         )
         assert out == expected
 
-    def test_draw_with_qfunc_warns_with_expansion_strategy(self):
-        """Test that draw warns the user about expansion_strategy being ignored."""
+    def test_draw_with_qfunc_warns_with_expansion_strategy_or_level(self):
+        """Test that draw warns the user about expansion_strategy and level being ignored."""
 
         def qfunc():
             qml.PauliZ(0)
@@ -960,16 +960,25 @@ class TestLevelExpansionStrategy:
         with pytest.warns(
             UserWarning, match="the expansion_strategy and level arguments are ignored"
         ):
-            _ = qml.draw(qfunc, expansion_strategy="gradient")
+            with pytest.warns(
+                qml.PennyLaneDeprecationWarning, match="'expansion_strategy' argument is deprecated"
+            ):
+                qml.draw(qfunc, expansion_strategy="gradient")
 
         with pytest.warns(
             UserWarning, match="the expansion_strategy and level arguments are ignored"
         ):
-            _ = qml.draw(qfunc, level="gradient")
+            qml.draw(qfunc, level="gradient")
 
     def test_providing_both_level_and_expansion_raises_error(self, transforms_circuit):
         with pytest.raises(ValueError, match="Either 'level' or 'expansion_strategy'"):
             qml.draw(transforms_circuit, level=0, expansion_strategy="device")
+
+    def test_deprecation_warning_when_expansion_strategy_provided(self, transforms_circuit):
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match="'expansion_strategy' argument is deprecated"
+        ):
+            qml.draw(transforms_circuit, expansion_strategy="device")
 
 
 def test_draw_batch_transform():

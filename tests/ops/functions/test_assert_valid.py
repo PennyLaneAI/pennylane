@@ -52,34 +52,6 @@ class TestDecompositionErrors:
         with pytest.raises(AssertionError, match="decomposition must match queued operations"):
             assert_valid(BadDecomp(wires=0), skip_pickle=True)
 
-    def test_expand_must_be_qscript(self):
-        """Test that an error is raised if expand does not return a QuantumScript"""
-
-        class BadDecomp(Operator):
-            @staticmethod
-            def compute_decomposition(wires):
-                return [qml.RY(2.3, 0)]
-
-            def expand(self):
-                return [qml.S(0)]
-
-        with pytest.raises(AssertionError, match=r"expand must return a QuantumScript"):
-            assert_valid(BadDecomp(wires=0), skip_pickle=True)
-
-    def test_decomposition_must_match_expand(self):
-        """Test that decomposition and expand must match."""
-
-        class BadDecomp(Operator):
-            @staticmethod
-            def compute_decomposition(wires):
-                return [qml.RY(2.3, 0)]
-
-            def expand(self):
-                return qml.tape.QuantumScript([qml.S(0)])
-
-        with pytest.raises(AssertionError, match="decomposition must match expansion"):
-            assert_valid(BadDecomp(wires=0), skip_pickle=True)
-
     def test_decomposition_wires_must_be_mapped(self):
         """Test that the operators in decomposition have mapped wires after mapping the op."""
 

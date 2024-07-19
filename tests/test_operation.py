@@ -321,6 +321,21 @@ class TestOperatorConstruction:
         assert op._ndim_params == (ndim_params,)
         assert op.ndim_params == (0,)
 
+    def test_expand_deprecated(self):
+
+        class MyOp(qml.operation.Operation):
+            num_wires = 1
+            has_decomposition = True
+
+            @staticmethod
+            def compute_decomposition(*params, wires=None, **hyperparameters):
+                return [qml.Hadamard(wires=wires)]
+
+        op = MyOp(wires=0)
+
+        with pytest.warns(qml.PennyLaneDeprecationWarning, match="'Operator.expand' is deprecated"):
+            op.expand()
+
 
 class TestPytreeMethods:
     def test_pytree_defaults(self):
