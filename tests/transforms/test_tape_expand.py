@@ -17,20 +17,13 @@ Unit tests for tape expansion stopping criteria and expansion functions.
 # pylint: disable=too-few-public-methods, invalid-unary-operand-type, no-member,
 # pylint: disable=arguments-differ, arguments-renamed,
 
+import warnings
+
 import numpy as np
 import pytest
 
 import pennylane as qml
 from pennylane.wires import Wires
-
-
-@pytest.fixture(scope="function", autouse=True)
-def capture_warnings(recwarn):
-    yield
-    if len(recwarn) > 0:
-        for w in recwarn:
-            assert isinstance(w.message, qml.PennyLaneDeprecationWarning)
-            assert "'expansion_strategy' attribute is deprecated" in str(w.message)
 
 
 class TestCreateExpandFn:
@@ -437,6 +430,18 @@ def custom_basic_entangler_layers(weights, wires, **kwargs):
 
 class TestCreateCustomDecompExpandFn:
     """Tests for the custom_decomps argument for devices"""
+
+    @pytest.fixture(scope="function", autouse=True)
+    def capture_warnings(self):
+        with pytest.warns(qml.PennyLaneDeprecationWarning) as record:
+            yield
+
+        for w in record:
+            assert isinstance(w.message, qml.PennyLaneDeprecationWarning)
+            if "'expansion_strategy' attribute is deprecated" not in str(w.message):
+                warnings.warn(w.message, w.category)
+            else:
+                assert "'expansion_strategy' attribute is deprecated" in str(w.message)
 
     @pytest.mark.parametrize("device_name", ["default.qubit", "default.qubit.legacy"])
     def test_string_and_operator_allowed(self, device_name):
@@ -910,7 +915,7 @@ class TestCreateCustomDecompExpandFn:
             custom_decomps = {"MultiRZ": qml.MultiRZ.compute_decomposition}
             dev = qml.device("lightning.qubit", wires=2, custom_decomps=custom_decomps)
 
-            @qml.qnode(dev, diff_method="adjoint")
+            @qml.qnode(dev, diff_method="adjoint", expansion_strategy="gradient")
             def cost(theta):
                 qml.Hadamard(wires=0)
                 qml.Hadamard(wires=1)
