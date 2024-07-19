@@ -462,6 +462,9 @@ def _get_cond_qfunc_prim():
     cond_prim = jax.core.Primitive("cond")
     cond_prim.multiple_results = True
 
+    # The AbstractOperator class is defined in the PennyLane capture module. Don't worry about it.
+    AbstractOperator = qml.capture.AbstractOperator
+
     @cond_prim.def_impl
     def _(*args, condition, jaxpr_true, jaxpr_false, jaxpr_elifs):
 
@@ -486,12 +489,10 @@ def _get_cond_qfunc_prim():
             pred, jaxpr_elif = jaxpr_elifs[0]
             rest_jaxpr_elifs = jaxpr_elifs[1:]
 
-            return jax.lax.cond(
-                pred,
-                lambda y: run_jaxpr(jaxpr_elif, *y),
-                lambda y: elif_branch(y, rest_jaxpr_elifs),
-                args,
-            )
+            if pred:
+                return run_jaxpr(jaxpr_elif, *args)
+            else:
+                return elif_branch(args, rest_jaxpr_elifs)
 
         def false_branch(args):
             print("We are in the false branch")
@@ -499,14 +500,34 @@ def _get_cond_qfunc_prim():
                 return run_jaxpr(jaxpr_false, *args)
             return elif_branch(args, jaxpr_elifs)
 
-        return jax.lax.cond(condition, true_branch, false_branch, args)
+        if condition:
+            return true_branch(args)
+        else:
+            return false_branch(args)
+
+    def _is_queued_outvar(outvars):
+        if not outvars:
+            return False
+        return isinstance(outvars[0].aval, AbstractOperator) and isinstance(
+            outvars[0], jax.core.DropVar
+        )
 
     @cond_prim.def_abstract_eval
     def _(*args, condition, jaxpr_true, jaxpr_false, jaxpr_elifs):
         print("We are in the cond primitive abstract evaluation")
 
-        out_avals = jaxpr_true.out_avals
-        return out_avals
+        outvars = [AbstractOperator() for eqn in jaxpr_true.eqns if _is_queued_outvar(eqn.outvars)]
+
+        # operators that are not dropped var because they are returned
+        outvars += [
+            AbstractOperator()
+            for aval in jaxpr_true.out_avals
+            if isinstance(aval, AbstractOperator)
+        ]
+        return outvars
+
+        # out_avals = jaxpr_true.out_avals
+        # return out_avals
 
     return cond_prim
 
