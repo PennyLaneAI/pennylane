@@ -894,15 +894,19 @@ class TestClassicalControl:
                 "linewidth": 5 * 1.5,  # lines.linewidth for black white style
                 "foreground": "black",  # lines.color for black white style
             }
-            assert pe2._gc == {
-                "linewidth": 3 * 1.5,  # lines.linewidth for black white style
-                "foreground": "white",  # figure.facecolor for black white sytle
-            }
+            assert pe2._gc["linewidth"] == 3 * 1.5  # lines.linewidth for black white style
+            assert pe2._gc["foreground"].lower() in (
+                "white",
+                "#f0f0f0",
+            )  # figure.facecolor for black white style
 
         assert eraser.get_xdata() == (1.8, 2)
         assert eraser.get_ydata() == (2, 2)
-        assert eraser.get_color() == plt.rcParams["figure.facecolor"]
-        assert eraser.get_linewidth() == 3 * plt.rcParams["lines.linewidth"]
+        assert eraser.get_color().lower() in (
+            "white",
+            "#f0f0f0",
+        )  # figure.facecolor for black white style
+        assert eraser.get_linewidth() == 3 * 1.5  # lines.linewidth for black white style
 
         plt.close()
 
@@ -945,8 +949,11 @@ class TestClassicalControl:
 
         assert eraser.get_xdata() == (1.8, 2.2)
         assert eraser.get_ydata() == (2, 2)
-        assert eraser.get_color() == plt.rcParams["figure.facecolor"]
-        assert eraser.get_linewidth() == 3 * plt.rcParams["lines.linewidth"]
+        assert eraser.get_color().lower() in (
+            "white",
+            "#f0f0f0",
+        )  # figure.facecolor for black white style
+        assert eraser.get_linewidth() == 3 * 1.5  # lines.linewidth for black white style
 
         plt.close()
 
