@@ -474,7 +474,22 @@ def _get_cond_qfunc_prim():
         )
 
         def run_jaxpr(jaxpr, *args):
-            return jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *args)
+
+            print(f"Running jaxpr: {jaxpr}")
+            print(f"jaxpr.eqns={jaxpr.eqns}")
+            print(f"jaxpr.out_avals={jaxpr.out_avals}")
+
+            out = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *args)
+            print(f"Jaxpr evaluation result: {out}")
+
+            if not isinstance(out, tuple):
+                out = (out,)
+
+            for outvar in out:
+                if isinstance(outvar, Operator):
+                    QueuingManager.append(outvar)
+
+            return out
 
         def true_branch(args):
             print("We are in the true branch")
@@ -500,10 +515,14 @@ def _get_cond_qfunc_prim():
                 return run_jaxpr(jaxpr_false, *args)
             return elif_branch(args, jaxpr_elifs)
 
-        if condition:
-            return true_branch(args)
+        if isinstance(condition, bool):
+            if condition:
+                return true_branch(args)
+            else:
+                return false_branch(args)
         else:
-            return false_branch(args)
+            # understand what to do with the condition
+            pass
 
     def _is_queued_outvar(outvars):
         if not outvars:
@@ -515,6 +534,9 @@ def _get_cond_qfunc_prim():
     @cond_prim.def_abstract_eval
     def _(*args, condition, jaxpr_true, jaxpr_false, jaxpr_elifs):
         print("We are in the cond primitive abstract evaluation")
+        print(
+            f"args={args}, condition={condition}, jaxpr_true={jaxpr_true}, jaxpr_false={jaxpr_false}, jaxpr_elifs={jaxpr_elifs}"
+        )
 
         outvars = [AbstractOperator() for eqn in jaxpr_true.eqns if _is_queued_outvar(eqn.outvars)]
 
@@ -526,17 +548,12 @@ def _get_cond_qfunc_prim():
         ]
         return outvars
 
-        # out_avals = jaxpr_true.out_avals
-        # return out_avals
-
     return cond_prim
 
 
 def _capture_cond(condition, true_fn, false_fn, elifs=()) -> Callable:
     """Capture compatible way to apply conditionals."""
     # TODO: implement tests
-
-    print("Capture mode for cond")
 
     import jax  # pylint: disable=import-outside-toplevel
 
@@ -546,10 +563,13 @@ def _capture_cond(condition, true_fn, false_fn, elifs=()) -> Callable:
     # pylint: disable=unused-variable
     @wraps(true_fn)
     def new_wrapper(*args, **kwargs):
+
         jaxpr_true = jax.make_jaxpr(true_fn)(*args)
         jaxpr_false = jax.make_jaxpr(false_fn)(*args) if false_fn else jaxpr_true
         jaxpr_elifs = [(cond, jax.make_jaxpr(elif_fn)(*args)) for cond, elif_fn in elifs]
 
+        print(f"jaxpr_true={jaxpr_true}")
+        print(f"jaxpr_false={jaxpr_false}")
         print(f"jaxpr_elifs={jaxpr_elifs}")
 
         return cond_prim.bind(
