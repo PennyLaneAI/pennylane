@@ -423,11 +423,9 @@ class TestCatalystControlFlow:
 
         assert jnp.allclose(circuit(4), jnp.eye(2**4)[0])
 
-    def test_for_loop_python_fallback(self, mocker):
+    def test_for_loop_python_fallback(self):
         """Test that qml.for_loop fallsback to Python
         interpretation if Catalyst is not available"""
-        mocker.patch("pennylane.compiler.available", return_value=False)
-
         dev = qml.device("lightning.qubit", wires=2)
 
         @qml.qnode(dev)
