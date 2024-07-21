@@ -607,6 +607,21 @@ class TestPythonFallback:
         assert np.allclose(f(-0.5), -(-0.5 + 1))
         assert np.allclose(f(-2.5), (-2.5 + 1))
 
+    def test_error_mcms_elif(self):
+        """Test that an error is raised if elifs are provided
+        when the conditional includes an MCM"""
+        dev = qml.device("default.qubit")
+
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.RX(x, wires=0)
+            m = qml.measure(0)
+            qml.cond(m, qml.RX, elifs=[(~m, qml.RY)])
+            return qml.probs
+
+        with pytest.raises(ConditionalTransformError, match="'elif' branches are not supported"):
+            circuit(0.5)
+
     def test_error_no_true_fn(self):
         """Test that an error is raised if no true_fn is provided
         when the conditional includes an MCM"""

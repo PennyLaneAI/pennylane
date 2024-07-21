@@ -498,13 +498,16 @@ def cond(condition, true_fn=None, false_fn=None, elifs=()):
     if true_fn is None:
         raise TypeError(
             "cond missing 1 required positional argument: 'true_fn'.\n"
-            "Note that if the conditional includes a mid-circuit measurement,"
+            "Note that if the conditional includes a mid-circuit measurement, "
             "qml.cond cannot be used as a decorator.\n"
             "Instead, please use the form qml.cond(condition, true_fn, false_fn)."
         )
 
     if elifs:
-        raise ConditionalTransformError("'elif' branches are not supported in interpreted mode.")
+        raise ConditionalTransformError(
+            "'elif' branches are not supported when not using @qjit and the "
+            "conditional include mid-circuit measurements."
+        )
 
     if callable(true_fn):
         # We assume that the callable is an operation or a quantum function
