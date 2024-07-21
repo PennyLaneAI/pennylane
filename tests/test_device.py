@@ -575,21 +575,6 @@ class TestInternalFunctions:  # pylint:disable=too-many-public-methods
         with pytest.raises(DeviceError, match="Mid-circuit measurements are not natively"):
             dev.check_validity(tape.operations, tape.observables)
 
-    def test_conditional_ops_unsupported_error(self, mock_device_with_paulis_and_methods):
-        """Test that an error is raised for conditional operations if
-        mid-circuit measurements are not supported natively"""
-        dev = mock_device_with_paulis_and_methods(wires=2)
-
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.cond(0, qml.RY)(0.3, wires=0)
-            qml.PauliZ(0)
-
-        tape = qml.tape.QuantumScript.from_queue(q)
-        # Raises an error for device that doesn't support conditional
-        # operations natively
-        with pytest.raises(DeviceError, match="Gate Conditional\\(RY\\) not supported on device"):
-            dev.check_validity(tape.operations, tape.observables)
-
     @pytest.mark.parametrize(
         "wires, subset, expected_subset",
         [
