@@ -426,7 +426,7 @@ class TestCatalystControlFlow:
     def test_for_loop_python_fallback(self, mocker):
         """Test that qml.for_loop fallsback to Python
         interpretation if Catalyst is not available"""
-        mocker.patch('pennylane.compiler.available', return_value=False)
+        mocker.patch("pennylane.compiler.available", return_value=False)
 
         dev = qml.device("lightning.qubit", wires=2)
 
@@ -447,7 +447,7 @@ class TestCatalystControlFlow:
                 # inner for loop
                 @qml.for_loop(i + 1, n, 1)
                 def inner(j):
-                    qml.CRY(x ** 2, [i, j])
+                    qml.CRY(x**2, [i, j])
 
                 inner()
 
@@ -471,7 +471,7 @@ class TestCatalystControlFlow:
             qml.CRY(0.25, wires=[0, 2]),
             qml.RX(0.6, wires=[1]),
             qml.CRY(0.36, wires=[1, 2]),
-            qml.RX(0.7, wires=[2])
+            qml.RX(0.7, wires=[2]),
         ]
 
         assert [qml.equal(i, j) for i, j in zip(res, expected)]
