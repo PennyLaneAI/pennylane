@@ -133,7 +133,7 @@ class TestTransformProgramGetter:
 
         dev = qml.device("default.qubit")
 
-        @qml.transforms.sum_expand
+        @qml.transforms.split_non_commuting
         @qml.qnode(dev, diff_method="adjoint", device_vjp=False)
         def circuit(x):
             qml.RX(x, 0)
@@ -150,7 +150,7 @@ class TestTransformProgramGetter:
         dev_program = dev.preprocess(config)[0]
 
         expected = TransformProgram()
-        expected.add_transform(qml.transforms.sum_expand)
+        expected.add_transform(qml.transforms.split_non_commuting)
         expected += dev_program
         assert full_prog == expected
 
