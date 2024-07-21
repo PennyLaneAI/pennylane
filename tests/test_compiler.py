@@ -353,6 +353,24 @@ class TestCatalystControlFlow:
         assert circuit(5, 6) == 30  # 5 * 6
         assert circuit(4, 7) == 28  # 4 * 7
 
+    def test_while_loop_python_fallback(self):
+        """Test that qml.while_loop fallsback to
+        Python without qjit"""
+
+        def f(n, m):
+            @qml.while_loop(lambda i, _: i < n)
+            def outer(i, sm):
+                @qml.while_loop(lambda j: j < m)
+                def inner(j):
+                    return j + 1
+
+                return i + 1, sm + inner(0)
+
+            return outer(0, 0)[1]
+
+        assert f(5, 6) == 30  # 5 * 6
+        assert f(4, 7) == 28  # 4 * 7
+
     def test_dynamic_wires_for_loops(self):
         """Test for loops with iteration index-dependant wires."""
         dev = qml.device("lightning.qubit", wires=6)
@@ -404,6 +422,59 @@ class TestCatalystControlFlow:
             return qml.state()
 
         assert jnp.allclose(circuit(4), jnp.eye(2**4)[0])
+
+    def test_for_loop_python_fallback(self, mocker):
+        """Test that qml.for_loop fallsback to Python
+        interpretation if Catalyst is not available"""
+        mocker.patch('pennylane.compiler.available', return_value=False)
+
+        dev = qml.device("lightning.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit(x, n):
+
+            # for loop with dynamic bounds
+            @qml.for_loop(0, n, 1)
+            def loop_fn(i):
+                qml.Hadamard(wires=i)
+
+            # nested for loops.
+            # outer for loop updates x
+            @qml.for_loop(0, n, 1)
+            def loop_fn_returns(i, x):
+                qml.RX(x, wires=i)
+
+                # inner for loop
+                @qml.for_loop(i + 1, n, 1)
+                def inner(j):
+                    qml.CRY(x ** 2, [i, j])
+
+                inner()
+
+                return jnp.sin(x)
+
+            loop_fn()
+            loop_fn_returns(x)
+
+            return qml.expval(qml.PauliZ(0))
+
+        x = 0.5
+        assert jnp.allclose(circuit(x, 2), qml.qjit(circuit)(x, 2))
+
+        res = circuit.tape.operations
+        expected = [
+            qml.Hadamard(wires=[0]),
+            qml.Hadamard(wires=[1]),
+            qml.Hadamard(wires=[2]),
+            qml.RX(0.5, wires=[0]),
+            qml.CRY(0.25, wires=[0, 1]),
+            qml.CRY(0.25, wires=[0, 2]),
+            qml.RX(0.6, wires=[1]),
+            qml.CRY(0.36, wires=[1, 2]),
+            qml.RX(0.7, wires=[2])
+        ]
+
+        assert [qml.equal(i, j) for i, j in zip(res, expected)]
 
     def test_cond(self):
         """Test condition with simple true_fn"""

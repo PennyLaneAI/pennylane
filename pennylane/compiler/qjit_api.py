@@ -385,7 +385,7 @@ def while_loop(cond_fn):
     return _decorator
 
 
-class WhileLoopCallable:
+class WhileLoopCallable:  # pylint:disable=too-few-public-methods
     """Base class to represent a while loop. This class
     when called with an initial state will execute the while
     loop via the Python interpreter.
@@ -501,7 +501,8 @@ def for_loop(lower_bound, upper_bound, step):
 
     return _decorator
 
-class ForLoopCallable:
+
+class ForLoopCallable:  # pylint:disable=too-few-public-methods
     """Base class to represent a for loop. This class
     when called with an initial state will execute the while
     loop via the Python interpreter.
@@ -526,7 +527,7 @@ class ForLoopCallable:
     def __call__(self, *init_state):
         args = init_state
         fn_res = args if len(args) > 1 else args[0] if len(args) == 1 else None
-    
+
         for i in range(self.lower_bound, self.upper_bound, self.step):
             fn_res = self.body_fn(i, *args)
             args = fn_res if len(args) > 1 else (fn_res,) if len(args) == 1 else ()
