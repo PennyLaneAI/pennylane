@@ -20,6 +20,7 @@ from typing import Type
 from pennylane import QueuingManager
 from pennylane.compiler import compiler
 from pennylane.operation import AnyWires, Operation, Operator
+from pennylane.measurements import MeasurementValue
 from pennylane.ops.op_math.symbolicop import SymbolicOp
 from pennylane.tape import make_qscript
 
@@ -100,7 +101,111 @@ class Conditional(SymbolicOp, Operation):
         return Conditional(self.meas_val, self.base.adjoint())
 
 
-def cond(condition, true_fn, false_fn=None, elifs=()):
+class CondCallable:  # pylint:disable=too-few-public-methods
+    """Base class to represent a conditional function with boolean predicates.
+
+    Args:
+        condition (bool): a conditional expression
+        true_fn (callable): The function to apply if ``condition`` is ``True``
+        false_fn (callable): The function to apply if ``condition`` is ``False``
+        elifs (List(Tuple(bool, callable))): A list of (bool, elif_fn) clauses.
+
+    Passing ``true_fn``, ``false_fn``, and ``elifs`` on initialization
+    is optional; these functions can be registered post-initialization
+    via decorators:
+
+    .. code-block:: python
+
+        def f(x):
+            @qml.cond(x > 0)
+            def conditional(y):
+                return y ** 2
+
+            @conditional.else_if(x < -2)
+            def conditional(y):
+                return y
+
+            @conditional.otherwise
+            def conditional_false_fn(y):
+                return -y
+
+            return conditional(x + 1)
+
+    >>> [f(0.5), f(-3), f(-0.5)]
+    [2.25, -2, -0.5]
+    """
+
+    def __init__(self, condition, true_fn, false_fn=None, elifs=()):
+        self.preds = [condition]
+        self.branch_fns = [true_fn]
+        self.otherwise_fn = false_fn
+
+        if false_fn is None:
+            self.otherwise_fn = lambda *args, **kwargs: None
+
+        if elifs:
+            elif_preds, elif_fns = list(zip(*elifs))
+            self.preds.extend(elif_preds)
+            self.branch_fns.extend(elif_fns)
+
+    def else_if(self, pred):
+        """Decorator that allows else-if functions to be registered with a corresponding
+        boolean predicate.
+
+        Args:
+            pred (bool): The predicate that will determine if this branch is executed.
+
+        Returns:
+            callable: decorator that is applied to the else-if function
+        """
+
+        def decorator(branch_fn):
+            self.preds.append(pred)
+            self.branch_fns.append(branch_fn)
+            return self
+
+        return decorator
+
+    def otherwise(self, otherwise_fn):
+        """Decorator that registers the function to be run if all
+        conditional predicates (including optional) evaluates to ``False``.
+
+        Args:
+            otherwise_fn (callable): the function to apply if all ``self.preds`` evaluate to ``False``
+        """
+        self.otherwise_fn = otherwise_fn
+        return self
+
+    @property
+    def false_fn(self):
+        """callable: the function to apply if all ``self.preds`` evaluate to ``False``"""
+        return self.otherwise_fn
+
+    @property
+    def true_fn(self):
+        """callable: the function to apply if all ``self.condition`` evaluate to ``True``"""
+        return self.branch_fns[0]
+
+    @property
+    def condition(self):
+        """bool: the condition that determines if ``self.true_fn`` is applied"""
+        return self.preds[0]
+
+    @property
+    def elifs(self):
+        """(List(Tuple(bool, callable))): a list of (bool, elif_fn) clauses"""
+        return list(zip(self.preds[1:], self.branch_fns[1:]))
+
+    def __call__(self, *args, **kwargs):
+        # python fallback
+        for pred, branch_fn in zip(self.preds, self.branch_fns):
+            if pred:
+                return branch_fn(*args, **kwargs)
+
+        return self.false_fn(*args, **kwargs)
+
+
+def cond(condition, true_fn=None, false_fn=None, elifs=()):
     """Quantum-compatible if-else conditionals --- condition quantum operations
     on parameters such as the results of mid-circuit qubit measurements.
 
@@ -128,14 +233,14 @@ def cond(condition, true_fn, false_fn=None, elifs=()):
 
     Args:
         condition (Union[.MeasurementValue, bool]): a conditional expression involving a mid-circuit
-           measurement value (see :func:`.pennylane.measure`). This can only be of type ``bool`` when
-           decorated by :func:`~.qjit`.
+           measurement value (see :func:`.pennylane.measure`).
         true_fn (callable): The quantum function or PennyLane operation to
             apply if ``condition`` is ``True``
         false_fn (callable): The quantum function or PennyLane operation to
             apply if ``condition`` is ``False``
         elifs (List(Tuple(bool, callable))): A list of (bool, elif_fn) clauses. Can only
-            be used when decorated by :func:`~.qjit`.
+            be used when decorated by :func:`~.qjit` or if the condition is not
+            a mid-circuit measurement.
 
     Returns:
         function: A new function that applies the conditional equivalent of ``true_fn``. The returned
@@ -367,6 +472,10 @@ def cond(condition, true_fn, false_fn=None, elifs=()):
     if active_jit := compiler.active_compiler():
         available_eps = compiler.AvailableCompilers.names_entrypoints
         ops_loader = available_eps[active_jit]["ops"].load()
+
+        if true_fn is None:
+            return lambda fn: ops_loader.cond(condition)(fn)
+
         cond_func = ops_loader.cond(condition)(true_fn)
 
         # Optional 'elif' branches
@@ -378,6 +487,16 @@ def cond(condition, true_fn, false_fn=None, elifs=()):
             cond_func.otherwise(false_fn)
 
         return cond_func
+
+    if not isinstance(condition, MeasurementValue):
+        # The condition is not a mid-circuit measurement.
+        if true_fn is None:
+            return lambda fn: CondCallable(condition, fn)
+
+        return CondCallable(condition, true_fn, false_fn, elifs)
+
+    if true_fn is None:
+        raise TypeError("cond missing 1 required positional argument: 'true_fn'")
 
     if elifs:
         raise ConditionalTransformError("'elif' branches are not supported in interpreted mode.")
