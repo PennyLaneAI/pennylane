@@ -53,6 +53,7 @@
 
 * If the conditional does not include a mid-circuit measurement, then `qml.cond`
   will automatically evaluate conditionals using standard Python control flow.
+  [(#6016)](https://github.com/PennyLaneAI/pennylane/pull/6016)
 
   This allows `qml.cond` to be used to represent a wider range of conditionals:
 
