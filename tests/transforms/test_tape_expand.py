@@ -433,15 +433,18 @@ class TestCreateCustomDecompExpandFn:
 
     @pytest.fixture(scope="function", autouse=True)
     def capture_warnings(self):
-        with pytest.warns(qml.PennyLaneDeprecationWarning) as record:
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+        ) as record:
             yield
+
+            assert any(
+                "'expansion_strategy' attribute is deprecated" in str(w.message) for w in record
+            )
 
         for w in record:
             if "'expansion_strategy' attribute is deprecated" not in str(w.message):
                 warnings.warn(w.message, w.category)
-            else:
-                assert isinstance(w.message, qml.PennyLaneDeprecationWarning)
-                assert "'expansion_strategy' attribute is deprecated" in str(w.message)
 
     @pytest.mark.parametrize("device_name", ["default.qubit", "default.qubit.legacy"])
     def test_string_and_operator_allowed(self, device_name):

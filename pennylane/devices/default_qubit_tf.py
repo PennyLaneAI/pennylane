@@ -59,7 +59,7 @@ class DefaultQubitTF(DefaultQubitLegacy):
         pip install tensorflow>=2.0
 
     .. warning::
-        This device is deprecated. Use :class:`~.devices.DefaultQubit` instead; for example through ``qml.device("default.qubit")``, which now supports backpropagation.
+        This device is deprecated. Use :class:`~pennylane.devices.DefaultQubit` instead; for example through ``qml.device("default.qubit")``, which now supports backpropagation.
 
     **Example**
 

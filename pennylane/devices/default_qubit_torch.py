@@ -60,7 +60,7 @@ class DefaultQubitTorch(DefaultQubitLegacy):
         pip install torch>=1.8.0
 
     .. warning::
-        This device is deprecated. Use :class:`~.devices.DefaultQubit` instead; for example through ``qml.device("default.qubit")``, which now supports backpropagation.
+        This device is deprecated. Use :class:`~pennylane.devices.DefaultQubit` instead; for example through ``qml.device("default.qubit")``, which now supports backpropagation.
 
 
     **Example**
