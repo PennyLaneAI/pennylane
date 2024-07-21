@@ -51,6 +51,28 @@
 * Molecules and Hamiltonians can now be constructed for all the elements present in the periodic table.
   [(#5821)](https://github.com/PennyLaneAI/pennylane/pull/5821)
 
+* If the conditional does not include a mid-circuit measurement, then `qml.cond`
+  will automatically evaluate conditionals using standard Python control flow.
+
+  This allows `qml.cond` to be used to represent a wider range of conditionals:
+
+  ```python
+  dev = qml.device("default.qubit", wires=1)
+
+  @qml.qnode(dev)
+  def circuit(x):
+      c = qml.cond(x > 2.7, qml.RX, qml.RZ)
+      c(x, wires=0)
+      return qml.probs(wires=0)
+  ```
+
+  ```pycon
+  >>> print(qml.draw(circuit)(3.8))
+  0: ──RX(3.80)─┤  Probs
+  >>> print(qml.draw(circuit)(0.54))
+  0: ──RZ(0.54)─┤  Probs
+  ```
+
 <h4>Community contributions 🥳</h4>
 
 * `DefaultQutritMixed` readout error has been added using parameters `readout_relaxation_probs` and 
