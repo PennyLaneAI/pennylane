@@ -19,8 +19,8 @@ from typing import Type
 
 from pennylane import QueuingManager
 from pennylane.compiler import compiler
-from pennylane.operation import AnyWires, Operation, Operator
 from pennylane.measurements import MeasurementValue
+from pennylane.operation import AnyWires, Operation, Operator
 from pennylane.ops.op_math.symbolicop import SymbolicOp
 from pennylane.tape import make_qscript
 
@@ -202,7 +202,7 @@ class CondCallable:  # pylint:disable=too-few-public-methods
             if pred:
                 return branch_fn(*args, **kwargs)
 
-        return self.false_fn(*args, **kwargs)
+        return self.false_fn(*args, **kwargs)  # pylint: disable=not-callable
 
 
 def cond(condition, true_fn=None, false_fn=None, elifs=()):
