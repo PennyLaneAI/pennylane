@@ -496,7 +496,12 @@ def cond(condition, true_fn=None, false_fn=None, elifs=()):
         return CondCallable(condition, true_fn, false_fn, elifs)
 
     if true_fn is None:
-        raise TypeError("cond missing 1 required positional argument: 'true_fn'")
+        raise TypeError(
+            "cond missing 1 required positional argument: 'true_fn'.\n"
+            "Note that if the conditional includes a mid-circuit measurement,"
+            "qml.cond cannot be used as a decorator.\n"
+            "Instead, please use the form qml.cond(condition, true_fn, false_fn)."
+        )
 
     if elifs:
         raise ConditionalTransformError("'elif' branches are not supported in interpreted mode.")

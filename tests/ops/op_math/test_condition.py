@@ -607,6 +607,26 @@ class TestPythonFallback:
         assert np.allclose(f(-0.5), -(-0.5 + 1))
         assert np.allclose(f(-2.5), (-2.5 + 1))
 
+    def test_error_no_true_fn(self):
+        """Test that an error is raised if no true_fn is provided
+        when the conditional includes an MCM"""
+        dev = qml.device("default.qubit")
+
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.RX(x, wires=0)
+            m = qml.measure(0)
+
+            @qml.cond(m)
+            def conditional():
+                qml.RZ(x**2)
+
+            conditional()
+            return qml.probs
+
+        with pytest.raises(TypeError, match="cannot be used as a decorator"):
+            circuit(0.5)
+
     def test_qnode(self):
         """Test that qml.cond fallsback to Python when used
         within a QNode"""

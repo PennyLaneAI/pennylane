@@ -578,11 +578,31 @@ class TestCatalystControlFlow:
 
             return qml.expval(qml.PauliZ(0))
 
-        with pytest.raises(
-            ValueError,
-            match="'elif' branches are not supported in interpreted mode",
-        ):
-            circuit(1.5)
+        assert jnp.allclose(circuit(1.2), 1.0)
+        assert jnp.allclose(circuit(jnp.pi), -1.0)
+
+    def test_cond_with_decorator_syntax(self):
+        """Test condition using the decorator syntax"""
+
+        @qml.qjit
+        def f(x):
+            @qml.cond(x > 0)
+            def conditional():
+                return (x + 1) ** 2
+
+            @conditional.else_if(x < -2)
+            def conditional_elif():  # pylint: disable=unused-variable
+                return x + 1
+
+            @conditional.otherwise
+            def conditional_false_fn():  # pylint: disable=unused-variable
+                return -(x + 1)
+
+            return conditional()
+
+        assert np.allclose(f(0.5), (0.5 + 1) ** 2)
+        assert np.allclose(f(-0.5), -(-0.5 + 1))
+        assert np.allclose(f(-2.5), (-2.5 + 1))
 
 
 class TestCatalystGrad:
