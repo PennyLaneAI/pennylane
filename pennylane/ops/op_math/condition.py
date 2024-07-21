@@ -474,7 +474,7 @@ def cond(condition, true_fn=None, false_fn=None, elifs=()):
         ops_loader = available_eps[active_jit]["ops"].load()
 
         if true_fn is None:
-            return lambda fn: ops_loader.cond(condition)(fn)
+            return ops_loader.cond(condition)
 
         cond_func = ops_loader.cond(condition)(true_fn)
 
