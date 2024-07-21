@@ -594,7 +594,7 @@ class TestPythonFallback:
                 return y**2
 
             @conditional.else_if(x < -2)
-            def conditional_elif(y):
+            def conditional_elif(y):  # pylint: disable=unused-variable
                 return y
 
             @conditional.otherwise
