@@ -1056,7 +1056,9 @@ class QNode:
         )
         self._tape_cached = using_custom_cache and self.tape.hash in cache
 
-        mcm_config = copy.copy(self.execute_kwargs["mcm_config"])
+        execute_kwargs = copy.deepcopy(self.execute_kwargs)
+        execute_kwargs["cache"] = cache  # Need to keep reference to original cache
+        mcm_config = execute_kwargs["mcm_config"]
         finite_shots = _get_device_shots(self.device) if override_shots is False else override_shots
         if not finite_shots:
             mcm_config.postselect_mode = None
@@ -1107,9 +1109,8 @@ class QNode:
         full_transform_program.set_classical_component(self, args, kwargs)
         _prune_dynamic_transform(full_transform_program, inner_transform_program)
 
-        orig_mcm_config = self.execute_kwargs.pop("mcm_config")
         with warnings.catch_warnings():
-            # TODO: remove this once the cycle for the arguements have finished, i.e. 0.39.
+            # TODO: remove this once the cycle for the arguments have finished, i.e. 0.39.
             warnings.filterwarnings(
                 action="ignore",
                 message=r".*argument is deprecated and will be removed in version 0.39.*",
@@ -1124,13 +1125,11 @@ class QNode:
                 transform_program=full_transform_program,
                 inner_transform=inner_transform_program,
                 config=config,
-                mcm_config=mcm_config,
                 gradient_kwargs=self.gradient_kwargs,
                 override_shots=override_shots,
-                **self.execute_kwargs,
+                **execute_kwargs,
             )
         res = res[0]
-        self.execute_kwargs["mcm_config"] = orig_mcm_config
 
         # convert result to the interface in case the qfunc has no parameters
 
