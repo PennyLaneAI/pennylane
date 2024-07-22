@@ -457,7 +457,8 @@ class TestSPSAOptimizer:
 
         @qml.qnode(dev)
         def cost_fun(params, num_qubits=1):
-            qml.BasisState([1, 1, 0, 0], wires=range(num_qubits))
+            print(num_qubits, "1111")
+            qml.BasisState([1, 1, 0, 0], wires=range(4))
             for i in range(num_qubits):
                 qml.Rot(*params[i], wires=0)
                 qml.CNOT(wires=[2, 3])
@@ -473,7 +474,9 @@ class TestSPSAOptimizer:
         max_iterations = 100
         opt = qml.SPSAOptimizer(maxiter=max_iterations)
         for _ in range(max_iterations):
+            print("dentro")
             params, energy = opt.step_and_cost(cost_fun, params, num_qubits=num_qubits)
+            print("fuera")
 
         assert np.all(params != init_params)
         assert energy < init_energy

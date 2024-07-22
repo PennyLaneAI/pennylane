@@ -206,7 +206,7 @@ class TestInputs:
                 [[0, 2]],
                 [[0, 1, 2, 3]],
                 np.array([1, 1, 0, 0, 0]),
-                "Basis states must be of length 4",
+                "Features must be of length 4",
             ),
             (
                 np.array([-2.8, 1.6]),
