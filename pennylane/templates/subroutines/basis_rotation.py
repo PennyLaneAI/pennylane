@@ -119,7 +119,7 @@ class BasisRotation(Operation):
             )
 
         if check:
-            umat = jnp.array(unitary_matrix)
+            umat = unitary_matrix
             if not jnp.allclose(umat @ umat.conj().T, jnp.eye(M, dtype=complex), atol=1e-6):
                 raise ValueError("The provided transformation matrix should be unitary.")
 
