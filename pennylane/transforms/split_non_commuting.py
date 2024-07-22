@@ -702,6 +702,10 @@ def _processing_fn_with_grouping(
 def _sum_terms(res: ResultBatch, coeffs: List[float], offset: float, shape: Tuple) -> Result:
     """Sum results from measurements of multiple terms in a multi-term observable."""
 
+    # When the coeff for the identity term is a tensor, the offset is a tensor instead of a float
+    if not isinstance(offset, float):
+        offset = float(offset)
+
     # Trivially return the original result
     if coeffs == [1] and offset == 0:
         return res[0]
