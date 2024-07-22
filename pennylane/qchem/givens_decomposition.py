@@ -159,13 +159,19 @@ def givens_decomposition(unitary):
             for j in range(0, i):
                 indices = [i - j - 1, i - j]
                 grot_mat = _givens_matrix(*unitary[N - j - 1, indices].T, left=True)
-                unitary = unitary.at[:, indices].set(unitary[:, indices] @ grot_mat.T)
+                if qml.math.get_interface(unitary) == 'jax':
+                    unitary = unitary.at[:, indices].set(unitary[:, indices] @ grot_mat.T)
+                else:
+                    unitary[indices, :] = grot_mat @ unitary[indices, :]
                 right_givens.append((grot_mat.conj(), indices))
         else:
             for j in range(1, i + 1):
                 indices = [N + j - i - 2, N + j - i - 1]
                 grot_mat = _givens_matrix(*unitary[indices, j - 1], left=False)
-                unitary = unitary.at[indices, :].set(grot_mat @ unitary[indices, :])
+                if qml.math.get_interface(unitary) == 'jax':
+                    unitary = unitary.at[indices, :].set(grot_mat @ unitary[indices, :])
+                else:
+                    unitary[indices, :] = grot_mat @ unitary[indices, :]
                 left_givens.append((grot_mat, indices))
 
     nleft_givens = []
@@ -179,8 +185,11 @@ def givens_decomposition(unitary):
         if not qml.math.allclose(nphase_mat @ givens_mat.conj(), decomp_mat):  # pragma: no cover
             raise ValueError("Failed to shift phase transposition.")
 
-        unitary = unitary.at[i, i].set(qml.math.diag(nphase_mat)[0])
-        unitary = unitary.at[j, j].set(qml.math.diag(nphase_mat)[1])
+        if qml.math.get_interface(unitary) == 'jax':
+            unitary = unitary.at[i, i].set(qml.math.diag(nphase_mat)[0])
+            unitary = unitary.at[j, j].set(qml.math.diag(nphase_mat)[1])
+        else:
+            unitary[i, i], unitary[j, j] = qml.math.diag(nphase_mat)
         nleft_givens.append((givens_mat.conj(), (i, j)))
 
     phases, ordered_rotations = qml.math.diag(unitary), []
