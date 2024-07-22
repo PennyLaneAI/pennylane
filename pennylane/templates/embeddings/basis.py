@@ -18,7 +18,7 @@ Contains the BasisEmbedding template.
 
 from pennylane.ops.qubit.state_preparation import BasisState
 
+
 # pylint: disable=missing-class-docstring
 class BasisEmbedding(BasisState):
-    pass # BasisEmbedding is still available
-
+    pass  # BasisEmbedding is still available

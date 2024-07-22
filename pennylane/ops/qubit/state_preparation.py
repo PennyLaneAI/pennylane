@@ -66,7 +66,6 @@ class BasisState(StatePrepBase):
     [0.+0.j 0.+0.j 0.+0.j 1.+0.j]
     """
 
-
     def __init__(self, features, wires, id=None):
         if isinstance(features, list):
             features = qml.math.stack(features)
@@ -93,12 +92,17 @@ class BasisState(StatePrepBase):
                 f"Features must be of length {len(wires)}; got length {n_features} (features={features})."
             )
 
+        if not tracing:
+            features_list = list(qml.math.toarray(features))
+            if not set(features_list).issubset({0, 1}):
+                raise ValueError(f"Basis state must only consist of 0s and 1s; got {features_list}")
+
         super().__init__(features, wires=wires, id=id)
 
     def _flatten(self):
         features = self.parameters[0]
         features = tuple(features) if isinstance(features, list) else features
-        return (features, ), (self.wires, )
+        return (features,), (self.wires,)
 
     @classmethod
     def _unflatten(cls, data, metadata) -> "BasisState":
@@ -159,7 +163,6 @@ class BasisState(StatePrepBase):
 
         prep_vals_int = math.cast(prep_vals, int)
 
-
         if wire_order is None:
             indices = prep_vals_int
             num_wires = len(indices)
@@ -172,7 +175,7 @@ class BasisState(StatePrepBase):
                 indices[wire_order.index(base_wire_label)] = value
 
         if qml.math.get_interface(prep_vals_int) == "jax":
-            ket = math.array(math.zeros((2,) * num_wires), like = "jax")
+            ket = math.array(math.zeros((2,) * num_wires), like="jax")
             ket = ket.at[tuple(indices)].set(1)
 
         else:
@@ -242,7 +245,6 @@ class StatePrep(StatePrepBase):
             norm = math.linalg.norm(param, axis=-1, ord=2)
             if not math.allclose(norm, 1.0, atol=1e-10):
                 raise ValueError("Sum of amplitudes-squared does not equal one.")
-
 
     @staticmethod
     def compute_decomposition(state, wires):

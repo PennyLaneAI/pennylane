@@ -26,7 +26,7 @@ densitymat0 = np.array([[1.0, 0.0], [0.0, 0.0]])
 @pytest.mark.parametrize(
     "op",
     [
-        qml.BasisState(np.array([0, 1]), wires=[0,1]),
+        qml.BasisState(np.array([0, 1]), wires=[0, 1]),
         qml.StatePrep(np.array([1.0, 0.0]), wires=0),
         qml.QubitDensityMatrix(densitymat0, wires=0),
     ],
@@ -34,7 +34,6 @@ densitymat0 = np.array([[1.0, 0.0], [0.0, 0.0]])
 def test_adjoint_error_exception(op):
     with pytest.raises(qml.operation.AdjointUndefinedError):
         op.adjoint()
-        
 
 
 @pytest.mark.parametrize(
@@ -350,9 +349,9 @@ class TestStateVector:
         with pytest.raises(WireError, match="wire_order must contain all BasisState wires"):
             basis_op.state_vector(wire_order=[1, 2])
 
-
     def test_BasisState_wrong_param_size(self):
         """Tests that the parameter must be of length num_wires."""
-
-        with pytest.raises(ValueError, match="The state parameter must be of length 2\*\*num_wires"):
+        with pytest.raises(
+            ValueError, match="Features must be of length 2; got length 1 \(features=\[0\]\)."
+        ):
             _ = qml.BasisState([0], wires=[0, 1])

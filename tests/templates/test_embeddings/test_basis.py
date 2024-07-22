@@ -110,9 +110,7 @@ class TestInputs:
         """checks conversion from features as int to a list of binary digits
         with length = len(wires)"""
 
-        assert (
-            np.allclose(qml.BasisEmbedding(features=feat, wires=wires).parameters[0], expected)
-        )
+        assert np.allclose(qml.BasisEmbedding(features=feat, wires=wires).parameters[0], expected)
 
     @pytest.mark.parametrize("x", [[0], [0, 1, 1], 4])
     def test_wrong_input_bits_exception(self, x):
