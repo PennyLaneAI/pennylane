@@ -199,7 +199,7 @@ class TestDecomposeValidation:
     """Unit tests for helper functions in qml.devices.qubit.preprocess"""
 
     def test_error_if_invalid_op(self):
-        """Test that expand_fn throws an error when an operation is does not define a matrix or decomposition."""
+        """Test that expand_fn throws an error when an operation does not define a matrix or decomposition."""
 
         tape = QuantumScript(ops=[NoMatNoDecompOp(0)], measurements=[qml.expval(qml.Hadamard(0))])
         with pytest.raises(DeviceError, match="not supported with abc"):

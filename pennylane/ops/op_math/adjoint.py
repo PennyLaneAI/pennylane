@@ -85,7 +85,7 @@ def adjoint(fn, lazy=True):
     ...     return qml.expval(qml.Z(0))
     >>> print(qml.draw(circuit2)("y"))
     0: ──RY(y)†─┤  <Z>
-    >>> print(qml.draw(circuit2, expansion_strategy="device")(0.1))
+    >>> print(qml.draw(circuit2, level="device")(0.1))
     0: ──RY(-0.10)─┤  <Z>
 
     The adjoint transforms can also be used to apply the adjoint of
