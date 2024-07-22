@@ -20,7 +20,7 @@ import numpy as np
 import pennylane as qml
 from pennylane import math
 from pennylane.operation import AnyWires, Operation, StatePrepBase
-from pennylane.templates.state_preparations import BasisStatePreparation, MottonenStatePreparation
+from pennylane.templates.state_preparations import MottonenStatePreparation
 from pennylane.wires import WireError, Wires
 
 state_prep_ops = {"BasisState", "StatePrep", "QubitDensityMatrix"}
