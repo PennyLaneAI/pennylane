@@ -19,8 +19,11 @@ from .wires import Wires
 
 
 def registers(register_dict):
-    """Creates wire registers as a dictionary mapping from register names to
-    corresponding :class:`~pennylane.wires.Wires`.
+    """Creates wire registers as a dictionary mapping register names to corresponding
+    :class:`~pennylane.wires.Wires`.
+
+    This function flattens nested dictionaries in the input, creating a single-level dictionary
+    of registers.
 
     Args:
         register_dict (dict): a dictionary where keys are register names and values are either
