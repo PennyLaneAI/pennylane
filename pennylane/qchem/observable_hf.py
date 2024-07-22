@@ -20,7 +20,7 @@ import numpy as np
 import pennylane as qml
 from pennylane.fermi import FermiSentence, FermiWord
 from pennylane.operation import active_new_opmath
-from pennylane.pauli import PauliWord, PauliSentence
+from pennylane.pauli import PauliSentence
 from pennylane.pauli.utils import simplify
 
 
