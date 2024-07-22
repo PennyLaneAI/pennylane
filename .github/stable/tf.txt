@@ -67,7 +67,7 @@ py-cpuinfo==9.0.0
 Pygments==2.18.0
 pylint==2.7.4
 pyparsing==3.1.2
-pytest==8.2.2
+pytest==8.3.1
 pytest-benchmark==4.0.0
 pytest-cov==5.0.0
 pytest-forked==1.6.0

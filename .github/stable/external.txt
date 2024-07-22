@@ -129,7 +129,7 @@ prompt_toolkit==3.0.47
 protobuf==4.25.3
 psutil==6.0.0
 ptyprocess==0.7.0
-pure-eval==0.2.2
+pure_eval==0.2.3
 py==1.11.0
 py-cpuinfo==9.0.0
 pycparser==2.22
@@ -137,7 +137,7 @@ Pygments==2.18.0
 pylint==2.7.4
 pyparsing==3.1.2
 pyperclip==1.9.0
-pytest==8.2.2
+pytest==8.3.1
 pytest-benchmark==4.0.0
 pytest-cov==5.0.0
 pytest-forked==1.6.0
@@ -149,7 +149,7 @@ PyYAML==6.0.1
 pyzmq==26.0.3
 pyzx==0.8.0
 qdldl==0.1.7.post4
-quimb==1.8.3
+quimb==1.8.4
 referencing==0.35.1
 requests==2.32.3
 rfc3339-validator==0.1.4
