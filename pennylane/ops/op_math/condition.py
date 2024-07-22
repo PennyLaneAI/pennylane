@@ -16,7 +16,7 @@ Contains the condition transform.
 """
 import functools
 from functools import wraps
-from typing import Callable, Optional, Tuple, Type, overload
+from typing import Callable, Type
 
 import pennylane as qml
 from pennylane import QueuingManager
@@ -102,13 +102,6 @@ class Conditional(SymbolicOp, Operation):
         return Conditional(self.meas_val, self.base.adjoint())
 
 
-@overload
-def cond(
-    condition: bool,
-    true_fn: Callable,
-    false_fn: Optional[Callable] = None,
-    elifs: Optional[Tuple[Tuple[bool, Callable], ...]] = (),
-) -> Callable: ...
 def cond(condition, true_fn, false_fn=None, elifs=()):
     """Quantum-compatible if-else conditionals --- condition quantum operations
     on parameters such as the results of mid-circuit qubit measurements.
@@ -374,10 +367,6 @@ def cond(condition, true_fn, false_fn=None, elifs=()):
             tensor(-0.30922805, requires_grad=True)
     """
 
-    print(
-        f"cond function called with condition={condition}, true_fn={true_fn}, false_fn={false_fn}, elifs={elifs}"
-    )
-
     if active_jit := compiler.active_compiler():
         available_eps = compiler.AvailableCompilers.names_entrypoints
         ops_loader = available_eps[active_jit]["ops"].load()
@@ -393,8 +382,6 @@ def cond(condition, true_fn, false_fn=None, elifs=()):
 
         return cond_func
 
-    # This will not be the final place for this logic, but it is a start
-    # TODO: providing `elifs` raises an error at this stage
     if qml.capture.enabled():
         print("Capture mode for cond")
         return _capture_cond(condition, true_fn, false_fn, elifs)
@@ -460,7 +447,6 @@ def _get_cond_qfunc_prim():
     cond_prim = jax.core.Primitive("cond")
     cond_prim.multiple_results = True
 
-    # The AbstractOperator class is defined in the PennyLane capture module. Don't worry about it.
     AbstractOperator = qml.capture.AbstractOperator
 
     @cond_prim.def_impl
