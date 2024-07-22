@@ -14,6 +14,7 @@
 """A function to compute the Lie closure of a set of operators"""
 # pylint: disable=too-many-arguments
 import itertools
+import warnings
 from copy import copy
 from functools import reduce
 from typing import Iterable, Union
@@ -32,6 +33,7 @@ def lie_closure(
     verbose: bool = False,
     pauli: bool = False,
     tol: float = None,
+    dtype = None
 ) -> Iterable[Union[PauliWord, PauliSentence, Operator]]:
     r"""Compute the dynamical Lie algebra from a set of generators.
 
@@ -49,6 +51,10 @@ def lie_closure(
             This can help with performance to avoid unnecessary conversions to :class:`~pennylane.operation.Operator`
             and vice versa. Default is ``False``.
         tol (float): Numerical tolerance for the linear independence check used in :class:`~.PauliVSpace`.
+        dtype: Dtype for the underlyding matrix representation in :class:`~.PauliVSpace`.
+            For generators that are pure Pauli words (:class:`~PauliWord`), it can be set
+            to ``float``. For sums of Paulis (i.e. :class:`~PauliSentence`) it should be
+            set to ``complex`` (default).
 
     Returns:
         Union[list[:class:`~.PauliSentence`], list[:class:`~.Operator`]]: a basis of either :class:`~.PauliSentence` or :class:`~.Operator` instances that is closed under
@@ -78,7 +84,7 @@ def lie_closure(
     This can be done in short via ``lie_closure`` as follows.
 
     >>> ops = [X(0) @ X(1), Z(0), Z(1)]
-    >>> dla = qml.lie_closure(ops)
+    >>> dla = qml.lie_closure(ops, dtype=float)
     >>> print(dla)
     [X(1) @ X(0),
      Z(0),
@@ -125,7 +131,10 @@ def lie_closure(
             for op in generators
         ]
 
-    vspace = PauliVSpace(generators, tol=tol)
+    if dtype is None:
+        dtype = complex
+
+    vspace = PauliVSpace(generators, tol=tol, dtype=dtype)
 
     epoch = 0
     old_length = 0  # dummy value
@@ -134,8 +143,11 @@ def lie_closure(
     while (new_length > old_length) and (epoch < max_iterations):
         if verbose:
             print(f"epoch {epoch+1} of lie_closure, DLA size is {new_length}")
+            print(f"Basis: {vspace}")
         for ps1, ps2 in itertools.combinations(vspace.basis, 2):
             com = ps1.commutator(ps2)
+            com.simplify()
+
             if len(com) == 0:  # skip because operators commute
                 continue
 
@@ -143,12 +155,16 @@ def lie_closure(
             # remove common factor 2 with Pauli commutators
             for pw, val in com.items():
                 com[pw] = val.imag / 2
+
             vspace.add(com, tol=tol)
 
         # Updated number of linearly independent PauliSentences from previous and current step
         old_length = new_length
         new_length = len(vspace)
         epoch += 1
+
+        if epoch == max_iterations:
+            warnings.warn(f"reached the maximum number of iterations {max_iterations}", UserWarning)
 
     if verbose > 0:
         print(f"After {epoch} epochs, reached a DLA size of {new_length}")

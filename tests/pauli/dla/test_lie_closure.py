@@ -344,7 +344,9 @@ class TestLieClosure:
             PauliSentence({PauliWord({i: "X", (i + 1) % n: "Z"}): 1.0}) for i in range(n - 1)
         ]
 
-        res = qml.pauli.lie_closure(generators, verbose=True, max_iterations=1)
+        with pytest.warns(UserWarning, match="reached the maximum number of iterations"):
+            res = qml.pauli.lie_closure(generators, verbose=True, max_iterations=1)
+
         captured = capsys.readouterr()
         assert (
             captured.out
