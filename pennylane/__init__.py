@@ -63,6 +63,7 @@ from pennylane.circuit_graph import CircuitGraph
 from pennylane.configuration import Configuration
 from pennylane.drawer import draw, draw_mpl
 from pennylane.tracker import Tracker
+
 from pennylane.io import *
 from pennylane.measurements import (
     counts,
@@ -94,7 +95,6 @@ from pennylane.transforms import (
     transform,
     batch_params,
     batch_input,
-    batch_transform,
     batch_partial,
     compile,
     defer_measurements,

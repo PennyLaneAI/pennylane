@@ -79,7 +79,7 @@ class TestDecomposition:
         weights = np.array([0, 1], dtype=float)
 
         op = qml.ArbitraryStatePreparation(weights, wires=[0])
-        queue = op.expand().operations
+        queue = op.decomposition()
 
         assert queue[0].name == "PauliRot"
 
@@ -97,7 +97,7 @@ class TestDecomposition:
         weights = np.array([0, 1, 2, 3, 4, 5], dtype=float)
 
         op = qml.ArbitraryStatePreparation(weights, wires=[0, 1])
-        queue = op.expand().operations
+        queue = op.decomposition()
 
         assert queue[0].name == "PauliRot"
 
