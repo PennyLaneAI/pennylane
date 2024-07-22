@@ -335,7 +335,7 @@ class TestInputs:
 
 
 def circuit_template(unitary_matrix):
-    qml.BasisState(np.array([1, 1, 0]), wires=[0, 1, 2])
+    qml.BasisState(qml.math.array([1, 1, 0]), wires=[0, 1, 2])
     qml.BasisRotation(
         wires=range(3),
         unitary_matrix=unitary_matrix,
