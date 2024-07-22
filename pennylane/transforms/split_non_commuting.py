@@ -715,7 +715,7 @@ def _sum_terms(res: ResultBatch, coeffs: List[float], offset: float, shape: Tupl
     if len(dot_products) == 0:
         return qml.math.ones(shape) * offset
 
-    if qml.math.get_interface(r) == "autograd" and hasattr(offset, "requires_grad"):
+    if qml.math.get_interface(offset) == "autograd" and hasattr(offset, "requires_grad"):
         offset.requires_grad = True
 
     summed_dot_products = qml.math.sum(qml.math.stack(dot_products), axis=0)
