@@ -491,8 +491,10 @@ def _get_cond_qfunc_prim():
 
         if condition:
             return true_branch(args)
+
         if elifs_conditions.size > 0:
             return elif_branch(args, elifs_conditions, jaxpr_elifs)
+
         return false_branch(args)
 
     def _is_queued_outvar(outvars):
@@ -518,26 +520,26 @@ def _get_cond_qfunc_prim():
 
 def _capture_cond(condition, true_fn, false_fn=None, elifs=()) -> Callable:
     """Capture compatible way to apply conditionals."""
-    # TODO: implement tests
 
     import jax  # pylint: disable=import-outside-toplevel
 
     cond_prim = _get_cond_qfunc_prim()
 
-    # pylint: disable=unused-argument
-    # pylint: disable=unused-variable
+    elifs = (elifs,) if len(elifs) > 0 and not isinstance(elifs[0], tuple) else elifs
+
     @wraps(true_fn)
     def new_wrapper(*args, **kwargs):
 
         # We extract each predicate from the elifs list
-        # since these are traced by JAX and should be passed as positional arguments
+        # since these are traced by JAX and are passed as positional arguments
+
         elifs_conditions = (
             jax.numpy.array([cond for cond, _ in elifs]) if elifs else jax.numpy.empty(0)
         )
 
         jaxpr_true = jax.make_jaxpr(functools.partial(true_fn, **kwargs))(*args)
         jaxpr_false = (
-            ((jax.make_jaxpr(functools.partial(false_fn, **kwargs))(*args) if false_fn else None))
+            (jax.make_jaxpr(functools.partial(false_fn, **kwargs))(*args) if false_fn else None)
             if false_fn
             else None
         )
