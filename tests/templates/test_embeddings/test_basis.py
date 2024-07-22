@@ -34,9 +34,8 @@ def test_flatten_unflatten():
     wires = qml.wires.Wires((0, 1, 2))
     op = qml.BasisEmbedding(features=[1, 1, 1], wires=wires)
     data, metadata = op._flatten()
-    assert data == tuple()
+    assert np.allclose(data[0], [1, 1, 1])
     assert metadata[0] == wires
-    assert metadata[1] == (1, 1, 1)
 
     # make sure metadata hashable
     assert hash(metadata)
@@ -112,8 +111,7 @@ class TestInputs:
         with length = len(wires)"""
 
         assert (
-            qml.BasisEmbedding(features=feat, wires=wires).hyperparameters["basis_state"]
-            == expected
+            np.allclose(qml.BasisEmbedding(features=feat, wires=wires).parameters[0], expected)
         )
 
     @pytest.mark.parametrize("x", [[0], [0, 1, 1], 4])

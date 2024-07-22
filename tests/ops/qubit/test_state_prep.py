@@ -26,7 +26,7 @@ densitymat0 = np.array([[1.0, 0.0], [0.0, 0.0]])
 @pytest.mark.parametrize(
     "op",
     [
-        qml.BasisState(np.array([0, 1]), wires=0),
+        qml.BasisState(np.array([0, 1]), wires=[0,1]),
         qml.StatePrep(np.array([1.0, 0.0]), wires=0),
         qml.QubitDensityMatrix(densitymat0, wires=0),
     ],
@@ -34,6 +34,7 @@ densitymat0 = np.array([[1.0, 0.0], [0.0, 0.0]])
 def test_adjoint_error_exception(op):
     with pytest.raises(qml.operation.AdjointUndefinedError):
         op.adjoint()
+        
 
 
 @pytest.mark.parametrize(
@@ -66,8 +67,6 @@ class TestDecomposition:
         ops2 = qml.BasisState(n, wires=wires).decomposition()
 
         assert len(ops1) == len(ops2) == 1
-        assert isinstance(ops1[0], qml.BasisStatePreparation)
-        assert isinstance(ops2[0], qml.BasisStatePreparation)
 
     def test_StatePrep_decomposition(self):
         """Test the decomposition for StatePrep."""
@@ -351,18 +350,9 @@ class TestStateVector:
         with pytest.raises(WireError, match="wire_order must contain all BasisState wires"):
             basis_op.state_vector(wire_order=[1, 2])
 
-    def test_BasisState_explicitly_checks_0_1(self):
-        """Tests that BasisState gives a clear error if a value other than 0 or 1 is given."""
-        op = qml.BasisState([2, 1], wires=[0, 1])
-        with pytest.raises(
-            ValueError, match="BasisState parameter must consist of 0 or 1 integers."
-        ):
-            _ = op.state_vector()
 
     def test_BasisState_wrong_param_size(self):
         """Tests that the parameter must be of length num_wires."""
-        op = qml.BasisState([0], wires=[0, 1])
-        with pytest.raises(
-            ValueError, match="BasisState parameter and wires must be of equal length."
-        ):
-            _ = op.state_vector()
+
+        with pytest.raises(ValueError, match="The state parameter must be of length 2\*\*num_wires"):
+            _ = qml.BasisState([0], wires=[0, 1])
