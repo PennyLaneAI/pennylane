@@ -713,8 +713,8 @@ def _sum_terms(res: ResultBatch, coeffs: List[float], offset: float, shape: Tupl
     # The shape of res at this point is (n_terms, [,n_shots] [,batch_size])
     dot_products = []
     for c, r in zip(coeffs, res):
-        if not isinstance(c, float):
-            c = float(c)
+        if qml.math.get_interface(r) == "autograd":
+            r = qml.math.array(r)
         dot_products.append(qml.math.dot(qml.math.squeeze(r), c))
     if len(dot_products) == 0:
         return qml.math.ones(shape) * offset
