@@ -702,10 +702,6 @@ def _processing_fn_with_grouping(
 def _sum_terms(res: ResultBatch, coeffs: List[float], offset: float, shape: Tuple) -> Result:
     """Sum results from measurements of multiple terms in a multi-term observable."""
 
-    # When the coeff for the identity term is a tensor, the offset is a tensor instead of a float
-    if not isinstance(offset, float):
-        offset = float(offset)
-
     # Trivially return the original result
     if coeffs == [1] and offset == 0:
         return res[0]
@@ -718,6 +714,10 @@ def _sum_terms(res: ResultBatch, coeffs: List[float], offset: float, shape: Tupl
         dot_products.append(qml.math.dot(qml.math.squeeze(r), c))
     if len(dot_products) == 0:
         return qml.math.ones(shape) * offset
+
+    if qml.math.get_interface(r) == "autograd" and hasattr(offset, "requires_grad"):
+        offset.requires_grad = True
+
     summed_dot_products = qml.math.sum(qml.math.stack(dot_products), axis=0)
     return summed_dot_products + offset
 
