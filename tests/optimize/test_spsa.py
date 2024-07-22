@@ -443,7 +443,7 @@ class TestSPSAOptimizer:
 
     @pytest.mark.usefixtures("use_legacy_opmath")
     @pytest.mark.slow
-    def test_lighting_device_legacy_opmath(self):
+    def test_lightning_device_legacy_opmath(self):
         """Test SPSAOptimizer implementation with lightning.qubit device."""
         coeffs = [0.2, -0.543, 0.4514]
         obs = [
@@ -479,7 +479,7 @@ class TestSPSAOptimizer:
         assert energy < init_energy
 
     @pytest.mark.slow
-    def test_lighting_device(self):
+    def test_lightning_device(self):
         """Test SPSAOptimizer implementation with lightning.qubit device."""
         coeffs = [0.2, -0.543, 0.4514]
         obs = [
