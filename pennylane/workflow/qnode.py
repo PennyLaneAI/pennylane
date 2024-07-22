@@ -245,34 +245,6 @@ class QNode:
     .. warning::
 
         The ``max_expansion`` argument is deprecated and will be removed in version 0.39.
-        Instead, please apply the transform :func:`~.pennylane.devices.preprocessdecompose`
-        with the desired expansion level. For example:
-
-        .. code-block:: python
-
-            import pennylane as qml
-
-            from functools import partial
-            from pennylane.devices.preprocess import decompose
-
-            dev = qml.device("default.qubit", wires=2)
-
-            def stopping_condition(obj):
-                return obj.name in {"CNOT", "RX", "RZ"}
-
-            @partial(decompose,
-                    stopping_condition = stopping_condition,
-                    max_expansion=2)
-            @qml.qnode(dev)
-            def circuit():
-                qml.IsingXX(1.2, wires=(0,1))
-                return qml.expval(qml.Z(0))
-
-            print(qml.draw(circuit)())
-
-        >>> print(qml.draw(circuit)())
-        0: ─╭●──RX(1.20)─╭●─┤  <Z>
-        1: ─╰X───────────╰X─┤
 
     **Example**
 

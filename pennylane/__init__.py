@@ -18,6 +18,7 @@ PennyLane can be directly imported.
 from importlib import reload, metadata
 from sys import version_info
 
+import warnings
 import numpy as _np
 
 from semantic_version import SimpleSpec, Version
@@ -402,7 +403,7 @@ def device(name, *args, **kwargs):
         if decomp_depth is not None:
             warnings.warn(
                 "The decomp_depth argument is deprecated and will be removed in version 0.39. ",
-                qml.PennyLaneDeprecationWarning,
+                PennyLaneDeprecationWarning,
             )
         else:
             decomp_depth = 10
@@ -426,25 +427,20 @@ def device(name, *args, **kwargs):
 
         # Once the device is constructed, we set its custom expansion function if
         # any custom decompositions were specified.
-        with warnings.catch_warnings():
-            warnings.filterwarnings(
-                action="ignore",
-                message=r".*decomp_depth argument is deprecated and will be removed in version 0.39.*",
-                category=qml.PennyLaneDeprecationWarning,
-            )
-            if custom_decomps is not None:
-                if isinstance(dev, pennylane.devices.LegacyDevice):
-                    custom_decomp_expand_fn = pennylane.transforms.create_decomp_expand_fn(
+
+        if custom_decomps is not None:
+            if isinstance(dev, pennylane.devices.LegacyDevice):
+                custom_decomp_expand_fn = pennylane.transforms.create_decomp_expand_fn(
+                    custom_decomps, dev, decomp_depth=decomp_depth
+                )
+                dev.custom_expand(custom_decomp_expand_fn)
+            else:
+                custom_decomp_preprocess = (
+                    pennylane.transforms.tape_expand._create_decomp_preprocessing(
                         custom_decomps, dev, decomp_depth=decomp_depth
                     )
-                    dev.custom_expand(custom_decomp_expand_fn)
-                else:
-                    custom_decomp_preprocess = (
-                        pennylane.transforms.tape_expand._create_decomp_preprocessing(
-                            custom_decomps, dev, decomp_depth=decomp_depth
-                        )
-                    )
-                    dev.preprocess = custom_decomp_preprocess
+                )
+                dev.preprocess = custom_decomp_preprocess
 
         return dev
 
