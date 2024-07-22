@@ -55,7 +55,7 @@ class BasisEmbedding(Operation):
 
         The resulting circuit is:
 
-        >>> print(qml.draw(circuit, expansion_strategy="device")(X))
+        >>> print(qml.draw(circuit, level="device")(X))
         0: ──X─┤  State
         1: ──X─┤  State
         2: ──X─┤  State

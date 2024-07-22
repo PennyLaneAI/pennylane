@@ -70,7 +70,7 @@ class TestInterferometer:
             theta, phi, varphi, mesh="triangular", beamsplitter="clements", wires=wires
         )
 
-        for rec in [op_rect.expand(), op_tria.expand()]:
+        for rec in [op_rect.decomposition(), op_tria.decomposition()]:
             assert len(rec) == 4
 
             assert isinstance(rec[0], qml.Rotation)
@@ -90,7 +90,7 @@ class TestInterferometer:
         varphi = [0.42342]
 
         op = qml.Interferometer(theta=[], phi=[], varphi=varphi, wires=0)
-        rec = op.expand()
+        rec = op.decomposition()
 
         assert len(rec) == 1
         assert isinstance(rec[0], qml.Rotation)
@@ -107,7 +107,7 @@ class TestInterferometer:
         varphi = [0.42342, 0.1121]
 
         op = qml.Interferometer(theta, phi, varphi, wires=wires)
-        rec = op.expand()
+        rec = op.decomposition()
 
         isinstance(rec[0], qml.Beamsplitter)
         assert rec[0].parameters == theta + phi
@@ -129,7 +129,7 @@ class TestInterferometer:
         varphi = [0.42342, 0.1121]
 
         op = qml.Interferometer(theta, phi, varphi, mesh="triangular", wires=wires)
-        rec = op.expand()
+        rec = op.decomposition()
 
         assert len(rec) == 3
 
@@ -155,7 +155,7 @@ class TestInterferometer:
         op_tria = qml.Interferometer(theta, phi, varphi, wires=wires, mesh="triangular")
 
         # Test rectangular mesh
-        rec = op_rect.expand()
+        rec = op_rect.decomposition()
         assert len(rec) == 6
 
         expected_bs_wires = [[0, 1], [1, 2], [0, 1]]
@@ -171,7 +171,7 @@ class TestInterferometer:
             assert op.wires == Wires([idx])
 
         # Test triangular mesh
-        rec = op_tria.expand()
+        rec = op_tria.decomposition()
         assert len(rec) == 6
 
         expected_bs_wires = [[1, 2], [0, 1], [1, 2]]
@@ -196,7 +196,7 @@ class TestInterferometer:
         varphi = [0.42342, 0.234, 0.4523, 0.1121]
 
         op = qml.Interferometer(theta, phi, varphi, wires=wires)
-        rec = op.expand()
+        rec = op.decomposition()
 
         assert len(rec) == 10
 
@@ -222,7 +222,7 @@ class TestInterferometer:
         varphi = [0.42342, 0.234, 0.4523, 0.1121]
 
         op = qml.Interferometer(theta, phi, varphi, wires=wires, mesh="triangular")
-        rec = op.expand()
+        rec = op.decomposition()
 
         assert len(rec) == 10
 
