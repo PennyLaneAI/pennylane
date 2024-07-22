@@ -334,11 +334,12 @@ class TestInputs:
         assert template.id == "a"
 
 
-def circuit_template(unitary_matrix):
+def circuit_template(unitary_matrix, check = False):
     qml.BasisState(qml.math.array([1, 1, 0]), wires=[0, 1, 2])
     qml.BasisRotation(
         wires=range(3),
         unitary_matrix=unitary_matrix,
+        check = check,
     )
     return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
@@ -476,12 +477,12 @@ class TestInterfaces:
 
         dev = qml.device("default.qubit", wires=3)
 
-        circuit = qml.QNode(circuit_template, dev)
+        circuit = qml.QNode(jax.jit(circuit_template, static_argnames='check'), dev)
         circuit2 = qml.QNode(circuit_decomposed, dev)
 
-        res = jax.jit(circuit)(unitary_matrix)
-        res2 = jax.jit(circuit2)(weights)
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+        res = circuit(unitary_matrix)
+        res2 = circuit2(weights)
+        assert jnp.allclose(res, res2, atol=tol, rtol=0)
 
         grad_fn = jax.grad(circuit)
         grads = grad_fn(unitary_matrix)
