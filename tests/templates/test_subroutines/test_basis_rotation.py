@@ -446,6 +446,51 @@ class TestInterfaces:
 
         assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
 
+    @pytest.mark.jax
+    def test_jax_jit(self, tol):
+        """Test the jax interface."""
+
+        import jax
+        import jax.numpy as jnp
+
+        unitary_matrix = jnp.array(
+            [
+                [0.51378719 + 0.0j, 0.0546265 + 0.79145487j, -0.2051466 + 0.2540723j],
+                [0.62651582 + 0.0j, -0.00828925 - 0.60570321j, -0.36704948 + 0.32528067j],
+                [-0.58608928 + 0.0j, 0.03902657 + 0.04633548j, -0.57220635 + 0.57044649j],
+            ]
+        )
+        weights = jnp.array(
+            [
+                2.2707802713289267,
+                2.9355948424220206,
+                -1.4869222527726533,
+                1.2601662579297865,
+                2.3559705032936717,
+                1.1748572730890159,
+                2.2500537657656356,
+                -0.7251404204443089,
+                2.3577346350335198,
+            ]
+        )
+
+        dev = qml.device("default.qubit", wires=3)
+
+        circuit = qml.QNode(circuit_template, dev)
+        circuit2 = qml.QNode(circuit_decomposed, dev)
+
+        res = jax.jit(circuit)(unitary_matrix)
+        res2 = jax.jit(circuit2)(weights)
+        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+
+        grad_fn = jax.grad(circuit)
+        grads = grad_fn(unitary_matrix)
+
+        grad_fn2 = jax.grad(circuit2)
+        grads2 = grad_fn2(weights)
+
+        assert qml.math.allclose(grads[0], grads2[0], atol=tol, rtol=0)
+
     @pytest.mark.tf
     def test_tf(self, tol):
         """Test the tf interface."""
