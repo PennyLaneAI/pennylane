@@ -106,9 +106,9 @@ def drive(amplitude, phase, wires):
 
     >>> params = [2.4]
     >>> circuit(params)
-    Array(-0.17375104, dtype=float64)
+    Array(0.32495208, dtype=float64)
     >>> jax.grad(circuit)(params)
-    [Array(13.66916253, dtype=float64, weak_type=True)]
+    [Array(1.31956098, dtype=float64, weak_type=True)]
 
     We can also create a Hamiltonian with multiple local drives. The following circuit corresponds to the
     evolution where an additional local drive that changes in time is acting on wires ``[0, 1]`` is added to the Hamiltonian:
