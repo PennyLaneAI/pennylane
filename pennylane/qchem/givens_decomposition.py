@@ -44,16 +44,16 @@ def _givens_matrix(a, b, left=True, tol=1e-8):
     abs_a, abs_b = jnp.abs(a), jnp.abs(b)
     hypot = jnp.hypot(abs_a, abs_b)
 
-    cosine = jnp.where(jnp.logical_and(jnp.greater(abs_a, tol), jnp.greater(abs_b, tol)), 
-                    abs_b / hypot, 
+    cosine = jnp.where(jnp.logical_and(jnp.greater(abs_a, tol), jnp.greater(abs_b, tol)),
+                    abs_b / hypot,
                     jnp.where(jnp.less(abs_a, tol), 1.0, 0.0))
     
     sine = jnp.where(jnp.logical_and(jnp.greater(abs_a, tol), jnp.greater(abs_b, tol)),
-                    abs_a / hypot, 
+                    abs_a / hypot,
                     jnp.where(jnp.less(abs_b, tol), 1.0, 0.0))
     
-    phase = jnp.where(jnp.logical_and(abs_a > tol, abs_b > tol), 
-                    1.0 * b / abs_b * a.conjugate() / abs_a, 
+    phase = jnp.where(jnp.logical_and(abs_a > tol, abs_b > tol),
+                    1.0 * b / abs_b * a.conjugate() / abs_a,
                     1.0)
 
     L = jnp.array([[phase * cosine, -sine], [phase * sine, cosine]])
