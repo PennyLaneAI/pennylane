@@ -348,17 +348,19 @@ def givens_decomposition_jax(unitary):
         nphase_mat = decomp_mat @ givens_mat.T
 
         # check for T_{m,n}^{-1} x D = D x T.
-        if not qml.math.allclose(nphase_mat @ givens_mat.conj(), decomp_mat):  # pragma: no cover
-            raise ValueError("Failed to shift phase transposition.")
+        if not qml.math.is_abstract(nphase_mat @ givens_mat.conj()) and not qml.math.is_abstract(decomp_mat):
+            if not qml.math.allclose(nphase_mat @ givens_mat.conj(), decomp_mat):  # pragma: no cover
+                raise ValueError("Failed to shift phase transposition.")
 
         unitary = unitary.at[i, i].set(qml.math.diag(nphase_mat)[0])
         unitary = unitary.at[j, j].set(qml.math.diag(nphase_mat)[1])
         nleft_givens.append((givens_mat.conj(), (i, j)))
 
     phases, ordered_rotations = qml.math.diag(unitary), []
-    for grot_mat, (i, j) in list(reversed(nleft_givens)) + list(reversed(right_givens)):
-        if not qml.math.all(qml.math.isreal(grot_mat[0, 1]) and qml.math.isreal(grot_mat[1, 1])):  # pragma: no cover
-            raise ValueError(f"Incorrect Givens Rotation encountered, {grot_mat}")
+    if not qml.math.is_abstract(grot_mat):
+        for grot_mat, (i, j) in list(reversed(nleft_givens)) + list(reversed(right_givens)):
+            if not qml.math.all(qml.math.isreal(grot_mat[0, 1]) and qml.math.isreal(grot_mat[1, 1])):  # pragma: no cover
+                raise ValueError(f"Incorrect Givens Rotation encountered, {grot_mat}")
         ordered_rotations.append((grot_mat, (i, j)))
 
     return phases, ordered_rotations
