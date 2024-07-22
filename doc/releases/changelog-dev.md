@@ -138,7 +138,7 @@
 
 * `qml.AmplitudeEmbedding` has better support for features using low precision integer data types.
   [(#5969)](https://github.com/PennyLaneAI/pennylane/pull/5969)
-* `qml.BasisRotation` is now qjit compatible (#6004)
+* `qml.BasisRotation` is now qjit compatible ([#6004](`qml.BasisRotation` is now jit compatible ([#6004](https://github.com/PennyLaneAI/pennylane/issues/6004))))
 
 <h3>Contributors ✍️</h3>
 
