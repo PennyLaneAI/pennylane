@@ -75,7 +75,9 @@ class TestRegisters:
         ],
     )
     def test_build_registers(self, wire_dict, expected_register):
-        """Test that the registers function returns the correct dictionary of Wires instances"""
+        """Test that the registers function returns the correct dictionary of Wires instances.
+        The expected result is a dictionary that has elements ordered first by appearance from left
+        to right, then by nestedness (also known as DFS traversal order)."""
 
         wire_dict = qml.registers(wire_dict)
 
