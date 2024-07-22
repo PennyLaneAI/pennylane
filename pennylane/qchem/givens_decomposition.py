@@ -149,9 +149,9 @@ def givens_decomposition(unitary):
 
     """
 
-    unitary, (M, N) = qml.math.copy(unitary), unitary.shape
+    unitary, (M, N) = qml.math.copy(unitary), qml.math.shape(unitary)
     if M != N:
-        raise ValueError(f"The unitary matrix should be of shape NxN, got {unitary.shape}")
+        raise ValueError(f"The unitary matrix should be of shape NxN, got {qml.math.shape(unitary)}")
 
     left_givens, right_givens = [], []
     for i in range(1, N):

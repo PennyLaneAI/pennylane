@@ -107,7 +107,7 @@ class BasisRotation(Operation):
         return cls._primitive.bind(*wires, unitary_matrix, check=check, id=id)
 
     def __init__(self, wires, unitary_matrix, check=False, id=None):
-        M, N = unitary_matrix.shape
+        M, N = qml.math.shape(unitary_matrix)
 
         if M != N:
             raise ValueError(
@@ -115,7 +115,7 @@ class BasisRotation(Operation):
             )
 
         if check:
-            umat = unitary_matrix
+            umat = qml.math.copy(unitary_matrix)
             if not qml.math.allclose(umat @ umat.conj().T, qml.math.eye(M, dtype=complex), atol=1e-6):
                 raise ValueError("The provided transformation matrix should be unitary.")
 
@@ -151,15 +151,15 @@ class BasisRotation(Operation):
             list[.Operator]: decomposition of the operator
         """
 
-        M, N = unitary_matrix.shape
+        M, N = qml.math.shape(unitary_matrix)
         if M != N:
             raise ValueError(
                 f"The unitary matrix should be of shape NxN, got {unitary_matrix.shape}"
             )
 
         if check:
-            umat = unitary_matrix
-            if not qml.math.allclose(umat @ umat.conj().T, qml.math.eye(M, dtype=complex), atol=1e-4):
+            umat = qml.math.copy(unitary_matrix)
+            if (not qml.math.is_abstract(unitary_matrix)) and (not qml.math.allclose(umat @ umat.conj().T, qml.math.eye(M, dtype=complex), atol=1e-4)):
                 raise ValueError("The provided transformation matrix should be unitary.")
 
         if len(wires) < 2:
