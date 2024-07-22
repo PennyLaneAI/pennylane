@@ -111,7 +111,7 @@ class BasisRotation(Operation):
 
         if M != N:
             raise ValueError(
-                f"The unitary matrix should be of shape NxN, got {unitary_matrix.shape}"
+                f"The unitary matrix should be of shape NxN, got {qml.math.shape(unitary_matrix)}"
             )
 
         if check:
