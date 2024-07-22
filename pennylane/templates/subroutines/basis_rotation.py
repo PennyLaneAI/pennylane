@@ -159,17 +159,19 @@ class BasisRotation(Operation):
 
         if check:
             umat = qml.math.copy(unitary_matrix)
-            if (not qml.math.is_abstract(unitary_matrix)) and (not qml.math.allclose(umat @ umat.conj().T, qml.math.eye(M, dtype=complex), atol=1e-4)):
-                raise ValueError("The provided transformation matrix should be unitary.")
+            if (not qml.math.is_abstract(unitary_matrix)):
+                if not qml.math.allclose(umat @ umat.conj().T, qml.math.eye(M, dtype=complex), atol=1e-4):
+                    raise ValueError("The provided transformation matrix should be unitary.")
 
         if len(wires) < 2:
             raise ValueError(f"This template requires at least two wires, got {len(wires)}")
 
         op_list = []
-        if qml.math.get_interface(unitary_matrix) == 'jax':
-            phase_list, givens_list = givens_decomposition_jax(unitary_matrix)
-        else:
-            phase_list, givens_list = givens_decomposition(unitary_matrix)
+
+        phase_list, givens_list = qml.math.where(
+                                    qml.math.get_interface(unitary_matrix) == 'jax',
+                                    givens_decomposition_jax(unitary_matrix),
+                                    givens_decomposition(unitary_matrix))
 
         for idx, phase in enumerate(phase_list):
             op_list.append(qml.PhaseShift(qml.math.angle(phase), wires=wires[idx]))
