@@ -466,21 +466,23 @@ def _get_cond_qfunc_prim():
     AbstractOperator = qml.capture.AbstractOperator
 
     @cond_prim.def_impl
-    def _(*args, condition, jaxpr_true, jaxpr_false, jaxpr_elifs):
+    def _(condition, elifs_conditions, *args, jaxpr_true, jaxpr_false, jaxpr_elifs):
 
         print("We are in the cond primitive definition implementation")
-        print(
-            f"args={args}, \ncondition={condition}, \njaxpr_true={jaxpr_true}, \njaxpr_false={jaxpr_false}, \njaxpr_elifs={jaxpr_elifs}\n"
-        )
+        # print(
+        #    f"args={args}, \ncondition={condition}, \njaxpr_true={jaxpr_true}, \njaxpr_false={jaxpr_false}, \njaxpr_elifs={jaxpr_elifs}\n"
+        # )
+
+        # print(f"elifs_conditions={elifs_conditions}")
 
         def run_jaxpr(jaxpr, *args):
 
-            print(f"Running jaxpr: {jaxpr}")
-            print(f"jaxpr.eqns={jaxpr.eqns}")
-            print(f"jaxpr.out_avals={jaxpr.out_avals}")
+            # print(f"Running jaxpr: {jaxpr}")
+            # print(f"jaxpr.eqns={jaxpr.eqns}")
+            # print(f"jaxpr.out_avals={jaxpr.out_avals}")
 
             out = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *args)
-            print(f"Jaxpr evaluation result: {out}")
+            # print(f"Jaxpr evaluation result: {out}")
 
             if not isinstance(out, tuple):
                 out = (out,)
@@ -495,34 +497,34 @@ def _get_cond_qfunc_prim():
             print("We are in the true branch")
             return run_jaxpr(jaxpr_true, *args)
 
-        def elif_branch(args, jaxpr_elifs):
+        def elif_branch(args, elifs_conditions, jaxpr_elifs):
             print("We are in the elif branch")
             print(f"jaxpr_elifs={jaxpr_elifs}")
             if not jaxpr_elifs:
                 return run_jaxpr(jaxpr_false, *args)
 
-            pred, jaxpr_elif = jaxpr_elifs[0]
+            pred = elifs_conditions[0]
+            rest_preds = elifs_conditions[1:]
+
+            jaxpr_elif = jaxpr_elifs[0]
             rest_jaxpr_elifs = jaxpr_elifs[1:]
 
             if pred:
                 return run_jaxpr(jaxpr_elif, *args)
             else:
-                return elif_branch(args, rest_jaxpr_elifs)
+                return elif_branch(args, rest_preds, rest_jaxpr_elifs)
 
         def false_branch(args):
             print("We are in the false branch")
             if not jaxpr_elifs:
                 return run_jaxpr(jaxpr_false, *args)
-            return elif_branch(args, jaxpr_elifs)
+            return elif_branch(args, elifs_conditions, jaxpr_elifs)
 
-        if isinstance(condition, bool):
-            if condition:
-                return true_branch(args)
-            else:
-                return false_branch(args)
+        if condition:
+            return true_branch(args)
         else:
-            # understand what to do with the condition
-            pass
+            # if elifs_conditions
+            return false_branch(args)
 
     def _is_queued_outvar(outvars):
         if not outvars:
@@ -532,26 +534,24 @@ def _get_cond_qfunc_prim():
         )
 
     @cond_prim.def_abstract_eval
-    def _(*args, condition, jaxpr_true, jaxpr_false, jaxpr_elifs):
+    def _(condition, elifs_conditions, *args, jaxpr_true, jaxpr_false, jaxpr_elifs):
         print("We are in the cond primitive abstract evaluation")
         print(
             f"args={args}, condition={condition}, jaxpr_true={jaxpr_true}, jaxpr_false={jaxpr_false}, jaxpr_elifs={jaxpr_elifs}"
         )
 
-        outvars = [AbstractOperator() for eqn in jaxpr_true.eqns if _is_queued_outvar(eqn.outvars)]
+        def collect_outvars(jaxpr):
+            return [AbstractOperator() for eqn in jaxpr.eqns if _is_queued_outvar(eqn.outvars)] + [
+                AbstractOperator() for aval in jaxpr.out_avals if isinstance(aval, AbstractOperator)
+            ]
 
-        # operators that are not dropped var because they are returned
-        outvars += [
-            AbstractOperator()
-            for aval in jaxpr_true.out_avals
-            if isinstance(aval, AbstractOperator)
-        ]
-        return outvars
+        outvars_true = collect_outvars(jaxpr_true)
+        return outvars_true
 
     return cond_prim
 
 
-def _capture_cond(condition, true_fn, false_fn, elifs=()) -> Callable:
+def _capture_cond(condition, true_fn, false_fn=None, elifs=()) -> Callable:
     """Capture compatible way to apply conditionals."""
     # TODO: implement tests
 
@@ -564,17 +564,31 @@ def _capture_cond(condition, true_fn, false_fn, elifs=()) -> Callable:
     @wraps(true_fn)
     def new_wrapper(*args, **kwargs):
 
-        jaxpr_true = jax.make_jaxpr(true_fn)(*args)
-        jaxpr_false = jax.make_jaxpr(false_fn)(*args) if false_fn else jaxpr_true
-        jaxpr_elifs = [(cond, jax.make_jaxpr(elif_fn)(*args)) for cond, elif_fn in elifs]
+        # Each predicate in the elifs argument is traced by JAX
+        elifs_conditions = (
+            jax.numpy.array([cond for cond, _ in elifs]) if elifs else jax.numpy.empty(0)
+        )
 
-        print(f"jaxpr_true={jaxpr_true}")
-        print(f"jaxpr_false={jaxpr_false}")
-        print(f"jaxpr_elifs={jaxpr_elifs}")
+        jaxpr_true = jax.make_jaxpr(functools.partial(true_fn, **kwargs))(*args)
+        jaxpr_false = (
+            ((jax.make_jaxpr(functools.partial(false_fn, **kwargs))(*args) if false_fn else None))
+            if false_fn
+            else None
+        )
+        jaxpr_elifs = (
+            ([jax.make_jaxpr(functools.partial(elif_fn, **kwargs))(*args) for _, elif_fn in elifs])
+            if elifs
+            else ()
+        )
+
+        # print(f"jaxpr_true={jaxpr_true}")
+        # print(f"jaxpr_false={jaxpr_false}")
+        # print(f"jaxpr_elifs={jaxpr_elifs}")
 
         return cond_prim.bind(
+            condition,
+            elifs_conditions,
             *args,
-            condition=condition,
             jaxpr_true=jaxpr_true,
             jaxpr_false=jaxpr_false,
             jaxpr_elifs=jaxpr_elifs,
