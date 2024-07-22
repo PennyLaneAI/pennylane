@@ -55,6 +55,23 @@ class TestRegisters:
                     "cleo": Wires([4, 5, 6]),
                 },
             ),
+            (
+                {
+                    "alice": 3,
+                    "bob": {"nest1": {"nest2": {"nest3": 1}, "nest2a": 2}, "nest1a": 3},
+                    "cleo": 3,
+                },
+                {
+                    "alice": Wires([0, 1, 2]),
+                    "nest3": Wires([3]),
+                    "nest2": Wires([3]),
+                    "nest2a": Wires([4, 5]),
+                    "nest1": Wires([3, 4, 5]),
+                    "nest1a": Wires([6, 7, 8]),
+                    "bob": Wires([3, 4, 5, 6, 7, 8]),
+                    "cleo": Wires([9, 10, 11]),
+                },
+            ),
         ],
     )
     def test_build_registers(self, wire_dict, expected_register):
