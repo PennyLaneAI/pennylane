@@ -283,7 +283,8 @@ class QubitDevice(Device):
                 shots=[1],
                 trainable_params=circuit.trainable_params,
             )
-            # Some devices like Lightning-Kokkos use `self.shots` to update `_samples`, and hence we update `self.shots` temporarily for this loop
+            # Some devices like Lightning-Kokkos use `self.shots` to update `_samples`,
+            # and hence we update `self.shots` temporarily for this loop
             shots_copy = self.shots
             self.shots = 1
             for _ in circuit.shots:
