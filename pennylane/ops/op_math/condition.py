@@ -457,8 +457,6 @@ def _get_cond_qfunc_prim():
     # if capture is enabled, jax should be installed
     import jax  # pylint: disable=import-outside-toplevel
 
-    print("Creating the cond primitive (executed only once)")
-
     cond_prim = jax.core.Primitive("cond")
     cond_prim.multiple_results = True
 
@@ -468,21 +466,9 @@ def _get_cond_qfunc_prim():
     @cond_prim.def_impl
     def _(condition, elifs_conditions, *args, jaxpr_true, jaxpr_false, jaxpr_elifs):
 
-        print("We are in the cond primitive definition implementation")
-        # print(
-        #    f"args={args}, \ncondition={condition}, \njaxpr_true={jaxpr_true}, \njaxpr_false={jaxpr_false}, \njaxpr_elifs={jaxpr_elifs}\n"
-        # )
-
-        # print(f"elifs_conditions={elifs_conditions}")
-
         def run_jaxpr(jaxpr, *args):
 
-            # print(f"Running jaxpr: {jaxpr}")
-            # print(f"jaxpr.eqns={jaxpr.eqns}")
-            # print(f"jaxpr.out_avals={jaxpr.out_avals}")
-
             out = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *args)
-            # print(f"Jaxpr evaluation result: {out}")
 
             if not isinstance(out, tuple):
                 out = (out,)
@@ -494,14 +480,12 @@ def _get_cond_qfunc_prim():
             return out
 
         def true_branch(args):
-            print("We are in the true branch")
             return run_jaxpr(jaxpr_true, *args)
 
         def elif_branch(args, elifs_conditions, jaxpr_elifs):
-            print("We are in the elif branch")
-            print(f"jaxpr_elifs={jaxpr_elifs}")
+
             if not jaxpr_elifs:
-                return run_jaxpr(jaxpr_false, *args)
+                return false_branch(args)
 
             pred = elifs_conditions[0]
             rest_preds = elifs_conditions[1:]
@@ -511,20 +495,19 @@ def _get_cond_qfunc_prim():
 
             if pred:
                 return run_jaxpr(jaxpr_elif, *args)
-            else:
-                return elif_branch(args, rest_preds, rest_jaxpr_elifs)
+
+            return elif_branch(args, rest_preds, rest_jaxpr_elifs)
 
         def false_branch(args):
-            print("We are in the false branch")
-            if not jaxpr_elifs:
+            if jaxpr_false is not None:
                 return run_jaxpr(jaxpr_false, *args)
-            return elif_branch(args, elifs_conditions, jaxpr_elifs)
+            return ()
 
         if condition:
             return true_branch(args)
-        else:
-            # if elifs_conditions
-            return false_branch(args)
+        if elifs_conditions.size > 0:
+            return elif_branch(args, elifs_conditions, jaxpr_elifs)
+        return false_branch(args)
 
     def _is_queued_outvar(outvars):
         if not outvars:
@@ -534,11 +517,7 @@ def _get_cond_qfunc_prim():
         )
 
     @cond_prim.def_abstract_eval
-    def _(condition, elifs_conditions, *args, jaxpr_true, jaxpr_false, jaxpr_elifs):
-        print("We are in the cond primitive abstract evaluation")
-        print(
-            f"args={args}, condition={condition}, jaxpr_true={jaxpr_true}, jaxpr_false={jaxpr_false}, jaxpr_elifs={jaxpr_elifs}"
-        )
+    def _(*_, jaxpr_true, **__):
 
         def collect_outvars(jaxpr):
             return [AbstractOperator() for eqn in jaxpr.eqns if _is_queued_outvar(eqn.outvars)] + [
@@ -564,7 +543,8 @@ def _capture_cond(condition, true_fn, false_fn=None, elifs=()) -> Callable:
     @wraps(true_fn)
     def new_wrapper(*args, **kwargs):
 
-        # Each predicate in the elifs argument is traced by JAX
+        # We extract each predicate from the elifs list
+        # since these are traced by JAX and should be passed as positional arguments
         elifs_conditions = (
             jax.numpy.array([cond for cond, _ in elifs]) if elifs else jax.numpy.empty(0)
         )
@@ -580,10 +560,6 @@ def _capture_cond(condition, true_fn, false_fn=None, elifs=()) -> Callable:
             if elifs
             else ()
         )
-
-        # print(f"jaxpr_true={jaxpr_true}")
-        # print(f"jaxpr_false={jaxpr_false}")
-        # print(f"jaxpr_elifs={jaxpr_elifs}")
 
         return cond_prim.bind(
             condition,
