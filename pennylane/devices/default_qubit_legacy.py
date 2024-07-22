@@ -84,7 +84,7 @@ class DefaultQubitLegacy(QubitDevice):
     .. warning::
 
         This is the legacy implementation of DefaultQubit and is deprecated. It has been replaced by
-        :class:`~.devices.DefaultQubit`, which can be accessed with the familiar constructor,
+        :class:`~pennylane.devices.DefaultQubit`, which can be accessed with the familiar constructor,
         ``qml.device("default.qubit")``, and now supports backpropagation.
 
         This change will not alter device behaviour for most workflows, but may have implications for
