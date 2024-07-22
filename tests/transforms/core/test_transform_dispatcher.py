@@ -542,7 +542,7 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
 
         tape = qml.tape.QuantumTape(ops, measur)
 
-        batch1, fn1 = qml.transforms.hamiltonian_expand(tape)
+        batch1, fn1 = qml.transforms.split_non_commuting(tape)
         assert check_batch(batch1)
 
         batch2, fn2 = qml.transforms.merge_rotations(batch1)
