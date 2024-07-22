@@ -467,6 +467,15 @@ class QNode:
         mcm_method=None,
         **gradient_kwargs,
     ):
+        # Moving it here since the old default value is checked on debugging
+        if max_expansion is not None:
+            warnings.warn(
+                "The max_expansion argument is deprecated and will be removed in version 0.39. ",
+                qml.PennyLaneDeprecationWarning,
+            )
+        else:
+            max_expansion = 10
+
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(
                 """Creating QNode(func=%s, device=%s, interface=%s, diff_method=%s, expansion_strategy=%s, max_expansion=%s, grad_on_execution=%s, cache=%s, cachesize=%s, max_diff=%s, gradient_kwargs=%s""",
@@ -494,14 +503,6 @@ class QNode:
                 "constructed, use the 'pennylane.workflow.construct_batch' function.",
                 qml.PennyLaneDeprecationWarning,
             )
-
-        if max_expansion is not None:
-            warnings.warn(
-                "The max_expansion argument is deprecated and will be removed in version 0.39. ",
-                qml.PennyLaneDeprecationWarning,
-            )
-        else:
-            max_expansion = 10
 
         # Default to "gradient" to maintain default behaviour of "draw" and "specs"
         expansion_strategy = expansion_strategy or "gradient"
