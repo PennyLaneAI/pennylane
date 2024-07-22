@@ -143,7 +143,7 @@ def lie_closure(
     while (new_length > old_length) and (epoch < max_iterations):
         if verbose:
             print(f"epoch {epoch+1} of lie_closure, DLA size is {new_length}")
-            print(f"Basis: {vspace}")
+
         for ps1, ps2 in itertools.combinations(vspace.basis, 2):
             com = ps1.commutator(ps2)
             com.simplify()
@@ -156,6 +156,7 @@ def lie_closure(
             for pw, val in com.items():
                 com[pw] = val.imag / 2
 
+            print(com)
             vspace.add(com, tol=tol)
 
         # Updated number of linearly independent PauliSentences from previous and current step
