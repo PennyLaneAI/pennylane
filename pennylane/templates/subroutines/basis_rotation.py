@@ -20,8 +20,6 @@ import numpy as np
 import pennylane as qml
 from pennylane.operation import AnyWires, Operation
 from pennylane.qchem.givens_decomposition import givens_decomposition
-import jax.numpy as jnp
-
 
 # pylint: disable-msg=too-many-arguments
 class BasisRotation(Operation):
@@ -120,7 +118,7 @@ class BasisRotation(Operation):
 
         if check:
             umat = unitary_matrix
-            if not jnp.allclose(umat @ umat.conj().T, jnp.eye(M, dtype=complex), atol=1e-6):
+            if not qml.math.allclose(umat @ umat.conj().T, qml.math.eye(M, dtype=complex), atol=1e-6):
                 raise ValueError("The provided transformation matrix should be unitary.")
 
         if len(wires) < 2:
@@ -162,8 +160,8 @@ class BasisRotation(Operation):
             )
 
         if check:
-            umat = unitary_matrix #qml.math.toarray(unitary_matrix)
-            if not jnp.allclose(umat @ umat.conj().T, jnp.eye(M, dtype=complex), atol=1e-4):
+            umat = unitary_matrix
+            if not qml.math.allclose(umat @ umat.conj().T, qml.math.eye(M, dtype=complex), atol=1e-4):
                 raise ValueError("The provided transformation matrix should be unitary.")
 
         if len(wires) < 2:
@@ -173,17 +171,17 @@ class BasisRotation(Operation):
         phase_list, givens_list = givens_decomposition(unitary_matrix)
 
         for idx, phase in enumerate(phase_list):
-            op_list.append(qml.PhaseShift(jnp.angle(phase), wires=wires[idx]))
+            op_list.append(qml.PhaseShift(qml.math.angle(phase), wires=wires[idx]))
 
         for grot_mat, indices in givens_list:
-            theta = jnp.arccos(jnp.real(grot_mat[1, 1]))
-            phi = jnp.angle(grot_mat[0, 0])
+            theta = qml.math.arccos(qml.math.real(grot_mat[1, 1]))
+            phi = qml.math.angle(grot_mat[0, 0])
 
             op_list.append(
                 qml.SingleExcitation(2 * theta, wires=[wires[indices[0]], wires[indices[1]]])
             )
 
-            if not jnp.isclose(phi, 0.0):
+            if not qml.math.isclose(phi, 0.0):
                 op_list.append(qml.PhaseShift(phi, wires=wires[indices[0]]))
 
         return op_list

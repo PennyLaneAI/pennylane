@@ -16,7 +16,6 @@ This module contains the functions needed for performing basis transformations d
 """
 
 import numpy as np
-import jax.numpy as jnp
 import pennylane as qml
 
 
@@ -41,24 +40,24 @@ def _givens_matrix(a, b, left=True, tol=1e-8):
         np.ndarray (or tensor): Givens rotation matrix
 
     """
-    abs_a, abs_b = jnp.abs(a), jnp.abs(b)
-    hypot = jnp.hypot(abs_a, abs_b)
+    abs_a, abs_b = qml.math.abs(a), qml.math.abs(b)
+    hypot = qml.math.hypot(abs_a, abs_b)
 
-    cosine = jnp.where(jnp.logical_and(jnp.greater(abs_a, tol), jnp.greater(abs_b, tol)),
+    cosine = qml.math.where(qml.math.logical_and(qml.math.greater(abs_a, tol), qml.math.greater(abs_b, tol)),
                     abs_b / hypot,
-                    jnp.where(jnp.less(abs_a, tol), 1.0, 0.0))
+                    qml.math.where(qml.math.less(abs_a, tol), 1.0, 0.0))
     
-    sine = jnp.where(jnp.logical_and(jnp.greater(abs_a, tol), jnp.greater(abs_b, tol)),
+    sine = qml.math.where(qml.math.logical_and(qml.math.greater(abs_a, tol), qml.math.greater(abs_b, tol)),
                     abs_a / hypot,
-                    jnp.where(jnp.less(abs_b, tol), 1.0, 0.0))
+                    qml.math.where(qml.math.less(abs_b, tol), 1.0, 0.0))
     
-    phase = jnp.where(jnp.logical_and(abs_a > tol, abs_b > tol),
+    phase = qml.math.where(qml.math.logical_and(abs_a > tol, abs_b > tol),
                     1.0 * b / abs_b * a.conjugate() / abs_a,
                     1.0)
 
-    L = jnp.array([[phase * cosine, -sine], [phase * sine, cosine]])
-    R = jnp.array([[phase * sine, cosine], [-phase * cosine, sine]])
-    return jnp.where(left, L, R)
+    L = qml.math.array([[phase * cosine, -sine], [phase * sine, cosine]])
+    R = qml.math.array([[phase * sine, cosine], [-phase * cosine, sine]])
+    return qml.math.where(left, L, R)
 
 
 def givens_decomposition(unitary):
@@ -151,7 +150,7 @@ def givens_decomposition(unitary):
 
     """
 
-    unitary, (M, N) = jnp.copy(unitary), unitary.shape
+    unitary, (M, N) = qml.math.copy(unitary), unitary.shape
     if M != N:
         raise ValueError(f"The unitary matrix should be of shape NxN, got {unitary.shape}")
 
@@ -172,22 +171,22 @@ def givens_decomposition(unitary):
 
     nleft_givens = []
     for grot_mat, (i, j) in reversed(left_givens):
-        sphase_mat = jnp.diag(jnp.diag(unitary)[jnp.array([i, j])])
+        sphase_mat = qml.math.diag(qml.math.diag(unitary)[qml.math.array([i, j])])
         decomp_mat = grot_mat.conj().T @ sphase_mat
         givens_mat = _givens_matrix(*decomp_mat[1, :].T)
         nphase_mat = decomp_mat @ givens_mat.T
 
         # check for T_{m,n}^{-1} x D = D x T.
-        if not jnp.allclose(nphase_mat @ givens_mat.conj(), decomp_mat):  # pragma: no cover
+        if not qml.math.allclose(nphase_mat @ givens_mat.conj(), decomp_mat):  # pragma: no cover
             raise ValueError("Failed to shift phase transposition.")
 
-        unitary = unitary.at[i, i].set(jnp.diag(nphase_mat)[0])
-        unitary = unitary.at[j, j].set(jnp.diag(nphase_mat)[1])
+        unitary = unitary.at[i, i].set(qml.math.diag(nphase_mat)[0])
+        unitary = unitary.at[j, j].set(qml.math.diag(nphase_mat)[1])
         nleft_givens.append((givens_mat.conj(), (i, j)))
 
-    phases, ordered_rotations = jnp.diag(unitary), []
+    phases, ordered_rotations = qml.math.diag(unitary), []
     for grot_mat, (i, j) in list(reversed(nleft_givens)) + list(reversed(right_givens)):
-        if not jnp.all(jnp.isreal(grot_mat[0, 1]) and jnp.isreal(grot_mat[1, 1])):  # pragma: no cover
+        if not qml.math.all(qml.math.isreal(grot_mat[0, 1]) and qml.math.isreal(grot_mat[1, 1])):  # pragma: no cover
             raise ValueError(f"Incorrect Givens Rotation encountered, {grot_mat}")
         ordered_rotations.append((grot_mat, (i, j)))
 
