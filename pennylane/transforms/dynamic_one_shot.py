@@ -379,9 +379,16 @@ def gather_non_mcm(measurement, samples, is_valid, postselect_mode=None):
             tmp = Counter({k: v for k, v in tmp.items() if v > 0})
         return dict(sorted(tmp.items()))
 
-    if (interface := qml.math.get_interface(is_valid)) == "tensorflow" and not isinstance(
-        measurement, SampleMP
-    ):
+    if isinstance(measurement, SampleMP):
+        if postselect_mode == "pad-invalid-samples" and samples.ndim == 2:
+            is_valid = qml.math.reshape(is_valid, (-1, 1))
+        return (
+            qml.math.where(is_valid, samples, fill_in_value)
+            if postselect_mode == "pad-invalid-samples"
+            else samples[is_valid]
+        )
+
+    if (interface := qml.math.get_interface(is_valid)) == "tensorflow":
         # Tensorflow requires arrays that are used for arithmetic with each other to have the
         # same dtype. We don't cast if measuring samples as float tf.Tensors cannot be used to
         # index other tf.Tensors (is_valid is used to index valid samples).
@@ -393,14 +400,7 @@ def gather_non_mcm(measurement, samples, is_valid, postselect_mode=None):
         return qml.math.sum(samples * qml.math.reshape(is_valid, (-1, 1)), axis=0) / qml.math.sum(
             is_valid
         )
-    if isinstance(measurement, SampleMP):
-        if postselect_mode == "pad-invalid-samples" and samples.ndim == 2:
-            is_valid = qml.math.reshape(is_valid, (-1, 1))
-        return (
-            qml.math.where(is_valid, samples, fill_in_value)
-            if postselect_mode == "pad-invalid-samples"
-            else samples[is_valid]
-        )
+
     # VarianceMP
     expval = qml.math.sum(samples * is_valid) / qml.math.sum(is_valid)
     if interface == "tensorflow":
