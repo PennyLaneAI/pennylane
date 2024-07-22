@@ -127,6 +127,7 @@
 <h3>Bug fixes 🐛</h3>
 
 * Fixed a bug in `qml.SPSAOptimizer` that ignored keyword arguments in the objective function.
+  [(#6027)](https://github.com/PennyLaneAI/pennylane/pull/6027)
 
 * `CircuitGraph` can now handle circuits with the same operation instance occuring multiple times.
   [(#5907)](https://github.com/PennyLaneAI/pennylane/pull/5907)
