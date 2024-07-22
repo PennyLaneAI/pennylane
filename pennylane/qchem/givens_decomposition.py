@@ -45,11 +45,11 @@ def _givens_matrix(a, b, left=True, tol=1e-8):
     cosine = qml.math.where(qml.math.logical_and(qml.math.greater(abs_a, tol), qml.math.greater(abs_b, tol)),
                     abs_b / hypot,
                     qml.math.where(qml.math.less(abs_a, tol), 1.0, 0.0))
-    
+
     sine = qml.math.where(qml.math.logical_and(qml.math.greater(abs_a, tol), qml.math.greater(abs_b, tol)),
                     abs_a / hypot,
                     qml.math.where(qml.math.less(abs_b, tol), 1.0, 0.0))
-    
+
     phase = qml.math.where(qml.math.logical_and(abs_a > tol, abs_b > tol),
                     1.0 * b / abs_b * a.conjugate() / abs_a,
                     1.0)
