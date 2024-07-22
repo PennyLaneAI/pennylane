@@ -16,7 +16,6 @@ This module contains the functions needed for performing basis transformations d
 """
 
 import pennylane as qml
-import jax.numpy as jnp
 
 
 def _givens_matrix(a, b, left=True, tol=1e-8):
@@ -80,24 +79,24 @@ def _givens_matrix_jax(a, b, left=True, tol=1e-8):
         np.ndarray (or tensor): Givens rotation matrix
 
     """
-    abs_a, abs_b = jnp.abs(a), jnp.abs(b)
-    hypot = jnp.hypot(abs_a, abs_b)
+    abs_a, abs_b = qml.math.abs(a), qml.math.abs(b)
+    hypot = qml.math.hypot(abs_a, abs_b)
 
-    cosine = jnp.where(jnp.logical_and(jnp.greater(abs_a, tol), jnp.greater(abs_b, tol)),
+    cosine = qml.math.where(qml.math.logical_and(qml.math.greater(abs_a, tol), qml.math.greater(abs_b, tol)),
                     abs_b / hypot,
-                    jnp.where(jnp.less(abs_a, tol), 1.0, 0.0))
+                    qml.math.where(qml.math.less(abs_a, tol), 1.0, 0.0))
 
-    sine = jnp.where(jnp.logical_and(jnp.greater(abs_a, tol), jnp.greater(abs_b, tol)),
+    sine = qml.math.where(qml.math.logical_and(qml.math.greater(abs_a, tol), qml.math.greater(abs_b, tol)),
                     abs_a / hypot,
-                    jnp.where(jnp.less(abs_b, tol), 1.0, 0.0))
+                    qml.math.where(qml.math.less(abs_b, tol), 1.0, 0.0))
 
-    phase = jnp.where(jnp.logical_and(jnp.greater(abs_a, tol), jnp.greater(abs_b, tol)),
+    phase = qml.math.where(qml.math.logical_and(qml.math.greater(abs_a, tol), qml.math.greater(abs_b, tol)),
                     1.0 * b / abs_b * a.conjugate() / abs_a,
                     1.0)
 
-    L = jnp.array([[phase * cosine, -sine], [phase * sine, cosine]])
-    R = jnp.array([[phase * sine, cosine], [-phase * cosine, sine]])
-    return jnp.where(left, L, R)
+    L = qml.math.array([[phase * cosine, -sine], [phase * sine, cosine]])
+    R = qml.math.array([[phase * sine, cosine], [-phase * cosine, sine]])
+    return qml.math.where(left, L, R)
 
 def givens_decomposition(unitary):
     r"""Decompose a unitary into a sequence of Givens rotation gates with phase shifts and a diagonal phase matrix.
