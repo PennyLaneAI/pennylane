@@ -136,7 +136,6 @@ def qubit_observable(o_ferm, cutoff=1.0e-12, mapping="jordan_wigner"):
     """
     if mapping == "jordan_wigner":
         h = qml.jordan_wigner(o_ferm, ps=True, tol=cutoff)
-
     elif mapping == "parity":
         qubits = len(o_ferm.wires)
         h = qml.parity_transform(o_ferm, qubits, ps=True, tol=cutoff)
@@ -145,8 +144,9 @@ def qubit_observable(o_ferm, cutoff=1.0e-12, mapping="jordan_wigner"):
         h = qml.bravyi_kitaev(o_ferm, qubits, ps=True, tol=cutoff)
 
     if list(h.wires) != sorted(list(h.wires)):
-        h = h + 0 * PauliWord(dict(zip(sorted(h.wires.tolist()), ['X'] * len(h.wires))))
-        h = PauliSentence(sorted(h.items(), key=lambda item: item[0].wires.tolist()))
+        h = PauliSentence(
+            sorted(h.items(), key=lambda item: max(item[0].wires.tolist(), default=0))
+        )
 
     h.simplify(tol=cutoff)
 
