@@ -22,10 +22,6 @@ def registers(register_dict):
     """Creates wire registers as a dictionary mapping from register names to
     corresponding :class:`~pennylane.wires.Wires`.
 
-    The registers are a dictionary of :class:`~.Wires` objects where the key is the register name
-    and the value is the ``Wires`` object. The values can also be another registers object. This
-    allows creating a nested dictionary of registers.
-
     Args:
         register_dict (dict): a dictionary where keys are register names and values are either
             positive integers indicating the number of qubits or nested dictionaries of more registers.
@@ -39,6 +35,8 @@ def registers(register_dict):
     >>> wire_registers = qml.registers({"alice": 1, "bob": {"nest1": 2, "nest2": 1}})
     >>> wire_dict
     {'alice': Wires([0]), 'nest1': Wires([1, 2]), 'nest2': Wires([3]), 'bob': Wires([1, 2, 3])}
+    >>> wire_dict['nest1']
+    Wires([1, 2])
     """
 
     def _registers(register_dict, _start_wire_index=0):
