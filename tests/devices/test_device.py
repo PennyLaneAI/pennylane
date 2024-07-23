@@ -1010,7 +1010,7 @@ class TestDeviceInit:
             m.setattr(metadata, "entry_points", lambda **kwargs: retval)
 
             # reimporting PennyLane within the context sets qml.plugin_devices to {}
-            reload(qml)
+            reload(qml.devices)
 
             # since there are no entry points, there will be no plugin devices
             assert not qml.plugin_devices
@@ -1034,9 +1034,9 @@ class TestDeviceInit:
             m.setattr(metadata, "entry_points", lambda **kwargs: retval)
 
             # reimporting PennyLane within the context sets qml.plugin_devices to {}
-            reload(qml)
+            reload(qml.devices)
 
-            m.setattr(qml, "refresh_devices", lambda: None)
+            m.setattr(qml.devices, "refresh_devices", lambda: None)
             assert not qml.plugin_devices
 
             # since there are no entry points, there will be no plugin devices

@@ -151,7 +151,7 @@ import pennylane.data
 import pennylane.noise
 from pennylane.noise import NoiseModel
 
-from pennylane.devices import device
+from pennylane.devices import device, refresh_devices
 
 # Look for an existing configuration file
 default_config = Configuration("config.toml")
@@ -173,6 +173,9 @@ def __getattr__(name):
         if pennylane.operation.active_new_opmath():
             return pennylane.ops.LinearCombination
         return pennylane.ops.Hamiltonian
+
+    if name == "plugin_devices":
+        return pennylane.devices.plugin_devices
 
     raise AttributeError(f"module 'pennylane' has no attribute '{name}'")
 
