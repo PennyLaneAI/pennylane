@@ -20,28 +20,43 @@ from .wires import Wires
 
 def registers(register_dict):
     """
-    This function helps manage wire registers when setting up a quantum algorithm.
-    Wire register names and their total number of wires are typically known in advance,
-    but managing the specific wire range for each register can be a challenge. The
-    ``qml.registers()`` function helps by creating a dictionary, mapping from register name to
-    wire range. Moreover, it is possible to input a nested structure where registers
-    contain sub-registers, as illustrated in the example below.
+    Create a dictionary mapping register names to Wires objects.
+
+    This function takes a hierarchical register structure and flattens it into a dictionary
+    where each key is a register name and each value is a Wires object representing the
+    wires in that register.
 
     Args:
-        register_dict (dict): a dictionary where keys are register names and values are either
-            positive integers indicating the number of qubits or nested dictionaries of more registers.
+        register_dict (dict): A dictionary describing the register structure. Keys are
+            register names (str) and values are either:
+            - int: The number of wires in the register.
+            - dict: A nested dictionary representing sub-registers.
 
     Returns:
-        dict (Wires): dictionary where the keys are the names (str) of the registers, and the
-        values are :class:`~.Wires` objects.
+        dict: A flattened dictionary where keys are register names (str) and values
+        are Wires objects representing the wires in each register.
 
-    **Example**
+    Notes:
+        - For nested registers, the parent register's Wires object will be the union
+          of all its sub-registers' Wires objects.
+        - Qubit indices are assigned sequentially, starting from 0, in the order they
+          appear in the input dictionary.
 
-    >>> wire_registers = qml.registers({"alice": 1, "bob": {"nest1": 2, "nest2": 1}})
-    >>> wire_dict
-    {'alice': Wires([0]), 'nest1': Wires([1, 2]), 'nest2': Wires([3]), 'bob': Wires([1, 2, 3])}
-    >>> wire_dict['nest1']
-    Wires([1, 2])
+    Examples:
+        >>> qml.registers({"alice": 1, "bob": {"nest1": 2, "nest2": 1}})
+        {
+            'alice': Wires([0]),
+            'bob': Wires([1, 2, 3]),
+            'nest1': Wires([1, 2]),
+            'nest2': Wires([3])
+        }
+
+        >>> qml.registers({"ancilla": {"sub_ancilla": 2, "sub_ancilla1": 1}})
+        {
+            'ancilla': Wires([0, 1, 2]),
+            'sub_ancilla': Wires([0, 1]),
+            'sub_ancilla1': Wires([2])
+        }
     """
 
     def _registers(register_dict, _start_wire_index=0):
@@ -49,13 +64,15 @@ def registers(register_dict):
         names and sizes.
 
         Args:
-            register_dict (dict): a dictionary where keys are register names and values are either
-                positive integers indicating the number of qubits or nested dictionaries of more registers
+            register_dict (dict): A dictionary describing the register structure. Keys are
+                register names (str) and values are either:
+                - int: The number of wires in the register.
+                - dict: A nested dictionary representing sub-registers.
             _start_wire_index (int): the starting index for the wire labels.
 
         Returns:
-            dict (Wires): dictionary where the keys are the names (str) of the registers, and the
-            values are either :class:`~.Wires` objects or other registers
+            dict: A flattened dictionary where keys are register names (str) and values
+            are Wires objects representing the wires in each register.
         """
 
         all_reg = {}
