@@ -132,6 +132,9 @@
 * Fixed a bug in `qml.SPSAOptimizer` that ignored keyword arguments in the objective function.
   [(#6027)](https://github.com/PennyLaneAI/pennylane/pull/6027)
 
+* `dynamic_one_shot` was broken for old-API devices since `override_shots` was deprecated.
+  [(#6024)](https://github.com/PennyLaneAI/pennylane/pull/6024)
+
 * `CircuitGraph` can now handle circuits with the same operation instance occuring multiple times.
   [(#5907)](https://github.com/PennyLaneAI/pennylane/pull/5907)
 
