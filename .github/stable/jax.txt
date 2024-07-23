@@ -40,7 +40,7 @@ networkx==3.2.1
 nodeenv==1.9.1
 numpy==1.26.4
 opt-einsum==3.3.0
-osqp==0.6.7.post0
+osqp==0.6.7.post1
 packaging==24.1
 pathspec==0.12.1
 PennyLane_Lightning==0.38.0

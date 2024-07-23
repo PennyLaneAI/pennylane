@@ -39,7 +39,7 @@ mypy-extensions==1.0.0
 networkx==3.2.1
 nodeenv==1.9.1
 numpy==1.26.4
-osqp==0.6.7.post0
+osqp==0.6.7.post1
 packaging==24.1
 pathspec==0.12.1
 PennyLane_Lightning==0.38.0
@@ -63,7 +63,7 @@ PyYAML==6.0.1
 qdldl==0.1.7.post4
 requests==2.32.3
 rustworkx==0.15.1
-scipy==1.11.4
+scipy==1.12.0
 scs==3.2.6
 semantic-version==2.10.0
 six==1.16.0

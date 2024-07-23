@@ -111,7 +111,7 @@ numba==0.60.0
 numpy==1.26.4
 opt-einsum==3.3.0
 optree==0.12.1
-osqp==0.6.7.post0
+osqp==0.6.7.post1
 overrides==7.7.0
 packaging==24.1
 pandocfilters==1.5.1
