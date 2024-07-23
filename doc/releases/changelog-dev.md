@@ -35,6 +35,7 @@
 
 * Added compute_sparse_matrix for BasisStateProjector.
   [(#5790)](https://github.com/PennyLaneAI/pennylane/pull/5790)
+
 * `StateMP.process_state` defines rules in `cast_to_complex` for complex casting, avoiding a superfluous state vector copy in Lightning simulations
   [(#5995)](https://github.com/PennyLaneAI/pennylane/pull/5995)
 
