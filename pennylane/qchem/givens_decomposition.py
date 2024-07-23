@@ -16,7 +16,6 @@ This module contains the functions needed for performing basis transformations d
 """
 
 import pennylane as qml
-import numpy as np
 
 
 def _givens_matrix(a, b, left=True, tol=1e-8):
@@ -162,7 +161,7 @@ def givens_decomposition(unitary):
                     indices = [i - j - 1, i - j]
                     grot_mat = _givens_matrix(*unitary[N - j - 1, indices].T, left=True)
                     unitary = unitary.at[:, indices].set(unitary[:, indices] @ grot_mat.T)
-                    right_givens.append((grot_mat.conj(), indices))
+                    right_givens.append((qml.math.conj(grot_mat), indices))
             else:
                 for j in range(1, i + 1):
                     indices = [N + j - i - 2, N + j - i - 1]
@@ -176,7 +175,7 @@ def givens_decomposition(unitary):
                     indices = [i - j - 1, i - j]
                     grot_mat = _givens_matrix(*unitary[N - j - 1, indices].T, left=True)
                     unitary[:, indices] = unitary[:, indices] @ grot_mat.T
-                    right_givens.append((grot_mat.conj(), indices))
+                    right_givens.append((qml.math.conj(grot_mat), indices))
             else:
                 for j in range(1, i + 1):
                     indices = [N + j - i - 2, N + j - i - 1]
@@ -187,13 +186,13 @@ def givens_decomposition(unitary):
     nleft_givens = []
     for grot_mat, (i, j) in reversed(left_givens):
         sphase_mat = qml.math.diag(qml.math.diag(unitary)[qml.math.array([i, j])])
-        decomp_mat = grot_mat.conj().T @ sphase_mat
+        decomp_mat = qml.math.conj(grot_mat).T @ sphase_mat
         givens_mat = _givens_matrix(*decomp_mat[1, :].T)
         nphase_mat = decomp_mat @ givens_mat.T
 
         # check for T_{m,n}^{-1} x D = D x T.
         if not qml.math.is_abstract(decomp_mat) and not qml.math.allclose(
-            nphase_mat @ givens_mat.conj(), decomp_mat
+            nphase_mat @ qml.math.conj(givens_mat), decomp_mat
         ):  # pragma: no cover
             raise ValueError("Failed to shift phase transposition.")
 
@@ -202,12 +201,12 @@ def givens_decomposition(unitary):
             unitary = unitary.at[j, j].set(qml.math.diag(nphase_mat)[1])
         else:
             unitary[i, i], unitary[j, j] = qml.math.diag(nphase_mat)
-        nleft_givens.append((givens_mat.conj(), (i, j)))
+        nleft_givens.append((qml.math.conj(givens_mat), (i, j)))
 
     phases, ordered_rotations = qml.math.diag(unitary), []
     for grot_mat, (i, j) in list(reversed(nleft_givens)) + list(reversed(right_givens)):
         if not qml.math.is_abstract(grot_mat) and not qml.math.all(
-            np.isreal(grot_mat[0, 1]) and np.isreal(grot_mat[1, 1])
+            qml.math.isreal(grot_mat[0, 1]) and qml.math.isreal(grot_mat[1, 1])
         ):  # pragma: no cover
             raise ValueError(f"Incorrect Givens Rotation encountered, {grot_mat}")
         ordered_rotations.append((grot_mat, (i, j)))

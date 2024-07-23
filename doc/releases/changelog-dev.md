@@ -53,6 +53,10 @@
 * Molecules and Hamiltonians can now be constructed for all the elements present in the periodic table.
   [(#5821)](https://github.com/PennyLaneAI/pennylane/pull/5821)
 
+* `qml.BasisRotation` and `qml.qchem.givens_decomposition` are now jit compatible.
+  [(#6004)](https://github.com/PennyLaneAI/pennylane/pull/6004)
+
+
 <h4>Community contributions 🥳</h4>
 
 * `DefaultQutritMixed` readout error has been added using parameters `readout_relaxation_probs` and 
@@ -138,7 +142,6 @@
 
 * `qml.AmplitudeEmbedding` has better support for features using low precision integer data types.
   [(#5969)](https://github.com/PennyLaneAI/pennylane/pull/5969)
-* `qml.BasisRotation` is now qjit compatible. ([#6004](`qml.BasisRotation` is now jit compatible ([#6004](https://github.com/PennyLaneAI/pennylane/issues/6004))))
 
 <h3>Contributors ✍️</h3>
 
