@@ -1130,7 +1130,11 @@ class QNode:
 
         old_interface = self.interface
         if old_interface == "auto":
-            interface = qml.math.get_interface(*args, *list(kwargs.values()))
+            interface = (
+                "jax"
+                if qml.capture.enabled()
+                else qml.math.get_interface(*args, *list(kwargs.values()))
+            )
             self._interface = INTERFACE_MAP[interface]
 
         if self._qfunc_uses_shots_arg:

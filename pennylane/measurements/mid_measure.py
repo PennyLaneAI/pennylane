@@ -219,7 +219,7 @@ def measure(
 def _measure_impl(
     wires: Union[Hashable, Wires], reset: Optional[bool] = False, postselect: Optional[int] = None
 ):
-    """qml.measure implementation for qml.capture.disabled()"""
+    """Concrete implementation of qml.measure"""
     wires = Wires(wires)
     if len(wires) > 1:
         raise qml.QuantumFunctionError(
@@ -273,7 +273,7 @@ class MidMeasureMP(MeasurementProcess):
     @classmethod
     def _primitive_bind_call(cls, wires=None, reset=False, postselect=None, id=None):
         wires = () if wires is None else wires
-        return cls._wires_primitive.bind(*wires, reset=reset, postselect=postselect)
+        return cls._wires_primitive.bind(*wires, reset=reset, postselect=postselect, id=id)
 
     @classmethod
     def _abstract_eval(

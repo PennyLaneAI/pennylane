@@ -23,23 +23,91 @@ import pennylane as qml
 has_jax = True
 try:
     import jax
+    import jax.numpy as jnp
 except ImportError:
     has_jax = False
+
+
+@lru_cache
+def _get_abstract_mid_measure():
+    if not has_jax:  # pragma: no cover
+        raise ImportError("Jax is required for plxpr.")  # pragma: no cover
+
+    class AbstractMidMeasure(jax.core.ShapedArray):
+        """An abstract mid-circuit measurement value."""
+
+        def __eq__(self, other):
+            return isinstance(other, AbstractMidMeasure)
+
+        def __hash__(self):
+            return hash("AbstractMidMeasure")
+
+    arithmetic_fns = [
+        "eq",
+        "ne",
+        "invert",
+        "add",
+        "radd",
+        "sub",
+        "rsub",
+        "mul",
+        "rmul",
+        "truediv",
+        "rtruediv",
+        "lt",
+        "le",
+        "gt",
+        "ge",
+        "and",
+        "or",
+    ]
+
+    dtype_priority = {
+        jnp.dtype("complex128" if jax.config.jax_enable_x64 else "complex64"): 3,
+        jnp.dtype("float64" if jax.config.jax_enable_x64 else "float32"): 2,
+        jnp.dtype("int64" if jax.config.jax_enable_x64 else "int32"): 1,
+        jnp.dtype("bool"): 0,
+    }
+
+    def _create_arithmetic_prim(f_str):
+        prim = jax.core.Primitive(f_str)
+
+        dunder_str = f"__{f_str}__"
+
+        @prim.def_impl
+        def _(*args):
+            t = type(args[0])
+            return getattr(t, dunder_str)(*args)
+
+        @prim.def_abstract_eval
+        def _(*args):
+            dtype = max(args, key=lambda x: dtype_priority[x.dtype]).dtype
+            return AbstractMidMeasure(args[0].shape, dtype)
+
+        @staticmethod
+        def fn(*args):
+            return prim.bind(*args)
+
+        return fn
+
+    for f_str in arithmetic_fns:
+        math_fn = _create_arithmetic_prim(f_str)
+        setattr(AbstractMidMeasure, f"_{f_str}", math_fn)
+
+    jax.core.raise_to_shaped_mappings[AbstractMidMeasure] = lambda aval, _: aval
+
+    return AbstractMidMeasure
 
 
 @lru_cache
 def create_mid_measure_primitive() -> Optional["jax.core.Primitive"]:
     """Create a primitive corresponding to an mid-circuit measurement type.
 
-    Called when defining any :class:`~.Operator` subclass, and is used to set the
-    ``Operator._primitive`` class property.
-
-    Args:
-        operator_type (type): a subclass of qml.operation.Operator
+    Called when using :func:`~pennylane.measure`.
 
     Returns:
-        Optional[jax.core.Primitive]: A new jax primitive with the same name as the operator subclass.
-        ``None`` is returned if jax is not available.
+        Optional[jax.core.Primitive]: A new jax primitive corresponding to a mid-circuit
+        measurement. ``None`` is returned if jax is not available.
 
     """
     if not has_jax:
@@ -49,17 +117,14 @@ def create_mid_measure_primitive() -> Optional["jax.core.Primitive"]:
 
     @primitive.def_impl
     def _(wires, reset=False, postselect=None):
-        wires = qml.wires.Wires(wires)
-        if len(wires) > 1:
-            raise qml.QuantumFunctionError(
-                "Only a single qubit can be measured in the middle of the circuit"
-            )
-        # Do nothing with the MidMeasureMP. The MeasurementProcess primitive will handle that
-        mp = qml.measurements.MidMeasureMP(wires=wires, reset=reset, postselect=postselect)
-        return qml.measurements.MeasurementValue([mp], processing_fn=lambda v: v)
+        # pylint: disable=protected-access
+        return qml.measurements.mid_measure._measure_impl(wires, reset=reset, postselect=postselect)
+
+    abstract_type = _get_abstract_mid_measure()
+    dtype = jnp.int64 if jax.config.jax_enable_x64 else jnp.int32
 
     @primitive.def_abstract_eval
-    def _(wires, **_):  # pylint: disable=unused-argument
-        return jax.core.ShapedArray((), jax.numpy.bool_)
+    def _(*_, **__):
+        return abstract_type((), dtype)
 
     return primitive
