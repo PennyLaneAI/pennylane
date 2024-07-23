@@ -110,7 +110,7 @@ class CondCallable:  # pylint:disable=too-few-public-methods
         false_fn (callable): The function to apply if ``condition`` is ``False``
         elifs (List(Tuple(bool, callable))): A list of (bool, elif_fn) clauses.
 
-    Passing ``true_fn``, ``false_fn``, and ``elifs`` on initialization
+    Passing ``false_fn`` and ``elifs`` on initialization
     is optional; these functions can be registered post-initialization
     via decorators:
 
