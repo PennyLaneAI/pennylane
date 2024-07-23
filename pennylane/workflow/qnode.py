@@ -1109,7 +1109,6 @@ class QNode:
                 mcm_config=mcm_config,
                 interface=self.interface,
             )
-            override_shots = 1
         elif hasattr(self.device, "capabilities"):
             inner_transform_program.add_transform(
                 qml.defer_measurements,
