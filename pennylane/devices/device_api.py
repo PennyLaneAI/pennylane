@@ -259,7 +259,7 @@ class Device(abc.ABC):
                 from pennylane.typing import PostprocessingFn
 
                 @transform
-                def my_preprocessing_transform(tape: qml.tape.QuantumTape) -> tuple[TapeBatch, PostprocessingFn]:
+                def my_preprocessing_transform(tape: qml.tape.QuantumTape) -> tuple[QuantumTapeBatch, PostprocessingFn]:
                     # e.g. valid the measurements, expand the tape for the hardware execution, ...
 
                     def blank_processing_fn(results):

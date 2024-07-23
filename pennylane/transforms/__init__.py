@@ -199,10 +199,10 @@ function in this scenario, we include a function that simply returns the first a
 
 .. code-block:: python
 
-    from pennylane.tape import QuantumTape, TapeBatch
+    from pennylane.tape import QuantumTape, QuantumTapeBatch
     from pennylane.typing import PostprocessingFn
 
-    def remove_rx(tape: QuantumTape) -> tuple[TapeBatch, PostprocessingFn]:
+    def remove_rx(tape: QuantumTape) -> tuple[QuantumTapeBatch, PostprocessingFn]:
 
         operations = filter(lambda op: op.name != "RX", tape.operations)
         new_tape = type(tape)(operations, tape.measurements, shots=tape.shots)
@@ -226,11 +226,11 @@ function into a quantum transform.
 
 .. code-block:: python
 
-    from pennylane.tape import QuantumTape, TapeBatch
+    from pennylane.tape import QuantumTape, QuantumTapeBatch
     from pennylane.typing import PostprocessingFn
 
     @qml.transform
-    def sum_circuit_and_adjoint(tape: QuantumTape) -> tuple[TapeBatch, PostprocessingFn]:
+    def sum_circuit_and_adjoint(tape: QuantumTape) -> tuple[QuantumTapeBatch, PostprocessingFn]:
 
         operations = [qml.adjoint(op) for op in tape.operation]
         new_tape = type(tape)(operations, tape.measurements, shots=tape.shots)
