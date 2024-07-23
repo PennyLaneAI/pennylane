@@ -71,7 +71,7 @@
   the circuit.
   [(#5907)](https://github.com/PennyLaneAI/pennylane/pull/5907)
 
-* `queue_idx` attribute has been removed from the `Operator`, `CompositeOp`, and `SymboliOp` classes.
+* `queue_idx` attribute has been removed from the `Operator`, `CompositeOp`, and `SymbolicOp` classes.
   [(#6005)](https://github.com/PennyLaneAI/pennylane/pull/6005)
 
 * `qml.from_qasm` no longer removes measurements from the QASM code. Use 
@@ -131,6 +131,10 @@
 * The legacy devices `default.qubit.{autograd,torch,tf,jax,legacy}` are deprecated.
   Instead, use `default.qubit` as it now supports backpropagation through the several backends.
   [(#5997)](https://github.com/PennyLaneAI/pennylane/pull/5997)
+
+* The logic for internally switching a device for a different backpropagation
+  compatible device is now deprecated, as it was in place for the deprecated
+  `default.qubit.legacy`.
 
 <h3>Documentation 📝</h3>
 

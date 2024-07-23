@@ -36,6 +36,47 @@ def dummyfunc():
     return None
 
 
+def test_backprop_switching_deprecation():
+    """Test that a PennyLaneDeprecationWarning is raised when a device is subtituted
+    for a different backprop device.
+    """
+
+    class DummyDevice(qml.devices.LegacyDevice):
+        """A minimal device that substitutes for a backprop device."""
+
+        author = "some string"
+        name = "my legacy device"
+        short_name = "something"
+        version = 0.0
+
+        observables = {"PauliX", "PauliY", "PauliZ"}
+        operations = {"Rot", "RX", "RY", "RZ", "PauliX", "PauliY", "PauliZ", "CNOT"}
+        pennylane_requires = 0.38
+
+        _debugger = None
+
+        def capabilities(self):
+            return {"passthru_devices": {"autograd": "default.mixed"}}
+
+        def reset(self):
+            pass
+
+        # pylint: disable=unused-argument
+        def apply(self, operation, wires, par):
+            return 0.0
+
+        # pylint: disable=unused-argument
+        def expval(self, observable, wires, par):
+            return 0.0
+
+    with pytest.warns(qml.PennyLaneDeprecationWarning):
+
+        @qml.qnode(DummyDevice(shots=None), interface="autograd")
+        def _(x):
+            qml.RX(x, 0)
+            return qml.expval(qml.Z(0))
+
+
 # pylint: disable=too-many-public-methods
 class TestValidation:
     """Tests for QNode creation and validation"""
