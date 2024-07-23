@@ -508,7 +508,7 @@ def for_loop(lower_bound, upper_bound, step):
     # if there is no active compiler, simply interpret the for loop
     # via the Python interpretor.
     def _decorator(body_fn):
-         """Transform that will call the input ``body_fn`` within the for loop.
+         """Transform that will call the input ``body_fn`` within a for loop defined by the closure variables lower_bound, upper_bound, and step.
          
          Args:
              body_fn (Callable): The function called within the for loop. Note that the loop body
