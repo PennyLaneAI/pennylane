@@ -362,6 +362,10 @@ jobs:
       install_jax: true
       install_tensorflow: true
       install_pytorch: false
+      # This is required during the release process when the latest released version of
+      # catalyst requires the latest version of pennylane that is about to be released.
+      # Installing catalyst after pennylane to make sure that the latest catalyst is used.
+      install_catalyst_after_pennylane: true
       # using lightning master does not work for the tests with external libraries
       install_pennylane_lightning_master: false
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}

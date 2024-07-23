@@ -322,11 +322,11 @@ class Controlled(SymbolicOp):
     >>> op.data
     (1.234,)
     >>> op.wires
-    <Wires = [0, 1]>
+    Wires([0, 1])
     >>> op.control_wires
-    <Wires = [0]>
+    Wires([0])
     >>> op.target_wires
-    <Wires = [1]>
+    Wires([1])
 
     Control values are lists of booleans, indicating whether or not to control on the
     ``0==False`` value or the ``1==True`` wire.
@@ -764,6 +764,9 @@ def _decompose_custom_ops(op: Controlled) -> List["operation.Operator"]:
         # has some special case handling of its own for further decomposition
         return _decompose_pauli_x_based_no_control_values(op)
 
+    if isinstance(op.base, qml.GlobalPhase) and len(op.control_wires) == 1:
+        # use Lemma 5.2 from https://arxiv.org/pdf/quant-ph/9503016
+        return [qml.PhaseShift(phi=-op.data[0], wires=op.control_wires)]
     # A multi-wire controlled PhaseShift should be decomposed first using the decomposition
     # of ControlledPhaseShift. This is because the decomposition of PhaseShift contains a
     # GlobalPhase that we do not have a handling for.
@@ -802,9 +805,9 @@ def _decompose_no_control_values(op: Controlled) -> List["operation.Operator"]:
         return None
 
     base_decomp = op.base.decomposition()
-    if len(base_decomp) == 0 and isinstance(op.base, qml.GlobalPhase):
+    if len(base_decomp) == 0 and isinstance(op.base, qml.GlobalPhase) and len(op.control_wires) > 1:
         warnings.warn(
-            "Controlled-GlobalPhase currently decomposes to nothing, and this will likely "
+            "Multi-Controlled-GlobalPhase currently decomposes to nothing, and this will likely "
             "produce incorrect results. Consider implementing your circuit with a different set "
             "of operations, or use a device that natively supports GlobalPhase.",
             UserWarning,

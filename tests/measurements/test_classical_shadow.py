@@ -318,7 +318,6 @@ class TestClassicalShadow:
         """Test that the distribution of the bits and recipes are correct for a circuit
         that prepares all qubits in a Pauli basis"""
         # high number of shots to prevent true negatives
-        np.random.seed(42)
         shots = 1000
 
         circuit = circuit_fn(wires, shots=shots, interface=interface)
@@ -452,7 +451,7 @@ class TestExpvalMeasurement:
         copied_res = copy.copy(res)
         assert type(copied_res) == type(res)  # pylint: disable=unidiomatic-typecheck
         assert copied_res.return_type == res.return_type
-        assert qml.equal(copied_res.H, res.H)
+        qml.assert_equal(copied_res.H, res.H)
         assert copied_res.k == res.k
         assert copied_res.seed == res.seed
 

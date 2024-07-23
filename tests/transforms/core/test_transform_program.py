@@ -356,6 +356,13 @@ class TestTransformProgram:
         ):
             program.get_last()
 
+    def test_get_last(self):
+        """Tests the get_last method"""
+        program = TransformProgram()
+        program.add_transform(transform(first_valid_transform))
+        program.add_transform(transform(second_valid_transform))
+        assert program.get_last() == TransformContainer(transform=second_valid_transform)
+
     def test_push_back(self):
         """Test to push back multiple transforms into a program and also the different methods of a program."""
         transform_program = TransformProgram()
@@ -608,7 +615,7 @@ class TestTransformProgramCall:
         assert len(new_batch) == 1
         expected = [qml.S(0), qml.SX(2), qml.expval(qml.PauliZ(0))]
         for op1, op2 in zip(expected, new_batch[0]):
-            assert qml.equal(op1, op2)
+            qml.assert_equal(op1, op2)
         assert new_batch[0].shots == qml.measurements.Shots(100)
 
         assert fn.func is _apply_postprocessing_stack

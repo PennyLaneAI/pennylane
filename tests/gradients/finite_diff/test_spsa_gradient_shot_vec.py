@@ -24,8 +24,6 @@ from pennylane.gradients import spsa_grad
 from pennylane.measurements import Shots
 from pennylane.operation import AnyWires, Observable
 
-np.random.seed(0)
-
 h_val = 0.1
 spsa_shot_vec_tol = 0.31
 

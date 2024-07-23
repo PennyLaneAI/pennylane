@@ -742,6 +742,11 @@ class QubitChannel(Channel):
     def _flatten(self):
         return (self.data,), (self.wires, ())
 
+    # pylint: disable=arguments-differ, unused-argument
+    @classmethod
+    def _primitive_bind_call(cls, K_list, wires=None, id=None):
+        return super()._primitive_bind_call(*K_list, wires=wires)
+
     @staticmethod
     def compute_kraus_matrices(*kraus_matrices):  # pylint:disable=arguments-differ
         """Kraus matrices representing the QubitChannel channel.
@@ -760,6 +765,18 @@ class QubitChannel(Channel):
         True
         """
         return list(kraus_matrices)
+
+
+# The primitive will be None if jax is not installed in the environment
+# If defined, we need to update the implementation to repack matrices
+# See capture module for more information
+if QubitChannel._primitive is not None:  # pylint: disable=protected-access
+
+    @QubitChannel._primitive.def_impl  # pylint: disable=protected-access
+    def _(*args, n_wires):
+        K_list = args[:-n_wires]
+        wires = args[-n_wires:]
+        return type.__call__(QubitChannel, K_list, wires=wires)
 
 
 class ThermalRelaxationError(Channel):
@@ -845,8 +862,8 @@ class ThermalRelaxationError(Channel):
     num_wires = 1
     grad_method = "F"
 
-    def __init__(self, pe, t1, t2, tq, wires, id=None):
-        super().__init__(pe, t1, t2, tq, wires=wires, id=id)
+    def __init__(self, pe, t1, t2, tg, wires, id=None):
+        super().__init__(pe, t1, t2, tg, wires=wires, id=id)
 
     @staticmethod
     def compute_kraus_matrices(pe, t1, t2, tg):  # pylint:disable=arguments-differ

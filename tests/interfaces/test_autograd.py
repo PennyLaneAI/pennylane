@@ -180,9 +180,8 @@ class TestAutogradExecuteUnitTests:
 
 class TestBatchTransformExecution:
     """Tests to ensure batch transforms can be correctly executed
-    via qml.execute and map_batch_transform"""
+    via qml.execute and batch_transform"""
 
-    @pytest.mark.usefixtures("use_new_opmath")
     def test_no_batch_transform(self, mocker):
         """Test that batch transforms can be disabled and enabled"""
         dev = qml.device("default.qubit.legacy", wires=2, shots=100000)
@@ -200,47 +199,32 @@ class TestBatchTransformExecution:
         tape = qml.tape.QuantumScript.from_queue(q)
         spy = mocker.spy(dev, "batch_transform")
 
-        res = qml.execute([tape], dev, None, device_batch_transform=False)
-        assert np.allclose(res[0], np.cos(y), atol=0.1)
+        if not qml.operation.active_new_opmath():
+            with pytest.raises(AssertionError, match="Hamiltonian must be used with shots=None"):
+                with pytest.warns(
+                    qml.PennyLaneDeprecationWarning,
+                    match="The device_batch_transform argument is deprecated",
+                ):
+                    _ = qml.execute([tape], dev, None, device_batch_transform=False)
+        else:
+            with pytest.warns(
+                qml.PennyLaneDeprecationWarning,
+                match="The device_batch_transform argument is deprecated",
+            ):
+                res = qml.execute([tape], dev, None, device_batch_transform=False)
+            assert np.allclose(res[0], np.cos(y), atol=0.1)
 
         spy.assert_not_called()
 
-        res = qml.execute([tape], dev, None, device_batch_transform=True)
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match="The device_batch_transform argument is deprecated",
+        ):
+            res = qml.execute([tape], dev, None, device_batch_transform=True)
         spy.assert_called()
 
-        assert isinstance(res[0], np.ndarray)
-        assert res[0].shape == ()
-        assert np.allclose(res[0], np.cos(y), atol=0.1)
-
-    @pytest.mark.usefixtures("use_legacy_opmath")
-    def test_no_batch_transform_legacy_opmath(self, mocker):
-        """Test functionality to enable and disable"""
-        dev = qml.device("default.qubit.legacy", wires=2, shots=100000)
-
-        H = qml.PauliZ(0) @ qml.PauliZ(1) - qml.PauliX(0)
-        x = 0.6
-        y = 0.2
-
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.RX(x, wires=0)
-            qml.RY(y, wires=1)
-            qml.CNOT(wires=[0, 1])
-            qml.expval(H)
-
-        tape = qml.tape.QuantumScript.from_queue(q)
-        spy = mocker.spy(dev, "batch_transform")
-
-        with pytest.raises(AssertionError, match="Hamiltonian must be used with shots=None"):
-            res = qml.execute([tape], dev, None, device_batch_transform=False)
-
-        spy.assert_not_called()
-
-        res = qml.execute([tape], dev, None, device_batch_transform=True)
-        spy.assert_called()
-
-        assert isinstance(res[0], np.ndarray)
-        assert res[0].shape == ()
-        assert np.allclose(res[0], np.cos(y), atol=0.1)
+        assert qml.math.shape(res[0]) == ()
+        assert np.allclose(res[0], np.cos(y), rtol=0.05)
 
     def test_batch_transform_dynamic_shots(self):
         """Tests that the batch transform considers the number of shots for the execution, not those
@@ -248,7 +232,10 @@ class TestBatchTransformExecution:
         dev = qml.device("default.qubit.legacy", wires=1)
         H = 2.0 * qml.PauliZ(0)
         qscript = qml.tape.QuantumScript(measurements=[qml.expval(H)])
-        res = qml.execute([qscript], dev, interface=None, override_shots=10)
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match="The override_shots argument is deprecated"
+        ):
+            res = qml.execute([qscript], dev, interface=None, override_shots=10)
         assert res == (2.0,)
 
 
@@ -462,10 +449,10 @@ class TestCaching:
         assert qml.math.allclose(out, expected)
 
     def test_single_backward_pass_split_hamiltonian(self):
-        """Tests that the backward pass is one single batch, not a bunch of batches, when parameter shift
-        derivatives are requested for a a tape that the device split into batches."""
+        """Tests that the backward pass is one single batch, not a bunch of batches, when parameter
+        shift derivatives are requested for a tape that the device split into batches."""
 
-        dev = qml.device("default.qubit.legacy", wires=2)
+        dev = qml.device("default.qubit.legacy", wires=2, shots=50000)
 
         H = qml.Hamiltonian([1, 1], [qml.PauliY(0), qml.PauliZ(0)], grouping_type="qwc")
 
@@ -480,7 +467,7 @@ class TestCaching:
         assert dev.tracker.totals["batches"] == 2
         assert dev.tracker.history["batch_len"] == [2, 4]
 
-        assert qml.math.allclose(out, -np.cos(x) - np.sin(x))
+        assert qml.math.allclose(out, -np.cos(x) - np.sin(x), atol=0.05)
 
 
 execute_kwargs_integration = [
@@ -1143,7 +1130,10 @@ class TestOverridingShots:
         spy.assert_not_called()
 
         # execute with shots=100
-        res = qml.execute([tape], dev, gradient_fn=param_shift, override_shots=100)
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match="The override_shots argument is deprecated"
+        ):
+            res = qml.execute([tape], dev, gradient_fn=param_shift, override_shots=100)
         spy.assert_called_once()
         assert spy.spy_return.shape == (100,)
 
@@ -1170,11 +1160,17 @@ class TestOverridingShots:
         mock_property = qml.Device.shots.setter(spy)
         mocker.patch.object(qml.Device, "shots", mock_property)
 
-        qml.execute([tape], dev, gradient_fn=param_shift, override_shots=123)
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match="The override_shots argument is deprecated"
+        ):
+            qml.execute([tape], dev, gradient_fn=param_shift, override_shots=123)
         # overriden shots is the same, no change
         spy.assert_not_called()
 
-        qml.execute([tape], dev, gradient_fn=param_shift, override_shots=100)
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match="The override_shots argument is deprecated"
+        ):
+            qml.execute([tape], dev, gradient_fn=param_shift, override_shots=100)
         # overriden shots is not the same, shots were changed
         spy.assert_called()
 
@@ -1200,7 +1196,10 @@ class TestOverridingShots:
             qml.expval(qml.PauliY(1))
 
         tape = qml.tape.QuantumScript.from_queue(q)
-        res = qml.execute([tape], dev, gradient_fn=param_shift, override_shots=100)[0]
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match="The override_shots argument is deprecated"
+        ):
+            res = qml.execute([tape], dev, gradient_fn=param_shift, override_shots=100)[0]
 
         assert isinstance(res, np.ndarray)
         assert res.shape == ()
@@ -1228,7 +1227,11 @@ class TestOverridingShots:
                 qml.expval(qml.PauliY(1))
 
             tape = qml.tape.QuantumScript.from_queue(q)
-            return qml.execute([tape], dev, gradient_fn=param_shift, override_shots=shots)[0]
+            with pytest.warns(
+                qml.PennyLaneDeprecationWarning, match="The override_shots argument is deprecated"
+            ):
+                result = qml.execute([tape], dev, gradient_fn=param_shift, override_shots=shots)
+            return result[0]
 
         res = qml.jacobian(cost_fn)(a, b, shots=[10000, 10000, 10000])
         assert dev.shots is None

@@ -47,7 +47,7 @@ def test_flatten_unflatten():
     assert metadata[1] == (("rotation", "Z"),)
 
     new_op = type(op)._unflatten(*op._flatten())
-    assert qml.equal(op, new_op)
+    qml.assert_equal(op, new_op)
     assert op is not new_op
 
 
@@ -59,7 +59,7 @@ class TestDecomposition:
         """Checks the queue for the default settings."""
 
         op = qml.AngleEmbedding(features=features, wires=range(4))
-        tape = op.expand()
+        tape = qml.tape.QuantumScript(op.decomposition())
 
         assert len(tape.operations) == len(features)
         for gate in tape.operations:
@@ -73,7 +73,7 @@ class TestDecomposition:
 
         op = qml.AngleEmbedding(features=features, wires=range(4))
         assert op.batch_size == 5
-        tape = op.expand()
+        tape = qml.tape.QuantumScript(op.decomposition())
 
         assert len(tape.operations) == 3
         for gate in tape.operations:
@@ -86,7 +86,7 @@ class TestDecomposition:
         """Checks the queue for the specified rotation settings."""
 
         op = qml.AngleEmbedding(features=[1, 1, 1], wires=range(4), rotation=rotation)
-        tape = op.expand()
+        tape = qml.tape.QuantumScript(op.decomposition())
 
         for gate in tape.operations:
             assert gate.name == "R" + rotation

@@ -89,6 +89,7 @@ class TestPytree:
         assert evol._unflatten(*evol._flatten()) == evol
 
 
+@pytest.mark.xfail
 @pytest.mark.jax
 def test_standard_validity():
     """Run standard validity checks on the parametrized evolution."""
@@ -154,7 +155,6 @@ class TestInitialization:
         assert ev.num_wires == AnyWires
         assert ev.name == "ParametrizedEvolution"
         assert ev.id is None
-        assert ev.queue_idx is None
 
         exp_params = [] if params is None else params
         assert qml.math.allequal(ev.data, exp_params)

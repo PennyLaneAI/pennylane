@@ -161,7 +161,7 @@ class CountsMP(SampleMeasurement):
     """Measurement process that samples from the supplied observable and returns the number of
     counts for each sample.
 
-    Please refer to :func:`counts` for detailed documentation.
+    Please refer to :func:`pennylane.counts` for detailed documentation.
 
     Args:
         obs (Union[.Operator, .MeasurementValue]): The observable that is to be measured
@@ -317,7 +317,7 @@ class CountsMP(SampleMeasurement):
             # remove nans
             mask = qml.math.isnan(samples)
             num_wires = shape[-1]
-            if np.any(mask):
+            if qml.math.any(mask):
                 mask = np.logical_not(np.any(mask, axis=tuple(range(1, samples.ndim))))
                 samples = samples[mask, ...]
 

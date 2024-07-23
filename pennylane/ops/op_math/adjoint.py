@@ -18,7 +18,6 @@ from functools import wraps
 
 import pennylane as qml
 from pennylane.compiler import compiler
-from pennylane.compiler.compiler import CompileError
 from pennylane.math import conj, moveaxis, transpose
 from pennylane.operation import Observable, Operation, Operator
 from pennylane.queuing import QueuingManager
@@ -86,7 +85,7 @@ def adjoint(fn, lazy=True):
     ...     return qml.expval(qml.Z(0))
     >>> print(qml.draw(circuit2)("y"))
     0: ──RY(y)†─┤  <Z>
-    >>> print(qml.draw(circuit2, expansion_strategy="device")(0.1))
+    >>> print(qml.draw(circuit2, level="device")(0.1))
     0: ──RY(-0.10)─┤  <Z>
 
     The adjoint transforms can also be used to apply the adjoint of
@@ -160,13 +159,16 @@ def adjoint(fn, lazy=True):
 
     """
     if active_jit := compiler.active_compiler():
-        if lazy is False:
-            raise CompileError("Setting lazy=False is not supported with qjit.")
         available_eps = compiler.AvailableCompilers.names_entrypoints
         ops_loader = available_eps[active_jit]["ops"].load()
-        return ops_loader.adjoint(fn)
+        return ops_loader.adjoint(fn, lazy=lazy)
     if qml.math.is_abstract(fn):
         return Adjoint(fn)
+    return create_adjoint_op(fn, lazy)
+
+
+def create_adjoint_op(fn, lazy):
+    """Main logic for qml.adjoint, but allows bypassing the compiler dispatch if needed."""
     if isinstance(fn, Operator):
         return Adjoint(fn) if lazy else _single_op_eager(fn, update_queue=True)
     if not callable(fn):
@@ -296,7 +298,11 @@ class Adjoint(SymbolicOp):
 
     def label(self, decimals=None, base_label=None, cache=None):
         base_label = self.base.label(decimals, base_label, cache=cache)
-        return f"({base_label})†" if self.base.arithmetic_depth > 0 else f"{base_label}†"
+        return (
+            f"({base_label})†"
+            if self.base.arithmetic_depth > 0 and len(base_label) > 1
+            else f"{base_label}†"
+        )
 
     def matrix(self, wire_order=None):
         if isinstance(self.base, qml.ops.Hamiltonian):

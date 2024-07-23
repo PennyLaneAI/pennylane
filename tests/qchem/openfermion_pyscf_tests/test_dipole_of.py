@@ -241,7 +241,8 @@ def test_dipole_obs(symbols, coords, charge, core, active, mapping, coeffs, ops,
             ]
 
         assert all(isinstance(o1, o2.__class__) for o1, o2 in zip(d_ops, r_ops))
-        assert all(qml.equal(o1, o2) for o1, o2 in zip(d_ops, r_ops))
+        for o1, o2 in zip(d_ops, r_ops):
+            qml.assert_equal(o1, o2)
 
 
 @pytest.mark.parametrize(
@@ -273,7 +274,7 @@ def test_dipole(symbols, coords, charge, hf_state, exp_dipole, tol, tmpdir):
     ("symbols", "coords", "mult", "msg_match"),
     [
         (["H", "H"], x_h2, 2, "this functionality is constrained to Hartree-Fock states"),
-        (["H", "Ca"], x_h2, 1, "only first- or second-row elements of the periodic table"),
+        (["H", "Cx"], x_h2, 1, "Requested element Cx doesn't exist"),
     ],
 )
 @pytest.mark.usefixtures("skip_if_no_openfermion_support")

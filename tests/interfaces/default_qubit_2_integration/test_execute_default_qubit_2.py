@@ -64,9 +64,13 @@ class TestBatchTransformHelper:
 
         with pytest.warns(UserWarning, match="device batch transforms cannot be turned off"):
             program, _ = dev.preprocess()
-            qml.execute(
-                (qs, qs), device=dev, device_batch_transform=False, transform_program=program
-            )
+            with pytest.warns(
+                qml.PennyLaneDeprecationWarning,
+                match="The device_batch_transform argument is deprecated",
+            ):
+                qml.execute(
+                    (qs, qs), device=dev, device_batch_transform=False, transform_program=program
+                )
 
     def test_split_and_expand_performed(self):
         """Test that preprocess returns the correct tapes when splitting and expanding
@@ -107,12 +111,12 @@ class TestBatchTransformHelper:
         assert len(res_tapes) == 4
         for i, t in enumerate(res_tapes):
             for op, expected_op in zip(t.operations, expected_ops[i % 2]):
-                assert qml.equal(op, expected_op)
+                qml.assert_equal(op, expected_op)
             assert len(t.measurements) == 1
             if i < 2:
-                assert qml.equal(t.measurements[0], measurements[0])
+                qml.assert_equal(t.measurements[0], measurements[0])
             else:
-                assert qml.equal(t.measurements[0], measurements[1])
+                qml.assert_equal(t.measurements[0], measurements[1])
 
         input = ([[1, 2]], [[3, 4]], [[5, 6]], [[7, 8]])
         assert np.array_equal(batch_fn(input), np.array([[[1, 2], [3, 4]], [[5, 6], [7, 8]]]))
@@ -137,7 +141,13 @@ def test_warning_if_not_device_batch_transform():
 
     with pytest.warns(UserWarning, match="device batch transforms cannot be turned off"):
         program, _ = dev.preprocess()
-        results = qml.execute([qs], dev, device_batch_transform=False, transform_program=program)
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match="The device_batch_transform argument is deprecated",
+        ):
+            results = qml.execute(
+                [qs], dev, device_batch_transform=False, transform_program=program
+            )
 
     assert len(results) == 1
     assert qml.math.allclose(results[0], -1)
@@ -166,3 +176,54 @@ def test_caching(gradient_fn):
     assert tracker.totals["batches"] == 1
     assert tracker.totals["executions"] == 1
     assert cache[qs.hash] == -1.0
+
+
+class TestExecuteDeprecations:
+    """Class to test deprecation warnings in qml.execute. Warnings should be raised even if the default value is used."""
+
+    @pytest.mark.parametrize("expand_fn", (None, lambda qs: qs, "device"))
+    def test_expand_fn_is_deprecated(self, expand_fn):
+        """Test that expand_fn argument of qml.execute is deprecated."""
+        dev = DefaultQubit()
+        qs = qml.tape.QuantumScript([qml.PauliX(0)], [qml.expval(qml.PauliZ(0))])
+
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match="The expand_fn argument is deprecated"
+        ):
+            # None is a value used for expand_fn in the QNode
+            qml.execute([qs], dev, expand_fn=expand_fn)
+
+    def test_max_expansion_is_deprecated(self):
+        """Test that max_expansion argument of qml.execute is deprecated."""
+        dev = DefaultQubit()
+        qs = qml.tape.QuantumScript([qml.PauliX(0)], [qml.expval(qml.PauliZ(0))])
+
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match="The max_expansion argument is deprecated"
+        ):
+            qml.execute([qs], dev, max_expansion=10)
+
+    @pytest.mark.parametrize("override_shots", (False, 10))
+    def test_override_shots_is_deprecated(self, override_shots):
+        """Test that override_shots argument of qml.execute is deprecated."""
+        dev = DefaultQubit()
+        qs = qml.tape.QuantumScript([qml.PauliX(0)], [qml.expval(qml.PauliZ(0))])
+
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match="The override_shots argument is deprecated"
+        ):
+            qml.execute([qs], dev, override_shots=override_shots)
+
+    @pytest.mark.parametrize("device_batch_transform", (False, True))
+    def test_device_batch_transform_is_deprecated(self, device_batch_transform):
+        """Test that device_batch_transform argument of qml.execute is deprecated."""
+        # Need to use legacy device, otherwise another warning would be raised due to new Device interface
+        dev = qml.device("default.qubit.legacy", wires=1)
+
+        qs = qml.tape.QuantumScript([qml.PauliX(0)], [qml.expval(qml.PauliZ(0))])
+
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match="The device_batch_transform argument is deprecated",
+        ):
+            qml.execute([qs], dev, device_batch_transform=device_batch_transform)

@@ -21,54 +21,31 @@ from functools import partial
 import pennylane as qml
 from pennylane.measurements import MutualInfoMP, ProbabilityMP, StateMP, VarianceMP, VnEntropyMP
 
-SUPPORTED_GRADIENT_KWARGS = [
+SUPPORTED_GRADIENT_KWARGS = {
     "approx_order",
     "argnum",
+    "atol",
     "aux_wire",
     "broadcast",  # [TODO: This is in param_shift. Unify with use_broadcasting in stoch_pulse_grad
     "device_wires",
     "diagonal_shifts",
+    "fallback_fn",
     "f0",
     "force_order2",
     "gradient_recipes",
-    "gradient_kwargs",
     "h",
     "n",
-    "num",
     "num_directions",
     "num_split_times",
     "off_diagonal_shifts",
-    "order",
-    "reduction",
     "sampler",
     "sampler_rng",
     "sampler_seed",
     "shifts",
-    "shots",
     "strategy",
     "use_broadcasting",
     "validate_params",
-]
-
-
-def assert_multimeasure_not_broadcasted(measurements, broadcast):
-    """Assert that there are not simultaneously multiple measurements and
-    broadcasting activated. Otherwise raises an error."""
-    if broadcast and len(measurements) > 1:
-        raise NotImplementedError(
-            "Broadcasting with multiple measurements is not supported yet. "
-            f"Set broadcast to False instead. The tape measurements are {measurements}."
-        )
-
-
-def assert_shot_vector_not_broadcasted(shots, broadcast):
-    """Assert that there are not simultaneously multiple shot settings (shot vector) and
-    broadcasting activated. Otherwise raises an error."""
-    if broadcast and shots.has_partitioned_shots:
-        raise NotImplementedError(
-            "Broadcasting with shot vectors is not supported yet. "
-            f"Set broadcast to False instead. The tape shots are {shots}."
-        )
+}
 
 
 def assert_no_state_returns(measurements, transform_name):
@@ -172,8 +149,12 @@ def _try_zero_grad_from_graph_or_get_grad_method(tape, param_index, use_graph=Tr
     par_info = tape.par_info[param_index]
 
     if use_graph:
-        op_or_mp = tape[par_info["op_idx"]]
-        if not any(tape.graph.has_path(op_or_mp, mp) for mp in tape.measurements):
+        op_or_mp_idx = par_info["op_idx"]
+        n_ops = len(tape.operations)
+        if not any(
+            tape.graph.has_path_idx(op_or_mp_idx, n_ops + i)
+            for i, _ in enumerate(tape.measurements)
+        ):
             # there is no influence of this operation on any of the observables
             return "0"
 

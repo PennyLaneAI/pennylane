@@ -17,7 +17,6 @@ Unit tests for the :mod:`pennylane.devices.DefaultQubitLegacy` device.
 # pylint: disable=too-many-arguments,too-few-public-methods
 # pylint: disable=protected-access,cell-var-from-loop
 import cmath
-import copy
 import math
 from functools import partial
 
@@ -87,35 +86,6 @@ U_cswap = np.array(
 THETA = np.linspace(0.11, 1, 3)
 PHI = np.linspace(0.32, 1, 3)
 VARPHI = np.linspace(0.02, 1, 3)
-
-
-def test_qnode_native_mcm(mocker):
-    """Tests that the legacy devices may support native MCM execution via the dynamic_one_shot transform."""
-
-    class MCMDevice(DefaultQubitLegacy):
-        def apply(self, *args, **kwargs):
-            for op in args[0]:
-                if isinstance(op, qml.measurements.MidMeasureMP):
-                    kwargs["mid_measurements"][op] = 0
-
-        @classmethod
-        def capabilities(cls):
-            default_capabilities = copy.copy(DefaultQubitLegacy.capabilities())
-            default_capabilities["supports_mid_measure"] = True
-            return default_capabilities
-
-    dev = MCMDevice(wires=1, shots=100)
-    dev.operations.add("MidMeasureMP")
-    spy = mocker.spy(qml.dynamic_one_shot, "_transform")
-
-    @qml.qnode(dev, interface=None, diff_method=None)
-    def func():
-        _ = qml.measure(0)
-        return qml.expval(op=qml.PauliZ(0))
-
-    res = func()
-    assert spy.call_count == 1
-    assert isinstance(res, float)
 
 
 def test_analytic_deprecation():
@@ -2410,13 +2380,13 @@ class TestHamiltonianSupport:
         rotations = dev._get_diagonalizing_gates(qs)
 
         assert len(rotations) == 1
-        assert qml.equal(rotations[0], qml.Hadamard(0))
+        qml.assert_equal(rotations[0], qml.Hadamard(0))
 
         call_args = spy.call_args.args[1]  # 0 is self (the device)
         assert isinstance(call_args, qml.tape.QuantumScript)
         assert len(call_args.operations) == 0
         assert len(call_args.measurements) == 1
-        assert qml.equal(call_args.measurements[0], qml.expval(qml.PauliX(0)))
+        qml.assert_equal(call_args.measurements[0], qml.expval(qml.PauliX(0)))
 
 
 @pytest.mark.parametrize("is_state_batched", [False, True])

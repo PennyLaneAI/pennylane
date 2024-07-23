@@ -24,6 +24,7 @@ from .scalar import DatasetScalar
 from .sparse_array import DatasetSparseArray
 from .string import DatasetString
 from .tuple import DatasetTuple
+from .pytree import DatasetPyTree
 
 __all__ = (
     "DatasetArray",
@@ -32,6 +33,7 @@ __all__ = (
     "DatasetDict",
     "DatasetList",
     "DatasetOperator",
+    "DatasetPyTree",
     "DatasetSparseArray",
     "DatasetMolecule",
     "DatasetNone",

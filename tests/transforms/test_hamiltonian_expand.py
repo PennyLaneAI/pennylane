@@ -90,6 +90,14 @@ OUTPUTS = [-1.5, -6, -1.5, -8]
 class TestHamiltonianExpand:
     """Tests for the hamiltonian_expand transform"""
 
+    @pytest.fixture(scope="function", autouse=True)
+    def capture_warnings(self, recwarn):
+        yield
+        if len(recwarn) > 0:
+            for w in recwarn:
+                assert isinstance(w.message, qml.PennyLaneDeprecationWarning)
+                assert "qml.transforms.hamiltonian_expand is deprecated" in str(w.message)
+
     def test_ham_with_no_terms_raises(self):
         """Tests that the hamiltonian_expand transform raises an error for a Hamiltonian with no terms."""
         mps = [qml.expval(qml.Hamiltonian([], []))]
@@ -375,8 +383,8 @@ class TestHamiltonianExpand:
             shots=50,
         )
 
-        assert qml.equal(batch[0], tape_0)
-        assert qml.equal(batch[1], tape_1)
+        qml.assert_equal(batch[0], tape_0)
+        qml.assert_equal(batch[1], tape_1)
 
         dummy_res = (1.0, (1.0, 1.0))
         processed_res = fn(dummy_res)
@@ -395,9 +403,9 @@ class TestHamiltonianExpand:
         tape_1 = qml.tape.QuantumScript([], [qml.expval(qml.X(0) @ qml.Y(1))], shots=50)
         tape_2 = qml.tape.QuantumScript([], [qml.expval(qml.Z(0))], shots=50)
 
-        assert qml.equal(batch[0], tape_0)
-        assert qml.equal(batch[1], tape_1)
-        assert qml.equal(batch[2], tape_2)
+        qml.assert_equal(batch[0], tape_0)
+        qml.assert_equal(batch[1], tape_1)
+        qml.assert_equal(batch[2], tape_2)
 
         dummy_res = (1.0, 1.0, 1.0)
         processed_res = fn(dummy_res)
@@ -518,6 +526,14 @@ SUM_OUTPUTS = [
 class TestSumExpand:
     """Tests for the sum_expand transform"""
 
+    @pytest.fixture(scope="function", autouse=True)
+    def capture_warnings(self, recwarn):
+        yield
+        if len(recwarn) > 0:
+            for w in recwarn:
+                assert isinstance(w.message, qml.PennyLaneDeprecationWarning)
+                assert "qml.transforms.sum_expand is deprecated" in str(w.message)
+
     def test_observables_on_same_wires(self):
         """Test that even if the observables are on the same wires, if they are different operations, they are separated.
         This is testing for a case that gave rise to a bug that occured due to a problem in MeasurementProcess.hash.
@@ -528,8 +544,8 @@ class TestSumExpand:
         circuit = QuantumScript(measurements=[qml.expval(obs1), qml.expval(obs2)])
         batch, _ = sum_expand(circuit)
         assert len(batch) == 2
-        assert qml.equal(batch[0][0], qml.expval(obs1))
-        assert qml.equal(batch[1][0], qml.expval(obs2))
+        qml.assert_equal(batch[0][0], qml.expval(obs1))
+        qml.assert_equal(batch[1][0], qml.expval(obs2))
 
     @pytest.mark.parametrize(("qscript", "output"), zip(SUM_QSCRIPTS, SUM_OUTPUTS))
     def test_sums(self, qscript, output):

@@ -56,9 +56,6 @@ from pennylane.devices.default_qubit_tf import (  # pylint: disable=wrong-import
     DefaultQubitTF,
 )
 
-np.random.seed(42)
-
-
 #####################################################
 # Test matrices
 #####################################################
@@ -117,7 +114,6 @@ def init_state_fixture(scope="session"):
 
     def _init_state(n):
         """random initial state"""
-        np.random.seed(4214152)
         state = np.random.random([2**n]) + np.random.random([2**n]) * 1j
         state /= np.linalg.norm(state)
         return state
@@ -132,7 +128,6 @@ def broadcasted_init_state_fixture(scope="session"):
 
     def _broadcasted_init_state(n, batch_size):
         """random initial state"""
-        np.random.seed(4214152)
         state = np.random.random([batch_size, 2**n]) + np.random.random([batch_size, 2**n]) * 1j
         return state / np.linalg.norm(state, axis=1)[:, np.newaxis]
 

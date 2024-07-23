@@ -18,7 +18,7 @@ PennyLane can be directly imported.
 from importlib import reload, metadata
 from sys import version_info
 
-
+import warnings
 import numpy as _np
 
 from semantic_version import SimpleSpec, Version
@@ -51,6 +51,8 @@ from pennylane.qchem import (
     paulix_ops,
     taper_operation,
     import_operator,
+    from_openfermion,
+    to_openfermion,
 )
 from pennylane._device import Device, DeviceError
 from pennylane._grad import grad, jacobian, vjp, jvp
@@ -62,6 +64,7 @@ from pennylane.circuit_graph import CircuitGraph
 from pennylane.configuration import Configuration
 from pennylane.drawer import draw, draw_mpl
 from pennylane.tracker import Tracker
+
 from pennylane.io import *
 from pennylane.measurements import (
     counts,
@@ -93,7 +96,6 @@ from pennylane.transforms import (
     transform,
     batch_params,
     batch_input,
-    batch_transform,
     batch_partial,
     compile,
     defer_measurements,
@@ -104,11 +106,13 @@ from pennylane.transforms import (
     pattern_matching,
     pattern_matching_optimization,
     clifford_t_decomposition,
+    add_noise,
 )
 from pennylane.ops.functions import (
     dot,
     eigvals,
     equal,
+    assert_equal,
     evolve,
     generator,
     is_commuting,
@@ -123,7 +127,14 @@ from pennylane.ops.functions import (
 )
 from pennylane.ops.identity import I
 from pennylane.optimize import *
-from pennylane.debugging import snapshots
+from pennylane.debugging import (
+    snapshots,
+    breakpoint,
+    debug_expval,
+    debug_state,
+    debug_probs,
+    debug_tape,
+)
 from pennylane.shadows import ClassicalShadow
 from pennylane.qcut import cut_circuit, cut_circuit_mc
 import pennylane.pulse
@@ -140,6 +151,9 @@ from pennylane.compiler import qjit, while_loop, for_loop
 import pennylane.compiler
 
 import pennylane.data
+
+import pennylane.noise
+from pennylane.noise import NoiseModel
 
 # Look for an existing configuration file
 default_config = Configuration("config.toml")
@@ -218,6 +232,9 @@ def device(name, *args, **kwargs):
     * :mod:`'default.qutrit' <pennylane.devices.default_qutrit>`: a simple
       state simulator of qutrit-based quantum circuit architectures.
 
+    * :mod:`'default.qutrit.mixed' <pennylane.devices.default_qutrit_mixed>`: a
+      mixed-state simulator of qutrit-based quantum circuit architectures.
+
     * :mod:`'default.gaussian' <pennylane.devices.default_gaussian>`: a simple simulator
       of Gaussian states and operations on continuous-variable circuit architectures.
 
@@ -245,6 +262,10 @@ def device(name, *args, **kwargs):
             decompositions to be applied by the device at runtime.
         decomp_depth (int): For when custom decompositions are specified,
             the maximum expansion depth used by the expansion function.
+
+    .. warning::
+
+        The ``decomp_depth`` argument is deprecated and will be removed in version 0.39.
 
     All devices must be loaded by specifying their **short-name** as listed above,
     followed by the **wires** (subsystems) you wish to initialize. The ``wires``
@@ -377,7 +398,15 @@ def device(name, *args, **kwargs):
         # Pop the custom decomposition keyword argument; we will use it here
         # only and not pass it to the device.
         custom_decomps = kwargs.pop("custom_decomps", None)
-        decomp_depth = kwargs.pop("decomp_depth", 10)
+        decomp_depth = kwargs.pop("decomp_depth", None)
+
+        if decomp_depth is not None:
+            warnings.warn(
+                "The decomp_depth argument is deprecated and will be removed in version 0.39. ",
+                PennyLaneDeprecationWarning,
+            )
+        else:
+            decomp_depth = 10
 
         kwargs.pop("config", None)
         options.update(kwargs)
@@ -398,6 +427,7 @@ def device(name, *args, **kwargs):
 
         # Once the device is constructed, we set its custom expansion function if
         # any custom decompositions were specified.
+
         if custom_decomps is not None:
             if isinstance(dev, pennylane.devices.LegacyDevice):
                 custom_decomp_expand_fn = pennylane.transforms.create_decomp_expand_fn(

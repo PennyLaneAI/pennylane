@@ -53,16 +53,13 @@ def _check_decomposition(op, skip_wire_mapping):
         with qml.queuing.AnnotatedQueue() as queued_decomp:
             op.decomposition()
         processed_queue = qml.tape.QuantumTape.from_queue(queued_decomp)
-        expand = op.expand()
 
         assert isinstance(decomp, list), "decomposition must be a list"
         assert isinstance(compute_decomp, list), "decomposition must be a list"
-        assert isinstance(expand, qml.tape.QuantumScript), "expand must return a QuantumScript"
 
-        for o1, o2, o3, o4 in zip(decomp, compute_decomp, processed_queue, expand):
+        for o1, o2, o3 in zip(decomp, compute_decomp, processed_queue):
             assert o1 == o2, "decomposition must match compute_decomposition"
             assert o1 == o3, "decomposition must match queued operations"
-            assert o1 == o4, "decomposition must match expansion"
             assert isinstance(o1, qml.operation.Operator), "decomposition must contain operators"
 
         if skip_wire_mapping:
@@ -82,9 +79,6 @@ def _check_decomposition(op, skip_wire_mapping):
             op.decomposition,
             qml.operation.DecompositionUndefinedError,
             failure_comment=failure_comment,
-        )()
-        _assert_error_raised(
-            op.expand, qml.operation.DecompositionUndefinedError, failure_comment=failure_comment
         )()
         _assert_error_raised(
             op.compute_decomposition,
@@ -211,6 +205,34 @@ def _check_pytree(op):
         ), f"data must be the terminal leaves of the pytree. Got {d1}, {d2}"
 
 
+def _check_capture(op):
+    try:
+        import jax
+    except ImportError:
+        return
+
+    if not all(isinstance(w, int) for w in op.wires):
+        return
+
+    qml.capture.enable()
+    try:
+        jaxpr = jax.make_jaxpr(lambda obj: obj)(op)
+        data, _ = jax.tree_util.tree_flatten(op)
+        new_op = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *data)[0]
+        assert op == new_op
+    except Exception as e:
+        raise ValueError(
+            (
+                "The capture of the operation into jaxpr failed somehow."
+                " This capture mechanism is currently experimental and not a core"
+                " requirement, but will be necessary in the future."
+                " Please see the capture module documentation for more information."
+            )
+        ) from e
+    finally:
+        qml.capture.disable()
+
+
 def _check_pickle(op):
     """Check that an operation can be dumped and reloaded with pickle."""
     pickled = pickle.dumps(op)
@@ -303,3 +325,4 @@ def assert_valid(op: qml.operation.Operator, skip_pickle=False, skip_wire_mappin
     _check_matrix(op)
     _check_matrix_matches_decomp(op)
     _check_eigendecomposition(op)
+    _check_capture(op)

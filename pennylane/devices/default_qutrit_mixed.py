@@ -14,7 +14,9 @@
 """The default.qutrit.mixed device is PennyLane's standard qutrit simulator for mixed-state
 computations."""
 import logging
+import warnings
 from dataclasses import replace
+from functools import partial
 from typing import Callable, Optional, Sequence, Tuple, Union
 
 import numpy as np
@@ -33,6 +35,7 @@ from .modifiers import simulator_tracking, single_tape_support
 from .preprocess import (
     decompose,
     no_sampling,
+    null_postprocessing,
     validate_device_wires,
     validate_measurements,
     validate_observables,
@@ -85,10 +88,67 @@ def accepted_sample_measurement(m: qml.measurements.MeasurementProcess) -> bool:
     return isinstance(m, qml.measurements.SampleMeasurement)
 
 
+@qml.transform
+def warn_readout_error_state(
+    tape: qml.tape.QuantumTape,
+) -> tuple[Sequence[qml.tape.QuantumTape], Callable]:
+    """If a measurement in the QNode is an analytic state or density_matrix, and a readout error
+    parameter is defined, warn that readout error will not be applied.
+
+    Args:
+        tape (QuantumTape, .QNode, Callable): a quantum circuit.
+
+    Returns:
+        qnode (pennylane.QNode) or quantum function (callable) or tuple[List[.QuantumTape], function]:
+        The unaltered input circuit.
+    """
+    if not tape.shots:
+        for m in tape.measurements:
+            if isinstance(m, qml.measurements.StateMP):
+                warnings.warn(f"Measurement {m} is not affected by readout error.")
+
+    return (tape,), null_postprocessing
+
+
+def get_readout_errors(readout_relaxation_probs, readout_misclassification_probs):
+    r"""Get the list of readout errors that should be applied to each measured wire.
+
+    Args:
+        readout_relaxation_probs (List[float]): Inputs for :class:`~.QutritAmplitudeDamping` channel
+            of the form :math:`[\gamma_{10}, \gamma_{20}, \gamma_{21}]`. This error models
+            amplitude damping associated with longer readout and varying relaxation times of
+            transmon-based qudits.
+        readout_misclassification_probs (List[float]): Inputs for :class:`~.TritFlip` channel
+            of the form :math:`[p_{01}, p_{02}, p_{12}]`. This error models misclassification events
+            in readout.
+
+    Returns:
+        readout_errors (List[Callable]): List of readout error channels that should be
+        applied to each measured wire.
+    """
+    measure_funcs = []
+    if readout_relaxation_probs is not None:
+        try:
+            with qml.queuing.QueuingManager.stop_recording():
+                qml.QutritAmplitudeDamping(*readout_relaxation_probs, wires=0)
+        except Exception as e:
+            raise qml.DeviceError("Applying damping readout error results in error:\n" + str(e))
+        measure_funcs.append(partial(qml.QutritAmplitudeDamping, *readout_relaxation_probs))
+    if readout_misclassification_probs is not None:
+        try:
+            with qml.queuing.QueuingManager.stop_recording():
+                qml.TritFlip(*readout_misclassification_probs, wires=0)
+        except Exception as e:
+            raise qml.DeviceError("Applying trit flip readout error results in error:\n" + str(e))
+        measure_funcs.append(partial(qml.TritFlip, *readout_misclassification_probs))
+
+    return None if len(measure_funcs) == 0 else measure_funcs
+
+
 @simulator_tracking
 @single_tape_support
 class DefaultQutritMixed(Device):
-    """A PennyLane Python-based device for mixed-state qutrit simulation.
+    r"""A PennyLane Python-based device for mixed-state qutrit simulation.
 
     Args:
         wires (int, Iterable[Number, str]): Number of wires present on the device, or iterable that
@@ -104,6 +164,12 @@ class DefaultQutritMixed(Device):
             If a ``jax.random.PRNGKey`` is passed as the seed, a JAX-specific sampling function using
             ``jax.random.choice`` and the ``PRNGKey`` will be used for sampling rather than
             ``numpy.random.default_rng``.
+        readout_relaxation_probs (List[float]): Input probabilities for relaxation errors implemented
+            with the :class:`~.QutritAmplitudeDamping` channel. The input defines the
+            channel's parameters :math:`[\gamma_{10}, \gamma_{20}, \gamma_{21}]`.
+        readout_misclassification_probs (List[float]):  Input probabilities for state readout
+            misclassification events implemented with the :class:`~.TritFlip` channel. The input defines the
+            channel's parameters :math:`[p_{01}, p_{02}, p_{12}]`.
 
     **Example:**
 
@@ -155,6 +221,33 @@ class DefaultQutritMixed(Device):
     DeviceArray(-0.93203914, dtype=float32, weak_type=True)
 
     .. details::
+        :title: Readout Error
+
+        ``DefaultQutritMixed`` includes readout error support. Two input arguments control
+        the parameters of error channels applied to each measured wire of the state after
+        it has been diagonalized for measurement:
+
+        * ``readout_relaxation_probs``:  Input parameters of a :class:`~.QutritAmplitudeDamping` channel.
+          This error models state relaxation error that occurs during readout of transmon-based qutrits.
+          The motivation for this readout error is described in [`1 <https://arxiv.org/abs/2003.03307>`_] (Sec II.A).
+        * ``readout_misclassification_probs``: Input parameters of a :class:`~.TritFlip` channel.
+          This error models misclassification events in readout. An example of this readout error
+          can be seen in [`2 <https://arxiv.org/abs/2309.11303>`_] (Fig 1a).
+
+        In the case that both parameters are defined, relaxation error is applied first then
+        misclassification error is applied.
+
+        .. note::
+            The readout errors will be applied to the state after it has been diagonalized for each
+            measurement. This may give different results depending on how the observable is defined.
+            This is because diagonalizing gates for the same observable may return eigenvalues in
+            different orders. For example, measuring :class:`~.THermitian` with a non-diagonal
+            GellMann matrix will result in a different measurement result then measuring the
+            equivalent :class:`~.GellMann` observable, as the THermitian eigenvalues are returned
+            in increasing order when explicitly diagonalized (i.e., ``[-1, 0, 1]``), while non-diagonal GellManns provided
+            in PennyLane have their eigenvalues hardcoded (i.e., ``[1, -1, 0]``).
+
+    .. details::
         :title: Tracking
 
         ``DefaultQutritMixed`` tracks:
@@ -166,7 +259,6 @@ class DefaultQutritMixed(Device):
         * ``batches``: The number of times :meth:`~.execute` is called.
         * ``results``: The results of each call of :meth:`~.execute`
 
-
     """
 
     _device_options = ("rng", "prng_key")  # tuple of string names for all the device options.
@@ -177,11 +269,13 @@ class DefaultQutritMixed(Device):
         return "default.qutrit.mixed"
 
     @debug_logger_init
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         wires=None,
         shots=None,
         seed="global",
+        readout_relaxation_probs=None,
+        readout_misclassification_probs=None,
     ) -> None:
         super().__init__(wires=wires, shots=shots)
         seed = np.random.randint(0, high=10000000) if seed == "global" else seed
@@ -192,6 +286,10 @@ class DefaultQutritMixed(Device):
             self._prng_key = None
             self._rng = np.random.default_rng(seed)
         self._debugger = None
+
+        self.readout_errors = get_readout_errors(
+            readout_relaxation_probs, readout_misclassification_probs
+        )
 
     @debug_logger
     def supports_derivatives(
@@ -284,6 +382,9 @@ class DefaultQutritMixed(Device):
         if config.gradient_method == "backprop":
             transform_program.add_transform(no_sampling, name="backprop + default.qutrit")
 
+        if self.readout_errors is not None:
+            transform_program.add_transform(warn_readout_error_state)
+
         return transform_program, config
 
     @debug_logger
@@ -292,7 +393,6 @@ class DefaultQutritMixed(Device):
         circuits: QuantumTape_or_Batch,
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ) -> Result_or_ResultBatch:
-
         interface = (
             execution_config.interface
             if execution_config.gradient_method in {"best", "backprop", None}
@@ -306,6 +406,7 @@ class DefaultQutritMixed(Device):
                 prng_key=self._prng_key,
                 debugger=self._debugger,
                 interface=interface,
+                readout_errors=self.readout_errors,
             )
             for c in circuits
         )

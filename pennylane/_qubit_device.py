@@ -283,10 +283,15 @@ class QubitDevice(Device):
                 shots=[1],
                 trainable_params=circuit.trainable_params,
             )
+            # Some devices like Lightning-Kokkos use `self.shots` to update `_samples`,
+            # and hence we update `self.shots` temporarily for this loop
+            shots_copy = self.shots
+            self.shots = 1
             for _ in circuit.shots:
                 kwargs["mid_measurements"] = {}
                 self.reset()
                 results.append(self.execute(aux_circ, **kwargs))
+            self.shots = shots_copy
             return tuple(results)
         # apply all circuit operations
         self.apply(
@@ -468,7 +473,7 @@ class QubitDevice(Device):
 
         return new_r
 
-    def batch_execute(self, circuits):
+    def batch_execute(self, circuits, **kwargs):
         """Execute a batch of quantum circuits on the device.
 
         The circuits are represented by tapes, and they are executed one-by-one using the
@@ -492,13 +497,16 @@ class QubitDevice(Device):
                 ),
             )
 
+        if self.capabilities().get("supports_mid_measure", False):
+            kwargs.setdefault("postselect_mode", None)
+
         results = []
         for circuit in circuits:
             # we need to reset the device here, else it will
             # not start the next computation in the zero state
             self.reset()
 
-            res = self.execute(circuit)
+            res = self.execute(circuit, **kwargs)
             results.append(res)
 
         if self.tracker.active:
@@ -530,7 +538,7 @@ class QubitDevice(Device):
         >>> op.name # returns the operation name
         "RX"
         >>> op.wires # returns a Wires object representing the wires that the operation acts on
-        <Wires = [0]>
+        Wires([0])
         >>> op.parameters # returns a list of parameters
         [0.2]
 

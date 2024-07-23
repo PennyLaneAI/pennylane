@@ -20,7 +20,6 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.capture.primitives import _get_abstract_measurement
 from pennylane.measurements import (
     ClassicalShadowMP,
     DensityMatrixMP,
@@ -38,9 +37,9 @@ from pennylane.measurements import (
 
 jax = pytest.importorskip("jax")
 
-pytestmark = pytest.mark.jax
+from pennylane.capture import AbstractMeasurement  # pylint: disable=wrong-import-position
 
-AbstractMeasurement = _get_abstract_measurement()
+pytestmark = pytest.mark.jax
 
 
 @pytest.fixture(autouse=True)
@@ -171,7 +170,7 @@ def test_capture_and_eval(func):
     jaxpr = jax.make_jaxpr(func)()
     out = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)[0]
 
-    assert qml.equal(mp, out)
+    qml.assert_equal(mp, out)
 
 
 @pytest.mark.parametrize("x64_mode", [True, False])
@@ -453,17 +452,25 @@ class TestProbs:
 @pytest.mark.parametrize("x64_mode", (True, False))
 class TestSample:
 
-    @pytest.mark.parametrize("wires, dim1_len", [([0, 1, 2], 3), ([], 4)])
+    @pytest.mark.parametrize("wires, dim1_len", [([0, 1, 2], 3), ([], 4), (1, 1)])
     def test_wires(self, wires, dim1_len, x64_mode):
         """Tests capturing samples on wires."""
 
         initial_mode = jax.config.jax_enable_x64
         jax.config.update("jax_enable_x64", x64_mode)
 
-        def f(*inner_wires):
-            return qml.sample(wires=inner_wires)
+        if isinstance(wires, list):
 
-        jaxpr = jax.make_jaxpr(f)(*wires)
+            def f(*inner_wires):
+                return qml.sample(wires=inner_wires)
+
+            jaxpr = jax.make_jaxpr(f)(*wires)
+        else:
+
+            def f(inner_wire):
+                return qml.sample(wires=inner_wire)
+
+            jaxpr = jax.make_jaxpr(f)(wires)
 
         assert len(jaxpr.eqns) == 1
 
@@ -471,14 +478,16 @@ class TestSample:
         assert [x.aval for x in jaxpr.eqns[0].invars] == jaxpr.in_avals
         mp = jaxpr.eqns[0].outvars[0].aval
         assert isinstance(mp, AbstractMeasurement)
-        assert mp.n_wires == len(wires)
+        assert mp.n_wires == len(wires) if isinstance(wires, list) else 1
         assert mp._abstract_eval == SampleMP._abstract_eval
 
         shapes = _get_shapes_for(
             *jaxpr.out_avals, shots=qml.measurements.Shots(50), num_device_wires=4
         )
+        assert len(shapes) == 1
+        shape = (50, dim1_len) if isinstance(wires, list) else (50,)
         assert shapes[0] == jax.core.ShapedArray(
-            (50, dim1_len), jax.numpy.int64 if x64_mode else jax.numpy.int32
+            shape, jax.numpy.int64 if x64_mode else jax.numpy.int32
         )
 
         with pytest.raises(ValueError, match="finite shots are required"):
