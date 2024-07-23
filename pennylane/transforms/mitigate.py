@@ -320,6 +320,48 @@ def richardson_extrapolate(x, y):
     return poly_extrapolate(x, y, len(x) - 1)
 
 
+def exponential_extrapolate(x, y, asymptote=None, eps=1.0e-6):
+    r"""Extrapolate to the zero-noise limit using an exponential model (:math:`Ae^{Bx} + C`). This
+    is done by linearizing the data using a logarithm, whereupon a linear fit is performed. Once
+    the model parameters are found, they are transformed back to exponential parameters.
+
+    Args:
+        x (Array): Data in x axis.
+        y (Array): Data in y axis such that :math:`y = f(x)`.
+        asymptote (float): Infinite noise limit expected for your circuit of interest (:math:`C`
+            in the equation above). Defaults to 0 in the case an asymptote is not supplied.
+        eps (float): Epsilon to regularize :math:`\log(y - C)` when the argument is to close to
+            zero or negative.
+
+    Returns:
+        float: Extrapolated value at f(0).
+
+    .. seealso:: :func:`~.pennylane.transforms.richardson_extrapolate`, :func:`~.pennylane.transforms.mitigate_with_zne`.
+
+    **Example:**
+
+    >>> np.random.seed(0)
+    >>> x = np.linspace(1, 10, 5)
+    >>> y = np.exp(-x) + np.random.normal(scale=0.1, size=len(x))
+    >>> qml.transforms.exponential_extrapolate(x, y)
+    0.23365009000522544
+    """
+    y = qml.math.stack(y)
+    slope, y_intercept = _polyfit(x, y, 1)
+    if asymptote is None:
+        sign = qml.math.sign(-slope)
+        asymptote = 0.0
+    else:
+        sign = qml.math.sign(-(asymptote - y_intercept))
+
+    y_shifted = sign * (y - asymptote)
+    y_shifted = qml.math.where(y_shifted < eps, eps, y_shifted)
+    y_scaled = qml.math.log(y_shifted)
+
+    zne_unscaled = poly_extrapolate(x, y_scaled, 1)
+    return sign * qml.math.exp(zne_unscaled) + asymptote
+
+
 # pylint: disable=too-many-arguments, protected-access
 @transform
 def mitigate_with_zne(
