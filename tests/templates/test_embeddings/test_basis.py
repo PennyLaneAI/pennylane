@@ -241,19 +241,20 @@ class TestInterfaces:
 
         features = jnp.array([0, 1, 0])
 
-        dev = qml.device("default.qubit", wires=3)
+        for dev_name in ["default.qubit", "lightning.qubit"]:
+            dev = qml.device(dev_name, wires=3)
 
-        circuit = qml.QNode(circuit_template, dev)
-        circuit2 = qml.QNode(circuit_decomposed, dev)
+            circuit = qml.QNode(circuit_template, dev)
+            circuit2 = qml.QNode(circuit_decomposed, dev)
 
-        res = circuit(features)
-        res2 = circuit2(features)
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+            res = circuit(features)
+            res2 = circuit2(features)
+            assert qml.math.allclose(res, res2, atol=tol, rtol=0)
 
-        circuit = jax.jit(circuit)
+            circuit = jax.jit(circuit)
 
-        res = circuit(jnp.array(2))
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+            res = circuit(jnp.array(2))
+            assert qml.math.allclose(res, res2, atol=tol, rtol=0)
 
     @pytest.mark.tf
     def test_tf(self, tol):

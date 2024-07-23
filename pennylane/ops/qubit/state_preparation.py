@@ -17,6 +17,7 @@ with preparing a certain state on the device.
 """
 # pylint:disable=abstract-method,arguments-differ,protected-access,no-member
 import numpy as np
+
 import pennylane as qml
 from pennylane import math
 from pennylane.operation import AnyWires, Operation, StatePrepBase
@@ -97,6 +98,13 @@ class BasisState(StatePrepBase):
             if not set(features_list).issubset({0, 1}):
                 raise ValueError(f"Basis state must only consist of 0s and 1s; got {features_list}")
 
+        if len(qml.math.shape(features)) > 1:
+            raise ValueError(
+                "Broadcasting with BasisState is not supported. Please use the "
+                "qml.transforms.broadcast_expand transform to use broadcasting with "
+                "BasisState."
+            )
+
         super().__init__(features, wires=wires, id=id)
 
     def _flatten(self):
@@ -132,13 +140,6 @@ class BasisState(StatePrepBase):
 
         """
 
-        if len(qml.math.shape(features)) > 1:
-            raise ValueError(
-                "Broadcasting with BasisStatePreparation is not supported. Please use the "
-                "qml.transforms.broadcast_expand transform to use broadcasting with "
-                "BasisStatePreparation."
-            )
-
         if not qml.math.is_abstract(features):
             op_list = []
             for wire, state in zip(wires, features):
@@ -148,9 +149,9 @@ class BasisState(StatePrepBase):
 
         op_list = []
         for wire, state in zip(wires, features):
-            op_list.append(qml.PhaseShift(state * math.pi / 2, wire))
-            op_list.append(qml.RX(state * math.pi, wire))
-            op_list.append(qml.PhaseShift(state * math.pi / 2, wire))
+            op_list.append(qml.PhaseShift(state * np.pi / 2, wire))
+            op_list.append(qml.RX(state * np.pi, wire))
+            op_list.append(qml.PhaseShift(state * np.pi / 2, wire))
 
         return op_list
 

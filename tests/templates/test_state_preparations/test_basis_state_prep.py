@@ -171,12 +171,8 @@ class TestDecomposition:
         broadcasting raises an error."""
         state = np.array([[1, 0], [1, 1]])
 
-        op = qml.BasisStatePreparation(state, wires=[0, 1])
-        with pytest.raises(ValueError, match="Broadcasting with BasisStatePreparation"):
-            _ = op.decomposition()
-
-        with pytest.raises(ValueError, match="Broadcasting with BasisStatePreparation"):
-            _ = qml.BasisStatePreparation.compute_decomposition(state, qml.wires.Wires([0, 1]))
+        with pytest.raises(ValueError, match="Broadcasting with BasisState"):
+            _ = qml.BasisState(state, wires=[0, 1])
 
 
 class TestInputs:
