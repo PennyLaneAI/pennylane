@@ -17,7 +17,8 @@ This module contains the template for performing basis transformation defined by
 
 import pennylane as qml
 from pennylane.operation import AnyWires, Operation
-from pennylane.qchem.givens_decomposition import givens_decomposition, givens_decomposition_jax
+from pennylane.qchem.givens_decomposition import givens_decomposition  # , givens_decomposition_jax
+
 
 # pylint: disable-msg=too-many-arguments
 class BasisRotation(Operation):
@@ -116,7 +117,9 @@ class BasisRotation(Operation):
 
         if check:
             umat = qml.math.copy(unitary_matrix)
-            if not qml.math.allclose(umat @ umat.conj().T, qml.math.eye(M, dtype=complex), atol=1e-6):
+            if not qml.math.allclose(
+                umat @ umat.conj().T, qml.math.eye(M, dtype=complex), atol=1e-6
+            ):
                 raise ValueError("The provided transformation matrix should be unitary.")
 
         if len(wires) < 2:
@@ -159,8 +162,10 @@ class BasisRotation(Operation):
 
         if check:
             umat = qml.math.copy(unitary_matrix)
-            if (not qml.math.is_abstract(unitary_matrix)):
-                if not qml.math.allclose(umat @ umat.conj().T, qml.math.eye(M, dtype=complex), atol=1e-4):
+            if not qml.math.is_abstract(unitary_matrix):
+                if not qml.math.allclose(
+                    umat @ umat.conj().T, qml.math.eye(M, dtype=complex), atol=1e-4
+                ):
                     raise ValueError("The provided transformation matrix should be unitary.")
 
         if len(wires) < 2:
@@ -168,10 +173,7 @@ class BasisRotation(Operation):
 
         op_list = []
 
-        phase_list, givens_list = qml.math.where(
-                                    qml.math.get_interface(unitary_matrix) == 'jax',
-                                    givens_decomposition_jax(unitary_matrix),
-                                    givens_decomposition(unitary_matrix))
+        phase_list, givens_list = givens_decomposition(unitary_matrix)
 
         for idx, phase in enumerate(phase_list):
             op_list.append(qml.PhaseShift(qml.math.angle(phase), wires=wires[idx]))
@@ -184,7 +186,7 @@ class BasisRotation(Operation):
                 qml.SingleExcitation(2 * theta, wires=[wires[indices[0]], wires[indices[1]]])
             )
 
-            if not qml.math.isclose(phi, 0.0):
+            if qml.math.is_abstract(phi) or not qml.math.isclose(phi, 0.0):
                 op_list.append(qml.PhaseShift(phi, wires=wires[indices[0]]))
 
         return op_list
