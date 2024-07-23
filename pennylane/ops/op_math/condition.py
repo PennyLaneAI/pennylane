@@ -526,8 +526,8 @@ def _capture_cond(condition, true_fn, false_fn=None, elifs=()) -> Callable:
         elifs_conditions = []
         jaxpr_elifs = []
 
-        for cond, elif_fn in elifs:
-            elifs_conditions.append(cond)
+        for pred, elif_fn in elifs:
+            elifs_conditions.append(pred)
             jaxpr_elifs.append(jax.make_jaxpr(functools.partial(elif_fn, **kwargs))(*args))
 
         elifs_conditions = (
