@@ -371,6 +371,23 @@ class TestCatalystControlFlow:
         assert f(5, 6) == 30  # 5 * 6
         assert f(4, 7) == 28  # 4 * 7
 
+    def test_fallback_while_loop_qnode(self):
+        """Test that qml.while_loop inside a qnode fallsback to
+        Python without qjit"""
+        dev = qml.device("lightning.qubit", wires=1)
+
+        @qml.qnode(dev)
+        def circuit(n):
+            @qml.while_loop(lambda v: v[0] < v[1])
+            def loop(v):
+                qml.PauliX(wires=0)
+                return v[0] + 1, v[1]
+
+            loop((0, n))
+            return qml.expval(qml.PauliZ(0))
+
+        assert jnp.allclose(circuit(1), -1.0)
+
     def test_dynamic_wires_for_loops(self):
         """Test for loops with iteration index-dependant wires."""
         dev = qml.device("lightning.qubit", wires=6)
@@ -426,7 +443,7 @@ class TestCatalystControlFlow:
     def test_for_loop_python_fallback(self):
         """Test that qml.for_loop fallsback to Python
         interpretation if Catalyst is not available"""
-        dev = qml.device("lightning.qubit", wires=2)
+        dev = qml.device("lightning.qubit", wires=3)
 
         @qml.qnode(dev)
         def circuit(x, n):
@@ -449,7 +466,7 @@ class TestCatalystControlFlow:
 
                 inner()
 
-                return jnp.sin(x)
+                return x + 0.1
 
             loop_fn()
             loop_fn_returns(x)
@@ -457,7 +474,7 @@ class TestCatalystControlFlow:
             return qml.expval(qml.PauliZ(0))
 
         x = 0.5
-        assert jnp.allclose(circuit(x, 2), qml.qjit(circuit)(x, 2))
+        assert jnp.allclose(circuit(x, 3), qml.qjit(circuit)(x, 3))
 
         res = circuit.tape.operations
         expected = [
