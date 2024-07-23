@@ -447,15 +447,12 @@ def _get_cond_qfunc_prim():
     cond_prim = jax.core.Primitive("cond")
     cond_prim.multiple_results = True
 
-    AbstractOperator = qml.capture.AbstractOperator
-
     @cond_prim.def_impl
     def _(condition, elifs_conditions, *args, jaxpr_true, jaxpr_false, jaxpr_elifs):
 
         def run_jaxpr(jaxpr, *args):
 
             out = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *args)
-            out = (out,) if not isinstance(out, tuple) else out
 
             for outvar in out:
                 if isinstance(outvar, Operator):
@@ -488,23 +485,47 @@ def _get_cond_qfunc_prim():
             return elif_branch(args, elifs_conditions, jaxpr_elifs)
         return false_branch(args)
 
-    def _is_queued_outvar(outvars):
-        if not outvars:
-            return False
-        return isinstance(outvars[0].aval, AbstractOperator) and isinstance(
-            outvars[0], jax.core.DropVar
-        )
-
     @cond_prim.def_abstract_eval
-    def _(*_, jaxpr_true, **__):
+    def _(*_, jaxpr_true, jaxpr_false, jaxpr_elifs):
 
-        def collect_outvars(jaxpr):
-            return [AbstractOperator() for eqn in jaxpr.eqns if _is_queued_outvar(eqn.outvars)] + [
-                AbstractOperator() for aval in jaxpr.out_avals if isinstance(aval, AbstractOperator)
-            ]
+        # We check that the return values in each branch (true, and possibly false and elifs)
+        # have the same abstract values (length, type, and value).
+        # The error messages are detailed to help debugging
+        def validate_abstract_values(
+            outvals: list, expected_outvals: list, branch_type: str, index: int = None
+        ) -> None:
+            """Ensure the collected abstract values match the expected ones."""
 
-        outvars_true = collect_outvars(jaxpr_true)
-        return outvars_true
+            assert len(outvals) == len(expected_outvals), (
+                f"Mismatch in number of output variables in {branch_type} branch"
+                f"{'' if index is None else ' #' + str(index)}: "
+                f"{len(outvals)} vs {len(expected_outvals)}"
+            )
+            for i, (outval, expected_outval) in enumerate(zip(outvals, expected_outvals)):
+                assert isinstance(outval, type(expected_outval)), (
+                    f"Mismatch in output variable types in {branch_type} branch"
+                    f"{'' if index is None else ' #' + str(index)} at position {i}: "
+                    f"{type(outval)} vs {type(expected_outval)}"
+                )
+                assert outval == expected_outval, (
+                    f"Mismatch in output variable values in {branch_type} branch"
+                    f"{'' if index is None else ' #' + str(index)} at position {i}: "
+                    f"{outval} vs {expected_outval}"
+                )
+
+        outvals_true = jaxpr_true.out_avals
+        outvals_false = jaxpr_false.out_avals if jaxpr_false is not None else []
+
+        for idx, jaxpr_elif in enumerate(jaxpr_elifs):
+            outvals_elif = jaxpr_elif.out_avals
+            validate_abstract_values(outvals_elif, outvals_true, "elif", idx)
+
+        if outvals_false:
+            validate_abstract_values(outvals_false, outvals_true, "false")
+
+        # We return the abstract values of the true branch since the abstract values
+        # of the false and elif branches (if they exist) should be the same
+        return outvals_true
 
     return cond_prim
 
@@ -521,6 +542,13 @@ def _capture_cond(condition, true_fn, false_fn=None, elifs=()) -> Callable:
     @wraps(true_fn)
     def new_wrapper(*args, **kwargs):
 
+        jaxpr_true = jax.make_jaxpr(functools.partial(true_fn, **kwargs))(*args)
+        jaxpr_false = (
+            (jax.make_jaxpr(functools.partial(false_fn, **kwargs))(*args) if false_fn else None)
+            if false_fn
+            else None
+        )
+
         # We extract each condition (or predicate) from the elifs argument list
         # since these are traced by JAX and are passed as positional arguments to the cond primitive
         elifs_conditions = []
@@ -532,13 +560,6 @@ def _capture_cond(condition, true_fn, false_fn=None, elifs=()) -> Callable:
 
         elifs_conditions = (
             jax.numpy.array(elifs_conditions) if elifs_conditions else jax.numpy.empty(0)
-        )
-
-        jaxpr_true = jax.make_jaxpr(functools.partial(true_fn, **kwargs))(*args)
-        jaxpr_false = (
-            (jax.make_jaxpr(functools.partial(false_fn, **kwargs))(*args) if false_fn else None)
-            if false_fn
-            else None
         )
 
         return cond_prim.bind(
