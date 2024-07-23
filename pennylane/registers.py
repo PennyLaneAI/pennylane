@@ -19,7 +19,7 @@ from .wires import Wires
 
 
 def registers(register_dict):
-    """Creates wire registers as a dictionary mapping register names to corresponding
+    """Creates wire registers as a dictionary, mapping register names to corresponding
     :class:`~pennylane.wires.Wires`.
 
     This function helps manage wire registers when setting up a quantum algorithm.
