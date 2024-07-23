@@ -135,6 +135,7 @@
 * The logic for internally switching a device for a different backpropagation
   compatible device is now deprecated, as it was in place for the deprecated
   `default.qubit.legacy`.
+  [(#6032)](https://github.com/PennyLaneAI/pennylane/pull/6032)
 
 <h3>Documentation 📝</h3>
 
