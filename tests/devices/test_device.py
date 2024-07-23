@@ -188,6 +188,12 @@ def mock_device_supporting_prod(monkeypatch):
         yield get_device
 
 
+# pylint: disable=pointless-statement
+def test_invalid_attribute_in_devices_raises_error():
+    with pytest.raises(AttributeError, match="'pennylane.devices' has no attribute 'blabla'"):
+        qml.devices.blabla
+
+
 def test_gradients_record():
     """Test that execute_and_gradients and gradient both track the number of gradients requested."""
 
@@ -999,6 +1005,13 @@ class TestDeviceInit:
             m.setattr(qml, "version", lambda: "0.0.1")
             with pytest.raises(DeviceError, match="plugin requires PennyLane versions"):
                 qml.device("default.qubit.legacy", wires=0)
+
+    def test_plugin_devices_from_devices_triggers_getattr(self, mocker):
+        spied = mocker.spy(qml.devices, "__getattr__")
+
+        qml.devices.plugin_devices
+
+        spied.assert_called_once()
 
     def test_refresh_entrypoints(self, monkeypatch):
         """Test that new entrypoints are found by the refresh_devices function"""
