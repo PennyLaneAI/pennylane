@@ -87,6 +87,12 @@
 
 <h3>Deprecations 👋</h3>
 
+* The `decomp_depth` argument in `qml.device` has been deprecated.
+  [(#6026)](https://github.com/PennyLaneAI/pennylane/pull/6026)
+
+* The `max_expansion` argument in `qml.QNode` has been deprecated.
+  [(#6026)](https://github.com/PennyLaneAI/pennylane/pull/6026)
+
 * The `expansion_strategy` attribute in the `QNode` class is deprecated.
   [(#5989)](https://github.com/PennyLaneAI/pennylane/pull/5989)
 

@@ -552,7 +552,12 @@ class TestCreateCustomDecompExpandFn:
         """Test that specifying a single custom decomposition works as expected."""
 
         custom_decomps = {"Hadamard": custom_hadamard, "CNOT": custom_cnot}
-        decomp_dev = qml.device(device_name, wires=2, custom_decomps=custom_decomps, decomp_depth=0)
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match="The decomp_depth argument is deprecated"
+        ):
+            decomp_dev = qml.device(
+                device_name, wires=2, custom_decomps=custom_decomps, decomp_depth=0
+            )
 
         @qml.qnode(decomp_dev, expansion_strategy="device")
         def circuit():
@@ -729,13 +734,16 @@ class TestCreateCustomDecompExpandFn:
         # not be further decomposed even though the custom decomposition is specified.
         custom_decomps = {"BasicEntanglerLayers": custom_basic_entangler_layers, "RX": custom_rx}
 
-        decomp_dev_2 = qml.device(
-            device_name, wires=2, custom_decomps=custom_decomps, decomp_depth=2
-        )
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match="The decomp_depth argument is deprecated"
+        ):
+            decomp_dev_2 = qml.device(
+                device_name, wires=2, custom_decomps=custom_decomps, decomp_depth=2
+            )
 
-        decomp_dev_3 = qml.device(
-            device_name, wires=2, custom_decomps=custom_decomps, decomp_depth=3
-        )
+            decomp_dev_3 = qml.device(
+                device_name, wires=2, custom_decomps=custom_decomps, decomp_depth=3
+            )
 
         def circuit():
             qml.BasicEntanglerLayers([[0.1, 0.2]], wires=[0, 1])
