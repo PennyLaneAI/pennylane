@@ -22,10 +22,14 @@
 
 * `SProd.terms` now flattens out the terms if the base is a multi-term observable.
   [(#5885)](https://github.com/PennyLaneAI/pennylane/pull/5885)
-  
+
 * A new method `to_mat` has been added to the `FermiWord` and `FermiSentence` classes, which allows
   computing the matrix representation of these Fermi operators.
   [(#5920)](https://github.com/PennyLaneAI/pennylane/pull/5920)
+
+* New functionality has been added to natively support exponential extrapolation when using the `mitigate_with_zne`. This allows
+  users to have more control over the error mitigation protocol without needing to add further dependencies.
+  [(#5972)](https://github.com/PennyLaneAI/pennylane/pull/5972)
 
 <h3>Improvements 🛠</h3>
 
@@ -165,7 +169,7 @@
 
 This release contains contributions from (in alphabetical order):
 Guillermo Alonso,
-Utkarsh Azad
+Utkarsh Azad,
 Astral Cai,
 Yushao Chen,
 Gabriel Bottrill,
@@ -182,4 +186,5 @@ William Maxwell,
 Vincent Michaud-Rioux,
 Mudit Pandey,
 Erik Schultheis,
+Nate Stemen,
 David Wierichs.
