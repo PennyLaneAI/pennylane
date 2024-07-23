@@ -76,8 +76,7 @@ def _get_abstract_mid_measure():
 
         @prim.def_impl
         def _(*args):
-            t = type(args[0])
-            return getattr(t, dunder_str)(*args)
+            return getattr(type(args[0]), dunder_str)(*args)
 
         @prim.def_abstract_eval
         def _(*args):
