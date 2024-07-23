@@ -16,6 +16,7 @@ This is the top level module from which all basic functions and classes of
 PennyLane can be directly imported.
 """
 
+import warnings
 import numpy as _np
 
 
