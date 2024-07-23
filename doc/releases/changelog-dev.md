@@ -285,7 +285,6 @@ Vincent Michaud-Rioux,
 Lee James O'Riordan,
 Mudit Pandey,
 Kenya Sakka,
-David Wierichs,
-Anurav Modak.
+Anurav Modak,
 Haochen Paul Wang,
 David Wierichs.
