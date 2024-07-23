@@ -596,7 +596,7 @@ class TestProjector:
 
     def test_three_qubit_basis_state_101(self):
         """Tests the function with a three-qubits basis state |101>."""
-        basis_state = [1, 1]
+        basis_state = [1, 0, 1]
         data = [1]
         row_indices = [5]
         col_indices = [5]
