@@ -138,6 +138,9 @@
 * `qml.AmplitudeEmbedding` has better support for features using low precision integer data types.
 [(#5969)](https://github.com/PennyLaneAI/pennylane/pull/5969)
 
+* `qml.lie_closure` works with sums of Paulis.
+  [(#6023)](https://github.com/PennyLaneAI/pennylane/pull/6023)
+
 
 <h3>Contributors ✍️</h3>
 
@@ -152,6 +155,7 @@ Lillian M. A. Frederiksen,
 Pietropaolo Frisoni,
 Emiliano Godinez,
 Renke Huang,
+Korbinian Kottmann,
 Christina Lee,
 Austin Huang,
 Christina Lee,
