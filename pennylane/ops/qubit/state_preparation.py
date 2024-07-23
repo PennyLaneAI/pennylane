@@ -28,7 +28,7 @@ state_prep_ops = {"BasisState", "StatePrep", "QubitDensityMatrix"}
 
 
 class BasisState(StatePrepBase):
-    r"""BasisState(n, wires)
+    r"""BasisState(features, wires)
     Prepares a single computational basis state.
 
     **Details:**
@@ -68,6 +68,7 @@ class BasisState(StatePrepBase):
     """
 
     def __init__(self, features, wires, id=None):
+
         if isinstance(features, list):
             features = qml.math.stack(features)
 
