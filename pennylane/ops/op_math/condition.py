@@ -532,7 +532,6 @@ def _capture_cond(condition, true_fn, false_fn=None, elifs=()) -> Callable:
 
         # We extract each predicate from the elifs list
         # since these are traced by JAX and are passed as positional arguments
-
         elifs_conditions = (
             jax.numpy.array([cond for cond, _ in elifs]) if elifs else jax.numpy.empty(0)
         )
