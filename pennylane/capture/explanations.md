@@ -40,7 +40,7 @@ and `jacobian`.
 
 Jax describes two separate ways of defining higher order derivatives:
 
-1) *On the fly processing*: the primitive binds the function itslf as metadata
+1) *On the fly processing*: the primitive binds the function itself as metadata
 
 2) *Staged processing*: the primitive binds the function's jaxpr as metadata.
 
@@ -68,7 +68,7 @@ repeat_prim = jax.core.Primitive("repeat")
 repeat_prim.multiple_results = True
 ```
 
-Instead of starting with the implementation and abstract evaluation, let's write out function that will
+Instead of starting with the implementation and abstract evaluation, let's write out the function that will
 bind the primitive first.  This will showcase what the args and keyword args for our bind call will look like:
 
 ```python
@@ -85,7 +85,7 @@ def repeat(func: Callable, n: int) -> Callable:
 
 Several things to notice about this code.  First, we have to make the jaxpr from a function with any keyword arguments
 already bound.  `jax.make_jaxpr` does not currently accept keyword arguments for the function, so we need to pre-bind them.
-Next, I decided to make the integer `n` a traceable parameter instead of metadata. We could have chosen to make
+Next, we decided to make the integer `n` a traceable parameter instead of metadata. We could have chosen to make
 `n` metadata instead.  This way, we can compile our function once for different integers `n`, and it is in line with how
 catalyst treats `for_loop` and `while_loop`.  If the function produced outputs of different types and shapes than the inputs,
 we would have to treat `n` like metadata and re-compile for different integers `n`.
