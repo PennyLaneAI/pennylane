@@ -16,7 +16,6 @@ This is the top level module from which all basic functions and classes of
 PennyLane can be directly imported.
 """
 
-import warnings
 import numpy as _np
 
 
@@ -152,7 +151,7 @@ import pennylane.data
 import pennylane.noise
 from pennylane.noise import NoiseModel
 
-from pennylane.devices import device, refresh_devices
+from pennylane.devices.device_constructor import device, refresh_devices
 
 # Look for an existing configuration file
 default_config = Configuration("config.toml")
@@ -176,7 +175,7 @@ def __getattr__(name):
         return pennylane.ops.Hamiltonian
 
     if name == "plugin_devices":
-        return pennylane.devices.plugin_devices
+        return pennylane.devices.device_constructor.plugin_devices
 
     raise AttributeError(f"module 'pennylane' has no attribute '{name}'")
 

@@ -1010,7 +1010,8 @@ class TestDeviceInit:
             m.setattr(metadata, "entry_points", lambda **kwargs: retval)
 
             # reimporting PennyLane within the context sets qml.plugin_devices to {}
-            reload(qml.devices)
+            reload(qml)
+            reload(qml.devices.device_constructor)
 
             # since there are no entry points, there will be no plugin devices
             assert not qml.plugin_devices
@@ -1023,6 +1024,7 @@ class TestDeviceInit:
         # Test teardown: re-import PennyLane to revert all changes and
         # restore the plugin_device dictionary
         reload(qml)
+        reload(qml.devices.device_constructor)
 
     def test_hot_refresh_entrypoints(self, monkeypatch):
         """Test that new entrypoints are found by the device loader if not currently present"""
@@ -1035,8 +1037,9 @@ class TestDeviceInit:
 
             # reimporting PennyLane within the context sets qml.plugin_devices to {}
             reload(qml.devices)
+            reload(qml.devices.device_constructor)
 
-            m.setattr(qml.devices, "refresh_devices", lambda: None)
+            m.setattr(qml.devices.device_constructor, "refresh_devices", lambda: None)
             assert not qml.plugin_devices
 
             # since there are no entry points, there will be no plugin devices
@@ -1052,6 +1055,7 @@ class TestDeviceInit:
         # Test teardown: re-import PennyLane to revert all changes and
         # restore the plugin_device dictionary
         reload(qml)
+        reload(qml.devices.device_constructor)
 
     def test_shot_vector_property(self):
         """Tests shot vector initialization."""
