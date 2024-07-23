@@ -320,6 +320,7 @@ def _bipartite_qinfo_transform(
     base: float = None,
     **kwargs,
 ):
+
     # device_wires is provided by the custom QNode transform
     all_wires = kwargs.get("device_wires", tape.wires)
     wire_map = {w: i for i, w in enumerate(all_wires)}

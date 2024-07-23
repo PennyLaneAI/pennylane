@@ -142,6 +142,4 @@ class VarianceMP(SampleMeasurement, StateMeasurement):
             probabilities (array): the probabilities of collapsing to eigen states
         """
         eigvals = qml.math.asarray(self.eigvals(), dtype="float64")
-        return (
-            qml.math.dot(probabilities, (eigvals**2)) - qml.math.dot(probabilities, eigvals) ** 2
-        )
+        return qml.math.dot(probabilities, (eigvals**2)) - qml.math.dot(probabilities, eigvals) ** 2

@@ -116,6 +116,7 @@ def eigvals(op: qml.operation.Operator, k=1, which="SA") -> TensorLike:
         return _eigvals_tranform(op, k=k, which=which)
 
     if isinstance(op, qml.ops.Hamiltonian):
+
         warnings.warn(
             "For Hamiltonians, the eigenvalues will be computed numerically. "
             "This may be computationally intensive for a large number of wires. "

@@ -1010,6 +1010,7 @@ class TestMeasurementTransformations:
 
 
 class TestObservableHF:
+
     with qml.operation.disable_new_opmath_cm():
         HAMILTONIAN_SIMPLIFY = [
             (

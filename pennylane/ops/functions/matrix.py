@@ -186,6 +186,7 @@ def matrix(op: Union[Operator, PauliWord, PauliSentence], wire_order=None) -> Te
         op = op.user_function
 
     if not isinstance(op, Operator):
+
         if isinstance(op, (PauliWord, PauliSentence)):
             if wire_order is None and len(op.wires) > 1:
                 raise ValueError(
@@ -220,6 +221,7 @@ def matrix(op: Union[Operator, PauliWord, PauliSentence], wire_order=None) -> Te
         op = 1.0 * op  # convert to a Hamiltonian
 
     if isinstance(op, qml.ops.Hamiltonian):
+
         return op.sparse_matrix(wire_order=wire_order).toarray()
 
     try:

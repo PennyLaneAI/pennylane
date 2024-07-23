@@ -342,6 +342,7 @@ def dot(tensor1, tensor2, like=None):
     x, y = np.coerce([tensor1, tensor2], like=like)
 
     if like == "torch":
+
         if x.ndim == 0 or y.ndim == 0:
             return x * y
 
@@ -351,6 +352,7 @@ def dot(tensor1, tensor2, like=None):
         return np.tensordot(x, y, axes=[[-1], [-2]], like=like)
 
     if like in {"tensorflow", "autograd"}:
+
         ndim_y = len(np.shape(y))
         ndim_x = len(np.shape(x))
 

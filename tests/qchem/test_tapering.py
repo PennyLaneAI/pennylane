@@ -535,6 +535,7 @@ def test_taper_obs(symbols, geometry, charge):
         qml.qchem.spinz(len(hamiltonian.wires)),
     ]
     for observable in observables:
+
         obs_ps = qml.pauli.pauli_sentence(observable)
         tapered_obs = qml.taper(observable, generators, paulixops, paulix_sector)
         tapered_ps = _taper_pauli_sentence(obs_ps, generators, paulixops, paulix_sector)

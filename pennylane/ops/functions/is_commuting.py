@@ -155,6 +155,7 @@ def _check_opmath_operations(operation1, operation2):
     """Check that `Tensor`, `SProd`, `Prod`, and `Sum` instances only contain Pauli words."""
 
     for op in [operation1, operation2]:
+
         if op.pauli_rep is not None:
             continue
 

@@ -82,6 +82,7 @@ class TestDecompositionErrors:
         """Test that the operators in decomposition have mapped wires after mapping the op."""
 
         class BadDecompositionWireMap(Operator):
+
             @staticmethod
             def compute_decomposition(*args, **kwargs):
                 if kwargs["wires"][0] == 0:

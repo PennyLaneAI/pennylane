@@ -1004,6 +1004,7 @@ class Device(abc.ABC):
                         )
 
             elif isinstance(o, qml.ops.Prod):
+
                 supports_prod = self.supports_observable(o.name)
                 if not supports_prod:
                     raise DeviceError(f"Observable Prod not supported on device {self.short_name}")

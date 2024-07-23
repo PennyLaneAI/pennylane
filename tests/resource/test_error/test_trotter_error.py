@@ -233,9 +233,7 @@ class TestErrorFunctions:
     one_norm_error_dict = {
         1: lambda a1, a2, t, n: (1 / n) * (t * (abs(a1) + abs(a2))) ** 2,
         2: lambda a1, a2, t, n: (1 / n**2) * (3 / 2) * (t * (abs(a1) + abs(a2))) ** 3,
-        4: lambda a1, a2, t, n: (1 / n**4)
-        * ((10**5 + 1) / 120)
-        * (t * (abs(a1) + abs(a2))) ** 5,
+        4: lambda a1, a2, t, n: (1 / n**4) * ((10**5 + 1) / 120) * (t * (abs(a1) + abs(a2))) ** 5,
     }
 
     @pytest.mark.parametrize(

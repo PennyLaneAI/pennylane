@@ -292,6 +292,7 @@ class DefaultQutritMixed(Device):
         circuits: QuantumTape_or_Batch,
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ) -> Result_or_ResultBatch:
+
         interface = (
             execution_config.interface
             if execution_config.gradient_method in {"best", "backprop", None}

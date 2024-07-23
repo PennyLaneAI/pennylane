@@ -74,6 +74,7 @@ class TestModifierDefaultBeahviour:
 
         @modifier
         class DummyDev2(qml.devices.Device):
+
             _applied_modifiers = [None]  # some existing value
 
             def execute(self, circuits, execution_config=qml.devices.DefaultExecutionConfig):

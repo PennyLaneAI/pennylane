@@ -100,6 +100,7 @@ def matrix(hamiltonian: qml.Hamiltonian, n_wires: int) -> csc_matrix:
     ops_matrices = []
 
     for op in hamiltonian.ops:
+
         if isinstance(op, qml.ops.Prod):
             op_matrix = op.sparse_matrix(wire_order=list(range(n_wires)))
         else:
