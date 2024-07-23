@@ -424,7 +424,9 @@ class TestInterfaces:
 
         res = circuit(unitary_matrix)
         res2 = circuit2(unitary_matrix)
+        res3 = circuit2(qml.math.toarray(unitary_matrix))
         assert jnp.allclose(res, res2, atol=tol, rtol=0)
+        assert qml.math.allclose(res, res3, atol=tol, rtol=0)
 
         grad_fn = jax.grad(circuit)
         grads = grad_fn(unitary_matrix)
