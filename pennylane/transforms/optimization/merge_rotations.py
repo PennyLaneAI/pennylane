@@ -205,11 +205,11 @@ def merge_rotations(
                     current_gate.__class__(*cumulative_angles, wires=current_gate.wires)
                 )
         else:
-            if not allclose(cumulative_angles, zeros(len(cumulative_angles)), atol=atol, rtol=0):
-                with QueuingManager.stop_recording():
-                    new_operations.append(
-                        current_gate.__class__(*cumulative_angles, wires=current_gate.wires)
-                    )
+            # if not allclose(cumulative_angles, zeros(len(cumulative_angles)), atol=atol, rtol=0):
+            with QueuingManager.stop_recording():
+                new_operations.append(
+                    current_gate.__class__(*cumulative_angles, wires=current_gate.wires)
+                )
 
         # Remove the first gate from the working list
         list_copy.pop(0)
