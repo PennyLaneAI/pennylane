@@ -455,9 +455,8 @@ def _get_cond_qfunc_prim():
         def run_jaxpr(jaxpr, *args):
 
             out = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *args)
-
-            if not isinstance(out, tuple):
-                out = (out,)
+            print("out", out)
+            out = (out,) if not isinstance(out, tuple) else out
 
             for outvar in out:
                 if isinstance(outvar, Operator):
@@ -469,19 +468,14 @@ def _get_cond_qfunc_prim():
             return run_jaxpr(jaxpr_true, *args)
 
         def elif_branch(args, elifs_conditions, jaxpr_elifs):
-
             if not jaxpr_elifs:
                 return false_branch(args)
-
             pred = elifs_conditions[0]
             rest_preds = elifs_conditions[1:]
-
             jaxpr_elif = jaxpr_elifs[0]
             rest_jaxpr_elifs = jaxpr_elifs[1:]
-
             if pred:
                 return run_jaxpr(jaxpr_elif, *args)
-
             return elif_branch(args, rest_preds, rest_jaxpr_elifs)
 
         def false_branch(args):
@@ -491,10 +485,8 @@ def _get_cond_qfunc_prim():
 
         if condition:
             return true_branch(args)
-
         if elifs_conditions.size > 0:
             return elif_branch(args, elifs_conditions, jaxpr_elifs)
-
         return false_branch(args)
 
     def _is_queued_outvar(outvars):
@@ -530,10 +522,17 @@ def _capture_cond(condition, true_fn, false_fn=None, elifs=()) -> Callable:
     @wraps(true_fn)
     def new_wrapper(*args, **kwargs):
 
-        # We extract each predicate from the elifs list
-        # since these are traced by JAX and are passed as positional arguments
+        # We extract each condition (or predicate) from the elifs argument list
+        # since these are traced by JAX and are passed as positional arguments to the cond primitive
+        elifs_conditions = []
+        jaxpr_elifs = []
+
+        for cond, elif_fn in elifs:
+            elifs_conditions.append(cond)
+            jaxpr_elifs.append(jax.make_jaxpr(functools.partial(elif_fn, **kwargs))(*args))
+
         elifs_conditions = (
-            jax.numpy.array([cond for cond, _ in elifs]) if elifs else jax.numpy.empty(0)
+            jax.numpy.array(elifs_conditions) if elifs_conditions else jax.numpy.empty(0)
         )
 
         jaxpr_true = jax.make_jaxpr(functools.partial(true_fn, **kwargs))(*args)
@@ -541,11 +540,6 @@ def _capture_cond(condition, true_fn, false_fn=None, elifs=()) -> Callable:
             (jax.make_jaxpr(functools.partial(false_fn, **kwargs))(*args) if false_fn else None)
             if false_fn
             else None
-        )
-        jaxpr_elifs = (
-            ([jax.make_jaxpr(functools.partial(elif_fn, **kwargs))(*args) for _, elif_fn in elifs])
-            if elifs
-            else ()
         )
 
         return cond_prim.bind(
