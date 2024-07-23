@@ -856,6 +856,7 @@ class TestClassicalControl:
         [pe1, pe2] = cwire.get_path_effects()
 
         # probably not a good way to test this, but the best I can figure out
+        print("lines.linewidth in test: ", plt.rcParams["lines.linewidth"])
         assert pe1._gc == {
             "linewidth": 5 * plt.rcParams["lines.linewidth"],
             "foreground": "black",  # lines.color for black white style
