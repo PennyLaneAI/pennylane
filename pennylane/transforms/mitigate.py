@@ -12,19 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Provides transforms for mitigating quantum circuits."""
+from collections.abc import Sequence
 from copy import copy
-from typing import Any, Callable, Dict, Optional, Sequence
+from typing import Any, Optional
 
 import pennylane as qml
 from pennylane import adjoint, apply
 from pennylane.math import mean, round, shape
 from pennylane.queuing import AnnotatedQueue
-from pennylane.tape import QuantumScript, QuantumTape
+from pennylane.tape import QuantumScript, QuantumTape, QuantumTapeBatch
 from pennylane.transforms import transform
+from pennylane.typing import PostprocessingFn
 
 
 @transform
-def fold_global(tape: QuantumTape, scale_factor) -> (Sequence[QuantumTape], Callable):
+def fold_global(tape: QuantumTape, scale_factor) -> tuple[QuantumTapeBatch, PostprocessingFn]:
     r"""Differentiable circuit folding of the global unitary ``circuit``.
 
     For a unitary circuit :math:`U = L_d .. L_1`, where :math:`L_i` can be either a gate or layer, ``fold_global`` constructs
@@ -367,10 +369,10 @@ def mitigate_with_zne(
     scale_factors: Sequence[float],
     folding: callable,
     extrapolate: callable,
-    folding_kwargs: Optional[Dict[str, Any]] = None,
-    extrapolate_kwargs: Optional[Dict[str, Any]] = None,
+    folding_kwargs: Optional[dict[str, Any]] = None,
+    extrapolate_kwargs: Optional[dict[str, Any]] = None,
     reps_per_factor=1,
-) -> (Sequence[QuantumTape], Callable):
+) -> tuple[QuantumTapeBatch, PostprocessingFn]:
     r"""Mitigate an input circuit using zero-noise extrapolation.
 
     Error mitigation is a precursor to error correction and is compatible with near-term quantum
