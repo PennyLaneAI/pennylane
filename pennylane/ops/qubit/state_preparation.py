@@ -98,13 +98,6 @@ class BasisState(StatePrepBase):
             if not set(features_list).issubset({0, 1}):
                 raise ValueError(f"Basis state must only consist of 0s and 1s; got {features_list}")
 
-        if len(qml.math.shape(features)) > 1:
-            raise ValueError(
-                "Broadcasting with BasisState is not supported. Please use the "
-                "qml.transforms.broadcast_expand transform to use broadcasting with "
-                "BasisState."
-            )
-
         super().__init__(features, wires=wires, id=id)
 
     def _flatten(self):

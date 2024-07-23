@@ -171,7 +171,7 @@ class TestDecomposition:
         broadcasting raises an error."""
         state = np.array([[1, 0], [1, 1]])
 
-        with pytest.raises(ValueError, match="Broadcasting with BasisState"):
+        with pytest.raises(ValueError, match="Features must be one-dimensional"):
             _ = qml.BasisState(state, wires=[0, 1])
 
 
