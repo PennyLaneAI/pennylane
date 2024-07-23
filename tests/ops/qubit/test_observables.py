@@ -18,8 +18,8 @@ import pickle
 
 import numpy as np
 import pytest
-from scipy.sparse import csr_matrix
 from gate_data import H, I, X, Y, Z
+from scipy.sparse import csr_matrix
 
 import pennylane as qml
 from pennylane.ops.qubit.observables import BasisStateProjector, StateVectorProjector
