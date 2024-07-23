@@ -13,8 +13,7 @@
 * The `qml.PrepSelPrep` template is added. The template implements a block-encoding of a linear
   combination of unitaries.
   [(#5756)](https://github.com/PennyLaneAI/pennylane/pull/5756)
-
-[(#5987)](https://github.com/PennyLaneAI/pennylane/pull/5987)
+  [(#5987)](https://github.com/PennyLaneAI/pennylane/pull/5987)
 
 * The `split_to_single_terms` transform is added. This transform splits expectation values of sums
   into multiple single-term measurements on a single tape, providing better support for simulators
@@ -56,6 +55,9 @@
 * `qml.BasisRotation` and `qml.qchem.givens_decomposition` are now jit compatible.
   [(#6004)](https://github.com/PennyLaneAI/pennylane/pull/6004)
 
+* The `qubit_observable` function is modified to return an ascending wire order for molecular 
+  Hamiltonians.
+  [(#5950)](https://github.com/PennyLaneAI/pennylane/pull/5950)
 
 <h4>Community contributions 🥳</h4>
 
@@ -156,6 +158,7 @@ Lillian M. A. Frederiksen,
 Pietropaolo Frisoni,
 Emiliano Godinez,
 Renke Huang,
+Soran Jahangiri,
 Christina Lee,
 Austin Huang,
 Christina Lee,
