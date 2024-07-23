@@ -159,7 +159,7 @@ class BasisRotation(Operation):
 
         if check:
             umat = qml.math.copy(unitary_matrix)
-            if (not qml.math.is_abstract(unitary_matrix)):
+            if not qml.math.is_abstract(unitary_matrix):
                 if not qml.math.allclose(umat @ umat.conj().T, qml.math.eye(M, dtype=complex), atol=1e-4):
                     raise ValueError("The provided transformation matrix should be unitary.")
 
