@@ -22,8 +22,12 @@ def registers(register_dict):
     """Creates wire registers as a dictionary mapping register names to corresponding
     :class:`~pennylane.wires.Wires`.
 
-    This function flattens nested dictionaries in the input, creating a single-level dictionary
-    of registers.
+    This function helps manage wire registers when setting up a quantum algorithm.
+    Wire register names and their total number of wires are typically known in advance,
+    but managing the specific wire range for each register can be a challenge. The
+    ``qml.registers()`` function helps by returning a mapping from register name to
+    wire range. Moreover, it is possible to request a nested structure where registers
+    contain sub-registers, as illustrated in the example below.
 
     Args:
         register_dict (dict): a dictionary where keys are register names and values are either
