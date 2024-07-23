@@ -156,7 +156,6 @@ def lie_closure(
             for pw, val in com.items():
                 com[pw] = val.imag / 2
 
-            print(com)
             vspace.add(com, tol=tol)
 
         # Updated number of linearly independent PauliSentences from previous and current step
