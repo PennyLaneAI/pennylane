@@ -31,7 +31,7 @@ def registers(register_dict):
 
     Returns:
         dict (Wires): dictionary where the keys are the names (str) of the registers, and the
-        values are either :class:`~.Wires` objects or other registers.
+        values are :class:`~.Wires` objects.
 
     **Example**
 
