@@ -881,9 +881,8 @@ class QNode:
                 if device.short_name != "default.qubit.legacy":
                     warnings.warn(
                         "The switching of devices for backpropagation is now deprecated in v0.38 and "
-                        "will be removed in v0.39, as this behavior was a hack for the deprecated default.qubit.legacy. "
-                        "If you need help rewriting your device to be natively backpropagation compatible, you can "
-                        "reach out to the PennyLane developement team.",
+                        "will be removed in v0.39, as this behavior was developered purely for the"
+                        " deprecated default.qubit.legacy. ",
                         qml.PennyLaneDeprecationWarning,
                     )
 
