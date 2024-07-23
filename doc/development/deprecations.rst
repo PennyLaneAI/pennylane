@@ -9,6 +9,16 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
+* The ``decomp_depth`` argument in ``qml.device`` is deprecated. 
+
+  - Deprecated in v0.38
+  - Will be removed in v0.39
+
+* The ``max_expansion`` argument in ``qml.QNode`` is deprecated. 
+
+  - Deprecated in v0.38
+  - Will be removed in v0.39
+
 * The functions ``qml.transforms.sum_expand`` and ``qml.transforms.hamiltonian_expand`` are deprecated.
   Instead, ``qml.transforms.split_non_commuting`` can be used for equivalent behaviour.
 

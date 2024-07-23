@@ -13,6 +13,7 @@
 * The `qml.PrepSelPrep` template is added. The template implements a block-encoding of a linear
   combination of unitaries.
   [(#5756)](https://github.com/PennyLaneAI/pennylane/pull/5756)
+  [(#5987)](https://github.com/PennyLaneAI/pennylane/pull/5987)
 
 * The `split_to_single_terms` transform is added. This transform splits expectation values of sums
   into multiple single-term measurements on a single tape, providing better support for simulators
@@ -54,6 +55,10 @@
 * Molecules and Hamiltonians can now be constructed for all the elements present in the periodic table.
   [(#5821)](https://github.com/PennyLaneAI/pennylane/pull/5821)
 
+* The `qubit_observable` function is modified to return an ascending wire order for molecular 
+  Hamiltonians.
+  [(#5950)](https://github.com/PennyLaneAI/pennylane/pull/5950)
+
 <h4>Community contributions 🥳</h4>
 
 * `DefaultQutritMixed` readout error has been added using parameters `readout_relaxation_probs` and 
@@ -84,6 +89,12 @@
   [(#5980)](https://github.com/PennyLaneAI/pennylane/pull/5980)
 
 <h3>Deprecations 👋</h3>
+
+* The `decomp_depth` argument in `qml.device` has been deprecated.
+  [(#6026)](https://github.com/PennyLaneAI/pennylane/pull/6026)
+
+* The `max_expansion` argument in `qml.QNode` has been deprecated.
+  [(#6026)](https://github.com/PennyLaneAI/pennylane/pull/6026)
 
 * The `expansion_strategy` attribute in the `QNode` class is deprecated.
   [(#5989)](https://github.com/PennyLaneAI/pennylane/pull/5989)
@@ -130,6 +141,12 @@
 * `fuse_rot_angles` no longer returns wrong derivatives at singular points but returns NaN.
   [(#6031)](https://github.com/PennyLaneAI/pennylane/pull/6031)
 
+* Fixed a bug in `qml.SPSAOptimizer` that ignored keyword arguments in the objective function.
+  [(#6027)](https://github.com/PennyLaneAI/pennylane/pull/6027)
+
+* `dynamic_one_shot` was broken for old-API devices since `override_shots` was deprecated.
+  [(#6024)](https://github.com/PennyLaneAI/pennylane/pull/6024)
+
 * `CircuitGraph` can now handle circuits with the same operation instance occuring multiple times.
   [(#5907)](https://github.com/PennyLaneAI/pennylane/pull/5907)
 
@@ -157,6 +174,7 @@ Lillian M. A. Frederiksen,
 Pietropaolo Frisoni,
 Emiliano Godinez,
 Renke Huang,
+Soran Jahangiri,
 Christina Lee,
 Austin Huang,
 Christina Lee,
