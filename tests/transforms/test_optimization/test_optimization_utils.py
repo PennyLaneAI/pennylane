@@ -52,41 +52,102 @@ class TestFindNextGate:
 class TestRotGateFusion:
     """Test that utility functions for fusing two qml.Rot gates function as expected."""
 
-    @pytest.mark.parametrize(
-        ("angles_1", "angles_2"),
-        [
-            ([0.15, 0.25, -0.90], [-0.5, 0.25, 1.3]),
-            ([0.0, 0.0, 0.0], [0.0, 0.0, 0.0]),
-            ([0.1, 0.2, 0.3], [0.0, 0.0, 0.0]),
-            ([0.0, 0.0, 0.0], [0.2, 0.4, -0.5]),
-            ([0.15, 0.25, -0.90], [-0.15, -0.25, 0.9]),
-            ([0.05, -1.34, 4.12], [-0.8, 0.2, 0.12]),
-            ([0.05, 0.0, 4.12], [-0.8, 0.2, 0.12]),
-            ([0.05, -1.34, 0.0], [-0.8, 0.2, 0.12]),
-            ([0.05, 0.0, 0.1], [-0.2, 0.0, 0.12]),
-            ([0.05, 0.0, 0.0], [0.0, 0.0, 0.12]),
-            ([0.05, 0.0, 0.0], [0.0, 0.0, -0.05]),
-            ([0.05, 0.0, 0.0], [-0.05, 0.0, 0.0]),
-            ([0.0, 0.0, 0.05], [-0.05, 0.0, 0.0]),
-            ([0.0, 0.0, 0.05], [0.0, 0.0, -0.05]),
-            ([0.05, 0.2, 0.0], [0.0, -0.6, 0.12]),
-            ([0.05, -1.34, 4.12], [0.0, 0.2, 0.12]),
-            ([0.05, -1.34, 4.12], [0.3, 0.0, 0.12]),
-            ([np.pi, np.pi / 2, 0.0], [0.0, -np.pi / 2, 0.0]),
-            ([0.9, np.pi / 2, 0.0], [0.0, -np.pi / 2, 0.0]),
-            ([0.9, np.pi / 2, np.pi / 2], [-np.pi / 2, -np.pi / 2, 0.0]),
-        ],
-    )
-    def test_full_rot_fusion(self, angles_1, angles_2):
-        """Test that the fusion of two Rot gates has the same effect as
-        applying the Rots sequentially."""
+    generic_test_angles = [
+        ([0.15, 0.25, -0.90], [-0.5, 0.25, 1.3]),
+        ([0.0, 0.0, 0.0], [0.0, 0.0, 0.0]),
+        ([0.1, 0.2, 0.3], [0.0, 0.0, 0.0]),
+        ([0.0, 0.0, 0.0], [0.2, 0.4, -0.5]),
+        ([0.15, 0.25, -0.90], [-0.15, -0.25, 0.9]),
+        ([0.05, -1.34, 4.12], [-0.8, 0.2, 0.12]),
+        ([0.05, 0.0, 4.12], [-0.8, 0.2, 0.12]),
+        ([0.05, -1.34, 0.0], [-0.8, 0.2, 0.12]),
+        ([0.05, 0.0, 0.1], [-0.2, 0.0, 0.12]),
+        ([0.05, 0.0, 0.0], [0.0, 0.0, 0.12]),
+        ([0.05, 0.0, 0.0], [0.0, 0.0, -0.05]),
+        ([0.05, 0.0, 0.0], [-0.05, 0.0, 0.0]),
+        ([0.0, 0.0, 0.05], [-0.05, 0.0, 0.0]),
+        ([0.0, 0.0, 0.05], [0.0, 0.0, -0.05]),
+        ([0.05, 0.2, 0.0], [0.0, -0.6, 0.12]),
+        ([0.05, -1.34, 4.12], [0.0, 0.2, 0.12]),
+        ([0.05, -1.34, 4.12], [0.3, 0.0, 0.12]),
+        ([np.pi, np.pi / 2, 0.0], [0.0, -np.pi / 2, 0.0]),
+        ([0.9, np.pi / 2, 0.0], [0.0, -np.pi / 2, 0.0]),
+        ([0.9, np.pi / 2, np.pi / 2], [-np.pi / 2, -np.pi / 2, 0.0]),
+    ]
 
+    @staticmethod
+    def mat_from_prod(angles_1, angles_2):
         def original_ops():
             qml.Rot(*angles_1, wires=0)
             qml.Rot(*angles_2, wires=0)
 
-        matrix_expected = qml.matrix(original_ops, [0])()  # pylint:disable=too-many-function-args
+        return qml.matrix(original_ops, [0])()  # pylint:disable=too-many-function-args
 
+    @pytest.mark.parametrize("angles_1, angles_2", generic_test_angles)
+    def test_full_rot_fusion_numpy(self, angles_1, angles_2):
+        """Test that the fusion of two Rot gates has the same effect as
+        applying the Rots sequentially."""
+
+        matrix_expected = self.mat_from_prod(angles_1, angles_2)
+        fused_angles = fuse_rot_angles(angles_1, angles_2)
+        matrix_obtained = qml.Rot(*fused_angles, wires=0).matrix()
+
+        assert qml.math.allclose(matrix_expected, matrix_obtained)
+
+    @pytest.mark.autograd
+    @pytest.mark.parametrize("angles_1, angles_2", generic_test_angles)
+    def test_full_rot_fusion_autograd(self, angles_1, angles_2):
+        """Test that the fusion of two Rot gates has the same effect as
+        applying the Rots sequentially, in Autograd."""
+
+        angles_1, angles_2 = qml.numpy.array(angles_1), qml.numpy.array(angles_1)
+        matrix_expected = self.mat_from_prod(angles_1, angles_2)
+        fused_angles = fuse_rot_angles(angles_1, angles_2)
+        matrix_obtained = qml.Rot(*fused_angles, wires=0).matrix()
+
+        assert qml.math.allclose(matrix_expected, matrix_obtained)
+
+    @pytest.mark.tf
+    @pytest.mark.parametrize("angles_1, angles_2", generic_test_angles)
+    def test_full_rot_fusion_tensorflow(self, angles_1, angles_2):
+        """Test that the fusion of two Rot gates has the same effect as
+        applying the Rots sequentially, in Tensorflow."""
+        import tensorflow as tf
+
+        angles_1, angles_2 = tf.Variable(angles_1, dtype=tf.float64), tf.Variable(
+            angles_1, dtype=tf.float64
+        )
+        matrix_expected = self.mat_from_prod(angles_1, angles_2)
+        fused_angles = fuse_rot_angles(angles_1, angles_2)
+        matrix_obtained = qml.Rot(*fused_angles, wires=0).matrix()
+
+        assert qml.math.allclose(matrix_expected, matrix_obtained)
+
+    @pytest.mark.torch
+    @pytest.mark.parametrize("angles_1, angles_2", generic_test_angles)
+    def test_full_rot_fusion_torch(self, angles_1, angles_2):
+        """Test that the fusion of two Rot gates has the same effect as
+        applying the Rots sequentially, in torch."""
+        import torch
+
+        angles_1, angles_2 = torch.tensor(
+            angles_1, requires_grad=True, dtype=torch.float64
+        ), torch.tensor(angles_1, requires_grad=True, dtype=torch.float64)
+        matrix_expected = self.mat_from_prod(angles_1, angles_2)
+        fused_angles = fuse_rot_angles(angles_1, angles_2)
+        matrix_obtained = qml.Rot(*fused_angles, wires=0).matrix()
+
+        assert qml.math.allclose(matrix_expected, matrix_obtained)
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("angles_1, angles_2", generic_test_angles)
+    def test_full_rot_fusion_jax(self, angles_1, angles_2):
+        """Test that the fusion of two Rot gates has the same effect as
+        applying the Rots sequentially, in JAX."""
+        import jax
+
+        angles_1, angles_2 = jax.numpy.array(angles_1), jax.numpy.array(angles_1)
+        matrix_expected = self.mat_from_prod(angles_1, angles_2)
         fused_angles = fuse_rot_angles(angles_1, angles_2)
         matrix_obtained = qml.Rot(*fused_angles, wires=0).matrix()
 
@@ -103,16 +164,12 @@ class TestRotGateFusion:
         special_angles = np.array(list(product(special_points, repeat=6))).reshape((-1, 2, 3))
         angles_1, angles_2 = np.transpose(special_angles, (1, 0, 2))
 
-        def original_ops():
-            qml.Rot(*angles_1.T, wires=0)  # Transpose to bring size-3 axis to front
-            qml.Rot(*angles_2.T, wires=0)  # Transpose to bring size-3 axis to front
-
-        matrix_expected = qml.matrix(original_ops, [0])()  # pylint:disable=too-many-function-args
+        # Transpose to bring size-3 axis to front
+        matrix_expected = self.mat_from_prod(angles_1.T, angles_2.T)
 
         fused_angles = fuse_rot_angles(angles_1, angles_2)
-        matrix_obtained = qml.Rot(
-            *fused_angles.T, wires=0
-        ).matrix()  # Transpose to bring size-3 axis to front
+        # Transpose to bring size-3 axis to front
+        matrix_obtained = qml.Rot(*fused_angles.T, wires=0).matrix()
 
         assert qml.math.allclose(matrix_expected, matrix_obtained)
 
@@ -163,61 +220,3 @@ class TestRotGateFusion:
         assert qml.math.all(
             qml.math.any(qml.math.isnan(jac_from_fuse[error_sources]), axis=[1, 2, 3, 4])
         )
-
-        """
-        mag = np.sqrt(pre_mag)
-
-        alpha1, beta1 = (phi1 + omega1) / 2, (phi1 - omega1) / 2
-        alpha2, beta2 = (phi2 + omega2) / 2, (phi2 - omega2) / 2
-
-        alpha_arg1 = -c1 * c2 * np.sin(alpha1 + alpha2) - s1 * s2 * np.sin(beta2 - beta1)
-        alpha_arg2 = c1 * c2 * np.cos(alpha1 + alpha2) - s1 * s2 * np.cos(beta2 - beta1)
-        beta_arg1 = -c1 * s2 * np.sin(alpha1 + beta2) + s1 * c2 * np.sin(alpha2 - beta1)
-        beta_arg2 = c1 * s2 * np.cos(alpha1 + beta2) + s1 * c2 * np.cos(alpha2 - beta1)
-
-        def partial(all_angles):
-            phi1, theta1, omega1 = all_angles[..., 0, :].T
-            phi2, theta2, omega2 = all_angles[..., 1, :].T
-            c1, c2, s1, s2 = qml.math.cos(theta1 / 2), qml.math.cos(theta2 / 2), qml.math.sin(theta1 / 2), qml.math.sin(theta2 / 2)
-            mag = qml.math.sqrt(c1 ** 2 * c2 ** 2 + s1 ** 2 * s2 ** 2 - 2 * c1 * c2 * s1 * s2 * qml.math.cos(omega1 + phi2))
-
-            #alpha1, beta1 = (phi1 + omega1) / 2, (phi1 - omega1) / 2
-            #alpha2, beta2 = (phi2 + omega2) / 2, (phi2 - omega2) / 2
-
-            #alpha_arg1 = -c1 * c2 * np.sin(alpha1 + alpha2) - s1 * s2 * np.sin(beta2 - beta1)
-            #alpha_arg2 = c1 * c2 * np.cos(alpha1 + alpha2) - s1 * s2 * np.cos(beta2 - beta1)
-            #beta_arg1 = -c1 * s2 * np.sin(alpha1 + beta2) + s1 * c2 * np.sin(alpha2 - beta1)
-            #beta_arg2 = c1 * s2 * np.cos(alpha1 + beta2) + s1 * c2 * np.cos(alpha2 - beta1)
-            #print(mag)
-            return mag
-
-        jac_partial = jax.vmap(jax.jacobian(partial))(all_angles.real)
-
-        expected_singular_ids = np.where(
-            np.any([
-                (np.abs(pre_mag - 1) < 1e-12),
-                (pre_mag == 0j),
-                #np.isnan(mag),
-                #(np.abs(alpha_arg1) + np.abs(alpha_arg1) < 1e-10),
-                #(np.abs(beta_arg1) + np.abs(beta_arg1) < 1e-10)
-            ], axis=0)
-        )
-        pre_mag2 = c1 ** 2 * s2 ** 2 + s1 ** 2 * c2 ** 2 + 2 * c1 * c2 * s1 * s2 * qml.math.cos(omega1 + phi2)
-        print(pre_mag2[np.where(pre_mag==0j)[0]])
-        for idx in np.where(qml.math.any(qml.math.isnan(jac_from_fuse), axis=[1, 2, 3, 4]))[0]:
-            if idx not in expected_singular_ids[0]:
-                weird_idx = idx
-                break
-        print(weird_idx)
-        print(jac_from_fuse[weird_idx])
-        print(all_angles[weird_idx])
-        print(f"{pre_mag[weird_idx]:.20f}")
-        print(jax.jacobian(qml.math.sqrt,holomorphic=True)(pre_mag[weird_idx]))
-        print(jax.jacobian(qml.math.sqrt)(pre_mag.real[weird_idx]))
-        print(len(all_angles))
-        print(len(expected_singular_ids[0]))
-        print(len(np.where(qml.math.any(qml.math.isnan(jac_from_fuse), axis=[1, 2, 3, 4]))[0]))
-        print(jac_partial.shape)
-        print(len(np.where(qml.math.any(qml.math.isnan(jac_partial), axis=[1, 2]))[0]))
-        print(np.unique(mag[np.array(np.where(qml.math.any(qml.math.isnan(jac_partial), axis=[1, 2]))[0])]))
-        """

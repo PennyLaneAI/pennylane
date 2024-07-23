@@ -13,7 +13,7 @@
 # limitations under the License.
 """Utility functions for circuit optimization."""
 # pylint: disable=too-many-return-statements,import-outside-toplevel
-from pennylane.math import arccos, arctan2, asarray, cos, sin, sqrt, stack
+from pennylane.math import arccos, arctan2, asarray, cos, sin, sqrt, stack, transpose
 from pennylane.ops.identity import GlobalPhase
 from pennylane.wires import Wires
 
@@ -68,12 +68,18 @@ def fuse_rot_angles(angles1, angles2):
         This function is not differentiable everywhere. It has singularities for specific
         input values, where the derivative will be ``nan``.
 
+    .. warning::
+
+        This function is numerically unstable at singular points. It is recommended to use
+        it with 64-bit floating point precision.
+
     """
-    phi1, theta1, omega1 = asarray(angles1).T
-    phi2, theta2, omega2 = asarray(angles2).T
+    phi1, theta1, omega1 = transpose(asarray(angles1))
+    phi2, theta2, omega2 = transpose(asarray(angles2))
     c1, c2, s1, s2 = cos(theta1 / 2), cos(theta2 / 2), sin(theta1 / 2), sin(theta2 / 2)
 
     mag = sqrt(c1**2 * c2**2 + s1**2 * s2**2 - 2 * c1 * c2 * s1 * s2 * cos(omega1 + phi2))
+    print(f"{mag=}")
     theta_f = 2 * arccos(mag)
 
     alpha1, beta1 = (phi1 + omega1) / 2, (phi1 - omega1) / 2
@@ -81,10 +87,12 @@ def fuse_rot_angles(angles1, angles2):
 
     alpha_arg1 = -c1 * c2 * sin(alpha1 + alpha2) - s1 * s2 * sin(beta2 - beta1)
     alpha_arg2 = c1 * c2 * cos(alpha1 + alpha2) - s1 * s2 * cos(beta2 - beta1)
+    print(f"{alpha_arg1=}, {alpha_arg2=}")
     alpha_f = -1 * arctan2(alpha_arg1, alpha_arg2)
 
     beta_arg1 = -c1 * s2 * sin(alpha1 + beta2) + s1 * c2 * sin(alpha2 - beta1)
     beta_arg2 = c1 * s2 * cos(alpha1 + beta2) + s1 * c2 * cos(alpha2 - beta1)
+    print(f"{beta_arg1=}, {beta_arg2=}")
     beta_f = -1 * arctan2(beta_arg1, beta_arg2)
 
     return stack([alpha_f + beta_f, theta_f, alpha_f - beta_f], axis=-1)
