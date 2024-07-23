@@ -455,7 +455,6 @@ def _get_cond_qfunc_prim():
         def run_jaxpr(jaxpr, *args):
 
             out = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *args)
-            print("out", out)
             out = (out,) if not isinstance(out, tuple) else out
 
             for outvar in out:
