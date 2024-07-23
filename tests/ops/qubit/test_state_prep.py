@@ -352,6 +352,6 @@ class TestStateVector:
     def test_BasisState_wrong_param_size(self):
         """Tests that the parameter must be of length num_wires."""
         with pytest.raises(
-            ValueError, match="Features must be of length 2; got length 1 \(features=\[0\]\)."
+            ValueError, match=r"Features must be of length 2; got length 1 \(features=\[0\]\)."
         ):
             _ = qml.BasisState([0], wires=[0, 1])
