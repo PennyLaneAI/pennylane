@@ -20,43 +20,41 @@ from .wires import Wires
 
 def registers(register_dict):
     """
-    Create a dictionary mapping register names to Wires objects.
+    The ``qml.registers()`` function creates a dictionary that maps register name to :class:`~.Wires`
+    object.
 
-    This function takes a hierarchical register structure and flattens it into a dictionary
-    where each key is a register name and each value is a Wires object representing the
-    wires in that register.
+    The function takes in a dictionary. The keys for this input dictionary are the names of the
+    registers. The values for this dictionary are either integers that represent the number of
+    wires or dictionaries that represent sub registers. For example, the key-value pair
+    `"ancilla": 3` would represent a register named "ancilla" with 3 wires whereas the key-value
+    pair `"ancilla": {"sub_ancilla": 2, "sub_ancilla1": 1}` would represent a register named
+    "ancilla" with two sub_registers: "sub_ancilla" and "sub_ancilla1", each with their respective
+    number of wires.
+
+    Given input `{"ancilla": {"sub_ancilla": 2, "sub_ancilla1": 1}}`, ``qml.registers()`` creates
+    a dictionary with 3 key-value pairs. The keys are the register names found in the input:
+    "ancilla", "sub_ancilla" and "sub_ancilla1". The values are the respective :class:`~.Wires`
+    objects for each register. For example, "ancilla" has two sub registers "sub_ancilla" and
+    "sub_ancilla1". Therefore, the value associated with key "ancilla" is the union of the
+    :class:`~.Wires` of its sub registers. Since its sub registers "sub_ancilla" and "sub_ancilla1"
+    have :class:`~.Wires` objects `Wires([0, 1])` and Wires([2]) respectively, the key "ancilla"
+    has the value `Wires([0, 1, 2])`.
 
     Args:
-        register_dict (dict): A dictionary describing the register structure. Keys are
-            register names (str) and values are either:
-            - int: The number of wires in the register.
-            - dict: A nested dictionary representing sub-registers.
+        register_dict (dict): a dictionary where keys are register names and values are either
+            positive integers indicating the number of qubits or nested dictionaries of more registers.
 
     Returns:
-        dict: A flattened dictionary where keys are register names (str) and values
-        are Wires objects representing the wires in each register.
+        dict (Wires): dictionary where the keys are the names (str) of the registers, and the
+        values are :class:`~.Wires` objects.
 
-    Notes:
-        - For nested registers, the parent register's Wires object will be the union
-          of all its sub-registers' Wires objects.
-        - Qubit indices are assigned sequentially, starting from 0, in the order they
-          appear in the input dictionary.
+    **Example**
 
-    Examples:
-        >>> qml.registers({"alice": 1, "bob": {"nest1": 2, "nest2": 1}})
-        {
-            'alice': Wires([0]),
-            'bob': Wires([1, 2, 3]),
-            'nest1': Wires([1, 2]),
-            'nest2': Wires([3])
-        }
-
-        >>> qml.registers({"ancilla": {"sub_ancilla": 2, "sub_ancilla1": 1}})
-        {
-            'ancilla': Wires([0, 1, 2]),
-            'sub_ancilla': Wires([0, 1]),
-            'sub_ancilla1': Wires([2])
-        }
+    >>> wire_registers = qml.registers({"alice": 1, "bob": {"nest1": 2, "nest2": 1}})
+    >>> wire_dict
+    {'alice': Wires([0]), 'nest1': Wires([1, 2]), 'nest2': Wires([3]), 'bob': Wires([1, 2, 3])}
+    >>> wire_dict['nest1']
+    Wires([1, 2])
     """
 
     def _registers(register_dict, _start_wire_index=0):
@@ -64,15 +62,13 @@ def registers(register_dict):
         names and sizes.
 
         Args:
-            register_dict (dict): A dictionary describing the register structure. Keys are
-                register names (str) and values are either:
-                - int: The number of wires in the register.
-                - dict: A nested dictionary representing sub-registers.
+            register_dict (dict): a dictionary where keys are register names and values are either
+                positive integers indicating the number of qubits or nested dictionaries of more registers
             _start_wire_index (int): the starting index for the wire labels.
 
         Returns:
-            dict: A flattened dictionary where keys are register names (str) and values
-            are Wires objects representing the wires in each register.
+            dict (Wires): dictionary where the keys are the names (str) of the registers, and the
+            values are either :class:`~.Wires` objects or other registers
         """
 
         all_reg = {}
