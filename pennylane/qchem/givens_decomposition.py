@@ -14,7 +14,6 @@
 """
 This module contains the functions needed for performing basis transformations defined by a set of fermionic ladder operators.
 """
-import numpy as np
 
 import pennylane as qml
 
@@ -37,7 +36,7 @@ def _givens_matrix(a, b, left=True, tol=1e-8):
         tol (float): determines tolerance limits for :math:`|a|` and :math:`|b|` under which they are considered as zero.
 
     Returns:
-        np.ndarray (or tensor): Givens rotation matrix
+        qml.math.array (or tensor): Givens rotation matrix
 
     """
     abs_a, abs_b, interface = qml.math.abs(a), qml.math.abs(b), qml.math.get_interface(a)
@@ -86,7 +85,7 @@ def givens_decomposition(unitary):
 
     .. code-block:: python
 
-        unitary = np.array([[ 0.73678+0.27511j, -0.5095 +0.10704j, -0.06847+0.32515j],
+        unitary = qml.math.array([[ 0.73678+0.27511j, -0.5095 +0.10704j, -0.06847+0.32515j],
                             [-0.21271+0.34938j, -0.38853+0.36497j,  0.61467-0.41317j],
                             [ 0.41356-0.20765j, -0.00651-0.66689j,  0.32839-0.48293j]])
 
@@ -110,7 +109,7 @@ def givens_decomposition(unitary):
         unitary (tensor): unitary matrix on which decomposition will be performed
 
     Returns:
-        (np.ndarray, list[(np.ndarray, tuple)]): diagonal elements of the phase matrix :math:`D` and Givens rotation matrix :math:`T` with their indices.
+        (qml.math.array, list[(qml.math.array, tuple)]): diagonal elements of the phase matrix :math:`D` and Givens rotation matrix :math:`T` with their indices.
 
     Raises:
         ValueError: if the provided matrix is not square.
@@ -207,7 +206,7 @@ def givens_decomposition(unitary):
     phases, ordered_rotations = qml.math.diag(unitary), []
     for grot_mat, (i, j) in list(reversed(nleft_givens)) + list(reversed(right_givens)):
         if not qml.math.is_abstract(grot_mat) and not qml.math.all(
-            np.isreal(grot_mat[0, 1]) and np.isreal(grot_mat[1, 1])
+            qml.math.isreal(grot_mat[0, 1]) and qml.math.isreal(grot_mat[1, 1])
         ):  # pragma: no cover
             raise ValueError(f"Incorrect Givens Rotation encountered, {grot_mat}")
         ordered_rotations.append((grot_mat, (i, j)))
