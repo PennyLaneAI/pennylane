@@ -379,7 +379,18 @@ def while_loop(cond_fn):
 
     # if there is no active compiler, simply interpret the while loop
     # via the Python interpretor.
-    def _decorator(body_fn):
+    def _decorator(body_fn: Callable) -> Callable:
+         """Transform that will call the input ``body_fn`` until the closure variable ``cond_fn`` is met.
+         
+         Args:
+             body_fn (Callable):
+         
+         Closure Variables:
+             cond_fn (Callable):
+             
+         Returns:
+              Callable: a callable with the same signature as ``body_fn`` and ``cond_fn``.
+         """
         return WhileLoopCallable(cond_fn, body_fn)
 
     return _decorator
@@ -497,6 +508,23 @@ def for_loop(lower_bound, upper_bound, step):
     # if there is no active compiler, simply interpret the for loop
     # via the Python interpretor.
     def _decorator(body_fn):
+         """Transform that will call the input ``body_fn`` within the for loop.
+         
+         Args:
+             body_fn (Callable): The function called within the for loop. Note that the loop body
+                function must always have the iteration index as its first
+                argument, which can be used arbitrarily inside the loop body. As the value of the index
+                across iterations is handled automatically by the provided loop bounds, it must not be
+                returned from the function.
+         
+         Closure Variables:
+            lower_bound (int): starting value of the iteration index
+            upper_bound (int): (exclusive) upper bound of the iteration index
+            step (int): increment applied to the iteration index at the end of each iteration
+             
+         Returns:
+              Callable: a callable with the same signature as ``body_fn``
+"""
         return ForLoopCallable(lower_bound, upper_bound, step, body_fn)
 
     return _decorator

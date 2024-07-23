@@ -472,7 +472,7 @@ class TestCatalystControlFlow:
             qml.RX(0.7, wires=[2]),
         ]
 
-        assert [qml.equal(i, j) for i, j in zip(res, expected)]
+        _ = [qml.assert_equal(i, j) for i, j in zip(res, expected)]
 
     def test_cond(self):
         """Test condition with simple true_fn"""
