@@ -91,7 +91,7 @@ class TestDecomposition:
         exp_unitary += [qml.FermionicSingleExcitation] * len(gen_single_terms_wires)
 
         op = qml.kUpCCGSD(weights, wires=wires, k=k, delta_sz=delta_sz, init_state=init_state)
-        queue = op.expand().operations
+        queue = op.decomposition()
 
         # number of gates
         assert len(queue) == n_gates

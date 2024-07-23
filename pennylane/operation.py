@@ -557,7 +557,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
 
         >>> op = qml.PauliRot(1.2, "XY", wires=(0,1))
         >>> op._flatten()
-        ((1.2,), (<Wires = [0, 1]>, (('pauli_word', 'XY'),)))
+        ((1.2,), (Wires([0, 1]), (('pauli_word', 'XY'),)))
         >>> qml.PauliRot._unflatten(*op._flatten())
         PauliRot(1.2, XY, wires=[0, 1])
 
@@ -1089,7 +1089,6 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
 
         self._name = self.__class__.__name__  #: str: name of the operator
         self._id = id
-        self.queue_idx = None  #: int, None: index of the Operator in the circuit queue, or None if not in a queue
         self._pauli_rep = None  # Union[PauliSentence, None]: Representation of the operator as a pauli sentence, if applicable
 
         wires_from_args = False
@@ -1499,9 +1498,19 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
     def expand(self):
         """Returns a tape that contains the decomposition of the operator.
 
+        .. warning::
+            This function is deprecated and will be removed in version 0.39.
+            The same behaviour can be achieved simply through 'qml.tape.QuantumScript(self.decomposition())'.
+
         Returns:
             .QuantumTape: quantum tape
         """
+        warnings.warn(
+            "'Operator.expand' is deprecated and will be removed in version 0.39. "
+            "The same behaviour can be achieved simply through 'qml.tape.QuantumScript(self.decomposition())'.",
+            qml.PennyLaneDeprecationWarning,
+        )
+
         if not self.has_decomposition:
             raise DecompositionUndefinedError
 
@@ -1629,7 +1638,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         >>> op = qml.ctrl(qml.U2(3.4, 4.5, wires="a"), ("b", "c") )
         >>> op._flatten()
         ((U2(3.4, 4.5, wires=['a']),),
-        (<Wires = ['b', 'c']>, (True, True), <Wires = []>))
+        (Wires(['b', 'c']), (True, True), Wires([])))
 
         """
         hashable_hyperparameters = tuple(
@@ -1652,11 +1661,11 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
 
         >>> op = qml.Rot(1.2, 2.3, 3.4, wires=0)
         >>> op._flatten()
-        ((1.2, 2.3, 3.4), (<Wires = [0]>, ()))
+        ((1.2, 2.3, 3.4), (Wires([0]), ()))
         >>> qml.Rot._unflatten(*op._flatten())
         >>> op = qml.PauliRot(1.2, "XY", wires=(0,1))
         >>> op._flatten()
-        ((1.2,), (<Wires = [0, 1]>, (('pauli_word', 'XY'),)))
+        ((1.2,), (Wires([0, 1]), (('pauli_word', 'XY'),)))
         >>> op = qml.ctrl(qml.U2(3.4, 4.5, wires="a"), ("b", "c") )
         >>> type(op)._unflatten(*op._flatten())
         Controlled(U2(3.4, 4.5, wires=['a']), control_wires=['b', 'c'])
@@ -1968,7 +1977,7 @@ class Observable(Operator):
 
         >>> tensor = qml.X(0) @ qml.Z(1)
         >>> print(tensor._obs_data())
-        {("PauliZ", <Wires = [1]>, ()), ("PauliX", <Wires = [0]>, ())}
+        {("PauliZ", Wires([1]), ()), ("PauliX", Wires([0]), ())}
         """
         obs = Tensor(self).non_identity_obs
         tensor = set()

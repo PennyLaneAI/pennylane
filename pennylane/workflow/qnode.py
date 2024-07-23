@@ -106,7 +106,7 @@ def _to_qfunc_output_type(
 
 
 class QNode:
-    """Represents a quantum node in the hybrid computational graph.
+    r"""Represents a quantum node in the hybrid computational graph.
 
     A *quantum node* contains a :ref:`quantum function <intro_vcirc_qfunc>` (corresponding to
     a `variational circuit <https://pennylane.ai/qml/glossary/variational_circuit>`)
@@ -237,6 +237,9 @@ class QNode:
         **kwargs: Any additional keyword arguments provided are passed to the differentiation
             method. Please refer to the :mod:`qml.gradients <.gradients>` module for details
             on supported options for your chosen gradient transform.
+
+    .. warning::
+        The ``expansion_strategy`` attribute is deprecated and will be removed in version 0.39.
 
     **Example**
 
@@ -448,7 +451,7 @@ class QNode:
         device: Union[Device, "qml.devices.Device"],
         interface="auto",
         diff_method="best",
-        expansion_strategy="gradient",
+        expansion_strategy=None,
         max_expansion=10,
         grad_on_execution="best",
         cache="auto",
@@ -478,6 +481,17 @@ class QNode:
                 max_diff,
                 gradient_kwargs,
             )
+
+        if expansion_strategy is not None:
+            warnings.warn(
+                "The 'expansion_strategy' attribute is deprecated and will be removed  "
+                "in version 0.39. For full control over the stage to which the tape is "
+                "constructed, use the 'pennylane.workflow.construct_batch' function.",
+                qml.PennyLaneDeprecationWarning,
+            )
+
+        # Default to "gradient" to maintain default behaviour of "draw" and "specs"
+        expansion_strategy = expansion_strategy or "gradient"
 
         if interface not in SUPPORTED_INTERFACES:
             raise qml.QuantumFunctionError(
@@ -961,7 +975,7 @@ class QNode:
         # Before constructing the tape, we pass the device to the
         # debugger to ensure they are compatible if there are any
         # breakpoints in the circuit
-        with pldb_device_manager(self.device) as _:
+        with pldb_device_manager(self.device):
             with qml.queuing.AnnotatedQueue() as q:
                 self._qfunc_output = self.func(*args, **kwargs)
 
@@ -1081,7 +1095,6 @@ class QNode:
                 mcm_config=mcm_config,
                 interface=self.interface,
             )
-            override_shots = 1
         elif hasattr(self.device, "capabilities"):
             inner_transform_program.add_transform(
                 qml.defer_measurements,
@@ -1099,19 +1112,26 @@ class QNode:
         full_transform_program.set_classical_component(self, args, kwargs)
         _prune_dynamic_transform(full_transform_program, inner_transform_program)
 
-        # pylint: disable=unexpected-keyword-arg
-        res = qml.execute(
-            (self._tape,),
-            device=self.device,
-            gradient_fn=self.gradient_fn,
-            interface=self.interface,
-            transform_program=full_transform_program,
-            inner_transform=inner_transform_program,
-            config=config,
-            gradient_kwargs=self.gradient_kwargs,
-            override_shots=override_shots,
-            **self.execute_kwargs,
-        )
+        with warnings.catch_warnings():
+            # TODO: remove this once the cycle for the arguements have finished, i.e. 0.39.
+            warnings.filterwarnings(
+                action="ignore",
+                message=r".*argument is deprecated and will be removed in version 0.39.*",
+                category=qml.PennyLaneDeprecationWarning,
+            )
+            # pylint: disable=unexpected-keyword-arg
+            res = qml.execute(
+                (self._tape,),
+                device=self.device,
+                gradient_fn=self.gradient_fn,
+                interface=self.interface,
+                transform_program=full_transform_program,
+                inner_transform=inner_transform_program,
+                config=config,
+                gradient_kwargs=self.gradient_kwargs,
+                override_shots=override_shots,
+                **self.execute_kwargs,
+            )
         res = res[0]
 
         # convert result to the interface in case the qfunc has no parameters

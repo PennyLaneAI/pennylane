@@ -948,7 +948,7 @@ class TestDecompositionExpand:
         """Test that the expand method uses a shortcut if it is defined for that exponent and base."""
         base = qml.PauliX(0)
         op = Pow(base, 0.5)
-        expansion_tape = op.expand()
+        expansion_tape = qml.tape.QuantumScript(op.decomposition())
 
         assert len(expansion_tape) == 1
         assert isinstance(expansion_tape[0], qml.SX)
@@ -972,7 +972,7 @@ class TestDecompositionExpand:
 
         base = qml.SX(0)
         op = Pow(base, 3)
-        expansion_tape = op.expand()
+        expansion_tape = qml.tape.QuantumScript(op.decomposition())
 
         assert len(expansion_tape) == 3
 

@@ -575,7 +575,7 @@ def dipole_of(
     >>> coordinates = np.array([0.028, 0.054, 0.0, 0.986, 1.610, 0.0, 1.855, 0.002, 0.0])
     >>> dipole_obs = dipole_of(symbols, coordinates, charge=1)
     >>> print([(h.wires) for h in dipole_obs])
-    [<Wires = [0, 1, 2, 3, 4, 5]>, <Wires = [0, 1, 2, 3, 4, 5]>, <Wires = [0]>]
+    [Wires([0, 1, 2, 3, 4, 5]), Wires([0, 1, 2, 3, 4, 5]), Wires([0])]
 
     >>> dipole_obs[0] # x-component of D
     (
@@ -609,10 +609,7 @@ def dipole_of(
 
     for i in symbols:
         if i not in atomic_numbers:
-            raise ValueError(
-                f"Currently, only first- or second-row elements of the periodic table are supported;"
-                f" got element {i}"
-            )
+            raise ValueError(f"Requested element {i} doesn't exist")
 
     hf_file = qml.qchem.meanfield(symbols, coordinates, name, charge, mult, basis, package, outpath)
 

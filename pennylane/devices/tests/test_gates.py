@@ -31,7 +31,6 @@ import pennylane as qml
 
 pytestmark = pytest.mark.skip_unsupported
 
-np.random.seed(42)
 
 # ==========================================================
 # Some useful global variables

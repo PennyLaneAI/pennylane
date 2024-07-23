@@ -67,7 +67,7 @@ importing PennyLane in Python.
     requires ``pip install -e .`` to be re-run in the plugin repository
     for the changes to take effect.
 
-Apart from the core packages needed to run PennyLane. Some extra packages need
+Apart from the core packages needed to run PennyLane, some extra packages need
 to be installed for several development processes, such as linting, testing, and
 pre-commit quality checks. Those can be installed easily via ``pip``:
 

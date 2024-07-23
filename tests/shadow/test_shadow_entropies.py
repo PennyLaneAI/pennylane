@@ -22,8 +22,6 @@ import pennylane.numpy as np
 from pennylane.shadows import ClassicalShadow
 from pennylane.shadows.classical_shadow import _project_density_matrix_spectrum
 
-np.random.seed(777)
-
 
 def max_entangled_circuit(wires, shots=10000, interface="autograd"):
     """maximally entangled state preparation circuit"""

@@ -542,7 +542,7 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
 
         tape = qml.tape.QuantumTape(ops, measur)
 
-        batch1, fn1 = qml.transforms.hamiltonian_expand(tape)
+        batch1, fn1 = qml.transforms.split_non_commuting(tape)
         assert check_batch(batch1)
 
         batch2, fn2 = qml.transforms.merge_rotations(batch1)
@@ -639,8 +639,8 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
         assert isinstance(program, qml.transforms.core.TransformProgram)
         assert isinstance(new_program, qml.transforms.core.TransformProgram)
 
-        assert len(program) == 5
-        assert len(new_program) == 6
+        assert len(program) == 4
+        assert len(new_program) == 5
 
         assert new_program[-1].transform is valid_transform
 
