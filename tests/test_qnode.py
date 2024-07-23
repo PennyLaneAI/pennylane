@@ -101,6 +101,15 @@ class TestInitialization:
 
         assert f.execute_kwargs["cache"] is True
 
+    def test_max_expansion_is_deprecated(self):
+        """Test that a warning is raised when using the deprecated max_expansion argument"""
+        dev = qml.device("default.qubit", wires=1)
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match="The max_expansion argument is deprecated",
+        ):
+            QNode(dummyfunc, dev, max_expansion=10)
+
 
 # pylint: disable=too-many-public-methods
 class TestValidation:
