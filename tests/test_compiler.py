@@ -388,6 +388,10 @@ class TestCatalystControlFlow:
 
         assert jnp.allclose(circuit(1), -1.0)
 
+        res = circuit.tape.operations
+        expected = [qml.PauliX(0) for i in range(4)]
+        _ = [qml.assert_equal(i, j) for i, j in zip(res, expected)]
+
     def test_dynamic_wires_for_loops(self):
         """Test for loops with iteration index-dependant wires."""
         dev = qml.device("lightning.qubit", wires=6)
