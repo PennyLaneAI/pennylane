@@ -511,7 +511,7 @@ class TestLieClosure:
         genZZ = [Z(i) @ Z(i + 1) for i in range(n - 1)]
 
         generators = [qml.sum(XX + YY + ZZ) for XX, YY, ZZ in zip(genXX, genYY, genZZ)]
-        g = qml.lie_closure(generators, dtype=complex)
+        g = qml.lie_closure(generators)
         assert len(g) == res
 
     def test_universal_gate_set(self):

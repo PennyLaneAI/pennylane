@@ -32,8 +32,7 @@ def lie_closure(
     max_iterations: int = 10000,
     verbose: bool = False,
     pauli: bool = False,
-    tol: float = None,
-    dtype=None,
+    tol: float = None
 ) -> Iterable[Union[PauliWord, PauliSentence, Operator]]:
     r"""Compute the dynamical Lie algebra from a set of generators.
 
@@ -131,10 +130,7 @@ def lie_closure(
             for op in generators
         ]
 
-    if dtype is None:
-        dtype = complex
-
-    vspace = PauliVSpace(generators, tol=tol, dtype=dtype)
+    vspace = PauliVSpace(generators, tol=tol, dtype=float)
 
     epoch = 0
     old_length = 0  # dummy value
