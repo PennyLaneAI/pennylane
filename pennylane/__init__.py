@@ -151,6 +151,8 @@ import pennylane.data
 import pennylane.noise
 from pennylane.noise import NoiseModel
 
+from pennylane.devices import device
+
 # Look for an existing configuration file
 default_config = Configuration("config.toml")
 
