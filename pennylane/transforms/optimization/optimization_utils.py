@@ -50,11 +50,11 @@ def fuse_rot_angles(angles1, angles2):
     is non-trivial.
 
     Args:
-        angles_1 (float): A set of three angles for the first ``qml.Rot`` operation.
-        angles_2 (float): A set of three angles for the second ``qml.Rot`` operation.
+        angles_1 (tensor_like): A set of three angles for the first ``qml.Rot`` operation.
+        angles_2 (tensor_like): A set of three angles for the second ``qml.Rot`` operation.
 
     Returns:
-        array[float]: Rotation angles for a single ``qml.Rot`` operation that
+        tensor_like: Rotation angles for a single ``qml.Rot`` operation that
         implements the same operation as the two sets of input angles.
 
     .. note::
