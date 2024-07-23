@@ -33,7 +33,7 @@ def lie_closure(
     verbose: bool = False,
     pauli: bool = False,
     tol: float = None,
-    dtype=None,
+    dtype = None,
 ) -> Iterable[Union[PauliWord, PauliSentence, Operator]]:
     r"""Compute the dynamical Lie algebra from a set of generators.
 
