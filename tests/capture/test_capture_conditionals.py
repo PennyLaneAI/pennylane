@@ -117,6 +117,7 @@ def cond_true(selector, arg):
         true_fn,
     )(arg)
 
+
 # pylint: disable=no-self-use
 class TestCond:
     """Tests for capturing conditional statements."""
