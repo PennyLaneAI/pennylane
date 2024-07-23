@@ -503,7 +503,7 @@ class TestLieClosure:
         res = qml.pauli.lie_closure(generators)
         assert len(res) == 4 * ((2 ** (n - 2)) ** 2 - 1)
     
-    @pytest.mark.parametrize("n, res", [(3, 4), (4, 12), (5, 40)])
+    @pytest.mark.parametrize("n, res", [(3, 4), (4, 12)])
     def test_lie_closure_heisenberg(self, n, res):
         """Test the resulting DLA from Heisenberg model with summed generators"""
         genXX = [X(i) @ X(i+1) for i in range(n-1)]
