@@ -29,7 +29,7 @@
 <h3>Improvements 🛠</h3>
 
 * `fuse_rot_angles` respects now the global phase of the combined rotations.
-  [(#-___)](https://github.com/PennyLaneAI/pennylane/pull/-___)
+  [(#6031)](https://github.com/PennyLaneAI/pennylane/pull/6031)
 
 * `StateMP.process_state` defines rules in `cast_to_complex` for complex casting, avoiding a superfluous state vector copy in Lightning simulations
   [(#5995)](https://github.com/PennyLaneAI/pennylane/pull/5995)
@@ -128,7 +128,7 @@
 <h3>Bug fixes 🐛</h3>
 
 * `fuse_rot_angles` no longer returns wrong derivatives at singular points but returns NaN.
-  [(#____)](https://github.com/PennyLaneAI/pennylane/pull/____)
+  [(#6031)](https://github.com/PennyLaneAI/pennylane/pull/6031)
 
 * `CircuitGraph` can now handle circuits with the same operation instance occuring multiple times.
   [(#5907)](https://github.com/PennyLaneAI/pennylane/pull/5907)
