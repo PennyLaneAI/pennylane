@@ -27,6 +27,7 @@ import numpy as np
 import pennylane as qml
 from pennylane.logging import debug_logger, debug_logger_init
 from pennylane.measurements.mid_measure import MidMeasureMP
+from pennylane.operation import classproperty
 from pennylane.ops.op_math.condition import Conditional
 from pennylane.tape import QuantumTape
 from pennylane.transforms import convert_to_numpy_parameters
@@ -410,8 +411,8 @@ class DefaultQubit(Device):
 
     """
 
-    @property
-    def name(self):
+    @classproperty
+    def name(cls):  # pylint: disable=no-self-argument
         """The name of the device."""
         return "default.qubit"
 

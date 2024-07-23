@@ -18,11 +18,14 @@ This module contains the Abstract Base Class for the next generation of devices.
 import abc
 from collections.abc import Iterable
 from dataclasses import replace
+from importlib import metadata
 from numbers import Number
+from sys import version_info
 from typing import Callable, Optional, Sequence, Tuple, Union
 
 from pennylane import Tracker
 from pennylane.measurements import Shots
+from pennylane.operation import classproperty
 from pennylane.tape import QuantumTape
 from pennylane.transforms.core import TransformProgram
 from pennylane.typing import Result, ResultBatch
@@ -34,6 +37,8 @@ Result_or_ResultBatch = Union[Result, ResultBatch]
 QuantumTapeBatch = Sequence[QuantumTape]
 QuantumTape_or_Batch = Union[QuantumTape, QuantumTapeBatch]
 PostprocessingFn = Callable[[ResultBatch], Result_or_ResultBatch]
+
+DEVICE_REGISTRY: dict = {}
 
 
 # pylint: disable=unused-argument, no-self-use
@@ -125,15 +130,30 @@ class Device(abc.ABC):
 
     """
 
-    @property
-    def name(self) -> str:
+    def __init_subclass__(cls) -> None:
+        try:
+            name = cls.name
+        except AttributeError:
+            return
+        entries = (
+            metadata.entry_points()["pennylane.plugins"]
+            if version_info[:2] == (3, 9)
+            # pylint:disable=unexpected-keyword-arg
+            else metadata.entry_points(group="pennylane.plugins")
+        )
+        if name in {entry.name for entry in entries}:
+            return
+        DEVICE_REGISTRY[name] = cls
+
+    @classproperty
+    def name(cls) -> str:  # pylint: disable=no-self-argument
         """The name of the device or set of devices.
 
         This property can either be the name of the class, or an alias to be used in the :func:`~.device` constructor,
         such as ``"default.qubit"`` or ``"lightning.qubit"``.
 
         """
-        return type(self).__name__
+        return cls.__name__
 
     tracker: Tracker = Tracker()
     """A :class:`~.Tracker` that can store information about device executions, shots, batches,

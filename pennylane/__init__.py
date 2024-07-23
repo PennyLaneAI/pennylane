@@ -370,13 +370,15 @@ def device(name, *args, **kwargs):
     Please refer to the documentation for the individual devices to see any
     additional arguments that might be required or supported.
     """
-    if name not in plugin_devices:
+    from .devices.device_api import DEVICE_REGISTRY  # pylint: disable=import-outside-toplevel
+
+    if name not in plugin_devices and name not in DEVICE_REGISTRY:
         # Device does not exist in the loaded device list.
         # Attempt to refresh the devices, in case the user
         # installed the plugin during the current Python session.
         refresh_devices()
 
-    if name in plugin_devices:
+    if name in plugin_devices or name in DEVICE_REGISTRY:
         options = {}
 
         # load global configuration settings if available
@@ -399,15 +401,18 @@ def device(name, *args, **kwargs):
         options.update(kwargs)
 
         # loads the device class
-        plugin_device_class = plugin_devices[name].load()
+        if name in plugin_devices:
+            plugin_device_class = plugin_devices[name].load()
 
-        if hasattr(plugin_device_class, "pennylane_requires") and Version(
-            version()
-        ) not in SimpleSpec(plugin_device_class.pennylane_requires):
-            raise DeviceError(
-                f"The {name} plugin requires PennyLane versions {plugin_device_class.pennylane_requires}, "
-                f"however PennyLane version {__version__} is installed."
-            )
+            if hasattr(plugin_device_class, "pennylane_requires") and Version(
+                version()
+            ) not in SimpleSpec(plugin_device_class.pennylane_requires):
+                raise DeviceError(
+                    f"The {name} plugin requires PennyLane versions {plugin_device_class.pennylane_requires}, "
+                    f"however PennyLane version {__version__} is installed."
+                )
+        else:
+            plugin_device_class = DEVICE_REGISTRY[name]
 
         # Construct the device
         dev = plugin_device_class(*args, **options)
