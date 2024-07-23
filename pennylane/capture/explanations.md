@@ -47,7 +47,8 @@ Jax describes two separate ways of defining higher order derivatives:
 Jax also has a [`CallPrimitive`](https://github.com/google/jax/blob/23ad313817f20345c60281fbf727cf4f8dc83181/jax/_src/core.py#L2366)
 but using this seems to be more trouble than its worth so far. Notably, this class is rather private and undocumented.
 
-We will proceed with using *staged processing* for now.
+We will proceed with using *staged processing* for now. This choice was as it is more straightforward to implement, follows catalyst's choice of representation, and is more
+explicit in the contents. On the fly isn't as much "program capture" as deferring capture till later. We want to immediately capture all aspects of the jaxpr.
 
 
 Suppose we have a transform that repeats a function n times
@@ -124,8 +125,8 @@ Now that we have all the parts, we can see it in action:
 { lambda ; a:f32[]. let
     b:f32[] c:f32[] = repeat[
       jaxpr={ lambda ; d:f32[] e:f32[]. let
-          f:f32[] = mul d e
-          g:f32[] = mul 1.0 e
+          f:f32[] = add d 1.0
+          g:f32[] = mul 2.0 e
         in (f, g) }
     ] 2 a 2.0
   in (b, c) }
