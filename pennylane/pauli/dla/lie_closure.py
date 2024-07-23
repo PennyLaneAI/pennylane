@@ -50,10 +50,6 @@ def lie_closure(
             This can help with performance to avoid unnecessary conversions to :class:`~pennylane.operation.Operator`
             and vice versa. Default is ``False``.
         tol (float): Numerical tolerance for the linear independence check used in :class:`~.PauliVSpace`.
-        dtype: Dtype for the underlyding matrix representation in :class:`~.PauliVSpace`.
-            For generators that are pure Pauli words (:class:`~PauliWord`), it can be set
-            to ``float``. For sums of Paulis (i.e. :class:`~PauliSentence`) it should be
-            set to ``complex`` (default).
 
     Returns:
         Union[list[:class:`~.PauliSentence`], list[:class:`~.Operator`]]: a basis of either :class:`~.PauliSentence` or :class:`~.Operator` instances that is closed under
@@ -83,7 +79,7 @@ def lie_closure(
     This can be done in short via ``lie_closure`` as follows.
 
     >>> ops = [X(0) @ X(1), Z(0), Z(1)]
-    >>> dla = qml.lie_closure(ops, dtype=float)
+    >>> dla = qml.lie_closure(ops)
     >>> print(dla)
     [X(1) @ X(0),
      Z(0),
