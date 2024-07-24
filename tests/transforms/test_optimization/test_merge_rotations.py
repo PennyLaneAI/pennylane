@@ -424,13 +424,11 @@ class TestMergeRotationsInterfaces:
         @qml.qnode(qml.device("default.qubit", wires=["w1", "w2"]), interface="jax")
         @merge_rotations
         def qfunc():
-            qml.Rot(jax.numpy.array(0.1), jax.numpy.array(0.2), jax.numpy.array(0.3), wires=["w1"])
-            qml.Rot(
-                jax.numpy.array(-0.1), jax.numpy.array(-0.2), jax.numpy.array(-0.3), wires=["w1"]
-            )
+            qml.Rot(*jax.numpy.array([0.1, 0.2, 0.3]), wires=["w1"])
+            qml.Rot(*jax.numpy.array([-0.3, -0.2, -0.1]), wires=["w1"])
             qml.CRX(jax.numpy.array(0.2), wires=["w1", "w2"])
             qml.CRX(jax.numpy.array(-0.2), wires=["w1", "w2"])
-            return qml.expval(qml.PauliZ("w1"))
+            return qml.expval(qml.PauliZ("w2"))
 
         res = qfunc()
 
@@ -525,7 +523,7 @@ class TestTransformDispatch:
 
 @pytest.mark.xfail
 def test_merge_rotations_non_commuting_observables():
-    """Test that merge_roatations works with non-commuting observables."""
+    """Test that merge_rotations works with non-commuting observables."""
 
     @qml.transforms.merge_rotations
     def circuit(x):

@@ -14,7 +14,7 @@
 """Transform for fusing sequences of single-qubit gates."""
 # pylint: disable=too-many-branches
 
-from pennylane.math import allclose, is_abstract, stack
+from pennylane.math import allclose, cast_like, is_abstract, requires_grad, stack
 from pennylane.ops.qubit import Rot
 from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumTape, QuantumTapeBatch
@@ -282,28 +282,29 @@ def single_qubit_fusion(
                 next_gate_angles = stack(next_gate.single_qubit_rot_angles())
             except (NotImplementedError, AttributeError):
                 break
-
-            cumulative_angles = fuse_rot_angles(cumulative_angles, stack(next_gate_angles))
+            if not is_abstract(cumulative_angles):
+                next_gate_angles = cast_like(next_gate_angles, cumulative_angles)
+            cumulative_angles = fuse_rot_angles(cumulative_angles, next_gate_angles)
 
             list_copy.pop(next_gate_idx + 1)
             next_gate_idx = find_next_gate(current_gate.wires, list_copy[1:])
 
-        # If we are tracing/jitting, don't perform any conditional checks and
+        # If we are tracing/jitting or differentiating, don't perform any conditional checks and
         # apply the rotation regardless of the angles.
-        if is_abstract(cumulative_angles):
-            with QueuingManager.stop_recording():
-                new_operations.append(Rot(*cumulative_angles, wires=current_gate.wires))
-        # If not tracing, check whether all angles are 0 (or equivalently, if the RY
-        # angle is close to 0, and so is the sum of the RZ angles
-        else:
-            if not allclose(
+        # If not tracing or differentiating, check whether total rotation is trivial by checking
+        # if the RY angle and the sum of the RZ angles are close to 0
+        if (
+            is_abstract(cumulative_angles)
+            or requires_grad(cumulative_angles)
+            or not allclose(
                 stack([cumulative_angles[0] + cumulative_angles[2], cumulative_angles[1]]),
-                [0.0, 0.0],
+                0.0,
                 atol=atol,
                 rtol=0,
-            ):
-                with QueuingManager.stop_recording():
-                    new_operations.append(Rot(*cumulative_angles, wires=current_gate.wires))
+            )
+        ):
+            with QueuingManager.stop_recording():
+                new_operations.append(Rot(*cumulative_angles, wires=current_gate.wires))
 
         # Remove the starting gate from the list
         list_copy.pop(0)
