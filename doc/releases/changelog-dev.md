@@ -56,6 +56,51 @@
 * Molecules and Hamiltonians can now be constructed for all the elements present in the periodic table.
   [(#5821)](https://github.com/PennyLaneAI/pennylane/pull/5821)
 
+* `qml.for_loop` and `qml.while_loop` now fallback to standard Python control
+  flow if `@qjit` is not present, allowing the same code to work with and without
+  `@qjit` without any rewrites.
+  [(#6014)](https://github.com/PennyLaneAI/pennylane/pull/6014)
+
+  ```python
+  dev = qml.device("lightning.qubit", wires=3)
+
+  @qml.qnode(dev)
+  def circuit(x, n):
+
+      @qml.for_loop(0, n, 1)
+      def init_state(i):
+          qml.Hadamard(wires=i)
+
+      init_state()
+
+      @qml.for_loop(0, n, 1)
+      def apply_operations(i, x):
+          qml.RX(x, wires=i)
+
+          @qml.for_loop(i + 1, n, 1)
+          def inner(j):
+              qml.CRY(x**2, [i, j])
+
+          inner()
+          return jnp.sin(x)
+
+      apply_operations(x)
+      return qml.probs()
+  ```
+
+  ```pycon
+  >>> print(qml.draw(circuit)(0.5, 3))
+  0: ──H──RX(0.50)─╭●────────╭●──────────────────────────────────────┤  Probs
+  1: ──H───────────╰RY(0.25)─│──────────RX(0.48)─╭●──────────────────┤  Probs
+  2: ──H─────────────────────╰RY(0.25)───────────╰RY(0.23)──RX(0.46)─┤  Probs
+  >>> circuit(0.5, 3)
+  array([0.125     , 0.125     , 0.09949758, 0.15050242, 0.07594666,
+       0.11917543, 0.08942104, 0.21545687])
+  >>> qml.qjit(circuit)(0.5, 3)
+  Array([0.125     , 0.125     , 0.09949758, 0.15050242, 0.07594666,
+       0.11917543, 0.08942104, 0.21545687], dtype=float64)
+  ```
+
 * The `qubit_observable` function is modified to return an ascending wire order for molecular 
   Hamiltonians.
   [(#5950)](https://github.com/PennyLaneAI/pennylane/pull/5950)
@@ -172,6 +217,7 @@ Lillian M. A. Frederiksen,
 Pietropaolo Frisoni,
 Emiliano Godinez,
 Renke Huang,
+Josh Izaac,
 Soran Jahangiri,
 Christina Lee,
 Austin Huang,
