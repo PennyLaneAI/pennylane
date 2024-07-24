@@ -152,10 +152,6 @@ class BasisState(StatePrepBase):
     def state_vector(self, wire_order=None):
         """Returns a statevector of shape ``(2,) * num_wires``."""
         prep_vals = self.parameters[0]
-        if qml.math.shape(prep_vals) == ():
-            bin = 2 ** math.arange(len(self.wires))[::-1]
-            prep_vals = qml.math.where((prep_vals & bin) > 0, 1, 0)
-
         prep_vals_int = math.cast(prep_vals, int)
 
         if wire_order is None:
