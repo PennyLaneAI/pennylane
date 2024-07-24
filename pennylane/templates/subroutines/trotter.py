@@ -374,7 +374,7 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
         >>> op = qml.ctrl(qml.U2(3.4, 4.5, wires="a"), ("b", "c") )
         >>> op._flatten()
         ((U2(3.4, 4.5, wires=['a']),),
-        (<Wires = ['b', 'c']>, (True, True), <Wires = []>))
+        (Wires(['b', 'c']), (True, True), Wires([])))
         """
         hamiltonian = self.hyperparameters["base"]
         time = self.data[-1]
@@ -399,11 +399,11 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
 
         >>> op = qml.Rot(1.2, 2.3, 3.4, wires=0)
         >>> op._flatten()
-        ((1.2, 2.3, 3.4), (<Wires = [0]>, ()))
+        ((1.2, 2.3, 3.4), (Wires([0]), ()))
         >>> qml.Rot._unflatten(*op._flatten())
         >>> op = qml.PauliRot(1.2, "XY", wires=(0,1))
         >>> op._flatten()
-        ((1.2,), (<Wires = [0, 1]>, (('pauli_word', 'XY'),)))
+        ((1.2,), (Wires([0, 1]), (('pauli_word', 'XY'),)))
         >>> op = qml.ctrl(qml.U2(3.4, 4.5, wires="a"), ("b", "c") )
         >>> type(op)._unflatten(*op._flatten())
         Controlled(U2(3.4, 4.5, wires=['a']), control_wires=['b', 'c'])
@@ -438,10 +438,9 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
         ops = kwargs["base"].operands
 
         decomp = _recursive_expression(time / n, order, ops)[::-1] * n
-        unique_decomp = [copy.copy(op) for op in decomp]
 
         if qml.QueuingManager.recording():
-            for op in unique_decomp:  # apply operators in reverse order of expression
+            for op in decomp:  # apply operators in reverse order of expression
                 qml.apply(op)
 
-        return unique_decomp
+        return decomp

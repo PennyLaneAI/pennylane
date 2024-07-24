@@ -9,25 +9,69 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
+* The ``decomp_depth`` argument in ``qml.device`` is deprecated. 
+
+  - Deprecated in v0.38
+  - Will be removed in v0.39
+
+* The ``max_expansion`` argument in ``qml.QNode`` is deprecated. 
+
+  - Deprecated in v0.38
+  - Will be removed in v0.39
+
+* The functions ``qml.transforms.sum_expand`` and ``qml.transforms.hamiltonian_expand`` are deprecated.
+  Instead, ``qml.transforms.split_non_commuting`` can be used for equivalent behaviour.
+
+  - Deprecated in v0.38
+  - Will be removed in v0.39
+
+* The ``expansion_strategy`` attribute of ``qml.QNode`` is deprecated. 
+  Users should make use of ``qml.workflow.construct_batch``, should they require fine control over the output tape(s).
+
+  - Deprecated in v0.38
+  - Will be removed in v0.39
+
+* The ``expansion_strategy`` argument in ``qml.specs``, ``qml.draw``, and ``qml.draw_mpl`` is deprecated. 
+  Instead, use the ``level`` argument which provides a superset of options.
+
+  - Deprecated in v0.38
+  - Will be removed in v0.39
+
+* The ``expand_fn`` argument in ``qml.execute`` is deprecated. 
+  Instead, please create a ``qml.transforms.core.TransformProgram`` with the desired preprocessing and pass it to the ``transform_program`` argument of ``qml.execute``.
+
+  - Deprecated in v0.38
+  - Will be removed in v0.39
+
+* The ``max_expansion`` argument in ``qml.execute`` is deprecated. 
+  Instead, please use ``qml.devices.preprocess.decompose`` with the desired expansion level, add it to a ``TransformProgram``, and pass it to the ``transform_program`` argument of ``qml.execute``.
+
+  - Deprecated in v0.38
+  - Will be removed in v0.39
+
+* The ``override_shots`` argument in ``qml.execute`` is deprecated.
+  Instead, please add the shots to the ``QuantumTape``\ s to be executed.
+
+  - Deprecated in v0.38
+  - Will be removed in v0.39
+
+* The ``device_batch_transform`` argument in ``qml.execute`` is deprecated. 
+  Instead, please create a ``qml.transforms.core.TransformProgram`` with the desired preprocessing and pass it to the ``transform_program`` argument of ``qml.execute``.
+
+  - Deprecated in v0.38
+  - Will be removed in v0.39
+
+* The functions ``qml.qinfo.classical_fisher`` and ``qml.qinfo.quantum_fisher`` are deprecated since they are being migrated
+  to the ``qml.gradients`` module. Therefore, ``qml.gradients.classical_fisher`` and ``qml.gradients.quantum_fisher`` should be used instead.
+
+  - Deprecated and Duplicated in v0.38
+  - Will be removed in v0.39
+
 * The ``simplify`` argument in ``qml.Hamiltonian`` and ``qml.ops.LinearCombination`` is deprecated. 
   Instead, ``qml.simplify()`` can be called on the constructed operator.
 
   - Deprecated in v0.37
   - Will be removed in v0.39
-
-* ``qml.transforms.map_batch_transform`` is deprecated, since transforms can be applied directly to a batch of tapes.
-  See :func:`~.pennylane.transform` for more information.
-
-  - Deprecated in v0.37
-  - Will be removed in v0.38
-
-* ``qml.from_qasm`` will no longer remove measurements from the QASM code. Calling ``qml.from_qasm``
-  on a circuit containing measurements without specifying ``measurements`` will raise a deprecation 
-  warning in v0.37, and in v0.38, the default behaviour will be changed to keeping measurements. Use 
-  ``measurements=[]`` to remove measurements from the original circuit.
-
-  - Deprecated in v0.37
-  - Default behaviour will be changed in v0.38
 
 New operator arithmetic deprecations
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -72,6 +116,23 @@ Other deprecations
 
 Completed deprecation cycles
 ----------------------------
+
+* ``queue_idx`` attribute has been removed from the ``Operator``, ``CompositeOp``, and ``SymboliOp`` classes. Instead, the index is now stored as the label of the ``CircuitGraph.graph`` nodes.
+
+  - Deprecated in v0.38
+  - Removed in v0.38
+
+* ``qml.from_qasm`` no longer removes measurements from the QASM code. Use 
+  ``measurements=[]`` to remove measurements from the original circuit.
+
+  - Deprecated in v0.37
+  - Default behaviour changed in v0.38
+
+* ``qml.transforms.map_batch_transform`` has been removed, since transforms can be applied directly to a batch of tapes.
+  See :func:`~.pennylane.transform` for more information.
+
+  - Deprecated in v0.37
+  - Removed in v0.38
 
 * ``qml.from_qasm_file`` has been removed. Instead, the user can open the file and then load its content using ``qml.from_qasm``.
 

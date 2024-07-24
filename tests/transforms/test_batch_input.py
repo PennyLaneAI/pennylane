@@ -128,7 +128,6 @@ def test_value_error():
         qml.RY(weights[1], wires=1)
         return qml.expval(qml.PauliZ(1))
 
-    np.random.seed(42)
     batch_size = 5
     input1 = np.random.uniform(0, np.pi, (batch_size, 2), requires_grad=False)
     input2 = np.random.uniform(0, np.pi, (4, 1), requires_grad=False)

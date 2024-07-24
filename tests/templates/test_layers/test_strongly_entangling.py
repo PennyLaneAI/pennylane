@@ -67,7 +67,7 @@ class TestDecomposition:
         weights = np.random.random(size=weight_shape)
 
         op = qml.StronglyEntanglingLayers(weights, wires=range(n_wires))
-        tape = op.expand()
+        tape = qml.tape.QuantumScript(op.decomposition())
 
         if batch_dim is None:
             param_sets = iter(weights.reshape((-1, 3)))
@@ -93,7 +93,7 @@ class TestDecomposition:
         weights = np.random.randn(*shape)
 
         op = qml.StronglyEntanglingLayers(weights=weights, wires=range(n_wires), imprimitive=qml.CZ)
-        ops = op.expand().operations
+        ops = op.decomposition()
 
         gate_names = [gate.name for gate in ops]
         assert gate_names.count("CZ") == n_wires * n_layers
@@ -134,7 +134,7 @@ class TestDecomposition:
         weights = np.random.randn(*shape)
 
         op = qml.StronglyEntanglingLayers(weights=weights, wires=range(n_wires), ranges=ranges)
-        ops = op.expand().operations
+        ops = op.decomposition()
 
         gate_wires = [gate.wires.labels for gate in ops]
         range_idx = 0

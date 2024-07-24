@@ -27,9 +27,13 @@ import pennylane as qml
     ("lcu", "control"),
     [
         (qml.ops.LinearCombination([0.25, 0.75], [qml.Z(2), qml.X(1) @ qml.X(2)]), [0]),
+        (qml.dot([0.25, 0.75], [qml.Z(2), qml.X(1) @ qml.X(2)]), [0]),
+        (qml.Hamiltonian([0.25, 0.75], [qml.Z(2), qml.X(1) @ qml.X(2)]), [0]),
+        (0.25 * qml.Z(2) - 0.75 * qml.X(1) @ qml.X(2), [0]),
+        (qml.Z(2) + qml.X(1) @ qml.X(2), [0]),
         (qml.ops.LinearCombination([-0.25, 0.75j], [qml.Z(3), qml.X(2) @ qml.X(3)]), [0, 1]),
         (
-            qml.ops.LinearCombination([-0.25 + 0.1j, 0.75j], [qml.Z(4), qml.X(4) @ qml.X(4)]),
+            qml.ops.LinearCombination([-0.25 + 0.1j, 0.75j], [qml.Z(4), qml.X(4) @ qml.X(5)]),
             [0, 1, 2, 3],
         ),
     ],
@@ -48,8 +52,7 @@ def test_repr():
 
     op = qml.PrepSelPrep(lcu, control)
     assert (
-        repr(op)
-        == "PrepSelPrep(coeffs=(0.25, 0.75), ops=(Z(2), X(1) @ X(2)), control=<Wires = [0]>)"
+        repr(op) == "PrepSelPrep(coeffs=(0.25, 0.75), ops=(Z(2), X(1) @ X(2)), control=Wires([0]))"
     )
 
 
@@ -258,25 +261,35 @@ class TestPrepSelPrep:
 
         assert qml.equal(op, op_copy)
 
-    def test_flatten_unflatten(self):
+    @pytest.mark.parametrize(
+        ("lcu"),
+        [
+            qml.ops.LinearCombination([0.25, 0.75], [qml.Z(2), qml.X(1) @ qml.X(2)]),
+            qml.dot([0.25, 0.75], [qml.Z(2), qml.X(1) @ qml.X(2)]),
+            qml.Hamiltonian([0.25, 0.75], [qml.Z(2), qml.X(1) @ qml.X(2)]),
+            0.25 * qml.Z(2) - 0.75 * qml.X(1) @ qml.X(2),
+            qml.Z(2) + qml.X(1) @ qml.X(2),
+            qml.ops.LinearCombination([-0.25, 0.75j], [qml.Z(3), qml.X(2) @ qml.X(3)]),
+            qml.ops.LinearCombination([-0.25 + 0.1j, 0.75j], [qml.Z(4), qml.X(4) @ qml.X(5)]),
+        ],
+    )
+    def test_flatten_unflatten(self, lcu):
         """Test that the class can be correctly flattened and unflattened"""
 
-        lcu = qml.ops.LinearCombination([1 / 2, 1 / 2], [qml.Identity(1), qml.PauliZ(1)])
         lcu_coeffs, lcu_ops = lcu.terms()
 
         op = qml.PrepSelPrep(lcu, control=0)
         data, metadata = op._flatten()
 
-        data_coeffs = [term.terms()[0][0] for term in data]
-        data_ops = [term.terms()[1][0] for term in data]
+        data_coeffs, data_ops = data[0].terms()
 
         assert hash(metadata)
 
-        assert len(data) == len(lcu)
+        assert len(data[0]) == len(lcu)
         assert all(coeff1 == coeff2 for coeff1, coeff2 in zip(lcu_coeffs, data_coeffs))
         assert all(op1 == op2 for op1, op2 in zip(lcu_ops, data_ops))
 
-        assert metadata == op.control
+        assert metadata[0] == op.control
 
         new_op = type(op)._unflatten(*op._flatten())
         assert op.lcu == new_op.lcu

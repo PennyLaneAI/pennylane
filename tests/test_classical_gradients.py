@@ -20,8 +20,6 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 
-np.random.seed(42)
-
 
 def test_grad_no_ints():
     """Test that grad raises a `ValueError` if the trainable parameter is an int."""

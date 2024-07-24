@@ -106,7 +106,7 @@ def _to_qfunc_output_type(
 
 
 class QNode:
-    """Represents a quantum node in the hybrid computational graph.
+    r"""Represents a quantum node in the hybrid computational graph.
 
     A *quantum node* contains a :ref:`quantum function <intro_vcirc_qfunc>` (corresponding to
     a `variational circuit <https://pennylane.ai/qml/glossary/variational_circuit>`)
@@ -237,6 +237,14 @@ class QNode:
         **kwargs: Any additional keyword arguments provided are passed to the differentiation
             method. Please refer to the :mod:`qml.gradients <.gradients>` module for details
             on supported options for your chosen gradient transform.
+
+    .. warning::
+
+        The ``expansion_strategy`` argument is deprecated and will be removed in version 0.39.
+
+    .. warning::
+
+        The ``max_expansion`` argument is deprecated and will be removed in version 0.39.
 
     **Example**
 
@@ -448,8 +456,8 @@ class QNode:
         device: Union[Device, "qml.devices.Device"],
         interface="auto",
         diff_method="best",
-        expansion_strategy="gradient",
-        max_expansion=10,
+        expansion_strategy=None,
+        max_expansion=None,
         grad_on_execution="best",
         cache="auto",
         cachesize=10000,
@@ -459,6 +467,15 @@ class QNode:
         mcm_method=None,
         **gradient_kwargs,
     ):
+        # Moving it here since the old default value is checked on debugging
+        if max_expansion is not None:
+            warnings.warn(
+                "The max_expansion argument is deprecated and will be removed in version 0.39. ",
+                qml.PennyLaneDeprecationWarning,
+            )
+        else:
+            max_expansion = 10
+
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(
                 """Creating QNode(func=%s, device=%s, interface=%s, diff_method=%s, expansion_strategy=%s, max_expansion=%s, grad_on_execution=%s, cache=%s, cachesize=%s, max_diff=%s, gradient_kwargs=%s""",
@@ -478,6 +495,17 @@ class QNode:
                 max_diff,
                 gradient_kwargs,
             )
+
+        if expansion_strategy is not None:
+            warnings.warn(
+                "The 'expansion_strategy' attribute is deprecated and will be removed  "
+                "in version 0.39. For full control over the stage to which the tape is "
+                "constructed, use the 'pennylane.workflow.construct_batch' function.",
+                qml.PennyLaneDeprecationWarning,
+            )
+
+        # Default to "gradient" to maintain default behaviour of "draw" and "specs"
+        expansion_strategy = expansion_strategy or "gradient"
 
         if interface not in SUPPORTED_INTERFACES:
             raise qml.QuantumFunctionError(
@@ -1081,7 +1109,6 @@ class QNode:
                 mcm_config=mcm_config,
                 interface=self.interface,
             )
-            override_shots = 1
         elif hasattr(self.device, "capabilities"):
             inner_transform_program.add_transform(
                 qml.defer_measurements,
@@ -1099,19 +1126,26 @@ class QNode:
         full_transform_program.set_classical_component(self, args, kwargs)
         _prune_dynamic_transform(full_transform_program, inner_transform_program)
 
-        # pylint: disable=unexpected-keyword-arg
-        res = qml.execute(
-            (self._tape,),
-            device=self.device,
-            gradient_fn=self.gradient_fn,
-            interface=self.interface,
-            transform_program=full_transform_program,
-            inner_transform=inner_transform_program,
-            config=config,
-            gradient_kwargs=self.gradient_kwargs,
-            override_shots=override_shots,
-            **self.execute_kwargs,
-        )
+        with warnings.catch_warnings():
+            # TODO: remove this once the cycle for the arguements have finished, i.e. 0.39.
+            warnings.filterwarnings(
+                action="ignore",
+                message=r".*argument is deprecated and will be removed in version 0.39.*",
+                category=qml.PennyLaneDeprecationWarning,
+            )
+            # pylint: disable=unexpected-keyword-arg
+            res = qml.execute(
+                (self._tape,),
+                device=self.device,
+                gradient_fn=self.gradient_fn,
+                interface=self.interface,
+                transform_program=full_transform_program,
+                inner_transform=inner_transform_program,
+                config=config,
+                gradient_kwargs=self.gradient_kwargs,
+                override_shots=override_shots,
+                **self.execute_kwargs,
+            )
         res = res[0]
 
         # convert result to the interface in case the qfunc has no parameters
