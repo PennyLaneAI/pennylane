@@ -60,17 +60,23 @@ def registers(register_dict):
 
     .. code-block::
 
-        reg =  qml.registers({"aux": 1, "phi": 5, "psi": 5})
+        dev = qml.device("default.qubit")
+        reg =  registers({"aux": 1, "phi": 5, "psi": 5})
 
+        @qml.qnode(dev)
         def circuit():
-            qml.Hadamard(reg["aux"])
+            for state in ["phi", "psi"]:
+                 qml.BasisState([1, 1, 0, 0, 0], reg[state])
 
+            qml.Hadamard(reg["aux"])
             for i in range(len(reg["phi"])):
-                qml.CSWAP(reg["aux"] | reg["phi"][i] | reg["psi"][i])
-
+                qml.CSWAP(reg["aux"] + reg["phi"][i] + reg["psi"][i])
             qml.Hadamard(reg["aux"])
-
+            
             return qml.expval(qml.Z(wires=reg["aux"]))
+
+>>> circuit()
+0.9999999999999996
     """
 
     def _registers(register_dict, _start_wire_index=0):
