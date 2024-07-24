@@ -119,8 +119,8 @@ class TestCond:
     @pytest.mark.parametrize(
         "selector, arg, expected",
         [
-            (1, 10, 20),  # True condition
-            (0, 10, 30),  # False condition
+            (1, 10, 20),
+            (0, 10, 30),
         ],
     )
     def test_cond_true_false(self, testing_functions, selector, arg, expected):
@@ -137,8 +137,8 @@ class TestCond:
     @pytest.mark.parametrize(
         "selector, arg, expected",
         [
-            (1, 10, 20),  # True condition
-            (0, 10, ()),  # No condition met
+            (1, 10, 20),
+            (0, 10, ()),
         ],
     )
     def test_cond_true(self, testing_functions, selector, arg, expected):
@@ -149,6 +149,25 @@ class TestCond:
             selector > 0,
             true_fn,
         )(arg)
+        assert np.allclose(result, expected), f"Expected {expected}, but got {result}"
+
+    @pytest.mark.parametrize(
+        "selector, arg, expected",
+        [
+            (1, jax.numpy.array([2, 3]), 12),
+            (0, jax.numpy.array([2, 3]), 15),
+        ],
+    )
+    def test_cond_with_jax_array(self, selector, arg, expected):
+        """Test the conditional with array arguments."""
+
+        def true_fn(jax_array):
+            return jax_array[0] * jax_array[1] * 2
+
+        def false_fn(jax_array):
+            return jax_array[0] * jax_array[1] * 2.5
+
+        result = qml.cond(selector > 0, true_fn, false_fn)(arg)
         assert np.allclose(result, expected), f"Expected {expected}, but got {result}"
 
 

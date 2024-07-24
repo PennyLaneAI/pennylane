@@ -4,6 +4,9 @@
 
 <h3>New features since last release</h3>
 
+* The `qml.cond` function can be captured into plxpr. 
+  [(#5999)](https://github.com/PennyLaneAI/pennylane/pull/5999)
+
 * Resolved the bug in `qml.ThermalRelaxationError` where there was a typo from `tq` to `tg`.
   [(#5988)](https://github.com/PennyLaneAI/pennylane/issues/5988)
 

@@ -102,7 +102,7 @@ class Conditional(SymbolicOp, Operation):
         return Conditional(self.meas_val, self.base.adjoint())
 
 
-def cond(condition, true_fn, false_fn=None, elifs=()):
+def cond(condition, true_fn: Callable, false_fn: Callable = None, elifs=()):
     """Quantum-compatible if-else conditionals --- condition quantum operations
     on parameters such as the results of mid-circuit qubit measurements.
 
@@ -114,10 +114,12 @@ def cond(condition, true_fn, false_fn=None, elifs=()):
     will be captured by Catalyst, the just-in-time (JIT) compiler, with the executed
     branch determined at runtime. For more details, please see :func:`catalyst.cond`.
 
-    When used with `qml.capture.enabled()` equal to ``True``, this function allows
-    for general if-elif-else constructs. As with the JIT mode, all branches will be
-    captured, with the executed branch determined at runtime. Each branch can receive parameters.
+    When used with `qml.capture.enabled()`, this function allows for general
+    if-elif-else constructs. As with the JIT mode, all branches will be captured,
+    with the executed branch determined at runtime.
     However, the function cannot branch on mid-circuit measurements.
+    Each branch can receive arguments, but the arguments must be the same for all branches.
+    Both the arguments and the branches must be JAX-compatible.
     If a branch returns one or more variables, every other branch must return the same abstract values.
     If a branch returns one or more operators, these will be appended to the QueuingManager.
 
@@ -138,13 +140,13 @@ def cond(condition, true_fn, false_fn=None, elifs=()):
     Args:
         condition (Union[.MeasurementValue, bool]): a conditional expression involving a mid-circuit
            measurement value (see :func:`.pennylane.measure`). This can only be of type ``bool`` when
-           decorated by :func:`~.qjit`.
+           decorated by :func:`~.qjit` or when using :func:`~.qml.capture.enabled()`.
         true_fn (callable): The quantum function or PennyLane operation to
             apply if ``condition`` is ``True``
         false_fn (callable): The quantum function or PennyLane operation to
             apply if ``condition`` is ``False``
         elifs (List(Tuple(bool, callable))): A list of (bool, elif_fn) clauses. Can only
-            be used when decorated by :func:`~.qjit`.
+            be used when decorated by :func:`~.qjit` or when using :func:`~.qml.capture.enabled()`.
 
     Returns:
         function: A new function that applies the conditional equivalent of ``true_fn``. The returned
