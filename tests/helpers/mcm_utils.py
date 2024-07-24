@@ -14,8 +14,8 @@
 """
 Pytest helper functions are defined in this module.
 """
+from collections.abc import Iterable, Sequence
 from functools import reduce
-from typing import Iterable, Sequence
 
 import numpy as np
 

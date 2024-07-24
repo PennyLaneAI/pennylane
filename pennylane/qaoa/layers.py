@@ -91,11 +91,12 @@ def cost_layer(gamma, hamiltonian):
         >>> print(qml.draw(circuit)(0.5))
         0: ──H─╭ApproxTimeEvolution(1.00,1.00,0.50)─┤  <Z>
         1: ──H─╰ApproxTimeEvolution(1.00,1.00,0.50)─┤  <Z>
-        >>> print(qml.draw(circuit, expansion_strategy="device")(0.5))
+        >>> print(qml.draw(circuit, level="device")(0.5))
         0: ──H──RZ(1.00)─╭RZZ(1.00)─┤  <Z>
         1: ──H───────────╰RZZ(1.00)─┤  <Z>
 
     """
+    # NOTE: op is defined explicitely as validation inside ApproxTimeEvolution needs to be called before checking Hamiltonian
     op = qml.templates.ApproxTimeEvolution(hamiltonian, gamma, 1)
     if not _diagonal_terms(hamiltonian):
         raise ValueError("hamiltonian must be written only in terms of PauliZ and Identity gates")
@@ -148,7 +149,7 @@ def mixer_layer(alpha, hamiltonian):
         >>> print(qml.draw(circuit)(0.5))
         0: ──H─╭ApproxTimeEvolution(1.00,1.00,0.50)─┤  <Z>
         1: ──H─╰ApproxTimeEvolution(1.00,1.00,0.50)─┤  <Z>
-        >>> print(qml.draw(circuit, expansion_strategy="device")(0.5))
+        >>> print(qml.draw(circuit, level="device")(0.5))
         0: ──H──RX(1.00)─╭RXX(1.00)─┤  <Z>
         1: ──H───────────╰RXX(1.00)─┤  <Z>
 

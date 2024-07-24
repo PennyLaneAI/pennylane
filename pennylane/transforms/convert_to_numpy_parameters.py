@@ -15,12 +15,12 @@
 This file contains preprocessings steps that may be called internally
 during execution.
 """
-from typing import Callable, Sequence, Tuple
 
 import pennylane as qml
 from pennylane import math
-from pennylane.tape import QuantumTape
+from pennylane.tape import QuantumScript, QuantumTapeBatch
 from pennylane.transforms import transform
+from pennylane.typing import PostprocessingFn
 
 
 # pylint: disable=no-member
@@ -48,19 +48,16 @@ def _convert_measurement_to_numpy_data(
 
 # pylint: disable=protected-access
 @transform
-def convert_to_numpy_parameters(tape: QuantumTape) -> Tuple[Sequence[QuantumTape], Callable]:
+def convert_to_numpy_parameters(tape: QuantumScript) -> tuple[QuantumTapeBatch, PostprocessingFn]:
     """Transforms a circuit to one with purely numpy parameters.
 
     Args:
-        circuit (QuantumScript): a circuit with parameters of any interface
+        tape (QuantumScript): a circuit with parameters of any interface
 
     Returns:
-        tuple[List[QuantumTape], function]: The transformed circuits along with a dummy post-processing function.
+        tuple[List[QuantumScript], function]: The transformed circuits along with a dummy post-processing function.
 
-    .. seealso::
-
-        :class:`pennylane.tape.Unwrap` modifies a :class:`~.pennylane.tape.QuantumScript` in place instead of creating
-        a new class. It will also set all parameters on the circuit, not just ones that need to be unwrapped.
+    **Examples:**
 
     >>> ops = [qml.S(0), qml.RX(torch.tensor(0.1234), 0)]
     >>> measurements = [qml.state(), qml.expval(qml.Hermitian(torch.eye(2), 0))]

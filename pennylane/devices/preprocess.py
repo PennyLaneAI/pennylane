@@ -18,20 +18,20 @@ that they are supported for execution by a device."""
 
 import os
 import warnings
+from collections.abc import Callable, Generator, Sequence
 from copy import copy
 from itertools import chain
-from typing import Callable, Generator, Optional, Sequence, Union
+from typing import Optional, Union
 
 import pennylane as qml
 from pennylane import DeviceError, Snapshot, transform
 from pennylane.measurements import SampleMeasurement, StateMeasurement
 from pennylane.operation import StatePrepBase, Tensor
-from pennylane.typing import Result, ResultBatch
+from pennylane.tape import QuantumTapeBatch
+from pennylane.typing import PostprocessingFn
 from pennylane.wires import WireError
 
 from .execution_config import MCMConfig
-
-PostprocessingFn = Callable[[ResultBatch], Union[Result, ResultBatch]]
 
 
 def null_postprocessing(results):
@@ -83,7 +83,7 @@ def _operator_decomposition_gen(
 @transform
 def no_sampling(
     tape: qml.tape.QuantumTape, name: str = "device"
-) -> tuple[Sequence[qml.tape.QuantumTape], Callable]:
+) -> tuple[QuantumTapeBatch, PostprocessingFn]:
     """Raises an error if the tape has finite shots.
 
     Args:
@@ -107,7 +107,7 @@ def no_sampling(
 @transform
 def validate_device_wires(
     tape: qml.tape.QuantumTape, wires: Optional[qml.wires.Wires] = None, name: str = "device"
-) -> tuple[Sequence[qml.tape.QuantumTape], Callable]:
+) -> tuple[QuantumTapeBatch, PostprocessingFn]:
     """Validates that all wires present in the tape are in the set of provided wires. Adds the
     device wires to measurement processes like :class:`~.measurements.StateMP` that are broadcasted
     across all available wires.
@@ -152,7 +152,7 @@ def mid_circuit_measurements(
     device,
     mcm_config=MCMConfig(),
     interface=None,
-) -> tuple[Sequence[qml.tape.QuantumTape], Callable]:
+) -> tuple[QuantumTapeBatch, PostprocessingFn]:
     """Provide the transform to handle mid-circuit measurements.
 
     If the tape or device uses finite-shot, use the native implementation (i.e. no transform),
@@ -175,7 +175,7 @@ def mid_circuit_measurements(
 @transform
 def validate_multiprocessing_workers(
     tape: qml.tape.QuantumTape, max_workers: int, device
-) -> tuple[Sequence[qml.tape.QuantumTape], Callable]:
+) -> tuple[QuantumTapeBatch, PostprocessingFn]:
     """Validates the number of workers for multiprocessing.
 
     Checks that the CPU is not oversubscribed and warns user if it is,
@@ -234,7 +234,7 @@ def validate_multiprocessing_workers(
 @transform
 def validate_adjoint_trainable_params(
     tape: qml.tape.QuantumTape,
-) -> tuple[Sequence[qml.tape.QuantumTape], Callable]:
+) -> tuple[QuantumTapeBatch, PostprocessingFn]:
     """Raises a warning if any of the observables is trainable, and raises an error if any
     trainable parameters belong to state-prep operations. Can be used in validating circuits
     for adjoint differentiation.
@@ -260,7 +260,7 @@ def validate_adjoint_trainable_params(
 
 @transform
 def decompose(
-    tape: qml.tape.QuantumTape,
+    tape: qml.tape.QuantumScript,
     stopping_condition: Callable[[qml.operation.Operator], bool],
     stopping_condition_shots: Callable[[qml.operation.Operator], bool] = None,
     skip_initial_state_prep: bool = True,
@@ -270,38 +270,40 @@ def decompose(
     max_expansion: Union[int, None] = None,
     name: str = "device",
     error: Exception = DeviceError,
-) -> tuple[Sequence[qml.tape.QuantumTape], Callable]:
+) -> tuple[QuantumTapeBatch, PostprocessingFn]:
     """Decompose operations until the stopping condition is met.
 
     Args:
-        tape (QuantumTape or QNode or Callable): a quantum circuit.
-        stopping_condition (Callable): a function from an operator to a boolean. If ``False``, the operator
-            should be decomposed. If an operator cannot be decomposed and is not accepted by ``stopping_condition``,
-            an ``Exception`` will be raised (of a type specified by the ``error`` kwarg).
+        tape (QuantumScript or QNode or Callable): a quantum circuit.
+        stopping_condition (Callable): a function from an operator to a boolean. If ``False``,
+            the operator should be decomposed. If an operator cannot be decomposed and is not
+            accepted by ``stopping_condition``, an ``Exception`` will be raised (of a type
+            specified by the ``error`` keyward argument).
 
     Keyword Args:
-        stopping_condition_shots (Callable): a function from an operator to a boolean. If ``False``, the operator
-            should be decomposed. If an operator cannot be decomposed and is not accepted by ``stopping_condition``,
-            an ``Exception`` will be raised (of a type specified by the ``error`` kwarg). This replaces stopping_condition if and only if the tape has shots.
-        skip_initial_state_prep (bool): If ``True``, the first operator will not be decomposed if it inherits
-            from :class:`~.StatePrepBase`. Defaults to ``True``.
-        decomposer (Callable): an optional callable that takes an operator and implements the relevant decomposition.
-            If None, defaults to using a callable returning ``op.decomposition()`` for any :class:`~.Operator` .
+        stopping_condition_shots (Callable): a function from an operator to a boolean. If
+            ``False``, the operator should be decomposed. This replaces ``stopping_condition``
+            if and only if the tape has shots.
+        skip_initial_state_prep (bool): If ``True``, the first operator will not be decomposed if
+            it inherits from :class:`~.StatePrepBase`. Defaults to ``True``.
+        decomposer (Callable): an optional callable that takes an operator and implements the
+            relevant decomposition. If ``None``, defaults to using a callable returning
+            ``op.decomposition()`` for any :class:`~.Operator` .
         max_expansion (int): The maximum depth of the expansion. Defaults to None.
-        name (str): The name of the transform, process or device using decompose. Used in the error message. Defaults to "device".
-        error (Error): An error type to raise if it is not possible to obtain a decomposition that fulfills
-            the ``stopping_condition``. Defaults to ``DeviceError``.
-
+        name (str): The name of the transform, process or device using decompose. Used in the
+            error message. Defaults to "device".
+        error (type): An error type to raise if it is not possible to obtain a decomposition that
+            fulfills the ``stopping_condition``. Defaults to ``DeviceError``.
 
     Returns:
-        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]:
+        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumScript], function]:
 
         The decomposed circuit. The output type is explained in :func:`qml.transform <pennylane.transform>`.
 
     Raises:
-        Exception: Type defaults to ``DeviceError`` but can be modified via keyword argument. Raised if
-            an operator is not accepted and does not define a decomposition, or if the decomposition
-            enters an infinite loop and raises a ``RecursionError``.
+        Exception: Type defaults to ``DeviceError`` but can be modified via keyword argument.
+            Raised if an operator is not accepted and does not define a decomposition, or if
+            the decomposition enters an infinite loop and raises a ``RecursionError``.
 
     **Example:**
 
@@ -320,7 +322,7 @@ def decompose(
     >>> decompose(tape, lambda obj: obj.name == "S")
     DeviceError: Operator CNOT(wires=[0, 1]) not supported on device and does not provide a decomposition.
 
-    The ``skip_initial_state_prep`` specifies whether or not the device supports state prep operations
+    The ``skip_initial_state_prep`` specifies whether the device supports state prep operations
     at the beginning of the circuit.
 
     >>> tape = qml.tape.QuantumScript([qml.BasisState([1], wires=0), qml.BasisState([1], wires=1)])
@@ -384,7 +386,7 @@ def validate_observables(
     tape: qml.tape.QuantumTape,
     stopping_condition: Callable[[qml.operation.Operator], bool],
     name: str = "device",
-) -> tuple[Sequence[qml.tape.QuantumTape], Callable]:
+) -> tuple[QuantumTapeBatch, PostprocessingFn]:
     """Validates the observables and measurements for a circuit.
 
     Args:
@@ -426,7 +428,7 @@ def validate_observables(
 @transform
 def validate_measurements(
     tape: qml.tape.QuantumTape, analytic_measurements=None, sample_measurements=None, name="device"
-) -> tuple[Sequence[qml.tape.QuantumTape], Callable[[ResultBatch], Result]]:
+) -> tuple[QuantumTapeBatch, PostprocessingFn]:
     """Validates the supported state and sample based measurement processes.
 
     Args:
@@ -477,7 +479,9 @@ def validate_measurements(
         and not isinstance(meas := op.hyperparameters["measurement"], qml.measurements.StateMP)
     ]
 
-    if tape.shots:
+    shots = qml.measurements.Shots(tape.shots)
+
+    if shots.total_shots is not None:
         for m in chain(snapshot_measurements, tape.measurements):
             if not sample_measurements(m):
                 raise DeviceError(f"Measurement {m} not accepted with finite shots on {name}")

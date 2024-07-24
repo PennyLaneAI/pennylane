@@ -207,19 +207,30 @@ def diff_hamiltonian(mol, cutoff=1.0e-12, core=None, active=None, mapping="jorda
 
     **Example**
 
+    >>> from pennylane import numpy as pnp
     >>> symbols  = ['H', 'H']
-    >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad = False)
-    >>> alpha = np.array([[3.42525091, 0.62391373, 0.1688554],
+    >>> geometry = pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad = False)
+    >>> alpha = pnp.array([[3.42525091, 0.62391373, 0.1688554],
     >>>                   [3.42525091, 0.62391373, 0.1688554]], requires_grad=True)
     >>> mol = qml.qchem.Molecule(symbols, geometry, alpha=alpha)
     >>> args = [alpha]
-    >>> h = diff_hamiltonian(mol)(*args)
-    >>> h.coeffs
-    array([ 0.29817879+0.j,  0.20813365+0.j,  0.20813365+0.j,
-             0.17860977+0.j,  0.04256036+0.j, -0.04256036+0.j,
-            -0.04256036+0.j,  0.04256036+0.j, -0.34724873+0.j,
-             0.13290293+0.j, -0.34724873+0.j,  0.17546329+0.j,
-             0.17546329+0.j,  0.13290293+0.j,  0.18470917+0.j])
+    >>> h = qml.qchem.diff_hamiltonian(mol)(*args)
+    >>> h.terms()[0]
+    [tensor(0.29817878, requires_grad=True),
+    tensor(0.20813366, requires_grad=True),
+    tensor(-0.34724872, requires_grad=True),
+    tensor(0.13290292, requires_grad=True),
+    tensor(0.20813366, requires_grad=True),
+    tensor(0.17860977, requires_grad=True),
+    tensor(0.04256036, requires_grad=True),
+    tensor(-0.04256036, requires_grad=True),
+    tensor(-0.04256036, requires_grad=True),
+    tensor(0.04256036, requires_grad=True),
+    tensor(-0.34724872, requires_grad=True),
+    tensor(0.17546328, requires_grad=True),
+    tensor(0.13290292, requires_grad=True),
+    tensor(0.17546328, requires_grad=True),
+    tensor(0.18470917, requires_grad=True)]
     """
 
     def _molecular_hamiltonian(*args):
@@ -352,7 +363,7 @@ def molecular_hamiltonian(*args, **kwargs):
             from pennylane import qchem
 
             symbols = ["H", "H"]
-            geometry = [[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]
+            geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])
 
             H, qubit = qchem.molecular_hamiltonian(symbols, geometry, charge=0)
 

@@ -42,7 +42,7 @@ The basic components of operators are the following:
 #. **The subsystems that the operator addresses** (:attr:`.Operator.wires`), which mathematically speaking defines the subspace that it acts on.
 
    >>> op.wires
-   <Wires = ['a']>
+   Wires(['a'])
 
 #. **Trainable parameters** (:attr:`.Operator.parameters`) that the map depends on, such as a rotation angle,
    which can be fed to the operator as tensor-like objects. For example, since we used jax arrays to
@@ -237,7 +237,7 @@ If the above operator omitted the ``_unflatten`` custom definition, it would rai
     The above exception was the direct cause of the following exception:
 
     AssertionError: FlipAndRotate._unflatten must be able to reproduce the original operation
-    from (0.1,) and (<Wires = ['q3', 'q1']>, (('do_flip', True),)). You may need to override
+    from (0.1,) and (Wires(['q3', 'q1']), (('do_flip', True),)). You may need to override
     either the _unflatten or _flatten method. 
     For local testing, try type(op)._unflatten(*op._flatten())
 
