@@ -17,9 +17,9 @@ Contains types and functions for dataset parameters.
 
 
 import enum
-import typing
+from collections.abc import Iterable, Iterator, Mapping
 from functools import lru_cache
-from typing import Any, Dict, FrozenSet, Iterable, List, Tuple, Union
+from typing import Any, Union
 
 
 class ParamArg(enum.Enum):
@@ -34,7 +34,7 @@ class ParamArg(enum.Enum):
 
     @classmethod
     @lru_cache(maxsize=1)
-    def values(cls) -> FrozenSet[str]:
+    def values(cls) -> frozenset[str]:
         """Returns all values."""
         return frozenset(arg.value for arg in cls)
 
@@ -57,18 +57,18 @@ ParamName = str
 ParamVal = str
 
 
-class Description(typing.Mapping[ParamName, ParamVal]):
+class Description(Mapping[ParamName, ParamVal]):
     """An immutable and hashable dictionary that contains all the parameter
     values for a dataset."""
 
-    def __init__(self, params: typing.Iterable[Tuple[ParamName, ParamVal]]):
+    def __init__(self, params: Iterable[tuple[ParamName, ParamVal]]):
         self.__data = dict(params)
         self.__hash = None
 
     def __getitem__(self, __key: ParamName) -> ParamVal:
         return self.__data[__key]
 
-    def __iter__(self) -> typing.Iterator[ParamName]:
+    def __iter__(self) -> Iterator[ParamName]:
         return iter(self.__data)
 
     def __len__(self) -> int:
@@ -88,7 +88,7 @@ class Description(typing.Mapping[ParamName, ParamVal]):
 
 
 # pylint:disable=too-many-branches
-def format_param_args(param: ParamName, details: Any) -> Union[ParamArg, List[ParamVal]]:
+def format_param_args(param: ParamName, details: Any) -> Union[ParamArg, list[ParamVal]]:
     """Ensures each user-inputted parameter is a properly typed list.
     Also provides custom support for certain parameters."""
     if not isinstance(details, list):
@@ -127,7 +127,7 @@ def format_param_args(param: ParamName, details: Any) -> Union[ParamArg, List[Pa
     return details
 
 
-def format_params(**params: Any) -> Dict[ParamName, Union[ParamArg, ParamVal]]:
+def format_params(**params: Any) -> dict[ParamName, Union[ParamArg, ParamVal]]:
     """Converts params to a dictionary whose keys are parameter names and
     whose values are single ``ParamaterArg`` objects or lists of parameter values."""
     return {
