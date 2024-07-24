@@ -901,7 +901,7 @@ class TestClassicalControl:
 
         assert eraser.get_xdata() == (1.8, 2)
         assert eraser.get_ydata() == (2, 2)
-        assert eraser.get_color() == plt.rcParams["figure.facecolor"]
+        assert eraser.get_color() == "white"  # hardcoded value to black_white color
         assert eraser.get_linewidth() == 3 * 1.5  # hardcoded value to black_white linewidth
 
         plt.close()
@@ -943,7 +943,7 @@ class TestClassicalControl:
 
         assert eraser.get_xdata() == (1.8, 2.2)
         assert eraser.get_ydata() == (2, 2)
-        assert eraser.get_color() == plt.rcParams["figure.facecolor"]
+        assert eraser.get_color() == "white"  # hardcoded value to black_white color
         assert eraser.get_linewidth() == 3 * 1.5  # hardcoded value to black_white linewidth
 
         plt.close()
