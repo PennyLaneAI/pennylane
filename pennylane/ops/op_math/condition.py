@@ -454,6 +454,8 @@ def _get_cond_qfunc_prim():
 
             out = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *args)
 
+            # If the branch returns an Operator, we append it to the QueuingManager
+            # so that it is applied to the circuit
             for outvar in out:
                 if isinstance(outvar, Operator):
                     QueuingManager.append(outvar)
@@ -502,13 +504,8 @@ def _get_cond_qfunc_prim():
                 f"{len(outvals)} vs {len(expected_outvals)}"
             )
             for i, (outval, expected_outval) in enumerate(zip(outvals, expected_outvals)):
-                assert isinstance(outval, type(expected_outval)), (
-                    f"Mismatch in output variable types in {branch_type} branch"
-                    f"{'' if index is None else ' #' + str(index)} at position {i}: "
-                    f"{type(outval)} vs {type(expected_outval)}"
-                )
                 assert outval == expected_outval, (
-                    f"Mismatch in output variable values in {branch_type} branch"
+                    f"Mismatch in output abstract values in {branch_type} branch"
                     f"{'' if index is None else ' #' + str(index)} at position {i}: "
                     f"{outval} vs {expected_outval}"
                 )
