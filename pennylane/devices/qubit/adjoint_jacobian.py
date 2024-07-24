@@ -14,7 +14,6 @@
 """Functions to apply adjoint jacobian differentiation"""
 import logging
 from numbers import Number
-from typing import Tuple
 
 import numpy as np
 
@@ -150,7 +149,7 @@ def adjoint_jacobian(tape: QuantumTape, state=None):
 
 
 @debug_logger
-def adjoint_jvp(tape: QuantumTape, tangents: Tuple[Number], state=None):
+def adjoint_jvp(tape: QuantumTape, tangents: tuple[Number], state=None):
     """The jacobian vector product used in forward mode calculation of derivatives.
 
     Implements the adjoint method outlined in
@@ -324,7 +323,7 @@ def _get_vjp_bras(tape, cotangents, ket):
 
 
 @debug_logger
-def adjoint_vjp(tape: QuantumTape, cotangents: Tuple[Number], state=None):
+def adjoint_vjp(tape: QuantumTape, cotangents: tuple[Number, ...], state=None):
     """The vector jacobian product used in reverse-mode differentiation.
 
     Implements the adjoint method outlined in

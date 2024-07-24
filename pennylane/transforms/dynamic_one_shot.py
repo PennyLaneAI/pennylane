@@ -19,7 +19,7 @@ import itertools
 
 # pylint: disable=import-outside-toplevel
 from collections import Counter
-from typing import Callable, Sequence
+from collections.abc import Sequence
 
 import numpy as np
 
@@ -33,7 +33,8 @@ from pennylane.measurements import (
     SampleMP,
     VarianceMP,
 )
-from pennylane.typing import TensorLike
+from pennylane.tape import QuantumTapeBatch
+from pennylane.typing import PostprocessingFn, TensorLike
 
 from .core import transform
 
@@ -56,7 +57,7 @@ def null_postprocessing(results):
 @transform
 def dynamic_one_shot(
     tape: qml.tape.QuantumTape, **kwargs
-) -> tuple[Sequence[qml.tape.QuantumTape], Callable]:
+) -> tuple[QuantumTapeBatch, PostprocessingFn]:
     """Transform a QNode to into several one-shot tapes to support dynamic circuit execution.
 
     Args:

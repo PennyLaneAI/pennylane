@@ -14,8 +14,9 @@
 """This module contains the classes/functions needed to simulate and execute the evolution of real
 Hardware Hamiltonians"""
 
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Callable, List, Union
+from typing import Optional, Union
 
 import numpy as np
 
@@ -308,8 +309,8 @@ class HardwareHamiltonian(ParametrizedHamiltonian):
         coeffs,
         observables,
         reorder_fn: Callable = _reorder_parameters,
-        pulses: List["HardwarePulse"] = None,
-        settings: Union["RydbergSettings", "TransmonSettings"] = None,
+        pulses: Optional[list["HardwarePulse"]] = None,
+        settings: Optional[Union["qml.pulse.RydbergSettings", "qml.pulse.TransmonSettings"]] = None,
     ):
         self.settings = settings
         self.pulses = [] if pulses is None else pulses
@@ -437,7 +438,7 @@ class HardwarePulse:
     amplitude: Union[float, Callable]
     phase: Union[float, Callable]
     frequency: Union[float, Callable]
-    wires: List[Wires]
+    wires: list[Wires]
 
     def __post_init__(self):
         self.wires = Wires(self.wires)

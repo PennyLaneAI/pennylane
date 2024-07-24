@@ -13,8 +13,9 @@
 # limitations under the License.
 """This module contains the classes/functions specific for simulation of superconducting transmon hardware systems"""
 import warnings
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Callable, List, Union
+from typing import Union
 
 import numpy as np
 
@@ -225,7 +226,7 @@ class TransmonSettings:
 
     """
 
-    connections: List
+    connections: list
     qubit_freq: Union[float, Callable]
     coupling: Union[list, TensorLike, Callable]
     anharmonicity: Union[float, Callable]
