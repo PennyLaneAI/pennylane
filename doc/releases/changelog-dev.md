@@ -26,10 +26,14 @@
 
 * `SProd.terms` now flattens out the terms if the base is a multi-term observable.
   [(#5885)](https://github.com/PennyLaneAI/pennylane/pull/5885)
-  
+
 * A new method `to_mat` has been added to the `FermiWord` and `FermiSentence` classes, which allows
   computing the matrix representation of these Fermi operators.
   [(#5920)](https://github.com/PennyLaneAI/pennylane/pull/5920)
+
+* New functionality has been added to natively support exponential extrapolation when using the `mitigate_with_zne`. This allows
+  users to have more control over the error mitigation protocol without needing to add further dependencies.
+  [(#5972)](https://github.com/PennyLaneAI/pennylane/pull/5972)
 
 <h3>Improvements 🛠</h3>
 
@@ -55,6 +59,10 @@
 
 * Molecules and Hamiltonians can now be constructed for all the elements present in the periodic table.
   [(#5821)](https://github.com/PennyLaneAI/pennylane/pull/5821)
+
+* The `qubit_observable` function is modified to return an ascending wire order for molecular 
+  Hamiltonians.
+  [(#5950)](https://github.com/PennyLaneAI/pennylane/pull/5950)
 
 <h4>Community contributions 🥳</h4>
 
@@ -86,6 +94,12 @@
   [(#5980)](https://github.com/PennyLaneAI/pennylane/pull/5980)
 
 <h3>Deprecations 👋</h3>
+
+* The `decomp_depth` argument in `qml.device` has been deprecated.
+  [(#6026)](https://github.com/PennyLaneAI/pennylane/pull/6026)
+
+* The `max_expansion` argument in `qml.QNode` has been deprecated.
+  [(#6026)](https://github.com/PennyLaneAI/pennylane/pull/6026)
 
 * The `expansion_strategy` attribute in the `QNode` class is deprecated.
   [(#5989)](https://github.com/PennyLaneAI/pennylane/pull/5989)
@@ -129,6 +143,12 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixed a bug in `qml.SPSAOptimizer` that ignored keyword arguments in the objective function.
+  [(#6027)](https://github.com/PennyLaneAI/pennylane/pull/6027)
+
+* `dynamic_one_shot` was broken for old-API devices since `override_shots` was deprecated.
+  [(#6024)](https://github.com/PennyLaneAI/pennylane/pull/6024)
+
 * `CircuitGraph` can now handle circuits with the same operation instance occuring multiple times.
   [(#5907)](https://github.com/PennyLaneAI/pennylane/pull/5907)
 
@@ -157,8 +177,10 @@ Pietropaolo Frisoni,
 Emiliano Godinez,
 Austin Huang,
 Renke Huang,
+Soran Jahangiri,
 Christina Lee,
 William Maxwell,
 Vincent Michaud-Rioux,
 Mudit Pandey,
-Erik Schultheis.
+Erik Schultheis,
+nate stemen.

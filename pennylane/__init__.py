@@ -18,6 +18,7 @@ PennyLane can be directly imported.
 from importlib import reload, metadata
 from sys import version_info
 
+import warnings
 import numpy as _np
 
 from semantic_version import SimpleSpec, Version
@@ -262,6 +263,10 @@ def device(name, *args, **kwargs):
         decomp_depth (int): For when custom decompositions are specified,
             the maximum expansion depth used by the expansion function.
 
+    .. warning::
+
+        The ``decomp_depth`` argument is deprecated and will be removed in version 0.39.
+
     All devices must be loaded by specifying their **short-name** as listed above,
     followed by the **wires** (subsystems) you wish to initialize. The ``wires``
     argument can be an integer, in which case the wires of the device are addressed
@@ -393,7 +398,15 @@ def device(name, *args, **kwargs):
         # Pop the custom decomposition keyword argument; we will use it here
         # only and not pass it to the device.
         custom_decomps = kwargs.pop("custom_decomps", None)
-        decomp_depth = kwargs.pop("decomp_depth", 10)
+        decomp_depth = kwargs.pop("decomp_depth", None)
+
+        if decomp_depth is not None:
+            warnings.warn(
+                "The decomp_depth argument is deprecated and will be removed in version 0.39. ",
+                PennyLaneDeprecationWarning,
+            )
+        else:
+            decomp_depth = 10
 
         kwargs.pop("config", None)
         options.update(kwargs)
@@ -414,6 +427,7 @@ def device(name, *args, **kwargs):
 
         # Once the device is constructed, we set its custom expansion function if
         # any custom decompositions were specified.
+
         if custom_decomps is not None:
             if isinstance(dev, pennylane.devices.LegacyDevice):
                 custom_decomp_expand_fn = pennylane.transforms.create_decomp_expand_fn(
