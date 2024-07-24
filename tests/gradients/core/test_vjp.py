@@ -678,27 +678,21 @@ class TestBatchVJP:
         assert len(res) == sum(len(t.trainable_params) for t in tapes)
 
     def test_batched_params_probs_jacobian(self):
-        """Test if jacobian gets calculated when inputs are batched, multiple
+        """Test that the VJP gets calculated correctly when inputs are batched, multiple
         trainable parameters are used and the measurement has a shape (probs)"""
 
-        @qml.qnode(qml.device("default.qubit"), diff_method="parameter-shift")
-        def circuit(x, data):
-            qml.RX(x[0], 0)
-            qml.RX(x[1], 0)
-            qml.RY(data, 0)
-            return qml.probs(wires=0)
-
-        x = qml.numpy.array([0.5, 0.8], requires_grad=True)
-        data = qml.numpy.array([1.2, 2.3, 3.4], requires_grad=False)
-
-        out = circuit(x, data)
-        jacobian = qml.jacobian(circuit)(x, data)
-
-        assert out.shape == (3, 2)
-        assert jacobian.shape == (3, 2, 2)
-
-        # Every element of batched output/jacobian is equal to every single
-        # output/jacobian over inputs
-        for i, d in enumerate(data):
-            assert np.allclose(out[i], circuit(x, d))
-            assert np.allclose(jacobian[i], qml.jacobian(circuit)(x, d))
+        data = np.array([1.2, 2.3, 3.4])
+        x0, x1 = 0.5, 0.8
+        ops = [qml.RX(x0, 0), qml.RX(x1, 0), qml.RY(data, 0)]
+        tape = qml.tape.QuantumScript(ops, [qml.probs(wires=0)], trainable_params=[0, 1])
+        dy = np.array([[0.6, -0.7], [0.2, -0.7], [-5.2, 0.6]])
+        v_tapes, fn = qml.gradients.batch_vjp([tape], [dy], qml.gradients.param_shift)
+        
+        dev = qml.device("default.qubit")
+        vjp = fn(dev.execute(v_tapes))
+        
+        # Analytically expected Jacobian and VJP
+        expected_jac = [-0.5 * np.cos(data) * np.sin(x0 + x1), 0.5 * np.cos(data) * np.sin(x0 + x1)]
+        expected = np.tensordot(expected_jac, dy, axes=[[0, 1], [1, 0]])
+        assert qml.math.shape(vjp) == (1, 2) # num tapes, num trainable tape parameters
+        assert np.allclose(vjp, expected) # Both parameters essentially feed into the same RX rotation
