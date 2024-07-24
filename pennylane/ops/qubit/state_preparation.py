@@ -130,7 +130,7 @@ class BasisState(StatePrepBase):
         **Example:**
 
         >>> qml.BasisState.compute_decomposition([1,0], wires=(0,1))
-        [BasisStatePreparation([1, 0], wires=[0, 1])]
+        [X(0)]
 
         """
 

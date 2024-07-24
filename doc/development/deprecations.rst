@@ -63,6 +63,12 @@ Pending deprecations
   - Deprecated in v0.37
   - Will be removed in v0.39
 
+* The ``BasisStatePreparation`` template is deprecated.
+  Instead, ``BasisState`` can be called on the constructed operator.
+
+  - Deprecated in v0.38
+  - Will be removed in v0.39
+
 New operator arithmetic deprecations
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
