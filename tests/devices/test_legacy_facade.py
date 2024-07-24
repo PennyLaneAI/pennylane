@@ -236,6 +236,28 @@ def test_preprocessing_program_supports_mid_measure():
     assert qml.defer_measurements not in program
 
 
+@pytest.mark.parametrize("t_postselect_mode", ("hw-like", "fill-shots"))
+def test_pass_postselect_mode_to_dev(t_postselect_mode):
+    """test that postselect mode is passed to the target if it supports mid measure."""
+
+    class MidMeasureDev(DummyDevice):
+        """A dummy device that supports mid circuit measurements."""
+
+        _capabilities = {"supports_mid_measure": True}
+
+        def batch_execute(self, circuits, postselect_mode):
+            assert postselect_mode == t_postselect_mode
+            return tuple(0 for _ in circuits)
+
+    target = MidMeasureDev()
+    dev = LegacyDeviceFacade(target)
+
+    mcm_config = qml.devices.MCMConfig(postselect_mode=t_postselect_mode)
+    config = qml.devices.ExecutionConfig(mcm_config=mcm_config)
+
+    dev.execute(qml.tape.QuantumScript(), config)
+
+
 class TestGradientSupport:
     """Test integration with various kinds of device derivatives."""
 

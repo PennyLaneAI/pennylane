@@ -391,11 +391,17 @@ class LegacyDeviceFacade(Device):
             else self._device
         )
 
+        kwargs = {}
+        if dev.capabilities().get("supports_mid_measure", False):
+            kwargs["postselect_mode"] = execution_config.mcm_config.postselect_mode
+
         first_shot = circuits[0].shots
         if all(t.shots == first_shot for t in circuits):
-            results = _set_shots(dev, first_shot)(dev.batch_execute)(circuits)
+            results = _set_shots(dev, first_shot)(dev.batch_execute)(circuits, **kwargs)
         else:
-            results = tuple(_set_shots(dev, t.shots)(dev.batch_execute)((t,))[0] for t in circuits)
+            results = tuple(
+                _set_shots(dev, t.shots)(dev.batch_execute)((t,), **kwargs)[0] for t in circuits
+            )
 
         if dev is not self._device:
             self._update_original_device(dev)
