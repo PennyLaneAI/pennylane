@@ -22,7 +22,7 @@ import logging
 from dataclasses import replace
 from functools import singledispatch
 from numbers import Number
-from typing import Callable, Sequence, Tuple, Union
+from typing import Union
 
 import numpy as np
 
@@ -40,7 +40,7 @@ from pennylane.measurements import (
     Shots,
     StateMP,
 )
-from pennylane.tape import QuantumTape
+from pennylane.tape import QuantumTape, QuantumTapeBatch
 from pennylane.transforms.core import TransformProgram
 from pennylane.typing import Result, ResultBatch
 
@@ -51,11 +51,7 @@ from .preprocess import decompose
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
-Result_or_ResultBatch = Union[Result, ResultBatch]
-QuantumTapeBatch = Sequence[QuantumTape]
 QuantumTape_or_Batch = Union[QuantumTape, QuantumTapeBatch]
-# always a function from a resultbatch to either a result or a result batch
-PostprocessingFn = Callable[[ResultBatch], Result_or_ResultBatch]
 
 
 @singledispatch
@@ -282,7 +278,7 @@ class NullQubit(Device):
     # pylint: disable=cell-var-from-loop
     def preprocess(
         self, execution_config=DefaultExecutionConfig
-    ) -> Tuple[TransformProgram, ExecutionConfig]:
+    ) -> tuple[TransformProgram, ExecutionConfig]:
         program, _ = DefaultQubit.preprocess(self, execution_config)
         for t in program:
             if t.transform == decompose.transform:
@@ -323,7 +319,7 @@ class NullQubit(Device):
         self,
         circuits: QuantumTape_or_Batch,
         execution_config: ExecutionConfig = DefaultExecutionConfig,
-    ) -> Result_or_ResultBatch:
+    ) -> Union[Result, ResultBatch]:
         if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
             logger.debug(
                 """Entry with args=(circuits=%s) called by=%s""",
@@ -384,7 +380,7 @@ class NullQubit(Device):
     def compute_jvp(
         self,
         circuits: QuantumTape_or_Batch,
-        tangents: Tuple[Number],
+        tangents: tuple[Number],
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ):
         return tuple(self._jvp(c, INTERFACE_TO_LIKE[execution_config.interface]) for c in circuits)
@@ -392,7 +388,7 @@ class NullQubit(Device):
     def execute_and_compute_jvp(
         self,
         circuits: QuantumTape_or_Batch,
-        tangents: Tuple[Number],
+        tangents: tuple[Number],
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ):
         results = tuple(
@@ -405,7 +401,7 @@ class NullQubit(Device):
     def compute_vjp(
         self,
         circuits: QuantumTape_or_Batch,
-        cotangents: Tuple[Number],
+        cotangents: tuple[Number],
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ):
         return tuple(self._vjp(c, INTERFACE_TO_LIKE[execution_config.interface]) for c in circuits)
@@ -413,7 +409,7 @@ class NullQubit(Device):
     def execute_and_compute_vjp(
         self,
         circuits: QuantumTape_or_Batch,
-        cotangents: Tuple[Number],
+        cotangents: tuple[Number],
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ):
         results = tuple(

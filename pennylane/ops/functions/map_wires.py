@@ -14,15 +14,17 @@
 """
 This module contains the qml.map_wires function.
 """
+from collections.abc import Callable
 from functools import partial
-from typing import Callable, Sequence, Union
+from typing import Union
 
 import pennylane as qml
 from pennylane import transform
 from pennylane.measurements import MeasurementProcess
 from pennylane.operation import Operator
 from pennylane.queuing import QueuingManager
-from pennylane.tape import QuantumScript, QuantumTape
+from pennylane.tape import QuantumScript, QuantumTape, QuantumTapeBatch
+from pennylane.typing import PostprocessingFn
 from pennylane.workflow import QNode
 
 
@@ -108,7 +110,7 @@ def map_wires(
 @partial(transform)
 def _map_wires_transform(
     tape: qml.tape.QuantumTape, wire_map=None, queue=False
-) -> (Sequence[qml.tape.QuantumTape], Callable):
+) -> tuple[QuantumTapeBatch, PostprocessingFn]:
     ops = [
         (
             map_wires(op, wire_map, queue=queue)
