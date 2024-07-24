@@ -94,6 +94,31 @@ class TestRotGateFusion:
 
         assert qml.math.allclose(matrix_expected, matrix_obtained)
 
+    mixed_batched_angles = [
+        ([[0.4, 0.1, 0.0], [0.7, 0.2, 0.1]], [-0.9, 1.2, 0.6]),  # (2, None)
+        ([-0.9, 1.2, 0.6], [[0.4, 0.1, 0.0], [0.7, 0.2, 0.1]]),  # (None, 2)
+        ([-0.9, 1.2, 0.6], [[[0.4, 0.1, 0.0], [0.7, 0.2, 0.1]]] * 4),  # (None, (4, 2))
+        (
+            [[[-0.9, 1.2, 0.6]] * 2] * 4,
+            [[[0.4, 0.1, 0.0], [0.7, 0.2, 0.1]]] * 4,
+        ),  # ((4, 2), (4, 2))
+    ]
+
+    @pytest.mark.parametrize("angles_1, angles_2", mixed_batched_angles)
+    def test_full_rot_fusion_mixed_batching(self, angles_1, angles_2):
+        """Test that the fusion of two Rot gates has the same effect as
+        applying the Rots sequentially when the input angles are batched
+        with mixed batching shapes."""
+
+        fused_angles = fuse_rot_angles(angles_1, angles_2)
+
+        reshaped_angles_1 = np.reshape(angles_1, (-1, 3) if np.ndim(angles_1) > 1 else (3,))
+        reshaped_angles_2 = np.reshape(angles_2, (-1, 3) if np.ndim(angles_2) > 1 else (3,))
+        matrix_expected = self.mat_from_prod(reshaped_angles_1.T, reshaped_angles_2.T)
+        matrix_obtained = qml.Rot(*fused_angles.reshape((-1, 3)).T, wires=0).matrix()
+
+        assert qml.math.allclose(matrix_expected, matrix_obtained)
+
     @pytest.mark.autograd
     @pytest.mark.parametrize("angles_1, angles_2", generic_test_angles)
     def test_full_rot_fusion_autograd(self, angles_1, angles_2):

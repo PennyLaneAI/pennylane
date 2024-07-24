@@ -13,7 +13,7 @@
 # limitations under the License.
 """Utility functions for circuit optimization."""
 # pylint: disable=too-many-return-statements,import-outside-toplevel
-from pennylane.math import arccos, arctan2, asarray, cos, sin, sqrt, stack, transpose
+from pennylane.math import arccos, arctan2, asarray, cos, moveaxis, sin, sqrt, stack
 from pennylane.ops.identity import GlobalPhase
 from pennylane.wires import Wires
 
@@ -56,6 +56,9 @@ def fuse_rot_angles(angles1, angles2):
     Returns:
         tensor_like: Rotation angles for a single ``qml.Rot`` operation that
         implements the same operation as the two sets of input angles.
+
+    This function supports broadcasting/batching as long as the two inputs are standard
+    broadcast-compatible.
 
     .. note::
 
@@ -131,7 +134,7 @@ def fuse_rot_angles(angles1, angles2):
 
         We can use the standard numerical function :math:`\operatorname{arctan2}`, which
         computes :math:`\arctan(x_1/x_2)` from :math:`x_1` and :math:`x_2` while handling
-        special points suitably to obtain the argument of the underlying complex number 
+        special points suitably to obtain the argument of the underlying complex number
         :math:`x_2 + x_1 i`.
 
         Finally, to obtain :math:`\beta_f`, we need a second element of the matrix product from
@@ -164,7 +167,7 @@ def fuse_rot_angles(angles1, angles2):
         All functions above are well-defined on the domain we are using them on,
         if we handle :math:`\arctan` via standard numerical implementations such as
         ``np.arctan2``.
-        Based on the choices we made in the derivation above, the fused angles will lie in 
+        Based on the choices we made in the derivation above, the fused angles will lie in
         the intervals
 
         .. math::
@@ -183,8 +186,10 @@ def fuse_rot_angles(angles1, angles2):
         :math:`|x|=0` singular. Second, :math:`\arccos` is not differentiable at :math:`1`, making
         all input angles with :math:`|x|=1` singular.
     """
-    phi1, theta1, omega1 = transpose(asarray(angles1))
-    phi2, theta2, omega2 = transpose(asarray(angles2))
+
+    # moveaxis required for batched inputs
+    phi1, theta1, omega1 = moveaxis(asarray(angles1), -1, 0)
+    phi2, theta2, omega2 = moveaxis(asarray(angles2), -1, 0)
     c1, c2, s1, s2 = cos(theta1 / 2), cos(theta2 / 2), sin(theta1 / 2), sin(theta2 / 2)
 
     mag = sqrt(c1**2 * c2**2 + s1**2 * s2**2 - 2 * c1 * c2 * s1 * s2 * cos(omega1 + phi2))
