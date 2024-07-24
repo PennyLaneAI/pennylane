@@ -41,17 +41,17 @@ def find_next_gate(wires, op_list):
     return next_gate_idx
 
 
-def _try_no_fuse(angles1, angles2):
+def _try_no_fuse(angles_1, angles_2):
     """Try to combine rotation angles without trigonometric identities
     if some angles in the input angles vanish."""
-    dummy_sum = angles1 + angles2
+    angles_1 = qml.math.asarray(angles_1)
+    angles_2 = qml.math.asarray(angles_2)
+    # This sum is only computed to obtain a dtype-coerced object that respects
+    # TensorFlow's coercion rules between Python/NumPy objects and TF objects.
+    _sum = angles_1 + angles_2
     # moveaxis required for batched inputs
-    phi1, theta1, omega1 = qml.math.moveaxis(
-        qml.math.cast_like(qml.math.asarray(angles1), dummy_sum), -1, 0
-    )
-    phi2, theta2, omega2 = qml.math.moveaxis(
-        qml.math.cast_like(qml.math.asarray(angles2), dummy_sum), -1, 0
-    )
+    phi1, theta1, omega1 = qml.math.moveaxis(qml.math.cast_like(angles_1, _sum), -1, 0)
+    phi2, theta2, omega2 = qml.math.moveaxis(qml.math.cast_like(angles_2, _sum), -1, 0)
 
     if qml.math.allclose(omega1 + phi2, 0.0):
         return qml.math.stack([phi1, theta1 + theta2, omega2])
@@ -68,7 +68,7 @@ def _try_no_fuse(angles1, angles2):
     return None
 
 
-def fuse_rot_angles(angles1, angles2):
+def fuse_rot_angles(angles_1, angles_2):
     r"""Compute the set of rotation angles that is equivalent to performing
     two successive ``qml.Rot`` operations.
 
@@ -108,18 +108,18 @@ def fuse_rot_angles(angles1, angles2):
     """
 
     if not (
-        qml.math.is_abstract(angles1)
-        or qml.math.is_abstract(angles2)
-        or qml.math.requires_grad(angles1)
-        or qml.math.requires_grad(angles2)
+        qml.math.is_abstract(angles_1)
+        or qml.math.is_abstract(angles_2)
+        or qml.math.requires_grad(angles_1)
+        or qml.math.requires_grad(angles_2)
     ):
-        fused_angles = _try_no_fuse(angles1, angles2)
+        fused_angles = _try_no_fuse(angles_1, angles_2)
         if fused_angles is not None:
             return fused_angles
 
     # moveaxis required for batched inputs
-    phi1, theta1, omega1 = qml.math.moveaxis(qml.math.asarray(angles1), -1, 0)
-    phi2, theta2, omega2 = qml.math.moveaxis(qml.math.asarray(angles2), -1, 0)
+    phi1, theta1, omega1 = qml.math.moveaxis(qml.math.asarray(angles_1), -1, 0)
+    phi2, theta2, omega2 = qml.math.moveaxis(qml.math.asarray(angles_2), -1, 0)
     c1, c2 = qml.math.cos(theta1 / 2), qml.math.cos(theta2 / 2)
     s1, s2 = qml.math.sin(theta1 / 2), qml.math.sin(theta2 / 2)
 
