@@ -56,6 +56,9 @@ def _check_decomposition(op, skip_wire_mapping):
 
         assert isinstance(decomp, list), "decomposition must be a list"
         assert isinstance(compute_decomp, list), "decomposition must be a list"
+        assert op.__class__ not in [
+            decomp_op.__class__ for decomp_op in decomp
+        ], "an operator should not be included in its own decomposition"
 
         for o1, o2, o3 in zip(decomp, compute_decomp, processed_queue):
             assert o1 == o2, "decomposition must match compute_decomposition"
