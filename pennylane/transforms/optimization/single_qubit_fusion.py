@@ -14,7 +14,7 @@
 """Transform for fusing sequences of single-qubit gates."""
 # pylint: disable=too-many-branches
 
-from pennylane.math import allclose, cast_like, is_abstract, requires_grad, stack
+import pennylane as qml
 from pennylane.ops.qubit import Rot
 from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumTape, QuantumTapeBatch
@@ -241,7 +241,7 @@ def single_qubit_fusion(
         # Look for single_qubit_rot_angles; if not available, queue and move on.
         # If available, grab the angles and try to fuse.
         try:
-            cumulative_angles = stack(current_gate.single_qubit_rot_angles())
+            cumulative_angles = qml.math.stack(current_gate.single_qubit_rot_angles())
         except (NotImplementedError, AttributeError):
             new_operations.append(current_gate)
             list_copy.pop(0)
@@ -279,11 +279,9 @@ def single_qubit_fusion(
             # the gate in question, only valid single-qubit gates on the same
             # wire as the current gate will be fused.
             try:
-                next_gate_angles = stack(next_gate.single_qubit_rot_angles())
+                next_gate_angles = qml.math.stack(next_gate.single_qubit_rot_angles())
             except (NotImplementedError, AttributeError):
                 break
-            if not is_abstract(cumulative_angles):
-                next_gate_angles = cast_like(next_gate_angles, cumulative_angles)
             cumulative_angles = fuse_rot_angles(cumulative_angles, next_gate_angles)
 
             list_copy.pop(next_gate_idx + 1)
@@ -294,10 +292,10 @@ def single_qubit_fusion(
         # If not tracing or differentiating, check whether total rotation is trivial by checking
         # if the RY angle and the sum of the RZ angles are close to 0
         if (
-            is_abstract(cumulative_angles)
-            or requires_grad(cumulative_angles)
-            or not allclose(
-                stack([cumulative_angles[0] + cumulative_angles[2], cumulative_angles[1]]),
+            qml.math.is_abstract(cumulative_angles)
+            or qml.math.requires_grad(cumulative_angles)
+            or not qml.math.allclose(
+                qml.math.stack([cumulative_angles[0] + cumulative_angles[2], cumulative_angles[1]]),
                 0.0,
                 atol=atol,
                 rtol=0,
