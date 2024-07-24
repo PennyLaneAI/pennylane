@@ -149,6 +149,7 @@ Qutrit Mixed-State Simulation Tools
 """
 
 from .execution_config import ExecutionConfig, DefaultExecutionConfig, MCMConfig
+from .device_constructor import device, refresh_devices
 from .device_api import Device
 from .default_qubit import DefaultQubit
 
@@ -163,5 +164,15 @@ from .default_mixed import DefaultMixed
 from .default_clifford import DefaultClifford
 from .default_tensor import DefaultTensor
 from .null_qubit import NullQubit
+from .default_qutrit import DefaultQutrit
 from .default_qutrit_mixed import DefaultQutritMixed
 from .._device import Device as LegacyDevice
+from .._device import DeviceError
+
+
+# pylint: disable=undefined-variable
+def __getattr__(name):
+    if name == "plugin_devices":
+        return device_constructor.plugin_devices
+
+    raise AttributeError(f"module 'pennylane.devices' has no attribute '{name}'")

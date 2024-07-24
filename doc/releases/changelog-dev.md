@@ -36,6 +36,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* Added the `compute_sparse_matrix` method for `qml.ops.qubit.BasisStateProjector`.
+  [(#5790)](https://github.com/PennyLaneAI/pennylane/pull/5790)
+
 * `StateMP.process_state` defines rules in `cast_to_complex` for complex casting, avoiding a superfluous state vector copy in Lightning simulations
   [(#5995)](https://github.com/PennyLaneAI/pennylane/pull/5995)
 
@@ -224,9 +227,9 @@ Josh Izaac,
 Soran Jahangiri,
 Christina Lee,
 Austin Huang,
-Christina Lee,
 William Maxwell,
 Vincent Michaud-Rioux,
+Anurav Modak,
 Mudit Pandey,
 Erik Schultheis,
 nate stemen.
