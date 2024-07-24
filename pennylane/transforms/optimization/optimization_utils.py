@@ -69,7 +69,7 @@ def fuse_rot_angles(angles1, angles2):
     .. warning::
 
         This function is not differentiable everywhere. It has singularities for specific
-        input values, where the derivative will be ``nan``.
+        input values where the derivative will be NaN.
 
     .. warning::
 
