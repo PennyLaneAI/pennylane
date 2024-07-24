@@ -19,7 +19,6 @@ import warnings
 from copy import copy
 from functools import wraps
 from inspect import signature
-from typing import List
 
 import numpy as np
 from scipy import sparse
@@ -750,7 +749,7 @@ def _decompose_pauli_x_based_no_control_values(op: Controlled):
     )
 
 
-def _decompose_custom_ops(op: Controlled) -> List["operation.Operator"]:
+def _decompose_custom_ops(op: Controlled) -> list["operation.Operator"]:
     """Custom handling for decomposing a controlled operation"""
 
     pauli_x_based_ctrl_ops = _get_pauli_x_based_ops()
@@ -789,7 +788,7 @@ def _decompose_custom_ops(op: Controlled) -> List["operation.Operator"]:
     return None
 
 
-def _decompose_no_control_values(op: Controlled) -> List["operation.Operator"]:
+def _decompose_no_control_values(op: Controlled) -> list["operation.Operator"]:
     """Decompose without considering control values. Returns None if no decomposition."""
 
     decomp = _decompose_custom_ops(op)
