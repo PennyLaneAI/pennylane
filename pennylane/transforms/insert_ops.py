@@ -14,14 +14,16 @@
 """
 Provides transforms for inserting operations into quantum circuits.
 """
+from collections.abc import Sequence
 from types import FunctionType
-from typing import Callable, Sequence, Type, Union
+from typing import Type, Union
 
 import pennylane as qml
 from pennylane.operation import Operation
 from pennylane.ops.op_math import Adjoint
-from pennylane.tape import QuantumTape
+from pennylane.tape import QuantumTape, QuantumTapeBatch
 from pennylane.transforms import transform
+from pennylane.typing import PostprocessingFn
 
 # pylint: disable=too-many-branches
 
@@ -56,7 +58,7 @@ def insert(
     op_args: Union[tuple, float],
     position: Union[str, list, Type[Operation]] = "all",
     before: bool = False,
-) -> (Sequence[QuantumTape], Callable):
+) -> tuple[QuantumTapeBatch, PostprocessingFn]:
     """Insert an operation into specified points in an input circuit.
 
     Circuits passed through this transform will be updated to have the operation, specified by the

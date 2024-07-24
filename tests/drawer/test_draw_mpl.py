@@ -109,7 +109,7 @@ class TestLevelExpansionStrategy:
         ],
     )
     def test_equivalent_levels(self, transforms_circuit, levels, expected_metadata):
-        """Test that the expansion strategy keyword controls what operations are drawn."""
+        """Test that the level keyword controls what operations are drawn."""
         var1, var2 = levels
         expected_lines, expected_patches, expected_texts = expected_metadata
 
@@ -136,12 +136,20 @@ class TestLevelExpansionStrategy:
     def test_expansion_strategy(self, device, strategy, initial_strategy, n_lines):
         """Test that the expansion strategy keyword controls what operations are drawn."""
 
-        @qml.qnode(device, expansion_strategy=initial_strategy)
-        def circuit():
-            qml.Permute([2, 0, 1], wires=(0, 1, 2))
-            return qml.expval(qml.PauliZ(0))
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match="'expansion_strategy' attribute is deprecated",
+        ):
 
-        _, ax = qml.draw_mpl(circuit, expansion_strategy=strategy)()
+            @qml.qnode(device, expansion_strategy=initial_strategy)
+            def circuit():
+                qml.Permute([2, 0, 1], wires=(0, 1, 2))
+                return qml.expval(qml.PauliZ(0))
+
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match="'expansion_strategy' argument is deprecated"
+        ):
+            _, ax = qml.draw_mpl(circuit, expansion_strategy=strategy)()
 
         assert len(ax.lines) == n_lines
         assert circuit.expansion_strategy == initial_strategy
@@ -172,7 +180,10 @@ class TestLevelExpansionStrategy:
         with pytest.warns(
             UserWarning, match="the expansion_strategy and level arguments are ignored"
         ):
-            qml.draw_mpl(qfunc, expansion_strategy="gradient")
+            with pytest.warns(
+                qml.PennyLaneDeprecationWarning, match="'expansion_strategy' argument is deprecated"
+            ):
+                qml.draw_mpl(qfunc, expansion_strategy="gradient")
 
         with pytest.warns(
             UserWarning, match="the expansion_strategy and level arguments are ignored"
@@ -446,7 +457,13 @@ def test_draw_mpl_with_qfunc_warns_with_expansion_strategy():
         qml.PauliZ(0)
 
     with pytest.warns(UserWarning, match="the expansion_strategy and level arguments are ignored"):
-        _ = qml.draw_mpl(qfunc, expansion_strategy="gradient")
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match="'expansion_strategy' argument is deprecated"
+        ):
+            qml.draw_mpl(qfunc, expansion_strategy="gradient")
+
+    with pytest.warns(UserWarning, match="the expansion_strategy and level arguments are ignored"):
+        qml.draw_mpl(qfunc, level="gradient")
 
 
 def test_qnode_mid_circuit_measurement_not_deferred_device_api(mocker):

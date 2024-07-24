@@ -19,13 +19,14 @@ Contains the tape transform that splits a tape into tapes measuring commuting ob
 # pylint: disable=too-many-arguments,too-many-boolean-expressions
 
 from functools import partial
-from typing import Callable, Dict, List, Optional, Sequence, Tuple
+from typing import Optional
 
 import pennylane as qml
 from pennylane.measurements import ExpectationMP, MeasurementProcess, Shots, StateMP
 from pennylane.ops import Hamiltonian, LinearCombination, Prod, SProd, Sum
+from pennylane.tape import QuantumTapeBatch
 from pennylane.transforms import transform
-from pennylane.typing import Result, ResultBatch
+from pennylane.typing import PostprocessingFn, Result, ResultBatch
 
 
 def null_postprocessing(results):
@@ -39,7 +40,7 @@ def null_postprocessing(results):
 def split_non_commuting(
     tape: qml.tape.QuantumScript,
     grouping_strategy: Optional[str] = "default",
-) -> Tuple[Sequence[qml.tape.QuantumTape], Callable]:
+) -> tuple[QuantumTapeBatch, PostprocessingFn]:
     r"""Splits a circuit into tapes measuring groups of commuting observables.
 
     Args:
@@ -50,6 +51,12 @@ def split_non_commuting(
 
     Returns:
         qnode (QNode) or tuple[List[QuantumScript], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
+
+    .. note::
+        This transform splits expectation values of sums into separate terms, and also distributes the terms into
+        multiple executions if there are terms that do not commute with one another. For state-based simulators
+        that are able to handle non-commuting measurements in a single execution, but don't natively support sums
+        of observables, consider :func:`split_to_single_terms <pennylane.transforms.split_to_single_terms>` instead.
 
     **Examples:**
 
@@ -377,8 +384,8 @@ def _split_ham_with_grouping(tape: qml.tape.QuantumScript):
 
 def _split_using_qwc_grouping(
     tape: qml.tape.QuantumScript,
-    single_term_obs_mps: Dict[MeasurementProcess, Tuple[List[int], List[float]]],
-    offsets: List[float],
+    single_term_obs_mps: dict[MeasurementProcess, tuple[list[int], list[float]]],
+    offsets: list[float],
 ):
     """Split tapes using group_observables in the Pauli module.
 
@@ -443,8 +450,8 @@ def _split_using_qwc_grouping(
 
 def _split_using_wires_grouping(
     tape: qml.tape.QuantumScript,
-    single_term_obs_mps: Dict[MeasurementProcess, Tuple[List[int], List[float]]],
-    offsets: List[float],
+    single_term_obs_mps: dict[MeasurementProcess, tuple[list[int], list[float]]],
+    offsets: list[float],
 ):
     """Split tapes by grouping observables based on overlapping wires.
 
@@ -537,10 +544,6 @@ def _split_all_multi_term_obs_mps(tape: qml.tape.QuantumScript):
         obs = mp.obs
         offset = 0
         if isinstance(mp, ExpectationMP) and isinstance(obs, (Hamiltonian, Sum, Prod, SProd)):
-            if isinstance(obs, SProd):
-                # This is necessary because SProd currently does not flatten into
-                # multiple terms if the base is a sum, which is needed here.
-                obs = obs.simplify()
             # Break the observable into terms, and construct an ExpectationMP with each term.
             for c, o in zip(*obs.terms()):
                 # If the observable is an identity, track it with a constant offset
@@ -557,6 +560,12 @@ def _split_all_multi_term_obs_mps(tape: qml.tape.QuantumScript):
                 else:
                     single_term_obs_mps[sm] = ([mp_idx], [c])
         else:
+            if isinstance(obs, SProd):
+                obs = obs.simplify()
+            if isinstance(obs, (Hamiltonian, Sum)):
+                raise RuntimeError(
+                    f"Cannot split up terms in sums for MeasurementProcess {type(mp)}"
+                )
             # For all other measurement types, simply add them to the list of measurements.
             if mp not in single_term_obs_mps:
                 single_term_obs_mps[mp] = ([mp_idx], [1])
@@ -571,8 +580,8 @@ def _split_all_multi_term_obs_mps(tape: qml.tape.QuantumScript):
 
 def _processing_fn_no_grouping(
     res: ResultBatch,
-    single_term_obs_mps: Dict[MeasurementProcess, Tuple[List[int], List[float]]],
-    offsets: List[float],
+    single_term_obs_mps: dict[MeasurementProcess, tuple[list[int], list[float]]],
+    offsets: list[float],
     shots: Shots,
     batch_size: int,
 ):
@@ -623,9 +632,9 @@ def _processing_fn_no_grouping(
 
 def _processing_fn_with_grouping(
     res: ResultBatch,
-    single_term_obs_mps: Dict[MeasurementProcess, Tuple[List[int], List[float], int, int]],
-    offsets: List[float],
-    group_sizes: List[int],
+    single_term_obs_mps: dict[MeasurementProcess, tuple[list[int], list[float], int, int]],
+    offsets: list[float],
+    group_sizes: list[int],
     shots: Shots,
     batch_size: int,
 ):
@@ -691,7 +700,7 @@ def _processing_fn_with_grouping(
     return tuple(res_for_each_mp)
 
 
-def _sum_terms(res: ResultBatch, coeffs: List[float], offset: float, shape: Tuple) -> Result:
+def _sum_terms(res: ResultBatch, coeffs: list[float], offset: float, shape: tuple) -> Result:
     """Sum results from measurements of multiple terms in a multi-term observable."""
 
     # Trivially return the original result
@@ -725,7 +734,7 @@ def _mp_to_obs(mp: MeasurementProcess, tape: qml.tape.QuantumScript) -> qml.oper
     return qml.prod(*(qml.Z(wire) for wire in obs_wires))
 
 
-def _infer_result_shape(shots: Shots, batch_size: int) -> Tuple:
+def _infer_result_shape(shots: Shots, batch_size: int) -> tuple:
     """Based on the result, infer the ([,n_shots] [,batch_size]) shape of the result."""
 
     shape = ()

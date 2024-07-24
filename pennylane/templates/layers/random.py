@@ -91,11 +91,11 @@ class RandomLayers(Operation):
 
         You can verify this by drawing the circuits.
 
-        >>> print(qml.draw(circuit1, expansion_strategy="device")(weights))
+        >>> print(qml.draw(circuit1, level="device")(weights))
         0: ──────────────────────╭X─╭X──RZ(1.40)─┤  <Z>
         1: ──RX(0.10)──RX(-2.10)─╰●─╰●───────────┤
 
-        >>> print(qml.draw(circuit2, expansion_strategy="device")(weights))
+        >>> print(qml.draw(circuit2, level="device")(weights))
         0: ──────────────────────╭X─╭X──RZ(1.40)─┤  <Z>
         1: ──RX(0.10)──RX(-2.10)─╰●─╰●───────────┤
 
@@ -111,10 +111,10 @@ class RandomLayers(Operation):
         ...     return qml.expval(qml.Z(0))
         >>> np.allclose(circuit(weights, seed=9), circuit(weights, seed=12))
         False
-        >>>  print(qml.draw(circuit, expansion_strategy="device")(weights, seed=9))
+        >>>  print(qml.draw(circuit, level="device")(weights, seed=9))
         0: ─╭X──RX(0.10)────────────┤  <Z>
         1: ─╰●──RY(-2.10)──RX(1.40)─┤
-        >>> print(qml.draw(circuit, expansion_strategy="device")(weights, seed=12))
+        >>> print(qml.draw(circuit, level="device")(weights, seed=12))
         0: ─╭X──RZ(0.10)──╭●─╭X───────────┤  <Z>
         1: ─╰●──RX(-2.10)─╰X─╰●──RZ(1.40)─┤
 

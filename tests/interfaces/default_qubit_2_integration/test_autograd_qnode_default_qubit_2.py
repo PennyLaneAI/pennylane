@@ -106,8 +106,6 @@ class TestQNode:
 
         res = circuit(a)
 
-        assert circuit.qtape.interface is None
-
         # without the interface, the QNode simply returns a scalar array or float
         assert isinstance(res, (np.ndarray, float))
         assert qml.math.shape(res) == tuple()  # pylint: disable=comparison-with-callable

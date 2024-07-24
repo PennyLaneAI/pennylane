@@ -14,9 +14,10 @@
 """A function to compute the Lie closure of a set of operators"""
 # pylint: disable=too-many-arguments
 import itertools
+from collections.abc import Iterable
 from copy import copy
 from functools import reduce
-from typing import Iterable, Union
+from typing import Union
 
 import numpy as np
 

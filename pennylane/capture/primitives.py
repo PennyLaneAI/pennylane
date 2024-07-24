@@ -15,8 +15,9 @@
 This submodule defines the abstract classes and primitives for capture.
 """
 
+from collections.abc import Callable
 from functools import lru_cache
-from typing import Callable, Optional, Tuple, Type
+from typing import Optional, Type
 
 import pennylane as qml
 
@@ -107,7 +108,7 @@ def _get_abstract_measurement():
             self._n_wires = n_wires
             self.has_eigvals: bool = has_eigvals
 
-        def abstract_eval(self, num_device_wires: int, shots: int) -> Tuple[Tuple, type]:
+        def abstract_eval(self, num_device_wires: int, shots: int) -> tuple[tuple, type]:
             """Calculate the shape and dtype for an evaluation with specified number of device
             wires and shots.
 
