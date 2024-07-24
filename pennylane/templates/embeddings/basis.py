@@ -23,47 +23,47 @@ from pennylane.ops.qubit.state_preparation import BasisState
 class BasisEmbedding(BasisState):
     r"""Encodes :math:`n` binary features into a basis state of :math:`n` qubits.
 
-        For example, for ``features=np.array([0, 1, 0])`` or ``features=2`` (binary 010), the
-        quantum system will be prepared in state :math:`|010 \rangle`.
+    For example, for ``features=np.array([0, 1, 0])`` or ``features=2`` (binary 010), the
+    quantum system will be prepared in state :math:`|010 \rangle`.
 
-        .. warning::
+    .. warning::
 
-            ``BasisEmbedding`` calls a circuit whose architecture depends on the binary features.
-            The ``features`` argument is therefore not differentiable when using the template, and
-            gradients with respect to the argument cannot be computed by PennyLane.
+        ``BasisEmbedding`` calls a circuit whose architecture depends on the binary features.
+        The ``features`` argument is therefore not differentiable when using the template, and
+        gradients with respect to the argument cannot be computed by PennyLane.
 
-        Args:
-            features (tensor_like or int): binary input of shape ``(len(wires), )`` or integer
-                that represents the binary input.
-            wires (Any or Iterable[Any]): wires that the template acts on
+    Args:
+        features (tensor_like or int): binary input of shape ``(len(wires), )`` or integer
+            that represents the binary input.
+        wires (Any or Iterable[Any]): wires that the template acts on
 
-        Example:
+    Example:
 
-            Basis embedding encodes the binary feature vector into a basis state.
+        Basis embedding encodes the binary feature vector into a basis state.
 
-            .. code-block:: python
+        .. code-block:: python
 
-                dev = qml.device('default.qubit', wires=3)
+            dev = qml.device('default.qubit', wires=3)
 
-                @qml.qnode(dev)
-                def circuit(feature_vector):
-                    qml.BasisEmbedding(features=feature_vector, wires=range(3))
-                    return qml.state()
+            @qml.qnode(dev)
+            def circuit(feature_vector):
+                qml.BasisEmbedding(features=feature_vector, wires=range(3))
+                return qml.state()
 
-                X = [1,1,1]
+            X = [1,1,1]
 
-            The resulting circuit is:
+        The resulting circuit is:
 
-            >>> print(qml.draw(circuit, level="device")(X))
-            0: ──X─┤  State
-            1: ──X─┤  State
-            2: ──X─┤  State
+        >>> print(qml.draw(circuit, level="device")(X))
+        0: ──X─┤  State
+        1: ──X─┤  State
+        2: ──X─┤  State
 
-            And, the output state is:
+        And, the output state is:
 
-            >>> print(circuit(X))
-                [0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 1.+0.j]
+        >>> print(circuit(X))
+            [0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 1.+0.j]
 
-            Thus, ``[1,1,1]`` is mapped to :math:`|111 \rangle`.
+        Thus, ``[1,1,1]`` is mapped to :math:`|111 \rangle`.
 
     """
