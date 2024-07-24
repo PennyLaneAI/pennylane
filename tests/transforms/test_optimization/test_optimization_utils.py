@@ -200,10 +200,11 @@ class TestRotGateFusion:
 
     @pytest.mark.slow
     @pytest.mark.jax
-    def test_full_rot_fusion_jacobian(self):
+    @pytest.mark.parametrize("use_jit", [False, True])
+    def test_full_rot_fusion_jacobian(self, use_jit):
         """Test the Jacobian of the rotation angle fusion. Uses batching for performance reasons.
-        For known sources of singularities, the Jacobian is checked to indeed return NaN.
-        These sources are related to the absolute value of the upper left entry of the matrix product:
+        For known sources of singularities, the Jacobian is checked to indeed return NaN. These
+        sources are related to the absolute value of the upper left entry of the matrix product:
          - If it is 1, the derivative of arccos becomes infinite (evaluated at 1), and
          - if its square is 0, the derivative of sqrt becomes infinite (evaluated at 0).
         """
@@ -222,10 +223,12 @@ class TestRotGateFusion:
 
             return qml.matrix(original_ops, [0])()  # pylint:disable=too-many-function-args
 
-        def mat_from_fuse(angles):
+        def _mat_from_fuse(angles):
             angles1, angles2 = angles[..., 0, :], angles[..., 1, :]
             fused_angles = fuse_rot_angles(angles1, angles2)
             return qml.Rot(*fused_angles.T, wires=0).matrix()
+
+        mat_from_fuse = jax.jit(_mat_from_fuse) if use_jit else _mat_from_fuse
 
         # Need holomorphic derivatives because the output matrices are complex-valued
         jac_from_prod = jax.vmap(jax.jacobian(mat_from_prod, holomorphic=True))(all_angles)

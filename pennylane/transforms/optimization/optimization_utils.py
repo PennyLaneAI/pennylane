@@ -13,7 +13,20 @@
 # limitations under the License.
 """Utility functions for circuit optimization."""
 # pylint: disable=too-many-return-statements,import-outside-toplevel
-from pennylane.math import arccos, arctan2, asarray, cos, moveaxis, sin, sqrt, stack
+from pennylane.math import (
+    allclose,
+    arccos,
+    arctan2,
+    asarray,
+    cos,
+    is_abstract,
+    moveaxis,
+    requires_grad,
+    sin,
+    sqrt,
+    stack,
+    zeros_like,
+)
 from pennylane.ops.identity import GlobalPhase
 from pennylane.wires import Wires
 
@@ -39,6 +52,28 @@ def find_next_gate(wires, op_list):
             break
 
     return next_gate_idx
+
+
+def _try_no_fuse(angles1, angles2):
+    """Try to combine rotation angles without trigonometric identities
+    if some angles in the input angles vanish."""
+    # moveaxis required for batched inputs
+    phi1, theta1, omega1 = moveaxis(asarray(angles1), -1, 0)
+    phi2, theta2, omega2 = moveaxis(asarray(angles2), -1, 0)
+
+    if allclose(omega1 + phi2, 0.0):
+        return stack([phi1, theta1 + theta2, omega2])
+    zero = zeros_like(phi1) + zeros_like(phi2)
+    if allclose(theta1, 0.0):
+        # No Y rotation in first Rot
+        if allclose(theta2, 0.0):
+            # Z rotations only
+            return stack([phi1 + omega1 + phi2 + omega2, zero, zero])
+        return stack([phi1 + omega1 + phi2, theta2, omega2])
+    if allclose(theta2, 0.0):
+        # No Y rotation in second Rot
+        return stack([phi1, theta1, omega1 + phi2 + omega2])
+    return None
 
 
 def fuse_rot_angles(angles1, angles2):
@@ -79,6 +114,16 @@ def fuse_rot_angles(angles1, angles2):
     See the documentation of :func:`~.pennylane.transforms.single_qubit_fusion` for a
     mathematical derivation of this function.
     """
+
+    if not (
+        is_abstract(angles1)
+        or is_abstract(angles2)
+        or requires_grad(angles1)
+        or requires_grad(angles2)
+    ):
+        fused_angles = _try_no_fuse(angles1, angles2)
+        if fused_angles is not None:
+            return fused_angles
 
     # moveaxis required for batched inputs
     phi1, theta1, omega1 = moveaxis(asarray(angles1), -1, 0)
