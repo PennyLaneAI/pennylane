@@ -15,7 +15,7 @@
 Contains the switches to (de)activate the capturing mechanism, and a
 status reporting function on whether it is enabled or not.
 """
-from typing import Callable
+from collections.abc import Callable
 
 has_jax = True
 try:
@@ -24,7 +24,7 @@ except ImportError:
     has_jax = False
 
 
-def _make_switches() -> [Callable[[], None], Callable[[], None], Callable[[], bool]]:
+def _make_switches() -> tuple[Callable[[], None], Callable[[], None], Callable[[], bool]]:
     r"""Create three functions, corresponding to an activation switch, a deactivation switch
     and a status query, in that order.
 

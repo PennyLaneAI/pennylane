@@ -1069,6 +1069,15 @@ class TestDeviceInit:
 
         assert dev.shots == 22
 
+    def test_decomp_depth_is_deprecated(self):
+        """Test that a warning is raised when using the deprecated decomp_depth argument"""
+
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match="The decomp_depth argument is deprecated",
+        ):
+            qml.device("default.qubit", decomp_depth=1)
+
 
 class TestBatchExecution:
     """Tests for the batch_execute method."""
