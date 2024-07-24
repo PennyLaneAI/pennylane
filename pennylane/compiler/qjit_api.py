@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """QJIT compatible quantum and compilation operations API"""
+from collections.abc import Callable
 
 from .compiler import (
     AvailableCompilers,
@@ -377,20 +378,54 @@ def while_loop(cond_fn):
         ops_loader = compilers[active_jit]["ops"].load()
         return ops_loader.while_loop(cond_fn)
 
-    raise CompileError("There is no active compiler package.")  # pragma: no cover
+    # if there is no active compiler, simply interpret the while loop
+    # via the Python interpretor.
+    def _decorator(body_fn: Callable) -> Callable:
+        """Transform that will call the input ``body_fn`` until the closure variable ``cond_fn`` is met.
+
+        Args:
+            body_fn (Callable):
+
+        Closure Variables:
+            cond_fn (Callable):
+
+        Returns:
+            Callable: a callable with the same signature as ``body_fn`` and ``cond_fn``.
+        """
+        return WhileLoopCallable(cond_fn, body_fn)
+
+    return _decorator
+
+
+class WhileLoopCallable:  # pylint:disable=too-few-public-methods
+    """Base class to represent a while loop. This class
+    when called with an initial state will execute the while
+    loop via the Python interpreter.
+
+    Args:
+        cond_fn (Callable): the condition function in the while loop
+        body_fn (Callable): the function that is executed within the while loop
+    """
+
+    def __init__(self, cond_fn, body_fn):
+        self.cond_fn = cond_fn
+        self.body_fn = body_fn
+
+    def __call__(self, *init_state):
+        args = init_state
+        fn_res = args if len(args) > 1 else args[0] if len(args) == 1 else None
+
+        while self.cond_fn(*args):
+            fn_res = self.body_fn(*args)
+            args = fn_res if len(args) > 1 else (fn_res,) if len(args) == 1 else ()
+
+        return fn_res
 
 
 def for_loop(lower_bound, upper_bound, step):
-    """A :func:`~.qjit` compatible for-loop for PennyLane programs.
-
-    .. note::
-
-        This function only supports the Catalyst compiler. See
-        :func:`catalyst.for_loop` for more details.
-
-        Please see the Catalyst :doc:`quickstart guide <catalyst:dev/quick_start>`,
-        as well as the :doc:`sharp bits and debugging tips <catalyst:dev/sharp_bits>`
-        page for an overview of the differences between Catalyst and PennyLane.
+    """A :func:`~.qjit` compatible for-loop for PennyLane programs. When
+    used without :func:`~.qjit`, this function will fall back to a standard
+    Python for loop.
 
     This decorator provides a functional version of the traditional
     for-loop, similar to `jax.cond.fori_loop <https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.fori_loop.html>`__.
@@ -430,19 +465,14 @@ def for_loop(lower_bound, upper_bound, step):
         across iterations is handled automatically by the provided loop bounds, it must not be
         returned from the function.
 
-    Raises:
-        CompileError: if the compiler is not installed
-
     .. seealso:: :func:`~.while_loop`, :func:`~.qjit`
 
     **Example**
-
 
     .. code-block:: python
 
         dev = qml.device("lightning.qubit", wires=1)
 
-        @qml.qjit
         @qml.qnode(dev)
         def circuit(n: int, x: float):
 
@@ -457,10 +487,24 @@ def for_loop(lower_bound, upper_bound, step):
             # apply the for loop
             final_x = loop_rx(x)
 
-            return qml.expval(qml.Z(0)), final_x
+            return qml.expval(qml.Z(0))
 
     >>> circuit(7, 1.6)
-    (array(0.97926626), array(0.55395718))
+    array(0.97926626)
+
+    ``for_loop`` is also :func:`~.qjit` compatible; when used with the
+    :func:`~.qjit` decorator, the for loop will not be unrolled, and instead
+    will be captured as-is during compilation and executed during runtime:
+
+    >>> qml.qjit(circuit)(7, 1.6)
+    Array(0.97926626, dtype=float64)
+
+    .. note::
+
+        Please see the Catalyst :doc:`quickstart guide <catalyst:dev/quick_start>`,
+        as well as the :doc:`sharp bits and debugging tips <catalyst:dev/sharp_bits>`
+        page for an overview of using quantum just-in-time compilation.
+
     """
 
     if active_jit := active_compiler():
@@ -468,4 +512,59 @@ def for_loop(lower_bound, upper_bound, step):
         ops_loader = compilers[active_jit]["ops"].load()
         return ops_loader.for_loop(lower_bound, upper_bound, step)
 
-    raise CompileError("There is no active compiler package.")  # pragma: no cover
+    # if there is no active compiler, simply interpret the for loop
+    # via the Python interpretor.
+    def _decorator(body_fn):
+        """Transform that will call the input ``body_fn`` within a for loop defined by the closure variables lower_bound, upper_bound, and step.
+
+        Args:
+            body_fn (Callable): The function called within the for loop. Note that the loop body
+                function must always have the iteration index as its first
+                argument, which can be used arbitrarily inside the loop body. As the value of the index
+                across iterations is handled automatically by the provided loop bounds, it must not be
+                returned from the function.
+
+        Closure Variables:
+            lower_bound (int): starting value of the iteration index
+            upper_bound (int): (exclusive) upper bound of the iteration index
+            step (int): increment applied to the iteration index at the end of each iteration
+
+        Returns:
+            Callable: a callable with the same signature as ``body_fn``
+        """
+        return ForLoopCallable(lower_bound, upper_bound, step, body_fn)
+
+    return _decorator
+
+
+class ForLoopCallable:  # pylint:disable=too-few-public-methods
+    """Base class to represent a for loop. This class
+    when called with an initial state will execute the while
+    loop via the Python interpreter.
+
+    Args:
+        lower_bound (int): starting value of the iteration index
+        upper_bound (int): (exclusive) upper bound of the iteration index
+        step (int): increment applied to the iteration index at the end of each iteration
+        body_fn (Callable): The function called within the for loop. Note that the loop body
+            function must always have the iteration index as its first
+            argument, which can be used arbitrarily inside the loop body. As the value of the index
+            across iterations is handled automatically by the provided loop bounds, it must not be
+            returned from the function.
+    """
+
+    def __init__(self, lower_bound, upper_bound, step, body_fn):
+        self.lower_bound = lower_bound
+        self.upper_bound = upper_bound
+        self.step = step
+        self.body_fn = body_fn
+
+    def __call__(self, *init_state):
+        args = init_state
+        fn_res = args if len(args) > 1 else args[0] if len(args) == 1 else None
+
+        for i in range(self.lower_bound, self.upper_bound, self.step):
+            fn_res = self.body_fn(i, *args)
+            args = fn_res if len(args) > 1 else (fn_res,) if len(args) == 1 else ()
+
+        return fn_res
