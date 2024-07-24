@@ -114,6 +114,13 @@ def cond(condition, true_fn, false_fn=None, elifs=()):
     will be captured by Catalyst, the just-in-time (JIT) compiler, with the executed
     branch determined at runtime. For more details, please see :func:`catalyst.cond`.
 
+    When used with `qml.capture.enabled()` equal to ``True``, this function allows
+    for general if-elif-else constructs. As with the JIT mode, all branches will be
+    captured, with the executed branch determined at runtime. Each branch can receive parameters.
+    However, the function cannot branch on mid-circuit measurements.
+    If a branch returns one or more variables, every other branch must return the same abstract values.
+    If a branch returns one or more operators, these will be appended to the QueuingManager.
+
     .. note::
 
         With the Python interpreter, support for :func:`~.cond`
@@ -511,14 +518,14 @@ def _get_cond_qfunc_prim():
                 )
 
         outvals_true = jaxpr_true.out_avals
-        outvals_false = jaxpr_false.out_avals if jaxpr_false is not None else []
+
+        if jaxpr_false is not None:
+            outvals_false = jaxpr_false.out_avals
+            validate_abstract_values(outvals_false, outvals_true, "false")
 
         for idx, jaxpr_elif in enumerate(jaxpr_elifs):
             outvals_elif = jaxpr_elif.out_avals
             validate_abstract_values(outvals_elif, outvals_true, "elif", idx)
-
-        if outvals_false:
-            validate_abstract_values(outvals_false, outvals_true, "false")
 
         # We return the abstract values of the true branch since the abstract values
         # of the false and elif branches (if they exist) should be the same

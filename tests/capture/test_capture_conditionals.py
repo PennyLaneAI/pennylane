@@ -16,6 +16,7 @@ Tests for capturing conditionals into jaxpr.
 """
 
 # pylint: disable=redefined-outer-name
+# pylint: disable=no-self-use
 
 import numpy as np
 import pytest
@@ -61,180 +62,182 @@ def testing_functions():
     return true_fn, false_fn, elif_fn1, elif_fn2, elif_fn3, elif_fn4
 
 
-@pytest.mark.parametrize(
-    "selector, arg, expected",
-    [
-        (1, 10, 20),  # True condition
-        (-1, 10, 9),  # Elif condition 1
-        (-2, 10, 8),  # Elif condition 2
-        (-3, 10, 7),  # Elif condition 3
-        (-4, 10, 6),  # Elif condition 4
-        (0, 10, 30),  # False condition
-    ],
-)
-def test_cond_true_elifs_false(testing_functions, selector, arg, expected):
-    """Test the conditional with true, elifs, and false branches."""
+class TestCond:
+    """Tests for conditional functions using qml.cond."""
 
-    true_fn, false_fn, elif_fn1, elif_fn2, elif_fn3, elif_fn4 = testing_functions
+    @pytest.mark.parametrize(
+        "selector, arg, expected",
+        [
+            (1, 10, 20),  # True condition
+            (-1, 10, 9),  # Elif condition 1
+            (-2, 10, 8),  # Elif condition 2
+            (-3, 10, 7),  # Elif condition 3
+            (-4, 10, 6),  # Elif condition 4
+            (0, 10, 30),  # False condition
+        ],
+    )
+    def test_cond_true_elifs_false(self, testing_functions, selector, arg, expected):
+        """Test the conditional with true, elifs, and false branches."""
+        true_fn, false_fn, elif_fn1, elif_fn2, elif_fn3, elif_fn4 = testing_functions
 
-    result = qml.cond(
-        selector > 0,
-        true_fn,
-        false_fn,
-        elifs=(
-            (selector == -1, elif_fn1),
-            (selector == -2, elif_fn2),
-            (selector == -3, elif_fn3),
-            (selector == -4, elif_fn4),
-        ),
-    )(arg)
-    assert np.allclose(result, expected), f"Expected {expected}, but got {result}"
+        result = qml.cond(
+            selector > 0,
+            true_fn,
+            false_fn,
+            elifs=(
+                (selector == -1, elif_fn1),
+                (selector == -2, elif_fn2),
+                (selector == -3, elif_fn3),
+                (selector == -4, elif_fn4),
+            ),
+        )(arg)
+        assert np.allclose(result, expected), f"Expected {expected}, but got {result}"
 
+    @pytest.mark.parametrize(
+        "selector, arg, expected",
+        [
+            (1, 10, 20),  # True condition
+            (-1, 10, 9),  # Elif condition 1
+            (-2, 10, 8),  # Elif condition 2
+            (-3, 10, ()),  # No condition met
+        ],
+    )
+    def test_cond_true_elifs(self, testing_functions, selector, arg, expected):
+        """Test the conditional with true and elifs branches."""
+        true_fn, _, elif_fn1, elif_fn2, _, _ = testing_functions
 
-@pytest.mark.parametrize(
-    "selector, arg, expected",
-    [
-        (1, 10, 20),  # True condition
-        (-1, 10, 9),  # Elif condition 1
-        (-2, 10, 8),  # Elif condition 2
-        (-3, 10, ()),  # No condition met
-    ],
-)
-def test_cond_true_elifs(testing_functions, selector, arg, expected):
-    """Test the conditional with true and elifs branches."""
+        result = qml.cond(
+            selector > 0,
+            true_fn,
+            elifs=(
+                (selector == -1, elif_fn1),
+                (selector == -2, elif_fn2),
+            ),
+        )(arg)
+        assert np.allclose(result, expected), f"Expected {expected}, but got {result}"
 
-    true_fn, _, elif_fn1, elif_fn2, _, _ = testing_functions
+    @pytest.mark.parametrize(
+        "selector, arg, expected",
+        [
+            (1, 10, 20),  # True condition
+            (0, 10, 30),  # False condition
+        ],
+    )
+    def test_cond_true_false(self, testing_functions, selector, arg, expected):
+        """Test the conditional with true and false branches."""
+        true_fn, false_fn, _, _, _, _ = testing_functions
 
-    result = qml.cond(
-        selector > 0,
-        true_fn,
-        elifs=(
-            (selector == -1, elif_fn1),
-            (selector == -2, elif_fn2),
-        ),
-    )(arg)
-    assert np.allclose(result, expected), f"Expected {expected}, but got {result}"
+        result = qml.cond(
+            selector > 0,
+            true_fn,
+            false_fn,
+        )(arg)
+        assert np.allclose(result, expected), f"Expected {expected}, but got {result}"
 
+    @pytest.mark.parametrize(
+        "selector, arg, expected",
+        [
+            (1, 10, 20),  # True condition
+            (0, 10, ()),  # No condition met
+        ],
+    )
+    def test_cond_true(self, testing_functions, selector, arg, expected):
+        """Test the conditional with only the true branch."""
+        true_fn, _, _, _, _, _ = testing_functions
 
-@pytest.mark.parametrize(
-    "selector, arg, expected",
-    [
-        (1, 10, 20),  # True condition
-        (0, 10, 30),  # False condition
-    ],
-)
-def test_cond_true_false(testing_functions, selector, arg, expected):
-    """Test the conditional with true and false branches."""
-
-    true_fn, false_fn, _, _, _, _ = testing_functions
-
-    result = qml.cond(
-        selector > 0,
-        true_fn,
-        false_fn,
-    )(arg)
-    assert np.allclose(result, expected), f"Expected {expected}, but got {result}"
-
-
-@pytest.mark.parametrize(
-    "selector, arg, expected",
-    [
-        (1, 10, 20),  # True condition
-        (0, 10, ()),  # No condition met
-    ],
-)
-def test_cond_true(testing_functions, selector, arg, expected):
-    """Test the conditional with only the true branch."""
-
-    true_fn, _, _, _, _, _ = testing_functions
-
-    result = qml.cond(
-        selector > 0,
-        true_fn,
-    )(arg)
-    assert np.allclose(result, expected), f"Expected {expected}, but got {result}"
+        result = qml.cond(
+            selector > 0,
+            true_fn,
+        )(arg)
+        assert np.allclose(result, expected), f"Expected {expected}, but got {result}"
 
 
-def test_validate_number_of_output_variables():
-    """Test mismatch in number of output variables."""
+class TestCondReturns:
+    """Tests for validating the number and types of output variables in conditional functions."""
 
-    def true_fn(x):
-        return x + 1, x + 2
+    @pytest.mark.parametrize(
+        "true_fn, false_fn, expected_error, match",
+        [
+            (
+                lambda x: (x + 1, x + 2),
+                lambda x: None,
+                AssertionError,
+                r"Mismatch in number of output variables",
+            ),
+            (
+                lambda x: (x + 1, x + 2),
+                lambda x: (x + 1,),
+                AssertionError,
+                r"Mismatch in number of output variables",
+            ),
+            (
+                lambda x: (x + 1, x + 2),
+                lambda x: (x + 1, x + 2.0),
+                AssertionError,
+                r"Mismatch in output abstract values",
+            ),
+        ],
+    )
+    def test_validate_mismatches(self, true_fn, false_fn, expected_error, match):
+        """Test mismatch in number and type of output variables."""
+        with pytest.raises(expected_error, match=match):
+            jax.make_jaxpr(_capture_cond(True, true_fn, false_fn))(jax.numpy.array(1))
 
-    def false_fn(x):
-        return x + 1
+    def test_validate_number_of_output_variables(self):
+        """Test mismatch in number of output variables."""
 
-    with pytest.raises(AssertionError, match=r"Mismatch in number of output variables"):
-        jax.make_jaxpr(_capture_cond(True, true_fn, false_fn))(jax.numpy.array(1))
+        def true_fn(x):
+            return x + 1, x + 2
 
+        def false_fn(x):
+            return x + 1
 
-def test_validate_output_variable_types():
-    """Test mismatch in output variable types."""
+        with pytest.raises(AssertionError, match=r"Mismatch in number of output variables"):
+            jax.make_jaxpr(_capture_cond(True, true_fn, false_fn))(jax.numpy.array(1))
 
-    def true_fn(x):
-        return x + 1, x + 2
+    def test_validate_output_variable_types(self):
+        """Test mismatch in output variable types."""
 
-    def false_fn(x):
-        return x + 1, x + 2.0
+        def true_fn(x):
+            return x + 1, x + 2
 
-    with pytest.raises(AssertionError, match=r"Mismatch in output abstract values"):
-        jax.make_jaxpr(_capture_cond(True, true_fn, false_fn))(jax.numpy.array(1))
+        def false_fn(x):
+            return x + 1, x + 2.0
 
+        with pytest.raises(AssertionError, match=r"Mismatch in output abstract values"):
+            jax.make_jaxpr(_capture_cond(True, true_fn, false_fn))(jax.numpy.array(1))
 
-def test_validate_elif_branches():
-    """Test elif branch mismatches."""
+    def test_validate_elif_branches(self):
+        """Test elif branch mismatches."""
 
-    def true_fn(x):
-        return x + 1, x + 2
+        def true_fn(x):
+            return x + 1, x + 2
 
-    def false_fn(x):
-        return x + 1, x + 2
+        def false_fn(x):
+            return x + 1, x + 2
 
-    def elif_fn1(x):
-        return x + 1, x + 2
+        def elif_fn1(x):
+            return x + 1, x + 2
 
-    def elif_fn2(x):
-        return x + 1, x + 2.0
+        def elif_fn2(x):
+            return x + 1, x + 2.0
 
-    def elif_fn3(x):
-        return x + 1
+        def elif_fn3(x):
+            return x + 1
 
-    with pytest.raises(
-        AssertionError, match=r"Mismatch in output abstract values in elif branch #1"
-    ):
-        jax.make_jaxpr(
-            _capture_cond(False, true_fn, false_fn, [(True, elif_fn1), (False, elif_fn2)])
-        )(jax.numpy.array(1))
+        with pytest.raises(
+            AssertionError, match=r"Mismatch in output abstract values in elif branch #1"
+        ):
+            jax.make_jaxpr(
+                _capture_cond(False, true_fn, false_fn, [(True, elif_fn1), (False, elif_fn2)])
+            )(jax.numpy.array(1))
 
-    with pytest.raises(
-        AssertionError, match=r"Mismatch in number of output variables in elif branch #0"
-    ):
-        jax.make_jaxpr(_capture_cond(False, true_fn, false_fn, [(True, elif_fn3)]))(
-            jax.numpy.array(1)
-        )
-
-
-@pytest.mark.parametrize(
-    "true_fn, false_fn, expected_error, match",
-    [
-        (
-            lambda x: (x + 1, x + 2),
-            lambda x: (x + 1),
-            AssertionError,
-            r"Mismatch in number of output variables",
-        ),
-        (
-            lambda x: (x + 1, x + 2),
-            lambda x: (x + 1, x + 2.0),
-            AssertionError,
-            r"Mismatch in output abstract values",
-        ),
-    ],
-)
-def test_validate_mismatches(true_fn, false_fn, expected_error, match):
-    """Test mismatch in number and type of output variables."""
-    with pytest.raises(expected_error, match=match):
-        jax.make_jaxpr(_capture_cond(True, true_fn, false_fn))(jax.numpy.array(1))
+        with pytest.raises(
+            AssertionError, match=r"Mismatch in number of output variables in elif branch #0"
+        ):
+            jax.make_jaxpr(_capture_cond(False, true_fn, false_fn, [(True, elif_fn3)]))(
+                jax.numpy.array(1)
+            )
 
 
 dev = qml.device("default.qubit", wires=3)
@@ -242,83 +245,71 @@ dev = qml.device("default.qubit", wires=3)
 
 @qml.qnode(dev)
 def circuit(pred, arg1, arg2):
+    """Quantum circuit with conditional branches."""
 
     qml.RX(0.10, wires=0)
 
     def true_fn(arg1, arg2):
-        qml.RX(arg1, wires=0)
+        qml.RY(arg1, wires=0)
         qml.RX(arg2, wires=0)
-        qml.RX(arg1, wires=0)
+        qml.RZ(arg1, wires=0)
 
     def false_fn(arg1, arg2):
+        qml.RX(arg1, wires=0)
         qml.RX(arg2, wires=0)
 
     def elif_fn1(arg1, arg2):
+        qml.RZ(arg2, wires=0)
         qml.RX(arg1, wires=0)
 
-    qml.cond(
-        pred > 0,
-        true_fn,
-        false_fn,
-        elifs=((pred == -1, elif_fn1)),
-    )(arg1, arg2)
-
-    qml.RX(0.10, wires=0)
-
-    return qml.expval(qml.PauliZ(wires=0))
-
-
-@qml.qnode(dev)
-def reference_circuit_true(arg1, arg2):
-    qml.RX(0.10, wires=0)
-    qml.RX(arg1, wires=0)
-    qml.RX(arg2, wires=0)
-    qml.RX(arg1, wires=0)
+    qml.cond(pred > 0, true_fn, false_fn, elifs=(pred == -1, elif_fn1))(arg1, arg2)
     qml.RX(0.10, wires=0)
     return qml.expval(qml.PauliZ(wires=0))
 
 
 @qml.qnode(dev)
-def reference_circuit_false(arg2):
-    qml.RX(0.10, wires=0)
-    qml.RX(arg2, wires=0)
-    qml.RX(0.10, wires=0)
-    return qml.expval(qml.PauliZ(wires=0))
+def circuit_with_returned_operator(pred, arg1, arg2):
+    """Quantum circuit with conditional branches that return operators."""
 
-
-@qml.qnode(dev)
-def reference_circuit_elif1(arg1):
     qml.RX(0.10, wires=0)
-    qml.RX(arg1, wires=0)
-    qml.RX(0.10, wires=0)
-    return qml.expval(qml.PauliZ(wires=0))
 
+    def true_fn(arg1, arg2):
+        qml.RY(arg1, wires=0)
+        return 7, 4.6, qml.RY(arg2, wires=0), True
 
-@qml.qnode(dev)
-def reference_circuit_no_branch():
-    qml.RX(0.10, wires=0)
+    def false_fn(arg1, arg2):
+        qml.RZ(arg2, wires=0)
+        return 2, 2.2, qml.RZ(arg1, wires=0), False
+
+    qml.cond(pred > 0, true_fn, false_fn)(arg1, arg2)
     qml.RX(0.10, wires=0)
     return qml.expval(qml.PauliZ(wires=0))
 
 
-class TestQuantumConditionals:
+class TestCondCircuits:
+    """Tests for conditional quantum circuits."""
+
     @pytest.mark.parametrize(
-        "pred, arg1, arg2",
+        "pred, arg1, arg2, expected",
         [
-            (1, 0.5, 1.0),
-            (0, 0.5, 1.0),
-            (-1, 0.5, 1.0),
-            (-2, 0.5, 1.0),
+            (1, 0.5, 0.6, 0.63340907),  # RX(0.10) -> RY(0.5) -> RX(0.6) -> RZ(0.5) -> RX(0.10)
+            (0, 0.5, 0.6, 0.26749883),  # RX(0.10) -> RX(0.5) -> RX(0.6) -> RX(0.10)
+            (-1, 0.5, 0.6, 0.77468805),  # RX(0.10) -> RZ(0.6) -> RX(0.5) -> RX(0.10)
         ],
     )
-    def test_conditional_branches(self, pred, arg1, arg2):
+    def test_circuit(self, pred, arg1, arg2, expected):
+        """Test circuit with true, false, and elif branches."""
         result = circuit(pred, arg1, arg2)
+        assert np.allclose(result, expected), f"Expected {expected}, but got {result}"
 
-        if pred > 0:
-            expected_result = reference_circuit_true(arg1, arg2)
-        elif pred == -1:
-            expected_result = reference_circuit_elif1(arg1)
-        else:
-            expected_result = reference_circuit_false(arg2)
-
-        assert np.allclose(result, expected_result), f"Expected {expected_result}, but got {result}"
+    @pytest.mark.parametrize(
+        "pred, arg1, arg2, expected",
+        [
+            (1, 0.5, 0.6, 0.43910855),  # RX(0.10) -> RY(0.5) -> RY(0.6) -> RX(0.10)
+            (0, 0.5, 0.6, 0.98551243),  # RX(0.10) -> RZ(0.6) -> RX(0.5) -> RX(0.10)
+        ],
+    )
+    def test_circuit_with_returned_operator(self, pred, arg1, arg2, expected):
+        """Test circuit with returned operators in the branches."""
+        result = circuit_with_returned_operator(pred, arg1, arg2)
+        assert np.allclose(result, expected), f"Expected {expected}, but got {result}"
