@@ -72,11 +72,11 @@ def registers(register_dict):
             for i in range(len(reg["phi"])):
                 qml.CSWAP(reg["aux"] + reg["phi"][i] + reg["psi"][i])
             qml.Hadamard(reg["aux"])
-            
+
             return qml.expval(qml.Z(wires=reg["aux"]))
 
->>> circuit()
-0.9999999999999996
+        >>> circuit()
+        0.9999999999999996
     """
 
     def _registers(register_dict, _start_wire_index=0):
