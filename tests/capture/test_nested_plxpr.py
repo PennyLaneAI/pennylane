@@ -83,13 +83,17 @@ class TestAdjointQfunc:
         assert len(q) == 1
         qml.assert_equal(q.queue[0], qml.Rot(3.0, 2.0, 1.0, 0))
 
-    def test_multiple_ops_and_classical_processing(self):
+    @pytest.mark.parametrize("eqn_out", (None, 2))
+    def test_multiple_ops_and_classical_processing(self, eqn_out):
         """Tests applying the adjoint transform with multiple operations and classical processing."""
 
+        # pylint: disable=inconsistent-return-statements
         def func(x, w):
             qml.X(w)
             qml.IsingXX(2 * x + 1, (w, w + 1))
-            return 2  # should be ignored by transform
+            if eqn_out is None:
+                return
+            return eqn_out  # should be ignored by transform
 
         def workflow(x):
             return qml.adjoint(func)(x, 5)
