@@ -15,8 +15,8 @@
 Code relevant for performing measurements on a qutrit mixed state.
 """
 
+from collections.abc import Callable
 from string import ascii_letters as alphabet
-from typing import Callable
 
 from pennylane import math, queuing
 from pennylane.measurements import (

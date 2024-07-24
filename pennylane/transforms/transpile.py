@@ -3,7 +3,6 @@ Contains the transpiler transform.
 """
 
 from functools import partial
-from typing import Callable, Sequence
 
 import networkx as nx
 
@@ -13,9 +12,9 @@ from pennylane.ops import Hamiltonian, LinearCombination
 from pennylane.ops import __all__ as all_ops
 from pennylane.ops.qubit import SWAP
 from pennylane.queuing import QueuingManager
-from pennylane.tape import QuantumTape
+from pennylane.tape import QuantumTape, QuantumTapeBatch
 from pennylane.transforms import transform
-from pennylane.typing import Result, ResultBatch
+from pennylane.typing import PostprocessingFn
 
 
 def state_transposition(results, mps, new_wire_order, original_wire_order):
@@ -63,7 +62,7 @@ def _process_measurements(expanded_tape, device_wires, is_default_mixed):
 @transform
 def transpile(
     tape: QuantumTape, coupling_map, device=None
-) -> tuple[Sequence[QuantumTape], Callable[[ResultBatch], Result]]:
+) -> tuple[QuantumTapeBatch, PostprocessingFn]:
     """Transpile a circuit according to a desired coupling map
 
     .. warning::

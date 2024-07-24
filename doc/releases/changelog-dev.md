@@ -22,12 +22,19 @@
 
 * `SProd.terms` now flattens out the terms if the base is a multi-term observable.
   [(#5885)](https://github.com/PennyLaneAI/pennylane/pull/5885)
-  
+
 * A new method `to_mat` has been added to the `FermiWord` and `FermiSentence` classes, which allows
   computing the matrix representation of these Fermi operators.
   [(#5920)](https://github.com/PennyLaneAI/pennylane/pull/5920)
 
+* New functionality has been added to natively support exponential extrapolation when using the `mitigate_with_zne`. This allows
+  users to have more control over the error mitigation protocol without needing to add further dependencies.
+  [(#5972)](https://github.com/PennyLaneAI/pennylane/pull/5972)
+
 <h3>Improvements 🛠</h3>
+
+* Added the `compute_sparse_matrix` method for `qml.ops.qubit.BasisStateProjector`.
+  [(#5790)](https://github.com/PennyLaneAI/pennylane/pull/5790)
 
 * `StateMP.process_state` defines rules in `cast_to_complex` for complex casting, avoiding a superfluous state vector copy in Lightning simulations
   [(#5995)](https://github.com/PennyLaneAI/pennylane/pull/5995)
@@ -155,6 +162,12 @@
 
 <h3>Deprecations 👋</h3>
 
+* The `decomp_depth` argument in `qml.device` has been deprecated.
+  [(#6026)](https://github.com/PennyLaneAI/pennylane/pull/6026)
+
+* The `max_expansion` argument in `qml.QNode` has been deprecated.
+  [(#6026)](https://github.com/PennyLaneAI/pennylane/pull/6026)
+
 * The `expansion_strategy` attribute in the `QNode` class is deprecated.
   [(#5989)](https://github.com/PennyLaneAI/pennylane/pull/5989)
 
@@ -190,12 +203,19 @@
   Instead, use `pennylane.gradients.classical_fisher` and `pennylane.gradients.quantum_fisher`.
   [(#5985)](https://github.com/PennyLaneAI/pennylane/pull/5985)
 
+* The legacy devices `default.qubit.{autograd,torch,tf,jax,legacy}` are deprecated.
+  Instead, use `default.qubit` as it now supports backpropagation through the several backends.
+  [(#5997)](https://github.com/PennyLaneAI/pennylane/pull/5997)
+
 <h3>Documentation 📝</h3>
 
 * Improves the docstring for `QuantumScript.expand` and `qml.tape.tape.expand_tape`.
   [(#5974)](https://github.com/PennyLaneAI/pennylane/pull/5974)
 
 <h3>Bug fixes 🐛</h3>
+
+* Fixed a bug in `qml.SPSAOptimizer` that ignored keyword arguments in the objective function.
+  [(#6027)](https://github.com/PennyLaneAI/pennylane/pull/6027)
 
 * `dynamic_one_shot` was broken for old-API devices since `override_shots` was deprecated.
   [(#6024)](https://github.com/PennyLaneAI/pennylane/pull/6024)
@@ -231,8 +251,9 @@ Josh Izaac,
 Soran Jahangiri,
 Christina Lee,
 Austin Huang,
-Christina Lee,
 William Maxwell,
 Vincent Michaud-Rioux,
+Anurav Modak,
 Mudit Pandey,
-Erik Schultheis.
+Erik Schultheis,
+nate stemen.
