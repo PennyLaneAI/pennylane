@@ -67,4 +67,5 @@ and a reduction in unintended side effects, ``QuantumScript`` is strictly used i
 .. automodapi:: pennylane.tape
     :no-main-docstr:
     :include-all-objects:
+    :skip: QuantumTapeBatch
     :inheritance-diagram:

@@ -18,7 +18,6 @@ import copy
 import warnings
 from dataclasses import replace
 from functools import partial
-from typing import Callable, Tuple
 
 import numpy as np
 import pytest
@@ -28,7 +27,8 @@ import pennylane as qml
 from pennylane import QNode
 from pennylane import numpy as pnp
 from pennylane import qnode
-from pennylane.tape import QuantumScript
+from pennylane.tape import QuantumScript, QuantumTapeBatch
+from pennylane.typing import PostprocessingFn
 from pennylane.workflow.qnode import _prune_dynamic_transform
 
 
@@ -100,6 +100,15 @@ class TestInitialization:
             return qml.state()
 
         assert f.execute_kwargs["cache"] is True
+
+    def test_max_expansion_is_deprecated(self):
+        """Test that a warning is raised when using the deprecated max_expansion argument"""
+        dev = qml.device("default.qubit", wires=1)
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match="The max_expansion argument is deprecated",
+        ):
+            QNode(dummyfunc, dev, max_expansion=10)
 
 
 # pylint: disable=too-many-public-methods
@@ -1388,7 +1397,7 @@ class TestTransformProgramIntegration:
         @qml.transforms.core.transform
         def just_pauli_x_out(
             tape: qml.tape.QuantumTape,
-        ) -> (Tuple[qml.tape.QuantumTape], Callable):
+        ) -> tuple[QuantumTapeBatch, PostprocessingFn]:
             return (
                 qml.tape.QuantumScript([qml.PauliX(0)], tape.measurements),
             ), null_postprocessing
@@ -1418,7 +1427,7 @@ class TestTransformProgramIntegration:
         @qml.transforms.core.transform
         def pin_result(
             tape: qml.tape.QuantumTape, requested_result
-        ) -> (Tuple[qml.tape.QuantumTape], Callable):
+        ) -> tuple[QuantumTapeBatch, PostprocessingFn]:
             def postprocessing(_: qml.typing.ResultBatch) -> qml.typing.Result:
                 return requested_result
 
@@ -1444,7 +1453,9 @@ class TestTransformProgramIntegration:
             return results[0]
 
         @qml.transforms.core.transform
-        def just_pauli_x_out(tape: qml.tape.QuantumTape) -> (Tuple[qml.tape.QuantumTape], Callable):
+        def just_pauli_x_out(
+            tape: qml.tape.QuantumTape,
+        ) -> tuple[QuantumTapeBatch, PostprocessingFn]:
             return (
                 qml.tape.QuantumScript([qml.PauliX(0)], tape.measurements),
             ), null_postprocessing
@@ -1452,7 +1463,7 @@ class TestTransformProgramIntegration:
         @qml.transforms.core.transform
         def repeat_operations(
             tape: qml.tape.QuantumTape,
-        ) -> (Tuple[qml.tape.QuantumTape], Callable):
+        ) -> tuple[QuantumTapeBatch, PostprocessingFn]:
             new_tape = qml.tape.QuantumScript(
                 tape.operations + copy.deepcopy(tape.operations), tape.measurements
             )
@@ -1496,13 +1507,13 @@ class TestTransformProgramIntegration:
         @qml.transforms.core.transform
         def scale_output(
             tape: qml.tape.QuantumTape, factor
-        ) -> (Tuple[qml.tape.QuantumTape], Callable):
+        ) -> tuple[QuantumTapeBatch, PostprocessingFn]:
             return (tape,), partial(scale_by_factor, factor=factor)
 
         @qml.transforms.core.transform
         def shift_output(
             tape: qml.tape.QuantumTape, shift
-        ) -> (Tuple[qml.tape.QuantumTape], Callable):
+        ) -> tuple[QuantumTapeBatch, PostprocessingFn]:
             return (tape,), partial(add_shift, shift=shift)
 
         @partial(shift_output, shift=1.0)
@@ -1533,7 +1544,7 @@ class TestTransformProgramIntegration:
             return len(results[0])
 
         @qml.transforms.core.transform
-        def use_n_shots(tape: qml.tape.QuantumTape, n) -> (Tuple[qml.tape.QuantumTape], Callable):
+        def use_n_shots(tape: qml.tape.QuantumTape, n) -> tuple[QuantumTapeBatch, PostprocessingFn]:
             return (
                 qml.tape.QuantumScript(tape.operations, tape.measurements, shots=n),
             ), num_of_shots_from_sample

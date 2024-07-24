@@ -19,7 +19,8 @@ This file contains the ``ParametrizedEvolution`` operator.
 """
 
 import warnings
-from typing import List, Sequence, Union
+from collections.abc import Sequence
+from typing import Union
 
 import pennylane as qml
 from pennylane.operation import AnyWires, Operation
@@ -371,7 +372,7 @@ class ParametrizedEvolution(Operation):
         self,
         H: ParametrizedHamiltonian,
         params: list = None,
-        t: Union[float, List[float]] = None,
+        t: Union[float, list[float]] = None,
         return_intermediate: bool = False,
         complementary: bool = False,
         dense: bool = None,
