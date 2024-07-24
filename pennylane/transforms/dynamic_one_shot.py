@@ -261,7 +261,7 @@ def parse_native_mid_circuit_measurements(
     mcm_samples = qml.math.array(mcm_samples, like=interface)
     # Can't use boolean dtype array with tf, hence why conditionally setting items to 0 or 1
     has_postselect = qml.math.array(
-        [[int(op.postselect is not None) for op in all_mcms]],
+        [[op.postselect is not None for op in all_mcms]],
         like=interface,
         dtype=mcm_samples.dtype,
     )

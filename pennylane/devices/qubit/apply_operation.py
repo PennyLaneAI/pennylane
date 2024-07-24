@@ -328,7 +328,7 @@ def apply_mid_measure(
         axis = wire.toarray()[0]
         slices = [slice(None)] * qml.math.ndim(state)
         slices[axis] = 0
-        prob0 = qml.math.real(qml.math.norm(state[tuple(slices)]) ** 2)
+        prob0 = qml.math.real(qml.math.norm(state[tuple(slices)])) ** 2
 
         if prng_key is not None:
             # pylint: disable=import-outside-toplevel
