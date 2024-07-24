@@ -926,7 +926,7 @@ class TestCreateCustomDecompExpandFn:
             custom_decomps = {"MultiRZ": qml.MultiRZ.compute_decomposition}
             dev = qml.device("lightning.qubit", wires=2, custom_decomps=custom_decomps)
 
-            @qml.qnode(dev, diff_method="adjoint", expansion_strategy="device")
+            @qml.qnode(dev, diff_method="adjoint", expansion_strategy="gradient")
             def cost(theta):
                 qml.Hadamard(wires=0)
                 qml.Hadamard(wires=1)
