@@ -564,7 +564,6 @@ class Wires(Sequence):
         >>> wires1.intersection(wires2)
         Wires([2, 3])
         """
-
         return Wires((set(self.labels) & set(_process(other))))
 
     def __and__(self, other):
