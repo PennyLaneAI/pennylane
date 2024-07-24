@@ -438,7 +438,7 @@ class TestReturnShotVectorHessian:
         assert hess.shape == (num_copies, 3, 2, 2)
 
 
-shots_and_num_copies = [((1000000, 900000, 800000), 3), ((1000000, (900000, 2)), 3)]
+shots_and_num_copies = [((30000, 28000, 26000), 3), ((30000, (28000, 2)), 3)]
 
 
 @pytest.mark.parametrize("shots,num_copies", shots_and_num_copies)

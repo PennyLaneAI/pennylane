@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Integration tests for using the TF interface with shot vectors and with a QNode"""
-# pylint: disable=too-many-arguments,too-few-public-methods,unexpected-keyword-arg
+# pylint: disable=too-many-arguments,too-few-public-methods,unexpected-keyword-arg,redefined-outer-name
 import pytest
 
 import pennylane as qml
@@ -27,14 +27,16 @@ tf = pytest.importorskip("tensorflow")
 shots_and_num_copies = [((1, (5, 2), 10), 4)]
 shots_and_num_copies_hess = [((10, (5, 1)), 2)]
 
+kwargs = {
+    "finite-diff": {"h": 10e-2},
+    "parameter-shift": {},
+    "spsa": {"h": 10e-2, "num_directions": 20},
+}
+
 qubit_device_and_diff_method = [
-    [DefaultQubit(), "finite-diff", {"h": 10e-2}],
-    [DefaultQubit(), "parameter-shift", {}],
-    [
-        DefaultQubit(),
-        "spsa",
-        {"h": 10e-2, "num_directions": 20, "sampler_rng": np.random.default_rng(42)},
-    ],
+    [DefaultQubit(), "finite-diff"],
+    [DefaultQubit(), "parameter-shift"],
+    [DefaultQubit(), "spsa"],
 ]
 
 TOLS = {
@@ -44,8 +46,16 @@ TOLS = {
 }
 
 
+@pytest.fixture
+def gradient_kwargs(request):
+    diff_method = request.node.funcargs["diff_method"]
+    return kwargs[diff_method] | (
+        {"sampler_rng": np.random.default_rng(42)} if diff_method == "spsa" else {}
+    )
+
+
 @pytest.mark.parametrize("shots,num_copies", shots_and_num_copies)
-@pytest.mark.parametrize("dev,diff_method,gradient_kwargs", qubit_device_and_diff_method)
+@pytest.mark.parametrize("dev,diff_method", qubit_device_and_diff_method)
 @pytest.mark.parametrize(
     "decorator,interface",
     [(tf.function, "tf"), (lambda x: x, "tf-autograph")],
@@ -329,7 +339,7 @@ class TestReturnWithShotVectors:
 
 @pytest.mark.slow
 @pytest.mark.parametrize("shots,num_copies", shots_and_num_copies_hess)
-@pytest.mark.parametrize("dev,diff_method,gradient_kwargs", qubit_device_and_diff_method)
+@pytest.mark.parametrize("dev,diff_method", qubit_device_and_diff_method)
 @pytest.mark.parametrize(
     "decorator,interface",
     [(tf.function, "tf"), (lambda x: x, "tf-autograph")],
@@ -374,11 +384,11 @@ class TestReturnShotVectorHessian:
             assert h.shape == (2, num_copies)
 
 
-shots_and_num_copies = [((1000000, 900000, 800000), 3), ((1000000, (900000, 2)), 3)]
+shots_and_num_copies = [((30000, 28000, 26000), 3), ((20000, (18000, 2)), 3)]
 
 
 @pytest.mark.parametrize("shots,num_copies", shots_and_num_copies)
-@pytest.mark.parametrize("dev,diff_method,gradient_kwargs", qubit_device_and_diff_method)
+@pytest.mark.parametrize("dev,diff_method", qubit_device_and_diff_method)
 @pytest.mark.parametrize(
     "decorator,interface",
     [(tf.function, "tf"), (lambda x: x, "tf-autograph")],
