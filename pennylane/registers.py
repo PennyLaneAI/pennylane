@@ -55,6 +55,22 @@ def registers(register_dict):
     {'alice': Wires([0]), 'nest1': Wires([1, 2]), 'nest2': Wires([3]), 'bob': Wires([1, 2, 3])}
     >>> wire_dict['nest1']
     Wires([1, 2])
+
+    A simple example showcasing how to implement the `SWAP <https://en.wikipedia.org/wiki/Swap_test>`_ test:
+
+    .. code-block::
+
+        reg =  qml.registers({"aux": 1, "phi": 5, "psi": 5})
+
+        def circuit():
+            qml.Hadamard(reg["aux"])
+
+            for i in range(len(reg["phi"])):
+                qml.CSWAP(reg["aux"] | reg["phi"][i] | reg["psi"][i])
+
+            qml.Hadamard(reg["aux"])
+
+            return qml.expval(qml.Z(wires=reg["aux"]))
     """
 
     def _registers(register_dict, _start_wire_index=0):
