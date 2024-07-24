@@ -67,4 +67,3 @@ class BasisEmbedding(BasisState):
             Thus, ``[1,1,1]`` is mapped to :math:`|111 \rangle`.
 
     """
-    pass
