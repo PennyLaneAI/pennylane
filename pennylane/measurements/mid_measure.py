@@ -341,7 +341,7 @@ class MidMeasureMP(MeasurementProcess):
         return self.__class__.__name__
 
 
-class MeasurementValue(Generic[T]):
+class MeasurementValue(Generic[T], metaclass=qml.capture.CaptureMeta):
     """A class representing unknown measurement outcomes in the qubit model.
 
     Measurements on a single qubit in the computational basis are assumed.
@@ -352,6 +352,14 @@ class MeasurementValue(Generic[T]):
     """
 
     name = "MeasurementValue"
+
+    _primitive = qml.capture.create_mcm_value_primitive()
+
+    @classmethod
+    def _primitive_bind_call(cls, *args, **kwargs):
+        if cls._primitive is None:
+            return cls.__call__(*args, **kwargs)
+        return cls._primitive.bind(*args, **kwargs)
 
     def __init__(self, measurements, processing_fn):
         self.measurements = measurements
@@ -414,6 +422,35 @@ class MeasurementValue(Generic[T]):
         """
         mapped_measurements = [m.map_wires(wire_map) for m in self.measurements]
         return MeasurementValue(mapped_measurements, self.processing_fn)
+
+    # @staticmethod
+    # def _add(a, b):
+    #     return a.__add__(b)
+
+    # @property
+    # def aval(self):
+    #     try:
+    #         import jax
+    #     except ImportError:
+    #         return None
+
+    #     class AbstractMidMeasure(jax.core.ShapedArray):
+
+    #         @staticmethod
+    #         def _add(a, b):
+    #             add_p = jax.core.Primitive("add")
+
+    #             @add_p.def_impl
+    #             def _(a, b):
+    #                 return a.__add__(b)
+
+    #             @add_p.def_abstract_eval
+    #             def _(a, b):
+    #                 return AbstractMidMeasure(a.shape, a.dtype)
+
+    #             return add_p.bind(a, b)
+
+    #     return AbstractMidMeasure((), jax.numpy.bool_)
 
     def _transform_bin_op(self, base_bin, other):
         """Helper function for defining dunder binary operations."""
