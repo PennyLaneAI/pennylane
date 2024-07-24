@@ -13,6 +13,7 @@
 # limitations under the License.
 """Utility functions for circuit optimization."""
 # pylint: disable=too-many-return-statements,import-outside-toplevel
+import pennylane as qml
 from pennylane.ops.identity import GlobalPhase
 from pennylane.wires import Wires
 
