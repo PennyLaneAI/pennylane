@@ -491,7 +491,7 @@ def _get_cond_qfunc_prim():
     def _(*_, jaxpr_true, jaxpr_false, jaxpr_elifs):
 
         # We check that the return values in each branch (true, and possibly false and elifs)
-        # have the same abstract values (length, type, and value).
+        # have the same abstract values.
         # The error messages are detailed to help debugging
         def validate_abstract_values(
             outvals: list, expected_outvals: list, branch_type: str, index: int = None

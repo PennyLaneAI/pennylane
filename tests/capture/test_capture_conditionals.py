@@ -17,7 +17,6 @@ Tests for capturing conditionals into jaxpr.
 
 # pylint: disable=redefined-outer-name
 
-import jax.numpy as jnp
 import numpy as np
 import pytest
 
@@ -166,7 +165,7 @@ def test_validate_number_of_output_variables():
         return x + 1
 
     with pytest.raises(AssertionError, match=r"Mismatch in number of output variables"):
-        jax.make_jaxpr(_capture_cond(True, true_fn, false_fn))(jnp.array(1))
+        jax.make_jaxpr(_capture_cond(True, true_fn, false_fn))(jax.numpy.array(1))
 
 
 def test_validate_output_variable_types():
@@ -179,7 +178,7 @@ def test_validate_output_variable_types():
         return x + 1, x + 2.0
 
     with pytest.raises(AssertionError, match=r"Mismatch in output abstract values"):
-        jax.make_jaxpr(_capture_cond(True, true_fn, false_fn))(jnp.array(1))
+        jax.make_jaxpr(_capture_cond(True, true_fn, false_fn))(jax.numpy.array(1))
 
 
 def test_validate_elif_branches():
@@ -205,12 +204,14 @@ def test_validate_elif_branches():
     ):
         jax.make_jaxpr(
             _capture_cond(False, true_fn, false_fn, [(True, elif_fn1), (False, elif_fn2)])
-        )(jnp.array(1))
+        )(jax.numpy.array(1))
 
     with pytest.raises(
         AssertionError, match=r"Mismatch in number of output variables in elif branch #0"
     ):
-        jax.make_jaxpr(_capture_cond(False, true_fn, false_fn, [(True, elif_fn3)]))(jnp.array(1))
+        jax.make_jaxpr(_capture_cond(False, true_fn, false_fn, [(True, elif_fn3)]))(
+            jax.numpy.array(1)
+        )
 
 
 @pytest.mark.parametrize(
@@ -233,4 +234,4 @@ def test_validate_elif_branches():
 def test_validate_mismatches(true_fn, false_fn, expected_error, match):
     """Test mismatch in number and type of output variables."""
     with pytest.raises(expected_error, match=match):
-        jax.make_jaxpr(_capture_cond(True, true_fn, false_fn))(jnp.array(1))
+        jax.make_jaxpr(_capture_cond(True, true_fn, false_fn))(jax.numpy.array(1))
