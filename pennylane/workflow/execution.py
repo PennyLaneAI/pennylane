@@ -24,16 +24,17 @@ differentiation support.
 import inspect
 import logging
 import warnings
+from collections.abc import Callable, MutableMapping, Sequence
 from functools import partial
-from typing import Callable, MutableMapping, Optional, Sequence, Tuple, Union
+from typing import Optional, Union
 
 from cachetools import Cache, LRUCache
 
 import pennylane as qml
 from pennylane.data.base.attribute import UNSET
-from pennylane.tape import QuantumTape
+from pennylane.tape import QuantumTape, QuantumTapeBatch
 from pennylane.transforms import transform
-from pennylane.typing import ResultBatch
+from pennylane.typing import PostprocessingFn, Result, ResultBatch
 
 from .jacobian_products import (
     DeviceDerivatives,
@@ -96,7 +97,7 @@ _CACHED_EXECUTION_WITH_FINITE_SHOTS_WARNINGS = (
 
 
 def _adjoint_jacobian_expansion(
-    tapes: Sequence[QuantumTape], grad_on_execution: bool, interface: str, max_expansion: int
+    tapes: QuantumTapeBatch, grad_on_execution: bool, interface: str, max_expansion: int
 ):
     """Performs adjoint jacobian specific expansion.  Expands so that every
     trainable operation has a generator.
@@ -181,12 +182,12 @@ def _get_ml_boundary_execute(
 
 
 def _batch_transform(
-    tapes: Sequence[QuantumTape],
+    tapes: QuantumTapeBatch,
     device: device_type,
     config: "qml.devices.ExecutionConfig",
     override_shots: Union[bool, int, Sequence[int]] = False,
     device_batch_transform: bool = True,
-) -> Tuple[Sequence[QuantumTape], Callable, "qml.devices.ExecutionConfig"]:
+) -> tuple[QuantumTapeBatch, PostprocessingFn, "qml.devices.ExecutionConfig"]:
     """Apply the device batch transform unless requested not to.
 
     Args:
@@ -289,7 +290,7 @@ def _make_inner_execute(
     else:
         device_execution = partial(device.execute, execution_config=execution_config)
 
-    def inner_execute(tapes: Sequence[QuantumTape], **_) -> ResultBatch:
+    def inner_execute(tapes: QuantumTapeBatch, **_) -> ResultBatch:
         """Execution that occurs within a machine learning framework boundary.
 
         Closure Variables:
@@ -332,7 +333,7 @@ def _cache_transform(tape: QuantumTape, cache: MutableMapping):
         This function makes use of :attr:`.QuantumTape.hash` to identify unique tapes.
     """
 
-    def cache_hit_postprocessing(_results: Tuple[Tuple]) -> Tuple:
+    def cache_hit_postprocessing(_results: ResultBatch) -> Result:
         result = cache[tape.hash]
         if result is not None:
             if tape.shots and getattr(cache, "_persistent_cache", True):
@@ -347,7 +348,7 @@ def _cache_transform(tape: QuantumTape, cache: MutableMapping):
     if tape.hash in cache:
         return [], cache_hit_postprocessing
 
-    def cache_miss_postprocessing(results: Tuple[Tuple]) -> Tuple:
+    def cache_miss_postprocessing(results: ResultBatch) -> Result:
         result = results[0]
         cache[tape.hash] = result
         return result
@@ -467,7 +468,7 @@ def _deprecated_arguments_warnings(
 
 
 def execute(
-    tapes: Sequence[QuantumTape],
+    tapes: QuantumTapeBatch,
     device: device_type,
     gradient_fn: Optional[Union[Callable, str]] = None,
     interface="auto",
@@ -821,7 +822,7 @@ def execute(
 
         else:
 
-            def execute_fn(internal_tapes) -> Tuple[ResultBatch, Tuple]:
+            def execute_fn(internal_tapes) -> tuple[ResultBatch, tuple]:
                 """A wrapper around device.execute that adds an empty tuple instead of derivatives.
 
                 Closure Variables:

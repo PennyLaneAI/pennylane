@@ -16,12 +16,11 @@ This file contains the snapshots function which extracts measurements from the q
 """
 import warnings
 from functools import partial
-from typing import Callable, Sequence
 
 import pennylane as qml
-from pennylane.tape import QuantumTape
+from pennylane.tape import QuantumTape, QuantumTapeBatch
 from pennylane.transforms import transform
-from pennylane.typing import Result, ResultBatch
+from pennylane.typing import PostprocessingFn
 
 
 def _is_snapshot_compatible(dev):
@@ -55,7 +54,7 @@ class _SnapshotDebugger:
 
 
 @transform
-def snapshots(tape: QuantumTape) -> tuple[Sequence[QuantumTape], Callable[[ResultBatch], Result]]:
+def snapshots(tape: QuantumTape) -> tuple[QuantumTapeBatch, PostprocessingFn]:
     r"""This transform processes :class:`~pennylane.Snapshot` instances contained in a circuit,
     depending on the compatibility of the execution device.
     For supported devices, the snapshots' measurements are computed as the execution progresses.
