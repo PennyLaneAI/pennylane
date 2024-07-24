@@ -159,7 +159,6 @@ class StatePrep(StatePrepBase):
     >>> @qml.qnode(dev)
     ... def example_circuit():
     ...     qml.StatePrep(np.array([1, 0, 0, 0]), wires=range(2))
-    ...     qml.StatePrep(np.array([1, 0, 0, 0]), wires=range(2))
     ...     return qml.state()
     >>> print(example_circuit())
     [1.+0.j 0.+0.j 0.+0.j 0.+0.j]
