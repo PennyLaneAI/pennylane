@@ -17,12 +17,13 @@ Differentiability tests are still in the ml-framework specific files.
 """
 import copy
 from functools import partial
-from typing import Callable, Tuple
 
 import numpy as np
 import pytest
 
 import pennylane as qml
+from pennylane.tape import QuantumTapeBatch
+from pennylane.typing import PostprocessingFn
 
 device_suite = (
     qml.device("default.qubit.legacy", wires=5),
@@ -66,7 +67,7 @@ class TestTransformProgram:
 
         def just_pauli_x_out(
             tape: qml.tape.QuantumTape,
-        ) -> (Tuple[qml.tape.QuantumTape], Callable):
+        ) -> tuple[QuantumTapeBatch, PostprocessingFn]:
             return (
                 qml.tape.QuantumScript([qml.PauliX(0)], tape.measurements),
             ), null_postprocessing
@@ -173,14 +174,16 @@ class TestTransformProgram:
         def null_postprocessing(results):
             return results[0]
 
-        def just_pauli_x_out(tape: qml.tape.QuantumTape) -> (Tuple[qml.tape.QuantumTape], Callable):
+        def just_pauli_x_out(
+            tape: qml.tape.QuantumTape,
+        ) -> tuple[QuantumTapeBatch, PostprocessingFn]:
             return (
                 qml.tape.QuantumScript([qml.PauliX(0)], tape.measurements),
             ), null_postprocessing
 
         def repeat_operations(
             tape: qml.tape.QuantumTape,
-        ) -> (Tuple[qml.tape.QuantumTape], Callable):
+        ) -> tuple[QuantumTapeBatch, PostprocessingFn]:
             new_tape = qml.tape.QuantumScript(
                 tape.operations + copy.deepcopy(tape.operations), tape.measurements
             )
