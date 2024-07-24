@@ -53,7 +53,7 @@
   [(#5821)](https://github.com/PennyLaneAI/pennylane/pull/5821)
 
 * `qml.BasisRotation` and `qml.qchem.givens_decomposition` are now jit compatible.
-  [(#6004)](https://github.com/PennyLaneAI/pennylane/pull/6004)
+  [(#6019)](https://github.com/PennyLaneAI/pennylane/pull/6019)
 
 * The `qubit_observable` function is modified to return an ascending wire order for molecular 
   Hamiltonians.
