@@ -18,6 +18,7 @@ from pennylane.math import (
     arccos,
     arctan2,
     asarray,
+    cast_like,
     cos,
     is_abstract,
     moveaxis,
@@ -57,9 +58,10 @@ def find_next_gate(wires, op_list):
 def _try_no_fuse(angles1, angles2):
     """Try to combine rotation angles without trigonometric identities
     if some angles in the input angles vanish."""
+    dummy_sum = angles1 + angles2
     # moveaxis required for batched inputs
-    phi1, theta1, omega1 = moveaxis(asarray(angles1), -1, 0)
-    phi2, theta2, omega2 = moveaxis(asarray(angles2), -1, 0)
+    phi1, theta1, omega1 = moveaxis(cast_like(asarray(angles1), dummy_sum), -1, 0)
+    phi2, theta2, omega2 = moveaxis(cast_like(asarray(angles2), dummy_sum), -1, 0)
 
     if allclose(omega1 + phi2, 0.0):
         return stack([phi1, theta1 + theta2, omega2])
