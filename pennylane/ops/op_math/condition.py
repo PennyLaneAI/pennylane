@@ -454,8 +454,8 @@ def _get_cond_qfunc_prim():
 
             out = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *args)
 
-            # If the branch returns an Operator, we append it to the QueuingManager
-            # so that it is applied to the circuit
+            # If the branch returns one or more Operators, we append them to the QueuingManager
+            # so that they are applied to the quantum circuit
             for outvar in out:
                 if isinstance(outvar, Operator):
                     QueuingManager.append(outvar)

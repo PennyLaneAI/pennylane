@@ -194,10 +194,10 @@ def test_validate_elif_branches():
         return x + 1, x + 2
 
     def elif_fn2(x):
-        return x + 1, x + 2.0  # Type mismatch
+        return x + 1, x + 2.0
 
     def elif_fn3(x):
-        return x + 1  # Length mismatch
+        return x + 1
 
     with pytest.raises(
         AssertionError, match=r"Mismatch in output abstract values in elif branch #1"
@@ -235,3 +235,90 @@ def test_validate_mismatches(true_fn, false_fn, expected_error, match):
     """Test mismatch in number and type of output variables."""
     with pytest.raises(expected_error, match=match):
         jax.make_jaxpr(_capture_cond(True, true_fn, false_fn))(jax.numpy.array(1))
+
+
+dev = qml.device("default.qubit", wires=3)
+
+
+@qml.qnode(dev)
+def circuit(pred, arg1, arg2):
+
+    qml.RX(0.10, wires=0)
+
+    def true_fn(arg1, arg2):
+        qml.RX(arg1, wires=0)
+        qml.RX(arg2, wires=0)
+        qml.RX(arg1, wires=0)
+
+    def false_fn(arg1, arg2):
+        qml.RX(arg2, wires=0)
+
+    def elif_fn1(arg1, arg2):
+        qml.RX(arg1, wires=0)
+
+    qml.cond(
+        pred > 0,
+        true_fn,
+        false_fn,
+        elifs=((pred == -1, elif_fn1)),
+    )(arg1, arg2)
+
+    qml.RX(0.10, wires=0)
+
+    return qml.expval(qml.PauliZ(wires=0))
+
+
+@qml.qnode(dev)
+def reference_circuit_true(arg1, arg2):
+    qml.RX(0.10, wires=0)
+    qml.RX(arg1, wires=0)
+    qml.RX(arg2, wires=0)
+    qml.RX(arg1, wires=0)
+    qml.RX(0.10, wires=0)
+    return qml.expval(qml.PauliZ(wires=0))
+
+
+@qml.qnode(dev)
+def reference_circuit_false(arg2):
+    qml.RX(0.10, wires=0)
+    qml.RX(arg2, wires=0)
+    qml.RX(0.10, wires=0)
+    return qml.expval(qml.PauliZ(wires=0))
+
+
+@qml.qnode(dev)
+def reference_circuit_elif1(arg1):
+    qml.RX(0.10, wires=0)
+    qml.RX(arg1, wires=0)
+    qml.RX(0.10, wires=0)
+    return qml.expval(qml.PauliZ(wires=0))
+
+
+@qml.qnode(dev)
+def reference_circuit_no_branch():
+    qml.RX(0.10, wires=0)
+    qml.RX(0.10, wires=0)
+    return qml.expval(qml.PauliZ(wires=0))
+
+
+class TestQuantumConditionals:
+    @pytest.mark.parametrize(
+        "pred, arg1, arg2",
+        [
+            (1, 0.5, 1.0),
+            (0, 0.5, 1.0),
+            (-1, 0.5, 1.0),
+            (-2, 0.5, 1.0),
+        ],
+    )
+    def test_conditional_branches(self, pred, arg1, arg2):
+        result = circuit(pred, arg1, arg2)
+
+        if pred > 0:
+            expected_result = reference_circuit_true(arg1, arg2)
+        elif pred == -1:
+            expected_result = reference_circuit_elif1(arg1)
+        else:
+            expected_result = reference_circuit_false(arg2)
+
+        assert np.allclose(result, expected_result), f"Expected {expected_result}, but got {result}"
