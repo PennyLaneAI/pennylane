@@ -930,7 +930,6 @@ class MPLDrawer:
                 greater than the number of quantum wires will be scaled as classical wires.
 
         """
-        print("linewidth in MPLDrawer: ", plt.rcParams["lines.linewidth"])
         outer_stroke = path_effects.Stroke(
             linewidth=5 * plt.rcParams["lines.linewidth"], foreground=plt.rcParams["lines.color"]
         )
