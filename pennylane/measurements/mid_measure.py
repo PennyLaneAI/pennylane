@@ -518,9 +518,13 @@ class MeasurementValue(Generic[T]):
         return f"MeasurementValue(wires={self.wires.tolist()})"
 
 
-def find_measured_mcms(circuit):
-    """Return a set of the mid-circuit measurements which are required in any of the terminal measurements of a quantum circuit."""
-    measured_mcms = set(
+def find_post_processed_mcms(circuit):
+    """Return the subset of mid-circuit measurements which are required for post-processing.
+
+    This includes any mid-circuit measurement that is post-selected or the object of a terminal
+    measurement.
+    """
+    post_processed_mcms = set(
         op
         for op in circuit.operations
         if isinstance(op, MidMeasureMP) and op.postselect is not None
@@ -528,7 +532,7 @@ def find_measured_mcms(circuit):
     for m in circuit.measurements:
         if isinstance(m.mv, Sequence):
             for mv in m.mv:
-                measured_mcms = measured_mcms | set(mv.measurements)
+                post_processed_mcms = post_processed_mcms | set(mv.measurements)
         elif m.mv:
-            measured_mcms = measured_mcms | set(m.mv.measurements)
-    return measured_mcms
+            post_processed_mcms = post_processed_mcms | set(m.mv.measurements)
+    return post_processed_mcms

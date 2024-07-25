@@ -31,7 +31,7 @@ from pennylane.measurements import (
     ProbabilityMP,
     SampleMP,
     VarianceMP,
-    find_measured_mcms,
+    find_post_processed_mcms,
 )
 from pennylane.transforms.dynamic_one_shot import gather_mcm
 from pennylane.typing import Result
@@ -446,7 +446,7 @@ def simulate_tree_mcm(
     mcms = tuple([None] + [op for op in circuit.operations if isinstance(op, MidMeasureMP)])
     n_mcms = len(mcms) - 1
     mcm_current = qml.math.zeros(n_mcms + 1, dtype=bool)
-    measured_mcms = find_measured_mcms(circuit)
+    measured_mcms = find_post_processed_mcms(circuit)
     measured_mcms_indices = [i for i, mcm in enumerate(mcms[1:]) if mcm in measured_mcms]
     mcm_samples = dict(
         (k + 1, qml.math.empty((circuit.shots.total_shots,), dtype=bool) if finite_shots else None)
