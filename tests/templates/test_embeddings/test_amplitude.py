@@ -458,6 +458,7 @@ class TestInterfaces:
 
         assert qml.math.allclose(res, res2, atol=tol, rtol=0)
 
+
 int_features = [
     [10, 0, 2, 35, 0, 41, 56, 0],
     [
@@ -584,7 +585,7 @@ class TestInterfaceDtypes:
 
         assert qml.math.allclose(res, res2, atol=tol, rtol=0)
 
-        
+
 @pytest.mark.jax
 def test_jacobian_with_and_without_jit_has_same_output_with_high_shots():
     """Test that the jacobian of AmplitudeEmbedding is the same with and without jit for high number of shots."""

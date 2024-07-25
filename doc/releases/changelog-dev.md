@@ -216,6 +216,8 @@
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
+
+Tarun Kumar Allamsetty,
 Guillermo Alonso,
 Utkarsh Azad
 Astral Cai,
