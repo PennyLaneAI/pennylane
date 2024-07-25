@@ -210,7 +210,7 @@ class TestCtrlQfunc:
         with qml.queuing.AnnotatedQueue() as q:
             out = jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, 5.4)
 
-        expected = qml.ctrl(qml.RX(jax.numpy.array(5.4), 0), (3, 4), [False, True])
+        expected = qml.ctrl(qml.RZ(5.4, 0), (3, 4), [False, True])
         qml.assert_equal(out[0], expected)
         qml.assert_equal(q.queue[0], expected)
         assert len(q) == len(out) == 1
@@ -226,3 +226,18 @@ class TestCtrlQfunc:
             return qml.ctrl(f1, w2)(x, 0.5, 2 * x, 0)
 
         plxpr = jax.make_jaxpr(f)(-0.5, 1, 2)
+
+        assert plxpr.eqns[0].params["n_consts"] == 1
+        assert (
+            plxpr.eqns[0].invars[0] is plxpr.jaxpr.invars[1]
+        )  # first input is first control wire, const
+        assert plxpr.eqns[0].invars[1] is plxpr.jaxpr.invars[0]  # second input is x, first arg
+        assert plxpr.eqns[0].invars[-1] is plxpr.jaxpr.invars[2]  # second control wire
+        assert len(plxpr.eqns[0].invars) == 6  # one const, 4 args, one control wire
+
+        with qml.queuing.AnnotatedQueue() as q:
+            jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, 1.2, 3, 4)
+
+        target = qml.Rot(1.2, 0.5, jax.numpy.array(2 * 1.2), wires=0)
+        expected = qml.ctrl(qml.ctrl(target, 3), 4)
+        qml.assert_equal(q.queue[0], expected)

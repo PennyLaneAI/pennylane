@@ -236,13 +236,14 @@ def _get_ctrl_qfunc_prim():
     ctrl_prim.multiple_results = True
 
     @ctrl_prim.def_impl
-    def _(*args, n_control, jaxpr, control_values, work_wires):
-
+    def _(*args, n_control, jaxpr, control_values, work_wires, n_consts):
+        consts = args[:n_consts]
+        args = args[n_consts:]
         control_wires = args[-n_control:]
         args = args[:-n_control]
 
         with qml.queuing.AnnotatedQueue() as q:
-            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *args)
+            jax.core.eval_jaxpr(jaxpr, consts, *args)
         ops, _ = qml.queuing.process_queue(q)
 
         return [ctrl(op, control_wires, control_values, work_wires) for op in ops]
@@ -259,11 +260,9 @@ def _get_ctrl_qfunc_prim():
         # note that this approximation may fail when we have nested qfuncs like for and while
         # the do not return variables for all operators they queue...
         # all queued drop var operators
-        outvars = [AbstractOperator() for eqn in jaxpr.eqns if _is_queued_outvar(eqn.outvars)]
+        outvars = [eqn.outvars[0].aval for eqn in jaxpr.eqns if _is_queued_outvar(eqn.outvars)]
         # operators that are not dropped var because they are returned
-        outvars += [
-            AbstractOperator() for aval in jaxpr.out_avals if isinstance(aval, AbstractOperator)
-        ]
+        outvars += [var.aval for var in jaxpr.outvars if isinstance(var.aval, AbstractOperator)]
         return outvars
 
     return ctrl_prim
@@ -281,12 +280,14 @@ def _capture_ctrl_transform(qfunc: Callable, control, control_values, work_wires
         jaxpr = jax.make_jaxpr(functools.partial(qfunc, **kwargs))(*args)
         control_wires = qml.wires.Wires(control)  # make sure is iterable
         return qnode_prim.bind(
+            *jaxpr.consts,
             *args,
             *control_wires,
-            jaxpr=jaxpr,
+            jaxpr=jaxpr.jaxpr,
             n_control=len(control_wires),
             control_values=control_values,
             work_wires=work_wires,
+            n_consts=len(jaxpr.consts),
         )
 
     return new_qfunc
