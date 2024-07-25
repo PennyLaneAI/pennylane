@@ -137,8 +137,24 @@ def _bisect_compute_b(u: np.ndarray):
 
 # pylint: disable=too-many-arguments
 def _multicontrolled_zyz(
-    phi, theta, omega, target_wire: Wires, control_wires: Wires, work_wires: Optional[Wires] = None
+    rot_angles,
+    global_phase,
+    target_wire: Wires,
+    control_wires: Wires,
+    work_wires: Optional[Wires] = None,
 ) -> list[Operator]:
+    # The decomposition of special zyz with multiple control wires
+    # defined in Lemma 7.9 of https://arxiv.org/pdf/quant-ph/9503016
+
+    if not qml.math.allclose(0.0, global_phase, atol=1e-8, rtol=0):
+        raise ValueError(
+            f"The control_wires should be a single wire, instead got: {len(control_wires)} wires."
+        )
+
+    # Unpack the rotation angles
+    phi, theta, omega = rot_angles
+
+    # We use the conditional statements to account when decomposition is ran within a queue
     decomp = []
 
     cop_wires = (control_wires[-1], target_wire[0])
@@ -167,7 +183,12 @@ def _multicontrolled_zyz(
 
 
 # pylint: disable=too-many-arguments
-def _single_control_zyz(phi, theta, omega, global_phase, target_wire, control_wires: Wires):
+def _single_control_zyz(rot_angles, global_phase, target_wire, control_wires: Wires):
+    # The decomposition of special zyz with multiple control wires
+    # defined in Lemma 7.9 of https://arxiv.org/pdf/quant-ph/9503016
+
+    # Unpack the rotation angles
+    phi, theta, omega = rot_angles
     # We use the conditional statements to account when decomposition is ran within a queue
     decomp = []
     # Add negative of global phase. Compare definition of qml.GlobalPhase and Ph(delta) from section 4.1 of Barenco et al.
@@ -204,7 +225,8 @@ def ctrl_decomp_zyz(
     """Decompose the controlled version of a target single-qubit operation
 
     This function decomposes a controlled single-qubit target operation with one
-    single control using the decomposition defined in Lemma 4.3 and Lemma 5.1 of
+    single control using the decomposition defined in Lemma 4.3 and Lemma 5.1,
+    and multiple control using the decomposition defined in Lemma 7.9 of
     `Barenco et al. (1995) <https://arxiv.org/abs/quant-ph/9503016>`_.
 
     Args:
@@ -261,24 +283,19 @@ def ctrl_decomp_zyz(
 
     if isinstance(target_operation, Operation):
         try:
-            phi, theta, omega = target_operation.single_qubit_rot_angles()
+            rot_angles = target_operation.single_qubit_rot_angles()
         except NotImplementedError:
-            phi, theta, omega = _get_single_qubit_rot_angles_via_matrix(
-                qml.matrix(target_operation)
-            )
+            rot_angles = _get_single_qubit_rot_angles_via_matrix(qml.matrix(target_operation))
     else:
-        phi, theta, omega = _get_single_qubit_rot_angles_via_matrix(qml.matrix(target_operation))
+        rot_angles = _get_single_qubit_rot_angles_via_matrix(qml.matrix(target_operation))
 
     _, global_phase = _convert_to_su2(qml.matrix(target_operation), return_global_phase=True)
 
-    if len(control_wires) > 1:
-        if not qml.math.allclose(0.0, global_phase, atol=1e-8, rtol=0):
-            raise ValueError(
-                f"The control_wires should be a single wire, instead got: {len(control_wires)} wires."
-            )
-        return _multicontrolled_zyz(phi, theta, omega, target_wire, control_wires, work_wires)
-
-    return _single_control_zyz(phi, theta, omega, global_phase, target_wire, control_wires)
+    return (
+        _multicontrolled_zyz(rot_angles, global_phase, target_wire, control_wires, work_wires)
+        if len(control_wires) > 1
+        else _single_control_zyz(rot_angles, global_phase, target_wire, control_wires)
+    )
 
 
 def _ctrl_decomp_bisect_od(
