@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Integration tests for using the Autograd interface with shot vectors and with a QNode"""
-# pylint: disable=too-many-arguments
+# pylint: disable=too-many-arguments,redefined-outer-name
 
 import pytest
 
@@ -25,13 +25,17 @@ pytestmark = pytest.mark.autograd
 shots_and_num_copies = [(((5, 2), 1, 10), 4), ((1, 10, (5, 2)), 4)]
 shots_and_num_copies_hess = [(((5, 1), 10), 2), ((10, (5, 1)), 2)]
 
-SEED_FOR_SPSA = 42
-spsa_kwargs = {"h": 0.05, "num_directions": 20, "sampler_rng": np.random.default_rng(SEED_FOR_SPSA)}
+
+kwargs = {
+    "finite-diff": {"h": 0.05},
+    "parameter-shift": {},
+    "spsa": {"h": 0.05, "num_directions": 20},
+}
 
 qubit_device_and_diff_method = [
-    ["default.qubit", "finite-diff", {"h": 0.05}],
-    ["default.qubit", "parameter-shift", {}],
-    ["default.qubit", "spsa", spsa_kwargs],
+    ["default.qubit.legacy", "finite-diff"],
+    ["default.qubit.legacy", "parameter-shift"],
+    ["default.qubit.legacy", "spsa"],
 ]
 
 TOLS = {
@@ -41,8 +45,16 @@ TOLS = {
 }
 
 
+@pytest.fixture
+def gradient_kwargs(request):
+    diff_method = request.node.funcargs["diff_method"]
+    return kwargs[diff_method] | (
+        {"sampler_rng": np.random.default_rng(42)} if diff_method == "spsa" else {}
+    )
+
+
 @pytest.mark.parametrize("shots,num_copies", shots_and_num_copies)
-@pytest.mark.parametrize("dev_name,diff_method,gradient_kwargs", qubit_device_and_diff_method)
+@pytest.mark.parametrize("dev_name,diff_method", qubit_device_and_diff_method)
 class TestReturnWithShotVectors:
     """Class to test the shape of the Jacobian/Hessian with different return types and shot vectors."""
 
@@ -369,7 +381,7 @@ class TestReturnWithShotVectors:
 
 @pytest.mark.slow
 @pytest.mark.parametrize("shots,num_copies", shots_and_num_copies_hess)
-@pytest.mark.parametrize("dev_name,diff_method,gradient_kwargs", qubit_device_and_diff_method)
+@pytest.mark.parametrize("dev_name,diff_method", qubit_device_and_diff_method)
 class TestReturnShotVectorHessian:
     """Class to test the shape of the Hessian with different return types and shot vectors."""
 
@@ -553,12 +565,11 @@ class TestReturnShotVectorHessian:
         assert hess.shape == (num_copies, 3, 2, 2)
 
 
-shots_and_num_copies = [((1000000, 900000, 800000), 3), ((1000000, (900000, 2)), 3)]
+shots_and_num_copies = [((30000, 28000, 26000), 3), ((30000, (28000, 2)), 3)]
 
 
-@pytest.mark.skip("failing in CI for inscrutable reasons, passes locally")
 @pytest.mark.parametrize("shots,num_copies", shots_and_num_copies)
-@pytest.mark.parametrize("dev_name,diff_method,gradient_kwargs", qubit_device_and_diff_method)
+@pytest.mark.parametrize("dev_name,diff_method", qubit_device_and_diff_method)
 class TestReturnShotVectorIntegration:
     """Tests for the integration of shots with the autograd interface."""
 

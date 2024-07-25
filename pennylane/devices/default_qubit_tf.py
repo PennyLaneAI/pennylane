@@ -15,6 +15,7 @@
 reference plugin.
 """
 import itertools
+import warnings
 
 import numpy as np
 from packaging.version import Version
@@ -42,7 +43,7 @@ from .default_qubit_legacy import tolerance
 
 
 class DefaultQubitTF(DefaultQubitLegacy):
-    """Simulator plugin based on ``"default.qubit.legacy"``, written using TensorFlow.
+    r"""Simulator plugin based on ``"default.qubit.legacy"``, written using TensorFlow.
 
     **Short name:** ``default.qubit.tf``
 
@@ -56,6 +57,9 @@ class DefaultQubitTF(DefaultQubitLegacy):
     .. code-block:: console
 
         pip install tensorflow>=2.0
+
+    .. warning::
+        This device is deprecated. Use :class:`~pennylane.devices.DefaultQubit` instead; for example through ``qml.device("default.qubit")``, which now supports backpropagation.
 
     **Example**
 
@@ -162,6 +166,14 @@ class DefaultQubitTF(DefaultQubitLegacy):
         return res
 
     def __init__(self, wires, *, shots=None, analytic=None):
+        warnings.warn(
+            f"Use of '{self.short_name}' is deprecated. Instead, use 'default.qubit', "
+            "which supports backpropagation. "
+            "If you experience issues, reach out to the PennyLane team on "
+            "the discussion forum: https://discuss.pennylane.ai/",
+            qml.PennyLaneDeprecationWarning,
+        )
+
         r_dtype = tf.float64
         c_dtype = tf.complex128
 

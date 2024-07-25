@@ -230,7 +230,6 @@ def measure_final_state(circuit, state, is_state_batched, **execution_kwargs) ->
     mid_measurements = execution_kwargs.get("mid_measurements", None)
 
     # analytic case
-
     if not circuit.shots:
         if mid_measurements is not None:
             raise TypeError("Native mid-circuit measurements are only supported with finite shots.")
@@ -243,7 +242,6 @@ def measure_final_state(circuit, state, is_state_batched, **execution_kwargs) ->
         )
 
     # finite-shot case
-
     rng = default_rng(rng)
     results = measure_with_samples(
         circuit.measurements,
