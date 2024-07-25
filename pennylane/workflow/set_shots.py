@@ -24,15 +24,14 @@ from pennylane.measurements import Shots
 
 @contextlib.contextmanager
 def set_shots(device, shots):
-    """Context manager to temporarily change the shots
-    of a device.
+    r"""Context manager to temporarily change the shots of a device.
 
     This context manager can be used in two ways.
 
     As a standard context manager:
 
     >>> dev = qml.device("default.qubit.legacy", wires=2, shots=None)
-    >>> with set_shots(dev, shots=100):
+    >>> with qml.workflow.set_shots(dev, shots=100):
     ...     print(dev.shots)
     100
     >>> print(dev.shots)
@@ -40,7 +39,7 @@ def set_shots(device, shots):
 
     Or as a decorator that acts on a function that uses the device:
 
-    >>> set_shots(dev, shots=100)(lambda: dev.shots)()
+    >>> qml.workflow.set_shots(dev, shots=100)(lambda: dev.shots)()
     100
     """
     if isinstance(device, qml.devices.Device):

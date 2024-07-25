@@ -19,9 +19,6 @@ import itertools
 import warnings
 from functools import partial
 
-# pylint: disable=protected-access,too-many-arguments,too-many-statements,too-many-branches,unused-argument
-from typing import Callable, Sequence
-
 import numpy as np
 
 import pennylane as qml
@@ -38,12 +35,16 @@ from pennylane.measurements import (
     StateMP,
     VarianceMP,
 )
+from pennylane.tape import QuantumTapeBatch
 from pennylane.transforms.tape_expand import expand_invalid_trainable
+from pennylane.typing import PostprocessingFn
 
 from .finite_difference import finite_diff
 from .general_shift_rules import generate_shifted_tapes, process_shifts
 from .gradient_transform import _no_trainable_grad
 from .parameter_shift import _get_operation_recipe, expval_param_shift
+
+# pylint: disable=protected-access,too-many-arguments,too-many-statements,too-many-branches,unused-argument
 
 
 def _grad_method_cv(tape, idx):
@@ -376,8 +377,10 @@ def second_order_param_shift(tape, dev_wires, argnum=None, shifts=None, gradient
         B_inv = B.copy()
 
         succ = tape.graph.descendants_in_order((op,))
-        operation_descendents = itertools.filterfalse(qml.circuit_graph._is_observable, succ)
-        observable_descendents = filter(qml.circuit_graph._is_observable, succ)
+        operation_descendents = itertools.filterfalse(
+            lambda obj: isinstance(obj, MeasurementProcess), succ
+        )
+        observable_descendents = filter(lambda obj: isinstance(obj, MeasurementProcess), succ)
 
         for BB in operation_descendents:
             if not BB.supports_heisenberg:
@@ -501,7 +504,7 @@ def _expand_transform_param_shift_cv(
     fallback_fn=finite_diff,
     f0=None,
     force_order2=False,
-) -> (Sequence[qml.tape.QuantumTape], Callable):
+) -> tuple[QuantumTapeBatch, PostprocessingFn]:
     """Expand function to be applied before parameter shift CV."""
     expanded_tape = expand_invalid_trainable(tape)
 
@@ -529,7 +532,7 @@ def param_shift_cv(
     fallback_fn=finite_diff,
     f0=None,
     force_order2=False,
-) -> (Sequence[qml.tape.QuantumTape], Callable):
+) -> tuple[QuantumTapeBatch, PostprocessingFn]:
     r"""Transform a continuous-variable QNode to compute the parameter-shift gradient of all gate
     parameters with respect to its inputs.
 

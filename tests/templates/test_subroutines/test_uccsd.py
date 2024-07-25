@@ -190,7 +190,7 @@ class TestDecomposition:
             init_state=ref_state,
             n_repeats=n_repeats,
         )
-        raw_queue = op.expand().operations
+        raw_queue = op.decomposition()
 
         # hack to avoid updating the test data:
         # expand the other templates, which now
@@ -198,7 +198,7 @@ class TestDecomposition:
         queue = []
         for op in raw_queue:
             if op.name in ["FermionicSingleExcitation", "FermionicDoubleExcitation"]:
-                queue.extend(op.expand().operations)
+                queue.extend(op.decomposition())
             else:
                 queue.append(op)
 

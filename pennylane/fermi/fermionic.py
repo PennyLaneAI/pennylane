@@ -273,6 +273,36 @@ class FermiWord(dict):
 
         return operator
 
+    def to_mat(self, n_orbitals=None):
+        r"""Return the matrix representation.
+
+        Args:
+            n_orbitals (int or None): Number of orbitals. If not provided, it will be inferred from
+                the largest orbital index in the Fermi operator.
+
+        Returns:
+            NumpyArray: Matrix representation of the :class:`~.FermiWord`.
+
+        **Example**
+
+        >>> w = FermiWord({(0, 0): '+', (1, 1): '-'})
+        >>> w.to_mat()
+        array([0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j],
+              [0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j],
+              [0.+0.j, 1.+0.j, 0.+0.j, 0.+0.j],
+              [0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j])
+        """
+        largest_orb_id = max(key[1] for key in self.keys()) + 1
+        if n_orbitals and n_orbitals < largest_orb_id:
+            raise ValueError(
+                f"n_orbitals cannot be smaller than {largest_orb_id}, got: {n_orbitals}."
+            )
+
+        largest_order = n_orbitals or largest_orb_id
+        mat = qml.jordan_wigner(self, ps=True).to_mat(wire_order=list(range(largest_order)))
+
+        return mat
+
 
 # pylint: disable=useless-super-delegation
 class FermiSentence(dict):
@@ -462,6 +492,36 @@ class FermiSentence(dict):
         for fw, coeff in items:
             if abs(coeff) <= tol:
                 del self[fw]
+
+    def to_mat(self, n_orbitals=None):
+        r"""Return the matrix representation.
+
+        Args:
+            n_orbitals (int or None): Number of orbitals. If not provided, it will be inferred from
+                the largest orbital index in the Fermi operator
+
+        Returns:
+            NumpyArray: Matrix representation of the :class:`~.FermiSentence`.
+
+        **Example**
+
+        >>> fs = FermiSentence({FermiWord({(0, 0): "+", (1, 1): "-"}): 1.2, FermiWord({(0, 0): "+", (1, 0): "-"}): 3.1})
+        >>> fs.to_mat()
+        array([0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j],
+              [0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j],
+              [0.0 + 0.0j, 1.2 + 0.0j, 3.1 + 0.0j, 0.0 + 0.0j],
+              [0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, 3.1 + 0.0j])
+        """
+        largest_orb_id = max(key[1] for fermi_word in self.keys() for key in fermi_word.keys()) + 1
+        if n_orbitals and n_orbitals < largest_orb_id:
+            raise ValueError(
+                f"n_orbitals cannot be smaller than {largest_orb_id}, got: {n_orbitals}."
+            )
+
+        largest_order = n_orbitals or largest_orb_id
+        mat = qml.jordan_wigner(self, ps=True).to_mat(wire_order=list(range(largest_order)))
+
+        return mat
 
 
 def from_string(fermi_string):
