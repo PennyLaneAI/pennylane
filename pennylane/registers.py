@@ -22,12 +22,12 @@ def registers(register_dict):
     """
     Returns a dictionary that maps register names to :class:`~.Wires`.
 
-    This function helps us group qubits and abstract away the finer details of running quantum
-    algorithms. Wire register names and their total number of wires are typically known in advance,
+    This function helps to group qubits and abstract away the finer details of running quantum
+    algorithms. Register names and their total number of wires are typically known in advance,
     but managing the specific wire range for each register can be a challenge. The ``qml.registers()``
     function creates a dictionary that maps register name to :class:`~.Wires` object. Moreover,
-    it is possible to input a nested structure where registers contain sub-registers, as illustrated
-    in the example below.
+    it allows to input a nested structure where registers contain sub-registers, as illustrated
+    in the examples below.
 
     Args:
         register_dict (dict): a dictionary where keys are register names and values are either
