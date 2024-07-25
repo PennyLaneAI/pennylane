@@ -189,6 +189,13 @@ unmodified_templates_cases = [
     ),
 ]
 
+@pytest.fixture(scope="function", autouse=True)
+def capture_warnings(recwarn):
+    yield
+    if len(recwarn) > 0:
+        for w in recwarn:
+            assert isinstance(w.message, qml.PennyLaneDeprecationWarning)
+            assert "BasisStatePreparation is deprecated" in str(w.message)
 
 @pytest.mark.parametrize("template, args, kwargs", unmodified_templates_cases)
 def test_unmodified_templates(template, args, kwargs):
