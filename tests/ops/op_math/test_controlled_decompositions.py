@@ -87,14 +87,6 @@ class TestControlledDecompositionZYZ:
         ):
             _ = ctrl_decomp_zyz(qml.CNOT([0, 1]), [2])
 
-    def test_invalid_num_controls(self):
-        """Tests that an error is raised when an invalid number of control wires is passed"""
-        with pytest.raises(
-            ValueError,
-            match="The control_wires should be a single wire, instead got: 2",
-        ):
-            _ = ctrl_decomp_zyz(qml.X([1]), [0, 1])
-
     su2_ops = [
         qml.RX(0.123, wires=0),
         qml.RY(0.123, wires=0),
@@ -109,11 +101,24 @@ class TestControlledDecompositionZYZ:
         qml.PhaseShift(1.5, wires=0),
     ]
 
-    @pytest.mark.parametrize("op", su2_ops + unitary_ops)
-    @pytest.mark.parametrize("control_wires", ([1], [1, 2], [1, 2, 3]))
-    def test_decomposition_circuit(self, op, control_wires, tol):
+    general_unitary_ops = [
+        qml.QubitUnitary(
+            np.array(
+                [
+                    [-0.28829348 - 0.78829734j, 0.30364367 + 0.45085995j],
+                    [0.53396245 - 0.10177564j, 0.76279558 - 0.35024096j],
+                ]
+            ),
+            wires=0,
+        ),
+        qml.DiagonalQubitUnitary(np.array([1, -1]), wires=0),
+    ]
+
+    @pytest.mark.parametrize("op", su2_ops + special_unitary_ops + general_unitary_ops)
+    @pytest.mark.parametrize("control_wires", ([1], [2], [3]))
+    def test_decomposition_circuit_general_ops(self, op, control_wires, tol):
         """Tests that the controlled decomposition of a single-qubit operation
-        behaves as expected in a quantum circuit"""
+        behaves as expected in a quantum circuit for general_unitary_ops"""
         dev = qml.device("default.qubit", wires=4)
 
         @qml.qnode(dev)
@@ -132,6 +137,25 @@ class TestControlledDecompositionZYZ:
         expected = expected_circuit()
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("op", general_unitary_ops)
+    @pytest.mark.parametrize("control_wires", ([1, 2],[1,2,3]))
+    def test_decomposition_circuit_general_ops_error(self, op, control_wires, tol):
+        """Tests that the controlled decomposition of a single-qubit operation
+        with multiple controlled wires raises a ValueError for general_unitary_ops"""
+        dev = qml.device("default.qubit", wires=4)
+
+        @qml.qnode(dev)
+        def decomp_circuit():
+            qml.broadcast(unitary=qml.Hadamard, pattern="single", wires=control_wires)
+            ctrl_decomp_zyz(op, Wires(control_wires))
+            return qml.probs()
+
+        with pytest.raises(
+            ValueError,
+            match="The global_phase should be zero",
+        ):
+            decomp_circuit()
 
     @pytest.mark.parametrize("control_wires", ([1], [1, 2], [1, 2, 3]))
     def test_decomposition_circuit_gradient(self, control_wires, tol):
@@ -183,23 +207,23 @@ class TestControlledDecompositionZYZ:
         """Test that the operations in the decomposition are correct."""
         phi, theta, omega = 0.123, 0.456, 0.789
         op = qml.Rot(phi, theta, omega, wires=0)
-        control_wires = [1]
+        control_wires = [1, 2, 3]
         decomps = ctrl_decomp_zyz(op, Wires(control_wires))
 
         expected_ops = [
-            qml.RZ(0.123, wires=0),
-            qml.RY(0.456 / 2, wires=0),
-            qml.CNOT(wires=control_wires + [0]),
-            qml.RY(-0.456 / 2, wires=0),
-            qml.RZ(-(0.123 + 0.789) / 2, wires=0),
-            qml.CNOT(wires=control_wires + [0]),
-            qml.RZ((0.789 - 0.123) / 2, wires=0),
+            qml.CRZ(0.123, wires=[3, 0]),
+            qml.CRY(0.456 / 2, wires=[3, 0]),
+            qml.Toffoli(wires=control_wires[:-1] + [0]),
+            qml.CRY(-0.456 / 2, wires=[3, 0]),
+            qml.CRZ(-(0.123 + 0.789) / 2, wires=[3, 0]),
+            qml.Toffoli(wires=control_wires[:-1] + [0]),
+            qml.CRZ((0.789 - 0.123) / 2, wires=[3, 0]),
         ]
         for decomp_op, expected_op in zip(decomps, expected_ops):
             qml.assert_equal(decomp_op, expected_op)
         assert len(decomps) == 7
 
-    @pytest.mark.parametrize("op", su2_ops + unitary_ops)
+    @pytest.mark.parametrize("op", su2_ops + special_unitary_ops + general_unitary_ops)
     @pytest.mark.parametrize("control_wires", ([1], [2], [3]))
     def test_decomp_queues_correctly(self, op, control_wires, tol):
         """Test that any incorrect operations aren't queued when using

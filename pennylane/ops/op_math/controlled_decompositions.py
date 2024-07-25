@@ -151,7 +151,7 @@ def _multi_controlled_zyz(
             f"The global_phase should be zero, instead got: {global_phase}."
         )
 
-    if len(work_wires) > 1:
+    if work_wires and len(work_wires) > 1:
         raise ValueError(
             f"The work_wires should be a single wire, instead got: {len(work_wires)} wires."
         )
