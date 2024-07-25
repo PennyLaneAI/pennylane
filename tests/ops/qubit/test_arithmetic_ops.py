@@ -194,7 +194,7 @@ class TestQubitSum:
         if expand:
             ops = [
                 qml.StatePrep(input_state, wires=[0, 1, 2]),
-                *qml.QubitSum(wires=wires).expand(),
+                *qml.tape.QuantumScript(qml.QubitSum(wires=wires).decomposition()),
             ]
         else:
             ops = [qml.StatePrep(input_state, wires=[0, 1, 2]), qml.QubitSum(wires=wires)]
