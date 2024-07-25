@@ -16,8 +16,8 @@ This submodule contains controlled operators based on the ControlledOp class.
 """
 # pylint: disable=no-value-for-parameter, arguments-differ, arguments-renamed
 import warnings
+from collections.abc import Iterable
 from functools import lru_cache
-from typing import Iterable
 
 import numpy as np
 from scipy.linalg import block_diag

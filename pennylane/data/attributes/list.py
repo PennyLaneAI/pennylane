@@ -14,9 +14,8 @@
 """Contains an DatasetAttribute that allows for heterogeneous lists of dataset
 types."""
 
-import typing
-from collections.abc import Sequence
-from typing import Generic, List, Union, overload
+from collections.abc import Iterable, MutableSequence, Sequence
+from typing import Generic, Union, overload
 
 from pennylane.data.base.attribute import DatasetAttribute
 from pennylane.data.base.hdf5 import HDF5Any, HDF5Group
@@ -26,37 +25,35 @@ from pennylane.data.base.typing_util import T
 
 class DatasetList(  # pylint: disable=too-many-ancestors
     Generic[T],
-    DatasetAttribute[HDF5Group, typing.Sequence[T], typing.Iterable[T]],
-    typing.MutableSequence[T],
+    DatasetAttribute[HDF5Group, Sequence[T], Iterable[T]],
+    MutableSequence[T],
     MapperMixin,
 ):
     """Provides a list-like collection type for Dataset Attributes."""
 
     type_id = "list"
 
-    def __post_init__(self, value: typing.Iterable[T]):
+    def __post_init__(self, value: Iterable[T]):
         super().__post_init__(value)
 
         self.extend(value)
 
     @classmethod
-    def default_value(cls) -> typing.Iterable[T]:
+    def default_value(cls) -> Iterable[T]:
         return []
 
-    def hdf5_to_value(self, bind: HDF5Group) -> typing.MutableSequence[T]:
+    def hdf5_to_value(self, bind: HDF5Group) -> MutableSequence[T]:
         return self
 
-    def value_to_hdf5(
-        self, bind_parent: HDF5Group, key: str, value: typing.Iterable[T]
-    ) -> HDF5Group:
+    def value_to_hdf5(self, bind_parent: HDF5Group, key: str, value: Iterable[T]) -> HDF5Group:
         grp = bind_parent.create_group(key)
 
         return grp
 
-    def copy_value(self) -> List[T]:
+    def copy_value(self) -> list[T]:
         return [self._mapper[str(i)].copy_value() for i in range(len(self))]
 
-    def copy(self) -> List[T]:
+    def copy(self) -> list[T]:
         """Returns a copy of this list as a builtin ``list``, with all
         elements copied.."""
         return self.copy_value()
@@ -97,7 +94,7 @@ class DatasetList(  # pylint: disable=too-many-ancestors
         return f"[{items_repr}]"
 
     @overload
-    def __getitem__(self, index: slice) -> typing.List[T]:
+    def __getitem__(self, index: slice) -> list[T]:
         pass
 
     @overload

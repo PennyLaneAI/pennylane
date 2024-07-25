@@ -878,13 +878,11 @@ class TestMidCircuitMeasurements:
 
 
 class TestLevelExpansionStrategy:
-    @pytest.fixture(
-        params=[qml.device("default.qubit.legacy", wires=3), qml.devices.DefaultQubit()],
-    )
-    def transforms_circuit(self, request):
+    @pytest.fixture
+    def transforms_circuit(self):
         @qml.transforms.merge_rotations
         @qml.transforms.cancel_inverses
-        @qml.qnode(request.param, diff_method="parameter-shift")
+        @qml.qnode(qml.device("default.qubit"), diff_method="parameter-shift")
         def circ(weights, order):
             qml.RandomLayers(weights, wires=(0, 1))
             qml.Permute(order, wires=(0, 1, 2))
@@ -953,8 +951,8 @@ class TestLevelExpansionStrategy:
         )
         assert out == expected
 
-    def test_draw_with_qfunc_warns_with_expansion_strategy(self):
-        """Test that draw warns the user about expansion_strategy being ignored."""
+    def test_draw_with_qfunc_warns_with_expansion_strategy_or_level(self):
+        """Test that draw warns the user about expansion_strategy and level being ignored."""
 
         def qfunc():
             qml.PauliZ(0)
@@ -962,16 +960,25 @@ class TestLevelExpansionStrategy:
         with pytest.warns(
             UserWarning, match="the expansion_strategy and level arguments are ignored"
         ):
-            _ = qml.draw(qfunc, expansion_strategy="gradient")
+            with pytest.warns(
+                qml.PennyLaneDeprecationWarning, match="'expansion_strategy' argument is deprecated"
+            ):
+                qml.draw(qfunc, expansion_strategy="gradient")
 
         with pytest.warns(
             UserWarning, match="the expansion_strategy and level arguments are ignored"
         ):
-            _ = qml.draw(qfunc, level="gradient")
+            qml.draw(qfunc, level="gradient")
 
     def test_providing_both_level_and_expansion_raises_error(self, transforms_circuit):
         with pytest.raises(ValueError, match="Either 'level' or 'expansion_strategy'"):
             qml.draw(transforms_circuit, level=0, expansion_strategy="device")
+
+    def test_deprecation_warning_when_expansion_strategy_provided(self, transforms_circuit):
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match="'expansion_strategy' argument is deprecated"
+        ):
+            qml.draw(transforms_circuit, expansion_strategy="device")
 
 
 def test_draw_batch_transform():
@@ -1015,11 +1022,7 @@ def test_nested_tapes():
     assert draw(circ)() == expected
 
 
-@pytest.mark.parametrize(
-    "device",
-    [qml.device("default.qubit.legacy", wires=2), qml.device("default.qubit", wires=2)],
-)
-def test_applied_transforms(device):
+def test_applied_transforms():
     """Test that any transforms applied to the qnode are included in the output."""
 
     @qml.transform
@@ -1028,7 +1031,7 @@ def test_applied_transforms(device):
         return (new_tape,), lambda res: res[0]
 
     @just_pauli_x
-    @qml.qnode(device)
+    @qml.qnode(qml.device("default.qubit", wires=2))
     def my_circuit(x):
         qml.RX(x, wires=0)
         qml.SWAP(wires=(0, 1))

@@ -24,15 +24,17 @@ differentiation support.
 import inspect
 import logging
 import warnings
+from collections.abc import Callable, MutableMapping, Sequence
 from functools import partial
-from typing import Callable, MutableMapping, Optional, Sequence, Tuple, Union
+from typing import Optional, Union
 
 from cachetools import Cache, LRUCache
 
 import pennylane as qml
-from pennylane.tape import QuantumTape
+from pennylane.data.base.attribute import UNSET
+from pennylane.tape import QuantumTape, QuantumTapeBatch
 from pennylane.transforms import transform
-from pennylane.typing import ResultBatch
+from pennylane.typing import PostprocessingFn, Result, ResultBatch
 
 from .jacobian_products import (
     DeviceDerivatives,
@@ -95,7 +97,7 @@ _CACHED_EXECUTION_WITH_FINITE_SHOTS_WARNINGS = (
 
 
 def _adjoint_jacobian_expansion(
-    tapes: Sequence[QuantumTape], grad_on_execution: bool, interface: str, max_expansion: int
+    tapes: QuantumTapeBatch, grad_on_execution: bool, interface: str, max_expansion: int
 ):
     """Performs adjoint jacobian specific expansion.  Expands so that every
     trainable operation has a generator.
@@ -180,12 +182,12 @@ def _get_ml_boundary_execute(
 
 
 def _batch_transform(
-    tapes: Sequence[QuantumTape],
+    tapes: QuantumTapeBatch,
     device: device_type,
     config: "qml.devices.ExecutionConfig",
     override_shots: Union[bool, int, Sequence[int]] = False,
     device_batch_transform: bool = True,
-) -> Tuple[Sequence[QuantumTape], Callable, "qml.devices.ExecutionConfig"]:
+) -> tuple[QuantumTapeBatch, PostprocessingFn, "qml.devices.ExecutionConfig"]:
     """Apply the device batch transform unless requested not to.
 
     Args:
@@ -288,7 +290,7 @@ def _make_inner_execute(
     else:
         device_execution = partial(device.execute, execution_config=execution_config)
 
-    def inner_execute(tapes: Sequence[QuantumTape], **_) -> ResultBatch:
+    def inner_execute(tapes: QuantumTapeBatch, **_) -> ResultBatch:
         """Execution that occurs within a machine learning framework boundary.
 
         Closure Variables:
@@ -331,7 +333,7 @@ def _cache_transform(tape: QuantumTape, cache: MutableMapping):
         This function makes use of :attr:`.QuantumTape.hash` to identify unique tapes.
     """
 
-    def cache_hit_postprocessing(_results: Tuple[Tuple]) -> Tuple:
+    def cache_hit_postprocessing(_results: ResultBatch) -> Result:
         result = cache[tape.hash]
         if result is not None:
             if tape.shots and getattr(cache, "_persistent_cache", True):
@@ -346,7 +348,7 @@ def _cache_transform(tape: QuantumTape, cache: MutableMapping):
     if tape.hash in cache:
         return [], cache_hit_postprocessing
 
-    def cache_miss_postprocessing(results: Tuple[Tuple]) -> Tuple:
+    def cache_miss_postprocessing(results: ResultBatch) -> Result:
         result = results[0]
         cache[tape.hash] = result
         return result
@@ -408,8 +410,65 @@ def _get_interface_name(tapes, interface):
     return interface
 
 
+def _deprecated_arguments_warnings(
+    tapes, override_shots, expand_fn, max_expansion, device_batch_transform
+):
+    """Helper function to raise exceptions and pass codefactor checks regarding the length of the function"""
+
+    if device_batch_transform is not None:
+        warnings.warn(
+            "The device_batch_transform argument is deprecated and will be removed in version 0.39. "
+            "Instead, please create a TransformProgram with the desired preprocessing and pass "
+            "it to the transform_program argument of qml.execute.",
+            qml.PennyLaneDeprecationWarning,
+        )
+    else:
+        device_batch_transform = True
+
+    if override_shots is not UNSET:
+        warnings.warn(
+            "The override_shots argument is deprecated and will be removed in version 0.39. "
+            "Instead, please add the shots to the QuantumTape's to be executed.",
+            qml.PennyLaneDeprecationWarning,
+        )
+        if override_shots is not False:
+            tapes = tuple(
+                qml.tape.QuantumScript(
+                    t.operations,
+                    t.measurements,
+                    trainable_params=t.trainable_params,
+                    shots=override_shots,
+                )
+                for t in tapes
+            )
+    else:
+        override_shots = False
+
+    if expand_fn is not UNSET:
+        warnings.warn(
+            "The expand_fn argument is deprecated and will be removed in version 0.39. "
+            "Instead, please create a TransformProgram with the desired preprocessing and pass "
+            "it to the transform_program argument of qml.execute.",
+            qml.PennyLaneDeprecationWarning,
+        )
+    else:
+        expand_fn = "device"
+
+    if max_expansion is not None:
+        warnings.warn(
+            "The max_expansion argument is deprecated and will be removed in version 0.39. "
+            "Instead, please use qml.devices.preprocess.decompose with the desired expansion level, "
+            "add it to a TransformProgram and pass it to the transform_program argument of qml.execute.",
+            qml.PennyLaneDeprecationWarning,
+        )
+    else:
+        max_expansion = 10
+
+    return tapes, override_shots, expand_fn, max_expansion, device_batch_transform
+
+
 def execute(
-    tapes: Sequence[QuantumTape],
+    tapes: QuantumTapeBatch,
     device: device_type,
     gradient_fn: Optional[Union[Callable, str]] = None,
     interface="auto",
@@ -421,10 +480,10 @@ def execute(
     cache: Union[None, bool, dict, Cache] = True,
     cachesize=10000,
     max_diff=1,
-    override_shots: int = False,
-    expand_fn="device",  # type: ignore
-    max_expansion=10,
-    device_batch_transform=True,
+    override_shots: int = UNSET,
+    expand_fn=UNSET,  # type: ignore
+    max_expansion=None,
+    device_batch_transform=None,
     device_vjp=False,
     mcm_config=None,
 ) -> ResultBatch:
@@ -479,6 +538,53 @@ def execute(
     Returns:
         list[tensor_like[float]]: A nested list of tape results. Each element in
         the returned list corresponds in order to the provided tapes.
+
+    .. warning::
+
+        The following arguments are deprecated and will be removed in version 0.39:
+        ``expand_fn``, ``max_expansion``, and ``device_batch_transform``.
+        Instead, please create a :class:`~.TransformProgram` with the desired preprocessing and
+        pass it to the ``transform_program`` argument. For instance, we can create a program that uses
+        the ``qml.devices.preprocess.decompose`` transform with the desired expansion level and pass it
+        to the ``qml.execute`` function:
+
+        .. code-block:: python
+
+            from pennylane.devices.preprocess import decompose
+            from pennylane.transforms.core import TransformProgram
+
+            def stopping_condition(obj):
+                return obj.name in {"CNOT", "RX", "RZ"}
+
+            tape = qml.tape.QuantumScript([qml.IsingXX(1.2, wires=(0,1))], [qml.expval(qml.Z(0))])
+
+            program = TransformProgram()
+            program.add_transform(
+                decompose,
+                stopping_condition=stopping_condition,
+                max_expansion=10,
+            )
+
+            dev = qml.device("default.qubit", wires=2)
+
+        >>> qml.execute([tape], dev, transform_program=program)
+        (0.36235775447667357,)
+
+    .. warning::
+
+        The ``override_shots`` argument is deprecated and will be removed in version 0.39.
+        Instead, please add the shots to the ``QuantumTape``'s to be executed. For instance:
+
+        .. code-block:: python
+
+            dev = qml.device("default.qubit", wires=1)
+            operations = [qml.PauliX(0)]
+            measurements = [qml.expval(qml.PauliZ(0))]
+            qs = qml.tape.QuantumTape(operations, measurements, shots=100)
+
+        >>> qml.execute([qs], dev)
+        (-1.0,)
+
 
     **Example**
 
@@ -561,6 +667,12 @@ def execute(
             device_batch_transform,
             "::L".join(str(i) for i in inspect.getouterframes(inspect.currentframe(), 2)[1][1:3]),
         )
+
+    tapes, override_shots, expand_fn, max_expansion, device_batch_transform = (
+        _deprecated_arguments_warnings(
+            tapes, override_shots, expand_fn, max_expansion, device_batch_transform
+        )
+    )
 
     ### Specifying and preprocessing variables ####
 
@@ -710,7 +822,7 @@ def execute(
 
         else:
 
-            def execute_fn(internal_tapes) -> Tuple[ResultBatch, Tuple]:
+            def execute_fn(internal_tapes) -> tuple[ResultBatch, tuple]:
                 """A wrapper around device.execute that adds an empty tuple instead of derivatives.
 
                 Closure Variables:
