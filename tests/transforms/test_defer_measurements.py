@@ -1347,6 +1347,14 @@ class TestExpressionConditionals:
 class TestTemplates:
     """Tests templates being conditioned on mid-circuit measurement outcomes."""
 
+    @pytest.fixture(scope="function", autouse=True)
+    def capture_warnings(self, recwarn):
+        yield
+        if len(recwarn) > 0:
+            for w in recwarn:
+                assert isinstance(w.message, qml.PennyLaneDeprecationWarning)
+                assert "BasisStatePreparation is deprecated" in str(w.message)
+
     def test_basis_state_prep(self):
         """Test the basis state prep template conditioned on mid-circuit
         measurement outcomes."""
