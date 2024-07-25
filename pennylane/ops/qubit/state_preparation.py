@@ -18,16 +18,17 @@ with preparing a certain state on the device.
 # pylint:disable=abstract-method,arguments-differ,protected-access,no-member
 import numpy as np
 
+import pennylane as qml
 from pennylane import math
 from pennylane.operation import AnyWires, Operation, StatePrepBase
-from pennylane.templates.state_preparations import BasisStatePreparation, MottonenStatePreparation
+from pennylane.templates.state_preparations import MottonenStatePreparation
 from pennylane.wires import WireError, Wires
 
 state_prep_ops = {"BasisState", "StatePrep", "QubitDensityMatrix"}
 
 
 class BasisState(StatePrepBase):
-    r"""BasisState(n, wires)
+    r"""BasisState(features, wires)
     Prepares a single computational basis state.
 
     **Details:**
@@ -66,15 +67,51 @@ class BasisState(StatePrepBase):
     [0.+0.j 0.+0.j 0.+0.j 1.+0.j]
     """
 
-    num_wires = AnyWires
-    num_params = 1
-    """int: Number of trainable parameters that the operator depends on."""
+    def __init__(self, features, wires, id=None):
 
-    ndim_params = (1,)
-    """int: Number of dimensions per trainable parameter of the operator."""
+        if isinstance(features, list):
+            features = qml.math.stack(features)
+
+        tracing = qml.math.is_abstract(features)
+
+        if qml.math.shape(features) == ():
+            if not tracing and features >= 2 ** len(wires):
+                raise ValueError(
+                    f"Features must be of length {len(wires)}, got features={features} which is >= {2 ** len(wires)}"
+                )
+            bin = 2 ** math.arange(len(wires))[::-1]
+            features = qml.math.where((features & bin) > 0, 1, 0)
+
+        wires = Wires(wires)
+        shape = qml.math.shape(features)
+
+        if len(shape) != 1:
+            raise ValueError(f"Features must be one-dimensional; got shape {shape}.")
+
+        n_features = shape[0]
+        if n_features != len(wires):
+            raise ValueError(
+                f"Features must be of length {len(wires)}; got length {n_features} (features={features})."
+            )
+
+        if not tracing:
+            features_list = list(qml.math.toarray(features))
+            if not set(features_list).issubset({0, 1}):
+                raise ValueError(f"Basis state must only consist of 0s and 1s; got {features_list}")
+
+        super().__init__(features, wires=wires, id=id)
+
+    def _flatten(self):
+        features = self.parameters[0]
+        features = tuple(features) if isinstance(features, list) else features
+        return (features,), (self.wires,)
+
+    @classmethod
+    def _unflatten(cls, data, metadata) -> "BasisState":
+        return cls(data[0], wires=metadata[0])
 
     @staticmethod
-    def compute_decomposition(n, wires):
+    def compute_decomposition(features, wires):
         r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -93,33 +130,49 @@ class BasisState(StatePrepBase):
         **Example:**
 
         >>> qml.BasisState.compute_decomposition([1,0], wires=(0,1))
-        [BasisStatePreparation([1, 0], wires=[0, 1])]
+        [X(0)]
 
         """
-        return [BasisStatePreparation(n, wires)]
+
+        if not qml.math.is_abstract(features):
+            op_list = []
+            for wire, state in zip(wires, features):
+                if state == 1:
+                    op_list.append(qml.X(wire))
+            return op_list
+
+        op_list = []
+        for wire, state in zip(wires, features):
+            op_list.append(qml.PhaseShift(state * np.pi / 2, wire))
+            op_list.append(qml.RX(state * np.pi, wire))
+            op_list.append(qml.PhaseShift(state * np.pi / 2, wire))
+
+        return op_list
 
     def state_vector(self, wire_order=None):
         """Returns a statevector of shape ``(2,) * num_wires``."""
         prep_vals = self.parameters[0]
-        if any(i not in [0, 1] for i in prep_vals):
-            raise ValueError("BasisState parameter must consist of 0 or 1 integers.")
+        prep_vals_int = math.cast(prep_vals, int)
 
-        if (num_wires := len(self.wires)) != len(prep_vals):
-            raise ValueError("BasisState parameter and wires must be of equal length.")
-
-        prep_vals = math.cast(prep_vals, int)
         if wire_order is None:
-            indices = prep_vals
+            indices = prep_vals_int
+            num_wires = len(indices)
         else:
             if not Wires(wire_order).contains_wires(self.wires):
                 raise WireError("Custom wire_order must contain all BasisState wires")
             num_wires = len(wire_order)
             indices = [0] * num_wires
-            for base_wire_label, value in zip(self.wires, prep_vals):
+            for base_wire_label, value in zip(self.wires, prep_vals_int):
                 indices[wire_order.index(base_wire_label)] = value
 
-        ket = np.zeros((2,) * num_wires)
-        ket[tuple(indices)] = 1
+        if qml.math.get_interface(prep_vals_int) == "jax":
+            ket = math.array(math.zeros((2,) * num_wires), like="jax")
+            ket = ket.at[tuple(indices)].set(1)
+
+        else:
+            ket = math.zeros((2,) * num_wires)
+            ket[tuple(indices)] = 1
+
         return math.convert_like(ket, prep_vals)
 
 

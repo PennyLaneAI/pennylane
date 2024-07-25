@@ -641,7 +641,7 @@ class TestScriptCopying:
 def test_adjoint():
     """Tests taking the adjoint of a quantum script."""
     ops = [
-        qml.BasisState([1, 1], wires=0),
+        qml.BasisState([1, 1], wires=[0, 1]),
         qml.RX(1.2, wires=0),
         qml.S(0),
         qml.CNOT((0, 1)),
