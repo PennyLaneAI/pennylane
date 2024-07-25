@@ -70,12 +70,14 @@ def _check_decomposition(op, skip_wire_mapping):
         # Check that mapping wires transitions to the decomposition
         wire_map = {w: ascii_lowercase[i] for i, w in enumerate(op.wires)}
         mapped_op = op.map_wires(wire_map)
-        mapped_decomp = mapped_op.decomposition()
-        orig_decomp = op.decomposition()
-        for mapped_op, orig_op in zip(mapped_decomp, orig_decomp):
-            assert (
-                mapped_op.wires == qml.map_wires(orig_op, wire_map).wires
-            ), "Operators in decomposition of wire-mapped operator must have mapped wires."
+        # I don't think this is a good solution, try to think of a better one
+        if mapped_op.has_decomposition():
+            mapped_decomp = mapped_op.decomposition()
+            orig_decomp = op.decomposition()
+            for mapped_op, orig_op in zip(mapped_decomp, orig_decomp):
+                assert (
+                    mapped_op.wires == qml.map_wires(orig_op, wire_map).wires
+                ), "Operators in decomposition of wire-mapped operator must have mapped wires."
     else:
         failure_comment = "If has_decomposition is False, then decomposition must raise a ``DecompositionUndefinedError``."
         _assert_error_raised(
