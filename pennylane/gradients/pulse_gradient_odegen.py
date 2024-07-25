@@ -485,7 +485,7 @@ def pulse_odegen(
 
     .. code-block:: python
 
-        dev = qml.device("default.qubit.jax")
+        dev = qml.device("default.qubit")
 
         @qml.qnode(dev, interface="jax", diff_method=qml.gradients.pulse_odegen)
         def circuit(params):
