@@ -23,12 +23,6 @@ import pennylane as qml
 from pennylane import numpy as pnp
 
 
-@pytest.fixture(scope="function")
-def seed():
-    """Resets the random seed with every test"""
-    np.random.seed(0)
-
-
 def generate_cost_fn(ansatz, hamiltonian, device, **kwargs):
     """Generates a QNode and computes the expectation value of a cost Hamiltonian with respect
     to the parameters provided to an ansatz"""
@@ -63,18 +57,6 @@ OBSERVABLES_NO_HERMITIAN = [
     (qml.PauliZ(0), qml.PauliY(0), qml.PauliZ(1)),
     (qml.PauliX(0) @ qml.PauliZ(1), qml.PauliY(0) @ qml.PauliZ(1), qml.PauliZ(1)),
 ]
-
-with qml.operation.disable_new_opmath_cm():
-    OBSERVABLES_LEGACY = [
-        (qml.PauliZ(0), qml.PauliY(0), qml.PauliZ(1)),
-        (qml.PauliX(0) @ qml.PauliZ(1), qml.PauliY(0) @ qml.PauliZ(1), qml.PauliZ(1)),
-        (qml.Hermitian(H_TWO_QUBITS, [0, 1]),),
-    ]
-
-    OBSERVABLES_NO_HERMITIAN_LEGACY = [
-        (qml.PauliZ(0), qml.PauliY(0), qml.PauliZ(1)),
-        (qml.PauliX(0) @ qml.PauliZ(1), qml.PauliY(0) @ qml.PauliZ(1), qml.PauliZ(1)),
-    ]
 
 hamiltonians_with_expvals = [
     ((-0.6,), (qml.PauliZ(0),), [-0.6 * 1.0]),
@@ -135,16 +117,16 @@ big_hamiltonian_grad = (
     np.array(
         [
             [
-                [6.52084595e-18, -2.11464420e-02, -1.16576858e-02],
-                [-8.22589330e-18, -5.20597922e-02, -1.85365365e-02],
-                [-2.73850768e-17, 1.14202988e-01, -5.45041403e-03],
-                [-1.27514307e-17, -1.10465531e-01, 5.19489457e-02],
+                [3.46944695e-17, 2.19990188e-01, -2.30793349e-02],
+                [3.28242208e-17, -2.40632771e-02, -3.24974295e-04],
+                [3.81639165e-17, 5.36985274e-02, 5.09078210e-02],
+                [4.16333634e-17, -1.65286612e-01, 1.00566407e-01],
             ],
             [
-                [-2.45428288e-02, 8.38921555e-02, -2.00641818e-17],
-                [-2.21085973e-02, 7.39332741e-04, -1.25580654e-17],
-                [9.62058625e-03, -1.51398765e-01, 2.02129847e-03],
-                [1.10020832e-03, -3.49066271e-01, 2.13669117e-03],
+                [-1.30075605e-02, 7.64413731e-02, -1.73472348e-17],
+                [-3.93930424e-02, -1.41264311e-02, -3.03576608e-18],
+                [1.27502468e-02, 2.53562554e-02, -1.93489132e-02],
+                [-3.78744735e-02, 1.04547989e-02, 1.86649332e-02],
             ],
         ]
     ),
@@ -275,49 +257,47 @@ QUEUES = [
 add_queue = zip(QUEUE_HAMILTONIANS_1, QUEUE_HAMILTONIANS_2, QUEUES)
 
 #####################################################
+# Helper functions
+
+
+def _convert_obs_to_legacy_opmath(obs):
+    """Convert single-term observables to legacy opmath"""
+
+    if isinstance(obs, qml.ops.Prod):
+        return qml.operation.Tensor(*obs.operands)
+
+    if isinstance(obs, (list, tuple)):
+        return [_convert_obs_to_legacy_opmath(o) for o in obs]
+
+    return obs
+
+
+#####################################################
 # Tests
 
 
 class TestVQE:
     """Test the core functionality of the VQE module"""
 
-    @pytest.mark.usefixtures("use_new_opmath")
     @pytest.mark.parametrize("ansatz, params", CIRCUITS)
     @pytest.mark.parametrize("coeffs, observables", list(zip(COEFFS, OBSERVABLES)))
     def test_cost_evaluate(self, params, ansatz, coeffs, observables):
         """Tests that the cost function evaluates properly"""
+        if not qml.operation.active_new_opmath():
+            observables = _convert_obs_to_legacy_opmath(observables)
         hamiltonian = qml.Hamiltonian(coeffs, observables)
         dev = qml.device("default.qubit", wires=3)
         expval = generate_cost_fn(ansatz, hamiltonian, dev)
         assert expval(params).dtype == np.float64
         assert np.shape(expval(params)) == ()  # expval should be scalar
 
-    @pytest.mark.usefixtures("use_legacy_opmath")
-    @pytest.mark.parametrize("ansatz, params", CIRCUITS)
-    @pytest.mark.parametrize("coeffs, observables", list(zip(COEFFS, OBSERVABLES_LEGACY)))
-    def test_cost_evaluate_legacy(self, params, ansatz, coeffs, observables):
-        """Tests that the cost function evaluates properly"""
-        hamiltonian = qml.Hamiltonian(coeffs, observables)
-        dev = qml.device("default.qubit", wires=3)
-        expval = generate_cost_fn(ansatz, hamiltonian, dev)
-        assert expval(params).dtype == np.float64
-        assert np.shape(expval(params)) == ()  # expval should be scalar
-
-    @pytest.mark.usefixtures("use_new_opmath")
     @pytest.mark.parametrize(
         "coeffs, observables, expected", hamiltonians_with_expvals + zero_hamiltonians_with_expvals
     )
     def test_cost_expvals(self, coeffs, observables, expected):
         """Tests that the cost function returns correct expectation values"""
-        dev = qml.device("default.qubit", wires=2)
-        hamiltonian = qml.Hamiltonian(coeffs, observables)
-        cost = generate_cost_fn(lambda params, **kwargs: None, hamiltonian, dev)
-        assert cost([]) == sum(expected)
-
-    @pytest.mark.usefixtures("use_legacy_opmath")
-    @pytest.mark.parametrize("coeffs, observables, expected", hamiltonians_with_expvals)
-    def test_cost_expvals_legacy(self, coeffs, observables, expected):
-        """Tests that the cost function returns correct expectation values"""
+        if not qml.operation.active_new_opmath() and (not coeffs or all(c == 0 for c in coeffs)):
+            pytest.skip("Legacy opmath does not support zero Hamiltonians")
         dev = qml.device("default.qubit", wires=2)
         hamiltonian = qml.Hamiltonian(coeffs, observables)
         cost = generate_cost_fn(lambda params, **kwargs: None, hamiltonian, dev)
@@ -356,9 +336,9 @@ class TestVQE:
             diff_method="parameter-shift",
         )
 
-        np.random.seed(1967)
         shape = qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=4)
-        w = np.random.random(shape)
+        _rng = np.random.default_rng(1234)
+        w = _rng.random(shape)
 
         with qml.Tracker(dev) as tracker:
             c1 = cost(w)
@@ -371,19 +351,23 @@ class TestVQE:
         exec_no_opt = tracker.totals["executions"]
 
         assert exec_opt == 5  # Number of groups in the Hamiltonian
-        assert exec_no_opt == 14
+        assert exec_no_opt == 8  # Number of wire-based groups
 
         assert np.allclose(c1, c2, atol=1e-1)
 
     # pylint: disable=protected-access
     @pytest.mark.tf
     @pytest.mark.slow
+    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.legacy"])
     @pytest.mark.parametrize("shots", [None, [(8000, 5)], [(8000, 5), (9000, 4)]])
-    def test_optimize_tf(self, shots):
+    def test_optimize_tf(self, shots, dev_name):
         """Test that a Hamiltonian cost function is the same with and without
         grouping optimization when using the TensorFlow interface."""
 
-        dev = qml.device("default.qubit", wires=4, shots=shots)
+        if dev_name == "default.qubit.legacy" and shots is None:
+            pytest.xfail(reason="DQ legacy does not count hardware executions in analytic mode")
+
+        dev = qml.device(dev_name, wires=4, shots=shots)
 
         hamiltonian1 = copy.copy(big_hamiltonian)
         hamiltonian2 = copy.copy(big_hamiltonian)
@@ -404,9 +388,9 @@ class TestVQE:
             diff_method="parameter-shift",
         )
 
-        np.random.seed(1967)
         shape = qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=4)
-        w = np.random.random(shape)
+        _rng = np.random.default_rng(1234)
+        w = _rng.random(shape)
 
         with qml.Tracker(dev) as tracker:
             c1 = cost(w)
@@ -417,19 +401,23 @@ class TestVQE:
         exec_no_opt = tracker.totals["executions"]
 
         assert exec_opt == 5  # Number of groups in the Hamiltonian
-        assert exec_no_opt == 14
+        assert exec_no_opt == 8  # Number of wire-based groups
 
         assert np.allclose(c1, c2, atol=1e-1)
 
     # pylint: disable=protected-access
     @pytest.mark.autograd
     @pytest.mark.slow
+    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.legacy"])
     @pytest.mark.parametrize("shots", [None, [(8000, 5)], [(8000, 5), (9000, 4)]])
-    def test_optimize_autograd(self, shots):
+    def test_optimize_autograd(self, shots, dev_name):
         """Test that a Hamiltonian cost function is the same with and without
         grouping optimization when using the autograd interface."""
 
-        dev = qml.device("default.qubit", wires=4, shots=shots)
+        if dev_name == "default.qubit.legacy" and shots is None:
+            pytest.xfail(reason="DQ legacy does not count hardware executions in analytic mode")
+
+        dev = qml.device(dev_name, wires=4, shots=shots)
 
         hamiltonian1 = copy.copy(big_hamiltonian)
         hamiltonian2 = copy.copy(big_hamiltonian)
@@ -450,9 +438,9 @@ class TestVQE:
             diff_method="parameter-shift",
         )
 
-        np.random.seed(1967)
         shape = qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=4)
-        w = np.random.random(shape)
+        _rng = np.random.default_rng(1234)
+        w = _rng.random(shape)
 
         with qml.Tracker(dev) as tracker:
             c1 = cost(w)
@@ -463,7 +451,7 @@ class TestVQE:
         exec_no_opt = tracker.totals["executions"]
 
         assert exec_opt == 5  # Number of groups in the Hamiltonian
-        assert exec_no_opt == 14
+        assert exec_no_opt == 8
 
         assert np.allclose(c1, c2, atol=1e-1)
 
@@ -506,9 +494,9 @@ class TestVQE:
             diff_method="parameter-shift",
         )
 
-        np.random.seed(1967)
         shape = qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=5)
-        w = np.random.random(shape)
+        _rng = np.random.default_rng(1234)
+        w = _rng.random(shape)
 
         with qml.Tracker(dev) as tracker:
             c1 = cost(w)
@@ -519,7 +507,7 @@ class TestVQE:
         exec_no_opt = tracker.totals["executions"]
 
         assert exec_opt == 1  # Number of groups in the Hamiltonian
-        assert exec_no_opt == 8
+        assert exec_no_opt == 4  # number of wire-based groups
 
         assert np.allclose(c1, c2)
 
@@ -562,9 +550,9 @@ class TestVQE:
             diff_method="parameter-shift",
         )
 
-        np.random.seed(1967)
         shape = qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=5)
-        w = np.random.random(shape)
+        _rng = np.random.default_rng(1234)
+        w = _rng.random(shape)
 
         with qml.Tracker(dev) as tracker:
             c1 = cost(w)
@@ -574,9 +562,8 @@ class TestVQE:
             c2 = cost2(w)
         exec_no_opt = tracker.totals["executions"]
 
-        # was 1, 8 on old device
         assert exec_opt == 1  # Number of groups in the Hamiltonian
-        assert exec_no_opt == 8
+        assert exec_no_opt == 4
 
         assert np.allclose(c1, c2)
 
@@ -619,9 +606,9 @@ class TestVQE:
             diff_method="parameter-shift",
         )
 
-        np.random.seed(1967)
         shape = qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=5)
-        w = np.random.random(shape)
+        _rng = np.random.default_rng(1234)
+        w = _rng.random(shape)
 
         with qml.Tracker(dev) as tracker:
             c1 = cost(w)
@@ -631,9 +618,8 @@ class TestVQE:
             c2 = cost2(w)
         exec_no_opt = tracker.totals["executions"]
 
-        # was 1, 8 on old device
         assert exec_opt == 1  # Number of groups in the Hamiltonian
-        assert exec_no_opt == 8
+        assert exec_no_opt == 4
 
         assert np.allclose(c1, c2)
 
@@ -662,9 +648,9 @@ class TestVQE:
             diff_method="parameter-shift",
         )
 
-        np.random.seed(1967)
         shape = qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=4)
-        w = pnp.random.uniform(low=0, high=2 * np.pi, size=shape, requires_grad=True)
+        _rng = pnp.random.default_rng(1967)
+        w = _rng.uniform(low=0, high=2 * np.pi, size=shape, requires_grad=True)
 
         with qml.Tracker(dev) as tracker:
             dc = qml.grad(cost)(w)
@@ -696,7 +682,6 @@ class TestVQE:
             diff_method="parameter-shift",
         )
 
-        np.random.seed(1967)
         shape = qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=4)
         w = pnp.random.random(shape, requires_grad=True)
 
@@ -722,9 +707,9 @@ class TestVQE:
             interface="torch",
         )
 
-        np.random.seed(1967)
         shape = qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=4)
-        w = np.random.uniform(low=0, high=2 * np.pi, size=shape)
+        _rng = np.random.default_rng(1967)
+        w = _rng.uniform(low=0, high=2 * np.pi, size=shape)
         w = torch.tensor(w, requires_grad=True)
 
         res = cost(w)
@@ -749,9 +734,9 @@ class TestVQE:
             qml.templates.StronglyEntanglingLayers, hamiltonian, dev, interface="tf"
         )
 
-        np.random.seed(1967)
         shape = qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=4)
-        w = np.random.uniform(low=0, high=2 * np.pi, size=shape)
+        _rng = np.random.default_rng(1967)
+        w = _rng.uniform(low=0, high=2 * np.pi, size=shape)
         w = tf.Variable(w)
 
         with tf.GradientTape() as tape:
@@ -763,52 +748,23 @@ class TestVQE:
 
 
 # Test data
-np.random.seed(1967)
+rng = np.random.default_rng(1967)
 _shape = qml.templates.StronglyEntanglingLayers.shape(2, 4)
-PARAMS = np.random.uniform(low=0, high=2 * np.pi, size=_shape)
+PARAMS = rng.uniform(low=0, high=2 * np.pi, size=_shape)
 
 
 class TestNewVQE:
     """Test the new VQE syntax of passing the Hamiltonian as an observable."""
 
     # pylint: disable=cell-var-from-loop
-    @pytest.mark.usefixtures("use_new_opmath")
     @pytest.mark.parametrize("ansatz, params", CIRCUITS)
     @pytest.mark.parametrize("observables", OBSERVABLES_NO_HERMITIAN)
     def test_circuits_evaluate(self, ansatz, observables, params, tol):
         """Tests simple VQE evaluations."""
-        coeffs = [1.0] * len(observables)
-        dev = qml.device("default.qubit", wires=3)
-        H = qml.Hamiltonian(coeffs, observables)
 
-        # pass H directly
-        @qml.qnode(dev)
-        def circuit():
-            ansatz(params, wires=range(3))
-            return qml.expval(H)
+        if not qml.operation.active_new_opmath():
+            observables = _convert_obs_to_legacy_opmath(observables)
 
-        res = circuit()
-
-        res_expected = []
-        for obs in observables:
-
-            @qml.qnode(dev)
-            def separate_circuit():
-                ansatz(params, wires=range(3))
-                return qml.expval(obs)
-
-            res_expected.append(separate_circuit())
-
-        res_expected = np.sum([c * r for c, r in zip(coeffs, res_expected)])
-
-        assert np.isclose(res, res_expected, atol=tol)
-
-    # pylint: disable=cell-var-from-loop
-    @pytest.mark.usefixtures("use_legacy_opmath")
-    @pytest.mark.parametrize("ansatz, params", CIRCUITS)
-    @pytest.mark.parametrize("observables", OBSERVABLES_NO_HERMITIAN_LEGACY)
-    def test_circuits_evaluate_legacy(self, ansatz, observables, params, tol):
-        """Tests simple VQE evaluations."""
         coeffs = [1.0] * len(observables)
         dev = qml.device("default.qubit", wires=3)
         H = qml.Hamiltonian(coeffs, observables)
@@ -839,7 +795,7 @@ class TestNewVQE:
         """Tests a VQE circuit where the observable does not act on all wires."""
         dev = qml.device("default.qubit", wires=3)
         coeffs = [1.0, 1.0, 1.0]
-        np.random.seed(1967)
+
         w = np.random.random(qml.templates.StronglyEntanglingLayers.shape(n_layers=1, n_wires=2))
 
         observables1 = [qml.PauliZ(0), qml.PauliY(0), qml.PauliZ(1)]
@@ -959,7 +915,7 @@ class TestNewVQE:
 
     # the LinearCombination implementation does have diagonalizing gates,
     # but legacy Hamiltonian does not and fails
-    @pytest.mark.usefixtures("use_legacy_opmath")
+    @pytest.mark.usefixtures("legacy_opmath_only")
     def test_error_var_measurement(self):
         """Tests that error is thrown if var(H) is measured."""
         observables = [qml.PauliZ(0), qml.PauliY(0), qml.PauliZ(1)]
@@ -976,7 +932,7 @@ class TestNewVQE:
 
     # the LinearCombination implementation does have diagonalizing gates,
     # but legacy Hamiltonian does not and fails
-    @pytest.mark.usefixtures("use_legacy_opmath")
+    @pytest.mark.usefixtures("legacy_opmath_only")
     def test_error_sample_measurement(self):
         """Tests that error is thrown if sample(H) is measured."""
         observables = [qml.PauliZ(0), qml.PauliY(0), qml.PauliZ(1)]
@@ -1075,7 +1031,7 @@ class TestNewVQE:
 
         dev = qml.device("default.qubit", wires=4)
         H = big_hamiltonian
-        np.random.seed(1967)
+
         w = jnp.array(PARAMS)
 
         @qml.qnode(dev)
@@ -1086,7 +1042,7 @@ class TestNewVQE:
         dc = jax.grad(circuit)(w)
         assert np.allclose(dc, big_hamiltonian_grad, atol=tol)
 
-    @pytest.mark.usefixtures("use_legacy_opmath")
+    @pytest.mark.usefixtures("legacy_opmath_only")
     def test_specs_legacy(self):
         """Test that the specs of a VQE circuit can be computed"""
         dev = qml.device("default.qubit", wires=2)
@@ -1110,7 +1066,7 @@ class TestNewVQE:
     @pytest.mark.xfail(
         reason="diagonalizing gates defined but not used, should not be included in specs"
     )
-    @pytest.mark.usefixtures("use_new_opmath")
+    @pytest.mark.usefixtures("new_opmath_only")
     def test_specs(self):
         """Test that the specs of a VQE circuit can be computed"""
         dev = qml.device("default.qubit", wires=2)
@@ -1131,7 +1087,7 @@ class TestNewVQE:
         # to be revisited in [sc-59117]
         assert res["num_diagonalizing_gates"] == 0
 
-    @pytest.mark.usefixtures("use_legacy_opmath")
+    @pytest.mark.usefixtures("legacy_opmath_only")
     def test_specs_legacy_opmath(self):
         """Test that the specs of a VQE circuit can be computed"""
         dev = qml.device("default.qubit", wires=2)
@@ -1256,7 +1212,6 @@ class TestInterfaces:
 
         H = qml.Hamiltonian(coeffs, observables)
 
-        np.random.seed(1)
         shape = qml.templates.StronglyEntanglingLayers.shape(3, 2)
         params = np.random.uniform(low=0, high=2 * np.pi, size=shape)
 

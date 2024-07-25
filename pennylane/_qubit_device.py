@@ -26,7 +26,7 @@ import itertools
 import logging
 import warnings
 from collections import defaultdict
-from typing import List, Union
+from typing import Union
 
 import numpy as np
 
@@ -283,10 +283,15 @@ class QubitDevice(Device):
                 shots=[1],
                 trainable_params=circuit.trainable_params,
             )
+            # Some devices like Lightning-Kokkos use `self.shots` to update `_samples`,
+            # and hence we update `self.shots` temporarily for this loop
+            shots_copy = self.shots
+            self.shots = 1
             for _ in circuit.shots:
                 kwargs["mid_measurements"] = {}
                 self.reset()
                 results.append(self.execute(aux_circ, **kwargs))
+            self.shots = shots_copy
             return tuple(results)
         # apply all circuit operations
         self.apply(
@@ -533,7 +538,7 @@ class QubitDevice(Device):
         >>> op.name # returns the operation name
         "RX"
         >>> op.wires # returns a Wires object representing the wires that the operation acts on
-        <Wires = [0]>
+        Wires([0])
         >>> op.parameters # returns a list of parameters
         [0.2]
 
@@ -1772,7 +1777,7 @@ class QubitDevice(Device):
         # must be 2-dimensional
         return tuple(tuple(np.array(j_) for j_ in j) for j in jac)
 
-    def _get_diagonalizing_gates(self, circuit: QuantumTape) -> List[Operation]:
+    def _get_diagonalizing_gates(self, circuit: QuantumTape) -> list[Operation]:
         """Returns the gates that diagonalize the measured wires such that they
         are in the eigenbasis of the circuit observables.
 

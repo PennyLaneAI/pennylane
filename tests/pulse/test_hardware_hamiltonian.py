@@ -110,10 +110,8 @@ class TestHardwareHamiltonian:
 
         assert isinstance(sum_rm, HardwareHamiltonian)
         assert qml.math.allequal(sum_rm.coeffs, [1, 2, 2])
-        assert all(
-            qml.equal(op1, op2)
-            for op1, op2 in zip(sum_rm.ops, [qml.PauliX(4), qml.PauliZ(8), qml.PauliY(8)])
-        )
+        for op1, op2 in zip(sum_rm.ops, [qml.PauliX(4), qml.PauliZ(8), qml.PauliY(8)]):
+            qml.assert_equal(op1, op2)
         assert sum_rm.pulses == [
             HardwarePulse(1, 2, 3, [4, 8]),
             HardwarePulse(5, 6, 7, 8),
@@ -151,7 +149,8 @@ class TestHardwareHamiltonian:
         assert isinstance(res1, HardwareHamiltonian)
         assert res1.coeffs_fixed == coeffs
         assert res1.coeffs_parametrized == []
-        assert all(qml.equal(op1, op2) for op1, op2 in zip(res1.ops_fixed, ops))
+        for op1, op2 in zip(res1.ops_fixed, ops):
+            qml.assert_equal(op1, op2)
         assert res1.ops_parametrized == []
         assert res1.wires == qml.wires.Wires(h_wires)
 
@@ -162,7 +161,8 @@ class TestHardwareHamiltonian:
         assert isinstance(res2, HardwareHamiltonian)
         assert res2.coeffs_fixed == coeffs
         assert res2.coeffs_parametrized == []
-        assert all(qml.equal(op1, op2) for op1, op2 in zip(res2.ops_fixed, ops))
+        for op1, op2 in zip(res2.ops_fixed, ops):
+            qml.assert_equal(op1, op2)
         assert res2.ops_parametrized == []
         assert res2.wires == qml.wires.Wires(h_wires)
 
@@ -180,18 +180,18 @@ class TestHardwareHamiltonian:
         orig_matrix = qml.matrix(H([0.3], 0.1))
         H1 = H + scalars[0]
         assert len(H1.ops) == len(H1.coeffs) == 3
-        assert qml.equal(H1.ops[-1], qml.Identity(2))
+        qml.assert_equal(H1.ops[-1], qml.Identity(2))
         assert qml.math.allclose(qml.matrix(H1([0.3], 0.1)), orig_matrix + np.eye(4) * scalars[0])
         H2 = scalars[1] + H1
         assert len(H2.ops) == len(H2.coeffs) == 4
-        assert qml.equal(H2.ops[-2], qml.Identity(2))
-        assert qml.equal(H2.ops[-1], qml.Identity(2))
+        qml.assert_equal(H2.ops[-2], qml.Identity(2))
+        qml.assert_equal(H2.ops[-1], qml.Identity(2))
         assert qml.math.allclose(
             qml.matrix(H2([0.3], 0.1)), orig_matrix + np.eye(4) * (scalars[0] + scalars[1])
         )
         H += scalars[0]
         assert len(H.ops) == len(H.coeffs) == 3
-        assert qml.equal(H.ops[-1], qml.Identity(2))
+        qml.assert_equal(H.ops[-1], qml.Identity(2))
         assert qml.math.allclose(qml.matrix(H([0.3], 0.1)), orig_matrix + np.eye(4) * scalars[0])
 
     def test_add_zero(self):
@@ -313,14 +313,14 @@ class TestInteractionWithOperators:
         new_pH = R + H
         assert isinstance(new_pH, HardwareHamiltonian)
         assert R.H_fixed() == 0
-        assert qml.equal(new_pH.H_fixed(), qml.s_prod(coeff, qml.PauliZ(0)))
+        qml.assert_equal(new_pH.H_fixed(), qml.s_prod(coeff, qml.PauliZ(0)))
         assert new_pH.coeffs_fixed[0] == coeff
         assert qml.math.allequal(new_pH(params, t=0.5).matrix(), qml.matrix(R(params, t=0.5) + H))
         # Adding on the left
         new_pH = H + R
         assert isinstance(new_pH, HardwareHamiltonian)
         assert R.H_fixed() == 0
-        assert qml.equal(new_pH.H_fixed(), qml.s_prod(coeff, qml.PauliZ(0)))
+        qml.assert_equal(new_pH.H_fixed(), qml.s_prod(coeff, qml.PauliZ(0)))
         assert new_pH.coeffs_fixed[0] == coeff
         assert qml.math.allequal(new_pH(params, t=0.5).matrix(), qml.matrix(R(params, t=0.5) + H))
 
@@ -335,14 +335,14 @@ class TestInteractionWithOperators:
         new_pH = R + op
         assert isinstance(new_pH, HardwareHamiltonian)
         assert R.H_fixed() == 0
-        assert qml.equal(new_pH.H_fixed(), qml.s_prod(1, op))
+        qml.assert_equal(new_pH.H_fixed(), qml.s_prod(1, op))
         new_pH(params, 2)  # confirm calling does not raise error
 
         # Adding on the left
         new_pH = op + R
         assert isinstance(new_pH, HardwareHamiltonian)
         assert R.H_fixed() == 0
-        assert qml.equal(new_pH.H_fixed(), qml.s_prod(1, op))
+        qml.assert_equal(new_pH.H_fixed(), qml.s_prod(1, op))
         new_pH(params, 2)  # confirm calling does not raise error
 
     def test_adding_scalar_does_not_queue_id(self):
@@ -414,7 +414,7 @@ class TestDrive:
         assert Hd.pulses == []
 
         # Hamiltonian is as expected
-        assert qml.equal(Hd([0.5, -0.5], t=5), H_expected([0.5, -0.5], t=5))
+        qml.assert_equal(Hd([0.5, -0.5], t=5), H_expected([0.5, -0.5], t=5))
 
 
 def callable_amp(p, t):
@@ -520,7 +520,7 @@ class TestAmplitudeAndPhase:
             qml.s_prod(c1, qml.Hamiltonian([0.5, 0.5], [qml.PauliX(0), qml.PauliX(1)])),
             qml.s_prod(c2, qml.Hamiltonian([-0.5, -0.5], [qml.PauliY(0), qml.PauliY(1)])),
         )
-        assert qml.equal(evaluated_H, expected_H_parametrized)
+        qml.assert_equal(evaluated_H, expected_H_parametrized)
 
     def test_callable_phase_hamiltonian(self):
         """Test that using callable phase in drive creates AmplitudeAndPhase
@@ -542,7 +542,7 @@ class TestAmplitudeAndPhase:
             qml.s_prod(c2, qml.Hamiltonian([-0.5, -0.5], [qml.PauliY(0), qml.PauliY(1)])),
         )
 
-        assert qml.equal(evaluated_H, expected_H_parametrized)
+        qml.assert_equal(evaluated_H, expected_H_parametrized)
 
     def test_callable_amplitude_hamiltonian(self):
         """Test that using callable amplitude in drive creates AmplitudeAndPhase
@@ -564,7 +564,7 @@ class TestAmplitudeAndPhase:
             qml.s_prod(c2, qml.Hamiltonian([-0.5, -0.5], [qml.PauliY(0), qml.PauliY(1)])),
         )
 
-        assert qml.equal(evaluated_H, expected_H_parametrized)
+        qml.assert_equal(evaluated_H, expected_H_parametrized)
 
     COEFFS_AND_PARAMS = [
         (

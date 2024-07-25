@@ -169,7 +169,8 @@ class TestQROM:
             qml.CSWAP(wires=[1, 2, 3]),
         ]
 
-        assert all(qml.equal(op1, op2) for op1, op2 in zip(qrom_decomposition, expected_gates))
+        for op1, op2 in zip(qrom_decomposition, expected_gates):
+            qml.assert_equal(op1, op2)
 
     @pytest.mark.jax
     def test_jit_compatible(self):
@@ -226,7 +227,7 @@ def test_repr():
         ["1", "0", "0", "1"], control_wires=[0, 1], target_wires=[2], work_wires=[3], clean=True
     )
     res = op.__repr__()
-    expected = "QROM(control_wires=<Wires = [0, 1]>, target_wires=<Wires = [2]>,  work_wires=<Wires = [3]>, clean=True)"
+    expected = "QROM(control_wires=Wires([0, 1]), target_wires=Wires([2]),  work_wires=Wires([3]), clean=True)"
     assert res == expected
 
 

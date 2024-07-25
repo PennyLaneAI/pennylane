@@ -48,26 +48,6 @@ SUPPORTED_GRADIENT_KWARGS = {
 }
 
 
-def assert_multimeasure_not_broadcasted(measurements, broadcast):
-    """Assert that there are not simultaneously multiple measurements and
-    broadcasting activated. Otherwise raises an error."""
-    if broadcast and len(measurements) > 1:
-        raise NotImplementedError(
-            "Broadcasting with multiple measurements is not supported yet. "
-            f"Set broadcast to False instead. The tape measurements are {measurements}."
-        )
-
-
-def assert_shot_vector_not_broadcasted(shots, broadcast):
-    """Assert that there are not simultaneously multiple shot settings (shot vector) and
-    broadcasting activated. Otherwise raises an error."""
-    if broadcast and shots.has_partitioned_shots:
-        raise NotImplementedError(
-            "Broadcasting with shot vectors is not supported yet. "
-            f"Set broadcast to False instead. The tape shots are {shots}."
-        )
-
-
 def assert_no_state_returns(measurements, transform_name):
     """Check whether a set of measurements contains a measurement process that returns the quantum
     state and raise an error if this is the case.
@@ -169,8 +149,12 @@ def _try_zero_grad_from_graph_or_get_grad_method(tape, param_index, use_graph=Tr
     par_info = tape.par_info[param_index]
 
     if use_graph:
-        op_or_mp = tape[par_info["op_idx"]]
-        if not any(tape.graph.has_path(op_or_mp, mp) for mp in tape.measurements):
+        op_or_mp_idx = par_info["op_idx"]
+        n_ops = len(tape.operations)
+        if not any(
+            tape.graph.has_path_idx(op_or_mp_idx, n_ops + i)
+            for i, _ in enumerate(tape.measurements)
+        ):
             # there is no influence of this operation on any of the observables
             return "0"
 

@@ -20,8 +20,8 @@ simulation of a qubit-based quantum circuit architecture.
 """
 import functools
 import itertools
+import warnings
 from string import ascii_letters as ABC
-from typing import List
 
 import numpy as np
 from scipy.sparse import csr_matrix
@@ -78,13 +78,13 @@ def _get_slice(index, axis, num_axes):
 
 # pylint: disable=unused-argument
 class DefaultQubitLegacy(QubitDevice):
-    """Default qubit device for PennyLane.
+    r"""Default qubit device for PennyLane.
 
     .. warning::
 
-        This is the legacy implementation of DefaultQubit. It has been replaced by
-        ``qml.devices.DefaultQubit``, which can be accessed with the familiar constructor,
-        ``qml.device("default.qubit")``.
+        This is the legacy implementation of DefaultQubit and is deprecated. It has been replaced by
+        :class:`~pennylane.devices.DefaultQubit`, which can be accessed with the familiar constructor,
+        ``qml.device("default.qubit")``, and now supports backpropagation.
 
         This change will not alter device behaviour for most workflows, but may have implications for
         plugin developers and users who directly interact with device methods. Please consult
@@ -207,6 +207,14 @@ class DefaultQubitLegacy(QubitDevice):
     def __init__(
         self, wires, *, r_dtype=np.float64, c_dtype=np.complex128, shots=None, analytic=None
     ):
+        warnings.warn(
+            f"Use of '{self.short_name}' is deprecated. Instead, use 'default.qubit', "
+            "which supports backpropagation. "
+            "If you experience issues, reach out to the PennyLane team on "
+            "the discussion forum: https://discuss.pennylane.ai/",
+            qml.PennyLaneDeprecationWarning,
+        )
+
         super().__init__(wires, shots, r_dtype=r_dtype, c_dtype=c_dtype, analytic=analytic)
         self._debugger = None
 
@@ -292,6 +300,12 @@ class DefaultQubitLegacy(QubitDevice):
                 self._apply_basis_state(operation.parameters[0], operation.wires)
             elif isinstance(operation, Snapshot):
                 if self._debugger and self._debugger.active:
+                    if not isinstance(
+                        operation.hyperparameters["measurement"], qml.measurements.StateMP
+                    ):
+                        raise NotImplementedError(
+                            f"{self.__class__.__name__} only supports `qml.state` measurements."
+                        )
                     state_vector = np.array(self._flatten(self._state))
                     if operation.tag:
                         self._debugger.snapshots[operation.tag] = state_vector
@@ -1084,7 +1098,7 @@ class DefaultQubitLegacy(QubitDevice):
 
         return self._cast(self._stack([outcomes, recipes]), dtype=np.int8)
 
-    def _get_diagonalizing_gates(self, circuit: qml.tape.QuantumTape) -> List[Operation]:
+    def _get_diagonalizing_gates(self, circuit: qml.tape.QuantumTape) -> list[Operation]:
         meas_filtered = [
             m
             for m in circuit.measurements

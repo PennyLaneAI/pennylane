@@ -42,7 +42,7 @@ def test_flatten_unflatten():
     assert hash(metadata)
 
     new_op = op._unflatten(*op._flatten())
-    assert qml.equal(op, new_op)
+    qml.assert_equal(op, new_op)
     assert op is not new_op
 
 
@@ -54,7 +54,7 @@ class TestDecomposition:
         """Checks the queue."""
 
         op = qml.BasisEmbedding(features=features, wires=range(3))
-        tape = op.expand()
+        tape = qml.tape.QuantumScript(op.decomposition())
 
         assert len(tape.operations) == features.count(1)
         for gate in tape.operations:

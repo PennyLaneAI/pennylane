@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests for qutrit mixed device preprocessing."""
+import warnings
+
 import numpy as np
 import pytest
 
@@ -115,7 +117,7 @@ class TestPreprocessing:
         tape = tapes[0]
         assert tape.operations == qs.operations
         assert tape.measurements != qs.measurements
-        assert qml.equal(tape.measurements[0], mp_cls(wires=[0, 1, 2]))
+        qml.assert_equal(tape.measurements[0], mp_cls(wires=[0, 1, 2]))
         assert tape.measurements[1] is exp_z
 
     @pytest.mark.parametrize(
@@ -200,7 +202,7 @@ class TestPreprocessingIntegration:
         assert len(res_tapes) == 2
         for res_tape, measurement in zip(res_tapes, measurements):
             for op, expected_op in zip(res_tape.operations, ops):
-                assert qml.equal(op, expected_op)
+                qml.assert_equal(op, expected_op)
             assert res_tape.measurements == [measurement]
 
         val = ([[1, 2], [3, 4]], [[5, 6], [7, 8]])
@@ -223,7 +225,7 @@ class TestPreprocessingIntegration:
         assert len(res_tapes) == 2
         for i, t in enumerate(res_tapes):
             for op, exp in zip(t.circuit, expected + measurements[i]):
-                assert qml.equal(op, exp)
+                qml.assert_equal(op, exp)
 
         val = (("a", "b"), "c", "d")
         assert batch_fn(val) == (("a", "b"), "c")
@@ -250,7 +252,7 @@ class TestPreprocessingIntegration:
         assert len(res_tapes) == 2
         for res_tape, measurement in zip(res_tapes, measurements):
             for op, expected_op in zip(res_tape.operations, expected_ops):
-                assert qml.equal(op, expected_op)
+                qml.assert_equal(op, expected_op)
             assert res_tape.measurements == [measurement]
 
         val = ([[1, 2], [3, 4]], [[5, 6], [7, 8]])
@@ -269,3 +271,47 @@ class TestPreprocessingIntegration:
         program, _ = DefaultQutritMixed().preprocess()
         with pytest.raises(qml.DeviceError, match="Operator NoMatNoDecompOp"):
             program(tapes)
+
+    @pytest.mark.parametrize(
+        "relaxations,misclassifications,req_warn",
+        [
+            [(0.1, 0.2, 0.3), None, True],
+            [None, (0.1, 0.2, 0.3), True],
+            [(0.1, 0.2, 0.3), (0.1, 0.2, 0.3), True],
+            [None, None, False],
+        ],
+    )
+    @pytest.mark.parametrize(
+        "measurements",
+        [
+            [qml.state()],
+            [qml.density_matrix(0)],
+            [qml.state(), qml.density_matrix([1, 2])],
+            [qml.state(), qml.expval(qml.GellMann(1))],
+        ],
+    )
+    def test_preprocess_warns_measurement_error_state(
+        self, relaxations, misclassifications, req_warn, measurements
+    ):
+        """Test that preprocess raises a warning if there is an analytic state measurement and
+        measurement error."""
+        tapes = [
+            qml.tape.QuantumScript(ops=[], measurements=measurements),
+            qml.tape.QuantumScript(
+                ops=[qml.THadamard(0), qml.TRZ(0.123, wires=1)], measurements=measurements
+            ),
+        ]
+        device = DefaultQutritMixed(
+            readout_relaxation_probs=relaxations, readout_misclassification_probs=misclassifications
+        )
+        program, _ = device.preprocess()
+
+        with warnings.catch_warnings(record=True) as warning:
+            program(tapes)
+            if req_warn:
+                assert len(warning) != 0
+                for warn in list(warning):
+                    print(type(warn.message))
+                    assert "is not affected by readout error" in warn.message.args[0]
+            else:
+                assert len(warning) == 0

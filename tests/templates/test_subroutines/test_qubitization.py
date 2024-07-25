@@ -67,7 +67,7 @@ def test_positive_coeffs_hamiltonian(hamiltonian, expected_unitaries):
     assert np.allclose(new_coeffs, np.abs(hamiltonian.terms()[0]))
 
     for i, unitary in enumerate(new_unitaries):
-        assert qml.equal(expected_unitaries[i], unitary)
+        qml.assert_equal(expected_unitaries[i], unitary)
 
 
 @pytest.mark.parametrize(
@@ -173,7 +173,7 @@ def test_decomposition(hamiltonian, expected_decomposition):
     decomposition = qml.Qubitization.compute_decomposition(hamiltonian=hamiltonian, control=[1])
 
     for i, op in enumerate(decomposition):
-        assert qml.equal(op, expected_decomposition[i])
+        qml.assert_equal(op, expected_decomposition[i])
 
 
 def test_lightning_qubit():
@@ -330,7 +330,7 @@ def test_copy():
 
     orig_op = qml.Qubitization(H, control=[2, 3])
     copy_op = copy.copy(orig_op)
-    assert qml.equal(orig_op, copy_op)
+    qml.assert_equal(orig_op, copy_op)
 
     # Ensure the (nested) operations are copied instead of aliased.
     assert orig_op is not copy_op

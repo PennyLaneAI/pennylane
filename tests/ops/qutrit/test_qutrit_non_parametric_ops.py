@@ -133,7 +133,7 @@ class TestPowMethod:
             op_pow_1 = op.pow(1 + offset)[0]
 
         assert q.queue[0] is op_pow_1
-        assert qml.equal(op_pow_1, op)
+        qml.assert_equal(op_pow_1, op)
 
     @pytest.mark.parametrize("op", period_three_ops)
     @pytest.mark.parametrize("offset", (0, 3))
@@ -158,7 +158,7 @@ class TestPowMethod:
         integer powers"""
 
         assert len(op.pow(0 + offset)) == 0
-        assert qml.equal(op.pow(1 + offset)[0], op)
+        qml.assert_equal(op.pow(1 + offset)[0], op)
 
     @pytest.mark.parametrize("op", no_pow_method_ops)
     def test_no_pow_ops(self, op):
@@ -237,5 +237,5 @@ def test_adjoint_method_involution(op):
     assert op.has_adjoint
 
     adj_op = op.adjoint()
-    assert qml.equal(adj_op, op)
+    qml.assert_equal(adj_op, op)
     assert adj_op is not op

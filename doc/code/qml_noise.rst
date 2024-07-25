@@ -4,6 +4,8 @@ qml.noise
 This module contains the functionality for building and manipulating insertion-based noise models,
 where noisy gates and channels are inserted based on the target operations.
 
+.. _intro_noise_model:
+
 Overview
 --------
 
@@ -22,7 +24,13 @@ noise-related metadata can also be supplied to construct a noise model using:
 Each conditional in the ``model_map`` evaluates the gate operations in the quantum circuit based on
 some condition of its attributes (e.g., type, parameters, wires, etc.) and use the corresponding
 callable to apply the noise operations, using the user-provided metadata (e.g., hardware topologies
-or relaxation times), whenever the condition results true.
+or relaxation times), whenever the condition results true. A noise model once built can be attached
+to a circuit or device via the following transform:
+
+.. autosummary::
+    :toctree: api
+
+    ~add_noise
 
 .. _intro_boolean_fn:
 
@@ -42,15 +50,16 @@ quantum circuit. One can construct standard Boolean functions using the followin
     ~wires_eq
     ~wires_in
 
-For example, a Boolean function that checks of an operation is on wire ``0`` can be created
-like so:
+For example, a Boolean function that checks if an operation is on wire ``0`` can be created
+as follows:
 
->>> fn = wires_eq(0)
+>>> fn = qml.noise.wires_eq(0)
 >>> op1, op2 = qml.PauliX(0), qml.PauliX(1)
 >>> fn(op1)
-False
->>> fn(op2)
 True
+
+>>> fn(op2)
+False
 
 Arbitrary Boolean functions can also be defined by wrapping the functional form
 of custom conditions with the following decorator:
@@ -71,7 +80,7 @@ with a maximum parameter value:
     def rx_condition(op, **metadata):
         return isinstance(op, qml.RX) and op.parameters[0] < 1.0
 
-Boolean functions can be combined using standard bit-wise operators, such as
+Boolean functions can be combined using standard bitwise operators, such as
 ``&``, ``|``, ``^``, or ``~``. The result will be another Boolean function. It
 is important to note that as Python will evaluate the expression in the order
 of their combination, i.e., left to right, the order of composition could matter,
@@ -109,6 +118,7 @@ For example, a constant-valued over-rotation can be created using:
 >>> rx_constant = qml.noise.partial_wires(qml.RX(0.1, wires=[0]))
 >>> rx_constant(2)
 RX(0.1, 2)
+
 >>> qml.NoiseModel({rx_condition: rx_constant})
 NoiseModel({
     BooleanFn(rx_condition): RX(phi=0.1)
@@ -169,7 +179,7 @@ above, such as :func:`~.op_eq`. These objects do not need to be instantiated dir
     ~WiresEq
     ~WiresIn
 
-Bitwise operations like `And` and `Or` are represented with the following classes in the
+Bitwise operations like ``And`` and ``Or`` are represented with the following classes in the
 :mod:`boolean_fn` module:
 
 .. currentmodule:: pennylane.boolean_fn
@@ -185,8 +195,15 @@ Bitwise operations like `And` and `Or` are represented with the following classe
 Class Inheritence Diagram
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Note all child classes inherit from the same parent :class:`~.BooleanFn`,
+but are just located in different modules.
+
+**Noise Conditionals:**
+
 .. inheritance-diagram:: pennylane.noise.conditionals
     :parts: 1
+
+**Boolean Fn conditionals:**
 
 .. inheritance-diagram:: pennylane.boolean_fn
     :parts: 1

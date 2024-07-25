@@ -355,7 +355,7 @@ class Projector(Observable):
 
     Args:
         state (tensor-like): Input state of shape ``(n,)`` for a basis-state projector, or ``(2**n,)``
-            for a state-vector projector.
+            for a statevector projector.
         wires (Iterable): wires that the projector acts on.
         id (str or None): String representing the operation (optional).
 
@@ -583,6 +583,24 @@ class BasisStateProjector(Projector, Operation):
         []
         """
         return []
+
+    @staticmethod
+    def compute_sparse_matrix(basis_state):  # pylint: disable=arguments-differ,unused-argument
+        """
+        Computes the sparse CSR matrix representation of the projector onto the basis state.
+
+        Args:
+            basis_state (Iterable): The basis state as an iterable of integers (0 or 1).
+
+        Returns:
+            scipy.sparse.csr_matrix: The sparse CSR matrix representation of the projector.
+        """
+
+        num_qubits = len(basis_state)
+        data = [1]
+        rows = [int("".join(str(bit) for bit in basis_state), 2)]
+        cols = rows
+        return csr_matrix((data, (rows, cols)), shape=(2**num_qubits, 2**num_qubits))
 
 
 class StateVectorProjector(Projector):

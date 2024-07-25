@@ -134,7 +134,8 @@ class DefaultQutrit(QutritDevice):
         analytic=None,
     ):
         super().__init__(wires, shots, r_dtype=r_dtype, c_dtype=c_dtype, analytic=analytic)
-        self._debugger = None
+        # TODO: add support for snapshots
+        # self._debugger = None
 
         # Create the initial state. Internally, we store the
         # state as an array of dimension [3]*wires.

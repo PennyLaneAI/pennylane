@@ -1211,7 +1211,7 @@ class TestExecution:
         """Test the number of times a qubit device is executed over a QNode's
         lifetime is tracked by `num_executions`"""
 
-        dev_1 = qml.device("default.qubit.legacy", wires=2)
+        dev_1 = qml.device("default.mixed", wires=2)
 
         def circuit_1(x, y):
             qml.RX(x, wires=[0])
@@ -1227,7 +1227,7 @@ class TestExecution:
         assert dev_1.num_executions == num_evals_1
 
         # test a second instance of a default qubit device
-        dev_2 = qml.device("default.qubit.legacy", wires=2)
+        dev_2 = qml.device("default.mixed", wires=2)
 
         def circuit_2(x):
             qml.RX(x, wires=[0])
@@ -1261,7 +1261,7 @@ class TestExecution:
         dev = mock_qubit_device(wires=1)
         rotations = dev._get_diagonalizing_gates(circuit)
         assert len(rotations) == 1
-        assert qml.equal(rotations[0], qml.Hadamard(0))
+        qml.assert_equal(rotations[0], qml.Hadamard(0))
 
 
 # pylint: disable=too-few-public-methods, unused-argument
@@ -1272,7 +1272,7 @@ class TestExecutionBroadcasted:
         """Test the number of times a qubit device is executed over a QNode's
         lifetime is tracked by `num_executions`"""
 
-        dev_1 = qml.device("default.qubit.legacy", wires=2)
+        dev_1 = qml.device("default.mixed", wires=2)
 
         def circuit_1(x, y):
             qml.RX(x, wires=[0])
@@ -1285,10 +1285,10 @@ class TestExecutionBroadcasted:
 
         for _ in range(num_evals_1):
             node_1(0.432, np.array([0.12, 0.5, 3.2]))
-        assert dev_1.num_executions == num_evals_1
+        assert dev_1.num_executions == num_evals_1 * 3
 
         # test a second instance of a default qubit device
-        dev_2 = qml.device("default.qubit.legacy", wires=2)
+        dev_2 = qml.device("default.mixed", wires=2)
 
         assert dev_2.num_executions == 0
 
@@ -1302,7 +1302,7 @@ class TestExecutionBroadcasted:
 
         for _ in range(num_evals_2):
             node_2(np.array([0.432, 0.61, 8.2]), 0.12)
-        assert dev_2.num_executions == num_evals_2
+        assert dev_2.num_executions == num_evals_2 * 3
 
         # test a new circuit on an existing instance of a qubit device
         def circuit_3(x, y):
@@ -1315,7 +1315,7 @@ class TestExecutionBroadcasted:
 
         for _ in range(num_evals_3):
             node_3(np.array([0.432, 0.2]), np.array([0.12, 1.214]))
-        assert dev_1.num_executions == num_evals_1 + num_evals_3
+        assert dev_1.num_executions == num_evals_1 * 3 + num_evals_3 * 2
 
 
 class TestBatchExecution:
@@ -1504,7 +1504,7 @@ class TestResourcesTracker:
     @pytest.mark.autograd
     def test_tracker_grad(self):
         """Test that the tracker can track resources through a gradient computation"""
-        dev = qml.device("default.qubit.legacy", wires=1, shots=100)
+        dev = qml.device("default.qubit", wires=1, shots=100)
 
         @qml.qnode(dev, diff_method="parameter-shift")
         def circuit(x):
@@ -1540,8 +1540,9 @@ class TestSamplesToCounts:
         """Test that the counts function disregards failed measurements (samples including
         NaN values) when totalling counts"""
         # generate 1000 samples for 2 wires, randomly distributed between 0 and 1
-        device = qml.device("default.qubit.legacy", wires=2, shots=1000)
-        device._state = [0.5 + 0.0j, 0.5 + 0.0j, 0.5 + 0.0j, 0.5 + 0.0j]
+        device = qml.device("default.mixed", wires=2, shots=1000)
+        sv = [0.5 + 0.0j, 0.5 + 0.0j, 0.5 + 0.0j, 0.5 + 0.0j]
+        device._state = np.outer(sv, sv)
         device._samples = device.generate_samples()
         samples = device.sample(qml.measurements.CountsMP())
 
@@ -1568,9 +1569,12 @@ class TestSamplesToCounts:
         # generate 1000 samples for 10 wires, randomly distributed between 0 and 1
         n_wires = 10
         shots = 100
-        device = qml.device("default.qubit.legacy", wires=n_wires, shots=shots)
-        state = np.random.rand(*([2] * n_wires))
-        device._state = state / np.linalg.norm(state)
+        device = qml.device("default.mixed", wires=n_wires, shots=shots)
+
+        sv = np.random.rand(*([2] * n_wires))
+        state = sv / np.linalg.norm(sv)
+
+        device._state = np.outer(state, state)
         device._samples = device.generate_samples()
         samples = device.sample(qml.measurements.CountsMP(all_outcomes=all_outcomes))
 

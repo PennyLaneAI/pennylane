@@ -234,7 +234,7 @@ class MidMeasureMP(MeasurementProcess):
     This class additionally stores information about unknown measurement outcomes in the qubit model.
     Measurements on a single qubit in the computational basis are assumed.
 
-    Please refer to :func:`measure` for detailed documentation.
+    Please refer to :func:`pennylane.measure` for detailed documentation.
 
     Args:
         wires (.Wires): The wires the measurement process applies to.
@@ -331,7 +331,7 @@ class MidMeasureMP(MeasurementProcess):
     @property
     def name(self):
         """The name of the measurement. Needed to match the Operator API."""
-        return "MidMeasureMP"
+        return self.__class__.__name__
 
 
 class MeasurementValue(Generic[T]):
@@ -419,7 +419,7 @@ class MeasurementValue(Generic[T]):
     def __invert__(self):
         """Return a copy of the measurement value with an inverted control
         value."""
-        return self._apply(lambda v: not v)
+        return self._apply(qml.math.logical_not)
 
     def __eq__(self, other):
         return self._transform_bin_op(lambda a, b: a == b, other)
