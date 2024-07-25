@@ -749,10 +749,10 @@ class CNOT(ControlledOp):
     The controlled-NOT operator
 
     .. math:: CNOT = \begin{bmatrix}
-            1 & 0 & 0 & 0 \\
-            0 & 1 & 0 & 0\\
-            0 & 0 & 0 & 1\\
-            0 & 0 & 1 & 0
+        1 & 0 & 0 & 0 \\
+        0 & 1 & 0 & 0\\
+        0 & 0 & 0 & 1\\
+        0 & 0 & 1 & 0
         \end{bmatrix}.
 
     .. note:: The first wire provided corresponds to the **control qubit**.
