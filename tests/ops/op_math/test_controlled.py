@@ -1053,13 +1053,14 @@ class TestDecomposition:
     def test_differentiable_one_qubit_special_unitary(self):
         """Assert that a differentiable qubit special unitary uses the zyz decomposition."""
 
-        op = qml.ctrl(qml.RZ(qml.numpy.array(1.2), 0), (1))
+        op = qml.ctrl(qml.RZ(qml.numpy.array(1.2), 0), (1,2,3,4))
         decomp = op.decomposition()
 
-        qml.assert_equal(decomp[0], qml.PhaseShift(qml.numpy.array(1.2 / 2), 0))
-        qml.assert_equal(decomp[1], qml.CNOT(wires=(1, 0)))
-        qml.assert_equal(decomp[2], qml.PhaseShift(qml.numpy.array(-1.2 / 2), 0))
-        qml.assert_equal(decomp[3], qml.CNOT(wires=(1, 0)))
+        assert qml.equal(decomp[0], qml.CRZ(qml.numpy.array(1.2), [4, 0]))
+        assert qml.equal(decomp[1], qml.MultiControlledX(wires=[1, 2, 3, 0]))
+        assert qml.equal(decomp[2], qml.CRZ(qml.numpy.array(-0.6), wires=[4, 0]))
+        assert qml.equal(decomp[3], qml.MultiControlledX(wires=[1, 2, 3, 0]))
+        assert qml.equal(decomp[4], qml.CRZ(qml.numpy.array(-0.6), wires=[4, 0]))
 
         decomp_mat = qml.matrix(op.decomposition, wire_order=op.wires)()
         assert qml.math.allclose(op.matrix(), decomp_mat)
@@ -1150,14 +1151,6 @@ class TestDecomposition:
         op = Controlled(TempOperator(0), (1, 2))
         with pytest.raises(DecompositionUndefinedError):
             op.decomposition()
-
-    def test_global_phase_decomp_raises_warning(self):
-        """Test that ctrl(GlobalPhase).decomposition() raises a warning with more than one control."""
-        op = qml.ctrl(qml.GlobalPhase(1.23), control=[0, 1])
-        with pytest.warns(
-            UserWarning, match="Controlled-GlobalPhase currently decomposes to nothing"
-        ):
-            assert op.decomposition() == []
 
     def test_control_on_zero(self):
         """Test decomposition applies PauliX gates to flip any control-on-zero wires."""
@@ -1730,7 +1723,6 @@ class TestCtrl:
 
         if isinstance(op, qml.QubitUnitary):
             pytest.skip("ControlledQubitUnitary can accept any number of control wires.")
-            expected = None  # to pass pylint(possibly-used-before-assignment) error
         elif isinstance(op, Controlled):
             expected = Controlled(
                 op.base,

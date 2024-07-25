@@ -136,7 +136,7 @@ def _bisect_compute_b(u: np.ndarray):
 
 
 # pylint: disable=too-many-arguments
-def _multicontrolled_zyz(
+def _multi_controlled_zyz(
     rot_angles,
     global_phase,
     target_wire: Wires,
@@ -148,7 +148,12 @@ def _multicontrolled_zyz(
 
     if not qml.math.allclose(0.0, global_phase, atol=1e-8, rtol=0):
         raise ValueError(
-            f"The control_wires should be a single wire, instead got: {len(control_wires)} wires."
+            f"The global_phase should be zero, instead got: {global_phase}."
+        )
+
+    if len(work_wires) > 1:
+        raise ValueError(
+            f"The work_wires should be a single wire, instead got: {len(work_wires)} wires."
         )
 
     # Unpack the rotation angles
@@ -194,7 +199,7 @@ def _single_control_zyz(rot_angles, global_phase, target_wire, control_wires: Wi
     # Add negative of global phase. Compare definition of qml.GlobalPhase and Ph(delta) from section 4.1 of Barenco et al.
     if not qml.math.allclose(0.0, global_phase, atol=1e-8, rtol=0):
         decomp.append(
-            qml.ctrl(qml.GlobalPhase(phi=-global_phase, wires=target_wire), control=control_wires)
+             qml.ctrl(qml.GlobalPhase(phi=-global_phase, wires=target_wire), control=control_wires)
         )
     # Add A operator
     if not qml.math.allclose(0.0, phi, atol=1e-8, rtol=0):
@@ -292,7 +297,7 @@ def ctrl_decomp_zyz(
     _, global_phase = _convert_to_su2(qml.matrix(target_operation), return_global_phase=True)
 
     return (
-        _multicontrolled_zyz(rot_angles, global_phase, target_wire, control_wires, work_wires)
+        _multi_controlled_zyz(rot_angles, global_phase, target_wire, control_wires, work_wires)
         if len(control_wires) > 1
         else _single_control_zyz(rot_angles, global_phase, target_wire, control_wires)
     )

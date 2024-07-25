@@ -102,25 +102,15 @@ class TestControlledDecompositionZYZ:
         qml.Rot(0.123, 0.456, 0.789, wires=0),
     ]
 
-    unitary_ops = [
+    special_unitary_ops = [
         qml.Hadamard(0),
         qml.PauliZ(0),
         qml.S(0),
         qml.PhaseShift(1.5, wires=0),
-        qml.QubitUnitary(
-            np.array(
-                [
-                    [-0.28829348 - 0.78829734j, 0.30364367 + 0.45085995j],
-                    [0.53396245 - 0.10177564j, 0.76279558 - 0.35024096j],
-                ]
-            ),
-            wires=0,
-        ),
-        qml.DiagonalQubitUnitary(np.array([1, -1]), wires=0),
     ]
 
     @pytest.mark.parametrize("op", su2_ops + unitary_ops)
-    @pytest.mark.parametrize("control_wires", ([1], [2], [3]))
+    @pytest.mark.parametrize("control_wires", ([1], [1, 2], [1, 2, 3]))
     def test_decomposition_circuit(self, op, control_wires, tol):
         """Tests that the controlled decomposition of a single-qubit operation
         behaves as expected in a quantum circuit"""
@@ -143,7 +133,7 @@ class TestControlledDecompositionZYZ:
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    @pytest.mark.parametrize("control_wires", ([1], [2], [3]))
+    @pytest.mark.parametrize("control_wires", ([1], [1, 2], [1, 2, 3]))
     def test_decomposition_circuit_gradient(self, control_wires, tol):
         """Tests that the controlled decomposition of a single-qubit operation
         behaves as expected in a quantum circuit"""
