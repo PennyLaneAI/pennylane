@@ -19,6 +19,7 @@ import contextlib
 import os
 import pathlib
 import sys
+import warnings
 
 import numpy as np
 import pytest
@@ -47,6 +48,23 @@ class DummyDevice(DefaultGaussian):
 def set_numpy_seed():
     np.random.seed(9872653)
     yield
+
+
+@pytest.fixture(scope="function", autouse=True)
+def capture_legacy_device_deprecation_warnings():
+    with warnings.catch_warnings(record=True) as recwarn:
+        warnings.simplefilter("always")
+        yield
+
+        for w in recwarn:
+            if isinstance(w, qml.PennyLaneDeprecationWarning):
+                assert "Use of 'default.qubit." in str(w.message)
+                assert "is deprecated" in str(w.message)
+                assert "use 'default.qubit'" in str(w.message)
+
+    for w in recwarn:
+        if "Use of 'default.qubit." not in str(w.message):
+            warnings.warn(message=w.message, category=w.category)
 
 
 @pytest.fixture(scope="session")
@@ -81,7 +99,8 @@ def n_subsystems_fixture(request):
 
 @pytest.fixture(scope="session")
 def qubit_device(n_subsystems):
-    return qml.device("default.qubit.legacy", wires=n_subsystems)
+    with pytest.warns(qml.PennyLaneDeprecationWarning, match="Use of 'default.qubit.legacy'"):
+        return qml.device("default.qubit.legacy", wires=n_subsystems)
 
 
 @pytest.fixture(scope="function", params=[(np.float32, np.complex64), (np.float64, np.complex128)])
