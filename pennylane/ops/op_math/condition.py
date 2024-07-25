@@ -114,7 +114,7 @@ def cond(condition, true_fn: Callable, false_fn: Callable = None, elifs=()):
     will be captured by Catalyst, the just-in-time (JIT) compiler, with the executed
     branch determined at runtime. For more details, please see :func:`catalyst.cond`.
 
-    When used with `qml.capture.enabled()`, this function allows for general
+    When used with :func:`~.pennylane.capture.enabled`, this function allows for general
     if-elif-else constructs. As with the JIT mode, all branches will be captured,
     with the executed branch determined at runtime.
     However, the function cannot branch on mid-circuit measurements.
@@ -140,13 +140,13 @@ def cond(condition, true_fn: Callable, false_fn: Callable = None, elifs=()):
     Args:
         condition (Union[.MeasurementValue, bool]): a conditional expression involving a mid-circuit
            measurement value (see :func:`.pennylane.measure`). This can only be of type ``bool`` when
-           decorated by :func:`~.qjit` or when using :func:`~.qml.capture.enabled()`.
+           decorated by :func:`~.qjit` or when using :func:`~.pennylane.capture.enabled`.
         true_fn (callable): The quantum function or PennyLane operation to
             apply if ``condition`` is ``True``
         false_fn (callable): The quantum function or PennyLane operation to
             apply if ``condition`` is ``False``
         elifs (List(Tuple(bool, callable))): A list of (bool, elif_fn) clauses. Can only
-            be used when decorated by :func:`~.qjit` or when using :func:`~.qml.capture.enabled()`.
+            be used when decorated by :func:`~.qjit` or when using :func:`~.pennylane.capture.enabled`.
 
     Returns:
         function: A new function that applies the conditional equivalent of ``true_fn``. The returned
@@ -448,9 +448,11 @@ def cond(condition, true_fn: Callable, false_fn: Callable = None, elifs=()):
     return wrapper
 
 
-@functools.lru_cache  # only create the first time requested
+@functools.lru_cache
 def _get_cond_qfunc_prim():
-    # if capture is enabled, jax should be installed
+    """Get the cond primitive for quantum functions."""
+
+    # JAX should be installed if capture is enabled
     import jax  # pylint: disable=import-outside-toplevel
 
     cond_prim = jax.core.Primitive("cond")
@@ -460,16 +462,7 @@ def _get_cond_qfunc_prim():
     def _(condition, elifs_conditions, *args, jaxpr_true, jaxpr_false, jaxpr_elifs):
 
         def run_jaxpr(jaxpr, *args):
-
-            out = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *args)
-
-            # If the branch returns one or more Operators, we append them to the QueuingManager
-            # so that they are applied to the quantum circuit
-            for outvar in out:
-                if isinstance(outvar, Operator):
-                    QueuingManager.append(outvar)
-
-            return out
+            return jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *args)
 
         def true_branch(args):
             return run_jaxpr(jaxpr_true, *args)
