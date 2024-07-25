@@ -20,6 +20,8 @@ from .wires import Wires
 
 def registers(register_dict):
     """
+    Returns a dictionary that maps register names to :class:`~.Wires`
+
     This function helps us group qubits and abstract away the finer details of running quantum
     algorithms. Wire register names and their total number of wires are typically known in advance,
     but managing the specific wire range for each register can be a challenge. The ``qml.registers()``
