@@ -44,12 +44,12 @@ def registers(register_dict):
     {'alice': Wires([0, 1]), 'bob': Wires([2, 3, 4])}
 
     Given nested input dictionary:
-    >>> wire_registers = qml.registers({"ancilla": {"sub_ancilla": 2, "sub_ancilla1": 1}})
+    >>> wire_registers = qml.registers({"people": {"alice": 2, "bob": 1}})
     >>> wire_dict
-    {'sub_ancilla': Wires([0, 1]), 'sub_ancilla1': Wires([2]), 'ancilla': Wires([0, 1, 2])}
-    >>> wire_dict['sub_ancilla1']
+    {'alice': Wires([0, 1]), 'bob': Wires([2]), 'people': Wires([0, 1, 2])}
+    >>> wire_dict['bob']
     Wires([2])
-    >>> wire_dict['sub_ancilla'][1]
+    >>> wire_dict['alice'][1]
     1
 
     A simple example showcasing how to implement the `SWAP <https://en.wikipedia.org/wiki/Swap_test>`_ test:
