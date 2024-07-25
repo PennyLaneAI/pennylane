@@ -1,4 +1,4 @@
-# Copyright 2018-2023 Xanadu Quantum Technologies Inc.
+# Copyright 2023 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,20 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Tests for workflow.set_shots
+Interface independent tests for qml.execute
 """
 
 import pytest
 
 import pennylane as qml
-from pennylane.workflow import set_shots
 
 
-def test_shots_new_device_interface():
-    """Test that calling set_shots on a device implementing the new interface leaves it
-    untouched.
-    """
-    dev = qml.devices.DefaultQubit()
-    with pytest.raises(ValueError):
-        with set_shots(dev, 10):
-            pass
+def test_old_interface_no_device_jacobian_products():
+    """Test that an error is always raised for the old device interface if device jacobian products are requested."""
+    dev = qml.device("default.qubit.legacy", wires=2)
+    tape = qml.tape.QuantumScript([qml.RX(1.0, wires=0)], [qml.expval(qml.PauliZ(0))])
+    with pytest.raises(qml.QuantumFunctionError):
+        qml.execute((tape,), dev, device_vjp=True)
