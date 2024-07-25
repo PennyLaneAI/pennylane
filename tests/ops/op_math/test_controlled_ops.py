@@ -763,3 +763,14 @@ def test_tuple_control_wires_parametric_ops(op_type):
     """Test that tuples can be provided as control wire labels."""
 
     assert op_type(0.123, [(0, 1), 2]).wires == qml.wires.Wires([(0, 1), 2])
+
+
+def test_CNOT_decomposition():
+    """Test that CNOT raises a DecompositionUndefinedError instead of using the
+    controlled_op decomposition functions"""
+
+    with pytest.raises(qml.operation.DecompositionUndefinedError):
+        qml.CNOT.compute_decomposition()
+
+    with pytest.raises(qml.operation.DecompositionUndefinedError):
+        qml.CNOT([0, 1]).decomposition()
