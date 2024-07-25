@@ -67,7 +67,7 @@ def stopping_condition(op: qml.operation.Operator) -> bool:
     if op.__class__.__name__[:3] == "Pow" and qml.operation.is_trainable(op):
         return False
 
-    return op.has_matrix
+    return isinstance(op, (Conditional, MidMeasureMP)) or op.has_matrix
 
 
 def stopping_condition_shots(op: qml.operation.Operator) -> bool:
@@ -202,7 +202,7 @@ def adjoint_state_measurements(
 
 def adjoint_ops(op: qml.operation.Operator) -> bool:
     """Specify whether or not an Operator is supported by adjoint differentiation."""
-    return not isinstance(op, MidMeasureMP) and (
+    return not isinstance(op, (Conditional, MidMeasureMP)) and (
         op.num_params == 0
         or not qml.operation.is_trainable(op)
         or (op.num_params == 1 and op.has_generator)

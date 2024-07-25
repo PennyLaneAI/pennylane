@@ -15,7 +15,7 @@
 This module contains the qml.measure measurement.
 """
 import uuid
-from typing import Generic, Hashable, Optional, TypeVar, Union
+from typing import Generic, Hashable, Optional, Sequence, TypeVar, Union
 
 import pennylane as qml
 from pennylane.wires import Wires
@@ -516,3 +516,23 @@ class MeasurementValue(Generic[T]):
 
     def __repr__(self):
         return f"MeasurementValue(wires={self.wires.tolist()})"
+
+
+def find_post_processed_mcms(circuit):
+    """Return the subset of mid-circuit measurements which are required for post-processing.
+
+    This includes any mid-circuit measurement that is post-selected or the object of a terminal
+    measurement.
+    """
+    post_processed_mcms = set(
+        op
+        for op in circuit.operations
+        if isinstance(op, MidMeasureMP) and op.postselect is not None
+    )
+    for m in circuit.measurements:
+        if isinstance(m.mv, Sequence):
+            for mv in m.mv:
+                post_processed_mcms = post_processed_mcms | set(mv.measurements)
+        elif m.mv:
+            post_processed_mcms = post_processed_mcms | set(m.mv.measurements)
+    return post_processed_mcms
