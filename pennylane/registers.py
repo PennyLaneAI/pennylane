@@ -20,25 +20,12 @@ from .wires import Wires
 
 def registers(register_dict):
     """
-    The ``qml.registers()`` function creates a dictionary that maps register name to :class:`~.Wires`
-    object.
-
-    The function takes in a dictionary. The keys for this input dictionary are the names of the
-    registers. The values for this dictionary are either integers that represent the number of
-    wires or dictionaries that represent sub registers. For example, the key-value pair
-    `"ancilla": 3` would represent a register named "ancilla" with 3 wires whereas the key-value
-    pair `"ancilla": {"sub_ancilla": 2, "sub_ancilla1": 1}` would represent a register named
-    "ancilla" with two sub_registers: "sub_ancilla" and "sub_ancilla1", each with their respective
-    number of wires.
-
-    Given input `{"ancilla": {"sub_ancilla": 2, "sub_ancilla1": 1}}`, ``qml.registers()`` creates
-    a dictionary with 3 key-value pairs. The keys are the register names found in the input:
-    "ancilla", "sub_ancilla" and "sub_ancilla1". The values are the respective :class:`~.Wires`
-    objects for each register. For example, "ancilla" has two sub registers "sub_ancilla" and
-    "sub_ancilla1". Therefore, the value associated with key "ancilla" is the union of the
-    :class:`~.Wires` of its sub registers. Since its sub registers "sub_ancilla" and "sub_ancilla1"
-    have :class:`~.Wires` objects `Wires([0, 1])` and Wires([2]) respectively, the key "ancilla"
-    has the value `Wires([0, 1, 2])`.
+    This function helps us group qubits and abstract away the finer details of running quantum
+    algorithms. Wire register names and their total number of wires are typically known in advance,
+    but managing the specific wire range for each register can be a challenge. The ``qml.registers()``
+    function creates a dictionary that maps register name to :class:`~.Wires` object. Moreover,
+    it is possible to input a nested structure where registers contain sub-registers, as illustrated
+    in the example below.
 
     Args:
         register_dict (dict): a dictionary where keys are register names and values are either
