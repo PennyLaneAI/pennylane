@@ -37,11 +37,22 @@ def registers(register_dict):
 
     **Example**
 
-    >>> wire_registers = qml.registers({"alice": 1, "bob": {"nest1": 2, "nest2": 1}})
+    Given input ``{"ancilla": {"sub_ancilla": 2, "sub_ancilla1": 1}}``, ``qml.registers()`` creates
+    a dictionary with 3 key-value pairs. The keys are the register names found in the input:
+    "ancilla", "sub_ancilla" and "sub_ancilla1". The values are the respective :class:`~.Wires`
+    objects for each register. For example, "ancilla" has two sub registers "sub_ancilla" and
+    "sub_ancilla1". Therefore, the value associated with key "ancilla" is the union of the
+    :class:`~.Wires` of its sub registers. Since its sub registers "sub_ancilla" and "sub_ancilla1"
+    have :class:`~.Wires` objects ``Wires([0, 1])`` and ``Wires([2])`` respectively, the key "ancilla"
+    has the value ``Wires([0, 1, 2])``.
+
+    >>> wire_registers = qml.registers({"ancilla": {"sub_ancilla": 2, "sub_ancilla1": 1}})
     >>> wire_dict
-    {'alice': Wires([0]), 'nest1': Wires([1, 2]), 'nest2': Wires([3]), 'bob': Wires([1, 2, 3])}
-    >>> wire_dict['nest1']
-    Wires([1, 2])
+    {'sub_ancilla': Wires([0, 1]), 'sub_ancilla1': Wires([2]), 'ancilla': Wires([0, 1, 2])}
+    >>> wire_dict['sub_ancilla1']
+    Wires([2])
+    >>> wire_dict['sub_ancilla'][1]
+    1
 
     A simple example showcasing how to implement the `SWAP <https://en.wikipedia.org/wiki/Swap_test>`_ test:
 
