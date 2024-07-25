@@ -3464,9 +3464,9 @@ class TestSimplify:
         import jax
         import jax.numpy as jnp
 
-        dev = qml.device("default.qubit.jax", wires=2)
+        dev = qml.device("default.qubit")
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, interface="jax")
         def circuit(simplify, wires, *params, **hyperparams):
             if simplify:
                 qml.simplify(op(*params, wires=wires, **hyperparams))

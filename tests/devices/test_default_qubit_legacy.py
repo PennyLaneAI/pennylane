@@ -2002,7 +2002,8 @@ class TestApplyOps:
     gates in DefaultQubitLegacy."""
 
     state = np.arange(2**4, dtype=np.complex128).reshape((2, 2, 2, 2))
-    dev = qml.device("default.qubit.legacy", wires=4)
+    with pytest.warns(qml.PennyLaneDeprecationWarning):
+        dev = qml.device("default.qubit.legacy", wires=4)
 
     single_qubit_ops = [
         (qml.PauliX, dev._apply_x),

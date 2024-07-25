@@ -20,7 +20,6 @@ import numbers
 # pylint: disable=too-many-arguments, protected-access, too-many-instance-attributes
 import warnings
 from copy import copy
-from typing import List
 
 import pennylane as qml
 from pennylane.operation import Observable, Operator, Tensor, convert_to_opmath
@@ -119,7 +118,7 @@ class LinearCombination(Sum):
     def __init__(
         self,
         coeffs,
-        observables: List[Operator],
+        observables: list[Operator],
         simplify=False,
         grouping_type=None,
         method="rlf",

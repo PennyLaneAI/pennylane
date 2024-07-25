@@ -17,14 +17,15 @@ This module contains the qml.matrix function.
 from functools import partial
 
 # pylint: disable=protected-access,too-many-branches
-from typing import Callable, Sequence, Union
+from typing import Union
 
 import pennylane as qml
 from pennylane import transform
 from pennylane.operation import Operator
 from pennylane.pauli import PauliSentence, PauliWord
+from pennylane.tape import QuantumTapeBatch
 from pennylane.transforms import TransformError
-from pennylane.typing import TensorLike
+from pennylane.typing import PostprocessingFn, TensorLike
 
 
 def catalyst_qjit(qnode):
@@ -233,7 +234,7 @@ def matrix(op: Union[Operator, PauliWord, PauliSentence], wire_order=None) -> Te
 @partial(transform, is_informative=True)
 def _matrix_transform(
     tape: qml.tape.QuantumTape, wire_order=None, **kwargs
-) -> (Sequence[qml.tape.QuantumTape], Callable):
+) -> tuple[QuantumTapeBatch, PostprocessingFn]:
     if not tape.wires:
         raise qml.operation.MatrixUndefinedError
 

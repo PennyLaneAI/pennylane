@@ -14,7 +14,8 @@
 """
 This module contains the qml.expval measurement.
 """
-from typing import Sequence, Tuple, Union
+from collections.abc import Sequence
+from typing import Optional, Union
 
 import pennylane as qml
 from pennylane.operation import Operator
@@ -107,8 +108,8 @@ class ExpectationMP(SampleMeasurement, StateMeasurement):
         self,
         samples: Sequence[complex],
         wire_order: Wires,
-        shot_range: Tuple[int] = None,
-        bin_size: int = None,
+        shot_range: Optional[tuple[int, ...]] = None,
+        bin_size: Optional[int] = None,
     ):
         if not self.wires:
             return qml.math.squeeze(self.eigvals())
