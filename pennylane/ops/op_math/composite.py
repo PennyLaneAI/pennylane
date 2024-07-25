@@ -17,7 +17,7 @@ This submodule defines a base class for composite operations.
 # pylint: disable=too-many-instance-attributes,invalid-sequence-index
 import abc
 import copy
-from typing import Callable, List
+from collections.abc import Callable
 
 import pennylane as qml
 from pennylane import math
@@ -59,7 +59,6 @@ class CompositeOp(Operator):
         self, *operands: Operator, id=None, _pauli_rep=None
     ):  # pylint: disable=super-init-not-called
         self._id = id
-        self.queue_idx = None
         self._name = self.__class__.__name__
 
         self.operands = operands
@@ -189,7 +188,7 @@ class CompositeOp(Operator):
         """Representation of the operator as a matrix in the computational basis."""
 
     @property
-    def overlapping_ops(self) -> List[List[Operator]]:
+    def overlapping_ops(self) -> list[list[Operator]]:
         """Groups all operands of the composite operator that act on overlapping wires.
 
         Returns:
@@ -340,7 +339,7 @@ class CompositeOp(Operator):
 
     @classmethod
     @abc.abstractmethod
-    def _sort(cls, op_list, wire_map: dict = None) -> List[Operator]:
+    def _sort(cls, op_list, wire_map: dict = None) -> list[Operator]:
         """Sort composite operands by their wire indices."""
 
     @property

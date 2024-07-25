@@ -15,7 +15,6 @@
 Unit tests for the Sum arithmetic class of qubit operations
 """
 # pylint: disable=eval-used, unused-argument
-from typing import Tuple
 
 import gate_data as gd  # a file containing matrix rep of each gate
 import numpy as np
@@ -359,8 +358,8 @@ class TestMatrix:
     @pytest.mark.parametrize("op_and_mat2", non_param_ops)
     def test_non_parametric_ops_two_terms(
         self,
-        op_and_mat1: Tuple[Operator, np.ndarray],
-        op_and_mat2: Tuple[Operator, np.ndarray],
+        op_and_mat1: tuple[Operator, np.ndarray],
+        op_and_mat2: tuple[Operator, np.ndarray],
     ):
         """Test matrix method for a sum of non_parametric ops"""
         op1, mat1 = op_and_mat1
@@ -379,7 +378,7 @@ class TestMatrix:
     @pytest.mark.parametrize("op_mat1", param_ops)
     @pytest.mark.parametrize("op_mat2", param_ops)
     def test_parametric_ops_two_terms(
-        self, op_mat1: Tuple[Operator, np.ndarray], op_mat2: Tuple[Operator, np.ndarray]
+        self, op_mat1: tuple[Operator, np.ndarray], op_mat2: tuple[Operator, np.ndarray]
     ):
         """Test matrix method for a sum of parametric ops"""
         op1, mat1 = op_mat1

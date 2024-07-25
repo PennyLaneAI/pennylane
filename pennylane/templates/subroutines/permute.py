@@ -67,7 +67,7 @@ class Permute(Operation):
                 qml.Permute([3, 2, 0, 1], dev.wires)
                 return qml.expval(qml.Z(0))
 
-        >>> print(qml.draw(apply_perm, expansion_strategy="device")())
+        >>> print(qml.draw(apply_perm, level="device")())
         0: ─╭SWAP─────────────┤  <Z>
         1: ─│─────╭SWAP───────┤
         2: ─│─────╰SWAP─╭SWAP─┤
@@ -108,7 +108,7 @@ class Permute(Operation):
 
         The permuted circuit is:
 
-        >>> print(qml.draw(circuit, expansion_strategy="device")())
+        >>> print(qml.draw(circuit, level="device")())
         3: ─╭SWAP─────────────┤
         2: ─│─────╭SWAP───────┤
         0: ─│─────│─────╭SWAP─┤
@@ -131,7 +131,7 @@ class Permute(Operation):
 
         will permute only the second, third, and fifth wires as follows:
 
-        >>> print(qml.draw(circuit, expansion_strategy="device", show_all_wires=True)())
+        >>> print(qml.draw(circuit, level="device", show_all_wires=True)())
         3: ─────────────┤
         2: ─╭SWAP───────┤
         a: ─│───────────┤

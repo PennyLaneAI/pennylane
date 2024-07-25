@@ -13,7 +13,7 @@
 # limitations under the License.
 """A function to compute the adjoint representation of a Lie algebra"""
 from itertools import combinations
-from typing import List, Union
+from typing import Union
 
 import numpy as np
 
@@ -34,7 +34,7 @@ def _all_commutators(ops):
 
 
 def structure_constants(
-    g: List[Union[Operator, PauliWord, PauliSentence]], pauli: bool = False
+    g: list[Union[Operator, PauliWord, PauliSentence]], pauli: bool = False
 ) -> TensorLike:
     r"""
     Compute the structure constants that make up the adjoint representation of a Lie algebra.
