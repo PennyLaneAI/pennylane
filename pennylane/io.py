@@ -412,27 +412,27 @@ def from_qiskit_noise(noise_model, **kwargs):
     into a PennyLane :class:`~.NoiseModel`.
 
     Args:
-        noise_model (qiskit_aer.noise.NoiseModel): a Qiskit ``NoiseModel`` instance
+        noise_model (qiskit_aer.noise.NoiseModel): a Qiskit ``NoiseModel`` instance.
         kwargs: Optional keyword arguments for conversion of the noise model.
 
     Keyword Arguments:
         verbose (bool): show a complete list of Kraus matrices for ``qml.QubitChannel`` instead of
-            number of Kraus matrices and the number of qubits they act on. The default is ``False``
+            the number of Kraus matrices and the number of qubits they act on. The default is ``False``.
         decimal_places (int): number of decimal places to round the Kraus matrices when they are
             being displayed for each ``qml.QubitChannel`` with ``verbose=False``.
 
     Returns:
-        qml.NoiseModel: An equivalent noise model constructed in PennyLane
+        qml.NoiseModel: The PennyLane noise model, created based on the input Qiskit
+        ``NoiseModel`` object.
 
     Raises:
-        ValueError: When an encountered quantum error cannot be converted.
+        ValueError: When a quantum error present in the noise model cannot be converted.
 
     .. note::
 
-        - This function depends upon the PennyLane-Qiskit plugin. Follow the
-          `installation instructions <https://docs.pennylane.ai/projects/qiskit/en/latest/installation.html>`__
-          to get up and running. You may need to restart your kernel if you are running in a notebook
-          environment.
+        - This function depends upon the PennyLane-Qiskit plugin, which can be installed following these
+          `installation instructions <https://docs.pennylane.ai/projects/qiskit/en/latest/installation.html>`__.
+          You may need to restart your kernel if you are running it in a notebook environment.
         - Currently, PennyLane noise models do not support readout errors, so those will be skipped during
           conversion.
 
@@ -449,7 +449,7 @@ def from_qiskit_noise(noise_model, **kwargs):
 
     This noise model can be converted into PennyLane using:
 
-    >>> load_noise_model(noise_model)
+    >>> from_qiskit_noise(noise_model)
     NoiseModel({
         OpIn(['RZ', 'RY']): QubitChannel(num_kraus=4, num_wires=1)
         OpIn(['CNOT']): QubitChannel(num_kraus=16, num_wires=2)
