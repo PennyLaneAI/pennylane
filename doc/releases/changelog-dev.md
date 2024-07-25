@@ -33,7 +33,7 @@
 
 <h3>Improvements 🛠</h3>
 
-* `fuse_rot_angles` respects now the global phase of the combined rotations.
+* `fuse_rot_angles` now respects the global phase of the combined rotations.
   [(#6031)](https://github.com/PennyLaneAI/pennylane/pull/6031)
 
 * `StateMP.process_state` defines rules in `cast_to_complex` for complex casting, avoiding a superfluous state vector copy in Lightning simulations

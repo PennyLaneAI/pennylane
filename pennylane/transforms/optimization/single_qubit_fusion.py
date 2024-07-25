@@ -36,7 +36,7 @@ def single_qubit_fusion(
     (on the same qubit) with that property defined will be fused into one ``Rot``.
 
     Args:
-        tape (QNode or QuantumTape or callable): A quantum circuit.
+        tape (QNode or QuantumTape or Callable): A quantum circuit.
         atol (float): An absolute tolerance for which to apply a rotation after
             fusion. After fusion of gates, if the fused angles :math:`\theta` are such that
             :math:`|\theta|\leq \text{atol}`, no rotation gate will be applied.
@@ -45,7 +45,7 @@ def single_qubit_fusion(
             be fused will be fused.
 
     Returns:
-        qnode (QNode) or quantum function (callable) or tuple[List[QuantumTape], callable]:
+        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], Callable]:
         The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
 
     **Example**
@@ -160,7 +160,7 @@ def single_qubit_fusion(
             \theta_f = 2\arccos(|x|).
 
         We can extract the angle combination :math:`\alpha_f` from :math:`x` above as well via
-        :math:`\operatorname{arg}(x)`, which can be readily computed with :math:`arctan`:
+        :math:`\operatorname{arg}(x)`, which can be readily computed with :math:`\arctan`:
 
         .. math::
 
@@ -218,7 +218,7 @@ def single_qubit_fusion(
         **Differentiability:**
 
         The function derived above is differentiable almost everywhere.
-        In particular, there are two problematic scenarios at which the derivative is not defined:
+        In particular, there are two problematic scenarios at which the derivative is not defined.
         First, the square root is not differentiable at :math:`0`, making all input angles with
         :math:`|x|=0` singular. Second, :math:`\arccos` is not differentiable at :math:`1`, making
         all input angles with :math:`|x|=1` singular.
