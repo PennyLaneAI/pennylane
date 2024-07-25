@@ -26,7 +26,7 @@ def registers(register_dict):
     algorithms. Register names and their total number of wires are typically known in advance,
     but managing the specific wire range for each register can be a challenge. The ``qml.registers()``
     function creates a dictionary that maps register name to :class:`~.Wires` object. Moreover,
-    it allows to input a nested structure where registers contain sub-registers, as illustrated
+    it allows one to input a nested structure where registers contain sub-registers, as illustrated
     in the examples below.
 
     Args:
