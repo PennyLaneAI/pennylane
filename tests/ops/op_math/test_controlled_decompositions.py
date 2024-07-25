@@ -139,7 +139,7 @@ class TestControlledDecompositionZYZ:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("op", general_unitary_ops)
-    @pytest.mark.parametrize("control_wires", ([1, 2],[1,2,3]))
+    @pytest.mark.parametrize("control_wires", ([1, 2], [1, 2, 3]))
     def test_decomposition_circuit_general_ops_error(self, op, control_wires, tol):
         """Tests that the controlled decomposition of a single-qubit operation
         with multiple controlled wires raises a ValueError for general_unitary_ops"""

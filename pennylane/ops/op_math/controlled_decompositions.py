@@ -147,9 +147,7 @@ def _multi_controlled_zyz(
     # defined in Lemma 7.9 of https://arxiv.org/pdf/quant-ph/9503016
 
     if not qml.math.allclose(0.0, global_phase, atol=1e-8, rtol=0):
-        raise ValueError(
-            f"The global_phase should be zero, instead got: {global_phase}."
-        )
+        raise ValueError(f"The global_phase should be zero, instead got: {global_phase}.")
 
     if work_wires and len(work_wires) > 1:
         raise ValueError(
@@ -199,7 +197,7 @@ def _single_control_zyz(rot_angles, global_phase, target_wire, control_wires: Wi
     # Add negative of global phase. Compare definition of qml.GlobalPhase and Ph(delta) from section 4.1 of Barenco et al.
     if not qml.math.allclose(0.0, global_phase, atol=1e-8, rtol=0):
         decomp.append(
-             qml.ctrl(qml.GlobalPhase(phi=-global_phase, wires=target_wire), control=control_wires)
+            qml.ctrl(qml.GlobalPhase(phi=-global_phase, wires=target_wire), control=control_wires)
         )
     # Add A operator
     if not qml.math.allclose(0.0, phi, atol=1e-8, rtol=0):
@@ -215,7 +213,7 @@ def _single_control_zyz(rot_angles, global_phase, target_wire, control_wires: Wi
     if not qml.math.allclose(0.0, -(phi + omega) / 2, atol=1e-6, rtol=0):
         decomp.append(qml.RZ(-(phi + omega) / 2, wires=target_wire))
 
-    decomp.append(qml.ctrl(qml.PauliX(wires=target_wire), control=control_wires))
+    decomp.append(qml.ctrl(qml.X(target_wire), control=control_wires))
 
     # Add C operator
     if not qml.math.allclose(0.0, (omega - phi) / 2, atol=1e-8, rtol=0):

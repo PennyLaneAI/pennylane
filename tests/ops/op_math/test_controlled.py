@@ -1053,7 +1053,7 @@ class TestDecomposition:
     def test_differentiable_one_qubit_special_unitary(self):
         """Assert that a differentiable qubit special unitary uses the zyz decomposition."""
 
-        op = qml.ctrl(qml.RZ(qml.numpy.array(1.2), 0), (1,2,3,4))
+        op = qml.ctrl(qml.RZ(qml.numpy.array(1.2), 0), (1, 2, 3, 4))
         decomp = op.decomposition()
 
         assert qml.equal(decomp[0], qml.CRZ(qml.numpy.array(1.2), [4, 0]))
