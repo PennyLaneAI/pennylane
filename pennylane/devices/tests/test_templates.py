@@ -227,6 +227,7 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
 
     @pytest.fixture(scope="function", autouse=True)
     def capture_warnings(self, recwarn):
+        """Capture warnings."""
         yield
         if len(recwarn) > 0:
             for w in recwarn:
