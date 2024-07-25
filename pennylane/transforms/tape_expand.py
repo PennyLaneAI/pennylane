@@ -307,7 +307,7 @@ def _custom_decomp_context(custom_decomps):
 
         finally:
             obj.compute_decomposition = staticmethod(original_decomp_method)
-            obj.has_decomposition = property(original_has_decomp_propety)
+            obj.has_decomposition = original_has_decomp_propety
 
     # Loop through the decomposition dictionary and create all the contexts
     try:
