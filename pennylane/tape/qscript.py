@@ -538,7 +538,7 @@ class QuantumScript:
 
     @property
     def trainable_params(self):
-        """Store or return a list containing the indices of parameters that support
+        r"""Store or return a list containing the indices of parameters that support
         differentiability. The indices provided match the order of appearence in the
         quantum circuit.
 

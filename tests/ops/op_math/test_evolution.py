@@ -172,7 +172,7 @@ class TestEvolution:
             Evolution(base, -0.5 * x)
             return qml.expval(qml.PauliZ(0))
 
-        @qml.qnode(qml.device("default.qubit.jax", wires=1), interface="jax")
+        @qml.qnode(qml.device("default.qubit"), interface="jax")
         def circ(x):
             Evolution(qml.PauliX(0), -0.5 * x)
             return qml.expval(qml.PauliZ(0))
