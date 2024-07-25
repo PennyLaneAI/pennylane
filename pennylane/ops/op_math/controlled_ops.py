@@ -812,8 +812,8 @@ class CNOT(ControlledOp):
             wires (Iterable[Any], Wires): wires that the operator acts on
             **hyperparams (dict): non-trainable hyperparameters of the operator, as stored in the ``hyperparameters`` attribute
 
-        Returns:
-            list[Operator]: decomposition of the operator
+        Raises:
+            qml.DecompositionUndefinedError
         """
         raise qml.operation.DecompositionUndefinedError
 
