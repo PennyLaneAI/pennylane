@@ -40,10 +40,12 @@ def registers(register_dict):
     **Example**
 
     Given flat input dictionary:
+
     >>> qml.registers({"alice": 2, "bob": 3})
     {'alice': Wires([0, 1]), 'bob': Wires([2, 3, 4])}
 
     Given nested input dictionary:
+
     >>> wire_registers = qml.registers({"people": {"alice": 2, "bob": 1}})
     >>> wire_dict
     {'alice': Wires([0, 1]), 'bob': Wires([2]), 'people': Wires([0, 1, 2])}
