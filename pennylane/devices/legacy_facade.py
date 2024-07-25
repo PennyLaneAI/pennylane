@@ -337,15 +337,12 @@ class LegacyDeviceFacade(Device):
             self._device._state = temp_device._state
 
     def _validate_backprop_method(self, tape):
-        print("in _valdiate_backprop_method")
         if tape.shots:
-            print("has shots")
             return False
         params = tape.get_parameters(trainable_only=False)
         interface = qml.math.get_interface(*params)
 
         if tape and any(isinstance(m.obs, qml.SparseHamiltonian) for m in tape.measurements):
-            print("sparse hamiltonian")
             return False
         if interface == "numpy":
             interface = None
@@ -353,11 +350,8 @@ class LegacyDeviceFacade(Device):
 
         # determine if the device supports backpropagation
         backprop_interface = self._device.capabilities().get("passthru_interface", None)
-        print("im here")
         if backprop_interface is not None:
             # device supports backpropagation natively
-            print("backprop_interface", backprop_interface)
-            print("mapped_interface: ", mapped_interface)
             return mapped_interface in [backprop_interface, "Numpy"]
         # determine if the device has any child devices that support backpropagation
         backprop_devices = self._device.capabilities().get("passthru_devices", None)
