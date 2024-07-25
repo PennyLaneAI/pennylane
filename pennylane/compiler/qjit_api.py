@@ -12,7 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """QJIT compatible quantum and compilation operations API"""
+
+import pennylane as qml
+
 from collections.abc import Callable
+
+from functools import wraps
 
 from .compiler import (
     AvailableCompilers,
@@ -512,6 +517,9 @@ def for_loop(lower_bound, upper_bound, step):
         ops_loader = compilers[active_jit]["ops"].load()
         return ops_loader.for_loop(lower_bound, upper_bound, step)
 
+    if qml.capture.enabled():
+        return _capture_for(lower_bound, upper_bound, step)
+
     # if there is no active compiler, simply interpret the for loop
     # via the Python interpretor.
     def _decorator(body_fn):
@@ -532,6 +540,18 @@ def for_loop(lower_bound, upper_bound, step):
         Returns:
             Callable: a callable with the same signature as ``body_fn``
         """
+        return ForLoopCallable(lower_bound, upper_bound, step, body_fn)
+
+    return _decorator
+
+
+def _capture_for(lower_bound, upper_bound, step) -> Callable:
+    """Capture compatible way to represent a for loop"""
+
+    import jax  # pylint: disable=import-outside-toplevel
+
+    def _decorator(body_fn):
+
         return ForLoopCallable(lower_bound, upper_bound, step, body_fn)
 
     return _decorator
