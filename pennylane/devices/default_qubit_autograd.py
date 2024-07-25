@@ -14,12 +14,15 @@
 """This module contains an autograd implementation of the :class:`~.DefaultQubitLegacy`
 reference plugin.
 """
+import warnings
+
+from pennylane import PennyLaneDeprecationWarning
 from pennylane import numpy as pnp
 from pennylane.devices import DefaultQubitLegacy
 
 
 class DefaultQubitAutograd(DefaultQubitLegacy):
-    """Simulator plugin based on ``"default.qubit.legacy"``, written using Autograd.
+    r"""Simulator plugin based on ``"default.qubit.legacy"``, written using Autograd.
 
     **Short name:** ``default.qubit.autograd``
 
@@ -33,6 +36,9 @@ class DefaultQubitAutograd(DefaultQubitLegacy):
     .. code-block:: console
 
         pip install autograd
+
+    .. warning::
+        This device is deprecated. Use :class:`~pennylane.devices.DefaultQubit` instead; for example through ``qml.device("default.qubit")``, which now supports backpropagation.
 
     **Example**
 
@@ -104,6 +110,14 @@ class DefaultQubitAutograd(DefaultQubitLegacy):
         return constant * array
 
     def __init__(self, wires, *, shots=None, analytic=None):
+        warnings.warn(
+            f"Use of '{self.short_name}' is deprecated. Instead, use 'default.qubit', "
+            "which supports backpropagation. "
+            "If you experience issues, reach out to the PennyLane team on "
+            "the discussion forum: https://discuss.pennylane.ai/",
+            PennyLaneDeprecationWarning,
+        )
+
         r_dtype = pnp.float64
         c_dtype = pnp.complex128
         super().__init__(wires, shots=shots, r_dtype=r_dtype, c_dtype=c_dtype, analytic=analytic)

@@ -22,12 +22,19 @@
 
 * `SProd.terms` now flattens out the terms if the base is a multi-term observable.
   [(#5885)](https://github.com/PennyLaneAI/pennylane/pull/5885)
-  
+
 * A new method `to_mat` has been added to the `FermiWord` and `FermiSentence` classes, which allows
   computing the matrix representation of these Fermi operators.
   [(#5920)](https://github.com/PennyLaneAI/pennylane/pull/5920)
 
+* New functionality has been added to natively support exponential extrapolation when using the `mitigate_with_zne`. This allows
+  users to have more control over the error mitigation protocol without needing to add further dependencies.
+  [(#5972)](https://github.com/PennyLaneAI/pennylane/pull/5972)
+
 <h3>Improvements 🛠</h3>
+
+* Added the `compute_sparse_matrix` method for `qml.ops.qubit.BasisStateProjector`.
+  [(#5790)](https://github.com/PennyLaneAI/pennylane/pull/5790)
 
 * `StateMP.process_state` defines rules in `cast_to_complex` for complex casting, avoiding a superfluous state vector copy in Lightning simulations
   [(#5995)](https://github.com/PennyLaneAI/pennylane/pull/5995)
@@ -51,6 +58,51 @@
 
 * Molecules and Hamiltonians can now be constructed for all the elements present in the periodic table.
   [(#5821)](https://github.com/PennyLaneAI/pennylane/pull/5821)
+
+* `qml.for_loop` and `qml.while_loop` now fallback to standard Python control
+  flow if `@qjit` is not present, allowing the same code to work with and without
+  `@qjit` without any rewrites.
+  [(#6014)](https://github.com/PennyLaneAI/pennylane/pull/6014)
+
+  ```python
+  dev = qml.device("lightning.qubit", wires=3)
+
+  @qml.qnode(dev)
+  def circuit(x, n):
+
+      @qml.for_loop(0, n, 1)
+      def init_state(i):
+          qml.Hadamard(wires=i)
+
+      init_state()
+
+      @qml.for_loop(0, n, 1)
+      def apply_operations(i, x):
+          qml.RX(x, wires=i)
+
+          @qml.for_loop(i + 1, n, 1)
+          def inner(j):
+              qml.CRY(x**2, [i, j])
+
+          inner()
+          return jnp.sin(x)
+
+      apply_operations(x)
+      return qml.probs()
+  ```
+
+  ```pycon
+  >>> print(qml.draw(circuit)(0.5, 3))
+  0: ──H──RX(0.50)─╭●────────╭●──────────────────────────────────────┤  Probs
+  1: ──H───────────╰RY(0.25)─│──────────RX(0.48)─╭●──────────────────┤  Probs
+  2: ──H─────────────────────╰RY(0.25)───────────╰RY(0.23)──RX(0.46)─┤  Probs
+  >>> circuit(0.5, 3)
+  array([0.125     , 0.125     , 0.09949758, 0.15050242, 0.07594666,
+       0.11917543, 0.08942104, 0.21545687])
+  >>> qml.qjit(circuit)(0.5, 3)
+  Array([0.125     , 0.125     , 0.09949758, 0.15050242, 0.07594666,
+       0.11917543, 0.08942104, 0.21545687], dtype=float64)
+  ```
 
 * The `qubit_observable` function is modified to return an ascending wire order for molecular 
   Hamiltonians.
@@ -87,6 +139,12 @@
 
 <h3>Deprecations 👋</h3>
 
+* The `decomp_depth` argument in `qml.device` has been deprecated.
+  [(#6026)](https://github.com/PennyLaneAI/pennylane/pull/6026)
+
+* The `max_expansion` argument in `qml.QNode` has been deprecated.
+  [(#6026)](https://github.com/PennyLaneAI/pennylane/pull/6026)
+
 * The `expansion_strategy` attribute in the `QNode` class is deprecated.
   [(#5989)](https://github.com/PennyLaneAI/pennylane/pull/5989)
 
@@ -122,12 +180,19 @@
   Instead, use `pennylane.gradients.classical_fisher` and `pennylane.gradients.quantum_fisher`.
   [(#5985)](https://github.com/PennyLaneAI/pennylane/pull/5985)
 
+* The legacy devices `default.qubit.{autograd,torch,tf,jax,legacy}` are deprecated.
+  Instead, use `default.qubit` as it now supports backpropagation through the several backends.
+  [(#5997)](https://github.com/PennyLaneAI/pennylane/pull/5997)
+
 <h3>Documentation 📝</h3>
 
 * Improves the docstring for `QuantumScript.expand` and `qml.tape.tape.expand_tape`.
   [(#5974)](https://github.com/PennyLaneAI/pennylane/pull/5974)
 
 <h3>Bug fixes 🐛</h3>
+
+* Fixed a bug in `qml.SPSAOptimizer` that ignored keyword arguments in the objective function.
+  [(#6027)](https://github.com/PennyLaneAI/pennylane/pull/6027)
 
 * `dynamic_one_shot` was broken for old-API devices since `override_shots` was deprecated.
   [(#6024)](https://github.com/PennyLaneAI/pennylane/pull/6024)
@@ -162,12 +227,14 @@ Lillian M. A. Frederiksen,
 Pietropaolo Frisoni,
 Emiliano Godinez,
 Renke Huang,
+Josh Izaac,
 Soran Jahangiri,
 Korbinian Kottmann,
 Christina Lee,
 Austin Huang,
-Christina Lee,
 William Maxwell,
 Vincent Michaud-Rioux,
+Anurav Modak,
 Mudit Pandey,
-Erik Schultheis.
+Erik Schultheis,
+nate stemen.

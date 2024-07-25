@@ -16,14 +16,14 @@
 
 from collections import OrderedDict
 from functools import partial
-from typing import Callable, Sequence
 
 import numpy as np
 
 import pennylane as qml
 from pennylane.operation import Operator
-from pennylane.tape import QuantumScript, QuantumTape
+from pennylane.tape import QuantumScript, QuantumTape, QuantumTapeBatch
 from pennylane.transforms import TransformError, transform
+from pennylane.typing import PostprocessingFn
 from pennylane.wires import Wires
 
 
@@ -266,7 +266,7 @@ def to_zx(tape, expand_measurements=False):  # pylint: disable=unused-argument
 @partial(transform, is_informative=True)
 def _to_zx_transform(
     tape: QuantumTape, expand_measurements=False
-) -> (Sequence[QuantumTape], Callable):
+) -> tuple[QuantumTapeBatch, PostprocessingFn]:
     """Private function to convert a PennyLane tape to a `PyZX graph <https://pyzx.readthedocs.io/en/latest/>`_ ."""
     # Avoid to make PyZX a requirement for PennyLane.
     try:

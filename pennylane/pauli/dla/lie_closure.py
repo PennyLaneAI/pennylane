@@ -15,9 +15,10 @@
 # pylint: disable=too-many-arguments
 import itertools
 import warnings
+from collections.abc import Iterable
 from copy import copy
 from functools import reduce
-from typing import Iterable, Union
+from typing import Union
 
 import numpy as np
 

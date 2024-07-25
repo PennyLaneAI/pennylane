@@ -15,6 +15,7 @@
 Unit tests for the ``hamiltonian_expand`` transform.
 """
 import functools
+import warnings
 
 import numpy as np
 import pytest
@@ -91,11 +92,15 @@ class TestHamiltonianExpand:
     """Tests for the hamiltonian_expand transform"""
 
     @pytest.fixture(scope="function", autouse=True)
-    def capture_warnings(self, recwarn):
-        yield
-        if len(recwarn) > 0:
-            for w in recwarn:
-                assert isinstance(w.message, qml.PennyLaneDeprecationWarning)
+    def capture_warnings(self):
+        with pytest.warns(qml.PennyLaneDeprecationWarning) as record:
+            yield
+
+        for w in record:
+            assert isinstance(w.message, qml.PennyLaneDeprecationWarning)
+            if "qml.transforms.hamiltonian_expand is deprecated" not in str(w.message):
+                warnings.warn(w.message, w.category)
+            else:
                 assert "qml.transforms.hamiltonian_expand is deprecated" in str(w.message)
 
     def test_ham_with_no_terms_raises(self):
@@ -527,11 +532,15 @@ class TestSumExpand:
     """Tests for the sum_expand transform"""
 
     @pytest.fixture(scope="function", autouse=True)
-    def capture_warnings(self, recwarn):
-        yield
-        if len(recwarn) > 0:
-            for w in recwarn:
-                assert isinstance(w.message, qml.PennyLaneDeprecationWarning)
+    def capture_warnings(self):
+        with pytest.warns(qml.PennyLaneDeprecationWarning) as record:
+            yield
+
+        for w in record:
+            assert isinstance(w.message, qml.PennyLaneDeprecationWarning)
+            if "qml.transforms.sum_expand is deprecated" not in str(w.message):
+                warnings.warn(w.message, w.category)
+            else:
                 assert "qml.transforms.sum_expand is deprecated" in str(w.message)
 
     def test_observables_on_same_wires(self):
@@ -560,6 +569,7 @@ class TestSumExpand:
         assert all(qml.math.allclose(o, e) for o, e in zip(output, expval))
 
     @pytest.mark.parametrize(("qscript", "output"), zip(SUM_QSCRIPTS, SUM_OUTPUTS))
+    @pytest.mark.filterwarnings("ignore:Use of 'default.qubit.legacy' is deprecated")
     def test_sums_legacy_opmath(self, qscript, output):
         """Tests that the sum_expand transform returns the correct value"""
         dev_old = qml.device("default.qubit.legacy", wires=4)
