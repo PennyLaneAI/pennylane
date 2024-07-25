@@ -81,7 +81,7 @@ class TestDecompositionErrors:
             assert_valid(BadDecomp(wires=0), skip_pickle=True)
 
     def test_decomposition_must_not_contain_op(self):
-        """Test that decomposition op an operator doesn't include the operator itself"""
+        """Test that the decomposition of an operator doesn't include the operator itself"""
 
         class BadDecomp(Operator):
             @staticmethod
