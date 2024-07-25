@@ -282,7 +282,7 @@ class GlobalPhase(Operation):
 
     """
 
-    grad_method = "F"
+    grad_method = None
     num_params = 1
     num_wires = AllWires
     """int: Number of wires that the operator acts on."""

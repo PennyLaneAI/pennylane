@@ -587,35 +587,13 @@ class TestInterfaceDtypes:
 
 
 @pytest.mark.jax
-def test_jacobian_with_and_without_jit_has_same_output_with_high_shots():
-    """Test that the jacobian of AmplitudeEmbedding is the same with and without jit for high number of shots."""
+@pytest.mark.parametrize("shots, atol", [(10000, 0.05), (None, 1e-8)])
+def test_jacobian_with_and_without_jit_has_same_output(shots, atol):
+    """Test that the jacobian of AmplitudeEmbedding is the same with and without jit."""
 
     import jax
 
-    dev = qml.device("default.qubit", shots=10000, seed=7890234)
-
-    @qml.qnode(dev)
-    def circuit(coeffs):
-        qml.AmplitudeEmbedding(coeffs, normalize=True, wires=[0, 1])
-        return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
-
-    params = jax.numpy.array([0.4, 0.5, 0.1, 0.3])
-    jac_fn = jax.jacobian(circuit)
-    jac_jit_fn = jax.jit(jac_fn)
-
-    jac = jac_fn(params)
-
-    jac_jit = jac_jit_fn(params)
-
-    assert qml.math.allclose(jac, jac_jit, atol=0.02)
-
-
-@pytest.mark.jax
-def test_jacobian_with_and_without_jit_has_same_output_with_analytic_mode():
-    """Test that the jacobian of AmplitudeEmbedding is the same with and without jit for analytic mode."""
-    import jax
-
-    dev = qml.device("default.qubit", shots=None)
+    dev = qml.device("default.qubit", shots=shots, seed=7890234)
 
     @qml.qnode(dev, diff_method="parameter-shift")
     def circuit(coeffs):
@@ -630,4 +608,4 @@ def test_jacobian_with_and_without_jit_has_same_output_with_analytic_mode():
 
     jac_jit = jac_jit_fn(params)
 
-    assert qml.math.allclose(jac, jac_jit)
+    assert qml.math.allclose(jac, jac_jit, atol=atol)
