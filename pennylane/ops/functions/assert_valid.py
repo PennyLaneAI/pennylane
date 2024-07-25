@@ -71,7 +71,7 @@ def _check_decomposition(op, skip_wire_mapping):
         wire_map = {w: ascii_lowercase[i] for i, w in enumerate(op.wires)}
         mapped_op = op.map_wires(wire_map)
         # I don't think this is a good solution, try to think of a better one
-        if mapped_op.has_decomposition():
+        if mapped_op.has_decomposition:
             mapped_decomp = mapped_op.decomposition()
             orig_decomp = op.decomposition()
             for mapped_op, orig_op in zip(mapped_decomp, orig_decomp):
