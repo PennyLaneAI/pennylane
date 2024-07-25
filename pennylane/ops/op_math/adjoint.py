@@ -231,12 +231,12 @@ def _capture_adjoint_transform(qfunc: Callable, lazy=True) -> Callable:
     # note that this logic is tested in `tests/capture/test_nested_plxpr.py`
     import jax  # pylint: disable=import-outside-toplevel
 
-    qnode_prim = _get_adjoint_qfunc_prim()
+    adjoint_prim = _get_adjoint_qfunc_prim()
 
     @wraps(qfunc)
     def new_qfunc(*args, **kwargs):
         jaxpr = jax.make_jaxpr(partial(qfunc, **kwargs))(*args)
-        return qnode_prim.bind(
+        return adjoint_prim.bind(
             *jaxpr.consts, *args, jaxpr=jaxpr.jaxpr, lazy=lazy, n_consts=len(jaxpr.consts)
         )
 
