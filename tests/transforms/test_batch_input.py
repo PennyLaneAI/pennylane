@@ -200,12 +200,12 @@ def test_mottonenstate_preparation(mocker):
     assert np.allclose(res, indiv_res)
 
 @pytest.fixture(scope="function", autouse=True)
-    def capture_warnings(self, recwarn):
-        yield
-        if len(recwarn) > 0:
-            for w in recwarn:
-                assert isinstance(w.message, qml.PennyLaneDeprecationWarning)
-                assert "BasisStatePreparation is deprecated" in str(w.message)
+def capture_warnings(self, recwarn):
+    yield
+    if len(recwarn) > 0:
+        for w in recwarn:
+            assert isinstance(w.message, qml.PennyLaneDeprecationWarning)
+            assert "BasisStatePreparation is deprecated" in str(w.message)
 
 def test_basis_state_preparation(mocker):
     """Test that batching works for BasisStatePreparation"""
