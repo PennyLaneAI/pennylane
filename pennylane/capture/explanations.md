@@ -80,24 +80,37 @@ def repeat(func: Callable, n: int) -> Callable:
     def new_func(*args, **kwargs):
         func_bound_kwargs = partial(func, **kwargs)
         jaxpr = jax.make_jaxpr(func_bound_kwargs)(*args)
-        return repeat_prim.bind(n, *args, jaxpr=jaxpr)
+        n_consts = len(jaxpr.consts)
+        return repeat_prim.bind(n, *jaxpr.consts, *args, jaxpr=jaxpr.jaxpr, n_consts=n_consts)
     return new_func
 ```
 
-Several things to notice about this code.  First, we have to make the jaxpr from a function with any keyword arguments
+Several things to notice about this code.
+
+First, we have to make the jaxpr from a function with any keyword arguments
 already bound.  `jax.make_jaxpr` does not currently accept keyword arguments for the function, so we need to pre-bind them.
+
 Next, we decided to make the integer `n` a traceable parameter instead of metadata. We could have chosen to make
 `n` metadata instead.  This way, we can compile our function once for different integers `n`, and it is in line with how
 catalyst treats `for_loop` and `while_loop`.  If the function produced outputs of different types and shapes than the inputs,
 we would have to treat `n` like metadata and re-compile for different integers `n`.
 
+Finally, we promote the `jaxpr.consts` to being actual positional arguments. The consts
+contain any closure variables that the function implicitly depends on that are not present
+in the actual call signature. For example: `def f(x): return x+y`. `y` here would be a
+`const` pulled from the global environment. `f` implicitly depends on it, and it is
+required to reproduce the full behavior of `f`. To separate the normal positional
+arguments from the consts, we then also need a `n_consts` keyword argument.
+
 Now we can define the implementation for our primitive.
 
 ```python
 @repeat_prim.def_impl
-def _(n, *args, jaxpr):
+def _(n, *args, jaxpr, n_consts):
+    consts = args[:n_consts]
+    args = args[n_consts:]
     for _ in range(n):
-        args = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *args)
+        args = jax.core.eval_jaxpr(jaxpr, consts, *args)
     return args
 ```
 
@@ -107,30 +120,39 @@ to directly evaluate the jaxpr instead.
 
 ```python
 @repeat_prim.def_abstract_eval
-def _(n, *args, jaxpr):
-    return args
+def _(n, *args, jaxpr, n_consts):
+    return args[n_consts:]
 ```
 
 Now that we have all the parts, we can see it in action:
 
 ```pycon
+>>> a = jax.numpy.array(1)
 >>> def func(x, y, y_coeff=1):
-...     return (x + 1, y_coeff * y)
+...     return (x + a, y_coeff * y)
 >>> def workflow(x):
 ...     return repeat(func, 2)(x, 2.0, y_coeff=2.0)
 >>> workflow(0.5)
 [Array(2.5, dtype=float32, weak_type=True),
  Array(8., dtype=float32, weak_type=True)]
 >>> jax.make_jaxpr(workflow)(0.5)
-{ lambda ; a:f32[]. let
-    b:f32[] c:f32[] = repeat[
-      jaxpr={ lambda ; d:f32[] e:f32[]. let
-          f:f32[] = add d 1.0
-          g:f32[] = mul 2.0 e
-        in (f, g) }
-    ] 2 a 2.0
-  in (b, c) }
+{ lambda a:i32[]; b:f32[]. let
+    c:f32[] d:f32[] = repeat[
+      jaxpr={ lambda e:i32[]; f:f32[] g:f32[]. let
+          h:f32[] = convert_element_type[new_dtype=float32 weak_type=True] e
+          i:f32[] = add f h
+          j:f32[] = mul 2.0 g
+        in (i, j) }
+      n_consts=1
+    ] 2 a b 2.0
+  in (c, d) }
+>>> jax.make_jaxpr(workflow)(0.5).consts
+[Array(1, dtype=int32, weak_type=True)]
 ```
+
+Some notes here about how read this. `a:i32[]` is the global integer variable `a` that is
+a constant.  The arguments to the `repeat` primitive are `n (const a) x (hardcoded 2.0=y)`.
+You can also see the const variable `e:i32[]` in the inner nested jaxpr as well.
 
 
 ## Metaprogramming

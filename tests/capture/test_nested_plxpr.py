@@ -138,3 +138,24 @@ class TestAdjointQfunc:
 
         qml.assert_equal(out, qml.adjoint(qml.adjoint(qml.X(10))))
         qml.assert_equal(q.queue[0], out)
+
+    def test_qfunc_with_closure_tracer(self):
+        """Test that we can take the adjoint of a qfunc with a closure variable tracer."""
+
+        def workflow(x):
+            def qfunc(wire):  # x is closure variable and a tracer
+                qml.RX(x, wire)
+
+            qml.adjoint(qfunc)(2)
+
+        jaxpr = jax.make_jaxpr(workflow)(0.5)
+
+        assert jaxpr.eqns[0].primitive == adjoint_prim
+        assert jaxpr.eqns[0].params["n_consts"] == 1
+        assert len(jaxpr.eqns[0].invars) == 2  # one const, one arg
+
+        with qml.queuing.AnnotatedQueue() as q:
+            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2.5)
+
+        assert len(q) == 1
+        qml.assert_equal(q.queue[0], qml.adjoint(qml.RX(2.5, 2)))

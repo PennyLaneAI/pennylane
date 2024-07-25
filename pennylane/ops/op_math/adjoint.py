@@ -198,9 +198,11 @@ def _get_adjoint_qfunc_prim():
     adjoint_prim.multiple_results = True
 
     @adjoint_prim.def_impl
-    def _(*args, jaxpr, lazy=True):
+    def _(*args, jaxpr, lazy, n_consts):
+        consts = args[:n_consts]
+        args = args[n_consts:]
         with qml.queuing.AnnotatedQueue() as q:
-            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *args)
+            jax.core.eval_jaxpr(jaxpr, consts, *args)
         ops, _ = qml.queuing.process_queue(q)
         return [adjoint(op, lazy=lazy) for op in ops]
 
@@ -216,11 +218,9 @@ def _get_adjoint_qfunc_prim():
         # note that this approximation may fail when we have nested qfuncs like for and while
         # the do not return variables for all operators they queue
         # all queued drop var operators
-        outvars = [AbstractOperator() for eqn in jaxpr.eqns if _is_queued_outvar(eqn.outvars)]
+        outvars = [eqn.outvars[0].aval for eqn in jaxpr.eqns if _is_queued_outvar(eqn.outvars)]
         # operators that are not dropped var because they are returned
-        outvars += [
-            AbstractOperator() for aval in jaxpr.out_avals if isinstance(aval, AbstractOperator)
-        ]
+        outvars += [var.aval for var in jaxpr.outvars if isinstance(var.aval, AbstractOperator)]
         return outvars
 
     return adjoint_prim
@@ -236,7 +236,9 @@ def _capture_adjoint_transform(qfunc: Callable, lazy=True) -> Callable:
     @wraps(qfunc)
     def new_qfunc(*args, **kwargs):
         jaxpr = jax.make_jaxpr(partial(qfunc, **kwargs))(*args)
-        return qnode_prim.bind(*args, jaxpr=jaxpr, lazy=lazy)
+        return qnode_prim.bind(
+            *jaxpr.consts, *args, jaxpr=jaxpr.jaxpr, lazy=lazy, n_consts=len(jaxpr.consts)
+        )
 
     return new_qfunc
 
