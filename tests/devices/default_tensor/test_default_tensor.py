@@ -405,7 +405,7 @@ class TestJaxSupport:
 
         jax = pytest.importorskip("jax")
         dev = qml.device("default.tensor", wires=1, method=method)
-        ref_dev = qml.device("default.qubit.jax", wires=1)
+        ref_dev = qml.device("default.qubit", wires=1)
 
         def circuit(x):
             qml.RX(x[1], wires=0)

@@ -22,6 +22,13 @@ from pennylane import numpy as pnp
 from pennylane.tape import QuantumTapeBatch
 from pennylane.typing import PostprocessingFn
 
+with pytest.warns(qml.PennyLaneDeprecationWarning):
+    devices_list = [
+        (qml.device("default.qubit"), 1),
+        (qml.device("default.qubit", wires=2), 2),
+        (qml.device("default.qubit.legacy", wires=2), 2),
+    ]
+
 
 class TestSpecsTransform:
     """Tests for the transform specs using the QNode"""
@@ -329,11 +336,7 @@ class TestSpecsTransform:
 
     @pytest.mark.parametrize(
         "device,num_wires",
-        [
-            (qml.device("default.qubit"), 1),
-            (qml.device("default.qubit", wires=2), 2),
-            (qml.device("default.qubit.legacy", wires=2), 2),
-        ],
+        devices_list,
     )
     def test_num_wires_source_of_truth(self, device, num_wires):
         """Tests that num_wires behaves differently on old and new devices."""
