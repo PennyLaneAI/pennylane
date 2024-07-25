@@ -180,19 +180,19 @@ class TestCondReturns:
             (
                 lambda x: (x + 1, x + 2),
                 lambda x: None,
-                AssertionError,
+                ValueError,
                 r"Mismatch in number of output variables",
             ),
             (
                 lambda x: (x + 1, x + 2),
                 lambda x: (x + 1,),
-                AssertionError,
+                ValueError,
                 r"Mismatch in number of output variables",
             ),
             (
                 lambda x: (x + 1, x + 2),
                 lambda x: (x + 1, x + 2.0),
-                AssertionError,
+                ValueError,
                 r"Mismatch in output abstract values",
             ),
         ],
@@ -211,7 +211,7 @@ class TestCondReturns:
         def false_fn(x):
             return x + 1
 
-        with pytest.raises(AssertionError, match=r"Mismatch in number of output variables"):
+        with pytest.raises(ValueError, match=r"Mismatch in number of output variables"):
             jax.make_jaxpr(_capture_cond(True, true_fn, false_fn))(jax.numpy.array(1))
 
     def test_validate_output_variable_types(self):
@@ -223,8 +223,20 @@ class TestCondReturns:
         def false_fn(x):
             return x + 1, x + 2.0
 
-        with pytest.raises(AssertionError, match=r"Mismatch in output abstract values"):
+        with pytest.raises(ValueError, match=r"Mismatch in output abstract values"):
             jax.make_jaxpr(_capture_cond(True, true_fn, false_fn))(jax.numpy.array(1))
+
+    def test_validate_no_false_branch_with_return(self):
+        """Test no false branch provided with return variables."""
+
+        def true_fn(x):
+            return x + 1, x + 2
+
+        with pytest.raises(
+            ValueError,
+            match=r"The false branch must be provided if the true branch returns any variables",
+        ):
+            jax.make_jaxpr(_capture_cond(True, true_fn))(jax.numpy.array(1))
 
     def test_validate_elif_branches(self):
         """Test elif branch mismatches."""
@@ -245,14 +257,14 @@ class TestCondReturns:
             return x + 1
 
         with pytest.raises(
-            AssertionError, match=r"Mismatch in output abstract values in elif branch #1"
+            ValueError, match=r"Mismatch in output abstract values in elif branch #1"
         ):
             jax.make_jaxpr(
                 _capture_cond(False, true_fn, false_fn, [(True, elif_fn1), (False, elif_fn2)])
             )(jax.numpy.array(1))
 
         with pytest.raises(
-            AssertionError, match=r"Mismatch in number of output variables in elif branch #0"
+            ValueError, match=r"Mismatch in number of output variables in elif branch #0"
         ):
             jax.make_jaxpr(_capture_cond(False, true_fn, false_fn, [(True, elif_fn3)]))(
                 jax.numpy.array(1)

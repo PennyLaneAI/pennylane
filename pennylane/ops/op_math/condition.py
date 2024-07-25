@@ -121,7 +121,7 @@ def cond(condition, true_fn: Callable, false_fn: Callable = None, elifs=()):
     Each branch can receive arguments, but the arguments must be the same for all branches.
     Both the arguments and the branches must be JAX-compatible.
     If a branch returns one or more variables, every other branch must return the same abstract values.
-    If a branch returns one or more operators, these will be appended to the QueuingManager.
+    If a branch returns one or more operators, these will be applied to the circuit.
 
     .. note::
 
@@ -392,7 +392,6 @@ def cond(condition, true_fn: Callable, false_fn: Callable = None, elifs=()):
         return cond_func
 
     if qml.capture.enabled():
-        print("Capture mode for cond")
         return _capture_cond(condition, true_fn, false_fn, elifs)
 
     if elifs:
@@ -469,7 +468,7 @@ def _get_cond_qfunc_prim():
 
         def elif_branch(args, elifs_conditions, jaxpr_elifs):
             if not jaxpr_elifs:
-                return false_branch(args)
+                return None
             pred = elifs_conditions[0]
             rest_preds = elifs_conditions[1:]
             jaxpr_elif = jaxpr_elifs[0]
@@ -485,9 +484,12 @@ def _get_cond_qfunc_prim():
 
         if condition:
             return true_branch(args)
-        if elifs_conditions.size > 0:
-            return elif_branch(args, elifs_conditions, jaxpr_elifs)
-        return false_branch(args)
+
+        elif_branch_out = (
+            elif_branch(args, elifs_conditions, jaxpr_elifs) if elifs_conditions.size > 0 else None
+        )
+
+        return false_branch(args) if elif_branch_out is None else elif_branch_out
 
     @cond_prim.def_abstract_eval
     def _(*_, jaxpr_true, jaxpr_false, jaxpr_elifs):
@@ -500,23 +502,32 @@ def _get_cond_qfunc_prim():
         ) -> None:
             """Ensure the collected abstract values match the expected ones."""
 
-            assert len(outvals) == len(expected_outvals), (
-                f"Mismatch in number of output variables in {branch_type} branch"
-                f"{'' if index is None else ' #' + str(index)}: "
-                f"{len(outvals)} vs {len(expected_outvals)}"
-            )
-            for i, (outval, expected_outval) in enumerate(zip(outvals, expected_outvals)):
-                assert outval == expected_outval, (
-                    f"Mismatch in output abstract values in {branch_type} branch"
-                    f"{'' if index is None else ' #' + str(index)} at position {i}: "
-                    f"{outval} vs {expected_outval}"
+            if len(outvals) != len(expected_outvals):
+                raise ValueError(
+                    f"Mismatch in number of output variables in {branch_type} branch"
+                    f"{'' if index is None else ' #' + str(index)}: "
+                    f"{len(outvals)} vs {len(expected_outvals)}"
                 )
+
+            for i, (outval, expected_outval) in enumerate(zip(outvals, expected_outvals)):
+                if outval != expected_outval:
+                    raise ValueError(
+                        f"Mismatch in output abstract values in {branch_type} branch"
+                        f"{'' if index is None else ' #' + str(index)} at position {i}: "
+                        f"{outval} vs {expected_outval}"
+                    )
 
         outvals_true = jaxpr_true.out_avals
 
         if jaxpr_false is not None:
             outvals_false = jaxpr_false.out_avals
             validate_abstract_values(outvals_false, outvals_true, "false")
+
+        else:
+            if outvals_true is not None:
+                raise ValueError(
+                    "The false branch must be provided if the true branch returns any variables"
+                )
 
         for idx, jaxpr_elif in enumerate(jaxpr_elifs):
             outvals_elif = jaxpr_elif.out_avals
@@ -543,9 +554,7 @@ def _capture_cond(condition, true_fn, false_fn=None, elifs=()) -> Callable:
 
         jaxpr_true = jax.make_jaxpr(functools.partial(true_fn, **kwargs))(*args)
         jaxpr_false = (
-            (jax.make_jaxpr(functools.partial(false_fn, **kwargs))(*args) if false_fn else None)
-            if false_fn
-            else None
+            jax.make_jaxpr(functools.partial(false_fn, **kwargs))(*args) if false_fn else None
         )
 
         # We extract each condition (or predicate) from the elifs argument list
