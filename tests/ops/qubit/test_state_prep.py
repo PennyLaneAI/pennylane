@@ -38,7 +38,7 @@ def test_adjoint_error_exception(op):
 def test_BasisStatePreparation_is_deprecated():
     """Test that my_feature is deprecated."""
     with pytest.warns(qml.PennyLaneDeprecationWarning, match="BasisStatePreparation is deprecated"):
-        _ = qml.BasisStatePreparation()
+        _ = qml.BasisStatePreparation([1,0], wires = [0,1])
 
 @pytest.mark.parametrize(
     "op, mat, base",
