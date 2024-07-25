@@ -105,6 +105,9 @@
   Hamiltonians.
   [(#5950)](https://github.com/PennyLaneAI/pennylane/pull/5950)
 
+* The `CNOT` operator no longer decomposes to itself. Instead, it raises a `qml.DecompositionUndefinedError`.
+  [(#6039)](https://github.com/PennyLaneAI/pennylane/pull/6039)
+
 <h4>Community contributions 🥳</h4>
 
 * `DefaultQutritMixed` readout error has been added using parameters `readout_relaxation_probs` and 
