@@ -54,7 +54,7 @@ explicit in the contents. On the fly isn't as much "program capture" as deferrin
 Suppose we have a transform that repeats a function n times
 
 ```python
-def repeat(func : Callable, n:int) -> Callable:
+def repeat(func: Callable, n: int) -> Callable:
     def new_func(*args, **kwargs):
         for _ in range(n):
             args = func(*args, **kwargs)
