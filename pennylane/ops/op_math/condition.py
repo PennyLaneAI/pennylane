@@ -115,13 +115,14 @@ def cond(condition, true_fn: Callable, false_fn: Callable = None, elifs=()):
     branch determined at runtime. For more details, please see :func:`catalyst.cond`.
 
     When used with :func:`~.pennylane.capture.enabled`, this function allows for general
-    if-elif-else constructs. As with the JIT mode, all branches will be captured,
+    if-elif-else constructs. As with the JIT mode, all branches are captured,
     with the executed branch determined at runtime.
     However, the function cannot branch on mid-circuit measurements.
     Each branch can receive arguments, but the arguments must be the same for all branches.
     Both the arguments and the branches must be JAX-compatible.
     If a branch returns one or more variables, every other branch must return the same abstract values.
-    If a branch returns one or more operators, these will be applied to the circuit.
+    If used inside a quantum function, operators in the branch executed
+    at runtime are applied to the circuit, even if they are not explicitly returned.
 
     .. note::
 
