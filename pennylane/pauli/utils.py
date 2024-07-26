@@ -185,7 +185,7 @@ def are_identical_pauli_words(pauli_1, pauli_2):
 
 def pauli_to_binary(pauli_word, n_qubits=None, wire_map=None, check_is_pauli_word=True):
     # pylint: disable=isinstance-second-argument-not-valid-type
-    """Converts a Pauli word to the binary vector representation.
+    """Converts a Pauli word to the binary vector (symplectic) representation.
 
     This functions follows convention that the first half of binary vector components specify
     PauliX placements while the last half specify PauliZ placements.
@@ -733,11 +733,11 @@ def are_pauli_words_qwc(lst_pauli_words):
 
 
 def observables_to_binary_matrix(observables, n_qubits=None, wire_map=None):
-    """Converts a list of Pauli words to the binary vector representation and yields a row matrix
-    of the binary vectors.
+    """Converts a list of Pauli words into a matrix where each row is the binary vector (symplectic)
+    representation of the ``observables``.
 
-    The dimension of the binary vectors will be implied from the highest wire being acted on
-    non-trivially by the Pauli words in observables.
+    The dimension of the binary vectors (the number of columns) will be implied from the highest wire
+    being acted on non-trivially by the Pauli words in observables.
 
     Args:
         observables (list[Union[Identity, PauliX, PauliY, PauliZ, Tensor, Prod, SProd]]): the list
@@ -748,7 +748,7 @@ def observables_to_binary_matrix(observables, n_qubits=None, wire_map=None):
 
 
     Returns:
-        array[array[int]]: a matrix whose rows are Pauli words in binary vector representation
+        array[array[int]]: a matrix whose rows are Pauli words in binary vector (symplectic) representation.
 
     **Example**
 

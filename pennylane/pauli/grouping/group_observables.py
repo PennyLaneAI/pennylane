@@ -69,12 +69,16 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
             the Pauli words, can be ``'qwc'`` (qubit-wise commuting), ``'commuting'``, or
             ``'anticommuting'``.
         graph_colourer (str): the heuristic algorithm to employ for graph
-                colouring, can be ``'lf'`` (Largest First) or ``'rlf'`` (Recursive
-                Largest First)
+                colouring, can be ``'lf'`` (Largest First), ``'rlf'`` (Recursive
+                Largest First), `dsatur` (DSATUR), or `gis` (IndependentSet). Defaults to ``'lf'``.
+
+    See Also:
+        `rustworkx.ColoringStrategy <https://www.rustworkx.org/apiref/rustworkx.ColoringStrategy.html#coloringstrategy>`_
+        for more information on the ``('lf', 'dsatur', 'gis')`` strategies.
 
     Raises:
         ValueError: if arguments specified for ``grouping_type`` or ``graph_colourer``
-        are not recognized
+        are not recognized.
     """
 
     def __init__(self, observables, grouping_type="qwc", graph_colourer="rlf"):
@@ -93,18 +97,20 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
         self.grouping_type = grouping_type.lower()
         self.observables = observables
         self._wire_map = None
-        self._n_qubits = None
-        self.grouped_paulis = None
 
     @cached_property
     def binary_observables(self):
-        """Matrix of (m x n) dimension where each row is the symplectic (binary) representation of
-        ``self.observables``, with ``m = len(self.observables)`` and ``n = self._n_qubits``.
+        """Binary Matrix corresponding to the symplectic representation of ``self.observables``.
+
+        It is an m x n matrix where each row is the symplectic (binary) representation of
+        ``self.observables``, with ``m = len(self.observables)`` and n the
+        number of qubits acted on by the observables.
         """
         return self.binary_repr()
 
     def binary_repr(self, n_qubits=None, wire_map=None):
-        """Converts the list of Pauli words to a binary matrix.
+        """Converts the list of Pauli words to a binary matrix,
+        i.e. a matrix where row m is the symplectic representation of ``self.observables[m]``.
 
         Args:
             n_qubits (int): number of qubits to specify dimension of binary vector representation
@@ -126,19 +132,14 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
         else:
             self._wire_map = wire_map
 
-        self._n_qubits = n_qubits
-
         return observables_to_binary_matrix(self.observables, n_qubits, self._wire_map)
 
     @cached_property
-    def adj_matrix(self):
-        """Constructs the adjacency matrix for the complement of the Pauli graph.
+    def adj_matrix(self) -> np.ndarray:
+        """Adjacency matrix for the complement of the Pauli graph determined by the ``grouping_type``.
 
-        The adjacency matrix for an undirected graph of N vertices is an N by N symmetric binary
+        The adjacency matrix for an undirected graph of N nodes is an N by N symmetric binary
         matrix, where matrix elements of 1 denote an edge, and matrix elements of 0 denote no edge.
-
-        Returns:
-            array[int]: the square and symmetric adjacency matrix
         """
 
         n_qubits = int(np.shape(self.binary_observables)[1] / 2)
@@ -171,52 +172,62 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
         Runs the graph colouring heuristic algorithm to obtain the partitioned Pauli words.
 
         Returns:
-            list[list[Observable]]: a list of the obtained groupings. Each grouping is itself a
-            list of Pauli word ``Observable`` instances
-
-        Raises:
-            ValueError: if arguments specified for ``graph_colourer`` is not recognized
+            list[list[Observable]]: List of partitions of the Pauli observables made up of mutually (anti-)commuting observables.
         """
         if self.graph_colourer == "rlf":
             coloured_binary_paulis = recursive_largest_first(
                 self.binary_observables, self.adj_matrix
             )
 
-            self.grouped_paulis = [
+            # Need to convert back from the symplectic representation
+            pauli_groups = [
                 [binary_to_pauli(pauli_word, wire_map=self._wire_map) for pauli_word in grouping]
                 for grouping in coloured_binary_paulis.values()
             ]
 
         else:
-            graph = self.noncommuting_complement_graph()
-            # A dictionary where keys are node indices and the value is the color
-            colouring_dict = rx.graph_greedy_color(
-                graph, strategy=RX_STRATEGIES[self.graph_colourer]
+            pauli_groups = self.partitions_from_graph()
+
+        return pauli_groups
+
+    def partitions_from_graph(self) -> list[list]:
+        """Partition Pauli observables into lists of (anti-)commuting observables
+        using Rustworkx graph colouring algorithms.
+
+        Returns:
+            list[list[Observable]]: List of partitions of the Pauli observables made up of mutually (anti-)commuting observables.
+        """
+        # A dictionary where keys are node indices and the value is the color
+        colouring_dict = rx.graph_greedy_color(
+            self.noncommutation_graph, strategy=RX_STRATEGIES[self.graph_colourer]
+        )
+        # group together indices (values) of the same colour (keys)
+        groups = defaultdict(list)
+        for idx, colour in sorted(colouring_dict.items()):
+            groups[colour].append(idx)
+
+        # Get the observables from the indices. itemgetter outperforms list comprehension
+        pauli_groups = [
+            (
+                list(itemgetter(*indices)(self.observables))
+                if len(indices) > 1
+                else [itemgetter(*indices)(self.observables)]
             )
-            # group indices (values) of the same colour (key)
-            groups = defaultdict(list)
-            for idx, colour in sorted(colouring_dict.items()):
-                groups[colour].append(idx)
+            for indices in groups.values()
+        ]
+        return pauli_groups
 
-            # Get the observables from the indices.
-            # itemgetter is more performant than list comprehension
-            grouped_paulis = [itemgetter(*indices)(self.observables) for indices in groups.values()]
-            # need to convert from list[tuple[Observable]] list[list[Observable]]
-            self.grouped_paulis = [
-                list(group) if isinstance(group, tuple) else list((group,))
-                for group in grouped_paulis
-            ]
-
-        return self.grouped_paulis
-
-    def noncommuting_complement_graph(self):
+    @property
+    def noncommutation_graph(self) -> rx.PyGraph:
         """
-        Create the complement graph using the adjancency matrix.
+        Complement graph of the commutation graph.
+
+        Edge (i,j) is present in the graph if observable[i] and observable[j] do NOT commute under
+        the specificed strategy.
+        The nodes are the observables (can only be accesssed through their int index).
         """
-        # List of edges on the complement graph.
-        # Get only the upper triangle since the adjacency matrix is symmetric and we want an undirected graph
+        # Use upper triangle since adjacency matrix is symmetric and we have an undirected graph
         edges = list(zip(*np.where(np.triu(self.adj_matrix, k=1))))
-
         # Create complement graph
         graph = rx.PyGraph()
         graph.add_nodes_from(self.observables)
