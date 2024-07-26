@@ -33,6 +33,10 @@
 
 <h3>Improvements 🛠</h3>
 
+* `qml.devices.LegacyDeviceFacade` has been added to map the legacy devices to the new
+  device interface.
+  [(#5927)](https://github.com/PennyLaneAI/pennylane/pull/5927)
+
 * Added the `compute_sparse_matrix` method for `qml.ops.qubit.BasisStateProjector`.
   [(#5790)](https://github.com/PennyLaneAI/pennylane/pull/5790)
 
