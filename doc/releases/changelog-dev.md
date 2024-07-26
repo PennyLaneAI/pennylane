@@ -33,6 +33,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* Added the decomposition of zyz for special unitaries with multiple control wires.
+  [(#6042)](https://github.com/PennyLaneAI/pennylane/pull/6042)
+
 * Added the `compute_sparse_matrix` method for `qml.ops.qubit.BasisStateProjector`.
   [(#5790)](https://github.com/PennyLaneAI/pennylane/pull/5790)
 
@@ -218,6 +221,7 @@
 
 This release contains contributions from (in alphabetical order):
 Guillermo Alonso,
+Ali Asadi,
 Utkarsh Azad
 Astral Cai,
 Yushao Chen,
