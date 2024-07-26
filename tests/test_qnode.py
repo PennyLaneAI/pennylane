@@ -147,63 +147,8 @@ class TestValidation:
             QNode(dummyfunc, None)
 
     # pylint: disable=protected-access
-    def test_validate_backprop_method_invalid_device(self):
-        """Test that the method for validating the backprop diff method
-        tape raises an exception if the device does not support backprop."""
-        dev = qml.device("default.gaussian", wires=1)
-
-        with pytest.raises(qml.QuantumFunctionError, match="does not support native computations"):
-            QNode._validate_backprop_method(dev, None)
-
-    # pylint: disable=protected-access
-    def test_validate_device_method_new_device(self):
-        """Test that _validate_device_method raises a valueerror with the new device interface."""
-
-        dev = qml.device("default.qubit")
-
-        with pytest.raises(ValueError):
-            QNode._validate_device_method(dev)
-
-    # pylint: disable=protected-access
-    def test_validate_backprop_method(self):
-        """Test that the method for validating the backprop diff method
-        tape works as expected"""
-        dev = qml.device("default.qubit", wires=1)
-
-        with pytest.raises(ValueError):
-            QNode._validate_backprop_method(dev, "auto")
-
-    # pylint: disable=protected-access
     @pytest.mark.autograd
-    def test_parameter_shift_qubit_device(self):
-        """Test that the _validate_parameter_shift method
-        returns the correct gradient transform for qubit devices."""
-        dev = qml.device("default.qubit", wires=1)
-        gradient_fn = QNode._validate_parameter_shift(dev)
-        assert gradient_fn[0] is qml.gradients.param_shift
-
-    # pylint: disable=protected-access
-    @pytest.mark.autograd
-    def test_parameter_shift_cv_device(self):
-        """Test that the _validate_parameter_shift method
-        returns the correct gradient transform for cv devices."""
-        dev = qml.device("default.gaussian", wires=1)
-        gradient_fn = QNode._validate_parameter_shift(dev)
-        assert gradient_fn[0] is qml.gradients.param_shift_cv
-        assert gradient_fn[1] == {"dev": dev}
-
-    # pylint: disable=protected-access
-    @pytest.mark.autograd
-    def test_parameter_shift_qutrit_device(self):
-        """Test that the _validate_parameter_shift method
-        returns the correct gradient transform for qutrit devices."""
-        dev = qml.device("default.qutrit", wires=1)
-        gradient_fn = QNode._validate_parameter_shift(dev)
-        assert gradient_fn[0] is qml.gradients.param_shift
-
-    # pylint: disable=protected-access
-    @pytest.mark.autograd
-    def test_best_method_is_device(self, monkeypatch):
+    def test_best_method_is_device(self):
         """Test that the method for determining the best diff method
         for a device that is a child of qml.devices.Device and has a
         compute_derivatives method defined returns 'device'"""
@@ -229,7 +174,7 @@ class TestValidation:
         assert res == ("backprop", {}, dev)
 
     # pylint: disable=protected-access
-    def test_best_method_is_param_shift(self, monkeypatch):
+    def test_best_method_is_param_shift(self):
         """Test that the method for determining the best diff method
         for a given device and interface returns the parameter shift rule if
         'device' and 'backprop' don't work"""
@@ -355,15 +300,6 @@ class TestValidation:
             match="Differentiation method 5 must be a gradient transform or a string",
         ):
             QNode(dummyfunc, dev, interface="autograd", diff_method=5)
-
-    def test_validate_adjoint_invalid_device(self):
-        """Test if a ValueError is raised when an invalid device is provided to
-        _validate_adjoint_method"""
-
-        dev = qml.device("default.gaussian", wires=1)
-
-        with pytest.raises(ValueError, match="The default.gaussian device does not"):
-            QNode._validate_adjoint_method(dev)
 
     def test_adjoint_finite_shots(self):
         """Tests that a DeviceError is raised with the adjoint differentiation method
@@ -1595,17 +1531,6 @@ class TestNewDeviceIntegration:
         assert not kwargs
         assert new_dev is dev
 
-    def test_get_gradient_fn_default_qubit2_adjoint(self):
-        """Test that the get_gradient_fn and _validate_adjoint_methods work for default qubit 2."""
-        dev = qml.devices.DefaultQubit()
-        gradient_fn, kwargs, new_dev = QNode.get_gradient_fn(dev, "autograd", "adjoint")
-        assert gradient_fn == "adjoint"
-        assert len(kwargs) == 0
-        assert new_dev is dev
-
-        with pytest.raises(ValueError):
-            QNode._validate_adjoint_method(dev)
-
     def test_get_gradient_fn_custom_dev_adjoint(self):
         """Test that an error is raised if adjoint is requested for a device that does not support it."""
         with pytest.raises(
@@ -1739,7 +1664,7 @@ class TestMCMConfiguration:
             ValueError,
             match=f"Cannot use the '{mcm_method}' method for mid-circuit measurements with",
         ):
-            _ = f(param)
+            f(param)
 
     def test_invalid_mcm_method_error(self):
         """Test that an error is raised if the requested mcm_method is invalid"""
@@ -1911,7 +1836,7 @@ class TestTapeExpansion:
         assert np.allclose(tape.operations[0].parameters, 3 * x)
 
     @pytest.mark.autograd
-    def test_no_gradient_expansion(self, mocker):
+    def test_no_gradient_expansion(self):
         """Test that an unsupported operation with defined gradient recipe is
         not expanded"""
         dev = qml.device("default.qubit", wires=1)

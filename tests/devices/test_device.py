@@ -1084,7 +1084,7 @@ class TestDeviceInit:
         assert shot_vector[3].shots == 3
         assert shot_vector[3].copies == 1
 
-        assert dev.shots == 22
+        assert dev.shots.total_shots == 22
 
     def test_decomp_depth_is_deprecated(self):
         """Test that a warning is raised when using the deprecated decomp_depth argument"""

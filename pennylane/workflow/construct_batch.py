@@ -24,7 +24,7 @@ import pennylane as qml
 from pennylane.tape import QuantumTapeBatch
 from pennylane.typing import PostprocessingFn
 
-from .qnode import QNode, _get_device_shots, _make_execution_config
+from .qnode import QNode, _make_execution_config
 
 
 def null_postprocessing(results):
@@ -322,9 +322,9 @@ def construct_batch(
     def batch_constructor(*args, **kwargs) -> tuple[QuantumTapeBatch, PostprocessingFn]:
         """Create a batch of tapes and a post processing function."""
         if "shots" in inspect.signature(qnode.func).parameters:
-            shots = _get_device_shots(qnode.device)
+            shots = qnode.device.shots
         else:
-            shots = kwargs.pop("shots", _get_device_shots(qnode.device))
+            shots = kwargs.pop("shots", qnode.device.shots)
 
         context_fn = nullcontext
 

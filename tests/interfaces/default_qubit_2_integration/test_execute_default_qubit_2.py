@@ -17,32 +17,6 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.devices import DefaultQubit
-from pennylane.workflow.execution import _preprocess_expand_fn
-
-
-class TestPreprocessExpandFn:
-    """Tests the _preprocess_expand_fn helper function."""
-
-    def test_provided_is_callable(self):
-        """Test that if the expand_fn is not "device", it is simply returned."""
-
-        dev = DefaultQubit()
-
-        def f(tape):
-            return tape
-
-        out = _preprocess_expand_fn(f, dev, 10)
-        assert out is f
-
-    def test_new_device_blank_expand_fn(self):
-        """Test that the expand_fn is blank if is new device."""
-
-        dev = DefaultQubit()
-
-        out = _preprocess_expand_fn("device", dev, 10)
-
-        x = [1]
-        assert out(x) is x
 
 
 class TestBatchTransformHelper:

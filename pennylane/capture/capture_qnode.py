@@ -84,15 +84,6 @@ def _get_qnode_prim():
     return qnode_prim
 
 
-# pylint: disable=protected-access
-def _get_device_shots(device) -> "qml.measurements.Shots":
-    if isinstance(device, qml.devices.LegacyDevice):
-        if device._shot_vector:
-            return qml.measurements.Shots(device._raw_shot_sequence)
-        return qml.measurements.Shots(device.shots)
-    return device.shots
-
-
 def qnode_call(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
     """A capture compatible call to a QNode. This function is internally used by ``QNode.__call__``.
 
@@ -160,7 +151,7 @@ def qnode_call(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
     if "shots" in kwargs:
         shots = qml.measurements.Shots(kwargs.pop("shots"))
     else:
-        shots = _get_device_shots(qnode.device)
+        shots = qnode.device.shots
     if shots.has_partitioned_shots:
         # Questions over the pytrees and the nested result object shape
         raise NotImplementedError("shot vectors are not yet supported with plxpr capture.")

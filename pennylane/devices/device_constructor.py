@@ -269,20 +269,16 @@ def device(name, *args, **kwargs):
         # Construct the device
         dev = plugin_device_class(*args, **options)
 
+        if isinstance(dev, qml.devices.LegacyDevice):
+            dev = qml.devices.LegacyDeviceFacade(dev)
+
         # Once the device is constructed, we set its custom expansion function if
         # any custom decompositions were specified.
-
         if custom_decomps is not None:
-            if isinstance(dev, qml.devices.LegacyDevice):
-                custom_decomp_expand_fn = qml.transforms.create_decomp_expand_fn(
-                    custom_decomps, dev, decomp_depth=decomp_depth
-                )
-                dev.custom_expand(custom_decomp_expand_fn)
-            else:
-                custom_decomp_preprocess = qml.transforms.tape_expand._create_decomp_preprocessing(
-                    custom_decomps, dev, decomp_depth=decomp_depth
-                )
-                dev.preprocess = custom_decomp_preprocess
+            custom_decomp_preprocess = qml.transforms.tape_expand._create_decomp_preprocessing(
+                custom_decomps, dev, decomp_depth=decomp_depth
+            )
+            dev.preprocess = custom_decomp_preprocess
 
         return dev
 
