@@ -17,6 +17,7 @@ This module contains the high-level Pauli-word-partitioning functionality used i
 
 from collections import defaultdict
 from copy import copy
+from functools import cached_property
 from operator import itemgetter
 
 import numpy as np
@@ -24,17 +25,24 @@ import rustworkx as rx
 
 import pennylane as qml
 from pennylane.ops import Prod, SProd
-from pennylane.pauli.utils import (  # binary_to_pauli,
+from pennylane.pauli.utils import (
     are_identical_pauli_words,
+    binary_to_pauli,
     observables_to_binary_matrix,
     qwc_complement_adj_matrix,
 )
 from pennylane.wires import Wires
 
-from .graph_colouring import largest_first, recursive_largest_first
+from .graph_colouring import recursive_largest_first
 
 GROUPING_TYPES = frozenset(["qwc", "commuting", "anticommuting"])
-GRAPH_COLOURING_METHODS = {"lf": largest_first, "rlf": recursive_largest_first}
+GRAPH_COLOURING_METHODS = frozenset(["lf", "rlf", "dsatur", "gis"])
+
+RX_STRATEGIES = {
+    "lf": rx.ColoringStrategy.Degree,
+    "dsatur": rx.ColoringStrategy.Saturation,
+    "gis": rx.ColoringStrategy.IndependentSet,
+}
 
 
 class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
@@ -61,12 +69,12 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
             the Pauli words, can be ``'qwc'`` (qubit-wise commuting), ``'commuting'``, or
             ``'anticommuting'``.
         graph_colourer (str): the heuristic algorithm to employ for graph
-            colouring, can be ``'lf'`` (Largest First) or ``'rlf'`` (Recursive
-            Largest First)
+                colouring, can be ``'lf'`` (Largest First) or ``'rlf'`` (Recursive
+                Largest First)
 
     Raises:
-        ValueError: if arguments specified for ``grouping_type`` or
-            ``graph_colourer`` are not recognized
+        ValueError: if arguments specified for ``grouping_type`` or ``graph_colourer``
+        are not recognized
     """
 
     def __init__(self, observables, grouping_type="qwc", graph_colourer="rlf"):
@@ -75,21 +83,25 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
                 f"Grouping type must be one of: {GROUPING_TYPES}, instead got {grouping_type}."
             )
 
-        self.grouping_type = grouping_type.lower()
-
         if graph_colourer.lower() not in GRAPH_COLOURING_METHODS:
             raise ValueError(
-                f"Graph colouring method must be one of: {list(GRAPH_COLOURING_METHODS)}, "
+                f"Graph colouring method must be one of: {GRAPH_COLOURING_METHODS}, "
                 f"instead got {graph_colourer}."
             )
 
-        self.graph_colourer = GRAPH_COLOURING_METHODS[graph_colourer.lower()]
+        self.graph_colourer = graph_colourer.lower()
+        self.grouping_type = grouping_type.lower()
         self.observables = observables
         self._wire_map = None
         self._n_qubits = None
-        self.binary_observables = None
-        self.adj_matrix = None
         self.grouped_paulis = None
+
+    @cached_property
+    def binary_observables(self):
+        """Matrix of (m x n) dimension where each row is the symplectic (binary) representation of
+        ``self.observables``, with ``m = len(self.observables)`` and ``n = self._n_qubits``.
+        """
+        return self.binary_repr()
 
     def binary_repr(self, n_qubits=None, wire_map=None):
         """Converts the list of Pauli words to a binary matrix.
@@ -118,7 +130,8 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
 
         return observables_to_binary_matrix(self.observables, n_qubits, self._wire_map)
 
-    def complement_adj_matrix_for_operator(self):
+    @cached_property
+    def adj_matrix(self):
         """Constructs the adjacency matrix for the complement of the Pauli graph.
 
         The adjacency matrix for an undirected graph of N vertices is an N by N symmetric binary
@@ -127,9 +140,6 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
         Returns:
             array[int]: the square and symmetric adjacency matrix
         """
-
-        if self.binary_observables is None:
-            self.binary_observables = self.binary_repr()
 
         n_qubits = int(np.shape(self.binary_observables)[1] / 2)
 
@@ -163,40 +173,43 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
         Returns:
             list[list[Observable]]: a list of the obtained groupings. Each grouping is itself a
             list of Pauli word ``Observable`` instances
+
+        Raises:
+            ValueError: if arguments specified for ``graph_colourer`` is not recognized
         """
+        if self.graph_colourer == "rlf":
+            coloured_binary_paulis = recursive_largest_first(
+                self.binary_observables, self.adj_matrix
+            )
 
-        if self.adj_matrix is None:
-            self.adj_matrix = self.complement_adj_matrix_for_operator()
+            self.grouped_paulis = [
+                [binary_to_pauli(pauli_word, wire_map=self._wire_map) for pauli_word in grouping]
+                for grouping in coloured_binary_paulis.values()
+            ]
 
-        graph = self.complement_graph()
-        # Solve the graph colouring problem of the complement graph using Rustworkx
-        # A dictionary where keys are node indices and the value is the color
-        colouring_dict = rx.graph_greedy_color(graph)
-        colouring_dict = dict(sorted(colouring_dict.items()))
-        # groups is a dictionary where the keys are the colours of the partitions and the values are lists of
-        # indices corresponding to the observables on each partition
-        groups = defaultdict(list)
-        for idx, colour in colouring_dict.items():
-            groups[colour].append(idx)
+        else:
+            graph = self.noncommuting_complement_graph()
+            # A dictionary where keys are node indices and the value is the color
+            colouring_dict = rx.graph_greedy_color(
+                graph, strategy=RX_STRATEGIES[self.graph_colourer]
+            )
+            # group indices (values) of the same colour (key)
+            groups = defaultdict(list)
+            for idx, colour in sorted(colouring_dict.items()):
+                groups[colour].append(idx)
 
-        # grouped_paulis is a list[tuple[Observable]]
-        # itemgetter is used as it is more performant than list comprehension
-        grouped_paulis = [itemgetter(*indices)(self.observables) for indices in groups.values()]
-        # need to convert to list[list[Observable]]
-        self.grouped_paulis = [
-            list(group) if isinstance(group, tuple) else list((group,)) for group in grouped_paulis
-        ]
-
-        # coloured_binary_paulis = self.graph_colourer(self.binary_observables, self.adj_matrix)
-
-        # self.grouped_paulis = [
-        #     [binary_to_pauli(pauli_word, wire_map=self._wire_map) for pauli_word in grouping]
-        #     for grouping in coloured_binary_paulis.values()
-        # ]
+            # Get the observables from the indices.
+            # itemgetter is more performant than list comprehension
+            grouped_paulis = [itemgetter(*indices)(self.observables) for indices in groups.values()]
+            # need to convert from list[tuple[Observable]] list[list[Observable]]
+            self.grouped_paulis = [
+                list(group) if isinstance(group, tuple) else list((group,))
+                for group in grouped_paulis
+            ]
 
         return self.grouped_paulis
 
-    def complement_graph(self):
+    def noncommuting_complement_graph(self):
         """
         Create the complement graph using the adjancency matrix.
         """
@@ -206,9 +219,7 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
 
         # Create complement graph
         graph = rx.PyGraph()
-        _ = graph.add_nodes_from(
-            self.observables
-        )  # returns the indices of the observables as nodes
+        graph.add_nodes_from(self.observables)
         graph.add_edges_from_no_data(edges)
         return graph
 

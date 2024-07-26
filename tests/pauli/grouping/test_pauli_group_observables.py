@@ -46,7 +46,7 @@ class TestPauliGroupingStrategy:
             ValueError, PauliGroupingStrategy, observables, graph_colourer="invalid"
         )
 
-    def test_construct_qwc_complement_adj_matrix_for_operators(self):
+    def test_construct_qwc_adj_matrix(self):
         """Constructing the complement graph adjacency matrix for a list of Pauli words according
         to qubit-wise commutativity."""
 
@@ -54,12 +54,9 @@ class TestPauliGroupingStrategy:
         qwc_complement_adjacency_matrix = np.array([[0, 1, 0], [1, 0, 1], [0, 1, 0]])
 
         grouping_instance = PauliGroupingStrategy(observables, "qwc")
-        assert (
-            grouping_instance.complement_adj_matrix_for_operator()
-            == qwc_complement_adjacency_matrix
-        ).all()
+        assert (grouping_instance.adj_matrix == qwc_complement_adjacency_matrix).all()
 
-    def test_construct_commuting_complement_adj_matrix_for_operators(self):
+    def test_construct_commuting_adj_matrix(self):
         """Constructing the complement graph adjacency matrix for a list of Pauli words according
         to general commutativity."""
 
@@ -67,12 +64,9 @@ class TestPauliGroupingStrategy:
         commuting_complement_adjacency_matrix = np.array([[0, 1, 0], [1, 0, 0], [0, 0, 0]])
 
         grouping_instance = PauliGroupingStrategy(observables, "commuting")
-        assert (
-            grouping_instance.complement_adj_matrix_for_operator()
-            == commuting_complement_adjacency_matrix
-        ).all()
+        assert (grouping_instance.adj_matrix == commuting_complement_adjacency_matrix).all()
 
-    def test_construct_anticommuting_complement_adj_matrix_for_operators(self):
+    def test_construct_anticommuting_adj_matrix(self):
         """Constructing the complement graph adjacency matrix for a list of Pauli words according
         to anticommutativity."""
 
@@ -80,10 +74,7 @@ class TestPauliGroupingStrategy:
         anticommuting_complement_adjacency_matrix = np.array([[0, 0, 1], [0, 0, 1], [1, 1, 0]])
 
         grouping_instance = PauliGroupingStrategy(observables, "anticommuting")
-        assert (
-            grouping_instance.complement_adj_matrix_for_operator()
-            == anticommuting_complement_adjacency_matrix
-        ).all()
+        assert (grouping_instance.adj_matrix == anticommuting_complement_adjacency_matrix).all()
 
     trivial_ops = [
         [Identity(0), Identity(0), Identity(7)],
@@ -98,10 +89,7 @@ class TestPauliGroupingStrategy:
         qwc_complement_adjacency_matrix = np.array([[0, 0, 0], [0, 0, 0], [0, 0, 0]])
 
         grouping_instance = PauliGroupingStrategy(observables, "qwc")
-        assert (
-            grouping_instance.complement_adj_matrix_for_operator()
-            == qwc_complement_adjacency_matrix
-        ).all()
+        assert (grouping_instance.adj_matrix == qwc_complement_adjacency_matrix).all()
 
     @pytest.mark.parametrize("observables", trivial_ops)
     def test_construct_complement_commuting_adj_matrix_for_trivial_operators(self, observables):
@@ -111,10 +99,7 @@ class TestPauliGroupingStrategy:
         commuting_complement_adjacency_matrix = np.array([[0, 0, 0], [0, 0, 0], [0, 0, 0]])
 
         grouping_instance = PauliGroupingStrategy(observables, "commuting")
-        assert (
-            grouping_instance.complement_adj_matrix_for_operator()
-            == commuting_complement_adjacency_matrix
-        ).all()
+        assert (grouping_instance.adj_matrix == commuting_complement_adjacency_matrix).all()
 
     @pytest.mark.parametrize("observables", trivial_ops)
     def test_construct_complement_anticommuting_adj_matrix_for_trivial_operators(self, observables):
@@ -124,10 +109,7 @@ class TestPauliGroupingStrategy:
         anticommuting_complement_adjacency_matrix = np.array([[0, 1, 1], [1, 0, 1], [1, 1, 0]])
 
         grouping_instance = PauliGroupingStrategy(observables, "anticommuting")
-        assert (
-            grouping_instance.complement_adj_matrix_for_operator()
-            == anticommuting_complement_adjacency_matrix
-        ).all()
+        assert (grouping_instance.adj_matrix == anticommuting_complement_adjacency_matrix).all()
 
 
 observables_list = [
