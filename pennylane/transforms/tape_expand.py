@@ -297,14 +297,17 @@ def _custom_decomp_context(custom_decomps):
             obj = getattr(qml, obj)
 
         original_decomp_method = obj.compute_decomposition
+        original_has_decomp_property = obj.has_decomposition
 
         try:
             # Explicitly set the new compute_decomposition method
             obj.compute_decomposition = staticmethod(fn)
+            obj.has_decomposition = lambda obj: True
             yield
 
         finally:
             obj.compute_decomposition = staticmethod(original_decomp_method)
+            obj.has_decomposition = original_has_decomp_property
 
     # Loop through the decomposition dictionary and create all the contexts
     try:

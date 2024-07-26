@@ -63,6 +63,9 @@
 * `QuantumScript.hash` is now cached, leading to performance improvements.
   [(#5919)](https://github.com/PennyLaneAI/pennylane/pull/5919)
 
+* Set operations are now supported by Wires.
+  [(#5983)](https://github.com/PennyLaneAI/pennylane/pull/5983)
+
 * `qml.dynamic_one_shot` now supports circuits using the `"tensorflow"` interface.
   [(#5973)](https://github.com/PennyLaneAI/pennylane/pull/5973)
 
@@ -123,6 +126,9 @@
 * The `qubit_observable` function is modified to return an ascending wire order for molecular 
   Hamiltonians.
   [(#5950)](https://github.com/PennyLaneAI/pennylane/pull/5950)
+
+* The `CNOT` operator no longer decomposes to itself. Instead, it raises a `qml.DecompositionUndefinedError`.
+  [(#6039)](https://github.com/PennyLaneAI/pennylane/pull/6039)
 
 <h4>Community contributions 🥳</h4>
 
