@@ -30,7 +30,7 @@ from pennylane.devices.legacy_facade import (
 
 
 class DummyDevice(qml.devices.LegacyDevice):
-    """A minimal device that does not do"""
+    """A minimal device that does not do anything."""
 
     author = "some string"
     name = "my legacy device"
