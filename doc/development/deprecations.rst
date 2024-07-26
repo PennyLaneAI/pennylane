@@ -15,6 +15,12 @@ Pending deprecations
   - Deprecated in v0.38
   - Will be removed in v0.39
 
+* The logic for internally switching a device for a different backpropagation
+  compatible device is now deprecated, as it was in place for the deprecated `default.qubit.legacy`.
+
+  - Deprecated in v0.38
+  - Will be removed in v0.39  
+
 * The ``decomp_depth`` argument in ``qml.device`` is deprecated. 
 
   - Deprecated in v0.38
