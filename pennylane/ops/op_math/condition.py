@@ -16,7 +16,7 @@ Contains the condition transform.
 """
 import functools
 from functools import wraps
-from typing import Callable, Type
+from typing import Callable, Optional, Type
 
 import pennylane as qml
 from pennylane import QueuingManager
@@ -102,7 +102,7 @@ class Conditional(SymbolicOp, Operation):
         return Conditional(self.meas_val, self.base.adjoint())
 
 
-def cond(condition, true_fn: Callable, false_fn: Callable = None, elifs=()):
+def cond(condition, true_fn: Callable, false_fn: Optional[Callable] = None, elifs=()):
     """Quantum-compatible if-else conditionals --- condition quantum operations
     on parameters such as the results of mid-circuit qubit measurements.
 
@@ -114,16 +114,6 @@ def cond(condition, true_fn: Callable, false_fn: Callable = None, elifs=()):
     will be captured by Catalyst, the just-in-time (JIT) compiler, with the executed
     branch determined at runtime. For more details, please see :func:`catalyst.cond`.
 
-    When used with :func:`~.pennylane.capture.enabled`, this function allows for general
-    if-elif-else constructs. As with the JIT mode, all branches are captured,
-    with the executed branch determined at runtime.
-    However, the function cannot branch on mid-circuit measurements.
-    Each branch can receive arguments, but the arguments must be the same for all branches.
-    Both the arguments and the branches must be JAX-compatible.
-    If a branch returns one or more variables, every other branch must return the same abstract values.
-    If used inside a quantum function, operators in the branch executed
-    at runtime are applied to the circuit, even if they are not explicitly returned.
-
     .. note::
 
         With the Python interpreter, support for :func:`~.cond`
@@ -132,22 +122,32 @@ def cond(condition, true_fn: Callable, false_fn: Callable = None, elifs=()):
         apply the :func:`defer_measurements` transform.
 
     .. note::
+
         When used with :func:`~.qjit`, this function only supports
         the Catalyst compiler. See :func:`catalyst.cond` for more details.
 
         Please see the Catalyst :doc:`quickstart guide <catalyst:dev/quick_start>`,
         as well as the :doc:`sharp bits and debugging tips <catalyst:dev/sharp_bits>`.
 
+    .. note::
+
+        When used with :func:`~.pennylane.capture.enabled`, this function allows for general
+        if-elif-else constructs. As with the JIT mode, all branches are captured,
+        with the executed branch determined at runtime.
+
+        Each branch can receive arguments, but the arguments must be JAX-compatible.
+        If a branch returns one or more variables, every other branch must return the same abstract values.
+
     Args:
         condition (Union[.MeasurementValue, bool]): a conditional expression involving a mid-circuit
            measurement value (see :func:`.pennylane.measure`). This can only be of type ``bool`` when
-           decorated by :func:`~.qjit` or when using :func:`~.pennylane.capture.enabled`.
+           decorated by :func:`~.qjit`.
         true_fn (callable): The quantum function or PennyLane operation to
             apply if ``condition`` is ``True``
         false_fn (callable): The quantum function or PennyLane operation to
             apply if ``condition`` is ``False``
         elifs (List(Tuple(bool, callable))): A list of (bool, elif_fn) clauses. Can only
-            be used when decorated by :func:`~.qjit` or when using :func:`~.pennylane.capture.enabled`.
+            be used when decorated by :func:`~.qjit`.
 
     Returns:
         function: A new function that applies the conditional equivalent of ``true_fn``. The returned
@@ -448,94 +448,66 @@ def cond(condition, true_fn: Callable, false_fn: Callable = None, elifs=()):
     return wrapper
 
 
+def _validate_abstract_values(
+    outvals: list, expected_outvals: list, branch_type: str, index: int = None
+) -> None:
+    """Ensure the collected abstract values match the expected ones."""
+
+    if len(outvals) != len(expected_outvals):
+        raise ValueError(
+            f"Mismatch in number of output variables in {branch_type} branch"
+            f"{'' if index is None else ' #' + str(index)}: "
+            f"{len(outvals)} vs {len(expected_outvals)}"
+        )
+
+    for i, (outval, expected_outval) in enumerate(zip(outvals, expected_outvals)):
+        if outval != expected_outval:
+            raise ValueError(
+                f"Mismatch in output abstract values in {branch_type} branch"
+                f"{'' if index is None else ' #' + str(index)} at position {i}: "
+                f"{outval} vs {expected_outval}"
+            )
+
+
 @functools.lru_cache
 def _get_cond_qfunc_prim():
     """Get the cond primitive for quantum functions."""
 
-    # JAX should be installed if capture is enabled
     import jax  # pylint: disable=import-outside-toplevel
 
     cond_prim = jax.core.Primitive("cond")
     cond_prim.multiple_results = True
 
     @cond_prim.def_impl
-    def _(condition, elifs_conditions, *args, jaxpr_true, jaxpr_false, jaxpr_elifs):
+    def _(conditions, *args, jaxpr_branches):
 
-        def run_jaxpr(jaxpr, *args):
-            return jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *args)
+        for pred, jaxpr in zip(conditions, jaxpr_branches):
+            if pred and jaxpr is not None:
+                return jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *args)
 
-        def true_branch(args):
-            return run_jaxpr(jaxpr_true, *args)
-
-        def elif_branch(args, elifs_conditions, jaxpr_elifs):
-            if not jaxpr_elifs:
-                return None
-            pred = elifs_conditions[0]
-            rest_preds = elifs_conditions[1:]
-            jaxpr_elif = jaxpr_elifs[0]
-            rest_jaxpr_elifs = jaxpr_elifs[1:]
-            if pred:
-                return run_jaxpr(jaxpr_elif, *args)
-            return elif_branch(args, rest_preds, rest_jaxpr_elifs)
-
-        def false_branch(args):
-            if jaxpr_false is not None:
-                return run_jaxpr(jaxpr_false, *args)
-            return ()
-
-        if condition:
-            return true_branch(args)
-
-        elif_branch_out = (
-            elif_branch(args, elifs_conditions, jaxpr_elifs) if elifs_conditions.size > 0 else None
-        )
-
-        return false_branch(args) if elif_branch_out is None else elif_branch_out
+        return ()
 
     @cond_prim.def_abstract_eval
-    def _(*_, jaxpr_true, jaxpr_false, jaxpr_elifs):
+    def _(*_, jaxpr_branches):
 
-        # We check that the return values in each branch (true, and possibly false and elifs)
-        # have the same abstract values.
-        # The error messages are detailed to help debugging
-        def validate_abstract_values(
-            outvals: list, expected_outvals: list, branch_type: str, index: int = None
-        ) -> None:
-            """Ensure the collected abstract values match the expected ones."""
+        # Index 0 corresponds to the true branch
+        outvals_true = jaxpr_branches[0].out_avals
 
-            if len(outvals) != len(expected_outvals):
-                raise ValueError(
-                    f"Mismatch in number of output variables in {branch_type} branch"
-                    f"{'' if index is None else ' #' + str(index)}: "
-                    f"{len(outvals)} vs {len(expected_outvals)}"
-                )
+        for idx, jaxpr_branch in enumerate(jaxpr_branches):
+            if idx == 0:
+                continue
 
-            for i, (outval, expected_outval) in enumerate(zip(outvals, expected_outvals)):
-                if outval != expected_outval:
-                    raise ValueError(
-                        f"Mismatch in output abstract values in {branch_type} branch"
-                        f"{'' if index is None else ' #' + str(index)} at position {i}: "
-                        f"{outval} vs {expected_outval}"
-                    )
-
-        outvals_true = jaxpr_true.out_avals
-
-        if jaxpr_false is not None:
-            outvals_false = jaxpr_false.out_avals
-            validate_abstract_values(outvals_false, outvals_true, "false")
-
-        else:
-            if outvals_true is not None:
+            if outvals_true and jaxpr_branch is None:
                 raise ValueError(
                     "The false branch must be provided if the true branch returns any variables"
                 )
 
-        for idx, jaxpr_elif in enumerate(jaxpr_elifs):
-            outvals_elif = jaxpr_elif.out_avals
-            validate_abstract_values(outvals_elif, outvals_true, "elif", idx)
+            outvals_branch = jaxpr_branch.out_avals
+            branch_type = "elif" if idx < len(jaxpr_branches) - 1 else "false"
+            _validate_abstract_values(outvals_branch, outvals_true, branch_type, idx - 1)
 
         # We return the abstract values of the true branch since the abstract values
-        # of the false and elif branches (if they exist) should be the same
+        # of the other branches (if they exist) should be the same
         return outvals_true
 
     return cond_prim
@@ -567,17 +539,13 @@ def _capture_cond(condition, true_fn, false_fn=None, elifs=()) -> Callable:
             elifs_conditions.append(pred)
             jaxpr_elifs.append(jax.make_jaxpr(functools.partial(elif_fn, **kwargs))(*args))
 
-        elifs_conditions = (
-            jax.numpy.array(elifs_conditions) if elifs_conditions else jax.numpy.empty(0)
-        )
+        jaxpr_branches = [jaxpr_true, *jaxpr_elifs, jaxpr_false]
+        conditions = jax.numpy.array([condition, *elifs_conditions, True])
 
         return cond_prim.bind(
-            condition,
-            elifs_conditions,
+            conditions,
             *args,
-            jaxpr_true=jaxpr_true,
-            jaxpr_false=jaxpr_false,
-            jaxpr_elifs=jaxpr_elifs,
+            jaxpr_branches=jaxpr_branches,
         )
 
     return new_wrapper

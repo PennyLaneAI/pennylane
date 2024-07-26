@@ -238,6 +238,23 @@ class TestCondReturns:
         ):
             jax.make_jaxpr(_capture_cond(True, true_fn))(jax.numpy.array(1))
 
+    def test_validate_no_false_branch_with_return_2(self):
+        """Test no false branch provided with return variables."""
+
+        def true_fn(x):
+            return x + 1, x + 2
+
+        def elif_fn(x):
+            return x + 1, x + 2
+
+        with pytest.raises(
+            ValueError,
+            match=r"The false branch must be provided if the true branch returns any variables",
+        ):
+            jax.make_jaxpr(_capture_cond(True, true_fn, false_fn=None, elifs=(False, elif_fn)))(
+                jax.numpy.array(1)
+            )
+
     def test_validate_elif_branches(self):
         """Test elif branch mismatches."""
 
