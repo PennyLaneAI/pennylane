@@ -768,7 +768,7 @@ def test_tuple_control_wires_parametric_ops(op_type):
 def test_CNOT_decomposition():
     """Test that CNOT raises a DecompositionUndefinedError instead of using the
     controlled_op decomposition functions"""
-    assert not qml.CNOT((0,1)).has_decomposition
+    assert not qml.CNOT((0, 1)).has_decomposition
 
     with pytest.raises(qml.operation.DecompositionUndefinedError):
         qml.CNOT.compute_decomposition()
