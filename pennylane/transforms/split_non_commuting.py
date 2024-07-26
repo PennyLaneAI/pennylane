@@ -25,7 +25,7 @@ import pennylane as qml
 from pennylane.measurements import ExpectationMP, MeasurementProcess, Shots, StateMP
 from pennylane.ops import Hamiltonian, LinearCombination, Prod, SProd, Sum
 from pennylane.transforms import transform
-from pennylane.typing import Result, ResultBatch
+from pennylane.typing import Result, ResultBatch, TensorLike, Union
 
 
 def null_postprocessing(results):
@@ -383,8 +383,8 @@ def _split_ham_with_grouping(tape: qml.tape.QuantumScript):
 
 def _split_using_qwc_grouping(
     tape: qml.tape.QuantumScript,
-    single_term_obs_mps: Dict[MeasurementProcess, Tuple[List[int], List[float]]],
-    offsets: List[float],
+    single_term_obs_mps: Dict[MeasurementProcess, Tuple[List[int], List[Union[float, TensorLike]]]],
+    offsets: List[Union[float, TensorLike]],
 ):
     """Split tapes using group_observables in the Pauli module.
 
@@ -449,8 +449,8 @@ def _split_using_qwc_grouping(
 
 def _split_using_wires_grouping(
     tape: qml.tape.QuantumScript,
-    single_term_obs_mps: Dict[MeasurementProcess, Tuple[List[int], List[float]]],
-    offsets: List[float],
+    single_term_obs_mps: Dict[MeasurementProcess, Tuple[List[int], List[Union[float, TensorLike]]]],
+    offsets: List[Union[float, TensorLike]],
 ):
     """Split tapes by grouping observables based on overlapping wires.
 
@@ -579,8 +579,8 @@ def _split_all_multi_term_obs_mps(tape: qml.tape.QuantumScript):
 
 def _processing_fn_no_grouping(
     res: ResultBatch,
-    single_term_obs_mps: Dict[MeasurementProcess, Tuple[List[int], List[float]]],
-    offsets: List[float],
+    single_term_obs_mps: Dict[MeasurementProcess, Tuple[List[int], List[Union[float, TensorLike]]]],
+    offsets: List[Union[float, TensorLike]],
     shots: Shots,
     batch_size: int,
 ):
@@ -589,10 +589,10 @@ def _processing_fn_no_grouping(
     Args:
         res (ResultBatch): The results from executing the tapes. Assumed to have a shape
             of (n_groups [,n_shots] [,n_mps] [,batch_size])
-        single_term_obs_mps (Dict[MeasurementProcess, Tuple[List[int], List[float]]]): A dictionary
+        single_term_obs_mps (Dict[MeasurementProcess, Tuple[List[int], List[Union[float, TensorLike]]]]): A dictionary
             of measurements of each unique single-term observable, mapped to the indices of the
             original measurements it belongs to, and its coefficients.
-        offsets (List[float]): Offsets associated with each original measurement in the tape.
+        offsets (List[Union[float, TensorLike]]): Offsets associated with each original measurement in the tape.
         shots (Shots): The shots settings of the original tape.
 
     """
@@ -631,8 +631,10 @@ def _processing_fn_no_grouping(
 
 def _processing_fn_with_grouping(
     res: ResultBatch,
-    single_term_obs_mps: Dict[MeasurementProcess, Tuple[List[int], List[float], int, int]],
-    offsets: List[float],
+    single_term_obs_mps: Dict[
+        MeasurementProcess, Tuple[List[int], List[Union[float, TensorLike]], int, int]
+    ],
+    offsets: List[Union[float, TensorLike]],
     group_sizes: List[int],
     shots: Shots,
     batch_size: int,
@@ -642,11 +644,11 @@ def _processing_fn_with_grouping(
     Args:
         res (ResultBatch): The results from executing the tapes. Assumed to have a shape
             of (n_groups [,n_shots] [,n_mps_in_group] [,batch_size])
-        single_term_obs_mps (Dict[MeasurementProcess, Tuple[List[int], List[float], int, int]]):
+        single_term_obs_mps (Dict[MeasurementProcess, Tuple[List[int], List[Union[float, TensorLike]], int, int]]):
             A dictionary of measurements of each unique single-term observable, mapped to the
             indices of the original measurements it belongs to, its coefficients, its group
             index, and the index of the measurement within the group.
-        offsets (List[float]): Offsets associated with each original measurement in the tape.
+        offsets (List[Union[float, TensorLike]]): Offsets associated with each original measurement in the tape.
         group_sizes (List[int]): The number of tapes in each group.
         shots (Shots): The shots setting of the original tape.
 
@@ -699,7 +701,12 @@ def _processing_fn_with_grouping(
     return tuple(res_for_each_mp)
 
 
-def _sum_terms(res: ResultBatch, coeffs: List[float], offset: float, shape: Tuple) -> Result:
+def _sum_terms(
+    res: ResultBatch,
+    coeffs: List[Union[float, TensorLike]],
+    offset: Union[float, TensorLike],
+    shape: Tuple,
+) -> Result:
     """Sum results from measurements of multiple terms in a multi-term observable."""
 
     # Trivially return the original result
