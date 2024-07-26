@@ -169,7 +169,7 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
 
     def colour_pauli_graph(self):
         """
-        Runs the graph colouring heuristic algorithm to obtain the partitioned Pauli words.
+        Runs the graph colouring heuristic algorithm to obtain the partitioned Pauli observables.
 
         Returns:
             list[list[Observable]]: List of partitions of the Pauli observables made up of mutually (anti-)commuting observables.
@@ -199,7 +199,7 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
         """
         # A dictionary where keys are node indices and the value is the color
         colouring_dict = rx.graph_greedy_color(
-            self.noncommutation_graph, strategy=RX_STRATEGIES[self.graph_colourer]
+            self.complement_graph, strategy=RX_STRATEGIES[self.graph_colourer]
         )
         # group together indices (values) of the same colour (keys)
         groups = defaultdict(list)
@@ -218,13 +218,14 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
         return pauli_groups
 
     @property
-    def noncommutation_graph(self) -> rx.PyGraph:
+    def complement_graph(self) -> rx.PyGraph:
         """
-        Complement graph of the commutation graph.
+        Complement graph of the (anti-)commutation graph constructed from the Pauli observables.
 
         Edge (i,j) is present in the graph if observable[i] and observable[j] do NOT commute under
-        the specificed strategy.
-        The nodes are the observables (can only be accesssed through their int index).
+        the ``grouping_type`` strategy.
+
+        The nodes are the observables (can only be accesssed through their integer index).
         """
         # Use upper triangle since adjacency matrix is symmetric and we have an undirected graph
         edges = list(zip(*np.where(np.triu(self.adj_matrix, k=1))))
