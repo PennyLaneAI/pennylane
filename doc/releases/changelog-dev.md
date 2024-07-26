@@ -15,8 +15,11 @@
   [(#5756)](https://github.com/PennyLaneAI/pennylane/pull/5756)
   [(#5987)](https://github.com/PennyLaneAI/pennylane/pull/5987)
 
-* The `split_to_single_terms` transform is added. This transform splits expectation values of sums
-  into multiple single-term measurements on a single tape, providing better support for simulators
+* A new function `qml.registers` has been added, enabling the creation of registers, which are implemented as a dictionary of `Wires` instances.
+  [(#5957)](https://github.com/PennyLaneAI/pennylane/pull/5957)
+
+* The `split_to_single_terms` transform is added. This transform splits expectation values of sums 
+  into multiple single-term measurements on a single tape, providing better support for simulators 
   that can handle non-commuting observables but don't natively support multi-term observables.
   [(#5884)](https://github.com/PennyLaneAI/pennylane/pull/5884)
 
@@ -235,12 +238,12 @@ Ahmed Darwish,
 Lillian M. A. Frederiksen,
 Pietropaolo Frisoni,
 Emiliano Godinez,
+Austin Huang,
 Renke Huang,
 Josh Izaac,
 Soran Jahangiri,
 Korbinian Kottmann,
 Christina Lee,
-Austin Huang,
 William Maxwell,
 Vincent Michaud-Rioux,
 Anurav Modak,
