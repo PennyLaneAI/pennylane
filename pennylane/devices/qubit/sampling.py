@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Functions to sample a state."""
-from typing import List, Tuple, Union
+from typing import Union
 
 import numpy as np
 
@@ -25,7 +25,7 @@ from pennylane.measurements import (
     ShadowExpvalMP,
     Shots,
 )
-from pennylane.ops import Hamiltonian, LinearCombination, Sum
+from pennylane.ops import Hamiltonian, LinearCombination, Prod, SProd, Sum
 from pennylane.typing import TensorLike
 
 from .apply_operation import apply_operation
@@ -42,7 +42,7 @@ def jax_random_split(prng_key, num: int = 2):
     return split(prng_key, num=num)
 
 
-def _group_measurements(mps: List[Union[SampleMeasurement, ClassicalShadowMP, ShadowExpvalMP]]):
+def _group_measurements(mps: list[Union[SampleMeasurement, ClassicalShadowMP, ShadowExpvalMP]]):
     """
     Group the measurements such that:
       - measurements with pauli observables pairwise-commute in each group
@@ -65,6 +65,8 @@ def _group_measurements(mps: List[Union[SampleMeasurement, ClassicalShadowMP, Sh
     mp_no_obs_indices = []
 
     for i, mp in enumerate(mps):
+        if isinstance(mp.obs, (Sum, SProd, Prod)):
+            mps[i].obs = qml.simplify(mp.obs)
         if isinstance(mp, (ClassicalShadowMP, ShadowExpvalMP)):
             mp_other_obs.append([mp])
             mp_other_obs_indices.append([i])
@@ -103,7 +105,30 @@ def _get_num_executions_for_expval_H(obs):
     indices = obs.grouping_indices
     if indices:
         return len(indices)
-    return sum(int(not isinstance(o, qml.Identity)) for o in obs.terms()[1])
+    return _get_num_wire_groups_for_expval_H(obs)
+
+
+def _get_num_wire_groups_for_expval_H(obs):
+    _, obs_list = obs.terms()
+    wires_list = []
+    added_obs = []
+    num_groups = 0
+    for o in obs_list:
+        if o in added_obs:
+            continue
+        if isinstance(o, qml.Identity):
+            continue
+        added = False
+        for wires in wires_list:
+            if len(qml.wires.Wires.shared_wires([wires, o.wires])) == 0:
+                added_obs.append(o)
+                added = True
+                break
+        if not added:
+            added_obs.append(o)
+            wires_list.append(o.wires)
+            num_groups += 1
+    return num_groups
 
 
 def _get_num_executions_for_sum(obs):
@@ -121,7 +146,7 @@ def _get_num_executions_for_sum(obs):
 
 
 # pylint: disable=no-member
-def get_num_shots_and_executions(tape: qml.tape.QuantumTape) -> Tuple[int, int]:
+def get_num_shots_and_executions(tape: qml.tape.QuantumTape) -> tuple[int, int]:
     """Get the total number of qpu executions and shots.
 
     Args:
@@ -165,7 +190,7 @@ def get_num_shots_and_executions(tape: qml.tape.QuantumTape) -> Tuple[int, int]:
 
 
 def _apply_diagonalizing_gates(
-    mps: List[SampleMeasurement], state: np.ndarray, is_state_batched: bool = False
+    mps: list[SampleMeasurement], state: np.ndarray, is_state_batched: bool = False
 ):
     if len(mps) == 1:
         diagonalizing_gates = mps[0].diagonalizing_gates()
@@ -182,14 +207,14 @@ def _apply_diagonalizing_gates(
 
 # pylint:disable = too-many-arguments
 def measure_with_samples(
-    measurements: List[Union[SampleMeasurement, ClassicalShadowMP, ShadowExpvalMP]],
+    measurements: list[Union[SampleMeasurement, ClassicalShadowMP, ShadowExpvalMP]],
     state: np.ndarray,
     shots: Shots,
     is_state_batched: bool = False,
     rng=None,
     prng_key=None,
     mid_measurements: dict = None,
-) -> List[TensorLike]:
+) -> list[TensorLike]:
     """
     Returns the samples of the measurement process performed on the given state.
     This function assumes that the user-defined wire labels in the measurement process
@@ -256,7 +281,7 @@ def measure_with_samples(
 
 
 def _measure_with_samples_diagonalizing_gates(
-    mps: List[SampleMeasurement],
+    mps: list[SampleMeasurement],
     state: np.ndarray,
     shots: Shots,
     is_state_batched: bool = False,
@@ -326,7 +351,7 @@ def _measure_with_samples_diagonalizing_gates(
 
 
 def _measure_classical_shadow(
-    mp: List[Union[ClassicalShadowMP, ShadowExpvalMP]],
+    mp: list[Union[ClassicalShadowMP, ShadowExpvalMP]],
     state: np.ndarray,
     shots: Shots,
     is_state_batched: bool = False,
@@ -365,7 +390,7 @@ def _measure_classical_shadow(
 
 
 def _measure_hamiltonian_with_samples(
-    mp: List[SampleMeasurement],
+    mp: list[SampleMeasurement],
     state: np.ndarray,
     shots: Shots,
     is_state_batched: bool = False,
@@ -396,7 +421,7 @@ def _measure_hamiltonian_with_samples(
 
 
 def _measure_sum_with_samples(
-    mp: List[SampleMeasurement],
+    mp: list[SampleMeasurement],
     state: np.ndarray,
     shots: Shots,
     is_state_batched: bool = False,

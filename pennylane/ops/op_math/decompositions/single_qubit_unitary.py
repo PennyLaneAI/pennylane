@@ -15,8 +15,6 @@
 operations into elementary gates.
 """
 
-from typing import Tuple
-
 import numpy as np
 
 import pennylane as qml
@@ -163,7 +161,7 @@ def _rot_decomposition(U, wire, return_global_phase=False):
 
 def _get_single_qubit_rot_angles_via_matrix(
     U, return_global_phase=False
-) -> Tuple[float, float, float]:
+) -> tuple[float, float, float]:
     """Returns a triplet of angles representing the single-qubit decomposition
     of the matrix of the target operation using ZYZ rotations.
     """

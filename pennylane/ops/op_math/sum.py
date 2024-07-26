@@ -19,9 +19,9 @@ computing the sum of operations.
 
 import itertools
 import warnings
+from collections import Counter
 from collections.abc import Iterable
 from copy import copy
-from typing import List
 
 import pennylane as qml
 from pennylane import math
@@ -240,7 +240,7 @@ class Sum(CompositeOp):
     @property
     def hash(self):
         # Since addition is always commutative, we do not need to sort
-        return hash(("Sum", frozenset(o.hash for o in self.operands)))
+        return hash(("Sum", hash(frozenset(Counter(self.operands).items()))))
 
     @property
     def grouping_indices(self):
@@ -380,7 +380,7 @@ class Sum(CompositeOp):
         return None
 
     @classmethod
-    def _simplify_summands(cls, summands: List[Operator]):
+    def _simplify_summands(cls, summands: list[Operator]):
         """Reduces the depth of nested summands and groups equal terms together.
 
         Args:
@@ -546,7 +546,7 @@ class Sum(CompositeOp):
         return ops
 
     @classmethod
-    def _sort(cls, op_list, wire_map: dict = None) -> List[Operator]:
+    def _sort(cls, op_list, wire_map: dict = None) -> list[Operator]:
         """Sort algorithm that sorts a list of sum summands by their wire indices.
 
         Args:

@@ -13,9 +13,11 @@
 # limitations under the License.
 """This module contains the tape expansion function for expanding a
 broadcasted tape into multiple tapes."""
-from typing import Callable, Sequence
 
 import pennylane as qml
+from pennylane.measurements import MidMeasureMP, SampleMP
+from pennylane.tape import QuantumTapeBatch
+from pennylane.typing import PostprocessingFn
 
 from .core import transform
 
@@ -47,7 +49,7 @@ def _split_operations(ops, num_tapes):
 
 
 @transform
-def broadcast_expand(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTape], Callable):
+def broadcast_expand(tape: qml.tape.QuantumTape) -> tuple[QuantumTapeBatch, PostprocessingFn]:
     r"""Expand a broadcasted tape into multiple tapes
     and a function that stacks and squeezes the results.
 
@@ -132,6 +134,16 @@ def broadcast_expand(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTa
 
         processing_fn = null_postprocessing
     else:
+
+        has_postselect = any(
+            op.postselect is not None for op in tape.operations if isinstance(op, MidMeasureMP)
+        )
+        has_sample = any(isinstance(op, SampleMP) for op in tape.measurements)
+        if has_postselect and has_sample:
+            raise ValueError(
+                "Returning qml.sample is not supported when using post-selected mid-circuit measurements and parameters broadcasting."
+            )
+
         num_tapes = tape.batch_size
         new_ops = _split_operations(tape.operations, num_tapes)
 

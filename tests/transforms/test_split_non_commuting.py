@@ -350,32 +350,32 @@ class TestUnits:
 
         tapes, fn = split_non_commuting(tape, grouping_strategy=None)
         for actual_tape, expected_tape in zip(tapes, expected_tapes_no_grouping):
-            assert qml.equal(actual_tape, expected_tape)
+            qml.assert_equal(actual_tape, expected_tape)
         assert qml.math.allclose(fn([0.1, 0.2, 0.3, 0.4, 0.5]), [0.01, 0.04, 0.09, 0.16, 0.25])
 
         tapes, fn = split_non_commuting(tape, grouping_strategy="default")
         # When new opmath is disabled, c * o gives Hamiltonians, which leads to wires grouping
         if qml.operation.active_new_opmath():
             for actual_tape, expected_tape in zip(tapes, expected_tapes_qwc_grouping):
-                assert qml.equal(actual_tape, expected_tape)
+                qml.assert_equal(actual_tape, expected_tape)
             assert qml.math.allclose(
                 fn([[0.1, 0.2], [0.3, 0.4, 0.5]]), [0.01, 0.06, 0.12, 0.08, 0.25]
             )
         else:
             for actual_tape, expected_tape in zip(tapes, expected_tapes_wires_grouping):
-                assert qml.equal(actual_tape, expected_tape)
+                qml.assert_equal(actual_tape, expected_tape)
             assert qml.math.allclose(
                 fn([[0.1, 0.2], 0.3, 0.4, 0.5]), [0.01, 0.06, 0.06, 0.16, 0.25]
             )
 
         tapes, fn = split_non_commuting(tape, grouping_strategy="qwc")
         for actual_tape, expected_tape in zip(tapes, expected_tapes_qwc_grouping):
-            assert qml.equal(actual_tape, expected_tape)
+            qml.assert_equal(actual_tape, expected_tape)
         assert qml.math.allclose(fn([[0.1, 0.2], [0.3, 0.4, 0.5]]), [0.01, 0.06, 0.12, 0.08, 0.25])
 
         tapes, fn = split_non_commuting(tape, grouping_strategy="wires")
         for actual_tape, expected_tape in zip(tapes, expected_tapes_wires_grouping):
-            assert qml.equal(actual_tape, expected_tape)
+            qml.assert_equal(actual_tape, expected_tape)
         assert qml.math.allclose(fn([[0.1, 0.2], 0.3, 0.4, 0.5]), [0.01, 0.06, 0.06, 0.16, 0.25])
 
     @pytest.mark.parametrize(
@@ -416,15 +416,49 @@ class TestUnits:
 
         tapes, fn = split_non_commuting(tape, grouping_strategy=None)
         for actual_tape, expected_tape in zip(tapes, expected_tapes_no_grouping):
-            assert qml.equal(actual_tape, expected_tape)
+            qml.assert_equal(actual_tape, expected_tape)
         expected = 0.55 if not qml.operation.active_new_opmath() else 1.15
         assert qml.math.allclose(fn([0.1, 0.2, 0.3, 0.4, 0.5]), expected)
 
         tapes, fn = split_non_commuting(tape, grouping_strategy="default")
         for actual_tape, expected_tape in zip(tapes, expected_tapes_qwc_grouping):
-            assert qml.equal(actual_tape, expected_tape)
+            qml.assert_equal(actual_tape, expected_tape)
         expected = 0.52 if not qml.operation.active_new_opmath() else 1.12
         assert qml.math.allclose(fn([[0.1, 0.2], [0.3, 0.4, 0.5]]), expected)
+
+    @pytest.mark.usefixtures("new_opmath_only")
+    @pytest.mark.parametrize(
+        "H",
+        [
+            qml.sum(qml.X(0), qml.Hadamard(1) @ qml.Z(0), qml.Y(1)),
+            qml.Hamiltonian([1, 2, 3], [qml.X(0), qml.Hadamard(1) @ qml.Z(0), qml.Y(1)]),
+        ],
+    )
+    def test_single_hamiltonian_non_pauli_words(self, H):
+        """Tests that a single Hamiltonian with non-pauli words is split correctly"""
+
+        tape = qml.tape.QuantumScript([], [qml.expval(H)], shots=100)
+        tapes, _ = split_non_commuting(tape)
+        expected_tapes = [
+            qml.tape.QuantumScript([], [qml.expval(qml.X(0)), qml.expval(qml.Y(1))], shots=100),
+            qml.tape.QuantumScript([], [qml.expval(qml.Hadamard(1) @ qml.Z(0))], shots=100),
+        ]
+        for actual_tape, expected_tape in zip(tapes, expected_tapes):
+            qml.assert_equal(actual_tape, expected_tape)
+
+    @pytest.mark.usefixtures("legacy_opmath_only")
+    def test_single_hamiltonian_non_pauli_words_legacy(self):
+        """Tests that a single Hamiltonian with non-pauli words is split correctly"""
+
+        H = qml.Hamiltonian([1, 2, 3], [qml.X(0), qml.Hadamard(1) @ qml.Z(0), qml.Y(1)])
+        tape = qml.tape.QuantumScript([], [qml.expval(H)], shots=100)
+        tapes, _ = split_non_commuting(tape)
+        expected_tapes = [
+            qml.tape.QuantumScript([], [qml.expval(qml.X(0)), qml.expval(qml.Y(1))], shots=100),
+            qml.tape.QuantumScript([], [qml.expval(qml.Hadamard(1) @ qml.Z(0))], shots=100),
+        ]
+        for actual_tape, expected_tape in zip(tapes, expected_tapes):
+            qml.assert_equal(actual_tape, expected_tape)
 
     @pytest.mark.parametrize(
         "grouping_strategy, expected_tapes, processing_fn, mock_results",
@@ -472,7 +506,7 @@ class TestUnits:
         tapes, fn = split_non_commuting(tape, grouping_strategy=grouping_strategy)
 
         for actual_tape, expected_tape in zip(tapes, expected_tapes):
-            assert qml.equal(actual_tape, expected_tape)
+            qml.assert_equal(actual_tape, expected_tape)
 
         expected = processing_fn(mock_results)
         if not qml.operation.active_new_opmath():
@@ -504,10 +538,96 @@ class TestUnits:
             qml.tape.QuantumScript([qml.RY(0.5, 0)], [qml.expval(qml.Y(0))]),
         ]
         for actual_tape, expected_tape in zip(tapes, expected_tapes):
-            assert qml.equal(actual_tape, expected_tape)
+            qml.assert_equal(actual_tape, expected_tape)
 
         result = ([0.1, 0.2], 0.2, 0.3, 0.4)
         assert fn(result) == ((0.1, 0.2, 0.2), (0.3, 0.4))
+
+    @pytest.mark.parametrize(
+        "non_pauli_obs",
+        [
+            [
+                qml.Projector([0], wires=[1]),
+                qml.Projector([1, 1, 0, 1], wires=[0, 1]),
+            ],
+            [
+                qml.Hadamard(wires=[1]),
+                qml.Hadamard(wires=[0]) @ qml.PauliX(wires=[1]),
+            ],
+        ],
+    )
+    def test_tape_with_non_pauli_obs(self, non_pauli_obs):
+        """Tests that the tape is split correctly when containing non-Pauli observables"""
+
+        obs_list = single_term_obs_list + non_pauli_obs
+
+        if not qml.operation.active_new_opmath():
+            non_pauli_obs = _convert_obs_to_legacy_opmath(non_pauli_obs)
+            obs_list = _convert_obs_to_legacy_opmath(obs_list)
+
+        measurements = [
+            qml.expval(c * o) for c, o in zip([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7], obs_list)
+        ]
+        tape = qml.tape.QuantumScript([], measurements, shots=100)
+
+        expected_tapes_no_grouping = [
+            qml.tape.QuantumScript([], [qml.expval(o)], shots=100) for o in obs_list
+        ]
+
+        tapes, fn = split_non_commuting(tape, grouping_strategy=None)
+        for actual_tape, expected_tape in zip(tapes, expected_tapes_no_grouping):
+            qml.assert_equal(actual_tape, expected_tape)
+        assert qml.math.allclose(
+            fn([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7]), [0.01, 0.04, 0.09, 0.16, 0.25, 0.36, 0.49]
+        )
+
+        wires_groups = [
+            [qml.X(0), qml.Z(1)],
+            [qml.Y(0), non_pauli_obs[0]],
+            [qml.X(0) @ qml.Y(1)],
+            [qml.Y(0) @ qml.Z(1)],
+            [non_pauli_obs[1]],
+        ]
+
+        # wires grouping produces [[0, 2], [1, 5], [3], [4], [6]]
+        expected_tapes_wires_grouping = [
+            qml.tape.QuantumScript([], [qml.expval(o) for o in group], shots=100)
+            for group in wires_groups
+        ]
+
+        tapes, fn = split_non_commuting(tape)
+        for actual_tape, expected_tape in zip(tapes, expected_tapes_wires_grouping):
+            qml.assert_equal(actual_tape, expected_tape)
+        assert qml.math.allclose(
+            fn([[0.1, 0.2], [0.3, 0.6], 0.4, 0.5, 0.7]), [0.01, 0.06, 0.06, 0.16, 0.25, 0.36, 0.49]
+        )
+
+    @pytest.mark.parametrize("grouping_strategy", [None, "default", "qwc", "wires"])
+    def test_no_measurements(self, grouping_strategy):
+        """Test that if the tape contains no measurements, the transform doesn't
+        modify it"""
+
+        tape = qml.tape.QuantumScript([qml.X(0)])
+        tapes, post_processing_fn = split_non_commuting(tape, grouping_strategy=grouping_strategy)
+        assert len(tapes) == 1
+        assert tapes[0] == tape
+        assert post_processing_fn(tapes) == tape
+
+    @pytest.mark.parametrize(
+        "observable",
+        [
+            qml.X(0) + qml.Y(1),
+            2 * (qml.X(0) + qml.Y(1)),
+            3 * (2 * (qml.X(0) + qml.Y(1)) + qml.X(1)),
+        ],
+    )
+    def test_splitting_sums_in_unsupported_mps_raises_error(self, observable):
+
+        tape = qml.tape.QuantumScript([qml.X(0)], measurements=[qml.counts(observable)])
+        with pytest.raises(
+            RuntimeError, match="Cannot split up terms in sums for MeasurementProcess"
+        ):
+            _, _ = split_non_commuting(tape)
 
 
 class TestIntegration:
@@ -816,6 +936,25 @@ class TestIntegration:
         assert _dev.tracker.totals == {}
         assert qml.math.allclose(res, [1.5, 2.5])
 
+    def test_non_pauli_obs_in_circuit(self):
+        """Tests that the tape is executed correctly with non-pauli observables"""
+
+        _dev = qml.device("default.qubit", wires=1)
+
+        @qml.transforms.split_non_commuting
+        @qml.qnode(_dev)
+        def circuit():
+            qml.Hadamard(0)
+            return (
+                qml.expval(qml.Projector([0], wires=[0])),
+                qml.expval(qml.Projector([1], wires=[0])),
+            )
+
+        with _dev.tracker:
+            res = circuit()
+        assert _dev.tracker.totals["simulations"] == 2
+        assert qml.math.allclose(res, [0.5, 0.5])
+
 
 expected_grad_param_0 = [
     0.125,
@@ -883,9 +1022,52 @@ class TestDifferentiability:
         assert qml.math.allclose(grad1, expected_grad_1)
         assert qml.math.allclose(grad2, expected_grad_2)
 
-    @pytest.mark.jax
+    @pytest.mark.autograd
     @pytest.mark.parametrize("grouping_strategy", [None, "default", "qwc", "wires"])
-    def test_jax(self, grouping_strategy):
+    def test_trainable_hamiltonian_autograd(self, grouping_strategy):
+        """Tests that measurements of trainable Hamiltonians are differentiable"""
+
+        import pennylane.numpy as pnp
+
+        dev = qml.device("default.qubit", wires=2, shots=50000)
+
+        @partial(split_non_commuting, grouping_strategy=grouping_strategy)
+        @qml.qnode(dev)
+        def circuit(coeff1, coeff2):
+            qml.RX(np.pi / 4, wires=0)
+            qml.RY(np.pi / 4, wires=1)
+            return qml.expval(qml.Hamiltonian([coeff1, coeff2], [qml.Y(0) @ qml.Z(1), qml.X(1)]))
+
+        params = pnp.array(pnp.pi / 4), pnp.array(3 * pnp.pi / 4)
+        actual = qml.jacobian(circuit)(*params)
+
+        assert qml.math.allclose(actual, [-0.5, np.cos(np.pi / 4)], rtol=0.05)
+
+    @pytest.mark.autograd
+    @pytest.mark.parametrize("grouping_strategy", [None, "default", "qwc", "wires"])
+    def test_non_trainable_obs_autograd(self, grouping_strategy):
+        """Test that we can measure a hamiltonian with non-trainable autograd coefficients."""
+
+        dev = qml.device("default.qubit")
+
+        @partial(split_non_commuting, grouping_strategy=grouping_strategy)
+        @qml.qnode(dev, diff_method="adjoint")
+        def circuit(x):
+            qml.RX(x, 0)
+            c1 = qml.numpy.array(0.1, requires_grad=False)
+            c2 = qml.numpy.array(0.2, requires_grad=False)
+            H = c1 * qml.Z(0) + c2 * qml.X(0)
+            return qml.expval(H)
+
+        x = qml.numpy.array(0.5)
+        actual = qml.grad(circuit)(x)
+
+        assert qml.math.allclose(actual, -0.1 * np.sin(x))
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("use_jit", [False, True])
+    @pytest.mark.parametrize("grouping_strategy", [None, "default", "qwc", "wires"])
+    def test_jax(self, grouping_strategy, use_jit):
         """Tests that the output of ``split_non_commuting`` is differentiable with jax"""
 
         import jax
@@ -906,6 +1088,9 @@ class TestDifferentiability:
             qml.RY(phi, wires=1)
             return qml.probs(wires=[0, 1]), *[qml.expval(o) for o in obs_list]
 
+        if use_jit:
+            circuit = jax.jit(circuit)
+
         def cost(theta, phi):
             res = circuit(theta, phi)
             return qml.math.concatenate([res[0], qml.math.stack(res[1:])], axis=0)
@@ -923,44 +1108,30 @@ class TestDifferentiability:
         assert qml.math.allclose(grad2, expected_grad_2)
 
     @pytest.mark.jax
+    @pytest.mark.parametrize("use_jit", [False, True])
     @pytest.mark.parametrize("grouping_strategy", [None, "default", "qwc", "wires"])
-    def test_jax_jit(self, grouping_strategy):
-        """Tests that the output of ``split_non_commuting`` is differentiable with jax and jit"""
+    def test_trainable_hamiltonian_jax(self, grouping_strategy, use_jit):
+        """Tests that measurements of trainable Hamiltonians are differentiable with jax"""
 
         import jax
         import jax.numpy as jnp
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit", wires=2, shots=50000)
 
-        obs_list = complex_obs_list
-        if not qml.operation.active_new_opmath():
-            obs_list = obs_list[:-1]  # exclude the identity term
-
-        @jax.jit
         @partial(split_non_commuting, grouping_strategy=grouping_strategy)
         @qml.qnode(dev)
-        def circuit(theta, phi):
-            qml.RX(theta, wires=0)
-            qml.RY(phi, wires=0)
-            qml.RX(theta, wires=1)
-            qml.RY(phi, wires=1)
-            return qml.probs(wires=[0, 1]), *[qml.expval(o) for o in obs_list]
+        def circuit(coeff1, coeff2):
+            qml.RX(np.pi / 4, wires=0)
+            qml.RY(np.pi / 4, wires=1)
+            return qml.expval(qml.Hamiltonian([coeff1, coeff2], [qml.Y(0) @ qml.Z(1), qml.X(1)]))
 
-        def cost(theta, phi):
-            res = circuit(theta, phi)
-            return qml.math.concatenate([res[0], qml.math.stack(res[1:])], axis=0)
+        if use_jit:
+            circuit = jax.jit(circuit)
 
-        params = jnp.array(jnp.pi / 4), jnp.array(3 * jnp.pi / 4)
-        grad1, grad2 = jax.jacobian(cost, argnums=[0, 1])(*params)
+        params = jnp.array(np.pi / 4), jnp.array(3 * np.pi / 4)
+        actual = jax.jacobian(circuit, argnums=[0, 1])(*params)
 
-        expected_grad_1 = expected_grad_param_0
-        expected_grad_2 = expected_grad_param_1
-        if not qml.operation.active_new_opmath():
-            expected_grad_1 = expected_grad_param_0[:-1]
-            expected_grad_2 = expected_grad_param_1[:-1]
-
-        assert qml.math.allclose(grad1, expected_grad_1)
-        assert qml.math.allclose(grad2, expected_grad_2)
+        assert qml.math.allclose(actual, [-0.5, np.cos(np.pi / 4)], rtol=0.05)
 
     @pytest.mark.torch
     @pytest.mark.parametrize("grouping_strategy", [None, "default", "qwc", "wires"])
@@ -1001,10 +1172,32 @@ class TestDifferentiability:
         assert qml.math.allclose(grad1, expected_grad_1, atol=1e-5)
         assert qml.math.allclose(grad2, expected_grad_2, atol=1e-5)
 
+    @pytest.mark.torch
+    @pytest.mark.parametrize("grouping_strategy", [None, "default", "qwc", "wires"])
+    def test_trainable_hamiltonian_torch(self, grouping_strategy):
+        """Tests that measurements of trainable Hamiltonians are differentiable with torch"""
+
+        import torch
+        from torch.autograd.functional import jacobian
+
+        dev = qml.device("default.qubit", wires=2, shots=50000)
+
+        @partial(split_non_commuting, grouping_strategy=grouping_strategy)
+        @qml.qnode(dev)
+        def circuit(coeff1, coeff2):
+            qml.RX(np.pi / 4, wires=0)
+            qml.RY(np.pi / 4, wires=1)
+            return qml.expval(qml.Hamiltonian([coeff1, coeff2], [qml.Y(0) @ qml.Z(1), qml.X(1)]))
+
+        params = torch.tensor(np.pi / 4), torch.tensor(3 * np.pi / 4)
+        actual = jacobian(circuit, params)
+
+        assert qml.math.allclose(actual, [-0.5, np.cos(np.pi / 4)], rtol=0.05)
+
     @pytest.mark.tf
     @pytest.mark.parametrize("grouping_strategy", [None, "default", "qwc", "wires"])
     def test_tensorflow(self, grouping_strategy):
-        """Tests that the output of ``split_non_commuting`` is differentiable with torch"""
+        """Tests that the output of ``split_non_commuting`` is differentiable with tensorflow"""
 
         import tensorflow as tf
 
@@ -1038,3 +1231,27 @@ class TestDifferentiability:
 
         assert qml.math.allclose(grad1, expected_grad_1, atol=1e-5)
         assert qml.math.allclose(grad2, expected_grad_2, atol=1e-5)
+
+    @pytest.mark.tf
+    @pytest.mark.parametrize("grouping_strategy", [None, "default", "qwc", "wires"])
+    def test_trainable_hamiltonian_tensorflow(self, grouping_strategy):
+        """Tests that measurements of trainable Hamiltonians are differentiable with tensorflow"""
+
+        import tensorflow as tf
+
+        dev = qml.device("default.qubit", wires=2, shots=50000)
+
+        @qml.qnode(dev)
+        def circuit(coeff1, coeff2):
+            qml.RX(np.pi / 4, wires=0)
+            qml.RY(np.pi / 4, wires=1)
+            return qml.expval(qml.Hamiltonian([coeff1, coeff2], [qml.Y(0) @ qml.Z(1), qml.X(1)]))
+
+        params = tf.Variable(np.pi / 4), tf.Variable(3 * np.pi / 4)
+
+        with tf.GradientTape() as tape:
+            cost = split_non_commuting(circuit, grouping_strategy=grouping_strategy)(*params)
+
+        actual = tape.jacobian(cost, params)
+
+        assert qml.math.allclose(actual, [-0.5, np.cos(np.pi / 4)], rtol=0.05)

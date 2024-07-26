@@ -47,7 +47,7 @@ def test_flatten_unflatten():
     assert hash(metadata)
 
     new_op = type(op)._unflatten(*op._flatten())
-    assert qml.equal(op, new_op)
+    qml.assert_equal(op, new_op)
 
 
 class TestDecomposition:
@@ -76,7 +76,7 @@ class TestDecomposition:
         weights = np.zeros(shape=weight_shape)
 
         op = qml.QAOAEmbedding(features, weights, wires=range(n_wires))
-        tape = op.expand()
+        tape = qml.tape.QuantumScript(op.decomposition())
 
         for i, gate in enumerate(tape.operations):
             assert gate.name == expected_names[i]
@@ -94,7 +94,7 @@ class TestDecomposition:
         # Only broadcast features
         op = qml.QAOAEmbedding(broadcasted_features, weights, wires=range(n_wires))
         assert op.batch_size == n_broadcast
-        tape = op.expand()
+        tape = qml.tape.QuantumScript(op.decomposition())
 
         for i, gate in enumerate(tape.operations):
             assert gate.name == expected_names[i]
@@ -106,7 +106,7 @@ class TestDecomposition:
         # Only broadcast weights
         op = qml.QAOAEmbedding(features, broadcasted_weights, wires=range(n_wires))
         assert op.batch_size == n_broadcast
-        tape = op.expand()
+        tape = qml.tape.QuantumScript(op.decomposition())
 
         for i, gate in enumerate(tape.operations):
             assert gate.name == expected_names[i]
@@ -118,7 +118,7 @@ class TestDecomposition:
         # Broadcast weights and features
         op = qml.QAOAEmbedding(broadcasted_features, broadcasted_weights, wires=range(n_wires))
         assert op.batch_size == n_broadcast
-        tape = op.expand()
+        tape = qml.tape.QuantumScript(op.decomposition())
 
         for i, gate in enumerate(tape.operations):
             assert gate.name == expected_names[i]
@@ -134,7 +134,7 @@ class TestDecomposition:
         weights = np.zeros(shape=(1, 3))
 
         op = qml.QAOAEmbedding(features, weights, wires=range(2), local_field=local_field)
-        tape = op.expand()
+        tape = qml.tape.QuantumScript(op.decomposition())
         gate_names = [gate.name for gate in tape.operations]
 
         assert gate_names[3] == get_name[local_field]

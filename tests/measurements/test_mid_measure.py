@@ -224,8 +224,14 @@ class TestMeasurementValueManipulation:
         """Test the __inv__ dunder method."""
         m = MeasurementValue([mp1], lambda v: v)
         m_inversion = ~m
-        assert m_inversion[0] is True
-        assert m_inversion[1] is False
+        assert qml.math.allclose(m_inversion[0], True)
+        assert qml.math.allclose(m_inversion[1], False)
+        values = {mp1: True}
+        assert qml.math.allclose(m_inversion.concretize(values), False)
+        values = {mp1: False}
+        assert qml.math.allclose(m_inversion.concretize(values), True)
+        values = {mp1: np.random.rand(10) < 0.5}
+        assert all(m_inversion.concretize(values) != np.array(values.values()))
 
     def test_lt(self):
         """Test the __lt__ dunder method between a MeasurementValue and a float."""

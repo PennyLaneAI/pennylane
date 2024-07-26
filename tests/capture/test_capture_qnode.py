@@ -14,15 +14,14 @@
 """
 Tests for capturing a qnode into jaxpr.
 """
+from dataclasses import asdict
 from functools import partial
 
 # pylint: disable=protected-access
 import pytest
 
 import pennylane as qml
-from pennylane.capture.capture_qnode import _get_qnode_prim
-
-qnode_prim = _get_qnode_prim()
+from pennylane.capture import qnode_prim
 
 pytestmark = pytest.mark.jax
 
@@ -118,10 +117,11 @@ def test_simple_qnode(x64_mode):
     assert jaxpr.out_avals[0] == jax.core.ShapedArray((), fdtype)
 
     assert eqn0.params["device"] == dev
+    assert eqn0.params["qnode"] == circuit
     assert eqn0.params["shots"] == qml.measurements.Shots(None)
     expected_kwargs = {"diff_method": "best"}
     expected_kwargs.update(circuit.execute_kwargs)
-    expected_kwargs.update(expected_kwargs.pop("mcm_config"))
+    expected_kwargs.update(asdict(expected_kwargs.pop("mcm_config")))
     assert eqn0.params["qnode_kwargs"] == expected_kwargs
 
     qfunc_jaxpr = eqn0.params["qfunc_jaxpr"]

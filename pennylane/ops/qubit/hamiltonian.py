@@ -22,7 +22,6 @@ import itertools
 import numbers
 from collections.abc import Iterable
 from copy import copy
-from typing import List
 from warnings import warn
 
 import numpy as np
@@ -246,7 +245,7 @@ class Hamiltonian(Observable):
     def __init__(
         self,
         coeffs,
-        observables: List[Observable],
+        observables: list[Observable],
         simplify=False,
         grouping_type=None,
         _grouping_indices=None,
@@ -317,6 +316,10 @@ class Hamiltonian(Observable):
 
         super().__init__(*coeffs_flat, wires=self._wires, id=id)
         self._pauli_rep = "unset"
+
+    def __len__(self):
+        """The number of terms in the Hamiltonian."""
+        return len(self.ops)
 
     @property
     def pauli_rep(self):
@@ -658,8 +661,8 @@ class Hamiltonian(Observable):
 
         >>> H = qml.Hamiltonian([1, 1], [qml.X(0) @ qml.X(1), qml.Z(0)])
         >>> print(H._obs_data())
-        {(1, frozenset({('PauliX', <Wires = [1]>, ()), ('PauliX', <Wires = [0]>, ())})),
-         (1, frozenset({('PauliZ', <Wires = [0]>, ())}))}
+        {(1, frozenset({('PauliX', Wires([1]), ()), ('PauliX', Wires([0]), ())})),
+         (1, frozenset({('PauliZ', Wires([0]), ())}))}
         """
         data = set()
 

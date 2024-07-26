@@ -3,7 +3,6 @@ Contains the transpiler transform.
 """
 
 from functools import partial
-from typing import Callable, List, Sequence, Union
 
 import networkx as nx
 
@@ -13,8 +12,9 @@ from pennylane.ops import Hamiltonian, LinearCombination
 from pennylane.ops import __all__ as all_ops
 from pennylane.ops.qubit import SWAP
 from pennylane.queuing import QueuingManager
-from pennylane.tape import QuantumTape
+from pennylane.tape import QuantumTape, QuantumTapeBatch
 from pennylane.transforms import transform
+from pennylane.typing import PostprocessingFn
 
 
 def state_transposition(results, mps, new_wire_order, original_wire_order):
@@ -61,8 +61,8 @@ def _process_measurements(expanded_tape, device_wires, is_default_mixed):
 
 @transform
 def transpile(
-    tape: QuantumTape, coupling_map: Union[List, nx.Graph], device=None
-) -> (Sequence[QuantumTape], Callable):
+    tape: QuantumTape, coupling_map, device=None
+) -> tuple[QuantumTapeBatch, PostprocessingFn]:
     """Transpile a circuit according to a desired coupling map
 
     .. warning::
@@ -72,8 +72,8 @@ def transpile(
 
     Args:
         tape (QNode or QuantumTape or Callable): A quantum tape.
-        coupling_map (list[tuple(int, int)] or nx.Graph): Either a list of tuples(int, int) or an instance of
-            `networkx.Graph` specifying the couplings between different qubits.
+        coupling_map: Data specifying the couplings between different qubits. This data can be any format accepted by ``nx.to_networkx_graph()``,
+            currently including edge list, dict of dicts, dict of lists, NetworkX graph, 2D NumPy array, SciPy sparse matrix, or PyGraphviz graph.
 
     Returns:
         qnode (QNode) or quantum function (Callable) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.

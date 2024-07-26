@@ -400,7 +400,7 @@ class TestControlledMiscMethods:
         assert hash(metadata)
 
         new_op = type(op)._unflatten(*op._flatten())
-        assert qml.equal(op, new_op)
+        qml.assert_equal(op, new_op)
         assert new_op._name == "C(S)"  # make sure initialization was called
 
     def test_copy(self):
@@ -682,7 +682,7 @@ class TestControlledQueuing:
             op = Controlled(base, (0, 1))
 
         assert base not in q
-        assert qml.equal(q.queue[0], op)
+        qml.assert_equal(q.queue[0], op)
 
     def test_queuing_base_defined_outside(self):
         """Test that base isn't added to queue if its defined outside the recording context."""
@@ -1038,13 +1038,13 @@ class TestDecomposition:
         op = qml.ctrl(qml.RZ(1.2, wires=0), (1, 2, 3, 4))
         decomp = op.decomposition()
 
-        assert qml.equal(decomp[0], qml.Toffoli(wires=(1, 2, 0)))
+        qml.assert_equal(decomp[0], qml.Toffoli(wires=(1, 2, 0)))
         assert isinstance(decomp[1], qml.QubitUnitary)
-        assert qml.equal(decomp[2], qml.Toffoli(wires=(3, 4, 0)))
+        qml.assert_equal(decomp[2], qml.Toffoli(wires=(3, 4, 0)))
         assert isinstance(decomp[3].base, qml.QubitUnitary)
-        assert qml.equal(decomp[4], qml.Toffoli(wires=(1, 2, 0)))
+        qml.assert_equal(decomp[4], qml.Toffoli(wires=(1, 2, 0)))
         assert isinstance(decomp[5], qml.QubitUnitary)
-        assert qml.equal(decomp[6], qml.Toffoli(wires=(3, 4, 0)))
+        qml.assert_equal(decomp[6], qml.Toffoli(wires=(3, 4, 0)))
         assert isinstance(decomp[7].base, qml.QubitUnitary)
 
         decomp_mat = qml.matrix(op.decomposition, wire_order=op.wires)()
@@ -1056,10 +1056,10 @@ class TestDecomposition:
         op = qml.ctrl(qml.RZ(qml.numpy.array(1.2), 0), (1))
         decomp = op.decomposition()
 
-        assert qml.equal(decomp[0], qml.PhaseShift(qml.numpy.array(1.2 / 2), 0))
-        assert qml.equal(decomp[1], qml.CNOT(wires=(1, 0)))
-        assert qml.equal(decomp[2], qml.PhaseShift(qml.numpy.array(-1.2 / 2), 0))
-        assert qml.equal(decomp[3], qml.CNOT(wires=(1, 0)))
+        qml.assert_equal(decomp[0], qml.PhaseShift(qml.numpy.array(1.2 / 2), 0))
+        qml.assert_equal(decomp[1], qml.CNOT(wires=(1, 0)))
+        qml.assert_equal(decomp[2], qml.PhaseShift(qml.numpy.array(-1.2 / 2), 0))
+        qml.assert_equal(decomp[3], qml.CNOT(wires=(1, 0)))
 
         decomp_mat = qml.matrix(op.decomposition, wire_order=op.wires)()
         assert qml.math.allclose(op.matrix(), decomp_mat)
@@ -1086,7 +1086,7 @@ class TestDecomposition:
         custom_ctrl_op = custom_ctrl_cls(*params, active_wires)
 
         assert ctrl_op.decomposition() == expected
-        assert ctrl_op.expand().circuit == expected
+        assert qml.tape.QuantumScript(ctrl_op.decomposition()).circuit == expected
         assert custom_ctrl_op.decomposition() == expected
         assert custom_ctrl_cls.compute_decomposition(*params, active_wires) == expected
 
@@ -1130,7 +1130,7 @@ class TestDecomposition:
         ctrl_op = Controlled(base_op, control_wires=ctrl_wires, work_wires=Wires("aux"))
 
         assert ctrl_op.decomposition() == expected
-        assert ctrl_op.expand().circuit == expected
+        assert qml.tape.QuantumScript(ctrl_op.decomposition()).circuit == expected
 
     def test_decomposition_nested(self):
         """Tests decompositions of nested controlled operations"""
@@ -1143,7 +1143,7 @@ class TestDecomposition:
             qml.Toffoli(wires=[2, 1, 0]),
         ]
         assert ctrl_op.decomposition() == expected
-        assert ctrl_op.expand().circuit == expected
+        assert qml.tape.QuantumScript(ctrl_op.decomposition()).circuit == expected
 
     def test_decomposition_undefined(self):
         """Tests error raised when decomposition is undefined"""
@@ -1169,17 +1169,17 @@ class TestDecomposition:
         op = Controlled(base, control_wires, control_values)
 
         decomp1 = op.decomposition()
-        decomp2 = op.expand().circuit
+        decomp2 = qml.tape.QuantumScript(op.decomposition()).circuit
 
         for decomp in [decomp1, decomp2]:
-            assert qml.equal(decomp[0], qml.PauliX(1))
-            assert qml.equal(decomp[1], qml.PauliX(2))
+            qml.assert_equal(decomp[0], qml.PauliX(1))
+            qml.assert_equal(decomp[1], qml.PauliX(2))
 
             assert isinstance(decomp[2], Controlled)
             assert decomp[2].control_values == [True, True, True]
 
-            assert qml.equal(decomp[3], qml.PauliX(1))
-            assert qml.equal(decomp[4], qml.PauliX(2))
+            qml.assert_equal(decomp[3], qml.PauliX(1))
+            qml.assert_equal(decomp[4], qml.PauliX(2))
 
     @pytest.mark.parametrize(
         "base_cls, params, base_wires, ctrl_wires, _, expected",

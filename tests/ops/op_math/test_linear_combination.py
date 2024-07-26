@@ -53,13 +53,15 @@ class TestParityWithHamiltonian:
         assert isinstance(H, qml.Hamiltonian)
 
 
-@pytest.mark.filterwarnings(
-    "ignore:Using 'qml.ops.Hamiltonian' with new operator arithmetic is deprecated"
-)
 def test_mixed_legacy_warning_Hamiltonian():
     """Test that mixing legacy ops and LinearCombination.compare raises a warning"""
     op1 = qml.ops.LinearCombination([0.5, 0.5], [X(0) @ X(1), qml.Hadamard(0)])
-    op2 = qml.ops.Hamiltonian([0.5, 0.5], [qml.operation.Tensor(X(0), X(1)), qml.Hadamard(0)])
+
+    with pytest.warns(
+        qml.PennyLaneDeprecationWarning,
+        match="Using 'qml.ops.Hamiltonian' with new operator arithmetic is deprecated",
+    ):
+        op2 = qml.ops.Hamiltonian([0.5, 0.5], [qml.operation.Tensor(X(0), X(1)), qml.Hadamard(0)])
 
     with pytest.warns(UserWarning, match="Attempting to compare a legacy operator class instance"):
         res = op1.compare(op2)
@@ -671,7 +673,7 @@ class TestLinearCombination:
         assert data[1] == H._ops
 
         new_H = LinearCombination._unflatten(*H._flatten())
-        assert qml.equal(H, new_H)
+        qml.assert_equal(H, new_H)
         assert new_H.grouping_indices == H.grouping_indices
 
     @pytest.mark.parametrize("coeffs, ops", valid_LinearCombinations)
@@ -954,7 +956,7 @@ class TestLinearCombination:
         assert h.wires == Wires([0, 1, 2])
         assert mapped_h.wires == Wires([10, 11, 12])
         for obs1, obs2 in zip(mapped_h.ops, final_obs):
-            assert qml.equal(obs1, obs2)
+            qml.assert_equal(obs1, obs2)
         for coeff1, coeff2 in zip(mapped_h.coeffs, h.coeffs):
             assert coeff1 == coeff2
 
@@ -971,7 +973,7 @@ class TestLinearCombination:
         assert h.wires == Wires([0, 1, 2])
         assert mapped_h.wires == Wires([10, 11, 12])
         for obs1, obs2 in zip(mapped_h.ops, final_obs):
-            assert qml.equal(obs1, obs2)
+            qml.assert_equal(obs1, obs2)
         for coeff1, coeff2 in zip(mapped_h.coeffs, h.coeffs):
             assert coeff1 == coeff2
         assert group_indices_before == mapped_h.grouping_indices

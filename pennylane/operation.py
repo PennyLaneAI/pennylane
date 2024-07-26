@@ -249,14 +249,14 @@ import itertools
 import warnings
 from contextlib import contextmanager
 from enum import IntEnum
-from typing import List, Optional, Tuple
+from typing import Optional
 
 import numpy as np
 from numpy.linalg import multi_dot
 from scipy.sparse import coo_matrix, csr_matrix, eye, kron
 
 import pennylane as qml
-from pennylane.capture import CaptureMeta, create_operator_primitive
+from pennylane.capture import ABCCaptureMeta, create_operator_primitive
 from pennylane.math import expand_matrix
 from pennylane.queuing import QueuingManager
 from pennylane.typing import TensorLike
@@ -406,12 +406,7 @@ def _process_data(op):
     return str([id(d) if qml.math.is_abstract(d) else _mod_and_round(d, mod_val) for d in op.data])
 
 
-# pylint: disable=abstract-method
-class CaptureMetaABC(CaptureMeta, abc.ABCMeta):
-    """Mixing together CaptureMeta and ABCMeta so that Operator can use both."""
-
-
-class Operator(abc.ABC, metaclass=CaptureMetaABC):
+class Operator(abc.ABC, metaclass=ABCCaptureMeta):
     r"""Base class representing quantum operators.
 
     Operators are uniquely defined by their name, the wires they act on, their (trainable) parameters,
@@ -562,7 +557,7 @@ class Operator(abc.ABC, metaclass=CaptureMetaABC):
 
         >>> op = qml.PauliRot(1.2, "XY", wires=(0,1))
         >>> op._flatten()
-        ((1.2,), (<Wires = [0, 1]>, (('pauli_word', 'XY'),)))
+        ((1.2,), (Wires([0, 1]), (('pauli_word', 'XY'),)))
         >>> qml.PauliRot._unflatten(*op._flatten())
         PauliRot(1.2, XY, wires=[0, 1])
 
@@ -1094,7 +1089,6 @@ class Operator(abc.ABC, metaclass=CaptureMetaABC):
 
         self._name = self.__class__.__name__  #: str: name of the operator
         self._id = id
-        self.queue_idx = None  #: int, None: index of the Operator in the circuit queue, or None if not in a queue
         self._pauli_rep = None  # Union[PauliSentence, None]: Representation of the operator as a pauli sentence, if applicable
 
         wires_from_args = False
@@ -1310,7 +1304,7 @@ class Operator(abc.ABC, metaclass=CaptureMetaABC):
             or cls.decomposition != Operator.decomposition
         )
 
-    def decomposition(self) -> List["Operator"]:
+    def decomposition(self) -> list["Operator"]:
         r"""Representation of the operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n
@@ -1327,7 +1321,7 @@ class Operator(abc.ABC, metaclass=CaptureMetaABC):
         )
 
     @staticmethod
-    def compute_decomposition(*params, wires=None, **hyperparameters) -> List["Operator"]:
+    def compute_decomposition(*params, wires=None, **hyperparameters) -> list["Operator"]:
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -1366,7 +1360,7 @@ class Operator(abc.ABC, metaclass=CaptureMetaABC):
     @staticmethod
     def compute_diagonalizing_gates(
         *params, wires, **hyperparams
-    ) -> List["Operator"]:  # pylint: disable=unused-argument
+    ) -> list["Operator"]:  # pylint: disable=unused-argument
         r"""Sequence of gates that diagonalize the operator in the computational basis (static method).
 
         Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
@@ -1440,7 +1434,7 @@ class Operator(abc.ABC, metaclass=CaptureMetaABC):
         """
         raise GeneratorUndefinedError(f"Operation {self.name} does not have a generator")
 
-    def pow(self, z) -> List["Operator"]:
+    def pow(self, z) -> list["Operator"]:
         """A list of new operators equal to this one raised to the given power.
 
         Args:
@@ -1504,9 +1498,19 @@ class Operator(abc.ABC, metaclass=CaptureMetaABC):
     def expand(self):
         """Returns a tape that contains the decomposition of the operator.
 
+        .. warning::
+            This function is deprecated and will be removed in version 0.39.
+            The same behaviour can be achieved simply through 'qml.tape.QuantumScript(self.decomposition())'.
+
         Returns:
             .QuantumTape: quantum tape
         """
+        warnings.warn(
+            "'Operator.expand' is deprecated and will be removed in version 0.39. "
+            "The same behaviour can be achieved simply through 'qml.tape.QuantumScript(self.decomposition())'.",
+            qml.PennyLaneDeprecationWarning,
+        )
+
         if not self.has_decomposition:
             raise DecompositionUndefinedError
 
@@ -1634,7 +1638,7 @@ class Operator(abc.ABC, metaclass=CaptureMetaABC):
         >>> op = qml.ctrl(qml.U2(3.4, 4.5, wires="a"), ("b", "c") )
         >>> op._flatten()
         ((U2(3.4, 4.5, wires=['a']),),
-        (<Wires = ['b', 'c']>, (True, True), <Wires = []>))
+        (Wires(['b', 'c']), (True, True), Wires([])))
 
         """
         hashable_hyperparameters = tuple(
@@ -1657,11 +1661,11 @@ class Operator(abc.ABC, metaclass=CaptureMetaABC):
 
         >>> op = qml.Rot(1.2, 2.3, 3.4, wires=0)
         >>> op._flatten()
-        ((1.2, 2.3, 3.4), (<Wires = [0]>, ()))
+        ((1.2, 2.3, 3.4), (Wires([0]), ()))
         >>> qml.Rot._unflatten(*op._flatten())
         >>> op = qml.PauliRot(1.2, "XY", wires=(0,1))
         >>> op._flatten()
-        ((1.2,), (<Wires = [0, 1]>, (('pauli_word', 'XY'),)))
+        ((1.2,), (Wires([0, 1]), (('pauli_word', 'XY'),)))
         >>> op = qml.ctrl(qml.U2(3.4, 4.5, wires="a"), ("b", "c") )
         >>> type(op)._unflatten(*op._flatten())
         Controlled(U2(3.4, 4.5, wires=['a']), control_wires=['b', 'c'])
@@ -1765,7 +1769,7 @@ class Operation(Operator):
         """
         return Wires([])
 
-    def single_qubit_rot_angles(self) -> Tuple[float, float, float]:
+    def single_qubit_rot_angles(self) -> tuple[float, float, float]:
         r"""The parameters required to implement a single-qubit gate as an
         equivalent ``Rot`` gate, up to a global phase.
 
@@ -1862,7 +1866,7 @@ class Channel(Operation, abc.ABC):
     @abc.abstractmethod
     def compute_kraus_matrices(
         *params, **hyperparams
-    ) -> List[np.ndarray]:  # pylint:disable=unused-argument
+    ) -> list[np.ndarray]:  # pylint:disable=unused-argument
         """Kraus matrices representing a quantum channel, specified in
         the computational basis.
 
@@ -1973,7 +1977,7 @@ class Observable(Operator):
 
         >>> tensor = qml.X(0) @ qml.Z(1)
         >>> print(tensor._obs_data())
-        {("PauliZ", <Wires = [1]>, ()), ("PauliX", <Wires = [0]>, ())}
+        {("PauliZ", Wires([1]), ()), ("PauliX", Wires([0]), ())}
         """
         obs = Tensor(self).non_identity_obs
         tensor = set()
@@ -2097,7 +2101,7 @@ class Tensor(Observable):
 
     def __init__(self, *args):  # pylint: disable=super-init-not-called
         self._eigvals_cache = None
-        self.obs: List[Observable] = []
+        self.obs: list[Observable] = []
         self._args = args
         self._batch_size = None
         self._pauli_rep = None

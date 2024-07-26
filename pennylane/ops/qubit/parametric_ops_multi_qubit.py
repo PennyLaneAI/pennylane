@@ -489,7 +489,7 @@ class PauliRot(Operation):
 
         # Check for identity and do nothing
         if set(pauli_word) == {"I"}:
-            return []
+            return [qml.GlobalPhase(phi=theta / 2)]
 
         active_wires, active_gates = zip(
             *[(wire, gate) for wire, gate in zip(wires, pauli_word) if gate != "I"]

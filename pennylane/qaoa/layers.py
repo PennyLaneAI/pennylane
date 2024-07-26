@@ -28,21 +28,18 @@ def _diagonal_terms(hamiltonian):
     Returns:
         bool: ``True`` if all terms are products of diagonal Pauli gates, ``False`` otherwise
     """
-    val = True
 
-    for i in hamiltonian.ops:
-        if isinstance(i, Tensor):
-            obs = i.obs
-        elif isinstance(i, qml.ops.Prod):
-            obs = i.operands
+    for op in hamiltonian.terms()[1]:
+        if isinstance(op, Tensor):
+            obs = op.obs
+        elif isinstance(op, qml.ops.Prod):
+            obs = op.operands
         else:
-            obs = [i]
+            obs = [op]
         for j in obs:
             if j.name not in ("PauliZ", "Identity"):
-                val = False
-                break
-
-    return val
+                return False
+    return True
 
 
 def cost_layer(gamma, hamiltonian):
@@ -94,20 +91,16 @@ def cost_layer(gamma, hamiltonian):
         >>> print(qml.draw(circuit)(0.5))
         0: ──H─╭ApproxTimeEvolution(1.00,1.00,0.50)─┤  <Z>
         1: ──H─╰ApproxTimeEvolution(1.00,1.00,0.50)─┤  <Z>
-        >>> print(qml.draw(circuit, expansion_strategy="device")(0.5))
+        >>> print(qml.draw(circuit, level="device")(0.5))
         0: ──H──RZ(1.00)─╭RZZ(1.00)─┤  <Z>
         1: ──H───────────╰RZZ(1.00)─┤  <Z>
 
     """
-    if not isinstance(hamiltonian, (qml.ops.Hamiltonian, qml.ops.LinearCombination)):
-        raise ValueError(
-            f"hamiltonian must be of type pennylane.Hamiltonian, got {type(hamiltonian).__name__}"
-        )
-
+    # NOTE: op is defined explicitely as validation inside ApproxTimeEvolution needs to be called before checking Hamiltonian
+    op = qml.templates.ApproxTimeEvolution(hamiltonian, gamma, 1)
     if not _diagonal_terms(hamiltonian):
         raise ValueError("hamiltonian must be written only in terms of PauliZ and Identity gates")
-
-    qml.templates.ApproxTimeEvolution(hamiltonian, gamma, 1)
+    return op
 
 
 def mixer_layer(alpha, hamiltonian):
@@ -156,14 +149,9 @@ def mixer_layer(alpha, hamiltonian):
         >>> print(qml.draw(circuit)(0.5))
         0: ──H─╭ApproxTimeEvolution(1.00,1.00,0.50)─┤  <Z>
         1: ──H─╰ApproxTimeEvolution(1.00,1.00,0.50)─┤  <Z>
-        >>> print(qml.draw(circuit, expansion_strategy="device")(0.5))
+        >>> print(qml.draw(circuit, level="device")(0.5))
         0: ──H──RX(1.00)─╭RXX(1.00)─┤  <Z>
         1: ──H───────────╰RXX(1.00)─┤  <Z>
 
     """
-    if not isinstance(hamiltonian, (qml.ops.Hamiltonian, qml.ops.LinearCombination)):
-        raise ValueError(
-            f"hamiltonian must be of type pennylane.Hamiltonian, got {type(hamiltonian).__name__}"
-        )
-
-    qml.templates.ApproxTimeEvolution(hamiltonian, alpha, 1)
+    return qml.templates.ApproxTimeEvolution(hamiltonian, alpha, 1)

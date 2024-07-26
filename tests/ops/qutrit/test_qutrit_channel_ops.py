@@ -391,3 +391,100 @@ class TestTritFlip:
         p_12 = jax.numpy.array(0.23)
         jac = jax.jacobian(self.kraus_fn, argnums=[0, 1, 2])(p_01, p_02, p_12)
         assert qml.math.allclose(jac, self.expected_jac_fn(p_01, p_02, p_12))
+
+
+class TestQutritChannel:
+    """Tests for the quantum channel QubitChannel"""
+
+    def test_input_correctly_handled(self, tol):
+        """Test that Kraus matrices are correctly processed"""
+        K_list = qml.QutritDepolarizingChannel(0.75, wires=0).kraus_matrices()
+        out = qml.QutritChannel(K_list, wires=0).kraus_matrices()
+
+        assert np.allclose(out, K_list, atol=tol, rtol=0)
+
+    def test_kraus_matrices_are_square(self):
+        """Tests that the given Kraus matrices are square"""
+        K_list = [np.zeros((3, 3)), np.zeros((2, 3))]
+        with pytest.raises(
+            ValueError, match="Only channels with the same input and output Hilbert space"
+        ):
+            qml.QutritChannel(K_list, wires=0)
+
+    def test_kraus_matrices_are_of_same_shape(self):
+        """Tests that the given Kraus matrices are of same shape"""
+        K_list = [np.eye(3), np.eye(4)]
+        with pytest.raises(ValueError, match="All Kraus matrices must have the same shape."):
+            qml.QutritChannel(K_list, wires=0)
+
+    def test_kraus_matrices_are_dimensions(self):
+        """Tests that the given Kraus matrices are of right dimension i.e (9,9)"""
+        K_list = [np.eye(3), np.eye(3)]
+        with pytest.raises(ValueError, match=r"Shape of all Kraus matrices must be \(9,9\)."):
+            qml.QutritChannel(K_list, wires=[0, 1])
+
+    def test_kraus_matrices_are_trace_preserved(self):
+        """Tests that the channel represents a trace-preserving map"""
+        K_list = [0.75 * np.eye(3), 0.35j * np.eye(3)]
+        with pytest.raises(ValueError, match="Only trace preserving channels can be applied."):
+            qml.QutritChannel(K_list, wires=0)
+
+    @pytest.mark.parametrize("diff_method", ["parameter-shift", "finite-diff", "backprop"])
+    def test_integrations(self, diff_method):
+        """Test integration"""
+        kraus = [
+            np.array([[1, 0, 0], [0, 0.70710678, 0], [0, 0, 0.8660254]]),
+            np.array([[0, 0.70710678, 0], [0, 0, 0], [0, 0, 0]]),
+            np.array([[0, 0, 0.5], [0, 0, 0], [0, 0, 0]]),
+        ]
+
+        dev = qml.device("default.qutrit.mixed", wires=1)
+
+        @qml.qnode(dev, diff_method=diff_method)
+        def func():
+            qml.QutritChannel(kraus, 0)
+            return qml.expval(qml.GellMann(wires=0, index=1))
+
+        func()
+
+    @pytest.mark.parametrize("diff_method", ["parameter-shift", "finite-diff", "backprop"])
+    def test_integration_grad(self, diff_method):
+        """Test integration with grad"""
+        dev = qml.device("default.qutrit.mixed", wires=1)
+
+        @qml.qnode(dev, diff_method=diff_method)
+        def func(p):
+            kraus = qml.QutritDepolarizingChannel.compute_kraus_matrices(p)
+            qml.QutritChannel(kraus, 0)
+            return qml.expval(qml.GellMann(wires=0, index=1))
+
+        qml.grad(func)(0.5)
+
+    @pytest.mark.parametrize("diff_method", ["parameter-shift", "finite-diff", "backprop"])
+    def test_integration_jacobian(self, diff_method):
+        """Test integration with grad"""
+        dev = qml.device("default.qutrit.mixed", wires=1)
+
+        @qml.qnode(dev, diff_method=diff_method)
+        def func(p):
+            kraus = qml.QutritDepolarizingChannel.compute_kraus_matrices(p)
+            qml.QutritChannel(kraus, 0)
+            return qml.expval(qml.GellMann(wires=0, index=1))
+
+        qml.jacobian(func)(0.5)
+
+    def test_flatten(self):
+        """Test flatten method returns kraus matrices and wires"""
+        kraus = [
+            np.array([[1, 0, 0], [0, 0.70710678, 0], [0, 0, 0.8660254]]),
+            np.array([[0, 0.70710678, 0], [0, 0, 0], [0, 0, 0]]),
+            np.array([[0, 0, 0.5], [0, 0, 0], [0, 0, 0]]),
+        ]
+
+        qutrit_channel = qml.QutritChannel(kraus, 1, id="test")
+        data, metadata = qutrit_channel._flatten()  # pylint: disable=protected-access
+        new_op = qml.QutritChannel._unflatten(data, metadata)  # pylint: disable=protected-access
+        qml.assert_equal(qutrit_channel, new_op)
+
+        assert np.allclose(kraus, data)
+        assert metadata == (qml.wires.Wires(1), ())

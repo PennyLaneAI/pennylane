@@ -12,14 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit and integration tests for the transform dispatcher."""
+import inspect
+from collections.abc import Callable, Sequence
 from functools import partial
-from typing import Callable, Sequence
 
 import pytest
 
 import pennylane as qml
+from pennylane.tape import QuantumTapeBatch
 from pennylane.transforms.core import TransformContainer, TransformError, transform
-from pennylane.typing import TensorLike
+from pennylane.typing import PostprocessingFn, TensorLike
 
 dev = qml.device("default.qubit", wires=2)
 
@@ -31,7 +33,7 @@ with qml.tape.QuantumTape() as tape_circuit:
     qml.expval(qml.PauliZ(wires=0))
 
 
-def qfunc_circuit(a):
+def qfunc_circuit(a: qml.typing.TensorLike):
     """Qfunc circuit/"""
     qml.Hadamard(wires=0)
     qml.CNOT(wires=[0, 1])
@@ -48,7 +50,7 @@ non_callable = tape_circuit
 
 def no_tape_transform(
     circuit: qml.tape.QuantumTape, index: int
-) -> (Sequence[qml.tape.QuantumTape], Callable):
+) -> tuple[QuantumTapeBatch, PostprocessingFn]:
     """Transform without tape."""
     circuit = circuit.copy()
     circuit._ops.pop(index)  # pylint:disable=protected-access
@@ -57,27 +59,29 @@ def no_tape_transform(
 
 def no_quantum_tape_transform(
     tape: qml.operation.Operator, index: int
-) -> (Sequence[qml.tape.QuantumTape], Callable):
+) -> tuple[QuantumTapeBatch, Callable]:
     """Transform with wrong hinting."""
     tape = tape.copy()
     tape._ops.pop(index)  # pylint:disable=protected-access
     return [tape], lambda x: x
 
 
-def no_processing_fn_transform(tape: qml.tape.QuantumTape) -> Sequence[qml.tape.QuantumTape]:
+def no_processing_fn_transform(tape: qml.tape.QuantumTape) -> QuantumTapeBatch:
     """Transform without processing fn."""
     tape_copy = tape.copy()
     return [tape, tape_copy]
 
 
-def no_tape_sequence_transform(tape: qml.tape.QuantumTape) -> (qml.tape.QuantumTape, Callable):
+def no_tape_sequence_transform(
+    tape: qml.tape.QuantumTape,
+) -> tuple[qml.tape.QuantumTape, PostprocessingFn]:
     """Transform wihtout Sequence return."""
     return tape, lambda x: x
 
 
 def no_callable_return(
     tape: qml.tape.QuantumTape,
-) -> (Sequence[qml.tape.QuantumTape], qml.tape.QuantumTape):
+) -> tuple[QuantumTapeBatch, qml.tape.QuantumTape]:
     """Transform without callable return."""
     return list(tape), tape
 
@@ -98,7 +102,7 @@ non_valid_transforms = [
 
 def first_valid_transform(
     tape: qml.tape.QuantumTape, index: int
-) -> (Sequence[qml.tape.QuantumTape], Callable):
+) -> tuple[QuantumTapeBatch, PostprocessingFn]:
     """A valid transform."""
     tape = tape.copy()
     tape._ops.pop(index)  # pylint:disable=protected-access
@@ -108,7 +112,7 @@ def first_valid_transform(
 
 def second_valid_transform(
     tape: qml.tape.QuantumTape, index: int
-) -> (Sequence[qml.tape.QuantumTape], Callable):
+) -> tuple[QuantumTapeBatch, PostprocessingFn]:
     """A valid trasnform."""
     tape1 = tape.copy()
     tape2 = tape.copy()
@@ -127,7 +131,7 @@ valid_transforms = [first_valid_transform, second_valid_transform]
 # Valid expand transform
 def expand_transform(
     tape: qml.tape.QuantumTape, index: int
-) -> (Sequence[qml.tape.QuantumTape], Callable):
+) -> tuple[QuantumTapeBatch, PostprocessingFn]:
     """Multiple args expand fn."""
     tape._ops.pop(index)  # pylint:disable=protected-access
     return [tape], lambda x: x
@@ -136,14 +140,14 @@ def expand_transform(
 # Non-valid expand transform
 def non_valid_expand_transform(
     tape: qml.tape.QuantumTape,
-) -> (Sequence[qml.tape.QuantumTape], Callable):
+) -> tuple[QuantumTapeBatch, PostprocessingFn]:
     """A valid expand transform."""
     return [tape], lambda x: x
 
 
 ##########################################
 # Valid informative transform
-def informative_transform(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTape], Callable):
+def informative_transform(tape: qml.tape.QuantumTape) -> tuple[QuantumTapeBatch, PostprocessingFn]:
     """A valid informative transform"""
 
     def fn(results):
@@ -382,6 +386,8 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
         qfunc_transformed = dispatched_transform(qfunc_circuit, 0)
         assert callable(qfunc_transformed)
 
+        assert inspect.signature(qfunc_transformed) == inspect.signature(qfunc_circuit)
+
         with qml.tape.QuantumTape() as transformed_tape:
             qfunc_transformed(0.42)
 
@@ -539,7 +545,7 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
 
         tape = qml.tape.QuantumTape(ops, measur)
 
-        batch1, fn1 = qml.transforms.hamiltonian_expand(tape)
+        batch1, fn1 = qml.transforms.split_non_commuting(tape)
         assert check_batch(batch1)
 
         batch2, fn2 = qml.transforms.merge_rotations(batch1)
@@ -554,7 +560,8 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
         tp2 = qml.tape.QuantumTape(fin_ops, [qml.expval(qml.PauliY(2) @ qml.PauliZ(1))])
         fin_batch = batch_type([tp1, tp2])
 
-        assert all(qml.equal(tapeA, tapeB) for tapeA, tapeB in zip(fin_batch, batch2))
+        for tapeA, tapeB in zip(fin_batch, batch2):
+            qml.assert_equal(tapeA, tapeB)
         assert abs(comb_postproc(result, fn1, fn2).item() - 0.5) < num_margin
 
     @pytest.mark.parametrize("valid_transform", valid_transforms)
@@ -635,8 +642,8 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
         assert isinstance(program, qml.transforms.core.TransformProgram)
         assert isinstance(new_program, qml.transforms.core.TransformProgram)
 
-        assert len(program) == 5
-        assert len(new_program) == 6
+        assert len(program) == 4
+        assert len(new_program) == 5
 
         assert new_program[-1].transform is valid_transform
 
@@ -713,7 +720,7 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
             @qml.transforms.core.transform
             def custom_transform(  # pylint:disable=unused-variable
                 tape: qml.tape.QuantumTape, index: int
-            ) -> (Sequence[qml.tape.QuantumTape], Callable):
+            ) -> tuple[QuantumTapeBatch, PostprocessingFn]:
                 """A valid transform."""
                 tape = tape.copy()
                 tape._ops.pop(index)  # pylint:disable=protected-access

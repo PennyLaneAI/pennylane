@@ -14,23 +14,19 @@
 """
 This module contains the ``TransformProgram`` class.
 """
+from collections.abc import Sequence
 from functools import partial
-from typing import Callable, List, Optional, Sequence, Tuple, Union
-
-import numpy as np
+from typing import Optional, Union
 
 import pennylane as qml
-from pennylane.tape import QuantumTape
-from pennylane.typing import Result, ResultBatch
+from pennylane.tape import QuantumTapeBatch
+from pennylane.typing import BatchPostprocessingFn, PostprocessingFn, ResultBatch
 
 from .transform_dispatcher import TransformContainer, TransformDispatcher, TransformError
 
-PostProcessingFn = Callable[[ResultBatch], Result]
-BatchPostProcessingFn = Callable[[ResultBatch], ResultBatch]
-
 
 def _batch_postprocessing(
-    results: ResultBatch, individual_fns: List[PostProcessingFn], slices: List[slice]
+    results: ResultBatch, individual_fns: list[PostprocessingFn], slices: list[slice]
 ) -> ResultBatch:
     """Broadcast individual post processing functions onto their respective tapes.
 
@@ -60,7 +56,7 @@ def _batch_postprocessing(
 
 def _apply_postprocessing_stack(
     results: ResultBatch,
-    postprocessing_stack: List[BatchPostProcessingFn],
+    postprocessing_stack: list[BatchPostprocessingFn],
 ) -> ResultBatch:
     """Applies the postprocessing and cotransform postprocessing functions in a Last-In-First-Out LIFO manner.
 
@@ -143,7 +139,7 @@ class TransformProgram:
     True
     >>> qml.compile in program
     True
-    >>> qml.transforms.hamiltonian_expand in program
+    >>> qml.transforms.split_non_commuting in program
     False
     >>> program + program
     TransformProgram(compile, cancel_inverses, compile, cancel_inverses)
@@ -354,24 +350,32 @@ class TransformProgram:
             self._set_all_classical_jacobians(qnode, args, kwargs, argnums)
             self._set_all_argnums(qnode, args, kwargs, argnums)
 
-    def prune_dynamic_transform(self):
-        """Ensure a single ``dynamic_one_shot`` transform is applied."""
-        trans_type = np.zeros(len(self._transform_program), dtype=np.int32)
-        for i, t in enumerate(self._transform_program):
-            if "dynamic_one_shot" in str(t):
-                trans_type[i] = 1
-            if "mid_circuit_measurements" in str(t):
-                trans_type[i] = 2
-        if sum(trans_type) < 2:
-            return
-        keep = 2 if 2 in trans_type else 1
+    def prune_dynamic_transform(self, type_to_keep=1):
+        """Ensures that only one or none ``dynamic_one_shot`` is applied.
+
+        Args:
+            type_to_keep (int): The type of the dynamic transform to keep. 0: keep none,
+                1: dynamic_one_shot or mid_circuit_measurements, 2: only mid_circuit_measurements.
+
+        Returns:
+            bool: ``True`` if a dynamic transform was found, ``False`` otherwise.
+
+        """
+
+        i = len(self._transform_program) - 1
         found = False
-        for i, ttype in enumerate(reversed(trans_type)):
-            if not found and ttype == keep:
+        while i >= 0:
+            t = self._transform_program[i]
+            if "mid_circuit_measurements" in str(t) and type_to_keep > 0:
+                type_to_keep = 0  # keep this and do not keep the rest
                 found = True
-                continue
-            if found and ttype in [1, 2]:
-                self._transform_program.pop(len(self._transform_program) - 1 - i)
+            elif "dynamic_one_shot" in str(t) and type_to_keep == 1:
+                type_to_keep = 0  # keep this and do not keep the rest
+                found = True
+            elif "dynamic_one_shot" in str(t) or "mid_circuit_measurements" in str(t):
+                self._transform_program.pop(i)
+            i -= 1
+        return found
 
     def _set_all_classical_jacobians(
         self, qnode, args, kwargs, argnums
@@ -403,7 +407,7 @@ class TransformProgram:
                 raise qml.QuantumFunctionError("No trainable parameters.")
 
             classical_function = partial(classical_function, program)
-
+            jac = None
             if qnode.interface == "autograd":
                 jac = qml.jacobian(classical_function, argnum=argnums)(*args, **kwargs)
 
@@ -485,7 +489,7 @@ class TransformProgram:
 
         qnode.construct(args, kwargs)
 
-    def __call__(self, tapes: Tuple[QuantumTape]) -> Tuple[ResultBatch, BatchPostProcessingFn]:
+    def __call__(self, tapes: QuantumTapeBatch) -> tuple[QuantumTapeBatch, BatchPostprocessingFn]:
         if not self:
             return tapes, null_postprocessing
 

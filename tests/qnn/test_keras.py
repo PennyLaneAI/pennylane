@@ -503,7 +503,7 @@ class TestKerasLayer:
     def test_backprop_gradients(self, mocker):  # pylint: disable=no-self-use
         """Test if KerasLayer is compatible with the backprop diff method."""
 
-        dev = qml.device("default.qubit.tf", wires=2)
+        dev = qml.device("default.qubit")
 
         @qml.qnode(dev, interface="tf", diff_method="backprop")
         def f(inputs, weights):
@@ -537,6 +537,22 @@ class TestKerasLayer:
 
         output_shape = layer.compute_output_shape(inputs_shape)
         assert output_shape.as_list() == [None, 1]
+
+    @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(3))
+    def test_construct(self, get_circuit, n_qubits, output_dim):
+        """Test that the construct method builds the correct tape with correct differentiability"""
+        c, w = get_circuit
+        layer = KerasLayer(c, w, output_dim)
+
+        x = tf.ones((1, n_qubits))
+
+        layer.construct((x,), {})
+
+        assert layer.tape is not None
+        assert (
+            len(layer.tape.get_parameters(trainable_only=False))
+            == len(layer.tape.get_parameters(trainable_only=True)) + 1
+        )
 
 
 @pytest.mark.all_interfaces
@@ -797,9 +813,9 @@ def test_no_attribute():
 @pytest.mark.tf
 def test_batch_input_single_measure(tol):
     """Test input batching in keras"""
-    dev = qml.device("default.qubit.tf", wires=4)
+    dev = qml.device("default.qubit")
 
-    @qml.qnode(dev, diff_method="parameter-shift")
+    @qml.qnode(dev, interface="tf", diff_method="parameter-shift")
     def circuit(x, weights):
         qml.AngleEmbedding(x, wires=range(4), rotation="Y")
         qml.RY(weights[0], wires=0)
@@ -814,7 +830,6 @@ def test_batch_input_single_measure(tol):
     res = layer(x)
 
     assert res.shape == (10, 2)
-    assert dev.num_executions == 1
 
     for x_, r in zip(x, res):
         assert qml.math.allclose(r, circuit(x_, layer.qnode_weights["weights"]), atol=tol)
@@ -826,9 +841,9 @@ def test_batch_input_single_measure(tol):
 @pytest.mark.tf
 def test_batch_input_multi_measure(tol):
     """Test input batching in keras for multiple measurements"""
-    dev = qml.device("default.qubit.tf", wires=4)
+    dev = qml.device("default.qubit")
 
-    @qml.qnode(dev, diff_method="parameter-shift")
+    @qml.qnode(dev, interface="tf", diff_method="parameter-shift")
     def circuit(x, weights):
         qml.AngleEmbedding(x, wires=range(4), rotation="Y")
         qml.RY(weights[0], wires=0)
@@ -843,7 +858,6 @@ def test_batch_input_multi_measure(tol):
     res = layer(x)
 
     assert res.shape == (10, 5)
-    assert dev.num_executions == 1
 
     for x_, r in zip(x, res):
         exp = tf.experimental.numpy.hstack(circuit(x_, layer.qnode_weights["weights"]))
@@ -955,7 +969,8 @@ def test_specs():
 
     assert info["num_observables"] == 2
     assert info["num_diagonalizing_gates"] == 0
-    assert info["num_device_wires"] == 2
+    assert info["num_device_wires"] == 3
+    assert info["num_tape_wires"] == 2
     assert info["num_trainable_params"] == 2
     assert info["interface"] == "tf"
     assert info["device_name"] == "default.qubit"

@@ -297,11 +297,11 @@ class TestOtherTransforms:
 
         assert isinstance(ops[1], qml.ops.Conditional)
         assert isinstance(ops[1].base, qml.ops.op_math.Controlled)
-        assert qml.equal(ops[1].base.base, qml.RX(r, wires=2))
+        qml.assert_equal(ops[1].base.base, qml.RX(r, wires=2))
 
         assert isinstance(ops[2], qml.ops.Conditional)
         assert isinstance(ops[2].base, qml.ops.op_math.Controlled)
-        assert qml.equal(ops[2].base.base, qml.RY(r, wires=2))
+        qml.assert_equal(ops[2].base.base, qml.RY(r, wires=2))
 
         assert len(tape.measurements) == 1
         assert tape.measurements[0] is terminal_measurement
@@ -324,11 +324,11 @@ class TestOtherTransforms:
 
         assert isinstance(ops[1], qml.ops.op_math.Controlled)
         assert isinstance(ops[1].base, qml.ops.Conditional)
-        assert qml.equal(ops[1].base.base, qml.RX(1.234, wires=0))
+        qml.assert_equal(ops[1].base.base, qml.RX(1.234, wires=0))
 
         assert isinstance(ops[2], qml.ops.op_math.Controlled)
         assert isinstance(ops[2].base, qml.ops.Conditional)
-        assert qml.equal(ops[2].base.base, qml.RY(r, wires=0))
+        qml.assert_equal(ops[2].base.base, qml.RY(r, wires=0))
 
         assert len(tape.measurements) == 1
         assert tape.measurements[0] is terminal_measurement

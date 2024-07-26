@@ -16,6 +16,7 @@ Defines a metaclass for automatic integration of any ``Operator`` with plxpr pro
 
 See ``explanations.md`` for technical explanations of how this works.
 """
+from abc import ABCMeta
 from inspect import Signature, signature
 
 from .switches import enabled
@@ -30,6 +31,8 @@ class CaptureMeta(type):
     works.
 
     .. code-block::
+
+        qml.capture.enable()
 
         class AbstractMyObj(jax.core.AbstractValue):
             pass
@@ -84,3 +87,8 @@ class CaptureMeta(type):
             # use bind to construct the class if we want class construction to add it to the jaxpr
             return cls._primitive_bind_call(*args, **kwargs)
         return type.__call__(cls, *args, **kwargs)
+
+
+# pylint: disable=abstract-method
+class ABCCaptureMeta(CaptureMeta, ABCMeta):
+    """A combination of the capture meta and ABCMeta"""

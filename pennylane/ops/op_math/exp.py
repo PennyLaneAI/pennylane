@@ -14,7 +14,6 @@
 """
 This submodule defines the symbolic operation that stands for an exponential of an operator.
 """
-from typing import List
 from warnings import warn
 
 import numpy as np
@@ -356,7 +355,7 @@ class Exp(ScalarSymbolicOp, Operation):
             return []
         return [qml.PauliRot(theta=coeff, pauli_word=pauli_word, wires=base.wires)]
 
-    def _trotter_decomposition(self, ops: List[Operator], coeffs: List[complex]):
+    def _trotter_decomposition(self, ops: list[Operator], coeffs: list[complex]):
         """Uses the Suzuki-Trotter approximation to decompose the exponential of the linear
         combination of ``coeffs`` and ``ops``.
 
@@ -464,8 +463,8 @@ class Exp(ScalarSymbolicOp, Operation):
     def simplify(self):
         new_base = self.base.simplify()
         if isinstance(new_base, qml.ops.op_math.SProd):  # pylint: disable=no-member
-            return Exp(new_base.base, self.coeff * new_base.scalar)
-        return Exp(new_base, self.coeff)
+            return Exp(new_base.base, self.coeff * new_base.scalar, self.num_steps)
+        return Exp(new_base, self.coeff, self.num_steps)
 
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property

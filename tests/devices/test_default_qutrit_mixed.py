@@ -13,16 +13,15 @@
 # limitations under the License.
 """Tests for default qutrit mixed."""
 
-from functools import reduce
+from functools import partial, reduce
 
 import numpy as np
 import pytest
 
 import pennylane as qml
 from pennylane import math
+from pennylane import numpy as qnp
 from pennylane.devices import DefaultQutritMixed, ExecutionConfig
-
-np.random.seed(0)
 
 
 class TestDeviceProperties:
@@ -759,23 +758,23 @@ class TestSumOfTermsDifferentiability:
     x = 0.52
 
     @staticmethod
-    def f(scale, coeffs, n_wires=5, offset=0.1):
+    def f(scale, coeffs, num_wires=5, offset=0.1):
         """Function to differentiate that implements a circuit with a SumOfTerms operator."""
-        ops = [qml.TRX(offset + scale * i, wires=i, subspace=(0, 2)) for i in range(n_wires)]
+        ops = [qml.TRX(offset + scale * i, wires=i, subspace=(0, 2)) for i in range(num_wires)]
         H = qml.Hamiltonian(
             coeffs,
             [
-                reduce(lambda x, y: x @ y, (qml.GellMann(i, 3) for i in range(n_wires))),
-                reduce(lambda x, y: x @ y, (qml.GellMann(i, 5) for i in range(n_wires))),
+                reduce(lambda x, y: x @ y, (qml.GellMann(i, 3) for i in range(num_wires))),
+                reduce(lambda x, y: x @ y, (qml.GellMann(i, 5) for i in range(num_wires))),
             ],
         )
         qs = qml.tape.QuantumScript(ops, [qml.expval(H)])
         return DefaultQutritMixed().execute(qs)
 
     @staticmethod
-    def expected(scale, coeffs, n_wires=5, offset=0.1, like="numpy"):
+    def expected(scale, coeffs, num_wires=5, offset=0.1, like="numpy"):
         """Gets the expected output of function TestSumOfTermsDifferentiability.f."""
-        phase = offset + scale * qml.math.asarray(range(n_wires), like=like)
+        phase = offset + scale * qml.math.asarray(range(num_wires), like=like)
         cosines = qml.math.cos(phase / 2) ** 2
         sines = -qml.math.sin(phase)
         return coeffs[0] * qml.math.prod(cosines) + coeffs[1] * qml.math.prod(sines)
@@ -1270,3 +1269,512 @@ class TestIntegration:
         grad_jit = jax.grad(qnode_jit)(x, y)
 
         assert qml.math.allclose(grad, grad_jit)
+
+
+@pytest.mark.parametrize("num_wires", [2, 3])
+class TestReadoutError:
+    """Tests for measurement readout error"""
+
+    setup_unitary = np.array(
+        [
+            [1 / np.sqrt(2), 1 / np.sqrt(3), 1 / np.sqrt(6)],
+            [np.sqrt(2 / 29), np.sqrt(3 / 29), -2 * np.sqrt(6 / 29)],
+            [-5 / np.sqrt(58), 7 / np.sqrt(87), 1 / np.sqrt(174)],
+        ]
+    ).T
+
+    def setup_state(self, num_wires):
+        """Sets up a basic state used for testing."""
+        qml.QutritUnitary(self.setup_unitary, wires=0)
+        qml.QutritUnitary(self.setup_unitary, wires=1)
+        if num_wires == 3:
+            qml.TAdd(wires=(0, 2))
+
+    @staticmethod
+    def get_expected_dm(num_wires):
+        """Gets the expected density matrix of the circuit for the first num_wires"""
+        state = np.array([2, 3, 6], dtype=complex) ** -(1 / 2)
+        if num_wires == 2:
+            state = np.kron(state, state)
+        if num_wires == 3:
+            state = sum(
+                [
+                    state[i] * reduce(np.kron, [v, state, v])
+                    for i, v in enumerate([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
+                ]
+            )
+        return np.outer(state, state)
+
+    # Set up the sets of probabilities that are inputted as the readout errors.
+    relax_and_misclass = [
+        [(0, 0, 0), (0, 0, 0)],
+        [None, (1, 0, 0)],
+        [None, (0, 1, 0)],
+        [None, (0, 0, 1)],
+        [(1, 0, 0), None],
+        [(0, 1, 0), None],
+        [(1, 0, 1), None],
+        [(0, 1, 0), (0, 0, 1)],
+        [None, (0.1, 0.2, 0.4)],
+        [(0.2, 0.1, 0.3), None],
+        [(0.2, 0.1, 0.4), (0.1, 0.2, 0.5)],
+    ]
+
+    # Expected probabilities of measuring each state after the above readout errors are applied.
+    expected_probs = [
+        [1 / 2, 1 / 3, 1 / 6],
+        [1 / 3, 1 / 2, 1 / 6],
+        [1 / 6, 1 / 3, 1 / 2],
+        [1 / 2, 1 / 6, 1 / 3],
+        [5 / 6, 0, 1 / 6],
+        [2 / 3, 1 / 3, 0],
+        [5 / 6, 1 / 6, 0],
+        [2 / 3, 0, 1 / 3],
+        [5 / 12, 17 / 60, 0.3],
+        [7 / 12, 19 / 60, 0.1],
+        [11 / 24, 7 / 30, 37 / 120],
+    ]
+
+    @pytest.mark.parametrize(
+        "relax_and_misclass, expected", zip(relax_and_misclass, expected_probs)
+    )
+    def test_probs_with_readout_error(self, num_wires, relax_and_misclass, expected):
+        """Tests the measurement results for probs"""
+        dev = qml.device(
+            "default.qutrit.mixed",
+            wires=num_wires,
+            readout_relaxation_probs=relax_and_misclass[0],
+            readout_misclassification_probs=relax_and_misclass[1],
+        )
+
+        @qml.qnode(dev)
+        def circuit():
+            self.setup_state(num_wires)
+            return qml.probs(wires=0)
+
+        res = circuit()
+        assert np.allclose(res, expected)
+
+    # Expected expval list from circuit with diagonal observables after the readout errors
+    # defined by relax_and_misclass are applied.
+    expected_commuting_expvals = [
+        [1 / 6, 1 / (2 * np.sqrt(3)), 1 / 6],
+        [-1 / 6, 1 / (2 * np.sqrt(3)), -1 / 6],
+        [-1 / 6, -1 / (2 * np.sqrt(3)), -1 / 6],
+        [1 / 3, 0, 1 / 3],
+        [5 / 6, 1 / (2 * np.sqrt(3)), 5 / 6],
+        [1 / 3, 1 / np.sqrt(3), 1 / 3],
+        [2 / 3, 1 / np.sqrt(3), 2 / 3],
+        [4 / 6, 0, 4 / 6],
+        [2 / 15, 1 / (10 * np.sqrt(3)), 2 / 15],
+        [4 / 15, 7 / (10 * np.sqrt(3)), 4 / 15],
+        [9 / 40, 3 / (40 * np.sqrt(3)), 9 / 40],
+    ]
+
+    @pytest.mark.parametrize(
+        "relax_and_misclass, expected", zip(relax_and_misclass, expected_commuting_expvals)
+    )
+    def test_readout_expval_commuting(self, num_wires, relax_and_misclass, expected):
+        """Tests the measurement results for expval of diagonal GellMann observables (3 and 8)"""
+        dev = qml.device(
+            "default.qutrit.mixed",
+            wires=num_wires,
+            readout_relaxation_probs=relax_and_misclass[0],
+            readout_misclassification_probs=relax_and_misclass[1],
+        )
+
+        @qml.qnode(dev)
+        def circuit():
+            self.setup_state(num_wires)
+            return (
+                qml.expval(qml.GellMann(0, 3)),
+                qml.expval(qml.GellMann(0, 8)),
+                qml.expval(qml.GellMann(1, 3)),
+            )
+
+        res = circuit()
+        assert np.allclose(res, expected)
+
+    # Expected expval list from circuit with non-diagonal observables after the measurement errors
+    # defined by relax_and_misclass are applied. The readout error is applied to the circuit shown
+    # above so the pre measurement probabilities are the same.
+    expected_noncommuting_expvals = [
+        [-1 / 3, -7 / 6, 1 / 6],
+        [-1 / 6, -1, -1 / 6],
+        [1 / 3, -1 / 6, -1 / 6],
+        [-1 / 6, -5 / 6, 1 / 3],
+        [-2 / 3, -3 / 2, 5 / 6],
+        [-2 / 3, -5 / 3, 1 / 3],
+        [-5 / 6, -11 / 6, 2 / 3],
+        [-1 / 3, -1, 4 / 6],
+        [-7 / 60, -49 / 60, 2 / 15],
+        [-29 / 60, -83 / 60, 4 / 15],
+        [-3 / 20, -101 / 120, 9 / 40],
+    ]
+
+    @pytest.mark.parametrize(
+        "relax_and_misclass, expected", zip(relax_and_misclass, expected_noncommuting_expvals)
+    )
+    def test_readout_expval_non_commuting(self, num_wires, relax_and_misclass, expected):
+        """Tests the measurement results for expval of GellMann 1 observables"""
+        dev = qml.device(
+            "default.qutrit.mixed",
+            wires=num_wires,
+            readout_relaxation_probs=relax_and_misclass[0],
+            readout_misclassification_probs=relax_and_misclass[1],
+        )
+        # Create matrices for the observables with diagonalizing matrix :math:`THadamard^\dag`
+        inv_sqrt_3_i = 1j / np.sqrt(3)
+        non_commuting_obs_one = np.array(
+            [
+                [0, -1 + inv_sqrt_3_i, -1 - inv_sqrt_3_i],
+                [-1 - inv_sqrt_3_i, 0, -1 + inv_sqrt_3_i],
+                [-1 + inv_sqrt_3_i, -1 - inv_sqrt_3_i, 0],
+            ]
+        )
+        non_commuting_obs_one /= 2
+
+        non_commuting_obs_two = np.array(
+            [
+                [-2 / 3, -2 / 3 + inv_sqrt_3_i, -2 / 3 - inv_sqrt_3_i],
+                [-2 / 3 - inv_sqrt_3_i, -2 / 3, -2 / 3 + inv_sqrt_3_i],
+                [-2 / 3 + inv_sqrt_3_i, -2 / 3 - inv_sqrt_3_i, -2 / 3],
+            ]
+        )
+
+        @qml.qnode(dev)
+        def circuit():
+            self.setup_state(num_wires)
+
+            qml.THadamard(wires=0)
+            qml.THadamard(wires=1, subspace=(0, 1))
+
+            return (
+                qml.expval(qml.THermitian(non_commuting_obs_one, 0)),
+                qml.expval(qml.THermitian(non_commuting_obs_two, 0)),
+                qml.expval(qml.GellMann(1, 1)),
+            )
+
+        res = circuit()
+        assert np.allclose(res, expected)
+
+    state_relax_and_misclass = [
+        [(0, 0, 0), (0, 0, 0)],
+        [(0.1, 0.15, 0.25), (0.1, 0.15, 0.25)],
+        [(1, 0, 1), (1, 0, 0)],
+    ]
+
+    @pytest.mark.parametrize("relaxations, misclassifications", state_relax_and_misclass)
+    def test_readout_state(self, num_wires, relaxations, misclassifications):
+        """Tests the state output is not affected by readout error"""
+        dev = qml.device(
+            "default.qutrit.mixed",
+            wires=num_wires,
+            readout_relaxation_probs=relaxations,
+            readout_misclassification_probs=misclassifications,
+        )
+
+        @qml.qnode(dev)
+        def circuit():
+            self.setup_state(num_wires)
+            return qml.state()
+
+        res = circuit()
+        assert np.allclose(res, self.get_expected_dm(num_wires))
+
+    @pytest.mark.parametrize("relaxations, misclassifications", state_relax_and_misclass)
+    def test_readout_density_matrix(self, num_wires, relaxations, misclassifications):
+        """Tests the density matrix output is not affected by readout error"""
+        dev = qml.device(
+            "default.qutrit.mixed",
+            wires=num_wires,
+            readout_relaxation_probs=relaxations,
+            readout_misclassification_probs=misclassifications,
+        )
+
+        @qml.qnode(dev)
+        def circuit():
+            self.setup_state(num_wires)
+            return qml.density_matrix(wires=1)
+
+        res = circuit()
+        assert np.allclose(res, self.get_expected_dm(1))
+
+    @pytest.mark.parametrize(
+        "relaxations, misclassifications, expected",
+        [
+            ((0, 0, 0), (0, 0, 0), [(np.ones(2) * 2)] * 2),
+            (None, (0, 0, 1), [np.ones(2)] * 2),
+            ((0, 0, 1), None, [np.ones(2)] * 2),
+            (None, (0, 1, 0), [np.zeros(2)] * 2),
+            ((0, 1, 0), None, [np.zeros(2)] * 2),
+        ],
+    )
+    def test_readout_sample(self, num_wires, relaxations, misclassifications, expected):
+        """Tests the sample output with readout error"""
+        dev = qml.device(
+            "default.qutrit.mixed",
+            shots=2,
+            wires=num_wires,
+            readout_relaxation_probs=relaxations,
+            readout_misclassification_probs=misclassifications,
+        )
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.QutritBasisState([2] * num_wires, wires=range(num_wires))
+            return qml.sample(wires=[0, 1])
+
+        res = circuit()
+        assert np.allclose(res, expected)
+
+    @pytest.mark.parametrize(
+        "relaxations, misclassifications, expected",
+        [
+            ((0, 0, 0), (0, 0, 0), {"22": 100}),
+            (None, (0, 0, 1), {"11": 100}),
+            ((0, 0, 1), None, {"11": 100}),
+            (None, (0, 1, 0), {"00": 100}),
+            ((0, 1, 0), None, {"00": 100}),
+        ],
+    )
+    def test_readout_counts(self, num_wires, relaxations, misclassifications, expected):
+        """Tests the counts output with readout error"""
+        dev = qml.device(
+            "default.qutrit.mixed",
+            shots=100,
+            wires=num_wires,
+            readout_relaxation_probs=relaxations,
+            readout_misclassification_probs=misclassifications,
+        )
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.QutritBasisState([2] * num_wires, wires=range(num_wires))
+            return qml.counts(wires=[0, 1])
+
+        res = circuit()
+        assert res == expected
+
+    @pytest.mark.parametrize(
+        "relaxations, misclassifications, expected",
+        [
+            [None, (0.1, 0.2, 0.4), [5 / 12, 17 / 60, 0.3]],
+            [(0.2, 0.1, 0.3), None, [7 / 12, 19 / 60, 0.1]],
+            [(0.2, 0.1, 0.4), (0.1, 0.2, 0.5), [11 / 24, 7 / 30, 37 / 120]],
+        ],
+    )
+    def test_approximate_readout_counts(self, num_wires, relaxations, misclassifications, expected):
+        """Tests the counts output with readout error"""
+        num_shots = 10000
+        dev = qml.device(
+            "default.qutrit.mixed",
+            shots=num_shots,
+            wires=num_wires,
+            readout_relaxation_probs=relaxations,
+            readout_misclassification_probs=misclassifications,
+            seed=221349,
+        )
+
+        @qml.qnode(dev)
+        def circuit():
+            self.setup_state(num_wires)
+            return qml.counts(wires=[0])
+
+        res = circuit()
+        assert isinstance(res, dict)
+        assert len(res) == 3
+        cases = ["0", "1", "2"]
+        for case, expected_result in zip(cases, expected):
+            assert np.isclose(res[case] / num_shots, expected_result, atol=0.05)
+
+    @pytest.mark.parametrize(
+        "relaxations,misclassifications",
+        [
+            [(0.1, 0.2), None],
+            [None, (0.1, 0.2, 0.3, 0.1)],
+            [(0.1, 0.2, 0.3, 0.1), (0.1, 0.2, 0.3)],
+        ],
+    )
+    def test_measurement_error_validation(self, relaxations, misclassifications, num_wires):
+        """Ensure error is raised for wrong number of arguments inputted in readout errors."""
+        with pytest.raises(qml.DeviceError, match="results in error:"):
+            qml.device(
+                "default.qutrit.mixed",
+                wires=num_wires,
+                readout_relaxation_probs=relaxations,
+                readout_misclassification_probs=misclassifications,
+            )
+
+    def test_prob_type(self, num_wires):
+        """Tests that an error is raised for wrong data type in readout errors"""
+        with pytest.raises(qml.DeviceError, match="results in error:"):
+            qml.device(
+                "default.qutrit.mixed", wires=num_wires, readout_relaxation_probs=[0.1, 0.2, "0.3"]
+            )
+        with pytest.raises(qml.DeviceError, match="results in error:"):
+            qml.device(
+                "default.qutrit.mixed",
+                wires=num_wires,
+                readout_misclassification_probs=[0.1, 0.2, "0.3"],
+            )
+
+    diff_parameters = [
+        [
+            None,
+            [0.1, 0.2, 0.4],
+            [
+                [
+                    [1 / 3 - 1 / 2, 1 / 6 - 1 / 2, 0.0],
+                    [1 / 2 - 1 / 3, 0.0, 1 / 6 - 1 / 3],
+                    [0.0, 1 / 2 - 1 / 6, 1 / 3 - 1 / 6],
+                ]
+            ],
+        ],
+        [
+            [0.2, 0.1, 0.3],
+            None,
+            [
+                [
+                    [1 / 3, 1 / 6, 0.0],
+                    [-1 / 3, 0.0, 1 / 6],
+                    [0.0, -1 / 6, -1 / 6],
+                ]
+            ],
+        ],
+        [
+            [0.2, 0.1, 0.3],
+            [0.0, 0.0, 0.0],
+            [
+                [[1 / 3, 1 / 6, 0.0], [-1 / 3, 0.0, 1 / 6], [0.0, -1 / 6, -1 / 6]],
+                [
+                    [19 / 60 - 7 / 12, 0.1 - 7 / 12, 0.0],
+                    [7 / 12 - 19 / 60, 0.0, 0.1 - 19 / 60],
+                    [0.0, 7 / 12 - 0.1, 19 / 60 - 0.1],
+                ],
+            ],
+        ],
+    ]
+
+    def get_diff_function(self, interface, num_wires):
+        """Get the function to differentiate for following differentiability interface tests"""
+
+        def diff_func(relaxations, misclassifications):
+            dev = qml.device(
+                "default.qutrit.mixed",
+                wires=num_wires,
+                readout_relaxation_probs=relaxations,
+                readout_misclassification_probs=misclassifications,
+            )
+
+            @qml.qnode(dev, interface=interface)
+            def circuit():
+                self.setup_state(num_wires)
+                return qml.probs(0)
+
+            return circuit()
+
+        return diff_func
+
+    @pytest.mark.autograd
+    @pytest.mark.parametrize("relaxations, misclassifications, expected", diff_parameters)
+    def test_differentiation_autograd(self, num_wires, relaxations, misclassifications, expected):
+        """Tests the differentiation of readout errors using autograd"""
+
+        if misclassifications is None:
+            args_to_diff = (0,)
+            relaxations = qnp.array(relaxations)
+        elif relaxations is None:
+            args_to_diff = (1,)
+            misclassifications = qnp.array(misclassifications)
+        else:
+            args_to_diff = (0, 1)
+            relaxations = qnp.array(relaxations)
+            misclassifications = qnp.array(misclassifications)
+
+        diff_func = self.get_diff_function("autograd", num_wires)
+        jac = qml.jacobian(diff_func, args_to_diff)(relaxations, misclassifications)
+        assert np.allclose(jac, expected)
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("relaxations, misclassifications, expected", diff_parameters)
+    @pytest.mark.parametrize("use_jit", (True, False))
+    def test_differentiation_jax(  # pylint: disable=too-many-arguments
+        self, num_wires, relaxations, misclassifications, use_jit, expected
+    ):
+        """Tests the differentiation of readout errors using JAX"""
+        import jax
+
+        if misclassifications is None:
+            args_to_diff = (0,)
+            relaxations = jax.numpy.array(relaxations)
+        elif relaxations is None:
+            args_to_diff = (1,)
+            misclassifications = jax.numpy.array(misclassifications)
+        else:
+            args_to_diff = (0, 1)
+            relaxations = jax.numpy.array(relaxations)
+            misclassifications = jax.numpy.array(misclassifications)
+
+        diff_func = self.get_diff_function("jax", num_wires)
+        if use_jit:
+            diff_func = jax.jit(diff_func)
+        jac = jax.jacobian(diff_func, args_to_diff)(relaxations, misclassifications)
+        assert np.allclose(jac, expected)
+
+    @pytest.mark.torch
+    @pytest.mark.parametrize("relaxations, misclassifications, expected", diff_parameters)
+    def test_differentiation_torch(self, num_wires, relaxations, misclassifications, expected):
+        """Tests the differentiation of readout errors using PyTorch"""
+        import torch
+
+        if misclassifications is None:
+            relaxations = torch.tensor(relaxations, requires_grad=True, dtype=torch.float64)
+            diff_func = partial(self.get_diff_function("torch", num_wires), misclassifications=None)
+            diff_variables = relaxations
+        elif relaxations is None:
+            misclassifications = torch.tensor(
+                misclassifications, requires_grad=True, dtype=torch.float64
+            )
+
+            def diff_func(misclass):
+                return self.get_diff_function("torch", num_wires)(None, misclass)
+
+            diff_variables = misclassifications
+        else:
+            relaxations = torch.tensor(relaxations, requires_grad=True, dtype=torch.float64)
+            misclassifications = torch.tensor(
+                misclassifications, requires_grad=True, dtype=torch.float64
+            )
+            diff_variables = (relaxations, misclassifications)
+            diff_func = self.get_diff_function("torch", num_wires)
+
+        jac = torch.autograd.functional.jacobian(diff_func, diff_variables)
+        if isinstance(jac, tuple):
+            for j, expected_j in zip(jac, expected):
+                np.allclose(j.detach().numpy(), expected_j)
+        else:
+            assert np.allclose(jac.detach().numpy(), expected)
+
+    @pytest.mark.tf
+    @pytest.mark.parametrize("relaxations, misclassifications, expected", diff_parameters)
+    def test_differentiation_tensorflow(self, num_wires, relaxations, misclassifications, expected):
+        """Tests the differentiation of readout errors using TensorFlow"""
+        import tensorflow as tf
+
+        if misclassifications is None:
+            relaxations = tf.Variable(relaxations, dtype="float64")
+            diff_variables = [relaxations]
+        elif relaxations is None:
+            misclassifications = tf.Variable(misclassifications, dtype="float64")
+            diff_variables = [misclassifications]
+        else:
+            relaxations = tf.Variable(relaxations, dtype="float64")
+            misclassifications = tf.Variable(misclassifications, dtype="float64")
+            diff_variables = [relaxations, misclassifications]
+
+        diff_func = self.get_diff_function("tf", num_wires)
+        with tf.GradientTape() as grad_tape:
+            probs = diff_func(relaxations, misclassifications)
+        jac = grad_tape.jacobian(probs, diff_variables)
+        assert np.allclose(jac, expected)
