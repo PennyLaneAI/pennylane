@@ -312,8 +312,6 @@ class LegacyDeviceFacade(Device):
             debugger = "No debugger"
         tracker = self._device.tracker
 
-        backprop_devices = self._device.capabilities().get("passthru_devices", None)
-
         new_device = qml.device(
             backprop_devices[mapped_interface], wires=self._device.wires, shots=self._device.shots
         )
