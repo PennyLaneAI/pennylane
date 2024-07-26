@@ -180,7 +180,7 @@ def test_mid_measure(x64_mode):
 
     assert len(jaxpr.eqns) == 1
     assert jaxpr.eqns[0].primitive == MidMeasureMP._wires_primitive
-    assert jaxpr.eqns[0].params == {"reset": True, "postselect": 1}
+    assert jaxpr.eqns[0].params == {"reset": True, "postselect": 1, "id": None}
     mp = jaxpr.eqns[0].outvars[0].aval
     assert isinstance(mp, AbstractMeasurement)
     assert mp.n_wires == 1
@@ -344,9 +344,6 @@ class TestExpvalVar:
         )[0]
         assert shapes == jax.core.ShapedArray((), expected)
 
-        with pytest.raises(NotImplementedError):
-            f()
-
         jax.config.update("jax_enable_x64", initial_mode)
 
 
@@ -436,9 +433,6 @@ class TestProbs:
         assert shapes[0] == jax.core.ShapedArray(
             (4,), jax.numpy.float64 if x64_mode else jax.numpy.float32
         )
-
-        with pytest.raises(NotImplementedError):
-            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 1, 2)
 
         jax.config.update("jax_enable_x64", initial_mode)
 
@@ -540,9 +534,6 @@ class TestSample:
         assert shapes[0] == jax.core.ShapedArray(
             (50, 2), jax.numpy.int64 if x64_mode else jax.numpy.int32
         )
-
-        with pytest.raises(NotImplementedError):
-            f()
 
         jax.config.update("jax_enable_x64", initial_mode)
 
