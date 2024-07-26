@@ -76,7 +76,7 @@ def merge_rotations(
 
         When merging two :class:`~.pennylane.Rot` gates, there are a number of details to consider:
 
-        First, the output angles are not always uniquely defined, because Euler angles are not
+        First, the output angles are not always defined uniquely, because Euler angles are not
         unique for some rotations. ``merge_rotations`` makes a particular choice in
         this case.
 

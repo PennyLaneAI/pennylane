@@ -90,7 +90,7 @@ def fuse_rot_angles(angles_1, angles_2):
     .. note::
 
         The output angles are not always defined uniquely because Euler angles are not
-        defined uniquely for some rotations. ``fuse_rot_angles`` makes a particular
+        unique for some rotations. ``fuse_rot_angles`` makes a particular
         choice in this case.
 
     .. warning::

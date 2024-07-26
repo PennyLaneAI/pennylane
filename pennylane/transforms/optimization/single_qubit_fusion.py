@@ -71,7 +71,7 @@ def single_qubit_fusion(
     .. note::
 
         The fused angles between two sets of rotation angles are not always defined uniquely
-        because Euler angles are not defined uniquely for some rotations. ``single_qubit_fusion``
+        because Euler angles are not unique for some rotations. ``single_qubit_fusion``
         makes a particular choice in this case.
 
     .. warning::
