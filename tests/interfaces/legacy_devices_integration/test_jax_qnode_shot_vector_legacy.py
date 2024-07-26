@@ -28,9 +28,9 @@ jax.config.update("jax_enable_x64", True)
 all_shots = [(1, 20, 100), (1, (20, 1), 100), (1, (5, 4), 100)]
 
 qubit_device_and_diff_method = [
-    ["default.qubit", "finite-diff", {"h": 10e-2}],
-    ["default.qubit", "parameter-shift", {}],
-    ["default.qubit", "spsa", {"h": 10e-2, "num_directions": 20}],
+    ["default.qubit.legacy", "finite-diff", {"h": 10e-2}],
+    ["default.qubit.legacy", "parameter-shift", {}],
+    ["default.qubit.legacy", "spsa", {"h": 10e-2, "num_directions": 20}],
 ]
 
 interface_and_qubit_device_and_diff_method = [
@@ -766,9 +766,59 @@ class TestReturnWithShotVectors:
             assert h[1].shape == (2, 2, 2)
 
 
+@pytest.mark.parametrize("shots", all_shots)
+class TestReturnShotVectorsDevice:
+    """Test for shot vectors with device method adjoint_jacobian."""
+
+    def test_jac_adjoint_fwd_error(self, shots):
+        """Test that an error is raised for adjoint forward."""
+        dev = qml.device("default.qubit.legacy", wires=1, shots=shots)
+
+        with pytest.warns(
+            UserWarning, match="Requested adjoint differentiation to be computed with finite shots."
+        ):
+
+            @qnode(dev, interface="jax", diff_method="adjoint", grad_on_execution=True)
+            def circuit(a):
+                qml.RY(a, wires=0)
+                qml.RX(0.2, wires=0)
+                return qml.expval(qml.PauliZ(0))
+
+        a = jax.numpy.array(0.1)
+
+        if isinstance(shots, tuple):
+            with pytest.raises(
+                qml.QuantumFunctionError,
+                match="Adjoint does not support shot vectors.",
+            ):
+                jax.jacobian(circuit)(a)
+
+    def test_jac_adjoint_bwd_error(self, shots):
+        """Test that an error is raised for adjoint backward."""
+        dev = qml.device("default.qubit.legacy", wires=1, shots=shots)
+
+        with pytest.warns(
+            UserWarning, match="Requested adjoint differentiation to be computed with finite shots."
+        ):
+
+            @qnode(dev, interface="jax", diff_method="adjoint", grad_on_execution=False)
+            def circuit(a):
+                qml.RY(a, wires=0)
+                qml.RX(0.2, wires=0)
+                return qml.expval(qml.PauliZ(0))
+
+        a = jax.numpy.array(0.1)
+
+        with pytest.raises(
+            qml.QuantumFunctionError,
+            match="Adjoint does not support shot vectors.",
+        ):
+            jax.jacobian(circuit)(a)
+
+
 qubit_device_and_diff_method = [
-    ["default.qubit", "finite-diff", {"h": 10e-2}],
-    ["default.qubit", "parameter-shift", {}],
+    ["default.qubit.legacy", "finite-diff", {"h": 10e-2}],
+    ["default.qubit.legacy", "parameter-shift", {}],
 ]
 
 shots_large = [(1000000, 900000, 800000), (1000000, (900000, 2))]

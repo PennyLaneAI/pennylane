@@ -37,6 +37,9 @@
   device interface.
   [(#5927)](https://github.com/PennyLaneAI/pennylane/pull/5927)
 
+* Added the `compute_sparse_matrix` method for `qml.ops.qubit.BasisStateProjector`.
+  [(#5790)](https://github.com/PennyLaneAI/pennylane/pull/5790)
+
 * `StateMP.process_state` defines rules in `cast_to_complex` for complex casting, avoiding a superfluous state vector copy in Lightning simulations
   [(#5995)](https://github.com/PennyLaneAI/pennylane/pull/5995)
 
@@ -181,6 +184,10 @@
   Instead, use `pennylane.gradients.classical_fisher` and `pennylane.gradients.quantum_fisher`.
   [(#5985)](https://github.com/PennyLaneAI/pennylane/pull/5985)
 
+* The legacy devices `default.qubit.{autograd,torch,tf,jax,legacy}` are deprecated.
+  Instead, use `default.qubit` as it now supports backpropagation through the several backends.
+  [(#5997)](https://github.com/PennyLaneAI/pennylane/pull/5997)
+
 <h3>Documentation 📝</h3>
 
 * Improves the docstring for `QuantumScript.expand` and `qml.tape.tape.expand_tape`.
@@ -207,6 +214,9 @@
 * `qml.AmplitudeEmbedding` has better support for features using low precision integer data types.
 [(#5969)](https://github.com/PennyLaneAI/pennylane/pull/5969)
 
+* `qml.lie_closure` works with sums of Paulis.
+  [(#6023)](https://github.com/PennyLaneAI/pennylane/pull/6023)
+
 
 <h3>Contributors ✍️</h3>
 
@@ -223,11 +233,12 @@ Emiliano Godinez,
 Renke Huang,
 Josh Izaac,
 Soran Jahangiri,
+Korbinian Kottmann,
 Christina Lee,
 Austin Huang,
-Christina Lee,
 William Maxwell,
 Vincent Michaud-Rioux,
+Anurav Modak,
 Mudit Pandey,
 Erik Schultheis,
 nate stemen.
