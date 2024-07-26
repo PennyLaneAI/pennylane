@@ -16,7 +16,7 @@ import copy
 
 # pylint: disable=import-outside-toplevel, protected-access, no-member
 import warnings
-from dataclasses import asdict, replace
+from dataclasses import replace
 from functools import partial
 
 import numpy as np
@@ -1778,7 +1778,7 @@ class TestMCMConfiguration:
             postselect_mode=postselect_mode, mcm_method=mcm_method
         )
 
-        @qml.qnode(dev, **asdict(original_config))
+        @qml.qnode(dev, postselect_mode=postselect_mode, mcm_method=mcm_method)
         def circuit(x, mp):
             qml.RX(x, 0)
             qml.measure(0, postselect=1)
