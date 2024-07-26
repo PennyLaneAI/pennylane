@@ -13,12 +13,10 @@
 # limitations under the License.
 """QJIT compatible quantum and compilation operations API"""
 
-import jax.core
-import pennylane as qml
-
+import functools
 from collections.abc import Callable
 
-import functools
+import pennylane as qml
 
 from .compiler import (
     AvailableCompilers,
@@ -547,7 +545,6 @@ def for_loop(lower_bound, upper_bound, step):
 def _get_for_loop_qfunc_prim():
     """Get the cond primitive for quantum functions."""
 
-    # JAX should be installed if capture is enabled
     import jax  # pylint: disable=import-outside-toplevel
 
     for_loop_prim = jax.core.Primitive("for_loop")
@@ -559,30 +556,18 @@ def _get_for_loop_qfunc_prim():
         args = init_state
         fn_res = args if len(args) > 1 else args[0] if len(args) == 1 else None
 
-        # index_plus_args = (0, *init_state)
-        # jaxpr_body_fn = jaxpr_body_fn(*index_plus_args)
-
         for i in range(lower_bound, upper_bound, step):
 
             tmp_args = (i, *args)
-
-            print("Iteration", i)
-            print("args", args)
-            print("tmp_args", tmp_args)
-
             jaxpr_exec = jaxpr_body_fn(*tmp_args)
             fn_res = jax.core.eval_jaxpr(jaxpr_exec.jaxpr, jaxpr_exec.consts, *tmp_args)
             args = fn_res if len(args) > 1 else (fn_res,) if len(args) == 1 else ()
 
         return fn_res
 
+    # pylint: disable=unused-argument
     @for_loop_prim.def_abstract_eval
     def _(lower_bound, upper_bound, step, *init_state, jaxpr_body_fn):
-
-        # We assume that the abstract values returned by the body function
-        # do not depend on the iteration index.
-
-        # TODO: add check to ensure this is the case
 
         return jaxpr_body_fn(0, *init_state).out_avals
 
@@ -627,8 +612,6 @@ class ForLoopCallable:  # pylint:disable=too-few-public-methods
 
         for_loop_prim = _get_for_loop_qfunc_prim()
 
-        print("Capture enabled")
-
         jaxpr_body_fn = jax.make_jaxpr(self.body_fn)
 
         return for_loop_prim.bind(
@@ -638,14 +621,6 @@ class ForLoopCallable:  # pylint:disable=too-few-public-methods
             *init_state,
             jaxpr_body_fn=jaxpr_body_fn,
         )
-
-        init_state_freg = (0, *init_state)
-        jax_lezza = jaxpr_funza(*init_state_freg)
-        print(jax_lezza)
-        jax.core.eval_jaxpr(jax_lezza.jaxpr, jax_lezza.consts, *init_state_freg)
-
-        # args = init_state
-        # fn_res = args if len(args) > 1 else args[0] if len(args) == 1 else None
 
     def __call__(self, *init_state):
 
