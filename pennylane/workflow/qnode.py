@@ -897,9 +897,7 @@ class QNode:
 
         execute_kwargs = copy.copy(self.execute_kwargs)
         mcm_config = copy.copy(execute_kwargs["mcm_config"])
-        finite_shots = (lambda dev: dev.shots) if override_shots is False else override_shots
-
-        if not finite_shots:
+        if not self._tape.shots:
             mcm_config.postselect_mode = None
             if mcm_config.mcm_method in ("one-shot", "tree-traversal"):
                 raise ValueError(
