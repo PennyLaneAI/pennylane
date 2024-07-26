@@ -148,11 +148,6 @@ def _multi_controlled_zyz(
     if not qml.math.allclose(0.0, global_phase, atol=1e-8, rtol=0):
         raise ValueError(f"The global_phase should be zero, instead got: {global_phase}.")
 
-    if work_wires and len(work_wires) > 1:
-        raise ValueError(
-            f"The work_wires should be a single wire, instead got: {len(work_wires)} wires."
-        )
-
     # Unpack the rotation angles
     phi, theta, omega = rot_angles
 

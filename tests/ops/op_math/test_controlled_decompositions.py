@@ -910,6 +910,30 @@ class TestMultiControlledUnitary:
         res = _decompose_multicontrolled_unitary(op, Wires(control_wires))
         assert equal_list(res, expected)
 
+    @pytest.mark.parametrize(
+        "op, controlled_wires, work_wires",
+        [
+            (qml.RX(0.123, wires=1), [0, 2], [3, 4, 5]),
+            (qml.Rot(0.123, 0.456, 0.789, wires=0), [1, 2, 3], [4, 5]),
+        ],
+    )
+    def test_with_many_workers(self, op, controlled_wires, work_wires):
+        """Tests ctrl_decomp_zyz with multiple workers"""
+
+        dev = qml.device("default.qubit", wires=6)
+
+        @qml.qnode(dev)
+        def decomp_circuit(op):
+            ctrl_decomp_zyz(op, controlled_wires, work_wires=work_wires)
+            return qml.probs()
+
+        @qml.qnode(dev)
+        def expected_circuit(op):
+            qml.ctrl(op, controlled_wires, work_wires=work_wires)
+            return qml.probs()
+
+        assert np.allclose(decomp_circuit(op), expected_circuit(op))
+
     controlled_wires = tuple(list(range(2, 1 + n)) for n in range(3, 7))
 
     @pytest.mark.parametrize("op", gen_ops + su2_gen_ops)
