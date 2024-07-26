@@ -390,10 +390,10 @@ def _split_using_qwc_grouping(
 
     Args:
         tape (~qml.tape.QuantumScript): The tape to be split.
-        single_term_obs_mps (Dict[MeasurementProcess, Tuple[List[int], List[float]]]): A dictionary
+        single_term_obs_mps (Dict[MeasurementProcess, Tuple[List[int], List[Union[float, TensorLike]]]]): A dictionary
             of measurements of each unique single-term observable, mapped to the indices of the
             original measurements it belongs to, and its coefficients.
-        offsets (List[float]): Offsets associated with each original measurement in the tape.
+        offsets (List[Union[float, TensorLike]]): Offsets associated with each original measurement in the tape.
 
     """
 
@@ -456,10 +456,10 @@ def _split_using_wires_grouping(
 
     Args:
         tape (~qml.tape.QuantumScript): The tape to be split.
-        single_term_obs_mps (Dict[MeasurementProcess, Tuple[List[int], List[float]]]): A dictionary
+        single_term_obs_mps (Dict[MeasurementProcess, Tuple[List[int], List[Union[float, TensorLike]]]]): A dictionary
             of measurements of each unique single-term observable, mapped to the indices of the
             original measurements it belongs to, and its coefficients.
-        offsets (List[float]): Offsets associated with each original measurement in the tape.
+        offsets (List[Union[float, TensorLike]]): Offsets associated with each original measurement in the tape.
 
     """
 
@@ -525,10 +525,10 @@ def _split_all_multi_term_obs_mps(tape: qml.tape.QuantumScript):
         tape (~qml.tape.QuantumScript): The tape with measurements to split.
 
     Returns:
-        single_term_obs_mps (Dict[MeasurementProcess, Tuple[List[int], List[float]]]): A
+        single_term_obs_mps (Dict[MeasurementProcess, Tuple[List[int], List[Union[float, TensorLike]]]]): A
             dictionary for measurements of each unique single-term observable, mapped to the
             indices of the original measurements it belongs to, and its coefficients.
-        offsets (List[float]): Offsets associated with each original measurement in the tape.
+        offsets (List[Union[float, TensorLike]]): Offsets associated with each original measurement in the tape.
 
     """
 
