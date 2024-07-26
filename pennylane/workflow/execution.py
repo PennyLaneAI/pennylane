@@ -611,9 +611,10 @@ def execute(
     #### Executing the configured setup #####
     if not device_batch_transform:
         warnings.warn(
-            "device batch transforms cannot be turned off with the new device interface.",
+            "Device batch transforms cannot be turned off with the new device interface.",
             UserWarning,
         )
+
     tapes, post_processing = transform_program(tapes)
 
     if transform_program.is_informative:

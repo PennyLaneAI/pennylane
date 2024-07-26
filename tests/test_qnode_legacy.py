@@ -36,17 +36,6 @@ def dummyfunc():
     return None
 
 
-# class CustomDeviceWithDiffMethod(qml.devices.DefaultQubitLegacy):
-#     """A device that defines a derivative."""
-
-#     def execute(self, circuits, execution_config=None):
-#         return 0
-
-#     def compute_derivatives(self, circuits, execution_config=None):
-#         """Device defines its own method to compute derivatives"""
-#         return 0
-
-
 def test_backprop_switching_deprecation():
     """Test that a PennyLaneDeprecationWarning is raised when a device is subtituted
     for a different backprop device.
@@ -83,9 +72,11 @@ def test_backprop_switching_deprecation():
     with pytest.warns(qml.PennyLaneDeprecationWarning):
 
         @qml.qnode(DummyDevice(shots=None), interface="autograd")
-        def _(x):
+        def circ(x):
             qml.RX(x, 0)
             return qml.expval(qml.Z(0))
+
+        circ(pnp.array(3))
 
 
 # pylint: disable=too-many-public-methods
@@ -347,8 +338,8 @@ class TestValidation:
 
         dev = qml.device("default.qubit.legacy", wires=1, shots=1)
 
-        with pytest.warns(
-            UserWarning, match="Requested adjoint differentiation to be computed with finite shots."
+        with pytest.raises(
+            qml.QuantumFunctionError, match="does not support adjoint with requested circuit."
         ):
 
             @qnode(dev, diff_method="adjoint")

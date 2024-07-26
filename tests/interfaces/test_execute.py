@@ -12,37 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests for exeuction with default qubit 2 independent of any interface."""
+from contextlib import nullcontext
+
 import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.devices import DefaultQubit
-from pennylane.workflow.execution import _preprocess_expand_fn
-
-
-class TestPreprocessExpandFn:
-    """Tests the _preprocess_expand_fn helper function."""
-
-    def test_provided_is_callable(self):
-        """Test that if the expand_fn is not "device", it is simply returned."""
-
-        dev = DefaultQubit()
-
-        def f(tape):
-            return tape
-
-        out = _preprocess_expand_fn(f, dev, 10)
-        assert out is f
-
-    def test_new_device_blank_expand_fn(self):
-        """Test that the expand_fn is blank if is new device."""
-
-        dev = DefaultQubit()
-
-        out = _preprocess_expand_fn("device", dev, 10)
-
-        x = [1]
-        assert out(x) is x
 
 
 class TestBatchTransformHelper:
@@ -62,7 +38,7 @@ class TestBatchTransformHelper:
 
         qs = qml.tape.QuantumScript([CustomOp(0)], [qml.expval(qml.PauliZ(0))])
 
-        with pytest.warns(UserWarning, match="device batch transforms cannot be turned off"):
+        with pytest.warns(UserWarning, match="Device batch transforms cannot be turned off"):
             program, _ = dev.preprocess()
             with pytest.warns(
                 qml.PennyLaneDeprecationWarning,
@@ -139,7 +115,7 @@ def test_warning_if_not_device_batch_transform():
 
     qs = qml.tape.QuantumScript([CustomOp(0)], [qml.expval(qml.PauliZ(0))])
 
-    with pytest.warns(UserWarning, match="device batch transforms cannot be turned off"):
+    with pytest.warns(UserWarning, match="Device batch transforms cannot be turned off"):
         program, _ = dev.preprocess()
         with pytest.warns(
             qml.PennyLaneDeprecationWarning,
@@ -222,8 +198,13 @@ class TestExecuteDeprecations:
 
         qs = qml.tape.QuantumScript([qml.PauliX(0)], [qml.expval(qml.PauliZ(0))])
 
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning,
-            match="The device_batch_transform argument is deprecated",
+        with (
+            pytest.warns(UserWarning, match="Device batch transforms cannot be turned off")
+            if not device_batch_transform
+            else nullcontext()
         ):
-            qml.execute([qs], dev, device_batch_transform=device_batch_transform)
+            with pytest.warns(
+                qml.PennyLaneDeprecationWarning,
+                match="The device_batch_transform argument is deprecated",
+            ):
+                qml.execute([qs], dev, device_batch_transform=device_batch_transform)
