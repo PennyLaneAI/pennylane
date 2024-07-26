@@ -72,7 +72,6 @@ def _set_shots(device, shots):
     original_shots = device.shots
     original_shot_vector = device._shot_vector  # pylint: disable=protected-access
 
-    # device = device.target_device if isinstance(device, LegacyDeviceFacade) else device
     try:
         device.shots = shots
         yield

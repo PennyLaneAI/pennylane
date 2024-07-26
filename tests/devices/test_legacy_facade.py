@@ -270,6 +270,7 @@ class TestGradientSupport:
         assert not dev.supports_derivatives(ExecutionConfig(gradient_method="backprop"))
         assert not dev.supports_derivatives(ExecutionConfig(gradient_method="adjoint"))
         assert not dev.supports_derivatives(ExecutionConfig(gradient_method="device"))
+        assert not dev.supports_derivatives(ExecutionConfig(gradient_method="param_shift"))
 
         with pytest.raises(qml.DeviceError):
             dev.preprocess(ExecutionConfig(gradient_method="device"))
@@ -382,6 +383,9 @@ class TestGradientSupport:
         assert dev.supports_derivatives(qml.devices.ExecutionConfig(gradient_method="backprop"))
         assert dev._create_temp_device((tape,)) is dev.target_device
 
+        config = qml.devices.ExecutionConfig(gradient_method="backprop", use_device_gradient=True)
+        assert dev.preprocess(config)[1] is config  # unchanged
+
     def test_backprop_has_passthru_devices(self):
         """Test that backprop is supported if the device has passthru devices."""
 
@@ -396,6 +400,9 @@ class TestGradientSupport:
         assert dev.supports_derivatives()
         assert dev.supports_derivatives(ExecutionConfig(gradient_method="backprop"))
         assert dev.supports_derivatives(ExecutionConfig(gradient_method="backprop"), tape)
+
+        config = qml.devices.ExecutionConfig(gradient_method="backprop", use_device_gradient=True)
+        assert dev.preprocess(config)[1] is config  # unchanged
 
         with pytest.warns(qml.PennyLaneDeprecationWarning, match="switching of devices"):
             tmp_device = dev._create_temp_device((tape,))
