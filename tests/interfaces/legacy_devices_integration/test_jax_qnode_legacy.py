@@ -670,8 +670,6 @@ class TestVectorValuedQNode:
         elif diff_method == "spsa":
             kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
             tol = TOL_FOR_SPSA
-        if dev.name == "default.qubit.legacy" and diff_method == "adjoint":
-            pytest.xfail("default.qubit.legacy does not support probs with adjoint.")
 
         dev = qml.device(dev_name, wires=3)
         x = jax.numpy.array(0.543)
@@ -1731,11 +1729,9 @@ class TestReturn:
         dimension"""
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
-        if device_vjp is True and jacobian is jax.jacfwd:
-            pytest.xfail("cant use device_vjp=True and jax.jacfwd")
 
-        if dev.name in {"default.qubit.legacy", "lightning.qubit"} and diff_method == "adjoint":
-            pytest.xfail(f"{dev.name} does not support probs with adjoint.")
+        if diff_method == "adjoint":
+            pytest.skip("Test does not supports adjoint because of probabilities.")
 
         num_wires = 2
 
@@ -1765,10 +1761,8 @@ class TestReturn:
     ):
         """For a multi dimensional measurement (probs), check that a single tuple is returned containing arrays with
         the correct dimension"""
-        if dev.name in {"default.qubit.legacy", "lightning.qubit"} and diff_method == "adjoint":
-            pytest.xfail(f"{dev.name} does not support probs with adjoint.")
-        if device_vjp is True and jacobian is jax.jacfwd:
-            pytest.xfail("cant use device_vjp=True and jax.jacfwd")
+        if diff_method == "adjoint":
+            pytest.skip("Test does not supports adjoint because of probabilities.")
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
 
@@ -1806,12 +1800,10 @@ class TestReturn:
     ):
         """For a multi dimensional measurement (probs), check that a single tuple is returned containing arrays with
         the correct dimension"""
-        if dev.name in {"default.qubit.legacy", "lightning.qubit"} and diff_method == "adjoint":
-            pytest.xfail(f"{dev.name} does not support probs with adjoint.")
+        if diff_method == "adjoint":
+            pytest.skip("Test does not supports adjoint because of probabilities.")
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
-        if device_vjp is True and jacobian is jax.jacfwd:
-            pytest.xfail("cant use device_vjp=True and jax.jacfwd")
 
         num_wires = 2
 

@@ -872,11 +872,8 @@ class TestQubitIntegration:
         if grad_on_execution:
             pytest.skip("Sampling not possible with forward grad_on_execution differentiation.")
 
-        if diff_method in {"adjoint", "backprop"}:
-            pytest.xfail("adjoint and backprop incompatible with finite shots.")
-
-        if dev.name == "default.qubit.legacy":
-            pytest.xfail("default.qubit.legacy cannot sample in more than one basis.")
+        if diff_method == "adjoint":
+            pytest.skip("Adjoint warns with finite shots")
 
         dev = qml.device(dev_name, wires=2, shots=10)
 
@@ -902,8 +899,8 @@ class TestQubitIntegration:
         if grad_on_execution:
             pytest.skip("Sampling not possible with forward grad_on_execution differentiation.")
 
-        if diff_method in {"adjoint", "backprop"}:
-            pytest.xfail("adjoint and backprop do not work with finite shots.")
+        if diff_method == "adjoint":
+            pytest.skip("Adjoint warns with finite shots")
 
         dev = qml.device(dev_name, wires=2, shots=10)
 
@@ -1923,8 +1920,6 @@ class TestJIT:
         elif diff_method == "spsa":
             gradient_kwargs = {"h": H_FOR_SPSA, "sampler_rng": np.random.default_rng(SEED_FOR_SPSA)}
             tol = TOL_FOR_SPSA
-        if dev.name == "default.qubit.legacy" and diff_method == "adjoint":
-            pytest.xfail("default.qubit.legacy does not support probs with adjoint.")
 
         @qnode(
             dev,
