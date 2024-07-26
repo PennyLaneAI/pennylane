@@ -135,7 +135,6 @@ def _bisect_compute_b(u: np.ndarray):
     return _param_su2(c, d, b, 0)
 
 
-# pylint: disable=too-many-arguments
 def _multi_controlled_zyz(
     rot_angles,
     global_phase,
@@ -185,7 +184,6 @@ def _multi_controlled_zyz(
     return decomp
 
 
-# pylint: disable=too-many-arguments
 def _single_control_zyz(rot_angles, global_phase, target_wire, control_wires: Wires):
     # The decomposition of special zyz with multiple control wires
     # defined in Lemma 7.9 of https://arxiv.org/pdf/quant-ph/9503016

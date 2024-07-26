@@ -140,7 +140,7 @@ class TestControlledDecompositionZYZ:
 
     @pytest.mark.parametrize("op", general_unitary_ops)
     @pytest.mark.parametrize("control_wires", ([1, 2], [1, 2, 3]))
-    def test_decomposition_circuit_general_ops_error(self, op, control_wires, tol):
+    def test_decomposition_circuit_general_ops_error(self, op, control_wires):
         """Tests that the controlled decomposition of a single-qubit operation
         with multiple controlled wires raises a ValueError for general_unitary_ops"""
         dev = qml.device("default.qubit", wires=4)
