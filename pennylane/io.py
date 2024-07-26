@@ -435,7 +435,7 @@ def from_qiskit_noise(noise_model, **kwargs):
           `installation instructions <https://docs.pennylane.ai/projects/qiskit/en/latest/installation.html>`__.
           You may need to restart your kernel if you are running it in a notebook environment.
         - Each quantum error present in the qiskit noise model is converted into an equivalent
-          :class:`~.QubitChannel` operator with a same canonical Kraus representation.
+          :class:`~.QubitChannel` operator with the same canonical Kraus representation.
         - Currently, PennyLane noise models do not support readout errors, so those will be skipped during
           conversion.
 
