@@ -66,7 +66,6 @@
 * `qml.dynamic_one_shot` now supports circuits using the `"tensorflow"` interface.
   [(#5973)](https://github.com/PennyLaneAI/pennylane/pull/5973)
 
-
 * The representation for `Wires` has now changed to be more copy-paste friendly.
   [(#5958)](https://github.com/PennyLaneAI/pennylane/pull/5958)
 
