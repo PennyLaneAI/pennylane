@@ -567,7 +567,6 @@ class QNode:
         self._tape = None
         self._qfunc_output = None
         self._user_gradient_kwargs = gradient_kwargs
-        self._original_device = device
         self.gradient_fn = None
         self.gradient_kwargs = {}
         self._tape_cached = False
@@ -639,7 +638,7 @@ class QNode:
             diff_method = "parameter-shift"
 
         self.gradient_fn, self.gradient_kwargs, self.device = QNode.get_gradient_fn(
-            self._original_device, self.interface, diff_method, tape=tape
+            self.device, self.interface, diff_method, tape=tape
         )
         self.gradient_kwargs.update(self._user_gradient_kwargs or {})
 
@@ -805,9 +804,9 @@ class QNode:
         old_interface = self.interface
 
         if self._qfunc_uses_shots_arg:
-            shots = self._original_device.shots
+            shots = self.device.shots
         else:
-            shots = kwargs.pop("shots", self._original_device.shots)
+            shots = kwargs.pop("shots", self.device.shots)
 
         if old_interface == "auto":
             self.interface = qml.math.get_interface(*args, *list(kwargs.values()))
@@ -917,27 +916,6 @@ class QNode:
             full_transform_program += device_transform_program
         else:
             inner_transform_program += device_transform_program
-            config = _make_execution_config(self, self.gradient_fn, mcm_config)
-            device_transform_program, config = self.device.preprocess(execution_config=config)
-
-            if config.use_device_gradient:
-                full_transform_program += device_transform_program
-            else:
-                inner_transform_program += device_transform_program
-
-        has_mcm_support = (
-            any(isinstance(op, MidMeasureMP) for op in self._tape)
-            and hasattr(self.device, "capabilities")
-            and self.device.capabilities().get("supports_mid_measure", False)
-        )
-        if has_mcm_support:
-            inner_transform_program.add_transform(
-                qml.devices.preprocess.mid_circuit_measurements,
-                device=self.device,
-                mcm_config=mcm_config,
-            )
-        elif hasattr(self.device, "capabilities"):
-            inner_transform_program.add_transform(qml.defer_measurements, device=self.device)
 
         # Add the gradient expand to the program if necessary
         if getattr(self.gradient_fn, "expand_transform", False):

@@ -863,7 +863,7 @@ class TestCreateCustomDecompExpandFn:
         assert ops_in_context[2].name == "Hadamard"
 
         # Check that afterwards, the device has gone back to normal
-        _ = circuit()
+        circuit()
 
         assert len(circuit.qtape.operations) == 1
         assert circuit.qtape.operations[0].name == "CNOT"

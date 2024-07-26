@@ -1726,7 +1726,7 @@ class TestMCMConfiguration:
     @pytest.mark.jax
     # @pytest.mark.parametrize("diff_method", [None, "best"])
     @pytest.mark.parametrize("diff_method", ["best"])
-    def test__deferred_hw_like_error_with_jit(self, diff_method):
+    def test_deferred_hw_like_error_with_jit(self, diff_method):
         """Test that an error is raised if attempting to use postselect_mode="hw-like"
         with jax jit with mcm_method="deferred"."""
         import jax  # pylint: disable=import-outside-toplevel
