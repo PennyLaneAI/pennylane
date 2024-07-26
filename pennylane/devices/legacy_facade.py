@@ -15,6 +15,8 @@
 Defines a LegacyDeviceFacade class for converting legacy devices to the
 new interface.
 """
+import warnings
+
 # pylint: disable=not-callable
 from contextlib import contextmanager
 from dataclasses import replace
@@ -303,6 +305,14 @@ class LegacyDeviceFacade(Device):
         if backprop_devices[mapped_interface] == self._device.short_name:
             return self._device
 
+        if self.target_device.short_name != "default.qubit.legacy":
+            warnings.warn(
+                "The switching of devices for backpropagation is now deprecated in v0.38 and "
+                "will be removed in v0.39, as this behavior was developed purely for the"
+                " deprecated default.qubit.legacy. ",
+                qml.PennyLaneDeprecationWarning,
+            )
+
         # create new backprop device
         expand_fn = self._device.expand_fn
         batch_transform = self._device.batch_transform
@@ -312,9 +322,19 @@ class LegacyDeviceFacade(Device):
             debugger = "No debugger"
         tracker = self._device.tracker
 
-        new_device = qml.device(
-            backprop_devices[mapped_interface], wires=self._device.wires, shots=self._device.shots
-        )
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                action="ignore",
+                category=qml.PennyLaneDeprecationWarning,
+                message=r"use 'default.qubit'",
+            )
+            # we already warned about backprop device switching
+            new_device = qml.device(
+                backprop_devices[mapped_interface],
+                wires=self._device.wires,
+                shots=self._device.shots,
+            )
+
         new_device.expand_fn = expand_fn
         new_device.batch_transform = batch_transform
         if debugger != "No debugger":

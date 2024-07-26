@@ -397,7 +397,8 @@ class TestGradientSupport:
         assert dev.supports_derivatives(ExecutionConfig(gradient_method="backprop"))
         assert dev.supports_derivatives(ExecutionConfig(gradient_method="backprop"), tape)
 
-        tmp_device = dev._create_temp_device((tape,))
+        with pytest.warns(qml.PennyLaneDeprecationWarning, match="switching of devices"):
+            tmp_device = dev._create_temp_device((tape,))
         assert tmp_device.short_name == "default.qubit.autograd"
 
     def test_backprop_passthru_device_self(self):
@@ -431,7 +432,8 @@ class TestGradientSupport:
     def test_backprop_device_substitution(self, dev_class):
         """Test that default.qubit.legacy is substituted for a backprop device during backprop execution."""
 
-        dq_legacy = dev_class(wires=2)
+        with pytest.warns(qml.PennyLaneDeprecationWarning, match="use 'default.qubit'"):
+            dq_legacy = dev_class(wires=2)
         dev = LegacyDeviceFacade(dq_legacy)
 
         def f(x):
