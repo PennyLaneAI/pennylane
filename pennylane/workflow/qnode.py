@@ -997,7 +997,7 @@ class QNode:
             override_shots = False
         else:
             if "shots" not in kwargs:
-                kwargs["shots"] = self._original_device.shots
+                kwargs["shots"] = self.device.shots
             override_shots = kwargs["shots"]
 
         # construct the tape
