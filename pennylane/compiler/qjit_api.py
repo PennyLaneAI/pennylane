@@ -17,7 +17,7 @@ import pennylane as qml
 
 from collections.abc import Callable
 
-from functools import wraps
+import functools
 
 from .compiler import (
     AvailableCompilers,
@@ -517,9 +517,6 @@ def for_loop(lower_bound, upper_bound, step):
         ops_loader = compilers[active_jit]["ops"].load()
         return ops_loader.for_loop(lower_bound, upper_bound, step)
 
-    if qml.capture.enabled():
-        return _capture_for(lower_bound, upper_bound, step)
-
     # if there is no active compiler, simply interpret the for loop
     # via the Python interpretor.
     def _decorator(body_fn):
@@ -545,16 +542,25 @@ def for_loop(lower_bound, upper_bound, step):
     return _decorator
 
 
-def _capture_for(lower_bound, upper_bound, step) -> Callable:
-    """Capture compatible way to represent a for loop"""
+@functools.lru_cache
+def _get_for_loop_qfunc_prim():
+    """Get the cond primitive for quantum functions."""
 
+    # JAX should be installed if capture is enabled
     import jax  # pylint: disable=import-outside-toplevel
 
-    def _decorator(body_fn):
+    for_loop_prim = jax.core.Primitive("for_loop")
+    for_loop_prim.multiple_results = True
 
-        return ForLoopCallable(lower_bound, upper_bound, step, body_fn)
+    @for_loop.def_impl
+    def _():
+        pass
 
-    return _decorator
+    @for_loop.def_abstract_eval
+    def _():
+        pass
+
+    return for_loop_prim
 
 
 class ForLoopCallable:  # pylint:disable=too-few-public-methods
@@ -579,7 +585,7 @@ class ForLoopCallable:  # pylint:disable=too-few-public-methods
         self.step = step
         self.body_fn = body_fn
 
-    def __call__(self, *init_state):
+    def _call_capture_disabled(self, *init_state):
         args = init_state
         fn_res = args if len(args) > 1 else args[0] if len(args) == 1 else None
 
@@ -588,3 +594,27 @@ class ForLoopCallable:  # pylint:disable=too-few-public-methods
             args = fn_res if len(args) > 1 else (fn_res,) if len(args) == 1 else ()
 
         return fn_res
+
+    def _call_capture_enabled(self, *init_state):
+
+        import jax  # pylint: disable=import-outside-toplevel
+
+        for_loop_prim = _get_for_loop_qfunc_prim()
+
+        print("Capture enabled")
+
+        jaxpr_funza = jax.make_jaxpr(self.body_fn)
+        init_state_freg = (0, *init_state)
+        jax_lezza = jaxpr_funza(*init_state_freg)
+        print(jax_lezza)
+        jax.core.eval_jaxpr(jax_lezza.jaxpr, jax_lezza.consts, *init_state_freg)
+
+        # args = init_state
+        # fn_res = args if len(args) > 1 else args[0] if len(args) == 1 else None
+
+    def __call__(self, *init_state):
+
+        if qml.capture.enabled():
+            return self._call_capture_enabled(*init_state)
+
+        return self._call_capture_disabled(*init_state)
