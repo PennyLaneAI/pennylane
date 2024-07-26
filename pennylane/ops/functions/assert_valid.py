@@ -70,7 +70,10 @@ def _check_decomposition(op, skip_wire_mapping):
         # Check that mapping wires transitions to the decomposition
         wire_map = {w: ascii_lowercase[i] for i, w in enumerate(op.wires)}
         mapped_op = op.map_wires(wire_map)
-        # I don't think this is a good solution, try to think of a better one
+        # calling `map_wires` on a Controlled operator generates a new `op` from the controls and
+        # base, so may return a different class of operator. We only compare decomps of `op` and 
+        # `mapped_op` if `mapped_op` **has** a decomposition.
+        # see MultiControlledX([0, 1]) and CNOT([0, 1]) as an example
         if mapped_op.has_decomposition:
             mapped_decomp = mapped_op.decomposition()
             orig_decomp = op.decomposition()
