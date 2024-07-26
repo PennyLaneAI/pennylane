@@ -71,7 +71,7 @@ def _check_decomposition(op, skip_wire_mapping):
         wire_map = {w: ascii_lowercase[i] for i, w in enumerate(op.wires)}
         mapped_op = op.map_wires(wire_map)
         # calling `map_wires` on a Controlled operator generates a new `op` from the controls and
-        # base, so may return a different class of operator. We only compare decomps of `op` and 
+        # base, so may return a different class of operator. We only compare decomps of `op` and
         # `mapped_op` if `mapped_op` **has** a decomposition.
         # see MultiControlledX([0, 1]) and CNOT([0, 1]) as an example
         if mapped_op.has_decomposition:
