@@ -44,8 +44,6 @@ def find_next_gate(wires, op_list):
 def _try_no_fuse(angles_1, angles_2):
     """Try to combine rotation angles without trigonometric identities
     if some angles in the input angles vanish."""
-    angles_1 = qml.math.asarray(angles_1)
-    angles_2 = qml.math.asarray(angles_2)
     # This sum is only computed to obtain a dtype-coerced object that respects
     # TensorFlow's coercion rules between Python/NumPy objects and TF objects.
     _sum = angles_1 + angles_2
@@ -55,11 +53,11 @@ def _try_no_fuse(angles_1, angles_2):
 
     if qml.math.allclose(omega1 + phi2, 0.0):
         return qml.math.stack([phi1, theta1 + theta2, omega2])
-    zero = qml.math.zeros_like(phi1) + qml.math.zeros_like(phi2)
     if qml.math.allclose(theta1, 0.0):
         # No Y rotation in first Rot
         if qml.math.allclose(theta2, 0.0):
             # Z rotations only
+            zero = qml.math.zeros_like(phi1) + qml.math.zeros_like(phi2)
             return qml.math.stack([phi1 + omega1 + phi2 + omega2, zero, zero])
         return qml.math.stack([phi1 + omega1 + phi2, theta2, omega2])
     if qml.math.allclose(theta2, 0.0):
@@ -106,6 +104,8 @@ def fuse_rot_angles(angles_1, angles_2):
     See the documentation of :func:`~.pennylane.transforms.single_qubit_fusion` for a
     mathematical derivation of this function.
     """
+    angles_1 = qml.math.asarray(angles_1)
+    angles_2 = qml.math.asarray(angles_2)
 
     if not (
         qml.math.is_abstract(angles_1)
@@ -118,8 +118,8 @@ def fuse_rot_angles(angles_1, angles_2):
             return fused_angles
 
     # moveaxis required for batched inputs
-    phi1, theta1, omega1 = qml.math.moveaxis(qml.math.asarray(angles_1), -1, 0)
-    phi2, theta2, omega2 = qml.math.moveaxis(qml.math.asarray(angles_2), -1, 0)
+    phi1, theta1, omega1 = qml.math.moveaxis(angles_1, -1, 0)
+    phi2, theta2, omega2 = qml.math.moveaxis(angles_2, -1, 0)
     c1, c2 = qml.math.cos(theta1 / 2), qml.math.cos(theta2 / 2)
     s1, s2 = qml.math.sin(theta1 / 2), qml.math.sin(theta2 / 2)
 
