@@ -673,6 +673,7 @@ class QNode:
         if device.supports_derivatives(config, circuit=tape):
             new_config = device.preprocess(config)[1]
             return new_config.gradient_method, {}, device
+
         if diff_method in {"backprop", "adjoint", "device"}:  # device-only derivatives
             raise qml.QuantumFunctionError(
                 f"Device {device} does not support {diff_method} with requested circuit."

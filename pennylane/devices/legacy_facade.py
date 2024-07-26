@@ -195,9 +195,10 @@ class LegacyDeviceFacade(Device):
     def preprocess(self, execution_config=DefaultExecutionConfig):
         execution_config = self._setup_execution_config(execution_config)
         program = qml.transforms.core.TransformProgram()
-        # note: need to wrap these methods with a set_shots modifier
+
         program.add_transform(legacy_device_batch_transform, device=self._device)
         program.add_transform(legacy_device_expand_fn, device=self._device)
+
         if execution_config.gradient_method == "adjoint":
             _add_adjoint_transforms(program, name=f"{self.name} + adjoint")
 
@@ -243,15 +244,17 @@ class LegacyDeviceFacade(Device):
     def _setup_execution_config(self, execution_config):
         if execution_config.gradient_method == "best":
             tape = qml.tape.QuantumScript([], [])
-            if self._validate_backprop_method(tape):
-                config = replace(execution_config, gradient_method="backprop")
-                return self._setup_backprop_config(config)
-            if self._validate_adjoint_method(tape):
-                config = replace(execution_config, gradient_method="adjoint")
-                return self._setup_adjoint_config(config)
             if self._validate_device_method(tape):
                 config = replace(execution_config, gradient_method="device")
                 return self._setup_execution_config(config)
+
+            if self._validate_backprop_method(tape):
+                config = replace(execution_config, gradient_method="backprop")
+                return self._setup_backprop_config(config)
+
+            if self._validate_adjoint_method(tape):
+                config = replace(execution_config, gradient_method="adjoint")
+                return self._setup_adjoint_config(config)
 
         if execution_config.gradient_method == "backprop":
             return self._setup_backprop_config(execution_config)
@@ -279,6 +282,7 @@ class LegacyDeviceFacade(Device):
             return self._validate_adjoint_method(circuit)
         if execution_config.gradient_method == "device":
             return self._validate_device_method(circuit)
+
         return False
 
     # pylint: disable=protected-access

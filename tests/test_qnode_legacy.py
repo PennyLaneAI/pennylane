@@ -36,38 +36,50 @@ def dummyfunc():
     return None
 
 
+class DummyDevice(qml.devices.LegacyDevice):
+    """A minimal device that does not do anything."""
+
+    author = "some string"
+    name = "my legacy device"
+    short_name = "something"
+    version = 0.0
+
+    observables = {"PauliX", "PauliY", "PauliZ"}
+    operations = {"Rot", "RX", "RY", "RZ", "PauliX", "PauliY", "PauliZ", "CNOT"}
+    pennylane_requires = 0.38
+
+    def capabilities(self):
+        return {"passthru_devices": {"autograd": "default.mixed"}}
+
+    def reset(self):
+        pass
+
+    # pylint: disable=unused-argument
+    def apply(self, operation, wires, par):
+        return 0.0
+
+    # pylint: disable=unused-argument
+    def expval(self, observable, wires, par):
+        return 0.0
+
+
+class DeviceDerivatives(DummyDevice):
+    """A dummy device with a jacobian."""
+
+    # _capabilities = {"provides_jacobian": True}
+
+    def capabilities(self):
+        capabilities = super().capabilities().copy()
+        capabilities.update(
+            provides_jacobian=True,
+        )
+        return capabilities
+
+
 def test_backprop_switching_deprecation():
     """Test that a PennyLaneDeprecationWarning is raised when a device is subtituted
     for a different backprop device.
     """
-
-    class DummyDevice(qml.devices.LegacyDevice):
-        """A minimal device that substitutes for a backprop device."""
-
-        author = "some string"
-        name = "my legacy device"
-        short_name = "something"
-        version = 0.0
-
-        observables = {"PauliX", "PauliY", "PauliZ"}
-        operations = {"Rot", "RX", "RY", "RZ", "PauliX", "PauliY", "PauliZ", "CNOT"}
-        pennylane_requires = 0.38
-
-        _debugger = None
-
-        def capabilities(self):
-            return {"passthru_devices": {"autograd": "default.mixed"}}
-
-        def reset(self):
-            pass
-
-        # pylint: disable=unused-argument
-        def apply(self, operation, wires, par):
-            return 0.0
-
-        # pylint: disable=unused-argument
-        def expval(self, observable, wires, par):
-            return 0.0
 
     with pytest.warns(qml.PennyLaneDeprecationWarning):
 
@@ -121,15 +133,9 @@ class TestValidation:
         for a given device and interface returns the device"""
 
         dev = qml.device("default.qubit.legacy", wires=1)
+
         monkeypatch.setitem(dev._capabilities, "passthru_interface", "some_interface")
         monkeypatch.setitem(dev._capabilities, "provides_jacobian", True)
-        # dev = CustomDeviceWithDiffMethod(wires=1)
-
-        # res = QNode.get_best_method(dev, "jax")
-        # assert res == ("device", {}, dev)
-
-        # res = QNode.get_best_method(dev, None)
-        # assert res == ("device", {}, dev)
 
         # basic check if the device provides a Jacobian
         res = QNode.get_best_method(dev, "another_interface")
@@ -161,6 +167,7 @@ class TestValidation:
         assert res == (qml.gradients.param_shift, {}, dev)
 
     # pylint: disable=protected-access
+    @pytest.mark.xfail(reason="No longer possible thanks to the new Legacy Facade")
     def test_best_method_is_finite_diff(self, monkeypatch):
         """Test that the method for determining the best diff method
         for a given device and interface returns finite differences"""
@@ -209,12 +216,10 @@ class TestValidation:
         assert res == "backprop"
 
     # pylint: disable=protected-access
-    def test_best_method_str_is_param_shift(self, monkeypatch):
+    def test_best_method_str_is_param_shift(self):
         """Test that the method for determining the best diff method string
         for a given device and interface returns 'parameter-shift'"""
-        dev = qml.device("default.qubit.legacy", wires=1)
-        monkeypatch.setitem(dev._capabilities, "passthru_interface", "some_interface")
-        monkeypatch.setitem(dev._capabilities, "provides_jacobian", False)
+        dev = qml.device("default.qubit.legacy", wires=1, shots=50)
 
         # parameter shift is returned when Jacobian is not provided and
         # the backprop interfaces do not match
@@ -222,6 +227,7 @@ class TestValidation:
         assert res == "parameter-shift"
 
     # pylint: disable=protected-access
+    @pytest.mark.xfail(reason="No longer possible thanks to the new Legacy Facade")
     def test_best_method_str_is_finite_diff(self, monkeypatch):
         """Test that the method for determining the best diff method string
         for a given device and interface returns 'finite-diff'"""
@@ -264,11 +270,13 @@ class TestValidation:
         assert qn.diff_method == "backprop"
         assert qn.gradient_fn == "backprop"
 
-        qn = QNode(dummyfunc, dev, diff_method="device")
+        qn = QNode(dummyfunc, DeviceDerivatives(wires=1), diff_method="device")
         assert qn.diff_method == "device"
         assert qn.gradient_fn == "device"
 
-        qn = QNode(dummyfunc, dev, interface="autograd", diff_method="device")
+        qn = QNode(
+            dummyfunc, DeviceDerivatives(wires=1), interface="autograd", diff_method="device"
+        )
         assert qn.diff_method == "device"
         assert qn.gradient_fn == "device"
 
