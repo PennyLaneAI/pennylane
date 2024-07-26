@@ -911,7 +911,6 @@ class QNode:
 
         full_transform_program = qml.transforms.core.TransformProgram(self.transform_program)
         inner_transform_program = qml.transforms.core.TransformProgram()
-        config = None
 
         config = _make_execution_config(self, self.gradient_fn)
         device_transform_program, config = self.device.preprocess(execution_config=config)
