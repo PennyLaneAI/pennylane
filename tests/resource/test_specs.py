@@ -29,13 +29,6 @@ with pytest.warns(qml.PennyLaneDeprecationWarning):
         (qml.device("default.qubit.legacy", wires=2), 2),
     ]
 
-with pytest.warns(qml.PennyLaneDeprecationWarning):
-    devices_list = [
-        (qml.device("default.qubit"), 1),
-        (qml.device("default.qubit", wires=2), 2),
-        (qml.device("default.qubit.legacy", wires=2), 2),
-    ]
-
 
 class TestSpecsTransform:
     """Tests for the transform specs using the QNode"""
