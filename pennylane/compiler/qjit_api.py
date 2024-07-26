@@ -13,6 +13,7 @@
 # limitations under the License.
 """QJIT compatible quantum and compilation operations API"""
 
+import jax.core
 import pennylane as qml
 
 from collections.abc import Callable
@@ -552,13 +553,38 @@ def _get_for_loop_qfunc_prim():
     for_loop_prim = jax.core.Primitive("for_loop")
     for_loop_prim.multiple_results = True
 
-    @for_loop.def_impl
-    def _():
-        pass
+    @for_loop_prim.def_impl
+    def _(lower_bound, upper_bound, step, *init_state, jaxpr_body_fn):
 
-    @for_loop.def_abstract_eval
-    def _():
-        pass
+        args = init_state
+        fn_res = args if len(args) > 1 else args[0] if len(args) == 1 else None
+
+        # index_plus_args = (0, *init_state)
+        # jaxpr_body_fn = jaxpr_body_fn(*index_plus_args)
+
+        for i in range(lower_bound, upper_bound, step):
+
+            tmp_args = (i, *args)
+
+            print("Iteration", i)
+            print("args", args)
+            print("tmp_args", tmp_args)
+
+            jaxpr_exec = jaxpr_body_fn(*tmp_args)
+            fn_res = jax.core.eval_jaxpr(jaxpr_exec.jaxpr, jaxpr_exec.consts, *tmp_args)
+            args = fn_res if len(args) > 1 else (fn_res,) if len(args) == 1 else ()
+
+        return fn_res
+
+    @for_loop_prim.def_abstract_eval
+    def _(lower_bound, upper_bound, step, *init_state, jaxpr_body_fn):
+
+        # We assume that the abstract values returned by the body function
+        # do not depend on the iteration index.
+
+        # TODO: add check to ensure this is the case
+
+        return jaxpr_body_fn(0, *init_state).out_avals
 
     return for_loop_prim
 
@@ -603,7 +629,16 @@ class ForLoopCallable:  # pylint:disable=too-few-public-methods
 
         print("Capture enabled")
 
-        jaxpr_funza = jax.make_jaxpr(self.body_fn)
+        jaxpr_body_fn = jax.make_jaxpr(self.body_fn)
+
+        return for_loop_prim.bind(
+            self.lower_bound,
+            self.upper_bound,
+            self.step,
+            *init_state,
+            jaxpr_body_fn=jaxpr_body_fn,
+        )
+
         init_state_freg = (0, *init_state)
         jax_lezza = jaxpr_funza(*init_state_freg)
         print(jax_lezza)
