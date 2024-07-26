@@ -165,7 +165,9 @@ def are_identical_pauli_words(pauli_1, pauli_2):
 
     **Example**
 
-    >>> are_identical_pauli_words(qml.Z(0) @ qml.Z(1), qml.Z(0) @ qml.Z(1))
+    >>> are_identical_pauli_words(qml.Z(0) @ qml.Z(1), qml.Z(1) @ qml.Z(0))
+    True
+    >>> are_identical_pauli_words(qml.I(0) @ qml.X(1), qml.X(1))
     True
     >>> are_identical_pauli_words(qml.Z(0) @ qml.Z(1), qml.Z(0) @ qml.X(3))
     False
@@ -195,7 +197,7 @@ def pauli_to_binary(pauli_word, n_qubits=None, wire_map=None, check_is_pauli_wor
         wire_map (dict): dictionary containing all wire labels used in the Pauli word as keys, and
             unique integer labels as their values
         check_is_pauli_word (bool): If True (default) then a check is run to verify that pauli_word
-            is infact a Pauli word
+            is in fact a Pauli word.
 
     Returns:
         array: the ``2*n_qubits`` dimensional binary vector representation of the input Pauli word

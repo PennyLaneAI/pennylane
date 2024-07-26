@@ -15,15 +15,17 @@
 This module contains the high-level Pauli-word-partitioning functionality used in measurement optimization.
 """
 
+from collections import defaultdict
 from copy import copy
+from operator import itemgetter
 
 import numpy as np
+import rustworkx as rx
 
 import pennylane as qml
 from pennylane.ops import Prod, SProd
-from pennylane.pauli.utils import (
+from pennylane.pauli.utils import (  # binary_to_pauli,
     are_identical_pauli_words,
-    binary_to_pauli,
     observables_to_binary_matrix,
     qwc_complement_adj_matrix,
 )
@@ -166,14 +168,49 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
         if self.adj_matrix is None:
             self.adj_matrix = self.complement_adj_matrix_for_operator()
 
-        coloured_binary_paulis = self.graph_colourer(self.binary_observables, self.adj_matrix)
+        graph = self.complement_graph()
+        # Solve the graph colouring problem of the complement graph using Rustworkx
+        # A dictionary where keys are node indices and the value is the color
+        colouring_dict = rx.graph_greedy_color(graph)
+        colouring_dict = dict(sorted(colouring_dict.items()))
+        # groups is a dictionary where the keys are the colours of the partitions and the values are lists of
+        # indices corresponding to the observables on each partition
+        groups = defaultdict(list)
+        for idx, colour in colouring_dict.items():
+            groups[colour].append(idx)
 
+        # grouped_paulis is a list[tuple[Observable]]
+        # itemgetter is used as it is more performant than list comprehension
+        grouped_paulis = [itemgetter(*indices)(self.observables) for indices in groups.values()]
+        # need to convert to list[list[Observable]]
         self.grouped_paulis = [
-            [binary_to_pauli(pauli_word, wire_map=self._wire_map) for pauli_word in grouping]
-            for grouping in coloured_binary_paulis.values()
+            list(group) if isinstance(group, tuple) else list((group,)) for group in grouped_paulis
         ]
 
+        # coloured_binary_paulis = self.graph_colourer(self.binary_observables, self.adj_matrix)
+
+        # self.grouped_paulis = [
+        #     [binary_to_pauli(pauli_word, wire_map=self._wire_map) for pauli_word in grouping]
+        #     for grouping in coloured_binary_paulis.values()
+        # ]
+
         return self.grouped_paulis
+
+    def complement_graph(self):
+        """
+        Create the complement graph using the adjancency matrix.
+        """
+        # List of edges on the complement graph.
+        # Get only the upper triangle since the adjacency matrix is symmetric and we want an undirected graph
+        edges = list(zip(*np.where(np.triu(self.adj_matrix, k=1))))
+
+        # Create complement graph
+        graph = rx.PyGraph()
+        _ = graph.add_nodes_from(
+            self.observables
+        )  # returns the indices of the observables as nodes
+        graph.add_edges_from_no_data(edges)
+        return graph
 
 
 def group_observables(observables, coefficients=None, grouping_type="qwc", method="rlf"):
