@@ -36,6 +36,47 @@ def dummyfunc():
     return None
 
 
+def test_backprop_switching_deprecation():
+    """Test that a PennyLaneDeprecationWarning is raised when a device is subtituted
+    for a different backprop device.
+    """
+
+    class DummyDevice(qml.devices.LegacyDevice):
+        """A minimal device that substitutes for a backprop device."""
+
+        author = "some string"
+        name = "my legacy device"
+        short_name = "something"
+        version = 0.0
+
+        observables = {"PauliX", "PauliY", "PauliZ"}
+        operations = {"Rot", "RX", "RY", "RZ", "PauliX", "PauliY", "PauliZ", "CNOT"}
+        pennylane_requires = 0.38
+
+        _debugger = None
+
+        def capabilities(self):
+            return {"passthru_devices": {"autograd": "default.mixed"}}
+
+        def reset(self):
+            pass
+
+        # pylint: disable=unused-argument
+        def apply(self, operation, wires, par):
+            return 0.0
+
+        # pylint: disable=unused-argument
+        def expval(self, observable, wires, par):
+            return 0.0
+
+    with pytest.warns(qml.PennyLaneDeprecationWarning):
+
+        @qml.qnode(DummyDevice(shots=None), interface="autograd")
+        def _(x):
+            qml.RX(x, 0)
+            return qml.expval(qml.Z(0))
+
+
 # pylint: disable=too-many-public-methods
 class TestValidation:
     """Tests for QNode creation and validation"""
@@ -491,13 +532,14 @@ class TestValidation:
 
         dev = qml.device("default.qubit.legacy", wires=1, shots=1)
 
-        @qnode(dev, diff_method="adjoint")
-        def circ():
-            return qml.expval(qml.PauliZ(0))
-
         with pytest.warns(
             UserWarning, match="Requested adjoint differentiation to be computed with finite shots."
         ):
+
+            @qnode(dev, diff_method="adjoint")
+            def circ():
+                return qml.expval(qml.PauliZ(0))
+
             circ()
 
     @pytest.mark.autograd
@@ -621,7 +663,8 @@ class TestValidation:
         }
 
     def test_autograd_interface_device_switched_no_warnings(self):
-        """Test that checks that no warning is raised for device switch when you define an interface."""
+        """Test that checks that no warning is raised for device switch when you define an interface,
+        except for the deprecation warnings which will be caught by the fixture."""
         dev = qml.device("default.qubit.legacy", wires=1)
 
         @qml.qnode(dev, interface="autograd")
@@ -629,17 +672,16 @@ class TestValidation:
             qml.RX(params, wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        with warnings.catch_warnings(record=True) as record:
-            circuit(qml.numpy.array(0.1, requires_grad=True))
-
-        assert len(record) == 0
+        circuit(qml.numpy.array(0.1, requires_grad=True))
 
     def test_not_giving_mode_kwarg_does_not_raise_warning(self):
-        """Test that not providing a value for mode does not raise a warning."""
+        """Test that not providing a value for mode does not raise a warning
+        except for the deprecation warning."""
         with warnings.catch_warnings(record=True) as record:
-            _ = qml.QNode(lambda f: f, qml.device("default.qubit.legacy", wires=1))
+            qml.QNode(lambda f: f, qml.device("default.qubit.legacy", wires=1))
 
-        assert len(record) == 0
+        assert len(record) == 1
+        assert record[0].category == qml.PennyLaneDeprecationWarning
 
 
 class TestTapeConstruction:
@@ -1089,9 +1131,7 @@ class TestIntegration:
         assert len(circuit.tape.operations) == 2
         assert isinstance(circuit.tape.operations[1], qml.measurements.MidMeasureMP)
 
-    @pytest.mark.parametrize(
-        "dev", [qml.device("default.qubit", wires=3), qml.device("default.qubit.legacy", wires=3)]
-    )
+    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.legacy"])
     @pytest.mark.parametrize("first_par", np.linspace(0.15, np.pi - 0.3, 3))
     @pytest.mark.parametrize("sec_par", np.linspace(0.15, np.pi - 0.3, 3))
     @pytest.mark.parametrize(
@@ -1106,11 +1146,13 @@ class TestIntegration:
         ],
     )
     def test_defer_meas_if_mcm_unsupported(
-        self, dev, first_par, sec_par, return_type, mv_return, mv_res, mocker
+        self, dev_name, first_par, sec_par, return_type, mv_return, mv_res, mocker
     ):  # pylint: disable=too-many-arguments
         """Tests that the transform using the deferred measurement principle is
         applied if the device doesn't support mid-circuit measurements
         natively."""
+
+        dev = qml.device(dev_name, wires=3)
 
         @qml.qnode(dev)
         def cry_qnode(x, y):

@@ -876,6 +876,14 @@ class QNode:
                 if backprop_devices[mapped_interface] == device.short_name:
                     return "backprop", {}, device
 
+                if device.short_name != "default.qubit.legacy":
+                    warnings.warn(
+                        "The switching of devices for backpropagation is now deprecated in v0.38 and "
+                        "will be removed in v0.39, as this behavior was developed purely for the "
+                        "deprecated default.qubit.legacy.",
+                        qml.PennyLaneDeprecationWarning,
+                    )
+
                 # TODO: need a better way of passing existing device init options
                 # to a new device?
                 expand_fn = device.expand_fn

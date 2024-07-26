@@ -805,9 +805,9 @@ def test_vjp_is_unwrapped_for_param_shift():
 @pytest.mark.torch
 def test_batch_input_single_measure(tol):
     """Test input batching in torch"""
-    dev = qml.device("default.qubit.torch", wires=4)
+    dev = qml.device("default.qubit")
 
-    @qml.qnode(dev, diff_method="parameter-shift")
+    @qml.qnode(dev, interface="torch", diff_method="parameter-shift")
     def circuit(x, weights):
         qml.AngleEmbedding(x, wires=range(4), rotation="Y")
         qml.RY(weights[0], wires=0)
@@ -820,7 +820,6 @@ def test_batch_input_single_measure(tol):
     res = layer(x)
 
     assert res.shape == (10, 2)
-    assert dev.num_executions == 1
 
     for x_, r in zip(x, res):
         assert qml.math.allclose(r, circuit(x_, layer.qnode_weights["weights"]), atol=tol)
@@ -832,9 +831,9 @@ def test_batch_input_single_measure(tol):
 @pytest.mark.torch
 def test_batch_input_multi_measure(tol):
     """Test input batching in torch for multiple measurements"""
-    dev = qml.device("default.qubit.torch", wires=4)
+    dev = qml.device("default.qubit")
 
-    @qml.qnode(dev, diff_method="parameter-shift")
+    @qml.qnode(dev, interface="torch", diff_method="parameter-shift")
     def circuit(x, weights):
         qml.AngleEmbedding(x, wires=range(4), rotation="Y")
         qml.RY(weights[0], wires=0)
@@ -847,7 +846,6 @@ def test_batch_input_multi_measure(tol):
     res = layer(x)
 
     assert res.shape == (10, 5)
-    assert dev.num_executions == 1
 
     for x_, r in zip(x, res):
         exp = torch.hstack(circuit(x_, layer.qnode_weights["weights"]))
