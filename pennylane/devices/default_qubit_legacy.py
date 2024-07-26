@@ -22,7 +22,6 @@ import functools
 import itertools
 import warnings
 from string import ascii_letters as ABC
-from typing import List
 
 import numpy as np
 from scipy.sparse import csr_matrix
@@ -1099,7 +1098,7 @@ class DefaultQubitLegacy(QubitDevice):
 
         return self._cast(self._stack([outcomes, recipes]), dtype=np.int8)
 
-    def _get_diagonalizing_gates(self, circuit: qml.tape.QuantumTape) -> List[Operation]:
+    def _get_diagonalizing_gates(self, circuit: qml.tape.QuantumTape) -> list[Operation]:
         meas_filtered = [
             m
             for m in circuit.measurements
