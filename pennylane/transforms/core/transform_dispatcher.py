@@ -19,7 +19,7 @@ import functools
 import os
 import types
 import warnings
-from typing import Sequence
+from collections.abc import Sequence
 
 import pennylane as qml
 from pennylane.typing import ResultBatch
@@ -235,6 +235,7 @@ class TransformDispatcher:
     def _qfunc_transform(self, qfunc, targs, tkwargs):
         """Apply the transform on a quantum function."""
 
+        @functools.wraps(qfunc)
         def qfunc_transformed(*args, **kwargs):
             with qml.queuing.AnnotatedQueue() as q:
                 qfunc_output = qfunc(*args, **kwargs)

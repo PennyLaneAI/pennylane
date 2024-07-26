@@ -15,9 +15,9 @@
 This module contains the qml.classical_shadow measurement.
 """
 import copy
-from collections.abc import Iterable
+from collections.abc import Iterable, Sequence
 from string import ascii_letters as ABC
-from typing import Optional, Sequence, Union
+from typing import Optional, Union
 
 import numpy as np
 
@@ -216,7 +216,7 @@ class ClassicalShadowMP(MeasurementTransform):
     """Represents a classical shadow measurement process occurring at the end of a
     quantum variational circuit.
 
-    Please refer to :func:`classical_shadow` for detailed documentation.
+    Please refer to :func:`pennylane.classical_shadow` for detailed documentation.
 
 
     Args:

@@ -18,8 +18,8 @@ import contextlib
 import functools
 import inspect
 import math
-from collections.abc import Iterable
-from typing import Any, Callable, Dict, Union
+from collections.abc import Callable, Iterable
+from typing import Any, Union
 
 from pennylane import QNode
 
@@ -106,7 +106,7 @@ class TorchLayer(Module):
 
         **Output shape**
 
-        If the QNode returns a single measurement, then the output of the ``KerasLayer`` will have
+        If the QNode returns a single measurement, then the output of the ``TorchLayer`` will have
         shape ``(batch_dim, *measurement_shape)``, where ``measurement_shape`` is the output shape
         of the measurement:
 
@@ -186,7 +186,7 @@ class TorchLayer(Module):
 
             init_method = {
                 "weights_0": torch.nn.init.normal_,
-                "weights_1": torch.nn.init.uniform,
+                "weights_1": torch.nn.init.uniform_,
                 "weights_2": torch.tensor([1., 2., 3.]),
                 "weight_3": torch.tensor(1.),  # scalar when shape is not an iterable and is <= 1
                 "weight_4": torch.tensor([1.]),
@@ -261,7 +261,7 @@ class TorchLayer(Module):
             def qnode(inputs, weights):
                 qml.templates.AngleEmbedding(inputs, wires=range(n_qubits))
                 qml.templates.StronglyEntanglingLayers(weights, wires=range(n_qubits))
-                return qml.expval(qml.Z(0)), qml.expval(qml.Z(1))
+                return [qml.expval(qml.Z(0)), qml.expval(qml.Z(1))]
 
             weight_shapes = {"weights": (3, n_qubits, 3)}
 
@@ -328,7 +328,7 @@ class TorchLayer(Module):
         self,
         qnode: QNode,
         weight_shapes: dict,
-        init_method: Union[Callable, Dict[str, Union[Callable, Any]]] = None,
+        init_method: Union[Callable, dict[str, Union[Callable, Any]]] = None,
         # FIXME: Cannot change type `Any` to `torch.Tensor` in init_method because it crashes the
         # tests that don't use torch module.
     ):
@@ -354,7 +354,7 @@ class TorchLayer(Module):
         if self.qnode.interface not in ("auto", "torch", "pytorch"):
             raise ValueError(f"Invalid interface '{self.qnode.interface}' for TorchLayer")
 
-        self.qnode_weights: Dict[str, torch.nn.Parameter] = {}
+        self.qnode_weights: dict[str, torch.nn.Parameter] = {}
 
         self._init_weights(init_method=init_method, weight_shapes=weight_shapes)
         self._initialized = True
@@ -438,6 +438,8 @@ class TorchLayer(Module):
             return torch.hstack(_res).type(x.dtype)
 
         if isinstance(res, tuple) and len(res) > 1:
+            if all(isinstance(r, torch.Tensor) for r in res):
+                return tuple(_combine_dimensions([r]) for r in res)  # pragma: no cover
             return tuple(_combine_dimensions(r) for r in res)
 
         return _combine_dimensions(res)
@@ -456,7 +458,7 @@ class TorchLayer(Module):
         x = args[0]
         kwargs = {
             self.input_arg: x,
-            **{arg: weight.data.to(x) for arg, weight in self.qnode_weights.items()},
+            **{arg: weight.to(x) for arg, weight in self.qnode_weights.items()},
         }
         self.qnode.construct((), kwargs)
 
@@ -478,8 +480,8 @@ class TorchLayer(Module):
 
     def _init_weights(
         self,
-        weight_shapes: Dict[str, tuple],
-        init_method: Union[Callable, Dict[str, Union[Callable, Any]], None],
+        weight_shapes: dict[str, tuple],
+        init_method: Union[Callable, dict[str, Union[Callable, Any]], None],
     ):
         r"""Initialize and register the weights with the given init_method. If init_method is not
         specified, weights are randomly initialized from the uniform distribution on the interval

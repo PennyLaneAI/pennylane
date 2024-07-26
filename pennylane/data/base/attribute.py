@@ -14,30 +14,18 @@
 """Contains the base class for Dataset attribute types, and a class for
 attribute metadata."""
 
-import typing
 import warnings
 from abc import ABC, abstractmethod
-from collections.abc import Mapping, MutableMapping, Sequence
+from collections.abc import Iterable, Iterator, Mapping, MutableMapping, Sequence
 from functools import lru_cache
 from numbers import Number
 from types import MappingProxyType
-from typing import (
-    Any,
-    ClassVar,
-    Generic,
-    Iterator,
-    Literal,
-    Optional,
-    Tuple,
-    Type,
-    TypeVar,
-    Union,
-    overload,
-)
+from typing import Any, ClassVar, Generic, Literal, Optional, Type, TypeVar, Union, overload
 
 from pennylane.data.base import hdf5
 from pennylane.data.base.hdf5 import HDF5, HDF5Any, HDF5Group
 from pennylane.data.base.typing_util import UNSET, get_type, get_type_str
+from pennylane.pytrees import is_pytree
 
 T = TypeVar("T")
 
@@ -54,12 +42,12 @@ class AttributeInfo(MutableMapping):
     """
 
     attrs_namespace: ClassVar[str] = "qml.data"
-    attrs_bind: typing.MutableMapping[str, Any]
+    attrs_bind: MutableMapping[str, Any]
 
     @overload
     def __init__(  # overload to specify known keyword args
         self,
-        attrs_bind: Optional[typing.MutableMapping[str, Any]] = None,
+        attrs_bind: Optional[MutableMapping[str, Any]] = None,
         *,
         doc: Optional[str] = None,
         py_type: Optional[str] = None,
@@ -71,7 +59,7 @@ class AttributeInfo(MutableMapping):
     def __init__(self):  # need at least two overloads when using @overload
         pass
 
-    def __init__(self, attrs_bind: Optional[typing.MutableMapping[str, Any]] = None, **kwargs: Any):
+    def __init__(self, attrs_bind: Optional[MutableMapping[str, Any]] = None, **kwargs: Any):
         object.__setattr__(self, "attrs_bind", attrs_bind if attrs_bind is not None else {})
 
         for k, v in kwargs.items():
@@ -191,7 +179,7 @@ class DatasetAttribute(ABC, Generic[HDF5, ValueType, InitValueType]):
         value: Union[InitValueType, Literal[UNSET]] = UNSET,
         info: Optional[AttributeInfo] = None,
         *,
-        parent_and_key: Optional[Tuple[HDF5Group, str]] = None,
+        parent_and_key: Optional[tuple[HDF5Group, str]] = None,
     ):
         """Initialize a new dataset attribute from ``value``.
 
@@ -219,7 +207,7 @@ class DatasetAttribute(ABC, Generic[HDF5, ValueType, InitValueType]):
         info: Optional[AttributeInfo] = None,
         *,
         bind: Optional[HDF5] = None,
-        parent_and_key: Optional[Tuple[HDF5Group, str]] = None,
+        parent_and_key: Optional[tuple[HDF5Group, str]] = None,
     ) -> None:
         """
         Initialize a new dataset attribute, or load from an existing
@@ -259,7 +247,7 @@ class DatasetAttribute(ABC, Generic[HDF5, ValueType, InitValueType]):
         self,
         value: Union[InitValueType, Literal[UNSET]],
         info: Optional[AttributeInfo],
-        parent_and_key: Optional[Tuple[HDF5Group, str]],
+        parent_and_key: Optional[tuple[HDF5Group, str]],
     ):
         """Constructor for value initialization. See __init__()."""
 
@@ -303,7 +291,7 @@ class DatasetAttribute(ABC, Generic[HDF5, ValueType, InitValueType]):
         return get_type_str(value_type)
 
     @classmethod
-    def consumes_types(cls) -> typing.Iterable[type]:
+    def consumes_types(cls) -> Iterable[type]:
         """
         Returns an iterable of types for which this should be the default
         codec. If a value of one of these types is assigned to a Dataset
@@ -375,13 +363,13 @@ class DatasetAttribute(ABC, Generic[HDF5, ValueType, InitValueType]):
     def __str__(self) -> str:
         return str(self.get_value())
 
-    __registry: typing.Mapping[str, Type["DatasetAttribute"]] = {}
-    __type_consumer_registry: typing.Mapping[type, Type["DatasetAttribute"]] = {}
+    __registry: Mapping[str, Type["DatasetAttribute"]] = {}
+    __type_consumer_registry: Mapping[type, Type["DatasetAttribute"]] = {}
 
-    registry: typing.Mapping[str, Type["DatasetAttribute"]] = MappingProxyType(__registry)
+    registry: Mapping[str, Type["DatasetAttribute"]] = MappingProxyType(__registry)
     """Maps type_ids to their DatasetAttribute classes."""
 
-    type_consumer_registry: typing.Mapping[type, Type["DatasetAttribute"]] = MappingProxyType(
+    type_consumer_registry: Mapping[type, Type["DatasetAttribute"]] = MappingProxyType(
         __type_consumer_registry
     )
     """Maps types to their default DatasetAttribute"""
@@ -492,5 +480,7 @@ def match_obj_type(
         ret = DatasetAttribute.registry["list"]
     elif issubclass(type_, Mapping):
         ret = DatasetAttribute.registry["dict"]
+    elif is_pytree(type_):
+        ret = DatasetAttribute.registry["pytree"]
 
     return ret

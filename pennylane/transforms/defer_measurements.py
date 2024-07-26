@@ -12,14 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Code for the tape transform implementing the deferred measurement principle."""
-from typing import Callable, Sequence
 
 import pennylane as qml
 from pennylane.measurements import CountsMP, MeasurementValue, MidMeasureMP, ProbabilityMP, SampleMP
 from pennylane.ops.op_math import ctrl
 from pennylane.queuing import QueuingManager
-from pennylane.tape import QuantumTape
+from pennylane.tape import QuantumTape, QuantumTapeBatch
 from pennylane.transforms import transform
+from pennylane.typing import PostprocessingFn
 from pennylane.wires import Wires
 
 # pylint: disable=too-many-branches, protected-access, too-many-statements
@@ -104,7 +104,7 @@ def null_postprocessing(results):
 @transform
 def defer_measurements(
     tape: QuantumTape, reduce_postselected: bool = True, **kwargs
-) -> tuple[Sequence[QuantumTape], Callable]:
+) -> tuple[QuantumTapeBatch, PostprocessingFn]:
     """Quantum function transform that substitutes operations conditioned on
     measurement outcomes to controlled operations.
 

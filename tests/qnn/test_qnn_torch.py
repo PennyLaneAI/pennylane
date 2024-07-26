@@ -564,6 +564,42 @@ class TestTorchLayer:  # pylint: disable=too-many-public-methods
             assert torch.allclose(g1, g2)
         assert len(weights) == len(list(layer.parameters()))
 
+    @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(3))
+    def test_construct(self, get_circuit, n_qubits):
+        """Test that the construct method builds the correct tape with correct differentiability"""
+        c, w = get_circuit
+        layer = TorchLayer(c, w)
+
+        x = torch.ones(n_qubits)
+
+        layer.construct((x,), {})
+
+        assert layer.tape is not None
+        assert (
+            len(layer.tape.get_parameters(trainable_only=False))
+            == len(layer.tape.get_parameters(trainable_only=True)) + 1
+        )
+
+
+@pytest.mark.parametrize(
+    "num_qubits, weight_shapes",
+    [(2, {"weights": [3, 2, 3]}), (3, {"weights": [7, 3, 3]}), (4, {"weights": [3, 4, 3]})],
+)
+def test_forward_tuple(num_qubits, weight_shapes):
+    """Test that the forward method accepts a tuple input and returns a torch tensor."""
+
+    dev = qml.device("default.qubit", wires=num_qubits)
+
+    @qml.qnode(dev)
+    def qnode(inputs, weights):
+        qml.templates.AngleEmbedding(inputs, wires=range(num_qubits))
+        qml.templates.StronglyEntanglingLayers(weights, wires=range(num_qubits))
+        return qml.expval(qml.Z(0)), qml.var(qml.Y(1))
+
+    qlayer = qml.qnn.TorchLayer(qnode, weight_shapes)
+    x = torch.tensor(np.random.random((5, num_qubits)), dtype=torch.float32)
+    assert isinstance(qlayer.forward(x), torch.Tensor)
+
 
 @pytest.mark.all_interfaces
 @pytest.mark.parametrize("interface", ["autograd", "jax", "tf"])
@@ -769,9 +805,9 @@ def test_vjp_is_unwrapped_for_param_shift():
 @pytest.mark.torch
 def test_batch_input_single_measure(tol):
     """Test input batching in torch"""
-    dev = qml.device("default.qubit.torch", wires=4)
+    dev = qml.device("default.qubit")
 
-    @qml.qnode(dev, diff_method="parameter-shift")
+    @qml.qnode(dev, interface="torch", diff_method="parameter-shift")
     def circuit(x, weights):
         qml.AngleEmbedding(x, wires=range(4), rotation="Y")
         qml.RY(weights[0], wires=0)
@@ -784,7 +820,6 @@ def test_batch_input_single_measure(tol):
     res = layer(x)
 
     assert res.shape == (10, 2)
-    assert dev.num_executions == 1
 
     for x_, r in zip(x, res):
         assert qml.math.allclose(r, circuit(x_, layer.qnode_weights["weights"]), atol=tol)
@@ -796,9 +831,9 @@ def test_batch_input_single_measure(tol):
 @pytest.mark.torch
 def test_batch_input_multi_measure(tol):
     """Test input batching in torch for multiple measurements"""
-    dev = qml.device("default.qubit.torch", wires=4)
+    dev = qml.device("default.qubit")
 
-    @qml.qnode(dev, diff_method="parameter-shift")
+    @qml.qnode(dev, interface="torch", diff_method="parameter-shift")
     def circuit(x, weights):
         qml.AngleEmbedding(x, wires=range(4), rotation="Y")
         qml.RY(weights[0], wires=0)
@@ -811,7 +846,6 @@ def test_batch_input_multi_measure(tol):
     res = layer(x)
 
     assert res.shape == (10, 5)
-    assert dev.num_executions == 1
 
     for x_, r in zip(x, res):
         exp = torch.hstack(circuit(x_, layer.qnode_weights["weights"]))
@@ -923,7 +957,8 @@ def test_specs():
 
     assert info["num_observables"] == 2
     assert info["num_diagonalizing_gates"] == 0
-    assert info["num_device_wires"] == 2
-    assert info["num_trainable_params"] == 0
+    assert info["num_device_wires"] == 3
+    assert info["num_tape_wires"] == 2
+    assert info["num_trainable_params"] == 2
     assert info["interface"] == "torch"
     assert info["device_name"] == "default.qubit"

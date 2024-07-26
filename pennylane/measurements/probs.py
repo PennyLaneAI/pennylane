@@ -14,11 +14,13 @@
 """
 This module contains the qml.probs measurement.
 """
-from typing import Sequence, Tuple
+from collections.abc import Sequence
+from typing import Optional
 
 import numpy as np
 
 import pennylane as qml
+from pennylane.typing import TensorLike
 from pennylane.wires import Wires
 
 from .measurements import Probability, SampleMeasurement, StateMeasurement
@@ -135,7 +137,7 @@ def probs(wires=None, op=None) -> "ProbabilityMP":
 class ProbabilityMP(SampleMeasurement, StateMeasurement):
     """Measurement process that computes the probability of each computational basis state.
 
-    Please refer to :func:`probs` for detailed documentation.
+    Please refer to :func:`pennylane.probs` for detailed documentation.
 
     Args:
         obs (Union[.Operator, .MeasurementValue]): The observable that is to be measured
@@ -176,8 +178,8 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
         self,
         samples: Sequence[complex],
         wire_order: Wires,
-        shot_range: Tuple[int] = None,
-        bin_size: int = None,
+        shot_range: Optional[tuple[int, ...]] = None,
+        bin_size: Optional[int] = None,
     ):
         wire_map = dict(zip(wire_order, range(len(wire_order))))
         mapped_wires = [wire_map[w] for w in self.wires]
@@ -259,6 +261,18 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
             prob_vector[int(outcome, base=2)] = occurrence / num_shots
 
         return prob_vector
+
+    def process_density_matrix(self, density_matrix: TensorLike, wire_order: Wires):
+        if len(np.shape(density_matrix)) == 2:
+            prob = qml.math.diagonal(density_matrix)
+        else:
+            prob = qml.math.array(
+                [qml.math.diagonal(density_matrix[i]) for i in range(np.shape(density_matrix)[0])]
+            )
+
+        # Since we only care about the probabilities, we can simplify the task here by creating a 'pseudo-state' to carry the diagonal elements and reuse the process_state method
+        p_state = np.sqrt(prob)
+        return self.process_state(p_state, wire_order)
 
     @staticmethod
     def _count_samples(indices, batch_size, dim):

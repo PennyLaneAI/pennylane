@@ -18,7 +18,6 @@ import copy
 import warnings
 from dataclasses import replace
 from functools import partial
-from typing import Callable, Tuple
 
 import numpy as np
 import pytest
@@ -28,7 +27,9 @@ import pennylane as qml
 from pennylane import QNode
 from pennylane import numpy as pnp
 from pennylane import qnode
-from pennylane.tape import QuantumScript
+from pennylane.tape import QuantumScript, QuantumTapeBatch
+from pennylane.typing import PostprocessingFn
+from pennylane.workflow.qnode import _prune_dynamic_transform
 
 
 def dummyfunc():
@@ -99,6 +100,15 @@ class TestInitialization:
             return qml.state()
 
         assert f.execute_kwargs["cache"] is True
+
+    def test_max_expansion_is_deprecated(self):
+        """Test that a warning is raised when using the deprecated max_expansion argument"""
+        dev = qml.device("default.qubit", wires=1)
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match="The max_expansion argument is deprecated",
+        ):
+            QNode(dummyfunc, dev, max_expansion=10)
 
 
 # pylint: disable=too-many-public-methods
@@ -877,10 +887,7 @@ class TestIntegration:
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    @pytest.mark.parametrize(
-        "dev",
-        [qml.device("default.qubit", wires=3), qml.device("default.qubit.legacy", wires=3)],
-    )
+    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.legacy"])
     @pytest.mark.parametrize("first_par", np.linspace(0.15, np.pi - 0.3, 3))
     @pytest.mark.parametrize("sec_par", np.linspace(0.15, np.pi - 0.3, 3))
     @pytest.mark.parametrize(
@@ -895,11 +902,12 @@ class TestIntegration:
         ],
     )
     def test_defer_meas_if_mcm_unsupported(
-        self, dev, first_par, sec_par, return_type, mv_return, mv_res, mocker
+        self, dev_name, first_par, sec_par, return_type, mv_return, mv_res, mocker
     ):  # pylint: disable=too-many-arguments
         """Tests that the transform using the deferred measurement principle is
         applied if the device doesn't support mid-circuit measurements
         natively."""
+        dev = qml.device(dev_name, wires=3)
 
         @qml.qnode(dev)
         def cry_qnode(x, y):
@@ -974,23 +982,8 @@ class TestIntegration:
         r2 = conditional_ry_qnode(first_par)
         assert np.allclose(r1, r2)
 
-        @qml.defer_measurements
-        @qml.qnode(dev)
-        def cry_qnode_deferred(x):
-            """QNode where we apply a controlled Y-rotation."""
-            qml.BasisStatePreparation(basis_state, wires=[0, 1])
-            qml.CRY(x, wires=[0, 1])
-            return qml.sample(qml.PauliZ(1))
-
-        @qml.defer_measurements
-        @qml.qnode(dev)
-        def conditional_ry_qnode_deferred(x):
-            """QNode where the defer measurements transform is applied by
-            default under the hood."""
-            qml.BasisStatePreparation(basis_state, wires=[0, 1])
-            m_0 = qml.measure(0)
-            qml.cond(m_0, qml.RY)(x, wires=1)
-            return qml.sample(qml.PauliZ(1))
+        cry_qnode_deferred = qml.defer_measurements(cry_qnode)
+        conditional_ry_qnode_deferred = qml.defer_measurements(conditional_ry_qnode)
 
         r1 = cry_qnode_deferred(first_par)
         r2 = conditional_ry_qnode_deferred(first_par)
@@ -1013,7 +1006,6 @@ class TestIntegration:
             return qml.expval(qml.PauliZ(1))
 
         @qml.qnode(dev, interface=interface, diff_method="parameter-shift")
-        @qml.defer_measurements
         def conditional_ry_qnode(x):
             """QNode where the defer measurements transform is applied by
             default under the hood."""
@@ -1023,9 +1015,12 @@ class TestIntegration:
             qml.cond(m_0, qml.RY)(x, wires=1)
             return qml.expval(qml.PauliZ(1))
 
+        dm_conditional_ry_qnode = qml.defer_measurements(conditional_ry_qnode)
+
         x_ = -0.654
         x1 = tf.Variable(x_, dtype=tf.float64)
         x2 = tf.Variable(x_, dtype=tf.float64)
+        x3 = tf.Variable(x_, dtype=tf.float64)
 
         with tf.GradientTape() as tape1:
             r1 = cry_qnode(x1)
@@ -1033,11 +1028,17 @@ class TestIntegration:
         with tf.GradientTape() as tape2:
             r2 = conditional_ry_qnode(x2)
 
+        with tf.GradientTape() as tape3:
+            r3 = dm_conditional_ry_qnode(x3)
+
         assert np.allclose(r1, r2)
+        assert np.allclose(r1, r3)
 
         grad1 = tape1.gradient(r1, x1)
         grad2 = tape2.gradient(r2, x2)
+        grad3 = tape3.gradient(r3, x3)
         assert np.allclose(grad1, grad2)
+        assert np.allclose(grad1, grad3)
 
     @pytest.mark.torch
     @pytest.mark.parametrize("interface", ["torch", "auto"])
@@ -1394,7 +1395,7 @@ class TestTransformProgramIntegration:
         @qml.transforms.core.transform
         def just_pauli_x_out(
             tape: qml.tape.QuantumTape,
-        ) -> (Tuple[qml.tape.QuantumTape], Callable):
+        ) -> tuple[QuantumTapeBatch, PostprocessingFn]:
             return (
                 qml.tape.QuantumScript([qml.PauliX(0)], tape.measurements),
             ), null_postprocessing
@@ -1424,7 +1425,7 @@ class TestTransformProgramIntegration:
         @qml.transforms.core.transform
         def pin_result(
             tape: qml.tape.QuantumTape, requested_result
-        ) -> (Tuple[qml.tape.QuantumTape], Callable):
+        ) -> tuple[QuantumTapeBatch, PostprocessingFn]:
             def postprocessing(_: qml.typing.ResultBatch) -> qml.typing.Result:
                 return requested_result
 
@@ -1450,7 +1451,9 @@ class TestTransformProgramIntegration:
             return results[0]
 
         @qml.transforms.core.transform
-        def just_pauli_x_out(tape: qml.tape.QuantumTape) -> (Tuple[qml.tape.QuantumTape], Callable):
+        def just_pauli_x_out(
+            tape: qml.tape.QuantumTape,
+        ) -> tuple[QuantumTapeBatch, PostprocessingFn]:
             return (
                 qml.tape.QuantumScript([qml.PauliX(0)], tape.measurements),
             ), null_postprocessing
@@ -1458,7 +1461,7 @@ class TestTransformProgramIntegration:
         @qml.transforms.core.transform
         def repeat_operations(
             tape: qml.tape.QuantumTape,
-        ) -> (Tuple[qml.tape.QuantumTape], Callable):
+        ) -> tuple[QuantumTapeBatch, PostprocessingFn]:
             new_tape = qml.tape.QuantumScript(
                 tape.operations + copy.deepcopy(tape.operations), tape.measurements
             )
@@ -1502,13 +1505,13 @@ class TestTransformProgramIntegration:
         @qml.transforms.core.transform
         def scale_output(
             tape: qml.tape.QuantumTape, factor
-        ) -> (Tuple[qml.tape.QuantumTape], Callable):
+        ) -> tuple[QuantumTapeBatch, PostprocessingFn]:
             return (tape,), partial(scale_by_factor, factor=factor)
 
         @qml.transforms.core.transform
         def shift_output(
             tape: qml.tape.QuantumTape, shift
-        ) -> (Tuple[qml.tape.QuantumTape], Callable):
+        ) -> tuple[QuantumTapeBatch, PostprocessingFn]:
             return (tape,), partial(add_shift, shift=shift)
 
         @partial(shift_output, shift=1.0)
@@ -1539,7 +1542,7 @@ class TestTransformProgramIntegration:
             return len(results[0])
 
         @qml.transforms.core.transform
-        def use_n_shots(tape: qml.tape.QuantumTape, n) -> (Tuple[qml.tape.QuantumTape], Callable):
+        def use_n_shots(tape: qml.tape.QuantumTape, n) -> tuple[QuantumTapeBatch, PostprocessingFn]:
             return (
                 qml.tape.QuantumScript(tape.operations, tape.measurements, shots=n),
             ), num_of_shots_from_sample
@@ -1718,19 +1721,21 @@ class TestMCMConfiguration:
     """Tests for MCM configuration arguments"""
 
     @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.legacy"])
-    def test_one_shot_error_without_shots(self, dev_name):
-        """Test that an error is raised if mcm_method="one-shot" with no shots"""
+    @pytest.mark.parametrize("mcm_method", ["one-shot", "tree-traversal"])
+    def test_one_shot_error_without_shots(self, dev_name, mcm_method):
+        """Test that an error is raised if mcm_method="one-shot"/"tree-traversal" with no shots"""
         dev = qml.device(dev_name, wires=3)
         param = np.pi / 4
 
-        @qml.qnode(dev, mcm_method="one-shot")
+        @qml.qnode(dev, mcm_method=mcm_method)
         def f(x):
             qml.RX(x, 0)
             _ = qml.measure(0)
             return qml.probs(wires=[0, 1])
 
         with pytest.raises(
-            ValueError, match="Cannot use the 'one-shot' method for mid-circuit measurements with"
+            ValueError,
+            match=f"Cannot use the '{mcm_method}' method for mid-circuit measurements with",
         ):
             _ = f(param)
 
@@ -1822,6 +1827,47 @@ class TestMCMConfiguration:
             ValueError, match="Using postselect_mode='hw-like' is not supported with jax-jit."
         ):
             _ = f_jit(param)
+
+    def test_single_branch_statistics_error_without_qjit(self):
+        """Test that an error is raised if attempting to use mcm_method="single-branch-statistics
+        without qml.qjit"""
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev, mcm_method="single-branch-statistics")
+        def circuit(x):
+            qml.RX(x, 0)
+            qml.measure(0, postselect=1)
+            return qml.sample(wires=0)
+
+        param = np.pi / 4
+        with pytest.raises(ValueError, match="Cannot use mcm_method='single-branch-statistics'"):
+            _ = circuit(param)
+
+    @pytest.mark.parametrize("postselect_mode", [None, "fill-shots", "hw-like"])
+    @pytest.mark.parametrize("mcm_method", [None, "one-shot", "deferred"])
+    def test_execution_does_not_mutate_config(self, mcm_method, postselect_mode):
+        """Test that executing a QNode does not mutate its mid-circuit measurement config options"""
+        dev = qml.device("default.qubit", wires=2)
+
+        original_config = qml.devices.MCMConfig(
+            postselect_mode=postselect_mode, mcm_method=mcm_method
+        )
+
+        @qml.qnode(dev, postselect_mode=postselect_mode, mcm_method=mcm_method)
+        def circuit(x, mp):
+            qml.RX(x, 0)
+            qml.measure(0, postselect=1)
+            return mp(qml.PauliZ(0))
+
+        _ = circuit(1.8, qml.expval, shots=10)
+        assert circuit.execute_kwargs["mcm_config"] == original_config
+
+        if mcm_method != "one-shot":
+            _ = circuit(1.8, qml.expval)
+            assert circuit.execute_kwargs["mcm_config"] == original_config
+
+        _ = circuit(1.8, qml.expval, shots=10)
+        assert circuit.execute_kwargs["mcm_config"] == original_config
 
 
 class TestTapeExpansion:
@@ -1947,10 +1993,15 @@ class TestTapeExpansion:
         dev = qml.device("default.qubit", wires=2)
         x = pnp.array(0.5, requires_grad=True)
 
-        @qnode(dev, diff_method="parameter-shift", expansion_strategy="device")
-        def circuit(x):
-            qml.SingleExcitation(x, wires=[0, 1])
-            return qml.expval(qml.PauliX(0))
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match="'expansion_strategy' attribute is deprecated",
+        ):
+
+            @qnode(dev, diff_method="parameter-shift", expansion_strategy="device")
+            def circuit(x):
+                qml.SingleExcitation(x, wires=[0, 1])
+                return qml.expval(qml.PauliX(0))
 
         assert circuit.expansion_strategy == "device"
         assert circuit.execute_kwargs["expand_fn"] is None
@@ -1982,10 +2033,15 @@ class TestTapeExpansion:
         dev = qml.device("default.qubit", wires=2)
         monkeypatch.setattr(dev, "preprocess", preprocess_with_batchtransform)
 
-        @qnode(dev, diff_method="parameter-shift", expansion_strategy="device")
-        def circuit(x):
-            qml.SingleExcitation(x, wires=[0, 1])
-            return qml.expval(qml.PauliX(0))
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match="'expansion_strategy' attribute is deprecated",
+        ):
+
+            @qnode(dev, diff_method="parameter-shift", expansion_strategy="device")
+            def circuit(x):
+                qml.SingleExcitation(x, wires=[0, 1])
+                return qml.expval(qml.PauliX(0))
 
         with pytest.raises(
             ValueError,
@@ -2011,3 +2067,48 @@ def test_resets_after_execution_error():
         circuit(qml.numpy.array(0.1))
 
     assert circuit.interface == "auto"
+
+
+def test_prune_dynamic_transform():
+    """Tests that the helper function prune dynamic transform works."""
+
+    program1 = qml.transforms.core.TransformProgram(
+        [
+            qml.transforms.dynamic_one_shot,
+            qml.transforms.split_non_commuting,
+            qml.transforms.dynamic_one_shot,
+        ]
+    )
+    program2 = qml.transforms.core.TransformProgram(
+        [
+            qml.transforms.dynamic_one_shot,
+            qml.transforms.split_non_commuting,
+        ]
+    )
+
+    _prune_dynamic_transform(program1, program2)
+    assert len(program1) == 1
+    assert len(program2) == 2
+
+
+def test_prune_dynamic_transform_with_mcm():
+    """Tests that the helper function prune dynamic transform works with mcm"""
+
+    program1 = qml.transforms.core.TransformProgram(
+        [
+            qml.transforms.dynamic_one_shot,
+            qml.transforms.split_non_commuting,
+            qml.devices.preprocess.mid_circuit_measurements,
+        ]
+    )
+    program2 = qml.transforms.core.TransformProgram(
+        [
+            qml.transforms.dynamic_one_shot,
+            qml.transforms.split_non_commuting,
+        ]
+    )
+
+    _prune_dynamic_transform(program1, program2)
+    assert len(program1) == 2
+    assert qml.devices.preprocess.mid_circuit_measurements in program1
+    assert len(program2) == 1

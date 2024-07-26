@@ -23,14 +23,12 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.capture.primitives import _get_abstract_operator
 
 jax = pytest.importorskip("jax")
 jnp = jax.numpy
 
 pytestmark = pytest.mark.jax
 
-AbstractOperator = _get_abstract_operator()
 original_op_bind_code = qml.operation.Operator._primitive_bind_call.__code__
 
 
@@ -482,7 +480,7 @@ class TestModifiedTemplates:
             jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, v_params)
 
         assert len(q) == 1
-        assert qml.equal(q.queue[0], template(v_params, **kwargs))
+        qml.assert_equal(q.queue[0], template(v_params, **kwargs))
 
     @pytest.mark.parametrize("template", [qml.MERA, qml.MPS, qml.TTN])
     def test_tensor_networks(self, template):
@@ -539,7 +537,7 @@ class TestModifiedTemplates:
             jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
 
         assert len(q) == 1
-        assert qml.equal(q.queue[0], template(**kwargs))
+        qml.assert_equal(q.queue[0], template(**kwargs))
 
     def test_qsvt(self):
         """Test the primitive bind call of QSVT."""
@@ -651,7 +649,7 @@ class TestModifiedTemplates:
             jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
 
         assert len(q) == 1
-        assert qml.equal(q.queue[0], qml.Qubitization(**kwargs))
+        qml.assert_equal(q.queue[0], qml.Qubitization(**kwargs))
 
     @pytest.mark.usefixtures("new_opmath_only")
     def test_qrom(self):
@@ -686,7 +684,7 @@ class TestModifiedTemplates:
             jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
 
         assert len(q) == 1
-        assert qml.equal(q.queue[0], qml.QROM(**kwargs))
+        qml.assert_equal(q.queue[0], qml.QROM(**kwargs))
 
     @pytest.mark.parametrize(
         "template, kwargs",
@@ -726,7 +724,7 @@ class TestModifiedTemplates:
             jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, np.pi / 2)
 
         assert len(q) == 1
-        assert qml.equal(q.queue[0], template(op, **kwargs))
+        qml.assert_equal(q.queue[0], template(op, **kwargs))
 
     def test_select(self):
         """Test the primitive bind call of Select."""
@@ -756,7 +754,7 @@ class TestModifiedTemplates:
             jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
 
         assert len(q) == 1
-        assert qml.equal(q.queue[0], qml.Select(**kwargs))
+        qml.assert_equal(q.queue[0], qml.Select(**kwargs))
 
 
 def filter_fn(member: Any) -> bool:
@@ -772,6 +770,7 @@ unsupported_templates = [
     qml.CVNeuralNetLayers,
     qml.DisplacementEmbedding,
     qml.Interferometer,
+    qml.PrepSelPrep,
     qml.QutritBasisStatePreparation,
     qml.SqueezingEmbedding,
 ]

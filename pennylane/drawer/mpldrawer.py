@@ -15,8 +15,7 @@
 This module contains the MPLDrawer class for creating circuit diagrams with matplotlib
 """
 import warnings
-from collections.abc import Iterable
-from typing import Sequence
+from collections.abc import Iterable, Sequence
 
 has_mpl = True
 try:
