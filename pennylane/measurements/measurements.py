@@ -171,8 +171,8 @@ class MeasurementProcess(ABC, metaclass=qml.capture.ABCCaptureMeta):
         ):
             return cls._obs_primitive.bind(obs, **kwargs)
         if isinstance(obs, (list, tuple)):
-            return cls._mcm_primitive.bind(*obs, **kwargs)  # iterable of mcms
-        return cls._mcm_primitive.bind(obs, **kwargs)  # single mcm
+            return cls._mcm_primitive.bind(*obs, single_mcm=False, **kwargs)  # iterable of mcms
+        return cls._mcm_primitive.bind(obs, single_mcm=True, **kwargs)  # single mcm
 
     # pylint: disable=unused-argument
     @classmethod
