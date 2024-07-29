@@ -234,7 +234,7 @@ def _measure_impl(
 
 
 @lru_cache
-def _create_mid_measure_primitive() -> "jax.core.Primitive":
+def _create_mid_measure_primitive():
     """Create a primitive corresponding to an mid-circuit measurement type.
 
     Called when using :func:`~pennylane.measure`.
@@ -246,17 +246,17 @@ def _create_mid_measure_primitive() -> "jax.core.Primitive":
     """
     import jax  # pylint: disable=import-outside-toplevel
 
-    primitive = jax.core.Primitive("mid_measure")
+    mid_measure_p = jax.core.Primitive("measure")
 
-    @primitive.def_impl
+    @mid_measure_p.def_impl
     def _(wires, reset=False, postselect=None):
         return _measure_impl(wires, reset=reset, postselect=postselect)
 
-    @primitive.def_abstract_eval
+    @mid_measure_p.def_abstract_eval
     def _(*_, **__):
         return jax.core.ShapedArray((), jax.numpy.bool_)
 
-    return primitive
+    return mid_measure_p
 
 
 T = TypeVar("T")

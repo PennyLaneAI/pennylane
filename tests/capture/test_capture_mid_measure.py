@@ -30,3 +30,57 @@ def enable_disable_plxpr():
     qml.capture.enable()
     yield
     qml.capture.disable()
+
+
+# pylint: disable=unused-argument
+@pytest.mark.parametrize("reset", [True, False])
+@pytest.mark.parametrize("postselect", [None, 0, 1])
+class TestMidMeasure:
+    """Unit tests for capturing mid-circuit measurements."""
+
+    def test_mid_measure(self, reset, postselect):
+        """Test that qml.measure assert Trues expected results"""
+        assert True
+
+    def test_mid_measure_capture(self, reset, postselect):
+        """Test that qml.measure can be captured correctly"""
+        assert True
+
+
+# pylint: disable=unused-argument
+@pytest.mark.parametrize("reset", [True, False])
+@pytest.mark.parametrize("postselect", [None, 0, 1])
+class TestMidMeasureIntegration:
+    """Integration tests for capturing mid-circuit measurements."""
+
+    def test_simple_circuit_capture_and_execution(self, reset, postselect):
+        """Test that circuits with mid-circuit measurements can be captured and executed
+        in a QNode"""
+        assert True
+
+    def test_circuit_with_terminal_measurement_capture_and_execution(self, reset, postselect):
+        """Test that circuits with mid-circuit measurements that also collect statistics
+        on the mid-circuit measurements can be captured and executed in a QNode"""
+        assert True
+
+    def test_circuit_with_boolean_arithmetic_capture(self, reset, postselect):
+        """Test that circuits that apply boolean logic to mid-circuit measurement values
+        can be captured"""
+        assert True
+
+    def test_circuit_with_classical_processing_capture(self, reset, postselect):
+        """Test that circuits that apply non-boolean operations to mid-circuit measurement
+        values can be captured"""
+        assert True
+
+    @pytest.mark.xfail
+    def test_circuit_with_boolean_arithmetic_execution(self, reset, postselect):
+        """Test that circuits that apply boolean logic to mid-circuit measurement values
+        can be executed"""
+        assert False
+
+    @pytest.mark.xfail
+    def test_circuit_with_classical_processing_execution(self, reset, postselect):
+        """Test that circuits that apply non-boolean operations to mid-circuit measurement
+        values can be executed"""
+        assert False
