@@ -19,6 +19,7 @@ works correctly an a device.
 # pylint: disable=too-many-arguments
 # pylint: disable=pointless-statement
 # pylint: disable=unnecessary-lambda-assignment
+# pylint: disable=no-name-in-module
 from cmath import exp
 from math import cos, sin, sqrt
 
@@ -357,7 +358,7 @@ class TestSupportedGates:
         device_kwargs["wires"] = 4  # maximum size of current gates
         dev = qml.device(**device_kwargs)
 
-        if isinstance(dev, qml.Device):
+        if isinstance(getattr(dev, "target_device", None), qml.Device):
             if operation not in dev.operations:
                 pytest.skip("operation not supported.")
         else:
