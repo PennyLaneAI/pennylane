@@ -4,11 +4,14 @@
 
 <h3>New features since last release</h3>
 
+* A new method `process_density_matrix` has been added to the `ProbabilityMP` and `DensityMatrixMP`
+  classes, allowing for more efficient handling of quantum density matrices, particularly with batch
+  processing support. This method simplifies the calculation of probabilities from quantum states
+  represented as density matrices.
+  [(#5830)](https://github.com/PennyLaneAI/pennylane/pull/5830)
+
 * Resolved the bug in `qml.ThermalRelaxationError` where there was a typo from `tq` to `tg`.
   [(#5988)](https://github.com/PennyLaneAI/pennylane/issues/5988)
-
-* A new method `process_density_matrix` has been added to the `ProbabilityMP` and `DensityMatrixMP` classes, allowing for more efficient handling of quantum density matrices, particularly with batch processing support. This method simplifies the calculation of probabilities from quantum states represented as density matrices.
-  [(#5830)](https://github.com/PennyLaneAI/pennylane/pull/5830)
 
 * The `qml.PrepSelPrep` template is added. The template implements a block-encoding of a linear
   combination of unitaries.
@@ -60,6 +63,12 @@
 
 * `QuantumScript.hash` is now cached, leading to performance improvements.
   [(#5919)](https://github.com/PennyLaneAI/pennylane/pull/5919)
+
+* Set operations are now supported by Wires.
+  [(#5983)](https://github.com/PennyLaneAI/pennylane/pull/5983)
+
+* `qml.dynamic_one_shot` now supports circuits using the `"tensorflow"` interface.
+  [(#5973)](https://github.com/PennyLaneAI/pennylane/pull/5973)
 
 * The representation for `Wires` has now changed to be more copy-paste friendly.
   [(#5958)](https://github.com/PennyLaneAI/pennylane/pull/5958)
@@ -118,6 +127,9 @@
 * The `qubit_observable` function is modified to return an ascending wire order for molecular 
   Hamiltonians.
   [(#5950)](https://github.com/PennyLaneAI/pennylane/pull/5950)
+
+* The `CNOT` operator no longer decomposes to itself. Instead, it raises a `qml.DecompositionUndefinedError`.
+  [(#6039)](https://github.com/PennyLaneAI/pennylane/pull/6039)
 
 <h4>Community contributions 🥳</h4>
 
