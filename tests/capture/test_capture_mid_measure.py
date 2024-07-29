@@ -11,17 +11,17 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""
-Tests for capturing mid-circuit measurements.
-"""
+"""Tests for capturing mid-circuit measurements."""
+# pylint: disable=ungrouped-imports, wrong-import-order, wrong-import-position
 import pytest
 
 import pennylane as qml
-from pennylane.capture import AbstractOperator
 from pennylane.measurements.mid_measure import MeasurementValue, MidMeasureMP
 
 jax = pytest.importorskip("jax")
-import jax.numpy as jnp  # pylint: disable=wrong-import-order, wrong-import-position
+import jax.numpy as jnp
+
+from pennylane.capture import AbstractOperator
 
 pytestmark = pytest.mark.jax
 
