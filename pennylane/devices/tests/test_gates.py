@@ -358,7 +358,7 @@ class TestSupportedGates:
         device_kwargs["wires"] = 4  # maximum size of current gates
         dev = qml.device(**device_kwargs)
 
-        if isinstance(getattr(dev, "target_device", None), qml.Device):
+        if isinstance(dev, qml.Device):
             if operation not in dev.operations:
                 pytest.skip("operation not supported.")
         else:

@@ -49,6 +49,7 @@ with qml.queuing.AnnotatedQueue() as q_tape_base:
 
 
 tape_base = QuantumScript.from_queue(q_tape_base)
+dev_ideal = qml.device("default.mixed", wires=2)
 
 
 def same_tape(tape1, tape2):
@@ -119,8 +120,7 @@ class TestMitigateWithZNE:
         """Tests if the expected shape is returned when mitigating a circuit with two returns"""
         noise_strength = 0.05
 
-        dev_noise_free = qml.device("default.mixed", wires=2)
-        dev = qml.transforms.insert(dev_noise_free, qml.AmplitudeDamping, noise_strength)
+        dev_noise = qml.transforms.insert(dev_ideal, qml.AmplitudeDamping, noise_strength)
 
         n_wires = 2
         n_layers = 2
@@ -134,12 +134,12 @@ class TestMitigateWithZNE:
             folding=fold_global,
             extrapolate=extrapolate,
         )
-        @qml.qnode(dev)
+        @qml.qnode(dev_noise)
         def mitigated_circuit(w1, w2):
             qml.SimplifiedTwoDesign(w1, w2, wires=range(2))
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.Hadamard(1))
 
-        @qml.qnode(dev_noise_free)
+        @qml.qnode(dev_ideal)
         def ideal_circuit(w1, w2):
             qml.SimplifiedTwoDesign(w1, w2, wires=range(2))
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.Hadamard(1))
@@ -466,7 +466,6 @@ def qfunc_multi(theta):
 noise_gate = qml.PhaseDamping
 
 # Load devices
-dev_ideal = qml.device("default.mixed", wires=2)
 dev_noisy = qml.transforms.insert(dev_ideal, noise_gate, 0.05)
 
 out_ideal = np.sqrt(2) / 2 + np.sqrt(2)

@@ -280,6 +280,9 @@ class TransformDispatcher:
         if self._final_transform:
             raise TransformError("Device transform does not support final transforms.")
 
+        if originally_facaded := isinstance(original_device, qml.devices.LegacyDeviceFacade):
+            original_device = original_device.target_device
+
         class TransformedDevice(type(original_device)):
             """A transformed device with updated preprocess method."""
 
@@ -306,7 +309,12 @@ class TransformDispatcher:
                 """Return the original device."""
                 return self._original_device
 
-        return TransformedDevice(original_device, self._transform)
+        new_dev = TransformedDevice(original_device, self._transform)
+
+        if originally_facaded:
+            new_dev = qml.devices.LegacyDeviceFacade(new_dev)
+
+        return new_dev
 
     def _batch_transform(self, original_batch, targs, tkwargs):
         """Apply the transform on a batch of tapes."""
