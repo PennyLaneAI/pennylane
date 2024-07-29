@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """A function to compute the center of a Lie algebra"""
-from itertools import combinations
 from typing import Union
 
 import numpy as np
@@ -58,7 +57,7 @@ def center(
     In this case, just ``X(0)``.
 
     >>> qml.center(g)
-    [X(0)]
+    [-0.9999999999999999 * X(0)]
 
     """
     if len(g) < 2:
@@ -78,10 +77,10 @@ def center(
     if combined_support.shape[1] == 0:
         return g
     # Compute the complement of the combined complements: It is the intersection of the kernels
-    center = null_space(combined_support.T)
+    center_coefficients = null_space(combined_support.T)
 
     # Construct operators from numerical output and convert to desired format
-    res = [sum(c * x for c, x in zip(c_coeffs, g)) for c_coeffs in center.T]
+    res = [sum(c * x for c, x in zip(c_coeffs, g)) for c_coeffs in center_coefficients.T]
 
     have_paulis = isinstance(g[0], (PauliWord, PauliSentence))
     if pauli or have_paulis:
