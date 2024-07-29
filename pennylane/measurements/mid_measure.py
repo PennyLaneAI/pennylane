@@ -477,7 +477,7 @@ class MeasurementValue(Generic[T]):
         return self._transform_bin_op(lambda a, b: a * b, other)
 
     def __rmul__(self, other):
-        return self._apply(lambda v: other * v)
+        return self._apply(lambda v: other * qml.math.cast_like(v, other))
 
     def __truediv__(self, other):
         return self._transform_bin_op(lambda a, b: a / b, other)

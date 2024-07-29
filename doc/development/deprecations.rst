@@ -9,6 +9,28 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
+* All of the legacy devices (any with the name ``default.qubit.{autograd,torch,tf,jax,legacy}``) are deprecated. Use ``default.qubit`` instead,
+  as it supports backpropagation for the many backends the legacy devices support.
+
+  - Deprecated in v0.38
+  - Will be removed in v0.39
+
+* The logic for internally switching a device for a different backpropagation
+  compatible device is now deprecated, as it was in place for the deprecated `default.qubit.legacy`.
+
+  - Deprecated in v0.38
+  - Will be removed in v0.39  
+
+* The ``decomp_depth`` argument in ``qml.device`` is deprecated. 
+
+  - Deprecated in v0.38
+  - Will be removed in v0.39
+
+* The ``max_expansion`` argument in ``qml.QNode`` is deprecated. 
+
+  - Deprecated in v0.38
+  - Will be removed in v0.39
+
 * The functions ``qml.transforms.sum_expand`` and ``qml.transforms.hamiltonian_expand`` are deprecated.
   Instead, ``qml.transforms.split_non_commuting`` can be used for equivalent behaviour.
 
