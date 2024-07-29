@@ -103,14 +103,14 @@ class TestAdjointQfunc:
         with qml.queuing.AnnotatedQueue() as q:
             out = jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, 1.2)
 
+        assert out == []
+
         expected_op1 = qml.adjoint(qml.IsingXX(jax.numpy.array(2 * 1.2 + 1), wires=(5, 6)))
-        qml.assert_equal(out[0], expected_op1)
         qml.assert_equal(q.queue[0], expected_op1)
         expected_op2 = qml.adjoint(qml.X(5))
-        qml.assert_equal(out[1], expected_op2)
         qml.assert_equal(q.queue[1], expected_op2)
 
-        assert len(out) == len(q.queue) == 2
+        assert len(q.queue) == 2
 
         assert plxpr.eqns[0].primitive == adjoint_prim
         assert plxpr.eqns[0].params["lazy"] is True
@@ -134,10 +134,10 @@ class TestAdjointQfunc:
         )
 
         with qml.queuing.AnnotatedQueue() as q:
-            out = jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, 10)[0]
+            out = jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, 10)
 
-        qml.assert_equal(out, qml.adjoint(qml.adjoint(qml.X(10))))
-        qml.assert_equal(q.queue[0], out)
+        assert out == []
+        qml.assert_equal(q.queue[0], qml.adjoint(qml.adjoint(qml.X(10))))
 
     def test_qfunc_with_closure_tracer(self):
         """Test that we can take the adjoint of a qfunc with a closure variable tracer."""

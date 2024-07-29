@@ -192,8 +192,6 @@ def _get_adjoint_qfunc_prim():
     # if capture is enabled, jax should be installed
     import jax  # pylint: disable=import-outside-toplevel
 
-    AbstractOperator = qml.capture.AbstractOperator
-
     adjoint_prim = jax.core.Primitive("adjoint_transform")
     adjoint_prim.multiple_results = True
 
@@ -204,24 +202,13 @@ def _get_adjoint_qfunc_prim():
         with qml.queuing.AnnotatedQueue() as q:
             jax.core.eval_jaxpr(jaxpr, consts, *args)
         ops, _ = qml.queuing.process_queue(q)
-        return [adjoint(op, lazy=lazy) for op in reversed(ops)]
-
-    def _is_queued_outvar(outvars):
-        if not outvars:
-            return False
-        return isinstance(outvars[0].aval, AbstractOperator) and isinstance(
-            outvars[0], jax.core.DropVar
-        )
+        for op in reversed(ops):
+            adjoint(op, lazy=lazy)
+        return []
 
     @adjoint_prim.def_abstract_eval
-    def _(*_, jaxpr, **__):
-        # note that this approximation may fail when we have nested qfuncs like for and while
-        # the do not return variables for all operators they queue
-        # all queued drop var operators
-        outvars = [eqn.outvars[0].aval for eqn in jaxpr.eqns if _is_queued_outvar(eqn.outvars)]
-        # operators that are not dropped var because they are returned
-        outvars += [var.aval for var in jaxpr.outvars if isinstance(var.aval, AbstractOperator)]
-        return outvars
+    def _(*_, **__):
+        return []
 
     return adjoint_prim
 
