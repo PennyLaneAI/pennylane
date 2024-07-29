@@ -29,13 +29,15 @@ def diagonalize_tape_measurements(tape, supported_base_obs=_default_supported_ob
             f"but received {list(bad_obs_input)}"
         )
 
-    _diag_obs = ([], [])  # tracks which observables and wires have been diagonalized
+    _visited_obs = ([], [])  # tracks which observables and wires have been diagonalized
     diagonalizing_gates = []
     new_measurements = []
 
     for m in tape.measurements:
         if m.obs:
-            gates, new_obs, _diag_obs = diagonalize_observable(m.obs, _diag_obs, supported_base_obs)
+            gates, new_obs, _visited_obs = _diagonalize_observable(
+                m.obs, _visited_obs, supported_base_obs
+            )
             diagonalizing_gates.extend(gates)
 
             meas = copy(m)
@@ -57,54 +59,57 @@ def diagonalize_tape_measurements(tape, supported_base_obs=_default_supported_ob
     return (new_tape,), null_postprocessing
 
 
-def _check_if_diagonalizing(obs, _diag_obs, switch_basis):
+def _check_if_diagonalizing(obs, _visited_obs, switch_basis):
 
     # its already been diagonalized - we will not be applying any gates
-    if obs in _diag_obs[0]:
-        return False
+    if obs in _visited_obs[0]:
+        return False, _visited_obs
 
     # a different observable has been diagonalized on the same wire - error
-    if obs.wires in _diag_obs[1]:
+    if obs.wires in _visited_obs[1]:
         raise RuntimeError(
             f"Expected only a single observable per wire, but {obs} "
             f"overlaps with other obserables on the tape."
         )
 
     # we diagonalize if it's an operator we are switching the basis for
-    _diag_obs[0].append(obs)
-    _diag_obs[1].append(obs.wires[0])
-    return switch_basis, _diag_obs
+    _visited_obs[0].append(obs)
+    _visited_obs[1].append(obs.wires[0])
+    return switch_basis, _visited_obs
 
 
-def diagonalize_observable(
+def _diagonalize_observable(
     observable,
-    _diag_obs,
+    _visited_obs=None,
     supported_base_obs=_default_supported_obs,
 ):
     """takes an observable and changes all unsupported obs to the measurement
     basis. Applies diagonalizing gates if the observable being diagonalized is
     on one of the diagonalization wires."""
 
+    if _visited_obs is None:
+        _visited_obs = ([], [])
+
     if not isinstance(observable, (qml.X, qml.Y, qml.Z, qml.Hadamard)):
         return _diagonalize_compound_observable(
-            observable, _diag_obs, supported_base_obs=supported_base_obs
+            observable, _visited_obs, supported_base_obs=supported_base_obs
         )
 
-    # also validates that the wire hasn't already been diagonalized and updated _diag_obs
+    # also validates that the wire hasn't already been diagonalized and updated _visited_obs
     switch_basis = observable.name not in supported_base_obs
-    diagonalize, _diag_obs = _check_if_diagonalizing(observable, _diag_obs, switch_basis)
+    diagonalize, _visited_obs = _check_if_diagonalizing(observable, _visited_obs, switch_basis)
 
     if isinstance(observable, qml.Z):  # maybe kind of redundant
-        return [], observable, _diag_obs
+        return [], observable, _visited_obs
 
     new_obs = qml.Z(wires=observable.wires) if switch_basis else observable
     diagonalizing_gates = observable.diagonalizing_gates() if diagonalize else []
 
-    return diagonalizing_gates, new_obs, _diag_obs
+    return diagonalizing_gates, new_obs, _visited_obs
 
 
-def get_obs_and_gates(obs_list, _diag_obs, supported_base_obs=_default_supported_obs):
-    """Calls diagonalize_observables on each observable in a list. After each observable is diagonalized,
+def _get_obs_and_gates(obs_list, _visited_obs, supported_base_obs=_default_supported_obs):
+    """Calls _diagonalize_observable on each observable in a list. After each observable is diagonalized,
     if diagonalizing gates were added, its wire is removed from the list of wires still needing
     diagonalization. This prevents diagonalizing twice on the same wire for overlapping measurements, like
     [qml.X(0), qml.X(0)@qml.Y(1)]"""
@@ -113,7 +118,7 @@ def get_obs_and_gates(obs_list, _diag_obs, supported_base_obs=_default_supported
     diagonalizing_gates = []
 
     for o in obs_list:
-        gates, obs, _diag_obs = diagonalize_observable(o, _diag_obs, supported_base_obs)
+        gates, obs, _visited_obs = _diagonalize_observable(o, _visited_obs, supported_base_obs)
         if gates:
             diagonalizing_gates.extend(gates)
         new_obs.append(obs)
@@ -123,7 +128,7 @@ def get_obs_and_gates(obs_list, _diag_obs, supported_base_obs=_default_supported
 
 @singledispatch
 def _diagonalize_compound_observable(
-    observable, _diag_obs, supported_base_obs=_default_supported_obs
+    observable, _visited_obs, supported_base_obs=_default_supported_obs
 ):
     """takes an observable consisting of multiple other observables, and changes all
     unsupported obs to the measurement basis. Applies diagonalizing gates unless the
@@ -136,64 +141,70 @@ def _diagonalize_compound_observable(
 
 @_diagonalize_compound_observable.register
 def _diagonalize_symbolic_op(
-    observable: SymbolicOp, _diag_obs, supported_base_obs=_default_supported_obs
+    observable: SymbolicOp, _visited_obs, supported_base_obs=_default_supported_obs
 ):
-    diagonalizing_gates, new_base, _diag_obs = diagonalize_observable(
-        observable.base, _diag_obs, supported_base_obs
+    diagonalizing_gates, new_base, _visited_obs = _diagonalize_observable(
+        observable.base, _visited_obs, supported_base_obs
     )
 
     new_observable = copy(observable)
     new_observable._hyperparameters["base"] = new_base
 
-    return diagonalizing_gates, new_observable, _diag_obs
+    return diagonalizing_gates, new_observable, _visited_obs
 
 
 @_diagonalize_compound_observable.register
-def _diagonalize_tensor(observable: Tensor, _diag_obs, supported_base_obs=_default_supported_obs):
-    diagonalizing_gates, new_obs = get_obs_and_gates(observable.obs, _diag_obs, supported_base_obs)
+def _diagonalize_tensor(
+    observable: Tensor, _visited_obs, supported_base_obs=_default_supported_obs
+):
+    diagonalizing_gates, new_obs = _get_obs_and_gates(
+        observable.obs, _visited_obs, supported_base_obs
+    )
 
     new_observable = copy(observable)
     new_observable.obs = new_obs
 
-    return diagonalizing_gates, new_observable, _diag_obs
+    return diagonalizing_gates, new_observable, _visited_obs
 
 
 @_diagonalize_compound_observable.register
 def _diagonalize_hamiltonian(
     observable: qml.ops.Hamiltonian,
-    _diag_obs,
+    _visited_obs,
     supported_base_obs=_default_supported_obs,
 ):
-    diagonalizing_gates, new_ops = get_obs_and_gates(observable.ops, _diag_obs, supported_base_obs)
+    diagonalizing_gates, new_ops = _get_obs_and_gates(
+        observable.ops, _visited_obs, supported_base_obs
+    )
 
     new_observable = copy(observable)
     new_observable._ops = new_ops
 
-    return diagonalizing_gates, new_observable, _diag_obs
+    return diagonalizing_gates, new_observable, _visited_obs
 
 
 @_diagonalize_compound_observable.register
 def _diagonalize_composite_op(
-    observable: LinearCombination, _diag_obs, supported_base_obs=_default_supported_obs
+    observable: LinearCombination, _visited_obs, supported_base_obs=_default_supported_obs
 ):
-    diagonalizing_gates, new_operands = get_obs_and_gates(
-        observable.operands, _diag_obs, supported_base_obs
+    diagonalizing_gates, new_operands = _get_obs_and_gates(
+        observable.operands, _visited_obs, supported_base_obs
     )
 
     new_observable = LinearCombination(observable.coeffs, new_operands)
 
-    return diagonalizing_gates, new_observable, _diag_obs
+    return diagonalizing_gates, new_observable, _visited_obs
 
 
 @_diagonalize_compound_observable.register
 def _diagonalize_composite_op(
-    observable: CompositeOp, _diag_obs, supported_base_obs=_default_supported_obs
+    observable: CompositeOp, _visited_obs, supported_base_obs=_default_supported_obs
 ):
-    diagonalizing_gates, new_operands = get_obs_and_gates(
-        observable.operands, _diag_obs, supported_base_obs
+    diagonalizing_gates, new_operands = _get_obs_and_gates(
+        observable.operands, _visited_obs, supported_base_obs
     )
 
     print(new_operands)
     new_observable = observable.__class__(*new_operands)
 
-    return diagonalizing_gates, new_observable, _diag_obs
+    return diagonalizing_gates, new_observable, _visited_obs
