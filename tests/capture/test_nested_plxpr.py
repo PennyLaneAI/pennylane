@@ -103,10 +103,10 @@ class TestAdjointQfunc:
         with qml.queuing.AnnotatedQueue() as q:
             out = jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, 1.2)
 
-        expected_op1 = qml.adjoint(qml.X(5))
+        expected_op1 = qml.adjoint(qml.IsingXX(jax.numpy.array(2 * 1.2 + 1), wires=(5, 6)))
         qml.assert_equal(out[0], expected_op1)
         qml.assert_equal(q.queue[0], expected_op1)
-        expected_op2 = qml.adjoint(qml.IsingXX(jax.numpy.array(2 * 1.2 + 1), wires=(5, 6)))
+        expected_op2 = qml.adjoint(qml.X(5))
         qml.assert_equal(out[1], expected_op2)
         qml.assert_equal(q.queue[1], expected_op2)
 

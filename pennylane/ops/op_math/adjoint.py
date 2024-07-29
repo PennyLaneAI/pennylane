@@ -204,7 +204,7 @@ def _get_adjoint_qfunc_prim():
         with qml.queuing.AnnotatedQueue() as q:
             jax.core.eval_jaxpr(jaxpr, consts, *args)
         ops, _ = qml.queuing.process_queue(q)
-        return [adjoint(op, lazy=lazy) for op in ops]
+        return [adjoint(op, lazy=lazy) for op in reversed(ops)]
 
     def _is_queued_outvar(outvars):
         if not outvars:
