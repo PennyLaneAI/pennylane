@@ -116,6 +116,7 @@ def structure_constants(
         g = [op.pauli_rep for op in g]
 
     commutators = _all_commutators(g)
+    print(commutators)
 
     rep = np.zeros((len(g), len(g), len(g)), dtype=float)
     for i, op in enumerate(g):

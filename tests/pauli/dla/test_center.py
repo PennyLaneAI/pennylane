@@ -13,6 +13,7 @@
 # limitations under the License.
 """Tests for pennylane/dla/center.py functionality"""
 
+import numpy as np
 import pytest
 
 import pennylane as qml
@@ -60,19 +61,30 @@ def test_center_pauli_word_pauli_True(pauli):
         qml.pauli.PauliWord({0: "X"}),
         qml.pauli.PauliWord({0: "X", 1: "X"}),
         qml.pauli.PauliWord({1: "Y"}),
+        qml.pauli.PauliWord({0: "X", 1: "Z"}),
     ]
+    x0_pw = qml.pauli.PauliWord({0: "X"})
+    center = qml.center(ops, pauli=pauli)
+    assert isinstance(center, list)
+    assert len(center) == 1
     if pauli:
-        assert qml.center(ops, pauli=pauli) == [qml.pauli.PauliWord({0: "X"})]
+        assert isinstance(center[0], qml.pauli.PauliSentence) and len(center[0]) == 1
+        assert x0_pw in center[0]
+        assert np.isclose(center[0][x0_pw], -1)
     else:
-        assert qml.center(ops, pauli=pauli) == [qml.X(0)]
+        assert isinstance(center[0], qml.ops.op_math.SProd)
+        assert qml.equal(center[0], -1 * qml.X(0))
 
+
+c = 1 / np.sqrt(2)
 
 GENERATOR_CENTERS = (
-    ([qml.X(0), qml.X(0) @ qml.X(1), qml.Y(1)], [qml.X(0)]),
-    ([qml.X(0) @ qml.X(1), qml.Y(1), qml.X(0)], [qml.X(0)]),
+    ([qml.X(0), qml.X(0) @ qml.X(1), qml.Y(1)], [-1 * qml.X(0)]),
+    ([qml.X(0) @ qml.X(1), qml.Y(1), qml.X(0)], [-1 * qml.X(0)]),
     ([qml.X(0) @ qml.X(1), qml.Y(1), qml.X(1)], []),
     ([qml.X(0) @ qml.X(1), qml.Y(1), qml.Z(0)], []),
     ([p(0) @ p(1) for p in [qml.X, qml.Y, qml.Z]], [p(0) @ p(1) for p in [qml.X, qml.Y, qml.Z]]),
+    ([qml.X(0), qml.X(1), sum(p(0) @ p(1) for p in [qml.Y, qml.Z])], [c * qml.X(0) + c * qml.X(1)]),
 )
 
 

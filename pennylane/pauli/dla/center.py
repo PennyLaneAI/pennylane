@@ -16,9 +16,11 @@ from itertools import combinations
 from typing import Union
 
 import numpy as np
+from scipy.linalg import null_space
 
 from pennylane.operation import Operator
 from pennylane.pauli import PauliSentence, PauliWord
+from pennylane.pauli.dla import structure_constants
 
 
 def center(
@@ -33,9 +35,11 @@ def center(
     .. math:: \mathfrak{\xi}(\mathfrak{g}) := \{h \in \mathfrak{g} | [h, h_i]=0 \ \forall h_i \in \mathfrak{g} \}
 
     Args:
-        g (List[Union[Operator, PauliSentence, PauliWord]]): List of operators for which to find the center.
-        pauli (bool): Indicates whether it is assumed that :class:`~.PauliSentence` or :class:`~.PauliWord` instances are input and returned.
-            This can help with performance to avoid unnecessary conversions to :class:`~pennylane.operation.Operator`
+        g (List[Union[Operator, PauliSentence, PauliWord]]): List of operators that spans
+            the algebra for which to find the center.
+        pauli (bool): Indicates whether it is assumed that :class:`~.PauliSentence` or
+            :class:`~.PauliWord` instances are input and returned. This can help with performance
+            to avoid unnecessary conversions to :class:`~pennylane.operation.Operator`
             and vice versa. Default is ``False``.
 
     Returns:
@@ -57,22 +61,34 @@ def center(
     [X(0)]
 
     """
+    if len(g) < 2:
+        # A length-zero list has zero center, a length-one list has full center
+        return g
 
-    if not pauli:
-        g = [o.pauli_rep for o in g]
+    adjoint_repr = structure_constants(g, pauli)
+    # Compute kernel for adjoint rep of each DLA element
+    kernels = [null_space(ad_x) for ad_x in adjoint_repr]
+    # If any kernels vanishes, their overlap vanishes as well
+    if any(k.shape[1] == 0 for k in kernels):
+        return []
+    # Compute the complements of the kernels
+    supports = [null_space(k.T) for k in kernels]
+    # Combine all complements
+    combined_support = np.hstack(supports)
+    if combined_support.shape[1] == 0:
+        return g
+    # Compute the complement of the combined complements: It is the intersection of the kernels
+    center = null_space(combined_support.T)
 
-    d = len(g)
-    commutators = np.zeros((d, d), dtype=int)
-    for (j, op1), (k, op2) in combinations(enumerate(g), r=2):
-        res = op1.commutator(op2)
-        res.simplify()
-        if res != PauliSentence({}):
-            commutators[j, k] = 1  # dummy value to indicate operators dont commute
-            commutators[k, j] = 1
+    # Construct operators from numerical output and convert to desired format
+    res = [sum(c * x for c, x in zip(c_coeffs, g)) for c_coeffs in center.T]
 
-    mask = np.all(commutators == 0, axis=0)
-    res = list(np.array(g)[mask])
+    have_paulis = isinstance(g[0], (PauliWord, PauliSentence))
+    if pauli or have_paulis:
+        _ = [el.simplify() for el in res]
+        if not pauli:
+            res = [el.operation() for el in res]
+    else:
+        res = [el.simplify() for el in res]
 
-    if not pauli:
-        res = [op.operation() for op in res]
     return res
