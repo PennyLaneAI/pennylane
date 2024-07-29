@@ -61,7 +61,7 @@ iniconfig==2.0.0
 ipykernel==6.29.5
 ipython==8.18.1
 ipython-genutils==0.2.0
-ipywidgets==7.8.2
+ipywidgets==7.8.3
 isoduration==20.11.0
 isort==5.13.2
 jax==0.4.23
@@ -81,7 +81,7 @@ jupyter_server_terminals==0.5.3
 jupyterlab==4.2.4
 jupyterlab_pygments==0.3.0
 jupyterlab_server==2.27.3
-jupyterlab_widgets==1.1.8
+jupyterlab_widgets==1.1.9
 keras==3.4.1
 kiwisolver==1.4.5
 lark==1.1.9
@@ -123,7 +123,7 @@ pexpect==4.9.0
 pillow==10.4.0
 platformdirs==4.2.2
 pluggy==1.5.0
-pre-commit==3.7.1
+pre-commit==3.8.0
 prometheus_client==0.20.0
 prompt_toolkit==3.0.47
 protobuf==4.25.4
@@ -191,6 +191,6 @@ webcolors==24.6.0
 webencodings==0.5.1
 websocket-client==1.8.0
 Werkzeug==3.0.3
-widgetsnbextension==3.6.7
+widgetsnbextension==3.6.8
 wrapt==1.12.1
 zipp==3.19.2

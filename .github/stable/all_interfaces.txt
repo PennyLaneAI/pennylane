@@ -65,7 +65,7 @@ PennyLane_Lightning==0.38.0
 pillow==10.4.0
 platformdirs==4.2.2
 pluggy==1.5.0
-pre-commit==3.7.1
+pre-commit==3.8.0
 protobuf==4.25.4
 py==1.11.0
 py-cpuinfo==9.0.0
