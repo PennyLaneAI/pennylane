@@ -80,7 +80,7 @@ def center(
     center_coefficients = null_space(combined_support.T)
 
     # Construct operators from numerical output and convert to desired format
-    res = [sum(c * x for c, x in zip(c_coeffs, g)) for c_coeffs in center_coefficients.T]
+    res = [qml.math.dot(c_coeffs, g) for c_coeffs in center_coefficients.T]
 
     have_paulis = isinstance(g[0], (PauliWord, PauliSentence))
     if pauli or have_paulis:

@@ -215,7 +215,7 @@
 
 <h3>Bug fixes 🐛</h3>
 
-* Fixed a bug in `qml.pauli.dla.center` that omitted elements from the center if they were
+* Fixed a bug in `qml.center` that omitted elements from the center if they were
   linear combinations of input elements.
   [(#6049)](https://github.com/PennyLaneAI/pennylane/pull/6049)
 
