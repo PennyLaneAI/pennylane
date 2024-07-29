@@ -360,6 +360,35 @@ def circuit_multiple_cond(tmp_pred, tmp_arg):
     return qml.expval(qml.Z(0))
 
 
+@qml.qnode(dev)
+def circuit_with_consts(pred, arg):
+    """Quantum circuit with jaxpr constants."""
+
+    # these are captured as consts
+    arg1 = arg
+    arg2 = arg + 0.2
+    arg3 = arg + 0.3
+    arg4 = arg + 0.4
+    arg5 = arg + 0.5
+    arg6 = arg + 0.6
+
+    def true_fn():
+        qml.RX(arg1, 0)
+
+    def false_fn():
+        qml.RX(arg2, 0)
+        qml.RX(arg3, 0)
+
+    def elif_fn1():
+        qml.RX(arg4, 0)
+        qml.RX(arg5, 0)
+        qml.RX(arg6, 0)
+
+    qml.cond(pred > 0, true_fn, false_fn, elifs=((pred == 0, elif_fn1),))()
+
+    return qml.expval(qml.Z(0))
+
+
 class TestCondCircuits:
     """Tests for conditional quantum circuits."""
 
@@ -398,4 +427,17 @@ class TestCondCircuits:
     def test_circuit_multiple_cond(self, tmp_pred, tmp_arg, expected):
         """Test circuit with returned operators in the branches."""
         result = circuit_multiple_cond(tmp_pred, tmp_arg)
+        assert np.allclose(result, expected), f"Expected {expected}, but got {result}"
+
+    @pytest.mark.parametrize(
+        "pred, arg, expected",
+        [
+            (1, 0.5, 0.87758256),  # RX(0.5)
+            (-1, 0.5, 0.0707372),  # RX(0.7) -> RX(0.8)
+            (0, 0.5, -0.9899925),  # RX(0.9) -> RX(1.0) -> RX(1.1)
+        ],
+    )
+    def test_circuit_consts(self, pred, arg, expected):
+        """Test circuit with jaxpr constants."""
+        result = circuit_with_consts(pred, arg)
         assert np.allclose(result, expected), f"Expected {expected}, but got {result}"

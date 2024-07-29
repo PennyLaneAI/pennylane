@@ -479,28 +479,38 @@ def _get_cond_qfunc_prim():
     cond_prim.multiple_results = True
 
     @cond_prim.def_impl
-    def _(conditions, *args, jaxpr_branches):
+    def _(conditions, *args_and_consts, jaxpr_branches, n_consts_per_branch, n_args):
 
-        for pred, jaxpr in zip(conditions, jaxpr_branches):
+        args = args_and_consts[:n_args]
+        consts_flat = args_and_consts[n_args:]
+
+        consts_per_branch = []
+        start = 0
+        for n in n_consts_per_branch:
+            consts_per_branch.append(consts_flat[start : start + n])
+            start += n
+
+        for pred, jaxpr, consts in zip(conditions, jaxpr_branches, consts_per_branch):
             if pred and jaxpr is not None:
-                return jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *args)
+                return jax.core.eval_jaxpr(jaxpr.jaxpr, consts, *args)
 
         return ()
 
     @cond_prim.def_abstract_eval
-    def _(*_, jaxpr_branches):
+    def _(*_, jaxpr_branches, **__):
 
-        # Index 0 corresponds to the true branch
         outvals_true = jaxpr_branches[0].out_avals
 
         for idx, jaxpr_branch in enumerate(jaxpr_branches):
             if idx == 0:
                 continue
 
-            if outvals_true and jaxpr_branch is None:
-                raise ValueError(
-                    "The false branch must be provided if the true branch returns any variables"
-                )
+            if jaxpr_branch is None:
+                if outvals_true:
+                    raise ValueError(
+                        "The false branch must be provided if the true branch returns any variables"
+                    )
+                continue
 
             outvals_branch = jaxpr_branch.out_avals
             branch_type = "elif" if idx < len(jaxpr_branches) - 1 else "false"
@@ -531,7 +541,7 @@ def _capture_cond(condition, true_fn, false_fn=None, elifs=()) -> Callable:
         )
 
         # We extract each condition (or predicate) from the elifs argument list
-        # since these are traced by JAX and are passed as positional arguments to the cond primitive
+        # since these are traced by JAX and are passed as positional arguments to the primitive
         elifs_conditions = []
         jaxpr_elifs = []
 
@@ -539,13 +549,23 @@ def _capture_cond(condition, true_fn, false_fn=None, elifs=()) -> Callable:
             elifs_conditions.append(pred)
             jaxpr_elifs.append(jax.make_jaxpr(functools.partial(elif_fn, **kwargs))(*args))
 
-        jaxpr_branches = [jaxpr_true, *jaxpr_elifs, jaxpr_false]
         conditions = jax.numpy.array([condition, *elifs_conditions, True])
+
+        jaxpr_branches = [jaxpr_true, *jaxpr_elifs, jaxpr_false]
+        jaxpr_consts = [jaxpr.consts if jaxpr is not None else () for jaxpr in jaxpr_branches]
+
+        # We need to flatten the constants since JAX does not allow
+        # to pass lists as positional arguments
+        consts_flat = [const for sublist in jaxpr_consts for const in sublist]
+        n_consts_per_branch = [len(consts) for consts in jaxpr_consts]
 
         return cond_prim.bind(
             conditions,
             *args,
+            *consts_flat,
             jaxpr_branches=jaxpr_branches,
+            n_consts_per_branch=n_consts_per_branch,
+            n_args=len(args),
         )
 
     return new_wrapper
