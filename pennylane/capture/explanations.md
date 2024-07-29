@@ -35,7 +35,7 @@ def my_func(x):
 # Higher Order Primitives and nested jaxpr
 
 Higher order primitives are essentially function transforms. They are functions that accept other
-functions. Our higher order primitives will be `adjoint`, `ctrl`, `for_loop`, `while_loop`, `cond`, `grad`,
+functions. Our higher order primitives will include `adjoint`, `ctrl`, `for_loop`, `while_loop`, `cond`, `grad`,
 and `jacobian`.
 
 Jax describes two separate ways of defining higher order derivatives:
@@ -47,7 +47,7 @@ Jax describes two separate ways of defining higher order derivatives:
 Jax also has a [`CallPrimitive`](https://github.com/google/jax/blob/23ad313817f20345c60281fbf727cf4f8dc83181/jax/_src/core.py#L2366)
 but using this seems to be more trouble than its worth so far. Notably, this class is rather private and undocumented.
 
-We will proceed with using *staged processing* for now. This choice was as it is more straightforward to implement, follows catalyst's choice of representation, and is more
+We will proceed with using *staged processing* for now. This choice is more straightforward to implement, follows Catalyst's choice of representation, and is more
 explicit in the contents. On the fly isn't as much "program capture" as deferring capture till later. We want to immediately capture all aspects of the jaxpr.
 
 
@@ -92,7 +92,7 @@ already bound.  `jax.make_jaxpr` does not currently accept keyword arguments for
 
 Next, we decided to make the integer `n` a traceable parameter instead of metadata. We could have chosen to make
 `n` metadata instead.  This way, we can compile our function once for different integers `n`, and it is in line with how
-catalyst treats `for_loop` and `while_loop`.  If the function produced outputs of different types and shapes than the inputs,
+catalyst treats `for_loop` and `while_loop`.  If the function produced outputs of different types and shapes for different `n`,
 we would have to treat `n` like metadata and re-compile for different integers `n`.
 
 Finally, we promote the `jaxpr.consts` to being actual positional arguments. The consts
@@ -117,6 +117,8 @@ def _(n, *args, jaxpr, n_consts):
 Here we use `jax.core.eval_jaxpr` to execute the jaxpr with concrete arguments. If we had instead used
 *on the fly processing*, we could have simply executed the stored function, but when using *staged processing*, we need
 to directly evaluate the jaxpr instead.
+
+In addition, we need to define the abstract evaluation. As the function in our case returns outputs that match the inputs in number, shape and type, we can simply extract the abstract values of the `args`.
 
 ```python
 @repeat_prim.def_abstract_eval
@@ -152,7 +154,7 @@ Now that we have all the parts, we can see it in action:
 
 Some notes here about how read this. `a:i32[]` is the global integer variable `a` that is
 a constant.  The arguments to the `repeat` primitive are `n (const a) x (hardcoded 2.0=y)`.
-You can also see the const variable `e:i32[]` in the inner nested jaxpr as well.
+You can also see the const variable `a` as argument `e:i32[]` to the inner nested jaxpr as well.
 
 
 ## Metaprogramming
