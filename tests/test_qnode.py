@@ -16,7 +16,7 @@ import copy
 
 # pylint: disable=import-outside-toplevel, protected-access, no-member
 import warnings
-from dataclasses import asdict, replace
+from dataclasses import replace
 from functools import partial
 
 import numpy as np
@@ -887,10 +887,7 @@ class TestIntegration:
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    @pytest.mark.parametrize(
-        "dev",
-        [qml.device("default.qubit", wires=3), qml.device("default.qubit.legacy", wires=3)],
-    )
+    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.legacy"])
     @pytest.mark.parametrize("first_par", np.linspace(0.15, np.pi - 0.3, 3))
     @pytest.mark.parametrize("sec_par", np.linspace(0.15, np.pi - 0.3, 3))
     @pytest.mark.parametrize(
@@ -905,11 +902,12 @@ class TestIntegration:
         ],
     )
     def test_defer_meas_if_mcm_unsupported(
-        self, dev, first_par, sec_par, return_type, mv_return, mv_res, mocker
+        self, dev_name, first_par, sec_par, return_type, mv_return, mv_res, mocker
     ):  # pylint: disable=too-many-arguments
         """Tests that the transform using the deferred measurement principle is
         applied if the device doesn't support mid-circuit measurements
         natively."""
+        dev = qml.device(dev_name, wires=3)
 
         @qml.qnode(dev)
         def cry_qnode(x, y):
@@ -1855,7 +1853,7 @@ class TestMCMConfiguration:
             postselect_mode=postselect_mode, mcm_method=mcm_method
         )
 
-        @qml.qnode(dev, **asdict(original_config))
+        @qml.qnode(dev, postselect_mode=postselect_mode, mcm_method=mcm_method)
         def circuit(x, mp):
             qml.RX(x, 0)
             qml.measure(0, postselect=1)

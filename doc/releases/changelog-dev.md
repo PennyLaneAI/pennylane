@@ -4,19 +4,25 @@
 
 <h3>New features since last release</h3>
 
+* A new method `process_density_matrix` has been added to the `ProbabilityMP` and `DensityMatrixMP`
+  classes, allowing for more efficient handling of quantum density matrices, particularly with batch
+  processing support. This method simplifies the calculation of probabilities from quantum states
+  represented as density matrices.
+  [(#5830)](https://github.com/PennyLaneAI/pennylane/pull/5830)
+
 * Resolved the bug in `qml.ThermalRelaxationError` where there was a typo from `tq` to `tg`.
   [(#5988)](https://github.com/PennyLaneAI/pennylane/issues/5988)
-
-* A new method `process_density_matrix` has been added to the `ProbabilityMP` and `DensityMatrixMP` classes, allowing for more efficient handling of quantum density matrices, particularly with batch processing support. This method simplifies the calculation of probabilities from quantum states represented as density matrices.
-  [(#5830)](https://github.com/PennyLaneAI/pennylane/pull/5830)
 
 * The `qml.PrepSelPrep` template is added. The template implements a block-encoding of a linear
   combination of unitaries.
   [(#5756)](https://github.com/PennyLaneAI/pennylane/pull/5756)
   [(#5987)](https://github.com/PennyLaneAI/pennylane/pull/5987)
 
-* The `split_to_single_terms` transform is added. This transform splits expectation values of sums
-  into multiple single-term measurements on a single tape, providing better support for simulators
+* A new function `qml.registers` has been added, enabling the creation of registers, which are implemented as a dictionary of `Wires` instances.
+  [(#5957)](https://github.com/PennyLaneAI/pennylane/pull/5957)
+
+* The `split_to_single_terms` transform is added. This transform splits expectation values of sums 
+  into multiple single-term measurements on a single tape, providing better support for simulators 
   that can handle non-commuting observables but don't natively support multi-term observables.
   [(#5884)](https://github.com/PennyLaneAI/pennylane/pull/5884)
 
@@ -33,6 +39,13 @@
 
 <h3>Improvements 🛠</h3>
 
+* `qml.devices.LegacyDeviceFacade` has been added to map the legacy devices to the new
+  device interface.
+  [(#5927)](https://github.com/PennyLaneAI/pennylane/pull/5927)
+
+* Added the `compute_sparse_matrix` method for `qml.ops.qubit.BasisStateProjector`.
+  [(#5790)](https://github.com/PennyLaneAI/pennylane/pull/5790)
+
 * `StateMP.process_state` defines rules in `cast_to_complex` for complex casting, avoiding a superfluous state vector copy in Lightning simulations
   [(#5995)](https://github.com/PennyLaneAI/pennylane/pull/5995)
 
@@ -46,6 +59,12 @@
 
 * `QuantumScript.hash` is now cached, leading to performance improvements.
   [(#5919)](https://github.com/PennyLaneAI/pennylane/pull/5919)
+
+* Set operations are now supported by Wires.
+  [(#5983)](https://github.com/PennyLaneAI/pennylane/pull/5983)
+
+* `qml.dynamic_one_shot` now supports circuits using the `"tensorflow"` interface.
+  [(#5973)](https://github.com/PennyLaneAI/pennylane/pull/5973)
 
 * The representation for `Wires` has now changed to be more copy-paste friendly.
   [(#5958)](https://github.com/PennyLaneAI/pennylane/pull/5958)
@@ -108,6 +127,9 @@
 * `qml.BasisRotation` and `qml.qchem.givens_decomposition` are now jit compatible.
   [(#6019)](https://github.com/PennyLaneAI/pennylane/pull/6019)
 
+* The `CNOT` operator no longer decomposes to itself. Instead, it raises a `qml.DecompositionUndefinedError`.
+  [(#6039)](https://github.com/PennyLaneAI/pennylane/pull/6039)
+
 <h4>Community contributions 🥳</h4>
 
 * `DefaultQutritMixed` readout error has been added using parameters `readout_relaxation_probs` and 
@@ -123,7 +145,7 @@
   the circuit.
   [(#5907)](https://github.com/PennyLaneAI/pennylane/pull/5907)
 
-* `queue_idx` attribute has been removed from the `Operator`, `CompositeOp`, and `SymboliOp` classes.
+* `queue_idx` attribute has been removed from the `Operator`, `CompositeOp`, and `SymbolicOp` classes.
   [(#6005)](https://github.com/PennyLaneAI/pennylane/pull/6005)
 
 * `qml.from_qasm` no longer removes measurements from the QASM code. Use 
@@ -180,6 +202,15 @@
   Instead, use `pennylane.gradients.classical_fisher` and `pennylane.gradients.quantum_fisher`.
   [(#5985)](https://github.com/PennyLaneAI/pennylane/pull/5985)
 
+* The legacy devices `default.qubit.{autograd,torch,tf,jax,legacy}` are deprecated.
+  Instead, use `default.qubit` as it now supports backpropagation through the several backends.
+  [(#5997)](https://github.com/PennyLaneAI/pennylane/pull/5997)
+
+* The logic for internally switching a device for a different backpropagation
+  compatible device is now deprecated, as it was in place for the deprecated
+  `default.qubit.legacy`.
+  [(#6032)](https://github.com/PennyLaneAI/pennylane/pull/6032)
+
 <h3>Documentation 📝</h3>
 
 * Improves the docstring for `QuantumScript.expand` and `qml.tape.tape.expand_tape`.
@@ -206,6 +237,12 @@
 * `qml.AmplitudeEmbedding` has better support for features using low precision integer data types.
   [(#5969)](https://github.com/PennyLaneAI/pennylane/pull/5969)
 
+* `qml.lie_closure` works with sums of Paulis.
+  [(#6023)](https://github.com/PennyLaneAI/pennylane/pull/6023)
+
+* `qml.BasisRotation` works with qjit.
+  [(#6019)](https://github.com/PennyLaneAI/pennylane/pull/6019)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -218,15 +255,16 @@ Ahmed Darwish,
 Lillian M. A. Frederiksen,
 Pietropaolo Frisoni,
 Emiliano Godinez,
+Austin Huang,
 Renke Huang,
 Josh Izaac,
 Soran Jahangiri,
-Christina Lee,
-Austin Huang,
+Korbinian Kottmann,
 Christina Lee,
 William Maxwell,
 Vincent Michaud-Rioux,
+Anurav Modak,
 Pablo A. Moreno Casares,
 Mudit Pandey,
 Erik Schultheis,
-nate stemen.
+Nate Stemen.
