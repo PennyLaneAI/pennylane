@@ -266,7 +266,7 @@ def _capture_ctrl_transform(qfunc: Callable, control, control_values, work_wires
     def new_qfunc(*args, **kwargs):
         jaxpr = jax.make_jaxpr(functools.partial(qfunc, **kwargs))(*args)
         control_wires = qml.wires.Wires(control)  # make sure is iterable
-        return qnode_prim.bind(
+        qnode_prim.bind(
             *jaxpr.consts,
             *args,
             *control_wires,

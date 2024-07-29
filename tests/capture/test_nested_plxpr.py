@@ -177,6 +177,7 @@ class TestCtrlQfunc:
         with qml.queuing.AnnotatedQueue() as q:
             out = jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, 1.2, 2)
 
+        assert f(0.5, 0) is None
         assert out == []
         expected = qml.ctrl(qml.RX(1.2, 2), 1)
         qml.assert_equal(q.queue[0], expected)
