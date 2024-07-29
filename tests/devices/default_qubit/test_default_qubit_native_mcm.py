@@ -13,6 +13,7 @@
 # limitations under the License.
 """Tests for default qubit preprocessing."""
 from collections.abc import Sequence
+from unittest.mock import patch
 
 import mcm_utils
 import numpy as np
@@ -424,156 +425,141 @@ def test_sample_with_broadcasting_and_postselection_error(mcm_method):
         _ = circuit([0.1, 0.2])
 
 
-# pylint: disable=not-an-iterable
-@pytest.mark.jax
+@pytest.mark.all_interfaces
+@pytest.mark.parametrize("interface", ["torch", "tensorflow", "jax", "autograd"])
 @pytest.mark.parametrize("mcm_method", ["one-shot", "tree-traversal"])
-@pytest.mark.parametrize("shots", [100, [100, 101], [100, 100, 101]])
-@pytest.mark.parametrize("postselect", [None, 0, 1])
-def test_sample_with_prng_key(mcm_method, shots, postselect):
-    """Test that setting a PRNGKey gives the expected behaviour. With separate calls
-    to DefaultQubit.execute, the same results are expected when using a PRNGKey"""
-    # pylint: disable=import-outside-toplevel
-    from jax.random import PRNGKey
+def test_finite_diff_in_transform_program(interface, mcm_method):
+    """Test that finite diff is in the transform program of a qnode containing
+    mid-circuit measurements"""
 
-    dev = get_device(shots=shots, seed=PRNGKey(678))
-    params = [np.pi / 4, np.pi / 3]
-    obs = qml.PauliZ(0) @ qml.PauliZ(1)
+    dev = get_device(shots=10)
 
-    def func(x, y):
-        obs_tape(x, y, None, postselect=postselect)
-        return qml.sample(op=obs)
+    @qml.qnode(dev, mcm_method=mcm_method, diff_method="finite-diff")
+    def circuit(x):
+        qml.RX(x, 0)
+        qml.measure(0)
+        return qml.expval(qml.Z(0))
 
-    func0 = qml.QNode(func, dev, mcm_method=mcm_method)
-    results0 = func0(*params)
-    results1 = qml.QNode(func, dev, mcm_method="deferred")(*params)
+    x = qml.math.array(1.5, like=interface)
+    with patch("pennylane.execute") as mock_execute:
+        circuit(x)
+        mock_execute.assert_called()
+        _, kwargs = mock_execute.call_args
+        transform_program = kwargs["transform_program"]
 
-    mcm_utils.validate_measurements(qml.sample, shots, results1, results0, batch_size=None)
-
-    evals = obs.eigvals()
-    for eig in evals:
-        # When comparing with the results from a circuit with deferred measurements
-        # we're not always expected to have the functions used to sample are different
-        if isinstance(shots, list):
-            for r in results1:
-                assert not np.all(np.isclose(r, eig))
-        else:
-            assert not np.all(np.isclose(results1, eig))
-
-    results0_2 = func0(*params)
-    # Same result expected with multiple executions
-    if isinstance(shots, list):
-        for r0, r0_2 in zip(results0, results0_2):
-            assert np.allclose(r0, r0_2)
-    else:
-        assert np.allclose(results0, results0_2)
+    # pylint: disable=protected-access
+    assert transform_program[0]._transform == qml.gradients.finite_diff.expand_transform
 
 
 # pylint: disable=import-outside-toplevel, not-an-iterable
 @pytest.mark.jax
-@pytest.mark.parametrize("diff_method", [None, "best"])
-@pytest.mark.parametrize("postselect", [None, 1])
-@pytest.mark.parametrize("reset", [False, True])
-def test_jax_jit(diff_method, postselect, reset):
-    """Tests that DefaultQubit handles a circuit with a single mid-circuit measurement and a
-    conditional gate. A single measurement of a common observable is performed at the end."""
-    import jax
+class TestJaxIntegration:
+    """Integration tests for dynamic_one_shot with jax"""
 
-    shots = 10
+    @pytest.mark.parametrize("mcm_method", ["one-shot", "tree-traversal"])
+    @pytest.mark.parametrize("shots", [100, [100, 101], [100, 100, 101]])
+    @pytest.mark.parametrize("postselect", [None, 0, 1])
+    def test_sample_with_prng_key(self, mcm_method, shots, postselect):
+        """Test that setting a PRNGKey gives the expected behaviour. With separate calls
+        to DefaultQubit.execute, the same results are expected when using a PRNGKey"""
+        # pylint: disable=import-outside-toplevel
+        from jax.random import PRNGKey
 
-    dev = get_device(shots=shots, seed=jax.random.PRNGKey(678))
-    params = [np.pi / 2.5, np.pi / 3, -np.pi / 3.5]
-    obs = qml.PauliY(0)
+        dev = get_device(shots=shots, seed=PRNGKey(678))
+        params = [np.pi / 4, np.pi / 3]
+        obs = qml.PauliZ(0) @ qml.PauliZ(1)
 
-    @qml.qnode(dev, diff_method=diff_method)
-    def func(x, y, z):
-        m0, m1 = obs_tape(x, y, z, reset=reset, postselect=postselect)
-        return (
-            qml.probs(wires=[1]),
-            qml.probs(wires=[0, 1]),
-            qml.sample(wires=[1]),
-            qml.sample(wires=[0, 1]),
-            qml.expval(obs),
-            qml.probs(obs),
-            qml.sample(obs),
-            qml.var(obs),
-            qml.expval(op=m0 + 2 * m1),
-            qml.probs(op=m0),
-            qml.sample(op=m0 + 2 * m1),
-            qml.var(op=m0 + 2 * m1),
-            qml.probs(op=[m0, m1]),
-        )
+        def func(x, y):
+            obs_tape(x, y, None, postselect=postselect)
+            return qml.sample(op=obs)
 
-    func1 = func
-    results1 = func1(*params)
+        func0 = qml.QNode(func, dev, mcm_method=mcm_method)
+        results0 = func0(*params)
+        results1 = qml.QNode(func, dev, mcm_method="deferred")(*params)
 
-    jaxpr = str(jax.make_jaxpr(func)(*params))
-    if diff_method == "best":
-        assert "pure_callback" in jaxpr
-        pytest.xfail("QNode with diff_method='best' cannot be compiled with jax.jit.")
-    else:
-        assert "pure_callback" not in jaxpr
+        mcm_utils.validate_measurements(qml.sample, shots, results1, results0, batch_size=None)
 
-    func2 = jax.jit(func)
-    results2 = func2(*params)
+        evals = obs.eigvals()
+        for eig in evals:
+            # When comparing with the results from a circuit with deferred measurements
+            # we're not always expected to have the functions used to sample are different
+            if isinstance(shots, list):
+                for r in results1:
+                    assert not np.all(np.isclose(r, eig))
+            else:
+                assert not np.all(np.isclose(results1, eig))
 
-    measures = [
-        qml.probs,
-        qml.probs,
-        qml.sample,
-        qml.sample,
-        qml.expval,
-        qml.probs,
-        qml.sample,
-        qml.var,
-        qml.expval,
-        qml.probs,
-        qml.sample,
-        qml.var,
-        qml.probs,
-    ]
-    for measure_f, r1, r2 in zip(measures, results1, results2):
-        r1, r2 = np.array(r1).ravel(), np.array(r2).ravel()
-        if measure_f == qml.sample:
-            r2 = r2[r2 != fill_in_value]
-        np.allclose(r1, r2)
+        results0_2 = func0(*params)
+        # Same result expected with multiple executions
+        if isinstance(shots, list):
+            for r0, r0_2 in zip(results0, results0_2):
+                assert np.allclose(r0, r0_2)
+        else:
+            assert np.allclose(results0, results0_2)
 
+    @pytest.mark.parametrize("diff_method", [None, "best"])
+    @pytest.mark.parametrize("postselect", [None, 1])
+    @pytest.mark.parametrize("reset", [False, True])
+    def test_jax_jit(self, diff_method, postselect, reset):
+        """Tests that DefaultQubit handles a circuit with a single mid-circuit measurement and a
+        conditional gate. A single measurement of a common observable is performed at the end."""
+        import jax
 
-@pytest.mark.torch
-@pytest.mark.parametrize("postselect", [None, 1])
-@pytest.mark.parametrize("diff_method", [None, "best"])
-@pytest.mark.parametrize("measure_f", [qml.probs, qml.sample, qml.expval, qml.var])
-@pytest.mark.parametrize("meas_obj", [qml.PauliZ(1), [0, 1], "composite_mcm", "mcm_list"])
-def test_torch_integration(postselect, diff_method, measure_f, meas_obj):
-    """Test that native MCM circuits are executed correctly with Torch"""
-    if measure_f in (qml.expval, qml.var) and (
-        isinstance(meas_obj, list) or meas_obj == "mcm_list"
-    ):
-        pytest.skip("Can't use wires/mcm lists with var or expval")
+        shots = 10
 
-    import torch
+        dev = get_device(shots=shots, seed=jax.random.PRNGKey(678))
+        params = [np.pi / 2.5, np.pi / 3, -np.pi / 3.5]
+        obs = qml.PauliY(0)
 
-    shots = 7000
-    dev = get_device(shots=shots, seed=123456789)
-    param = torch.tensor(np.pi / 3, dtype=torch.float64)
+        @qml.qnode(dev, diff_method=diff_method)
+        def func(x, y, z):
+            m0, m1 = obs_tape(x, y, z, reset=reset, postselect=postselect)
+            return (
+                qml.probs(wires=[1]),
+                qml.probs(wires=[0, 1]),
+                qml.sample(wires=[1]),
+                qml.sample(wires=[0, 1]),
+                qml.expval(obs),
+                qml.probs(obs),
+                qml.sample(obs),
+                qml.var(obs),
+                qml.expval(op=m0 + 2 * m1),
+                qml.probs(op=m0),
+                qml.sample(op=m0 + 2 * m1),
+                qml.var(op=m0 + 2 * m1),
+                qml.probs(op=[m0, m1]),
+            )
 
-    @qml.qnode(dev, diff_method=diff_method)
-    def func(x):
-        qml.RX(x, 0)
-        m0 = qml.measure(0)
-        qml.RX(0.5 * x, 1)
-        m1 = qml.measure(1, postselect=postselect)
-        qml.cond((m0 + m1) == 2, qml.RY)(2.0 * x, 0)
-        m2 = qml.measure(0)
+        func1 = func
+        results1 = func1(*params)
 
-        mid_measure = 0.5 * m2 if meas_obj == "composite_mcm" else [m1, m2]
-        measurement_key = "wires" if isinstance(meas_obj, list) else "op"
-        measurement_value = mid_measure if isinstance(meas_obj, str) else meas_obj
-        return measure_f(**{measurement_key: measurement_value})
+        jaxpr = str(jax.make_jaxpr(func)(*params))
+        if diff_method == "best":
+            assert "pure_callback" in jaxpr
+            pytest.xfail("QNode with diff_method='best' cannot be compiled with jax.jit.")
+        else:
+            assert "pure_callback" not in jaxpr
 
-    func1 = func
-    func2 = qml.defer_measurements(func)
+        func2 = jax.jit(func)
+        results2 = func2(*params)
 
-    results1 = func1(param)
-    results2 = func2(param)
-
-    mcm_utils.validate_measurements(measure_f, shots, results1, results2)
+        measures = [
+            qml.probs,
+            qml.probs,
+            qml.sample,
+            qml.sample,
+            qml.expval,
+            qml.probs,
+            qml.sample,
+            qml.var,
+            qml.expval,
+            qml.probs,
+            qml.sample,
+            qml.var,
+            qml.probs,
+        ]
+        for measure_f, r1, r2 in zip(measures, results1, results2):
+            r1, r2 = np.array(r1).ravel(), np.array(r2).ravel()
+            if measure_f == qml.sample:
+                r2 = r2[r2 != fill_in_value]
+            np.allclose(r1, r2)
