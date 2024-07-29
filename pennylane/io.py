@@ -407,15 +407,12 @@ def from_qiskit_op(qiskit_op, params=None, wires=None):
         raise RuntimeError(_MISSING_QISKIT_PLUGIN_MESSAGE) from e
 
 
-def from_qiskit_noise(noise_model, **kwargs):
+def from_qiskit_noise(noise_model, verbose=False, decimal_places=None):
     """Converts a Qiskit `NoiseModel <https://qiskit.github.io/qiskit-aer/stubs/qiskit_aer.noise.NoiseModel.html>`__
     into a PennyLane :class:`~.NoiseModel`.
 
     Args:
         noise_model (qiskit_aer.noise.NoiseModel): a Qiskit ``NoiseModel`` instance.
-        kwargs: Optional keyword arguments for conversion of the noise model.
-
-    Keyword Arguments:
         verbose (bool): when printing a ``NoiseModel``, a complete list of Kraus matrices for each ``qml.QubitChannel``
             is displayed with ``verbose=True``. By default, ``verbose=False`` and only the number of Kraus matrices and
             the number of qubits they act on is displayed for brevity.
@@ -423,8 +420,7 @@ def from_qiskit_noise(noise_model, **kwargs):
             displayed for each ``qml.QubitChannel`` when ``verbose=True``.
 
     Returns:
-        qml.NoiseModel: The PennyLane noise model, created based on the input Qiskit
-        ``NoiseModel`` object.
+        qml.NoiseModel: The PennyLane noise model, created based on the input Qiskit ``NoiseModel`` object.
 
     Raises:
         ValueError: When a quantum error present in the noise model cannot be converted.
@@ -461,7 +457,7 @@ def from_qiskit_noise(noise_model, **kwargs):
     """
     try:
         plugin_converter = plugin_converters["qiskit_noise"].load()
-        return plugin_converter(noise_model, **kwargs)
+        return plugin_converter(noise_model, verbose=verbose, decimal_places=decimal_places)
     except KeyError as e:
         raise RuntimeError(_MISSING_QISKIT_PLUGIN_MESSAGE) from e
 
