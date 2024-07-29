@@ -23,9 +23,9 @@ import numpy as np
 import rustworkx as rx
 
 from pennylane.measurements import MeasurementProcess, MidMeasureMP
-from pennylane.ops.op_math import Conditional
 from pennylane.operation import Observable, Operator
 from pennylane.ops.identity import I
+from pennylane.ops.op_math import Conditional
 from pennylane.queuing import QueuingManager, WrappedObj
 from pennylane.resource import ResourcesOperation
 from pennylane.wires import Wires
