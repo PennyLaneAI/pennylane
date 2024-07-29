@@ -237,6 +237,5 @@ class TestParameterShiftMCM:
                     assert isinstance(_g, jnp.ndarray)
                     assert _g.shape == (*meas_dim, 4)
 
-        print(grads)
         for g0, g1, g2 in zip(*grads):
             assert qml.math.allclose(np.stack([g1, g2]), g0)

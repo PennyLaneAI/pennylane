@@ -65,21 +65,23 @@ def _construct_graph_from_queue(queue, all_wires):
     # TODO: Once sc-62336 is resolved, remove the `any_m_id_in_grid` logic and always
     # `continue` if `meas_val is not None` in the `isinstance(op, MeasurementProcess)` branch
     for i, obj in enumerate(queue):
+        obj_node = graph.add_node(i)
         inds_for_objs[WrappedObj(obj)].append(i)
         if isinstance(obj, MidMeasureMP):
             # A mid-circuit measurement creates a unique classical wire, labelled with the obj id
-            nodes_on_wires[obj.id].append(obj)
+            nodes_on_wires[obj.id].append(obj_node)
             # Optional modification: Do not put the MidMeasure obj on the classical wire
             # if it postselects, because it "does not affect" the wire causally.
             # Mod 1: Add a "classical node" with postselection value
-            # nodes_on_wires[obj.id].append(obj if obj.postselect is None else obj.postselect)
+            # nodes_on_wires[obj.id].append(obj_node if obj.postselect is None else obj.postselect)
             # Mod 2: Don't add anything for this MCM
             # if obj.postselect is None:
-            #     nodes_on_wires[obj.id].append(obj)
+            #     nodes_on_wires[obj.id].append(obj_node)
         elif isinstance(obj, Conditional):
             # A conditional operation needs to be added to the classical wires that control it
             for m in obj.meas_val.measurements:
-                nodes_on_wires[m.id].append(obj)
+                nodes_on_wires[m.id].append(obj_node)
+                graph.add_edge(nodes_on_wires[m.id][0], obj_node, "")
         elif isinstance(obj, MeasurementProcess):
             # A Measurement process of mid-circuit measured quantities needs to be
             # added to the classical wires of the MCMs.
@@ -94,7 +96,8 @@ def _construct_graph_from_queue(queue, all_wires):
                     # Iterate over MidMeasureMPs in the MeasurementValue
                     for m in mv.measurements:
                         if m.id in nodes_on_wires:
-                            nodes_on_wires[m.id].append(obj)
+                            nodes_on_wires[m.id].append(obj_node)
+                            graph.add_edge(nodes_on_wires[m.id][0], obj_node, "")
                             any_m_id_in_grid = True  # hotfix for deferred measurements
 
                 # It should _not_ be added to the quantum wire, so we continue with the loop
@@ -102,7 +105,6 @@ def _construct_graph_from_queue(queue, all_wires):
                 if any_m_id_in_grid:  # hotfix for deferred measurements
                     continue
 
-        obj_node = graph.add_node(i)
         for w in _get_wires(obj, all_wires):
             if w in nodes_on_wires:
                 graph.add_edge(nodes_on_wires[w][-1], obj_node, "")
