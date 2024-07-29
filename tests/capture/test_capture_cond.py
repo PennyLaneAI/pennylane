@@ -334,6 +334,32 @@ def circuit_with_returned_operator(pred, arg1, arg2):
     return qml.expval(qml.PauliZ(wires=0))
 
 
+@qml.qnode(dev)
+def circuit_multiple_cond(tmp_pred, tmp_arg):
+    """Quantum circuit with multiple dynamic conditional branches."""
+
+    dyn_pred_1 = tmp_pred > 0
+    arg = tmp_arg
+
+    def true_fn_1(arg):
+        return True, qml.RX(arg, wires=0)
+
+    # pylint: disable=unused-argument
+    def false_fn_1(arg):
+        return False, qml.RY(0.1, wires=0)
+
+    def true_fn_2(arg):
+        return qml.RX(arg, wires=0)
+
+    # pylint: disable=unused-argument
+    def false_fn_2(arg):
+        return qml.RY(0.1, wires=0)
+
+    [dyn_pred_2, _] = qml.cond(dyn_pred_1, true_fn_1, false_fn_1, elifs=())(arg)
+    qml.cond(dyn_pred_2, true_fn_2, false_fn_2, elifs=())(arg)
+    return qml.expval(qml.Z(0))
+
+
 class TestCondCircuits:
     """Tests for conditional quantum circuits."""
 
@@ -360,4 +386,16 @@ class TestCondCircuits:
     def test_circuit_with_returned_operator(self, pred, arg1, arg2, expected):
         """Test circuit with returned operators in the branches."""
         result = circuit_with_returned_operator(pred, arg1, arg2)
+        assert np.allclose(result, expected), f"Expected {expected}, but got {result}"
+
+    @pytest.mark.parametrize(
+        "tmp_pred, tmp_arg, expected",
+        [
+            (1, 0.5, 0.54030231),  # RX(0.5) -> RX(0.5)
+            (-1, 0.5, 0.98006658),  # RY(0.1) -> RY(0.1)
+        ],
+    )
+    def test_circuit_multiple_cond(self, tmp_pred, tmp_arg, expected):
+        """Test circuit with returned operators in the branches."""
+        result = circuit_multiple_cond(tmp_pred, tmp_arg)
         assert np.allclose(result, expected), f"Expected {expected}, but got {result}"
