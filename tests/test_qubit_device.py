@@ -1470,6 +1470,9 @@ class TestResourcesTracker:
     def test_tracker_single_execution(self, dev_name, qs_shots_wires, expected_resource):
         """Test that the tracker accurately tracks resources in a single execution"""
         qs, shots, wires = qs_shots_wires
+
+        qs._shots = qml.measurements.Shots(shots)
+
         dev = qml.device(dev_name, shots=shots, wires=wires)
 
         with qml.Tracker(dev) as tracker:

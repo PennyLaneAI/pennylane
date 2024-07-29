@@ -1050,24 +1050,19 @@ class TestShotList:
             mock_qutrit_device_shots(wires=2, shots=["a", "b", "c"])
 
     shot_data = [
-        [[1, 2, 3, 10], [(1, 1), (2, 1), (3, 1), (10, 1)], (4, 9), 16],
-        [
-            [1, 2, 2, 2, 10, 1, 1, 5, 1, 1, 1],
-            [(1, 1), (2, 3), (10, 1), (1, 2), (5, 1), (1, 3)],
-            (11, 9),
-            27,
-        ],
-        [[10, 10, 10], [(10, 3)], (3, 9), 30],
-        [[(10, 3)], [(10, 3)], (3, 9), 30],
+        [[1, 2, 3, 10], (4, 9)],
+        [[1, 2, 2, 2, 10, 1, 1, 5, 1, 1, 1], (11, 9)],
+        [[10, 10, 10], (3, 9)],
+        [[(10, 3)], (3, 9)],
     ]
 
     @pytest.mark.autograd
-    @pytest.mark.parametrize("shot_list,shot_vector,expected_shape,total_shots", shot_data)
-    def test_probs(
-        self, mock_qutrit_device_shots, shot_list, shot_vector, expected_shape, total_shots
-    ):
+    @pytest.mark.parametrize("shot_list,expected_shape", shot_data)
+    def test_probs(self, mock_qutrit_device_shots, shot_list, expected_shape):
         """Test a probability return"""
         dev = mock_qutrit_device_shots(wires=2, shots=shot_list)
+
+        shots = qml.measurements.Shots(shot_list)
 
         @qml.qnode(dev)
         def circuit(x, z):
@@ -1088,41 +1083,34 @@ class TestShotList:
             return qml.probs(wires=[0, 1])
 
         res = circuit(0.1, 0.6)
-        print(res)
+
         if isinstance(shot_list[0], tuple):
-            shots = shot_list[0][1]
             assert isinstance(res, tuple)
-            assert len(res) == shots
-            assert circuit.device._shot_vector == shot_vector
-            assert circuit.device.shots == total_shots
+            copies = shot_list[0][1]
+            assert len(res) == copies
+            assert circuit.device.shots == shots
         else:
             assert isinstance(res, tuple)
             assert len(res) == len(shot_list)
-            assert circuit.device._shot_vector == shot_vector
-            assert circuit.device.shots == total_shots
+            assert circuit.device.shots == shots
 
         # test gradient works
         # TODO: Add after differentiability of qutrit circuits is implemented
         # res = qml.jacobian(circuit, argnum=[0, 1])(0.1, 0.6)
 
     marginal_shot_data = [
-        [[1, 2, 3, 10], [(1, 1), (2, 1), (3, 1), (10, 1)], (4, 3), 16],
-        [
-            [1, 2, 2, 2, 10, 1, 1, 5, 1, 1, 1],
-            [(1, 1), (2, 3), (10, 1), (1, 2), (5, 1), (1, 3)],
-            (11, 3),
-            27,
-        ],
-        [[10, 10, 10], [(10, 3)], (3, 3), 30],
-        [[(10, 3)], [(10, 3)], (3, 3), 30],
+        [[1, 2, 3, 10], (4, 3)],
+        [[1, 2, 2, 2, 10, 1, 1, 5, 1, 1, 1], (11, 3)],
+        [[10, 10, 10], (3, 3)],
+        [[(10, 3)], (3, 3)],
     ]
 
     @pytest.mark.autograd
-    @pytest.mark.parametrize("shot_list,shot_vector,expected_shape,total_shots", marginal_shot_data)
-    def test_marginal_probs(
-        self, mock_qutrit_device_shots, shot_list, shot_vector, expected_shape, total_shots
-    ):
+    @pytest.mark.parametrize("shot_list,expected_shape", marginal_shot_data)
+    def test_marginal_probs(self, mock_qutrit_device_shots, shot_list, expected_shape):
         dev = mock_qutrit_device_shots(wires=2, shots=shot_list)
+
+        shots = qml.measurements.Shots(shot_list)
 
         @qml.qnode(dev)
         def circuit(x, z):
@@ -1145,16 +1133,14 @@ class TestShotList:
         res = circuit(0.1, 0.6)
 
         if isinstance(shot_list[0], tuple):
-            shots = shot_list[0][1]
             assert isinstance(res, tuple)
-            assert len(res) == shots
-            assert circuit.device._shot_vector == shot_vector
-            assert circuit.device.shots == total_shots
+            copies = shot_list[0][1]
+            assert len(res) == copies
+            assert circuit.device.shots == shots
         else:
             assert isinstance(res, tuple)
             assert len(res) == len(shot_list)
-            assert circuit.device._shot_vector == shot_vector
-            assert circuit.device.shots == total_shots
+            assert circuit.device.shots == shots
 
         # test gradient works
         # TODO: Uncomment after parametric operations are added for qutrits and decomposition
@@ -1162,24 +1148,19 @@ class TestShotList:
         # res = qml.jacobian(circuit, argnum=[0, 1])(0.1, 0.6)
 
     shot_data = [
-        [[1, 2, 3, 10], [(1, 1), (2, 1), (3, 1), (10, 1)], (4, 3, 2), 16],
-        [
-            [1, 2, 2, 2, 10, 1, 1, 5, 1, 1, 1],
-            [(1, 1), (2, 3), (10, 1), (1, 2), (5, 1), (1, 3)],
-            (11, 3, 2),
-            27,
-        ],
-        [[10, 10, 10], [(10, 3)], (3, 3, 2), 30],
-        [[(10, 3)], [(10, 3)], (3, 3, 2), 30],
+        [[1, 2, 3, 10], (4, 3, 2)],
+        [[1, 2, 2, 2, 10, 1, 1, 5, 1, 1, 1], (11, 3, 2)],
+        [[10, 10, 10], (3, 3, 2)],
+        [[(10, 3)], (3, 3, 2)],
     ]
 
     @pytest.mark.autograd
-    @pytest.mark.parametrize("shot_list,shot_vector,expected_shape,total_shots", shot_data)
-    def test_multiple_probs(
-        self, mock_qutrit_device_shots, shot_list, shot_vector, expected_shape, total_shots
-    ):
+    @pytest.mark.parametrize("shot_list,expected_shape", shot_data)
+    def test_multiple_probs(self, mock_qutrit_device_shots, shot_list, expected_shape):
         """Test multiple probability returns"""
         dev = mock_qutrit_device_shots(wires=2, shots=shot_list)
+
+        shots = qml.measurements.Shots(shot_list)
 
         @qml.qnode(dev)
         def circuit(U):
@@ -1191,16 +1172,14 @@ class TestShotList:
         res = circuit(pnp.eye(9))
 
         if isinstance(shot_list[0], tuple):
-            shots = shot_list[0][1]
             assert isinstance(res, tuple)
-            assert len(res) == shots
-            assert circuit.device._shot_vector == shot_vector
-            assert circuit.device.shots == total_shots
+            copies = shot_list[0][1]
+            assert len(res) == copies
+            assert circuit.device.shots == shots
         else:
             assert isinstance(res, tuple)
             assert len(res) == len(shot_list)
-            assert circuit.device._shot_vector == shot_vector
-            assert circuit.device.shots == total_shots
+            assert circuit.device.shots == shots
 
         # test gradient works
         # TODO: Uncomment after parametric operations are added for qutrits and decomposition

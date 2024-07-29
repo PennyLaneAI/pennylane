@@ -1783,13 +1783,10 @@ class TestStateMeasurement:
             qml.X(0)
             return MyMeasurement()
 
-        if isinstance(dev, qml.Device):
-            with pytest.warns(
-                UserWarning,
-                match="Requested measurement MyMeasurement with finite shots",
-            ):
-                circuit()
-        else:
+        with pytest.warns(
+            UserWarning,
+            match="Requested measurement MyMeasurement with finite shots",
+        ):
             with pytest.raises(qml.DeviceError):
                 circuit()
 
