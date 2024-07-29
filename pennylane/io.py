@@ -420,7 +420,7 @@ def from_qiskit_noise(noise_model, verbose=False, decimal_places=None):
             displayed for each ``qml.QubitChannel`` when ``verbose=True``.
 
     Returns:
-        qml.NoiseModel: The PennyLane noise model, created based on the input Qiskit ``NoiseModel`` object.
+        qml.NoiseModel: The PennyLane noise model converted from the input Qiskit ``NoiseModel`` object.
 
     Raises:
         ValueError: When a quantum error present in the noise model cannot be converted.
