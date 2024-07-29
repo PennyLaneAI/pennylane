@@ -104,6 +104,7 @@ class TestAdjointQfunc:
             out = jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, 1.2)
 
         assert out == []
+        assert workflow(0.5) is None
 
         expected_op1 = qml.adjoint(qml.IsingXX(jax.numpy.array(2 * 1.2 + 1), wires=(5, 6)))
         qml.assert_equal(q.queue[0], expected_op1)

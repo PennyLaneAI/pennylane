@@ -223,7 +223,7 @@ def _capture_adjoint_transform(qfunc: Callable, lazy=True) -> Callable:
     @wraps(qfunc)
     def new_qfunc(*args, **kwargs):
         jaxpr = jax.make_jaxpr(partial(qfunc, **kwargs))(*args)
-        return adjoint_prim.bind(
+        adjoint_prim.bind(
             *jaxpr.consts, *args, jaxpr=jaxpr.jaxpr, lazy=lazy, n_consts=len(jaxpr.consts)
         )
 
