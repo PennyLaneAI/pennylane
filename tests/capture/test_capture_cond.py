@@ -292,7 +292,18 @@ dev = qml.device("default.qubit", wires=3)
 
 
 @qml.qnode(dev)
-def circuit(pred, arg1, arg2):
+def circuit(pred):
+    """Quantum circuit with only a true branch."""
+
+    def true_fn():
+        qml.RX(0.1, wires=0)
+
+    qml.cond(pred > 0, true_fn)()
+    return qml.expval(qml.PauliZ(wires=0))
+
+
+@qml.qnode(dev)
+def circuit_branches(pred, arg1, arg2):
     """Quantum circuit with conditional branches."""
 
     qml.RX(0.10, wires=0)
@@ -393,6 +404,18 @@ class TestCondCircuits:
     """Tests for conditional quantum circuits."""
 
     @pytest.mark.parametrize(
+        "pred, expected",
+        [
+            (1, 0.99500417),  # RX(0.1)
+            (0, 1.0),  # No operation
+        ],
+    )
+    def test_circuit(self, pred, expected):
+        """Test circuit with only a true branch."""
+        result = circuit(pred)
+        assert np.allclose(result, expected), f"Expected {expected}, but got {result}"
+
+    @pytest.mark.parametrize(
         "pred, arg1, arg2, expected",
         [
             (1, 0.5, 0.6, 0.63340907),  # RX(0.10) -> RY(0.5) -> RX(0.6) -> RZ(0.5) -> RX(0.10)
@@ -400,9 +423,9 @@ class TestCondCircuits:
             (-1, 0.5, 0.6, 0.77468805),  # RX(0.10) -> RZ(0.6) -> RX(0.5) -> RX(0.10)
         ],
     )
-    def test_circuit(self, pred, arg1, arg2, expected):
+    def test_circuit_branches(self, pred, arg1, arg2, expected):
         """Test circuit with true, false, and elif branches."""
-        result = circuit(pred, arg1, arg2)
+        result = circuit_branches(pred, arg1, arg2)
         assert np.allclose(result, expected), f"Expected {expected}, but got {result}"
 
     @pytest.mark.parametrize(
