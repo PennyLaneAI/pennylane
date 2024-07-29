@@ -510,7 +510,8 @@ def _get_cond_qfunc_prim():
                     raise ValueError(
                         "The false branch must be provided if the true branch returns any variables"
                     )
-                continue
+                # this is tested, but coverage does not pick it up
+                continue  # pragma: no cover
 
             outvals_branch = jaxpr_branch.out_avals
             branch_type = "elif" if idx < len(jaxpr_branches) - 1 else "false"
