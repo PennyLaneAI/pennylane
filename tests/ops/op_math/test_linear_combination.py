@@ -53,6 +53,7 @@ class TestParityWithHamiltonian:
         assert isinstance(H, qml.Hamiltonian)
 
 
+@pytest.mark.usefixtures("new_opmath_only")
 def test_mixed_legacy_warning_Hamiltonian():
     """Test that mixing legacy ops and LinearCombination.compare raises a warning"""
     op1 = qml.ops.LinearCombination([0.5, 0.5], [X(0) @ X(1), qml.Hadamard(0)])
