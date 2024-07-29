@@ -258,6 +258,18 @@ def test_warning_useless_kwargs():
         qml.device("default.tensor", method="tn", cutoff=1e-16)
 
 
+def test_kahypar_warning_not_raised(recwarn):
+    """Test that a warning is not raised if the user does not have kahypar installed when initializing the
+    default.tensor device"""
+    try:
+        import kahypar  # pylint: disable=import-outside-toplevel, unused-import
+
+        pytest.skip(reason="Test is for when kahypar is not installed")
+    except ImportError:
+        _ = qml.device("default.tensor", wires=1)
+        assert len(recwarn) == 0
+
+
 @pytest.mark.parametrize("method", ["mps", "tn"])
 class TestSupportedGatesAndObservables:
     """Test that the DefaultTensor device supports all gates and observables that it claims to support."""
@@ -285,7 +297,7 @@ class TestSupportedGatesAndObservables:
         nwires = 4
         dq = qml.device("default.qubit", wires=nwires)
         dev = qml.device("default.tensor", wires=nwires, method=method)
-        np.random.seed(0)
+
         state = np.random.rand(2**nwires) + 1j * np.random.rand(2**nwires)
         state /= np.linalg.norm(state)
         wires = qml.wires.Wires(range(nwires))
@@ -393,7 +405,7 @@ class TestJaxSupport:
 
         jax = pytest.importorskip("jax")
         dev = qml.device("default.tensor", wires=1, method=method)
-        ref_dev = qml.device("default.qubit.jax", wires=1)
+        ref_dev = qml.device("default.qubit", wires=1)
 
         def circuit(x):
             qml.RX(x[1], wires=0)

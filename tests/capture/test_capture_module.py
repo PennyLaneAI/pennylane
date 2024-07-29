@@ -36,16 +36,3 @@ def test_no_attribute_available():
 
     with pytest.raises(AttributeError):
         _ = qml.capture.something
-
-
-def test_default_use():
-
-    @qml.capture.bind_nested_plxpr
-    def repeat(qfunc, start=0, stop=4):
-        def new_qfunc(*args, **kwargs):
-            for _ in range(start, stop):
-                qfunc(*args, **kwargs)
-
-        return new_qfunc
-
-    #

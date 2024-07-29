@@ -14,7 +14,8 @@
 """
 This module contains the qml.counts measurement.
 """
-from typing import Optional, Sequence, Tuple
+from collections.abc import Sequence
+from typing import Optional
 
 import numpy as np
 
@@ -161,7 +162,7 @@ class CountsMP(SampleMeasurement):
     """Measurement process that samples from the supplied observable and returns the number of
     counts for each sample.
 
-    Please refer to :func:`counts` for detailed documentation.
+    Please refer to :func:`pennylane.counts` for detailed documentation.
 
     Args:
         obs (Union[.Operator, .MeasurementValue]): The observable that is to be measured
@@ -238,8 +239,8 @@ class CountsMP(SampleMeasurement):
         self,
         samples: Sequence[complex],
         wire_order: Wires,
-        shot_range: Tuple[int] = None,
-        bin_size: int = None,
+        shot_range: Optional[tuple[int, ...]] = None,
+        bin_size: Optional[int] = None,
     ):
         with qml.queuing.QueuingManager.stop_recording():
             samples = qml.sample(op=self.obs or self.mv, wires=self._wires).process_samples(

@@ -89,7 +89,7 @@ def adjoint(fn, lazy=True):
     ...     return qml.expval(qml.Z(0))
     >>> print(qml.draw(circuit2)("y"))
     0: ──RY(y)†─┤  <Z>
-    >>> print(qml.draw(circuit2, expansion_strategy="device")(0.1))
+    >>> print(qml.draw(circuit2, level="device")(0.1))
     0: ──RY(-0.10)─┤  <Z>
 
     The adjoint transforms can also be used to apply the adjoint of
@@ -192,36 +192,23 @@ def _get_adjoint_qfunc_prim():
     # if capture is enabled, jax should be installed
     import jax  # pylint: disable=import-outside-toplevel
 
-    AbstractOperator = qml.capture.AbstractOperator
-
     adjoint_prim = jax.core.Primitive("adjoint_transform")
     adjoint_prim.multiple_results = True
 
     @adjoint_prim.def_impl
-    def _(*args, jaxpr, lazy=True):
+    def _(*args, jaxpr, lazy, n_consts):
+        consts = args[:n_consts]
+        args = args[n_consts:]
         with qml.queuing.AnnotatedQueue() as q:
-            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *args)
+            jax.core.eval_jaxpr(jaxpr, consts, *args)
         ops, _ = qml.queuing.process_queue(q)
-        return [adjoint(op, lazy=lazy) for op in ops]
-
-    def _is_queued_outvar(outvars):
-        if not outvars:
-            return False
-        return isinstance(outvars[0].aval, AbstractOperator) and isinstance(
-            outvars[0], jax.core.DropVar
-        )
+        for op in reversed(ops):
+            adjoint(op, lazy=lazy)
+        return []
 
     @adjoint_prim.def_abstract_eval
-    def _(*_, jaxpr, **__):
-        # note that this approximation may fail when we have nested qfuncs like for and while
-        # the do not return variables for all operators they queue...
-        # all queued drop var operators
-        outvars = [AbstractOperator() for eqn in jaxpr.eqns if _is_queued_outvar(eqn.outvars)]
-        # operators that are not dropped var because they are returned
-        outvars += [
-            AbstractOperator() for aval in jaxpr.out_avals if isinstance(aval, AbstractOperator)
-        ]
-        return outvars
+    def _(*_, **__):
+        return []
 
     return adjoint_prim
 
@@ -231,12 +218,14 @@ def _capture_adjoint_transform(qfunc: Callable, lazy=True) -> Callable:
     # note that this logic is tested in `tests/capture/test_nested_plxpr.py`
     import jax  # pylint: disable=import-outside-toplevel
 
-    qnode_prim = _get_adjoint_qfunc_prim()
+    adjoint_prim = _get_adjoint_qfunc_prim()
 
     @wraps(qfunc)
     def new_qfunc(*args, **kwargs):
         jaxpr = jax.make_jaxpr(partial(qfunc, **kwargs))(*args)
-        return qnode_prim.bind(*args, jaxpr=jaxpr, lazy=lazy)
+        return adjoint_prim.bind(
+            *jaxpr.consts, *args, jaxpr=jaxpr.jaxpr, lazy=lazy, n_consts=len(jaxpr.consts)
+        )
 
     return new_qfunc
 

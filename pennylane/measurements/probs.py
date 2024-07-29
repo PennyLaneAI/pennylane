@@ -14,7 +14,8 @@
 """
 This module contains the qml.probs measurement.
 """
-from typing import Sequence, Tuple
+from collections.abc import Sequence
+from typing import Optional
 
 import numpy as np
 
@@ -136,7 +137,7 @@ def probs(wires=None, op=None) -> "ProbabilityMP":
 class ProbabilityMP(SampleMeasurement, StateMeasurement):
     """Measurement process that computes the probability of each computational basis state.
 
-    Please refer to :func:`probs` for detailed documentation.
+    Please refer to :func:`pennylane.probs` for detailed documentation.
 
     Args:
         obs (Union[.Operator, .MeasurementValue]): The observable that is to be measured
@@ -177,8 +178,8 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
         self,
         samples: Sequence[complex],
         wire_order: Wires,
-        shot_range: Tuple[int] = None,
-        bin_size: int = None,
+        shot_range: Optional[tuple[int, ...]] = None,
+        bin_size: Optional[int] = None,
     ):
         wire_map = dict(zip(wire_order, range(len(wire_order))))
         mapped_wires = [wire_map[w] for w in self.wires]

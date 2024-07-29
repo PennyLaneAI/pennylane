@@ -14,9 +14,11 @@
 """A function to compute the Lie closure of a set of operators"""
 # pylint: disable=too-many-arguments
 import itertools
+import warnings
+from collections.abc import Iterable
 from copy import copy
 from functools import reduce
-from typing import Iterable, Union
+from typing import Union
 
 import numpy as np
 
@@ -134,8 +136,11 @@ def lie_closure(
     while (new_length > old_length) and (epoch < max_iterations):
         if verbose:
             print(f"epoch {epoch+1} of lie_closure, DLA size is {new_length}")
+
         for ps1, ps2 in itertools.combinations(vspace.basis, 2):
             com = ps1.commutator(ps2)
+            com.simplify()
+
             if len(com) == 0:  # skip because operators commute
                 continue
 
@@ -143,12 +148,16 @@ def lie_closure(
             # remove common factor 2 with Pauli commutators
             for pw, val in com.items():
                 com[pw] = val.imag / 2
+
             vspace.add(com, tol=tol)
 
         # Updated number of linearly independent PauliSentences from previous and current step
         old_length = new_length
         new_length = len(vspace)
         epoch += 1
+
+        if epoch == max_iterations:
+            warnings.warn(f"reached the maximum number of iterations {max_iterations}", UserWarning)
 
     if verbose > 0:
         print(f"After {epoch} epochs, reached a DLA size of {new_length}")

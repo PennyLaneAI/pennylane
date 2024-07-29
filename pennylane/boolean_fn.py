@@ -22,7 +22,7 @@ import functools
 # pylint: disable=unnecessary-lambda
 class BooleanFn:
     r"""Wrapper for simple callables with Boolean output that can be
-    manipulated and combined with bit-wise operators.
+    manipulated and combined with bitwise operators.
 
     Args:
         fn (callable): Function to be wrapped. It can accept any number
@@ -30,34 +30,43 @@ class BooleanFn:
 
     **Example**
 
-    Consider functions that filter numbers to lie in a certain domain.
+    Consider functions that filter numbers to lie within a certain domain.
     We may wrap them using ``BooleanFn``:
 
-    >>> bigger_than_4 = qml.BooleanFn(lambda x: x > 4)
-    >>> smaller_than_10 = qml.BooleanFn(lambda x: x < 10)
-    >>> is_int = qml.BooleanFn(lambda x: isinstance(x, int))
+    .. code-block:: python
+
+        bigger_than_4 = qml.BooleanFn(lambda x: x > 4)
+        smaller_than_10 = qml.BooleanFn(lambda x: x < 10)
+        is_int = qml.BooleanFn(lambda x: isinstance(x, int))
+
     >>> bigger_than_4(5.2)
     True
+
     >>> smaller_than_10(20.1)
     False
+
     >>> is_int(2.3)
     False
 
     These can then be combined into a single callable using boolean operators,
-    such as ``&``, logical and:
+    such as ``&`` (logical and):
 
     >>> between_4_and_10 = bigger_than_4 & smaller_than_10
     >>> between_4_and_10(-3.2)
     False
+
     >>> between_4_and_10(9.9)
     True
+
     >>> between_4_and_10(19.7)
     False
 
-    Other supported operators are ``|``, logical or, and ``~``, logical not:
+    Other supported operators are ``|`` (logical or) and ``~`` (logical not):
 
-    >>> smaller_equal_than_4 = ~bigger_than_4
-    >>> smaller_than_10_or_int = smaller_than_10 | is_int
+    .. code-block:: python
+
+        smaller_equal_than_4 = ~bigger_than_4
+        smaller_than_10_or_int = smaller_than_10 | is_int
 
     .. warning::
 
@@ -71,8 +80,10 @@ class BooleanFn:
         >>> has_bit_length_3 = qml.BooleanFn(lambda x: x.bit_length()==3)
         >>> (is_int & has_bit_length_3)(4)
         True
+
         >>> (is_int & has_bit_length_3)(2.3)
         False
+
         >>> (has_bit_length_3 & is_int)(2.3)
         AttributeError: 'float' object has no attribute 'bit_length'
 
@@ -103,24 +114,24 @@ class BooleanFn:
 
     @property
     def bitwise(self):
-        """Determine whether wrapped callable performs a bit-wise operation or not.
+        """Determine whether the wrapped callable performs a bitwise operation or not.
         This checks for the ``operands`` attribute that should be defined by it."""
         return bool(getattr(self, "operands", tuple()))
 
     @property
     def conditional(self):
-        """Determine whether wrapped callable is for a conditional or not.
+        """Determine whether the wrapped callable is for a conditional or not.
         This checks for the ``condition`` attribute that should be defined by it."""
         return bool(getattr(self, "condition", None))
 
 
 class And(BooleanFn):
-    """Developer facing class for implemeting bit-wise ``AND`` for callables
+    """Developer facing class for implemeting bitwise ``AND`` for callables
     wrapped up with :class:`BooleanFn <pennylane.BooleanFn>`.
 
     Args:
-        left (~.BooleanFn): Left operand in the bit-wise expression.
-        right (~.BooleanFn): Right operand in the bit-wise expression.
+        left (~.BooleanFn): Left operand in the bitwise expression.
+        right (~.BooleanFn): Right operand in the bitwise expression.
     """
 
     def __init__(self, left, right):
@@ -139,12 +150,12 @@ class And(BooleanFn):
 
 
 class Or(BooleanFn):
-    """Developer facing class for implemeting bit-wise ``OR`` for callables
+    """Developer facing class for implemeting bitwise ``OR`` for callables
     wrapped up with :class:`BooleanFn <pennylane.BooleanFn>`.
 
     Args:
-        left (~.BooleanFn): Left operand in the bit-wise expression.
-        right (~.BooleanFn): Right operand in the bit-wise expression.
+        left (~.BooleanFn): Left operand in the bitwise expression.
+        right (~.BooleanFn): Right operand in the bitwise expression.
     """
 
     def __init__(self, left, right):
@@ -163,12 +174,12 @@ class Or(BooleanFn):
 
 
 class Xor(BooleanFn):
-    """Developer facing class for implemeting bit-wise ``XOR`` for callables
+    """Developer facing class for implemeting bitwise ``XOR`` for callables
     wrapped up with :class:`BooleanFn <pennylane.BooleanFn>`.
 
     Args:
-        left (~.BooleanFn): Left operand in the bit-wise expression.
-        right (~.BooleanFn): Right operand in the bit-wise expression.
+        left (~.BooleanFn): Left operand in the bitwise expression.
+        right (~.BooleanFn): Right operand in the bitwise expression.
     """
 
     def __init__(self, left, right):
@@ -187,11 +198,11 @@ class Xor(BooleanFn):
 
 
 class Not(BooleanFn):
-    """Developer facing class for implemeting bit-wise ``NOT`` for callables
+    """Developer facing class for implemeting bitwise ``NOT`` for callables
     wrapped up with :class:`BooleanFn <pennylane.BooleanFn>`.
 
     Args:
-        left (~.BooleanFn): Left operand in the bit-wise expression.
+        left (~.BooleanFn): Left operand in the bitwise expression.
     """
 
     def __init__(self, left):

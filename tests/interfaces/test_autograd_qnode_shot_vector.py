@@ -29,9 +29,9 @@ SEED_FOR_SPSA = 42
 spsa_kwargs = {"h": 0.05, "num_directions": 20, "sampler_rng": np.random.default_rng(SEED_FOR_SPSA)}
 
 qubit_device_and_diff_method = [
-    ["default.qubit.legacy", "finite-diff", {"h": 0.05}],
-    ["default.qubit.legacy", "parameter-shift", {}],
-    ["default.qubit.legacy", "spsa", spsa_kwargs],
+    ["default.qubit", "finite-diff", {"h": 0.05}],
+    ["default.qubit", "parameter-shift", {}],
+    ["default.qubit", "spsa", spsa_kwargs],
 ]
 
 TOLS = {
@@ -567,7 +567,6 @@ class TestReturnShotVectorIntegration:
     ):
         """Tests correct output shape and evaluation for a tape
         with a single expval output"""
-        np.random.seed(42)
         dev = qml.device(dev_name, wires=2, shots=shots)
         x = np.array(0.543)
         y = np.array(-0.654)
@@ -601,7 +600,6 @@ class TestReturnShotVectorIntegration:
     ):
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
-        np.random.seed(42)
         dev = qml.device(dev_name, wires=2, shots=shots)
         x = np.array(0.543)
         y = np.array(-0.654)

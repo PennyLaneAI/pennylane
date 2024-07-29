@@ -18,7 +18,6 @@ Tests for workflow.set_shots
 import pytest
 
 import pennylane as qml
-from pennylane.measurements import Shots
 from pennylane.workflow import set_shots
 
 
@@ -30,29 +29,3 @@ def test_shots_new_device_interface():
     with pytest.raises(ValueError):
         with set_shots(dev, 10):
             pass
-
-
-def test_set_with_shots_class():
-    """Test that shots can be set on the old device interface with a Shots class."""
-
-    dev = qml.devices.DefaultQubitLegacy(wires=1)
-    with set_shots(dev, Shots(10)):
-        assert dev.shots == 10
-
-    assert dev.shots is None
-
-    shot_tuples = Shots((10, 10))
-    with set_shots(dev, shot_tuples):
-        assert dev.shots == 20
-        assert dev.shot_vector == list(shot_tuples.shot_vector)
-
-    assert dev.shots is None
-
-
-def test_shots_not_altered_if_False():
-    """Test a value of False can be passed to shots, indicating to not override
-    shots on the device."""
-
-    dev = qml.devices.DefaultQubitLegacy(wires=1)
-    with set_shots(dev, False):
-        assert dev.shots is None

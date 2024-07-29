@@ -35,25 +35,26 @@ def my_func(x):
 # Higher Order Primitives and nested jaxpr
 
 Higher order primitives are essentially function transforms. They are functions that accept other
-functions. Our higher order primitives will be `adjoint`, `ctrl`, `for_loop`, `while_loop`, `cond`, `grad`,
+functions. Our higher order primitives will include `adjoint`, `ctrl`, `for_loop`, `while_loop`, `cond`, `grad`,
 and `jacobian`.
 
 Jax describes two separate ways of defining higher order derivatives:
 
-1) *On the fly processing*: the primitive binds the function itslf as metadata
+1) *On the fly processing*: the primitive binds the function itself as metadata
 
 2) *Staged processing*: the primitive binds the function's jaxpr as metadata.
 
 Jax also has a [`CallPrimitive`](https://github.com/google/jax/blob/23ad313817f20345c60281fbf727cf4f8dc83181/jax/_src/core.py#L2366)
 but using this seems to be more trouble than its worth so far. Notably, this class is rather private and undocumented.
 
-We will proceed with using *staged processing* for now.
+We will proceed with using *staged processing* for now. This choice is more straightforward to implement, follows Catalyst's choice of representation, and is more
+explicit in the contents. On the fly isn't as much "program capture" as deferring capture till later. We want to immediately capture all aspects of the jaxpr.
 
 
 Suppose we have a transform that repeats a function n times
 
 ```python
-def repeat(func : Callable, n:int) -> Callable:
+def repeat(func: Callable, n: int) -> Callable:
     def new_func(*args, **kwargs):
         for _ in range(n):
             args = func(*args, **kwargs)
@@ -68,7 +69,7 @@ repeat_prim = jax.core.Primitive("repeat")
 repeat_prim.multiple_results = True
 ```
 
-Instead of starting with the implementation and abstract evaluation, let's write out function that will
+Instead of starting with the implementation and abstract evaluation, let's write out the function that will
 bind the primitive first.  This will showcase what the args and keyword args for our bind call will look like:
 
 ```python
@@ -79,24 +80,37 @@ def repeat(func: Callable, n: int) -> Callable:
     def new_func(*args, **kwargs):
         func_bound_kwargs = partial(func, **kwargs)
         jaxpr = jax.make_jaxpr(func_bound_kwargs)(*args)
-        return repeat_prim.bind(n, *args, jaxpr=jaxpr)
+        n_consts = len(jaxpr.consts)
+        return repeat_prim.bind(n, *jaxpr.consts, *args, jaxpr=jaxpr.jaxpr, n_consts=n_consts)
     return new_func
 ```
 
-Several things to notice about this code.  First, we have to make the jaxpr from a function with any keyword arguments
+Several things to notice about this code.
+
+First, we have to make the jaxpr from a function with any keyword arguments
 already bound.  `jax.make_jaxpr` does not currently accept keyword arguments for the function, so we need to pre-bind them.
-Next, I decided to make the integer `n` a traceable parameter instead of metadata. We could have chosen to make
+
+Next, we decided to make the integer `n` a traceable parameter instead of metadata. We could have chosen to make
 `n` metadata instead.  This way, we can compile our function once for different integers `n`, and it is in line with how
-catalyst treats `for_loop` and `while_loop`.  If the function produced outputs of different types and shapes than the inputs,
+catalyst treats `for_loop` and `while_loop`.  If the function produced outputs of different types and shapes for different `n`,
 we would have to treat `n` like metadata and re-compile for different integers `n`.
+
+Finally, we promote the `jaxpr.consts` to being actual positional arguments. The consts
+contain any closure variables that the function implicitly depends on that are not present
+in the actual call signature. For example: `def f(x): return x+y`. `y` here would be a
+`const` pulled from the global environment. `f` implicitly depends on it, and it is
+required to reproduce the full behavior of `f`. To separate the normal positional
+arguments from the consts, we then also need a `n_consts` keyword argument.
 
 Now we can define the implementation for our primitive.
 
 ```python
 @repeat_prim.def_impl
-def _(n, *args, jaxpr):
+def _(n, *args, jaxpr, n_consts):
+    consts = args[:n_consts]
+    args = args[n_consts:]
     for _ in range(n):
-        args = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *args)
+        args = jax.core.eval_jaxpr(jaxpr, consts, *args)
     return args
 ```
 
@@ -104,32 +118,43 @@ Here we use `jax.core.eval_jaxpr` to execute the jaxpr with concrete arguments. 
 *on the fly processing*, we could have simply executed the stored function, but when using *staged processing*, we need
 to directly evaluate the jaxpr instead.
 
+In addition, we need to define the abstract evaluation. As the function in our case returns outputs that match the inputs in number, shape and type, we can simply extract the abstract values of the `args`.
+
 ```python
 @repeat_prim.def_abstract_eval
-def _(n, *args, jaxpr):
-    return args
+def _(n, *args, jaxpr, n_consts):
+    return args[n_consts:]
 ```
 
 Now that we have all the parts, we can see it in action:
 
 ```pycon
+>>> a = jax.numpy.array(1)
 >>> def func(x, y, y_coeff=1):
-...     return (x + 1, y_coeff * y)
+...     return (x + a, y_coeff * y)
 >>> def workflow(x):
 ...     return repeat(func, 2)(x, 2.0, y_coeff=2.0)
 >>> workflow(0.5)
 [Array(2.5, dtype=float32, weak_type=True),
  Array(8., dtype=float32, weak_type=True)]
 >>> jax.make_jaxpr(workflow)(0.5)
-{ lambda ; a:f32[]. let
-    b:f32[] c:f32[] = repeat[
-      jaxpr={ lambda ; d:f32[] e:f32[]. let
-          f:f32[] = mul d e
-          g:f32[] = mul 1.0 e
-        in (f, g) }
-    ] 2 a 2.0
-  in (b, c) }
+{ lambda a:i32[]; b:f32[]. let
+    c:f32[] d:f32[] = repeat[
+      jaxpr={ lambda e:i32[]; f:f32[] g:f32[]. let
+          h:f32[] = convert_element_type[new_dtype=float32 weak_type=True] e
+          i:f32[] = add f h
+          j:f32[] = mul 2.0 g
+        in (i, j) }
+      n_consts=1
+    ] 2 a b 2.0
+  in (c, d) }
+>>> jax.make_jaxpr(workflow)(0.5).consts
+[Array(1, dtype=int32, weak_type=True)]
 ```
+
+Some notes here about how read this. `a:i32[]` is the global integer variable `a` that is
+a constant.  The arguments to the `repeat` primitive are `n (const a) x (hardcoded 2.0=y)`.
+You can also see the const variable `a` as argument `e:i32[]` to the inner nested jaxpr as well.
 
 
 ## Metaprogramming
@@ -278,7 +303,7 @@ Great!👍
 
 Now you can see that the problem is that we lied in our definition of abstract evaluation.  Jax thinks that `PrimitiveClass` returns something of shape `(1,)` and type `float32`.
 
-But jax doesn't have an abstract type that really describes "PrimitiveClass".  So we need to define an register our own.
+But jax doesn't have an abstract type that really describes "PrimitiveClass".  So we need to define and register our own.
 
 
 ```python
