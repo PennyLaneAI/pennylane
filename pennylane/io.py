@@ -416,7 +416,7 @@ def from_qiskit_noise(noise_model, verbose=False, decimal_places=None):
         verbose (bool): when printing a ``NoiseModel``, a complete list of Kraus matrices for each ``qml.QubitChannel``
             is displayed with ``verbose=True``. By default, ``verbose=False`` and only the number of Kraus matrices and
             the number of qubits they act on is displayed for brevity.
-        decimal_places (int): number of decimal places to round the elements of Kraus matrices when they are being
+        decimal_places (int | None): number of decimal places to round the elements of Kraus matrices when they are being
             displayed for each ``qml.QubitChannel`` when ``verbose=True``.
 
     Returns:
