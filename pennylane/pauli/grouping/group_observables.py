@@ -81,7 +81,7 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
         are not recognized.
     """
 
-    def __init__(self, observables, grouping_type="qwc", graph_colourer="rlf"):
+    def __init__(self, observables, grouping_type="qwc", graph_colourer="lf"):
         if grouping_type.lower() not in GROUPING_TYPES:
             raise ValueError(
                 f"Grouping type must be one of: {GROUPING_TYPES}, instead got {grouping_type}."
