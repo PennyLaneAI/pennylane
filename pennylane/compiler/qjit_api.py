@@ -543,7 +543,7 @@ def for_loop(lower_bound, upper_bound, step):
 
 @functools.lru_cache
 def _get_for_loop_qfunc_prim():
-    """Get the cond primitive for quantum functions."""
+    """Get the loop_for primitive for quantum functions."""
 
     import jax  # pylint: disable=import-outside-toplevel
 
@@ -565,9 +565,11 @@ def _get_for_loop_qfunc_prim():
 
         return fn_res
 
-    # pylint: disable=unused-argument
     @for_loop_prim.def_abstract_eval
-    def _(lower_bound, upper_bound, step, *init_state, jaxpr_body_fn):
+    def _(*args):
+
+        init_state = args[3:-1]
+        jaxpr_body_fn = args[-1]
 
         return jaxpr_body_fn(0, *init_state).out_avals
 
