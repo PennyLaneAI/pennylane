@@ -169,7 +169,7 @@ def single_qubit_fusion(
             {c_1c_2\cos(\alpha_1+\alpha_2)-s_1s_2\cos(\beta_2-\beta_1)}
             \right).
 
-        We can use the standard numerical function :math:`\operatorname{arctan2}`, which
+        We can use the standard numerical function ``arctan2``, which
         computes :math:`\arctan(x_1/x_2)` from :math:`x_1` and :math:`x_2` while handling
         special points suitably, to obtain the argument of the underlying complex number
         :math:`x_2 + x_1 i`.
