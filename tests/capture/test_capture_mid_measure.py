@@ -14,12 +14,12 @@
 """
 Tests for capturing mid-circuit measurements.
 """
-# pylint: disable=unused-import
+# pylint: disable=unused-import, protected-access
 import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.capture import create_mid_measure_primitive
+from pennylane.measurements.mid_measure import _create_mid_measure_primitive
 
 jax = pytest.importorskip("jax")
 pytestmark = pytest.mark.jax

@@ -15,6 +15,7 @@
 This module contains the qml.measure measurement.
 """
 import uuid
+from functools import lru_cache
 from typing import Generic, Hashable, Optional, TypeVar, Union
 
 import pennylane as qml
@@ -210,7 +211,7 @@ def measure(
 
     """
     if qml.capture.enabled():
-        primitive = qml.capture.create_mid_measure_primitive()
+        primitive = _create_mid_measure_primitive()
         return primitive.bind(wires, reset=reset, postselect=postselect)
 
     return _measure_impl(wires, reset=reset, postselect=postselect)
@@ -230,6 +231,32 @@ def _measure_impl(
     measurement_id = str(uuid.uuid4())[:8]
     mp = MidMeasureMP(wires=wires, reset=reset, postselect=postselect, id=measurement_id)
     return MeasurementValue([mp], processing_fn=lambda v: v)
+
+
+@lru_cache
+def _create_mid_measure_primitive() -> "jax.core.Primitive":
+    """Create a primitive corresponding to an mid-circuit measurement type.
+
+    Called when using :func:`~pennylane.measure`.
+
+    Returns:
+        jax.core.Primitive: A new jax primitive corresponding to a mid-circuit
+        measurement.
+
+    """
+    import jax  # pylint: disable=import-outside-toplevel
+
+    primitive = jax.core.Primitive("mid_measure")
+
+    @primitive.def_impl
+    def _(wires, reset=False, postselect=None):
+        return _measure_impl(wires, reset=reset, postselect=postselect)
+
+    @primitive.def_abstract_eval
+    def _(*_, **__):
+        return jax.core.ShapedArray((), jax.numpy.bool_)
+
+    return primitive
 
 
 T = TypeVar("T")

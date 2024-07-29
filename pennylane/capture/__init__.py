@@ -134,7 +134,6 @@ from .primitives import (
     create_measurement_mcm_primitive,
 )
 from .capture_qnode import qnode_call
-from .capture_mid_measure import create_mid_measure_primitive
 
 # by defining this here, we avoid
 # E0611: No name 'AbstractOperator' in module 'pennylane.capture' (no-name-in-module)
@@ -173,7 +172,6 @@ __all__ = (
     "create_measurement_obs_primitive",
     "create_measurement_wires_primitive",
     "create_measurement_mcm_primitive",
-    "create_mid_measure_primitive",
     "qnode_call",
     "AbstractOperator",
     "AbstractMeasurement",
