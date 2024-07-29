@@ -28,6 +28,16 @@ jobs:
         git commit -m "[no ci] bump nightly version"
         git push
 
+    - name: Build wheels
+      run: |
+        python -m pip install build
+        python -m build --wheel --outdir dist
+  
+    - uses: actions/upload-artifact@v3
+      with:
+        name: nightly-wheels
+        path: ./dist/*.whl
+
   upload:
     name: Upload wheels to TestPyPI
     needs: [setup]
@@ -36,10 +46,10 @@ jobs:
       id-token: write  # IMPORTANT: mandatory for trusted publishing
 
     steps:
-    - name: Build wheels
-      run: |
-        python -m pip install build
-        python -m build --wheel --outdir dist
+    - uses: actions/download-artifact@v3
+      with:
+        name: nightly-wheels
+        path: dist
 
     - name: Upload wheels
       uses: pypa/gh-action-pypi-publish@release/v1
