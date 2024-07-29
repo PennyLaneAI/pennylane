@@ -141,7 +141,6 @@ class TestAdjointQfunc:
         assert out == []
         qml.assert_equal(q.queue[0], qml.adjoint(qml.adjoint(qml.X(10))))
 
-       
     def test_qfunc_with_closure_tracer(self):
         """Test that we can take the adjoint of a qfunc with a closure variable tracer."""
 
@@ -151,11 +150,21 @@ class TestAdjointQfunc:
 
             qml.adjoint(qfunc)(2)
 
-        qml.assert_equal(out, qml.adjoint(qml.adjoint(qml.X(10))))
-        qml.assert_equal(q.queue[0], out)
+        jaxpr = jax.make_jaxpr(workflow)(0.5)
+
+        assert jaxpr.eqns[0].primitive == adjoint_prim
+        assert jaxpr.eqns[0].params["n_consts"] == 1
+        assert len(jaxpr.eqns[0].invars) == 2  # one const, one arg
+
+        with qml.queuing.AnnotatedQueue() as q:
+            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2.5)
+
+        assert len(q) == 1
+        qml.assert_equal(q.queue[0], qml.adjoint(qml.RX(2.5, 2)))
 
 
 class TestCtrlQfunc:
+    """Tests for the ctrl primitive."""
 
     def test_operator_type_input(self):
         """Test that an operator type can be the callable."""
@@ -168,8 +177,8 @@ class TestCtrlQfunc:
         with qml.queuing.AnnotatedQueue() as q:
             out = jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, 1.2, 2)
 
+        assert out == []
         expected = qml.ctrl(qml.RX(1.2, 2), 1)
-        qml.assert_equal(out[0], expected)
         qml.assert_equal(q.queue[0], expected)
 
         assert plxpr.eqns[0].primitive == ctrl_prim
@@ -188,10 +197,10 @@ class TestCtrlQfunc:
         with qml.queuing.AnnotatedQueue() as q:
             out = jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, 1, 2, 3)
 
+        assert out == []
         expected = qml.Toffoli(wires=(2, 3, 1))
         qml.assert_equal(q.queue[0], expected)
-        qml.assert_equal(out[0], expected)
-        assert len(out) == len(q) == 1
+        assert len(q) == 1
 
         assert plxpr.eqns[0].primitive == ctrl_prim
         assert plxpr.eqns[0].params["control_values"] == [True, True]
@@ -209,10 +218,10 @@ class TestCtrlQfunc:
         with qml.queuing.AnnotatedQueue() as q:
             out = jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, 5)
 
+        assert out == []
         expected = qml.ctrl(qml.S(5), (1, 2), work_wires="aux")
-        qml.assert_equal(out[0], expected)
         qml.assert_equal(q.queue[0], expected)
-        assert len(out) == len(q) == 1
+        assert len(q) == 1
 
         assert plxpr.eqns[0].params["work_wires"] == "aux"
 
@@ -227,10 +236,10 @@ class TestCtrlQfunc:
         with qml.queuing.AnnotatedQueue() as q:
             out = jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, 5.4)
 
+        assert out == []
         expected = qml.ctrl(qml.RZ(5.4, 0), (3, 4), [False, True])
-        qml.assert_equal(out[0], expected)
         qml.assert_equal(q.queue[0], expected)
-        assert len(q) == len(out) == 1
+        assert len(q) == 1
 
         assert plxpr.eqns[0].params["control_values"] == [False, True]
         assert plxpr.eqns[0].params["n_control"] == 2
@@ -244,13 +253,14 @@ class TestCtrlQfunc:
 
         plxpr = jax.make_jaxpr(f)(-0.5, 1, 2)
 
-        assert plxpr.eqns[0].params["n_consts"] == 1
+        print(plxpr)
+        assert plxpr.eqns[1].params["n_consts"] == 1
         assert (
-            plxpr.eqns[0].invars[0] is plxpr.jaxpr.invars[1]
+            plxpr.eqns[1].invars[0] is plxpr.jaxpr.invars[1]
         )  # first input is first control wire, const
-        assert plxpr.eqns[0].invars[1] is plxpr.jaxpr.invars[0]  # second input is x, first arg
-        assert plxpr.eqns[0].invars[-1] is plxpr.jaxpr.invars[2]  # second control wire
-        assert len(plxpr.eqns[0].invars) == 6  # one const, 4 args, one control wire
+        assert plxpr.eqns[1].invars[1] is plxpr.jaxpr.invars[0]  # second input is x, first arg
+        assert plxpr.eqns[1].invars[-1] is plxpr.jaxpr.invars[2]  # second control wire
+        assert len(plxpr.eqns[1].invars) == 6  # one const, 4 args, one control wire
 
         with qml.queuing.AnnotatedQueue() as q:
             jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, 1.2, 3, 4)

@@ -19,7 +19,7 @@ import warnings
 from copy import copy
 from functools import wraps
 from inspect import signature
-from typing import Any, Callable, List, Optional, Sequence, overload
+from typing import Any, Callable, Optional, Sequence, overload
 
 import numpy as np
 from scipy import sparse
@@ -230,8 +230,6 @@ def _get_ctrl_qfunc_prim():
     # if capture is enabled, jax should be installed
     import jax  # pylint: disable=import-outside-toplevel
 
-    AbstractOperator = qml.capture.AbstractOperator
-
     ctrl_prim = jax.core.Primitive("ctrl_transform")
     ctrl_prim.multiple_results = True
 
@@ -246,24 +244,13 @@ def _get_ctrl_qfunc_prim():
             jax.core.eval_jaxpr(jaxpr, consts, *args)
         ops, _ = qml.queuing.process_queue(q)
 
-        return [ctrl(op, control_wires, control_values, work_wires) for op in ops]
-
-    def _is_queued_outvar(outvars):
-        if not outvars:
-            return False
-        return isinstance(outvars[0].aval, AbstractOperator) and isinstance(
-            outvars[0], jax.core.DropVar
-        )
+        for op in ops:
+            ctrl(op, control_wires, control_values, work_wires)
+        return []
 
     @ctrl_prim.def_abstract_eval
-    def _(*_, jaxpr, **__):
-        # note that this approximation may fail when we have nested qfuncs like for and while
-        # the do not return variables for all operators they queue...
-        # all queued drop var operators
-        outvars = [eqn.outvars[0].aval for eqn in jaxpr.eqns if _is_queued_outvar(eqn.outvars)]
-        # operators that are not dropped var because they are returned
-        outvars += [var.aval for var in jaxpr.outvars if isinstance(var.aval, AbstractOperator)]
-        return outvars
+    def _(*_, **__):
+        return []
 
     return ctrl_prim
 
