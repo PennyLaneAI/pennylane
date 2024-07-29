@@ -139,7 +139,7 @@
 
 * `GlobalPhase` is considered non-differentiable with tape transforms.
   As a consequence, `qml.gradients.finite_diff` and `qml.gradients.spsa_grad` no longer
-  support differentiation of `GlobalPhase`.
+  support differentiation of `GlobalPhase` with state-based outputs.
   [(#5620)](https://github.com/PennyLaneAI/pennylane/pull/5620) 
 
 * The `CircuitGraph.graph` rustworkx graph now stores indices into the circuit as the node labels,
