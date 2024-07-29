@@ -137,23 +137,13 @@ class TestLoad:
     def test_from_qasm(self, mock_plugin_converters):
         """Tests that the correct entry point is called for from_qasm."""
 
-        qml.from_qasm("Test", measurements=None)
+        qml.from_qasm("Test")
         assert mock_plugin_converters["qasm"].called
         assert mock_plugin_converters["qasm"].last_args == ("Test",)
 
         for plugin_converter in mock_plugin_converters:
             if mock_plugin_converters[plugin_converter].called and plugin_converter != "qasm":
                 raise RuntimeError(f"The other plugin converter {plugin_converter} was called.")
-
-    def test_from_qasm_deprecated(self, mock_plugin_converters):
-        """Tests that the current default behaviour of from_qasm is deprecated."""
-
-        with pytest.warns(qml.PennyLaneDeprecationWarning, match="The current default behaviour"):
-            qml.from_qasm("Test")
-
-        called_args, called_kwargs = mock_plugin_converters["qasm"].call_args
-        assert called_args == ("Test",)
-        assert called_kwargs == {"measurements": []}
 
     @pytest.mark.parametrize(
         "method, entry_point_name, args, kwargs",

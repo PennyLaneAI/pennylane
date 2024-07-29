@@ -72,7 +72,7 @@ class StronglyEntanglingLayers(Operation):
 
         The resulting circuit is:
 
-        >>> print(qml.draw(circuit, expansion_strategy="device")(weights))
+        >>> print(qml.draw(circuit, level="device")(weights))
         0: ──Rot(0.68,0.98,0.48)─╭●───────╭X──Rot(0.94,0.22,0.70)─╭●────╭X────┤  <Z>
         1: ──Rot(0.91,0.19,0.15)─╰X─╭●────│───Rot(0.50,0.20,0.63)─│──╭●─│──╭X─┤
         2: ──Rot(0.91,0.68,0.96)────╰X─╭●─│───Rot(0.14,0.05,0.16)─╰X─│──╰●─│──┤
@@ -108,7 +108,7 @@ class StronglyEntanglingLayers(Operation):
 
         The resulting circuit is:
 
-        >>> print(qml.draw(circuit, expansion_strategy="device")(weights))
+        >>> print(qml.draw(circuit, level="device")(weights))
         0: ──Rot(0.99,0.17,0.12)─╭●────╭Z──Rot(0.02,0.94,0.57)──────────────────────╭●─╭Z───────┤  <Z>
         1: ──Rot(0.55,0.42,0.61)─│──╭●─│──╭Z────────────────────Rot(0.15,0.26,0.82)─│──╰●─╭Z────┤
         2: ──Rot(0.79,0.93,0.27)─╰Z─│──╰●─│─────────────────────Rot(0.73,0.01,0.44)─│─────╰●─╭Z─┤

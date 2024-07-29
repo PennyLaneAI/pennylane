@@ -17,7 +17,7 @@ Utility functions to convert between ``~.PauliSentence`` and other PennyLane ope
 from functools import reduce, singledispatch
 from itertools import product
 from operator import matmul
-from typing import Tuple, Union
+from typing import Union
 
 import pennylane as qml
 from pennylane.math.utils import is_abstract
@@ -42,7 +42,7 @@ from .utils import is_pauli_word
 # pylint: disable=too-many-branches
 def _generalized_pauli_decompose(
     matrix, hide_identity=False, wire_order=None, pauli=False, padding=False
-) -> Tuple[qml.typing.TensorLike, list]:
+) -> tuple[qml.typing.TensorLike, list]:
     r"""Decomposes any matrix into a linear combination of Pauli operators.
 
     This method converts any matrix to a weighted sum of Pauli words acting on :math:`n` qubits
@@ -252,6 +252,8 @@ def pauli_decompose(
     We can use this function to compute the Pauli operator decomposition of an arbitrary Hermitian
     matrix:
 
+    >>> import pennylane as qml
+    >>> import numpy as np
     >>> A = np.array(
     ... [[-2, -2+1j, -2, -2], [-2-1j,  0,  0, -1], [-2,  0, -2, -1], [-2, -1, -1,  0]])
     >>> H = qml.pauli_decompose(A)

@@ -1086,7 +1086,7 @@ class TestDecomposition:
         custom_ctrl_op = custom_ctrl_cls(*params, active_wires)
 
         assert ctrl_op.decomposition() == expected
-        assert ctrl_op.expand().circuit == expected
+        assert qml.tape.QuantumScript(ctrl_op.decomposition()).circuit == expected
         assert custom_ctrl_op.decomposition() == expected
         assert custom_ctrl_cls.compute_decomposition(*params, active_wires) == expected
 
@@ -1130,7 +1130,7 @@ class TestDecomposition:
         ctrl_op = Controlled(base_op, control_wires=ctrl_wires, work_wires=Wires("aux"))
 
         assert ctrl_op.decomposition() == expected
-        assert ctrl_op.expand().circuit == expected
+        assert qml.tape.QuantumScript(ctrl_op.decomposition()).circuit == expected
 
     def test_decomposition_nested(self):
         """Tests decompositions of nested controlled operations"""
@@ -1143,7 +1143,7 @@ class TestDecomposition:
             qml.Toffoli(wires=[2, 1, 0]),
         ]
         assert ctrl_op.decomposition() == expected
-        assert ctrl_op.expand().circuit == expected
+        assert qml.tape.QuantumScript(ctrl_op.decomposition()).circuit == expected
 
     def test_decomposition_undefined(self):
         """Tests error raised when decomposition is undefined"""
@@ -1169,7 +1169,7 @@ class TestDecomposition:
         op = Controlled(base, control_wires, control_values)
 
         decomp1 = op.decomposition()
-        decomp2 = op.expand().circuit
+        decomp2 = qml.tape.QuantumScript(op.decomposition()).circuit
 
         for decomp in [decomp1, decomp2]:
             qml.assert_equal(decomp[0], qml.PauliX(1))

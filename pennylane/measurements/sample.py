@@ -15,7 +15,8 @@
 This module contains the qml.sample measurement.
 """
 import functools
-from typing import Optional, Sequence, Tuple, Union
+from collections.abc import Sequence
+from typing import Optional, Union
 
 import numpy as np
 
@@ -141,7 +142,7 @@ class SampleMP(SampleMeasurement):
     """Measurement process that returns the samples of a given observable. If no observable is
     provided then basis state samples are returned directly from the device.
 
-    Please refer to :func:`sample` for detailed documentation.
+    Please refer to :func:`pennylane.sample` for detailed documentation.
 
     Args:
         obs (Union[.Operator, .MeasurementValue]): The observable that is to be measured
@@ -254,7 +255,7 @@ class SampleMP(SampleMeasurement):
         self,
         samples: Sequence[complex],
         wire_order: Wires,
-        shot_range: Tuple[int] = None,
+        shot_range: tuple[int, ...] = None,
         bin_size: int = None,
     ):
         wire_map = dict(zip(wire_order, range(len(wire_order))))

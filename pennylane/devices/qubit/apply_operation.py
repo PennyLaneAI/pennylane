@@ -328,7 +328,7 @@ def apply_mid_measure(
         axis = wire.toarray()[0]
         slices = [slice(None)] * qml.math.ndim(state)
         slices[axis] = 0
-        prob0 = qml.math.norm(state[tuple(slices)]) ** 2
+        prob0 = qml.math.real(qml.math.norm(state[tuple(slices)])) ** 2
 
         if prng_key is not None:
             # pylint: disable=import-outside-toplevel
@@ -405,6 +405,75 @@ def apply_pauliz(op: qml.Z, state, is_state_batched: bool = False, debugger=None
 
     # must be first state and then -1 because it breaks otherwise
     state1 = math.multiply(state[sl_1], -1)
+    return math.stack([state[sl_0], state1], axis=axis)
+
+
+@apply_operation.register
+def apply_phaseshift(op: qml.PhaseShift, state, is_state_batched: bool = False, debugger=None, **_):
+    """Apply PhaseShift to state."""
+
+    n_dim = math.ndim(state)
+
+    if n_dim >= 9 and math.get_interface(state) == "tensorflow":
+        return apply_operation_tensordot(op, state, is_state_batched=is_state_batched)
+
+    axis = op.wires[0] + is_state_batched
+
+    sl_0 = _get_slice(0, axis, n_dim)
+    sl_1 = _get_slice(1, axis, n_dim)
+
+    params = math.cast(op.parameters[0], dtype=complex)
+    state0 = state[sl_0]
+    state1 = state[sl_1]
+    if op.batch_size is not None and len(params) > 1:
+        interface = math.get_interface(state)
+        if interface == "torch":
+            params = math.array(params, like=interface)
+        if is_state_batched:
+            params = math.reshape(params, (-1,) + (1,) * (n_dim - 2))
+        else:
+            axis = axis + 1
+            params = math.reshape(params, (-1,) + (1,) * (n_dim - 1))
+            state0 = math.expand_dims(state0, 0) + math.zeros_like(params)
+            state1 = math.expand_dims(state1, 0)
+    state1 = math.multiply(math.cast(state1, dtype=complex), math.exp(1.0j * params))
+    state = math.stack([state0, state1], axis=axis)
+    if not is_state_batched and op.batch_size == 1:
+        state = math.stack([state], axis=0)
+    return state
+
+
+@apply_operation.register
+def apply_T(op: qml.T, state, is_state_batched: bool = False, debugger=None, **_):
+    """Apply T to state."""
+
+    axis = op.wires[0] + is_state_batched
+    n_dim = math.ndim(state)
+
+    if n_dim >= 9 and math.get_interface(state) == "tensorflow":
+        return apply_operation_tensordot(op, state, is_state_batched=is_state_batched)
+
+    sl_0 = _get_slice(0, axis, n_dim)
+    sl_1 = _get_slice(1, axis, n_dim)
+
+    state1 = math.multiply(math.cast(state[sl_1], dtype=complex), math.exp(0.25j * np.pi))
+    return math.stack([state[sl_0], state1], axis=axis)
+
+
+@apply_operation.register
+def apply_S(op: qml.S, state, is_state_batched: bool = False, debugger=None, **_):
+    """Apply S to state."""
+
+    axis = op.wires[0] + is_state_batched
+    n_dim = math.ndim(state)
+
+    if n_dim >= 9 and math.get_interface(state) == "tensorflow":
+        return apply_operation_tensordot(op, state, is_state_batched=is_state_batched)
+
+    sl_0 = _get_slice(0, axis, n_dim)
+    sl_1 = _get_slice(1, axis, n_dim)
+
+    state1 = math.multiply(math.cast(state[sl_1], dtype=complex), 1j)
     return math.stack([state[sl_0], state1], axis=axis)
 
 

@@ -512,7 +512,6 @@ class TestParameterShiftRule:
         """Tests that the automatic gradients of Pauli rotations are correct."""
         # pylint: disable=too-many-arguments
 
-        np.random.seed(824)
         spy = mocker.spy(qml.gradients.parameter_shift, "_get_operation_recipe")
         shot_vec = many_shots_shot_vector
         dev = qml.device("default.qubit", wires=1, shots=shot_vec)
@@ -2060,7 +2059,6 @@ class TestHamiltonianExpvalGradients:
 
     def test_no_trainable_coeffs(self, mocker, broadcast, tol):
         """Test no trainable Hamiltonian coefficients"""
-        np.random.seed(3751)
         shot_vec = many_shots_shot_vector
         dev = qml.device("default.qubit", wires=2, shots=shot_vec)
         spy = mocker.spy(qml.gradients, "hamiltonian_grad")
