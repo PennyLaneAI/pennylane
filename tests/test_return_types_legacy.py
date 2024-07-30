@@ -42,13 +42,7 @@ class TestSingleReturnExecute:
         qnode = qml.QNode(circuit, dev)
         qnode.construct([0.5], {})
 
-        if dev.shots is not None:
-            with pytest.warns(UserWarning, match="with finite shots; the returned"):
-                res = qml.execute(
-                    tapes=[qnode.tape], device=dev, gradient_fn=None, interface=interface
-                )
-        else:
-            res = qml.execute(tapes=[qnode.tape], device=dev, gradient_fn=None, interface=interface)
+        res = qml.execute(tapes=[qnode.tape], device=dev, gradient_fn=None, interface=interface)
 
         assert res[0].shape == (2**wires,)
         assert isinstance(res[0], np.ndarray)
@@ -66,13 +60,7 @@ class TestSingleReturnExecute:
         qnode = qml.QNode(circuit, dev)
         qnode.construct([0.5], {})
 
-        if dev.shots is not None:
-            with pytest.warns(UserWarning, match="with finite shots; the returned"):
-                res = qml.execute(
-                    tapes=[qnode.tape], device=dev, gradient_fn=None, interface=interface
-                )
-        else:
-            res = qml.execute(tapes=[qnode.tape], device=dev, gradient_fn=None, interface=interface)
+        res = qml.execute(tapes=[qnode.tape], device=dev, gradient_fn=None, interface=interface)
 
         assert res[0].shape == (2**wires, 2**wires)
         assert isinstance(res[0], np.ndarray)
@@ -91,13 +79,7 @@ class TestSingleReturnExecute:
         qnode = qml.QNode(circuit, dev)
         qnode.construct([0.5], {})
 
-        if dev.shots is not None:
-            with pytest.warns(UserWarning, match="with finite shots; the returned"):
-                res = qml.execute(
-                    tapes=[qnode.tape], device=dev, gradient_fn=None, interface=interface
-                )
-        else:
-            res = qml.execute(tapes=[qnode.tape], device=dev, gradient_fn=None, interface=interface)
+        res = qml.execute(tapes=[qnode.tape], device=dev, gradient_fn=None, interface=interface)
 
         assert res[0].shape == (2**d_wires, 2**d_wires)
         assert isinstance(res[0], np.ndarray)
@@ -151,13 +133,7 @@ class TestSingleReturnExecute:
         qnode = qml.QNode(circuit, dev)
         qnode.construct([0.5], {})
 
-        if dev.shots is not None:
-            with pytest.warns(UserWarning, match="with finite shots; the returned"):
-                res = qml.execute(
-                    tapes=[qnode.tape], device=dev, gradient_fn=None, interface=interface
-                )
-        else:
-            res = qml.execute(tapes=[qnode.tape], device=dev, gradient_fn=None, interface=interface)
+        res = qml.execute(tapes=[qnode.tape], device=dev, gradient_fn=None, interface=interface)
 
         assert res[0].shape == ()
         assert isinstance(res[0], np.ndarray)
@@ -175,13 +151,7 @@ class TestSingleReturnExecute:
         qnode = qml.QNode(circuit, dev)
         qnode.construct([0.5], {})
 
-        if dev.shots is not None:
-            with pytest.warns(UserWarning, match="with finite shots; the returned"):
-                res = qml.execute(
-                    tapes=[qnode.tape], device=dev, gradient_fn=None, interface=interface
-                )
-        else:
-            res = qml.execute(tapes=[qnode.tape], device=dev, gradient_fn=None, interface=interface)
+        res = qml.execute(tapes=[qnode.tape], device=dev, gradient_fn=None, interface=interface)
 
         assert res[0].shape == ()
         assert isinstance(res[0], np.ndarray)
@@ -383,11 +353,7 @@ class TestMultipleReturns:
         qnode = qml.QNode(circuit, dev)
         qnode.construct([0.5], {})
 
-        if dev.shots is not None:
-            with pytest.warns(UserWarning, match="with finite shots; the returned"):
-                res = qml.execute(tapes=[qnode.tape], device=dev, gradient_fn=None)
-        else:
-            res = qml.execute(tapes=[qnode.tape], device=dev, gradient_fn=None)
+        res = qml.execute(tapes=[qnode.tape], device=dev, gradient_fn=None)
 
         if wires1 is None:
             wires1 = op1.wires
@@ -581,11 +547,7 @@ class TestShotVector:
         qnode = qml.QNode(circuit, dev)
         qnode.construct([0.5], {})
 
-        if dev.shots is not None:
-            with pytest.warns(UserWarning, match="with finite shots; the returned"):
-                res = qml.execute(tapes=[qnode.tape], device=dev, gradient_fn=None)
-        else:
-            res = qml.execute(tapes=[qnode.tape], device=dev, gradient_fn=None)
+        res = qml.execute(tapes=[qnode.tape], device=dev, gradient_fn=None)
 
         all_shots = sum([shot_tuple.copies for shot_tuple in dev.shot_vector])
 
@@ -1224,6 +1186,7 @@ class TestQubitDeviceNewUnits:
 
         tape = qml.tape.QuantumScript.from_queue(q)
         dev = qml.device("default.qubit.legacy", wires=3)
+
         with pytest.raises(
             qml.QuantumFunctionError, match="Unsupported return type specified for observable"
         ):

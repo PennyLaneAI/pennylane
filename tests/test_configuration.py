@@ -223,4 +223,4 @@ class TestPennyLaneInit:
         dev = qml.device("default.gaussian", wires=2, config=default_config)
 
         assert dev.hbar == 2
-        assert dev.shots == 1000
+        assert dev.shots == qml.measurements.Shots(1000)

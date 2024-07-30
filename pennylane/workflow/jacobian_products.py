@@ -416,8 +416,6 @@ class DeviceDerivatives(JacobianProductCalculator):
         self._execution_config = execution_config
         self._gradient_kwargs = gradient_kwargs
 
-        self._uses_new_device = isinstance(device, qml.devices.Device)
-
         # only really need to keep most recent entry, but keeping 10 around just in case
         self._results_cache = LRUCache(maxsize=10)
         self._jacs_cache = LRUCache(maxsize=10)
@@ -429,10 +427,7 @@ class DeviceDerivatives(JacobianProductCalculator):
         Dispatches between the two different device interfaces.
         """
         numpy_tapes, _ = qml.transforms.convert_to_numpy_parameters(tapes)
-
-        if self._uses_new_device:
-            return self._device.execute_and_compute_derivatives(numpy_tapes, self._execution_config)
-        return self._device.execute_and_gradients(numpy_tapes, **self._gradient_kwargs)
+        return self._device.execute_and_compute_derivatives(numpy_tapes, self._execution_config)
 
     def _dev_execute(self, tapes: QuantumTapeBatch):
         """
@@ -441,9 +436,7 @@ class DeviceDerivatives(JacobianProductCalculator):
         Dispatches between the two different device interfaces.
         """
         numpy_tapes, _ = qml.transforms.convert_to_numpy_parameters(tapes)
-        if self._uses_new_device:
-            return self._device.execute(numpy_tapes, self._execution_config)
-        return self._device.batch_execute(numpy_tapes)
+        return self._device.execute(numpy_tapes, self._execution_config)
 
     def _dev_compute_derivatives(self, tapes: QuantumTapeBatch):
         """
@@ -452,9 +445,7 @@ class DeviceDerivatives(JacobianProductCalculator):
         Dispatches between the two different device interfaces.
         """
         numpy_tapes, _ = qml.transforms.convert_to_numpy_parameters(tapes)
-        if self._uses_new_device:
-            return self._device.compute_derivatives(numpy_tapes, self._execution_config)
-        return self._device.gradients(numpy_tapes, **self._gradient_kwargs)
+        return self._device.compute_derivatives(numpy_tapes, self._execution_config)
 
     def execute_and_cache_jacobian(self, tapes: QuantumTapeBatch):
         """Forward pass used to cache the results and jacobians.
