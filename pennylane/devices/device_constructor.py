@@ -18,9 +18,11 @@ import warnings
 from importlib import metadata
 from sys import version_info
 
-from semantic_version import SimpleSpec, Version
+from packaging.specifiers import SpecifierSet
+from packaging.version import Version
 
 import pennylane as qml
+from pennylane._device import DeviceError
 
 
 def _get_device_entrypoints():
@@ -258,13 +260,22 @@ def device(name, *args, **kwargs):
         # loads the device class
         plugin_device_class = plugin_devices[name].load()
 
-        if hasattr(plugin_device_class, "pennylane_requires") and Version(
-            qml.version()
-        ) not in SimpleSpec(plugin_device_class.pennylane_requires):
-            raise qml.DeviceError(
-                f"The {name} plugin requires PennyLane versions {plugin_device_class.pennylane_requires}, "
-                f"however PennyLane version {qml.version()} is installed."
-            )
+        def _safe_specifier_set(version_str):
+            """Safely create a SpecifierSet from a version string."""
+            operators = ["<", ">", "==", "!=", "<=", ">=", "~=", "==="]
+            if any(version_str.startswith(op) for op in operators):
+                # This is tested in the plugin-test-matrix
+                return SpecifierSet(version_str, prereleases=True)  # pragma: no cover
+            return SpecifierSet(f"=={version_str}", prereleases=True)
+
+        if hasattr(plugin_device_class, "pennylane_requires"):
+            required_versions = _safe_specifier_set(plugin_device_class.pennylane_requires)
+            current_version = Version(qml.version())
+            if current_version not in required_versions:
+                raise DeviceError(
+                    f"The {name} plugin requires PennyLane versions {required_versions}, "
+                    f"however PennyLane version {qml.version()} is installed."
+                )
 
         # Construct the device
         dev = plugin_device_class(*args, **options)

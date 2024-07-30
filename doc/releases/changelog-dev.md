@@ -43,6 +43,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* Removed `semantic_version` from the list of required packages in PennyLane. 
+  [(#5836)](https://github.com/PennyLaneAI/pennylane/pull/5836)
+
 * During experimental program capture, the qnode can now use closure variables.
   [(#6052)](https://github.com/PennyLaneAI/pennylane/pull/6052)
 
@@ -58,9 +61,6 @@
 
 * `StateMP.process_state` defines rules in `cast_to_complex` for complex casting, avoiding a superfluous state vector copy in Lightning simulations
   [(#5995)](https://github.com/PennyLaneAI/pennylane/pull/5995)
-
-* Removed `semantic_version` from the list of required packages in PennyLane. 
-  [(#5836)](https://github.com/PennyLaneAI/pennylane/pull/5836)
 
 * Port the fast `apply_operation` implementation of `PauliZ` to `PhaseShift`, `S` and `T`.
   [(#5876)](https://github.com/PennyLaneAI/pennylane/pull/5876)
