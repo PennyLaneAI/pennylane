@@ -18,6 +18,18 @@ import pytest
 
 import pennylane as qml
 
+jax = pytest.importorskip("jax")
+
+pytestmark = pytest.mark.jax
+
+
+@pytest.fixture(autouse=True)
+def enable_disable_plxpr():
+    """enable and disable capture around each test."""
+    qml.capture.enable()
+    yield
+    qml.capture.disable()
+
 
 def test_no_attribute_available():
     """Test that if we try and access an attribute that doesn't exist, we get an attribute error."""
