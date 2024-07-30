@@ -83,7 +83,7 @@ def merge_rotations(
         Second, ``merge_rotations`` is not differentiable everywhere when used on ``Rot``.
         It has singularities for specific rotation angles where the derivative will be NaN.
 
-        Finally, this function can be numerically unstable at singular points.
+        Finally, this function can be numerically unstable near singular points.
         It is therefore recommended to use it with 64-bit floating point precision angles.
 
         For a mathematical derivation of the fusion of two ``Rot`` gates, see the documentation
