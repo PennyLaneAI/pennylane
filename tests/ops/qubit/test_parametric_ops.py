@@ -2046,6 +2046,7 @@ class TestGrad:
         @qml.qnode(dev, diff_method=diff_method)
         def circuit(x):
             qml.Identity(wires[0])
+            qml.GlobalPhase(x, wires=[0, 1])  # Does not change the derivative, but tests it
             qml.Hadamard(wires[1])
             qml.ctrl(qml.GlobalPhase(x), control=wires[1])
             qml.Hadamard(wires[1])
@@ -3493,9 +3494,9 @@ class TestSimplify:
         import jax
         import jax.numpy as jnp
 
-        dev = qml.device("default.qubit.jax", wires=2)
+        dev = qml.device("default.qubit")
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, interface="jax")
         def circuit(simplify, wires, *params, **hyperparams):
             if simplify:
                 qml.simplify(op(*params, wires=wires, **hyperparams))

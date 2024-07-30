@@ -288,7 +288,7 @@ class GlobalPhase(Operation):
 
 
     """
-
+    
     num_wires = AllWires
     """int: Number of wires that the operator acts on."""
 
@@ -298,7 +298,7 @@ class GlobalPhase(Operation):
     ndim_params = (0,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    grad_method = "A"
+    grad_method = None
 
     def __init__(self, phi, wires=None, id=None):
         super().__init__(phi, wires=[] if wires is None else wires, id=id)
