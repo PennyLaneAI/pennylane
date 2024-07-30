@@ -551,7 +551,7 @@ def _get_for_loop_qfunc_prim():
     for_loop_prim.multiple_results = True
 
     @for_loop_prim.def_impl
-    def _(lower_bound, upper_bound, step, *init_state, jaxpr_body_fn):
+    def _(lower_bound, upper_bound, step, jaxpr_consts, *init_state, jaxpr_body_fn):
 
         args = init_state
         fn_res = args if len(args) > 1 else args[0] if len(args) == 1 else None
@@ -559,19 +559,19 @@ def _get_for_loop_qfunc_prim():
         for i in range(lower_bound, upper_bound, step):
 
             tmp_args = (i, *args)
-            jaxpr_exec = jaxpr_body_fn(*tmp_args)
-            fn_res = jax.core.eval_jaxpr(jaxpr_exec.jaxpr, jaxpr_exec.consts, *tmp_args)
+            fn_res = jax.core.eval_jaxpr(jaxpr_body_fn.jaxpr, jaxpr_consts, *tmp_args)
+            fn_res = jax.numpy.array(fn_res)
             args = fn_res if len(args) > 1 else (fn_res,) if len(args) == 1 else ()
 
         return fn_res
 
     @for_loop_prim.def_abstract_eval
-    def _(*args):
+    def _(*_, jaxpr_body_fn, **__):
 
-        init_state = args[3:-1]
-        jaxpr_body_fn = args[-1]
+        # TODO: potentially add check to verify that the out_avals of the jaxpr_body_fn
+        # are the same for each iteration of the loop
 
-        return jaxpr_body_fn(0, *init_state).out_avals
+        return jaxpr_body_fn.out_avals
 
     return for_loop_prim
 
@@ -614,12 +614,14 @@ class ForLoopCallable:  # pylint:disable=too-few-public-methods
 
         for_loop_prim = _get_for_loop_qfunc_prim()
 
-        jaxpr_body_fn = jax.make_jaxpr(self.body_fn)
+        jaxpr_body_fn = jax.make_jaxpr(self.body_fn)(0, *init_state)
+        jaxpr_consts = jax.numpy.array(jaxpr_body_fn.consts)
 
         return for_loop_prim.bind(
             self.lower_bound,
             self.upper_bound,
             self.step,
+            jaxpr_consts,
             *init_state,
             jaxpr_body_fn=jaxpr_body_fn,
         )
