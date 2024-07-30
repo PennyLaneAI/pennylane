@@ -198,12 +198,23 @@ class TestDiagonalizeObservable:
         assert diagonalizing_gates == X(0).diagonalizing_gates()
         assert new_obs == Z(0) + Z(2) + Z(0) @ Z(3)
 
+    @pytest.mark.parametrize("obs", [X(0) + 2 * qml.Identity(), X(0) + 2 * qml.Identity(wires=2)])
+    def test_with_identity(self, obs):
+        """Test that observables with Identity are supported and Identity remains unchanged"""
+
+        gates, new_obs, visited_obs = _diagonalize_observable(obs)
+
+        assert gates == X(0).diagonalizing_gates()
+        assert new_obs[0] == Z(0)  # X(0) is diagonalized
+        assert new_obs[1] == obs[1]  # Identity is unchanged
+        assert visited_obs == ([X(0)], [0])
+
     @pytest.mark.parametrize(
         "obs", [X(0) + 1.7 * X(2) + X(0) @ Y(2), X(0) + 2.3 * X(2) + X(0) @ Z(2)]
     )
     def test_non_commuting_measurements(self, obs):
-        """Test that when a compound observable includes duplicate terms, it only adds
-        the diagonalizing gates once"""
+        """Test that when a compound observable includes non-commuting observables, it raises
+        an error"""
 
         obs = X(0) + Z(2) + X(0) @ Y(2)
 
@@ -214,13 +225,25 @@ class TestDiagonalizeObservable:
         "obs", [X(0) + 1.7 * X(2) + X(0) @ Y(2), X(0) + 2.3 * X(2) + X(0) @ Z(2)]
     )
     def test_non_commuting_measurements_with_supported_obs(self, obs):
-        """Test that when a compound observable includes duplicate terms, it only adds
-        the diagonalizing gates once"""
+        """Test that when a compound observable includes non-commuting observables, it raises
+        an error, even if some of those observables aren't being diagonalized"""
 
         device_supported_obs = ["PauliX", "PauliZ"]
 
         with pytest.raises(ValueError, match="Expected only a single observable per wire"):
             _ = _diagonalize_observable(obs, supported_base_obs=device_supported_obs)
+
+    def test_diagonalizing_unknown_observable_raises_error(self):
+        """Test that an unknown observable raises an error when diagonalizing"""
+
+        class MyObs(qml.operation.Observable):
+
+            @property
+            def name(self):
+                return f"MyObservable[{self.wires}]"
+
+        with pytest.raises(NotImplementedError, match="Unable to convert observable"):
+            _ = _diagonalize_observable(MyObs(wires=[2]))
 
     @pytest.mark.parametrize(
         "obs, input_visited_obs, switch_basis, expected_res",
@@ -266,9 +289,7 @@ class TestDiagonalizeTapeMeasurements:
         measurements = [qml.expval(X(0)), qml.var(X(1) + Y(2))]
 
         tape = QuantumScript([], measurements=measurements)
-
         tapes, fn = diagonalize_tape_measurements(tape)
-
         new_tape = tapes[0]
 
         assert new_tape.measurements == [qml.expval(Z(0)), qml.var(Z(1) + Z(2))]
@@ -285,9 +306,7 @@ class TestDiagonalizeTapeMeasurements:
         measurements = [qml.expval(X(0)), qml.var(X(1) + Y(2)), qml.sample(X(0) @ Y(2))]
 
         tape = QuantumScript([], measurements=measurements)
-
         tapes, fn = diagonalize_tape_measurements(tape)
-
         new_tape = tapes[0]
 
         assert new_tape.measurements == [
@@ -312,7 +331,25 @@ class TestDiagonalizeTapeMeasurements:
         with pytest.raises(ValueError, match="overlaps with another observable on the tape"):
             _ = diagonalize_tape_measurements(tape)
 
-    def test_decomposing_a_subset_of_obs(self):
+    def test_measurements_with_no_obs(self):
+        """Test that the transform correctly handles tapes where some measurements don't
+        have an observable"""
+
+        measurements = [qml.expval(X(0)), qml.var(X(1) + Y(2)), qml.sample()]
+
+        tape = QuantumScript([], measurements=measurements)
+        tapes, fn = diagonalize_tape_measurements(tape)
+        new_tape = tapes[0]
+
+        assert new_tape.measurements == [qml.expval(Z(0)), qml.var(Z(1) + Z(2)), qml.sample()]
+        assert (
+            new_tape.operations
+            == X(0).diagonalizing_gates() + X(1).diagonalizing_gates() + Y(2).diagonalizing_gates()
+        )
+
+        assert fn == null_postprocessing
+
+    def test_decomposing_subset_of_obs(self):
         """Test that passing a list of supported obs to the diagonalize_tape_measurements transform
         diagonalizes only the unsupported base observables"""
         measurements = [
