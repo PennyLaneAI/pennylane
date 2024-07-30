@@ -2189,7 +2189,7 @@ class TestCovMatrix:
     def test_jax(self, tol):
         """Test that the covariance matrix computes the correct
         result, and is differentiable, using the JAX interface"""
-        dev = qml.device("default.qubit.jax", wires=3)
+        dev = qml.device("default.qubit", wires=3)
 
         @qml.qnode(dev, interface="jax", diff_method="backprop")
         def circuit(weights):

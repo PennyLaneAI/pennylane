@@ -80,6 +80,17 @@ class TestDecompositionErrors:
         with pytest.raises(AssertionError, match="If has_decomposition is False"):
             assert_valid(BadDecomp(wires=0), skip_pickle=True)
 
+    def test_decomposition_must_not_contain_op(self):
+        """Test that the decomposition of an operator doesn't include the operator itself"""
+
+        class BadDecomp(Operator):
+            @staticmethod
+            def compute_decomposition(wires):
+                return [BadDecomp(wires)]
+
+        with pytest.raises(AssertionError, match="should not be included in its own decomposition"):
+            assert_valid(BadDecomp(wires=0), skip_pickle=True)
+
 
 class TestBadMatrix:
     """Tests involving matrix validation."""

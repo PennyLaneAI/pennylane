@@ -26,7 +26,7 @@ import itertools
 import logging
 import warnings
 from collections import defaultdict
-from typing import List, Union
+from typing import Union
 
 import numpy as np
 
@@ -1777,7 +1777,7 @@ class QubitDevice(Device):
         # must be 2-dimensional
         return tuple(tuple(np.array(j_) for j_ in j) for j in jac)
 
-    def _get_diagonalizing_gates(self, circuit: QuantumTape) -> List[Operation]:
+    def _get_diagonalizing_gates(self, circuit: QuantumTape) -> list[Operation]:
         """Returns the gates that diagonalize the measured wires such that they
         are in the eigenbasis of the circuit observables.
 
