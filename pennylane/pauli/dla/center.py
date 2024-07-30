@@ -76,7 +76,7 @@ def center(
     In this case, just ``X(0)``.
 
     >>> qml.center(g)
-    [-0.9999999999999999 * X(0)]
+    [X(0)]
 
     .. details::
         :title: Derivation
