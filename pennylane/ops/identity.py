@@ -288,7 +288,7 @@ class GlobalPhase(Operation):
 
 
     """
-    
+
     num_wires = AllWires
     """int: Number of wires that the operator acts on."""
 
