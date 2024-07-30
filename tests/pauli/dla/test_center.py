@@ -17,7 +17,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.pauli import PauliSentence, center
+from pennylane.pauli import PauliSentence, PauliWord, center
 
 
 def test_trivial_center():
@@ -58,29 +58,24 @@ def test_center_pauli(ops, true_res):
 def test_center_pauli_word_pauli_True(pauli):
     """Test that PauliWord instances can be passed for both pauli=True/False"""
     ops = [
-        qml.pauli.PauliWord({0: "X"}),
-        qml.pauli.PauliWord({0: "X", 1: "X"}),
-        qml.pauli.PauliWord({1: "Y"}),
-        qml.pauli.PauliWord({0: "X", 1: "Z"}),
+        PauliWord({0: "X"}),
+        PauliWord({0: "X", 1: "X"}),
+        PauliWord({1: "Y"}),
+        PauliWord({0: "X", 1: "Z"}),
     ]
-    x0_pw = qml.pauli.PauliWord({0: "X"})
+    x0_pw = PauliWord({0: "X"})
     center = qml.center(ops, pauli=pauli)
-    assert isinstance(center, list)
-    assert len(center) == 1
     if pauli:
-        assert isinstance(center[0], qml.pauli.PauliSentence) and len(center[0]) == 1
-        assert x0_pw in center[0]
-        assert np.isclose(center[0][x0_pw], -1)
+        assert center == [PauliSentence({x0_pw: 1.0})]
     else:
-        assert isinstance(center[0], qml.ops.op_math.SProd)
-        assert qml.equal(center[0], -1 * qml.X(0))
+        assert center == [qml.X(0)]
 
 
 c = 1 / np.sqrt(2)
 
 GENERATOR_CENTERS = (
-    ([qml.X(0), qml.X(0) @ qml.X(1), qml.Y(1)], [-1 * qml.X(0)]),
-    ([qml.X(0) @ qml.X(1), qml.Y(1), qml.X(0)], [-1 * qml.X(0)]),
+    ([qml.X(0), qml.X(0) @ qml.X(1), qml.Y(1)], [qml.X(0)]),
+    ([qml.X(0) @ qml.X(1), qml.Y(1), qml.X(0)], [qml.X(0)]),
     ([qml.X(0) @ qml.X(1), qml.Y(1), qml.X(1)], []),
     ([qml.X(0) @ qml.X(1), qml.Y(1), qml.Z(0)], []),
     ([p(0) @ p(1) for p in [qml.X, qml.Y, qml.Z]], [p(0) @ p(1) for p in [qml.X, qml.Y, qml.Z]]),

@@ -15,11 +15,30 @@
 from typing import Union
 
 import numpy as np
-from scipy.linalg import null_space
+from scipy.linalg import norm, null_space
 
 from pennylane.operation import Operator
 from pennylane.pauli import PauliSentence, PauliWord
 from pennylane.pauli.dla import structure_constants
+
+
+def _intersect_bases(basis_0, basis_1):
+    r"""Compute the intersection of two vector spaces that are given by a basis each.
+    This is done by constructing a matrix [basis_0 | -basis_1] and computing its null space
+    in form of vectors (u, v)^T, which is equivalent to solving the equation
+    ``basis_0 @ u = basis_1 @ v``.
+    Given a basis for this null space, the vectors ``basis_0 @ u`` (or equivalently
+    ``basis_1 @ v``) form a basis for the intersection of the vector spaces.
+
+    Also see https://math.stackexchange.com/questions/25371/how-to-find-a-basis-for-the-intersection-of-two-vector-spaces-in-mathbbrn
+    """
+    # Compute (orthonormal) basis for the null space of the augmented matrix [basis_0, -basis_1]
+    augmented_basis = null_space(np.hstack([basis_0, -basis_1]))
+    # Compute basis_0 @ u for each vector u from the basis (u, v)^T in the augmented basis
+    intersection_basis = basis_0 @ augmented_basis[: basis_0.shape[1]]
+    # Normalize the output for cleaner results, because the augmented kernel was normalized
+    intersection_basis = intersection_basis / norm(intersection_basis, axis=0)
+    return intersection_basis
 
 
 def center(
@@ -59,30 +78,55 @@ def center(
     >>> qml.center(g)
     [-0.9999999999999999 * X(0)]
 
+    .. details::
+        :title: Derivation
+        :href: derivation
+
+        The center :math:`\mathfrak{z}(\mathfrak{k})` of an algebra :math:`\mathfrak{k}`
+        can be computed in the following steps. First, compute the
+        :func:`~.pennylane.structure_constants`, or adjoint representation, of the algebra
+        with respect to some basis :math:`\mathbb{B}` of :math:`\mathfrak{k}`.
+        The center of :math:`\mathfrak{k}` is then given by
+
+        .. math::
+
+            \mathfrak{z}(\mathfrak{k}) = \operatorname{span}\left\{\bigcap_{x\in\mathbb{B}}
+            \operatorname{ker}(\operatorname{ad}_x)\right\},
+
+        i.e., the intersection of the kernels, or null spaces, of all basis elements in the
+        adjoint representation.
+
+        The kernel can be computed with ``scipy.linalg.null_space``, and vector space
+        intersections are computed recursively from pairwise intersections. The intersection
+        between two vectors spaces :math:`V_1` and :math:`V_2` given by (orthonormal) bases
+        :math:`\mathbb{B}_i` can be computed from
+        :math:`\operatorname{ker}([\mathbb{B}_1 | -\mathbb{B}_2])`. For an (orthonormal)
+        basis :math:`\{(u_1^{(i)}, u_2^{(i)})^T\}_i` of this kernel, a basis of the
+        intersection space :math:`V_1 \cap V_2` is given by :math:`\{\mathbb{B}_1 u_1^{(i)}\}_i`
+        (or equivalently by :math:`\{\mathbb{B}_2 u_2^{(i)}\}_i`).
+        Also see [this post](https://math.stackexchange.com/questions/25371/how-to-find-a-basis-for-the-intersection-of-two-vector-spaces-in-mathbbrn)
+        for details.
     """
     if len(g) < 2:
         # A length-zero list has zero center, a length-one list has full center
         return g
 
     adjoint_repr = structure_constants(g, pauli)
-    # Compute kernel for adjoint rep of each DLA element
-    kernels = [null_space(ad_x) for ad_x in adjoint_repr]
-    # If any kernels vanishes, their overlap vanishes as well
-    if any(k.shape[1] == 0 for k in kernels):
-        return []
-    # Compute the complements of the kernels
-    supports = [null_space(k.T) for k in kernels]
-    # Combine all complements
-    combined_support = np.hstack(supports)
-    if combined_support.shape[1] == 0:
-        return g
-    # Compute the complement of the combined complements: It is the intersection of the kernels
-    center_coefficients = null_space(combined_support.T)
+    # Start kernels intersection with kernel of first DLA element
+    kernel_intersection = null_space(adjoint_repr[0])
+    for ad_x in adjoint_repr[1:]:
+        # Compute the next kernel and intersect it with previous intersection
+        next_kernel = null_space(ad_x)
+        kernel_intersection = _intersect_bases(kernel_intersection, next_kernel)
+
+        # If the intersection is zero-dimensional, exit early
+        if kernel_intersection.shape[1] == 0:
+            return []
 
     # Construct operators from numerical output and convert to desired format
-    res = [qml.math.dot(c_coeffs, g) for c_coeffs in center_coefficients.T]
+    res = [sum(c * x for c, x in zip(c_coeffs, g)) for c_coeffs in kernel_intersection.T]
 
-    have_paulis = isinstance(g[0], (PauliWord, PauliSentence))
+    have_paulis = all(isinstance(x, (PauliWord, PauliSentence)) for x in res)
     if pauli or have_paulis:
         _ = [el.simplify() for el in res]
         if not pauli:
