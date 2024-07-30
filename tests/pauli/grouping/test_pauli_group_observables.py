@@ -71,7 +71,7 @@ class TestPauliGroupingStrategy:
         to anticommutativity."""
 
         observables = [PauliY(0), PauliZ(0) @ PauliZ(1), PauliY(0) @ PauliX(1)]
-        anticommuting_complement_adjacency_matrix = np.array([[0, 0, 1], [0, 0, 1], [1, 1, 0]])
+        anticommuting_complement_adjacency_matrix = np.array([[1, 0, 1], [0, 1, 1], [1, 1, 1]])
 
         grouping_instance = PauliGroupingStrategy(observables, "anticommuting")
         assert (grouping_instance.adj_matrix == anticommuting_complement_adjacency_matrix).all()
@@ -106,7 +106,7 @@ class TestPauliGroupingStrategy:
         """Constructing the complement of anticommutativity graph's adjacency matrix for a list of
         identity operations and various symmetric binary relations"""
 
-        anticommuting_complement_adjacency_matrix = np.array([[0, 1, 1], [1, 0, 1], [1, 1, 0]])
+        anticommuting_complement_adjacency_matrix = np.array([[1, 1, 1], [1, 1, 1], [1, 1, 1]])
 
         grouping_instance = PauliGroupingStrategy(observables, "anticommuting")
         assert (grouping_instance.adj_matrix == anticommuting_complement_adjacency_matrix).all()

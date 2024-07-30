@@ -244,35 +244,50 @@ def is_qwc_pauli_obs(pauli_obs_1, pauli_obs_2):
 
 
 def qwc_adj_matrix_from_symplectic(symplectic_matrix, grouping_type):
-    """Get adjacency matrix of (anti-)commuting graph based on grouping type
+    """Get adjacency matrix of (anti-)commuting graph based on grouping type.
+
+    This is the adjacency matrix of the complement graph. Based on symplectic representations and inner product of [1].
+
+    [1] Andrew Jena (2019). Partitioning Pauli Operators: in Theory and in Practice.
+    UWSpace. http://hdl.handle.net/10012/15017
 
     Args:
         symplectic_matrix (np.ndarray): 2D symplectic matrix. Each row corresponds to the
-        symplectic representation of the observables
+        symplectic representation of the Pauli observables.
         grouping_type (str): the binary relation used to define partitions of
             the Pauli words, can be ``'qwc'`` (qubit-wise commuting), ``'commuting'``, or
             ``'anticommuting'``.
 
     Returns:
-        np.ndarray: Adjacency matrix. Binary matrix such that adj_matrix[i,j] = 1 if observable
-        [i,j] do not (anti-)commute, as determined by the ``grouping_type``.
+        np.ndarray: Adjacency matrix. Binary matrix such that adj_matrix[i,j] = 1 if observables[i]
+        observables[j] do NOT (anti-)commute, as determined by the ``grouping_type``.
     """
 
     n_qubits = symplectic_matrix.shape[1] // 2
 
-    # Convert symplectic representation to integer format
-    mat1 = np.array(
+    # Convert symplectic representation to integer format.
+    # This is equivalent to the map: {0: I, 1: X, 2:Y, Z:3}
+    pauli_matrix_int = np.array(
         [2 * row[:n_qubits] + row[n_qubits:] for row in symplectic_matrix], dtype=np.int8
     )
-    mat2 = mat1[:, None]
-    # This is 0 (false-y) iff one of the operators is the identity and/or both operators are the same. In other cases, it is non-zero (truth-y).
-    qubit_anticommutation_mat = (mat1 * mat2) * (mat1 - mat2)
-    # 'adjacency_mat[i, j]' is True iff Paulis 'i' and 'j' do not commute in the given strategy.
+    # Broadcast the second dimension, sucht that pauli_matrix_broad.shape = (m, 1, n_qubits)
+    # with m = len(observables). This allows for calculation of all possible combinations of Pauli observable pairs (Pi, Pj).
+    # Something like: result[i, j, k] = pauli_matrix_int[i, k] * pauli_matrix_int[j, k]
+    pauli_matrix_broad = pauli_matrix_int[:, None]
+    # Calculate the symplectic inner product in [1], using the integer representation - hence the difference in the equation form.
+    # qubit_anticommutation_mat[i,j, k] is k=0 if Pi and Pj commute, else k!=0 if they anticommute.
+    qubit_anticommutation_mat = (pauli_matrix_int * pauli_matrix_broad) * (
+        pauli_matrix_int - pauli_matrix_broad
+    )
+    # 'adjacency_mat[i, j]' is True iff Paulis 'i' and 'j' do not (anti-)commute under given grouping_type.
     if grouping_type == "qwc":
+        # True if any term anti commutes
         adj_matrix = np.logical_or.reduce(qubit_anticommutation_mat, axis=2)
     elif grouping_type == "commuting":
+        # True if the number of anti commuting terms is odd (anti commte)
         adj_matrix = np.logical_xor.reduce(qubit_anticommutation_mat, axis=2)
-    else:  # anticommuting should be the only other option if validating the grouping_type correctly
+    else:
+        # True if the number of anti commuting terms is even (commute)
         adj_matrix = ~np.logical_xor.reduce(qubit_anticommutation_mat, axis=2)
 
     return adj_matrix
