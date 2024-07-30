@@ -146,6 +146,7 @@ def _rot_decomposition(U, wire, return_global_phase=False):
             angle = 2 * math.angle(U_det1[0, 1, 1]) % (4 * np.pi)
             operations = [qml.RZ(angle, wires=wire)]
             if return_global_phase:
+                alphas = math.squeeze(alphas)
                 operations.append(qml.GlobalPhase(-alphas))
             return operations
 
