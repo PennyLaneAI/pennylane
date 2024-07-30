@@ -18,11 +18,15 @@
   [(#5756)](https://github.com/PennyLaneAI/pennylane/pull/5756)
   [(#5987)](https://github.com/PennyLaneAI/pennylane/pull/5987)
 
+* A new `qml.from_qiskit_noise` method now allows one to convert a Qiskit ``NoiseModel`` to a
+  PennyLane ``NoiseModel`` via the Pennylane-Qiskit plugin.
+  [(#5996)](https://github.com/PennyLaneAI/pennylane/pull/5996)
+
 * A new function `qml.registers` has been added, enabling the creation of registers, which are implemented as a dictionary of `Wires` instances.
   [(#5957)](https://github.com/PennyLaneAI/pennylane/pull/5957)
 
-* The `split_to_single_terms` transform is added. This transform splits expectation values of sums 
-  into multiple single-term measurements on a single tape, providing better support for simulators 
+* The `split_to_single_terms` transform is added. This transform splits expectation values of sums
+  into multiple single-term measurements on a single tape, providing better support for simulators
   that can handle non-commuting observables but don't natively support multi-term observables.
   [(#5884)](https://github.com/PennyLaneAI/pennylane/pull/5884)
 
@@ -241,8 +245,10 @@
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
+
 Guillermo Alonso,
-Utkarsh Azad
+Utkarsh Azad,
+Ahmed Darwish,
 Astral Cai,
 Yushao Chen,
 Gabriel Bottrill,
