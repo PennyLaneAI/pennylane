@@ -19,7 +19,7 @@ import warnings
 from copy import copy
 from functools import wraps
 from inspect import signature
-from typing import List
+from typing import Any, Callable, Optional, Sequence, overload
 
 import numpy as np
 from scipy import sparse
@@ -35,7 +35,21 @@ from .controlled_decompositions import ctrl_decomp_bisect, ctrl_decomp_zyz
 from .symbolicop import SymbolicOp
 
 
-def ctrl(op, control, control_values=None, work_wires=None):
+@overload
+def ctrl(
+    op: Operator,
+    control: Any,
+    control_values: Optional[Sequence[bool]] = None,
+    work_wires: Optional[Any] = None,
+) -> Operator: ...
+@overload
+def ctrl(
+    op: Callable,
+    control: Any,
+    control_values: Optional[Sequence[bool]] = None,
+    work_wires: Optional[Any] = None,
+) -> Callable: ...
+def ctrl(op, control: Any, control_values=None, work_wires=None):
     """Create a method that applies a controlled version of the provided op.
     :func:`~.qjit` compatible.
 
@@ -178,7 +192,12 @@ def create_controlled_op(op, control, control_values=None, work_wires=None):
             "This error might occur if you apply ctrl to a list "
             "of operations instead of a function or Operator."
         )
+    if qml.capture.enabled():
+        return _capture_ctrl_transform(op, control, control_values, work_wires)
+    return _ctrl_transform(op, control, control_values, work_wires)
 
+
+def _ctrl_transform(op, control, control_values, work_wires):
     @wraps(op)
     def wrapper(*args, **kwargs):
         qscript = qml.tape.make_qscript(op)(*args, **kwargs)
@@ -203,6 +222,61 @@ def create_controlled_op(op, control, control_values=None, work_wires=None):
         return qscript.measurements
 
     return wrapper
+
+
+@functools.lru_cache  # only create the first time requested
+def _get_ctrl_qfunc_prim():
+    """See capture/explanations.md : Higher Order primitives for more information on this code."""
+    # if capture is enabled, jax should be installed
+    import jax  # pylint: disable=import-outside-toplevel
+
+    ctrl_prim = jax.core.Primitive("ctrl_transform")
+    ctrl_prim.multiple_results = True
+
+    @ctrl_prim.def_impl
+    def _(*args, n_control, jaxpr, control_values, work_wires, n_consts):
+        consts = args[:n_consts]
+        control_wires = args[-n_control:]
+        args = args[n_consts:-n_control]
+
+        with qml.queuing.AnnotatedQueue() as q:
+            jax.core.eval_jaxpr(jaxpr, consts, *args)
+        ops, _ = qml.queuing.process_queue(q)
+
+        for op in ops:
+            ctrl(op, control_wires, control_values, work_wires)
+        return []
+
+    @ctrl_prim.def_abstract_eval
+    def _(*_, **__):
+        return []
+
+    return ctrl_prim
+
+
+def _capture_ctrl_transform(qfunc: Callable, control, control_values, work_wires) -> Callable:
+    """Capture compatible way of performing an ctrl transform."""
+    # note that this logic is tested in `tests/capture/test_nested_plxpr.py`
+    import jax  # pylint: disable=import-outside-toplevel
+
+    ctrl_prim = _get_ctrl_qfunc_prim()
+
+    @wraps(qfunc)
+    def new_qfunc(*args, **kwargs):
+        jaxpr = jax.make_jaxpr(functools.partial(qfunc, **kwargs))(*args)
+        control_wires = qml.wires.Wires(control)  # make sure is iterable
+        ctrl_prim.bind(
+            *jaxpr.consts,
+            *args,
+            *control_wires,
+            jaxpr=jaxpr.jaxpr,
+            n_control=len(control_wires),
+            control_values=control_values,
+            work_wires=work_wires,
+            n_consts=len(jaxpr.consts),
+        )
+
+    return new_qfunc
 
 
 @functools.lru_cache()
@@ -322,11 +396,11 @@ class Controlled(SymbolicOp):
     >>> op.data
     (1.234,)
     >>> op.wires
-    <Wires = [0, 1]>
+    Wires([0, 1])
     >>> op.control_wires
-    <Wires = [0]>
+    Wires([0])
     >>> op.target_wires
-    <Wires = [1]>
+    Wires([1])
 
     Control values are lists of booleans, indicating whether or not to control on the
     ``0==False`` value or the ``1==True`` wire.
@@ -750,7 +824,7 @@ def _decompose_pauli_x_based_no_control_values(op: Controlled):
     )
 
 
-def _decompose_custom_ops(op: Controlled) -> List["operation.Operator"]:
+def _decompose_custom_ops(op: Controlled) -> list["operation.Operator"]:
     """Custom handling for decomposing a controlled operation"""
 
     pauli_x_based_ctrl_ops = _get_pauli_x_based_ops()
@@ -789,7 +863,7 @@ def _decompose_custom_ops(op: Controlled) -> List["operation.Operator"]:
     return None
 
 
-def _decompose_no_control_values(op: Controlled) -> List["operation.Operator"]:
+def _decompose_no_control_values(op: Controlled) -> list["operation.Operator"]:
     """Decompose without considering control values. Returns None if no decomposition."""
 
     decomp = _decompose_custom_ops(op)

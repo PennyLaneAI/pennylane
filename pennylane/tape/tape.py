@@ -16,6 +16,7 @@ This module contains the base quantum tape.
 """
 # pylint: disable=too-many-instance-attributes,protected-access,too-many-branches,too-many-public-methods, too-many-arguments
 import copy
+from collections.abc import Sequence
 from threading import RLock
 
 import pennylane as qml
@@ -408,7 +409,7 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
     >>> tape.get_parameters()
     [0.432, 0.543, 0.133]
     >>> tape.wires
-    <Wires = [0, 'a']>
+    Wires([0, 'a'])
     >>> tape.num_params
     3
 
@@ -540,5 +541,7 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
     def __hash__(self):
         return QuantumScript.__hash__(self)
 
+
+QuantumTapeBatch = Sequence[QuantumTape]
 
 register_pytree(QuantumTape, QuantumTape._flatten, QuantumTape._unflatten)

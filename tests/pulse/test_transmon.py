@@ -510,7 +510,7 @@ class TestIntegration:
         Hd = transmon_drive(amplitude=fa, phase=fb, freq=0.5, wires=[0])
         H = Hi + Hd
 
-        dev = qml.device("default.qubit.jax", wires=wires)
+        dev = qml.device("default.qubit")
 
         ts = jnp.array([0.0, 3.0])
         H_obj = sum(qml.PauliZ(i) for i in range(2))

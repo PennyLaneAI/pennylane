@@ -297,7 +297,7 @@ class TestSupportedGatesAndObservables:
         nwires = 4
         dq = qml.device("default.qubit", wires=nwires)
         dev = qml.device("default.tensor", wires=nwires, method=method)
-        np.random.seed(0)
+
         state = np.random.rand(2**nwires) + 1j * np.random.rand(2**nwires)
         state /= np.linalg.norm(state)
         wires = qml.wires.Wires(range(nwires))
@@ -405,7 +405,7 @@ class TestJaxSupport:
 
         jax = pytest.importorskip("jax")
         dev = qml.device("default.tensor", wires=1, method=method)
-        ref_dev = qml.device("default.qubit.jax", wires=1)
+        ref_dev = qml.device("default.qubit", wires=1)
 
         def circuit(x):
             qml.RX(x[1], wires=0)

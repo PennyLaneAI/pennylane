@@ -1,4 +1,4 @@
-# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2024 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -93,13 +93,14 @@ Transforms for error mitigation
     ~transforms.fold_global
     ~transforms.poly_extrapolate
     ~transforms.richardson_extrapolate
+    ~transforms.exponential_extrapolate
 
 Other transforms
 ~~~~~~~~~~~~~~~~
 
-These transforms use the :func:`pennylane.transform` function / decorator and can be used on
+These transforms use the :func:`pennylane.transform` function/decorator and can be used on
 :class:`pennylane.tape.QuantumTape`, :class:`pennylane.QNode`. They fulfill multiple purposes like circuit
-preprocessing, get information from a circuit and more.
+preprocessing, getting information from a circuit, and more.
 
 .. autosummary::
     :toctree: api
@@ -110,6 +111,7 @@ preprocessing, get information from a circuit and more.
     ~transforms.add_noise
     ~defer_measurements
     ~transforms.split_non_commuting
+    ~transforms.split_to_single_terms
     ~transforms.broadcast_expand
     ~transforms.hamiltonian_expand
     ~transforms.sign_expand
@@ -152,9 +154,9 @@ to help build custom QNode, quantum function, and tape transforms:
 Transforms developer functions
 ------------------------------
 
-:class:`~.TransformContainer`, :class:`~.TransformDispatcher` and  :class:`~.TransformProgram` are
+:class:`~.TransformContainer`, :class:`~.TransformDispatcher`, and  :class:`~.TransformProgram` are
 developer-facing objects that allow the
-creation, dispatching and composability of transforms. If you would like to make a custom transform, refer
+creation, dispatching, and composability of transforms. If you would like to make a custom transform, refer
 instead to the documentation of :func:`qml.transform <pennylane.transform>`.
 
 .. autosummary::
@@ -188,20 +190,20 @@ various circuit abstractions in PennyLane, the
 :func:`pennylane.transform` is available.
 
 This decorator registers transforms that accept a :class:`~.QuantumTape`
-as its primary input, and returns a sequence of :class:`~.QuantumTape`
+as its primary input and returns a sequence of :class:`~.QuantumTape`
 and an associated processing function.
 
-To illustrate the process of creating a quantum transform, let's consider a straightforward example. Suppose we want
+To illustrate the process of creating a quantum transform, let's consider an example. Suppose we want
 a transform that removes all :class:`~.RX` operations from a given circuit. In this case, we merely need to filter the
 original :class:`~.QuantumTape` and return a new one without the filtered operations. As we don't require a specific processing
 function in this scenario, we include a function that simply returns the first and only result.
 
 .. code-block:: python
 
-    from typing import Sequence, Callable
-    from pennylane.tape import QuantumTape
+    from pennylane.tape import QuantumTape, QuantumTapeBatch
+    from pennylane.typing import PostprocessingFn
 
-    def remove_rx(tape: QuantumTape) -> (Sequence[QuantumTape], Callable):
+    def remove_rx(tape: QuantumTape) -> tuple[QuantumTapeBatch, PostprocessingFn]:
 
         operations = filter(lambda op: op.name != "RX", tape.operations)
         new_tape = type(tape)(operations, tape.measurements, shots=tape.shots)
@@ -225,11 +227,11 @@ function into a quantum transform.
 
 .. code-block:: python
 
-    from typing import Sequence, Callable
-    from pennylane.tape import QuantumTape
+    from pennylane.tape import QuantumTape, QuantumTapeBatch
+    from pennylane.typing import PostprocessingFn
 
     @qml.transform
-    def sum_circuit_and_adjoint(tape: QuantumTape) -> (Sequence[QuantumTape], Callable):
+    def sum_circuit_and_adjoint(tape: QuantumTape) -> tuple[QuantumTapeBatch, PostprocessingFn]:
 
         operations = [qml.adjoint(op) for op in tape.operation]
         new_tape = type(tape)(operations, tape.measurements, shots=tape.shots)
@@ -249,9 +251,10 @@ passes on a QNode to maximize gate reduction before execution.
 .. code-block:: python
 
         dev = qml.device("default.qubit", wires=1)
+
         @qml.transforms.merge_rotations
         @qml.transforms.cancel_inverses
-        @qml.qnode(device=dev):
+        @qml.qnode(device=dev)
         def circuit(x, y):
             qml.Hadamard(wires=0)
             qml.Hadamard(wires=0)
@@ -264,11 +267,37 @@ passes on a QNode to maximize gate reduction before execution.
 In this example, inverses are canceled, leading to the removal of two Hadamard gates. Subsequently, rotations are
 merged into a single :class:`qml.Rot` gate. Consequently, two transforms are successfully applied to the circuit.
 
+
+Passing arguments to transforms
+-------------------------------
+
+We can decorate a QNode with ``@partial(transform_fn, **transform_kwargs)`` to provide additional keyword arguments to a transform function.
+In the following example, we pass the keyword argument ``grouping_strategy="wires"`` to the :func:`~.split_non_commuting` quantum transform,
+which splits a circuit into tapes measuring groups of commuting observables.
+
+.. code-block:: python
+
+        from functools import partial
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @partial(qml.transforms.split_non_commuting, grouping_strategy="wires")
+        @qml.qnode(dev)
+        def circuit(params):
+            qml.RX(params[0], wires=0)
+            qml.RZ(params[1], wires=1)
+            return [
+                qml.expval(qml.X(0)),
+                qml.expval(qml.Y(1)),
+                qml.expval(qml.Z(0) @ qml.Z(1)),
+                qml.expval(qml.X(0) @ qml.Z(1) + 0.5 * qml.Y(1) + qml.Z(0)),
+            ]
+
 Additional information
 ----------------------
 
 Explore practical examples of transforms focused on compiling circuits in the :doc:`compiling circuits documentation </introduction/compiling_circuits>`.
-For gradient transforms, refer to the examples in :doc:`gradients documentation <../code/qml_gradients>`.
+For gradient transforms, refer to the examples in the :doc:`gradients documentation <../code/qml_gradients>`.
 Discover quantum information transformations in the :doc:`quantum information documentation <../code/qml_qinfo>`. Finally,
 for a comprehensive overview of transforms and core functionalities, consult the :doc:`summary above <../code/qml_transforms>`.
 """
@@ -291,9 +320,16 @@ from .dynamic_one_shot import dynamic_one_shot, is_mcm
 from .sign_expand import sign_expand
 from .hamiltonian_expand import hamiltonian_expand, sum_expand
 from .split_non_commuting import split_non_commuting
+from .split_to_single_terms import split_to_single_terms
 from .insert_ops import insert
 
-from .mitigate import mitigate_with_zne, fold_global, poly_extrapolate, richardson_extrapolate
+from .mitigate import (
+    mitigate_with_zne,
+    fold_global,
+    poly_extrapolate,
+    richardson_extrapolate,
+    exponential_extrapolate,
+)
 from .optimization import (
     cancel_inverses,
     commute_controlled,
