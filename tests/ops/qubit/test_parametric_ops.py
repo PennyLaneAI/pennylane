@@ -2015,6 +2015,7 @@ class TestGrad:
         @qml.qnode(dev, diff_method=diff_method)
         def circuit(x):
             qml.Identity(wires[0])
+            qml.GlobalPhase(x, wires=[0, 1])  # Does not change the derivative, but tests it
             qml.Hadamard(wires[1])
             qml.ctrl(qml.GlobalPhase(x), control=wires[1])
             qml.Hadamard(wires[1])
