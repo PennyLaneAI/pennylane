@@ -680,7 +680,7 @@ class QNode:
             return QNode.get_best_method(device, interface, tape=tape)
 
         if diff_method == "parameter-shift":
-            if tape and any(isinstance(o, qml.operation.CV) for o in tape):
+            if tape and any(isinstance(o, qml.operation.CV) and o.name != "Identity" for o in tape):
                 return qml.gradients.param_shift_cv, {"dev": device}, device
             return qml.gradients.param_shift, {}, device
 
