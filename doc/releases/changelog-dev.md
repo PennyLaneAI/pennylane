@@ -18,11 +18,15 @@
   [(#5756)](https://github.com/PennyLaneAI/pennylane/pull/5756)
   [(#5987)](https://github.com/PennyLaneAI/pennylane/pull/5987)
 
+* A new `qml.from_qiskit_noise` method now allows one to convert a Qiskit ``NoiseModel`` to a
+  PennyLane ``NoiseModel`` via the Pennylane-Qiskit plugin.
+  [(#5996)](https://github.com/PennyLaneAI/pennylane/pull/5996)
+
 * A new function `qml.registers` has been added, enabling the creation of registers, which are implemented as a dictionary of `Wires` instances.
   [(#5957)](https://github.com/PennyLaneAI/pennylane/pull/5957)
 
-* The `split_to_single_terms` transform is added. This transform splits expectation values of sums 
-  into multiple single-term measurements on a single tape, providing better support for simulators 
+* The `split_to_single_terms` transform is added. This transform splits expectation values of sums
+  into multiple single-term measurements on a single tape, providing better support for simulators
   that can handle non-commuting observables but don't natively support multi-term observables.
   [(#5884)](https://github.com/PennyLaneAI/pennylane/pull/5884)
 
@@ -38,6 +42,12 @@
   [(#5972)](https://github.com/PennyLaneAI/pennylane/pull/5972)
 
 <h3>Improvements 🛠</h3>
+
+* During experimental program capture, the qnode can now use closure variables.
+  [(#6052)](https://github.com/PennyLaneAI/pennylane/pull/6052)
+
+* `GlobalPhase` now supports parameter broadcasting.
+  [(#5923)](https://github.com/PennyLaneAI/pennylane/pull/5923)
 
 * `qml.devices.LegacyDeviceFacade` has been added to map the legacy devices to the new
   device interface, obviating the need to upgrade older devices to the new API. 
@@ -62,6 +72,9 @@
 
 * `QuantumScript.hash` is now cached, leading to performance improvements.
   [(#5919)](https://github.com/PennyLaneAI/pennylane/pull/5919)
+
+* Applying `adjoint` to a quantum function can now be captured into plxpr.
+  [(#5966)](https://github.com/PennyLaneAI/pennylane/pull/5966)
 
 * Set operations are now supported by Wires.
   [(#5983)](https://github.com/PennyLaneAI/pennylane/pull/5983)
@@ -139,6 +152,11 @@
   [(#5842)](https://github.com/PennyLaneAI/pennylane/pull/5842)
 
 <h3>Breaking changes 💔</h3>
+
+* `GlobalPhase` is considered non-differentiable with tape transforms.
+  As a consequence, `qml.gradients.finite_diff` and `qml.gradients.spsa_grad` no longer
+  support differentiation of `GlobalPhase` with state-based outputs.
+  [(#5620)](https://github.com/PennyLaneAI/pennylane/pull/5620) 
 
 * The `CircuitGraph.graph` rustworkx graph now stores indices into the circuit as the node labels,
   instead of the operator/ measurement itself.  This allows the same operator to occur multiple times in
@@ -218,6 +236,12 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fix `jax.grad` + `jax.jit` not working for `AmplitudeEmbedding`, `StatePrep` and `MottonenStatePreparation`.
+  [(#5620)](https://github.com/PennyLaneAI/pennylane/pull/5620) 
+
+* Fix a bug where the global phase returned by `one_qubit_decomposition` gained a broadcasting dimension.
+  [(#5923)](https://github.com/PennyLaneAI/pennylane/pull/5923)
+
 * Fixed a bug in `qml.SPSAOptimizer` that ignored keyword arguments in the objective function.
   [(#6027)](https://github.com/PennyLaneAI/pennylane/pull/6027)
 
@@ -244,8 +268,11 @@
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
+
+Tarun Kumar Allamsetty,
 Guillermo Alonso,
-Utkarsh Azad
+Utkarsh Azad,
+Ahmed Darwish,
 Astral Cai,
 Yushao Chen,
 Gabriel Bottrill,
@@ -264,4 +291,5 @@ Vincent Michaud-Rioux,
 Anurav Modak,
 Mudit Pandey,
 Erik Schultheis,
-nate stemen.
+nate stemen,
+David Wierichs,
