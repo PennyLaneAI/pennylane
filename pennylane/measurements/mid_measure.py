@@ -310,7 +310,7 @@ class MidMeasureMP(MeasurementProcess):
         shots: Optional[int] = None,
         num_device_wires: int = 0,
     ) -> tuple:
-        return (), int
+        return (), bool
 
     def label(self, decimals=None, base_label=None, cache=None):  # pylint: disable=unused-argument
         r"""How the mid-circuit measurement is represented in diagrams and drawings.
