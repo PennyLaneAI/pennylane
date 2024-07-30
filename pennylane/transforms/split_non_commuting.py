@@ -632,7 +632,9 @@ def _processing_fn_no_grouping(
 
 def _processing_fn_with_grouping(
     res: ResultBatch,
-    single_term_obs_mps: dict[MeasurementProcess, tuple[list[int], list[Union[float, TensorLike]], int, int]],
+    single_term_obs_mps: dict[
+        MeasurementProcess, tuple[list[int], list[Union[float, TensorLike]], int, int]
+    ],
     offsets: list[Union[float, TensorLike]],
     group_sizes: list[int],
     shots: Shots,
@@ -700,8 +702,12 @@ def _processing_fn_with_grouping(
     return tuple(res_for_each_mp)
 
 
-
-def _sum_terms(res: ResultBatch, coeffs: list[Union[float, TensorLike]], offset: Union[float, TensorLike], shape: tuple) -> Result:
+def _sum_terms(
+    res: ResultBatch,
+    coeffs: list[Union[float, TensorLike]],
+    offset: Union[float, TensorLike],
+    shape: tuple,
+) -> Result:
     """Sum results from measurements of multiple terms in a multi-term observable."""
 
     # Trivially return the original result
