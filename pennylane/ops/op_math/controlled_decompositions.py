@@ -145,7 +145,7 @@ def _multi_controlled_zyz(
     # The decomposition of special zyz with multiple control wires
     # defined in Lemma 7.9 of https://arxiv.org/pdf/quant-ph/9503016
 
-    if not qml.math.allclose(0.0, global_phase, atol=1e-8, rtol=0):
+    if not qml.math.allclose(0.0, global_phase, atol=1e-6, rtol=0):
         raise ValueError(f"The global_phase should be zero, instead got: {global_phase}.")
 
     # Unpack the rotation angles
