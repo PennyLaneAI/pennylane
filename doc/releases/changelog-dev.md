@@ -43,6 +43,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* During experimental program capture, the qnode can now use closure variables.
+  [(#6052)](https://github.com/PennyLaneAI/pennylane/pull/6052)
+
 * `GlobalPhase` now supports parameter broadcasting.
   [(#5923)](https://github.com/PennyLaneAI/pennylane/pull/5923)
 
