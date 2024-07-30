@@ -124,6 +124,34 @@ def center(
         (or equivalently by :math:`\{\mathbb{B}_2 u_2^{(i)}\}_i`).
         Also see [this post](https://math.stackexchange.com/questions/25371/how-to-find-a-basis-for-the-intersection-of-two-vector-spaces-in-mathbbrn)
         for details.
+
+        If the input consists of :class:`~.pennylane.PauliWord` instances only, we can
+        instead compute pairwise commutators and know that the center consists solely of
+        basis elements that commute with all other basis elements. This can be seen in the
+        following way.
+        Assume that the center elements identified based on the basis have been removed
+        already and we are left with a basis :math:`\mathbb{B}=\{p_i\}_i` of Pauli
+        words such that :math:`\forall i\ \exists j:\ [p_i, p_j] \neq 0`. Assume that there is
+        another center element :math:`x`, which was missed before because it is a linear
+        combination of Pauli words:
+
+        .. math::
+
+            \forall j: \ [x, p_j] = [\sum_i x_i p_i, p_j] = 0.
+
+        As products of Paulis are unique when fixing one of the factors (:math:`p_j` is fixed
+        above), we then know that
+
+        .. math::
+
+            &\forall j: \ 0 = \sum_i x_i [p_i, p_j] = 2 \sum_i x_i \chi_{i,j} p_ip_j\\
+            \Rightarrow &\forall i,j such that \chi_{i,j}\neq 0: x_i = 0,
+
+        where denoted by :math:`\chi_{i,j}` an indicator that is :math:`0` if the commutator
+        :math:`[p_i, p_j]` vanishes and :math:`1` else.
+        However, we know that for each :math:`i` there is a :math:`j` such that
+        :math:`\chi_{i,j}\neq 0`. This means that :math:`x_i = 0\ \forall i` and therefore
+        :math:`x`, so that we did not miss a center element.
     """
     if len(g) < 2:
         # A length-zero list has zero center, a length-one list has full center
