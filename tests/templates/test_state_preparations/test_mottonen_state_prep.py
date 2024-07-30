@@ -430,16 +430,21 @@ def test_jacobians_with_and_without_jit_match(shots, atol):
         return qml.probs(wires=[0, 1])
 
     circuit_fd = qml.QNode(circuit, dev, diff_method="finite-diff", h=0.05)
+    circuit_ps = qml.QNode(circuit, dev, diff_method="parameter-shift")
     circuit_exact = qml.QNode(circuit, dev_no_shots)
 
     params = jax.numpy.array([0.5, 0.5, 0.5, 0.5])
     jac_exact_fn = jax.jacobian(circuit_exact)
-    jac_fn = jax.jacobian(circuit_fd)
-    jac_jit_fn = jax.jit(jac_fn)
+    jac_fd_fn = jax.jacobian(circuit_fd)
+    jac_fd_fn_jit = jax.jit(jac_fd_fn)
+    jac_ps_fn = jax.jacobian(circuit_ps)
+    jac_ps_fn_jit = jax.jit(jac_ps_fn)
 
     jac_exact = jac_exact_fn(params)
-    jac = jac_fn(params)
-    jac_jit = jac_jit_fn(params)
+    jac_fd = jac_fd_fn(params)
+    jac_fd_jit = jac_fd_fn_jit(params)
+    jac_ps = jac_ps_fn(params)
+    jac_ps_jit = jac_ps_fn_jit(params)
 
-    assert qml.math.allclose(jac_exact, jac_jit, atol=atol)
-    assert qml.math.allclose(jac, jac_jit, atol=atol)
+    for compare in [jac_fd, jac_fd_jit, jac_ps, jac_ps_jit]:
+        assert qml.math.allclose(jac_exact, compare, atol=atol)

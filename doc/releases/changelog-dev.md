@@ -4,16 +4,26 @@
 
 <h3>New features since last release</h3>
 
+* A new method `process_density_matrix` has been added to the `ProbabilityMP` and `DensityMatrixMP`
+  classes, allowing for more efficient handling of quantum density matrices, particularly with batch
+  processing support. This method simplifies the calculation of probabilities from quantum states
+  represented as density matrices.
+  [(#5830)](https://github.com/PennyLaneAI/pennylane/pull/5830)
+
 * Resolved the bug in `qml.ThermalRelaxationError` where there was a typo from `tq` to `tg`.
   [(#5988)](https://github.com/PennyLaneAI/pennylane/issues/5988)
-
-* A new method `process_density_matrix` has been added to the `ProbabilityMP` and `DensityMatrixMP` classes, allowing for more efficient handling of quantum density matrices, particularly with batch processing support. This method simplifies the calculation of probabilities from quantum states represented as density matrices.
-  [(#5830)](https://github.com/PennyLaneAI/pennylane/pull/5830)
 
 * The `qml.PrepSelPrep` template is added. The template implements a block-encoding of a linear
   combination of unitaries.
   [(#5756)](https://github.com/PennyLaneAI/pennylane/pull/5756)
   [(#5987)](https://github.com/PennyLaneAI/pennylane/pull/5987)
+
+* A new `qml.from_qiskit_noise` method now allows one to convert a Qiskit ``NoiseModel`` to a
+  PennyLane ``NoiseModel`` via the Pennylane-Qiskit plugin.
+  [(#5996)](https://github.com/PennyLaneAI/pennylane/pull/5996)
+
+* A new function `qml.registers` has been added, enabling the creation of registers, which are implemented as a dictionary of `Wires` instances.
+  [(#5957)](https://github.com/PennyLaneAI/pennylane/pull/5957)
 
 * The `split_to_single_terms` transform is added. This transform splits expectation values of sums
   into multiple single-term measurements on a single tape, providing better support for simulators
@@ -36,6 +46,13 @@
 * Added the decomposition of zyz for special unitaries with multiple control wires.
   [(#6042)](https://github.com/PennyLaneAI/pennylane/pull/6042)
 
+* `GlobalPhase` now supports parameter broadcasting.
+  [(#5923)](https://github.com/PennyLaneAI/pennylane/pull/5923)
+
+* `qml.devices.LegacyDeviceFacade` has been added to map the legacy devices to the new
+  device interface.
+  [(#5927)](https://github.com/PennyLaneAI/pennylane/pull/5927)
+
 * Added the `compute_sparse_matrix` method for `qml.ops.qubit.BasisStateProjector`.
   [(#5790)](https://github.com/PennyLaneAI/pennylane/pull/5790)
 
@@ -52,6 +69,12 @@
 
 * `QuantumScript.hash` is now cached, leading to performance improvements.
   [(#5919)](https://github.com/PennyLaneAI/pennylane/pull/5919)
+
+* Set operations are now supported by Wires.
+  [(#5983)](https://github.com/PennyLaneAI/pennylane/pull/5983)
+
+* `qml.dynamic_one_shot` now supports circuits using the `"tensorflow"` interface.
+  [(#5973)](https://github.com/PennyLaneAI/pennylane/pull/5973)
 
 * The representation for `Wires` has now changed to be more copy-paste friendly.
   [(#5958)](https://github.com/PennyLaneAI/pennylane/pull/5958)
@@ -111,6 +134,9 @@
   Hamiltonians.
   [(#5950)](https://github.com/PennyLaneAI/pennylane/pull/5950)
 
+* The `CNOT` operator no longer decomposes to itself. Instead, it raises a `qml.DecompositionUndefinedError`.
+  [(#6039)](https://github.com/PennyLaneAI/pennylane/pull/6039)
+
 <h4>Community contributions 🥳</h4>
 
 * `DefaultQutritMixed` readout error has been added using parameters `readout_relaxation_probs` and 
@@ -121,12 +147,17 @@
 
 <h3>Breaking changes 💔</h3>
 
+* `GlobalPhase` is considered non-differentiable with tape transforms.
+  As a consequence, `qml.gradients.finite_diff` and `qml.gradients.spsa_grad` no longer
+  support differentiation of `GlobalPhase` with state-based outputs.
+  [(#5620)](https://github.com/PennyLaneAI/pennylane/pull/5620) 
+
 * The `CircuitGraph.graph` rustworkx graph now stores indices into the circuit as the node labels,
   instead of the operator/ measurement itself.  This allows the same operator to occur multiple times in
   the circuit.
   [(#5907)](https://github.com/PennyLaneAI/pennylane/pull/5907)
 
-* `queue_idx` attribute has been removed from the `Operator`, `CompositeOp`, and `SymboliOp` classes.
+* `queue_idx` attribute has been removed from the `Operator`, `CompositeOp`, and `SymbolicOp` classes.
   [(#6005)](https://github.com/PennyLaneAI/pennylane/pull/6005)
 
 * `qml.from_qasm` no longer removes measurements from the QASM code. Use 
@@ -187,12 +218,23 @@
   Instead, use `default.qubit` as it now supports backpropagation through the several backends.
   [(#5997)](https://github.com/PennyLaneAI/pennylane/pull/5997)
 
+* The logic for internally switching a device for a different backpropagation
+  compatible device is now deprecated, as it was in place for the deprecated
+  `default.qubit.legacy`.
+  [(#6032)](https://github.com/PennyLaneAI/pennylane/pull/6032)
+
 <h3>Documentation 📝</h3>
 
 * Improves the docstring for `QuantumScript.expand` and `qml.tape.tape.expand_tape`.
   [(#5974)](https://github.com/PennyLaneAI/pennylane/pull/5974)
 
 <h3>Bug fixes 🐛</h3>
+
+* Fix `jax.grad` + `jax.jit` not working for `AmplitudeEmbedding`, `StatePrep` and `MottonenStatePreparation`.
+  [(#5620)](https://github.com/PennyLaneAI/pennylane/pull/5620) 
+
+* Fix a bug where the global phase returned by `one_qubit_decomposition` gained a broadcasting dimension.
+  [(#5923)](https://github.com/PennyLaneAI/pennylane/pull/5923)
 
 * Fixed a bug in `qml.SPSAOptimizer` that ignored keyword arguments in the objective function.
   [(#6027)](https://github.com/PennyLaneAI/pennylane/pull/6027)
@@ -220,9 +262,16 @@
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
+
+Tarun Kumar Allamsetty,
 Guillermo Alonso,
+<<<<<<< HEAD
 Ali Asadi,
 Utkarsh Azad
+=======
+Utkarsh Azad,
+Ahmed Darwish,
+>>>>>>> 74543ed865706b5b3f700084819e657013a55c88
 Astral Cai,
 Yushao Chen,
 Gabriel Bottrill,
@@ -230,15 +279,16 @@ Ahmed Darwish,
 Lillian M. A. Frederiksen,
 Pietropaolo Frisoni,
 Emiliano Godinez,
+Austin Huang,
 Renke Huang,
 Josh Izaac,
 Soran Jahangiri,
 Korbinian Kottmann,
 Christina Lee,
-Austin Huang,
 William Maxwell,
 Vincent Michaud-Rioux,
 Anurav Modak,
 Mudit Pandey,
 Erik Schultheis,
-nate stemen.
+nate stemen,
+David Wierichs,
