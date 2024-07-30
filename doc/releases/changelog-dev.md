@@ -4,9 +4,6 @@
 
 <h3>New features since last release</h3>
 
-* The `qml.cond` function can be captured into plxpr. 
-  [(#5999)](https://github.com/PennyLaneAI/pennylane/pull/5999)
-
 * A new method `process_density_matrix` has been added to the `ProbabilityMP` and `DensityMatrixMP`
   classes, allowing for more efficient handling of quantum density matrices, particularly with batch
   processing support. This method simplifies the calculation of probabilities from quantum states
@@ -74,8 +71,10 @@
   [(#5919)](https://github.com/PennyLaneAI/pennylane/pull/5919)
 
 * Applying `adjoint` and `ctrl` to a quantum function can now be captured into plxpr.
+  Furthermore, the `qml.cond` function can be captured into plxpr. 
   [(#5966)](https://github.com/PennyLaneAI/pennylane/pull/5966)
   [(#5967)](https://github.com/PennyLaneAI/pennylane/pull/5967)
+  [(#5999)](https://github.com/PennyLaneAI/pennylane/pull/5999)
 
 * Set operations are now supported by Wires.
   [(#5983)](https://github.com/PennyLaneAI/pennylane/pull/5983)

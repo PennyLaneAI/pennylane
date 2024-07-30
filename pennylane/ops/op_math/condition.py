@@ -484,13 +484,10 @@ def _get_cond_qfunc_prim():
         args = args_and_consts[:n_args]
         consts_flat = args_and_consts[n_args:]
 
-        consts_per_branch = []
         start = 0
-        for n in n_consts_per_branch:
-            consts_per_branch.append(consts_flat[start : start + n])
-            start += n
-
-        for pred, jaxpr, consts in zip(conditions, jaxpr_branches, consts_per_branch):
+        for pred, jaxpr, n_consts in zip(conditions, jaxpr_branches, n_consts_per_branch):
+            consts = consts_flat[start : start + n_consts]
+            start += n_consts
             if pred and jaxpr is not None:
                 return jax.core.eval_jaxpr(jaxpr.jaxpr, consts, *args)
 

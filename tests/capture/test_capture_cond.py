@@ -428,6 +428,11 @@ class TestCondCircuits:
         result = circuit_branches(pred, arg1, arg2)
         assert np.allclose(result, expected), f"Expected {expected}, but got {result}"
 
+        args = [pred, arg1, arg2]
+        jaxpr = jax.make_jaxpr(circuit_branches)(*args)
+        res_ev_jxpr = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *args)
+        assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
+
     @pytest.mark.parametrize(
         "pred, arg1, arg2, expected",
         [
@@ -439,6 +444,11 @@ class TestCondCircuits:
         """Test circuit with returned operators in the branches."""
         result = circuit_with_returned_operator(pred, arg1, arg2)
         assert np.allclose(result, expected), f"Expected {expected}, but got {result}"
+
+        args = [pred, arg1, arg2]
+        jaxpr = jax.make_jaxpr(circuit_with_returned_operator)(*args)
+        res_ev_jxpr = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *args)
+        assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
 
     @pytest.mark.parametrize(
         "tmp_pred, tmp_arg, expected",
@@ -452,6 +462,11 @@ class TestCondCircuits:
         result = circuit_multiple_cond(tmp_pred, tmp_arg)
         assert np.allclose(result, expected), f"Expected {expected}, but got {result}"
 
+        args = [tmp_pred, tmp_arg]
+        jaxpr = jax.make_jaxpr(circuit_multiple_cond)(*args)
+        res_ev_jxpr = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *args)
+        assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
+
     @pytest.mark.parametrize(
         "pred, arg, expected",
         [
@@ -464,3 +479,8 @@ class TestCondCircuits:
         """Test circuit with jaxpr constants."""
         result = circuit_with_consts(pred, arg)
         assert np.allclose(result, expected), f"Expected {expected}, but got {result}"
+
+        args = [pred, arg]
+        jaxpr = jax.make_jaxpr(circuit_with_consts)(*args)
+        res_ev_jxpr = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *args)
+        assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
