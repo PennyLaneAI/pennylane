@@ -25,7 +25,7 @@ def diagonalize_tape_measurements(tape, supported_base_obs=_default_supported_ob
 
     if bad_obs_input:
         raise ValueError(
-            "Supported base observables must be a subset of [PauliX, PauliY, PauliZ, Hadamard] "
+            "Supported base observables must be a subset of ['PauliX', 'PauliY', 'PauliZ', 'Hadamard'] "
             f"but received {list(bad_obs_input)}"
         )
 
@@ -66,15 +66,16 @@ def _check_if_diagonalizing(obs, _visited_obs, switch_basis):
         return False, _visited_obs
 
     # a different observable has been diagonalized on the same wire - error
-    if obs.wires in _visited_obs[1]:
-        raise RuntimeError(
+    if obs.wires[0] in _visited_obs[1]:
+        raise ValueError(
             f"Expected only a single observable per wire, but {obs} "
-            f"overlaps with other obserables on the tape."
+            f"overlaps with another observable on the tape."
         )
 
     # we diagonalize if it's an operator we are switching the basis for
     _visited_obs[0].append(obs)
     _visited_obs[1].append(obs.wires[0])
+
     return switch_basis, _visited_obs
 
 
@@ -187,11 +188,12 @@ def _diagonalize_hamiltonian(
 def _diagonalize_composite_op(
     observable: LinearCombination, _visited_obs, supported_base_obs=_default_supported_obs
 ):
-    diagonalizing_gates, new_operands = _get_obs_and_gates(
-        observable.operands, _visited_obs, supported_base_obs
-    )
 
-    new_observable = LinearCombination(observable.coeffs, new_operands)
+    coeffs, obs = observable.terms()
+
+    diagonalizing_gates, new_obs = _get_obs_and_gates(obs, _visited_obs, supported_base_obs)
+
+    new_observable = LinearCombination(coeffs, new_obs)
 
     return diagonalizing_gates, new_observable, _visited_obs
 
@@ -204,7 +206,6 @@ def _diagonalize_composite_op(
         observable.operands, _visited_obs, supported_base_obs
     )
 
-    print(new_operands)
     new_observable = observable.__class__(*new_operands)
 
     return diagonalizing_gates, new_observable, _visited_obs
