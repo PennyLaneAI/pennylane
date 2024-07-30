@@ -22,9 +22,7 @@ from pennylane.pauli import PauliSentence, PauliWord, center
 
 def test_trivial_center():
     """Test that the center of an empty list of generators is an empty list of generators."""
-    ops = []
-    res = center(ops)
-    assert res == []
+    assert center([]) == []
 
 
 DLA_CENTERS = (
@@ -39,8 +37,7 @@ DLA_CENTERS = (
 @pytest.mark.parametrize("ops, true_res", DLA_CENTERS)
 def test_center(ops, true_res):
     """Test centers with Identity operators or non-overlapping wires"""
-    res = center(ops)
-    assert res == true_res
+    assert center(ops) == true_res
 
 
 @pytest.mark.parametrize("ops, true_res", DLA_CENTERS)
@@ -50,19 +47,42 @@ def test_center_pauli(ops, true_res):
     res = center(ops, pauli=True)
 
     assert all(isinstance(op, PauliSentence) for op in res)
-    true_res = [op.pauli_rep for op in true_res]
-    assert res == true_res
+    assert res == [op.pauli_rep for op in true_res]
 
 
 @pytest.mark.parametrize("pauli", [False, True])
-def test_center_pauli_word_pauli_True(pauli):
+def test_center_pauli_word(pauli):
     """Test that PauliWord instances can be passed for both pauli=True/False"""
     words = [{0: "X"}, {0: "X", 1: "X"}, {1: "Y"}, {0: "X", 1: "Z"}]
     ops = list(map(PauliWord, words))
     if pauli:
-        assert qml.center(ops, pauli=pauli) == [PauliSentence({PauliWord({0: "X"}): 1.0})]
+        assert qml.center(ops, pauli=pauli) == [PauliWord({0: "X"})]
     else:
         assert qml.center(ops, pauli=pauli) == [qml.X(0)]
+
+
+@pytest.mark.parametrize("pauli", [False, True])
+def test_center_pauli_sentence(pauli):
+    """Test that PauliSentence instances can be passed for both pauli=True/False"""
+    words = [{0: "X"}, {0: "X", 1: "X"}, {1: "Y"}, {0: "X", 1: "Z"}]
+    words = list(map(PauliWord, words))
+    sentences = [
+        {words[0]: 0.5, words[1]: 3.2},
+        {words[0]: -0.2, words[2]: 2.5},
+        {words[2]: 1.2, words[3]: 0.72, words[1]: 0.6},
+        {words[1]: 0.9, words[2]: 1.8},
+    ]
+    sentences = list(map(PauliSentence, sentences))
+    if pauli:
+        cent = qml.center(sentences, pauli=pauli)
+        assert isinstance(cent, list) and len(cent) == 1
+        assert isinstance(cent[0], PauliSentence)
+        assert PauliWord({0: "X"}) in cent[0]
+    else:
+        cent = qml.center(sentences, pauli=pauli)
+        assert isinstance(cent, list) and len(cent) == 1
+        assert isinstance(cent[0], qml.ops.op_math.SProd)
+        assert cent[0].base == qml.X(0)
 
 
 c = 1 / np.sqrt(2)
@@ -81,5 +101,4 @@ GENERATOR_CENTERS = (
 def test_center_dla(generators, true_res):
     """Test computing the center for a non-trivial DLA"""
     g = qml.pauli.lie_closure(generators)
-    res = center(g)
-    assert res == true_res
+    assert center(g) == true_res

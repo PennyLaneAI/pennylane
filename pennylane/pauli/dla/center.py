@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """A function to compute the center of a Lie algebra"""
+from itertools import combinations
 from typing import Union
 
 import numpy as np
@@ -39,6 +40,23 @@ def _intersect_bases(basis_0, basis_1):
     # Normalize the output for cleaner results, because the augmented kernel was normalized
     intersection_basis = intersection_basis / norm(intersection_basis, axis=0)
     return intersection_basis
+
+
+def _center_pauli_words(g, pauli):
+    """Compute the center of an algebra given in a PauliWord basis."""
+    d = len(g)
+    commutators = np.zeros((d, d), dtype=int)
+    for (j, op1), (k, op2) in combinations(enumerate(g), r=2):
+        if not op1.commutes_with(op2):
+            commutators[j, k] = 1  # dummy value to indicate operators dont commute
+            commutators[k, j] = 1
+
+    mask = np.all(commutators == 0, axis=0)
+    res = list(np.array(g)[mask])
+
+    if not pauli:
+        res = [op.operation() for op in res]
+    return res
 
 
 def center(
@@ -110,6 +128,8 @@ def center(
     if len(g) < 2:
         # A length-zero list has zero center, a length-one list has full center
         return g
+    if all(isinstance(x, PauliWord) for x in g):
+        return _center_pauli_words(g, pauli)
 
     adjoint_repr = structure_constants(g, pauli)
     # Start kernels intersection with kernel of first DLA element
