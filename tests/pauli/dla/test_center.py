@@ -57,18 +57,12 @@ def test_center_pauli(ops, true_res):
 @pytest.mark.parametrize("pauli", [False, True])
 def test_center_pauli_word_pauli_True(pauli):
     """Test that PauliWord instances can be passed for both pauli=True/False"""
-    ops = [
-        PauliWord({0: "X"}),
-        PauliWord({0: "X", 1: "X"}),
-        PauliWord({1: "Y"}),
-        PauliWord({0: "X", 1: "Z"}),
-    ]
-    x0_pw = PauliWord({0: "X"})
-    center = qml.center(ops, pauli=pauli)
+    words = [{0: "X"}, {0: "X", 1: "X"}, {1: "Y"}, {0: "X", 1: "Z"}]
+    ops = list(map(PauliWord, words))
     if pauli:
-        assert center == [PauliSentence({x0_pw: 1.0})]
+        assert qml.center(ops, pauli=pauli) == [PauliSentence({PauliWord({0: "X"}): 1.0})]
     else:
-        assert center == [qml.X(0)]
+        assert qml.center(ops, pauli=pauli) == [qml.X(0)]
 
 
 c = 1 / np.sqrt(2)
