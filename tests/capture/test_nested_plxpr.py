@@ -256,7 +256,7 @@ class TestCtrlQfunc:
         plxpr = jax.make_jaxpr(f)(-0.5, 1, 2)
 
         # First equation of plxpr is the multiplication of x by 2
-        assert plxpr.eqns[1].params["n_consts"] == 1 # w1 is a const for the outer `ctrl`
+        assert plxpr.eqns[1].params["n_consts"] == 1  # w1 is a const for the outer `ctrl`
         assert (
             plxpr.eqns[1].invars[0] is plxpr.jaxpr.invars[1]
         )  # first input is first control wire, const
@@ -270,3 +270,37 @@ class TestCtrlQfunc:
         target = qml.Rot(1.2, 0.5, jax.numpy.array(2 * 1.2), wires=0)
         expected = qml.ctrl(qml.ctrl(target, 3), 4)
         qml.assert_equal(q.queue[0], expected)
+
+    @pytest.mark.parametrize("include_s", (True, False))
+    def test_extended_qfunc(self, include_s):
+        """Test that the qfunc can contain multiple operations and classical processing."""
+
+        def qfunc(x, wire, include_s=True):
+            qml.RX(2 * x, wire)
+            qml.RY(x + 1, wire + 1)
+            if include_s:
+                qml.S(wire)
+
+        def workflow(wire):
+            qml.ctrl(qfunc, 0)(0.5, wire, include_s=include_s)
+
+        jaxpr = jax.make_jaxpr(workflow)(1)
+
+        with qml.queuing.AnnotatedQueue() as q:
+            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2)
+
+        expected0 = qml.ctrl(qml.RX(jax.numpy.array(1.0), 2), 0)
+        expected1 = qml.ctrl(qml.RY(jax.numpy.array(1.5), 3), 0)
+        assert len(q.queue) == 2 + include_s
+        qml.assert_equal(q.queue[0], expected0)
+        qml.assert_equal(q.queue[1], expected1)
+        if include_s:
+            qml.assert_equal(q.queue[2], qml.ctrl(qml.S(2), 0))
+
+        eqn = jaxpr.eqns[0]
+        assert eqn.params["control_values"] == [True]
+        assert eqn.params["n_consts"] == 0
+        assert eqn.params["n_control"] == 1
+        assert eqn.params["work_wires"] is None
+
+        assert len(eqn.params["jaxpr"].eqns) == 5 + include_s
