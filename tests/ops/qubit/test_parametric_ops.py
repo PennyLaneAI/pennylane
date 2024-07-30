@@ -269,14 +269,13 @@ class TestDecompositions:
         assert np.allclose(res[0].data[0], phi)
 
         decomposed_matrix = res[0].matrix()
-        global_phase = np.exp(-1j * phi / 2)[..., np.newaxis, np.newaxis]
+        global_phase = np.exp(1j * phi / 2)[..., np.newaxis, np.newaxis]
 
         assert res[1].name == "GlobalPhase"
-        assert np.allclose(qml.matrix(res[1]), np.exp(1j * phi / 2))
+        assert np.allclose(qml.matrix(res[1]), global_phase)
 
-        assert np.allclose(decomposed_matrix, global_phase * op.matrix(), atol=tol, rtol=0)
-        if qml.math.shape(phi) == ():  # GlobalPhase matrix doesn't support batching
-            assert np.allclose(op.matrix(), qml.prod(*res[::-1]).matrix())
+        assert np.allclose(decomposed_matrix, (1 / global_phase) * op.matrix(), atol=tol, rtol=0)
+        assert np.allclose(op.matrix(), qml.prod(*res[::-1]).matrix())
 
     def test_Rot_decomposition(self):
         """Test the decomposition of Rot."""
@@ -710,20 +709,42 @@ class TestMatrix:
         assert np.allclose(qml.PhaseShift.compute_matrix(phi), expected, atol=tol, rtol=0)
         assert np.allclose(qml.U1.compute_matrix(phi), expected, atol=tol, rtol=0)
 
-    def test_global_phase(self, tol):
+    @pytest.mark.parametrize("n_wires", [0, 1, 2])
+    def test_global_phase(self, tol, n_wires):
         """Test GlobalPhase matrix is correct"""
 
+        wires = list(range(n_wires))
+        eye = np.eye(2**n_wires)
+        eye2 = np.eye(2)
         # test identity for theta=0
-        assert np.allclose(qml.GlobalPhase.compute_matrix(0), np.identity(2), atol=tol, rtol=0)
         assert np.allclose(
-            qml.GlobalPhase(0).matrix(wire_order=[0]), np.identity(2), atol=tol, rtol=0
+            qml.GlobalPhase.compute_matrix(0, n_wires=n_wires), eye, atol=tol, rtol=0
+        )
+        assert np.allclose(qml.GlobalPhase.compute_matrix(0), eye2, atol=tol, rtol=0)
+        assert np.allclose(qml.GlobalPhase(0).matrix(wire_order=wires), eye, atol=tol, rtol=0)
+
+        # test arbitrary global phase
+        phi = 0.5432
+        exp = np.exp(-1j * phi)
+        assert np.allclose(
+            qml.GlobalPhase.compute_matrix(phi, n_wires=n_wires), exp * eye, atol=tol, rtol=0
+        )
+        assert np.allclose(qml.GlobalPhase.compute_matrix(phi), exp * eye2, atol=tol, rtol=0)
+        assert np.allclose(
+            qml.GlobalPhase(phi).matrix(wire_order=wires), exp * eye, atol=tol, rtol=0
         )
 
-        # test arbitrary phase shift
-        phi = 0.5432
-        expected = np.array([[qml.math.exp(-1j * phi), 0], [0, qml.math.exp(-1j * phi)]])
-        assert np.allclose(qml.GlobalPhase.compute_matrix(phi), expected, atol=tol, rtol=0)
-        assert np.allclose(qml.GlobalPhase(phi).matrix(wire_order=[0]), expected, atol=tol, rtol=0)
+        # test arbitrary broadcasted global phase with non-default n_wires=0
+        phi = np.array([0.5, 0.4, 0.3])
+        expected = np.tensordot(np.exp(-1j * phi), eye, axes=0)
+        expected2 = np.tensordot(np.exp(-1j * phi), eye2, axes=0)
+        assert np.allclose(
+            qml.GlobalPhase.compute_matrix(phi, n_wires=n_wires), expected, atol=tol, rtol=0
+        )
+        assert np.allclose(qml.GlobalPhase.compute_matrix(phi), expected2, atol=tol, rtol=0)
+        assert np.allclose(
+            qml.GlobalPhase(phi).matrix(wire_order=wires), expected, atol=tol, rtol=0
+        )
 
     def test_identity(self, tol):
         """Test Identity matrix is correct with no wires"""
@@ -1698,19 +1719,29 @@ class TestEigvals:
         )
         assert np.allclose(op.eigvals(), expected)
 
-    def test_global_phase_eigvals(self):
+    @pytest.mark.parametrize("n_wires", [0, 1, 2])
+    def test_global_phase_eigvals(self, n_wires):
         """Test GlobalPhase eigenvalues are correct"""
 
+        dim = 2**n_wires
         # test identity for theta=0
-        op = qml.GlobalPhase(0.0)
-        assert np.allclose(op.compute_eigvals(*op.parameters, **op.hyperparameters), np.ones(2))
-        assert np.allclose(op.eigvals(), np.ones(2))
+        phi = 0.0
+        op = qml.GlobalPhase(phi, wires=list(range(n_wires)))
+        assert np.allclose(op.compute_eigvals(phi, n_wires=n_wires), np.ones(dim))
+        assert np.allclose(op.eigvals(), np.ones(dim))
 
-        # test arbitrary phase shift
+        # test arbitrary global phase
         phi = 0.5432
-        op = qml.GlobalPhase(phi)
-        expected = np.array([np.exp(-1j * phi), np.exp(-1j * phi)])
-        assert np.allclose(op.compute_eigvals(*op.parameters, **op.hyperparameters), expected)
+        op = qml.GlobalPhase(phi, wires=list(range(n_wires)))
+        expected = np.array([np.exp(-1j * phi)] * dim)
+        assert np.allclose(op.compute_eigvals(phi, n_wires=n_wires), expected)
+        assert np.allclose(op.eigvals(), expected)
+
+        # test arbitrary broadcasted global phase
+        phi = np.array([0.5, 0.4, 0.3])
+        op = qml.GlobalPhase(phi, wires=list(range(n_wires)))
+        expected = np.array([np.exp(-1j * p) * np.ones(dim) for p in phi])
+        assert np.allclose(op.compute_eigvals(phi, n_wires=n_wires), expected)
         assert np.allclose(op.eigvals(), expected)
 
 
@@ -2790,10 +2821,8 @@ class TestPauliRot:
         qml.assert_equal(decomp_op, qml.GlobalPhase(theta / 2))
 
         op_matrices = op.matrix()
-        decomp_op_matrices = decomp_op.matrix().T
-        assert len(op_matrices) == len(decomp_op_matrices)
-        for op_matrix, decomp_phase in zip(op_matrices, decomp_op_matrices):
-            assert qml.math.allclose(op_matrix, decomp_phase * np.eye(4))
+        decomp_op_matrices = decomp_op.matrix(wire_order=[0, 1])
+        assert qml.math.allclose(op_matrices, decomp_op_matrices)
 
     @pytest.mark.parametrize("theta", [0.4, np.array([np.pi / 3, 0.1, -0.9])])
     def test_PauliRot_decomposition_ZZ(self, theta):
@@ -3922,12 +3951,21 @@ def test_diagonalization_static_global_phase():
 @pytest.mark.parametrize("phi", [0.123, np.pi / 4, 0])
 @pytest.mark.parametrize("n_wires", [0, 1, 2])
 def test_global_phase_compute_sparse_matrix(phi, n_wires):
-    """Test that compute_sparse_matrix"""
+    """Test compute_sparse_matrix"""
 
     sparse_matrix = qml.GlobalPhase.compute_sparse_matrix(phi, n_wires=n_wires)
     expected = np.exp(-1j * phi) * sparse.eye(int(2**n_wires), format="csr")
 
     assert np.allclose(sparse_matrix.todense(), expected.todense())
+
+
+@pytest.mark.parametrize("n_wires", [0, 1, 2])
+def test_global_phase_compute_sparse_matrix_broadcasted_raises(n_wires):
+    """Test that compute_sparse_matrix raises an error for broadcasted GlobalPhase"""
+
+    phi = np.array([0.123, np.pi / 4, 0])
+    with pytest.raises(qml.operation.SparseMatrixUndefinedError, match="broadcasting"):
+        _ = qml.GlobalPhase.compute_sparse_matrix(phi, n_wires=n_wires)
 
 
 def test_decomposition():
