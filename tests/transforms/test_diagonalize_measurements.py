@@ -236,6 +236,7 @@ class TestDiagonalizeObservable:
     def test_diagonalizing_unknown_observable_raises_error(self):
         """Test that an unknown observable raises an error when diagonalizing"""
 
+        # pylint: disable=too-few-public-methods
         class MyObs(qml.operation.Observable):
 
             @property
