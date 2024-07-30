@@ -788,7 +788,7 @@ class TestShotsIntegration:
             return qml.expval(qml.PauliY(1))
 
         res = jax.grad(cost_fn, argnums=[0, 1])(a, b, shots=30000)
-        assert dev.shots == 1
+        assert dev.shots == qml.measurements.Shots(1)
 
         expected = [np.sin(a) * np.sin(b), -np.cos(a) * np.cos(b)]
         assert np.allclose(res, expected, atol=0.1, rtol=0)

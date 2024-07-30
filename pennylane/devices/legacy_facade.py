@@ -17,7 +17,7 @@ new interface.
 """
 import warnings
 
-# pylint: disable=not-callable
+# pylint: disable=not-callable, unused-argument
 from contextlib import contextmanager
 from dataclasses import replace
 
@@ -139,7 +139,7 @@ class LegacyDeviceFacade(Device):
 
     """
 
-    def __new__(cls, device: "qml.devices.LegacyDevice"):
+    def __new__(cls, device: "qml.devices.LegacyDevice", *args, **kwargs):
         return device if isinstance(device, cls) else super().__new__(cls)
 
     # pylint: disable=super-init-not-called
@@ -238,8 +238,10 @@ class LegacyDeviceFacade(Device):
 
     def _setup_device_config(self, execution_config):
         tape = qml.tape.QuantumScript([], [])
+
         if not self._validate_device_method(tape):
             raise qml.DeviceError("device does not support device derivatives")
+
         updated_values = {}
         if execution_config.use_device_gradient is None:
             updated_values["use_device_gradient"] = True

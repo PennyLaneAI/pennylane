@@ -280,9 +280,6 @@ class TransformDispatcher:
         if self._final_transform:
             raise TransformError("Device transform does not support final transforms.")
 
-        if originally_facaded := isinstance(original_device, qml.devices.LegacyDeviceFacade):
-            original_device = original_device.target_device
-
         class TransformedDevice(type(original_device)):
             """A transformed device with updated preprocess method."""
 
@@ -310,9 +307,6 @@ class TransformDispatcher:
                 return self._original_device
 
         new_dev = TransformedDevice(original_device, self._transform)
-
-        if originally_facaded:
-            new_dev = qml.devices.LegacyDeviceFacade(new_dev)
 
         return new_dev
 
