@@ -17,16 +17,15 @@ Defines classes that take the vjps, jvps, and jacobians of circuits.
 import abc
 import inspect
 import logging
-from typing import Tuple, Callable, Optional, Union
+from collections.abc import Callable, Sequence
+from typing import Optional, Union
 
-from cachetools import LRUCache
 import numpy as np
+from cachetools import LRUCache
 
 import pennylane as qml
-from pennylane.tape import QuantumScript
+from pennylane.tape import QuantumTapeBatch
 from pennylane.typing import ResultBatch, TensorLike
-
-Batch = Tuple[QuantumScript]
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -77,14 +76,14 @@ class JacobianProductCalculator(abc.ABC):
 
     @abc.abstractmethod
     def execute_and_compute_jvp(
-        self, tapes: Batch, tangents: Tuple[Tuple[TensorLike]]
-    ) -> Tuple[ResultBatch, Tuple]:
+        self, tapes: QuantumTapeBatch, tangents: Sequence[Sequence[TensorLike]]
+    ) -> tuple[ResultBatch, tuple]:
         """Calculate both the results for a batch of tapes and the jvp.
 
         This method is required to compute JVPs in the JAX interface.
 
         Args:
-            tapes (tuple[.QuantumScript]): The batch of tapes to take the derivatives of
+            tapes (Sequence[.QuantumScript | .QuantumTape]): The batch of tapes to take the derivatives of
             tangents (Sequence[Sequence[TensorLike]]): the tangents for the parameters of the tape.
                 The ``i`` th tangent corresponds to the ``i`` th tape, and the ``j`` th entry into a
                 tangent entry corresponds to the ``j`` th trainable parameter of the tape.
@@ -118,7 +117,7 @@ class JacobianProductCalculator(abc.ABC):
         """
 
     @abc.abstractmethod
-    def compute_vjp(self, tapes: Batch, dy: Tuple[Tuple[TensorLike]]) -> Tuple:
+    def compute_vjp(self, tapes: QuantumTapeBatch, dy: Sequence[Sequence[TensorLike]]) -> tuple:
         """Compute the vjp for a given batch of tapes.
 
         This method is used by autograd, torch, and tensorflow to compute VJPs.
@@ -158,7 +157,7 @@ class JacobianProductCalculator(abc.ABC):
         """
 
     @abc.abstractmethod
-    def compute_jacobian(self, tapes: Batch) -> Tuple:
+    def compute_jacobian(self, tapes: QuantumTapeBatch) -> tuple:
         """Compute the full Jacobian for a batch of tapes.
 
         This method is required to compute Jacobians in the ``tensorflow`` interface
@@ -182,7 +181,7 @@ class JacobianProductCalculator(abc.ABC):
         """
 
     @abc.abstractmethod
-    def execute_and_compute_jacobian(self, tapes: Batch) -> Tuple:
+    def execute_and_compute_jacobian(self, tapes: QuantumTapeBatch) -> tuple[ResultBatch, tuple]:
         """Compute the results and the full Jacobian for a batch of tapes.
 
         This method is required to compute Jacobians in the ``jax-jit`` interface
@@ -241,7 +240,7 @@ class TransformJacobianProducts(JacobianProductCalculator):
     def __init__(
         self,
         inner_execute: Callable,
-        gradient_transform: "pennylane.transforms.core.TransformDispatcher",
+        gradient_transform: "qml.transforms.core.TransformDispatcher",
         gradient_kwargs: Optional[dict] = None,
         cache_full_jacobian: bool = False,
     ):
@@ -265,7 +264,9 @@ class TransformJacobianProducts(JacobianProductCalculator):
         self._cache_full_jacobian = cache_full_jacobian
         self._cache = LRUCache(maxsize=10)
 
-    def execute_and_compute_jvp(self, tapes: Batch, tangents: Tuple[Tuple[TensorLike]]):
+    def execute_and_compute_jvp(
+        self, tapes: QuantumTapeBatch, tangents: Sequence[Sequence[TensorLike]]
+    ):
         if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
             logger.debug("execute_and_compute_jvp called with (%s, %s)", tapes, tangents)
 
@@ -288,7 +289,7 @@ class TransformJacobianProducts(JacobianProductCalculator):
         jvps = jvp_processing_fn(jvp_results)
         return tuple(results), tuple(jvps)
 
-    def compute_vjp(self, tapes: Batch, dy: Tuple[Tuple[TensorLike]]):
+    def compute_vjp(self, tapes: QuantumTapeBatch, dy: Sequence[Sequence[TensorLike]]):
         if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
             logger.debug("compute_vjp called with (%s, %s)", tapes, dy)
 
@@ -303,7 +304,7 @@ class TransformJacobianProducts(JacobianProductCalculator):
         vjp_results = self._inner_execute(tuple(vjp_tapes))
         return tuple(processing_fn(vjp_results))
 
-    def execute_and_compute_jacobian(self, tapes: Batch):
+    def execute_and_compute_jacobian(self, tapes: QuantumTapeBatch):
         if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
             logger.debug("execute_and_compute_jacobian called with %s", tapes)
 
@@ -318,7 +319,7 @@ class TransformJacobianProducts(JacobianProductCalculator):
         jacs = jac_postprocessing(jac_results)
         return tuple(results), tuple(jacs)
 
-    def compute_jacobian(self, tapes: Batch):
+    def compute_jacobian(self, tapes: QuantumTapeBatch):
         if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
             logger.debug("compute_jacobian called with %s", tapes)
         if tapes in self._cache:
@@ -414,46 +415,46 @@ class DeviceDerivatives(JacobianProductCalculator):
         self._execution_config = execution_config
         self._gradient_kwargs = gradient_kwargs
 
-        self._uses_new_device = not isinstance(device, qml.Device)
+        self._uses_new_device = not isinstance(device, qml.devices.LegacyDevice)
 
         # only really need to keep most recent entry, but keeping 10 around just in case
         self._results_cache = LRUCache(maxsize=10)
         self._jacs_cache = LRUCache(maxsize=10)
 
-    def _dev_execute_and_compute_derivatives(self, tapes: Batch):
+    def _dev_execute_and_compute_derivatives(self, tapes: QuantumTapeBatch):
         """
         Converts tapes to numpy before computing the the results and derivatives on the device.
 
         Dispatches between the two different device interfaces.
         """
-        numpy_tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
+        numpy_tapes, _ = qml.transforms.convert_to_numpy_parameters(tapes)
         if self._uses_new_device:
             return self._device.execute_and_compute_derivatives(numpy_tapes, self._execution_config)
         return self._device.execute_and_gradients(numpy_tapes, **self._gradient_kwargs)
 
-    def _dev_execute(self, tapes: Batch):
+    def _dev_execute(self, tapes: QuantumTapeBatch):
         """
         Converts tapes to numpy before computing just the results on the device.
 
         Dispatches between the two different device interfaces.
         """
-        numpy_tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
+        numpy_tapes, _ = qml.transforms.convert_to_numpy_parameters(tapes)
         if self._uses_new_device:
             return self._device.execute(numpy_tapes, self._execution_config)
         return self._device.batch_execute(numpy_tapes)
 
-    def _dev_compute_derivatives(self, tapes: Batch):
+    def _dev_compute_derivatives(self, tapes: QuantumTapeBatch):
         """
         Converts tapes to numpy before computing the derivatives on the device.
 
         Dispatches between the two different device interfaces.
         """
-        numpy_tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
+        numpy_tapes, _ = qml.transforms.convert_to_numpy_parameters(tapes)
         if self._uses_new_device:
             return self._device.compute_derivatives(numpy_tapes, self._execution_config)
         return self._device.gradients(numpy_tapes, **self._gradient_kwargs)
 
-    def execute_and_cache_jacobian(self, tapes: Batch):
+    def execute_and_cache_jacobian(self, tapes: QuantumTapeBatch):
         """Forward pass used to cache the results and jacobians.
 
         Args:
@@ -473,7 +474,7 @@ class DeviceDerivatives(JacobianProductCalculator):
         self._jacs_cache[tapes] = jac
         return results
 
-    def execute_and_compute_jvp(self, tapes: Batch, tangents):
+    def execute_and_compute_jvp(self, tapes: QuantumTapeBatch, tangents):
         """Calculate both the results for a batch of tapes and the jvp.
 
         This method is required to compute JVPs in the JAX interface.
@@ -665,18 +666,18 @@ class DeviceJacobianProducts(JacobianProductCalculator):
         self._execution_config = execution_config
 
     def execute_and_compute_jvp(
-        self, tapes: Batch, tangents: Tuple[Tuple[TensorLike]]
-    ) -> Tuple[ResultBatch, Tuple]:
+        self, tapes: QuantumTapeBatch, tangents: Sequence[Sequence[TensorLike]]
+    ) -> tuple[ResultBatch, tuple]:
         if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
             logger.debug("execute_and_compute_jvp called with (%s, %s)", tapes, tangents)
-        numpy_tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
+        numpy_tapes, _ = qml.transforms.convert_to_numpy_parameters(tapes)
         tangents = qml.math.unwrap(tangents)
         return self._device.execute_and_compute_jvp(numpy_tapes, tangents, self._execution_config)
 
-    def compute_vjp(self, tapes: Batch, dy: Tuple[Tuple[TensorLike]]) -> Tuple:
+    def compute_vjp(self, tapes: QuantumTapeBatch, dy: Sequence[Sequence[TensorLike]]) -> tuple:
         if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
             logger.debug("compute_vjp called with (%s, %s)", tapes, dy)
-        numpy_tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
+        numpy_tapes, _ = qml.transforms.convert_to_numpy_parameters(tapes)
         dy = qml.math.unwrap(dy)
         vjps = self._device.compute_vjp(numpy_tapes, dy, self._execution_config)
         res = []
@@ -687,16 +688,16 @@ class DeviceJacobianProducts(JacobianProductCalculator):
                 res.append(r)
         return res
 
-    def compute_jacobian(self, tapes: Batch):
+    def compute_jacobian(self, tapes: QuantumTapeBatch):
         if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
             logger.debug("compute_jacobian called with %s", tapes)
-        numpy_tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
+        numpy_tapes, _ = qml.transforms.convert_to_numpy_parameters(tapes)
         return self._device.compute_derivatives(numpy_tapes, self._execution_config)
 
-    def execute_and_compute_jacobian(self, tapes: Batch) -> Tuple:
+    def execute_and_compute_jacobian(self, tapes: QuantumTapeBatch) -> tuple:
         if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
             logger.debug("execute_and_compute_jacobian called with %s", tapes)
-        numpy_tapes = tuple(qml.transforms.convert_to_numpy_parameters(t) for t in tapes)
+        numpy_tapes, _ = qml.transforms.convert_to_numpy_parameters(tapes)
         return self._device.execute_and_compute_derivatives(numpy_tapes, self._execution_config)
 
 
@@ -739,8 +740,8 @@ class LightningVJPs(DeviceDerivatives):
         ):
             raise NotImplementedError("Lightning device VJPs only support expectation values.")
         results = []
-        for dyi, tape in zip(dy, tapes):
-            numpy_tape = qml.transforms.convert_to_numpy_parameters(tape)
+        numpy_tapes, _ = qml.transforms.convert_to_numpy_parameters(tapes)
+        for dyi, tape in zip(dy, numpy_tapes):
             if len(tape.measurements) == 1:
                 dyi = (dyi,)
             dyi = np.array(qml.math.unwrap(dyi))
@@ -748,10 +749,8 @@ class LightningVJPs(DeviceDerivatives):
                 raise NotImplementedError(
                     "Lightning device VJPs are not supported with jax jacobians."
                 )
-            vjp_f = self._device.vjp(
-                numpy_tape.measurements, dyi, **self._processed_gradient_kwargs
-            )
-            out = vjp_f(numpy_tape)
+            vjp_f = self._device.vjp(tape.measurements, dyi, **self._processed_gradient_kwargs)
+            out = vjp_f(tape)
             if len(tape.trainable_params) == 1:
                 out = (out,)
             results.append(out)

@@ -16,7 +16,8 @@ Processing functions for circuit cutting.
 """
 
 import string
-from typing import List, Sequence
+from collections.abc import Sequence
+
 from networkx import MultiDiGraph
 
 import pennylane as qml
@@ -83,7 +84,7 @@ def qcut_processing_fn(
 
 def qcut_processing_fn_sample(
     results: Sequence, communication_graph: MultiDiGraph, shots: int
-) -> List:
+) -> list:
     """
     Function to postprocess samples for the :func:`cut_circuit_mc() <pennylane.cut_circuit_mc>`
     transform. This removes superfluous mid-circuit measurement samples from fragment
@@ -186,7 +187,7 @@ def qcut_processing_fn_mc(
     return qml.math.convert_like(pnp.mean(expvals), res0)
 
 
-def _reshape_results(results: Sequence, shots: int) -> List[List]:
+def _reshape_results(results: Sequence, shots: int) -> list[list]:
     """
     Helper function to reshape ``results`` into a two-dimensional nested list whose number of rows
     is determined by the number of shots and whose number of columns is determined by the number of
@@ -427,7 +428,7 @@ def _to_tensors(
     results,
     prepare_nodes: Sequence[Sequence[PrepareNode]],
     measure_nodes: Sequence[Sequence[MeasureNode]],
-) -> List:
+) -> list:
     """Process a flat list of execution results from all circuit fragments into the corresponding
     tensors.
 

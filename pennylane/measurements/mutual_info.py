@@ -15,8 +15,9 @@
 """
 This module contains the qml.mutual_info measurement.
 """
+from collections.abc import Sequence
 from copy import copy
-from typing import Sequence, Optional
+from typing import Optional
 
 import pennylane as qml
 from pennylane.wires import Wires
@@ -79,7 +80,9 @@ def mutual_info(wires0, wires1, log_base=None):
     wires1 = qml.wires.Wires(wires1)
 
     # the subsystems cannot overlap
-    if [wire for wire in wires0 if wire in wires1]:
+    if not any(qml.math.is_abstract(w) for w in wires0 + wires1) and [
+        wire for wire in wires0 if wire in wires1
+    ]:
         raise qml.QuantumFunctionError(
             "Subsystems for computing mutual information must not overlap."
         )
@@ -89,7 +92,7 @@ def mutual_info(wires0, wires1, log_base=None):
 class MutualInfoMP(StateMeasurement):
     """Measurement process that computes the mutual information between the provided wires.
 
-    Please refer to :func:`mutual_info` for detailed documentation.
+    Please refer to :func:`pennylane.mutual_info` for detailed documentation.
 
     Args:
         wires (Sequence[.Wires]): The wires the measurement process applies to.
@@ -112,6 +115,14 @@ class MutualInfoMP(StateMeasurement):
     ):
         self.log_base = log_base
         super().__init__(wires=wires, id=id)
+
+    # pylint: disable=arguments-differ
+    @classmethod
+    def _primitive_bind_call(cls, wires: Sequence, **kwargs):
+        if cls._wires_primitive is None:  # pragma: no cover
+            # just a safety check
+            return type.__call__(cls, wires=wires, **kwargs)  # pragma: no cover
+        return cls._wires_primitive.bind(*wires[0], *wires[1], n_wires0=len(wires[0]), **kwargs)
 
     def __repr__(self):
         return f"MutualInfo(wires0={self.raw_wires[0].tolist()}, wires1={self.raw_wires[1].tolist()}, log_base={self.log_base})"
@@ -158,3 +169,12 @@ class MutualInfoMP(StateMeasurement):
             c_dtype=state.dtype,
             base=self.log_base,
         )
+
+
+if MutualInfoMP._wires_primitive is not None:
+
+    @MutualInfoMP._wires_primitive.def_impl
+    def _(*all_wires, n_wires0, **kwargs):
+        wires0 = all_wires[:n_wires0]
+        wires1 = all_wires[n_wires0:]
+        return type.__call__(MutualInfoMP, wires=(wires0, wires1), **kwargs)

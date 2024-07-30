@@ -14,12 +14,13 @@
 """Unit Tests for the Fermionic representation classes."""
 import pickle
 from copy import copy, deepcopy
+
 import numpy as np
 import pytest
 
-
+import pennylane as qml
 from pennylane import numpy as pnp
-from pennylane.fermi.fermionic import FermiSentence, FermiWord, from_string
+from pennylane.fermi.fermionic import FermiSentence, FermiWord, _to_string, from_string
 
 # pylint: disable=too-many-public-methods
 
@@ -123,6 +124,22 @@ class TestFermiWord:
         """Test that an error is raised if the operator orders are not correct."""
         with pytest.raises(ValueError, match="The operator indices must belong to the set"):
             FermiWord(operator)
+
+    def test_to_mat(self):
+        """Test that the matrix representation of FermiWord is correct."""
+
+        expected_mat = np.zeros((4, 4), dtype=complex)
+        expected_mat[2, 1] = 1.0
+
+        mat = fw1.to_mat()
+        assert np.allclose(mat, expected_mat)
+
+    def test_to_mat_error(self):
+        """Test that an error is raised if the requested matrix dimension is smaller than the
+        dimension inferred from the largest orbital index.
+        """
+        with pytest.raises(ValueError, match="n_orbitals cannot be smaller than 2"):
+            fw1.to_mat(n_orbitals=1)
 
 
 class TestFermiWordArithmetic:
@@ -441,6 +458,14 @@ fs2_hamiltonian = FermiSentence({fw1: -1.23, fw2: -4, fw3: 0.5})
 fs3 = FermiSentence({fw3: -0.5, fw4: 1})
 fs4 = FermiSentence({fw4: 1})
 fs5 = FermiSentence({})
+fs6 = FermiSentence({fw1: 1.2, fw2: 3.1})
+fs7 = FermiSentence(
+    {
+        FermiWord({(0, 0): "+", (1, 1): "-"}): 1.23,  # a+(0) a(1)
+        FermiWord({(0, 0): "+", (1, 0): "-"}): 4.0j,  # a+(0) a(0) = n(0) (number operator)
+        FermiWord({(0, 0): "+", (1, 2): "-", (2, 1): "+"}): -0.5,  # a+(0) a(2) a+(1)
+    }
+)
 
 fs1_x_fs2 = FermiSentence(  # fs1 * fs1, computed by hand
     {
@@ -598,6 +623,25 @@ class TestFermiSentence:
         serialization = pickle.dumps(fs)
         new_fs = pickle.loads(serialization)
         assert fs == new_fs
+
+    def test_to_mat(self):
+        """Test that the matrix representation of FermiSentence is correct."""
+        expected_mat = np.zeros((8, 8), dtype=complex)
+        expected_mat[4, 2] = 1.23 + 0j
+        expected_mat[5, 3] = 1.23 + 0j
+        for i in [4, 5, 6, 7]:
+            expected_mat[i, i] = 4.0j
+        expected_mat[6, 1] = 0.5 + 0j
+
+        mat = fs7.to_mat()
+        assert np.allclose(mat, expected_mat)
+
+    def test_to_mat_error(self):
+        """Test that an error is raised if the requested matrix dimension is smaller than the
+        dimension inferred from the largest orbital index.
+        """
+        with pytest.raises(ValueError, match="n_orbitals cannot be smaller than 3"):
+            fs7.to_mat(n_orbitals=2)
 
 
 class TestFermiSentenceArithmetic:
@@ -1006,6 +1050,42 @@ class TestFermiSentenceArithmetic:
     def test_from_string_error(self, string):
         with pytest.raises(ValueError, match="Invalid character encountered in string "):
             from_string(string)  # pylint: disable=pointless-statement
+
+    fw_string = (
+        (fw1, "0+ 1-"),
+        (fw2, "0+ 0-"),
+        (fw3, "0+ 3- 0+ 4-"),
+        (fw4, "I"),
+        (fw5, "10+ 30- 0+ 400-"),
+        (fw6, "10+ 30+ 0- 400-"),
+        (fw7, "10- 30+ 0- 400+"),
+    )
+
+    @pytest.mark.parametrize("f_op, string", fw_string)
+    def test_to_string(self, f_op, string):
+        """Test if _to_string returns the correct string in PennyLane format."""
+        assert _to_string(f_op) == string
+
+    fw_of_string = (
+        (fw1, "0^ 1"),
+        (fw2, "0^ 0"),
+        (fw3, "0^ 3 0^ 4"),
+        (fw4, "I"),
+        (fw5, "10^ 30 0^ 400"),
+        (fw6, "10^ 30^ 0 400"),
+        (fw7, "10 30^ 0 400^"),
+    )
+
+    @pytest.mark.parametrize("f_op, string", fw_of_string)
+    def test_to_string_of_format(self, f_op, string):
+        """Test if to_string returns the correct string in OpenFermion format."""
+        assert _to_string(f_op, of=True) == string
+
+    def test_to_string_type(self):
+        """Test if to_string throws error if wrong type is given."""
+        pl_op = qml.X(0)
+        with pytest.raises(ValueError, match=f"fermi_op must be a FermiWord, got: {type(pl_op)}"):
+            _to_string(pl_op)
 
     @pytest.mark.parametrize(
         "method_name", ("__add__", "__sub__", "__mul__", "__radd__", "__rsub__", "__rmul__")

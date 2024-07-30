@@ -15,19 +15,19 @@
 Tests the apply_operation functions from devices/qubit
 """
 from functools import reduce
-import pytest
 
 import numpy as np
+import pytest
 from scipy.stats import unitary_group
+
 import pennylane as qml
-from pennylane.operation import _UNSET_BATCH_SIZE, Operation
-
-
 from pennylane.devices.qubit.apply_operation import (
     apply_operation,
     apply_operation_einsum,
     apply_operation_tensordot,
 )
+from pennylane.operation import _UNSET_BATCH_SIZE, Operation
+from tests.dummy_debugger import Debugger
 
 ml_frameworks_list = [
     "numpy",
@@ -389,7 +389,8 @@ class TestApplyParametrizedEvolution:
 
         # seems like _evolve_state_vector_under_parametrized_evolution calls
         # einsum twice, and the default apply_operation only once
-        assert spy.call_count == 1
+        # and it seems that getting the matrix from the hamiltonian calls einsum a few times.
+        assert spy.call_count == 6
 
     def test_small_evolves_state(self, mocker):
         """Test that applying a ParametrizedEvolution operating on less
@@ -465,7 +466,8 @@ class TestApplyParametrizedEvolution:
 
         # seems like _evolve_state_vector_under_parametrized_evolution calls
         # einsum twice, and the default apply_operation only once
-        assert spy.call_count == 2
+        # and it seems that getting the matrix from the hamiltonian calls einsum a few times.
+        assert spy.call_count == 7
 
     def test_parametrized_evolution_raises_error(self):
         """Test applying a ParametrizedEvolution without params or t specified raises an error."""
@@ -530,21 +532,16 @@ class TestApplyParametrizedEvolution:
         assert np.allclose(new_state, new_state_expected, atol=0.002)
 
         if num_state_wires == 4:
-            assert spy_einsum.call_count == 2
+            # and it seems that getting the matrix from the hamiltonian calls einsum a few times.
+            assert spy_einsum.call_count == 7
         else:
-            assert spy_einsum.call_count == 1
+            # and it seems that getting the matrix from the hamiltonian calls einsum a few times.
+            assert spy_einsum.call_count == 6
 
 
 @pytest.mark.parametrize("ml_framework", ml_frameworks_list)
 class TestSnapshot:
     """Test that apply_operation works for Snapshot ops"""
-
-    class Debugger:  # pylint: disable=too-few-public-methods
-        """A dummy debugger class"""
-
-        def __init__(self):
-            self.active = True
-            self.snapshots = {}
 
     def test_no_debugger(self, ml_framework):
         """Test nothing happens when there is no debugger"""
@@ -570,7 +567,7 @@ class TestSnapshot:
         )
         initial_state = qml.math.asarray(initial_state, like=ml_framework)
 
-        debugger = self.Debugger()
+        debugger = Debugger()
         new_state = apply_operation(qml.Snapshot(), initial_state, debugger=debugger)
 
         assert new_state.shape == initial_state.shape
@@ -590,7 +587,7 @@ class TestSnapshot:
         )
         initial_state = qml.math.asarray(initial_state, like=ml_framework)
 
-        debugger = self.Debugger()
+        debugger = Debugger()
         tag = "abcd"
         new_state = apply_operation(qml.Snapshot(tag), initial_state, debugger=debugger)
 
@@ -612,7 +609,7 @@ class TestSnapshot:
         initial_state = qml.math.asarray(initial_state, like=ml_framework)
         measurement = qml.expval(qml.PauliZ(0))
 
-        debugger = self.Debugger()
+        debugger = Debugger()
         new_state = apply_operation(
             qml.Snapshot(measurement=measurement), initial_state, debugger=debugger
         )
@@ -627,7 +624,7 @@ class TestSnapshot:
     def test_batched_state(self, ml_framework):
         """Test that batched states create batched snapshots."""
         initial_state = qml.math.asarray([[1.0, 0.0], [0.0, 0.1]], like=ml_framework)
-        debugger = self.Debugger()
+        debugger = Debugger()
         new_state = apply_operation(
             qml.Snapshot(), initial_state, is_state_batched=True, debugger=debugger
         )
@@ -781,7 +778,7 @@ class TestBroadcasting:  # pylint: disable=too-few-public-methods
     @pytest.mark.parametrize("op", broadcasted_ops)
     def test_broadcasted_op(self, op, method, ml_framework):
         """Tests that batched operations are applied correctly to an unbatched state."""
-        state = np.ones((2, 2, 2)) / np.sqrt(8)
+        state = np.ones((2, 2, 2), dtype=complex) / np.sqrt(8)
 
         res = method(op, qml.math.asarray(state, like=ml_framework))
         missing_wires = 3 - len(op.wires)
@@ -799,7 +796,7 @@ class TestBroadcasting:  # pylint: disable=too-few-public-methods
     @pytest.mark.parametrize("op", unbroadcasted_ops)
     def test_broadcasted_state(self, op, method, ml_framework):
         """Tests that unbatched operations are applied correctly to a batched state."""
-        state = np.ones((3, 2, 2, 2)) / np.sqrt(8)
+        state = np.ones((3, 2, 2, 2), dtype=complex) / np.sqrt(8)
 
         res = method(op, qml.math.asarray(state, like=ml_framework), is_state_batched=True)
         missing_wires = 3 - len(op.wires)
@@ -816,7 +813,7 @@ class TestBroadcasting:  # pylint: disable=too-few-public-methods
         if method is apply_operation_tensordot:
             pytest.skip("Tensordot doesn't support batched operator and batched state.")
 
-        state = np.ones((3, 2, 2, 2)) / np.sqrt(8)
+        state = np.ones((3, 2, 2, 2), dtype=complex) / np.sqrt(8)
 
         res = method(op, qml.math.asarray(state, like=ml_framework), is_state_batched=True)
         missing_wires = 3 - len(op.wires)
@@ -951,7 +948,6 @@ class TestApplyGroverOperator:
     def test_dispatching(self, op_wires, state_wires, einsum_called, tensordot_called, mocker):
         """Test that apply_operation dispatches to einsum, tensordot and the kernel correctly."""
         # pylint: disable=too-many-arguments
-        np.random.seed(752)
         state = np.random.random([2] * state_wires) + 1j * np.random.random([2] * state_wires)
 
         op = qml.GroverOperator(list(range(op_wires)))
@@ -966,7 +962,6 @@ class TestApplyGroverOperator:
     def test_correctness_full_wires(self, op_wires, state_wires, batch_dim):
         """Test that apply_operation is correct for GroverOperator for all dispatch branches
         when applying it to all wires of a state."""
-        np.random.seed(752)
         batched = batch_dim is not None
         shape = [batch_dim] + [2] * state_wires if batched else [2] * state_wires
         flat_shape = (batch_dim, 2**state_wires) if batched else (2**state_wires,)
@@ -986,7 +981,6 @@ class TestApplyGroverOperator:
         """Test that apply_operation is correct for GroverOperator for all dispatch branches
         but einsum (because Grover can't act on a single wire)
         when applying it only to some of the wires of a state."""
-        np.random.seed(752)
         batched = batch_dim is not None
         shape = [batch_dim] + [2] * state_wires if batched else [2] * state_wires
         state = np.random.random(shape) + 1j * np.random.random(shape)
@@ -1009,7 +1003,6 @@ class TestApplyGroverOperator:
         batched = batch_dim is not None
         shape = [batch_dim] + [2] * state_wires if batched else [2] * state_wires
         # Input state
-        np.random.seed(752)
         state = np.random.random(shape) + 1j * np.random.random(shape)
 
         wires = list(range(op_wires))
@@ -1038,7 +1031,6 @@ class TestApplyGroverOperator:
         batched = batch_dim is not None
         shape = [batch_dim] + [2] * state_wires if batched else [2] * state_wires
         # Input state
-        np.random.seed(752)
         state = np.random.random(shape) + 1j * np.random.random(shape)
 
         wires = list(range(op_wires))
@@ -1069,7 +1061,6 @@ class TestApplyGroverOperator:
         batched = batch_dim is not None
         shape = [batch_dim] + [2] * state_wires if batched else [2] * state_wires
         # Input state
-        np.random.seed(752)
         state = np.random.random(shape) + 1j * np.random.random(shape)
 
         wires = list(range(op_wires))
@@ -1098,7 +1089,6 @@ class TestApplyGroverOperator:
         batched = batch_dim is not None
         shape = [batch_dim] + [2] * state_wires if batched else [2] * state_wires
         # Input state
-        np.random.seed(752)
         state = np.random.random(shape) + 1j * np.random.random(shape)
 
         wires = list(range(op_wires))
@@ -1143,7 +1133,6 @@ class TestMultiControlledXKernel:
         self, num_op_wires, num_state_wires, einsum_called, tdot_called, mocker
     ):
         """Test that apply_multicontrolledx dispatches to the right method and is correct."""
-        np.random.seed(2751)
         op = qml.MultiControlledX(wires=list(range(num_op_wires)))
         state = np.random.random([2] * num_state_wires).astype(complex)
         spies = [mocker.spy(qml.math, "einsum"), mocker.spy(qml.math, "tensordot")]
@@ -1162,7 +1151,6 @@ class TestMultiControlledXKernel:
         """Test that the custom kernel works with JAX."""
         from jax import numpy as jnp
 
-        np.random.seed(2751)
         op = qml.MultiControlledX(wires=[0, 4, 3, 1])
         state_shape = ([batch_dim] if batch_dim is not None else []) + [2] * 5
         state = np.random.random(state_shape).astype(complex)
@@ -1179,7 +1167,6 @@ class TestMultiControlledXKernel:
         """Test that the custom kernel works with Tensorflow."""
         import tensorflow as tf
 
-        np.random.seed(2751)
         op = qml.MultiControlledX(wires=[0, 4, 3, 1])
         state_shape = ([batch_dim] if batch_dim is not None else []) + [2] * 5
         state = np.random.random(state_shape).astype(complex)
@@ -1194,7 +1181,6 @@ class TestMultiControlledXKernel:
     @pytest.mark.parametrize("batch_dim", [None, 1, 3])
     def test_with_autograd(self, batch_dim):
         """Test that the custom kernel works with Autograd."""
-        np.random.seed(2751)
         op = qml.MultiControlledX(wires=[0, 4, 3, 1])
         state_shape = ([batch_dim] if batch_dim is not None else []) + [2] * 5
         state = np.random.random(state_shape).astype(complex)
@@ -1211,7 +1197,6 @@ class TestMultiControlledXKernel:
         """Test that the custom kernel works with Torch."""
         import torch
 
-        np.random.seed(2751)
         op = qml.MultiControlledX(wires=[0, 4, 3, 1])
         state_shape = ([batch_dim] if batch_dim is not None else []) + [2] * 5
         state = np.random.random(state_shape).astype(complex)
@@ -1229,13 +1214,15 @@ class TestMultiControlledXKernel:
 class TestLargeTFCornerCases:
     """Test large corner cases for tensorflow."""
 
-    @pytest.mark.parametrize("op", (qml.PauliZ(8), qml.CNOT((5, 6))))
+    @pytest.mark.parametrize(
+        "op", (qml.PauliZ(8), qml.PhaseShift(1.0, 8), qml.S(8), qml.T(8), qml.CNOT((5, 6)))
+    )
     def test_tf_large_state(self, op):
         """Tests that custom kernels that use slicing fall back to a different method when
         the state has a large number of wires."""
         import tensorflow as tf
 
-        state = np.zeros([2] * 10)
+        state = np.zeros([2] * 10, dtype=complex)
         state = tf.Variable(state)
         new_state = apply_operation(op, state)
 

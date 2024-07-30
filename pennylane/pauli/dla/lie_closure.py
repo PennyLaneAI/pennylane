@@ -14,16 +14,18 @@
 """A function to compute the Lie closure of a set of operators"""
 # pylint: disable=too-many-arguments
 import itertools
-from functools import reduce
-
-from typing import Union, Iterable
+import warnings
+from collections.abc import Iterable
 from copy import copy
+from functools import reduce
+from typing import Union
+
 import numpy as np
 
 import pennylane as qml
-
 from pennylane.operation import Operator
-from ..pauli_arithmetic import PauliWord, PauliSentence
+
+from ..pauli_arithmetic import PauliSentence, PauliWord
 
 
 def lie_closure(
@@ -31,6 +33,7 @@ def lie_closure(
     max_iterations: int = 10000,
     verbose: bool = False,
     pauli: bool = False,
+    tol: float = None,
 ) -> Iterable[Union[PauliWord, PauliSentence, Operator]]:
     r"""Compute the dynamical Lie algebra from a set of generators.
 
@@ -47,6 +50,7 @@ def lie_closure(
         pauli (bool): Indicates whether it is assumed that :class:`~.PauliSentence` or :class:`~.PauliWord` instances are input and returned.
             This can help with performance to avoid unnecessary conversions to :class:`~pennylane.operation.Operator`
             and vice versa. Default is ``False``.
+        tol (float): Numerical tolerance for the linear independence check used in :class:`~.PauliVSpace`.
 
     Returns:
         Union[list[:class:`~.PauliSentence`], list[:class:`~.Operator`]]: a basis of either :class:`~.PauliSentence` or :class:`~.Operator` instances that is closed under
@@ -63,9 +67,9 @@ def lie_closure(
     A first round of commutators between all elements yields:
 
     >>> qml.commutator(X(0) @ X(1), Z(0))
-    -2j * (X(1) @ Y(0))
+    -2j * (Y(0) @ X(1))
     >>> qml.commutator(X(0) @ X(1), Z(1))
-    -2j * (Y(1) @ X(0))
+    -2j * (X(0) @ Y(1))
 
     A next round of commutators between all elements further yields the new operator ``Y(0) @ Y(1)``.
 
@@ -81,9 +85,9 @@ def lie_closure(
     [X(1) @ X(0),
      Z(0),
      Z(1),
-     -1.0 * (X(1) @ Y(0)),
-     -1.0 * (Y(1) @ X(0)),
-     -1.0 * (Y(1) @ Y(0))]
+     -1.0 * (Y(0) @ X(1)),
+     -1.0 * (X(0) @ Y(1)),
+     -1.0 * (Y(0) @ Y(1))]
 
     Note that we normalize by removing the factors of :math:`2i`, though minus signs are left intact.
 
@@ -123,7 +127,7 @@ def lie_closure(
             for op in generators
         ]
 
-    vspace = PauliVSpace(generators)
+    vspace = PauliVSpace(generators, tol=tol)
 
     epoch = 0
     old_length = 0  # dummy value
@@ -132,8 +136,11 @@ def lie_closure(
     while (new_length > old_length) and (epoch < max_iterations):
         if verbose:
             print(f"epoch {epoch+1} of lie_closure, DLA size is {new_length}")
+
         for ps1, ps2 in itertools.combinations(vspace.basis, 2):
             com = ps1.commutator(ps2)
+            com.simplify()
+
             if len(com) == 0:  # skip because operators commute
                 continue
 
@@ -141,12 +148,16 @@ def lie_closure(
             # remove common factor 2 with Pauli commutators
             for pw, val in com.items():
                 com[pw] = val.imag / 2
-            vspace.add(com)
+
+            vspace.add(com, tol=tol)
 
         # Updated number of linearly independent PauliSentences from previous and current step
         old_length = new_length
         new_length = len(vspace)
         epoch += 1
+
+        if epoch == max_iterations:
+            warnings.warn(f"reached the maximum number of iterations {max_iterations}", UserWarning)
 
     if verbose > 0:
         print(f"After {epoch} epochs, reached a DLA size of {new_length}")
@@ -159,7 +170,7 @@ def lie_closure(
 
 
 class PauliVSpace:
-    """
+    r"""
     Class representing the linearly independent basis of a vector space.
 
     The main purpose of this class is to store and process ``M``, which
@@ -195,6 +206,8 @@ class PauliVSpace:
     Args:
         generators (Iterable[Union[PauliWord, PauliSentence, Operator]]): Operators that span the vector space.
         dtype (type): ``dtype`` of the underlying DOK sparse matrix ``M``. Default is ``float``.
+        tol (float): Numerical tolerance for the linear independence check. If the norm of the projection of the candidate vector
+            onto :math:`M^\perp` is greater than ``tol``, then it is deemed to be linearly independent.
 
     **Example**
 
@@ -234,7 +247,7 @@ class PauliVSpace:
      1.0 * X(0)]
     """
 
-    def __init__(self, generators, dtype=float):
+    def __init__(self, generators, dtype=float, tol=None):
 
         self.dtype = dtype
 
@@ -245,7 +258,11 @@ class PauliVSpace:
             ]
 
         # Get all Pauli words that are present in at least one Pauli sentence
-        all_pws = list(reduce(set.__or__, [set(ps.keys()) for ps in generators]))
+        if len(generators) != 0:
+            all_pws = list(reduce(set.__or__, [set(ps.keys()) for ps in generators]))
+        else:
+            all_pws = []
+
         num_pw = len(all_pws)
         # Create a dictionary mapping from PauliWord to row index
         self._pw_to_idx = {pw: i for i, pw in enumerate(all_pws)}
@@ -258,8 +275,10 @@ class PauliVSpace:
         self._rank = rank
         self._num_pw = num_pw
 
+        self.tol = np.finfo(self._M.dtype).eps * 100 if tol is None else tol
+
         # Add all generators that are linearly independent
-        self.add(generators)
+        self.add(generators, tol=tol)
 
     @property
     def basis(self):
@@ -269,7 +288,7 @@ class PauliVSpace:
     def __len__(self):
         return len(self.basis)
 
-    def add(self, other, tol=1e-15):
+    def add(self, other, tol=None):
         r"""Adding Pauli sentences if they are linearly independent.
 
         Args:
@@ -295,6 +314,9 @@ class PauliVSpace:
         [1.0 * X(0), 1.0 * X(1), 1.0 * Y(0), 1.0 * Z(0)]
 
         """
+        if tol is None:
+            tol = self.tol
+
         if isinstance(other, (qml.pauli.PauliWord, qml.pauli.PauliSentence, Operator)):
             other = [other]
 
@@ -305,16 +327,20 @@ class PauliVSpace:
 
         for ps in other:
             # TODO: Potential speed-up by computing the maximal linear independent set for all current basis vectors + other, essentially algorithm1 in https://arxiv.org/abs/1012.5256
-            self._M, self._pw_to_idx, self._rank, self._num_pw, is_independent = (
-                self._check_independence(
-                    self._M, ps, self._pw_to_idx, self._rank, self._num_pw, tol
-                )
+            (
+                self._M,
+                self._pw_to_idx,
+                self._rank,
+                self._num_pw,
+                is_independent,
+            ) = self._check_independence(
+                self._M, ps, self._pw_to_idx, self._rank, self._num_pw, tol
             )
             if is_independent:
                 self._basis.append(ps)
         return self._basis
 
-    def is_independent(self, pauli_sentence, tol=1e-15):
+    def is_independent(self, pauli_sentence, tol=None):
         r"""Check if the ``pauli_sentence`` is linearly independent of the basis of ``PauliVSpace``.
 
         Args:
@@ -334,13 +360,16 @@ class PauliVSpace:
         True
 
         """
+        if tol is None:
+            tol = self.tol
+
         _, _, _, _, is_independent = self._check_independence(
             self._M, pauli_sentence, self._pw_to_idx, self._rank, self._num_pw, tol
         )
         return is_independent
 
     @staticmethod
-    def _check_independence(M, pauli_sentence, pw_to_idx, rank, num_pw, tol=1e-15):
+    def _check_independence(M, pauli_sentence, pw_to_idx, rank, num_pw, tol):
         r"""
         Checks if :class:`~PauliSentence` ``pauli_sentence`` is linearly independent and provides the updated class attributes in case the vector is added.
 
@@ -396,7 +425,7 @@ class PauliVSpace:
         v = M[:, -1].copy()  # remove copy to normalize M
         v /= np.linalg.norm(v)
         A = M[:, :-1]
-        v = v - A @ qml.math.linalg.inv(qml.math.conj(A.T) @ A) @ qml.math.conj(A).T @ v
+        v = v - A @ qml.math.linalg.solve(qml.math.conj(A.T) @ A, A.conj().T) @ v
 
         if np.linalg.norm(v) > tol:
             return M, pw_to_idx, rank + 1, new_num_pw, True

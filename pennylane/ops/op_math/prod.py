@@ -20,7 +20,7 @@ import warnings
 from copy import copy
 from functools import reduce, wraps
 from itertools import combinations
-from typing import List, Tuple, Union
+from typing import Union
 
 from scipy.sparse import kron as sparse_kron
 
@@ -33,7 +33,6 @@ from pennylane.ops.op_math.sum import Sum
 from pennylane.ops.qubit.non_parametric_ops import PauliX, PauliY, PauliZ
 from pennylane.queuing import QueuingManager
 from pennylane.typing import TensorLike
-from pennylane.wires import Wires
 
 from .composite import CompositeOp
 
@@ -246,36 +245,6 @@ class Prod(CompositeOp):
                 return False
         return all(op.is_hermitian for op in self)
 
-    @property
-    def overlapping_ops(self) -> List[Tuple[Wires, List[Operator]]]:
-        """Groups all operands of the composite operator that act on overlapping wires taking
-        into account operator commutivity.
-
-        Returns:
-            List[List[Operator]]: List of lists of operators that act on overlapping wires. All the
-            inner lists commute with each other.
-        """
-        if self._overlapping_ops is None:
-            overlapping_ops = []  # [(wires, [ops])]
-            for op in self:
-                op_idx = False
-                ops = [op]
-                wires = op.wires
-                for idx, (old_wires, old_ops) in reversed(list(enumerate(overlapping_ops))):
-                    if any(wire in old_wires for wire in wires):
-                        ops = old_ops + ops
-                        wires = old_wires + wires
-                        op_idx = idx
-                        old_wires, old_ops = overlapping_ops.pop(idx)
-                if op_idx is not False:
-                    overlapping_ops.insert(op_idx, (wires, ops))
-                else:
-                    overlapping_ops += [(wires, ops)]
-
-            self._overlapping_ops = [overlapping_op[1] for overlapping_op in overlapping_ops]
-
-        return self._overlapping_ops
-
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     def has_decomposition(self):
@@ -305,9 +274,11 @@ class Prod(CompositeOp):
 
     def matrix(self, wire_order=None):
         """Representation of the operator as a matrix in the computational basis."""
+        if self.pauli_rep:
+            return self.pauli_rep.to_mat(wire_order=wire_order or self.wires)
 
-        mats: List[TensorLike] = []
-        batched: List[bool] = []  # batched[i] tells if mats[i] is batched or not
+        mats: list[TensorLike] = []
+        batched: list[bool] = []  # batched[i] tells if mats[i] is batched or not
         for ops in self.overlapping_ops:
             gen = (
                 (
@@ -387,7 +358,7 @@ class Prod(CompositeOp):
             return reduce(lambda a, b: a @ b, operand_pauli_reps)
         return None
 
-    def _simplify_factors(self, factors: Tuple[Operator]) -> Tuple[complex, Operator]:
+    def _simplify_factors(self, factors: tuple[Operator]) -> tuple[complex, Operator]:
         """Reduces the depth of nested factors and groups identical factors.
 
         Returns:
@@ -429,7 +400,7 @@ class Prod(CompositeOp):
         return op if global_phase == 1 else qml.s_prod(global_phase, op).simplify()
 
     @classmethod
-    def _sort(cls, op_list, wire_map: dict = None) -> List[Operator]:
+    def _sort(cls, op_list, wire_map: dict = None) -> list[Operator]:
         """Insertion sort algorithm that sorts a list of product factors by their wire indices, taking
         into account the operator commutivity.
 
@@ -469,7 +440,6 @@ class Prod(CompositeOp):
 
         **Example**
 
-        >>> qml.operation.enable_new_opmath()
         >>> op = X(0) @ (0.5 * X(1) + X(2))
         >>> op.terms()
         ([0.5, 1.0],
@@ -624,7 +594,7 @@ class _ProductFactorsGrouping:
                 self._add_non_pauli_factor(factor=factor, wires=wires)
                 self._remove_pauli_factors(wires=wires)
 
-    def _add_pauli_factor(self, factor: Operator, wires: List[int]):
+    def _add_pauli_factor(self, factor: Operator, wires: list[int]):
         """Adds the given Pauli operator to the temporary ``self._pauli_factors`` dictionary. If
         there was another Pauli operator acting on the same wire, the two operators are grouped
         together using the ``self._pauli_mult`` dictionary.
@@ -640,7 +610,7 @@ class _ProductFactorsGrouping:
         coeff, new_word = self._pauli_mult[old_word][op2_name]
         self._pauli_factors[wire] = old_coeff * coeff, new_word
 
-    def _add_non_pauli_factor(self, factor: Operator, wires: List[int]):
+    def _add_non_pauli_factor(self, factor: Operator, wires: list[int]):
         """Adds the given non-Pauli factor to the temporary ``self._non_pauli_factors`` dictionary.
         If there alerady exists an identical operator in the dictionary, the two are grouped
         together.
@@ -672,7 +642,7 @@ class _ProductFactorsGrouping:
             self._remove_non_pauli_factors(wires=wires)
             self._non_pauli_factors[wires] = [op_hash, copy(exponent), factor]
 
-    def _remove_non_pauli_factors(self, wires: List[int]):
+    def _remove_non_pauli_factors(self, wires: list[int]):
         """Remove all factors from the ``self._non_pauli_factors`` dictionary that act on the given
         wires and add them to the ``self._factors`` tuple.
 
@@ -692,7 +662,7 @@ class _ProductFactorsGrouping:
                     if not isinstance(op, qml.Identity):
                         self._factors += ((op,),)
 
-    def _remove_pauli_factors(self, wires: List[int]):
+    def _remove_pauli_factors(self, wires: list[int]):
         """Remove all Pauli factors from the ``self._pauli_factors`` dictionary that act on the
         given wires and add them to the ``self._factors`` tuple.
 
@@ -708,7 +678,7 @@ class _ProductFactorsGrouping:
                 self._factors += ((pauli_op,),)
                 self.global_phase *= pauli_coeff
 
-    def remove_factors(self, wires: List[int]):
+    def remove_factors(self, wires: list[int]):
         """Remove all factors from the ``self._pauli_factors`` and ``self._non_pauli_factors``
         dictionaries that act on the given wires and add them to the ``self._factors`` tuple.
 

@@ -15,9 +15,9 @@
 This module contains the qml.classical_shadow measurement.
 """
 import copy
-from collections.abc import Iterable
-from typing import Optional, Union, Sequence
+from collections.abc import Iterable, Sequence
 from string import ascii_letters as ABC
+from typing import Optional, Union
 
 import numpy as np
 
@@ -216,7 +216,7 @@ class ClassicalShadowMP(MeasurementTransform):
     """Represents a classical shadow measurement process occurring at the end of a
     quantum variational circuit.
 
-    Please refer to :func:`classical_shadow` for detailed documentation.
+    Please refer to :func:`pennylane.classical_shadow` for detailed documentation.
 
 
     Args:
@@ -440,6 +440,16 @@ class ClassicalShadowMP(MeasurementTransform):
     def return_type(self):
         return Shadow
 
+    @classmethod
+    def _abstract_eval(
+        cls,
+        n_wires: Optional[int] = None,
+        has_eigvals=False,
+        shots: Optional[int] = None,
+        num_device_wires: int = 0,
+    ) -> tuple:
+        return (2, shots, n_wires), np.int8
+
     def shape(self, device, shots):  # pylint: disable=unused-argument
         # otherwise, the return type requires a device
         if not shots:
@@ -495,6 +505,19 @@ class ShadowExpvalMP(MeasurementTransform):
         self.H = H
         self.k = k
         super().__init__(id=id)
+
+    # pylint: disable=arguments-differ
+    @classmethod
+    def _primitive_bind_call(
+        cls,
+        H: Union[Operator, Sequence],
+        seed: Optional[int] = None,
+        k: int = 1,
+        **kwargs,
+    ):
+        if cls._obs_primitive is None:  # pragma: no cover
+            return type.__call__(cls, H=H, seed=seed, k=k, **kwargs)  # pragma: no cover
+        return cls._obs_primitive.bind(H, seed=seed, k=k, **kwargs)
 
     def process(self, tape, device):
         bits, recipes = qml.classical_shadow(wires=self.wires, seed=self.seed).process(tape, device)
@@ -573,3 +596,10 @@ class ShadowExpvalMP(MeasurementTransform):
             k=self.k,
             seed=self.seed,
         )
+
+
+if ShadowExpvalMP._obs_primitive is not None:  # pylint: disable=protected-access
+
+    @ShadowExpvalMP._obs_primitive.def_impl  # pylint: disable=protected-access
+    def _(H, **kwargs):
+        return type.__call__(ShadowExpvalMP, H, **kwargs)

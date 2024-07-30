@@ -14,9 +14,11 @@
 r"""
 Contains the Permute template.
 """
+import copy
 
-from pennylane.operation import Operation, AnyWires
+from pennylane.operation import AnyWires, Operation
 from pennylane.ops import SWAP
+from pennylane.wires import Wires
 
 
 class Permute(Operation):
@@ -65,7 +67,7 @@ class Permute(Operation):
                 qml.Permute([3, 2, 0, 1], dev.wires)
                 return qml.expval(qml.Z(0))
 
-        >>> print(qml.draw(apply_perm, expansion_strategy="device")())
+        >>> print(qml.draw(apply_perm, level="device")())
         0: ─╭SWAP─────────────┤  <Z>
         1: ─│─────╭SWAP───────┤
         2: ─│─────╰SWAP─╭SWAP─┤
@@ -106,7 +108,7 @@ class Permute(Operation):
 
         The permuted circuit is:
 
-        >>> print(qml.draw(circuit, expansion_strategy="device")())
+        >>> print(qml.draw(circuit, level="device")())
         3: ─╭SWAP─────────────┤
         2: ─│─────╭SWAP───────┤
         0: ─│─────│─────╭SWAP─┤
@@ -129,7 +131,7 @@ class Permute(Operation):
 
         will permute only the second, third, and fifth wires as follows:
 
-        >>> print(qml.draw(circuit, expansion_strategy="device", show_all_wires=True)())
+        >>> print(qml.draw(circuit, level="device", show_all_wires=True)())
         3: ─────────────┤
         2: ─╭SWAP───────┤
         a: ─│───────────┤
@@ -163,6 +165,15 @@ class Permute(Operation):
 
         self._hyperparameters = {"permutation": tuple(permutation)}
         super().__init__(wires=wires, id=id)
+
+    def map_wires(self, wire_map: dict):
+        # pylint: disable=protected-access
+        new_op = copy.deepcopy(self)
+        new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
+        new_op._hyperparameters["permutation"] = tuple(
+            wire_map.get(w, w) for w in new_op._hyperparameters["permutation"]
+        )
+        return new_op
 
     @property
     def num_params(self):

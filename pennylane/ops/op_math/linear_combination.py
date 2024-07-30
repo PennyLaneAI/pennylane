@@ -14,15 +14,15 @@
 """
 LinearCombination class
 """
-# pylint: disable=too-many-arguments, protected-access, too-many-instance-attributes
-import warnings
 import itertools
 import numbers
+
+# pylint: disable=too-many-arguments, protected-access, too-many-instance-attributes
+import warnings
 from copy import copy
-from typing import List
 
 import pennylane as qml
-from pennylane.operation import Observable, Tensor, Operator, convert_to_opmath
+from pennylane.operation import Observable, Operator, Tensor, convert_to_opmath
 
 from .sum import Sum
 
@@ -38,7 +38,7 @@ class LinearCombination(Sum):
         observables (Iterable[Observable]): observables in the ``LinearCombination`` expression, of same length as ``coeffs``
         simplify (bool): Specifies whether the ``LinearCombination`` is simplified upon initialization
                          (like-terms are combined). The default value is `False`. Note that ``coeffs`` cannot
-                         be differentiated when using the ``'torch'`` interface and ``simplify=True``.
+                         be differentiated when using the ``'torch'`` interface and ``simplify=True``. Use of this argument is deprecated.
         grouping_type (str): If not ``None``, compute and store information on how to group commuting
             observables upon initialization. This information may be accessed when a :class:`~.QNode` containing this
             ``LinearCombination`` is executed on devices. The string refers to the type of binary relation between Pauli words.
@@ -46,6 +46,10 @@ class LinearCombination(Sum):
         method (str): The graph coloring heuristic to use in solving minimum clique cover for grouping, which
             can be ``'lf'`` (Largest First) or ``'rlf'`` (Recursive Largest First). Ignored if ``grouping_type=None``.
         id (str): name to be assigned to this ``LinearCombination`` instance
+
+    .. warning::
+        The ``simplify`` argument is deprecated and will be removed in a future release.
+        Instead, you can call ``qml.simplify`` on the constructed operator.
 
     **Example:**
 
@@ -106,10 +110,15 @@ class LinearCombination(Sum):
     def _unflatten(cls, data, metadata):
         return cls(data[0], data[1], _grouping_indices=metadata[0])
 
+    # pylint: disable=arguments-differ
+    @classmethod
+    def _primitive_bind_call(cls, coeffs, observables, _pauli_rep=None, **kwargs):
+        return cls._primitive.bind(*coeffs, *observables, **kwargs, n_obs=len(observables))
+
     def __init__(
         self,
         coeffs,
-        observables: List[Operator],
+        observables: list[Operator],
         simplify=False,
         grouping_type=None,
         method="rlf",
@@ -117,6 +126,10 @@ class LinearCombination(Sum):
         _pauli_rep=None,
         id=None,
     ):
+        if isinstance(observables, Operator):
+            raise ValueError(
+                "observables must be an Iterable of Operator's, and not an Operator itself."
+            )
         if qml.math.shape(coeffs)[0] != len(observables):
             raise ValueError(
                 "Could not create valid LinearCombination; "
@@ -126,6 +139,13 @@ class LinearCombination(Sum):
             _pauli_rep = self._build_pauli_rep_static(coeffs, observables)
 
         if simplify:
+
+            warnings.warn(
+                "The simplify argument in qml.Hamiltonian and qml.ops.LinearCombination is deprecated. "
+                "Instead, you can call qml.simplify on the constructed operator.",
+                qml.PennyLaneDeprecationWarning,
+            )
+
             # simplify upon initialization changes ops such that they wouldnt be removed in self.queue() anymore
             if qml.QueuingManager.recording():
                 for o in observables:
@@ -370,7 +390,7 @@ class LinearCombination(Sum):
                 warnings.warn(
                     f"Attempting to compare a legacy operator class instance {other} of type {type(other)} with {self} of type {type(self)}."
                     f"You are likely disabling/enabling new opmath in the same script or explicitly create legacy operator classes Tensor and ops.Hamiltonian."
-                    f"Please visit https://docs.pennylane.ai/en/latest/introduction/new_opmath.html for more information and help troubleshooting.",
+                    f"Please visit https://docs.pennylane.ai/en/stable/news/new_opmath.html for more information and help troubleshooting.",
                     UserWarning,
                 )
                 op1 = self.simplify()
@@ -552,3 +572,12 @@ class LinearCombination(Sum):
         new_op = LinearCombination(coeffs, new_ops)
         new_op.grouping_indices = self._grouping_indices
         return new_op
+
+
+if LinearCombination._primitive is not None:
+
+    @LinearCombination._primitive.def_impl
+    def _(*args, n_obs, **kwargs):
+        coeffs = args[:n_obs]
+        observables = args[n_obs:]
+        return type.__call__(LinearCombination, coeffs, observables, **kwargs)

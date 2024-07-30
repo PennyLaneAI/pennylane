@@ -14,9 +14,11 @@
 """
 Unit tests for the QutritBasisStatePreparation template.
 """
+import numpy as np
+
 # pylint: disable=too-many-arguments
 import pytest
-import numpy as np
+
 import pennylane as qml
 
 
@@ -56,7 +58,7 @@ class TestDecomposition:
         """Tests queue for simple cases."""
 
         op = qml.QutritBasisStatePreparation(basis_state, wires)
-        queue = op.expand().operations
+        queue = op.decomposition()
 
         for id, gate in enumerate(queue):
             assert gate.name == "TShift"

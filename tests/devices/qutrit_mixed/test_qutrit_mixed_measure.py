@@ -14,20 +14,20 @@
 """Unit tests for measuring states in devices/qutrit_mixed."""
 
 from functools import reduce
+
 import pytest
 
 import pennylane as qml
-from pennylane import numpy as np
 from pennylane import math
-
-from pennylane.devices.qutrit_mixed import measure, create_initial_state, apply_operation
+from pennylane import numpy as np
+from pennylane.devices.qutrit_mixed import apply_operation, create_initial_state, measure
 from pennylane.devices.qutrit_mixed.measure import (
-    get_measurement_function,
     calculate_expval,
     calculate_expval_sum_of_terms,
-    calculate_reduced_density_matrix,
     calculate_probability,
+    calculate_reduced_density_matrix,
     calculate_variance,
+    get_measurement_function,
 )
 
 ml_frameworks_list = [
@@ -569,7 +569,7 @@ class TestSumOfTermsDifferentiability:
         Hamiltonians using new and old math."""
         import tensorflow as tf
 
-        x = tf.Variable(self.x)
+        x = tf.Variable(self.x, dtype="float64")
         coeffs = [8.3, 5.7]
 
         with tf.GradientTape() as tape1:
@@ -589,7 +589,7 @@ class TestSumOfTermsDifferentiability:
         the coefficients of Hamiltonians using new and old math."""
         import tensorflow as tf
 
-        coeffs = tf.Variable([8.3, 5.7])
+        coeffs = tf.Variable([8.3, 5.7], dtype="float64")
 
         with tf.GradientTape() as tape1:
             out = self.f(self.x, coeffs)

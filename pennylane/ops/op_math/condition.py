@@ -18,23 +18,24 @@ from functools import wraps
 from typing import Type
 
 from pennylane import QueuingManager
-from pennylane.operation import AnyWires, Operation, Operator
-from pennylane.tape import make_qscript
 from pennylane.compiler import compiler
+from pennylane.operation import AnyWires, Operation, Operator
+from pennylane.ops.op_math.symbolicop import SymbolicOp
+from pennylane.tape import make_qscript
 
 
 class ConditionalTransformError(ValueError):
     """Error for using qml.cond incorrectly"""
 
 
-class Conditional(Operation):
+class Conditional(SymbolicOp, Operation):
     """A Conditional Operation.
 
     Unless you are a Pennylane plugin developer, **you should NOT directly use this class**,
     instead, use the :func:`qml.cond <.cond>` function.
 
     The ``Conditional`` class is a container class that defines an operation
-    that should by applied relative to a single measurement value.
+    that should be applied relative to a single measurement value.
 
     Support for executing ``Conditional`` operations is device-dependent. If a
     device doesn't support mid-circuit measurements natively, then the QNode
@@ -50,25 +51,53 @@ class Conditional(Operation):
     num_wires = AnyWires
 
     def __init__(self, expr, then_op: Type[Operation], id=None):
-        self.meas_val = expr
-        self.then_op = then_op
-        super().__init__(*then_op.data, wires=then_op.wires, id=id)
+        self.hyperparameters["meas_val"] = expr
+        self._name = f"Conditional({then_op.name})"
+        super().__init__(then_op, id=id)
+        if self.grad_recipe is None:
+            self.grad_recipe = [None] * self.num_params
 
     def label(self, decimals=None, base_label=None, cache=None):
-        return self.then_op.label(decimals=decimals, base_label=base_label, cache=cache)
+        return self.base.label(decimals=decimals, base_label=base_label, cache=cache)
+
+    @property
+    def meas_val(self):
+        """the measurement outcome value to consider from `expr` argument"""
+        return self.hyperparameters["meas_val"]
 
     @property
     def num_params(self):
-        return self.then_op.num_params
+        return self.base.num_params
 
     @property
     def ndim_params(self):
-        return self.then_op.ndim_params
+        return self.base.ndim_params
 
     def map_wires(self, wire_map):
         meas_val = self.meas_val.map_wires(wire_map)
-        then_op = self.then_op.map_wires(wire_map)
+        then_op = self.base.map_wires(wire_map)
         return Conditional(meas_val, then_op=then_op)
+
+    def matrix(self, wire_order=None):
+        return self.base.matrix(wire_order=wire_order)
+
+    # pylint: disable=arguments-renamed, invalid-overridden-method
+    @property
+    def has_diagonalizing_gates(self):
+        return self.base.has_diagonalizing_gates
+
+    def diagonalizing_gates(self):
+        return self.base.diagonalizing_gates()
+
+    def eigvals(self):
+        return self.base.eigvals()
+
+    @property
+    def has_adjoint(self):
+        return self.base.has_adjoint
+
+    def adjoint(self):
+        return Conditional(self.meas_val, self.base.adjoint())
 
 
 def cond(condition, true_fn, false_fn=None, elifs=()):
@@ -208,7 +237,7 @@ def cond(condition, true_fn, false_fn=None, elifs=()):
 
         .. code-block:: python3
 
-            dev = qml.device("default.qubit", wires=2)
+            dev = qml.device("default.qubit")
 
             def qfunc(par, wires):
                 qml.Hadamard(wires[0])
@@ -226,6 +255,26 @@ def cond(condition, true_fn, false_fn=None, elifs=()):
             >>> par = np.array(0.3, requires_grad=True)
             >>> qnode(par)
             tensor(0.3522399, requires_grad=True)
+
+        **Postprocessing multiple measurements into a condition**
+
+        The Boolean condition for ``cond`` may consist of arithmetic expressions
+        of one or multiple mid-circuit measurements:
+
+        .. code-block:: python3
+
+            def cond_fn(mcms):
+                first_term = np.prod(mcms)
+                second_term = (2 ** np.arange(len(mcms))) @ mcms
+                return (1 - first_term) * (second_term > 3)
+
+            @qml.qnode(dev)
+            def qnode(x):
+                ...
+                mcms = [qml.measure(w) for w in range(4)]
+                qml.cond(cond_fn(mcms), qml.RX)(x, wires=4)
+                ...
+                return qml.expval(qml.Z(1))
 
         **Passing two quantum functions**
 

@@ -31,7 +31,7 @@ def test_flatten_unflatten_standard_checks(op_type):
 
     v_wires = qml.wires.Wires((0, 1))
     op = op_type([0.1], v_function=global_v_circuit, v_wires=v_wires, u_tape=u_tape)
-    qml.ops.functions.assert_valid(op)
+    qml.ops.functions.assert_valid(op, skip_wire_mapping=True)
 
     data, metadata = op._flatten()
 
@@ -49,12 +49,22 @@ def test_flatten_unflatten_standard_checks(op_type):
     assert op.hyperparameters["v_function"] == new_op.hyperparameters["v_function"]
     assert op.hyperparameters["v_wires"] == new_op.hyperparameters["v_wires"]
     for op1, op2 in zip(op.hyperparameters["u_tape"], new_op.hyperparameters["u_tape"]):
-        assert qml.equal(op1, op2)
+        qml.assert_equal(op1, op2)
     assert new_op is not op
 
 
 class TestHilbertSchmidt:
     """Tests for the Hilbert-Schmidt template."""
+
+    @pytest.mark.parametrize("op_type", (qml.HilbertSchmidt, qml.LocalHilbertSchmidt))
+    def test_map_wires_errors_out(self, op_type):
+        """Test that map_wires raises an error."""
+        u_tape = qml.tape.QuantumScript([qml.Hadamard("a"), qml.Identity("b")])
+
+        v_wires = qml.wires.Wires((0, 1))
+        op = op_type([0.1], v_function=global_v_circuit, v_wires=v_wires, u_tape=u_tape)
+        with pytest.raises(NotImplementedError, match="Mapping the wires of HilbertSchmidt"):
+            op.map_wires({0: "a", 1: "b"})
 
     def test_hs_decomposition_1_qubit(self):
         """Test if the HS operation is correctly decomposed for a 1 qubit unitary."""
@@ -156,10 +166,10 @@ class TestHilbertSchmidt:
         ]
 
         for op1, op2 in zip(tape_dec.operations, expected_operations):
-            assert qml.equal(op1, op2)
+            qml.assert_equal(op1, op2)
 
         for op1, op2 in zip(decomp, expected_operations):
-            assert qml.equal(op1, op2)
+            qml.assert_equal(op1, op2)
 
     def test_v_not_quantum_function(self):
         """Test that we cannot pass a non quantum function to the HS operation"""
@@ -263,8 +273,10 @@ class TestLocalHilbertSchmidt:
 
         tape_dec = qml.tape.QuantumScript.from_queue(q_tape_dec)
 
-        assert all(qml.equal(o1, o2) for o1, o2 in zip(decomp, tape_dec))
-        assert all(qml.equal(o1, o2) for o1, o2 in zip(decomp, unqueued_decomp))
+        for o1, o2 in zip(decomp, tape_dec):
+            qml.assert_equal(o1, o2)
+        for o1, o2 in zip(decomp, unqueued_decomp):
+            qml.assert_equal(o1, o2)
 
         expected_operations = [
             qml.Hadamard(wires=[0]),

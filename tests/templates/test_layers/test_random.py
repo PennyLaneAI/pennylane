@@ -14,9 +14,11 @@
 """
 Unit tests for the RandomLayers template.
 """
+import numpy as np
+
 # pylint: disable=too-few-public-methods
 import pytest
-import numpy as np
+
 import pennylane as qml
 from pennylane import numpy as pnp
 
@@ -66,7 +68,7 @@ def test_flatten_unflatten():
     assert hash(metadata)
 
     new_op = type(op)._unflatten(*op._flatten())
-    assert qml.equal(new_op, op)
+    qml.assert_equal(new_op, op)
     assert new_op is not op
 
 
@@ -81,19 +83,22 @@ class TestDecomposition:
         op2 = qml.RandomLayers(weights, wires=range(2), seed=42)
         op3 = qml.RandomLayers(weights, wires=range(2), seed=42)
 
-        queue1 = op1.expand().operations
+        queue1 = op1.decomposition()
         decomp1 = op1.compute_decomposition(*op1.parameters, wires=op1.wires, **op1.hyperparameters)
-        queue2 = op2.expand().operations
+        queue2 = op2.decomposition()
         decomp2 = op2.compute_decomposition(*op2.parameters, wires=op2.wires, **op2.hyperparameters)
-        queue3 = op3.expand().operations
+        queue3 = op3.decomposition()
         decomp3 = op3.compute_decomposition(*op3.parameters, wires=op3.wires, **op3.hyperparameters)
 
         assert not all(g1.name == g2.name for g1, g2 in zip(queue1, queue2))
         assert all(g2.name == g3.name for g2, g3 in zip(queue2, queue3))
 
-        assert all(qml.equal(op1, op2) for op1, op2 in zip(queue1, decomp1))
-        assert all(qml.equal(op1, op2) for op1, op2 in zip(queue2, decomp2))
-        assert all(qml.equal(op1, op2) for op1, op2 in zip(queue3, decomp3))
+        for op1, op2 in zip(queue1, decomp1):
+            qml.assert_equal(op1, op2)
+        for op1, op2 in zip(queue2, decomp2):
+            qml.assert_equal(op1, op2)
+        for op1, op2 in zip(queue3, decomp3):
+            qml.assert_equal(op1, op2)
 
     @pytest.mark.parametrize("n_layers, n_rots", [(3, 4), (1, 2)])
     def test_number_gates(self, n_layers, n_rots):
@@ -101,7 +106,7 @@ class TestDecomposition:
         weights = np.random.randn(n_layers, n_rots)
 
         op = qml.RandomLayers(weights, wires=range(2))
-        ops = op.expand().operations
+        ops = op.decomposition()
 
         gate_names = [g.name for g in ops]
         assert len(gate_names) - gate_names.count("CNOT") == n_layers * n_rots
@@ -126,7 +131,7 @@ class TestDecomposition:
         weights = np.random.random(size=(2, n_rots))
 
         op = qml.RandomLayers(weights, wires=range(3))
-        queue = op.expand().operations
+        queue = op.decomposition()
 
         gate_wires = [gate.wires.labels for gate in queue]
         wires_flat = [item for w in gate_wires for item in w]
@@ -234,7 +239,7 @@ class TestInterfaces:
         ]
 
         for op1, op2 in zip(decomp, expected):
-            assert qml.equal(op1, op2)
+            qml.assert_equal(op1, op2)
 
     def test_autograd(self, tol):
         """Tests the autograd interface."""

@@ -15,6 +15,7 @@
 import re
 from copy import copy
 from numbers import Number
+
 from numpy import ndarray
 
 import pennylane as qml
@@ -272,6 +273,36 @@ class FermiWord(dict):
 
         return operator
 
+    def to_mat(self, n_orbitals=None):
+        r"""Return the matrix representation.
+
+        Args:
+            n_orbitals (int or None): Number of orbitals. If not provided, it will be inferred from
+                the largest orbital index in the Fermi operator.
+
+        Returns:
+            NumpyArray: Matrix representation of the :class:`~.FermiWord`.
+
+        **Example**
+
+        >>> w = FermiWord({(0, 0): '+', (1, 1): '-'})
+        >>> w.to_mat()
+        array([0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j],
+              [0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j],
+              [0.+0.j, 1.+0.j, 0.+0.j, 0.+0.j],
+              [0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j])
+        """
+        largest_orb_id = max(key[1] for key in self.keys()) + 1
+        if n_orbitals and n_orbitals < largest_orb_id:
+            raise ValueError(
+                f"n_orbitals cannot be smaller than {largest_orb_id}, got: {n_orbitals}."
+            )
+
+        largest_order = n_orbitals or largest_orb_id
+        mat = qml.jordan_wigner(self, ps=True).to_mat(wire_order=list(range(largest_order)))
+
+        return mat
+
 
 # pylint: disable=useless-super-delegation
 class FermiSentence(dict):
@@ -462,6 +493,36 @@ class FermiSentence(dict):
             if abs(coeff) <= tol:
                 del self[fw]
 
+    def to_mat(self, n_orbitals=None):
+        r"""Return the matrix representation.
+
+        Args:
+            n_orbitals (int or None): Number of orbitals. If not provided, it will be inferred from
+                the largest orbital index in the Fermi operator
+
+        Returns:
+            NumpyArray: Matrix representation of the :class:`~.FermiSentence`.
+
+        **Example**
+
+        >>> fs = FermiSentence({FermiWord({(0, 0): "+", (1, 1): "-"}): 1.2, FermiWord({(0, 0): "+", (1, 0): "-"}): 3.1})
+        >>> fs.to_mat()
+        array([0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j],
+              [0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j],
+              [0.0 + 0.0j, 1.2 + 0.0j, 3.1 + 0.0j, 0.0 + 0.0j],
+              [0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, 3.1 + 0.0j])
+        """
+        largest_orb_id = max(key[1] for fermi_word in self.keys() for key in fermi_word.keys()) + 1
+        if n_orbitals and n_orbitals < largest_orb_id:
+            raise ValueError(
+                f"n_orbitals cannot be smaller than {largest_orb_id}, got: {n_orbitals}."
+            )
+
+        largest_order = n_orbitals or largest_orb_id
+        mat = qml.jordan_wigner(self, ps=True).to_mat(wire_order=list(range(largest_order)))
+
+        return mat
+
 
 def from_string(fermi_string):
     r"""Return a fermionic operator object from its string representation.
@@ -508,6 +569,48 @@ def from_string(fermi_string):
     operators = [i + "-" if i[-1] not in "+-" else i for i in re.split(r"\s", fermi_string)]
 
     return FermiWord({(i, int(s[:-1])): s[-1] for i, s in enumerate(operators)})
+
+
+def _to_string(fermi_op, of=False):
+    r"""Return a string representation of the :class:`~.FermiWord` object.
+
+    Args:
+        fermi_op (FermiWord): the fermionic operator
+        of (bool): whether to return a string representation in the same style as OpenFermion using
+                    the shorthand: 'q^' = a^\dagger_q 'q' = a_q. Each operator in the word is
+                    represented by the number of the wire it operates on
+
+    Returns:
+        (str): a string representation of the :class:`~.FermiWord` object
+
+    **Example**
+
+    >>> w = FermiWord({(0, 0) : '+', (1, 1) : '-'})
+    >>> _to_string(w)
+    '0+ 1-'
+
+    >>> w = FermiWord({(0, 0) : '+', (1, 1) : '-'})
+    >>> _to_string(w, of=True)
+    '0^ 1'
+    """
+    if not isinstance(fermi_op, FermiWord):
+        raise ValueError(f"fermi_op must be a FermiWord, got: {type(fermi_op)}")
+
+    pl_to_of_map = {"+": "^", "-": ""}
+
+    if len(fermi_op) == 0:
+        return "I"
+
+    op_list = ["" for _ in range(len(fermi_op))]
+    for loc, wire in fermi_op:
+        if of:
+            op_str = str(wire) + pl_to_of_map[fermi_op[(loc, wire)]]
+        else:
+            op_str = str(wire) + fermi_op[(loc, wire)]
+
+        op_list[loc] += op_str
+
+    return " ".join(op_list).rstrip()
 
 
 # pylint: disable=too-few-public-methods

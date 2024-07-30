@@ -15,13 +15,12 @@
 Integration tests to ensure that tensor observables return the correct result.
 """
 import functools
-import pytest
 
 import numpy as np
-import pennylane as qml
-from pennylane import expval, var, sample
+import pytest
 
-np.random.seed(0)
+import pennylane as qml
+from pennylane import expval, sample, var
 
 Z = np.array([[1, 0], [0, -1]])
 THETA = np.linspace(0.11, 3, 5)

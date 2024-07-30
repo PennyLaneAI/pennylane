@@ -14,24 +14,24 @@
 """
 Unit tests for the available qubit operations for quantum chemistry purposes.
 """
+import numpy as np
+
 # pylint: disable=too-few-public-methods, unnecessary-lambda-assignment
 import pytest
-import numpy as np
+from gate_data import (
+    DoubleExcitation,
+    DoubleExcitationMinus,
+    DoubleExcitationPlus,
+    FermionicSWAP,
+    OrbitalRotation,
+    SingleExcitation,
+    SingleExcitationMinus,
+    SingleExcitationPlus,
+)
 from scipy.linalg import expm, fractional_matrix_power
 
-from gate_data import (
-    SingleExcitation,
-    SingleExcitationPlus,
-    SingleExcitationMinus,
-    DoubleExcitation,
-    DoubleExcitationPlus,
-    DoubleExcitationMinus,
-    OrbitalRotation,
-    FermionicSWAP,
-)
 import pennylane as qml
 from pennylane import numpy as pnp
-
 
 PARAMETRIZED_QCHEM_OPERATIONS = [
     qml.SingleExcitation(0.14, wires=[0, 1]),
@@ -273,10 +273,10 @@ class TestSingleExcitation:
         """Tests that operations are computed correctly using the
         autograd interface"""
 
-        dev = qml.device("default.qubit.autograd", wires=2)
+        dev = qml.device("default.qubit")
         state = np.array([0, -1 / np.sqrt(2), 1 / np.sqrt(2), 0])
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, interface="autograd")
         def circuit(phi):
             qml.PauliX(wires=0)
             excitation(phi, wires=[0, 1])
@@ -298,9 +298,9 @@ class TestSingleExcitation:
         """Tests that gradients are computed correctly using the
         autograd interface"""
 
-        dev = qml.device("default.qubit.autograd", wires=2)
+        dev = qml.device("default.qubit")
 
-        @qml.qnode(dev, diff_method=diff_method)
+        @qml.qnode(dev, diff_method=diff_method, interface="autograd")
         def circuit(phi):
             qml.PauliX(wires=0)
             excitation(phi, wires=[0, 1])
@@ -324,9 +324,9 @@ class TestSingleExcitation:
 
         import tensorflow as tf
 
-        dev = qml.device("default.qubit.tf", wires=2)
+        dev = qml.device("default.qubit")
 
-        @qml.qnode(dev, diff_method=diff_method)
+        @qml.qnode(dev, diff_method=diff_method, interface="tf")
         def circuit(phi):
             qml.PauliX(wires=0)
             excitation(phi, wires=[0, 1])
@@ -355,9 +355,9 @@ class TestSingleExcitation:
 
         import jax
 
-        dev = qml.device("default.qubit.jax", wires=2)
+        dev = qml.device("default.qubit")
 
-        @qml.qnode(dev, diff_method=diff_method)
+        @qml.qnode(dev, diff_method=diff_method, interface="jax")
         def circuit(phi):
             qml.PauliX(wires=0)
             excitation(phi, wires=[0, 1])
@@ -505,12 +505,12 @@ class TestDoubleExcitation:
         """Tests that operations are computed correctly using the
         autograd interface"""
 
-        dev = qml.device("default.qubit.autograd", wires=4)
+        dev = qml.device("default.qubit")
         state = np.array(
             [0, 0, 0, -1 / np.sqrt(2), 0, 0, 0, 0, 0, 0, 0, 0, 1 / np.sqrt(2), 0, 0, 0]
         )
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, interface="autograd")
         def circuit(phi):
             qml.PauliX(wires=0)
             qml.PauliX(wires=1)
@@ -528,12 +528,12 @@ class TestDoubleExcitation:
         """Tests that operations are computed correctly using the
         tensorflow interface"""
 
-        dev = qml.device("default.qubit.tf", wires=4)
+        dev = qml.device("default.qubit")
         state = np.array(
             [0, 0, 0, -1 / np.sqrt(2), 0, 0, 0, 0, 0, 0, 0, 0, 1 / np.sqrt(2), 0, 0, 0]
         )
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, interface="tf")
         def circuit(phi):
             qml.PauliX(wires=0)
             qml.PauliX(wires=1)
@@ -551,12 +551,12 @@ class TestDoubleExcitation:
         """Tests that operations are computed correctly using the
         jax interface"""
 
-        dev = qml.device("default.qubit.jax", wires=4)
+        dev = qml.device("default.qubit")
         state = np.array(
             [0, 0, 0, -1 / np.sqrt(2), 0, 0, 0, 0, 0, 0, 0, 0, 1 / np.sqrt(2), 0, 0, 0]
         )
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, interface="jax")
         def circuit(phi):
             qml.PauliX(wires=0)
             qml.PauliX(wires=1)
@@ -579,9 +579,9 @@ class TestDoubleExcitation:
         """Tests that gradients are computed correctly using the
         autograd interface"""
 
-        dev = qml.device("default.qubit.autograd", wires=4)
+        dev = qml.device("default.qubit")
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, interface="autograd")
         def circuit(phi):
             qml.PauliX(wires=0)
             qml.PauliX(wires=1)
@@ -607,9 +607,9 @@ class TestDoubleExcitation:
 
         import tensorflow as tf
 
-        dev = qml.device("default.qubit.tf", wires=4)
+        dev = qml.device("default.qubit")
 
-        @qml.qnode(dev, diff_method=diff_method)
+        @qml.qnode(dev, diff_method=diff_method, interface="tf")
         def circuit(phi):
             qml.PauliX(wires=0)
             qml.PauliX(wires=1)
@@ -639,9 +639,9 @@ class TestDoubleExcitation:
 
         import jax
 
-        dev = qml.device("default.qubit.jax", wires=4)
+        dev = qml.device("default.qubit")
 
-        @qml.qnode(dev, diff_method=diff_method)
+        @qml.qnode(dev, diff_method=diff_method, interface="jax")
         def circuit(phi):
             qml.PauliX(wires=0)
             qml.PauliX(wires=1)
@@ -725,7 +725,7 @@ class TestOrbitalRotation:
         wires = (0, 1, 2, 3)
         op = qml.OrbitalRotation(phi, wires=wires)
         adj_op = qml.adjoint(op, lazy=False)
-        assert qml.equal(adj_op, qml.OrbitalRotation(-phi, wires=wires))
+        qml.assert_equal(adj_op, qml.OrbitalRotation(-phi, wires=wires))
 
     def test_adjoint_integration(self):
         """Test that the adjoint correctly inverts the orbital rotation operation"""
@@ -774,7 +774,7 @@ class TestOrbitalRotation:
         """Tests that operations are computed correctly using the
         autograd interface"""
 
-        dev = qml.device("default.qubit.autograd", wires=4)
+        dev = qml.device("default.qubit")
         state = np.array(
             [
                 0.0 + 0.0j,
@@ -796,7 +796,7 @@ class TestOrbitalRotation:
             ]
         )
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, interface="autograd")
         def circuit(phi):
             qml.PauliX(wires=0)
             qml.PauliX(wires=1)
@@ -811,7 +811,7 @@ class TestOrbitalRotation:
         """Tests that operations are computed correctly using the
         tensorflow interface"""
 
-        dev = qml.device("default.qubit.tf", wires=4)
+        dev = qml.device("default.qubit")
         state = np.array(
             [
                 0.0 + 0.0j,
@@ -833,7 +833,7 @@ class TestOrbitalRotation:
             ]
         )
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, interface="tf")
         def circuit(phi):
             qml.PauliX(wires=0)
             qml.PauliX(wires=1)
@@ -848,7 +848,7 @@ class TestOrbitalRotation:
         """Tests that operations are computed correctly using the
         jax interface"""
 
-        dev = qml.device("default.qubit.jax", wires=4)
+        dev = qml.device("default.qubit")
         state = np.array(
             [
                 0.0 + 0.0j,
@@ -870,7 +870,7 @@ class TestOrbitalRotation:
             ]
         )
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, interface="jax")
         def circuit(phi):
             qml.PauliX(wires=0)
             qml.PauliX(wires=1)
@@ -885,7 +885,7 @@ class TestOrbitalRotation:
         """Tests that operations are computed correctly using the
         torch interface"""
 
-        dev = qml.device("default.qubit.torch", wires=4)
+        dev = qml.device("default.qubit")
         state = np.array(
             [
                 0.0 + 0.0j,
@@ -907,7 +907,7 @@ class TestOrbitalRotation:
             ]
         )
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, interface="torch")
         def circuit(phi):
             qml.PauliX(wires=0)
             qml.PauliX(wires=1)
@@ -930,10 +930,14 @@ class TestOrbitalRotation:
         """Tests that gradients are computed correctly using the
         autograd interface"""
 
-        dev = qml.device("default.qubit.autograd", wires=4)
+        dev = qml.device("default.qubit")
 
-        circuit_0 = qml.QNode(self.grad_circuit_0, dev, diff_method=diff_method)
-        circuit_1 = qml.QNode(self.grad_circuit_1, dev, diff_method=diff_method)
+        circuit_0 = qml.QNode(
+            self.grad_circuit_0, dev, interface="autograd", diff_method=diff_method
+        )
+        circuit_1 = qml.QNode(
+            self.grad_circuit_1, dev, interface="autograd", diff_method=diff_method
+        )
         total = lambda phi: 1.1 * circuit_0(phi) + 0.7 * circuit_1(phi)
 
         assert np.allclose(qml.grad(total)(phi), self.expected_grad_fn(phi))
@@ -950,10 +954,10 @@ class TestOrbitalRotation:
 
         import tensorflow as tf
 
-        dev = qml.device("default.qubit.tf", wires=4)
+        dev = qml.device("default.qubit")
 
-        circuit_0 = qml.QNode(self.grad_circuit_0, dev, diff_method=diff_method)
-        circuit_1 = qml.QNode(self.grad_circuit_1, dev, diff_method=diff_method)
+        circuit_0 = qml.QNode(self.grad_circuit_0, dev, interface="tf", diff_method=diff_method)
+        circuit_1 = qml.QNode(self.grad_circuit_1, dev, interface="tf", diff_method=diff_method)
         total = lambda phi: 1.1 * circuit_0(phi) + 0.7 * circuit_1(phi)
 
         phi_t = tf.Variable(phi, dtype=tf.float64)
@@ -976,10 +980,10 @@ class TestOrbitalRotation:
 
         import jax
 
-        dev = qml.device("default.qubit.jax", wires=4)
+        dev = qml.device("default.qubit")
 
-        circuit_0 = qml.QNode(self.grad_circuit_0, dev, diff_method=diff_method)
-        circuit_1 = qml.QNode(self.grad_circuit_1, dev, diff_method=diff_method)
+        circuit_0 = qml.QNode(self.grad_circuit_0, dev, interface="jax", diff_method=diff_method)
+        circuit_1 = qml.QNode(self.grad_circuit_1, dev, interface="jax", diff_method=diff_method)
         total = lambda phi: 1.1 * circuit_0(phi) + 0.7 * circuit_1(phi)
 
         phi_j = jax.numpy.array(phi)
@@ -998,10 +1002,10 @@ class TestOrbitalRotation:
 
         import torch
 
-        dev = qml.device("default.qubit.torch", wires=4)
+        dev = qml.device("default.qubit")
 
-        circuit_0 = qml.QNode(self.grad_circuit_0, dev, diff_method=diff_method)
-        circuit_1 = qml.QNode(self.grad_circuit_1, dev, diff_method=diff_method)
+        circuit_0 = qml.QNode(self.grad_circuit_0, dev, interface="torch", diff_method=diff_method)
+        circuit_1 = qml.QNode(self.grad_circuit_1, dev, interface="torch", diff_method=diff_method)
         total = lambda phi: 1.1 * circuit_0(phi) + 0.7 * circuit_1(phi)
 
         phi_t = torch.tensor(phi, dtype=torch.complex128, requires_grad=True)
@@ -1078,7 +1082,7 @@ class TestFermionicSWAP:
         wires = (0, 1)
         op = qml.FermionicSWAP(phi, wires=wires)
         adj_op = qml.adjoint(op, lazy=False)
-        assert qml.equal(adj_op, qml.FermionicSWAP(-phi, wires=wires))
+        qml.assert_equal(adj_op, qml.FermionicSWAP(-phi, wires=wires))
 
     def test_adjoint_integration(self):
         """Test that the adjoint correctly inverts the fermionic swap operation"""
@@ -1105,7 +1109,7 @@ class TestFermionicSWAP:
         """Tests that operations are computed correctly using the
         autograd interface"""
 
-        dev = qml.device("default.qubit.autograd", wires=2)
+        dev = qml.device("default.qubit")
         state = np.array(
             [
                 0,
@@ -1115,7 +1119,7 @@ class TestFermionicSWAP:
             ]
         )
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, interface="autograd")
         def circuit(phi):
             qml.PauliX(wires=0)
             qml.FermionicSWAP(phi, wires=[0, 1])
@@ -1137,9 +1141,9 @@ class TestFermionicSWAP:
         """Tests that gradients are computed correctly using the
         autograd interface"""
 
-        dev = qml.device("default.qubit.autograd", wires=2)
+        dev = qml.device("default.qubit")
 
-        @qml.qnode(dev, diff_method=diff_method)
+        @qml.qnode(dev, interface="autograd", diff_method=diff_method)
         def circuit(phi):
             qml.PauliX(wires=0)
             qml.FermionicSWAP(phi, wires=[0, 1])
@@ -1163,9 +1167,9 @@ class TestFermionicSWAP:
 
         import tensorflow as tf
 
-        dev = qml.device("default.qubit.tf", wires=2)
+        dev = qml.device("default.qubit")
 
-        @qml.qnode(dev, diff_method=diff_method)
+        @qml.qnode(dev, diff_method=diff_method, interface="tf")
         def circuit(phi):
             qml.PauliX(wires=0)
             qml.FermionicSWAP(phi, wires=[0, 1])
@@ -1194,9 +1198,9 @@ class TestFermionicSWAP:
 
         import jax
 
-        dev = qml.device("default.qubit.jax", wires=2)
+        dev = qml.device("default.qubit")
 
-        @qml.qnode(dev, diff_method=diff_method)
+        @qml.qnode(dev, interface="jax", diff_method=diff_method)
         def circuit(phi):
             qml.PauliX(wires=0)
             qml.FermionicSWAP(phi, wires=[0, 1])

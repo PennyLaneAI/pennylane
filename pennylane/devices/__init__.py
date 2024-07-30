@@ -36,6 +36,7 @@ to verify and test quantum gradient computations.
     default_qutrit
     default_qutrit_mixed
     default_clifford
+    default_tensor
     null_qubit
     tests
 
@@ -53,10 +54,13 @@ accessible from the ``pennylane.devices`` submodule.
     :toctree: api
 
     ExecutionConfig
+    MCMConfig
     Device
     DefaultQubit
+    DefaultTensor
     NullQubit
     DefaultQutritMixed
+    LegacyDeviceFacade
 
 Preprocessing Transforms
 ------------------------
@@ -145,16 +149,32 @@ Qutrit Mixed-State Simulation Tools
 
 """
 
-from .execution_config import ExecutionConfig, DefaultExecutionConfig
+from .execution_config import ExecutionConfig, DefaultExecutionConfig, MCMConfig
+from .device_constructor import device, refresh_devices
 from .device_api import Device
 from .default_qubit import DefaultQubit
+from .legacy_facade import LegacyDeviceFacade
 
 # DefaultQubitTF and DefaultQubitAutograd not imported here since this
 # would lead to an automatic import of tensorflow and autograd, which are
-# not PennyLane core dependencies
+# not PennyLane core dependencies.
+# DefaultTensor is not imported here to avoid warnings
+# from quimb in case it is installed on the system.
 from .default_qubit_legacy import DefaultQubitLegacy
 from .default_gaussian import DefaultGaussian
 from .default_mixed import DefaultMixed
 from .default_clifford import DefaultClifford
+from .default_tensor import DefaultTensor
 from .null_qubit import NullQubit
+from .default_qutrit import DefaultQutrit
 from .default_qutrit_mixed import DefaultQutritMixed
+from .._device import Device as LegacyDevice
+from .._device import DeviceError
+
+
+# pylint: disable=undefined-variable
+def __getattr__(name):
+    if name == "plugin_devices":
+        return device_constructor.plugin_devices
+
+    raise AttributeError(f"module 'pennylane.devices' has no attribute '{name}'")

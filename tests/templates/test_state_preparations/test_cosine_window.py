@@ -14,9 +14,11 @@
 """
 Unit tests for the CosineWindow template.
 """
+import numpy as np
+
 # pylint: disable=too-few-public-methods
 import pytest
-import numpy as np
+
 import pennylane as qml
 from pennylane.wires import WireError
 
@@ -36,7 +38,7 @@ class TestDecomposition:
         """Test that the correct gates are applied."""
 
         op = qml.CosineWindow(wires=[0])
-        queue = op.expand().operations
+        queue = op.decomposition()
 
         assert queue[0].name == "Hadamard"
         assert queue[1].name == "RZ"

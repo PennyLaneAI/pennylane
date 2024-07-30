@@ -12,15 +12,52 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests for the gradients.gradient_transform module."""
+import inspect
+
 import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.gradients.gradient_transform import (
+    SUPPORTED_GRADIENT_KWARGS,
     _find_gradient_methods,
     _validate_gradient_methods,
     choose_trainable_params,
 )
+from pennylane.transforms.core import TransformDispatcher
+
+
+def test_supported_gradient_kwargs():
+    """Test that all keyword arguments of gradient transforms are
+    registered as supported gradient kwargs, and no others."""
+    # Collect all gradient transforms
+
+    # Non-diff_methods to skip
+    methods_to_skip = ("metric_tensor", "classical_fisher", "quantum_fisher")
+
+    grad_transforms = []
+    for attr in qml.gradients.__dir__():
+        if attr in methods_to_skip:
+            continue
+        obj = getattr(qml.gradients, attr)
+        if isinstance(obj, TransformDispatcher):
+            grad_transforms.append(obj)
+
+    # Collect arguments of all gradient transforms
+    grad_kwargs = set()
+    for tr in grad_transforms:
+        grad_kwargs |= set(inspect.signature(tr).parameters)
+
+    # Remove arguments that are not keyword arguments
+    grad_kwargs -= {"tape"}
+    # Remove "dev", because we decided against supporting this kwarg, although
+    # it is an argument to param_shift_cv, to avoid confusion.
+    grad_kwargs -= {"dev"}
+
+    # Check equality of required and supported gradient kwargs
+    assert grad_kwargs == SUPPORTED_GRADIENT_KWARGS
+    # Shots should never be used as a gradient kwarg
+    assert "shots" not in grad_kwargs
 
 
 def test_repr():
@@ -189,7 +226,6 @@ class TestGradientTransformIntegration:
     @pytest.mark.parametrize("prefactor", [1.0, 2.0])
     def test_acting_on_qnodes_single_param(self, shots, slicing, prefactor, atol):
         """Test that a gradient transform acts on QNodes with a single parameter correctly"""
-        np.random.seed(412)
         dev = qml.device("default.qubit", wires=2, shots=shots)
 
         @qml.qnode(dev)
@@ -218,7 +254,6 @@ class TestGradientTransformIntegration:
     @pytest.mark.parametrize("prefactor", [1.0, 2.0])
     def test_acting_on_qnodes_multi_param(self, shots, prefactor, atol):
         """Test that a gradient transform acts on QNodes with multiple parameters correctly"""
-        np.random.seed(412)
         dev = qml.device("default.qubit", wires=2, shots=shots)
 
         @qml.qnode(dev)
@@ -254,7 +289,6 @@ class TestGradientTransformIntegration:
     def test_acting_on_qnodes_multi_param_multi_arg(self, shots, atol):
         """Test that a gradient transform acts on QNodes with multiple parameters
         in both the tape and the QNode correctly"""
-        np.random.seed(234)
         dev = qml.device("default.qubit", wires=2, shots=shots)
 
         @qml.qnode(dev)
@@ -585,10 +619,14 @@ class TestGradientTransformIntegration:
         correctly when the QNode contains a template"""
         dev = qml.device("default.qubit", wires=3)
 
-        @qml.qnode(dev, expansion_strategy=strategy)
-        def circuit(weights):
-            qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1, 2])
-            return qml.probs(wires=[0, 1])
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match="'expansion_strategy' attribute is deprecated"
+        ):
+
+            @qml.qnode(dev, expansion_strategy=strategy)
+            def circuit(weights):
+                qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1, 2])
+                return qml.probs(wires=[0, 1])
 
         weights = np.ones([2, 3, 3], dtype=np.float64, requires_grad=True)
         res = qml.gradients.param_shift(circuit)(weights)

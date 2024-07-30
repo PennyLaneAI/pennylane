@@ -16,11 +16,15 @@ Unit tests for the compiler subpackage.
 """
 # pylint: disable=import-outside-toplevel
 from unittest.mock import patch
-import pytest
-import pennylane as qml
-from pennylane.compiler.compiler import CompileError
 
+import mcm_utils
+import numpy as np
+import pytest
+
+import pennylane as qml
 from pennylane import numpy as np
+from pennylane.compiler.compiler import CompileError
+from pennylane.transforms.dynamic_one_shot import fill_in_value
 
 catalyst = pytest.importorskip("catalyst")
 jax = pytest.importorskip("jax")
@@ -43,7 +47,7 @@ def catalyst_incompatible_version():
 
 @pytest.mark.usefixtures("catalyst_incompatible_version")
 def test_catalyst_incompatible():
-    """Test qjit with an incompatible Catalyst version < 0.4.0"""
+    """Test qjit with an incompatible Catalyst version that's lower than required."""
 
     dev = qml.device("lightning.qubit", wires=1)
 
@@ -53,7 +57,8 @@ def test_catalyst_incompatible():
         return qml.state()
 
     with pytest.raises(
-        CompileError, match="PennyLane-Catalyst 0.5.0 or greater is required, but installed 0.0.1"
+        CompileError,
+        match="PennyLane-Catalyst 0.[0-9]+.0 or greater is required, but installed 0.0.1",
     ):
         qml.qjit(circuit)()
 
@@ -99,6 +104,14 @@ class TestCatalyst:
 
         assert jnp.allclose(circuit(jnp.pi, jnp.pi / 2), 1.0)
         assert jnp.allclose(qml.qjit(circuit)(jnp.pi, jnp.pi / 2), -1.0)
+
+    @pytest.mark.parametrize("jax_enable_x64", [False, True])
+    def test_jax_enable_x64(self, jax_enable_x64):
+        """Test whether `qml.compiler.active` changes `jax_enable_x64`."""
+        jax.config.update("jax_enable_x64", jax_enable_x64)
+        assert jax.config.jax_enable_x64 is jax_enable_x64
+        qml.compiler.active()
+        assert jax.config.jax_enable_x64 is jax_enable_x64
 
     def test_qjit_circuit(self):
         """Test JIT compilation of a circuit with 2-qubit"""
@@ -260,20 +273,18 @@ class TestCatalyst:
         assert jnp.allclose(workflow_cl(0.1, [1]), workflow_pl(0.1, [1]))
 
     def test_qjit_adjoint_lazy(self):
-        """Test that Lazy kwarg is not supported."""
+        """Test that the lazy kwarg is supported."""
         dev = qml.device("lightning.qubit", wires=2)
 
-        @qml.qjit
         @qml.qnode(device=dev)
-        def workflow(theta, wires):
-            def func():
-                qml.RX(theta, wires=wires)
-
-            qml.adjoint(func, lazy=False)()
+        def workflow_pl(theta, wires):
+            qml.Hadamard(wires)
+            qml.adjoint(qml.RX(theta, wires=wires), lazy=False)
             return qml.probs()
 
-        with pytest.raises(CompileError, match="Setting lazy=False is not supported with qjit."):
-            workflow(0.1, [1])
+        workflow_cl = qml.qjit(workflow_pl)
+
+        assert jnp.allclose(workflow_cl(0.1, [1]), workflow_pl(0.1, [1]))
 
     def test_control(self):
         """Test that control works with qjit."""
@@ -342,6 +353,45 @@ class TestCatalystControlFlow:
         assert circuit(5, 6) == 30  # 5 * 6
         assert circuit(4, 7) == 28  # 4 * 7
 
+    def test_while_loop_python_fallback(self):
+        """Test that qml.while_loop fallsback to
+        Python without qjit"""
+
+        def f(n, m):
+            @qml.while_loop(lambda i, _: i < n)
+            def outer(i, sm):
+                @qml.while_loop(lambda j: j < m)
+                def inner(j):
+                    return j + 1
+
+                return i + 1, sm + inner(0)
+
+            return outer(0, 0)[1]
+
+        assert f(5, 6) == 30  # 5 * 6
+        assert f(4, 7) == 28  # 4 * 7
+
+    def test_fallback_while_loop_qnode(self):
+        """Test that qml.while_loop inside a qnode fallsback to
+        Python without qjit"""
+        dev = qml.device("lightning.qubit", wires=1)
+
+        @qml.qnode(dev)
+        def circuit(n):
+            @qml.while_loop(lambda v: v[0] < v[1])
+            def loop(v):
+                qml.PauliX(wires=0)
+                return v[0] + 1, v[1]
+
+            loop((0, n))
+            return qml.expval(qml.PauliZ(0))
+
+        assert jnp.allclose(circuit(1), -1.0)
+
+        res = circuit.tape.operations
+        expected = [qml.PauliX(0) for i in range(4)]
+        _ = [qml.assert_equal(i, j) for i, j in zip(res, expected)]
+
     def test_dynamic_wires_for_loops(self):
         """Test for loops with iteration index-dependant wires."""
         dev = qml.device("lightning.qubit", wires=6)
@@ -393,6 +443,57 @@ class TestCatalystControlFlow:
             return qml.state()
 
         assert jnp.allclose(circuit(4), jnp.eye(2**4)[0])
+
+    def test_for_loop_python_fallback(self):
+        """Test that qml.for_loop fallsback to Python
+        interpretation if Catalyst is not available"""
+        dev = qml.device("lightning.qubit", wires=3)
+
+        @qml.qnode(dev)
+        def circuit(x, n):
+
+            # for loop with dynamic bounds
+            @qml.for_loop(0, n, 1)
+            def loop_fn(i):
+                qml.Hadamard(wires=i)
+
+            # nested for loops.
+            # outer for loop updates x
+            @qml.for_loop(0, n, 1)
+            def loop_fn_returns(i, x):
+                qml.RX(x, wires=i)
+
+                # inner for loop
+                @qml.for_loop(i + 1, n, 1)
+                def inner(j):
+                    qml.CRY(x**2, [i, j])
+
+                inner()
+
+                return x + 0.1
+
+            loop_fn()
+            loop_fn_returns(x)
+
+            return qml.expval(qml.PauliZ(0))
+
+        x = 0.5
+        assert jnp.allclose(circuit(x, 3), qml.qjit(circuit)(x, 3))
+
+        res = circuit.tape.operations
+        expected = [
+            qml.Hadamard(wires=[0]),
+            qml.Hadamard(wires=[1]),
+            qml.Hadamard(wires=[2]),
+            qml.RX(0.5, wires=[0]),
+            qml.CRY(0.25, wires=[0, 1]),
+            qml.CRY(0.25, wires=[0, 2]),
+            qml.RX(0.6, wires=[1]),
+            qml.CRY(0.36, wires=[1, 2]),
+            qml.RX(0.7, wires=[2]),
+        ]
+
+        _ = [qml.assert_equal(i, j) for i, j in zip(res, expected)]
 
     def test_cond(self):
         """Test condition with simple true_fn"""
@@ -714,3 +815,94 @@ class TestCatalystGrad:
             CompileError, match="Pennylane does not support the VJP function without QJIT."
         ):
             vjp(x, dy)
+
+
+class TestCatalystSample:
+    """Test qml.sample with Catalyst."""
+
+    def test_sample_measure(self):
+        """Test that qml.sample can be used with catalyst.measure."""
+
+        dev = qml.device("lightning.qubit", wires=1, shots=1)
+
+        @qml.qjit
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.RY(x, wires=0)
+            m = catalyst.measure(0)
+            qml.PauliX(0)
+            return qml.sample(m)
+
+        assert circuit(0.0) == 0
+        assert circuit(jnp.pi) == 1
+
+
+class TestCatalystMCMs:
+    """Test dynamic_one_shot with Catalyst."""
+
+    @pytest.mark.xfail(reason="requires simultaneous catalyst pr")
+    @pytest.mark.parametrize("measure_f", [qml.counts, qml.expval, qml.probs])
+    @pytest.mark.parametrize("meas_obj", [qml.PauliZ(0), [0], "mcm"])
+    # pylint: disable=too-many-arguments
+    def test_dynamic_one_shot_simple(self, measure_f, meas_obj):
+        """Tests that Catalyst yields the same results as PennyLane's DefaultQubit for a simple
+        circuit with a mid-circuit measurement."""
+        if measure_f in (qml.counts, qml.probs, qml.sample) and (
+            not isinstance(meas_obj, list) and not meas_obj == "mcm"
+        ):
+            pytest.skip("Can't use observables with counts, probs or sample")
+
+        if measure_f in (qml.var, qml.expval) and (isinstance(meas_obj, list)):
+            pytest.skip("Can't use wires/mcm lists with var or expval")
+
+        if measure_f == qml.var and (not isinstance(meas_obj, list) and not meas_obj == "mcm"):
+            pytest.xfail("isa<UnrealizedConversionCastOp>")
+        shots = 8000
+
+        dq = qml.device("default.qubit", shots=shots, seed=8237945)
+
+        @qml.defer_measurements
+        @qml.qnode(dq)
+        def ref_func(x, y):
+            qml.RX(x, wires=0)
+            m0 = qml.measure(0)
+            qml.cond(m0, qml.RY)(y, wires=1)
+
+            meas_key = "wires" if isinstance(meas_obj, list) else "op"
+            meas_value = m0 if isinstance(meas_obj, str) else meas_obj
+            kwargs = {meas_key: meas_value}
+            if measure_f == qml.counts:
+                kwargs["all_outcomes"] = True
+            return measure_f(**kwargs)
+
+        dev = qml.device("lightning.qubit", wires=2, shots=shots)
+
+        @qml.qjit
+        @catalyst.dynamic_one_shot
+        @qml.qnode(dev)
+        def func(x, y):
+            qml.RX(x, wires=0)
+            m0 = catalyst.measure(0)
+
+            @catalyst.cond(m0 == 1)
+            def ansatz():
+                qml.RY(y, wires=1)
+
+            ansatz()
+
+            meas_key = "wires" if isinstance(meas_obj, list) else "op"
+            meas_value = m0 if isinstance(meas_obj, str) else meas_obj
+            kwargs = {meas_key: meas_value}
+            return measure_f(**kwargs)
+
+        params = jnp.pi / 4 * jnp.ones(2)
+        results0 = ref_func(*params)
+        results1 = func(*params)
+        if measure_f == qml.counts and isinstance(meas_obj, list):
+            results1 = {
+                format(int(state), f"0{len(meas_obj)}b"): count for state, count in zip(*results1)
+            }
+        if measure_f == qml.sample:
+            results0 = results0[results0 != fill_in_value]
+            results1 = results1[results1 != fill_in_value]
+        mcm_utils.validate_measurements(measure_f, shots, results1, results0)

@@ -12,10 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Transforms for pushing commuting gates through targets/control qubits."""
-from typing import Sequence, Callable
 
-from pennylane.tape import QuantumTape
+from pennylane.tape import QuantumTape, QuantumTapeBatch
 from pennylane.transforms import transform
+from pennylane.typing import PostprocessingFn
 from pennylane.wires import Wires
 
 from .optimization_utils import find_next_gate
@@ -42,7 +42,7 @@ def _commute_controlled_right(op_list):
         # We are looking only at the gates that can be pushed through
         # controls/targets; these are single-qubit gates with the basis
         # property specified.
-        if current_gate.basis is None or len(current_gate.wires) != 1:
+        if getattr(current_gate, "basis", None) is None or len(current_gate.wires) != 1:
             current_location -= 1
             continue
 
@@ -56,7 +56,7 @@ def _commute_controlled_right(op_list):
             next_gate = op_list[new_location + next_gate_idx + 1]
 
             # Only go ahead if information is available
-            if next_gate.basis is None:
+            if getattr(next_gate, "basis", None) is None:
                 break
 
             # If the next gate does not have control_wires defined, it is not
@@ -153,7 +153,9 @@ def _commute_controlled_left(op_list):
 
 
 @transform
-def commute_controlled(tape: QuantumTape, direction="right") -> (Sequence[QuantumTape], Callable):
+def commute_controlled(
+    tape: QuantumTape, direction="right"
+) -> tuple[QuantumTapeBatch, PostprocessingFn]:
     """Quantum transform to move commuting gates past control and target qubits of controlled operations.
 
     Args:

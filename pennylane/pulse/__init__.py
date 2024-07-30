@@ -236,7 +236,9 @@ Now we can execute the evolution of this Hamiltonian in a QNode and compute its 
 
     import jax
 
-    dev = qml.device("default.qubit.jax", wires=1)
+    jax.config.update("jax_enable_x64", True)
+
+    dev = qml.device("default.qubit", wires=1)
 
     @jax.jit
     @qml.qnode(dev, interface="jax")
@@ -246,10 +248,10 @@ Now we can execute the evolution of this Hamiltonian in a QNode and compute its 
 
 >>> params = [1.2]
 >>> circuit(params)
-Array(0.96632576, dtype=float32)
+Array(0.96632722, dtype=float64)
 
 >>> jax.grad(circuit)(params)
-[Array(2.3569832, dtype=float32)]
+[Array(2.35694829, dtype=float64)]
 
 We can use the decorator ``jax.jit`` to compile this execution just-in-time. This means the first execution
 will typically take a little longer with the benefit that all following executions will be significantly faster.
@@ -267,8 +269,8 @@ JIT-compiling is optional, and one can remove the decorator when only single exe
 """
 
 from .convenience_functions import constant, pwc, pwc_from_function, rect
+from .hardware_hamiltonian import HardwareHamiltonian, HardwarePulse, drive
 from .parametrized_evolution import ParametrizedEvolution
 from .parametrized_hamiltonian import ParametrizedHamiltonian
-from .hardware_hamiltonian import HardwareHamiltonian, HardwarePulse, drive
-from .rydberg import rydberg_interaction, rydberg_drive
-from .transmon import transmon_interaction, transmon_drive
+from .rydberg import rydberg_drive, rydberg_interaction
+from .transmon import transmon_drive, transmon_interaction

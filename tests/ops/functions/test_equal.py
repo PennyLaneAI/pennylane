@@ -15,19 +15,28 @@
 Unit tests for the equal function.
 Tests are divided by number of parameters and wires different operators take.
 """
-# pylint: disable=too-many-arguments, too-many-public-methods
 import itertools
+import re
 
+# pylint: disable=too-many-arguments, too-many-public-methods
 from copy import deepcopy
+
 import numpy as np
 import pytest
-
 
 import pennylane as qml
 from pennylane import numpy as npp
 from pennylane.measurements import ExpectationMP
 from pennylane.measurements.probs import ProbabilityMP
-from pennylane.ops.op_math import SymbolicOp, Controlled
+from pennylane.operation import Operator
+from pennylane.ops import Conditional
+from pennylane.ops.functions.equal import (
+    BASE_OPERATION_MISMATCH_ERROR_MESSAGE,
+    OPERANDS_MISMATCH_ERROR_MESSAGE,
+    _equal_dispatch,
+    assert_equal,
+)
+from pennylane.ops.op_math import Controlled, SymbolicOp
 from pennylane.templates.subroutines import ControlledSequence
 
 PARAMETRIZED_OPERATIONS_1P_1W = [
@@ -316,40 +325,95 @@ equal_pauli_operators = [
 ]
 
 
+def test_assert_equal_types():
+    """Test that assert equal raises if the operator types are different."""
+
+    op1 = qml.S(0)
+    op2 = qml.T(0)
+    with pytest.raises(AssertionError, match="op1 and op2 are of different types"):
+        assert_equal(op1, op2)
+
+
+def test_assert_equal_unspecified():
+
+    # pylint: disable=too-few-public-methods
+    class RandomType:
+        """dummy type"""
+
+        def __init__(self):
+            pass
+
+    # pylint: disable=unused-argument
+    @_equal_dispatch.register
+    def _(op1: RandomType, op2, **_):
+        """always returns false"""
+        return False
+
+    with pytest.raises(AssertionError, match=r"for an unspecified reason"):
+        assert_equal(RandomType(), RandomType())
+
+
 class TestEqual:
     @pytest.mark.parametrize("ops", PARAMETRIZED_OPERATIONS_COMBINATIONS)
     def test_equal_simple_diff_op(self, ops):
         """Test different operators return False"""
         assert not qml.equal(ops[0], ops[1], check_trainability=False, check_interface=False)
+        with pytest.raises(AssertionError, match="op1 and op2 are of different types"):
+            assert_equal(ops[0], ops[1], check_trainability=False, check_interface=False)
 
     @pytest.mark.parametrize("op1", PARAMETRIZED_OPERATIONS)
     def test_equal_simple_same_op(self, op1):
         """Test same operators return True"""
         assert qml.equal(op1, op1, check_trainability=False, check_interface=False)
+        assert_equal(op1, op1, check_trainability=False, check_interface=False)
 
     @pytest.mark.parametrize("op1", PARAMETRIZED_OPERATIONS_1P_1W)
     def test_equal_simple_op_1p1w(self, op1):
         """Test changing parameter or wire returns False"""
         wire = 0
         param = 0.123
+        test_operator = op1(param, wires=wire)
         assert qml.equal(
-            op1(param, wires=wire),
-            op1(param, wires=wire),
+            test_operator,
+            test_operator,
             check_trainability=False,
             check_interface=False,
         )
+        assert_equal(
+            test_operator,
+            test_operator,
+            check_trainability=False,
+            check_interface=False,
+        )
+
+        test_operator_diff_parameter = op1(param * 2, wires=wire)
         assert not qml.equal(
-            op1(param, wires=wire),
-            op1(param * 2, wires=wire),
+            test_operator,
+            test_operator_diff_parameter,
             check_trainability=False,
             check_interface=False,
         )
+        with pytest.raises(AssertionError, match="op1 and op2 have different data."):
+            assert_equal(
+                test_operator,
+                test_operator_diff_parameter,
+                check_trainability=False,
+                check_interface=False,
+            )
+        test_operator_diff_wire = op1(param, wires=wire + 1)
         assert not qml.equal(
-            op1(param, wires=wire),
-            op1(param, wires=wire + 1),
+            test_operator,
+            test_operator_diff_wire,
             check_trainability=False,
             check_interface=False,
         )
+        with pytest.raises(AssertionError, match="op1 and op2 have different wires."):
+            assert_equal(
+                test_operator,
+                test_operator_diff_wire,
+                check_trainability=False,
+                check_interface=False,
+            )
 
     @pytest.mark.all_interfaces
     @pytest.mark.parametrize("op1", PARAMETRIZED_OPERATIONS_1P_1W)
@@ -396,6 +460,14 @@ class TestEqual:
             check_trainability=True,
             check_interface=False,
         )
+
+        with pytest.raises(AssertionError, match="Parameters have different trainability"):
+            assert_equal(
+                op1(param_qml, wires=wire),
+                op1(param_qml_1, wires=wire),
+                check_trainability=True,
+                check_interface=False,
+            )
 
     @pytest.mark.all_interfaces
     @pytest.mark.parametrize("op1", PARAMETRIZED_OPERATIONS_1P_2W)
@@ -977,6 +1049,15 @@ class TestEqual:
             check_trainability=False,
             check_interface=False,
         )
+        with pytest.raises(
+            AssertionError, match="The hyperparameters are not equal for op1 and op2."
+        ):
+            assert_equal(
+                op1(param, "Y", wires=wire),
+                op1(param, "Z", wires=wire),
+                check_trainability=False,
+                check_interface=False,
+            )
 
         wire = 0
         param = np.eye(2) * 1j
@@ -1125,11 +1206,22 @@ class TestEqual:
             check_interface=False,
         )
 
+        with pytest.raises(AssertionError, match="Parameters have different interfaces"):
+            assert_equal(
+                op1(pl_tensor, wires=wire),
+                op1(torch_tensor, wires=wire),
+                check_trainability=True,
+                check_interface=True,
+            )
+
     def test_equal_with_different_arithmetic_depth(self):
         """Test equal method with two operators with different arithmetic depth."""
-        op1 = qml.RX(0.3, wires=0)
-        op2 = qml.prod(op1, qml.RY(0.25, wires=1))
-        assert not qml.equal(op1, op2)
+        op1 = Operator(wires=0)
+        op2 = DepthIncreaseOperator(op1)
+
+        assert qml.equal(op1, op2) is False
+        with pytest.raises(AssertionError, match="op1 and op2 have different arithmetic depths"):
+            assert_equal(op1, op2)
 
     def test_equal_with_unsupported_nested_operators_returns_false(self):
         """Test that the equal method with two operators with the same arithmetic depth (>0) returns
@@ -1143,6 +1235,8 @@ class TestEqual:
         assert op1.arithmetic_depth > 0
 
         assert not qml.equal(op1, op2)
+        with pytest.raises(AssertionError, match="op1 and op2 have arithmetic depth > 0"):
+            assert_equal(op1, op2)
 
     # Measurements test cases
     @pytest.mark.parametrize("ops", PARAMETRIZED_MEASUREMENTS_COMBINATIONS)
@@ -1257,6 +1351,35 @@ class TestMeasurementsEqual:
             qml.measurements.MidMeasureMP(wires=qml.wires.Wires([0, 1]), reset=True, id="test_id"),
         )
 
+    def test_equal_measurement_value(self):
+        """Test that MeasurementValue's are equal when their measurements are the same."""
+        mv1 = qml.measure(0)
+        mv2 = qml.measure(0)
+        # qml.equal of MidMeasureMP checks the id
+        mv2.measurements[0].id = mv1.measurements[0].id
+
+        assert qml.equal(mv1, mv1)
+        assert qml.equal(mv1, mv2)
+
+    def test_different_measurement_value(self):
+        """Test that MeasurementValue's are different when their measurements are not the same."""
+        mv1 = qml.measure(0)
+        mv2 = qml.measure(1)
+        assert not qml.equal(mv1, mv2)
+
+    def test_composed_measurement_value(self):
+        """Test that composition of MeasurementValue's are checked correctly."""
+        mv1 = qml.measure(0)
+        mv2 = qml.measure(1)
+        mv3 = qml.measure(0)
+        # qml.equal of MidMeasureMP checks the id
+        mv3.measurements[0].id = mv1.measurements[0].id
+
+        assert qml.equal(mv1 * mv2, mv2 * mv1)
+        assert qml.equal(mv1 + mv2, mv3 + mv2)
+        # NOTE: we are deliberatily just checking for measurements and not for processing_fn, such that two MeasurementValue objects composed from the same operators will be qml.equal
+        assert qml.equal(3 * mv1 + 1, 4 * mv3 + 2)
+
     @pytest.mark.parametrize("mp_fn", [qml.probs, qml.sample, qml.counts])
     def test_mv_list_as_op(self, mp_fn):
         """Test that MeasurementProcesses that measure a list of MeasurementValues check for equality
@@ -1307,6 +1430,31 @@ class TestMeasurementsEqual:
         assert qml.equal(mp1, mp3)
         assert not qml.equal(mp1, mp4)
 
+    @pytest.mark.jax
+    @pytest.mark.parametrize("mp_fn", [qml.expval, qml.var, qml.sample, qml.counts, qml.probs])
+    def test_abstract_mv_equality(self, mp_fn):
+        """Test that equality is verified correctly for measurements collecting statistics for
+        abstract mid-circuit measurement values"""
+        import jax  # pylint: disable=import-outside-toplevel
+
+        m1 = True
+        m2 = False
+
+        @jax.jit
+        def eq_traced(a, b):
+            assert qml.math.is_abstract(a)
+            assert qml.math.is_abstract(b)
+
+            mp1 = mp_fn(op=a)
+            mp2 = mp_fn(op=a)
+            mp3 = mp_fn(op=b)
+
+            return qml.equal(mp1, mp2), qml.equal(mp1, mp3)
+
+        res = eq_traced(m1, m2)
+        assert res[0]
+        assert not res[1]
+
     def test_shadow_expval_list_versus_operator(self):
         """Check that if one shadow expval has an operator and the other has a list, they are not equal."""
 
@@ -1343,12 +1491,23 @@ class TestObservablesComparisons:
 
         assert qml.equal(H1, H2) == qml.equal(H2, H1)
         assert qml.equal(H1, H2) == res
+        if not res:
+            error_message_pattern = re.compile(r"'([^']+)' and '([^']+)' are not the same")
+            with pytest.raises(AssertionError, match=error_message_pattern):
+                assert_equal(H1, H2)
 
     @pytest.mark.parametrize(("T1", "T2", "res"), equal_tensors)
     def test_tensors_equal(self, T1, T2, res):
         """Tests that equality can be checked between Tensors"""
         assert qml.equal(T1, T2) == qml.equal(T2, T1)
         assert qml.equal(T1, T2) == res
+
+    def test_tensors_not_equal(self):
+        """Tensors are not equal because of different observable data"""
+        op1 = qml.operation.Tensor(qml.X(0), qml.Y(1))
+        op2 = qml.operation.Tensor(qml.Y(0), qml.X(1))
+        with pytest.raises(AssertionError, match="have different _obs_data outputs"):
+            assert_equal(op1, op2)
 
     @pytest.mark.parametrize(("H", "T", "res"), equal_hamiltonians_and_tensors)
     def test_hamiltonians_and_tensors_equal(self, H, T, res):
@@ -1376,6 +1535,8 @@ class TestObservablesComparisons:
         op2 = qml.RX(1.2, 0)
         assert qml.equal(op1, op2) is False
         assert qml.equal(op2, op1) is False
+        with pytest.raises(AssertionError, match="is not of type Observable"):
+            assert_equal(op1, op2)
 
     def test_tensor_and_operation_not_equal(self):
         """Tests that comparing a Tensor with an Operator that is not an Observable returns False"""
@@ -1383,6 +1544,17 @@ class TestObservablesComparisons:
         op2 = qml.RX(1.2, 0)
         assert qml.equal(op1, op2) is False
         assert qml.equal(op2, op1) is False
+        with pytest.raises(AssertionError, match="is not of type Observable"):
+            assert_equal(op1, op2)
+
+    def test_tensor_and_observable_not_equal(self):
+        """Tests that comparing a Tensor with an Observable that is not a Tensor returns False"""
+        op1 = qml.PauliX(0) @ qml.PauliY(1)
+        op2 = qml.Z(0)
+        assert qml.equal(op1, op2) is False
+        assert qml.equal(op2, op1) is False
+        with pytest.raises(AssertionError, match="is of type <class 'pennylane.operation.Tensor'>"):
+            assert_equal(op1, op2)
 
     def test_tensor_and_unsupported_observable_returns_false(self):
         """Tests that trying to compare a Tensor to something other than another Tensor or a Hamiltonian returns False"""
@@ -1390,6 +1562,9 @@ class TestObservablesComparisons:
         op2 = qml.Hermitian([[0, 1], [1, 0]], 0)
 
         assert not qml.equal(op1, op2)
+        error_message_pattern = re.compile(r"'([^']+)' and '([^']+)' are not the same")
+        with pytest.raises(AssertionError, match=error_message_pattern):
+            assert_equal(op1, op2)
 
     def test_unsupported_object_type_not_implemented(self):
         dev = qml.device("default.qubit", wires=1)
@@ -1456,8 +1631,8 @@ class TestSymbolicOpComparison:
     @pytest.mark.jax
     def test_kwargs_for_base_operator_comparison(self):
         """Test that setting kwargs check_interface and check_trainability are applied when comparing the bases"""
-        import torch
         import jax
+        import torch
 
         base1 = qml.RX(torch.tensor(1.2), wires=0)
         base2 = qml.RX(jax.numpy.array(1.2), wires=0)
@@ -1517,7 +1692,12 @@ class TestSymbolicOpComparison:
         """Test that equal compares base operators for Controlled operators"""
         op1 = Controlled(base1, control_wires=2)
         op2 = Controlled(base2, control_wires=2)
-        assert qml.equal(op1, op2) == res
+        if res:
+            assert qml.equal(op1, op2)
+        else:
+            assert not qml.equal(op1, op2)
+            with pytest.raises(AssertionError, match=BASE_OPERATION_MISMATCH_ERROR_MESSAGE):
+                assert_equal(op1, op2)
 
     @pytest.mark.parametrize(("base1", "base2", "res"), BASES)
     def test_controlled_sequence_base_operator_comparison(self, base1, base2, res):
@@ -1525,6 +1705,23 @@ class TestSymbolicOpComparison:
         op1 = ControlledSequence(base1, control=2)
         op2 = ControlledSequence(base2, control=2)
         assert qml.equal(op1, op2) == res
+
+    def test_controlled_sequence_with_different_base_operator(self):
+        """Test controlled sequence operator with different base operators"""
+        op1 = ControlledSequence(qml.PauliX(0), control=2)
+        op2 = ControlledSequence(qml.PauliY(0), control=2)
+        with pytest.raises(AssertionError, match=BASE_OPERATION_MISMATCH_ERROR_MESSAGE):
+            assert_equal(op1, op2)
+
+    def test_controlled_sequence_with_different_arithmetic_depth(self):
+        """The depths of controlled sequence operators are different due to nesting"""
+        base = qml.MultiRZ(1.23, [0, 1])
+        depth_increased_base = DepthIncreaseOperator(base)
+        op1 = ControlledSequence(base, control=5)
+        op2 = ControlledSequence(depth_increased_base, control=5)
+
+        with pytest.raises(AssertionError, match="op1 and op2 have different arithmetic depths."):
+            assert_equal(op1, op2)
 
     @pytest.mark.parametrize(("wire1", "wire2", "res"), WIRES)
     def test_control_wires_comparison(self, wire1, wire2, res):
@@ -1544,7 +1741,15 @@ class TestSymbolicOpComparison:
         op1 = qml.ops.op_math.Controlled(base1, control_wires=[1, 2], control_values=controls1)
         op2 = qml.ops.op_math.Controlled(base2, control_wires=[1, 2], control_values=controls2)
 
-        assert qml.equal(op1, op2) == np.allclose(controls1, controls2)
+        if np.allclose(controls1, controls2):
+            assert qml.equal(op1, op2)
+            assert_equal(op1, op2)
+        else:
+            assert not qml.equal(op1, op2)
+            with pytest.raises(
+                AssertionError, match="op1 and op2 have different control dictionaries."
+            ):
+                assert_equal(op1, op2)
 
     @pytest.mark.parametrize(
         ("wires1", "controls1", "wires2", "controls2", "res"),
@@ -1573,6 +1778,9 @@ class TestSymbolicOpComparison:
         op1 = ControlledSequence(base1, control=wires1)
         op2 = ControlledSequence(base2, control=wires2)
         assert qml.equal(op1, op2) == res
+        if not res:
+            with pytest.raises(AssertionError, match="op1 and op2 have different wires."):
+                assert_equal(op1, op2)
 
     @pytest.mark.parametrize(("wire1", "wire2", "res"), WIRES)
     def test_controlled_work_wires_comparison(self, wire1, wire2, res):
@@ -1581,7 +1789,22 @@ class TestSymbolicOpComparison:
         base2 = qml.MultiRZ(1.23, [0, 1])
         op1 = Controlled(base1, control_wires=2, work_wires=wire1)
         op2 = Controlled(base2, control_wires=2, work_wires=wire2)
-        assert qml.equal(op1, op2) == res
+        if res:
+            assert qml.equal(op1, op2) == res
+            assert_equal(op1, op2)
+        else:
+            assert not qml.equal(op1, op2)
+            with pytest.raises(AssertionError, match="op1 and op2 have different work wires."):
+                assert_equal(op1, op2)
+
+    def test_controlled_arithmetic_depth(self):
+        """The depths of controlled operators are different due to nesting"""
+        base = qml.MultiRZ(1.23, [0, 1])
+        op1 = Controlled(base, control_wires=5)
+        op2 = Controlled(op1, control_wires=6)
+
+        with pytest.raises(AssertionError, match="op1 and op2 have different arithmetic depths."):
+            assert_equal(op1, op2)
 
     @pytest.mark.parametrize("base", PARAMETRIZED_OPERATIONS)
     def test_adjoint_comparison(self, base):
@@ -1592,6 +1815,101 @@ class TestSymbolicOpComparison:
 
         assert qml.equal(op1, op2)
         assert not qml.equal(op1, op3)
+        with pytest.raises(AssertionError, match=BASE_OPERATION_MISMATCH_ERROR_MESSAGE):
+            assert_equal(op1, op3)
+
+    def test_adjoint_comparison_with_tolerance(self):
+        """Test that equal compares the parameters within a provided tolerance of the Adjoint class."""
+        op1 = qml.adjoint(qml.RX(1.2, wires=0))
+        op2 = qml.adjoint(qml.RX(1.2 + 1e-4, wires=0))
+
+        assert qml.equal(op1, op2, atol=1e-3, rtol=0)
+        assert not qml.equal(op1, op2, atol=1e-5, rtol=0)
+        assert qml.equal(op1, op2, atol=0, rtol=1e-3)
+        assert not qml.equal(op1, op2, atol=0, rtol=1e-5)
+
+    def test_adjoint_base_op_comparison_with_interface(self):
+        """Test that equal compares the parameters within a provided interface of the base operator of Adjoint class."""
+        op1 = qml.adjoint(qml.RX(1.2, wires=0))
+        op2 = qml.adjoint(qml.RX(npp.array(1.2), wires=0))
+
+        assert qml.equal(op1, op2, check_interface=False, check_trainability=False)
+        assert not qml.equal(op1, op2, check_interface=True, check_trainability=False)
+
+    def test_adjoint_base_op_comparison_with_trainability(self):
+        """Test that equal compares the parameters within a provided trainability of the base operator of Adjoint class."""
+        op1 = qml.adjoint(qml.RX(npp.array(1.2, requires_grad=False), wires=0))
+        op2 = qml.adjoint(qml.RX(npp.array(1.2, requires_grad=True), wires=0))
+
+        assert qml.equal(op1, op2, check_interface=False, check_trainability=False)
+        assert not qml.equal(op1, op2, check_interface=False, check_trainability=True)
+
+    @pytest.mark.parametrize(("wire1", "wire2", "res"), WIRES)
+    def test_conditional_base_operator_wire_comparison(self, wire1, wire2, res):
+        """Test that equal compares operator wires for Conditional operators"""
+        m = qml.measure(0)
+        base1 = qml.PauliX(wire1)
+        base2 = qml.PauliX(wire2)
+        op1 = Conditional(m, base1)
+        op2 = Conditional(m, base2)
+        assert qml.equal(op1, op2) == res
+
+    @pytest.mark.parametrize(("wire1", "wire2", "res"), WIRES)
+    def test_conditional_measurement_value_wire_comparison(self, wire1, wire2, res):
+        """Test that equal compares operator wires for Conditional operators"""
+        m1 = qml.measure(wire1)
+        m2 = qml.measure(wire2)
+        if wire1 == wire2:
+            # qml.equal checks id for MidMeasureMP, but here we only care about them acting on the same wire
+            m2.measurements[0].id = m1.measurements[0].id
+        base = qml.PauliX(wire2)
+        op1 = Conditional(m1, base)
+        op2 = Conditional(m2, base)
+        assert qml.equal(op1, op2) == res
+
+    @pytest.mark.parametrize(("base1", "base2", "res"), BASES)
+    def test_conditional_base_operator_comparison(self, base1, base2, res):
+        """Test that equal compares base operators for Conditional operators"""
+        m = qml.measure(0)
+        op1 = Conditional(m, base1)
+        op2 = Conditional(m, base2)
+        assert qml.equal(op1, op2) == res
+
+    def test_conditional_comparison_with_tolerance(self):
+        """Test that equal compares the parameters within a provided tolerance of the Conditional class."""
+        m = qml.measure(0)
+        base1 = qml.RX(1.2, wires=0)
+        base2 = qml.RX(1.2 + 1e-4, wires=0)
+        op1 = Conditional(m, base1)
+        op2 = Conditional(m, base2)
+
+        assert qml.equal(op1, op2, atol=1e-3, rtol=0)
+        assert not qml.equal(op1, op2, atol=1e-5, rtol=0)
+        assert qml.equal(op1, op2, atol=0, rtol=1e-3)
+        assert not qml.equal(op1, op2, atol=0, rtol=1e-5)
+
+    def test_conditional_base_op_comparison_with_interface(self):
+        """Test that equal compares the parameters within a provided interface of the base operator of Conditional class."""
+        m = qml.measure(0)
+        base1 = qml.RX(1.2, wires=0)
+        base2 = qml.RX(npp.array(1.2), wires=0)
+        op1 = Conditional(m, base1)
+        op2 = Conditional(m, base2)
+
+        assert qml.equal(op1, op2, check_interface=False, check_trainability=False)
+        assert not qml.equal(op1, op2, check_interface=True, check_trainability=False)
+
+    def test_conditional_base_op_comparison_with_trainability(self):
+        """Test that equal compares the parameters within a provided trainability of the base operator of Conditional class."""
+
+        m = qml.measure(0)
+        base1 = qml.RX(npp.array(1.2, requires_grad=False), wires=0)
+        base2 = qml.RX(npp.array(1.2, requires_grad=True), wires=0)
+        op1 = Conditional(m, base1)
+        op2 = Conditional(m, base2)
+
+        assert qml.equal(op1, op2, check_interface=False, check_trainability=False)
+        assert not qml.equal(op1, op2, check_interface=False, check_trainability=True)
 
     @pytest.mark.parametrize("bases_bases_match", BASES)
     @pytest.mark.parametrize("params_params_match", PARAMS)
@@ -1603,6 +1921,60 @@ class TestSymbolicOpComparison:
         op2 = qml.pow(base2, param2)
         assert qml.equal(op1, op2) == (bases_match and params_match)
 
+    def test_diff_pow_comparison(self):
+        """Test different exponents"""
+        base = qml.PauliX(0)
+        op1 = qml.pow(base, 0.2)
+        op2 = qml.pow(base, 0.3)
+        with pytest.raises(AssertionError, match="Exponent are different."):
+            assert_equal(op1, op2)
+
+    def test_pow_comparison_with_tolerance(self):
+        """Test that equal compares the parameters within a provided tolerance of the Pow class."""
+        op1 = qml.pow(qml.RX(1.2, wires=0), 2)
+        op2 = qml.pow(qml.RX(1.2 + 1e-4, wires=0), 2)
+
+        assert qml.equal(op1, op2, atol=1e-3, rtol=0)
+        assert not qml.equal(op1, op2, atol=1e-5, rtol=0)
+        assert qml.equal(op1, op2, atol=0, rtol=1e-3)
+        assert not qml.equal(op1, op2, atol=0, rtol=1e-5)
+
+    def test_pow_comparison_with_interface(self):
+        """Test that equal compares the parameters within a provided interface of the Pow class."""
+        op1 = qml.pow(qml.RX(1.2, wires=0), 2)
+        op2 = qml.pow(qml.RX(1.2, wires=0), npp.array(2))
+
+        assert qml.equal(op1, op2, check_interface=False, check_trainability=False)
+        assert not qml.equal(op1, op2, check_interface=True, check_trainability=False)
+        with pytest.raises(AssertionError, match="Exponent have different interfaces.\n"):
+            assert_equal(op1, op2, check_interface=True, check_trainability=False)
+
+    def test_pow_comparison_with_trainability(self):
+        """Test that equal compares the parameters within a provided trainability of the Pow class."""
+        op1 = qml.pow(qml.RX(1.2, wires=0), npp.array(2, requires_grad=False))
+        op2 = qml.pow(qml.RX(1.2, wires=0), npp.array(2, requires_grad=True))
+
+        assert qml.equal(op1, op2, check_interface=False, check_trainability=False)
+        assert not qml.equal(op1, op2, check_interface=False, check_trainability=True)
+        with pytest.raises(AssertionError, match="Exponent have different trainability.\n"):
+            assert_equal(op1, op2, check_interface=True, check_trainability=True)
+
+    def test_pow_base_op_comparison_with_interface(self):
+        """Test that equal compares the parameters within a provided interface of the base operator of Pow class."""
+        op1 = qml.pow(qml.RX(1.2, wires=0), 2)
+        op2 = qml.pow(qml.RX(npp.array(1.2), wires=0), 2)
+
+        assert qml.equal(op1, op2, check_interface=False, check_trainability=False)
+        assert not qml.equal(op1, op2, check_interface=True, check_trainability=False)
+
+    def test_pow_base_op_comparison_with_trainability(self):
+        """Test that equal compares the parameters within a provided trainability of the base operator of Pow class."""
+        op1 = qml.pow(qml.RX(npp.array(1.2, requires_grad=False), wires=0), 2)
+        op2 = qml.pow(qml.RX(npp.array(1.2, requires_grad=True), wires=0), 2)
+
+        assert qml.equal(op1, op2, check_interface=False, check_trainability=False)
+        assert not qml.equal(op1, op2, check_interface=False, check_trainability=True)
+
     @pytest.mark.parametrize("bases_bases_match", BASES)
     @pytest.mark.parametrize("params_params_match", PARAMS)
     def test_exp_comparison(self, bases_bases_match, params_params_match):
@@ -1611,15 +1983,78 @@ class TestSymbolicOpComparison:
         param1, param2, params_match = params_params_match
         op1 = qml.exp(base1, param1)
         op2 = qml.exp(base2, param2)
+
         assert qml.equal(op1, op2) == (bases_match and params_match)
 
-    def test_exp_comparison_with_tolerance(self):
-        """Test that equal compares the parameters within a provided tolerance."""
-        op1 = qml.exp(qml.PauliX(0), 0.12345)
-        op2 = qml.exp(qml.PauliX(0), 0.12356)
+    def test_exp_with_different_coeffs(self):
+        """Test that assert_equal fails when coeffs are different"""
+        op1 = qml.exp(qml.X(0), 0.5j)
+        op2 = qml.exp(qml.X(0), 1.0j)
 
-        assert qml.equal(op1, op2, atol=1e-3, rtol=1e-2)
-        assert not qml.equal(op1, op2, atol=1e-5, rtol=1e-4)
+        with pytest.raises(AssertionError, match="op1 and op2 have different coefficients."):
+            assert_equal(op1, op2)
+
+    def test_exp_with_different_base_operator(self):
+        """Test that assert_equal fails when base operators are different"""
+        op1 = qml.exp(qml.X(0), 0.5j)
+        op2 = qml.exp(qml.Y(0), 0.5j)
+
+        with pytest.raises(AssertionError, match=BASE_OPERATION_MISMATCH_ERROR_MESSAGE):
+            assert_equal(op1, op2)
+
+    def test_exp_comparison_with_tolerance(self):
+        """Test that equal compares the parameters within a provided tolerance of the Exp class."""
+        op1 = qml.exp(qml.PauliX(0), 0.12)
+        op2 = qml.exp(qml.PauliX(0), 0.12 + 1e-4)
+
+        assert qml.equal(op1, op2, atol=1e-3, rtol=0)
+        assert not qml.equal(op1, op2, atol=1e-5, rtol=0)
+        assert qml.equal(op1, op2, atol=0, rtol=1e-2)
+        assert not qml.equal(op1, op2, atol=0, rtol=1e-5)
+
+    def test_exp_comparison_with_interface(self):
+        """Test that equal compares the parameters within a provided interface of the Exp class."""
+        op1 = qml.exp(qml.PauliX(0), 1.2)
+        op2 = qml.exp(qml.PauliX(0), npp.array(1.2))
+
+        assert qml.equal(op1, op2, check_interface=False, check_trainability=False)
+        assert not qml.equal(op1, op2, check_interface=True, check_trainability=False)
+
+        assert_equal(op1, op2, check_interface=False, check_trainability=False)
+        with pytest.raises(AssertionError, match="Parameters have different interface"):
+            assert_equal(op1, op2, check_interface=True, check_trainability=False)
+
+    def test_exp_comparison_with_trainability(self):
+        """Test that equal compares the parameters within a provided trainability of the Exp class."""
+        op1 = qml.exp(qml.PauliX(0), npp.array(1.2, requires_grad=False))
+        op2 = qml.exp(qml.PauliX(0), npp.array(1.2, requires_grad=True))
+
+        assert qml.equal(op1, op2, check_interface=False, check_trainability=False)
+        assert not qml.equal(op1, op2, check_interface=False, check_trainability=True)
+
+        assert_equal(op1, op2, check_interface=False, check_trainability=False)
+        with pytest.raises(AssertionError, match="Parameters have different trainability"):
+            assert_equal(op1, op2, check_interface=False, check_trainability=True)
+
+    def test_exp_base_op_comparison_with_interface(self):
+        """Test that equal compares the parameters within a provided interface of the base operator of Exp class."""
+        op1 = qml.exp(qml.RX(0.5, wires=0), 1.2)
+        op2 = qml.exp(qml.RX(npp.array(0.5), wires=0), 1.2)
+
+        assert qml.equal(op1, op2, check_interface=False, check_trainability=False)
+        assert not qml.equal(op1, op2, check_interface=True, check_trainability=False)
+
+        assert_equal(op1, op2, check_interface=False, check_trainability=False)
+        with pytest.raises(AssertionError, match="Parameters have different interface"):
+            assert_equal(op1, op2, check_interface=True, check_trainability=False)
+
+    def test_exp_base_op_comparison_with_trainability(self):
+        """Test that equal compares the parameters within a provided trainability of the base operator of Exp class."""
+        op1 = qml.exp(qml.RX(npp.array(0.5, requires_grad=False), wires=0), 1.2)
+        op2 = qml.exp(qml.RX(npp.array(0.5, requires_grad=True), wires=0), 1.2)
+
+        assert qml.equal(op1, op2, check_interface=False, check_trainability=False)
+        assert not qml.equal(op1, op2, check_interface=False, check_trainability=True)
 
     additional_cases = [
         (qml.sum(qml.PauliX(0), qml.PauliY(0)), qml.sum(qml.PauliY(0), qml.PauliX(0)), True),
@@ -1638,13 +2073,72 @@ class TestSymbolicOpComparison:
         op2 = qml.s_prod(param2, base2)
         assert qml.equal(op1, op2) == (bases_match and params_match)
 
-    def test_s_prod_comparison_with_tolerance(self):
-        """Test that equal compares the parameters within a provided tolerance."""
-        op1 = qml.s_prod(0.12345, qml.PauliX(0))
-        op2 = qml.s_prod(0.12356, qml.PauliX(0))
+    def test_s_prod_comparison_different_scalar(self):
+        """Test that equal compares two objects of the SProd class with different scalars"""
+        base = qml.PauliX(0) @ qml.PauliY(1)
+        op1 = qml.s_prod(0.2, base)
+        op2 = qml.s_prod(0.3, base)
 
-        assert qml.equal(op1, op2, atol=1e-3, rtol=1e-2)
-        assert not qml.equal(op1, op2, atol=1e-5, rtol=1e-4)
+        with pytest.raises(
+            AssertionError, match="op1 and op2 have different scalars. Got 0.2 and 0.3"
+        ):
+            assert_equal(op1, op2)
+
+    def test_s_prod_comparison_different_operands(self):
+        """Test that equal compares two objects of the SProd class with different operands"""
+        base1 = qml.PauliX(0) @ qml.PauliY(1)
+        base2 = qml.PauliX(0) @ qml.PauliY(2)
+        op1 = qml.s_prod(0.2, base1)
+        op2 = qml.s_prod(0.2, base2)
+
+        with pytest.raises(AssertionError, match=OPERANDS_MISMATCH_ERROR_MESSAGE):
+            assert_equal(op1, op2)
+
+    def test_s_prod_comparison_with_tolerance(self):
+        """Test that equal compares the parameters within a provided tolerance of the SProd class."""
+        op1 = qml.s_prod(0.12, qml.PauliX(0))
+        op2 = qml.s_prod(0.12 + 1e-4, qml.PauliX(0))
+
+        assert qml.equal(op1, op2, atol=1e-3, rtol=0)
+        assert not qml.equal(op1, op2, atol=1e-5, rtol=0)
+        assert qml.equal(op1, op2, atol=0, rtol=1e-3)
+        assert not qml.equal(op1, op2, atol=0, rtol=1e-5)
+
+    def test_s_prod_comparison_with_interface(self):
+        """Test that equal compares the parameters within a provided interface of the SProd class."""
+        op1 = qml.s_prod(0.12, qml.PauliX(0))
+        op2 = qml.s_prod(npp.array(0.12), qml.PauliX(0))
+
+        assert qml.equal(op1, op2, check_interface=False, check_trainability=False)
+        assert not qml.equal(op1, op2, check_interface=True, check_trainability=False)
+        with pytest.raises(AssertionError, match="Parameters have different interfaces."):
+            assert_equal(op1, op2)
+
+    def test_s_prod_comparison_with_trainability(self):
+        """Test that equal compares the parameters within a provided trainability of the SProd class."""
+        op1 = qml.s_prod(npp.array(0.12, requires_grad=False), qml.PauliX(0))
+        op2 = qml.s_prod(npp.array(0.12, requires_grad=True), qml.PauliX(0))
+
+        assert qml.equal(op1, op2, check_interface=False, check_trainability=False)
+        assert not qml.equal(op1, op2, check_interface=False, check_trainability=True)
+        with pytest.raises(AssertionError, match="Parameters have different trainability."):
+            assert_equal(op1, op2)
+
+    def test_s_prod_base_op_comparison_with_interface(self):
+        """Test that equal compares the parameters within a provided interface of the base operator of SProd class."""
+        op1 = qml.s_prod(0.12, qml.RX(0.5, wires=0))
+        op2 = qml.s_prod(0.12, qml.RX(npp.array(0.5), wires=0))
+
+        assert qml.equal(op1, op2, check_interface=False, check_trainability=False)
+        assert not qml.equal(op1, op2, check_interface=True, check_trainability=False)
+
+    def test_s_prod_base_op_comparison_with_trainability(self):
+        """Test that equal compares the parameters within a provided trainability of the base operator of SProd class."""
+        op1 = qml.s_prod(0.12, qml.RX(npp.array(0.5, requires_grad=False), wires=0))
+        op2 = qml.s_prod(0.12, qml.RX(npp.array(0.5, requires_grad=True), wires=0))
+
+        assert qml.equal(op1, op2, check_interface=False, check_trainability=False)
+        assert not qml.equal(op1, op2, check_interface=False, check_trainability=True)
 
 
 @pytest.mark.usefixtures("use_new_opmath")
@@ -1710,8 +2204,8 @@ class TestProdComparisons:
     @pytest.mark.all_interfaces
     def test_prod_kwargs_used_for_base_operator_comparison(self):
         """Test that setting kwargs check_interface and check_trainability are applied when comparing the bases"""
-        import torch
         import jax
+        import torch
 
         base_list1 = [qml.RX(torch.tensor(1.2), wires=0), qml.RX(torch.tensor(2.3), wires=1)]
         base_list2 = [qml.RX(jax.numpy.array(1.2), wires=0), qml.RX(jax.numpy.array(2.3), wires=1)]
@@ -1804,8 +2298,8 @@ class TestSumComparisons:
     @pytest.mark.all_interfaces
     def test_sum_kwargs_used_for_base_operator_comparison(self):
         """Test that setting kwargs check_interface and check_trainability are applied when comparing the bases"""
-        import torch
         import jax
+        import torch
 
         base_list1 = [qml.RX(torch.tensor(1.2), wires=0), qml.RX(torch.tensor(2.3), wires=1)]
         base_list2 = [qml.RX(jax.numpy.array(1.2), wires=0), qml.RX(jax.numpy.array(2.3), wires=1)]
@@ -1829,6 +2323,28 @@ class TestSumComparisons:
         op1 = qml.sum(*base_list1)
         op2 = qml.sum(*base_list2)
         assert qml.equal(op1, op2) == res
+
+    def test_sum_with_different_operands(self):
+        """Test sum equals with different operands"""
+        operands1 = [qml.PauliX(0), qml.PauliY(1)]
+        operands2 = [qml.PauliY(0), qml.PauliY(1)]
+        op1 = qml.sum(*operands1)
+        op2 = qml.sum(*operands2)
+
+        with pytest.raises(AssertionError, match=OPERANDS_MISMATCH_ERROR_MESSAGE):
+            assert_equal(op1, op2)
+
+    def test_sum_with_different_number_of_operands(self):
+        """Test sum equals with different number of operands"""
+        operands1 = [qml.PauliX(0), qml.PauliY(1)]
+        operands2 = [qml.PauliY(1)]
+        op1 = qml.sum(*operands1)
+        op2 = qml.sum(*operands2)
+
+        with pytest.raises(
+            AssertionError, match="op1 and op2 have different number of operands. Got 2 and 1"
+        ):
+            assert_equal(op1, op2)
 
     def test_sum_equal_order_invarient(self):
         """Test that the order of operations doesn't affect equality"""
@@ -2063,15 +2579,23 @@ class TestBasisRotation:
     @pytest.mark.parametrize("op, other_op", [(op1, op3)])
     def test_different_tolerances_comparison(self, op, other_op):
         assert qml.equal(op, other_op, atol=1e-5)
+        assert_equal(op, other_op, atol=1e-5)
         assert qml.equal(op, other_op, rtol=0, atol=1e-9) is False
+
+        with pytest.raises(AssertionError, match="The hyperparameter unitary_matrix is not equal"):
+            assert_equal(op, other_op, rtol=0, atol=1e-9)
 
     @pytest.mark.parametrize("op, other_op", [(op1, op2)])
     def test_non_equal_training_params_comparison(self, op, other_op):
         assert qml.equal(op, other_op)
+        assert_equal(op, other_op)
 
     @pytest.mark.parametrize("op, other_op", [(op1, op4)])
     def test_non_equal_training_wires(self, op, other_op):
         assert qml.equal(op, other_op) is False
+
+        with pytest.raises(AssertionError, match="op1 and op2 have different wires."):
+            assert_equal(op, other_op)
 
     @pytest.mark.jax
     @pytest.mark.parametrize("op", [op1])
@@ -2086,7 +2610,11 @@ class TestBasisRotation:
         )
         other_op = qml.BasisRotation(wires=range(2), unitary_matrix=rotation_mat_jax)
         assert qml.equal(op, other_op, check_interface=False)
+        assert_equal(op, other_op, check_interface=False)
         assert qml.equal(op, other_op) is False
+
+        with pytest.raises(AssertionError, match=r"has different interfaces for op1 and op2"):
+            assert_equal(op, other_op)
 
 
 class TestHilbertSchmidt:
@@ -2244,3 +2772,32 @@ class TestHilbertSchmidt:
         assert qml.equal(op, other_op, check_interface=False) is False
         assert qml.equal(op, other_op, check_trainability=False) is False
         assert qml.equal(op, other_op, check_interface=False, check_trainability=False) is True
+
+
+# pylint: disable=too-few-public-methods
+class DepthIncreaseOperator(Operator):
+    """Dummy class which increases depth by one"""
+
+    # pylint: disable=super-init-not-called
+    def __init__(self, op: Operator):
+        self._op = op
+
+    @property
+    def arithmetic_depth(self) -> int:
+        """Arithmetic depth of the operator."""
+        return 1 + self._op.arithmetic_depth
+
+    @property
+    def wires(self):
+        return self._op.wires
+
+
+@pytest.mark.jax
+def test_ops_with_abstract_parameters_not_equal():
+    """Test that ops are not equal if any data is tracers."""
+
+    import jax
+
+    assert not jax.jit(qml.equal)(qml.RX(0.1, 0), qml.RX(0.1, 0))
+    with pytest.raises(AssertionError, match="Data contains a tracer"):
+        jax.jit(assert_equal)(qml.RX(0.1, 0), qml.RX(0.1, 0))

@@ -12,13 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for qubit observables."""
-# pylint: disable=protected-access
+# pylint: disable=protected-access, use-implicit-booleaness-not-comparison
 import functools
 import pickle
-import pytest
-import numpy as np
 
-from gate_data import I, X, Y, Z, H
+import numpy as np
+import pytest
+from gate_data import H, I, X, Y, Z
+from scipy.sparse import csr_matrix
+
 import pennylane as qml
 from pennylane.ops.qubit.observables import BasisStateProjector, StateVectorProjector
 
@@ -468,7 +470,7 @@ class TestProjector:
         assert isinstance(basis_state_projector, BasisStateProjector)
 
         second_projector = qml.Projector(basis_state, wires)
-        assert qml.equal(second_projector, basis_state_projector)
+        qml.assert_equal(second_projector, basis_state_projector)
 
         qml.ops.functions.assert_valid(basis_state_projector)
 
@@ -480,7 +482,7 @@ class TestProjector:
         assert isinstance(state_vector_projector, StateVectorProjector)
 
         second_projector = qml.Projector(state_vector, wires)
-        assert qml.equal(second_projector, state_vector_projector)
+        qml.assert_equal(second_projector, state_vector_projector)
 
         qml.ops.functions.assert_valid(state_vector_projector)
 
@@ -503,13 +505,13 @@ class TestProjector:
         basis_state = np.array([0, 1])
         op = qml.Projector(basis_state, wires=(0, 1))
         pow_op = op.pow(n)[0]
-        assert qml.equal(op, pow_op)
+        qml.assert_equal(op, pow_op)
 
         # State vector projector
         state_vector = np.array([0, 1])
         op = qml.Projector(state_vector, wires=[0])
         pow_op = op.pow(n)[0]
-        assert qml.equal(op, pow_op)
+        qml.assert_equal(op, pow_op)
 
     def test_exception_bad_input(self):
         """Tests that we get an exception when the input shape is wrong."""
@@ -527,7 +529,7 @@ class TestProjector:
         serialization = pickle.dumps(proj)
         new_proj = pickle.loads(serialization)
         assert type(new_proj) is type(proj)
-        assert qml.equal(new_proj, proj)
+        qml.assert_equal(new_proj, proj)
         assert new_proj.id == proj.id  # Ensure they are identical
 
         # State vector projector
@@ -536,8 +538,115 @@ class TestProjector:
         new_proj = pickle.loads(serialization)
 
         assert type(new_proj) is type(proj)
-        assert qml.equal(new_proj, proj)
+        qml.assert_equal(new_proj, proj)
         assert new_proj.id == proj.id  # Ensure they are identical
+
+    def test_single_qubit_basis_state_0(self):
+        """Tests the function with a single-qubit basis state |0>."""
+        basis_state = [0]
+        data = [1]
+        row_indices = [0]
+        col_indices = [0]
+        expected_matrix = csr_matrix((data, (row_indices, col_indices)), shape=(2, 2))
+
+        actual_matrix = BasisStateProjector.compute_sparse_matrix(basis_state)
+        actual_matrix = BasisStateProjector.compute_sparse_matrix(basis_state)
+
+        assert np.array_equal(expected_matrix.toarray(), actual_matrix.toarray())
+
+    def test_single_qubit_basis_state_1(self):
+        """Tests the function with a single-qubit basis state |1>."""
+        basis_state = [1]
+        data = [1]
+        row_indices = [1]
+        col_indices = [1]
+        expected_matrix = csr_matrix((data, (row_indices, col_indices)), shape=(2, 2))
+        actual_matrix = BasisStateProjector.compute_sparse_matrix(basis_state)
+        assert np.array_equal(expected_matrix.toarray(), actual_matrix.toarray())
+
+    def test_two_qubit_basis_state_10(self):
+        """Tests the function with a two-qubits basis state |10>."""
+        basis_state = [1, 0]
+        data = [1]
+        row_indices = [2]
+        col_indices = [2]
+        expected_matrix = csr_matrix((data, (row_indices, col_indices)), shape=(4, 4))
+        actual_matrix = BasisStateProjector.compute_sparse_matrix(basis_state)
+        assert np.array_equal(expected_matrix.toarray(), actual_matrix.toarray())
+
+    def test_two_qubit_basis_state_01(self):
+        """Tests the function with a two-qubits basis state |01>."""
+        basis_state = [0, 1]
+        data = [1]
+        row_indices = [1]
+        col_indices = [1]
+        expected_matrix = csr_matrix((data, (row_indices, col_indices)), shape=(4, 4))
+        actual_matrix = BasisStateProjector.compute_sparse_matrix(basis_state)
+        assert np.array_equal(expected_matrix.toarray(), actual_matrix.toarray())
+
+    def test_two_qubit_basis_state_11(self):
+        """Tests the function with a two-qubits basis state |11>."""
+        basis_state = [1, 1]
+        data = [1]
+        row_indices = [3]
+        col_indices = [3]
+        expected_matrix = csr_matrix((data, (row_indices, col_indices)), shape=(4, 4))
+        actual_matrix = BasisStateProjector.compute_sparse_matrix(basis_state)
+        assert np.array_equal(expected_matrix.toarray(), actual_matrix.toarray())
+
+    def test_three_qubit_basis_state_101(self):
+        """Tests the function with a three-qubits basis state |101>."""
+        basis_state = [1, 0, 1]
+        data = [1]
+        row_indices = [5]
+        col_indices = [5]
+        expected_matrix = csr_matrix((data, (row_indices, col_indices)), shape=(8, 8))
+        actual_matrix = BasisStateProjector.compute_sparse_matrix(basis_state)
+        assert np.array_equal(expected_matrix.toarray(), actual_matrix.toarray())
+
+    def test_invalid_basis_state(self):
+        """Tests the function with an invalid state."""
+        basis_state = [0, 2]  # Invalid basis state
+        with pytest.raises(ValueError):
+            BasisStateProjector.compute_sparse_matrix(basis_state)
+
+    @pytest.mark.jax
+    def test_jit_measurement(self):
+        """Test that the measurement of a projector can be jitted."""
+
+        import jax
+
+        @jax.jit
+        @qml.qnode(qml.device("default.qubit"))
+        def circuit(state):
+            qml.X(1)
+            return qml.expval(qml.Projector(state, wires=(0, 1)))
+
+        state00 = jax.numpy.array([0, 0])
+        out00 = circuit(state00)
+        assert qml.math.allclose(out00, 0)
+        state01 = jax.numpy.array([0, 1])
+        out01 = circuit(state01)
+        assert qml.math.allclose(out01, 1)
+        state10 = jax.numpy.array([True, False])
+        out10 = circuit(state10)
+        assert qml.math.allclose(out10, 0)
+
+        with pytest.raises(ValueError, match=r"Basis state must consist of integers or booleans."):
+            circuit(jax.numpy.array([0.5, 0.6]))
+
+    @pytest.mark.jax
+    def test_jit_matrix(self):
+        """Test that computing the matrix of a projector is jittable."""
+
+        import jax
+
+        basis_state = jax.numpy.array([0, 1])
+        f = jax.jit(BasisStateProjector.compute_matrix)
+        out = f(basis_state)
+
+        expected = np.array([[0, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]])
+        assert qml.math.allclose(out, expected)
 
 
 class TestBasisStateProjector:
@@ -637,10 +746,10 @@ class TestBasisStateProjector:
         assert np.allclose(res_dynamic, expected, atol=tol)
         assert np.allclose(res_static, expected, atol=tol)
 
-    @pytest.mark.parametrize(
-        "dev", (qml.device("default.qubit"), qml.device("default.qubit.legacy", wires=1))
-    )
-    def test_integration_batched_state(self, dev):
+    @pytest.mark.parametrize("dev_name", ("default.qubit", "default.qubit.legacy"))
+    def test_integration_batched_state(self, dev_name):
+        dev = qml.device(dev_name, wires=1)
+
         @qml.qnode(dev)
         def circuit(x):
             qml.RX(x, wires=0)
@@ -714,6 +823,24 @@ class TestStateVectorProjector:
         assert projector.label(cache=cache) == "P(M1)"  # Does not check repetition (not needed)
         assert len(cache["matrices"]) == 2
         assert np.allclose(cache["matrices"][1], projector.parameters[0])
+
+    @pytest.mark.jax
+    def test_jit_execution(self):
+        """Test that executing a StateVectorProjector can be jitted."""
+
+        import jax
+
+        @jax.jit
+        @qml.qnode(qml.device("default.qubit"))
+        def circuit(state):
+            return qml.expval(qml.Projector(state, wires=(0, 1)))
+
+        basis_state = jax.numpy.array([1, 1, 1, 1.0]) / 2
+        out = circuit(basis_state)
+        assert qml.math.allclose(out, 0.25)
+
+        basis_state2 = jax.numpy.array([0, 0, 0, 0])
+        assert qml.math.allclose(circuit(basis_state2), 0)
 
 
 label_data = [

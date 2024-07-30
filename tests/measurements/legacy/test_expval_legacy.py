@@ -16,8 +16,8 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.measurements import Expectation, Shots
 from pennylane.devices.qubit.measure import flatten_state
+from pennylane.measurements import Expectation, Shots
 
 
 # TODO: Remove this when new CustomMP are the default
@@ -105,7 +105,6 @@ class TestExpval:
     ):  # pylint: disable=too-many-arguments
         """Test that expectation values for mid-circuit measurement values
         are correct for a single measurement value."""
-        np.random.seed(42)
         dev = qml.device(device_name, wires=2, shots=shots)
 
         @qml.qnode(dev)
@@ -133,7 +132,6 @@ class TestExpval:
     ):  # pylint: disable=too-many-arguments
         """Test that expectation values for mid-circuit measurement values
         are correct for a composite measurement value."""
-        np.random.seed(42)
         dev = qml.device(device_name, wires=6, shots=shots)
 
         @qml.qnode(dev)
@@ -201,7 +199,6 @@ class TestExpval:
         """Tests that the expectation of a ``Projector`` object is computed correctly for both of
         its subclasses."""
         dev = qml.device("default.qubit.legacy", wires=3, shots=shots)
-        np.random.seed(42)
 
         @qml.qnode(dev)
         def circuit():

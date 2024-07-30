@@ -12,29 +12,69 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the QNode"""
-# pylint: disable=import-outside-toplevel, protected-access, no-member
-import warnings
 import copy
 
+# pylint: disable=import-outside-toplevel, protected-access, no-member
+import warnings
 from functools import partial
-from typing import Callable, Tuple
 
 import numpy as np
 import pytest
 from scipy.sparse import csr_matrix
 
-
 import pennylane as qml
 from pennylane import QNode
 from pennylane import numpy as pnp
 from pennylane import qnode
-from pennylane.tape import QuantumScript
 from pennylane.resource import Resources
+from pennylane.tape import QuantumScript, QuantumTapeBatch
+from pennylane.typing import PostprocessingFn
 
 
 def dummyfunc():
     """dummy func."""
     return None
+
+
+def test_backprop_switching_deprecation():
+    """Test that a PennyLaneDeprecationWarning is raised when a device is subtituted
+    for a different backprop device.
+    """
+
+    class DummyDevice(qml.devices.LegacyDevice):
+        """A minimal device that substitutes for a backprop device."""
+
+        author = "some string"
+        name = "my legacy device"
+        short_name = "something"
+        version = 0.0
+
+        observables = {"PauliX", "PauliY", "PauliZ"}
+        operations = {"Rot", "RX", "RY", "RZ", "PauliX", "PauliY", "PauliZ", "CNOT"}
+        pennylane_requires = 0.38
+
+        _debugger = None
+
+        def capabilities(self):
+            return {"passthru_devices": {"autograd": "default.mixed"}}
+
+        def reset(self):
+            pass
+
+        # pylint: disable=unused-argument
+        def apply(self, operation, wires, par):
+            return 0.0
+
+        # pylint: disable=unused-argument
+        def expval(self, observable, wires, par):
+            return 0.0
+
+    with pytest.warns(qml.PennyLaneDeprecationWarning):
+
+        @qml.qnode(DummyDevice(shots=None), interface="autograd")
+        def _(x):
+            qml.RX(x, 0)
+            return qml.expval(qml.Z(0))
 
 
 # pylint: disable=too-many-public-methods
@@ -492,13 +532,14 @@ class TestValidation:
 
         dev = qml.device("default.qubit.legacy", wires=1, shots=1)
 
-        @qnode(dev, diff_method="adjoint")
-        def circ():
-            return qml.expval(qml.PauliZ(0))
-
         with pytest.warns(
             UserWarning, match="Requested adjoint differentiation to be computed with finite shots."
         ):
+
+            @qnode(dev, diff_method="adjoint")
+            def circ():
+                return qml.expval(qml.PauliZ(0))
+
             circ()
 
     @pytest.mark.autograd
@@ -622,7 +663,8 @@ class TestValidation:
         }
 
     def test_autograd_interface_device_switched_no_warnings(self):
-        """Test that checks that no warning is raised for device switch when you define an interface."""
+        """Test that checks that no warning is raised for device switch when you define an interface,
+        except for the deprecation warnings which will be caught by the fixture."""
         dev = qml.device("default.qubit.legacy", wires=1)
 
         @qml.qnode(dev, interface="autograd")
@@ -630,17 +672,16 @@ class TestValidation:
             qml.RX(params, wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        with warnings.catch_warnings(record=True) as record:
-            circuit(qml.numpy.array(0.1, requires_grad=True))
-
-        assert len(record) == 0
+        circuit(qml.numpy.array(0.1, requires_grad=True))
 
     def test_not_giving_mode_kwarg_does_not_raise_warning(self):
-        """Test that not providing a value for mode does not raise a warning."""
+        """Test that not providing a value for mode does not raise a warning
+        except for the deprecation warning."""
         with warnings.catch_warnings(record=True) as record:
-            _ = qml.QNode(lambda f: f, qml.device("default.qubit.legacy", wires=1))
+            qml.QNode(lambda f: f, qml.device("default.qubit.legacy", wires=1))
 
-        assert len(record) == 0
+        assert len(record) == 1
+        assert record[0].category == qml.PennyLaneDeprecationWarning
 
 
 class TestTapeConstruction:
@@ -1076,7 +1117,7 @@ class TestIntegration:
         QNode construction if the device supports mid-circuit measurements."""
         dev = qml.device("default.qubit.legacy", wires=3)
         mocker.patch.object(qml.Device, "_capabilities", {"supports_mid_measure": True})
-        spy = mocker.spy(qml, "defer_measurements")
+        spy = mocker.spy(qml.defer_measurements, "_transform")
 
         @qml.qnode(dev)
         def circuit():
@@ -1090,9 +1131,7 @@ class TestIntegration:
         assert len(circuit.tape.operations) == 2
         assert isinstance(circuit.tape.operations[1], qml.measurements.MidMeasureMP)
 
-    @pytest.mark.parametrize(
-        "dev", [qml.device("default.qubit", wires=3), qml.device("default.qubit.legacy", wires=3)]
-    )
+    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.legacy"])
     @pytest.mark.parametrize("first_par", np.linspace(0.15, np.pi - 0.3, 3))
     @pytest.mark.parametrize("sec_par", np.linspace(0.15, np.pi - 0.3, 3))
     @pytest.mark.parametrize(
@@ -1107,11 +1146,13 @@ class TestIntegration:
         ],
     )
     def test_defer_meas_if_mcm_unsupported(
-        self, dev, first_par, sec_par, return_type, mv_return, mv_res, mocker
+        self, dev_name, first_par, sec_par, return_type, mv_return, mv_res, mocker
     ):  # pylint: disable=too-many-arguments
         """Tests that the transform using the deferred measurement principle is
         applied if the device doesn't support mid-circuit measurements
         natively."""
+
+        dev = qml.device(dev_name, wires=3)
 
         @qml.qnode(dev)
         def cry_qnode(x, y):
@@ -1139,23 +1180,6 @@ class TestIntegration:
         assert np.allclose(r2[1], mv_res(first_par))
         assert spy.call_count == 3 if dev.name == "defaut.qubit" else 1
 
-    def test_drawing_has_deferred_measurements(self):
-        """Test that `qml.draw` with qnodes uses defer_measurements
-        to draw circuits with mid-circuit measurements."""
-        dev = qml.device("default.qubit.legacy", wires=2)
-
-        @qml.qnode(dev)
-        def circuit(x):
-            qml.RX(x, wires=0)
-            m = qml.measure(0)
-            qml.cond(m, qml.PauliX)(wires=1)
-            return qml.expval(qml.PauliZ(wires=1))
-
-        res = qml.draw(circuit)("x")
-        expected = "0: ──RX(x)─╭●─┤     \n1: ────────╰X─┤  <Z>"
-
-        assert res == expected
-
     @pytest.mark.parametrize("basis_state", [[1, 0], [0, 1]])
     def test_sampling_with_mcm(self, basis_state, mocker):
         """Tests that a QNode with qml.sample and mid-circuit measurements
@@ -1180,11 +1204,11 @@ class TestIntegration:
             qml.cond(m_0, qml.RY)(x, wires=1)
             return qml.sample(qml.PauliZ(1))
 
-        spy = mocker.spy(qml, "defer_measurements")
+        spy = mocker.spy(qml.defer_measurements, "_transform")
         r1 = cry_qnode(first_par)
         r2 = conditional_ry_qnode(first_par)
         assert np.allclose(r1, r2)
-        spy.assert_called_once()
+        spy.assert_called()
 
     @pytest.mark.tf
     @pytest.mark.parametrize("interface", ["tf", "auto"])
@@ -1566,7 +1590,7 @@ class TestTransformProgramIntegration:
         @qml.transforms.core.transform
         def just_pauli_x_out(
             tape: qml.tape.QuantumTape,
-        ) -> (Tuple[qml.tape.QuantumTape], Callable):
+        ) -> tuple[QuantumTapeBatch, PostprocessingFn]:
             return (
                 qml.tape.QuantumScript([qml.PauliX(0)], tape.measurements),
             ), null_postprocessing
@@ -1596,7 +1620,7 @@ class TestTransformProgramIntegration:
         @qml.transforms.core.transform
         def pin_result(
             tape: qml.tape.QuantumTape, requested_result
-        ) -> (Tuple[qml.tape.QuantumTape], Callable):
+        ) -> tuple[QuantumTapeBatch, PostprocessingFn]:
             def postprocessing(_: qml.typing.ResultBatch) -> qml.typing.Result:
                 return requested_result
 
@@ -1622,7 +1646,9 @@ class TestTransformProgramIntegration:
             return results[0]
 
         @qml.transforms.core.transform
-        def just_pauli_x_out(tape: qml.tape.QuantumTape) -> (Tuple[qml.tape.QuantumTape], Callable):
+        def just_pauli_x_out(
+            tape: qml.tape.QuantumTape,
+        ) -> tuple[QuantumTapeBatch, PostprocessingFn]:
             return (
                 qml.tape.QuantumScript([qml.PauliX(0)], tape.measurements),
             ), null_postprocessing
@@ -1630,7 +1656,7 @@ class TestTransformProgramIntegration:
         @qml.transforms.core.transform
         def repeat_operations(
             tape: qml.tape.QuantumTape,
-        ) -> (Tuple[qml.tape.QuantumTape], Callable):
+        ) -> tuple[QuantumTapeBatch, PostprocessingFn]:
             new_tape = qml.tape.QuantumScript(
                 tape.operations + copy.deepcopy(tape.operations), tape.measurements
             )
@@ -1674,13 +1700,13 @@ class TestTransformProgramIntegration:
         @qml.transforms.core.transform
         def scale_output(
             tape: qml.tape.QuantumTape, factor
-        ) -> (Tuple[qml.tape.QuantumTape], Callable):
+        ) -> tuple[QuantumTapeBatch, PostprocessingFn]:
             return (tape,), partial(scale_by_factor, factor=factor)
 
         @qml.transforms.core.transform
         def shift_output(
             tape: qml.tape.QuantumTape, shift
-        ) -> (Tuple[qml.tape.QuantumTape], Callable):
+        ) -> tuple[QuantumTapeBatch, PostprocessingFn]:
             return (tape,), partial(add_shift, shift=shift)
 
         @partial(shift_output, shift=1.0)
@@ -1711,7 +1737,7 @@ class TestTransformProgramIntegration:
             return len(results[0])
 
         @qml.transforms.core.transform
-        def use_n_shots(tape: qml.tape.QuantumTape, n) -> (Tuple[qml.tape.QuantumTape], Callable):
+        def use_n_shots(tape: qml.tape.QuantumTape, n) -> tuple[QuantumTapeBatch, PostprocessingFn]:
             return (
                 qml.tape.QuantumScript(tape.operations, tape.measurements, shots=n),
             ), num_of_shots_from_sample
@@ -1868,7 +1894,7 @@ class TestTapeExpansion:
         def circuit():
             return qml.expval(H)
 
-        spy = mocker.spy(qml.transforms, "hamiltonian_expand")
+        spy = mocker.spy(qml.transforms, "split_non_commuting")
         res = circuit()
         assert np.allclose(res, c[2], atol=0.3)
 
@@ -1877,6 +1903,7 @@ class TestTapeExpansion:
 
         assert len(tapes) == 2
 
+    @pytest.mark.usefixtures("new_opmath_only")
     @pytest.mark.parametrize("grouping", [True, False])
     def test_multiple_hamiltonian_expansion_finite_shots(self, grouping):
         """Test that multiple Hamiltonians works correctly (sum_expand should be used)"""
@@ -1905,10 +1932,15 @@ class TestTapeExpansion:
         dev = qml.device("default.qubit.legacy", wires=2)
         x = pnp.array(0.5, requires_grad=True)
 
-        @qnode(dev, diff_method="parameter-shift", expansion_strategy="device")
-        def circuit(x):
-            qml.SingleExcitation(x, wires=[0, 1])
-            return qml.expval(qml.PauliX(0))
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match="'expansion_strategy' attribute is deprecated",
+        ):
+
+            @qnode(dev, diff_method="parameter-shift", expansion_strategy="device")
+            def circuit(x):
+                qml.SingleExcitation(x, wires=[0, 1])
+                return qml.expval(qml.PauliX(0))
 
         assert circuit.expansion_strategy == "device"
         assert circuit.execute_kwargs["expand_fn"] is None

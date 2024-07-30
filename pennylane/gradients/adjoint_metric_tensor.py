@@ -14,16 +14,18 @@
 """
 Contains the adjoint_metric_tensor.
 """
-from typing import Sequence, Callable
-from itertools import chain
 from functools import partial
+from itertools import chain
 
 import numpy as np
+
 import pennylane as qml
 
 # pylint: disable=too-many-statements,unused-argument
 from pennylane.gradients.metric_tensor import _contract_metric_tensor_with_cjac
+from pennylane.tape import QuantumTapeBatch
 from pennylane.transforms import transform
+from pennylane.typing import PostprocessingFn
 
 
 def _reshape_real_imag(state, dim):
@@ -39,7 +41,7 @@ def _group_operations(tape):
     ops = tape.operations
     # Find the indices of trainable operations in the tape operations list
     # pylint: disable=protected-access
-    trainable_par_info = [tape._par_info[i] for i in tape.trainable_params]
+    trainable_par_info = [tape.par_info[i] for i in tape.trainable_params]
     trainables = [info["op_idx"] for info in trainable_par_info]
     # Add the indices incremented by one to the trainable indices
     split_ids = list(chain.from_iterable([idx, idx + 1] for idx in trainables))
@@ -58,7 +60,7 @@ def _group_operations(tape):
 
 def _expand_trainable_multipar(
     tape: qml.tape.QuantumTape,
-) -> (Sequence[qml.tape.QuantumTape], Callable):
+) -> tuple[QuantumTapeBatch, PostprocessingFn]:
     """Expand trainable multi-parameter operations in a quantum tape."""
 
     interface = qml.math.get_interface(*tape.get_parameters())
@@ -76,7 +78,9 @@ def _expand_trainable_multipar(
     is_informative=True,
     use_argnum_in_expand=True,
 )
-def adjoint_metric_tensor(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTape], Callable):
+def adjoint_metric_tensor(
+    tape: qml.tape.QuantumTape,
+) -> tuple[QuantumTapeBatch, PostprocessingFn]:
     r"""Implements the adjoint method outlined in
     `Jones <https://arxiv.org/abs/2011.02991>`__ to compute the metric tensor.
 

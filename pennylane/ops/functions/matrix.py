@@ -14,16 +14,23 @@
 """
 This module contains the qml.matrix function.
 """
-# pylint: disable=protected-access,too-many-branches
-from typing import Sequence, Callable, Union
 from functools import partial
 
+# pylint: disable=protected-access,too-many-branches
+from typing import Union
+
 import pennylane as qml
-from pennylane.transforms import TransformError
 from pennylane import transform
-from pennylane.typing import TensorLike
 from pennylane.operation import Operator
-from pennylane.pauli import PauliWord, PauliSentence
+from pennylane.pauli import PauliSentence, PauliWord
+from pennylane.tape import QuantumTapeBatch
+from pennylane.transforms import TransformError
+from pennylane.typing import PostprocessingFn, TensorLike
+
+
+def catalyst_qjit(qnode):
+    """A method checking whether a qnode is compiled by catalyst.qjit"""
+    return qnode.__class__.__name__ == "QJIT" and hasattr(qnode, "user_function")
 
 
 def matrix(op: Union[Operator, PauliWord, PauliSentence], wire_order=None) -> TensorLike:
@@ -176,6 +183,9 @@ def matrix(op: Union[Operator, PauliWord, PauliSentence], wire_order=None) -> Te
             wires specified, and this is the order in which wires appear in ``circuit()``.
 
     """
+    if catalyst_qjit(op):
+        op = op.user_function
+
     if not isinstance(op, Operator):
 
         if isinstance(op, (PauliWord, PauliSentence)):
@@ -218,13 +228,13 @@ def matrix(op: Union[Operator, PauliWord, PauliSentence], wire_order=None) -> Te
     try:
         return op.matrix(wire_order=wire_order)
     except:  # pylint: disable=bare-except
-        return matrix(op.expand(), wire_order=wire_order or op.wires)
+        return matrix(qml.tape.QuantumScript(op.decomposition()), wire_order=wire_order or op.wires)
 
 
 @partial(transform, is_informative=True)
 def _matrix_transform(
     tape: qml.tape.QuantumTape, wire_order=None, **kwargs
-) -> (Sequence[qml.tape.QuantumTape], Callable):
+) -> tuple[QuantumTapeBatch, PostprocessingFn]:
     if not tape.wires:
         raise qml.operation.MatrixUndefinedError
 

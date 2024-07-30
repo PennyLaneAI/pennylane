@@ -20,23 +20,17 @@ executed by a device.
 import contextlib
 import copy
 from collections import Counter
-from typing import List, Union, Optional, Sequence
+from collections.abc import Sequence
+from functools import cached_property
+from typing import Optional, Union
 
 import pennylane as qml
-from pennylane.measurements import (
-    MeasurementProcess,
-    ProbabilityMP,
-    StateMP,
-    Shots,
-)
-from pennylane.typing import TensorLike
-from pennylane.operation import Observable, Operator, Operation, _UNSET_BATCH_SIZE
+from pennylane.measurements import MeasurementProcess, ProbabilityMP, Shots, StateMP
+from pennylane.operation import _UNSET_BATCH_SIZE, Observable, Operation, Operator
 from pennylane.pytrees import register_pytree
 from pennylane.queuing import AnnotatedQueue, process_queue
+from pennylane.typing import TensorLike
 from pennylane.wires import Wires
-
-_empty_wires = Wires([])
-
 
 OPENQASM_GATES = {
     "CNOT": "cx",
@@ -89,8 +83,6 @@ class QuantumScript:
         shots (None, int, Sequence[int], ~.Shots): Number and/or batches of shots for execution.
             Note that this property is still experimental and under development.
         trainable_params (None, Sequence[int]): the indices for which parameters are trainable
-        _update=True (bool): Whether or not to set various properties on initialization. Setting
-            ``_update=False`` reduces computations if the script is only an intermediary step.
 
     .. seealso:: :class:`pennylane.tape.QuantumTape`
 
@@ -180,15 +172,10 @@ class QuantumScript:
         measurements=None,
         shots: Optional[Union[int, Sequence, Shots]] = None,
         trainable_params: Optional[Sequence[int]] = None,
-        _update=True,
     ):
         self._ops = [] if ops is None else list(ops)
         self._measurements = [] if measurements is None else list(measurements)
         self._shots = Shots(shots)
-
-        self._par_info = []
-        """list[dict[str, Operator or int]]: Parameter information.
-        Values are dictionaries containing the corresponding operation and operation parameter index."""
 
         self._trainable_params = trainable_params
         self._graph = None
@@ -196,21 +183,13 @@ class QuantumScript:
         self._output_dim = None
         self._batch_size = _UNSET_BATCH_SIZE
 
-        self.wires = _empty_wires
-        self.num_wires = 0
-
-        self._obs_sharing_wires = []
-        """list[.Observable]: subset of the observables that share wires with another observable,
-        i.e., that do not have their own unique set of wires."""
-        self._obs_sharing_wires_id = []
-
-        if _update:
-            self._update()
+        self._obs_sharing_wires = None
+        self._obs_sharing_wires_id = None
 
     def __repr__(self):
         return f"<{self.__class__.__name__}: wires={self.wires.tolist()}, params={self.num_params}>"
 
-    @property
+    @cached_property
     def hash(self):
         """int: returns an integer hash uniquely representing the quantum script"""
         fingerprint = []
@@ -240,11 +219,6 @@ class QuantumScript:
     # ========================================================
 
     @property
-    def interface(self):
-        """str, None: automatic differentiation interface used by the quantum script (if any)"""
-        return None
-
-    @property
     def circuit(self):
         """Returns the underlying quantum circuit as a list of operations and measurements.
 
@@ -265,7 +239,7 @@ class QuantumScript:
         return self.operations + self.measurements
 
     @property
-    def operations(self) -> List[Operator]:
+    def operations(self) -> list[Operator]:
         """Returns the state preparations and operations on the quantum script.
 
         Returns:
@@ -279,7 +253,7 @@ class QuantumScript:
         return self._ops
 
     @property
-    def observables(self) -> List[Union[MeasurementProcess, Observable]]:
+    def observables(self) -> list[Union[MeasurementProcess, Observable]]:
         """Returns the observables on the quantum script.
 
         Returns:
@@ -306,7 +280,7 @@ class QuantumScript:
         return obs
 
     @property
-    def measurements(self) -> List[MeasurementProcess]:
+    def measurements(self) -> list[MeasurementProcess]:
         """Returns the measurements on the quantum script.
 
         Returns:
@@ -353,7 +327,7 @@ class QuantumScript:
         return self._output_dim
 
     @property
-    def diagonalizing_gates(self) -> List[Operation]:
+    def diagonalizing_gates(self) -> list[Operation]:
         """Returns the gates that diagonalize the measured wires such that they
         are in the eigenbasis of the circuit observables.
 
@@ -400,41 +374,89 @@ class QuantumScript:
         """Update all internal metadata regarding processed operations and observables"""
         self._graph = None
         self._specs = None
-        self._update_circuit_info()  # Updates wires, num_wires; O(ops+obs)
-        self._update_par_info()  # Updates _par_info; O(ops+obs)
+        self._trainable_params = None
 
-        self._update_observables()  # Updates _obs_sharing_wires and _obs_sharing_wires_id
+        try:
+            # Invalidate cached properties so they get recalculated
+            del self.wires
+            del self.par_info
+            del self.hash
+        except AttributeError:
+            pass
 
-    def _update_circuit_info(self):
-        """Update circuit metadata
+    @cached_property
+    def wires(self) -> Wires:
+        """Returns the wires used in the quantum script process
 
-        Sets:
-            wires (~.Wires): Wires
-            num_wires (int): Number of wires
+        Returns:
+            ~.Wires: wires in quantum script process
         """
-        self.wires = Wires.all_wires(dict.fromkeys(op.wires for op in self))
-        self.num_wires = len(self.wires)
+        return Wires.all_wires(dict.fromkeys(op.wires for op in self))
 
-    def _update_par_info(self):
-        """Update the parameter information list. Each entry in the list with an operation and an index
-        into that operation's data.
+    @property
+    def num_wires(self) -> int:
+        """Returns the number of wires in the quantum script process
 
-        Sets:
-            _par_info (list): Parameter information
+        Returns:
+            int: number of wires in quantum script process
         """
-        self._par_info = []
+        return len(self.wires)
+
+    @cached_property
+    def par_info(self):
+        """Returns the parameter information of the operations and measurements in the quantum script.
+
+        Returns:
+            list[dict[str, Operator or int]]: list of dictionaries with parameter information.
+
+        **Example**
+
+        >>> ops = [qml.StatePrep([0, 1], 0), qml.RX(0.432, 0), qml.CNOT((0,1))]
+        >>> qscript = QuantumScript(ops, [qml.expval(qml.Z(0))])
+        >>> qscript.par_info
+        [{'op': StatePrep(array([0, 1]), wires=[0]), 'op_idx': 0, 'p_idx': 0},
+        {'op': RX(0.432, wires=[0]), 'op_idx': 1, 'p_idx': 0}]
+
+        Note that the operations and measurements included in this list are only the ones that have parameters
+        """
+        par_info = []
         for idx, op in enumerate(self.operations):
-            self._par_info.extend(
-                {"op": op, "op_idx": idx, "p_idx": i} for i, d in enumerate(op.data)
-            )
+            par_info.extend({"op": op, "op_idx": idx, "p_idx": i} for i, d in enumerate(op.data))
 
         n_ops = len(self.operations)
         for idx, m in enumerate(self.measurements):
             if m.obs is not None:
-                self._par_info.extend(
+                par_info.extend(
                     {"op": m.obs, "op_idx": idx + n_ops, "p_idx": i}
                     for i, d in enumerate(m.obs.data)
                 )
+        return par_info
+
+    @property
+    def obs_sharing_wires(self):
+        """Returns the subset of the observables that share wires with another observable,
+        i.e., that do not have their own unique set of wires.
+
+        Returns:
+            list[~.Observable]: list of observables with shared wires.
+
+        """
+        if self._obs_sharing_wires is None:
+            self._update_observables()
+        return self._obs_sharing_wires
+
+    @property
+    def obs_sharing_wires_id(self):
+        """Returns the indices subset of the observables that share wires with another observable,
+        i.e., that do not have their own unique set of wires.
+
+        Returns:
+            list[int]: list of indices from observables with shared wires.
+
+        """
+        if self._obs_sharing_wires_id is None:
+            self._update_observables()
+        return self._obs_sharing_wires_id
 
     def _update_observables(self):
         """Update information about observables, including the wires that are acted upon and
@@ -516,7 +538,7 @@ class QuantumScript:
 
     @property
     def trainable_params(self):
-        """Store or return a list containing the indices of parameters that support
+        r"""Store or return a list containing the indices of parameters that support
         differentiability. The indices provided match the order of appearence in the
         quantum circuit.
 
@@ -546,7 +568,7 @@ class QuantumScript:
         [0.432]
         """
         if self._trainable_params is None:
-            self._trainable_params = list(range(len(self._par_info)))
+            self._trainable_params = list(range(len(self.par_info)))
         return self._trainable_params
 
     @trainable_params.setter
@@ -559,7 +581,7 @@ class QuantumScript:
         if any(not isinstance(i, int) or i < 0 for i in param_indices):
             raise ValueError("Argument indices must be non-negative integers.")
 
-        num_params = len(self._par_info)
+        num_params = len(self.par_info)
         if any(i > num_params for i in param_indices):
             raise ValueError(f"Quantum Script only has {num_params} parameters.")
 
@@ -581,7 +603,7 @@ class QuantumScript:
         t_idx = self.trainable_params[idx]
 
         # get the info for the parameter
-        info = self._par_info[t_idx]
+        info = self.par_info[t_idx]
         return info["op"], info["op_idx"], info["p_idx"]
 
     def get_parameters(
@@ -624,7 +646,7 @@ class QuantumScript:
         if trainable_only:
             params = []
             for p_idx in self.trainable_params:
-                par_info = self._par_info[p_idx]
+                par_info = self.par_info[p_idx]
                 if operations_only and isinstance(self[par_info["op_idx"]], MeasurementProcess):
                     continue
 
@@ -634,7 +656,7 @@ class QuantumScript:
             return params
 
         # If trainable_only=False, return all parameters
-        # This is faster than the above and should be used when indexing `_par_info` is not needed
+        # This is faster than the above and should be used when indexing `par_info` is not needed
         params = [d for op in self.operations for d in op.data]
         if operations_only:
             return params
@@ -691,7 +713,7 @@ class QuantumScript:
         # determine the ops that need to be updated
         op_indices = {}
         for param_idx, idx in enumerate(sorted(indices)):
-            pinfo = self._par_info[idx]
+            pinfo = self.par_info[idx]
             op_idx, p_idx = pinfo["op_idx"], pinfo["p_idx"]
 
             if op_idx not in op_indices:
@@ -819,6 +841,7 @@ class QuantumScript:
         Returns:
             QuantumScript : a shallow copy of the quantum script
         """
+
         if copy_operations:
             # Perform a shallow copy of all operations in the operation and measurement
             # queues. The operations will continue to share data with the original script operations
@@ -829,7 +852,9 @@ class QuantumScript:
             # Perform a shallow copy of the operation and measurement queues. The
             # operations within the queues will be references to the original script operations;
             # changing the original operations will always alter the operations on the copied script.
+
             _ops = self.operations.copy()
+
             _measurements = self.measurements.copy()
 
         new_qscript = self.__class__(
@@ -840,14 +865,10 @@ class QuantumScript:
         )
         new_qscript._graph = None if copy_operations else self._graph
         new_qscript._specs = None
-        new_qscript.wires = copy.copy(self.wires)
-        new_qscript.num_wires = self.num_wires
-        new_qscript._update_par_info()
-        new_qscript._obs_sharing_wires = self._obs_sharing_wires
-        new_qscript._obs_sharing_wires_id = self._obs_sharing_wires_id
         new_qscript._batch_size = self._batch_size
         new_qscript._output_dim = self._output_dim
-
+        new_qscript._obs_sharing_wires = self._obs_sharing_wires
+        new_qscript._obs_sharing_wires_id = self._obs_sharing_wires_id
         return new_qscript
 
     def __copy__(self):
@@ -864,45 +885,100 @@ class QuantumScript:
             expand_measurements (bool): If ``True``, measurements will be expanded
                 to basis rotations and computational basis measurements.
 
-        **Example**
+        .. seealso:: :func:`~.pennylane.devices.preprocess.decompose` for a transform that
+           performs the same job and fits into the current transform architecture.
 
-        Consider the following nested quantum script:
+        .. warning::
 
-        >>> nested_script = QuantumScript([qml.Rot(0.543, 0.1, 0.4, wires=0)])
-        >>> ops = [
-                qml.BasisState(np.array([1, 1]), wires=[0, 'a']),
-                nested_script,
-                qml.CNOT(wires=[0, 'a']), qml.RY(0.2, wires='a'),
-            ]
-        >>> measurements = [qml.probs(wires=0), qml.probs(wires='a')]
-        >>> qscript = QuantumScript(ops, measurements)
+            This method cannot be used with a tape with non-commuting measurements, even if
+            ``expand_measurements=False``.
 
-        The nested structure is preserved:
+            >>> mps = [qml.expval(qml.X(0)), qml.expval(qml.Y(0))]
+            >>> tape = qml.tape.QuantumScript([], mps)
+            >>> tape.expand()
+            QuantumFunctionError: Only observables that are qubit-wise commuting Pauli words
+            can be returned on the same wire, some of the following measurements do not commute:
+            [expval(X(0)), expval(Y(0))]
 
-        >>> qscript.operations
-        [BasisState(tensor([1, 1], requires_grad=True), wires=[0, 'a']),
-        <QuantumScript: wires=[0], params=3>,
-        CNOT(wires=[0, 'a']),
-        RY(0.2, wires=['a'])]
+            Since commutation is determined by pauli word arithmetic, non-pauli words cannot share
+            wires with other measurements, even if they commute:
 
-        Calling ``.expand`` will return a script with all nested scripts
-        expanded, resulting in a single script of quantum operations:
+            >>> measurements = [qml.expval(qml.Projector([0], 0)), qml.probs(wires=0)]
+            >>> tape = qml.tape.QuantumScript([], measurements)
+            >>> tape.expand()
+            QuantumFunctionError: Only observables that are qubit-wise commuting Pauli words
+            can be returned on the same wire, some of the following measurements do not commute:
+            [expval(Projector(array([0]), wires=[0])), probs(wires=[0])]
 
-        >>> new_qscript = qscript.expand(depth=2)
-        >>> new_qscript.operations
-        [X(0),
-        X('a'),
-        RZ(0.543, wires=[0]),
-        RY(0.1, wires=[0]),
-        RZ(0.4, wires=[0]),
-        CNOT(wires=[0, 'a']),
-        RY(0.2, wires=['a'])]
+            For this reason, we recommend the use of :func:`~.pennylane.devices.preprocess.decompose` instead.
+
+        .. details::
+            :title: Usage Details
+
+            >>> ops = [qml.Permute((2,1,0), wires=(0,1,2)), qml.X(0)]
+            >>> measurements = [qml.expval(qml.X(0))]
+            >>> tape = qml.tape.QuantumScript(ops, measurements)
+            >>> expanded_tape = tape.expand()
+            >>> print(expanded_tape.draw())
+            0: ─╭SWAP──Rϕ──RX──Rϕ─┤  <X>
+            2: ─╰SWAP─────────────┤
+
+            Specifying a depth greater than one decomposes operations multiple times.
+
+            >>> expanded_tape2 = tape.expand(depth=2)
+            >>> print(expanded_tape2.draw())
+            0: ─╭●─╭X─╭●──RZ──GlobalPhase──RX──RZ──GlobalPhase─┤  <Z>
+            2: ─╰X─╰●─╰X──────GlobalPhase──────────GlobalPhase─┤
+
+            The ``stop_at`` callable allows the specification of terminal
+            operations that should no longer be decomposed. In this example, the ``X``
+            operator is not decomposed becasue ``stop_at(qml.X(0)) == True``.
+
+            >>> def stop_at(obj):
+            ...     return isinstance(obj, qml.X)
+            >>> expanded_tape = tape.expand(stop_at=stop_at)
+            >>> print(expanded_tape.draw())
+            0: ─╭SWAP──X─┤  <X>
+            2: ─╰SWAP────┤
+
+            .. warning::
+
+                If an operator does not have a decomposition, it will not be decomposed, even if
+                ``stop_at(obj) == False``.  If you want to decompose to reach a certain gateset,
+                you will need an extra validation pass to ensure you have reached the gateset.
+
+                >>> def stop_at(obj):
+                ...     return getattr(obj, "name", "") in {"RX", "RY"}
+                >>> tape = qml.tape.QuantumScript([qml.RZ(0.1, 0)])
+                >>> tape.expand(stop_at=stop_at).circuit
+                [RZ(0.1, wires=[0])]
+
+            If more than one observable exists on a wire, the diagonalizing gates will be applied
+            and the observable will be substituted for an analogous combination of ``qml.Z`` operators.
+            This will happen even if ``expand_measurements=False``.
+
+            >>> mps = [qml.expval(qml.X(0)), qml.expval(qml.X(0) @ qml.X(1))]
+            >>> tape = qml.tape.QuantumScript([], mps)
+            >>> expanded_tape = tape.expand()
+            >>> print(expanded_tape.draw())
+            0: ──RY─┤  <Z> ╭<Z@Z>
+            1: ──RY─┤      ╰<Z@Z>
+
+            Setting ``expand_measurements=True`` applies any diagonalizing gates and converts
+            the measurement into a wires+eigvals representation.
+
+            .. warning::
+                Many components of PennyLane do not support the wires + eigvals representation.
+                Setting ``expand_measurements=True`` should be used with extreme caution.
+
+            >>> tape = qml.tape.QuantumScript([], [qml.expval(qml.X(0))])
+            >>> tape.expand(expand_measurements=True).circuit
+            [Hadamard(wires=[0]), expval(eigvals=[ 1. -1.], wires=[0])]
+
         """
-        new_script = qml.tape.tape.expand_tape(
+        return qml.tape.tape.expand_tape(
             self, depth=depth, stop_at=stop_at, expand_measurements=expand_measurements
         )
-        new_script._update()
-        return new_script
 
     def adjoint(self):
         """Create a quantum script that is the adjoint of this one.
@@ -945,7 +1021,7 @@ class QuantumScript:
                 self.operations,
                 self.measurements,
                 self.wires,
-                self._par_info,
+                self.par_info,
                 self.trainable_params,
             )
 
@@ -1065,7 +1141,8 @@ class QuantumScript:
         qasm_str += f"creg c[{len(wires)}];\n"
 
         # get the user applied circuit operations without interface information
-        operations = qml.transforms.convert_to_numpy_parameters(self).operations
+        [transformed_tape], _ = qml.transforms.convert_to_numpy_parameters(self)
+        operations = transformed_tape.operations
 
         if rotations:
             # if requested, append diagonalizing gates corresponding

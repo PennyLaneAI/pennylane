@@ -12,8 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Module containing the ``JaxParametrizedHamiltonian`` class."""
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Callable, Optional, Tuple, Union
+from typing import Optional, Union
 
 import jax
 import jax.numpy as jnp
@@ -22,8 +23,8 @@ from jax.tree_util import register_pytree_node_class
 
 import pennylane as qml
 
-from .parametrized_hamiltonian import ParametrizedHamiltonian
 from .hardware_hamiltonian import HardwareHamiltonian
+from .parametrized_hamiltonian import ParametrizedHamiltonian
 
 
 @register_pytree_node_class
@@ -32,8 +33,8 @@ class ParametrizedHamiltonianPytree:
     """Jax pytree class that represents a ``ParametrizedHamiltonian``."""
 
     mat_fixed: Optional[Union[jnp.ndarray, sparse.BCSR]]
-    mats_parametrized: Tuple[Union[jnp.ndarray, sparse.BCSR], ...]
-    coeffs_parametrized: Tuple[Callable]
+    mats_parametrized: tuple[Union[jnp.ndarray, sparse.BCSR], ...]
+    coeffs_parametrized: tuple[Callable]
     reorder_fn: Callable
 
     @staticmethod
@@ -117,8 +118,8 @@ class ParametrizedHamiltonianPytree:
 class LazyDotPytree:
     """Jax pytree representing a lazy dot operation."""
 
-    coeffs: Tuple[complex, ...]
-    mats: Tuple[Union[jnp.ndarray, sparse.BCSR], ...]
+    coeffs: tuple[complex, ...]
+    mats: tuple[Union[jnp.ndarray, sparse.BCSR], ...]
 
     @jax.jit
     def __matmul__(self, other):

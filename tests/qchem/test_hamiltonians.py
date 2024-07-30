@@ -21,8 +21,8 @@ import pennylane as qml
 from pennylane import Identity, PauliX, PauliY, PauliZ
 from pennylane import numpy as np
 from pennylane import qchem
-from pennylane.operation import active_new_opmath
 from pennylane.fermi import from_string
+from pennylane.operation import active_new_opmath
 
 
 @pytest.mark.parametrize(
@@ -265,6 +265,36 @@ def test_diff_hamiltonian_active_space():
     h = qchem.diff_hamiltonian(mol, core=[0], active=[1, 2])(*args)
 
     assert isinstance(h, qml.ops.Sum if active_new_opmath() else qml.Hamiltonian)
+
+
+@pytest.mark.parametrize(
+    ("symbols", "geometry", "core", "active", "charge"),
+    [
+        (
+            ["H", "H"],
+            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]]),
+            None,
+            None,
+            0,
+        ),
+        (
+            ["H", "H", "H"],
+            np.array([[0.0, 0.0, 0.0], [2.0, 0.0, 1.0], [0.0, 2.0, 0.0]]),
+            [0],
+            [1, 2],
+            1,
+        ),
+    ],
+)
+def test_diff_hamiltonian_wire_order(symbols, geometry, core, active, charge):
+    r"""Test that diff_hamiltonian has an ascending wire order."""
+
+    mol = qchem.Molecule(symbols, geometry, charge)
+    args = [geometry]
+
+    h = qchem.diff_hamiltonian(mol, core=core, active=active)(*args)
+
+    assert h.wires.tolist() == sorted(h.wires.tolist())
 
 
 def test_gradient_expvalH():

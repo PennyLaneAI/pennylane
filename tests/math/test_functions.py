@@ -170,6 +170,16 @@ test_data = [
     tf.constant([1, 2, 3]),
 ]
 
+unequal_test_data = [
+    (2, 2, 3),
+    [1, 21, 3],
+    onp.array([1, 2, 39]),
+    np.array([1, 2, 4]),
+    torch.tensor([1, 20, 3]),
+    tf.Variable([2, 21, 3]),
+    tf.constant([2, 1, 3]),
+]
+
 
 @pytest.mark.parametrize("t1,t2", list(itertools.combinations(test_data, r=2)))
 def test_allequal(t1, t2):
@@ -226,7 +236,8 @@ def test_any(array_fn, t1, expected):
     "t1,t2",
     list(
         itertools.combinations(test_data + [torch.tensor([1.0, 2.0, 3.0], requires_grad=True)], r=2)
-    ),
+    )
+    + [(t1, t2) for t1 in test_data for t2 in unequal_test_data],
 )
 def test_allclose(t1, t2):
     """Test that the allclose function works for a variety of inputs."""
@@ -2178,7 +2189,7 @@ class TestCovMatrix:
     def test_jax(self, tol):
         """Test that the covariance matrix computes the correct
         result, and is differentiable, using the JAX interface"""
-        dev = qml.device("default.qubit.jax", wires=3)
+        dev = qml.device("default.qubit", wires=3)
 
         @qml.qnode(dev, interface="jax", diff_method="backprop")
         def circuit(weights):

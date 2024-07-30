@@ -13,6 +13,7 @@
 # limitations under the License.
 """Tests for the qml.counts measurement process."""
 import copy
+
 import numpy as np
 import pytest
 
@@ -93,7 +94,8 @@ class TestProcessSamples:
     def test_counts_shape_single_wires(self):
         """Test that the counts output is correct for single wires"""
         shots = 1000
-        samples = np.random.choice([0, 1], size=(shots, 2)).astype(np.int64)
+        rng = np.random.default_rng(123)
+        samples = rng.choice([0, 1], size=(shots, 2)).astype(np.int64)
 
         result = qml.counts(wires=0).process_samples(samples, wire_order=[0])
 
@@ -106,7 +108,8 @@ class TestProcessSamples:
         """Test that the counts function outputs counts of the right size
         for multiple wires"""
         shots = 1000
-        samples = np.random.choice([0, 1], size=(shots, 2)).astype(np.int64)
+        rng = np.random.default_rng(123)
+        samples = rng.choice([0, 1], size=(shots, 2)).astype(np.int64)
 
         result = qml.counts(wires=[0, 1]).process_samples(samples, wire_order=[0, 1])
 
@@ -129,7 +132,8 @@ class TestProcessSamples:
         """Test that the counts function disregards failed measurements (samples including
         NaN values) when totalling counts"""
         shots = 1000
-        samples = np.random.choice([0, 1], size=(shots, 2)).astype(np.float64)
+        rng = np.random.default_rng(123)
+        samples = rng.choice([0, 1], size=(shots, 2)).astype(np.float64)
 
         samples[0][0] = np.NaN
         samples[17][1] = np.NaN
@@ -172,7 +176,8 @@ class TestProcessSamples:
     def test_counts_obs(self):
         """Test that the counts function outputs counts of the right size for observables"""
         shots = 1000
-        samples = np.random.choice([0, 1], size=(shots, 2)).astype(np.int64)
+        rng = np.random.default_rng(123)
+        samples = rng.choice([0, 1], size=(shots, 2)).astype(np.int64)
 
         result = qml.counts(qml.PauliZ(0)).process_samples(samples, wire_order=[0])
 
@@ -185,7 +190,8 @@ class TestProcessSamples:
         """Tests that eigvals are used instead of obs for counts"""
 
         shots = 100
-        samples = np.random.choice([0, 1], size=(shots, 2)).astype(np.int64)
+        rng = np.random.default_rng(123)
+        samples = rng.choice([0, 1], size=(shots, 2)).astype(np.int64)
         result = CountsMP(eigvals=[1, -1], wires=0).process_samples(samples, wire_order=[0])
         assert len(result) == 2
         assert set(result.keys()) == {1, -1}
@@ -196,7 +202,8 @@ class TestProcessSamples:
         """Test that the counts output is correct for single mid-circuit measurement
         values."""
         shots = 1000
-        samples = np.random.choice([0, 1], size=(shots, 2)).astype(np.int64)
+        rng = np.random.default_rng(123)
+        samples = rng.choice([0, 1], size=(shots, 2)).astype(np.int64)
         mv = qml.measure(0)
 
         result = qml.counts(mv).process_samples(samples, wire_order=[0])
@@ -210,7 +217,8 @@ class TestProcessSamples:
         """Test that the counts output is correct for composite mid-circuit measurement
         values."""
         shots = 1000
-        samples = np.random.choice([0, 1], size=(shots, 2)).astype(np.int64)
+        rng = np.random.default_rng(123)
+        samples = rng.choice([0, 1], size=(shots, 2)).astype(np.int64)
         m0 = qml.measure(0)
         m1 = qml.measure(1)
 
@@ -226,7 +234,8 @@ class TestProcessSamples:
         """Test that the counts output is correct for list mid-circuit measurement
         values."""
         shots = 1000
-        samples = np.random.choice([0, 1], size=(shots, 2)).astype(np.int64)
+        rng = np.random.default_rng(123)
+        samples = rng.choice([0, 1], size=(shots, 2)).astype(np.int64)
         m0 = qml.measure(0)
         m1 = qml.measure(1)
 

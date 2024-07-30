@@ -14,15 +14,16 @@
 """
 This module contains the qml.expval measurement.
 """
-from typing import Sequence, Tuple, Union
+from collections.abc import Sequence
+from typing import Optional, Union
 
 import pennylane as qml
 from pennylane.operation import Operator
 from pennylane.wires import Wires
 
 from .measurements import Expectation, SampleMeasurement, StateMeasurement
-from .sample import SampleMP
 from .mid_measure import MeasurementValue
+from .sample import SampleMP
 
 
 def expval(
@@ -77,7 +78,7 @@ def expval(
 class ExpectationMP(SampleMeasurement, StateMeasurement):
     """Measurement process that computes the expectation value of the supplied observable.
 
-    Please refer to :func:`expval` for detailed documentation.
+    Please refer to :func:`pennylane.expval` for detailed documentation.
 
     Args:
         obs (Union[.Operator, .MeasurementValue]): The observable that is to be measured
@@ -91,9 +92,7 @@ class ExpectationMP(SampleMeasurement, StateMeasurement):
             where the instance has to be identified
     """
 
-    @property
-    def return_type(self):
-        return Expectation
+    return_type = Expectation
 
     @property
     def numeric_type(self):
@@ -109,8 +108,8 @@ class ExpectationMP(SampleMeasurement, StateMeasurement):
         self,
         samples: Sequence[complex],
         wire_order: Wires,
-        shot_range: Tuple[int] = None,
-        bin_size: int = None,
+        shot_range: Optional[tuple[int, ...]] = None,
+        bin_size: Optional[int] = None,
     ):
         if not self.wires:
             return qml.math.squeeze(self.eigvals())

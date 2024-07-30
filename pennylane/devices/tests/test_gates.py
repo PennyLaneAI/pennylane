@@ -22,16 +22,15 @@ works correctly an a device.
 from cmath import exp
 from math import cos, sin, sqrt
 
-import pytest
 import numpy as np
-from scipy.linalg import block_diag
+import pytest
 from flaky import flaky
+from scipy.linalg import block_diag
 
 import pennylane as qml
 
 pytestmark = pytest.mark.skip_unsupported
 
-np.random.seed(42)
 
 # ==========================================================
 # Some useful global variables

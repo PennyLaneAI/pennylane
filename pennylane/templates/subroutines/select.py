@@ -18,9 +18,10 @@ Contains the Select template.
 
 import copy
 import itertools
+
 import pennylane as qml
-from pennylane.operation import Operation
 from pennylane import math
+from pennylane.operation import Operation
 
 
 class Select(Operation):
@@ -55,7 +56,7 @@ class Select(Operation):
     >>>     qml.Select(ops, control=[0,1])
     >>>     return qml.state()
     ...
-    >>> print(qml.draw(circuit, expansion_strategy='device')())
+    >>> print(qml.draw(circuit, level='device')())
     0: ─╭○─╭○─╭●─╭●────┤  State
     1: ─├○─├●─├○─├●────┤  State
     2: ─╰X─│──╰Y─├SWAP─┤  State
@@ -67,6 +68,10 @@ class Select(Operation):
 
     def _flatten(self):
         return (self.ops), (self.control)
+
+    @classmethod
+    def _primitive_bind_call(cls, *args, **kwargs):
+        return cls._primitive.bind(*args, **kwargs)
 
     @classmethod
     def _unflatten(cls, data, metadata) -> "Select":

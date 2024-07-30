@@ -16,9 +16,11 @@ This module contains the functions needed for creating fermionic and qubit obser
 """
 # pylint: disable= too-many-branches, too-many-return-statements
 import numpy as np
+
 import pennylane as qml
 from pennylane.fermi import FermiSentence, FermiWord
 from pennylane.operation import active_new_opmath
+from pennylane.pauli import PauliSentence
 from pennylane.pauli.utils import simplify
 
 
@@ -80,12 +82,9 @@ def fermionic_observable(constant, one=None, two=None, cutoff=1.0e-12):
         coeffs = qml.math.concatenate((coeffs, coeffs_two))
         operators = operators + operators_two
 
-    indices_sort = [operators.index(i) for i in sorted(operators)]
-    if indices_sort:
-        indices_sort = qml.math.array(indices_sort)
-
     sentence = FermiSentence({FermiWord({}): constant[0]})
-    for c, o in zip(coeffs[indices_sort], sorted(operators)):
+    for c, o in sorted(zip(coeffs, operators), key=lambda item: item[1]):
+
         if len(o) == 2:
             sentence.update({FermiWord({(0, o[0]): "+", (1, o[1]): "-"}): c})
         if len(o) == 4:
@@ -97,18 +96,31 @@ def fermionic_observable(constant, one=None, two=None, cutoff=1.0e-12):
     return sentence
 
 
-def qubit_observable(o_ferm, cutoff=1.0e-12):
+def qubit_observable(o_ferm, cutoff=1.0e-12, mapping="jordan_wigner"):
     r"""Convert a fermionic observable to a PennyLane qubit observable.
 
     Args:
         o_ferm (Union[FermiWord, FermiSentence]): fermionic operator
         cutoff (float): cutoff value for discarding the negligible terms
-
+        mapping (str): Specifies the fermion-to-qubit mapping. Input values can
+            be ``'jordan_wigner'``, ``'parity'`` or ``'bravyi_kitaev'``.
     Returns:
         Operator: Simplified PennyLane Hamiltonian
 
     **Example**
 
+    >>> w1 = qml.fermi.FermiWord({(0, 0) : '+', (1, 1) : '-'})
+    >>> w2 = qml.fermi.FermiWord({(0, 0) : '+', (1, 1) : '-'})
+    >>> s = qml.fermi.FermiSentence({w1 : 1.2, w2: 3.1})
+    >>> print(qubit_observable(s))
+    -0.775j * (Y(0) @ X(1)) + 0.775 * (Y(0) @ Y(1)) + 0.775 * (X(0) @ X(1)) + 0.775j * (X(0) @ Y(1))
+
+    If the new op-math is deactivated, a legacy :class:`~pennylane.ops.Hamiltonian` instance is returned.
+
+    >>> qml.operation.disable_new_opmath()
+    UserWarning: Disabling the new Operator arithmetic system for legacy support.
+    If you need help troubleshooting your code, please visit
+    https://docs.pennylane.ai/en/stable/news/new_opmath.html
     >>> w1 = qml.fermi.FermiWord({(0, 0) : '+', (1, 1) : '-'})
     >>> w2 = qml.fermi.FermiWord({(0, 1) : '+', (1, 2) : '-'})
     >>> s = qml.fermi.FermiSentence({w1 : 1.2, w2: 3.1})
@@ -121,17 +133,21 @@ def qubit_observable(o_ferm, cutoff=1.0e-12):
     + ((0.3+0j)) [X0 X1]
     + ((0.775+0j)) [Y1 Y2]
     + ((0.775+0j)) [X1 X2]
-
-    If the new op-math is active, an arithmetic operator is returned.
-
-    >>> qml.operation.enable_new_opmath()
-    >>> w1 = qml.fermi.FermiWord({(0, 0) : '+', (1, 1) : '-'})
-    >>> w2 = qml.fermi.FermiWord({(0, 0) : '+', (1, 1) : '-'})
-    >>> s = qml.fermi.FermiSentence({w1 : 1.2, w2: 3.1})
-    >>> print(qubit_observable(s))
-    -0.775j * (Y(0) @ X(1)) + 0.775 * (Y(0) @ Y(1)) + 0.775 * (X(0) @ X(1)) + 0.775j * (X(0) @ Y(1))
     """
-    h = qml.jordan_wigner(o_ferm, ps=True, tol=cutoff)
+    if mapping == "jordan_wigner":
+        h = qml.jordan_wigner(o_ferm, ps=True, tol=cutoff)
+    elif mapping == "parity":
+        qubits = len(o_ferm.wires)
+        h = qml.parity_transform(o_ferm, qubits, ps=True, tol=cutoff)
+    elif mapping == "bravyi_kitaev":
+        qubits = len(o_ferm.wires)
+        h = qml.bravyi_kitaev(o_ferm, qubits, ps=True, tol=cutoff)
+
+    if list(h.wires) != sorted(list(h.wires)):
+        h = PauliSentence(
+            sorted(h.items(), key=lambda item: max(item[0].wires.tolist(), default=0))
+        )
+
     h.simplify(tol=cutoff)
 
     if active_new_opmath():

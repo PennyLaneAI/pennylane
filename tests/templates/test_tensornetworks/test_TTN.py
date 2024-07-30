@@ -14,11 +14,13 @@
 """
 Tests for the TTN template.
 """
+import numpy as np
+
 # pylint: disable=too-many-arguments,too-few-public-methods
 import pytest
-import numpy as np
+
 import pennylane as qml
-from pennylane.templates.tensornetworks.ttn import compute_indices, TTN
+from pennylane.templates.tensornetworks.ttn import TTN, compute_indices
 
 
 # pylint: disable=protected-access
@@ -51,7 +53,7 @@ def test_flatten_unflatten_methods():
     assert hash(metadata)
 
     new_op = qml.TTN._unflatten(*op._flatten())
-    assert qml.equal(new_op, op)
+    qml.assert_equal(new_op, op)
     assert new_op._name == "TTN"  # make sure acutally initialized
     assert new_op is not op
 

@@ -22,7 +22,7 @@ representation of Pauli words and applications, see:
 """
 from functools import lru_cache, singledispatch
 from itertools import product
-from typing import List, Union
+from typing import Union
 
 import numpy as np
 
@@ -30,8 +30,8 @@ import pennylane as qml
 from pennylane.operation import Tensor
 from pennylane.ops import (
     Hamiltonian,
-    LinearCombination,
     Identity,
+    LinearCombination,
     PauliX,
     PauliY,
     PauliZ,
@@ -930,7 +930,7 @@ def pauli_group(n_qubits, wire_map=None):
 
 
 @lru_cache()
-def partition_pauli_group(n_qubits: int) -> List[List[str]]:
+def partition_pauli_group(n_qubits: int) -> list[list[str]]:
     """Partitions the :math:`n`-qubit Pauli group into qubit-wise commuting terms.
 
     The :math:`n`-qubit Pauli group is composed of :math:`4^{n}` terms that can be partitioned into

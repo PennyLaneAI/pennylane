@@ -17,11 +17,11 @@ computing the sum of operations.
 """
 # pylint: disable=too-many-arguments,too-many-instance-attributes,protected-access
 
-import warnings
 import itertools
+import warnings
+from collections import Counter
 from collections.abc import Iterable
 from copy import copy
-from typing import List
 
 import pennylane as qml
 from pennylane import math
@@ -240,7 +240,7 @@ class Sum(CompositeOp):
     @property
     def hash(self):
         # Since addition is always commutative, we do not need to sort
-        return hash(("Sum", frozenset(o.hash for o in self.operands)))
+        return hash(("Sum", hash(frozenset(Counter(self.operands).items()))))
 
     @property
     def grouping_indices(self):
@@ -325,6 +325,8 @@ class Sum(CompositeOp):
         Returns:
             tensor_like: matrix representation
         """
+        if self.pauli_rep:
+            return self.pauli_rep.to_mat(wire_order=wire_order or self.wires)
         gen = (
             (qml.matrix(op) if isinstance(op, qml.ops.Hamiltonian) else op.matrix(), op.wires)
             for op in self
@@ -378,7 +380,7 @@ class Sum(CompositeOp):
         return None
 
     @classmethod
-    def _simplify_summands(cls, summands: List[Operator]):
+    def _simplify_summands(cls, summands: list[Operator]):
         """Reduces the depth of nested summands and groups equal terms together.
 
         Args:
@@ -430,7 +432,6 @@ class Sum(CompositeOp):
 
         **Example**
 
-        >>> qml.operation.enable_new_opmath()
         >>> op = 0.5 * X(0) + 0.7 * X(1) + 1.5 * Y(0) @ Y(1)
         >>> op.terms()
         ([0.5, 0.7, 1.5],
@@ -545,7 +546,7 @@ class Sum(CompositeOp):
         return ops
 
     @classmethod
-    def _sort(cls, op_list, wire_map: dict = None) -> List[Operator]:
+    def _sort(cls, op_list, wire_map: dict = None) -> list[Operator]:
         """Sort algorithm that sorts a list of sum summands by their wire indices.
 
         Args:

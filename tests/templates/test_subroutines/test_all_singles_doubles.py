@@ -14,11 +14,13 @@
 """
 Tests for the AllSinglesDoubles template.
 """
+import numpy as np
+
 # pylint: disable=too-many-arguments,too-few-public-methods
 import pytest
-import numpy as np
-from pennylane import numpy as pnp
+
 import pennylane as qml
+from pennylane import numpy as pnp
 
 
 def test_standard_validity():
@@ -97,7 +99,7 @@ class TestDecomposition:
         hf_state = np.array([1, 1, 0, 0, 0, 0])
 
         op = qml.AllSinglesDoubles(weights, wires, hf_state, singles=singles, doubles=doubles)
-        queue = op.expand().operations
+        queue = op.decomposition()
 
         assert len(queue) == len(singles) + len(doubles) + 1
 

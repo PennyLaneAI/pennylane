@@ -18,6 +18,7 @@ Tests for the QSVT template and qsvt wrapper function.
 from copy import copy
 
 import pytest
+
 import pennylane as qml
 from pennylane import numpy as np
 
@@ -40,20 +41,11 @@ def lst_phis(phis):
 class TestQSVT:
     """Test the qml.QSVT template."""
 
-    # pylint: disable=protected-access
-    def test_flatten_unflatten(self):
+    def test_standard_validity(self):
+        """Test standard validity criteria with assert_valid."""
         projectors = [qml.PCPhase(0.2, dim=1, wires=0), qml.PCPhase(0.3, dim=1, wires=0)]
         op = qml.QSVT(qml.PauliX(wires=0), projectors)
-        data, metadata = op._flatten()
-        assert qml.equal(data[0], qml.PauliX(0))
-        assert len(data[1]) == len(projectors)
-        assert all(qml.equal(op1, op2) for op1, op2 in zip(data[1], projectors))
-
-        assert metadata == tuple()
-
-        new_op = type(op)._unflatten(*op._flatten())
-        assert qml.equal(op, new_op)
-        assert op is not new_op
+        qml.ops.functions.assert_valid(op)
 
     def test_init_error(self):
         """Test that an error is raised if a non-operation object is passed
@@ -164,7 +156,7 @@ class TestQSVT:
         tape = qml.tape.QuantumScript.from_queue(q)
 
         for expected, val in zip(results, tape.expand().operations):
-            assert qml.equal(expected, val)
+            qml.assert_equal(expected, val)
 
     def test_decomposition_queues_its_contents(self):
         """Test that the decomposition method queues the decomposition in the correct order."""
@@ -174,7 +166,15 @@ class TestQSVT:
             decomp = op.decomposition()
 
         ops, _ = qml.queuing.process_queue(q)
-        assert all(qml.equal(op1, op2) for op1, op2 in zip(ops, decomp))
+        for op1, op2 in zip(ops, decomp):
+            qml.assert_equal(op1, op2)
+
+    def test_wire_order(self):
+        """Test that the wire order is preserved."""
+
+        op = qml.QFT(wires=[2, 1])
+        qsvt_wires = qml.QSVT(op, [op]).wires
+        assert qsvt_wires == op.wires
 
     @pytest.mark.parametrize(
         ("quantum_function", "phi_func", "A", "phis", "results"),
@@ -371,7 +371,7 @@ class TestQSVT:
         """Test that a QSVT operator can be copied."""
         orig_op = qml.QSVT(qml.RX(1, wires=0), [qml.RY(2, wires=0), qml.RZ(3, wires=0)])
         copy_op = copy(orig_op)
-        assert qml.equal(orig_op, copy_op)
+        qml.assert_equal(orig_op, copy_op)
 
         # Ensure the (nested) operations are copied instead of aliased.
         assert orig_op is not copy_op
@@ -585,3 +585,30 @@ class Testqsvt:
 
         for idx, result in enumerate(manual_phi_results):
             assert np.isclose(result, np.real(phi_grad_results[idx]), atol=1e-6)
+
+
+phase_angle_data = (
+    (
+        [0, 0, 0],
+        [3 * np.pi / 4, np.pi / 2, -np.pi / 4],
+    ),
+    (
+        [1.0, 2.0, 3.0, 4.0],
+        [1.0 + 3 * np.pi / 4, 2.0 + np.pi / 2, 3.0 + np.pi / 2, 4.0 - np.pi / 4],
+    ),
+)
+
+
+@pytest.mark.jax
+@pytest.mark.parametrize("initial_angles, expected_angles", phase_angle_data)
+def test_private_qsp_to_qsvt_jax(initial_angles, expected_angles):
+    """Test that the _qsp_to_qsvt function is jax compatible"""
+    import jax.numpy as jnp
+
+    from pennylane.templates.subroutines.qsvt import _qsp_to_qsvt
+
+    initial_angles = jnp.array(initial_angles)
+    expected_angles = jnp.array(expected_angles)
+
+    computed_angles = _qsp_to_qsvt(initial_angles)
+    jnp.allclose(computed_angles, expected_angles)

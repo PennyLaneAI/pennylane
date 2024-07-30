@@ -17,10 +17,11 @@ with preparing a certain state on the device.
 """
 # pylint:disable=abstract-method,arguments-differ,protected-access,no-member
 import numpy as np
+
 from pennylane import math
 from pennylane.operation import AnyWires, Operation, StatePrepBase
 from pennylane.templates.state_preparations import BasisStatePreparation, MottonenStatePreparation
-from pennylane.wires import Wires, WireError
+from pennylane.wires import WireError, Wires
 
 state_prep_ops = {"BasisState", "StatePrep", "QubitDensityMatrix"}
 
@@ -98,7 +99,7 @@ class BasisState(StatePrepBase):
         return [BasisStatePreparation(n, wires)]
 
     def state_vector(self, wire_order=None):
-        """Returns a state-vector of shape ``(2,) * num_wires``."""
+        """Returns a statevector of shape ``(2,) * num_wires``."""
         prep_vals = self.parameters[0]
         if any(i not in [0, 1] for i in prep_vals):
             raise ValueError("BasisState parameter must consist of 0 or 1 integers.")

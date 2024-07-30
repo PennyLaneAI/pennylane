@@ -15,6 +15,7 @@
 Unit tests for the ``hamiltonian_expand`` transform.
 """
 import functools
+import warnings
 
 import numpy as np
 import pytest
@@ -89,6 +90,18 @@ OUTPUTS = [-1.5, -6, -1.5, -8]
 
 class TestHamiltonianExpand:
     """Tests for the hamiltonian_expand transform"""
+
+    @pytest.fixture(scope="function", autouse=True)
+    def capture_warnings(self):
+        with pytest.warns(qml.PennyLaneDeprecationWarning) as record:
+            yield
+
+        for w in record:
+            assert isinstance(w.message, qml.PennyLaneDeprecationWarning)
+            if "qml.transforms.hamiltonian_expand is deprecated" not in str(w.message):
+                warnings.warn(w.message, w.category)
+            else:
+                assert "qml.transforms.hamiltonian_expand is deprecated" in str(w.message)
 
     def test_ham_with_no_terms_raises(self):
         """Tests that the hamiltonian_expand transform raises an error for a Hamiltonian with no terms."""
@@ -345,9 +358,7 @@ class TestHamiltonianExpand:
         """Tests that the processing function works with shot vectors, parameter broadcasting,
         and grouping with different number of coefficients in each group"""
 
-        np.random.seed(824)
-        dev_with_shot_vector = qml.device("default.qubit", shots=[(8000, 4)])
-
+        dev_with_shot_vector = qml.device("default.qubit", shots=[(10000, 4)])
         if grouping:
             H.compute_grouping()
 
@@ -377,8 +388,8 @@ class TestHamiltonianExpand:
             shots=50,
         )
 
-        assert qml.equal(batch[0], tape_0)
-        assert qml.equal(batch[1], tape_1)
+        qml.assert_equal(batch[0], tape_0)
+        qml.assert_equal(batch[1], tape_1)
 
         dummy_res = (1.0, (1.0, 1.0))
         processed_res = fn(dummy_res)
@@ -397,9 +408,9 @@ class TestHamiltonianExpand:
         tape_1 = qml.tape.QuantumScript([], [qml.expval(qml.X(0) @ qml.Y(1))], shots=50)
         tape_2 = qml.tape.QuantumScript([], [qml.expval(qml.Z(0))], shots=50)
 
-        assert qml.equal(batch[0], tape_0)
-        assert qml.equal(batch[1], tape_1)
-        assert qml.equal(batch[2], tape_2)
+        qml.assert_equal(batch[0], tape_0)
+        qml.assert_equal(batch[1], tape_1)
+        qml.assert_equal(batch[2], tape_2)
 
         dummy_res = (1.0, 1.0, 1.0)
         processed_res = fn(dummy_res)
@@ -520,6 +531,18 @@ SUM_OUTPUTS = [
 class TestSumExpand:
     """Tests for the sum_expand transform"""
 
+    @pytest.fixture(scope="function", autouse=True)
+    def capture_warnings(self):
+        with pytest.warns(qml.PennyLaneDeprecationWarning) as record:
+            yield
+
+        for w in record:
+            assert isinstance(w.message, qml.PennyLaneDeprecationWarning)
+            if "qml.transforms.sum_expand is deprecated" not in str(w.message):
+                warnings.warn(w.message, w.category)
+            else:
+                assert "qml.transforms.sum_expand is deprecated" in str(w.message)
+
     def test_observables_on_same_wires(self):
         """Test that even if the observables are on the same wires, if they are different operations, they are separated.
         This is testing for a case that gave rise to a bug that occured due to a problem in MeasurementProcess.hash.
@@ -530,8 +553,8 @@ class TestSumExpand:
         circuit = QuantumScript(measurements=[qml.expval(obs1), qml.expval(obs2)])
         batch, _ = sum_expand(circuit)
         assert len(batch) == 2
-        assert qml.equal(batch[0][0], qml.expval(obs1))
-        assert qml.equal(batch[1][0], qml.expval(obs2))
+        qml.assert_equal(batch[0][0], qml.expval(obs1))
+        qml.assert_equal(batch[1][0], qml.expval(obs2))
 
     @pytest.mark.parametrize(("qscript", "output"), zip(SUM_QSCRIPTS, SUM_OUTPUTS))
     def test_sums(self, qscript, output):
@@ -546,6 +569,7 @@ class TestSumExpand:
         assert all(qml.math.allclose(o, e) for o, e in zip(output, expval))
 
     @pytest.mark.parametrize(("qscript", "output"), zip(SUM_QSCRIPTS, SUM_OUTPUTS))
+    @pytest.mark.filterwarnings("ignore:Use of 'default.qubit.legacy' is deprecated")
     def test_sums_legacy_opmath(self, qscript, output):
         """Tests that the sum_expand transform returns the correct value"""
         dev_old = qml.device("default.qubit.legacy", wires=4)
@@ -751,8 +775,7 @@ class TestSumExpand:
         res = circuit(theta)
 
         if isinstance(theta, np.ndarray):
-            expected = np.stack(expected).T
-            assert qml.math.shape(res) == (5, 4, 3)
+            assert qml.math.shape(res) == (5, 3, 4)
         else:
             assert qml.math.shape(res) == (5, 3)
 

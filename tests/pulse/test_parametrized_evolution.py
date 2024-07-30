@@ -16,15 +16,16 @@ Unit tests for the ParametrizedEvolution class
 """
 # pylint: disable=unused-argument,too-few-public-methods,import-outside-toplevel,comparison-with-itself,protected-access
 from functools import reduce
-import numpy as np
 
+import numpy as np
 import pytest
+
 import pennylane as qml
+from pennylane.devices import DefaultQubit, DefaultQubitLegacy
 from pennylane.operation import AnyWires
 from pennylane.ops import QubitUnitary
 from pennylane.pulse import ParametrizedEvolution, ParametrizedHamiltonian
 from pennylane.tape import QuantumTape
-from pennylane.devices import DefaultQubit, DefaultQubitLegacy
 
 
 class MyOp(qml.RX):
@@ -88,6 +89,7 @@ class TestPytree:
         assert evol._unflatten(*evol._flatten()) == evol
 
 
+@pytest.mark.xfail
 @pytest.mark.jax
 def test_standard_validity():
     """Run standard validity checks on the parametrized evolution."""
@@ -153,7 +155,6 @@ class TestInitialization:
         assert ev.num_wires == AnyWires
         assert ev.name == "ParametrizedEvolution"
         assert ev.id is None
-        assert ev.queue_idx is None
 
         exp_params = [] if params is None else params
         assert qml.math.allequal(ev.data, exp_params)

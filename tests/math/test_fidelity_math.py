@@ -364,7 +364,7 @@ class TestGradient:
     @pytest.mark.parametrize("cost_fn, expected_res, expected_grad", cost_fns)
     def test_grad_tf(self, x, cost_fn, expected_res, expected_grad, tol):
         """Test gradients are correct for tf"""
-        x = tf.Variable(x, trainable=True)
+        x = tf.Variable(x, trainable=True, dtype="float64")
 
         with tf.GradientTape() as tape:
             res = cost_fn(x)
@@ -427,7 +427,9 @@ class TestGradient:
     @pytest.mark.parametrize("cost_fn, expected_res, expected_grad", cost_fns)
     def test_broadcast_tf(self, cost_fn, expected_res, expected_grad, tol):
         """Test gradients are correct for a broadcasted input for tf"""
-        x = tf.Variable([0.0, 1e-7, 0.456, np.pi / 2 - 1e-7, np.pi / 2], trainable=True)
+        x = tf.Variable(
+            [0.0, 1e-7, 0.456, np.pi / 2 - 1e-7, np.pi / 2], trainable=True, dtype="float64"
+        )
 
         with tf.GradientTape() as tape:
             res = cost_fn(x)

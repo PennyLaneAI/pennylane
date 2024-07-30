@@ -14,11 +14,13 @@
 """
 Tests for the DisplacementEmbedding template.
 """
+import numpy as np
+
 # pylint: disable=protected-access
 import pytest
-import numpy as np
-from pennylane import numpy as pnp
+
 import pennylane as qml
+from pennylane import numpy as pnp
 
 
 def test_standard_validity():
@@ -39,7 +41,7 @@ def test_flatten_unflatten_methods():
     assert hash(metadata)
 
     new_op = type(op)._unflatten(*op._flatten())
-    assert qml.equal(new_op, op)
+    qml.assert_equal(new_op, op)
     assert new_op is not op
     assert new_op._name == "DisplacementEmbedding"  # make sure initialized
 
@@ -52,7 +54,7 @@ class TestDecomposition:
         """Checks the queue for the default settings."""
 
         op = qml.DisplacementEmbedding(features=features, wires=range(3))
-        tape = op.expand()
+        tape = qml.tape.QuantumScript(op.decomposition())
 
         assert len(tape.operations) == len(features)
         for idx, gate in enumerate(tape.operations):

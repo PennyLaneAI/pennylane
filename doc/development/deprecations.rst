@@ -9,6 +9,112 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
+* All of the legacy devices (any with the name ``default.qubit.{autograd,torch,tf,jax,legacy}``) are deprecated. Use ``default.qubit`` instead,
+  as it supports backpropagation for the many backends the legacy devices support.
+
+  - Deprecated in v0.38
+  - Will be removed in v0.39
+
+* The logic for internally switching a device for a different backpropagation
+  compatible device is now deprecated, as it was in place for the deprecated `default.qubit.legacy`.
+
+  - Deprecated in v0.38
+  - Will be removed in v0.39  
+
+* The ``decomp_depth`` argument in ``qml.device`` is deprecated. 
+
+  - Deprecated in v0.38
+  - Will be removed in v0.39
+
+* The ``max_expansion`` argument in ``qml.QNode`` is deprecated. 
+
+  - Deprecated in v0.38
+  - Will be removed in v0.39
+
+* The functions ``qml.transforms.sum_expand`` and ``qml.transforms.hamiltonian_expand`` are deprecated.
+  Instead, ``qml.transforms.split_non_commuting`` can be used for equivalent behaviour.
+
+  - Deprecated in v0.38
+  - Will be removed in v0.39
+
+* The ``expansion_strategy`` attribute of ``qml.QNode`` is deprecated. 
+  Users should make use of ``qml.workflow.construct_batch``, should they require fine control over the output tape(s).
+
+  - Deprecated in v0.38
+  - Will be removed in v0.39
+
+* The ``expansion_strategy`` argument in ``qml.specs``, ``qml.draw``, and ``qml.draw_mpl`` is deprecated. 
+  Instead, use the ``level`` argument which provides a superset of options.
+
+  - Deprecated in v0.38
+  - Will be removed in v0.39
+
+* The ``expand_fn`` argument in ``qml.execute`` is deprecated. 
+  Instead, please create a ``qml.transforms.core.TransformProgram`` with the desired preprocessing and pass it to the ``transform_program`` argument of ``qml.execute``.
+
+  - Deprecated in v0.38
+  - Will be removed in v0.39
+
+* The ``max_expansion`` argument in ``qml.execute`` is deprecated. 
+  Instead, please use ``qml.devices.preprocess.decompose`` with the desired expansion level, add it to a ``TransformProgram``, and pass it to the ``transform_program`` argument of ``qml.execute``.
+
+  - Deprecated in v0.38
+  - Will be removed in v0.39
+
+* The ``override_shots`` argument in ``qml.execute`` is deprecated.
+  Instead, please add the shots to the ``QuantumTape``\ s to be executed.
+
+  - Deprecated in v0.38
+  - Will be removed in v0.39
+
+* The ``device_batch_transform`` argument in ``qml.execute`` is deprecated. 
+  Instead, please create a ``qml.transforms.core.TransformProgram`` with the desired preprocessing and pass it to the ``transform_program`` argument of ``qml.execute``.
+
+  - Deprecated in v0.38
+  - Will be removed in v0.39
+
+* The functions ``qml.qinfo.classical_fisher`` and ``qml.qinfo.quantum_fisher`` are deprecated since they are being migrated
+  to the ``qml.gradients`` module. Therefore, ``qml.gradients.classical_fisher`` and ``qml.gradients.quantum_fisher`` should be used instead.
+
+  - Deprecated and Duplicated in v0.38
+  - Will be removed in v0.39
+
+* The ``simplify`` argument in ``qml.Hamiltonian`` and ``qml.ops.LinearCombination`` is deprecated. 
+  Instead, ``qml.simplify()`` can be called on the constructed operator.
+
+  - Deprecated in v0.37
+  - Will be removed in v0.39
+
+New operator arithmetic deprecations
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The v0.36 release completes the main phase of PennyLane's switchover to an updated approach for handling
+arithmetic operations between operators, check out the :ref:`Updated operators <new_opmath>` page
+for more details. The old system is still accessible via :func:`~.disable_new_opmath`. However, the
+old system will be removed in an upcoming release and should be treated as deprecated. The following
+functionality will explicitly raise a deprecation warning when used:
+
+* ``op.ops`` and ``op.coeffs`` will be deprecated in the future. Use 
+  :meth:`~.Operator.terms` instead.
+
+  - Added and deprecated for ``Sum`` and ``Prod`` instances in v0.35
+
+* Accessing ``qml.ops.Hamiltonian`` is deprecated because it points to the old version of the class
+  that may not be compatible with the new approach to operator arithmetic. Instead, using
+  ``qml.Hamiltonian`` is recommended because it dispatches to the :class:`~.LinearCombination` class
+  when the new approach to operator arithmetic is enabled. This will allow you to continue to use
+  ``qml.Hamiltonian`` with existing code without needing to make any changes.
+
+  - Use of ``qml.ops.Hamiltonian`` is deprecated in v0.36
+
+* Accessing terms of a tensor product (e.g., ``op = X(0) @ X(1)``) via ``op.obs`` is deprecated with new operator arithmetic.
+  A user should use :class:`op.operands <~.CompositeOp>` instead.
+
+  - Deprecated in v0.36
+
+Other deprecations
+~~~~~~~~~~~~~~~~~~
+
 * PennyLane Lightning and Catalyst will no longer support ``manylinux2014`` (GLIBC 2.17) compatibile Linux operating systems, and will be migrated to ``manylinux_2_28`` (GLIBC 2.28). See `pypa/manylinux <https://github.com/pypa/manylinux>`_ for additional details.
   
   - Last supported version of ``manylinux2014`` with v0.36
@@ -20,49 +126,39 @@ Pending deprecations
   - Deprecated in v0.36
   - Will be removed in v0.37
 
-* ``qml.from_qasm_file`` is deprecated. Instead, the user can open the file and then load its content using ``qml.from_qasm``.
+Completed deprecation cycles
+----------------------------
+
+* ``queue_idx`` attribute has been removed from the ``Operator``, ``CompositeOp``, and ``SymboliOp`` classes. Instead, the index is now stored as the label of the ``CircuitGraph.graph`` nodes.
+
+  - Deprecated in v0.38
+  - Removed in v0.38
+
+* ``qml.from_qasm`` no longer removes measurements from the QASM code. Use 
+  ``measurements=[]`` to remove measurements from the original circuit.
+
+  - Deprecated in v0.37
+  - Default behaviour changed in v0.38
+
+* ``qml.transforms.map_batch_transform`` has been removed, since transforms can be applied directly to a batch of tapes.
+  See :func:`~.pennylane.transform` for more information.
+
+  - Deprecated in v0.37
+  - Removed in v0.38
+
+* ``qml.from_qasm_file`` has been removed. Instead, the user can open the file and then load its content using ``qml.from_qasm``.
 
   >>> with open("test.qasm", "r") as f:
   ...     circuit = qml.from_qasm(f.read())
 
   - Deprecated in v0.36
-  - Will be removed in v0.37
+  - Removed in v0.37
 
 * The ``qml.load`` function is a general-purpose way to convert circuits into PennyLane from other
-  libraries. It is being deprecated in favour of the more specific functions ``from_qiskit``,
-  ``from_qasm``, etc.
+  libraries. It has been removed in favour of the more specific functions ``from_qiskit``, ``from_qasm``, etc.
 
   - Deprecated in v0.36
-  - Will be removed in v0.37
-
-New operator arithmetic deprecations
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-* ``op.ops`` and ``op.coeffs`` will be deprecated in the future. Use ``op.terms()`` instead.
-
-  - Added and deprecated for ``Sum`` and ``Prod`` instances in v0.35
-
-* Accessing ``qml.ops.Hamiltonian`` with new operator arithmetic enabled is deprecated. Using ``qml.Hamiltonian``
-  with new operator arithmetic enabled now returns a ``LinearCombination`` instance. Some functionality
-  may not work as expected, and use of the Hamiltonian class with the new operator arithmetic will not
-  be supported in future releases of PennyLane.
-
-  You can update your code to the new operator arithmetic by using ``qml.Hamiltonian`` instead of importing
-  the Hamiltonian class directly or via ``qml.ops.Hamiltonian``. When the new operator arithmetic is enabled, 
-  ``qml.Hamiltonian`` will access the new corresponding implementation. 
-
-  Alternatively, to continue accessing the legacy functionality, you can use 
-  ``qml.operation.disable_new_opmath()``.
-
-  - Deprecated in v0.36
-
-* Accessing terms of a tensor product ``op = X(0) @ X(1)`` via ``op.obs`` is deprecated with new operator arithmetic.
-  A user should use ``op.operands`` instead.
-
-  - Deprecated in v0.36
-
-Completed deprecation cycles
-----------------------------
+  - Removed in v0.37
 
 * ``single_tape_transform``, ``batch_transform``, ``qfunc_transform``, ``op_transform``,
   ``gradient_transform`` and ``hessian_transform`` are deprecated. Instead switch to using the new
@@ -106,7 +202,7 @@ Completed deprecation cycles
   - Deprecated in v0.35
   - Removed in v0.36
 
-* ``MeasurementProcess.name`` and ``MeasurementProcess.data`` have been deprecated, as they contain
+* ``MeasurementProcess.name`` and ``MeasurementProcess.data`` have been removed, as they contain
   dummy values that are no longer needed.
   
   - Deprecated in v0.35

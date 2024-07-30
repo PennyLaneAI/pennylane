@@ -16,10 +16,10 @@ Functions for partitioning a graph using KaHyPar.
 """
 
 
-from collections.abc import Sequence as SequenceType
+from collections.abc import Sequence
 from itertools import compress
 from pathlib import Path
-from typing import Any, List, Sequence, Tuple, Union
+from typing import Any, Union
 
 import numpy as np
 from networkx import MultiDiGraph
@@ -32,15 +32,15 @@ def kahypar_cut(
     graph: MultiDiGraph,
     num_fragments: int,
     imbalance: int = None,
-    edge_weights: List[Union[int, float]] = None,
-    node_weights: List[Union[int, float]] = None,
-    fragment_weights: List[Union[int, float]] = None,
+    edge_weights: list[Union[int, float]] = None,
+    node_weights: list[Union[int, float]] = None,
+    fragment_weights: list[Union[int, float]] = None,
     hyperwire_weight: int = 1,
     seed: int = None,
     config_path: Union[str, Path] = None,
     trial: int = None,
     verbose: bool = False,
-) -> List[Tuple[Operation, Operation, Any]]:
+) -> list[tuple[Operation, Any]]:
     """Calls `KaHyPar <https://kahypar.org/>`__ to partition a graph.
 
     .. warning::
@@ -92,11 +92,11 @@ def kahypar_cut(
 
     >>> graph = qml.qcut.tape_to_graph(tape)
     >>> cut_edges = qml.qcut.kahypar_cut(
-            graph=graph,
-            num_fragments=2,
-        )
+    ...     graph=graph,
+    ...     num_fragments=2,
+    ... )
     >>> cut_edges
-    [(CNOT(wires=[0, 'a']), RZ(0.24, wires=[0]), 0)]
+    [(Wrapped(CNOT(wires=[0, 'a'])), Wrapped(RZ(0.24, wires=[0])), 0)]
     """
     # pylint: disable=too-many-arguments, import-outside-toplevel
     try:
@@ -141,7 +141,7 @@ def kahypar_cut(
 
     if isinstance(imbalance, float):
         context.setEpsilon(imbalance)
-    if isinstance(fragment_weights, SequenceType) and (len(fragment_weights) == num_fragments):
+    if isinstance(fragment_weights, Sequence) and (len(fragment_weights) == num_fragments):
         context.setCustomTargetBlockWeights(fragment_weights)
     if not verbose:
         context.suppressOutput(True)
@@ -168,7 +168,7 @@ def _graph_to_hmetis(
     graph: MultiDiGraph,
     hyperwire_weight: int = 0,
     edge_weights: Sequence[int] = None,
-) -> Tuple[List[int], List[int], List[Union[int, float]]]:
+) -> tuple[list[int], list[int], list[Union[int, float]]]:
     """Converts a ``MultiDiGraph`` into the
     `hMETIS hypergraph input format <http://glaros.dtc.umn.edu/gkhome/fetch/sw/hmetis/manual.pdf>`__
     conforming to KaHyPar's calling signature.

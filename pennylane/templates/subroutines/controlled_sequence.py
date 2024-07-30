@@ -15,11 +15,11 @@ r"""
 Contains the ControlledSequence template.
 """
 from copy import copy
-import pennylane as qml
 
+import pennylane as qml
 from pennylane.operation import Operation
-from pennylane.wires import Wires
 from pennylane.ops.op_math.symbolicop import SymbolicOp
+from pennylane.wires import Wires
 
 
 class ControlledSequence(SymbolicOp, Operation):
@@ -68,6 +68,8 @@ class ControlledSequence(SymbolicOp, Operation):
     [0.92059345 0.02637178 0.00729619 0.00423258 0.00360545 0.00423258 0.00729619 0.02637178]
 
     """
+
+    grad_method = None
 
     def _flatten(self):
         return (self.base,), (self.control,)

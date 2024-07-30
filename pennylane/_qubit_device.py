@@ -26,7 +26,7 @@ import itertools
 import logging
 import warnings
 from collections import defaultdict
-from typing import List, Union
+from typing import Union
 
 import numpy as np
 
@@ -275,8 +275,24 @@ class QubitDevice(Device):
         self.check_validity(circuit.operations, circuit.observables)
 
         has_mcm = any(isinstance(op, MidMeasureMP) for op in circuit.operations)
-        if has_mcm:
-            kwargs["mid_measurements"] = {}
+        if has_mcm and "mid_measurements" not in kwargs:
+            results = []
+            aux_circ = qml.tape.QuantumScript(
+                circuit.operations,
+                circuit.measurements,
+                shots=[1],
+                trainable_params=circuit.trainable_params,
+            )
+            # Some devices like Lightning-Kokkos use `self.shots` to update `_samples`,
+            # and hence we update `self.shots` temporarily for this loop
+            shots_copy = self.shots
+            self.shots = 1
+            for _ in circuit.shots:
+                kwargs["mid_measurements"] = {}
+                self.reset()
+                results.append(self.execute(aux_circ, **kwargs))
+            self.shots = shots_copy
+            return tuple(results)
         # apply all circuit operations
         self.apply(
             circuit.operations,
@@ -457,7 +473,7 @@ class QubitDevice(Device):
 
         return new_r
 
-    def batch_execute(self, circuits):
+    def batch_execute(self, circuits, **kwargs):
         """Execute a batch of quantum circuits on the device.
 
         The circuits are represented by tapes, and they are executed one-by-one using the
@@ -481,13 +497,16 @@ class QubitDevice(Device):
                 ),
             )
 
+        if self.capabilities().get("supports_mid_measure", False):
+            kwargs.setdefault("postselect_mode", None)
+
         results = []
         for circuit in circuits:
             # we need to reset the device here, else it will
             # not start the next computation in the zero state
             self.reset()
 
-            res = self.execute(circuit)
+            res = self.execute(circuit, **kwargs)
             results.append(res)
 
         if self.tracker.active:
@@ -519,7 +538,7 @@ class QubitDevice(Device):
         >>> op.name # returns the operation name
         "RX"
         >>> op.wires # returns a Wires object representing the wires that the operation acts on
-        <Wires = [0]>
+        Wires([0])
         >>> op.parameters # returns a list of parameters
         [0.2]
 
@@ -1537,7 +1556,6 @@ class QubitDevice(Device):
         # translate to wire labels used by device. observable is list when measuring sequence
         # of multiple MeasurementValues
         device_wires = self.map_wires(observable.wires)
-        name = None if no_observable_provided else observable.name
         # Select the samples from self._samples that correspond to ``shot_range`` if provided
         if shot_range is None:
             sub_samples = self._samples
@@ -1547,11 +1565,7 @@ class QubitDevice(Device):
             # Ellipsis (...) otherwise would take up broadcasting and shots axes.
             sub_samples = self._samples[..., slice(*shot_range), :]
 
-        if isinstance(name, str) and name in {"PauliX", "PauliY", "PauliZ", "Hadamard"}:
-            # Process samples for observables with eigenvalues {1, -1}
-            samples = 1 - 2 * sub_samples[..., device_wires[0]]
-
-        elif no_observable_provided:
+        if no_observable_provided:
             # if no observable was provided then return the raw samples
             if len(observable.wires) != 0:
                 # if wires are provided, then we only return samples from those wires
@@ -1560,26 +1574,33 @@ class QubitDevice(Device):
                 samples = sub_samples
 
         else:
-            # Replace the basis state in the computational basis with the correct eigenvalue.
-            # Extract only the columns of the basis samples required based on ``wires``.
-            samples = sub_samples[..., np.array(device_wires)]  # Add np.array here for Jax support.
-            powers_of_two = 2 ** np.arange(samples.shape[-1])[::-1]
-            indices = samples @ powers_of_two
-            indices = np.array(indices)  # Add np.array here for Jax support.
+            # get eigvals
             if isinstance(observable, MeasurementValue):
                 eigvals = self._asarray(
                     [observable[i] for i in range(2 ** len(observable.measurements))],
                     dtype=self.R_DTYPE,
                 )
-                samples = eigvals[indices]
             else:
                 try:
-                    samples = observable.eigvals()[indices]
+                    eigvals = observable.eigvals()
                 except qml.operation.EigvalsUndefinedError as e:
                     # if observable has no info on eigenvalues, we cannot return this measurement
                     raise qml.operation.EigvalsUndefinedError(
                         f"Cannot compute samples of {observable.name}."
                     ) from e
+
+            # special handling for observables with eigvals +1/-1 to enable JIT compatibility.
+            if np.array_equal(eigvals, [1.0, -1.0]):
+                samples = 1.0 - 2 * sub_samples[..., device_wires[0]]  # type should be float
+            else:
+                # Replace the basis state in the computational basis with the correct eigenvalue.
+                # Extract only the columns of the basis samples required based on ``wires``.
+                # Add np.array here for Jax support.
+                samples = sub_samples[..., np.array(device_wires)]
+                powers_of_two = 2 ** np.arange(samples.shape[-1])[::-1]
+                indices = samples @ powers_of_two
+                indices = np.array(indices)  # Add np.array here for Jax support.
+                samples = eigvals[indices]
 
         num_wires = len(device_wires) if len(device_wires) > 0 else self.num_wires
         if bin_size is None:
@@ -1702,7 +1723,7 @@ class QubitDevice(Device):
         trainable_params = []
         for k in tape.trainable_params:
             # pylint: disable=protected-access
-            mp_or_op = tape[tape._par_info[k]["op_idx"]]
+            mp_or_op = tape[tape.par_info[k]["op_idx"]]
             if isinstance(mp_or_op, MeasurementProcess):
                 warnings.warn(
                     "Differentiating with respect to the input parameters of "
@@ -1756,7 +1777,7 @@ class QubitDevice(Device):
         # must be 2-dimensional
         return tuple(tuple(np.array(j_) for j_ in j) for j in jac)
 
-    def _get_diagonalizing_gates(self, circuit: QuantumTape) -> List[Operation]:
+    def _get_diagonalizing_gates(self, circuit: QuantumTape) -> list[Operation]:
         """Returns the gates that diagonalize the measured wires such that they
         are in the eigenbasis of the circuit observables.
 

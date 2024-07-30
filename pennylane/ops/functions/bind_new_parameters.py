@@ -16,17 +16,18 @@ This module contains the qml.bind_new_parameters function.
 """
 # pylint: disable=missing-docstring
 
-from typing import Sequence, Union
 import copy
+from collections.abc import Sequence
 from functools import singledispatch
+from typing import Union
 
 import pennylane as qml
-from pennylane.typing import TensorLike
 from pennylane.operation import Operator, Tensor
+from pennylane.typing import TensorLike
 
 from ..identity import Identity
+from ..op_math import Adjoint, CompositeOp, Pow, ScalarSymbolicOp, SProd, SymbolicOp
 from ..qubit import Projector
-from ..op_math import CompositeOp, SymbolicOp, ScalarSymbolicOp, Adjoint, Pow, SProd
 
 
 @singledispatch
@@ -75,6 +76,16 @@ def bind_new_parameters_commuting_evolution(
     time = params[0]
 
     return qml.CommutingEvolution(new_hamiltonian, time, frequencies=freq, shifts=shifts)
+
+
+@bind_new_parameters.register
+def bind_new_parameters_qdrift(op: qml.QDrift, params: Sequence[TensorLike]):
+    new_hamiltonian = bind_new_parameters(op.hyperparameters["base"], params[:-1])
+    time = params[-1]
+    n = op.hyperparameters["n"]
+    seed = op.hyperparameters["seed"]
+
+    return qml.QDrift(new_hamiltonian, time, n=n, seed=seed)
 
 
 @bind_new_parameters.register
@@ -244,7 +255,7 @@ def bind_new_parameters_tensor(op: Tensor, params: Sequence[TensorLike]):
 
 @bind_new_parameters.register
 def bind_new_parameters_conditional(op: qml.ops.Conditional, params: Sequence[TensorLike]):
-    then_op = bind_new_parameters(op.then_op, params)
+    then_op = bind_new_parameters(op.base, params)
     mv = copy.deepcopy(op.meas_val)
 
     return qml.ops.Conditional(mv, then_op)

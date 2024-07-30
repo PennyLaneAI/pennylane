@@ -14,8 +14,9 @@
 """
 Unit tests for the ParticleConservingU2 template.
 """
-import pytest
 import numpy as np
+import pytest
+
 import pennylane as qml
 from pennylane import numpy as pnp
 
@@ -56,7 +57,7 @@ class TestDecomposition:
         ) * layers
 
         op = qml.ParticleConservingU2(weights, wires=range(qubits), init_state=init_state)
-        queue = op.expand().operations
+        queue = op.decomposition()
 
         # number of gates
         assert len(queue) == n_gates

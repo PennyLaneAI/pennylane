@@ -12,21 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Provides transforms for mitigating quantum circuits."""
+from collections.abc import Sequence
 from copy import copy
-
-from typing import Any, Dict, Optional, Sequence, Callable
-
-from pennylane import apply, adjoint
-from pennylane.math import mean, shape, round
-from pennylane.queuing import AnnotatedQueue
-from pennylane.tape import QuantumTape, QuantumScript
-from pennylane.transforms import transform
+from typing import Any, Optional
 
 import pennylane as qml
+from pennylane import adjoint, apply
+from pennylane.math import mean, round, shape
+from pennylane.queuing import AnnotatedQueue
+from pennylane.tape import QuantumScript, QuantumTape, QuantumTapeBatch
+from pennylane.transforms import transform
+from pennylane.typing import PostprocessingFn
 
 
 @transform
-def fold_global(tape: QuantumTape, scale_factor) -> (Sequence[QuantumTape], Callable):
+def fold_global(tape: QuantumTape, scale_factor) -> tuple[QuantumTapeBatch, PostprocessingFn]:
     r"""Differentiable circuit folding of the global unitary ``circuit``.
 
     For a unitary circuit :math:`U = L_d .. L_1`, where :math:`L_i` can be either a gate or layer, ``fold_global`` constructs
@@ -320,6 +320,48 @@ def richardson_extrapolate(x, y):
     return poly_extrapolate(x, y, len(x) - 1)
 
 
+def exponential_extrapolate(x, y, asymptote=None, eps=1.0e-6):
+    r"""Extrapolate to the zero-noise limit using an exponential model (:math:`Ae^{Bx} + C`). This
+    is done by linearizing the data using a logarithm, whereupon a linear fit is performed. Once
+    the model parameters are found, they are transformed back to exponential parameters.
+
+    Args:
+        x (Array): Data in x axis.
+        y (Array): Data in y axis such that :math:`y = f(x)`.
+        asymptote (float): Infinite noise limit expected for your circuit of interest (:math:`C`
+            in the equation above). Defaults to 0 in the case an asymptote is not supplied.
+        eps (float): Epsilon to regularize :math:`\log(y - C)` when the argument is to close to
+            zero or negative.
+
+    Returns:
+        float: Extrapolated value at f(0).
+
+    .. seealso:: :func:`~.pennylane.transforms.richardson_extrapolate`, :func:`~.pennylane.transforms.mitigate_with_zne`.
+
+    **Example:**
+
+    >>> np.random.seed(0)
+    >>> x = np.linspace(1, 10, 5)
+    >>> y = np.exp(-x) + np.random.normal(scale=0.1, size=len(x))
+    >>> qml.transforms.exponential_extrapolate(x, y)
+    0.23365009000522544
+    """
+    y = qml.math.stack(y)
+    slope, y_intercept = _polyfit(x, y, 1)
+    if asymptote is None:
+        sign = qml.math.sign(-slope)
+        asymptote = 0.0
+    else:
+        sign = qml.math.sign(-(asymptote - y_intercept))
+
+    y_shifted = sign * (y - asymptote)
+    y_shifted = qml.math.where(y_shifted < eps, eps, y_shifted)
+    y_scaled = qml.math.log(y_shifted)
+
+    zne_unscaled = poly_extrapolate(x, y_scaled, 1)
+    return sign * qml.math.exp(zne_unscaled) + asymptote
+
+
 # pylint: disable=too-many-arguments, protected-access
 @transform
 def mitigate_with_zne(
@@ -327,10 +369,10 @@ def mitigate_with_zne(
     scale_factors: Sequence[float],
     folding: callable,
     extrapolate: callable,
-    folding_kwargs: Optional[Dict[str, Any]] = None,
-    extrapolate_kwargs: Optional[Dict[str, Any]] = None,
+    folding_kwargs: Optional[dict[str, Any]] = None,
+    extrapolate_kwargs: Optional[dict[str, Any]] = None,
     reps_per_factor=1,
-) -> (Sequence[QuantumTape], Callable):
+) -> tuple[QuantumTapeBatch, PostprocessingFn]:
     r"""Mitigate an input circuit using zero-noise extrapolation.
 
     Error mitigation is a precursor to error correction and is compatible with near-term quantum

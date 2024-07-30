@@ -16,12 +16,15 @@ Contains the QSVT template and qsvt wrapper function.
 """
 # pylint: disable=too-many-arguments
 import copy
+
 import numpy as np
+
 import pennylane as qml
-from pennylane.queuing import QueuingManager
+from pennylane.operation import AnyWires, Operation
 from pennylane.ops import BlockEncode, PCPhase
 from pennylane.ops.op_math import adjoint
-from pennylane.operation import AnyWires, Operation
+from pennylane.queuing import QueuingManager
+from pennylane.wires import Wires
 
 
 def qsvt(A, angles, wires, convention=None):
@@ -266,6 +269,10 @@ class QSVT(Operation):
         return data, tuple()
 
     @classmethod
+    def _primitive_bind_call(cls, *args, **kwargs):
+        return cls._primitive.bind(*args, **kwargs)
+
+    @classmethod
     def _unflatten(cls, data, _) -> "QSVT":
         return cls(*data)
 
@@ -278,11 +285,21 @@ class QSVT(Operation):
             "projectors": projectors,
         }
 
-        ua_wires = UA.wires.toset()
-        proj_wires = set.union(*(proj.wires.toset() for proj in projectors))
+        total_wires = qml.wires.Wires(UA.wires) + qml.wires.Wires.all_wires(
+            [proj.wires for proj in projectors]
+        )
 
-        total_wires = ua_wires.union(proj_wires)
         super().__init__(wires=total_wires, id=id)
+
+    def map_wires(self, wire_map: dict):
+        # pylint: disable=protected-access
+        new_op = copy.deepcopy(self)
+        new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
+        new_op._hyperparameters["UA"] = qml.map_wires(new_op._hyperparameters["UA"], wire_map)
+        new_op._hyperparameters["projectors"] = [
+            qml.map_wires(proj, wire_map) for proj in new_op._hyperparameters["projectors"]
+        ]
+        return new_op
 
     @property
     def data(self):
@@ -418,7 +435,9 @@ class QSVT(Operation):
         UA = kwargs["UA"]
         projectors = kwargs["projectors"]
 
-        with QueuingManager.stop_recording():  # incase this method is called in a queue context, this prevents
+        with (
+            QueuingManager.stop_recording()
+        ):  # incase this method is called in a queue context, this prevents
             UA_copy = copy.copy(UA)  # us from queuing operators unnecessarily
 
             for idx, op in enumerate(projectors[:-1]):
@@ -436,9 +455,12 @@ class QSVT(Operation):
 
 def _qsp_to_qsvt(angles):
     r"""Converts qsp angles to qsvt angles."""
-    new_angles = qml.math.array(copy.copy(angles))
-    new_angles[0] += 3 * np.pi / 4
-    new_angles[-1] -= np.pi / 4
+    num_angles = len(angles)
+    update_vals = np.empty(num_angles)
 
-    new_angles[1:-1] += np.pi / 2
-    return new_angles
+    update_vals[0] = 3 * np.pi / 4
+    update_vals[1:-1] = np.pi / 2
+    update_vals[-1] = -np.pi / 4
+    update_vals = qml.math.convert_like(update_vals, angles)
+
+    return angles + update_vals

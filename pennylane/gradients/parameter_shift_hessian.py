@@ -17,14 +17,16 @@ of a qubit-based quantum tape.
 """
 import itertools as it
 import warnings
-from string import ascii_letters as ABC
 from functools import partial
-from typing import Sequence, Callable
+from string import ascii_letters as ABC
 
 import numpy as np
+
 import pennylane as qml
 from pennylane.measurements import ProbabilityMP, StateMP, VarianceMP
+from pennylane.tape import QuantumTapeBatch
 from pennylane.transforms import transform
+from pennylane.typing import PostprocessingFn
 
 from .general_shift_rules import (
     _combine_shift_rules,
@@ -439,7 +441,7 @@ def _contract_qjac_with_cjac(qhess, cjac, tape):
 @partial(transform, classical_cotransform=_contract_qjac_with_cjac, final_transform=True)
 def param_shift_hessian(
     tape: qml.tape.QuantumTape, argnum=None, diagonal_shifts=None, off_diagonal_shifts=None, f0=None
-) -> (Sequence[qml.tape.QuantumTape], Callable):
+) -> tuple[QuantumTapeBatch, PostprocessingFn]:
     r"""Transform a circuit to compute the parameter-shift Hessian with respect to its trainable
     parameters. This is the Hessian transform to replace the old one in the new return types system
 
@@ -496,7 +498,7 @@ def param_shift_hessian(
     This works best if no classical processing is applied within the
     QNode to operation parameters.
 
-    >>> dev = qml.device("default.qubit", wires=2)
+    >>> dev = qml.device("default.qubit")
     >>> @qml.qnode(dev)
     ... def circuit(x):
     ...     qml.RX(x[0], wires=0)
@@ -576,7 +578,8 @@ def param_shift_hessian(
 
         >>> hessian_tapes, postproc_fn = qml.gradients.param_shift_hessian(tape, argnum=(1,))
         >>> postproc_fn(qml.execute(hessian_tapes, dev, None))
-        ((array(0.), array(0.)), (array(0.), array(0.05998862)))
+        ((tensor(0., requires_grad=True), tensor(0., requires_grad=True)),
+         (tensor(0., requires_grad=True), array(0.05998862)))
 
     """
     # Perform input validation before generating tapes.

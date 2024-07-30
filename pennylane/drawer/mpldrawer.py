@@ -14,15 +14,14 @@
 """
 This module contains the MPLDrawer class for creating circuit diagrams with matplotlib
 """
-from collections.abc import Iterable
 import warnings
-from typing import Sequence
+from collections.abc import Iterable, Sequence
 
 has_mpl = True
 try:
+    import matplotlib.patheffects as path_effects
     import matplotlib.pyplot as plt
     from matplotlib import patches
-    import matplotlib.patheffects as path_effects
 except (ModuleNotFoundError, ImportError) as e:  # pragma: no cover
     has_mpl = False
 

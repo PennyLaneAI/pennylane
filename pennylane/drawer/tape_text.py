@@ -19,19 +19,26 @@ This module contains logic for the text based circuit drawer through the ``tape_
 
 from dataclasses import dataclass
 from typing import Optional
+
 import pennylane as qml
 from pennylane.measurements import (
+    Counts,
     Expectation,
+    MidMeasureMP,
     Probability,
     Sample,
-    Variance,
     State,
-    Counts,
-    MidMeasureMP,
+    Variance,
 )
 
 from .drawable_layers import drawable_layers
-from .utils import convert_wire_order, unwrap_controls, cwire_connections, default_bit_map
+from .utils import (
+    convert_wire_order,
+    cwire_connections,
+    default_bit_map,
+    transform_deferred_measurements_tape,
+    unwrap_controls,
+)
 
 
 @dataclass
@@ -124,7 +131,7 @@ def _add_op(op, layer_str, config):
     """Updates ``layer_str`` with ``op`` operation."""
     if isinstance(op, qml.ops.Conditional):  # pylint: disable=no-member
         layer_str = _add_cond_grouping_symbols(op, layer_str, config)
-        return _add_op(op.then_op, layer_str, config)
+        return _add_op(op.base, layer_str, config)
 
     if isinstance(op, MidMeasureMP):
         return _add_mid_measure_op(op, layer_str, config)
@@ -425,6 +432,7 @@ def tape_text(
         New tape offset:  4
 
     """
+    tape = transform_deferred_measurements_tape(tape)
     cache = cache or {}
     cache.setdefault("tape_offset", 0)
     cache.setdefault("matrices", [])

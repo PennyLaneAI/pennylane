@@ -23,12 +23,12 @@ import pytest
 import scipy
 
 import pennylane as qml
-from pennylane import numpy as pnp, X, Y, Z
-from pennylane.wires import Wires
-from pennylane.pauli import PauliWord, PauliSentence
-from pennylane.ops import LinearCombination
-
+from pennylane import X, Y, Z
+from pennylane import numpy as pnp
 from pennylane.operation import enable_new_opmath_cm
+from pennylane.ops import LinearCombination
+from pennylane.pauli import PauliSentence, PauliWord
+from pennylane.wires import Wires
 
 
 @pytest.mark.usefixtures("use_legacy_opmath")
@@ -53,11 +53,27 @@ class TestParityWithHamiltonian:
         assert isinstance(H, qml.Hamiltonian)
 
 
-@pytest.mark.filterwarnings(
-    "ignore:Using 'qml.ops.Hamiltonian' with new operator arithmetic is deprecated"
-)
+@pytest.mark.usefixtures("new_opmath_only")
 def test_mixed_legacy_warning_Hamiltonian():
     """Test that mixing legacy ops and LinearCombination.compare raises a warning"""
+    op1 = qml.ops.LinearCombination([0.5, 0.5], [X(0) @ X(1), qml.Hadamard(0)])
+
+    with pytest.warns(
+        qml.PennyLaneDeprecationWarning,
+        match="Using 'qml.ops.Hamiltonian' with new operator arithmetic is deprecated",
+    ):
+        op2 = qml.ops.Hamiltonian([0.5, 0.5], [qml.operation.Tensor(X(0), X(1)), qml.Hadamard(0)])
+
+    with pytest.warns(UserWarning, match="Attempting to compare a legacy operator class instance"):
+        res = op1.compare(op2)
+
+    assert res
+
+
+@pytest.mark.usefixtures("legacy_opmath_only")
+def test_mixed_legacy_warning_Hamiltonian_legacy():
+    """Test that mixing legacy ops and LinearCombination.compare raises a warning in legacy opmath"""
+
     op1 = qml.ops.LinearCombination([0.5, 0.5], [X(0) @ X(1), qml.Hadamard(0)])
     op2 = qml.ops.Hamiltonian([0.5, 0.5], [qml.operation.Tensor(X(0), X(1)), qml.Hadamard(0)])
 
@@ -564,6 +580,20 @@ dev = qml.device("default.qubit", wires=2)
 class TestLinearCombination:
     """Test the LinearCombination class"""
 
+    def test_deprecation_simplify_argument(self):
+        """Test that a deprecation warning is raised if the simplify argument is True."""
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match="deprecated",
+        ):
+            _ = qml.ops.LinearCombination([1.0], [qml.X(0)], simplify=True)
+
+    def test_error_if_observables_operator(self):
+        """Test thatt an error is raised if an operator is provided to observables."""
+
+        with pytest.raises(ValueError, match=r"observables must be an Iterable of Operator's"):
+            qml.ops.LinearCombination([1, 1], qml.X(0) @ qml.Y(1))
+
     PAULI_REPS = (
         ([], [], PauliSentence({})),
         (
@@ -582,7 +612,14 @@ class TestLinearCombination:
     @pytest.mark.parametrize("coeffs, ops, true_pauli", PAULI_REPS)
     def test_pauli_rep(self, coeffs, ops, true_pauli, simplify):
         """Test the pauli rep is correctly constructed"""
-        H = qml.ops.LinearCombination(coeffs, ops, simplify=simplify)
+        if simplify:
+            with pytest.warns(
+                qml.PennyLaneDeprecationWarning,
+                match="deprecated",
+            ):
+                H = qml.ops.LinearCombination(coeffs, ops, simplify=simplify)
+        else:
+            H = qml.ops.LinearCombination(coeffs, ops, simplify=simplify)
         pr = H.pauli_rep
         if simplify:
             pr.simplify()
@@ -650,7 +687,7 @@ class TestLinearCombination:
         assert data[1] == H._ops
 
         new_H = LinearCombination._unflatten(*H._flatten())
-        assert qml.equal(H, new_H)
+        qml.assert_equal(H, new_H)
         assert new_H.grouping_indices == H.grouping_indices
 
     @pytest.mark.parametrize("coeffs, ops", valid_LinearCombinations)
@@ -933,7 +970,7 @@ class TestLinearCombination:
         assert h.wires == Wires([0, 1, 2])
         assert mapped_h.wires == Wires([10, 11, 12])
         for obs1, obs2 in zip(mapped_h.ops, final_obs):
-            assert qml.equal(obs1, obs2)
+            qml.assert_equal(obs1, obs2)
         for coeff1, coeff2 in zip(mapped_h.coeffs, h.coeffs):
             assert coeff1 == coeff2
 
@@ -950,7 +987,7 @@ class TestLinearCombination:
         assert h.wires == Wires([0, 1, 2])
         assert mapped_h.wires == Wires([10, 11, 12])
         for obs1, obs2 in zip(mapped_h.ops, final_obs):
-            assert qml.equal(obs1, obs2)
+            qml.assert_equal(obs1, obs2)
         for coeff1, coeff2 in zip(mapped_h.coeffs, h.coeffs):
             assert coeff1 == coeff2
         assert group_indices_before == mapped_h.grouping_indices
@@ -1623,10 +1660,28 @@ class TestLinearCombinationEvaluation:
             qml.RY(0.1, wires=0)
             return qml.expval(qml.ops.LinearCombination([1.0, 2.0], [X(1), X(1)], simplify=True))
 
-        circuit()
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match="deprecated",
+        ):
+            circuit()
         pars = circuit.qtape.get_parameters(trainable_only=False)
         # simplify worked and added 1. and 2.
         assert pars == [0.1, 3.0]
+
+    @pytest.mark.usefixtures("use_legacy_and_new_opmath")
+    def test_queuing_behaviour(self):
+        """Tests that the base observables are correctly dequeued with simplify=True"""
+
+        with qml.queuing.AnnotatedQueue() as q:
+            with pytest.warns(
+                qml.PennyLaneDeprecationWarning,
+                match="deprecated",
+            ):
+                obs = qml.Hamiltonian([1, 1, 1], [qml.X(0), qml.X(0), qml.Z(0)], simplify=True)
+
+        assert len(q) == 1
+        assert q.queue[0] == obs
 
 
 class TestLinearCombinationDifferentiation:
@@ -1655,7 +1710,14 @@ class TestLinearCombinationDifferentiation:
             )
 
         grad_fn = qml.grad(circuit)
-        grad = grad_fn(coeffs, param)
+        if simplify:
+            with pytest.warns(
+                qml.PennyLaneDeprecationWarning,
+                match="deprecated",
+            ):
+                grad = grad_fn(coeffs, param)
+        else:
+            grad = grad_fn(coeffs, param)
 
         # differentiating a cost that combines circuits with
         # measurements expval(Pauli)
@@ -1729,7 +1791,14 @@ class TestLinearCombinationDifferentiation:
             )
 
         grad_fn = qml.grad(circuit)
-        grad = grad_fn(coeffs, param)
+        if simplify:
+            with pytest.warns(
+                qml.PennyLaneDeprecationWarning,
+                match="deprecated",
+            ):
+                grad = grad_fn(coeffs, param)
+        else:
+            grad = grad_fn(coeffs, param)
 
         # differentiating a cost that combines circuits with
         # measurements expval(Pauli)
@@ -1799,7 +1868,15 @@ class TestLinearCombinationDifferentiation:
             )
 
         grad_fn = jax.grad(circuit)
-        grad = grad_fn(coeffs, param)
+
+        if simplify:
+            with pytest.warns(
+                qml.PennyLaneDeprecationWarning,
+                match="deprecated",
+            ):
+                grad = grad_fn(coeffs, param)
+        else:
+            grad = grad_fn(coeffs, param)
 
         # differentiating a cost that combines circuits with
         # measurements expval(Pauli)
@@ -1868,7 +1945,14 @@ class TestLinearCombinationDifferentiation:
                 )
             )
 
-        res = circuit(coeffs, param)
+        if simplify:
+            with pytest.warns(
+                qml.PennyLaneDeprecationWarning,
+                match="deprecated",
+            ):
+                res = circuit(coeffs, param)
+        else:
+            res = circuit(coeffs, param)
         res.backward()  # pylint:disable=no-member
         grad = (coeffs.grad, param.grad)
 
@@ -1956,7 +2040,14 @@ class TestLinearCombinationDifferentiation:
             )
 
         with tf.GradientTape() as tape:
-            res = circuit(coeffs, param)
+            if simplify:
+                with pytest.warns(
+                    qml.PennyLaneDeprecationWarning,
+                    match="deprecated",
+                ):
+                    res = circuit(coeffs, param)
+            else:
+                res = circuit(coeffs, param)
         grad = tape.gradient(res, [coeffs, param])
 
         # differentiating a cost that combines circuits with

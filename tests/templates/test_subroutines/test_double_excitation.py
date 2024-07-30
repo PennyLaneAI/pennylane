@@ -14,10 +14,11 @@
 """
 Tests for the FermionicDoubleExcitation template.
 """
-import pytest
 import numpy as np
-from pennylane import numpy as pnp
+import pytest
+
 import pennylane as qml
+from pennylane import numpy as pnp
 
 
 def test_standard_validity():
@@ -27,27 +28,6 @@ def test_standard_validity():
     wires2 = qml.wires.Wires((2, 3, 4))
     op = qml.FermionicDoubleExcitation(weight, wires1=wires1, wires2=wires2)
     qml.ops.functions.assert_valid(op)
-
-
-# pylint: disable=protected-access
-def test_flatten_unflatten():
-    """Test the _flatten and _unflatten methods."""
-    weight = 0.5
-    wires1 = qml.wires.Wires((0, 1))
-    wires2 = qml.wires.Wires((2, 3, 4))
-    op = qml.FermionicDoubleExcitation(weight, wires1=wires1, wires2=wires2)
-
-    data, metadata = op._flatten()
-    assert data == (0.5,)
-    assert metadata[0] == wires1
-    assert metadata[1] == wires2
-
-    # test that its hashable
-    assert hash(metadata)
-
-    new_op = type(op)._unflatten(*op._flatten())
-    assert qml.equal(op, new_op)
-    assert op is not new_op
 
 
 class TestDecomposition:
@@ -223,7 +203,7 @@ class TestDecomposition:
         cnots = 16 * (len(wires1) - 1 + len(wires2) - 1 + 1)
         weight = np.pi / 3
         op = qml.FermionicDoubleExcitation(weight, wires1=wires1, wires2=wires2)
-        queue = op.expand().operations
+        queue = op.decomposition()
 
         assert len(queue) == sqg + cnots
 

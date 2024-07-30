@@ -17,11 +17,12 @@ them.
 """
 
 import urllib.parse
+from collections.abc import Iterable, Mapping
 from concurrent.futures import ThreadPoolExecutor
 from functools import lru_cache
 from pathlib import Path
 from time import sleep
-from typing import List, Optional, Union, Tuple, Iterable, Mapping
+from typing import Iterable, Mapping, Optional, Tuple, Union
 
 from requests import get, head
 
@@ -88,7 +89,9 @@ def _download_partial(
         attributes_to_fetch.difference_update(dest_dataset.attrs)
 
     if len(attributes_to_fetch) > 0:
-        remote_dataset = remote_dataset or Dataset(open_hdf5_s3(s3_url, block_size=block_size))
+        remote_dataset = remote_dataset or Dataset(
+            open_hdf5_s3(s3_url, block_size=block_size)
+        )
         remote_dataset.write(dest_dataset, "a", attributes, overwrite=overwrite)
 
     if remote_dataset:
@@ -134,7 +137,11 @@ def _download_dataset(  # pylint:disable=too-many-arguments
 
     if attributes is not None or dest.exists():
         _download_partial(
-            s3_url, dest=dest, attributes=attributes, overwrite=force, block_size=block_size
+            s3_url,
+            dest=dest,
+            attributes=attributes,
+            overwrite=force,
+            block_size=block_size,
         )
     else:
         _download_full(s3_url, dest=dest)
@@ -154,11 +161,15 @@ def _validate_attributes(data_struct: dict, data_name: str, attributes: Iterable
         return
 
     if len(invalid_attributes) == 1:
-        values_err = f"'{invalid_attributes[0]}' is an invalid attribute for '{data_name}'"
+        values_err = (
+            f"'{invalid_attributes[0]}' is an invalid attribute for '{data_name}'"
+        )
     else:
         values_err = f"{invalid_attributes} are invalid attributes for '{data_name}'"
 
-    raise ValueError(f"{values_err}. Valid attributes are: {data_struct[data_name]['attributes']}")
+    raise ValueError(
+        f"{values_err}. Valid attributes are: {data_struct[data_name]['attributes']}"
+    )
 
 
 def load(  # pylint: disable=too-many-arguments
@@ -168,7 +179,7 @@ def load(  # pylint: disable=too-many-arguments
     force: bool = False,
     num_threads: int = 50,
     block_size: int = 8388608,
-    **params: Union[ParamArg, str, List[str]],
+    **params: Union[ParamArg, str, list[str]],
 ):
     r"""Downloads the data if it is not already present in the directory and returns it as a list of
     :class:`~pennylane.data.Dataset` objects. For the full list of available datasets, please see
@@ -270,7 +281,8 @@ def load(  # pylint: disable=too-many-arguments
         path_parents.mkdir(parents=True, exist_ok=True)
 
     file_sizes = [
-        int(head(f"{S3_URL}/{urllib.parse.quote(str(p))}").headers["Content-Length"]) / 1000
+        int(head(f"{S3_URL}/{urllib.parse.quote(str(p))}").headers["Content-Length"])
+        / 1000
         for p in data_paths
     ]
     total_size = sum(file_sizes)
@@ -375,11 +387,15 @@ def _interactive_request_attributes(options):
             option = "full (all attributes)"
         prompt += f"\n\t{i+1}) {option}"
     print(prompt)
-    choices = input(f"Choice (comma-separated list of options) [1-{len(options)}]: ").split(",")
+    choices = input(
+        f"Choice (comma-separated list of options) [1-{len(options)}]: "
+    ).split(",")
     try:
         choices = list(map(int, choices))
     except ValueError as e:
-        raise ValueError(f"Must enter a list of integers between 1 and {len(options)}") from e
+        raise ValueError(
+            f"Must enter a list of integers between 1 and {len(options)}"
+        ) from e
     if any(choice < 1 or choice > len(options) for choice in choices):
         raise ValueError(f"Must enter a list of integers between 1 and {len(options)}")
     return [options[choice - 1] for choice in choices]
@@ -458,11 +474,17 @@ def load_interactive():
         description[param] = value
 
     attributes = _interactive_request_attributes(
-        [attribute for attribute in data_struct[data_name]["attributes"] if attribute not in params]
+        [
+            attribute
+            for attribute in data_struct[data_name]["attributes"]
+            if attribute not in params
+        ]
     )
     force = input("Force download files? (Default is no) [y/N]: ") in ["y", "Y"]
     dest_folder = Path(
-        input("Folder to download to? (Default is pwd, will download to /datasets subdirectory): ")
+        input(
+            "Folder to download to? (Default is pwd, will download to /datasets subdirectory): "
+        )
     )
 
     print("\nPlease confirm your choices:")
@@ -477,7 +499,11 @@ def load_interactive():
         return None
 
     return load(
-        data_name, attributes=attributes, folder_path=dest_folder, force=force, **description
+        data_name,
+        attributes=attributes,
+        folder_path=dest_folder,
+        force=force,
+        **description,
     )[0]
 
 

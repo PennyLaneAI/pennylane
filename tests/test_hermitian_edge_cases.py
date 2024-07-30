@@ -15,13 +15,11 @@
 Unit tests for edge cases of the Hermitian class.
 """
 import itertools
-import pytest
+
 import numpy as np
+import pytest
 
 import pennylane as qml
-
-np.random.seed(0)
-
 
 THETA = np.linspace(0.11, 1, 3)
 PHI = np.linspace(0.32, 1, 3)

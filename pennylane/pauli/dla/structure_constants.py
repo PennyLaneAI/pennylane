@@ -12,13 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """A function to compute the adjoint representation of a Lie algebra"""
-from typing import List, Union
 from itertools import combinations
+from typing import Union
 
 import numpy as np
 
-from pennylane.typing import TensorLike
 from pennylane.operation import Operator
+from pennylane.typing import TensorLike
+
 from ..pauli_arithmetic import PauliSentence, PauliWord
 
 
@@ -33,7 +34,7 @@ def _all_commutators(ops):
 
 
 def structure_constants(
-    g: List[Union[Operator, PauliWord, PauliSentence]], pauli: bool = False
+    g: list[Union[Operator, PauliWord, PauliSentence]], pauli: bool = False
 ) -> TensorLike:
     r"""
     Compute the structure constants that make up the adjoint representation of a Lie algebra.
@@ -74,7 +75,7 @@ def structure_constants(
     >>> gens += [Z(i) for i in range(n)]
     >>> dla = qml.lie_closure(gens)
     >>> print(dla)
-    [X(1) @ X(0), Z(0), Z(1), -1.0 * (X(1) @ Y(0)), -1.0 * (Y(1) @ X(0)), -1.0 * (Y(1) @ Y(0))]
+    [X(0) @ X(1), Z(0), Z(1), -1.0 * (Y(0) @ X(1)), -1.0 * (X(0) @ Y(1)), -1.0 * (Y(0) @ Y(1))]
 
     The dimension of the DLA is :math:`d = 6`. Hence, the structure constants have shape ``(6, 6, 6)``.
 
@@ -90,7 +91,7 @@ def structure_constants(
     we should have :math:`f^0_{1, 3} = -2`, which is indeed the case.
 
     >>> adjoint_rep[0, 1, 3]
-    -2.
+    -2.0
 
     We can also look at the overall adjoint action of the first element :math:`G_0 = X_{0} \otimes X_{1}` of the DLA on other elements.
     In particular, at :math:`\left(\text{ad}(iG_0)\right)_{\alpha, \beta} = f^0_{\alpha, \beta}`, which corresponds to the following matrix.

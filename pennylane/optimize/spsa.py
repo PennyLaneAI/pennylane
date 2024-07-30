@@ -14,6 +14,7 @@
 """SPSA optimizer"""
 
 import numpy as np
+
 from pennylane.measurements import Shots
 
 
@@ -193,6 +194,7 @@ class SPSAOptimizer:
             objective function output prior to the step.
         """
         g = self.compute_grad(objective_fn, args, kwargs)
+
         new_args = self.apply_grad(g, args)
 
         self.k += 1
@@ -269,7 +271,8 @@ class SPSAOptimizer:
                 shots = Shots(objective_fn.device._raw_shot_sequence)  # pragma: no cover
             else:
                 shots = Shots(None)
-            if np.prod(objective_fn.func(*args).shape(objective_fn.device, shots)) > 1:
+
+            if np.prod(objective_fn.func(*args, **kwargs).shape(objective_fn.device, shots)) > 1:
                 raise ValueError(
                     "The objective function must be a scalar function for the gradient "
                     "to be computed."

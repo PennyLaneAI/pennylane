@@ -83,15 +83,15 @@ Other interfaces are capable of calculating the full jacobian in one call, so th
 """
 # pylint: disable=too-many-arguments, unused-argument
 import logging
-from typing import Tuple, Callable
+from collections.abc import Callable
 
 import autograd
 from autograd.numpy.numpy_boxes import ArrayBox
 
 import pennylane as qml
+from pennylane.tape import QuantumTapeBatch
 
-Batch = Tuple[qml.tape.QuantumTape]
-ExecuteFn = Callable[[Batch], qml.typing.ResultBatch]
+ExecuteFn = Callable[[QuantumTapeBatch], qml.typing.ResultBatch]
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -99,7 +99,7 @@ logger.addHandler(logging.NullHandler())
 
 # pylint: disable=unused-argument
 def autograd_execute(
-    tapes: Batch,
+    tapes: QuantumTapeBatch,
     execute_fn: ExecuteFn,
     jpc: qml.workflow.jacobian_products.JacobianProductCalculator,
     device=None,

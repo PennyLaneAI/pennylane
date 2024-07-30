@@ -13,19 +13,21 @@
 # limitations under the License.
 """QNode transforms for the quantum information quantities."""
 # pylint: disable=import-outside-toplevel, not-callable
+import warnings
+from collections.abc import Callable, Sequence
 from functools import partial
-from typing import Callable, Sequence
 
 import pennylane as qml
-from pennylane.tape import QuantumTape
-from pennylane.devices import DefaultQubit, DefaultQubitLegacy, DefaultMixed
-from pennylane.measurements import StateMP, DensityMatrixMP
-from pennylane.gradients import adjoint_metric_tensor, metric_tensor
 from pennylane import transform
+from pennylane.devices import DefaultMixed, DefaultQubit, DefaultQubitLegacy
+from pennylane.gradients import adjoint_metric_tensor, metric_tensor
+from pennylane.measurements import DensityMatrixMP, StateMP
+from pennylane.tape import QuantumTape, QuantumTapeBatch
+from pennylane.typing import PostprocessingFn
 
 
 @partial(transform, final_transform=True)
-def reduced_dm(tape: QuantumTape, wires, **kwargs) -> (Sequence[QuantumTape], Callable):
+def reduced_dm(tape: QuantumTape, wires, **kwargs) -> tuple[QuantumTapeBatch, PostprocessingFn]:
     """Compute the reduced density matrix from a :class:`~.QNode` returning
     :func:`~pennylane.state`.
 
@@ -122,7 +124,7 @@ def _reduced_dm_qnode(self, qnode, targs, tkwargs):
 
 
 @partial(transform, final_transform=True)
-def purity(tape: QuantumTape, wires, **kwargs) -> (Sequence[QuantumTape], Callable):
+def purity(tape: QuantumTape, wires, **kwargs) -> tuple[QuantumTapeBatch, PostprocessingFn]:
     r"""Compute the purity of a :class:`~.QuantumTape` returning :func:`~pennylane.state`.
 
     .. math::
@@ -221,7 +223,7 @@ def _purity_qnode(self, qnode, targs, tkwargs):
 @partial(transform, final_transform=True)
 def vn_entropy(
     tape: QuantumTape, wires: Sequence[int], base: float = None, **kwargs
-) -> (Sequence[QuantumTape], Callable):
+) -> tuple[QuantumTapeBatch, PostprocessingFn]:
     r"""Compute the Von Neumann entropy from a :class:`.QuantumTape` returning a :func:`~pennylane.state`.
 
     .. math::
@@ -312,10 +314,46 @@ def _vn_entropy_qnode(self, qnode, targs, tkwargs):
     return self.default_qnode_transform(qnode, targs, tkwargs)
 
 
+def _bipartite_qinfo_transform(
+    transform_func: Callable,
+    tape: QuantumTape,
+    wires0: Sequence[int],
+    wires1: Sequence[int],
+    base: float = None,
+    **kwargs,
+):
+
+    # device_wires is provided by the custom QNode transform
+    all_wires = kwargs.get("device_wires", tape.wires)
+    wire_map = {w: i for i, w in enumerate(all_wires)}
+    indices0 = [wire_map[w] for w in wires0]
+    indices1 = [wire_map[w] for w in wires1]
+
+    # Check measurement
+    measurements = tape.measurements
+    if len(measurements) != 1 or not isinstance(measurements[0], StateMP):
+        raise ValueError("The qfunc return type needs to be a state.")
+
+    def processing_fn(res):
+        # device is provided by the custom QNode transform
+        device = kwargs.get("device", None)
+        c_dtype = getattr(device, "C_DTYPE", "complex128")
+
+        density_matrix = (
+            res[0]
+            if isinstance(measurements[0], DensityMatrixMP) or isinstance(device, DefaultMixed)
+            else qml.math.dm_from_state_vector(res[0], c_dtype=c_dtype)
+        )
+        entropy = transform_func(density_matrix, indices0, indices1, base=base, c_dtype=c_dtype)
+        return entropy
+
+    return [tape], processing_fn
+
+
 @partial(transform, final_transform=True)
 def mutual_info(
     tape: QuantumTape, wires0: Sequence[int], wires1: Sequence[int], base: float = None, **kwargs
-) -> (Sequence[QuantumTape], Callable):
+) -> tuple[QuantumTapeBatch, PostprocessingFn]:
     r"""Compute the mutual information from a :class:`.QuantumTape` returning a :func:`~pennylane.state`:
 
     .. math::
@@ -365,33 +403,7 @@ def mutual_info(
 
     .. seealso:: :func:`~.qinfo.vn_entropy`, :func:`pennylane.math.mutual_info` and :func:`pennylane.mutual_info`
     """
-    # device_wires is provided by the custom QNode transform
-    all_wires = kwargs.get("device_wires", tape.wires)
-    wire_map = {w: i for i, w in enumerate(all_wires)}
-    indices0 = [wire_map[w] for w in wires0]
-    indices1 = [wire_map[w] for w in wires1]
-
-    # Check measurement
-    measurements = tape.measurements
-    if len(measurements) != 1 or not isinstance(measurements[0], StateMP):
-        raise ValueError("The qfunc return type needs to be a state.")
-
-    def processing_fn(res):
-        # device is provided by the custom QNode transform
-        device = kwargs.get("device", None)
-        c_dtype = getattr(device, "C_DTYPE", "complex128")
-
-        density_matrix = (
-            res[0]
-            if isinstance(measurements[0], DensityMatrixMP) or isinstance(device, DefaultMixed)
-            else qml.math.dm_from_state_vector(res[0], c_dtype=c_dtype)
-        )
-        entropy = qml.math.mutual_info(
-            density_matrix, indices0, indices1, base=base, c_dtype=c_dtype
-        )
-        return entropy
-
-    return [tape], processing_fn
+    return _bipartite_qinfo_transform(qml.math.mutual_info, tape, wires0, wires1, base, **kwargs)
 
 
 @mutual_info.custom_qnode_transform
@@ -412,66 +424,40 @@ def _mutual_info_qnode(self, qnode, targs, tkwargs):
     return self.default_qnode_transform(qnode, targs, tkwargs)
 
 
-# TODO: create qml.math.jacobian and replace it here
-def _torch_jac(circ):
-    """Torch jacobian as a callable function"""
-    import torch
+@partial(transform, final_transform=True)
+def vn_entanglement_entropy(
+    tape, wires0: Sequence[int], wires1: Sequence[int], base: float = None, **kwargs
+):
+    r"""Compute the Von Neumann entanglement entropy from a circuit returning a :func:`~pennylane.state`:
 
-    def wrapper(*args, **kwargs):
-        loss = partial(circ, **kwargs)
-        if len(args) > 1:
-            return torch.autograd.functional.jacobian(loss, args, create_graph=True)
-        return torch.autograd.functional.jacobian(loss, *args, create_graph=True)
+    .. math::
 
-    return wrapper
+        S(\rho_A) = -\text{Tr}[\rho_A \log \rho_A] = -\text{Tr}[\rho_B \log \rho_B] = S(\rho_B)
 
+    where :math:`S` is the von Neumann entropy; :math:`\rho_A = \text{Tr}_B [\rho_{AB}]` and
+    :math:`\rho_B = \text{Tr}_A [\rho_{AB}]` are the reduced density matrices for each partition.
 
-# TODO: create qml.math.jacobian and replace it here
-def _tf_jac(circ):
-    """TF jacobian as a callable function"""
-    import tensorflow as tf
+    The Von Neumann entanglement entropy is a measure of the degree of quantum entanglement between
+    two subsystems constituting a pure bipartite quantum state. The entropy of entanglement is the
+    Von Neumann entropy of the reduced density matrix for any of the subsystems. If it is non-zero,
+    it indicates the two subsystems are entangled.
 
-    def wrapper(*args, **kwargs):
-        with tf.GradientTape() as tape:
-            loss = circ(*args, **kwargs)
-        return tape.jacobian(loss, args)
+    Args:
+        tape (QNode or QuantumTape or Callable): A quantum circuit returning a :func:`~pennylane.state`.
+        wires0 (Sequence(int)): List of wires in the first subsystem.
+        wires1 (Sequence(int)): List of wires in the second subsystem.
+        base (float): Base for the logarithm. If None, the natural logarithm is used.
 
-    return wrapper
+    Returns:
+        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]:
 
+        The transformed circuit as described in :func:`qml.transform <pennylane.transform>`. Executing this circuit
+        will provide the entanglement entropy in the form of a tensor.
 
-def _compute_cfim(p, dp):
-    r"""Computes the (num_params, num_params) classical fisher information matrix from the probabilities and its derivatives
-    I.e. it computes :math:`classical_fisher_{ij} = \sum_\ell (\partial_i p_\ell) (\partial_i p_\ell) / p_\ell`
     """
-    # Exclude values where p=0 and calculate 1/p
-    nonzeros_p = qml.math.where(p > 0, p, qml.math.ones_like(p))
-    one_over_p = qml.math.where(p > 0, qml.math.ones_like(p), qml.math.zeros_like(p))
-    one_over_p = one_over_p / nonzeros_p
-
-    # Multiply dp and p
-    # Note that casting and being careful about dtypes is necessary as interfaces
-    # typically treat derivatives (dp) with float32, while standard execution (p) comes in float64
-    dp = qml.math.cast_like(dp, p)
-    dp = qml.math.reshape(
-        dp, (len(p), -1)
-    )  # Squeeze does not work, as you could have shape (num_probs, num_params) with num_params = 1
-    dp_over_p = qml.math.transpose(dp) * one_over_p  # creates (n_params, n_probs) array
-
-    # (n_params, n_probs) @ (n_probs, n_params) = (n_params, n_params)
-    return dp_over_p @ dp
-
-
-@transform
-def _make_probs(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTape], Callable):
-    """Ignores the return types of the provided circuit and creates a new one
-    that outputs probabilities"""
-    qscript = qml.tape.QuantumScript(tape.operations, [qml.probs(tape.wires)], shots=tape.shots)
-
-    def post_processing_fn(res):
-        # only a single probs measurement, so no stacking needed
-        return res[0]
-
-    return [qscript], post_processing_fn
+    return _bipartite_qinfo_transform(
+        qml.math.vn_entanglement_entropy, tape, wires0, wires1, base, **kwargs
+    )
 
 
 def classical_fisher(qnode, argnums=0):
@@ -501,6 +487,9 @@ def classical_fisher(qnode, argnums=0):
         returns a matrix of size ``(len(params), len(params))``. For multiple differentiable arguments ``x, y, z``,
         it returns a list of sizes ``[(len(x), len(x)), (len(y), len(y)), (len(z), len(z))]``.
 
+    .. warning::
+        ``pennylane.qinfo.classical_fisher`` is being migrated to a different module and will
+        removed in version 0.39. Instead, use :func:`pennylane.gradients.classical_fisher`.
 
     .. seealso:: :func:`~.pennylane.metric_tensor`, :func:`~.pennylane.qinfo.transforms.quantum_fisher`
 
@@ -617,56 +606,19 @@ def classical_fisher(qnode, argnums=0):
             [2.16840434e-18, 2.81967252e-01]]]))
 
     """
-    new_qnode = _make_probs(qnode)
+    warnings.warn(
+        "pennylane.qinfo.classical_fisher is being migrated to a different module and will "
+        "removed in version 0.39. Instead, use pennylane.gradients.classical_fisher.",
+        qml.PennyLaneDeprecationWarning,
+    )
 
-    def wrapper(*args, **kwargs):
-        old_interface = qnode.interface
-
-        if old_interface == "auto":
-            qnode.interface = qml.math.get_interface(*args, *list(kwargs.values()))
-
-        interface = qnode.interface
-
-        if interface in ("jax", "jax-jit"):
-            import jax
-
-            jac = jax.jacobian(new_qnode, argnums=argnums)
-
-        if interface == "torch":
-            jac = _torch_jac(new_qnode)
-
-        if interface == "autograd":
-            jac = qml.jacobian(new_qnode)
-
-        if interface == "tf":
-            jac = _tf_jac(new_qnode)
-
-        j = jac(*args, **kwargs)
-        p = new_qnode(*args, **kwargs)
-
-        if old_interface == "auto":
-            qnode.interface = "auto"
-
-        # In case multiple variables are used, we create a list of cfi matrices
-        if isinstance(j, tuple):
-            res = []
-            for j_i in j:
-                res.append(_compute_cfim(p, j_i))
-
-            if len(j) == 1:
-                return res[0]
-
-            return res
-
-        return _compute_cfim(p, j)
-
-    return wrapper
+    return qml.gradients.classical_fisher(qnode, argnums=argnums)
 
 
 @partial(transform, is_informative=True)
 def quantum_fisher(
     tape: qml.tape.QuantumTape, device, *args, **kwargs
-) -> (Sequence[qml.tape.QuantumTape], Callable):
+) -> tuple[QuantumTapeBatch, PostprocessingFn]:
     r"""Returns a function that computes the quantum fisher information matrix (QFIM) of a given :class:`.QNode`.
 
     Given a parametrized quantum state :math:`|\psi(\bm{\theta})\rangle`, the quantum fisher information matrix (QFIM) quantifies how changes to the parameters :math:`\bm{\theta}`
@@ -692,6 +644,10 @@ def quantum_fisher(
 
         The transformed circuit as described in :func:`qml.transform <pennylane.transform>`. Executing this circuit
         will provide the quantum Fisher information in the form of a tensor.
+
+    .. warning::
+        ``pennylane.qinfo.quantum_fisher`` is being migrated to a different module and will
+        removed in version 0.39. Instead, use :func:`pennylane.gradients.quantum_fisher`.
 
     .. note::
 
@@ -753,6 +709,11 @@ def quantum_fisher(
     >>> qfim = qml.qinfo.quantum_fisher(circ, approx="block-diag")(params)
 
     """
+    warnings.warn(
+        "pennylane.qinfo.quantum_fisher is being migrated to a different module and will "
+        "removed in version 0.39. Instead, use pennylane.gradients.quantum_fisher.",
+        qml.PennyLaneDeprecationWarning,
+    )
 
     if device.shots or not isinstance(device, (DefaultQubitLegacy, DefaultQubit)):
         tapes, processing_fn = metric_tensor(tape, *args, **kwargs)

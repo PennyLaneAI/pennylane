@@ -14,9 +14,11 @@
 """
 Tests for the MERA template.
 """
+import numpy as np
+
 # pylint: disable=too-many-arguments,too-few-public-methods
 import pytest
-import numpy as np
+
 import pennylane as qml
 from pennylane.templates.tensornetworks.mera import MERA, compute_indices
 
@@ -136,7 +138,7 @@ def test_flatten_unflatten():
     assert hash(metadata)
 
     new_op = qml.MERA._unflatten(*op._flatten())
-    assert qml.equal(new_op, op)
+    qml.assert_equal(new_op, op)
     assert new_op._name == "MERA"  # make sure acutally initialized
     assert new_op is not op
 

@@ -15,6 +15,7 @@
 # pylint: disable=too-few-public-methods
 
 from functools import partial
+
 import pytest
 
 import pennylane as qml
@@ -282,7 +283,7 @@ class TestStateBackward:
         sub_wires = [[0, 1], [1, 2]]
         shadow_circuit = qml.shadows.shadow_state(shadow_circuit, wires=sub_wires, diffable=True)
 
-        x = tf.Variable(self.x)
+        x = tf.Variable(self.x, dtype="float64")
 
         with tf.GradientTape() as tape:
             out = qml.math.stack(shadow_circuit(x))
@@ -363,7 +364,8 @@ class TestExpvalTransform:
         shadow_circuit = qml.shadows.shadow_expval(shadow_circuit, obs)
         exact_circuit = basic_entangler_circuit_exact_expval(3, "autograd")
 
-        x = np.random.uniform(0.8, 2, size=qml.BasicEntanglerLayers.shape(n_layers=1, n_wires=3))
+        rng = np.random.default_rng(123)
+        x = rng.uniform(0.8, 2, size=qml.BasicEntanglerLayers.shape(n_layers=1, n_wires=3))
 
         def shadow_cost(x):
             res = shadow_circuit(x)

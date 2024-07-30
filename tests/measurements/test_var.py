@@ -13,12 +13,12 @@
 # limitations under the License.
 """Unit tests for the var module"""
 
-from flaky import flaky
 import numpy as np
 import pytest
+from flaky import flaky
 
 import pennylane as qml
-from pennylane.measurements import Variance, Shots, VarianceMP
+from pennylane.measurements import Shots, Variance, VarianceMP
 
 
 class TestVar:
@@ -126,7 +126,8 @@ class TestVar:
         """Tests process samples with eigvals instead of observables"""
 
         shots = 100
-        samples = np.random.choice([0, 1], size=(shots, 2)).astype(np.int64)
+        rng = np.random.default_rng(123)
+        samples = rng.choice([0, 1], size=(shots, 2)).astype(np.int64)
         expected = qml.var(qml.PauliZ(0)).process_samples(samples, [0, 1])
         assert VarianceMP(eigvals=[1, -1], wires=[0]).process_samples(samples, [0, 1]) == expected
 

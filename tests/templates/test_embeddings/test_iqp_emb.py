@@ -14,8 +14,9 @@
 """
 Tests for the IQPEmbedding template.
 """
-import pytest
 import numpy as np
+import pytest
+
 import pennylane as qml
 from pennylane import numpy as pnp
 
@@ -48,7 +49,7 @@ class TestDecomposition:
         features = list(range(n_wires))
 
         op = qml.IQPEmbedding(features, wires=range(n_wires))
-        tape = op.expand()
+        tape = qml.tape.QuantumScript(op.decomposition())
 
         j = 0
         for i, gate in enumerate(tape.operations):
@@ -66,7 +67,7 @@ class TestDecomposition:
 
         op = qml.IQPEmbedding(features, wires=range(n_wires))
         assert op.batch_size == 3
-        tape = op.expand()
+        tape = qml.tape.QuantumScript(op.decomposition())
 
         j = 0
         for i, gate in enumerate(tape.operations):
@@ -86,7 +87,7 @@ class TestDecomposition:
         expected_wires = self.QUEUES[2][2] + self.QUEUES[2][2]
 
         op = qml.IQPEmbedding(features, wires=range(3), n_repeats=2)
-        tape = op.expand()
+        tape = qml.tape.QuantumScript(op.decomposition())
 
         for i, gate in enumerate(tape.operations):
             assert gate.name == expected_names[i]
@@ -111,7 +112,7 @@ class TestDecomposition:
         expected_wires = [[0], [0], [1], [1], [2], [2], *pattern]
 
         op = qml.IQPEmbedding(features, wires=range(3), pattern=pattern)
-        tape = op.expand()
+        tape = qml.tape.QuantumScript(op.decomposition())
 
         for i, gate in enumerate(tape.operations):
             assert gate.name == expected_names[i]

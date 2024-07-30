@@ -16,12 +16,13 @@
 # pylint:disable=protected-access,import-outside-toplevel,wrong-import-position, disable=unnecessary-lambda
 from importlib import import_module
 
+# pylint: disable=wrong-import-order
 import autoray as ar
 import numpy as np
-import semantic_version
+from packaging.version import Version
 from scipy.linalg import block_diag as _scipy_block_diag
 
-from .utils import get_deep_interface
+from .utils import get_deep_interface, is_abstract
 
 
 def _i(name):
@@ -236,13 +237,15 @@ ar.autoray._SUBMODULE_ALIASES["tensorflow", "arccos"] = "tensorflow.math"
 ar.autoray._SUBMODULE_ALIASES["tensorflow", "arctan"] = "tensorflow.math"
 ar.autoray._SUBMODULE_ALIASES["tensorflow", "arctan2"] = "tensorflow.math"
 ar.autoray._SUBMODULE_ALIASES["tensorflow", "mod"] = "tensorflow.math"
-ar.autoray._SUBMODULE_ALIASES["tensorflow", "diag"] = "tensorflow.linalg"
+ar.autoray._SUBMODULE_ALIASES["tensorflow", "logical_and"] = "tensorflow.math"
 ar.autoray._SUBMODULE_ALIASES["tensorflow", "kron"] = "tensorflow.experimental.numpy"
 ar.autoray._SUBMODULE_ALIASES["tensorflow", "moveaxis"] = "tensorflow.experimental.numpy"
 ar.autoray._SUBMODULE_ALIASES["tensorflow", "sinc"] = "tensorflow.experimental.numpy"
 ar.autoray._SUBMODULE_ALIASES["tensorflow", "isclose"] = "tensorflow.experimental.numpy"
 ar.autoray._SUBMODULE_ALIASES["tensorflow", "atleast_1d"] = "tensorflow.experimental.numpy"
 ar.autoray._SUBMODULE_ALIASES["tensorflow", "all"] = "tensorflow.experimental.numpy"
+ar.autoray._SUBMODULE_ALIASES["tensorflow", "ravel"] = "tensorflow.experimental.numpy"
+ar.autoray._SUBMODULE_ALIASES["tensorflow", "vstack"] = "tensorflow.experimental.numpy"
 
 tf_fft_functions = [
     "fft",
@@ -262,8 +265,22 @@ ar.autoray._FUNC_ALIASES["tensorflow", "arcsin"] = "asin"
 ar.autoray._FUNC_ALIASES["tensorflow", "arccos"] = "acos"
 ar.autoray._FUNC_ALIASES["tensorflow", "arctan"] = "atan"
 ar.autoray._FUNC_ALIASES["tensorflow", "arctan2"] = "atan2"
-ar.autoray._FUNC_ALIASES["tensorflow", "diag"] = "diag"
 
+
+def _coerce_tensorflow_diag(x, **kwargs):
+    return ar.autoray.tensorflow_diag(_tf_convert_to_tensor(x), **kwargs)
+
+
+ar.register_function("tensorflow", "diag", _coerce_tensorflow_diag)
+
+
+def _tensorflow_allclose(a, b, **kwargs):
+    if is_abstract(a):
+        a = ar.to_numpy(a)
+    return ar.autoray.allclose(a, b, **kwargs)
+
+
+ar.register_function("tensorflow", "allclose", _tensorflow_allclose)
 
 ar.register_function(
     "tensorflow",
@@ -715,7 +732,7 @@ ar.register_function("torch", "sort", _sort_torch)
 
 def _tensordot_torch(tensor1, tensor2, axes):
     torch = _i("torch")
-    if not semantic_version.match(">=1.10.0", torch.__version__) and axes == 0:
+    if Version(torch.__version__) < Version("1.10.0") and axes == 0:
         return torch.outer(tensor1, tensor2)
     return torch.tensordot(tensor1, tensor2, axes)
 

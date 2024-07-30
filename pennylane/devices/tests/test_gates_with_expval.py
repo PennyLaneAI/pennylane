@@ -18,17 +18,15 @@ device by checking expectation values.
 # pylint: disable=no-self-use
 # pylint: disable=too-many-arguments
 # pylint: disable=pointless-statement
-from math import sqrt, pi
+from math import pi, sqrt
 
-import pytest
 import numpy as np
+import pytest
 from flaky import flaky
 
 import pennylane as qml
 
 pytestmark = pytest.mark.skip_unsupported
-
-np.random.seed(42)
 
 
 # ===============================================================

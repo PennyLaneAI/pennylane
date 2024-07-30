@@ -14,9 +14,11 @@
 """
 Unit tests for the CVNeuralNetLayers template.
 """
+import numpy as np
+
 # pylint: disable=too-few-public-methods,protected-access
 import pytest
-import numpy as np
+
 import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane.devices import DefaultGaussian
@@ -74,7 +76,7 @@ class TestDecomposition:
         weights = [np.random.random(shape) for shape in shapes]
 
         op = qml.CVNeuralNetLayers(*weights, wires=range(n_wires))
-        tape = op.expand()
+        tape = qml.tape.QuantumScript(op.decomposition())
 
         i = 0
         for gate in tape.operations:
@@ -83,7 +85,7 @@ class TestDecomposition:
                 assert gate.wires.labels == tuple(expected_wires[i])
                 i = i + 1
             else:
-                for gate_inter in gate.expand().operations:
+                for gate_inter in gate.decomposition():
                     assert gate_inter.name == expected_names[i]
                     assert gate_inter.wires.labels == tuple(expected_wires[i])
                     i = i + 1
@@ -207,7 +209,6 @@ def circuit_decomposed(*weights):
 def test_adjoint():
     """Test that the adjoint method works"""
     dev = DummyDevice(wires=2)
-    np.random.seed(42)
 
     shapes = qml.CVNeuralNetLayers.shape(n_layers=1, n_wires=2)
     weights = [np.random.random(shape) for shape in shapes]

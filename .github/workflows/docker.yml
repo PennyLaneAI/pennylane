@@ -1,8 +1,5 @@
 name: Docker builds
-on:
-  push:
-    branches:
-      - master
+on: workflow_dispatch
 
 jobs:
   base-tests:

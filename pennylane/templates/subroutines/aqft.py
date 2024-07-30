@@ -16,6 +16,7 @@ This submodule contains the template for AQFT.
 """
 
 import warnings
+
 import numpy as np
 
 import pennylane as qml
@@ -83,7 +84,7 @@ class AQFT(Operation):
 
             The resulting circuit is:
 
-            >>> print(qml.draw(circ, expansion_strategy='device')())
+            >>> print(qml.draw(circ, level='device')())
             UserWarning: order=0, applying Hadamard transform warnings.warn("order=0, applying Hadamard transform")
             0: ──H─╭SWAP─────────────┤ ╭Probs
             1: ──H─│─────╭SWAP───────┤ ├Probs
@@ -104,7 +105,7 @@ class AQFT(Operation):
 
             The resulting circuit is:
 
-            >>> print(qml.draw(circ, expansion_strategy='device')())
+            >>> print(qml.draw(circ, level='device')())
             0: ──H─╭Rϕ(1.57)─╭Rϕ(0.79)────────────────────────────────────────╭SWAP───────┤ ╭Probs
             1: ────╰●────────│──────────H─╭Rϕ(1.57)─╭Rϕ(0.79)─────────────────│─────╭SWAP─┤ ├Probs
             2: ──────────────╰●───────────╰●────────│──────────H─╭Rϕ(1.57)────│─────╰SWAP─┤ ├Probs

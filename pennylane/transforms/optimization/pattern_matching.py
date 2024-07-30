@@ -17,16 +17,16 @@ substitution."""
 import copy
 import itertools
 from collections import OrderedDict
-from typing import Sequence, Callable
 
 import numpy as np
 
 import pennylane as qml
-from pennylane.transforms import transform
 from pennylane import adjoint
 from pennylane.ops.qubit.attributes import symmetric_over_all_wires
-from pennylane.tape import QuantumTape, QuantumScript
+from pennylane.tape import QuantumScript, QuantumTape, QuantumTapeBatch
+from pennylane.transforms import transform
 from pennylane.transforms.commutation_dag import commutation_dag
+from pennylane.typing import PostprocessingFn
 from pennylane.wires import Wires
 
 
@@ -34,7 +34,7 @@ from pennylane.wires import Wires
 @transform
 def pattern_matching_optimization(
     tape: QuantumTape, pattern_tapes, custom_quantum_cost=None
-) -> (Sequence[QuantumTape], Callable):
+) -> tuple[QuantumTapeBatch, PostprocessingFn]:
     r"""Quantum function transform to optimize a circuit given a list of patterns (templates).
 
     Args:

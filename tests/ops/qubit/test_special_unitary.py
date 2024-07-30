@@ -16,16 +16,18 @@ Unit tests for the SpecialUnitary operation and its utility functions.
 """
 # pylint:disable=import-outside-toplevel
 from functools import partial
+
 import numpy as np
-from scipy.linalg import expm
 import pytest
+from scipy.linalg import expm
+
 import pennylane as qml
 from pennylane.ops.qubit.special_unitary import (
-    pauli_basis_matrices,
-    pauli_basis_strings,
     TmpPauliRot,
     _pauli_letters,
     _pauli_matrices,
+    pauli_basis_matrices,
+    pauli_basis_strings,
 )
 from pennylane.transforms.convert_to_numpy_parameters import _convert_op_to_numpy_data
 from pennylane.wires import Wires
@@ -118,9 +120,9 @@ class TestGetOneParameterGenerators:
         jax.config.update("jax_enable_x64", True)
         from jax import numpy as jnp
 
-        np.random.seed(14521)
+        rng = np.random.default_rng(14521)
         d = 4**n - 1
-        theta = jnp.array(np.random.random(d))
+        theta = jnp.array(rng.random(d))
         fn = (
             jax.jit(self.get_one_parameter_generators, static_argnums=[1, 2])
             if use_jit
@@ -159,7 +161,6 @@ class TestGetOneParameterGenerators:
         """Test that generators are computed correctly in Tensorflow."""
         import tensorflow as tf
 
-        np.random.seed(14521)
         d = 4**n - 1
         theta = tf.Variable(np.random.random(d))
         Omegas = self.get_one_parameter_generators(theta, n, "tf")
@@ -187,7 +188,6 @@ class TestGetOneParameterGenerators:
         """Test that generators are computed correctly in Torch."""
         import torch
 
-        np.random.seed(14521)
         d = 4**n - 1
         theta = torch.tensor(np.random.random(d), requires_grad=True)
         Omegas = self.get_one_parameter_generators(theta, n, "torch")
@@ -252,7 +252,6 @@ class TestGetOneParameterGeneratorsDiffability:
         jax.config.update("jax_enable_x64", True)
         from jax import numpy as jnp
 
-        np.random.seed(14521)
         d = 4**n - 1
         theta = jnp.array(np.random.random(d), dtype=jnp.complex128)
         fn = (
@@ -269,7 +268,6 @@ class TestGetOneParameterGeneratorsDiffability:
         """Test that generators are differentiable in Tensorflow."""
         import tensorflow as tf
 
-        np.random.seed(14521)
         d = 4**n - 1
         theta = tf.Variable(np.random.random(d))
         with tf.GradientTape() as t:
@@ -283,7 +281,6 @@ class TestGetOneParameterGeneratorsDiffability:
         """Test that generators are differentiable in Torch."""
         import torch
 
-        np.random.seed(14521)
         d = 4**n - 1
         theta = torch.tensor(np.random.random(d), requires_grad=True)
 
@@ -313,7 +310,6 @@ class TestGetOneParameterCoeffs:
         jax.config.update("jax_enable_x64", True)
         from jax import numpy as jnp
 
-        np.random.seed(14521)
         d = 4**n - 1
         theta = jnp.array(np.random.random(d))
         op = qml.SpecialUnitary(theta, list(range(n)))
@@ -332,7 +328,6 @@ class TestGetOneParameterCoeffs:
         """Test that the coefficients of the generators are computed correctly in Tensorflow."""
         import tensorflow as tf
 
-        np.random.seed(14521)
         d = 4**n - 1
         theta = tf.Variable(np.random.random(d))
         op = qml.SpecialUnitary(theta, list(range(n)))
@@ -351,7 +346,6 @@ class TestGetOneParameterCoeffs:
         """Test that the coefficients of the generators are computed correctly in Torch."""
         import torch
 
-        np.random.seed(14521)
         d = 4**n - 1
         theta = torch.tensor(np.random.random(d), requires_grad=True)
         op = qml.SpecialUnitary(theta, list(range(n)))
@@ -416,9 +410,9 @@ class TestSpecialUnitary:
     def test_compute_matrix_random(self, n, seed, interface):
         """Test that ``compute_matrix`` returns a correctly-shaped
         unitary matrix for random input parameters."""
-        np.random.seed(seed)
+        rng = np.random.default_rng(seed)
         d = 4**n - 1
-        theta = np.random.random(d)
+        theta = rng.random(d)
         theta = self.interface_array(theta, interface)
         matrices = [
             qml.SpecialUnitary(theta, list(range(n))).matrix(),
@@ -436,10 +430,10 @@ class TestSpecialUnitary:
     def test_compute_matrix_random_many_wires(self, seed, interface):
         """Test that ``compute_matrix`` returns a correctly-shaped
         unitary matrix for random input parameters and more than 5 wires."""
-        np.random.seed(seed)
+        rng = np.random.default_rng(seed)
         n = 6
         d = 4**n - 1
-        theta = np.random.random(d)
+        theta = rng.random(d)
         theta = self.interface_array(theta, interface)
         matrices = [
             qml.SpecialUnitary(theta, list(range(n))).matrix(),
@@ -458,9 +452,9 @@ class TestSpecialUnitary:
     def test_compute_matrix_random_broadcasted(self, n, seed, interface):
         """Test that ``compute_matrix`` returns a correctly-shaped
         unitary matrix for broadcasted random input parameters."""
-        np.random.seed(seed)
+        rng = np.random.default_rng(seed)
         d = 4**n - 1
-        theta = np.random.random((2, d))
+        theta = rng.random((2, d))
         separate_matrices = [qml.SpecialUnitary.compute_matrix(t, n) for t in theta]
         theta = self.interface_array(theta, interface)
         matrices = [
@@ -562,18 +556,18 @@ class TestSpecialUnitary:
             decomp = qml.SpecialUnitary(theta, wires).decomposition()
             assert len(decomp) == d + 1
             for w, op in zip(words, decomp[:-1]):
-                assert qml.equal(
+                qml.assert_equal(
                     TmpPauliRot(0.0, w, wires=wires),
                     op,
                     check_trainability=False,
                     check_interface=False,
                 )
-            assert qml.equal(qml.SpecialUnitary(qml.math.detach(theta), wires=wires), decomp[-1])
+            qml.assert_equal(qml.SpecialUnitary(qml.math.detach(theta), wires=wires), decomp[-1])
 
             decomp = qml.SpecialUnitary(qml.math.detach(theta), wires).decomposition()
             mat = qml.SpecialUnitary.compute_matrix(qml.math.detach(theta), n)
             assert len(decomp) == 1
-            assert qml.equal(qml.QubitUnitary(mat, wires=wires), decomp[0])
+            qml.assert_equal(qml.QubitUnitary(mat, wires=wires), decomp[0])
 
             return theta
 
@@ -594,18 +588,18 @@ class TestSpecialUnitary:
         decomp = qml.SpecialUnitary(theta, wires).decomposition()
         assert len(decomp) == d + 1
         for w, op in zip(words, decomp[:-1]):
-            assert qml.equal(
+            qml.assert_equal(
                 TmpPauliRot(0.0, w, wires=wires),
                 op,
                 check_trainability=False,
                 check_interface=False,
             )
-        assert qml.equal(qml.SpecialUnitary(qml.math.detach(theta), wires=wires), decomp[-1])
+        qml.assert_equal(qml.SpecialUnitary(qml.math.detach(theta), wires=wires), decomp[-1])
 
         decomp = qml.SpecialUnitary(qml.math.detach(theta), wires).decomposition()
         mat = qml.SpecialUnitary.compute_matrix(qml.math.detach(theta), n)
         assert len(decomp) == 1
-        assert qml.equal(qml.QubitUnitary(mat, wires=wires), decomp[0])
+        qml.assert_equal(qml.QubitUnitary(mat, wires=wires), decomp[0])
 
     @pytest.mark.tf
     @pytest.mark.parametrize("n, theta", n_and_theta)
@@ -622,18 +616,18 @@ class TestSpecialUnitary:
             decomp = qml.SpecialUnitary(theta, wires).decomposition()
             assert len(decomp) == d + 1
             for w, op in zip(words, decomp[:-1]):
-                assert qml.equal(
+                qml.assert_equal(
                     TmpPauliRot(0.0, w, wires=wires),
                     op,
                     check_trainability=False,
                     check_interface=False,
                 )
-            assert qml.equal(qml.SpecialUnitary(qml.math.detach(theta), wires=wires), decomp[-1])
+            qml.assert_equal(qml.SpecialUnitary(qml.math.detach(theta), wires=wires), decomp[-1])
 
             decomp = qml.SpecialUnitary(qml.math.detach(theta), wires).decomposition()
             mat = qml.SpecialUnitary.compute_matrix(qml.math.detach(theta), n)
             assert len(decomp) == 1
-            assert qml.equal(qml.QubitUnitary(mat, wires=wires), decomp[0])
+            qml.assert_equal(qml.QubitUnitary(mat, wires=wires), decomp[0])
 
     @pytest.mark.parametrize("n, theta", n_and_theta)
     def test_adjoint(self, theta, n):
@@ -995,4 +989,4 @@ class TestTmpPauliRot:
         decomp2 = TmpPauliRot.compute_decomposition(x, wires, word)
         for dec in [decomp, decomp2]:
             assert len(dec) == 1
-            assert qml.equal(dec[0], qml.PauliRot(x, word, wires))
+            qml.assert_equal(dec[0], qml.PauliRot(x, word, wires))

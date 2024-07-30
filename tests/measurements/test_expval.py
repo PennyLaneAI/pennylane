@@ -13,6 +13,7 @@
 # limitations under the License.
 """Unit tests for the expval module"""
 import copy
+
 import numpy as np
 import pytest
 
@@ -112,8 +113,7 @@ class TestExpval:
     ):  # pylint: disable=too-many-arguments
         """Test that expectation values for mid-circuit measurement values
         are correct for a composite measurement value."""
-        np.random.seed(478437894)
-        dev = qml.device("default.qubit")
+        dev = qml.device("default.qubit", seed=123)
 
         @qml.qnode(dev)
         def circuit(phi):
@@ -148,7 +148,8 @@ class TestExpval:
         """Tests process samples with eigvals instead of observables"""
 
         shots = 100
-        samples = np.random.choice([0, 1], size=(shots, 2)).astype(np.int64)
+        rng = np.random.default_rng(123)
+        samples = rng.choice([0, 1], size=(shots, 2)).astype(np.int64)
         expected = qml.expval(qml.PauliZ(0)).process_samples(samples, [0, 1])
         assert (
             ExpectationMP(eigvals=[1, -1], wires=[0]).process_samples(samples, [0, 1]) == expected
@@ -202,8 +203,7 @@ class TestExpval:
     def test_projector_expval(self, state, shots):
         """Tests that the expectation of a ``Projector`` object is computed correctly for both of
         its subclasses."""
-        dev = qml.device("default.qubit", wires=3, shots=shots)
-        np.random.seed(42)
+        dev = qml.device("default.qubit", wires=3, shots=shots, seed=123)
 
         @qml.qnode(dev)
         def circuit():
@@ -242,7 +242,7 @@ class TestExpval:
         m = qml.expval(qml.PauliX(0))
         copied_m = copy.copy(m)
         assert m.obs is not copied_m.obs
-        assert qml.equal(m.obs, copied_m.obs)
+        qml.assert_equal(m.obs, copied_m.obs)
 
     def test_copy_eigvals(self):
         """Test that the eigvals value is just assigned to new mp without copying."""

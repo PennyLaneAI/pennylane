@@ -15,72 +15,45 @@
 The default.qubit device is PennyLane's standard qubit-based device.
 """
 
+import concurrent.futures
+import logging
 from dataclasses import replace
 from functools import partial
 from numbers import Number
-from typing import Union, Callable, Tuple, Optional, Sequence
-import concurrent.futures
-import inspect
-import logging
+from typing import Optional, Union
+
 import numpy as np
 
 import pennylane as qml
-from pennylane.ops.op_math.condition import Conditional
+from pennylane.logging import debug_logger, debug_logger_init
 from pennylane.measurements.mid_measure import MidMeasureMP
-from pennylane.tape import QuantumTape
-from pennylane.typing import Result, ResultBatch
+from pennylane.ops.op_math.condition import Conditional
+from pennylane.tape import QuantumTape, QuantumTapeBatch
 from pennylane.transforms import convert_to_numpy_parameters
 from pennylane.transforms.core import TransformProgram
+from pennylane.typing import PostprocessingFn, Result, ResultBatch
 
 from . import Device
-from .modifiers import single_tape_support, simulator_tracking
+from .execution_config import DefaultExecutionConfig, ExecutionConfig
+from .modifiers import simulator_tracking, single_tape_support
 from .preprocess import (
     decompose,
     mid_circuit_measurements,
-    validate_observables,
+    no_sampling,
+    validate_adjoint_trainable_params,
+    validate_device_wires,
     validate_measurements,
     validate_multiprocessing_workers,
-    validate_device_wires,
-    validate_adjoint_trainable_params,
-    no_sampling,
+    validate_observables,
 )
-from .execution_config import ExecutionConfig, DefaultExecutionConfig
+from .qubit.adjoint_jacobian import adjoint_jacobian, adjoint_jvp, adjoint_vjp
 from .qubit.sampling import jax_random_split
-from .qubit.simulate import simulate, get_final_state, measure_final_state
-from .qubit.adjoint_jacobian import adjoint_jacobian, adjoint_vjp, adjoint_jvp
+from .qubit.simulate import get_final_state, measure_final_state, simulate
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
-Result_or_ResultBatch = Union[Result, ResultBatch]
-QuantumTapeBatch = Sequence[QuantumTape]
 QuantumTape_or_Batch = Union[QuantumTape, QuantumTapeBatch]
-# always a function from a resultbatch to either a result or a result batch
-PostprocessingFn = Callable[[ResultBatch], Result_or_ResultBatch]
-
-
-observables = {
-    "PauliX",
-    "PauliY",
-    "PauliZ",
-    "Hadamard",
-    "Hermitian",
-    "Identity",
-    "Projector",
-    "SparseHamiltonian",
-    "Hamiltonian",
-    "LinearCombination",
-    "Sum",
-    "SProd",
-    "Prod",
-    "Exp",
-    "Evolution",
-}
-
-
-def observable_stopping_condition(obs: qml.operation.Operator) -> bool:
-    """Specifies whether or not an observable is accepted by DefaultQubit."""
-    return obs.name in observables
 
 
 def stopping_condition(op: qml.operation.Operator) -> bool:
@@ -102,16 +75,74 @@ def stopping_condition_shots(op: qml.operation.Operator) -> bool:
     return isinstance(op, (Conditional, MidMeasureMP)) or stopping_condition(op)
 
 
+def observable_accepts_sampling(obs: qml.operation.Operator) -> bool:
+    """Verifies whether an observable supports sample measurement"""
+
+    if isinstance(obs, qml.ops.CompositeOp):
+        return all(observable_accepts_sampling(o) for o in obs.operands)
+
+    if isinstance(obs, qml.ops.SymbolicOp):
+        return observable_accepts_sampling(obs.base)
+
+    if isinstance(obs, qml.ops.Hamiltonian):
+        return all(observable_accepts_sampling(o) for o in obs.ops)
+
+    if isinstance(obs, qml.operation.Tensor):
+        return all(observable_accepts_sampling(o) for o in obs.obs)
+
+    return obs.has_diagonalizing_gates
+
+
+def observable_accepts_analytic(obs: qml.operation.Operator, is_expval=False) -> bool:
+    """Verifies whether an observable supports analytic measurement"""
+
+    if isinstance(obs, qml.ops.CompositeOp):
+        return all(observable_accepts_analytic(o, is_expval) for o in obs.operands)
+
+    if isinstance(obs, qml.ops.SymbolicOp):
+        return observable_accepts_analytic(obs.base, is_expval)
+
+    if isinstance(obs, qml.ops.Hamiltonian):
+        return all(observable_accepts_analytic(o, is_expval) for o in obs.ops)
+
+    if isinstance(obs, qml.operation.Tensor):
+        return all(observable_accepts_analytic(o, is_expval) for o in obs.obs)
+
+    if is_expval and isinstance(obs, (qml.ops.SparseHamiltonian, qml.ops.Hermitian)):
+        return True
+
+    return obs.has_diagonalizing_gates
+
+
 def accepted_sample_measurement(m: qml.measurements.MeasurementProcess) -> bool:
-    """Specifies whether or not a measurement is accepted when sampling."""
-    return isinstance(
+    """Specifies whether a measurement is accepted when sampling."""
+
+    if not isinstance(
         m,
         (
             qml.measurements.SampleMeasurement,
             qml.measurements.ClassicalShadowMP,
             qml.measurements.ShadowExpvalMP,
         ),
-    )
+    ):
+        return False
+
+    if m.obs is not None:
+        return observable_accepts_sampling(m.obs)
+
+    return True
+
+
+def accepted_analytic_measurement(m: qml.measurements.MeasurementProcess) -> bool:
+    """Specifies whether a measurement is accepted when analytic."""
+
+    if not isinstance(m, qml.measurements.StateMeasurement):
+        return False
+
+    if m.obs is not None:
+        return observable_accepts_analytic(m.obs, isinstance(m, qml.measurements.ExpectationMP))
+
+    return True
 
 
 def null_postprocessing(results):
@@ -128,7 +159,7 @@ def all_state_postprocessing(results, measurements, wire_order):
 @qml.transform
 def adjoint_state_measurements(
     tape: QuantumTape, device_vjp=False
-) -> (Tuple[QuantumTape], Callable):
+) -> tuple[QuantumTapeBatch, PostprocessingFn]:
     """Perform adjoint measurement preprocessing.
 
     * Allows a tape with only expectation values through unmodified
@@ -183,11 +214,12 @@ def adjoint_observables(obs: qml.operation.Operator) -> bool:
     return obs.has_matrix
 
 
-def _supports_adjoint(circuit):
+def _supports_adjoint(circuit, device_wires, device_name):
     if circuit is None:
         return True
 
     prog = TransformProgram()
+    prog.add_transform(validate_device_wires, device_wires, name=device_name)
     _add_adjoint_transforms(prog)
 
     try:
@@ -418,6 +450,7 @@ class DefaultQubit(Device):
     """
 
     # pylint:disable = too-many-arguments
+    @debug_logger_init
     def __init__(
         self,
         wires=None,
@@ -438,6 +471,7 @@ class DefaultQubit(Device):
             self._rng = np.random.default_rng(seed)
         self._debugger = None
 
+    @debug_logger
     def supports_derivatives(
         self,
         execution_config: Optional[ExecutionConfig] = None,
@@ -471,13 +505,14 @@ class DefaultQubit(Device):
             )
 
         if execution_config.gradient_method in {"adjoint", "best"}:
-            return _supports_adjoint(circuit=circuit)
+            return _supports_adjoint(circuit, device_wires=self.wires, device_name=self.name)
         return False
 
+    @debug_logger
     def preprocess(
         self,
         execution_config: ExecutionConfig = DefaultExecutionConfig,
-    ) -> Tuple[TransformProgram, ExecutionConfig]:
+    ) -> tuple[TransformProgram, ExecutionConfig]:
         """This function defines the device transform program to be applied and an updated device configuration.
 
         Args:
@@ -489,18 +524,16 @@ class DefaultQubit(Device):
             can natively execute as well as a postprocessing function to be called after execution, and a configuration with
             unset specifications filled in.
 
-        This device:
-
-        * Supports any qubit operations that provide a matrix
-        * Currently does not support finite shots
-        * Currently does not intrinsically support parameter broadcasting
+        This device supports any qubit operations that provide a matrix
 
         """
         config = self._setup_execution_config(execution_config)
         transform_program = TransformProgram()
 
         transform_program.add_transform(validate_device_wires, self.wires, name=self.name)
-        transform_program.add_transform(mid_circuit_measurements, device=self)
+        transform_program.add_transform(
+            mid_circuit_measurements, device=self, mcm_config=config.mcm_config
+        )
         transform_program.add_transform(
             decompose,
             stopping_condition=stopping_condition,
@@ -508,12 +541,13 @@ class DefaultQubit(Device):
             name=self.name,
         )
         transform_program.add_transform(
-            validate_measurements, sample_measurements=accepted_sample_measurement, name=self.name
+            validate_measurements,
+            analytic_measurements=accepted_analytic_measurement,
+            sample_measurements=accepted_sample_measurement,
+            name=self.name,
         )
-        transform_program.add_transform(
-            validate_observables, stopping_condition=observable_stopping_condition, name=self.name
-        )
-
+        if config.mcm_config.mcm_method == "tree-traversal":
+            transform_program.add_transform(qml.transforms.broadcast_expand)
         # Validate multi processing
         max_workers = config.device_options.get("max_workers", self._max_workers)
         if max_workers:
@@ -569,20 +603,13 @@ class DefaultQubit(Device):
                 updated_values["device_options"][option] = getattr(self, f"_{option}")
         return replace(execution_config, **updated_values)
 
+    @debug_logger
     def execute(
         self,
         circuits: QuantumTape_or_Batch,
         execution_config: ExecutionConfig = DefaultExecutionConfig,
-    ) -> Result_or_ResultBatch:
+    ) -> Union[Result, ResultBatch]:
         self.reset_prng_key()
-        if logger.isEnabledFor(logging.DEBUG):
-            logger.debug(
-                """Entry with args=(circuits=%s) called by=%s""",
-                circuits,
-                "::L".join(
-                    str(i) for i in inspect.getouterframes(inspect.currentframe(), 2)[1][1:3]
-                ),
-            )
 
         max_workers = execution_config.device_options.get("max_workers", self._max_workers)
         self._state_cache = {} if execution_config.use_device_jacobian_product else None
@@ -591,29 +618,39 @@ class DefaultQubit(Device):
             if execution_config.gradient_method in {"backprop", None}
             else None
         )
+        prng_keys = [self.get_prng_keys()[0] for _ in range(len(circuits))]
+
         if max_workers is None:
             return tuple(
-                simulate(
+                _simulate_wrapper(
                     c,
-                    rng=self._rng,
-                    prng_key=self.get_prng_keys()[0],
-                    debugger=self._debugger,
-                    interface=interface,
-                    state_cache=self._state_cache,
+                    {
+                        "rng": self._rng,
+                        "debugger": self._debugger,
+                        "interface": interface,
+                        "state_cache": self._state_cache,
+                        "prng_key": _key,
+                        "mcm_method": execution_config.mcm_config.mcm_method,
+                        "postselect_mode": execution_config.mcm_config.postselect_mode,
+                    },
                 )
-                for c in circuits
+                for c, _key in zip(circuits, prng_keys)
             )
 
-        vanilla_circuits = [convert_to_numpy_parameters(c) for c in circuits]
+        vanilla_circuits = convert_to_numpy_parameters(circuits)[0]
         seeds = self._rng.integers(2**31 - 1, size=len(vanilla_circuits))
-        _wrap_simulate = partial(simulate, debugger=None, interface=interface)
+        simulate_kwargs = [
+            {
+                "rng": _rng,
+                "prng_key": _key,
+                "mcm_method": execution_config.mcm_config.mcm_method,
+                "postselect_mode": execution_config.mcm_config.postselect_mode,
+            }
+            for _rng, _key in zip(seeds, prng_keys)
+        ]
+
         with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
-            exec_map = executor.map(
-                _wrap_simulate,
-                vanilla_circuits,
-                seeds,
-                self.get_prng_keys(num=len(vanilla_circuits)),
-            )
+            exec_map = executor.map(_simulate_wrapper, vanilla_circuits, simulate_kwargs)
             results = tuple(exec_map)
 
         # reset _rng to mimic serial behaviour
@@ -621,6 +658,7 @@ class DefaultQubit(Device):
 
         return results
 
+    @debug_logger
     def compute_derivatives(
         self,
         circuits: QuantumTape_or_Batch,
@@ -630,7 +668,7 @@ class DefaultQubit(Device):
         if max_workers is None:
             return tuple(adjoint_jacobian(circuit) for circuit in circuits)
 
-        vanilla_circuits = [convert_to_numpy_parameters(c) for c in circuits]
+        vanilla_circuits = convert_to_numpy_parameters(circuits)[0]
         with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
             exec_map = executor.map(adjoint_jacobian, vanilla_circuits)
             res = tuple(exec_map)
@@ -640,6 +678,7 @@ class DefaultQubit(Device):
 
         return res
 
+    @debug_logger
     def execute_and_compute_derivatives(
         self,
         circuits: QuantumTape_or_Batch,
@@ -650,7 +689,7 @@ class DefaultQubit(Device):
         if max_workers is None:
             results = tuple(_adjoint_jac_wrapper(c, debugger=self._debugger) for c in circuits)
         else:
-            vanilla_circuits = [convert_to_numpy_parameters(c) for c in circuits]
+            vanilla_circuits = convert_to_numpy_parameters(circuits)[0]
 
             with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
                 results = tuple(
@@ -662,6 +701,7 @@ class DefaultQubit(Device):
 
         return tuple(zip(*results))
 
+    @debug_logger
     def supports_jvp(
         self,
         execution_config: Optional[ExecutionConfig] = None,
@@ -681,17 +721,18 @@ class DefaultQubit(Device):
         """
         return self.supports_derivatives(execution_config, circuit)
 
+    @debug_logger
     def compute_jvp(
         self,
         circuits: QuantumTape_or_Batch,
-        tangents: Tuple[Number],
+        tangents: tuple[Number, ...],
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ):
         max_workers = execution_config.device_options.get("max_workers", self._max_workers)
         if max_workers is None:
             return tuple(adjoint_jvp(circuit, tans) for circuit, tans in zip(circuits, tangents))
 
-        vanilla_circuits = [convert_to_numpy_parameters(c) for c in circuits]
+        vanilla_circuits = convert_to_numpy_parameters(circuits)[0]
         with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
             res = tuple(executor.map(adjoint_jvp, vanilla_circuits, tangents))
 
@@ -700,10 +741,11 @@ class DefaultQubit(Device):
 
         return res
 
+    @debug_logger
     def execute_and_compute_jvp(
         self,
         circuits: QuantumTape_or_Batch,
-        tangents: Tuple[Number],
+        tangents: tuple[Number, ...],
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ):
         self.reset_prng_key()
@@ -714,7 +756,7 @@ class DefaultQubit(Device):
                 for c, t in zip(circuits, tangents)
             )
         else:
-            vanilla_circuits = [convert_to_numpy_parameters(c) for c in circuits]
+            vanilla_circuits = convert_to_numpy_parameters(circuits)[0]
 
             with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
                 results = tuple(
@@ -727,6 +769,7 @@ class DefaultQubit(Device):
 
         return tuple(zip(*results))
 
+    @debug_logger
     def supports_vjp(
         self,
         execution_config: Optional[ExecutionConfig] = None,
@@ -746,10 +789,11 @@ class DefaultQubit(Device):
         """
         return self.supports_derivatives(execution_config, circuit)
 
+    @debug_logger
     def compute_vjp(
         self,
         circuits: QuantumTape_or_Batch,
-        cotangents: Tuple[Number],
+        cotangents: tuple[Number, ...],
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ):
         r"""The vector jacobian product used in reverse-mode differentiation. ``DefaultQubit`` uses the
@@ -804,7 +848,7 @@ class DefaultQubit(Device):
                 for circuit, cots in zip(circuits, cotangents)
             )
 
-        vanilla_circuits = [convert_to_numpy_parameters(c) for c in circuits]
+        vanilla_circuits = convert_to_numpy_parameters(circuits)[0]
         with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
             res = tuple(executor.map(adjoint_vjp, vanilla_circuits, cotangents))
 
@@ -813,10 +857,11 @@ class DefaultQubit(Device):
 
         return res
 
+    @debug_logger
     def execute_and_compute_vjp(
         self,
         circuits: QuantumTape_or_Batch,
-        cotangents: Tuple[Number],
+        cotangents: tuple[Number, ...],
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ):
         self.reset_prng_key()
@@ -827,7 +872,7 @@ class DefaultQubit(Device):
                 for c, t in zip(circuits, cotangents)
             )
         else:
-            vanilla_circuits = [convert_to_numpy_parameters(c) for c in circuits]
+            vanilla_circuits = convert_to_numpy_parameters(circuits)[0]
 
             with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
                 results = tuple(
@@ -841,7 +886,12 @@ class DefaultQubit(Device):
         return tuple(zip(*results))
 
 
+def _simulate_wrapper(circuit, kwargs):
+    return simulate(circuit, **kwargs)
+
+
 def _adjoint_jac_wrapper(c, debugger=None):
+    c = c.map_to_standard_wires()
     state, is_state_batched = get_final_state(c, debugger=debugger)
     jac = adjoint_jacobian(c, state=state)
     res = measure_final_state(c, state, is_state_batched)
@@ -849,6 +899,7 @@ def _adjoint_jac_wrapper(c, debugger=None):
 
 
 def _adjoint_jvp_wrapper(c, t, debugger=None):
+    c = c.map_to_standard_wires()
     state, is_state_batched = get_final_state(c, debugger=debugger)
     jvp = adjoint_jvp(c, t, state=state)
     res = measure_final_state(c, state, is_state_batched)
@@ -856,6 +907,7 @@ def _adjoint_jvp_wrapper(c, t, debugger=None):
 
 
 def _adjoint_vjp_wrapper(c, t, debugger=None):
+    c = c.map_to_standard_wires()
     state, is_state_batched = get_final_state(c, debugger=debugger)
     vjp = adjoint_vjp(c, t, state=state)
     res = measure_final_state(c, state, is_state_batched)

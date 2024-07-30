@@ -15,8 +15,9 @@
 Unit tests for the :func:`_cache_transform` and :func:`_apply_cache_transform` functions.
 """
 # pylint: disable=protected-access,redefined-outer-name
-from typing import MutableMapping
+from collections.abc import MutableMapping
 from unittest.mock import MagicMock
+
 import pytest
 
 import pennylane as qml

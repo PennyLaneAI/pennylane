@@ -16,25 +16,21 @@ This module contains the Abstract Base Class for the next generation of devices.
 """
 # pylint: disable=comparison-with-callable
 import abc
-from dataclasses import replace
-
 from collections.abc import Iterable
+from dataclasses import replace
 from numbers import Number
-from typing import Callable, Union, Sequence, Tuple, Optional
+from typing import Optional, Union
 
+from pennylane import Tracker
 from pennylane.measurements import Shots
-from pennylane.tape import QuantumTape
+from pennylane.tape import QuantumTape, QuantumTapeBatch
+from pennylane.transforms.core import TransformProgram
 from pennylane.typing import Result, ResultBatch
 from pennylane.wires import Wires
-from pennylane import Tracker
-from pennylane.transforms.core import TransformProgram
 
-from .execution_config import ExecutionConfig, DefaultExecutionConfig
+from .execution_config import DefaultExecutionConfig, ExecutionConfig
 
-Result_or_ResultBatch = Union[Result, ResultBatch]
-QuantumTapeBatch = Sequence[QuantumTape]
 QuantumTape_or_Batch = Union[QuantumTape, QuantumTapeBatch]
-PostprocessingFn = Callable[[ResultBatch], Result_or_ResultBatch]
 
 
 # pylint: disable=unused-argument, no-self-use
@@ -177,6 +173,14 @@ class Device(abc.ABC):
         details = f"({', '.join(details)}) " if details else ""
         return f"<{self.name} device {details}at {hex(id(self))}>"
 
+    def __getattr__(self, key):
+        raise AttributeError(
+            f"{type(self).__name__} has no attribute '{key}'."
+            " You may be looking for a property or method present in the legacy device interface."
+            f" Please consult the {type(self).__name__} documentation for an updated list of public"
+            " properties and methods."
+        )
+
     @property
     def shots(self) -> Shots:
         """Default shots for execution workflows containing this device.
@@ -186,6 +190,16 @@ class Device(abc.ABC):
 
         """
         return self._shots
+
+    @shots.setter
+    def shots(self, _):
+        raise AttributeError(
+            (
+                "Shots can no longer be set on a device instance. "
+                "You can set shots on a call to a QNode, on individual tapes, or "
+                "create a new device instance instead."
+            )
+        )
 
     @property
     def wires(self) -> Wires:
@@ -203,7 +217,7 @@ class Device(abc.ABC):
     def preprocess(
         self,
         execution_config: ExecutionConfig = DefaultExecutionConfig,
-    ) -> Tuple[TransformProgram, ExecutionConfig]:
+    ) -> tuple[TransformProgram, ExecutionConfig]:
         """Device preprocessing function.
 
         .. warning::
@@ -241,8 +255,11 @@ class Device(abc.ABC):
 
         .. code-block:: python
 
+                from pennylane.tape import TapeBatch
+                from pennylane.typing import PostprocessingFn
+
                 @transform
-                def my_preprocessing_transform(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTape], callable):
+                def my_preprocessing_transform(tape: qml.tape.QuantumTape) -> tuple[QuantumTapeBatch, PostprocessingFn]:
                     # e.g. valid the measurements, expand the tape for the hardware execution, ...
 
                     def blank_processing_fn(results):
@@ -305,7 +322,7 @@ class Device(abc.ABC):
         self,
         circuits: QuantumTape_or_Batch,
         execution_config: ExecutionConfig = DefaultExecutionConfig,
-    ) -> Result_or_ResultBatch:
+    ) -> Union[Result, ResultBatch]:
         """Execute a circuit or a batch of circuits and turn it into results.
 
         Args:
@@ -526,7 +543,7 @@ class Device(abc.ABC):
     def compute_jvp(
         self,
         circuits: QuantumTape_or_Batch,
-        tangents: Tuple[Number],
+        tangents: tuple[Number, ...],
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ):
         r"""The jacobian vector product used in forward mode calculation of derivatives.
@@ -565,7 +582,7 @@ class Device(abc.ABC):
     def execute_and_compute_jvp(
         self,
         circuits: QuantumTape_or_Batch,
-        tangents: Tuple[Number],
+        tangents: tuple[Number, ...],
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ):
         """Execute a batch of circuits and compute their jacobian vector products.
@@ -603,7 +620,7 @@ class Device(abc.ABC):
     def compute_vjp(
         self,
         circuits: QuantumTape_or_Batch,
-        cotangents: Tuple[Number],
+        cotangents: tuple[Number, ...],
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ):
         r"""The vector jacobian product used in reverse-mode differentiation.
@@ -643,7 +660,7 @@ class Device(abc.ABC):
     def execute_and_compute_vjp(
         self,
         circuits: QuantumTape_or_Batch,
-        cotangents: Tuple[Number],
+        cotangents: tuple[Number, ...],
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ):
         r"""Calculate both the results and the vector jacobian product used in reverse-mode differentiation.

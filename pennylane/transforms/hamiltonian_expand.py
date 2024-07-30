@@ -14,16 +14,18 @@
 """
 Contains the hamiltonian expand tape transform
 """
+
 # pylint: disable=protected-access
+import warnings
+from collections.abc import Sequence
 from functools import partial
-from typing import List, Sequence, Callable, Tuple
 
 import pennylane as qml
 from pennylane.measurements import ExpectationMP, MeasurementProcess, Shots
-from pennylane.ops import SProd, Sum, Prod
-from pennylane.tape import QuantumTape
+from pennylane.ops import Prod, SProd, Sum
+from pennylane.tape import QuantumTape, QuantumTapeBatch
 from pennylane.transforms import transform
-from pennylane.typing import ResultBatch
+from pennylane.typing import PostprocessingFn, ResultBatch
 
 
 def grouping_processing_fn(res_groupings, coeff_groupings, batch_size, offset):
@@ -111,10 +113,7 @@ def naive_processing_fn(res, coeffs, offset):
     """
     dot_products = []
     for c, r in zip(coeffs, res):
-        if qml.math.ndim(c) == 0 and qml.math.size(r) != 1:
-            dot_products.append(qml.math.squeeze(r) * c)
-        else:
-            dot_products.append(qml.math.dot(qml.math.squeeze(r), c))
+        dot_products.append(qml.math.dot(qml.math.squeeze(r), c))
     if len(dot_products) == 0:
         return offset
     summed_dot_products = qml.math.sum(qml.math.stack(dot_products), axis=0)
@@ -140,7 +139,9 @@ def _naive_hamiltonian_expand(tape):
 
 
 @transform
-def hamiltonian_expand(tape: QuantumTape, group: bool = True) -> (Sequence[QuantumTape], Callable):
+def hamiltonian_expand(
+    tape: QuantumTape, group: bool = True
+) -> tuple[QuantumTapeBatch, PostprocessingFn]:
     r"""
     Splits a tape measuring a Hamiltonian expectation into mutliple tapes of Pauli expectations,
     and provides a function to recombine the results.
@@ -153,6 +154,10 @@ def hamiltonian_expand(tape: QuantumTape, group: bool = True) -> (Sequence[Quant
 
     Returns:
         qnode (QNode) or tuple[List[QuantumTape], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
+
+    .. warning::
+        This function is deprecated and will be removed in version 0.39.
+        Instead, use :func:`~.transforms.split_non_commuting`.
 
     **Example**
 
@@ -226,6 +231,12 @@ def hamiltonian_expand(tape: QuantumTape, group: bool = True) -> (Sequence[Quant
     2
     """
 
+    warnings.warn(
+        "qml.transforms.hamiltonian_expand is deprecated and will be removed in version 0.39. "
+        "Instead, use qml.transforms.split_non_commuting, which can handle the same measurement type.",
+        qml.PennyLaneDeprecationWarning,
+    )
+
     if (
         len(tape.measurements) != 1
         or not hasattr(tape.measurements[0].obs, "grouping_indices")
@@ -247,8 +258,8 @@ def hamiltonian_expand(tape: QuantumTape, group: bool = True) -> (Sequence[Quant
 
 
 def _group_measurements(
-    measurements: Sequence[MeasurementProcess], indices_and_coeffs: List[List[Tuple[int, float]]]
-) -> (List[List[MeasurementProcess]], List[List[Tuple[int, int, float]]]):
+    measurements: Sequence[MeasurementProcess], indices_and_coeffs: list[list[tuple[int, float]]]
+) -> tuple[list[list[MeasurementProcess]], list[list[tuple[int, int, float]]]]:
     """Groups measurements that does not have overlapping wires.
 
     Returns:
@@ -321,10 +332,10 @@ def _group_measurements(
 
 def _sum_expand_processing_fn_grouping(
     res: ResultBatch,
-    group_sizes: List[int],
+    group_sizes: list[int],
     shots: Shots,
-    indices_and_coeffs: List[List[Tuple[int, int, float]]],
-    offsets: List[int],
+    indices_and_coeffs: list[list[tuple[int, int, float]]],
+    offsets: list[int],
 ):
     """The processing function for sum_expand with grouping."""
 
@@ -344,16 +355,15 @@ def _sum_expand_processing_fn_grouping(
             coeffs.append(coeff)
         res_for_each_mp.append(naive_processing_fn(sub_res, coeffs, offset))
     if shots.has_partitioned_shots:
-        res_for_each_mp = qml.math.stack(res_for_each_mp, axis=0)
-        res_for_each_mp = qml.math.moveaxis(res_for_each_mp, 0, -1)
+        res_for_each_mp = qml.math.moveaxis(res_for_each_mp, 0, 1)
     return res_for_each_mp[0] if len(res_for_each_mp) == 1 else res_for_each_mp
 
 
 def _sum_expand_processing_fn(
     res: ResultBatch,
     shots: Shots,
-    indices_and_coeffs: List[List[Tuple[int, float]]],
-    offsets: List[int],
+    indices_and_coeffs: list[list[tuple[int, float]]],
+    offsets: list[int],
 ):
     """The processing function for sum_expand without grouping."""
 
@@ -368,14 +378,12 @@ def _sum_expand_processing_fn(
             coeffs.append(coeff)
         res_for_each_mp.append(naive_processing_fn(sub_res, coeffs, offset))
     if shots.has_partitioned_shots:
-        res_for_each_mp = qml.math.stack(res_for_each_mp, axis=0)
-        # Move dimensions around to make things work.
-        res_for_each_mp = qml.math.moveaxis(res_for_each_mp, 0, -1)
+        res_for_each_mp = qml.math.moveaxis(res_for_each_mp, 0, 1)
     return res_for_each_mp[0] if len(res_for_each_mp) == 1 else res_for_each_mp
 
 
 @transform
-def sum_expand(tape: QuantumTape, group: bool = True) -> (Sequence[QuantumTape], Callable):
+def sum_expand(tape: QuantumTape, group: bool = True) -> tuple[QuantumTapeBatch, PostprocessingFn]:
     """Splits a quantum tape measuring a Sum expectation into multiple tapes of summand
     expectations, and provides a function to recombine the results.
 
@@ -389,6 +397,10 @@ def sum_expand(tape: QuantumTape, group: bool = True) -> (Sequence[QuantumTape],
         tuple[Sequence[.QuantumTape], Callable]: Returns a tuple containing a list of
         quantum tapes to be evaluated, and a function to be applied to these
         tape executions to compute the expectation value.
+
+    .. warning::
+        This function is deprecated and will be removed in version 0.39.
+        Instead, use :func:`~.transforms.split_non_commuting`.
 
     **Example**
 
@@ -463,6 +475,12 @@ def sum_expand(tape: QuantumTape, group: bool = True) -> (Sequence[QuantumTape],
     [expval(X(0))]
 
     """
+
+    warnings.warn(
+        "qml.transforms.sum_expand is deprecated and will be removed in version 0.39. "
+        "Instead, use qml.transforms.split_non_commuting, which can handle the same measurement type.",
+        qml.PennyLaneDeprecationWarning,
+    )
 
     # The dictionary of all unique single-term observable measurements, and their indices
     # within the list of all single-term observable measurements.

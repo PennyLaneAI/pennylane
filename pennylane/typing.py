@@ -14,9 +14,10 @@
 """This file contains different PennyLane types."""
 import contextlib
 
-# pylint: disable=import-outside-toplevel, too-few-public-methods
+# pylint: disable=import-outside-toplevel, too-few-public-methods, unused-import
 import sys
-from typing import Union, TypeVar, Tuple
+from collections.abc import Callable, Sequence
+from typing import TypeVar, Union
 
 import numpy as np
 from autograd.numpy.numpy_boxes import ArrayBox
@@ -119,6 +120,11 @@ def _is_torch(other, subclass=False):
     return False
 
 
-Result = TypeVar("Result", Tuple, TensorLike)
+Result = TypeVar("Result", dict, tuple, TensorLike)
 
-ResultBatch = Tuple[Result]
+ResultBatch = Sequence[Result]
+
+PostprocessingFn = Callable[[ResultBatch], Result]
+BatchPostprocessingFn = Callable[[ResultBatch], ResultBatch]
+
+JSON = Union[None, int, str, bool, list["JSON"], dict[str, "JSON"]]

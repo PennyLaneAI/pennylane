@@ -16,8 +16,9 @@ Contains the BasisEmbedding template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 import numpy as np
+
 import pennylane as qml
-from pennylane.operation import Operation, AnyWires
+from pennylane.operation import AnyWires, Operation
 from pennylane.wires import Wires
 
 
@@ -54,7 +55,7 @@ class BasisEmbedding(Operation):
 
         The resulting circuit is:
 
-        >>> print(qml.draw(circuit, expansion_strategy="device")(X))
+        >>> print(qml.draw(circuit, level="device")(X))
         0: ──X─┤  State
         1: ──X─┤  State
         2: ──X─┤  State

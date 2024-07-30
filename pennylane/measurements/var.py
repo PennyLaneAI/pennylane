@@ -15,15 +15,16 @@
 """
 This module contains the qml.var measurement.
 """
-from typing import Sequence, Tuple, Union
+from collections.abc import Sequence
+from typing import Optional, Union
 
 import pennylane as qml
 from pennylane.operation import Operator
 from pennylane.wires import Wires
 
 from .measurements import SampleMeasurement, StateMeasurement, Variance
-from .sample import SampleMP
 from .mid_measure import MeasurementValue
+from .sample import SampleMP
 
 
 def var(op: Union[Operator, MeasurementValue]) -> "VarianceMP":
@@ -69,7 +70,7 @@ def var(op: Union[Operator, MeasurementValue]) -> "VarianceMP":
 class VarianceMP(SampleMeasurement, StateMeasurement):
     """Measurement process that computes the variance of the supplied observable.
 
-    Please refer to :func:`var` for detailed documentation.
+    Please refer to :func:`pennylane.var` for detailed documentation.
 
     Args:
         obs (Union[.Operator, .MeasurementValue]): The observable that is to be measured
@@ -83,9 +84,7 @@ class VarianceMP(SampleMeasurement, StateMeasurement):
             where the instance has to be identified
     """
 
-    @property
-    def return_type(self):
-        return Variance
+    return_type = Variance
 
     @property
     def numeric_type(self):
@@ -101,8 +100,8 @@ class VarianceMP(SampleMeasurement, StateMeasurement):
         self,
         samples: Sequence[complex],
         wire_order: Wires,
-        shot_range: Tuple[int] = None,
-        bin_size: int = None,
+        shot_range: Optional[tuple[int, ...]] = None,
+        bin_size: Optional[int] = None,
     ):
         # estimate the variance
         op = self.mv if self.mv is not None else self.obs

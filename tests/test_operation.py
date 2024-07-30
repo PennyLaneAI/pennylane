@@ -26,13 +26,13 @@ from numpy.linalg import multi_dot
 import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane.operation import (
+    _UNSET_BATCH_SIZE,
     Operation,
     Operator,
     StatePrepBase,
     Tensor,
     convert_to_legacy_H,
     operation_derivative,
-    _UNSET_BATCH_SIZE,
 )
 from pennylane.ops import Prod, SProd, Sum, cv
 from pennylane.wires import Wires
@@ -321,6 +321,21 @@ class TestOperatorConstruction:
         assert op._ndim_params == (ndim_params,)
         assert op.ndim_params == (0,)
 
+    def test_expand_deprecated(self):
+
+        class MyOp(qml.operation.Operation):
+            num_wires = 1
+            has_decomposition = True
+
+            @staticmethod
+            def compute_decomposition(*params, wires=None, **hyperparameters):
+                return [qml.Hadamard(wires=wires)]
+
+        op = MyOp(wires=0)
+
+        with pytest.warns(qml.PennyLaneDeprecationWarning, match="'Operator.expand' is deprecated"):
+            op.expand()
+
 
 class TestPytreeMethods:
     def test_pytree_defaults(self):
@@ -347,7 +362,7 @@ class TestPytreeMethods:
         _ = {metadata: 0}
 
         new_op = CustomOp._unflatten(*op._flatten())
-        assert qml.equal(op, new_op)
+        qml.assert_equal(op, new_op)
         assert new_op.i_got_initialized
 
 
@@ -1073,7 +1088,7 @@ class TestOperatorIntegration:
         """Test that an exception is raised if the class is defined with ALL wires,
         but then instantiated with only one"""
 
-        dev1 = qml.device("default.qubit.legacy", wires=2)
+        dev1 = qml.device("default.qubit", wires=2)
 
         class DummyOp(qml.operation.Operation):
             r"""Dummy custom operator"""
@@ -1192,8 +1207,8 @@ class TestOperatorIntegration:
         op = qml.S(0) - qml.PauliX(1)
         assert isinstance(op, Sum)
         assert isinstance(op[1], SProd)
-        assert qml.equal(op[0], qml.S(0))
-        assert qml.equal(op[1], SProd(-1, qml.PauliX(1)))
+        qml.assert_equal(op[0], qml.S(0))
+        qml.assert_equal(op[1], SProd(-1, qml.PauliX(1)))
 
     def test_mul_with_scalar(self):
         """Test the __mul__ dunder method with a scalar value."""
@@ -1382,13 +1397,13 @@ class TestTensor:
         t = Tensor(op1, op2)
 
         data, metadata = t._flatten()
-        assert qml.equal(data[0], op1)
-        assert qml.equal(data[1], op2)
+        qml.assert_equal(data[0], op1)
+        qml.assert_equal(data[1], op2)
         assert not metadata
         assert hash(metadata)
 
         new_op = Tensor._unflatten(*t._flatten())
-        assert qml.equal(t, new_op)
+        qml.assert_equal(t, new_op)
 
     def test_warning_for_overlapping_wires(self):
         """Test that creating a Tensor with overlapping wires raises a warning"""
@@ -1654,7 +1669,7 @@ class TestTensor:
                 qml.PauliZ(1) @ qml.PauliZ(2) @ qml.PauliY(0),
             ],
         )
-        assert qml.equal(out, expected)
+        qml.assert_equal(out, expected)
 
     def test_multiply_tensor_in_place(self):
         """Test that multiplying a tensor in-place
@@ -2024,7 +2039,7 @@ class TestTensor:
         assert c.wires == Wires([0, 1, 2])
         assert c.batch_size == tensor.batch_size == None
         for obs1, obs2 in zip(c.obs, tensor.obs):
-            assert qml.equal(obs1, obs2)
+            qml.assert_equal(obs1, obs2)
 
     def test_map_wires(self):
         """Test the map_wires method."""
@@ -2037,7 +2052,7 @@ class TestTensor:
         assert mapped_tensor.wires == Wires([10, 11, 12])
         assert mapped_tensor.batch_size == tensor.batch_size
         for obs1, obs2 in zip(mapped_tensor.obs, final_obs):
-            assert qml.equal(obs1, obs2)
+            qml.assert_equal(obs1, obs2)
         assert mapped_tensor.pauli_rep == Tensor(*final_obs).pauli_rep
 
     def test_map_wires_no_pauli_rep(self):
@@ -2060,6 +2075,20 @@ class TestTensor:
 
         with pytest.raises(TypeError, match="unsupported operand type"):
             _ = op @ 1.0
+
+    @pytest.mark.jax
+    def test_matrix_jax_projector(self):
+        """Test that matrix can be computed with a jax projector."""
+
+        import jax
+
+        def f(state):
+            op = qml.Projector(state, wires=0)
+            return qml.operation.Tensor(op, qml.Z(1)).matrix()
+
+        res = jax.jit(f)(jax.numpy.array([0, 1]))
+        expected = np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]])
+        assert qml.math.allclose(res, expected)
 
 
 with qml.operation.disable_new_opmath_cm():
@@ -2644,18 +2673,18 @@ class TestNewOpMath:
             """Tests adding two operators, observable or not."""
             op = op0 + op1
             assert isinstance(op, Sum)
-            assert qml.equal(op[0], op0)
-            assert qml.equal(op[1], op1)
+            qml.assert_equal(op[0], op0)
+            qml.assert_equal(op[1], op1)
 
         @pytest.mark.parametrize("op0,op1", pairs_of_ops)
         def test_sub_operators(self, op0, op1):
             """Tests subtracting two operators."""
             op = op0 - op1
             assert isinstance(op, Sum)
-            assert qml.equal(op[0], op0)
+            qml.assert_equal(op[0], op0)
             assert isinstance(op[1], SProd)
             assert op[1].scalar == -1
-            assert qml.equal(op[1].base, op1)
+            qml.assert_equal(op[1].base, op1)
 
         def test_sub_with_unknown_not_supported(self):
             """Test subtracting an unexpected type from an Operator."""
@@ -2667,27 +2696,27 @@ class TestNewOpMath:
             x0 = qml.PauliX(0)
             for op in [x0 + 1, 1 + x0]:
                 assert isinstance(op, Sum)
-                assert qml.equal(op[0], x0)
+                qml.assert_equal(op[0], x0)
                 assert isinstance(op[1], SProd)
                 assert op[1].scalar == 1
-                assert qml.equal(op[1].base, qml.Identity(0))
+                qml.assert_equal(op[1].base, qml.Identity(0))
 
             x1 = qml.PauliX(1)
             op = x1 - 1.1
             assert isinstance(op, Sum)
-            assert qml.equal(op[0], x1)
+            qml.assert_equal(op[0], x1)
             assert isinstance(op[1], SProd)
             assert op[1].scalar == -1.1
-            assert qml.equal(op[1].base, qml.Identity(1))
+            qml.assert_equal(op[1].base, qml.Identity(1))
 
             op = 1.1 - x1  # will use radd
             assert isinstance(op, Sum)
             assert isinstance(op[0], SProd)
             assert op[0].scalar == -1
-            assert qml.equal(op[0].base, x1)
+            qml.assert_equal(op[0].base, x1)
             assert isinstance(op[1], SProd)
             assert op[1].scalar == 1.1
-            assert qml.equal(op[1].base, qml.Identity(1))
+            qml.assert_equal(op[1].base, qml.Identity(1))
 
         def test_adding_many_does_auto_simplify(self):
             """Tests that adding more than two operators creates nested Sums."""
@@ -2695,9 +2724,9 @@ class TestNewOpMath:
             op = op0 + op1 + op2
             assert isinstance(op, Sum)
             assert len(op) == 3
-            assert qml.equal(op[0], op0)
-            assert qml.equal(op[1], op1)
-            assert qml.equal(op[2], op2)
+            qml.assert_equal(op[0], op0)
+            qml.assert_equal(op[1], op1)
+            qml.assert_equal(op[2], op2)
 
     class TestMul:
         """Test the __mul__/__rmul__ dunders."""
@@ -2709,7 +2738,7 @@ class TestNewOpMath:
             for op in [scalar * base, base * scalar]:
                 assert isinstance(op, SProd)
                 assert qml.math.allequal(op.scalar, scalar)
-                assert qml.equal(op.base, base)
+                qml.assert_equal(op.base, base)
 
         @pytest.mark.parametrize("scalar", [1, 1.1, 1 + 2j, qml.numpy.array([3, 4j])])
         def test_div(self, scalar):
@@ -2718,7 +2747,7 @@ class TestNewOpMath:
             op = base / scalar
             assert isinstance(op, SProd)
             assert qml.math.allequal(op.scalar, 1 / scalar)
-            assert qml.equal(op.base, base)
+            qml.assert_equal(op.base, base)
 
         def test_mul_does_auto_simplify(self):
             """Tests that multiplying an SProd with a scalar creates nested SProds."""
@@ -2726,7 +2755,7 @@ class TestNewOpMath:
             nested = 0.5 * op
             assert isinstance(nested, SProd)
             assert nested.scalar == 1.0
-            assert qml.equal(nested.base, qml.X(0))
+            qml.assert_equal(nested.base, qml.X(0))
 
     class TestMatMul:
         """Test the __matmul__/__rmatmul__ dunders."""
@@ -2736,12 +2765,12 @@ class TestNewOpMath:
             """Tests matrix-multiplication of two operators, observable or not."""
             op = op0 @ op1
             assert isinstance(op, Prod)
-            assert qml.equal(op[0], op0)
+            qml.assert_equal(op[0], op0)
             if isinstance(op1, Prod):
-                assert qml.equal(op[1], op1[0])
-                assert qml.equal(op[2], op1[1])
+                qml.assert_equal(op[1], op1[0])
+                qml.assert_equal(op[2], op1[1])
             else:
-                assert qml.equal(op[1], op1)
+                qml.assert_equal(op[1], op1)
 
         def test_mul_does_auto_simplify(self):
             """Tests that matrix-multiplying a Prod with another operator creates nested Prods."""
@@ -2749,9 +2778,9 @@ class TestNewOpMath:
             op = op0 @ op1 @ op2
             assert isinstance(op, Prod)
             assert len(op) == 3
-            assert qml.equal(op[0], op0)
-            assert qml.equal(op[1], op1)
-            assert qml.equal(op[2], op2)
+            qml.assert_equal(op[0], op0)
+            qml.assert_equal(op[1], op1)
+            qml.assert_equal(op[2], op2)
 
 
 class TestHamiltonianLinearCombinationAlias:
@@ -2832,6 +2861,23 @@ def test_op_arithmetic_toggle():
         assert isinstance(qml.PauliX(0) @ qml.PauliZ(1), Tensor)
 
 
+@pytest.mark.usefixtures("use_new_opmath")
+def test_disable_enable_new_opmath():
+    """Test that disabling and re-enabling new opmath works and raises the correct warning"""
+    with pytest.warns(UserWarning, match="Disabling the new Operator arithmetic"):
+        qml.operation.disable_new_opmath()
+
+    assert not qml.operation.active_new_opmath()
+
+    with pytest.warns(
+        UserWarning,
+        match="Re-enabling the new Operator arithmetic system after disabling it is not advised.",
+    ):
+        qml.operation.enable_new_opmath()
+
+    assert qml.operation.active_new_opmath()
+
+
 def test_docstring_example_of_operator_class(tol):
     """Tests an example of how to create an operator which is used in the
     Operator class docstring, as well as in the 'adding_operators'
@@ -2902,7 +2948,7 @@ def test_custom_operator_is_jax_pytree():
     assert data == [1.2]
 
     new_op = jax.tree_util.tree_unflatten(structure, [2.3])
-    assert qml.equal(new_op, CustomOperator(2.3, wires=0))
+    qml.assert_equal(new_op, CustomOperator(2.3, wires=0))
 
 
 @pytest.mark.usefixtures("use_new_opmath")
@@ -2969,7 +3015,7 @@ def test_convert_to_hamiltonian(coeffs, obs):
     ):
         hamiltonian_instance = qml.ops.Hamiltonian(coeffs, obs)
 
-    assert qml.equal(converted_opmath, hamiltonian_instance)
+    qml.assert_equal(converted_opmath, hamiltonian_instance)
 
 
 @pytest.mark.parametrize(
@@ -3031,7 +3077,7 @@ def test_convert_to_H():
         assert np.all(legacy_op.matrix() == op.matrix())
 
     # the converted op is the same as the original op
-    assert qml.equal(operator.simplify(), linear_combination.simplify())
+    qml.assert_equal(operator.simplify(), linear_combination.simplify())
 
 
 # pylint: disable=unused-import,no-name-in-module
@@ -3054,3 +3100,22 @@ def test_get_attr():
     assert (
         StatePrep is qml.operation.StatePrepBase
     )  # StatePrep imported from operation.py is an alias for StatePrepBase
+
+
+@pytest.mark.parametrize(
+    "make_op",
+    [
+        lambda: qml.Hamiltonian([1, 2], [qml.PauliX(0), qml.PauliY(1)]),
+        lambda: 1.2 * qml.PauliX(0),
+    ],
+)
+@pytest.mark.usefixtures("use_legacy_and_new_opmath")
+def test_convert_to_opmath_queueing(make_op):
+    """Tests that converting to opmath dequeues the original operation"""
+
+    with qml.queuing.AnnotatedQueue() as q:
+        original_op = make_op()
+        new_op = qml.operation.convert_to_opmath(original_op)
+
+    assert len(q.queue) == 1
+    assert q.queue[0] is new_op

@@ -22,6 +22,7 @@ from scipy.linalg import fractional_matrix_power
 import pennylane as qml
 from pennylane import math as qmlmath
 from pennylane.operation import (
+    AdjointUndefinedError,
     DecompositionUndefinedError,
     Observable,
     Operation,
@@ -262,6 +263,11 @@ class Pow(ScalarSymbolicOp):
             self.base.pow(self.z)
         except PowUndefinedError:
             return False
+        except Exception as e:  # pylint: disable=broad-except
+            # some pow methods cant handle a batched z
+            if qml.math.ndim(self.z) != 0:
+                return False
+            raise e
         return True
 
     def decomposition(self):
@@ -274,6 +280,8 @@ class Pow(ScalarSymbolicOp):
                 return [copy.copy(self.base) for _ in range(self.z)]
             # TODO: consider: what if z is an int and less than 0?
             # do we want Pow(base, -1) to be a "more fundamental" op
+            raise DecompositionUndefinedError from e
+        except Exception as e:  # pylint: disable=broad-except
             raise DecompositionUndefinedError from e
 
     @property
@@ -334,8 +342,37 @@ class Pow(ScalarSymbolicOp):
     def pow(self, z):
         return [Pow(base=self.base, z=self.z * z)]
 
+    # pylint: disable=arguments-renamed, invalid-overridden-method
+    @property
+    def has_adjoint(self):
+        return isinstance(self.z, int)
+
     def adjoint(self):
-        return Pow(base=qml.adjoint(self.base), z=self.z)
+        """Create an operation that is the adjoint of this one.
+
+        Adjointed operations are the conjugated and transposed version of the
+        original operation. Adjointed ops are equivalent to the inverted operation for unitary
+        gates.
+
+        .. warning::
+
+            The adjoint of a fractional power of an operator is not well-defined due to branch cuts in the power function.
+            Therefore, an ``AdjointUndefinedError`` is raised when the power ``z`` is not an integer.
+
+            The integer power check is a type check, so that floats like ``2.0`` are not considered to be integers.
+
+        Returns:
+            The adjointed operation.
+
+        Raises:
+            AdjointUndefinedError: If the exponent ``z`` is not of type ``int``.
+
+        """
+        if isinstance(self.z, int):
+            return Pow(base=qml.adjoint(self.base), z=self.z)
+        raise AdjointUndefinedError(
+            "The adjoint of Pow operators only is well-defined for integer powers."
+        )
 
     def simplify(self) -> Union["Pow", Identity]:
         # try using pauli_rep:

@@ -16,20 +16,21 @@
 Differentiability tests are still in the ml-framework specific files.
 """
 import copy
-from typing import Tuple, Callable
 from functools import partial
-import pytest
 
 import numpy as np
+import pytest
 
 import pennylane as qml
+from pennylane.tape import QuantumTapeBatch
+from pennylane.typing import PostprocessingFn
 
-
-device_suite = (
-    qml.device("default.qubit.legacy", wires=5),
-    qml.devices.DefaultQubit(),
-    qml.device("lightning.qubit", wires=5),
-)
+with pytest.warns(qml.PennyLaneDeprecationWarning):
+    device_suite = (
+        qml.device("default.qubit.legacy", wires=5),
+        qml.devices.DefaultQubit(),
+        qml.device("lightning.qubit", wires=5),
+    )
 
 
 @pytest.mark.all_interfaces
@@ -67,7 +68,7 @@ class TestTransformProgram:
 
         def just_pauli_x_out(
             tape: qml.tape.QuantumTape,
-        ) -> (Tuple[qml.tape.QuantumTape], Callable):
+        ) -> tuple[QuantumTapeBatch, PostprocessingFn]:
             return (
                 qml.tape.QuantumScript([qml.PauliX(0)], tape.measurements),
             ), null_postprocessing
@@ -169,19 +170,21 @@ class TestTransformProgram:
     def test_chained_preprocessing(self):
         """Test a transform program with two transforms where their order affects the output."""
 
-        dev = qml.device("default.qubit.legacy", wires=2)
+        dev = qml.device("default.qubit", wires=2)
 
         def null_postprocessing(results):
             return results[0]
 
-        def just_pauli_x_out(tape: qml.tape.QuantumTape) -> (Tuple[qml.tape.QuantumTape], Callable):
+        def just_pauli_x_out(
+            tape: qml.tape.QuantumTape,
+        ) -> tuple[QuantumTapeBatch, PostprocessingFn]:
             return (
                 qml.tape.QuantumScript([qml.PauliX(0)], tape.measurements),
             ), null_postprocessing
 
         def repeat_operations(
             tape: qml.tape.QuantumTape,
-        ) -> (Tuple[qml.tape.QuantumTape], Callable):
+        ) -> tuple[QuantumTapeBatch, PostprocessingFn]:
             new_tape = qml.tape.QuantumScript(
                 tape.operations + copy.deepcopy(tape.operations), tape.measurements
             )

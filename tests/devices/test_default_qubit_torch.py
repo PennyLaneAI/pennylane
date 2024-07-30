@@ -20,10 +20,11 @@ import math
 import numpy as np
 import pytest
 from gate_data import (
+    CCZ,
+    CH,
     CNOT,
     CSWAP,
     CZ,
-    CH,
     SWAP,
     ControlledPhaseShift,
     CRot3,
@@ -33,6 +34,7 @@ from gate_data import (
     DoubleExcitation,
     DoubleExcitationMinus,
     DoubleExcitationPlus,
+    FermionicSWAP,
     H,
     IsingXX,
     IsingYY,
@@ -40,7 +42,6 @@ from gate_data import (
     MultiRZ1,
     MultiRZ2,
     OrbitalRotation,
-    FermionicSWAP,
     Rot3,
     Rotx,
     Roty,
@@ -52,7 +53,6 @@ from gate_data import (
     SingleExcitationPlus,
     T,
     Toffoli,
-    CCZ,
     X,
     Y,
     Z,
@@ -74,8 +74,6 @@ torch_devices = [None]
 if torch.cuda.is_available():
     torch_devices.append("cuda")
 
-
-np.random.seed(42)
 
 #####################################################
 # Test matrices
@@ -2265,7 +2263,7 @@ class TestSamples:
         assert torch.is_tensor(res)
         assert res.shape == (shots,)  # pylint:disable=comparison-with-callable
         assert torch.allclose(
-            torch.unique(res), torch.tensor([-1, 1], dtype=torch.int64, device=torch_device)
+            torch.unique(res), torch.tensor([-1, 1], dtype=torch.float64, device=torch_device)
         )
 
     def test_estimating_marginal_probability(self, torch_device, tol):

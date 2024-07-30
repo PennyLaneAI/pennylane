@@ -12,26 +12,27 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for preprocess in devices/qubit."""
+import warnings
 
 import pytest
 
 import pennylane as qml
-from pennylane.operation import Operation
-from pennylane.tape import QuantumScript
 from pennylane import DeviceError
-
-# pylint: disable=too-few-public-methods
-
 from pennylane.devices.preprocess import (
-    no_sampling,
-    validate_device_wires,
-    validate_multiprocessing_workers,
-    validate_adjoint_trainable_params,
     _operator_decomposition_gen,
     decompose,
-    validate_observables,
+    mid_circuit_measurements,
+    no_sampling,
+    validate_adjoint_trainable_params,
+    validate_device_wires,
     validate_measurements,
+    validate_multiprocessing_workers,
+    validate_observables,
 )
+from pennylane.operation import Operation
+from pennylane.tape import QuantumScript
+
+# pylint: disable=too-few-public-methods
 
 
 class NoMatOp(Operation):
@@ -54,6 +55,15 @@ class NoMatNoDecompOp(Operation):
     @property
     def has_matrix(self):
         return False
+
+
+class InfiniteOp(qml.operation.Operation):
+    """An op with an infinite decomposition."""
+
+    num_wires = 1
+
+    def decomposition(self):
+        return [InfiniteOp(*self.parameters, self.wires)]
 
 
 class TestPrivateHelpers:
@@ -84,8 +94,8 @@ class TestPrivateHelpers:
         op = NoMatOp("a")
         casted_to_list = list(_operator_decomposition_gen(op, stopping_condition, self.decomposer))
         assert len(casted_to_list) == 2
-        assert qml.equal(casted_to_list[0], qml.PauliX("a"))
-        assert qml.equal(casted_to_list[1], qml.PauliY("a"))
+        qml.assert_equal(casted_to_list[0], qml.PauliX("a"))
+        qml.assert_equal(casted_to_list[1], qml.PauliY("a"))
 
     def test_operator_decomposition_gen_decomposed_operator_ragged_nesting(self):
         """Test that _operator_decomposition_gen handles a decomposition that requires different depths of decomposition."""
@@ -104,18 +114,18 @@ class TestPrivateHelpers:
         op = RaggedDecompositionOp("a")
         final_decomp = list(_operator_decomposition_gen(op, stopping_condition, self.decomposer))
         assert len(final_decomp) == 5
-        assert qml.equal(final_decomp[0], qml.PauliX("a"))
-        assert qml.equal(final_decomp[1], qml.PauliY("a"))
-        assert qml.equal(final_decomp[2], qml.S("a"))
-        assert qml.equal(final_decomp[3], qml.adjoint(qml.PauliY("a")))
-        assert qml.equal(final_decomp[4], qml.adjoint(qml.PauliX("a")))
+        qml.assert_equal(final_decomp[0], qml.PauliX("a"))
+        qml.assert_equal(final_decomp[1], qml.PauliY("a"))
+        qml.assert_equal(final_decomp[2], qml.S("a"))
+        qml.assert_equal(final_decomp[3], qml.adjoint(qml.PauliY("a")))
+        qml.assert_equal(final_decomp[4], qml.adjoint(qml.PauliX("a")))
 
     def test_error_from_unsupported_operation(self):
         """Test that a device error is raised if the operator cant be decomposed and doesn't have a matrix."""
         op = NoMatNoDecompOp("a")
         with pytest.raises(
             DeviceError,
-            match=r"not supported on abc and does",
+            match=r"not supported with abc and does",
         ):
             tuple(
                 _operator_decomposition_gen(
@@ -138,8 +148,16 @@ def test_no_sampling():
 
 def test_validate_adjoint_trainable_params_obs_warning():
     """Tests warning raised for validate_adjoint_trainable_params with trainable observables."""
-    tape = qml.tape.QuantumScript([], [qml.expval(2 * qml.PauliX(0))])
+
+    params = qml.numpy.array(0.123)
+    tape = qml.tape.QuantumScript([], [qml.expval(2 * qml.RX(params, wires=0))])
     with pytest.warns(UserWarning, match="Differentiating with respect to the input "):
+        validate_adjoint_trainable_params(tape)
+
+    params_non_trainable = qml.numpy.array(0.123, requires_grad=False)
+    tape = qml.tape.QuantumScript([], [qml.expval(2 * qml.RX(params_non_trainable, wires=0))])
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")  # assert no warning raised
         validate_adjoint_trainable_params(tape)
 
 
@@ -181,10 +199,10 @@ class TestDecomposeValidation:
     """Unit tests for helper functions in qml.devices.qubit.preprocess"""
 
     def test_error_if_invalid_op(self):
-        """Test that expand_fn throws an error when an operation is does not define a matrix or decomposition."""
+        """Test that expand_fn throws an error when an operation does not define a matrix or decomposition."""
 
         tape = QuantumScript(ops=[NoMatNoDecompOp(0)], measurements=[qml.expval(qml.Hadamard(0))])
-        with pytest.raises(DeviceError, match="not supported on abc"):
+        with pytest.raises(DeviceError, match="not supported with abc"):
             decompose(tape, lambda op: op.has_matrix, name="abc")
 
     def test_decompose(self):
@@ -197,17 +215,27 @@ class TestDecomposeValidation:
     def test_infinite_decomposition_loop(self):
         """Test that a device error is raised if decomposition enters an infinite loop."""
 
-        class InfiniteOp(qml.operation.Operation):
-            """An op with an infinite decomposition."""
-
-            num_wires = 1
-
-            def decomposition(self):
-                return [InfiniteOp(*self.parameters, self.wires)]
-
         qs = qml.tape.QuantumScript([InfiniteOp(1.23, 0)])
         with pytest.raises(DeviceError, match=r"Reached recursion limit trying to decompose"):
             decompose(qs, lambda obj: obj.has_matrix)
+
+    @pytest.mark.parametrize(
+        "error_type", [RuntimeError, qml.operation.DecompositionUndefinedError]
+    )
+    def test_error_type_can_be_set(self, error_type):
+        """Test that passing a class of Error the ``decompose`` transform allows raising another type
+        of error instead of the default ``DeviceError``."""
+
+        decomp_error_tape = QuantumScript(
+            ops=[NoMatNoDecompOp(0)], measurements=[qml.expval(qml.Hadamard(0))]
+        )
+        recursion_error_tape = qml.tape.QuantumScript([InfiniteOp(1.23, 0)])
+
+        with pytest.raises(error_type, match="not supported with abc"):
+            decompose(decomp_error_tape, lambda op: op.has_matrix, name="abc", error=error_type)
+
+        with pytest.raises(error_type, match=r"Reached recursion limit trying to decompose"):
+            decompose(recursion_error_tape, lambda obj: obj.has_matrix, error=error_type)
 
 
 class TestValidateObservables:
@@ -331,7 +359,7 @@ class TestDecomposeTransformations:
         expected = [qml.Hadamard(0), qml.PauliX(1), qml.PauliY(1), qml.RZ(0.123, wires=1)]
 
         for op, exp in zip(expanded_tape.circuit, expected + measurements):
-            assert qml.equal(op, exp)
+            qml.assert_equal(op, exp)
 
         assert tape.shots == expanded_tape.shots
 
@@ -344,7 +372,7 @@ class TestDecomposeTransformations:
         expanded_tape = expanded_tapes[0]
 
         for op, exp in zip(expanded_tape.circuit, ops + measurements):
-            assert qml.equal(op, exp)
+            qml.assert_equal(op, exp)
 
     @pytest.mark.parametrize("validation_transform", (validate_measurements, validate_observables))
     def test_valdiate_measurements_non_commuting_measurements(self, validation_transform):
@@ -411,6 +439,42 @@ class TestDecomposeTransformations:
         new_tape = batch[0]
 
         assert new_tape[0] != prep_op
+
+
+class TestMidCircuitMeasurements:
+    """Unit tests for the mid_circuit_measurements preprocessing transform"""
+
+    @pytest.mark.parametrize(
+        "mcm_method, shots, expected_transform",
+        [
+            ("deferred", 10, qml.defer_measurements),
+            ("deferred", None, qml.defer_measurements),
+            (None, None, qml.defer_measurements),
+            (None, 10, qml.dynamic_one_shot),
+            ("one-shot", 10, qml.dynamic_one_shot),
+        ],
+    )
+    def test_mcm_method(self, mcm_method, shots, expected_transform, mocker):
+        """Test that the preprocessing transform adheres to the specified transform"""
+        dev = qml.device("default.qubit")
+        mcm_config = {"postselect_mode": None, "mcm_method": mcm_method}
+        tape = QuantumScript([qml.measurements.MidMeasureMP(0)], [], shots=shots)
+        spy = mocker.spy(expected_transform, "_transform")
+
+        _, _ = mid_circuit_measurements(tape, dev, mcm_config)
+        spy.assert_called_once()
+
+    def test_error_incompatible_mcm_method(self):
+        """Test that an error is raised if requesting the one-shot transform without shots"""
+        dev = qml.device("default.qubit")
+        shots = None
+        mcm_config = {"postselect_mode": None, "mcm_method": "one-shot"}
+        tape = QuantumScript([qml.measurements.MidMeasureMP(0)], [], shots=shots)
+
+        with pytest.raises(
+            qml.QuantumFunctionError, match="dynamic_one_shot is only supported with finite shots."
+        ):
+            _, _ = mid_circuit_measurements(tape, dev, mcm_config)
 
 
 def test_validate_multiprocessing_workers_None():

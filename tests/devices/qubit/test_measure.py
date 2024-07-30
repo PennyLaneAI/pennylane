@@ -13,19 +13,18 @@
 # limitations under the License.
 """Unit tests for measure in devices/qubit."""
 
-import pytest
-
 import numpy as np
+import pytest
 from scipy.sparse import csr_matrix
 
 import pennylane as qml
 from pennylane.devices.qubit import simulate
 from pennylane.devices.qubit.measure import (
-    measure,
-    state_diagonalizing_gates,
     csr_dot_products,
     full_dot_products,
     get_measurement_function,
+    measure,
+    state_diagonalizing_gates,
     sum_of_terms_method,
 )
 
@@ -180,18 +179,17 @@ class TestMeasurements:
 
         dev = qml.device("default.qubit", wires=4)
 
-        O1 = qml.X(0)
-        O2 = qml.X(0)
-
         @qml.qnode(dev, interface="jax")
         def qnode(t1, t2):
-            return qml.expval(qml.prod(O1, qml.RX(t1, 0), O2, qml.RX(t2, 0)))
+            return qml.expval((t1 * qml.X(0)) @ (t2 * qml.Y(1)))
 
         t1, t2 = 0.5, 1.0
         assert qml.math.allclose(qnode(t1, t2), jax.jit(qnode)(t1, t2))
 
+    @pytest.mark.usefixtures("new_opmath_only")
     def test_measure_identity_no_wires(self):
         """Test that measure can handle the expectation value of identity on no wires."""
+
         state = np.random.random([2, 2, 2])
         out = measure(qml.measurements.ExpectationMP(qml.I()), state)
         assert qml.math.allclose(out, 1.0)
@@ -485,7 +483,7 @@ class TestSumOfTermsDifferentiability:
         """Test that backpropagation derivatives work with tensorflow with hamiltonians and large sums."""
         import tensorflow as tf
 
-        x = tf.Variable(0.5)
+        x = tf.Variable(0.5, dtype="float64")
         coeffs = [8.3, 5.7]
 
         with tf.GradientTape() as tape1:

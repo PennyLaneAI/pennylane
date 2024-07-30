@@ -13,14 +13,14 @@
 # limitations under the License.
 """Transform for removing the Barrier gate from quantum circuits."""
 # pylint: disable=too-many-branches
-from typing import Sequence, Callable
 
-from pennylane.tape import QuantumTape
+from pennylane.tape import QuantumTape, QuantumTapeBatch
 from pennylane.transforms import transform
+from pennylane.typing import PostprocessingFn
 
 
 @transform
-def remove_barrier(tape: QuantumTape) -> (Sequence[QuantumTape], Callable):
+def remove_barrier(tape: QuantumTape) -> tuple[QuantumTapeBatch, PostprocessingFn]:
     """Quantum transform to remove Barrier gates.
 
     Args:

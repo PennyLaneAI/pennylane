@@ -18,7 +18,7 @@ import pytest
 
 import pennylane as qml
 from pennylane.ops import Prod, SProd, Sum
-from pennylane.pauli.pauli_arithmetic import PauliWord, PauliSentence, I, X, Y, Z
+from pennylane.pauli.pauli_arithmetic import I, PauliSentence, PauliWord, X, Y, Z
 
 pw1 = PauliWord({0: I, 1: X, 2: Y})
 pw2 = PauliWord({0: Z, 2: Z, 4: Z})
@@ -49,6 +49,11 @@ H3 = 1.0 * X0 + 2.0 * Y0 + 3.0 * Z0
 
 class TestDotSum:
     """Unittests for the dot function when ``pauli=False``."""
+
+    def test_error_if_ops_operator(self):
+        """Test that dot raises an error if ops is an operator itself."""
+        with pytest.raises(ValueError, match=r"ops must be an Iterable of Operator's"):
+            qml.dot([1, 1], qml.X(0) @ qml.Y(1))
 
     def test_dot_returns_sum(self):
         """Test that the dot function returns a Sum operator when ``pauli=False``."""
@@ -130,7 +135,7 @@ class TestDotSum:
             SProd(qml.numpy.array(2.0, dtype=dtype), qml.PauliY(1)),
             SProd(qml.numpy.array(3.0, dtype=dtype), qml.PauliZ(2)),
         )
-        assert qml.equal(op_sum, op_sum_2)
+        qml.assert_equal(op_sum, op_sum_2)
 
     @pytest.mark.tf
     @pytest.mark.parametrize("dtype", ("float64", "complex128"))
@@ -146,7 +151,7 @@ class TestDotSum:
             SProd(tf.constant(2.0, dtype=getattr(tf, dtype)), qml.PauliY(1)),
             SProd(tf.constant(3.0, dtype=getattr(tf, dtype)), qml.PauliZ(2)),
         )
-        assert qml.equal(op_sum, op_sum_2)
+        qml.assert_equal(op_sum, op_sum_2)
 
     @pytest.mark.torch
     @pytest.mark.parametrize("dtype", ("float64", "complex128"))
@@ -162,7 +167,7 @@ class TestDotSum:
             SProd(torch.tensor(2.0, dtype=getattr(torch, dtype)), qml.PauliY(1)),
             SProd(torch.tensor(3.0, dtype=getattr(torch, dtype)), qml.PauliZ(2)),
         )
-        assert qml.equal(op_sum, op_sum_2)
+        qml.assert_equal(op_sum, op_sum_2)
 
     @pytest.mark.jax
     @pytest.mark.parametrize("dtype", (float, complex))
@@ -178,7 +183,7 @@ class TestDotSum:
             SProd(jax.numpy.array(2.0, dtype=dtype), qml.PauliY(1)),
             SProd(jax.numpy.array(3.0, dtype=dtype), qml.PauliZ(2)),
         )
-        assert qml.equal(op_sum, op_sum_2)
+        qml.assert_equal(op_sum, op_sum_2)
 
     data_just_words_pauli_false = (
         ([1.0, 2.0, 3.0], [pw1, pw2, pw_id], [op1, op2, op_id]),
@@ -280,6 +285,20 @@ ops0 = [
 class TestDotPauliSentence:
     """Unittest for the dot function when ``pauli=True``"""
 
+    def test_error_if_ops_PauliWord(self):
+        """Test that dot raises an error if ops is a PauliWord itself."""
+        _pw = qml.pauli.PauliWord({0: "X", 1: "Y"})
+        with pytest.raises(ValueError, match=r"ops must be an Iterable of PauliWord's"):
+            qml.dot([1, 2], _pw)
+
+    def test_error_if_ops_PauliSentence(self):
+        """Test that dot raises an error if ops is a PauliSentence itself."""
+        _pw1 = qml.pauli.PauliWord({0: "X", 1: "Y"})
+        _pw2 = qml.pauli.PauliWord({2: "Z"})
+        ps = 2 * _pw1 + 3 * _pw2
+        with pytest.raises(ValueError, match=r"ops must be an Iterable of PauliSentence's"):
+            qml.dot([1, 2], ps)
+
     def test_dot_returns_pauli_sentence(self):
         """Test that the dot function returns a PauliSentence class."""
         ps = qml.dot(coeffs0, ops0, pauli=True)
@@ -290,7 +309,8 @@ class TestDotPauliSentence:
         ps = qml.dot(coeffs0, ops0, pauli=True)
         h = ps.hamiltonian()
         assert qml.math.allequal(h.coeffs, coeffs0)
-        assert all(qml.equal(op1, op2) for op1, op2 in zip(h.ops, ops0))
+        for _op1, _op2 in zip(h.ops, ops0):
+            qml.assert_equal(_op1, _op2)
 
     def test_dot_simplifies_linear_combination(self):
         """Test that the dot function groups equal pauli words."""
@@ -300,7 +320,7 @@ class TestDotPauliSentence:
         assert len(ps) == 1
         h = ps.hamiltonian()
         assert len(h.ops) == 1
-        assert qml.equal(h.ops[0], qml.PauliX(0))
+        qml.assert_equal(h.ops[0], qml.PauliX(0))
 
     def test_dot_returns_hamiltonian_simplified(self):
         """Test that hamiltonian computed from the PauliSentence created by the dot function is equal
@@ -309,7 +329,7 @@ class TestDotPauliSentence:
         h_ps = ps.hamiltonian()
         h = qml.Hamiltonian(coeffs0, ops0)
         h.simplify()
-        assert qml.equal(h_ps, h)
+        qml.assert_equal(h_ps, h)
 
     @pytest.mark.autograd
     def test_dot_autograd(self):

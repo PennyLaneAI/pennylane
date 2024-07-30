@@ -14,12 +14,13 @@
 """This module contains the classes/functions needed to simulate the evolution of ensembles of
 individual (trapped) rydberg atoms under the excitation of several laser fields."""
 from dataclasses import dataclass
-import numpy as np
-import pennylane as qml
 
+import numpy as np
+
+import pennylane as qml
 from pennylane.pulse import HardwareHamiltonian, HardwarePulse, drive
-from pennylane.wires import Wires
 from pennylane.pulse.hardware_hamiltonian import _reorder_parameters
+from pennylane.wires import Wires
 
 
 def rydberg_interaction(
@@ -85,7 +86,11 @@ def rydberg_interaction(
 
     .. code-block:: python
 
-        dev = qml.device("default.qubit.jax", wires=9)
+        import jax
+
+        jax.config.update("jax_enable_x64", True)
+
+        dev = qml.device("default.qubit", wires=9)
 
         @qml.qnode(dev, interface="jax")
         def circuit():
@@ -93,7 +98,7 @@ def rydberg_interaction(
             return qml.expval(qml.Z(0))
 
     >>> circuit()
-    Array(1., dtype=float32)
+    Array(1., dtype=float64)
     """
     if wires is None:
         wires = list(range(len(register)))
@@ -207,7 +212,11 @@ def rydberg_drive(amplitude, phase, detuning, wires):
 
     .. code-block:: python
 
-        dev = qml.device("default.qubit.jax", wires=wires)
+        import jax
+
+        jax.config.update("jax_enable_x64", True)
+
+        dev = qml.device("default.qubit", wires=wires)
         @qml.qnode(dev, interface="jax")
         def circuit(params):
             qml.evolve(H_i + H_d)(params, t=[0, 0.5])

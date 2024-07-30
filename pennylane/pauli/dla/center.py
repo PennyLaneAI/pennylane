@@ -12,18 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """A function to compute the center of a Lie algebra"""
-from typing import List, Union
 from itertools import combinations
+from typing import Union
 
 import numpy as np
 
-from pennylane.pauli import PauliSentence, PauliWord
 from pennylane.operation import Operator
+from pennylane.pauli import PauliSentence, PauliWord
 
 
 def center(
-    g: List[Union[Operator, PauliWord, PauliSentence]], pauli: bool = False
-) -> List[Union[Operator, PauliSentence]]:
+    g: list[Union[Operator, PauliWord, PauliSentence]], pauli: bool = False
+) -> list[Union[Operator, PauliSentence]]:
     r"""
     A function to compute the center of a Lie algebra.
 

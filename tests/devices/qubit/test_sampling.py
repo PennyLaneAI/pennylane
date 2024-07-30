@@ -15,14 +15,13 @@
 
 from random import shuffle
 
-import pytest
 import numpy as np
+import pytest
 
 import pennylane as qml
-from pennylane.devices.qubit import simulate
-from pennylane.devices.qubit.simulate import _FlexShots
-from pennylane.devices.qubit import sample_state, measure_with_samples
+from pennylane.devices.qubit import measure_with_samples, sample_state, simulate
 from pennylane.devices.qubit.sampling import _sample_state_jax
+from pennylane.devices.qubit.simulate import _FlexShots
 from pennylane.measurements import Shots
 
 two_qubit_state = np.array([[0, 1j], [-1, 0]], dtype=np.complex128) / np.sqrt(2)
@@ -35,7 +34,8 @@ def fixture_init_state():
 
     def _init_state(n):
         """random initial state"""
-        state = np.random.random([1 << n]) + np.random.random([1 << n]) * 1j
+        rng = np.random.default_rng(123)
+        state = rng.random([1 << n]) + rng.random([1 << n]) * 1j
         state /= np.linalg.norm(state)
         return state.reshape((2,) * n)
 
@@ -190,6 +190,7 @@ class TestSampleState:
         assert np.allclose(reordered_probs, random_probs, atol=APPROX_ATOL)
 
 
+# pylint: disable=too-many-public-methods
 class TestMeasureSamples:
     """Test that the measure_with_samples function works as expected"""
 
@@ -518,6 +519,7 @@ class TestMeasureSamples:
         [result] = measure_with_samples([mp], state, shots=qml.measurements.Shots(1))
         assert qml.math.allclose(result, 1.0)
 
+    @pytest.mark.usefixtures("new_opmath_only")
     def test_identity_on_no_wires_with_other_observables(self):
         """Test that measuring an identity on no wires can be used in conjunction with other measurements."""
 
@@ -541,6 +543,44 @@ class TestMeasureSamples:
         mp = qml.expval(qml.Z(0) + 2 * qml.I())
         [result] = measure_with_samples([mp], state, shots=qml.measurements.Shots(1))
         assert qml.math.allclose(result, 1)  # -1 + 2
+
+    @pytest.mark.parametrize(
+        "state, measurements, expected_results",
+        [
+            [
+                np.array([[0.5, 0.5j], [-0.5j, 0.5]]),
+                [qml.expval(qml.Y(0) + qml.Y(0)), qml.expval(qml.Y(1))],
+                (-2.0, 1.0),
+            ],
+            [
+                np.array([[0.5, -0.5j], [0.5j, 0.5]]),
+                [qml.expval(qml.Y(0) + qml.Y(0)), qml.expval(qml.Y(1))],
+                (2.0, -1.0),
+            ],
+            [
+                np.array([[0.5, 0.5j], [-0.5j, 0.5]]),
+                [qml.expval(qml.Y(1)), qml.expval(qml.Y(0) + qml.Y(0))],
+                (1.0, -2.0),
+            ],
+            [
+                np.array([[0.5, 0.5j], [-0.5j, 0.5]]),
+                [
+                    qml.expval(qml.Y(1) - qml.Y(1)),
+                    qml.expval(2 * (qml.Y(0) + qml.Y(0) - 5 * (qml.Y(0) + qml.Y(0)))),
+                    qml.expval(
+                        (2 * (qml.Y(0) + qml.Y(0)))
+                        @ ((5 * (qml.Y(0) + qml.Y(0)) + 3 * (qml.Y(0) + qml.Y(0))))
+                    ),
+                ],
+                (0.0, 16.0, 64.0),
+            ],
+        ],
+    )
+    def test_sum_same_wires(self, state, measurements, expected_results):
+        """Test that the sum of observables acting on the same wires works as expected."""
+
+        results = measure_with_samples(measurements, state, qml.measurements.Shots(1000))
+        assert qml.math.allclose(results, expected_results)
 
 
 class TestInvalidStateSamples:
