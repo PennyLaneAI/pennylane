@@ -141,6 +141,11 @@
 
 <h3>Breaking changes 💔</h3>
 
+* `GlobalPhase` is considered non-differentiable with tape transforms.
+  As a consequence, `qml.gradients.finite_diff` and `qml.gradients.spsa_grad` no longer
+  support differentiation of `GlobalPhase` with state-based outputs.
+  [(#5620)](https://github.com/PennyLaneAI/pennylane/pull/5620) 
+
 * The `CircuitGraph.graph` rustworkx graph now stores indices into the circuit as the node labels,
   instead of the operator/ measurement itself.  This allows the same operator to occur multiple times in
   the circuit.
@@ -218,6 +223,8 @@
   [(#5974)](https://github.com/PennyLaneAI/pennylane/pull/5974)
 
 <h3>Bug fixes 🐛</h3>
+* Fix `jax.grad` + `jax.jit` not working for `AmplitudeEmbedding`, `StatePrep` and `MottonenStatePreparation`.
+  [(#5620)](https://github.com/PennyLaneAI/pennylane/pull/5620) 
 
 * Fixed a bug in `qml.center` that omitted elements from the center if they were
   linear combinations of input elements.
@@ -250,6 +257,7 @@
 
 This release contains contributions from (in alphabetical order):
 
+Tarun Kumar Allamsetty,
 Guillermo Alonso,
 Utkarsh Azad,
 Ahmed Darwish,
