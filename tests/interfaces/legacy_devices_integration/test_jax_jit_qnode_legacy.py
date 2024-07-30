@@ -1464,7 +1464,7 @@ def test_adjoint_reuse_device_state(mocker, interface):
         qml.RX(x, wires=0)
         return qml.expval(qml.PauliZ(0))
 
-    spy = mocker.spy(dev, "adjoint_jacobian")
+    spy = mocker.spy(dev.target_device, "adjoint_jacobian")
 
     jax.grad(circ)(1.0)
     assert circ.device.num_executions == 1

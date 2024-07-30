@@ -237,6 +237,9 @@ class LegacyDeviceFacade(Device):
         return replace(execution_config, **updated_values)
 
     def _setup_device_config(self, execution_config):
+        if execution_config.gradient_keyword_arguments["method"] == "adjoint_jacobian":
+            return self._setup_adjoint_config(execution_config)
+
         tape = qml.tape.QuantumScript([], [])
 
         if not self._validate_device_method(tape):

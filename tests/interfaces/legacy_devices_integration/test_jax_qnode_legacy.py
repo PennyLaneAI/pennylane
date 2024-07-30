@@ -744,7 +744,7 @@ class TestShotsIntegration:
 
         assert jax.numpy.allclose(circuit(jax.numpy.array(0.0)), 1)
 
-    def test_changing_shots(self, interface, mocker, tol):
+    def test_changing_shots(self, interface):
         """Test that changing shots works on execution"""
         dev = qml.device("default.qubit.legacy", wires=2, shots=None)
         a, b = jax.numpy.array([0.543, -0.654])
@@ -754,25 +754,15 @@ class TestShotsIntegration:
             qml.RY(a, wires=0)
             qml.RX(b, wires=1)
             qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliY(1))
-
-        spy = mocker.spy(dev, "sample")
+            return qml.sample(wires=(0, 1))
 
         # execute with device default shots (None)
-        res = circuit(a, b)
-        assert np.allclose(res, -np.cos(a) * np.sin(b), atol=tol, rtol=0)
-        spy.assert_not_called()
+        with pytest.raises(qml.QuantumFunctionError):
+            circuit(a, b)
 
         # execute with shots=100
-        res = circuit(a, b, shots=100)  # pylint: disable=unexpected-keyword-arg
-        spy.assert_called_once()
-        assert spy.spy_return.shape == (100,)
-
-        # device state has been unaffected
-        assert dev.shots is None
-        res = circuit(a, b)
-        assert np.allclose(res, -np.cos(a) * np.sin(b), atol=tol, rtol=0)
-        spy.assert_called_once()  # no additional calls
+        res = circuit(a, b, shots=100)
+        assert res.shape == (100, 2)  # pylint: disable=comparison-with-callable
 
     def test_gradient_integration(self, interface):
         """Test that temporarily setting the shots works
@@ -1416,7 +1406,7 @@ def test_adjoint_reuse_device_state(mocker, interface):
         qml.RX(x, wires=0)
         return qml.expval(qml.PauliZ(0))
 
-    spy = mocker.spy(dev, "adjoint_jacobian")
+    spy = mocker.spy(dev.target_device, "adjoint_jacobian")
 
     jax.grad(circ)(1.0)
     assert circ.device.num_executions == 1

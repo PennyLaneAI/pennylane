@@ -573,7 +573,7 @@ def execute(
     gradient_kwargs = gradient_kwargs or {}
     mcm_config = mcm_config or {}
     config = config or _get_execution_config(
-        gradient_fn, grad_on_execution, interface, device, device_vjp, mcm_config
+        gradient_fn, grad_on_execution, interface, device, device_vjp, mcm_config, gradient_kwargs
     )
 
     # Mid-circuit measurement configuration validation
@@ -795,7 +795,7 @@ def _make_transform_programs(
 
 
 def _get_execution_config(
-    gradient_fn, grad_on_execution, interface, device, device_vjp, mcm_config
+    gradient_fn, grad_on_execution, interface, device, device_vjp, mcm_config, gradient_kwargs
 ):
     """Helper function to get the execution config."""
     if gradient_fn is None:
@@ -810,6 +810,7 @@ def _get_execution_config(
         grad_on_execution=None if grad_on_execution == "best" else grad_on_execution,
         use_device_jacobian_product=device_vjp,
         mcm_config=mcm_config,
+        gradient_keyword_arguments=gradient_kwargs,
     )
 
     return device.preprocess(config)[1]
