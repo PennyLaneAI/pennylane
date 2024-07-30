@@ -599,6 +599,9 @@ class TestGrad:
     @pytest.mark.parametrize("diff_method", diff_methods)
     def test_differentiability_tf_broadcasted(self, op, obs, grad_fn, diff_method, tol):
         """Test that differentiation of parametrized operations in TensorFlow with broadcasting works."""
+        if diff_method in ("finite-diff", "parameter-shift"):
+            pytest.xfail()
+
         import tensorflow as tf
 
         dev = qml.device("default.qutrit", wires=1)

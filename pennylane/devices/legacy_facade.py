@@ -144,7 +144,7 @@ class LegacyDeviceFacade(Device):
 
     # pylint: disable=super-init-not-called
     def __init__(self, device: "qml.devices.LegacyDevice"):
-        if isinstance(device, self.__class__):
+        if isinstance(device, type(self)):
             return
 
         if not isinstance(device, qml.devices.LegacyDevice):
