@@ -39,6 +39,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* During experimental program capture, the qnode can now use closure variables.
+  [(#6052)](https://github.com/PennyLaneAI/pennylane/pull/6052)
+
 * `qml.devices.LegacyDeviceFacade` has been added to map the legacy devices to the new
   device interface.
   [(#5927)](https://github.com/PennyLaneAI/pennylane/pull/5927)
