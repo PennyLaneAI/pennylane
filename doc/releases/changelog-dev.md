@@ -43,6 +43,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* During experimental program capture, the qnode can now use closure variables.
+  [(#6052)](https://github.com/PennyLaneAI/pennylane/pull/6052)
+
 * `GlobalPhase` now supports parameter broadcasting.
   [(#5923)](https://github.com/PennyLaneAI/pennylane/pull/5923)
 
@@ -66,6 +69,10 @@
 
 * `QuantumScript.hash` is now cached, leading to performance improvements.
   [(#5919)](https://github.com/PennyLaneAI/pennylane/pull/5919)
+
+* Applying `adjoint` and `ctrl` to a quantum function can now be captured into plxpr.
+  [(#5966)](https://github.com/PennyLaneAI/pennylane/pull/5966)
+  [(#5967)](https://github.com/PennyLaneAI/pennylane/pull/5967)
 
 * Set operations are now supported by Wires.
   [(#5983)](https://github.com/PennyLaneAI/pennylane/pull/5983)
