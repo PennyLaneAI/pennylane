@@ -29,7 +29,6 @@ from pennylane.pauli.utils import (
     are_identical_pauli_words,
     binary_to_pauli,
     observables_to_binary_matrix,
-    qwc_complement_adj_matrix,
 )
 from pennylane.wires import Wires
 
@@ -142,28 +141,9 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
         matrix, where matrix elements of 1 denote an edge, and matrix elements of 0 denote no edge.
         """
 
-        n_qubits = int(np.shape(self.binary_observables)[1] / 2)
-
-        if self.grouping_type == "qwc":
-            adj = qwc_complement_adj_matrix(self.binary_observables)
-
-        elif self.grouping_type in frozenset(["commuting", "anticommuting"]):
-            symplectic_form = np.block(
-                [
-                    [np.zeros((n_qubits, n_qubits)), np.eye(n_qubits)],
-                    [np.eye(n_qubits), np.zeros((n_qubits, n_qubits))],
-                ]
-            )
-            mat_prod = (
-                self.binary_observables @ symplectic_form @ np.transpose(self.binary_observables)
-            )
-
-            if self.grouping_type == "commuting":
-                adj = mat_prod % 2
-
-            elif self.grouping_type == "anticommuting":
-                adj = (mat_prod + 1) % 2
-                np.fill_diagonal(adj, 0)
+        adj = qwc_adj_matrix_from_symplectic(
+            self.binary_observables, grouping_type=self.grouping_type
+        )
 
         return adj
 
@@ -234,6 +214,68 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
         graph.add_nodes_from(self.observables)
         graph.add_edges_from_no_data(edges)
         return graph
+
+
+def qwc_adj_matrix_from_obs(observables):
+    """Get adjacency matrix of the graph of NOT commuting observables qubit-wise.
+
+    Args:
+        observables (list[observables]): list of pauli observables
+
+    Returns:
+        np.ndarray
+    """
+    num_obs = len(observables)
+    adj_matrix = np.zeros((num_obs, num_obs))
+
+    for i in range(num_obs):
+        for j in range(i + 1, num_obs):
+            adj_matrix[i, j] = int(not is_qwc_pauli_obs(observables[i], observables[j]))
+            adj_matrix[j, i] = adj_matrix[i, j]
+    return adj_matrix
+
+
+def is_qwc_pauli_obs(pauli_obs_1, pauli_obs_2):
+    """Determine whether or not two pauli observables commute qubit wise (qwc)"""
+    pw1 = next(iter(pauli_obs_1.pauli_rep))
+    pw2 = next(iter(pauli_obs_2.pauli_rep))
+
+    return all(pw2[wire] in {"I", val} for wire, val in pw1.items())
+
+
+def qwc_adj_matrix_from_symplectic(symplectic_matrix, grouping_type):
+    """Get adjacency matrix of (anti-)commuting graph based on grouping type
+
+    Args:
+        symplectic_matrix (np.ndarray): 2D symplectic matrix. Each row corresponds to the
+        symplectic representation of the observables
+        grouping_type (str): the binary relation used to define partitions of
+            the Pauli words, can be ``'qwc'`` (qubit-wise commuting), ``'commuting'``, or
+            ``'anticommuting'``.
+
+    Returns:
+        np.ndarray: Adjacency matrix. Binary matrix such that adj_matrix[i,j] = 1 if observable
+        [i,j] do not (anti-)commute, as determined by the ``grouping_type``.
+    """
+
+    n_qubits = symplectic_matrix.shape[1] // 2
+
+    # Convert symplectic representation to integer format
+    mat1 = np.array(
+        [2 * row[:n_qubits] + row[n_qubits:] for row in symplectic_matrix], dtype=np.int8
+    )
+    mat2 = mat1[:, None]
+    # This is 0 (false-y) iff one of the operators is the identity and/or both operators are the same. In other cases, it is non-zero (truth-y).
+    qubit_anticommutation_mat = (mat1 * mat2) * (mat1 - mat2)
+    # 'adjacency_mat[i, j]' is True iff Paulis 'i' and 'j' do not commute in the given strategy.
+    if grouping_type == "qwc":
+        adj_matrix = np.logical_or.reduce(qubit_anticommutation_mat, axis=2)
+    elif grouping_type == "commuting":
+        adj_matrix = np.logical_xor.reduce(qubit_anticommutation_mat, axis=2)
+    else:  # anticommuting should be the only other option if validating the grouping_type correctly
+        adj_matrix = ~np.logical_xor.reduce(qubit_anticommutation_mat, axis=2)
+
+    return adj_matrix
 
 
 def group_observables(observables, coefficients=None, grouping_type="qwc", method="rlf"):
