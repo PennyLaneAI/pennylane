@@ -186,6 +186,7 @@ class TestCtrlQfunc:
         assert plxpr.eqns[0].params["control_values"] == [True]
         assert plxpr.eqns[0].params["n_control"] == 1
         assert plxpr.eqns[0].params["work_wires"] is None
+        assert plxpr.eqns[0].params["n_consts"] == 0
 
     def test_dynamic_control_wires(self):
         """Test that control wires can be dynamic."""
@@ -254,8 +255,8 @@ class TestCtrlQfunc:
 
         plxpr = jax.make_jaxpr(f)(-0.5, 1, 2)
 
-        print(plxpr)
-        assert plxpr.eqns[1].params["n_consts"] == 1
+        # First equation of plxpr is the multiplication of x by 2
+        assert plxpr.eqns[1].params["n_consts"] == 1 # w1 is a const for the outer `ctrl`
         assert (
             plxpr.eqns[1].invars[0] is plxpr.jaxpr.invars[1]
         )  # first input is first control wire, const

@@ -236,9 +236,8 @@ def _get_ctrl_qfunc_prim():
     @ctrl_prim.def_impl
     def _(*args, n_control, jaxpr, control_values, work_wires, n_consts):
         consts = args[:n_consts]
-        args = args[n_consts:]
         control_wires = args[-n_control:]
-        args = args[:-n_control]
+        args = args[n_consts:-n_control]
 
         with qml.queuing.AnnotatedQueue() as q:
             jax.core.eval_jaxpr(jaxpr, consts, *args)
@@ -260,13 +259,13 @@ def _capture_ctrl_transform(qfunc: Callable, control, control_values, work_wires
     # note that this logic is tested in `tests/capture/test_nested_plxpr.py`
     import jax  # pylint: disable=import-outside-toplevel
 
-    qnode_prim = _get_ctrl_qfunc_prim()
+    ctrl_prim = _get_ctrl_qfunc_prim()
 
     @wraps(qfunc)
     def new_qfunc(*args, **kwargs):
         jaxpr = jax.make_jaxpr(functools.partial(qfunc, **kwargs))(*args)
         control_wires = qml.wires.Wires(control)  # make sure is iterable
-        qnode_prim.bind(
+        ctrl_prim.bind(
             *jaxpr.consts,
             *args,
             *control_wires,
