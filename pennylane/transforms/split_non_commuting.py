@@ -19,13 +19,14 @@ Contains the tape transform that splits a tape into tapes measuring commuting ob
 # pylint: disable=too-many-arguments,too-many-boolean-expressions
 
 from functools import partial
-from typing import Callable, Dict, List, Optional, Sequence, Tuple
+from typing import Optional
 
 import pennylane as qml
 from pennylane.measurements import ExpectationMP, MeasurementProcess, Shots, StateMP
 from pennylane.ops import Hamiltonian, LinearCombination, Prod, SProd, Sum
+from pennylane.tape import QuantumTapeBatch
 from pennylane.transforms import transform
-from pennylane.typing import Result, ResultBatch, TensorLike, Union
+from pennylane.typing import PostprocessingFn, Result, ResultBatch, TensorLike, Union
 
 
 def null_postprocessing(results):
@@ -39,7 +40,7 @@ def null_postprocessing(results):
 def split_non_commuting(
     tape: qml.tape.QuantumScript,
     grouping_strategy: Optional[str] = "default",
-) -> Tuple[Sequence[qml.tape.QuantumTape], Callable]:
+) -> tuple[QuantumTapeBatch, PostprocessingFn]:
     r"""Splits a circuit into tapes measuring groups of commuting observables.
 
     Args:
@@ -383,8 +384,8 @@ def _split_ham_with_grouping(tape: qml.tape.QuantumScript):
 
 def _split_using_qwc_grouping(
     tape: qml.tape.QuantumScript,
-    single_term_obs_mps: Dict[MeasurementProcess, Tuple[List[int], List[Union[float, TensorLike]]]],
-    offsets: List[Union[float, TensorLike]],
+    single_term_obs_mps: dict[MeasurementProcess, tuple[list[int], list[Union[float, TensorLike]]]],
+    offsets: list[Union[float, TensorLike]],
 ):
     """Split tapes using group_observables in the Pauli module.
 
@@ -449,8 +450,8 @@ def _split_using_qwc_grouping(
 
 def _split_using_wires_grouping(
     tape: qml.tape.QuantumScript,
-    single_term_obs_mps: Dict[MeasurementProcess, Tuple[List[int], List[Union[float, TensorLike]]]],
-    offsets: List[Union[float, TensorLike]],
+    single_term_obs_mps: dict[MeasurementProcess, tuple[list[int], list[Union[float, TensorLike]]]],
+    offsets: list[Union[float, TensorLike]],
 ):
     """Split tapes by grouping observables based on overlapping wires.
 
@@ -579,8 +580,8 @@ def _split_all_multi_term_obs_mps(tape: qml.tape.QuantumScript):
 
 def _processing_fn_no_grouping(
     res: ResultBatch,
-    single_term_obs_mps: Dict[MeasurementProcess, Tuple[List[int], List[Union[float, TensorLike]]]],
-    offsets: List[Union[float, TensorLike]],
+    single_term_obs_mps: dict[MeasurementProcess, tuple[list[int], list[Union[float, TensorLike]]]],
+    offsets: list[Union[float, TensorLike]],
     shots: Shots,
     batch_size: int,
 ):
@@ -631,11 +632,9 @@ def _processing_fn_no_grouping(
 
 def _processing_fn_with_grouping(
     res: ResultBatch,
-    single_term_obs_mps: Dict[
-        MeasurementProcess, Tuple[List[int], List[Union[float, TensorLike]], int, int]
-    ],
-    offsets: List[Union[float, TensorLike]],
-    group_sizes: List[int],
+    single_term_obs_mps: dict[MeasurementProcess, tuple[list[int], list[Union[float, TensorLike]], int, int]],
+    offsets: list[Union[float, TensorLike]],
+    group_sizes: list[int],
     shots: Shots,
     batch_size: int,
 ):
@@ -701,12 +700,8 @@ def _processing_fn_with_grouping(
     return tuple(res_for_each_mp)
 
 
-def _sum_terms(
-    res: ResultBatch,
-    coeffs: List[Union[float, TensorLike]],
-    offset: Union[float, TensorLike],
-    shape: Tuple,
-) -> Result:
+
+def _sum_terms(res: ResultBatch, coeffs: list[Union[float, TensorLike]], offset: Union[float, TensorLike], shape: tuple) -> Result:
     """Sum results from measurements of multiple terms in a multi-term observable."""
 
     # Trivially return the original result
@@ -744,7 +739,7 @@ def _mp_to_obs(mp: MeasurementProcess, tape: qml.tape.QuantumScript) -> qml.oper
     return qml.prod(*(qml.Z(wire) for wire in obs_wires))
 
 
-def _infer_result_shape(shots: Shots, batch_size: int) -> Tuple:
+def _infer_result_shape(shots: Shots, batch_size: int) -> tuple:
     """Based on the result, infer the ([,n_shots] [,batch_size]) shape of the result."""
 
     shape = ()
