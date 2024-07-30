@@ -680,17 +680,16 @@ class TestBatchVJP:
     def test_batched_params_probs_jacobian(self):
         """Test that the VJP gets calculated correctly when inputs are batched, multiple
         trainable parameters are used and the measurement has a shape (probs)"""
-
         data = np.array([1.2, 2.3, 3.4])
         x0, x1 = 0.5, 0.8
         ops = [qml.RX(x0, 0), qml.RX(x1, 0), qml.RY(data, 0)]
         tape = qml.tape.QuantumScript(ops, [qml.probs(wires=0)], trainable_params=[0, 1])
         dy = np.array([[0.6, -0.7], [0.2, -0.7], [-5.2, 0.6]])
         v_tapes, fn = qml.gradients.batch_vjp([tape], [dy], qml.gradients.param_shift)
-        
+
         dev = qml.device("default.qubit")
         vjp = fn(dev.execute(v_tapes))
-        
+
         # Analytically expected Jacobian and VJP
         expected_jac = [-0.5 * np.cos(data) * np.sin(x0 + x1), 0.5 * np.cos(data) * np.sin(x0 + x1)]
         expected = np.tensordot(expected_jac, dy, axes=[[0, 1], [1, 0]])
