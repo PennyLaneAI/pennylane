@@ -145,6 +145,7 @@ to help build custom QNode, quantum function, and tape transforms:
     ~transforms.make_tape
     ~transforms.create_expand_fn
     ~transforms.create_decomp_expand_fn
+    ~transforms.diagonalize_tape_measurements
     ~transforms.expand_invalid_trainable
     ~transforms.expand_invalid_trainable_hadamard_gradient
     ~transforms.expand_multipar
@@ -316,6 +317,7 @@ from .add_noise import add_noise
 
 from .decompositions import clifford_t_decomposition
 from .defer_measurements import defer_measurements
+from .diagonalize_measurements import diagonalize_tape_measurements
 from .dynamic_one_shot import dynamic_one_shot, is_mcm
 from .sign_expand import sign_expand
 from .hamiltonian_expand import hamiltonian_expand, sum_expand
