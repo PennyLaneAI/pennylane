@@ -23,6 +23,8 @@ from copy import copy
 from itertools import chain
 from typing import Optional, Union
 
+from jax.interpreters.partial_eval import DynamicJaxprTracer
+
 import pennylane as qml
 from pennylane import DeviceError, Snapshot, transform
 from pennylane.measurements import SampleMeasurement, StateMeasurement
@@ -349,7 +351,12 @@ def decompose(
     if stopping_condition_shots is not None and tape.shots:
         stopping_condition = stopping_condition_shots
 
-    if tape.operations and isinstance(tape[0], StatePrepBase) and skip_initial_state_prep:
+    def are_params_static(params):
+        def is_static(param):
+            return not isinstance(param, DynamicJaxprTracer)
+        return all(map(is_static, params))
+
+    if tape.operations and isinstance(tape[0], StatePrepBase) and skip_initial_state_prep and are_params_static(tape[0].parameters):
         prep_op = [tape[0]]
     else:
         prep_op = []
