@@ -283,8 +283,10 @@ def _diagonalize_symbolic_op(
         observable.base, _visited_obs, supported_base_obs
     )
 
-    new_observable = copy(observable)
-    new_observable._hyperparameters["base"] = new_base
+    params, hyperparams = observable.parameters, observable.hyperparameters
+    hyperparams["base"] = new_base
+
+    new_observable = observable.__class__(*params, **hyperparams)
 
     return diagonalizing_gates, new_observable, _visited_obs
 
@@ -297,8 +299,7 @@ def _diagonalize_tensor(
         observable.obs, _visited_obs, supported_base_obs
     )
 
-    new_observable = copy(observable)
-    new_observable.obs = new_obs
+    new_observable = Tensor(*new_obs)
 
     return diagonalizing_gates, new_observable, _visited_obs
 
@@ -313,8 +314,7 @@ def _diagonalize_hamiltonian(
         observable.ops, _visited_obs, supported_base_obs
     )
 
-    new_observable = copy(observable)
-    new_observable._ops = new_ops
+    new_observable = qml.ops.Hamiltonian(observable.coeffs, new_ops)
 
     return diagonalizing_gates, new_observable, _visited_obs
 
