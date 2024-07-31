@@ -29,7 +29,7 @@ def diagonalize_measurements(tape, supported_base_obs=("PauliZ", "Identity")):
         tape (QNode or QuantumScript or Callable): The quantum circuit to modify the measurements of.
         supported_base_obs (Optional, Iterable(Str)): A list of names of supported base observables.
             Allowed names are 'PauliX', 'PauliY', 'PauliZ' and 'Hadamard'. If no list is provided,
-            the transform will diagonalize everything.
+            the transform will diagonalize everything into the Z basis.
 
     Returns:
         qnode (QNode) or tuple[List[QuantumScript], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
@@ -49,7 +49,7 @@ def diagonalize_measurements(tape, supported_base_obs=("PauliZ", "Identity")):
 
         from pennylane.transforms import diagonalize_measurements
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit")
 
         @diagonalize_measurements
         @qml.qnode(dev)
@@ -58,42 +58,29 @@ def diagonalize_measurements(tape, supported_base_obs=("PauliZ", "Identity")):
             qml.RX(x[1], wires=1)
             return qml.expval(qml.X(0) @ qml.Z(1)), qml.var(0.5 * qml.Y(2) + qml.X(0))
 
-    Instead of decorating the QNode, we can also create a new function that yields the same
-    result in the following way:
-
-    .. code-block:: python3
-
-        @qml.qnode(dev)
-        def circuit(x):
-            qml.RY(x[0], wires=0)
-            qml.RX(x[1], wires=1)
-            return qml.expval(qml.X(0) @ qml.Z(1)), qml.var(0.5 * qml.Y(2) + qml.X(0))
-
-        diagonalized_circuit = diagonalize_measurements(circuit)
-
-    Applying the transform appends the relevant gates to the end of the cirucit to allow
+    Applying the transform appends the relevant gates to the end of the circuit to allow
     measurements to be in the Z basis, so the original circuit
 
-    >>> print(qml.draw(circuit)([np.pi/4, np.pi/4]))
+    >>> print(qml.draw(circuit, level=0)([np.pi/4, np.pi/4]))
     0: ──RY(0.79)─┤ ╭<X@Z> ╭Var[(0.50*Y)+X]
     1: ──RX(0.79)─┤ ╰<X@Z> │
     2: ───────────┤        ╰Var[(0.50*Y)+X]
 
     becomes
 
-    >>> print(qml.draw(diagonalized_circuit)([np.pi/4, np.pi/4]))
+    >>> print(qml.draw(circuit)([np.pi/4, np.pi/4]))
     0: ──RY(0.79)──H────┤ ╭<Z@Z> ╭Var[(0.50*Z)+Z]
     1: ──RX(0.79)───────┤ ╰<Z@Z> │
     2: ──Z─────────S──H─┤        ╰Var[(0.50*Z)+Z]
 
-    >>> diagonalized_circuit([np.pi/4, np.pi/4])
+    >>> circuit([np.pi/4, np.pi/4])
     (tensor(0.5, requires_grad=True), tensor(0.75, requires_grad=True))
 
     .. details::
         :title: Usage Details
 
-        The transform can also diagonalize only a subset of the operators. Be default, the only
-        supported base observable is PauliZ. What if a backend device can handle
+        The transform can also diagonalize only a subset of the operators. By default, the only
+        supported base observable is Z. What if a backend device can handle
         X, Y and Z, but doesn't provide support for Hadamard? We can set this by passing
         ``supported_base_obs`` to the transform. Let's create a tape with some measurements:
 
@@ -105,8 +92,10 @@ def diagonalize_measurements(tape, supported_base_obs=("PauliZ", "Identity")):
                 qml.var(qml.Y(2) + qml.X(0)),
             ]
             tape = qml.tape.QuantumScript(measurements=measurements)
-            tapes, processing_fn = diagonalize_measurements(tape,
-                                                                 supported_base_obs=['PauliX', 'PauliY', 'PauliZ'])
+            tapes, processing_fn = diagonalize_measurements(
+                tape,
+                supported_base_obs=['PauliX', 'PauliY', 'PauliZ']
+            )
 
         Now ``tapes`` is a tuple containing a single tape with the updated measurements,
         where only the Hadamard gate has been diagonalized:
@@ -123,7 +112,7 @@ def diagonalize_measurements(tape, supported_base_obs=("PauliZ", "Identity")):
 
     if bad_obs_input:
         raise ValueError(
-            "Supported base observables must be a subset of ['PauliX', 'PauliY', 'PauliZ', 'Hadamard'] "
+            "Supported base observables must be a subset of ['PauliX', 'PauliY', 'PauliZ', 'Hadamard', 'Identity'] "
             f"but received {list(bad_obs_input)}"
         )
 
@@ -281,6 +270,7 @@ def _diagonalize_symbolic_op(
     )
 
     params, hyperparams = observable.parameters, observable.hyperparameters
+    hyperparams = copy.copy(hyperparams)
     hyperparams["base"] = new_base
 
     new_observable = observable.__class__(*params, **hyperparams)
