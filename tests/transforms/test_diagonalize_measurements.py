@@ -43,7 +43,7 @@ class TestDiagonalizeObservable:
 
         assert diagonalizing_gates == obs.diagonalizing_gates()
         assert new_obs == Z(obs.wires)
-        assert _diag_obs == ([obs], [obs.wires[0]])
+        assert _diag_obs == ({obs}, {obs.wires[0]})
 
     @pytest.mark.parametrize("obs, diagonalize", [(X(1), False), (Y(3), True), (Hadamard(0), True)])
     def test_supported_base_obs_arg(self, obs, diagonalize):
@@ -55,7 +55,7 @@ class TestDiagonalizeObservable:
         diagonalizing_gates, new_obs, _visited_obs = _diagonalize_observable(
             obs, supported_base_obs=device_supported_obs
         )
-        assert _visited_obs == ([obs], [obs.wires[0]])
+        assert _visited_obs == ({obs}, {obs.wires[0]})
 
         if diagonalize:
             assert diagonalizing_gates == obs.diagonalizing_gates()
@@ -69,7 +69,7 @@ class TestDiagonalizeObservable:
         """Test that if _visited_obs includes previously encountered observables that overlap
         with the observable to be diagonalized, this is taken into account"""
 
-        visited_obs = ([Y(3), Z(1)], [3, 1])
+        visited_obs = ({Y(3), Z(1)}, {3, 1})
 
         diagonalizing_gates, new_obs, new_visited_obs = _diagonalize_observable(
             obs, _visited_obs=visited_obs
@@ -123,7 +123,7 @@ class TestDiagonalizeObservable:
         expected_diag_gates = np.concatenate([o.diagonalizing_gates() for o in base_obs])
 
         assert new_obs == expected_res
-        assert visited_obs == (base_obs, [o.wires[0] for o in base_obs])
+        assert visited_obs == (set(base_obs), {o.wires[0] for o in base_obs})
         assert diagonalizing_gates == list(expected_diag_gates)
 
     def test_legacy_hamiltonian(self):
@@ -137,7 +137,7 @@ class TestDiagonalizeObservable:
         expected_diag_gates = np.concatenate([o.diagonalizing_gates() for o in base_obs])
 
         assert new_obs == expected_res
-        assert visited_obs == (base_obs, [o.wires[0] for o in base_obs])
+        assert visited_obs == (set(base_obs), {o.wires[0] for o in base_obs})
         assert diagonalizing_gates == list(expected_diag_gates)
 
     @pytest.mark.parametrize(
@@ -183,7 +183,7 @@ class TestDiagonalizeObservable:
         )
 
         assert new_obs == expected_res
-        assert visited_obs == (base_obs, [o.wires[0] for o in base_obs])
+        assert visited_obs == (set(base_obs), {o.wires[0] for o in base_obs})
         assert diagonalizing_gates == list(expected_diag_gates)
 
     def test_compound_observable_with_duplicate_terms(self):
@@ -194,7 +194,7 @@ class TestDiagonalizeObservable:
 
         diagonalizing_gates, new_obs, new_visited_obs = _diagonalize_observable(obs)
 
-        assert new_visited_obs == ([X(0), Z(2), Z(3)], [0, 2, 3])
+        assert new_visited_obs == ({X(0), Z(2), Z(3)}, {0, 2, 3})
         assert diagonalizing_gates == X(0).diagonalizing_gates()
         assert new_obs == Z(0) + Z(2) + Z(0) @ Z(3)
 
@@ -207,7 +207,7 @@ class TestDiagonalizeObservable:
         assert gates == X(0).diagonalizing_gates()
         assert new_obs[0] == Z(0)  # X(0) is diagonalized
         assert new_obs[1] == obs[1]  # Identity is unchanged
-        assert visited_obs == ([X(0)], [0])
+        assert visited_obs == ({X(0)}, {0})
 
     @pytest.mark.parametrize(
         "obs", [X(0) + 1.7 * X(2) + X(0) @ Y(2), X(0) + 2.3 * X(2) + X(0) @ Z(2)]
@@ -249,10 +249,10 @@ class TestDiagonalizeObservable:
     @pytest.mark.parametrize(
         "obs, input_visited_obs, switch_basis, expected_res",
         [
-            (X(0), ([], []), True, (True, ([X(0)], [0]))),
-            (X(0), ([], []), False, (False, ([X(0)], [0]))),
-            (X(0), ([X(0)], [0]), False, (False, ([X(0)], [0]))),
-            (X(0), ([X(0)], [0]), True, (False, ([X(0)], [0]))),
+            (X(0), (set(), set()), True, (True, ({X(0)}, {0}))),
+            (X(0), (set(), set()), False, (False, ({X(0)}, {0}))),
+            (X(0), ({X(0)}, {0}), False, (False, ({X(0)}, {0}))),
+            (X(0), ({X(0)}, {0}), True, (False, ({X(0)}, {0}))),
         ],
     )
     def test_check_if_diagonalising(self, obs, input_visited_obs, switch_basis, expected_res):
@@ -266,7 +266,7 @@ class TestDiagonalizeObservable:
 
     @pytest.mark.parametrize(
         "obs, _visited_obs, raise_error",
-        [(Y(1), ([X(0)], [0]), False), (Y(1), ([Y(1)], [1]), False), (Y(1), ([X(1)], [1]), True)],
+        [(Y(1), ({X(0)}, {0}), False), (Y(1), ({Y(1)}, {1}), False), (Y(1), ({X(1)}, {1}), True)],
     )
     def test_check_if_diagonalizing_raises_error(self, obs, _visited_obs, raise_error):
         """Test that _check_if_diagonalizing raises an error if the observable should be

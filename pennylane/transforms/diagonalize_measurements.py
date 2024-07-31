@@ -118,7 +118,7 @@ def diagonalize_measurements(tape, supported_base_obs=("PauliZ", "Identity")):
 
     supported_base_obs = set(list(supported_base_obs) + ["PauliZ", "Identity"])
 
-    _visited_obs = ([], [])  # tracks which observables and wires have been diagonalized
+    _visited_obs = (set(), set())  # tracks which observables and wires have been diagonalized
     diagonalizing_gates = []
     new_measurements = []
 
@@ -167,7 +167,7 @@ def _check_if_diagonalizing(obs, _visited_obs, switch_basis):
     if obs in _visited_obs[0] or isinstance(obs, qml.Identity):
         # its already been encountered before, and if need be, diagonalized - we will
         # not be applying any gates or updating _visited_obs
-        # same if its just an Identity
+        # same if it's just an Identity
         return False, _visited_obs
 
     # a different observable has been diagonalized on the same wire - error
@@ -179,8 +179,8 @@ def _check_if_diagonalizing(obs, _visited_obs, switch_basis):
 
     # we diagonalize if it's an operator we are switching the basis for
     # we update _visited_obs to indicate that we've encountered that observable regardless
-    _visited_obs[0].append(obs)
-    _visited_obs[1].append(obs.wires[0])
+    _visited_obs[0].add(obs)
+    _visited_obs[1].add(obs.wires[0])
 
     return switch_basis, _visited_obs
 
@@ -212,7 +212,7 @@ def _diagonalize_observable(
     """
 
     if _visited_obs is None:
-        _visited_obs = ([], [])
+        _visited_obs = (set(), set())
 
     if not isinstance(observable, (qml.X, qml.Y, qml.Z, qml.Hadamard, qml.Identity)):
         return _diagonalize_compound_observable(
@@ -270,7 +270,7 @@ def _diagonalize_symbolic_op(
     )
 
     params, hyperparams = observable.parameters, observable.hyperparameters
-    hyperparams = copy.copy(hyperparams)
+    hyperparams = copy(hyperparams)
     hyperparams["base"] = new_base
 
     new_observable = observable.__class__(*params, **hyperparams)
