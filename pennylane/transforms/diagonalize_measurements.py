@@ -121,7 +121,7 @@ def diagonalize_tape_measurements(tape, supported_base_obs=None):
     bad_obs_input = [
         o
         for o in supported_base_obs
-        if not o in {"PauliX", "PauliY", "PauliZ", "Hadamard", "Identity"}
+        if o not in {"PauliX", "PauliY", "PauliZ", "Hadamard", "Identity"}
     ]
 
     if bad_obs_input:
@@ -149,8 +149,7 @@ def diagonalize_tape_measurements(tape, supported_base_obs=None):
         else:
             new_measurements.append(m)
 
-    new_operations = tape.operations.copy()
-    new_operations.extend(diagonalizing_gates)
+    new_operations = tape.operations + diagonalizing_gates
 
     new_tape = type(tape)(
         ops=new_operations,
@@ -188,8 +187,8 @@ def _check_if_diagonalizing(obs, _visited_obs, switch_basis):
     # a different observable has been diagonalized on the same wire - error
     if obs.wires[0] in _visited_obs[1]:
         raise ValueError(
-            f"Expected only a single observable per wire, but {obs} "
-            f"overlaps with another observable on the tape."
+            f"Expected measurements on the same wire to commute, but {obs} "
+            f"overlaps with another non-commuting observable on the tape."
         )
 
     # we diagonalize if it's an operator we are switching the basis for
