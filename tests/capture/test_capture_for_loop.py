@@ -251,3 +251,48 @@ class TestCaptureCircuitsForLoop:
         jaxpr = jax.make_jaxpr(circuit)(*args)
         res_ev_jxpr = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *args)
         assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
+
+    @pytest.mark.parametrize(
+        "upper_bound, arg, expected", [(3, 0.5, 0.00223126), (2, 12, 0.2653001)]
+    )
+    def test_for_loop_nested(self, upper_bound, arg, expected):
+        """Test that a nested for loop is correctly captured into a jaxpr."""
+
+        dev = qml.device("default.qubit", wires=3)
+
+        @qml.qnode(dev)
+        def circuit(upper_bound, arg):
+
+            # for loop with dynamic bounds
+            @qml.for_loop(0, upper_bound, 1)
+            def loop_fn(i):
+                qml.Hadamard(wires=i)
+
+            # nested for loops.
+            # outer for loop updates x
+            @qml.for_loop(0, upper_bound, 1)
+            def loop_fn_returns(i, x):
+                qml.RX(x, wires=i)
+
+                # inner for loop
+                @qml.for_loop(i + 1, upper_bound, 1)
+                def inner(j):
+                    qml.RZ(j, wires=0)
+                    qml.RY(x**2, wires=0)
+
+                inner()
+
+                return x + 0.1
+
+            loop_fn()
+            loop_fn_returns(arg)
+
+            return qml.expval(qml.PauliZ(0))
+
+        args = [upper_bound, arg]
+        result = circuit(*args)
+        assert np.allclose(result, expected), f"Expected {expected}, but got {result}"
+
+        jaxpr = jax.make_jaxpr(circuit)(*args)
+        res_ev_jxpr = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *args)
+        assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"

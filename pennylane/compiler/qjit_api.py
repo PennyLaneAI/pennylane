@@ -554,12 +554,15 @@ def _get_for_loop_qfunc_prim():
     def _(lower_bound, upper_bound, step, *jaxpr_consts_and_init_state, jaxpr_body_fn, n_consts):
 
         jaxpr_consts = jaxpr_consts_and_init_state[:n_consts]
-        args = jaxpr_consts_and_init_state[n_consts:]
+        init_state = jaxpr_consts_and_init_state[n_consts:]
+
+        # in case lower_bound >= upper_bound, return the initial state
+        fn_res = init_state
 
         for i in range(lower_bound, upper_bound, step):
 
-            fn_res = jax.core.eval_jaxpr(jaxpr_body_fn.jaxpr, jaxpr_consts, *(i, *args))
-            args = fn_res
+            fn_res = jax.core.eval_jaxpr(jaxpr_body_fn.jaxpr, jaxpr_consts, *(i, *init_state))
+            init_state = fn_res
 
         return fn_res
 
