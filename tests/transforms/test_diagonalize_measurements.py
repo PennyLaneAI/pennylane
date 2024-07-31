@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Tests for the transform diagonalize_tape_measurements, which diagonalizes unsupported
+Tests for the transform diagonalize_measurements, which diagonalizes unsupported
 observables in measurements on a tape.
 """
 
@@ -28,7 +28,7 @@ from pennylane.transforms.diagonalize_measurements import (
     _check_if_diagonalizing,
     _diagonalize_observable,
     _diagonalize_subset_of_obs,
-    diagonalize_tape_measurements,
+    diagonalize_measurements,
     null_postprocessing,
 )
 
@@ -132,8 +132,8 @@ class TestDiagonalizeObservable:
         with pytest.warns():
             compound_obs = qml.ops.Hamiltonian([2, 3], [Y(0), X(1)])
             expected_res = qml.ops.Hamiltonian([2, 3], [Z(0), Z(1)])
+            diagonalizing_gates, new_obs, visited_obs = _diagonalize_observable(compound_obs)
 
-        diagonalizing_gates, new_obs, visited_obs = _diagonalize_observable(compound_obs)
         base_obs = [Y(0), X(1)]
         expected_diag_gates = np.concatenate([o.diagonalizing_gates() for o in base_obs])
 
@@ -219,7 +219,7 @@ class TestDiagonalizeObservable:
 
         obs = X(0) + Z(2) + X(0) @ Y(2)
 
-        with pytest.raises(ValueError, match="Expected only a single observable per wire"):
+        with pytest.raises(ValueError, match="Expected measurements on the same wire to commute"):
             _ = _diagonalize_observable(obs)
 
     @pytest.mark.parametrize(
@@ -231,7 +231,7 @@ class TestDiagonalizeObservable:
 
         device_supported_obs = ["PauliX", "PauliZ"]
 
-        with pytest.raises(ValueError, match="Expected only a single observable per wire"):
+        with pytest.raises(ValueError, match="Expected measurements on the same wire to commute"):
             _ = _diagonalize_observable(obs, supported_base_obs=device_supported_obs)
 
     def test_diagonalizing_unknown_observable_raises_error(self):
@@ -273,9 +273,13 @@ class TestDiagonalizeObservable:
         """Test that _check_if_diagonalizing raises an error if the observable should be
         diagonalized, but a different observable on that wire has already been diagonalized"""
         if raise_error:
-            with pytest.raises(ValueError, match="overlaps with another observable on the tape"):
+            with pytest.raises(
+                ValueError, match="Expected measurements on the same wire to commute"
+            ):
                 _ = _check_if_diagonalizing(obs, _visited_obs, switch_basis=True)
-            with pytest.raises(ValueError, match="overlaps with another observable on the tape"):
+            with pytest.raises(
+                ValueError, match="Expected measurements on the same wire to commute"
+            ):
                 _ = _check_if_diagonalizing(obs, _visited_obs, switch_basis=False)
 
         else:
@@ -292,6 +296,7 @@ class TestDiagonalizeSubsetOfObs:
 
         tape = QuantumScript([], measurements=measurements)
         tapes, fn = _diagonalize_subset_of_obs(tape)
+
         new_tape = tapes[0]
 
         assert new_tape.measurements == [qml.expval(Z(0)), qml.var(Z(1) + Z(2))]
@@ -406,7 +411,7 @@ class TestDiagonalizeSubsetOfObs:
             qml.RY(2.46, 0)
             return qml.expval(X(0)), qml.var(X(1) + Y(2))
 
-        @partial(diagonalize_tape_measurements, supported_base_obs=supported_base_obs)
+        @partial(diagonalize_measurements, supported_base_obs=supported_base_obs)
         @qml.qnode(dev)
         def circuit_diagonalized():
             qml.RX(1.23, 1)

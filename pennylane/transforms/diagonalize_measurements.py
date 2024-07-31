@@ -21,7 +21,7 @@ def null_postprocessing(results):
 
 
 @transform
-def diagonalize_tape_measurements(tape, supported_base_obs=None):
+def diagonalize_measurements(tape, supported_base_obs=("PauliZ", "Identity")):
     """Diagonalize the measurements on a tape if they are not supported. Raises an error if the
     measurements do not commute.
 
@@ -47,11 +47,11 @@ def diagonalize_tape_measurements(tape, supported_base_obs=None):
 
     .. code-block:: python3
 
-        from pennylane.transforms import diagonalize_tape_measurements
+        from pennylane.transforms import diagonalize_measurements
 
         dev = qml.device("default.qubit", wires=2)
 
-        @diagonalize_tape_measurements
+        @diagonalize_measurements
         @qml.qnode(dev)
         def circuit(x):
             qml.RY(x[0], wires=0)
@@ -69,7 +69,7 @@ def diagonalize_tape_measurements(tape, supported_base_obs=None):
             qml.RX(x[1], wires=1)
             return qml.expval(qml.X(0) @ qml.Z(1)), qml.var(0.5 * qml.Y(2) + qml.X(0))
 
-        diagonalized_circuit = diagonalize_tape_measurements(circuit)
+        diagonalized_circuit = diagonalize_measurements(circuit)
 
     Applying the transform appends the relevant gates to the end of the cirucit to allow
     measurements to be in the Z basis, so the original circuit
@@ -105,7 +105,7 @@ def diagonalize_tape_measurements(tape, supported_base_obs=None):
                 qml.var(qml.Y(2) + qml.X(0)),
             ]
             tape = qml.tape.QuantumScript(measurements=measurements)
-            tapes, processing_fn = diagonalize_tape_measurements(tape,
+            tapes, processing_fn = diagonalize_measurements(tape,
                                                                  supported_base_obs=['PauliX', 'PauliY', 'PauliZ'])
 
         Now ``tapes`` is a tuple containing a single tape with the updated measurements,
@@ -129,13 +129,10 @@ def _diagonalize_subset_of_obs(tape, supported_base_obs=None):
             Allowed names are 'PauliX', 'PauliY', 'PauliZ' and 'Hadamard'. If no list is provided,
             everything will be diagonalized."""
 
-    if supported_base_obs is None:
-        supported_base_obs = ["PauliZ"]
-
     bad_obs_input = [
         o
         for o in supported_base_obs
-        if not o in {"PauliX", "PauliY", "PauliZ", "Hadamard", "Identity"}
+        if o not in {"PauliX", "PauliY", "PauliZ", "Hadamard", "Identity"}
     ]
 
     if bad_obs_input:
@@ -144,7 +141,7 @@ def _diagonalize_subset_of_obs(tape, supported_base_obs=None):
             f"but received {list(bad_obs_input)}"
         )
 
-    supported_base_obs.append("Identity")
+    supported_base_obs = set(list(supported_base_obs) + ["PauliZ", "Identity"])
 
     _visited_obs = ([], [])  # tracks which observables and wires have been diagonalized
     diagonalizing_gates = []
@@ -163,8 +160,7 @@ def _diagonalize_subset_of_obs(tape, supported_base_obs=None):
         else:
             new_measurements.append(m)
 
-    new_operations = tape.operations.copy()
-    new_operations.extend(diagonalizing_gates)
+    new_operations = tape.operations + diagonalizing_gates
 
     new_tape = type(tape)(
         ops=new_operations,
@@ -202,8 +198,8 @@ def _check_if_diagonalizing(obs, _visited_obs, switch_basis):
     # a different observable has been diagonalized on the same wire - error
     if obs.wires[0] in _visited_obs[1]:
         raise ValueError(
-            f"Expected only a single observable per wire, but {obs} "
-            f"overlaps with another observable on the tape."
+            f"Expected measurements on the same wire to commute, but {obs} "
+            f"overlaps with another non-commuting observable on the tape."
         )
 
     # we diagonalize if it's an operator we are switching the basis for
@@ -298,8 +294,10 @@ def _diagonalize_symbolic_op(
         observable.base, _visited_obs, supported_base_obs
     )
 
-    new_observable = copy(observable)
-    new_observable._hyperparameters["base"] = new_base
+    params, hyperparams = observable.parameters, observable.hyperparameters
+    hyperparams["base"] = new_base
+
+    new_observable = observable.__class__(*params, **hyperparams)
 
     return diagonalizing_gates, new_observable, _visited_obs
 
@@ -312,8 +310,7 @@ def _diagonalize_tensor(
         observable.obs, _visited_obs, supported_base_obs
     )
 
-    new_observable = copy(observable)
-    new_observable.obs = new_obs
+    new_observable = Tensor(*new_obs)
 
     return diagonalizing_gates, new_observable, _visited_obs
 
@@ -328,8 +325,7 @@ def _diagonalize_hamiltonian(
         observable.ops, _visited_obs, supported_base_obs
     )
 
-    new_observable = copy(observable)
-    new_observable._ops = new_ops
+    new_observable = qml.ops.Hamiltonian(observable.coeffs, new_ops)
 
     return diagonalizing_gates, new_observable, _visited_obs
 
