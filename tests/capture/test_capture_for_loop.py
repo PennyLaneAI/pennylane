@@ -40,7 +40,77 @@ def enable_disable_plxpr():
 class TestCaptureForLoop:
     """Tests for capturing for loops into jaxpr."""
 
-    def test_for_loop_capture(self):
+    @pytest.mark.parametrize("arg", [0, 5])
+    def test_for_loop_identity(self, arg):
+        """Test simple for-loop primitive vs dynamic dimensions."""
+
+        def fn(arg):
+
+            a = jax.numpy.ones([arg])
+
+            @qml.for_loop(0, 10, 2)
+            def loop(_, a):
+                return a
+
+            a2 = loop(a)
+            return a2
+
+        expected = jax.numpy.ones(arg)
+        result = fn(arg)
+        assert np.allclose(result, expected), f"Expected {expected}, but got {result}"
+
+        # Note that this cannot be transformed with `jax.make_jaxpr`
+        # because the concrete value of 'jax.numpy.ones([arg])' is not known.
+
+    @pytest.mark.parametrize("arg", [0, 5])
+    def test_for_loop_shared_indbidx(self, arg):
+        """Test for-loops with shared dynamic input dimensions."""
+
+        def fn(arg):
+            a = jax.numpy.ones([arg], dtype=float)
+            b = jax.numpy.ones([arg], dtype=float)
+
+            @qml.for_loop(0, 10, 2)
+            def loop(_, a, b):
+                return (a, b)
+
+            a2, b2 = loop(a, b)
+            return a2 + b2
+
+        result = fn(arg)
+        expected = 2 * jax.numpy.ones(arg)
+        assert np.allclose(result, expected), f"Expected {expected}, but got {result}"
+
+        # Note that this cannot be transformed with `jax.make_jaxpr`
+        # because the concrete value of 'jax.numpy.ones([arg])' is not known.
+
+    @pytest.mark.parametrize("lower_bound, upper_bound, arg, expected", [(0, 10, 0, 285)])
+    def test_for_loop_dynamic_bounds(self, lower_bound, upper_bound, arg, expected):
+        """Test for-loops with dynamic lower and upper bounds."""
+
+        def fn(lower_bound, upper_bound, arg):
+
+            @qml.for_loop(lower_bound, upper_bound, 1)
+            def loop_body(i, arg):
+                return arg + i**2
+
+            return loop_body(arg)
+
+        args = [lower_bound, upper_bound, arg]
+
+        result = fn(*args)
+        assert np.allclose(result, expected), f"Expected {expected}, but got {result}"
+
+        jaxpr = jax.make_jaxpr(fn)(*args)
+        res_ev_jxpr = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *args)
+        assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
+
+
+class TestCaptureCircuitsForLoop:
+    """Tests for capturing for loops into jaxpr in the context of quantum circuits."""
+
+    @pytest.mark.parametrize("n, expected", [(3, -0.9899925)])
+    def test_for_loop_capture(self, n, expected):
         """Test that a for loop is correctly captured into a jaxpr."""
 
         dev = qml.device("default.qubit", wires=3)
@@ -56,21 +126,9 @@ class TestCaptureForLoop:
 
             return qml.expval(qml.PauliZ(0))
 
-        assert np.allclose(circuit(3), -0.9899925)
+        result = circuit(n)
+        assert np.allclose(result, expected), f"Expected {expected}, but got {result}"
 
-
-def test_qjit_forloop_identity():
-    """Test simple for-loop primitive vs dynamic dimensions"""
-
-    def f(sz):
-        a = jax.numpy.ones([sz], dtype=float)
-
-        def loop(_, a):
-            return a
-
-        a2 = qml.for_loop(0, 10, 2)(loop)(a)
-        return a2
-
-    result = f(3)
-    expected = jax.numpy.ones(3)
-    assert np.allclose(result, expected)
+        jaxpr = jax.make_jaxpr(circuit)(n)
+        res_ev_jxpr = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, n)
+        assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"

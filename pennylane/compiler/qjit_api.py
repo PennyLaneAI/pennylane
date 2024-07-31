@@ -556,15 +556,10 @@ def _get_for_loop_qfunc_prim():
         jaxpr_consts = jaxpr_consts_and_init_state[:n_consts]
         args = jaxpr_consts_and_init_state[n_consts:]
 
-        # args = init_state
-        fn_res = args if len(args) > 1 else args[0] if len(args) == 1 else None
-
         for i in range(lower_bound, upper_bound, step):
 
-            fn_res = jax.numpy.array(
-                jax.core.eval_jaxpr(jaxpr_body_fn.jaxpr, jaxpr_consts, *(i, *args))
-            )
-            args = fn_res if len(args) > 1 else (fn_res,) if len(args) == 1 else ()
+            fn_res = jax.core.eval_jaxpr(jaxpr_body_fn.jaxpr, jaxpr_consts, *(i, *args))
+            args = fn_res
 
         return fn_res
 
