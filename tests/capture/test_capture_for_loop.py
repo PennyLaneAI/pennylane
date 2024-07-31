@@ -57,3 +57,20 @@ class TestCaptureForLoop:
             return qml.expval(qml.PauliZ(0))
 
         assert np.allclose(circuit(3), -0.9899925)
+
+
+def test_qjit_forloop_identity():
+    """Test simple for-loop primitive vs dynamic dimensions"""
+
+    def f(sz):
+        a = jax.numpy.ones([sz], dtype=float)
+
+        def loop(_, a):
+            return a
+
+        a2 = qml.for_loop(0, 10, 2)(loop)(a)
+        return a2
+
+    result = f(3)
+    expected = jax.numpy.ones(3)
+    assert np.allclose(result, expected)
