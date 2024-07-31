@@ -401,6 +401,8 @@ class DeviceDerivatives(JacobianProductCalculator):
         execution_config: Optional["qml.devices.ExecutionConfig"] = None,
         gradient_kwargs: dict = None,
     ):
+        if execution_config is None:
+            execution_config = qml.devices.DefaultExecutionConfig
         if gradient_kwargs is None:
             gradient_kwargs = {}
 

@@ -143,7 +143,9 @@ class TestValidation:
 
     def test_invalid_device(self):
         """Test that an exception is raised for an invalid device"""
-        with pytest.raises(qml.QuantumFunctionError, match="Invalid device"):
+        with pytest.raises(
+            ValueError, match="only accepts a device of type qml.devices.LegacyDevice"
+        ):
             QNode(dummyfunc, None)
 
     # pylint: disable=protected-access

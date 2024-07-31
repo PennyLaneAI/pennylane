@@ -117,7 +117,6 @@ class TestBasics:
         assert jpc._device is device
         assert jpc._execution_config is config
         assert jpc._gradient_kwargs == {}
-        assert jpc._uses_new_device is True
         assert isinstance(jpc._results_cache, LRUCache)
         assert len(jpc._results_cache) == 0
         assert isinstance(jpc._jacs_cache, LRUCache)
@@ -134,7 +133,6 @@ class TestBasics:
 
         assert jpc._device is device
         assert jpc._gradient_kwargs == gradient_kwargs
-        assert jpc._uses_new_device is False
         assert isinstance(jpc._results_cache, LRUCache)
         assert len(jpc._results_cache) == 0
         assert isinstance(jpc._jacs_cache, LRUCache)
@@ -491,10 +489,8 @@ class TestCachingDeviceDerivatives:
         assert jpc._device.tracker.totals["derivatives"] == 1
 
         # extra execution since needs to do the forward pass again.
-        if jpc._uses_new_device:
-            expected_execs = 3 if isinstance(jpc._device, ParamShiftDerivativesDevice) else 1
-        else:
-            expected_execs = 2
+        expected_execs = 3 if isinstance(jpc._device, ParamShiftDerivativesDevice) else 1
+
         assert jpc._device.tracker.totals["executions"] == expected_execs
 
         # Test reuse with jacobian
@@ -531,10 +527,9 @@ class TestCachingDeviceDerivatives:
 
         assert qml.math.allclose(jac, jac2)
         assert jpc._device.tracker.totals["derivatives"] == 1
-        if jpc._uses_new_device:
-            expected_execs = 2 if isinstance(jpc._device, ParamShiftDerivativesDevice) else 0
-        else:
-            expected_execs = 1
+
+        expected_execs = 2 if isinstance(jpc._device, ParamShiftDerivativesDevice) else 0
+
         assert jpc._device.tracker.totals.get("executions", 0) == expected_execs
 
     def test_cached_on_execute_and_compute_jvps(self, jpc):

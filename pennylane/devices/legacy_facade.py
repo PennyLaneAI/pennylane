@@ -209,7 +209,13 @@ class LegacyDeviceFacade(Device):
         if execution_config.gradient_method == "adjoint":
             _add_adjoint_transforms(program, name=f"{self.name} + adjoint")
 
-        if not self._device.capabilities().get("supports_mid_measure", False):
+        if self._device.capabilities().get("supports_mid_measure", False):
+            program.add_transform(
+                qml.devices.preprocess.mid_circuit_measurements,
+                device=self,
+                mcm_config=execution_config.mcm_config,
+            )
+        else:
             program.add_transform(qml.defer_measurements, device=self)
 
         return program, execution_config
@@ -237,7 +243,7 @@ class LegacyDeviceFacade(Device):
         return replace(execution_config, **updated_values)
 
     def _setup_device_config(self, execution_config):
-        if execution_config.gradient_keyword_arguments["method"] == "adjoint_jacobian":
+        if execution_config.gradient_keyword_arguments.get("method", None) == "adjoint_jacobian":
             return self._setup_adjoint_config(execution_config)
 
         tape = qml.tape.QuantumScript([], [])
