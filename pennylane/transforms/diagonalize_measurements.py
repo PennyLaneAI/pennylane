@@ -21,7 +21,7 @@ def null_postprocessing(results):
 
 
 @transform
-def diagonalize_measurements(tape, supported_base_obs=None):
+def diagonalize_measurements(tape, supported_base_obs=("PauliZ", "Identity")):
     """Diagonalize the measurements on a tape if they are not supported. Raises an error if the
     measurements do not commute.
 
@@ -115,9 +115,6 @@ def diagonalize_measurements(tape, supported_base_obs=None):
         [expval(X(0) + Z(1)), expval(X(0) + 0.2 * Z(1)), var(Y(2) + X(0))]
     """
 
-    if supported_base_obs is None:
-        supported_base_obs = ["PauliZ"]
-
     bad_obs_input = [
         o
         for o in supported_base_obs
@@ -130,7 +127,7 @@ def diagonalize_measurements(tape, supported_base_obs=None):
             f"but received {list(bad_obs_input)}"
         )
 
-    supported_base_obs.append("Identity")
+    supported_base_obs = set(list(supported_base_obs) + ["PauliZ", "Identity"])
 
     _visited_obs = ([], [])  # tracks which observables and wires have been diagonalized
     diagonalizing_gates = []
