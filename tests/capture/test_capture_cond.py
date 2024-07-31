@@ -80,19 +80,28 @@ class TestCond:
         """Test the conditional with true, elifs, and false branches."""
         true_fn, false_fn, elif_fn1, elif_fn2, elif_fn3, elif_fn4 = testing_functions
 
-        result = qml.cond(
-            selector > 0,
-            true_fn,
-            false_fn,
-            elifs=(
-                (selector == -1, elif_fn1),
-                (selector == -2, elif_fn2),
-                (selector == -3, elif_fn3),
-                (selector == -4, elif_fn4),
-            ),
-        )(arg)
+        def test_func(pred):
+            return qml.cond(
+                pred > 0,
+                true_fn,
+                false_fn,
+                elifs=(
+                    (pred == -1, elif_fn1),
+                    (pred == -2, elif_fn2),
+                    (pred == -3, elif_fn3),
+                    (pred == -4, elif_fn4),
+                ),
+            )
+
+        result = test_func(selector)(arg)
         assert np.allclose(result, expected), f"Expected {expected}, but got {result}"
 
+        jaxpr = jax.make_jaxpr(test_func(selector))(arg)
+        res_ev_jxpr = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, arg)
+        assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
+
+    # Note that this would fail by running the abstract evaluation of the jaxpr
+    # because the false branch must be provided if the true branch returns any variables.
     @pytest.mark.parametrize(
         "selector, arg, expected",
         [
@@ -127,13 +136,22 @@ class TestCond:
         """Test the conditional with true and false branches."""
         true_fn, false_fn, _, _, _, _ = testing_functions
 
-        result = qml.cond(
-            selector > 0,
-            true_fn,
-            false_fn,
-        )(arg)
+        def test_func(pred):
+            return qml.cond(
+                pred > 0,
+                true_fn,
+                false_fn,
+            )
+
+        result = test_func(selector)(arg)
         assert np.allclose(result, expected), f"Expected {expected}, but got {result}"
 
+        jaxpr = jax.make_jaxpr(test_func(selector))(arg)
+        res_ev_jxpr = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, arg)
+        assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
+
+    # Note that this would fail by running the abstract evaluation of the jaxpr
+    # because the false branch must be provided if the true branch returns any variables.
     @pytest.mark.parametrize(
         "selector, arg, expected",
         [
@@ -162,13 +180,24 @@ class TestCond:
         """Test the conditional with array arguments."""
 
         def true_fn(jax_array):
-            return jax_array[0] * jax_array[1] * 2
+            return jax_array[0] * jax_array[1] * 2.0
 
         def false_fn(jax_array):
             return jax_array[0] * jax_array[1] * 2.5
 
-        result = qml.cond(selector > 0, true_fn, false_fn)(arg)
+        def test_func(pred):
+            return qml.cond(
+                pred > 0,
+                true_fn,
+                false_fn,
+            )
+
+        result = test_func(selector)(arg)
         assert np.allclose(result, expected), f"Expected {expected}, but got {result}"
+
+        jaxpr = jax.make_jaxpr(test_func(selector))(arg)
+        res_ev_jxpr = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, arg)
+        assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
 
 
 class TestCondReturns:
@@ -414,6 +443,11 @@ class TestCondCircuits:
         """Test circuit with only a true branch."""
         result = circuit(pred)
         assert np.allclose(result, expected), f"Expected {expected}, but got {result}"
+
+        args = [pred]
+        jaxpr = jax.make_jaxpr(circuit)(*args)
+        res_ev_jxpr = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *args)
+        assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
 
     @pytest.mark.parametrize(
         "pred, arg1, arg2, expected",
