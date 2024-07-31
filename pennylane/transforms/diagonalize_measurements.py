@@ -114,6 +114,20 @@ def diagonalize_tape_measurements(tape, supported_base_obs=None):
         >>> tapes[0].measurements
         [expval(X(0) + Z(1)), expval(X(0) + 0.2 * Z(1)), var(Y(2) + X(0))]
     """
+    tapes, postprocessing = _diagonalize_subset_of_obs(tape, supported_base_obs=supported_base_obs)
+
+    return tapes, postprocessing
+
+
+def _diagonalize_subset_of_obs(tape, supported_base_obs=None):
+    """The version of the transform that iterates over and into the component parts
+    of all the observables and diagonalizes only those that are not supported.
+
+    Args:
+        tape (QNode or QuantumScript or Callable): The quantum circuit to modify the measurements of.
+        supported_base_obs (Optional, Iterable(Str)): A list of names of supported base observables.
+            Allowed names are 'PauliX', 'PauliY', 'PauliZ' and 'Hadamard'. If no list is provided,
+            everything will be diagonalized."""
 
     if supported_base_obs is None:
         supported_base_obs = ["PauliZ"]

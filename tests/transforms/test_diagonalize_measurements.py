@@ -27,6 +27,7 @@ from pennylane.tape import QuantumScript
 from pennylane.transforms.diagonalize_measurements import (
     _check_if_diagonalizing,
     _diagonalize_observable,
+    _diagonalize_subset_of_obs,
     diagonalize_tape_measurements,
     null_postprocessing,
 )
@@ -282,15 +283,15 @@ class TestDiagonalizeObservable:
             _ = _check_if_diagonalizing(obs, _visited_obs, switch_basis=False)
 
 
-class TestDiagonalizeTapeMeasurements:
-    """Tests the diagonalize_tape_measurements transform"""
+class TestDiagonalizeSubsetOfObs:
+    """Tests the _diagonalize_subset_of_obs transform"""
 
-    def test_diagonalize_tape_measurements(self):
-        """Test that the diagonalize_tape_measurements transform diagonalizes the measurements on the tape"""
+    def test_diagonalize_subset_of_obs(self):
+        """Test that the _diagonalize_subset_of_obs function diagonalizes the measurements on the tape"""
         measurements = [qml.expval(X(0)), qml.var(X(1) + Y(2))]
 
         tape = QuantumScript([], measurements=measurements)
-        tapes, fn = diagonalize_tape_measurements(tape)
+        tapes, fn = _diagonalize_subset_of_obs(tape)
         new_tape = tapes[0]
 
         assert new_tape.measurements == [qml.expval(Z(0)), qml.var(Z(1) + Z(2))]
@@ -302,12 +303,12 @@ class TestDiagonalizeTapeMeasurements:
         assert fn == null_postprocessing
 
     def test_with_duplicate_measurements(self):
-        """Test that the diagonalize_tape_measurements transform diagonalizes the measurements
+        """Test that the _diagonalize_subset_of_obs diagonalizes the measurements
         on the tape correctly when the same observable is used more than once"""
         measurements = [qml.expval(X(0)), qml.var(X(1) + Y(2)), qml.sample(X(0) @ Y(2))]
 
         tape = QuantumScript([], measurements=measurements)
-        tapes, fn = diagonalize_tape_measurements(tape)
+        tapes, fn = _diagonalize_subset_of_obs(tape)
         new_tape = tapes[0]
 
         assert new_tape.measurements == [
@@ -323,23 +324,23 @@ class TestDiagonalizeTapeMeasurements:
         assert fn == null_postprocessing
 
     def test_non_commuting_observables_raise_an_error(self):
-        """Test that the diagonalize_tape_measurements raises an error as expected if the tape contains
+        """Test that _diagonalize_subset_of_obs raises an error as expected if the tape contains
         non-commuting observables"""
         measurements = [qml.expval(X(0)), qml.var(Z(0) + Y(2))]
 
         tape = QuantumScript([], measurements=measurements)
 
         with pytest.raises(ValueError, match="overlaps with another observable on the tape"):
-            _ = diagonalize_tape_measurements(tape)
+            _ = _diagonalize_subset_of_obs(tape)
 
     def test_measurements_with_no_obs(self):
-        """Test that the transform correctly handles tapes where some measurements don't
+        """Test that _diagonalize_subset_of_obs correctly handles tapes where some measurements don't
         have an observable"""
 
         measurements = [qml.expval(X(0)), qml.var(X(1) + Y(2)), qml.sample()]
 
         tape = QuantumScript([], measurements=measurements)
-        tapes, fn = diagonalize_tape_measurements(tape)
+        tapes, fn = _diagonalize_subset_of_obs(tape)
         new_tape = tapes[0]
 
         assert new_tape.measurements == [qml.expval(Z(0)), qml.var(Z(1) + Z(2)), qml.sample()]
@@ -351,7 +352,7 @@ class TestDiagonalizeTapeMeasurements:
         assert fn == null_postprocessing
 
     def test_decomposing_subset_of_obs(self):
-        """Test that passing a list of supported obs to the diagonalize_tape_measurements transform
+        """Test that passing a list of supported obs to the _diagonalize_subset_of_obs
         diagonalizes only the unsupported base observables"""
         measurements = [
             qml.expval(X(0)),
@@ -361,7 +362,7 @@ class TestDiagonalizeTapeMeasurements:
 
         tape = QuantumScript([], measurements=measurements)
 
-        tapes, fn = diagonalize_tape_measurements(tape, supported_base_obs=["PauliX", "PauliZ"])
+        tapes, fn = _diagonalize_subset_of_obs(tape, supported_base_obs=["PauliX", "PauliZ"])
 
         new_tape = tapes[0]
 
@@ -376,18 +377,28 @@ class TestDiagonalizeTapeMeasurements:
 
     @pytest.mark.parametrize("supported_base_obs", (["PauliC", "PauliZ"], [X, Z], [X(0), qml.Z(1)]))
     def test_bad_obs_input_raises_error(self, supported_base_obs):
-        """Test that if a value is passed to supported_base_obs that can't be interpreted, a clear error is raised"""
+        """Test that if a value is passed to supported_base_obs that can't be interpreted,
+        a clear error is raised"""
 
         with pytest.raises(ValueError, match="Supported base observables must be a subset of"):
-            _ = diagonalize_tape_measurements(
+            _ = _diagonalize_subset_of_obs(
                 QuantumScript([], measurements=[]), supported_base_obs=supported_base_obs
             )
 
-    @pytest.mark.parametrize("supported_base_obs", (["PauliZ"],))
+    @pytest.mark.parametrize(
+        "supported_base_obs, expected_measurements",
+        (
+            (["PauliZ"], [qml.expval(Z(0)), qml.var(Z(1) + Z(2))]),
+            (["PauliY", "PauliZ"], [qml.expval(Z(0)), qml.var(Z(1) + Y(2))]),
+            (["PauliX", "PauliY", "PauliZ"], [qml.expval(X(0)), qml.var(X(1) + Y(2))]),
+        ),
+    )
     @pytest.mark.parametrize("shots", [None, 2000, (4000, 5000, 6000)])
-    def test_qnode_integration(self, supported_base_obs, shots):
+    def test_qnode_integration(self, supported_base_obs, expected_measurements, shots, mocker):
 
         dev = qml.device("default.qubit", shots=shots)
+
+        spy = mocker.spy(qml.transforms.diagonalize_measurements, "_diagonalize_subset_of_obs")
 
         @qml.qnode(dev)
         def circuit():
@@ -404,6 +415,12 @@ class TestDiagonalizeTapeMeasurements:
 
         expected_res = circuit()
         res = circuit_diagonalized()
+
+        # the transform used the _diagonalize_subset_of_obs function
+        spy.assert_called()
+        tapes, _ = spy.spy_return
+
+        assert tapes[0].measurements == expected_measurements
 
         if len(dev.shots.shot_vector) > 1:
             for r_diagonalized, r in zip(res, expected_res):
