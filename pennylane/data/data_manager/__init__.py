@@ -17,12 +17,12 @@ them.
 """
 
 import urllib.parse
-from collections.abc import Iterable, Mapping
+from collections.abc import Iterable, Mapping, Callable
 from concurrent.futures import ThreadPoolExecutor
 from functools import lru_cache
 from pathlib import Path
 from time import sleep
-from typing import Iterable, Mapping, Optional, Tuple, Union
+from typing import Iterable, Mapping, Optional, Union
 
 from requests import get, head
 
@@ -31,7 +31,7 @@ from pennylane.data.base.hdf5 import open_hdf5_s3
 
 from .foldermap import DataPath, FolderMapView, ParamArg
 from .params import DEFAULT, FULL, format_params
-from .progress_bar import Progress, progress
+from pennylane.data.data_manager import progress
 
 S3_URL = "https://datasets.cloud.pennylane.ai/datasets/h5"
 FOLDERMAP_URL = f"{S3_URL}/foldermap.json"
@@ -62,6 +62,7 @@ def _download_partial(
     attributes: Optional[Iterable[str]],
     overwrite: bool,
     block_size: int,
+    pbar_task: Optional[progress.Task],
 ) -> None:
     """Download the requested attributes of the Dataset at ``s3_path`` into ``dest``.
 
@@ -89,9 +90,7 @@ def _download_partial(
         attributes_to_fetch.difference_update(dest_dataset.attrs)
 
     if len(attributes_to_fetch) > 0:
-        remote_dataset = remote_dataset or Dataset(
-            open_hdf5_s3(s3_url, block_size=block_size)
-        )
+        remote_dataset = remote_dataset or Dataset(open_hdf5_s3(s3_url, block_size=block_size))
         remote_dataset.write(dest_dataset, "a", attributes, overwrite=overwrite)
 
     if remote_dataset:
@@ -101,24 +100,33 @@ def _download_partial(
     del remote_dataset
     del dest_dataset
 
+    if pbar_task:
+        file_size = dest.stat().st_size
+        pbar_task.update(completed=file_size, total=file_size)
 
-def _download_full(s3_url: str, dest: Path):
+
+def _download_full(s3_url: str, dest: Path, block_size: int, pbar_task: Optional[progress.Task]):
     """Download the full dataset file at ``s3_url`` to ``path``."""
+    resp = get(s3_url, timeout=5.0, stream=True)
+    resp.raise_for_status()
 
     with open(dest, "wb") as f:
-        resp = get(s3_url, timeout=5.0)
-        resp.raise_for_status()
-
-        f.write(resp.content)
+        if pbar_task is not None:
+            for block in resp.iter_content(chunk_size=block_size):
+                f.write(block)
+                pbar_task.update(advance=len(block))
+        else:
+            for block in resp.iter_content(chunk_size=block_size):
+                f.write(block)
 
 
 def _download_dataset(  # pylint:disable=too-many-arguments
-    data_path: DataPath,
+    s3_url: str,
     dest: Path,
     attributes: Optional[Iterable[str]],
     block_size: int,
-    force: bool = False,
-    progress_data: Optional[Tuple[Progress, int, float]] = None,
+    force: bool,
+    pbar_task: Optional[progress.Task],
 ) -> None:
     """Downloads the dataset at ``data_path`` to ``dest``, optionally downloading
     only requested attributes. If ``attributes`` is not provided, every attribute
@@ -127,13 +135,8 @@ def _download_dataset(  # pylint:disable=too-many-arguments
     If any of the attributes of the remote dataset are already downloaded locally,
     they will not be overwritten unless ``force`` is True.
 
-    If a progress tuple is provided, it will update a progress bar. The kwarg is
-    of the format (Progress, TaskID, file_size)
+    If ``pbar_task`` is provided, will update the provided progress bar.
     """
-
-    # URL-escape special characters like '+', '$', and '%' in the data path
-    url_safe_datapath = urllib.parse.quote(str(data_path))
-    s3_url = f"{S3_URL}/{url_safe_datapath}"
 
     if attributes is not None or dest.exists():
         _download_partial(
@@ -142,13 +145,56 @@ def _download_dataset(  # pylint:disable=too-many-arguments
             attributes=attributes,
             overwrite=force,
             block_size=block_size,
+            pbar_task=pbar_task,
         )
     else:
-        _download_full(s3_url, dest=dest)
+        _download_full(s3_url, dest=dest, block_size=block_size, pbar_task=pbar_task)
 
-    if progress_data:
-        pbar, task, size = progress_data
-        pbar.update(task, advance=size)
+
+def _download_datasets(
+    s3_base_url: str,
+    folder_path: Path,
+    data_paths: list[DataPath],
+    attributes: Optional[Iterable[str]],
+    force: bool,
+    block_size: int,
+    pbar: Optional[progress.Progress],
+) -> list[Dataset]:
+    """Downloads the datasets with given ``data_paths`` to ``folder_path``, copying the
+    directory structure of the bucket at ``s3_base_url``.
+
+    If ``pbar`` is provided, a progress task will be added for each requested dataset.
+    """
+    # URL-escape special characters like '+', '$', and '%' in the data path
+    s3_urls = [f"{s3_base_url}/{urllib.parse.quote(str(data_path))}" for data_path in data_paths]
+    dest_paths = [folder_path / data_path for data_path in data_paths]
+    for path_parents in set(path.parent for path in dest_paths):
+        path_parents.mkdir(parents=True, exist_ok=True)
+
+    if pbar is not None:
+        if attributes is None:
+            file_sizes = [int(head(s3_url).headers["Content-Length"]) for s3_url in s3_urls]
+        else:
+            file_sizes = (None for _ in s3_urls)
+
+        pbar_tasks = [
+            pbar.add_task(str(dest_path), total=file_size)
+            for dest_path, file_size in zip(dest_paths, file_sizes)
+        ]
+    else:
+        pbar_tasks = (None for _ in dest_paths)
+
+    for s3_url, dest_path, pbar_task in zip(s3_urls, dest_paths, pbar_tasks):
+        _download_dataset(
+            s3_url,
+            dest_path,
+            attributes=attributes,
+            force=force,
+            block_size=block_size,
+            pbar_task=pbar_task,
+        )
+
+    return [Dataset.open(dest_path) for dest_path in dest_paths]
 
 
 def _validate_attributes(data_struct: dict, data_name: str, attributes: Iterable[str]):
@@ -161,15 +207,11 @@ def _validate_attributes(data_struct: dict, data_name: str, attributes: Iterable
         return
 
     if len(invalid_attributes) == 1:
-        values_err = (
-            f"'{invalid_attributes[0]}' is an invalid attribute for '{data_name}'"
-        )
+        values_err = f"'{invalid_attributes[0]}' is an invalid attribute for '{data_name}'"
     else:
         values_err = f"{invalid_attributes} are invalid attributes for '{data_name}'"
 
-    raise ValueError(
-        f"{values_err}. Valid attributes are: {data_struct[data_name]['attributes']}"
-    )
+    raise ValueError(f"{values_err}. Valid attributes are: {data_struct[data_name]['attributes']}")
 
 
 def load(  # pylint: disable=too-many-arguments
@@ -177,8 +219,9 @@ def load(  # pylint: disable=too-many-arguments
     attributes: Optional[Iterable[str]] = None,
     folder_path: Path = Path("./datasets/"),
     force: bool = False,
-    num_threads: int = 50,
+    num_threads: int = 4,
     block_size: int = 8388608,
+    progress_bar: bool = True,
     **params: Union[ParamArg, str, list[str]],
 ):
     r"""Downloads the data if it is not already present in the directory and returns it as a list of
@@ -194,6 +237,7 @@ def load(  # pylint: disable=too-many-arguments
         block_size (int)  : The number of bytes to fetch per read operation when fetching datasets from S3.
             Larger values may improve performance for large datasets, but will slow down small reads. Defaults
             to 8MB
+        progress_bar (bool) : Whether to show a progress bars for downloads. Defaults to True.
         params (kwargs)   : Keyword arguments exactly matching the parameters required for the data type.
             Note that these are not optional
 
@@ -272,41 +316,23 @@ def load(  # pylint: disable=too-many-arguments
         _validate_attributes(data_struct, data_name, attributes)
 
     folder_path = Path(folder_path)
-
     data_paths = [data_path for _, data_path in foldermap.find(data_name, **params)]
 
-    dest_paths = [folder_path / data_path for data_path in data_paths]
-
-    for path_parents in set(path.parent for path in dest_paths):
-        path_parents.mkdir(parents=True, exist_ok=True)
-
-    file_sizes = [
-        int(head(f"{S3_URL}/{urllib.parse.quote(str(p))}").headers["Content-Length"])
-        / 1000
-        for p in data_paths
-    ]
-    total_size = sum(file_sizes)
-
-    with progress() as pbar:
-        pbar_task = pbar.add_task(f"{data_name} data:", total=total_size)
-
-        def download_fn(data_path, dest_path, file_size):
-            _download_dataset(
-                data_path,
-                dest_path,
-                attributes=attributes,
+    if progress_bar:
+        with progress.Progress() as pbar:
+            return _download_datasets(
+                S3_URL,
+                folder_path,
+                data_paths,
+                attributes,
                 force=force,
                 block_size=block_size,
-                progress_data=(pbar, pbar_task, file_size),
+                pbar=pbar,
             )
 
-        with ThreadPoolExecutor(min(num_threads, len(dest_paths))) as pool:
-            _ = list(pool.map(download_fn, data_paths, dest_paths, file_sizes))
-        # sometimes the last updates aren't registered
-        pbar.update(pbar_task, completed=total_size)
-        sleep(0.01)
-
-    return [Dataset.open(Path(dest_path), "a") for dest_path in dest_paths]
+    return _download_datasets(
+        S3_URL, folder_path, data_paths, attributes, force=force, block_size=block_size, pbar=None
+    )
 
 
 def list_datasets() -> dict:
@@ -387,15 +413,11 @@ def _interactive_request_attributes(options):
             option = "full (all attributes)"
         prompt += f"\n\t{i+1}) {option}"
     print(prompt)
-    choices = input(
-        f"Choice (comma-separated list of options) [1-{len(options)}]: "
-    ).split(",")
+    choices = input(f"Choice (comma-separated list of options) [1-{len(options)}]: ").split(",")
     try:
         choices = list(map(int, choices))
     except ValueError as e:
-        raise ValueError(
-            f"Must enter a list of integers between 1 and {len(options)}"
-        ) from e
+        raise ValueError(f"Must enter a list of integers between 1 and {len(options)}") from e
     if any(choice < 1 or choice > len(options) for choice in choices):
         raise ValueError(f"Must enter a list of integers between 1 and {len(options)}")
     return [options[choice - 1] for choice in choices]
@@ -474,17 +496,11 @@ def load_interactive():
         description[param] = value
 
     attributes = _interactive_request_attributes(
-        [
-            attribute
-            for attribute in data_struct[data_name]["attributes"]
-            if attribute not in params
-        ]
+        [attribute for attribute in data_struct[data_name]["attributes"] if attribute not in params]
     )
     force = input("Force download files? (Default is no) [y/N]: ") in ["y", "Y"]
     dest_folder = Path(
-        input(
-            "Folder to download to? (Default is pwd, will download to /datasets subdirectory): "
-        )
+        input("Folder to download to? (Default is pwd, will download to /datasets subdirectory): ")
     )
 
     print("\nPlease confirm your choices:")
