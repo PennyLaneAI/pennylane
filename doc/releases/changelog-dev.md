@@ -71,8 +71,10 @@
   [(#5919)](https://github.com/PennyLaneAI/pennylane/pull/5919)
 
 * Applying `adjoint` and `ctrl` to a quantum function can now be captured into plxpr.
+  Furthermore, the `qml.cond` function can be captured into plxpr. 
   [(#5966)](https://github.com/PennyLaneAI/pennylane/pull/5966)
   [(#5967)](https://github.com/PennyLaneAI/pennylane/pull/5967)
+  [(#5999)](https://github.com/PennyLaneAI/pennylane/pull/5999)
 
 * Set operations are now supported by Wires.
   [(#5983)](https://github.com/PennyLaneAI/pennylane/pull/5983)
@@ -262,11 +264,15 @@
 * `qml.AmplitudeEmbedding` has better support for features using low precision integer data types.
   [(#5969)](https://github.com/PennyLaneAI/pennylane/pull/5969)
 
+* Jacobian shape is fixed for measurements with dimension in `qml.gradients.vjp.compute_vjp_single`.
+[(5986)](https://github.com/PennyLaneAI/pennylane/pull/5986)
+
 * `qml.lie_closure` works with sums of Paulis.
   [(#6023)](https://github.com/PennyLaneAI/pennylane/pull/6023)
 
 * `qml.BasisRotation` works with qjit.
   [(#6019)](https://github.com/PennyLaneAI/pennylane/pull/6019)
+
 
 <h3>Contributors ✍️</h3>
 
@@ -275,11 +281,12 @@ This release contains contributions from (in alphabetical order):
 Tarun Kumar Allamsetty,
 Guillermo Alonso,
 Utkarsh Azad,
+Gabriel Bottrill,
 Ahmed Darwish,
 Astral Cai,
 Yushao Chen,
-Gabriel Bottrill,
 Ahmed Darwish,
+Maja Franz,
 Lillian M. A. Frederiksen,
 Pietropaolo Frisoni,
 Emiliano Godinez,
