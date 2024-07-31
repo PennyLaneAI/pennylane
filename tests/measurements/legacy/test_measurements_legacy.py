@@ -118,8 +118,8 @@ class TestSampleMeasurement:
             qml.PauliX(0)
             return qml.sample(wires=[0]), qml.sample(wires=[1])
 
-        circuit.device.measurement_map[SampleMP] = "test_method"
-        circuit.device.test_method = lambda obs, shot_range=None, bin_size=None: 2
+        circuit.device.target_device.measurement_map[SampleMP] = "test_method"
+        circuit.device.target_device.test_method = lambda obs, shot_range=None, bin_size=None: 2
 
         assert qml.math.allequal(circuit(), [2, 2])
 
@@ -170,8 +170,8 @@ class TestStateMeasurement:
         def circuit():
             return qml.state()
 
-        circuit.device.measurement_map[StateMP] = "test_method"
-        circuit.device.test_method = lambda obs, shot_range=None, bin_size=None: 2
+        circuit.device.target_device.measurement_map[StateMP] = "test_method"
+        circuit.device.target_device.test_method = lambda obs, shot_range=None, bin_size=None: 2
 
         assert circuit() == 2
 
@@ -192,7 +192,7 @@ class TestMeasurementTransform:
         def circuit():
             return MyMeasurement()
 
-        assert circuit() == {dev.shots: len(circuit.tape)}
+        assert circuit() == {dev._shots: len(circuit.tape)}  # pylint:disable=protected-access
 
     def test_method_overriden_by_device(self):
         """Test that the device can override a measurement process."""
@@ -203,7 +203,7 @@ class TestMeasurementTransform:
         def circuit():
             return qml.classical_shadow(wires=0)
 
-        circuit.device.measurement_map[ClassicalShadowMP] = "test_method"
-        circuit.device.test_method = lambda tape: 2
+        circuit.device.target_device.measurement_map[ClassicalShadowMP] = "test_method"
+        circuit.device.target_device.test_method = lambda tape: 2
 
         assert circuit() == 2

@@ -49,12 +49,14 @@ class TestVar:
     """Tests for the var function"""
 
     @pytest.mark.parametrize("shots", [None, 10000, [10000, 10000]])
-    @pytest.mark.parametrize("r_dtype", [np.float32, np.float64])
-    def test_value(self, tol, r_dtype, mocker, shots):
+    @pytest.mark.parametrize("r_dtype_name", ["float32", "float64"])
+    def test_value(self, tol, r_dtype_name, mocker, shots):
         """Test that the var function works"""
+        r_dtype = np.dtype(r_dtype_name)
+
         dev = qml.device("default.qubit.legacy", wires=2, shots=shots)
         spy = mocker.spy(qml.QubitDevice, "var")
-        dev.R_DTYPE = r_dtype
+        dev.target_device.R_DTYPE = r_dtype
 
         @qml.qnode(dev, diff_method="parameter-shift")
         def circuit(x):
@@ -125,7 +127,7 @@ class TestVar:
     @pytest.mark.parametrize("device_name", ["default.qubit.legacy", "default.mixed"])
     def test_observable_is_composite_measurement_value(
         self, shots, phi, mocker, tol, tol_stochastic, device_name
-    ):  # pylint: disable=too-many-arguments
+    ):  # pylint: disable=too-many-arguments,disable=protected-access
         """Test that variances for mid-circuit measurement values
         are correct for a composite measurement value."""
         dev = qml.device(device_name, wires=6, shots=shots)
@@ -164,6 +166,8 @@ class TestVar:
         assert np.allclose(np.array(res), expected, atol=atol, rtol=0)
 
         if device_name != "default.mixed":
+            if shots:
+                new_dev.target_device._samples = new_dev.generate_samples()
             custom_measurement_process(new_dev, spy)
 
     @pytest.mark.parametrize(

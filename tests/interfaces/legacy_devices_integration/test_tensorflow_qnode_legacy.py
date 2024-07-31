@@ -520,7 +520,7 @@ class TestShotsIntegration:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliY(1))
 
-        spy = mocker.spy(dev, "sample")
+        spy = mocker.spy(dev.target_device, "sample")
 
         # execute with device default shots (None)
         res = circuit(weights)
@@ -533,7 +533,7 @@ class TestShotsIntegration:
         assert spy.spy_return.shape == (100,)
 
         # device state has been unaffected
-        assert dev.shots is None
+        assert not dev.shots
         res = circuit(weights)
         assert np.allclose(res, -np.cos(a) * np.sin(b), atol=tol, rtol=0)
         spy.assert_called_once()
@@ -557,7 +557,7 @@ class TestShotsIntegration:
             res = circuit(weights, shots=[10000, 10000, 10000])
             res = tf.transpose(tf.stack(res))
 
-        assert dev.shots is None
+        assert not dev.shots
         assert len(res) == 3
 
         jacobian = tape.jacobian(res, weights)
@@ -639,7 +639,7 @@ class TestAdjoint:
             qml.CNOT(wires=(0, 1))
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliX(1))
 
-        spy = mocker.spy(dev, "adjoint_jacobian")
+        spy = mocker.spy(dev.target_device, "adjoint_jacobian")
 
         weights = tf.Variable([0.1, 0.2], dtype=tf.float64)
         x, y = 1.0 * weights
@@ -671,7 +671,7 @@ class TestAdjoint:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0))
 
-        spy = mocker.spy(dev, "adjoint_jacobian")
+        spy = mocker.spy(dev.target_device, "adjoint_jacobian")
 
         with tf.GradientTape() as tape:
             res1 = circuit(x, y)

@@ -79,7 +79,7 @@ class TestTensorFlowExecuteUnitTests:
         """Test that grad on execution uses the `device.execute_and_gradients` pathway"""
         dev = qml.device("default.qubit.legacy", wires=1)
         a = tf.Variable([0.1, 0.2])
-        spy = mocker.spy(dev, "execute_and_gradients")
+        spy = mocker.spy(dev.target_device, "execute_and_gradients")
 
         with tf.GradientTape():
             with qml.queuing.AnnotatedQueue() as q:
@@ -209,7 +209,7 @@ class TestCaching:
 
         # With caching, and non-vectorized, 5 evaluations are required to compute
         # the Jacobian: 1 (forward pass) + (2 shifts * 2 params)
-        dev._num_executions = 0
+        dev.target_device._num_executions = 0
         with tf.GradientTape(persistent=True) as t:
             res = cost(a, cache=True)
         t.jacobian(res, a)
@@ -217,7 +217,7 @@ class TestCaching:
 
         # In vectorized mode, 5 evaluations are required to compute
         # the Jacobian regardless of caching: 1 (forward pass) + (2 shifts * 2 params)
-        dev._num_executions = 0
+        dev.target_device._num_executions = 0
         with tf.GradientTape() as t:
             res = cost(a, cache=None)
         t.jacobian(res, a)
@@ -270,7 +270,7 @@ class TestCaching:
         nonideal_runs = dev.num_executions
 
         # Use caching: number of executions is ideal
-        dev._num_executions = 0
+        dev.target_device._num_executions = 0
         with tf.GradientTape() as t2:
             with tf.GradientTape() as t1:
                 res = cost(params, cache=True)
@@ -737,7 +737,7 @@ class TestTensorFlowExecuteIntegration:
                 qml.sample(qml.PauliZ(0))
                 qml.sample(qml.PauliX(1))
 
-            tape = qml.tape.QuantumScript.from_queue(q)
+            tape = qml.tape.QuantumScript.from_queue(q, shots=10)
             res = execute([tape], dev, **execute_kwargs)[0]
             res = qml.math.stack(res)
 

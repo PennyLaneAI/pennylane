@@ -789,7 +789,7 @@ class TestShotsIntegration:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliY(1))
 
-        spy = mocker.spy(dev, "sample")
+        spy = mocker.spy(dev.target_device, "sample")
 
         # execute with device default shots (None)
         res = circuit(a, b)
@@ -802,7 +802,7 @@ class TestShotsIntegration:
         assert spy.spy_return.shape == (100,)
 
         # device state has been unaffected
-        assert dev.shots is None
+        assert not dev.shots
         res = circuit(a, b)
         assert np.allclose(res, -np.cos(a) * np.sin(b), atol=tol, rtol=0)
         spy.assert_called_once()  # no additional calls
@@ -822,7 +822,7 @@ class TestShotsIntegration:
 
         # TODO: jit when https://github.com/PennyLaneAI/pennylane/issues/3474 is resolved
         res = jax.grad(cost_fn, argnums=[0, 1])(a, b, shots=30000)
-        assert dev.shots == 1
+        assert dev.shots == qml.measurements.Shots(1)
 
         expected = [np.sin(a) * np.sin(b), -np.cos(a) * np.cos(b)]
         assert np.allclose(res, expected, atol=0.1, rtol=0)

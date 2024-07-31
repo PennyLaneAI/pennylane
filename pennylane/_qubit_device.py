@@ -891,7 +891,7 @@ class QubitDevice(Device):
         """
         if self.shots is None:
             raise qml.QuantumFunctionError(
-                "The number of shots has to be explicitly set on the device "
+                "The number of shots has to be explicitly set on the tape "
                 "when using sample-based measurements."
             )
 
