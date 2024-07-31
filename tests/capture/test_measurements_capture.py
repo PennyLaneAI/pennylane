@@ -187,7 +187,7 @@ def test_mid_measure(x64_mode):
     assert mp._abstract_eval == MidMeasureMP._abstract_eval
 
     shapes = _get_shapes_for(*jaxpr.out_avals, shots=qml.measurements.Shots(1))
-    assert shapes[0] == jax.core.ShapedArray((), jax.numpy.bool_)
+    assert shapes[0] == jax.core.ShapedArray((), jax.numpy.int64 if x64_mode else jax.numpy.int32)
 
     mp = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 1)[0]
     assert mp == f(1)

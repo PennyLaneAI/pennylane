@@ -252,9 +252,11 @@ def _create_mid_measure_primitive():
     def _(wires, reset=False, postselect=None):
         return _measure_impl(wires, reset=reset, postselect=postselect)
 
+    dtype = jax.numpy.int64 if jax.config.jax_enable_x64 else jax.numpy.int32
+
     @mid_measure_p.def_abstract_eval
     def _(*_, **__):
-        return jax.core.ShapedArray((), jax.numpy.bool_)
+        return jax.core.ShapedArray((), dtype)
 
     return mid_measure_p
 
@@ -310,7 +312,7 @@ class MidMeasureMP(MeasurementProcess):
         shots: Optional[int] = None,
         num_device_wires: int = 0,
     ) -> tuple:
-        return (), bool
+        return (), int
 
     def label(self, decimals=None, base_label=None, cache=None):  # pylint: disable=unused-argument
         r"""How the mid-circuit measurement is represented in diagrams and drawings.
