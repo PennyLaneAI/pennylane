@@ -167,7 +167,7 @@ def givens_decomposition(unitary):
                 for j in range(1, i + 1):
                     indices = [N + j - i - 2, N + j - i - 1]
                     grot_mat = _givens_matrix(*unitary[indices, j - 1], left=False)
-                    unitary = unitary.at[indices, :].set(grot_mat @ unitary[indices, :])
+                    unitary = unitary.at[indices, :].set(grot_mat @ unitary[indices, :], indices_are_sorted=True, unique_indices=True)
                     left_givens.append((grot_mat, indices))
     else:
         for i in range(1, N):
