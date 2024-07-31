@@ -21,7 +21,7 @@ def null_postprocessing(results):
 
 
 @transform
-def diagonalize_tape_measurements(tape, supported_base_obs=None):
+def diagonalize_measurements(tape, supported_base_obs=None):
     """Diagonalize the measurements on a tape if they are not supported. Raises an error if the
     measurements do not commute.
 
@@ -47,11 +47,11 @@ def diagonalize_tape_measurements(tape, supported_base_obs=None):
 
     .. code-block:: python3
 
-        from pennylane.transforms import diagonalize_tape_measurements
+        from pennylane.transforms import diagonalize_measurements
 
         dev = qml.device("default.qubit", wires=2)
 
-        @diagonalize_tape_measurements
+        @diagonalize_measurements
         @qml.qnode(dev)
         def circuit(x):
             qml.RY(x[0], wires=0)
@@ -69,7 +69,7 @@ def diagonalize_tape_measurements(tape, supported_base_obs=None):
             qml.RX(x[1], wires=1)
             return qml.expval(qml.X(0) @ qml.Z(1)), qml.var(0.5 * qml.Y(2) + qml.X(0))
 
-        diagonalized_circuit = diagonalize_tape_measurements(circuit)
+        diagonalized_circuit = diagonalize_measurements(circuit)
 
     Applying the transform appends the relevant gates to the end of the cirucit to allow
     measurements to be in the Z basis, so the original circuit
@@ -105,7 +105,7 @@ def diagonalize_tape_measurements(tape, supported_base_obs=None):
                 qml.var(qml.Y(2) + qml.X(0)),
             ]
             tape = qml.tape.QuantumScript(measurements=measurements)
-            tapes, processing_fn = diagonalize_tape_measurements(tape,
+            tapes, processing_fn = diagonalize_measurements(tape,
                                                                  supported_base_obs=['PauliX', 'PauliY', 'PauliZ'])
 
         Now ``tapes`` is a tuple containing a single tape with the updated measurements,
