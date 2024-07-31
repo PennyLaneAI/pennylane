@@ -479,17 +479,34 @@ def _get_cond_qfunc_prim():
     cond_prim.multiple_results = True
 
     @cond_prim.def_impl
-    def _(conditions, *args_and_consts, jaxpr_branches, n_consts_per_branch, n_args):
+    def _(*all_args, jaxpr_branches, n_consts_per_branch, n_args):
+        n_branches = len(jaxpr_branches)
+        conditions = all_args[:n_branches]
+        args = all_args[n_branches : n_branches + n_args]
+        consts_flat = all_args[n_branches + n_args :]
 
-        args = args_and_consts[:n_args]
-        consts_flat = args_and_consts[n_args:]
+        if isinstance(conditions[0], qml.measurements.MeasurementValue):
+            conditions = conditions[:-1] + (~conditions[1],)
 
         start = 0
         for pred, jaxpr, n_consts in zip(conditions, jaxpr_branches, n_consts_per_branch):
             consts = consts_flat[start : start + n_consts]
             start += n_consts
             if pred and jaxpr is not None:
-                return jax.core.eval_jaxpr(jaxpr.jaxpr, consts, *args)
+                if isinstance(pred, qml.measurements.MeasurementValue):
+                    with qml.queuing.AnnotatedQueue() as q:
+                        out = jax.core.eval_jaxpr(jaxpr.jaxpr, consts, *args)
+
+                    if out is not None:
+                        raise ConditionalTransformError(
+                            "Only quantum functions without return values can be applied "
+                            "conditionally with mid-circuit measurement predicates."
+                        )
+                    for wrapped_op in q:
+                        Conditional(pred, wrapped_op.obj)
+
+                else:
+                    return jax.core.eval_jaxpr(jaxpr.jaxpr, consts, *args)
 
         return ()
 
@@ -547,7 +564,7 @@ def _capture_cond(condition, true_fn, false_fn=None, elifs=()) -> Callable:
             elifs_conditions.append(pred)
             jaxpr_elifs.append(jax.make_jaxpr(functools.partial(elif_fn, **kwargs))(*args))
 
-        conditions = jax.numpy.array([condition, *elifs_conditions, True])
+        conditions = [condition, *elifs_conditions, True]
 
         jaxpr_branches = [jaxpr_true, *jaxpr_elifs, jaxpr_false]
         jaxpr_consts = [jaxpr.consts if jaxpr is not None else () for jaxpr in jaxpr_branches]
@@ -558,7 +575,7 @@ def _capture_cond(condition, true_fn, false_fn=None, elifs=()) -> Callable:
         n_consts_per_branch = [len(consts) for consts in jaxpr_consts]
 
         return cond_prim.bind(
-            conditions,
+            *conditions,
             *args,
             *consts_flat,
             jaxpr_branches=jaxpr_branches,
