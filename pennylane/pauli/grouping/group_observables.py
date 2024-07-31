@@ -140,12 +140,7 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
         The adjacency matrix for an undirected graph of N nodes is an N by N symmetric binary
         matrix, where matrix elements of 1 denote an edge, and matrix elements of 0 denote no edge.
         """
-
-        adj = qwc_adj_matrix_from_symplectic(
-            self.binary_observables, grouping_type=self.grouping_type
-        )
-
-        return adj
+        return adj_matrix_from_symplectic(self.binary_observables, grouping_type=self.grouping_type)
 
     def colour_pauli_graph(self):
         """
@@ -166,16 +161,20 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
             ]
 
         else:
-            pauli_groups = self.partitions_from_graph()
+            pauli_groups = self.pauli_partitions_from_graph()
 
         return pauli_groups
 
-    def partitions_from_graph(self) -> list[list]:
-        """Partition Pauli observables into lists of (anti-)commuting observables
-        using Rustworkx graph colouring algorithms.
+    def idx_partitions_from_graph(self) -> list[list]:
+        """Colours the complement graph using a greedy colouring algorithm and groups indices by colour.
+
+        This function uses the `graph_greedy_color` function from `rx` to colour the graph defined by
+        `self.complement_graph` using a specified strategy from `RX_STRATEGIES`. It then groups the indices
+        (nodes) of the graph by their assigned colours.
 
         Returns:
-            list[list[Observable]]: List of partitions of the Pauli observables made up of mutually (anti-)commuting observables.
+            dict[int, list[int]]: A dictionary where the keys are colours (integers) and the values are lists
+            of indices (nodes) that have been assigned that colour.
         """
         # A dictionary where keys are node indices and the value is the color
         colouring_dict = rx.graph_greedy_color(
@@ -185,6 +184,17 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
         groups = defaultdict(list)
         for idx, colour in sorted(colouring_dict.items()):
             groups[colour].append(idx)
+
+        return groups
+
+    def pauli_partitions_from_graph(self) -> list[list]:
+        """Partition Pauli observables into lists of (anti-)commuting observables
+        using Rustworkx graph colouring algorithms.
+
+        Returns:
+            list[list[Observable]]: List of partitions of the Pauli observables made up of mutually (anti-)commuting terms.
+        """
+        groups = self.idx_partitions_from_graph()
 
         # Get the observables from the indices. itemgetter outperforms list comprehension
         pauli_groups = [
@@ -243,7 +253,7 @@ def is_qwc_pauli_obs(pauli_obs_1, pauli_obs_2):
     return all(pw2[wire] in {"I", val} for wire, val in pw1.items())
 
 
-def qwc_adj_matrix_from_symplectic(symplectic_matrix, grouping_type):
+def adj_matrix_from_symplectic(symplectic_matrix: np.ndarray, grouping_type: str):
     """Get adjacency matrix of (anti-)commuting graph based on grouping type.
 
     This is the adjacency matrix of the complement graph. Based on symplectic representations and inner product of [1].
@@ -291,6 +301,48 @@ def qwc_adj_matrix_from_symplectic(symplectic_matrix, grouping_type):
         adj_matrix = ~np.logical_xor.reduce(qubit_anticommutation_mat, axis=2)
 
     return adj_matrix
+
+
+def compute_partition_indices(
+    observables: list, grouping_type: str = "qwc", method: str = "lf"
+) -> tuple[tuple[int]]:
+    """
+    Computes the partition indices of a list of observables using a specified grouping type
+    and graph colouring method.
+
+    Args:
+        observables (list[Observable]): A list of Pauli Observables to be partitioned.
+        grouping_type (str): The type of binary relation between Pauli observables.
+            Can be ``'qwc'``, ``'commuting'``, or ``'anticommuting'``. Defaults to ``'qwc'``.
+        method (str): The graph colouring heuristic to use in solving minimum clique cover.
+            Can be ``'lf'`` (Largest First), ``'dsatur'`` (Degree of Saturation), or ``'gis'`` (Greedy Independent Set).
+            Defaults to ``'lf'``.
+
+    Returns:
+        tuple[tuple[int]]: A tuple of tuples where each inner tuple contains the indices of
+        observables that are grouped together according to the specified grouping type and
+        graph colouring method.
+
+    **Example**
+
+        >>> observables = [[qml.X(0) @ qml.Z(1)], [qml.Z(0)], [qml.X(1)]]
+        >>> compute_partition_indices(observables, grouping_type="qwc", method="lf")
+        ((0,), (1, 2))
+    """
+    if method == "rlf":
+        raise ValueError(
+            "Heuristic method 'rlf' is not a valid method for this function."
+            "Instead, use `lf`, 'dsatur' or 'gis'."
+        )
+
+    pauli_groupper = PauliGroupingStrategy(
+        observables, grouping_type=grouping_type, graph_colourer=method
+    )
+
+    idx_dictionary = pauli_groupper.idx_partitions_from_graph()
+
+    partition_indices = tuple(tuple(indices) for indices in idx_dictionary.values())
+    return partition_indices
 
 
 def group_observables(observables, coefficients=None, grouping_type="qwc", method="rlf"):
@@ -355,7 +407,7 @@ def group_observables(observables, coefficients=None, grouping_type="qwc", metho
             return [no_wires_obs]
         return [no_wires_obs], [coefficients]
 
-    pauli_grouping = PauliGroupingStrategy(
+    pauli_groupper = PauliGroupingStrategy(
         wires_obs, grouping_type=grouping_type, graph_colourer=method
     )
 
@@ -366,7 +418,7 @@ def group_observables(observables, coefficients=None, grouping_type="qwc", metho
         qml.operation.enable_new_opmath(warn=False)
 
     try:
-        partitioned_paulis = pauli_grouping.colour_pauli_graph()
+        partitioned_paulis = pauli_groupper.colour_pauli_graph()
     finally:
         if temp_opmath:
             qml.operation.disable_new_opmath(warn=False)
