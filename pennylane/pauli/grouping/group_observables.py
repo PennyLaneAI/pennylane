@@ -323,6 +323,9 @@ def compute_partition_indices(
         observables that are grouped together according to the specified grouping type and
         graph colouring method.
 
+    Raises:
+        ValueError: If method is ``'rlf'`` as it is not a supported heuristic for this implementation.
+
     **Example**
 
         >>> observables = [[qml.X(0) @ qml.Z(1)], [qml.Z(0)], [qml.X(1)]]
@@ -335,13 +338,29 @@ def compute_partition_indices(
             "Instead, use `lf`, 'dsatur' or 'gis'."
         )
 
+    idx_no_wires = []
+    obs_wires = []
+    for idx, obs in enumerate(observables):
+        if len(obs.wires) == 0:
+            idx_no_wires.append(idx)
+        else:
+            obs_wires.append(obs)
+
+    if not obs_wires:
+        return (tuple(idx_no_wires),)
+
     pauli_groupper = PauliGroupingStrategy(
-        observables, grouping_type=grouping_type, graph_colourer=method
+        obs_wires, grouping_type=grouping_type, graph_colourer=method
     )
 
     idx_dictionary = pauli_groupper.idx_partitions_from_graph()
 
     partition_indices = tuple(tuple(indices) for indices in idx_dictionary.values())
+
+    if idx_no_wires:
+        first_group = partition_indices[0] + tuple(idx_no_wires)
+        partition_indices = (first_group,) + partition_indices[1:]
+
     return partition_indices
 
 
