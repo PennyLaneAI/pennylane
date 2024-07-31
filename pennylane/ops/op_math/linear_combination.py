@@ -273,6 +273,7 @@ class LinearCombination(Sum):
         _, ops = self.terms()
 
         # 'rlf' method is not compatible with the rx implementation.
+        # This option is much less efficient so should be avoided.
         if method == "rlf":
             with qml.QueuingManager.stop_recording():
                 op_groups = qml.pauli.group_observables(

@@ -226,33 +226,6 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
         return graph
 
 
-def qwc_adj_matrix_from_obs(observables):
-    """Get adjacency matrix of the graph of NOT commuting observables qubit-wise.
-
-    Args:
-        observables (list[observables]): list of pauli observables
-
-    Returns:
-        np.ndarray
-    """
-    num_obs = len(observables)
-    adj_matrix = np.zeros((num_obs, num_obs))
-
-    for i in range(num_obs):
-        for j in range(i + 1, num_obs):
-            adj_matrix[i, j] = int(not is_qwc_pauli_obs(observables[i], observables[j]))
-            adj_matrix[j, i] = adj_matrix[i, j]
-    return adj_matrix
-
-
-def is_qwc_pauli_obs(pauli_obs_1, pauli_obs_2):
-    """Determine whether or not two pauli observables commute qubit wise (qwc)"""
-    pw1 = next(iter(pauli_obs_1.pauli_rep))
-    pw2 = next(iter(pauli_obs_2.pauli_rep))
-
-    return all(pw2[wire] in {"I", val} for wire, val in pw1.items())
-
-
 def adj_matrix_from_symplectic(symplectic_matrix: np.ndarray, grouping_type: str):
     """Get adjacency matrix of (anti-)commuting graph based on grouping type.
 
