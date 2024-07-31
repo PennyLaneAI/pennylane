@@ -110,6 +110,7 @@ preprocessing, getting information from a circuit, and more.
     ~transforms.insert
     ~transforms.add_noise
     ~defer_measurements
+    ~transforms.diagonalize_measurements
     ~transforms.split_non_commuting
     ~transforms.split_to_single_terms
     ~transforms.broadcast_expand
@@ -145,7 +146,6 @@ to help build custom QNode, quantum function, and tape transforms:
     ~transforms.make_tape
     ~transforms.create_expand_fn
     ~transforms.create_decomp_expand_fn
-    ~transforms.diagonalize_measurements
     ~transforms.expand_invalid_trainable
     ~transforms.expand_invalid_trainable_hadamard_gradient
     ~transforms.expand_multipar

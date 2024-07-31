@@ -10,7 +10,7 @@ from pennylane.transforms.core import transform
 
 # pylint: disable=protected-access
 
-_default_supported_obs = frozenset(["PauliZ", "Identity"])
+_default_supported_obs = (qml.Z, qml.Identity)
 
 
 def null_postprocessing(results):
@@ -21,15 +21,17 @@ def null_postprocessing(results):
 
 
 @transform
-def diagonalize_measurements(tape, supported_base_obs=("PauliZ", "Identity")):
+def diagonalize_measurements(tape, supported_base_obs=_default_supported_obs):
     """Diagonalize the measurements on a tape if they are not supported. Raises an error if the
     measurements do not commute.
 
     Args:
         tape (QNode or QuantumScript or Callable): The quantum circuit to modify the measurements of.
-        supported_base_obs (Optional, Iterable(Str)): A list of names of supported base observables.
-            Allowed names are 'PauliX', 'PauliY', 'PauliZ' and 'Hadamard'. If no list is provided,
-            the transform will diagonalize everything into the Z basis.
+        supported_base_obs (Optional, Iterable(Observable)): A list of supported base observable classes.
+            Allowed observables are X, Y, Z, Hadamarda and Identity. Z and Identity are always treated
+            as supported, regardless of input. If no list is provided, the transform will diagonalize
+            everything into the Z basis. If a list is provided, only unsupported observables will be
+            diagonalized to the Z basis.
 
     Returns:
         qnode (QNode) or tuple[List[QuantumScript], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
@@ -94,7 +96,7 @@ def diagonalize_measurements(tape, supported_base_obs=("PauliZ", "Identity")):
             tape = qml.tape.QuantumScript(measurements=measurements)
             tapes, processing_fn = diagonalize_measurements(
                 tape,
-                supported_base_obs=['PauliX', 'PauliY', 'PauliZ']
+                supported_base_obs=[qml.X, qml.Y, qml.Z]
             )
 
         Now ``tapes`` is a tuple containing a single tape with the updated measurements,
@@ -105,18 +107,16 @@ def diagonalize_measurements(tape, supported_base_obs=("PauliZ", "Identity")):
     """
 
     bad_obs_input = [
-        o
-        for o in supported_base_obs
-        if o not in {"PauliX", "PauliY", "PauliZ", "Hadamard", "Identity"}
+        o for o in supported_base_obs if o not in {qml.X, qml.Y, qml.Z, qml.Hadamard, qml.Identity}
     ]
 
     if bad_obs_input:
         raise ValueError(
-            "Supported base observables must be a subset of ['PauliX', 'PauliY', 'PauliZ', 'Hadamard', 'Identity'] "
+            "Supported base observables must be a subset of [X, Y, Z, Hadamard, and Identity] "
             f"but received {list(bad_obs_input)}"
         )
 
-    supported_base_obs = set(list(supported_base_obs) + ["PauliZ", "Identity"])
+    supported_base_obs = set(list(supported_base_obs) + [qml.Z, qml.Identity])
 
     _visited_obs = (set(), set())  # tracks which observables and wires have been diagonalized
     diagonalizing_gates = []
@@ -220,7 +220,10 @@ def _diagonalize_observable(
         )
 
     # also validates that the wire hasn't already been diagonalized and updated _visited_obs
-    switch_basis = observable.name not in supported_base_obs
+    switch_basis = type(observable) not in supported_base_obs
+    print(supported_base_obs)
+    print(type(observable))
+    print(switch_basis)
     diagonalize, _visited_obs = _check_if_diagonalizing(observable, _visited_obs, switch_basis)
 
     if isinstance(observable, qml.Z):  # maybe kind of redundant

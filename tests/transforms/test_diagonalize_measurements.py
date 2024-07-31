@@ -50,7 +50,7 @@ class TestDiagonalizeObservable:
         """Test that observables are diagonalized or not depending on whether the observable
         type is included in supported_base_obs"""
 
-        device_supported_obs = ["PauliX", "PauliZ"]
+        device_supported_obs = [qml.X, qml.Z]
 
         diagonalizing_gates, new_obs, _visited_obs = _diagonalize_observable(
             obs, supported_base_obs=device_supported_obs
@@ -171,7 +171,7 @@ class TestDiagonalizeObservable:
     def test_compound_observables_supported_base_obs(self, compound_obs, expected_res, base_obs):
         """Test supported_base_obs argument works as expected for compound observables"""
 
-        device_supported_obs = ["PauliX", "PauliZ"]
+        device_supported_obs = (qml.X, qml.Z)
         diagonalizing_gates, new_obs, visited_obs = _diagonalize_observable(
             compound_obs, supported_base_obs=device_supported_obs
         )
@@ -365,7 +365,7 @@ class TestDiagonalizeTapeMeasurements:
 
         tape = QuantumScript([], measurements=measurements)
 
-        tapes, fn = diagonalize_measurements(tape, supported_base_obs=["PauliX", "PauliZ"])
+        tapes, fn = diagonalize_measurements(tape, supported_base_obs=[qml.X, qml.Z])
 
         new_tape = tapes[0]
 
@@ -378,7 +378,9 @@ class TestDiagonalizeTapeMeasurements:
 
         assert fn == null_postprocessing
 
-    @pytest.mark.parametrize("supported_base_obs", (["PauliC", "PauliZ"], [X, Z], [X(0), qml.Z(1)]))
+    @pytest.mark.parametrize(
+        "supported_base_obs", (["PauliC", "PauliZ"], ["PauliX", "PauliZ"], [X(0), qml.Z(1)])
+    )
     def test_bad_obs_input_raises_error(self, supported_base_obs):
         """Test that if a value is passed to supported_base_obs that can't be interpreted, a clear error is raised"""
 
@@ -387,7 +389,7 @@ class TestDiagonalizeTapeMeasurements:
                 QuantumScript([], measurements=[]), supported_base_obs=supported_base_obs
             )
 
-    @pytest.mark.parametrize("supported_base_obs", (["PauliZ"],))
+    @pytest.mark.parametrize("supported_base_obs", ([qml.Z], [qml.Z, qml.X], [qml.Z, qml.X, qml.Y]))
     @pytest.mark.parametrize("shots", [None, 2000, (4000, 5000, 6000)])
     def test_qnode_integration(self, supported_base_obs, shots):
 
