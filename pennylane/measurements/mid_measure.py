@@ -252,10 +252,9 @@ def _create_mid_measure_primitive():
     def _(wires, reset=False, postselect=None):
         return _measure_impl(wires, reset=reset, postselect=postselect)
 
-    dtype = jax.numpy.int64 if jax.config.jax_enable_x64 else jax.numpy.int32
-
     @mid_measure_p.def_abstract_eval
     def _(*_, **__):
+        dtype = jax.numpy.int64 if jax.config.jax_enable_x64 else jax.numpy.int32
         return jax.core.ShapedArray((), dtype)
 
     return mid_measure_p

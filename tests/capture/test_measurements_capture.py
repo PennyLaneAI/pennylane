@@ -169,7 +169,7 @@ def test_capture_and_eval(func):
 
 @pytest.mark.parametrize("x64_mode", [True, False])
 def test_mid_measure(x64_mode):
-    """Test that mid circuit measurements can be captured and executed.x"""
+    """Test that mid circuit measurements can be captured and executed."""
     initial_mode = jax.config.jax_enable_x64
     jax.config.update("jax_enable_x64", x64_mode)
 

@@ -64,9 +64,9 @@ class TestMidMeasureUnit:
         invars = jaxpr.eqns[0].invars
         outvars = jaxpr.eqns[0].outvars
         assert len(invars) == len(outvars) == 1
-        expected_dtype = jnp.int64 if jax.config.jax_enable_x64 else jnp.int32
+        expected_dtype = jnp.int64 if x64_mode else jnp.int32
         assert invars[0].aval == jax.core.ShapedArray((), expected_dtype, weak_type=True)
-        assert outvars[0].aval == jax.core.ShapedArray((), jnp.int64 if x64_mode else jnp.int32)
+        assert outvars[0].aval == jax.core.ShapedArray((), expected_dtype)
         assert set(jaxpr.eqns[0].params.keys()) == {"reset", "postselect"}
 
         jax.config.update("jax_enable_x64", initial_mode)
