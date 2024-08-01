@@ -103,7 +103,7 @@ def center(
         :title: Derivation
         :href: derivation
 
-        The center :math:`\mathfrak{z}(\mathfrak{g})` of an algebra :math:`\mathfrak{g}`
+        The center :math:`\mathfrak{\xi}(\mathfrak{g})` of an algebra :math:`\mathfrak{g}`
         can be computed in the following steps. First, compute the
         :func:`~.pennylane.structure_constants`, or adjoint representation, of the algebra
         with respect to some basis :math:`\mathbb{B}` of :math:`\mathfrak{g}`.
@@ -133,6 +133,7 @@ def center(
         instead compute pairwise commutators and know that the center consists solely of
         basis elements that commute with all other basis elements. This can be seen in the
         following way.
+
         Assume that the center elements identified based on the basis have been removed
         already and we are left with a basis :math:`\mathbb{B}=\{p_i\}_i` of Pauli
         words such that :math:`\forall i\ \exists j:\ [p_i, p_j] \neq 0`. Assume that there is
@@ -149,10 +150,10 @@ def center(
         .. math::
 
             &\forall j: \ 0 = \sum_i x_i [p_i, p_j] = 2 \sum_i x_i \chi_{i,j} p_ip_j\\
-            \Rightarrow &\forall i,j \text{s.t.} \chi_{i,j}\neq 0: x_i = 0,
+            \Rightarrow &\forall i,j \text{ s.t. } \chi_{i,j}\neq 0: x_i = 0,
 
-        where denoted by :math:`\chi_{i,j}` an indicator that is :math:`0` if the commutator
-        :math:`[p_i, p_j]` vanishes and :math:`1` else.
+        where :math:`\chi_{i,j}` denotes an indicator that is :math:`0` if the commutator
+        :math:`[p_i, p_j]` vanishes and :math:`1` otherwise.
         However, we know that for each :math:`i` there is at least one :math:`j` such that
         :math:`\chi_{i,j}\neq 0`. This means that :math:`x_i = 0` is guaranteed for all
         :math:`i` by at least one :math:`j`. Therefore :math:`x=0`, which is a contradiction
