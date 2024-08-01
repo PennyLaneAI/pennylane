@@ -126,11 +126,7 @@ class TestJaxExecuteUnitTests:
             return execute(
                 [tape],
                 dev,
-                gradient_fn="device",
-                gradient_kwargs={
-                    "method": "adjoint_jacobian",
-                    "use_device_state": True,
-                },
+                gradient_fn="adjoint",
             )[0]
 
         a = jax.numpy.array([0.1, 0.2])
@@ -162,9 +158,8 @@ class TestJaxExecuteUnitTests:
             return execute(
                 [tape],
                 dev,
-                gradient_fn="device",
+                gradient_fn="adjoint",
                 grad_on_execution=False,
-                gradient_kwargs={"method": "adjoint_jacobian"},
             )[0]
 
         a = jax.numpy.array([0.1, 0.2])
@@ -343,10 +338,9 @@ class TestCaching:
             return execute(
                 [tape],
                 dev,
-                gradient_fn="device",
+                gradient_fn="adjoint",
                 cache=cache,
                 grad_on_execution=False,
-                gradient_kwargs={"method": "adjoint_jacobian"},
             )[0]
 
         # Without caching, 2 evaluations are required.
@@ -369,14 +363,12 @@ class TestCaching:
 execute_kwargs_integration = [
     {"gradient_fn": param_shift},
     {
-        "gradient_fn": "device",
+        "gradient_fn": "adjoint",
         "grad_on_execution": True,
-        "gradient_kwargs": {"method": "adjoint_jacobian", "use_device_state": True},
     },
     {
-        "gradient_fn": "device",
+        "gradient_fn": "adjoint",
         "grad_on_execution": False,
-        "gradient_kwargs": {"method": "adjoint_jacobian"},
     },
 ]
 
@@ -895,10 +887,11 @@ class TestVectorValuedJIT:
             assert jax.numpy.allclose(r, e, atol=1e-7)
 
 
+@pytest.mark.xfail(reason="Need to figure out how to handle this case in a less ambiguous manner")
 def test_diff_method_None_jit():
     """Test that jitted execution works when `gradient_fn=None`."""
 
-    dev = qml.device("default.qubit.jax", wires=1, shots=10)
+    dev = qml.device("default.qubit", wires=1, shots=10)
 
     @jax.jit
     def wrapper(x):

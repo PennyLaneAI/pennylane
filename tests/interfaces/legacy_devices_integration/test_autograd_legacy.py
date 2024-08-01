@@ -214,7 +214,7 @@ class TestBatchTransformExecution:
                 res = qml.execute([tape], dev, None, device_batch_transform=False)
             assert np.allclose(res[0], np.cos(y), atol=0.1)
 
-        spy.assert_not_called()
+        spy.assert_called()
 
         with pytest.warns(
             qml.PennyLaneDeprecationWarning,
@@ -464,7 +464,7 @@ class TestCaching:
             out = qml.grad(f)(x)
 
         assert dev.tracker.totals["batches"] == 2
-        assert dev.tracker.history["batch_len"] == [2, 4]
+        assert dev.tracker.history["batch_len"] == [1, 2]
 
         assert qml.math.allclose(out, -np.cos(x) - np.sin(x), atol=0.05)
 

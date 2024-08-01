@@ -36,7 +36,7 @@ class TestQNodeIntegration:
         """Test that the plugin device loads correctly"""
         dev = qml.device("default.mixed", wires=2)
         assert dev.num_wires == 2
-        assert dev.shots is None
+        assert dev.shots == qml.measurements.Shots(None)
         assert dev.short_name == "default.mixed"
         assert dev.capabilities()["passthru_devices"]["torch"] == "default.mixed"
 
@@ -267,16 +267,22 @@ class TestApplyChannelMethodChoice:
         # Manually set the data of the operation to be torch data
         # This is due to an import problem if these tests are skipped.
         op.data = [d if isinstance(d, str) else torch.tensor(d) for d in op.data]
+
         methods = ["_apply_channel", "_apply_channel_tensordot"]
         del methods[methods.index(exp_method)]
+
         unexp_method = methods[0]
+
         spy_exp = mocker.spy(DefaultMixed, exp_method)
         spy_unexp = mocker.spy(DefaultMixed, unexp_method)
+
         dev = qml.device("default.mixed", wires=dev_wires)
+
         state = np.zeros((2**dev_wires, 2**dev_wires))
         state[0, 0] = 1.0
-        dev._state = torch.tensor(state).reshape([2] * (2 * dev_wires))
-        dev._apply_operation(op)
+
+        dev.target_device._state = torch.tensor(state).reshape([2] * (2 * dev_wires))
+        dev.target_device._apply_operation(op)
 
         spy_unexp.assert_not_called()
         spy_exp.assert_called_once()
@@ -416,7 +422,6 @@ class TestPassthruIntegration:
         expected = torch.tensor(exp_fn(a), dtype=torch.float64)
         assert torch.allclose(a.grad, expected, atol=tol, rtol=0)
 
-    @pytest.mark.xfail(reason="see pytorch/pytorch/issues/94397")
     def test_state_vector_differentiability(self, tol):
         """Test that the device state vector can be differentiated directly"""
         dev = qml.device("default.mixed", wires=1)
@@ -518,7 +523,7 @@ class TestPassthruIntegration:
         # pylint: disable=unused-variable
         dev = qml.device("default.mixed", wires=1, shots=100)
 
-        msg = "Backpropagation is only supported when shots=None"
+        msg = "does not support backprop with requested circuit"
 
         with pytest.raises(qml.QuantumFunctionError, match=msg):
 

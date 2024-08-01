@@ -1620,7 +1620,7 @@ class TestQNodeIntegration:
         """Test that the torch device plugin loads correctly"""
         dev = qml.device("default.qubit.torch", wires=2, torch_device=torch_device)
         assert dev.num_wires == 2
-        assert dev.shots is None
+        assert dev.shots == qml.measurements.Shots(None)
         assert dev.short_name == "default.qubit.torch"
         assert dev.capabilities()["passthru_interface"] == "torch"
         assert dev._torch_device == torch_device

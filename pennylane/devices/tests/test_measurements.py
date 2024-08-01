@@ -1783,7 +1783,10 @@ class TestStateMeasurement:
             qml.X(0)
             return MyMeasurement()
 
-        with pytest.raises(qml.DeviceError):
+        with pytest.warns(
+            UserWarning,
+            match="MyMeasurement with finite shots; the returned state information is analytic",
+        ):
             circuit()
 
     def test_method_overriden_by_device(self, device):

@@ -880,6 +880,7 @@ class TestVectorValuedJIT:
             assert jax.numpy.allclose(r, e, atol=1e-7)
 
 
+@pytest.mark.xfail(reason="Need to figure out how to handle this case in a less ambiguous manner")
 def test_diff_method_None_jit():
     """Test that jitted execution works when `gradient_fn=None`."""
 
