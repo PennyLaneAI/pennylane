@@ -31,6 +31,10 @@ DLA_CENTERS = (
     ([qml.X(0), qml.X(1)], [qml.X(0), qml.X(1)]),  # two non-overlapping wires
     ([qml.X(0), qml.Y(1)], [qml.X(0), qml.Y(1)]),  # two non-overlapping wires with different ops
     ([qml.X(0), qml.Y(0), qml.Z(0), qml.I()], [qml.I()]),  # non-trivial DLA, but trivial center
+    (
+        [qml.X(0) + qml.Y(0), qml.X(0) - qml.Y(0), qml.Z(0)],
+        [],
+    ),  # non-trivial DLA, but trivial center
 )
 
 
