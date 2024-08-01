@@ -16,6 +16,7 @@ Unit tests for utilities for optimization transforms.
 """
 # pylint: disable=too-few-public-methods
 
+from functools import partial
 from itertools import product
 
 import pytest
@@ -172,22 +173,9 @@ class TestRotGateFusion:
         angles_1, angles_2 = np.transpose(special_angles, (1, 0, 2))
         self.run_interface_test(angles_1, angles_2)
 
-    @pytest.mark.slow
-    @pytest.mark.jax
-    @pytest.mark.parametrize("use_jit", [False, True])
-    def test_full_rot_fusion_jacobian(self, use_jit):
-        """Test the Jacobian of the rotation angle fusion. Uses batching for performance reasons.
-        For known sources of singularities, the Jacobian is checked to indeed return NaN. These
-        sources are related to the absolute value of the upper left entry of the matrix product:
-         - If it is 1, the derivative of arccos becomes infinite (evaluated at 1), and
-         - if its square is 0, the derivative of sqrt becomes infinite (evaluated at 0).
-        """
-        import jax
-
-        special_points = np.array([3 / 2, 1, 1 / 2, 0, -1 / 2, -1, -3 / 2]) * np.pi
-        special_angles = np.array(list(product(special_points, repeat=6))).reshape((-1, 2, 3))
-        random_angles = np.random.random((1000, 2, 3))
-        all_angles = jax.numpy.concatenate([special_angles, random_angles], dtype=complex)
+    def run_jacobian_test(self, all_angles, jac_fn, is_batched, jit_fn=None, array_fn=None):
+        """Execute standard test lines for testing Jacobians with different interfaces.
+        #Note that the transpose calls only are relevant for tests with batching."""
 
         def mat_from_prod(angles):
             def original_ops():
@@ -197,28 +185,149 @@ class TestRotGateFusion:
 
             return qml.matrix(original_ops, [0])()  # pylint:disable=too-many-function-args
 
-        def _mat_from_fuse(angles):
+        def mat_from_fuse(angles):
             angles1, angles2 = angles[..., 0, :], angles[..., 1, :]
-            fused_angles = fuse_rot_angles(angles1, angles2)
-            return qml.Rot(*fused_angles.T, wires=0).matrix()
+            fused_angles = qml.math.transpose(fuse_rot_angles(angles1, angles2))
+            return qml.Rot(fused_angles[0], fused_angles[1], fused_angles[2], wires=0).matrix()
 
-        mat_from_fuse = jax.jit(_mat_from_fuse) if use_jit else _mat_from_fuse
+        if jit_fn is not None:
+            mat_from_fuse = jit_fn(mat_from_fuse)
 
-        # Need holomorphic derivatives because the output matrices are complex-valued
-        jac_from_prod = jax.vmap(jax.jacobian(mat_from_prod, holomorphic=True))(all_angles)
-        jac_from_fuse = jax.vmap(jax.jacobian(mat_from_fuse, holomorphic=True))(all_angles)
+        if is_batched:
+            jac_from_prod = jac_fn(mat_from_prod)(all_angles)
+            jac_from_fuse = jac_fn(mat_from_fuse)(all_angles)
+        else:
+            jac_from_prod = qml.math.stack([jac_fn(mat_from_prod)(a) for a in all_angles])
+            jac_from_fuse = qml.math.stack([jac_fn(mat_from_fuse)(a) for a in all_angles])
+
+        if array_fn is not None:
+            # Convert to vanilla numpy
+            all_angles = array_fn(all_angles)
 
         # expected failures based on the sources mentioned in the docstring above.
-        thetas = all_angles[..., 1].T
-        (c1, c2), (s1, s2) = np.cos(thetas / 2), np.sin(thetas / 2)
+        thetas = qml.math.transpose(all_angles[..., 1])
+        (c1, c2), (s1, s2) = qml.math.cos(thetas / 2), qml.math.sin(thetas / 2)
         omega1 = all_angles[:, 0, 2]
         phi2 = all_angles[:, 1, 0]
         # squared absolute value of the relevant entry of the product of the two rotation matrices
-        pre_mag = c1**2 * c2**2 + s1**2 * s2**2 - 2 * c1 * c2 * s1 * s2 * np.cos(omega1 + phi2)
+        pre_mag = (
+            c1**2 * c2**2 + s1**2 * s2**2 - 2 * c1 * c2 * s1 * s2 * qml.math.cos(omega1 + phi2)
+        )
         # Compute condition for the two error sources combined
-        error_sources = (np.abs(pre_mag - 1) < 1e-12) + (pre_mag == 0j)
+        error_sources = (qml.math.abs(pre_mag - 1) < 1e-12) | (pre_mag == 0)
+
+        print(jac_from_fuse)
+        print(jac_from_prod)
+        print(error_sources)
 
         assert qml.math.allclose(jac_from_prod[~error_sources], jac_from_fuse[~error_sources])
-        assert qml.math.all(
-            qml.math.any(qml.math.isnan(jac_from_fuse[error_sources]), axis=[1, 2, 3, 4])
-        )
+        nans = qml.math.isnan(jac_from_fuse[error_sources])
+        nans = qml.math.reshape(nans, (len(nans), -1))
+        assert qml.math.all(qml.math.any(nans, axis=1))
+
+    @pytest.mark.slow
+    @pytest.mark.jax
+    @pytest.mark.parametrize("use_jit", [False, True])
+    def test_jacobian_jax(self, use_jit):
+        """Test the Jacobian of the rotation angle fusion with JAX. Uses batching for performance
+        reasons. For known sources of singularities, the Jacobian is checked to indeed return NaN.
+        These sources are related to the absolute value of the upper left entry of the matrix
+        product:
+         - If it is 1, the derivative of arccos becomes infinite (evaluated at 1), and
+         - if its square is 0, the derivative of sqrt becomes infinite (evaluated at 0).
+        """
+        import jax
+
+        special_points = np.array([3 / 2, 1, 1 / 2, 0, -1 / 2, -1, -3 / 2]) * np.pi
+        special_angles = np.array(list(product(special_points, repeat=6))).reshape((-1, 2, 3))
+        random_angles = np.random.random((1000, 2, 3))
+        # Need holomorphic derivatives and complex inputs because the output matrices are complex
+        all_angles = jax.numpy.concatenate([special_angles, random_angles], dtype=complex)
+        jac_fn = lambda fn: jax.vmap(jax.jacobian(fn, holomorphic=True))
+        jit_fn = jax.jit if use_jit else None
+        self.run_jacobian_test(all_angles, jac_fn, is_batched=True, jit_fn=jit_fn)
+
+    @pytest.mark.slow
+    @pytest.mark.torch
+    def test_jacobian_torch(self):
+        """Test the Jacobian of the rotation angle fusion with torch.
+        For known sources of singularities, the Jacobian is checked to indeed return NaN.
+        These sources are related to the absolute value of the upper left entry of the matrix
+        product:
+         - If it is 1, the derivative of arccos becomes infinite (evaluated at 1), and
+         - if its square is 0, the derivative of sqrt becomes infinite (evaluated at 0).
+        """
+        import torch
+
+        # Testing fewer points than with batching to limit test runtimes
+        special_points = np.array([1, 1 / 2, 0, -1]) * np.pi
+        special_angles = np.array(list(product(special_points, repeat=6))).reshape((-1, 2, 3))
+        random_angles = np.random.random((100, 2, 3))
+        all_angles = np.concatenate([special_angles, random_angles])
+
+        # Need holomorphic derivatives and complex inputs because the output matrices are complex
+        all_angles = torch.tensor(all_angles, requires_grad=True)
+        jac_fn = lambda fn: (lambda *args: torch.autograd.functional.jacobian(fn, args))
+        array_fn = lambda x: x.detach().numpy()
+        self.run_jacobian_test(all_angles, jac_fn, is_batched=False, array_fn=array_fn)
+
+    @pytest.mark.slow
+    @pytest.mark.autograd
+    def test_jacobian_autograd(self):
+        """Test the Jacobian of the rotation angle fusion with Autograd.
+        For known sources of singularities, the Jacobian is checked to indeed return NaN.
+        These sources are related to the absolute value of the upper left entry of the matrix
+        product:
+         - If it is 1, the derivative of arccos becomes infinite (evaluated at 1), and
+         - if its square is 0, the derivative of sqrt becomes infinite (evaluated at 0).
+        """
+        special_points = np.array([1, 0, -1]) * np.pi
+        special_angles = np.array(list(product(special_points, repeat=6))).reshape((-1, 2, 3))
+        random_angles = np.random.random((100, 2, 3))
+        # Need holomorphic derivatives and complex inputs because the output matrices are complex
+        all_angles = qml.numpy.concatenate([special_angles, random_angles], requires_grad=True)
+
+        def jacobian(fn):
+            real_fn = lambda *args: qml.math.real(fn(*args))
+            imag_fn = lambda *args: qml.math.imag(fn(*args))
+            real_jac_fn = qml.jacobian(real_fn)
+            imag_jac_fn = qml.jacobian(imag_fn)
+            return lambda *args: real_jac_fn(*args) + 1j * imag_jac_fn(*args)
+
+        self.run_jacobian_test(all_angles, jacobian, is_batched=False)
+
+    @pytest.mark.skip
+    @pytest.mark.slow
+    @pytest.mark.tf
+    def test_jacobian_tf(self):
+        """Test the Jacobian of the rotation angle fusion with TensorFlow.
+        For known sources of singularities, the Jacobian is checked to indeed return NaN.
+        These sources are related to the absolute value of the upper left entry of the matrix
+        product:
+         - If it is 1, the derivative of arccos becomes infinite (evaluated at 1), and
+         - if its square is 0, the derivative of sqrt becomes infinite (evaluated at 0).
+        """
+        import tensorflow as tf
+
+        # Testing fewer points than with batching to limit test runtimes
+        special_points = np.array([0, 1]) * np.pi
+        special_angles = np.array(list(product(special_points, repeat=6))).reshape((-1, 2, 3))
+        random_angles = np.random.random((3, 2, 3))
+        all_angles = np.concatenate([special_angles, random_angles])
+
+        def jacobian(fn):
+
+            def jac_fn(arg):
+                arg = tf.Variable(arg)
+                with tf.GradientTape() as t:
+                    out = fn(arg)
+                return t.jacobian(out, arg)
+
+            def vmapped_jac_fn(arg):
+                return tf.vectorized_map(jac_fn, arg)
+
+            return jac_fn
+
+        # Need holomorphic derivatives and complex inputs because the output matrices are complex
+        all_angles = tf.Variable(all_angles)
+        self.run_jacobian_test(all_angles, jacobian, is_batched=False)

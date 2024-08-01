@@ -118,8 +118,10 @@ def fuse_rot_angles(angles_1, angles_2):
             return fused_angles
 
     # moveaxis required for batched inputs
-    phi1, theta1, omega1 = qml.math.moveaxis(angles_1, -1, 0)
-    phi2, theta2, omega2 = qml.math.moveaxis(angles_2, -1, 0)
+    angles_1 = qml.math.moveaxis(angles_1, -1, 0)
+    angles_2 = qml.math.moveaxis(angles_2, -1, 0)
+    phi1, theta1, omega1 = angles_1[0], angles_1[1], angles_1[2]
+    phi2, theta2, omega2 = angles_2[0], angles_2[1], angles_2[2]
     c1, c2 = qml.math.cos(theta1 / 2), qml.math.cos(theta2 / 2)
     s1, s2 = qml.math.sin(theta1 / 2), qml.math.sin(theta2 / 2)
 
