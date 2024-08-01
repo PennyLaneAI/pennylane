@@ -111,7 +111,7 @@ def center(
 
         .. math::
 
-            \mathfrak{z}(\mathfrak{g}) = \operatorname{span}\left\{\bigcap_{x\in\mathbb{B}}
+            \mathfrak{\xi}(\mathfrak{g}) = \operatorname{span}\left\{\bigcap_{x\in\mathbb{B}}
             \operatorname{ker}(\operatorname{ad}_x)\right\},
 
         i.e., the intersection of the kernels, or null spaces, of all basis elements in the
@@ -120,7 +120,8 @@ def center(
         The kernel can be computed with ``scipy.linalg.null_space``, and vector space
         intersections are computed recursively from pairwise intersections. The intersection
         between two vectors spaces :math:`V_1` and :math:`V_2` given by (orthonormal) bases
-        :math:`\mathbb{B}_i` can be computed from
+        :math:`\mathbb{B}_i` can be computed from the kernel of the matrix that has all
+        basis vectors from :math:`\mathbb{B}_1` and :math:`-\mathbb{B}_2` as columns, i.e.,
         :math:`\operatorname{ker}(\left[\ \mathbb{B}_1 \ | -\mathbb{B}_2\ \right])`. For an
         (orthonormal) basis of this kernel, consisting of two stacked column vectors
         :math:`u^{(i)}_1` and :math:`u^{(i)}_2` for each basis, a basis of the
