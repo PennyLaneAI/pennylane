@@ -41,13 +41,13 @@ def enable_disable_plxpr():
 class TestCaptureForLoop:
     """Tests for capturing for loops into jaxpr."""
 
-    @pytest.mark.parametrize("arg", [0, 5])
-    def test_for_loop_identity(self, arg):
+    @pytest.mark.parametrize("array", [jax.numpy.zeros(0), jax.numpy.zeros(5)])
+    def test_for_loop_identity(self, array):
         """Test simple for-loop primitive vs dynamic dimensions."""
 
         def fn(arg):
 
-            a = jax.numpy.ones([arg])
+            a = jax.numpy.ones(arg.shape)
 
             @qml.for_loop(0, 10, 2)
             def loop(_, a):
@@ -56,20 +56,22 @@ class TestCaptureForLoop:
             a2 = loop(a)
             return a2
 
-        expected = jax.numpy.ones(arg)
-        result = fn(arg)
+        expected = jax.numpy.ones(array.shape)
+        result = fn(array)
         assert np.allclose(result, expected), f"Expected {expected}, but got {result}"
 
-        # Note that this cannot be transformed with `jax.make_jaxpr`
-        # because the concrete value of 'jax.numpy.ones([arg])' wouldn't be known.
+        jaxpr = jax.make_jaxpr(fn)(array)
+        res_ev_jxpr = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, array)
+        assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
 
-    @pytest.mark.parametrize("arg", [0, 5])
-    def test_for_loop_shared_indbidx(self, arg):
+    @pytest.mark.parametrize("array", [jax.numpy.zeros(0), jax.numpy.zeros(5)])
+    def test_for_loop_shared_indbidx(self, array):
         """Test for-loops with shared dynamic input dimensions."""
 
         def fn(arg):
-            a = jax.numpy.ones([arg], dtype=float)
-            b = jax.numpy.ones([arg], dtype=float)
+
+            a = jax.numpy.ones(arg.shape, dtype=float)
+            b = jax.numpy.ones(arg.shape, dtype=float)
 
             @qml.for_loop(0, 10, 2)
             def loop(_, a, b):
@@ -78,12 +80,13 @@ class TestCaptureForLoop:
             a2, b2 = loop(a, b)
             return a2 + b2
 
-        result = fn(arg)
-        expected = 2 * jax.numpy.ones(arg)
+        result = fn(array)
+        expected = 2 * jax.numpy.ones(array.shape)
         assert np.allclose(result, expected), f"Expected {expected}, but got {result}"
 
-        # Note that this cannot be transformed with `jax.make_jaxpr`
-        # because the concrete value of 'jax.numpy.ones([arg])' wouldn't be known.
+        jaxpr = jax.make_jaxpr(fn)(array)
+        res_ev_jxpr = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, array)
+        assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
 
     @pytest.mark.parametrize(
         "lower_bound, upper_bound, step, arg, expected",
