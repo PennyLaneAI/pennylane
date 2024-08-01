@@ -12,7 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """QJIT compatible quantum and compilation operations API"""
+
+import functools
 from collections.abc import Callable
+
+import pennylane as qml
 
 from .compiler import (
     AvailableCompilers,
@@ -537,6 +541,37 @@ def for_loop(lower_bound, upper_bound, step):
     return _decorator
 
 
+@functools.lru_cache
+def _get_for_loop_qfunc_prim():
+    """Get the loop_for primitive for quantum functions."""
+
+    import jax  # pylint: disable=import-outside-toplevel
+
+    for_loop_prim = jax.core.Primitive("for_loop")
+    for_loop_prim.multiple_results = True
+
+    @for_loop_prim.def_impl
+    def _(lower_bound, upper_bound, step, *jaxpr_consts_and_init_state, jaxpr_body_fn, n_consts):
+
+        jaxpr_consts = jaxpr_consts_and_init_state[:n_consts]
+        init_state = jaxpr_consts_and_init_state[n_consts:]
+
+        # in case lower_bound >= upper_bound, return the initial state
+        fn_res = init_state
+
+        for i in range(lower_bound, upper_bound, step):
+            fn_res = jax.core.eval_jaxpr(jaxpr_body_fn.jaxpr, jaxpr_consts, i, *fn_res)
+
+        return fn_res
+
+    @for_loop_prim.def_abstract_eval
+    def _(*_, jaxpr_body_fn, **__):
+
+        return jaxpr_body_fn.out_avals
+
+    return for_loop_prim
+
+
 class ForLoopCallable:  # pylint:disable=too-few-public-methods
     """Base class to represent a for loop. This class
     when called with an initial state will execute the while
@@ -559,7 +594,7 @@ class ForLoopCallable:  # pylint:disable=too-few-public-methods
         self.step = step
         self.body_fn = body_fn
 
-    def __call__(self, *init_state):
+    def _call_capture_disabled(self, *init_state):
         args = init_state
         fn_res = args if len(args) > 1 else args[0] if len(args) == 1 else None
 
@@ -568,3 +603,28 @@ class ForLoopCallable:  # pylint:disable=too-few-public-methods
             args = fn_res if len(args) > 1 else (fn_res,) if len(args) == 1 else ()
 
         return fn_res
+
+    def _call_capture_enabled(self, *init_state):
+
+        import jax  # pylint: disable=import-outside-toplevel
+
+        for_loop_prim = _get_for_loop_qfunc_prim()
+
+        jaxpr_body_fn = jax.make_jaxpr(self.body_fn)(0, *init_state)
+
+        return for_loop_prim.bind(
+            self.lower_bound,
+            self.upper_bound,
+            self.step,
+            *jaxpr_body_fn.consts,
+            *init_state,
+            jaxpr_body_fn=jaxpr_body_fn,
+            n_consts=len(jaxpr_body_fn.consts),
+        )
+
+    def __call__(self, *init_state):
+
+        if qml.capture.enabled():
+            return self._call_capture_enabled(*init_state)
+
+        return self._call_capture_disabled(*init_state)
