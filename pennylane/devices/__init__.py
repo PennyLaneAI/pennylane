@@ -60,6 +60,7 @@ accessible from the ``pennylane.devices`` submodule.
     DefaultTensor
     NullQubit
     DefaultQutritMixed
+    LegacyDeviceFacade
 
 Preprocessing Transforms
 ------------------------
@@ -152,6 +153,7 @@ from .execution_config import ExecutionConfig, DefaultExecutionConfig, MCMConfig
 from .device_constructor import device, refresh_devices
 from .device_api import Device
 from .default_qubit import DefaultQubit
+from .legacy_facade import LegacyDeviceFacade
 
 # DefaultQubitTF and DefaultQubitAutograd not imported here since this
 # would lead to an automatic import of tensorflow and autograd, which are
