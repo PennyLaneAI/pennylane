@@ -13,7 +13,7 @@
 # limitations under the License.
 """Fallback implementation of a progress bar, used when ``rich`` is not available."""
 
-import os
+import shutil
 from dataclasses import dataclass
 from typing import Any, Optional
 
@@ -50,18 +50,27 @@ class DefaultProgress:
 
     tasks: list[Task]
 
+    _active: bool
+    _term_columns: int
+    _term_lines: int
+    _task_display_lines: list[str]
+    _task_display_lines_max: int
+    _description_width_max: int
+
     def __init__(self):
         self.tasks = []
 
-        term_size = os.get_terminal_size()
-        self._term_columns = term_size.columns
-        self._term_lines = term_size.lines
+    def __enter__(self) -> "DefaultProgress":
+        if self._active:
+            raise RuntimeError("Progress context already active.")
 
+        self._term_columns, self._term_lines = shutil.get_terminal_size()
         self._task_display_lines = []
         self._task_display_lines_max = self._term_lines - 2
         self._description_width_max = int(self._term_columns * 0.6)
 
-    def __enter__(self) -> "DefaultProgress":
+        self._active = True
+
         return self
 
     def __exit__(
@@ -71,6 +80,8 @@ class DefaultProgress:
         traceback: Any,
     ) -> None:
         self._print_final()
+        self._active = False
+        del self._task_display_lines
 
     def add_task(self, description: str, total: Optional[float] = None) -> int:
         """Add a task."""

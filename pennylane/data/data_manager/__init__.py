@@ -22,7 +22,7 @@ from functools import lru_cache
 from pathlib import Path
 from time import sleep
 from typing import Iterable, Mapping, Optional, Union
-
+import sys
 from requests import get, head
 
 from pennylane.data.base import Dataset
@@ -233,7 +233,7 @@ def load(  # pylint: disable=too-many-arguments
     force: bool = False,
     num_threads: int = 50,
     block_size: int = 8388608,
-    progress_bar: bool = True,
+    progress_bar: Optional[bool] = None,
     **params: Union[ParamArg, str, list[str]],
 ):
     r"""Downloads the data if it is not already present in the directory and returns it as a list of
@@ -249,7 +249,8 @@ def load(  # pylint: disable=too-many-arguments
         block_size (int)  : The number of bytes to fetch per read operation when fetching datasets from S3.
             Larger values may improve performance for large datasets, but will slow down small reads. Defaults
             to 8MB
-        progress_bar (bool) : Whether to show a progress bars for downloads. Defaults to True.
+        progress_bar (bool) : Whether to show a progress bars for downloads. Defaults to True if running
+            in an interactive terminal, False otherwise.
         params (kwargs)   : Keyword arguments exactly matching the parameters required for the data type.
             Note that these are not optional
 
@@ -329,6 +330,8 @@ def load(  # pylint: disable=too-many-arguments
 
     folder_path = Path(folder_path).resolve()
     data_paths = [data_path for _, data_path in foldermap.find(data_name, **params)]
+
+    progress_bar = progress_bar if progress_bar is not None else sys.stdout.isatty()
 
     if progress_bar:
         with progress.Progress() as pbar:
