@@ -26,7 +26,7 @@ from pennylane.pauli.grouping.group_observables import (
     PauliGroupingStrategy,
     compute_partition_indices,
     group_observables,
-    obs_partition_from_idx_partitions,
+    obs_partitions_from_idx_partitions,
 )
 
 
@@ -472,35 +472,35 @@ class TestComputePartitionIndices:
         ),
     ]
 
-    def test_raise_value_error(self):
-        """Test that an error is raised when using the 'rlf' method."""
-        obs = [qml.X(0), qml.Y(0)]
-        with pytest.raises(ValueError, match="Heuristic method 'rlf' is not a valid method"):
-            compute_partition_indices(observables=obs, method="rlf")
+    def test_invalid_colouring_method(self):
+        """Test that passing an invalid colouring method raises an error"""
+        observables = [qml.X(0) @ qml.Z(1), qml.Z(0), qml.X(1)]
+        with pytest.raises(ValueError, match="Graph colouring method must be one of"):
+            compute_partition_indices(observables=observables, method="recursive")
 
     def test_only_observables_without_wires(self):
         """Test that if none of the observables has wires, they are all in one single partition."""
 
-        obs = [qml.I(), 2 * qml.I()]
-        partition_indices = compute_partition_indices(observables=obs)
-        assert partition_indices == (tuple(range(len(obs))),)
+        observables = [qml.I(), 2 * qml.I()]
+        partition_indices = compute_partition_indices(observables=observables)
+        assert partition_indices == (tuple(range(len(observables))),)
 
     @pytest.mark.parametrize("observables, indices, obs_partitions", OBS_IDX_PARTITIONS)
     def test_obs_from_indices_partitions(self, observables, indices, obs_partitions):
         """Test that obs_partition_from_idx_partitions returns the correct observables"""
 
-        partition_obs = obs_partition_from_idx_partitions(observables, indices)
+        partition_obs = obs_partitions_from_idx_partitions(observables, indices)
         assert partition_obs == obs_partitions
 
     def test_mixed_observables_qwc(self):
         """Test that if both observables with wires and without wires are present,
         the latter are appended on the first element of the former and the partitions are qwc."""
-        obs = [qml.I(), qml.X(0), qml.Z(0), 2 * qml.I(), 2 * qml.Z(0)]
-        partition_indices = compute_partition_indices(observables=obs, grouping_type="qwc")
+        observables = [qml.I(), qml.X(0), qml.Z(0), 2 * qml.I(), 2 * qml.Z(0)]
+        partition_indices = compute_partition_indices(observables=observables, grouping_type="qwc")
         indices_no_wires = (0, 3)
         assert set(indices_no_wires) < set(partition_indices[0])
 
-        partition_obs = obs_partition_from_idx_partitions(obs, partition_indices)
+        partition_obs = obs_partitions_from_idx_partitions(observables, partition_indices)
         for partition in partition_obs:
             assert are_pauli_words_qwc(partition)
 
@@ -512,7 +512,7 @@ class TestComputePartitionIndices:
             observables=observables, grouping_type="commuting"
         )
 
-        com_partitions = obs_partition_from_idx_partitions(observables, partition_indices)
+        com_partitions = obs_partitions_from_idx_partitions(observables, partition_indices)
 
         assert len(com_partitions) == len(com_partitions_sol)
         # assert each computed partition contains appears in the computed solution.
@@ -530,7 +530,7 @@ class TestComputePartitionIndices:
             observables=observables, grouping_type="anticommuting"
         )
 
-        anticom_partitions = obs_partition_from_idx_partitions(observables, partition_indices)
+        anticom_partitions = obs_partitions_from_idx_partitions(observables, partition_indices)
 
         # assert the correct number of partitions:
         assert len(anticom_partitions) == len(anticom_partitions_sol)
@@ -540,6 +540,15 @@ class TestComputePartitionIndices:
                 are_partitions_equal(exp_partition, comp_partition)
                 for exp_partition in anticom_partitions_sol
             )
+
+    @pytest.mark.parametrize("method", ("rlf", "lf", "dsatur", "gis"))
+    def test_colouring_methods(self, method):
+        """Test that all colouring methods return the correct results."""
+        observables = [qml.X(0) @ qml.Z(1), qml.Z(0), qml.X(1)]
+        partition_indices = compute_partition_indices(
+            observables, grouping_type="qwc", method=method
+        )
+        assert set(partition_indices) == set(((0,), (1, 2)))
 
 
 class TestDifferentiable:

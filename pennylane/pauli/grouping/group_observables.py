@@ -36,13 +36,14 @@ from pennylane.wires import Wires
 from .graph_colouring import recursive_largest_first
 
 GROUPING_TYPES = frozenset(["qwc", "commuting", "anticommuting"])
-GRAPH_COLOURING_METHODS = frozenset(["lf", "rlf", "dsatur", "gis"])
 
 RX_STRATEGIES = {
     "lf": rx.ColoringStrategy.Degree,
     "dsatur": rx.ColoringStrategy.Saturation,
     "gis": rx.ColoringStrategy.IndependentSet,
 }
+
+GRAPH_COLOURING_METHODS = frozenset(RX_STRATEGIES.keys()).union({"rlf"})
 
 
 class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
@@ -198,7 +199,7 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
         groups = self.idx_partitions_from_graph()
 
         # Get the observables from the indices. itemgetter outperforms list comprehension
-        pauli_groups = obs_partition_from_idx_partitions(self.observables, groups.values())
+        pauli_groups = obs_partitions_from_idx_partitions(self.observables, groups.values())
         return pauli_groups
 
     @property
@@ -220,7 +221,7 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
         return graph
 
 
-def obs_partition_from_idx_partitions(
+def obs_partitions_from_idx_partitions(
     observables: list, idx_partitions: Sequence[Sequence[int]]
 ) -> list[list]:
     """Get the partitions of the observables corresponding to the partitions of the indices.
@@ -320,37 +321,71 @@ def compute_partition_indices(
 
     **Example**
 
-        >>> observables = [[qml.X(0) @ qml.Z(1)], [qml.Z(0)], [qml.X(1)]]
+        >>> observables = [qml.X(0) @ qml.Z(1), qml.Z(0), qml.X(1)]
         >>> compute_partition_indices(observables, grouping_type="qwc", method="lf")
         ((0,), (1, 2))
     """
-    if method == "rlf":
-        raise ValueError(
-            "Heuristic method 'rlf' is not a valid method for this function."
-            "Instead, use 'lf', 'dsatur' or 'gis'."
+    if method in RX_STRATEGIES.keys():
+        idx_no_wires = []
+        has_obs_with_wires = False
+        for idx, obs in enumerate(observables):
+            if len(obs.wires) == 0:
+                idx_no_wires.append(idx)
+            else:
+                has_obs_with_wires = True
+                break
+
+        if not has_obs_with_wires:
+            return (tuple(idx_no_wires),)
+
+        pauli_groupper = PauliGroupingStrategy(
+            observables, grouping_type=grouping_type, graph_colourer=method
         )
 
-    idx_no_wires = []
-    has_obs_with_wires = False
-    for idx, obs in enumerate(observables):
-        if len(obs.wires) == 0:
-            idx_no_wires.append(idx)
-        else:
-            has_obs_with_wires = True
-            break
+        idx_dictionary = pauli_groupper.idx_partitions_from_graph()
 
-    if not has_obs_with_wires:
-        return (tuple(idx_no_wires),)
-
-    pauli_groupper = PauliGroupingStrategy(
-        observables, grouping_type=grouping_type, graph_colourer=method
-    )
-
-    idx_dictionary = pauli_groupper.idx_partitions_from_graph()
-
-    partition_indices = tuple(tuple(indices) for indices in idx_dictionary.values())
+        partition_indices = tuple(tuple(indices) for indices in idx_dictionary.values())
+    elif method == "rlf":
+        # 'rlf' method is not compatible with the rx implementation.
+        partition_indices = _compute_partition_indices_rlf(observables, grouping_type=grouping_type)
+    else:
+        raise ValueError(
+            f"Graph colouring method must be one of: {GRAPH_COLOURING_METHODS}, "
+            f"instead got {method}."
+        )
 
     return partition_indices
+
+
+def _compute_partition_indices_rlf(observables: list, grouping_type: str):
+    """Computes the partition indices of a list of observables using a specified grouping type and 'rlf' method.
+
+    This option is much less efficient so should be avoided.
+    """
+
+    with qml.QueuingManager.stop_recording():
+        obs_groups = qml.pauli.group_observables(
+            observables, grouping_type=grouping_type, method="rlf"
+        )
+
+    observables = copy(observables)
+
+    indices = []
+    available_indices = list(range(len(observables)))
+    for partition in obs_groups:  # pylint:disable=too-many-nested-blocks
+        indices_this_group = []
+        for pauli_word in partition:
+            # find index of this pauli word in remaining original observables,
+            for ind, observable in enumerate(observables):
+                if qml.pauli.are_identical_pauli_words(pauli_word, observable):
+                    indices_this_group.append(available_indices[ind])
+                    # delete this observable and its index, so it cannot be found again
+                    observables.pop(ind)
+                    available_indices.pop(ind)
+                    break
+        indices.append(tuple(indices_this_group))
+
+    return tuple(indices)
 
 
 def group_observables(observables, coefficients=None, grouping_type="qwc", method="rlf"):

@@ -272,38 +272,9 @@ class LinearCombination(Sum):
 
         _, ops = self.terms()
 
-        # 'rlf' method is not compatible with the rx implementation.
-        # This option is much less efficient so should be avoided.
-        if method == "rlf":
-            with qml.QueuingManager.stop_recording():
-                op_groups = qml.pauli.group_observables(
-                    ops, grouping_type=grouping_type, method=method
-                )
-
-            ops = copy(ops)
-
-            indices = []
-            available_indices = list(range(len(ops)))
-            for partition in op_groups:  # pylint:disable=too-many-nested-blocks
-                indices_this_group = []
-                for pauli_word in partition:
-                    # find index of this pauli word in remaining original observables,
-                    for ind, observable in enumerate(ops):
-                        if qml.pauli.are_identical_pauli_words(pauli_word, observable):
-                            indices_this_group.append(available_indices[ind])
-                            # delete this observable and its index, so it cannot be found again
-                            ops.pop(ind)
-                            available_indices.pop(ind)
-                            break
-                indices.append(tuple(indices_this_group))
-
-                grouping_indices = tuple(indices)
-        else:
-            grouping_indices = qml.pauli.compute_partition_indices(
-                ops, grouping_type=grouping_type, method=method
-            )
-
-        self._grouping_indices = grouping_indices
+        self._grouping_indices = qml.pauli.compute_partition_indices(
+            ops, grouping_type=grouping_type, method=method
+        )
 
     @property
     def wires(self):
