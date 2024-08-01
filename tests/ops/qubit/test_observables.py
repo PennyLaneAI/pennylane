@@ -182,7 +182,7 @@ class TestSimpleObservables:
 # Prevents multiple threads from updating Hermitian._eigs at the same time
 @pytest.mark.xdist_group(name="hermitian_cache_group")
 @pytest.mark.usefixtures("tear_down_hermitian")
-class TestHermitian:
+class TestHermitian:  # pylint: disable-msg=too-many-public-methods
     """Test the Hermitian observable"""
 
     def test_preserves_autograd_trainability(self):
@@ -216,7 +216,7 @@ class TestHermitian:
         """Tests that an error is raised if the input to Hermitian is ragged."""
         ham = [[1, 0], [0, 1, 2]]
 
-        with pytest.raises(ValueError, match="must be a square matrix"):
+        with pytest.raises(ValueError, match="The requested array has an inhomogeneous shape"):
             qml.Hermitian(ham, wires=0)
 
     @pytest.mark.parametrize("observable, eigvals, eigvecs", EIGVALS_TEST_DATA)
@@ -305,8 +305,8 @@ class TestHermitian:
         assert np.allclose(qml.Hermitian._eigs[key]["eigvec"], eigvecs, atol=tol, rtol=0)
         assert len(qml.Hermitian._eigs) == 1
 
-    def test_hermitian_compute_decomposition_exceptions(self):
-        """Tests errors associated with input exceptions"""
+    def test_hermitian_compute_decomposition_wire_exceptions(self):
+        """Tests user errors associated with input exceptions"""
         single_wire_observable = np.array([[1, 1], [1, -1]]) / np.sqrt(2)
         double_wire_observable = qml.matrix(qml.X(0) @ qml.X(1))
 
@@ -329,7 +329,8 @@ class TestHermitian:
         A_decomp = qml.Hermitian.compute_decomposition(single_wire_observable, wires="aux")
         assert np.allclose(A_decomp.to_mat(), single_wire_observable, rtol=0)
 
-        # test large input warning
+    def test_hermitian_compute_decomposition_inefficiency_warning(self):
+        """Tests user inefficiency warning associated with large matrix decomposition"""
         observable = qml.Identity(0)
         for i in range(9):
             observable = observable @ qml.X(i)
@@ -339,7 +340,7 @@ class TestHermitian:
         ):
             qml.Hermitian.compute_decomposition(qml.matrix(observable), wires=list(range(9)))
 
-    @pytest.mark.parametrize("test_num_wires", list(range(1, 10)))
+    @pytest.mark.parametrize("test_num_wires", list(range(1, 11)))
     def test_hermitian_compute_decomposition_performance(self, test_num_wires, benchmark):
         """Tests the performance of the compute_decomposition method of the Hermitian class.
         Used to determine the minimum matrix dimension to raise an inefficiency warning"""

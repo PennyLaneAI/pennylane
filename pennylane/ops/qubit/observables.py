@@ -170,7 +170,8 @@ class Hermitian(Observable):
             A (array or Sequence): hermitian matrix
             wires (Iterable[Any], Wires): wires that the operator acts on
         Returns:
-            ~.PauliSentence: hermitian matrix decomposed as a linear combination of Pauli operators
+            list[.Operator]: Hermitian matrix decomposition as a linear combination of Pauli operators.
+            Returned as :class:`~.PauliSentence` class instance.
 
         **Examples**
 
@@ -180,7 +181,6 @@ class Hermitian(Observable):
         1.0 * Y(b)
         + 1.0 * X(a)
         + 2.0 * X(a) @ Z(aux)
-
         >>> op = np.array([[1, 1], [1, -1]]) / np.sqrt(2)
         >>> op_matrix = qml.matrix(op)
         >>> qml.Hermitian.compute_decomposition(op_matrix, wires=0)
