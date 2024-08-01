@@ -594,10 +594,10 @@ class TestCachingDeviceDerivatives:
 
         if isinstance(jpc._device, ParamShiftDerivativesDevice):
             expected = 2
-        elif isinstance(jpc._device, qml.devices.Device):
-            expected = 0
-        else:
+        elif isinstance(jpc._device, qml.devices.LegacyDevice):
             expected = 1
+        else:
+            expected = 0
 
         assert jpc._device.tracker.totals.get("executions", 0) == expected
 

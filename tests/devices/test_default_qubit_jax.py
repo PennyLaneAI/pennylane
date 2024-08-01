@@ -83,7 +83,7 @@ class TestQNodeIntegration:
         """Test that the plugin device loads correctly"""
         dev = qml.device("default.qubit.jax", wires=2)
         assert dev.num_wires == 2
-        assert dev.shots is None
+        assert dev.shots == qml.measurements.Shots(None)
         assert dev.short_name == "default.qubit.jax"
         assert dev.capabilities()["passthru_interface"] == "jax"
 
@@ -528,7 +528,7 @@ class TestQNodeIntegration:
         the `_evolve_state_vector_under_parametrized_evolution` method is used."""
         dev = qml.device("default.qubit.jax", wires=1)
         H = ParametrizedHamiltonian([1], [qml.PauliX(0)])
-        spy = mocker.spy(dev, "_evolve_state_vector_under_parametrized_evolution")
+        spy = mocker.spy(dev.target_device, "_evolve_state_vector_under_parametrized_evolution")
 
         @jax.jit
         @qml.qnode(dev, interface="jax")
@@ -551,8 +551,8 @@ class TestQNodeIntegration:
         the `_apply_operation` method is used."""
         dev = qml.device("default.qubit.jax", wires=3)
         H = ParametrizedHamiltonian([1], [qml.PauliX(0)])
-        spy = mocker.spy(dev, "_evolve_state_vector_under_parametrized_evolution")
-        spy2 = mocker.spy(dev, "_apply_operation")
+        spy = mocker.spy(dev.target_device, "_evolve_state_vector_under_parametrized_evolution")
+        spy2 = mocker.spy(dev.target_device, "_apply_operation")
 
         @jax.jit
         @qml.qnode(dev, interface="jax")
@@ -576,8 +576,8 @@ class TestQNodeIntegration:
         method is used."""
         dev = qml.device("default.qubit.jax", wires=1)
         H = ParametrizedHamiltonian([1], [qml.PauliX(0)])
-        spy = mocker.spy(dev, "_evolve_state_vector_under_parametrized_evolution")
-        spy2 = mocker.spy(dev, "_apply_operation")
+        spy = mocker.spy(dev.target_device, "_evolve_state_vector_under_parametrized_evolution")
+        spy2 = mocker.spy(dev.target_device, "_apply_operation")
 
         phi = jnp.linspace(0.3, 0.7, 7)
         phi_for_RX = phi - phi[0]
@@ -603,8 +603,8 @@ class TestQNodeIntegration:
         but with ``complementary=True``, the `_apply_operation` method is used."""
         dev = qml.device("default.qubit.jax", wires=1)
         H = ParametrizedHamiltonian([1], [qml.PauliX(0)])
-        spy = mocker.spy(dev, "_evolve_state_vector_under_parametrized_evolution")
-        spy2 = mocker.spy(dev, "_apply_operation")
+        spy = mocker.spy(dev.target_device, "_evolve_state_vector_under_parametrized_evolution")
+        spy2 = mocker.spy(dev.target_device, "_apply_operation")
 
         phi = jnp.linspace(0.3, 0.7, 7)
         phi_for_RX = phi[-1] - phi
@@ -1008,23 +1008,6 @@ class TestPassthruIntegration:
         )
         assert jnp.allclose(grad, expected_grad, atol=tol, rtol=0)
 
-    @pytest.mark.parametrize("interface", ["autograd", "tf", "torch"])
-    def test_error_backprop_wrong_interface(self, interface):
-        """Tests that an error is raised if diff_method='backprop' but not using
-        the Jax interface"""
-        dev = qml.device("default.qubit.jax", wires=1)
-
-        def circuit(x, w=None):
-            qml.RZ(x, wires=w)
-            return qml.expval(qml.PauliX(w))
-
-        error_type = qml.QuantumFunctionError
-        with pytest.raises(
-            error_type,
-            match="default.qubit.jax only supports diff_method='backprop' when using the jax interface",
-        ):
-            qml.qnode(dev, diff_method="backprop", interface=interface)(circuit)
-
     def test_no_jax_interface_applied(self):
         """Tests that the JAX interface is not applied and no error is raised if qml.probs is used with the Jax
         interface when diff_method='backprop'
@@ -1053,7 +1036,7 @@ class TestHighLevelIntegration:
         def circuit():
             return qml.expval(H)
 
-        spy = mocker.spy(dev, "expval")
+        spy = mocker.spy(dev.target_device, "expval")
 
         circuit()
         # evaluated one expval altogether
@@ -1237,7 +1220,7 @@ class TestEstimateProb:
         samples = jnp.array([[0, 0], [1, 1], [1, 1], [0, 0]])
 
         with monkeypatch.context() as m:
-            m.setattr(dev, "_samples", samples)
+            m.setattr(dev.target_device, "_samples", samples)
             res = dev.estimate_probability(wires=wires)
 
         assert np.allclose(res, expected)
@@ -1257,7 +1240,7 @@ class TestEstimateProb:
         bin_size = 2
 
         with monkeypatch.context() as m:
-            m.setattr(dev, "_samples", samples)
+            m.setattr(dev.target_device, "_samples", samples)
             res = dev.estimate_probability(wires=wires, bin_size=bin_size)
 
         assert np.allclose(res, expected)
@@ -1282,7 +1265,7 @@ class TestEstimateProb:
         )
 
         with monkeypatch.context() as m:
-            m.setattr(dev, "_samples", samples)
+            m.setattr(dev.target_device, "_samples", samples)
             res = dev.estimate_probability(wires=wires)
 
         assert np.allclose(res, expected)
@@ -1331,7 +1314,7 @@ class TestEstimateProb:
         )
 
         with monkeypatch.context() as m:
-            m.setattr(dev, "_samples", samples)
+            m.setattr(dev.target_device, "_samples", samples)
             res = dev.estimate_probability(wires=wires, bin_size=bin_size)
 
         assert np.allclose(res, expected)

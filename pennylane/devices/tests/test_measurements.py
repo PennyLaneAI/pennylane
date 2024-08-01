@@ -1783,9 +1783,13 @@ class TestStateMeasurement:
             qml.X(0)
             return MyMeasurement()
 
-        with pytest.warns(
-            UserWarning,
-            match="MyMeasurement with finite shots; the returned state information is analytic",
+        with (
+            pytest.warns(
+                UserWarning,
+                match="MyMeasurement with finite shots; the returned state information is analytic",
+            )
+            if isinstance(dev, qml.devices.LegacyDevice)
+            else pytest.raises(qml.DeviceError, match="not accepted with finite shots")
         ):
             circuit()
 

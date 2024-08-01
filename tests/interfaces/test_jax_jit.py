@@ -799,12 +799,9 @@ class TestVectorValuedJIT:
         dev = qml.device("default.qubit", wires=2, shots=10)
         params = jax.numpy.array([0.1, 0.2, 0.3])
 
-        grad_meth = (
-            execute_kwargs["gradient_kwargs"]["method"]
-            if "gradient_kwargs" in execute_kwargs
-            else ""
-        )
-        if "adjoint" in grad_meth or "backprop" in grad_meth:
+        grad_meth = execute_kwargs.get("gradient_fn", "")
+
+        if grad_meth in ("adjoint", "backprop"):
             pytest.skip("Adjoint does not support probs")
 
         def cost(a, cache):

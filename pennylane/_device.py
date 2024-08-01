@@ -548,7 +548,7 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
 
         return results
 
-    def execute_and_gradients(self, circuits, method="jacobian", **kwargs):
+    def execute_and_gradients(self, circuits, method="adjoint_jacobian", **kwargs):
         """Execute a batch of quantum circuits on the device, and return both the
         results and the gradients.
 
@@ -587,7 +587,7 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
 
         return res, jacs
 
-    def gradients(self, circuits, method="jacobian", **kwargs):
+    def gradients(self, circuits, method="adjoint_jacobian", **kwargs):
         """Return the gradients of a batch of quantum circuits on the device.
 
         The gradient method ``method`` is called sequentially for each
