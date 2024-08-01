@@ -21,15 +21,14 @@ from pennylane.data.data_manager.progress import Progress, Task
 from pennylane.data.data_manager.progress._default import DefaultProgress
 
 
-@pytest.fixture(params=[True, False])
-def progress(request):
-    progress = Progress(use_rich=request.param)
-
-    yield progress
-
-
 class TestProgress:
     """Tests for :class:`pennylane.data.progress.Progress`."""
+
+    @pytest.fixture(params=[True, False])
+    def progress(self, request):
+        progress = Progress(use_rich=request.param)
+
+        yield progress
 
     @pytest.mark.parametrize(
         "use_rich, expect_cls", [(False, DefaultProgress), (True, rich.progress.Progress)]
@@ -37,6 +36,7 @@ class TestProgress:
     def test_init(self, use_rich, expect_cls):
         """Test that ``__init__()`` uses the correct implementation based
         on the value of ``use_rich``."""
+        # pylint: disable=protected-access
 
         prog = Progress(use_rich=use_rich)
         assert isinstance(prog._progress, expect_cls)

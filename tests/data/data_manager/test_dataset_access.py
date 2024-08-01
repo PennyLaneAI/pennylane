@@ -25,7 +25,7 @@ import requests
 import pennylane as qml
 import pennylane.data.data_manager
 from pennylane.data import Dataset
-from pennylane.data.data_manager import S3_URL, DataPath, _validate_attributes
+from pennylane.data.data_manager import S3_URL, _validate_attributes
 
 has_rich = False
 try:
