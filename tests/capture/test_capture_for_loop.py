@@ -149,7 +149,7 @@ class TestCaptureCircuitsForLoop:
 
             loop_fn()
 
-            return qml.expval(qml.PauliZ(0))
+            return qml.expval(qml.Z(0))
 
         result = circuit()
         expected = -0.9899925
@@ -178,7 +178,7 @@ class TestCaptureCircuitsForLoop:
 
             loop_body(arg)
 
-            return qml.expval(qml.PauliZ(0))
+            return qml.expval(qml.Z(0))
 
         result = circuit(arg)
         assert np.allclose(result, expected), f"Expected {expected}, but got {result}"
@@ -211,7 +211,7 @@ class TestCaptureCircuitsForLoop:
 
             loop_body(arg)
 
-            return qml.expval(qml.PauliZ(0))
+            return qml.expval(qml.Z(0))
 
         result = circuit(arg)
         assert np.allclose(result, expected), f"Expected {expected}, but got {result}"
@@ -242,7 +242,7 @@ class TestCaptureCircuitsForLoop:
 
             loop_body(arg)
 
-            return qml.expval(qml.PauliZ(0))
+            return qml.expval(qml.Z(0))
 
         args = [lower_bound, upper_bound, step, arg]
         result = circuit(*args)
@@ -287,7 +287,7 @@ class TestCaptureCircuitsForLoop:
             loop_fn()
             loop_fn_returns(arg)
 
-            return qml.expval(qml.PauliZ(0))
+            return qml.expval(qml.Z(0))
 
         args = [upper_bound, arg]
         result = circuit(*args)
