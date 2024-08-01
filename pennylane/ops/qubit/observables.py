@@ -182,8 +182,7 @@ class Hermitian(Observable):
         + 1.0 * X(a)
         + 2.0 * X(a) @ Z(aux)
         >>> op = np.array([[1, 1], [1, -1]]) / np.sqrt(2)
-        >>> op_matrix = qml.matrix(op)
-        >>> qml.Hermitian.compute_decomposition(op_matrix, wires=0)
+        >>> qml.Hermitian.compute_decomposition(op, wires=0)
         0.7071067811865475 * X(0)
         + 0.7071067811865475 * Z(0)
 
