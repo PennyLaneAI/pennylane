@@ -14,11 +14,12 @@
 """A library for showing loading progress, using ``rich`` or basic stdout."""
 
 from typing import Any, Optional
+from pennylane.data.data_manager.progress._default import make_progress as make_progress_default
 
 try:
-    from pennylane.data.data_manager.progress._rich import make_progress as make_progress
+    from pennylane.data.data_manager.progress._rich import make_progress as make_progress_rich
 except ImportError:
-    from pennylane.data.data_manager.progress._default import make_progress as make_progress
+    make_progress_rich = None
 
 
 class Task:
@@ -54,9 +55,17 @@ class Progress:
     Must be used as a context manager to ensure correct output.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, use_rich: bool = make_progress_rich is not None) -> None:
         """Initialize progress."""
-        self._progress = make_progress()
+        if use_rich:
+            if make_progress_rich is None:
+                raise ImportError(
+                    "Module 'rich' is not installed. Install it with 'pip install rich'"
+                )
+
+            self._progress = make_progress_rich()
+        else:
+            self._progress = make_progress_default()
 
     def __enter__(self) -> "Progress":
         """Enter progress context."""
