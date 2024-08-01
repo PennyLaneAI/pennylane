@@ -21,8 +21,13 @@ import pennylane as qml
 from pennylane import Identity, PauliX, PauliY, PauliZ
 from pennylane import numpy as pnp
 from pennylane.operation import Tensor
-from pennylane.pauli import are_identical_pauli_words
-from pennylane.pauli.grouping.group_observables import PauliGroupingStrategy, group_observables
+from pennylane.pauli import are_identical_pauli_words, are_pauli_words_qwc
+from pennylane.pauli.grouping.group_observables import (
+    PauliGroupingStrategy,
+    compute_partition_indices,
+    group_observables,
+    obs_partition_from_idx_partitions,
+)
 
 
 class TestPauliGroupingStrategy:
@@ -288,6 +293,10 @@ anticommuting_sols = [
     [[PauliX([(0, 0)]), PauliZ([(0, 0)])]],
 ]
 
+com_tuples = list(zip(observables_list, commuting_sols))
+
+anticom_tuples = list(zip(observables_list, anticommuting_sols))
+
 
 def are_partitions_equal(partition_1: list, partition_2: list) -> bool:
     """Checks whether two partition are the same, i.e. contain the same Pauli terms.
@@ -328,8 +337,6 @@ class TestGroupObservables:
                 for exp_partition in qwc_partitions_sol
             )
 
-    com_tuples = list(zip(observables_list, commuting_sols))
-
     @pytest.mark.parametrize("observables,com_partitions_sol", com_tuples)
     def test_commuting_partitioning(self, observables, com_partitions_sol):
         com_partitions = group_observables(observables, grouping_type="commuting")
@@ -341,8 +348,6 @@ class TestGroupObservables:
                 are_partitions_equal(exp_partition, comp_partition)
                 for exp_partition in com_partitions_sol
             )
-
-    anticom_tuples = list(zip(observables_list, anticommuting_sols))
 
     @pytest.mark.parametrize("observables,anticom_partitions_sol", anticom_tuples)
     def test_anticommuting_partitioning(self, observables, anticom_partitions_sol):
@@ -454,6 +459,87 @@ class TestGroupObservables:
         groups, out_coeffs = group_observables(observables, coeffs)
         assert groups == [[qml.X(0), 2 * qml.I(), qml.I() @ qml.I()], [qml.Z(0)]]
         assert out_coeffs == [[1, 3, 4], [2]]
+
+
+class TestComputePartitionIndices:
+    """Tests for ``compute_partition_indices``"""
+
+    OBS_IDX_PARTITIONS = [
+        (
+            [qml.I(), qml.X(0) @ qml.X(1), qml.Z(0) @ qml.Z(1), 2 * qml.I(), 2 * qml.Z(0)],
+            ((0, 1, 3), (2, 4)),
+            [[qml.I(), qml.X(0) @ qml.X(1), 2 * qml.I()], [qml.Z(0) @ qml.Z(1), 2 * qml.Z(0)]],
+        ),
+    ]
+
+    def test_raise_value_error(self):
+        """Test that an error is raised when using the 'rlf' method."""
+        obs = [qml.X(0), qml.Y(0)]
+        with pytest.raises(ValueError, match="Heuristic method 'rlf' is not a valid method"):
+            compute_partition_indices(observables=obs, method="rlf")
+
+    def test_only_observables_without_wires(self):
+        """Test that if none of the observables has wires, they are all in one single partition."""
+
+        obs = [qml.I(), 2 * qml.I()]
+        partition_indices = compute_partition_indices(observables=obs)
+        assert partition_indices == (tuple(range(len(obs))),)
+
+    @pytest.mark.parametrize("observables, indices, obs_partitions", OBS_IDX_PARTITIONS)
+    def test_obs_from_indices_partitions(self, observables, indices, obs_partitions):
+        """Test that obs_partition_from_idx_partitions returns the correct observables"""
+
+        partition_obs = obs_partition_from_idx_partitions(observables, indices)
+        assert partition_obs == obs_partitions
+
+    def test_mixed_observables_qwc(self):
+        """Test that if both observables with wires and without wires are present,
+        the latter are appended on the first element of the former and the partitions are qwc."""
+        obs = [qml.I(), qml.X(0), qml.Z(0), 2 * qml.I(), 2 * qml.Z(0)]
+        partition_indices = compute_partition_indices(observables=obs, grouping_type="qwc")
+        indices_no_wires = (0, 3)
+        assert set(indices_no_wires) < set(partition_indices[0])
+
+        partition_obs = obs_partition_from_idx_partitions(obs, partition_indices)
+        for partition in partition_obs:
+            assert are_pauli_words_qwc(partition)
+
+    @pytest.mark.parametrize("observables,com_partitions_sol", com_tuples)
+    def test_commuting_partitioning(self, observables, com_partitions_sol):
+        """Test that using the commuting grouping type returns the correct solutions."""
+
+        partition_indices = compute_partition_indices(
+            observables=observables, grouping_type="commuting"
+        )
+
+        com_partitions = obs_partition_from_idx_partitions(observables, partition_indices)
+
+        assert len(com_partitions) == len(com_partitions_sol)
+        # assert each computed partition contains appears in the computed solution.
+        for comp_partition in com_partitions:
+            assert any(
+                are_partitions_equal(exp_partition, comp_partition)
+                for exp_partition in com_partitions_sol
+            )
+
+    @pytest.mark.parametrize("observables,anticom_partitions_sol", anticom_tuples)
+    def test_anticommuting_partitioning(self, observables, anticom_partitions_sol):
+        """Test that using the anticommuting grouping type returns the correct solutions."""
+
+        partition_indices = compute_partition_indices(
+            observables=observables, grouping_type="anticommuting"
+        )
+
+        anticom_partitions = obs_partition_from_idx_partitions(observables, partition_indices)
+
+        # assert the correct number of partitions:
+        assert len(anticom_partitions) == len(anticom_partitions_sol)
+        # assert each computed partition contains appears in the computed solution.
+        for comp_partition in anticom_partitions:
+            assert any(
+                are_partitions_equal(exp_partition, comp_partition)
+                for exp_partition in anticom_partitions_sol
+            )
 
 
 class TestDifferentiable:

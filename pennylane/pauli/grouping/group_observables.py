@@ -19,6 +19,7 @@ from collections import defaultdict
 from copy import copy
 from functools import cached_property
 from operator import itemgetter
+from typing import Sequence
 
 import numpy as np
 import rustworkx as rx
@@ -62,12 +63,12 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
     find approximate solutions in polynomial time.
 
     Args:
-        observables (list[Observable]): a list of Pauli words to be partitioned according to a
-            grouping strategy
-        grouping_type (str): the binary relation used to define partitions of
+        observables (list[Observable]): A list of Pauli words to be partitioned according to a
+            grouping strategy.
+        grouping_type (str): The binary relation used to define partitions of
             the Pauli words, can be ``'qwc'`` (qubit-wise commuting), ``'commuting'``, or
             ``'anticommuting'``.
-        graph_colourer (str): the heuristic algorithm to employ for graph
+        graph_colourer (str): The heuristic algorithm to employ for graph
                 colouring, can be ``'lf'`` (Largest First), ``'rlf'`` (Recursive
                 Largest First), `dsatur` (DSATUR), or `gis` (IndependentSet). Defaults to ``'lf'``.
 
@@ -197,14 +198,7 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
         groups = self.idx_partitions_from_graph()
 
         # Get the observables from the indices. itemgetter outperforms list comprehension
-        pauli_groups = [
-            (
-                list(itemgetter(*indices)(self.observables))
-                if len(indices) > 1
-                else [itemgetter(*indices)(self.observables)]
-            )
-            for indices in groups.values()
-        ]
+        pauli_groups = obs_partition_from_idx_partitions(self.observables, groups.values())
         return pauli_groups
 
     @property
@@ -224,6 +218,31 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
         graph.add_nodes_from(self.observables)
         graph.add_edges_from_no_data(edges)
         return graph
+
+
+def obs_partition_from_idx_partitions(
+    observables: list, idx_partitions: Sequence[Sequence[int]]
+) -> list[list]:
+    """Get the partitions of the observables corresponding to the partitions of the indices.
+
+    Args:
+        observables (list[Observable]): A list of Pauli words to be partitioned according to a
+            grouping strategy.
+        idx_partitions (Sequence[Sequence[int]]): Sequence of sequences containing the indices of the partitioned observables.
+
+    Returns:
+        list[list[Observable]]: List of partitions of the Pauli observables made up of mutually (anti-)commuting terms.
+    """
+    pauli_groups = [
+        (
+            list(itemgetter(*indices)(observables))
+            if len(indices) > 1
+            else [itemgetter(*indices)(observables)]
+        )
+        for indices in idx_partitions
+    ]
+
+    return pauli_groups
 
 
 def adj_matrix_from_symplectic(symplectic_matrix: np.ndarray, grouping_type: str):
@@ -308,31 +327,28 @@ def compute_partition_indices(
     if method == "rlf":
         raise ValueError(
             "Heuristic method 'rlf' is not a valid method for this function."
-            "Instead, use `lf`, 'dsatur' or 'gis'."
+            "Instead, use 'lf', 'dsatur' or 'gis'."
         )
 
     idx_no_wires = []
-    obs_wires = []
+    has_obs_with_wires = False
     for idx, obs in enumerate(observables):
         if len(obs.wires) == 0:
             idx_no_wires.append(idx)
         else:
-            obs_wires.append(obs)
+            has_obs_with_wires = True
+            break
 
-    if not obs_wires:
+    if not has_obs_with_wires:
         return (tuple(idx_no_wires),)
 
     pauli_groupper = PauliGroupingStrategy(
-        obs_wires, grouping_type=grouping_type, graph_colourer=method
+        observables, grouping_type=grouping_type, graph_colourer=method
     )
 
     idx_dictionary = pauli_groupper.idx_partitions_from_graph()
 
     partition_indices = tuple(tuple(indices) for indices in idx_dictionary.values())
-
-    if idx_no_wires:
-        first_group = partition_indices[0] + tuple(idx_no_wires)
-        partition_indices = (first_group,) + partition_indices[1:]
 
     return partition_indices
 
