@@ -721,9 +721,9 @@ class TestTensorFlowExecuteIntegration:
 
     def test_sampling(self, execute_kwargs):
         """Test sampling works as expected"""
-        if (
-            execute_kwargs["gradient_fn"] == "device"
-            and execute_kwargs["grad_on_execution"] is True
+        if execute_kwargs["gradient_fn"] == "device" and (
+            execute_kwargs["grad_on_execution"] is True
+            or execute_kwargs["gradient_kwargs"]["method"] == "adjoint_jacobian"
         ):
             pytest.skip("Adjoint differentiation does not support samples")
 

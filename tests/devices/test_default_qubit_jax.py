@@ -1008,6 +1008,24 @@ class TestPassthruIntegration:
         )
         assert jnp.allclose(grad, expected_grad, atol=tol, rtol=0)
 
+    @pytest.mark.xfail(reason="Not applicable anymore.")
+    @pytest.mark.parametrize("interface", ["autograd", "tf", "torch"])
+    def test_error_backprop_wrong_interface(self, interface):
+        """Tests that an error is raised if diff_method='backprop' but not using
+        the Jax interface"""
+        dev = qml.device("default.qubit.jax", wires=1)
+
+        def circuit(x, w=None):
+            qml.RZ(x, wires=w)
+            return qml.expval(qml.PauliX(w))
+
+        error_type = qml.QuantumFunctionError
+        with pytest.raises(
+            error_type,
+            match="default.qubit.jax only supports diff_method='backprop' when using the jax interface",
+        ):
+            qml.qnode(dev, diff_method="backprop", interface=interface)(circuit)
+
     def test_no_jax_interface_applied(self):
         """Tests that the JAX interface is not applied and no error is raised if qml.probs is used with the Jax
         interface when diff_method='backprop'

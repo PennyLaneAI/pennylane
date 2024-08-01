@@ -644,6 +644,23 @@ class TestPassthruIntegration:
         )
         assert np.allclose(res, expected_grad, atol=tol, rtol=0)
 
+    @pytest.mark.xfail(reason="Not applicable anymore.")
+    @pytest.mark.parametrize("interface", ["tf", "torch"])
+    def test_error_backprop_wrong_interface(self, interface):
+        """Tests that an error is raised if diff_method='backprop' but not using
+        the Autograd interface"""
+        dev = qml.device("default.qubit.autograd", wires=1)
+
+        def circuit(x, w=None):
+            qml.RZ(x, wires=w)
+            return qml.expval(qml.PauliX(w))
+
+        with pytest.raises(
+            qml.QuantumFunctionError,
+            match="default.qubit.autograd only supports diff_method='backprop' when using the autograd interface",
+        ):
+            qml.qnode(dev, diff_method="backprop", interface=interface)(circuit)
+
 
 @pytest.mark.autograd
 class TestHighLevelIntegration:

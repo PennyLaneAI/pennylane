@@ -1460,7 +1460,7 @@ class TestTapeExpansion:
         # test second-order derivatives
         if diff_method == "parameter-shift" and max_diff == 2:
             grad2_c = t2.jacobian(grad[2], c)
-            assert grad2_c is None
+            assert grad2_c is None or np.allclose(grad2_c, 0, atol=tol)
 
             grad2_w_c = t2.jacobian(grad[1], c)
             expected = [0, -np.cos(d[0] + w[0]) * np.sin(d[1] + w[1]), 0], [

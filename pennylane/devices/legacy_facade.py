@@ -206,7 +206,12 @@ class LegacyDeviceFacade(Device):
         program.add_transform(legacy_device_batch_transform, device=self._device)
         program.add_transform(legacy_device_expand_fn, device=self._device)
 
-        if execution_config.gradient_method == "adjoint":
+        if (
+            execution_config.gradient_method == "adjoint"
+            or execution_config.gradient_method == "device"
+            and execution_config.gradient_keyword_arguments.get("method", None)
+            == "adjoint_jacobian"
+        ):
             _add_adjoint_transforms(program, name=f"{self.name} + adjoint")
 
         if self._device.capabilities().get("supports_mid_measure", False):
