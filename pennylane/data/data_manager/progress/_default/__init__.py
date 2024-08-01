@@ -13,9 +13,10 @@
 # limitations under the License.
 """Fallback implementation of a progress bar, used when ``rich`` is not available."""
 
-from dataclasses import dataclass
-from typing import Optional, Any
 import os
+from dataclasses import dataclass
+from typing import Any, Optional
+
 from pennylane.data.data_manager.progress._default import term
 
 

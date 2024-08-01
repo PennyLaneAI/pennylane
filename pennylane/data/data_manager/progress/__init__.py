@@ -14,15 +14,20 @@
 """A library for showing loading progress, using ``rich`` or basic stdout."""
 
 from typing import Any, Optional
-from pennylane.data.data_manager.progress._default import make_progress as make_progress_default
+
+from pennylane.data.data_manager.progress._default import (
+    make_progress as make_progress_default,
+)
 
 try:
-    from pennylane.data.data_manager.progress._rich import make_progress as make_progress_rich
+    from pennylane.data.data_manager.progress._rich import (
+        make_progress as make_progress_rich,
+    )
 except ImportError:
     make_progress_rich = None
 
 
-class Task:
+class Task:  # pylint: disable=too-few-public-methods
     """Represents progress display for a single dataset download."""
 
     def __init__(self, _task_id: Any, _progress: Any):

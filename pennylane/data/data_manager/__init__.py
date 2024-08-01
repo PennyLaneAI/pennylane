@@ -28,10 +28,10 @@ from requests import get, head
 
 from pennylane.data.base import Dataset
 from pennylane.data.base.hdf5 import open_hdf5_s3
+from pennylane.data.data_manager import progress
 
 from .foldermap import DataPath, FolderMapView, ParamArg
 from .params import DEFAULT, FULL, format_params
-from pennylane.data.data_manager import progress
 
 S3_URL = "https://datasets.cloud.pennylane.ai/datasets/h5"
 FOLDERMAP_URL = f"{S3_URL}/foldermap.json"
@@ -56,7 +56,7 @@ def _get_data_struct():
     return response.json()
 
 
-def _download_partial(
+def _download_partial(  # pylint: disable=too-many-arguments
     s3_url: str,
     dest: Path,
     attributes: Optional[Iterable[str]],
@@ -151,7 +151,7 @@ def _download_dataset(  # pylint:disable=too-many-arguments
         _download_full(s3_url, dest=dest, block_size=block_size, pbar_task=pbar_task)
 
 
-def _download_datasets(
+def _download_datasets(  # pylint: disable=too-many-arguments
     s3_base_url: str,
     folder_path: Path,
     data_paths: list[DataPath],
