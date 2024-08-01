@@ -143,11 +143,10 @@ class CondCallable:  # pylint:disable=too-few-public-methods
         self.otherwise_fn = false_fn
 
         # when working with `qml.capture.enabled()`,
-        # it's easier to store the original `elifs` and `false_fn`
+        # it's easier to store the original `elifs` argument
         self.orig_elifs = elifs
-        self.orig_false_fn = false_fn
 
-        if false_fn is None:
+        if false_fn is None and not qml.capture.enabled():
             self.otherwise_fn = lambda *args, **kwargs: None
 
         if elifs and not qml.capture.enabled():
@@ -228,8 +227,8 @@ class CondCallable:  # pylint:disable=too-few-public-methods
 
             jaxpr_true = jax.make_jaxpr(functools.partial(self.true_fn, **kwargs))(*args)
             jaxpr_false = (
-                jax.make_jaxpr(functools.partial(self.orig_false_fn, **kwargs))(*args)
-                if self.orig_false_fn
+                jax.make_jaxpr(functools.partial(self.otherwise_fn, **kwargs))(*args)
+                if self.otherwise_fn
                 else None
             )
 
