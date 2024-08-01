@@ -13,12 +13,12 @@
 # limitations under the License.
 """A library for showing loading progress, using ``rich`` or basic stdout."""
 
-try:
-    from pennylane.data.data_manager.progress._rich import make_progress
-except ImportError:
-    from pennylane.data.data_manager.progress._default import make_progress
-
 from typing import Any, Optional
+
+try:
+    from pennylane.data.data_manager.progress._rich import make_progress as make_progress
+except ImportError:
+    from pennylane.data.data_manager.progress._default import make_progress as make_progress
 
 
 class Task:
