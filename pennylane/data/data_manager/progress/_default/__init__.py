@@ -59,6 +59,7 @@ class DefaultProgress:
 
     def __init__(self):
         self.tasks = []
+        self._active = False
 
     def __enter__(self) -> "DefaultProgress":
         if self._active:
