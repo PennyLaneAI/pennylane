@@ -37,11 +37,17 @@ from .graph_colouring import recursive_largest_first
 
 GROUPING_TYPES = frozenset(["qwc", "commuting", "anticommuting"])
 
-RX_STRATEGIES = {
-    "lf": rx.ColoringStrategy.Degree,
-    "dsatur": rx.ColoringStrategy.Saturation,
-    "gis": rx.ColoringStrategy.IndependentSet,
-}
+# ColoringStrategy is only available from version 0.15.0
+NEW_RX = True
+try:
+    RX_STRATEGIES = {
+        "lf": rx.ColoringStrategy.Degree,
+        "dsatur": rx.ColoringStrategy.Saturation,
+        "gis": rx.ColoringStrategy.IndependentSet,
+    }
+except AttributeError:
+    NEW_RX = False
+    RX_STRATEGIES = {"lf": None}  # Only "lf" can be used without a strategy
 
 GRAPH_COLOURING_METHODS = frozenset(RX_STRATEGIES.keys()).union({"rlf"})
 
@@ -88,10 +94,16 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
                 f"Grouping type must be one of: {GROUPING_TYPES}, instead got {grouping_type}."
             )
 
+        if graph_colourer.lower() in ["dsatur", "gis"] and not NEW_RX:
+            raise ValueError(
+                f"The strategy '{graph_colourer}' is not supported in this version of Rustworkx. "
+                "Please install rustworkx>=0.15.0 to access the 'dsatur' and 'gis' colouring strategies."
+            )
+
         if graph_colourer.lower() not in GRAPH_COLOURING_METHODS:
             raise ValueError(
                 f"Graph colouring method must be one of: {GRAPH_COLOURING_METHODS}, "
-                f"instead got {graph_colourer}."
+                f"instead got '{graph_colourer}'."
             )
 
         self.graph_colourer = graph_colourer.lower()
@@ -179,9 +191,15 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
             of indices (nodes) that have been assigned that colour.
         """
         # A dictionary where keys are node indices and the value is the color
-        colouring_dict = rx.graph_greedy_color(
-            self.complement_graph, strategy=RX_STRATEGIES[self.graph_colourer]
-        )
+        if NEW_RX:
+            # 'strategy' kwarg was implemented in Rustworkx 0.15
+            colouring_dict = rx.graph_greedy_color(
+                self.complement_graph, strategy=RX_STRATEGIES[self.graph_colourer]
+            )
+        else:
+            # Default value for <0.15.0 was 'lf'.
+            colouring_dict = rx.graph_greedy_color(self.complement_graph)
+
         # group together indices (values) of the same colour (keys)
         groups = defaultdict(list)
         for idx, colour in sorted(colouring_dict.items()):
@@ -325,7 +343,7 @@ def compute_partition_indices(
         >>> compute_partition_indices(observables, grouping_type="qwc", method="lf")
         ((0,), (1, 2))
     """
-    if method in RX_STRATEGIES.keys():
+    if method != "rlf":
         idx_no_wires = []
         has_obs_with_wires = False
         for idx, obs in enumerate(observables):
@@ -345,14 +363,9 @@ def compute_partition_indices(
         idx_dictionary = pauli_groupper.idx_partitions_from_graph()
 
         partition_indices = tuple(tuple(indices) for indices in idx_dictionary.values())
-    elif method == "rlf":
+    else:
         # 'rlf' method is not compatible with the rx implementation.
         partition_indices = _compute_partition_indices_rlf(observables, grouping_type=grouping_type)
-    else:
-        raise ValueError(
-            f"Graph colouring method must be one of: {GRAPH_COLOURING_METHODS}, "
-            f"instead got {method}."
-        )
 
     return partition_indices
 
