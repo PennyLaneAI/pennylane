@@ -44,18 +44,24 @@ def _intersect_bases(basis_0, basis_1):
 
 def _center_pauli_words(g, pauli):
     """Compute the center of an algebra given in a PauliWord basis."""
-    d = len(g)
+    # Guarantees all operators to be given as a PauliWord
+    # If `pauli=True` we know that they are PauliWord or PauliSentence instances
+    if pauli:
+        g_pws = [o if isinstance(o, PauliWord) else next(iter(o.keys())) for o in g]
+    else:
+        g_pws = [o if isinstance(o, PauliWord) else next(iter(o.pauli_rep.keys())) for o in g]
+    d = len(g_pws)
     commutators = np.zeros((d, d), dtype=int)
-    for (j, op1), (k, op2) in combinations(enumerate(g), r=2):
+    for (j, op1), (k, op2) in combinations(enumerate(g_pws), r=2):
         if not op1.commutes_with(op2):
             commutators[j, k] = 1  # dummy value to indicate operators dont commute
             commutators[k, j] = 1
 
-    mask = np.all(commutators == 0, axis=0)
-    res = list(np.array(g)[mask])
+    ids = np.where(np.all(commutators == 0, axis=0))[0]
+    res = [g[idx] for idx in ids]
 
     if not pauli:
-        res = [op.operation() for op in res]
+        res = [op.operation() if isinstance(op, (PauliWord, PauliSentence)) else op for op in res]
     return res
 
 
@@ -100,15 +106,15 @@ def center(
         :title: Derivation
         :href: derivation
 
-        The center :math:`\mathfrak{z}(\mathfrak{k})` of an algebra :math:`\mathfrak{k}`
+        The center :math:`\mathfrak{z}(\mathfrak{g})` of an algebra :math:`\mathfrak{g}`
         can be computed in the following steps. First, compute the
         :func:`~.pennylane.structure_constants`, or adjoint representation, of the algebra
-        with respect to some basis :math:`\mathbb{B}` of :math:`\mathfrak{k}`.
-        The center of :math:`\mathfrak{k}` is then given by
+        with respect to some basis :math:`\mathbb{B}` of :math:`\mathfrak{g}`.
+        The center of :math:`\mathfrak{g}` is then given by
 
         .. math::
 
-            \mathfrak{z}(\mathfrak{k}) = \operatorname{span}\left\{\bigcap_{x\in\mathbb{B}}
+            \mathfrak{z}(\mathfrak{g}) = \operatorname{span}\left\{\bigcap_{x\in\mathbb{B}}
             \operatorname{ker}(\operatorname{ad}_x)\right\},
 
         i.e., the intersection of the kernels, or null spaces, of all basis elements in the
@@ -118,11 +124,12 @@ def center(
         intersections are computed recursively from pairwise intersections. The intersection
         between two vectors spaces :math:`V_1` and :math:`V_2` given by (orthonormal) bases
         :math:`\mathbb{B}_i` can be computed from
-        :math:`\operatorname{ker}([\mathbb{B}_1 | -\mathbb{B}_2])`. For an (orthonormal)
-        basis :math:`\{(u_1^{(i)}, u_2^{(i)})^T\}_i` of this kernel, a basis of the
+        :math:`\operatorname{ker}(\left[\ \mathbb{B}_1 \ | -\mathbb{B}_2\ \right])`. For an
+        (orthonormal) basis of this kernel, consisting of two stacked column vectors
+        :math:`u^{(i)}_1` and :math:`u^{(i)}_2` for each basis, a basis of the
         intersection space :math:`V_1 \cap V_2` is given by :math:`\{\mathbb{B}_1 u_1^{(i)}\}_i`
         (or equivalently by :math:`\{\mathbb{B}_2 u_2^{(i)}\}_i`).
-        Also see [this post](https://math.stackexchange.com/questions/25371/how-to-find-a-basis-for-the-intersection-of-two-vector-spaces-in-mathbbrn)
+        Also see `this post <https://math.stackexchange.com/questions/25371/how-to-find-a-basis-for-the-intersection-of-two-vector-spaces-in-mathbbrn>`_
         for details.
 
         If the input consists of :class:`~.pennylane.PauliWord` instances only, we can
@@ -132,7 +139,7 @@ def center(
         Assume that the center elements identified based on the basis have been removed
         already and we are left with a basis :math:`\mathbb{B}=\{p_i\}_i` of Pauli
         words such that :math:`\forall i\ \exists j:\ [p_i, p_j] \neq 0`. Assume that there is
-        another center element :math:`x`, which was missed before because it is a linear
+        another center element :math:`x\neq 0`, which was missed before because it is a linear
         combination of Pauli words:
 
         .. math::
@@ -145,18 +152,19 @@ def center(
         .. math::
 
             &\forall j: \ 0 = \sum_i x_i [p_i, p_j] = 2 \sum_i x_i \chi_{i,j} p_ip_j\\
-            \Rightarrow &\forall i,j such that \chi_{i,j}\neq 0: x_i = 0,
+            \Rightarrow &\forall i,j \text{s.t.} \chi_{i,j}\neq 0: x_i = 0,
 
         where denoted by :math:`\chi_{i,j}` an indicator that is :math:`0` if the commutator
         :math:`[p_i, p_j]` vanishes and :math:`1` else.
-        However, we know that for each :math:`i` there is a :math:`j` such that
-        :math:`\chi_{i,j}\neq 0`. This means that :math:`x_i = 0\ \forall i` and therefore
-        :math:`x`, so that we did not miss a center element.
+        However, we know that for each :math:`i` there is at least one :math:`j` such that
+        :math:`\chi_{i,j}\neq 0`. This means that :math:`x_i = 0` is guaranteed for all
+        :math:`i` by at least one :math:`j`. Therefore :math:`x=0`, which is a contradiction
+        to our initial assumption that :math:`x\neq 0`.
     """
     if len(g) < 2:
         # A length-zero list has zero center, a length-one list has full center
         return g
-    if all(isinstance(x, PauliWord) for x in g):
+    if all(isinstance(x, PauliWord) or len(x.pauli_rep) == 1 for x in g):
         return _center_pauli_words(g, pauli)
 
     adjoint_repr = structure_constants(g, pauli)
