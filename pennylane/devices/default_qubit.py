@@ -532,10 +532,7 @@ class DefaultQubit(Device):
 
         transform_program.add_transform(validate_device_wires, self.wires, name=self.name)
         transform_program.add_transform(
-            mid_circuit_measurements,
-            device=self,
-            mcm_config=config.mcm_config,
-            interface=config.interface,
+            mid_circuit_measurements, device=self, mcm_config=config.mcm_config
         )
         transform_program.add_transform(
             decompose,
