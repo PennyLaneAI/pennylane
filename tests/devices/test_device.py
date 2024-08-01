@@ -188,6 +188,12 @@ def mock_device_supporting_prod(monkeypatch):
         yield get_device
 
 
+# pylint: disable=pointless-statement
+def test_invalid_attribute_in_devices_raises_error():
+    with pytest.raises(AttributeError, match="'pennylane.devices' has no attribute 'blabla'"):
+        qml.devices.blabla
+
+
 def test_gradients_record():
     """Test that execute_and_gradients and gradient both track the number of gradients requested."""
 
@@ -642,7 +648,7 @@ class TestInternalFunctions:  # pylint:disable=too-many-public-methods
         prep = [op]
         ops = [qml.AngleEmbedding(features=[0.1], wires=[0], rotation="Z"), op, qml.PauliZ(wires=2)]
 
-        dev = qml.device("default.qubit.legacy", wires=3)
+        dev = qml.device("default.mixed", wires=3)
         tape = qml.tape.QuantumTape(ops=prep + ops, measurements=[], shots=100)
         new_tape = dev.default_expand_fn(tape)
 
@@ -998,7 +1004,14 @@ class TestDeviceInit:
         with monkeypatch.context() as m:
             m.setattr(qml, "version", lambda: "0.0.1")
             with pytest.raises(DeviceError, match="plugin requires PennyLane versions"):
-                qml.device("default.qubit.legacy", wires=0)
+                qml.device("default.mixed", wires=0)
+
+    def test_plugin_devices_from_devices_triggers_getattr(self, mocker):
+        spied = mocker.spy(qml.devices, "__getattr__")
+
+        qml.devices.plugin_devices
+
+        spied.assert_called_once()
 
     def test_refresh_entrypoints(self, monkeypatch):
         """Test that new entrypoints are found by the refresh_devices function"""
@@ -1011,6 +1024,7 @@ class TestDeviceInit:
 
             # reimporting PennyLane within the context sets qml.plugin_devices to {}
             reload(qml)
+            reload(qml.devices.device_constructor)
 
             # since there are no entry points, there will be no plugin devices
             assert not qml.plugin_devices
@@ -1023,6 +1037,7 @@ class TestDeviceInit:
         # Test teardown: re-import PennyLane to revert all changes and
         # restore the plugin_device dictionary
         reload(qml)
+        reload(qml.devices.device_constructor)
 
     def test_hot_refresh_entrypoints(self, monkeypatch):
         """Test that new entrypoints are found by the device loader if not currently present"""
@@ -1034,9 +1049,10 @@ class TestDeviceInit:
             m.setattr(metadata, "entry_points", lambda **kwargs: retval)
 
             # reimporting PennyLane within the context sets qml.plugin_devices to {}
-            reload(qml)
+            reload(qml.devices)
+            reload(qml.devices.device_constructor)
 
-            m.setattr(qml, "refresh_devices", lambda: None)
+            m.setattr(qml.devices.device_constructor, "refresh_devices", lambda: None)
             assert not qml.plugin_devices
 
             # since there are no entry points, there will be no plugin devices
@@ -1052,10 +1068,11 @@ class TestDeviceInit:
         # Test teardown: re-import PennyLane to revert all changes and
         # restore the plugin_device dictionary
         reload(qml)
+        reload(qml.devices.device_constructor)
 
     def test_shot_vector_property(self):
         """Tests shot vector initialization."""
-        dev = qml.device("default.qubit.legacy", wires=1, shots=[1, 3, 3, 4, 4, 4, 3])
+        dev = qml.device("default.mixed", wires=1, shots=[1, 3, 3, 4, 4, 4, 3])
         shot_vector = dev.shot_vector
         assert len(shot_vector) == 4
         assert shot_vector[0].shots == 1
@@ -1068,6 +1085,15 @@ class TestDeviceInit:
         assert shot_vector[3].copies == 1
 
         assert dev.shots == 22
+
+    def test_decomp_depth_is_deprecated(self):
+        """Test that a warning is raised when using the deprecated decomp_depth argument"""
+
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match="The decomp_depth argument is deprecated",
+        ):
+            qml.device("default.qubit", decomp_depth=1)
 
 
 class TestBatchExecution:

@@ -299,3 +299,21 @@ def test_capture_qnode_kwargs():
         "postselect_mode": None,
     }
     assert jaxpr.eqns[0].params["qnode_kwargs"] == expected
+
+
+def test_qnode_closure_variables():
+    """Test that qnode can capture closure variables and consts."""
+
+    a = jax.numpy.array(2.0)
+
+    @qml.qnode(qml.device("default.qubit", wires=2))
+    def circuit(w):
+        qml.RX(a, w)
+        return qml.expval(qml.Z(0))
+
+    jaxpr = jax.make_jaxpr(circuit)(1)
+    assert len(jaxpr.eqns[0].invars) == 2  # one closure variable, one arg
+    assert jaxpr.eqns[0].params["n_consts"] == 1
+
+    out = jax.core.eval_jaxpr(jaxpr.jaxpr, [jax.numpy.array(0.5)], 0)
+    assert qml.math.allclose(out, jax.numpy.cos(0.5))

@@ -50,7 +50,7 @@ class MCMConfig:
             None,
         ):
             raise ValueError(f"Invalid mid-circuit measurements method '{self.mcm_method}'.")
-        if self.postselect_mode not in ("hw-like", "fill-shots", None):
+        if self.postselect_mode not in ("hw-like", "fill-shots", "pad-invalid-samples", None):
             raise ValueError(f"Invalid postselection mode '{self.postselect_mode}'.")
 
 

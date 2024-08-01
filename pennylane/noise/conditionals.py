@@ -22,7 +22,8 @@ from inspect import isclass, signature
 
 import pennylane as qml
 from pennylane.boolean_fn import BooleanFn
-from pennylane.ops import Controlled
+from pennylane.measurements import MeasurementValue, MidMeasureMP
+from pennylane.ops import Adjoint, Controlled
 from pennylane.templates import ControlledSequence
 from pennylane.wires import WireError, Wires
 
@@ -182,7 +183,7 @@ class OpIn(BooleanFn):
         self._cops = _get_ops(ops)
         self.condition = self._cops
         super().__init__(
-            self._check_in_ops, f"OpIn({[getattr(op, '__name__') for op in self._cops]})"
+            self._check_in_ops, f"OpIn({[getattr(op, '__name__', op) for op in self._cops]})"
         )
 
     def _check_in_ops(self, operation):
@@ -226,7 +227,7 @@ class OpEq(BooleanFn):
         self._cond = [ops] if not isinstance(ops, (list, tuple, set)) else ops
         self._cops = _get_ops(ops)
         self.condition = self._cops
-        cops_names = list(getattr(op, "__name__") for op in self._cops)
+        cops_names = list(getattr(op, "__name__", op) for op in self._cops)
         super().__init__(
             self._check_eq_ops,
             f"OpEq({cops_names if len(cops_names) > 1 else cops_names[0]})",
@@ -267,22 +268,26 @@ def _get_ops(val):
         classes corresponding to val.
     """
     vals = val if isinstance(val, (list, tuple, set)) else [val]
-    return tuple(
-        (
-            getattr(qml.ops, val, None) or getattr(qml, val)
-            if isinstance(val, str)
-            else (val if isclass(val) else getattr(val, "__class__"))
-        )
-        for val in vals
-    )
+    op_names = []
+    for _val in vals:
+        if isinstance(_val, str):
+            op_names.append(getattr(qml.ops, _val, None) or getattr(qml, _val))
+        elif isclass(_val):
+            op_names.append(_val)
+        elif isinstance(_val, (MeasurementValue, MidMeasureMP)):
+            mid_measure = _val if isinstance(_val, MidMeasureMP) else _val.measurements[0]
+            op_names.append(["MidMeasure", "Reset"][getattr(mid_measure, "reset", 0)])
+        else:
+            op_names.append(getattr(_val, "__class__"))
+    return tuple(op_names)
 
 
 def _check_arithmetic_ops(op1, op2):
     """Helper method for comparing two arithmetic operators based on type check of the bases"""
     # pylint: disable = unnecessary-lambda-assignment
 
-    if isinstance(op1, (Controlled, ControlledSequence)) or isinstance(
-        op2, (Controlled, ControlledSequence)
+    if isinstance(op1, (Adjoint, Controlled, ControlledSequence)) or isinstance(
+        op2, (Adjoint, Controlled, ControlledSequence)
     ):
         return (
             isinstance(op1, type(op2))

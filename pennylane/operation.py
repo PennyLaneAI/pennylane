@@ -249,7 +249,7 @@ import itertools
 import warnings
 from contextlib import contextmanager
 from enum import IntEnum
-from typing import List, Optional, Tuple
+from typing import Optional
 
 import numpy as np
 from numpy.linalg import multi_dot
@@ -1304,7 +1304,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
             or cls.decomposition != Operator.decomposition
         )
 
-    def decomposition(self) -> List["Operator"]:
+    def decomposition(self) -> list["Operator"]:
         r"""Representation of the operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n
@@ -1321,7 +1321,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         )
 
     @staticmethod
-    def compute_decomposition(*params, wires=None, **hyperparameters) -> List["Operator"]:
+    def compute_decomposition(*params, wires=None, **hyperparameters) -> list["Operator"]:
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -1360,7 +1360,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
     @staticmethod
     def compute_diagonalizing_gates(
         *params, wires, **hyperparams
-    ) -> List["Operator"]:  # pylint: disable=unused-argument
+    ) -> list["Operator"]:  # pylint: disable=unused-argument
         r"""Sequence of gates that diagonalize the operator in the computational basis (static method).
 
         Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
@@ -1434,7 +1434,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         """
         raise GeneratorUndefinedError(f"Operation {self.name} does not have a generator")
 
-    def pow(self, z) -> List["Operator"]:
+    def pow(self, z) -> list["Operator"]:
         """A list of new operators equal to this one raised to the given power.
 
         Args:
@@ -1769,7 +1769,7 @@ class Operation(Operator):
         """
         return Wires([])
 
-    def single_qubit_rot_angles(self) -> Tuple[float, float, float]:
+    def single_qubit_rot_angles(self) -> tuple[float, float, float]:
         r"""The parameters required to implement a single-qubit gate as an
         equivalent ``Rot`` gate, up to a global phase.
 
@@ -1866,7 +1866,7 @@ class Channel(Operation, abc.ABC):
     @abc.abstractmethod
     def compute_kraus_matrices(
         *params, **hyperparams
-    ) -> List[np.ndarray]:  # pylint:disable=unused-argument
+    ) -> list[np.ndarray]:  # pylint:disable=unused-argument
         """Kraus matrices representing a quantum channel, specified in
         the computational basis.
 
@@ -2101,7 +2101,7 @@ class Tensor(Observable):
 
     def __init__(self, *args):  # pylint: disable=super-init-not-called
         self._eigvals_cache = None
-        self.obs: List[Observable] = []
+        self.obs: list[Observable] = []
         self._args = args
         self._batch_size = None
         self._pauli_rep = None

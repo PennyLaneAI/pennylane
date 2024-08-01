@@ -16,7 +16,7 @@ Contains the MERA template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 import warnings
-from typing import Callable
+from collections.abc import Callable
 
 import numpy as np
 

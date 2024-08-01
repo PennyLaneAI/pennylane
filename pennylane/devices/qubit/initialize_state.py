@@ -13,7 +13,8 @@
 # limitations under the License.
 """Functions to prepare a state."""
 
-from typing import Iterable, Union
+from collections.abc import Iterable
+from typing import Union
 
 import numpy as np
 

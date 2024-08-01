@@ -15,7 +15,8 @@
 """
 This module contains the qml.var measurement.
 """
-from typing import Sequence, Tuple, Union
+from collections.abc import Sequence
+from typing import Optional, Union
 
 import pennylane as qml
 from pennylane.operation import Operator
@@ -99,8 +100,8 @@ class VarianceMP(SampleMeasurement, StateMeasurement):
         self,
         samples: Sequence[complex],
         wire_order: Wires,
-        shot_range: Tuple[int] = None,
-        bin_size: int = None,
+        shot_range: Optional[tuple[int, ...]] = None,
+        bin_size: Optional[int] = None,
     ):
         # estimate the variance
         op = self.mv if self.mv is not None else self.obs
