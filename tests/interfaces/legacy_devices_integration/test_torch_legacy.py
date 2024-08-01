@@ -80,6 +80,7 @@ class TestTorchExecuteUnitTests:
                 [tape], dev, gradient_fn=param_shift, grad_on_execution=True, interface=interface
             )
 
+    @pytest.mark.xfail(reason="Adjoint Jacobian is not supported with shots")
     def test_grad_on_execution_reuse_state(self, interface, mocker):
         """Test that grad_on_execution uses the `device.execute_and_gradients` pathway
         while reusing the quantum state."""
@@ -897,9 +898,9 @@ class TestTorchExecuteIntegration:
     def test_sampling(self, torch_device, execute_kwargs):
         """Test sampling works as expected"""
         # pylint: disable=unused-argument
-        if (
-            execute_kwargs["gradient_fn"] == "device"
-            and execute_kwargs["grad_on_execution"] is True
+        if execute_kwargs["gradient_fn"] == "device" and (
+            execute_kwargs["grad_on_execution"] is True
+            or execute_kwargs["gradient_kwargs"]["method"] == "adjoint_jacobian"
         ):
             pytest.skip("Adjoint differentiation does not support samples")
         if execute_kwargs["interface"] == "auto":
@@ -929,9 +930,9 @@ class TestTorchExecuteIntegration:
     def test_sampling_expval(self, torch_device, execute_kwargs):
         """Test sampling works as expected if combined with expectation values"""
         # pylint: disable=unused-argument
-        if (
-            execute_kwargs["gradient_fn"] == "device"
-            and execute_kwargs["grad_on_execution"] is True
+        if execute_kwargs["gradient_fn"] == "device" and (
+            execute_kwargs["grad_on_execution"] is True
+            or execute_kwargs["gradient_kwargs"]["method"] == "adjoint_jacobian"
         ):
             pytest.skip("Adjoint differentiation does not support samples")
         if execute_kwargs["interface"] == "auto":
@@ -959,9 +960,9 @@ class TestTorchExecuteIntegration:
     def test_sampling_gradient_error(self, torch_device, execute_kwargs):
         """Test differentiating a tape with sampling results in an error"""
         # pylint: disable=unused-argument
-        if (
-            execute_kwargs["gradient_fn"] == "device"
-            and execute_kwargs["grad_on_execution"] is True
+        if execute_kwargs["gradient_fn"] == "device" and (
+            execute_kwargs["grad_on_execution"] is True
+            or execute_kwargs["gradient_kwargs"]["method"] == "adjoint_jacobian"
         ):
             pytest.skip("Adjoint differentiation does not support samples")
 

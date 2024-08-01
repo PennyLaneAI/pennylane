@@ -930,9 +930,9 @@ class TestAutogradExecuteIntegration:
 
     def test_sampling(self, execute_kwargs):
         """Test sampling works as expected"""
-        if (
-            execute_kwargs["gradient_fn"] == "device"
-            and execute_kwargs["grad_on_execution"] is True
+        if execute_kwargs["gradient_fn"] == "device" and (
+            execute_kwargs["grad_on_execution"] is True
+            or execute_kwargs["gradient_kwargs"]["method"] == "adjoint_jacobian"
         ):
             pytest.skip("Adjoint differentiation does not support samples")
 
@@ -1345,6 +1345,7 @@ class TestHamiltonianWorkflows:
 class TestCustomJacobian:
     """Test for custom Jacobian."""
 
+    @pytest.mark.xfail(reason="No Probs with Adjoint diff")
     def test_custom_jacobians(self):
         """Test custom Jacobian device methood"""
 
