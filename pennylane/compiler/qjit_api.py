@@ -560,9 +560,7 @@ def _get_for_loop_qfunc_prim():
         fn_res = init_state
 
         for i in range(lower_bound, upper_bound, step):
-
-            fn_res = jax.core.eval_jaxpr(jaxpr_body_fn.jaxpr, jaxpr_consts, *(i, *init_state))
-            init_state = fn_res
+            fn_res = jax.core.eval_jaxpr(jaxpr_body_fn.jaxpr, jaxpr_consts, *(i, *fn_res))
 
         return fn_res
 
