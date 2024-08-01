@@ -17,7 +17,6 @@ them.
 """
 
 import urllib.parse
-from collections.abc import Iterable, Mapping
 from concurrent import futures
 from functools import lru_cache
 from pathlib import Path
