@@ -46,6 +46,9 @@
 * `qml.for_loop` can now be captured into plxpr.
   [(#6041)](https://github.com/PennyLaneAI/pennylane/pull/6041)
 
+* Removed `semantic_version` from the list of required packages in PennyLane. 
+  [(#5836)](https://github.com/PennyLaneAI/pennylane/pull/5836)
+
 * During experimental program capture, the qnode can now use closure variables.
   [(#6052)](https://github.com/PennyLaneAI/pennylane/pull/6052)
 
