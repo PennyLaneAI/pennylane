@@ -155,7 +155,7 @@ class TestCaptureCircuitsForLoop:
             return qml.expval(qml.Z(0))
 
         result = circuit()
-        expected = -0.9899925
+        expected = np.cos(0 + 1 + 2)
         assert np.allclose(result, expected), f"Expected {expected}, but got {result}"
 
         jaxpr = jax.make_jaxpr(circuit)()
