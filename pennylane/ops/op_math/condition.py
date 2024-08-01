@@ -142,10 +142,14 @@ class CondCallable:  # pylint:disable=too-few-public-methods
         self.branch_fns = [true_fn]
         self.otherwise_fn = false_fn
 
-        if false_fn is None:
+        # when working with `qml.capture.enabled()`,
+        # it's easier to store the original `elifs` argument
+        self.orig_elifs = elifs
+
+        if false_fn is None and not qml.capture.enabled():
             self.otherwise_fn = lambda *args, **kwargs: None
 
-        if elifs:
+        if elifs and not qml.capture.enabled():
             elif_preds, elif_fns = list(zip(*elifs))
             self.preds.extend(elif_preds)
             self.branch_fns.extend(elif_fns)
@@ -198,13 +202,72 @@ class CondCallable:  # pylint:disable=too-few-public-methods
         """(List(Tuple(bool, callable))): a list of (bool, elif_fn) clauses"""
         return list(zip(self.preds[1:], self.branch_fns[1:]))
 
-    def __call__(self, *args, **kwargs):
+    def __call_capture_disabled(self, *args, **kwargs):
         # python fallback
         for pred, branch_fn in zip(self.preds, self.branch_fns):
             if pred:
                 return branch_fn(*args, **kwargs)
 
         return self.false_fn(*args, **kwargs)  # pylint: disable=not-callable
+
+    def __call_capture_enabled(self, *args, **kwargs):
+
+        import jax  # pylint: disable=import-outside-toplevel
+
+        cond_prim = _get_cond_qfunc_prim()
+
+        elifs = (
+            (self.orig_elifs,)
+            if len(self.orig_elifs) > 0 and not isinstance(self.orig_elifs[0], tuple)
+            else self.orig_elifs
+        )
+
+        @wraps(self.true_fn)
+        def new_wrapper(*args, **kwargs):
+
+            jaxpr_true = jax.make_jaxpr(functools.partial(self.true_fn, **kwargs))(*args)
+            jaxpr_false = (
+                jax.make_jaxpr(functools.partial(self.otherwise_fn, **kwargs))(*args)
+                if self.otherwise_fn
+                else None
+            )
+
+            # We extract each condition (or predicate) from the elifs argument list
+            # since these are traced by JAX and are passed as positional arguments to the primitive
+            elifs_conditions = []
+            jaxpr_elifs = []
+
+            for pred, elif_fn in elifs:
+                elifs_conditions.append(pred)
+                jaxpr_elifs.append(jax.make_jaxpr(functools.partial(elif_fn, **kwargs))(*args))
+
+            conditions = jax.numpy.array([self.condition, *elifs_conditions, True])
+
+            jaxpr_branches = [jaxpr_true, *jaxpr_elifs, jaxpr_false]
+            jaxpr_consts = [jaxpr.consts if jaxpr is not None else () for jaxpr in jaxpr_branches]
+
+            # We need to flatten the constants since JAX does not allow
+            # to pass lists as positional arguments
+            consts_flat = [const for sublist in jaxpr_consts for const in sublist]
+            n_consts_per_branch = [len(consts) for consts in jaxpr_consts]
+
+            return cond_prim.bind(
+                conditions,
+                *args,
+                *consts_flat,
+                jaxpr_branches=jaxpr_branches,
+                n_consts_per_branch=n_consts_per_branch,
+                n_args=len(args),
+            )
+
+        return new_wrapper(*args, **kwargs)
+
+    def __call__(self, *args, **kwargs):
+
+        if qml.capture.enabled():
+            return self.__call_capture_enabled(*args, **kwargs)
+
+        return self.__call_capture_disabled(*args, **kwargs)
 
 
 def cond(condition, true_fn: Callable = None, false_fn: Optional[Callable] = None, elifs=()):
@@ -501,9 +564,6 @@ def cond(condition, true_fn: Callable = None, false_fn: Optional[Callable] = Non
 
         return cond_func
 
-    if qml.capture.enabled():
-        return _capture_cond(condition, true_fn, false_fn, elifs)
-
     if not isinstance(condition, MeasurementValue):
         # The condition is not a mid-circuit measurement.
         if true_fn is None:
@@ -646,51 +706,3 @@ def _get_cond_qfunc_prim():
         return outvals_true
 
     return cond_prim
-
-
-def _capture_cond(condition, true_fn, false_fn=None, elifs=()) -> Callable:
-    """Capture compatible way to apply conditionals."""
-
-    import jax  # pylint: disable=import-outside-toplevel
-
-    cond_prim = _get_cond_qfunc_prim()
-
-    elifs = (elifs,) if len(elifs) > 0 and not isinstance(elifs[0], tuple) else elifs
-
-    @wraps(true_fn)
-    def new_wrapper(*args, **kwargs):
-
-        jaxpr_true = jax.make_jaxpr(functools.partial(true_fn, **kwargs))(*args)
-        jaxpr_false = (
-            jax.make_jaxpr(functools.partial(false_fn, **kwargs))(*args) if false_fn else None
-        )
-
-        # We extract each condition (or predicate) from the elifs argument list
-        # since these are traced by JAX and are passed as positional arguments to the primitive
-        elifs_conditions = []
-        jaxpr_elifs = []
-
-        for pred, elif_fn in elifs:
-            elifs_conditions.append(pred)
-            jaxpr_elifs.append(jax.make_jaxpr(functools.partial(elif_fn, **kwargs))(*args))
-
-        conditions = jax.numpy.array([condition, *elifs_conditions, True])
-
-        jaxpr_branches = [jaxpr_true, *jaxpr_elifs, jaxpr_false]
-        jaxpr_consts = [jaxpr.consts if jaxpr is not None else () for jaxpr in jaxpr_branches]
-
-        # We need to flatten the constants since JAX does not allow
-        # to pass lists as positional arguments
-        consts_flat = [const for sublist in jaxpr_consts for const in sublist]
-        n_consts_per_branch = [len(consts) for consts in jaxpr_consts]
-
-        return cond_prim.bind(
-            conditions,
-            *args,
-            *consts_flat,
-            jaxpr_branches=jaxpr_branches,
-            n_consts_per_branch=n_consts_per_branch,
-            n_args=len(args),
-        )
-
-    return new_wrapper
