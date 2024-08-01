@@ -119,7 +119,15 @@ def mock_requests_get(request, monkeypatch, mock_get_args):
 
         mock_resp.json.return_value = json_data
         if hasattr(request, "param"):
-            mock_resp.content = request.param
+            content = request.param
+            mock_resp.content = content
+
+            def mock_iter_content(chunk_size: int):
+                """Mock for Response.iter_content()."""
+                for i in range(0, len(content), chunk_size):
+                    yield content[i : i + chunk_size]
+
+            mock_resp.iter_content = mock_iter_content
 
         return mock_resp
 
@@ -284,7 +292,7 @@ class TestProgressBar:
 @pytest.fixture
 def mock_download_dataset(monkeypatch):
     # pylint:disable=too-many-arguments
-    def mock(data_path, dest, attributes, force, block_size, progress_data):
+    def mock(data_path, dest, attributes, force, block_size, pbar_task):
         dset = Dataset.open(Path(dest), "w")
         dset.close()
 
@@ -354,7 +362,12 @@ def test_download_dataset_full_or_partial(
     dest.exists.return_value = dest_exists
 
     pennylane.data.data_manager._download_dataset(
-        "dataset/path", attributes=attributes, dest=dest, force=force, block_size=1
+        "dataset/path",
+        attributes=attributes,
+        dest=dest,
+        force=force,
+        block_size=1,
+        pbar_task=MagicMock(),
     )
 
     assert download_partial.called is called_partial
@@ -372,7 +385,12 @@ def test_download_dataset_full_call(download_full, force):
     pbar_task = MagicMock()
 
     pennylane.data.data_manager._download_dataset(
-        "dataset/path", attributes=None, dest=dest, force=force, block_size=1, pbar_task=pbar_task
+        f"{S3_URL}/dataset/path",
+        attributes=None,
+        dest=dest,
+        force=force,
+        block_size=1,
+        pbar_task=pbar_task,
     )
 
     download_full.assert_called_once_with(
@@ -392,7 +410,7 @@ def test_download_dataset_partial_call(download_partial, attributes, force):
     pbar_task = MagicMock()
 
     pennylane.data.data_manager._download_dataset(
-        "dataset/path",
+        f"{S3_URL}/dataset/path",
         attributes=attributes,
         dest=dest,
         force=force,
@@ -521,23 +539,26 @@ def test_download_partial_no_check_remote(open_hdf5_s3, tmp_path):
 
 
 @patch("builtins.open")
+@patch.object(pennylane.data.data_manager, "head", head_mock)
 @pytest.mark.parametrize(
     "datapath, escaped",
     [("data/NH3+/data.h5", "data/NH3%2B/data.h5"), ("data/CA$H/money.h5", "data/CA%24H/money.h5")],
 )
-def test_download_dataset_escapes_url(_, mock_get_args, datapath, escaped):
-    """Tests that _download_dataset escapes special characters in a URL when doing a full download."""
+def test_download_datasets_escapes_url(_, tmp_path, mock_get_args, datapath, escaped):
+    """Tests that _download_datasets escapes special characters in a URL when doing a full download."""
 
     dest = MagicMock()
     dest.exists.return_value = False
 
-    pennylane.data.data_manager._download_dataset(
-        DataPath(datapath),
-        dest=dest,
+    pennylane.data.data_manager._download_datasets(
+        S3_URL,
+        folder_path=tmp_path,
+        data_paths=[datapath],
         attributes=None,
         force=True,
         block_size=1,
-        pbar_task=MagicMock(),
+        num_threads=1,
+        pbar=MagicMock(),
     )
 
     mock_get_args.assert_called_once()
@@ -549,25 +570,33 @@ def test_download_dataset_escapes_url(_, mock_get_args, datapath, escaped):
     "datapath, escaped",
     [("data/NH3+/data.h5", "data/NH3%2B/data.h5"), ("data/CA$H/money.h5", "data/CA%24H/money.h5")],
 )
-def test_download_dataset_escapes_url_partial(download_partial, datapath, escaped):
-    """Tests that _download_dataset escapes special characters in a URL when doing a partial
+def test_download_datasets_escapes_url_partial(download_partial, tmp_path, datapath, escaped):
+    """Tests that _download_datasets escapes special characters in a URL when doing a partial
     download."""
-    dest = Path("dest")
     attributes = ["attr"]
     force = False
+    pbar = MagicMock()
     pbar_task = MagicMock()
+    pbar.add_task.return_value = pbar_task
 
-    pennylane.data.data_manager._download_dataset(
-        DataPath(datapath),
-        dest=dest,
+    pennylane.data.data_manager._download_datasets(
+        S3_URL,
+        folder_path=tmp_path,
+        data_paths=[datapath],
         attributes=attributes,
         force=force,
         block_size=1,
-        pbar_task=pbar_task,
+        num_threads=1,
+        pbar=pbar,
     )
 
     download_partial.assert_called_once_with(
-        f"{S3_URL}/{escaped}", dest=dest, attributes=attributes, overwrite=force, block_size=1
+        f"{S3_URL}/{escaped}",
+        dest=tmp_path / datapath,
+        attributes=attributes,
+        overwrite=force,
+        block_size=1,
+        pbar_task=pbar_task,
     )
 
 

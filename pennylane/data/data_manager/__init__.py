@@ -183,7 +183,7 @@ def _download_datasets(  # pylint: disable=too-many-arguments
             file_sizes = (None for _ in s3_urls)
 
         pbar_tasks = [
-            pbar.add_task(str(dest_path.relative_to(Path.cwd())), total=file_size)
+            pbar.add_task(str(dest_path.relative_to(folder_path)), total=file_size)
             for dest_path, file_size in zip(dest_paths, file_sizes)
         ]
     else:
