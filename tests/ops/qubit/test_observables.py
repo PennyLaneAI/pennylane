@@ -216,7 +216,7 @@ class TestHermitian:
         """Tests that an error is raised if the input to Hermitian is ragged."""
         ham = [[1, 0], [0, 1, 2]]
 
-        with pytest.raises(ValueError, match="The requested array has an inhomogeneous shape"):
+        with pytest.raises(ValueError, match="must be a square matrix"):
             qml.Hermitian(ham, wires=0)
 
     @pytest.mark.parametrize("observable, eigvals, eigvecs", EIGVALS_TEST_DATA)
@@ -305,6 +305,66 @@ class TestHermitian:
         assert np.allclose(qml.Hermitian._eigs[key]["eigvec"], eigvecs, atol=tol, rtol=0)
         assert len(qml.Hermitian._eigs) == 1
 
+    def test_hermitian_compute_decomposition_exceptions(self):
+        """Tests errors associated with input exceptions"""
+        single_wire_observable = np.array([[1, 1], [1, -1]]) / np.sqrt(2)
+        double_wire_observable = qml.matrix(qml.X(0) @ qml.X(1))
+
+        # test empty wire list
+        with pytest.raises(ValueError, match="At least one wire"):
+            qml.Hermitian.compute_decomposition(single_wire_observable, wires=[])
+
+        # test wrong number of wires
+        with pytest.raises(ValueError, match="wrong number of wires"):
+            qml.Hermitian.compute_decomposition(double_wire_observable, wires=[0, 1, 2])
+
+        with pytest.raises(ValueError, match="wrong number of wires"):
+            qml.Hermitian.compute_decomposition(double_wire_observable, wires="aux")
+
+        # test int as wire type
+        A_decomp = qml.Hermitian.compute_decomposition(single_wire_observable, wires=0)
+        assert np.allclose(A_decomp.to_mat(), single_wire_observable, rtol=0)
+
+        # test str as wire type
+        A_decomp = qml.Hermitian.compute_decomposition(single_wire_observable, wires="aux")
+        assert np.allclose(A_decomp.to_mat(), single_wire_observable, rtol=0)
+
+        # test large input warning
+        observable = qml.Identity(0)
+        for i in range(9):
+            observable = observable @ qml.X(i)
+
+        with pytest.warns(
+            UserWarning, match="Decomposition may be inefficient for this large of a matrix."
+        ):
+            qml.Hermitian.compute_decomposition(qml.matrix(observable), wires=list(range(9)))
+
+    @pytest.mark.parametrize("test_num_wires", list(range(1, 10)))
+    def test_hermitian_compute_decomposition_performance(self, test_num_wires, benchmark):
+        """Tests the performance of the compute_decomposition method of the Hermitian class.
+        Used to determine the minimum matrix dimension to raise an inefficiency warning"""
+        observable = qml.Identity(0)
+        for i in range(test_num_wires):
+            observable = observable @ qml.X(i)
+        benchmark(
+            qml.Hermitian.compute_decomposition, qml.matrix(observable), list(range(test_num_wires))
+        )
+
+    def test_hermitian_decomposition(self):
+        """Tests that the decomposition method of the Hermitian class returns the correct result."""
+        observable = np.array([[1, 1], [1, -1]]) / np.sqrt(2)
+        A = qml.Hermitian(observable, wires=[0])
+        A_decomp = A.decomposition()
+
+        assert np.allclose(A_decomp.to_mat(), observable, rtol=0)
+
+    def test_hermitian_compute_decomposition(self):
+        """Tests that the compute_decomposition method of the Hermitian class returns the correct result."""
+        observable = np.array([[1, 1], [1, -1]]) / np.sqrt(2)
+        A_decomp = qml.Hermitian.compute_decomposition(observable, wires=[0])
+
+        assert np.allclose(A_decomp.to_mat(), observable, rtol=0)
+
     @pytest.mark.parametrize("observable, eigvals, eigvecs", EIGVALS_TEST_DATA)
     def test_hermitian_diagonalizing_gates(self, observable, eigvals, eigvecs, tol, mocker):
         """Tests that the diagonalizing_gates method of the Hermitian class returns the correct results."""
@@ -380,7 +440,7 @@ class TestHermitian:
         assert len(qml.Hermitian._eigs) == 2
 
     @pytest.mark.parametrize("observable, eigvals, eigvecs", EIGVALS_TEST_DATA)
-    def test_hermitian_diagonalizing_gatesi_same_observable_twice(
+    def test_hermitian_diagonalizing_gates_same_observable_twice(
         self, observable, eigvals, eigvecs, tol
     ):
         """Tests that the diagonalizing_gates method of the Hermitian class keeps the same dictionary entries upon multiple calls."""

@@ -43,6 +43,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* Added the `compute_decomposition` method for `qml.ops.qubit.Hermitian`.
+  [(#6047)](https://github.com/PennyLaneAI/pennylane/pull/6047)
+
 * During experimental program capture, the qnode can now use closure variables.
   [(#6052)](https://github.com/PennyLaneAI/pennylane/pull/6052)
 
@@ -288,6 +291,7 @@ William Maxwell,
 Vincent Michaud-Rioux,
 Anurav Modak,
 Mudit Pandey,
+Andrija Paurevic,
 Erik Schultheis,
 nate stemen,
 David Wierichs,
