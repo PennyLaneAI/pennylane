@@ -17,8 +17,15 @@ Tests for :class:`pennylane.data.progress`
 import pytest
 import rich.progress
 
-from pennylane.data.data_manager.progress import Progress
+from pennylane.data.data_manager.progress import Progress, Task
 from pennylane.data.data_manager.progress._default import DefaultProgress
+
+
+@pytest.fixture(params=[True, False])
+def progress(request):
+    progress = Progress(use_rich=request.param)
+
+    yield progress
 
 
 class TestProgress:
@@ -33,3 +40,10 @@ class TestProgress:
 
         prog = Progress(use_rich=use_rich)
         assert isinstance(prog._progress, expect_cls)
+
+    @pytest.mark.parametrize("total", [100, None])
+    def test_add_task(self, progress, total):
+        """Test that ``add_task()`` returns a new Task instance."""
+        task = progress.add_task(description="abc", total=total)
+
+        assert isinstance(task, Task)

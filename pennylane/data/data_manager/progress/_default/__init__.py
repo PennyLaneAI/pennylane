@@ -60,15 +60,14 @@ class DefaultProgress:
     def __init__(self):
         self.tasks = []
         self._active = False
-
-    def __enter__(self) -> "DefaultProgress":
-        if self._active:
-            raise RuntimeError("Progress context already active.")
-
         self._term_columns, self._term_lines = shutil.get_terminal_size()
         self._task_display_lines = []
         self._task_display_lines_max = self._term_lines - 2
         self._description_width_max = int(self._term_columns * 0.6)
+
+    def __enter__(self) -> "DefaultProgress":
+        if self._active:
+            raise RuntimeError("Progress context already active.")
 
         self._active = True
 
@@ -82,7 +81,6 @@ class DefaultProgress:
     ) -> None:
         self._print_final()
         self._active = False
-        del self._task_display_lines
 
     def add_task(self, description: str, total: Optional[float] = None) -> int:
         """Add a task."""
@@ -91,6 +89,7 @@ class DefaultProgress:
         self.tasks.append(Task(description=description, total=total))
 
         task_id = len(self.tasks) - 1
+
         if task_id < self._task_display_lines_max:
             self._task_display_lines.append(self._get_task_display_line(task))
         elif task_id == self._task_display_lines_max:
@@ -119,7 +118,8 @@ class DefaultProgress:
         if task_id < self._task_display_lines_max:
             self._task_display_lines[task_id] = self._get_task_display_line(task)
 
-        self._print()
+        if self._active:
+            self._print()
 
     def _get_task_display_line(self, task: Task) -> str:
         """Get display line for the task."""
