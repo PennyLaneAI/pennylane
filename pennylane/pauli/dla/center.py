@@ -46,10 +46,7 @@ def _center_pauli_words(g, pauli):
     """Compute the center of an algebra given in a PauliWord basis."""
     # Guarantees all operators to be given as a PauliWord
     # If `pauli=True` we know that they are PauliWord or PauliSentence instances
-    if pauli:
-        g_pws = [o if isinstance(o, PauliWord) else next(iter(o.keys())) for o in g]
-    else:
-        g_pws = [o if isinstance(o, PauliWord) else next(iter(o.pauli_rep.keys())) for o in g]
+    g_pws = [o if isinstance(o, PauliWord) else next(iter(o.pauli_rep.keys())) for o in g]
     d = len(g_pws)
     commutators = np.zeros((d, d), dtype=int)
     for (j, op1), (k, op2) in combinations(enumerate(g_pws), r=2):
