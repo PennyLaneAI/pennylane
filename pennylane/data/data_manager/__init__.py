@@ -17,8 +17,8 @@ them.
 """
 
 import urllib.parse
-from collections.abc import Iterable, Mapping, Callable
-from concurrent.futures import ThreadPoolExecutor
+from collections.abc import Iterable, Mapping
+from concurrent import futures
 from functools import lru_cache
 from pathlib import Path
 from time import sleep
@@ -135,7 +135,7 @@ def _download_dataset(  # pylint:disable=too-many-arguments
     If any of the attributes of the remote dataset are already downloaded locally,
     they will not be overwritten unless ``force`` is True.
 
-    If ``pbar_task`` is provided, will update the provided progress bar.
+    If ``pbar_task`` is provided, it will be updated with the download progress.
     """
 
     if attributes is not None or dest.exists():
@@ -158,15 +158,20 @@ def _download_datasets(
     attributes: Optional[Iterable[str]],
     force: bool,
     block_size: int,
+    num_threads: int,
     pbar: Optional[progress.Progress],
-) -> list[Dataset]:
+) -> list[Path]:
     """Downloads the datasets with given ``data_paths`` to ``folder_path``, copying the
     directory structure of the bucket at ``s3_base_url``.
 
     If ``pbar`` is provided, a progress task will be added for each requested dataset.
+
+    Returns:
+        list[Path]: List of downloaded dataset paths
     """
     # URL-escape special characters like '+', '$', and '%' in the data path
     s3_urls = [f"{s3_base_url}/{urllib.parse.quote(str(data_path))}" for data_path in data_paths]
+
     dest_paths = [folder_path / data_path for data_path in data_paths]
     for path_parents in set(path.parent for path in dest_paths):
         path_parents.mkdir(parents=True, exist_ok=True)
@@ -175,26 +180,34 @@ def _download_datasets(
         if attributes is None:
             file_sizes = [int(head(s3_url).headers["Content-Length"]) for s3_url in s3_urls]
         else:
+            # Can't get file sizes for partial downloads
             file_sizes = (None for _ in s3_urls)
 
         pbar_tasks = [
-            pbar.add_task(str(dest_path), total=file_size)
+            pbar.add_task(str(dest_path.relative_to(Path.cwd())), total=file_size)
             for dest_path, file_size in zip(dest_paths, file_sizes)
         ]
     else:
         pbar_tasks = (None for _ in dest_paths)
 
-    for s3_url, dest_path, pbar_task in zip(s3_urls, dest_paths, pbar_tasks):
-        _download_dataset(
-            s3_url,
-            dest_path,
-            attributes=attributes,
-            force=force,
-            block_size=block_size,
-            pbar_task=pbar_task,
-        )
+    with futures.ThreadPoolExecutor(min(num_threads, len(dest_paths))) as pool:
+        for s3_url, dest_path, pbar_task in zip(s3_urls, dest_paths, pbar_tasks):
+            futs = [
+                pool.submit(
+                    _download_dataset,
+                    s3_url,
+                    dest_path,
+                    attributes=attributes,
+                    force=force,
+                    block_size=block_size,
+                    pbar_task=pbar_task,
+                )
+            ]
+            for result in futures.wait(futs, return_when=futures.FIRST_EXCEPTION).done:
+                if result.exception() is not None:
+                    raise result.exception()
 
-    return [Dataset.open(dest_path) for dest_path in dest_paths]
+    return dest_paths
 
 
 def _validate_attributes(data_struct: dict, data_name: str, attributes: Iterable[str]):
@@ -219,7 +232,7 @@ def load(  # pylint: disable=too-many-arguments
     attributes: Optional[Iterable[str]] = None,
     folder_path: Path = Path("./datasets/"),
     force: bool = False,
-    num_threads: int = 4,
+    num_threads: int = 50,
     block_size: int = 8388608,
     progress_bar: bool = True,
     **params: Union[ParamArg, str, list[str]],
@@ -315,24 +328,35 @@ def load(  # pylint: disable=too-many-arguments
     if attributes:
         _validate_attributes(data_struct, data_name, attributes)
 
-    folder_path = Path(folder_path)
+    folder_path = Path(folder_path).resolve()
     data_paths = [data_path for _, data_path in foldermap.find(data_name, **params)]
 
     if progress_bar:
         with progress.Progress() as pbar:
-            return _download_datasets(
+            download_paths = _download_datasets(
                 S3_URL,
                 folder_path,
                 data_paths,
                 attributes,
                 force=force,
                 block_size=block_size,
+                num_threads=num_threads,
                 pbar=pbar,
             )
 
-    return _download_datasets(
-        S3_URL, folder_path, data_paths, attributes, force=force, block_size=block_size, pbar=None
-    )
+    else:
+        download_paths = _download_datasets(
+            S3_URL,
+            folder_path,
+            data_paths,
+            attributes,
+            force=force,
+            block_size=block_size,
+            num_threads=num_threads,
+            pbar=None,
+        )
+
+    return [Dataset.open(path, "a") for path in download_paths]
 
 
 def list_datasets() -> dict:

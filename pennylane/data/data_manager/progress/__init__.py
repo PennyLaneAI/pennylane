@@ -18,13 +18,14 @@ try:
 except ImportError:
     from pennylane.data.data_manager.progress._default import make_progress
 
-
 from typing import Any, Optional
 
 
 class Task:
+    """Represents progress display for a single dataset download."""
 
-    def __init__(self, _progress: Any, _task_id: Any):
+    def __init__(self, _task_id: Any, _progress: Any):
+        """Private constructor."""
         self._progress = _progress
         self._task_id = _task_id
 
@@ -35,27 +36,48 @@ class Task:
         advance: Optional[float] = None,
         total: Optional[float] = None,
     ):
+        """Update download state.
+
+        Args:
+            advance: Adds to number of bytes downloaded so far
+            completed: Sets the number of bytes downloaded so far
+            total: Sets the total number of bytes for the download
+        """
         self._progress.update(self._task_id, completed=completed, total=total, advance=advance)
 
 
 class Progress:
-    """"""
+    """Displays dataset download progress on the terminal. Will use
+    ``rich.progress.Progress`` if available, otherwise it will fall back to the
+    default implementation.
+
+    Must be used as a context manager to ensure correct output.
+    """
 
     def __init__(self) -> None:
+        """Initialize progress."""
         self._progress = make_progress()
 
     def __enter__(self) -> "Progress":
+        """Enter progress context."""
         self._progress.__enter__()
 
         return self
 
     def __exit__(self, *args):
+        """Exit progress context."""
         return self._progress.__exit__(*args)
 
     def add_task(self, description: str, total: Optional[float] = None) -> Task:
+        """Add a task.
+
+        Args:
+            description: Description for the task
+            total: Total size of the dataset download in bytes, if available.
+        """
         task_id = self._progress.add_task(description=description, total=total)
 
-        return Task(self._progress, task_id)
+        return Task(task_id, self._progress)
 
 
 __all__ = ["Progress", "Task"]

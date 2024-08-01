@@ -15,8 +15,8 @@
 Unit tests for the :class:`pennylane.data.data_manager` functions.
 """
 import os
-from typing import NamedTuple
 from pathlib import Path, PosixPath
+from typing import NamedTuple
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -254,38 +254,24 @@ class TestProgressBar:
 
     def test_download_basic(self, download_partial, mocker):
         """Test that update is called."""
-        with pennylane.data.data_manager.progress() as pbar:
+        with pennylane.data.data_manager.progress.Progress() as pbar:
             spy = mocker.spy(pbar, "update")
             task = pbar.add_task("qchem data:", total=100)
             pennylane.data.data_manager._download_dataset(
-                "foo/bar",
-                "dest/foo/bar",
-                attributes=["baz"],
-                block_size=100,
-                progress_data=(pbar, task, 10),
+                "foo/bar", "dest/foo/bar", attributes=["baz"], block_size=100, pbar_task=task
             )
             spy.assert_called_once_with(task, advance=10)
 
-    def test_naive_only_supports_one_task(self, download_partial):
-        """Test that the progress bar can only have one task."""
-        with pennylane.data.data_manager.progress() as pbar:
-            pbar.add_task("qchem data:", total=100)
-            with pytest.raises(ValueError, match="non-rich progress bar can only handle one task"):
-                pbar.add_task("qspin data:", total=100)
-
     def test_progress_bar_update(self, download_partial, capsys):
         """Test the various parts of the update function."""
-        with pennylane.data.data_manager.progress() as pbar:
-            with pytest.raises(ValueError, match="no task found to update"):
-                pbar.update(0)
+        with pennylane.data.data_manager.progress.Progress() as pbar:
+            task = pbar.add_task("qchem data:", total=10000)
 
-            task = pbar.add_task("qchem data:", total=100)
-
-            pbar.update(task, advance=20)
+            task.update(advance=20)
             out, _err = capsys.readouterr()
-            assert out == "qchem data:   0.00/100.00 KB\rqchem data:  20.00/100.00 KB\r"
+            assert out == "qchem data:   0.00/0.01 MB\rqchem data:  0.\r"
 
-            pbar.update(task, completed=100)
+            task.update(completed=100)
             out, _err = capsys.readouterr()
             assert out == "qchem data: 100.00/100.00 KB\n"
 
