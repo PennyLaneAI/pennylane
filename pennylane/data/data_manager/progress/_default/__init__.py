@@ -68,7 +68,7 @@ class DefaultProgress:
         exc_type: Optional[type[BaseException]],
         exc_value: Optional[BaseException],
         traceback: Any,
-    ) -> bool | None:
+    ) -> None:
         self._print_final()
 
     def add_task(self, description: str, total: Optional[float] = None) -> int:
