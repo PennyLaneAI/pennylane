@@ -328,7 +328,7 @@ class TestOptimize:
 
             # check metric tensor
             res = opt.metric_tensor
-            exp = np.array([[[0.25]], [[(np.cos(2 * theta[0]) + 1) / 8]]])
+            exp = (np.array([[0.25]]), np.array([[(np.cos(2 * theta[0]) + 1) / 8]]))
             assert np.allclose(res, exp)
 
             # check parameter update
