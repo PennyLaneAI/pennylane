@@ -162,7 +162,7 @@ class TestCaptureCircuitsWhileLoop:
         @qml.qnode(dev)
         def circuit(upper_bound, arg):
 
-            # for loop with dynamic bounds
+            # while loop with dynamic bounds
             @qml.while_loop(lambda i: i < upper_bound)
             def loop_fn(i):
                 qml.Hadamard(wires=i)
