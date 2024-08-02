@@ -22,7 +22,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.ops.op_math.condition import _capture_cond
+from pennylane.ops.op_math.condition import CondCallable
 
 pytestmark = pytest.mark.jax
 
@@ -229,7 +229,7 @@ class TestCondReturns:
     def test_validate_mismatches(self, true_fn, false_fn, expected_error, match):
         """Test mismatch in number and type of output variables."""
         with pytest.raises(expected_error, match=match):
-            jax.make_jaxpr(_capture_cond(True, true_fn, false_fn))(jax.numpy.array(1))
+            jax.make_jaxpr(CondCallable(True, true_fn, false_fn))(jax.numpy.array(1))
 
     def test_validate_number_of_output_variables(self):
         """Test mismatch in number of output variables."""
@@ -241,7 +241,7 @@ class TestCondReturns:
             return x + 1
 
         with pytest.raises(ValueError, match=r"Mismatch in number of output variables"):
-            jax.make_jaxpr(_capture_cond(True, true_fn, false_fn))(jax.numpy.array(1))
+            jax.make_jaxpr(CondCallable(True, true_fn, false_fn))(jax.numpy.array(1))
 
     def test_validate_output_variable_types(self):
         """Test mismatch in output variable types."""
@@ -253,7 +253,7 @@ class TestCondReturns:
             return x + 1, x + 2.0
 
         with pytest.raises(ValueError, match=r"Mismatch in output abstract values"):
-            jax.make_jaxpr(_capture_cond(True, true_fn, false_fn))(jax.numpy.array(1))
+            jax.make_jaxpr(CondCallable(True, true_fn, false_fn))(jax.numpy.array(1))
 
     def test_validate_no_false_branch_with_return(self):
         """Test no false branch provided with return variables."""
@@ -265,7 +265,7 @@ class TestCondReturns:
             ValueError,
             match=r"The false branch must be provided if the true branch returns any variables",
         ):
-            jax.make_jaxpr(_capture_cond(True, true_fn))(jax.numpy.array(1))
+            jax.make_jaxpr(CondCallable(True, true_fn))(jax.numpy.array(1))
 
     def test_validate_no_false_branch_with_return_2(self):
         """Test no false branch provided with return variables."""
@@ -280,9 +280,7 @@ class TestCondReturns:
             ValueError,
             match=r"The false branch must be provided if the true branch returns any variables",
         ):
-            jax.make_jaxpr(_capture_cond(True, true_fn, false_fn=None, elifs=(False, elif_fn)))(
-                jax.numpy.array(1)
-            )
+            jax.make_jaxpr(CondCallable(True, true_fn, elifs=[(True, elif_fn)]))(jax.numpy.array(1))
 
     def test_validate_elif_branches(self):
         """Test elif branch mismatches."""
@@ -306,13 +304,13 @@ class TestCondReturns:
             ValueError, match=r"Mismatch in output abstract values in elif branch #1"
         ):
             jax.make_jaxpr(
-                _capture_cond(False, true_fn, false_fn, [(True, elif_fn1), (False, elif_fn2)])
+                CondCallable(True, true_fn, false_fn, [(True, elif_fn1), (False, elif_fn2)])
             )(jax.numpy.array(1))
 
         with pytest.raises(
             ValueError, match=r"Mismatch in number of output variables in elif branch #0"
         ):
-            jax.make_jaxpr(_capture_cond(False, true_fn, false_fn, [(True, elif_fn3)]))(
+            jax.make_jaxpr(CondCallable(True, true_fn, false_fn, elifs=[(True, elif_fn3)]))(
                 jax.numpy.array(1)
             )
 
@@ -328,7 +326,7 @@ def circuit(pred):
         qml.RX(0.1, wires=0)
 
     qml.cond(pred > 0, true_fn)()
-    return qml.expval(qml.PauliZ(wires=0))
+    return qml.expval(qml.Z(wires=0))
 
 
 @qml.qnode(dev)
@@ -352,7 +350,7 @@ def circuit_branches(pred, arg1, arg2):
 
     qml.cond(pred > 0, true_fn, false_fn, elifs=(pred == -1, elif_fn1))(arg1, arg2)
     qml.RX(0.10, wires=0)
-    return qml.expval(qml.PauliZ(wires=0))
+    return qml.expval(qml.Z(wires=0))
 
 
 @qml.qnode(dev)
@@ -371,7 +369,7 @@ def circuit_with_returned_operator(pred, arg1, arg2):
 
     qml.cond(pred > 0, true_fn, false_fn)(arg1, arg2)
     qml.RX(0.10, wires=0)
-    return qml.expval(qml.PauliZ(wires=0))
+    return qml.expval(qml.Z(wires=0))
 
 
 @qml.qnode(dev)

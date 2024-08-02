@@ -190,10 +190,11 @@ def create_operator_primitive(
             return type.__call__(operator_type, *args, **kwargs)
         n_wires = kwargs.pop("n_wires")
 
+        split = None if n_wires == 0 else -n_wires
         # need to convert array values into integers
         # for plxpr, all wires must be integers
-        wires = tuple(int(w) for w in args[-n_wires:])
-        args = args[:-n_wires]
+        wires = tuple(int(w) for w in args[split:])
+        args = args[:split]
         return type.__call__(operator_type, *args, wires=wires, **kwargs)
 
     abstract_type = _get_abstract_operator()
