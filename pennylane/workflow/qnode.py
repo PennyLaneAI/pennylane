@@ -108,7 +108,7 @@ class QNode:
     r"""Represents a quantum node in the hybrid computational graph.
 
     A *quantum node* contains a :ref:`quantum function <intro_vcirc_qfunc>` (corresponding to
-    a `variational circuit <https://pennylane.ai/qml/glossary/variational_circuit>`)
+    a `variational circuit <https://pennylane.ai/qml/glossary/variational_circuit>`)__
     and the computational device it is executed on.
 
     The QNode calls the quantum function to construct a :class:`~.QuantumTape` instance representing
@@ -223,14 +223,14 @@ class QNode:
             ``"hw-like"``, invalid shots will be discarded and only results for valid shots will be returned.
             If ``"fill-shots"``, results corresponding to the original number of shots will be returned. The
             default is ``None``, in which case the device will automatically choose the best configuration. For
-            usage details, please refer to the :doc:`main measurements page </introduction/measurements>`.
+            usage details, please refer to the :doc:`dynamic quantum circuits page </introduction/dynamic_quantum_circuits>`.
         mcm_method (str): Strategy to use when executing circuits with mid-circuit measurements. Use ``"deferred"``
             to apply the deferred measurements principle (using the :func:`~pennylane.defer_measurements` transform),
             or ``"one-shot"`` if using finite shots to execute the circuit for each shot separately.
             ``default.qubit`` also supports ``"tree-traversal"`` which visits the tree of possible MCM sequences
             as the name suggests. If not provided,
             the device will determine the best choice automatically. For usage details, please refer to the
-            :doc:`main measurements page </introduction/measurements>`.
+            :doc:`dynamic quantum circuits page </introduction/dynamic_quantum_circuits>`.
 
     Keyword Args:
         **kwargs: Any additional keyword arguments provided are passed to the differentiation
@@ -1169,7 +1169,11 @@ class QNode:
 
         old_interface = self.interface
         if old_interface == "auto":
-            interface = qml.math.get_interface(*args, *list(kwargs.values()))
+            interface = (
+                "jax"
+                if qml.capture.enabled()
+                else qml.math.get_interface(*args, *list(kwargs.values()))
+            )
             self._interface = INTERFACE_MAP[interface]
 
         if self._qfunc_uses_shots_arg:
