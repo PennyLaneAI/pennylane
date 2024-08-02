@@ -401,6 +401,37 @@ def while_loop(cond_fn):
     return _decorator
 
 
+@functools.lru_cache
+def _get_while_loop_qfunc_prim():
+    """Get the while_loop primitive for quantum functions."""
+
+    import jax  # pylint: disable=import-outside-toplevel
+
+    while_loop_prim = jax.core.Primitive("while_loop")
+    while_loop_prim.multiple_results = True
+
+    @while_loop_prim.def_impl
+    def _(*jaxpr_args, jaxpr_body_fn, jaxpr_cond_fn, n_consts_body, n_consts_cond):
+
+        jaxpr_consts_body = jaxpr_args[:n_consts_body]
+        jaxpr_consts_cond = jaxpr_args[n_consts_body : n_consts_body + n_consts_cond]
+        init_state = jaxpr_args[n_consts_body + n_consts_cond :]
+
+        # If cond_fn(*init_state) is False, return the initial state
+        fn_res = init_state
+        while jax.core.eval_jaxpr(jaxpr_cond_fn.jaxpr, jaxpr_consts_cond, *fn_res)[0]:
+            fn_res = jax.core.eval_jaxpr(jaxpr_body_fn.jaxpr, jaxpr_consts_body, *fn_res)
+
+        return fn_res
+
+    @while_loop_prim.def_abstract_eval
+    def _(*_, jaxpr_body_fn, **__):
+
+        return jaxpr_body_fn.out_avals
+
+    return while_loop_prim
+
+
 class WhileLoopCallable:  # pylint:disable=too-few-public-methods
     """Base class to represent a while loop. This class
     when called with an initial state will execute the while
@@ -415,7 +446,7 @@ class WhileLoopCallable:  # pylint:disable=too-few-public-methods
         self.cond_fn = cond_fn
         self.body_fn = body_fn
 
-    def __call__(self, *init_state):
+    def _call_capture_disabled(self, *init_state):
         args = init_state
         fn_res = args if len(args) > 1 else args[0] if len(args) == 1 else None
 
@@ -424,6 +455,32 @@ class WhileLoopCallable:  # pylint:disable=too-few-public-methods
             args = fn_res if len(args) > 1 else (fn_res,) if len(args) == 1 else ()
 
         return fn_res
+
+    def _call_capture_enabled(self, *init_state):
+
+        import jax  # pylint: disable=import-outside-toplevel
+
+        while_loop_prim = _get_while_loop_qfunc_prim()
+
+        jaxpr_body_fn = jax.make_jaxpr(self.body_fn)(*init_state)
+        jaxpr_cond_fn = jax.make_jaxpr(self.cond_fn)(*init_state)
+
+        return while_loop_prim.bind(
+            *jaxpr_body_fn.consts,
+            *jaxpr_cond_fn.consts,
+            *init_state,
+            jaxpr_body_fn=jaxpr_body_fn,
+            jaxpr_cond_fn=jaxpr_cond_fn,
+            n_consts_body=len(jaxpr_body_fn.consts),
+            n_consts_cond=len(jaxpr_cond_fn.consts),
+        )
+
+    def __call__(self, *init_state):
+
+        if qml.capture.enabled():
+            return self._call_capture_enabled(*init_state)
+
+        return self._call_capture_disabled(*init_state)
 
 
 def for_loop(lower_bound, upper_bound, step):
