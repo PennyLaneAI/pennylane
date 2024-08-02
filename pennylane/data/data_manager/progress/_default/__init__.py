@@ -45,6 +45,16 @@ class Task:
             self.total = total
 
 
+class TerminalInfo:
+    """Contains information on  the dimensions of
+    the terminal."""
+
+    def __init__(self):
+        self.columns, self.lines = shutil.get_terminal_size()
+        self.max_display_lines = self.lines - 2
+        self.description_len_max = int(self.columns * 0.6) - 1
+
+
 class DefaultProgress:
     """Implements a progress bar."""
 
@@ -52,11 +62,10 @@ class DefaultProgress:
 
     def __init__(self):
         self.tasks = []
+
         self._active = False
-        self._term_columns, self._term_lines = shutil.get_terminal_size()
+        self._term_info = TerminalInfo()
         self._task_display_lines = []
-        self._task_display_lines_max = self._term_lines - 2
-        self._description_len_max = int(self._term_columns * 0.6) - 1
         self._curr_longest_description = 0
 
     def __enter__(self) -> "DefaultProgress":
@@ -75,7 +84,7 @@ class DefaultProgress:
 
     def add_task(self, description: str, total: Optional[float] = None) -> int:
         """Add a task."""
-        description = _truncate(description, self._description_len_max)
+        description = _truncate(description, self._term_info.description_len_max)
         self.tasks.append(Task(description=description, total=total))
 
         self._curr_longest_description = max(self._curr_longest_description, len(description))
@@ -83,19 +92,19 @@ class DefaultProgress:
 
         return len(self.tasks) - 1
 
-    def refresh(self, task_id: int | None = None):
+    def refresh(self, task_id: Optional[int] = None):
         """Refresh display liens for one or all tasks."""
         if task_id is None:
             self._task_display_lines.clear()
             self._task_display_lines.extend(
                 self._get_task_display_line(task)
-                for task in self.tasks[: self._task_display_lines_max]
+                for task in self.tasks[: self._term_info.max_display_lines]
             )
 
-            if len(self.tasks) > self._task_display_lines_max:
+            if len(self.tasks) > self._term_info.max_display_lines:
                 self._task_display_lines.append(f"{term.erase_line()}...")
 
-        elif task_id < self._task_display_lines_max:
+        elif task_id < self._term_info.max_display_lines:
             self._task_display_lines[task_id] = self._get_task_display_line(self.tasks[task_id])
 
     def update(
@@ -130,7 +139,7 @@ class DefaultProgress:
 
         display = _truncate(
             f"{task.description.ljust(self._curr_longest_description + 1)}" f"{progress_column}",
-            self._term_columns,
+            self._term_info.columns,
         )
 
         return f"{term.erase_line()}{display}"

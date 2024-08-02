@@ -267,6 +267,7 @@ def mock_download_dataset(monkeypatch):
     return mock
 
 
+# pylint: disable=too-many-arguments
 @patch.object(pennylane.data.data_manager, "head", head_mock)
 @pytest.mark.usefixtures("mock_download_dataset")
 @pytest.mark.parametrize(

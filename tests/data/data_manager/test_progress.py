@@ -77,6 +77,7 @@ class TestDefaultProgress:
         """Patches terminal size for testing."""
 
         def get_terminal_size(fallback=None):
+            # pylint: disable=unused-argument
             return (40, 4)
 
         monkeypatch.setattr(shutil, "get_terminal_size", get_terminal_size)
