@@ -50,25 +50,16 @@ class DefaultProgress:
 
     tasks: list[Task]
 
-    _active: bool
-    _term_columns: int
-    _term_lines: int
-    _task_display_lines: list[str]
-    _task_display_lines_max: int
-    _description_width_max: int
-
     def __init__(self):
         self.tasks = []
         self._active = False
         self._term_columns, self._term_lines = shutil.get_terminal_size()
         self._task_display_lines = []
         self._task_display_lines_max = self._term_lines - 2
-        self._description_width_max = int(self._term_columns * 0.6)
+        self._description_len_max = int(self._term_columns * 0.6) - 1
+        self._curr_longest_description = 0
 
     def __enter__(self) -> "DefaultProgress":
-        if self._active:
-            raise RuntimeError("Progress context already active.")
-
         self._active = True
 
         return self
@@ -84,18 +75,28 @@ class DefaultProgress:
 
     def add_task(self, description: str, total: Optional[float] = None) -> int:
         """Add a task."""
-        task = Task(description=description, total=total)
-
+        description = _truncate(description, self._description_len_max)
         self.tasks.append(Task(description=description, total=total))
 
-        task_id = len(self.tasks) - 1
-
-        if task_id < self._task_display_lines_max:
-            self._task_display_lines.append(self._get_task_display_line(task))
-        elif task_id == self._task_display_lines_max:
-            self._task_display_lines.append("...")
+        self._curr_longest_description = max(self._curr_longest_description, len(description))
+        self.refresh()
 
         return len(self.tasks) - 1
+
+    def refresh(self, task_id: int | None = None):
+        """Refresh display liens for one or all tasks."""
+        if task_id is None:
+            self._task_display_lines.clear()
+            self._task_display_lines.extend(
+                self._get_task_display_line(task)
+                for task in self.tasks[: self._task_display_lines_max]
+            )
+
+            if len(self.tasks) > self._task_display_lines_max:
+                self._task_display_lines.append(f"{term.erase_line()}...")
+
+        elif task_id < self._task_display_lines_max:
+            self._task_display_lines[task_id] = self._get_task_display_line(self.tasks[task_id])
 
     def update(
         self,
@@ -115,8 +116,7 @@ class DefaultProgress:
         task = self.tasks[task_id]
         task.update(advance=advance, completed=completed, total=total)
 
-        if task_id < self._task_display_lines_max:
-            self._task_display_lines[task_id] = self._get_task_display_line(task)
+        self.refresh(task_id)
 
         if self._active:
             self._print()
@@ -129,8 +129,7 @@ class DefaultProgress:
             progress_column = f"{task.completed / 1e6:.2f}/{task.total / 1e6:.2f} MB"
 
         display = _truncate(
-            f"{_truncate(task.description, self._description_width_max - 1).ljust(self._description_width_max)}"
-            f"{progress_column}",
+            f"{task.description.ljust(self._curr_longest_description + 1)}" f"{progress_column}",
             self._term_columns,
         )
 
