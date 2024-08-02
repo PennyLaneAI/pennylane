@@ -17,7 +17,7 @@ inputs:
     description: The version of numpy 2.0 to use in order to run unit tests
     required: false
     type: string
-    default: '2.0.0rc2'
+    default: '2.0.0'
   install_jax:
     description: Indicate if JAX should be installed or not
     required: false
@@ -77,7 +77,7 @@ runs:
       shell: bash
       if: inputs.install_numpy_2 == true
       env:
-        NUMPY2_VERSION: ${{ inputs.numpy_2_version != '' && format('=={0}', inputs.numpy_2_version) || '' }}
+        NUMPY2_VERSION: ${{ inputs.numpy_2_version != '' && format('~={0}', inputs.numpy_2_version) || '' }}
       run: pip install "numpy${{ env.NUMPY2_VERSION }}"
 
     - name: Install PyTorch
