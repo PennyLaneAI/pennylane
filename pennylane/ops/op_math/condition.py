@@ -168,6 +168,7 @@ class CondCallable:  # pylint:disable=too-few-public-methods
         def decorator(branch_fn):
             self.preds.append(pred)
             self.branch_fns.append(branch_fn)
+            self.orig_elifs += ((pred, branch_fn),)
             return self
 
         return decorator
@@ -582,7 +583,7 @@ def cond(condition, true_fn: Callable = None, false_fn: Optional[Callable] = Non
     if elifs:
         raise ConditionalTransformError(
             "'elif' branches are not supported when not using @qjit and the "
-            "conditional include mid-circuit measurements."
+            "conditional includes mid-circuit measurements."
         )
 
     if callable(true_fn):
@@ -673,7 +674,12 @@ def _get_cond_qfunc_prim():
         consts_flat = all_args[n_branches + n_args :]
 
         if isinstance(conditions[0], qml.measurements.MeasurementValue):
-            conditions = conditions[:-1] + (~conditions[1],)
+            if len(conditions) > 2:
+                raise ConditionalTransformError(
+                    "'elif' branches are not supported when not using @qjit and the "
+                    "conditional includes mid-circuit measurements."
+                )
+            conditions = (conditions[0], ~conditions[1])
 
         start = 0
         for pred, jaxpr, n_consts in zip(conditions, jaxpr_branches, n_consts_per_branch):
@@ -684,7 +690,7 @@ def _get_cond_qfunc_prim():
                     with qml.queuing.AnnotatedQueue() as q:
                         out = jax.core.eval_jaxpr(jaxpr.jaxpr, consts, *args)
 
-                    if out is not None:
+                    if len(out) != 0:
                         raise ConditionalTransformError(
                             "Only quantum functions without return values can be applied "
                             "conditionally with mid-circuit measurement predicates."
@@ -723,4 +729,3 @@ def _get_cond_qfunc_prim():
         return outvals_true
 
     return cond_prim
-

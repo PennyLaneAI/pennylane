@@ -15,7 +15,7 @@
 Tests for capturing conditionals into jaxpr.
 """
 
-# pylint: disable=redefined-outer-name
+# pylint: disable=redefined-outer-name, too-many-arguments
 # pylint: disable=no-self-use
 
 import numpy as np
@@ -62,6 +62,7 @@ def testing_functions():
     return true_fn, false_fn, elif_fn1, elif_fn2, elif_fn3, elif_fn4
 
 
+@pytest.mark.parametrize("decorator", [True, False])
 class TestCond:
     """Tests for conditional functions using qml.cond."""
 
@@ -76,11 +77,20 @@ class TestCond:
             (0, 10, 30),  # False condition
         ],
     )
-    def test_cond_true_elifs_false(self, testing_functions, selector, arg, expected):
+    def test_cond_true_elifs_false(self, testing_functions, selector, arg, expected, decorator):
         """Test the conditional with true, elifs, and false branches."""
         true_fn, false_fn, elif_fn1, elif_fn2, elif_fn3, elif_fn4 = testing_functions
 
         def test_func(pred):
+            if decorator:
+                conditional = qml.cond(pred > 0)(true_fn)
+                conditional.else_if(pred == -1)(elif_fn1)
+                conditional.else_if(pred == -2)(elif_fn2)
+                conditional.else_if(pred == -3)(elif_fn3)
+                conditional.else_if(pred == -4)(elif_fn4)
+                conditional.otherwise(false_fn)
+                return conditional
+
             return qml.cond(
                 pred > 0,
                 true_fn,
@@ -111,18 +121,27 @@ class TestCond:
             (-3, 10, ()),  # No condition met
         ],
     )
-    def test_cond_true_elifs(self, testing_functions, selector, arg, expected):
+    def test_cond_true_elifs(self, testing_functions, selector, arg, expected, decorator):
         """Test the conditional with true and elifs branches."""
         true_fn, _, elif_fn1, elif_fn2, _, _ = testing_functions
 
-        result = qml.cond(
-            selector > 0,
-            true_fn,
-            elifs=(
-                (selector == -1, elif_fn1),
-                (selector == -2, elif_fn2),
-            ),
-        )(arg)
+        def test_func(pred):
+            if decorator:
+                conditional = qml.cond(pred > 0)(true_fn)
+                conditional.else_if(pred == -1)(elif_fn1)
+                conditional.else_if(pred == -2)(elif_fn2)
+                return conditional
+
+            return qml.cond(
+                pred > 0,
+                true_fn,
+                elifs=(
+                    (pred == -1, elif_fn1),
+                    (pred == -2, elif_fn2),
+                ),
+            )
+
+        result = test_func(selector)(arg)
         assert np.allclose(result, expected), f"Expected {expected}, but got {result}"
 
     @pytest.mark.parametrize(
@@ -132,11 +151,16 @@ class TestCond:
             (0, 10, 30),
         ],
     )
-    def test_cond_true_false(self, testing_functions, selector, arg, expected):
+    def test_cond_true_false(self, testing_functions, selector, arg, expected, decorator):
         """Test the conditional with true and false branches."""
         true_fn, false_fn, _, _, _, _ = testing_functions
 
         def test_func(pred):
+            if decorator:
+                conditional = qml.cond(pred > 0)(true_fn)
+                conditional.otherwise(false_fn)
+                return conditional
+
             return qml.cond(
                 pred > 0,
                 true_fn,
@@ -159,14 +183,21 @@ class TestCond:
             (0, 10, ()),
         ],
     )
-    def test_cond_true(self, testing_functions, selector, arg, expected):
+    def test_cond_true(self, testing_functions, selector, arg, expected, decorator):
         """Test the conditional with only the true branch."""
         true_fn, _, _, _, _, _ = testing_functions
 
-        result = qml.cond(
-            selector > 0,
-            true_fn,
-        )(arg)
+        def test_func(pred):
+            if decorator:
+                conditional = qml.cond(pred > 0)(true_fn)
+                return conditional
+
+            return qml.cond(
+                pred > 0,
+                true_fn,
+            )
+
+        result = test_func(selector)(arg)
         assert np.allclose(result, expected), f"Expected {expected}, but got {result}"
 
     @pytest.mark.parametrize(
@@ -176,7 +207,7 @@ class TestCond:
             (0, jax.numpy.array([2, 3]), 15),
         ],
     )
-    def test_cond_with_jax_array(self, selector, arg, expected):
+    def test_cond_with_jax_array(self, selector, arg, expected, decorator):
         """Test the conditional with array arguments."""
 
         def true_fn(jax_array):
@@ -186,6 +217,11 @@ class TestCond:
             return jax_array[0] * jax_array[1] * 2.5
 
         def test_func(pred):
+            if decorator:
+                conditional = qml.cond(pred > 0)(true_fn)
+                conditional.otherwise(false_fn)
+                return conditional
+
             return qml.cond(
                 pred > 0,
                 true_fn,
