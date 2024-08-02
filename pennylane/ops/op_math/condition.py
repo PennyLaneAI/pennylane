@@ -307,7 +307,7 @@ def cond(condition, true_fn: Callable = None, false_fn: Optional[Callable] = Non
         If a branch returns one or more variables, every other branch must return the same abstract values.
 
     Args:
-        condition (Union[.MeasurementValue, bool]): a conditional expression involving a mid-circuit
+        condition (Union[.MeasurementValue, bool]): a conditional expression that may involve a mid-circuit
            measurement value (see :func:`.pennylane.measure`).
         true_fn (callable): The quantum function or PennyLane operation to
             apply if ``condition`` is ``True``
