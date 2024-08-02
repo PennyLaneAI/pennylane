@@ -302,10 +302,6 @@
 * `qml.lie_closure` works with sums of Paulis.
   [(#6023)](https://github.com/PennyLaneAI/pennylane/pull/6023)
 
-* `qml.BasisRotation` works with qjit.
-  [(#6019)](https://github.com/PennyLaneAI/pennylane/pull/6019)
-
-
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
