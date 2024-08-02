@@ -18,14 +18,15 @@ methods of computing the metric tensor.
 import functools
 import warnings
 from functools import partial
-from typing import Callable, Sequence
 
 import numpy as np
 
 import pennylane as qml
 from pennylane.circuit_graph import LayerData
 from pennylane.queuing import WrappedObj
+from pennylane.tape import QuantumTapeBatch
 from pennylane.transforms import transform
+from pennylane.typing import PostprocessingFn
 
 
 def _contract_metric_tensor_with_cjac(mt, cjac, tape):  # pylint: disable=unused-argument
@@ -74,7 +75,7 @@ def _expand_metric_tensor(
     allow_nonunitary=True,
     aux_wire=None,
     device_wires=None,
-) -> (Sequence[qml.tape.QuantumTape], Callable):  # pylint: disable=too-many-arguments
+) -> tuple[QuantumTapeBatch, PostprocessingFn]:  # pylint: disable=too-many-arguments
     """Set the metric tensor based on whether non-unitary gates are allowed."""
     # pylint: disable=unused-argument,too-many-arguments
 
@@ -96,7 +97,7 @@ def metric_tensor(  # pylint:disable=too-many-arguments
     allow_nonunitary=True,
     aux_wire=None,
     device_wires=None,
-) -> (Sequence[qml.tape.QuantumTape], Callable):
+) -> tuple[QuantumTapeBatch, PostprocessingFn]:
     r"""Returns a function that computes the metric tensor of a given QNode or quantum tape.
 
     The metric tensor convention we employ here has the following form:

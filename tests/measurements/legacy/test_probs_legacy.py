@@ -49,10 +49,6 @@ def custom_measurement_process(device, spy):
         assert qml.math.allequal(old_res, new_res)
 
 
-# make the test deterministic
-np.random.seed(42)
-
-
 @pytest.fixture(name="init_state")
 def fixture_init_state():
     """Fixture that creates an initial state"""
@@ -181,7 +177,6 @@ class TestProbs:
     ):  # pylint: disable=too-many-arguments
         """Test that probs for mid-circuit measurement values
         are correct for a single measurement value."""
-        np.random.seed(42)
         dev = qml.device(device_name, wires=2, shots=shots)
 
         @qml.qnode(dev)
@@ -215,7 +210,6 @@ class TestProbs:
     ):  # pylint: disable=too-many-arguments
         """Test that probs for mid-circuit measurement values
         are correct for a list of measurement value."""
-        np.random.seed(42)
         dev = qml.device(device_name, wires=6, shots=shots)
 
         @qml.qnode(dev)

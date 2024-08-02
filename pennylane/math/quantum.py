@@ -832,9 +832,10 @@ def expectation_value(
     The expectation value for any operator can obtained by passing their matrix representation as an argument.
     For example, for a 2 qubit state, we can compute the expectation value of the operator :math:`Z \otimes I` as
 
-
-    >>> state_vector = [1/np.sqrt(2), 0, 1/np.sqrt(2), 0]
-    >>> operator_matrix = qml.matrix(qml.PauliZ(0), wire_order=[0,1])
+    >>> import pennylane as qml
+    >>> import numpy as np
+    >>> state_vector = [1 / np.sqrt(2), 0, 1 / np.sqrt(2), 0]
+    >>> operator_matrix = qml.matrix(qml.PauliZ(0), wire_order=[0, 1])
     >>> qml.math.expectation_value(operator_matrix, state_vector)
     tensor(-2.23711432e-17+0.j, requires_grad=True)
 

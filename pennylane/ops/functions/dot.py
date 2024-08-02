@@ -17,7 +17,8 @@ a vector and a list of operators.
 """
 # pylint: disable=too-many-branches
 from collections import defaultdict
-from typing import Callable, Sequence, Union
+from collections.abc import Callable, Sequence
+from typing import Union
 
 import pennylane as qml
 from pennylane.operation import Operator, convert_to_opmath

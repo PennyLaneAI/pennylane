@@ -15,7 +15,8 @@
 """
 This module contains the qml.vn_entropy measurement.
 """
-from typing import Optional, Sequence
+from collections.abc import Sequence
+from typing import Optional
 
 import pennylane as qml
 from pennylane.wires import Wires

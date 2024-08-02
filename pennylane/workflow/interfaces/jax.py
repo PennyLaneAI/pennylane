@@ -127,12 +127,13 @@ import dataclasses
 
 # pylint: disable=unused-argument
 import logging
-from typing import Callable, Tuple
+from collections.abc import Callable
 
 import jax
 import jax.numpy as jnp
 
 import pennylane as qml
+from pennylane.tape import QuantumTapeBatch
 from pennylane.transforms import convert_to_numpy_parameters
 from pennylane.typing import ResultBatch
 
@@ -142,8 +143,7 @@ logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
 
-Batch = Tuple[qml.tape.QuantumTape]
-ExecuteFn = Callable[[Batch], qml.typing.ResultBatch]
+ExecuteFn = Callable[[QuantumTapeBatch], qml.typing.ResultBatch]
 
 
 @dataclasses.dataclass
@@ -161,7 +161,7 @@ class _NonPytreeWrapper:
 
     """
 
-    vals: Batch = None
+    vals: QuantumTapeBatch = None
 
 
 def _set_copy_and_unwrap_tape(t, a, unwrap=True):
@@ -243,7 +243,7 @@ _execute_jvp = jax.custom_jvp(_execute_wrapper, nondiff_argnums=[1, 2, 3])
 _execute_jvp.defjvp(_execute_and_compute_jvp)
 
 
-def jax_jvp_execute(tapes: Batch, execute_fn: ExecuteFn, jpc, device=None):
+def jax_jvp_execute(tapes: QuantumTapeBatch, execute_fn: ExecuteFn, jpc, device=None):
     """Execute a batch of tapes with JAX parameters using JVP derivatives.
 
     Args:

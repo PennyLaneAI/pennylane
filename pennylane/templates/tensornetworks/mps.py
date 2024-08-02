@@ -122,7 +122,7 @@ class MPS(Operation):
                 qml.MPS(range(n_wires),n_block_wires,block, n_params_block, template_weights)
                 return qml.expval(qml.Z(n_wires-1))
 
-        >>> print(qml.draw(circuit, expansion_strategy='device')(template_weights))
+        >>> print(qml.draw(circuit, level='device')(template_weights))
         0: ─╭●──RY(0.10)──────────────────────────────┤
         1: ─╰X──RY(-0.30)─╭●──RY(0.10)────────────────┤
         2: ───────────────╰X──RY(-0.30)─╭●──RY(0.10)──┤
@@ -148,7 +148,7 @@ class MPS(Operation):
                 qml.MPS(range(n_wires),n_block_wires, block, n_params_block, offset = 1)
                 return qml.state()
 
-        >>> print(qml.draw(circuit, expansion_strategy='device')())
+        >>> print(qml.draw(circuit, level='device')())
         0: ─╭●─────────────┤  State
         1: ─├●─╭●──────────┤  State
         2: ─├●─├●─╭●───────┤  State

@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """This file contains convenience functions for pulse programming."""
-from typing import Callable, List, Tuple, Union
+from collections.abc import Callable
+from typing import Optional, Union
 
 import numpy as np
 
@@ -25,7 +26,7 @@ except ImportError:
 
 # pylint: disable=unused-argument
 def constant(scalar, time):
-    """Returns the given ``scalar``, for use in defining a :class:`~.ParametrizedHamiltonian` with a
+    r"""Returns the given ``scalar``, for use in defining a :class:`~.ParametrizedHamiltonian` with a
     trainable coefficient.
 
     Args:
@@ -57,7 +58,12 @@ def constant(scalar, time):
 
     .. code-block:: python
 
-        dev = qml.device("default.qubit.jax", wires=1)
+        import jax
+
+        jax.config.update("jax_enable_x64", True)
+
+        dev = qml.device("default.qubit")
+
         @qml.qnode(dev, interface="jax")
         def circuit(params):
             qml.evolve(H)(params, t=2)
@@ -66,15 +72,17 @@ def constant(scalar, time):
 
     >>> params = jnp.array([5.0])
     >>> circuit(params)
-    Array(0.40808904, dtype=float32)
+    Array(0.40808193, dtype=float64)
 
     >>> jax.grad(circuit)(params)
-    Array([-3.6517754], dtype=float32)
+    Array([-3.65178003], dtype=float64)
     """
     return scalar
 
 
-def rect(x: Union[float, Callable], windows: Union[Tuple[float], List[Tuple[float]]] = None):
+def rect(
+    x: Union[float, Callable], windows: Optional[Union[tuple[float], list[tuple[float]]]] = None
+):
     """Takes a scalar or a scalar-valued function, x, and applies a rectangular window to it, such that the
     returned function is x inside the window and 0 outside it.
 

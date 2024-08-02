@@ -295,8 +295,6 @@ class TestParshiftAndIntegrate:
         """
         from jax import numpy as jnp
 
-        np.random.seed(3751)
-
         cjac_shape = (num_split_times,) + par_shape
         if multi_term > 1:
             cjacs = tuple(np.random.random(cjac_shape) for _ in range(multi_term))
@@ -353,8 +351,6 @@ class TestParshiftAndIntegrate:
         This is the variant of the previous test that uses broadcasting.
         """
         from jax import numpy as jnp
-
-        np.random.seed(3751)
 
         cjac_shape = (num_split_times,) + par_shape
         if multi_term > 1:
@@ -417,8 +413,6 @@ class TestParshiftAndIntegrate:
         the number of shifts in the shift rule and with the number of splitting times.
         """
         from jax import numpy as jnp
-
-        np.random.seed(3751)
 
         num_meas_or_shots = 5
 
@@ -491,8 +485,6 @@ class TestParshiftAndIntegrate:
         This is the variant of the previous test that uses broadcasting.
         """
         from jax import numpy as jnp
-
-        np.random.seed(3751)
 
         num_meas_or_shots = 5
 
@@ -568,8 +560,6 @@ class TestParshiftAndIntegrate:
         """
         from jax import numpy as jnp
 
-        np.random.seed(3751)
-
         num_shots = 3
         num_meas = 5
 
@@ -643,8 +633,6 @@ class TestParshiftAndIntegrate:
         This is the variant of the previous test that uses broadcasting.
         """
         from jax import numpy as jnp
-
-        np.random.seed(3751)
 
         num_shots = 3
         num_meas = 5

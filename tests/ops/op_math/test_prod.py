@@ -165,7 +165,6 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
         assert prod_op.num_wires == 2
         assert prod_op.name == "Prod"
         assert prod_op.id == id
-        assert prod_op.queue_idx is None
 
         assert prod_op.data == (0.23,)
         assert prod_op.parameters == [0.23]
@@ -1522,7 +1521,7 @@ class TestIntegration:
             qml.PauliX(0)
             return qml.expval(prod_op)
 
-        with pytest.raises(NotImplementedError):
+        with pytest.raises(qml.DeviceError):
             my_circ()
 
     def test_operation_integration(self):

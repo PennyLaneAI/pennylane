@@ -13,13 +13,13 @@
 # limitations under the License.
 """Transform for fusing sequences of single-qubit gates."""
 # pylint: disable=too-many-branches
-from typing import Callable, Sequence
 
 from pennylane.math import allclose, is_abstract, stack
 from pennylane.ops.qubit import Rot
 from pennylane.queuing import QueuingManager
-from pennylane.tape import QuantumTape
+from pennylane.tape import QuantumTape, QuantumTapeBatch
 from pennylane.transforms import transform
+from pennylane.typing import PostprocessingFn
 
 from .optimization_utils import find_next_gate, fuse_rot_angles
 
@@ -27,7 +27,7 @@ from .optimization_utils import find_next_gate, fuse_rot_angles
 @transform
 def single_qubit_fusion(
     tape: QuantumTape, atol=1e-8, exclude_gates=None
-) -> (Sequence[QuantumTape], Callable):
+) -> tuple[QuantumTapeBatch, PostprocessingFn]:
     r"""Quantum function transform to fuse together groups of single-qubit
     operations into a general single-qubit unitary operation (:class:`~.Rot`).
 
