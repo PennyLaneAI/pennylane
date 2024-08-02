@@ -49,6 +49,8 @@ class TerminalInfo:
     """Contains information on  the dimensions of
     the terminal."""
 
+    # pylint: disable=too-few-public-methods
+
     def __init__(self):
         self.columns, self.lines = shutil.get_terminal_size()
         self.max_display_lines = self.lines - 2
