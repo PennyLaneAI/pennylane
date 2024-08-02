@@ -109,7 +109,7 @@ def test_shot_distribution():
 
         _capabilities = {"provides_jacobian": True}
 
-        def jacobian(self, circuit):  # pylint: disable=unused-argument
+        def adjoint_jacobian(self, circuit):  # pylint: disable=unused-argument
             return 0
 
     dev = LegacyDeviceFacade(DummyJacobianDevice())
