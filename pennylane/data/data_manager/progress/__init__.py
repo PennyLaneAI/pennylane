@@ -23,7 +23,7 @@ try:
     from pennylane.data.data_manager.progress._rich import (
         make_progress as make_progress_rich,
     )
-except ImportError:
+except ImportError:  # pragma: no cover
     make_progress_rich = None
 
 
