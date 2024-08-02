@@ -22,6 +22,7 @@ import pytest
 
 import pennylane as qml
 from pennylane.devices import DefaultQubit, DefaultQubitLegacy
+from pennylane.devices.default_qubit_jax import DefaultQubitJax
 from pennylane.operation import AnyWires
 from pennylane.ops import QubitUnitary
 from pennylane.pulse import ParametrizedEvolution, ParametrizedHamiltonian
@@ -544,7 +545,7 @@ class TestMatrix:
 class TestIntegration:
     """Integration tests for the ParametrizedEvolution class."""
 
-    @pytest.mark.parametrize("device_class", [DefaultQubit, DefaultQubitLegacy])
+    @pytest.mark.parametrize("device_class", [DefaultQubit, DefaultQubitJax])
     @pytest.mark.parametrize("time", [0.3, 1, [0, 2], [0.4, 2], (3, 3.1)])
     @pytest.mark.parametrize("time_interface", ["python", "numpy", "jax"])
     @pytest.mark.parametrize("use_jit", [False, True])
