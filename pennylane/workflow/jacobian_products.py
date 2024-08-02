@@ -398,7 +398,7 @@ class DeviceDerivatives(JacobianProductCalculator):
     def __init__(
         self,
         device: Union["qml.devices.Device", "qml.Device"],
-        execution_config: qml.devices.ExecutionConfig = qml.devices.DefaultExecutionConfig,
+        execution_config: "qml.devices.ExecutionConfig" = None,
         gradient_kwargs: dict = None,
     ):
         if execution_config is None:

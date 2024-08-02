@@ -488,8 +488,13 @@ class TestCachingDeviceDerivatives:
         assert jpc._device.tracker.totals["execute_and_derivative_batches"] == 1
         assert jpc._device.tracker.totals["derivatives"] == 1
 
-        # extra execution since needs to do the forward pass again.
-        expected_execs = 3 if isinstance(jpc._device, ParamShiftDerivativesDevice) else 1
+        if isinstance(jpc._device, ParamShiftDerivativesDevice):
+            # extra execution since needs to do the forward pass again.
+            expected_execs = 3
+        elif isinstance(jpc._device, qml.devices.LegacyDevice):
+            expected_execs = 2
+        else:
+            expected_execs = 1
 
         assert jpc._device.tracker.totals["executions"] == expected_execs
 
@@ -528,7 +533,13 @@ class TestCachingDeviceDerivatives:
         assert qml.math.allclose(jac, jac2)
         assert jpc._device.tracker.totals["derivatives"] == 1
 
-        expected_execs = 2 if isinstance(jpc._device, ParamShiftDerivativesDevice) else 0
+        if isinstance(jpc._device, ParamShiftDerivativesDevice):
+            # extra execution since needs to do the forward pass again.
+            expected_execs = 2
+        elif isinstance(jpc._device, qml.devices.LegacyDevice):
+            expected_execs = 1
+        else:
+            expected_execs = 0
 
         assert jpc._device.tracker.totals.get("executions", 0) == expected_execs
 
