@@ -315,10 +315,10 @@ class TestHermitian:  # pylint: disable-msg=too-many-public-methods
             qml.Hermitian.compute_decomposition(single_wire_observable, wires=[])
 
         # test wrong number of wires
-        with pytest.raises(ValueError, match="wrong number of wires"):
+        with pytest.raises(ValueError, match="Expected input matrix to have shape"):
             qml.Hermitian.compute_decomposition(double_wire_observable, wires=[0, 1, 2])
 
-        with pytest.raises(ValueError, match="wrong number of wires"):
+        with pytest.raises(ValueError, match="Expected input matrix to have shape"):
             qml.Hermitian.compute_decomposition(double_wire_observable, wires="aux")
 
         # test int as wire type

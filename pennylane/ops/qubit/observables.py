@@ -170,7 +170,7 @@ class Hermitian(Observable):
             A (array or Sequence): hermitian matrix
             wires (Iterable[Any], Wires): wires that the operator acts on
         Returns:
-            list[.Operator]: Hermitian matrix decomposition as a linear combination of Pauli operators.
+            .PauliSentence: Hermitian matrix decomposition as a linear combination of Pauli operators.
             Returned as :class:`~.PauliSentence` class instance.
 
         **Examples**
@@ -188,18 +188,15 @@ class Hermitian(Observable):
 
         """
         A = qml.math.asarray(A)
-        Hermitian._validate_input(A)
-        A_DIMENSION = A.shape[0]
+        A_SHAPE = qml.math.shape(A)
+        A_DIMENSION = A_SHAPE[0]
 
         if isinstance(wires, (int, str)):
             wires = Wires(wires)
 
         if len(wires) == 0:
             raise ValueError("Hermitian: wrong number of wires. At least one wire has to be given.")
-        if len(wires) != int(np.log2(A_DIMENSION)):
-            raise ValueError(
-                f"Hermitian: wrong number of wires. Expected wires of length {int(np.log2(A_DIMENSION))}, but received {len(wires)}."
-            )
+        Hermitian._validate_input(A, expected_mx_shape=2 ** len(wires))
 
         MAX_DIMENSION = (
             256  # determined heuristically from test_hermitian_decomposition_performance
