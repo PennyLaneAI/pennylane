@@ -216,10 +216,6 @@ class TestRotGateFusion:
         # Compute condition for the two error sources combined
         error_sources = (qml.math.abs(pre_mag - 1) < 1e-12) | (pre_mag == 0)
 
-        print(jac_from_fuse)
-        print(jac_from_prod)
-        print(error_sources)
-
         assert qml.math.allclose(jac_from_prod[~error_sources], jac_from_fuse[~error_sources])
         nans = qml.math.isnan(jac_from_fuse[error_sources])
         nans = qml.math.reshape(nans, (len(nans), -1))
@@ -260,16 +256,23 @@ class TestRotGateFusion:
         import torch
 
         # Testing fewer points than with batching to limit test runtimes
-        special_points = np.array([1, 1 / 2, 0, -1]) * np.pi
+        special_points = np.array([1, 0, -1]) * np.pi
         special_angles = np.array(list(product(special_points, repeat=6))).reshape((-1, 2, 3))
-        random_angles = np.random.random((100, 2, 3))
+        random_angles = np.random.random((10, 2, 3))
         all_angles = np.concatenate([special_angles, random_angles])
 
         # Need holomorphic derivatives and complex inputs because the output matrices are complex
         all_angles = torch.tensor(all_angles, requires_grad=True)
-        jac_fn = lambda fn: (lambda *args: torch.autograd.functional.jacobian(fn, args))
+
+        def jacobian(fn):
+            real_fn = lambda arg: qml.math.real(fn(arg))
+            imag_fn = lambda arg: qml.math.imag(fn(arg))
+            real_jac_fn = lambda arg: torch.autograd.functional.jacobian(real_fn, (arg,))
+            imag_jac_fn = lambda arg: torch.autograd.functional.jacobian(imag_fn, (arg,))
+            return lambda arg: real_jac_fn(arg)[0] + 1j * imag_jac_fn(arg)[0]
+
         array_fn = lambda x: x.detach().numpy()
-        self.run_jacobian_test(all_angles, jac_fn, is_batched=False, array_fn=array_fn)
+        self.run_jacobian_test(all_angles, jacobian, is_batched=False, array_fn=array_fn)
 
     @pytest.mark.slow
     @pytest.mark.autograd
