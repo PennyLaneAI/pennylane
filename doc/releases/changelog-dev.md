@@ -142,6 +142,29 @@
        0.11917543, 0.08942104, 0.21545687], dtype=float64)
   ```
 
+* If the conditional does not include a mid-circuit measurement, then `qml.cond`
+  will automatically evaluate conditionals using standard Python control flow.
+  [(#6016)](https://github.com/PennyLaneAI/pennylane/pull/6016)
+
+  This allows `qml.cond` to be used to represent a wider range of conditionals:
+
+  ```python
+  dev = qml.device("default.qubit", wires=1)
+
+  @qml.qnode(dev)
+  def circuit(x):
+      c = qml.cond(x > 2.7, qml.RX, qml.RZ)
+      c(x, wires=0)
+      return qml.probs(wires=0)
+  ```
+
+  ```pycon
+  >>> print(qml.draw(circuit)(3.8))
+  0: ──RX(3.80)─┤  Probs
+  >>> print(qml.draw(circuit)(0.54))
+  0: ──RZ(0.54)─┤  Probs
+  ```
+
 * The `qubit_observable` function is modified to return an ascending wire order for molecular 
   Hamiltonians.
   [(#5950)](https://github.com/PennyLaneAI/pennylane/pull/5950)
