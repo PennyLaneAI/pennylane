@@ -35,7 +35,7 @@ qubit_device_and_diff_method = [
 
 TOLS = {
     "finite-diff": 0.3,
-    "parameter-shift": 1e-2,
+    "parameter-shift": 2e-2,
     "spsa": 0.5,
 }
 

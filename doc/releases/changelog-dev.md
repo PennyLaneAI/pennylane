@@ -46,6 +46,12 @@
 * `fuse_rot_angles` now respects the global phase of the combined rotations.
   [(#6031)](https://github.com/PennyLaneAI/pennylane/pull/6031)
 
+* `qml.for_loop` can now be captured into plxpr.
+  [(#6041)](https://github.com/PennyLaneAI/pennylane/pull/6041)
+
+* Removed `semantic_version` from the list of required packages in PennyLane. 
+  [(#5836)](https://github.com/PennyLaneAI/pennylane/pull/5836)
+
 * During experimental program capture, the qnode can now use closure variables.
   [(#6052)](https://github.com/PennyLaneAI/pennylane/pull/6052)
 
@@ -137,6 +143,29 @@
   >>> qml.qjit(circuit)(0.5, 3)
   Array([0.125     , 0.125     , 0.09949758, 0.15050242, 0.07594666,
        0.11917543, 0.08942104, 0.21545687], dtype=float64)
+  ```
+
+* If the conditional does not include a mid-circuit measurement, then `qml.cond`
+  will automatically evaluate conditionals using standard Python control flow.
+  [(#6016)](https://github.com/PennyLaneAI/pennylane/pull/6016)
+
+  This allows `qml.cond` to be used to represent a wider range of conditionals:
+
+  ```python
+  dev = qml.device("default.qubit", wires=1)
+
+  @qml.qnode(dev)
+  def circuit(x):
+      c = qml.cond(x > 2.7, qml.RX, qml.RZ)
+      c(x, wires=0)
+      return qml.probs(wires=0)
+  ```
+
+  ```pycon
+  >>> print(qml.draw(circuit)(3.8))
+  0: ──RX(3.80)─┤  Probs
+  >>> print(qml.draw(circuit)(0.54))
+  0: ──RZ(0.54)─┤  Probs
   ```
 
 * The `qubit_observable` function is modified to return an ascending wire order for molecular 
@@ -239,16 +268,17 @@
 
 <h3>Bug fixes 🐛</h3>
 
-<<<<<<< HEAD
 * `fuse_rot_angles` no longer returns wrong derivatives at singular points but returns NaN.
   [(#6031)](https://github.com/PennyLaneAI/pennylane/pull/6031)
-=======
+
+* `qml.GlobalPhase` and `qml.I` can now be captured when acting on no wires.
+  [(#6060)](https://github.com/PennyLaneAI/pennylane/pull/6060)
+
 * Fix `jax.grad` + `jax.jit` not working for `AmplitudeEmbedding`, `StatePrep` and `MottonenStatePreparation`.
   [(#5620)](https://github.com/PennyLaneAI/pennylane/pull/5620) 
 
 * Fix a bug where the global phase returned by `one_qubit_decomposition` gained a broadcasting dimension.
   [(#5923)](https://github.com/PennyLaneAI/pennylane/pull/5923)
->>>>>>> master
 
 * Fixed a bug in `qml.SPSAOptimizer` that ignored keyword arguments in the objective function.
   [(#6027)](https://github.com/PennyLaneAI/pennylane/pull/6027)
