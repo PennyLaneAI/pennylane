@@ -426,7 +426,7 @@ class WhileLoopCallable:  # pylint:disable=too-few-public-methods
         return fn_res
 
 
-def for_loop(lower_bound, upper_bound, step):
+def for_loop(lower_bound, upper_bound=None, step=1):
     """A :func:`~.qjit` compatible for-loop for PennyLane programs. When
     used without :func:`~.qjit`, this function will fall back to a standard
     Python for loop.
@@ -459,8 +459,11 @@ def for_loop(lower_bound, upper_bound, step):
 
     Args:
         lower_bound (int): starting value of the iteration index
-        upper_bound (int): (exclusive) upper bound of the iteration index
-        step (int): increment applied to the iteration index at the end of each iteration
+        upper_bound (int | None): (exclusive) upper bound of the iteration index. If ``None``,
+            provided ``lower_bound`` is used as the ``upper_bound`` and ``lower_bound`` is
+            considered to be ``0``.
+        step (int): increment applied to the iteration index at the end of each iteration.
+            Default is ``1``.
 
     Returns:
         Callable[[int, ...], ...]: A wrapper around the loop body function.
@@ -510,6 +513,8 @@ def for_loop(lower_bound, upper_bound, step):
         page for an overview of using quantum just-in-time compilation.
 
     """
+    if upper_bound is None:
+        lower_bound, upper_bound = 0, lower_bound
 
     if active_jit := active_compiler():
         compilers = AvailableCompilers.names_entrypoints

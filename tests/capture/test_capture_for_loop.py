@@ -65,6 +65,37 @@ class TestCaptureForLoop:
         assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
 
     @pytest.mark.parametrize("array", [jax.numpy.zeros(0), jax.numpy.zeros(5)])
+    def test_for_loop_defaults(self, array):
+        """Test simple for-loop primitive using default values."""
+
+        def fn(arg):
+
+            a = jax.numpy.ones(arg.shape)
+
+            @qml.for_loop(0, 10, 1)
+            def loop1(_, a):
+                return a
+
+            @qml.for_loop(10, 1)
+            def loop2(_, a):
+                return a
+
+            @qml.for_loop(10)
+            def loop3(_, a):
+                return a
+
+            r1, r2, r3 = loop1(a), loop2(a), loop3(a)
+            return r1, r2, r3
+
+        expected = jax.numpy.ones(array.shape)
+        result = fn(array)
+        assert np.allclose(result, expected), f"Expected {expected}, but got {result}"
+
+        jaxpr = jax.make_jaxpr(fn)(array)
+        res_ev_jxpr = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, array)
+        assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
+
+    @pytest.mark.parametrize("array", [jax.numpy.zeros(0), jax.numpy.zeros(5)])
     def test_for_loop_shared_indbidx(self, array):
         """Test for-loops with shared dynamic input dimensions."""
 
