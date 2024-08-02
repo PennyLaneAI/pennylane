@@ -22,7 +22,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.ops.op_math.condition import CondCallable
+from pennylane.ops.op_math.condition import CondCallable, ConditionalTransformError
 
 pytestmark = pytest.mark.jax
 
@@ -552,3 +552,86 @@ class TestCondCircuits:
         jaxpr = jax.make_jaxpr(circuit_with_consts)(*args)
         res_ev_jxpr = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *args)
         assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
+
+    def test_mcm_elif_error(self):
+        """Test that an error is raised if executing a circuit with qml.cond that uses
+        mid-circuit measurement predicates and also elif branches."""
+
+        def true_fn(arg):
+            qml.RX(arg, 0)
+
+        def elif_fn(arg):
+            qml.RY(arg, 0)
+
+        @qml.qnode(dev)
+        def f(x):
+            m1 = qml.measure(0)
+            m2 = qml.measure(1)
+            qml.cond(m1, true_fn, elifs=(m2, elif_fn))(x)
+            return qml.expval(qml.Z(0))
+
+        with pytest.raises(ConditionalTransformError, match="'elif' branches are not supported"):
+            f(1.23)
+
+    def test_mcm_return_error(self):
+        """Test that an error is raised if executing a circuit with qml.cond that uses
+        mid-circuit measurement predicates and returns something."""
+
+        def true_fn(arg):
+            qml.RX(arg, 0)
+            return 0
+
+        def false_fn(arg):
+            qml.RY(arg, 0)
+            return 1
+
+        @qml.qnode(dev)
+        def f(x):
+            m1 = qml.measure(0)
+            qml.cond(m1, true_fn, false_fn)(x)
+            return qml.expval(qml.Z(0))
+
+        with pytest.raises(
+            ConditionalTransformError, match="Only quantum functions without return values"
+        ):
+            f(1.23)
+
+    @pytest.mark.parametrize("reset", [True, False])
+    @pytest.mark.parametrize("postselect", [None, 0, 1])
+    @pytest.mark.parametrize(
+        "shots",
+        [
+            pytest.param(
+                None,
+                marks=pytest.mark.skip(
+                    reason="defer_measurements not compatible with program capture"
+                ),
+            ),
+            20,
+        ],
+    )
+    def test_mcm_predicate_execution(self, reset, postselect, shots):
+        """Test that QNodes executed with mid-circuit measurement predicates for
+        qml.cond give correct results."""
+        device = qml.device("default.qubit", wires=3, shots=shots, seed=jax.random.PRNGKey(1234))
+
+        def true_fn(arg):
+            qml.RX(arg, 0)
+
+        def false_fn(arg):
+            qml.RY(arg, 0)
+
+        @qml.qnode(device)
+        def f(x, y):
+            qml.RX(x, 0)
+            m = qml.measure(0, reset=reset, postselect=postselect)
+
+            qml.cond(m, true_fn, false_fn)(y)
+            return qml.expval(qml.Z(0))
+
+        params = [2.5, 4.0]
+        res = f(*params)
+        qml.capture.disable()
+        expected = f(*params)
+
+        assert np.allclose(res, expected), f"Expected {expected}, but got {res}"

@@ -679,7 +679,7 @@ def _get_cond_qfunc_prim():
                     "'elif' branches are not supported when not using @qjit and the "
                     "conditional includes mid-circuit measurements."
                 )
-            conditions = (conditions[0], ~conditions[1])
+            conditions = (conditions[0], ~conditions[0])
 
         start = 0
         for pred, jaxpr, n_consts in zip(conditions, jaxpr_branches, n_consts_per_branch):
