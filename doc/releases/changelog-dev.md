@@ -46,6 +46,12 @@
 * Added the decomposition of zyz for special unitaries with multiple control wires.
   [(#6042)](https://github.com/PennyLaneAI/pennylane/pull/6042)
 
+* `qml.for_loop` can now be captured into plxpr.
+  [(#6041)](https://github.com/PennyLaneAI/pennylane/pull/6041)
+
+* Removed `semantic_version` from the list of required packages in PennyLane. 
+  [(#5836)](https://github.com/PennyLaneAI/pennylane/pull/5836)
+
 * During experimental program capture, the qnode can now use closure variables.
   [(#6052)](https://github.com/PennyLaneAI/pennylane/pull/6052)
 
@@ -74,8 +80,10 @@
   [(#5919)](https://github.com/PennyLaneAI/pennylane/pull/5919)
 
 * Applying `adjoint` and `ctrl` to a quantum function can now be captured into plxpr.
+  Furthermore, the `qml.cond` function can be captured into plxpr. 
   [(#5966)](https://github.com/PennyLaneAI/pennylane/pull/5966)
   [(#5967)](https://github.com/PennyLaneAI/pennylane/pull/5967)
+  [(#5999)](https://github.com/PennyLaneAI/pennylane/pull/5999)
 
 * Set operations are now supported by Wires.
   [(#5983)](https://github.com/PennyLaneAI/pennylane/pull/5983)
@@ -135,6 +143,29 @@
   >>> qml.qjit(circuit)(0.5, 3)
   Array([0.125     , 0.125     , 0.09949758, 0.15050242, 0.07594666,
        0.11917543, 0.08942104, 0.21545687], dtype=float64)
+  ```
+
+* If the conditional does not include a mid-circuit measurement, then `qml.cond`
+  will automatically evaluate conditionals using standard Python control flow.
+  [(#6016)](https://github.com/PennyLaneAI/pennylane/pull/6016)
+
+  This allows `qml.cond` to be used to represent a wider range of conditionals:
+
+  ```python
+  dev = qml.device("default.qubit", wires=1)
+
+  @qml.qnode(dev)
+  def circuit(x):
+      c = qml.cond(x > 2.7, qml.RX, qml.RZ)
+      c(x, wires=0)
+      return qml.probs(wires=0)
+  ```
+
+  ```pycon
+  >>> print(qml.draw(circuit)(3.8))
+  0: ──RX(3.80)─┤  Probs
+  >>> print(qml.draw(circuit)(0.54))
+  0: ──RZ(0.54)─┤  Probs
   ```
 
 * The `qubit_observable` function is modified to return an ascending wire order for molecular 
@@ -237,6 +268,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* `qml.GlobalPhase` and `qml.I` can now be captured when acting on no wires.
+  [(#6060)](https://github.com/PennyLaneAI/pennylane/pull/6060)
+
 * Fix `jax.grad` + `jax.jit` not working for `AmplitudeEmbedding`, `StatePrep` and `MottonenStatePreparation`.
   [(#5620)](https://github.com/PennyLaneAI/pennylane/pull/5620) 
 
@@ -262,9 +296,11 @@
 * `qml.AmplitudeEmbedding` has better support for features using low precision integer data types.
 [(#5969)](https://github.com/PennyLaneAI/pennylane/pull/5969)
 
+* Jacobian shape is fixed for measurements with dimension in `qml.gradients.vjp.compute_vjp_single`.
+[(5986)](https://github.com/PennyLaneAI/pennylane/pull/5986)
+
 * `qml.lie_closure` works with sums of Paulis.
   [(#6023)](https://github.com/PennyLaneAI/pennylane/pull/6023)
-
 
 <h3>Contributors ✍️</h3>
 
@@ -274,11 +310,12 @@ Tarun Kumar Allamsetty,
 Guillermo Alonso,
 Ali Asadi,
 Utkarsh Azad,
+Gabriel Bottrill,
 Ahmed Darwish,
 Astral Cai,
 Yushao Chen,
-Gabriel Bottrill,
 Ahmed Darwish,
+Maja Franz,
 Lillian M. A. Frederiksen,
 Pietropaolo Frisoni,
 Emiliano Godinez,
