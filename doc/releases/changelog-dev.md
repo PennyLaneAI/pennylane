@@ -169,7 +169,7 @@
   Hamiltonians.
   [(#5950)](https://github.com/PennyLaneAI/pennylane/pull/5950)
   
-* `qml.BasisRotation` and `qml.qchem.givens_decomposition` are now jit compatible.
+* `qml.BasisRotation` is now jit compatible.
   [(#6019)](https://github.com/PennyLaneAI/pennylane/pull/6019)
 
 * The `CNOT` operator no longer decomposes to itself. Instead, it raises a `qml.DecompositionUndefinedError`.
