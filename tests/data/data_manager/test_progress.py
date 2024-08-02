@@ -16,10 +16,11 @@ Tests for :class:`pennylane.data.progress`
 """
 import shutil
 
-import pennylane.data.data_manager.progress
-import pennylane.data.data_manager.progress._default
 import pytest
 import rich.progress
+
+import pennylane.data.data_manager.progress
+import pennylane.data.data_manager.progress._default
 from pennylane.data.data_manager.progress import Progress, Task
 from pennylane.data.data_manager.progress._default import DefaultProgress, term
 

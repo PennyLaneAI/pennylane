@@ -17,7 +17,7 @@ Unit tests for the :class:`pennylane.data.data_manager` functions.
 import os
 from pathlib import Path, PosixPath
 from typing import NamedTuple
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, call, patch
 
 import pytest
 import requests
@@ -255,40 +255,6 @@ class TestMiscHelpers:
             qml.data.list_attributes("invalid_data_name")
 
 
-@pytest.mark.skipif(has_rich, reason="tests the non-rich implementation")
-@patch("pennylane.data.data_manager._download_partial")
-class TestProgressBar:
-    """Test the naive progress bar implementation."""
-
-    def test_download_basic(self, download_partial, mocker):
-        """Test that update is called."""
-        with pennylane.data.data_manager.progress.Progress() as pbar:
-            spy = mocker.spy(pbar, "update")
-            task = pbar.add_task("qchem data:", total=100)
-            pennylane.data.data_manager._download_dataset(
-                "foo/bar",
-                "dest/foo/bar",
-                attributes=["baz"],
-                block_size=100,
-                force=False,
-                pbar_task=task,
-            )
-            spy.assert_called_once_with(task, advance=10)
-
-    def test_progress_bar_update(self, download_partial, capsys):
-        """Test the various parts of the update function."""
-        with pennylane.data.data_manager.progress.Progress() as pbar:
-            task = pbar.add_task("qchem data:", total=10000)
-
-            task.update(advance=20)
-            out, _err = capsys.readouterr()
-            assert out == "qchem data:   0.00/0.01 MB\rqchem data:  0.\r"
-
-            task.update(completed=100)
-            out, _err = capsys.readouterr()
-            assert out == "qchem data: 100.00/100.00 KB\n"
-
-
 @pytest.fixture
 def mock_download_dataset(monkeypatch):
     # pylint:disable=too-many-arguments
@@ -313,7 +279,9 @@ def mock_download_dataset(monkeypatch):
         )
     ],
 )
-def test_load(tmp_path, data_name, params, expect_paths):
+@pytest.mark.parametrize("progress_bar", [True, False])
+@pytest.mark.parametrize("attributes", [None, ["molecule"]])
+def test_load(tmp_path, data_name, params, expect_paths, progress_bar, attributes):
     """Test that load fetches the correct datasets at the
     expected paths."""
 
@@ -322,6 +290,8 @@ def test_load(tmp_path, data_name, params, expect_paths):
         data_name=data_name,
         folder_path=folder_path,
         block_size=1,
+        progress_bar=progress_bar,
+        attributes=attributes,
         **params,
     )
 
@@ -362,12 +332,7 @@ def test_download_dataset_full_or_partial(
     dest.exists.return_value = dest_exists
 
     pennylane.data.data_manager._download_dataset(
-        "dataset/path",
-        attributes=attributes,
-        dest=dest,
-        force=force,
-        block_size=1,
-        pbar_task=MagicMock(),
+        "dataset/path", attributes=attributes, dest=dest, force=force, block_size=1, pbar_task=None
     )
 
     assert download_partial.called is called_partial
@@ -434,11 +399,28 @@ def test_download_full(tmp_path):
     """Tests that _download_dataset will fetch the dataset file
     at ``s3_url`` into ``dest``."""
     pennylane.data.data_manager._download_full(
-        "dataset/path", tmp_path / "dataset", block_size=1, pbar_task=MagicMock()
+        "dataset/path", tmp_path / "dataset", block_size=1, pbar_task=None
     )
 
     with open(tmp_path / "dataset", "rb") as f:
         assert f.read() == b"This is binary data"
+
+
+@pytest.mark.usefixtures("mock_requests_get")
+@pytest.mark.parametrize("mock_requests_get", [b"0123456789"], indirect=True)
+def test_download_full_with_progress(tmp_path):
+    """Tests that _download_dataset will fetch the dataset file
+    at ``s3_url`` into ``dest`` and call the ``update`` method
+    of the progress bar task."""
+    pbar_task = MagicMock()
+    pennylane.data.data_manager._download_full(
+        "dataset/path", tmp_path / "dataset", block_size=4, pbar_task=pbar_task
+    )
+
+    with open(tmp_path / "dataset", "rb") as f:
+        assert f.read() == b"0123456789"
+
+    pbar_task.update.assert_has_calls([call(advance=4), call(advance=4), call(advance=2)])
 
 
 @pytest.mark.parametrize("overwrite", [True, False])
