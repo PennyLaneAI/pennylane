@@ -65,7 +65,6 @@ requests==2.32.3
 rustworkx==0.15.1
 scipy==1.12.0
 scs==3.2.6
-semantic-version==2.10.0
 six==1.16.0
 sympy==1.13.1
 toml==0.10.2
