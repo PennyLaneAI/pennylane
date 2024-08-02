@@ -21,6 +21,7 @@ from typing import Callable, Optional, Type
 import pennylane as qml
 from pennylane import QueuingManager
 from pennylane.compiler import compiler
+from pennylane.measurements import MeasurementValue
 from pennylane.operation import AnyWires, Operation, Operator
 from pennylane.ops.op_math.symbolicop import SymbolicOp
 from pennylane.tape import make_qscript
@@ -102,7 +103,174 @@ class Conditional(SymbolicOp, Operation):
         return Conditional(self.meas_val, self.base.adjoint())
 
 
-def cond(condition, true_fn: Callable, false_fn: Optional[Callable] = None, elifs=()):
+class CondCallable:  # pylint:disable=too-few-public-methods
+    """Base class to represent a conditional function with boolean predicates.
+
+    Args:
+        condition (bool): a conditional expression
+        true_fn (callable): The function to apply if ``condition`` is ``True``
+        false_fn (callable): The function to apply if ``condition`` is ``False``
+        elifs (List(Tuple(bool, callable))): A list of (bool, elif_fn) clauses.
+
+    Passing ``false_fn`` and ``elifs`` on initialization
+    is optional; these functions can be registered post-initialization
+    via decorators:
+
+    .. code-block:: python
+
+        def f(x):
+            @qml.cond(x > 0)
+            def conditional(y):
+                return y ** 2
+
+            @conditional.else_if(x < -2)
+            def conditional(y):
+                return y
+
+            @conditional.otherwise
+            def conditional_false_fn(y):
+                return -y
+
+            return conditional(x + 1)
+
+    >>> [f(0.5), f(-3), f(-0.5)]
+    [2.25, -2, -0.5]
+    """
+
+    def __init__(self, condition, true_fn, false_fn=None, elifs=()):
+        self.preds = [condition]
+        self.branch_fns = [true_fn]
+        self.otherwise_fn = false_fn
+
+        # when working with `qml.capture.enabled()`,
+        # it's easier to store the original `elifs` argument
+        self.orig_elifs = elifs
+
+        if false_fn is None and not qml.capture.enabled():
+            self.otherwise_fn = lambda *args, **kwargs: None
+
+        if elifs and not qml.capture.enabled():
+            elif_preds, elif_fns = list(zip(*elifs))
+            self.preds.extend(elif_preds)
+            self.branch_fns.extend(elif_fns)
+
+    def else_if(self, pred):
+        """Decorator that allows else-if functions to be registered with a corresponding
+        boolean predicate.
+
+        Args:
+            pred (bool): The predicate that will determine if this branch is executed.
+
+        Returns:
+            callable: decorator that is applied to the else-if function
+        """
+
+        def decorator(branch_fn):
+            self.preds.append(pred)
+            self.branch_fns.append(branch_fn)
+            return self
+
+        return decorator
+
+    def otherwise(self, otherwise_fn):
+        """Decorator that registers the function to be run if all
+        conditional predicates (including optional) evaluates to ``False``.
+
+        Args:
+            otherwise_fn (callable): the function to apply if all ``self.preds`` evaluate to ``False``
+        """
+        self.otherwise_fn = otherwise_fn
+        return self
+
+    @property
+    def false_fn(self):
+        """callable: the function to apply if all ``self.preds`` evaluate to ``False``"""
+        return self.otherwise_fn
+
+    @property
+    def true_fn(self):
+        """callable: the function to apply if all ``self.condition`` evaluate to ``True``"""
+        return self.branch_fns[0]
+
+    @property
+    def condition(self):
+        """bool: the condition that determines if ``self.true_fn`` is applied"""
+        return self.preds[0]
+
+    @property
+    def elifs(self):
+        """(List(Tuple(bool, callable))): a list of (bool, elif_fn) clauses"""
+        return list(zip(self.preds[1:], self.branch_fns[1:]))
+
+    def __call_capture_disabled(self, *args, **kwargs):
+        # python fallback
+        for pred, branch_fn in zip(self.preds, self.branch_fns):
+            if pred:
+                return branch_fn(*args, **kwargs)
+
+        return self.false_fn(*args, **kwargs)  # pylint: disable=not-callable
+
+    def __call_capture_enabled(self, *args, **kwargs):
+
+        import jax  # pylint: disable=import-outside-toplevel
+
+        cond_prim = _get_cond_qfunc_prim()
+
+        elifs = (
+            (self.orig_elifs,)
+            if len(self.orig_elifs) > 0 and not isinstance(self.orig_elifs[0], tuple)
+            else self.orig_elifs
+        )
+
+        @wraps(self.true_fn)
+        def new_wrapper(*args, **kwargs):
+
+            jaxpr_true = jax.make_jaxpr(functools.partial(self.true_fn, **kwargs))(*args)
+            jaxpr_false = (
+                jax.make_jaxpr(functools.partial(self.otherwise_fn, **kwargs))(*args)
+                if self.otherwise_fn
+                else None
+            )
+
+            # We extract each condition (or predicate) from the elifs argument list
+            # since these are traced by JAX and are passed as positional arguments to the primitive
+            elifs_conditions = []
+            jaxpr_elifs = []
+
+            for pred, elif_fn in elifs:
+                elifs_conditions.append(pred)
+                jaxpr_elifs.append(jax.make_jaxpr(functools.partial(elif_fn, **kwargs))(*args))
+
+            conditions = [self.condition, *elifs_conditions, True]
+
+            jaxpr_branches = [jaxpr_true, *jaxpr_elifs, jaxpr_false]
+            jaxpr_consts = [jaxpr.consts if jaxpr is not None else () for jaxpr in jaxpr_branches]
+
+            # We need to flatten the constants since JAX does not allow
+            # to pass lists as positional arguments
+            consts_flat = [const for sublist in jaxpr_consts for const in sublist]
+            n_consts_per_branch = [len(consts) for consts in jaxpr_consts]
+
+            return cond_prim.bind(
+                *conditions,
+                *args,
+                *consts_flat,
+                jaxpr_branches=jaxpr_branches,
+                n_consts_per_branch=n_consts_per_branch,
+                n_args=len(args),
+            )
+
+        return new_wrapper(*args, **kwargs)
+
+    def __call__(self, *args, **kwargs):
+
+        if qml.capture.enabled():
+            return self.__call_capture_enabled(*args, **kwargs)
+
+        return self.__call_capture_disabled(*args, **kwargs)
+
+
+def cond(condition, true_fn: Callable = None, false_fn: Optional[Callable] = None, elifs=()):
     """Quantum-compatible if-else conditionals --- condition quantum operations
     on parameters such as the results of mid-circuit qubit measurements.
 
@@ -139,15 +307,15 @@ def cond(condition, true_fn: Callable, false_fn: Optional[Callable] = None, elif
         If a branch returns one or more variables, every other branch must return the same abstract values.
 
     Args:
-        condition (Union[.MeasurementValue, bool]): a conditional expression involving a mid-circuit
-           measurement value (see :func:`.pennylane.measure`). This can only be of type ``bool`` when
-           decorated by :func:`~.qjit`.
+        condition (Union[.MeasurementValue, bool]): a conditional expression that may involve a mid-circuit
+           measurement value (see :func:`.pennylane.measure`).
         true_fn (callable): The quantum function or PennyLane operation to
             apply if ``condition`` is ``True``
         false_fn (callable): The quantum function or PennyLane operation to
             apply if ``condition`` is ``False``
         elifs (List(Tuple(bool, callable))): A list of (bool, elif_fn) clauses. Can only
-            be used when decorated by :func:`~.qjit`.
+            be used when decorated by :func:`~.qjit` or if the condition is not
+            a mid-circuit measurement.
 
     Returns:
         function: A new function that applies the conditional equivalent of ``true_fn``. The returned
@@ -380,6 +548,10 @@ def cond(condition, true_fn: Callable, false_fn: Optional[Callable] = None, elif
     if active_jit := compiler.active_compiler():
         available_eps = compiler.AvailableCompilers.names_entrypoints
         ops_loader = available_eps[active_jit]["ops"].load()
+
+        if true_fn is None:
+            return ops_loader.cond(condition)
+
         cond_func = ops_loader.cond(condition)(true_fn)
 
         # Optional 'elif' branches
@@ -392,11 +564,26 @@ def cond(condition, true_fn: Callable, false_fn: Optional[Callable] = None, elif
 
         return cond_func
 
-    if qml.capture.enabled():
-        return _capture_cond(condition, true_fn, false_fn, elifs)
+    if not isinstance(condition, MeasurementValue):
+        # The condition is not a mid-circuit measurement.
+        if true_fn is None:
+            return lambda fn: CondCallable(condition, fn)
+
+        return CondCallable(condition, true_fn, false_fn, elifs)
+
+    if true_fn is None:
+        raise TypeError(
+            "cond missing 1 required positional argument: 'true_fn'.\n"
+            "Note that if the conditional includes a mid-circuit measurement, "
+            "qml.cond cannot be used as a decorator.\n"
+            "Instead, please use the form qml.cond(condition, true_fn, false_fn)."
+        )
 
     if elifs:
-        raise ConditionalTransformError("'elif' branches are not supported in interpreted mode.")
+        raise ConditionalTransformError(
+            "'elif' branches are not supported when not using @qjit and the "
+            "conditional include mid-circuit measurements."
+        )
 
     if callable(true_fn):
         # We assume that the callable is an operation or a quantum function
@@ -537,50 +724,3 @@ def _get_cond_qfunc_prim():
 
     return cond_prim
 
-
-def _capture_cond(condition, true_fn, false_fn=None, elifs=()) -> Callable:
-    """Capture compatible way to apply conditionals."""
-
-    import jax  # pylint: disable=import-outside-toplevel
-
-    cond_prim = _get_cond_qfunc_prim()
-
-    elifs = (elifs,) if len(elifs) > 0 and not isinstance(elifs[0], tuple) else elifs
-
-    @wraps(true_fn)
-    def new_wrapper(*args, **kwargs):
-
-        jaxpr_true = jax.make_jaxpr(functools.partial(true_fn, **kwargs))(*args)
-        jaxpr_false = (
-            jax.make_jaxpr(functools.partial(false_fn, **kwargs))(*args) if false_fn else None
-        )
-
-        # We extract each condition (or predicate) from the elifs argument list
-        # since these are traced by JAX and are passed as positional arguments to the primitive
-        elifs_conditions = []
-        jaxpr_elifs = []
-
-        for pred, elif_fn in elifs:
-            elifs_conditions.append(pred)
-            jaxpr_elifs.append(jax.make_jaxpr(functools.partial(elif_fn, **kwargs))(*args))
-
-        conditions = [condition, *elifs_conditions, True]
-
-        jaxpr_branches = [jaxpr_true, *jaxpr_elifs, jaxpr_false]
-        jaxpr_consts = [jaxpr.consts if jaxpr is not None else () for jaxpr in jaxpr_branches]
-
-        # We need to flatten the constants since JAX does not allow
-        # to pass lists as positional arguments
-        consts_flat = [const for sublist in jaxpr_consts for const in sublist]
-        n_consts_per_branch = [len(consts) for consts in jaxpr_consts]
-
-        return cond_prim.bind(
-            *conditions,
-            *args,
-            *consts_flat,
-            jaxpr_branches=jaxpr_branches,
-            n_consts_per_branch=n_consts_per_branch,
-            n_args=len(args),
-        )
-
-    return new_wrapper

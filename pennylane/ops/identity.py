@@ -60,6 +60,11 @@ class Identity(CVObservable, Operation):
 
     ev_order = 1
 
+    @classmethod
+    def _primitive_bind_call(cls, wires=None, **kwargs):  # pylint: disable=arguments-differ
+        wires = [] if wires is None else wires
+        return super()._primitive_bind_call(wires=wires, **kwargs)
+
     def _flatten(self):
         return tuple(), (self.wires, tuple())
 
@@ -299,6 +304,11 @@ class GlobalPhase(Operation):
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
     grad_method = None
+
+    @classmethod
+    def _primitive_bind_call(cls, phi, wires=None, **kwargs):  # pylint: disable=arguments-differ
+        wires = [] if wires is None else wires
+        return super()._primitive_bind_call(phi, wires=wires, **kwargs)
 
     def __init__(self, phi, wires=None, id=None):
         super().__init__(phi, wires=[] if wires is None else wires, id=id)
