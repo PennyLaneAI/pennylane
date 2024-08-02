@@ -272,13 +272,9 @@ This release contains contributions from (in alphabetical order):
 
 Tarun Kumar Allamsetty,
 Guillermo Alonso,
-<<<<<<< HEAD
 Ali Asadi,
-Utkarsh Azad
-=======
 Utkarsh Azad,
 Ahmed Darwish,
->>>>>>> 74543ed865706b5b3f700084819e657013a55c88
 Astral Cai,
 Yushao Chen,
 Gabriel Bottrill,

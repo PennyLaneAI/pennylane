@@ -142,7 +142,7 @@ def _multi_controlled_zyz(
     control_wires: Wires,
     work_wires: Optional[Wires] = None,
 ) -> list[Operator]:
-    # The decomposition of special zyz with multiple control wires
+    # The decomposition of zyz for special unitaries with multiple control wires
     # defined in Lemma 7.9 of https://arxiv.org/pdf/quant-ph/9503016
 
     if not qml.math.allclose(0.0, global_phase, atol=1e-6, rtol=0):
@@ -220,10 +220,10 @@ def ctrl_decomp_zyz(
 ) -> list[Operator]:
     """Decompose the controlled version of a target single-qubit operation
 
-    This function decomposes a controlled single-qubit target operation with one
-    single control using the decomposition defined in Lemma 4.3 and Lemma 5.1,
-    and multiple control using the decomposition defined in Lemma 7.9 of
-    `Barenco et al. (1995) <https://arxiv.org/abs/quant-ph/9503016>`_.
+    This function decomposes both single and multiple controlled single-qubit
+    target operations using the decomposition defined in Lemma 4.3 and Lemma 5.1
+    for single `controlled_wires`, Lemma 7.9 for multiple `controlled_wires`
+    from `Barenco et al. (1995) <https://arxiv.org/abs/quant-ph/9503016>`_.
 
     Args:
         target_operation (~.operation.Operator): the target operation to decompose
