@@ -16,7 +16,6 @@ Unit tests for utilities for optimization transforms.
 """
 # pylint: disable=too-few-public-methods
 
-from functools import partial
 from itertools import product
 
 import pytest
@@ -173,6 +172,7 @@ class TestRotGateFusion:
         angles_1, angles_2 = np.transpose(special_angles, (1, 0, 2))
         self.run_interface_test(angles_1, angles_2)
 
+    # pylint: disable=too-many-arguments
     def run_jacobian_test(self, all_angles, jac_fn, is_batched, jit_fn=None, array_fn=None):
         """Execute standard test lines for testing Jacobians with different interfaces.
         #Note that the transpose calls only are relevant for tests with batching."""
@@ -325,9 +325,6 @@ class TestRotGateFusion:
                 with tf.GradientTape() as t:
                     out = fn(arg)
                 return t.jacobian(out, arg)
-
-            def vmapped_jac_fn(arg):
-                return tf.vectorized_map(jac_fn, arg)
 
             return jac_fn
 
