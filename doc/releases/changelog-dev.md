@@ -265,6 +265,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* `qml.GlobalPhase` and `qml.I` can now be captured when acting on no wires.
+  [(#6060)](https://github.com/PennyLaneAI/pennylane/pull/6060)
+
 * Fix `jax.grad` + `jax.jit` not working for `AmplitudeEmbedding`, `StatePrep` and `MottonenStatePreparation`.
   [(#5620)](https://github.com/PennyLaneAI/pennylane/pull/5620) 
 
