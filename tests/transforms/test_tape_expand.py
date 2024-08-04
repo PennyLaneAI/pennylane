@@ -336,9 +336,8 @@ class TestExpandInvalidTrainable:
 
         assert new_tape.operations[0].name == "RZ"
         assert new_tape.operations[0].grad_method == "A"
-        assert new_tape.operations[1].name == "GlobalPhase"
-        assert new_tape.operations[2].name == "RY"
-        assert new_tape.operations[3].name == "CNOT"
+        assert new_tape.operations[1].name == "RY"
+        assert new_tape.operations[2].name == "CNOT"
 
     def test_nontrainable_nondiff(self, mocker):
         """Test that a circuit with non-differentiable
@@ -926,7 +925,7 @@ class TestCreateCustomDecompExpandFn:
             custom_decomps = {"MultiRZ": qml.MultiRZ.compute_decomposition}
             dev = qml.device("lightning.qubit", wires=2, custom_decomps=custom_decomps)
 
-            @qml.qnode(dev, diff_method="adjoint", expansion_strategy="device")
+            @qml.qnode(dev, diff_method="adjoint", expansion_strategy="gradient")
             def cost(theta):
                 qml.Hadamard(wires=0)
                 qml.Hadamard(wires=1)

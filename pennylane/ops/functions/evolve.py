@@ -129,7 +129,10 @@ def evolve(*args, **kwargs):  # pylint: disable=unused-argument
 
         import jax
 
-        dev = qml.device("default.qubit.jax", wires=4)
+        jax.config.update("jax_enable_x64", True)
+
+        dev = qml.device("default.qubit")
+
         @jax.jit
         @qml.qnode(dev, interface="jax")
         def circuit(params):
@@ -138,13 +141,13 @@ def evolve(*args, **kwargs):  # pylint: disable=unused-argument
 
     >>> params = [1., 2., 3., 4.]
     >>> circuit(params)
-    Array(0.8627419, dtype=float32)
+    Array(0.86231063, dtype=float64)
 
     >>> jax.grad(circuit)(params)
-    [Array(50.690746, dtype=float32),
-    Array(-6.296886e-05, dtype=float32),
-    Array(-6.3341584e-05, dtype=float32),
-    Array(-7.052516e-05, dtype=float32)]
+    [Array(50.391273, dtype=float64),
+    Array(-9.42415807e-05, dtype=float64),
+    Array(-0.0001049, dtype=float64),
+    Array(-0.00010601, dtype=float64)]
 
     .. note::
         In the example above, the decorator ``@jax.jit`` is used to compile this execution just-in-time. This means
