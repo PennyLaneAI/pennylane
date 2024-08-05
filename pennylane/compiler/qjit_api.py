@@ -426,8 +426,9 @@ class WhileLoopCallable:  # pylint:disable=too-few-public-methods
         return fn_res
 
 
-def for_loop(lower_bound, upper_bound=None, step=1):
-    """A :func:`~.qjit` compatible for-loop for PennyLane programs. When
+def for_loop(start, stop=None, step=1):
+    """for_loop([start, ]stop, [step, ])
+    A :func:`~.qjit` compatible for-loop for PennyLane programs. When
     used without :func:`~.qjit`, this function will fall back to a standard
     Python for loop.
 
@@ -449,21 +450,29 @@ def for_loop(lower_bound, upper_bound=None, step=1):
 
     .. code-block:: python
 
-        def for_loop(lower_bound, upper_bound, step, loop_fn, *args):
-            for i in range(lower_bound, upper_bound, step):
+        def for_loop(start, stop, step, loop_fn, *args):
+            for i in range(start, stop, step):
                 args = loop_fn(i, *args)
             return args
 
     Unlike ``jax.cond.fori_loop``, the step can be negative if it is known at tracing time
     (i.e., constant). If a non-constant negative step is used, the loop will produce no iterations.
 
+    .. note::
+
+        This function can be used in the following different ways:
+
+        1. ``for_loop(stop)``:  Values are generated within the interval ``[0, stop)``
+        2. ``for_loop(start, stop)``: Values are generated within the interval ``[start, stop)``
+        3. ``for_loop(start, stop, step)``: Values are generated within the interval ``[start, stop)``,
+           with spacing between the values given by ``step``
+
     Args:
-        lower_bound (int): starting value of the iteration index
-        upper_bound (int | None): (exclusive) upper bound of the iteration index. If ``None``,
-            provided ``lower_bound`` is used as the ``upper_bound`` and ``lower_bound`` is
-            considered to be ``0``.
-        step (int): increment applied to the iteration index at the end of each iteration.
-            Default is ``1``.
+        start (Optional[int]): starting value of the iteration index.
+            The default start value is ``0``
+        stop (int): upper bound of the iteration index
+        step (Optional[int]): increment applied to the iteration index at the end of
+            each iteration. The default step size is ``1``
 
     Returns:
         Callable[[int, ...], ...]: A wrapper around the loop body function.
@@ -513,18 +522,18 @@ def for_loop(lower_bound, upper_bound=None, step=1):
         page for an overview of using quantum just-in-time compilation.
 
     """
-    if upper_bound is None:
-        lower_bound, upper_bound = 0, lower_bound
+    if stop is None:
+        start, stop = 0, start
 
     if active_jit := active_compiler():
         compilers = AvailableCompilers.names_entrypoints
         ops_loader = compilers[active_jit]["ops"].load()
-        return ops_loader.for_loop(lower_bound, upper_bound, step)
+        return ops_loader.for_loop(start, stop, step)
 
     # if there is no active compiler, simply interpret the for loop
     # via the Python interpretor.
     def _decorator(body_fn):
-        """Transform that will call the input ``body_fn`` within a for loop defined by the closure variables lower_bound, upper_bound, and step.
+        """Transform that will call the input ``body_fn`` within a for loop defined by the closure variables start, stop, and step.
 
         Args:
             body_fn (Callable): The function called within the for loop. Note that the loop body
@@ -534,14 +543,14 @@ def for_loop(lower_bound, upper_bound=None, step=1):
                 returned from the function.
 
         Closure Variables:
-            lower_bound (int): starting value of the iteration index
-            upper_bound (int): (exclusive) upper bound of the iteration index
+            start (int): starting value of the iteration index
+            stop (int): (exclusive) upper bound of the iteration index
             step (int): increment applied to the iteration index at the end of each iteration
 
         Returns:
             Callable: a callable with the same signature as ``body_fn``
         """
-        return ForLoopCallable(lower_bound, upper_bound, step, body_fn)
+        return ForLoopCallable(start, stop, step, body_fn)
 
     return _decorator
 
