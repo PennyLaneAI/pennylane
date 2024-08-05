@@ -57,6 +57,27 @@ def _givens_matrix(a, b, left=True, tol=1e-8):
     return qml.math.array([[phase * sine, cosine], [-phase * cosine, sine]], like=interface)
 
 
+def _set_unitary_matrix(unitary_matrix, index, value, like=None):
+    """Set the values in the ``unitary_matrix`` at the specified index.
+
+    Args:
+        unitary_matrix (tensor_like): unitary being modified
+        index (Tuple[int | Ellipsis | List[Int]]): index for the slicing the unitary
+        value (tensor_like): new values for the specified index
+        like (str): interface for the unitary matrix.
+
+    Returns:
+        tensor_like: modified unitary
+    """
+    if like == "jax":
+        return unitary_matrix.at[index[0], index[1]].set(
+            value, indices_are_sorted=True, unique_indices=True
+        )
+
+    unitary_matrix[index[0], index[1]] = value
+    return unitary_matrix
+
+
 # pylint:disable = too-many-branches
 def givens_decomposition(unitary):
     r"""Decompose a unitary into a sequence of Givens rotation gates with phase shifts and a diagonal phase matrix.
@@ -155,34 +176,23 @@ def givens_decomposition(unitary):
         raise ValueError(f"The unitary matrix should be of shape NxN, got {unitary.shape}")
 
     left_givens, right_givens = [], []
-    if interface == "jax":
-        for i in range(1, N):
-            if i % 2:
-                for j in range(0, i):
-                    indices = [i - j - 1, i - j]
-                    grot_mat = _givens_matrix(*unitary[N - j - 1, indices].T, left=True)
-                    unitary = unitary.at[:, indices].set(unitary[:, indices] @ grot_mat.T, indices_are_sorted=True, unique_indices=True)
-                    right_givens.append((qml.math.conj(grot_mat), indices))
-            else:
-                for j in range(1, i + 1):
-                    indices = [N + j - i - 2, N + j - i - 1]
-                    grot_mat = _givens_matrix(*unitary[indices, j - 1], left=False)
-                    unitary = unitary.at[indices, :].set(grot_mat @ unitary[indices, :], indices_are_sorted=True, unique_indices=True)
-                    left_givens.append((grot_mat, indices))
-    else:
-        for i in range(1, N):
-            if i % 2:
-                for j in range(0, i):
-                    indices = [i - j - 1, i - j]
-                    grot_mat = _givens_matrix(*unitary[N - j - 1, indices].T, left=True)
-                    unitary[:, indices] = unitary[:, indices] @ grot_mat.T
-                    right_givens.append((qml.math.conj(grot_mat), indices))
-            else:
-                for j in range(1, i + 1):
-                    indices = [N + j - i - 2, N + j - i - 1]
-                    grot_mat = _givens_matrix(*unitary[indices, j - 1], left=False)
-                    unitary[indices] = grot_mat @ unitary[indices]
-                    left_givens.append((grot_mat, indices))
+    for i in range(1, N):
+        if i % 2:
+            for j in range(0, i):
+                indices = [i - j - 1, i - j]
+                grot_mat = _givens_matrix(*unitary[N - j - 1, indices].T, left=True)
+                unitary = _set_unitary_matrix(
+                    unitary, (Ellipsis, indices), unitary[:, indices] @ grot_mat.T, like=interface
+                )
+                right_givens.append((qml.math.conj(grot_mat), indices))
+        else:
+            for j in range(1, i + 1):
+                indices = [N + j - i - 2, N + j - i - 1]
+                grot_mat = _givens_matrix(*unitary[indices, j - 1], left=False)
+                unitary = _set_unitary_matrix(
+                    unitary, (indices, Ellipsis), grot_mat @ unitary[indices, :], like=interface
+                )
+                left_givens.append((grot_mat, indices))
 
     nleft_givens = []
     for grot_mat, (i, j) in reversed(left_givens):
@@ -197,11 +207,8 @@ def givens_decomposition(unitary):
         ):  # pragma: no cover
             raise ValueError("Failed to shift phase transposition.")
 
-        if interface == "jax":
-            unitary = unitary.at[i, i].set(qml.math.diag(nphase_mat)[0])
-            unitary = unitary.at[j, j].set(qml.math.diag(nphase_mat)[1])
-        else:
-            unitary[i, i], unitary[j, j] = qml.math.diag(nphase_mat)
+        for diag_idx, diag_val in zip([(i, i), (j, j)], qml.math.diag(nphase_mat)):
+            unitary = _set_unitary_matrix(unitary, diag_idx, diag_val, like=interface)
         nleft_givens.append((qml.math.conj(givens_mat), (i, j)))
 
     phases, ordered_rotations = qml.math.diag(unitary), []

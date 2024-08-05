@@ -116,9 +116,10 @@ class BasisRotation(Operation):
             )
 
         if check:
-            umat = qml.math.copy(unitary_matrix)
-            if not qml.math.allclose(
-                umat @ umat.conj().T, qml.math.eye(M, dtype=complex), atol=1e-6
+            if not qml.math.is_abstract(unitary_matrix) and not qml.math.allclose(
+                unitary_matrix @ qml.math.conj(unitary_matrix).T,
+                qml.math.eye(M, dtype=complex),
+                atol=1e-4,
             ):
                 raise ValueError("The provided transformation matrix should be unitary.")
 
@@ -161,12 +162,12 @@ class BasisRotation(Operation):
             )
 
         if check:
-            umat = qml.math.copy(unitary_matrix)
-            if not qml.math.is_abstract(unitary_matrix):
-                if not qml.math.allclose(
-                    umat @ umat.conj().T, qml.math.eye(M, dtype=complex), atol=1e-4
-                ):
-                    raise ValueError("The provided transformation matrix should be unitary.")
+            if not qml.math.is_abstract(unitary_matrix) and not qml.math.allclose(
+                unitary_matrix @ qml.math.conj(unitary_matrix).T,
+                qml.math.eye(M, dtype=complex),
+                atol=1e-4,
+            ):
+                raise ValueError("The provided transformation matrix should be unitary.")
 
         if len(wires) < 2:
             raise ValueError(f"This template requires at least two wires, got {len(wires)}")
