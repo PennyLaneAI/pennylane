@@ -165,7 +165,7 @@ class TestDtypePreserved:
     """Test that the user-defined dtype of the device is preserved for QNode
     evaluation"""
 
-    @pytest.mark.parametrize("r_dtype_name", ["float32", "float64"])
+    @pytest.mark.parametrize("r_dtype", [np.float32, np.float64])
     @pytest.mark.parametrize(
         "measurement",
         [
@@ -175,11 +175,10 @@ class TestDtypePreserved:
             qml.probs(wires=[2, 0]),
         ],
     )
-    def test_real_dtype(self, r_dtype_name, measurement):
+    def test_real_dtype(self, r_dtype, measurement):
         """Test that the default qubit plugin returns the correct
         real data type for a simple circuit"""
         p = 0.543
-        r_dtype = np.dtype(r_dtype_name)
 
         dev = qml.device("default.qubit.autograd", wires=3)
         dev.target_device.R_DTYPE = r_dtype
@@ -192,7 +191,7 @@ class TestDtypePreserved:
         res = circuit(p)
         assert res.dtype == r_dtype
 
-    @pytest.mark.parametrize("r_dtype_name", ["float32", "float64"])
+    @pytest.mark.parametrize("r_dtype", [np.float32, np.float64])
     @pytest.mark.parametrize(
         "measurement",
         [
@@ -202,11 +201,10 @@ class TestDtypePreserved:
             qml.probs(wires=[2, 0]),
         ],
     )
-    def test_real_dtype_broadcasted(self, r_dtype_name, measurement):
+    def test_real_dtype_broadcasted(self, r_dtype, measurement):
         """Test that the default qubit plugin returns the correct
         real data type for a simple broadcasted circuit"""
         p = np.array([0.543, 0.21, 1.6])
-        r_dtype = np.dtype(r_dtype_name)
 
         dev = qml.device("default.qubit.autograd", wires=3)
         dev.target_device.R_DTYPE = r_dtype

@@ -49,10 +49,9 @@ class TestVar:
     """Tests for the var function"""
 
     @pytest.mark.parametrize("shots", [None, 10000, [10000, 10000]])
-    @pytest.mark.parametrize("r_dtype_name", ["float32", "float64"])
-    def test_value(self, tol, r_dtype_name, mocker, shots):
+    @pytest.mark.parametrize("r_dtype", [np.float32, np.float64])
+    def test_value(self, tol, r_dtype, mocker, shots):
         """Test that the var function works"""
-        r_dtype = np.dtype(r_dtype_name)
 
         dev = qml.device("default.qubit.legacy", wires=2, shots=shots)
         spy = mocker.spy(qml.QubitDevice, "var")

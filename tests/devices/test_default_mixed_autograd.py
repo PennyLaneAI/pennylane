@@ -120,7 +120,7 @@ class TestDtypePreserved:
     """Test that the user-defined dtype of the device is preserved for QNode
     evaluation"""
 
-    @pytest.mark.parametrize("r_dtype_name", ["float32", "float64"])
+    @pytest.mark.parametrize("r_dtype", [np.float32, np.float64])
     @pytest.mark.parametrize(
         "measurement",
         [
@@ -130,11 +130,10 @@ class TestDtypePreserved:
             qml.probs(wires=[2, 0]),
         ],
     )
-    def test_real_dtype(self, r_dtype_name, measurement):
+    def test_real_dtype(self, r_dtype, measurement):
         """Test that the user-defined dtype of the device is preserved
         for QNodes with real-valued outputs"""
         p = 0.543
-        r_dtype = np.dtype(r_dtype_name)
 
         dev = qml.device("default.mixed", wires=3)
         dev.target_device.R_DTYPE = r_dtype

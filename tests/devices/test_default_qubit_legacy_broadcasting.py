@@ -773,12 +773,11 @@ class TestDefaultQubitIntegrationBroadcasted:
     """Integration tests for default.qubit.legacy. This test ensures it integrates
     properly with the PennyLane interface, in particular QNode."""
 
-    @pytest.mark.parametrize("r_dtype_name", ["float32", "float64"])
-    def test_qubit_circuit_broadcasted(self, qubit_device_1_wire, r_dtype_name, tol):
+    @pytest.mark.parametrize("r_dtype", [np.float32, np.float64])
+    def test_qubit_circuit_broadcasted(self, qubit_device_1_wire, r_dtype, tol):
         """Test that the default qubit plugin provides correct result for a simple circuit"""
 
         p = np.array([0.543, np.pi / 2, 0.0, 1.0])
-        r_dtype = np.dtype(r_dtype_name)
 
         dev = qubit_device_1_wire
         dev.target_device.R_DTYPE = r_dtype

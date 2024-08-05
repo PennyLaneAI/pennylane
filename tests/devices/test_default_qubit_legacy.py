@@ -1020,12 +1020,11 @@ class TestDefaultQubitLegacyIntegration:
         }
         assert cap == capabilities
 
-    @pytest.mark.parametrize("r_dtype_name", ["float32", "float64"])
-    def test_qubit_circuit(self, qubit_device_1_wire, r_dtype_name, tol):
+    @pytest.mark.parametrize("r_dtype", [np.float32, np.float64])
+    def test_qubit_circuit(self, qubit_device_1_wire, r_dtype, tol):
         """Test that the default qubit plugin provides correct result for a simple circuit"""
 
         p = 0.543
-        r_dtype = np.dtype(r_dtype_name)
 
         dev = qubit_device_1_wire
         dev.target_device.R_DTYPE = r_dtype
