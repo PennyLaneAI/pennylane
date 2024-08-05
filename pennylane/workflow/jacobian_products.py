@@ -393,30 +393,25 @@ class DeviceDerivatives(JacobianProductCalculator):
     """
 
     def __repr__(self):
-        return f"<DeviceDerivatives: {self._device.name}, {self._gradient_kwargs}, {self._execution_config}>"
+        return f"<DeviceDerivatives: {self._device.name}, {self._execution_config}>"
 
     def __init__(
         self,
         device: Union["qml.devices.Device", "qml.Device"],
         execution_config: Optional["qml.devices.ExecutionConfig"] = None,
-        gradient_kwargs: Optional[dict] = None,
     ):
         if execution_config is None:
             execution_config = qml.devices.DefaultExecutionConfig
-        if gradient_kwargs is None:
-            gradient_kwargs = {}
 
         if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
             logger.debug(
-                "DeviceDerivatives created with (%s, %s, %s)",
+                "DeviceDerivatives created with (%s, %s)",
                 device,
                 execution_config,
-                gradient_kwargs,
             )
 
         self._device = device
         self._execution_config = execution_config
-        self._gradient_kwargs = gradient_kwargs
 
         # only really need to keep most recent entry, but keeping 10 around just in case
         self._results_cache = LRUCache(maxsize=10)
@@ -721,12 +716,14 @@ class LightningVJPs(DeviceDerivatives):
             "LightningKokkos": "lightning.kokkos",
             "LightningGPU": "lightning.gpu",
         }
-        return f"<LightningVJPs: {long_to_short_name[type(self._device).__name__]}, {self._gradient_kwargs}>"
+        return f"<LightningVJPs: {long_to_short_name[type(self._device).__name__]}, {self._execution_config.gradient_keyword_arguments}>"
 
-    def __init__(self, device, gradient_kwargs=None):
-        super().__init__(device, gradient_kwargs=gradient_kwargs)
+    def __init__(self, device, execution_config=None):
+        super().__init__(device, execution_config=execution_config)
         self._processed_gradient_kwargs = {
-            key: value for key, value in self._gradient_kwargs.items() if key != "method"
+            key: value
+            for key, value in self._execution_config.gradient_keyword_arguments.items()
+            if key != "method"
         }
 
     def compute_vjp(self, tapes, dy):  # pragma: no cover
