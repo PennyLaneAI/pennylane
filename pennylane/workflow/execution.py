@@ -578,15 +578,7 @@ def execute(
 
     # Mid-circuit measurement configuration validation
     mcm_interface = interface or _get_interface_name(tapes, "auto")
-    finite_shots = (
-        (
-            qml.measurements.Shots(device.shots)
-            if not isinstance(device, qml.devices.Device)
-            else device.shots
-        )
-        if override_shots is False
-        else override_shots
-    )
+    finite_shots = any(tape.shots for tape in tapes)
     _update_mcm_config(config.mcm_config, mcm_interface, finite_shots)
 
     is_gradient_transform = isinstance(gradient_fn, qml.transforms.core.TransformDispatcher)
