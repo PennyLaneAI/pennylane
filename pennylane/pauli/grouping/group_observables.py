@@ -46,8 +46,8 @@ try:
         "gis": rx.ColoringStrategy.IndependentSet,
     }
 except AttributeError:
-    NEW_RX = False
-    RX_STRATEGIES = {"lf": None}  # Only "lf" can be used without a strategy
+    NEW_RX = False  # pragma: no cover. This error is raised for versions lower than 0.15.0
+    RX_STRATEGIES = {"lf": None}  # pragma: no cover # Only "lf" can be used without a strategy
 
 GRAPH_COLOURING_METHODS = frozenset(RX_STRATEGIES.keys()).union({"rlf"})
 
@@ -95,7 +95,7 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
             )
 
         if graph_colourer.lower() in ["dsatur", "gis"] and not NEW_RX:
-            raise ValueError(
+            raise ValueError(  # pragma: no cover
                 f"The strategy '{graph_colourer}' is not supported in this version of Rustworkx. "
                 "Please install rustworkx>=0.15.0 to access the 'dsatur' and 'gis' colouring strategies."
             )
