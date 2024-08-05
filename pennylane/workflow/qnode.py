@@ -569,7 +569,6 @@ class QNode:
         self._user_gradient_kwargs = gradient_kwargs
         self.gradient_fn = None
         self.gradient_kwargs = {}
-        self._tape_cached = False
 
         self._transform_program = qml.transforms.core.TransformProgram()
         self._update_gradient_fn()
@@ -885,14 +884,6 @@ class QNode:
             Result
 
         """
-
-        cache = self.execute_kwargs.get("cache", False)
-        using_custom_cache = (
-            hasattr(cache, "__getitem__")
-            and hasattr(cache, "__setitem__")
-            and hasattr(cache, "__delitem__")
-        )
-        self._tape_cached = using_custom_cache and self.tape.hash in cache
 
         execute_kwargs = copy.copy(self.execute_kwargs)
         mcm_config = copy.copy(execute_kwargs["mcm_config"])
