@@ -23,10 +23,9 @@ import numpy as np
 import rustworkx as rx
 
 from pennylane.measurements import MeasurementProcess
-from pennylane.operation import Observable, Operator
+from pennylane.operation import Observable, Operator, ResourcesOperation
 from pennylane.ops.identity import I
 from pennylane.queuing import QueuingManager, WrappedObj
-from pennylane.resource import ResourcesOperation
 from pennylane.wires import Wires
 
 
