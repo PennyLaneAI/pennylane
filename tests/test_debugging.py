@@ -176,16 +176,14 @@ class TestSnapshotGeneral:
             if "mixed" in dev.name:
                 qml.Snapshot(measurement=qml.density_matrix(wires=[0, 1]))
 
-            if isinstance(getattr(dev, "target_device", None), qml.QutritDevice):
+            if isinstance(dev, qml.QutritDevice):
                 return qml.expval(qml.GellMann(0, 1))
 
             return qml.expval(qml.PauliZ(0))
 
         with (
             pytest.warns(UserWarning, match="Requested state or density matrix with finite shots")
-            if isinstance(
-                getattr(dev, "target_device", None), qml.devices.default_qutrit.DefaultQutrit
-            )
+            if isinstance(dev, qml.devices.default_qutrit.DefaultQutrit)
             else nullcontext()
         ):
             qml.snapshots(circuit)(shots=200)
@@ -194,7 +192,7 @@ class TestSnapshotGeneral:
     def test_all_state_measurement_snapshot_pure_qubit_dev(self, dev, diff_method):
         """Test that the correct measurement snapshots are returned for different measurement types."""
         if isinstance(
-            getattr(dev, "target_device", None),
+            dev,
             (qml.devices.default_mixed.DefaultMixed, qml.QutritDevice),
         ):
             pytest.skip()
@@ -235,7 +233,7 @@ class TestSnapshotGeneral:
 
         @qml.qnode(dev)
         def circuit():
-            if isinstance(getattr(dev, "target_device", None), qml.QutritDevice):
+            if isinstance(dev, qml.QutritDevice):
                 qml.THadamard(wires=0)
                 return qml.expval(qml.GellMann(0, index=6))
 
@@ -243,7 +241,7 @@ class TestSnapshotGeneral:
             return qml.expval(qml.PauliX(0))
 
         result = qml.snapshots(circuit)()
-        if isinstance(getattr(dev, "target_device", None), qml.QutritDevice):
+        if isinstance(dev, qml.QutritDevice):
             expected = {"execution_results": np.array(0.66666667)}
         else:
             expected = {"execution_results": np.array(1.0)}
