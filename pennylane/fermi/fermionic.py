@@ -613,6 +613,7 @@ def _to_string(fermi_op, of=False):
     return " ".join(op_list).rstrip()
 
 
+
 # pylint: disable=too-few-public-methods
 class FermiC(FermiWord):
     r"""FermiC(orbital)
