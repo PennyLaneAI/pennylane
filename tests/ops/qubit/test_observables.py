@@ -323,11 +323,11 @@ class TestHermitian:  # pylint: disable-msg=too-many-public-methods
 
         # test int as wire type
         A_decomp = qml.Hermitian.compute_decomposition(single_wire_observable, wires=0)
-        assert np.allclose(A_decomp.to_mat(), single_wire_observable, rtol=0)
+        assert np.allclose(A_decomp[0].to_mat(), single_wire_observable, rtol=0)
 
         # test str as wire type
         A_decomp = qml.Hermitian.compute_decomposition(single_wire_observable, wires="aux")
-        assert np.allclose(A_decomp.to_mat(), single_wire_observable, rtol=0)
+        assert np.allclose(A_decomp[0].to_mat(), single_wire_observable, rtol=0)
 
     def test_hermitian_compute_decomposition_inefficiency_warning(self):
         """Tests user inefficiency warning associated with large matrix decomposition"""
@@ -357,14 +357,14 @@ class TestHermitian:  # pylint: disable-msg=too-many-public-methods
         A = qml.Hermitian(observable, wires=[0])
         A_decomp = A.decomposition()
 
-        assert np.allclose(A_decomp.to_mat(), observable, rtol=0)
+        assert np.allclose(A_decomp[0].to_mat(), observable, rtol=0)
 
     def test_hermitian_compute_decomposition(self):
         """Tests that the compute_decomposition method of the Hermitian class returns the correct result."""
         observable = np.array([[1, 1], [1, -1]]) / np.sqrt(2)
         A_decomp = qml.Hermitian.compute_decomposition(observable, wires=[0])
 
-        assert np.allclose(A_decomp.to_mat(), observable, rtol=0)
+        assert np.allclose(A_decomp[0].to_mat(), observable, rtol=0)
 
     @pytest.mark.parametrize("observable, eigvals, eigvecs", EIGVALS_TEST_DATA)
     def test_hermitian_diagonalizing_gates(self, observable, eigvals, eigvecs, tol, mocker):

@@ -170,21 +170,20 @@ class Hermitian(Observable):
             A (array or Sequence): hermitian matrix
             wires (Iterable[Any], Wires): wires that the operator acts on
         Returns:
-            .PauliSentence: Hermitian matrix decomposition as a linear combination of Pauli operators.
-            Returned as :class:`~.PauliSentence` class instance.
+            list[.PauliSentence]: decomposition of the hermitian matrix
 
         **Examples**
 
         >>> op = qml.X(0) + qml.Y(1) + 2 * qml.X(0) @ qml.Z(3)
         >>> op_matrix = qml.matrix(op)
         >>> qml.Hermitian.compute_decomposition(op_matrix, wires=['a', 'b', 'aux'])
-        1.0 * Y(b)
+        [1.0 * Y(b)
         + 1.0 * X(a)
-        + 2.0 * X(a) @ Z(aux)
+        + 2.0 * X(a) @ Z(aux)]
         >>> op = np.array([[1, 1], [1, -1]]) / np.sqrt(2)
         >>> qml.Hermitian.compute_decomposition(op, wires=0)
-        0.7071067811865475 * X(0)
-        + 0.7071067811865475 * Z(0)
+        [0.7071067811865475 * X(0)
+        + 0.7071067811865475 * Z(0)]
 
         """
         A = qml.math.asarray(A)
@@ -207,7 +206,7 @@ class Hermitian(Observable):
                 UserWarning,
             )
 
-        return qml.pauli.conversion.pauli_decompose(A, wire_order=wires, pauli=True)
+        return [qml.pauli.conversion.pauli_decompose(A, wire_order=wires, pauli=True)]
 
     @staticmethod
     def compute_diagonalizing_gates(eigenvectors, wires):  # pylint: disable=arguments-differ

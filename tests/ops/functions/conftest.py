@@ -79,7 +79,11 @@ _INSTANCES_TO_FAIL = [
     ),
     (
         qml.THermitian(np.eye(3), wires=0),
-        AssertionError,  # qutrit ops fail validation
+        (AssertionError, ValueError),  # qutrit ops fail validation
+    ),
+    (
+        qml.Hermitian(np.eye(2), wires=0),
+        ValueError,  # cannot map wires of decomposition type PauliSentence
     ),
     (
         qml.ops.qubit.special_unitary.TmpPauliRot(1.1, "X", [0]),
