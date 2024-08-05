@@ -156,6 +156,55 @@ Some notes here about how read this. `a:i32[]` is the global integer variable `a
 a constant.  The arguments to the `repeat` primitive are `n (const a) x (hardcoded 2.0=y)`.
 You can also see the const variable `a` as argument `e:i32[]` to the inner nested jaxpr as well.
 
+### Pytree handling
+
+```python
+from pennylane.capture.flatfn import FlatFn
+```
+
+```pycon
+>>> def f(x):
+...     return {"a": x[0], "b": x[1]+1}
+>>> args = ([0.1, 0.2],)
+>>> flat_args, in_tree = jax.tree_util.tree_flatten(args)
+>>> flat_args
+[0.1, 0.2]
+>>> in_tree
+PyTreeDef(([*, *],))
+```
+
+```pycon
+>>> flatfn = FlatFn(f)
+>>> flatfn.out_tree is None # initialized to None
+True
+>>> results = flatfn(*flat_args)
+>>> results
+[0.1, 1.2]
+>>> flatfn.out_tree # set once function is called
+PyTreeDef({'a': *, 'b': *})
+>>> jax.tree_util.tree_unflatten(flatfn.out_tree, results)
+{'a': 0.1, 'b': 1.2}
+```
+
+```python
+
+def repeat(func: Callable, n: int) -> Callable:
+    def new_func(*args, **kwargs):
+
+        func_bound_kwargs = partial(func, **kwargs)
+
+        flat_args, in_tree = jax.tree_util.tree_flatten(args)
+        flat_fn = FlatFn(func_bound_kwargs, in_tree)
+
+        jaxpr = jax.make_jaxpr(func_bound_kwargs)(*args)
+        n_consts = len(jaxpr.consts)
+        results = repeat_prim.bind(n, *jaxpr.consts, *flat_args, jaxpr=jaxpr.jaxpr, n_consts=n_consts)
+
+        # repack the results back into the cached pytree
+        assert flat_fn.out_tree is not None
+        return jax.tree_util.tree_unflatten(flat_fn.out_tree, results)
+    return new_func
+```
 
 ## Metaprogramming
 

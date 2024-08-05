@@ -11,7 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+"""
+Defines a utility for capturing higher order primitives that return pytrees
+"""
 from functools import update_wrapper
 
 has_jax = True
@@ -21,6 +23,7 @@ except ImportError:
     has_jax = False
 
 
+# pylint: disable=too-few-public-methods
 class FlatFn:
     """A"""
 

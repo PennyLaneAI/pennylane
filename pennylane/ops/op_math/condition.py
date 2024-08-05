@@ -20,6 +20,7 @@ from typing import Callable, Optional, Type
 
 import pennylane as qml
 from pennylane import QueuingManager
+from pennylane.capture.flatfn import FlatFn
 from pennylane.compiler import compiler
 from pennylane.measurements import MeasurementValue
 from pennylane.operation import AnyWires, Operation, Operator
@@ -225,7 +226,9 @@ class CondCallable:  # pylint:disable=too-few-public-methods
         @wraps(self.true_fn)
         def new_wrapper(*args, **kwargs):
 
-            jaxpr_true = jax.make_jaxpr(functools.partial(self.true_fn, **kwargs))(*args)
+            flat_args, in_tree = jax.tree_util.tree_flatten(args)
+            flat_fn = FlatFn(functools.partial(self.true_fn, **kwargs), in_tree)
+            jaxpr_true = jax.make_jaxpr(flat_fn)(*flat_args)
             jaxpr_false = (
                 jax.make_jaxpr(functools.partial(self.otherwise_fn, **kwargs))(*args)
                 if self.otherwise_fn
@@ -251,14 +254,16 @@ class CondCallable:  # pylint:disable=too-few-public-methods
             consts_flat = [const for sublist in jaxpr_consts for const in sublist]
             n_consts_per_branch = [len(consts) for consts in jaxpr_consts]
 
-            return cond_prim.bind(
+            results = cond_prim.bind(
                 conditions,
-                *args,
+                *flat_args,
                 *consts_flat,
                 jaxpr_branches=jaxpr_branches,
                 n_consts_per_branch=n_consts_per_branch,
-                n_args=len(args),
+                n_args=len(flat_args),
             )
+            assert flat_fn.out_tree is not None
+            return jax.tree_util.tree_unflatten(flat_fn.out_tree, results)
 
         return new_wrapper(*args, **kwargs)
 
