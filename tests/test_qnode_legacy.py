@@ -128,6 +128,15 @@ class TestValidation:
         ):
             QNode(dummyfunc, None)
 
+    def test_best_method_wraps_legacy_device_correctly(self, mocker):
+        dev_legacy = qml.devices.DefaultQubitLegacy(wires=2)
+
+        spy = mocker.spy(qml.devices.LegacyDeviceFacade, "__init__")
+
+        QNode.get_best_method(dev_legacy, "some_interface")
+
+        spy.assert_called_once()
+
     # pylint: disable=protected-access
     @pytest.mark.autograd
     def test_best_method_is_device(self, monkeypatch):
@@ -216,6 +225,15 @@ class TestValidation:
         # backprop is returned when the interfaces match and Jacobian is not provided
         res = QNode.best_method_str(dev, "some_interface")
         assert res == "backprop"
+
+    def test_best_method_str_wraps_legacy_device_correctly(self, mocker):
+        dev_legacy = qml.devices.DefaultQubitLegacy(wires=2)
+
+        spy = mocker.spy(qml.devices.LegacyDeviceFacade, "__init__")
+
+        QNode.best_method_str(dev_legacy, "some_interface")
+
+        spy.assert_called_once()
 
     # pylint: disable=protected-access
     def test_best_method_str_is_param_shift(self):
