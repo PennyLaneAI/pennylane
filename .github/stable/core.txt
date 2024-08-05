@@ -2,7 +2,7 @@ appdirs==1.4.4
 astroid==2.6.6
 autograd==1.6.2
 autoray==0.6.12
-black==24.4.2
+black==24.8.0
 cachetools==5.4.0
 certifi==2024.7.4
 cfgv==3.4.0
@@ -10,7 +10,7 @@ charset-normalizer==3.3.2
 clarabel==0.9.0
 click==8.1.7
 contourpy==1.2.1
-coverage==7.6.0
+coverage==7.6.1
 cvxopt==1.3.2
 cvxpy==1.5.2
 cycler==0.12.1
@@ -29,7 +29,7 @@ iniconfig==2.0.0
 isort==5.13.2
 kiwisolver==1.4.5
 lazy-object-proxy==1.10.0
-matplotlib==3.9.1
+matplotlib==3.9.0
 mccabe==0.6.1
 mypy-extensions==1.0.0
 networkx==3.2.1
