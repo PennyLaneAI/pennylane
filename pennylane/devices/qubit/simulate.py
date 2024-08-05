@@ -291,7 +291,7 @@ def simulate(
             ``"deferred"`` is ignored. If mid-circuit measurements are found in the circuit,
             the device will use ``"tree-traversal"`` if specified and the ``"one-shot"`` method
             otherwise. For usage details, please refer to the
-            :doc:`main measurements page </introduction/measurements>`.
+            :doc:`dynamic quantum circuits page </introduction/dynamic_quantum_circuits>`.
 
     Returns:
         tuple(TensorLike): The results of the simulation
