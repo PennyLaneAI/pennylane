@@ -4,14 +4,14 @@
 
 <h3>New features since last release</h3>
 
+* Mid-circuit measurements can now be captured with `qml.capture` enabled.
+  [(#6015)](https://github.com/PennyLaneAI/pennylane/pull/6015)
+
 * A new method `process_density_matrix` has been added to the `ProbabilityMP` and `DensityMatrixMP`
   classes, allowing for more efficient handling of quantum density matrices, particularly with batch
   processing support. This method simplifies the calculation of probabilities from quantum states
   represented as density matrices.
   [(#5830)](https://github.com/PennyLaneAI/pennylane/pull/5830)
-
-* Resolved the bug in `qml.ThermalRelaxationError` where there was a typo from `tq` to `tg`.
-  [(#5988)](https://github.com/PennyLaneAI/pennylane/issues/5988)
 
 * The `qml.PrepSelPrep` template is added. The template implements a block-encoding of a linear
   combination of unitaries.
@@ -49,6 +49,9 @@ This provides an improvement of orders of magnitude when using `grouping_type='q
 An additional function `qml.pauli.compute_partition_indices` is added to calculate the indices from the partitioned observables more efficiently.
 This improves the wall time of `qml.LinearCombination.compute_grouping()` by orders of magnitude.
   [(#6043)](https://github.com/PennyLaneAI/pennylane/pull/6043)
+
+* `QNGOptimizer` now supports cost functions with multiple arguments, updating each argument independently.
+  [(#5926)](https://github.com/PennyLaneAI/pennylane/pull/5926)
 
 * `qml.for_loop` can now be captured into plxpr.
   [(#6041)](https://github.com/PennyLaneAI/pennylane/pull/6041)
@@ -149,6 +152,29 @@ This improves the wall time of `qml.LinearCombination.compute_grouping()` by ord
        0.11917543, 0.08942104, 0.21545687], dtype=float64)
   ```
 
+* If the conditional does not include a mid-circuit measurement, then `qml.cond`
+  will automatically evaluate conditionals using standard Python control flow.
+  [(#6016)](https://github.com/PennyLaneAI/pennylane/pull/6016)
+
+  This allows `qml.cond` to be used to represent a wider range of conditionals:
+
+  ```python
+  dev = qml.device("default.qubit", wires=1)
+
+  @qml.qnode(dev)
+  def circuit(x):
+      c = qml.cond(x > 2.7, qml.RX, qml.RZ)
+      c(x, wires=0)
+      return qml.probs(wires=0)
+  ```
+
+  ```pycon
+  >>> print(qml.draw(circuit)(3.8))
+  0: ──RX(3.80)─┤  Probs
+  >>> print(qml.draw(circuit)(0.54))
+  0: ──RZ(0.54)─┤  Probs
+  ```
+
 * The `qubit_observable` function is modified to return an ascending wire order for molecular 
   Hamiltonians.
   [(#5950)](https://github.com/PennyLaneAI/pennylane/pull/5950)
@@ -157,6 +183,9 @@ This improves the wall time of `qml.LinearCombination.compute_grouping()` by ord
   [(#6039)](https://github.com/PennyLaneAI/pennylane/pull/6039)
 
 <h4>Community contributions 🥳</h4>
+
+* Resolved the bug in `qml.ThermalRelaxationError` where there was a typo from `tq` to `tg`.
+  [(#5988)](https://github.com/PennyLaneAI/pennylane/issues/5988)
 
 * `DefaultQutritMixed` readout error has been added using parameters `readout_relaxation_probs` and 
   `readout_misclassification_probs` on the `default.qutrit.mixed` device. These parameters add a `~.QutritAmplitudeDamping`  and a `~.TritFlip` channel, respectively,
