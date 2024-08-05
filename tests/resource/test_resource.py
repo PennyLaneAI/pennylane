@@ -21,8 +21,8 @@ import pytest
 
 import pennylane as qml
 from pennylane.measurements import Shots
-from pennylane.operation import Operation
-from pennylane.resource.resource import Resources, ResourcesOperation, _count_resources
+from pennylane.operation import Operation, ResourcesOperation
+from pennylane.resource.resource import Resources, _count_resources
 from pennylane.tape import QuantumScript
 
 
