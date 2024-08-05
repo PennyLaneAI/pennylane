@@ -117,17 +117,18 @@ def test_shot_distribution():
     tape1 = qml.tape.QuantumScript([], [qml.expval(qml.Z(0))], shots=5)
     tape2 = qml.tape.QuantumScript([], [qml.expval(qml.Z(0))], shots=100)
 
+    execution_config = ExecutionConfig(gradient_keyword_arguments={"method": "adjoint_jacobian"})
     with dev.tracker:
         dev.execute((tape1, tape2))
     assert dev.tracker.history["shots"] == [5, 100]
 
     with dev.tracker:
-        dev.compute_derivatives((tape1, tape2))
+        dev.compute_derivatives((tape1, tape2), execution_config)
 
     assert dev.tracker.history["derivatives"] == [1, 1]  # two calls
 
     with dev.tracker:
-        dev.execute_and_compute_derivatives((tape1, tape2))
+        dev.execute_and_compute_derivatives((tape1, tape2), execution_config)
 
     assert dev.tracker.history["batches"] == [1, 1]  # broken up into multiple calls
     assert dev.tracker.history["shots"] == [5, 100]
