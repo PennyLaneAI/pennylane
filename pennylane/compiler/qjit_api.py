@@ -427,7 +427,8 @@ class WhileLoopCallable:  # pylint:disable=too-few-public-methods
 
 
 def for_loop(start=0, stop=None, step=1):
-    """A :func:`~.qjit` compatible for-loop for PennyLane programs. When
+    """for_loop([start, ]stop[, step])
+    A :func:`~.qjit` compatible for-loop for PennyLane programs. When
     used without :func:`~.qjit`, this function will fall back to a standard
     Python for loop.
 
@@ -469,7 +470,7 @@ def for_loop(start=0, stop=None, step=1):
     Args:
         start (int, optional): starting value of the iteration index.
             The default start value is ``0``
-        stop (int | None): upper bound of the iteration index
+        stop (int): upper bound of the iteration index
         step (int, optional): increment applied to the iteration index at the end of
             each iteration. The default step size is ``1``
 
