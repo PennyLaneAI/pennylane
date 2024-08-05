@@ -14,7 +14,6 @@
 """
 Stores classes and logic to aggregate all the resource information from a quantum workflow.
 """
-from abc import abstractmethod
 from collections import defaultdict
 from dataclasses import dataclass, field
 
