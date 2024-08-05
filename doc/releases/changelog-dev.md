@@ -171,6 +171,9 @@
 * The `qubit_observable` function is modified to return an ascending wire order for molecular 
   Hamiltonians.
   [(#5950)](https://github.com/PennyLaneAI/pennylane/pull/5950)
+  
+* `qml.BasisRotation` is now jit compatible.
+  [(#6019)](https://github.com/PennyLaneAI/pennylane/pull/6019)
 
 * The `CNOT` operator no longer decomposes to itself. Instead, it raises a `qml.DecompositionUndefinedError`.
   [(#6039)](https://github.com/PennyLaneAI/pennylane/pull/6039)
@@ -297,7 +300,7 @@
   [(#5978)](https://github.com/PennyLaneAI/pennylane/pull/5978)
 
 * `qml.AmplitudeEmbedding` has better support for features using low precision integer data types.
-[(#5969)](https://github.com/PennyLaneAI/pennylane/pull/5969)
+  [(#5969)](https://github.com/PennyLaneAI/pennylane/pull/5969)
 
 * Jacobian shape is fixed for measurements with dimension in `qml.gradients.vjp.compute_vjp_single`.
 [(5986)](https://github.com/PennyLaneAI/pennylane/pull/5986)
@@ -330,7 +333,8 @@ Christina Lee,
 William Maxwell,
 Vincent Michaud-Rioux,
 Anurav Modak,
+Pablo A. Moreno Casares,
 Mudit Pandey,
 Erik Schultheis,
-nate stemen,
-David Wierichs,
+Nate Stemen,
+David Wierichs.
