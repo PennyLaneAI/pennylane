@@ -656,7 +656,7 @@ def quantum_fisher(
         with exact expectations (``shots=None``). In all other cases, e.g. if a device with finite shots
         is used, the hardware-compatible transform :func:`~.pennylane.metric_tensor` is used, which
         may require an additional wire on the device.
-        Please refer to the respective documentations for details on the arguments.
+        Please refer to the respective documentations for details.
 
     **Example**
 
