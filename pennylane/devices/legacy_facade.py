@@ -107,8 +107,13 @@ def _add_adjoint_transforms(program: TransformProgram, name="adjoint"):
         name=name,
     )
     program.add_transform(validate_observables, adjoint_observables, name=name)
+
+    def accepted_adjoint_measurements(mp):
+        return isinstance(mp, qml.measurements.ExpectationMP)
+
     program.add_transform(
         validate_measurements,
+        analytic_measurements=accepted_adjoint_measurements,
         name=name,
     )
     program.add_transform(qml.transforms.broadcast_expand)
@@ -412,9 +417,15 @@ class LegacyDeviceFacade(Device):
         supported_device = all(hasattr(self._device, attr) for attr in required_attrs)
         supported_device = supported_device and self._device.capabilities().get("returns_state")
 
-        if not supported_device:
+        if not supported_device or bool(tape.shots):
             return False
-        return not bool(tape.shots)
+        program = TransformProgram()
+        _add_adjoint_transforms(program, name=f"{self.name} + adjoint")
+        try:
+            program((tape,))
+        except (qml.operation.DecompositionUndefinedError, qml.DeviceError, AttributeError):
+            return False
+        return True
 
     def _validate_device_method(self, _):
         # determine if the device provides its own jacobian method

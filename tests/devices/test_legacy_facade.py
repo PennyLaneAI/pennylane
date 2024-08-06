@@ -308,6 +308,9 @@ class TestGradientSupport:
         assert dev.supports_derivatives(config, tape)
         assert not dev.supports_derivatives(config, tape_shots)
 
+        unsupported_tape = qml.tape.QuantumScript([], [qml.state()])
+        assert not dev.supports_derivatives(config, unsupported_tape)
+
         program, processed_config = dev.preprocess(config)
         assert processed_config.use_device_gradient is True
         assert processed_config.gradient_keyword_arguments == {
