@@ -271,6 +271,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fix `pauli.dla.PauliVSpace` to compute linear independence in a more stable manner.
+  [(#6075)](https://github.com/PennyLaneAI/pennylane/pull/6075)
+  
 * `qml.GlobalPhase` and `qml.I` can now be captured when acting on no wires.
   [(#6060)](https://github.com/PennyLaneAI/pennylane/pull/6060)
 
