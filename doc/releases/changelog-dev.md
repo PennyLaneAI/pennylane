@@ -277,6 +277,10 @@
 * Fix `jax.grad` + `jax.jit` not working for `AmplitudeEmbedding`, `StatePrep` and `MottonenStatePreparation`.
   [(#5620)](https://github.com/PennyLaneAI/pennylane/pull/5620) 
 
+* Fixed a bug in `qml.center` that omitted elements from the center if they were
+  linear combinations of input elements.
+  [(#6049)](https://github.com/PennyLaneAI/pennylane/pull/6049)
+
 * Fix a bug where the global phase returned by `one_qubit_decomposition` gained a broadcasting dimension.
   [(#5923)](https://github.com/PennyLaneAI/pennylane/pull/5923)
 
