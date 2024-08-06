@@ -662,15 +662,15 @@ def _get_mcm_predicates(conditions: tuple[MeasurementValue]) -> list[Measurement
     new_conds = [conditions[0]]
     false_cond = ~conditions[0]
 
-    for c in conditions[1:-1]:
+    for c in conditions[1:]:
         new_conds.append(false_cond & c)
         false_cond = false_cond & ~c
 
     new_conds.append(false_cond)
-    return tuple(new_conds)
+    return new_conds
 
 
-# @functools.lru_cache
+@functools.lru_cache
 def _get_cond_qfunc_prim():
     """Get the cond primitive for quantum functions."""
 
@@ -686,19 +686,16 @@ def _get_cond_qfunc_prim():
         args = all_args[n_branches : n_branches + n_args]
         consts_flat = all_args[n_branches + n_args :]
 
-        if isinstance(conditions[0], qml.measurements.MeasurementValue):
-            # if len(conditions) > 2:
-            #     raise ConditionalTransformError(
-            #         "'elif' branches are not supported when not using @qjit and the "
-            #         "conditional includes mid-circuit measurements."
-            #     )
-            # conditions = (conditions[0], ~conditions[0])
-            if any(not isinstance(pred, MeasurementValue) for pred in conditions[:-1]):
+        # Find predicates that use mid-circuit measurements. We don't check the last
+        # condition as that is always `True`.
+        mcm_conditions = [pred for pred in conditions[:-1] if isinstance(pred, MeasurementValue)]
+        if len(mcm_conditions) != 0:
+            if len(mcm_conditions) != len(conditions) - 1:
                 raise ConditionalTransformError(
                     "Cannot use qml.cond with a combination of mid-circuit measurements "
                     "and other classical conditions as predicates."
                 )
-            conditions = _get_mcm_predicates(conditions)
+            conditions = _get_mcm_predicates(mcm_conditions)
 
         start = 0
         for pred, jaxpr, n_consts in zip(conditions, jaxpr_branches, n_consts_per_branch):

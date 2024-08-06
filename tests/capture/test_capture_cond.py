@@ -235,6 +235,65 @@ class TestCond:
         res_ev_jxpr = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, arg)
         assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
 
+    def test_mcm_return_error(self, decorator):
+        """Test that an error is raised if executing a quantum function that uses qml.cond with
+        mid-circuit measurement predicates where the conditional functions return something."""
+
+        def true_fn(arg):
+            qml.RX(arg, 0)
+            return 0
+
+        def false_fn(arg):
+            qml.RY(arg, 0)
+            return 1
+
+        def f(x):
+            m1 = qml.measure(0)
+            if decorator:
+                conditional = qml.cond(m1)(true_fn)
+                conditional.otherwise(false_fn)
+                conditional(x)
+            else:
+                qml.cond(m1, true_fn, false_fn)(x)
+            return qml.expval(qml.Z(0))
+
+        jaxpr = jax.make_jaxpr(f)(1.23)
+        with pytest.raises(
+            ConditionalTransformError, match="Only quantum functions without return values"
+        ):
+            _ = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 1.23)
+
+    def test_mcm_mixed_conds_error(self, decorator):
+        """Test that an error is raised if executing a quantum function that uses qml.cond with
+        a combination of mid-circuit measurement and other predicates."""
+
+        def true_fn(arg):
+            qml.RX(arg, 0)
+
+        def elif_fn(arg):
+            qml.RZ(arg, 0)
+
+        def false_fn(arg):
+            qml.RY(arg, 0)
+
+        def f(x):
+            m1 = qml.measure(0)
+            if decorator:
+                conditional = qml.cond(m1)(true_fn)
+                conditional.else_if(x > 1.5)(elif_fn)
+                conditional.otherwise(false_fn)
+                conditional(x)
+            else:
+                qml.cond(m1, true_fn, false_fn, elifs=(x > 1.5, elif_fn))(x)
+            return qml.expval(qml.Z(0))
+
+        jaxpr = jax.make_jaxpr(f)(1.23)
+        with pytest.raises(
+            ConditionalTransformError,
+            match="Cannot use qml.cond with a combination of mid-circuit measurements",
+        ):
+            _ = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 1.23)
+
 
 class TestCondReturns:
     """Tests for validating the number and types of output variables in conditional functions."""
@@ -553,63 +612,9 @@ class TestCondCircuits:
         res_ev_jxpr = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *args)
         assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
 
-    def test_mcm_elif_error(self):
-        """Test that an error is raised if executing a circuit with qml.cond that uses
-        mid-circuit measurement predicates and also elif branches."""
-
-        def true_fn(arg):
-            qml.RX(arg, 0)
-
-        def elif_fn(arg):
-            qml.RY(arg, 0)
-
-        @qml.qnode(dev)
-        def f(x):
-            m1 = qml.measure(0)
-            m2 = qml.measure(1)
-            qml.cond(m1, true_fn, elifs=(m2, elif_fn))(x)
-            return qml.expval(qml.Z(0))
-
-        with pytest.raises(ConditionalTransformError, match="'elif' branches are not supported"):
-            f(1.23)
-
-    def test_mcm_return_error(self):
-        """Test that an error is raised if executing a circuit with qml.cond that uses
-        mid-circuit measurement predicates and returns something."""
-
-        def true_fn(arg):
-            qml.RX(arg, 0)
-            return 0
-
-        def false_fn(arg):
-            qml.RY(arg, 0)
-            return 1
-
-        @qml.qnode(dev)
-        def f(x):
-            m1 = qml.measure(0)
-            qml.cond(m1, true_fn, false_fn)(x)
-            return qml.expval(qml.Z(0))
-
-        with pytest.raises(
-            ConditionalTransformError, match="Only quantum functions without return values"
-        ):
-            f(1.23)
-
     @pytest.mark.parametrize("reset", [True, False])
     @pytest.mark.parametrize("postselect", [None, 0, 1])
-    @pytest.mark.parametrize(
-        "shots",
-        [
-            pytest.param(
-                None,
-                marks=pytest.mark.skip(
-                    reason="defer_measurements not compatible with program capture"
-                ),
-            ),
-            20,
-        ],
-    )
+    @pytest.mark.parametrize("shots", [None, 20])
     def test_mcm_predicate_execution(self, reset, postselect, shots):
         """Test that QNodes executed with mid-circuit measurement predicates for
         qml.cond give correct results."""
@@ -635,3 +640,59 @@ class TestCondCircuits:
         expected = f(*params)
 
         assert np.allclose(res, expected), f"Expected {expected}, but got {res}"
+
+    @pytest.mark.parametrize("shots", [None, 100])
+    @pytest.mark.parametrize(
+        "params, expected",
+        [
+            ([np.pi / 2, 0, 0, np.pi / 2], (0, 0, 0, 0)),  # true_fn
+            ([0, np.pi / 2, 0, np.pi / 2], (0, 0, -1, 0)),  # elif_fn1
+            ([0, 0, np.pi / 2, np.pi / 2], (1 / (2 * np.sqrt(2)), 0, -0.5, 0.5)),  # elif_fn2
+            ([0, 0, 0, 0], (1 / np.sqrt(2), 0, 0, 1)),  # false_fn
+        ],
+    )
+    def test_mcm_predicate_execution_with_elifs(self, params, expected, shots, tol):
+        """Test that QNodes executed with mid-circuit measurement predicates for
+        qml.cond give correct results when there are also elifs present."""
+        device = qml.device("default.qubit", wires=3, shots=shots, seed=jax.random.PRNGKey(10))
+
+        def true_fn():
+            # Hadamard diagonalizing gates
+            qml.RY(-np.pi / 4, 0)
+
+        def elif_fn1():
+            # PauliX diagonalizing gates
+            qml.Hadamard(0)
+
+        def elif_fn2():
+            # PauliY diagonalizing gates
+            qml.Z(0)
+            qml.S(0)
+            qml.Hadamard(0)
+
+        def false_fn():
+            # PauliZ diagonalizing gates
+            return
+
+        @qml.qnode(device)
+        def f(*x):
+            qml.RX(x[0], 0)
+            m1 = qml.measure(0)
+            qml.RX(x[1], 0)
+            m2 = qml.measure(0)
+            qml.RX(x[2], 0)
+            m3 = qml.measure(0)
+            qml.RX(x[3], 0)
+
+            qml.cond(m1, true_fn, false_fn, elifs=((m2, elif_fn1), (m3, elif_fn2)))()
+            return (
+                qml.expval(qml.Hadamard(0)),
+                qml.expval(qml.X(0)),
+                qml.expval(qml.Y(0)),
+                qml.expval(qml.Z(0)),
+            )
+
+        res = f(*params)
+        atol = tol if shots is None else 0.1
+
+        assert np.allclose(res, expected, atol=atol, rtol=0), f"Expected {expected}, but got {res}"
