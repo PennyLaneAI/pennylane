@@ -44,6 +44,10 @@ inputs:
     description: File name to store stable version of requirements for a test group
     required: false
     default: ''
+  skip_dev_deps:
+    description: Skip installing the dev and CI requirements files
+    required: false
+    default: 'false'
 
 runs:
   using: composite
@@ -58,6 +62,7 @@ runs:
       run: pip install --upgrade pip && pip install wheel --upgrade
 
     - name: Install PennyLane dependencies
+      if: inputs.skip_dev_deps != 'true'
       shell: bash
       run: |
         pip install -r requirements-ci.txt --upgrade
@@ -108,11 +113,11 @@ runs:
     - name: Freeze dependencies
       shell: bash
       if: inputs.requirements_file != ''
-      run: pip freeze | grep -v "file:///" | sed 's/\(pennylane[-_]lightning==[0-9\.]\+\)\.dev[0-9]\+/\1/gI' > ${{ inputs.requirements_file }}
+      run: pip freeze | grep -v "file:///" > .github/stable/${{ inputs.requirements_file }}
 
     - name: Upload frozen requirements
       if: inputs.requirements_file != ''
       uses: actions/upload-artifact@v4
       with:
         name: frozen-${{ inputs.requirements_file }}
-        path: ${{ inputs.requirements_file }}
+        path: .github/stable/${{ inputs.requirements_file }}
