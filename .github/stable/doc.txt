@@ -6,7 +6,7 @@ alabaster==0.7.16
 appdirs==1.4.4
 astunparse==1.6.3
 async-timeout==4.0.3
-attrs==24.1.0
+attrs==24.2.0
 autograd==1.6.2
 autoray==0.6.12
 Babel==2.15.0
