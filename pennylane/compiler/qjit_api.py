@@ -426,7 +426,7 @@ class WhileLoopCallable:  # pylint:disable=too-few-public-methods
         return fn_res
 
 
-def for_loop(start=0, stop=None, step=1):
+def for_loop(start, stop=None, step=1):
     """for_loop([start, ]stop[, step])
     A :func:`~.qjit` compatible for-loop for PennyLane programs. When
     used without :func:`~.qjit`, this function will fall back to a standard
