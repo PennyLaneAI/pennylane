@@ -25,50 +25,55 @@ from pennylane.data.data_manager.progress import Progress, Task
 from pennylane.data.data_manager.progress._default import DefaultProgress, term
 
 
+@pytest.fixture
+def disable_rich(request, monkeypatch):
+    """Sets ``progress.make_progress_rich`` to ``None``, mocking the result of
+    a failed import."""
+    if getattr(request, "param", True):
+        monkeypatch.setattr(pennylane.data.data_manager.progress, "make_progress_rich", None)
+        return True
+
+    return False
+
+
 class TestProgress:
     """Tests for :class:`pennylane.data.progress.Progress`."""
 
-    @pytest.fixture(params=[True, False])
-    def progress(self, request):
-        """Progress bar fixture."""
-        progress = Progress(use_rich=request.param)
-
-        yield progress
-
     @pytest.mark.parametrize(
-        "use_rich, expect_cls", [(False, DefaultProgress), (True, rich.progress.Progress)]
+        "disable_rich, expect_cls",
+        [(True, DefaultProgress), (False, rich.progress.Progress)],
+        indirect=["disable_rich"],
     )
-    def test_init(self, use_rich, expect_cls):
+    def test_init(self, disable_rich, expect_cls):
         """Test that ``__init__()`` uses the correct implementation based
         on the value of ``use_rich``."""
-        # pylint: disable=protected-access
+        del disable_rich
 
-        prog = Progress(use_rich=use_rich)
-        assert isinstance(prog._progress, expect_cls)
+        prog = Progress()
+        assert isinstance(prog.progress, expect_cls)
 
-    def test_init_no_rich(self, monkeypatch):
-        """Test that an ImportError is raised if rich is requested but is
-        not installed."""
-        monkeypatch.setattr(pennylane.data.data_manager.progress, "make_progress_rich", None)
-
-        with pytest.raises(
-            ImportError, match=r"Module 'rich' is not installed. Install it with 'pip install rich'"
-        ):
-            Progress(use_rich=True)
-
+    @pytest.mark.usefixtures("disable_rich")
+    @pytest.mark.parametrize("disable_rich", [True, False], indirect=True)
     @pytest.mark.parametrize("total", [100, None])
-    def test_add_task(self, progress, total):
+    def test_add_task(self, total):
         """Test that ``add_task()`` returns a new Task instance."""
+        progress = Progress()
         task = progress.add_task(description="abc", total=total)
 
         assert isinstance(task, Task)
 
-    def test_context(self, progress):
+    @pytest.mark.usefixtures("disable_rich")
+    @pytest.mark.parametrize("disable_rich", [True, False], indirect=True)
+    def test_context(self):
         """Test that ``__enter__()`` returns the instance."""
+        # del disable_rich
+
+        progress = Progress()
         with progress as progress_ctx:
             assert progress_ctx is progress
 
 
+@pytest.mark.usefixtures("disable_rich")
 class TestDefaultProgress:
     """Tests for :class:`pennylane.data.data_manger.progress._default.DefaultProgress`."""
 
@@ -87,7 +92,7 @@ class TestDefaultProgress:
     @pytest.fixture()
     def progress(self):
         """Progress bar fixture."""
-        yield Progress(use_rich=False)
+        yield Progress()
 
     def test_task_update_with_total(self, progress: Progress, capsys: pytest.CaptureFixture):
         """Tests for updating a task with a total."""

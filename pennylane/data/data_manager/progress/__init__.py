@@ -62,27 +62,22 @@ class Progress:
     Must be used as a context manager to ensure correct output.
     """
 
-    def __init__(self, use_rich: bool = make_progress_rich is not None) -> None:
+    def __init__(self) -> None:
         """Initialize progress."""
-        if use_rich:
-            if make_progress_rich is None:
-                raise ImportError(
-                    "Module 'rich' is not installed. Install it with 'pip install rich'"
-                )
-
-            self._progress = make_progress_rich()
+        if make_progress_rich is not None:
+            self.progress = make_progress_rich()
         else:
-            self._progress = make_progress_default()
+            self.progress = make_progress_default()
 
     def __enter__(self) -> "Progress":
         """Enter progress context."""
-        self._progress.__enter__()
+        self.progress.__enter__()
 
         return self
 
     def __exit__(self, *args):
         """Exit progress context."""
-        return self._progress.__exit__(*args)
+        return self.progress.__exit__(*args)
 
     def add_task(self, description: str, total: Optional[float] = None) -> Task:
         """Add a task.
@@ -91,9 +86,9 @@ class Progress:
             description: Description for the task
             total: Total size of the dataset download in bytes, if available.
         """
-        task_id = self._progress.add_task(description=description, total=total)
+        task_id = self.progress.add_task(description=description, total=total)
 
-        return Task(task_id, self._progress)
+        return Task(task_id, self.progress)
 
 
 __all__ = ["Progress", "Task"]
