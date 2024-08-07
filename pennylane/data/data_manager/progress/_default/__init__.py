@@ -115,6 +115,7 @@ class DefaultProgress:
         completed: Optional[float] = None,
         total: Optional[float] = None,
         advance: Optional[float] = None,
+        refresh: bool = False,
     ):
         """Update task with given ``task_id`` and refresh its progress.
 
@@ -123,7 +124,9 @@ class DefaultProgress:
             completed: Set the completed state of the task
             total: Set the total for the task
             advance: Advance the completion state of the task
+            refresh: Included for compatability with ``rich.Progress``, has no effect
         """
+        del refresh
         task = self.tasks[task_id]
         task.update(advance=advance, completed=completed, total=total)
 

@@ -48,8 +48,11 @@ class Task:  # pylint: disable=too-few-public-methods
             advance: Adds to number of bytes downloaded so far
             completed: Sets the number of bytes downloaded so far
             total: Sets the total number of bytes for the download
+            refresh:
         """
-        self._progress.update(self._task_id, completed=completed, total=total, advance=advance)
+        self._progress.update(
+            self._task_id, completed=completed, total=total, advance=advance, refresh=True
+        )
 
 
 class Progress:
