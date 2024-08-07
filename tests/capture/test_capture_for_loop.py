@@ -95,6 +95,43 @@ class TestCaptureForLoop:
         res_ev_jxpr = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, array)
         assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
 
+    @pytest.mark.parametrize(
+        "array, expected",
+        [
+            (jax.numpy.zeros(5), jax.numpy.array([0, 1, 4, 9, 16])),
+            (jax.numpy.zeros(10), jax.numpy.array([0, 1, 4, 9, 16, 25, 36, 49, 64, 81])),
+        ],
+    )
+    def test_for_loop_default(self, array, expected):
+        """Test simple for-loop primitive using default values."""
+
+        def fn(arg):
+
+            stop = arg.shape[0]
+            a = jax.numpy.ones(stop)
+
+            @qml.for_loop(0, stop, 1)
+            def loop1(i, a):
+                return a.at[i].set(i**2)
+
+            @qml.for_loop(0, stop)
+            def loop2(i, a):
+                return a.at[i].set(i**2)
+
+            @qml.for_loop(stop)
+            def loop3(i, a):
+                return a.at[i].set(i**2)
+
+            r1, r2, r3 = loop1(a), loop2(a), loop3(a)
+            return r1, r2, r3
+
+        result = fn(array)
+        assert np.allclose(result, expected), f"Expected {expected}, but got {result}"
+
+        jaxpr = jax.make_jaxpr(fn)(array)
+        res_ev_jxpr = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, array)
+        assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
+
     @pytest.mark.parametrize("array", [jax.numpy.zeros(0), jax.numpy.zeros(5)])
     def test_for_loop_shared_indbidx(self, array):
         """Test for-loops with shared dynamic input dimensions."""
