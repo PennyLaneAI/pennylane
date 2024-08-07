@@ -263,6 +263,9 @@ class CondCallable:  # pylint:disable=too-few-public-methods
                 n_args=len(flat_args),
             )
             assert flat_fn.out_tree is not None
+            if flat_fn.out_tree.num_leaves != len(results):
+                # undefined false fn leads to empty results
+                return results
             return jax.tree_util.tree_unflatten(flat_fn.out_tree, results)
 
         return new_wrapper(*args, **kwargs)
