@@ -172,7 +172,7 @@ The following demonstrates how the tree utilities and the `FlatFn` class
 can be used together to unpack and repack the variables:
 
 ```pycon
->>> from pennylaane.capture.flatfn import FlatFn
+>>> from pennylane.capture.flatfn import FlatFn
 >>> def f(x): # define a function with pytree inputs and outputs
 ...     return {"a": x[0], "b": x[1]+1}
 >>> args = ([0.1, 0.2],) # the arguments to the function
