@@ -404,14 +404,14 @@ class TestValidation:
 
         assert (
             repr(qn)
-            == f"<QNode: device='<LegacyDeviceFacade: <DefaultQubitLegacy device (wires=1, shots=None) at {hex(id(dev.target_device))}>>', interface='auto', diff_method='best'>"
+            == "<QNode: wires=1, device='default.qubit.legacy', interface='auto', diff_method='best'>"
         )
 
         qn = QNode(func, dev, interface="autograd")
 
         assert (
             repr(qn)
-            == f"<QNode: device='<LegacyDeviceFacade: <DefaultQubitLegacy device (wires=1, shots=None) at {hex(id(dev.target_device))}>>', interface='autograd', diff_method='best'>"
+            == "<QNode: wires=1, device='default.qubit.legacy', interface='autograd', diff_method='best'>"
         )
 
     @pytest.mark.autograd

@@ -589,7 +589,16 @@ class QNode:
 
     def __repr__(self):
         """String representation."""
-        return f"<QNode: device='{self.device}', interface='{self.interface}', diff_method='{self.diff_method}'>"
+        if not isinstance(self.device, qml.devices.LegacyDeviceFacade):
+            return f"<QNode: device='{self.device}', interface='{self.interface}', diff_method='{self.diff_method}'>"
+
+        detail = "<QNode: wires={}, device='{}', interface='{}', diff_method='{}'>"
+        return detail.format(
+            self.device.num_wires,
+            self.device.short_name,
+            self.interface,
+            self.diff_method,
+        )
 
     @property
     def interface(self):
