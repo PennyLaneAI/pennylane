@@ -8,7 +8,7 @@ astroid==2.6.6
 asttokens==2.4.1
 astunparse==1.6.3
 async-lru==2.0.4
-attrs==24.1.0
+attrs==24.2.0
 autograd==1.6.2
 autoray==0.6.12
 Babel==2.15.0
@@ -17,7 +17,7 @@ black==24.8.0
 bleach==6.1.0
 cachetools==5.4.0
 certifi==2024.7.4
-cffi==1.16.0
+cffi==1.17.0
 cfgv==3.4.0
 charset-normalizer==3.3.2
 clarabel==0.9.0
@@ -91,7 +91,7 @@ llvmlite==0.43.0
 Markdown==3.6
 markdown-it-py==3.0.0
 MarkupSafe==2.1.5
-matplotlib==3.9.0
+matplotlib==3.9.1.post1
 matplotlib-inline==0.1.7
 mccabe==0.6.1
 mdurl==0.1.2
@@ -145,7 +145,7 @@ pytest-mock==3.14.0
 pytest-xdist==3.6.1
 python-dateutil==2.9.0.post0
 python-json-logger==2.0.7
-PyYAML==6.0.1
+PyYAML==6.0.2
 pyzmq==26.1.0
 pyzx==0.8.0
 qdldl==0.1.7.post4
@@ -155,7 +155,7 @@ requests==2.32.3
 rfc3339-validator==0.1.4
 rfc3986-validator==0.1.1
 rich==13.7.1
-rpds-py==0.19.1
+rpds-py==0.20.0
 rustworkx==0.15.1
 scipy==1.12.0
 scs==3.2.6
