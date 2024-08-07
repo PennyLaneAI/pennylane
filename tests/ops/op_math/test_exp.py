@@ -421,7 +421,7 @@ class TestDecomposition:
         assert not op.has_decomposition
         with pytest.raises(
             DecompositionUndefinedError,
-            match=re.escape(f"The decomposition of the {op} operator is not defined. "),
+            match=re.escape(f"The decomposition of the {op} operator is not defined."),
         ):
             op.decomposition()
 
@@ -429,7 +429,7 @@ class TestDecomposition:
         assert not op.has_decomposition
         with pytest.raises(
             DecompositionUndefinedError,
-            match=re.escape(f"The decomposition of the {op} operator is not defined. "),
+            match=re.escape(f"The decomposition of the {op} operator is not defined."),
         ):
             op.decomposition()
 
