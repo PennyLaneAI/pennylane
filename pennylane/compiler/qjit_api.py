@@ -307,19 +307,12 @@ def qjit(fn=None, *args, compiler="catalyst", **kwargs):  # pylint:disable=keywo
 
 
 def while_loop(cond_fn):
-    """A :func:`~.qjit` compatible while-loop for PennyLane programs.
+    """A :func:`~.qjit` compatible for-loop for PennyLane programs. When
+    used without :func:`~.qjit`, this function will fall back to a standard
+    Python for loop.
 
-    .. note::
-
-        This function only supports the Catalyst compiler. See
-        :func:`catalyst.while_loop` for more details.
-
-        Please see the Catalyst :doc:`quickstart guide <catalyst:dev/quick_start>`,
-        as well as the :doc:`sharp bits and debugging tips <catalyst:dev/sharp_bits>`
-        page for an overview of the differences between Catalyst and PennyLane.
-
-    This decorator provides a functional version of the traditional while
-    loop, similar to `jax.lax.while_loop <https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.while_loop.html>`__.
+    This decorator provides a functional version of the traditional while loop,
+    similar to `jax.lax.while_loop <https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.while_loop.html>`__.
     That is, any variables that are modified across iterations need to be provided as
     inputs and outputs to the loop body function:
 
@@ -329,10 +322,9 @@ def while_loop(cond_fn):
     - Output arguments contain the value at the end of the iteration. The
       outputs are then fed back as inputs to the next iteration.
 
-    The final iteration values are also returned from the
-    transformed function.
+    The final iteration values are also returned from the transformed function.
 
-    The semantics of ``while_loop`` are given by the following Python pseudo-code:
+    The semantics of ``while_loop`` are given by the following Python pseudocode:
 
     .. code-block:: python
 
@@ -358,7 +350,6 @@ def while_loop(cond_fn):
 
         dev = qml.device("lightning.qubit", wires=1)
 
-        @qml.qjit
         @qml.qnode(dev)
         def circuit(x: float):
 
@@ -369,12 +360,19 @@ def while_loop(cond_fn):
                 return x ** 2
 
             # apply the while loop
-            final_x = loop_rx(x)
+            loop_rx(x)
 
-            return qml.expval(qml.Z(0)), final_x
+            return qml.expval(qml.Z(0))
 
     >>> circuit(1.6)
-    (array(-0.02919952), array(2.56))
+    -0.02919952
+
+    ``while_loop`` is also :func:`~.qjit` compatible; when used with the
+    :func:`~.qjit` decorator, the while loop will not be unrolled, and instead
+    will be captured as-is during compilation and executed during runtime:
+
+    >>> qml.qjit(circuit)(1.6)
+    Array(-0.02919952, dtype=float64)
     """
 
     if active_jit := active_compiler():

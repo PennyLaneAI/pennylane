@@ -15,11 +15,6 @@
 Tests for capturing for while loops into jaxpr.
 """
 
-# pylint: disable=no-value-for-parameter
-# pylint: disable=too-few-public-methods
-# pylint: disable=too-many-arguments
-# pylint: disable=no-self-use
-
 import numpy as np
 import pytest
 
@@ -146,6 +141,29 @@ class TestCaptureCircuitsWhileLoop:
 
         result = circuit(arg)
         assert np.allclose(result, expected), f"Expected {expected}, but got {result}"
+
+        jaxpr = jax.make_jaxpr(circuit)(arg)
+        res_ev_jxpr = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, arg)
+        assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
+
+    @pytest.mark.parametrize("arg, expected", [(3, 5), (11, 21)])
+    def test_circuit_closure_vars(self, arg, expected):
+        """Test that closure variables within a while loop are correctly captured via jaxpr."""
+
+        def circuit(x):
+            y = x + 1
+
+            def while_f(i):
+                return i < y
+
+            @qml.while_loop(while_f)
+            def f(i):
+                return 4 * i + 1
+
+            return f(0)
+
+        result = circuit(arg)
+        assert qml.math.allclose(result, expected), f"Expected {expected}, but got {result}"
 
         jaxpr = jax.make_jaxpr(circuit)(arg)
         res_ev_jxpr = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, arg)
