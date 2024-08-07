@@ -269,6 +269,10 @@
 
 <h3>Documentation 📝</h3>
 
+* Improves the docstring for `qinfo.quantum_fisher` regarding the internally used functions and
+  potentially required auxiliary wires.
+  [(#6074)](https://github.com/PennyLaneAI/pennylane/pull/6074)
+
 * Improves the docstring for `QuantumScript.expand` and `qml.tape.tape.expand_tape`.
   [(#5974)](https://github.com/PennyLaneAI/pennylane/pull/5974)
 
