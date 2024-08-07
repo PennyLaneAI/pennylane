@@ -17,7 +17,6 @@ Tests for :class:`pennylane.data.progress`
 import shutil
 
 import pytest
-import rich.progress
 
 import pennylane.data.data_manager.progress
 import pennylane.data.data_manager.progress._default
@@ -28,12 +27,22 @@ from pennylane.data.data_manager.progress._default import DefaultProgress, term
 @pytest.fixture
 def disable_rich(request, monkeypatch):
     """Sets ``progress.make_progress_rich`` to ``None``, mocking the result of
-    a failed import."""
+    a failed import.
+
+    Also skips the calling test if rich is not disabled, but is not
+    installed.
+    """
     if getattr(request, "param", True):
         monkeypatch.setattr(pennylane.data.data_manager.progress, "make_progress_rich", None)
         return True
 
-    return False
+    try:
+        from pennylane.data.data_manager.progress._rich import RichProgress
+
+        del RichProgress
+        return False
+    except ImportError:
+        pytest.skip("'rich' is not installed")
 
 
 class TestProgress:
@@ -41,16 +50,19 @@ class TestProgress:
 
     @pytest.mark.parametrize(
         "disable_rich, expect_cls",
-        [(True, DefaultProgress), (False, rich.progress.Progress)],
+        [
+            (True, "pennylane.data.data_manager.progress._default.DefaultProgress"),
+            (False, "rich.progress.Progress"),
+        ],
         indirect=["disable_rich"],
     )
     def test_init(self, disable_rich, expect_cls):
         """Test that ``__init__()`` uses the correct implementation based
-        on the value of ``use_rich``."""
+        on the value of ``disable_rich``."""
         del disable_rich
 
-        prog = Progress()
-        assert isinstance(prog.progress, expect_cls)
+        prog_cls = type(Progress().progress)
+        assert f"{prog_cls.__module__}.{prog_cls.__name__}" == expect_cls
 
     @pytest.mark.usefixtures("disable_rich")
     @pytest.mark.parametrize("disable_rich", [True, False], indirect=True)
@@ -66,8 +78,6 @@ class TestProgress:
     @pytest.mark.parametrize("disable_rich", [True, False], indirect=True)
     def test_context(self):
         """Test that ``__enter__()`` returns the instance."""
-        # del disable_rich
-
         progress = Progress()
         with progress as progress_ctx:
             assert progress_ctx is progress
