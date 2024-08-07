@@ -299,6 +299,49 @@ class TestPauliVSpace:
         assert v1._rank == vcopy._rank
         assert v1._num_pw == vcopy._num_pw
 
+    @pytest.mark.parametrize(
+        "n, lengths, num_pw",
+        [(2, [4, 6, 8], 8), (3, [6, 9, 12, 15, 18, 19, 20, 21, 22, 23, 24, 25, 26], 32)],
+    )
+    def test_complex_workflow(self, n, lengths, num_pw):
+        """Test a more involved workflow with iteratively adding operators to a
+        vector space. The application is iteratively building up a set of operators
+        S with the invariance property from the Hamiltonian Shadow Simulation paper,
+        for the transverse field Ising Hamiltonian.
+        """
+        ZZs = [Z(i) @ Z(i + 1) for i in range(n - 1)]
+        Xs = [X(i) for i in range(n)]
+
+        # Transverse Field Ising Model Hamiltonian
+        H = qml.dot(np.ones(2 * n - 1, dtype=float), ZZs + Xs).pauli_rep
+        S = [Z(i).pauli_rep for i in range(n)]
+
+        vspace = qml.pauli.PauliVSpace(S, dtype=float)
+
+        lengths_iter = iter(lengths)
+        len_before = 0
+        while True:
+            basis_copy = vspace.basis.copy()
+            for m, Om in enumerate(basis_copy[len_before:]):
+                com = H.commutator(Om)
+                com.simplify()
+
+                if len(com) == 0:  # skip because operators commute
+                    continue
+
+                # result is always purely imaginary
+                for pw, val in com.items():
+                    com[pw] = val.imag / 2.0
+
+                vspace.add(com, tol=1e-8)
+
+            len_before = len(basis_copy)
+            if len_before == len(vspace):
+                break
+            assert len(vspace) == next(lengths_iter)
+        assert len(vspace) == lengths[-1]
+        assert vspace._num_pw == num_pw
+
 
 dla11 = [
     PauliSentence({PauliWord({0: "X", 1: "X"}): 1.0, PauliWord({0: "Y", 1: "Y"}): 1.0}),

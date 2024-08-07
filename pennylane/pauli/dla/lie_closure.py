@@ -422,11 +422,11 @@ class PauliVSpace:
             M[pw_to_idx[pw], rank] = value
 
         # Check if new vector is linearly dependent on the current basis
-        v = M[:, -1]  # .copy()  # remove copy to normalize M
+        v = M[:, -1].copy()  # remove copy to normalize M
         v /= np.linalg.norm(v)
         A = M[:, :-1]
 
-        if np.linalg.norm(A @ qml.math.linalg.pinv(A) @ v - v) > tol:
+        if np.linalg.norm(A @ (qml.math.linalg.pinv(A) @ v) - v) > tol:
             return M, pw_to_idx, rank + 1, new_num_pw, True
 
         return M[:num_pw, :rank], pw_to_idx, rank, num_pw, False
