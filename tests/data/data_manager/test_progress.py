@@ -21,7 +21,9 @@ import pytest
 import pennylane.data.data_manager.progress
 import pennylane.data.data_manager.progress._default
 from pennylane.data.data_manager.progress import Progress, Task
-from pennylane.data.data_manager.progress._default import DefaultProgress, term
+from pennylane.data.data_manager.progress._default import term
+
+# pylint: disable=redefined-outer-name
 
 
 @pytest.fixture
@@ -40,9 +42,10 @@ def disable_rich(request, monkeypatch):
         from pennylane.data.data_manager.progress._rich import RichProgress
 
         del RichProgress
-        return False
     except ImportError:
         pytest.skip("'rich' is not installed")
+
+    return False
 
 
 class TestProgress:
