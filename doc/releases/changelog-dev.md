@@ -4,14 +4,14 @@
 
 <h3>New features since last release</h3>
 
+* Mid-circuit measurements can now be captured with `qml.capture` enabled.
+  [(#6015)](https://github.com/PennyLaneAI/pennylane/pull/6015)
+
 * A new method `process_density_matrix` has been added to the `ProbabilityMP` and `DensityMatrixMP`
   classes, allowing for more efficient handling of quantum density matrices, particularly with batch
   processing support. This method simplifies the calculation of probabilities from quantum states
   represented as density matrices.
   [(#5830)](https://github.com/PennyLaneAI/pennylane/pull/5830)
-
-* Resolved the bug in `qml.ThermalRelaxationError` where there was a typo from `tq` to `tg`.
-  [(#5988)](https://github.com/PennyLaneAI/pennylane/issues/5988)
 
 * The `qml.PrepSelPrep` template is added. The template implements a block-encoding of a linear
   combination of unitaries.
@@ -45,6 +45,9 @@
 
 * `fuse_rot_angles` now respects the global phase of the combined rotations.
   [(#6031)](https://github.com/PennyLaneAI/pennylane/pull/6031)
+
+* `QNGOptimizer` now supports cost functions with multiple arguments, updating each argument independently.
+  [(#5926)](https://github.com/PennyLaneAI/pennylane/pull/5926)
 
 * `qml.for_loop` can now be captured into plxpr.
   [(#6041)](https://github.com/PennyLaneAI/pennylane/pull/6041)
@@ -177,6 +180,9 @@
 
 <h4>Community contributions 🥳</h4>
 
+* Resolved the bug in `qml.ThermalRelaxationError` where there was a typo from `tq` to `tg`.
+  [(#5988)](https://github.com/PennyLaneAI/pennylane/issues/5988)
+
 * `DefaultQutritMixed` readout error has been added using parameters `readout_relaxation_probs` and 
   `readout_misclassification_probs` on the `default.qutrit.mixed` device. These parameters add a `~.QutritAmplitudeDamping`  and a `~.TritFlip` channel, respectively,
   after measurement diagonalization. The amplitude damping error represents the potential for
@@ -263,6 +269,10 @@
 
 <h3>Documentation 📝</h3>
 
+* Improves the docstring for `qinfo.quantum_fisher` regarding the internally used functions and
+  potentially required auxiliary wires.
+  [(#6074)](https://github.com/PennyLaneAI/pennylane/pull/6074)
+
 * Improves the docstring for `QuantumScript.expand` and `qml.tape.tape.expand_tape`.
   [(#5974)](https://github.com/PennyLaneAI/pennylane/pull/5974)
 
@@ -276,6 +286,10 @@
 
 * Fix `jax.grad` + `jax.jit` not working for `AmplitudeEmbedding`, `StatePrep` and `MottonenStatePreparation`.
   [(#5620)](https://github.com/PennyLaneAI/pennylane/pull/5620) 
+
+* Fixed a bug in `qml.center` that omitted elements from the center if they were
+  linear combinations of input elements.
+  [(#6049)](https://github.com/PennyLaneAI/pennylane/pull/6049)
 
 * Fix a bug where the global phase returned by `one_qubit_decomposition` gained a broadcasting dimension.
   [(#5923)](https://github.com/PennyLaneAI/pennylane/pull/5923)
@@ -332,5 +346,5 @@ Vincent Michaud-Rioux,
 Anurav Modak,
 Mudit Pandey,
 Erik Schultheis,
-Nate Stemen,
+nate stemen,
 David Wierichs,
