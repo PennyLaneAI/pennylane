@@ -181,7 +181,7 @@ can be used together to unpack and repack the variables:
 [0.1, 0.2]
 >>> in_tree
 PyTreeDef(([*, *],))
->>> flatfn = FlatFn(f)
+>>> flatfn = FlatFn(f, in_tree)
 >>> flatfn.out_tree is None # initialized to None
 True
 >>> results = flatfn(*flat_args)
