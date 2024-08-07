@@ -759,11 +759,9 @@ class StateVectorProjector(Projector):
         return qml.math.convert_like(w, state_vector)
 
     @staticmethod
-    def compute_diagonalizing_gates(
+    def compute_diagonalizing_gates(  # pylint: disable=arguments-differ,unused-argument,arguments-renamed
         state_vector: TensorLike, wires: WireTypes
-    ) -> list[
-        "qml.operation.Operator"
-    ]:  # pylint: disable=arguments-differ,unused-argument,arguments-renamed
+    ) -> list["qml.operation.Operator"]:
         r"""Sequence of gates that diagonalize the operator in the computational basis (static method).
 
         Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
