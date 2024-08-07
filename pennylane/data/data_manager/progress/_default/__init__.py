@@ -19,8 +19,6 @@ from typing import Any, Optional
 
 from pennylane.data.data_manager.progress._default import term
 
-import sys
-
 
 @dataclass
 class Task:
