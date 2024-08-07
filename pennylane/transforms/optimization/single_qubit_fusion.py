@@ -36,7 +36,7 @@ def single_qubit_fusion(
     (on the same qubit) with that property defined will be fused into one ``Rot``.
 
     Args:
-        tape (QNode or QuantumTape or callable): A quantum circuit.
+        tape (QNode or QuantumTape or Callable): A quantum circuit.
         atol (float): An absolute tolerance for which to apply a rotation after
             fusion. After fusion of gates, if the fused angles :math:`\theta` are such that
             :math:`|\theta|\leq \text{atol}`, no rotation gate will be applied.
@@ -45,7 +45,7 @@ def single_qubit_fusion(
             be fused will be fused.
 
     Returns:
-        qnode (QNode) or quantum function (callable) or tuple[List[QuantumTape], callable]:
+        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], Callable]:
         The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
 
     **Example**
@@ -71,7 +71,7 @@ def single_qubit_fusion(
     .. note::
 
         The fused angles between two sets of rotation angles are not always defined uniquely
-        because Euler angles are not defined uniquely for some rotations. ``single_qubit_fusion``
+        because Euler angles are not unique for some rotations. ``single_qubit_fusion``
         makes a particular choice in this case.
 
     .. warning::
@@ -131,7 +131,7 @@ def single_qubit_fusion(
             e^{-i\beta_j}s_j & e^{i\alpha_j}c_j
             \end{bmatrix},
 
-        where we introduced abbreviations :math:`\alpha_j`, :math:`\beta_j`,
+        where we introduced abbreviations :math:`\alpha_j,\beta_j=\frac{\phi_j\pm\omega_j}{2}`,
         :math:`c_j=\cos(\theta_j / 2)` and :math:`s_j=\sin(\theta_j / 2)` for notational brevity.
         The upper left entry of the matrix product
         :math:`R(\phi_2,\theta_2,\omega_2)R(\phi_1,\theta_1,\omega_1)` reads
@@ -140,7 +140,7 @@ def single_qubit_fusion(
 
             x = e^{-i(\alpha_2+\alpha_1)} c_2 c_1 - e^{i(\beta_2-\beta_1)} s_2 s_1
 
-        and should equal :math:`e^{-i(\alpha_f)/2}c_f` for the fused rotation angles.
+        and should equal :math:`e^{-i\alpha_f}c_f` for the fused rotation angles.
         This means that we can obtain :math:`\theta_f` from the magnitude of the matrix product
         entry above, choosing :math:`c_f=\cos(\theta_f / 2)` to be non-negative:
 
@@ -159,8 +159,8 @@ def single_qubit_fusion(
 
             \theta_f = 2\arccos(|x|).
 
-        We can extract the angle combination :math:`\alpha_f` from :math:`x` above as well via
-        :math:`\operatorname{arg}(x)`, which can be readily computed with :math:`arctan`:
+        We can also extract the angle combination :math:`\alpha_f` from :math:`x` via
+        :math:`\operatorname{arg}(x)`, which can be readily computed with :math:`\arctan`:
 
         .. math::
 
@@ -169,9 +169,9 @@ def single_qubit_fusion(
             {c_1c_2\cos(\alpha_1+\alpha_2)-s_1s_2\cos(\beta_2-\beta_1)}
             \right).
 
-        We can use the standard numerical function :math:`\operatorname{arctan2}`, which
+        We can use the standard numerical function ``arctan2``, which
         computes :math:`\arctan(x_1/x_2)` from :math:`x_1` and :math:`x_2` while handling
-        special points suitably to obtain the argument of the underlying complex number
+        special points suitably, to obtain the argument of the underlying complex number
         :math:`x_2 + x_1 i`.
 
         Finally, to obtain :math:`\beta_f`, we need a second element of the matrix product from
@@ -194,10 +194,26 @@ def single_qubit_fusion(
 
         .. math::
 
-            \phi_f = \alpha_f + \beta_f
+            \phi_f = \alpha_f + \beta_f\qquad
             \omega_f = \alpha_f - \beta_f
 
         and are done.
+
+        **Special cases:**
+
+        There are a number of special cases for which we can skip the computation above and
+        can combine rotation angles directly.
+
+        1. If :math:`\omega_1=\phi_2=0`, we can simply merge the ``RY`` rotation angles
+           :math:`\theta_j` and obtain :math:`(\phi_1, \theta_1+\theta_2, \omega_2)`.
+
+        2. If :math:`\theta_j=0`, we can merge the two ``RZ`` rotations of the same ``Rot``
+           and obtain :math:`(\phi_1+\omega_1+\phi_2, \theta_2, \omega_2)` or
+           :math:`(\phi_1, \theta_1, \omega_1+\phi_2+\omega_2)`. If both ``RY`` angles vanish
+           we get :math:`(\phi_1+\omega_1+\phi_2+\omega_2, 0, 0)`.
+
+        Note that this optimization is not performed for differentiable input parameters,
+        in order to maintain differentiability.
 
         **Mathematical properties:**
 
@@ -218,7 +234,7 @@ def single_qubit_fusion(
         **Differentiability:**
 
         The function derived above is differentiable almost everywhere.
-        In particular, there are two problematic scenarios at which the derivative is not defined:
+        In particular, there are two problematic scenarios at which the derivative is not defined.
         First, the square root is not differentiable at :math:`0`, making all input angles with
         :math:`|x|=0` singular. Second, :math:`\arccos` is not differentiable at :math:`1`, making
         all input angles with :math:`|x|=1` singular.

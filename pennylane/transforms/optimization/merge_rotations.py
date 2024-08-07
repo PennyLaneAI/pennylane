@@ -75,14 +75,14 @@ def merge_rotations(
 
         When merging two :class:`~.pennylane.Rot` gates, there are a number of details to consider:
 
-        First, the output angles are not always uniquely defined, because Euler angles are not
-        defined uniquely for some rotations. ``merge_rotations`` makes a particular choice in
+        First, the output angles are not always defined uniquely, because Euler angles are not
+        unique for some rotations. ``merge_rotations`` makes a particular choice in
         this case.
 
         Second, ``merge_rotations`` is not differentiable everywhere when used on ``Rot``.
         It has singularities for specific rotation angles where the derivative will be NaN.
 
-        Finally, this function can be numerically unstable at singular points.
+        Finally, this function can be numerically unstable near singular points.
         It is therefore recommended to use it with 64-bit floating point precision angles.
 
         For a mathematical derivation of the fusion of two ``Rot`` gates, see the documentation

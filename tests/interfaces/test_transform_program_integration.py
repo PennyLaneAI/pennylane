@@ -25,11 +25,12 @@ import pennylane as qml
 from pennylane.tape import QuantumTapeBatch
 from pennylane.typing import PostprocessingFn
 
-device_suite = (
-    qml.device("default.qubit.legacy", wires=5),
-    qml.devices.DefaultQubit(),
-    qml.device("lightning.qubit", wires=5),
-)
+with pytest.warns(qml.PennyLaneDeprecationWarning):
+    device_suite = (
+        qml.device("default.qubit.legacy", wires=5),
+        qml.devices.DefaultQubit(),
+        qml.device("lightning.qubit", wires=5),
+    )
 
 
 @pytest.mark.all_interfaces
@@ -169,7 +170,7 @@ class TestTransformProgram:
     def test_chained_preprocessing(self):
         """Test a transform program with two transforms where their order affects the output."""
 
-        dev = qml.device("default.qubit.legacy", wires=2)
+        dev = qml.device("default.qubit", wires=2)
 
         def null_postprocessing(results):
             return results[0]

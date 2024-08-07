@@ -1,4 +1,4 @@
-# Copyright 2023 Xanadu Quantum Technologies Inc.
+# Copyright 2022 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,13 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Integration tests for using the TF interface with shot vectors and with a QNode"""
-# pylint: disable=too-many-arguments,too-few-public-methods,unexpected-keyword-arg
+# pylint: disable=too-many-arguments,too-few-public-methods,redefined-outer-name
 import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane import qnode
-from pennylane.devices import DefaultQubit
 
 pytestmark = pytest.mark.tf
 
@@ -27,25 +26,36 @@ tf = pytest.importorskip("tensorflow")
 shots_and_num_copies = [((1, (5, 2), 10), 4)]
 shots_and_num_copies_hess = [((10, (5, 1)), 2)]
 
+
+kwargs = {
+    "finite-diff": {"h": 10e-2},
+    "parameter-shift": {},
+    "spsa": {"h": 10e-2, "num_directions": 30},
+}
+
 qubit_device_and_diff_method = [
-    [DefaultQubit(), "finite-diff", {"h": 10e-2}],
-    [DefaultQubit(), "parameter-shift", {}],
-    [
-        DefaultQubit(),
-        "spsa",
-        {"h": 10e-2, "num_directions": 20, "sampler_rng": np.random.default_rng(42)},
-    ],
+    ["default.qubit.legacy", "finite-diff"],
+    ["default.qubit.legacy", "parameter-shift"],
+    ["default.qubit.legacy", "spsa"],
 ]
 
 TOLS = {
     "finite-diff": 0.3,
     "parameter-shift": 1e-2,
-    "spsa": 0.5,
+    "spsa": 0.3,
 }
 
 
+@pytest.fixture
+def gradient_kwargs(request):
+    diff_method = request.node.funcargs["diff_method"]
+    return kwargs[diff_method] | (
+        {"sampler_rng": np.random.default_rng(42)} if diff_method == "spsa" else {}
+    )
+
+
 @pytest.mark.parametrize("shots,num_copies", shots_and_num_copies)
-@pytest.mark.parametrize("dev,diff_method,gradient_kwargs", qubit_device_and_diff_method)
+@pytest.mark.parametrize("dev_name,diff_method", qubit_device_and_diff_method)
 @pytest.mark.parametrize(
     "decorator,interface",
     [(tf.function, "tf"), (lambda x: x, "tf-autograph")],
@@ -54,13 +64,14 @@ class TestReturnWithShotVectors:
     """Class to test the shape of the Grad/Jacobian/Hessian with different return types and shot vectors."""
 
     def test_jac_single_measurement_param(
-        self, dev, diff_method, gradient_kwargs, shots, num_copies, decorator, interface
+        self, dev_name, diff_method, gradient_kwargs, shots, num_copies, decorator, interface
     ):
         """For one measurement and one param, the gradient is a float."""
+        dev = qml.device(dev_name, wires=1, shots=shots)
 
         @decorator
         @qnode(dev, diff_method=diff_method, interface=interface, **gradient_kwargs)
-        def circuit(a, **_):
+        def circuit(a):
             qml.RY(a, wires=0)
             qml.RX(0.7, wires=0)
             return qml.expval(qml.PauliZ(0))
@@ -68,7 +79,7 @@ class TestReturnWithShotVectors:
         a = tf.Variable(1.5, dtype=tf.float64)
 
         with tf.GradientTape() as tape:
-            res = circuit(a, shots=shots)
+            res = circuit(a)
             res = qml.math.stack(res)
 
         jac = tape.jacobian(res, a)
@@ -77,13 +88,14 @@ class TestReturnWithShotVectors:
         assert jac.shape == (num_copies,)
 
     def test_jac_single_measurement_multiple_param(
-        self, dev, diff_method, gradient_kwargs, shots, num_copies, decorator, interface
+        self, dev_name, diff_method, gradient_kwargs, shots, num_copies, decorator, interface
     ):
         """For one measurement and multiple param, the gradient is a tuple of arrays."""
+        dev = qml.device(dev_name, wires=1, shots=shots)
 
         @decorator
         @qnode(dev, diff_method=diff_method, interface=interface, **gradient_kwargs)
-        def circuit(a, b, **_):
+        def circuit(a, b):
             qml.RY(a, wires=0)
             qml.RX(b, wires=0)
             return qml.expval(qml.PauliZ(0))
@@ -92,7 +104,7 @@ class TestReturnWithShotVectors:
         b = tf.Variable(0.7, dtype=tf.float64)
 
         with tf.GradientTape() as tape:
-            res = circuit(a, b, shots=shots)
+            res = circuit(a, b)
             res = qml.math.stack(res)
 
         jac = tape.jacobian(res, (a, b))
@@ -104,13 +116,14 @@ class TestReturnWithShotVectors:
             assert j.shape == (num_copies,)
 
     def test_jacobian_single_measurement_multiple_param_array(
-        self, dev, diff_method, gradient_kwargs, shots, num_copies, decorator, interface
+        self, dev_name, diff_method, gradient_kwargs, shots, num_copies, decorator, interface
     ):
         """For one measurement and multiple param as a single array params, the gradient is an array."""
+        dev = qml.device(dev_name, wires=1, shots=shots)
 
         @decorator
         @qnode(dev, diff_method=diff_method, interface=interface, **gradient_kwargs)
-        def circuit(a, **_):
+        def circuit(a):
             qml.RY(a[0], wires=0)
             qml.RX(a[1], wires=0)
             return qml.expval(qml.PauliZ(0))
@@ -118,7 +131,7 @@ class TestReturnWithShotVectors:
         a = tf.Variable([1.5, 0.7], dtype=tf.float64)
 
         with tf.GradientTape() as tape:
-            res = circuit(a, shots=shots)
+            res = circuit(a)
             res = qml.math.stack(res)
 
         jac = tape.jacobian(res, a)
@@ -127,14 +140,15 @@ class TestReturnWithShotVectors:
         assert jac.shape == (num_copies, 2)
 
     def test_jacobian_single_measurement_param_probs(
-        self, dev, diff_method, gradient_kwargs, shots, num_copies, decorator, interface
+        self, dev_name, diff_method, gradient_kwargs, shots, num_copies, decorator, interface
     ):
         """For a multi dimensional measurement (probs), check that a single array is returned with the correct
         dimension"""
+        dev = qml.device(dev_name, wires=2, shots=shots)
 
         @decorator
         @qnode(dev, diff_method=diff_method, interface=interface, **gradient_kwargs)
-        def circuit(a, **_):
+        def circuit(a):
             qml.RY(a, wires=0)
             qml.RX(0.7, wires=0)
             return qml.probs(wires=[0, 1])
@@ -142,7 +156,7 @@ class TestReturnWithShotVectors:
         a = tf.Variable(1.5, dtype=tf.float64)
 
         with tf.GradientTape() as tape:
-            res = circuit(a, shots=shots)
+            res = circuit(a)
             res = qml.math.stack(res)
 
         jac = tape.jacobian(res, a)
@@ -151,14 +165,15 @@ class TestReturnWithShotVectors:
         assert jac.shape == (num_copies, 4)
 
     def test_jacobian_single_measurement_probs_multiple_param(
-        self, dev, diff_method, gradient_kwargs, shots, num_copies, decorator, interface
+        self, dev_name, diff_method, gradient_kwargs, shots, num_copies, decorator, interface
     ):
         """For a multi dimensional measurement (probs), check that a single tuple is returned containing arrays with
         the correct dimension"""
+        dev = qml.device(dev_name, wires=2, shots=shots)
 
         @decorator
         @qnode(dev, diff_method=diff_method, interface=interface, **gradient_kwargs)
-        def circuit(a, b, **_):
+        def circuit(a, b):
             qml.RY(a, wires=0)
             qml.RX(b, wires=0)
             return qml.probs(wires=[0, 1])
@@ -167,7 +182,7 @@ class TestReturnWithShotVectors:
         b = tf.Variable(0.7, dtype=tf.float64)
 
         with tf.GradientTape() as tape:
-            res = circuit(a, b, shots=shots)
+            res = circuit(a, b)
             res = qml.math.stack(res)
 
         jac = tape.jacobian(res, (a, b))
@@ -179,14 +194,15 @@ class TestReturnWithShotVectors:
             assert j.shape == (num_copies, 4)
 
     def test_jacobian_single_measurement_probs_multiple_param_single_array(
-        self, dev, diff_method, gradient_kwargs, shots, num_copies, decorator, interface
+        self, dev_name, diff_method, gradient_kwargs, shots, num_copies, decorator, interface
     ):
         """For a multi dimensional measurement (probs), check that a single tuple is returned containing arrays with
         the correct dimension"""
+        dev = qml.device(dev_name, wires=2, shots=shots)
 
         @decorator
         @qnode(dev, diff_method=diff_method, interface=interface, **gradient_kwargs)
-        def circuit(a, **_):
+        def circuit(a):
             qml.RY(a[0], wires=0)
             qml.RX(a[1], wires=0)
             return qml.probs(wires=[0, 1])
@@ -194,7 +210,7 @@ class TestReturnWithShotVectors:
         a = tf.Variable([1.5, 0.7], dtype=tf.float64)
 
         with tf.GradientTape() as tape:
-            res = circuit(a, shots=shots)
+            res = circuit(a)
             res = qml.math.stack(res)
 
         jac = tape.jacobian(res, a)
@@ -203,22 +219,24 @@ class TestReturnWithShotVectors:
         assert jac.shape == (num_copies, 4, 2)
 
     def test_jacobian_expval_expval_multiple_params(
-        self, dev, diff_method, gradient_kwargs, shots, num_copies, decorator, interface
+        self, dev_name, diff_method, gradient_kwargs, shots, num_copies, decorator, interface
     ):
         """The gradient of multiple measurements with multiple params return a tuple of arrays."""
+        dev = qml.device(dev_name, wires=2, shots=shots)
+
         par_0 = tf.Variable(1.5, dtype=tf.float64)
         par_1 = tf.Variable(0.7, dtype=tf.float64)
 
         @decorator
         @qnode(dev, diff_method=diff_method, interface=interface, max_diff=1, **gradient_kwargs)
-        def circuit(x, y, **_):
+        def circuit(x, y):
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0) @ qml.PauliX(1)), qml.expval(qml.PauliZ(0))
 
         with tf.GradientTape() as tape:
-            res = circuit(par_0, par_1, shots=shots)
+            res = circuit(par_0, par_1)
             res = qml.math.stack([qml.math.stack(r) for r in res])
 
         jac = tape.jacobian(res, (par_0, par_1))
@@ -230,13 +248,14 @@ class TestReturnWithShotVectors:
             assert j.shape == (num_copies, 2)
 
     def test_jacobian_expval_expval_multiple_params_array(
-        self, dev, diff_method, gradient_kwargs, shots, num_copies, decorator, interface
+        self, dev_name, diff_method, gradient_kwargs, shots, num_copies, decorator, interface
     ):
         """The jacobian of multiple measurements with a multiple params array return a single array."""
+        dev = qml.device(dev_name, wires=2, shots=shots)
 
         @decorator
         @qnode(dev, diff_method=diff_method, interface=interface, **gradient_kwargs)
-        def circuit(a, **_):
+        def circuit(a):
             qml.RY(a[0], wires=0)
             qml.RX(a[1], wires=0)
             qml.RY(a[2], wires=0)
@@ -245,7 +264,7 @@ class TestReturnWithShotVectors:
         a = tf.Variable([0.7, 0.9, 1.1], dtype=tf.float64)
 
         with tf.GradientTape() as tape:
-            res = circuit(a, shots=shots)
+            res = circuit(a)
             res = qml.math.stack([qml.math.stack(r) for r in res])
 
         jac = tape.jacobian(res, a)
@@ -254,13 +273,14 @@ class TestReturnWithShotVectors:
         assert jac.shape == (num_copies, 2, 3)
 
     def test_jacobian_multiple_measurement_single_param(
-        self, dev, diff_method, gradient_kwargs, shots, num_copies, decorator, interface
+        self, dev_name, diff_method, gradient_kwargs, shots, num_copies, decorator, interface
     ):
         """The jacobian of multiple measurements with a single params return an array."""
+        dev = qml.device(dev_name, wires=2, shots=shots)
 
         @decorator
         @qnode(dev, diff_method=diff_method, interface=interface, **gradient_kwargs)
-        def circuit(a, **_):
+        def circuit(a):
             qml.RY(a, wires=0)
             qml.RX(0.7, wires=0)
             return qml.expval(qml.PauliZ(0)), qml.probs(wires=[0, 1])
@@ -268,7 +288,7 @@ class TestReturnWithShotVectors:
         a = tf.Variable(1.5, dtype=tf.float64)
 
         with tf.GradientTape() as tape:
-            res = circuit(a, shots=shots)
+            res = circuit(a)
             res = qml.math.stack([tf.experimental.numpy.hstack(r) for r in res])
 
         jac = tape.jacobian(res, a)
@@ -277,13 +297,14 @@ class TestReturnWithShotVectors:
         assert jac.shape == (num_copies, 5)
 
     def test_jacobian_multiple_measurement_multiple_param(
-        self, dev, diff_method, gradient_kwargs, shots, num_copies, decorator, interface
+        self, dev_name, diff_method, gradient_kwargs, shots, num_copies, decorator, interface
     ):
         """The jacobian of multiple measurements with a multiple params return a tuple of arrays."""
+        dev = qml.device(dev_name, wires=2, shots=shots)
 
         @decorator
         @qnode(dev, diff_method=diff_method, interface=interface, **gradient_kwargs)
-        def circuit(a, b, **_):
+        def circuit(a, b):
             qml.RY(a, wires=0)
             qml.RX(b, wires=0)
             return qml.expval(qml.PauliZ(0)), qml.probs(wires=[0, 1])
@@ -292,7 +313,7 @@ class TestReturnWithShotVectors:
         b = tf.Variable(0.7, dtype=tf.float64)
 
         with tf.GradientTape() as tape:
-            res = circuit(a, b, shots=shots)
+            res = circuit(a, b)
             res = qml.math.stack([tf.experimental.numpy.hstack(r) for r in res])
 
         jac = tape.jacobian(res, (a, b))
@@ -304,13 +325,14 @@ class TestReturnWithShotVectors:
             assert j.shape == (num_copies, 5)
 
     def test_jacobian_multiple_measurement_multiple_param_array(
-        self, dev, diff_method, gradient_kwargs, shots, num_copies, decorator, interface
+        self, dev_name, diff_method, gradient_kwargs, shots, num_copies, decorator, interface
     ):
         """The jacobian of multiple measurements with a multiple params array return a single array."""
+        dev = qml.device(dev_name, wires=2, shots=shots)
 
         @decorator
         @qnode(dev, diff_method=diff_method, interface=interface, **gradient_kwargs)
-        def circuit(a, **_):
+        def circuit(a):
             qml.RY(a[0], wires=0)
             qml.RX(a[1], wires=0)
             return qml.expval(qml.PauliZ(0)), qml.probs(wires=[0, 1])
@@ -318,7 +340,7 @@ class TestReturnWithShotVectors:
         a = tf.Variable([1.5, 0.7], dtype=tf.float64)
 
         with tf.GradientTape() as tape:
-            res = circuit(a, shots=shots)
+            res = circuit(a)
             res = qml.math.stack([tf.experimental.numpy.hstack(r) for r in res])
 
         jac = tape.jacobian(res, a)
@@ -329,7 +351,7 @@ class TestReturnWithShotVectors:
 
 @pytest.mark.slow
 @pytest.mark.parametrize("shots,num_copies", shots_and_num_copies_hess)
-@pytest.mark.parametrize("dev,diff_method,gradient_kwargs", qubit_device_and_diff_method)
+@pytest.mark.parametrize("dev_name,diff_method", qubit_device_and_diff_method)
 @pytest.mark.parametrize(
     "decorator,interface",
     [(tf.function, "tf"), (lambda x: x, "tf-autograph")],
@@ -338,7 +360,7 @@ class TestReturnShotVectorHessian:
     """Class to test the shape of the Hessian with different return types and shot vectors."""
 
     def test_hessian_expval_multiple_params(
-        self, dev, diff_method, gradient_kwargs, shots, num_copies, decorator, interface
+        self, dev_name, diff_method, gradient_kwargs, shots, num_copies, decorator, interface
     ):
         """The hessian of a single measurement with multiple params return a tuple of arrays."""
 
@@ -346,12 +368,14 @@ class TestReturnShotVectorHessian:
             # TODO: Find out why.
             pytest.skip("SPSA gradient does not support this particular test case")
 
+        dev = qml.device(dev_name, wires=2, shots=shots)
+
         par_0 = tf.Variable(1.5, dtype=tf.float64)
         par_1 = tf.Variable(0.7, dtype=tf.float64)
 
         @decorator
         @qnode(dev, diff_method=diff_method, interface=interface, max_diff=2, **gradient_kwargs)
-        def circuit(x, y, **_):
+        def circuit(x, y):
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
             qml.CNOT(wires=[0, 1])
@@ -359,7 +383,7 @@ class TestReturnShotVectorHessian:
 
         with tf.GradientTape() as tape1:
             with tf.GradientTape(persistent=True) as tape2:
-                res = circuit(par_0, par_1, shots=shots)
+                res = circuit(par_0, par_1)
                 res = qml.math.stack(res)
 
             jac = tape2.jacobian(res, (par_0, par_1), experimental_use_pfor=False)
@@ -374,11 +398,11 @@ class TestReturnShotVectorHessian:
             assert h.shape == (2, num_copies)
 
 
-shots_and_num_copies = [((1000000, 900000, 800000), 3), ((1000000, (900000, 2)), 3)]
+shots_and_num_copies = [((20000, 18000, 16000), 3), ((20000, (18000, 2)), 3)]
 
 
 @pytest.mark.parametrize("shots,num_copies", shots_and_num_copies)
-@pytest.mark.parametrize("dev,diff_method,gradient_kwargs", qubit_device_and_diff_method)
+@pytest.mark.parametrize("dev_name,diff_method", qubit_device_and_diff_method)
 @pytest.mark.parametrize(
     "decorator,interface",
     [(tf.function, "tf"), (lambda x: x, "tf-autograph")],
@@ -387,23 +411,24 @@ class TestReturnShotVectorIntegration:
     """Tests for the integration of shots with the TF interface."""
 
     def test_single_expectation_value(
-        self, dev, diff_method, gradient_kwargs, shots, num_copies, decorator, interface
+        self, dev_name, diff_method, gradient_kwargs, shots, num_copies, decorator, interface
     ):
         """Tests correct output shape and evaluation for a tape
         with a single expval output"""
+        dev = qml.device(dev_name, wires=2, shots=shots)
         x = tf.Variable(0.543, dtype=tf.float64)
         y = tf.Variable(-0.654, dtype=tf.float64)
 
         @decorator
         @qnode(dev, diff_method=diff_method, interface=interface, **gradient_kwargs)
-        def circuit(x, y, **_):
+        def circuit(x, y):
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
         with tf.GradientTape() as tape:
-            res = circuit(x, y, shots=shots)
+            res = circuit(x, y)
             res = qml.math.stack(res)
 
         all_res = tape.jacobian(res, (x, y))
@@ -420,23 +445,24 @@ class TestReturnShotVectorIntegration:
             assert np.allclose(res, exp, atol=tol, rtol=0)
 
     def test_prob_expectation_values(
-        self, dev, diff_method, gradient_kwargs, shots, num_copies, decorator, interface
+        self, dev_name, diff_method, gradient_kwargs, shots, num_copies, decorator, interface
     ):
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
+        dev = qml.device(dev_name, wires=2, shots=shots)
         x = tf.Variable(0.543, dtype=tf.float64)
         y = tf.Variable(-0.654, dtype=tf.float64)
 
         @decorator
         @qnode(dev, diff_method=diff_method, interface=interface, **gradient_kwargs)
-        def circuit(x, y, **_):
+        def circuit(x, y):
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0)), qml.probs(wires=[0, 1])
 
         with tf.GradientTape() as tape:
-            res = circuit(x, y, shots=shots)
+            res = circuit(x, y)
             res = qml.math.stack([tf.experimental.numpy.hstack(r) for r in res])
 
         all_res = tape.jacobian(res, (x, y))
