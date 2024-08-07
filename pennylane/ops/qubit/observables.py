@@ -164,31 +164,33 @@ class Hermitian(Observable):
 
     @staticmethod
     def compute_decomposition(A, wires):  # pylint: disable=arguments-differ
-        r"""Decomposes an observable as a sum of Pauli operators (static method).
+        r"""Decomposes a hermitian matrix as a sum of Pauli operators.
 
         Args:
             A (array or Sequence): hermitian matrix
             wires (Iterable[Any], Wires): wires that the operator acts on
         Returns:
-            list[.PauliSentence]: decomposition of the hermitian matrix
+            list[.Operator]: decomposition of the hermitian matrix
 
         **Examples**
 
         >>> op = qml.X(0) + qml.Y(1) + 2 * qml.X(0) @ qml.Z(3)
         >>> op_matrix = qml.matrix(op)
         >>> qml.Hermitian.compute_decomposition(op_matrix, wires=['a', 'b', 'aux'])
-        [1.0 * Y(b)
-        + 1.0 * X(a)
-        + 2.0 * X(a) @ Z(aux)]
+        [(
+              1.0 * (I('a') @ Y('b') @ I('aux'))
+            + 1.0 * (X('a') @ I('b') @ I('aux'))
+            + 2.0 * (X('a') @ I('b') @ Z('aux'))
+        )]
         >>> op = np.array([[1, 1], [1, -1]]) / np.sqrt(2)
         >>> qml.Hermitian.compute_decomposition(op, wires=0)
-        [0.7071067811865475 * X(0)
-        + 0.7071067811865475 * Z(0)]
+        [(
+              0.7071067811865475 * X(0)
+            + 0.7071067811865475 * Z(0)
+        )]
 
         """
         A = qml.math.asarray(A)
-        A_SHAPE = qml.math.shape(A)
-        A_DIMENSION = A_SHAPE[0]
 
         if isinstance(wires, (int, str)):
             wires = Wires(wires)
@@ -197,16 +199,14 @@ class Hermitian(Observable):
             raise ValueError("Hermitian: wrong number of wires. At least one wire has to be given.")
         Hermitian._validate_input(A, expected_mx_shape=2 ** len(wires))
 
-        MAX_DIMENSION = (
-            256  # determined heuristically from test_hermitian_decomposition_performance
-        )
-        if A_DIMENSION >= MAX_DIMENSION:
+        # determined heuristically from test_hermitian_decomposition_performance
+        if len(wires) > 7:
             warnings.warn(
                 "Decomposition may be inefficient for this large of a matrix.",
                 UserWarning,
             )
 
-        return [qml.pauli.conversion.pauli_decompose(A, wire_order=wires, pauli=True)]
+        return [qml.pauli.conversion.pauli_decompose(A, wire_order=wires, pauli=False)]
 
     @staticmethod
     def compute_diagonalizing_gates(eigenvectors, wires):  # pylint: disable=arguments-differ

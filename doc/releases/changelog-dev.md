@@ -52,7 +52,7 @@
 * Removed `semantic_version` from the list of required packages in PennyLane. 
   [(#5836)](https://github.com/PennyLaneAI/pennylane/pull/5836)
 
-* Added the `compute_decomposition` method for `qml.ops.qubit.Hermitian`.
+* Added the `compute_decomposition` method for `qml.Hermitian`.
   [(#6062)](https://github.com/PennyLaneAI/pennylane/pull/6062)
 
 * During experimental program capture, the qnode can now use closure variables.

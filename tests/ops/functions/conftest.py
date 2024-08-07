@@ -82,10 +82,6 @@ _INSTANCES_TO_FAIL = [
         (AssertionError, ValueError),  # qutrit ops fail validation
     ),
     (
-        qml.Hermitian(np.eye(2), wires=0),
-        ValueError,  # cannot map wires of decomposition type PauliSentence
-    ),
-    (
         qml.ops.qubit.special_unitary.TmpPauliRot(1.1, "X", [0]),
         AssertionError,  # private type with has_matrix=False despite having one
     ),
