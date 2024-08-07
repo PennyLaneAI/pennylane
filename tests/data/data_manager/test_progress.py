@@ -121,6 +121,16 @@ class TestDefaultProgress:
                 f"{term.erase_line()}Task-2 0.00 MB\r{term.cursor_up(1)}"
             )
 
+    def test_task_update_one_task(self, progress: Progress, capsys: pytest.CaptureFixture):
+        """Test for updating with only one task."""
+        task = progress.add_task(description="Task-1", total=100 * 1e6)
+
+        with progress:
+            task.update(advance=50 * 1e6)
+            out, _ = capsys.readouterr()
+
+            assert out == f"{term.erase_line()}Task-1 50.00/100.00 MB\r"
+
     @pytest.mark.parametrize(
         "kwds, numbers",
         [

@@ -19,6 +19,8 @@ from typing import Any, Optional
 
 from pennylane.data.data_manager.progress._default import term
 
+import sys
+
 
 @dataclass
 class Task:
@@ -72,7 +74,6 @@ class DefaultProgress:
 
     def __enter__(self) -> "DefaultProgress":
         self._active = True
-
         return self
 
     def __exit__(
@@ -158,10 +159,15 @@ class DefaultProgress:
     def _print(self):
         """Prints up to ``_task_display_lines_max`` lines and returns the terminal cursor to
         the starting point."""
+        if len(self._task_display_lines) > 1:
+            end = f"\r{term.cursor_up(len(self._task_display_lines) - 1)}"
+        else:
+            end = "\r"
+
         print(
             *self._task_display_lines,
             sep="\n",
-            end=f"\r{term.cursor_up(len(self._task_display_lines) - 1)}",
+            end=end,
             flush=True,
         )
 
