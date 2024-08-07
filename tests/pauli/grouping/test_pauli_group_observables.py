@@ -299,7 +299,7 @@ anticom_tuples = list(zip(observables_list, anticommuting_sols))
 
 
 def are_partitions_equal(partition_1: list, partition_2: list) -> bool:
-    """Checks whether two partition are the same, i.e. contain the same Pauli terms.
+    """Checks whether two partitions are the same, i.e. contain the same Pauli terms.
 
     We check this way since the partitions might vary in the order of the elements
 
@@ -308,12 +308,13 @@ def are_partitions_equal(partition_1: list, partition_2: list) -> bool:
         partition_2 (list[Observable]): list of Pauli word ``Observable`` instances corresponding to a partition.
 
     """
-    are_equal = True
+    partition_3 = set(
+        partition_2
+    )  # to improve the lookup time for similar obs in the second partition
     for pauli in partition_1:
-        are_equal &= any(
-            are_identical_pauli_words(pauli, other_pauli) for other_pauli in partition_2
-        )
-    return are_equal
+        if not any(are_identical_pauli_words(pauli, other) for other in partition_3):
+            return False
+    return True
 
 
 class TestGroupObservables:

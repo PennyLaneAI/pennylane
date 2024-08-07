@@ -38,7 +38,7 @@ from .graph_colouring import recursive_largest_first
 GROUPING_TYPES = frozenset(["qwc", "commuting", "anticommuting"])
 
 # ColoringStrategy is only available from version 0.15.0
-NEW_RX = True
+new_rx = True
 try:
     RX_STRATEGIES = {
         "lf": rx.ColoringStrategy.Degree,
@@ -46,7 +46,7 @@ try:
         "gis": rx.ColoringStrategy.IndependentSet,
     }
 except AttributeError:
-    NEW_RX = False  # pragma: no cover. This error is raised for versions lower than 0.15.0
+    new_rx = False  # pragma: no cover. This error is raised for versions lower than 0.15.0
     RX_STRATEGIES = {"lf": None}  # pragma: no cover # Only "lf" can be used without a strategy
 
 GRAPH_COLOURING_METHODS = frozenset(RX_STRATEGIES.keys()).union({"rlf"})
@@ -79,7 +79,7 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
                 colouring, can be ``'lf'`` (Largest First), ``'rlf'`` (Recursive
                 Largest First), `dsatur` (DSATUR), or `gis` (IndependentSet). Defaults to ``'lf'``.
 
-    See Also:
+    .. seealso::
         `rustworkx.ColoringStrategy <https://www.rustworkx.org/apiref/rustworkx.ColoringStrategy.html#coloringstrategy>`_
         for more information on the ``('lf', 'dsatur', 'gis')`` strategies.
 
@@ -89,25 +89,27 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
     """
 
     def __init__(self, observables, grouping_type="qwc", graph_colourer="lf"):
-        if grouping_type.lower() not in GROUPING_TYPES:
+
+        self.graph_colourer = graph_colourer.lower()
+        self.grouping_type = grouping_type.lower()
+
+        if self.grouping_type not in GROUPING_TYPES:
             raise ValueError(
                 f"Grouping type must be one of: {GROUPING_TYPES}, instead got {grouping_type}."
             )
 
-        if graph_colourer.lower() in ["dsatur", "gis"] and not NEW_RX:
+        if self.graph_colourer in ["dsatur", "gis"] and not new_rx:
             raise ValueError(  # pragma: no cover
                 f"The strategy '{graph_colourer}' is not supported in this version of Rustworkx. "
                 "Please install rustworkx>=0.15.0 to access the 'dsatur' and 'gis' colouring strategies."
             )
 
-        if graph_colourer.lower() not in GRAPH_COLOURING_METHODS:
+        if self.graph_colourer not in GRAPH_COLOURING_METHODS:
             raise ValueError(
                 f"Graph colouring method must be one of: {GRAPH_COLOURING_METHODS}, "
                 f"instead got '{graph_colourer}'."
             )
 
-        self.graph_colourer = graph_colourer.lower()
-        self.grouping_type = grouping_type.lower()
         self.observables = observables
         self._wire_map = None
 
@@ -179,7 +181,7 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
 
         return pauli_groups
 
-    def idx_partitions_from_graph(self) -> list[list]:
+    def _idx_partitions_dict_from_graph(self) -> dict[int, list[int]]:
         """Colours the complement graph using a greedy colouring algorithm and groups indices by colour.
 
         This function uses the `graph_greedy_color` function from `rx` to colour the graph defined by
@@ -191,7 +193,7 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
             of indices (nodes) that have been assigned that colour.
         """
         # A dictionary where keys are node indices and the value is the color
-        if NEW_RX:
+        if new_rx:
             # 'strategy' kwarg was implemented in Rustworkx 0.15
             colouring_dict = rx.graph_greedy_color(
                 self.complement_graph, strategy=RX_STRATEGIES[self.graph_colourer]
@@ -207,18 +209,32 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
 
         return groups
 
+    def idx_partitions_from_graph(self) -> tuple[tuple[int, ...], ...]:
+        """Partition the indices of the Pauli observables into tuples of (anti-)commuting observables
+        using Rustworkx graph colouring algorithms based on binary relation determined by  ``self.grouping_type``.
+
+        Returns:
+            tuple[tuple[int]]: Tuple of tuples containing the indices of the partitioned observables.
+        """
+        idx_dictionary = self._idx_partitions_dict_from_graph()
+
+        partition_indices = tuple(tuple(indices) for indices in idx_dictionary.values())
+        return partition_indices
+
     def pauli_partitions_from_graph(self) -> list[list]:
         """Partition Pauli observables into lists of (anti-)commuting observables
-        using Rustworkx graph colouring algorithms.
+        using Rustworkx graph colouring algorithms based on binary relation determined by  ``self.grouping_type``.
 
         Returns:
             list[list[Observable]]: List of partitions of the Pauli observables made up of mutually (anti-)commuting terms.
         """
-        groups = self.idx_partitions_from_graph()
+        idx_dictionary = self._idx_partitions_dict_from_graph()
 
         # Get the observables from the indices. itemgetter outperforms list comprehension
-        pauli_groups = obs_partitions_from_idx_partitions(self.observables, groups.values())
-        return pauli_groups
+        pauli_partitions = obs_partitions_from_idx_partitions(
+            self.observables, idx_dictionary.values()
+        )
+        return pauli_partitions
 
     @property
     def complement_graph(self) -> rx.PyGraph:
@@ -233,7 +249,10 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
         # Use upper triangle since adjacency matrix is symmetric and we have an undirected graph
         edges = list(zip(*np.where(np.triu(self.adj_matrix, k=1))))
         # Create complement graph
-        graph = rx.PyGraph()
+        graph = rx.PyGraph(
+            node_count_hint=len(self.observables),
+            edge_count_hint=len(edges),
+        )
         graph.add_nodes_from(self.observables)
         graph.add_edges_from_no_data(edges)
         return graph
@@ -334,9 +353,6 @@ def compute_partition_indices(
         observables that are grouped together according to the specified grouping type and
         graph colouring method.
 
-    Raises:
-        ValueError: If method is ``'rlf'`` as it is not a supported heuristic for this implementation.
-
     **Example**
 
         >>> observables = [qml.X(0) @ qml.Z(1), qml.Z(0), qml.X(1)]
@@ -344,25 +360,17 @@ def compute_partition_indices(
         ((0,), (1, 2))
     """
     if method != "rlf":
-        idx_no_wires = []
-        has_obs_with_wires = False
-        for idx, obs in enumerate(observables):
-            if len(obs.wires) == 0:
-                idx_no_wires.append(idx)
-            else:
-                has_obs_with_wires = True
-                break
 
-        if not has_obs_with_wires:
+        idx_no_wires = [idx for idx, obs in enumerate(observables) if len(obs.wires) == 0]
+
+        if len(idx_no_wires) == len(observables):
             return (tuple(idx_no_wires),)
 
         pauli_groupper = PauliGroupingStrategy(
             observables, grouping_type=grouping_type, graph_colourer=method
         )
 
-        idx_dictionary = pauli_groupper.idx_partitions_from_graph()
-
-        partition_indices = tuple(tuple(indices) for indices in idx_dictionary.values())
+        partition_indices = pauli_groupper.idx_partitions_from_graph()
     else:
         # 'rlf' method is not compatible with the rx implementation.
         partition_indices = _compute_partition_indices_rlf(observables, grouping_type=grouping_type)
@@ -417,8 +425,9 @@ def group_observables(observables, coefficients=None, grouping_type="qwc", metho
             output ``partitioned_coeffs`` is not returned.
         grouping_type (str): The type of binary relation between Pauli words.
             Can be ``'qwc'``, ``'commuting'``, or ``'anticommuting'``.
-        method (str): the graph coloring heuristic to use in solving minimum clique cover, which
-            can be ``'lf'`` (Largest First) or ``'rlf'`` (Recursive Largest First)
+        method (str): The graph coloring heuristic to use in solving minimum clique cover, which
+            can be ``'lf'`` (Largest First), ``'rlf'`` (Recursive Largest First),
+            `dsatur` (DSATUR), or `gis` (IndependentSet). Defaults to ``'rlf'``.
 
     Returns:
        tuple:
