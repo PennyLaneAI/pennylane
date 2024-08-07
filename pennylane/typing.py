@@ -17,10 +17,12 @@ import contextlib
 # pylint: disable=import-outside-toplevel, too-few-public-methods, unused-import
 import sys
 from collections.abc import Callable, Sequence
-from typing import TypeVar, Union
+from typing import Hashable, Iterable, TypeVar, Union
 
 import numpy as np
 from autograd.numpy.numpy_boxes import ArrayBox
+
+from .wires import Wires
 
 _TensorLike = Union[int, float, bool, complex, bytes, list, tuple, np.ndarray, ArrayBox, np.generic]
 
@@ -128,3 +130,5 @@ PostprocessingFn = Callable[[ResultBatch], Result]
 BatchPostprocessingFn = Callable[[ResultBatch], ResultBatch]
 
 JSON = Union[None, int, str, bool, list["JSON"], dict[str, "JSON"]]
+
+WireTypes = Union[Wires, Iterable[Hashable]]
