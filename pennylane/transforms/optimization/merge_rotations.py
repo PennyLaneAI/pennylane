@@ -184,7 +184,7 @@ def merge_rotations(
             next_gate = list_copy[next_gate_idx + 1]
 
             # If next gate is of the same type, we can merge the angles
-            if current_gate.name == next_gate.name and current_gate.wires == next_gate.wires:
+            if isinstance(current_gate, type(next_gate)) and current_gate.wires == next_gate.wires:
                 list_copy.pop(next_gate_idx + 1)
                 next_params = qml.math.stack(next_gate.parameters, like=interface)
                 # jax-jit does not support cast_like
@@ -192,7 +192,7 @@ def merge_rotations(
                     next_params = qml.math.cast_like(next_params, cumulative_angles)
 
                 # The Rot gate must be treated separately
-                if current_gate.name == "Rot":
+                if isinstance(current_gate, qml.Rot):
                     cumulative_angles = fuse_rot_angles(cumulative_angles, next_params)
                 # Other, single-parameter rotation gates just have the angle summed
                 else:
