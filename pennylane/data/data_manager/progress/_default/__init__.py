@@ -112,6 +112,7 @@ class DefaultProgress:
     def update(
         self,
         task_id: int,
+        *,
         completed: Optional[float] = None,
         total: Optional[float] = None,
         advance: Optional[float] = None,
