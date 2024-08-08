@@ -644,6 +644,10 @@ class TestCondCircuits:
     @pytest.mark.parametrize("shots", [None, 100])
     @pytest.mark.parametrize(
         "params, expected",
+        # The parameters used here will essentially apply a PauliX to different wires, each
+        # of which will trigger a different conditional block. Each conditional block applies
+        # the diagonalizing gates of different observables, so the expectation value for the
+        # measured observables will vary accordingly.
         [
             ([np.pi / 2, 0, 0, np.pi / 2], (0, 0, 0, 0)),  # true_fn
             ([0, np.pi / 2, 0, np.pi / 2], (0, 0, -1, 0)),  # elif_fn1
