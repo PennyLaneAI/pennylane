@@ -181,10 +181,10 @@ can be used together to unpack and repack the variables:
 [0.1, 0.2]
 >>> in_tree
 PyTreeDef(([*, *],))
->>> flatfn = FlatFn(f, in_tree)
+>>> flatfn = FlatFn(f)
 >>> flatfn.out_tree is None # initialized to None
 True
->>> results = flatfn(*flat_args)
+>>> results = flatfn(*args)
 >>> results
 [0.1, 1.2]
 >>> flatfn.out_tree # set once function is called
@@ -200,11 +200,10 @@ def repeat(func, n: int):
     def new_func(*args, **kwargs):
 
         func_bound_kwargs = partial(func, **kwargs)
+        flat_fn = FlatFn(func_bound_kwargs)
 
-        flat_args, in_tree = jax.tree_util.tree_flatten(args)
-        flat_fn = FlatFn(func_bound_kwargs, in_tree)
-
-        jaxpr = jax.make_jaxpr(flat_fn)(*flat_args)
+        jaxpr = jax.make_jaxpr(flat_fn)(*args)
+        flat_args, _ = jax.tree_util.tree_flatten(args)
         n_consts = len(jaxpr.consts)
         results = repeat_prim.bind(n, *jaxpr.consts, *flat_args, jaxpr=jaxpr.jaxpr, n_consts=n_consts)
 

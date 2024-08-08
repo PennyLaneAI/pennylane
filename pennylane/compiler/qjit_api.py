@@ -461,18 +461,22 @@ class WhileLoopCallable:  # pylint:disable=too-few-public-methods
 
         while_loop_prim = _get_while_loop_qfunc_prim()
 
-        jaxpr_body_fn = jax.make_jaxpr(self.body_fn)(*init_state)
+        flat_body_fn = FlatFn(self.body_fn)
+        jaxpr_body_fn = jax.make_jaxpr(flat_body_fn)(*init_state)
         jaxpr_cond_fn = jax.make_jaxpr(self.cond_fn)(*init_state)
 
-        return while_loop_prim.bind(
+        flat_args, _ = jax.tree_util.tree_flatten(init_state)
+        results = while_loop_prim.bind(
             *jaxpr_body_fn.consts,
             *jaxpr_cond_fn.consts,
-            *init_state,
+            *flat_args,
             jaxpr_body_fn=jaxpr_body_fn,
             jaxpr_cond_fn=jaxpr_cond_fn,
             n_consts_body=len(jaxpr_body_fn.consts),
             n_consts_cond=len(jaxpr_cond_fn.consts),
         )
+        assert flat_body_fn.out_tree is not None, "Should be set when constructing the jaxpr"
+        return jax.tree_util.tree_unflatten(flat_body_fn.out_tree, results)
 
     def __call__(self, *init_state):
 
