@@ -38,6 +38,13 @@ from .preprocess import (
 )
 
 
+def _requests_adjoint(execution_config):
+    return execution_config.gradient_method == "adjoint" or (
+        execution_config.gradient_method == "device"
+        and execution_config.gradient_keyword_arguments.get("method", None) == "adjoint_jacobian"
+    )
+
+
 @contextmanager
 def _set_shots(device, shots):
     """Context manager to temporarily change the shots
@@ -208,11 +215,7 @@ class LegacyDeviceFacade(Device):
         program.add_transform(legacy_device_batch_transform, device=self._device)
         program.add_transform(legacy_device_expand_fn, device=self._device)
 
-        if execution_config.gradient_method == "adjoint" or (
-            execution_config.gradient_method == "device"
-            and execution_config.gradient_keyword_arguments.get("method", None)
-            == "adjoint_jacobian"
-        ):
+        if _requests_adjoint(execution_config):
             _add_adjoint_transforms(program, name=f"{self.name} + adjoint")
 
         if self._device.capabilities().get("supports_mid_measure", False):
@@ -282,7 +285,7 @@ class LegacyDeviceFacade(Device):
 
         if execution_config.gradient_method == "backprop":
             return self._setup_backprop_config(execution_config)
-        if execution_config.gradient_method == "adjoint":
+        if _requests_adjoint(execution_config):
             return self._setup_adjoint_config(execution_config)
         if execution_config.gradient_method == "device":
             return self._setup_device_config(execution_config)
@@ -302,7 +305,7 @@ class LegacyDeviceFacade(Device):
 
         if execution_config.gradient_method == "backprop":
             return self._validate_backprop_method(circuit)
-        if execution_config.gradient_method == "adjoint":
+        if _requests_adjoint(execution_config):
             return self._validate_adjoint_method(circuit)
         if execution_config.gradient_method == "device":
             return self._validate_device_method(circuit)
