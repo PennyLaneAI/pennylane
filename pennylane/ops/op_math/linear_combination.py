@@ -48,9 +48,8 @@ class LinearCombination(Sum):
              Defaults to ``'lf'``. Ignored if ``grouping_type=None``.
          id (str): name to be assigned to this ``LinearCombination`` instance
 
-    .. seealso::
-         `rustworkx.ColoringStrategy <https://www.rustworkx.org/apiref/rustworkx.ColoringStrategy.html#coloringstrategy>`_
-         for more information on the ``('lf', 'dsatur', 'gis')`` strategies.
+    .. seealso:: `rustworkx.ColoringStrategy <https://www.rustworkx.org/apiref/rustworkx.ColoringStrategy.html#coloringstrategy>`_
+    for more information on the ``('lf', 'dsatur', 'gis')`` strategies.
 
      .. warning::
          The ``simplify`` argument is deprecated and will be removed in a future release.

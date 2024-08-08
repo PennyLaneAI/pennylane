@@ -79,9 +79,8 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
                 colouring, can be ``'lf'`` (Largest First), ``'rlf'`` (Recursive
                 Largest First), `dsatur` (DSATUR), or `gis` (IndependentSet). Defaults to ``'lf'``.
 
-    .. seealso::
-        `rustworkx.ColoringStrategy <https://www.rustworkx.org/apiref/rustworkx.ColoringStrategy.html#coloringstrategy>`_
-        for more information on the ``('lf', 'dsatur', 'gis')`` strategies.
+    .. seealso:: `rustworkx.ColoringStrategy <https://www.rustworkx.org/apiref/rustworkx.ColoringStrategy.html#coloringstrategy>`_
+    for more information on the ``('lf', 'dsatur', 'gis')`` strategies.
 
     Raises:
         ValueError: if arguments specified for ``grouping_type`` or ``graph_colourer``
@@ -307,9 +306,8 @@ def adj_matrix_from_symplectic(symplectic_matrix: np.ndarray, grouping_type: str
 
     # Convert symplectic representation to integer format.
     # This is equivalent to the map: {0: I, 1: X, 2:Y, Z:3}
-    pauli_matrix_int = np.array(
-        [2 * row[:n_qubits] + row[n_qubits:] for row in symplectic_matrix], dtype=np.int8
-    )
+    pauli_matrix_int = 2 * symplectic_matrix[:, :n_qubits] + symplectic_matrix[:, n_qubits:]
+    pauli_matrix_int = pauli_matrix_int.astype(np.int8)
     # Broadcast the second dimension, sucht that pauli_matrix_broad.shape = (m, 1, n_qubits)
     # with m = len(observables). This allows for calculation of all possible combinations of Pauli observable pairs (Pi, Pj).
     # Something like: result[i, j, k] = pauli_matrix_int[i, k] * pauli_matrix_int[j, k]
