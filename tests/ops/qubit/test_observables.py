@@ -65,6 +65,14 @@ EIGVALS_TEST_DATA = [
 
 EIGVALS_TEST_DATA_MULTI_WIRES = [functools.reduce(np.kron, [Y, I, Z])]
 
+DECOMPOSITION_TEST_DATA_MULTI_WIRES = [
+    functools.reduce(np.kron, [X]),
+    functools.reduce(np.kron, [X, Y]),
+    functools.reduce(np.kron, [X, Y, Z]),
+    functools.reduce(np.kron, [X, I, H, Y]),
+    functools.reduce(np.kron, [X, H, Y, Z, X]),
+]
+
 # Testing Projector observable with the basis states.
 BASISSTATEPROJECTOR_EIGVALS_TEST_DATA = [
     (np.array([0, 0])),
@@ -182,7 +190,7 @@ class TestSimpleObservables:
 # Prevents multiple threads from updating Hermitian._eigs at the same time
 @pytest.mark.xdist_group(name="hermitian_cache_group")
 @pytest.mark.usefixtures("tear_down_hermitian")
-class TestHermitian:  # pylint: disable-msg=too-many-public-methods
+class TestHermitian:  # pylint: disable=too-many-public-methods
     """Test the Hermitian observable"""
 
     def test_preserves_autograd_trainability(self):
@@ -331,14 +339,15 @@ class TestHermitian:  # pylint: disable-msg=too-many-public-methods
 
     def test_hermitian_compute_decomposition_inefficiency_warning(self):
         """Tests user inefficiency warning associated with large matrix decomposition"""
-        observable = qml.Identity(0)
-        for i in range(9):
-            observable = observable @ qml.X(i)
+        num_wires = 8
+        observable = qml.Identity(wires=list(range(num_wires)))
 
         with pytest.warns(
             UserWarning, match="Decomposition may be inefficient for this large of a matrix."
         ):
-            qml.Hermitian.compute_decomposition(qml.matrix(observable), wires=list(range(9)))
+            qml.Hermitian.compute_decomposition(
+                qml.matrix(observable), wires=list(range(num_wires))
+            )
 
     @pytest.mark.parametrize("test_num_wires", list(range(1, 11)))
     def test_hermitian_compute_decomposition_performance(self, test_num_wires, benchmark):
@@ -351,18 +360,11 @@ class TestHermitian:  # pylint: disable-msg=too-many-public-methods
             qml.Hermitian.compute_decomposition, qml.matrix(observable), list(range(test_num_wires))
         )
 
-    def test_hermitian_decomposition(self):
-        """Tests that the decomposition method of the Hermitian class returns the correct result."""
-        observable = np.array([[1, 1], [1, -1]]) / np.sqrt(2)
-        A = qml.Hermitian(observable, wires=[0])
-        A_decomp = A.decomposition()
-
-        assert np.allclose(A_decomp[0].matrix(), observable, rtol=0)
-
-    def test_hermitian_compute_decomposition(self):
+    @pytest.mark.parametrize("observable", DECOMPOSITION_TEST_DATA_MULTI_WIRES)
+    def test_hermitian_compute_decomposition(self, observable):
         """Tests that the compute_decomposition method of the Hermitian class returns the correct result."""
-        observable = np.array([[1, 1], [1, -1]]) / np.sqrt(2)
-        A_decomp = qml.Hermitian.compute_decomposition(observable, wires=[0])
+        num_wires = int(np.log2(len(observable)))
+        A_decomp = qml.Hermitian.compute_decomposition(observable, wires=list(range(num_wires)))
 
         assert np.allclose(A_decomp[0].matrix(), observable, rtol=0)
 
