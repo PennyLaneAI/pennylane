@@ -191,7 +191,7 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
             dict[int, list[int]]: A dictionary where the keys are colours (integers) and the values are lists
             of indices (nodes) that have been assigned that colour.
         """
-        # A dictionary where keys are node indices and the value is the color
+        # A dictionary where keys are node indices and the value is the colour
         if new_rx:
             # 'strategy' kwarg was implemented in Rustworkx 0.15
             colouring_dict = rx.graph_greedy_color(
@@ -407,7 +407,7 @@ def _compute_partition_indices_rlf(observables: list, grouping_type: str):
     return tuple(indices)
 
 
-def group_observables(observables, coefficients=None, grouping_type="qwc", method="rlf"):
+def group_observables(observables, coefficients=None, grouping_type="qwc", method="lf"):
     """Partitions a list of observables (Pauli operations and tensor products thereof) into
     groupings according to a binary relation (qubit-wise commuting, fully-commuting, or
     anticommuting).
@@ -423,7 +423,7 @@ def group_observables(observables, coefficients=None, grouping_type="qwc", metho
             output ``partitioned_coeffs`` is not returned.
         grouping_type (str): The type of binary relation between Pauli words.
             Can be ``'qwc'``, ``'commuting'``, or ``'anticommuting'``.
-        method (str): The graph coloring heuristic to use in solving minimum clique cover, which
+        method (str): The graph colouring heuristic to use in solving minimum clique cover, which
             can be ``'lf'`` (Largest First), ``'rlf'`` (Recursive Largest First),
             `dsatur` (DSATUR), or `gis` (IndependentSet). Defaults to ``'rlf'``.
 

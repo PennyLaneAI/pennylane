@@ -43,7 +43,7 @@ class LinearCombination(Sum):
              observables upon initialization. This information may be accessed when a :class:`~.QNode` containing this
              ``LinearCombination`` is executed on devices. The string refers to the type of binary relation between Pauli words.
              Can be ``'qwc'`` (qubit-wise commuting), ``'commuting'``, or ``'anticommuting'``.
-         method (str): The graph coloring heuristic to use in solving minimum clique cover for grouping, which
+         method (str): The graph colouring heuristic to use in solving minimum clique cover for grouping, which
              can be ``'lf'`` (Largest First), ``'rlf'`` (Recursive Largest First), `dsatur` (DSATUR), or `gis` (IndependentSet).
              Defaults to ``'lf'``. Ignored if ``grouping_type=None``.
          id (str): name to be assigned to this ``LinearCombination`` instance
@@ -246,7 +246,7 @@ class LinearCombination(Sum):
             grouping_type (str): The type of binary relation between Pauli words used to compute
                 the grouping. Can be ``'qwc'``, ``'commuting'``, or ``'anticommuting'``.
                 Defaults to ``'qwc'``.
-            method (str): The graph coloring heuristic to use in solving minimum clique cover for
+            method (str): The graph colouring heuristic to use in solving minimum clique cover for
                 grouping, which can be ``'lf'`` (Largest First) or ``'rlf'`` (Recursive Largest
                 First). Defaults to ``'lf'``.
 
