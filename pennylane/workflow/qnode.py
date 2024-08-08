@@ -476,7 +476,8 @@ class QNode:
         max_diff: int = 1,
         device_vjp: bool = False,
         postselect_mode: Literal[None, "hw-like", "fill-shots"] = None,
-        mcm_method: Literal[None, "deferred", "one-shit", "tree-traversal"] = None,
+        mcm_method: Literal[None, "deferred", "one-shot", "tree-traversal"] = None,
+
         **gradient_kwargs,
     ):
         # Moving it here since the old default value is checked on debugging
