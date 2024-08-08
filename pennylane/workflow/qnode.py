@@ -31,12 +31,12 @@ from pennylane.measurements import CountsMP, MidMeasureMP, Shots
 from pennylane.tape import QuantumScript, QuantumTape
 from pennylane.transforms.core import TransformContainer, TransformDispatcher, TransformProgram
 
-from .execution import INTERFACE_MAP, SUPPORTED_INTERFACE_USER_INPUT, SUPPORTED_INTERFACES
+from .execution import INTERFACE_MAP, SUPPORTED_INTERFACES, SupportedInterfaceUserInput
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
-SUPPORTED_DIFF_METHODS = Literal[
+SupportedDiffMethods = Literal[
     None,
     "best",
     "device",
@@ -466,8 +466,8 @@ class QNode:
         self,
         func: Callable,
         device: Union[Device, "qml.devices.Device"],
-        interface: SUPPORTED_INTERFACE_USER_INPUT = "auto",
-        diff_method: Union[TransformDispatcher, SUPPORTED_DIFF_METHODS] = "best",
+        interface: SupportedInterfaceUserInput = "auto",
+        diff_method: Union[TransformDispatcher, SupportedDiffMethods] = "best",
         expansion_strategy: Literal[None, "device", "gradient"] = None,
         max_expansion: Optional[int] = None,
         grad_on_execution: Literal[True, False, "best"] = "best",
@@ -477,7 +477,6 @@ class QNode:
         device_vjp: bool = False,
         postselect_mode: Literal[None, "hw-like", "fill-shots"] = None,
         mcm_method: Literal[None, "deferred", "one-shot", "tree-traversal"] = None,
-
         **gradient_kwargs,
     ):
         # Moving it here since the old default value is checked on debugging
@@ -630,7 +629,7 @@ class QNode:
         return self._interface
 
     @interface.setter
-    def interface(self, value: SUPPORTED_INTERFACE_USER_INPUT):
+    def interface(self, value: SupportedInterfaceUserInput):
         if value not in SUPPORTED_INTERFACES:
 
             raise qml.QuantumFunctionError(
@@ -698,7 +697,7 @@ class QNode:
     def get_gradient_fn(
         device: Union[Device, "qml.devices.Device"],
         interface,
-        diff_method: Union[TransformDispatcher, SUPPORTED_DIFF_METHODS] = "best",
+        diff_method: Union[TransformDispatcher, SupportedDiffMethods] = "best",
         tape: Optional["qml.tape.QuantumTape"] = None,
     ):
         """Determine the best differentiation method, interface, and device
@@ -757,7 +756,7 @@ class QNode:
         if isinstance(diff_method, str):
             raise qml.QuantumFunctionError(
                 f"Differentiation method {diff_method} not recognized. Allowed "
-                f"options are {tuple(get_args(SUPPORTED_DIFF_METHODS))}."
+                f"options are {tuple(get_args(SupportedDiffMethods))}."
             )
 
         if isinstance(diff_method, qml.transforms.core.TransformDispatcher):

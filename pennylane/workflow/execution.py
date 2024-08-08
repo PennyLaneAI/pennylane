@@ -61,7 +61,7 @@ jpc_interfaces = {
     "tensorflow",
 }
 
-SUPPORTED_INTERFACE_USER_INPUT = Literal[
+SupportedInterfaceUserInput = Literal[
     None,
     "auto",
     "autograd",
@@ -96,7 +96,7 @@ _mapping_output = (
     "tf",
     "tf",
 )
-INTERFACE_MAP = dict(zip(get_args(SUPPORTED_INTERFACE_USER_INPUT), _mapping_output))
+INTERFACE_MAP = dict(zip(get_args(SupportedInterfaceUserInput), _mapping_output))
 """dict[str, str]: maps an allowed interface specification to its canonical name."""
 
 #: list[str]: allowed interface strings
