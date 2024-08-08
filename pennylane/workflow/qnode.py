@@ -631,7 +631,8 @@ class QNode:
 
     @interface.setter
     def interface(self, value: SUPPORTED_INTERFACE_USER_INPUT):
-        if value not in get_args(SUPPORTED_INTERFACE_USER_INPUT):
+        if value not in SUPPORTED_INTERFACES:
+
             raise qml.QuantumFunctionError(
                 f"Unknown interface {value}. Interface must be one of {SUPPORTED_INTERFACES}."
             )
