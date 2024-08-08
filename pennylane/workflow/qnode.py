@@ -755,8 +755,7 @@ class QNode:
         if isinstance(diff_method, str):
             raise qml.QuantumFunctionError(
                 f"Differentiation method {diff_method} not recognized. Allowed "
-                "options are ('best', 'parameter-shift', 'backprop', 'finite-diff', "
-                "'device', 'adjoint', 'spsa', 'hadamard')."
+                f"options are {tuple(get_args(SUPPORTED_DIFF_METHODS))}."
             )
 
         if isinstance(diff_method, qml.transforms.core.TransformDispatcher):
