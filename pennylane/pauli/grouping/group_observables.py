@@ -355,9 +355,9 @@ def compute_partition_indices(
 
     **Example**
 
-        >>> observables = [qml.X(0) @ qml.Z(1), qml.Z(0), qml.X(1)]
-        >>> compute_partition_indices(observables, grouping_type="qwc", method="lf")
-        ((0,), (1, 2))
+    >>> observables = [qml.X(0) @ qml.Z(1), qml.Z(0), qml.X(1)]
+    >>> compute_partition_indices(observables, grouping_type="qwc", method="lf")
+    ((0,), (1, 2))
     """
     if method != "rlf":
 
