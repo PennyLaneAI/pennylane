@@ -251,7 +251,6 @@ class Exp(ScalarSymbolicOp, Operation):
 
         return d
 
-    # pylint:disable=too-many-branches
     def _recursive_decomposition(self, base: Operator, coeff: complex):
         """Decompose the exponential of ``base`` multiplied by ``coeff``.
 
@@ -284,41 +283,27 @@ class Exp(ScalarSymbolicOp, Operation):
             coeffs = [c * coeff for c in coeffs]
             return self._trotter_decomposition(ops, coeffs)
 
-        with qml.queuing.AnnotatedQueue() as q:
+        if not qml.math.is_abstract(coeff) and not qml.math.isclose(qml.math.real(coeff), 0):
 
-            qml.cond(
-                qml.math.isclose(qml.math.real(coeff), 0),
-                lambda: self._smart_decomposition(coeff, base),
-                lambda: self._raise_decomposition_undefined_error(coeff, base),
-            )()
+            error_msg = f"The decomposition of the {self} operator is not defined."
 
-        return q.queue
+            if not self.num_steps:  # if num_steps was not set
+                error_msg += (
+                    " Please set a value to ``num_steps`` when instantiating the ``Exp`` operator "
+                    "if a Suzuki-Trotter decomposition is required."
+                )
 
-    def _raise_decomposition_undefined_error(self, *args):
-        """Raise an error when the decomposition is not defined."""
+            if self.base.is_hermitian:
+                error_msg += (
+                    " Decomposition is not defined for real coefficients of hermitian operators."
+                )
 
-        if qml.math.is_abstract(args[0]):
-            # Do not raise an error during tracing
-            return
+            raise DecompositionUndefinedError(error_msg)
 
-        error_msg = f"The decomposition of the {self} operator is not defined."
-
-        if not self.num_steps:  # if num_steps was not set
-            error_msg += (
-                " Please set a value to ``num_steps`` when instantiating the ``Exp`` operator "
-                "if a Suzuki-Trotter decomposition is required."
-            )
-
-        if self.base.is_hermitian:
-            error_msg += (
-                " Decomposition is not defined for real coefficients of hermitian operators."
-            )
-
-        raise DecompositionUndefinedError(error_msg)
+        return self._smart_decomposition(coeff, base)
 
     def _smart_decomposition(self, coeff, base):
-        """Decompose to an operator to an operator with a generator or a PauliRot if possible.
-        This is only applicable when the coeff is imaginary. Queues the decomposed operations."""
+        """Decompose to an operator to an operator with a generator or a PauliRot if possible."""
 
         # Store operator classes with generators
         has_generator_types = []
@@ -336,40 +321,32 @@ class Exp(ScalarSymbolicOp, Operation):
         for op_class in has_generator_types:
             # PauliRot and PCPhase have different positional args
             if op_class not in {qml.PauliRot, qml.PCPhase}:
-                with qml.QueuingManager.stop_recording():
-                    g, c = qml.generator(op_class)(coeff, base.wires)
+                g, c = qml.generator(op_class)(coeff, base.wires)
                 # Some generators are not wire-ordered (e.g. OrbitalRotation)
                 mapped_wires_g = qml.map_wires(g, dict(zip(g.wires, base.wires)))
 
                 if qml.equal(mapped_wires_g, base):
                     # Cancel the coefficients added by the generator
                     coeff = math.real(-1j / c * coeff)
-                    op_class(coeff, g.wires)
-                    return
+                    return [op_class(coeff, g.wires)]
 
                 # could have absorbed the coefficient.
-                with qml.QueuingManager.stop_recording():
-                    simplified_g = qml.simplify(qml.s_prod(c, mapped_wires_g))
+                simplified_g = qml.simplify(qml.s_prod(c, mapped_wires_g))
 
                 if qml.equal(simplified_g, base):
                     # Cancel the coefficients added by the generator
                     coeff = math.real(-1j * coeff)
-                    op_class(coeff, g.wires)
-                    return
+                    return [op_class(coeff, g.wires)]
 
         if qml.pauli.is_pauli_word(base):
             # Check if the exponential can be decomposed into a PauliRot gate
-            with qml.QueuingManager.stop_recording():
-                ops = self._pauli_rot_decomposition(base, coeff)
-            for op in ops:
-                qml.apply(op)
-            return
+            return self._pauli_rot_decomposition(base, coeff)
 
         error_msg = f"The decomposition of the {self} operator is not defined."
 
         if not self.num_steps:  # if num_steps was not set
             error_msg += (
-                "Please set a value to ``num_steps`` when instantiating the ``Exp`` operator "
+                " Please set a value to ``num_steps`` when instantiating the ``Exp`` operator "
                 "if a Suzuki-Trotter decomposition is required. "
             )
 
