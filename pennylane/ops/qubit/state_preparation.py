@@ -23,7 +23,7 @@ import numpy as np
 from pennylane import math
 from pennylane.operation import AnyWires, Operation, Operator, StatePrepBase
 from pennylane.templates.state_preparations import BasisStatePreparation, MottonenStatePreparation
-from pennylane.typing import TensorLike, WireTypes
+from pennylane.typing import TensorLike, WiresLike
 from pennylane.wires import WireError, Wires
 
 state_prep_ops = {"BasisState", "StatePrep", "QubitDensityMatrix"}
@@ -77,7 +77,7 @@ class BasisState(StatePrepBase):
     """int: Number of dimensions per trainable parameter of the operator."""
 
     @staticmethod
-    def compute_decomposition(n: TensorLike, wires: WireTypes) -> list[Operator]:
+    def compute_decomposition(n: TensorLike, wires: WiresLike) -> list[Operator]:
         r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -101,7 +101,7 @@ class BasisState(StatePrepBase):
         """
         return [BasisStatePreparation(n, wires)]
 
-    def state_vector(self, wire_order: Optional[WireTypes] = None) -> TensorLike:
+    def state_vector(self, wire_order: Optional[WiresLike] = None) -> TensorLike:
         """Returns a statevector of shape ``(2,) * num_wires``."""
         prep_vals = self.parameters[0]
         if any(i not in [0, 1] for i in prep_vals):
@@ -172,7 +172,7 @@ class StatePrep(StatePrepBase):
     ndim_params = (1,)
     """int: Number of dimensions per trainable parameter of the operator."""
 
-    def __init__(self, state: TensorLike, wires: WireTypes, id: Optional[str] = None):
+    def __init__(self, state: TensorLike, wires: WiresLike, id: Optional[str] = None):
         super().__init__(state, wires=wires, id=id)
         state = self.parameters[0]
 
@@ -188,7 +188,7 @@ class StatePrep(StatePrepBase):
                 raise ValueError("Sum of amplitudes-squared does not equal one.")
 
     @staticmethod
-    def compute_decomposition(state: TensorLike, wires: WireTypes) -> list[Operator]:
+    def compute_decomposition(state: TensorLike, wires: WiresLike) -> list[Operator]:
         r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -211,7 +211,7 @@ class StatePrep(StatePrepBase):
         """
         return [MottonenStatePreparation(state, wires)]
 
-    def state_vector(self, wire_order: Optional[WireTypes] = None):
+    def state_vector(self, wire_order: Optional[WiresLike] = None):
         num_op_wires = len(self.wires)
         op_vector_shape = (-1,) + (2,) * num_op_wires if self.batch_size else (2,) * num_op_wires
         op_vector = math.reshape(self.parameters[0], op_vector_shape)

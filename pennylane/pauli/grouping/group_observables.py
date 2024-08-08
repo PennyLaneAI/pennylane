@@ -184,7 +184,7 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
 
 
 def group_observables(
-    observables: list["qml.Observable"],
+    observables: list["qml.operation.Observable"],
     coefficients: Optional[TensorLike] = None,
     grouping_type: Literal["qwc", "commuting", "anticommuting"] = "qwc",
     method: Literal["lf", "rlf"] = "rlf",

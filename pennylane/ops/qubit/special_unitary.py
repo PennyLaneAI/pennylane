@@ -23,9 +23,9 @@ from typing import Literal, Optional
 import numpy as np
 
 import pennylane as qml
-from pennylane.operation import AnyWires, FlattenOutput, Operation
+from pennylane.operation import AnyWires, FlatPytree, Operation
 from pennylane.ops.qubit.parametric_ops_multi_qubit import PauliRot
-from pennylane.typing import TensorLike, WireTypes
+from pennylane.typing import TensorLike, WiresLike
 
 _pauli_matrices = np.array(
     [[[1, 0], [0, 1]], [[0, 1], [1, 0]], [[0, -1j], [1j, 0]], [[1, 0], [0, -1]]]
@@ -411,7 +411,7 @@ class SpecialUnitary(Operation):
     grad_method = None
     """Gradient computation method."""
 
-    def __init__(self, theta: TensorLike, wires: WireTypes, id: Optional[str] = None):
+    def __init__(self, theta: TensorLike, wires: WiresLike, id: Optional[str] = None):
         num_wires = 1 if isinstance(wires, int) else len(wires)
         self.hyperparameters["num_wires"] = num_wires
         theta_shape = qml.math.shape(theta)
@@ -431,7 +431,7 @@ class SpecialUnitary(Operation):
 
         super().__init__(theta, wires=wires, id=id)
 
-    def _flatten(self) -> FlattenOutput:
+    def _flatten(self) -> FlatPytree:
         return self.data, (self.wires, ())
 
     @staticmethod
@@ -711,7 +711,7 @@ class TmpPauliRot(PauliRot):
     @staticmethod
     def compute_decomposition(
         theta: TensorLike,
-        wires: WireTypes,
+        wires: WiresLike,
         pauli_word: Literal["I", "X", "Y", "Z"],
     ):
         r"""Representation of the operator as a product of other operators (static method). :

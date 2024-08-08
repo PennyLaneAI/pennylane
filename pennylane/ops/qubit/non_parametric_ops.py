@@ -26,7 +26,7 @@ from scipy import sparse
 
 import pennylane as qml
 from pennylane.operation import Observable, Operation
-from pennylane.typing import TensorLike, WireTypes
+from pennylane.typing import TensorLike, WiresLike
 from pennylane.utils import pauli_eigs
 from pennylane.wires import Wires
 
@@ -116,7 +116,7 @@ class Hadamard(Observable, Operation):
         return pauli_eigs(1)
 
     @staticmethod
-    def compute_diagonalizing_gates(wires: WireTypes) -> list["qml.operation.Operator"]:
+    def compute_diagonalizing_gates(wires: WiresLike) -> list["qml.operation.Operator"]:
         r"""Sequence of gates that diagonalize the operator in the computational basis (static method).
 
         Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
@@ -141,7 +141,7 @@ class Hadamard(Observable, Operation):
         return [qml.RY(-np.pi / 4, wires=wires)]
 
     @staticmethod
-    def compute_decomposition(wires: WireTypes) -> list["qml.operation.Operator"]:
+    def compute_decomposition(wires: WiresLike) -> list["qml.operation.Operator"]:
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -168,7 +168,7 @@ class Hadamard(Observable, Operation):
             qml.PhaseShift(np.pi / 2, wires=wires),
         ]
 
-    def _controlled(self, wire: WireTypes) -> "qml.CH":
+    def _controlled(self, wire: WiresLike) -> "qml.CH":
         return qml.CH(wires=Wires(wire) + self.wires)
 
     def adjoint(self) -> "Hadamard":
@@ -211,7 +211,7 @@ class PauliX(Observable, Operation):
 
     _queue_category = "_ops"
 
-    def __init__(self, wires: Optional[WireTypes] = None, id: Optional[str] = None):
+    def __init__(self, wires: Optional[WiresLike] = None, id: Optional[str] = None):
         super().__init__(wires=wires, id=id)
         self._pauli_rep = qml.pauli.PauliSentence({qml.pauli.PauliWord({self.wires[0]: "X"}): 1.0})
 
@@ -287,7 +287,7 @@ class PauliX(Observable, Operation):
         return pauli_eigs(1)
 
     @staticmethod
-    def compute_diagonalizing_gates(wires: WireTypes) -> list["qml.operation.Operator"]:
+    def compute_diagonalizing_gates(wires: WiresLike) -> list["qml.operation.Operator"]:
         r"""Sequence of gates that diagonalize the operator in the computational basis (static method).
 
         Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
@@ -312,7 +312,7 @@ class PauliX(Observable, Operation):
         return [Hadamard(wires=wires)]
 
     @staticmethod
-    def compute_decomposition(wires: WireTypes) -> list["qml.operation.Operator"]:
+    def compute_decomposition(wires: WiresLike) -> list["qml.operation.Operator"]:
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -349,7 +349,7 @@ class PauliX(Observable, Operation):
             return [SX(wires=self.wires)]
         return super().pow(z_mod2)
 
-    def _controlled(self, wire: WireTypes) -> "qml.CNOT":
+    def _controlled(self, wire: WiresLike) -> "qml.CNOT":
         return qml.CNOT(wires=Wires(wire) + self.wires)
 
     def single_qubit_rot_angles(self) -> list[TensorLike]:
@@ -403,7 +403,7 @@ class PauliY(Observable, Operation):
 
     _queue_category = "_ops"
 
-    def __init__(self, wires: Optional[WireTypes] = None, id: Optional[str] = None):
+    def __init__(self, wires: Optional[WiresLike] = None, id: Optional[str] = None):
         super().__init__(wires=wires, id=id)
         self._pauli_rep = qml.pauli.PauliSentence({qml.pauli.PauliWord({self.wires[0]: "Y"}): 1.0})
 
@@ -478,7 +478,7 @@ class PauliY(Observable, Operation):
         return pauli_eigs(1)
 
     @staticmethod
-    def compute_diagonalizing_gates(wires: WireTypes) -> list["qml.operation.Operator"]:
+    def compute_diagonalizing_gates(wires: WiresLike) -> list["qml.operation.Operator"]:
         r"""Sequence of gates that diagonalize the operator in the computational basis (static method).
 
         Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
@@ -507,7 +507,7 @@ class PauliY(Observable, Operation):
         ]
 
     @staticmethod
-    def compute_decomposition(wires: WireTypes) -> list["qml.operation.Operator"]:
+    def compute_decomposition(wires: WiresLike) -> list["qml.operation.Operator"]:
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -540,7 +540,7 @@ class PauliY(Observable, Operation):
     def pow(self, z: Union[float, int]) -> list["qml.operation.Operator"]:
         return super().pow(z % 2)
 
-    def _controlled(self, wire: WireTypes) -> "qml.CY":
+    def _controlled(self, wire: WiresLike) -> "qml.CY":
         return qml.CY(wires=Wires(wire) + self.wires)
 
     def single_qubit_rot_angles(self) -> list[TensorLike]:
@@ -592,7 +592,7 @@ class PauliZ(Observable, Operation):
 
     _queue_category = "_ops"
 
-    def __init__(self, wires: Optional[WireTypes] = None, id: Optional[str] = None):
+    def __init__(self, wires: Optional[WiresLike] = None, id: Optional[str] = None):
         super().__init__(wires=wires, id=id)
         self._pauli_rep = qml.pauli.PauliSentence({qml.pauli.PauliWord({self.wires[0]: "Z"}): 1.0})
 
@@ -668,7 +668,7 @@ class PauliZ(Observable, Operation):
 
     @staticmethod
     def compute_diagonalizing_gates(  # pylint: disable=unused-argument
-        wires: WireTypes,
+        wires: WiresLike,
     ) -> list["qml.operation.Operator"]:
         r"""Sequence of gates that diagonalize the operator in the computational basis (static method).
 
@@ -695,7 +695,7 @@ class PauliZ(Observable, Operation):
         return []
 
     @staticmethod
-    def compute_decomposition(wires: WireTypes) -> list["qml.operation.Operator"]:
+    def compute_decomposition(wires: WiresLike) -> list["qml.operation.Operator"]:
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -733,7 +733,7 @@ class PauliZ(Observable, Operation):
 
         return [qml.PhaseShift(np.pi * z_mod2, wires=self.wires)]
 
-    def _controlled(self, wire: WireTypes) -> "qml.CZ":
+    def _controlled(self, wire: WiresLike) -> "qml.CZ":
         return qml.CZ(wires=wire + self.wires)
 
     def single_qubit_rot_angles(self) -> list[TensorLike]:
@@ -831,7 +831,7 @@ class S(Operation):
         return np.array([1, 1j])
 
     @staticmethod
-    def compute_decomposition(wires: WireTypes) -> np.ndarray:
+    def compute_decomposition(wires: WiresLike) -> np.ndarray:
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -943,7 +943,7 @@ class T(Operation):
         return np.array([1, cmath.exp(1j * np.pi / 4)])
 
     @staticmethod
-    def compute_decomposition(wires: WireTypes) -> list["qml.operation.Operator"]:
+    def compute_decomposition(wires: WiresLike) -> list["qml.operation.Operator"]:
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -1054,7 +1054,7 @@ class SX(Operation):
         return np.array([1, 1j])
 
     @staticmethod
-    def compute_decomposition(wires: WireTypes) -> list["qml.operation.Operator"]:
+    def compute_decomposition(wires: WiresLike) -> list["qml.operation.Operator"]:
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -1145,7 +1145,7 @@ class SWAP(Operation):
         return np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]])
 
     @staticmethod
-    def compute_decomposition(wires: WireTypes) -> list["qml.operation.Operator"]:
+    def compute_decomposition(wires: WiresLike) -> list["qml.operation.Operator"]:
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -1177,7 +1177,7 @@ class SWAP(Operation):
     def adjoint(self) -> "SWAP":
         return SWAP(wires=self.wires)
 
-    def _controlled(self, wire: WireTypes) -> "qml.CSWAP":
+    def _controlled(self, wire: WiresLike) -> "qml.CSWAP":
         return qml.CSWAP(wires=wire + self.wires)
 
     @property
@@ -1270,7 +1270,7 @@ class ECR(Operation):
         return np.array([1, -1, 1, -1])
 
     @staticmethod
-    def compute_decomposition(wires: WireTypes) -> list["qml.operation.Operator"]:
+    def compute_decomposition(wires: WiresLike) -> list["qml.operation.Operator"]:
         r"""Representation of the operator as a product of other operators (static method).
 
            .. math:: O = O_1 O_2 \dots O_n.
@@ -1390,7 +1390,7 @@ class ISWAP(Operation):
         return np.array([1j, -1j, 1, 1])
 
     @staticmethod
-    def compute_decomposition(wires: WireTypes) -> list["qml.operation.Operator"]:
+    def compute_decomposition(wires: WiresLike) -> list["qml.operation.Operator"]:
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -1515,7 +1515,7 @@ class SISWAP(Operation):
         return np.array([INV_SQRT2 * (1 + 1j), INV_SQRT2 * (1 - 1j), 1, 1])
 
     @staticmethod
-    def compute_decomposition(wires: WireTypes) -> list["qml.operation.Operator"]:
+    def compute_decomposition(wires: WiresLike) -> list["qml.operation.Operator"]:
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.

@@ -26,8 +26,8 @@ from scipy.linalg import fractional_matrix_power
 import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane.math import cast, conj, eye, norm, sqrt, sqrt_matrix, transpose, zeros
-from pennylane.operation import AnyWires, DecompositionUndefinedError, FlattenOutput, Operation
-from pennylane.typing import TensorLike, WireTypes
+from pennylane.operation import AnyWires, DecompositionUndefinedError, FlatPytree, Operation
+from pennylane.typing import TensorLike, WiresLike
 from pennylane.wires import Wires
 
 _walsh_hadamard_matrix = np.array([[1, 1], [1, -1]]) / 2
@@ -122,7 +122,7 @@ class QubitUnitary(Operation):
     def __init__(
         self,
         U: TensorLike,
-        wires: WireTypes,
+        wires: WiresLike,
         id: Optional[str] = None,
         unitary_check: bool = False,
     ):  # pylint: disable=too-many-arguments
@@ -181,7 +181,7 @@ class QubitUnitary(Operation):
         return U
 
     @staticmethod
-    def compute_decomposition(U: TensorLike, wires: WireTypes):
+    def compute_decomposition(U: TensorLike, wires: WiresLike):
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -359,7 +359,7 @@ class DiagonalQubitUnitary(Operation):
         return D
 
     @staticmethod
-    def compute_decomposition(D: TensorLike, wires: WireTypes) -> list["qml.operation.Operator"]:
+    def compute_decomposition(D: TensorLike, wires: WiresLike) -> list["qml.operation.Operator"]:
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -432,7 +432,7 @@ class DiagonalQubitUnitary(Operation):
         cast_data = qml.math.cast(self.data[0], np.complex128)
         return [DiagonalQubitUnitary(cast_data**z, wires=self.wires)]
 
-    def _controlled(self, control: WireTypes):
+    def _controlled(self, control: WiresLike):
         return DiagonalQubitUnitary(
             qml.math.hstack([np.ones_like(self.parameters[0]), self.parameters[0]]),
             wires=control + self.wires,
@@ -532,7 +532,7 @@ class BlockEncode(Operation):
     grad_method = None
     """Gradient computation method."""
 
-    def __init__(self, A: TensorLike, wires: WireTypes, id: Optional[str] = None):
+    def __init__(self, A: TensorLike, wires: WiresLike, id: Optional[str] = None):
         wires = Wires(wires)
         shape_a = qml.math.shape(A)
         if shape_a == () or all(x == 1 for x in shape_a):
@@ -566,7 +566,7 @@ class BlockEncode(Operation):
         self.hyperparameters["norm"] = normalization
         self.hyperparameters["subspace"] = subspace
 
-    def _flatten(self) -> FlattenOutput:
+    def _flatten(self) -> FlatPytree:
         return self.data, (self.wires, ())
 
     @staticmethod

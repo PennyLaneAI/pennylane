@@ -25,7 +25,7 @@ from scipy.sparse import csr_matrix
 
 import pennylane as qml
 from pennylane.operation import AnyWires, Observable, Operation
-from pennylane.typing import TensorLike, WireTypes
+from pennylane.typing import TensorLike, WiresLike
 from pennylane.wires import Wires
 
 from .matrix_ops import QubitUnitary
@@ -70,7 +70,7 @@ class Hermitian(Observable):
     _num_basis_states = 2
     _eigs = {}
 
-    def __init__(self, A: TensorLike, wires: WireTypes, id: Optional[str] = None):
+    def __init__(self, A: TensorLike, wires: WiresLike, id: Optional[str] = None):
         A = np.array(A) if isinstance(A, list) else A
         if not qml.math.is_abstract(A):
             if isinstance(wires, Sequence) and not isinstance(wires, str):
@@ -170,7 +170,7 @@ class Hermitian(Observable):
 
     @staticmethod
     def compute_diagonalizing_gates(  # pylint: disable=arguments-differ
-        eigenvectors: TensorLike, wires: WireTypes
+        eigenvectors: TensorLike, wires: WiresLike
     ) -> list["qml.operation.Operator"]:
         r"""Sequence of gates that diagonalize the operator in the computational basis (static method).
 
@@ -254,7 +254,7 @@ class SparseHamiltonian(Observable):
 
     grad_method = None
 
-    def __init__(self, H: csr_matrix, wires: Optional[WireTypes] = None, id: Optional[str] = None):
+    def __init__(self, H: csr_matrix, wires: Optional[WiresLike] = None, id: Optional[str] = None):
         if not isinstance(H, csr_matrix):
             raise TypeError("Observable must be a scipy sparse csr_matrix.")
         super().__init__(H, wires=wires, id=id)
@@ -403,7 +403,7 @@ class Projector(Observable):
     ndim_params = (1,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    def __new__(cls, state: TensorLike, wires: WireTypes, **_):
+    def __new__(cls, state: TensorLike, wires: WiresLike, **_):
         """Changes parents based on the state representation.
 
         Though all the types will be named "Projector", their *identity* and location in memory
@@ -453,7 +453,7 @@ class BasisStateProjector(Projector, Operation):
 
     # The call signature should be the same as Projector.__new__ for the positional
     # arguments, but with free key word arguments.
-    def __init__(self, state: TensorLike, wires: WireTypes, id: Optional[str] = None):
+    def __init__(self, state: TensorLike, wires: WiresLike, id: Optional[str] = None):
         wires = Wires(wires)
 
         if qml.math.get_interface(state) == "jax":
@@ -578,7 +578,7 @@ class BasisStateProjector(Projector, Operation):
     @staticmethod
     def compute_diagonalizing_gates(  # pylint: disable=arguments-differ,unused-argument
         basis_state: TensorLike,
-        wires: WireTypes,
+        wires: WiresLike,
     ) -> list["qml.operation.Operator"]:
         r"""Sequence of gates that diagonalize the operator in the computational basis (static method).
 
@@ -633,7 +633,7 @@ class StateVectorProjector(Projector):
 
     # The call signature should be the same as Projector.__new__ for the positional
     # arguments, but with free key word arguments.
-    def __init__(self, state: TensorLike, wires: WireTypes, id: Optional[str] = None):
+    def __init__(self, state: TensorLike, wires: WiresLike, id: Optional[str] = None):
         wires = Wires(wires)
         super().__init__(state, wires=wires, id=id)
 
@@ -760,7 +760,7 @@ class StateVectorProjector(Projector):
 
     @staticmethod
     def compute_diagonalizing_gates(  # pylint: disable=arguments-differ,unused-argument,arguments-renamed
-        state_vector: TensorLike, wires: WireTypes
+        state_vector: TensorLike, wires: WiresLike
     ) -> list["qml.operation.Operator"]:
         r"""Sequence of gates that diagonalize the operator in the computational basis (static method).
 

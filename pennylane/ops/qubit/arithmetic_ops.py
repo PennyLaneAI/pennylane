@@ -22,9 +22,9 @@ from typing import Optional
 import numpy as np
 
 import pennylane as qml
-from pennylane.operation import AnyWires, FlattenOutput, Operation
+from pennylane.operation import AnyWires, FlatPytree, Operation
 from pennylane.ops import Identity
-from pennylane.typing import TensorLike, WireTypes
+from pennylane.typing import TensorLike, WiresLike
 from pennylane.wires import Wires
 
 
@@ -154,7 +154,7 @@ class QubitCarry(Operation):
         )
 
     @staticmethod
-    def compute_decomposition(wires: WireTypes) -> list["qml.operation.Operator"]:
+    def compute_decomposition(wires: WiresLike) -> list["qml.operation.Operator"]:
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -290,7 +290,7 @@ class QubitSum(Operation):
         )
 
     @staticmethod
-    def compute_decomposition(wires: WireTypes) -> "qml.Operator":
+    def compute_decomposition(wires: WiresLike) -> "qml.operation.Operator":
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -367,7 +367,7 @@ class IntegerComparator(Operation):
 
     grad_method = None
 
-    def _flatten(self) -> FlattenOutput:
+    def _flatten(self) -> FlatPytree:
         hp = self.hyperparameters
         metadata = (
             ("work_wires", hp["work_wires"]),
@@ -381,8 +381,8 @@ class IntegerComparator(Operation):
         self,
         value: int,
         geq: bool = True,
-        wires: Optional[WireTypes] = None,
-        work_wires: Optional[WireTypes] = None,
+        wires: Optional[WiresLike] = None,
+        work_wires: Optional[WiresLike] = None,
     ):
         if not isinstance(value, int):
             raise ValueError(f"The compared value must be an int. Got {type(value)}.")
@@ -427,7 +427,7 @@ class IntegerComparator(Operation):
     @staticmethod
     def compute_matrix(
         value: Optional[int] = None,
-        control_wires: Optional[WireTypes] = None,
+        control_wires: Optional[WiresLike] = None,
         geq: bool = True,
         **kwargs,
     ) -> TensorLike:  # pylint: disable=arguments-differ
@@ -498,8 +498,8 @@ class IntegerComparator(Operation):
     def compute_decomposition(
         value: int,
         geq: bool = True,
-        wires: Optional[WireTypes] = None,
-        work_wires: Optional[WireTypes] = None,
+        wires: Optional[WiresLike] = None,
+        work_wires: Optional[WiresLike] = None,
         **kwargs,
     ) -> list["qml.operation.Operator"]:
         r"""Representation of the operator as a product of other operators (static method).

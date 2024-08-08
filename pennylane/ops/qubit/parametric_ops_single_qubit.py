@@ -24,7 +24,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.operation import Operation
-from pennylane.typing import TensorLike, WireTypes
+from pennylane.typing import TensorLike, WiresLike
 
 from .non_parametric_ops import Hadamard, PauliX, PauliY, PauliZ
 
@@ -76,7 +76,7 @@ class RX(Operation):
     def generator(self) -> "qml.Hamiltonian":
         return qml.Hamiltonian([-0.5], [PauliX(wires=self.wires)])
 
-    def __init__(self, phi: TensorLike, wires: WireTypes, id: Optional[str] = None):
+    def __init__(self, phi: TensorLike, wires: WiresLike, id: Optional[str] = None):
         super().__init__(phi, wires=wires, id=id)
 
     @staticmethod
@@ -118,7 +118,7 @@ class RX(Operation):
     def pow(self, z: Union[int, float]) -> list["qml.operation.Operator"]:
         return [RX(self.data[0] * z, wires=self.wires)]
 
-    def _controlled(self, wire: WireTypes) -> "qml.CRX":
+    def _controlled(self, wire: WiresLike) -> "qml.CRX":
         return qml.CRX(*self.parameters, wires=wire + self.wires)
 
     def simplify(self) -> "RX":
@@ -172,7 +172,7 @@ class RY(Operation):
     def generator(self) -> "qml.Hamiltonian":
         return qml.Hamiltonian([-0.5], [PauliY(wires=self.wires)])
 
-    def __init__(self, phi: TensorLike, wires: WireTypes, id: Optional[str] = None):
+    def __init__(self, phi: TensorLike, wires: WiresLike, id: Optional[str] = None):
         super().__init__(phi, wires=wires, id=id)
 
     @staticmethod
@@ -214,7 +214,7 @@ class RY(Operation):
     def pow(self, z: Union[int, float]) -> list["qml.operation.Operator"]:
         return [RY(self.data[0] * z, wires=self.wires)]
 
-    def _controlled(self, wire: WireTypes) -> "qml.CRY":
+    def _controlled(self, wire: WiresLike) -> "qml.CRY":
         return qml.CRY(*self.parameters, wires=wire + self.wires)
 
     def simplify(self) -> "RY":
@@ -267,7 +267,7 @@ class RZ(Operation):
     def generator(self) -> "qml.Hamiltonian":
         return qml.Hamiltonian([-0.5], [PauliZ(wires=self.wires)])
 
-    def __init__(self, phi: TensorLike, wires: WireTypes, id: Optional[str] = None):
+    def __init__(self, phi: TensorLike, wires: WiresLike, id: Optional[str] = None):
         super().__init__(phi, wires=wires, id=id)
 
     @staticmethod
@@ -350,7 +350,7 @@ class RZ(Operation):
     def pow(self, z: Union[int, float]) -> list["qml.operation.Operator"]:
         return [RZ(self.data[0] * z, wires=self.wires)]
 
-    def _controlled(self, wire: WireTypes) -> "qml.CRZ":
+    def _controlled(self, wire: WiresLike) -> "qml.CRZ":
         return qml.CRZ(*self.parameters, wires=wire + self.wires)
 
     def simplify(self) -> "RZ":
@@ -403,7 +403,7 @@ class PhaseShift(Operation):
     def generator(self) -> "qml.Projector":
         return qml.Projector(np.array([1]), wires=self.wires)
 
-    def __init__(self, phi: TensorLike, wires: WireTypes, id: Optional[str] = None):
+    def __init__(self, phi: TensorLike, wires: WiresLike, id: Optional[str] = None):
         super().__init__(phi, wires=wires, id=id)
 
     def label(
@@ -491,7 +491,7 @@ class PhaseShift(Operation):
         return qml.math.exp(product)
 
     @staticmethod
-    def compute_decomposition(phi: TensorLike, wires: WireTypes) -> "qml.operation.Operator":
+    def compute_decomposition(phi: TensorLike, wires: WiresLike) -> "qml.operation.Operator":
         r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -520,7 +520,7 @@ class PhaseShift(Operation):
     def pow(self, z: Union[int, float]) -> list["qml.operation.Operator"]:
         return [PhaseShift(self.data[0] * z, wires=self.wires)]
 
-    def _controlled(self, wire: WireTypes) -> "qml.ControlledPhaseShift":
+    def _controlled(self, wire: WiresLike) -> "qml.ControlledPhaseShift":
         return qml.ControlledPhaseShift(*self.parameters, wires=wire + self.wires)
 
     def simplify(self) -> "PhaseShift":
@@ -584,7 +584,7 @@ class Rot(Operation):
         phi: TensorLike,
         theta: TensorLike,
         omega: TensorLike,
-        wires: WireTypes,
+        wires: WiresLike,
         id: Optional[str] = None,
     ):
         super().__init__(phi, theta, omega, wires=wires, id=id)
@@ -653,7 +653,7 @@ class Rot(Operation):
 
     @staticmethod
     def compute_decomposition(
-        phi: TensorLike, theta: TensorLike, omega: TensorLike, wires: WireTypes
+        phi: TensorLike, theta: TensorLike, omega: TensorLike, wires: WiresLike
     ) -> list["qml.operation.Operator"]:
         r"""Representation of the operator as a product of other operators (static method). :
 
@@ -687,7 +687,7 @@ class Rot(Operation):
         phi, theta, omega = self.parameters
         return Rot(-omega, -theta, -phi, wires=self.wires)
 
-    def _controlled(self, wire: WireTypes) -> "qml.CRot":
+    def _controlled(self, wire: WiresLike) -> "qml.CRot":
         return qml.CRot(*self.parameters, wires=wire + self.wires)
 
     def single_qubit_rot_angles(self) -> list[TensorLike]:
@@ -758,7 +758,7 @@ class U1(Operation):
     def generator(self) -> "qml.Projector":
         return qml.Projector(np.array([1]), wires=self.wires)
 
-    def __init__(self, phi: TensorLike, wires: WireTypes, id: Optional[str] = None):
+    def __init__(self, phi: TensorLike, wires: WiresLike, id: Optional[str] = None):
         super().__init__(phi, wires=wires, id=id)
 
     @staticmethod
@@ -798,7 +798,7 @@ class U1(Operation):
         return diags[:, :, np.newaxis] * qml.math.cast_like(qml.math.eye(2, like=diags), diags)
 
     @staticmethod
-    def compute_decomposition(phi: TensorLike, wires: WireTypes) -> "qml.operation.Operator":
+    def compute_decomposition(phi: TensorLike, wires: WiresLike) -> "qml.operation.Operator":
         r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -884,7 +884,7 @@ class U2(Operation):
     parameter_frequencies = [(1,), (1,)]
 
     def __init__(
-        self, phi: TensorLike, delta: TensorLike, wires: WireTypes, id: Optional[str] = None
+        self, phi: TensorLike, delta: TensorLike, wires: WiresLike, id: Optional[str] = None
     ):
         super().__init__(phi, delta, wires=wires, id=id)
 
@@ -929,7 +929,7 @@ class U2(Operation):
 
     @staticmethod
     def compute_decomposition(
-        phi: TensorLike, delta: TensorLike, wires: WireTypes
+        phi: TensorLike, delta: TensorLike, wires: WiresLike
     ) -> list["qml.operation.Operator"]:
         r"""Representation of the operator as a product of other operators (static method).
 
@@ -1035,7 +1035,7 @@ class U3(Operation):
         theta: TensorLike,
         phi: TensorLike,
         delta: TensorLike,
-        wires: WireTypes,
+        wires: WiresLike,
         id: Optional[str] = None,
     ):
         super().__init__(theta, phi, delta, wires=wires, id=id)
@@ -1095,7 +1095,7 @@ class U3(Operation):
 
     @staticmethod
     def compute_decomposition(
-        theta: TensorLike, phi: TensorLike, delta: TensorLike, wires: WireTypes
+        theta: TensorLike, phi: TensorLike, delta: TensorLike, wires: WiresLike
     ) -> list["qml.operation.Operator"]:
         r"""Representation of the operator as a product of other operators (static method).
 

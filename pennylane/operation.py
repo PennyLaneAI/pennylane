@@ -247,7 +247,7 @@ import copy
 import functools
 import itertools
 import warnings
-from collections.abc import Hashable, Iterable
+from collections.abc import Hashable
 from contextlib import contextmanager
 from enum import IntEnum
 from typing import Any, Callable, Literal, Optional, Union
@@ -260,7 +260,7 @@ import pennylane as qml
 from pennylane.capture import ABCCaptureMeta, create_operator_primitive
 from pennylane.math import expand_matrix
 from pennylane.queuing import QueuingManager
-from pennylane.typing import TensorLike, WireTypes
+from pennylane.typing import TensorLike, WiresLike
 from pennylane.wires import Wires
 
 from .pytrees import register_pytree
@@ -407,7 +407,7 @@ def _process_data(op):
     return str([id(d) if qml.math.is_abstract(d) else _mod_and_round(d, mod_val) for d in op.data])
 
 
-FlattenOutput = tuple[tuple[TensorLike, ...], tuple[Wires, tuple[tuple[str, Any], ...]]]
+FlatPytree = tuple[tuple[TensorLike, ...], tuple[Wires, tuple[tuple[str, Any], ...]]]
 
 
 class Operator(abc.ABC, metaclass=ABCCaptureMeta):
@@ -815,7 +815,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         """
         return cls.compute_matrix != Operator.compute_matrix or cls.matrix != Operator.matrix
 
-    def matrix(self, wire_order: Optional[WireTypes] = None) -> TensorLike:
+    def matrix(self, wire_order: Optional[WiresLike] = None) -> TensorLike:
         r"""Representation of the operator as a matrix in the computational basis.
 
         If ``wire_order`` is provided, the numerical representation considers the position of the
@@ -870,7 +870,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         """
         raise SparseMatrixUndefinedError
 
-    def sparse_matrix(self, wire_order: Optional[WireTypes] = None) -> csr_matrix:
+    def sparse_matrix(self, wire_order: Optional[WiresLike] = None) -> csr_matrix:
         r"""Representation of the operator as a sparse matrix in the computational basis.
 
         If ``wire_order`` is provided, the numerical representation considers the position of the
@@ -1098,7 +1098,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
     def __init__(
         self,
         *params: TensorLike,
-        wires: Optional[WireTypes] = None,
+        wires: Optional[WiresLike] = None,
         id: Optional[str] = None,
     ):
         # pylint: disable=too-many-branches
@@ -1341,7 +1341,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
     @staticmethod
     def compute_decomposition(
         *params: TensorLike,
-        wires: Optional[WireTypes] = None,
+        wires: Optional[WiresLike] = None,
         **hyperparameters: dict[str, Any],
     ) -> list["Operator"]:
         r"""Representation of the operator as a product of other operators (static method).
@@ -1381,7 +1381,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
 
     @staticmethod
     def compute_diagonalizing_gates(
-        *params: TensorLike, wires: WireTypes, **hyperparams: dict[str, Any]
+        *params: TensorLike, wires: WiresLike, **hyperparams: dict[str, Any]
     ) -> list["Operator"]:  # pylint: disable=unused-argument
         r"""Sequence of gates that diagonalize the operator in the computational basis (static method).
 
@@ -1549,7 +1549,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         """Arithmetic depth of the operator."""
         return 0
 
-    def map_wires(self, wire_map: dict[Iterable[Hashable], Iterable[Hashable]]) -> "Operator":
+    def map_wires(self, wire_map: dict[Hashable, Hashable]) -> "Operator":
         """Returns a copy of the current operator with its wires changed according to the given
         wire map.
 
@@ -1631,7 +1631,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
             return qml.pow(self, z=other)
         return NotImplemented
 
-    def _flatten(self) -> FlattenOutput:
+    def _flatten(self) -> FlatPytree:
         """Serialize the operation into trainable and non-trainable components.
 
         Returns:
@@ -1864,7 +1864,7 @@ class Operation(Operator):
     def __init__(
         self,
         *params: TensorLike,
-        wires: Optional[WireTypes] = None,
+        wires: Optional[WiresLike] = None,
         id: Optional[str] = None,
     ):
         super().__init__(*params, wires=wires, id=id)
@@ -2125,7 +2125,7 @@ class Tensor(Observable):
     tensor = True
     has_matrix = True
 
-    def _flatten(self) -> FlattenOutput:
+    def _flatten(self) -> FlatPytree:
         return tuple(self.obs), tuple()
 
     @classmethod
@@ -2923,7 +2923,7 @@ class StatePrepBase(Operation):
 
     # pylint:disable=too-few-public-methods
     @abc.abstractmethod
-    def state_vector(self, wire_order: Optional[WireTypes] = None) -> TensorLike:
+    def state_vector(self, wire_order: Optional[WiresLike] = None) -> TensorLike:
         """
         Returns the initial state vector for a circuit given a state preparation.
 

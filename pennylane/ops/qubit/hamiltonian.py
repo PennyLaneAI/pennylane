@@ -29,8 +29,8 @@ import numpy as np
 import scipy
 
 import pennylane as qml
-from pennylane.operation import FlattenOutput, Observable, Tensor
-from pennylane.typing import TensorLike, WireTypes
+from pennylane.operation import FlatPytree, Observable, Tensor
+from pennylane.typing import TensorLike, WiresLike
 from pennylane.wires import Wires
 
 OBS_MAP = {"PauliX": "X", "PauliY": "Y", "PauliZ": "Z", "Hadamard": "H", "Identity": "I"}
@@ -235,7 +235,7 @@ class Hamiltonian(Observable):
     batch_size = None
     ndim_params = None  # could be (0,) * len(coeffs), but it is not needed. Define at class-level
 
-    def _flatten(self) -> FlattenOutput:
+    def _flatten(self) -> FlatPytree:
         # note that we are unable to restore grouping type or method without creating new properties
         return (self.data, self._ops), (self.grouping_indices,)
 
@@ -485,7 +485,7 @@ class Hamiltonian(Observable):
                 self.ops, grouping_type=grouping_type, method=method
             )
 
-    def sparse_matrix(self, wire_order: Optional[WireTypes] = None) -> scipy.sparse.csr_matrix:
+    def sparse_matrix(self, wire_order: Optional[WiresLike] = None) -> scipy.sparse.csr_matrix:
         r"""Computes the sparse matrix representation of a Hamiltonian in the computational basis.
 
         Args:
@@ -898,7 +898,7 @@ class Hamiltonian(Observable):
         context.append(self)
         return self
 
-    def map_wires(self, wire_map: dict[Iterable[Hashable], Iterable[Hashable]]):
+    def map_wires(self, wire_map: dict[Hashable, Hashable]):
         """Returns a copy of the current hamiltonian with its wires changed according to the given
         wire map.
 

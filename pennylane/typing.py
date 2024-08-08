@@ -131,4 +131,4 @@ BatchPostprocessingFn = Callable[[ResultBatch], ResultBatch]
 
 JSON = Union[None, int, str, bool, list["JSON"], dict[str, "JSON"]]
 
-WireTypes = Union[Wires, Iterable[Hashable]]
+WiresLike = Union[Wires, Iterable[Hashable]]

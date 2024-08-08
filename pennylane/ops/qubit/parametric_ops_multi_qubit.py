@@ -25,8 +25,8 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.math import expand_matrix
-from pennylane.operation import AnyWires, FlattenOutput, Operation
-from pennylane.typing import TensorLike, WireTypes
+from pennylane.operation import AnyWires, FlatPytree, Operation
+from pennylane.typing import TensorLike, WiresLike
 from pennylane.utils import pauli_eigs
 from pennylane.wires import Wires
 
@@ -71,11 +71,11 @@ class MultiRZ(Operation):
     grad_method = "A"
     parameter_frequencies = [(1,)]
 
-    def _flatten(self) -> FlattenOutput:
+    def _flatten(self) -> FlatPytree:
         return self.data, (self.wires, tuple())
 
     def __init__(
-        self, theta: TensorLike, wires: Optional[WireTypes] = None, id: Optional[str] = None
+        self, theta: TensorLike, wires: Optional[WiresLike] = None, id: Optional[str] = None
     ):
         wires = Wires(wires)
         self.hyperparameters["num_wires"] = len(wires)
@@ -168,7 +168,7 @@ class MultiRZ(Operation):
 
     @staticmethod
     def compute_decomposition(  # pylint: disable=arguments-differ,unused-argument
-        theta: TensorLike, wires: WireTypes, **kwargs
+        theta: TensorLike, wires: WiresLike, **kwargs
     ) -> list["qml.operation.Operator"]:
         r"""Representation of the operator as a product of other operators (static method). :
 
@@ -277,7 +277,7 @@ class PauliRot(Operation):
         self,
         theta: TensorLike,
         pauli_word: Literal["I", "X", "Y", "Z"],
-        wires: Optional[WireTypes] = None,
+        wires: Optional[WiresLike] = None,
         id: Optional[str] = None,
     ):
         super().__init__(theta, wires=wires, id=id)
@@ -463,7 +463,7 @@ class PauliRot(Operation):
 
     @staticmethod
     def compute_decomposition(
-        theta: TensorLike, wires: WireTypes, pauli_word: str
+        theta: TensorLike, wires: WiresLike, pauli_word: str
     ) -> list["qml.operation.Operator"]:
         r"""Representation of the operator as a product of other operators (static method). :
 
@@ -596,11 +596,11 @@ class PCPhase(Operation):
         mat = np.diag([1 if index < dim else -1 for index in range(shape)])
         return qml.Hermitian(mat, wires=self.wires)
 
-    def _flatten(self) -> FlattenOutput:
+    def _flatten(self) -> FlatPytree:
         hyperparameter = (("dim", self.hyperparameters["dimension"][0]),)
         return tuple(self.data), (self.wires, hyperparameter)
 
-    def __init__(self, phi: TensorLike, dim: int, wires: WireTypes, id: Optional[str] = None):
+    def __init__(self, phi: TensorLike, dim: int, wires: WiresLike, id: Optional[str] = None):
         wires = wires if isinstance(wires, Wires) else Wires(wires)
 
         if not (isinstance(dim, int) and (dim <= 2 ** len(wires))):
@@ -664,7 +664,7 @@ class PCPhase(Operation):
 
     @staticmethod
     def compute_decomposition(
-        *params: TensorLike, wires: Optional[WireTypes] = None, **hyperparams
+        *params: TensorLike, wires: Optional[WiresLike] = None, **hyperparams
     ) -> list["qml.operation.Operator"]:
         r"""Representation of the operator as a product of other operators (static method).
 
@@ -797,7 +797,7 @@ class IsingXX(Operation):
     def generator(self) -> "qml.Hamiltonian":
         return qml.Hamiltonian([-0.5], [PauliX(wires=self.wires[0]) @ PauliX(wires=self.wires[1])])
 
-    def __init__(self, phi: TensorLike, wires: WireTypes, id: Optional[str] = None):
+    def __init__(self, phi: TensorLike, wires: WiresLike, id: Optional[str] = None):
         super().__init__(phi, wires=wires, id=id)
 
     @staticmethod
@@ -843,7 +843,7 @@ class IsingXX(Operation):
         return qml.math.tensordot(c, eye, axes=0) + qml.math.tensordot(js, rev_eye, axes=0)
 
     @staticmethod
-    def compute_decomposition(phi: TensorLike, wires: WireTypes) -> list["qml.operation.Operator"]:
+    def compute_decomposition(phi: TensorLike, wires: WiresLike) -> list["qml.operation.Operator"]:
         r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -933,11 +933,11 @@ class IsingYY(Operation):
     def generator(self) -> "qml.Hamiltonian":
         return qml.Hamiltonian([-0.5], [PauliY(wires=self.wires[0]) @ PauliY(wires=self.wires[1])])
 
-    def __init__(self, phi: TensorLike, wires: WireTypes, id: Optional[str] = None):
+    def __init__(self, phi: TensorLike, wires: WiresLike, id: Optional[str] = None):
         super().__init__(phi, wires=wires, id=id)
 
     @staticmethod
-    def compute_decomposition(phi: TensorLike, wires: WireTypes) -> list["qml.operation.Operator"]:
+    def compute_decomposition(phi: TensorLike, wires: WiresLike) -> list["qml.operation.Operator"]:
         r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -1076,11 +1076,11 @@ class IsingZZ(Operation):
     def generator(self) -> "qml.Hamiltonian":
         return qml.Hamiltonian([-0.5], [PauliZ(wires=self.wires[0]) @ PauliZ(wires=self.wires[1])])
 
-    def __init__(self, phi: TensorLike, wires: WireTypes, id: Optional[str] = None):
+    def __init__(self, phi: TensorLike, wires: WiresLike, id: Optional[str] = None):
         super().__init__(phi, wires=wires, id=id)
 
     @staticmethod
-    def compute_decomposition(phi: TensorLike, wires: WireTypes):
+    def compute_decomposition(phi: TensorLike, wires: WiresLike):
         r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -1266,11 +1266,11 @@ class IsingXY(Operation):
             ],
         )
 
-    def __init__(self, phi: TensorLike, wires: WireTypes, id: Optional[str] = None):
+    def __init__(self, phi: TensorLike, wires: WiresLike, id: Optional[str] = None):
         super().__init__(phi, wires=wires, id=id)
 
     @staticmethod
-    def compute_decomposition(phi: TensorLike, wires: WireTypes) -> list["qml.operation.Operator"]:
+    def compute_decomposition(phi: TensorLike, wires: WiresLike) -> list["qml.operation.Operator"]:
         r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -1436,11 +1436,11 @@ class PSWAP(Operation):
     grad_method = "A"
     grad_recipe = ([[0.5, 1, np.pi / 2], [-0.5, 1, -np.pi / 2]],)
 
-    def __init__(self, phi: TensorLike, wires: WireTypes, id: Optional[str] = None):
+    def __init__(self, phi: TensorLike, wires: WiresLike, id: Optional[str] = None):
         super().__init__(phi, wires=wires, id=id)
 
     @staticmethod
-    def compute_decomposition(phi: TensorLike, wires: WireTypes) -> list["qml.operation.Operator"]:
+    def compute_decomposition(phi: TensorLike, wires: WiresLike) -> list["qml.operation.Operator"]:
         r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -1596,7 +1596,7 @@ class CPhaseShift00(Operation):
     def generator(self) -> "qml.Projector":
         return qml.Projector(np.array([0, 0]), wires=self.wires)
 
-    def __init__(self, phi: TensorLike, wires: WireTypes, id: Optional[str] = None):
+    def __init__(self, phi: TensorLike, wires: WiresLike, id: Optional[str] = None):
         super().__init__(phi, wires=wires, id=id)
 
     def label(
@@ -1684,7 +1684,7 @@ class CPhaseShift00(Operation):
         return stack_last([exp_part, ones, ones, ones])
 
     @staticmethod
-    def compute_decomposition(phi: TensorLike, wires: WireTypes) -> list["qml.operation.Operator"]:
+    def compute_decomposition(phi: TensorLike, wires: WiresLike) -> list["qml.operation.Operator"]:
         r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -1788,7 +1788,7 @@ class CPhaseShift01(Operation):
     def generator(self) -> "qml.Projector":
         return qml.Projector(np.array([0, 1]), wires=self.wires)
 
-    def __init__(self, phi: TensorLike, wires: WireTypes, id: Optional[str] = None):
+    def __init__(self, phi: TensorLike, wires: WiresLike, id: Optional[str] = None):
         super().__init__(phi, wires=wires, id=id)
 
     def label(
@@ -1876,7 +1876,7 @@ class CPhaseShift01(Operation):
         return stack_last([ones, exp_part, ones, ones])
 
     @staticmethod
-    def compute_decomposition(phi: TensorLike, wires: WireTypes) -> list["qml.operation.Operator"]:
+    def compute_decomposition(phi: TensorLike, wires: WiresLike) -> list["qml.operation.Operator"]:
         r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -1972,7 +1972,7 @@ class CPhaseShift10(Operation):
     def generator(self) -> "qml.Projector":
         return qml.Projector(np.array([1, 0]), wires=self.wires)
 
-    def __init__(self, phi: TensorLike, wires: WireTypes, id: Optional[str] = None):
+    def __init__(self, phi: TensorLike, wires: WiresLike, id: Optional[str] = None):
         super().__init__(phi, wires=wires, id=id)
 
     def label(
@@ -2060,7 +2060,7 @@ class CPhaseShift10(Operation):
         return stack_last([ones, ones, exp_part, ones])
 
     @staticmethod
-    def compute_decomposition(phi: TensorLike, wires: WireTypes) -> list["qml.operation.Operator"]:
+    def compute_decomposition(phi: TensorLike, wires: WiresLike) -> list["qml.operation.Operator"]:
         r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.
