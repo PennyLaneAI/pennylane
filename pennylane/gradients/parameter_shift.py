@@ -757,9 +757,6 @@ def var_param_shift(tape, argnum, shifts=None, gradient_recipes=None, f0=None, b
 
 
 def _param_shift_stopping_condition(op) -> bool:
-    if isinstance(op, qml.ops.Exp) and qml.math.is_abstract(op.data[0]):
-        # Skip validation of Exp in tracing because Exp.has_decomposition is not traceable.
-        return True
     if not op.has_decomposition:
         # let things without decompositions through without error
         # error will happen when calculating parameter shift tapes
