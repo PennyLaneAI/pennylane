@@ -48,6 +48,10 @@
 
 * `qml.for_loop` can now be captured into plxpr.
   [(#6041)](https://github.com/PennyLaneAI/pennylane/pull/6041)
+  [(#6064)](https://github.com/PennyLaneAI/pennylane/pull/6064)
+
+* `qml.for_loop` now supports `range`-like syntax with default `step=1`.
+  [(#6068)](https://github.com/PennyLaneAI/pennylane/pull/6068)
 
 * Removed `semantic_version` from the list of required packages in PennyLane. 
   [(#5836)](https://github.com/PennyLaneAI/pennylane/pull/5836)
