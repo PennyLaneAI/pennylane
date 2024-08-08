@@ -158,9 +158,9 @@ You can also see the const variable `a` as argument `e:i32[]` to the inner neste
 
 ### Pytree handling
 
-Evaluating a jaxpr requires a flat list of tensorlike inputs, and returns a flat
-list of tensorlike outputs.  But these long lists can be hard to manage and are very
-restrictive on the allowed functions. But we can take advantage of pytree to allow handling
+Evaluating a jaxpr requires a flat list of tensor-like inputs, and returns a flat
+list of tensor-like outputs.  But these long lists can be hard to manage and are very
+restrictive on the allowed functions. But we can take advantage of pytrees to allow handling
 arbitrary functions.
 
 To start, we import the `FlatFn` helper. This class converts a function to one that
@@ -196,7 +196,7 @@ PyTreeDef({'a': *, 'b': *})
 Using these tools, we can now redefine out wrapper around the repeat primitive.
 
 ```python
-def repeat(funcm, n: int):
+def repeat(func, n: int):
     def new_func(*args, **kwargs):
 
         func_bound_kwargs = partial(func, **kwargs)
