@@ -583,8 +583,9 @@ def cond(condition, true_fn: Callable = None, false_fn: Optional[Callable] = Non
 
     if elifs:
         raise ConditionalTransformError(
-            "'elif' branches are not supported when not using @qjit or with qml.capture.disabled()\n"
+            "'elif' branches are not supported when not using @qjit and with qml.capture.disabled()\n"
             "if the conditional includes mid-circuit measurements."
+
         )
 
     if callable(true_fn):

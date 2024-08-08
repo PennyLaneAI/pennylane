@@ -624,7 +624,7 @@ class TestCondCircuits:
             qml.RX(arg, 0)
 
         def false_fn(arg):
-            qml.RY(arg, 0)
+            qml.RY(3 * arg, 0)
 
         @qml.qnode(device)
         def f(x, y):
