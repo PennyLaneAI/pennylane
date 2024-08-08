@@ -11,7 +11,7 @@ async-lru==2.0.4
 attrs==24.2.0
 autograd==1.6.2
 autoray==0.6.12
-Babel==2.15.0
+babel==2.16.0
 beautifulsoup4==4.12.3
 black==24.8.0
 bleach==6.1.0
