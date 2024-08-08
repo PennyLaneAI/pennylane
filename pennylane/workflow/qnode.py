@@ -20,8 +20,8 @@ import functools
 import inspect
 import logging
 import warnings
-from collections.abc import Sequence
-from typing import Optional, Union
+from collections.abc import Callable, MutableMapping, Sequence
+from typing import Any, Literal, Optional, Union, get_args
 
 import pennylane as qml
 from pennylane import Device
@@ -29,11 +29,24 @@ from pennylane.debugging import pldb_device_manager
 from pennylane.logging import debug_logger
 from pennylane.measurements import CountsMP, MidMeasureMP, Shots
 from pennylane.tape import QuantumScript, QuantumTape
+from pennylane.transforms.core import TransformContainer, TransformDispatcher, TransformProgram
 
-from .execution import INTERFACE_MAP, SUPPORTED_INTERFACES
+from .execution import INTERFACE_MAP, SUPPORTED_INTERFACE_USER_INPUT, SUPPORTED_INTERFACES
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
+
+SUPPORTED_DIFF_METHODS = Literal[
+    None,
+    "best",
+    "device",
+    "backprop",
+    "adjoint",
+    "parameter-shift",
+    "hadamard",
+    "finite-diff",
+    "spsa",
+]
 
 
 def _convert_to_interface(res, interface):
@@ -119,7 +132,7 @@ class QNode:
         device (~.Device): a PennyLane-compatible device
         interface (str): The interface that will be used for classical backpropagation.
             This affects the types of objects that can be passed to/returned from the QNode. See
-            ``qml.workflow.SUPPORTED_INTERFACES`` for a list of all accepted strings.
+            ``qml.workflow.SUPPORTED_INTERFACE_USER_INPUT`` for a list of all accepted strings.
 
             * ``"autograd"``: Allows autograd to backpropagate
               through the QNode. The QNode accepts default Python types
@@ -451,19 +464,19 @@ class QNode:
 
     def __init__(
         self,
-        func,
+        func: Callable,
         device: Union[Device, "qml.devices.Device"],
-        interface="auto",
-        diff_method="best",
-        expansion_strategy=None,
-        max_expansion=None,
-        grad_on_execution="best",
-        cache="auto",
-        cachesize=10000,
-        max_diff=1,
-        device_vjp=False,
-        postselect_mode=None,
-        mcm_method=None,
+        interface: SUPPORTED_INTERFACE_USER_INPUT = "auto",
+        diff_method: Union[TransformDispatcher, SUPPORTED_DIFF_METHODS] = "best",
+        expansion_strategy: Literal[None, "device", "gradient"] = None,
+        max_expansion: Optional[int] = None,
+        grad_on_execution: Literal[True, False, "best"] = "best",
+        cache: Union[MutableMapping, Literal["auto", True, False]] = "auto",
+        cachesize: int = 10000,
+        max_diff: int = 1,
+        device_vjp: bool = False,
+        postselect_mode: Literal[None, "hw-like", "fill-shots"] = None,
+        mcm_method: Literal[None, "deferred", "one-shit", "tree-traversal"] = None,
         **gradient_kwargs,
     ):
         # Moving it here since the old default value is checked on debugging
@@ -506,7 +519,7 @@ class QNode:
         # Default to "gradient" to maintain default behaviour of "draw" and "specs"
         expansion_strategy = expansion_strategy or "gradient"
 
-        if interface not in SUPPORTED_INTERFACES:
+        if interface not in get_args(SUPPORTED_INTERFACE_USER_INPUT):
             raise qml.QuantumFunctionError(
                 f"Unknown interface {interface}. Interface must be "
                 f"one of {SUPPORTED_INTERFACES}."
@@ -580,11 +593,11 @@ class QNode:
         self.gradient_kwargs = {}
         self._tape_cached = False
 
-        self._transform_program = qml.transforms.core.TransformProgram()
+        self._transform_program = TransformProgram()
         self._update_gradient_fn()
         functools.update_wrapper(self, func)
 
-    def __copy__(self):
+    def __copy__(self) -> "QNode":
         copied_qnode = QNode.__new__(QNode)
         for attr, value in vars(self).items():
             if attr not in {"execute_kwargs", "_transform_program", "gradient_kwargs"}:
@@ -597,7 +610,7 @@ class QNode:
         copied_qnode.gradient_kwargs = dict(self.gradient_kwargs)
         return copied_qnode
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """String representation."""
         if isinstance(self.device, qml.devices.Device):
             return f"<QNode: device='{self.device}', interface='{self.interface}', diff_method='{self.diff_method}'>"
@@ -611,13 +624,13 @@ class QNode:
         )
 
     @property
-    def interface(self):
+    def interface(self) -> str:
         """The interface used by the QNode"""
         return self._interface
 
     @interface.setter
-    def interface(self, value):
-        if value not in SUPPORTED_INTERFACES:
+    def interface(self, value: SUPPORTED_INTERFACE_USER_INPUT):
+        if value not in get_args(SUPPORTED_INTERFACE_USER_INPUT):
             raise qml.QuantumFunctionError(
                 f"Unknown interface {value}. Interface must be one of {SUPPORTED_INTERFACES}."
             )
@@ -626,19 +639,19 @@ class QNode:
         self._update_gradient_fn(shots=self.device.shots)
 
     @property
-    def transform_program(self):
+    def transform_program(self) -> TransformProgram:
         """The transform program used by the QNode."""
         return self._transform_program
 
     @debug_logger
-    def add_transform(self, transform_container):
+    def add_transform(self, transform_container: TransformContainer):
         """Add a transform (container) to the transform program.
 
         .. warning:: This is a developer facing feature and is called when a transform is applied on a QNode.
         """
         self._transform_program.push_back(transform_container=transform_container)
 
-    def _update_gradient_fn(self, shots=None, tape=None):
+    def _update_gradient_fn(self, shots=None, tape: Optional["qml.tape.QuantumTape"] = None):
         if self.diff_method is None:
             self._interface = None
             self.gradient_fn = None
@@ -681,7 +694,10 @@ class QNode:
     @staticmethod
     @debug_logger
     def get_gradient_fn(
-        device, interface, diff_method="best", tape: Optional["qml.tape.QuantumTape"] = None
+        device: Union[Device, "qml.devices.Device"],
+        interface,
+        diff_method: Union[TransformDispatcher, SUPPORTED_DIFF_METHODS] = "best",
+        tape: Optional["qml.tape.QuantumTape"] = None,
     ):
         """Determine the best differentiation method, interface, and device
         for a requested device, interface, and diff method.
@@ -752,7 +768,15 @@ class QNode:
 
     @staticmethod
     @debug_logger
-    def get_best_method(device, interface, tape=None):
+    def get_best_method(
+        device: Union[Device, "qml.devices.Device"],
+        interface,
+        tape: Optional["qml.tape.QuantumTape"] = None,
+    ) -> tuple[
+        Union[TransformDispatcher, Literal["device", "backprop", "parameter-shift", "finite-diff"]],
+        dict[str, Any],
+        Union[Device, "qml.devices.Device"],
+    ]:
         """Returns the 'best' differentiation method
         for a particular device and interface combination.
 
@@ -799,7 +823,7 @@ class QNode:
 
     @staticmethod
     @debug_logger
-    def best_method_str(device, interface):
+    def best_method_str(device: Union[Device, "qml.devices.Device"], interface) -> str:
         """Similar to :meth:`~.get_best_method`, except return the
         'best' differentiation method in human-readable format.
 
@@ -838,7 +862,7 @@ class QNode:
 
     @staticmethod
     @debug_logger
-    def _validate_backprop_method(device, interface, tape=None):
+    def _validate_backprop_method(device, interface, tape: Optional["qml.tape.QuantumTape"] = None):
         if isinstance(device, qml.devices.Device):
             raise ValueError(
                 "QNode._validate_backprop_method only applies to the qml.Device interface."
