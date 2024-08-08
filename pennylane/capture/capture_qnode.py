@@ -176,14 +176,14 @@ def qnode_call(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
 
     qfunc = partial(qnode.func, **kwargs) if kwargs else qnode.func
 
-    flat_args, in_tree = jax.tree_util.tree_flatten(args)
-    flat_fn = FlatFn(qfunc, in_tree)
-    qfunc_jaxpr = jax.make_jaxpr(flat_fn)(*flat_args)
+    flat_fn = FlatFn(qfunc)
+    qfunc_jaxpr = jax.make_jaxpr(flat_fn)(*args)
     execute_kwargs = copy(qnode.execute_kwargs)
     mcm_config = asdict(execute_kwargs.pop("mcm_config"))
     qnode_kwargs = {"diff_method": qnode.diff_method, **execute_kwargs, **mcm_config}
     qnode_prim = _get_qnode_prim()
 
+    flat_args, _ = jax.tree_util.tree_flatten(args)
     res = qnode_prim.bind(
         *qfunc_jaxpr.consts,
         *flat_args,

@@ -611,16 +611,16 @@ class ForLoopCallable:  # pylint:disable=too-few-public-methods
 
         for_loop_prim = _get_for_loop_qfunc_prim()
 
-        flat_args, in_tree = jax.tree_util.tree_flatten((0, *init_state))
-        flat_fn = FlatFn(self.body_fn, in_tree)
-        jaxpr_body_fn = jax.make_jaxpr(flat_fn)(*flat_args)
+        flat_fn = FlatFn(self.body_fn)
+        jaxpr_body_fn = jax.make_jaxpr(flat_fn)(0, *init_state)
 
+        flat_args, _ = jax.tree_util.tree_flatten(init_state)
         results = for_loop_prim.bind(
             self.lower_bound,
             self.upper_bound,
             self.step,
             *jaxpr_body_fn.consts,
-            *flat_args[1:],  # skip the initial 0
+            *flat_args,
             jaxpr_body_fn=jaxpr_body_fn,
             n_consts=len(jaxpr_body_fn.consts),
         )

@@ -32,9 +32,8 @@ class FlatFn:
     >>> def f(x):
     ...     return {"y": 2+x["x"]}
     >>> args = ({"x": 0},)
-    >>> flat_args, in_tree = jax.tree_util.tree_flatten(args)
-    >>> flat_f = FlatFn(f, in_tree)
-    >>> res = flat_f(*flat_args)
+    >>> flat_f = FlatFn(f)
+    >>> res = flat_f(*args)
     >>> res
     [2]
     >>> jax.tree_util.tree_unflatten(flat_f.out_tree, res)
@@ -42,14 +41,12 @@ class FlatFn:
 
     """
 
-    def __init__(self, f, in_tree):
+    def __init__(self, f):
         self.f = f
-        self.in_tree = in_tree
         self.out_tree = None
         update_wrapper(self, f)
 
-    def __call__(self, *flat_args):
-        args = jax.tree_util.tree_unflatten(self.in_tree, flat_args)
+    def __call__(self, *args):
         out = self.f(*args)
         out_flat, out_tree = jax.tree_util.tree_flatten(out)
         self.out_tree = out_tree

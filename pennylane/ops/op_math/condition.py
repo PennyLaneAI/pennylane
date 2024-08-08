@@ -226,9 +226,8 @@ class CondCallable:  # pylint:disable=too-few-public-methods
         @wraps(self.true_fn)
         def new_wrapper(*args, **kwargs):
 
-            flat_args, in_tree = jax.tree_util.tree_flatten(args)
-            flat_fn = FlatFn(functools.partial(self.true_fn, **kwargs), in_tree)
-            jaxpr_true = jax.make_jaxpr(flat_fn)(*flat_args)
+            flat_fn = FlatFn(functools.partial(self.true_fn, **kwargs))
+            jaxpr_true = jax.make_jaxpr(flat_fn)(*args)
             jaxpr_false = (
                 jax.make_jaxpr(functools.partial(self.otherwise_fn, **kwargs))(*args)
                 if self.otherwise_fn
@@ -254,6 +253,7 @@ class CondCallable:  # pylint:disable=too-few-public-methods
             consts_flat = [const for sublist in jaxpr_consts for const in sublist]
             n_consts_per_branch = [len(consts) for consts in jaxpr_consts]
 
+            flat_args, _ = jax.tree_util.tree_flatten(args)
             results = cond_prim.bind(
                 conditions,
                 *flat_args,
