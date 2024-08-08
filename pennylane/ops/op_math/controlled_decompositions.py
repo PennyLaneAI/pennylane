@@ -180,7 +180,7 @@ def _multi_controlled_zyz(
 
 
 def _single_control_zyz(rot_angles, global_phase, target_wire, control_wires: Wires):
-    # The decomposition of special zyz with multiple control wires
+    # The zyz decomposition of a general unitary with single control wire
     # defined in Lemma 7.9 of https://arxiv.org/pdf/quant-ph/9503016
 
     # Unpack the rotation angles
