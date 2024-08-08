@@ -317,7 +317,7 @@
 * `qml.lie_closure` works with sums of Paulis.
   [(#6023)](https://github.com/PennyLaneAI/pennylane/pull/6023)
 
-* Workflows that parameterize the coefficients of `qml.exp` is now compatible with `qjit`.
+* Workflows that parameterize the coefficients of `qml.exp` is now jit-compatible.
   [(#6082)](https://github.com/PennyLaneAI/pennylane/pull/6082)
 
 <h3>Contributors ✍️</h3>

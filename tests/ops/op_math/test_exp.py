@@ -801,16 +801,39 @@ class TestIntegration:
 
         pytest.importorskip("catalyst")
 
+        phi = 0.345
+
         @qml.qjit
         @qml.qnode(qml.device("lightning.qubit", wires=1))
         def func(params):
             qml.exp(qml.X(0), -0.5j * params)
             return qml.expval(qml.Z(0))
 
-        res = func(0.345)
-        assert qml.math.allclose(res, np.cos(0.345 / 2) ** 2 - np.sin(0.345 / 2) ** 2)
-        grad = qml.grad(func)(0.345)
-        assert qml.math.allclose(grad, -np.sin(0.345 / 2) - np.cos(0.345 / 2))
+        res = func(phi)
+        assert qml.math.allclose(res, np.cos(phi))
+        grad = qml.grad(func)(phi)
+        assert qml.math.allclose(grad, -np.sin(phi))
+
+    @pytest.mark.jax
+    @pytest.mark.external
+    def test_jax_jit_qnode(self):
+        """Tests with jax.jit"""
+
+        import jax
+        from jax import numpy as jnp
+
+        phi = jnp.array(0.345)
+
+        @jax.jit
+        @qml.qnode(qml.device("lightning.qubit", wires=1))
+        def func(params):
+            qml.exp(qml.X(0), -0.5j * params)
+            return qml.expval(qml.Z(0))
+
+        res = func(phi)
+        assert qml.math.allclose(res, jnp.cos(phi))
+        grad = jax.grad(func)(phi)
+        assert qml.math.allclose(grad, -jnp.sin(phi))
 
     @pytest.mark.tf
     def test_tensorflow_qnode(self):

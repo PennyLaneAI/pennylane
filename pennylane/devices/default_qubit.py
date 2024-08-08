@@ -202,6 +202,9 @@ def adjoint_state_measurements(
 
 def adjoint_ops(op: qml.operation.Operator) -> bool:
     """Specify whether or not an Operator is supported by adjoint differentiation."""
+    if isinstance(op, qml.ops.Exp) and qml.math.is_abstract(op.data[0]):
+        # Skip validation of Exp in tracing because Exp.has_generator is not traceable.
+        return True
     return not isinstance(op, MidMeasureMP) and (
         op.num_params == 0
         or not qml.operation.is_trainable(op)
