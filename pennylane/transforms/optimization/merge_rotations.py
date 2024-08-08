@@ -15,7 +15,6 @@
 # pylint: disable=too-many-branches
 
 import pennylane as qml
-from pennylane.math import allclose, cast_like, get_interface, is_abstract, stack, zeros
 from pennylane.ops.op_math import Adjoint
 from pennylane.ops.qubit.attributes import composable_rotations
 from pennylane.queuing import QueuingManager
@@ -177,37 +176,27 @@ def merge_rotations(
             continue
 
         # We need to use stack to get this to work and be differentiable in all interfaces
-        cumulative_angles = stack(current_gate.parameters)
-        interface = get_interface(cumulative_angles)
+        cumulative_angles = qml.math.stack(current_gate.parameters)
+        interface = qml.math.get_interface(cumulative_angles)
         # As long as there is a valid next gate, check if we can merge the angles
         while next_gate_idx is not None:
             # Get the next gate
             next_gate = list_copy[next_gate_idx + 1]
 
             # If next gate is of the same type, we can merge the angles
-            if current_gate.name == next_gate.name and current_gate.wires == next_gate.wires:
+            if isinstance(current_gate, type(next_gate)) and current_gate.wires == next_gate.wires:
                 list_copy.pop(next_gate_idx + 1)
+                next_params = qml.math.stack(next_gate.parameters, like=interface)
+                # jax-jit does not support cast_like
+                if not qml.math.is_abstract(cumulative_angles):
+                    next_params = qml.math.cast_like(next_params, cumulative_angles)
+
                 # The Rot gate must be treated separately
-                if current_gate.name == "Rot":
-                    if is_abstract(cumulative_angles):
-                        # jax-jit does not support cast_like
-                        cumulative_angles = cumulative_angles + stack(next_gate.parameters)
-                    else:
-                        cumulative_angles = fuse_rot_angles(
-                            cumulative_angles,
-                            cast_like(
-                                stack(next_gate.parameters, like=interface), cumulative_angles
-                            ),
-                        )
+                if isinstance(current_gate, qml.Rot):
+                    cumulative_angles = fuse_rot_angles(cumulative_angles, next_params)
                 # Other, single-parameter rotation gates just have the angle summed
                 else:
-                    if is_abstract(cumulative_angles):
-                        # jax-jit does not support cast_like
-                        cumulative_angles = cumulative_angles + stack(next_gate.parameters)
-                    else:
-                        cumulative_angles = cumulative_angles + cast_like(
-                            stack(next_gate.parameters, like=interface), cumulative_angles
-                        )
+                    cumulative_angles = cumulative_angles + next_params
             # If it is not, we need to stop
             else:
                 break
@@ -215,20 +204,18 @@ def merge_rotations(
             # If we did merge, look now at the next gate
             next_gate_idx = find_next_gate(current_gate.wires, list_copy[1:])
 
-        # If we are tracing/jitting, don't perform any conditional checks and
+        # If we are tracing/jitting or differentiating, don't perform any conditional checks and
         # apply the operation regardless of the angles. Otherwise, only apply if
         # the rotation angle is non-trivial.
-        if is_abstract(cumulative_angles):
+        if (
+            qml.math.is_abstract(cumulative_angles)
+            or qml.math.requires_grad(cumulative_angles)
+            or not qml.math.allclose(cumulative_angles, 0.0, atol=atol, rtol=0)
+        ):
             with QueuingManager.stop_recording():
                 new_operations.append(
                     current_gate.__class__(*cumulative_angles, wires=current_gate.wires)
                 )
-        else:
-            if not allclose(cumulative_angles, zeros(len(cumulative_angles)), atol=atol, rtol=0):
-                with QueuingManager.stop_recording():
-                    new_operations.append(
-                        current_gate.__class__(*cumulative_angles, wires=current_gate.wires)
-                    )
 
         # Remove the first gate from the working list
         list_copy.pop(0)
