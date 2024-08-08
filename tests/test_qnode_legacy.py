@@ -123,7 +123,9 @@ class TestValidation:
 
     def test_invalid_device(self):
         """Test that an exception is raised for an invalid device"""
-        with pytest.raises(qml.QuantumFunctionError, match="Invalid device"):
+        with pytest.raises(
+            ValueError, match="only accepts a device of type qml.devices.LegacyDevice"
+        ):
             QNode(dummyfunc, None)
 
     def test_best_method_wraps_legacy_device_correctly(self, mocker):
@@ -231,7 +233,7 @@ class TestValidation:
 
         QNode.best_method_str(dev_legacy, "some_interface")
 
-        assert spy.call_count == 2
+        spy.assert_called_once()
 
     # pylint: disable=protected-access
     def test_best_method_str_is_param_shift(self):

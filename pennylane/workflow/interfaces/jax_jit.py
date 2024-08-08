@@ -147,7 +147,7 @@ def _execute_wrapper_inner(params, tapes, execute_fn, _, device, is_vjp=False) -
         new_tapes = _set_fn(tapes.vals, p)
         return _to_jax(execute_fn(new_tapes))
 
-    if isinstance(device, qml.devices.LegacyDevice):
+    if isinstance(device, qml.Device):
         device_supports_vectorization = device.capabilities().get("supports_broadcasting")
     else:
         # first order way of determining native parameter broadcasting support
