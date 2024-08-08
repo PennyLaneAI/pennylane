@@ -495,7 +495,7 @@ class QNode:
                 gradient_kwargs,
             )
 
-        if not isinstance(device, qml.devices.Device):
+        if isinstance(device, qml.devices.LegacyDevice):
             device = qml.devices.LegacyDeviceFacade(device)
 
         if interface not in SUPPORTED_INTERFACES:
@@ -589,7 +589,7 @@ class QNode:
 
     def __repr__(self):
         """String representation."""
-        if not isinstance(self.device, qml.devices.LegacyDeviceFacade):
+        if not isinstance(self.device, qml.devices.LegacyDevice):
             return f"<QNode: device='{self.device}', interface='{self.interface}', diff_method='{self.diff_method}'>"
 
         detail = "<QNode: wires={}, device='{}', interface='{}', diff_method='{}'>"
@@ -742,7 +742,7 @@ class QNode:
             tuple[str or .TransformDispatcher, dict, .Device: Tuple containing the ``gradient_fn``,
             ``gradient_kwargs``, and the device to use when calling the execute function.
         """
-        if not isinstance(device, qml.devices.Device):
+        if isinstance(device, qml.devices.LegacyDevice):
             device = qml.devices.LegacyDeviceFacade(device)
 
         config = _make_execution_config(None, "best")
@@ -784,7 +784,7 @@ class QNode:
         Returns:
             str: The gradient function to use in human-readable format.
         """
-        if not isinstance(device, qml.devices.Device):
+        if isinstance(device, qml.devices.LegacyDevice):
             device = qml.devices.LegacyDeviceFacade(device)
 
         transform = QNode.get_best_method(device, interface)[0]
