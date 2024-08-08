@@ -360,7 +360,7 @@ class Exp(ScalarSymbolicOp, Operation):
         if qml.pauli.is_pauli_word(base):
             # Check if the exponential can be decomposed into a PauliRot gate
             with qml.QueuingManager.stop_recording():
-                ops = Exp._pauli_rot_decomposition(base, coeff)
+                ops = self._pauli_rot_decomposition(base, coeff)
             for op in ops:
                 qml.apply(op)
             return
