@@ -191,10 +191,7 @@ class TestSnapshotGeneral:
     @pytest.mark.parametrize("diff_method", [None, "parameter-shift"])
     def test_all_state_measurement_snapshot_pure_qubit_dev(self, dev, diff_method):
         """Test that the correct measurement snapshots are returned for different measurement types."""
-        if isinstance(
-            dev,
-            (qml.devices.default_mixed.DefaultMixed, qml.QutritDevice),
-        ):
+        if isinstance(dev, (qml.devices.default_mixed.DefaultMixed, qml.QutritDevice)):
             pytest.skip()
 
         @qml.qnode(dev, diff_method=diff_method)
