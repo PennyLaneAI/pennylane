@@ -82,6 +82,32 @@ class TestDecomposition:
         assert isinstance(ops1[0], qml.MottonenStatePreparation)
         assert isinstance(ops2[0], qml.MottonenStatePreparation)
 
+    def test_StatePrep_padding(self):
+        """Test that StatePrep pads the input state correctly."""
+
+        state = np.array([1, 0])
+        wires = (0, 1)
+
+        @qml.qnode(qml.device("default.qubit", wires=2))
+        def circuit():
+            qml.StatePrep(state, pad_with=0, wires=wires)
+            return qml.state()
+
+        assert np.allclose(circuit(), np.array([1, 0, 0, 0]))
+
+    def test_StatePrep_normalize(self):
+        """Test that StatePrep normalizes the input state correctly."""
+
+        state = np.array([1, 1, 1, 1])
+        wires = (0, 1)
+
+        @qml.qnode(qml.device("default.qubit", wires=2))
+        def circuit():
+            qml.StatePrep(state, normalize=True, wires=wires)
+            return qml.state()
+
+        assert np.allclose(circuit(), np.array([1, 1, 1, 1]) / 2)
+
     def test_StatePrep_broadcasting(self):
         """Test broadcasting for StatePrep."""
 
@@ -182,12 +208,13 @@ class TestStateVector:
     @pytest.mark.parametrize("vec", [[0] * 4, [1] * 4])
     def test_StatePrep_state_norm_not_one_fails(self, vec):
         """Tests that the state-vector provided must have norm equal to 1."""
-        with pytest.raises(ValueError, match="Sum of amplitudes-squared does not equal one."):
+
+        with pytest.raises(ValueError, match="The state must be a vector of norm 1"):
             _ = qml.StatePrep(vec, wires=[0, 1])
 
     def test_StatePrep_wrong_param_size_fails(self):
         """Tests that the parameter must be of shape (2**num_wires,)."""
-        with pytest.raises(ValueError, match="State vector must have shape"):
+        with pytest.raises(ValueError, match="State must be of length"):
             _ = qml.StatePrep([0, 1], wires=[0, 1])
 
     @pytest.mark.torch
