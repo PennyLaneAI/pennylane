@@ -22,10 +22,10 @@ from contextlib import contextmanager
 from dataclasses import replace
 
 import pennylane as qml
-from pennylane.measurements import Shots
+from pennylane.measurements import MidMeasureMP, Shots
 from pennylane.transforms.core.transform_program import TransformProgram
 
-from .default_qubit import adjoint_observables, adjoint_ops
+from .default_qubit import adjoint_observables
 from .device_api import Device
 from .execution_config import DefaultExecutionConfig
 from .modifiers import single_tape_support
@@ -103,6 +103,13 @@ def legacy_device_expand_fn(tape, device):
 def legacy_device_batch_transform(tape, device):
     """Turn the ``batch_transform`` from the legacy device interface into a transform."""
     return _set_shots(device, tape.shots)(device.batch_transform)(tape)
+
+
+def adjoint_ops(op: qml.operation.Operator) -> bool:
+    """Specify whether or not an Operator is supported by adjoint differentiation."""
+    return not isinstance(op, MidMeasureMP) and (
+        op.num_params == 0 or (op.num_params == 1 and op.has_generator)
+    )
 
 
 def _add_adjoint_transforms(program: TransformProgram, name="adjoint"):
