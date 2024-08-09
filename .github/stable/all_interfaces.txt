@@ -46,7 +46,7 @@ libclang==18.1.1
 Markdown==3.6
 markdown-it-py==3.0.0
 MarkupSafe==2.1.5
-matplotlib==3.9.0
+matplotlib==3.9.1.post1
 mccabe==0.6.1
 mdurl==0.1.2
 ml-dtypes==0.3.2
@@ -80,7 +80,7 @@ pytest-mock==3.14.0
 pytest-xdist==3.6.1
 python-dateutil==2.9.0.post0
 pytorch-triton-rocm==2.3.0
-PyYAML==6.0.1
+PyYAML==6.0.2
 qdldl==0.1.7.post4
 requests==2.32.3
 rich==13.7.1
