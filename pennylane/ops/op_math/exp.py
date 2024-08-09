@@ -283,7 +283,7 @@ class Exp(ScalarSymbolicOp, Operation):
             coeffs = [c * coeff for c in coeffs]
             return self._trotter_decomposition(ops, coeffs)
 
-        if not qml.math.is_abstract(coeff) and not qml.math.isclose(qml.math.real(coeff), 0):
+        if not qml.math.is_abstract(coeff) and qml.math.real(coeff):
 
             error_msg = f"The decomposition of the {self} operator is not defined."
 
