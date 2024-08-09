@@ -2607,7 +2607,7 @@ class ResourcesOperation(Operation):
     """
 
     @abc.abstractmethod
-    def resources(self):
+    def resources(self, gate_set=None):
         r"""Compute the resources required for this operation.
 
         Returns:

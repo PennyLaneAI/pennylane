@@ -14,11 +14,13 @@
 """
 Stores classes and logic to aggregate all the resource information from a quantum workflow.
 """
+from copy import copy
+from functools import reduce, partial
 from collections import defaultdict
 from dataclasses import dataclass, field
 
 from pennylane.measurements import Shots
-from pennylane.operation import ResourcesOperation
+from pennylane.operation import ResourcesOperation, DecompositionUndefinedError
 
 
 @dataclass(frozen=True)
@@ -122,3 +124,107 @@ def _count_resources(tape) -> Resources:
             num_gates += 1
 
     return Resources(num_wires, num_gates, gate_types, gate_sizes, depth, shots)
+
+
+StandardGateSet = {
+    "PauliX",
+    "PauliY",
+    "PauliZ",
+    "Hadamard",
+    "SWAP",
+    "CNOT",
+    "S",
+    "Adjoint(S)",  # <-- Clifford Gates
+    "T",
+    "Adjoint(T)",
+    "Toffoli",     # <-- Non-Clifford Gates 
+}
+
+
+def resource_estimation(tape, gate_set=StandardGateSet) -> Resources:
+    """Given a quantum circuit (tape), this function
+     counts the resources used by standard PennyLane operations.
+
+    Args:
+        tape (.QuantumTape): The quantum circuit for which we count resources
+
+    Returns:
+        (.Resources): The total resources used in the workflow
+    """
+
+    num_wires = len(tape.wires)
+    shots = tape.shots
+    
+    # depth = tape.graph.get_depth()
+    depth = -1  # Not computing depth
+
+    num_gates = 0
+    gate_types = defaultdict(int)
+    gate_sizes = defaultdict(int)
+    for op in tape.operations:
+        if op.name in gate_set:
+            gate_types[op.name] += 1
+            gate_sizes[len(op.wires)] += 1
+            num_gates += 1
+
+        else: 
+            op_resources = resources_from_op(op, gate_set)
+
+            for d in op_resources.gate_types:
+                gate_types[d] += op_resources.gate_types[d]
+
+            for n in op_resources.gate_sizes:
+                gate_sizes[n] += op_resources.gate_sizes[n]
+
+            num_gates += sum(op_resources.gate_types.values())
+
+    return Resources(num_wires, num_gates, gate_types, gate_sizes, depth, shots)
+
+
+def resources_from_op(op, gate_set) -> Resources:
+    """Compute the resources for a single operator 
+
+    Args:
+        op (.Operator): The operation for which we must compute resoruces
+        gate_set (set, optional): _description_. Defaults to StandardGateSet.
+
+    Raises:
+        ValueError: Cannot obtain resources for the operator in the target gate_set
+
+    Returns:
+        Resources: 
+    """
+    if isinstance(op, ResourcesOperation): 
+        op_resources = op.resources(gate_set)
+        return op_resources
+    
+    else: 
+        try:
+            return resources_from_sequence_ops(op.decomposition(), gate_set)
+        except DecompositionUndefinedError as e:
+            raise ValueError(f"Cannot obtain the resources for type {type(op)} in terms of the gate-set:\n {gate_set}") from e
+
+
+def resources_from_sequence_ops(ops_lst, gate_set):
+    num_gates = 0
+    gate_types = defaultdict(int)
+    gate_sizes = defaultdict(int)
+
+    for op in ops_lst:
+        if op.name in gate_set:
+            gate_types[op.name] += 1
+            gate_sizes[len(op.wires)] += 1
+            num_gates += 1
+        
+        else: 
+            op_resources = resources_from_op(op, gate_set)
+            num_gates += op_resources.num_gates
+            _combine_dicts(gate_types, op_resources.gate_types)  # update in place
+            _combine_dicts(gate_sizes, op_resources.gate_sizes)  # update in place
+
+    return Resources(num_gates, gate_types, gate_sizes)
+
+
+def _combine_dicts(base_dict, other_dict): 
+    for k, v in other_dict.items():
+        base_dict[k] += v

@@ -254,7 +254,7 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
         context.append(self)
         return self
 
-    def resources(self) -> Resources:
+    def resources(self, gate_set=None) -> Resources:
         """The resource requirements for a given instance of the Suzuki-Trotter product.
 
         Returns:
