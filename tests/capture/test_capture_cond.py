@@ -15,14 +15,14 @@
 Tests for capturing conditionals into jaxpr.
 """
 
-# pylint: disable=redefined-outer-name
+# pylint: disable=redefined-outer-name, too-many-arguments
 # pylint: disable=no-self-use
 
 import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.ops.op_math.condition import CondCallable
+from pennylane.ops.op_math.condition import CondCallable, ConditionalTransformError
 
 pytestmark = pytest.mark.jax
 
@@ -62,6 +62,7 @@ def testing_functions():
     return true_fn, false_fn, elif_fn1, elif_fn2, elif_fn3, elif_fn4
 
 
+@pytest.mark.parametrize("decorator", [True, False])
 class TestCond:
     """Tests for conditional functions using qml.cond."""
 
@@ -76,11 +77,20 @@ class TestCond:
             (0, 10, 30),  # False condition
         ],
     )
-    def test_cond_true_elifs_false(self, testing_functions, selector, arg, expected):
+    def test_cond_true_elifs_false(self, testing_functions, selector, arg, expected, decorator):
         """Test the conditional with true, elifs, and false branches."""
         true_fn, false_fn, elif_fn1, elif_fn2, elif_fn3, elif_fn4 = testing_functions
 
         def test_func(pred):
+            if decorator:
+                conditional = qml.cond(pred > 0)(true_fn)
+                conditional.else_if(pred == -1)(elif_fn1)
+                conditional.else_if(pred == -2)(elif_fn2)
+                conditional.else_if(pred == -3)(elif_fn3)
+                conditional.else_if(pred == -4)(elif_fn4)
+                conditional.otherwise(false_fn)
+                return conditional
+
             return qml.cond(
                 pred > 0,
                 true_fn,
@@ -111,18 +121,27 @@ class TestCond:
             (-3, 10, ()),  # No condition met
         ],
     )
-    def test_cond_true_elifs(self, testing_functions, selector, arg, expected):
+    def test_cond_true_elifs(self, testing_functions, selector, arg, expected, decorator):
         """Test the conditional with true and elifs branches."""
         true_fn, _, elif_fn1, elif_fn2, _, _ = testing_functions
 
-        result = qml.cond(
-            selector > 0,
-            true_fn,
-            elifs=(
-                (selector == -1, elif_fn1),
-                (selector == -2, elif_fn2),
-            ),
-        )(arg)
+        def test_func(pred):
+            if decorator:
+                conditional = qml.cond(pred > 0)(true_fn)
+                conditional.else_if(pred == -1)(elif_fn1)
+                conditional.else_if(pred == -2)(elif_fn2)
+                return conditional
+
+            return qml.cond(
+                pred > 0,
+                true_fn,
+                elifs=(
+                    (pred == -1, elif_fn1),
+                    (pred == -2, elif_fn2),
+                ),
+            )
+
+        result = test_func(selector)(arg)
         assert np.allclose(result, expected), f"Expected {expected}, but got {result}"
 
     @pytest.mark.parametrize(
@@ -132,11 +151,16 @@ class TestCond:
             (0, 10, 30),
         ],
     )
-    def test_cond_true_false(self, testing_functions, selector, arg, expected):
+    def test_cond_true_false(self, testing_functions, selector, arg, expected, decorator):
         """Test the conditional with true and false branches."""
         true_fn, false_fn, _, _, _, _ = testing_functions
 
         def test_func(pred):
+            if decorator:
+                conditional = qml.cond(pred > 0)(true_fn)
+                conditional.otherwise(false_fn)
+                return conditional
+
             return qml.cond(
                 pred > 0,
                 true_fn,
@@ -159,14 +183,21 @@ class TestCond:
             (0, 10, ()),
         ],
     )
-    def test_cond_true(self, testing_functions, selector, arg, expected):
+    def test_cond_true(self, testing_functions, selector, arg, expected, decorator):
         """Test the conditional with only the true branch."""
         true_fn, _, _, _, _, _ = testing_functions
 
-        result = qml.cond(
-            selector > 0,
-            true_fn,
-        )(arg)
+        def test_func(pred):
+            if decorator:
+                conditional = qml.cond(pred > 0)(true_fn)
+                return conditional
+
+            return qml.cond(
+                pred > 0,
+                true_fn,
+            )
+
+        result = test_func(selector)(arg)
         assert np.allclose(result, expected), f"Expected {expected}, but got {result}"
 
     @pytest.mark.parametrize(
@@ -176,7 +207,7 @@ class TestCond:
             (0, jax.numpy.array([2, 3]), 15),
         ],
     )
-    def test_cond_with_jax_array(self, selector, arg, expected):
+    def test_cond_with_jax_array(self, selector, arg, expected, decorator):
         """Test the conditional with array arguments."""
 
         def true_fn(jax_array):
@@ -186,6 +217,11 @@ class TestCond:
             return jax_array[0] * jax_array[1] * 2.5
 
         def test_func(pred):
+            if decorator:
+                conditional = qml.cond(pred > 0)(true_fn)
+                conditional.otherwise(false_fn)
+                return conditional
+
             return qml.cond(
                 pred > 0,
                 true_fn,
@@ -198,6 +234,65 @@ class TestCond:
         jaxpr = jax.make_jaxpr(test_func(selector))(arg)
         res_ev_jxpr = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, arg)
         assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
+
+    def test_mcm_return_error(self, decorator):
+        """Test that an error is raised if executing a quantum function that uses qml.cond with
+        mid-circuit measurement predicates where the conditional functions return something."""
+
+        def true_fn(arg):
+            qml.RX(arg, 0)
+            return 0
+
+        def false_fn(arg):
+            qml.RY(arg, 0)
+            return 1
+
+        def f(x):
+            m1 = qml.measure(0)
+            if decorator:
+                conditional = qml.cond(m1)(true_fn)
+                conditional.otherwise(false_fn)
+                conditional(x)
+            else:
+                qml.cond(m1, true_fn, false_fn)(x)
+            return qml.expval(qml.Z(0))
+
+        jaxpr = jax.make_jaxpr(f)(1.23)
+        with pytest.raises(
+            ConditionalTransformError, match="Only quantum functions without return values"
+        ):
+            _ = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 1.23)
+
+    def test_mcm_mixed_conds_error(self, decorator):
+        """Test that an error is raised if executing a quantum function that uses qml.cond with
+        a combination of mid-circuit measurement and other predicates."""
+
+        def true_fn(arg):
+            qml.RX(arg, 0)
+
+        def elif_fn(arg):
+            qml.RZ(arg, 0)
+
+        def false_fn(arg):
+            qml.RY(arg, 0)
+
+        def f(x):
+            m1 = qml.measure(0)
+            if decorator:
+                conditional = qml.cond(m1)(true_fn)
+                conditional.else_if(x > 1.5)(elif_fn)
+                conditional.otherwise(false_fn)
+                conditional(x)
+            else:
+                qml.cond(m1, true_fn, false_fn, elifs=(x > 1.5, elif_fn))(x)
+            return qml.expval(qml.Z(0))
+
+        jaxpr = jax.make_jaxpr(f)(1.23)
+        with pytest.raises(
+            ConditionalTransformError,
+            match="Cannot use qml.cond with a combination of mid-circuit measurements",
+        ):
+            _ = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 1.23)
 
 
 class TestCondReturns:
@@ -516,3 +611,90 @@ class TestCondCircuits:
         jaxpr = jax.make_jaxpr(circuit_with_consts)(*args)
         res_ev_jxpr = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *args)
         assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
+
+    @pytest.mark.parametrize("reset", [True, False])
+    @pytest.mark.parametrize("postselect", [None, 0, 1])
+    @pytest.mark.parametrize("shots", [None, 20])
+    def test_mcm_predicate_execution(self, reset, postselect, shots):
+        """Test that QNodes executed with mid-circuit measurement predicates for
+        qml.cond give correct results."""
+        device = qml.device("default.qubit", wires=3, shots=shots, seed=jax.random.PRNGKey(1234))
+
+        def true_fn(arg):
+            qml.RX(arg, 0)
+
+        def false_fn(arg):
+            qml.RY(3 * arg, 0)
+
+        @qml.qnode(device)
+        def f(x, y):
+            qml.RX(x, 0)
+            m = qml.measure(0, reset=reset, postselect=postselect)
+
+            qml.cond(m, true_fn, false_fn)(y)
+            return qml.expval(qml.Z(0))
+
+        params = [2.5, 4.0]
+        res = f(*params)
+        qml.capture.disable()
+        expected = f(*params)
+
+        assert np.allclose(res, expected), f"Expected {expected}, but got {res}"
+
+    @pytest.mark.parametrize("shots", [None, 100])
+    @pytest.mark.parametrize(
+        "params, expected",
+        # The parameters used here will essentially apply a PauliX just before mid-circuit
+        # measurements, each of which will trigger a different conditional block. Each
+        # conditional block prepares basis states in different bases, so the expectation value
+        # for the measured observables will vary accordingly.
+        [
+            ([np.pi, 0, 0], (1, 1 / np.sqrt(2), 0, 1 / np.sqrt(2))),  # true_fn, Hadamard basis
+            ([0, np.pi, 0], (1 / np.sqrt(2), 1, 0, 0)),  # elif_fn1, PauliX basis
+            ([0, 0, np.pi], (0, 0, 1, 0)),  # elif_fn2, PauliY basis
+            ([0, 0, 0, 0], (1 / np.sqrt(2), 0, 0, 1)),  # false_fn, PauliZ basis
+        ],
+    )
+    def test_mcm_predicate_execution_with_elifs(self, params, expected, shots, tol):
+        """Test that QNodes executed with mid-circuit measurement predicates for
+        qml.cond give correct results when there are also elifs present."""
+        # pylint: disable=expression-not-assigned
+        device = qml.device("default.qubit", wires=5, shots=shots, seed=jax.random.PRNGKey(10))
+
+        def true_fn():
+            # Adjoint Hadamard diagonalizing gates to get Hadamard basis state
+            [qml.adjoint(op) for op in qml.Hadamard.compute_diagonalizing_gates(0)[::-1]]
+
+        def elif_fn1():
+            # Adjoint PauliX diagonalizing gates to get X basis state
+            [qml.adjoint(op) for op in qml.X.compute_diagonalizing_gates(0)[::-1]]
+
+        def elif_fn2():
+            # Adjoint PauliY diagonalizing gates to get Y basis state
+            [qml.adjoint(op) for op in qml.Y.compute_diagonalizing_gates(0)[::-1]]
+
+        def false_fn():
+            # Adjoint PauliZ diagonalizing gates to get Z basis state
+            return
+
+        @qml.qnode(device)
+        def f(*x):
+            qml.RX(x[0], 0)
+            m1 = qml.measure(0, reset=True)
+            qml.RX(x[1], 0)
+            m2 = qml.measure(0, reset=True)
+            qml.RX(x[2], 0)
+            m3 = qml.measure(0, reset=True)
+
+            qml.cond(m1, true_fn, false_fn, elifs=((m2, elif_fn1), (m3, elif_fn2)))()
+            return (
+                qml.expval(qml.Hadamard(0)),
+                qml.expval(qml.X(0)),
+                qml.expval(qml.Y(0)),
+                qml.expval(qml.Z(0)),
+            )
+
+        res = f(*params)
+        atol = tol if shots is None else 0.1
+
+        assert np.allclose(res, expected, atol=atol, rtol=0), f"Expected {expected}, but got {res}"
