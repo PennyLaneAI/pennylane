@@ -516,3 +516,25 @@ class TestCondCircuits:
         jaxpr = jax.make_jaxpr(circuit_with_consts)(*args)
         res_ev_jxpr = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *args)
         assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
+
+
+def test_pytree_input_output():
+    """Test that cond can handle pytree inputs and outputs."""
+
+    def f(x):
+        return {"val": x["1"]}
+
+    def g(x):
+        return {"val": x["2"]}
+
+    def h(x):
+        return {"val": x["h"]}
+
+    res_true = qml.cond(True, f, false_fn=g, elifs=(False, h))({"1": 1, "2": 2, "h": 3})
+    assert res_true == {"val": 1}
+
+    res_elif = qml.cond(False, f, false_fn=g, elifs=(True, h))({"1": 1, "2": 2, "h": 3})
+    assert res_elif == {"val": 3}
+
+    res_false = qml.cond(False, f, false_fn=g, elifs=(False, h))({"1": 1, "2": 2, "h": 3})
+    assert res_false == {"val": 2}

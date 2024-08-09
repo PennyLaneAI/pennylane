@@ -367,3 +367,16 @@ class TestCaptureCircuitsForLoop:
         jaxpr = jax.make_jaxpr(circuit)(*args)
         res_ev_jxpr = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *args)
         assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
+
+
+def test_pytree_inputs():
+    """Test that for_loop works with pytree inputs and outputs."""
+
+    @qml.for_loop(1, 7, 2)
+    def f(i, x):
+        return {"x": i + x["x"]}
+
+    x = {"x": 0}
+    out = f(x)
+    assert list(out.keys()) == ["x"]
+    assert qml.math.allclose(out["x"], 9)  # 1 + 3 + 5 = 9

@@ -215,3 +215,16 @@ class TestCaptureCircuitsWhileLoop:
         jaxpr = jax.make_jaxpr(circuit)(*args)
         res_ev_jxpr = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *args)
         assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
+
+
+def test_pytree_input_output():
+    """Test that the while loop supports pytree input and output."""
+
+    @qml.while_loop(lambda x: x["x"] < 10)
+    def f(x):
+        return {"x": x["x"] + 1}
+
+    x0 = {"x": 0}
+    out = f(x0)
+    assert list(out.keys()) == ["x"]
+    assert qml.math.allclose(out["x"], 10)

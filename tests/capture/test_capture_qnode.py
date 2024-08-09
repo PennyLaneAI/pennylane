@@ -317,3 +317,33 @@ def test_qnode_closure_variables():
 
     out = jax.core.eval_jaxpr(jaxpr.jaxpr, [jax.numpy.array(0.5)], 0)
     assert qml.math.allclose(out, jax.numpy.cos(0.5))
+
+
+def test_qnode_pytree_input():
+    """Test that we can capture and execute a qnode with a pytree input."""
+
+    @qml.qnode(qml.device("default.qubit", wires=2))
+    def circuit(x):
+        qml.RX(x["val"], wires=x["wires"])
+        return qml.expval(qml.Z(wires=x["wires"]))
+
+    x = {"val": 0.5, "wires": 0}
+    res = circuit(x)
+    assert qml.math.allclose(res, jax.numpy.cos(0.5))
+
+    jaxpr = jax.make_jaxpr(circuit)(x)
+    assert len(jaxpr.eqns[0].invars) == 2
+
+
+def test_qnode_pytree_output():
+    """Test that we can capture and execute a qnode with a pytree output."""
+
+    @qml.qnode(qml.device("default.qubit", wires=2))
+    def circuit(x):
+        qml.RX(x, 0)
+        return {"a": qml.expval(qml.Z(0)), "b": qml.expval(qml.Y(0))}
+
+    out = circuit(1.2)
+    assert qml.math.allclose(out["a"], jax.numpy.cos(1.2))
+    assert qml.math.allclose(out["b"], -jax.numpy.sin(1.2))
+    assert list(out.keys()) == ["a", "b"]
