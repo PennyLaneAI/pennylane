@@ -1056,7 +1056,7 @@ class TestDifferentiability:
             qml.RX(x, 0)
             c1 = qml.numpy.array(0.1, requires_grad=False)
             c2 = qml.numpy.array(0.2, requires_grad=False)
-            H = c1 * qml.Z(0) + c2 * qml.X(0)
+            H = c1 * qml.Z(0) + c2 * qml.X(0) + c2 * qml.I(0)
             return qml.expval(H)
 
         x = qml.numpy.array(0.5)
