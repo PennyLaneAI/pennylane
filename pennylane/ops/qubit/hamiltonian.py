@@ -891,7 +891,9 @@ class Hamiltonian(Observable):
 
         return NotImplemented
 
-    def queue(self, context: Literal[qml.QueuingManager, qml.queuing.AnnotatedQueue] = qml.QueuingManager):
+    def queue(
+        self, context: Literal[qml.QueuingManager, qml.queuing.AnnotatedQueue] = qml.QueuingManager
+    ):
         """Queues a qml.Hamiltonian instance"""
         for o in self.ops:
             context.remove(o)
