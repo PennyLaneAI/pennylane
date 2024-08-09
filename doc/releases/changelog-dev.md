@@ -87,10 +87,11 @@
   [(#5919)](https://github.com/PennyLaneAI/pennylane/pull/5919)
 
 * Applying `adjoint` and `ctrl` to a quantum function can now be captured into plxpr.
-  Furthermore, the `qml.cond` function can be captured into plxpr. 
+  Furthermore, the `qml.cond` function can be captured into plxpr.
   [(#5966)](https://github.com/PennyLaneAI/pennylane/pull/5966)
   [(#5967)](https://github.com/PennyLaneAI/pennylane/pull/5967)
   [(#5999)](https://github.com/PennyLaneAI/pennylane/pull/5999)
+  [(#6058)](https://github.com/PennyLaneAI/pennylane/pull/6058)
 
 * Set operations are now supported by Wires.
   [(#5983)](https://github.com/PennyLaneAI/pennylane/pull/5983)
