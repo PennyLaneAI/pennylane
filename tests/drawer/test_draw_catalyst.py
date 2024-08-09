@@ -20,7 +20,7 @@ import pennylane as qml
 catalyst = pytest.importorskip("catalyst")
 mpl = pytest.importorskip("matplotlib")
 
-pytestmark = pytest.mark.external
+pytestmark = pytest.mark.catalyst
 
 
 class TestCatalystDraw:
