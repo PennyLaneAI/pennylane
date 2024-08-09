@@ -18,9 +18,10 @@ import copy
 from collections import defaultdict
 
 import pennylane as qml
+from pennylane.operation import ResourcesOperation
 from pennylane.ops import Sum
 from pennylane.ops.op_math import SProd
-from pennylane.resource import Resources, ResourcesOperation
+from pennylane.resource import Resources
 from pennylane.resource.error import ErrorOperation, SpectralNormError
 from pennylane.wires import Wires
 
