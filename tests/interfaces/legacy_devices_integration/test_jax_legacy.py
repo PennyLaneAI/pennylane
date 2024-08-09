@@ -110,7 +110,7 @@ class TestJaxExecuteUnitTests:
     def test_grad_on_execution(self, mocker):
         """Test that grad_on_execution uses the `device.execute_and_gradients` pathway"""
         dev = qml.device("default.qubit.legacy", wires=2)
-        spy = mocker.spy(dev, "execute_and_gradients")
+        spy = mocker.spy(dev, "execute_and_compute_derivatives")
 
         def cost(params):
             tape1 = qml.tape.QuantumScript(
@@ -308,7 +308,7 @@ class TestCaching:
 
         # With caching, 5 evaluations are required to compute
         # the Jacobian: 1 (forward pass) + (2 shifts * 2 params)
-        dev._num_executions = 0
+        dev.target_device._num_executions = 0
         jac_fn = jax.grad(cost)
         grad1 = jac_fn(params, cache=True)
         assert dev.num_executions == 5
@@ -353,14 +353,14 @@ class TestCaching:
         # 1 for the forward pass, and one per output dimension
         # on the backward pass.
         jax.grad(cost)(params, cache=None)
-        assert dev.num_executions == 2
+        assert dev.num_executions == 1
 
         # With caching, also 2 evaluations are required. One
         # for the forward pass, and one for the backward pass.
-        dev._num_executions = 0
+        dev.target_device._num_executions = 0
         jac_fn = jax.grad(cost)
         jac_fn(params, cache=True)
-        assert dev.num_executions == 2
+        assert dev.num_executions == 1
 
 
 execute_kwargs_integration = [

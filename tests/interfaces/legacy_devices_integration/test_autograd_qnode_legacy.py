@@ -90,7 +90,7 @@ class TestQNode:
             for op in args[0]:
                 param_data.extend(op.data)
 
-        mocker.patch.object(dev, "apply", side_effect=mock_apply)
+        mocker.patch.object(dev.target_device, "apply", side_effect=mock_apply)
         circuit(x, y)
         assert param_data == [0.1, 0.2, 0.3, 0.4, 0.5]
         assert not any(isinstance(p, np.tensor) for p in param_data)
@@ -529,7 +529,7 @@ class TestShotsIntegration:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliY(1))
 
-        spy = mocker.spy(dev, "sample")
+        spy = mocker.spy(dev.target_device, "sample")
 
         # execute with device default shots (None)
         res = circuit(a, b)
@@ -542,7 +542,7 @@ class TestShotsIntegration:
         assert spy.spy_return.shape == (100,)
 
         # device state has been unaffected
-        assert dev.shots is None
+        assert not dev.shots
         res = circuit(a, b)
         assert np.allclose(res, -np.cos(a) * np.sin(b), atol=tol, rtol=0)
         spy.assert_called_once()  # same single call performed above
@@ -1528,7 +1528,7 @@ def test_adjoint_reuse_device_state(mocker):
         qml.RX(x, wires=0)
         return qml.expval(qml.PauliZ(0))
 
-    spy = mocker.spy(dev, "adjoint_jacobian")
+    spy = mocker.spy(dev.target_device, "adjoint_jacobian")
 
     qml.grad(circ, argnum=0)(1.0)
     assert circ.device.num_executions == 1
@@ -1705,8 +1705,8 @@ class TestTapeExpansion:
 
         # test second-order derivatives
         if diff_method == "parameter-shift" and max_diff == 2:
-            with pytest.warns(UserWarning, match=r"Output seems independent of input."):
-                grad2_c = qml.jacobian(qml.grad(circuit, argnum=2), argnum=2)(d, w, c)
+            grad2_c = qml.jacobian(qml.grad(circuit, argnum=2), argnum=2)(d, w, c)
+
             assert np.allclose(grad2_c, 0, atol=tol)
 
             grad2_w_c = qml.jacobian(qml.grad(circuit, argnum=1), argnum=2)(d, w, c)
@@ -1730,7 +1730,9 @@ class TestSample:
             qml.RX(0.54, wires=0)
             return qml.sample(qml.PauliZ(0)), qml.sample(qml.PauliX(1))
 
-        with pytest.raises(qml.QuantumFunctionError, match="only supported when shots=None"):
+        with pytest.raises(
+            qml.QuantumFunctionError, match="does not support backprop with requested circuit"
+        ):
             circuit(shots=10)  # pylint: disable=unexpected-keyword-arg
 
     def test_sample_dimension(self):

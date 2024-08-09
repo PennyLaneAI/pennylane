@@ -1783,15 +1783,15 @@ class TestStateMeasurement:
             qml.X(0)
             return MyMeasurement()
 
-        if isinstance(dev, qml.Device):
-            with pytest.warns(
+        with (
+            pytest.warns(
                 UserWarning,
-                match="Requested measurement MyMeasurement with finite shots",
-            ):
-                circuit()
-        else:
-            with pytest.raises(qml.DeviceError):
-                circuit()
+                match="MyMeasurement with finite shots; the returned state information is analytic",
+            )
+            if isinstance(dev, qml.devices.LegacyDevice)
+            else pytest.raises(qml.DeviceError, match="not accepted with finite shots")
+        ):
+            circuit()
 
     def test_method_overriden_by_device(self, device):
         """Test that the device can override a measurement process."""

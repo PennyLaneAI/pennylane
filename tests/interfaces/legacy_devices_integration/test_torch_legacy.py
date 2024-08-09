@@ -80,11 +80,12 @@ class TestTorchExecuteUnitTests:
                 [tape], dev, gradient_fn=param_shift, grad_on_execution=True, interface=interface
             )
 
+    @pytest.mark.xfail(reason="Adjoint Jacobian is not supported with shots")
     def test_grad_on_execution_reuse_state(self, interface, mocker):
         """Test that grad_on_execution uses the `device.execute_and_gradients` pathway
         while reusing the quantum state."""
         dev = qml.device("default.qubit.legacy", wires=1)
-        spy = mocker.spy(dev, "execute_and_gradients")
+        spy = mocker.spy(dev.target_device, "execute_and_gradients")
 
         a = torch.tensor([0.1, 0.2], requires_grad=True)
 
@@ -93,7 +94,7 @@ class TestTorchExecuteUnitTests:
             qml.RX(a[1], wires=0)
             qml.expval(qml.PauliZ(0))
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qml.tape.QuantumScript.from_queue(q, shots=10)
 
         execute(
             [tape],
@@ -110,7 +111,7 @@ class TestTorchExecuteUnitTests:
     def test_grad_on_execution(self, interface, mocker):
         """Test that grad on execution uses the `device.execute_and_gradients` pathway"""
         dev = qml.device("default.qubit.legacy", wires=1)
-        spy = mocker.spy(dev, "execute_and_gradients")
+        spy = mocker.spy(dev.target_device, "execute_and_gradients")
 
         a = torch.tensor([0.1, 0.2], requires_grad=True)
 
@@ -129,8 +130,7 @@ class TestTorchExecuteUnitTests:
             interface=interface,
         )
 
-        # two device executions; one for the value, one for the Jacobian
-        assert dev.num_executions == 2
+        assert dev.num_executions == 1
         spy.assert_called()
 
     def test_no_grad_on_execution(self, interface, mocker):
@@ -244,7 +244,7 @@ class TestCaching:
 
         # With caching, 5 evaluations are required to compute
         # the Jacobian: 1 (forward pass) + (2 shifts * 2 params)
-        dev._num_executions = 0
+        dev.target_device._num_executions = 0
         torch_functional.jacobian(lambda p: cost(p, cache=True), params)
         assert dev.num_executions == 5
 
@@ -296,7 +296,7 @@ class TestCaching:
         assert dev.num_executions == expected_runs
 
         # Use caching: number of executions is ideal
-        dev._num_executions = 0
+        dev.target_device._num_executions = 0
         hess2 = torch.autograd.functional.hessian(lambda x: cost(x, cache=True), params)
         assert np.allclose(hess1, hess2, atol=tol, rtol=0)
 
@@ -333,16 +333,14 @@ class TestCaching:
                 interface="torch",
             )[0]
 
-        # Without caching, 2 evaluations are required.
-        # 1 for the forward pass, and one for the backward pass
+        # Without caching, 1 evaluations are required.
         torch_functional.jacobian(lambda x: cost(x, cache=None), params)
-        assert dev.num_executions == 2
+        assert dev.num_executions == 1
 
-        # With caching, only 2 evaluations are required. One
-        # for the forward pass, and one for the backward pass.
-        dev._num_executions = 0
+        # With caching, only 1 evaluations are required.
+        dev.target_device._num_executions = 0
         torch_functional.jacobian(lambda x: cost(x, cache=True), params)
-        assert dev.num_executions == 2
+        assert dev.num_executions == 1
 
 
 torch_devices = [None]
@@ -900,9 +898,9 @@ class TestTorchExecuteIntegration:
     def test_sampling(self, torch_device, execute_kwargs):
         """Test sampling works as expected"""
         # pylint: disable=unused-argument
-        if (
-            execute_kwargs["gradient_fn"] == "device"
-            and execute_kwargs["grad_on_execution"] is True
+        if execute_kwargs["gradient_fn"] == "device" and (
+            execute_kwargs["grad_on_execution"] is True
+            or execute_kwargs["gradient_kwargs"]["method"] == "adjoint_jacobian"
         ):
             pytest.skip("Adjoint differentiation does not support samples")
         if execute_kwargs["interface"] == "auto":
@@ -916,7 +914,7 @@ class TestTorchExecuteIntegration:
             qml.sample(qml.PauliZ(0))
             qml.sample(qml.PauliX(1))
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qml.tape.QuantumScript.from_queue(q, shots=10)
 
         res = execute([tape], dev, **execute_kwargs)[0]
 
@@ -932,9 +930,9 @@ class TestTorchExecuteIntegration:
     def test_sampling_expval(self, torch_device, execute_kwargs):
         """Test sampling works as expected if combined with expectation values"""
         # pylint: disable=unused-argument
-        if (
-            execute_kwargs["gradient_fn"] == "device"
-            and execute_kwargs["grad_on_execution"] is True
+        if execute_kwargs["gradient_fn"] == "device" and (
+            execute_kwargs["grad_on_execution"] is True
+            or execute_kwargs["gradient_kwargs"]["method"] == "adjoint_jacobian"
         ):
             pytest.skip("Adjoint differentiation does not support samples")
         if execute_kwargs["interface"] == "auto":
@@ -948,7 +946,7 @@ class TestTorchExecuteIntegration:
             qml.sample(qml.PauliZ(0))
             qml.expval(qml.PauliX(1))
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qml.tape.QuantumScript.from_queue(q, shots=10)
 
         res = execute([tape], dev, **execute_kwargs)[0]
 
@@ -962,9 +960,9 @@ class TestTorchExecuteIntegration:
     def test_sampling_gradient_error(self, torch_device, execute_kwargs):
         """Test differentiating a tape with sampling results in an error"""
         # pylint: disable=unused-argument
-        if (
-            execute_kwargs["gradient_fn"] == "device"
-            and execute_kwargs["grad_on_execution"] is True
+        if execute_kwargs["gradient_fn"] == "device" and (
+            execute_kwargs["grad_on_execution"] is True
+            or execute_kwargs["gradient_kwargs"]["method"] == "adjoint_jacobian"
         ):
             pytest.skip("Adjoint differentiation does not support samples")
 
@@ -976,7 +974,7 @@ class TestTorchExecuteIntegration:
             qml.RX(x, wires=[0])
             qml.sample()
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qml.tape.QuantumScript.from_queue(q, shots=10)
 
         res = execute([tape], dev, **execute_kwargs)[0]
 

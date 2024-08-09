@@ -103,7 +103,25 @@ class DeviceError(Exception):
     """
 
 
-class Device(abc.ABC):
+class _LegacyMeta(abc.ABCMeta):
+    """
+    A simple meta class added to circumvent the Legacy facade when
+    checking the instance of a device against a Legacy device type.
+
+    To illustrate, if "dev" is of type LegacyDeviceFacade, and a user is
+    checking "isinstance(dev, qml.devices.DefaultMixed)", the overridden
+    "__instancecheck__" will look behind the facade, and will evaluate instead
+    "isinstance(dev.target_device, qml.devices.DefaultMixed)"
+    """
+
+    def __instancecheck__(cls, instance):
+        if isinstance(instance, qml.devices.LegacyDeviceFacade):
+            return isinstance(instance.target_device, cls)
+
+        return super().__instancecheck__(instance)
+
+
+class Device(abc.ABC, metaclass=_LegacyMeta):
     """Abstract base class for PennyLane devices.
 
     Args:

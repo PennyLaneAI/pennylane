@@ -19,6 +19,7 @@ works correctly an a device.
 # pylint: disable=too-many-arguments
 # pylint: disable=pointless-statement
 # pylint: disable=unnecessary-lambda-assignment
+# pylint: disable=no-name-in-module
 from cmath import exp
 from math import cos, sin, sqrt
 

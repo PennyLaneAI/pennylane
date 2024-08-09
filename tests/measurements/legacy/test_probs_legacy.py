@@ -37,7 +37,7 @@ def custom_measurement_process(device, spy):
         # no need to use op, because the observable has already been applied to ``dev._state``
         meas = qml.probs(wires=wires)
         old_res = device.probability(wires=wires, shot_range=shot_range, bin_size=bin_size)
-        if device.shots is None:
+        if not device.shots:
             new_res = meas.process_state(state=state, wire_order=device.wires)
         else:
             new_res = meas.process_samples(

@@ -109,7 +109,7 @@ def test_shot_distribution():
 
         _capabilities = {"provides_jacobian": True}
 
-        def jacobian(self, circuit):  # pylint: disable=unused-argument
+        def adjoint_jacobian(self, circuit):  # pylint: disable=unused-argument
             return 0
 
     dev = LegacyDeviceFacade(DummyJacobianDevice())
@@ -117,17 +117,18 @@ def test_shot_distribution():
     tape1 = qml.tape.QuantumScript([], [qml.expval(qml.Z(0))], shots=5)
     tape2 = qml.tape.QuantumScript([], [qml.expval(qml.Z(0))], shots=100)
 
+    execution_config = ExecutionConfig(gradient_keyword_arguments={"method": "adjoint_jacobian"})
     with dev.tracker:
         dev.execute((tape1, tape2))
     assert dev.tracker.history["shots"] == [5, 100]
 
     with dev.tracker:
-        dev.compute_derivatives((tape1, tape2))
+        dev.compute_derivatives((tape1, tape2), execution_config)
 
     assert dev.tracker.history["derivatives"] == [1, 1]  # two calls
 
     with dev.tracker:
-        dev.execute_and_compute_derivatives((tape1, tape2))
+        dev.execute_and_compute_derivatives((tape1, tape2), execution_config)
 
     assert dev.tracker.history["batches"] == [1, 1]  # broken up into multiple calls
     assert dev.tracker.history["shots"] == [5, 100]
@@ -306,6 +307,9 @@ class TestGradientSupport:
         config = qml.devices.ExecutionConfig(gradient_method=gradient_method)
         assert dev.supports_derivatives(config, tape)
         assert not dev.supports_derivatives(config, tape_shots)
+
+        unsupported_tape = qml.tape.QuantumScript([], [qml.state()])
+        assert not dev.supports_derivatives(config, unsupported_tape)
 
         program, processed_config = dev.preprocess(config)
         assert processed_config.use_device_gradient is True
