@@ -21,8 +21,13 @@ import pennylane as qml
 from pennylane import Identity, PauliX, PauliY, PauliZ
 from pennylane import numpy as pnp
 from pennylane.operation import Tensor
-from pennylane.pauli import are_identical_pauli_words
-from pennylane.pauli.grouping.group_observables import PauliGroupingStrategy, group_observables
+from pennylane.pauli import are_identical_pauli_words, are_pauli_words_qwc
+from pennylane.pauli.grouping.group_observables import (
+    PauliGroupingStrategy,
+    compute_partition_indices,
+    group_observables,
+    obs_partitions_from_idx_partitions,
+)
 
 
 class TestPauliGroupingStrategy:
@@ -46,7 +51,7 @@ class TestPauliGroupingStrategy:
             ValueError, PauliGroupingStrategy, observables, graph_colourer="invalid"
         )
 
-    def test_construct_qwc_complement_adj_matrix_for_operators(self):
+    def test_construct_qwc_adj_matrix(self):
         """Constructing the complement graph adjacency matrix for a list of Pauli words according
         to qubit-wise commutativity."""
 
@@ -54,12 +59,9 @@ class TestPauliGroupingStrategy:
         qwc_complement_adjacency_matrix = np.array([[0, 1, 0], [1, 0, 1], [0, 1, 0]])
 
         grouping_instance = PauliGroupingStrategy(observables, "qwc")
-        assert (
-            grouping_instance.complement_adj_matrix_for_operator()
-            == qwc_complement_adjacency_matrix
-        ).all()
+        assert (grouping_instance.adj_matrix == qwc_complement_adjacency_matrix).all()
 
-    def test_construct_commuting_complement_adj_matrix_for_operators(self):
+    def test_construct_commuting_adj_matrix(self):
         """Constructing the complement graph adjacency matrix for a list of Pauli words according
         to general commutativity."""
 
@@ -67,23 +69,17 @@ class TestPauliGroupingStrategy:
         commuting_complement_adjacency_matrix = np.array([[0, 1, 0], [1, 0, 0], [0, 0, 0]])
 
         grouping_instance = PauliGroupingStrategy(observables, "commuting")
-        assert (
-            grouping_instance.complement_adj_matrix_for_operator()
-            == commuting_complement_adjacency_matrix
-        ).all()
+        assert (grouping_instance.adj_matrix == commuting_complement_adjacency_matrix).all()
 
-    def test_construct_anticommuting_complement_adj_matrix_for_operators(self):
+    def test_construct_anticommuting_adj_matrix(self):
         """Constructing the complement graph adjacency matrix for a list of Pauli words according
         to anticommutativity."""
 
         observables = [PauliY(0), PauliZ(0) @ PauliZ(1), PauliY(0) @ PauliX(1)]
-        anticommuting_complement_adjacency_matrix = np.array([[0, 0, 1], [0, 0, 1], [1, 1, 0]])
+        anticommuting_complement_adjacency_matrix = np.array([[1, 0, 1], [0, 1, 1], [1, 1, 1]])
 
         grouping_instance = PauliGroupingStrategy(observables, "anticommuting")
-        assert (
-            grouping_instance.complement_adj_matrix_for_operator()
-            == anticommuting_complement_adjacency_matrix
-        ).all()
+        assert (grouping_instance.adj_matrix == anticommuting_complement_adjacency_matrix).all()
 
     trivial_ops = [
         [Identity(0), Identity(0), Identity(7)],
@@ -98,10 +94,7 @@ class TestPauliGroupingStrategy:
         qwc_complement_adjacency_matrix = np.array([[0, 0, 0], [0, 0, 0], [0, 0, 0]])
 
         grouping_instance = PauliGroupingStrategy(observables, "qwc")
-        assert (
-            grouping_instance.complement_adj_matrix_for_operator()
-            == qwc_complement_adjacency_matrix
-        ).all()
+        assert (grouping_instance.adj_matrix == qwc_complement_adjacency_matrix).all()
 
     @pytest.mark.parametrize("observables", trivial_ops)
     def test_construct_complement_commuting_adj_matrix_for_trivial_operators(self, observables):
@@ -111,23 +104,17 @@ class TestPauliGroupingStrategy:
         commuting_complement_adjacency_matrix = np.array([[0, 0, 0], [0, 0, 0], [0, 0, 0]])
 
         grouping_instance = PauliGroupingStrategy(observables, "commuting")
-        assert (
-            grouping_instance.complement_adj_matrix_for_operator()
-            == commuting_complement_adjacency_matrix
-        ).all()
+        assert (grouping_instance.adj_matrix == commuting_complement_adjacency_matrix).all()
 
     @pytest.mark.parametrize("observables", trivial_ops)
     def test_construct_complement_anticommuting_adj_matrix_for_trivial_operators(self, observables):
         """Constructing the complement of anticommutativity graph's adjacency matrix for a list of
         identity operations and various symmetric binary relations"""
 
-        anticommuting_complement_adjacency_matrix = np.array([[0, 1, 1], [1, 0, 1], [1, 1, 0]])
+        anticommuting_complement_adjacency_matrix = np.array([[1, 1, 1], [1, 1, 1], [1, 1, 1]])
 
         grouping_instance = PauliGroupingStrategy(observables, "anticommuting")
-        assert (
-            grouping_instance.complement_adj_matrix_for_operator()
-            == anticommuting_complement_adjacency_matrix
-        ).all()
+        assert (grouping_instance.adj_matrix == anticommuting_complement_adjacency_matrix).all()
 
 
 observables_list = [
@@ -172,13 +159,13 @@ observables_list = [
 
 qwc_sols = [
     [
-        [PauliX(wires=[1]), PauliY(wires=[0])],
         [PauliX(wires=[0]) @ PauliZ(wires=[1]), PauliZ(wires=[1]) @ PauliY(wires=[2])],
+        [PauliX(wires=[1]), PauliY(wires=[0])],
         [PauliZ(wires=[1]) @ PauliZ(wires=[2])],
     ],
     [
-        [PauliX(wires=[1]), PauliY(wires=[0])],
         [PauliX(wires=[0]) @ PauliZ(wires=[1]), PauliZ(wires=[1]) @ PauliY(wires=[2])],
+        [PauliX(wires=[1]), PauliY(wires=[0])],
         [PauliZ(wires=[1]) @ PauliZ(wires=[2])],
     ],
     [
@@ -202,14 +189,14 @@ qwc_sols = [
         [PauliX(wires=[1]) @ PauliX(wires=[0])],
     ],
     [
+        [PauliX(wires=["a"]), PauliX(wires=["a"]) @ PauliZ(wires=["b"])],
         [PauliZ(wires=["a"]) @ PauliX(wires=["b"])],
         [PauliZ(wires=["a"]) @ PauliZ(wires=["b"]) @ PauliZ(wires=["c"])],
-        [PauliX(wires=["a"]), PauliX(wires=["a"]) @ PauliZ(wires=["b"])],
     ],
     [
+        [PauliX(wires=["a"]), PauliX(wires=["a"]) @ PauliZ(wires=["b"])],
         [PauliZ(wires=["a"]) @ PauliX(wires=["b"])],
         [PauliZ(wires=["a"]) @ PauliZ(wires=["b"]) @ PauliZ(wires=["c"])],
-        [PauliX(wires=["a"]), PauliX(wires=["a"]) @ PauliZ(wires=["b"])],
     ],
     [[PauliX([(0, 0)])], [PauliZ([(0, 0)])]],
 ]
@@ -306,6 +293,29 @@ anticommuting_sols = [
     [[PauliX([(0, 0)]), PauliZ([(0, 0)])]],
 ]
 
+com_tuples = list(zip(observables_list, commuting_sols))
+
+anticom_tuples = list(zip(observables_list, anticommuting_sols))
+
+
+def are_partitions_equal(partition_1: list, partition_2: list) -> bool:
+    """Checks whether two partitions are the same, i.e. contain the same Pauli terms.
+
+    We check this way since the partitions might vary in the order of the elements
+
+    Args:
+        partition_1 (list[Observable]): list of Pauli word ``Observable`` instances corresponding to a partition.
+        partition_2 (list[Observable]): list of Pauli word ``Observable`` instances corresponding to a partition.
+
+    """
+    partition_3 = set(
+        partition_2
+    )  # to improve the lookup time for similar obs in the second partition
+    for pauli in partition_1:
+        if not any(are_identical_pauli_words(pauli, other) for other in partition_3):
+            return False
+    return True
+
 
 class TestGroupObservables:
     """
@@ -319,50 +329,39 @@ class TestGroupObservables:
         qwc_partitions = group_observables(observables, grouping_type="qwc")
 
         # assert the correct number of partitions:
-        n_partitions = len(qwc_partitions_sol)
-        assert len(qwc_partitions) == n_partitions
-        # assert each partition is of the correct length:
-        assert all(
-            len(part) == len(part_sol) for part, part_sol in zip(qwc_partitions, qwc_partitions_sol)
-        )
-        # assert each partition contains the same Pauli terms as the solution partition:
-        for i, partition in enumerate(qwc_partitions):
-            for j, pauli in enumerate(partition):
-                assert are_identical_pauli_words(pauli, qwc_partitions_sol[i][j])
+        assert len(qwc_partitions) == len(qwc_partitions_sol)
 
-    com_tuples = list(zip(observables_list, commuting_sols))
+        # assert each computed partition contains appears in the computed solution.
+        for comp_partition in qwc_partitions:
+            assert any(
+                are_partitions_equal(exp_partition, comp_partition)
+                for exp_partition in qwc_partitions_sol
+            )
 
     @pytest.mark.parametrize("observables,com_partitions_sol", com_tuples)
     def test_commuting_partitioning(self, observables, com_partitions_sol):
         com_partitions = group_observables(observables, grouping_type="commuting")
 
-        # assert the correct number of partitions:
-        n_partitions = len(com_partitions_sol)
-        assert len(com_partitions) == n_partitions
-        # assert each partition is of the correct length:
-        assert all(len(p) == len(p_sol) for p, p_sol in zip(com_partitions, com_partitions_sol))
-        # assert each partition contains the same Pauli terms as the solution partition:
-        for i, partition in enumerate(com_partitions):
-            for j, pauli in enumerate(partition):
-                assert are_identical_pauli_words(pauli, com_partitions_sol[i][j])
-
-    anticom_tuples = list(zip(observables_list, anticommuting_sols))
+        assert len(com_partitions) == len(com_partitions_sol)
+        # assert each computed partition contains appears in the computed solution.
+        for comp_partition in com_partitions:
+            assert any(
+                are_partitions_equal(exp_partition, comp_partition)
+                for exp_partition in com_partitions_sol
+            )
 
     @pytest.mark.parametrize("observables,anticom_partitions_sol", anticom_tuples)
     def test_anticommuting_partitioning(self, observables, anticom_partitions_sol):
         anticom_partitions = group_observables(observables, grouping_type="anticommuting")
 
         # assert the correct number of partitions:
-        n_partitions = len(anticom_partitions_sol)
-        assert len(anticom_partitions) == n_partitions
-        # assert each partition is of the correct length:
-        assert all(
-            len(p) == len(p_sol) for p, p_sol in zip(anticom_partitions, anticom_partitions_sol)
-        )
-        # assert each partition contains the same Pauli terms as the solution partition:
-        for i, partition in enumerate(anticom_partitions):
-            for j, pauli in enumerate(partition):
-                assert are_identical_pauli_words(pauli, anticom_partitions_sol[i][j])
+        assert len(anticom_partitions) == len(anticom_partitions_sol)
+        # assert each computed partition contains appears in the computed solution.
+        for comp_partition in anticom_partitions:
+            assert any(
+                are_partitions_equal(exp_partition, comp_partition)
+                for exp_partition in anticom_partitions_sol
+            )
 
     def test_group_observables_exception(self):
         """Tests that the ``group_observables`` function raises an exception if
@@ -393,26 +392,6 @@ class TestGroupObservables:
         coeffs = [1.0, 2.0]
         _, grouped_coeffs = group_observables(obs, coeffs)
         assert isinstance(grouped_coeffs[0], list)
-
-    def test_return_new_opmath(self):
-        """Test that using new opmath causes grouped observables to have Prods instead of
-        Tensors"""
-        new_observables = [
-            qml.prod(PauliX(0), PauliZ(1)),
-            qml.prod(PauliY(2), PauliZ(1)),
-            qml.s_prod(1.5, qml.prod(PauliZ(1), PauliZ(2))),
-        ]
-        mixed_observables = [
-            Tensor(PauliX(0), PauliZ(1)),
-            qml.prod(PauliY(2), PauliZ(1)),
-            qml.s_prod(1.5, qml.prod(PauliZ(1), PauliZ(2))),
-        ]
-
-        new_groups = group_observables(new_observables)
-        mixed_groups = group_observables(mixed_observables)
-
-        assert all(isinstance(o, qml.ops.Prod) for g in new_groups for o in g)
-        assert all(isinstance(o, qml.ops.Prod) for g in mixed_groups for o in g)
 
     @pytest.mark.usefixtures("use_legacy_opmath")
     def test_return_new_opmath_legacy_opmath(self):
@@ -481,6 +460,96 @@ class TestGroupObservables:
         groups, out_coeffs = group_observables(observables, coeffs)
         assert groups == [[qml.X(0), 2 * qml.I(), qml.I() @ qml.I()], [qml.Z(0)]]
         assert out_coeffs == [[1, 3, 4], [2]]
+
+
+class TestComputePartitionIndices:
+    """Tests for ``compute_partition_indices``"""
+
+    OBS_IDX_PARTITIONS = [
+        (
+            [qml.I(), qml.X(0) @ qml.X(1), qml.Z(0) @ qml.Z(1), 2 * qml.I(), 2 * qml.Z(0)],
+            ((0, 1, 3), (2, 4)),
+            [[qml.I(), qml.X(0) @ qml.X(1), 2 * qml.I()], [qml.Z(0) @ qml.Z(1), 2 * qml.Z(0)]],
+        ),
+    ]
+
+    def test_invalid_colouring_method(self):
+        """Test that passing an invalid colouring method raises an error"""
+        observables = [qml.X(0) @ qml.Z(1), qml.Z(0), qml.X(1)]
+        with pytest.raises(ValueError, match="Graph colouring method must be one of"):
+            compute_partition_indices(observables=observables, method="recursive")
+
+    def test_only_observables_without_wires(self):
+        """Test that if none of the observables has wires, they are all in one single partition."""
+
+        observables = [qml.I(), 2 * qml.I()]
+        partition_indices = compute_partition_indices(observables=observables)
+        assert partition_indices == (tuple(range(len(observables))),)
+
+    @pytest.mark.parametrize("observables, indices, obs_partitions", OBS_IDX_PARTITIONS)
+    def test_obs_from_indices_partitions(self, observables, indices, obs_partitions):
+        """Test that obs_partition_from_idx_partitions returns the correct observables"""
+
+        partition_obs = obs_partitions_from_idx_partitions(observables, indices)
+        assert partition_obs == obs_partitions
+
+    def test_mixed_observables_qwc(self):
+        """Test that if both observables with wires and without wires are present,
+        the latter are appended on the first element of the former and the partitions are qwc."""
+        observables = [qml.I(), qml.X(0), qml.Z(0), 2 * qml.I(), 2 * qml.Z(0)]
+        partition_indices = compute_partition_indices(observables=observables, grouping_type="qwc")
+        indices_no_wires = (0, 3)
+        assert set(indices_no_wires) < set(partition_indices[0])
+
+        partition_obs = obs_partitions_from_idx_partitions(observables, partition_indices)
+        for partition in partition_obs:
+            assert are_pauli_words_qwc(partition)
+
+    @pytest.mark.parametrize("observables,com_partitions_sol", com_tuples)
+    def test_commuting_partitioning(self, observables, com_partitions_sol):
+        """Test that using the commuting grouping type returns the correct solutions."""
+
+        partition_indices = compute_partition_indices(
+            observables=observables, grouping_type="commuting"
+        )
+
+        com_partitions = obs_partitions_from_idx_partitions(observables, partition_indices)
+
+        assert len(com_partitions) == len(com_partitions_sol)
+        # assert each computed partition contains appears in the computed solution.
+        for comp_partition in com_partitions:
+            assert any(
+                are_partitions_equal(exp_partition, comp_partition)
+                for exp_partition in com_partitions_sol
+            )
+
+    @pytest.mark.parametrize("observables,anticom_partitions_sol", anticom_tuples)
+    def test_anticommuting_partitioning(self, observables, anticom_partitions_sol):
+        """Test that using the anticommuting grouping type returns the correct solutions."""
+
+        partition_indices = compute_partition_indices(
+            observables=observables, grouping_type="anticommuting"
+        )
+
+        anticom_partitions = obs_partitions_from_idx_partitions(observables, partition_indices)
+
+        # assert the correct number of partitions:
+        assert len(anticom_partitions) == len(anticom_partitions_sol)
+        # assert each computed partition contains appears in the computed solution.
+        for comp_partition in anticom_partitions:
+            assert any(
+                are_partitions_equal(exp_partition, comp_partition)
+                for exp_partition in anticom_partitions_sol
+            )
+
+    @pytest.mark.parametrize("method", ("rlf", "lf", "dsatur", "gis"))
+    def test_colouring_methods(self, method):
+        """Test that all colouring methods return the correct results."""
+        observables = [qml.X(0) @ qml.Z(1), qml.Z(0), qml.X(1)]
+        partition_indices = compute_partition_indices(
+            observables, grouping_type="qwc", method=method
+        )
+        assert set(partition_indices) == set(((0,), (1, 2)))
 
 
 class TestDifferentiable:

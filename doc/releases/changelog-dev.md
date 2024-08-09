@@ -43,6 +43,13 @@
 
 <h3>Improvements 🛠</h3>
 
+* `qml.pauli.group_observables` now uses `Rustworkx` colouring algorithms to solve the Minimum Clique Cover problem. 
+In addition, the creation of the adjancecy matrix now takes advantage of the symplectic representation of the Pauli observables. 
+This provides an improvement of orders of magnitude when using `grouping_type='qwc'`. 
+An additional function `qml.pauli.compute_partition_indices` is added to calculate the indices from the partitioned observables more efficiently.
+This improves the wall time of `qml.LinearCombination.compute_grouping()` by orders of magnitude.
+  [(#6043)](https://github.com/PennyLaneAI/pennylane/pull/6043)
+
 * `QNGOptimizer` now supports cost functions with multiple arguments, updating each argument independently.
   [(#5926)](https://github.com/PennyLaneAI/pennylane/pull/5926)
 

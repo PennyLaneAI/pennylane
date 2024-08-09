@@ -48,6 +48,7 @@ from .grouping import (
     PauliGroupingStrategy,
     optimize_measurements,
     graph_colouring,
+    compute_partition_indices,
 )
 
 from .dla import PauliVSpace, lie_closure, structure_constants, center

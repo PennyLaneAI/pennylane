@@ -43,7 +43,7 @@ def sum(*summands, grouping_type=None, method="rlf", id=None, lazy=True):
             of the operators is already a sum operator, its operands (summands) will be used instead.
         grouping_type (str): The type of binary relation between Pauli words used to compute
             the grouping. Can be ``'qwc'``, ``'commuting'``, or ``'anticommuting'``.
-        method (str): The graph coloring heuristic to use in solving minimum clique cover for
+        method (str): The graph colouring heuristic to use in solving minimum clique cover for
             grouping, which can be ``'lf'`` (Largest First) or ``'rlf'`` (Recursive Largest
             First). This keyword argument is ignored if ``grouping_type`` is ``None``.
 
@@ -129,7 +129,7 @@ class Sum(CompositeOp):
     Keyword Args:
         grouping_type (str): The type of binary relation between Pauli words used to compute
             the grouping. Can be ``'qwc'``, ``'commuting'``, or ``'anticommuting'``.
-        method (str): The graph coloring heuristic to use in solving minimum clique cover for
+        method (str): The graph colouring heuristic to use in solving minimum clique cover for
             grouping, which can be ``'lf'`` (Largest First) or ``'rlf'`` (Recursive Largest
             First). This keyword argument is ignored if ``grouping_type`` is ``None``.
         id (str or None): id for the sum operator. Default is None.
@@ -480,7 +480,7 @@ class Sum(CompositeOp):
         Args:
             grouping_type (str): The type of binary relation between Pauli words used to compute
                 the grouping. Can be ``'qwc'``, ``'commuting'``, or ``'anticommuting'``.
-            method (str): The graph coloring heuristic to use in solving minimum clique cover for
+            method (str): The graph colouring heuristic to use in solving minimum clique cover for
                 grouping, which can be ``'lf'`` (Largest First) or ``'rlf'`` (Recursive Largest
                 First).
 

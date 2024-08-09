@@ -24,7 +24,7 @@ requirements = [
     "numpy<2.0",
     "scipy",
     "networkx",
-    "rustworkx",
+    "rustworkx>=0.14.0",
     "autograd",
     "toml",
     "appdirs",
