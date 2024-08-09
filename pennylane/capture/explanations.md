@@ -158,7 +158,7 @@ You can also see the const variable `a` as argument `e:i32[]` to the inner neste
 
 ### Pytree handling
 
-Evaluating a jaxpr requires a flat list of tensor-like inputs, and returns a flat
+Evaluating a jaxpr requires a flat list of tensor-like inputs and returning a flat
 list of tensor-like outputs.  But these long lists can be hard to manage and are very
 restrictive on the allowed functions. But we can take advantage of pytrees to allow handling
 arbitrary functions.
@@ -193,7 +193,7 @@ PyTreeDef({'a': *, 'b': *})
 {'a': 0.1, 'b': 1.2}
 ```
 
-Using these tools, we can now redefine out wrapper around the repeat primitive.
+Using these tools, we can now redefine our wrapper around the repeat primitive.
 
 ```python
 def repeat(func, n: int):

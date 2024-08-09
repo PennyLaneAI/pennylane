@@ -25,7 +25,7 @@ except ImportError:
 
 # pylint: disable=too-few-public-methods
 class FlatFn:
-    """Wrap a function so that is accepts flat arguments and returns flat outputs. Caches
+    """Wrap a function so that it accepts flattened arguments and returns flattened outputs. It caches
     the pytree shape of the output into the ``out_tree`` property, so that the results can
     be repacked later.
 
