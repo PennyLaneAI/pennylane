@@ -43,6 +43,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* Added the decomposition of zyz for special unitaries with multiple control wires.
+  [(#6042)](https://github.com/PennyLaneAI/pennylane/pull/6042)
+
 * `QNGOptimizer` now supports cost functions with multiple arguments, updating each argument independently.
   [(#5926)](https://github.com/PennyLaneAI/pennylane/pull/5926)
 
@@ -323,6 +326,7 @@ This release contains contributions from (in alphabetical order):
 
 Tarun Kumar Allamsetty,
 Guillermo Alonso,
+Ali Asadi,
 Utkarsh Azad,
 Gabriel Bottrill,
 Ahmed Darwish,
