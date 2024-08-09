@@ -16,10 +16,11 @@ This submodule defines the symbolic operation that indicates the control of an o
 """
 import functools
 import warnings
+from collections.abc import Callable, Sequence
 from copy import copy
 from functools import wraps
 from inspect import signature
-from typing import Any, Callable, Optional, Sequence, overload
+from typing import Any, Optional, overload
 
 import numpy as np
 from scipy import sparse
