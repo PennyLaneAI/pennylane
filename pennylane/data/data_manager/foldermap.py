@@ -16,7 +16,6 @@ Contains ``FolderMapView`` for reading the ``foldermap.json`` file in the
 datasets bucket.
 """
 
-
 from collections.abc import Iterable, Iterator, Mapping
 from pathlib import PurePosixPath
 from typing import Any, Literal, Optional, Union

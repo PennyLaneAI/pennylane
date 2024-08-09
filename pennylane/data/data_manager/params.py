@@ -15,7 +15,6 @@
 Contains types and functions for dataset parameters.
 """
 
-
 import enum
 from collections.abc import Iterable, Iterator, Mapping
 from functools import lru_cache
