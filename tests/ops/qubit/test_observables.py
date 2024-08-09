@@ -361,11 +361,15 @@ class TestHermitian:  # pylint: disable=too-many-public-methods
         )
 
     @pytest.mark.parametrize("observable", DECOMPOSITION_TEST_DATA_MULTI_WIRES)
-    def test_hermitian_compute_decomposition(self, observable):
+    def test_hermitian_decomposition(self, observable):
         """Tests that the compute_decomposition method of the Hermitian class returns the correct result."""
         num_wires = int(np.log2(len(observable)))
-        A_decomp = qml.Hermitian.compute_decomposition(observable, wires=list(range(num_wires)))
+        A_decomp_static = qml.Hermitian.compute_decomposition(
+            observable, wires=list(range(num_wires))
+        )
+        A_decomp = qml.Hermitian(observable, wires=list(range(num_wires))).decomposition()
 
+        assert np.allclose(A_decomp_static[0].matrix(), observable, rtol=0)
         assert np.allclose(A_decomp[0].matrix(), observable, rtol=0)
 
     @pytest.mark.parametrize("observable, eigvals, eigvecs", EIGVALS_TEST_DATA)
