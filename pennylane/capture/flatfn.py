@@ -25,15 +25,14 @@ except ImportError:
 
 # pylint: disable=too-few-public-methods
 class FlatFn:
-    """Wrap a function so that it accepts flattened arguments and returns flattened outputs. It caches
-    the pytree shape of the output into the ``out_tree`` property, so that the results can
-    be repacked later.
+    """Wrap a function so that it caches the pytree shape of the output into the ``out_tree``
+    property, so that the results can be repacked later. It also returns flattened results
+    instead of the original result object.
 
     >>> def f(x):
     ...     return {"y": 2+x["x"]}
-    >>> args = ({"x": 0},)
     >>> flat_f = FlatFn(f)
-    >>> res = flat_f(*args)
+    >>> res = flat_f({"x": 0})
     >>> res
     [2]
     >>> jax.tree_util.tree_unflatten(flat_f.out_tree, res)

@@ -163,10 +163,11 @@ list of tensor-like outputs.  But these long lists can be hard to manage and are
 restrictive on the allowed functions. But we can take advantage of pytrees to allow handling
 arbitrary functions.
 
-To start, we import the `FlatFn` helper. This class converts a function to one that
-accepts flat inputs and returns flat outputs.  It also caches the result pytree
-definition into the `flat_fn.out_tree` property. This can be used to repack the
-results into the correct shape.
+To start, we import the `FlatFn` helper. This class converts a function to one caches
+the resulting result pytree into `flat_fn.out_tree` when executed. This can be used to repack the
+results into the correct shape. It also returns flattened results. This does not particularly
+matter for program capture, as we will only be producing jaxpr from the function, not calling
+it directly.
 
 The following demonstrates how the tree utilities and the `FlatFn` class
 can be used together to unpack and repack the variables:
@@ -176,11 +177,6 @@ can be used together to unpack and repack the variables:
 >>> def f(x): # define a function with pytree inputs and outputs
 ...     return {"a": x[0], "b": x[1]+1}
 >>> args = ([0.1, 0.2],) # the arguments to the function
->>> flat_args, in_tree = jax.tree_util.tree_flatten(args)
->>> flat_args
-[0.1, 0.2]
->>> in_tree
-PyTreeDef(([*, *],))
 >>> flatfn = FlatFn(f)
 >>> flatfn.out_tree is None # initialized to None
 True
@@ -193,7 +189,8 @@ PyTreeDef({'a': *, 'b': *})
 {'a': 0.1, 'b': 1.2}
 ```
 
-Using these tools, we can now redefine our wrapper around the repeat primitive.
+Using these tools, we can now redefine our wrapper around the repeat primitive. This
+code just extends what we did with the repeat primitive above.
 
 ```python
 def repeat(func, n: int):
