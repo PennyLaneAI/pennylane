@@ -644,49 +644,47 @@ class TestCondCircuits:
     @pytest.mark.parametrize("shots", [None, 100])
     @pytest.mark.parametrize(
         "params, expected",
-        # The parameters used here will essentially apply a PauliX to different wires, each
-        # of which will trigger a different conditional block. Each conditional block applies
-        # the diagonalizing gates of different observables, so the expectation value for the
-        # measured observables will vary accordingly.
+        # The parameters used here will essentially apply a PauliX just before mid-circuit
+        # measurements, each of which will trigger a different conditional block. Each
+        # conditional block prepares basis states in different bases, so the expectation value
+        # for the measured observables will vary accordingly.
         [
-            ([np.pi / 2, 0, 0, np.pi / 2], (0, 0, 0, 0)),  # true_fn
-            ([0, np.pi / 2, 0, np.pi / 2], (0, 0, -1, 0)),  # elif_fn1
-            ([0, 0, np.pi / 2, np.pi / 2], (1 / (2 * np.sqrt(2)), 0, -0.5, 0.5)),  # elif_fn2
-            ([0, 0, 0, 0], (1 / np.sqrt(2), 0, 0, 1)),  # false_fn
+            ([np.pi, 0, 0], (1, 1 / np.sqrt(2), 0, 1 / np.sqrt(2))),  # true_fn, Hadamard basis
+            ([0, np.pi, 0], (1 / np.sqrt(2), 1, 0, 0)),  # elif_fn1, PauliX basis
+            ([0, 0, np.pi], (0, 0, 1, 0)),  # elif_fn2, PauliY basis
+            ([0, 0, 0, 0], (1 / np.sqrt(2), 0, 0, 1)),  # false_fn, PauliZ basis
         ],
     )
     def test_mcm_predicate_execution_with_elifs(self, params, expected, shots, tol):
         """Test that QNodes executed with mid-circuit measurement predicates for
         qml.cond give correct results when there are also elifs present."""
-        device = qml.device("default.qubit", wires=3, shots=shots, seed=jax.random.PRNGKey(10))
+        # pylint: disable=expression-not-assigned
+        device = qml.device("default.qubit", wires=5, shots=shots, seed=jax.random.PRNGKey(10))
 
         def true_fn():
-            # Hadamard diagonalizing gates
-            qml.RY(-np.pi / 4, 0)
+            # Adjoint Hadamard diagonalizing gates to get Hadamard basis state
+            [qml.adjoint(op) for op in qml.Hadamard.compute_diagonalizing_gates(0)[::-1]]
 
         def elif_fn1():
-            # PauliX diagonalizing gates
-            qml.Hadamard(0)
+            # Adjoint PauliX diagonalizing gates to get X basis state
+            [qml.adjoint(op) for op in qml.X.compute_diagonalizing_gates(0)[::-1]]
 
         def elif_fn2():
-            # PauliY diagonalizing gates
-            qml.Z(0)
-            qml.S(0)
-            qml.Hadamard(0)
+            # Adjoint PauliY diagonalizing gates to get Y basis state
+            [qml.adjoint(op) for op in qml.Y.compute_diagonalizing_gates(0)[::-1]]
 
         def false_fn():
-            # PauliZ diagonalizing gates
+            # Adjoint PauliZ diagonalizing gates to get Z basis state
             return
 
         @qml.qnode(device)
         def f(*x):
             qml.RX(x[0], 0)
-            m1 = qml.measure(0)
+            m1 = qml.measure(0, reset=True)
             qml.RX(x[1], 0)
-            m2 = qml.measure(0)
+            m2 = qml.measure(0, reset=True)
             qml.RX(x[2], 0)
-            m3 = qml.measure(0)
-            qml.RX(x[3], 0)
+            m3 = qml.measure(0, reset=True)
 
             qml.cond(m1, true_fn, false_fn, elifs=((m2, elif_fn1), (m3, elif_fn2)))()
             return (
