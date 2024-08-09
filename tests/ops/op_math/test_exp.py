@@ -815,7 +815,6 @@ class TestIntegration:
         assert qml.math.allclose(grad, -np.sin(phi))
 
     @pytest.mark.jax
-    @pytest.mark.external
     def test_jax_jit_qnode(self):
         """Tests with jax.jit"""
 

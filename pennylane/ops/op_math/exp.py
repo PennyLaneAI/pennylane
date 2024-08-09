@@ -484,6 +484,8 @@ class Exp(ScalarSymbolicOp, Operation):
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     def has_generator(self):
+        if qml.math.is_abstract(self.coeff):
+            return self.base.is_hermitian
         return self.base.is_hermitian and not np.real(self.coeff)
 
     def generator(self):
@@ -501,7 +503,7 @@ class Exp(ScalarSymbolicOp, Operation):
           0.5 * Y(0) + Z(0) @ X(1)
 
         """
-        if self.base.is_hermitian and not np.real(self.coeff):
+        if self.has_generator:
             return self.base
 
         raise GeneratorUndefinedError(
