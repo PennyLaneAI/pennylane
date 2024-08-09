@@ -52,11 +52,20 @@ class PlxprInterpreter:
         mp = eqn.primitive.impl(*invals, **eqn.params)
         return self.interpret_measurement(mp)
 
-    def call_jaxpr(self, jaxpr, consts):
-        partial_call = partial(self, jaxpr, consts)
-        return jax.make_jaxpr(partial_call)
+    def call(self, jaxpr, n_consts):
+        def wrapper(*args):
+            return self(jaxpr.jaxpr, args[:n_consts], *args[n_consts:])
 
-    def __call__(self, jaxpr, consts, *args):
+        return wrapper
+
+    def __call__(self, f):
+        def wrapper(*args):
+            jaxpr = jax.make_jaxpr(f)(*args)
+            return self.eval(jaxpr.jaxpr, jaxpr.consts, *args)
+
+        return wrapper
+
+    def eval(self, jaxpr, consts, *args):
         self._env = {}
         self._op_math_cache = {}
         self.setup()
