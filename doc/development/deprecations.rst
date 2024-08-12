@@ -80,7 +80,7 @@ Pending deprecations
   - Will be removed in v0.39
 
 * The ``BasisStatePreparation`` template is deprecated.
-  Instead, ``BasisState`` can be called on the constructed operator.
+  Instead, use ``BasisState``.
 
   - Deprecated in v0.38
   - Will be removed in v0.39
