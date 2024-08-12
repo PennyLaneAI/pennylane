@@ -18,14 +18,14 @@ import warnings
 
 # pylint: disable=protected-access
 from functools import partial, reduce
-from typing import Callable, Sequence
 
 import scipy
 
 import pennylane as qml
 from pennylane import transform
+from pennylane.tape import QuantumTapeBatch
 from pennylane.transforms import TransformError
-from pennylane.typing import TensorLike
+from pennylane.typing import PostprocessingFn, TensorLike
 
 
 def eigvals(op: qml.operation.Operator, k=1, which="SA") -> TensorLike:
@@ -135,13 +135,13 @@ def eigvals(op: qml.operation.Operator, k=1, which="SA") -> TensorLike:
     try:
         return op.eigvals()
     except qml.operation.EigvalsUndefinedError:
-        return eigvals(op.expand(), k=k, which=which)
+        return eigvals(qml.tape.QuantumScript(op.decomposition()), k=k, which=which)
 
 
 @partial(transform, is_informative=True)
 def _eigvals_tranform(
     tape: qml.tape.QuantumTape, k=1, which="SA"
-) -> (Sequence[qml.tape.QuantumTape], Callable):
+) -> tuple[QuantumTapeBatch, PostprocessingFn]:
     def processing_fn(res):
         [qs] = res
         op_wires = [op.wires for op in qs.operations]

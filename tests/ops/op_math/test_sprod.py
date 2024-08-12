@@ -109,7 +109,6 @@ class TestInitialization:
         assert sprod_op.num_wires == 1
         assert sprod_op.name == "SProd"
         assert sprod_op.id == test_id
-        assert sprod_op.queue_idx is None
 
         assert sprod_op.data == (3.14, 0.23)
         assert sprod_op.parameters == [3.14, 0.23]

@@ -31,7 +31,8 @@ from pennylane.workflow.jacobian_products import (
 )
 
 dev = qml.device("default.qubit")
-dev_old = qml.device("default.qubit.legacy", wires=5)
+with pytest.warns(qml.PennyLaneDeprecationWarning):
+    dev_old = qml.device("default.qubit.legacy", wires=5)
 dev_lightning = qml.device("lightning.qubit", wires=5)
 adjoint_config = qml.devices.ExecutionConfig(gradient_method="adjoint")
 dev_ps = ParamShiftDerivativesDevice()

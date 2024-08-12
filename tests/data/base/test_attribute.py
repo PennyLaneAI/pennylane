@@ -17,8 +17,9 @@ Tests for :mod:`pennylane.data.base.attribute`.
 
 # pylint: disable=unused-argument,unused-variable,too-many-public-methods
 
+from collections.abc import Iterable
 from copy import copy, deepcopy
-from typing import Any, Iterable, List
+from typing import Any
 
 import numpy as np
 import pytest
@@ -47,7 +48,7 @@ pytestmark = pytest.mark.data
 pytest.importorskip("h5py")
 
 
-def _sort_types(types: Iterable[type]) -> List[type]:
+def _sort_types(types: Iterable[type]) -> list[type]:
     """
     pytest-split requires that test parameters are always in the same
     order between runs. This function ensures that collections of types
@@ -126,7 +127,7 @@ class TestAttributeInfo:
         [
             ({"py_type": None}, "None"),
             ({"py_type": "None"}, "None"),
-            ({"py_type": List[None]}, "list[None]"),
+            ({"py_type": list[None]}, "list[None]"),
             ({}, None),
         ],
     )

@@ -17,10 +17,9 @@ datasets bucket.
 """
 
 
-import typing
-from collections.abc import Mapping
+from collections.abc import Iterable, Iterator, Mapping
 from pathlib import PurePosixPath
-from typing import Any, List, Literal, Optional, Tuple, Union
+from typing import Any, Literal, Optional, Union
 
 from .params import Description, ParamArg, ParamVal
 
@@ -33,7 +32,7 @@ class DataPath(PurePosixPath):
         return repr(str(self))
 
 
-class FolderMapView(typing.Mapping[str, Union["FolderMapView", DataPath]]):
+class FolderMapView(Mapping[str, Union["FolderMapView", DataPath]]):
     """Provides a read-only view of the ``foldermap.json`` file in
     the datasets bucket. The folder map is a nested mapping of
     dataset parameters to their path, relative to the ``foldermap.json``
@@ -75,7 +74,7 @@ class FolderMapView(typing.Mapping[str, Union["FolderMapView", DataPath]]):
 
     __PRIVATE_KEYS = {"__default", "__params"}
 
-    def __init__(self, __curr_level: typing.Mapping[str, Any]) -> None:
+    def __init__(self, __curr_level: Mapping[str, Any]) -> None:
         """Initialize the mapping.
 
         Args:
@@ -93,8 +92,8 @@ class FolderMapView(typing.Mapping[str, Union["FolderMapView", DataPath]]):
         self,
         data_name: str,
         missing_default: Optional[ParamArg] = ParamArg.DEFAULT,
-        **params: Union[typing.Iterable[ParamVal], ParamArg],
-    ) -> List[Tuple[Description, DataPath]]:
+        **params: Union[Iterable[ParamVal], ParamArg],
+    ) -> list[tuple[Description, DataPath]]:
         """Returns a 2-tuple of dataset description and paths, for each dataset that
         matches ``params``."""
 
@@ -104,15 +103,15 @@ class FolderMapView(typing.Mapping[str, Union["FolderMapView", DataPath]]):
             raise RuntimeError("Can only call find() from top level of foldermap") from exc
 
         try:
-            param_names: List[str] = data_names_to_params[data_name]
+            param_names: list[str] = data_names_to_params[data_name]
         except KeyError as exc:
             raise ValueError(f"No datasets with data name: '{data_name}'") from exc
 
-        curr: List[Tuple[Description, Union[FolderMapView, DataPath]]] = [
+        curr: list[tuple[Description, Union[FolderMapView, DataPath]]] = [
             (Description(()), self[data_name])
         ]
-        todo: List[Tuple[Description, Union[FolderMapView, DataPath]]] = []
-        done: List[Tuple[Description, DataPath]] = []
+        todo: list[tuple[Description, Union[FolderMapView, DataPath]]] = []
+        done: list[tuple[Description, DataPath]] = []
 
         for param_name in param_names:
             param_arg = params.get(param_name, missing_default)
@@ -183,10 +182,11 @@ class FolderMapView(typing.Mapping[str, Union["FolderMapView", DataPath]]):
 
         return DataPath(elem)
 
-    def __iter__(self) -> typing.Iterator[str]:
+    def __iter__(self) -> Iterator[str]:
         return (key for key in self.__curr_level.keys() if key not in self.__PRIVATE_KEYS)
 
-    def keys(self) -> typing.FrozenSet[str]:
+    def keys(self) -> frozenset[str]:
+        """Keys of the folder view"""
         return frozenset(iter(self))
 
     def __len__(self) -> int:

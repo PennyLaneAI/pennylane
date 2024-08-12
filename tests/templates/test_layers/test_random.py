@@ -83,11 +83,11 @@ class TestDecomposition:
         op2 = qml.RandomLayers(weights, wires=range(2), seed=42)
         op3 = qml.RandomLayers(weights, wires=range(2), seed=42)
 
-        queue1 = op1.expand().operations
+        queue1 = op1.decomposition()
         decomp1 = op1.compute_decomposition(*op1.parameters, wires=op1.wires, **op1.hyperparameters)
-        queue2 = op2.expand().operations
+        queue2 = op2.decomposition()
         decomp2 = op2.compute_decomposition(*op2.parameters, wires=op2.wires, **op2.hyperparameters)
-        queue3 = op3.expand().operations
+        queue3 = op3.decomposition()
         decomp3 = op3.compute_decomposition(*op3.parameters, wires=op3.wires, **op3.hyperparameters)
 
         assert not all(g1.name == g2.name for g1, g2 in zip(queue1, queue2))
@@ -106,7 +106,7 @@ class TestDecomposition:
         weights = np.random.randn(n_layers, n_rots)
 
         op = qml.RandomLayers(weights, wires=range(2))
-        ops = op.expand().operations
+        ops = op.decomposition()
 
         gate_names = [g.name for g in ops]
         assert len(gate_names) - gate_names.count("CNOT") == n_layers * n_rots
@@ -131,7 +131,7 @@ class TestDecomposition:
         weights = np.random.random(size=(2, n_rots))
 
         op = qml.RandomLayers(weights, wires=range(3))
-        queue = op.expand().operations
+        queue = op.decomposition()
 
         gate_wires = [gate.wires.labels for gate in queue]
         wires_flat = [item for w in gate_wires for item in w]

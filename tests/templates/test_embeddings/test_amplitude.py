@@ -59,7 +59,7 @@ class TestDecomposition:
         """Checks the queue for the default settings."""
 
         op = qml.AmplitudeEmbedding(features=FEATURES[0], wires=range(2))
-        tape = op.expand()
+        tape = qml.tape.QuantumScript(op.decomposition())
 
         assert len(tape.operations) == 1
         assert tape.operations[0].name == "StatePrep"
@@ -70,7 +70,7 @@ class TestDecomposition:
 
         op = qml.AmplitudeEmbedding(features=BROADCASTED_FEATURES[0], wires=range(2))
         assert op.batch_size == 3
-        tape = op.expand()
+        tape = qml.tape.QuantumScript(op.decomposition())
 
         assert len(tape.operations) == 1
         assert tape.operations[0].name == "StatePrep"
@@ -584,3 +584,28 @@ class TestInterfaceDtypes:
         res2 = circuit2(features, pad_with, normalize=True)
 
         assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+
+
+@pytest.mark.jax
+@pytest.mark.parametrize("shots, atol", [(10000, 0.05), (None, 1e-8)])
+def test_jacobian_with_and_without_jit_has_same_output(shots, atol):
+    """Test that the jacobian of AmplitudeEmbedding is the same with and without jit."""
+
+    import jax
+
+    dev = qml.device("default.qubit", shots=shots, seed=7890234)
+
+    @qml.qnode(dev, diff_method="parameter-shift")
+    def circuit(coeffs):
+        qml.AmplitudeEmbedding(coeffs, normalize=True, wires=[0, 1])
+        return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
+    params = jax.numpy.array([0.4, 0.5, 0.1, 0.3])
+    jac_fn = jax.jacobian(circuit)
+    jac_jit_fn = jax.jit(jac_fn)
+
+    jac = jac_fn(params)
+
+    jac_jit = jac_jit_fn(params)
+
+    assert qml.math.allclose(jac, jac_jit, atol=atol)

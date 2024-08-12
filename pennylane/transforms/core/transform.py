@@ -45,7 +45,7 @@ def transform(
               returns a sequence of :class:`~.QuantumTape` and a processing function.
 
             * The transform must have the following structure (type hinting is optional): ``my_quantum_transform(tape:
-              qml.tape.QuantumTape, ...) -> ( Sequence[qml.tape.QuantumTape], Callable)``
+              qml.tape.QuantumTape, ...) -> tuple[qml.tape.QuantumTapeBatch, qml.typing.PostprocessingFn]``
 
     Keyword Args:
         expand_transform=None (Optional[Callable]): An optional expand transform is applied directly before the input
@@ -72,9 +72,10 @@ def transform(
 
     .. code-block:: python
 
-        from typing import Sequence, Callable
+        from pennylane.tape import QuantumTapeBatch
+        from pennylane.typing import PostprocessingFn
 
-        def my_quantum_transform(tape: qml.tape.QuantumTape) -> (Sequence[qml.tape.QuantumTape], Callable):
+        def my_quantum_transform(tape: qml.tape.QuantumTape) -> tuple[QuantumTapeBatch, PostprocessingFn]:
             tape1 = tape
             tape2 = tape.copy()
 
@@ -146,13 +147,13 @@ def transform(
             operations = [qml.Hadamard(0), qml.RX(0.2, 0), qml.RX(0.6, 0), qml.CNOT((0, 1))]
             tape = qml.tape.QuantumTape(operations, measurement)
 
-            batch1, function1 = qml.transforms.hamiltonian_expand(tape)
+            batch1, function1 = qml.transforms.split_non_commuting(tape)
             batch2, function2 = qml.transforms.merge_rotations(batch1)
 
             dev = qml.device("default.qubit", wires=3)
             result = dev.execute(batch2)
 
-        The first ``hamiltonian_expand`` transform splits the original tape, returning a batch of tapes ``batch1`` and a processing function ``function1``.
+        The first ``split_non_commuting`` transform splits the original tape, returning a batch of tapes ``batch1`` and a processing function ``function1``.
         The second ``merge_rotations`` transform is applied to the batch of tapes returned by the first transform.
         It returns a new batch of tapes ``batch2``, each of which has been transformed by the second transform, and a processing function ``function2``.
 

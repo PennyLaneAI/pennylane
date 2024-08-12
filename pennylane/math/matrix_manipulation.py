@@ -14,8 +14,8 @@
 """This module contains methods to expand the matrix representation of an operator
 to a higher hilbert space with re-ordered wires."""
 import itertools
+from collections.abc import Callable, Generator, Iterable
 from functools import reduce
-from typing import Generator, Iterable, Tuple
 
 import numpy as np
 from scipy.sparse import csr_matrix, eye, kron
@@ -280,8 +280,8 @@ def _permutation_sparse_matrix(expanded_wires: Iterable, wire_order: Iterable) -
 
 
 def reduce_matrices(
-    mats_and_wires_gen: Generator[Tuple[np.ndarray, Wires], None, None], reduce_func: callable
-) -> Tuple[np.ndarray, Wires]:
+    mats_and_wires_gen: Generator[tuple[np.ndarray, Wires], None, None], reduce_func: Callable
+) -> tuple[np.ndarray, Wires]:
     """Apply the given ``reduce_func`` cumulatively to the items of the ``mats_and_wires_gen``
     generator, from left to right, so as to reduce the sequence to a tuple containing a single
     matrix and the wires it acts on.
@@ -295,7 +295,7 @@ def reduce_matrices(
         Tuple[tensor, Wires]: a tuple containing the reduced matrix and the wires it acts on
     """
 
-    def expand_and_reduce(op1_tuple: Tuple[np.ndarray, Wires], op2_tuple: Tuple[np.ndarray, Wires]):
+    def expand_and_reduce(op1_tuple: tuple[np.ndarray, Wires], op2_tuple: tuple[np.ndarray, Wires]):
         mat1, wires1 = op1_tuple
         mat2, wires2 = op2_tuple
         expanded_wires = wires1 + wires2

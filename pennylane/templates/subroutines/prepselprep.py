@@ -75,9 +75,10 @@ class PrepSelPrep(Operation):
     """
 
     def __init__(self, lcu, control=None, id=None):
+
         coeffs, ops = lcu.terms()
         control = qml.wires.Wires(control)
-        self.hyperparameters["lcu"] = lcu
+        self.hyperparameters["lcu"] = qml.ops.LinearCombination(coeffs, ops)
         self.hyperparameters["coeffs"] = coeffs
         self.hyperparameters["ops"] = ops
         self.hyperparameters["control"] = control
@@ -95,14 +96,11 @@ class PrepSelPrep(Operation):
         super().__init__(*self.data, wires=all_wires, id=id)
 
     def _flatten(self):
-        return tuple(self.lcu), (self.control)
+        return (self.lcu,), (self.control,)
 
     @classmethod
     def _unflatten(cls, data, metadata) -> "PrepSelPrep":
-        coeffs = [term.terms()[0][0] for term in data]
-        ops = [term.terms()[1][0] for term in data]
-        lcu = qml.ops.LinearCombination(coeffs, ops)
-        return cls(lcu, metadata)
+        return cls(data[0], metadata[0])
 
     def __repr__(self):
         return f"PrepSelPrep(coeffs={tuple(self.coeffs)}, ops={tuple(self.ops)}, control={self.control})"

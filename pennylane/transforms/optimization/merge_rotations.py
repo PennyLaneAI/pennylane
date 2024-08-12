@@ -13,15 +13,15 @@
 # limitations under the License.
 """Transform for merging adjacent rotations of the same type in a quantum circuit."""
 # pylint: disable=too-many-branches
-from typing import Callable, Sequence
 
 import pennylane as qml
 from pennylane.math import allclose, cast_like, get_interface, is_abstract, stack, zeros
 from pennylane.ops.op_math import Adjoint
 from pennylane.ops.qubit.attributes import composable_rotations
 from pennylane.queuing import QueuingManager
-from pennylane.tape import QuantumTape
+from pennylane.tape import QuantumTape, QuantumTapeBatch
 from pennylane.transforms import transform
+from pennylane.typing import PostprocessingFn
 
 from .optimization_utils import find_next_gate, fuse_rot_angles
 
@@ -29,7 +29,7 @@ from .optimization_utils import find_next_gate, fuse_rot_angles
 @transform
 def merge_rotations(
     tape: QuantumTape, atol=1e-8, include_gates=None
-) -> (Sequence[QuantumTape], Callable):
+) -> tuple[QuantumTapeBatch, PostprocessingFn]:
     r"""Quantum transform to combine rotation gates of the same type that act sequentially.
 
     If the combination of two rotation produces an angle that is close to 0,

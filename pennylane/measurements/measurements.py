@@ -19,8 +19,9 @@ and measurement samples using AnnotatedQueues.
 import copy
 import functools
 from abc import ABC, abstractmethod
+from collections.abc import Sequence
 from enum import Enum
-from typing import Optional, Sequence, Tuple, Union
+from typing import Optional, Union
 
 import pennylane as qml
 from pennylane.math.utils import is_abstract
@@ -171,8 +172,8 @@ class MeasurementProcess(ABC, metaclass=qml.capture.ABCCaptureMeta):
         ):
             return cls._obs_primitive.bind(obs, **kwargs)
         if isinstance(obs, (list, tuple)):
-            return cls._mcm_primitive.bind(*obs, **kwargs)  # iterable of mcms
-        return cls._mcm_primitive.bind(obs, **kwargs)  # single mcm
+            return cls._mcm_primitive.bind(*obs, single_mcm=False, **kwargs)  # iterable of mcms
+        return cls._mcm_primitive.bind(obs, single_mcm=True, **kwargs)  # single mcm
 
     # pylint: disable=unused-argument
     @classmethod
@@ -288,7 +289,7 @@ class MeasurementProcess(ABC, metaclass=qml.capture.ABCCaptureMeta):
             f"The numeric type of the measurement {self.__class__.__name__} is not defined."
         )
 
-    def shape(self, device, shots: Shots) -> Tuple:
+    def shape(self, device, shots: Shots) -> tuple:
         """The expected output shape of the MeasurementProcess.
 
         Note that the output shape is dependent on the shots or device when:
@@ -604,7 +605,7 @@ class SampleMeasurement(MeasurementProcess):
         self,
         samples: Sequence[complex],
         wire_order: Wires,
-        shot_range: Tuple[int] = None,
+        shot_range: tuple[int] = None,
         bin_size: int = None,
     ):
         """Process the given samples.

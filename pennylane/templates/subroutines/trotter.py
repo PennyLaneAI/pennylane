@@ -438,10 +438,9 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
         ops = kwargs["base"].operands
 
         decomp = _recursive_expression(time / n, order, ops)[::-1] * n
-        unique_decomp = [copy.copy(op) for op in decomp]
 
         if qml.QueuingManager.recording():
-            for op in unique_decomp:  # apply operators in reverse order of expression
+            for op in decomp:  # apply operators in reverse order of expression
                 qml.apply(op)
 
-        return unique_decomp
+        return decomp

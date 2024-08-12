@@ -16,8 +16,8 @@ This submodule contains controlled operators based on the ControlledOp class.
 """
 # pylint: disable=no-value-for-parameter, arguments-differ, arguments-renamed
 import warnings
+from collections.abc import Iterable
 from functools import lru_cache
-from typing import Iterable
 
 import numpy as np
 from scipy.linalg import block_diag
@@ -749,10 +749,10 @@ class CNOT(ControlledOp):
     The controlled-NOT operator
 
     .. math:: CNOT = \begin{bmatrix}
-            1 & 0 & 0 & 0 \\
-            0 & 1 & 0 & 0\\
-            0 & 0 & 0 & 1\\
-            0 & 0 & 1 & 0
+        1 & 0 & 0 & 0 \\
+        0 & 1 & 0 & 0\\
+        0 & 0 & 0 & 1\\
+        0 & 0 & 1 & 0
         \end{bmatrix}.
 
     .. note:: The first wire provided corresponds to the **control qubit**.
@@ -790,6 +790,32 @@ class CNOT(ControlledOp):
 
     def __init__(self, wires, id=None):
         super().__init__(qml.PauliX(wires=wires[1:]), wires[:1], id=id)
+
+    @property
+    def has_decomposition(self):
+        return False
+
+    @staticmethod
+    def compute_decomposition(*params, wires=None, **hyperparameters):  # -> List["Operator"]:
+        r"""Representation of the operator as a product of other operators (static method).
+
+        .. math:: O = O_1 O_2 \dots O_n.
+
+        .. note::
+            Operations making up the decomposition should be queued within the
+            ``compute_decomposition`` method.
+
+        .. seealso:: :meth:`~.Operator.decomposition`.
+
+        Args:
+            *params (list): trainable parameters of the operator, as stored in the ``parameters`` attribute
+            wires (Iterable[Any], Wires): wires that the operator acts on
+            **hyperparams (dict): non-trainable hyperparameters of the operator, as stored in the ``hyperparameters`` attribute
+
+        Raises:
+            qml.DecompositionUndefinedError
+        """
+        raise qml.operation.DecompositionUndefinedError
 
     def __repr__(self):
         return f"CNOT(wires={self.wires.tolist()})"
