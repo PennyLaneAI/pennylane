@@ -241,12 +241,12 @@ class DefaultQubitTF(DefaultQubitLegacy):
             output_shape.insert(0, batch_size)
 
         if not (state.shape in [(dim,), (batch_size, dim)]):
-            raise ValueError("State vector must have shape (2**wires,) or (batch_size, 2**wires).")
+            raise ValueError("State must be of length ")
 
         if not qml.math.is_abstract(state):
             norm = qml.math.linalg.norm(state, axis=-1, ord=2)
             if not qml.math.allclose(norm, 1.0, atol=tolerance):
-                raise ValueError("Sum of amplitudes-squared does not equal one.")
+                raise ValueError("The state must be a vector of norm 1.0")
 
         if len(device_wires) == self.num_wires and sorted(device_wires) == device_wires:
             # Initialize the entire device state with the input state

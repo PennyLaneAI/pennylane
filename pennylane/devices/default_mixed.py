@@ -501,7 +501,7 @@ class DefaultMixed(QubitDevice):
             raise ValueError("State vector must be of length 2**wires.")
 
         if not qnp.allclose(qnp.linalg.norm(state, ord=2), 1.0, atol=tolerance):
-            raise ValueError("Sum of amplitudes-squared does not equal one.")
+            raise ValueError("The state must be a vector of norm 1.0")
 
         if len(device_wires) == self.num_wires and sorted(device_wires.labels) == list(
             device_wires.labels

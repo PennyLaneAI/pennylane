@@ -1145,7 +1145,7 @@ def _check_state_vector(state_vector):
         for sv in state_vector:
             norm = np.linalg.norm(sv, ord=2)
             if not allclose(norm, 1.0, atol=1e-10):
-                raise ValueError("Sum of amplitudes-squared does not equal one.")
+                raise ValueError("The state must be a vector of norm 1.0")
 
 
 def max_entropy(state, indices, base=None, check_state=False, c_dtype="complex128"):
