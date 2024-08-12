@@ -254,12 +254,55 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
         context.append(self)
         return self
 
-    def resources(self, gate_set=None) -> Resources:
+    def resources(self, gate_set=None, estimate=False, epsilon=None) -> Resources:
         """The resource requirements for a given instance of the Suzuki-Trotter product.
 
         Returns:
             Resources: The resources for an instance of ``TrotterProduct``.
         """
+        if estimate:
+            time = self.parameters[-1]
+            n = self.hyperparameters["n"]
+            
+            order = self.hyperparameters["order"]
+            k = order // 2
+            
+            ops = self.hyperparameters["base"].operands
+            first_order_expansion = [qml.exp(op, (time/n) * 1j) for op in ops]
+
+            gate_types = defaultdict(int)
+            gate_sizes = defaultdict(int)
+
+            if order == 1: 
+                r_all = qml.resources_from_sequence_ops(first_order_expansion)
+                for gate in r_all.gate_types:
+                    gate_types[gate] = r_all.gate_types[gate] * n
+                
+                for size in r_all.gate_sizes:
+                    gate_sizes[size] = r_all.gate_sizes[size] * n
+
+                return Resources(num_gates=r_all.num_gates*n, gate_types=gate_types, gate_sizes=gate_sizes)
+
+            r_first = qml.resource.resources_from_op(first_order_expansion[0], estimate, epsilon)
+            r_last = qml.resource.resources_from_op(first_order_expansion[-1], estimate, epsilon)
+            r_rest = qml.resource.resources_from_sequence_ops(first_order_expansion[1:-1], estimate, epsilon)
+
+            for gate in set((*r_first.gate_types.keys(),*r_rest.gate_types.keys(),*r_last.gate_types.keys())) :
+                gate_types[gate] = (
+                    r_first.gate_types[gate] * n * (5**(k - 1) + 1) \
+                    + r_rest.gate_types[gate] * n * 2 * (5 ** (k - 1)) \
+                    + r_last.gate_types[gate] * n * (5 ** (k - 1))
+                )
+            
+            for size in set((*r_first.gate_sizes.keys(),*r_rest.gate_sizes.keys(),*r_last.gate_sizes.keys())) :
+                gate_sizes[size] = (
+                    r_first.gate_sizes[size] * n * (5**(k - 1) + 1) \
+                    + r_rest.gate_sizes[size] * n * 2 * (5 ** (k - 1)) \
+                    + r_last.gate_sizes[size] * n * (5 ** (k - 1))
+                )
+
+            return Resources(num_gates=sum(gate_types.values()), gate_types=gate_types, gate_sizes=gate_sizes)
+
         with qml.QueuingManager.stop_recording():
             decomp = self.compute_decomposition(*self.parameters, **self.hyperparameters)
 
