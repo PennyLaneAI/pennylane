@@ -158,7 +158,7 @@ You can also see the const variable `a` as argument `e:i32[]` to the inner neste
 
 ### Pytree handling
 
-Evaluating a jaxpr requires a flat list of tensor-like inputs and returning a flat
+Evaluating a jaxpr requires accepting and returning a flat list of tensor-like inputs and outputs.
 list of tensor-like outputs.  These long lists can be hard to manage and are very
 restrictive on the allowed functions, but we can take advantage of pytrees to allow handling
 arbitrary functions.

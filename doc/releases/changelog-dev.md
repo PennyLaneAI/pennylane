@@ -93,8 +93,7 @@
   [(#5999)](https://github.com/PennyLaneAI/pennylane/pull/5999)
   [(#6058)](https://github.com/PennyLaneAI/pennylane/pull/6058)
 
-* During experimental program capture, the qnode call, `cond`, and `for_loop`
-  can all handle functions that accept and/ or return pytree structures.
+* During experimental program capture, functions that accept and/or return `pytree` structures can now be handled in the `QNode` call, `cond`, `for_loop` and `while_loop`. 
   [(#6081)](https://github.com/PennyLaneAI/pennylane/pull/6081)
 
 * Set operations are now supported by Wires.
