@@ -1573,7 +1573,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         """
         return self
 
-    def __add__(self, other: Union["Operator", TensorLike]):
+    def __add__(self, other: Union["Operator", TensorLike]) -> "Operator":
         """The addition operation of Operator-Operator objects and Operator-scalar."""
         if isinstance(other, Operator):
             return qml.sum(self, other, lazy=False)
