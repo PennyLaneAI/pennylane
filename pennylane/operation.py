@@ -1589,7 +1589,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
 
     __radd__ = __add__
 
-    def __mul__(self, other: Union[Callable, TensorLike]):
+    def __mul__(self, other: Union[Callable, TensorLike]) -> "Operator":
         """The scalar multiplication between scalars and Operators."""
         if callable(other):
             return qml.pulse.ParametrizedHamiltonian([other], [self])
