@@ -25,7 +25,6 @@ import pennylane as qml
 from pennylane.measurements import MidMeasureMP, Shots
 from pennylane.transforms.core.transform_program import TransformProgram
 
-from .default_qubit import adjoint_observables
 from .device_api import Device
 from .execution_config import DefaultExecutionConfig
 from .modifiers import single_tape_support
@@ -34,7 +33,6 @@ from .preprocess import (
     no_sampling,
     validate_adjoint_trainable_params,
     validate_measurements,
-    validate_observables,
 )
 
 
@@ -122,7 +120,6 @@ def _add_adjoint_transforms(program: TransformProgram, name="adjoint"):
         stopping_condition=adjoint_ops,
         name=name,
     )
-    program.add_transform(validate_observables, adjoint_observables, name=name)
 
     def accepted_adjoint_measurements(mp):
         return isinstance(mp, qml.measurements.ExpectationMP)
