@@ -394,7 +394,7 @@ def _split_using_qwc_grouping(
         single_term_obs_mps (Dict[MeasurementProcess, Tuple[List[int], List[TensorLike]]]): A dictionary
             of measurements of each unique single-term observable, mapped to the indices of the
             original measurements it belongs to, and its coefficients.
-        offsets (List[Union[float, TensorLike]]): Offsets associated with each original measurement in the tape.
+        offsets (List[TensorLike]): Offsets associated with each original measurement in the tape.
 
     """
 
