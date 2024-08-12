@@ -305,7 +305,6 @@ class LegacyDeviceFacade(Device):
         if execution_config is None or execution_config.gradient_method == "best":
             validation_methods = (
                 self._validate_backprop_method,
-                self._validate_adjoint_method,
                 self._validate_device_method,
             )
             return any(validate(circuit) for validate in validation_methods)

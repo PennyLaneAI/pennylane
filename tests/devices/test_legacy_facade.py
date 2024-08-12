@@ -282,9 +282,10 @@ class TestGradientSupport:
         with pytest.raises(qml.DeviceError):
             dev.preprocess(ExecutionConfig(gradient_method="backprop"))
 
-    @pytest.mark.parametrize("gradient_method", ("best", "adjoint"))
-    def test_adjoint_support(self, gradient_method):
+    def test_adjoint_support(self):
         """Test that the facade can handle devices that support adjoint."""
+
+        gradient_method = "adjoint"
 
         # pylint: disable=unnecessary-lambda-assignment
         class AdjointDev(DummyDevice):
