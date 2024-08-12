@@ -126,7 +126,7 @@ def scf(mol, n_steps=50, tol=1e-8):
         r = mol.coordinates
         n_electron = mol.n_electrons
 
-        if r.requires_grad:
+        if getattr(r, "requires_grad", False):
             args_r = [[args[0][i]] * mol.n_basis[i] for i in range(len(mol.n_basis))]
             args_ = [*args] + [qml.math.vstack(list(itertools.chain(*args_r)))]
             rep_tensor = repulsion_tensor(basis_functions)(*args_[1:])
@@ -213,7 +213,7 @@ def nuclear_energy(charges, r):
         Returns:
             array[float]: nuclear-repulsion energy
         """
-        if r.requires_grad:
+        if getattr(r, "requires_grad", False):
             coor = args[0]
         else:
             coor = r

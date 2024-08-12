@@ -80,6 +80,9 @@ class Molecule:
         coeff=None,
         normalize=True,
         unit="bohr",
+        coord_opt=False,
+        alpha_opt=False,
+        coeff_opt=False
     ):
         if (
             basis_name.lower()
@@ -109,6 +112,9 @@ class Molecule:
         self.name = name
         self.load_data = load_data
         self.n_basis, self.basis_data = mol_basis_data(self.basis_name, self.symbols, load_data)
+        self.coord_opt = coord_opt
+        self.alpha_opt = alpha_opt
+        self.coeff_opt = coeff_opt
 
         if self.unit not in ("angstrom", "bohr"):
             raise ValueError(

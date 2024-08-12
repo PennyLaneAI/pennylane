@@ -248,18 +248,18 @@ def attraction_matrix(basis_functions, charges, r):
             if args:
                 args_ab = []
 
-                if r.requires_grad:
+                if getattr(r, "requires_grad", False):
                     args_ab.extend([arg[i], arg[j]] for arg in args[1:])
                 else:
                     args_ab.extend([arg[i], arg[j]] for arg in args)
 
                 for k, c in enumerate(r):
-                    if c.requires_grad:
+                    if getattr(c, "requires_grad", False):
                         args_ab = [args[0][k]] + args_ab
                     integral = integral - charges[k] * attraction_integral(
                         c, a, b, normalize=False
                     )(*args_ab)
-                    if c.requires_grad:
+                    if getattr(c, "requires_grad", False):
                         args_ab = args_ab[1:]
             else:
                 for k, c in enumerate(r):
@@ -379,7 +379,7 @@ def core_matrix(basis_functions, charges, r):
         Returns:
             array[array[float]]: the core matrix
         """
-        if r.requires_grad:
+        if getattr(r, "requires_grad", False):
             t = kinetic_matrix(basis_functions)(*args[1:])
         else:
             t = kinetic_matrix(basis_functions)(*args)
