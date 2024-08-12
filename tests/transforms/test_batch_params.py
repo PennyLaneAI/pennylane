@@ -173,6 +173,7 @@ def test_mottonenstate_preparation(mocker):
         indiv_res.append(circuit2(state, weight))
     assert np.allclose(res, indiv_res)
 
+
 @pytest.fixture(scope="function", autouse=True)
 def capture_warnings(recwarn):
     yield
@@ -180,6 +181,7 @@ def capture_warnings(recwarn):
         for w in recwarn:
             assert isinstance(w.message, qml.PennyLaneDeprecationWarning)
             assert "BasisStatePreparation is deprecated" in str(w.message)
+
 
 def test_basis_state_preparation(mocker):
     """Test that batching works for BasisStatePreparation"""
