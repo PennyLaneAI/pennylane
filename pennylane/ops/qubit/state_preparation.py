@@ -165,17 +165,14 @@ class StatePrep(StatePrepBase):
     """
 
     num_wires = AnyWires
-    num_params = 1
-    """int: Number of trainable parameters that the operator depends on."""
-
-    ndim_params = (1,)
-    """int: Number of dimensions per trainable parameter of the operator."""
 
     def __init__(self, state, wires, pad_with=None, normalize=False, id=None):
 
-        self.pad_with = pad_with
-        self.normalize = normalize
+
         state = self._preprocess(state, wires, pad_with, normalize)
+
+
+        self._hyperparameters = {"pad_with": pad_with, "normalize": normalize}
 
         super().__init__(state, wires=wires, id=id)
 
@@ -202,6 +199,15 @@ class StatePrep(StatePrepBase):
 
         """
         return [MottonenStatePreparation(state, wires)]
+
+    def _flatten(self):
+        metadata = tuple((key, value) for key, value in self.hyperparameters.items())
+        return tuple(self.parameters[0],), metadata
+
+    @classmethod
+    def _unflatten(cls, data, metadata):
+        hyperparams_dict = dict(metadata)
+        return cls(*data, **hyperparams_dict)
 
     def state_vector(self, wire_order=None):
 
