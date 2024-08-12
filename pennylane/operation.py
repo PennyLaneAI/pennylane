@@ -1605,7 +1605,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
 
     __rmul__ = __mul__
 
-    def __matmul__(self, other: "Operator"):
+    def __matmul__(self, other: "Operator") -> "Operator":
         """The product operation between Operator objects."""
         return qml.prod(self, other, lazy=False) if isinstance(other, Operator) else NotImplemented
 
