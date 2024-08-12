@@ -16,6 +16,7 @@ Contains the BasisStatePreparation template.
 """
 
 import warnings
+
 import numpy as np
 
 import pennylane as qml
