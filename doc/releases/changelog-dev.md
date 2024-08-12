@@ -321,6 +321,9 @@
 * Workflows that parameterize the coefficients of `qml.exp` are now jit-compatible.
   [(#6082)](https://github.com/PennyLaneAI/pennylane/pull/6082)
 
+* Fixes a bug where `CompositeOp.overlapping_ops` changes the original ordering of ops, causing incorrect matrix generated for `Prod` with `Sum` as operands.
+  [(#6091)](https://github.com/PennyLaneAI/pennylane/pull/6091)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
