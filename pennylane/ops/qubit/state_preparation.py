@@ -35,7 +35,6 @@ class BasisState(StatePrepBase):
 
     * Number of wires: Any (the operation can act on any number of wires)
     * Number of parameters: 1
-    * Gradient recipe: None (integer parameters not supported)
 
     .. note::
 
@@ -49,9 +48,8 @@ class BasisState(StatePrepBase):
         as :math:`U|0\rangle = |\psi\rangle`
 
     Args:
-        n (array): prepares the basis state :math:`\ket{n}`, where ``n`` is an
-            array of integers from the set :math:`\{0, 1\}`, i.e.,
-            if ``n = np.array([0, 1, 0])``, prepares the state :math:`|010\rangle`.
+        features (tensor_like): binary input of shape ``(len(wires), )``. For example, for ``features=np.array([0, 1, 0])`` or ``features=2`` (binary 010), the quantum system will be prepared in state :math:`|010 \rangle`.
+
         wires (Sequence[int] or int): the wire(s) the operation acts on
         id (str): custom label given to an operator instance,
             can be useful for some applications where the instance has to be identified.

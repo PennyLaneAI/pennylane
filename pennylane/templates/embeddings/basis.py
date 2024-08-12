@@ -35,7 +35,7 @@ class BasisEmbedding(BasisState):
     Args:
         features (tensor_like or int): binary input of shape ``(len(wires), )`` or integer
             that represents the binary input.
-        wires (Any or Iterable[Any]): wires that the template acts on
+        wires (Any or Iterable[Any]): wires that the template acts on.
 
     Example:
 
