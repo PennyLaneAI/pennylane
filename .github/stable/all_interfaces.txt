@@ -88,7 +88,7 @@ rustworkx==0.15.1
 scipy==1.12.0
 scs==3.2.6
 six==1.16.0
-sympy==1.13.1
+sympy==1.13.2
 tensorboard==2.16.2
 tensorboard-data-server==0.7.2
 tensorflow==2.16.2
@@ -103,4 +103,4 @@ urllib3==2.2.2
 virtualenv==20.26.3
 Werkzeug==3.0.3
 wrapt==1.12.1
-zipp==3.19.2
+zipp==3.20.0
