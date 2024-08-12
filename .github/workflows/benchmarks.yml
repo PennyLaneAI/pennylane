@@ -1,6 +1,12 @@
 name: Benchmarks
 on:
   pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - ready_for_review
+      - labeled
   workflow_call:
     inputs:
       ref_branch:
@@ -22,7 +28,7 @@ jobs:
     # If needed, this workflow will create a cached benchmark reference.
     # This reference will be used for comparative analyses with all PRs benchmarks.
     reference-benchmarks:
-      if: github.event_name == 'schedule' || (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'ci:run-benchmarks'))
+      if: github.event.pull_request.draft == false && github.event_name == 'schedule' || (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'ci:run-benchmarks'))
 
       uses: ./.github/workflows/interface-unit-tests.yml
       secrets:
@@ -70,4 +76,3 @@ jobs:
           }}
 
         skip_ci_test_jobs: torch-tests, autograd-tests, tf-tests, core-tests, all-interfaces-tests, external-libraries-tests, qcut-tests, qchem-tests, gradients-tests, data-tests
-
