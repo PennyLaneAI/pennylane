@@ -17,10 +17,11 @@ This module contains the default.tensor device to perform tensor network simulat
 # pylint: disable=protected-access
 import copy
 import warnings
+from collections.abc import Callable
 from dataclasses import replace
 from functools import singledispatch
 from numbers import Number
-from typing import Callable, Optional, Sequence, Tuple, Union
+from typing import Optional, Union
 
 import numpy as np
 
@@ -42,16 +43,13 @@ from pennylane.measurements import (
 )
 from pennylane.operation import Observable, Operation, Tensor
 from pennylane.ops import LinearCombination, Prod, SProd, Sum
-from pennylane.tape import QuantumScript, QuantumTape
+from pennylane.tape import QuantumScript, QuantumTape, QuantumTapeBatch
 from pennylane.templates.subroutines.trotter import _recursive_expression
 from pennylane.transforms.core import TransformProgram
 from pennylane.typing import Result, ResultBatch, TensorLike
 from pennylane.wires import WireError
 
-Result_or_ResultBatch = Union[Result, ResultBatch]
-QuantumTapeBatch = Sequence[QuantumTape]
 QuantumTape_or_Batch = Union[QuantumTape, QuantumTapeBatch]
-PostprocessingFn = Callable[[ResultBatch], Result_or_ResultBatch]
 
 has_quimb = True
 
@@ -628,7 +626,7 @@ class DefaultTensor(Device):
         self,
         circuits: QuantumTape_or_Batch,
         execution_config: ExecutionConfig = DefaultExecutionConfig,
-    ) -> Result_or_ResultBatch:
+    ) -> Union[Result, ResultBatch]:
         """Execute a circuit or a batch of circuits and turn it into results.
 
         Args:
@@ -885,7 +883,7 @@ class DefaultTensor(Device):
     def compute_vjp(
         self,
         circuits: QuantumTape_or_Batch,
-        cotangents: Tuple[Number],
+        cotangents: tuple[Number, ...],
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ):
         r"""The vector-Jacobian product used in reverse-mode differentiation.
@@ -907,7 +905,7 @@ class DefaultTensor(Device):
     def execute_and_compute_vjp(
         self,
         circuits: QuantumTape_or_Batch,
-        cotangents: Tuple[Number],
+        cotangents: tuple[Number, ...],
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ):
         """Calculate both the results and the vector-Jacobian product used in reverse-mode differentiation.

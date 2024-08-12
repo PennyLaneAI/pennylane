@@ -493,6 +493,207 @@ class Wires(Sequence):
 
         return Wires(tuple(unique), _override=True)
 
+    def union(self, other):
+        """Return the union of the current Wires object and either another Wires object or an
+        iterable that can be interpreted like a Wires object e.g., List.
+
+        Args:
+            other (Any): Wires or any iterable that can be interpreted like a Wires object
+                to perform the union with. See _process for details on the interpretation.
+
+        Returns:
+            Wires: A new Wires object representing the union of the two Wires objects.
+
+        **Example**
+
+        >>> from pennylane.wires import Wires
+        >>> wires1 = Wires([1, 2, 3])
+        >>> wires2 = Wires([3, 4, 5])
+        >>> wires1.union(wires2)
+        Wires([1, 2, 3, 4, 5])
+
+        Alternatively, use the | operator:
+        >>> wires1 | wires2
+        Wires([1, 2, 3, 4, 5])
+        """
+        return Wires((set(self.labels) | set(_process(other))))
+
+    def __or__(self, other):
+        """Return the union of the current Wires object and either another Wires object or an
+        iterable that can be interpreted like a Wires object e.g., List.
+
+        Args:
+            other (Any): Wires or any iterable that can be interpreted like a Wires object
+                to perform the union with. See _process for details on the interpretation.
+
+        Returns:
+            Wires: A new Wires object representing the union of the two Wires objects.
+
+        **Example**
+
+        >>> from pennylane.wires import Wires
+        >>> wires1 = Wires([1, 2, 3])
+        >>> wires2 = Wires([3, 4, 5])
+        >>> wires1 | wires2
+        Wires([1, 2, 3, 4, 5])
+        """
+        return self.union(other)
+
+    def __ror__(self, other):
+        """Right-hand version of __or__."""
+        return self.union(other)
+
+    def intersection(self, other):
+        """Return the intersection of the current Wires object and either another Wires object or
+        an iterable that can be interpreted like a Wires object e.g., List.
+
+        Args:
+            other (Any): Wires or any iterable that can be interpreted like a Wires object
+                to perform the union with. See _process for details on the interpretation.
+
+        Returns:
+            Wires: A new Wires object representing the intersection of the two Wires objects.
+
+        **Example**
+
+        >>> from pennylane.wires import Wires
+        >>> wires1 = Wires([1, 2, 3])
+        >>> wires2 = Wires([2, 3, 4])
+        >>> wires1.intersection(wires2)
+        Wires([2, 3])
+
+        Alternatively, use the & operator:
+        >>> wires1 & wires2
+        Wires([2, 3])
+        """
+        return Wires((set(self.labels) & set(_process(other))))
+
+    def __and__(self, other):
+        """Return the intersection of the current Wires object and either another Wires object or
+        an iterable that can be interpreted like a Wires object e.g., List.
+
+        Args:
+            other (Any): Wires or any iterable that can be interpreted like a Wires object
+                to perform the union with. See _process for details on the interpretation.
+
+        Returns:
+            Wires: A new Wires object representing the intersection of the two Wires objects.
+
+        **Example**
+
+        >>> from pennylane.wires import Wires
+        >>> wires1 = Wires([1, 2, 3])
+        >>> wires2 = Wires([2, 3, 4])
+        >>> wires1 & wires2
+        Wires([2, 3])
+        """
+        return self.intersection(other)
+
+    def __rand__(self, other):
+        """Right-hand version of __and__."""
+        return self.intersection(other)
+
+    def difference(self, other):
+        """Return the difference of the current Wires object and either another Wires object or
+        an iterable that can be interpreted like a Wires object e.g., List.
+
+        Args:
+            other (Any): Wires object or any iterable that can be interpreted like a Wires object
+                to perform the union with. See _process for details on the interpretation.
+
+        Returns:
+            Wires: A new Wires object representing the difference of the two Wires objects.
+
+        **Example**
+
+        >>> from pennylane.wires import Wires
+        >>> wires1 = Wires([1, 2, 3])
+        >>> wires2 = Wires([2, 3, 4])
+        >>> wires1.difference(wires2)
+        Wires([1])
+
+        Alternatively, use the - operator:
+        >>> wires1 - wires2
+        Wires([1])
+        """
+        return Wires((set(self.labels) - set(_process(other))))
+
+    def __sub__(self, other):
+        """Return the difference of the current Wires object and either another Wires object or
+        an iterable that can be interpreted like a Wires object e.g., List.
+
+        Args:
+            other (Any): Wires or any iterable that can be interpreted like a Wires object
+                to perform the union with. See _process for details on the interpretation.
+
+        Returns:
+            Wires: A new Wires object representing the difference of the two Wires objects.
+
+        **Example**
+
+        >>> from pennylane.wires import Wires
+        >>> wires1 = Wires([1, 2, 3])
+        >>> wires2 = Wires([2, 3, 4])
+        >>> wires1 - wires2
+        Wires([1])
+        """
+        return self.difference(other)
+
+    def __rsub__(self, other):
+        """Right-hand version of __sub__."""
+        return Wires((set(_process(other)) - set(self.labels)))
+
+    def symmetric_difference(self, other):
+        """Return the symmetric difference of the current Wires object and either another Wires
+        object or an iterable that can be interpreted like a Wires object e.g., List.
+
+        Args:
+            other (Any): Wires or any iterable that can be interpreted like a Wires object
+                to perform the union with. See _process for details on the interpretation.
+
+        Returns:
+            Wires: A new Wires object representing the symmetric difference of the two Wires objects.
+
+        **Example**
+
+        >>> from pennylane.wires import Wires
+        >>> wires1 = Wires([1, 2, 3])
+        >>> wires2 = Wires([3, 4, 5])
+        >>> wires1.symmetric_difference(wires2)
+        Wires([1, 2, 4, 5])
+
+        Alternatively, use the ^ operator:
+        >>> wires1 ^ wires2
+        Wires([1, 2, 4, 5])
+        """
+
+        return Wires((set(self.labels) ^ set(_process(other))))
+
+    def __xor__(self, other):
+        """Return the symmetric difference of the current Wires object and either another Wires
+        object or an iterable that can be interpreted like a Wires object e.g., List.
+
+        Args:
+            other (Any): Wires or any iterable that can be interpreted like a Wires object
+                to perform the union with. See _process for details on the interpretation.
+
+        Returns:
+            Wires: A new Wires object representing the symmetric difference of the two Wires objects.
+
+        **Example**
+
+        >>> from pennylane.wires import Wires
+        >>> wires1 = Wires([1, 2, 3])
+        >>> wires2 = Wires([3, 4, 5])
+        >>> wires1 ^ wires2
+        Wires([1, 2, 4, 5])
+        """
+        return self.symmetric_difference(other)
+
+    def __rxor__(self, other):
+        """Right-hand version of __xor__."""
+        return Wires((set(_process(other)) ^ set(self.labels)))
+
 
 # Register Wires as a PyTree-serializable class
 register_pytree(Wires, Wires._flatten, Wires._unflatten)  # pylint: disable=protected-access

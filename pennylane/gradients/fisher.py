@@ -305,9 +305,12 @@ def quantum_fisher(
 
     .. note::
 
-        ``quantum_fisher`` coincides with the ``metric_tensor`` with a prefactor of :math:`4`. Internally, :func:`~.pennylane.adjoint_metric_tensor` is used when executing on a device with
-        exact expectations (``shots=None``) that inherits from ``"default.qubit"``. In all other cases, i.e. if a device with finite shots is used, the hardware compatible transform :func:`~.pennylane.metric_tensor` is used.
-        Please refer to their respective documentations for details on the arguments.
+        ``quantum_fisher`` coincides with the ``metric_tensor`` with a prefactor of :math:`4`.
+        Internally, :func:`~.pennylane.adjoint_metric_tensor` is used when executing on ``"default.qubit"``
+        with exact expectations (``shots=None``). In all other cases, e.g. if a device with finite shots
+        is used, the hardware-compatible transform :func:`~.pennylane.metric_tensor` is used, which
+        may require an additional wire on the device.
+        Please refer to the respective documentations for details.
 
     **Example**
 

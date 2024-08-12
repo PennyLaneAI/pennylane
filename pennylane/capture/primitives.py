@@ -15,8 +15,9 @@
 This submodule defines the abstract classes and primitives for capture.
 """
 
+from collections.abc import Callable
 from functools import lru_cache
-from typing import Callable, Optional, Tuple, Type
+from typing import Optional, Type
 
 import pennylane as qml
 
@@ -107,7 +108,7 @@ def _get_abstract_measurement():
             self._n_wires = n_wires
             self.has_eigvals: bool = has_eigvals
 
-        def abstract_eval(self, num_device_wires: int, shots: int) -> Tuple[Tuple, type]:
+        def abstract_eval(self, num_device_wires: int, shots: int) -> tuple[tuple, type]:
             """Calculate the shape and dtype for an evaluation with specified number of device
             wires and shots.
 
@@ -189,10 +190,11 @@ def create_operator_primitive(
             return type.__call__(operator_type, *args, **kwargs)
         n_wires = kwargs.pop("n_wires")
 
+        split = None if n_wires == 0 else -n_wires
         # need to convert array values into integers
         # for plxpr, all wires must be integers
-        wires = tuple(int(w) for w in args[-n_wires:])
-        args = args[:-n_wires]
+        wires = tuple(int(w) for w in args[split:])
+        args = args[:split]
         return type.__call__(operator_type, *args, wires=wires, **kwargs)
 
     abstract_type = _get_abstract_operator()
@@ -264,13 +266,8 @@ def create_measurement_mcm_primitive(
     primitive = jax.core.Primitive(name + "_mcm")
 
     @primitive.def_impl
-    def _(*mcms, **kwargs):
-        raise NotImplementedError(
-            "mcm measurements do not currently have a concrete implementation"
-        )
-        # need to figure out how to convert a jaxpr int into a measurement value, and pass
-        # that measurment value here.
-        # return type.__call__(measurement_type, obs=mcms, **kwargs)
+    def _(*mcms, single_mcm=True, **kwargs):
+        return type.__call__(measurement_type, obs=mcms[0] if single_mcm else mcms, **kwargs)
 
     abstract_type = _get_abstract_measurement()
 

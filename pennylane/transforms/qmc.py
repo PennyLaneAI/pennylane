@@ -15,12 +15,13 @@
 Contains the quantum_monte_carlo transform.
 """
 from copy import copy
-from typing import Callable, Sequence
 
 import pennylane as qml
 from pennylane import CZ, Hadamard, MultiControlledX, PauliX, adjoint
+from pennylane.tape import QuantumTapeBatch
 from pennylane.templates import QFT
 from pennylane.transforms.core import transform
+from pennylane.typing import PostprocessingFn
 from pennylane.wires import Wires
 
 
@@ -82,7 +83,7 @@ def _apply_controlled_v(target_wire, control_wire):
 @transform
 def apply_controlled_Q(
     tape: qml.tape.QuantumTape, wires, target_wire, control_wire, work_wires
-) -> (Sequence[qml.tape.QuantumTape], Callable):
+) -> tuple[QuantumTapeBatch, PostprocessingFn]:
     r"""Applies the transform that performs a controlled version of the :math:`\mathcal{Q}` unitary
     defined in `this <https://arxiv.org/abs/1805.00109>`__ paper.
 
@@ -151,7 +152,7 @@ def apply_controlled_Q(
 @transform
 def quantum_monte_carlo(
     tape: qml.tape.QuantumTape, wires, target_wire, estimation_wires
-) -> (Sequence[qml.tape.QuantumTape], Callable):
+) -> tuple[QuantumTapeBatch, PostprocessingFn]:
     r"""Applies the transform
     `quantum Monte Carlo estimation <https://arxiv.org/abs/1805.00109>`__ algorithm.
 

@@ -15,6 +15,7 @@
 This submodule defines a capture compatible call to QNodes.
 """
 
+import warnings
 from copy import copy
 from dataclasses import asdict
 from functools import lru_cache, partial
@@ -29,7 +30,7 @@ except ImportError:
 
 
 def _get_shapes_for(*measurements, shots=None, num_device_wires=0):
-    if jax.config.jax_enable_x64:
+    if jax.config.jax_enable_x64:  # pylint: disable=no-member
         dtype_map = {
             float: jax.numpy.float64,
             int: jax.numpy.int64,
@@ -48,7 +49,7 @@ def _get_shapes_for(*measurements, shots=None, num_device_wires=0):
 
     for s in shots:
         for m in measurements:
-            shape, dtype = m.abstract_eval(shots=s, num_device_wires=num_device_wires)
+            shape, dtype = m.aval.abstract_eval(shots=s, num_device_wires=num_device_wires)
             shapes.append(jax.core.ShapedArray(shape, dtype_map.get(dtype, dtype)))
     return shapes
 
@@ -60,18 +61,28 @@ def _get_qnode_prim():
     qnode_prim = jax.core.Primitive("qnode")
     qnode_prim.multiple_results = True
 
+    # pylint: disable=too-many-arguments
     @qnode_prim.def_impl
-    def _(*args, qnode, shots, device, qnode_kwargs, qfunc_jaxpr):
-        def qfunc(*inner_args):
-            return jax.core.eval_jaxpr(qfunc_jaxpr.jaxpr, qfunc_jaxpr.consts, *inner_args)
+    def _(*args, qnode, shots, device, qnode_kwargs, qfunc_jaxpr, n_consts):
+        consts = args[:n_consts]
+        args = args[n_consts:]
 
-        qnode = qml.QNode(qfunc, device, **qnode_kwargs)
+        def qfunc(*inner_args):
+            return jax.core.eval_jaxpr(qfunc_jaxpr, consts, *inner_args)
+
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                action="ignore",
+                message=r"The max_expansion argument is deprecated and will be removed in version 0.39.",
+                category=qml.PennyLaneDeprecationWarning,
+            )
+            qnode = qml.QNode(qfunc, device, **qnode_kwargs)
         return qnode._impl_call(*args, shots=shots)  # pylint: disable=protected-access
 
     # pylint: disable=unused-argument
     @qnode_prim.def_abstract_eval
-    def _(*args, qnode, shots, device, qnode_kwargs, qfunc_jaxpr):
-        mps = qfunc_jaxpr.out_avals
+    def _(*args, qnode, shots, device, qnode_kwargs, qfunc_jaxpr, n_consts):
+        mps = qfunc_jaxpr.outvars
         return _get_shapes_for(*mps, shots=shots, num_device_wires=len(device.wires))
 
     return qnode_prim
@@ -170,11 +181,13 @@ def qnode_call(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
     qnode_prim = _get_qnode_prim()
 
     res = qnode_prim.bind(
+        *qfunc_jaxpr.consts,
         *args,
         shots=shots,
         qnode=qnode,
         device=qnode.device,
         qnode_kwargs=qnode_kwargs,
-        qfunc_jaxpr=qfunc_jaxpr,
+        qfunc_jaxpr=qfunc_jaxpr.jaxpr,
+        n_consts=len(qfunc_jaxpr.consts),
     )
     return res[0] if len(res) == 1 else res
