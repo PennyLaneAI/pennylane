@@ -15,7 +15,7 @@
 Tests for the :mod:`pennylane.data.base.typing_util` functions.
 """
 
-import typing
+from typing import Optional, Type, Union
 
 import pytest
 
@@ -30,16 +30,16 @@ pytestmark = pytest.mark.data
     "type_, expect",
     [
         (list, "list"),
-        (typing.List, "list"),
+        (list, "list"),
         (Molecule, "pennylane.qchem.molecule.Molecule"),
         ("nonsense", "nonsense"),
-        (typing.List[int], "list[int]"),
-        (typing.List[typing.Tuple[int, "str"]], "list[tuple[int, str]]"),
-        (typing.Optional[int], "Union[int, None]"),
-        (typing.Union[int, "str", Molecule], "Union[int, str, pennylane.qchem.molecule.Molecule]"),
+        (list[int], "list[int]"),
+        (list[tuple[int, "str"]], "list[tuple[int, str]]"),
+        (Optional[int], "Union[int, None]"),
+        (Union[int, "str", Molecule], "Union[int, str, pennylane.qchem.molecule.Molecule]"),
         (str, "str"),
-        (typing.Type[str], "type[str]"),
-        (typing.Union[typing.List[typing.List[int]], str], "Union[list[list[int]], str]"),
+        (Type[str], "type[str]"),
+        (Union[list[list[int]], str], "Union[list[list[int]], str]"),
     ],
 )
 def test_get_type_str(type_, expect):
@@ -53,8 +53,8 @@ def test_get_type_str(type_, expect):
     [
         (list, list),
         ([1, 2], list),
-        (typing.List, list),
-        (typing.List[int], list),
+        (list, list),
+        (list[int], list),
         (qml.RX, qml.RX),
         (qml.RX(1, [1]), qml.RX),
     ],
@@ -70,7 +70,7 @@ def test_unset_bool():
     assert not UNSET
 
 
-@pytest.mark.parametrize("type_, expect", [(typing.List[typing.List[int]], (list, [list]))])
+@pytest.mark.parametrize("type_, expect", [(list[list[int]], (list, [list]))])
 def test_resolve_special_type(type_, expect):
     """Test resolve_special_type()."""
     assert resolve_special_type(type_) == expect

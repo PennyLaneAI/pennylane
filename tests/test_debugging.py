@@ -181,7 +181,12 @@ class TestSnapshotGeneral:
 
             return qml.expval(qml.PauliZ(0))
 
-        qml.snapshots(circuit)(shots=200)
+        with (
+            pytest.warns(UserWarning, match="Requested state or density matrix with finite shots")
+            if isinstance(dev, qml.devices.default_qutrit.DefaultQutrit)
+            else nullcontext()
+        ):
+            qml.snapshots(circuit)(shots=200)
 
     @pytest.mark.parametrize("diff_method", [None, "parameter-shift"])
     def test_all_state_measurement_snapshot_pure_qubit_dev(self, dev, diff_method):
@@ -275,7 +280,8 @@ class TestSnapshotSupportedQNode:
 
     @pytest.mark.parametrize("diff_method", [None, "backprop", "parameter-shift", "adjoint"])
     def test_default_qubit_legacy_only_supports_state(self, diff_method):
-        dev = qml.device("default.qubit.legacy", wires=2)
+        with pytest.warns(qml.PennyLaneDeprecationWarning, match="Use of 'default.qubit"):
+            dev = qml.device("default.qubit.legacy", wires=2)
 
         assert qml.debugging.snapshot._is_snapshot_compatible(dev)
 

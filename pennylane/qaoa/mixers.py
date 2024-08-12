@@ -18,7 +18,8 @@ import functools
 
 # pylint: disable=unnecessary-lambda-assignment
 import itertools
-from typing import Iterable, Union
+from collections.abc import Iterable
+from typing import Union
 
 import networkx as nx
 import rustworkx as rx

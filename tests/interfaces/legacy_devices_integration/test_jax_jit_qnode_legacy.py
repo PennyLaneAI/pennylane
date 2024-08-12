@@ -1,4 +1,4 @@
-# Copyright 2018-2023 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,35 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Integration tests for using the JAX-JIT interface with a QNode"""
-import copy
-
 # pylint: disable=too-many-arguments,too-few-public-methods
-from functools import partial
-
 import pytest
-from param_shift_dev import ParamShiftDerivativesDevice
 
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane import qnode
-from pennylane.devices import DefaultQubit
 
-# device, diff_method, grad_on_execution, device_vjp
 qubit_device_and_diff_method = [
-    [DefaultQubit(), "backprop", True, False],
-    [DefaultQubit(), "finite-diff", False, False],
-    [DefaultQubit(), "parameter-shift", False, False],
-    [DefaultQubit(), "adjoint", True, False],
-    [DefaultQubit(), "adjoint", True, True],
-    [ParamShiftDerivativesDevice(), "device", False, True],
-    [DefaultQubit(), "adjoint", False, False],
-    [DefaultQubit(), "spsa", False, False],
-    [DefaultQubit(), "hadamard", False, False],
-    [qml.device("lightning.qubit", wires=5), "adjoint", False, True],
-    [qml.device("lightning.qubit", wires=5), "adjoint", True, False],
-    [qml.device("lightning.qubit", wires=5), "adjoint", False, False],
-    [qml.device("lightning.qubit", wires=5), "adjoint", True, True],
-    [qml.device("lightning.qubit", wires=5), "parameter-shift", False, False],
+    ["default.qubit.legacy", "backprop", True],
+    ["default.qubit.legacy", "finite-diff", False],
+    ["default.qubit.legacy", "parameter-shift", False],
+    ["default.qubit.legacy", "adjoint", True],
+    ["default.qubit.legacy", "adjoint", False],
+    ["default.qubit.legacy", "spsa", False],
+    ["default.qubit.legacy", "hadamard", False],
 ]
 interface_and_qubit_device_and_diff_method = [
     ["auto"] + inner_list for inner_list in qubit_device_and_diff_method
@@ -57,33 +43,33 @@ H_FOR_SPSA = 0.05
 
 
 @pytest.mark.parametrize(
-    "interface,dev,diff_method,grad_on_execution,device_vjp",
-    interface_and_qubit_device_and_diff_method,
+    "interface,dev_name,diff_method,grad_on_execution", interface_and_qubit_device_and_diff_method
 )
 class TestQNode:
     """Test that using the QNode with JAX integrates with the PennyLane
     stack"""
 
-    def test_execution_with_interface(
-        self, dev, diff_method, grad_on_execution, interface, device_vjp
-    ):
+    def test_execution_with_interface(self, dev_name, diff_method, grad_on_execution, interface):
         """Test execution works with the interface"""
-        if dev.name == "param_shift.qubit":
-            pytest.xfail("gradient transforms have a different vjp shape convention")
+        if diff_method == "backprop":
+            pytest.skip("Test does not support backprop")
+
+        num_wires = 1
+
+        if diff_method == "hadamard":
+            num_wires = 2
+
+        dev = qml.device(dev_name, wires=num_wires)
 
         @qnode(
-            dev,
-            interface=interface,
-            diff_method=diff_method,
-            grad_on_execution=grad_on_execution,
-            device_vjp=device_vjp,
+            dev, interface=interface, diff_method=diff_method, grad_on_execution=grad_on_execution
         )
         def circuit(a):
             qml.RY(a, wires=0)
             qml.RX(0.2, wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        a = jax.numpy.array(0.1)
+        a = np.array(0.1, requires_grad=True)
         jax.jit(circuit)(a)
 
         assert circuit.interface == interface
@@ -96,9 +82,7 @@ class TestQNode:
         assert isinstance(grad, jax.Array)
         assert grad.shape == ()
 
-    def test_changing_trainability(
-        self, dev, diff_method, grad_on_execution, interface, device_vjp, tol
-    ):
+    def test_changing_trainability(self, dev_name, diff_method, grad_on_execution, interface, tol):
         """Test changing the trainability of parameters changes the
         number of differentiation requests made"""
         if diff_method != "parameter-shift":
@@ -107,12 +91,13 @@ class TestQNode:
         a = jax.numpy.array(0.1)
         b = jax.numpy.array(0.2)
 
+        dev = qml.device(dev_name, wires=2)
+
         @qnode(
             dev,
             interface=interface,
             diff_method="parameter-shift",
             grad_on_execution=grad_on_execution,
-            device_vjp=device_vjp,
         )
         def circuit(a, b):
             qml.RY(a, wires=0)
@@ -145,21 +130,21 @@ class TestQNode:
         circuit(a, b)
         assert circuit.qtape.trainable_params == [1]
 
-    def test_classical_processing(self, dev, diff_method, grad_on_execution, device_vjp, interface):
+    def test_classical_processing(self, dev_name, diff_method, grad_on_execution, interface):
         """Test classical processing within the quantum tape"""
         a = jax.numpy.array(0.1)
         b = jax.numpy.array(0.2)
         c = jax.numpy.array(0.3)
 
-        if dev.name == "param_shift.qubit":
-            pytest.xfail("gradient transforms have a different vjp shape convention.")
+        num_wires = 1
+
+        if diff_method == "hadamard":
+            num_wires = 2
+
+        dev = qml.device(dev_name, wires=num_wires)
 
         @qnode(
-            dev,
-            diff_method=diff_method,
-            interface=interface,
-            grad_on_execution=grad_on_execution,
-            device_vjp=device_vjp,
+            dev, diff_method=diff_method, interface=interface, grad_on_execution=grad_on_execution
         )
         def circuit(a, b, c):
             qml.RY(a * c, wires=0)
@@ -174,24 +159,21 @@ class TestQNode:
 
         assert len(res) == 2
 
-    def test_matrix_parameter(
-        self, dev, diff_method, grad_on_execution, device_vjp, interface, tol
-    ):
+    def test_matrix_parameter(self, dev_name, diff_method, grad_on_execution, interface, tol):
         """Test that the jax interface works correctly
         with a matrix parameter"""
-
-        if dev.name == "param_shift.qubit":
-            pytest.xfail("gradient transforms have a different vjp shape convention.")
-
         U = jax.numpy.array([[0, 1], [1, 0]])
         a = jax.numpy.array(0.1)
 
+        num_wires = 2
+
+        if diff_method == "hadamard":
+            num_wires = 3
+
+        dev = qml.device(dev_name, wires=num_wires)
+
         @qnode(
-            dev,
-            diff_method=diff_method,
-            interface=interface,
-            grad_on_execution=grad_on_execution,
-            device_vjp=device_vjp,
+            dev, diff_method=diff_method, interface=interface, grad_on_execution=grad_on_execution
         )
         def circuit(U, a):
             qml.QubitUnitary(U, wires=0)
@@ -204,19 +186,16 @@ class TestQNode:
         if diff_method == "finite-diff":
             assert circuit.qtape.trainable_params == [1]
 
-    def test_differentiable_expand(
-        self, dev, diff_method, grad_on_execution, device_vjp, interface, tol
-    ):
+    def test_differentiable_expand(self, dev_name, diff_method, grad_on_execution, interface, tol):
         """Test that operation and nested tape expansion
         is differentiable"""
 
-        if dev.name == "param_shift.qubit":
-            pytest.xfail("gradient transforms have a different vjp shape convention.")
-
         gradient_kwargs = {}
         if diff_method == "spsa":
-            gradient_kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
-            gradient_kwargs["num_directions"] = 20
+            gradient_kwargs = {
+                "sampler_rng": SEED_FOR_SPSA,
+                "num_directions": 10,
+            }
             tol = TOL_FOR_SPSA
 
         class U3(qml.U3):
@@ -228,6 +207,13 @@ class TestQNode:
                     qml.PhaseShift(phi + lam, wires=wires),
                 ]
 
+        num_wires = 1
+
+        if diff_method == "hadamard":
+            num_wires = 2
+
+        dev = qml.device(dev_name, wires=num_wires)
+
         a = jax.numpy.array(0.1)
         p = jax.numpy.array([0.1, 0.2, 0.3])
 
@@ -236,7 +222,6 @@ class TestQNode:
             diff_method=diff_method,
             interface=interface,
             grad_on_execution=grad_on_execution,
-            device_vjp=device_vjp,
             **gradient_kwargs,
         )
         def circuit(a, p):
@@ -263,11 +248,14 @@ class TestQNode:
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_jacobian_options(self, dev, diff_method, grad_on_execution, device_vjp, interface):
+    def test_jacobian_options(self, dev_name, diff_method, grad_on_execution, interface):
         """Test setting jacobian options"""
         if diff_method != "finite-diff":
             pytest.skip("Test only applies to finite diff.")
+
         a = np.array([0.1, 0.2], requires_grad=True)
+
+        dev = qml.device(dev_name, wires=1)
 
         @qnode(
             dev,
@@ -276,7 +264,6 @@ class TestQNode:
             h=1e-8,
             approx_order=2,
             grad_on_execution=grad_on_execution,
-            device_vjp=device_vjp,
         )
         def circuit(a):
             qml.RY(a[0], wires=0)
@@ -291,37 +278,36 @@ class TestQNode:
 
 
 @pytest.mark.parametrize(
-    "interface,dev,diff_method,grad_on_execution, device_vjp",
-    interface_and_qubit_device_and_diff_method,
+    "interface,dev_name,diff_method,grad_on_execution", interface_and_qubit_device_and_diff_method
 )
 class TestVectorValuedQNode:
     """Test that using vector-valued QNodes with JAX integrate with the
     PennyLane stack"""
 
-    def test_diff_expval_expval(
-        self, dev, diff_method, grad_on_execution, device_vjp, interface, tol
-    ):
+    def test_diff_expval_expval(self, dev_name, diff_method, grad_on_execution, interface, tol):
         """Test jacobian calculation"""
-        if dev.name == "param_shift.qubit":
-            pytest.xfail("gradient transforms have a different vjp shape convention.")
-        if "lightning" in dev.name:
-            pytest.xfail("lightning does not support device vjps with jax jacobians.")
+
         gradient_kwargs = {}
 
         if diff_method == "spsa":
-            gradient_kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
-            gradient_kwargs["num_directions"] = 20
+            gradient_kwargs = {"sampler_rng": SEED_FOR_SPSA}
             tol = TOL_FOR_SPSA
 
         a = np.array(0.1, requires_grad=True)
         b = np.array(0.2, requires_grad=True)
+
+        num_wires = 2
+
+        if diff_method == "hadamard":
+            num_wires = 3
+
+        dev = qml.device(dev_name, wires=num_wires)
 
         @qnode(
             dev,
             diff_method=diff_method,
             interface=interface,
             grad_on_execution=grad_on_execution,
-            device_vjp=device_vjp,
             **gradient_kwargs,
         )
         def circuit(a, b):
@@ -363,30 +349,29 @@ class TestVectorValuedQNode:
         assert res[1][1].shape == ()
         assert np.allclose(res[1][1], expected[1][1], atol=tol, rtol=0)
 
-    def test_jacobian_no_evaluate(
-        self, dev, diff_method, grad_on_execution, device_vjp, interface, tol
-    ):
+    def test_jacobian_no_evaluate(self, dev_name, diff_method, grad_on_execution, interface, tol):
         """Test jacobian calculation when no prior circuit evaluation has been performed"""
-        if dev.name == "param_shift.qubit":
-            pytest.xfail("gradient transforms have a different vjp shape convention.")
-        if "lightning" in dev.name:
-            pytest.xfail("lightning does not support device vjps with jax jacobians.")
-        gradient_kwargs = {}
 
+        gradient_kwargs = {}
         if diff_method == "spsa":
-            gradient_kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
-            gradient_kwargs["num_directions"] = 20
+            gradient_kwargs = {"sampler_rng": SEED_FOR_SPSA}
             tol = TOL_FOR_SPSA
 
         a = jax.numpy.array(0.1)
         b = jax.numpy.array(0.2)
+
+        num_wires = 2
+
+        if diff_method == "hadamard":
+            num_wires = 3
+
+        dev = qml.device(dev_name, wires=num_wires)
 
         @qnode(
             dev,
             diff_method=diff_method,
             interface=interface,
             grad_on_execution=grad_on_execution,
-            device_vjp=device_vjp,
             **gradient_kwargs,
         )
         def circuit(a, b):
@@ -427,21 +412,22 @@ class TestVectorValuedQNode:
                 assert r.shape == ()
                 assert np.allclose(r, e, atol=tol, rtol=0)
 
-    def test_diff_single_probs(
-        self, dev, diff_method, grad_on_execution, device_vjp, interface, tol
-    ):
+    def test_diff_single_probs(self, dev_name, diff_method, grad_on_execution, interface, tol):
         """Tests correct output shape and evaluation for a tape
         with a single prob output"""
-        if dev.name == "param_shift.qubit":
-            pytest.xfail("gradient transforms have a different vjp shape convention.")
-        if "lightning" in dev.name:
-            pytest.xfail("lightning does not support device vjps with jax jacobians.")
         gradient_kwargs = {}
-        if diff_method == "spsa":
-            gradient_kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
-            gradient_kwargs["num_directions"] = 20
+        if diff_method == "adjoint":
+            pytest.skip("Adjoint does not support probs")
+        elif diff_method == "spsa":
+            gradient_kwargs = {"sampler_rng": SEED_FOR_SPSA}
             tol = TOL_FOR_SPSA
 
+        num_wires = 2
+
+        if diff_method == "hadamard":
+            num_wires = 3
+
+        dev = qml.device(dev_name, wires=num_wires)
         x = jax.numpy.array(0.543)
         y = jax.numpy.array(-0.654)
 
@@ -450,7 +436,6 @@ class TestVectorValuedQNode:
             diff_method=diff_method,
             interface=interface,
             grad_on_execution=grad_on_execution,
-            device_vjp=device_vjp,
             **gradient_kwargs,
         )
         def circuit(x, y):
@@ -480,21 +465,22 @@ class TestVectorValuedQNode:
         assert np.allclose(res[0], expected.T[0], atol=tol, rtol=0)
         assert np.allclose(res[1], expected.T[1], atol=tol, rtol=0)
 
-    def test_diff_multi_probs(
-        self, dev, diff_method, grad_on_execution, device_vjp, interface, tol
-    ):
+    def test_diff_multi_probs(self, dev_name, diff_method, grad_on_execution, interface, tol):
         """Tests correct output shape and evaluation for a tape
         with multiple prob outputs"""
-        if dev.name == "param_shift.qubit":
-            pytest.xfail("gradient transforms have a different vjp shape convention.")
-        if "lightning" in dev.name:
-            pytest.xfail("lightning does not support device vjps with jax jacobians.")
         gradient_kwargs = {}
-        if diff_method == "spsa":
-            gradient_kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
-            gradient_kwargs["num_directions"] = 20
+        if diff_method == "adjoint":
+            pytest.skip("Adjoint does not support probs")
+        elif diff_method == "spsa":
+            gradient_kwargs = {"sampler_rng": SEED_FOR_SPSA}
             tol = TOL_FOR_SPSA
 
+        num_wires = 3
+
+        if diff_method == "hadamard":
+            num_wires = 4
+
+        dev = qml.device(dev_name, wires=num_wires)
         x = jax.numpy.array(0.543)
         y = jax.numpy.array(-0.654)
 
@@ -503,7 +489,6 @@ class TestVectorValuedQNode:
             diff_method=diff_method,
             interface=interface,
             grad_on_execution=grad_on_execution,
-            device_vjp=device_vjp,
             **gradient_kwargs,
         )
         def circuit(x, y):
@@ -566,21 +551,22 @@ class TestVectorValuedQNode:
         assert jac[1][1].shape == (4,)
         assert np.allclose(jac[1][1], expected_1[1], atol=tol, rtol=0)
 
-    def test_diff_expval_probs(
-        self, dev, diff_method, grad_on_execution, device_vjp, interface, tol
-    ):
+    def test_diff_expval_probs(self, dev_name, diff_method, grad_on_execution, interface, tol):
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
-        if dev.name == "param_shift.qubit":
-            pytest.xfail("gradient transforms have a different vjp shape convention.")
-        if "lightning" in dev.name:
-            pytest.xfail("lightning does not support device vjps with jax jacobians.")
         gradient_kwargs = {}
-        if diff_method == "spsa":
-            gradient_kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
-            gradient_kwargs["num_directions"] = 20
+        if diff_method == "adjoint":
+            pytest.skip("Adjoint does not support probs")
+        elif diff_method == "spsa":
+            gradient_kwargs = {"sampler_rng": SEED_FOR_SPSA}
             tol = TOL_FOR_SPSA
 
+        num_wires = 2
+
+        if diff_method == "hadamard":
+            num_wires = 3
+
+        dev = qml.device(dev_name, wires=num_wires)
         x = jax.numpy.array(0.543)
         y = jax.numpy.array(-0.654)
 
@@ -589,7 +575,6 @@ class TestVectorValuedQNode:
             diff_method=diff_method,
             interface=interface,
             grad_on_execution=grad_on_execution,
-            device_vjp=device_vjp,
             **gradient_kwargs,
         )
         def circuit(x, y):
@@ -643,19 +628,23 @@ class TestVectorValuedQNode:
         assert np.allclose(jac[1][1], expected[1][1], atol=tol, rtol=0)
 
     def test_diff_expval_probs_sub_argnums(
-        self, dev, diff_method, grad_on_execution, device_vjp, interface, tol
+        self, dev_name, diff_method, grad_on_execution, interface, tol
     ):
         """Tests correct output shape and evaluation for a tape with prob and expval outputs with less
         trainable parameters (argnums) than parameters."""
-        if dev.name == "param_shift.qubit":
-            pytest.xfail("gradient transforms have a different vjp shape convention.")
-        if "lightning" in dev.name:
-            pytest.xfail("lightning does not support device vjps with jax jacobians.")
         kwargs = {}
-        if diff_method == "spsa":
-            kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
+        if diff_method == "adjoint":
+            pytest.skip("Adjoint does not support probs")
+        elif diff_method == "spsa":
             tol = TOL_FOR_SPSA
+            kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
 
+        num_wires = 2
+
+        if diff_method == "hadamard":
+            num_wires = 3
+
+        dev = qml.device(dev_name, wires=num_wires)
         x = jax.numpy.array(0.543)
         y = jax.numpy.array(-0.654)
 
@@ -664,7 +653,6 @@ class TestVectorValuedQNode:
             diff_method=diff_method,
             interface=interface,
             grad_on_execution=grad_on_execution,
-            device_vjp=device_vjp,
             **kwargs,
         )
         def circuit(x, y):
@@ -697,21 +685,19 @@ class TestVectorValuedQNode:
         assert jac[1][0].shape == (2,)
         assert np.allclose(jac[1][0], expected[1][0], atol=tol, rtol=0)
 
-    def test_diff_var_probs(self, dev, diff_method, grad_on_execution, device_vjp, interface, tol):
+    def test_diff_var_probs(self, dev_name, diff_method, grad_on_execution, interface, tol):
         """Tests correct output shape and evaluation for a tape
         with prob and variance outputs"""
-        if dev.name == "param_shift.qubit":
-            pytest.xfail("gradient transforms have a different vjp shape convention.")
-        if "lightning" in dev.name:
-            pytest.xfail("lightning does not support device vjps with jax jacobians.")
         gradient_kwargs = {}
-        if diff_method == "hadamard":
+        if diff_method == "adjoint":
+            pytest.skip("Adjoint does not support probs")
+        elif diff_method == "hadamard":
             pytest.skip("Hadamard does not support var")
         elif diff_method == "spsa":
-            gradient_kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
-            gradient_kwargs["num_directions"] = 20
+            gradient_kwargs = {"sampler_rng": SEED_FOR_SPSA}
             tol = TOL_FOR_SPSA
 
+        dev = qml.device(dev_name, wires=3)
         x = jax.numpy.array(0.543)
         y = jax.numpy.array(-0.654)
 
@@ -720,7 +706,6 @@ class TestVectorValuedQNode:
             diff_method=diff_method,
             interface=interface,
             grad_on_execution=grad_on_execution,
-            device_vjp=device_vjp,
             **gradient_kwargs,
         )
         def circuit(x, y):
@@ -781,8 +766,8 @@ class TestShotsIntegration:
     remains differentiable."""
 
     def test_diff_method_None(self, interface):
-        """Test device works with diff_method=None."""
-        dev = DefaultQubit()
+        """Test jax device works with diff_method=None."""
+        dev = qml.device("default.qubit.jax", wires=1, shots=10)
 
         @jax.jit
         @qml.qnode(dev, diff_method=None, interface=interface)
@@ -792,40 +777,52 @@ class TestShotsIntegration:
 
         assert jax.numpy.allclose(circuit(jax.numpy.array(0.0)), 1)
 
-    @pytest.mark.skip("jax.jit does not work with sample")
-    def test_changing_shots(self, interface):
+    def test_changing_shots(self, interface, mocker, tol):
         """Test that changing shots works on execution"""
+        dev = qml.device("default.qubit.legacy", wires=2, shots=None)
         a, b = jax.numpy.array([0.543, -0.654])
 
-        @qnode(DefaultQubit(), diff_method=qml.gradients.param_shift, interface=interface)
+        @qnode(dev, diff_method=qml.gradients.param_shift, interface=interface)
         def circuit(a, b):
             qml.RY(a, wires=0)
             qml.RX(b, wires=1)
             qml.CNOT(wires=[0, 1])
-            return qml.sample(wires=(0, 1))
+            return qml.expval(qml.PauliY(1))
+
+        spy = mocker.spy(dev, "sample")
 
         # execute with device default shots (None)
-        with pytest.raises(qml.DeviceError):
-            circuit(a, b)
+        res = circuit(a, b)
+        assert np.allclose(res, -np.cos(a) * np.sin(b), atol=tol, rtol=0)
+        spy.assert_not_called()
 
         # execute with shots=100
         res = circuit(a, b, shots=100)  # pylint: disable=unexpected-keyword-arg
-        assert res.shape == (100, 2)  # pylint:disable=comparison-with-callable
+        spy.assert_called_once()
+        assert spy.spy_return.shape == (100,)
+
+        # device state has been unaffected
+        assert dev.shots is None
+        res = circuit(a, b)
+        assert np.allclose(res, -np.cos(a) * np.sin(b), atol=tol, rtol=0)
+        spy.assert_called_once()  # no additional calls
 
     def test_gradient_integration(self, interface):
         """Test that temporarily setting the shots works
         for gradient computations"""
+        dev = qml.device("default.qubit.legacy", wires=2, shots=1)
         a, b = jax.numpy.array([0.543, -0.654])
 
-        @qnode(DefaultQubit(), diff_method=qml.gradients.param_shift, interface=interface)
+        @qnode(dev, diff_method=qml.gradients.param_shift, interface=interface)
         def cost_fn(a, b):
             qml.RY(a, wires=0)
             qml.RX(b, wires=1)
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliY(1))
 
-        jit_cost_fn = jax.jit(cost_fn, static_argnames=["shots"])
-        res = jax.grad(jit_cost_fn, argnums=[0, 1])(a, b, shots=30000)
+        # TODO: jit when https://github.com/PennyLaneAI/pennylane/issues/3474 is resolved
+        res = jax.grad(cost_fn, argnums=[0, 1])(a, b, shots=30000)
+        assert dev.shots == 1
 
         expected = [np.sin(a) * np.sin(b), -np.cos(a) * np.cos(b)]
         assert np.allclose(res, expected, atol=0.1, rtol=0)
@@ -833,79 +830,44 @@ class TestShotsIntegration:
     def test_update_diff_method(self, mocker, interface):
         """Test that temporarily setting the shots updates the diff method"""
         # pylint: disable=unused-argument
+        dev = qml.device("default.qubit.legacy", wires=2, shots=100)
         a, b = jax.numpy.array([0.543, -0.654])
 
         spy = mocker.spy(qml, "execute")
 
-        @qnode(DefaultQubit(), interface=interface)
+        # We're choosing interface="jax" such that backprop can be used in the
+        # test later
+        @qnode(dev, interface="jax")
         def cost_fn(a, b):
             qml.RY(a, wires=0)
             qml.RX(b, wires=1)
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliY(1))
 
-        cost_fn(a, b, shots=100)  # pylint:disable=unexpected-keyword-arg
         # since we are using finite shots, parameter-shift will
         # be chosen
-        assert cost_fn.gradient_fn == qml.gradients.param_shift
-        assert spy.call_args[1]["gradient_fn"] is qml.gradients.param_shift
+        assert cost_fn.gradient_fn is qml.gradients.param_shift
 
         cost_fn(a, b)
-        assert cost_fn.gradient_fn == "backprop"
+        assert spy.call_args[1]["gradient_fn"] is qml.gradients.param_shift
+
         # if we set the shots to None, backprop can now be used
+        cost_fn(a, b, shots=None)  # pylint: disable=unexpected-keyword-arg
         assert spy.call_args[1]["gradient_fn"] == "backprop"
+        assert cost_fn.gradient_fn == "backprop"
 
-    @pytest.mark.parametrize("shots", [(10000, 10000), (10000, 10005)])
-    def test_shot_vectors_single_measurements(self, interface, shots):
-        """Test jax-jit can work with shot vectors."""
-
-        dev = qml.device("default.qubit", shots=shots, seed=4747)
-
-        @jax.jit
-        @qml.qnode(dev, interface=interface, diff_method="parameter-shift")
-        def circuit(x):
-            qml.RX(x, wires=0)
-            return qml.var(qml.PauliZ(0))
-
-        res = circuit(0.5)
-        expected = 1 - np.cos(0.5) ** 2
-        assert qml.math.allclose(res[0], expected, atol=1e-2)
-        assert qml.math.allclose(res[1], expected, atol=3e-2)
-
-        g = jax.jacobian(circuit)(0.5)
-
-        expected_g = 2 * np.cos(0.5) * np.sin(0.5)
-        assert qml.math.allclose(g[0], expected_g, atol=2e-2)
-        assert qml.math.allclose(g[1], expected_g, atol=2e-2)
-
-    @pytest.mark.parametrize("shots", [(10000, 10000), (10000, 10005)])
-    def test_shot_vectors_multiple_measurements(self, interface, shots):
-        """Test jax-jit can work with shot vectors."""
-
-        dev = qml.device("default.qubit", shots=shots, seed=987548)
-
-        @jax.jit
-        @qml.qnode(dev, interface=interface, diff_method="parameter-shift")
-        def circuit(x):
-            qml.RX(x, wires=0)
-            return qml.expval(qml.PauliZ(0)), qml.probs(wires=0)
-
-        res = circuit(0.5)
-        assert qml.math.allclose(res[0][0], np.cos(0.5), atol=5e-3)
-        assert qml.math.allclose(res[1][0], np.cos(0.5), atol=5e-3)
-        expected_probs = np.array([np.cos(0.25) ** 2, np.sin(0.25) ** 2])
-        assert qml.math.allclose(res[0][1], expected_probs, atol=5e-3)
-        assert qml.math.allclose(res[1][1], expected_probs, atol=5e-3)
+        cost_fn(a, b)
+        assert cost_fn.gradient_fn is qml.gradients.param_shift
+        assert spy.call_args[1]["gradient_fn"] is qml.gradients.param_shift
 
 
 @pytest.mark.parametrize(
-    "interface,dev,diff_method,grad_on_execution, device_vjp",
-    interface_and_qubit_device_and_diff_method,
+    "interface,dev_name,diff_method,grad_on_execution", interface_and_qubit_device_and_diff_method
 )
 class TestQubitIntegration:
     """Tests that ensure various qubit circuits integrate correctly"""
 
-    def test_sampling(self, dev, diff_method, grad_on_execution, device_vjp, interface):
+    def test_sampling(self, dev_name, diff_method, grad_on_execution, interface):
         """Test sampling works as expected"""
         if grad_on_execution:
             pytest.skip("Sampling not possible with forward grad_on_execution differentiation.")
@@ -913,19 +875,17 @@ class TestQubitIntegration:
         if diff_method == "adjoint":
             pytest.skip("Adjoint warns with finite shots")
 
-        @qml.qnode(
-            dev,
-            diff_method=diff_method,
-            interface=interface,
-            grad_on_execution=grad_on_execution,
-            device_vjp=device_vjp,
+        dev = qml.device(dev_name, wires=2, shots=10)
+
+        @qnode(
+            dev, diff_method=diff_method, interface=interface, grad_on_execution=grad_on_execution
         )
         def circuit():
             qml.Hadamard(wires=[0])
             qml.CNOT(wires=[0, 1])
-            return qml.sample(qml.Z(0)), qml.sample(qml.s_prod(2, qml.X(0) @ qml.Y(1)))
+            return qml.sample(qml.PauliZ(0)), qml.sample(qml.PauliX(1))
 
-        res = jax.jit(circuit, static_argnames="shots")(shots=10)
+        res = jax.jit(circuit)()
 
         assert isinstance(res, tuple)
 
@@ -934,7 +894,7 @@ class TestQubitIntegration:
         assert isinstance(res[1], jax.Array)
         assert res[1].shape == (10,)
 
-    def test_counts(self, dev, diff_method, grad_on_execution, device_vjp, interface):
+    def test_counts(self, dev_name, diff_method, grad_on_execution, interface):
         """Test counts works as expected"""
         if grad_on_execution:
             pytest.skip("Sampling not possible with forward grad_on_execution differentiation.")
@@ -942,12 +902,10 @@ class TestQubitIntegration:
         if diff_method == "adjoint":
             pytest.skip("Adjoint warns with finite shots")
 
+        dev = qml.device(dev_name, wires=2, shots=10)
+
         @qnode(
-            dev,
-            diff_method=diff_method,
-            interface=interface,
-            grad_on_execution=grad_on_execution,
-            device_vjp=device_vjp,
+            dev, diff_method=diff_method, interface=interface, grad_on_execution=grad_on_execution
         )
         def circuit():
             qml.Hadamard(wires=[0])
@@ -958,9 +916,9 @@ class TestQubitIntegration:
             with pytest.raises(
                 NotImplementedError, match="The JAX-JIT interface doesn't support qml.counts."
             ):
-                jax.jit(circuit, static_argnames="shots")(shots=10)
+                jax.jit(circuit)()
         else:
-            res = jax.jit(circuit, static_argnames="shots")(shots=10)
+            res = jax.jit(circuit)()
 
             assert isinstance(res, tuple)
 
@@ -969,32 +927,28 @@ class TestQubitIntegration:
             assert isinstance(res[1], dict)
             assert len(res[1]) == 2
 
-    def test_chained_qnodes(self, dev, diff_method, grad_on_execution, device_vjp, interface):
+    def test_chained_qnodes(self, dev_name, diff_method, grad_on_execution, interface):
         """Test that the gradient of chained QNodes works without error"""
-        if dev.name == "param_shift.qubit":
-            pytest.xfail("gradient transforms have a different vjp shape convention.")
+        num_wires = 2
+
+        if diff_method == "hadamard":
+            num_wires = 3
+
+        dev = qml.device(dev_name, wires=num_wires)
 
         class Template(qml.templates.StronglyEntanglingLayers):
             def decomposition(self):
                 return [qml.templates.StronglyEntanglingLayers(*self.parameters, self.wires)]
 
         @qnode(
-            dev,
-            interface=interface,
-            diff_method=diff_method,
-            grad_on_execution=grad_on_execution,
-            device_vjp=device_vjp,
+            dev, interface=interface, diff_method=diff_method, grad_on_execution=grad_on_execution
         )
         def circuit1(weights):
             Template(weights, wires=[0, 1])
             return qml.expval(qml.PauliZ(0))
 
         @qnode(
-            dev,
-            interface=interface,
-            diff_method=diff_method,
-            grad_on_execution=grad_on_execution,
-            device_vjp=device_vjp,
+            dev, interface=interface, diff_method=diff_method, grad_on_execution=grad_on_execution
         )
         def circuit2(data, weights):
             qml.templates.AngleEmbedding(jax.numpy.stack([data, 0.7]), wires=[0, 1])
@@ -1020,76 +974,35 @@ class TestQubitIntegration:
 
         assert len(res) == 2
 
-    def test_postselection_differentiation(
-        self, dev, diff_method, grad_on_execution, device_vjp, interface
-    ):
-        """Test that when postselecting with default.qubit, differentiation works correctly."""
-
-        if diff_method in ["adjoint", "spsa", "hadamard"]:
-            pytest.skip("Diff method does not support postselection.")
-        if dev.name == "param_shift.qubit":
-            pytest.xfail("gradient transforms have a different vjp shape convention")
-        elif dev.name == "lightning.qubit":
-            pytest.xfail("lightning qubit does not support postselection.")
-
-        @qml.qnode(
-            dev, diff_method=diff_method, interface=interface, grad_on_execution=grad_on_execution
-        )
-        def circuit(phi, theta):
-            qml.RX(phi, wires=0)
-            qml.CNOT([0, 1])
-            qml.measure(wires=0, postselect=1)
-            qml.RX(theta, wires=1)
-            return qml.expval(qml.PauliZ(1))
-
-        @qml.qnode(
-            dev,
-            diff_method=diff_method,
-            interface=interface,
-            grad_on_execution=grad_on_execution,
-            device_vjp=device_vjp,
-        )
-        def expected_circuit(theta):
-            qml.PauliX(1)
-            qml.RX(theta, wires=1)
-            return qml.expval(qml.PauliZ(1))
-
-        phi = jax.numpy.array(1.23)
-        theta = jax.numpy.array(4.56)
-
-        assert np.allclose(jax.jit(circuit)(phi, theta), jax.jit(expected_circuit)(theta))
-
-        gradient = jax.jit(jax.grad(circuit, argnums=[0, 1]))(phi, theta)
-        exp_theta_grad = jax.jit(jax.grad(expected_circuit))(theta)
-        assert np.allclose(gradient, [0.0, exp_theta_grad])
-
 
 @pytest.mark.parametrize(
-    "interface,dev,diff_method,grad_on_execution, device_vjp",
-    interface_and_qubit_device_and_diff_method,
+    "interface,dev_name,diff_method,grad_on_execution", interface_and_qubit_device_and_diff_method
 )
 class TestQubitIntegrationHigherOrder:
     """Tests that ensure various qubit circuits integrate correctly when computing higher-order derivatives"""
 
-    def test_second_derivative(
-        self, dev, diff_method, grad_on_execution, device_vjp, interface, tol
-    ):
+    def test_second_derivative(self, dev_name, diff_method, grad_on_execution, interface, tol):
         """Test second derivative calculation of a scalar-valued QNode"""
+
         gradient_kwargs = {}
-        if diff_method in {"adjoint", "device"}:
-            pytest.skip("Adjoint does not support second derivatives.")
+        if diff_method == "adjoint":
+            pytest.skip("Adjoint does not second derivative.")
         elif diff_method == "spsa":
-            gradient_kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
-            gradient_kwargs["num_directions"] = 20
-            gradient_kwargs["h"] = H_FOR_SPSA
+            gradient_kwargs = {"sampler_rng": SEED_FOR_SPSA, "num_directions": 10}
             tol = TOL_FOR_SPSA
+
+        num_wires = 1
+
+        if diff_method == "hadamard":
+            num_wires = 3
+
+        dev = qml.device(dev_name, wires=num_wires)
 
         @qnode(
             dev,
             diff_method=diff_method,
             interface=interface,
             grad_on_execution=grad_on_execution,
-            device_vjp=device_vjp,
             max_diff=2,
             **gradient_kwargs,
         )
@@ -1120,25 +1033,31 @@ class TestQubitIntegrationHigherOrder:
         else:
             assert np.allclose(g2, expected_g2, atol=tol, rtol=0)
 
-    def test_hessian(self, dev, diff_method, grad_on_execution, device_vjp, interface, tol):
+    def test_hessian(self, dev_name, diff_method, grad_on_execution, interface, tol):
         """Test hessian calculation of a scalar-valued QNode"""
         gradient_kwargs = {}
-        if diff_method in {"adjoint", "device"}:
+        if diff_method == "adjoint":
             pytest.skip("Adjoint does not support second derivative.")
         elif diff_method == "spsa":
             gradient_kwargs = {
                 "h": H_FOR_SPSA,
-                "num_directions": 40,
+                "num_directions": 20,
                 "sampler_rng": np.random.default_rng(SEED_FOR_SPSA),
             }
             tol = TOL_FOR_SPSA
+
+        num_wires = 1
+
+        if diff_method == "hadamard":
+            num_wires = 3
+
+        dev = qml.device(dev_name, wires=num_wires)
 
         @qnode(
             dev,
             diff_method=diff_method,
             interface=interface,
             grad_on_execution=grad_on_execution,
-            device_vjp=device_vjp,
             max_diff=2,
             **gradient_kwargs,
         )
@@ -1172,12 +1091,10 @@ class TestQubitIntegrationHigherOrder:
         else:
             assert np.allclose(hess, expected_hess, atol=tol, rtol=0)
 
-    def test_hessian_vector_valued(
-        self, dev, diff_method, grad_on_execution, device_vjp, interface, tol
-    ):
+    def test_hessian_vector_valued(self, dev_name, diff_method, grad_on_execution, interface, tol):
         """Test hessian calculation of a vector-valued QNode"""
         gradient_kwargs = {}
-        if diff_method in {"adjoint", "device"}:
+        if diff_method == "adjoint":
             pytest.skip("Adjoint does not support second derivative.")
         elif diff_method == "spsa":
             gradient_kwargs = {
@@ -1187,12 +1104,18 @@ class TestQubitIntegrationHigherOrder:
             }
             tol = TOL_FOR_SPSA
 
+        num_wires = 1
+
+        if diff_method == "hadamard":
+            num_wires = 3
+
+        dev = qml.device(dev_name, wires=num_wires)
+
         @qnode(
             dev,
             diff_method=diff_method,
             interface=interface,
             grad_on_execution=grad_on_execution,
-            device_vjp=device_vjp,
             max_diff=2,
             **gradient_kwargs,
         )
@@ -1236,11 +1159,11 @@ class TestQubitIntegrationHigherOrder:
             assert np.allclose(hess, expected_hess, atol=tol, rtol=0)
 
     def test_hessian_vector_valued_postprocessing(
-        self, dev, diff_method, interface, device_vjp, grad_on_execution, tol
+        self, dev_name, diff_method, interface, grad_on_execution, tol
     ):
         """Test hessian calculation of a vector valued QNode with post-processing"""
         gradient_kwargs = {}
-        if diff_method in {"adjoint", "device"}:
+        if diff_method == "adjoint":
             pytest.skip("Adjoint does not support second derivative.")
         elif diff_method == "spsa":
             gradient_kwargs = {
@@ -1250,12 +1173,18 @@ class TestQubitIntegrationHigherOrder:
             }
             tol = TOL_FOR_SPSA
 
+        num_wires = 1
+
+        if diff_method == "hadamard":
+            num_wires = 3
+
+        dev = qml.device(dev_name, wires=num_wires)
+
         @qnode(
             dev,
             diff_method=diff_method,
             interface=interface,
             grad_on_execution=grad_on_execution,
-            device_vjp=device_vjp,
             max_diff=2,
             **gradient_kwargs,
         )
@@ -1302,11 +1231,11 @@ class TestQubitIntegrationHigherOrder:
             assert np.allclose(hess, expected_hess, atol=tol, rtol=0)
 
     def test_hessian_vector_valued_separate_args(
-        self, dev, diff_method, grad_on_execution, device_vjp, interface, tol
+        self, dev_name, diff_method, grad_on_execution, interface, tol
     ):
         """Test hessian calculation of a vector valued QNode that has separate input arguments"""
         gradient_kwargs = {}
-        if diff_method in {"adjoint", "device"}:
+        if diff_method == "adjoint":
             pytest.skip("Adjoint does not support second derivative.")
         elif diff_method == "spsa":
             gradient_kwargs = {
@@ -1316,13 +1245,19 @@ class TestQubitIntegrationHigherOrder:
             }
             tol = TOL_FOR_SPSA
 
+        num_wires = 1
+
+        if diff_method == "hadamard":
+            num_wires = 3
+
+        dev = qml.device(dev_name, wires=num_wires)
+
         @qnode(
             dev,
             diff_method=diff_method,
             interface=interface,
             grad_on_execution=grad_on_execution,
             max_diff=2,
-            device_vjp=device_vjp,
             **gradient_kwargs,
         )
         def circuit(a, b):
@@ -1347,7 +1282,6 @@ class TestQubitIntegrationHigherOrder:
             ]
         )
         assert np.allclose(g, expected_g.T, atol=tol, rtol=0)
-
         hess = jax.jit(jax.jacobian(jac_fn, argnums=[0, 1]))(a, b)
 
         expected_hess = np.array(
@@ -1367,24 +1301,23 @@ class TestQubitIntegrationHigherOrder:
         else:
             assert np.allclose(hess, expected_hess, atol=tol, rtol=0)
 
-    def test_state(self, dev, diff_method, grad_on_execution, device_vjp, interface, tol):
+    def test_state(self, dev_name, diff_method, grad_on_execution, interface, tol):
         """Test that the state can be returned and differentiated"""
+        if diff_method == "adjoint":
+            pytest.skip("Adjoint does not support states")
 
-        if dev.name == "lightning.qubit" and diff_method == "adjoint":
-            pytest.xfail("lightning.qubit does not support adjoint with the state.")
+        num_wires = 2
+
+        if diff_method == "hadamard":
+            num_wires = 3
+
+        dev = qml.device(dev_name, wires=num_wires)
 
         x = jax.numpy.array(0.543)
         y = jax.numpy.array(-0.654)
-        if not dev.wires:
-            dev = copy.copy(dev)
-            dev._wires = qml.wires.Wires([0, 1])  # pylint:disable=protected-access
 
         @qnode(
-            dev,
-            diff_method=diff_method,
-            interface=interface,
-            grad_on_execution=grad_on_execution,
-            device_vjp=device_vjp,
+            dev, diff_method=diff_method, interface=interface, grad_on_execution=grad_on_execution
         )
         def circuit(x, y):
             qml.RX(x, wires=[0])
@@ -1394,7 +1327,7 @@ class TestQubitIntegrationHigherOrder:
 
         def cost_fn(x, y):
             res = circuit(x, y)
-            assert res.dtype is np.dtype("complex128")
+            assert res.dtype is np.dtype("complex128")  # pylint:disable=no-member
             probs = jax.numpy.abs(res) ** 2
             return probs[0] + probs[2]
 
@@ -1408,13 +1341,9 @@ class TestQubitIntegrationHigherOrder:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("state", [[1], [0, 1]])  # Basis state and state vector
-    def test_projector(
-        self, state, dev, diff_method, grad_on_execution, device_vjp, interface, tol
-    ):
+    def test_projector(self, state, dev_name, diff_method, grad_on_execution, interface, tol):
         """Test that the variance of a projector is correctly returned"""
         gradient_kwargs = {}
-        if dev.name == "param_shift.qubit":
-            pytest.xfail("gradient transforms have a different vjp shape convention.")
         if diff_method == "adjoint":
             pytest.skip("Adjoint does not support projectors")
         elif diff_method == "hadamard":
@@ -1423,6 +1352,7 @@ class TestQubitIntegrationHigherOrder:
             gradient_kwargs = {"h": H_FOR_SPSA, "sampler_rng": np.random.default_rng(SEED_FOR_SPSA)}
             tol = TOL_FOR_SPSA
 
+        dev = qml.device(dev_name, wires=2)
         P = jax.numpy.array(state)
         x, y = 0.765, -0.654
 
@@ -1431,7 +1361,6 @@ class TestQubitIntegrationHigherOrder:
             diff_method=diff_method,
             interface=interface,
             grad_on_execution=grad_on_execution,
-            device_vjp=device_vjp,
             **gradient_kwargs,
         )
         def circuit(x, y):
@@ -1454,9 +1383,97 @@ class TestQubitIntegrationHigherOrder:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
 
+# TODO: Add CV test when return types and custom diff are compatible
 @pytest.mark.parametrize(
-    "interface,dev,diff_method,grad_on_execution, device_vjp",
-    interface_and_qubit_device_and_diff_method,
+    "diff_method,kwargs",
+    [
+        ["finite-diff", {}],
+        ["spsa", {"num_directions": 100, "h": H_FOR_SPSA}],
+        ("parameter-shift", {}),
+        ("parameter-shift", {"force_order2": True}),
+    ],
+)
+@pytest.mark.parametrize("interface", ["auto", "jax-jit", "jax"])
+class TestCV:
+    """Tests for CV integration"""
+
+    def test_first_order_observable(self, diff_method, kwargs, interface, tol):
+        """Test variance of a first order CV observable"""
+        dev = qml.device("default.gaussian", wires=1)
+        if diff_method == "spsa":
+            kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
+            tol = TOL_FOR_SPSA
+
+        r = 0.543
+        phi = -0.654
+
+        @qnode(dev, interface=interface, diff_method=diff_method, **kwargs)
+        def circuit(r, phi):
+            qml.Squeezing(r, 0, wires=0)
+            qml.Rotation(phi, wires=0)
+            return qml.var(qml.QuadX(0))
+
+        res = circuit(r, phi)
+        expected = np.exp(2 * r) * np.sin(phi) ** 2 + np.exp(-2 * r) * np.cos(phi) ** 2
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+        # circuit jacobians
+        res = jax.grad(circuit, argnums=[0, 1])(r, phi)
+        expected = np.array(
+            [
+                2 * np.exp(2 * r) * np.sin(phi) ** 2 - 2 * np.exp(-2 * r) * np.cos(phi) ** 2,
+                2 * np.sinh(2 * r) * np.sin(2 * phi),
+            ]
+        )
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_second_order_observable(self, diff_method, kwargs, interface, tol):
+        """Test variance of a second order CV expectation value"""
+        dev = qml.device("default.gaussian", wires=1)
+        if diff_method == "spsa":
+            kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
+            tol = TOL_FOR_SPSA
+
+        n = 0.12
+        a = 0.765
+
+        @qnode(dev, interface=interface, diff_method=diff_method, **kwargs)
+        def circuit(n, a):
+            qml.ThermalState(n, wires=0)
+            qml.Displacement(a, 0, wires=0)
+            return qml.var(qml.NumberOperator(0))
+
+        res = circuit(n, a)
+        expected = n**2 + n + np.abs(a) ** 2 * (1 + 2 * n)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+        # circuit jacobians
+        res = jax.grad(circuit, argnums=[0, 1])(n, a)
+        expected = np.array([2 * a**2 + 2 * n + 1, 2 * a * (2 * n + 1)])
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+
+# TODO: add support for fwd grad_on_execution to JAX-JIT
+@pytest.mark.parametrize("interface", ["auto", "jax-jit"])
+def test_adjoint_reuse_device_state(mocker, interface):
+    """Tests that the jax interface reuses the device state for adjoint differentiation"""
+    dev = qml.device("default.qubit.legacy", wires=1)
+
+    @qnode(dev, interface=interface, diff_method="adjoint")
+    def circ(x):
+        qml.RX(x, wires=0)
+        return qml.expval(qml.PauliZ(0))
+
+    spy = mocker.spy(dev, "adjoint_jacobian")
+
+    jax.grad(circ)(1.0)
+    assert circ.device.num_executions == 1
+
+    spy.assert_called_with(mocker.ANY, use_device_state=True)
+
+
+@pytest.mark.parametrize(
+    "interface,dev_name,diff_method,grad_on_execution", interface_and_qubit_device_and_diff_method
 )
 class TestTapeExpansion:
     """Test that tape expansion within the QNode integrates correctly
@@ -1464,12 +1481,19 @@ class TestTapeExpansion:
 
     @pytest.mark.parametrize("max_diff", [1, 2])
     def test_gradient_expansion_trainable_only(
-        self, dev, diff_method, grad_on_execution, device_vjp, max_diff, interface
+        self, dev_name, diff_method, grad_on_execution, max_diff, interface
     ):
         """Test that a *supported* operation with no gradient recipe is only
         expanded for parameter-shift and finite-differences when it is trainable."""
         if diff_method not in ("parameter-shift", "finite-diff", "spsa"):
             pytest.skip("Only supports gradient transforms")
+
+        num_wires = 1
+
+        if diff_method == "hadamard":
+            num_wires = 2
+
+        dev = qml.device(dev_name, wires=num_wires)
 
         class PhaseShift(qml.PhaseShift):
             grad_method = None
@@ -1483,7 +1507,6 @@ class TestTapeExpansion:
             grad_on_execution=grad_on_execution,
             max_diff=max_diff,
             interface=interface,
-            device_vjp=device_vjp,
         )
         def circuit(x, y):
             qml.Hadamard(wires=0)
@@ -1494,19 +1517,16 @@ class TestTapeExpansion:
         x = jax.numpy.array(0.5)
         y = jax.numpy.array(0.7)
         circuit(x, y)
-
         jax.grad(circuit, argnums=[0])(x, y)
 
     @pytest.mark.parametrize("max_diff", [1, 2])
     def test_hamiltonian_expansion_analytic(
-        self, dev, diff_method, grad_on_execution, max_diff, device_vjp, interface, mocker, tol
+        self, dev_name, diff_method, grad_on_execution, max_diff, interface, mocker, tol
     ):
         """Test that the Hamiltonian is not expanded if there
         are non-commuting groups and the number of shots is None
         and the first and second order gradients are correctly evaluated"""
         gradient_kwargs = {}
-        if dev.name == "param_shift.qubit":
-            pytest.xfail("gradients transforms have a different vjp shape convention.")
         if diff_method == "adjoint":
             pytest.skip("The adjoint method does not yet support Hamiltonians")
         elif diff_method == "hadamard":
@@ -1519,17 +1539,16 @@ class TestTapeExpansion:
             }
             tol = TOL_FOR_SPSA
 
+        dev = qml.device(dev_name, wires=3, shots=None)
         spy = mocker.spy(qml.transforms, "split_non_commuting")
         obs = [qml.PauliX(0), qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliZ(1)]
 
-        @jax.jit
         @qnode(
             dev,
             interface=interface,
             diff_method=diff_method,
             grad_on_execution=grad_on_execution,
             max_diff=max_diff,
-            device_vjp=device_vjp,
             **gradient_kwargs,
         )
         def circuit(data, weights, coeffs):
@@ -1573,16 +1592,14 @@ class TestTapeExpansion:
             assert np.allclose(grad2_w_c, expected, atol=tol)
 
     @pytest.mark.parametrize("max_diff", [1, 2])
-    def test_hamiltonian_finite_shots(
-        self, dev, diff_method, grad_on_execution, device_vjp, interface, max_diff
+    def test_hamiltonian_expansion_finite_shots(
+        self, dev_name, diff_method, grad_on_execution, interface, max_diff, mocker
     ):
-        """Test that the Hamiltonian is correctly measured if there
+        """Test that the Hamiltonian is expanded if there
         are non-commuting groups and the number of shots is finite
         and the first and second order gradients are correctly evaluated"""
         gradient_kwargs = {}
         tol = 0.3
-        if dev.name == "param_shift.qubit":
-            pytest.xfail("gradient transforms have a different vjp shape convention.")
         if diff_method in ("adjoint", "backprop", "finite-diff"):
             pytest.skip("The adjoint and backprop methods do not yet support sampling")
         elif diff_method == "hadamard":
@@ -1591,6 +1608,8 @@ class TestTapeExpansion:
             gradient_kwargs = {"sampler_rng": SEED_FOR_SPSA, "h": H_FOR_SPSA, "num_directions": 20}
             tol = TOL_FOR_SPSA
 
+        dev = qml.device(dev_name, wires=3, shots=50000)
+        spy = mocker.spy(qml.transforms, "split_non_commuting")
         obs = [qml.PauliX(0), qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliZ(1)]
 
         @qnode(
@@ -1599,7 +1618,6 @@ class TestTapeExpansion:
             diff_method=diff_method,
             grad_on_execution=grad_on_execution,
             max_diff=max_diff,
-            device_vjp=device_vjp,
             **gradient_kwargs,
         )
         def circuit(data, weights, coeffs):
@@ -1615,12 +1633,13 @@ class TestTapeExpansion:
         c = jax.numpy.array([-0.6543, 0.24, 0.54])
 
         # test output
-        res = circuit(d, w, c, shots=50000)  # pylint:disable=unexpected-keyword-arg
+        res = circuit(d, w, c)
         expected = c[2] * np.cos(d[1] + w[1]) - c[1] * np.sin(d[0] + w[0]) * np.sin(d[1] + w[1])
         assert np.allclose(res, expected, atol=tol)
+        spy.assert_called()
 
         # test gradients
-        grad = jax.grad(circuit, argnums=[1, 2])(d, w, c, shots=50000)
+        grad = jax.grad(circuit, argnums=[1, 2])(d, w, c)
         expected_w = [
             -c[1] * np.cos(d[0] + w[0]) * np.sin(d[1] + w[1]),
             -c[1] * np.cos(d[1] + w[1]) * np.sin(d[0] + w[0]) - c[2] * np.sin(d[1] + w[1]),
@@ -1645,21 +1664,27 @@ class TestTapeExpansion:
     #         assert np.allclose(grad2_w_c, expected, atol=tol)
 
     def test_vmap_compared_param_broadcasting(
-        self, dev, diff_method, grad_on_execution, device_vjp, interface, tol
+        self, dev_name, diff_method, grad_on_execution, interface, tol
     ):
         """Test that jax.vmap works just as well as parameter-broadcasting with JAX JIT on the forward pass when
         vectorized=True is specified for the callback when caching is disabled."""
-        if (
-            dev.name == "default.qubit"
-            and diff_method == "adjoint"
-            and grad_on_execution
-            and not device_vjp
-        ):
-            pytest.xfail("adjoint is incompatible with parameter broadcasting.")
         interface = "jax-jit"
+        if diff_method == "adjoint":
+            pytest.skip("The adjoint method does not yet support Hamiltonians")
+        elif diff_method == "hadamard":
+            pytest.skip("The Hadamard method does not yet support Hamiltonians")
 
+        if diff_method == "backprop":
+            pytest.skip(
+                "The backprop method does not yet support parameter-broadcasting with Hamiltonians"
+            )
+
+        phys_qubits = 2
+        if diff_method == "hadamard":
+            phys_qubits = 3
         n_configs = 5
         pars_q = np.random.rand(n_configs, 2)
+        dev = qml.device(dev_name, wires=tuple(range(phys_qubits)), shots=None)
 
         def minimal_circ(params):
             @qml.qnode(
@@ -1667,38 +1692,42 @@ class TestTapeExpansion:
                 interface=interface,
                 diff_method=diff_method,
                 grad_on_execution=grad_on_execution,
-                device_vjp=device_vjp,
                 cache=None,
             )
             def _measure_operator():
                 qml.RY(params[..., 0], wires=0)
                 qml.RY(params[..., 1], wires=1)
-                return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+                op = qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(1)])
+                return qml.expval(op)
 
             res = _measure_operator()
             return res
 
-        res1 = jax.jit(minimal_circ)(pars_q)
-        res2 = jax.jit(jax.vmap(minimal_circ))(pars_q)
-        assert np.allclose(res1, res2, tol)
+        assert np.allclose(
+            jax.jit(minimal_circ)(pars_q), jax.jit(jax.vmap(minimal_circ))(pars_q), tol
+        )
 
     def test_vmap_compared_param_broadcasting_multi_output(
-        self, dev, diff_method, grad_on_execution, device_vjp, interface, tol
+        self, dev_name, diff_method, grad_on_execution, interface, tol
     ):
         """Test that jax.vmap works just as well as parameter-broadcasting with JAX JIT on the forward pass when
         vectorized=True is specified for the callback when caching is disabled and when multiple output values
         are returned."""
-        if (
-            dev.name == "default.qubit"
-            and diff_method == "adjoint"
-            and grad_on_execution
-            and not device_vjp
-        ):
-            pytest.xfail("adjoint is incompatible with parameter broadcasting.")
         interface = "jax-jit"
+        if diff_method == "adjoint":
+            pytest.skip("The adjoint method does not yet support Hamiltonians")
+        elif diff_method == "hadamard":
+            pytest.skip("The Hadamard method does not yet support Hamiltonians")
 
+        if diff_method == "backprop":
+            pytest.skip(
+                "The backprop method does not yet support parameter-broadcasting with Hamiltonians"
+            )
+
+        phys_qubits = 2
         n_configs = 5
         pars_q = np.random.rand(n_configs, 2)
+        dev = qml.device(dev_name, wires=tuple(range(phys_qubits)), shots=None)
 
         def minimal_circ(params):
             @qml.qnode(
@@ -1706,55 +1735,14 @@ class TestTapeExpansion:
                 interface=interface,
                 diff_method=diff_method,
                 grad_on_execution=grad_on_execution,
-                device_vjp=device_vjp,
                 cache=None,
             )
             def _measure_operator():
                 qml.RY(params[..., 0], wires=0)
                 qml.RY(params[..., 1], wires=1)
-                return qml.expval(qml.Z(0) @ qml.Z(1)), qml.expval(qml.X(0) @ qml.X(1))
-
-            res = _measure_operator()
-            return res
-
-        res1, res2 = jax.jit(minimal_circ)(pars_q)
-        vres1, vres2 = jax.jit(jax.vmap(minimal_circ))(pars_q)
-        assert np.allclose(res1, vres1, tol)
-        assert np.allclose(res2, vres2, tol)
-
-    def test_vmap_compared_param_broadcasting_probs(
-        self, dev, diff_method, grad_on_execution, device_vjp, interface, tol
-    ):
-        """Test that jax.vmap works just as well as parameter-broadcasting with JAX JIT on the forward pass when
-        vectorized=True is specified for the callback when caching is disabled and when multiple output values
-        are returned."""
-        if (
-            dev.name == "default.qubit"
-            and diff_method == "adjoint"
-            and grad_on_execution
-            and not device_vjp
-        ):
-            pytest.xfail("adjoint is incompatible with parameter broadcasting.")
-        elif dev.name == "lightning.qubit" and diff_method == "adjoint":
-            pytest.xfail("lightning adjoign cannot differentiate probabilities.")
-        interface = "jax-jit"
-
-        n_configs = 5
-        pars_q = np.random.rand(n_configs, 2)
-
-        def minimal_circ(params):
-            @qml.qnode(
-                dev,
-                interface=interface,
-                diff_method=diff_method,
-                grad_on_execution=grad_on_execution,
-                device_vjp=device_vjp,
-                cache=None,
-            )
-            def _measure_operator():
-                qml.RY(params[..., 0], wires=0)
-                qml.RY(params[..., 1], wires=1)
-                return qml.probs(wires=0), qml.probs(wires=1)
+                op1 = qml.Hamiltonian([1.0], [qml.PauliZ(0) @ qml.PauliZ(1)])
+                op2 = qml.Hamiltonian([1.0], [qml.PauliX(0) @ qml.PauliX(1)])
+                return qml.expval(op1), qml.expval(op2)
 
             res = _measure_operator()
             return res
@@ -1770,25 +1758,23 @@ jacobian_fn = [jax.jacobian, jax.jacrev, jax.jacfwd]
 
 @pytest.mark.parametrize("jacobian", jacobian_fn)
 @pytest.mark.parametrize(
-    "interface,dev,diff_method,grad_on_execution, device_vjp",
-    interface_and_qubit_device_and_diff_method,
+    "interface,dev_name,diff_method,grad_on_execution", interface_and_qubit_device_and_diff_method
 )
 class TestJIT:
     """Test JAX JIT integration with the QNode and automatic resolution of the
     correct JAX interface variant."""
 
-    def test_gradient(
-        self, dev, diff_method, grad_on_execution, device_vjp, jacobian, tol, interface
-    ):
+    def test_gradient(self, dev_name, diff_method, grad_on_execution, jacobian, tol, interface):
         """Test derivative calculation of a scalar valued QNode"""
+        num_wires = 1
+
+        if diff_method == "hadamard":
+            num_wires = 2
+
+        dev = qml.device(dev_name, wires=num_wires)
+
         gradient_kwargs = {}
-        if dev.name == "param_shift.qubit":
-            pytest.xfail("gradient transforms have a different vjp shape convention.")
-        if "lightning" in dev.name:
-            pytest.xfail("lightning device vjps are not compatible with jax jaocbians")
-        if device_vjp and jacobian == jax.jacfwd:
-            pytest.skip("device vjps not compatible with forward diff.")
-        elif diff_method == "spsa":
+        if diff_method == "spsa":
             gradient_kwargs = {"h": H_FOR_SPSA, "sampler_rng": np.random.default_rng(SEED_FOR_SPSA)}
             tol = TOL_FOR_SPSA
 
@@ -1797,7 +1783,6 @@ class TestJIT:
             diff_method=diff_method,
             interface=interface,
             grad_on_execution=grad_on_execution,
-            device_vjp=device_vjp,
             **gradient_kwargs,
         )
         def circuit(x):
@@ -1821,9 +1806,7 @@ class TestJIT:
         "ignore:Requested adjoint differentiation to be computed with finite shots."
     )
     @pytest.mark.parametrize("shots", [10, 1000])
-    def test_hermitian(
-        self, dev, diff_method, grad_on_execution, device_vjp, shots, jacobian, interface
-    ):
+    def test_hermitian(self, dev_name, diff_method, grad_on_execution, shots, jacobian, interface):
         """Test that the jax device works with qml.Hermitian and jitting even
         when shots>0.
 
@@ -1831,6 +1814,13 @@ class TestJIT:
         to different reasons, hence the parametrization in the test.
         """
         # pylint: disable=unused-argument
+        num_wires = 2
+
+        if diff_method == "hadamard":
+            num_wires = 3
+
+        dev = qml.device(dev_name, wires=num_wires, shots=shots)
+
         if diff_method == "backprop":
             pytest.skip("Backpropagation is unsupported if shots > 0.")
 
@@ -1840,11 +1830,7 @@ class TestJIT:
         projector = np.array(qml.matrix(qml.PauliZ(0) @ qml.PauliZ(1)))
 
         @qml.qnode(
-            dev,
-            interface=interface,
-            diff_method=diff_method,
-            grad_on_execution=grad_on_execution,
-            device_vjp=device_vjp,
+            dev, interface=interface, diff_method=diff_method, grad_on_execution=grad_on_execution
         )
         def circ(projector):
             return qml.expval(qml.Hermitian(projector, wires=range(2)))
@@ -1857,20 +1843,23 @@ class TestJIT:
     )
     @pytest.mark.parametrize("shots", [10, 1000])
     def test_probs_obs_none(
-        self, dev, diff_method, grad_on_execution, device_vjp, shots, jacobian, interface
+        self, dev_name, diff_method, grad_on_execution, shots, jacobian, interface
     ):
         """Test that the jax device works with qml.probs, a MeasurementProcess
         that has obs=None even when shots>0."""
         # pylint: disable=unused-argument
+        num_wires = 2
+
+        if diff_method == "hadamard":
+            num_wires = 3
+
+        dev = qml.device(dev_name, wires=num_wires, shots=shots)
+
         if diff_method in ["backprop", "adjoint"]:
             pytest.skip("Backpropagation is unsupported if shots > 0.")
 
         @qml.qnode(
-            dev,
-            interface=interface,
-            diff_method=diff_method,
-            grad_on_execution=grad_on_execution,
-            device_vjp=device_vjp,
+            dev, interface=interface, diff_method=diff_method, grad_on_execution=grad_on_execution
         )
         def circuit():
             return qml.probs(wires=0)
@@ -1881,30 +1870,23 @@ class TestJIT:
     #     reason="Non-trainable parameters are not being correctly unwrapped by the interface"
     # )
     def test_gradient_subset(
-        self, dev, diff_method, grad_on_execution, device_vjp, jacobian, tol, interface
+        self, dev_name, diff_method, grad_on_execution, jacobian, tol, interface
     ):
         """Test derivative calculation of a scalar valued QNode with respect
         to a subset of arguments"""
-        if diff_method == "spsa" and not grad_on_execution and not device_vjp:
+        if diff_method == "spsa" and not grad_on_execution:
             pytest.xfail(reason="incorrect jacobian results")
-        if "lightning" in dev.name:
-            pytest.xfail("lightning device vjps are not compatible with jax jaocbians")
 
-        if diff_method == "device" and not grad_on_execution and device_vjp:
-            pytest.xfail(reason="various runtime-related errors")
-
-        if diff_method == "adjoint" and device_vjp and jacobian is jax.jacfwd:
-            pytest.xfail(reason="TypeError applying forward-mode autodiff.")
+        if diff_method == "hadamard" and not grad_on_execution:
+            pytest.xfail(reason="XLA raised wire error")
 
         a = jax.numpy.array(0.1)
         b = jax.numpy.array(0.2)
 
+        dev = qml.device(dev_name, wires=1)
+
         @qnode(
-            dev,
-            diff_method=diff_method,
-            interface=interface,
-            grad_on_execution=grad_on_execution,
-            device_vjp=device_vjp,
+            dev, diff_method=diff_method, interface=interface, grad_on_execution=grad_on_execution
         )
         def circuit(a, b, c):
             qml.RY(a, wires=0)
@@ -1921,17 +1903,20 @@ class TestJIT:
         assert np.allclose(g, expected_g, atol=tol, rtol=0)
 
     def test_gradient_scalar_cost_vector_valued_qnode(
-        self, dev, diff_method, grad_on_execution, device_vjp, jacobian, tol, interface
+        self, dev_name, diff_method, grad_on_execution, jacobian, tol, interface
     ):
         """Test derivative calculation of a scalar valued cost function that
         uses the output of a vector-valued QNode"""
+        num_wires = 2
+
+        if diff_method == "hadamard":
+            num_wires = 3
+
+        dev = qml.device(dev_name, wires=num_wires)
+
         gradient_kwargs = {}
-        if dev.name == "param_shift.qubit":
-            pytest.xfail("gradient transforms have a different vjp shape convention.")
-        if "lightning" in dev.name:
-            pytest.xfail("lightning device vjps are not compatible with jax jaocbians")
-        elif jacobian == jax.jacfwd and device_vjp:
-            pytest.skip("device vjps are not compatible with forward differentiation.")
+        if diff_method == "adjoint":
+            pytest.xfail(reason="Adjoint does not support probs.")
         elif diff_method == "spsa":
             gradient_kwargs = {"h": H_FOR_SPSA, "sampler_rng": np.random.default_rng(SEED_FOR_SPSA)}
             tol = TOL_FOR_SPSA
@@ -1941,7 +1926,6 @@ class TestJIT:
             diff_method=diff_method,
             interface=interface,
             grad_on_execution=grad_on_execution,
-            device_vjp=device_vjp,
             **gradient_kwargs,
         )
         def circuit(x, y):
@@ -1974,26 +1958,21 @@ class TestJIT:
         assert np.allclose(g0, expected_g[0][idx], atol=tol, rtol=0)
         assert np.allclose(g1, expected_g[1][idx], atol=tol, rtol=0)
 
-    # pylint: disable=unused-argument
     def test_matrix_parameter(
-        self, dev, diff_method, grad_on_execution, device_vjp, jacobian, tol, interface
+        self, dev_name, diff_method, grad_on_execution, jacobian, tol, interface
     ):
         """Test that the JAX-JIT interface works correctly with a matrix
         parameter"""
-        if dev.name == "param_shift.qubit":
-            pytest.xfail("gradient transforms have a different vjp shape convention.")
-        if "lightning" in dev.name:
-            pytest.xfail("lightning device vjps are not compatible with jax jaocbians")
-        if jacobian == jax.jacfwd and device_vjp:
-            pytest.skip("device vjps are not compatible with forward differentiation.")
-
         # pylint: disable=unused-argument
+        num_wires = 1
+
+        if diff_method == "hadamard":
+            num_wires = 2
+
+        dev = qml.device(dev_name, wires=num_wires)
+
         @qml.qnode(
-            dev,
-            diff_method=diff_method,
-            interface=interface,
-            grad_on_execution=grad_on_execution,
-            device_vjp=device_vjp,
+            dev, diff_method=diff_method, interface=interface, grad_on_execution=grad_on_execution
         )
         def circ(p, U):
             qml.QubitUnitary(U, wires=0)
@@ -2005,7 +1984,7 @@ class TestJIT:
         res = jax.jit(circ)(p, U)
         assert np.allclose(res, -np.cos(p), atol=tol, rtol=0)
 
-        jac_fn = jax.jit(jacobian(circ, argnums=0))
+        jac_fn = jax.jit(jax.grad(circ, argnums=(0)))
         res = jac_fn(p, U)
         assert np.allclose(res, np.sin(p), atol=tol, rtol=0)
 
@@ -2013,31 +1992,27 @@ class TestJIT:
 @pytest.mark.parametrize("shots", [None, 10000])
 @pytest.mark.parametrize("jacobian", jacobian_fn)
 @pytest.mark.parametrize(
-    "interface,dev,diff_method,grad_on_execution, device_vjp",
-    interface_and_qubit_device_and_diff_method,
+    "interface,dev_name,diff_method,grad_on_execution", interface_and_qubit_device_and_diff_method
 )
 class TestReturn:
     """Class to test the shape of the Grad/Jacobian with different return types."""
 
     def test_grad_single_measurement_param(
-        self, dev, diff_method, grad_on_execution, device_vjp, jacobian, shots, interface
+        self, dev_name, diff_method, grad_on_execution, jacobian, shots, interface
     ):
         """For one measurement and one param, the gradient is a float."""
-        if dev.name == "param_shift.qubit":
-            pytest.xfail("gradient transforms have a different vjp shape convention")
-        if "lightning" in dev.name:
-            pytest.xfail("lightning device vjps are not compatible with jax jaocbians")
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
-        if jacobian == jax.jacfwd and device_vjp:
-            pytest.skip("jacfwd is not compatible with device_vjp=True.")
+
+        num_wires = 1
+
+        if diff_method == "hadamard":
+            num_wires = 2
+
+        dev = qml.device(dev_name, wires=num_wires, shots=shots)
 
         @qnode(
-            dev,
-            interface=interface,
-            diff_method=diff_method,
-            grad_on_execution=grad_on_execution,
-            device_vjp=device_vjp,
+            dev, interface=interface, diff_method=diff_method, grad_on_execution=grad_on_execution
         )
         def circuit(a):
             qml.RY(a, wires=0)
@@ -2046,30 +2021,27 @@ class TestReturn:
 
         a = jax.numpy.array(0.1)
 
-        grad = jax.jit(jacobian(circuit), static_argnames="shots")(a, shots=shots)
+        grad = jax.jit(jacobian(circuit))(a)
 
         assert isinstance(grad, jax.numpy.ndarray)
         assert grad.shape == ()
 
     def test_grad_single_measurement_multiple_param(
-        self, dev, diff_method, grad_on_execution, device_vjp, jacobian, shots, interface
+        self, dev_name, diff_method, grad_on_execution, jacobian, shots, interface
     ):
         """For one measurement and multiple param, the gradient is a tuple of arrays."""
-        if dev.name == "param_shift.qubit":
-            pytest.xfail("gradient transforms have a different vjp shape convention.")
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
-        if jacobian == jax.jacfwd and device_vjp:
-            pytest.skip("jacfwd is not compatible with device_vjp=True.")
-        if "lightning" in dev.name:
-            pytest.xfail("lightning device vjps are not compatible with jax jaocbians")
+
+        num_wires = 1
+
+        if diff_method == "hadamard":
+            num_wires = 2
+
+        dev = qml.device(dev_name, wires=num_wires, shots=shots)
 
         @qnode(
-            dev,
-            interface=interface,
-            diff_method=diff_method,
-            grad_on_execution=grad_on_execution,
-            device_vjp=device_vjp,
+            dev, interface=interface, diff_method=diff_method, grad_on_execution=grad_on_execution
         )
         def circuit(a, b):
             qml.RY(a, wires=0)
@@ -2079,9 +2051,7 @@ class TestReturn:
         a = jax.numpy.array(0.1)
         b = jax.numpy.array(0.2)
 
-        grad = jax.jit(jacobian(circuit, argnums=[0, 1]), static_argnames="shots")(
-            a, b, shots=shots
-        )
+        grad = jax.jit(jacobian(circuit, argnums=[0, 1]))(a, b)
 
         assert isinstance(grad, tuple)
         assert len(grad) == 2
@@ -2089,24 +2059,21 @@ class TestReturn:
         assert grad[1].shape == ()
 
     def test_grad_single_measurement_multiple_param_array(
-        self, dev, diff_method, grad_on_execution, device_vjp, jacobian, shots, interface
+        self, dev_name, diff_method, grad_on_execution, jacobian, shots, interface
     ):
         """For one measurement and multiple param as a single array params, the gradient is an array."""
-        if dev.name == "param_shift.qubit":
-            pytest.xfail("gradient transforms have a different vjp shape convention.")
-        if "lightning" in dev.name:
-            pytest.xfail("lightning device vjps are not compatible with jax jaocbians")
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
-        if jacobian == jax.jacfwd and device_vjp:
-            pytest.skip("jacfwd is not compatible with device_vjp=True.")
+
+        num_wires = 1
+
+        if diff_method == "hadamard":
+            num_wires = 2
+
+        dev = qml.device(dev_name, wires=num_wires, shots=shots)
 
         @qnode(
-            dev,
-            interface=interface,
-            diff_method=diff_method,
-            grad_on_execution=grad_on_execution,
-            device_vjp=device_vjp,
+            dev, interface=interface, diff_method=diff_method, grad_on_execution=grad_on_execution
         )
         def circuit(a):
             qml.RY(a[0], wires=0)
@@ -2115,31 +2082,31 @@ class TestReturn:
 
         a = jax.numpy.array([0.1, 0.2])
 
-        grad = jax.jit(jacobian(circuit), static_argnames="shots")(a, shots=shots)
+        grad = jax.jit(jacobian(circuit))(a)
 
         assert isinstance(grad, jax.numpy.ndarray)
         assert grad.shape == (2,)
 
     def test_jacobian_single_measurement_param_probs(
-        self, dev, diff_method, grad_on_execution, device_vjp, jacobian, shots, interface
+        self, dev_name, diff_method, grad_on_execution, jacobian, shots, interface
     ):
         """For a multi dimensional measurement (probs), check that a single array is returned with the correct
         dimension"""
-        if dev.name == "param_shift.qubit":
-            pytest.xfail("gradient transforms have a different vjp shape convention.")
-        if "lightning" in dev.name:
-            pytest.xfail("lightning device vjps are not compatible with jax jaocbians")
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
-        if jacobian == jax.jacfwd and device_vjp:
-            pytest.skip("jacfwd is not compatible with device_vjp=True.")
+
+        if diff_method == "adjoint":
+            pytest.skip("Test does not supports adjoint because of probabilities.")
+
+        num_wires = 2
+
+        if diff_method == "hadamard":
+            num_wires = 3
+
+        dev = qml.device(dev_name, wires=num_wires, shots=shots)
 
         @qnode(
-            dev,
-            interface=interface,
-            diff_method=diff_method,
-            grad_on_execution=grad_on_execution,
-            device_vjp=device_vjp,
+            dev, interface=interface, diff_method=diff_method, grad_on_execution=grad_on_execution
         )
         def circuit(a):
             qml.RY(a, wires=0)
@@ -2148,31 +2115,30 @@ class TestReturn:
 
         a = jax.numpy.array(0.1)
 
-        jac = jax.jit(jacobian(circuit), static_argnames="shots")(a, shots=shots)
+        jac = jax.jit(jacobian(circuit))(a)
 
         assert isinstance(jac, jax.numpy.ndarray)
         assert jac.shape == (4,)
 
     def test_jacobian_single_measurement_probs_multiple_param(
-        self, dev, diff_method, grad_on_execution, device_vjp, jacobian, shots, interface
+        self, dev_name, diff_method, grad_on_execution, jacobian, shots, interface
     ):
         """For a multi dimensional measurement (probs), check that a single tuple is returned containing arrays with
         the correct dimension"""
-        if dev.name == "param_shift.qubit":
-            pytest.xfail("gradient transforms have a different vjp shape convention.")
-        if "lightning" in dev.name:
-            pytest.xfail("lightning device vjps are not compatible with jax jaocbians")
+        if diff_method == "adjoint":
+            pytest.skip("Test does not supports adjoint because of probabilities.")
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
-        if jacobian == jax.jacfwd and device_vjp:
-            pytest.skip("jacfwd is not compatible with device_vjp=True.")
+
+        num_wires = 2
+
+        if diff_method == "hadamard":
+            num_wires = 3
+
+        dev = qml.device(dev_name, wires=num_wires, shots=shots)
 
         @qnode(
-            dev,
-            interface=interface,
-            diff_method=diff_method,
-            grad_on_execution=grad_on_execution,
-            device_vjp=device_vjp,
+            dev, interface=interface, diff_method=diff_method, grad_on_execution=grad_on_execution
         )
         def circuit(a, b):
             qml.RY(a, wires=0)
@@ -2182,7 +2148,7 @@ class TestReturn:
         a = jax.numpy.array(0.1)
         b = jax.numpy.array(0.2)
 
-        jac = jax.jit(jacobian(circuit, argnums=[0, 1]), static_argnames="shots")(a, b, shots=shots)
+        jac = jax.jit(jacobian(circuit, argnums=[0, 1]))(a, b)
 
         assert isinstance(jac, tuple)
 
@@ -2193,25 +2159,24 @@ class TestReturn:
         assert jac[1].shape == (4,)
 
     def test_jacobian_single_measurement_probs_multiple_param_single_array(
-        self, dev, diff_method, grad_on_execution, device_vjp, jacobian, shots, interface
+        self, dev_name, diff_method, grad_on_execution, jacobian, shots, interface
     ):
         """For a multi dimensional measurement (probs), check that a single tuple is returned containing arrays with
         the correct dimension"""
-        if dev.name == "param_shift.qubit":
-            pytest.xfail("gradient transforms have a different vjp shape convention.")
+        if diff_method == "adjoint":
+            pytest.skip("Test does not supports adjoint because of probabilities.")
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
-        if "lightning" in dev.name:
-            pytest.xfail("lightning device vjps are not compatible with jax jaocbians")
-        if jacobian == jax.jacfwd and device_vjp:
-            pytest.skip("jacfwd is not compatible with device_vjp=True.")
+
+        num_wires = 2
+
+        if diff_method == "hadamard":
+            num_wires = 3
+
+        dev = qml.device(dev_name, wires=num_wires, shots=shots)
 
         @qnode(
-            dev,
-            interface=interface,
-            diff_method=diff_method,
-            grad_on_execution=grad_on_execution,
-            device_vjp=device_vjp,
+            dev, interface=interface, diff_method=diff_method, grad_on_execution=grad_on_execution
         )
         def circuit(a):
             qml.RY(a[0], wires=0)
@@ -2219,33 +2184,29 @@ class TestReturn:
             return qml.probs(wires=[0, 1])
 
         a = jax.numpy.array([0.1, 0.2])
-        jac = jax.jit(jacobian(circuit), static_argnames="shots")(a, shots=shots)
+        jac = jax.jit(jacobian(circuit))(a)
 
         assert isinstance(jac, jax.numpy.ndarray)
         assert jac.shape == (4, 2)
 
     def test_jacobian_expval_expval_multiple_params(
-        self, dev, diff_method, grad_on_execution, device_vjp, jacobian, shots, interface
+        self, dev_name, diff_method, grad_on_execution, jacobian, shots, interface
     ):
         """The jacobian of multiple measurements with multiple params return a tuple of arrays."""
-        if dev.name == "param_shift.qubit":
-            pytest.xfail("gradient transforms have a different vjp shape convention.")
-        if "lightning" in dev.name:
-            pytest.xfail("lightning device vjps are not compatible with jax jaocbians")
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
-        if jacobian == jax.jacfwd and device_vjp:
-            pytest.skip("jacfwd is not compatible with device_vjp=True.")
+        num_wires = 2
+
+        if diff_method == "hadamard":
+            num_wires = 3
+
+        dev = qml.device(dev_name, wires=num_wires, shots=shots)
 
         par_0 = jax.numpy.array(0.1)
         par_1 = jax.numpy.array(0.2)
 
         @qnode(
-            dev,
-            interface=interface,
-            diff_method=diff_method,
-            grad_on_execution=grad_on_execution,
-            device_vjp=device_vjp,
+            dev, interface=interface, diff_method=diff_method, grad_on_execution=grad_on_execution
         )
         def circuit(x, y):
             qml.RX(x, wires=[0])
@@ -2253,9 +2214,7 @@ class TestReturn:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0) @ qml.PauliX(1)), qml.expval(qml.PauliZ(0))
 
-        jac = jax.jit(jacobian(circuit, argnums=[0, 1]), static_argnames="shots")(
-            par_0, par_1, shots=shots
-        )
+        jac = jax.jit(jacobian(circuit, argnums=[0, 1]))(par_0, par_1)
 
         assert isinstance(jac, tuple)
 
@@ -2274,24 +2233,20 @@ class TestReturn:
         assert jac[1][1].shape == ()
 
     def test_jacobian_expval_expval_multiple_params_array(
-        self, dev, diff_method, grad_on_execution, device_vjp, jacobian, shots, interface
+        self, dev_name, diff_method, grad_on_execution, jacobian, shots, interface
     ):
         """The jacobian of multiple measurements with a multiple params array return a single array."""
-        if dev.name == "param_shift.qubit":
-            pytest.xfail("gradient transforms have a different vjp shape convention.")
-        if "lightning" in dev.name:
-            pytest.xfail("lightning device vjps are not compatible with jax jaocbians")
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
-        if jacobian == jax.jacfwd and device_vjp:
-            pytest.skip("jacfwd is not compatible with device_vjp=True.")
+        num_wires = 2
+
+        if diff_method == "hadamard":
+            num_wires = 3
+
+        dev = qml.device(dev_name, wires=num_wires, shots=shots)
 
         @qnode(
-            dev,
-            interface=interface,
-            diff_method=diff_method,
-            grad_on_execution=grad_on_execution,
-            device_vjp=device_vjp,
+            dev, interface=interface, diff_method=diff_method, grad_on_execution=grad_on_execution
         )
         def circuit(a):
             qml.RY(a[0], wires=0)
@@ -2300,7 +2255,7 @@ class TestReturn:
 
         a = jax.numpy.array([0.1, 0.2])
 
-        jac = jax.jit(jacobian(circuit), static_argnames="shots")(a, shots=shots)
+        jac = jax.jit(jacobian(circuit))(a)
 
         assert isinstance(jac, tuple)
         assert len(jac) == 2  # measurements
@@ -2312,29 +2267,23 @@ class TestReturn:
         assert jac[1].shape == (2,)
 
     def test_jacobian_var_var_multiple_params(
-        self, dev, diff_method, grad_on_execution, device_vjp, jacobian, shots, interface
+        self, dev_name, diff_method, grad_on_execution, jacobian, shots, interface
     ):
         """The jacobian of multiple measurements with multiple params return a tuple of arrays."""
-        if dev.name == "param_shift.qubit":
-            pytest.xfail("gradient transforms have a different vjp shape convention.")
+        if diff_method == "adjoint":
+            pytest.skip("Test does not supports adjoint because of var.")
         elif diff_method == "hadamard":
             pytest.skip("Test does not supports hadamard because of var.")
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
-        if jacobian == jax.jacfwd and device_vjp:
-            pytest.skip("jacfwd is not compatible with device_vjp=True.")
-        if diff_method == "adjoint":
-            pytest.skip("adjoint supports either all expvals or only diagonal measurements")
+
+        dev = qml.device(dev_name, wires=2, shots=shots)
 
         par_0 = jax.numpy.array(0.1)
         par_1 = jax.numpy.array(0.2)
 
         @qnode(
-            dev,
-            interface=interface,
-            diff_method=diff_method,
-            grad_on_execution=grad_on_execution,
-            device_vjp=device_vjp,
+            dev, interface=interface, diff_method=diff_method, grad_on_execution=grad_on_execution
         )
         def circuit(x, y):
             qml.RX(x, wires=[0])
@@ -2342,9 +2291,7 @@ class TestReturn:
             qml.CNOT(wires=[0, 1])
             return qml.var(qml.PauliZ(0) @ qml.PauliX(1)), qml.var(qml.PauliZ(0))
 
-        jac = jax.jit(jacobian(circuit, argnums=[0, 1]), static_argnames="shots")(
-            par_0, par_1, shots=shots
-        )
+        jac = jax.jit(jacobian(circuit, argnums=[0, 1]))(par_0, par_1)
 
         assert isinstance(jac, tuple)
         assert len(jac) == 2
@@ -2364,26 +2311,20 @@ class TestReturn:
         assert jac[1][1].shape == ()
 
     def test_jacobian_var_var_multiple_params_array(
-        self, dev, diff_method, grad_on_execution, device_vjp, jacobian, shots, interface
+        self, dev_name, diff_method, grad_on_execution, jacobian, shots, interface
     ):
         """The jacobian of multiple measurements with a multiple params array return a single array."""
-        if dev.name == "param_shift.qubit":
-            pytest.xfail("gradient transforms have a different vjp shape convention.")
+        if diff_method == "adjoint":
+            pytest.skip("Test does not supports adjoint because of var.")
         elif diff_method == "hadamard":
             pytest.skip("Test does not supports hadamard because of var.")
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
-        if jacobian == jax.jacfwd and device_vjp:
-            pytest.skip("jacfwd is not compatible with device_vjp=True.")
-        if diff_method == "adjoint":
-            pytest.skip("adjoint supports either all expvals or only diagonal measurements")
+
+        dev = qml.device(dev_name, wires=2, shots=shots)
 
         @qnode(
-            dev,
-            interface=interface,
-            diff_method=diff_method,
-            grad_on_execution=grad_on_execution,
-            device_vjp=device_vjp,
+            dev, interface=interface, diff_method=diff_method, grad_on_execution=grad_on_execution
         )
         def circuit(a):
             qml.RY(a[0], wires=0)
@@ -2392,7 +2333,7 @@ class TestReturn:
 
         a = jax.numpy.array([0.1, 0.2])
 
-        jac = jax.jit(jacobian(circuit), static_argnames="shots")(a, shots=shots)
+        jac = jax.jit(jacobian(circuit))(a)
 
         assert isinstance(jac, tuple)
         assert len(jac) == 2  # measurements
@@ -2404,24 +2345,23 @@ class TestReturn:
         assert jac[1].shape == (2,)
 
     def test_jacobian_multiple_measurement_single_param(
-        self, dev, diff_method, grad_on_execution, device_vjp, jacobian, shots, interface
+        self, dev_name, diff_method, grad_on_execution, jacobian, shots, interface
     ):
         """The jacobian of multiple measurements with a single params return an array."""
-        if dev.name == "param_shift.qubit":
-            pytest.xfail("gradient transforms have a different vjp shape convention")
-        if "lightning" in dev.name:
-            pytest.xfail("lightning device vjps are not compatible with jax jaocbians")
-        if device_vjp and jacobian == jax.jacfwd:
-            pytest.skip("device vjp not compatible with forward differentiation.")
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
+        num_wires = 2
+
+        if diff_method == "hadamard":
+            num_wires = 3
+
+        dev = qml.device(dev_name, wires=num_wires, shots=shots)
+
+        if diff_method == "adjoint":
+            pytest.skip("Test does not supports adjoint because of probabilities.")
 
         @qnode(
-            dev,
-            interface=interface,
-            diff_method=diff_method,
-            grad_on_execution=grad_on_execution,
-            device_vjp=device_vjp,
+            dev, interface=interface, diff_method=diff_method, grad_on_execution=grad_on_execution
         )
         def circuit(a):
             qml.RY(a, wires=0)
@@ -2430,7 +2370,7 @@ class TestReturn:
 
         a = jax.numpy.array(0.1)
 
-        jac = jax.jit(jacobian(circuit), static_argnames="shots")(a, shots=shots)
+        jac = jax.jit(jacobian(circuit))(a)
 
         assert isinstance(jac, tuple)
         assert len(jac) == 2
@@ -2442,24 +2382,23 @@ class TestReturn:
         assert jac[1].shape == (4,)
 
     def test_jacobian_multiple_measurement_multiple_param(
-        self, dev, diff_method, grad_on_execution, device_vjp, jacobian, shots, interface
+        self, dev_name, diff_method, grad_on_execution, jacobian, shots, interface
     ):
         """The jacobian of multiple measurements with a multiple params return a tuple of arrays."""
-        if dev.name == "param_shift.qubit":
-            pytest.xfail("gradient transforms have a different vjp shape convention.")
-        if "lightning" in dev.name:
-            pytest.xfail("lightning device vjps are not compatible with jax jaocbians")
+        if diff_method == "adjoint":
+            pytest.skip("Test does not supports adjoint because of probabilities.")
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
-        if jacobian == jax.jacfwd and device_vjp:
-            pytest.skip("jacfwd is not compatible with device_vjp=True.")
+
+        num_wires = 2
+
+        if diff_method == "hadamard":
+            num_wires = 3
+
+        dev = qml.device(dev_name, wires=num_wires, shots=shots)
 
         @qnode(
-            dev,
-            interface=interface,
-            diff_method=diff_method,
-            grad_on_execution=grad_on_execution,
-            device_vjp=device_vjp,
+            dev, interface=interface, diff_method=diff_method, grad_on_execution=grad_on_execution
         )
         def circuit(a, b):
             qml.RY(a, wires=0)
@@ -2469,7 +2408,7 @@ class TestReturn:
         a = np.array(0.1, requires_grad=True)
         b = np.array(0.2, requires_grad=True)
 
-        jac = jax.jit(jacobian(circuit, argnums=[0, 1]), static_argnames="shots")(a, b, shots=shots)
+        jac = jax.jit(jacobian(circuit, argnums=[0, 1]))(a, b)
 
         assert isinstance(jac, tuple)
         assert len(jac) == 2
@@ -2489,24 +2428,23 @@ class TestReturn:
         assert jac[1][1].shape == (4,)
 
     def test_jacobian_multiple_measurement_multiple_param_array(
-        self, dev, diff_method, grad_on_execution, device_vjp, jacobian, shots, interface
+        self, dev_name, diff_method, grad_on_execution, jacobian, shots, interface
     ):
         """The jacobian of multiple measurements with a multiple params array return a single array."""
-        if dev.name == "param_shift.qubit":
-            pytest.xfail("gradient transforms have a different vjp shape convention.")
-        if "lightning" in dev.name:
-            pytest.xfail("lightning device vjps are not compatible with jax jaocbians")
+        if diff_method == "adjoint":
+            pytest.skip("Test does not supports adjoint because of probabilities.")
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
-        if jacobian == jax.jacfwd and device_vjp:
-            pytest.skip("jacfwd is not compatible with device_vjp=True.")
+
+        num_wires = 2
+
+        if diff_method == "hadamard":
+            num_wires = 3
+
+        dev = qml.device(dev_name, wires=num_wires, shots=shots)
 
         @qnode(
-            dev,
-            interface=interface,
-            diff_method=diff_method,
-            grad_on_execution=grad_on_execution,
-            device_vjp=device_vjp,
+            dev, interface=interface, diff_method=diff_method, grad_on_execution=grad_on_execution
         )
         def circuit(a):
             qml.RY(a[0], wires=0)
@@ -2515,7 +2453,7 @@ class TestReturn:
 
         a = jax.numpy.array([0.1, 0.2])
 
-        jac = jax.jit(jacobian(circuit), static_argnames="shots")(a, shots=shots)
+        jac = jax.jit(jacobian(circuit))(a)
 
         assert isinstance(jac, tuple)
         assert len(jac) == 2  # measurements
@@ -2536,17 +2474,23 @@ hessian_fn = [
 
 @pytest.mark.parametrize("hessian", hessian_fn)
 @pytest.mark.parametrize(
-    "interface,dev,diff_method,grad_on_execution, device_vjp",
-    interface_and_qubit_device_and_diff_method,
+    "interface,dev_name,diff_method,grad_on_execution", interface_and_qubit_device_and_diff_method
 )
 class TestReturnHessian:
     """Class to test the shape of the Hessian with different return types."""
 
     def test_hessian_expval_multiple_params(
-        self, dev, diff_method, hessian, device_vjp, grad_on_execution, interface
+        self, dev_name, diff_method, hessian, grad_on_execution, interface
     ):
         """The hessian of single a measurement with multiple params return a tuple of arrays."""
-        if diff_method in {"adjoint", "device"}:
+        num_wires = 2
+
+        if diff_method == "hadamard":
+            num_wires = 4
+
+        dev = qml.device(dev_name, wires=num_wires)
+
+        if diff_method == "adjoint":
             pytest.skip("Test does not supports adjoint because second order diff.")
 
         par_0 = jax.numpy.array(0.1)
@@ -2558,7 +2502,6 @@ class TestReturnHessian:
             diff_method=diff_method,
             max_diff=2,
             grad_on_execution=grad_on_execution,
-            device_vjp=device_vjp,
         )
         def circuit(x, y):
             qml.RX(x, wires=[0])
@@ -2586,12 +2529,19 @@ class TestReturnHessian:
         assert hess[1][1].shape == ()
 
     def test_hessian_expval_multiple_param_array(
-        self, dev, diff_method, hessian, grad_on_execution, device_vjp, interface
+        self, dev_name, diff_method, hessian, grad_on_execution, interface
     ):
         """The hessian of single measurement with a multiple params array return a single array."""
 
-        if diff_method in {"adjoint", "device"}:
+        if diff_method == "adjoint":
             pytest.skip("Test does not supports adjoint because second order diff.")
+
+        num_wires = 2
+
+        if diff_method == "hadamard":
+            num_wires = 4
+
+        dev = qml.device(dev_name, wires=num_wires)
 
         params = jax.numpy.array([0.1, 0.2], dtype=jax.numpy.float64)
 
@@ -2601,7 +2551,6 @@ class TestReturnHessian:
             diff_method=diff_method,
             max_diff=2,
             grad_on_execution=grad_on_execution,
-            device_vjp=device_vjp,
         )
         def circuit(x):
             qml.RX(x[0], wires=[0])
@@ -2615,10 +2564,12 @@ class TestReturnHessian:
         assert hess.shape == (2, 2)
 
     def test_hessian_var_multiple_params(
-        self, dev, diff_method, hessian, device_vjp, grad_on_execution, interface
+        self, dev_name, diff_method, hessian, grad_on_execution, interface
     ):
         """The hessian of single a measurement with multiple params return a tuple of arrays."""
-        if diff_method in {"adjoint", "device"}:
+        dev = qml.device(dev_name, wires=2)
+
+        if diff_method == "adjoint":
             pytest.skip("Test does not supports adjoint because second order diff.")
         elif diff_method == "hadamard":
             pytest.skip("Test does not supports hadamard because of var.")
@@ -2632,7 +2583,6 @@ class TestReturnHessian:
             diff_method=diff_method,
             max_diff=2,
             grad_on_execution=grad_on_execution,
-            device_vjp=device_vjp,
         )
         def circuit(x, y):
             qml.RX(x, wires=[0])
@@ -2660,13 +2610,15 @@ class TestReturnHessian:
         assert hess[1][1].shape == ()
 
     def test_hessian_var_multiple_param_array(
-        self, dev, diff_method, hessian, grad_on_execution, device_vjp, interface
+        self, dev_name, diff_method, hessian, grad_on_execution, interface
     ):
         """The hessian of single measurement with a multiple params array return a single array."""
-        if diff_method in {"adjoint", "device"}:
+        if diff_method == "adjoint":
             pytest.skip("Test does not supports adjoint because second order diff.")
         elif diff_method == "hadamard":
             pytest.skip("Test does not supports hadamard because of var.")
+
+        dev = qml.device(dev_name, wires=2)
 
         params = jax.numpy.array([0.1, 0.2], dtype=jax.numpy.float64)
 
@@ -2676,7 +2628,6 @@ class TestReturnHessian:
             diff_method=diff_method,
             max_diff=2,
             grad_on_execution=grad_on_execution,
-            device_vjp=device_vjp,
         )
         def circuit(x):
             qml.RX(x[0], wires=[0])
@@ -2690,10 +2641,17 @@ class TestReturnHessian:
         assert hess.shape == (2, 2)
 
     def test_hessian_probs_expval_multiple_params(
-        self, dev, diff_method, hessian, grad_on_execution, device_vjp, interface
+        self, dev_name, diff_method, hessian, grad_on_execution, interface
     ):
         """The hessian of multiple measurements with multiple params return a tuple of arrays."""
-        if diff_method in {"adjoint", "device"}:
+        num_wires = 2
+
+        if diff_method == "hadamard":
+            num_wires = 4
+
+        dev = qml.device(dev_name, wires=num_wires)
+
+        if diff_method == "adjoint":
             pytest.skip("Test does not supports adjoint because second order diff.")
         elif diff_method == "hadamard":
             pytest.skip("Test does not supports hadamard because of non commuting obs.")
@@ -2707,7 +2665,6 @@ class TestReturnHessian:
             diff_method=diff_method,
             max_diff=2,
             grad_on_execution=grad_on_execution,
-            device_vjp=device_vjp,
         )
         def circuit(x, y):
             qml.RX(x, wires=[0])
@@ -2734,14 +2691,21 @@ class TestReturnHessian:
                 assert h_comp.shape == (2,)
 
     def test_hessian_probs_expval_multiple_param_array(
-        self, dev, diff_method, hessian, grad_on_execution, device_vjp, interface
+        self, dev_name, diff_method, hessian, grad_on_execution, interface
     ):
         """The hessian of multiple measurements with a multiple param array return a single array."""
 
-        if diff_method in {"adjoint", "device"}:
+        if diff_method == "adjoint":
             pytest.skip("Test does not supports adjoint because second order diff.")
         elif diff_method == "hadamard":
             pytest.skip("Test does not supports hadamard because of non commuting obs.")
+
+        num_wires = 2
+
+        if diff_method == "hadamard":
+            num_wires = 4
+
+        dev = qml.device(dev_name, wires=num_wires)
 
         params = jax.numpy.array([0.1, 0.2], dtype=jax.numpy.float64)
 
@@ -2751,7 +2715,6 @@ class TestReturnHessian:
             diff_method=diff_method,
             max_diff=2,
             grad_on_execution=grad_on_execution,
-            device_vjp=device_vjp,
         )
         def circuit(x):
             qml.RX(x[0], wires=[0])
@@ -2770,10 +2733,12 @@ class TestReturnHessian:
         assert hess[1].shape == (2, 2, 2)
 
     def test_hessian_probs_var_multiple_params(
-        self, dev, diff_method, hessian, grad_on_execution, device_vjp, interface
+        self, dev_name, diff_method, hessian, grad_on_execution, interface
     ):
         """The hessian of multiple measurements with multiple params return a tuple of arrays."""
-        if diff_method in {"adjoint", "device"}:
+        dev = qml.device(dev_name, wires=2)
+
+        if diff_method == "adjoint":
             pytest.skip("Test does not supports adjoint because second order diff.")
         elif diff_method == "hadamard":
             pytest.skip("Test does not supports hadamard because of var.")
@@ -2787,7 +2752,6 @@ class TestReturnHessian:
             diff_method=diff_method,
             max_diff=2,
             grad_on_execution=grad_on_execution,
-            device_vjp=device_vjp,
         )
         def circuit(x, y):
             qml.RX(x, wires=[0])
@@ -2814,13 +2778,15 @@ class TestReturnHessian:
                 assert h_comp.shape == (2,)
 
     def test_hessian_probs_var_multiple_param_array(
-        self, dev, diff_method, hessian, grad_on_execution, device_vjp, interface
+        self, dev_name, diff_method, hessian, grad_on_execution, interface
     ):
         """The hessian of multiple measurements with a multiple param array return a single array."""
-        if diff_method in {"adjoint", "device"}:
+        if diff_method == "adjoint":
             pytest.skip("Test does not supports adjoint because second order diff.")
         elif diff_method == "hadamard":
             pytest.skip("Test does not supports hadamard because of var.")
+
+        dev = qml.device(dev_name, wires=2)
 
         params = jax.numpy.array([0.1, 0.2], dtype=jax.numpy.float64)
 
@@ -2830,7 +2796,6 @@ class TestReturnHessian:
             diff_method=diff_method,
             max_diff=2,
             grad_on_execution=grad_on_execution,
-            device_vjp=device_vjp,
         )
         def circuit(x):
             qml.RX(x[0], wires=[0])
@@ -2853,9 +2818,15 @@ class TestReturnHessian:
 @pytest.mark.parametrize("diff_method", ["parameter-shift", "hadamard"])
 def test_jax_device_hessian_shots(hessian, diff_method):
     """The hessian of multiple measurements with a multiple param array return a single array."""
+    num_wires = 1
 
-    @partial(jax.jit, static_argnames="shots")
-    @qml.qnode(DefaultQubit(), diff_method=diff_method, max_diff=2)
+    if diff_method == "hadamard":
+        num_wires = 3
+
+    dev = qml.device("default.qubit.jax", wires=num_wires, shots=10000)
+
+    @jax.jit
+    @qml.qnode(dev, diff_method=diff_method, max_diff=2)
     def circuit(x):
         qml.RY(x[0], wires=0)
         qml.RX(x[1], wires=0)
@@ -2864,7 +2835,7 @@ def test_jax_device_hessian_shots(hessian, diff_method):
     x = jax.numpy.array([1.0, 2.0])
     a, b = x
 
-    hess = jax.jit(hessian(circuit), static_argnames="shots")(x, shots=10000)
+    hess = jax.jit(hessian(circuit))(x)
 
     expected_hess = [
         [-np.cos(a) * np.cos(b), np.sin(a) * np.sin(b)],
@@ -2878,33 +2849,28 @@ def test_jax_device_hessian_shots(hessian, diff_method):
 @pytest.mark.parametrize("argnums", [0, 1, [0, 1]])
 @pytest.mark.parametrize("jacobian", jacobian_fn)
 @pytest.mark.parametrize(
-    "interface,dev,diff_method,grad_on_execution, device_vjp",
-    interface_and_qubit_device_and_diff_method,
+    "interface,dev_name,diff_method,grad_on_execution", interface_and_qubit_device_and_diff_method
 )
 class TestSubsetArgnums:
     def test_single_measurement(
         self,
         interface,
-        dev,
+        dev_name,
         diff_method,
         grad_on_execution,
-        device_vjp,
         jacobian,
         argnums,
         jit_inside,
         tol,
     ):
         """Test single measurement with different diff methods with argnums."""
+
+        dev = qml.device(dev_name, wires=3)
+
         kwargs = {}
-        if jacobian == jax.jacfwd and device_vjp:
-            pytest.skip("jacfwd is not compatible with device_vjp=True.")
-        if "lightning" in dev.name:
-            pytest.xfail("lightning device vjps are not compatible with jax jaocbians")
-        if dev.name == "param_shift.qubit":
-            pytest.xfail("gradient transform have a different vjp shape convention.")
         if diff_method == "spsa":
-            kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
             tol = TOL_FOR_SPSA
+            kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
 
         @qml.qnode(
             dev,
@@ -2912,7 +2878,6 @@ class TestSubsetArgnums:
             diff_method=diff_method,
             grad_on_execution=grad_on_execution,
             cache=False,
-            device_vjp=device_vjp,
             **kwargs,
         )
         def circuit(a, b):
@@ -2942,34 +2907,27 @@ class TestSubsetArgnums:
     def test_multi_measurements(
         self,
         interface,
-        dev,
+        dev_name,
         diff_method,
         grad_on_execution,
-        device_vjp,
         jacobian,
         argnums,
         jit_inside,
         tol,
     ):
         """Test multiple measurements with different diff methods with argnums."""
-        if jacobian == jax.jacfwd and device_vjp:
-            pytest.skip("jacfwd is not compatible with device_vjp=True.")
-        if "lightning" in dev.name:
-            pytest.xfail("lightning device vjps are not compatible with jax jaocbians")
-        if dev.name == "param_shift.qubit":
-            pytest.xfail("gradient transform have a different vjp shape convention.")
+        dev = qml.device(dev_name, wires=3)
 
         kwargs = {}
         if diff_method == "spsa":
-            kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
             tol = TOL_FOR_SPSA
+            kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
 
         @qml.qnode(
             dev,
             interface=interface,
             diff_method=diff_method,
             grad_on_execution=grad_on_execution,
-            device_vjp=device_vjp,
             **kwargs,
         )
         def circuit(a, b):
@@ -2995,72 +2953,3 @@ class TestSubsetArgnums:
         else:
             assert np.allclose(jac[0], expected[0], atol=tol)
             assert np.allclose(jac[1], expected[1], atol=tol)
-
-
-class TestSinglePrecision:
-    """Tests for compatibility with single precision mode."""
-
-    # pylint: disable=import-outside-toplevel
-    def test_type_conversion_fallback(self):
-        """Test that if the type isn't int, float, or complex, we still have a fallback."""
-        from pennylane.workflow.interfaces.jax_jit import _jax_dtype
-
-        assert _jax_dtype(bool) == jax.numpy.dtype(bool)
-
-    @pytest.mark.parametrize("diff_method", ("adjoint", "parameter-shift"))
-    def test_float32_return(self, diff_method):
-        """Test that jax jit works when float64 mode is disabled."""
-        jax.config.update("jax_enable_x64", False)
-
-        try:
-
-            @jax.jit
-            @qml.qnode(qml.device("default.qubit"), diff_method=diff_method)
-            def circuit(x):
-                qml.RX(x, wires=0)
-                return qml.expval(qml.PauliZ(0))
-
-            grad = jax.grad(circuit)(jax.numpy.array(0.1))
-            assert qml.math.allclose(grad, -np.sin(0.1))
-        finally:
-            jax.config.update("jax_enable_x64", True)
-        jax.config.update("jax_enable_x64", True)
-
-    @pytest.mark.parametrize("diff_method", ("adjoint", "finite-diff"))
-    def test_complex64_return(self, diff_method):
-        """Test that jax jit works with differentiating the state."""
-        jax.config.update("jax_enable_x64", False)
-
-        try:
-            tol = 2e-2 if diff_method == "finite-diff" else 1e-6
-
-            @jax.jit
-            @qml.qnode(qml.device("default.qubit", wires=1), diff_method=diff_method)
-            def circuit(x):
-                qml.RX(x, wires=0)
-                return qml.state()
-
-            j = jax.jacobian(circuit, holomorphic=True)(jax.numpy.array(0.1 + 0j))
-            assert qml.math.allclose(j, [-np.sin(0.05) / 2, -np.cos(0.05) / 2 * 1j], atol=tol)
-
-        finally:
-            jax.config.update("jax_enable_x64", True)
-        jax.config.update("jax_enable_x64", True)
-
-    def test_int32_return(self):
-        """Test that jax jit forward execution works with samples and int32"""
-
-        jax.config.update("jax_enable_x64", False)
-
-        try:
-
-            @jax.jit
-            @qml.qnode(qml.device("default.qubit", shots=10), diff_method=qml.gradients.param_shift)
-            def circuit(x):
-                qml.RX(x, wires=0)
-                return qml.sample(wires=0)
-
-            _ = circuit(jax.numpy.array(0.1))
-        finally:
-            jax.config.update("jax_enable_x64", True)
-        jax.config.update("jax_enable_x64", True)
