@@ -107,6 +107,8 @@ def legacy_device_batch_transform(tape, device):
 
 def adjoint_ops(op: qml.operation.Operator) -> bool:
     """Specify whether or not an Operator is supported by adjoint differentiation."""
+    if isinstance(op, qml.QubitUnitary) and not qml.math.is_trainable(op):
+        return True
     return not isinstance(op, MidMeasureMP) and (
         op.num_params == 0 or (op.num_params == 1 and op.has_generator)
     )
