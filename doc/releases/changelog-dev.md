@@ -4,6 +4,16 @@
 
 <h3>New features since last release</h3>
 
+<h4>Lightning Tensor with MPS backend 🐎</h4>
+
+<h4>Converting noise models from Qiskit ♻️</h4>
+
+<h4>Registers of wires 🌈</h4>
+
+<h4>Quantum arithmetic operations 🧮</h4>
+
+<h4>Creating spin Hamiltonians 🧑‍🎨</h4>
+
 * Mid-circuit measurements can now be captured with `qml.capture` enabled.
   [(#6015)](https://github.com/PennyLaneAI/pennylane/pull/6015)
 
