@@ -978,7 +978,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         return self._id
 
     @name.setter
-    def name(self, value: Any):
+    def name(self, value: str):
         self._name = value
 
     def label(
