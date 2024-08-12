@@ -964,7 +964,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         """
         raise TermsUndefinedError
 
-    num_wires: WiresEnum = AnyWires
+    num_wires: Union[int, WiresEnum] = AnyWires
     """Number of wires the operator acts on."""
 
     @property
