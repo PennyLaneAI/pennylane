@@ -385,7 +385,7 @@ def _split_ham_with_grouping(tape: qml.tape.QuantumScript):
 def _split_using_qwc_grouping(
     tape: qml.tape.QuantumScript,
     single_term_obs_mps: dict[MeasurementProcess, tuple[list[int], list[Union[float, TensorLike]]]],
-    offsets: list[Union[float, TensorLike]],
+    offsets: list[TensorLike],
 ):
     """Split tapes using group_observables in the Pauli module.
 
