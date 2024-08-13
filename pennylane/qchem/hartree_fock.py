@@ -258,7 +258,7 @@ def hf_energy(mol):
         """
         argnums = [mol.coord_opt, mol.coeff_opt, mol.alpha_opt]
         _, coeffs, fock_matrix, h_core, _ = scf(mol, argnums)(*args)
-        e_rep = nuclear_energy(mol.nuclear_charges, mol.coordinates)(*args)
+        e_rep = nuclear_energy(mol.nuclear_charges, mol.coordinates, argnums)(*args)
         e_elec = qml.math.einsum(
             "pq,qp", fock_matrix + h_core, mol_density_matrix(mol.n_electrons, coeffs)
         )
