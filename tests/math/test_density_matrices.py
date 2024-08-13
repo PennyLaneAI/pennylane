@@ -179,7 +179,7 @@ class TestDensityMatrixFromStateVectors:
         """Test that state vector with wrong norm raises an error with check_state=True"""
         state_vector = [0.1, 0, 0, 0]
 
-        with pytest.raises(ValueError, match="The state must be a vector of norm 1.0"):
+        with pytest.raises(ValueError, match="Sum of amplitudes-squared does not equal one."):
             fn.quantum.reduce_statevector(state_vector, indices=[0], check_state=True)
 
     def test_reduce_statevector_jax_jit(self):

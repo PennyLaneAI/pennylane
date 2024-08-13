@@ -83,7 +83,7 @@ class TestExpectationValueMath:
     @pytest.mark.parametrize("ops,state_vectors", state_wrong_amp)
     def test_state_vector_wrong_amplitudes(self, ops, state_vectors):
         """Test that a message is raised when a state does not have right norm"""
-        with pytest.raises(ValueError, match="The state must be a vector of norm 1.0"):
+        with pytest.raises(ValueError, match="Sum of amplitudes-squared does not equal one."):
             qml.math.expectation_value(ops, state_vectors, check_state=True)
 
     operator_wrong_shape = [

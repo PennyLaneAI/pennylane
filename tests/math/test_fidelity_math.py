@@ -85,7 +85,7 @@ class TestFidelityMath:
     @pytest.mark.parametrize("state0,state1", state_wrong_amp)
     def test_state_vector_wrong_amplitudes(self, state0, state1):
         """Test that a message is raised when a state does not have right norm"""
-        with pytest.raises(ValueError, match="The state must be a vector of norm 1.0"):
+        with pytest.raises(ValueError, match="Sum of amplitudes-squared does not equal one."):
             qml.math.fidelity_statevector(state0, state1, check_state=True)
 
     state_wrong_shape = [([0, 1, 1], [0, 1]), ([0, 1], [0, 1, 1])]
