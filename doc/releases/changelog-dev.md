@@ -56,6 +56,9 @@
 * Removed `semantic_version` from the list of required packages in PennyLane. 
   [(#5836)](https://github.com/PennyLaneAI/pennylane/pull/5836)
 
+* Added the `compute_decomposition` method for `qml.Hermitian`.
+  [(#6062)](https://github.com/PennyLaneAI/pennylane/pull/6062)
+
 * During experimental program capture, the qnode can now use closure variables.
   [(#6052)](https://github.com/PennyLaneAI/pennylane/pull/6052)
 
@@ -89,6 +92,9 @@
   [(#5967)](https://github.com/PennyLaneAI/pennylane/pull/5967)
   [(#5999)](https://github.com/PennyLaneAI/pennylane/pull/5999)
   [(#6058)](https://github.com/PennyLaneAI/pennylane/pull/6058)
+
+* During experimental program capture, functions that accept and/or return `pytree` structures can now be handled in the `QNode` call, `cond`, `for_loop` and `while_loop`. 
+  [(#6081)](https://github.com/PennyLaneAI/pennylane/pull/6081)
 
 * Set operations are now supported by Wires.
   [(#5983)](https://github.com/PennyLaneAI/pennylane/pull/5983)
@@ -347,6 +353,7 @@ William Maxwell,
 Vincent Michaud-Rioux,
 Anurav Modak,
 Mudit Pandey,
+Andrija Paurevic,
 Erik Schultheis,
 nate stemen,
 David Wierichs,
