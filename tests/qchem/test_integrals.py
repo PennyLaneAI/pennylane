@@ -877,90 +877,89 @@ class TestRepulsion:
         assert np.allclose(g_coeff, g_ref_coeff)
 
 
-class TestJax:
+def create_jax_like_array(values):
+    return qml.math.array(values, like="jax")
 
+
+class TestJax:
     @pytest.mark.jax
     @pytest.mark.parametrize(
-        ("alpha", "coeff", "r", "argnums"),
+        ("alpha_values", "coeff_values", "r_values", "argnums"),
         [
             (
-                qml.math.array([3.42525091, 0.62391373, 0.1688554], like="jax"),
-                qml.math.array([0.15432897, 0.53532814, 0.44463454], like="jax"),
-                qml.math.array([0.0, 0.0, 0.0], like="jax"),
+                [3.42525091, 0.62391373, 0.1688554],
+                [0.15432897, 0.53532814, 0.44463454],
+                [0.0, 0.0, 0.0],
                 [False, True, True],
             ),
             (
-                qml.math.array([3.42525091, 0.62391373, 0.1688554], like="jax"),
-                qml.math.array([0.15432897, 0.53532814, 0.44463454], like="jax"),
-                qml.math.array([0.0, 0.0, 0.0], like="jax"),
+                [3.42525091, 0.62391373, 0.1688554],
+                [0.15432897, 0.53532814, 0.44463454],
+                [0.0, 0.0, 0.0],
                 [True, False, False],
             ),
         ],
     )
-    def test_generate_params_jax(self, alpha, coeff, r, argnums):
-        r"""Test that test_generate_params_jax returns correct basis set parameters."""
-        import jax
+    def test_generate_params_jax(self, alpha_values, coeff_values, r_values, argnums):
+        """Test that test_generate_params_jax returns correct basis set parameters."""
+        alpha = create_jax_like_array(alpha_values)
+        coeff = create_jax_like_array(coeff_values)
+        r = create_jax_like_array(r_values)
 
         params = [alpha, coeff, r]
         args = [p for i, p in enumerate([alpha, coeff, r]) if argnums[2 - i]]
         basis_params = qchem.integrals._generate_params(params, args, argnums)
-
         assert np.allclose(basis_params, (alpha, coeff, r))
 
     @pytest.mark.jax
     @pytest.mark.parametrize(
-        ("symbols", "geometry", "alpha", "coef", "r", "o_ref", "argnums"),
+        (
+            "symbols",
+            "geometry_values",
+            "alpha_values",
+            "coef_values",
+            "r_values",
+            "o_ref_values",
+            "argnums",
+        ),
         [
             (
                 ["H", "H"],
-                qml.math.array([[0.0, 0.0, 0.0], [0.0, 0.0, 20.0]], like="jax"),
-                qml.math.array(
-                    [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
-                    like="jax",
-                ),
-                qml.math.array(
-                    [[0.15432897, 0.53532814, 0.44463454], [0.15432897, 0.53532814, 0.44463454]],
-                    like="jax",
-                ),
-                qml.math.array([[0.0, 0.0, 0.0], [0.0, 0.0, 20.0]], like="jax"),
-                qml.math.array([0.0]),
+                [[0.0, 0.0, 0.0], [0.0, 0.0, 20.0]],
+                [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
+                [[0.15432897, 0.53532814, 0.44463454], [0.15432897, 0.53532814, 0.44463454]],
+                [[0.0, 0.0, 0.0], [0.0, 0.0, 20.0]],
+                [0.0],
                 [True, True, False],
             ),
             (
                 ["H", "H"],
-                qml.math.array([[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]], like="jax"),
-                qml.math.array(
-                    [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
-                    like="jax",
-                ),
-                qml.math.array(
-                    [[0.15432897, 0.53532814, 0.44463454], [0.15432897, 0.53532814, 0.44463454]],
-                    like="jax",
-                ),
-                qml.math.array([[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]], like="jax"),
-                qml.math.array([1.0]),
+                [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]],
+                [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
+                [[0.15432897, 0.53532814, 0.44463454], [0.15432897, 0.53532814, 0.44463454]],
+                [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]],
+                [1.0],
                 [True, False, False],
             ),
             (
                 ["H", "H"],
-                qml.math.array([[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]], like="jax"),
-                qml.math.array(
-                    [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
-                    like="jax",
-                ),
-                qml.math.array(
-                    [[0.15432897, 0.53532814, 0.44463454], [0.15432897, 0.53532814, 0.44463454]],
-                    like="jax",
-                ),
-                qml.math.array([[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]], like="jax"),
-                qml.math.array([1.0]),
+                [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]],
+                [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
+                [[0.15432897, 0.53532814, 0.44463454], [0.15432897, 0.53532814, 0.44463454]],
+                [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]],
+                [1.0],
                 [True, True, True],
             ),
         ],
     )
-    def test_overlap_integral_jax(self, symbols, geometry, alpha, coef, r, o_ref, argnums):
-        r"""Test that overlap_integral function returns a correct value for the overlap integral."""
-        import jax
+    def test_overlap_integral_jax(
+        self, symbols, geometry_values, alpha_values, coef_values, r_values, o_ref_values, argnums
+    ):
+        geometry = create_jax_like_array(geometry_values)
+        alpha = create_jax_like_array(alpha_values)
+        coef = create_jax_like_array(coef_values)
+        r = create_jax_like_array(r_values)
+        o_ref = create_jax_like_array(o_ref_values)
 
         mol = qchem.Molecule(symbols, geometry)
         basis_a = mol.basis_set[0]
@@ -972,37 +971,36 @@ class TestJax:
 
     @pytest.mark.jax
     @pytest.mark.parametrize(
-        ("symbols", "geometry", "e", "idx", "ref", "argnums"),
+        ("symbols", "geometry_values", "e", "idx", "ref", "argnums"),
         [
             (
                 ["H", "Li"],
-                qml.math.array([[0.0, 0.0, 0.0], [2.0, 0.0, 0.0]], like="jax"),
+                [[0.0, 0.0, 0.0], [2.0, 0.0, 0.0]],
                 1,
-                0,  # 'x' component
-                3.12846324e-01,  # obtained from pyscf using mol.intor_symmetric("int1e_r")
+                0,
+                3.12846324e-01,
                 [False, False, False],
             ),
             (
                 ["H", "Li"],
-                qml.math.array([[0.5, 0.1, -0.2], [2.1, -0.3, 0.1]], like="jax"),
+                [[0.5, 0.1, -0.2], [2.1, -0.3, 0.1]],
                 1,
-                0,  # 'x' component
-                4.82090830e-01,  # obtained from pyscf using mol.intor_symmetric("int1e_r")
+                0,
+                4.82090830e-01,
                 [True, False, False],
             ),
             (
                 ["N", "N"],
-                qml.math.array([[0.5, 0.1, -0.2], [2.1, -0.3, 0.1]], like="jax"),
+                [[0.5, 0.1, -0.2], [2.1, -0.3, 0.1]],
                 1,
-                2,  # 'z' component
-                -4.70075530e-02,  # obtained from pyscf using mol.intor_symmetric("int1e_r")
+                2,
+                -4.70075530e-02,
                 [False, False, False],
             ),
         ],
     )
-    def test_moment_integral(self, symbols, geometry, e, idx, ref, argnums):
-        r"""Test that moment_integral function returns a correct value for the moment integral."""
-        import jax
+    def test_moment_integral(self, symbols, geometry_values, e, idx, ref, argnums):
+        geometry = create_jax_like_array(geometry_values)
 
         mol = qchem.Molecule(symbols, geometry)
         basis_a = mol.basis_set[0]
@@ -1016,43 +1014,33 @@ class TestJax:
 
     @pytest.mark.jax
     @pytest.mark.parametrize(
-        ("symbols", "geometry", "alpha", "coeff", "t_ref", "argnums"),
+        ("symbols", "geometry_values", "alpha_values", "coeff_values", "t_ref_values", "argnums"),
         [
-            # kinetic_integral must return 0.0 for two Gaussians centered far apart
             (
                 ["H", "H"],
-                qml.math.array([[0.0, 0.0, 0.0], [0.0, 0.0, 20.0]], like="jax"),
-                qml.math.array(
-                    [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
-                    like="jax",
-                ),
-                qml.math.array(
-                    [[0.15432897, 0.53532814, 0.44463454], [0.15432897, 0.53532814, 0.44463454]],
-                    like="jax",
-                ),
-                qml.math.array([0.0]),
+                [[0.0, 0.0, 0.0], [0.0, 0.0, 20.0]],
+                [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
+                [[0.15432897, 0.53532814, 0.44463454], [0.15432897, 0.53532814, 0.44463454]],
+                [0.0],
                 [False, False, True],
             ),
-            # kinetic integral obtained from pyscf using mol.intor('int1e_kin')
             (
                 ["H", "H"],
-                qml.math.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], like="jax"),
-                qml.math.array(
-                    [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
-                    like="jax",
-                ),
-                qml.math.array(
-                    [[0.15432897, 0.53532814, 0.44463454], [0.15432897, 0.53532814, 0.44463454]],
-                    like="jax",
-                ),
-                qml.math.array([0.38325384]),
+                [[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]],
+                [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
+                [[0.15432897, 0.53532814, 0.44463454], [0.15432897, 0.53532814, 0.44463454]],
+                [0.38325384],
                 [False, False, True],
             ),
         ],
     )
-    def test_kinetic_integral(self, symbols, geometry, alpha, coeff, t_ref, argnums):
-        r"""Test that kinetic_integral function returns a correct value for the kinetic integral."""
-        import jax
+    def test_kinetic_integral(
+        self, symbols, geometry_values, alpha_values, coeff_values, t_ref_values, argnums
+    ):
+        geometry = create_jax_like_array(geometry_values)
+        alpha = create_jax_like_array(alpha_values)
+        coeff = create_jax_like_array(coeff_values)
+        t_ref = create_jax_like_array(t_ref_values)
 
         mol = qchem.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
         basis_a = mol.basis_set[0]
@@ -1064,44 +1052,34 @@ class TestJax:
 
     @pytest.mark.jax
     @pytest.mark.parametrize(
-        ("symbols", "geometry", "alpha", "coeff", "a_ref", "argnums"),
+        ("symbols", "geometry_values", "alpha_values", "coeff_values", "a_ref_values", "argnums"),
         [
-            # trivial case: integral should be zero since atoms are located very far apart
             (
                 ["H", "H"],
-                qml.math.array([[0.0, 0.0, 0.0], [0.0, 0.0, 20.0]], like="jax"),
-                qml.math.array(
-                    [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
-                    like="jax",
-                ),
-                qml.math.array(
-                    [[0.15432897, 0.53532814, 0.44463454], [0.15432897, 0.53532814, 0.44463454]],
-                    like="jax",
-                ),
-                qml.math.array([0.0]),
+                [[0.0, 0.0, 0.0], [0.0, 0.0, 20.0]],
+                [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
+                [[0.15432897, 0.53532814, 0.44463454], [0.15432897, 0.53532814, 0.44463454]],
+                [0.0],
                 [False, True, True],
             ),
-            # nuclear attraction integral obtained from pyscf using mol.intor('int1e_nuc')
             (
                 ["H", "H"],
-                qml.math.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], like="jax"),
-                qml.math.array(
-                    [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
-                    like="jax",
-                ),
-                qml.math.array(
-                    [[0.15432897, 0.53532814, 0.44463454], [0.15432897, 0.53532814, 0.44463454]],
-                    like="jax",
-                ),
-                qml.math.array([0.80120855]),
+                [[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]],
+                [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
+                [[0.15432897, 0.53532814, 0.44463454], [0.15432897, 0.53532814, 0.44463454]],
+                [0.80120855],
                 [True, True, True],
             ),
         ],
     )
-    def test_attraction_integral(self, symbols, geometry, alpha, coeff, a_ref, argnums):
-        r"""Test that attraction_integral function returns a correct value for the kinetic
-        integral."""
-        import jax
+    def test_attraction_integral(
+        self, symbols, geometry_values, alpha_values, coeff_values, a_ref_values, argnums
+    ):
+        geometry = create_jax_like_array(geometry_values)
+        alpha = create_jax_like_array(alpha_values)
+        coeff = create_jax_like_array(coeff_values)
+        a_ref = create_jax_like_array(a_ref_values)
+
         mol = qchem.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
         basis_a = mol.basis_set[0]
         basis_b = mol.basis_set[1]
@@ -1115,62 +1093,54 @@ class TestJax:
 
     @pytest.mark.jax
     @pytest.mark.parametrize(
-        ("symbols", "geometry", "alpha", "coeff", "e_ref", "argnums"),
+        ("symbols", "geometry_values", "alpha_values", "coeff_values", "e_ref_values", "argnums"),
         [
             (
                 ["H", "H"],
-                qml.math.array([[0.0, 0.0, 0.0], [0.0, 0.0, 20.0]], like="jax"),
-                qml.math.array(
-                    [
-                        [3.42525091, 0.62391373, 0.1688554],
-                        [3.42525091, 0.62391373, 0.1688554],
-                        [3.42525091, 0.62391373, 0.1688554],
-                        [3.42525091, 0.62391373, 0.1688554],
-                    ],
-                    like="jax",
-                ),
-                qml.math.array(
-                    [
-                        [0.15432897, 0.53532814, 0.44463454],
-                        [0.15432897, 0.53532814, 0.44463454],
-                        [0.15432897, 0.53532814, 0.44463454],
-                        [0.15432897, 0.53532814, 0.44463454],
-                    ],
-                    like="jax",
-                ),
-                qml.math.array([0.0]),
+                [[0.0, 0.0, 0.0], [0.0, 0.0, 20.0]],
+                [
+                    [3.42525091, 0.62391373, 0.1688554],
+                    [3.42525091, 0.62391373, 0.1688554],
+                    [3.42525091, 0.62391373, 0.1688554],
+                    [3.42525091, 0.62391373, 0.1688554],
+                ],
+                [
+                    [0.15432897, 0.53532814, 0.44463454],
+                    [0.15432897, 0.53532814, 0.44463454],
+                    [0.15432897, 0.53532814, 0.44463454],
+                    [0.15432897, 0.53532814, 0.44463454],
+                ],
+                [0.0],
                 [False, True, False],
             ),
             (
                 ["H", "H"],
-                qml.math.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], like="jax"),
-                qml.math.array(
-                    [
-                        [3.42525091, 0.62391373, 0.1688554],
-                        [3.42525091, 0.62391373, 0.1688554],
-                        [3.42525091, 0.62391373, 0.1688554],
-                        [3.42525091, 0.62391373, 0.1688554],
-                    ],
-                    like="jax",
-                ),
-                qml.math.array(
-                    [
-                        [0.15432897, 0.53532814, 0.44463454],
-                        [0.15432897, 0.53532814, 0.44463454],
-                        [0.15432897, 0.53532814, 0.44463454],
-                        [0.15432897, 0.53532814, 0.44463454],
-                    ],
-                    like="jax",
-                ),
-                qml.math.array([0.45590169]),
+                [[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]],
+                [
+                    [3.42525091, 0.62391373, 0.1688554],
+                    [3.42525091, 0.62391373, 0.1688554],
+                    [3.42525091, 0.62391373, 0.1688554],
+                    [3.42525091, 0.62391373, 0.1688554],
+                ],
+                [
+                    [0.15432897, 0.53532814, 0.44463454],
+                    [0.15432897, 0.53532814, 0.44463454],
+                    [0.15432897, 0.53532814, 0.44463454],
+                    [0.15432897, 0.53532814, 0.44463454],
+                ],
+                [0.45590169],
                 [False, True, False],
             ),
         ],
     )
-    def test_repulsion_integral(self, symbols, geometry, alpha, coeff, e_ref, argnums):
-        r"""Test that repulsion_integral function returns a correct value for the repulsion
-        integral."""
-        import jax
+    def test_repulsion_integral(
+        self, symbols, geometry_values, alpha_values, coeff_values, e_ref_values, argnums
+    ):
+        geometry = create_jax_like_array(geometry_values)
+        alpha = create_jax_like_array(alpha_values)
+        coeff = create_jax_like_array(coeff_values)
+        e_ref = create_jax_like_array(e_ref_values)
+
         mol = qchem.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
         basis_a = mol.basis_set[0]
         basis_b = mol.basis_set[1]
