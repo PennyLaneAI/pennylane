@@ -688,6 +688,7 @@ class ForLoopCallable:  # pylint:disable=too-few-public-methods
         jaxpr_body_fn = jax.make_jaxpr(flat_fn)(0, *init_state)
 
         flat_args, _ = jax.tree_util.tree_flatten(init_state)
+        print(jaxpr_body_fn)
         results = for_loop_prim.bind(
             self.lower_bound,
             self.upper_bound,
