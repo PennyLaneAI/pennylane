@@ -513,7 +513,6 @@ class TrotterizedQfunc(ResourcesOperation):
     
     @qml.QueuingManager.stop_recording()
     def resources(self, gate_set=None, estimate=True, epsilon=None):  # Update
-        print(estimate)
         if estimate:
             k = self._order // 2
             gate_types = defaultdict(int)

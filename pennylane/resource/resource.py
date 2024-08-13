@@ -146,34 +146,11 @@ StandardGateSet = {
 }
 
 
-# def compute_resources(tape, gate_set=StandardGateSet, estimate=False, epsilon=None) -> Resources:
-#     """Given a quantum circuit (tape), this function
-#      counts the resources used by standard PennyLane operations.
-
-#     Args:
-#         tape (.QuantumTape): The quantum circuit for which we count resources
-
-#     Returns:
-#         (.Resources): The total resources used in the workflow
-#     """
-
-#     num_wires = len(tape.wires)
-#     shots = tape.shots
-    
-#     # depth = tape.graph.get_depth()
-#     depth = -1  # Not computing depth
-
-#     op_resources = resources_from_sequence_ops(tape.operations, gate_set, estimate, epsilon)
-#     return Resources(num_wires, op_resources.num_gates, op_resources.gate_types, op_resources.gate_sizes, depth, shots)
-
-
 def get_resources(obj, gate_set=StandardGateSet, estimate=True, epsilon=None):
     if isinstance(obj, Callable):
         @wraps(obj)
         def wrapper(*args, **kwargs):
             qs = make_qscript(obj)(*args, **kwargs)
-            if len(qs.operations) == 1:
-                return resources_from_op(qs.operations[0], gate_set, estimate, epsilon)
             return resources_from_sequence_ops(qs.operations, gate_set, estimate, epsilon)
 
         return wrapper
