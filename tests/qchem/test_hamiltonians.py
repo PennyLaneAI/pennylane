@@ -348,7 +348,7 @@ def test_gradient_expvalH():
 @pytest.mark.usefixtures("use_legacy_and_new_opmath")
 @pytest.mark.jax
 class TestJax:
-    from jax import numpy as jnp
+    import jax.numpy as jnp
 
     @pytest.mark.parametrize(
         ("symbols", "geometry", "core", "active", "e_core", "one_ref", "two_ref"),
@@ -591,7 +591,8 @@ class TestJax:
     def test_diff_hamiltonian_active_space_jax(self):
         r"""Test that diff_hamiltonian using jax arrays works when an active space is defined."""
 
-        from jax import numpy as jnp    
+        from jax import numpy as jnp
+
         symbols = ["H", "H", "H"]
         geometry = jnp.array([[0.0, 0.0, 0.0], [2.0, 0.0, 1.0], [0.0, 2.0, 0.0]])
 

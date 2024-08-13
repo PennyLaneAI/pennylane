@@ -55,8 +55,11 @@ class TestNorm:
         assert np.allclose(qchem.contracted_norm(l, alpha, a), n)
 
 
+@pytest.mark.jax
 class TestParams:
     """Tests for parameter generation functions"""
+
+    import jax.numpy as jnp
 
     @pytest.mark.parametrize(
         ("alpha", "coeff", "r"),
@@ -77,7 +80,33 @@ class TestParams:
         r"""Test that test_generate_params returns correct basis set parameters."""
         params = [alpha, coeff, r]
         args = [p for p in [alpha, coeff, r] if p.requires_grad]
-        basis_params = qchem.integrals._generate_params(params, args)
+        basis_params = qchem.integrals._generate_params(params, args, argnums=[False, False, False])
+
+        assert np.allclose(basis_params, (alpha, coeff, r))
+
+    @pytest.mark.parametrize(
+        ("alpha", "coeff", "r", "argnums"),
+        [
+            (
+                jnp.array([3.42525091, 0.62391373, 0.1688554]),
+                jnp.array([0.15432897, 0.53532814, 0.44463454]),
+                jnp.array([0.0, 0.0, 0.0]),
+                [False, True, True],
+            ),
+            (
+                jnp.array([3.42525091, 0.62391373, 0.1688554]),
+                jnp.array([0.15432897, 0.53532814, 0.44463454]),
+                jnp.array([0.0, 0.0, 0.0]),
+                [True, False, False],
+            ),
+        ],
+    )
+    def test_generate_params_jax(self, alpha, coeff, r, argnums):
+        r"""Test that test_generate_params_jax returns correct basis set parameters."""
+
+        params = [alpha, coeff, r]
+        args = [p for i, p in enumerate([alpha, coeff, r]) if argnums[2 - i]]
+        basis_params = qchem.integrals._generate_params(params, args, argnums)
 
         assert np.allclose(basis_params, (alpha, coeff, r))
 
