@@ -557,7 +557,7 @@ def simulate_tree_mcm(
                 stack.counts[depth] = samples_to_counts(samples)
                 stack.probs[depth] = counts_to_probs(stack.counts[depth])
             else:
-                stack.probs[depth] = dict((k, v) for k, v in zip([False, True], measurements))
+                stack.probs[depth] = {k: v for k, v in zip([False, True], measurements)}
                 samples = None
             # Store a copy of the state-vector to project on the one-branch
             stack.states[depth] = state
@@ -567,7 +567,7 @@ def simulate_tree_mcm(
         if not skip_subtree and not invalid_postselect:
             measurements = insert_mcms(circuit, measurements, mid_measurements)
         # If at a zero-branch leaf, update measurements and switch to the one-branch
-        if not mcm_current[depth]:
+        if mcm_current[depth] == 0:
             stack.results_0[depth] = measurements
             mcm_current[depth] = True
             mid_measurements[mcms[depth]] = True
@@ -588,12 +588,41 @@ def split_circuit_at_mcms(circuit):
     """Return a list of circuits segments (one for each mid-circuit measurement in the
     original circuit) where the terminal measurements probe the MCM statistics. Only
     the last segment retains the original terminal measurements."""
+
+    mcm_gen = ((i, op) for i, op in enumerate(circuit) if isinstance(op, MidMeasureMP))
     circuits = []
-    circuit_right = circuit
-    while any(isinstance(op, MidMeasureMP) for op in circuit_right.operations):
-        circuit_left, circuit_right, _ = circuit_up_to_first_mcm(circuit_right)
-        circuits.append(circuit_left)
-    circuits.append(circuit_right)
+
+    first = 0
+    for last, op in mcm_gen:
+        new_operations = circuit.operations[first:last]
+        new_measurements = (
+            [qml.sample(wires=op.wires)] if circuit.shots else [qml.probs(wires=op.wires)]
+        )
+        circuits.append(
+            qml.tape.QuantumScript(new_operations, new_measurements, shots=circuit.shots)
+        )
+        first = last + 1
+
+    last_circuit_operations = circuit.operations[first:]
+    last_circuit_measurements = []
+
+    for m in circuit.measurements:
+        if not m.mv:
+            if isinstance(m, VarianceMP):
+                if circuit.shots:
+                    last_circuit_measurements.append(SampleMP(obs=m.obs))
+                else:
+                    raise TypeError(
+                        "VarianceMP measurements should be replace by variance_transform."
+                    )
+            else:
+                last_circuit_measurements.append(m)
+
+    circuits.append(
+        qml.tape.QuantumScript(
+            last_circuit_operations, last_circuit_measurements, shots=circuit.shots
+        )
+    )
     return circuits
 
 
@@ -683,9 +712,7 @@ def prepend_state_prep(circuit, state, interface, wires):
 
 def insert_mcms(circuit, results, mid_measurements):
     """Inserts terminal measurements of MCMs if the circuit is evaluated in analytic mode."""
-    if circuit.shots:
-        return results
-    if not any(m.mv for m in circuit.measurements):
+    if circuit.shots or not any(m.mv for m in circuit.measurements):
         return results
     results = list(results)
     new_results = []
@@ -786,8 +813,8 @@ def update_mcm_samples(samples, mcm_samples, depth, cumcounts):
 
     To illustrate how the function works, let's take an example. Suppose there are
     ``2**20`` shots in total and the computation is midway through the circuit at the
-    7th MCM, the active branch is ``[0,1,1,0,0,1]`` and each MCM everything happened to
-    split the counts 50/50 so there are ``2**14`` samples to update.
+    7th MCM, the active branch is ``[0,1,1,0,0,1]``, and at each MCM everything happened to
+    split the counts 50/50, so there are ``2**14`` samples to update.
     These samples are correlated with the parent
     branches, so where do they go? They must update the ``2**14`` elements whose parent
     sequence corresponds to ``[0,1,1,0,0,1]``. ``cumcounts`` is used for this job and
