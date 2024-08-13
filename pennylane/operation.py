@@ -247,7 +247,7 @@ import copy
 import functools
 import itertools
 import warnings
-from collections.abc import Hashable
+from collections.abc import Hashable, Iterable
 from contextlib import contextmanager
 from enum import IntEnum
 from typing import Any, Callable, Literal, Optional, Union
@@ -407,7 +407,7 @@ def _process_data(op):
     return str([id(d) if qml.math.is_abstract(d) else _mod_and_round(d, mod_val) for d in op.data])
 
 
-FlatPytree = tuple[tuple[TensorLike, ...], tuple[Wires, tuple[tuple[str, Any], ...]]]
+FlatPytree = tuple[Iterable[Any], Hashable]
 
 
 class Operator(abc.ABC, metaclass=ABCCaptureMeta):
@@ -1669,9 +1669,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         return self.data, (self.wires, hashable_hyperparameters)
 
     @classmethod
-    def _unflatten(
-        cls, data: tuple[TensorLike, ...], metadata: tuple[Wires, tuple[tuple[str, Any], ...]]
-    ):
+    def _unflatten(cls, data: Iterable[Any], metadata: Hashable):
         """Recreate an operation from its serialized format.
 
         Args:
@@ -1983,9 +1981,7 @@ class Observable(Operator):
         """All observables must be hermitian"""
         return True
 
-    def __matmul__(
-        self, other: Union["Operator", "Tensor", "qml.ops.Hamiltonian", "qml.ops.LinearCombination"]
-    ):
+    def __matmul__(self, other: Operator):
         if active_new_opmath():
             return super().__matmul__(other=other)
 
