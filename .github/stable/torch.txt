@@ -32,7 +32,7 @@ Jinja2==3.1.4
 kiwisolver==1.4.5
 lazy-object-proxy==1.10.0
 MarkupSafe==2.1.5
-matplotlib==3.9.1.post1
+matplotlib==3.9.2
 mccabe==0.6.1
 mpmath==1.3.0
 mypy-extensions==1.0.0

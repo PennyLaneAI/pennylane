@@ -32,7 +32,7 @@ jax==0.4.23
 jaxlib==0.4.23
 kiwisolver==1.4.5
 lazy-object-proxy==1.10.0
-matplotlib==3.9.1.post1
+matplotlib==3.9.2
 mccabe==0.6.1
 ml-dtypes==0.4.0
 mypy-extensions==1.0.0

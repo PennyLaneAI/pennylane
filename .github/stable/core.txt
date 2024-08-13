@@ -29,7 +29,7 @@ iniconfig==2.0.0
 isort==5.13.2
 kiwisolver==1.4.5
 lazy-object-proxy==1.10.0
-matplotlib==3.9.1.post1
+matplotlib==3.9.2
 mccabe==0.6.1
 mypy-extensions==1.0.0
 networkx==3.2.1
