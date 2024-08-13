@@ -165,19 +165,23 @@ class StatePrep(StatePrepBase):
     """
 
     num_wires = AnyWires
+    num_params = 1
+    """int: Number of trainable parameters that the operator depends on."""
+
+    ndim_params = (1,)
+    """int: Number of dimensions per trainable parameter of the operator."""
 
     def __init__(self, state, wires, pad_with=None, normalize=False, id=None):
 
-
         state = self._preprocess(state, wires, pad_with, normalize)
-
 
         self._hyperparameters = {"pad_with": pad_with, "normalize": normalize}
 
         super().__init__(state, wires=wires, id=id)
 
+
     @staticmethod
-    def compute_decomposition(state, wires):
+    def compute_decomposition(state, wires, **kwargs):
         r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -201,15 +205,17 @@ class StatePrep(StatePrepBase):
         return [MottonenStatePreparation(state, wires)]
 
     def _flatten(self):
+        print(self.hyperparameters)
         metadata = tuple((key, value) for key, value in self.hyperparameters.items())
-        return tuple(self.parameters[0],), metadata
+
+        return tuple(self.parameters,), (metadata, self.wires)
 
     @classmethod
     def _unflatten(cls, data, metadata):
-        hyperparams_dict = dict(metadata)
-        return cls(*data, **hyperparams_dict)
+        return cls(*data, **dict(metadata[0]), wires=metadata[1])
 
     def state_vector(self, wire_order=None):
+
 
         num_op_wires = len(Wires(self.wires))
         op_vector_shape = (-1,) + (2,) * num_op_wires if self.batch_size else (2,) * num_op_wires
