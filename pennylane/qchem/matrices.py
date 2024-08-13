@@ -264,7 +264,8 @@ def attraction_matrix(basis_functions, charges, r, argnums):
             else:
                 for k, c in enumerate(r):
                     integral = (
-                        integral - charges[k] * attraction_integral(c, a, b, argnums, normalize=False)()
+                        integral
+                        - charges[k] * attraction_integral(c, a, b, argnums, normalize=False)()
                     )
 
             o = qml.math.zeros((n, n))
@@ -322,7 +323,14 @@ def repulsion_tensor(basis_functions, argnums):
                 args_abcd = []
                 if args:
                     args_abcd.extend([arg[i], arg[j], arg[k], arg[l]] for arg in args)
-                integral = repulsion_integral(a, b, c, d, argnums, normalize=False,)(*args_abcd)
+                integral = repulsion_integral(
+                    a,
+                    b,
+                    c,
+                    d,
+                    argnums,
+                    normalize=False,
+                )(*args_abcd)
 
                 permutations = [
                     (i, j, k, l),

@@ -141,8 +141,8 @@ def _generate_params(params, args, argnums):
     basis_params = []
     c = 0
     for i, p in enumerate(params):
-        # we iterate through argnums backwards because params order goes [alpha, coeff, r] 
-        if getattr(p, "requires_grad", False) or argnums[2-i]:
+        # we iterate through argnums backwards because params order goes [alpha, coeff, r]
+        if getattr(p, "requires_grad", False) or argnums[2 - i]:
             basis_params.append(args[c])
             c += 1
         else:
