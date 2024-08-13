@@ -27,8 +27,8 @@ import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane.math import cast, conj, eye, norm, sqrt, sqrt_matrix, transpose, zeros
 from pennylane.operation import AnyWires, DecompositionUndefinedError, FlatPytree, Operation
-from pennylane.typing import TensorLike, WiresLike
-from pennylane.wires import Wires
+from pennylane.typing import TensorLike
+from pennylane.wires import Wires, WiresLike
 
 _walsh_hadamard_matrix = np.array([[1, 1], [1, -1]]) / 2
 

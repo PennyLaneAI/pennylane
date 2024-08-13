@@ -260,8 +260,8 @@ import pennylane as qml
 from pennylane.capture import ABCCaptureMeta, create_operator_primitive
 from pennylane.math import expand_matrix
 from pennylane.queuing import QueuingManager
-from pennylane.typing import TensorLike, WiresLike
-from pennylane.wires import Wires
+from pennylane.typing import TensorLike
+from pennylane.wires import Wires, WiresLike
 
 from .pytrees import register_pytree
 from .utils import pauli_eigs

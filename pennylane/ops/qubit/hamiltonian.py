@@ -30,8 +30,8 @@ import scipy
 
 import pennylane as qml
 from pennylane.operation import FlatPytree, Observable, Tensor
-from pennylane.typing import TensorLike, WiresLike
-from pennylane.wires import Wires
+from pennylane.typing import TensorLike
+from pennylane.wires import Wires, WiresLike
 
 OBS_MAP = {"PauliX": "X", "PauliY": "Y", "PauliZ": "Z", "Hadamard": "H", "Identity": "I"}
 

@@ -25,7 +25,8 @@ import numpy as np
 import pennylane as qml
 from pennylane.operation import AnyWires, FlatPytree, Operation
 from pennylane.ops.qubit.parametric_ops_multi_qubit import PauliRot
-from pennylane.typing import TensorLike, WiresLike
+from pennylane.typing import TensorLike
+from pennylane.wires import WiresLike
 
 _pauli_matrices = np.array(
     [[[1, 0], [0, 1]], [[0, 1], [1, 0]], [[0, -1j], [1j, 0]], [[1, 0], [0, -1]]]

@@ -24,7 +24,8 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.operation import Operation
-from pennylane.typing import TensorLike, WiresLike
+from pennylane.typing import TensorLike
+from pennylane.wires import WiresLike
 
 from .non_parametric_ops import Hadamard, PauliX, PauliY, PauliZ
 

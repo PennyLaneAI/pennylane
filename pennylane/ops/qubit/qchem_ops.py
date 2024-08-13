@@ -24,7 +24,8 @@ from scipy.sparse import csr_matrix
 
 import pennylane as qml
 from pennylane.operation import Operation
-from pennylane.typing import TensorLike, WiresLike
+from pennylane.typing import TensorLike
+from pennylane.wires import WiresLike
 
 I4 = np.eye(4)
 I16 = np.eye(16)

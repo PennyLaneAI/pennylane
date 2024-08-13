@@ -26,9 +26,9 @@ import numpy as np
 import pennylane as qml
 from pennylane.math import expand_matrix
 from pennylane.operation import AnyWires, FlatPytree, Operation
-from pennylane.typing import TensorLike, WiresLike
+from pennylane.typing import TensorLike
 from pennylane.utils import pauli_eigs
-from pennylane.wires import Wires
+from pennylane.wires import Wires, WiresLike
 
 from .non_parametric_ops import Hadamard, PauliX, PauliY, PauliZ
 from .parametric_ops_single_qubit import RX, RY, RZ, PhaseShift, _can_replace, stack_last

@@ -26,9 +26,9 @@ from scipy import sparse
 
 import pennylane as qml
 from pennylane.operation import Observable, Operation
-from pennylane.typing import TensorLike, WiresLike
+from pennylane.typing import TensorLike
 from pennylane.utils import pauli_eigs
-from pennylane.wires import Wires
+from pennylane.wires import Wires, WiresLike
 
 INV_SQRT2 = 1 / qml.math.sqrt(2)
 

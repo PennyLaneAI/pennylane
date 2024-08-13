@@ -23,8 +23,8 @@ import numpy as np
 from pennylane import math
 from pennylane.operation import AnyWires, Operation, Operator, StatePrepBase
 from pennylane.templates.state_preparations import BasisStatePreparation, MottonenStatePreparation
-from pennylane.typing import TensorLike, WiresLike
-from pennylane.wires import WireError, Wires
+from pennylane.typing import TensorLike
+from pennylane.wires import WireError, Wires, WiresLike
 
 state_prep_ops = {"BasisState", "StatePrep", "QubitDensityMatrix"}
 
