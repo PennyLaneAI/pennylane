@@ -15,7 +15,7 @@
 This submodule contains the discrete-variable quantum operations concerned
 with preparing a certain state on the device.
 """
-# pylint:disable=abstract-method,arguments-differ,protected-access,no-member
+# pylint:disable=too-many-branches,abstract-method,arguments-differ,protected-access,no-member
 import numpy as np
 
 from pennylane import math
@@ -171,6 +171,7 @@ class StatePrep(StatePrepBase):
     ndim_params = (1,)
     """int: Number of dimensions per trainable parameter of the operator."""
 
+    # pylint: disable=too-many-arguments
     def __init__(self, state, wires, pad_with=None, normalize=False, id=None):
 
         state = self._preprocess(state, wires, pad_with, normalize)
@@ -179,9 +180,8 @@ class StatePrep(StatePrepBase):
 
         super().__init__(state, wires=wires, id=id)
 
-
     @staticmethod
-    def compute_decomposition(state, wires, **kwargs):
+    def compute_decomposition(state, wires, **kwargs):  # pylint: disable=unused-argument
         r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -208,14 +208,15 @@ class StatePrep(StatePrepBase):
         print(self.hyperparameters)
         metadata = tuple((key, value) for key, value in self.hyperparameters.items())
 
-        return tuple(self.parameters,), (metadata, self.wires)
+        return tuple(
+            self.parameters,
+        ), (metadata, self.wires)
 
     @classmethod
     def _unflatten(cls, data, metadata):
         return cls(*data, **dict(metadata[0]), wires=metadata[1])
 
     def state_vector(self, wire_order=None):
-
 
         num_op_wires = len(Wires(self.wires))
         op_vector_shape = (-1,) + (2,) * num_op_wires if self.batch_size else (2,) * num_op_wires

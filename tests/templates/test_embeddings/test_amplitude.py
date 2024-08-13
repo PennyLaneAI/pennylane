@@ -66,7 +66,6 @@ class TestDecomposition:
         assert tape.operations[0].name == "MottonenStatePreparation"
         assert tape.batch_size is None
 
-
     def test_expansion_broadcasted(self):
         """Checks the queue for the default settings."""
 
@@ -77,7 +76,6 @@ class TestDecomposition:
         assert len(tape.operations) == 1
         assert tape.operations[0].name == "MottonenStatePreparation"
         assert tape.batch_size == 3
-
 
     @pytest.mark.parametrize("normalize", (True, False))
     @pytest.mark.parametrize("inpt", FEATURES)
@@ -94,7 +92,6 @@ class TestDecomposition:
 
         state = circuit(x=inpt).ravel()
         assert np.allclose(state, inpt)
-
 
     @pytest.mark.parametrize("normalize", (True, False))
     @pytest.mark.parametrize("inpt", BROADCASTED_FEATURES)
@@ -203,7 +200,10 @@ class TestInputs:
             qml.AmplitudeEmbedding(features=x, wires=range(n_qubits))
             return qml.expval(qml.PauliZ(0))
 
-        with pytest.raises(ValueError, match="State must be a one-dimensional tensor, or two-dimensional with batching;"):
+        with pytest.raises(
+            ValueError,
+            match="State must be a one-dimensional tensor, or two-dimensional with batching;",
+        ):
             circuit(x=[[[1.0, 0.0], [0.0, 0.0]], [[1.0, 0.0], [0.0, 0.0]]])
 
     @pytest.mark.parametrize(

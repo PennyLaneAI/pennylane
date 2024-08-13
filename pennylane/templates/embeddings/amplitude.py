@@ -15,9 +15,7 @@ r"""
 Contains the AmplitudeEmbedding template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
-import pennylane as qml
 from pennylane.ops import StatePrep
-from pennylane.wires import Wires
 
 # tolerance for normalization
 TOLERANCE = 1e-10
@@ -119,6 +117,3 @@ class AmplitudeEmbedding(StatePrep):
 
     def __init__(self, features, wires, pad_with=None, normalize=False, id=None):
         super().__init__(features, wires=wires, pad_with=pad_with, normalize=normalize, id=id)
-
-
-
