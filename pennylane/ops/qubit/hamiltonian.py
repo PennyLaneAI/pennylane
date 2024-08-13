@@ -757,7 +757,7 @@ class Hamiltonian(Observable):
 
         raise ValueError("Can only compare a Hamiltonian, and a Hamiltonian/Observable/Tensor.")
 
-    def __matmul__(self, H: Observable):
+    def __matmul__(self, H: Observable) -> Observable:
         r"""The tensor product operation between a Hamiltonian and a Hamiltonian/Tensor/Observable."""
         coeffs1 = copy(self.coeffs)
         ops1 = self.ops.copy()
@@ -806,7 +806,7 @@ class Hamiltonian(Observable):
 
         return NotImplemented
 
-    def __add__(self, H: Observable):
+    def __add__(self, H: Observable) -> Observable:
         r"""The addition operation between a Hamiltonian and a Hamiltonian/Tensor/Observable."""
         ops = self.ops.copy()
         self_coeffs = copy(self.coeffs)
@@ -845,7 +845,7 @@ class Hamiltonian(Observable):
 
     __rmul__ = __mul__
 
-    def __sub__(self, H: Observable):
+    def __sub__(self, H: Observable) -> Observable:
         r"""The subtraction operation between a Hamiltonian and a Hamiltonian/Tensor/Observable."""
         if isinstance(H, (Hamiltonian, Tensor, Observable)):
             return self + (-1 * H)
@@ -892,7 +892,7 @@ class Hamiltonian(Observable):
         return NotImplemented
 
     def queue(
-        self, context: Literal[qml.QueuingManager, qml.queuing.AnnotatedQueue] = qml.QueuingManager
+        self, context: Union[qml.QueuingManager, qml.queuing.AnnotatedQueue] = qml.QueuingManager
     ):
         """Queues a qml.Hamiltonian instance"""
         for o in self.ops:

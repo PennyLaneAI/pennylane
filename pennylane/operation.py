@@ -1609,7 +1609,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         """The product operation between Operator objects."""
         return qml.prod(self, other, lazy=False) if isinstance(other, Operator) else NotImplemented
 
-    def __sub__(self, other: Union["Operator", TensorLike]):
+    def __sub__(self, other: Union["Operator", TensorLike]) -> "Operator":
         """The subtraction operation of Operator-Operator objects and Operator-scalar."""
         if isinstance(other, Operator):
             return self + qml.s_prod(-1, other, lazy=False)
@@ -1981,7 +1981,7 @@ class Observable(Operator):
         """All observables must be hermitian"""
         return True
 
-    def __matmul__(self, other: Operator):
+    def __matmul__(self, other: Operator) -> Operator:
         if active_new_opmath():
             return super().__matmul__(other=other)
 
@@ -2058,10 +2058,7 @@ class Observable(Operator):
             "Can only compare an Observable/Tensor, and a Hamiltonian/Observable/Tensor."
         )
 
-    def __add__(
-        self,
-        other: Union["Tensor", "Observable", "qml.ops.Hamiltonian", "qml.ops.LinearCombination"],
-    ):
+    def __add__(self, other: Operator) -> Operator:
         r"""The addition operation between Observables/Tensors/qml.Hamiltonian objects."""
         if active_new_opmath():
             return super().__add__(other=other)
@@ -2087,13 +2084,14 @@ class Observable(Operator):
 
     __rmul__ = __mul__
 
-    def __sub__(self, other):
+    def __sub__(self, other: "Observable") -> "Observable":
         r"""The subtraction operation between Observables/Tensors/qml.Hamiltonian objects."""
         if active_new_opmath():
             return super().__sub__(other=other)
 
         if isinstance(other, (Observable, Tensor, qml.ops.Hamiltonian, qml.ops.LinearCombination)):
             return self + (-1 * other)
+
         return super().__sub__(other=other)
 
 
@@ -2318,7 +2316,7 @@ class Tensor(Observable):
     def arithmetic_depth(self) -> int:
         return 1 + max(o.arithmetic_depth for o in self.obs)
 
-    def __matmul__(self, other):
+    def __matmul__(self, other: Operator) -> Operator:
         if isinstance(other, (qml.ops.Hamiltonian, qml.ops.LinearCombination)):
             return other.__rmatmul__(self)
 
