@@ -560,6 +560,12 @@ class TestIntegration:
             time = np.array(time)
         H = qml.pulse.ParametrizedHamiltonian([2], [qml.PauliX(0)])
 
+        # This weird-looking code is a temporary solution to be able
+        # to access both DefaultQubit and DefaultQubitJax without
+        # having to the break the parameterization of the test.
+        # Once DefaultQubitJax is removed, the 'device_class'
+        # parameter would be redundant and dev would always be
+        # default qubit.
         dev = {**globals(), **locals()}[device_class](wires=1)
 
         @qml.qnode(dev, interface="jax")

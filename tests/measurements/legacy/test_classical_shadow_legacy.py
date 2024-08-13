@@ -45,7 +45,8 @@ def get_circuit(wires, shots, seed_recipes, interface="autograd", device="defaul
 
 def get_basis_circuit(wires, shots, basis, interface="autograd", device="default.qubit.legacy"):
     """
-    Return a QNode that prepares the |00..0> state and performs a classical shadow measurement
+    Return a QNode that prepares a state in a given computational basis
+    and performs a classical shadow measurement
     """
     dev = qml.device(device or "default.qubit.legacy", wires=wires, shots=shots)
 

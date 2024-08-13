@@ -645,6 +645,7 @@ def execute(
         and getattr(device, "short_name", "") in ("lightning.gpu", "lightning.kokkos")
         and interface in jpc_interfaces
     ):
+        # pragma: no cover
         if INTERFACE_MAP[interface] == "jax" and "use_device_state" in gradient_kwargs:
             gradient_kwargs["use_device_state"] = False
 
