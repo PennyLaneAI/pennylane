@@ -348,21 +348,23 @@ def test_gradient_expvalH():
 @pytest.mark.usefixtures("use_legacy_and_new_opmath")
 @pytest.mark.jax
 class TestJax:
-    import jax.numpy as jnp
 
     @pytest.mark.parametrize(
         ("symbols", "geometry", "core", "active", "e_core", "one_ref", "two_ref"),
         [
             (
                 ["H", "H"],
-                jnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]),
+                qml.math.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], like="jax"),
                 None,
                 None,
-                jnp.array([1.0000000000321256]),
+                qml.math.array([1.0000000000321256], like="jax"),
                 # computed with OpenFermion using molecule.one_body_integrals
-                jnp.array([[-1.39021927e00, -1.28555566e-16], [-3.52805508e-16, -2.91653305e-01]]),
+                qml.math.array(
+                    [[-1.39021927e00, -1.28555566e-16], [-3.52805508e-16, -2.91653305e-01]],
+                    like="jax",
+                ),
                 # computed with OpenFermion using molecule.two_body_integrals
-                jnp.array(
+                qml.math.array(
                     [
                         [
                             [[7.14439079e-01, 6.62555256e-17], [2.45552260e-16, 1.70241444e-01]],
@@ -372,19 +374,23 @@ class TestJax:
                             [[6.62555256e-17, 7.01853156e-01], [1.70241444e-01, 2.72068603e-16]],
                             [[1.70241444e-01, 2.72068603e-16], [6.51416091e-16, 7.38836693e-01]],
                         ],
-                    ]
+                    ],
+                    like="jax",
                 ),
             ),
             (
                 ["H", "H"],
-                jnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]),
+                qml.math.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], like="jax"),
                 [],
                 [0, 1],
-                jnp.array([1.0000000000321256]),
+                qml.math.array([1.0000000000321256], like="jax"),
                 # computed with OpenFermion using molecule.one_body_integrals
-                jnp.array([[-1.39021927e00, -1.28555566e-16], [-3.52805508e-16, -2.91653305e-01]]),
+                qml.math.array(
+                    [[-1.39021927e00, -1.28555566e-16], [-3.52805508e-16, -2.91653305e-01]],
+                    like="jax",
+                ),
                 # computed with OpenFermion using molecule.two_body_integrals
-                jnp.array(
+                qml.math.array(
                     [
                         [
                             [[7.14439079e-01, 6.62555256e-17], [2.45552260e-16, 1.70241444e-01]],
@@ -394,18 +400,21 @@ class TestJax:
                             [[6.62555256e-17, 7.01853156e-01], [1.70241444e-01, 2.72068603e-16]],
                             [[1.70241444e-01, 2.72068603e-16], [6.51416091e-16, 7.38836693e-01]],
                         ],
-                    ]
+                    ],
+                    like="jax",
                 ),
             ),
             (
                 ["Li", "H"],
-                jnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]),
+                qml.math.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], like="jax"),
                 [0, 1, 2, 3],
                 [4, 5],
                 # reference values of e_core, one and two are computed with our initial prototype code
-                jnp.array([-5.141222763432437]),
-                jnp.array([[1.17563204e00, -5.75186616e-18], [-5.75186616e-18, 1.78830226e00]]),
-                jnp.array(
+                qml.math.array([-5.141222763432437], like="jax"),
+                qml.math.array(
+                    [[1.17563204e00, -5.75186616e-18], [-5.75186616e-18, 1.78830226e00]], like="jax"
+                ),
+                qml.math.array(
                     [
                         [
                             [[3.12945511e-01, 4.79898448e-19], [4.79898448e-19, 9.78191587e-03]],
@@ -415,7 +424,8 @@ class TestJax:
                             [[4.79898448e-19, 3.00580620e-01], [9.78191587e-03, 4.28570365e-18]],
                             [[9.78191587e-03, 4.28570365e-18], [4.28570365e-18, 5.10996835e-01]],
                         ],
-                    ]
+                    ],
+                    like="jax",
                 ),
             ),
         ],
@@ -438,9 +448,10 @@ class TestJax:
         [
             (
                 ["H", "H"],
-                jnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]),
-                jnp.array(
+                qml.math.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], like="jax"),
+                qml.math.array(
                     [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
+                    like="jax",
                 ),
                 # Hamiltonian coefficients and operators computed with OpenFermion using
                 # molecule = openfermion.MolecularData(geometry, basis, multiplicity, charge)
@@ -503,14 +514,14 @@ class TestJax:
         [
             (
                 ["H", "H"],
-                jnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]),
+                qml.math.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], like="jax"),
                 # computed with qchem.convert_observable and an OpenFermion Hamiltonian; data reordered
                 # h_mol = molecule.get_molecular_hamiltonian()
                 # h_f = openfermion.transforms.get_fermion_operator(h_mol)
                 # h_q = openfermion.transforms.jordan_wigner(h_f)
                 # h_pl = qchem.convert_observable(h_q, wires=[0, 1, 2, 3], tol=(5e-5))
                 (
-                    jnp.array(
+                    qml.math.array(
                         [
                             0.2981788017,
                             0.2081336485,
@@ -527,7 +538,8 @@ class TestJax:
                             0.175463289,
                             0.1329029281,
                             0.1847091733,
-                        ]
+                        ],
+                        like="jax",
                     ),
                     [
                         Identity(wires=[0]),
@@ -591,10 +603,8 @@ class TestJax:
     def test_diff_hamiltonian_active_space_jax(self):
         r"""Test that diff_hamiltonian using jax arrays works when an active space is defined."""
 
-        from jax import numpy as jnp
-
         symbols = ["H", "H", "H"]
-        geometry = jnp.array([[0.0, 0.0, 0.0], [2.0, 0.0, 1.0], [0.0, 2.0, 0.0]])
+        geometry = qml.math.array([[0.0, 0.0, 0.0], [2.0, 0.0, 1.0], [0.0, 2.0, 0.0]], like="jax")
 
         mol = qchem.Molecule(symbols, geometry, charge=1)
         args = [geometry]
@@ -608,14 +618,14 @@ class TestJax:
         [
             (
                 ["H", "H"],
-                jnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]]),
+                qml.math.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]], like="jax"),
                 None,
                 None,
                 0,
             ),
             (
                 ["H", "H", "H"],
-                jnp.array([[0.0, 0.0, 0.0], [2.0, 0.0, 1.0], [0.0, 2.0, 0.0]]),
+                qml.math.array([[0.0, 0.0, 0.0], [2.0, 0.0, 1.0], [0.0, 2.0, 0.0]], like="jax"),
                 [0],
                 [1, 2],
                 1,
@@ -637,12 +647,15 @@ class TestJax:
         obtained with the finite difference method when using alpha_opt and jax arrays."""
 
         import jax
-        from jax import numpy as jnp
 
         symbols = ["H", "H"]
-        geometry = jnp.array([[0.0, 0.0, -0.3674625962], [0.0, 0.0, 0.3674625962]]) / 0.529177210903
-        alpha = jnp.array(
+        geometry = (
+            qml.math.array([[0.0, 0.0, -0.3674625962], [0.0, 0.0, 0.3674625962]], like="jax")
+            / 0.529177210903
+        )
+        alpha = qml.math.array(
             [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
+            like="jax",
         )
         mol = qchem.Molecule(symbols, geometry, alpha=alpha, alpha_opt=True)
         args = [mol.alpha]
@@ -661,12 +674,14 @@ class TestJax:
 
         grad_jax = jax.grad(energy(mol), argnums=0)(*args)
 
-        alpha_1 = jnp.array(
+        alpha_1 = qml.math.array(
             [[3.42425091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
+            like="jax",
         )  # alpha[0][0] -= 0.001
 
-        alpha_2 = jnp.array(
+        alpha_2 = qml.math.array(
             [[3.42625091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
+            like="jax",
         )  # alpha[0][0] += 0.001
 
         e_1 = energy(mol)(*[alpha_1])

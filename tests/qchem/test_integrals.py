@@ -59,8 +59,6 @@ class TestNorm:
 class TestParams:
     """Tests for parameter generation functions"""
 
-    import jax.numpy as jnp
-
     @pytest.mark.parametrize(
         ("alpha", "coeff", "r"),
         [
@@ -88,15 +86,15 @@ class TestParams:
         ("alpha", "coeff", "r", "argnums"),
         [
             (
-                jnp.array([3.42525091, 0.62391373, 0.1688554]),
-                jnp.array([0.15432897, 0.53532814, 0.44463454]),
-                jnp.array([0.0, 0.0, 0.0]),
+                qml.math.array([3.42525091, 0.62391373, 0.1688554], like="jax"),
+                qml.math.array([0.15432897, 0.53532814, 0.44463454], like="jax"),
+                qml.math.array([0.0, 0.0, 0.0], like="jax"),
                 [False, True, True],
             ),
             (
-                jnp.array([3.42525091, 0.62391373, 0.1688554]),
-                jnp.array([0.15432897, 0.53532814, 0.44463454]),
-                jnp.array([0.0, 0.0, 0.0]),
+                qml.math.array([3.42525091, 0.62391373, 0.1688554], like="jax"),
+                qml.math.array([0.15432897, 0.53532814, 0.44463454], like="jax"),
+                qml.math.array([0.0, 0.0, 0.0], like="jax"),
                 [True, False, False],
             ),
         ],
