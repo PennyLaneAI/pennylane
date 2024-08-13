@@ -26,7 +26,7 @@ import logging
 import warnings
 from collections.abc import Callable, MutableMapping, Sequence
 from functools import partial
-from typing import Optional, Union
+from typing import Literal, Optional, Union, get_args
 
 from cachetools import Cache, LRUCache
 
@@ -61,23 +61,42 @@ jpc_interfaces = {
     "tensorflow",
 }
 
-INTERFACE_MAP = {
-    None: "Numpy",
-    "auto": "auto",
-    "autograd": "autograd",
-    "numpy": "autograd",
-    "scipy": "numpy",
-    "jax": "jax",
-    "jax-jit": "jax",
-    "jax-python": "jax",
-    "JAX": "jax",
-    "torch": "torch",
-    "pytorch": "torch",
-    "tf": "tf",
-    "tensorflow": "tf",
-    "tensorflow-autograph": "tf",
-    "tf-autograph": "tf",
-}
+SupportedInterfaceUserInput = Literal[
+    None,
+    "auto",
+    "autograd",
+    "numpy",
+    "scipy",
+    "jax",
+    "jax-jit",
+    "jax-python",
+    "JAX",
+    "torch",
+    "pytorch",
+    "tf",
+    "tensorflow",
+    "tensorflow-autograph",
+    "tf-autograph",
+]
+
+_mapping_output = (
+    "Numpy",
+    "auto",
+    "autograd",
+    "autograd",
+    "numpy",
+    "jax",
+    "jax",
+    "jax",
+    "jax",
+    "torch",
+    "torch",
+    "tf",
+    "tf",
+    "tf",
+    "tf",
+)
+INTERFACE_MAP = dict(zip(get_args(SupportedInterfaceUserInput), _mapping_output))
 """dict[str, str]: maps an allowed interface specification to its canonical name."""
 
 #: list[str]: allowed interface strings
@@ -467,6 +486,28 @@ def _deprecated_arguments_warnings(
     return tapes, override_shots, expand_fn, max_expansion, device_batch_transform
 
 
+def _update_mcm_config(mcm_config: "qml.devices.MCMConfig", interface: str, finite_shots: bool):
+    """Helper function to update the mid-circuit measurements configuration based on
+    execution parameters"""
+    if interface == "jax-jit" and mcm_config.mcm_method == "deferred":
+        # This is a current limitation of defer_measurements. "hw-like" behaviour is
+        # not yet accessible.
+        if mcm_config.postselect_mode == "hw-like":
+            raise ValueError(
+                "Using postselect_mode='hw-like' is not supported with jax-jit when using "
+                "mcm_method='deferred'."
+            )
+        mcm_config.postselect_mode = "fill-shots"
+
+    if (
+        finite_shots
+        and "jax" in interface
+        and mcm_config.mcm_method in (None, "one-shot")
+        and mcm_config.postselect_mode in (None, "hw-like")
+    ):
+        mcm_config.postselect_mode = "pad-invalid-samples"
+
+
 def execute(
     tapes: QuantumTapeBatch,
     device: device_type,
@@ -697,16 +738,9 @@ def execute(
     )
 
     # Mid-circuit measurement configuration validation
-    mcm_interface = _get_interface_name(tapes, "auto") if interface is None else interface
-    if mcm_interface == "jax-jit" and config.mcm_config.mcm_method == "deferred":
-        # This is a current limitation of defer_measurements. "hw-like" behaviour is
-        # not yet accessible.
-        if config.mcm_config.postselect_mode == "hw-like":
-            raise ValueError(
-                "Using postselect_mode='hw-like' is not supported with jax-jit when using "
-                "mcm_method='deferred'."
-            )
-        config.mcm_config.postselect_mode = "fill-shots"
+    mcm_interface = interface or _get_interface_name(tapes, "auto")
+    finite_shots = any(tape.shots for tape in tapes)
+    _update_mcm_config(config.mcm_config, mcm_interface, finite_shots)
 
     is_gradient_transform = isinstance(gradient_fn, qml.transforms.core.TransformDispatcher)
     transform_program, inner_transform = _make_transform_programs(
