@@ -18,13 +18,11 @@ Unit tests for functions needed for computing the Hamiltonian.
 import pytest
 
 import pennylane as qml
-import jax
 from pennylane import Identity, PauliX, PauliY, PauliZ
 from pennylane import numpy as np
 from pennylane import qchem
 from pennylane.fermi import from_string
 from pennylane.operation import active_new_opmath
-from jax import numpy as jnp
 
 
 @pytest.mark.parametrize(
@@ -348,7 +346,9 @@ def test_gradient_expvalH():
 
 
 @pytest.mark.usefixtures("use_legacy_and_new_opmath")
+@pytest.mark.jax
 class TestJax:
+    from jax import numpy as jnp
 
     @pytest.mark.parametrize(
         ("symbols", "geometry", "core", "active", "e_core", "one_ref", "two_ref"),
@@ -562,7 +562,6 @@ class TestJax:
             )
         ],
     )
-    @pytest.mark.jax
     def test_diff_hamiltonian_jax(self, symbols, geometry, h_ref_data):
         r"""Test that diff_hamiltonian using jax arrays returns the correct Hamiltonian."""
 
@@ -589,10 +588,10 @@ class TestJax:
             qml.matrix(h_ref, wire_order=wire_order),
         )
 
-    @pytest.mark.jax
     def test_diff_hamiltonian_active_space_jax(self):
         r"""Test that diff_hamiltonian using jax arrays works when an active space is defined."""
 
+        from jax import numpy as jnp    
         symbols = ["H", "H", "H"]
         geometry = jnp.array([[0.0, 0.0, 0.0], [2.0, 0.0, 1.0], [0.0, 2.0, 0.0]])
 
@@ -622,7 +621,6 @@ class TestJax:
             ),
         ],
     )
-    @pytest.mark.jax
     def test_diff_hamiltonian_wire_order_jax(self, symbols, geometry, core, active, charge):
         r"""Test that diff_hamiltonian using jax arrays has an ascending wire order."""
 
@@ -633,10 +631,12 @@ class TestJax:
 
         assert h.wires.tolist() == sorted(h.wires.tolist())
 
-    @pytest.mark.jax
     def test_gradient_jax_array(self):
         r"""Test that the gradient of expval(H) computed with ``jax.grad`` is equal to the value
         obtained with the finite difference method when using alpha_opt and jax arrays."""
+
+        import jax
+        from jax import numpy as jnp
 
         symbols = ["H", "H"]
         geometry = jnp.array([[0.0, 0.0, -0.3674625962], [0.0, 0.0, 0.3674625962]]) / 0.529177210903
@@ -675,7 +675,6 @@ class TestJax:
 
         assert np.allclose(grad_jax[0][0], grad_finitediff, rtol=1e-02)
 
-    @pytest.mark.jax
     def test_gradient_expvalH(self):
         r"""Test that the gradient of expval(H) computed with ``jax.grad`` is equal to the value
         obtained with the finite difference method."""

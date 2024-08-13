@@ -72,6 +72,9 @@ class TestMolecule:
         assert mol.charge == charge
         assert mol.mult == mult
         assert mol.basis_name == basis_name
+        assert mol.coord_opt == False
+        assert mol.alpha_opt == False
+        assert mol.coeff_opt == False
 
     @pytest.mark.parametrize(
         ("symbols", "geometry", "n_electrons", "n_orbitals", "nuclear_charges"),
