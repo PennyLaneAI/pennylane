@@ -879,6 +879,7 @@ class TestRepulsion:
 
 class TestJax:
 
+    @pytest.mark.jax
     @pytest.mark.parametrize(
         ("alpha", "coeff", "r", "argnums"),
         [
@@ -896,7 +897,6 @@ class TestJax:
             ),
         ],
     )
-    @pytest.mark.jax
     def test_generate_params_jax(self, alpha, coeff, r, argnums):
         r"""Test that test_generate_params_jax returns correct basis set parameters."""
 
@@ -906,6 +906,7 @@ class TestJax:
 
         assert np.allclose(basis_params, (alpha, coeff, r))
 
+    @pytest.mark.jax
     @pytest.mark.parametrize(
         ("symbols", "geometry", "alpha", "coef", "r", "o_ref", "argnums"),
         [
@@ -956,7 +957,6 @@ class TestJax:
             ),
         ],
     )
-    @pytest.mark.jax
     def test_overlap_integral_jax(self, symbols, geometry, alpha, coef, r, o_ref, argnums):
         r"""Test that overlap_integral function returns a correct value for the overlap integral."""
         mol = qchem.Molecule(symbols, geometry)
@@ -967,6 +967,7 @@ class TestJax:
         o = qchem.overlap_integral(basis_a, basis_b, argnums)(*args)
         assert np.allclose(o, o_ref)
 
+    @pytest.mark.jax
     @pytest.mark.parametrize(
         ("symbols", "geometry", "e", "idx", "ref", "argnums"),
         [
@@ -996,7 +997,6 @@ class TestJax:
             ),
         ],
     )
-    @pytest.mark.jax
     def test_moment_integral(self, symbols, geometry, e, idx, ref, argnums):
         r"""Test that moment_integral function returns a correct value for the moment integral."""
         mol = qchem.Molecule(symbols, geometry)
@@ -1009,6 +1009,7 @@ class TestJax:
 
         assert np.allclose(s, ref)
 
+    @pytest.mark.jax
     @pytest.mark.parametrize(
         ("symbols", "geometry", "alpha", "coeff", "t_ref", "argnums"),
         [
@@ -1044,7 +1045,6 @@ class TestJax:
             ),
         ],
     )
-    @pytest.mark.jax
     def test_kinetic_integral(self, symbols, geometry, alpha, coeff, t_ref, argnums):
         r"""Test that kinetic_integral function returns a correct value for the kinetic integral."""
         mol = qchem.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
@@ -1055,6 +1055,7 @@ class TestJax:
         t = qchem.kinetic_integral(basis_a, basis_b, argnums)(*args)
         assert qml.math.allclose(t, t_ref)
 
+    @pytest.mark.jax
     @pytest.mark.parametrize(
         ("symbols", "geometry", "alpha", "coeff", "a_ref", "argnums"),
         [
@@ -1090,7 +1091,6 @@ class TestJax:
             ),
         ],
     )
-    @pytest.mark.jax
     def test_attraction_integral(self, symbols, geometry, alpha, coeff, a_ref, argnums):
         r"""Test that attraction_integral function returns a correct value for the kinetic
         integral."""
@@ -1105,6 +1105,7 @@ class TestJax:
         a = qchem.attraction_integral(geometry[0], basis_a, basis_b, argnums)(*args)
         assert np.allclose(a, a_ref)
 
+    @pytest.mark.jax
     @pytest.mark.parametrize(
         ("symbols", "geometry", "alpha", "coeff", "e_ref", "argnums"),
         [
@@ -1158,7 +1159,6 @@ class TestJax:
             ),
         ],
     )
-    @pytest.mark.jax
     def test_repulsion_integral(self, symbols, geometry, alpha, coeff, e_ref, argnums):
         r"""Test that repulsion_integral function returns a correct value for the repulsion
         integral."""
