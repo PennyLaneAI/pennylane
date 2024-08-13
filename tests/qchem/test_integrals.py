@@ -899,6 +899,7 @@ class TestJax:
     )
     def test_generate_params_jax(self, alpha, coeff, r, argnums):
         r"""Test that test_generate_params_jax returns correct basis set parameters."""
+        import jax
 
         params = [alpha, coeff, r]
         args = [p for i, p in enumerate([alpha, coeff, r]) if argnums[2 - i]]
@@ -959,6 +960,8 @@ class TestJax:
     )
     def test_overlap_integral_jax(self, symbols, geometry, alpha, coef, r, o_ref, argnums):
         r"""Test that overlap_integral function returns a correct value for the overlap integral."""
+        import jax
+
         mol = qchem.Molecule(symbols, geometry)
         basis_a = mol.basis_set[0]
         basis_b = mol.basis_set[1]
@@ -999,6 +1002,8 @@ class TestJax:
     )
     def test_moment_integral(self, symbols, geometry, e, idx, ref, argnums):
         r"""Test that moment_integral function returns a correct value for the moment integral."""
+        import jax
+
         mol = qchem.Molecule(symbols, geometry)
         basis_a = mol.basis_set[0]
         basis_b = mol.basis_set[1]
@@ -1047,6 +1052,8 @@ class TestJax:
     )
     def test_kinetic_integral(self, symbols, geometry, alpha, coeff, t_ref, argnums):
         r"""Test that kinetic_integral function returns a correct value for the kinetic integral."""
+        import jax
+
         mol = qchem.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
         basis_a = mol.basis_set[0]
         basis_b = mol.basis_set[1]
@@ -1094,6 +1101,7 @@ class TestJax:
     def test_attraction_integral(self, symbols, geometry, alpha, coeff, a_ref, argnums):
         r"""Test that attraction_integral function returns a correct value for the kinetic
         integral."""
+        import jax
         mol = qchem.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
         basis_a = mol.basis_set[0]
         basis_b = mol.basis_set[1]
@@ -1162,6 +1170,7 @@ class TestJax:
     def test_repulsion_integral(self, symbols, geometry, alpha, coeff, e_ref, argnums):
         r"""Test that repulsion_integral function returns a correct value for the repulsion
         integral."""
+        import jax
         mol = qchem.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
         basis_a = mol.basis_set[0]
         basis_b = mol.basis_set[1]

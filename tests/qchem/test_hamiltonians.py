@@ -434,6 +434,8 @@ class TestJax:
         self, symbols, geometry, core, active, e_core, one_ref, two_ref
     ):
         r"""Test that electron_integrals returns the correct values using jax arrays."""
+        import jax
+        
         mol = qchem.Molecule(symbols, geometry)
         args = []
 
@@ -501,6 +503,8 @@ class TestJax:
     )
     def test_fermionic_hamiltonian_jax(self, symbols, geometry, alpha, h_ref):
         r"""Test that fermionic_hamiltonian using jax arrays returns the correct Hamiltonian."""
+        import jax
+
         mol = qchem.Molecule(symbols, geometry, alpha=alpha, alpha_opt=True)
         args = [alpha]
         h = qchem.fermionic_hamiltonian(mol)(*args)
@@ -578,7 +582,7 @@ class TestJax:
     )
     def test_diff_hamiltonian_jax(self, symbols, geometry, h_ref_data):
         r"""Test that diff_hamiltonian using jax arrays returns the correct Hamiltonian."""
-
+        import jax
         mol = qchem.Molecule(symbols, geometry)
         args = []
         h = qchem.diff_hamiltonian(mol)(*args)
@@ -605,6 +609,8 @@ class TestJax:
     @pytest.mark.jax
     def test_diff_hamiltonian_active_space_jax(self):
         r"""Test that diff_hamiltonian using jax arrays works when an active space is defined."""
+
+        import jax
 
         symbols = ["H", "H", "H"]
         geometry = qml.math.array([[0.0, 0.0, 0.0], [2.0, 0.0, 1.0], [0.0, 2.0, 0.0]], like="jax")
@@ -638,6 +644,7 @@ class TestJax:
     )
     def test_diff_hamiltonian_wire_order_jax(self, symbols, geometry, core, active, charge):
         r"""Test that diff_hamiltonian using jax arrays has an ascending wire order."""
+        import jax
 
         mol = qchem.Molecule(symbols, geometry, charge)
         args = [geometry]
@@ -650,7 +657,6 @@ class TestJax:
     def test_gradient_jax_array(self):
         r"""Test that the gradient of expval(H) computed with ``jax.grad`` is equal to the value
         obtained with the finite difference method when using alpha_opt and jax arrays."""
-
         import jax
 
         symbols = ["H", "H"]
