@@ -28,7 +28,7 @@ jobs:
     # If needed, this workflow will create a cached benchmark reference.
     # This reference will be used for comparative analyses with all PRs benchmarks.
     reference-benchmarks:
-      if: github.event.pull_request.draft == false && github.event_name == 'schedule' || (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'ci:run-benchmarks'))
+      if: github.event_name == 'schedule' || (github.event_name == 'pull_request' && github.event.pull_request.draft == false && contains(github.event.pull_request.labels.*.name, 'ci:run-benchmarks'))
 
       uses: ./.github/workflows/interface-unit-tests.yml
       secrets:
