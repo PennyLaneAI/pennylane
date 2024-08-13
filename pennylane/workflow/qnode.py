@@ -474,7 +474,7 @@ class QNode:
         cache: Union[MutableMapping, Literal["auto", True, False]] = "auto",
         cachesize: int = 10000,
         max_diff: int = 1,
-        device_vjp: bool = False,
+        device_vjp: Union[None, bool] = False,
         postselect_mode: Literal[None, "hw-like", "fill-shots"] = None,
         mcm_method: Literal[None, "deferred", "one-shot", "tree-traversal"] = None,
         **gradient_kwargs,
