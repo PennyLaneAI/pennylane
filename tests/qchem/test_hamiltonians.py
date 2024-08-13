@@ -348,6 +348,7 @@ def test_gradient_expvalH():
 @pytest.mark.usefixtures("use_legacy_and_new_opmath")
 class TestJax:
 
+    @pytest.mark.jax
     @pytest.mark.parametrize(
         ("symbols", "geometry", "core", "active", "e_core", "one_ref", "two_ref"),
         [
@@ -429,7 +430,6 @@ class TestJax:
             ),
         ],
     )
-    @pytest.mark.jax
     def test_electron_integrals_jax(
         self, symbols, geometry, core, active, e_core, one_ref, two_ref
     ):
@@ -443,6 +443,7 @@ class TestJax:
         assert np.allclose(one, one_ref)
         assert np.allclose(two, two_ref)
 
+    @pytest.mark.jax
     @pytest.mark.parametrize(
         ("symbols", "geometry", "alpha", "h_ref"),
         [
@@ -498,7 +499,6 @@ class TestJax:
             )
         ],
     )
-    @pytest.mark.jax
     def test_fermionic_hamiltonian_jax(self, symbols, geometry, alpha, h_ref):
         r"""Test that fermionic_hamiltonian using jax arrays returns the correct Hamiltonian."""
         mol = qchem.Molecule(symbols, geometry, alpha=alpha, alpha_opt=True)
@@ -510,6 +510,7 @@ class TestJax:
         assert np.allclose(list(h.values()), list(h_ref.values()))
         assert h.keys() == h_ref.keys()
 
+    @pytest.mark.jax
     @pytest.mark.parametrize(
         ("symbols", "geometry", "h_ref_data"),
         [
@@ -575,7 +576,6 @@ class TestJax:
             )
         ],
     )
-    @pytest.mark.jax
     def test_diff_hamiltonian_jax(self, symbols, geometry, h_ref_data):
         r"""Test that diff_hamiltonian using jax arrays returns the correct Hamiltonian."""
 
@@ -616,6 +616,7 @@ class TestJax:
 
         assert isinstance(h, qml.ops.Sum if active_new_opmath() else qml.Hamiltonian)
 
+    @pytest.mark.jax
     @pytest.mark.parametrize(
         ("symbols", "geometry", "core", "active", "charge"),
         [
@@ -635,7 +636,6 @@ class TestJax:
             ),
         ],
     )
-    @pytest.mark.jax
     def test_diff_hamiltonian_wire_order_jax(self, symbols, geometry, core, active, charge):
         r"""Test that diff_hamiltonian using jax arrays has an ascending wire order."""
 
