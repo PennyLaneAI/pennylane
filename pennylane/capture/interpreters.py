@@ -1,110 +1,20 @@
-from functools import partial
-from typing import Optional
 
-import jax
 from jax.tree_util import tree_flatten, tree_unflatten
+
+from .base_interpreter import PlxprInterpreter
 
 from pennylane.devices.qubit import apply_operation, create_initial_state, measure
 from pennylane.tape import QuantumScript
-from pennylane.transforms.optimization.cancel_inverses import _are_inverses
-
-from .primitives import _get_abstract_measurement, _get_abstract_operator
-
-AbstractOperator = _get_abstract_operator()
-AbstractMeasurement = _get_abstract_measurement()
-
-
-class PlxprInterpreter:
-
-    _env: Optional[dict] = None
-    _op_math_cache: Optional[dict] = None
-
-    def _read(self, var):
-        """Extract the value corresponding to a variable."""
-        if self._env is None:
-            raise ValueError("_env not yet initialized.")
-        return var.val if type(var) is jax.core.Literal else self._env[var]
-
-    def setup(self):
-        pass
-
-    def cleanup(self):
-        pass
-
-    def interpret_operation(self, op: "pennylane.operation.Operator"):
-        raise NotImplementedError
-
-    def interpret_operation_eqn(self, eqn: "jax.core.JaxprEqn"):
-
-        invals = [self._read(invar) for invar in eqn.invars]
-        op = eqn.primitive.impl(*invals, **eqn.params)
-        if not isinstance(eqn.outvars[0], jax.core.DropVar):
-            self._op_math_cache[eqn.outvars[0]] = eqn
-            self._env[eqn.outvars[0]] = op
-            return
-        return self.interpret_operation(op)
-
-    def interpret_measurement(self, measurement: "pennylane.measurements.MeasurementProcess"):
-        raise NotImplementedError
-
-    def interpret_measurement_eqn(self, eqn: "jax.core.JaxprEqn"):
-        invals = [self._read(invar) for invar in eqn.invars]
-        mp = eqn.primitive.impl(*invals, **eqn.params)
-        return self.interpret_measurement(mp)
-
-    def call(self, jaxpr, n_consts):
-        def wrapper(*args):
-            return self(jaxpr.jaxpr, args[:n_consts], *args[n_consts:])
-
-        return wrapper
-
-    def __call__(self, f):
-        def wrapper(*args):
-            jaxpr = jax.make_jaxpr(f)(*args)
-            return self.eval(jaxpr.jaxpr, jaxpr.consts, *args)
-
-        return wrapper
-
-    def eval(self, jaxpr, consts, *args):
-        self._env = {}
-        self._op_math_cache = {}
-        self.setup()
-
-        for arg, invar in zip(args, jaxpr.invars):
-            self._env[invar] = arg
-        for const, constvar in zip(consts, jaxpr.constvars):
-            self._env[constvar] = const
-
-        measurements = []
-        for eqn in jaxpr.eqns:
-            if isinstance(eqn.outvars[0].aval, AbstractOperator):
-                self.interpret_operation_eqn(eqn)
-
-            elif isinstance(eqn.outvars[0].aval, AbstractMeasurement):
-                measurement = self.interpret_measurement_eqn(eqn)
-                measurements.append(measurement)
-            else:
-                invals = [self._read(invar) for invar in eqn.invars]
-                outvals = eqn.primitive.bind(*invals, **eqn.params)
-                if not eqn.primitive.multiple_results:
-                    outvals = [outvals]
-                for outvar, outval in zip(eqn.outvars, outvals):
-                    self._env[outvar] = outval
-
-        self.cleanup()
-        # Read the final result of the Jaxpr from the environment
-        return measurements
-
 
 class DefaultQubitInterpreter(PlxprInterpreter):
 
-    _state = None
-
-    def __init__(self, num_wires):
+    def __init__(self, num_wires, state = None):
         self.num_wires = num_wires
+        self._state = {"statevector": state}
 
     def setup(self):
-        self._state = create_initial_state(range(self.num_wires))
+        if self._state is not None:
+            self._state = create_initial_state(range(self.num_wires))
 
     def cleanup(self):
         self._state = None
@@ -161,10 +71,6 @@ class DecompositionInterpreter(PlxprInterpreter):
         else:
             vals, structure = tree_flatten(op)
             tree_unflatten(structure, vals)
-
-    def interpret_measurement(self, m):
-        vals, structure = tree_flatten(m)
-        return tree_unflatten(structure, vals)
 
 
 class ConvertToTape(PlxprInterpreter):
