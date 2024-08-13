@@ -117,7 +117,7 @@ def electron_integrals(mol, core=None, active=None):
         Returns:
             tuple[array[float]]: 1D tuple containing core constant, one- and two-electron integrals
         """
-        argnums = [opt for opt in [mol.coord_opt, mol.coeff_opt, mol.alpha_opt]]
+        argnums = [mol.coord_opt, mol.coeff_opt, mol.alpha_opt]
         _, coeffs, _, h_core, repulsion_tensor = scf(mol, argnums)(*args)
         one = qml.math.einsum("qr,rs,st->qt", coeffs.T, h_core, coeffs)
         two = qml.math.swapaxes(
