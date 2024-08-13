@@ -225,7 +225,7 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
             [math.fidelity_statevector(circuit(), exp_state)], [1.0], atol=tol(dev.shots)
         )
 
-    @pytest.fixture(scope="function", autouse=True)
+    @pytest.fixture(scope="function", autouse=False)
     def capture_warnings(self, recwarn):
         """Capture warnings."""
         yield

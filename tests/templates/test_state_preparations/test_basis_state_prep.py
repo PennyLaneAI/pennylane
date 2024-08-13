@@ -22,7 +22,7 @@ import pytest
 import pennylane as qml
 
 
-@pytest.fixture(scope="function", autouse=True)
+@pytest.fixture(scope="function", autouse=False)
 def capture_warnings(recwarn):  # pylint: disable=function-redefined
     yield
     if len(recwarn) > 0:
@@ -45,7 +45,7 @@ def test_standard_validity():
 class TestDecomposition:
     """Tests that the template defines the correct decomposition."""
 
-    @pytest.fixture(scope="function", autouse=True)
+    @pytest.fixture(scope="function", autouse=False)
     def capture_warnings(self, recwarn):  # pylint: disable=function-redefined
         yield
         if len(recwarn) > 0:
@@ -78,7 +78,7 @@ class TestDecomposition:
             assert gate.name == "PauliX"
             assert gate.wires.tolist() == [target_wires[id]]
 
-    @pytest.fixture(scope="function", autouse=True)
+    @pytest.fixture(scope="function", autouse=False)
     def capture_warnings(self, recwarn):  # pylint: disable=function-redefined
         yield
         if len(recwarn) > 0:
@@ -115,7 +115,7 @@ class TestDecomposition:
 
         assert np.allclose(output_state, target_state, atol=tol, rtol=0)
 
-    @pytest.fixture(scope="function", autouse=True)
+    @pytest.fixture(scope="function", autouse=False)
     def capture_warnings(self, recwarn):  # pylint: disable=function-redefined
         yield
         if len(recwarn) > 0:
@@ -150,7 +150,7 @@ class TestDecomposition:
 
         assert np.allclose(output_state, target_state, atol=tol, rtol=0)
 
-    @pytest.fixture(scope="function", autouse=True)
+    @pytest.fixture(scope="function", autouse=False)
     def capture_warnings(self, recwarn):  # pylint: disable=function-redefined
         yield
         if len(recwarn) > 0:
@@ -184,7 +184,7 @@ class TestDecomposition:
 
         assert np.allclose(output_state, target_state, atol=tol, rtol=0)
 
-    @pytest.fixture(scope="function", autouse=True)
+    @pytest.fixture(scope="function", autouse=False)
     def capture_warnings(self, recwarn):  # pylint: disable=function-redefined
         yield
         if len(recwarn) > 0:
@@ -215,7 +215,7 @@ class TestDecomposition:
         assert np.allclose(res1, res2, atol=tol, rtol=0)
         assert np.allclose(state1, state2, atol=tol, rtol=0)
 
-    @pytest.fixture(scope="function", autouse=True)
+    @pytest.fixture(scope="function", autouse=False)
     def capture_warnings(self, recwarn):  # pylint: disable=function-redefined
         yield
         if len(recwarn) > 0:
@@ -235,7 +235,7 @@ class TestDecomposition:
 class TestInputs:
     """Test inputs and pre-processing."""
 
-    @pytest.fixture(scope="function", autouse=True)
+    @pytest.fixture(scope="function", autouse=False)
     def capture_warnings(self, recwarn):  # pylint: disable=function-redefined
         yield
         if len(recwarn) > 0:
@@ -256,7 +256,7 @@ class TestInputs:
         with pytest.raises(ValueError, match="Basis states must be of (shape|length)"):
             qml.BasisStatePreparation(basis_state, wires)
 
-    @pytest.fixture(scope="function", autouse=True)
+    @pytest.fixture(scope="function", autouse=False)
     def capture_warnings(self, recwarn):  # pylint: disable=function-redefined
         yield
         if len(recwarn) > 0:
@@ -277,7 +277,7 @@ class TestInputs:
         with pytest.raises(ValueError, match="Basis states must only (contain|consist)"):
             qml.BasisStatePreparation(basis_state, wires)
 
-    @pytest.fixture(scope="function", autouse=True)
+    @pytest.fixture(scope="function", autouse=False)
     def capture_warnings(self, recwarn):  # pylint: disable=function-redefined
         yield
         if len(recwarn) > 0:
@@ -307,7 +307,7 @@ class TestInputs:
             basis_state = np.array([0, 2])
             circuit(basis_state)
 
-    @pytest.fixture(scope="function", autouse=True)
+    @pytest.fixture(scope="function", autouse=False)
     def capture_warnings(self, recwarn):  # pylint: disable=function-redefined
         yield
         if len(recwarn) > 0:

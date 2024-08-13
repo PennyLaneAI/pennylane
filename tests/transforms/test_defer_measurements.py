@@ -1347,7 +1347,7 @@ class TestExpressionConditionals:
 class TestTemplates:
     """Tests templates being conditioned on mid-circuit measurement outcomes."""
 
-    @pytest.fixture(scope="function", autouse=True)
+    @pytest.fixture(scope="function", autouse=False)
     def capture_warnings(self, recwarn):
         yield
         if len(recwarn) > 0:

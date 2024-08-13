@@ -174,7 +174,7 @@ def test_mottonenstate_preparation(mocker):
     assert np.allclose(res, indiv_res)
 
 
-@pytest.fixture(scope="function", autouse=True)
+@pytest.fixture(scope="function", autouse=False)
 def capture_warnings(recwarn):
     yield
     if len(recwarn) > 0:
