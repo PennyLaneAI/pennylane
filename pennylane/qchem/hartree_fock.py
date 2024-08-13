@@ -22,7 +22,7 @@ import pennylane as qml
 from .matrices import core_matrix, mol_density_matrix, overlap_matrix, repulsion_tensor
 
 
-def scf(mol, n_steps=50, tol=1e-8):
+def scf(mol, argnums, n_steps=50, tol=1e-8):
     r"""Return a function that performs the self-consistent-field calculations.
 
     In the Hartree-Fock method, molecular orbitals are typically constructed as a linear combination
@@ -126,16 +126,16 @@ def scf(mol, n_steps=50, tol=1e-8):
         r = mol.coordinates
         n_electron = mol.n_electrons
 
-        if getattr(r, "requires_grad", False):
+        if getattr(r, "requires_grad", False) or argnums[0]:
             args_r = [[args[0][i]] * mol.n_basis[i] for i in range(len(mol.n_basis))]
             args_ = [*args] + [qml.math.vstack(list(itertools.chain(*args_r)))]
-            rep_tensor = repulsion_tensor(basis_functions)(*args_[1:])
-            s = overlap_matrix(basis_functions)(*args_[1:])
-            h_core = core_matrix(basis_functions, charges, r)(*args_)
+            rep_tensor = repulsion_tensor(basis_functions, argnums)(*args_[1:])
+            s = overlap_matrix(basis_functions, argnums)(*args_[1:])
+            h_core = core_matrix(basis_functions, charges, r, argnums)(*args_)
         else:
-            rep_tensor = repulsion_tensor(basis_functions)(*args)
-            s = overlap_matrix(basis_functions)(*args)
-            h_core = core_matrix(basis_functions, charges, r)(*args)
+            rep_tensor = repulsion_tensor(basis_functions, argnums)(*args)
+            s = overlap_matrix(basis_functions, argnums)(*args)
+            h_core = core_matrix(basis_functions, charges, r, argnums)(*args)
 
         rng = qml.math.random.default_rng(2030)
         s = s + qml.math.diag(rng.random(len(s)) * 1.0e-12)
@@ -174,7 +174,7 @@ def scf(mol, n_steps=50, tol=1e-8):
     return _scf
 
 
-def nuclear_energy(charges, r):
+def nuclear_energy(charges, r, argnums):
     r"""Return a function that computes the nuclear-repulsion energy.
 
     The nuclear-repulsion energy is computed as
@@ -213,7 +213,7 @@ def nuclear_energy(charges, r):
         Returns:
             array[float]: nuclear-repulsion energy
         """
-        if getattr(r, "requires_grad", False):
+        if getattr(r, "requires_grad", False) or argnums[0]:
             coor = args[0]
         else:
             coor = r

@@ -61,7 +61,7 @@ def mol_density_matrix(n_electron, c):
     return p
 
 
-def overlap_matrix(basis_functions):
+def overlap_matrix(basis_functions, argnums):
     r"""Return a function that computes the overlap matrix for a given set of basis functions.
 
     Args:
@@ -98,7 +98,7 @@ def overlap_matrix(basis_functions):
             args_ab = []
             if args:
                 args_ab.extend([arg[i], arg[j]] for arg in args)
-            integral = overlap_integral(a, b, normalize=False)(*args_ab)
+            integral = overlap_integral(a, b, argnums, normalize=False)(*args_ab)
 
             o = qml.math.zeros((n, n))
             o[i, j] = o[j, i] = 1.0
@@ -160,7 +160,7 @@ def moment_matrix(basis_functions, order, idx):
     return _moment_matrix
 
 
-def kinetic_matrix(basis_functions):
+def kinetic_matrix(basis_functions, argnums):
     r"""Return a function that computes the kinetic matrix for a given set of basis functions.
 
     Args:
@@ -197,7 +197,7 @@ def kinetic_matrix(basis_functions):
             args_ab = []
             if args:
                 args_ab.extend([arg[i], arg[j]] for arg in args)
-            integral = kinetic_integral(a, b, normalize=False)(*args_ab)
+            integral = kinetic_integral(a, b, argnums, normalize=False)(*args_ab)
 
             o = qml.math.zeros((n, n))
             o[i, j] = o[j, i] = 1.0
@@ -208,7 +208,7 @@ def kinetic_matrix(basis_functions):
     return kinetic
 
 
-def attraction_matrix(basis_functions, charges, r):
+def attraction_matrix(basis_functions, charges, r, argnums):
     r"""Return a function that computes the electron-nuclear attraction matrix for a given set of
     basis functions.
 
@@ -248,23 +248,23 @@ def attraction_matrix(basis_functions, charges, r):
             if args:
                 args_ab = []
 
-                if getattr(r, "requires_grad", False):
+                if getattr(r, "requires_grad", False) or argnums[0]:
                     args_ab.extend([arg[i], arg[j]] for arg in args[1:])
                 else:
                     args_ab.extend([arg[i], arg[j]] for arg in args)
 
                 for k, c in enumerate(r):
-                    if getattr(c, "requires_grad", False):
+                    if getattr(c, "requires_grad", False) or argnums[0]:
                         args_ab = [args[0][k]] + args_ab
                     integral = integral - charges[k] * attraction_integral(
-                        c, a, b, normalize=False
+                        c, a, b, argnums, normalize=False
                     )(*args_ab)
-                    if getattr(c, "requires_grad", False):
+                    if getattr(c, "requires_grad", False) or argnums[0]:
                         args_ab = args_ab[1:]
             else:
                 for k, c in enumerate(r):
                     integral = (
-                        integral - charges[k] * attraction_integral(c, a, b, normalize=False)()
+                        integral - charges[k] * attraction_integral(c, a, b, argnums, normalize=False)()
                     )
 
             o = qml.math.zeros((n, n))
@@ -276,7 +276,7 @@ def attraction_matrix(basis_functions, charges, r):
     return attraction
 
 
-def repulsion_tensor(basis_functions):
+def repulsion_tensor(basis_functions, argnums):
     r"""Return a function that computes the electron repulsion tensor for a given set of basis
     functions.
 
@@ -322,7 +322,7 @@ def repulsion_tensor(basis_functions):
                 args_abcd = []
                 if args:
                     args_abcd.extend([arg[i], arg[j], arg[k], arg[l]] for arg in args)
-                integral = repulsion_integral(a, b, c, d, normalize=False)(*args_abcd)
+                integral = repulsion_integral(a, b, c, d, argnums, normalize=False,)(*args_abcd)
 
                 permutations = [
                     (i, j, k, l),
@@ -345,7 +345,7 @@ def repulsion_tensor(basis_functions):
     return repulsion
 
 
-def core_matrix(basis_functions, charges, r):
+def core_matrix(basis_functions, charges, r, argnums):
     r"""Return a function that computes the core matrix for a given set of basis functions.
 
     The core matrix is computed as a sum of the kinetic and electron-nuclear attraction matrices.
@@ -379,12 +379,12 @@ def core_matrix(basis_functions, charges, r):
         Returns:
             array[array[float]]: the core matrix
         """
-        if getattr(r, "requires_grad", False):
-            t = kinetic_matrix(basis_functions)(*args[1:])
+        if getattr(r, "requires_grad", False) or argnums[0]:
+            t = kinetic_matrix(basis_functions, argnums)(*args[1:])
         else:
-            t = kinetic_matrix(basis_functions)(*args)
+            t = kinetic_matrix(basis_functions, argnums)(*args)
 
-        a = attraction_matrix(basis_functions, charges, r)(*args)
+        a = attraction_matrix(basis_functions, charges, r, argnums)(*args)
         return t + a
 
     return core
