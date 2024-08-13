@@ -59,6 +59,11 @@ on:
         required: false
         type: string
         default: ''
+      install_catalyst_after_pennylane:
+        description: Indicate if the latest Catalyst should be installed after PennyLane
+        required: false
+        type: boolean
+        default: false
       install_pennylane_lightning_master:
         description: Indicate if PennyLane-Lightning should be installed from the master branch
         required: false
@@ -147,6 +152,7 @@ jobs:
           install_tensorflow: ${{ inputs.install_tensorflow }}
           install_jax: ${{ inputs.install_jax }}
           additional_pip_packages: ${{ inputs.additional_pip_packages }}
+          install_catalyst_after_pennylane: ${{ inputs.install_catalyst_after_pennylane }}
           install_pennylane_lightning_master: ${{ inputs.install_pennylane_lightning_master }}
           requirements_file: ${{ inputs.requirements_file }}
 

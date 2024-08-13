@@ -15,10 +15,10 @@
 Code relevant for performing measurements on a qutrit mixed state.
 """
 
+from collections.abc import Callable
 from string import ascii_letters as alphabet
-from typing import Callable
 
-from pennylane import math
+from pennylane import math, queuing
 from pennylane.measurements import (
     ExpectationMP,
     MeasurementProcess,
@@ -36,7 +36,10 @@ from .utils import QUDIT_DIM, get_num_wires, reshape_state_as_matrix
 
 
 def calculate_expval(
-    measurementprocess: ExpectationMP, state: TensorLike, is_state_batched: bool = False
+    measurementprocess: ExpectationMP,
+    state: TensorLike,
+    is_state_batched: bool = False,
+    readout_errors: list[Callable] = None,
 ) -> TensorLike:
     """Measure the expectation value of an observable.
 
@@ -44,18 +47,23 @@ def calculate_expval(
         measurementprocess (ExpectationMP): measurement process to apply to the state.
         state (TensorLike): the state to measure.
         is_state_batched (bool): whether the state is batched or not.
+        readout_errors (List[Callable]): List of chanels to apply to each wire being measured
+        to simulate readout errors.
 
     Returns:
         TensorLike: expectation value of observable wrt the state.
     """
-    probs = calculate_probability(measurementprocess, state, is_state_batched)
+    probs = calculate_probability(measurementprocess, state, is_state_batched, readout_errors)
     eigvals = math.asarray(measurementprocess.eigvals(), dtype="float64")
     # In case of broadcasting, `probs` has two axes and these are a matrix-vector products
     return math.dot(probs, eigvals)
 
 
 def calculate_reduced_density_matrix(
-    measurementprocess: StateMeasurement, state: TensorLike, is_state_batched: bool = False
+    measurementprocess: StateMeasurement,
+    state: TensorLike,
+    is_state_batched: bool = False,
+    _readout_errors: list[Callable] = None,
 ) -> TensorLike:
     """Get the state or reduced density matrix.
 
@@ -63,6 +71,8 @@ def calculate_reduced_density_matrix(
         measurementprocess (StateMeasurement): measurement to apply to the state.
         state (TensorLike): state to apply the measurement to.
         is_state_batched (bool): whether the state is batched or not.
+        _readout_errors (List[Callable]): List of channels to apply to each wire being measured
+        to simulate readout errors. These are not applied on this type of measurement.
 
     Returns:
         TensorLike: state or reduced density matrix.
@@ -91,7 +101,10 @@ def calculate_reduced_density_matrix(
 
 
 def calculate_probability(
-    measurementprocess: StateMeasurement, state: TensorLike, is_state_batched: bool = False
+    measurementprocess: StateMeasurement,
+    state: TensorLike,
+    is_state_batched: bool = False,
+    readout_errors: list[Callable] = None,
 ) -> TensorLike:
     """Find the probability of measuring states.
 
@@ -99,6 +112,8 @@ def calculate_probability(
         measurementprocess (StateMeasurement): measurement to apply to the state.
         state (TensorLike): state to apply the measurement to.
         is_state_batched (bool): whether the state is batched or not.
+        readout_errors (List[Callable]): List of channels to apply to each wire being measured
+        to simulate readout errors.
 
     Returns:
         TensorLike: the probability of the state being in each measurable state.
@@ -106,9 +121,15 @@ def calculate_probability(
     for op in measurementprocess.diagonalizing_gates():
         state = apply_operation(op, state, is_state_batched=is_state_batched)
 
+    wires = measurementprocess.wires
     num_state_wires = get_num_wires(state, is_state_batched)
     wire_order = Wires(range(num_state_wires))
-    wires = measurementprocess.wires
+
+    if readout_errors is not None:
+        with queuing.QueuingManager.stop_recording():
+            for wire in wires:
+                for m_error in readout_errors:
+                    state = apply_operation(m_error(wire), state, is_state_batched=is_state_batched)
 
     # probs are diagonal elements
     # stacking list since diagonal function axis selection parameter names
@@ -158,7 +179,10 @@ def calculate_probability(
 
 
 def calculate_variance(
-    measurementprocess: StateMeasurement, state: TensorLike, is_state_batched: bool = False
+    measurementprocess: StateMeasurement,
+    state: TensorLike,
+    is_state_batched: bool = False,
+    readout_errors: list[Callable] = None,
 ) -> TensorLike:
     """Find variance of observable.
 
@@ -166,11 +190,13 @@ def calculate_variance(
         measurementprocess (StateMeasurement): measurement to apply to the state.
         state (TensorLike): state to apply the measurement to.
         is_state_batched (bool): whether the state is batched or not.
+        readout_errors (List[Callable]): List of operators to apply to each wire being measured
+        to simulate readout errors.
 
     Returns:
         TensorLike: the variance of the observable wrt the state.
     """
-    probs = calculate_probability(measurementprocess, state, is_state_batched)
+    probs = calculate_probability(measurementprocess, state, is_state_batched, readout_errors)
     eigvals = math.asarray(measurementprocess.eigvals(), dtype="float64")
     # In case of broadcasting, `probs` has two axes and these are a matrix-vector products
     return math.dot(probs, (eigvals**2)) - math.dot(probs, eigvals) ** 2
@@ -180,6 +206,7 @@ def calculate_expval_sum_of_terms(
     measurementprocess: ExpectationMP,
     state: TensorLike,
     is_state_batched: bool = False,
+    readout_errors: list[Callable] = None,
 ) -> TensorLike:
     """Measure the expectation value of the state when the measured observable is a ``Hamiltonian`` or ``Sum``
     and it must be backpropagation compatible.
@@ -188,6 +215,8 @@ def calculate_expval_sum_of_terms(
         measurementprocess (ExpectationMP): measurement process to apply to the state.
         state (TensorLike): the state to measure.
         is_state_batched (bool): whether the state is batched or not.
+        readout_errors (List[Callable]): List of channels to apply to each wire being measured
+        to simulate readout errors.
 
     Returns:
         TensorLike: the expectation value of the sum of Hamiltonian observable wrt the state.
@@ -196,12 +225,23 @@ def calculate_expval_sum_of_terms(
         # Recursively call measure on each term, so that the best measurement method can
         # be used for each term
         return sum(
-            measure(ExpectationMP(term), state, is_state_batched=is_state_batched)
+            measure(
+                ExpectationMP(term),
+                state,
+                is_state_batched=is_state_batched,
+                readout_errors=readout_errors,
+            )
             for term in measurementprocess.obs
         )
     # else hamiltonian
     return sum(
-        c * measure(ExpectationMP(t), state, is_state_batched=is_state_batched)
+        c
+        * measure(
+            ExpectationMP(t),
+            state,
+            is_state_batched=is_state_batched,
+            readout_errors=readout_errors,
+        )
         for c, t in zip(*measurementprocess.obs.terms())
     )
 
@@ -209,7 +249,7 @@ def calculate_expval_sum_of_terms(
 # pylint: disable=too-many-return-statements
 def get_measurement_function(
     measurementprocess: MeasurementProcess,
-) -> Callable[[MeasurementProcess, TensorLike], TensorLike]:
+) -> Callable[[MeasurementProcess, TensorLike, bool, list[Callable]], TensorLike]:
     """Get the appropriate method for performing a measurement.
 
     Args:
@@ -238,7 +278,10 @@ def get_measurement_function(
 
 
 def measure(
-    measurementprocess: MeasurementProcess, state: TensorLike, is_state_batched: bool = False
+    measurementprocess: MeasurementProcess,
+    state: TensorLike,
+    is_state_batched: bool = False,
+    readout_errors: list[Callable] = None,
 ) -> TensorLike:
     """Apply a measurement process to a state.
 
@@ -246,8 +289,11 @@ def measure(
         measurementprocess (MeasurementProcess): measurement process to apply to the state.
         state (TensorLike): the state to measure.
         is_state_batched (bool): whether the state is batched or not.
+        readout_errors (List[Callable]): List of channels to apply to each wire being measured
+        to simulate readout errors.
 
     Returns:
         Tensorlike: the result of the measurement process being applied to the state.
     """
-    return get_measurement_function(measurementprocess)(measurementprocess, state, is_state_batched)
+    measurement_function = get_measurement_function(measurementprocess)
+    return measurement_function(measurementprocess, state, is_state_batched, readout_errors)

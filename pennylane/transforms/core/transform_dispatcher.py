@@ -19,7 +19,7 @@ import functools
 import os
 import types
 import warnings
-from typing import Sequence
+from collections.abc import Sequence
 
 import pennylane as qml
 from pennylane.typing import ResultBatch

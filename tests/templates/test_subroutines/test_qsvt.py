@@ -169,6 +169,13 @@ class TestQSVT:
         for op1, op2 in zip(ops, decomp):
             qml.assert_equal(op1, op2)
 
+    def test_wire_order(self):
+        """Test that the wire order is preserved."""
+
+        op = qml.QFT(wires=[2, 1])
+        qsvt_wires = qml.QSVT(op, [op]).wires
+        assert qsvt_wires == op.wires
+
     @pytest.mark.parametrize(
         ("quantum_function", "phi_func", "A", "phis", "results"),
         [
@@ -578,3 +585,30 @@ class Testqsvt:
 
         for idx, result in enumerate(manual_phi_results):
             assert np.isclose(result, np.real(phi_grad_results[idx]), atol=1e-6)
+
+
+phase_angle_data = (
+    (
+        [0, 0, 0],
+        [3 * np.pi / 4, np.pi / 2, -np.pi / 4],
+    ),
+    (
+        [1.0, 2.0, 3.0, 4.0],
+        [1.0 + 3 * np.pi / 4, 2.0 + np.pi / 2, 3.0 + np.pi / 2, 4.0 - np.pi / 4],
+    ),
+)
+
+
+@pytest.mark.jax
+@pytest.mark.parametrize("initial_angles, expected_angles", phase_angle_data)
+def test_private_qsp_to_qsvt_jax(initial_angles, expected_angles):
+    """Test that the _qsp_to_qsvt function is jax compatible"""
+    import jax.numpy as jnp
+
+    from pennylane.templates.subroutines.qsvt import _qsp_to_qsvt
+
+    initial_angles = jnp.array(initial_angles)
+    expected_angles = jnp.array(expected_angles)
+
+    computed_angles = _qsp_to_qsvt(initial_angles)
+    jnp.allclose(computed_angles, expected_angles)

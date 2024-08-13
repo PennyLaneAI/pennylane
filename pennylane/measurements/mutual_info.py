@@ -15,8 +15,9 @@
 """
 This module contains the qml.mutual_info measurement.
 """
+from collections.abc import Sequence
 from copy import copy
-from typing import Optional, Sequence
+from typing import Optional
 
 import pennylane as qml
 from pennylane.wires import Wires
@@ -91,7 +92,7 @@ def mutual_info(wires0, wires1, log_base=None):
 class MutualInfoMP(StateMeasurement):
     """Measurement process that computes the mutual information between the provided wires.
 
-    Please refer to :func:`mutual_info` for detailed documentation.
+    Please refer to :func:`pennylane.mutual_info` for detailed documentation.
 
     Args:
         wires (Sequence[.Wires]): The wires the measurement process applies to.

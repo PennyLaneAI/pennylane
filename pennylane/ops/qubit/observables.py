@@ -16,6 +16,7 @@ This submodule contains the discrete-variable quantum observables,
 excepting the Pauli gates and Hadamard gate in ``non_parametric_ops.py``.
 """
 
+import warnings
 from collections.abc import Sequence
 from copy import copy
 
@@ -160,6 +161,52 @@ class Hermitian(Observable):
             array: array containing the eigenvalues of the Hermitian observable
         """
         return self.eigendecomposition["eigval"]
+
+    @staticmethod
+    def compute_decomposition(A, wires):  # pylint: disable=arguments-differ
+        r"""Decomposes a hermitian matrix as a sum of Pauli operators.
+
+        Args:
+            A (array or Sequence): hermitian matrix
+            wires (Iterable[Any], Wires): wires that the operator acts on
+        Returns:
+            list[.Operator]: decomposition of the hermitian matrix
+
+        **Examples**
+
+        >>> op = qml.X(0) + qml.Y(1) + 2 * qml.X(0) @ qml.Z(3)
+        >>> op_matrix = qml.matrix(op)
+        >>> qml.Hermitian.compute_decomposition(op_matrix, wires=['a', 'b', 'aux'])
+        [(
+              1.0 * (I('a') @ Y('b') @ I('aux'))
+            + 1.0 * (X('a') @ I('b') @ I('aux'))
+            + 2.0 * (X('a') @ I('b') @ Z('aux'))
+        )]
+        >>> op = np.array([[1, 1], [1, -1]]) / np.sqrt(2)
+        >>> qml.Hermitian.compute_decomposition(op, wires=0)
+        [(
+              0.7071067811865475 * X(0)
+            + 0.7071067811865475 * Z(0)
+        )]
+
+        """
+        A = qml.math.asarray(A)
+
+        if isinstance(wires, (int, str)):
+            wires = Wires(wires)
+
+        if len(wires) == 0:
+            raise ValueError("Hermitian: wrong number of wires. At least one wire has to be given.")
+        Hermitian._validate_input(A, expected_mx_shape=2 ** len(wires))
+
+        # determined heuristically from test_hermitian_decomposition_performance
+        if len(wires) > 7:
+            warnings.warn(
+                "Decomposition may be inefficient for this large of a matrix.",
+                UserWarning,
+            )
+
+        return [qml.pauli.conversion.pauli_decompose(A, wire_order=wires, pauli=False)]
 
     @staticmethod
     def compute_diagonalizing_gates(eigenvectors, wires):  # pylint: disable=arguments-differ
@@ -583,6 +630,24 @@ class BasisStateProjector(Projector, Operation):
         []
         """
         return []
+
+    @staticmethod
+    def compute_sparse_matrix(basis_state):  # pylint: disable=arguments-differ,unused-argument
+        """
+        Computes the sparse CSR matrix representation of the projector onto the basis state.
+
+        Args:
+            basis_state (Iterable): The basis state as an iterable of integers (0 or 1).
+
+        Returns:
+            scipy.sparse.csr_matrix: The sparse CSR matrix representation of the projector.
+        """
+
+        num_qubits = len(basis_state)
+        data = [1]
+        rows = [int("".join(str(bit) for bit in basis_state), 2)]
+        cols = rows
+        return csr_matrix((data, (rows, cols)), shape=(2**num_qubits, 2**num_qubits))
 
 
 class StateVectorProjector(Projector):

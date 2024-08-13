@@ -124,7 +124,7 @@ class Interferometer(CVOperation):
 
         Using these random parameters, the resulting circuit is:
 
-        >>> print(qml.draw(circuit, expansion_strategy="device")(params))
+        >>> print(qml.draw(circuit, level="device")(params))
         0: ─╭BS(0.97,0.09)────────────────╭BS(0.89,0.33)──R(0.83)────────────────┤  <I>
         1: ─╰BS(0.97,0.09)─╭BS(0.94,0.05)─╰BS(0.89,0.33)─╭BS(0.92,0.27)──R(0.36)─┤
         2: ─╭BS(0.78,0.20)─╰BS(0.94,0.05)─╭BS(0.60,0.39)─╰BS(0.92,0.27)──R(0.28)─┤
@@ -144,7 +144,7 @@ class Interferometer(CVOperation):
             for shape in shapes:
                 params.append(np.random.random(shape))
 
-            print(qml.draw(circuit, expansion_strategy="device")(params))
+            print(qml.draw(circuit, level="device")(params))
 
         .. code-block::
 

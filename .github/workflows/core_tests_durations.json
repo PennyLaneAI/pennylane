@@ -13182,7 +13182,6 @@
     "ops/op_math/test_composite.py::TestConstruction::test_map_wires[True-expected_overlapping_ops1]": 0.001044666045345366,
     "ops/op_math/test_composite.py::TestConstruction::test_ndim_params_raises_error": 0.0008577080443501472,
     "ops/op_math/test_composite.py::TestConstruction::test_parameters": 0.0009155830484814942,
-    "ops/op_math/test_composite.py::TestConstruction::test_queue_idx": 0.0008379160426557064,
     "ops/op_math/test_composite.py::TestConstruction::test_raise_error_fewer_than_2_operands": 0.0010355000267736614,
     "ops/op_math/test_composite.py::TestConstruction::test_tensor_and_hamiltonian_converted": 0.0014357499894686043,
     "ops/op_math/test_composite.py::TestMscMethods::test_copy[ops_lst0]": 0.0009615410235710442,

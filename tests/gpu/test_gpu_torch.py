@@ -33,7 +33,7 @@ class TestTorchDevice:
     def test_device_to_cuda(self):
         """Checks device executes with cuda is input data is cuda"""
 
-        dev = qml.device("default.qubit.torch", wires=1)
+        dev = qml.device("default.qubit", wires=1)
 
         x = torch.tensor(0.1, requires_grad=True, device=torch.device("cuda"))
 
@@ -53,7 +53,7 @@ class TestTorchDevice:
     def test_mixed_devices(self):
         """Asserts works with both cuda and cpu input data"""
 
-        dev = qml.device("default.qubit.torch", wires=1)
+        dev = qml.device("default.qubit", wires=1)
 
         x = torch.tensor(0.1, requires_grad=True, device=torch.device("cuda"))
         y = torch.tensor(0.2, requires_grad=True, device=torch.device("cpu"))
@@ -77,7 +77,7 @@ class TestTorchDevice:
     def test_matrix_input(self):
         """Test goes to GPU for matrix valued inputs."""
 
-        dev = qml.device("default.qubit.torch", wires=1)
+        dev = qml.device("default.qubit", wires=1)
 
         U = torch.eye(2, requires_grad=False, device=torch.device("cuda"))
 
@@ -93,7 +93,7 @@ class TestTorchDevice:
     def test_resets(self):
         """Asserts reverts to cpu after execution on gpu"""
 
-        dev = qml.device("default.qubit.torch", wires=1)
+        dev = qml.device("default.qubit", wires=1)
 
         x = torch.tensor(0.1, requires_grad=True, device=torch.device("cuda"))
         y = torch.tensor(0.2, requires_grad=True, device=torch.device("cpu"))
@@ -143,7 +143,7 @@ class TestTorchDevice:
         PennyLane device creation differs from the Torch device of gate
         parameters.
         """
-        dev = qml.device("default.qubit.torch", wires=1, torch_device=init_device)
+        dev = qml.device("default.qubit", wires=1, torch_device=init_device)
 
         p = torch.tensor(0.543, dtype=torch.float64, device=par_device)
 
@@ -180,7 +180,7 @@ class TestTorchDevice:
 
 
 @pytest.mark.skipif(not torch_cuda.is_available(), reason="no cuda support")
-class TestqnnTorchLayer:
+class TestQnnTorchLayer:
     def test_torch_device_cuda_if_tensors_on_cuda(self):
         """Test that if any tensor passed to operators is on the GPU then CUDA
         is set internally as a device option for 'default.qubit.torch'."""

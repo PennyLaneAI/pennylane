@@ -16,7 +16,8 @@ Functionality for finding the maximum weighted cycle of directed graphs.
 """
 # pylint: disable=unnecessary-comprehension, unnecessary-lambda-assignment
 import itertools
-from typing import Dict, Iterable, List, Tuple, Union
+from collections.abc import Iterable
+from typing import Union
 
 import networkx as nx
 import numpy as np
@@ -25,7 +26,7 @@ import rustworkx as rx
 import pennylane as qml
 
 
-def edges_to_wires(graph: Union[nx.Graph, rx.PyGraph, rx.PyDiGraph]) -> Dict[Tuple, int]:
+def edges_to_wires(graph: Union[nx.Graph, rx.PyGraph, rx.PyDiGraph]) -> dict[tuple, int]:
     r"""Maps the edges of a graph to corresponding wires.
 
     **Example**
@@ -79,7 +80,7 @@ def edges_to_wires(graph: Union[nx.Graph, rx.PyGraph, rx.PyDiGraph]) -> Dict[Tup
     )
 
 
-def wires_to_edges(graph: Union[nx.Graph, rx.PyGraph, rx.PyDiGraph]) -> Dict[int, Tuple]:
+def wires_to_edges(graph: Union[nx.Graph, rx.PyGraph, rx.PyDiGraph]) -> dict[int, tuple]:
     r"""Maps the wires of a register of qubits to corresponding edges.
 
     **Example**
@@ -230,7 +231,7 @@ def cycle_mixer(graph: Union[nx.DiGraph, rx.PyDiGraph]) -> qml.operation.Operato
 
 
 def _partial_cycle_mixer(
-    graph: Union[nx.DiGraph, rx.PyDiGraph], edge: Tuple
+    graph: Union[nx.DiGraph, rx.PyDiGraph], edge: tuple
 ) -> qml.operation.Operator:
     r"""Calculates the partial cycle-mixer Hamiltonian for a specific edge.
 
@@ -414,7 +415,7 @@ def loss_hamiltonian(graph: Union[nx.Graph, rx.PyGraph, rx.PyDiGraph]) -> qml.op
 
 def _square_hamiltonian_terms(
     coeffs: Iterable[float], ops: Iterable[qml.operation.Observable]
-) -> Tuple[List[float], List[qml.operation.Observable]]:
+) -> tuple[list[float], list[qml.operation.Observable]]:
     """Calculates the coefficients and observables that compose the squared Hamiltonian.
 
     Args:

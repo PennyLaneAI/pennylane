@@ -54,7 +54,7 @@ class TestDecomposition:
         """Checks the queue."""
 
         op = qml.BasisEmbedding(features=features, wires=range(3))
-        tape = op.expand()
+        tape = qml.tape.QuantumScript(op.decomposition())
 
         assert len(tape.operations) == features.count(1)
         for gate in tape.operations:

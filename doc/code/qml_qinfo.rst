@@ -18,3 +18,5 @@ Transforms
     :skip: metric_tensor
     :skip: adjoint_metric_tensor
     :skip: transform
+    :skip: classical_fisher
+    :skip: quantum_fisher

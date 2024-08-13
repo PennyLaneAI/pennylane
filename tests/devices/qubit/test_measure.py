@@ -179,12 +179,9 @@ class TestMeasurements:
 
         dev = qml.device("default.qubit", wires=4)
 
-        O1 = qml.X(0)
-        O2 = qml.X(0)
-
         @qml.qnode(dev, interface="jax")
         def qnode(t1, t2):
-            return qml.expval(qml.prod(O1, qml.RX(t1, 0), O2, qml.RX(t2, 0)))
+            return qml.expval((t1 * qml.X(0)) @ (t2 * qml.Y(1)))
 
         t1, t2 = 0.5, 1.0
         assert qml.math.allclose(qnode(t1, t2), jax.jit(qnode)(t1, t2))

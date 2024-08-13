@@ -73,7 +73,7 @@ Rot
 >>> op.hyperparameters
 {}
 >>> op.wires
-<Wires = ['a']>
+Wires(['a'])
 
 Operators can optionally define the transformation they implement via
 symbolic or numerical representations. Here are two examples, and you find more

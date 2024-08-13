@@ -63,13 +63,16 @@ class UCCSD(Operation):
         \{\mathrm{H.c.}\}) \Big\}.
 
     Args:
-        weights (tensor_like): Size ``(len(s_wires) + len(d_wires),)`` tensor containing the parameters
+        weights (tensor_like): Size ``(n_repeats, len(s_wires) + len(d_wires),)`` tensor containing the
+            parameters (see usage details below) :math:`\theta_{pr}` and :math:`\theta_{pqrs}` entering
+            the Z rotation in :func:`~.FermionicSingleExcitation` and :func:`~.FermionicDoubleExcitation`.
+            These parameters are the coupled-cluster amplitudes that need to be optimized for each
+            single and double excitation generated with the :func:`~.excitations` function.
+            If the size of the given tensor is ``(len(s_wires) + len(d_wires),)``, it is assumed that ``n_repeats == 1``.
             :math:`\theta_{pr}` and :math:`\theta_{pqrs}` entering the Z rotation in
-            :func:`~.FermionicSingleExcitation`
-            and
-            :func:`~.FermionicDoubleExcitation`. These parameters are the coupled-cluster
-            amplitudes that need to be optimized for each single and double excitation generated
-            with the :func:`~.excitations` function.
+            :func:`~.FermionicSingleExcitation` and :func:`~.FermionicDoubleExcitation`.
+            These parameters are the coupled-cluster amplitudes that need to be optimized for each
+            single and double excitation generated with the :func:`~.excitations` function.
         wires (Iterable): wires that the template acts on
         s_wires (Sequence[Sequence]): Sequence of lists containing the wires ``[r,...,p]``
             resulting from the single excitation
@@ -87,6 +90,7 @@ class UCCSD(Operation):
             and unoccupied orbitals in the intervals ``[s, r]`` and ``[q, p]``, respectively.
         init_state (array[int]): Length ``len(wires)`` occupation-number vector representing the
             HF state. ``init_state`` is used to initialize the wires.
+        n_repeats (int): Number of times the UCCSD unitary is repeated. The default value is ``1``.
 
     .. details::
         :title: Usage Details
@@ -99,8 +103,10 @@ class UCCSD(Operation):
         #. The single and double excitations can be generated with the function
            :func:`~.excitations`. See example below.
 
-        #. The vector of parameters ``weights`` is a one-dimensional array of size
-           ``len(s_wires)+len(d_wires)``
+        #. The vector of parameters ``weights`` is a two-dimensional array of size
+           ``(n_repeats, len(s_wires)+len(d_wires))``.
+        #. If ``n_repeats=1``, then ``weights`` can also be a one-dimensional array of size
+           ``len(s_wires)+len(d_wires)``.
 
 
         An example of how to use this template is shown below:
@@ -171,7 +177,9 @@ class UCCSD(Operation):
     num_wires = AnyWires
     grad_method = None
 
-    def __init__(self, weights, wires, s_wires=None, d_wires=None, init_state=None, id=None):
+    def __init__(
+        self, weights, wires, s_wires=None, d_wires=None, init_state=None, n_repeats=1, id=None
+    ):
         if (not s_wires) and (not d_wires):
             raise ValueError(
                 f"s_wires and d_wires lists can not be both empty; got ph={s_wires}, pphh={d_wires}"
@@ -183,10 +191,20 @@ class UCCSD(Operation):
                     f"expected entries of d_wires to be of size 2; got {d_wires_} of length {len(d_wires_)}"
                 )
 
+        if n_repeats < 1:
+            raise ValueError(f"Requires n_repeats to be at least 1; got {n_repeats}.")
+
         shape = qml.math.shape(weights)
-        if shape != (len(s_wires) + len(d_wires),):
+
+        expected_shape = (len(s_wires) + len(d_wires),)
+        if len(shape) == 1 and (n_repeats != 1 or shape != expected_shape):
             raise ValueError(
-                f"Weights tensor must be of shape {(len(s_wires) + len(d_wires),)}; got {shape}."
+                f"For one-dimensional weights tensor, the shape must be {expected_shape}, and n_repeats should be 1; "
+                f"got {shape} and {n_repeats}, respectively."
+            )
+        if len(shape) != 1 and shape != (n_repeats,) + expected_shape:
+            raise ValueError(
+                f"Weights tensor must be of shape {(n_repeats,) + expected_shape}; got {shape}."
             )
 
         init_state = qml.math.toarray(init_state)
@@ -198,6 +216,7 @@ class UCCSD(Operation):
             "init_state": tuple(init_state),
             "s_wires": tuple(tuple(w) for w in s_wires),
             "d_wires": tuple(tuple(tuple(w) for w in dw) for dw in d_wires),
+            "n_repeats": n_repeats,
         }
 
         super().__init__(weights, wires=wires, id=id)
@@ -220,7 +239,7 @@ class UCCSD(Operation):
 
     @staticmethod
     def compute_decomposition(
-        weights, wires, s_wires, d_wires, init_state
+        weights, wires, s_wires, d_wires, init_state, n_repeats
     ):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators.
 
@@ -231,7 +250,8 @@ class UCCSD(Operation):
         .. seealso:: :meth:`~.UCCSD.decomposition`.
 
         Args:
-            weights (tensor_like): Size ``(len(s_wires) + len(d_wires),)`` tensor containing the parameters
+            weights (tensor_like): Size ``(len(s_wires) + len(d_wires),)`` or ``(n_repeats, len(s_wires) + len(d_wires),)``,
+                depending on ``n_repeats``, tensor containing the parameters
                 entering the Z rotation in :func:`~.FermionicSingleExcitation` and :func:`~.FermionicDoubleExcitation`.
             wires (Any or Iterable[Any]): wires that the operator acts on
             s_wires (Sequence[Sequence]): Sequence of lists containing the wires ``[r,...,p]``
@@ -240,6 +260,7 @@ class UCCSD(Operation):
                 specify the indices ``[s, ...,r]`` and ``[q,..., p]`` defining the double excitation.
             init_state (array[int]): Length ``len(wires)`` occupation-number vector representing the
                 HF state. ``init_state`` is used to initialize the wires.
+            n_repeats (int): Number of times the UCCSD unitary is repeated.
 
         Returns:
             list[.Operator]: decomposition of the operator
@@ -248,12 +269,18 @@ class UCCSD(Operation):
 
         op_list.append(BasisState(init_state, wires=wires))
 
-        for i, (w1, w2) in enumerate(d_wires):
-            op_list.append(
-                qml.FermionicDoubleExcitation(weights[len(s_wires) + i], wires1=w1, wires2=w2)
-            )
+        if n_repeats == 1 and len(qml.math.shape(weights)) == 1:
+            weights = qml.math.expand_dims(weights, 0)
 
-        for j, s_wires_ in enumerate(s_wires):
-            op_list.append(qml.FermionicSingleExcitation(weights[j], wires=s_wires_))
+        for layer in range(n_repeats):
+            for i, (w1, w2) in enumerate(d_wires):
+                op_list.append(
+                    qml.FermionicDoubleExcitation(
+                        weights[layer][len(s_wires) + i], wires1=w1, wires2=w2
+                    )
+                )
+
+            for j, s_wires_ in enumerate(s_wires):
+                op_list.append(qml.FermionicSingleExcitation(weights[layer][j], wires=s_wires_))
 
         return op_list
