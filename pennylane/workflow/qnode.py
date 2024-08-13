@@ -1006,15 +1006,11 @@ class QNode:
     def construct(self, args, kwargs):  # pylint: disable=too-many-branches
         """Call the quantum function with a tape context, ensuring the operations get queued."""
         kwargs = copy.copy(kwargs)
-        old_interface = self.interface
 
         if self._qfunc_uses_shots_arg:
             shots = _get_device_shots(self._original_device)
         else:
             shots = kwargs.pop("shots", _get_device_shots(self._original_device))
-
-        if old_interface == "auto":
-            self.interface = qml.math.get_interface(*args, *list(kwargs.values()))
 
         # Before constructing the tape, we pass the device to the
         # debugger to ensure they are compatible if there are any
@@ -1077,9 +1073,6 @@ class QNode:
                 self._tape = tape[0]
             else:
                 self._tape = self.device.expand_fn(self.tape, max_expansion=self.max_expansion)
-
-        if old_interface == "auto":
-            self.interface = "auto"
 
     def _execution_component(self, args: tuple, kwargs: dict, override_shots) -> qml.typing.Result:
         """Construct the transform program and execute the tapes. Helper function for ``__call__``
