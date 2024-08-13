@@ -109,7 +109,7 @@ def overlap_matrix(basis_functions, argnums):
     return overlap
 
 
-def moment_matrix(basis_functions, order, idx):
+def moment_matrix(basis_functions, order, idx, argnums):
     r"""Return a function that computes the multipole moment matrix for a set of basis functions.
 
     Args:
@@ -149,7 +149,7 @@ def moment_matrix(basis_functions, order, idx):
             args_ab = []
             if args:
                 args_ab.extend([arg[i], arg[j]] for arg in args)
-            integral = moment_integral(a, b, order, idx, normalize=False)(*args_ab)
+            integral = moment_integral(a, b, order, idx, argnums, normalize=False)(*args_ab)
 
             o = qml.math.zeros((n, n))
             o[i, j] = o[j, i] = 1.0

@@ -22,7 +22,7 @@ import pennylane as qml
 from .matrices import core_matrix, mol_density_matrix, overlap_matrix, repulsion_tensor
 
 
-def scf(mol, argnums, n_steps=50, tol=1e-8):
+def scf(mol, argnums=[False, False, False], n_steps=50, tol=1e-8):
     r"""Return a function that performs the self-consistent-field calculations.
 
     In the Hartree-Fock method, molecular orbitals are typically constructed as a linear combination
@@ -125,6 +125,7 @@ def scf(mol, argnums, n_steps=50, tol=1e-8):
         charges = mol.nuclear_charges
         r = mol.coordinates
         n_electron = mol.n_electrons
+        argnums = [mol.coord_opt, mol.coeff_opt, mol.alpha_opt]
 
         if getattr(r, "requires_grad", False) or argnums[0]:
             args_r = [[args[0][i]] * mol.n_basis[i] for i in range(len(mol.n_basis))]

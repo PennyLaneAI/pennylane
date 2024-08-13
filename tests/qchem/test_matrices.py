@@ -63,7 +63,7 @@ class TestOverlapMat:
         r"""Test that overlap_matrix returns the correct matrix."""
         mol = qchem.Molecule(symbols, geometry, alpha=alpha)
         args = [alpha]
-        s = qchem.overlap_matrix(mol.basis_set)(*args)
+        s = qchem.overlap_matrix(mol.basis_set, argnums=[False, False, False])(*args)
         assert np.allclose(s, s_ref)
 
     @pytest.mark.parametrize(
@@ -80,7 +80,7 @@ class TestOverlapMat:
         r"""Test that overlap_matrix returns the correct matrix when no differentiable parameter is
         used."""
         mol = qchem.Molecule(symbols, geometry)
-        s = qchem.overlap_matrix(mol.basis_set)()
+        s = qchem.overlap_matrix(mol.basis_set, argnums=[False, False, False])()
         assert np.allclose(s, s_ref)
 
     @pytest.mark.parametrize(
@@ -143,8 +143,12 @@ class TestOverlapMat:
         r"""Test that the overlap gradients are correct."""
         mol = qchem.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
         args = [mol.alpha, mol.coeff]
-        g_alpha = qml.jacobian(qchem.overlap_matrix(mol.basis_set), argnum=0)(*args)
-        g_coeff = qml.jacobian(qchem.overlap_matrix(mol.basis_set), argnum=1)(*args)
+        g_alpha = qml.jacobian(
+            qchem.overlap_matrix(mol.basis_set, argnums=[False, False, False]), argnum=0
+        )(*args)
+        g_coeff = qml.jacobian(
+            qchem.overlap_matrix(mol.basis_set, argnums=[False, False, False]), argnum=1
+        )(*args)
         assert np.allclose(g_alpha, g_alpha_ref)
         assert np.allclose(g_coeff, g_coeff_ref)
 

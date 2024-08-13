@@ -650,14 +650,14 @@ class TestJax:
         [
             (
                 ["H", "H"],
-                qml.math.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]], like="jax"),
+                [[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]],
                 None,
                 None,
                 0,
             ),
             (
                 ["H", "H", "H"],
-                qml.math.array([[0.0, 0.0, 0.0], [2.0, 0.0, 1.0], [0.0, 2.0, 0.0]], like="jax"),
+                [[0.0, 0.0, 0.0], [2.0, 0.0, 1.0], [0.0, 2.0, 0.0]],
                 [0],
                 [1, 2],
                 1,
@@ -667,6 +667,7 @@ class TestJax:
     def test_diff_hamiltonian_wire_order_jax(self, symbols, geometry, core, active, charge):
         r"""Test that diff_hamiltonian using jax arrays has an ascending wire order."""
 
+        geometry = create_jax_like_array(geometry)
         mol = qchem.Molecule(symbols, geometry, charge)
         args = [geometry]
 
