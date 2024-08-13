@@ -15,12 +15,14 @@
 Stores classes and logic to aggregate all the resource information from a quantum workflow.
 """
 from copy import copy
-from functools import reduce, partial
+from functools import wraps
+from typing import Callable
 from collections import defaultdict
 from dataclasses import dataclass, field
 
+from pennylane.tape import make_qscript
 from pennylane.measurements import Shots
-from pennylane.operation import ResourcesOperation, DecompositionUndefinedError
+from pennylane.operation import Operator, ResourcesOperation, DecompositionUndefinedError
 
 
 @dataclass(frozen=True)
@@ -137,29 +139,49 @@ StandardGateSet = {
     "Adjoint(S)",  # <-- Clifford Gates
     "T",
     "Adjoint(T)",
-    "Toffoli",     # <-- Non-Clifford Gates 
+    "Toffoli",     # <-- Non-Clifford Gates
+    "RX",
+    "RY",
+    "RZ", 
 }
 
 
-def compute_resources(tape, gate_set=StandardGateSet, estimate=False, epsilon=None) -> Resources:
-    """Given a quantum circuit (tape), this function
-     counts the resources used by standard PennyLane operations.
+# def compute_resources(tape, gate_set=StandardGateSet, estimate=False, epsilon=None) -> Resources:
+#     """Given a quantum circuit (tape), this function
+#      counts the resources used by standard PennyLane operations.
 
-    Args:
-        tape (.QuantumTape): The quantum circuit for which we count resources
+#     Args:
+#         tape (.QuantumTape): The quantum circuit for which we count resources
 
-    Returns:
-        (.Resources): The total resources used in the workflow
-    """
+#     Returns:
+#         (.Resources): The total resources used in the workflow
+#     """
 
-    num_wires = len(tape.wires)
-    shots = tape.shots
+#     num_wires = len(tape.wires)
+#     shots = tape.shots
     
-    # depth = tape.graph.get_depth()
-    depth = -1  # Not computing depth
+#     # depth = tape.graph.get_depth()
+#     depth = -1  # Not computing depth
 
-    op_resources = resources_from_sequence_ops(tape.operations, gate_set, estimate, epsilon)
-    return Resources(num_wires, op_resources.num_gates, op_resources.gate_types, op_resources.gate_sizes, depth, shots)
+#     op_resources = resources_from_sequence_ops(tape.operations, gate_set, estimate, epsilon)
+#     return Resources(num_wires, op_resources.num_gates, op_resources.gate_types, op_resources.gate_sizes, depth, shots)
+
+
+def get_resources(obj, gate_set=StandardGateSet, estimate=True, epsilon=None):
+    if isinstance(obj, Callable):
+        @wraps(obj)
+        def wrapper(*args, **kwargs):
+            qs = make_qscript(obj)(*args, **kwargs)
+            if len(qs.operations) == 1:
+                return resources_from_op(qs.operations[0], gate_set, estimate, epsilon)
+            return resources_from_sequence_ops(qs.operations, gate_set, estimate, epsilon)
+
+        return wrapper
+    
+    if isinstance(obj, Operator):
+        return resources_from_op(obj, gate_set, estimate, epsilon)
+     
+    return resources_from_sequence_ops(obj, gate_set, estimate, epsilon)
 
 
 def resources_from_op(op, gate_set, estimate, epsilon) -> Resources:
@@ -203,7 +225,7 @@ def resources_from_sequence_ops(ops_lst, gate_set, estimate, epsilon):
             _combine_dicts(gate_types, op_resources.gate_types)  # update in place
             _combine_dicts(gate_sizes, op_resources.gate_sizes)  # update in place
 
-    return Resources(num_gates, gate_types, gate_sizes)
+    return Resources(num_gates=num_gates, gate_types=gate_types, gate_sizes=gate_sizes)
 
 
 def _combine_dicts(base_dict, other_dict): 

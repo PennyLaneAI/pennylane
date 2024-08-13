@@ -2633,6 +2633,43 @@ class ResourcesOperation(Operation):
         """
 
 
+class QFuncResourceOperator(ResourcesOperation):
+
+    def __init__(self, qfunc, *args, wires, resource_fn=None, name=None, **kwargs):
+        self.qfunc = qfunc
+        self.resource_fn = resource_fn
+        self._hyperparameters = kwargs
+        super().__init__(*args, wires=wires)
+
+        if name:
+            self._name = name
+    
+    def decomposition(self) -> list[Operator]:
+        with qml.queuing.AnnotatedQueue() as q:
+            self.qfunc(*self.data, self.wires, **self.hyperparameters)
+        return q.queue
+
+    def resources(self, gate_set=None, estimate=True, epsilon=None):
+        if self.resource_fn:
+            return self.resource_fn(
+                *self.data, 
+                self.wires, 
+                **self.hyperparameters, 
+                gate_set=gate_set, 
+                estimate=estimate, 
+                epsilon=epsilon,
+            )
+
+        return qml.resource.resources_from_sequence_ops(self.decomposition(), gate_set=gate_set, estimate=estimate, epsilon=epsilon)
+
+
+def resource_node(qfunc, resource_fn=None, name=None):
+    @functools.wraps(qfunc)
+    def wrapper(*args, **kwargs):
+        return QFuncResourceOperator(qfunc, *args, resource_fn=resource_fn, name=name, **kwargs)
+    return wrapper
+
+
 # =============================================================================
 # CV Operations and observables
 # =============================================================================
