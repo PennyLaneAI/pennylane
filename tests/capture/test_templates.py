@@ -190,7 +190,7 @@ unmodified_templates_cases = [
 ]
 
 
-@pytest.fixture(scope="function", autouse=False)
+@pytest.fixture(scope="function", autouse=True)
 def capture_warnings(recwarn):
     yield
     if len(recwarn) > 0:
