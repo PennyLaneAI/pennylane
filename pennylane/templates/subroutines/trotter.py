@@ -309,18 +309,15 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
             decomp = self.compute_decomposition(*self.parameters, **self.hyperparameters)
 
         num_wires = len(self.wires)
-        num_gates = len(decomp)
-
         depth = qml.tape.QuantumTape(ops=decomp).graph.get_depth()
 
-        gate_types = defaultdict(int)
-        gate_sizes = defaultdict(int)
+        r = qml.resource.resources_from_sequence_ops(decomp, gate_set, estimate, epsilon)
 
-        for op in decomp:
-            gate_types[op.name] += 1
-            gate_sizes[len(op.wires)] += 1
+        # for op in decomp:
+        #     gate_types[op.name] += 1
+        #     gate_sizes[len(op.wires)] += 1
 
-        return Resources(num_wires, num_gates, gate_types, gate_sizes, depth)
+        return Resources(num_wires, r.num_gates, r.gate_types, r.gate_sizes, depth)
 
     def error(
         self, method: str = "commutator-bound", fast: bool = True
