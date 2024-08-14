@@ -104,17 +104,18 @@ def dipole_integrals(mol, core=None, active=None):
             tuple[array[float]]: tuple containing the core orbital contributions and the dipole
             moment integrals
         """
+        argnums = [mol.coord_opt, mol.coeff_opt, mol.alpha_opt]
         _, coeffs, _, _, _ = scf(mol)(*args)
 
         # x, y, z components
         d_x = qml.math.einsum(
-            "qr,rs,st->qt", coeffs.T, moment_matrix(mol.basis_set, 1, 0)(*args), coeffs
+            "qr,rs,st->qt", coeffs.T, moment_matrix(mol.basis_set, 1, 0, argnums)(*args), coeffs
         )
         d_y = qml.math.einsum(
-            "qr,rs,st->qt", coeffs.T, moment_matrix(mol.basis_set, 1, 1)(*args), coeffs
+            "qr,rs,st->qt", coeffs.T, moment_matrix(mol.basis_set, 1, 1, argnums)(*args), coeffs
         )
         d_z = qml.math.einsum(
-            "qr,rs,st->qt", coeffs.T, moment_matrix(mol.basis_set, 1, 2)(*args), coeffs
+            "qr,rs,st->qt", coeffs.T, moment_matrix(mol.basis_set, 1, 2, argnums)(*args), coeffs
         )
 
         # x, y, z components (core orbitals contribution)

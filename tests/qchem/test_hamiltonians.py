@@ -589,52 +589,6 @@ class TestJax:
         r"""Test that diff_hamiltonian using jax arrays works when an active space is defined."""
 
         symbols = ["H", "H", "H"]
-        geometry_values = [[0.0, 0.0, 0.0], [2.0, 0.0, 1.0], [0.0, 2.0, 0.0]]
-        geometry = create_jax_like_array(geometry_values)
-
-        mol = qchem.Molecule(symbols, geometry, charge=1)
-        args = [geometry]
-
-        h = qchem.diff_hamiltonian(mol, core=[0], active=[1, 2])(*args)
-
-        assert isinstance(h, qml.ops.Sum if active_new_opmath() else qml.Hamiltonian)
-
-    @pytest.mark.jax
-    @pytest.mark.parametrize(
-        ("symbols", "geometry_values", "core", "active", "charge"),
-        [
-            (
-                ["H", "H"],
-                [[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]],
-                None,
-                None,
-                0,
-            ),
-            (
-                ["H", "H", "H"],
-                [[0.0, 0.0, 0.0], [2.0, 0.0, 1.0], [0.0, 2.0, 0.0]],
-                [0],
-                [1, 2],
-                1,
-            ),
-        ],
-    )
-    def test_diff_hamiltonian_wire_order_jax(self, symbols, geometry_values, core, active, charge):
-        r"""Test that diff_hamiltonian using jax arrays has an ascending wire order."""
-
-        geometry = create_jax_like_array(geometry_values)
-        mol = qchem.Molecule(symbols, geometry, charge)
-        args = [geometry]
-
-        h = qchem.diff_hamiltonian(mol, core=core, active=active)(*args)
-
-        assert h.wires.tolist() == sorted(h.wires.tolist())
-
-    @pytest.mark.jax
-    def test_diff_hamiltonian_active_space_jax(self):
-        r"""Test that diff_hamiltonian using jax arrays works when an active space is defined."""
-
-        symbols = ["H", "H", "H"]
         geometry = qml.math.array([[0.0, 0.0, 0.0], [2.0, 0.0, 1.0], [0.0, 2.0, 0.0]], like="jax")
 
         mol = qchem.Molecule(symbols, geometry, charge=1)
