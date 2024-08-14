@@ -141,7 +141,7 @@ class Hadamard(Observable, Operation):
         return [qml.RY(-np.pi / 4, wires=wires)]
 
     @staticmethod
-    def compute_decomposition(wires: WiresLike) -> list["qml.operation.Operator"]:
+    def compute_decomposition(wires: WiresLike) -> list[qml.operation.Operator]:
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -287,7 +287,7 @@ class PauliX(Observable, Operation):
         return pauli_eigs(1)
 
     @staticmethod
-    def compute_diagonalizing_gates(wires: WiresLike) -> list["qml.operation.Operator"]:
+    def compute_diagonalizing_gates(wires: WiresLike) -> list[qml.operation.Operator]:
         r"""Sequence of gates that diagonalize the operator in the computational basis (static method).
 
         Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
@@ -312,7 +312,7 @@ class PauliX(Observable, Operation):
         return [Hadamard(wires=wires)]
 
     @staticmethod
-    def compute_decomposition(wires: WiresLike) -> list["qml.operation.Operator"]:
+    def compute_decomposition(wires: WiresLike) -> list[qml.operation.Operator]:
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -719,7 +719,7 @@ class PauliZ(Observable, Operation):
     def adjoint(self) -> "PauliZ":
         return Z(wires=self.wires)
 
-    def pow(self, z: float) -> list["qml.operation.Operator"]:
+    def pow(self, z: float) -> list[qml.operation.Operator]:
         z_mod2 = z % 2
         if z_mod2 == 0:
             return []
@@ -943,7 +943,7 @@ class T(Operation):
         return np.array([1, cmath.exp(1j * np.pi / 4)])
 
     @staticmethod
-    def compute_decomposition(wires: WiresLike) -> list["qml.operation.Operator"]:
+    def compute_decomposition(wires: WiresLike) -> list[qml.operation.Operator]:
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -965,7 +965,7 @@ class T(Operation):
         """
         return [qml.PhaseShift(np.pi / 4, wires=wires)]
 
-    def pow(self, z: Union[int, float]) -> list["qml.operation.Operator"]:
+    def pow(self, z: Union[int, float]) -> list[qml.operation.Operator]:
         z_mod8 = z % 8
         pow_map = {
             0: lambda op: [],
@@ -1054,7 +1054,7 @@ class SX(Operation):
         return np.array([1, 1j])
 
     @staticmethod
-    def compute_decomposition(wires: WiresLike) -> list["qml.operation.Operator"]:
+    def compute_decomposition(wires: WiresLike) -> list[qml.operation.Operator]:
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -1084,7 +1084,7 @@ class SX(Operation):
             qml.PhaseShift(np.pi / 2, wires=wires),
         ]
 
-    def pow(self, z: Union[int, float]) -> list["qml.operation.Operator"]:
+    def pow(self, z: Union[int, float]) -> list[qml.operation.Operator]:
         z_mod4 = z % 4
         if z_mod4 == 2:
             return [X(wires=self.wires)]
@@ -1145,7 +1145,7 @@ class SWAP(Operation):
         return np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]])
 
     @staticmethod
-    def compute_decomposition(wires: WiresLike) -> list["qml.operation.Operator"]:
+    def compute_decomposition(wires: WiresLike) -> list[qml.operation.Operator]:
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -1171,7 +1171,7 @@ class SWAP(Operation):
             qml.CNOT(wires=[wires[0], wires[1]]),
         ]
 
-    def pow(self, z: Union[int, float]) -> list["qml.operation.Operator"]:
+    def pow(self, z: Union[int, float]) -> list[qml.operation.Operator]:
         return super().pow(z % 2)
 
     def adjoint(self) -> "SWAP":
@@ -1270,7 +1270,7 @@ class ECR(Operation):
         return np.array([1, -1, 1, -1])
 
     @staticmethod
-    def compute_decomposition(wires: WiresLike) -> list["qml.operation.Operator"]:
+    def compute_decomposition(wires: WiresLike) -> list[qml.operation.Operator]:
         r"""Representation of the operator as a product of other operators (static method).
 
            .. math:: O = O_1 O_2 \dots O_n.
@@ -1310,7 +1310,7 @@ class ECR(Operation):
     def adjoint(self) -> "ECR":
         return ECR(wires=self.wires)
 
-    def pow(self, z: Union[int, float]) -> list["qml.operation.Operator"]:
+    def pow(self, z: Union[int, float]) -> list[qml.operation.Operator]:
         return super().pow(z % 2)
 
 
@@ -1390,7 +1390,7 @@ class ISWAP(Operation):
         return np.array([1j, -1j, 1, 1])
 
     @staticmethod
-    def compute_decomposition(wires: WiresLike) -> list["qml.operation.Operator"]:
+    def compute_decomposition(wires: WiresLike) -> list[qml.operation.Operator]:
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -1424,7 +1424,7 @@ class ISWAP(Operation):
             Hadamard(wires=wires[1]),
         ]
 
-    def pow(self, z: Union[int, float]) -> list["qml.operation.Operator"]:
+    def pow(self, z: Union[int, float]) -> list[qml.operation.Operator]:
         z_mod2 = z % 2
         if abs(z_mod2 - 0.5) < 1e-6:
             return [SISWAP(wires=self.wires)]
@@ -1515,7 +1515,7 @@ class SISWAP(Operation):
         return np.array([INV_SQRT2 * (1 + 1j), INV_SQRT2 * (1 - 1j), 1, 1])
 
     @staticmethod
-    def compute_decomposition(wires: WiresLike) -> list["qml.operation.Operator"]:
+    def compute_decomposition(wires: WiresLike) -> list[qml.operation.Operator]:
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -1561,7 +1561,7 @@ class SISWAP(Operation):
             SX(wires=wires[1]),
         ]
 
-    def pow(self, z: Union[int, float]) -> list["qml.operation.Operator"]:
+    def pow(self, z: Union[int, float]) -> list[qml.operation.Operator]:
         z_mod4 = z % 4
         return [ISWAP(wires=self.wires)] if z_mod4 == 2 else super().pow(z_mod4)
 

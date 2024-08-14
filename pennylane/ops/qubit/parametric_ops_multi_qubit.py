@@ -19,7 +19,7 @@ core parameterized gates.
 # pylint:disable=abstract-method,arguments-differ,protected-access,invalid-overridden-method
 import functools
 from operator import matmul
-from typing import Literal, Optional, Union
+from typing import Optional, Union
 
 import numpy as np
 
@@ -74,9 +74,7 @@ class MultiRZ(Operation):
     def _flatten(self) -> FlatPytree:
         return self.data, (self.wires, tuple())
 
-    def __init__(
-        self, theta: TensorLike, wires: WiresLike, id: Optional[str] = None
-    ):
+    def __init__(self, theta: TensorLike, wires: WiresLike, id: Optional[str] = None):
         wires = Wires(wires)
         self.hyperparameters["num_wires"] = len(wires)
         super().__init__(theta, wires=wires, id=id)
