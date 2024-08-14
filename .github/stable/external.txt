@@ -56,7 +56,7 @@ httpx==0.27.0
 identify==2.6.0
 idna==3.7
 importlib_metadata==8.2.0
-importlib_resources==6.4.0
+importlib_resources==6.4.2
 iniconfig==2.0.0
 ipykernel==6.29.5
 ipython==8.18.1

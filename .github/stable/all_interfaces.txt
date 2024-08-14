@@ -33,7 +33,7 @@ h5py==3.11.0
 identify==2.6.0
 idna==3.7
 importlib_metadata==8.2.0
-importlib_resources==6.4.0
+importlib_resources==6.4.2
 iniconfig==2.0.0
 isort==5.13.2
 jax==0.4.23
