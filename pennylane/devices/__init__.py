@@ -174,12 +174,6 @@ from ._qubit_device import QubitDevice
 from ._qutrit_device import QutritDevice
 
 
-class DeviceError(Exception):
-    """Exception raised by a :class:`~.pennylane.devices` when it encounters an illegal
-    operation in the quantum circuit.
-    """
-
-
 # pylint: disable=undefined-variable
 def __getattr__(name):
     if name == "plugin_devices":

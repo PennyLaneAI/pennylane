@@ -148,11 +148,14 @@ import pennylane.data
 import pennylane.noise
 from pennylane.noise import NoiseModel
 
-from pennylane.devices import DeviceError
 from pennylane.devices.device_constructor import device, refresh_devices
 
 # Look for an existing configuration file
 default_config = Configuration("config.toml")
+
+
+class DeviceError(Exception):
+    """Exception raised when it encounters an illegal operation in the quantum circuit."""
 
 
 class QuantumFunctionError(Exception):
