@@ -24,6 +24,7 @@
 
 * A new function `qml.registers` has been added, enabling the creation of registers, which are implemented as a dictionary of `Wires` instances.
   [(#5957)](https://github.com/PennyLaneAI/pennylane/pull/5957)
+  [(#6102)](https://github.com/PennyLaneAI/pennylane/pull/6102)
 
 * The `split_to_single_terms` transform is added. This transform splits expectation values of sums
   into multiple single-term measurements on a single tape, providing better support for simulators
