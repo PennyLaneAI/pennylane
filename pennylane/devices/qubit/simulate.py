@@ -418,9 +418,9 @@ def simulate_tree_mcm(
     interface = execution_kwargs.get("interface", None)
     postselect_mode = execution_kwargs.get("postselect_mode", None)
 
-    #########################
-    # shot vector treatment #
-    #########################
+    ##########################
+    # shot vector processing #
+    ##########################
     if circuit.shots.has_partitioned_shots:
         prng_key = execution_kwargs.pop("prng_key", None)
         keys = jax_random_split(prng_key, num=circuit.shots.num_copies)
@@ -434,15 +434,19 @@ def simulate_tree_mcm(
             results.append(simulate_tree_mcm(aux_circuit, debugger, prng_key=k, **execution_kwargs))
         return tuple(results)
 
-    # `var` measurements cannot be aggregated on the fly as they require the global `expval`
-    # variance_transform replaces `var` measurements with `expval` and `expval**2` measurements
-    circuit, variance_post_processing = variance_transform(circuit)
-
     #######################
     # main implementation #
     #######################
-    # Parse MCM info
+
+    # `var` measurements cannot be aggregated on the fly as they require the global `expval`
+    # variance_transform replaces `var` measurements with `expval` and `expval**2` measurements
+    circuit, variance_post_processing = variance_transform(circuit)
     finite_shots = bool(circuit.shots)
+
+    ##################
+    # Parse MCM info #
+    ##################
+
     # mcms is the list of all mid-circuit measurement operations
     # mcms[d] is the parent MCM (node) of a circuit segment (edge) at depth `d`
     # The first element is None because there is no parent MCM at depth 0
@@ -458,6 +462,11 @@ def simulate_tree_mcm(
         k + 1: qml.math.empty((circuit.shots.total_shots,), dtype=bool) if finite_shots else None
         for k in measured_mcms_indices
     }
+
+    #############################
+    # Initialize tree-traversal #
+    #############################
+
     # mcm_current[:d+1] is the active branch at depth `d`
     # The first entry is always 0 as the first edge does not stem from an MCM.
     # For example, if `d = 2` and `mcm_current = [0, 1, 1, 0]` we are on the 11-branch,
@@ -478,6 +487,7 @@ def simulate_tree_mcm(
     # and to combine them into the final result. Exit the loop once the
     # zero-branch and one-branch measurements are available.
     depth = 0
+
     while stack.any_is_empty(1):
 
         ###########################################
@@ -507,9 +517,9 @@ def simulate_tree_mcm(
             )
             continue
 
-        ##############################################
-        # Determine whether to execute down the edge #
-        ##############################################
+        ################################################
+        # Determine whether to execute the active edge #
+        ################################################
 
         # Parse shots for the current branch
         if finite_shots:
@@ -594,12 +604,12 @@ def simulate_tree_mcm(
             mcm_samples, cumcounts = update_mcm_samples(samples, mcm_samples, depth, cumcounts)
             continue
 
-        if not skip_subtree and not invalid_postselect:
-            measurements = insert_mcms(circuit, measurements, mid_measurements)
-
         ################################################
         # Update terminal measurements & step sideways #
         ################################################
+
+        if not skip_subtree and not invalid_postselect:
+            measurements = insert_mcms(circuit, measurements, mid_measurements)
 
         # If at a zero-branch leaf, update measurements and switch to the one-branch
         if mcm_current[depth] == 0:
@@ -610,7 +620,10 @@ def simulate_tree_mcm(
         # If at a one-branch leaf, update measurements
         stack.results_1[depth] = measurements
 
-    # Combine first two branches
+    ##################################################
+    # Finalize terminal measurements post-processing #
+    ##################################################
+
     measurement_dicts = get_measurement_dicts(terminal_measurements, stack, depth)
     if finite_shots:
         terminal_measurements = circuit.measurements
