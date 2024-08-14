@@ -116,7 +116,7 @@ class Hadamard(Observable, Operation):
         return pauli_eigs(1)
 
     @staticmethod
-    def compute_diagonalizing_gates(wires: WiresLike) -> list["qml.operation.Operator"]:
+    def compute_diagonalizing_gates(wires: WiresLike) -> list[qml.operation.Operator]:
         r"""Sequence of gates that diagonalize the operator in the computational basis (static method).
 
         Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
