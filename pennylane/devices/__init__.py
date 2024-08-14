@@ -175,7 +175,7 @@ from ._qutrit_device import QutritDevice
 
 
 class DeviceError(Exception):
-    """Exception raised by a :class:`~.pennylane._device.Device` when it encounters an illegal
+    """Exception raised by a :class:`~.pennylane.devices` when it encounters an illegal
     operation in the quantum circuit.
     """
 
