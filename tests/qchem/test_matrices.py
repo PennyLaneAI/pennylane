@@ -703,8 +703,7 @@ class TestJax:
         ],
     )
     def test_overlap_matrix_jax(self, symbols, geometry, alpha, s_ref, argnums):
-        r"""Test that overlap_matrix returns the correct matrix."""
-        # Convert lists or numpy arrays to JAX-like arrays using the custom function
+        r"""Test that overlap_matrix returns the correct matrix when using jax."""
         geometry = create_jax_like_array(geometry)
         alpha = create_jax_like_array(alpha)
 
@@ -728,8 +727,7 @@ class TestJax:
         ],
     )
     def test_moment_matrix_jax(self, symbols, geometry, alpha, e, idx, s_ref, argnums):
-        r"""Test that moment_matrix returns the correct matrix."""
-        # Convert lists or numpy arrays to JAX-like arrays using the custom function
+        r"""Test that moment_matrix returns the correct matrix when using jax."""
         geometry = create_jax_like_array(geometry)
         alpha = create_jax_like_array(alpha)
 
@@ -756,8 +754,7 @@ class TestJax:
         ],
     )
     def test_kinetic_matrix_jax(self, symbols, geometry, alpha, t_ref, argnums):
-        r"""Test that kinetic_matrix returns the correct matrix."""
-        # Convert lists or numpy arrays to JAX-like arrays using the custom function
+        r"""Test that kinetic_matrix returns the correct matrix when using jax."""
         geometry = create_jax_like_array(geometry)
         alpha = create_jax_like_array(alpha)
 
@@ -784,8 +781,8 @@ class TestJax:
         ],
     )
     def test_core_matrix_diff_positions_jax(self, symbols, geometry, alpha, c_ref, argnums):
-        r"""Test that core_matrix returns the correct matrix when positions are differentiable."""
-        # Convert lists or numpy arrays to JAX-like arrays using the custom function
+        r"""Test that core_matrix returns the correct matrix when positions are differentiable
+        when using jax."""
         geometry = create_jax_like_array(geometry)
         alpha = create_jax_like_array(alpha)
 
@@ -819,8 +816,7 @@ class TestJax:
         ],
     )
     def test_repulsion_tensor_jax(self, symbols, geometry, alpha, e_ref, argnums):
-        r"""Test that repulsion_tensor returns the correct matrix."""
-        # Convert lists or numpy arrays to JAX-like arrays using the custom function
+        r"""Test that repulsion_tensor returns the correct matrix when using jax."""
         geometry = create_jax_like_array(geometry)
         alpha = create_jax_like_array(alpha)
 
@@ -848,7 +844,7 @@ class TestJax:
     )
     def test_attraction_matrix_diffR_jax(self, symbols, geometry, alpha, v_ref, argnums):
         r"""Test that attraction_matrix returns the correct matrix when positions are
-        differentiable."""
+        differentiable when using jax."""
         geometry = create_jax_like_array(geometry)
         alpha = create_jax_like_array(alpha)
 
