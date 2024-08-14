@@ -15,11 +15,11 @@
 
 import numpy as np
 import pytest
+from dummy_debugger import Debugger
 
 import pennylane as qml
 from pennylane.devices.qubit import get_final_state, measure_final_state, simulate
 from pennylane.devices.qubit.simulate import _FlexShots
-from tests.dummy_debugger import Debugger
 
 
 class TestCurrentlyUnsupportedCases:
