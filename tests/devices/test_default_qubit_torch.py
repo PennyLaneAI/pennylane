@@ -2234,12 +2234,10 @@ class TestPassthruIntegration:
             qml.RZ(x, wires=w)
             return qml.expval(qml.PauliX(w))
 
-        with pytest.raises(Exception) as e:
+        with pytest.raises(
+            qml.QuantumFunctionError, match="Differentiation method autograd not recognized"
+        ):
             assert qml.qnode(dev, diff_method="autograd", interface=interface)(circuit)
-        assert str(e.value) == (
-            "Differentiation method autograd not recognized. Allowed options are ('best', "
-            "'parameter-shift', 'backprop', 'finite-diff', 'device', 'adjoint', 'spsa', 'hadamard')."
-        )
 
 
 @pytest.mark.torch
