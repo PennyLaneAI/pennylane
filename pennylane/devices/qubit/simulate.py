@@ -876,7 +876,7 @@ def variance_transform(circuit):
             if isinstance(m, VarianceMP):
                 expval = new_results.pop(offset)
                 new_results[i] = r - expval**2
-        return new_results
+        return new_results[0] if len(new_results) == 1 else new_results
 
     new_measurements = []
     extra_measurements = []
