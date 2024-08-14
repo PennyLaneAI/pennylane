@@ -1074,7 +1074,7 @@ class TestApply:
         state = np.array([0])
         ops = [PauliX(0), BasisState(state, wires=0)]
 
-        with pytest.raises(DeviceError, match="Operation"):
+        with pytest.raises(qml.DeviceError, match="Operation"):
             dev.apply(ops)
 
     def test_raise_order_error_qubit_state(self):
@@ -1084,7 +1084,7 @@ class TestApply:
         state = np.array([1, 0])
         ops = [PauliX(0), StatePrep(state, wires=0)]
 
-        with pytest.raises(DeviceError, match="Operation"):
+        with pytest.raises(qml.DeviceError, match="Operation"):
             dev.apply(ops)
 
     def test_apply_toffoli(self, tol):
