@@ -24,6 +24,7 @@
 
 * A new function `qml.registers` has been added, enabling the creation of registers, which are implemented as a dictionary of `Wires` instances.
   [(#5957)](https://github.com/PennyLaneAI/pennylane/pull/5957)
+  [(#6102)](https://github.com/PennyLaneAI/pennylane/pull/6102)
 
 * The `split_to_single_terms` transform is added. This transform splits expectation values of sums
   into multiple single-term measurements on a single tape, providing better support for simulators
@@ -42,6 +43,9 @@
   [(#5972)](https://github.com/PennyLaneAI/pennylane/pull/5972)
 
 <h3>Improvements 🛠</h3>
+
+* `fuse_rot_angles` now respects the global phase of the combined rotations.
+  [(#6031)](https://github.com/PennyLaneAI/pennylane/pull/6031)
 
 * `QNGOptimizer` now supports cost functions with multiple arguments, updating each argument independently.
   [(#5926)](https://github.com/PennyLaneAI/pennylane/pull/5926)
@@ -285,6 +289,9 @@
   [(#5974)](https://github.com/PennyLaneAI/pennylane/pull/5974)
 
 <h3>Bug fixes 🐛</h3>
+
+* `fuse_rot_angles` no longer returns wrong derivatives at singular points but returns NaN.
+  [(#6031)](https://github.com/PennyLaneAI/pennylane/pull/6031)
 
 * `qml.GlobalPhase` and `qml.I` can now be captured when acting on no wires.
   [(#6060)](https://github.com/PennyLaneAI/pennylane/pull/6060)
