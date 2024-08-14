@@ -26,7 +26,7 @@ from pennylane.pauli.grouping.group_observables import (
     PauliGroupingStrategy,
     compute_partition_indices,
     group_observables,
-    obs_partitions_from_idx_partitions,
+    items_partitions_from_idx_partitions,
 )
 
 
@@ -490,7 +490,7 @@ class TestComputePartitionIndices:
     def test_obs_from_indices_partitions(self, observables, indices, obs_partitions):
         """Test that obs_partition_from_idx_partitions returns the correct observables"""
 
-        partition_obs = obs_partitions_from_idx_partitions(observables, indices)
+        partition_obs = items_partitions_from_idx_partitions(observables, indices)
         assert partition_obs == obs_partitions
 
     def test_mixed_observables_qwc(self):
@@ -501,7 +501,7 @@ class TestComputePartitionIndices:
         indices_no_wires = (0, 3)
         assert set(indices_no_wires) < set(partition_indices[0])
 
-        partition_obs = obs_partitions_from_idx_partitions(observables, partition_indices)
+        partition_obs = items_partitions_from_idx_partitions(observables, partition_indices)
         for partition in partition_obs:
             assert are_pauli_words_qwc(partition)
 
@@ -513,7 +513,7 @@ class TestComputePartitionIndices:
             observables=observables, grouping_type="commuting"
         )
 
-        com_partitions = obs_partitions_from_idx_partitions(observables, partition_indices)
+        com_partitions = items_partitions_from_idx_partitions(observables, partition_indices)
 
         assert len(com_partitions) == len(com_partitions_sol)
         # assert each computed partition contains appears in the computed solution.
@@ -531,7 +531,7 @@ class TestComputePartitionIndices:
             observables=observables, grouping_type="anticommuting"
         )
 
-        anticom_partitions = obs_partitions_from_idx_partitions(observables, partition_indices)
+        anticom_partitions = items_partitions_from_idx_partitions(observables, partition_indices)
 
         # assert the correct number of partitions:
         assert len(anticom_partitions) == len(anticom_partitions_sol)

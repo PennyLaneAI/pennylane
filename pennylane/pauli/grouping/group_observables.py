@@ -45,8 +45,8 @@ try:
         "dsatur": rx.ColoringStrategy.Saturation,
         "gis": rx.ColoringStrategy.IndependentSet,
     }
-except AttributeError:
-    new_rx = False  # pragma: no cover. This error is raised for versions lower than 0.15.0
+except AttributeError:  # pragma: no cover
+    new_rx = False  # pragma: no cover. # This error is raised for versions lower than 0.15.0
     RX_STRATEGIES = {"lf": None}  # pragma: no cover # Only "lf" can be used without a strategy
 
 GRAPH_COLOURING_METHODS = frozenset(RX_STRATEGIES.keys()).union({"rlf"})
@@ -155,9 +155,34 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
         The adjacency matrix for an undirected graph of N nodes is an N by N symmetric binary
         matrix, where matrix elements of 1 denote an edge, and matrix elements of 0 denote no edge.
         """
-        return adj_matrix_from_symplectic(self.binary_observables, grouping_type=self.grouping_type)
+        return _adj_matrix_from_symplectic(
+            self.binary_observables, grouping_type=self.grouping_type
+        )
 
-    def colour_pauli_graph(self):
+    @property
+    def complement_graph(self) -> rx.PyGraph:
+        """
+        Complement graph of the (anti-)commutation graph constructed from the Pauli observables.
+
+        Edge (i,j) is present in the graph if observable[i] and observable[j] do NOT commute under
+        the ``grouping_type`` strategy.
+
+        The nodes are the observables (can only be accesssed through their integer index).
+        """
+        # Use upper triangle since adjacency matrix is symmetric and we have an undirected graph
+        edges = list(zip(*np.where(np.triu(self.adj_matrix, k=1))))
+        # Create complement graph
+        graph = rx.PyGraph(
+            node_count_hint=len(self.observables),
+            edge_count_hint=len(edges),
+        )
+
+        graph.add_nodes_from(self.observables)
+        graph.add_edges_from_no_data(edges)
+
+        return graph
+
+    def partition_observables(self):
         """
         Runs the graph colouring heuristic algorithm to obtain the partitioned Pauli observables.
 
@@ -170,21 +195,23 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
             )
 
             # Need to convert back from the symplectic representation
-            pauli_groups = [
+            observables_groups = [
                 [binary_to_pauli(pauli_word, wire_map=self._wire_map) for pauli_word in grouping]
                 for grouping in coloured_binary_paulis.values()
             ]
-
         else:
-            pauli_groups = self.pauli_partitions_from_graph()
+            observables_groups = self.pauli_partitions_from_graph()
 
-        return pauli_groups
+        return observables_groups
 
+    @cached_property
     def _idx_partitions_dict_from_graph(self) -> dict[int, list[int]]:
-        """Colours the complement graph using a greedy colouring algorithm and groups indices by colour.
+        """Dictionary containing the solution to the graph colouring problem of ``self.complement_graph``.
 
-        This function uses the `graph_greedy_color` function from `rx` to colour the graph defined by
-        `self.complement_graph` using a specified strategy from `RX_STRATEGIES`. It then groups the indices
+        Colours the complement graph using a greedy colouring algorithm and groups indices by colour.
+
+        Uses the ``graph_greedy_color`` function from Rustworkx to colour the graph defined by
+        ``self.complement_graph`` using a specified strategy from ``RX_STRATEGIES``. It then groups the indices
         (nodes) of the graph by their assigned colours.
 
         Returns:
@@ -209,15 +236,47 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
         return groups
 
     def idx_partitions_from_graph(self) -> tuple[tuple[int, ...], ...]:
-        """Partition the indices of the Pauli observables into tuples of (anti-)commuting observables
-        using Rustworkx graph colouring algorithms based on binary relation determined by  ``self.grouping_type``.
+        """Partition the indices of the Pauli observables into tuples of indices corresponding to (anti-)commuting
+        observables using Rustworkx graph colouring algorithms based on binary relation determined by ``self.grouping_type``.
+
+        The partitions are made up of the relative indices of the observables, i.e. assuming ``self.observables`` have indices
+        in [0, len(observables)-1]. If custom indices are needed, use ``self.partition_observables`` .
 
         Returns:
             tuple[tuple[int]]: Tuple of tuples containing the indices of the partitioned observables.
         """
-        idx_dictionary = self._idx_partitions_dict_from_graph()
+        partition_indices = tuple(
+            tuple(indices) for indices in self._idx_partitions_dict_from_graph.values()
+        )
 
-        partition_indices = tuple(tuple(indices) for indices in idx_dictionary.values())
+        return partition_indices
+
+    def _custom_partition_indices(self, observables_indices=None) -> list[list]:
+        """Compute the indices of the partititions of the observables when these have custom indices.
+
+        Args:
+            observables_indices (tensor_like, optional): A tensor or list of indices associated to each observable.
+            This argument is helpful when the observables used in the graph colouring are part of a bigger set of observables.
+            Defaults to None.
+
+        Raises:
+            IndexError: When the tensor_like of observables_indices is not of the same length as the observables.
+
+        Returns:
+            list[list]: List of lists containing the indices of the observables on each partition.
+        """
+        if observables_indices is not None:
+            if qml.math.shape(observables_indices)[0] != len(self.observables):
+                raise IndexError(
+                    "The observables indices list must be the same length as the observables list. "
+                    f"Instead got {len(observables_indices)} and {len(self.observables)}, respectively."
+                )
+
+        partition_indices = [
+            qml.math.take(observables_indices, indices, axis=0)
+            for indices in self._idx_partitions_dict_from_graph.values()
+        ]
+
         return partition_indices
 
     def pauli_partitions_from_graph(self) -> list[list]:
@@ -227,62 +286,34 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
         Returns:
             list[list[Observable]]: List of partitions of the Pauli observables made up of mutually (anti-)commuting terms.
         """
-        idx_dictionary = self._idx_partitions_dict_from_graph()
-
         # Get the observables from the indices. itemgetter outperforms list comprehension
-        pauli_partitions = obs_partitions_from_idx_partitions(
-            self.observables, idx_dictionary.values()
+        pauli_partitions = items_partitions_from_idx_partitions(
+            self.observables, self._idx_partitions_dict_from_graph.values()
         )
         return pauli_partitions
 
-    @property
-    def complement_graph(self) -> rx.PyGraph:
-        """
-        Complement graph of the (anti-)commutation graph constructed from the Pauli observables.
 
-        Edge (i,j) is present in the graph if observable[i] and observable[j] do NOT commute under
-        the ``grouping_type`` strategy.
-
-        The nodes are the observables (can only be accesssed through their integer index).
-        """
-        # Use upper triangle since adjacency matrix is symmetric and we have an undirected graph
-        edges = list(zip(*np.where(np.triu(self.adj_matrix, k=1))))
-        # Create complement graph
-        graph = rx.PyGraph(
-            node_count_hint=len(self.observables),
-            edge_count_hint=len(edges),
-        )
-        graph.add_nodes_from(self.observables)
-        graph.add_edges_from_no_data(edges)
-        return graph
-
-
-def obs_partitions_from_idx_partitions(
-    observables: list, idx_partitions: Sequence[Sequence[int]]
+def items_partitions_from_idx_partitions(
+    items: list, idx_partitions: Sequence[Sequence[int]]
 ) -> list[list]:
-    """Get the partitions of the observables corresponding to the partitions of the indices.
+    """Get the partitions of the items corresponding to the partitions of the indices.
 
     Args:
-        observables (list[Observable]): A list of Pauli words to be partitioned according to a
-            grouping strategy.
-        idx_partitions (Sequence[Sequence[int]]): Sequence of sequences containing the indices of the partitioned observables.
+        items (Sequence): A list of items to be partitioned according to the partition of the indices.
+        idx_partitions (Sequence[Sequence[int]]): Sequence of sequences containing the indices of the partitioned items.
 
     Returns:
-        list[list[Observable]]: List of partitions of the Pauli observables made up of mutually (anti-)commuting terms.
+        list[list]: List of partitions of the items following the partition of the indices..
     """
-    pauli_groups = [
-        (
-            list(itemgetter(*indices)(observables))
-            if len(indices) > 1
-            else [itemgetter(*indices)(observables)]
-        )
+    items_partitioned = [
+        (list(itemgetter(*indices)(items)) if len(indices) > 1 else [itemgetter(*indices)(items)])
         for indices in idx_partitions
     ]
 
-    return pauli_groups
+    return items_partitioned
 
 
-def adj_matrix_from_symplectic(symplectic_matrix: np.ndarray, grouping_type: str):
+def _adj_matrix_from_symplectic(symplectic_matrix: np.ndarray, grouping_type: str):
     """Get adjacency matrix of (anti-)commuting graph based on grouping type.
 
     This is the adjacency matrix of the complement graph. Based on symplectic representations and inner product of [1].
@@ -452,28 +483,30 @@ def group_observables(observables, coefficients=None, grouping_type="qwc", metho
     [[0.97, 4.21], [1.43]]
     """
 
-    if coefficients is not None:
-        if qml.math.shape(coefficients)[0] != len(observables):
-            raise IndexError(
-                "The coefficients list must be the same length as the observables list."
-            )
+    if coefficients is not None and len(coefficients) != len(observables):
+        raise IndexError("The coefficients list must be the same length as the observables list.")
 
-    no_wires_obs = []
-    wires_obs = []
+    # # Separate observables based on whether they have wires or not.
+    no_wires_obs, wires_obs = [], []
+
     for ob in observables:
         if len(ob.wires) == 0:
             no_wires_obs.append(ob)
         else:
             wires_obs.append(ob)
+
+    # Handle case where all observables have no wires
     if not wires_obs:
         if coefficients is None:
-            return [no_wires_obs]
-        return [no_wires_obs], [coefficients]
+            return [observables]
+        return [observables], [coefficients]
 
+    # Initialize PauliGroupingStrategy
     pauli_groupper = PauliGroupingStrategy(
         wires_obs, grouping_type=grouping_type, graph_colourer=method
     )
 
+    # Handles legacy op_math
     temp_opmath = not qml.operation.active_new_opmath() and any(
         isinstance(o, (Prod, SProd)) for o in observables
     )
@@ -481,11 +514,12 @@ def group_observables(observables, coefficients=None, grouping_type="qwc", metho
         qml.operation.enable_new_opmath(warn=False)
 
     try:
-        partitioned_paulis = pauli_groupper.colour_pauli_graph()
+        partitioned_paulis = pauli_groupper.partition_observables()
     finally:
         if temp_opmath:
             qml.operation.disable_new_opmath(warn=False)
 
+    # Add observables without wires back to the first partition
     partitioned_paulis[0].extend(no_wires_obs)
 
     if coefficients is None:
@@ -497,7 +531,12 @@ def group_observables(observables, coefficients=None, grouping_type="qwc", metho
 
 
 def _partition_coeffs(partitioned_paulis, observables, coefficients):
-    """Partition the coefficients according to the Pauli word groupings."""
+    """Partition the coefficients according to the Pauli word groupings.
+
+    This function is necessary in the cases where the coefficients are not the trivial
+    integers range(0, len(observables)). In the latter case, using `compute_partition_indices`
+    is recommended.
+    """
 
     partitioned_coeffs = [
         qml.math.cast_like([0] * len(g), coefficients) for g in partitioned_paulis
@@ -513,11 +552,14 @@ def _partition_coeffs(partitioned_paulis, observables, coefficients):
             # find index of this pauli word in remaining original observables,
             for ind, observable in enumerate(observables):
                 if isinstance(observable, qml.ops.Hamiltonian):
-                    # Converts single-term Hamiltonian to SProd because
                     # are_identical_pauli_words cannot handle Hamiltonian
                     coeffs, ops = observable.terms()
                     # Assuming the Hamiltonian has only one term
                     observable = qml.s_prod(coeffs[0], ops[0])
+                if isinstance(pauli_word, qml.ops.Hamiltonian):
+                    # Need to add this case because rx methods do not change type of observables.
+                    coeffs, ops = pauli_word.terms()
+                    pauli_word = qml.s_prod(coeffs[0], ops[0])
                 if are_identical_pauli_words(pauli_word, observable):
                     indices.append(coeff_indices[ind])
                     observables.pop(ind)
