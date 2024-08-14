@@ -2084,7 +2084,7 @@ class Observable(Operator):
 
     __rmul__ = __mul__
 
-    def __sub__(self, other: "Observable") -> "Observable":
+    def __sub__(self, other: Operator) -> Operator:
         r"""The subtraction operation between Observables/Tensors/qml.Hamiltonian objects."""
         if active_new_opmath():
             return super().__sub__(other=other)
