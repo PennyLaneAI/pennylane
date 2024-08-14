@@ -888,10 +888,6 @@ def combine_measurements(terminal_measurements, results, mcm_samples):
         if isinstance(circ_meas, SampleMP):
             comb_meas = qml.math.squeeze(comb_meas)
         final_measurements.append(comb_meas)
-    # special treatment of var
-    for i, (c, m) in enumerate(zip(terminal_measurements, final_measurements)):
-        if not c.mv and isinstance(terminal_measurements[i], VarianceMP):
-            final_measurements[i] = qml.math.var(m)
     return final_measurements[0] if len(final_measurements) == 1 else tuple(final_measurements)
 
 
@@ -944,16 +940,6 @@ def _(original_measurement: ProbabilityMP, measures):  # pylint: disable=unused-
 @combine_measurements_core.register
 def _(original_measurement: SampleMP, measures):  # pylint: disable=unused-argument
     """The combined samples of two branches is obtained by concatenating the sample if each branch.."""
-    new_sample = tuple(
-        qml.math.atleast_1d(m[1]) for m in measures.values() if m[0] and not m[1] is tuple()
-    )
-    return qml.math.squeeze(qml.math.concatenate(new_sample))
-
-
-@combine_measurements_core.register
-def _(original_measurement: VarianceMP, measures):  # pylint: disable=unused-argument
-    """Intermediate ``VarianceMP`` measurements are in fact ``SampleMP`` measurements,
-    and hence the implementation is the same as for ``SampleMP``."""
     new_sample = tuple(
         qml.math.atleast_1d(m[1]) for m in measures.values() if m[0] and not m[1] is tuple()
     )
