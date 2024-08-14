@@ -31,75 +31,75 @@ from .sum import Sum
 class LinearCombination(Sum):
     r"""Operator representing a linear combination of operators.
 
-     The ``LinearCombination`` is represented as a linear combination of other operators, e.g.,
-     :math:`\sum_{k=0}^{N-1} c_k O_k`, where the :math:`c_k` are trainable parameters.
+    The ``LinearCombination`` is represented as a linear combination of other operators, e.g.,
+    :math:`\sum_{k=0}^{N-1} c_k O_k`, where the :math:`c_k` are trainable parameters.
 
-     Args:
-         coeffs (tensor_like): coefficients of the ``LinearCombination`` expression
-         observables (Iterable[Observable]): observables in the ``LinearCombination`` expression, of same length as ``coeffs``
-         simplify (bool): Specifies whether the ``LinearCombination`` is simplified upon initialization
-                          (like-terms are combined). The default value is `False`. Note that ``coeffs`` cannot
-                          be differentiated when using the ``'torch'`` interface and ``simplify=True``. Use of this argument is deprecated.
-         grouping_type (str): If not ``None``, compute and store information on how to group commuting
-             observables upon initialization. This information may be accessed when a :class:`~.QNode` containing this
-             ``LinearCombination`` is executed on devices. The string refers to the type of binary relation between Pauli words.
-             Can be ``'qwc'`` (qubit-wise commuting), ``'commuting'``, or ``'anticommuting'``.
-         method (str): The graph colouring heuristic to use in solving minimum clique cover for grouping, which
-             can be ``'lf'`` (Largest First), ``'rlf'`` (Recursive Largest First), `dsatur` (DSATUR), or `gis` (IndependentSet).
-             Defaults to ``'lf'``. Ignored if ``grouping_type=None``.
-         id (str): name to be assigned to this ``LinearCombination`` instance
+    Args:
+        coeffs (tensor_like): coefficients of the ``LinearCombination`` expression
+        observables (Iterable[Observable]): observables in the ``LinearCombination`` expression, of same length as ``coeffs``
+        simplify (bool): Specifies whether the ``LinearCombination`` is simplified upon initialization
+                        (like-terms are combined). The default value is `False`. Note that ``coeffs`` cannot
+                        be differentiated when using the ``'torch'`` interface and ``simplify=True``. Use of this argument is deprecated.
+        grouping_type (str): If not ``None``, compute and store information on how to group commuting
+            observables upon initialization. This information may be accessed when a :class:`~.QNode` containing this
+            ``LinearCombination`` is executed on devices. The string refers to the type of binary relation between Pauli words.
+            Can be ``'qwc'`` (qubit-wise commuting), ``'commuting'``, or ``'anticommuting'``.
+        method (str): The graph colouring heuristic to use in solving minimum clique cover for grouping, which
+            can be ``'lf'`` (Largest First), ``'rlf'`` (Recursive Largest First), `dsatur` (DSATUR), or `gis` (IndependentSet).
+            Defaults to ``'lf'``. Ignored if ``grouping_type=None``.
+        id (str): name to be assigned to this ``LinearCombination`` instance
 
     .. seealso:: `rustworkx.ColoringStrategy <https://www.rustworkx.org/apiref/rustworkx.ColoringStrategy.html#coloringstrategy>`_
     for more information on the ``('lf', 'dsatur', 'gis')`` strategies.
 
-     .. warning::
-         The ``simplify`` argument is deprecated and will be removed in a future release.
-         Instead, you can call ``qml.simplify`` on the constructed operator.
+    .. warning::
+        The ``simplify`` argument is deprecated and will be removed in a future release.
+        Instead, you can call ``qml.simplify`` on the constructed operator.
 
-     **Example:**
+    **Example:**
 
-     A ``LinearCombination`` can be created by simply passing the list of coefficients
-     as well as the list of observables:
+    A ``LinearCombination`` can be created by simply passing the list of coefficients
+    as well as the list of observables:
 
-     >>> coeffs = [0.2, -0.543]
-     >>> obs = [qml.X(0) @ qml.Z(1), qml.Z(0) @ qml.Hadamard(2)]
-     >>> H = qml.ops.LinearCombination(coeffs, obs)
-     >>> print(H)
-     0.2 * (X(0) @ Z(1)) + -0.543 * (Z(0) @ Hadamard(wires=[2]))
-
-
-     The coefficients can be a trainable tensor, for example:
-
-     >>> coeffs = tf.Variable([0.2, -0.543], dtype=tf.double)
-     >>> obs = [qml.X(0) @ qml.Z(1), qml.Z(0) @ qml.Hadamard(2)]
-     >>> H = qml.ops.LinearCombination(coeffs, obs)
-     >>> print(H)
-     0.2 * (X(0) @ Z(1)) + -0.543 * (Z(0) @ Hadamard(wires=[2]))
+    >>> coeffs = [0.2, -0.543]
+    >>> obs = [qml.X(0) @ qml.Z(1), qml.Z(0) @ qml.Hadamard(2)]
+    >>> H = qml.ops.LinearCombination(coeffs, obs)
+    >>> print(H)
+    0.2 * (X(0) @ Z(1)) + -0.543 * (Z(0) @ Hadamard(wires=[2]))
 
 
-     A ``LinearCombination`` can store information on which commuting observables should be measured together in
-     a circuit:
+    The coefficients can be a trainable tensor, for example:
 
-     >>> obs = [qml.X(0), qml.X(1), qml.Z(0)]
-     >>> coeffs = np.array([1., 2., 3.])
-     >>> H = qml.ops.LinearCombination(coeffs, obs, grouping_type='qwc')
-     >>> H.grouping_indices
-     ((0, 1), (2,))
+    >>> coeffs = tf.Variable([0.2, -0.543], dtype=tf.double)
+    >>> obs = [qml.X(0) @ qml.Z(1), qml.Z(0) @ qml.Hadamard(2)]
+    >>> H = qml.ops.LinearCombination(coeffs, obs)
+    >>> print(H)
+    0.2 * (X(0) @ Z(1)) + -0.543 * (Z(0) @ Hadamard(wires=[2]))
 
-     This attribute can be used to compute groups of coefficients and observables:
 
-     >>> grouped_coeffs = [coeffs[list(indices)] for indices in H.grouping_indices]
-     >>> grouped_obs = [[H.ops[i] for i in indices] for indices in H.grouping_indices]
-     >>> grouped_coeffs
-     [array([1., 2.]), array([3.])]
-     >>> grouped_obs
-     [[X(0), X(1)], [Z(0)]]
+    A ``LinearCombination`` can store information on which commuting observables should be measured together in
+    a circuit:
 
-     Devices that evaluate a ``LinearCombination`` expectation by splitting it into its local observables can
-     use this information to reduce the number of circuits evaluated.
+    >>> obs = [qml.X(0), qml.X(1), qml.Z(0)]
+    >>> coeffs = np.array([1., 2., 3.])
+    >>> H = qml.ops.LinearCombination(coeffs, obs, grouping_type='qwc')
+    >>> H.grouping_indices
+    ((0, 1), (2,))
 
-     Note that one can compute the ``grouping_indices`` for an already initialized ``LinearCombination`` by
-     using the :func:`compute_grouping <pennylane.ops.LinearCombination.compute_grouping>` method.
+    This attribute can be used to compute groups of coefficients and observables:
+
+    >>> grouped_coeffs = [coeffs[list(indices)] for indices in H.grouping_indices]
+    >>> grouped_obs = [[H.ops[i] for i in indices] for indices in H.grouping_indices]
+    >>> grouped_coeffs
+    [array([1., 2.]), array([3.])]
+    >>> grouped_obs
+    [[X(0), X(1)], [Z(0)]]
+
+    Devices that evaluate a ``LinearCombination`` expectation by splitting it into its local observables can
+    use this information to reduce the number of circuits evaluated.
+
+    Note that one can compute the ``grouping_indices`` for an already initialized ``LinearCombination`` by
+    using the :func:`compute_grouping <pennylane.ops.LinearCombination.compute_grouping>` method.
     """
 
     num_wires = qml.operation.AnyWires
