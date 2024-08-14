@@ -24,12 +24,13 @@ import logging
 import numpy as np
 
 import pennylane as qml  # pylint: disable=unused-import
-from pennylane import DeviceError, QutritBasisState, QutritDevice
+from pennylane import DeviceError, QutritBasisState
 from pennylane.devices.default_qubit_legacy import _get_slice
 from pennylane.logging import debug_logger, debug_logger_init
 from pennylane.wires import WireError
 
 from .._version import __version__
+from ._qutrit_device import QutritDevice
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())

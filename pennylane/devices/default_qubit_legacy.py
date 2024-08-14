@@ -27,7 +27,7 @@ import numpy as np
 from scipy.sparse import csr_matrix
 
 import pennylane as qml
-from pennylane import BasisState, DeviceError, QubitDevice, Snapshot, StatePrep
+from pennylane import BasisState, DeviceError, Snapshot, StatePrep
 from pennylane.devices.qubit import measure
 from pennylane.measurements import ExpectationMP
 from pennylane.operation import Operation
@@ -38,6 +38,7 @@ from pennylane.typing import TensorLike
 from pennylane.wires import WireError
 
 from .._version import __version__
+from ._qubit_device import QubitDevice
 
 ABC_ARRAY = np.array(list(ABC))
 

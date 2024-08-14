@@ -23,9 +23,10 @@ import itertools
 import numpy as np
 
 import pennylane as qml
-from pennylane import QubitDevice
 from pennylane.measurements import MeasurementProcess
 from pennylane.wires import Wires
+
+from ._qubit_device import QubitDevice
 
 
 class QutritDevice(QubitDevice):  # pylint: disable=too-many-public-methods

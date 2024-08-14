@@ -170,6 +170,8 @@ from .default_qutrit import DefaultQutrit
 from .default_qutrit_mixed import DefaultQutritMixed
 from .._device import Device as LegacyDevice
 from .._device import DeviceError
+from ._qubit_device import QubitDevice
+from ._qutrit_device import QutritDevice
 
 
 # pylint: disable=undefined-variable

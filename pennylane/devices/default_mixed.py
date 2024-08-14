@@ -29,7 +29,7 @@ import numpy as np
 
 import pennylane as qml
 import pennylane.math as qnp
-from pennylane import BasisState, DeviceError, QubitDensityMatrix, QubitDevice, Snapshot, StatePrep
+from pennylane import BasisState, DeviceError, QubitDensityMatrix, Snapshot, StatePrep
 from pennylane.logging import debug_logger, debug_logger_init
 from pennylane.measurements import (
     CountsMP,
@@ -48,6 +48,7 @@ from pennylane.ops.qubit.attributes import diagonal_in_z_basis
 from pennylane.wires import Wires
 
 from .._version import __version__
+from ._qubit_device import QubitDevice
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
