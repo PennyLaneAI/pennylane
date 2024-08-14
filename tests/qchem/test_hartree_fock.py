@@ -276,6 +276,11 @@ def test_nuclear_energy_gradient(symbols, geometry, g_ref):
     assert np.allclose(g, g_ref)
 
 
+def create_jax_like_array(values):
+    return qml.math.array(values, like="jax")
+
+
+@pytest.mark.jax
 class TestJax:
     @pytest.mark.parametrize(
         ("symbols", "geometry", "g_ref"),
@@ -288,7 +293,6 @@ class TestJax:
             ),
         ],
     )
-    @pytest.mark.jax
     def test_hf_energy_gradient(self, symbols, geometry, g_ref):
         r"""Test that the gradient of the Hartree-Fock energy wrt differentiable parameters is
         correct."""
@@ -299,4 +303,31 @@ class TestJax:
         g = jax.grad(qchem.hf_energy(mol))(*args)
         g_ref = jax.numpy.array(g_ref)
 
+        assert np.allclose(g, g_ref)
+
+    @pytest.mark.parametrize(
+        ("symbols", "geometry", "g_ref", "argnums"),
+        [
+            # gradient = d(q_i * q_j / (xi - xj)) / dxi, ...
+            (
+                ["H", "H"],
+                [[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]],
+                np.array([[0.0, 0.0, 1.0], [0.0, 0.0, -1.0]]),
+                [True, False, False],
+            ),
+            (
+                ["H", "F"],
+                [[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]],
+                np.array([[0.0, 0.0, 2.25], [0.0, 0.0, -2.25]]),
+                [True, False, False],
+            ),
+        ],
+    )
+    def test_nuclear_energy_gradient_jax(symbols, geometry, g_ref, argnums):
+        r"""Test that nuclear energy gradients are correct."""
+        geometry = create_jax_like_array(geometry, requires_grad=True)
+
+        mol = qchem.Molecule(symbols, geometry)
+        args = [mol.coordinates]
+        g = qml.grad(qchem.nuclear_energy(mol.nuclear_charges, mol.coordinates, argnums))(*args)
         assert np.allclose(g, g_ref)

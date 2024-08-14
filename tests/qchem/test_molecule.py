@@ -77,6 +77,28 @@ class TestMolecule:
         assert mol.coeff_opt is False
 
     @pytest.mark.parametrize(
+        ("symbols", "geometry", "coord_opt", "coeff_opt", "alpha_opt"),
+        [
+            (
+                ["H", "F"],
+                np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]),
+                True,
+                True,
+                True,
+            ),
+        ],
+    )
+    def test_molecule_opt_coeffs(self, symbols, geometry, coord_opt, coeff_opt, alpha_opt):
+        r"""Test that the molecule object contains correct optimization flags."""
+        mol = qchem.Molecule(
+            symbols, geometry, coeff_opt=coeff_opt, coord_opt=coord_opt, alpha_opt=alpha_opt
+        )
+
+        assert mol.coord_opt == coord_opt
+        assert mol.coeff_opt == coeff_opt
+        assert mol.alpha_opt == alpha_opt
+
+    @pytest.mark.parametrize(
         ("symbols", "geometry", "n_electrons", "n_orbitals", "nuclear_charges"),
         [
             (
