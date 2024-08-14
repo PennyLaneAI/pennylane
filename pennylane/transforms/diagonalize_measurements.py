@@ -22,8 +22,10 @@ def null_postprocessing(results):
 
 @transform
 def diagonalize_measurements(tape, supported_base_obs=_default_supported_obs):
-    """Diagonalize the measurements on a tape if they are not supported. Raises an error if the
+    """Diagonalize a set of measurements into the standard basis. Raises an error if the
     measurements do not commute.
+
+    See the usage details for more information on which measurements are supported.
 
     Args:
         tape (QNode or QuantumScript or Callable): The quantum circuit to modify the measurements of.
@@ -81,7 +83,10 @@ def diagonalize_measurements(tape, supported_base_obs=_default_supported_obs):
     .. details::
         :title: Usage Details
 
-        The transform can also diagonalize only a subset of the operators. By default, the only
+        The transform diagonalizes observables from the local Pauli basis only, i.e. it diagonalizes X, Y
+        and Hadamard.
+
+        The transform can also diagonalize only a subset of these operators. By default, the only
         supported base observable is Z. What if a backend device can handle
         X, Y and Z, but doesn't provide support for Hadamard? We can set this by passing
         ``supported_base_obs`` to the transform. Let's create a tape with some measurements:
