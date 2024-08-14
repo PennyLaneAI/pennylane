@@ -282,10 +282,6 @@ class LegacyDeviceFacade(Device):
                 config = replace(execution_config, gradient_method="backprop")
                 return self._setup_backprop_config(config)
 
-            if self._validate_adjoint_method(tape):
-                config = replace(execution_config, gradient_method="adjoint")
-                return self._setup_adjoint_config(config)
-
         if execution_config.gradient_method == "backprop":
             return self._setup_backprop_config(execution_config)
         if _requests_adjoint(execution_config):

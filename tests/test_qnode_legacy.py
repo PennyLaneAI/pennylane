@@ -247,22 +247,15 @@ class TestValidation:
         assert res == "parameter-shift"
 
     # pylint: disable=protected-access
-    @pytest.mark.xfail(reason="No longer possible thanks to the new Legacy Facade")
-    def test_best_method_str_is_finite_diff(self, monkeypatch):
+    def test_best_method_str_is_finite_diff(self, mocker):
         """Test that the method for determining the best diff method string
         for a given device and interface returns 'finite-diff'"""
         dev = qml.device("default.qubit.legacy", wires=1)
-        monkeypatch.setitem(dev._capabilities, "passthru_interface", "some_interface")
-        monkeypatch.setitem(dev._capabilities, "provides_jacobian", False)
 
-        def capabilities(cls):
-            capabilities = cls._capabilities
-            capabilities.update(model="None")
-            return capabilities
+        mocker.patch.object(QNode, "get_best_method", return_value=[qml.gradients.finite_diff])
 
-        # finite differences is the fallback when we know nothing about the device
-        monkeypatch.setattr(qml.devices.DefaultQubitLegacy, "capabilities", capabilities)
         res = QNode.best_method_str(dev, "another_interface")
+
         assert res == "finite-diff"
 
     # pylint: disable=protected-access

@@ -663,8 +663,7 @@ def execute(
         device_vjp
         and getattr(device, "short_name", "") in ("lightning.gpu", "lightning.kokkos")
         and interface in jpc_interfaces
-    ):
-        # pragma: no cover
+    ):  # pragma: no cover
         if INTERFACE_MAP[interface] == "jax" and "use_device_state" in gradient_kwargs:
             gradient_kwargs["use_device_state"] = False
 
@@ -782,26 +781,18 @@ def _make_transform_programs(
 ):
     """helper function to make the transform programs."""
 
-    if isinstance(device, qml.devices.Device):
-
-        # If gradient_fn is a gradient transform, device preprocessing should happen in
-        # inner execute (inside the ml boundary).
-        if is_gradient_transform:
-            if inner_transform is None:
-                inner_transform = device.preprocess(config)[0]
-            if transform_program is None:
-                transform_program = qml.transforms.core.TransformProgram()
-        else:
-            if inner_transform is None:
-                inner_transform = qml.transforms.core.TransformProgram()
-            if transform_program is None:
-                transform_program = device.preprocess(config)[0]
-
-    else:
+    # If gradient_fn is a gradient transform, device preprocessing should happen in
+    # inner execute (inside the ml boundary).
+    if is_gradient_transform:
+        if inner_transform is None:
+            inner_transform = device.preprocess(config)[0]
         if transform_program is None:
             transform_program = qml.transforms.core.TransformProgram()
+    else:
         if inner_transform is None:
             inner_transform = qml.transforms.core.TransformProgram()
+        if transform_program is None:
+            transform_program = device.preprocess(config)[0]
 
     return transform_program, inner_transform
 
