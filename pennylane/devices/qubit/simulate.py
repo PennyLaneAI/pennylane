@@ -345,10 +345,8 @@ def simulate(
 
     has_mcm = any(isinstance(op, MidMeasureMP) for op in circuit.operations)
     if has_mcm:
-        if not circuit.shots or execution_kwargs.get("mcm_method", None) == "tree-traversal":
-            circtmp, variance_post_processing = variance_transform(circuit)
-            results = simulate_tree_mcm(circtmp, prng_key=prng_key, **execution_kwargs)
-            return variance_post_processing(results)
+        if execution_kwargs.get("mcm_method", None) == "tree-traversal":
+            return simulate_tree_mcm(circuit, prng_key=prng_key, **execution_kwargs)
 
         results = []
         aux_circ = qml.tape.QuantumScript(
@@ -436,6 +434,10 @@ def simulate_tree_mcm(
             results.append(simulate_tree_mcm(aux_circuit, debugger, prng_key=k, **execution_kwargs))
         return tuple(results)
 
+    # `var` measurements cannot be aggregated on the fly as they require the global `expval`
+    # variance_transform replaces `var` measurements with `expval` and `expval**2` measurements
+    circuit, variance_post_processing = variance_transform(circuit)
+
     #######################
     # main implementation #
     #######################
@@ -464,7 +466,7 @@ def simulate_tree_mcm(
     mcm_current = qml.math.zeros(n_mcms + 1, dtype=int)
     # `mid_measurements` maps the elements of `mcm_current` to their respective MCMs
     # This is used by `get_final_state::apply_operation` for `Conditional` operations
-    mid_measurements = {k: v for k, v in zip(mcms[1:], mcm_current[1:].tolist())}
+    mid_measurements = dict(zip(mcms[1:], mcm_current[1:].tolist()))
     # Split circuit into segments
     circuits = split_circuit_at_mcms(circuit)
     circuits[0] = prepend_state_prep(circuits[0], None, interface, circuit.wires)
@@ -585,7 +587,7 @@ def simulate_tree_mcm(
                 stack.counts[depth] = samples_to_counts(samples)
                 stack.probs[depth] = counts_to_probs(stack.counts[depth])
             else:
-                stack.probs[depth] = {k: v for k, v in zip([False, True], measurements)}
+                stack.probs[depth] = dict(zip([False, True], measurements))
                 samples = None
             # Store a copy of the state-vector to project on the one-branch
             stack.states[depth] = state
@@ -614,62 +616,14 @@ def simulate_tree_mcm(
         terminal_measurements = circuit.measurements
     mcm_samples = {mcms[i]: v for i, v in mcm_samples.items()}
     mcm_samples = prune_mcm_samples(mcm_samples)
-    return combine_measurements(terminal_measurements, measurement_dicts, mcm_samples)
+    results = combine_measurements(terminal_measurements, measurement_dicts, mcm_samples)
+    return variance_post_processing(results)
 
 
 def split_circuit_at_mcms(circuit):
     """Return a list of circuits segments (one for each mid-circuit measurement in the
-    <<<<<<< Updated upstream
-        original circuit) where the terminal measurements probe the MCM statistics. Only
-        the last segment retains the original terminal measurements."""
-
-    mcm_gen = ((i, op) for i, op in enumerate(circuit) if isinstance(op, MidMeasureMP))
-    circuits = []
-
-    first = 0
-    for last, op in mcm_gen:
-        new_operations = circuit.operations[first:last]
-        new_measurements = (
-            [qml.sample(wires=op.wires)] if circuit.shots else [qml.probs(wires=op.wires)]
-        )
-        circuits.append(
-            qml.tape.QuantumScript(new_operations, new_measurements, shots=circuit.shots)
-        )
-        first = last + 1
-
-    last_circuit_operations = circuit.operations[first:]
-    last_circuit_measurements = []
-
-    for m in circuit.measurements:
-        if not m.mv:
-            if isinstance(m, VarianceMP):
-                if circuit.shots:
-                    last_circuit_measurements.append(SampleMP(obs=m.obs))
-                else:
-                    raise TypeError(
-                        "VarianceMP measurements should be replace by variance_transform."
-                    )
-            else:
-                last_circuit_measurements.append(m)
-
-    circuits.append(
-        qml.tape.QuantumScript(
-            last_circuit_operations, last_circuit_measurements, shots=circuit.shots
-        )
-    )
-    return circuits
-
-
-def circuit_up_to_first_mcm(circuit):
-    """Returns two circuits; one that runs up-to the next mid-circuit measurement and one that runs beyond it.
-    =======
-        original circuit) where the terminal measurements probe the MCM statistics.
-    >>>>>>> Stashed changes
-
-        Only the last segment retains the original terminal measurements for
-        `counts`, `expval`, `probs` and `sample` but not `var` measurements.
-        There is no way to recombine "partial variances" from two branches, so `var` measurements are replaced
-        by `sample` measurements from which the variance is calculated (once samples from all branches are available).
+    original circuit) where the terminal measurements probe the MCM statistics. Only
+    the last segment retains the original terminal measurements.
 
         Args:
             circuit (QuantumTape): The circuit to simulate
@@ -697,15 +651,7 @@ def circuit_up_to_first_mcm(circuit):
 
     for m in circuit.measurements:
         if not m.mv:
-            if isinstance(m, VarianceMP):
-                if circuit.shots:
-                    last_circuit_measurements.append(SampleMP(obs=m.obs))
-                else:
-                    raise TypeError(
-                        "VarianceMP measurements should be replace by variance_transform."
-                    )
-            else:
-                last_circuit_measurements.append(m)
+            last_circuit_measurements.append(m)
 
     circuits.append(
         qml.tape.QuantumScript(
@@ -813,7 +759,7 @@ def counts_to_probs(counts):
     """Converts counts to probs."""
     probs = qml.math.array(list(counts.values()))
     probs = probs / qml.math.sum(probs)
-    return {k: v for k, v in zip(counts.keys(), probs)}
+    return dict(zip(counts.keys(), probs))
 
 
 def prune_mcm_samples(mcm_samples):
@@ -862,9 +808,7 @@ def variance_transform(circuit):
 
     This is necessary since computing the variance requires the global expectation value which is not available from measurements on subtrees.
     """
-    skip_transform = circuit.shots or not any(
-        isinstance(m, VarianceMP) for m in circuit.measurements
-    )
+    skip_transform = not any(isinstance(m, VarianceMP) for m in circuit.measurements)
     if skip_transform:
         return circuit, lambda x: x
 
