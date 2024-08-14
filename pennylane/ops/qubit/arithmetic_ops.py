@@ -380,8 +380,8 @@ class IntegerComparator(Operation):
     def __init__(
         self,
         value: int,
+        wires: WiresLike,
         geq: bool = True,
-        wires: Optional[WiresLike] = None,
         work_wires: Optional[WiresLike] = None,
     ):
         if not isinstance(value, int):
@@ -426,10 +426,7 @@ class IntegerComparator(Operation):
     # pylint: disable=unused-argument
     @staticmethod
     def compute_matrix(
-        value: Optional[int] = None,
-        control_wires: Optional[WiresLike] = None,
-        geq: bool = True,
-        **kwargs,
+        control_wires: WiresLike, value: Optional[int] = None, geq: bool = True, **kwargs
     ) -> TensorLike:  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -471,8 +468,10 @@ class IntegerComparator(Operation):
 
         if value is None:
             raise ValueError("The value to compare to must be specified.")
+
         if control_wires is None:
             raise ValueError("Must specify the control wires.")
+
         if not isinstance(value, int):
             raise ValueError(f"The compared value must be an int. Got {type(value)}.")
 
@@ -497,8 +496,8 @@ class IntegerComparator(Operation):
     @staticmethod
     def compute_decomposition(
         value: int,
+        wires: WiresLike,
         geq: bool = True,
-        wires: Optional[WiresLike] = None,
         work_wires: Optional[WiresLike] = None,
         **kwargs,
     ) -> list[qml.operation.Operator]:
@@ -529,8 +528,10 @@ class IntegerComparator(Operation):
 
         if not isinstance(value, int):
             raise ValueError(f"The compared value must be an int. Got {type(value)}.")
+
         if wires is None:
             raise ValueError("Must specify the wires that the operation acts on.")
+
         if len(wires) > 1:
             control_wires = Wires(wires[:-1])
             wires = Wires(wires[-1])
