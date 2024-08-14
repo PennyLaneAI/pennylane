@@ -103,7 +103,7 @@ def no_sampling(
     adjoint and backprop validation.
     """
     if tape.shots:
-        raise qml.qml.DeviceError(f"Finite shots are not supported with {name}")
+        raise qml.DeviceError(f"Finite shots are not supported with {name}")
     return (tape,), null_postprocessing
 
 
