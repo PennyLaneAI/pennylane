@@ -16,11 +16,11 @@
 # pylint: disable=use-implicit-booleaness-not-comparison, unnecessary-lambda-assignment, use-dict-literal
 import numpy as np
 import pytest
+from param_shift_dev import ParamShiftDerivativesDevice
 
 import pennylane as qml
 from pennylane import qnode
 from pennylane.devices import DefaultQubit
-from tests.param_shift_dev import ParamShiftDerivativesDevice
 
 pytestmark = pytest.mark.torch
 

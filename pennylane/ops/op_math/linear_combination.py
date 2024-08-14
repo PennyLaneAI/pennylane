@@ -20,6 +20,7 @@ import numbers
 # pylint: disable=too-many-arguments, protected-access, too-many-instance-attributes
 import warnings
 from copy import copy
+from typing import Union
 
 import pennylane as qml
 from pennylane.operation import Observable, Operator, Tensor, convert_to_opmath
@@ -396,7 +397,7 @@ class LinearCombination(Sum):
             "Can only compare a LinearCombination, and a LinearCombination/Observable/Tensor."
         )
 
-    def __matmul__(self, other):
+    def __matmul__(self, other: Operator) -> Operator:
         """The product operation between Operator objects."""
         if isinstance(other, LinearCombination):
             coeffs1 = self.coeffs
@@ -430,7 +431,7 @@ class LinearCombination(Sum):
 
         return NotImplemented
 
-    def __add__(self, H):
+    def __add__(self, H: Union[numbers.Number, Operator]) -> Operator:
         r"""The addition operation between a LinearCombination and a LinearCombination/Tensor/Observable."""
         ops = copy(self.ops)
         self_coeffs = self.coeffs
@@ -447,7 +448,7 @@ class LinearCombination(Sum):
                 _pauli_rep = None
             return qml.ops.LinearCombination(coeffs, ops, _pauli_rep=_pauli_rep)
 
-        if isinstance(H, qml.operation.Operator):
+        if isinstance(H, Operator):
             coeffs = qml.math.concatenate(
                 [self_coeffs, qml.math.cast_like([1.0], self_coeffs)], axis=0
             )
@@ -459,7 +460,7 @@ class LinearCombination(Sum):
 
     __radd__ = __add__
 
-    def __mul__(self, a):
+    def __mul__(self, a: Union[int, float, complex]) -> "LinearCombination":
         r"""The scalar multiplication operation between a scalar and a LinearCombination."""
         if isinstance(a, (int, float, complex)):
             self_coeffs = self.coeffs
@@ -470,13 +471,15 @@ class LinearCombination(Sum):
 
     __rmul__ = __mul__
 
-    def __sub__(self, H):
+    def __sub__(self, H: Observable) -> Observable:
         r"""The subtraction operation between a LinearCombination and a LinearCombination/Tensor/Observable."""
         if isinstance(H, (LinearCombination, qml.ops.Hamiltonian, Tensor, Observable)):
             return self + qml.s_prod(-1.0, H, lazy=False)
         return NotImplemented
 
-    def queue(self, context=qml.QueuingManager):
+    def queue(
+        self, context: Union[qml.QueuingManager, qml.queuing.AnnotatedQueue] = qml.QueuingManager
+    ):
         """Queues a ``qml.ops.LinearCombination`` instance"""
         if qml.QueuingManager.recording():
             for o in self.ops:

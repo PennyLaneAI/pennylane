@@ -19,7 +19,7 @@ from collections import defaultdict
 from copy import copy
 from functools import cached_property
 from operator import itemgetter
-from typing import Sequence
+from typing import Literal, Optional, Sequence
 
 import numpy as np
 import rustworkx as rx
@@ -31,6 +31,7 @@ from pennylane.pauli.utils import (
     binary_to_pauli,
     observables_to_binary_matrix,
 )
+from pennylane.typing import TensorLike
 from pennylane.wires import Wires
 
 from .graph_colouring import recursive_largest_first
@@ -87,7 +88,12 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
         are not recognized.
     """
 
-    def __init__(self, observables, grouping_type="qwc", graph_colourer="lf"):
+    def __init__(
+        self,
+        observables,
+        grouping_type: Literal["qwc", "commuting", "anticommuting"] = "qwc",
+        graph_colourer: Literal["lf", "rlf", "dsatur", "gis"] = "lf",
+    ):
 
         self.graph_colourer = graph_colourer.lower()
         self.grouping_type = grouping_type.lower()
@@ -438,7 +444,12 @@ def _compute_partition_indices_rlf(observables: list, grouping_type: str):
     return tuple(indices)
 
 
-def group_observables(observables, coefficients=None, grouping_type="qwc", method="lf"):
+def group_observables(
+    observables: list["qml.operation.Operator"],
+    coefficients: Optional[TensorLike] = None,
+    grouping_type: Literal["qwc", "commuting", "anticommuting"] = "qwc",
+    method: Literal["lf", "rlf", "dsatur", "gis"] = "lf",
+):
     """Partitions a list of observables (Pauli operations and tensor products thereof) into
     groupings according to a binary relation (qubit-wise commuting, fully-commuting, or
     anticommuting).
