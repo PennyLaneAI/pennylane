@@ -391,9 +391,9 @@ def khk_decompose(generators, H, theta0=None, n_epochs=500, validate=True, invol
     print("Computing Cartan decomposition g = m + k") if verbose else None
     k, m = CartanDecomp(g, involution=involution)
 
-    g = m + k  # reorder g
+    g = k + m  # reorder g
 
-    print(f"Cartan decomposition g = m + k with dimensions {len(g)} = {len(m)} + {len(k)}") if verbose else None
+    print(f"Cartan decomposition g = k + m with dimensions {len(g)} = {len(k)} + {len(m)}") if verbose else None
 
     print("Computing adjoint representation of g = k + m") if verbose else None
     ad = qml.structure_constants(g)
@@ -403,7 +403,7 @@ def khk_decompose(generators, H, theta0=None, n_epochs=500, validate=True, invol
 
     g = k + mtilde + h  # reorder g
 
-    print(f"Cartan decomposition g = m + mtilde + h with dimensions {len(g)} = {len(k)} + {len(mtilde)} + {len(h)}") if verbose else None
+    print(f"Cartan decomposition g = k + mtilde + h with dimensions {len(g)} = {len(k)} + {len(mtilde)} + {len(h)}") if verbose else None
 
     print("Computing adjoint representation of g = k + mtilde + h") if verbose else None
     ad = qml.structure_constants(g)
@@ -458,30 +458,30 @@ def khk_decompose(generators, H, theta0=None, n_epochs=500, validate=True, invol
         h_elem = sum(c * op for c, op in zip(vec_h, g))
         h_elem.simplify(1e-10)
 
-        K = qml.Identity()
-        for th, op in zip(theta_opt, g):
-            K @= qml.exp(1j * th * op.operation())
-
         n = len(H.wires)
-        Km = qml.matrix(K, wire_order=range(n))
+
+        Km = jnp.eye(2**n)
+        for th, op in zip(theta_opt, k):
+            Km @= jax.scipy.linalg.expm(1j * th * qml.matrix(op.operation(), wire_order=range(n)))
 
         H_reconstructed = Km.conj().T @ qml.matrix(h_elem, wire_order=range(n)) @ Km
 
         H_m = qml.matrix(H, wire_order=range(len(H.wires)))
         success = np.allclose(H_m, H_reconstructed)
-        print(success)
 
         if not success:
             # more expensive check for unitary equivalence
-            warnings.warn(
-                "The reconstructed H is not numerical identical to the original H.\n"
-                "We can still check for unitary equivalence:"
-            )
             success = 1 - np.linalg.norm(
                 np.linalg.eigvalsh(H_m) - np.linalg.eigvalsh(H_reconstructed)
             )
+            warnings.warn(
+                "The reconstructed H is not numerical identical to the original H.\n"
+                f"We can still check for unitary equivalence: {success}",
+                UserWarning
+            )
 
-        print(f"Success: {success}")
+        print(f"success: {success}")
+    
 
     return vec_h, theta_opt, k, mtilde, h, ad
 
