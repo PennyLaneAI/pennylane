@@ -87,7 +87,7 @@ class Hadamard(Observable, Operation):
 
     @staticmethod
     @lru_cache()
-    def compute_sparse_matrix() -> sparse.csc_matrix:  # pylint: disable=arguments-differ
+    def compute_sparse_matrix() -> sparse.csr_matrix:  # pylint: disable=arguments-differ
         return sparse.csr_matrix([[INV_SQRT2, INV_SQRT2], [INV_SQRT2, -INV_SQRT2]])
 
     @staticmethod
