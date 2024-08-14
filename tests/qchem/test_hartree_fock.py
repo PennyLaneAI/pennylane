@@ -323,7 +323,7 @@ class TestJax:
             ),
         ],
     )
-    def test_nuclear_energy_gradient_jax(symbols, geometry, g_ref, argnums):
+    def test_nuclear_energy_gradient_jax(self, symbols, geometry, g_ref, argnums):
         r"""Test that nuclear energy gradients are correct when using jax."""
         geometry = create_jax_like_array(geometry, requires_grad=True)
 
