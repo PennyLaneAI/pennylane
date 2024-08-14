@@ -30,10 +30,10 @@ import numpy as np
 from scipy.special import factorial as fac
 
 import pennylane as qml
-from pennylane import Device
 from pennylane.ops import Identity
 
 from .._version import __version__
+from ._device import Device
 
 # tolerance for numerical errors
 tolerance = 1e-10

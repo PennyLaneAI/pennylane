@@ -31,7 +31,6 @@ from typing import Union
 import numpy as np
 
 import pennylane as qml
-from pennylane import Device
 from pennylane.math import multiply as qmlmul
 from pennylane.math import sum as qmlsum
 from pennylane.measurements import (
@@ -57,6 +56,8 @@ from pennylane.operation import Operation, operation_derivative
 from pennylane.resource import Resources
 from pennylane.tape import QuantumTape
 from pennylane.wires import Wires
+
+from ._device import Device
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())

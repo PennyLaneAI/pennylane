@@ -24,7 +24,6 @@ from collections.abc import Callable, MutableMapping, Sequence
 from typing import Any, Literal, Optional, Union, get_args
 
 import pennylane as qml
-from pennylane import Device
 from pennylane.debugging import pldb_device_manager
 from pennylane.logging import debug_logger
 from pennylane.measurements import CountsMP, MidMeasureMP, Shots
@@ -35,6 +34,8 @@ from .execution import INTERFACE_MAP, SUPPORTED_INTERFACES, SupportedInterfaceUs
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
+
+SupportedDeviceAPIs = Union["qml.devices.LegacyDevice", "qml.devices.Device"]
 
 SupportedDiffMethods = Literal[
     None,
@@ -465,7 +466,7 @@ class QNode:
     def __init__(
         self,
         func: Callable,
-        device: Union[Device, "qml.devices.Device"],
+        device: SupportedDeviceAPIs,
         interface: SupportedInterfaceUserInput = "auto",
         diff_method: Union[TransformDispatcher, SupportedDiffMethods] = "best",
         expansion_strategy: Literal[None, "device", "gradient"] = None,
@@ -695,7 +696,7 @@ class QNode:
     @staticmethod
     @debug_logger
     def get_gradient_fn(
-        device: Union[Device, "qml.devices.Device"],
+        device: SupportedDeviceAPIs,
         interface,
         diff_method: Union[TransformDispatcher, SupportedDiffMethods] = "best",
         tape: Optional["qml.tape.QuantumTape"] = None,
@@ -769,13 +770,13 @@ class QNode:
     @staticmethod
     @debug_logger
     def get_best_method(
-        device: Union[Device, "qml.devices.Device"],
+        device: SupportedDeviceAPIs,
         interface,
         tape: Optional["qml.tape.QuantumTape"] = None,
     ) -> tuple[
         Union[TransformDispatcher, Literal["device", "backprop", "parameter-shift", "finite-diff"]],
         dict[str, Any],
-        Union[Device, "qml.devices.Device"],
+        SupportedDeviceAPIs,
     ]:
         """Returns the 'best' differentiation method
         for a particular device and interface combination.
@@ -823,7 +824,7 @@ class QNode:
 
     @staticmethod
     @debug_logger
-    def best_method_str(device: Union[Device, "qml.devices.Device"], interface) -> str:
+    def best_method_str(device: SupportedDeviceAPIs, interface) -> str:
         """Similar to :meth:`~.get_best_method`, except return the
         'best' differentiation method in human-readable format.
 
