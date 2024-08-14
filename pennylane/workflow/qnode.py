@@ -513,9 +513,6 @@ class QNode:
                 gradient_kwargs,
             )
 
-        if not isinstance(device, qml.devices.Device):
-            device = qml.devices.LegacyDeviceFacade(device)
-
         if interface not in SUPPORTED_INTERFACES:
             raise qml.QuantumFunctionError(
                 f"Unknown interface {interface}. Interface must be "
@@ -526,6 +523,9 @@ class QNode:
             raise qml.QuantumFunctionError(
                 "Invalid device. Device must be a valid PennyLane device."
             )
+
+        if not isinstance(device, qml.devices.Device):
+            device = qml.devices.LegacyDeviceFacade(device)
 
         if "shots" in inspect.signature(func).parameters:
             warnings.warn(

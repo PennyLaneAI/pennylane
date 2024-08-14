@@ -65,14 +65,8 @@ def _get_full_transform_program(qnode: QNode) -> "qml.transforms.core.TransformP
             **qnode.gradient_kwargs,
         )
 
-    if isinstance(qnode.device, qml.devices.Device):
-        config = _make_execution_config(qnode, qnode.gradient_fn)
-        return program + qnode.device.preprocess(config)[0]
-
-    program.add_transform(qml.transform(qnode.device.batch_transform))
-    program.add_transform(expand_fn_transform(qnode.device.expand_fn))
-
-    return program
+    config = _make_execution_config(qnode, qnode.gradient_fn)
+    return program + qnode.device.preprocess(config)[0]
 
 
 def get_transform_program(qnode: "QNode", level=None) -> "qml.transforms.core.TransformProgram":
