@@ -696,7 +696,7 @@ class Wires(Sequence):
         return Wires((set(_process(other)) ^ set(self.labels)))
 
 
-WiresLike = Union[Wires, Iterable[Hashable]]
+WiresLike = Union[Wires, Iterable[Hashable], Hashable]
 
 # Register Wires as a PyTree-serializable class
 register_pytree(Wires, Wires._flatten, Wires._unflatten)  # pylint: disable=protected-access
