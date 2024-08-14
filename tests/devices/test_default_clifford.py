@@ -19,10 +19,10 @@ import os
 import numpy as np
 import pytest
 import scipy as sp
+from dummy_debugger import Debugger
 
 import pennylane as qml
 from pennylane.devices.default_clifford import _pl_op_to_stim
-from tests.dummy_debugger import Debugger
 
 stim = pytest.importorskip("stim")
 
