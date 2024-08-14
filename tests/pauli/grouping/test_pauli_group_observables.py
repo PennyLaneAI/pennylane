@@ -14,6 +14,8 @@
 """
 Unit tests for ``PauliGroupingStrategy`` and ``group_observables`` in ``/pauli/grouping/group_observables.py``.
 """
+import sys
+
 import numpy as np
 import pytest
 
@@ -28,6 +30,36 @@ from pennylane.pauli.grouping.group_observables import (
     group_observables,
     items_partitions_from_idx_partitions,
 )
+
+
+class TestOldRX:
+    """Test PauliGroupingStrategy behaves correctly when versions of rx older than 0.15 are used"""
+
+    @pytest.mark.parametrize("new_colourer", ["dsatur", "gis"])
+    def test_new_strategies_with_old_rx_raise_error(self, monkeypatch, new_colourer):
+        """Test that an error is raised if a new strategy is used with old rx"""
+        # Monkey patch the new_rx variable to False
+        grouping = sys.modules["pennylane.pauli.grouping.group_observables"]
+        monkeypatch.setattr(grouping, "new_rx", False)
+
+        observables = [qml.X(0)]
+        with pytest.raises(ValueError, match="not supported in this version of Rustworkx"):
+            PauliGroupingStrategy(observables, graph_colourer=new_colourer)
+
+    def test_old_rx_produces_right_results(self, monkeypatch):
+        """Test that the results produced with an older rx version is the same as with lf"""
+        observables = [qml.X(0) @ qml.Z(1), qml.Z(0), qml.X(1)]
+
+        new_groupper = PauliGroupingStrategy(observables, graph_colourer="lf")
+        new_partitions = new_groupper.partition_observables()
+
+        grouping = sys.modules["pennylane.pauli.grouping.group_observables"]
+        monkeypatch.setattr(grouping, "new_rx", False)
+
+        old_groupper = PauliGroupingStrategy(observables, graph_colourer="lf")
+        old_partitions = old_groupper.partition_observables()
+
+        assert new_partitions == old_partitions
 
 
 class TestPauliGroupingStrategy:

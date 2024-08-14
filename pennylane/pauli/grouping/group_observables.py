@@ -98,7 +98,7 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
             )
 
         if self.graph_colourer in ["dsatur", "gis"] and not new_rx:
-            raise ValueError(  # pragma: no cover
+            raise ValueError(
                 f"The strategy '{graph_colourer}' is not supported in this version of Rustworkx. "
                 "Please install rustworkx>=0.15.0 to access the 'dsatur' and 'gis' colouring strategies."
             )
