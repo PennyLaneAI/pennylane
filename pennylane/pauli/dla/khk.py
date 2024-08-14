@@ -228,6 +228,7 @@ def is_independent(v, A, tol=1e-14):
 
 
 def orthogonal_complement_basis(h, m, tol):
+    """find mtilde = m - h"""
     # Step 1: Find the span of h
     h = np.array(h)
     m = np.array(m)
@@ -353,7 +354,7 @@ def _compute_csa_words(m, which=0):
     return m, h
 
 
-def khk_decompose(generators, H, theta0=None, n_epochs=500, validate=True, involution=Involution0):
+def khk_decompose(generators, H, theta0=None, n_epochs=500, validate=True, involution=None, verbose=1):
     r"""The full KhK decomposition of a Hamiltonian H
 
     We are decomposing an :math:`H \ in \mathfrak{m}` into :math:`H = K^\dagger h K`
@@ -379,23 +380,32 @@ def khk_decompose(generators, H, theta0=None, n_epochs=500, validate=True, invol
 
 
     """
+    if involution is None:
+        involution = Involution0
+    elif involution == "EvenOdd":
+        involution = EvenOdd
+
     generators = [op.pauli_rep for op in generators]
     g = qml.lie_closure(generators, pauli=True)
 
-    print("Computing Cartan decomposition g = m + k")
+    print("Computing Cartan decomposition g = m + k") if verbose else None
     k, m = CartanDecomp(g, involution=involution)
 
     g = m + k  # reorder g
 
-    print("Computing adjoint representation of g = k + m")
+    print(f"Cartan decomposition g = m + k with dimensions {len(g)} = {len(m)} + {len(k)}") if verbose else None
+
+    print("Computing adjoint representation of g = k + m") if verbose else None
     ad = qml.structure_constants(g)
 
-    print("Computing Cartan subalgebra m = mtilde + h")
+    print("Computing Cartan subalgebra m = mtilde + h") if verbose else None
     mtilde, h = compute_csa_new(g, m, ad)
 
     g = k + mtilde + h  # reorder g
 
-    print("Computing adjoint representation of g = k + mtilde + h")
+    print(f"Cartan decomposition g = m + mtilde + h with dimensions {len(g)} = {len(k)} + {len(mtilde)} + {len(h)}") if verbose else None
+
+    print("Computing adjoint representation of g = k + mtilde + h") if verbose else None
     ad = qml.structure_constants(g)
 
     # khk decomposition
@@ -447,8 +457,6 @@ def khk_decompose(generators, H, theta0=None, n_epochs=500, validate=True, invol
     if validate:
         h_elem = sum(c * op for c, op in zip(vec_h, g))
         h_elem.simplify(1e-10)
-
-        print(f"h = {h_elem}")
 
         K = qml.Identity()
         for th, op in zip(theta_opt, g):
