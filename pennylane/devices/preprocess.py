@@ -24,7 +24,7 @@ from itertools import chain
 from typing import Optional, Union
 
 import pennylane as qml
-from pennylane import DeviceError, Snapshot, transform
+from pennylane import Snapshot, transform
 from pennylane.measurements import SampleMeasurement, StateMeasurement
 from pennylane.operation import StatePrepBase, Tensor
 from pennylane.tape import QuantumTapeBatch
@@ -48,9 +48,12 @@ def _operator_decomposition_gen(
     max_expansion: Optional[int] = None,
     current_depth=0,
     name: str = "device",
-    error: Exception = DeviceError,
+    error: Optional[Exception] = None,
 ) -> Generator[qml.operation.Operator, None, None]:
     """A generator that yields the next operation that is accepted."""
+    if error is None:
+        error = qml.DeviceError
+
     max_depth_reached = False
     if max_expansion is not None and max_expansion <= current_depth:
         max_depth_reached = True
@@ -100,7 +103,7 @@ def no_sampling(
     adjoint and backprop validation.
     """
     if tape.shots:
-        raise qml.DeviceError(f"Finite shots are not supported with {name}")
+        raise qml.qml.DeviceError(f"Finite shots are not supported with {name}")
     return (tape,), null_postprocessing
 
 
@@ -218,7 +221,9 @@ def validate_multiprocessing_workers(
             )
 
         if device._debugger and device._debugger.active:
-            raise DeviceError("Debugging with ``Snapshots`` is not available with multiprocessing.")
+            raise qml.DeviceError(
+                "Debugging with ``Snapshots`` is not available with multiprocessing."
+            )
 
         if any(isinstance(op, Snapshot) for op in tape.operations):
             raise RuntimeError(
@@ -268,7 +273,7 @@ def decompose(
     ] = None,
     max_expansion: Union[int, None] = None,
     name: str = "device",
-    error: Exception = DeviceError,
+    error: Optional[Exception] = None,
 ) -> tuple[QuantumTapeBatch, PostprocessingFn]:
     """Decompose operations until the stopping condition is met.
 
@@ -292,7 +297,7 @@ def decompose(
         name (str): The name of the transform, process or device using decompose. Used in the
             error message. Defaults to "device".
         error (type): An error type to raise if it is not possible to obtain a decomposition that
-            fulfills the ``stopping_condition``. Defaults to ``DeviceError``.
+            fulfills the ``stopping_condition``. Defaults to ``qml.DeviceError``.
 
     Returns:
         qnode (QNode) or quantum function (Callable) or tuple[List[QuantumScript], function]:
@@ -300,7 +305,7 @@ def decompose(
         The decomposed circuit. The output type is explained in :func:`qml.transform <pennylane.transform>`.
 
     Raises:
-        Exception: Type defaults to ``DeviceError`` but can be modified via keyword argument.
+        Exception: Type defaults to ``qml.DeviceError`` but can be modified via keyword argument.
             Raised if an operator is not accepted and does not define a decomposition, or if
             the decomposition enters an infinite loop and raises a ``RecursionError``.
 
@@ -319,7 +324,7 @@ def decompose(
     If an operator cannot be decomposed into a supported operation, an error is raised:
 
     >>> decompose(tape, lambda obj: obj.name == "S")
-    DeviceError: Operator CNOT(wires=[0, 1]) not supported on device and does not provide a decomposition.
+    qml.DeviceError: Operator CNOT(wires=[0, 1]) not supported on device and does not provide a decomposition.
 
     The ``skip_initial_state_prep`` specifies whether the device supports state prep operations
     at the beginning of the circuit.
@@ -341,6 +346,9 @@ def decompose(
     RZ(1.5707963267948966, wires=[1])]
 
     """
+    if error is None:
+        error = qml.DeviceError
+
     if decomposer is None:
 
         def decomposer(op):
@@ -399,7 +407,7 @@ def validate_observables(
         The unaltered input circuit. The output type is explained in :func:`qml.transform <pennylane.transform>`.
 
     Raises:
-        DeviceError: if an observable is not supported
+        qml.DeviceError: if an observable is not supported
 
     **Example:**
 
@@ -407,7 +415,7 @@ def validate_observables(
     ...    return obj.name in {"PauliX", "PauliY", "PauliZ"}
     >>> tape = qml.tape.QuantumScript([], [qml.expval(qml.Z(0) + qml.Y(0))])
     >>> validate_observables(tape, accepted_observable)
-    DeviceError: Observable Z(0) + Y(0) not supported on device
+    qml.DeviceError: Observable Z(0) + Y(0) not supported on device
 
     Note that if the observable is a :class:`~.Tensor`, the validation is run on each object in the
     ``Tensor`` instead.
@@ -417,9 +425,9 @@ def validate_observables(
         if m.obs is not None:
             if isinstance(m.obs, Tensor):
                 if any(not stopping_condition(o) for o in m.obs.obs):
-                    raise DeviceError(f"Observable {repr(m.obs)} not supported on {name}")
+                    raise qml.DeviceError(f"Observable {repr(m.obs)} not supported on {name}")
             elif not stopping_condition(m.obs):
-                raise DeviceError(f"Observable {repr(m.obs)} not supported on {name}")
+                raise qml.DeviceError(f"Observable {repr(m.obs)} not supported on {name}")
 
     return (tape,), null_postprocessing
 
@@ -444,7 +452,7 @@ def validate_measurements(
         The unaltered input circuit. The output type is explained in :func:`qml.transform <pennylane.transform>`.
 
     Raises:
-        DeviceError: if a measurement process is not supported.
+        qml.DeviceError: if a measurement process is not supported.
 
     >>> def analytic_measurements(m):
     ...     return isinstance(m, qml.measurements.StateMP)
@@ -452,10 +460,10 @@ def validate_measurements(
     ...     return isinstance(m, qml.measurements.CountsMP)
     >>> tape = qml.tape.QuantumScript([], [qml.expval(qml.Z(0))])
     >>> validate_measurements(tape, analytic_measurements, shots_measurements)
-    DeviceError: Measurement expval(Z(0)) not accepted for analytic simulation on device.
+    qml.DeviceError: Measurement expval(Z(0)) not accepted for analytic simulation on device.
     >>> tape = qml.tape.QuantumScript([], [qml.sample()], shots=10)
     >>> validate_measurements(tape, analytic_measurements, shots_measurements)
-    DeviceError: Measurement sample(wires=[]) not accepted with finite shots on device
+    qml.DeviceError: Measurement sample(wires=[]) not accepted with finite shots on device
 
     """
     if analytic_measurements is None:
@@ -483,12 +491,12 @@ def validate_measurements(
     if shots.total_shots is not None:
         for m in chain(snapshot_measurements, tape.measurements):
             if not sample_measurements(m):
-                raise DeviceError(f"Measurement {m} not accepted with finite shots on {name}")
+                raise qml.DeviceError(f"Measurement {m} not accepted with finite shots on {name}")
 
     else:
         for m in chain(snapshot_measurements, tape.measurements):
             if not analytic_measurements(m):
-                raise DeviceError(
+                raise qml.DeviceError(
                     f"Measurement {m} not accepted for analytic simulation on {name}."
                 )
 

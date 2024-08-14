@@ -97,12 +97,6 @@ def _local_tape_expand(tape, depth, stop_at):
     return new_tape
 
 
-class DeviceError(Exception):
-    """Exception raised by a :class:`~.pennylane._device.Device` when it encounters an illegal
-    operation in the quantum circuit.
-    """
-
-
 class Device(abc.ABC):
     """Abstract base class for PennyLane devices.
 
@@ -130,7 +124,7 @@ class Device(abc.ABC):
                 "The analytic argument has been replaced by shots=None. "
                 "Please use shots=None instead of analytic=True."
             )
-            raise DeviceError(msg)
+            raise qml.DeviceError(msg)
 
         if not isinstance(wires, Iterable):
             # interpret wires as the number of consecutive wires
@@ -247,7 +241,7 @@ class Device(abc.ABC):
                 expectation values of observables
 
         Raises:
-            DeviceError: if number of shots is less than 1
+            qml.DeviceError: if number of shots is less than 1
         """
         if shots is None:
             # device is in analytic mode
@@ -258,7 +252,7 @@ class Device(abc.ABC):
         elif isinstance(shots, int):
             # device is in sampling mode (unbatched)
             if shots < 1:
-                raise DeviceError(
+                raise qml.DeviceError(
                     f"The specified number of shots needs to be at least 1. Got {shots}."
                 )
 
@@ -272,7 +266,7 @@ class Device(abc.ABC):
             self._raw_shot_sequence = shots
 
         else:
-            raise DeviceError(
+            raise qml.DeviceError(
                 "Shots must be a single non-negative integer or a sequence of non-negative integers."
             )
 
@@ -966,7 +960,7 @@ class Device(abc.ABC):
                 to be evaluated on the device
 
         Raises:
-            DeviceError: if there are operations in the queue or observables that the device does
+            qml.DeviceError: if there are operations in the queue or observables that the device does
                 not support
         """
 
@@ -976,7 +970,7 @@ class Device(abc.ABC):
             if isinstance(o, MidMeasureMP) and not self.capabilities().get(
                 "supports_mid_measure", False
             ):
-                raise DeviceError(
+                raise qml.DeviceError(
                     f"Mid-circuit measurements are not natively supported on device {self.short_name}. "
                     "Apply the @qml.defer_measurements decorator to your quantum function to "
                     "simulate the application of mid-circuit measurements on this device."
@@ -986,7 +980,7 @@ class Device(abc.ABC):
                 raise ValueError(f"Postselection is not supported on the {self.name} device.")
 
             if not self.stopping_condition(o):
-                raise DeviceError(
+                raise qml.DeviceError(
                     f"Gate {operation_name} not supported on device {self.short_name}"
                 )
 
@@ -1002,13 +996,13 @@ class Device(abc.ABC):
                     "supports_tensor_observables", False
                 ) or self.capabilities().get("tensor_observables", False)
                 if not supports_tensor:
-                    raise DeviceError(
+                    raise qml.DeviceError(
                         f"Tensor observables not supported on device {self.short_name}"
                     )
 
                 for i in o.obs:
                     if not self.supports_observable(i.name):
-                        raise DeviceError(
+                        raise qml.DeviceError(
                             f"Observable {i.name} not supported on device {self.short_name}"
                         )
 
@@ -1016,13 +1010,15 @@ class Device(abc.ABC):
 
                 supports_prod = self.supports_observable(o.name)
                 if not supports_prod:
-                    raise DeviceError(f"Observable Prod not supported on device {self.short_name}")
+                    raise qml.DeviceError(
+                        f"Observable Prod not supported on device {self.short_name}"
+                    )
 
                 simplified_op = o.simplify()
                 if isinstance(simplified_op, qml.ops.Prod):
                     for i in o.simplify().operands:
                         if not self.supports_observable(i.name):
-                            raise DeviceError(
+                            raise qml.DeviceError(
                                 f"Observable {i.name} not supported on device {self.short_name}"
                             )
 
@@ -1030,7 +1026,7 @@ class Device(abc.ABC):
                 observable_name = o.name
 
                 if not self.supports_observable(observable_name):
-                    raise DeviceError(
+                    raise qml.DeviceError(
                         f"Observable {observable_name} not supported on device {self.short_name}"
                     )
 

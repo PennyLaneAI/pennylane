@@ -50,7 +50,7 @@ from pennylane.qchem import (
     from_openfermion,
     to_openfermion,
 )
-from pennylane._device import Device, DeviceError
+from pennylane._device import Device
 from pennylane._grad import grad, jacobian, vjp, jvp
 from pennylane._version import __version__
 from pennylane.about import about
@@ -149,6 +149,7 @@ import pennylane.data
 import pennylane.noise
 from pennylane.noise import NoiseModel
 
+from pennylane.devices import DeviceError
 from pennylane.devices.device_constructor import device, refresh_devices
 
 # Look for an existing configuration file

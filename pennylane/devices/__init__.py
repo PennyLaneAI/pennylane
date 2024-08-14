@@ -149,6 +149,7 @@ Qutrit Mixed-State Simulation Tools
 
 """
 
+
 from .execution_config import ExecutionConfig, DefaultExecutionConfig, MCMConfig
 from .device_constructor import device, refresh_devices
 from .device_api import Device
@@ -169,9 +170,14 @@ from .null_qubit import NullQubit
 from .default_qutrit import DefaultQutrit
 from .default_qutrit_mixed import DefaultQutritMixed
 from .._device import Device as LegacyDevice
-from .._device import DeviceError
 from ._qubit_device import QubitDevice
 from ._qutrit_device import QutritDevice
+
+
+class DeviceError(Exception):
+    """Exception raised by a :class:`~.pennylane._device.Device` when it encounters an illegal
+    operation in the quantum circuit.
+    """
 
 
 # pylint: disable=undefined-variable

@@ -24,7 +24,6 @@ import logging
 import numpy as np
 
 import pennylane as qml  # pylint: disable=unused-import
-from pennylane import DeviceError, QutritBasisState
 from pennylane.devices.default_qubit_legacy import _get_slice
 from pennylane.logging import debug_logger, debug_logger_init
 from pennylane.wires import WireError
@@ -183,12 +182,12 @@ class DefaultQutrit(QutritDevice):
         # for correctly applying basis state / state vector / snapshot operations which will
         # be added later.
         for i, operation in enumerate(operations):  # pylint: disable=unused-variable
-            if i > 0 and isinstance(operation, (QutritBasisState)):
-                raise DeviceError(
+            if i > 0 and isinstance(operation, qml.QutritBasisState):
+                raise qml.DeviceError(
                     f"Operation {operation.name} cannot be used after other operations have already been applied "
                     f"on a {self.short_name} device."
                 )
-            if isinstance(operation, QutritBasisState):
+            if isinstance(operation, qml.QutritBasisState):
                 self._apply_basis_state(operation.parameters[0], operation.wires)
             else:
                 self._state = self._apply_operation(self._state, operation)
