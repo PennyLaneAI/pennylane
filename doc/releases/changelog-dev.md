@@ -107,6 +107,12 @@
   [(#5999)](https://github.com/PennyLaneAI/pennylane/pull/5999)
   [(#6058)](https://github.com/PennyLaneAI/pennylane/pull/6058)
 
+* During experimental program capture, functions that accept and/or return `pytree` structures can now be handled in the `QNode` call, `cond`, `for_loop` and `while_loop`. 
+  [(#6081)](https://github.com/PennyLaneAI/pennylane/pull/6081)
+
+* Set operations are now supported by Wires.
+  [(#5983)](https://github.com/PennyLaneAI/pennylane/pull/5983)
+
 * `qml.dynamic_one_shot` now supports circuits using the `"tensorflow"` interface.
   [(#5973)](https://github.com/PennyLaneAI/pennylane/pull/5973)
 
@@ -331,6 +337,9 @@
 
 * Workflows that parameterize the coefficients of `qml.exp` are now jit-compatible.
   [(#6082)](https://github.com/PennyLaneAI/pennylane/pull/6082)
+
+* Fixes a bug where `CompositeOp.overlapping_ops` changes the original ordering of ops, causing incorrect matrix generated for `Prod` with `Sum` as operands.
+  [(#6091)](https://github.com/PennyLaneAI/pennylane/pull/6091)
 
 <h3>Contributors ✍️</h3>
 
