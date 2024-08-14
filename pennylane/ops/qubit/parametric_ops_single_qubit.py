@@ -1044,7 +1044,7 @@ class U3(Operation):
     @staticmethod
     def compute_matrix(
         theta: TensorLike, phi: TensorLike, delta: TensorLike
-    ):  # pylint: disable=arguments-differ
+    ) -> TensorLike:  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.

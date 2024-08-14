@@ -343,7 +343,7 @@ class PauliX(Observable, Operation):
     def adjoint(self) -> "PauliX":
         return X(wires=self.wires)
 
-    def pow(self, z: Union[int, float]) -> list["qml.operation.Operator"]:
+    def pow(self, z: Union[int, float]) -> list[qml.operation.Operator]:
         z_mod2 = z % 2
         if abs(z_mod2 - 0.5) < 1e-6:
             return [SX(wires=self.wires)]
@@ -403,7 +403,7 @@ class PauliY(Observable, Operation):
 
     _queue_category = "_ops"
 
-    def __init__(self, wires: Optional[WiresLike] = None, id: Optional[str] = None):
+    def __init__(self, wires: WiresLike, id: Optional[str] = None):
         super().__init__(wires=wires, id=id)
         self._pauli_rep = qml.pauli.PauliSentence({qml.pauli.PauliWord({self.wires[0]: "Y"}): 1.0})
 
@@ -478,7 +478,7 @@ class PauliY(Observable, Operation):
         return pauli_eigs(1)
 
     @staticmethod
-    def compute_diagonalizing_gates(wires: WiresLike) -> list["qml.operation.Operator"]:
+    def compute_diagonalizing_gates(wires: WiresLike) -> list[qml.operation.Operator]:
         r"""Sequence of gates that diagonalize the operator in the computational basis (static method).
 
         Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
@@ -507,7 +507,7 @@ class PauliY(Observable, Operation):
         ]
 
     @staticmethod
-    def compute_decomposition(wires: WiresLike) -> list["qml.operation.Operator"]:
+    def compute_decomposition(wires: WiresLike) -> list[qml.operation.Operator]:
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -537,7 +537,7 @@ class PauliY(Observable, Operation):
     def adjoint(self) -> "PauliY":
         return Y(wires=self.wires)
 
-    def pow(self, z: Union[float, int]) -> list["qml.operation.Operator"]:
+    def pow(self, z: Union[float, int]) -> list[qml.operation.Operator]:
         return super().pow(z % 2)
 
     def _controlled(self, wire: WiresLike) -> "qml.CY":
@@ -592,7 +592,7 @@ class PauliZ(Observable, Operation):
 
     _queue_category = "_ops"
 
-    def __init__(self, wires: Optional[WiresLike] = None, id: Optional[str] = None):
+    def __init__(self, wires: WiresLike, id: Optional[str] = None):
         super().__init__(wires=wires, id=id)
         self._pauli_rep = qml.pauli.PauliSentence({qml.pauli.PauliWord({self.wires[0]: "Z"}): 1.0})
 
@@ -669,7 +669,7 @@ class PauliZ(Observable, Operation):
     @staticmethod
     def compute_diagonalizing_gates(  # pylint: disable=unused-argument
         wires: WiresLike,
-    ) -> list["qml.operation.Operator"]:
+    ) -> list[qml.operation.Operator]:
         r"""Sequence of gates that diagonalize the operator in the computational basis (static method).
 
         Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
@@ -695,7 +695,7 @@ class PauliZ(Observable, Operation):
         return []
 
     @staticmethod
-    def compute_decomposition(wires: WiresLike) -> list["qml.operation.Operator"]:
+    def compute_decomposition(wires: WiresLike) -> list[qml.operation.Operator]:
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -831,7 +831,7 @@ class S(Operation):
         return np.array([1, 1j])
 
     @staticmethod
-    def compute_decomposition(wires: WiresLike) -> np.ndarray:
+    def compute_decomposition(wires: WiresLike) -> list[qml.operation.Operator]:
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -853,7 +853,7 @@ class S(Operation):
         """
         return [qml.PhaseShift(np.pi / 2, wires=wires)]
 
-    def pow(self, z: Union[int, float]) -> list["qml.operation.Operator"]:
+    def pow(self, z: Union[int, float]) -> list[qml.operation.Operator]:
         z_mod4 = z % 4
         pow_map = {
             0: lambda op: [],

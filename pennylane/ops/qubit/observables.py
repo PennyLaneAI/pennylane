@@ -301,7 +301,7 @@ class SparseHamiltonian(Observable):
 
     grad_method = None
 
-    def __init__(self, H: csr_matrix, wires: Optional[WiresLike] = None, id: Optional[str] = None):
+    def __init__(self, H: csr_matrix, wires: WiresLike, id: Optional[str] = None):
         if not isinstance(H, csr_matrix):
             raise TypeError("Observable must be a scipy sparse csr_matrix.")
         super().__init__(H, wires=wires, id=id)

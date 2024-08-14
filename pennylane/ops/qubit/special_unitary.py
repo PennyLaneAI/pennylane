@@ -713,7 +713,7 @@ class TmpPauliRot(PauliRot):
     def compute_decomposition(
         theta: TensorLike,
         wires: WiresLike,
-        pauli_word: Literal["I", "X", "Y", "Z"],
+        pauli_word: str,
     ):
         r"""Representation of the operator as a product of other operators (static method). :
 

@@ -75,7 +75,7 @@ class MultiRZ(Operation):
         return self.data, (self.wires, tuple())
 
     def __init__(
-        self, theta: TensorLike, wires: Optional[WiresLike] = None, id: Optional[str] = None
+        self, theta: TensorLike, wires: WiresLike, id: Optional[str] = None
     ):
         wires = Wires(wires)
         self.hyperparameters["num_wires"] = len(wires)
@@ -276,8 +276,8 @@ class PauliRot(Operation):
     def __init__(
         self,
         theta: TensorLike,
-        pauli_word: Literal["I", "X", "Y", "Z"],
-        wires: Optional[WiresLike] = None,
+        pauli_word: str,
+        wires: WiresLike,
         id: Optional[str] = None,
     ):
         super().__init__(theta, wires=wires, id=id)
@@ -613,10 +613,9 @@ class PCPhase(Operation):
         self.hyperparameters["dimension"] = (dim, 2 ** len(wires))
 
     @staticmethod
-    def compute_matrix(*params: TensorLike, **hyperparams) -> TensorLike:
+    def compute_matrix(phi: TensorLike, dimension: tuple[int, int]) -> TensorLike:
         """Get the matrix representation of Pi-controlled phase unitary."""
-        phi = params[0]
-        d, t = hyperparams["dimension"]
+        d, t = dimension
 
         if qml.math.get_interface(phi) == "tensorflow":
             p = qml.math.exp(1j * qml.math.cast_like(phi, 1j))
