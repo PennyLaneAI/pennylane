@@ -423,6 +423,7 @@ class TestJax:
     def test_electron_integrals_jax(
         self, symbols, geometry_values, core, active, e_core_values, one_ref_values, two_ref_values
     ):
+        r"""Test that using electron_integrals with jax returns the correct values."""
         geometry = create_jax_like_array(geometry_values)
         e_core = create_jax_like_array(e_core_values)
         one_ref = create_jax_like_array(one_ref_values)
@@ -486,6 +487,7 @@ class TestJax:
         ],
     )
     def test_fermionic_hamiltonian_jax(self, symbols, geometry_values, alpha_values, h_ref):
+        r"""Test that using fermionic_hamiltonian with jax returns the correct values."""
         geometry = create_jax_like_array(geometry_values)
         alpha = create_jax_like_array(alpha_values)
 
@@ -557,7 +559,7 @@ class TestJax:
         ],
     )
     def test_diff_hamiltonian_jax(self, symbols, geometry_values, h_ref_data_values):
-        r"""Test that diff_hamiltonian using jax arrays returns the correct Hamiltonian."""
+        r"""Test that diff_hamiltonian using jax returns the correct Hamiltonian."""
         geometry = create_jax_like_array(geometry_values)
         h_ref_data = (create_jax_like_array(h_ref_data_values[0]), h_ref_data_values[1])
 
@@ -586,7 +588,7 @@ class TestJax:
 
     @pytest.mark.jax
     def test_diff_hamiltonian_active_space_jax(self):
-        r"""Test that diff_hamiltonian using jax arrays works when an active space is defined."""
+        r"""Test that diff_hamiltonian using jax works when an active space is defined."""
 
         symbols = ["H", "H", "H"]
         geometry = qml.math.array([[0.0, 0.0, 0.0], [2.0, 0.0, 1.0], [0.0, 2.0, 0.0]], like="jax")
@@ -619,7 +621,7 @@ class TestJax:
         ],
     )
     def test_diff_hamiltonian_wire_order_jax(self, symbols, geometry, core, active, charge):
-        r"""Test that diff_hamiltonian using jax arrays has an ascending wire order."""
+        r"""Test that diff_hamiltonian using jax has an ascending wire order."""
 
         geometry = create_jax_like_array(geometry)
         mol = qchem.Molecule(symbols, geometry, charge)
@@ -632,7 +634,7 @@ class TestJax:
     @pytest.mark.jax
     def test_gradient_jax_array(self):
         r"""Test that the gradient of expval(H) computed with ``jax.grad`` is equal to the value
-        obtained with the finite difference method when using alpha_opt and jax arrays."""
+        obtained with the finite difference method when using ``alpha_opt`` and jax."""
         import jax
 
         symbols = ["H", "H"]

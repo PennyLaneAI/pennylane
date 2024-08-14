@@ -89,7 +89,7 @@ class TestMolecule:
         ],
     )
     def test_molecule_opt_coeffs(self, symbols, geometry, coord_opt, coeff_opt, alpha_opt):
-        r"""Test that the molecule object contains correct optimization flags."""
+        r"""Test that the molecule object contains the correct optimization flags."""
         mol = qchem.Molecule(
             symbols, geometry, coeff_opt=coeff_opt, coord_opt=coord_opt, alpha_opt=alpha_opt
         )

@@ -1017,6 +1017,8 @@ class TestJax:
     def test_overlap_integral_jax(
         self, symbols, geometry_values, alpha_values, coef_values, r_values, o_ref_values, argnums
     ):
+        r"""Test that overlap_integral function returns a correct value for the overlap
+        integral when using jax."""
         geometry = create_jax_like_array(geometry_values)
         alpha = create_jax_like_array(alpha_values)
         coef = create_jax_like_array(coef_values)
@@ -1061,7 +1063,9 @@ class TestJax:
             ),
         ],
     )
-    def test_moment_integral(self, symbols, geometry_values, e, idx, ref, argnums):
+    def test_moment_integral_jax(self, symbols, geometry_values, e, idx, ref, argnums):
+        r"""Test that moment_integral function returns a correct value for the moment
+        integral when using jax."""
         geometry = create_jax_like_array(geometry_values)
 
         mol = qchem.Molecule(symbols, geometry)
@@ -1096,9 +1100,11 @@ class TestJax:
             ),
         ],
     )
-    def test_kinetic_integral(
+    def test_kinetic_integral_jax(
         self, symbols, geometry_values, alpha_values, coeff_values, t_ref_values, argnums
     ):
+        r"""Test that kinetic_integral function returns a correct value for the kinetic
+        integral when using jax."""
         geometry = create_jax_like_array(geometry_values)
         alpha = create_jax_like_array(alpha_values)
         coeff = create_jax_like_array(coeff_values)
@@ -1134,9 +1140,11 @@ class TestJax:
             ),
         ],
     )
-    def test_attraction_integral(
+    def test_attraction_integral_jax(
         self, symbols, geometry_values, alpha_values, coeff_values, a_ref_values, argnums
     ):
+        r"""Test that attraction_integral function returns a correct value for the kinetic
+        integral when using jax."""
         geometry = create_jax_like_array(geometry_values)
         alpha = create_jax_like_array(alpha_values)
         coeff = create_jax_like_array(coeff_values)
@@ -1195,9 +1203,11 @@ class TestJax:
             ),
         ],
     )
-    def test_repulsion_integral(
+    def test_repulsion_integral_jax(
         self, symbols, geometry_values, alpha_values, coeff_values, e_ref_values, argnums
     ):
+        r"""Test that repulsion_integral function returns a correct value for the repulsion
+        integral when using jax."""
         geometry = create_jax_like_array(geometry_values)
         alpha = create_jax_like_array(alpha_values)
         coeff = create_jax_like_array(coeff_values)
