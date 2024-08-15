@@ -335,14 +335,9 @@ def repulsion_tensor(basis_functions, argnums=None):
                 args_abcd = []
                 if args:
                     args_abcd.extend([arg[i], arg[j], arg[k], arg[l]] for arg in args)
-                integral = repulsion_integral(
-                    a,
-                    b,
-                    c,
-                    d,
-                    local_argnums,
-                    normalize=False,
-                )(*args_abcd)
+                integral = repulsion_integral(a, b, c, d, local_argnums, normalize=False)(
+                    *args_abcd
+                )
 
                 permutations = [
                     (i, j, k, l),
