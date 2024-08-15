@@ -77,10 +77,7 @@ class TestParams:
         r"""Test that test_generate_params returns correct basis set parameters."""
         params = [alpha, coeff, r]
         args = [p for p in [alpha, coeff, r] if p.requires_grad]
-        basis_params = qchem.integrals._generate_params(
-            params,
-            args,
-        )
+        basis_params = qchem.integrals._generate_params(params, args)
 
         assert np.allclose(basis_params, (alpha, coeff, r))
 
@@ -267,10 +264,7 @@ class TestOverlap:
         basis_b = mol.basis_set[1]
         args = [p for p in [alpha, coef, r] if p.requires_grad]
 
-        o = qchem.overlap_integral(
-            basis_a,
-            basis_b,
-        )(*args)
+        o = qchem.overlap_integral(basis_a, basis_b)(*args)
         assert np.allclose(o, o_ref)
 
     @pytest.mark.parametrize(
@@ -298,20 +292,8 @@ class TestOverlap:
         basis_b = mol.basis_set[1]
         args = [mol.alpha, mol.coeff]
 
-        g_alpha = qml.grad(
-            qchem.overlap_integral(
-                basis_a,
-                basis_b,
-            ),
-            argnum=0,
-        )(*args)
-        g_coeff = qml.grad(
-            qchem.overlap_integral(
-                basis_a,
-                basis_b,
-            ),
-            argnum=1,
-        )(*args)
+        g_alpha = qml.grad(qchem.overlap_integral(basis_a, basis_b), argnum=0)(*args)
+        g_coeff = qml.grad(qchem.overlap_integral(basis_a, basis_b), argnum=1)(*args)
 
         # compute overlap gradients with respect to alpha and coeff using finite diff
         delta = 0.0001
@@ -324,28 +306,16 @@ class TestOverlap:
                 alpha_plus = alpha.copy()
                 alpha_minus[i][j] = alpha_minus[i][j] - delta
                 alpha_plus[i][j] = alpha_plus[i][j] + delta
-                o_minus = qchem.overlap_integral(
-                    basis_a,
-                    basis_b,
-                )(*[alpha_minus, coeff])
-                o_plus = qchem.overlap_integral(
-                    basis_a,
-                    basis_b,
-                )(*[alpha_plus, coeff])
+                o_minus = qchem.overlap_integral(basis_a, basis_b)(*[alpha_minus, coeff])
+                o_plus = qchem.overlap_integral(basis_a, basis_b)(*[alpha_plus, coeff])
                 g_ref_alpha[i][j] = (o_plus - o_minus) / (2 * delta)
 
                 coeff_minus = coeff.copy()
                 coeff_plus = coeff.copy()
                 coeff_minus[i][j] = coeff_minus[i][j] - delta
                 coeff_plus[i][j] = coeff_plus[i][j] + delta
-                o_minus = qchem.overlap_integral(
-                    basis_a,
-                    basis_b,
-                )(*[alpha, coeff_minus])
-                o_plus = qchem.overlap_integral(
-                    basis_a,
-                    basis_b,
-                )(*[alpha, coeff_plus])
+                o_minus = qchem.overlap_integral(basis_a, basis_b)(*[alpha, coeff_minus])
+                o_plus = qchem.overlap_integral(basis_a, basis_b)(*[alpha, coeff_plus])
                 g_ref_coeff[i][j] = (o_plus - o_minus) / (2 * delta)
 
         assert np.allclose(g_alpha, g_ref_alpha)
@@ -479,24 +449,8 @@ class TestMoment:
         basis_b = mol.basis_set[1]
         args = [mol.alpha, mol.coeff]
 
-        g_alpha = qml.grad(
-            qchem.moment_integral(
-                basis_a,
-                basis_b,
-                e,
-                idx,
-            ),
-            argnum=0,
-        )(*args)
-        g_coeff = qml.grad(
-            qchem.moment_integral(
-                basis_a,
-                basis_b,
-                e,
-                idx,
-            ),
-            argnum=1,
-        )(*args)
+        g_alpha = qml.grad(qchem.moment_integral(basis_a, basis_b, e, idx), argnum=0)(*args)
+        g_coeff = qml.grad(qchem.moment_integral(basis_a, basis_b, e, idx), argnum=1)(*args)
 
         # compute moment gradients with respect to alpha and coeff using finite diff
         delta = 0.0001
@@ -509,36 +463,16 @@ class TestMoment:
                 alpha_plus = alpha.copy()
                 alpha_minus[i][j] = alpha_minus[i][j] - delta
                 alpha_plus[i][j] = alpha_plus[i][j] + delta
-                o_minus = qchem.moment_integral(
-                    basis_a,
-                    basis_b,
-                    e,
-                    idx,
-                )(*[alpha_minus, coeff])
-                o_plus = qchem.moment_integral(
-                    basis_a,
-                    basis_b,
-                    e,
-                    idx,
-                )(*[alpha_plus, coeff])
+                o_minus = qchem.moment_integral(basis_a, basis_b, e, idx)(*[alpha_minus, coeff])
+                o_plus = qchem.moment_integral(basis_a, basis_b, e, idx)(*[alpha_plus, coeff])
                 g_ref_alpha[i][j] = (o_plus - o_minus) / (2 * delta)
 
                 coeff_minus = coeff.copy()
                 coeff_plus = coeff.copy()
                 coeff_minus[i][j] = coeff_minus[i][j] - delta
                 coeff_plus[i][j] = coeff_plus[i][j] + delta
-                o_minus = qchem.moment_integral(
-                    basis_a,
-                    basis_b,
-                    e,
-                    idx,
-                )(*[alpha, coeff_minus])
-                o_plus = qchem.moment_integral(
-                    basis_a,
-                    basis_b,
-                    e,
-                    idx,
-                )(*[alpha, coeff_plus])
+                o_minus = qchem.moment_integral(basis_a, basis_b, e, idx)(*[alpha, coeff_minus])
+                o_plus = qchem.moment_integral(basis_a, basis_b, e, idx)(*[alpha, coeff_plus])
                 g_ref_coeff[i][j] = (o_plus - o_minus) / (2 * delta)
 
         assert np.allclose(g_alpha, g_ref_alpha)
@@ -636,10 +570,7 @@ class TestKinetic:
         basis_b = mol.basis_set[1]
         args = [p for p in [alpha, coeff] if p.requires_grad]
 
-        t = qchem.kinetic_integral(
-            basis_a,
-            basis_b,
-        )(*args)
+        t = qchem.kinetic_integral(basis_a, basis_b)(*args)
         assert np.allclose(t, t_ref)
 
     @pytest.mark.parametrize(
@@ -667,20 +598,8 @@ class TestKinetic:
         basis_b = mol.basis_set[1]
         args = [mol.alpha, mol.coeff]
 
-        g_alpha = qml.grad(
-            qchem.kinetic_integral(
-                basis_a,
-                basis_b,
-            ),
-            argnum=0,
-        )(*args)
-        g_coeff = qml.grad(
-            qchem.kinetic_integral(
-                basis_a,
-                basis_b,
-            ),
-            argnum=1,
-        )(*args)
+        g_alpha = qml.grad(qchem.kinetic_integral(basis_a, basis_b), argnum=0)(*args)
+        g_coeff = qml.grad(qchem.kinetic_integral(basis_a, basis_b), argnum=1)(*args)
 
         # compute kinetic gradients with respect to alpha, coeff and r using finite diff
         delta = 0.0001
@@ -693,28 +612,16 @@ class TestKinetic:
                 alpha_plus = alpha.copy()
                 alpha_minus[i][j] = alpha_minus[i][j] - delta
                 alpha_plus[i][j] = alpha_plus[i][j] + delta
-                t_minus = qchem.kinetic_integral(
-                    basis_a,
-                    basis_b,
-                )(*[alpha_minus, coeff])
-                t_plus = qchem.kinetic_integral(
-                    basis_a,
-                    basis_b,
-                )(*[alpha_plus, coeff])
+                t_minus = qchem.kinetic_integral(basis_a, basis_b)(*[alpha_minus, coeff])
+                t_plus = qchem.kinetic_integral(basis_a, basis_b)(*[alpha_plus, coeff])
                 g_ref_alpha[i][j] = (t_plus - t_minus) / (2 * delta)
 
                 coeff_minus = coeff.copy()
                 coeff_plus = coeff.copy()
                 coeff_minus[i][j] = coeff_minus[i][j] - delta
                 coeff_plus[i][j] = coeff_plus[i][j] + delta
-                t_minus = qchem.kinetic_integral(
-                    basis_a,
-                    basis_b,
-                )(*[alpha, coeff_minus])
-                t_plus = qchem.kinetic_integral(
-                    basis_a,
-                    basis_b,
-                )(*[alpha, coeff_plus])
+                t_minus = qchem.kinetic_integral(basis_a, basis_b)(*[alpha, coeff_minus])
+                t_plus = qchem.kinetic_integral(basis_a, basis_b)(*[alpha, coeff_plus])
                 g_ref_coeff[i][j] = (t_plus - t_minus) / (2 * delta)
 
         assert np.allclose(g_alpha, g_ref_alpha)
@@ -768,11 +675,7 @@ class TestAttraction:
         if geometry.requires_grad:
             args = [geometry[0]] + args + [geometry]
 
-        a = qchem.attraction_integral(
-            geometry[0],
-            basis_a,
-            basis_b,
-        )(*args)
+        a = qchem.attraction_integral(geometry[0], basis_a, basis_b)(*args)
         assert np.allclose(a, a_ref)
 
     @pytest.mark.parametrize(
@@ -801,22 +704,8 @@ class TestAttraction:
         args = [mol.alpha, mol.coeff]
         r_nuc = geometry[0]
 
-        g_alpha = qml.grad(
-            qchem.attraction_integral(
-                r_nuc,
-                basis_a,
-                basis_b,
-            ),
-            argnum=0,
-        )(*args)
-        g_coeff = qml.grad(
-            qchem.attraction_integral(
-                r_nuc,
-                basis_a,
-                basis_b,
-            ),
-            argnum=1,
-        )(*args)
+        g_alpha = qml.grad(qchem.attraction_integral(r_nuc, basis_a, basis_b), argnum=0)(*args)
+        g_coeff = qml.grad(qchem.attraction_integral(r_nuc, basis_a, basis_b), argnum=1)(*args)
 
         # compute attraction gradients with respect to alpha and coeff using finite diff
         delta = 0.0001
@@ -829,32 +718,16 @@ class TestAttraction:
                 alpha_plus = alpha.copy()
                 alpha_minus[i][j] = alpha_minus[i][j] - delta
                 alpha_plus[i][j] = alpha_plus[i][j] + delta
-                a_minus = qchem.attraction_integral(
-                    r_nuc,
-                    basis_a,
-                    basis_b,
-                )(*[alpha_minus, coeff])
-                a_plus = qchem.attraction_integral(
-                    r_nuc,
-                    basis_a,
-                    basis_b,
-                )(*[alpha_plus, coeff])
+                a_minus = qchem.attraction_integral(r_nuc, basis_a, basis_b)(*[alpha_minus, coeff])
+                a_plus = qchem.attraction_integral(r_nuc, basis_a, basis_b)(*[alpha_plus, coeff])
                 g_ref_alpha[i][j] = (a_plus - a_minus) / (2 * delta)
 
                 coeff_minus = coeff.copy()
                 coeff_plus = coeff.copy()
                 coeff_minus[i][j] = coeff_minus[i][j] - delta
                 coeff_plus[i][j] = coeff_plus[i][j] + delta
-                a_minus = qchem.attraction_integral(
-                    r_nuc,
-                    basis_a,
-                    basis_b,
-                )(*[alpha, coeff_minus])
-                a_plus = qchem.attraction_integral(
-                    r_nuc,
-                    basis_a,
-                    basis_b,
-                )(*[alpha, coeff_plus])
+                a_minus = qchem.attraction_integral(r_nuc, basis_a, basis_b)(*[alpha, coeff_minus])
+                a_plus = qchem.attraction_integral(r_nuc, basis_a, basis_b)(*[alpha, coeff_plus])
                 g_ref_coeff[i][j] = (a_plus - a_minus) / (2 * delta)
 
         assert np.allclose(g_alpha, g_ref_alpha)
@@ -923,12 +796,7 @@ class TestRepulsion:
         basis_b = mol.basis_set[1]
         args = [p for p in [alpha, coeff] if p.requires_grad]
 
-        a = qchem.repulsion_integral(
-            basis_a,
-            basis_b,
-            basis_a,
-            basis_b,
-        )(*args)
+        a = qchem.repulsion_integral(basis_a, basis_b, basis_a, basis_b)(*args)
 
         assert np.allclose(a, e_ref)
 
@@ -967,24 +835,12 @@ class TestRepulsion:
         basis_b = mol.basis_set[1]
         args = [mol.alpha, mol.coeff]
 
-        g_alpha = qml.grad(
-            qchem.repulsion_integral(
-                basis_a,
-                basis_b,
-                basis_a,
-                basis_b,
-            ),
-            argnum=0,
-        )(*args)
-        g_coeff = qml.grad(
-            qchem.repulsion_integral(
-                basis_a,
-                basis_b,
-                basis_a,
-                basis_b,
-            ),
-            argnum=1,
-        )(*args)
+        g_alpha = qml.grad(qchem.repulsion_integral(basis_a, basis_b, basis_a, basis_b), argnum=0)(
+            *args
+        )
+        g_coeff = qml.grad(qchem.repulsion_integral(basis_a, basis_b, basis_a, basis_b), argnum=1)(
+            *args
+        )
 
         # compute repulsion gradients with respect to alpha and coeff using finite diff
         delta = 0.0001
@@ -997,36 +853,24 @@ class TestRepulsion:
                 alpha_plus = alpha.copy()
                 alpha_minus[i][j] = alpha_minus[i][j] - delta
                 alpha_plus[i][j] = alpha_plus[i][j] + delta
-                e_minus = qchem.repulsion_integral(
-                    basis_a,
-                    basis_b,
-                    basis_a,
-                    basis_b,
-                )(*[alpha_minus, coeff])
-                e_plus = qchem.repulsion_integral(
-                    basis_a,
-                    basis_b,
-                    basis_a,
-                    basis_b,
-                )(*[alpha_plus, coeff])
+                e_minus = qchem.repulsion_integral(basis_a, basis_b, basis_a, basis_b)(
+                    *[alpha_minus, coeff]
+                )
+                e_plus = qchem.repulsion_integral(basis_a, basis_b, basis_a, basis_b)(
+                    *[alpha_plus, coeff]
+                )
                 g_ref_alpha[i][j] = (e_plus - e_minus) / (2 * delta)
 
                 coeff_minus = coeff.copy()
                 coeff_plus = coeff.copy()
                 coeff_minus[i][j] = coeff_minus[i][j] - delta
                 coeff_plus[i][j] = coeff_plus[i][j] + delta
-                e_minus = qchem.repulsion_integral(
-                    basis_a,
-                    basis_b,
-                    basis_a,
-                    basis_b,
-                )(*[alpha, coeff_minus])
-                e_plus = qchem.repulsion_integral(
-                    basis_a,
-                    basis_b,
-                    basis_a,
-                    basis_b,
-                )(*[alpha, coeff_plus])
+                e_minus = qchem.repulsion_integral(basis_a, basis_b, basis_a, basis_b)(
+                    *[alpha, coeff_minus]
+                )
+                e_plus = qchem.repulsion_integral(basis_a, basis_b, basis_a, basis_b)(
+                    *[alpha, coeff_plus]
+                )
                 g_ref_coeff[i][j] = (e_plus - e_minus) / (2 * delta)
 
         assert np.allclose(g_alpha, g_ref_alpha)
