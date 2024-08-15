@@ -131,6 +131,11 @@ def test_fermionic_hamiltonian(use_jax):
             [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]]
         )
 
+    # Hamiltonian coefficients and operators computed with OpenFermion using
+    # molecule = openfermion.MolecularData(geometry, basis, multiplicity, charge)
+    # molecule = run_pyscf(molecule, run_scf=1)
+    # openfermion.transforms.get_fermion_operator(molecule.get_molecular_hamiltonian())
+    # The "^" symbols in the operators are replaced with "+"
     h_ref = (
         1.0000000206358097 * from_string("")
         + -1.3902192781338518 * from_string("0+ 0")
@@ -181,61 +186,60 @@ def test_fermionic_hamiltonian(use_jax):
     assert h.keys() == h_ref.keys()
 
 
+@pytest.mark.usefixtures("use_legacy_and_new_opmath")
 @pytest.mark.parametrize(
-    ("symbols", "geometry", "h_ref_data"),
+    "use_jax",
     [
-        (
-            ["H", "H"],
-            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False),
-            # computed with qchem.convert_observable and an OpenFermion Hamiltonian; data reordered
-            # h_mol = molecule.get_molecular_hamiltonian()
-            # h_f = openfermion.transforms.get_fermion_operator(h_mol)
-            # h_q = openfermion.transforms.jordan_wigner(h_f)
-            # h_pl = qchem.convert_observable(h_q, wires=[0, 1, 2, 3], tol=(5e-5))
-            (
-                np.array(
-                    [
-                        0.2981788017,
-                        0.2081336485,
-                        0.2081336485,
-                        0.1786097698,
-                        0.042560361,
-                        -0.042560361,
-                        -0.042560361,
-                        0.042560361,
-                        -0.3472487379,
-                        0.1329029281,
-                        -0.3472487379,
-                        0.175463289,
-                        0.175463289,
-                        0.1329029281,
-                        0.1847091733,
-                    ]
-                ),
-                [
-                    Identity(wires=[0]),
-                    PauliZ(wires=[0]),
-                    PauliZ(wires=[1]),
-                    PauliZ(wires=[0]) @ PauliZ(wires=[1]),
-                    PauliY(wires=[0]) @ PauliX(wires=[1]) @ PauliX(wires=[2]) @ PauliY(wires=[3]),
-                    PauliY(wires=[0]) @ PauliY(wires=[1]) @ PauliX(wires=[2]) @ PauliX(wires=[3]),
-                    PauliX(wires=[0]) @ PauliX(wires=[1]) @ PauliY(wires=[2]) @ PauliY(wires=[3]),
-                    PauliX(wires=[0]) @ PauliY(wires=[1]) @ PauliY(wires=[2]) @ PauliX(wires=[3]),
-                    PauliZ(wires=[2]),
-                    PauliZ(wires=[0]) @ PauliZ(wires=[2]),
-                    PauliZ(wires=[3]),
-                    PauliZ(wires=[0]) @ PauliZ(wires=[3]),
-                    PauliZ(wires=[1]) @ PauliZ(wires=[2]),
-                    PauliZ(wires=[1]) @ PauliZ(wires=[3]),
-                    PauliZ(wires=[2]) @ PauliZ(wires=[3]),
-                ],
-            ),
-        )
+        (False),
+        pytest.param(True, marks=pytest.mark.jax),
     ],
 )
-@pytest.mark.usefixtures("use_legacy_and_new_opmath")
-def test_diff_hamiltonian(symbols, geometry, h_ref_data):
+def test_diff_hamiltonian(use_jax):
     r"""Test that diff_hamiltonian returns the correct Hamiltonian."""
+
+    symbols = ["H", "H"]
+
+    geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False)
+
+    if use_jax:
+        geometry = create_jax_like_array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])
+
+    h_ref = (
+        [
+            0.2981788017,
+            0.2081336485,
+            0.2081336485,
+            0.1786097698,
+            0.042560361,
+            -0.042560361,
+            -0.042560361,
+            0.042560361,
+            -0.3472487379,
+            0.1329029281,
+            -0.3472487379,
+            0.175463289,
+            0.175463289,
+            0.1329029281,
+            0.1847091733,
+        ],
+        [
+            I(0),
+            Z(0),
+            Z(1),
+            Z(0) @ Z(1),
+            Y(0) @ X(1) @ X(2) @ Y(3),
+            Y(0) @ Y(1) @ X(2) @ X(3),
+            X(0) @ X(1) @ Y(2) @ Y(3),
+            X(0) @ Y(1) @ Y(2) @ X(3),
+            Z(2),
+            Z(0) @ Z(2),
+            Z(3),
+            Z(0) @ Z(3),
+            Z(1) @ Z(2),
+            Z(1) @ Z(3),
+            Z(2) @ Z(3),
+        ],
+    )
 
     mol = qchem.Molecule(symbols, geometry)
     args = []
@@ -243,9 +247,9 @@ def test_diff_hamiltonian(symbols, geometry, h_ref_data):
 
     ops = [
         qml.operation.Tensor(*op) if isinstance(op, qml.ops.Prod) else op
-        for op in map(qml.simplify, h_ref_data[1])
+        for op in map(qml.simplify, h_ref[1])
     ]
-    h_ref = qml.Hamiltonian(h_ref_data[0], ops)
+    h_ref = qml.Hamiltonian(h_ref[0], ops)
 
     assert np.allclose(np.sort(h.terms()[0]), np.sort(h_ref.terms()[0]))
     assert qml.Hamiltonian(np.ones(len(h.terms()[0])), h.terms()[1]).compare(
@@ -427,132 +431,6 @@ class TestJax:
         assert np.allclose(e, e_core)
         assert np.allclose(one, one_ref)
         assert np.allclose(two, two_ref)
-
-    def test_fermionic_hamiltonian_jax(self):
-        r"""Test that using fermionic_hamiltonian with jax returns the correct values."""
-
-        symbols = ["H", "H"]
-        geometry = create_jax_like_array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])
-        alpha = create_jax_like_array(
-            [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]]
-        )
-
-        h_ref = (
-            1.0000000206358097 * from_string("")
-            + -1.3902192781338518 * from_string("0+ 0")
-            + 0.35721954051077603 * from_string("0+ 0+ 0 0")
-            + 0.08512072166002102 * from_string("0+ 0+ 2 2")
-            + 0.35721954051077603 * from_string("0+ 1+ 1 0")
-            + 0.08512072166002102 * from_string("0+ 1+ 3 2")
-            + 0.08512072166002102 * from_string("0+ 2+ 0 2")
-            + 0.3509265790433101 * from_string("0+ 2+ 2 0")
-            + 0.08512072166002102 * from_string("0+ 3+ 1 2")
-            + 0.3509265790433101 * from_string("0+ 3+ 3 0")
-            + 0.35721954051077603 * from_string("1+ 0+ 0 1")
-            + 0.08512072166002102 * from_string("1+ 0+ 2 3")
-            + -1.3902192781338518 * from_string("1+ 1")
-            + 0.35721954051077603 * from_string("1+ 1+ 1 1")
-            + 0.08512072166002102 * from_string("1+ 1+ 3 3")
-            + 0.08512072166002102 * from_string("1+ 2+ 0 3")
-            + 0.3509265790433101 * from_string("1+ 2+ 2 1")
-            + 0.08512072166002102 * from_string("1+ 3+ 1 3")
-            + 0.3509265790433101 * from_string("1+ 3+ 3 1")
-            + 0.35092657904330926 * from_string("2+ 0+ 0 2")
-            + 0.08512072166002102 * from_string("2+ 0+ 2 0")
-            + 0.35092657904330926 * from_string("2+ 1+ 1 2")
-            + 0.08512072166002102 * from_string("2+ 1+ 3 0")
-            + -0.29165329244211186 * from_string("2+ 2")
-            + 0.08512072166002102 * from_string("2+ 2+ 0 0")
-            + 0.36941834777609744 * from_string("2+ 2+ 2 2")
-            + 0.08512072166002102 * from_string("2+ 3+ 1 0")
-            + 0.36941834777609744 * from_string("2+ 3+ 3 2")
-            + 0.35092657904330926 * from_string("3+ 0+ 0 3")
-            + 0.08512072166002102 * from_string("3+ 0+ 2 1")
-            + 0.35092657904330926 * from_string("3+ 1+ 1 3")
-            + 0.08512072166002102 * from_string("3+ 1+ 3 1")
-            + 0.08512072166002102 * from_string("3+ 2+ 0 1")
-            + 0.36941834777609744 * from_string("3+ 2+ 2 3")
-            + -0.29165329244211186 * from_string("3+ 3")
-            + 0.08512072166002102 * from_string("3+ 3+ 1 1")
-            + 0.36941834777609744 * from_string("3+ 3+ 3 3")
-        )
-
-        # Initialize the molecule and Hamiltonian
-        mol = qchem.Molecule(symbols, geometry, alpha=alpha, alpha_opt=True)
-        args = [alpha]
-        h = qchem.fermionic_hamiltonian(mol)(*args)
-
-        # Simplify the Hamiltonian
-        h.simplify(tol=1e-7)
-
-        # Perform the assertions to check correctness
-        assert np.allclose(list(h.values()), list(h_ref.values()))
-        assert h.keys() == h_ref.keys()
-
-    def test_diff_hamiltonian_jax(self):
-        r"""Test that diff_hamiltonian using jax returns the correct Hamiltonian."""
-
-        symbols = ["H", "H"]
-        geometry = create_jax_like_array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])
-        h_ref = (
-            [
-                0.2981788017,
-                0.2081336485,
-                0.2081336485,
-                0.1786097698,
-                0.042560361,
-                -0.042560361,
-                -0.042560361,
-                0.042560361,
-                -0.3472487379,
-                0.1329029281,
-                -0.3472487379,
-                0.175463289,
-                0.175463289,
-                0.1329029281,
-                0.1847091733,
-            ],
-            [
-                I(0),
-                Z(0),
-                Z(1),
-                Z(0) @ Z(1),
-                Y(0) @ X(1) @ X(2) @ Y(3),
-                Y(0) @ Y(1) @ X(2) @ X(3),
-                X(0) @ X(1) @ Y(2) @ Y(3),
-                X(0) @ Y(1) @ Y(2) @ X(3),
-                Z(2),
-                Z(0) @ Z(2),
-                Z(3),
-                Z(0) @ Z(3),
-                Z(1) @ Z(2),
-                Z(1) @ Z(3),
-                Z(2) @ Z(3),
-            ],
-        )
-
-        mol = qchem.Molecule(symbols, geometry)
-        args = []
-        h = qchem.diff_hamiltonian(mol)(*args)
-
-        ops = [
-            qml.operation.Tensor(*op) if isinstance(op, qml.ops.Prod) else op
-            for op in map(qml.simplify, h_ref[1])
-        ]
-        h_ref = qml.Hamiltonian(h_ref[0], ops)
-
-        assert np.allclose(np.sort(h.terms()[0]), np.sort(h_ref.terms()[0]))
-        assert qml.Hamiltonian(np.ones(len(h.terms()[0])), h.terms()[1]).compare(
-            qml.Hamiltonian(np.ones(len(h_ref.terms()[0])), h_ref.terms()[1])
-        )
-
-        assert isinstance(h, qml.ops.Sum if active_new_opmath() else qml.Hamiltonian)
-
-        wire_order = h_ref.wires
-        assert np.allclose(
-            qml.matrix(h, wire_order=wire_order),
-            qml.matrix(h_ref, wire_order=wire_order),
-        )
 
     def test_diff_hamiltonian_active_space_jax(self):
         r"""Test that diff_hamiltonian using jax works when an active space is defined."""
