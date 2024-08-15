@@ -192,9 +192,7 @@ class StatePrep(StatePrepBase):
 
     # pylint: disable=unused-argument
     @staticmethod
-    def compute_decomposition(
-        state: TensorLike, wires: WiresLike, **kwargs
-    ) -> list[Operator]:
+    def compute_decomposition(state: TensorLike, wires: WiresLike, **kwargs) -> list[Operator]:
         r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.
