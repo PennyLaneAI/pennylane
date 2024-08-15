@@ -20,6 +20,7 @@ from typing import Callable, Optional, Type
 
 import pennylane as qml
 from pennylane import QueuingManager
+from pennylane.capture.flatfn import FlatFn
 from pennylane.compiler import compiler
 from pennylane.measurements import MeasurementValue
 from pennylane.operation import AnyWires, Operation, Operator
@@ -223,45 +224,47 @@ class CondCallable:  # pylint:disable=too-few-public-methods
             else self.orig_elifs
         )
 
-        @wraps(self.true_fn)
-        def new_wrapper(*args, **kwargs):
+        flat_fn = FlatFn(functools.partial(self.true_fn, **kwargs))
+        jaxpr_true = jax.make_jaxpr(flat_fn)(*args)
+        jaxpr_false = (
+            jax.make_jaxpr(functools.partial(self.otherwise_fn, **kwargs))(*args)
+            if self.otherwise_fn
+            else None
+        )
 
-            jaxpr_true = jax.make_jaxpr(functools.partial(self.true_fn, **kwargs))(*args)
-            jaxpr_false = (
-                jax.make_jaxpr(functools.partial(self.otherwise_fn, **kwargs))(*args)
-                if self.otherwise_fn
-                else None
-            )
+        # We extract each condition (or predicate) from the elifs argument list
+        # since these are traced by JAX and are passed as positional arguments to the primitive
+        elifs_conditions = []
+        jaxpr_elifs = []
 
-            # We extract each condition (or predicate) from the elifs argument list
-            # since these are traced by JAX and are passed as positional arguments to the primitive
-            elifs_conditions = []
-            jaxpr_elifs = []
+        for pred, elif_fn in elifs:
+            elifs_conditions.append(pred)
+            jaxpr_elifs.append(jax.make_jaxpr(functools.partial(elif_fn, **kwargs))(*args))
 
-            for pred, elif_fn in elifs:
-                elifs_conditions.append(pred)
-                jaxpr_elifs.append(jax.make_jaxpr(functools.partial(elif_fn, **kwargs))(*args))
+        conditions = [self.condition, *elifs_conditions, True]
 
-            conditions = [self.condition, *elifs_conditions, True]
+        jaxpr_branches = [jaxpr_true, *jaxpr_elifs, jaxpr_false]
+        jaxpr_consts = [jaxpr.consts if jaxpr is not None else () for jaxpr in jaxpr_branches]
 
-            jaxpr_branches = [jaxpr_true, *jaxpr_elifs, jaxpr_false]
-            jaxpr_consts = [jaxpr.consts if jaxpr is not None else () for jaxpr in jaxpr_branches]
+        # We need to flatten the constants since JAX does not allow
+        # to pass lists as positional arguments
+        consts_flat = [const for sublist in jaxpr_consts for const in sublist]
+        n_consts_per_branch = [len(consts) for consts in jaxpr_consts]
 
-            # We need to flatten the constants since JAX does not allow
-            # to pass lists as positional arguments
-            consts_flat = [const for sublist in jaxpr_consts for const in sublist]
-            n_consts_per_branch = [len(consts) for consts in jaxpr_consts]
-
-            return cond_prim.bind(
-                *conditions,
-                *args,
-                *consts_flat,
-                jaxpr_branches=jaxpr_branches,
-                n_consts_per_branch=n_consts_per_branch,
-                n_args=len(args),
-            )
-
-        return new_wrapper(*args, **kwargs)
+        flat_args, _ = jax.tree_util.tree_flatten(args)
+        results = cond_prim.bind(
+            *conditions,
+            *flat_args,
+            *consts_flat,
+            jaxpr_branches=jaxpr_branches,
+            n_consts_per_branch=n_consts_per_branch,
+            n_args=len(flat_args),
+        )
+        assert flat_fn.out_tree is not None
+        if flat_fn.out_tree.num_leaves != len(results):
+            # undefined false fn leads to empty results
+            return results
+        return jax.tree_util.tree_unflatten(flat_fn.out_tree, results)
 
     def __call__(self, *args, **kwargs):
 
