@@ -156,8 +156,7 @@ class TestPauliGroupingStrategy:
         custom_indices = [1, 3, 5, 7]
 
         with pytest.raises(ValueError, match="The length of the list of indices:"):
-            # pylint: disable=protected-access
-            groupper._partition_custom_indices(observables_indices=custom_indices)
+            groupper.idx_partitions_from_graph(observables_indices=custom_indices)
 
     def test_custom_indices_partition(self):
         """Test that a custom list indices is partitioned according to the observables they correspond to."""
@@ -173,7 +172,7 @@ class TestPauliGroupingStrategy:
         # compute observable and custom indices partitions
         observables_partitioned = groupper.partition_observables()
         # pylint: disable=protected-access
-        indices_partitioned = groupper._partition_custom_indices(observables_indices=custom_indices)
+        indices_partitioned = groupper.idx_partitions_from_graph(observables_indices=custom_indices)
         for group_obs, group_custom_indices in zip(observables_partitioned, indices_partitioned):
             for i, custom_idx in enumerate(group_custom_indices):
                 standard_idx = map_indices[custom_idx]

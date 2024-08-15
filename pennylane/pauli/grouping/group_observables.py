@@ -78,7 +78,7 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
             ``'anticommuting'``.
         graph_colourer (str): The heuristic algorithm to employ for graph
                 colouring, can be ``'lf'`` (Largest First), ``'rlf'`` (Recursive
-                Largest First), `dsatur` (Degree of Saturation), or `gis` (IndependentSet). Defaults to ``'lf'``.
+                Largest First), ``'dsatur'`` (Degree of Saturation), or ``'gis'`` (IndependentSet). Defaults to ``'lf'``.
 
     Raises:
         ValueError: If arguments specified for ``grouping_type`` or ``graph_colourer``
@@ -159,7 +159,7 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
         """Adjacency matrix for the complement of the Pauli graph determined by the ``grouping_type``.
 
         The adjacency matrix for an undirected graph of N nodes is an N x N symmetric binary
-        matrix, where matrix elements of 1 denote an edge, and matrix elements of 0 denote no edge.
+        matrix, where matrix elements of 1 denote an edge (grouping strategy is **not** satisfied), and matrix elements of 0 denote no edge (binary relation is satisfied).
         """
         return _adj_matrix_from_symplectic(
             self.binary_observables, grouping_type=self.grouping_type
@@ -170,7 +170,7 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
         """
         Complement graph of the (anti-)commutation graph constructed from the Pauli observables.
 
-        Edge (i,j) is present in the graph if observable[i] and observable[j] do NOT satisfy
+        Edge ``(i,j)`` is present in the graph if ``observable[i]`` and ``observable[j]`` do **not** satisfy
         the ``grouping_type`` strategy.
 
         The nodes are the observables (can only be accesssed through their integer index).
@@ -188,9 +188,9 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
 
         return graph
 
-    def partition_observables(self):
+    def partition_observables(self) -> list[list]:
         """
-        Runs the graph colouring heuristic algorithm to obtain the partitioned Pauli observables.
+        Partition the observables into groups of observables mutually satisfying the binary relation determined by ``self.grouping_type``.
 
         Returns:
             list[list[Observable]]: List of partitions of the Pauli observables made up of mutually (anti-)commuting observables.
@@ -222,7 +222,7 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
 
         Returns:
             dict[int, list[int]]: A dictionary where the keys are colours (integers) and the values are lists
-            of indices (nodes) that have been assigned that colour.
+                of indices (nodes) that have been assigned that colour.
         """
         # A dictionary where keys are node indices and the value is the colour
         if new_rx:
@@ -241,48 +241,51 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
 
         return groups
 
-    def idx_partitions_from_graph(self) -> tuple[tuple[int, ...], ...]:
-        """Partition the indices of the Pauli observables into tuples of indices corresponding to (anti-)commuting
-        observables using Rustworkx graph colouring algorithms based on binary relation determined by ``self.grouping_type``.
-
-        The partitions are made up of the relative indices of the observables, i.e. assuming ``self.observables`` have indices
-        in [0, len(observables)-1]. If custom indices are needed, use ``self.partition_observables`` .
-
-        Returns:
-            tuple[tuple[int]]: Tuple of tuples containing the indices of the partitioned observables.
-        """
-        partition_indices = tuple(
-            tuple(indices) for indices in self._idx_partitions_dict_from_graph.values()
-        )
-
-        return partition_indices
-
-    def _partition_custom_indices(self, observables_indices=None) -> list[list]:
-        """Compute the indices of the partititions of the observables when these have custom indices.
-
-        TODO: change to public method when ready for use.
-
-        TODO: Use this function to calculate custom indices instead of calculating observables first.
+    def idx_partitions_from_graph(self, observables_indices=None) -> tuple[tuple[int, ...], ...]:
+        """Use ``Rustworkx`` graph colouring algorithms to partition the indices of the Pauli observables into
+        tuples containing the indices of observables satisying the binary relation determined by ``self.grouping_type``.
 
         Args:
             observables_indices (tensor_like, optional): A tensor or list of indices associated to each observable.
-            This argument is helpful when the observables used in the graph colouring are part of a bigger set of observables.
-            Defaults to None.
+                This argument is helpful when the observables used in the graph colouring are part of a bigger set of observables.
+                Defaults to None. If ``None``, the partitions are made up of the relative indices, i.e. assuming ``self.observables``
+                have indices in [0, len(observables)-1].
 
         Raises:
             IndexError: When the tensor_like of observables_indices is not of the same length as the observables.
 
         Returns:
-            list[list]: List of lists containing the indices of the observables on each partition.
+            tuple[tuple[int]]: Tuple of tuples containing the indices of the partitioned observables.
         """
-        if observables_indices is not None and len(observables_indices) != len(self.observables):
-            raise ValueError(
-                f"The length of the list of indices: {len(observables_indices)} does not "
-                f"match the length of the list of observables: {len(self.observables)}. "
+        if observables_indices is None:
+            partition_indices = tuple(
+                tuple(indices) for indices in self._idx_partitions_dict_from_graph.values()
             )
+        else:
+            if len(observables_indices) != len(self.observables):
+                raise ValueError(
+                    f"The length of the list of indices: {len(observables_indices)} does not "
+                    f"match the length of the list of observables: {len(self.observables)}. "
+                )
+            partition_indices = self._partition_custom_indices(observables_indices)
 
+        return partition_indices
+
+    def _partition_custom_indices(self, observables_indices) -> list[list]:
+        """Compute the indices of the partititions of the observables when these have custom indices.
+
+        TODO: Use this function to calculate custom indices instead of calculating observables first.
+
+        Args:
+            observables_indices (tensor_like, optional): A tensor or list of indices associated to each observable.
+                This argument is helpful when the observables used in the graph colouring are part of a bigger set of observables.
+                Defaults to None.
+
+        Returns:
+            tuple[tuple[int]]: Tuple of tuples containing the indices of the observables on each partition.
+        """
         partition_indices = items_partitions_from_idx_partitions(
-            observables_indices, self._idx_partitions_dict_from_graph.values()
+            observables_indices, self._idx_partitions_dict_from_graph.values(), return_tuples=True
         )
 
         return partition_indices
@@ -302,21 +305,36 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
 
 
 def items_partitions_from_idx_partitions(
-    items: list, idx_partitions: Sequence[Sequence[int]]
-) -> list[list]:
+    items: Sequence, idx_partitions: Sequence[Sequence[int]], return_tuples: bool = False
+) -> Sequence[Sequence]:
     """Get the partitions of the items corresponding to the partitions of the indices.
 
     Args:
-        items (Sequence): A list of items to be partitioned according to the partition of the indices.
+        items (Sequence): A Sequence of items to be partitioned according to the partition of the indices.
         idx_partitions (Sequence[Sequence[int]]): Sequence of sequences containing the indices of the partitioned items.
-
+        return_tuples (bool): Whether to return tuples of tuples or list of lists.
+            Useful when dealing with indices or observables.
     Returns:
-        list[list]: List of partitions of the items following the partition of the indices..
+        Sequence[Sequence]: Sequence of partitions of the items according to the partition of the indices.
     """
-    items_partitioned = [
-        (list(itemgetter(*indices)(items)) if len(indices) > 1 else [itemgetter(*indices)(items)])
-        for indices in idx_partitions
-    ]
+    if return_tuples:
+        items_partitioned = tuple(
+            (
+                tuple(itemgetter(*indices)(items))
+                if len(indices) > 1
+                else (itemgetter(*indices)(items),)
+            )
+            for indices in idx_partitions
+        )
+    else:
+        items_partitioned = [
+            (
+                list(itemgetter(*indices)(items))
+                if len(indices) > 1
+                else [itemgetter(*indices)(items)]
+            )
+            for indices in idx_partitions
+        ]
 
     return items_partitioned
 
@@ -338,7 +356,7 @@ def _adj_matrix_from_symplectic(symplectic_matrix: np.ndarray, grouping_type: st
 
     Returns:
         np.ndarray: Adjacency matrix. Binary matrix such that adj_matrix[i,j] = 1 if observables[i]
-        observables[j] do NOT (anti-)commute, as determined by the ``grouping_type``.
+        observables[j] do **not** (anti-)commute, as determined by the ``grouping_type``.
     """
 
     n_qubits = symplectic_matrix.shape[1] // 2
