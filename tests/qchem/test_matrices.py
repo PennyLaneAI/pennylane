@@ -684,10 +684,6 @@ class TestCoreMat:
         assert np.allclose(c, c_ref)
 
 
-def create_jax_like_array(values):
-    return qml.math.array(values, like="jax")
-
-
 def generate_symbols_geometry_alpha():
     """Generates symbols, geometry and alpha arrays to be reused for the molecule"""
     symbols = ["H", "H"]
