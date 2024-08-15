@@ -306,9 +306,7 @@ class TransformDispatcher:
                 """Return the original device."""
                 return self._original_device
 
-        new_dev = TransformedDevice(original_device, self._transform)
-
-        return new_dev
+        return TransformedDevice(original_device, self._transform)
 
     def _batch_transform(self, original_batch, targs, tkwargs):
         """Apply the transform on a batch of tapes."""

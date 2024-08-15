@@ -53,8 +53,16 @@ class DummyDevice(qml.devices.LegacyDevice):
         return 0.0
 
 
+def test_double_facade_raises_error():
+    """Test that a RuntimeError is raised if a facaded device is passed to constructor"""
+    dev = qml.device("default.mixed", wires=1)
+
+    with pytest.raises(RuntimeError, match="already-facaded device can not be wrapped"):
+        qml.devices.LegacyDeviceFacade(dev)
+
+
 def test_error_if_not_legacy_device():
-    """Test that a ValueError is raiuised if the target is not a legacy device."""
+    """Test that a ValueError is raised if the target is not a legacy device."""
 
     target = qml.devices.DefaultQubit()
     with pytest.raises(ValueError, match="The LegacyDeviceFacade only accepts"):

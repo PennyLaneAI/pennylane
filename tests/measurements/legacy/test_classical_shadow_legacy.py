@@ -148,22 +148,35 @@ class TestClassicalShadow:
             wires, basis=circuit_basis, shots=shots, interface=interface, device=device
         )
         bits, recipes = circuit()
+        new_bits, new_recipes = circuit.tape.measurements[0].process(
+            circuit.tape, circuit.device.target_device
+        )
 
         # test that the recipes follow a rough uniform distribution
         ratios = np.unique(recipes, return_counts=True)[1] / (wires * shots)
         assert np.allclose(ratios, 1 / 3, atol=1e-1)
+        new_ratios = np.unique(new_recipes, return_counts=True)[1] / (wires * shots)
+        assert np.allclose(new_ratios, 1 / 3, atol=1e-1)
 
         # test that the bit is 0 for all X measurements
         assert qml.math.allequal(bits[recipes == basis_recipe], 0)
+        assert qml.math.allequal(new_bits[new_recipes == basis_recipe], 0)
 
         # test that the bits are uniformly distributed for all Y and Z measurements
         bits1 = bits[recipes == (basis_recipe + 1) % 3]
         ratios1 = np.unique(bits1, return_counts=True)[1] / bits1.shape[0]
         assert np.allclose(ratios1, 1 / 2, atol=1e-1)
+        new_bits1 = new_bits[new_recipes == (basis_recipe + 1) % 3]
+        new_ratios1 = np.unique(new_bits1, return_counts=True)[1] / new_bits1.shape[0]
+        assert np.allclose(new_ratios1, 1 / 2, atol=1e-1)
 
         bits2 = bits[recipes == (basis_recipe + 2) % 3]
         ratios2 = np.unique(bits2, return_counts=True)[1] / bits2.shape[0]
         assert np.allclose(ratios2, 1 / 2, atol=1e-1)
+
+        new_bits2 = new_bits[new_recipes == (basis_recipe + 2) % 3]
+        new_ratios2 = np.unique(new_bits2, return_counts=True)[1] / new_bits2.shape[0]
+        assert np.allclose(new_ratios2, 1 / 2, atol=1e-1)
 
     @pytest.mark.parametrize("shots", shots_list)
     def test_multi_measurement_error(self, wires, shots):
@@ -333,24 +346,32 @@ class TestExpvalForward:
     def test_hadamard_expval(self, k=1, obs=obs_hadamard, expected=expected_hadamard):
         """Test that the expval estimation is correct for a uniform
         superposition of qubits"""
-        circuit = hadamard_circuit(3, shots=100000)
+        circuit = hadamard_circuit(3, shots=50000)
         actual = circuit(obs, k=k)
+        new_actual = circuit.tape.measurements[0].process(
+            circuit.tape, circuit.device.target_device
+        )
 
         assert actual.shape == (len(obs_hadamard),)
         assert actual.dtype == np.float64
         assert qml.math.allclose(actual, expected, atol=1e-1)
+        assert qml.math.allclose(new_actual, expected, atol=1e-1)
 
     def test_max_entangled_expval(
         self, k=1, obs=obs_max_entangled, expected=expected_max_entangled
     ):
         """Test that the expval estimation is correct for a maximally
         entangled state"""
-        circuit = max_entangled_circuit(3, shots=100000)
+        circuit = max_entangled_circuit(3, shots=50000)
         actual = circuit(obs, k=k)
+        new_actual = circuit.tape.measurements[0].process(
+            circuit.tape, circuit.device.target_device
+        )
 
         assert actual.shape == (len(obs_max_entangled),)
         assert actual.dtype == np.float64
         assert qml.math.allclose(actual, expected, atol=1e-1)
+        assert qml.math.allclose(new_actual, expected, atol=1e-1)
 
     def test_non_pauli_error(self):
         """Test that an error is raised when a non-Pauli observable is passed"""
@@ -372,12 +393,16 @@ class TestExpvalForwardInterfaces:
         """Test that the expval estimation is correct for a QFT state"""
         import torch
 
-        circuit = qft_circuit(3, shots=100000, interface=interface)
+        circuit = qft_circuit(3, shots=50000, interface=interface)
         actual = circuit(obs, k=k)
+        new_actual = circuit.tape.measurements[0].process(
+            circuit.tape, circuit.device.target_device
+        )
 
         assert actual.shape == (len(obs_qft),)
         assert actual.dtype == torch.float64 if interface == "torch" else np.float64
         assert qml.math.allclose(actual, expected, atol=1e-1)
+        assert qml.math.allclose(new_actual, expected, atol=1e-1)
 
 
 obs_strongly_entangled = [
