@@ -206,7 +206,7 @@ class QuantumScript:
         return iter(self.circuit)
 
     def __getitem__(self, idx: int) -> Union[Operator, MeasurementProcess]:
-        """list[.Operator]: Return the indexed operator from underlying quantum
+        """Union[Operator, MeasurementProcess]: Return the indexed operator from underlying quantum
         circuit object."""
         return self.circuit[idx]
 
