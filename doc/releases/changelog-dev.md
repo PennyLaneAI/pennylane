@@ -70,8 +70,6 @@
   a subset of the base observables `{X, Y, Z, Hadamard}`.
   [(#5829)](https://github.com/PennyLaneAI/pennylane/pull/5829)
 
-<h3>Improvements 🛠</h3>
-
 * The `qml.PrepSelPrep` template is added. The template implements a block-encoding of a linear
   combination of unitaries.
   [(#5756)](https://github.com/PennyLaneAI/pennylane/pull/5756)
