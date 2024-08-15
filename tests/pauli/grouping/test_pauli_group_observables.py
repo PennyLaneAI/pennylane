@@ -148,6 +148,41 @@ class TestPauliGroupingStrategy:
         grouping_instance = PauliGroupingStrategy(observables, "anticommuting")
         assert (grouping_instance.adj_matrix == anticommuting_complement_adjacency_matrix).all()
 
+    def test_wrong_length_of_custom_indices(self):
+        """Test that an error is raised if the length of indices does not match the length of observables"""
+        observables = [qml.X(0) @ qml.Z(1), qml.Z(0), qml.X(1)]
+        groupper = PauliGroupingStrategy(observables=observables)
+
+        custom_indices = [1, 3, 5, 7]
+
+        with pytest.raises(ValueError, match="The length of the list of indices:"):
+            # pylint: disable=protected-access
+            groupper._partition_custom_indices(observables_indices=custom_indices)
+
+    def test_custom_indices_partition(self):
+        """Test that a custom list indices is partitioned according to the observables they correspond to."""
+        observables = [qml.X(0) @ qml.Z(1), qml.Z(0), qml.X(1)]
+        groupper = PauliGroupingStrategy(observables=observables)
+
+        custom_indices = [1, 3, 5]
+        # the indices rustworkx assigns to each observable
+        standard_indices = list(range(len(observables)))
+        # map between custom and standard indices
+        map_indices = dict(zip(custom_indices, standard_indices))
+
+        # compute observable and custom indices partitions
+        observables_partitioned = groupper.partition_observables()
+        # pylint: disable=protected-access
+        indices_partitioned = groupper._partition_custom_indices(observables_indices=custom_indices)
+        for group_obs, group_custom_indices in zip(observables_partitioned, indices_partitioned):
+            for i, custom_idx in enumerate(group_custom_indices):
+                standard_idx = map_indices[custom_idx]
+                # observable corresponding to the custom index
+                observable_from_idx_partition = observables[standard_idx]
+                # observable in partition in the position of the custom idx
+                observable_from_partition = group_obs[i]
+                assert observable_from_idx_partition == observable_from_partition
+
 
 observables_list = [
     [PauliX(0) @ PauliZ(1), PauliY(2) @ PauliZ(1), PauliX(1), PauliY(0), PauliZ(1) @ PauliZ(2)],

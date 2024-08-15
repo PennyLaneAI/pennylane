@@ -257,8 +257,12 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
 
         return partition_indices
 
-    def _custom_partition_indices(self, observables_indices=None) -> list[list]:
+    def _partition_custom_indices(self, observables_indices=None) -> list[list]:
         """Compute the indices of the partititions of the observables when these have custom indices.
+
+        TODO: change to public method when ready for use.
+
+        TODO: Use this function to calculate custom indices instead of calculating observables first.
 
         Args:
             observables_indices (tensor_like, optional): A tensor or list of indices associated to each observable.
@@ -271,17 +275,15 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
         Returns:
             list[list]: List of lists containing the indices of the observables on each partition.
         """
-        if observables_indices is not None:
-            if qml.math.shape(observables_indices)[0] != len(self.observables):
-                raise IndexError(
-                    "The observables indices list must be the same length as the observables list. "
-                    f"Instead got {len(observables_indices)} and {len(self.observables)}, respectively."
-                )
+        if observables_indices is not None and len(observables_indices) != len(self.observables):
+            raise ValueError(
+                f"The length of the list of indices: {len(observables_indices)} does not "
+                f"match the length of the list of observables: {len(self.observables)}. "
+            )
 
-        partition_indices = [
-            qml.math.take(observables_indices, indices, axis=0)
-            for indices in self._idx_partitions_dict_from_graph.values()
-        ]
+        partition_indices = items_partitions_from_idx_partitions(
+            observables_indices, self._idx_partitions_dict_from_graph.values()
+        )
 
         return partition_indices
 
