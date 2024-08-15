@@ -18,7 +18,7 @@ Unit tests for functions needed for computing the Hamiltonian.
 import pytest
 
 import pennylane as qml
-from pennylane import Identity, PauliX, PauliY, PauliZ
+from pennylane import Identity, PauliX, PauliY, PauliZ, I, X, Y, Z
 from pennylane import numpy as np
 from pennylane import qchem
 from pennylane.fermi import from_string
@@ -437,129 +437,109 @@ class TestJax:
         assert np.allclose(one, one_ref)
         assert np.allclose(two, two_ref)
 
-    @pytest.mark.parametrize(
-        ("symbols", "geometry_values", "alpha_values", "h_ref"),
-        [
-            (
-                ["H", "H"],
-                [[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]],
-                [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
-                1.0000000206358097 * from_string("")
-                + -1.3902192781338518 * from_string("0+ 0")
-                + 0.35721954051077603 * from_string("0+ 0+ 0 0")
-                + 0.08512072166002102 * from_string("0+ 0+ 2 2")
-                + 0.35721954051077603 * from_string("0+ 1+ 1 0")
-                + 0.08512072166002102 * from_string("0+ 1+ 3 2")
-                + 0.08512072166002102 * from_string("0+ 2+ 0 2")
-                + 0.3509265790433101 * from_string("0+ 2+ 2 0")
-                + 0.08512072166002102 * from_string("0+ 3+ 1 2")
-                + 0.3509265790433101 * from_string("0+ 3+ 3 0")
-                + 0.35721954051077603 * from_string("1+ 0+ 0 1")
-                + 0.08512072166002102 * from_string("1+ 0+ 2 3")
-                + -1.3902192781338518 * from_string("1+ 1")
-                + 0.35721954051077603 * from_string("1+ 1+ 1 1")
-                + 0.08512072166002102 * from_string("1+ 1+ 3 3")
-                + 0.08512072166002102 * from_string("1+ 2+ 0 3")
-                + 0.3509265790433101 * from_string("1+ 2+ 2 1")
-                + 0.08512072166002102 * from_string("1+ 3+ 1 3")
-                + 0.3509265790433101 * from_string("1+ 3+ 3 1")
-                + 0.35092657904330926 * from_string("2+ 0+ 0 2")
-                + 0.08512072166002102 * from_string("2+ 0+ 2 0")
-                + 0.35092657904330926 * from_string("2+ 1+ 1 2")
-                + 0.08512072166002102 * from_string("2+ 1+ 3 0")
-                + -0.29165329244211186 * from_string("2+ 2")
-                + 0.08512072166002102 * from_string("2+ 2+ 0 0")
-                + 0.36941834777609744 * from_string("2+ 2+ 2 2")
-                + 0.08512072166002102 * from_string("2+ 3+ 1 0")
-                + 0.36941834777609744 * from_string("2+ 3+ 3 2")
-                + 0.35092657904330926 * from_string("3+ 0+ 0 3")
-                + 0.08512072166002102 * from_string("3+ 0+ 2 1")
-                + 0.35092657904330926 * from_string("3+ 1+ 1 3")
-                + 0.08512072166002102 * from_string("3+ 1+ 3 1")
-                + 0.08512072166002102 * from_string("3+ 2+ 0 1")
-                + 0.36941834777609744 * from_string("3+ 2+ 2 3")
-                + -0.29165329244211186 * from_string("3+ 3")
-                + 0.08512072166002102 * from_string("3+ 3+ 1 1")
-                + 0.36941834777609744 * from_string("3+ 3+ 3 3"),
-            )
-        ],
-    )
-    def test_fermionic_hamiltonian_jax(self, symbols, geometry_values, alpha_values, h_ref):
+    def test_fermionic_hamiltonian_jax(self):
         r"""Test that using fermionic_hamiltonian with jax returns the correct values."""
-        geometry = create_jax_like_array(geometry_values)
-        alpha = create_jax_like_array(alpha_values)
 
+        symbols = ["H", "H"]
+        geometry = create_jax_like_array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])
+        alpha = create_jax_like_array(
+            [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]]
+        )
+
+        h_ref = (
+            1.0000000206358097 * from_string("")
+            + -1.3902192781338518 * from_string("0+ 0")
+            + 0.35721954051077603 * from_string("0+ 0+ 0 0")
+            + 0.08512072166002102 * from_string("0+ 0+ 2 2")
+            + 0.35721954051077603 * from_string("0+ 1+ 1 0")
+            + 0.08512072166002102 * from_string("0+ 1+ 3 2")
+            + 0.08512072166002102 * from_string("0+ 2+ 0 2")
+            + 0.3509265790433101 * from_string("0+ 2+ 2 0")
+            + 0.08512072166002102 * from_string("0+ 3+ 1 2")
+            + 0.3509265790433101 * from_string("0+ 3+ 3 0")
+            + 0.35721954051077603 * from_string("1+ 0+ 0 1")
+            + 0.08512072166002102 * from_string("1+ 0+ 2 3")
+            + -1.3902192781338518 * from_string("1+ 1")
+            + 0.35721954051077603 * from_string("1+ 1+ 1 1")
+            + 0.08512072166002102 * from_string("1+ 1+ 3 3")
+            + 0.08512072166002102 * from_string("1+ 2+ 0 3")
+            + 0.3509265790433101 * from_string("1+ 2+ 2 1")
+            + 0.08512072166002102 * from_string("1+ 3+ 1 3")
+            + 0.3509265790433101 * from_string("1+ 3+ 3 1")
+            + 0.35092657904330926 * from_string("2+ 0+ 0 2")
+            + 0.08512072166002102 * from_string("2+ 0+ 2 0")
+            + 0.35092657904330926 * from_string("2+ 1+ 1 2")
+            + 0.08512072166002102 * from_string("2+ 1+ 3 0")
+            + -0.29165329244211186 * from_string("2+ 2")
+            + 0.08512072166002102 * from_string("2+ 2+ 0 0")
+            + 0.36941834777609744 * from_string("2+ 2+ 2 2")
+            + 0.08512072166002102 * from_string("2+ 3+ 1 0")
+            + 0.36941834777609744 * from_string("2+ 3+ 3 2")
+            + 0.35092657904330926 * from_string("3+ 0+ 0 3")
+            + 0.08512072166002102 * from_string("3+ 0+ 2 1")
+            + 0.35092657904330926 * from_string("3+ 1+ 1 3")
+            + 0.08512072166002102 * from_string("3+ 1+ 3 1")
+            + 0.08512072166002102 * from_string("3+ 2+ 0 1")
+            + 0.36941834777609744 * from_string("3+ 2+ 2 3")
+            + -0.29165329244211186 * from_string("3+ 3")
+            + 0.08512072166002102 * from_string("3+ 3+ 1 1")
+            + 0.36941834777609744 * from_string("3+ 3+ 3 3")
+        )
+
+        # Initialize the molecule and Hamiltonian
         mol = qchem.Molecule(symbols, geometry, alpha=alpha, alpha_opt=True)
         args = [alpha]
         h = qchem.fermionic_hamiltonian(mol)(*args)
 
+        # Simplify the Hamiltonian
         h.simplify(tol=1e-7)
 
+        # Perform the assertions to check correctness
         assert np.allclose(list(h.values()), list(h_ref.values()))
         assert h.keys() == h_ref.keys()
 
     @pytest.mark.jax
-    @pytest.mark.parametrize(
-        ("symbols", "geometry_values", "h_ref_data_values"),
-        [
-            (
-                ["H", "H"],
-                [[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]],
-                (
-                    [
-                        0.2981788017,
-                        0.2081336485,
-                        0.2081336485,
-                        0.1786097698,
-                        0.042560361,
-                        -0.042560361,
-                        -0.042560361,
-                        0.042560361,
-                        -0.3472487379,
-                        0.1329029281,
-                        -0.3472487379,
-                        0.175463289,
-                        0.175463289,
-                        0.1329029281,
-                        0.1847091733,
-                    ],
-                    [
-                        Identity(wires=[0]),
-                        PauliZ(wires=[0]),
-                        PauliZ(wires=[1]),
-                        PauliZ(wires=[0]) @ PauliZ(wires=[1]),
-                        PauliY(wires=[0])
-                        @ PauliX(wires=[1])
-                        @ PauliX(wires=[2])
-                        @ PauliY(wires=[3]),
-                        PauliY(wires=[0])
-                        @ PauliY(wires=[1])
-                        @ PauliX(wires=[2])
-                        @ PauliX(wires=[3]),
-                        PauliX(wires=[0])
-                        @ PauliX(wires=[1])
-                        @ PauliY(wires=[2])
-                        @ PauliY(wires=[3]),
-                        PauliX(wires=[0])
-                        @ PauliY(wires=[1])
-                        @ PauliY(wires=[2])
-                        @ PauliX(wires=[3]),
-                        PauliZ(wires=[2]),
-                        PauliZ(wires=[0]) @ PauliZ(wires=[2]),
-                        PauliZ(wires=[3]),
-                        PauliZ(wires=[0]) @ PauliZ(wires=[3]),
-                        PauliZ(wires=[1]) @ PauliZ(wires=[2]),
-                        PauliZ(wires=[1]) @ PauliZ(wires=[3]),
-                        PauliZ(wires=[2]) @ PauliZ(wires=[3]),
-                    ],
-                ),
-            )
-        ],
-    )
-    def test_diff_hamiltonian_jax(self, symbols, geometry_values, h_ref_data_values):
+    def test_diff_hamiltonian_jax(self):
         r"""Test that diff_hamiltonian using jax returns the correct Hamiltonian."""
-        geometry = create_jax_like_array(geometry_values)
-        h_ref_data = (create_jax_like_array(h_ref_data_values[0]), h_ref_data_values[1])
+
+        symbols = ["H", "H"]
+        geometry = create_jax_like_array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])
+        h_ref = (
+            [
+                0.2981788017,
+                0.2081336485,
+                0.2081336485,
+                0.1786097698,
+                0.042560361,
+                -0.042560361,
+                -0.042560361,
+                0.042560361,
+                -0.3472487379,
+                0.1329029281,
+                -0.3472487379,
+                0.175463289,
+                0.175463289,
+                0.1329029281,
+                0.1847091733,
+            ],
+            [
+                I(0),
+                Z(0),
+                Z(1),
+                Z(0) @ Z(1),
+                Y(0) @ X(1) @ X(2) @ Y(3),
+                Y(0) @ Y(1) @ X(2) @ X(3),
+                X(0) @ X(1) @ Y(2) @ Y(3),
+                X(0) @ Y(1) @ Y(2) @ X(3),
+                Z(2),
+                Z(0) @ Z(2),
+                Z(3),
+                Z(0) @ Z(3),
+                Z(1) @ Z(2),
+                Z(1) @ Z(3),
+                Z(2) @ Z(3),
+            ],
+        )
 
         mol = qchem.Molecule(symbols, geometry)
         args = []
@@ -567,9 +547,9 @@ class TestJax:
 
         ops = [
             qml.operation.Tensor(*op) if isinstance(op, qml.ops.Prod) else op
-            for op in map(qml.simplify, h_ref_data[1])
+            for op in map(qml.simplify, h_ref[1])
         ]
-        h_ref = qml.Hamiltonian(h_ref_data[0], ops)
+        h_ref = qml.Hamiltonian(h_ref[0], ops)
 
         assert np.allclose(np.sort(h.terms()[0]), np.sort(h_ref.terms()[0]))
         assert qml.Hamiltonian(np.ones(len(h.terms()[0])), h.terms()[1]).compare(
