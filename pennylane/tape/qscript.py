@@ -172,7 +172,7 @@ class QuantumScript:
     def __init__(
         self,
         ops: Iterable[Operator] = (),
-        measurements: Optional[Iterable[MeasurementProcess]] = None,
+        measurements: Iterable[MeasurementProcess] = (),
         shots: Optional[ShotsLike] = None,
         trainable_params: Optional[Sequence[int]] = None,
     ):
