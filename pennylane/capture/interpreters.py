@@ -172,6 +172,19 @@ class ConvertToTape(PlxprInterpreter):
         return wrapper
 
 
+@ConvertToTape.register_primitive(for_prim)
+def handle_for_loop(self, *invals, jaxpr_body_fn, n_consts):
+    start, stop, step = invals[0], invals[1], invals[2]
+    consts = invals[3 : 3 + n_consts]
+    init_state = invals[3 + n_consts :]
+
+    res = None
+    for i in range(start, stop, step):
+        res = type(self)(state=self.state).eval(jaxpr_body_fn.jaxpr, consts, i, *init_state)
+
+    return res
+
+
 class CancelInverses(PlxprInterpreter):
     """
 
