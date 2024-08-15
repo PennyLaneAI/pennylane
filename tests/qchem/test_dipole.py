@@ -216,7 +216,7 @@ def test_dipole_moment(symbols, geometry, core, charge, active, coeffs, ops):
         ),
     ],
 )
-@pytest.mark.usefixtures("use_legacy_and_new_opmath")
+@pytest.mark.uses("use_legacy_and_new_opmath")
 def test_dipole_moment_631g_basis(symbols, geometry, core, active):
     r"""Test that the dipole moment is constructed properly with basis sets having different numbers
     of primitive Gaussian functions."""
