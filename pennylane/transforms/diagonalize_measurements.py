@@ -83,7 +83,7 @@ def diagonalize_measurements(tape, supported_base_obs=_default_supported_obs):
     .. details::
         :title: Usage Details
 
-        The transform diagonalizes observables from the local Pauli basis only, i.e. it diagonalizes X, Y
+        The transform diagonalizes observables from the local Pauli basis only, i.e. it diagonalizes X, Y, Z,
         and Hadamard.
 
         The transform can also diagonalize only a subset of these operators. By default, the only
