@@ -175,7 +175,14 @@ class StatePrep(StatePrepBase):
     """int: Number of dimensions per trainable parameter of the operator."""
 
     # pylint: disable=too-many-arguments
-    def __init__(self, state: TensorLike, wires: WiresLike, pad_with=None, normalize=False, id: Optional[str] = None):
+    def __init__(
+        self,
+        state: TensorLike,
+        wires: WiresLike,
+        pad_with=None,
+        normalize=False,
+        id: Optional[str] = None,
+    ):
 
         state = self._preprocess(state, wires, pad_with, normalize)
 
@@ -184,7 +191,9 @@ class StatePrep(StatePrepBase):
         super().__init__(state, wires=wires, id=id)
 
     @staticmethod
-    def compute_decomposition(state: TensorLike, wires: WiresLike, **kwargs) -> list[Operator]: # pylint: disable=unused-argument
+    def compute_decomposition(
+        state: TensorLike, wires: WiresLike, **kwargs
+    ) -> list[Operator]:  # pylint: disable=unused-argument
         r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.
