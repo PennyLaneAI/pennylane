@@ -19,7 +19,7 @@ import itertools
 from string import ascii_letters as ABC
 
 from autoray import numpy as np
-from numpy import float64 # pylint:disable=wrong-import-order
+from numpy import float64  # pylint:disable=wrong-import-order
 
 import pennylane as qml
 
