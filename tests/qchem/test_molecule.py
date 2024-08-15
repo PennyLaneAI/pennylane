@@ -79,7 +79,7 @@ class TestMolecule:
     def test_molecule_opt_coeffs(self):
         r"""Test that the molecule object contains the correct optimization flags."""
         symbols = ["H", "H"]
-        geometry = np.array([0.0, 0.0, 0.0], [0.0, 0.0, 1.0])
+        geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])
         mol = qchem.Molecule(symbols, geometry, coeff_opt=True, coord_opt=True, alpha_opt=True)
 
         assert mol.coord_opt is True
