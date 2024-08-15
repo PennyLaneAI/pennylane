@@ -16,12 +16,15 @@ This submodule contains the discrete-variable quantum operations concerned
 with preparing a certain state on the device.
 """
 # pylint:disable=too-many-branches,abstract-method,arguments-differ,protected-access,no-member
+from typing import Optional
+
 import numpy as np
 
 from pennylane import math
-from pennylane.operation import AnyWires, Operation, StatePrepBase
+from pennylane.operation import AnyWires, Operation, Operator, StatePrepBase
 from pennylane.templates.state_preparations import BasisStatePreparation, MottonenStatePreparation
-from pennylane.wires import WireError, Wires
+from pennylane.typing import TensorLike
+from pennylane.wires import WireError, Wires, WiresLike
 
 state_prep_ops = {"BasisState", "StatePrep", "QubitDensityMatrix"}
 
@@ -76,7 +79,7 @@ class BasisState(StatePrepBase):
     """int: Number of dimensions per trainable parameter of the operator."""
 
     @staticmethod
-    def compute_decomposition(n, wires):
+    def compute_decomposition(n: TensorLike, wires: WiresLike) -> list[Operator]:
         r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -100,7 +103,7 @@ class BasisState(StatePrepBase):
         """
         return [BasisStatePreparation(n, wires)]
 
-    def state_vector(self, wire_order=None):
+    def state_vector(self, wire_order: Optional[WiresLike] = None) -> TensorLike:
         """Returns a statevector of shape ``(2,) * num_wires``."""
         prep_vals = self.parameters[0]
         if any(i not in [0, 1] for i in prep_vals):
@@ -172,7 +175,7 @@ class StatePrep(StatePrepBase):
     """int: Number of dimensions per trainable parameter of the operator."""
 
     # pylint: disable=too-many-arguments
-    def __init__(self, state, wires, pad_with=None, normalize=False, id=None):
+    def __init__(self, state: TensorLike, wires: WiresLike, pad_with=None, normalize=False, id: Optional[str] = None):
 
         state = self._preprocess(state, wires, pad_with, normalize)
 
@@ -181,7 +184,7 @@ class StatePrep(StatePrepBase):
         super().__init__(state, wires=wires, id=id)
 
     @staticmethod
-    def compute_decomposition(state, wires, **kwargs):  # pylint: disable=unused-argument
+    def compute_decomposition(state: TensorLike, wires: WiresLike, **kwargs) -> list[Operator]: # pylint: disable=unused-argument
         r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -216,9 +219,8 @@ class StatePrep(StatePrepBase):
     def _unflatten(cls, data, metadata):
         return cls(*data, **dict(metadata[0]), wires=metadata[1])
 
-    def state_vector(self, wire_order=None):
-
-        num_op_wires = len(Wires(self.wires))
+    def state_vector(self, wire_order: Optional[WiresLike] = None):
+        num_op_wires = len(self.wires)
         op_vector_shape = (-1,) + (2,) * num_op_wires if self.batch_size else (2,) * num_op_wires
         op_vector = math.reshape(self.parameters[0], op_vector_shape)
 

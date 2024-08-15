@@ -4,6 +4,29 @@
 
 <h3>New features since last release</h3>
 
+<h4>Converting noise models from Qiskit ♻️</h4>
+
+* A new `qml.from_qiskit_noise` method now allows one to convert a Qiskit ``NoiseModel`` to a
+  PennyLane ``NoiseModel`` via the Pennylane-Qiskit plugin.
+  [(#5996)](https://github.com/PennyLaneAI/pennylane/pull/5996)
+
+<h4>Registers of wires 🌈</h4>
+
+* Set operations are now supported by Wires.
+  [(#5983)](https://github.com/PennyLaneAI/pennylane/pull/5983)
+
+* The representation for `Wires` has now changed to be more copy-paste friendly.
+  [(#5958)](https://github.com/PennyLaneAI/pennylane/pull/5958)
+
+* A new function `qml.registers` has been added, enabling the creation of registers, which are implemented as a dictionary of `Wires` instances.
+  [(#5957)](https://github.com/PennyLaneAI/pennylane/pull/5957)
+
+<h4>Quantum arithmetic operations 🧮</h4>
+
+<h4>Creating spin Hamiltonians 🧑‍🎨</h4>
+
+<h3>Improvements 🛠</h3>
+
 * Mid-circuit measurements can now be captured with `qml.capture` enabled.
   [(#6015)](https://github.com/PennyLaneAI/pennylane/pull/6015)
 
@@ -24,6 +47,7 @@
 
 * A new function `qml.registers` has been added, enabling the creation of registers, which are implemented as a dictionary of `Wires` instances.
   [(#5957)](https://github.com/PennyLaneAI/pennylane/pull/5957)
+  [(#6102)](https://github.com/PennyLaneAI/pennylane/pull/6102)
 
 * The `split_to_single_terms` transform is added. This transform splits expectation values of sums
   into multiple single-term measurements on a single tape, providing better support for simulators
@@ -41,7 +65,13 @@
   users to have more control over the error mitigation protocol without needing to add further dependencies.
   [(#5972)](https://github.com/PennyLaneAI/pennylane/pull/5972)
 
-<h3>Improvements 🛠</h3>
+* The `qml.PrepSelPrep` template is added. The template implements a block-encoding of a linear
+  combination of unitaries.
+  [(#5756)](https://github.com/PennyLaneAI/pennylane/pull/5756)
+  [(#5987)](https://github.com/PennyLaneAI/pennylane/pull/5987)
+
+* `fuse_rot_angles` now respects the global phase of the combined rotations.
+  [(#6031)](https://github.com/PennyLaneAI/pennylane/pull/6031)
 
 * `QNGOptimizer` now supports cost functions with multiple arguments, updating each argument independently.
   [(#5926)](https://github.com/PennyLaneAI/pennylane/pull/5926)
@@ -101,9 +131,6 @@
 
 * `qml.dynamic_one_shot` now supports circuits using the `"tensorflow"` interface.
   [(#5973)](https://github.com/PennyLaneAI/pennylane/pull/5973)
-
-* The representation for `Wires` has now changed to be more copy-paste friendly.
-  [(#5958)](https://github.com/PennyLaneAI/pennylane/pull/5958)
 
 * Observable validation for `default.qubit` is now based on execution mode (analytic vs. finite shots) and measurement type (sample measurement vs. state measurement).
   [(#5890)](https://github.com/PennyLaneAI/pennylane/pull/5890)
@@ -285,6 +312,9 @@
   [(#5974)](https://github.com/PennyLaneAI/pennylane/pull/5974)
 
 <h3>Bug fixes 🐛</h3>
+
+* `fuse_rot_angles` no longer returns wrong derivatives at singular points but returns NaN.
+  [(#6031)](https://github.com/PennyLaneAI/pennylane/pull/6031)
 
 * `qml.GlobalPhase` and `qml.I` can now be captured when acting on no wires.
   [(#6060)](https://github.com/PennyLaneAI/pennylane/pull/6060)
