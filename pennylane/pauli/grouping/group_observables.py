@@ -78,14 +78,14 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
             ``'anticommuting'``.
         graph_colourer (str): The heuristic algorithm to employ for graph
                 colouring, can be ``'lf'`` (Largest First), ``'rlf'`` (Recursive
-                Largest First), `dsatur` (DSATUR), or `gis` (IndependentSet). Defaults to ``'lf'``.
-
-    .. seealso:: `rustworkx.ColoringStrategy <https://www.rustworkx.org/apiref/rustworkx.ColoringStrategy.html#coloringstrategy>`_
-    for more information on the ``('lf', 'dsatur', 'gis')`` strategies.
+                Largest First), `dsatur` (Degree of Saturation), or `gis` (IndependentSet). Defaults to ``'lf'``.
 
     Raises:
-        ValueError: if arguments specified for ``grouping_type`` or ``graph_colourer``
-        are not recognized.
+        ValueError: If arguments specified for ``grouping_type`` or ``graph_colourer``
+            are not recognized.
+
+    .. seealso:: `rustworkx.ColoringStrategy <https://www.rustworkx.org/apiref/rustworkx.ColoringStrategy.html#coloringstrategy>`_
+        for more information on the ``('lf', 'dsatur', 'gis')`` strategies.
     """
 
     def __init__(
@@ -158,7 +158,7 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
     def adj_matrix(self) -> np.ndarray:
         """Adjacency matrix for the complement of the Pauli graph determined by the ``grouping_type``.
 
-        The adjacency matrix for an undirected graph of N nodes is an N by N symmetric binary
+        The adjacency matrix for an undirected graph of N nodes is an N x N symmetric binary
         matrix, where matrix elements of 1 denote an edge, and matrix elements of 0 denote no edge.
         """
         return _adj_matrix_from_symplectic(
@@ -170,7 +170,7 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
         """
         Complement graph of the (anti-)commutation graph constructed from the Pauli observables.
 
-        Edge (i,j) is present in the graph if observable[i] and observable[j] do NOT commute under
+        Edge (i,j) is present in the graph if observable[i] and observable[j] do NOT satisfy
         the ``grouping_type`` strategy.
 
         The nodes are the observables (can only be accesssed through their integer index).
@@ -388,6 +388,9 @@ def compute_partition_indices(
         observables that are grouped together according to the specified grouping type and
         graph colouring method.
 
+    .. seealso:: `rustworkx.ColoringStrategy <https://www.rustworkx.org/apiref/rustworkx.ColoringStrategy.html#coloringstrategy>`_
+        for more information on the ``('lf', 'dsatur', 'gis')`` strategies.
+
     **Example**
 
     >>> observables = [qml.X(0) @ qml.Z(1), qml.Z(0), qml.X(1)]
@@ -467,7 +470,7 @@ def group_observables(
             Can be ``'qwc'``, ``'commuting'``, or ``'anticommuting'``.
         method (str): The graph colouring heuristic to use in solving minimum clique cover, which
             can be ``'lf'`` (Largest First), ``'rlf'`` (Recursive Largest First),
-            `dsatur` (DSATUR), or `gis` (IndependentSet). Defaults to ``'rlf'``.
+            ``'dsatur'`` (Degree of Saturation), or ``'gis'`` (IndependentSet). Defaults to ``'lf'``.
 
     Returns:
        tuple:
@@ -481,6 +484,9 @@ def group_observables(
     Raises:
         IndexError: if the input list of coefficients is not of the same length as the input list
             of Pauli words
+
+    .. seealso:: `rustworkx.ColoringStrategy <https://www.rustworkx.org/apiref/rustworkx.ColoringStrategy.html#coloringstrategy>`_
+        for more information on the ``('lf', 'dsatur', 'gis')`` strategies.
 
     **Example**
 

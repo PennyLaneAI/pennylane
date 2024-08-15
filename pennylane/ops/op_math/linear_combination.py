@@ -45,12 +45,12 @@ class LinearCombination(Sum):
             ``LinearCombination`` is executed on devices. The string refers to the type of binary relation between Pauli words.
             Can be ``'qwc'`` (qubit-wise commuting), ``'commuting'``, or ``'anticommuting'``.
         method (str): The graph colouring heuristic to use in solving minimum clique cover for grouping, which
-            can be ``'lf'`` (Largest First), ``'rlf'`` (Recursive Largest First), `dsatur` (DSATUR), or `gis` (IndependentSet).
+            can be ``'lf'`` (Largest First), ``'rlf'`` (Recursive Largest First), ``'dsatur'`` (Degree of Saturation), or ``'gis'`` (IndependentSet).
             Defaults to ``'lf'``. Ignored if ``grouping_type=None``.
         id (str): name to be assigned to this ``LinearCombination`` instance
 
     .. seealso:: `rustworkx.ColoringStrategy <https://www.rustworkx.org/apiref/rustworkx.ColoringStrategy.html#coloringstrategy>`_
-    for more information on the ``('lf', 'dsatur', 'gis')`` strategies.
+        for more information on the ``('lf', 'dsatur', 'gis')`` strategies.
 
     .. warning::
         The ``simplify`` argument is deprecated and will be removed in a future release.
