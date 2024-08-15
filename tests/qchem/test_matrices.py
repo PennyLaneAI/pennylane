@@ -683,7 +683,8 @@ class TestJax:
 
     def test_moment_matrix_jax(self):
         r"""Test that moment_matrix returns the correct matrix when using jax."""
-        symbols, geometry, alpha = generate_symbols_geometry_alpha()
+        symbols, _, alpha = generate_symbols_geometry_alpha()
+        geometry = qml.math.array([[0.0, 0.0, 0.0], [2.0, 0.0, 0.0]], like="jax")
         argnums = [False, False, True]
         e = 1
         idx = 0
