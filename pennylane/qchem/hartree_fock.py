@@ -190,7 +190,7 @@ def nuclear_energy(charges, r, argnums=None):
     Args:
         charges (list[int]): nuclear charges in atomic units
         r (array[float]): nuclear positions
-        argnums (list(bool)): differentiability of coords, coeffs, and alpha (in that order)
+        argnums (list[bool], optional): differentiability of coords, coeffs, and alpha (in that order)
 
     Returns:
         function: function that computes the nuclear-repulsion energy
