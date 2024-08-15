@@ -108,65 +108,74 @@ def test_electron_integrals(symbols, geometry, core, active, e_core, one_ref, tw
 
 
 @pytest.mark.parametrize(
-    ("symbols", "geometry", "alpha", "h_ref"),
+    "use_jax",
     [
-        (
-            ["H", "H"],
-            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False),
-            np.array(
-                [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
-                requires_grad=True,
-            ),
-            # Hamiltonian coefficients and operators computed with OpenFermion using
-            # molecule = openfermion.MolecularData(geometry, basis, multiplicity, charge)
-            # molecule = run_pyscf(molecule, run_scf=1)
-            # openfermion.transforms.get_fermion_operator(molecule.get_molecular_hamiltonian())
-            # The "^" symbols in the operators are replaced with "+"
-            1.0000000206358097 * from_string("")
-            + -1.3902192781338518 * from_string("0+ 0")
-            + 0.35721954051077603 * from_string("0+ 0+ 0 0")
-            + 0.08512072166002102 * from_string("0+ 0+ 2 2")
-            + 0.35721954051077603 * from_string("0+ 1+ 1 0")
-            + 0.08512072166002102 * from_string("0+ 1+ 3 2")
-            + 0.08512072166002102 * from_string("0+ 2+ 0 2")
-            + 0.3509265790433101 * from_string("0+ 2+ 2 0")
-            + 0.08512072166002102 * from_string("0+ 3+ 1 2")
-            + 0.3509265790433101 * from_string("0+ 3+ 3 0")
-            + 0.35721954051077603 * from_string("1+ 0+ 0 1")
-            + 0.08512072166002102 * from_string("1+ 0+ 2 3")
-            + -1.3902192781338518 * from_string("1+ 1")
-            + 0.35721954051077603 * from_string("1+ 1+ 1 1")
-            + 0.08512072166002102 * from_string("1+ 1+ 3 3")
-            + 0.08512072166002102 * from_string("1+ 2+ 0 3")
-            + 0.3509265790433101 * from_string("1+ 2+ 2 1")
-            + 0.08512072166002102 * from_string("1+ 3+ 1 3")
-            + 0.3509265790433101 * from_string("1+ 3+ 3 1")
-            + 0.35092657904330926 * from_string("2+ 0+ 0 2")
-            + 0.08512072166002102 * from_string("2+ 0+ 2 0")
-            + 0.35092657904330926 * from_string("2+ 1+ 1 2")
-            + 0.08512072166002102 * from_string("2+ 1+ 3 0")
-            + -0.29165329244211186 * from_string("2+ 2")
-            + 0.08512072166002102 * from_string("2+ 2+ 0 0")
-            + 0.36941834777609744 * from_string("2+ 2+ 2 2")
-            + 0.08512072166002102 * from_string("2+ 3+ 1 0")
-            + 0.36941834777609744 * from_string("2+ 3+ 3 2")
-            + 0.35092657904330926 * from_string("3+ 0+ 0 3")
-            + 0.08512072166002102 * from_string("3+ 0+ 2 1")
-            + 0.35092657904330926 * from_string("3+ 1+ 1 3")
-            + 0.08512072166002102 * from_string("3+ 1+ 3 1")
-            + 0.08512072166002102 * from_string("3+ 2+ 0 1")
-            + 0.36941834777609744 * from_string("3+ 2+ 2 3")
-            + -0.29165329244211186 * from_string("3+ 3")
-            + 0.08512072166002102 * from_string("3+ 3+ 1 1")
-            + 0.36941834777609744 * from_string("3+ 3+ 3 3"),
-        )
+        (False),
+        pytest.param(True, marks=pytest.mark.jax),
     ],
 )
-def test_fermionic_hamiltonian(symbols, geometry, alpha, h_ref):
-    r"""Test that fermionic_hamiltonian returns the correct Hamiltonian."""
-    mol = qchem.Molecule(symbols, geometry, alpha=alpha)
+def test_fermionic_hamiltonian(use_jax):
+    r"""Test that using fermionic_hamiltonian returns the correct values."""
+
+    symbols = ["H", "H"]
+
+    geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False)
+    alpha = np.array(
+        [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
+        requires_grad=True,
+    )
+
+    if use_jax:
+        geometry = create_jax_like_array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])
+        alpha = create_jax_like_array(
+            [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]]
+        )
+
+    h_ref = (
+        1.0000000206358097 * from_string("")
+        + -1.3902192781338518 * from_string("0+ 0")
+        + 0.35721954051077603 * from_string("0+ 0+ 0 0")
+        + 0.08512072166002102 * from_string("0+ 0+ 2 2")
+        + 0.35721954051077603 * from_string("0+ 1+ 1 0")
+        + 0.08512072166002102 * from_string("0+ 1+ 3 2")
+        + 0.08512072166002102 * from_string("0+ 2+ 0 2")
+        + 0.3509265790433101 * from_string("0+ 2+ 2 0")
+        + 0.08512072166002102 * from_string("0+ 3+ 1 2")
+        + 0.3509265790433101 * from_string("0+ 3+ 3 0")
+        + 0.35721954051077603 * from_string("1+ 0+ 0 1")
+        + 0.08512072166002102 * from_string("1+ 0+ 2 3")
+        + -1.3902192781338518 * from_string("1+ 1")
+        + 0.35721954051077603 * from_string("1+ 1+ 1 1")
+        + 0.08512072166002102 * from_string("1+ 1+ 3 3")
+        + 0.08512072166002102 * from_string("1+ 2+ 0 3")
+        + 0.3509265790433101 * from_string("1+ 2+ 2 1")
+        + 0.08512072166002102 * from_string("1+ 3+ 1 3")
+        + 0.3509265790433101 * from_string("1+ 3+ 3 1")
+        + 0.35092657904330926 * from_string("2+ 0+ 0 2")
+        + 0.08512072166002102 * from_string("2+ 0+ 2 0")
+        + 0.35092657904330926 * from_string("2+ 1+ 1 2")
+        + 0.08512072166002102 * from_string("2+ 1+ 3 0")
+        + -0.29165329244211186 * from_string("2+ 2")
+        + 0.08512072166002102 * from_string("2+ 2+ 0 0")
+        + 0.36941834777609744 * from_string("2+ 2+ 2 2")
+        + 0.08512072166002102 * from_string("2+ 3+ 1 0")
+        + 0.36941834777609744 * from_string("2+ 3+ 3 2")
+        + 0.35092657904330926 * from_string("3+ 0+ 0 3")
+        + 0.08512072166002102 * from_string("3+ 0+ 2 1")
+        + 0.35092657904330926 * from_string("3+ 1+ 1 3")
+        + 0.08512072166002102 * from_string("3+ 1+ 3 1")
+        + 0.08512072166002102 * from_string("3+ 2+ 0 1")
+        + 0.36941834777609744 * from_string("3+ 2+ 2 3")
+        + -0.29165329244211186 * from_string("3+ 3")
+        + 0.08512072166002102 * from_string("3+ 3+ 1 1")
+        + 0.36941834777609744 * from_string("3+ 3+ 3 3")
+    )
+
+    mol = qchem.Molecule(symbols, geometry, alpha=alpha, alpha_opt=True)
     args = [alpha]
     h = qchem.fermionic_hamiltonian(mol)(*args)
+
+    h.simplify(tol=1e-7)
 
     assert np.allclose(list(h.values()), list(h_ref.values()))
     assert h.keys() == h_ref.keys()
