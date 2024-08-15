@@ -494,7 +494,7 @@ def group_observables(
     [[0.97, 4.21], [1.43]]
     """
 
-    if coefficients is not None and len(coefficients) != len(observables):
+    if coefficients is not None and qml.math.shape(coefficients)[0] != len(observables):
         raise IndexError("The coefficients list must be the same length as the observables list.")
 
     # # Separate observables based on whether they have wires or not.
