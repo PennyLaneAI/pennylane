@@ -15,18 +15,19 @@
 This package provides a wrapped version of autograd.numpy.random, such that
 it works with the PennyLane :class:`~.tensor` class.
 """
-import semantic_version
+
 from autograd.numpy import random as _random
 from numpy import __version__ as np_version
 from numpy.random import MT19937, PCG64, SFC64, Philox  # pylint: disable=unused-import
+from packaging.specifiers import SpecifierSet
+from packaging.version import Version
 
 from .wrapper import tensor_wrapper, wrap_arrays
 
 wrap_arrays(_random.__dict__, globals())
 
 
-np_version_spec = semantic_version.SimpleSpec(">=0.17.0")
-if np_version_spec.match(semantic_version.Version(np_version)):
+if Version(np_version) in SpecifierSet(">=0.17.0"):
     # pylint: disable=too-few-public-methods
     # pylint: disable=missing-class-docstring
     class Generator(_random.Generator):

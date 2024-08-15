@@ -26,7 +26,7 @@ import logging
 import warnings
 from collections.abc import Callable, MutableMapping, Sequence
 from functools import partial
-from typing import Optional, Union
+from typing import Literal, Optional, Union, get_args
 
 from cachetools import Cache, LRUCache
 
@@ -61,23 +61,42 @@ jpc_interfaces = {
     "tensorflow",
 }
 
-INTERFACE_MAP = {
-    None: "Numpy",
-    "auto": "auto",
-    "autograd": "autograd",
-    "numpy": "autograd",
-    "scipy": "numpy",
-    "jax": "jax",
-    "jax-jit": "jax",
-    "jax-python": "jax",
-    "JAX": "jax",
-    "torch": "torch",
-    "pytorch": "torch",
-    "tf": "tf",
-    "tensorflow": "tf",
-    "tensorflow-autograph": "tf",
-    "tf-autograph": "tf",
-}
+SupportedInterfaceUserInput = Literal[
+    None,
+    "auto",
+    "autograd",
+    "numpy",
+    "scipy",
+    "jax",
+    "jax-jit",
+    "jax-python",
+    "JAX",
+    "torch",
+    "pytorch",
+    "tf",
+    "tensorflow",
+    "tensorflow-autograph",
+    "tf-autograph",
+]
+
+_mapping_output = (
+    "Numpy",
+    "auto",
+    "autograd",
+    "autograd",
+    "numpy",
+    "jax",
+    "jax",
+    "jax",
+    "jax",
+    "torch",
+    "torch",
+    "tf",
+    "tf",
+    "tf",
+    "tf",
+)
+INTERFACE_MAP = dict(zip(get_args(SupportedInterfaceUserInput), _mapping_output))
 """dict[str, str]: maps an allowed interface specification to its canonical name."""
 
 #: list[str]: allowed interface strings
@@ -720,15 +739,7 @@ def execute(
 
     # Mid-circuit measurement configuration validation
     mcm_interface = interface or _get_interface_name(tapes, "auto")
-    finite_shots = (
-        (
-            qml.measurements.Shots(device.shots)
-            if isinstance(device, qml.devices.LegacyDevice)
-            else device.shots
-        )
-        if override_shots is False
-        else override_shots
-    )
+    finite_shots = any(tape.shots for tape in tapes)
     _update_mcm_config(config.mcm_config, mcm_interface, finite_shots)
 
     is_gradient_transform = isinstance(gradient_fn, qml.transforms.core.TransformDispatcher)
