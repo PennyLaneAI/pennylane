@@ -538,7 +538,7 @@ class QuantumScript:
         return self.get_parameters(trainable_only=False)
 
     @property
-    def trainable_params(self) -> list[TensorLike]:
+    def trainable_params(self) -> list[int]:
         r"""Store or return a list containing the indices of parameters that support
         differentiability. The indices provided match the order of appearence in the
         quantum circuit.
