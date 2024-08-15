@@ -201,7 +201,7 @@ class QuantumScript:
         return hash(tuple(fingerprint))
 
     def __iter__(self) -> Iterator[Union[Operator, MeasurementProcess]]:
-        """list[.Operator, .MeasurementProcess]: Return an iterator to the
+        """Iterator[.Operator, .MeasurementProcess]: Return an iterator to the
         underlying quantum circuit object."""
         return iter(self.circuit)
 
