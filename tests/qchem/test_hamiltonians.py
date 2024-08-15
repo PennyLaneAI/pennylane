@@ -95,8 +95,19 @@ from pennylane.operation import active_new_opmath
         ),
     ],
 )
-def test_electron_integrals(symbols, geometry, core, active, e_core, one_ref, two_ref):
+@pytest.mark.parametrize(
+    "use_jax",
+    [
+        (False),
+        pytest.param(True, marks=pytest.mark.jax),
+    ],
+)
+def test_electron_integrals(symbols, geometry, core, active, e_core, one_ref, two_ref, use_jax):
     r"""Test that electron_integrals returns the correct values."""
+
+    if use_jax:
+        geometry = create_jax_like_array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])
+
     mol = qchem.Molecule(symbols, geometry)
     args = []
 
@@ -266,11 +277,20 @@ def test_diff_hamiltonian(use_jax):
 
 
 @pytest.mark.usefixtures("use_legacy_and_new_opmath")
-def test_diff_hamiltonian_active_space():
+@pytest.mark.parametrize(
+    "use_jax",
+    [
+        (False),
+        pytest.param(True, marks=pytest.mark.jax),
+    ],
+)
+def test_diff_hamiltonian_active_space(use_jax):
     r"""Test that diff_hamiltonian works when an active space is defined."""
 
     symbols = ["H", "H", "H"]
     geometry = np.array([[0.0, 0.0, 0.0], [2.0, 0.0, 1.0], [0.0, 2.0, 0.0]])
+    if use_jax:
+        geometry = create_jax_like_array([[0.0, 0.0, 0.0], [2.0, 0.0, 1.0], [0.0, 2.0, 0.0]])
 
     mol = qchem.Molecule(symbols, geometry, charge=1)
     args = [geometry]
@@ -299,8 +319,18 @@ def test_diff_hamiltonian_active_space():
         ),
     ],
 )
-def test_diff_hamiltonian_wire_order(symbols, geometry, core, active, charge):
+@pytest.mark.parametrize(
+    "use_jax",
+    [
+        (False),
+        pytest.param(True, marks=pytest.mark.jax),
+    ],
+)
+def test_diff_hamiltonian_wire_order(symbols, geometry, core, active, charge, use_jax):
     r"""Test that diff_hamiltonian has an ascending wire order."""
+
+    if use_jax:
+        geometry = create_jax_like_array(geometry)
 
     mol = qchem.Molecule(symbols, geometry, charge)
     args = [geometry]
@@ -365,116 +395,6 @@ def create_jax_like_array(values):
 @pytest.mark.usefixtures("use_legacy_and_new_opmath")
 @pytest.mark.jax
 class TestJax:
-    @pytest.mark.parametrize(
-        (
-            "symbols",
-            "geometry_values",
-            "core",
-            "active",
-            "e_core_values",
-            "one_ref_values",
-            "two_ref_values",
-        ),
-        [
-            (
-                ["H", "H"],
-                [[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]],
-                None,
-                None,
-                [1.0000000000321256],
-                [[-1.39021927e00, -1.28555566e-16], [-3.52805508e-16, -2.91653305e-01]],
-                [
-                    [
-                        [[7.14439079e-01, 6.62555256e-17], [2.45552260e-16, 1.70241444e-01]],
-                        [[2.45552260e-16, 1.70241444e-01], [7.01853156e-01, 6.51416091e-16]],
-                    ],
-                    [
-                        [[6.62555256e-17, 7.01853156e-01], [1.70241444e-01, 2.72068603e-16]],
-                        [[1.70241444e-01, 2.72068603e-16], [6.51416091e-16, 7.38836693e-01]],
-                    ],
-                ],
-            ),
-            (
-                ["Li", "H"],
-                [[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]],
-                [0, 1, 2, 3],
-                [4, 5],
-                [-5.141222763432437],
-                [[1.17563204e00, -5.75186616e-18], [-5.75186616e-18, 1.78830226e00]],
-                [
-                    [
-                        [[3.12945511e-01, 4.79898448e-19], [4.79898448e-19, 9.78191587e-03]],
-                        [[4.79898448e-19, 9.78191587e-03], [3.00580620e-01, 4.28570365e-18]],
-                    ],
-                    [
-                        [[4.79898448e-19, 3.00580620e-01], [9.78191587e-03, 4.28570365e-18]],
-                        [[9.78191587e-03, 4.28570365e-18], [4.28570365e-18, 5.10996835e-01]],
-                    ],
-                ],
-            ),
-        ],
-    )
-    def test_electron_integrals_jax(
-        self, symbols, geometry_values, core, active, e_core_values, one_ref_values, two_ref_values
-    ):
-        r"""Test that using electron_integrals with jax returns the correct values."""
-        geometry, e_core, one_ref, two_ref = (
-            create_jax_like_array(values)
-            for values in [geometry_values, e_core_values, one_ref_values, two_ref_values]
-        )
-
-        mol = qchem.Molecule(symbols, geometry)
-        args = []
-
-        e, one, two = qchem.electron_integrals(mol, core=core, active=active)(*args)
-
-        assert np.allclose(e, e_core)
-        assert np.allclose(one, one_ref)
-        assert np.allclose(two, two_ref)
-
-    def test_diff_hamiltonian_active_space_jax(self):
-        r"""Test that diff_hamiltonian using jax works when an active space is defined."""
-
-        symbols = ["H", "H", "H"]
-        geometry = qml.math.array([[0.0, 0.0, 0.0], [2.0, 0.0, 1.0], [0.0, 2.0, 0.0]], like="jax")
-
-        mol = qchem.Molecule(symbols, geometry, charge=1)
-        args = [geometry]
-
-        h = qchem.diff_hamiltonian(mol, core=[0], active=[1, 2])(*args)
-
-        assert isinstance(h, qml.ops.Sum if active_new_opmath() else qml.Hamiltonian)
-
-    @pytest.mark.parametrize(
-        ("symbols", "geometry", "core", "active", "charge"),
-        [
-            (
-                ["H", "H"],
-                [[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]],
-                None,
-                None,
-                0,
-            ),
-            (
-                ["H", "H", "H"],
-                [[0.0, 0.0, 0.0], [2.0, 0.0, 1.0], [0.0, 2.0, 0.0]],
-                [0],
-                [1, 2],
-                1,
-            ),
-        ],
-    )
-    def test_diff_hamiltonian_wire_order_jax(self, symbols, geometry, core, active, charge):
-        r"""Test that diff_hamiltonian using jax has an ascending wire order."""
-
-        geometry = create_jax_like_array(geometry)
-        mol = qchem.Molecule(symbols, geometry, charge)
-        args = [geometry]
-
-        h = qchem.diff_hamiltonian(mol, core=core, active=active)(*args)
-
-        assert h.wires.tolist() == sorted(h.wires.tolist())
-
     def test_gradient_jax_array(self):
         r"""Test that the gradient of expval(H) computed with ``jax.grad`` is equal to the value
         obtained with the finite difference method when using ``alpha_opt`` and jax."""
@@ -523,7 +443,7 @@ class TestJax:
 
         assert np.allclose(grad_jax[0][0], grad_finitediff, rtol=1e-02)
 
-    def test_gradient_expvalH(self):
+    def test_gradient_expvalH_jax(self):
         r"""Test that the gradient of expval(H) computed with ``jax.grad`` is equal to the value
         obtained with the finite difference method."""
         import jax
