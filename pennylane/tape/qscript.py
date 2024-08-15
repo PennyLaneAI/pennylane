@@ -885,7 +885,7 @@ class QuantumScript:
     def expand(
         self,
         depth: int = 1,
-        stop_at: Optional[Callable[[Operation], bool]] = None,
+        stop_at: Optional[Callable[[Union[Operation, MeasurementProcess]], bool]] = None,
         expand_measurements: bool = False,
     ) -> "QuantumScript":
         """Expand all operations to a specific depth.
