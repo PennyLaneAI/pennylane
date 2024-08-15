@@ -688,103 +688,72 @@ def create_jax_like_array(values):
     return qml.math.array(values, like="jax")
 
 
+def generate_symbols_geometry_alpha():
+    """Generates symbols, geometry and alpha arrays to be reused for the molecule"""
+    symbols = ["H", "H"]
+    geometry = qml.math.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], like="jax")
+    alpha = qml.math.array(
+        [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]], like="jax"
+    )
+
+    return symbols, geometry, alpha
+
+
 @pytest.mark.jax
 class TestJax:
-    @pytest.mark.parametrize(
-        ("symbols", "geometry", "alpha", "s_ref", "argnums"),
-        [
-            (
-                ["H", "H"],
-                [[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]],
-                [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
-                np.array([[1.0, 0.7965883009074122], [0.7965883009074122, 1.0]]),
-                [False, False, True],
-            )
-        ],
-    )
-    def test_overlap_matrix_jax(self, symbols, geometry, alpha, s_ref, argnums):
+    def test_overlap_matrix_jax(self):
         r"""Test that overlap_matrix returns the correct matrix when using jax."""
-        geometry = create_jax_like_array(geometry)
-        alpha = create_jax_like_array(alpha)
+        s_ref = np.array([[1.0, 0.7965883009074122], [0.7965883009074122, 1.0]])
+        argnums = [False, False, True]
+        symbols, geometry, alpha = generate_symbols_geometry_alpha()
 
         mol = qchem.Molecule(symbols, geometry, alpha=alpha)
         args = [alpha]
         s = qchem.overlap_matrix(mol.basis_set, argnums)(*args)
         assert np.allclose(s, s_ref)
 
-    @pytest.mark.parametrize(
-        ("symbols", "geometry", "alpha", "e", "idx", "s_ref", "argnums"),
-        [
-            (
-                ["H", "H"],
-                [[0.0, 0.0, 0.0], [2.0, 0.0, 0.0]],
-                [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
-                1,
-                0,
-                np.array([[0.0, 0.4627777], [0.4627777, 2.0]]),
-                [False, False, True],
-            )
-        ],
-    )
-    def test_moment_matrix_jax(self, symbols, geometry, alpha, e, idx, s_ref, argnums):
+    def test_moment_matrix_jax(self):
         r"""Test that moment_matrix returns the correct matrix when using jax."""
-        geometry = create_jax_like_array(geometry)
-        alpha = create_jax_like_array(alpha)
+        symbols, geometry, alpha = generate_symbols_geometry_alpha()
+        argnums = [False, False, True]
+        e = 1
+        idx = 0
+        s_ref = np.array([[0.0, 0.4627777], [0.4627777, 2.0]])
 
         mol = qchem.Molecule(symbols, geometry, alpha=alpha)
         args = [alpha]
         s = qchem.moment_matrix(mol.basis_set, e, idx, argnums)(*args)
         assert np.allclose(s, s_ref)
 
-    @pytest.mark.parametrize(
-        ("symbols", "geometry", "alpha", "t_ref", "argnums"),
-        [
-            (
-                ["H", "H"],
-                [[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]],
-                [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
-                np.array(
-                    [
-                        [0.7600318862777408, 0.38325367405372557],
-                        [0.38325367405372557, 0.7600318862777408],
-                    ]
-                ),
-                [False, False, True],
-            )
-        ],
-    )
-    def test_kinetic_matrix_jax(self, symbols, geometry, alpha, t_ref, argnums):
+    def test_kinetic_matrix_jax(self):
         r"""Test that kinetic_matrix returns the correct matrix when using jax."""
-        geometry = create_jax_like_array(geometry)
-        alpha = create_jax_like_array(alpha)
+        symbols, geometry, alpha = generate_symbols_geometry_alpha()
+        t_ref = np.array(
+            [
+                [0.7600318862777408, 0.38325367405372557],
+                [0.38325367405372557, 0.7600318862777408],
+            ]
+        )
+
+        argnums = [False, False, True]
 
         mol = qchem.Molecule(symbols, geometry, alpha=alpha)
         args = [alpha]
         t = qchem.kinetic_matrix(mol.basis_set, argnums)(*args)
         assert np.allclose(t, t_ref)
 
-    @pytest.mark.parametrize(
-        ("symbols", "geometry", "alpha", "c_ref", "argnums"),
-        [
-            (
-                ["H", "H"],
-                [[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]],
-                [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
-                np.array(
-                    [
-                        [-1.27848886, -1.21916326],
-                        [-1.21916326, -1.27848886],
-                    ]
-                ),
-                [True, False, True],
-            )
-        ],
-    )
-    def test_core_matrix_diff_positions_jax(self, symbols, geometry, alpha, c_ref, argnums):
+    def test_core_matrix_diff_positions_jax(self):
         r"""Test that core_matrix returns the correct matrix when positions are differentiable
         when using jax."""
-        geometry = create_jax_like_array(geometry)
-        alpha = create_jax_like_array(alpha)
+        symbols, geometry, alpha = generate_symbols_geometry_alpha()
+        c_ref = np.array(
+            [
+                [-1.27848886, -1.21916326],
+                [-1.21916326, -1.27848886],
+            ]
+        )
+
+        argnums = [True, False, True]
 
         mol = qchem.Molecule(symbols, geometry, alpha=alpha)
         r_basis = mol.coordinates
@@ -792,61 +761,39 @@ class TestJax:
         c = qchem.core_matrix(mol.basis_set, mol.nuclear_charges, mol.coordinates, argnums)(*args)
         assert np.allclose(c, c_ref)
 
-    @pytest.mark.parametrize(
-        ("symbols", "geometry", "alpha", "e_ref", "argnums"),
-        [
-            (
-                ["H", "H"],
-                [[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]],
-                [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
-                np.array(
-                    [
-                        [
-                            [[0.77460594, 0.56886157], [0.56886157, 0.65017755]],
-                            [[0.56886157, 0.45590169], [0.45590169, 0.56886157]],
-                        ],
-                        [
-                            [[0.56886157, 0.45590169], [0.45590169, 0.56886157]],
-                            [[0.65017755, 0.56886157], [0.56886157, 0.77460594]],
-                        ],
-                    ]
-                ),
-                [False, False, True],
-            )
-        ],
-    )
-    def test_repulsion_tensor_jax(self, symbols, geometry, alpha, e_ref, argnums):
+    def test_repulsion_tensor_jax(self):
         r"""Test that repulsion_tensor returns the correct matrix when using jax."""
-        geometry = create_jax_like_array(geometry)
-        alpha = create_jax_like_array(alpha)
+        symbols, geometry, alpha = generate_symbols_geometry_alpha()
+        e_ref = np.array(
+            [
+                [
+                    [[0.77460594, 0.56886157], [0.56886157, 0.65017755]],
+                    [[0.56886157, 0.45590169], [0.45590169, 0.56886157]],
+                ],
+                [
+                    [[0.56886157, 0.45590169], [0.45590169, 0.56886157]],
+                    [[0.65017755, 0.56886157], [0.56886157, 0.77460594]],
+                ],
+            ]
+        )
 
+        argnums = [False, False, True]
         mol = qchem.Molecule(symbols, geometry, alpha=alpha)
         args = [mol.alpha]
         e = qchem.repulsion_tensor(mol.basis_set, argnums)(*args)
         assert np.allclose(e, e_ref)
 
-    @pytest.mark.parametrize(
-        ("symbols", "geometry", "alpha", "v_ref", "argnums"),
-        [
-            (
-                ["H", "H"],
-                [[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]],
-                [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
-                np.array(
-                    [
-                        [-2.03852075, -1.6024171],
-                        [-1.6024171, -2.03852075],
-                    ]
-                ),
-                [True, False, True],
-            )
-        ],
-    )
-    def test_attraction_matrix_diffR_jax(self, symbols, geometry, alpha, v_ref, argnums):
+    def test_attraction_matrix_diffR_jax(self):
         r"""Test that attraction_matrix returns the correct matrix when positions are
         differentiable when using jax."""
-        geometry = create_jax_like_array(geometry)
-        alpha = create_jax_like_array(alpha)
+        symbols, geometry, alpha = generate_symbols_geometry_alpha()
+        v_ref = np.array(
+            [
+                [-2.03852075, -1.6024171],
+                [-1.6024171, -2.03852075],
+            ]
+        )
+        argnums = [True, False, True]
 
         mol = qchem.Molecule(symbols, geometry, alpha=alpha)
         r_basis = mol.coordinates
