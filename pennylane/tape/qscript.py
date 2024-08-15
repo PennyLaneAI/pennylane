@@ -434,7 +434,7 @@ class QuantumScript:
         return par_info
 
     @property
-    def obs_sharing_wires(self) -> list[Observable]:
+    def obs_sharing_wires(self) -> list[Operator]:
         """Returns the subset of the observables that share wires with another observable,
         i.e., that do not have their own unique set of wires.
 
