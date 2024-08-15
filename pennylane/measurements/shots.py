@@ -281,4 +281,4 @@ class Shots:
                 lower_bound = upper_bound
 
 
-ShotsLike = Union[Shots, int, Sequence[Union[int, tuple[int, int]]]]
+ShotsLike = Union[Shots, None, int, Sequence[Union[int, tuple[int, int]]]]
