@@ -47,11 +47,11 @@ def registers(register_dict):
     Given nested input dictionary:
 
     >>> wire_registers = qml.registers({"people": {"alice": 2, "bob": 1}})
-    >>> wire_dict
+    >>> wire_registers
     {'alice': Wires([0, 1]), 'bob': Wires([2]), 'people': Wires([0, 1, 2])}
-    >>> wire_dict['bob']
+    >>> wire_registers['bob']
     Wires([2])
-    >>> wire_dict['alice'][1]
+    >>> wire_registers['alice'][1]
     1
 
     A simple example showcasing how to implement the `SWAP <https://en.wikipedia.org/wiki/Swap_test>`_ test:
@@ -59,7 +59,7 @@ def registers(register_dict):
     .. code-block::
 
         dev = qml.device("default.qubit")
-        reg =  registers({"aux": 1, "phi": 5, "psi": 5})
+        reg = registers({"aux": 1, "phi": 5, "psi": 5})
 
         @qml.qnode(dev)
         def circuit():
