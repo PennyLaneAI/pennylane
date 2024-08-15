@@ -22,7 +22,7 @@ import copy
 from collections import Counter
 from collections.abc import Callable, Hashable, Iterable, Iterator, Sequence
 from functools import cached_property
-from typing import Any, Optional, Union
+from typing import Any, Optional, TypeVar, Union
 
 import pennylane as qml
 from pennylane.measurements import MeasurementProcess, ProbabilityMP, StateMP
@@ -70,6 +70,8 @@ Note that QASM has two native gates:
 All other gates are defined in the file stdgates.inc:
 https://github.com/Qiskit/openqasm/blob/master/examples/stdgates.inc
 """
+
+QS = TypeVar("QS", bound="QuantumScript")
 
 
 class QuantumScript:
@@ -169,12 +171,12 @@ class QuantumScript:
 
     def __init__(
         self,
-        ops: Optional[Iterable[Operator]] = None,
+        ops: Iterable[Operator] = (),
         measurements: Optional[Iterable[MeasurementProcess]] = None,
         shots: Optional[ShotsLike] = None,
         trainable_params: Optional[Sequence[int]] = None,
     ):
-        self._ops = [] if ops is None else list(ops)
+        self._ops = list(ops)
         self._measurements = [] if measurements is None else list(measurements)
         self._shots = Shots(shots)
 
@@ -1215,8 +1217,8 @@ class QuantumScript:
 
     @classmethod
     def from_queue(
-        cls: "QuantumScript", queue: qml.queuing.AnnotatedQueue, shots: Optional[ShotsLike] = None
-    ) -> "QuantumScript":
+        cls: type[QS], queue: qml.queuing.AnnotatedQueue, shots: Optional[ShotsLike] = None
+    ) -> QS:
         """Construct a QuantumScript from an AnnotatedQueue."""
         return cls(*process_queue(queue), shots=shots)
 
