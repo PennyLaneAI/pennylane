@@ -498,7 +498,6 @@ class TestJax:
         assert np.allclose(list(h.values()), list(h_ref.values()))
         assert h.keys() == h_ref.keys()
 
-    @pytest.mark.jax
     def test_diff_hamiltonian_jax(self):
         r"""Test that diff_hamiltonian using jax returns the correct Hamiltonian."""
 
