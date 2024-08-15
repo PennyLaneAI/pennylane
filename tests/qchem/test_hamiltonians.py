@@ -215,6 +215,11 @@ def test_diff_hamiltonian(use_jax):
     if use_jax:
         geometry = create_jax_like_array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])
 
+    # computed with qchem.convert_observable and an OpenFermion Hamiltonian; data reordered
+    # h_mol = molecule.get_molecular_hamiltonian()
+    # h_f = openfermion.transforms.get_fermion_operator(h_mol)
+    # h_q = openfermion.transforms.jordan_wigner(h_f)
+    # h_pl = qchem.convert_observable(h_q, wires=[0, 1, 2, 3], tol=(5e-5))
     h_ref = (
         [
             0.2981788017,

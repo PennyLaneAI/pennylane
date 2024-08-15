@@ -63,7 +63,7 @@ class TestOverlapMat:
         r"""Test that overlap_matrix returns the correct matrix."""
         mol = qchem.Molecule(symbols, geometry, alpha=alpha)
         args = [alpha]
-        s = qchem.overlap_matrix(mol.basis_set, argnums=[False, False, False])(*args)
+        s = qchem.overlap_matrix(mol.basis_set)(*args)
         assert np.allclose(s, s_ref)
 
     @pytest.mark.parametrize(
@@ -80,7 +80,7 @@ class TestOverlapMat:
         r"""Test that overlap_matrix returns the correct matrix when no differentiable parameter is
         used."""
         mol = qchem.Molecule(symbols, geometry)
-        s = qchem.overlap_matrix(mol.basis_set, argnums=[False, False, False])()
+        s = qchem.overlap_matrix(mol.basis_set)()
         assert np.allclose(s, s_ref)
 
     @pytest.mark.parametrize(
@@ -143,12 +143,8 @@ class TestOverlapMat:
         r"""Test that the overlap gradients are correct."""
         mol = qchem.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
         args = [mol.alpha, mol.coeff]
-        g_alpha = qml.jacobian(
-            qchem.overlap_matrix(mol.basis_set, argnums=[False, False, False]), argnum=0
-        )(*args)
-        g_coeff = qml.jacobian(
-            qchem.overlap_matrix(mol.basis_set, argnums=[False, False, False]), argnum=1
-        )(*args)
+        g_alpha = qml.jacobian(qchem.overlap_matrix(mol.basis_set), argnum=0)(*args)
+        g_coeff = qml.jacobian(qchem.overlap_matrix(mol.basis_set), argnum=1)(*args)
         assert np.allclose(g_alpha, g_alpha_ref)
         assert np.allclose(g_coeff, g_coeff_ref)
 
@@ -176,7 +172,7 @@ class TestMomentMat:
         r"""Test that moment_matrix returns the correct matrix."""
         mol = qchem.Molecule(symbols, geometry, alpha=alpha)
         args = [alpha]
-        s = qchem.moment_matrix(mol.basis_set, e, idx, argnums=[False, False, False])(*args)
+        s = qchem.moment_matrix(mol.basis_set, e, idx)(*args)
         assert np.allclose(s, s_ref)
 
     @pytest.mark.parametrize(
@@ -195,7 +191,11 @@ class TestMomentMat:
         r"""Test that moment_matrix returns the correct matrix when no differentiable parameter is
         used."""
         mol = qchem.Molecule(symbols, geometry)
-        s = qchem.moment_matrix(mol.basis_set, e, idx, argnums=[False, False, False])()
+        s = qchem.moment_matrix(
+            mol.basis_set,
+            e,
+            idx,
+        )()
         assert np.allclose(s, s_ref)
 
     @pytest.mark.parametrize(
@@ -262,10 +262,20 @@ class TestMomentMat:
         mol = qchem.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
         args = [mol.alpha, mol.coeff]
         g_alpha = qml.jacobian(
-            qchem.moment_matrix(mol.basis_set, e, idx, argnums=[False, False, False]), argnum=0
+            qchem.moment_matrix(
+                mol.basis_set,
+                e,
+                idx,
+            ),
+            argnum=0,
         )(*args)
         g_coeff = qml.jacobian(
-            qchem.moment_matrix(mol.basis_set, e, idx, argnums=[False, False, False]), argnum=1
+            qchem.moment_matrix(
+                mol.basis_set,
+                e,
+                idx,
+            ),
+            argnum=1,
         )(*args)
 
         assert np.allclose(g_alpha, g_alpha_ref)
@@ -298,7 +308,9 @@ class TestKineticMat:
         r"""Test that kinetic_matrix returns the correct matrix."""
         mol = qchem.Molecule(symbols, geometry, alpha=alpha)
         args = [alpha]
-        t = qchem.kinetic_matrix(mol.basis_set, argnums=[False, False, False])(*args)
+        t = qchem.kinetic_matrix(
+            mol.basis_set,
+        )(*args)
         assert np.allclose(t, t_ref)
 
     @pytest.mark.parametrize(
@@ -320,7 +332,9 @@ class TestKineticMat:
         r"""Test that kinetic_matrix returns the correct matrix when no differentiable parameter is
         used."""
         mol = qchem.Molecule(symbols, geometry)
-        t = qchem.kinetic_matrix(mol.basis_set, argnums=[False, False, False])()
+        t = qchem.kinetic_matrix(
+            mol.basis_set,
+        )()
         assert np.allclose(t, t_ref)
 
     @pytest.mark.parametrize(
@@ -384,10 +398,16 @@ class TestKineticMat:
         mol = qchem.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
         args = [mol.alpha, mol.coeff]
         g_alpha = qml.jacobian(
-            qchem.kinetic_matrix(mol.basis_set, argnums=[False, False, False]), argnum=0
+            qchem.kinetic_matrix(
+                mol.basis_set,
+            ),
+            argnum=0,
         )(*args)
         g_coeff = qml.jacobian(
-            qchem.kinetic_matrix(mol.basis_set, argnums=[False, False, False]), argnum=1
+            qchem.kinetic_matrix(
+                mol.basis_set,
+            ),
+            argnum=1,
         )(*args)
         assert np.allclose(g_alpha, g_alpha_ref)
         assert np.allclose(g_coeff, g_coeff_ref)
@@ -421,7 +441,9 @@ class TestAttractionMat:
         mol = qchem.Molecule(symbols, geometry, alpha=alpha)
         args = [mol.alpha]
         v = qchem.attraction_matrix(
-            mol.basis_set, mol.nuclear_charges, mol.coordinates, argnums=[False, False, False]
+            mol.basis_set,
+            mol.nuclear_charges,
+            mol.coordinates,
         )(*args)
         assert np.allclose(v, v_ref)
 
@@ -452,7 +474,9 @@ class TestAttractionMat:
         r_basis = mol.coordinates
         args = [mol.coordinates, mol.alpha, r_basis]
         v = qchem.attraction_matrix(
-            mol.basis_set, mol.nuclear_charges, mol.coordinates, argnums=[False, False, False]
+            mol.basis_set,
+            mol.nuclear_charges,
+            mol.coordinates,
         )(*args)
         assert np.allclose(v, v_ref)
 
@@ -476,7 +500,9 @@ class TestAttractionMat:
         r"""Test that attraction_matrix returns the correct matrix."""
         mol = qchem.Molecule(symbols, geometry)
         v = qchem.attraction_matrix(
-            mol.basis_set, mol.nuclear_charges, mol.coordinates, argnums=[False, False, False]
+            mol.basis_set,
+            mol.nuclear_charges,
+            mol.coordinates,
         )()
         assert np.allclose(v, v_ref)
 
@@ -523,7 +549,9 @@ class TestAttractionMat:
 
         g_r = qml.jacobian(
             qchem.attraction_matrix(
-                mol.basis_set, mol.nuclear_charges, mol.coordinates, argnums=[False, False, False]
+                mol.basis_set,
+                mol.nuclear_charges,
+                mol.coordinates,
             ),
             argnum=0,
         )(*args)
@@ -563,7 +591,9 @@ class TestRepulsionMat:
         r"""Test that repulsion_tensor returns the correct matrix."""
         mol = qchem.Molecule(symbols, geometry, alpha=alpha)
         args = [mol.alpha]
-        e = qchem.repulsion_tensor(mol.basis_set, argnums=[False, False, False])(*args)
+        e = qchem.repulsion_tensor(
+            mol.basis_set,
+        )(*args)
         assert np.allclose(e, e_ref)
 
     @pytest.mark.parametrize(
@@ -592,7 +622,9 @@ class TestRepulsionMat:
         r"""Test that repulsion_tensor returns the correct matrix when no differentiable parameter
         is used."""
         mol = qchem.Molecule(symbols, geometry)
-        e = qchem.repulsion_tensor(mol.basis_set, argnums=[False, False, False])()
+        e = qchem.repulsion_tensor(
+            mol.basis_set,
+        )()
         assert np.allclose(e, e_ref)
 
 
@@ -624,7 +656,9 @@ class TestCoreMat:
         mol = qchem.Molecule(symbols, geometry, alpha=alpha)
         args = [mol.alpha]
         c = qchem.core_matrix(
-            mol.basis_set, mol.nuclear_charges, mol.coordinates, argnums=[False, False, False]
+            mol.basis_set,
+            mol.nuclear_charges,
+            mol.coordinates,
         )(*args)
         assert np.allclose(c, c_ref)
 
@@ -649,7 +683,9 @@ class TestCoreMat:
         used."""
         mol = qchem.Molecule(symbols, geometry)
         c = qchem.core_matrix(
-            mol.basis_set, mol.nuclear_charges, mol.coordinates, argnums=[False, False, False]
+            mol.basis_set,
+            mol.nuclear_charges,
+            mol.coordinates,
         )()
         assert np.allclose(c, c_ref)
 
@@ -679,7 +715,9 @@ class TestCoreMat:
         r_basis = mol.coordinates
         args = [mol.coordinates, mol.alpha, r_basis]
         c = qchem.core_matrix(
-            mol.basis_set, mol.nuclear_charges, mol.coordinates, argnums=[False, False, False]
+            mol.basis_set,
+            mol.nuclear_charges,
+            mol.coordinates,
         )(*args)
         assert np.allclose(c, c_ref)
 

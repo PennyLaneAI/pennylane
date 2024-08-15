@@ -175,7 +175,7 @@ def scf(mol, n_steps=50, tol=1e-8):
     return _scf
 
 
-def nuclear_energy(charges, r, argnums):
+def nuclear_energy(charges, r, argnums=None):
     r"""Return a function that computes the nuclear-repulsion energy.
 
     The nuclear-repulsion energy is computed as
@@ -215,7 +215,9 @@ def nuclear_energy(charges, r, argnums):
         Returns:
             array[float]: nuclear-repulsion energy
         """
-        if getattr(r, "requires_grad", False) or argnums[0]:
+        local_argnums = argnums if argnums is not None else [False, False, False]
+
+        if getattr(r, "requires_grad", False) or local_argnums[0]:
             coor = args[0]
         else:
             coor = r

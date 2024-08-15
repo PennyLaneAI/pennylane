@@ -244,9 +244,10 @@ def test_nuclear_energy(symbols, geometry, e_ref):
     r"""Test that nuclear_energy returns the correct energy."""
     mol = qchem.Molecule(symbols, geometry)
     args = [mol.coordinates]
-    e = qchem.nuclear_energy(mol.nuclear_charges, mol.coordinates, argnums=[False, False, False])(
-        *args
-    )
+    e = qchem.nuclear_energy(
+        mol.nuclear_charges,
+        mol.coordinates,
+    )(*args)
     assert np.allclose(e, e_ref)
 
 
@@ -271,7 +272,10 @@ def test_nuclear_energy_gradient(symbols, geometry, g_ref):
     mol = qchem.Molecule(symbols, geometry)
     args = [mol.coordinates]
     g = qml.grad(
-        qchem.nuclear_energy(mol.nuclear_charges, mol.coordinates, argnums=[False, False, False])
+        qchem.nuclear_energy(
+            mol.nuclear_charges,
+            mol.coordinates,
+        )
     )(*args)
     assert np.allclose(g, g_ref)
 

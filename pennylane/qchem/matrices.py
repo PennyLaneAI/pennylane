@@ -61,7 +61,7 @@ def mol_density_matrix(n_electron, c):
     return p
 
 
-def overlap_matrix(basis_functions, argnums):
+def overlap_matrix(basis_functions, argnums=None):
     r"""Return a function that computes the overlap matrix for a given set of basis functions.
 
     Args:
@@ -94,12 +94,13 @@ def overlap_matrix(basis_functions, argnums):
         """
         n = len(basis_functions)
         matrix = qml.math.eye(n)
+        local_argnums = argnums if argnums is not None else [False, False, False]
 
         for (i, a), (j, b) in it.combinations(enumerate(basis_functions), r=2):
             args_ab = []
             if args:
                 args_ab.extend([arg[i], arg[j]] for arg in args)
-            integral = overlap_integral(a, b, argnums, normalize=False)(*args_ab)
+            integral = overlap_integral(a, b, local_argnums, normalize=False)(*args_ab)
 
             o = qml.math.zeros((n, n))
             o[i, j] = o[j, i] = 1.0
@@ -110,7 +111,7 @@ def overlap_matrix(basis_functions, argnums):
     return overlap
 
 
-def moment_matrix(basis_functions, order, idx, argnums):
+def moment_matrix(basis_functions, order, idx, argnums=None):
     r"""Return a function that computes the multipole moment matrix for a set of basis functions.
 
     Args:
@@ -144,6 +145,7 @@ def moment_matrix(basis_functions, order, idx, argnums):
         Returns:
             array[array[float]]: the multipole moment matrix
         """
+        local_argnums = argnums if argnums is not None else [False, False, False]
         n = len(basis_functions)
         matrix = qml.math.zeros((n, n))
 
@@ -151,7 +153,7 @@ def moment_matrix(basis_functions, order, idx, argnums):
             args_ab = []
             if args:
                 args_ab.extend([arg[i], arg[j]] for arg in args)
-            integral = moment_integral(a, b, order, idx, argnums, normalize=False)(*args_ab)
+            integral = moment_integral(a, b, order, idx, local_argnums, normalize=False)(*args_ab)
 
             o = qml.math.zeros((n, n))
             o[i, j] = o[j, i] = 1.0
@@ -162,7 +164,7 @@ def moment_matrix(basis_functions, order, idx, argnums):
     return _moment_matrix
 
 
-def kinetic_matrix(basis_functions, argnums):
+def kinetic_matrix(basis_functions, argnums=None):
     r"""Return a function that computes the kinetic matrix for a given set of basis functions.
 
     Args:
@@ -193,6 +195,7 @@ def kinetic_matrix(basis_functions, argnums):
         Returns:
             array[array[float]]: the kinetic matrix
         """
+        local_argnums = argnums if argnums is not None else [False, False, False]
         n = len(basis_functions)
         matrix = qml.math.zeros((n, n))
 
@@ -200,7 +203,7 @@ def kinetic_matrix(basis_functions, argnums):
             args_ab = []
             if args:
                 args_ab.extend([arg[i], arg[j]] for arg in args)
-            integral = kinetic_integral(a, b, argnums, normalize=False)(*args_ab)
+            integral = kinetic_integral(a, b, local_argnums, normalize=False)(*args_ab)
 
             o = qml.math.zeros((n, n))
             o[i, j] = o[j, i] = 1.0
@@ -211,7 +214,7 @@ def kinetic_matrix(basis_functions, argnums):
     return kinetic
 
 
-def attraction_matrix(basis_functions, charges, r, argnums):
+def attraction_matrix(basis_functions, charges, r, argnums=None):
     r"""Return a function that computes the electron-nuclear attraction matrix for a given set of
     basis functions.
 
@@ -245,6 +248,8 @@ def attraction_matrix(basis_functions, charges, r, argnums):
         Returns:
             array[array[float]]: the electron-nuclear attraction matrix
         """
+        local_argnums = argnums if argnums is not None else [False, False, False]
+
         n = len(basis_functions)
         matrix = qml.math.zeros((n, n))
         for (i, a), (j, b) in it.combinations_with_replacement(enumerate(basis_functions), r=2):
@@ -252,24 +257,25 @@ def attraction_matrix(basis_functions, charges, r, argnums):
             if args:
                 args_ab = []
 
-                if getattr(r, "requires_grad", False) or argnums[0]:
+                if getattr(r, "requires_grad", False) or local_argnums[0]:
                     args_ab.extend([arg[i], arg[j]] for arg in args[1:])
                 else:
                     args_ab.extend([arg[i], arg[j]] for arg in args)
 
                 for k, c in enumerate(r):
-                    if getattr(c, "requires_grad", False) or argnums[0]:
+                    if getattr(c, "requires_grad", False) or local_argnums[0]:
                         args_ab = [args[0][k]] + args_ab
                     integral = integral - charges[k] * attraction_integral(
                         c, a, b, argnums, normalize=False
                     )(*args_ab)
-                    if getattr(c, "requires_grad", False) or argnums[0]:
+                    if getattr(c, "requires_grad", False) or local_argnums[0]:
                         args_ab = args_ab[1:]
             else:
                 for k, c in enumerate(r):
                     integral = (
                         integral
-                        - charges[k] * attraction_integral(c, a, b, argnums, normalize=False)()
+                        - charges[k]
+                        * attraction_integral(c, a, b, local_argnums, normalize=False)()
                     )
 
             o = qml.math.zeros((n, n))
@@ -281,7 +287,7 @@ def attraction_matrix(basis_functions, charges, r, argnums):
     return attraction
 
 
-def repulsion_tensor(basis_functions, argnums):
+def repulsion_tensor(basis_functions, argnums=None):
     r"""Return a function that computes the electron repulsion tensor for a given set of basis
     functions.
 
@@ -319,6 +325,7 @@ def repulsion_tensor(basis_functions, argnums):
         Returns:
             array[array[float]]: the electron repulsion tensor
         """
+        local_argnums = argnums if argnums is not None else [False, False, False]
         n = len(basis_functions)
         tensor = qml.math.zeros((n, n, n, n))
         e_calc = qml.math.full((n, n, n, n), np.nan)
@@ -333,7 +340,7 @@ def repulsion_tensor(basis_functions, argnums):
                     b,
                     c,
                     d,
-                    argnums,
+                    local_argnums,
                     normalize=False,
                 )(*args_abcd)
 
@@ -358,7 +365,7 @@ def repulsion_tensor(basis_functions, argnums):
     return repulsion
 
 
-def core_matrix(basis_functions, charges, r, argnums):
+def core_matrix(basis_functions, charges, r, argnums=None):
     r"""Return a function that computes the core matrix for a given set of basis functions.
 
     The core matrix is computed as a sum of the kinetic and electron-nuclear attraction matrices.
@@ -393,12 +400,14 @@ def core_matrix(basis_functions, charges, r, argnums):
         Returns:
             array[array[float]]: the core matrix
         """
-        if getattr(r, "requires_grad", False) or argnums[0]:
-            t = kinetic_matrix(basis_functions, argnums)(*args[1:])
-        else:
-            t = kinetic_matrix(basis_functions, argnums)(*args)
+        local_argnums = argnums if argnums is not None else [False, False, False]
 
-        a = attraction_matrix(basis_functions, charges, r, argnums)(*args)
+        if getattr(r, "requires_grad", False) or local_argnums[0]:
+            t = kinetic_matrix(basis_functions, local_argnums)(*args[1:])
+        else:
+            t = kinetic_matrix(basis_functions, local_argnums)(*args)
+
+        a = attraction_matrix(basis_functions, charges, r, local_argnums)(*args)
         return t + a
 
     return core
