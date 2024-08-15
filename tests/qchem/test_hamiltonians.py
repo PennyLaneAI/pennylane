@@ -18,7 +18,7 @@ Unit tests for functions needed for computing the Hamiltonian.
 import pytest
 
 import pennylane as qml
-from pennylane import Identity, PauliX, PauliY, PauliZ, I, X, Y, Z
+from pennylane import I, X, Y, Z
 from pennylane import numpy as np
 from pennylane import qchem
 from pennylane.fermi import from_string
