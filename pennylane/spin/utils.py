@@ -1,4 +1,24 @@
+# Copyright 2018-2024 Xanadu Quantum Technologies Inc.
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""
+This module contains helper functions to create 
+:class:`~pennylane.spin.lattice` objects.
+"""
 import numpy as np
+
+# pylint: disable=too-many-arguments
+# pylint: disable=use-a-generator
 
 
 def map_vertices(basis_coords, sl, L, basis):
@@ -25,7 +45,7 @@ def map_vertices(basis_coords, sl, L, basis):
 
 
 def get_custom_edges(
-    unit_cell, L, basis, boundary_condition, atol, lattice_points, n_sites, custom_edges
+    unit_cell, L, basis, boundary_condition, lattice_points, n_sites, custom_edges
 ):
     """Generates the edges described in `custom_edges` for all unit cells."""
 
@@ -54,12 +74,12 @@ def get_custom_edges(
 
         # Unit cells of starting points
         edge_ranges = []
-        for i in range(len(L)):
+        for i, Li in enumerate(L):
             if boundary_condition[i]:
-                edge_ranges.append(np.arange(0, L[i]))
+                edge_ranges.append(np.arange(0, Li))
             else:
                 edge_ranges.append(
-                    np.arange(np.maximum(0, -d_cell[i]), L[i] - np.maximum(0, d_cell[i]))
+                    np.arange(np.maximum(0, -d_cell[i]), Li - np.maximum(0, d_cell[i]))
                 )
 
         start_grid = np.meshgrid(*edge_ranges, indexing="ij")

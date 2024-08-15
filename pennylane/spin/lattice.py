@@ -1,11 +1,45 @@
+# Copyright 2018-2024 Xanadu Quantum Technologies Inc.
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""
+This module contains functions and classes to create a
+:class:`~pennylane.spin.lattice` object. This object stores all
+the necessary information about a lattice.
+"""
+
 import numpy as np
-import scipy
 from scipy.spatial import cKDTree
-from scipy.sparse import find, triu
 from .utils import map_vertices, get_custom_edges
+
+# pylint: disable=too-many-arguments, too-many-instance-attributes
 
 
 class Lattice:
+    r"""Constructs a Lattice object.
+
+    Args:
+       L: Number of unit cells in a direction, it is a list depending on the dimensions of the lattice.
+       unit_cell: Primitive vectors for the lattice.
+       basis: Initial positions of spins.
+       boundary_condition: defines boundary conditions, boolean or series of bools with dimensions same as L.
+       neighbour_order: Range of neighbours a spin interacts with.
+       custom_edges: List of edges in a unit cell along with the operations associated with them.
+       distance_tol: Distance below which spatial points are considered equal for the purpose of identifying nearest neighbours.
+
+    Returns:
+       Lattice object
+    """
+
     def __init__(
         self,
         L,
@@ -16,16 +50,6 @@ class Lattice:
         custom_edges=None,
         distance_tol=1e-5,
     ):
-        r"""Constructs a Lattice object.
-        Args:
-        L: Number of unit cells in a direction, it is a list depending on the dimensions of the lattice.
-        unit_cell: Primitive vectors for the lattice.
-        basis: Initial positions of spins.
-        boundary_conditions: Boundary conditions, boolean or series of bools with dimensions same as L.
-        neighbour_order: Range of neighbours a spin interacts with.
-        custom_edges: List of edges in a unit cell along with the operations associated with them.
-        distance_tol: Distance below which spatial points are considered equal for the purpose of identifying nearest neighbours.
-        """
 
         self.L = np.asarray(L)
         self.n_dim = len(L)
@@ -40,7 +64,6 @@ class Lattice:
             boundary_condition = [boundary_condition for _ in range(self.n_dim)]
 
         self.boundary_condition = boundary_condition
-        self.custom_edges = custom_edges
         self.test_input_accuracy()
 
         if True in self.boundary_condition:
@@ -50,10 +73,10 @@ class Lattice:
 
         self.coords, self.sl_coords, self.lattice_points = self.generate_grid(extra_shells)
 
-        if self.custom_edges is None:
+        if custom_edges is None:
             cutoff = neighbour_order * np.linalg.norm(self.unit_cell, axis=1).max() + distance_tol
             self.identify_neighbours(cutoff, neighbour_order)
-            self.generate_true_edges(neighbour_order)
+            self.generate_true_edges()
         else:
             if neighbour_order > 1:
                 raise ValueError(
@@ -64,13 +87,14 @@ class Lattice:
                 self.L,
                 self.basis,
                 self.boundary_condition,
-                distance_tol,
                 self.lattice_points,
                 self.n_sites,
-                self.custom_edges,
+                custom_edges,
             )
 
     def test_input_accuracy(self):
+        r"""Tests the accuracy of the input provided"""
+
         for l in self.L:
             if (not isinstance(l, np.int64)) or l <= 0:
                 raise TypeError("Argument `L` must be a list of positive integers")
@@ -128,7 +152,9 @@ class Lattice:
 
         self.edges = [sorted(list(zip(row[ii == k], col[ii == k]))) for k in range(neighbour_order)]
 
-    def generate_true_edges(self, neighbour_order):
+    def generate_true_edges(self):
+        r"""Modifies the edges to remove hidden nodes and create connections based on boundary_conditions"""
+
         map = map_vertices(self.coords, self.sl_coords, self.L, self.basis)
         colored_edges = []
         for k, edge in enumerate(self.edges):
@@ -144,6 +170,8 @@ class Lattice:
         self.edges = colored_edges
 
     def add_edge(self, edge_index):
+        r"""Adds a specific edge based on the site index without translating it"""
+
         if len(edge_index) == 2:
             edge_index = (*edge_index, 0)
 
