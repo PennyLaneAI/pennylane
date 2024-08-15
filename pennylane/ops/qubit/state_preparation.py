@@ -129,8 +129,14 @@ class BasisState(StatePrepBase):
 
 
 class StatePrep(StatePrepBase):
-    r"""StatePrep(state, wires)
+    r"""StatePrep(state, wires, pad_with, nomralize)
     Prepare subsystems using the given ket vector in the computational basis.
+
+    By setting ``pad_with`` to a real or complex number, ``state`` is automatically padded to dimension
+    :math:`2^n` where :math:`n` is the number of qubits used in the embedding.
+
+    To represent a valid quantum state vector, the L2-norm of ``state`` must be one.
+    The argument ``normalize`` can be set to ``True`` to automatically normalize the features.
 
     **Details:**
 
@@ -153,6 +159,8 @@ class StatePrep(StatePrepBase):
     Args:
         state (array[complex]): a state vector of size 2**len(wires)
         wires (Sequence[int] or int): the wire(s) the operation acts on
+        pad_with (float or complex): the value to pad the state vector with
+        normalize (bool): whether to normalize the state vector
         id (str): custom label given to an operator instance,
             can be useful for some applications where the instance has to be identified.
 

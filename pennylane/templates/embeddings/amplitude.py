@@ -36,11 +36,6 @@ class AmplitudeEmbedding(StatePrep):
 
         On some devices, ``AmplitudeEmbedding`` must be the first operation of a quantum circuit.
 
-    .. warning::
-
-        At the moment, the ``features`` argument is **not differentiable** when using the template, and
-        gradients with respect to the features cannot be computed by PennyLane.
-
     Args:
         features (tensor_like): input tensor of dimension ``(2^len(wires),)``, or less if `pad_with` is specified
         wires (Any or Iterable[Any]): wires that the template acts on
