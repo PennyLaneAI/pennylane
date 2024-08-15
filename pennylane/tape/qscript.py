@@ -171,12 +171,12 @@ class QuantumScript:
 
     def __init__(
         self,
-        ops: Iterable[Operator] = (),
-        measurements: Iterable[MeasurementProcess] = (),
+        ops: Optional[Iterable[Operator]] = None,
+        measurements: Optional[Iterable[MeasurementProcess]] = None,
         shots: Optional[ShotsLike] = None,
         trainable_params: Optional[Sequence[int]] = None,
     ):
-        self._ops = list(ops)
+        self._ops = [] if ops is None else list(ops)
         self._measurements = [] if measurements is None else list(measurements)
         self._shots = Shots(shots)
 

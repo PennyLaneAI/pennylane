@@ -478,7 +478,7 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
     """threading.RLock: Used to synchronize appending to/popping from global QueueingContext."""
 
     def __init__(
-        self, ops=(), measurements=None, shots=None, trainable_params=None
+        self, ops=None, measurements=None, shots=None, trainable_params=None
     ):  # pylint: disable=too-many-arguments
         AnnotatedQueue.__init__(self)
         QuantumScript.__init__(self, ops, measurements, shots, trainable_params=trainable_params)
