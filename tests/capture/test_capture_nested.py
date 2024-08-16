@@ -95,6 +95,8 @@ def test_nested_cond_for_while_loop(upper_bound, arg):
         def loop_fn(i):
             qml.Hadamard(wires=i)
 
+        loop_fn()
+
     def elif_fn(arg):
         qml.RY(arg**2, wires=[2])
 
