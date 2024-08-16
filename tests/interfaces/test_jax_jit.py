@@ -898,7 +898,9 @@ class TestVectorValuedJIT:
 def test_jit_allcounts():
     """Test jitting with counts with all_outcomes == True."""
 
-    tape = qml.tape.QuantumScript([], [qml.counts(wires=(0, 1), all_outcomes=True)], shots=50)
+    tape = qml.tape.QuantumScript(
+        [qml.RX(0, 0)], [qml.counts(wires=(0, 1), all_outcomes=True)], shots=50
+    )
     device = qml.device("default.qubit")
 
     res = jax.jit(qml.execute, static_argnums=(1, 2))((tape,), device, qml.gradients.param_shift)[0]
