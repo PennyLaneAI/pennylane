@@ -197,6 +197,9 @@
   relaxation to occur during longer measurements. The trit flip error represents misclassification during readout.
   [(#5842)](https://github.com/PennyLaneAI/pennylane/pull/5842)
 
+* Added `is_leaf` parameter to function `flatten` in `pytrees.pytrees.py`. This is to allow node flattening to be stopped for any node where the `is_leaf` Optional argument evaluates to being true.
+  [(#6083)](https://github.com/PennyLaneAI/pennylane/issues/6083)
+
 <h3>Breaking changes 💔</h3>
 
 * `GlobalPhase` is considered non-differentiable with tape transforms.
@@ -338,6 +341,7 @@ Tarun Kumar Allamsetty,
 Guillermo Alonso,
 Utkarsh Azad,
 Gabriel Bottrill,
+Tonmoy T. Bhattacharya,
 Ahmed Darwish,
 Astral Cai,
 Yushao Chen,
