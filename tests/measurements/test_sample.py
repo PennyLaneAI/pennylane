@@ -16,7 +16,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.measurements import MeasurementShapeError, Sample, Shots
+from pennylane.measurements import MeasurementShapeError, Sample
 from pennylane.operation import EigvalsUndefinedError, Operator
 
 # pylint: disable=protected-access, no-member, too-many-public-methods
@@ -39,10 +39,10 @@ class TestSample:
         output = circuit()
 
         assert len(output) == 2
-        assert circuit._qfunc_output[0].shape(dev, Shots(n_sample)) == (
+        assert circuit._qfunc_output[0].shape(shots=n_sample, num_device_wires=2) == (
             (n_sample,) if not n_sample == 1 else ()
         )
-        assert circuit._qfunc_output[1].shape(dev, Shots(n_sample)) == (
+        assert circuit._qfunc_output[1].shape(shots=n_sample, num_device_wires=2) == (
             (n_sample,) if not n_sample == 1 else ()
         )
 
@@ -62,7 +62,7 @@ class TestSample:
 
         assert len(result) == 3
         assert np.array_equal(result[0].shape, (n_sample,))
-        assert circuit._qfunc_output[0].shape(dev, Shots(n_sample)) == (n_sample,)
+        assert circuit._qfunc_output[0].shape(shots=n_sample, num_device_wires=3) == (n_sample,)
         assert isinstance(result[1], np.float64)
         assert isinstance(result[2], np.float64)
 
@@ -81,7 +81,7 @@ class TestSample:
 
         assert isinstance(result, np.ndarray)
         assert np.array_equal(result.shape, (n_sample,))
-        assert circuit._qfunc_output.shape(dev, Shots(n_sample)) == (n_sample,)
+        assert circuit._qfunc_output.shape(shots=n_sample, num_device_wires=1) == (n_sample,)
 
     def test_multi_wire_sample_regular_shape(self):
         """Test the return type and shape of sampling multiple wires
@@ -96,9 +96,9 @@ class TestSample:
 
         result = circuit()
 
-        assert circuit._qfunc_output[0].shape(dev, Shots(n_sample)) == (n_sample,)
-        assert circuit._qfunc_output[1].shape(dev, Shots(n_sample)) == (n_sample,)
-        assert circuit._qfunc_output[2].shape(dev, Shots(n_sample)) == (n_sample,)
+        assert circuit._qfunc_output[0].shape(shots=n_sample, num_device_wires=3) == (n_sample,)
+        assert circuit._qfunc_output[1].shape(shots=n_sample, num_device_wires=3) == (n_sample,)
+        assert circuit._qfunc_output[2].shape(shots=n_sample, num_device_wires=3) == (n_sample,)
 
         # If all the dimensions are equal the result will end up to be a proper rectangular array
         assert isinstance(result, tuple)
@@ -347,14 +347,12 @@ class TestSample:
 
     def test_shape_no_shots_error(self):
         """Test that the appropriate error is raised with no shots are specified"""
-        dev = qml.device("default.qubit", wires=2, shots=None)
-        shots = Shots(None)
         mp = qml.sample()
 
         with pytest.raises(
             MeasurementShapeError, match="Shots are required to obtain the shape of the measurement"
         ):
-            _ = mp.shape(dev, shots)
+            _ = mp.shape(shots=None)
 
     @pytest.mark.parametrize(
         "obs",
@@ -368,34 +366,15 @@ class TestSample:
     def test_shape(self, obs):
         """Test that the shape is correct."""
         shots = 10
-        dev = qml.device("default.qubit", wires=3, shots=shots)
         res = qml.sample(obs) if obs is not None else qml.sample()
         expected = (shots,) if obs is not None else (shots, 3)
-        assert res.shape(dev, Shots(shots)) == expected
+        assert res.shape(10, 3) == expected
 
     @pytest.mark.parametrize("n_samples", (1, 10))
     def test_shape_wires(self, n_samples):
         """Test that the shape is correct when wires are provided."""
-        dev = qml.device("default.qubit", wires=3, shots=n_samples)
         mp = qml.sample(wires=(0, 1))
-        assert mp.shape(dev, Shots(n_samples)) == (n_samples, 2) if n_samples != 1 else (2,)
-
-    @pytest.mark.parametrize(
-        "obs",
-        [
-            None,
-            qml.PauliZ(0),
-            qml.Hermitian(np.diag([1, 2]), 0),
-            qml.Hermitian(np.diag([1.0, 2.0]), 0),
-        ],
-    )
-    def test_shape_shot_vector(self, obs):
-        """Test that the shape is correct with the shot vector too."""
-        shot_vector = (1, 2, 3)
-        dev = qml.device("default.qubit", wires=3, shots=shot_vector)
-        res = qml.sample(obs) if obs is not None else qml.sample()
-        expected = ((), (2,), (3,)) if obs is not None else ((3,), (2, 3), (3, 3))
-        assert res.shape(dev, Shots(shot_vector)) == expected
+        assert mp.shape(n_samples, 3) == (n_samples, 2) if n_samples != 1 else (2,)
 
     def test_shape_shot_vector_obs(self):
         """Test that the shape is correct with the shot vector and a observable too."""
@@ -494,9 +473,7 @@ def test_jitting_with_sampling_on_subset_of_wires(samples):
 
     expected = (2,) if samples == 1 else (samples, 2)
     assert results.shape == expected
-    assert (
-        circuit._qfunc_output.shape(dev, Shots(samples)) == (samples, 2) if samples != 1 else (2,)
-    )
+    assert circuit._qfunc_output.shape(samples, 3) == (samples, 2) if samples != 1 else (2,)
 
 
 @pytest.mark.jax

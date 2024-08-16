@@ -18,7 +18,6 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.measurements import Shots
 
 # pylint: disable=dangerous-default-value, too-many-arguments
 
@@ -120,20 +119,6 @@ class TestClassicalShadow:
     shots_list = [1, 100]
     seed_recipes_list = [None, 74]  # random seed
 
-    @pytest.mark.parametrize("shots", shots_list)
-    @pytest.mark.parametrize("seed", seed_recipes_list)
-    def test_measurement_process_shape(self, wires, shots, seed):
-        """Test that the shape of the MeasurementProcess instance is correct"""
-        dev = qml.device("default.qubit.legacy", wires=wires, shots=shots)
-        shots_obj = Shots(shots)
-        res = qml.classical_shadow(wires=range(wires), seed=seed)
-        assert res.shape(dev, shots_obj) == (2, shots, wires)
-
-        # test an error is raised when device is None
-        msg = "Shots must be specified to obtain the shape of a classical shadow measurement"
-        with pytest.raises(qml.measurements.MeasurementShapeError, match=msg):
-            res.shape(dev, Shots(None))
-
     def test_shape_matches(self, wires):
         """Test that the shape of the MeasurementProcess matches the shape
         of the tape execution"""
@@ -143,9 +128,7 @@ class TestClassicalShadow:
         circuit.construct((), {})
 
         res = qml.execute([circuit.tape], circuit.device, None)[0]
-        expected_shape = qml.classical_shadow(wires=range(wires)).shape(
-            circuit.device, Shots(shots)
-        )
+        expected_shape = qml.classical_shadow(wires=range(wires)).shape(shots, wires)
 
         assert res.shape == expected_shape
 
@@ -286,14 +269,6 @@ def qft_circuit(wires, shots=10000, interface="autograd"):
 
 @pytest.mark.autograd
 class TestExpvalMeasurement:
-    @pytest.mark.parametrize("wires", [1, 2])
-    @pytest.mark.parametrize("shots", [1, 10])
-    def test_measurement_process_shape(self, wires, shots):
-        """Test that the shape of the MeasurementProcess instance is correct"""
-        dev = qml.device("default.qubit.legacy", wires=wires, shots=shots)
-        H = qml.PauliZ(0)
-        res = qml.shadow_expval(H)
-        assert len(res.shape(dev, Shots(shots))) == 0
 
     def test_shape_matches(self):
         """Test that the shape of the MeasurementProcess matches the shape
@@ -306,7 +281,7 @@ class TestExpvalMeasurement:
         circuit.construct((H,), {})
 
         res = qml.execute([circuit.tape], circuit.device, None)[0]
-        expected_shape = qml.shadow_expval(H).shape(circuit.device, Shots(shots))
+        expected_shape = qml.shadow_expval(H).shape(shots, len(circuit.device.wires))
 
         assert res.shape == expected_shape
 
