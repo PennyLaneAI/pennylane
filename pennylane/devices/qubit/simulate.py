@@ -638,11 +638,11 @@ def split_circuit_at_mcms(circuit):
     original circuit) where the terminal measurements probe the MCM statistics. Only
     the last segment retains the original terminal measurements.
 
-        Args:
-            circuit (QuantumTape): The circuit to simulate
+    Args:
+        circuit (QuantumTape): The circuit to simulate
 
-        Returns:
-            Sequence[QuantumTape]: Circuit segments.
+    Returns:
+        Sequence[QuantumTape]: Circuit segments.
     """
 
     mcm_gen = ((i, op) for i, op in enumerate(circuit) if isinstance(op, MidMeasureMP))
