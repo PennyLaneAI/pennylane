@@ -81,9 +81,10 @@
 * `QNGOptimizer` now supports cost functions with multiple arguments, updating each argument independently.
   [(#5926)](https://github.com/PennyLaneAI/pennylane/pull/5926)
 
-* `qml.for_loop` can now be captured into plxpr.
+* `qml.for_loop` and `qml.while_loop` can now be captured into plxpr.
   [(#6041)](https://github.com/PennyLaneAI/pennylane/pull/6041)
   [(#6064)](https://github.com/PennyLaneAI/pennylane/pull/6064)
+  [(#)](https://github.com/PennyLaneAI/pennylane/pull/)
 
 * `qml.for_loop` now supports `range`-like syntax with default `step=1`.
   [(#6068)](https://github.com/PennyLaneAI/pennylane/pull/6068)
