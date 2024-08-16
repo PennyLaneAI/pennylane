@@ -33,7 +33,7 @@ import pennylane as qml
 from pennylane.ops import Identity
 
 from .._version import __version__
-from ._device import Device
+from ._legacy_device import Device
 
 # tolerance for numerical errors
 tolerance = 1e-10

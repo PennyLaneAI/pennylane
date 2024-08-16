@@ -169,7 +169,7 @@ from .default_tensor import DefaultTensor
 from .null_qubit import NullQubit
 from .default_qutrit import DefaultQutrit
 from .default_qutrit_mixed import DefaultQutritMixed
-from ._device import Device as LegacyDevice
+from ._legacy_device import Device as LegacyDevice
 from ._qubit_device import QubitDevice
 from ._qutrit_device import QutritDevice
 

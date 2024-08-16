@@ -57,7 +57,7 @@ from pennylane.resource import Resources
 from pennylane.tape import QuantumTape
 from pennylane.wires import Wires
 
-from ._device import Device
+from ._legacy_device import Device
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
