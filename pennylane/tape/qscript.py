@@ -763,7 +763,7 @@ class QuantumScript:
             dependent on the device used for execution.
 
         Args:
-            device (pennylane.Device): the device that will be used for the script execution
+            device (pennylane.devices.Device): the device that will be used for the script execution
 
         Returns:
             Union[tuple[int], tuple[tuple[int]]]: the output shape(s) of the quantum script result
@@ -781,27 +781,22 @@ class QuantumScript:
             >>> qs.shape(dev)
             ((4,), (), (4,))
         """
-        shots = self.shots
-        # even with the legacy device interface, the shots on the tape will agree with the shots used by the device for the execution
+        num_device_wires = len(device.wires) if device.wires else len(self.wires)
 
-        if len(shots.shot_vector) > 1 and self.batch_size is not None:
-            raise NotImplementedError(
-                "Parameter broadcasting when using a shot vector is not supported yet."
-            )
+        def get_shape(mp, _shots):
+            # depends on num_device_wires and self.batch_size from closure
+            standard_shape = mp.shape(shots=_shots, num_device_wires=num_device_wires)
+            if self.batch_size:
+                return (self.batch_size, *standard_shape)
+            return standard_shape
 
-        shapes = tuple(meas_process.shape(device, shots) for meas_process in self.measurements)
+        shape = []
+        for s in self.shots if self.shots else [None]:
+            shots_shape = tuple(get_shape(mp, s) for mp in self.measurements)
+            shots_shape = shots_shape[0] if len(shots_shape) == 1 else tuple(shots_shape)
+            shape.append(shots_shape)
 
-        if self.batch_size is not None:
-            shapes = tuple((self.batch_size,) + shape for shape in shapes)
-
-        if len(shapes) == 1:
-            return shapes[0]
-
-        if shots.num_copies > 1:
-            # put the shot vector axis before the measurement axis
-            shapes = tuple(zip(*shapes))
-
-        return shapes
+        return tuple(shape) if self.shots.has_partitioned_shots else shape[0]
 
     @property
     def numeric_type(self):

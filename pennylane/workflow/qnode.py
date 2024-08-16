@@ -27,7 +27,7 @@ import pennylane as qml
 from pennylane import Device
 from pennylane.debugging import pldb_device_manager
 from pennylane.logging import debug_logger
-from pennylane.measurements import CountsMP, MidMeasureMP, Shots
+from pennylane.measurements import MidMeasureMP, Shots
 from pennylane.tape import QuantumScript, QuantumTape
 from pennylane.transforms.core import TransformContainer, TransformDispatcher, TransformProgram
 
@@ -1023,11 +1023,6 @@ class QNode:
 
         params = self.tape.get_parameters(trainable_only=False)
         self.tape.trainable_params = qml.math.get_trainable_indices(params)
-
-        if any(isinstance(m, CountsMP) for m in self.tape.measurements) and any(
-            qml.math.is_abstract(a) for a in args
-        ):
-            raise qml.QuantumFunctionError("Can't JIT a quantum function that returns counts.")
 
         if isinstance(self._qfunc_output, qml.numpy.ndarray):
             measurement_processes = tuple(self.tape.measurements)
