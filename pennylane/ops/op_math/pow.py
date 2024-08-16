@@ -348,6 +348,26 @@ class Pow(ScalarSymbolicOp):
         return isinstance(self.z, int)
 
     def adjoint(self):
+        """Create an operation that is the adjoint of this one.
+
+        Adjointed operations are the conjugated and transposed version of the
+        original operation. Adjointed ops are equivalent to the inverted operation for unitary
+        gates.
+
+        .. warning::
+
+            The adjoint of a fractional power of an operator is not well-defined due to branch cuts in the power function.
+            Therefore, an ``AdjointUndefinedError`` is raised when the power ``z`` is not an integer.
+
+            The integer power check is a type check, so that floats like ``2.0`` are not considered to be integers.
+
+        Returns:
+            The adjointed operation.
+
+        Raises:
+            AdjointUndefinedError: If the exponent ``z`` is not of type ``int``.
+
+        """
         if isinstance(self.z, int):
             return Pow(base=qml.adjoint(self.base), z=self.z)
         raise AdjointUndefinedError(

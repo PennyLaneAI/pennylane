@@ -371,8 +371,7 @@ class TestQNode:
     def test_some_postselection_qnode(self, phi, shots, reduce_postselected, tol, tol_stochastic):
         """Test that a qnode with some mid-circuit measurements with postselection
         is transformed correctly by defer_measurements"""
-        np.random.seed(822)
-        dev = DefaultQubit()
+        dev = DefaultQubit(seed=822)
 
         dm_transform = qml.defer_measurements
         if reduce_postselected is not None:
@@ -420,8 +419,6 @@ class TestQNode:
         """Test that a qnode with all mid-circuit measurements with postselection
         is transformed correctly by defer_measurements"""
         dev = DefaultQubit()
-
-        np.random.seed(None)
 
         # Initializing mid circuit measurements here so that id can be controlled (affects
         # wire ordering for qml.cond)

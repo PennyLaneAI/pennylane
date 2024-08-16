@@ -17,8 +17,9 @@ This module contains the qml.bind_new_parameters function.
 # pylint: disable=missing-docstring
 
 import copy
+from collections.abc import Sequence
 from functools import singledispatch
-from typing import Sequence, Union
+from typing import Union
 
 import pennylane as qml
 from pennylane.operation import Operator, Tensor

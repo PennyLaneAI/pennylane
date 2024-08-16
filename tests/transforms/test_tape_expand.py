@@ -17,6 +17,8 @@ Unit tests for tape expansion stopping criteria and expansion functions.
 # pylint: disable=too-few-public-methods, invalid-unary-operand-type, no-member,
 # pylint: disable=arguments-differ, arguments-renamed,
 
+import warnings
+
 import numpy as np
 import pytest
 
@@ -334,9 +336,8 @@ class TestExpandInvalidTrainable:
 
         assert new_tape.operations[0].name == "RZ"
         assert new_tape.operations[0].grad_method == "A"
-        assert new_tape.operations[1].name == "GlobalPhase"
-        assert new_tape.operations[2].name == "RY"
-        assert new_tape.operations[3].name == "CNOT"
+        assert new_tape.operations[1].name == "RY"
+        assert new_tape.operations[2].name == "CNOT"
 
     def test_nontrainable_nondiff(self, mocker):
         """Test that a circuit with non-differentiable
@@ -428,6 +429,21 @@ def custom_basic_entangler_layers(weights, wires, **kwargs):
 
 class TestCreateCustomDecompExpandFn:
     """Tests for the custom_decomps argument for devices"""
+
+    @pytest.fixture(scope="function", autouse=True)
+    def capture_warnings(self):
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+        ) as record:
+            yield
+
+            assert any(
+                "'expansion_strategy' attribute is deprecated" in str(w.message) for w in record
+            )
+
+        for w in record:
+            if "'expansion_strategy' attribute is deprecated" not in str(w.message):
+                warnings.warn(w.message, w.category)
 
     @pytest.mark.parametrize("device_name", ["default.qubit", "default.qubit.legacy"])
     def test_string_and_operator_allowed(self, device_name):
@@ -535,7 +551,12 @@ class TestCreateCustomDecompExpandFn:
         """Test that specifying a single custom decomposition works as expected."""
 
         custom_decomps = {"Hadamard": custom_hadamard, "CNOT": custom_cnot}
-        decomp_dev = qml.device(device_name, wires=2, custom_decomps=custom_decomps, decomp_depth=0)
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match="The decomp_depth argument is deprecated"
+        ):
+            decomp_dev = qml.device(
+                device_name, wires=2, custom_decomps=custom_decomps, decomp_depth=0
+            )
 
         @qml.qnode(decomp_dev, expansion_strategy="device")
         def circuit():
@@ -712,13 +733,16 @@ class TestCreateCustomDecompExpandFn:
         # not be further decomposed even though the custom decomposition is specified.
         custom_decomps = {"BasicEntanglerLayers": custom_basic_entangler_layers, "RX": custom_rx}
 
-        decomp_dev_2 = qml.device(
-            device_name, wires=2, custom_decomps=custom_decomps, decomp_depth=2
-        )
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match="The decomp_depth argument is deprecated"
+        ):
+            decomp_dev_2 = qml.device(
+                device_name, wires=2, custom_decomps=custom_decomps, decomp_depth=2
+            )
 
-        decomp_dev_3 = qml.device(
-            device_name, wires=2, custom_decomps=custom_decomps, decomp_depth=3
-        )
+            decomp_dev_3 = qml.device(
+                device_name, wires=2, custom_decomps=custom_decomps, decomp_depth=3
+            )
 
         def circuit():
             qml.BasicEntanglerLayers([[0.1, 0.2]], wires=[0, 1])
@@ -901,7 +925,7 @@ class TestCreateCustomDecompExpandFn:
             custom_decomps = {"MultiRZ": qml.MultiRZ.compute_decomposition}
             dev = qml.device("lightning.qubit", wires=2, custom_decomps=custom_decomps)
 
-            @qml.qnode(dev, diff_method="adjoint")
+            @qml.qnode(dev, diff_method="adjoint", expansion_strategy="gradient")
             def cost(theta):
                 qml.Hadamard(wires=0)
                 qml.Hadamard(wires=1)

@@ -17,16 +17,15 @@ of a qubit-based quantum tape.
 """
 from functools import partial
 
-# pylint: disable=unused-argument
-from typing import Callable, Sequence
-
 import numpy as np
 
 import pennylane as qml
 from pennylane import transform
 from pennylane.gradients.gradient_transform import _contract_qjac_with_cjac
 from pennylane.gradients.metric_tensor import _get_aux_wire
+from pennylane.tape import QuantumTapeBatch
 from pennylane.transforms.tape_expand import expand_invalid_trainable_hadamard_gradient
+from pennylane.typing import PostprocessingFn
 
 from .gradient_transform import (
     _all_zero_grad,
@@ -38,13 +37,15 @@ from .gradient_transform import (
     find_and_validate_gradient_methods,
 )
 
+# pylint: disable=unused-argument
+
 
 def _expand_transform_hadamard(
     tape: qml.tape.QuantumTape,
     argnum=None,
     aux_wire=None,
     device_wires=None,
-) -> (Sequence[qml.tape.QuantumTape], Callable):
+) -> tuple[QuantumTapeBatch, PostprocessingFn]:
     """Expand function to be applied before hadamard gradient."""
     expanded_tape = expand_invalid_trainable_hadamard_gradient(tape)
 
@@ -68,7 +69,7 @@ def hadamard_grad(
     argnum=None,
     aux_wire=None,
     device_wires=None,
-) -> (Sequence[qml.tape.QuantumTape], Callable):
+) -> tuple[QuantumTapeBatch, PostprocessingFn]:
     r"""Transform a circuit to compute the Hadamard test gradient of all gates
     with respect to their inputs.
 

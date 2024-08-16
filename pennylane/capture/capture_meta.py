@@ -32,6 +32,8 @@ class CaptureMeta(type):
 
     .. code-block::
 
+        qml.capture.enable()
+
         class AbstractMyObj(jax.core.AbstractValue):
             pass
 

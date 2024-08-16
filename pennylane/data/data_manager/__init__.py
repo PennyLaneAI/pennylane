@@ -16,13 +16,13 @@ Contains functions for querying available datasets and downloading
 them.
 """
 
-import typing
 import urllib.parse
+from collections.abc import Mapping, Iterable
 from concurrent.futures import FIRST_EXCEPTION, ThreadPoolExecutor, wait
 from functools import lru_cache
 from pathlib import Path
 from time import sleep
-from typing import List, Optional, Union
+from typing import Optional, Union
 
 from requests import get
 
@@ -58,7 +58,7 @@ def _get_data_struct():
 def _download_partial(
     s3_url: str,
     dest: Path,
-    attributes: Optional[typing.Iterable[str]],
+    attributes: Optional[Iterable[str]],
     overwrite: bool,
     block_size: int,
 ) -> None:
@@ -112,7 +112,7 @@ def _download_full(s3_url: str, dest: Path):
 def _download_dataset(
     data_path: DataPath,
     dest: Path,
-    attributes: Optional[typing.Iterable[str]],
+    attributes: Optional[Iterable[str]],
     block_size: int,
     force: bool = False,
 ) -> None:
@@ -136,7 +136,7 @@ def _download_dataset(
         _download_full(s3_url, dest=dest)
 
 
-def _validate_attributes(data_struct: dict, data_name: str, attributes: typing.Iterable[str]):
+def _validate_attributes(data_struct: dict, data_name: str, attributes: Iterable[str]):
     """Checks that ``attributes`` contains only valid attributes for the given
     ``data_name``. If any attributes do not exist, raise a ValueError."""
     invalid_attributes = [
@@ -155,12 +155,12 @@ def _validate_attributes(data_struct: dict, data_name: str, attributes: typing.I
 
 def load(  # pylint: disable=too-many-arguments
     data_name: str,
-    attributes: Optional[typing.Iterable[str]] = None,
+    attributes: Optional[Iterable[str]] = None,
     folder_path: Path = Path("./datasets/"),
     force: bool = False,
     num_threads: int = 50,
     block_size: int = 8388608,
-    **params: Union[ParamArg, str, List[str]],
+    **params: Union[ParamArg, str, list[str]],
 ):
     r"""Downloads the data if it is not already present in the directory and returns it as a list of
     :class:`~pennylane.data.Dataset` objects. For the full list of available datasets, please see
@@ -314,7 +314,7 @@ def list_datasets() -> dict:
         to Paths to a list of the parameters."""
         value = next(iter(foldermap.values()))
 
-        if not isinstance(value, typing.Mapping):
+        if not isinstance(value, Mapping):
             return sorted(foldermap.keys())
 
         return {param: remove_paths(foldermap[param]) for param in foldermap.keys()}

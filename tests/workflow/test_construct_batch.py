@@ -105,7 +105,7 @@ class TestTransformProgramGetter:
         p_none = get_transform_program(circuit, None)
         assert p_dev == p_default
         assert p_none == p_dev
-        assert len(p_dev) == 9
+        assert len(p_dev) == 8
         config = qml.devices.ExecutionConfig(interface=getattr(circuit, "interface", None))
         assert p_dev == p_grad + dev.preprocess(config)[0]
 
@@ -133,14 +133,14 @@ class TestTransformProgramGetter:
 
         dev = qml.device("default.qubit")
 
-        @qml.transforms.sum_expand
+        @qml.transforms.split_non_commuting
         @qml.qnode(dev, diff_method="adjoint", device_vjp=False)
         def circuit(x):
             qml.RX(x, 0)
             return qml.expval(qml.PauliZ(0))
 
         full_prog = get_transform_program(circuit)
-        assert len(full_prog) == 13
+        assert len(full_prog) == 12
 
         config = qml.devices.ExecutionConfig(
             interface=getattr(circuit, "interface", None),
@@ -150,7 +150,7 @@ class TestTransformProgramGetter:
         dev_program = dev.preprocess(config)[0]
 
         expected = TransformProgram()
-        expected.add_transform(qml.transforms.sum_expand)
+        expected.add_transform(qml.transforms.split_non_commuting)
         expected += dev_program
         assert full_prog == expected
 

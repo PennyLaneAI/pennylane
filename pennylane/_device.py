@@ -331,7 +331,7 @@ class Device(abc.ABC):
 
         >>> dev = device('my.device', wires=['b', 'a'])
         >>> dev.wire_map()
-        OrderedDict( [(<Wires = ['a']>, <Wires = [0]>), (<Wires = ['b']>, <Wires = [1]>)])
+        OrderedDict( [(Wires(['a']), Wires([0])), (Wires(['b']), Wires([1]))])
         """
         consecutive_wires = Wires(range(self.num_wires))
 

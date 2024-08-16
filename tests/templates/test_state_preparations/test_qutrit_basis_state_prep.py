@@ -58,7 +58,7 @@ class TestDecomposition:
         """Tests queue for simple cases."""
 
         op = qml.QutritBasisStatePreparation(basis_state, wires)
-        queue = op.expand().operations
+        queue = op.decomposition()
 
         for id, gate in enumerate(queue):
             assert gate.name == "TShift"

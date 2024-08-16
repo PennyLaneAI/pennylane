@@ -256,7 +256,7 @@ class QutritAmplitudeDamping(Channel):
                 \end{bmatrix}
 
     where :math:`\gamma_{10}, \gamma_{20}, \gamma_{21} \in [0, 1]` are the amplitude damping
-    probabilities for subspaces (0,1), (0,2), and (1,2) respectively.
+    probabilities for subspaces :math:`(0, 1)`, :math:`(0, 2)`, and :math:`(1, 2)` respectively.
 
     .. note::
 
@@ -394,8 +394,8 @@ class TritFlip(Channel):
         p_01 (float): The probability that a :math:`|0 \rangle \leftrightarrow |1 \rangle` trit flip error occurs.
         p_02 (float): The probability that a :math:`|0 \rangle \leftrightarrow |2 \rangle` trit flip error occurs.
         p_12 (float): The probability that a :math:`|1 \rangle \leftrightarrow |2 \rangle` trit flip error occurs.
-        wires (Sequence[int] or int): The wire the channel acts on
-        id (str or None): String representing the operation (optional)
+        wires (Sequence[int] or int): The wire the channel acts on.
+        id (str or None): String representing the operation (optional).
     """
 
     num_params = 3

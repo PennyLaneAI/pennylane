@@ -326,7 +326,7 @@ For example:
     from pennylane.wires import Wires
 
     wires = Wires(['auxiliary', 0, 1])
-    print(wires[0]) # <Wires = ['auxiliary']>
+    print(wires[0]) # Wires(['auxiliary'])
     print(wires.labels) # ('auxiliary', 0, 1)
 
 As shown in the section on :doc:`/introduction/circuits`, a device can be created with custom wire labels:
@@ -351,10 +351,10 @@ object and store it in their ``wires`` attribute.
 
 .. code-block:: python
 
-    print(dev.wires) #  <Wires = ['q11', 'q12', 'q21', 'q22']>
+    print(dev.wires) #  Wires(['q11', 'q12', 'q21', 'q22'])
 
     op = Gate2(wires=['q21','q11'])
-    print(op.wires) # <Wires = ['q21', 'q11']>
+    print(op.wires) # Wires(['q21', 'q11'])
 
 When the device applies operations, it needs to translate
 ``op.wires`` into wire labels that the backend "understands". This can be done with the
@@ -365,7 +365,7 @@ but changes the labels according to the ``wire_map`` attribute of the device whi
 
     # inside the class defining 'my.device', which inherits from the base Device class
     device_wires = self.map_wires(op.wires)
-    print(device_wires) # <Wires = [2, 0]>
+    print(device_wires) # Wires([2, 0])
 
 By default, the map translates the custom labels ``'q11'``, ``'q12'``, ``'q21'``, ``'q22'`` to
 consecutive integers ``0``, ``1``, ``2``, ``3``. If a device uses a different wire labeling,
