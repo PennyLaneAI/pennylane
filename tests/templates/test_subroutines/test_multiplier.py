@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Tests for the InMultiplier template.
+Tests for the Multiplier template.
 """
 
 import pytest
@@ -27,7 +27,7 @@ def test_standard_validity_Multiplier():
     mod = 11
     wires=[0,1,2,3]
     work_wires=[4,5,6,7,8,9]
-    op = qml.InMultiplier(k, wires=wires,mod=mod,work_wires=work_wires)
+    op = qml.Multiplier(k, wires=wires,mod=mod,work_wires=work_wires)
     qml.ops.functions.assert_valid(op)
 
 def _mul_out_k_mod(k, wires_m,mod, work_wires_aux,wires_aux):
@@ -43,7 +43,7 @@ def _mul_out_k_mod(k, wires_m,mod, work_wires_aux,wires_aux):
     return op_list
 
 class TestMultiplier:
-    """Test the qml.InMultiplier template."""
+    """Test the qml.Multiplier template."""
 
     @pytest.mark.parametrize(
         ("k", "wires", "mod", "work_wires"),
@@ -77,7 +77,7 @@ class TestMultiplier:
         @qml.qnode(dev)
         def circuit(m):
             qml.BasisEmbedding(m, wires=wires)
-            qml.InMultiplier(k,wires,mod,work_wires)
+            qml.Multiplier(k,wires,mod,work_wires)
             return qml.sample(wires=wires)
         
         if mod == None:
@@ -119,7 +119,7 @@ class TestMultiplier:
         @qml.qnode(dev)
         def circuit(m):
             qml.BasisEmbedding(m, wires=wires)
-            qml.InMultiplier(k,wires,mod,work_wires)
+            qml.Multiplier(k,wires,mod,work_wires)
             return qml.sample(wires=wires)
 
         if mod == None:
@@ -143,7 +143,7 @@ class TestMultiplier:
                 [0, 1],
                 7,
                 [3, 4, 5, 6],
-                "InMultiplier must have at least enough wires to represent mod."
+                "Multiplier must have at least enough wires to represent mod."
             ),
             (
                 2,
@@ -157,7 +157,7 @@ class TestMultiplier:
     def test_operation_error(self, k, wires, mod, work_wires, msg_match):
         """Test an error is raised when k or mod don't meet the requirements"""
         with pytest.raises(ValueError, match=msg_match):
-            qml.InMultiplier(k,wires,mod,work_wires)
+            qml.Multiplier(k,wires,mod,work_wires)
     @pytest.mark.parametrize(
         ("k", "wires", "mod", "work_wires","msg_match"),
         [
@@ -173,14 +173,14 @@ class TestMultiplier:
                 [0, 1, 2, 3, 4],
                 11,
                 [5, 6, 7, 8, 9, 10],
-                "InMultiplier needs as many work_wires as wires plus two."
+                "Multiplier needs as many work_wires as wires plus two."
             ),
         ],
     )
     def test_wires_error(self, k, wires, mod, work_wires, msg_match):
         """Test an error is raised when some work_wires don't meet the requirements"""
         with pytest.raises(ValueError, match=msg_match):
-            qml.InMultiplier(k,wires,mod,work_wires)
+            qml.Multiplier(k,wires,mod,work_wires)
     @pytest.mark.parametrize(
         ("k", "wires", "mod", "work_wires"),
         [
@@ -207,7 +207,7 @@ class TestMultiplier:
     def test_decomposition(self, k, wires, mod, work_wires):
         """Test that compute_decomposition and decomposition work as expected."""
 
-        multiplier_decomposition = qml.InMultiplier(
+        multiplier_decomposition = qml.Multiplier(
             k, wires, mod, work_wires).compute_decomposition(k, mod, work_wires, wires)
         op_list = []
         # we perform m*k modulo mod
@@ -240,6 +240,6 @@ class TestMultiplier:
         @qml.qnode(dev)
         def circuit():
             qml.BasisEmbedding(m_list, wires=wires)
-            qml.InMultiplier(k,wires,mod,work_wires)
+            qml.Multiplier(k,wires,mod,work_wires)
             return qml.sample(wires=wires)
         assert jax.numpy.allclose(sum(bit * (2 ** i) for i, bit in enumerate(reversed(circuit()))), (m*k) % mod)

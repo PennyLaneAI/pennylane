@@ -22,11 +22,11 @@ def _add_k_fourier(k, wires):
     """Adds k in the Fourier basis"""
     op_list = []
     for j in range(len(wires)):
-        op_list.append(qml.RZ(k * np.pi / (2**j), wires=wires[j]))
+        op_list.append(qml.PhaseShift(k * np.pi / (2**j), wires=wires[j]))
     return op_list
 
 class PhaseAdder(Operation):
-    r"""Performs the Phase Addition operation.
+    r"""Performs the Inplace Phase Addition operation.
     
     This operator adds the integer :math:`k` modulo :math:`mod` in the Fourier basis:
 

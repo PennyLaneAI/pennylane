@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Contains the InMultiplier template.
+Contains the Multiplier template.
 """
 
 import numpy as np
@@ -31,26 +31,26 @@ def _mul_out_k_mod(k, wires_m,mod, work_wires_aux,wires_aux):
     op_list.append(qml.adjoint(qml.QFT(wires = qft_wires)))
     return op_list
 
-class InMultiplier(Operation):
-    r"""Performs the Multiplication operation inplace in the computational basis.
+class Multiplier(Operation):
+    r"""Performs the Inplace Multiplication operation.
     
     This operator multiplies the integer :math:`k` modulo :math:`mod` in the computational basis:
 
     .. math::
-        InMultiplier(k,mod) |m \rangle = | m*k mod mod \rangle,
+        Multiplier(k,mod) |m \rangle = | m*k mod mod \rangle,
 
-    The quantum circuit that represents the InMultiplier operator is:
+    The quantum circuit that represents the Multiplier operator is:
 
 
     Args:
         k (int): number that wants to be added 
-        wires (Sequence[int]): the wires the operation acts on. There are needed at least enough wires to represent :math:`k` plus one extra.
+        wires (Sequence[int]): the wires the operation acts on. There are needed at least enough wires to represent :math:`k` and :math:`mod`.
         mod (int): modulo with respect to which the multiplication is performed, default value will be ``2^len(wires)``
         work_wires (Sequence[int]): the auxiliary wires to use for the multiplication modulo :math:`mod`
 
     **Example**
 
-    Multiplication of two integers :math:`m=3` and :math:`k=4` modulo :math:`mod=7`. Note that to perform this multiplication using qml.InMultiplier we need that :math:`m,k < mod` 
+    Multiplication of two integers :math:`m=3` and :math:`k=4` modulo :math:`mod=7`. Note that to perform this multiplication using qml.Multiplier we need that :math:`m,k < mod` 
     and that :math:`k` has inverse, :math:`k^-1`, modulo :math:`mod`. That means :math:`k*k^-1 modulo mod = 1`, which will only be possible if :math:`k` and :math:`mod` are coprime.
     
     .. code-block::
@@ -64,7 +64,7 @@ class InMultiplier(Operation):
         def multiplier_modulo(m, k, mod, wires_m, work_wires):
             # Function that performs m * k modulo mod in the computational basis
             qml.BasisEmbedding(m, wires=wires_m) 
-            qml.InMultiplier(k, wires_m, mod, work_wires)
+            qml.Multiplier(k, wires_m, mod, work_wires)
             return qml.sample(wires=wires_m)
 
     .. code-block:: pycon
@@ -83,12 +83,12 @@ class InMultiplier(Operation):
         if (k>=mod):
             raise ValueError("The module mod must be larger than k.")
         if (not hasattr(wires, "__len__")) or (mod > 2**(len(wires))):
-            raise ValueError("InMultiplier must have at least enough wires to represent mod.")
+            raise ValueError("Multiplier must have at least enough wires to represent mod.")
         if work_wires!=None:
             if any(wire in work_wires for wire in wires):
                 raise ValueError("Any wire in work_wires should not be included in wires.")
             if len(work_wires)<(len(wires)+2):
-                raise ValueError("InMultiplier needs as many work_wires as wires plus two.")
+                raise ValueError("Multiplier needs as many work_wires as wires plus two.")
         else:
             work_wires = list(range(len(wires), 2*len(wires)+2))
 
@@ -117,7 +117,7 @@ class InMultiplier(Operation):
 
         **Example**
 
-        >>> qml.InMultiplier.compute_decomposition(k=3,mod=8,wires=[0,1,2],work_wires=[3,4,5,6,7])
+        >>> qml.Multiplier.compute_decomposition(k=3,mod=8,wires=[0,1,2],work_wires=[3,4,5,6,7])
         [QFT(wires=[5, 6, 7]),
         ControlledSequence(PhaseAdder(wires=[5, 6, 7]), control=[0, 1, 2]),
         Adjoint(QFT(wires=[5, 6, 7])),

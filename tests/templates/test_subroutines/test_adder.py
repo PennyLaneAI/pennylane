@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Tests for the InAdder template.
+Tests for the Adder template.
 """
 
 import pytest
@@ -21,18 +21,18 @@ import pennylane as qml
 from pennylane import numpy as np
 
 
-def test_standard_validity_InAdder():
+def test_standard_validity_Adder():
     """Check the operation using the assert_valid function."""
     k = 6
     mod = 11
     wires=[0,1,2,3]
     work_wires=[4,5]
-    op = qml.InAdder(k, wires=wires,mod=mod,work_wires=work_wires)
+    op = qml.Adder(k, wires=wires,mod=mod,work_wires=work_wires)
     qml.ops.functions.assert_valid(op)
 
 
-class TestInAdder:
-    """Test the qml.InAdder template."""
+class TestAdder:
+    """Test the qml.Adder template."""
 
     @pytest.mark.parametrize(
         ("k", "wires", "mod", "work_wires"),
@@ -60,13 +60,13 @@ class TestInAdder:
     def test_operation_result(
         self, k, wires, mod, work_wires
     ):  # pylint: disable=too-many-arguments
-        """Test the correctness of the InAdder template output."""
+        """Test the correctness of the Adder template output."""
         dev = qml.device("default.qubit", shots=1)
 
         @qml.qnode(dev)
         def circuit(m):
             qml.BasisEmbedding(m, wires=wires)
-            qml.InAdder(k,wires,mod,work_wires)
+            qml.Adder(k,wires,mod,work_wires)
             return qml.sample(wires=wires)
         
         if mod == None:
@@ -102,13 +102,13 @@ class TestInAdder:
     def test_operation_result_args_None(
         self, k, wires, mod, work_wires
     ):  # pylint: disable=too-many-arguments
-        """Test the correctness of the InAdder template output."""
+        """Test the correctness of the Adder template output."""
         dev = qml.device("default.qubit", shots=1)
 
         @qml.qnode(dev)
         def circuit(m):
             qml.BasisEmbedding(m, wires=wires)
-            qml.InAdder(k,wires,mod,work_wires)
+            qml.Adder(k,wires,mod,work_wires)
             return qml.sample(wires=wires)
 
         if mod == None:
@@ -144,7 +144,7 @@ class TestInAdder:
     def test_decomposition(self, k, wires, mod, work_wires):
         """Test that compute_decomposition and decomposition work as expected."""
 
-        InAdder_decomposition = qml.InAdder(
+        Adder_decomposition = qml.Adder(
             k, wires, mod, work_wires).compute_decomposition(k, mod, work_wires, wires)
         op_list = []
         # we perform m+k modulo mod
@@ -157,7 +157,7 @@ class TestInAdder:
         op_list.append(qml.PhaseAdder(k,wires,mod,work_wires))
         op_list.append(qml.adjoint(qml.QFT)(qft_wires))
 
-        for op1, op2 in zip(InAdder_decomposition, op_list):
+        for op1, op2 in zip(Adder_decomposition, op_list):
             qml.assert_equal(op1, op2)
     #@pytest.mark.jax
     def test_jit_compatible(self):
@@ -178,6 +178,6 @@ class TestInAdder:
         @qml.qnode(dev)
         def circuit():
             qml.BasisEmbedding(m_list, wires=wires)
-            qml.InAdder(k,wires,mod,work_wires)
+            qml.Adder(k,wires,mod,work_wires)
             return qml.sample(wires=wires)
         assert jax.numpy.allclose(sum(bit * (2 ** i) for i, bit in enumerate(reversed(circuit()))), (m+k) % mod)

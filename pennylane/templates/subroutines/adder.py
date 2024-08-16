@@ -12,33 +12,33 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Contains the InAdder template.
+Contains the Adder template.
 """
 
 import numpy as np
 import pennylane as qml
 from pennylane.operation import Operation
 
-class InAdder(Operation):
-    r"""Performs the Addition operation.
+class Adder(Operation):
+    r"""Performs the Inplace Addition operation.
     
     This operator adds the integer :math:`k` modulo :math:`mod` in the computational basis:
 
     .. math::
-        InAdder(k,mod) |m \rangle = | m+k mod mod \rangle,
+        Adder(k,mod) |m \rangle = | m+k mod mod \rangle,
 
-    The quantum circuit that represents the InAdder operator is:
-
+    The quantum circuit that represents the Adder operator is:
+    TO DO
 
     Args:
         k (int): number that wants to be added 
-        wires (Sequence[int]): the wires the operation acts on. There are needed at least enough wires to represent k plus one extra.
+        wires (Sequence[int]): the wires the operation acts on. There are needed at least enough wires to represent k and mod.
         mod (int): modulo with respect to which the sum is performed, default value will be ``2^len(wires)``
         work_wires (Sequence[int]): the auxiliary wires to use for the sum modulo :math:`mod` when :math:`mod \neq 2^{\textrm{len(wires)}}`
 
     **Example**
 
-    Sum of two integers :math:`m=8` and :math:`k=5` modulo :math:`mod=15`. Note that to perform this sum using qml.InAdder we need that :math:`m,k < mod`
+    Sum of two integers :math:`m=8` and :math:`k=5` modulo :math:`mod=15`. Note that to perform this sum using qml.Adder we need that :math:`m,k < mod`
     
     .. code-block::
         m = 8
@@ -48,15 +48,15 @@ class InAdder(Operation):
         work_wires=[4,5]
         dev = qml.device("default.qubit", shots=1)
         @qml.qnode(dev)
-        def InAdder_modulo(m, k, mod, wires_m, work_wires):
+        def adder_modulo(m, k, mod, wires_m, work_wires):
             # Function that performs m + k modulo mod in the computational basis
             qml.BasisEmbedding(m, wires=wires_m) 
-            qml.InAdder(k, wires_m, mod, work_wires)
+            qml.Adder(k, wires_m, mod, work_wires)
             return qml.sample(wires=wires_m)
 
     .. code-block:: pycon
 
-        >>> print(f"The ket representation of {m} + {k} mod {mod} is {InAdder_modulo(m, k, mod,wires_m, work_wires)}")
+        >>> print(f"The ket representation of {m} + {k} mod {mod} is {adder_modulo(m, k, mod,wires_m, work_wires)}")
         The ket representation of 8 + 5 mod 15 is [1 1 0 1]
     
     We can see that the result [1 1 0 1] corresponds to 13, which comes from :math:`8+5=13 \longrightarrow 13 mod 15 = 13`.
@@ -94,7 +94,7 @@ class InAdder(Operation):
 
         **Example**
 
-        >>> qml.InAdder.compute_decomposition(k=2,mod=8,wires=[0,1,2],work_wires=[3,4])
+        >>> qml.Adder.compute_decomposition(k=2,mod=8,wires=[0,1,2],work_wires=[3,4])
         [QFT(wires=[0, 1, 2]),
         PhaseAdder(wires=[0, 1, 2]),
         Adjoint(QFT(wires=[0, 1, 2]))]
