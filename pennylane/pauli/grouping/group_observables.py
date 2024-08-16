@@ -16,6 +16,7 @@ This module contains the high-level Pauli-word-partitioning functionality used i
 """
 
 from copy import copy
+from typing import Literal, Optional
 
 import numpy as np
 
@@ -27,6 +28,7 @@ from pennylane.pauli.utils import (
     observables_to_binary_matrix,
     qwc_complement_adj_matrix,
 )
+from pennylane.typing import TensorLike
 from pennylane.wires import Wires
 
 from .graph_colouring import largest_first, recursive_largest_first
@@ -67,7 +69,12 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
             ``graph_colourer`` are not recognized
     """
 
-    def __init__(self, observables, grouping_type="qwc", graph_colourer="rlf"):
+    def __init__(
+        self,
+        observables,
+        grouping_type: Literal["qwc", "commuting", "anticommuting"] = "qwc",
+        graph_colourer: Literal["lf", "rlf"] = "rlf",
+    ):
         if grouping_type.lower() not in GROUPING_TYPES:
             raise ValueError(
                 f"Grouping type must be one of: {GROUPING_TYPES}, instead got {grouping_type}."
@@ -176,7 +183,12 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
         return self.grouped_paulis
 
 
-def group_observables(observables, coefficients=None, grouping_type="qwc", method="rlf"):
+def group_observables(
+    observables: list["qml.operation.Operator"],
+    coefficients: Optional[TensorLike] = None,
+    grouping_type: Literal["qwc", "commuting", "anticommuting"] = "qwc",
+    method: Literal["lf", "rlf"] = "rlf",
+):
     """Partitions a list of observables (Pauli operations and tensor products thereof) into
     groupings according to a binary relation (qubit-wise commuting, fully-commuting, or
     anticommuting).
