@@ -88,7 +88,7 @@ lark==1.1.9
 lazy-object-proxy==1.10.0
 libclang==18.1.1
 llvmlite==0.43.0
-Markdown==3.6
+Markdown==3.7
 markdown-it-py==3.0.0
 MarkupSafe==2.1.5
 matplotlib==3.9.2

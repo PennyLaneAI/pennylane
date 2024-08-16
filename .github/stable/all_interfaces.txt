@@ -43,7 +43,7 @@ keras==3.5.0
 kiwisolver==1.4.5
 lazy-object-proxy==1.10.0
 libclang==18.1.1
-Markdown==3.6
+Markdown==3.7
 markdown-it-py==3.0.0
 MarkupSafe==2.1.5
 matplotlib==3.9.2
