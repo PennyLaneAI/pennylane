@@ -94,7 +94,6 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
         grouping_type: Literal["qwc", "commuting", "anticommuting"] = "qwc",
         graph_colourer: Literal["lf", "rlf", "dsatur", "gis"] = "lf",
     ):
-
         self.graph_colourer = graph_colourer.lower()
         self.grouping_type = grouping_type.lower()
 
@@ -195,20 +194,15 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
         Returns:
             list[list[Operator]]: List of partitions of the Pauli observables made up of mutually (anti-)commuting observables.
         """
-        if self.graph_colourer == "rlf":
-            coloured_binary_paulis = recursive_largest_first(
-                self.binary_observables, self.adj_matrix
-            )
+        if self.graph_colourer != "rlf":
+            return self.pauli_partitions_from_graph()
+        coloured_binary_paulis = recursive_largest_first(self.binary_observables, self.adj_matrix)
 
-            # Need to convert back from the symplectic representation
-            observables_groups = [
-                [binary_to_pauli(pauli_word, wire_map=self._wire_map) for pauli_word in grouping]
-                for grouping in coloured_binary_paulis.values()
-            ]
-        else:
-            observables_groups = self.pauli_partitions_from_graph()
-
-        return observables_groups
+        # Need to convert back from the symplectic representation
+        return [
+            [binary_to_pauli(pauli_word, wire_map=self._wire_map) for pauli_word in grouping]
+            for grouping in coloured_binary_paulis.values()
+        ]
 
     @cached_property
     def _idx_partitions_dict_from_graph(self) -> dict[int, list[int]]:
@@ -258,18 +252,15 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
             tuple[tuple[int]]: Tuple of tuples containing the indices of the partitioned observables.
         """
         if observables_indices is None:
-            partition_indices = tuple(
+            return tuple(
                 tuple(indices) for indices in self._idx_partitions_dict_from_graph.values()
             )
-        else:
-            if len(observables_indices) != len(self.observables):
-                raise ValueError(
-                    f"The length of the list of indices: {len(observables_indices)} does not "
-                    f"match the length of the list of observables: {len(self.observables)}. "
-                )
-            partition_indices = self._partition_custom_indices(observables_indices)
-
-        return partition_indices
+        if len(observables_indices) != len(self.observables):
+            raise ValueError(
+                f"The length of the list of indices: {len(observables_indices)} does not "
+                f"match the length of the list of observables: {len(self.observables)}. "
+            )
+        return self._partition_custom_indices(observables_indices)
 
     def _partition_custom_indices(self, observables_indices) -> list[list]:
         """Compute the indices of the partititions of the observables when these have custom indices.
