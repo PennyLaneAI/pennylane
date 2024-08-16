@@ -71,7 +71,7 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
     find approximate solutions in polynomial time.
 
     Args:
-        observables (list[Observable]): A list of Pauli words to be partitioned according to a
+        observables (list[Operator]): A list of Pauli words to be partitioned according to a
             grouping strategy.
         grouping_type (str): The binary relation used to define partitions of
             the Pauli words, can be ``'qwc'`` (qubit-wise commuting), ``'commuting'``, or
@@ -193,7 +193,7 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
         Partition the observables into groups of observables mutually satisfying the binary relation determined by ``self.grouping_type``.
 
         Returns:
-            list[list[Observable]]: List of partitions of the Pauli observables made up of mutually (anti-)commuting observables.
+            list[list[Operator]]: List of partitions of the Pauli observables made up of mutually (anti-)commuting observables.
         """
         if self.graph_colourer == "rlf":
             coloured_binary_paulis = recursive_largest_first(
