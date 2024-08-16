@@ -30,6 +30,7 @@
 * Counts measurements with `all_outcomes=True` can now be used with jax jitting. Measurements
   broadcasted across all available wires (`qml.probs()`) can now be used with jit and devices that
   allow variable numbers of wires (`qml.device('default.qubit')`).
+  [(#6108)](https://github.com/PennyLaneAI/pennylane/pull/6108/)
 
 * Mid-circuit measurements can now be captured with `qml.capture` enabled.
   [(#6015)](https://github.com/PennyLaneAI/pennylane/pull/6015)
@@ -68,6 +69,11 @@
 * New functionality has been added to natively support exponential extrapolation when using the `mitigate_with_zne`. This allows
   users to have more control over the error mitigation protocol without needing to add further dependencies.
   [(#5972)](https://github.com/PennyLaneAI/pennylane/pull/5972)
+
+* The `diagonalize_measurements` transform is added. This transform converts measurements
+  to the Z basis by applying the relevant diagonalizing gates. It can be set to diagonalize only 
+  a subset of the base observables `{X, Y, Z, Hadamard}`.
+  [(#5829)](https://github.com/PennyLaneAI/pennylane/pull/5829)
 
 * The `qml.PrepSelPrep` template is added. The template implements a block-encoding of a linear
   combination of unitaries.
@@ -233,9 +239,11 @@
 * `MeasurementProcess.shape(shots: Shots, device:Device)` is now
   `MeasurementProcess.shape(shots: Optional[int], num_device_wires:int = 0)`. This has been done to allow
   jitting when a measurement is broadcasted across all available wires, but the device does not specify wires.
+  [(#6108)](https://github.com/PennyLaneAI/pennylane/pull/6108/)
 
 * If the shape of a probability measurement is affected by a `Device.cutoff` property, it will no longer work with
   jitting.
+  [(#6108)](https://github.com/PennyLaneAI/pennylane/pull/6108/)
 
 * `GlobalPhase` is considered non-differentiable with tape transforms.
   As a consequence, `qml.gradients.finite_diff` and `qml.gradients.spsa_grad` no longer
