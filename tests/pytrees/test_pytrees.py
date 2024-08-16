@@ -192,3 +192,8 @@ def test_flatten_is_leaf():
     items = [1, 2, 3, (4, 5), 6, 7, {"a": 1, "b": 2}, {"a": 3, "b": 4}]
     data, _structure = flatten(items, z)
     assert data == [1, 2, 3, (4, 5), 6, 7, {"a": 1, "b": 2}, 3, 4]
+
+    z = lambda a: isinstance(a, tuple)
+    items = [1, 2, 3, (4, 5), 6, 7, (1, 2, 3, 4), {"a": 1, "b": 2}, {"a": 3, "b": 4}]
+    data, _structure = flatten(items, z)
+    assert data == [1, 2, 3, (4, 5), 6, 7, (1, 2, 3, 4), 1, 2, 3, 4]
