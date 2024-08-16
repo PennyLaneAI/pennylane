@@ -16,9 +16,10 @@ Unit tests for functions needed for computing the lattice.
 """
 import pytest
 
-import pennylane as qml
 from pennylane import numpy as np
 from pennylane.spin import Lattice
+
+# pylint: disable=too-many-arguments, too-many-instance-attributes
 
 
 def test_boundary_condition_dimension_error():
@@ -26,7 +27,7 @@ def test_boundary_condition_dimension_error():
     unit_cell = [[1]]
     L = [10]
     with pytest.raises(ValueError, match="Argument 'boundary_condition' must be a bool"):
-        lattice = Lattice(L=L, unit_cell=unit_cell, boundary_condition=[True, True])
+        Lattice(L=L, unit_cell=unit_cell, boundary_condition=[True, True])
 
 
 def test_boundary_condition_type_error():
@@ -34,7 +35,7 @@ def test_boundary_condition_type_error():
     unit_cell = [[1]]
     L = [10]
     with pytest.raises(ValueError, match="Argument 'boundary_condition' must be a bool"):
-        lattice = Lattice(L=L, unit_cell=unit_cell, boundary_condition=[4])
+        Lattice(L=L, unit_cell=unit_cell, boundary_condition=[4])
 
 
 def test_unit_cell_error():
@@ -44,7 +45,7 @@ def test_unit_cell_error():
     with pytest.raises(
         ValueError, match="'unit_cell' must have ndim==2, as array of primitive vectors."
     ):
-        lattice = Lattice(L=L, unit_cell=unit_cell)
+        Lattice(L=L, unit_cell=unit_cell)
 
 
 def test_basis_error():
@@ -55,7 +56,7 @@ def test_basis_error():
     with pytest.raises(
         ValueError, match="'basis' must have ndim==2, as array of initial coordinates."
     ):
-        lattice = Lattice(L=L, unit_cell=unit_cell, basis=basis)
+        Lattice(L=L, unit_cell=unit_cell, basis=basis)
 
 
 def test_unit_cell_shape_error():
@@ -63,7 +64,7 @@ def test_unit_cell_shape_error():
     unit_cell = [[0, 1, 2], [0, 1, 1]]
     L = [2, 2]
     with pytest.raises(ValueError, match="The number of primitive vectors must match their length"):
-        lattice = Lattice(L=L, unit_cell=unit_cell)
+        Lattice(L=L, unit_cell=unit_cell)
 
 
 def test_L_error():
@@ -72,7 +73,7 @@ def test_L_error():
     unit_cell = [[0, 1], [1, 0]]
     L = [2, -2]
     with pytest.raises(TypeError, match="Argument `L` must be a list of positive integers"):
-        lattice = Lattice(L=L, unit_cell=unit_cell)
+        Lattice(L=L, unit_cell=unit_cell)
 
 
 def test_L_type_error():
@@ -81,39 +82,7 @@ def test_L_type_error():
     unit_cell = [[0, 1], [1, 0]]
     L = [2, 2.4]
     with pytest.raises(TypeError, match="Argument `L` must be a list of positive integers"):
-        lattice = Lattice(L=L, unit_cell=unit_cell)
-
-
-def test_neighbour_order_error():
-    r"""Test that an error is raised if neighbour order is greater than 1 when custom_edges are provided."""
-
-    unit_cell = [[0, 1], [1, 0]]
-    L = [3, 3]
-    custom_edges = [[(0, 1)], [(0, 5)], [(0, 4)]]
-    with pytest.raises(
-        ValueError, match="custom_edges and neighbour_order cannot be specified at the same time"
-    ):
-        lattice = Lattice(L=L, unit_cell=unit_cell, neighbour_order=2, custom_edges=custom_edges)
-
-
-def test_custom_edge_type_error():
-    r"""Test that an error is raised if custom_edges are not provided as a list of length 1 or 2."""
-
-    unit_cell = [[0, 1], [1, 0]]
-    L = [3, 3]
-    custom_edges = [[(0, 1), 1, 3], [(0, 5)], [(0, 4)]]
-    with pytest.raises(TypeError, match="custom_edges must be a list of tuples of length 1 or 2."):
-        lattice = Lattice(L=L, unit_cell=unit_cell, custom_edges=custom_edges)
-
-
-def test_custom_edge_value_error():
-    r"""Test that an error is raised if the custom_edges contains an edge with site_index greater than number of sites"""
-
-    unit_cell = [[0, 1], [1, 0]]
-    L = [3, 3]
-    custom_edges = [[(0, 1)], [(0, 5)], [(0, 12)]]
-    with pytest.raises(ValueError, match="The edge \(0, 12\) has vertices greater than n_sites, 9"):
-        lattice = Lattice(L=L, unit_cell=unit_cell, custom_edges=custom_edges)
+        Lattice(L=L, unit_cell=unit_cell)
 
 
 @pytest.mark.parametrize(
@@ -129,41 +98,8 @@ def test_basis(unit_cell, basis, L):
     r"""Test that the lattice points start from the coordinates provided in the basis"""
 
     lattice = Lattice(L=L, unit_cell=unit_cell, basis=basis)
-    for i in range(len(basis)):
-        assert np.allclose(basis[i], lattice.lattice_points[i])
-
-
-@pytest.mark.parametrize(
-    # expected_edges here were obtained manually
-    ("unit_cell", "basis", "L", "custom_edges", "expected_edges"),
-    [
-        (
-            [[0, 1], [1, 0]],
-            [[0, 0]],
-            [3, 3],
-            [[(0, 1)], [(0, 5)], [(0, 4)]],
-            [(0, 1, 0), (0, 5, 1), (0, 4, 2), (1, 2, 0), (3, 4, 0), (0, 4, 2), (1, 5, 2)],
-        ),
-        (
-            [[0, 1], [1, 0]],
-            [[0, 0]],
-            [3, 4],
-            [[(0, 1)], [(1, 4)], [(1, 5)]],
-            [(0, 1, 0), (1, 2, 0), (2, 3, 0), (1, 4, 1), (2, 5, 1), (0, 4, 2), (2, 6, 2)],
-        ),
-        (
-            [[1, 0], [0.5, np.sqrt(3) / 2]],
-            [[0.5, 0.5 / 3**0.5], [1, 1 / 3**0.5]],
-            [2, 2],
-            [[(0, 1)], [(1, 2)], [(1, 5)]],
-            [(2, 3, 0), (4, 5, 0), (1, 2, 1), (5, 6, 1), (1, 5, 2), (3, 7, 2)],
-        ),
-    ],
-)
-def test_custom_edges(unit_cell, basis, L, custom_edges, expected_edges):
-    r"""Test that the edges are added as per custom_edges provided"""
-    lattice = Lattice(L=L, unit_cell=unit_cell, basis=basis, custom_edges=custom_edges)
-    assert np.all(np.isin(expected_edges, lattice.edges))
+    for i, b in enumerate(basis):
+        assert np.allclose(b, lattice.lattice_points[i])
 
 
 @pytest.mark.parametrize(
@@ -363,16 +299,44 @@ def test_neighbour_order(unit_cell, basis, L, neighbour_order, expected_edges):
         ([[0, 1], [1, 0]], [[1.5, 1.5]], [3, 3], True, 2, [True, True]),
         ([[0, 1], [1, 0]], [[-1, -1]], [3, 3], False, 2, [False, False]),
         ([[0, 1], [1, 0]], [[10, 10]], [3, 3], [True, False], 2, [True, False]),
-        ([[1, 0], [0.5, np.sqrt(3) / 2]], [[0.5, 0.5 / 3**0.5], [1, 1 / 3**0.5]], [2, 2], [True, True], 2, [True, True]),
-        (np.eye(3), [[0,0,0]], [3, 3, 4], True, 3, [True, True, True]),        
+        (
+            [[1, 0], [0.5, np.sqrt(3) / 2]],
+            [[0.5, 0.5 / 3**0.5], [1, 1 / 3**0.5]],
+            [2, 2],
+            [True, True],
+            2,
+            [True, True],
+        ),
+        (np.eye(3), [[0, 0, 0]], [3, 3, 4], True, 3, [True, True, True]),
     ],
 )
-
 def test_attributes(unit_cell, basis, L, boundary_condition, n_dim, expected_bc):
     r"""Test that the methods and attributes return correct values"""
-    lattice = Lattice(L=L, unit_cell=unit_cell, basis=basis,boundary_condition=boundary_condition)
+    lattice = Lattice(L=L, unit_cell=unit_cell, basis=basis, boundary_condition=boundary_condition)
 
-    assert(np.all(lattice.unit_cell == unit_cell))
-    assert(np.all(lattice.basis == basis))
-    assert(lattice.n_dim == n_dim)
-    assert(np.all(lattice.boundary_condition == expected_bc))
+    assert np.all(lattice.unit_cell == unit_cell)
+    assert np.all(lattice.basis == basis)
+    assert lattice.n_dim == n_dim
+    assert np.all(lattice.boundary_condition == expected_bc)
+
+
+def test_add_edge_error():
+    r"""Test that an error is raised if the added edge is already present for a lattice"""
+    edge_indices = [[4, 5]]
+    unit_cell = [[0, 1], [1, 0]]
+    L = [3, 3]
+    lattice = Lattice(L=L, unit_cell=unit_cell)
+
+    with pytest.raises(ValueError, match="Edge is already present"):
+        lattice.add_edge(edge_indices)
+
+
+def test_add_edge():
+    r"""Test that edges are added per their index to a lattice"""
+    edge_indices = [[1, 3], [4, 6]]
+    unit_cell = [[0, 1], [1, 0]]
+    L = [3, 3]
+    lattice = Lattice(L=L, unit_cell=unit_cell)
+
+    lattice.add_edge(edge_indices)
+    assert np.all(np.isin(edge_indices, lattice.edges))

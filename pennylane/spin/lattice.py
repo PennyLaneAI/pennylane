@@ -19,7 +19,7 @@ the necessary information about a lattice.
 
 import numpy as np
 from scipy.spatial import cKDTree
-from .utils import map_vertices, get_custom_edges
+from .utils import map_vertices
 
 # pylint: disable=too-many-arguments, too-many-instance-attributes
 
@@ -33,7 +33,6 @@ class Lattice:
        basis: Initial positions of spins.
        boundary_condition: defines boundary conditions, boolean or series of bools with dimensions same as L.
        neighbour_order: Range of neighbours a spin interacts with.
-       custom_edges: List of edges in a unit cell along with the operations associated with them.
        distance_tol: Distance below which spatial points are considered equal for the purpose of identifying nearest neighbours.
 
     Returns:
@@ -47,7 +46,6 @@ class Lattice:
         basis=None,
         boundary_condition=False,
         neighbour_order=1,
-        custom_edges=None,
         distance_tol=1e-5,
     ):
 
@@ -73,24 +71,9 @@ class Lattice:
 
         self.coords, self.sl_coords, self.lattice_points = self.generate_grid(extra_shells)
 
-        if custom_edges is None:
-            cutoff = neighbour_order * np.linalg.norm(self.unit_cell, axis=1).max() + distance_tol
-            self.identify_neighbours(cutoff, neighbour_order)
-            self.generate_true_edges()
-        else:
-            if neighbour_order > 1:
-                raise ValueError(
-                    "custom_edges and neighbour_order cannot be specified at the same time"
-                )
-            self.edges = get_custom_edges(
-                self.unit_cell,
-                self.L,
-                self.basis,
-                self.boundary_condition,
-                self.lattice_points,
-                self.n_sites,
-                custom_edges,
-            )
+        cutoff = neighbour_order * np.linalg.norm(self.unit_cell, axis=1).max() + distance_tol
+        self.identify_neighbours(cutoff, neighbour_order)
+        self.generate_true_edges()
 
     def test_input_accuracy(self):
         r"""Tests the accuracy of the input provided"""
@@ -162,20 +145,35 @@ class Lattice:
             for node1, node2 in edge:
                 node1 = map[node1]
                 node2 = map[node2]
-                if node1 == node2:
-                    raise RuntimeError(f"Lattice contains self-referential edge {(node1, node2)}.")
                 true_edges.add((min(node1, node2), max(node1, node2)))
-            for edge in true_edges:
-                colored_edges.append((*edge, k))
+            for e in true_edges:
+                colored_edges.append((*e, k))
         self.edges = colored_edges
 
-    def add_edge(self, edge_index):
-        r"""Adds a specific edge based on the site index without translating it"""
+    def add_edge(self, edge_indices):
+        r"""Adds a specific edge based on the site index without translating it.
+        Args:
+          edge_indices: List of edges to be added.
+        Returns:
+          Updates the edges attribute to include provided edges.
+        """
 
-        if len(edge_index) == 2:
-            edge_index = (*edge_index, 0)
+        edges_nocolor = [(v1, v2) for (v1, v2, color) in self.edges]
+        for edge_index in edge_indices:
+            edge_index = tuple(edge_index)
+            if len(edge_index) > 3 or len(edge_index) < 2:
+                raise ValueError("Edge length can only be 2 or 3.")
 
-        self.edges.append(edge_index)
+            if len(edge_index) == 2:
+                if edge_index in edges_nocolor:
+                    raise ValueError("Edge is already present")
+                new_edge = (*edge_index, 0)
+            else:
+                if edge_index in self.edges:
+                    raise ValueError("Edge is already present")
+                new_edge = edge_index
+
+            self.edges.append(new_edge)
 
     def generate_grid(self, extra_shells):
         """Generates the coordinates of all lattice sites.

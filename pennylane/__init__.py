@@ -154,6 +154,7 @@ from pennylane.noise import NoiseModel
 from pennylane.devices.device_constructor import device, refresh_devices
 
 import pennylane.spin
+
 # Look for an existing configuration file
 default_config = Configuration("config.toml")
 

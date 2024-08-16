@@ -17,5 +17,5 @@ This submodule provides the functionality to obtain spin Hamiltonians.
 
 from .lattice import Lattice
 from .lattice_shapes import Chain, Square, Rectangle, Honeycomb, Triangle
-from .utils import map_vertices, get_custom_edges
-from .spin_hamiltonian import generate_lattice, transverse_ising, heisenberg, fermihubbard
+from .utils import map_vertices
+from .spin_hamiltonian import generate_lattice, transverse_ising

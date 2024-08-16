@@ -37,7 +37,6 @@ def Square(n_cells, boundary_condition=False, neighbour_order=1):
     r"""Generates a square lattice"""
     unit_cell = [[1, 0], [0, 1]]
     basis = [[0, 0]]
-
     L = n_cells[0:2]
     lattice_square = Lattice(
         L=L,
