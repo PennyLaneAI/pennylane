@@ -249,6 +249,7 @@ def orthogonal_complement_basis(h, m, tol):
 
     return basis.T  # Transpose to get row vectors
 
+
 def linearly_independent_set_svd(vectors):
     """Find a basis given a set of vectors"""
     A = np.array(vectors).T  # Transpose to get vectors as columns
@@ -263,6 +264,7 @@ def linearly_independent_set_svd(vectors):
     independent_vectors = U[:, :rank]
 
     return independent_vectors.T  # Transpose back to original orientation
+
 
 def compute_csa_new(g, m, ad, which=0, tol=1e-14, verbose=0):
     r"""
@@ -312,7 +314,7 @@ def compute_csa_new(g, m, ad, which=0, tol=1e-14, verbose=0):
             if is_independent(vec, np.array(np_h).T, tol):
                 np_h.append(vec)
                 break
-        
+
         iteration += 1
 
     # turn numpy array into operators
@@ -372,7 +374,9 @@ def _compute_csa_words(m, which=0):
     return m, h
 
 
-def khk_decompose(generators, H, theta0=None, n_epochs=500, validate=True, involution=None, verbose=1):
+def khk_decompose(
+    generators, H, theta0=None, n_epochs=500, validate=True, involution=None, verbose=1
+):
     r"""The full KhK decomposition of a Hamiltonian H
 
     We are decomposing an :math:`H \ in \mathfrak{m}` into :math:`H = K^\dagger h K`
@@ -412,7 +416,11 @@ def khk_decompose(generators, H, theta0=None, n_epochs=500, validate=True, invol
 
     g = k + m  # reorder g
 
-    print(f"Cartan decomposition g = k + m with dimensions {len(g)} = {len(k)} + {len(m)}") if verbose else None
+    (
+        print(f"Cartan decomposition g = k + m with dimensions {len(g)} = {len(k)} + {len(m)}")
+        if verbose
+        else None
+    )
 
     print("Computing adjoint representation of g = k + m") if verbose else None
     ad = qml.structure_constants(g)
@@ -422,7 +430,13 @@ def khk_decompose(generators, H, theta0=None, n_epochs=500, validate=True, invol
 
     g = k + mtilde + h  # reorder g
 
-    print(f"Cartan decomposition g = k + mtilde + h with dimensions {len(g)} = {len(k)} + {len(mtilde)} + {len(h)}") if verbose else None
+    (
+        print(
+            f"Cartan decomposition g = k + mtilde + h with dimensions {len(g)} = {len(k)} + {len(mtilde)} + {len(h)}"
+        )
+        if verbose
+        else None
+    )
 
     print("Computing adjoint representation of g = k + mtilde + h") if verbose else None
     ad = qml.structure_constants(g)
@@ -495,11 +509,10 @@ def khk_decompose(generators, H, theta0=None, n_epochs=500, validate=True, invol
             warnings.warn(
                 "The reconstructed H is not numerical identical to the original H.\n"
                 f"We can still check for unitary equivalence: {success}",
-                UserWarning
+                UserWarning,
             )
 
         print(f"success: {success}")
-    
 
     return vec_h, theta_opt, k, mtilde, h, ad
 
