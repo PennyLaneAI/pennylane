@@ -225,10 +225,10 @@ def flatten(
     Args:
         obj (Any): any object
         is_leaf (Callable[[Any], bool] | None = None): an optionally specified
-        function that will be called at each flattening step. It should return
-        a boolean, with true stopping the traversal and the whole subtree being
-        treated as a leaf, and false indicating the flattening should traverse
-        the current object.
+            function that will be called at each flattening step. It should return
+            a boolean, with ``True`` stopping the traversal and the whole subtree being
+            treated as a leaf, and ``False`` indicating the flattening should traverse
+            the current object.
 
     Returns:
         List[Any], Union[Structure, Leaf]: a list of leaves and a structure representing the object
