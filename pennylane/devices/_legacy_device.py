@@ -241,7 +241,7 @@ class Device(abc.ABC):
                 expectation values of observables
 
         Raises:
-            qml.DeviceError: if number of shots is less than 1
+            ~pennylane.DeviceError: if number of shots is less than 1
         """
         if shots is None:
             # device is in analytic mode
@@ -960,7 +960,7 @@ class Device(abc.ABC):
                 to be evaluated on the device
 
         Raises:
-            qml.DeviceError: if there are operations in the queue or observables that the device does
+            ~pennylane.DeviceError: if there are operations in the queue or observables that the device does
                 not support
         """
 

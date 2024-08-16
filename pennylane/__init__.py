@@ -185,7 +185,7 @@ def __getattr__(name):
         return pennylane.devices._qutrit_device.QutritDevice  # pylint:disable=protected-access
 
     if name == "Device":
-        return pennylane.devices._device.Device  # pylint:disable=protected-access
+        return pennylane.devices._legacy_device.Device  # pylint:disable=protected-access
 
     raise AttributeError(f"module 'pennylane' has no attribute '{name}'")
 

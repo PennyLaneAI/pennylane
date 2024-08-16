@@ -14,7 +14,7 @@
 r"""
 The default.qutrit device is PennyLane's standard qutrit-based device.
 
-It implements the :class:`~pennylane._device.Device` methods as well as some built-in
+It implements the :class:`~pennylane.devices._legacy_device.Device` methods as well as some built-in
 :mod:`qutrit operations <pennylane.ops.qutrit>`, and provides simple pure state
 simulation of qutrit-based quantum computing.
 """

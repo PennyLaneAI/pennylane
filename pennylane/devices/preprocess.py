@@ -407,7 +407,7 @@ def validate_observables(
         The unaltered input circuit. The output type is explained in :func:`qml.transform <pennylane.transform>`.
 
     Raises:
-        qml.DeviceError: if an observable is not supported
+        ~pennylane.DeviceError: if an observable is not supported
 
     **Example:**
 
@@ -452,7 +452,7 @@ def validate_measurements(
         The unaltered input circuit. The output type is explained in :func:`qml.transform <pennylane.transform>`.
 
     Raises:
-        qml.DeviceError: if a measurement process is not supported.
+        ~pennylane.DeviceError: if a measurement process is not supported.
 
     >>> def analytic_measurements(m):
     ...     return isinstance(m, qml.measurements.StateMP)

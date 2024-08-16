@@ -14,7 +14,7 @@
 r"""
 This module contains the legacy implementation of default.qubit.
 
-It implements the necessary :class:`~pennylane._device.Device` methods as well as some built-in
+It implements the necessary :class:`~pennylane.devices._legacy_device.Device` methods as well as some built-in
 :mod:`qubit operations <pennylane.ops.qubit>`, and provides a very simple pure state
 simulation of a qubit-based quantum circuit architecture.
 """

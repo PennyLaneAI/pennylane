@@ -37,6 +37,9 @@ to verify and test quantum gradient computations.
     default_qutrit_mixed
     default_clifford
     default_tensor
+    _device
+    _qubit_device
+    _qutrit_device
     null_qubit
     tests
 
