@@ -84,7 +84,7 @@
 * `qml.for_loop` and `qml.while_loop` can now be captured into plxpr.
   [(#6041)](https://github.com/PennyLaneAI/pennylane/pull/6041)
   [(#6064)](https://github.com/PennyLaneAI/pennylane/pull/6064)
-  [(#)](https://github.com/PennyLaneAI/pennylane/pull/)
+  [(#6111)](https://github.com/PennyLaneAI/pennylane/pull/6111)
 
 * `qml.for_loop` now supports `range`-like syntax with default `step=1`.
   [(#6068)](https://github.com/PennyLaneAI/pennylane/pull/6068)
