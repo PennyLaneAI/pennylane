@@ -516,16 +516,19 @@ class TrotterizedQfunc(ResourcesOperation):
             gate_sizes = defaultdict(int)
             
             with qml.queuing.AnnotatedQueue() as q:
-                self.qfunc(self.data[0]/self._n, *(self.data[1:]), self.wires, **self.hyperparameters)
+                self.qfunc(self.data[0]/self._n, *(self.data[1:]), wires=self.wires, **self.hyperparameters)
 
             first_order_expansion = q.queue
             r_all = qml.resource.resources_from_sequence_ops(first_order_expansion, gate_set, estimate, epsilon)
-            for gate in r_all.gate_types:
-                gate_types[gate] = r_all.gate_types[gate] * self._n * 2 * (5 ** (k - 1))
-            
-            for size in r_all.gate_sizes:
-                gate_sizes[size] = r_all.gate_sizes[size] * self._n * 2 * (5 ** (k - 1))
 
+            c = self._n if k == 0 else self._n * 2 * (5 ** (k - 1))
+
+            for gate in r_all.gate_types:
+                gate_types[gate] = r_all.gate_types[gate] * c
+
+            for size in r_all.gate_sizes:
+                gate_sizes[size] = r_all.gate_sizes[size] * c
+            
             return Resources(num_gates=sum(gate_types.values()), gate_types=gate_types, gate_sizes=gate_sizes)
 
         return qml.resource.resources_from_sequence_ops(self.decomposition(), gate_set=gate_set, estimate=estimate, epsilon=epsilon)

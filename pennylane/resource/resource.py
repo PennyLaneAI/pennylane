@@ -20,7 +20,7 @@ from typing import Callable
 from collections import defaultdict
 from dataclasses import dataclass, field
 
-from pennylane.tape import make_qscript
+from pennylane.queuing import AnnotatedQueue
 from pennylane.measurements import Shots
 from pennylane.operation import Operator, ResourcesOperation, DecompositionUndefinedError
 
@@ -90,6 +90,49 @@ class Resources:
     def _ipython_display_(self):
         """Displays __str__ in ipython instead of __repr__"""
         print(str(self))
+    
+    def __mul__(self, other):
+        if isinstance(other, int):
+            new_num_gates = self.num_gates * other
+            new_gate_types = copy(self.gate_types)
+            new_gate_sizes = copy(self.gate_sizes)
+
+            for k, v in new_gate_types.items():
+                new_gate_types[k] = v * other
+            
+            for k, v in new_gate_sizes.items():
+                new_gate_sizes[k] = v * other 
+
+            return Resources(num_gates=new_num_gates, gate_types=new_gate_types, gate_sizes=new_gate_sizes)
+        
+        raise NotImplementedError
+
+    __rmul__ = __mul__
+
+
+def substitute(primary_resources, gate_info, replacement_resources):
+    gate_str, num_wires = gate_info
+
+    if primary_resources.gate_types[gate_str] == 0:
+        return primary_resources
+
+    num_gates = primary_resources.num_gates
+    gate_sizes = copy(primary_resources.gate_sizes)
+    gate_types = copy(primary_resources.gate_types)
+
+    counts_of_gate_to_replace = gate_types.pop(gate_str)
+
+    num_gates -= counts_of_gate_to_replace
+    gate_sizes[num_wires] -= counts_of_gate_to_replace
+
+    # Replace
+    scaled_replacement_resources = replacement_resources * counts_of_gate_to_replace
+    
+    num_gates = num_gates + scaled_replacement_resources.num_gates
+    _combine_dicts(gate_types, scaled_replacement_resources.gate_types)  # update in place
+    _combine_dicts(gate_sizes, scaled_replacement_resources.gate_sizes)  # update in place
+    
+    return Resources(num_gates=num_gates, gate_sizes=gate_sizes, gate_types=gate_types)
 
 
 def _count_resources(tape) -> Resources:
@@ -150,8 +193,9 @@ def get_resources(obj, gate_set=StandardGateSet, estimate=True, epsilon=None):
     if isinstance(obj, Callable):
         @wraps(obj)
         def wrapper(*args, **kwargs):
-            qs = make_qscript(obj)(*args, **kwargs)
-            return resources_from_sequence_ops(qs.operations, gate_set, estimate, epsilon)
+            with AnnotatedQueue() as q: 
+                obj(*args, **kwargs)
+            return resources_from_sequence_ops(q.queue, gate_set, estimate, epsilon)
 
         return wrapper
     

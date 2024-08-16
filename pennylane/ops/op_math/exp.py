@@ -17,6 +17,7 @@ This submodule defines the symbolic operation that stands for an exponential of 
 from warnings import warn
 
 import numpy as np
+from collections import defaultdict
 from scipy.sparse.linalg import expm as sparse_expm
 
 import pennylane as qml
@@ -26,7 +27,7 @@ from pennylane.operation import (
     AnyWires,
     DecompositionUndefinedError,
     GeneratorUndefinedError,
-    Operation,
+    ResourcesOperation,
     Operator,
     OperatorPropertyUndefined,
     Tensor,
@@ -114,7 +115,7 @@ def exp(op, coeff=1, num_steps=None, id=None):
     return Exp(op, coeff, num_steps=num_steps, id=id)
 
 
-class Exp(ScalarSymbolicOp, Operation):
+class Exp(ScalarSymbolicOp, ResourcesOperation):
     """A symbolic operator representing the exponential of a operator.
 
     Args:
@@ -212,6 +213,63 @@ class Exp(ScalarSymbolicOp, Operation):
     def _queue_category(self):
         return "_ops"
 
+    def resources(self, gate_set=None, estimate=True, epsilon=None):
+        """Temporary hack resources"""
+        base = self.base
+        coeff = self.coeff
+
+        while isinstance(base, SProd):
+            coeff *= base.scalar
+            base = base.base
+
+        if qml.pauli.is_pauli_word(base) and math.real(coeff) == 0:
+            num_gates = 0
+            gate_types_dict = defaultdict(int)
+            gate_sizes_dict = defaultdict(int)
+            
+            if base.num_wires == 1:
+                op_type = "RZ" if isinstance(base, qml.Z) else "RX" if isinstance(base, qml.X) else "RY"
+                num_gates += 1
+                gate_sizes_dict[1] += 1
+                gate_types_dict[op_type] += 1
+            
+            else:
+                num_gates += 2 * (base.num_wires - 1)
+                gate_sizes_dict[2] += 2 * (base.num_wires - 1)
+                gate_types_dict["CNOT"] += 2 * (base.num_wires - 1)
+            
+                num_gates += 2 * int(math.ceil(base.num_wires / 3))
+                gate_sizes_dict[1] += int(math.ceil(base.num_wires / 3))
+                gate_types_dict["RX"] += int(math.ceil(base.num_wires / 3))
+            
+                num_gates += 1
+                gate_sizes_dict[1] += 1
+                gate_types_dict["RZ"] += 1
+
+                num_gates += 2 * int(math.ceil(base.num_wires / 3))
+                gate_sizes_dict[1] += 2 * int(math.ceil(base.num_wires / 3))
+                gate_types_dict["H"] += 2 * int(math.ceil(base.num_wires / 3))
+
+            modified_resources = qml.resource.Resources(num_gates=num_gates, gate_sizes=gate_sizes_dict, gate_types=gate_types_dict)
+
+            if "RX" not in gate_set: 
+                modified_resources = modified_resources.substitute("RX", qml.RX(1.23, 0).resoruces(gate_set, estimate, epsilon))
+            
+            if "RY" not in gate_set: 
+                modified_resources = modified_resources.substitute("RY", qml.RY(1.23, 0).resoruces(gate_set, estimate, epsilon))
+            
+            if "RZ" not in gate_set: 
+                modified_resources = modified_resources.substitute("RZ", qml.RZ(1.23, 0).resoruces(gate_set, estimate, epsilon))
+
+            return modified_resources
+        
+        return qml.resource.resource.resources_from_sequence_ops(
+            self.decomposition(), 
+            gate_set=gate_set,
+            estimate=estimate,
+            epsilon=epsilon,
+        )
+    
     # pylint: disable=invalid-overridden-method, arguments-renamed
     @property
     def has_decomposition(self):

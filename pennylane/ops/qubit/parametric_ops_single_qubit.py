@@ -84,9 +84,9 @@ class RX(ResourcesOperation):
         gate_types = defaultdict(int)
         gate_sizes = defaultdict(int)
 
-        gate_types["T"] = sympy.log(1 / sympy.Symbol("epsilon"))
-        gate_sizes[1] = sympy.log(1 / sympy.Symbol("epsilon"))
-        num_gates = sympy.log(1 / sympy.Symbol("epsilon"))
+        gate_types["T"] = 3 * sympy.log(1 / sympy.Symbol("epsilon"))
+        gate_sizes[1] = 3 * sympy.log(1 / sympy.Symbol("epsilon"))
+        num_gates = 3 * sympy.log(1 / sympy.Symbol("epsilon"))
         
         return qml.resource.resource.Resources(num_gates=num_gates, gate_types=gate_types, gate_sizes=gate_sizes)
 
@@ -192,9 +192,9 @@ class RY(ResourcesOperation):
         gate_types = defaultdict(int)
         gate_sizes = defaultdict(int)
 
-        gate_types["T"] = sympy.log(1 / sympy.Symbol("epsilon"))
-        gate_sizes[1] = sympy.log(1 / sympy.Symbol("epsilon"))
-        num_gates = sympy.log(1 / sympy.Symbol("epsilon"))
+        gate_types["T"] = 3 * sympy.log(1 / sympy.Symbol("epsilon"))
+        gate_sizes[1] = 3 * sympy.log(1 / sympy.Symbol("epsilon"))
+        num_gates = 3 * sympy.log(1 / sympy.Symbol("epsilon"))
         
         return qml.resource.resource.Resources(num_gates=num_gates, gate_types=gate_types, gate_sizes=gate_sizes)
     
@@ -297,9 +297,9 @@ class RZ(ResourcesOperation):
         gate_types = defaultdict(int)
         gate_sizes = defaultdict(int)
 
-        gate_types["T"] = sympy.log(1 / sympy.Symbol("epsilon"))
-        gate_sizes[1] = sympy.log(1 / sympy.Symbol("epsilon"))
-        num_gates = sympy.log(1 / sympy.Symbol("epsilon"))
+        gate_types["T"] = 3 * sympy.log(1 / sympy.Symbol("epsilon"))
+        gate_sizes[1] = 3 * sympy.log(1 / sympy.Symbol("epsilon"))
+        num_gates = 3 * sympy.log(1 / sympy.Symbol("epsilon"))
         
         return qml.resource.resource.Resources(num_gates=num_gates, gate_types=gate_types, gate_sizes=gate_sizes)
     
