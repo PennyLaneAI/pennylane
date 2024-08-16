@@ -183,3 +183,12 @@ def test_get_typename_type_invalid():
         ValueError, match=re.escape("'not.a.typename' is not the name of a Pytree type.")
     ):
         get_typename_type("not.a.typename")
+
+
+def test_flatten_is_leaf():
+    """Tests for flatten function's is_leaf parameter"""
+    item_leaves = [(4, 5), 6, {"a": 1, "b": 2}]
+    z = lambda a: (a in item_leaves)
+    items = [1, 2, 3, (4, 5), 6, 7, {"a": 1, "b": 2}, {"a": 3, "b": 4}]
+    data, _structure = flatten(items, z)
+    assert data == [1, 2, 3, (4, 5), 6, 7, {"a": 1, "b": 2}, 3, 4]
