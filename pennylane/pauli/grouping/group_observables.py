@@ -428,12 +428,9 @@ def compute_partition_indices(
             observables, grouping_type=grouping_type, graph_colourer=method
         )
 
-        partition_indices = pauli_groupper.idx_partitions_from_graph()
-    else:
-        # 'rlf' method is not compatible with the rx implementation.
-        partition_indices = _compute_partition_indices_rlf(observables, grouping_type=grouping_type)
-
-    return partition_indices
+        return pauli_groupper.idx_partitions_from_graph()
+    # 'rlf' method is not compatible with the rx implementation.
+    return _compute_partition_indices_rlf(observables, grouping_type=grouping_type)
 
 
 def _compute_partition_indices_rlf(observables: list, grouping_type: str):
