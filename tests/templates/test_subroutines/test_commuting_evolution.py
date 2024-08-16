@@ -89,7 +89,7 @@ def test_decomposition_expand():
     assert qml.math.allclose(decomp.hyperparameters["hamiltonian"].data, hamiltonian.data)
     assert decomp.hyperparameters["n"] == 1
 
-    tape = op.expand()
+    tape = op.decomposition()
     assert len(tape) == 1
     assert isinstance(tape[0], qml.ApproxTimeEvolution)
 

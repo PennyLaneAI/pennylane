@@ -297,7 +297,7 @@ class TestQuantumMonteCarlo:
         target_wires, estimation_wires = Wires(range(3)), Wires(range(3, 5))
 
         op = QuantumMonteCarlo(p, self.func, target_wires, estimation_wires)
-        tape = op.expand()
+        tape = qml.tape.QuantumScript(op.decomposition())
 
         # Do expansion in two steps to avoid also decomposing the first QubitUnitary
         queue_before_qpe = tape.operations[:2]

@@ -116,7 +116,7 @@ class TestDecomposition:
         """Tests that the sequence of gates implemented in the ApproxTimeEvolution template is correct"""
 
         op = qml.ApproxTimeEvolution(hamiltonian, time, steps)
-        queue = op.expand().operations
+        queue = op.decomposition()
 
         for expected_gate, gate in zip(expected_queue, queue):
             qml.assert_equal(expected_gate, gate)

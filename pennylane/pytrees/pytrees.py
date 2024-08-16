@@ -183,7 +183,7 @@ class PyTreeStructure:
     >>> op = qml.adjoint(qml.RX(0.1, 0))
     >>> data, structure = qml.pytrees.flatten(op)
     >>> structure
-    PyTree(AdjointOperation, (), [PyTree(RX, (<Wires = [0]>, ()), [Leaf])])
+    PyTree(AdjointOperation, (), [PyTree(RX, (Wires([0]), ()), [Leaf])])
 
     A leaf is defined as just a ``PyTreeStructure`` with ``type_=None``.
     """
@@ -226,15 +226,17 @@ def flatten(obj: Any) -> tuple[list[Any], PyTreeStructure]:
     Returns:
         List[Any], Union[Structure, Leaf]: a list of leaves and a structure representing the object
 
+    See also :func:`~.unflatten`.
+
+    **Example**
+
     >>> op = qml.adjoint(qml.Rot(1.2, 2.3, 3.4, wires=0))
     >>> data, structure = flatten(op)
     >>> data
     [1.2, 2.3, 3.4]
+
     >>> structure
-    <PyTree(AdjointOperation, (), (<PyTree(Rot, (<Wires = [0]>, ()), (Leaf, Leaf, Leaf))>,))>
-
-    See also :function:`~.unflatten`.
-
+    <PyTree(AdjointOperation, (), (<PyTree(Rot, (Wires([0]), ()), (Leaf, Leaf, Leaf))>,))>
     """
     flatten_fn = flatten_registrations.get(type(obj), None)
     if flatten_fn is None:
@@ -262,7 +264,9 @@ def unflatten(data: list[Any], structure: PyTreeStructure) -> Any:
     Returns:
         A repacked pytree.
 
-    .. seealso:: :function:`~.flatten`
+    .. seealso:: :func:`~.flatten`
+
+    **Example**
 
     >>> op = qml.adjoint(qml.Rot(1.2, 2.3, 3.4, wires=0))
     >>> data, structure = flatten(op)

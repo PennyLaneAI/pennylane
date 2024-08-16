@@ -15,10 +15,9 @@
 class that provides the mapper class."""
 
 
-import typing
-from collections.abc import MutableMapping
+from collections.abc import Iterator, Mapping, MutableMapping
 from types import MappingProxyType
-from typing import Any, Dict, Optional, Type
+from typing import Any, Optional, Type
 
 from pennylane.data.base.attribute import (
     AttributeInfo,
@@ -46,7 +45,7 @@ class AttributeTypeMapper(MutableMapping):
     """
 
     bind: HDF5Group
-    _cache: Dict[str, DatasetAttribute]
+    _cache: dict[str, DatasetAttribute]
 
     def __init__(self, bind: HDF5Group) -> None:
         self._cache = {}
@@ -120,14 +119,14 @@ class AttributeTypeMapper(MutableMapping):
         self.bind.move(src, dest)
         self._cache.pop(src, None)
 
-    def view(self) -> typing.Mapping[str, DatasetAttribute]:
+    def view(self) -> Mapping[str, DatasetAttribute]:
         """Returns a read-only mapping of the attributes in ``bind``."""
         return MappingProxyType(self)
 
     def __len__(self) -> int:
         return len(self.bind)
 
-    def __iter__(self) -> typing.Iterator[str]:
+    def __iter__(self) -> Iterator[str]:
         return iter(self.bind)
 
     def __contains__(self, key: str) -> bool:

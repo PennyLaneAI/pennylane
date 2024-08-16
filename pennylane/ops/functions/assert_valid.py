@@ -53,16 +53,16 @@ def _check_decomposition(op, skip_wire_mapping):
         with qml.queuing.AnnotatedQueue() as queued_decomp:
             op.decomposition()
         processed_queue = qml.tape.QuantumTape.from_queue(queued_decomp)
-        expand = op.expand()
 
         assert isinstance(decomp, list), "decomposition must be a list"
         assert isinstance(compute_decomp, list), "decomposition must be a list"
-        assert isinstance(expand, qml.tape.QuantumScript), "expand must return a QuantumScript"
+        assert op.__class__ not in [
+            decomp_op.__class__ for decomp_op in decomp
+        ], "an operator should not be included in its own decomposition"
 
-        for o1, o2, o3, o4 in zip(decomp, compute_decomp, processed_queue, expand):
+        for o1, o2, o3 in zip(decomp, compute_decomp, processed_queue):
             assert o1 == o2, "decomposition must match compute_decomposition"
             assert o1 == o3, "decomposition must match queued operations"
-            assert o1 == o4, "decomposition must match expansion"
             assert isinstance(o1, qml.operation.Operator), "decomposition must contain operators"
 
         if skip_wire_mapping:
@@ -70,21 +70,23 @@ def _check_decomposition(op, skip_wire_mapping):
         # Check that mapping wires transitions to the decomposition
         wire_map = {w: ascii_lowercase[i] for i, w in enumerate(op.wires)}
         mapped_op = op.map_wires(wire_map)
-        mapped_decomp = mapped_op.decomposition()
-        orig_decomp = op.decomposition()
-        for mapped_op, orig_op in zip(mapped_decomp, orig_decomp):
-            assert (
-                mapped_op.wires == qml.map_wires(orig_op, wire_map).wires
-            ), "Operators in decomposition of wire-mapped operator must have mapped wires."
+        # calling `map_wires` on a Controlled operator generates a new `op` from the controls and
+        # base, so may return a different class of operator. We only compare decomps of `op` and
+        # `mapped_op` if `mapped_op` **has** a decomposition.
+        # see MultiControlledX([0, 1]) and CNOT([0, 1]) as an example
+        if mapped_op.has_decomposition:
+            mapped_decomp = mapped_op.decomposition()
+            orig_decomp = op.decomposition()
+            for mapped_op, orig_op in zip(mapped_decomp, orig_decomp):
+                assert (
+                    mapped_op.wires == qml.map_wires(orig_op, wire_map).wires
+                ), "Operators in decomposition of wire-mapped operator must have mapped wires."
     else:
         failure_comment = "If has_decomposition is False, then decomposition must raise a ``DecompositionUndefinedError``."
         _assert_error_raised(
             op.decomposition,
             qml.operation.DecompositionUndefinedError,
             failure_comment=failure_comment,
-        )()
-        _assert_error_raised(
-            op.expand, qml.operation.DecompositionUndefinedError, failure_comment=failure_comment
         )()
         _assert_error_raised(
             op.compute_decomposition,

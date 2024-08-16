@@ -58,7 +58,7 @@ or ``qml.state()``. In such a case, the measurement process instance should have
 The shape of the result object may be dictated either by the device or the other operations present in the circuit.
 
 >>> qml.probs().wires
-<Wires = []>
+Wires([])
 >>> tape = qml.tape.QuantumScript([qml.S(0)], (qml.probs(),))
 >>> qml.device('default.qubit').execute(tape)
 array([1., 0.])
