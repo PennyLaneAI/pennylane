@@ -16,7 +16,7 @@ This module contains the qml.measure measurement.
 """
 import uuid
 from functools import lru_cache
-from typing import Generic, Hashable, Optional, Sequence, TypeVar, Union
+from typing import Generic, Hashable, Optional, TypeVar, Union
 
 import pennylane as qml
 from pennylane.wires import Wires
@@ -565,7 +565,7 @@ def find_post_processed_mcms(circuit):
         if isinstance(op, MidMeasureMP) and op.postselect is not None
     )
     for m in circuit.measurements:
-        if isinstance(m.mv, Sequence):
+        if isinstance(m.mv, list):
             for mv in m.mv:
                 post_processed_mcms = post_processed_mcms | set(mv.measurements)
         elif m.mv:

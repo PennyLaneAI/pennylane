@@ -172,7 +172,13 @@ class StatePrep(StatePrepBase):
     ndim_params = (1,)
     """int: Number of dimensions per trainable parameter of the operator."""
 
-    def __init__(self, state: TensorLike, wires: WiresLike, id: Optional[str] = None, validate_norm: bool =True):
+    def __init__(
+        self,
+        state: TensorLike,
+        wires: WiresLike,
+        id: Optional[str] = None,
+        validate_norm: bool = True,
+    ):
         super().__init__(state, wires=wires, id=id)
         state = self.parameters[0]
 
