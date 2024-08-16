@@ -69,6 +69,11 @@
   users to have more control over the error mitigation protocol without needing to add further dependencies.
   [(#5972)](https://github.com/PennyLaneAI/pennylane/pull/5972)
 
+* The `diagonalize_measurements` transform is added. This transform converts measurements
+  to the Z basis by applying the relevant diagonalizing gates. It can be set to diagonalize only 
+  a subset of the base observables `{X, Y, Z, Hadamard}`.
+  [(#5829)](https://github.com/PennyLaneAI/pennylane/pull/5829)
+
 * The `qml.PrepSelPrep` template is added. The template implements a block-encoding of a linear
   combination of unitaries.
   [(#5756)](https://github.com/PennyLaneAI/pennylane/pull/5756)
