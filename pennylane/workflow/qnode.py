@@ -705,7 +705,7 @@ class QNode:
         for a requested device, interface, and diff method.
 
         Args:
-            device (.Device): PennyLane device
+            device (.device.Device): PennyLane device
             interface (str): name of the requested interface
             diff_method (str or .TransformDispatcher): The requested method of differentiation.
                 If a string, allowed options are ``"best"``, ``"backprop"``, ``"adjoint"``,
@@ -714,7 +714,7 @@ class QNode:
             tape (Optional[.QuantumTape]): the circuit that will be differentiated. Should include shots information.
 
         Returns:
-            tuple[str or .TransformDispatcher, dict, .Device: Tuple containing the ``gradient_fn``,
+            tuple[str or .TransformDispatcher, dict, .device.Device: Tuple containing the ``gradient_fn``,
             ``gradient_kwargs``, and the device to use when calling the execute function.
         """
 
@@ -794,12 +794,12 @@ class QNode:
         are not included here.
 
         Args:
-            device (.Device): PennyLane device
+            device (.devices.Device): PennyLane device
             interface (str): name of the requested interface
             shots
 
         Returns:
-            tuple[str or .TransformDispatcher, dict, .Device: Tuple containing the ``gradient_fn``,
+            tuple[str or .TransformDispatcher, dict, .device.Device: Tuple containing the ``gradient_fn``,
             ``gradient_kwargs``, and the device to use when calling the execute function.
         """
         config = _make_execution_config(None, "best")
@@ -844,7 +844,7 @@ class QNode:
         :meth:`~.get_best_method` should be used instead.
 
         Args:
-            device (.Device): PennyLane device
+            device (.devices.Device): PennyLane device
             interface (str): name of the requested interface
 
         Returns:
