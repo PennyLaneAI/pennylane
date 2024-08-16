@@ -197,7 +197,7 @@
   relaxation to occur during longer measurements. The trit flip error represents misclassification during readout.
   [(#5842)](https://github.com/PennyLaneAI/pennylane/pull/5842)
 
-* Added `is_leaf` parameter to function `flatten` in `pytrees.pytrees.py`. This is to allow node flattening to be stopped for any node where the `is_leaf` Optional argument evaluates to being true.
+* Added `is_leaf` parameter to function `flatten` in the `qml.pytrees` module. This is to allow node flattening to be stopped for any node where the `is_leaf` optional argument evaluates to being `True`.
   [(#6083)](https://github.com/PennyLaneAI/pennylane/issues/6083)
 
 <h3>Breaking changes 💔</h3>
