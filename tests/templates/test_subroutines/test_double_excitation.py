@@ -203,7 +203,7 @@ class TestDecomposition:
         cnots = 16 * (len(wires1) - 1 + len(wires2) - 1 + 1)
         weight = np.pi / 3
         op = qml.FermionicDoubleExcitation(weight, wires1=wires1, wires2=wires2)
-        queue = op.expand().operations
+        queue = op.decomposition()
 
         assert len(queue) == sqg + cnots
 

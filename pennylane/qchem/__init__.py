@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This subpackage provides the functionality to perform quantum chemistry calculations.
+This submodule provides the functionality to perform quantum chemistry calculations.
 """
 from .basis_data import load_basisset
 from .basis_set import BasisFunction, atom_basis_data, mol_basis_data

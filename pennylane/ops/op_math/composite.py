@@ -17,7 +17,7 @@ This submodule defines a base class for composite operations.
 # pylint: disable=too-many-instance-attributes,invalid-sequence-index
 import abc
 import copy
-from typing import Callable, List
+from collections.abc import Callable
 
 import pennylane as qml
 from pennylane import math
@@ -59,7 +59,6 @@ class CompositeOp(Operator):
         self, *operands: Operator, id=None, _pauli_rep=None
     ):  # pylint: disable=super-init-not-called
         self._id = id
-        self.queue_idx = None
         self._name = self.__class__.__name__
 
         self.operands = operands
@@ -189,7 +188,7 @@ class CompositeOp(Operator):
         """Representation of the operator as a matrix in the computational basis."""
 
     @property
-    def overlapping_ops(self) -> List[List[Operator]]:
+    def overlapping_ops(self) -> list[list[Operator]]:
         """Groups all operands of the composite operator that act on overlapping wires.
 
         Returns:
@@ -208,7 +207,6 @@ class CompositeOp(Operator):
             while i < len(groups):
                 if first_group_idx is None and any(wire in op.wires for wire in groups[i][1]):
                     # Found the first group that has overlapping wires with this op
-                    groups[i][0].append(op)
                     groups[i][1] = groups[i][1] + op.wires
                     first_group_idx = i  # record the index of this group
                     i += 1
@@ -220,7 +218,9 @@ class CompositeOp(Operator):
                     groups[first_group_idx][1] = groups[first_group_idx][1] + wires
                 else:
                     i += 1
-            if first_group_idx is None:
+            if first_group_idx is not None:
+                groups[first_group_idx][0].append(op)
+            else:
                 # Create new group
                 groups.append([[op], op.wires])
 
@@ -340,7 +340,7 @@ class CompositeOp(Operator):
 
     @classmethod
     @abc.abstractmethod
-    def _sort(cls, op_list, wire_map: dict = None) -> List[Operator]:
+    def _sort(cls, op_list, wire_map: dict = None) -> list[Operator]:
         """Sort composite operands by their wire indices."""
 
     @property

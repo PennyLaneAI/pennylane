@@ -459,6 +459,7 @@ def tape_mpl(
     if update_style := (has_mpl and style != "rcParams"):
         restore_params = mpl.rcParams.copy()
         _set_style(style)
+
     try:
         return _tape_mpl(
             tape,

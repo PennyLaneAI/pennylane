@@ -274,7 +274,7 @@ def test_dipole(symbols, coords, charge, hf_state, exp_dipole, tol, tmpdir):
     ("symbols", "coords", "mult", "msg_match"),
     [
         (["H", "H"], x_h2, 2, "this functionality is constrained to Hartree-Fock states"),
-        (["H", "Ca"], x_h2, 1, "only first- or second-row elements of the periodic table"),
+        (["H", "Cx"], x_h2, 1, "Requested element Cx doesn't exist"),
     ],
 )
 @pytest.mark.usefixtures("skip_if_no_openfermion_support")

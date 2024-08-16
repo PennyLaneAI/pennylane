@@ -17,7 +17,6 @@ be installed alongside PennyLane:
 * `autograd <https://github.com/HIPS/autograd>`_
 * `toml <https://github.com/uiri/toml>`_
 * `appdirs <https://github.com/ActiveState/appdirs>`_
-* `semantic-version <https://github.com/rbarrois/python-semanticversion>`_ >= 2.7
 * `autoray <https://github.com/jcmgray/autoray>`__ >= 0.6.11
 * `packaging <https://github.com/pypa/packaging>`_
 
@@ -67,7 +66,7 @@ importing PennyLane in Python.
     requires ``pip install -e .`` to be re-run in the plugin repository
     for the changes to take effect.
 
-Apart from the core packages needed to run PennyLane. Some extra packages need
+Apart from the core packages needed to run PennyLane, some extra packages need
 to be installed for several development processes, such as linting, testing, and
 pre-commit quality checks. Those can be installed easily via ``pip``:
 

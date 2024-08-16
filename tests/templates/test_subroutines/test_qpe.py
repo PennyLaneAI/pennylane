@@ -112,7 +112,7 @@ class TestDecomposition:
         m = qml.RX(0.3, wires=0).matrix()
 
         op = qml.QuantumPhaseEstimation(m, target_wires=[0], estimation_wires=[1, 2])
-        qscript = op.expand()
+        qscript = qml.tape.QuantumScript(op.decomposition())
 
         unitary = qml.QubitUnitary(m, wires=[0])
         with qml.queuing.AnnotatedQueue() as q:
