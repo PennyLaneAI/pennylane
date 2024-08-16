@@ -218,7 +218,7 @@ leaf = PyTreeStructure(None, (), [])
 
 
 def flatten(
-    obj: Any, is_leaf: Callable[[Any], bool] | None = None
+    obj: Any, is_leaf: Optional[Callable[[Any], bool]] = None
 ) -> tuple[list[Any], PyTreeStructure]:
     """Flattens a pytree into leaves and a structure.
 
