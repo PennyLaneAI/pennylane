@@ -649,7 +649,8 @@ class TestOptimization:
             ansatz(params)
             return qml.expval(H)
 
-        params = np.random.random((4, 3), requires_grad=True)
+        rng = np.random.default_rng(123)
+        params = rng.random((4, 3), requires_grad=True)
         initial_loss = cost(params)
 
         min_shots = 10
@@ -674,7 +675,6 @@ class TestStepAndCost:
     def test_qnode_cost(self, tol):
         """Test that the cost is correctly returned
         when using a QNode as the cost function"""
-        np.random.seed(0)
 
         dev = qml.device("default.qubit", wires=1, shots=10)
 

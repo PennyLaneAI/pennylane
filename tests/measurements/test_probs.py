@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the probs module"""
-from typing import Sequence
+from collections.abc import Sequence
 
 import numpy as np
 import pytest
@@ -22,9 +22,6 @@ from pennylane import numpy as pnp
 from pennylane.measurements import MeasurementProcess, Probability, ProbabilityMP, Shots
 from pennylane.queuing import AnnotatedQueue
 
-# make the test deterministic
-np.random.seed(42)
-
 
 @pytest.fixture(name="init_state")
 def fixture_init_state():
@@ -32,7 +29,8 @@ def fixture_init_state():
 
     def _init_state(n):
         """An initial state over n wires"""
-        state = np.random.random([2**n]) + np.random.random([2**n]) * 1j
+        rng = np.random.default_rng(42)
+        state = rng.random([2**n]) + rng.random([2**n]) * 1j
         state /= np.linalg.norm(state)
         return state
 

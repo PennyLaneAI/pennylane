@@ -98,7 +98,7 @@ class TestDecomposition:
         cnots = 4 * (len(single_wires) - 1)
         weight = np.pi / 3
         op = qml.FermionicSingleExcitation(weight, wires=single_wires)
-        queue = op.expand().operations
+        queue = op.decomposition()
 
         assert len(queue) == sqg + cnots
 

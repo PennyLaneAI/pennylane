@@ -16,7 +16,7 @@ Contains the MERA template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 import warnings
-from typing import Callable
+from collections.abc import Callable
 
 import numpy as np
 
@@ -160,7 +160,7 @@ class MERA(Operation):
 
         It may be necessary to reorder the wires to see the MERA architecture clearly:
 
-        >>> print(qml.draw(circuit, expansion_strategy='device', wire_order=[2,0,1,3])(template_weights))
+        >>> print(qml.draw(circuit, level='device', wire_order=[2,0,1,3])(template_weights))
         2: ───────────────╭●──RY(0.10)──╭X──RY(-0.30)───────────────┤
         0: ─╭X──RY(-0.30)─│─────────────╰●──RY(0.10)──╭●──RY(0.10)──┤
         1: ─╰●──RY(0.10)──│─────────────╭X──RY(-0.30)─╰X──RY(-0.30)─┤  <Z>

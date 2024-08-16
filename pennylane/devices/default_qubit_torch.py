@@ -34,6 +34,7 @@ except ImportError as e:  # pragma: no cover
 
 import numpy as np
 
+from pennylane import PennyLaneDeprecationWarning
 from pennylane.ops.qubit.attributes import diagonal_in_z_basis
 
 from . import DefaultQubitLegacy
@@ -43,7 +44,7 @@ logger.addHandler(logging.NullHandler())
 
 
 class DefaultQubitTorch(DefaultQubitLegacy):
-    """Simulator plugin based on ``"default.qubit.legacy"``, written using PyTorch.
+    r"""Simulator plugin based on ``"default.qubit.legacy"``, written using PyTorch.
 
     **Short name:** ``default.qubit.torch``
 
@@ -57,6 +58,10 @@ class DefaultQubitTorch(DefaultQubitLegacy):
     .. code-block:: console
 
         pip install torch>=1.8.0
+
+    .. warning::
+        This device is deprecated. Use :class:`~pennylane.devices.DefaultQubit` instead; for example through ``qml.device("default.qubit")``, which now supports backpropagation.
+
 
     **Example**
 
@@ -165,6 +170,13 @@ class DefaultQubitTorch(DefaultQubitLegacy):
     _ndim = staticmethod(lambda tensor: tensor.ndim)
 
     def __init__(self, wires, *, shots=None, analytic=None, torch_device=None):
+        warnings.warn(
+            f"Use of '{self.short_name}' is deprecated. Instead, use 'default.qubit', "
+            "which supports backpropagation. "
+            "If you experience issues, reach out to the PennyLane team on "
+            "the discussion forum: https://discuss.pennylane.ai/",
+            PennyLaneDeprecationWarning,
+        )
         # Store if the user specified a Torch device. Otherwise the execute
         # method attempts to infer the Torch device from the gate parameters.
         self._torch_device_specified = torch_device is not None

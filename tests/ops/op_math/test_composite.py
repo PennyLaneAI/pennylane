@@ -87,11 +87,6 @@ class TestConstruction:
         assert op._name == "ValidOp"
         assert op._op_symbol == "#"
 
-    def test_queue_idx(self):
-        """Test that queue_idx is None."""
-        op = ValidOp(*self.simple_operands)
-        assert op.queue_idx is None
-
     def test_parameters(self):
         """Test that parameters are initialized correctly."""
         op = ValidOp(qml.RX(9.87, wires=0), qml.Rot(1.23, 4.0, 5.67, wires=1), qml.PauliX(0))
@@ -362,8 +357,8 @@ class TestProperties:
             [
                 qml.sum(qml.PauliX(0), qml.PauliY(5), qml.PauliZ(10)),
                 qml.prod(qml.PauliX(10), qml.PauliY(2)),
-                qml.Hamiltonian([1, 1], [qml.PauliX(2), qml.PauliZ(7)]),
                 qml.PauliY(7),
+                qml.Hamiltonian([1, 1], [qml.PauliX(2), qml.PauliZ(7)]),
             ],
             [
                 qml.sum(qml.PauliX(1), qml.PauliY(4), qml.PauliZ(6)),

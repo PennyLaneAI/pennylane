@@ -13,8 +13,9 @@
 # limitations under the License.
 """This module contains the classes/functions specific for simulation of superconducting transmon hardware systems"""
 import warnings
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Callable, List, Union
+from typing import Union
 
 import numpy as np
 
@@ -225,7 +226,7 @@ class TransmonSettings:
 
     """
 
-    connections: List
+    connections: list
     qubit_freq: Union[float, Callable]
     coupling: Union[list, TensorLike, Callable]
     anharmonicity: Union[float, Callable]
@@ -350,6 +351,10 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
 
     .. code-block:: python3
 
+        import jax
+
+        jax.config.update("jax_enable_x64", True)
+
         qubit_freqs = [5.1, 5., 5.3]
         connections = [[0, 1], [1, 2]]  # qubits 0 and 1 are coupled, as are 1 and 2
         g = [0.02, 0.05]
@@ -363,7 +368,7 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
         for q in range(3):
             H += qml.pulse.transmon_drive(amp, phase, freq, q)  # Parametrized drive for each qubit
 
-        dev = qml.device("default.qubit.jax", wires=range(3))
+        dev = qml.device("default.qubit", wires=range(3))
 
         @jax.jit
         @qml.qnode(dev, interface="jax")

@@ -72,7 +72,7 @@ class TestDecomposition:
         op = qml.GateFabric(
             weights, wires=range(qubits), init_state=init_state, include_pi=include_pi
         )
-        queue = op.expand().operations
+        queue = op.decomposition()
 
         # number of gates
         assert len(queue) == n_gates

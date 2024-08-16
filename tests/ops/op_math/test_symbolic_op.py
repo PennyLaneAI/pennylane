@@ -52,7 +52,6 @@ def test_intialization():
     assert op.base is base
     assert op.hyperparameters["base"] is base
     assert op.id == "something"
-    assert op.queue_idx is None
     assert op.name == "Symbolic"
 
 

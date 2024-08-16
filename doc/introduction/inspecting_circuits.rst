@@ -193,14 +193,14 @@ Consider the following python script containing the quantum circuit with breakpo
 
     circuit(1.23)
 
-Running the circuit above launches an interactive :code:`[pldb]:` prompt. Here we can
+Running the circuit above launches an interactive :code:`[pldb]` prompt. Here we can
 step through the circuit execution:
 
 .. code-block:: console
 
     > /Users/your/path/to/script.py(8)circuit()
     -> qml.RX(x, wires=0)
-    [pldb]: list
+    [pldb] list
       3
       4  	@qml.qnode(dev)
       5  	def circuit(x):
@@ -212,7 +212,7 @@ step through the circuit execution:
      11  	    qml.breakpoint()
      12
      13  	    qml.CNOT(wires=[0, 1])
-    [pldb]: next
+    [pldb] next
     > /Users/your/path/to/script.py(9)circuit()
     -> qml.Hadamard(wires=1)
 
@@ -221,16 +221,16 @@ the circuit in execution:
 
 .. code-block:: console
 
-    [pldb]: qml.debug_state()
+    [pldb] qml.debug_state()
     array([0.81677345+0.j        , 0.        +0.j        ,
            0.        -0.57695852j, 0.        +0.j        ])
-    [pldb]: continue
+    [pldb] continue
     > /Users/your/path/to/script.py(13)circuit()
     -> qml.CNOT(wires=[0, 1])
-    [pldb]: next
+    [pldb] next
     > /Users/your/path/to/script.py(14)circuit()
     -> return qml.expval(qml.Z(0))
-    [pldb]: list
+    [pldb] list
       8  	    qml.RX(x, wires=0)
       9  	    qml.Hadamard(wires=1)
      10  	
@@ -246,12 +246,12 @@ We can also visualize the circuit and dynamically queue operations directly to t
 
 .. code-block:: console
 
-    [pldb]: print(qml.debug_tape().draw())
+    [pldb] print(qml.debug_tape().draw())
     0: ──RX─╭●─┤  
     1: ──H──╰X─┤
-    [pldb]: qml.RZ(-4.56, 1)
+    [pldb] qml.RZ(-4.56, 1)
     RZ(-4.56, wires=[1])
-    [pldb]: print(qml.debug_tape().draw())
+    [pldb] print(qml.debug_tape().draw())
     0: ──RX─╭●─────┤  
     1: ──H──╰X──RZ─┤
 

@@ -184,8 +184,8 @@ class TestWires:
 
         wires_str = str(Wires([1, 2, 3]))
         wires_repr = repr(Wires([1, 2, 3]))
-        assert wires_str == "<Wires = [1, 2, 3]>"
-        assert wires_repr == "<Wires = [1, 2, 3]>"
+        assert wires_str == "Wires([1, 2, 3])"
+        assert wires_repr == "Wires([1, 2, 3])"
 
     def test_array_representation(self):
         """Tests that Wires object has an array representation."""
@@ -377,3 +377,113 @@ class TestWires:
         wires2 = tree_unflatten(tree, wires_flat)
         assert isinstance(wires2, Wires), f"{wires2} is not Wires"
         assert wires == wires2, f"{wires} != {wires2}"
+
+    @pytest.mark.parametrize(
+        "wire_a, wire_b, expected",
+        [
+            (Wires([0, 1]), Wires([2, 3]), Wires([0, 1, 2, 3])),
+            (Wires([0, 1]), [2, 3], Wires([0, 1, 2, 3])),
+            ([], Wires([1, 2, 3]), Wires([1, 2, 3])),
+            ({4, 5}, Wires([1, 2, 3]), Wires([1, 2, 3, 4, 5])),
+            (Wires([1, 2]), Wires([1, 2, 3]), Wires([1, 2, 3])),
+        ],
+    )
+    def test_union(self, wire_a, wire_b, expected):
+        """
+        Test the union operation (|) between two Wires objects.
+        """
+        assert wire_a | wire_b == expected
+        assert wire_b | wire_a == expected
+
+    @pytest.mark.parametrize(
+        "wire_a, wire_b, expected",
+        [
+            (Wires([0, 1, 2]), Wires([2, 3, 4]), Wires([2])),
+            (Wires([1, 2, 3]), Wires([]), Wires([])),
+            (Wires([1, 2, 3]), [], Wires([])),
+            (Wires([1, 2, 3]), "2", Wires([])),
+            (Wires([1, 2, 3]), {3}, Wires([3])),
+            (Wires([1, 2, 3]), Wires([1, 2, 3, 4]), Wires([1, 2, 3])),
+        ],
+    )
+    def test_intersection(self, wire_a, wire_b, expected):
+        """
+        Test the intersection operation (&) between two Wires objects.
+        """
+        assert wire_a & wire_b == expected
+        assert wire_b & wire_a == expected
+
+    @pytest.mark.parametrize(
+        "wire_a, wire_b, expected",
+        [
+            (Wires([0, 1, 2, 3]), Wires([2, 3, 4]), Wires([0, 1])),
+            (Wires([1, 2, 3]), Wires([]), Wires([1, 2, 3])),
+            (Wires([1, 2, 3]), Wires([1, 2, 3, 4]), Wires([])),
+            (Wires([1, 2, 3]), [], Wires([1, 2, 3])),
+            ([1, 2, 3], Wires([]), Wires([1, 2, 3])),
+            ([], Wires([]), Wires([])),
+            (Wires([]), [], Wires([])),
+        ],
+    )
+    def test_difference(self, wire_a, wire_b, expected):
+        """
+        Test the difference operation (-) between two Wires objects.
+        """
+        assert wire_a - wire_b == expected
+
+    @pytest.mark.parametrize(
+        "wire_a, wire_b, expected",
+        [
+            (Wires([0, 1, 2]), Wires([2, 3, 4]), Wires([0, 1, 3, 4])),
+            ([0, 1, 2], Wires([2, 3, 4]), Wires([0, 1, 3, 4])),
+            (Wires([0, 1, 2]), [2, 3, 4], Wires([0, 1, 3, 4])),
+            (Wires([]), Wires([1, 2, 3]), Wires([1, 2, 3])),
+            (Wires([1, 2, 3]), Wires([1, 2, 3]), Wires([])),
+        ],
+    )
+    def test_symmetric_difference(self, wire_a, wire_b, expected):
+        """
+        Test the symmetric difference operation (^) between two Wires objects.
+        """
+        assert wire_a ^ wire_b == expected
+
+    @pytest.mark.parametrize(
+        "wire_a, wire_b, wire_c, wire_d, expected",
+        [
+            (
+                Wires([0, 1]),
+                Wires([2, 3]),
+                Wires([4, 5]),
+                Wires([6, 7]),
+                Wires([0, 1, 2, 3, 4, 5, 6, 7]),
+            ),
+            (Wires([0, 1]), Wires([1, 2]), Wires([2, 3]), Wires([3, 4]), Wires([0, 1, 2, 3, 4])),
+            (Wires([]), Wires([1, 2]), Wires([2, 3]), Wires([3, 4, 5]), Wires([1, 2, 3, 4, 5])),
+        ],
+    )
+    # pylint: disable=too-many-arguments
+    def test_multiple_union(self, wire_a, wire_b, wire_c, wire_d, expected):
+        """
+        Test the union operation (|) with multiple Wires objects.
+        """
+        result = wire_a | wire_b | wire_c | wire_d
+        assert result == expected
+        assert wire_a.union(wire_b.union(wire_c.union(wire_d))) == expected
+
+    def test_complex_operation(self):
+        """
+        Test a complex operation involving multiple set operations.
+        This test combines union, intersection, difference, and symmetric difference operations.
+        """
+        wire_a = Wires([0, 1, 2, 3])
+        wire_b = Wires([2, 3, 4, 5])
+        wire_c = Wires([4, 5, 6, 7])
+        wire_d = Wires([6, 7, 8, 9])
+
+        # ((A ∪ B) ∩ (C ∪ D)) ^ ((A - D) ∪ (C - B))
+        result = ((wire_a | wire_b) & (wire_c | wire_d)) ^ ((wire_a - wire_d) | (wire_c - wire_b))
+        assert (wire_a | wire_b) & (wire_c | wire_d) == Wires([4, 5])
+        assert (wire_a - wire_d) | (wire_c - wire_b) == Wires([0, 1, 2, 3, 6, 7])
+
+        expected = Wires([0, 1, 2, 3, 4, 5, 6, 7])
+        assert result == expected

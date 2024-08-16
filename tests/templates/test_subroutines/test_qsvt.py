@@ -169,6 +169,13 @@ class TestQSVT:
         for op1, op2 in zip(ops, decomp):
             qml.assert_equal(op1, op2)
 
+    def test_wire_order(self):
+        """Test that the wire order is preserved."""
+
+        op = qml.QFT(wires=[2, 1])
+        qsvt_wires = qml.QSVT(op, [op]).wires
+        assert qsvt_wires == op.wires
+
     @pytest.mark.parametrize(
         ("quantum_function", "phi_func", "A", "phis", "results"),
         [
