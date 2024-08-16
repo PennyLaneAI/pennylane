@@ -45,7 +45,7 @@ kiwisolver==1.4.5
 latexcodec==3.0.0
 libclang==18.1.1
 m2r2==0.3.2
-Markdown==3.6
+Markdown==3.7
 MarkupSafe==2.1.5
 matplotlib==3.8.0
 mistune==0.8.4
