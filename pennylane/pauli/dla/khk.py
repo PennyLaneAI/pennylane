@@ -249,8 +249,22 @@ def orthogonal_complement_basis(h, m, tol):
 
     return basis.T  # Transpose to get row vectors
 
+def linearly_independent_set_svd(vectors):
+    """Find a basis given a set of vectors"""
+    A = np.array(vectors).T  # Transpose to get vectors as columns
 
-def compute_csa_new(g, m, ad, which=0, tol=1e-14):
+    # Perform Singular Value Decomposition
+    U, S, VT = np.linalg.svd(A)
+
+    # Determine the rank of the matrix (number of non-zero singular values)
+    rank = np.sum(S > 1e-10)  # Use a threshold to determine non-zero singular values
+
+    # Select the first 'rank' columns of U (corresponding to non-zero singular values)
+    independent_vectors = U[:, :rank]
+
+    return independent_vectors.T  # Transpose back to original orientation
+
+def compute_csa_new(g, m, ad, which=0, tol=1e-14, verbose=0):
     r"""
     Compute cartan subalgebra of g given m, the odd parity subspace. I.e. the maximal Abelian subalgebra in m.
 
@@ -275,7 +289,9 @@ def compute_csa_new(g, m, ad, which=0, tol=1e-14):
     np_m = np.array([project(mop, g_vspace) for mop in m]).T
     np_h = [project(m[which], g_vspace)]
 
+    iteration = 1
     while True:
+        print(f"iteration: {iteration}") if verbose else None
         kernel_intersection = np_m
         for h_i in np_h:
 
@@ -296,6 +312,8 @@ def compute_csa_new(g, m, ad, which=0, tol=1e-14):
             if is_independent(vec, np.array(np_h).T, tol):
                 np_h.append(vec)
                 break
+        
+        iteration += 1
 
     # turn numpy array into operators
     h_vspace = PauliVSpace([])
@@ -387,6 +405,7 @@ def khk_decompose(generators, H, theta0=None, n_epochs=500, validate=True, invol
 
     generators = [op.pauli_rep for op in generators]
     g = qml.lie_closure(generators, pauli=True)
+    g = orthonormalize(g)
 
     print("Computing Cartan decomposition g = m + k") if verbose else None
     k, m = CartanDecomp(g, involution=involution)
@@ -413,7 +432,7 @@ def khk_decompose(generators, H, theta0=None, n_epochs=500, validate=True, invol
     # mututally irrational, see Example 10 on page 10 in https://arxiv.org/pdf/quant-ph/0505128
     gammas = [np.pi**i for i in range(len(h))]
 
-    cvec = project(H.pauli_rep, g).real
+    vec_H = project(H.pauli_rep, g).real
 
     ## creating the gamma vector expanded on the whole g
     gammavec = np.zeros(len(g))
@@ -431,7 +450,7 @@ def khk_decompose(generators, H, theta0=None, n_epochs=500, validate=True, invol
         for i in range(1, len(k)):
             M @= jax.scipy.linalg.expm(theta[i] * ad[i])
 
-        return gammavec @ M @ cvec
+        return gammavec @ M @ vec_H
 
     if theta0 is None:
         theta0 = jnp.ones(len(k), dtype=float)
@@ -450,7 +469,6 @@ def khk_decompose(generators, H, theta0=None, n_epochs=500, validate=True, invol
 
     for i in range(len(k)):
         M @= jax.scipy.linalg.expm(theta_opt[i] * ad[i])
-    vec_H = project(H.pauli_rep, g)  # same as cvec, redundant but just to completeness also here
 
     vec_h = M @ vec_H
 
