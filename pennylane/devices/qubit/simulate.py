@@ -440,7 +440,8 @@ def simulate_tree_mcm(
 
     # `var` measurements cannot be aggregated on the fly as they require the global `expval`
     # variance_transform replaces `var` measurements with `expval` and `expval**2` measurements
-    circuit, variance_post_processing = variance_transform(circuit)
+    circuits, variance_post_processing = variance_transform(circuit)
+    circuit = circuits[0]
     finite_shots = bool(circuit.shots)
 
     ##################
@@ -630,7 +631,7 @@ def simulate_tree_mcm(
     mcm_samples = {mcms[i]: v for i, v in mcm_samples.items()}
     mcm_samples = prune_mcm_samples(mcm_samples)
     results = combine_measurements(terminal_measurements, measurement_dicts, mcm_samples)
-    return variance_post_processing(results)
+    return variance_post_processing((results,))
 
 
 def split_circuit_at_mcms(circuit):
@@ -816,6 +817,7 @@ def update_mcm_samples(samples, mcm_samples, depth, cumcounts):
     return mcm_samples, cumcounts
 
 
+@qml.transform
 def variance_transform(circuit):
     """Replace variance measurements by expectation value measurements of both the observable and the observable square.
 
@@ -823,11 +825,11 @@ def variance_transform(circuit):
     """
     skip_transform = not any(isinstance(m, VarianceMP) for m in circuit.measurements)
     if skip_transform:
-        return circuit, lambda x: x
+        return (circuit,), lambda x: x[0]
 
     def variance_post_processing(results):
         """Compute the global variance from expectation value measurements of both the observable and the observable square."""
-        new_results = list(results)
+        new_results = list(results[0])
         offset = len(circuit.measurements)
         for i, (r, m) in enumerate(zip(new_results, circuit.measurements)):
             if isinstance(m, VarianceMP):
@@ -846,10 +848,12 @@ def variance_transform(circuit):
             new_measurements.append(m)
     new_measurements.extend(extra_measurements)
     return (
-        qml.tape.QuantumScript(
-            circuit.operations,
-            new_measurements,
-            shots=circuit.shots,
+        (
+            qml.tape.QuantumScript(
+                circuit.operations,
+                new_measurements,
+                shots=circuit.shots,
+            ),
         ),
         variance_post_processing,
     )
