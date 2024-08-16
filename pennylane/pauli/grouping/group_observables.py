@@ -159,7 +159,7 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
         """Adjacency matrix for the complement of the Pauli graph determined by the ``grouping_type``.
 
         The adjacency matrix for an undirected graph of N nodes is an N x N symmetric binary
-        matrix, where matrix elements of 1 denote an edge (grouping strategy is **not** satisfied), and matrix elements of 0 denote no edge (binary relation is satisfied).
+        matrix, where matrix elements of 1 denote an edge (grouping strategy is **not** satisfied), and matrix elements of 0 denote no edge (grouping strategy is satisfied).
         """
         return _adj_matrix_from_symplectic(
             self.binary_observables, grouping_type=self.grouping_type
@@ -216,7 +216,7 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
 
         Colours the complement graph using a greedy colouring algorithm and groups indices by colour.
 
-        Uses the ``graph_greedy_color`` function from Rustworkx to colour the graph defined by
+        Uses the ``graph_greedy_color`` function from ``Rustworkx`` to colour the graph defined by
         ``self.complement_graph`` using a specified strategy from ``RX_STRATEGIES``. It then groups the indices
         (nodes) of the graph by their assigned colours.
 
@@ -292,7 +292,7 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
 
     def pauli_partitions_from_graph(self) -> list[list]:
         """Partition Pauli observables into lists of (anti-)commuting observables
-        using Rustworkx graph colouring algorithms based on binary relation determined by  ``self.grouping_type``.
+        using ``Rustworkx`` graph colouring algorithms based on binary relation determined by  ``self.grouping_type``.
 
         Returns:
             list[list[Observable]]: List of partitions of the Pauli observables made up of mutually (anti-)commuting terms.
