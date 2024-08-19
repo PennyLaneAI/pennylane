@@ -272,6 +272,8 @@ class StatePrep(StatePrepBase):
         * If normalize is false, check that last dimension of state is normalised to one. Else, normalise the
           state tensor.
         """
+        if isinstance(state, (list, tuple)):
+            state = math.array(state)
 
         shape = math.shape(state)
 

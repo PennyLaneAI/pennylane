@@ -18,10 +18,10 @@ import functools
 import itertools
 from string import ascii_letters as ABC
 
-import pennylane as qml
 from autoray import numpy as np
+from numpy import float64  # pylint:disable=wrong-import-order
 
-from numpy import float64
+import pennylane as qml
 
 from . import single_dispatch  # pylint:disable=unused-import
 from .matrix_manipulation import _permute_dense_matrix
