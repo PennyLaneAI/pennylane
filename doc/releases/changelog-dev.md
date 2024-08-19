@@ -263,10 +263,6 @@
   Instead, use `pennylane.gradients.classical_fisher` and `pennylane.gradients.quantum_fisher`.
   [(#5985)](https://github.com/PennyLaneAI/pennylane/pull/5985)
 
-* The ``BasisStatePreparation`` template is deprecated.
-  Instead, ``BasisState`` can be called on the constructed operator.
-  [(#6021)](https://github.com/PennyLaneAI/pennylane/pull/6021)
-
 * The legacy devices `default.qubit.{autograd,torch,tf,jax,legacy}` are deprecated.
   Instead, use `default.qubit` as it now supports backpropagation through the several backends.
   [(#5997)](https://github.com/PennyLaneAI/pennylane/pull/5997)
