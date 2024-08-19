@@ -199,19 +199,20 @@ class TestDensityMatrixQNode:
             qml.IsingXX(x, wires=[0, 1])
             return qml.state()
 
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning,
-            match=DEP_WARNING_MESSAGE,
-        ):
             dm = qml.qinfo.reduced_dm(circuit, wires=[0])
 
         density_matrix = tf.function(
-            dm,
+            qml.qinfo.reduced_dm(circuit, wires=[0]),
             jit_compile=True,
             input_signature=(tf.TensorSpec(shape=(), dtype=tf.float32),),
         )
 
-        density_matrix = density_matrix(tf.Variable(0.0, dtype=tf.float32))
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match=DEP_WARNING_MESSAGE,
+        ):
+            density_matrix = density_matrix(tf.Variable(0.0, dtype=tf.float32))
+
         assert np.allclose(density_matrix, [[1, 0], [0, 0]])
 
     c_dtypes = [np.complex64, np.complex128]
