@@ -78,6 +78,9 @@
 * `fuse_rot_angles` now respects the global phase of the combined rotations.
   [(#6031)](https://github.com/PennyLaneAI/pennylane/pull/6031)
 
+* `fuse_rot_angles` now respects the global phase of the combined rotations.
+  [(#6031)](https://github.com/PennyLaneAI/pennylane/pull/6031)
+
 * `QNGOptimizer` now supports cost functions with multiple arguments, updating each argument independently.
   [(#5926)](https://github.com/PennyLaneAI/pennylane/pull/5926)
 
