@@ -323,7 +323,7 @@ class StatePrep(StatePrepBase):
                     "Use 'normalize=True' to automatically normalize."
                 )
 
-    return state
+        return state
 
 
 # pylint: disable=missing-class-docstring
