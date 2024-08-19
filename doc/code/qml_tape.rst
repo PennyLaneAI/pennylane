@@ -18,6 +18,8 @@ TensorFlow, and PyTorch.
     details on creating QNodes, as well as the :func:`~pennylane.qnode` decorator
     and :func:`~pennylane.QNode` constructor.
 
+.. _tape-vs-script:
+
 QuantumTape versus QuantumScript
 --------------------------------
 
