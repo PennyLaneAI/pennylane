@@ -77,7 +77,7 @@ class BasisState(StatePrepBase):
     """int: Number of dimensions per trainable parameter of the operator."""
 
     @staticmethod
-    def compute_decomposition(n: TensorLike, wires: WiresLike) -> list[Operator]:
+    def compute_decomposition(features: TensorLike, wires: WiresLike) -> list[Operator]:
         r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -96,10 +96,24 @@ class BasisState(StatePrepBase):
         **Example:**
 
         >>> qml.BasisState.compute_decomposition([1,0], wires=(0,1))
-        [BasisStatePreparation([1, 0], wires=[0, 1])]
+        [X(0)]
 
         """
-        return [BasisStatePreparation(n, wires)]
+
+        if not qml.math.is_abstract(features):
+            op_list = []
+            for wire, state in zip(wires, features):
+                if state == 1:
+                    op_list.append(qml.X(wire))
+            return op_list
+
+        op_list = []
+        for wire, state in zip(wires, features):
+            op_list.append(qml.PhaseShift(state * np.pi / 2, wire))
+            op_list.append(qml.RX(state * np.pi, wire))
+            op_list.append(qml.PhaseShift(state * np.pi / 2, wire))
+
+        return op_list
 
     def state_vector(self, wire_order: Optional[WiresLike] = None) -> TensorLike:
         """Returns a statevector of shape ``(2,) * num_wires``."""
