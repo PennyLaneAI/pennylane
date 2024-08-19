@@ -965,7 +965,7 @@ class TestIntegration:
         @qml.qnode(dev)
         def cry_qnode(x):
             """QNode where we apply a controlled Y-rotation."""
-            qml.BasisState(basis_state, wires=[0, 1])
+            qml.BasisStatePreparation(basis_state, wires=[0, 1])
             qml.CRY(x, wires=[0, 1])
             return qml.sample(qml.PauliZ(1))
 
@@ -973,7 +973,7 @@ class TestIntegration:
         def conditional_ry_qnode(x):
             """QNode where the defer measurements transform is applied by
             default under the hood."""
-            qml.BasisState(basis_state, wires=[0, 1])
+            qml.BasisStatePreparation(basis_state, wires=[0, 1])
             m_0 = qml.measure(0)
             qml.cond(m_0, qml.RY)(x, wires=1)
             return qml.sample(qml.PauliZ(1))
