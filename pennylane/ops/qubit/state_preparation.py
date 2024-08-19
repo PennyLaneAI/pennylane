@@ -305,25 +305,25 @@ class StatePrep(StatePrepBase):
                 padding = math.convert_like(padding, state)
                 state = math.hstack([state, padding])
 
-        if normalize:
-            if "int" in str(state.dtype):
-                state = math.cast_like(state, 0.0)
-            norm = math.linalg.norm(state, axis=-1)
+        # normalize
+        if "int" in str(state.dtype):
+            state = math.cast_like(state, 0.0)
+        norm = math.linalg.norm(state, axis=-1)
 
-            if math.is_abstract(norm):
-                if normalize or pad_with:
-                    state = state / math.reshape(norm, (*shape[:-1], 1))
+        if math.is_abstract(norm):
+            if normalize or pad_with:
+                state = state / math.reshape(norm, (*shape[:-1], 1))
 
-            elif not math.allclose(norm, 1.0, atol=TOLERANCE):
-                if normalize or pad_with:
-                    state = state / math.reshape(norm, (*shape[:-1], 1))
-                else:
-                    raise ValueError(
-                        f"The state must be a vector of norm 1.0; got norm {norm}. "
-                        "Use 'normalize=True' to automatically normalize."
-                    )
+        elif not math.allclose(norm, 1.0, atol=TOLERANCE):
+            if normalize or pad_with:
+                state = state / math.reshape(norm, (*shape[:-1], 1))
+            else:
+                raise ValueError(
+                    f"The state must be a vector of norm 1.0; got norm {norm}. "
+                    "Use 'normalize=True' to automatically normalize."
+                )
 
-        return state
+    return state
 
 
 # pylint: disable=missing-class-docstring
