@@ -143,7 +143,7 @@ def qsvt(A, angles, wires, convention=None):
 
     projectors = projectors[::-1]  # reverse order to match equation
 
-    if convention == "Wx":
+    if convention == "Wx" and global_phase:
         return qml.prod(global_phase_op, QSVT(UA, projectors))
     return QSVT(UA, projectors)
 
