@@ -106,12 +106,12 @@ class BasisState(StatePrepBase):
                 f"Basis states must be of length {len(wires)}; state {features} has length {len(features)}."
             )
 
-        if not qml.math.is_abstract(features):
-            op_list = []
-            for wire, state in zip(wires, features):
-                if state == 1:
-                    op_list.append(qml.X(wire))
-            return op_list
+        # if not qml.math.is_abstract(features):
+        op_list = []
+        for wire, state in zip(wires, features):
+            if state == 1:
+                op_list.append(qml.X(wire))
+        return op_list
 
         # TODO: It will be include in this PR: https://github.com/PennyLaneAI/pennylane/pull/6021
         #
@@ -121,7 +121,7 @@ class BasisState(StatePrepBase):
         #    op_list.append(qml.RX(state * np.pi, wire))
         #    op_list.append(qml.PhaseShift(state * np.pi / 2, wire))
         #
-        #return op_list
+        # return op_list
 
     def state_vector(self, wire_order: Optional[WiresLike] = None) -> TensorLike:
         """Returns a statevector of shape ``(2,) * num_wires``."""
