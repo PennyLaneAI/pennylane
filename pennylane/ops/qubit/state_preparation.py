@@ -273,9 +273,6 @@ class StatePrep(StatePrepBase):
           state tensor.
         """
 
-        if not normalize and pad_with is None:
-            return state
-
         shape = math.shape(state)
 
         # check shape
