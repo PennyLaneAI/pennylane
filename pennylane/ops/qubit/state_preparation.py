@@ -129,11 +129,11 @@ class BasisState(StatePrepBase):
 
 
 class StatePrep(StatePrepBase):
-    r"""StatePrep(state, wires, pad_with, nomralize)
+    r"""StatePrep(state, wires, pad_with = None, normalize = False)
     Prepare subsystems using the given ket vector in the computational basis.
 
     By setting ``pad_with`` to a real or complex number, ``state`` is automatically padded to dimension
-    :math:`2^n` where :math:`n` is the number of qubits used in the embedding.
+    :math:`2^n` where :math:`n` is the number of qubits used in the template.
 
     To represent a valid quantum state vector, the L2-norm of ``state`` must be one.
     The argument ``normalize`` can be set to ``True`` to automatically normalize the state.
@@ -292,6 +292,7 @@ class StatePrep(StatePrepBase):
             )
 
         if pad_with is not None:
+            normalize = True
             if n_states > dim:
                 raise ValueError(
                     f"Input state must be of length {dim} or "
@@ -312,11 +313,11 @@ class StatePrep(StatePrepBase):
         norm = math.linalg.norm(state, axis=-1)
 
         if math.is_abstract(norm):
-            if normalize or pad_with:
+            if normalize:
                 state = state / math.reshape(norm, (*shape[:-1], 1))
 
         elif not math.allclose(norm, 1.0, atol=TOLERANCE):
-            if normalize or pad_with:
+            if normalize:
                 state = state / math.reshape(norm, (*shape[:-1], 1))
             else:
                 raise ValueError(
