@@ -192,7 +192,8 @@ class StatePrep(StatePrepBase):
         id: Optional[str] = None,
     ):
 
-        state = self._preprocess(state, wires, pad_with, normalize)
+        if pad_with or normalize:
+            state = self._preprocess(state, wires, pad_with, normalize)
 
         self._hyperparameters = {"pad_with": pad_with, "normalize": normalize}
 
