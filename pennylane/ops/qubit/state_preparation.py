@@ -113,13 +113,15 @@ class BasisState(StatePrepBase):
                     op_list.append(qml.X(wire))
             return op_list
 
-        op_list = []
-        for wire, state in zip(wires, features):
-            op_list.append(qml.PhaseShift(state * np.pi / 2, wire))
-            op_list.append(qml.RX(state * np.pi, wire))
-            op_list.append(qml.PhaseShift(state * np.pi / 2, wire))
-
-        return op_list
+        # TODO: It will be include in this PR: https://github.com/PennyLaneAI/pennylane/pull/6021
+        #
+        # op_list = []
+        # for wire, state in zip(wires, features):
+        #    op_list.append(qml.PhaseShift(state * np.pi / 2, wire))
+        #    op_list.append(qml.RX(state * np.pi, wire))
+        #    op_list.append(qml.PhaseShift(state * np.pi / 2, wire))
+        #
+        #return op_list
 
     def state_vector(self, wire_order: Optional[WiresLike] = None) -> TensorLike:
         """Returns a statevector of shape ``(2,) * num_wires``."""
