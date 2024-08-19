@@ -16,13 +16,17 @@ This submodule contains the discrete-variable quantum operations concerned
 with preparing a certain state on the device.
 """
 # pylint:disable=abstract-method,arguments-differ,protected-access,no-member
+from typing import Optional
+
 import numpy as np
 
 import pennylane as qml
 from pennylane import math
-from pennylane.operation import AnyWires, Operation, StatePrepBase
-from pennylane.templates.state_preparations import MottonenStatePreparation
-from pennylane.wires import WireError, Wires
+
+from pennylane.operation import AnyWires, Operation, Operator, StatePrepBase
+from pennylane.templates.state_preparations import BasisStatePreparation, MottonenStatePreparation
+from pennylane.typing import TensorLike
+from pennylane.wires import WireError, Wires, WiresLike
 
 state_prep_ops = {"BasisState", "StatePrep", "QubitDensityMatrix"}
 
@@ -109,7 +113,7 @@ class BasisState(StatePrepBase):
         return cls(data[0], wires=metadata[0])
 
     @staticmethod
-    def compute_decomposition(features, wires):
+    def compute_decomposition(features: TensorLike, wires: WiresLike) -> list[Operator]:
         r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -147,7 +151,7 @@ class BasisState(StatePrepBase):
 
         return op_list
 
-    def state_vector(self, wire_order=None):
+    def state_vector(self, wire_order: Optional[WiresLike] = None) -> TensorLike:
         """Returns a statevector of shape ``(2,) * num_wires``."""
         prep_vals = self.parameters[0]
         prep_vals_int = math.cast(prep_vals, int)
@@ -220,7 +224,7 @@ class StatePrep(StatePrepBase):
     ndim_params = (1,)
     """int: Number of dimensions per trainable parameter of the operator."""
 
-    def __init__(self, state, wires, id=None):
+    def __init__(self, state: TensorLike, wires: WiresLike, id: Optional[str] = None):
         super().__init__(state, wires=wires, id=id)
         state = self.parameters[0]
 
@@ -236,7 +240,7 @@ class StatePrep(StatePrepBase):
                 raise ValueError("Sum of amplitudes-squared does not equal one.")
 
     @staticmethod
-    def compute_decomposition(state, wires):
+    def compute_decomposition(state: TensorLike, wires: WiresLike) -> list[Operator]:
         r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -259,7 +263,7 @@ class StatePrep(StatePrepBase):
         """
         return [MottonenStatePreparation(state, wires)]
 
-    def state_vector(self, wire_order=None):
+    def state_vector(self, wire_order: Optional[WiresLike] = None):
         num_op_wires = len(self.wires)
         op_vector_shape = (-1,) + (2,) * num_op_wires if self.batch_size else (2,) * num_op_wires
         op_vector = math.reshape(self.parameters[0], op_vector_shape)

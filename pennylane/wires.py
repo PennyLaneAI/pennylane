@@ -16,7 +16,8 @@ This module contains the :class:`Wires` class, which takes care of wire bookkeep
 """
 import functools
 import itertools
-from collections.abc import Iterable, Sequence
+from collections.abc import Hashable, Iterable, Sequence
+from typing import Union
 
 import numpy as np
 
@@ -694,6 +695,8 @@ class Wires(Sequence):
         """Right-hand version of __xor__."""
         return Wires((set(_process(other)) ^ set(self.labels)))
 
+
+WiresLike = Union[Wires, Iterable[Hashable], Hashable]
 
 # Register Wires as a PyTree-serializable class
 register_pytree(Wires, Wires._flatten, Wires._unflatten)  # pylint: disable=protected-access

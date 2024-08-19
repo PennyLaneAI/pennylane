@@ -698,3 +698,46 @@ class TestCondCircuits:
         atol = tol if shots is None else 0.1
 
         assert np.allclose(res, expected, atol=atol, rtol=0), f"Expected {expected}, but got {res}"
+
+
+class TestPytree:
+    """Test pytree support for cond."""
+
+    def test_pytree_input_output(self):
+        """Test that cond can handle pytree inputs and outputs."""
+
+        def f(x):
+            return {"val": x["1"]}
+
+        def g(x):
+            return {"val": x["2"]}
+
+        def h(x):
+            return {"val": x["h"]}
+
+        res_true = qml.cond(True, f, false_fn=g, elifs=(False, h))({"1": 1, "2": 2, "h": 3})
+        assert res_true == {"val": 1}
+
+        res_elif = qml.cond(False, f, false_fn=g, elifs=(True, h))({"1": 1, "2": 2, "h": 3})
+        assert res_elif == {"val": 3}
+
+        res_false = qml.cond(False, f, false_fn=g, elifs=(False, h))({"1": 1, "2": 2, "h": 3})
+        assert res_false == {"val": 2}
+
+    def test_pytree_measurment_value(self):
+        """Test that pytree args can be used when the condition is on a measurement value."""
+
+        def g(x):
+            qml.RX(x["x"], x["wire"])
+
+        def f(x):
+            m0 = qml.measure(0)
+            qml.cond(m0, g)(x)
+
+        with qml.queuing.AnnotatedQueue() as q:
+            f({"x": 0.5, "wire": 0})
+
+        assert len(q) == 2
+        assert isinstance(q.queue[0], qml.measurements.MidMeasureMP)
+        assert isinstance(q.queue[1], qml.ops.Conditional)
+        qml.assert_equal(q.queue[1].base, qml.RX(0.5, 0))
