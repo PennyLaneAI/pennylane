@@ -33,24 +33,26 @@ class PhaseAdder(Operation):
     This operator adds the integer :math:`k` modulo :math:`mod` in the Fourier basis:
 
     .. math::
-        \textrm{PhaseAdder}(k,mod) |\phi (m) \rangle = |\phi (m+k \textrm{ mod } mod) \rangle,
+
+        \text{PhaseAdder}(k,mod) |\phi (m) \rangle = |\phi (m+k \, \text{mod} \, mod) \rangle,
 
     where :math:`|\phi (m) \rangle` represents the :math:`| m \rangle`: state in the Fourier basis such:
 
     .. math::
+
         QFT |m \rangle = |\phi (m) \rangle.
 
-    The decomposition of this operator is based on `Atchade-Adelomou and Gonzalez (2023) <https://arxiv.org/abs/2311.08555>`_
+    The decomposition of this operator is based on the QFT-based method presented in `Atchade-Adelomou and Gonzalez (2023) <https://arxiv.org/abs/2311.08555>`_.
 
     Args:
-        k (int): number that wants to be added
+        k (int): number that wants to be added.
         wires (Sequence[int]): the wires the operation acts on. There are needed at least enough wires to represent k and mod.
-        mod (int): modulo with respect to which the sum is performed, default value will be ``2^len(wires)``
-        work_wires (Sequence[int]): the auxiliary wire to use for the sum modulo :math:`mod` when :math:`mod \neq 2^{\textrm{len(wires)}}`
+        mod (int): modulo with respect to which the sum is performed, default value will be ``2^len(wires)``.
+        work_wires (Sequence[int]): the auxiliary wire to use for the sum modulo :math:`mod` when :math:`mod \neq 2^{\text{len(wires)}}`.
 
     **Example**
 
-    Sum of two integers :math:`m=5` and :math:`k=4` modulo :math:`mod=7`. Note that to perform this sum using qml.PhaseAdder we need that :math:`m,k < mod`
+    Sum of two integers :math:`m=5` and :math:`k=4` modulo :math:`mod=7`. Note that to perform this sum using qml.PhaseAdder we need that :math:`m,k < mod`.
 
     .. code-block::
 
@@ -74,7 +76,7 @@ class PhaseAdder(Operation):
         >>> print(f"The ket representation of {m} + {k} mod {mod} is {adder_modulo(m, k, mod,wires_m,work_wires)}")
         The ket representation of 5 + 4 mod 7 is [0 1 0]
 
-    We can see that the result [0 1 0] corresponds to 2, which comes from :math:`5+4=9 \longrightarrow 9 \textrm{ mod } 7 = 2`.
+    We can see that the result [0 1 0] corresponds to 2, which comes from :math:`5+4=9 \longrightarrow 9 \, \text{mod} \,  7 = 2`.
     """
 
     grad_method = None

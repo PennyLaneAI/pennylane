@@ -22,44 +22,44 @@ from pennylane.operation import Operation
 class Adder(Operation):
     r"""Performs the Inplace Addition operation.
 
-    This operator adds the integer :math:`k` modulo :math:`mod` in the computational basis:
+        This operator adds the integer :math:`k` modulo :math:`mod` in the computational basis:
 
-    .. math::
-        Adder(k,mod) |m \rangle = | m+k mod mod \rangle,
+        .. math::
+            Adder(k,mod) |m \rangle = | m+k \, \textrm{mod} \, mod \rangle,
 
-    The decomposition of this operator is based on `Atchade-Adelomou and Gonzalez (2023) <https://arxiv.org/abs/2311.08555>`_.
+    The decomposition of this operator is based on the QFT-based method presented in `Atchade-Adelomou and Gonzalez (2023) <https://arxiv.org/abs/2311.08555>`_.
 
-    Args:
-        k (int): number that wants to be added
-        wires (Sequence[int]): the wires the operation acts on. There are needed at least enough wires to represent k and mod.
-        mod (int): modulo with respect to which the sum is performed, default value will be ``2^len(wires)``
-        work_wires (Sequence[int]): the auxiliary wires to use for the sum modulo :math:`mod` when :math:`mod \neq 2^{\textrm{len(wires)}}`
+        Args:
+            k (int): number that wants to be added.
+            wires (Sequence[int]): the wires the operation acts on. There are needed at least enough wires to represent k and mod.
+            mod (int): modulo with respect to which the sum is performed, default value will be ``2^len(wires)``.
+            work_wires (Sequence[int]): the auxiliary wires to use for the sum modulo :math:`mod` when :math:`mod \neq 2^{\text{len(wires)}}`.
 
-    **Example**
+        **Example**
 
-    Sum of two integers :math:`m=8` and :math:`k=5` modulo :math:`mod=15`. Note that to perform this sum using qml.Adder we need that :math:`m,k < mod`
+        Sum of two integers :math:`m=8` and :math:`k=5` modulo :math:`mod=15`. Note that to perform this sum using qml.Adder we need that :math:`m,k < mod`.
 
-    .. code-block::
+        .. code-block::
 
-        m = 8
-        k = 5
-        mod = 15
-        wires_m =[0,1,2,3]
-        work_wires=[4,5]
-        dev = qml.device("default.qubit", shots=1)
-        @qml.qnode(dev)
-        def adder_modulo(m, k, mod, wires_m, work_wires):
-            # Function that performs m + k modulo mod in the computational basis
-            qml.BasisEmbedding(m, wires=wires_m)
-            qml.Adder(k, wires_m, mod, work_wires)
-            return qml.sample(wires=wires_m)
+            m = 8
+            k = 5
+            mod = 15
+            wires_m =[0,1,2,3]
+            work_wires=[4,5]
+            dev = qml.device("default.qubit", shots=1)
+            @qml.qnode(dev)
+            def adder_modulo(m, k, mod, wires_m, work_wires):
+                # Function that performs m + k modulo mod in the computational basis
+                qml.BasisEmbedding(m, wires=wires_m)
+                qml.Adder(k, wires_m, mod, work_wires)
+                return qml.sample(wires=wires_m)
 
-    .. code-block:: pycon
+        .. code-block:: pycon
 
-        >>> print(f"The ket representation of {m} + {k} mod {mod} is {adder_modulo(m, k, mod,wires_m, work_wires)}")
-        The ket representation of 8 + 5 mod 15 is [1 1 0 1]
+            >>> print(f"The ket representation of {m} + {k} mod {mod} is {adder_modulo(m, k, mod,wires_m, work_wires)}")
+            The ket representation of 8 + 5 mod 15 is [1 1 0 1]
 
-    We can see that the result [1 1 0 1] corresponds to 13, which comes from :math:`8+5=13 \longrightarrow 13 mod 15 = 13`.
+        We can see that the result [1 1 0 1] corresponds to 13, which comes from :math:`8+5=13 \longrightarrow 13 \, \text{mod} \, 15 = 13`.
     """
 
     grad_method = None
