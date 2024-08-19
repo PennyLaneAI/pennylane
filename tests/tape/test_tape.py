@@ -809,7 +809,6 @@ class TestParameters:
         b = np.array([0, 1, 0, 0])
         new_params = [b, 0.543, 0.654, 0.123]
         new_tape = tape.bind_new_parameters(new_params, [0, 1, 2, 3])
-
         assert new_tape.get_parameters() == new_params
         assert tape.get_parameters() == params
 
