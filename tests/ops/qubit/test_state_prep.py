@@ -26,7 +26,7 @@ densitymat0 = np.array([[1.0, 0.0], [0.0, 0.0]])
 @pytest.mark.parametrize(
     "op",
     [
-        qml.BasisState(np.array([0, 1]), wires=[0,1]),
+        qml.BasisState(np.array([0, 1]), wires=[0, 1]),
         qml.StatePrep(np.array([1.0, 0.0]), wires=0),
         qml.QubitDensityMatrix(densitymat0, wires=0),
     ],
@@ -35,10 +35,12 @@ def test_adjoint_error_exception(op):
     with pytest.raises(qml.operation.AdjointUndefinedError):
         op.adjoint()
 
+
 def test_BasisStatePreparation_is_deprecated():
     """Test that my_feature is deprecated."""
     with pytest.warns(qml.PennyLaneDeprecationWarning, match="BasisStatePreparation is deprecated"):
         _ = qml.BasisStatePreparation([1, 0], wires=[0, 1])
+
 
 @pytest.mark.parametrize(
     "op, mat, base",

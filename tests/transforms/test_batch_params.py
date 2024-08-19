@@ -182,6 +182,7 @@ def capture_warnings(recwarn):
             assert isinstance(w.message, qml.PennyLaneDeprecationWarning)
             assert "BasisStatePreparation is deprecated" in str(w.message)
 
+
 def test_basis_state_preparation(mocker):
     """Test that batching works for BasisStatePreparation"""
     dev = qml.device("default.qubit", wires=4)

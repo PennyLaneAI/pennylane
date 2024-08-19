@@ -33,7 +33,7 @@ class BasisStatePreparation(Operation):
         gradient computations.
 
         ``BasisStatePreparation`` is deprecated and will be removed in version 0.39. Instead, please use ``BasisState``.
-        
+
     Args:
         basis_state (array): Input array of shape ``(n,)``, where n is the number of wires
             the state preparation acts on.
