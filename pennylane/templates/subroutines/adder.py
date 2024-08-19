@@ -69,7 +69,7 @@ class Adder(Operation):
     ):  # pylint: disable=too-many-arguments
         if mod is None:
             mod = 2 ** (len(wires))
-        if work_wires != None:
+        if work_wires is not None:
             if any(wire in work_wires for wire in wires):
                 raise ValueError("Any wire in work_wires should not be included in wires.")
         else:

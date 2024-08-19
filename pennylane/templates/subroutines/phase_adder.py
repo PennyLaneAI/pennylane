@@ -84,13 +84,13 @@ class PhaseAdder(Operation):
     def __init__(
         self, k, wires, mod=None, work_wires=None, id=None
     ):  # pylint: disable=too-many-arguments
-        if mod == None:
+        if mod is None:
             mod = 2 ** (len(wires))
         if k >= mod:
             raise ValueError("The module mod must be larger than k.")
         if not hasattr(wires, "__len__") or mod > 2 ** (len(wires)):
             raise ValueError("PhaseAdder must have at least enough wires to represent mod.")
-        if work_wires != None:
+        if work_wires is not None:
             if any(wire in work_wires for wire in wires):
                 raise ValueError("Any wire in work_wires should not be included in wires.")
         else:
