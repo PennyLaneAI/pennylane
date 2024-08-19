@@ -25,17 +25,19 @@ def test_standard_validity_Phase_Adder():
     """Check the operation using the assert_valid function."""
     k = 6
     mod = 11
-    wires=[0,1,2,3]
-    work_wires=[4,5]
-    op = qml.PhaseAdder(k, wires=wires,mod=mod,work_wires=work_wires)
+    wires = [0, 1, 2, 3]
+    work_wires = [4, 5]
+    op = qml.PhaseAdder(k, wires=wires, mod=mod, work_wires=work_wires)
     qml.ops.functions.assert_valid(op)
+
 
 def _add_k_fourier(k, wires):
     """Adds k in the Fourier basis"""
     op_list = []
     for j in range(len(wires)):
-        op_list.append(qml.RZ(k * np.pi / (2**j), wires=wires[j]))
+        op_list.append(qml.PhaseShift(k * np.pi / (2**j), wires=wires[j]))
     return op_list
+
 
 class TestPhaseAdder:
     """Test the qml.PhaseAdder template."""
@@ -71,7 +73,7 @@ class TestPhaseAdder:
                 1,
                 [0, 1, 2],
                 7,
-                [3,4],
+                [3, 4],
             ),
         ],
     )
@@ -83,19 +85,20 @@ class TestPhaseAdder:
 
         @qml.qnode(dev)
         def circuit(m):
-            qml.BasisEmbedding(m, wires= wires) 
-            qml.QFT(wires=work_wires[:1]+ wires)
+            qml.BasisEmbedding(m, wires=wires)
+            qml.QFT(wires=work_wires[:1] + wires)
             qml.PhaseAdder(k, wires, mod, work_wires)
-            qml.adjoint(qml.QFT)(wires=work_wires[:1]+ wires)
+            qml.adjoint(qml.QFT)(wires=work_wires[:1] + wires)
             return qml.sample(wires=wires)
 
-        
         if mod == None:
-            max = 2**len(wires)
+            max = 2 ** len(wires)
         else:
-            max=mod
-        for m in range(0,max):
-            assert np.allclose(sum(bit * (2 ** i) for i, bit in enumerate(reversed(circuit(m)))), (m+k) % max)
+            max = mod
+        for m in range(0, max):
+            assert np.allclose(
+                sum(bit * (2**i) for i, bit in enumerate(reversed(circuit(m)))), (m + k) % max
+            )
 
     @pytest.mark.parametrize(
         ("k", "wires", "mod", "work_wires"),
@@ -110,7 +113,7 @@ class TestPhaseAdder:
                 6,
                 [0, 1, 2, 3],
                 None,
-                [4,5],
+                [4, 5],
             ),
             (
                 6,
@@ -128,92 +131,89 @@ class TestPhaseAdder:
 
         @qml.qnode(dev)
         def circuit(m):
-            qml.BasisEmbedding(m, wires = wires) 
-            if mod==None:
-                qml.QFT(wires= wires)
+            qml.BasisEmbedding(m, wires=wires)
+            if mod == None:
+                qml.QFT(wires=wires)
             else:
                 qml.QFT(wires=[4] + wires)
             qml.PhaseAdder(k, wires, mod, work_wires)
-            if mod==None:
-                qml.adjoint(qml.QFT)(wires= wires)
+            if mod == None:
+                qml.adjoint(qml.QFT)(wires=wires)
             else:
                 qml.adjoint(qml.QFT)(wires=[4] + wires)
 
             return qml.sample(wires=wires)
 
-        
         if mod == None:
-            max = 2**len(wires)
+            max = 2 ** len(wires)
         else:
-            max=mod
-        for m in range(1,max):
-            assert np.allclose(sum(bit * (2 ** i) for i, bit in enumerate(reversed(circuit(m)))), (m+k) % max)
-
+            max = mod
+        for m in range(1, max):
+            assert np.allclose(
+                sum(bit * (2**i) for i, bit in enumerate(reversed(circuit(m)))), (m + k) % max
+            )
 
     @pytest.mark.parametrize(
-        ("k", "wires", "mod", "work_wires","msg_match"),
+        ("k", "wires", "mod", "work_wires", "msg_match"),
         [
-            (
-                6,
-                [0, 1, 2, 3, 4],
-                6,
-                [5,6],
-                "The module mod must be larger than k."
-            ),
+            (6, [0, 1, 2, 3, 4], 6, [5, 6], "The module mod must be larger than k."),
             (
                 1,
                 [0, 1, 2],
                 9,
-                [3,4],
-                ("PhaseAdder must have at least enough wires to represent mod.")
+                [3, 4],
+                ("PhaseAdder must have at least enough wires to represent mod."),
             ),
         ],
     )
     def test_operation_error(self, k, wires, mod, work_wires, msg_match):
         """Test an error is raised when k or mod don't meet the requirements"""
         with pytest.raises(ValueError, match=msg_match):
-            qml.PhaseAdder(k,wires,mod,work_wires)
+            qml.PhaseAdder(k, wires, mod, work_wires)
+
     @pytest.mark.parametrize(
-        ("k", "wires", "mod", "work_wires","msg_match"),
+        ("k", "wires", "mod", "work_wires", "msg_match"),
         [
             (
                 3,
                 [0, 1, 2, 3, 4],
                 12,
-                [4,5],
-                "Any wire in work_wires should not be included in wires."
+                [4, 5],
+                "Any wire in work_wires should not be included in wires.",
             ),
         ],
     )
     def test_wires_error(self, k, wires, mod, work_wires, msg_match):
         """Test an error is raised when some wire in work_wires is in wires"""
         with pytest.raises(ValueError, match=msg_match):
-            qml.PhaseAdder(k,wires,mod,work_wires)
+            qml.PhaseAdder(k, wires, mod, work_wires)
+
     def test_decomposition(self):
         """Test that compute_decomposition and decomposition work as expected."""
-        k=4
-        wires=[1,2,3]
-        mod=7
-        work_wires=[0,4]
+        k = 4
+        wires = [1, 2, 3]
+        mod = 7
+        work_wires = [0, 4]
 
-        phase_adder_decomposition = qml.PhaseAdder(
-            k, wires, mod, work_wires).compute_decomposition(k, mod, work_wires, wires)
+        phase_adder_decomposition = qml.PhaseAdder(k, wires, mod, work_wires).compute_decomposition(
+            k, mod, work_wires, wires
+        )
         op_list = []
-        
-        if (mod==2**(len(wires))):
+
+        if mod == 2 ** (len(wires)):
             # we perform m+k modulo 2^len(wires)
             op_list.extend(_add_k_fourier(k, wires))
         else:
             new_wires = work_wires[:1] + wires
-            work_wire=work_wires[1]
+            work_wire = work_wires[1]
             aux_k = new_wires[0]
             op_list.extend(_add_k_fourier(k, new_wires))
             # we implement this operators to make m+k modulo mod
-            op_list.extend(qml.adjoint(_add_k_fourier)(mod, new_wires)) 
+            op_list.extend(qml.adjoint(_add_k_fourier)(mod, new_wires))
             op_list.append(qml.adjoint(qml.QFT)(wires=new_wires))
             op_list.append(qml.CNOT(wires=[aux_k, work_wire]))
             op_list.append(qml.QFT(wires=new_wires))
-            op_list.extend(qml.ctrl(op, control=work_wire) for op in _add_k_fourier(mod,new_wires))
+            op_list.extend(qml.ctrl(op, control=work_wire) for op in _add_k_fourier(mod, new_wires))
             op_list.extend(qml.adjoint(_add_k_fourier)(k, new_wires))
             op_list.append(qml.adjoint(qml.QFT)(wires=new_wires))
             op_list.append(qml.ctrl(qml.PauliX(work_wire), control=aux_k, control_values=0))
@@ -222,27 +222,32 @@ class TestPhaseAdder:
 
         for op1, op2 in zip(phase_adder_decomposition, op_list):
             qml.assert_equal(op1, op2)
-    #@pytest.mark.jax
+
+    @pytest.mark.jax
     def test_jit_compatible(self):
         """Test that the template is compatible with the JIT compiler."""
 
         import jax
 
         jax.config.update("jax_enable_x64", True)
-        m=2
+        m = 2
         # m in binary
-        m_list = [0,1,0]
+        m_list = [0, 1, 0]
         k = 6
         mod = 7
-        wires=[0,1,2]
-        work_wires=[4,5]
+        wires = [0, 1, 2]
+        work_wires = [4, 5]
         dev = qml.device("default.qubit", shots=1)
+
         @jax.jit
         @qml.qnode(dev)
         def circuit():
             qml.BasisEmbedding(m_list, wires=wires)
-            qml.QFT(wires=work_wires[:1]+ wires)
+            qml.QFT(wires=work_wires[:1] + wires)
             qml.PhaseAdder(k, wires, mod, work_wires)
-            qml.adjoint(qml.QFT)(wires=work_wires[:1]+ wires)
+            qml.adjoint(qml.QFT)(wires=work_wires[:1] + wires)
             return qml.sample(wires=wires)
-        assert jax.numpy.allclose(sum(bit * (2 ** i) for i, bit in enumerate(reversed(circuit()))), (m+k) % mod)
+
+        assert jax.numpy.allclose(
+            sum(bit * (2**i) for i, bit in enumerate(reversed(circuit()))), (m + k) % mod
+        )

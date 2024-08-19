@@ -257,6 +257,8 @@ tested_modified_templates = [
     qml.MPS,
     qml.TTN,
     qml.QROM,
+    qml.PhaseAdder,
+    qml.Adder,
 ]
 
 
