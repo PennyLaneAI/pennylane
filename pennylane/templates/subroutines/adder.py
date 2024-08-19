@@ -1,4 +1,4 @@
-# Copyright 2018-2024 Xanadu Quantum Technologies Inc.
+# Copyright 2024 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@ from pennylane.operation import Operation
 class Adder(Operation):
     r"""Performs the Inplace Addition operation.
 
-        This operator adds the integer :math:`k` modulo :math:`mod` in the computational basis:
+    This operator adds the integer :math:`k` modulo :math:`mod` in the computational basis:
 
         .. math::
             Adder(k,mod) |m \rangle = | m+k \, \textrm{mod} \, mod \rangle,
@@ -71,7 +71,7 @@ class Adder(Operation):
             mod = 2 ** (len(wires))
         if work_wires is not None:
             if any(wire in work_wires for wire in wires):
-                raise ValueError("Any wire in work_wires should not be included in wires.")
+                raise ValueError("None of the wires in work_wires should be included in wires.")
         else:
             work_wires = [wires[-1] + 1, wires[-1] + 2]
         self.hyperparameters["k"] = k
@@ -82,10 +82,6 @@ class Adder(Operation):
     @property
     def num_params(self):
         return 0
-
-    @classmethod
-    def _primitive_bind_call(cls, *args, **kwargs):
-        return cls._primitive.bind(*args, **kwargs)
 
     @staticmethod
     def compute_decomposition(k, mod, work_wires, wires):  # pylint: disable=arguments-differ

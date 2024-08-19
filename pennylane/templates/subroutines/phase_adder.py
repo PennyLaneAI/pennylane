@@ -1,4 +1,4 @@
-# Copyright 2018-2024 Xanadu Quantum Technologies Inc.
+# Copyright 2024 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -94,7 +94,7 @@ class PhaseAdder(Operation):
             raise ValueError("PhaseAdder must have at least enough wires to represent mod.")
         if work_wires is not None:
             if any(wire in work_wires for wire in wires):
-                raise ValueError("Any wire in work_wires should not be included in wires.")
+                raise ValueError("None of the wires in work_wires should be included in wires.")
         else:
             work_wires = [wires[-1] + 1, wires[-1] + 2]
 
@@ -106,10 +106,6 @@ class PhaseAdder(Operation):
     @property
     def num_params(self):
         return 0
-
-    @classmethod
-    def _primitive_bind_call(cls, *args, **kwargs):
-        return cls._primitive.bind(*args, **kwargs)
 
     @staticmethod
     def compute_decomposition(k, mod, work_wires, wires):  # pylint: disable=arguments-differ
