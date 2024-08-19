@@ -264,7 +264,7 @@
   [(#6026)](https://github.com/PennyLaneAI/pennylane/pull/6026)
 
 * The ``BasisStatePreparation`` template is deprecated.
-  Instead, ``BasisState`` can be called on the constructed operator.
+  Instead, use ``BasisState``.
   [(#6021)](https://github.com/PennyLaneAI/pennylane/pull/6021)
 
 * The `max_expansion` argument in `qml.QNode` has been deprecated.

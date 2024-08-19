@@ -22,7 +22,6 @@ import numpy as np
 
 import pennylane as qml
 from pennylane import math
-
 from pennylane.operation import AnyWires, Operation, Operator, StatePrepBase
 from pennylane.templates.state_preparations import MottonenStatePreparation
 from pennylane.typing import TensorLike
@@ -101,6 +100,11 @@ class BasisState(StatePrepBase):
         [X(0)]
 
         """
+
+        if len(features) != len(wires):
+            raise ValueError(
+                f"Basis states must be of length {len(wires)}; state {features} has length {len(features)}."
+            )
 
         if not qml.math.is_abstract(features):
             op_list = []
