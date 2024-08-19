@@ -125,13 +125,8 @@ def _reduced_dm_qnode(self, qnode, targs, tkwargs):
 
 
 @partial(transform, final_transform=True)
-<<<<<<< HEAD
-def purity(tape: QuantumTape, wires, **kwargs) -> (Sequence[QuantumTape], Callable):
-    r"""Compute the purity of a :class:`~.QuantumTape` returning :func:`~pennylane.state`:
-=======
 def purity(tape: QuantumTape, wires, **kwargs) -> tuple[QuantumTapeBatch, PostprocessingFn]:
     r"""Compute the purity of a :class:`~.QuantumTape` returning :func:`~pennylane.state`.
->>>>>>> deprecate-qinfo
 
     .. math::
         \gamma = \text{Tr}(\rho^2)
