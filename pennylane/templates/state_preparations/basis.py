@@ -59,13 +59,6 @@ class BasisStatePreparation(Operation):
     ndim_params = (1,)
 
     def __init__(self, basis_state, wires, id=None):
-
-        warnings.warn(
-            "BasisStatePreparation is deprecated and will be removed in version 0.39. "
-            "Instead, please use BasisState.",
-            qml.PennyLaneDeprecationWarning,
-        )
-
         basis_state = qml.math.stack(basis_state)
 
         # check if the `basis_state` param is batched
