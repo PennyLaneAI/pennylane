@@ -307,6 +307,8 @@ class StatePrep(StatePrepBase):
                 state = math.hstack([state, padding])
 
         # normalize
+        if "int" in str(state.dtype):
+            state = math.cast_like(state, 0.0)
         norm = math.linalg.norm(state, axis=-1)
 
         if math.is_abstract(norm):
