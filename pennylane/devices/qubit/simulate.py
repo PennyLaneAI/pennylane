@@ -17,7 +17,7 @@ import logging
 # pylint: disable=protected-access
 from collections import Counter
 from functools import partial, singledispatch
-from typing import Optional, Sequence
+from typing import Optional
 
 import numpy as np
 from numpy.random import default_rng
@@ -69,11 +69,11 @@ class TreeTraversalStack:
     """This class is used to record various data used during the
     depth-first tree-traversal procedure for simulating dynamic circuits."""
 
-    counts: Sequence
-    probs: Sequence
-    results_0: Sequence
-    results_1: Sequence
-    states: Sequence
+    counts: list
+    probs: list
+    results_0: list
+    results_1: list
+    states: list
 
     def __init__(self, max_depth):
         self.counts = [None] * max_depth
