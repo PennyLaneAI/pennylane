@@ -15,8 +15,6 @@ r"""
 Contains the BasisStatePreparation template.
 """
 
-import warnings
-
 import numpy as np
 
 import pennylane as qml
@@ -31,8 +29,6 @@ class BasisStatePreparation(Operation):
 
         ``basis_state`` influences the circuit architecture and is therefore incompatible with
         gradient computations.
-
-        ``BasisStatePreparation`` is deprecated and will be removed in version 0.39. Instead, please use ``BasisState``.
 
     Args:
         basis_state (array): Input array of shape ``(n,)``, where n is the number of wires
