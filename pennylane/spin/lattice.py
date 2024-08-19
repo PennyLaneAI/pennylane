@@ -29,7 +29,7 @@ class Lattice:
     r"""Constructs a Lattice object.
 
     Args:
-       L: Number of unit cells in a direction, it is a list depending on the dimensions of the lattice.
+       L: Number of unit cells in each direction.
        unit_cell: Primitive vectors for the lattice.
        basis: Initial positions of spins.
        boundary_condition: defines boundary conditions, boolean or series of bools with dimensions same as L.
