@@ -719,7 +719,7 @@ class TestModifiedTemplates:
         assert qml.equal(q.queue[0], qml.PhaseAdder(k, wires))
 
     @pytest.mark.usefixtures("new_opmath_only")
-    def test_phase_adder(self):
+    def test_adder(self):
         """Test the primitive bind call of Adder."""
 
         k = 3
