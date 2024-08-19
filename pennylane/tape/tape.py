@@ -364,7 +364,7 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
         trainable_params (None, Sequence[int]): the indices for which parameters are trainable
 
     .. note::
-        If performance is a concern, and the queueing capabilities of this class are not
+        If performance and memory usage is a concern, and the queueing capabilities of this class are not
         crucial to your use case, we recommend using the :class:`~.QuantumScript` class instead,
         which is a drop-in replacement with a similar interface.
         For more information, check :ref:`tape-vs-script`.
