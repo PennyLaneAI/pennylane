@@ -430,7 +430,7 @@ def mutual_info(
         "return line of your QNode.",
         qml.PennyLaneDeprecationWarning,
     )
-    
+
     return _bipartite_qinfo_transform(qml.math.mutual_info, tape, wires0, wires1, base, **kwargs)
 
 
