@@ -15,7 +15,7 @@ babel==2.16.0
 beautifulsoup4==4.12.3
 black==24.8.0
 bleach==6.1.0
-cachetools==5.4.0
+cachetools==5.5.0
 certifi==2024.7.4
 cffi==1.17.0
 cfgv==3.4.0
@@ -27,7 +27,7 @@ contourpy==1.2.1
 cotengra==0.6.2
 coverage==7.6.1
 cvxopt==1.3.2
-cvxpy==1.5.2
+cvxpy==1.5.3
 cycler==0.12.1
 cytoolz==0.12.3
 debugpy==1.8.5
@@ -48,7 +48,7 @@ fqdn==1.5.1
 future==1.0.0
 gast==0.6.0
 google-pasta==0.2.0
-grpcio==1.65.4
+grpcio==1.65.5
 h11==0.14.0
 h5py==3.11.0
 httpcore==1.0.5
@@ -56,7 +56,7 @@ httpx==0.27.0
 identify==2.6.0
 idna==3.7
 importlib_metadata==8.2.0
-importlib_resources==6.4.2
+importlib_resources==6.4.3
 iniconfig==2.0.0
 ipykernel==6.29.5
 ipython==8.18.1
@@ -146,7 +146,7 @@ pytest-xdist==3.6.1
 python-dateutil==2.9.0.post0
 python-json-logger==2.0.7
 PyYAML==6.0.2
-pyzmq==26.1.0
+pyzmq==26.1.1
 pyzx==0.8.0
 qdldl==0.1.7.post4
 quimb==1.8.4
