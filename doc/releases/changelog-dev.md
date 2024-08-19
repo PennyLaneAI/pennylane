@@ -78,6 +78,9 @@
 * `fuse_rot_angles` now respects the global phase of the combined rotations.
   [(#6031)](https://github.com/PennyLaneAI/pennylane/pull/6031)
 
+* `fuse_rot_angles` now respects the global phase of the combined rotations.
+  [(#6031)](https://github.com/PennyLaneAI/pennylane/pull/6031)
+
 * `QNGOptimizer` now supports cost functions with multiple arguments, updating each argument independently.
   [(#5926)](https://github.com/PennyLaneAI/pennylane/pull/5926)
 
@@ -365,6 +368,9 @@
 
 * Fixes a bug where `CompositeOp.overlapping_ops` changes the original ordering of ops, causing incorrect matrix generated for `Prod` with `Sum` as operands.
   [(#6091)](https://github.com/PennyLaneAI/pennylane/pull/6091)
+
+* `qml.qsvt` now works with "Wx" convention and any number of angles.
+  [(#6105)](https://github.com/PennyLaneAI/pennylane/pull/6105)
 
 <h3>Contributors ✍️</h3>
 
