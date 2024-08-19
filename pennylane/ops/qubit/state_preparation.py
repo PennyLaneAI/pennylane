@@ -272,8 +272,10 @@ class StatePrep(StatePrepBase):
         * If normalize is false, check that last dimension of state is normalised to one. Else, normalise the
           state tensor.
         """
-        if isinstance(state, (list, tuple)):
-            state = math.array(state)
+
+        if not normalize and pad_with is None:
+            return state
+
         shape = math.shape(state)
 
         # check shape
@@ -306,8 +308,6 @@ class StatePrep(StatePrepBase):
                 state = math.hstack([state, padding])
 
         # normalize
-        if "int" in str(state.dtype) and normalize:
-            state = math.cast_like(state, 0.0)
         norm = math.linalg.norm(state, axis=-1)
 
         if math.is_abstract(norm):
