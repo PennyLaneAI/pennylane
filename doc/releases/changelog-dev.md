@@ -65,10 +65,18 @@
   users to have more control over the error mitigation protocol without needing to add further dependencies.
   [(#5972)](https://github.com/PennyLaneAI/pennylane/pull/5972)
 
+* The `diagonalize_measurements` transform is added. This transform converts measurements
+  to the Z basis by applying the relevant diagonalizing gates. It can be set to diagonalize only 
+  a subset of the base observables `{X, Y, Z, Hadamard}`.
+  [(#5829)](https://github.com/PennyLaneAI/pennylane/pull/5829)
+
 * The `qml.PrepSelPrep` template is added. The template implements a block-encoding of a linear
   combination of unitaries.
   [(#5756)](https://github.com/PennyLaneAI/pennylane/pull/5756)
   [(#5987)](https://github.com/PennyLaneAI/pennylane/pull/5987)
+
+* `fuse_rot_angles` now respects the global phase of the combined rotations.
+  [(#6031)](https://github.com/PennyLaneAI/pennylane/pull/6031)
 
 * `fuse_rot_angles` now respects the global phase of the combined rotations.
   [(#6031)](https://github.com/PennyLaneAI/pennylane/pull/6031)
@@ -359,6 +367,9 @@
 
 * Fixes a bug where `CompositeOp.overlapping_ops` changes the original ordering of ops, causing incorrect matrix generated for `Prod` with `Sum` as operands.
   [(#6091)](https://github.com/PennyLaneAI/pennylane/pull/6091)
+
+* `qml.qsvt` now works with "Wx" convention and any number of angles.
+  [(#6105)](https://github.com/PennyLaneAI/pennylane/pull/6105)
 
 <h3>Contributors ✍️</h3>
 
