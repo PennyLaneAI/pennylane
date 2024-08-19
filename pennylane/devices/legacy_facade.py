@@ -19,6 +19,7 @@ import warnings
 
 # pylint: disable=not-callable, unused-argument
 from contextlib import contextmanager
+from copy import copy, deepcopy
 from dataclasses import replace
 
 import pennylane as qml
@@ -189,6 +190,13 @@ class LegacyDeviceFacade(Device):
 
     def __getattr__(self, name):
         return getattr(self._device, name)
+
+    # These custom copy methods are needed for Catalyst
+    def __copy__(self):
+        return type(self)(copy(self.target_device))
+
+    def __deepcopy__(self, memo):
+        return type(self)(deepcopy(self.target_device, memo))
 
     @property
     def target_device(self) -> "qml._device.Device":

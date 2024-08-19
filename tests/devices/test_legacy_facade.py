@@ -14,9 +14,10 @@
 """
 Contains unit tests for the LegacyDeviceFacade class.
 """
-import numpy as np
-
 # pylint: disable=protected-access
+import copy
+
+import numpy as np
 import pytest
 
 import pennylane as qml
@@ -67,6 +68,16 @@ def test_error_if_not_legacy_device():
     target = qml.devices.DefaultQubit()
     with pytest.raises(ValueError, match="The LegacyDeviceFacade only accepts"):
         LegacyDeviceFacade(target)
+
+
+def test_copy():
+    """Test that copy works correctly"""
+    dev = qml.device("default.mixed", wires=1)
+
+    for copied_devs in (copy.copy(dev), copy.deepcopy(dev)):
+        assert copied_devs is not dev
+        assert copied_devs.target_device is not dev.target_device
+        assert isinstance(copied_devs.target_device, type(dev.target_device))
 
 
 def test_shots():
