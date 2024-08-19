@@ -26,7 +26,7 @@ densitymat0 = np.array([[1.0, 0.0], [0.0, 0.0]])
 @pytest.mark.parametrize(
     "op",
     [
-        qml.BasisState(np.array([0, 1]), wires=0),
+        qml.BasisState(np.array([0, 1]), wires=[0,1]),
         qml.StatePrep(np.array([1.0, 0.0]), wires=0),
         qml.QubitDensityMatrix(densitymat0, wires=0),
     ],
@@ -35,6 +35,10 @@ def test_adjoint_error_exception(op):
     with pytest.raises(qml.operation.AdjointUndefinedError):
         op.adjoint()
 
+def test_BasisStatePreparation_is_deprecated():
+    """Test that my_feature is deprecated."""
+    with pytest.warns(qml.PennyLaneDeprecationWarning, match="BasisStatePreparation is deprecated"):
+        _ = qml.BasisStatePreparation([1, 0], wires=[0, 1])
 
 @pytest.mark.parametrize(
     "op, mat, base",
@@ -66,8 +70,6 @@ class TestDecomposition:
         ops2 = qml.BasisState(n, wires=wires).decomposition()
 
         assert len(ops1) == len(ops2) == 1
-        assert isinstance(ops1[0], qml.BasisStatePreparation)
-        assert isinstance(ops2[0], qml.BasisStatePreparation)
 
     def test_StatePrep_decomposition(self):
         """Test the decomposition for StatePrep."""
