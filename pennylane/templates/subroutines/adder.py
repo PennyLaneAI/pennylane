@@ -24,8 +24,9 @@ class Adder(Operation):
 
     This operator adds the integer :math:`k` modulo :math:`mod` in the computational basis:
 
-        .. math::
-            Adder(k,mod) |m \rangle = | m+k \, \textrm{mod} \, mod \rangle,
+    .. math::
+
+        \text{Adder}(k,mod) |m \rangle = | m+k \, \text{mod} \, mod \rangle,
 
     The decomposition of this operator is based on the QFT-based method presented in `Atchade-Adelomou and Gonzalez (2023) <https://arxiv.org/abs/2311.08555>`_.
 
