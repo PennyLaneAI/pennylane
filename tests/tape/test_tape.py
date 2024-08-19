@@ -804,8 +804,9 @@ class TestParameters:
             qml.Rot(params[1], params[2], params[3], wires=0)
 
         assert tape.num_params == len(params)
+        assert tape.get_parameters() == params
 
-        b = np.array([0.0, 1.0, 0.0, 0.0])
+        b = np.array([0, 1, 0, 0])
         new_params = [b, 0.543, 0.654, 0.123]
         new_tape = tape.bind_new_parameters(new_params, [0, 1, 2, 3])
 

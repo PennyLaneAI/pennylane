@@ -136,7 +136,7 @@ class StatePrep(StatePrepBase):
     :math:`2^n` where :math:`n` is the number of qubits used in the embedding.
 
     To represent a valid quantum state vector, the L2-norm of ``state`` must be one.
-    The argument ``normalize`` can be set to ``True`` to automatically normalize the features.
+    The argument ``normalize`` can be set to ``True`` to automatically normalize the state.
 
     **Details:**
 
@@ -157,12 +157,12 @@ class StatePrep(StatePrepBase):
         as :math:`U|0\rangle = |\psi\rangle`
 
     Args:
-        state (array[complex]): a state vector of size 2**len(wires)
+        state (array[complex]): the state vector to prepare
         wires (Sequence[int] or int): the wire(s) the operation acts on
         pad_with (float or complex): the value to pad the state vector with
         normalize (bool): whether to normalize the state vector
         id (str): custom label given to an operator instance,
-            can be useful for some applications where the instance has to be identified.
+            can be useful for some applications where the instance has to be identified
 
     **Example**
 
@@ -305,23 +305,23 @@ class StatePrep(StatePrepBase):
                 padding = math.convert_like(padding, state)
                 state = math.hstack([state, padding])
 
-        # normalize
-        if "int" in str(state.dtype):
-            state = math.cast_like(state, 0.0)
-        norm = math.linalg.norm(state, axis=-1)
+        if normalize:
+            if "int" in str(state.dtype):
+                state = math.cast_like(state, 0.0)
+            norm = math.linalg.norm(state, axis=-1)
 
-        if math.is_abstract(norm):
-            if normalize or pad_with:
-                state = state / math.reshape(norm, (*shape[:-1], 1))
+            if math.is_abstract(norm):
+                if normalize or pad_with:
+                    state = state / math.reshape(norm, (*shape[:-1], 1))
 
-        elif not math.allclose(norm, 1.0, atol=TOLERANCE):
-            if normalize or pad_with:
-                state = state / math.reshape(norm, (*shape[:-1], 1))
-            else:
-                raise ValueError(
-                    f"The state must be a vector of norm 1.0; got norm {norm}. "
-                    "Use 'normalize=True' to automatically normalize."
-                )
+            elif not math.allclose(norm, 1.0, atol=TOLERANCE):
+                if normalize or pad_with:
+                    state = state / math.reshape(norm, (*shape[:-1], 1))
+                else:
+                    raise ValueError(
+                        f"The state must be a vector of norm 1.0; got norm {norm}. "
+                        "Use 'normalize=True' to automatically normalize."
+                    )
 
         return state
 
