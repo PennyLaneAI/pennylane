@@ -66,6 +66,8 @@ class TestDecomposition:
         ops2 = qml.BasisState(n, wires=wires).decomposition()
 
         assert len(ops1) == len(ops2) == 1
+        assert isinstance(ops1[0], qml.BasisStatePreparation)
+        assert isinstance(ops2[0], qml.BasisStatePreparation)
 
     def test_StatePrep_decomposition(self):
         """Test the decomposition for StatePrep."""
