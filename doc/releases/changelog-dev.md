@@ -4,6 +4,29 @@
 
 <h3>New features since last release</h3>
 
+<h4>Converting noise models from Qiskit ♻️</h4>
+
+* A new `qml.from_qiskit_noise` method now allows one to convert a Qiskit ``NoiseModel`` to a
+  PennyLane ``NoiseModel`` via the Pennylane-Qiskit plugin.
+  [(#5996)](https://github.com/PennyLaneAI/pennylane/pull/5996)
+
+<h4>Registers of wires 🌈</h4>
+
+* Set operations are now supported by Wires.
+  [(#5983)](https://github.com/PennyLaneAI/pennylane/pull/5983)
+
+* The representation for `Wires` has now changed to be more copy-paste friendly.
+  [(#5958)](https://github.com/PennyLaneAI/pennylane/pull/5958)
+
+* A new function `qml.registers` has been added, enabling the creation of registers, which are implemented as a dictionary of `Wires` instances.
+  [(#5957)](https://github.com/PennyLaneAI/pennylane/pull/5957)
+
+<h4>Quantum arithmetic operations 🧮</h4>
+
+<h4>Creating spin Hamiltonians 🧑‍🎨</h4>
+
+<h3>Improvements 🛠</h3>
+
 * Mid-circuit measurements can now be captured with `qml.capture` enabled.
   [(#6015)](https://github.com/PennyLaneAI/pennylane/pull/6015)
 
@@ -24,6 +47,7 @@
 
 * A new function `qml.registers` has been added, enabling the creation of registers, which are implemented as a dictionary of `Wires` instances.
   [(#5957)](https://github.com/PennyLaneAI/pennylane/pull/5957)
+  [(#6102)](https://github.com/PennyLaneAI/pennylane/pull/6102)
 
 * The `split_to_single_terms` transform is added. This transform splits expectation values of sums
   into multiple single-term measurements on a single tape, providing better support for simulators
@@ -41,16 +65,37 @@
   users to have more control over the error mitigation protocol without needing to add further dependencies.
   [(#5972)](https://github.com/PennyLaneAI/pennylane/pull/5972)
 
-<h3>Improvements 🛠</h3>
+* The `diagonalize_measurements` transform is added. This transform converts measurements
+  to the Z basis by applying the relevant diagonalizing gates. It can be set to diagonalize only 
+  a subset of the base observables `{X, Y, Z, Hadamard}`.
+  [(#5829)](https://github.com/PennyLaneAI/pennylane/pull/5829)
+
+* The `qml.PrepSelPrep` template is added. The template implements a block-encoding of a linear
+  combination of unitaries.
+  [(#5756)](https://github.com/PennyLaneAI/pennylane/pull/5756)
+  [(#5987)](https://github.com/PennyLaneAI/pennylane/pull/5987)
+
+* `fuse_rot_angles` now respects the global phase of the combined rotations.
+  [(#6031)](https://github.com/PennyLaneAI/pennylane/pull/6031)
+
+* `fuse_rot_angles` now respects the global phase of the combined rotations.
+  [(#6031)](https://github.com/PennyLaneAI/pennylane/pull/6031)
 
 * `QNGOptimizer` now supports cost functions with multiple arguments, updating each argument independently.
   [(#5926)](https://github.com/PennyLaneAI/pennylane/pull/5926)
 
 * `qml.for_loop` can now be captured into plxpr.
   [(#6041)](https://github.com/PennyLaneAI/pennylane/pull/6041)
+  [(#6064)](https://github.com/PennyLaneAI/pennylane/pull/6064)
+
+* `qml.for_loop` now supports `range`-like syntax with default `step=1`.
+  [(#6068)](https://github.com/PennyLaneAI/pennylane/pull/6068)
 
 * Removed `semantic_version` from the list of required packages in PennyLane. 
   [(#5836)](https://github.com/PennyLaneAI/pennylane/pull/5836)
+
+* Added the `compute_decomposition` method for `qml.Hermitian`.
+  [(#6062)](https://github.com/PennyLaneAI/pennylane/pull/6062)
 
 * During experimental program capture, the qnode can now use closure variables.
   [(#6052)](https://github.com/PennyLaneAI/pennylane/pull/6052)
@@ -80,19 +125,20 @@
   [(#5919)](https://github.com/PennyLaneAI/pennylane/pull/5919)
 
 * Applying `adjoint` and `ctrl` to a quantum function can now be captured into plxpr.
-  Furthermore, the `qml.cond` function can be captured into plxpr. 
+  Furthermore, the `qml.cond` function can be captured into plxpr.
   [(#5966)](https://github.com/PennyLaneAI/pennylane/pull/5966)
   [(#5967)](https://github.com/PennyLaneAI/pennylane/pull/5967)
   [(#5999)](https://github.com/PennyLaneAI/pennylane/pull/5999)
+  [(#6058)](https://github.com/PennyLaneAI/pennylane/pull/6058)
+
+* During experimental program capture, functions that accept and/or return `pytree` structures can now be handled in the `QNode` call, `cond`, `for_loop` and `while_loop`. 
+  [(#6081)](https://github.com/PennyLaneAI/pennylane/pull/6081)
 
 * Set operations are now supported by Wires.
   [(#5983)](https://github.com/PennyLaneAI/pennylane/pull/5983)
 
 * `qml.dynamic_one_shot` now supports circuits using the `"tensorflow"` interface.
   [(#5973)](https://github.com/PennyLaneAI/pennylane/pull/5973)
-
-* The representation for `Wires` has now changed to be more copy-paste friendly.
-  [(#5958)](https://github.com/PennyLaneAI/pennylane/pull/5958)
 
 * Observable validation for `default.qubit` is now based on execution mode (analytic vs. finite shots) and measurement type (sample measurement vs. state measurement).
   [(#5890)](https://github.com/PennyLaneAI/pennylane/pull/5890)
@@ -278,6 +324,9 @@
 * Fix `pauli.dla.PauliVSpace` to compute linear independence in a more stable manner.
   [(#6075)](https://github.com/PennyLaneAI/pennylane/pull/6075)
   
+* `fuse_rot_angles` no longer returns wrong derivatives at singular points but returns NaN.
+  [(#6031)](https://github.com/PennyLaneAI/pennylane/pull/6031)
+
 * `qml.GlobalPhase` and `qml.I` can now be captured when acting on no wires.
   [(#6060)](https://github.com/PennyLaneAI/pennylane/pull/6060)
 
@@ -316,6 +365,12 @@
 * `qml.lie_closure` works with sums of Paulis.
   [(#6023)](https://github.com/PennyLaneAI/pennylane/pull/6023)
 
+* Workflows that parameterize the coefficients of `qml.exp` are now jit-compatible.
+  [(#6082)](https://github.com/PennyLaneAI/pennylane/pull/6082)
+
+* Fixes a bug where `CompositeOp.overlapping_ops` changes the original ordering of ops, causing incorrect matrix generated for `Prod` with `Sum` as operands.
+  [(#6091)](https://github.com/PennyLaneAI/pennylane/pull/6091)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -342,6 +397,7 @@ William Maxwell,
 Vincent Michaud-Rioux,
 Anurav Modak,
 Mudit Pandey,
+Andrija Paurevic,
 Erik Schultheis,
 nate stemen,
 David Wierichs,

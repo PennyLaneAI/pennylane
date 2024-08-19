@@ -405,15 +405,10 @@ def _add_control_gate(op, control_wires, reduce_postselected):
     for branch, value in items:
         if value:
             # Empty sampling branches can occur when using _postselected_items
-            if branch == ():
-                new_ops.append(op.base)
-                continue
-            qscript = qml.tape.make_qscript(
-                ctrl(
-                    lambda: qml.apply(op.base),  # pylint: disable=cell-var-from-loop
-                    control=Wires(control),
-                    control_values=branch,
-                )
-            )()
-            new_ops.extend(qscript.circuit)
+            new_op = (
+                op.base
+                if branch == ()
+                else ctrl(op.base, control=Wires(control), control_values=branch)
+            )
+            new_ops.append(new_op)
     return new_ops
