@@ -194,18 +194,19 @@ def test_flatten_is_leaf():
     data, _structure = flatten(items, z)
     assert data == [1, 2, 3, (4, 5), 6, 7, {"a": 1, "b": 2}, 3, 4]
 
-    #case 2 - is_leaf is lambda to mark any tuple to not be flatten-ed
+    # case 2 - is_leaf is lambda to mark any tuple to not be flatten-ed
     z = lambda a: isinstance(a, tuple)
     items = [1, 2, 3, (4, 5), 6, 7, (1, 2, 3, 4), {"a": 1, "b": 2}, {"a": 3, "b": 4}]
     data, _structure = flatten(items, z)
     assert data == [1, 2, 3, (4, 5), 6, 7, (1, 2, 3, 4), 1, 2, 3, 4]
 
+
 def test_unflatten_is_leaf():
     """Tests for unflatten function following flatten function's is_leaf parameter
-        objective is to confirm that data processed with the flatten function 
-        becomes correctly reconstituted with the unflatten function.
+    objective is to confirm that data processed with the flatten function
+    becomes correctly reconstituted with the unflatten function.
     """
-    #case 1 - is_leaf given a None argument explcitly
+    # case 1 - is_leaf given a None argument explcitly
     z = None
     items = [1, 2, 3, (4, 5), 6, 7, (1, 2, 3, 4), {"a": 1, "b": 2}, {"a": 3, "b": 4}]
     data, _structure = flatten(items, z)
@@ -213,14 +214,14 @@ def test_unflatten_is_leaf():
     reconstituted_data = unflatten(data, _structure)
     assert reconstituted_data == items
 
-    #case 2 - no is_leaf given
+    # case 2 - no is_leaf given
     items = [1, 2, 3, (4, 5), 6, 7, {"a": 1, "b": 2}, {"a": 3, "b": 4}]
     data, _structure = flatten(items)
     assert data == [1, 2, 3, 4, 5, 6, 7, 1, 2, 3, 4]
     reconstituted_data = unflatten(data, _structure)
     assert reconstituted_data == items
 
-    #case 3 - is_leaf is lambda to mark any tuple to not be flatten-ed
+    # case 3 - is_leaf is lambda to mark any tuple to not be flatten-ed
     z = lambda a: isinstance(a, tuple)
     items = [1, 2, 3, (4, 5), 6, 7, (1, 2, 3, 4), {"a": 1, "b": 2}, {"a": 3, "b": 4}]
     data, _structure = flatten(items, z)
@@ -228,20 +229,21 @@ def test_unflatten_is_leaf():
     reconstituted_data = unflatten(data, _structure)
     assert reconstituted_data == items
 
-    #case 4 - is_leaf is lambda to mark elements from a list to not flatten
+    # case 4 - is_leaf is lambda to mark elements from a list to not flatten
     item_leaves = [(4, 5), 6, {"a": 1, "b": 2}]
     z = lambda a: (a in item_leaves)
     items = [1, 2, 3, (4, 5), 6, 7, {"a": 1, "b": 2}, {"a": 3, "b": 4}]
     data, _structure = flatten(items, z)
     assert data == [1, 2, 3, (4, 5), 6, 7, {"a": 1, "b": 2}, 3, 4]
 
+
 def test_unflatten_for_structure_is_leaf():
-    """Tests for unflatten function's structure reconstitution following flatten 
-        function's is_leaf parameter. Objective is to confirm that data processed 
-        with the flatten function becomes correctly reconstituted with respect to 
-        structure with the unflatten function.
+    """Tests for unflatten function's structure reconstitution following flatten
+    function's is_leaf parameter. Objective is to confirm that data processed
+    with the flatten function becomes correctly reconstituted with respect to
+    structure with the unflatten function.
     """
-    #case 1 - no is_leaf given
+    # case 1 - no is_leaf given
     items = (1, 2, (3, 4))
     data, _structure = flatten(items)
     assert data == [1, 2, 3, 4]
@@ -251,15 +253,12 @@ def test_unflatten_for_structure_is_leaf():
     reconstituted_data = unflatten([5, 6, 7, 8], _structure)
     assert reconstituted_data == (5, 6, (7, 8))
 
-    #case 2 - is_leaf is lambda to mark elements from a list to not flatten
-    item_leaves = [(3,4), 6, {"a": 1, "b": 2}]
+    # case 2 - is_leaf is lambda to mark elements from a list to not flatten
+    item_leaves = [(3, 4), 6, {"a": 1, "b": 2}]
     z = lambda a: (a in item_leaves)
     items = (1, 2, (3, 4))
     data, _structure = flatten(items, z)
     assert data == [1, 2, (3, 4)]
-    assert _structure == PyTreeStructure(
-        tuple, None, [leaf, leaf, leaf]
-    )
+    assert _structure == PyTreeStructure(tuple, None, [leaf, leaf, leaf])
     reconstituted_data = unflatten([5, 6, (7, 8)], _structure)
     assert reconstituted_data == (5, 6, (7, 8))
-
