@@ -19,9 +19,15 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 
+DEP_WARNING_MESSAGE_RELATIVE_ENTROPY = (
+    "The qml.qinfo.relative_entropy transform is deprecated and will be removed "
+    "in 0.40. Use qml.math.relative_entropy instead."
+)
+
 DEP_WARNING_MESSAGE_VN_ENTROPY = (
     "The qml.qinfo.vn_entropy transform is deprecated and will be removed "
     "in 0.40. Instead include the qml.vn_entropy measurement process in the "
+    "return line of your QNode."
 )
 
 DEP_WARNING_MESSAGE_MUTUAL_INFO = (
@@ -80,6 +86,21 @@ class TestVonNeumannEntropy:
 
     parameters = np.linspace(0, 2 * np.pi, 10)
     devices = ["default.qubit", "default.mixed", "lightning.qubit"]
+
+    def test_qinfo_vn_entropy_deprecated(self):
+        """Test that qinfo.vn_entropy is deprecated."""
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit():
+            return qml.state()
+
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match=DEP_WARNING_MESSAGE_VN_ENTROPY,
+        ):
+            _ = qml.qinfo.vn_entropy(circuit, [0])()
 
     def test_vn_entropy_cannot_specify_device(self):
         """Test that an error is raised if a device or device wires are given
@@ -487,7 +508,7 @@ class TestVonNeumannEntropy:
 
 
 class TestRelativeEntropy:
-    """Tests for the mutual information functions"""
+    """Tests for the relative entropy information functions"""
 
     diff_methods = ["backprop", "finite-diff"]
 
@@ -496,7 +517,26 @@ class TestRelativeEntropy:
     # to avoid nan values in the gradient for relative entropy
     grad_params = [[0.123, 0.456], [0.789, 1.618]]
 
-    @pytest.mark.all_interfaces
+    def test_qinfo_relative_entropy_deprecated(self):
+        """Test that qinfo.relative_entropy is deprecated."""
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit(param):
+            qml.RY(param, wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.state()
+
+        x, y = 0.4, 0.6
+
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match=DEP_WARNING_MESSAGE_RELATIVE_ENTROPY,
+        ):
+            _ = qml.qinfo.relative_entropy(circuit, circuit, wires0=[0], wires1=[0])((x,), (y,))
+
+    # @pytest.mark.all_interfaces
     @pytest.mark.parametrize("device", ["default.qubit", "default.mixed", "lightning.qubit"])
     @pytest.mark.parametrize("interface", ["autograd", "jax", "tensorflow", "torch"])
     @pytest.mark.parametrize("param", params)
@@ -519,7 +559,12 @@ class TestRelativeEntropy:
             qml.CNOT(wires=[0, 1])
             return qml.state()
 
-        rel_ent_circuit = qml.qinfo.relative_entropy(circuit1, circuit2, [0], [1])
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match=DEP_WARNING_MESSAGE_RELATIVE_ENTROPY,
+        ):
+            rel_ent_circuit = qml.qinfo.relative_entropy(circuit1, circuit2, [0], [1])
+
         actual = rel_ent_circuit((param[0],), (param[1],))
 
         # compare transform results with analytic results
@@ -545,7 +590,7 @@ class TestRelativeEntropy:
     @pytest.mark.parametrize("param", params)
     @pytest.mark.parametrize("interface", interfaces)
     def test_qnode_relative_entropy_jax_jit(self, param, interface):
-        """Test that the mutual information transform works for QNodes by comparing
+        """Test that the relative entropy transform works for QNodes by comparing
         against analytic values, for the JAX-jit interface"""
         import jax
         import jax.numpy as jnp
@@ -566,8 +611,12 @@ class TestRelativeEntropy:
             qml.CNOT(wires=[0, 1])
             return qml.state()
 
-        rel_ent_circuit = qml.qinfo.relative_entropy(circuit1, circuit2, [0], [1])
-        actual = jax.jit(rel_ent_circuit)((param[0],), (param[1],))
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match=DEP_WARNING_MESSAGE_RELATIVE_ENTROPY,
+        ):
+            rel_ent_circuit = qml.qinfo.relative_entropy(circuit1, circuit2, [0], [1])
+            actual = jax.jit(rel_ent_circuit)((param[0],), (param[1],))
 
         # compare transform results with analytic results
         first_term = (
@@ -609,21 +658,25 @@ class TestRelativeEntropy:
             qml.CNOT(wires=[0, 1])
             return qml.state()
 
-        rel_ent_circuit = qml.qinfo.relative_entropy(circuit1, circuit2, [0], [1])
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match=DEP_WARNING_MESSAGE_RELATIVE_ENTROPY,
+        ):
+            rel_ent_circuit = qml.qinfo.relative_entropy(circuit1, circuit2, [0], [1])
 
-        def wrapper(param0, param1):
-            return rel_ent_circuit((param0,), (param1,))
+            def wrapper(param0, param1):
+                return rel_ent_circuit((param0,), (param1,))
 
-        expected = [
-            np.sin(param[0] / 2)
-            * np.cos(param[0] / 2)
-            * (np.log(np.tan(param[0] / 2) ** 2) - np.log(np.tan(param[1] / 2) ** 2)),
-            np.cos(param[0] / 2) ** 2 * np.tan(param[1] / 2)
-            - np.sin(param[0] / 2) ** 2 / np.tan(param[1] / 2),
-        ]
+            expected = [
+                np.sin(param[0] / 2)
+                * np.cos(param[0] / 2)
+                * (np.log(np.tan(param[0] / 2) ** 2) - np.log(np.tan(param[1] / 2) ** 2)),
+                np.cos(param[0] / 2) ** 2 * np.tan(param[1] / 2)
+                - np.sin(param[0] / 2) ** 2 / np.tan(param[1] / 2),
+            ]
 
-        param0, param1 = jnp.array(param[0]), jnp.array(param[1])
-        actual = jax.grad(wrapper, argnums=[0, 1])(param0, param1)
+            param0, param1 = jnp.array(param[0]), jnp.array(param[1])
+            actual = jax.grad(wrapper, argnums=[0, 1])(param0, param1)
 
         assert np.allclose(actual, expected, atol=1e-8)
 
@@ -650,21 +703,25 @@ class TestRelativeEntropy:
             qml.CNOT(wires=[0, 1])
             return qml.state()
 
-        rel_ent_circuit = qml.qinfo.relative_entropy(circuit1, circuit2, [0], [1])
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match=DEP_WARNING_MESSAGE_RELATIVE_ENTROPY,
+        ):
+            rel_ent_circuit = qml.qinfo.relative_entropy(circuit1, circuit2, [0], [1])
 
-        def wrapper(param0, param1):
-            return rel_ent_circuit((param0,), (param1,))
+            def wrapper(param0, param1):
+                return rel_ent_circuit((param0,), (param1,))
 
-        expected = [
-            np.sin(param[0] / 2)
-            * np.cos(param[0] / 2)
-            * (np.log(np.tan(param[0] / 2) ** 2) - np.log(np.tan(param[1] / 2) ** 2)),
-            np.cos(param[0] / 2) ** 2 * np.tan(param[1] / 2)
-            - np.sin(param[0] / 2) ** 2 / np.tan(param[1] / 2),
-        ]
+            expected = [
+                np.sin(param[0] / 2)
+                * np.cos(param[0] / 2)
+                * (np.log(np.tan(param[0] / 2) ** 2) - np.log(np.tan(param[1] / 2) ** 2)),
+                np.cos(param[0] / 2) ** 2 * np.tan(param[1] / 2)
+                - np.sin(param[0] / 2) ** 2 / np.tan(param[1] / 2),
+            ]
 
-        param0, param1 = jnp.array(param[0]), jnp.array(param[1])
-        actual = jax.jit(jax.grad(wrapper, argnums=[0, 1]))(param0, param1)
+            param0, param1 = jnp.array(param[0]), jnp.array(param[1])
+            actual = jax.jit(jax.grad(wrapper, argnums=[0, 1]))(param0, param1)
 
         assert np.allclose(actual, expected, atol=1e-8)
 
@@ -690,21 +747,25 @@ class TestRelativeEntropy:
             qml.CNOT(wires=[0, 1])
             return qml.state()
 
-        rel_ent_circuit = qml.qinfo.relative_entropy(circuit1, circuit2, [0], [1])
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match=DEP_WARNING_MESSAGE_RELATIVE_ENTROPY,
+        ):
+            rel_ent_circuit = qml.qinfo.relative_entropy(circuit1, circuit2, [0], [1])
 
-        def wrapper(param0, param1):
-            return rel_ent_circuit((param0,), (param1,))
+            def wrapper(param0, param1):
+                return rel_ent_circuit((param0,), (param1,))
 
-        expected = [
-            np.sin(param[0] / 2)
-            * np.cos(param[0] / 2)
-            * (np.log(np.tan(param[0] / 2) ** 2) - np.log(np.tan(param[1] / 2) ** 2)),
-            np.cos(param[0] / 2) ** 2 * np.tan(param[1] / 2)
-            - np.sin(param[0] / 2) ** 2 / np.tan(param[1] / 2),
-        ]
+            expected = [
+                np.sin(param[0] / 2)
+                * np.cos(param[0] / 2)
+                * (np.log(np.tan(param[0] / 2) ** 2) - np.log(np.tan(param[1] / 2) ** 2)),
+                np.cos(param[0] / 2) ** 2 * np.tan(param[1] / 2)
+                - np.sin(param[0] / 2) ** 2 / np.tan(param[1] / 2),
+            ]
 
-        param0, param1 = np.array(param[0]), np.array(param[1])
-        actual = qml.grad(wrapper)(param0, param1)
+            param0, param1 = np.array(param[0]), np.array(param[1])
+            actual = qml.grad(wrapper)(param0, param1)
 
         assert np.allclose(actual, expected, atol=1e-8)
 
@@ -741,8 +802,13 @@ class TestRelativeEntropy:
         ]
 
         param0, param1 = tf.Variable(param[0]), tf.Variable(param[1])
-        with tf.GradientTape() as tape:
-            out = qml.qinfo.relative_entropy(circuit1, circuit2, [0], [1])((param0,), (param1,))
+
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match=DEP_WARNING_MESSAGE_RELATIVE_ENTROPY,
+        ):
+            with tf.GradientTape() as tape:
+                out = qml.qinfo.relative_entropy(circuit1, circuit2, [0], [1])((param0,), (param1,))
 
         actual = tape.gradient(out, [param0, param1])
 
@@ -782,14 +848,19 @@ class TestRelativeEntropy:
 
         param0 = torch.tensor(param[0], requires_grad=True)
         param1 = torch.tensor(param[1], requires_grad=True)
-        out = qml.qinfo.relative_entropy(circuit1, circuit2, [0], [1])((param0,), (param1,))
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match=DEP_WARNING_MESSAGE_RELATIVE_ENTROPY,
+        ):
+            out = qml.qinfo.relative_entropy(circuit1, circuit2, [0], [1])((param0,), (param1,))
+
         out.backward()
 
         actual = [param0.grad, param1.grad]
 
         assert np.allclose(actual, expected, atol=1e-8)
 
-    @pytest.mark.all_interfaces
+    # @pytest.mark.all_interfaces
     @pytest.mark.parametrize("device", ["default.qubit", "default.mixed", "lightning.qubit"])
     @pytest.mark.parametrize("interface", ["autograd", "jax", "tensorflow", "torch"])
     def test_num_wires_mismatch(self, device, interface):
@@ -828,12 +899,16 @@ class TestRelativeEntropy:
             qml.RY(param, wires=0)
             return qml.state()
 
-        rel_ent_circuit = qml.qinfo.relative_entropy(circuit1, circuit2, [0], [0])
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match=DEP_WARNING_MESSAGE_RELATIVE_ENTROPY,
+        ):
+            rel_ent_circuit = qml.qinfo.relative_entropy(circuit1, circuit2, [0], [0])
 
-        x, y = np.array(0.3), np.array(0.7)
+            x, y = np.array(0.3), np.array(0.7)
 
-        # test that the circuit executes
-        rel_ent_circuit(x, y)
+            # test that the circuit executes
+            rel_ent_circuit(x, y)
 
     @pytest.mark.parametrize("device", ["default.qubit", "default.mixed", "lightning.qubit"])
     def test_qnode_no_args(self, device):
@@ -852,10 +927,14 @@ class TestRelativeEntropy:
             qml.CNOT(wires=[0, 1])
             return qml.state()
 
-        rel_ent_circuit = qml.qinfo.relative_entropy(circuit1, circuit2, [0], [1])
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match=DEP_WARNING_MESSAGE_RELATIVE_ENTROPY,
+        ):
+            rel_ent_circuit = qml.qinfo.relative_entropy(circuit1, circuit2, [0], [1])
 
-        # test that the circuit executes
-        rel_ent_circuit()
+            # test that the circuit executes
+            rel_ent_circuit()
 
     @pytest.mark.parametrize("device", ["default.qubit", "default.mixed", "lightning.qubit"])
     def test_qnode_kwargs(self, device):
@@ -874,10 +953,14 @@ class TestRelativeEntropy:
             qml.CNOT(wires=[0, 1])
             return qml.state()
 
-        rel_ent_circuit = qml.qinfo.relative_entropy(circuit1, circuit2, [0], [1])
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match=DEP_WARNING_MESSAGE_RELATIVE_ENTROPY,
+        ):
+            rel_ent_circuit = qml.qinfo.relative_entropy(circuit1, circuit2, [0], [1])
 
-        x, y = np.array(0.4), np.array(0.8)
-        actual = rel_ent_circuit(({"param": x},), ({"param": y},))
+            x, y = np.array(0.4), np.array(0.8)
+            actual = rel_ent_circuit(({"param": x},), ({"param": y},))
 
         # compare transform results with analytic results
         expected = (
@@ -899,8 +982,12 @@ class TestRelativeEntropy:
             qml.CNOT(wires=wires)
             return qml.state()
 
-        rel_ent_circuit = qml.qinfo.relative_entropy(circuit, circuit, [wires[0]], [wires[1]])
-        actual = rel_ent_circuit((param[0],), (param[1],))
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match=DEP_WARNING_MESSAGE_RELATIVE_ENTROPY,
+        ):
+            rel_ent_circuit = qml.qinfo.relative_entropy(circuit, circuit, [wires[0]], [wires[1]])
+            actual = rel_ent_circuit((param[0],), (param[1],))
 
         # compare transform results with analytic results
         first_term = np.cos(param[0] / 2) ** 2 * (
@@ -968,9 +1055,14 @@ class TestBroadcasting:
 
         x = np.array([0.4, 0.6, 0.8])
         y = np.array([0.6, 0.8, 1.0])
-        entropy = qml.qinfo.relative_entropy(circuit_state, circuit_state, wires0=[0], wires1=[1])(
-            x, y
-        )
+
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match=DEP_WARNING_MESSAGE_RELATIVE_ENTROPY,
+        ):
+            entropy = qml.qinfo.relative_entropy(
+                circuit_state, circuit_state, wires0=[0], wires1=[1]
+            )(x, y)
 
         eigs0 = np.stack([np.cos(x / 2) ** 2, np.sin(x / 2) ** 2])
         eigs1 = np.stack([np.cos(y / 2) ** 2, np.sin(y / 2) ** 2])
