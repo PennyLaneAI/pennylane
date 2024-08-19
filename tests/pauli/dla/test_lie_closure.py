@@ -322,7 +322,7 @@ class TestPauliVSpace:
         len_before = 0
         while True:
             basis_copy = vspace.basis.copy()
-            for m, Om in enumerate(basis_copy[len_before:]):
+            for Om in basis_copy[len_before:]:
                 com = H.commutator(Om)
                 com.simplify()
 
