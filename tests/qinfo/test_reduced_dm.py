@@ -75,15 +75,11 @@ class TestDensityMatrixQNode:
             qml.CNOT(wires=[0, 1])
             return qml.state()
 
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning,
-            match=DEP_WARNING_MESSAGE,
-        ):
-            with pytest.raises(ValueError, match="Cannot provide a 'device' value"):
-                _ = qml.qinfo.reduced_dm(circuit, wires=[0], device=dev)
+        with pytest.raises(ValueError, match="Cannot provide a 'device' value"):
+            _ = qml.qinfo.reduced_dm(circuit, wires=[0], device=dev)
 
-            with pytest.raises(ValueError, match="Cannot provide a 'device_wires' value"):
-                _ = qml.qinfo.reduced_dm(circuit, wires=[0], device_wires=dev.wires)
+        with pytest.raises(ValueError, match="Cannot provide a 'device_wires' value"):
+            _ = qml.qinfo.reduced_dm(circuit, wires=[0], device_wires=dev.wires)
 
     @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("interface", interfaces)
@@ -207,11 +203,13 @@ class TestDensityMatrixQNode:
             qml.PennyLaneDeprecationWarning,
             match=DEP_WARNING_MESSAGE,
         ):
-            density_matrix = tf.function(
-                qml.qinfo.reduced_dm(circuit, wires=[0]),
-                jit_compile=True,
-                input_signature=(tf.TensorSpec(shape=(), dtype=tf.float32),),
-            )
+            dm = qml.qinfo.reduced_dm(circuit, wires=[0])
+
+        density_matrix = tf.function(
+            dm,
+            jit_compile=True,
+            input_signature=(tf.TensorSpec(shape=(), dtype=tf.float32),),
+        )
 
         density_matrix = density_matrix(tf.Variable(0.0, dtype=tf.float32))
         assert np.allclose(density_matrix, [[1, 0], [0, 0]])
