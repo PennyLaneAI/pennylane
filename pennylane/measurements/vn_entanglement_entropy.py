@@ -15,13 +15,13 @@
 """
 This module contains the qml.vn_entanglement_entropy measurement.
 """
-from typing import Optional, Sequence
 from copy import copy
+from typing import Optional, Sequence
 
 import pennylane as qml
 from pennylane.wires import Wires
 
-from .measurements import VnEntanglementEntropy, StateMeasurement
+from .measurements import StateMeasurement, VnEntanglementEntropy
 
 
 def vn_entanglement_entropy(wires0, wires1, log_base=None):
