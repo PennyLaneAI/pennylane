@@ -135,6 +135,11 @@ def purity(tape: QuantumTape, wires, **kwargs) -> tuple[QuantumTapeBatch, Postpr
     :math:`\frac{1}{d} \leq \gamma \leq 1`, where :math:`d` is the dimension of the Hilbert space.
     A pure state has a purity of 1.
 
+    .. warning::
+
+        The qml.qinfo.purity transform is deprecated and will be removed in 0.40. Instead include
+        the :func:`pennylane.purity` measurement process in the return line of your QNode.
+
     It is possible to compute the purity of a sub-system from a given state. To find the purity of
     the overall state, include all wires in the ``wires`` argument.
 
@@ -176,6 +181,13 @@ def purity(tape: QuantumTape, wires, **kwargs) -> tuple[QuantumTapeBatch, Postpr
 
     .. seealso:: :func:`pennylane.math.purity`
     """
+
+    warnings.warn(
+        "The qml.qinfo.purity transform is deprecated and will be removed "
+        "in 0.40. Instead include the qml.purity measurement process in the "
+        "return line of your QNode.",
+        qml.PennyLaneDeprecationWarning,
+    )
 
     # device_wires is provided by the custom QNode transform
     all_wires = kwargs.get("device_wires", tape.wires)
