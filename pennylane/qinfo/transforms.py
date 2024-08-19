@@ -1176,6 +1176,7 @@ def trace_distance(qnode0, qnode1, wires0, wires1):
     if len(wires0) != len(wires1):
         raise qml.QuantumFunctionError("The two states must have the same number of wires.")
 
+    warnings.filterwarnings("ignore")
     state_qnode0 = qml.qinfo.reduced_dm(qnode0, wires=wires0)
     state_qnode1 = qml.qinfo.reduced_dm(qnode1, wires=wires1)
 
