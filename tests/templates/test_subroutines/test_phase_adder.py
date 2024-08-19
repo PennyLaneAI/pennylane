@@ -34,8 +34,8 @@ def test_standard_validity_Phase_Adder():
 def _add_k_fourier(k, wires):
     """Adds k in the Fourier basis"""
     op_list = []
-    for j in range(len(wires)):
-        op_list.append(qml.PhaseShift(k * np.pi / (2**j), wires=wires[j]))
+    for j, wire in enumerate(wires):
+        op_list.append(qml.PhaseShift(k * np.pi / (2**j), wires=wire))
     return op_list
 
 
@@ -91,7 +91,7 @@ class TestPhaseAdder:
             qml.adjoint(qml.QFT)(wires=work_wires[:1] + wires)
             return qml.sample(wires=wires)
 
-        if mod == None:
+        if mod is None:
             max = 2 ** len(wires)
         else:
             max = mod
@@ -132,19 +132,19 @@ class TestPhaseAdder:
         @qml.qnode(dev)
         def circuit(m):
             qml.BasisEmbedding(m, wires=wires)
-            if mod == None:
+            if mod is None:
                 qml.QFT(wires=wires)
             else:
                 qml.QFT(wires=[4] + wires)
             qml.PhaseAdder(k, wires, mod, work_wires)
-            if mod == None:
+            if mod is None:
                 qml.adjoint(qml.QFT)(wires=wires)
             else:
                 qml.adjoint(qml.QFT)(wires=[4] + wires)
 
             return qml.sample(wires=wires)
 
-        if mod == None:
+        if mod is None:
             max = 2 ** len(wires)
         else:
             max = mod
@@ -166,7 +166,9 @@ class TestPhaseAdder:
             ),
         ],
     )
-    def test_operation_error(self, k, wires, mod, work_wires, msg_match):
+    def test_operation_error(
+        self, k, wires, mod, work_wires, msg_match
+    ):  # pylint: disable=too-many-arguments
         """Test an error is raised when k or mod don't meet the requirements"""
         with pytest.raises(ValueError, match=msg_match):
             qml.PhaseAdder(k, wires, mod, work_wires)
@@ -183,7 +185,9 @@ class TestPhaseAdder:
             ),
         ],
     )
-    def test_wires_error(self, k, wires, mod, work_wires, msg_match):
+    def test_wires_error(
+        self, k, wires, mod, work_wires, msg_match
+    ):  # pylint: disable=too-many-arguments
         """Test an error is raised when some wire in work_wires is in wires"""
         with pytest.raises(ValueError, match=msg_match):
             qml.PhaseAdder(k, wires, mod, work_wires)
@@ -200,15 +204,13 @@ class TestPhaseAdder:
         )
         op_list = []
 
-        if mod == 2 ** (len(wires)):
-            # we perform m+k modulo 2^len(wires)
+        if mod == 2 ** len(wires):
             op_list.extend(_add_k_fourier(k, wires))
         else:
             new_wires = work_wires[:1] + wires
             work_wire = work_wires[1]
             aux_k = new_wires[0]
             op_list.extend(_add_k_fourier(k, new_wires))
-            # we implement this operators to make m+k modulo mod
             op_list.extend(qml.adjoint(_add_k_fourier)(mod, new_wires))
             op_list.append(qml.adjoint(qml.QFT)(wires=new_wires))
             op_list.append(qml.CNOT(wires=[aux_k, work_wire]))

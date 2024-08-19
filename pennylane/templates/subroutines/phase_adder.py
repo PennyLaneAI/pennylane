@@ -33,15 +33,14 @@ class PhaseAdder(Operation):
     This operator adds the integer :math:`k` modulo :math:`mod` in the Fourier basis:
 
     .. math::
-        PhaseAdder(k,mod) |\phi (m) \rangle = |\phi (m+k mod mod) \rangle,
+        \textrm{PhaseAdder}(k,mod) |\phi (m) \rangle = |\phi (m+k \textrm{ mod } mod) \rangle,
 
     where :math:`|\phi (m) \rangle` represents the :math:`| m \rangle`: state in the Fourier basis such:
 
     .. math::
         QFT |m \rangle = |\phi (m) \rangle.
 
-    The quantum circuit that represents the PhaseAdder operator is:
-
+    The decomposition of this operator is based on `Atchade-Adelomou and Gonzalez (2023) <https://arxiv.org/abs/2311.08555>`_
 
     Args:
         k (int): number that wants to be added
@@ -75,7 +74,7 @@ class PhaseAdder(Operation):
         >>> print(f"The ket representation of {m} + {k} mod {mod} is {adder_modulo(m, k, mod,wires_m,work_wires)}")
         The ket representation of 5 + 4 mod 7 is [0 1 0]
 
-    We can see that the result [0 1 0] corresponds to 2, which comes from :math:`5+4=9 \longrightarrow 9 mod 7 = 2`.
+    We can see that the result [0 1 0] corresponds to 2, which comes from :math:`5+4=9 \longrightarrow 9 \textrm{ mod } 7 = 2`.
     """
 
     grad_method = None
@@ -129,14 +128,12 @@ class PhaseAdder(Operation):
         op_list = []
 
         if mod == 2 ** len(wires):
-            # we perform m+k modulo 2^len(wires)
             op_list.extend(_add_k_fourier(k, wires))
         else:
             new_wires = work_wires[:1] + wires
             work_wire = work_wires[1]
             aux_k = new_wires[0]
             op_list.extend(_add_k_fourier(k, new_wires))
-            # we implement this operators to make m+k modulo mod
             op_list.extend(qml.adjoint(_add_k_fourier)(mod, new_wires))
             op_list.append(qml.adjoint(qml.QFT)(wires=new_wires))
             op_list.append(qml.CNOT(wires=[aux_k, work_wire]))

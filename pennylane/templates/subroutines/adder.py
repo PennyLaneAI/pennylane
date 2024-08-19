@@ -27,8 +27,7 @@ class Adder(Operation):
     .. math::
         Adder(k,mod) |m \rangle = | m+k mod mod \rangle,
 
-    The quantum circuit that represents the Adder operator is:
-    TO DO
+    The decomposition of this operator is based on `Atchade-Adelomou and Gonzalez (2023) <https://arxiv.org/abs/2311.08555>`_.
 
     Args:
         k (int): number that wants to be added
@@ -41,7 +40,7 @@ class Adder(Operation):
     Sum of two integers :math:`m=8` and :math:`k=5` modulo :math:`mod=15`. Note that to perform this sum using qml.Adder we need that :math:`m,k < mod`
 
     .. code-block::
-    
+
         m = 8
         k = 5
         mod = 15
@@ -68,7 +67,7 @@ class Adder(Operation):
     def __init__(
         self, k, wires, mod=None, work_wires=None, id=None
     ):  # pylint: disable=too-many-arguments
-        if mod == None:
+        if mod is None:
             mod = 2 ** (len(wires))
         if work_wires != None:
             if any(wire in work_wires for wire in wires):
@@ -111,7 +110,6 @@ class Adder(Operation):
             qft_wires = wires
         else:
             qft_wires = work_wires[:1] + wires
-        # we perform m+k modulo mod
         op_list.append(qml.QFT(qft_wires))
         op_list.append(qml.PhaseAdder(k, wires, mod, work_wires))
         op_list.append(qml.adjoint(qml.QFT)(qft_wires))

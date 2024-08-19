@@ -69,7 +69,7 @@ class TestAdder:
             qml.Adder(k, wires, mod, work_wires)
             return qml.sample(wires=wires)
 
-        if mod == None:
+        if mod is None:
             max = 2 ** len(wires)
         else:
             max = mod
@@ -113,7 +113,7 @@ class TestAdder:
             qml.Adder(k, wires, mod, work_wires)
             return qml.sample(wires=wires)
 
-        if mod == None:
+        if mod is None:
             max = 2 ** len(wires)
         else:
             max = mod
@@ -121,6 +121,25 @@ class TestAdder:
             assert np.allclose(
                 sum(bit * (2**i) for i, bit in enumerate(reversed(circuit(m)))), (m + k) % max
             )
+
+    @pytest.mark.parametrize(
+        ("k", "wires", "mod", "work_wires", "msg_match"),
+        [
+            (
+                3,
+                [0, 1, 2, 3, 4],
+                12,
+                [4, 5],
+                "Any wire in work_wires should not be included in wires.",
+            ),
+        ],
+    )
+    def test_wires_error(
+        self, k, wires, mod, work_wires, msg_match
+    ):  # pylint: disable=too-many-arguments
+        """Test an error is raised when some wire in work_wires is in wires"""
+        with pytest.raises(ValueError, match=msg_match):
+            qml.Adder(k, wires, mod, work_wires)
 
     @pytest.mark.parametrize(
         ("k", "wires", "mod", "work_wires"),
