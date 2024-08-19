@@ -188,7 +188,7 @@ def purity(tape: QuantumTape, wires, **kwargs) -> tuple[QuantumTapeBatch, Postpr
         "return line of your QNode.",
         qml.PennyLaneDeprecationWarning,
     )
-  
+
     # device_wires is provided by the custom QNode transform
     all_wires = kwargs.get("device_wires", tape.wires)
     wire_map = {w: i for i, w in enumerate(all_wires)}
@@ -442,7 +442,7 @@ def mutual_info(
         "return line of your QNode.",
         qml.PennyLaneDeprecationWarning,
     )
-    
+
     return _bipartite_qinfo_transform(qml.math.mutual_info, tape, wires0, wires1, base, **kwargs)
 
 
