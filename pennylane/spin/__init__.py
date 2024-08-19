@@ -16,6 +16,5 @@ This submodule provides the functionality to obtain spin Hamiltonians.
 """
 
 from .lattice import Lattice
-from .lattice_shapes import Chain, Square, Rectangle, Honeycomb, Triangle
-from .utils import map_vertices
+from .lattice_shapes import Chain, Honeycomb, Rectangle, Square, Triangle
 from .spin_hamiltonian import generate_lattice, transverse_ising

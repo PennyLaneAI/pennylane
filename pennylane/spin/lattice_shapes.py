@@ -17,6 +17,7 @@ This module contains functions to create
 """
 
 from pennylane import numpy as np
+
 from .lattice import Lattice
 
 

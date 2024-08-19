@@ -16,12 +16,13 @@ This module contains functions and classes to create a
 :class:`~pennylane.spin.lattice` object. This object stores all
 the necessary information about a lattice.
 """
+import itertools
 
 import numpy as np
 from scipy.spatial import cKDTree
-from .utils import map_vertices
 
 # pylint: disable=too-many-arguments, too-many-instance-attributes
+# pylint: disable=use-a-generator, too-few-public-methods
 
 
 class Lattice:
@@ -54,6 +55,7 @@ class Lattice:
         self.unit_cell = np.asarray(unit_cell)
         if basis is None:
             basis = np.zeros(self.unit_cell.shape[0])[None, :]
+
         self.basis = np.asarray(basis)
         self.n_sl = len(self.basis)
         self.n_sites = np.prod(L) * self.n_sl
@@ -62,20 +64,15 @@ class Lattice:
             boundary_condition = [boundary_condition for _ in range(self.n_dim)]
 
         self.boundary_condition = boundary_condition
-        self.test_input_accuracy()
+        self._test_input_accuracy()
 
-        if True in self.boundary_condition:
-            extra_shells = np.where(self.boundary_condition, neighbour_order, 0)
-        else:
-            extra_shells = None
-
-        self.coords, self.sl_coords, self.lattice_points = self.generate_grid(extra_shells)
+        self.lattice_points, lattice_map = self._generate_grid(neighbour_order)
 
         cutoff = neighbour_order * np.linalg.norm(self.unit_cell, axis=1).max() + distance_tol
-        self.identify_neighbours(cutoff, neighbour_order)
-        self.generate_true_edges()
+        edges = self._identify_neighbours(cutoff)
+        self._generate_true_edges(edges, lattice_map, neighbour_order)
 
-    def test_input_accuracy(self):
+    def _test_input_accuracy(self):
         r"""Tests the accuracy of the input provided"""
 
         for l in self.L:
@@ -101,16 +98,14 @@ class Lattice:
                 "Argument 'boundary_condition' must be a bool or a list of bools of same dimensions as the unit_cell"
             )
 
-    def identify_neighbours(self, cutoff, neighbour_order):
+    def _identify_neighbours(self, cutoff):
         r"""Identifies the connections between lattice points and returns the unique connections
         based on the neighbour_order"""
 
         tree = cKDTree(self.lattice_points)
         indices = tree.query_ball_tree(tree, cutoff)
         unique_pairs = set()
-        row = []
-        col = []
-        distance = []
+        edges = {}
         for i, neighbours in enumerate(indices):
             for neighbour in neighbours:
                 if neighbour != i:
@@ -120,35 +115,60 @@ class Lattice:
                         dist = np.linalg.norm(
                             self.lattice_points[i] - self.lattice_points[neighbour]
                         )
-                        row.append(i)
-                        col.append(neighbour)
-                        distance.append(dist)
+                        # Scale the distance
+                        bin_density = 21621600  # multiple of expected denominators
+                        scaled_dist = np.rint(dist * bin_density)
 
-        row = np.array(row)
-        col = np.array(col)
+                        if scaled_dist not in edges:
+                            edges[scaled_dist] = []
+                        edges[scaled_dist].append((i, neighbour))
+        return edges
 
-        # Sort distance into bins for comparison
-        bin_density = 21621600  # multiple of expected denominators
-        distance = np.asarray(np.rint(np.asarray(distance) * bin_density), dtype=int)
-
-        _, ii = np.unique(distance, return_inverse=True)
-
-        self.edges = [sorted(list(zip(row[ii == k], col[ii == k]))) for k in range(neighbour_order)]
-
-    def generate_true_edges(self):
+    def _generate_true_edges(self, edges, map, neighbour_order):
         r"""Modifies the edges to remove hidden nodes and create connections based on boundary_conditions"""
 
-        map = map_vertices(self.coords, self.sl_coords, self.L, self.basis)
-        colored_edges = []
-        for k, edge in enumerate(self.edges):
-            true_edges = set()
-            for node1, node2 in edge:
-                node1 = map[node1]
-                node2 = map[node2]
-                true_edges.add((min(node1, node2), max(node1, node2)))
-            for e in true_edges:
-                colored_edges.append((*e, k))
-        self.edges = colored_edges
+        self.edges = []
+        for i, (_, edge) in enumerate(sorted(edges.items())):
+            if i >= neighbour_order:
+                break
+            for e1, e2 in edge:
+                true_edge = (min(map[e1], map[e2]), max(map[e1], map[e2]), i)
+                if true_edge not in self.edges:
+                    self.edges.append(true_edge)
+
+    def _generate_grid(self, neighbour_order):
+        """Generates the coordinates of all lattice sites and their indices.
+
+        Args:
+           neighbour_order: The number of nearest neighbour interactions.
+        Returns:
+           lattice_points: The coordinates of all lattice sites.
+           lattice_map: A list to represent the node number for each lattice_point
+        """
+
+        n_sl = len(self.basis)
+        if self.boundary_condition:
+            wrap_grid = np.where(self.boundary_condition, neighbour_order, 0)
+        else:
+            wrap_grid = np.zeros(self.L.size, dtype=int)
+
+        ranges_dim = [range(-wrap_grid[i], Lx + wrap_grid[i]) for i, Lx in enumerate(self.L)]
+        ranges_dim.append(range(n_sl))
+        lattice_points = []
+        lattice_map = []
+
+        for Lx in itertools.product(*ranges_dim):
+            point = np.dot(Lx[:-1], self.unit_cell) + self.basis[Lx[-1]]
+            node_index = 0
+            for i in range(self.n_dim):
+                node_index += (
+                    (Lx[i] % self.L[i]) * np.prod(self.L[self.n_dim - 1 - i : 0 : -1]) * n_sl
+                )
+            node_index += Lx[-1]
+            lattice_points.append(point)
+            lattice_map.append(node_index)
+
+        return np.array(lattice_points), np.array(lattice_map)
 
     def add_edge(self, edge_indices):
         r"""Adds a specific edge based on the site index without translating it.
@@ -174,42 +194,3 @@ class Lattice:
                 new_edge = edge_index
 
             self.edges.append(new_edge)
-
-    def generate_grid(self, extra_shells):
-        """Generates the coordinates of all lattice sites.
-
-        Args:
-           extra_shells (np.ndarray): Optional. The number of unit cells added along each lattice direction.
-           This is used for near-neighbour searching in periodic boundary conditions (PBC).
-           It must be a vector of the same length as L.
-
-        Returns:
-           basis_coords: The coordinates of the basis sites in each unit cell.
-           sl_coords: The coordinates of sublattice sites in each lattice site.
-           lattice_points: The coordinates of all lattice sites.
-        """
-
-        # Initialize extra_shells if not provided
-        if extra_shells is None:
-            extra_shells = np.zeros(self.L.size, dtype=int)
-
-        shell_min = -extra_shells
-        shell_max = self.L + extra_shells
-
-        range_dim = []
-        for i in range(self.n_dim):
-            range_dim.append(np.arange(shell_min[i], shell_max[i]))
-
-        range_dim.append(np.arange(0, self.n_sl))
-
-        coords = np.meshgrid(*range_dim, indexing="ij")
-
-        sl_coords = coords[-1].ravel()
-        basis_coords = np.column_stack([c.ravel() for c in coords[:-1]])
-
-        lattice_points = (np.dot(basis_coords, self.unit_cell)).astype(float)
-
-        for i in range(0, len(lattice_points), self.n_sl):
-            lattice_points[i : i + self.n_sl] = lattice_points[i : i + self.n_sl] + self.basis
-
-        return basis_coords, sl_coords, lattice_points

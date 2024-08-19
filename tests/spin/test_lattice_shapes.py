@@ -16,6 +16,7 @@ Unit tests for functions needed for computing the lattices of certain shapes.
 """
 
 import pytest
+
 from pennylane.spin import generate_lattice
 
 
@@ -103,4 +104,4 @@ from pennylane.spin import generate_lattice
 def test_edges_for_shapes(shape, L, expected_edges):
     r"""Test that correct edges are obtained for given lattice shapes"""
     lattice = generate_lattice(lattice=shape, n_cells=L)
-    assert lattice.edges == expected_edges
+    assert sorted(lattice.edges) == sorted(expected_edges)

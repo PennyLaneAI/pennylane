@@ -202,7 +202,7 @@ def test_lattice_points(unit_cell, basis, L, expected_number):
 def test_boundary_condition(unit_cell, basis, L, boundary_condition, expected_edges):
     r"""Test that the correct edges are obtained for given boundary conditions"""
     lattice = Lattice(L=L, unit_cell=unit_cell, basis=basis, boundary_condition=boundary_condition)
-    assert lattice.edges == expected_edges
+    assert sorted(lattice.edges) == sorted(expected_edges)
 
 
 @pytest.mark.parametrize(
@@ -290,7 +290,7 @@ def test_boundary_condition(unit_cell, basis, L, boundary_condition, expected_ed
 def test_neighbour_order(unit_cell, basis, L, neighbour_order, expected_edges):
     r"""Test that the correct edges are obtained for given neighbour order"""
     lattice = Lattice(L=L, unit_cell=unit_cell, basis=basis, neighbour_order=neighbour_order)
-    assert lattice.edges == expected_edges
+    assert sorted(lattice.edges) == sorted(expected_edges)
 
 
 @pytest.mark.parametrize(

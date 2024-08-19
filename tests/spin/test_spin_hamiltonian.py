@@ -25,8 +25,8 @@ def test_coupling_error():
     r"""Test that an error is raised when the provided coupling shape is wrong"""
     n_cells = [4, 4]
     lattice = "Square"
-    with pytest.raises(ValueError, match="Coupling shape should be 1 or 16x16"):
-        transverse_ising(lattice=lattice, n_cells=n_cells, coupling=1.0)
+    with pytest.raises(ValueError, match="Coupling shape should be equal to 1 or 16x16"):
+        transverse_ising(lattice=lattice, n_cells=n_cells, coupling=1.0, neighbour_order=1)
 
 
 def test_shape_error():

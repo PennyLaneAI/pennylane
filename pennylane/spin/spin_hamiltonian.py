@@ -15,10 +15,10 @@
 This module contains functions to create different templates of spin Hamiltonians.
 """
 
-from pennylane import numpy as np
 from pennylane import X, Z
+from pennylane import numpy as np
 
-from .lattice_shapes import Chain, Square, Rectangle, Honeycomb, Triangle
+from .lattice_shapes import Chain, Honeycomb, Rectangle, Square, Triangle
 
 # pylint: disable=too-many-arguments
 
@@ -75,13 +75,15 @@ def transverse_ising(
     coupling = np.asarray(coupling)
     hamiltonian = 0.0
     print(coupling.shape)
-    if coupling.shape not in [(1,), (lattice.n_sites, lattice.n_sites)]:
-        raise ValueError(f"Coupling shape should be 1 or {lattice.n_sites}x{lattice.n_sites}")
+    if coupling.shape not in [(neighbour_order,), (lattice.n_sites, lattice.n_sites)]:
+        raise ValueError(
+            f"Coupling shape should be equal to {neighbour_order} or {lattice.n_sites}x{lattice.n_sites}"
+        )
 
-    if coupling.shape == (1,):
+    if coupling.shape == (neighbour_order,):
         for edge in lattice.edges:
-            i, j = edge[0], edge[1]
-            hamiltonian += -coupling[0] * (Z(i) @ Z(j))
+            i, j, order = edge[0], edge[1], edge[2]
+            hamiltonian += -coupling[order] * (Z(i) @ Z(j))
     else:
         for edge in lattice.edges:
             i, j = edge[0], edge[1]
