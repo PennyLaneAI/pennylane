@@ -224,7 +224,6 @@ class StatePrep(StatePrepBase):
         return [MottonenStatePreparation(state, wires)]
 
     def _flatten(self):
-        print(self.hyperparameters)
         metadata = tuple((key, value) for key, value in self.hyperparameters.items())
 
         return tuple(
