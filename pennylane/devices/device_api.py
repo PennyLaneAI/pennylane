@@ -695,3 +695,9 @@ class Device(abc.ABC):
         Default behaviour assumes this to be ``True`` if :meth:`~.compute_vjp` is overridden.
         """
         return type(self).compute_vjp != Device.compute_vjp
+
+    def execute_jaxpr(
+        self, jaxpr, consts, *args, execution_config: Optional[ExecutionConfig] = None
+    ):
+        """An experimental method for executioning jaxpr."""
+        raise NotImplementedError

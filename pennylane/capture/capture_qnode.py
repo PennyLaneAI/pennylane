@@ -68,18 +68,7 @@ def _get_qnode_prim():
     def _(*args, qnode, shots, device, qnode_kwargs, qfunc_jaxpr, n_consts):
         consts = args[:n_consts]
         args = args[n_consts:]
-
-        def qfunc(*inner_args):
-            return jax.core.eval_jaxpr(qfunc_jaxpr, consts, *inner_args)
-
-        with warnings.catch_warnings():
-            warnings.filterwarnings(
-                action="ignore",
-                message=r"The max_expansion argument is deprecated and will be removed in version 0.39.",
-                category=qml.PennyLaneDeprecationWarning,
-            )
-            qnode = qml.QNode(qfunc, device, **qnode_kwargs)
-        return qnode._impl_call(*args, shots=shots)  # pylint: disable=protected-access
+        return device.execute_jaxpr(qfunc_jaxpr, consts, *args)
 
     # pylint: disable=unused-argument
     @qnode_prim.def_abstract_eval

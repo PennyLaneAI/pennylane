@@ -30,10 +30,121 @@ AbstractOperator = _get_abstract_operator()
 AbstractMeasurement = _get_abstract_measurement()
 
 
+def nested_for_loop(self, *invals, jaxpr_body_fn, n_consts):
+    start, stop, step = invals[0], invals[1], invals[2]
+    consts = invals[3 : 3 + n_consts]
+
+    @for_loop(start, stop, step)
+    def g(i, *init_state):
+        return type(self)(state=self.state).eval(jaxpr_body_fn.jaxpr, consts, i, *init_state)
+
+    return g(*invals[3 + n_consts :])
+
+
+def nested_cond(self, *invals, jaxpr_branches, n_consts_per_branch, n_args):
+    n_branches = len(jaxpr_branches)
+    conditions = invals[:n_branches]
+    consts_flat = invals[n_branches + n_args :]
+
+    def true_fn(*args):
+        return type(self)(state=self.state).eval(
+            jaxpr_branches[0].jaxpr, consts_flat[: n_consts_per_branch[0]], *args
+        )
+
+    def false_fn(*args):
+        return type(self)(state=self.state).eval(
+            jaxpr_branches[-1].jaxpr, consts_flat[n_consts_per_branch[0] :], *args
+        )
+
+    cond_fn = cond(conditions[0], true_fn, false_fn=false_fn)
+    return cond_fn(*invals[n_branches : n_branches + n_args])
+
+
+def nested_while_loop(self, *invals, jaxpr_body_fn, jaxpr_cond_fn, n_consts_body, n_consts_cond):
+    consts_body = invals[:n_consts_body]
+    consts_cond = invals[n_consts_body : n_consts_body + n_consts_cond]
+    init_state = invals[n_consts_body + n_consts_cond :]
+
+    def cond_fn(*args):
+        return jax.core.eval_jaxpr(jaxpr_cond_fn.jaxpr, consts_cond, *args)
+
+    @while_loop(cond_fn)
+    def loop(*args):
+        return type(self)(state=self.state).eval(jaxpr_body_fn.jaxpr, consts_body, *args)
+
+    return loop(*init_state)
+
+
+def handle_qnode(self, *invals, shots, qnode, device, qnode_kwargs, qfunc_jaxpr, n_consts):
+    consts = invals[:n_consts]
+
+    @qml.qnode(device, **qnode_kwargs)
+    def new_qnode(*args):
+        return type(self)(state=self.state).eval(qfunc_jaxpr, consts, *args)
+
+    return new_qnode(invals[n_consts:])
+
+
+NestedHigherOrderPrimitives = {
+    cond_prim: nested_cond,
+    for_prim: nested_for_loop,
+    while_prim: nested_while_loop,
+    qnode_prim: handle_qnode,
+}
+"""A map that handles higher order primitives by turning them into other higher order primitives."""
+
+
+def flatten_for_loop(self, *invals, jaxpr_body_fn, n_consts):
+    start, stop, step = invals[0], invals[1], invals[2]
+    consts = invals[3 : 3 + n_consts]
+    init_state = invals[3 + n_consts :]
+
+    res = None
+    for i in range(start, stop, step):
+        res = type(self)(state=self.state).eval(jaxpr_body_fn.jaxpr, consts, i, *init_state)
+
+    return res
+
+
+def flatten_cond(self, *invals, jaxpr_branches, n_consts_per_branch, n_args):
+    n_branches = len(jaxpr_branches)
+    conditions = invals[:n_branches]
+    consts_flat = invals[n_branches + n_args :]
+    args = invals[n_branches : n_branches + n_args]
+
+    if conditions[0]:
+        return type(self)(state=self.state).eval(
+            jaxpr_branches[0].jaxpr, consts_flat[: n_consts_per_branch[0]], *args
+        )
+    return type(self)(state=self.state).eval(
+        jaxpr_branches[-1].jaxpr, consts_flat[: n_consts_per_branch[0]], *args
+    )
+
+
+def flatten_while_loop(self, *invals, jaxpr_body_fn, jaxpr_cond_fn, n_consts_body, n_consts_cond):
+    consts_body = invals[:n_consts_body]
+    consts_cond = invals[n_consts_body : n_consts_body + n_consts_cond]
+    state = invals[n_consts_body + n_consts_cond :]
+
+    while jax.core.eval_jaxpr(jaxpr_cond_fn.cond_fn, consts_cond, *state):
+        state = type(self)(state=self.state).eval(jaxpr_body_fn.jaxpr, consts_body, *state)
+
+    return state
+
+
+FlattenHigherOrderPrimitives = {
+    for_prim: flatten_for_loop,
+    cond_prim: flatten_cond,
+    while_prim: flatten_while_loop,
+}
+"""A map that handles higher order primitives by flattening them out. Useful for an interpreter that
+no longer needs the nested structure, like device execution or serialization to a tape."""
+
+
 class PlxprInterpreter:
 
     _env: dict
-    _primitive_registrations = {}
+    _primitive_registrations = NestedHigherOrderPrimitives
 
     def __init_subclass__(cls) -> None:
         cls._primitive_registrations = copy.copy(cls._primitive_registrations)
@@ -114,62 +225,3 @@ class PlxprInterpreter:
             return self.eval(jaxpr.jaxpr, jaxpr.consts, *args)
 
         return wrapper
-
-
-@PlxprInterpreter.register_primitive(for_prim)
-def handle_for_loop(self, *invals, jaxpr_body_fn, n_consts):
-    start, stop, step = invals[0], invals[1], invals[2]
-    consts = invals[3 : 3 + n_consts]
-
-    @for_loop(start, stop, step)
-    def g(i, *init_state):
-        return type(self)(state=self.state).eval(jaxpr_body_fn.jaxpr, consts, i, *init_state)
-
-    return g(*invals[3 + n_consts :])
-
-
-@PlxprInterpreter.register_primitive(cond_prim)
-def handle_cond(self, *invals, jaxpr_branches, n_consts_per_branch, n_args):
-    n_branches = len(jaxpr_branches)
-    conditions = invals[:n_branches]
-    consts_flat = invals[n_branches + n_args :]
-
-    def true_fn(*args):
-        return type(self)(state=self.state).eval(
-            jaxpr_branches[0].jaxpr, consts_flat[: n_consts_per_branch[0]], *args
-        )
-
-    def false_fn(*args):
-        return type(self)(state=self.state).eval(
-            jaxpr_branches[-1].jaxpr, consts_flat[n_consts_per_branch[0] :], *args
-        )
-
-    cond_fn = cond(conditions[0], true_fn, false_fn=false_fn)
-    return cond_fn(*invals[n_branches : n_branches + n_args])
-
-
-@PlxprInterpreter.register_primitive(while_prim)
-def handle_while_loop(self, *invals, jaxpr_body_fn, jaxpr_cond_fn, n_consts_body, n_consts_cond):
-    consts_body = invals[:n_consts_body]
-    consts_cond = invals[n_consts_body : n_consts_body + n_consts_cond]
-    init_state = invals[n_consts_body + n_consts_cond :]
-
-    def cond_fn(*args):
-        return jax.core.eval_jaxpr(jaxpr_cond_fn.jaxpr, consts_cond, *args)
-
-    @while_loop(cond_fn)
-    def loop(*args):
-        return type(self)(state=self.state).eval(jaxpr_body_fn.jaxpr, consts_body, *args)
-
-    return loop(*init_state)
-
-
-@PlxprInterpreter.register_primitive(qnode_prim)
-def handle_qnode(self, *invals, shots, qnode, device, qnode_kwargs, qfunc_jaxpr, n_consts):
-    consts = invals[:n_consts]
-
-    @qml.qnode(device, **qnode_kwargs)
-    def new_qnode(*args):
-        return type(self)(state=self.state).eval(qfunc_jaxpr, consts, *args)
-
-    return new_qnode(invals[n_consts:])

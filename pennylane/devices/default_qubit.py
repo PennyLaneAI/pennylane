@@ -25,6 +25,7 @@ from typing import Optional, Union
 import numpy as np
 
 import pennylane as qml
+from pennylane.capture.interpreters import DefaultQubitInterpreter
 from pennylane.logging import debug_logger, debug_logger_init
 from pennylane.measurements.mid_measure import MidMeasureMP
 from pennylane.ops.op_math.condition import Conditional
@@ -884,6 +885,12 @@ class DefaultQubit(Device):
                 )
 
         return tuple(zip(*results))
+
+    def execute_jaxpr(
+        self, jaxpr, consts, *args, execution_config: Optional[ExecutionConfig] = None
+    ):
+        interpreter = DefaultQubitInterpreter(num_wires=len(self.wires), shots=self.shots)
+        return interpreter.eval(jaxpr, consts, *args)
 
 
 def _simulate_wrapper(circuit, kwargs):

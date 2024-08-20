@@ -1,4 +1,6 @@
+import copy
 from functools import partial, wraps
+from typing import Optional
 
 import jax
 from jax.tree_util import tree_flatten, tree_unflatten
@@ -9,12 +11,18 @@ from pennylane.compiler.qjit_api import (
     for_loop,
     while_loop,
 )
-from pennylane.devices.qubit import apply_operation, create_initial_state, measure
+from pennylane.devices.qubit import (
+    apply_operation,
+    create_initial_state,
+    measure,
+    measure_with_samples,
+)
+from pennylane.measurements import Shots
 from pennylane.measurements.mid_measure import MidMeasureMP, _create_mid_measure_primitive
 from pennylane.ops.op_math.condition import _get_cond_qfunc_prim
 from pennylane.tape import QuantumScript
 
-from .base_interpreter import PlxprInterpreter
+from .base_interpreter import FlattenHigherOrderPrimitives, PlxprInterpreter
 
 for_prim = _get_for_loop_qfunc_prim()
 midmeasure_prim = _create_mid_measure_primitive()
@@ -23,9 +31,12 @@ cond_prim = _get_cond_qfunc_prim()
 
 class DefaultQubitInterpreter(PlxprInterpreter):
 
-    def __init__(self, num_wires=None, state=None):
+    _primitive_registrations = copy.copy(FlattenHigherOrderPrimitives)
+
+    def __init__(self, num_wires=None, shots: Shots = Shots(None), state=None):
         self.num_wires = num_wires
         self.state = state
+        self.shots: Shots = shots
 
     @property
     def statevector(self):
@@ -52,20 +63,9 @@ class DefaultQubitInterpreter(PlxprInterpreter):
     def interpret_measurement_eqn(self, eqn):
         invals = [self.read(invar) for invar in eqn.invars]
         mp = eqn.primitive.impl(*invals, **eqn.params)
+        if self.shots:
+            return measure_with_samples([mp], self.statevector, shots=self.shots)[0]
         return measure(mp, self.statevector)
-
-
-@DefaultQubitInterpreter.register_primitive(for_prim)
-def handle_for_loop(self, *invals, jaxpr_body_fn, n_consts):
-    start, stop, step = invals[0], invals[1], invals[2]
-    consts = invals[3 : 3 + n_consts]
-    init_state = invals[3 + n_consts :]
-
-    res = None
-    for i in range(start, stop, step):
-        res = type(self)(state=self.state).eval(jaxpr_body_fn.jaxpr, consts, i, *init_state)
-
-    return res
 
 
 @DefaultQubitInterpreter.register_primitive(midmeasure_prim)
@@ -74,41 +74,6 @@ def handle_mm(self, *invals, reset, postselect):
     mid_measurements = {}
     self.statevector = apply_operation(mp, self.statevector, mid_measurements=mid_measurements)
     return mid_measurements[mp]
-
-
-@DefaultQubitInterpreter.register_primitive(cond_prim)
-def handle_cond(self, *invals, jaxpr_branches, n_consts_per_branch, n_args):
-    n_branches = len(jaxpr_branches)
-    conditions = invals[:n_branches]
-    consts_flat = invals[n_branches + n_args :]
-    args = invals[n_branches : n_branches + n_args]
-
-    if conditions[0]:
-        return type(self)(state=self.state).eval(
-            jaxpr_branches[0].jaxpr, consts_flat[: n_consts_per_branch[0]], *args
-        )
-    return type(self)(state=self.state).eval(
-        jaxpr_branches[-1].jaxpr, consts_flat[: n_consts_per_branch[0]], *args
-    )
-
-
-from pennylane_lightning.lightning_qubit._state_vector import (
-    LightningMeasurements,
-    LightningStateVector,
-)
-
-
-class LightningInterpreter(DefaultQubitInterpreter):
-
-    def setup(self):
-        if self.statevector is None:
-            self.statevector = LightningStateVector(self.num_wires)
-
-    def interpret_operation(self, op):
-        self.statevector._apply_lightning([op])
-
-    def interpret_measurement(self, m):
-        return LightningMeasurements(self.statevector).measurement(m)
 
 
 class DecompositionInterpreter(PlxprInterpreter):
@@ -149,6 +114,8 @@ class ConvertToTape(PlxprInterpreter):
 
     """
 
+    _primitive_registrations = copy.copy(FlattenHigherOrderPrimitives)
+
     def setup(self):
         if self.state is None:
             self.state = {"ops": [], "measurements": []}
@@ -170,19 +137,6 @@ class ConvertToTape(PlxprInterpreter):
             return QuantumScript(self.state["ops"], self.state["measurements"])
 
         return wrapper
-
-
-@ConvertToTape.register_primitive(for_prim)
-def handle_for_loop(self, *invals, jaxpr_body_fn, n_consts):
-    start, stop, step = invals[0], invals[1], invals[2]
-    consts = invals[3 : 3 + n_consts]
-    init_state = invals[3 + n_consts :]
-
-    res = None
-    for i in range(start, stop, step):
-        res = type(self)(state=self.state).eval(jaxpr_body_fn.jaxpr, consts, i, *init_state)
-
-    return res
 
 
 class CancelInverses(PlxprInterpreter):
