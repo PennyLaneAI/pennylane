@@ -440,8 +440,7 @@ def simulate_tree_mcm(
 
     # `var` measurements cannot be aggregated on the fly as they require the global `expval`
     # variance_transform replaces `var` measurements with `expval` and `expval**2` measurements
-    circuits, variance_post_processing = variance_transform(circuit)
-    circuit = circuits[0]
+    [circuit], variance_post_processing = variance_transform(circuit)
     finite_shots = bool(circuit.shots)
 
     ##################
