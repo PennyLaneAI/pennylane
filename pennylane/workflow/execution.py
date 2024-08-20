@@ -47,7 +47,7 @@ from .set_shots import set_shots
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
-device_type = Union[qml.Device, "qml.devices.Device"]
+SupportedDeviceAPIs = Union["qml.devices.LegacyDevice", "qml.devices.Device"]
 
 jpc_interfaces = {
     "autograd",
@@ -202,7 +202,7 @@ def _get_ml_boundary_execute(
 
 def _batch_transform(
     tapes: QuantumTapeBatch,
-    device: device_type,
+    device: SupportedDeviceAPIs,
     config: "qml.devices.ExecutionConfig",
     override_shots: Union[bool, int, Sequence[int]] = False,
     device_batch_transform: bool = True,
@@ -239,7 +239,7 @@ def _batch_transform(
 
 
 def _preprocess_expand_fn(
-    expand_fn: Union[str, Callable], device: device_type, max_expansion: int
+    expand_fn: Union[str, Callable], device: SupportedDeviceAPIs, max_expansion: int
 ) -> Callable:
     """Preprocess the ``expand_fn`` configuration property.
 
@@ -510,7 +510,7 @@ def _update_mcm_config(mcm_config: "qml.devices.MCMConfig", interface: str, fini
 
 def execute(
     tapes: QuantumTapeBatch,
-    device: device_type,
+    device: SupportedDeviceAPIs,
     gradient_fn: Optional[Union[Callable, str]] = None,
     interface="auto",
     transform_program=None,
