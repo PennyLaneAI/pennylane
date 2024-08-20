@@ -78,11 +78,12 @@
 * `fuse_rot_angles` now respects the global phase of the combined rotations.
   [(#6031)](https://github.com/PennyLaneAI/pennylane/pull/6031)
 
-* `qml.pauli.group_observables` now uses `Rustworkx` colouring algorithms to solve the Minimum Clique Cover problem. 
-In addition, the creation of the adjancecy matrix now takes advantage of the symplectic representation of the Pauli observables. 
-This provides an improvement of orders of magnitude when using `grouping_type='qwc'`. 
-An additional function `qml.pauli.compute_partition_indices` is added to calculate the indices from the partitioned observables more efficiently.
-This improves the wall time of `qml.LinearCombination.compute_grouping()` by orders of magnitude.
+* `qml.pauli.group_observables` now uses `Rustworkx` colouring algorithms to solve the Minimum Clique Cover problem.
+  This adds two new options for the `method` argument: `dsatur` and `gis`. In addition, the creation of the adjancecy matrix 
+  now takes advantage of the symplectic representation of the Pauli observables. An additional function `qml.pauli.compute_partition_indices` 
+  is added to calculate the indices from the partitioned observables more efficiently. `qml.pauli.grouping.PauliGroupingStrategy.idx_partitions_from_graph` 
+  can be used to compute partitions of custom indices. These changes improve the wall time of `qml.LinearCombination.compute_grouping` 
+  and the `grouping_type='qwc'` by orders of magnitude. 
   [(#6043)](https://github.com/PennyLaneAI/pennylane/pull/6043)
 
 * `QNGOptimizer` now supports cost functions with multiple arguments, updating each argument independently.
