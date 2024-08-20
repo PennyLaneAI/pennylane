@@ -36,6 +36,12 @@ DEP_WARNING_MESSAGE_MUTUAL_INFO = (
     "return line of your QNode."
 )
 
+DEP_WARNING_MESSAGE_REDUCED_DM = (
+    "The qml.qinfo.reduced_dm transform is deprecated and will be removed "
+    "in 0.40. Instead include the qml.density_matrix measurement process in the "
+    "return line of your QNode."
+)
+
 
 def expected_entropy_ising_xx(param):
     """
@@ -564,8 +570,7 @@ class TestRelativeEntropy:
             match=DEP_WARNING_MESSAGE_RELATIVE_ENTROPY,
         ):
             rel_ent_circuit = qml.qinfo.relative_entropy(circuit1, circuit2, [0], [1])
-
-        actual = rel_ent_circuit((param[0],), (param[1],))
+            actual = rel_ent_circuit((param[0],), (param[1],))
 
         # compare transform results with analytic results
         first_term = (
@@ -880,8 +885,10 @@ class TestRelativeEntropy:
             qml.CNOT(wires=[0, 1])
             return qml.state()
 
-        msg = "The two states must have the same number of wires"
-        with pytest.raises(qml.QuantumFunctionError, match=msg):
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match=DEP_WARNING_MESSAGE_RELATIVE_ENTROPY,
+        ):
             qml.qinfo.relative_entropy(circuit1, circuit2, [0], [0, 1])
 
     @pytest.mark.parametrize("device", ["default.qubit", "default.mixed", "lightning.qubit"])
