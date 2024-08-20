@@ -34,7 +34,7 @@ grpcio==1.65.5
 h5py==3.11.0
 idna==3.7
 imagesize==1.4.1
-importlib_metadata==8.3.0
+importlib_metadata==8.4.0
 importlib_resources==6.4.3
 iniconfig==2.0.0
 jax==0.4.16
