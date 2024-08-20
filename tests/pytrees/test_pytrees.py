@@ -191,7 +191,7 @@ def test_flatten_is_leaf():
     item_leaves = [(4, 5), 6, {"a": 1, "b": 2}]
     z = lambda a: (a in item_leaves)
     items = [1, 2, 3, (4, 5), 6, 7, {"a": 1, "b": 2}, {"a": 3, "b": 4}]
-    data, _structure = flatten(items, z)
+    data, _ = flatten(items, z)
     assert data == [1, 2, 3, (4, 5), 6, 7, {"a": 1, "b": 2}, 3, 4]
 
     # case 2 - is_leaf is lambda to mark any tuple to not be flatten-ed
