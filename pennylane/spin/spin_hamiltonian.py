@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains functions to create different templates of spin Hamiltonians.
+This file contains functions to create different templates of spin Hamiltonians.
 """
 
 from pennylane import X, Z
