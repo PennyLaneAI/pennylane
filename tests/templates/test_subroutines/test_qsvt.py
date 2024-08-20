@@ -612,3 +612,11 @@ def test_private_qsp_to_qsvt_jax(initial_angles, expected_angles):
 
     computed_angles = _qsp_to_qsvt(initial_angles)
     jnp.allclose(computed_angles, expected_angles)
+
+
+def test_global_phase_not_alway_applied():
+    """Test that the global phase is not applied if it is 0"""
+
+    decomposition = qml.qsvt([1], [0, 1, 2, 3, 4], wires=[0], convention="Wx").decomposition()
+    for op in decomposition:
+        assert not isinstance(op, qml.GlobalPhase)

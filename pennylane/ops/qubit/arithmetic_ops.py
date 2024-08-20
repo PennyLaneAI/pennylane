@@ -17,13 +17,15 @@ arithmetic operations on their input states.
 """
 # pylint:disable=abstract-method,arguments-differ,protected-access
 from copy import copy
+from typing import Optional
 
 import numpy as np
 
 import pennylane as qml
-from pennylane.operation import AnyWires, Operation
+from pennylane.operation import AnyWires, FlatPytree, Operation
 from pennylane.ops import Identity
-from pennylane.wires import Wires
+from pennylane.typing import TensorLike
+from pennylane.wires import Wires, WiresLike
 
 
 class QubitCarry(Operation):
@@ -92,14 +94,14 @@ class QubitCarry(Operation):
     1
     """
 
-    num_wires = 4
+    num_wires: int = 4
     """int: Number of wires that the operator acts on."""
 
-    num_params = 0
+    num_params: int = 0
     """int: Number of trainable parameters that the operator depends on."""
 
     @staticmethod
-    def compute_matrix():  # pylint: disable=arguments-differ
+    def compute_matrix() -> np.ndarray:  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -152,7 +154,7 @@ class QubitCarry(Operation):
         )
 
     @staticmethod
-    def compute_decomposition(wires):
+    def compute_decomposition(wires: WiresLike) -> list[qml.operation.Operator]:
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -236,17 +238,22 @@ class QubitSum(Operation):
     1
     """
 
-    num_wires = 3
+    num_wires: int = 3
     """int: Number of wires that the operator acts on."""
 
-    num_params = 0
+    num_params: int = 0
     """int: Number of trainable parameters that the operator depends on."""
 
-    def label(self, decimals=None, base_label=None, cache=None):
+    def label(
+        self,
+        decimals: Optional[int] = None,
+        base_label: Optional[str] = None,
+        cache: Optional[dict] = None,
+    ) -> str:
         return super().label(decimals=decimals, base_label=base_label or "Σ", cache=cache)
 
     @staticmethod
-    def compute_matrix():  # pylint: disable=arguments-differ
+    def compute_matrix() -> np.ndarray:  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -283,7 +290,7 @@ class QubitSum(Operation):
         )
 
     @staticmethod
-    def compute_decomposition(wires):
+    def compute_decomposition(wires: WiresLike) -> qml.operation.Operator:
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -353,14 +360,14 @@ class IntegerComparator(Operation):
     tensor(1.+0.j, requires_grad=True)
     """
 
-    is_self_inverse = True
+    is_self_inverse: bool = True
     num_wires = AnyWires
-    num_params = 0
+    num_params: int = 0
     """int: Number of trainable parameters that the operator depends on."""
 
     grad_method = None
 
-    def _flatten(self):
+    def _flatten(self) -> FlatPytree:
         hp = self.hyperparameters
         metadata = (
             ("work_wires", hp["work_wires"]),
@@ -370,11 +377,19 @@ class IntegerComparator(Operation):
         return tuple(), (hp["control_wires"] + hp["target_wires"], metadata)
 
     # pylint: disable=too-many-arguments
-    def __init__(self, value, geq=True, wires=None, work_wires=None):
+    def __init__(
+        self,
+        value: int,
+        wires: WiresLike,
+        geq: bool = True,
+        work_wires: Optional[WiresLike] = None,
+    ):
         if not isinstance(value, int):
             raise ValueError(f"The compared value must be an int. Got {type(value)}.")
+
         if wires is None:
             raise ValueError("Must specify wires that the operation acts on.")
+
         if len(wires) > 1:
             control_wires = Wires(wires[:-1])
             wires = Wires(wires[-1])
@@ -400,14 +415,19 @@ class IntegerComparator(Operation):
 
         super().__init__(wires=total_wires)
 
-    def label(self, decimals=None, base_label=None, cache=None):
+    def label(
+        self,
+        decimals: Optional[int] = None,
+        base_label: Optional[str] = None,
+        cache: Optional[dict] = None,
+    ):
         return base_label or f">={self.value}" if self.geq else f"<{self.value}"
 
     # pylint: disable=unused-argument
     @staticmethod
     def compute_matrix(
-        value=None, control_wires=None, geq=True, **kwargs
-    ):  # pylint: disable=arguments-differ
+        control_wires: WiresLike, value: Optional[int] = None, geq: bool = True, **kwargs
+    ) -> TensorLike:  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -448,8 +468,10 @@ class IntegerComparator(Operation):
 
         if value is None:
             raise ValueError("The value to compare to must be specified.")
+
         if control_wires is None:
             raise ValueError("Must specify the control wires.")
+
         if not isinstance(value, int):
             raise ValueError(f"The compared value must be an int. Got {type(value)}.")
 
@@ -472,7 +494,13 @@ class IntegerComparator(Operation):
         return mat
 
     @staticmethod
-    def compute_decomposition(value, geq=True, wires=None, work_wires=None, **kwargs):
+    def compute_decomposition(
+        value: int,
+        wires: WiresLike,
+        geq: bool = True,
+        work_wires: Optional[WiresLike] = None,
+        **kwargs,
+    ) -> list[qml.operation.Operator]:
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -500,8 +528,10 @@ class IntegerComparator(Operation):
 
         if not isinstance(value, int):
             raise ValueError(f"The compared value must be an int. Got {type(value)}.")
+
         if wires is None:
             raise ValueError("Must specify the wires that the operation acts on.")
+
         if len(wires) > 1:
             control_wires = Wires(wires[:-1])
             wires = Wires(wires[-1])
@@ -533,11 +563,11 @@ class IntegerComparator(Operation):
         return gates
 
     @property
-    def control_wires(self):
+    def control_wires(self) -> Wires:
         return self.wires[:~0]
 
-    def adjoint(self):
+    def adjoint(self) -> "IntegerComparator":
         return copy(self).queue()
 
-    def pow(self, z):
+    def pow(self, z: int) -> list["IntegerComparator"]:
         return super().pow(z % 2)
