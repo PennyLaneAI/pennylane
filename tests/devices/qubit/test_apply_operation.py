@@ -1285,7 +1285,7 @@ class TestConditionalsAndMidMeasure:
     @pytest.mark.parametrize("measure", (0, 1))
     @pytest.mark.parametrize("wires", ([0, 1], [1, 0]))
     def test_conditional(self, wires, measure, batched, ml_framework):
-        """Test the application of a Conditional"""
+        """Test the application of a Conditional on an arbitrary state."""
 
         n_states = int(batched) + 1
         initial_state = np.array(
@@ -1331,7 +1331,7 @@ class TestConditionalsAndMidMeasure:
 
     @pytest.mark.parametrize("m_res", ([0, 0], [0, 1], [1, 0], [1, 1]))
     def test_mid_measure(self, m_res):
-        """Test the application of a MidMeasureMP"""
+        """Test the application of a MidMeasureMP on a basis state."""
 
         zo_state = np.array([[1.0, 0.0], [0.0, 1.0]])
         initial_state = np.kron(zo_state[m_res[0]], zo_state[m_res[1]]).reshape(2, 2)
@@ -1353,7 +1353,7 @@ class TestConditionalsAndMidMeasure:
     @pytest.mark.parametrize("reset", (False, True))
     @pytest.mark.parametrize("m_res", ([0, 0], [0, 1], [1, 0], [1, 1]))
     def test_mid_measure_with_post_select_and_reset(self, m_res, reset):
-        """Test the application of a MidMeasureMP with post selection"""
+        """Test the application of a MidMeasureMP with post selection and reset."""
 
         initial_state = np.array([[0.5 + 0.0j, 0.5 + 0.0j], [0.5 + 0.0j, 0.5 + 0.0j]])
         mid_state, end_state = np.zeros((4, 4)), np.zeros((4, 4))
