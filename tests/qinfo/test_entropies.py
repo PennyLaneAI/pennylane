@@ -536,7 +536,7 @@ class TestRelativeEntropy:
         ):
             _ = qml.qinfo.relative_entropy(circuit, circuit, wires0=[0], wires1=[0])((x,), (y,))
 
-    # @pytest.mark.all_interfaces
+    @pytest.mark.all_interfaces
     @pytest.mark.parametrize("device", ["default.qubit", "default.mixed", "lightning.qubit"])
     @pytest.mark.parametrize("interface", ["autograd", "jax", "tensorflow", "torch"])
     @pytest.mark.parametrize("param", params)
@@ -860,7 +860,7 @@ class TestRelativeEntropy:
 
         assert np.allclose(actual, expected, atol=1e-8)
 
-    # @pytest.mark.all_interfaces
+    @pytest.mark.all_interfaces
     @pytest.mark.parametrize("device", ["default.qubit", "default.mixed", "lightning.qubit"])
     @pytest.mark.parametrize("interface", ["autograd", "jax", "tensorflow", "torch"])
     def test_num_wires_mismatch(self, device, interface):
