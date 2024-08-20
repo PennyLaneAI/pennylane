@@ -33,7 +33,7 @@ from pennylane.measurements import (
     SampleMP,
     VarianceMP,
 )
-from pennylane.tape import QuantumTapeBatch
+from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.typing import PostprocessingFn, TensorLike
 
 from .core import transform
@@ -55,9 +55,7 @@ def null_postprocessing(results):
 
 
 @transform
-def dynamic_one_shot(
-    tape: qml.tape.QuantumTape, **kwargs
-) -> tuple[QuantumTapeBatch, PostprocessingFn]:
+def dynamic_one_shot(tape: QuantumScript, **kwargs) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Transform a QNode to into several one-shot tapes to support dynamic circuit execution.
 
     Args:

@@ -1098,7 +1098,7 @@ class DefaultQubitLegacy(QubitDevice):
 
         return self._cast(self._stack([outcomes, recipes]), dtype=np.int8)
 
-    def _get_diagonalizing_gates(self, circuit: qml.tape.QuantumTape) -> list[Operation]:
+    def _get_diagonalizing_gates(self, circuit: qml.tape.QuantumScript) -> list[Operation]:
         meas_filtered = [
             m
             for m in circuit.measurements

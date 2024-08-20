@@ -18,7 +18,7 @@ import warnings
 from functools import partial
 
 import pennylane as qml
-from pennylane.tape import QuantumTape, QuantumTapeBatch
+from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
 
@@ -56,7 +56,7 @@ class _SnapshotDebugger:
 
 
 @transform
-def snapshots(tape: QuantumTape) -> tuple[QuantumTapeBatch, PostprocessingFn]:
+def snapshots(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     r"""This transform processes :class:`~pennylane.Snapshot` instances contained in a circuit,
     depending on the compatibility of the execution device.
     For supported devices, the snapshots' measurements are computed as the execution progresses.
