@@ -14,7 +14,7 @@
 from collections.abc import Sequence
 
 # pylint:disable=inconsistent-return-statements
-from typing import NamedTuple
+from typing import NamedTuple, Union
 
 
 class ShotCopies(NamedTuple):
@@ -279,3 +279,6 @@ class Shots:
                 upper_bound = lower_bound + sc.shots
                 yield lower_bound, upper_bound
                 lower_bound = upper_bound
+
+
+ShotsLike = Union[Shots, None, int, Sequence[Union[int, tuple[int, int]]]]
