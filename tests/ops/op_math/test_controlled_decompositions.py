@@ -92,9 +92,6 @@ class TestControlledDecompositionZYZ:
         qml.RY(0.123, wires=0),
         qml.RZ(0.123, wires=0),
         qml.Rot(0.123, 0.456, 0.789, wires=0),
-    ]
-
-    special_unitary_ops = [
         qml.Hadamard(0),
         qml.PauliZ(0),
         qml.S(0),
@@ -114,7 +111,7 @@ class TestControlledDecompositionZYZ:
         qml.DiagonalQubitUnitary(np.array([1, -1]), wires=0),
     ]
 
-    @pytest.mark.parametrize("op", su2_ops + special_unitary_ops + general_unitary_ops)
+    @pytest.mark.parametrize("op", su2_ops + general_unitary_ops)
     @pytest.mark.parametrize("control_wires", ([1], [2], [3]))
     def test_decomposition_circuit_general_ops(self, op, control_wires, tol):
         """Tests that the controlled decomposition of a single-qubit operation
@@ -223,7 +220,7 @@ class TestControlledDecompositionZYZ:
             qml.assert_equal(decomp_op, expected_op)
         assert len(decomps) == 7
 
-    @pytest.mark.parametrize("op", su2_ops + special_unitary_ops + general_unitary_ops)
+    @pytest.mark.parametrize("op", su2_ops + general_unitary_ops)
     @pytest.mark.parametrize("control_wires", ([1], [2], [3]))
     def test_decomp_queues_correctly(self, op, control_wires, tol):
         """Test that any incorrect operations aren't queued when using
