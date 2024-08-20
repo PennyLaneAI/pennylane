@@ -116,6 +116,9 @@
 * Port the fast `apply_operation` implementation of `PauliZ` to `PhaseShift`, `S` and `T`.
   [(#5876)](https://github.com/PennyLaneAI/pennylane/pull/5876)
 
+* Improve unit testing of `apply_operation` with `MidMeasureMP` and `Conditional`.
+  [(#)](https://github.com/PennyLaneAI/pennylane/pull/)
+
 * `qml.UCCSD` now accepts an additional optional argument, `n_repeats`, which defines the number of
   times the UCCSD template is repeated. This can improve the accuracy of the template by reducing
   the Trotter error but would result in deeper circuits.

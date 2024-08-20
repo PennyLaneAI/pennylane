@@ -40,6 +40,8 @@ ml_frameworks_list = [
 
 methods = [apply_operation_einsum, apply_operation_tensordot, apply_operation]
 
+# pylint: disable=import-outside-toplevel,unsubscriptable-object,arguments-differ
+
 
 def test_custom_operator_with_matrix():
     """Test that apply_operation works with any operation that defines a matrix."""
@@ -53,6 +55,8 @@ def test_custom_operator_with_matrix():
 
     # pylint: disable=too-few-public-methods
     class CustomOp(Operation):
+        """Custom Operation"""
+
         num_wires = 1
 
         def matrix(self):
@@ -294,6 +298,8 @@ def time_dependent_hamiltonian():
 
 @pytest.mark.jax
 class TestApplyParametrizedEvolution:
+    """Test that apply_operation works with ParametrizedEvolution"""
+
     @pytest.mark.parametrize("method", methods)
     def test_parameterized_evolution_time_independent(self, method):
         """Test that applying a ParametrizedEvolution gives the expected state
@@ -651,6 +657,7 @@ class TestRXCalcGrad:
     )
 
     def compare_expected_result(self, phi, state, new_state, g):
+        """Compares the new state against the expected state"""
         expected0 = np.cos(phi / 2) * state[0, :, :] + -1j * np.sin(phi / 2) * state[1, :, :]
         expected1 = -1j * np.sin(phi / 2) * state[0, :, :] + np.cos(phi / 2) * state[1, :, :]
 
@@ -1267,3 +1274,49 @@ class TestLargeTFCornerCases:
         results = circuit(tf.Variable(states))
         assert qml.math.shape(results) == (3, 256)
         assert np.array_equal(results[:, 128], [-1.0 + 0.0j] * 3)
+
+
+# pylint: disable=too-few-public-methods
+class TestConditionalsAndMidMeasure:
+    """Test dispatching for mid-circuit measurements and conditionals."""
+
+    @pytest.mark.parametrize("ml_framework", ml_frameworks_list)
+    @pytest.mark.parametrize("batched", (False, True))
+    @pytest.mark.parametrize("param", (0.1, 0.3, 0.5))
+    @pytest.mark.parametrize("wires", ([0, 1], [1, 0]))
+    def test_conditional(self, wires, param, batched, ml_framework):
+        """Test the application of an if-elif-else conditional"""
+
+        n_states = int(batched) + 1
+        initial_state = np.array(
+            [
+                [
+                    0.3541035 + 0.05231577j,
+                    0.6912382 + 0.49474503j,
+                    0.29276263 + 0.06231887j,
+                    0.10736635 + 0.21947607j,
+                ],
+                [
+                    0.09803567 + 0.47557068j,
+                    0.4427561 + 0.13810454j,
+                    0.26421703 + 0.5366283j,
+                    0.03825933 + 0.4357423j,
+                ],
+            ][:n_states]
+        )
+
+        unitary = qml.CRX if param > 0.4 else qml.CRY if param > 0.2 else qml.CRZ
+        rotated_state = qml.math.dot(
+            initial_state, qml.matrix(unitary(-param, wires), wire_order=[0, 1]).T
+        )
+        rotated_state = qml.math.asarray(rotated_state, like=ml_framework)
+        rotated_state = qml.math.squeeze(qml.math.reshape(rotated_state, (n_states, 2, 2)))
+
+        op = qml.cond(param > 0.4, qml.CRX, qml.CRZ, ((param > 0.2, qml.CRY),))(param, wires)
+        new_state = apply_operation(
+            op, state=rotated_state, is_state_batched=batched, interface=ml_framework
+        )
+
+        assert qml.math.allclose(
+            qml.math.squeeze(initial_state), qml.math.reshape(new_state, (n_states, 4))
+        )
