@@ -22,9 +22,8 @@ import numpy as np
 
 import pennylane as qml
 from pennylane import math
-
 from pennylane.operation import AnyWires, Operation, Operator, StatePrepBase
-from pennylane.templates.state_preparations import BasisStatePreparation, MottonenStatePreparation
+from pennylane.templates.state_preparations import MottonenStatePreparation
 from pennylane.typing import TensorLike
 from pennylane.wires import WireError, Wires, WiresLike
 
