@@ -169,7 +169,7 @@ class LegacyDeviceFacade(Device):
         return getattr(self._device, name)
 
     @property
-    def target_device(self) -> "qml._device.Device":
+    def target_device(self) -> "qml.devices.LegacyDevice":
         """The device wrapped by the facade."""
         return self._device
 

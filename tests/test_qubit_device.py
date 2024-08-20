@@ -21,7 +21,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane import DeviceError, QubitDevice
+from pennylane import QubitDevice
 from pennylane import numpy as pnp
 from pennylane.measurements import (
     Expectation,
@@ -222,7 +222,7 @@ class TestOperations:
             qml.var(qml.PauliZ(1))
 
         tape = QuantumScript.from_queue(q)
-        with pytest.raises(DeviceError, match="Gate Hadamard not supported on device"):
+        with pytest.raises(qml.DeviceError, match="Gate Hadamard not supported on device"):
             dev = mock_qubit_device_with_paulis_and_methods()
             dev.execute(tape)
 
@@ -284,7 +284,7 @@ class TestObservables:
             qml.sample(qml.PauliZ(2))
 
         tape = QuantumScript.from_queue(q)
-        with pytest.raises(DeviceError, match="Observable Hadamard not supported on device"):
+        with pytest.raises(qml.DeviceError, match="Observable Hadamard not supported on device"):
             dev = mock_qubit_device_with_paulis_and_methods()
             dev.execute(tape)
 
