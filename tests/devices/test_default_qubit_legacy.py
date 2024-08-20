@@ -23,7 +23,6 @@ from functools import partial
 import pytest
 
 import pennylane as qml
-from pennylane import DeviceError
 from pennylane import numpy as np
 from pennylane.devices.default_qubit_legacy import DefaultQubitLegacy, _get_slice
 from pennylane.pulse import ParametrizedHamiltonian
@@ -93,19 +92,16 @@ def test_analytic_deprecation():
     msg = "The analytic argument has been replaced by shots=None. "
     msg += "Please use shots=None instead of analytic=True."
 
-    with pytest.raises(
-        DeviceError,
-        match=msg,
-    ):
+    with pytest.raises(qml.DeviceError, match=msg):
         qml.device("default.qubit.legacy", wires=1, shots=1, analytic=True)
 
 
 def test_dtype_errors():
     """Test that if an incorrect dtype is provided to the device then an error is raised."""
-    with pytest.raises(DeviceError, match="Real datatype must be a floating point type."):
+    with pytest.raises(qml.DeviceError, match="Real datatype must be a floating point type."):
         qml.device("default.qubit.legacy", wires=1, r_dtype=np.complex128)
     with pytest.raises(
-        DeviceError, match="Complex datatype must be a complex floating point type."
+        qml.DeviceError, match="Complex datatype must be a complex floating point type."
     ):
         qml.device("default.qubit.legacy", wires=1, c_dtype=np.float64)
 
@@ -646,7 +642,7 @@ class TestApply:
             qubit_device_2_wires.apply([qml.StatePrep(p, wires=[0, 1])])
 
         with pytest.raises(
-            DeviceError,
+            qml.DeviceError,
             match="Operation StatePrep cannot be used after other Operations have already been applied "
             "on a default.qubit.legacy device.",
         ):
@@ -667,7 +663,7 @@ class TestApply:
             qubit_device_2_wires.apply([qml.BasisState(np.array([0, 1]), wires=[0])])
 
         with pytest.raises(
-            DeviceError,
+            qml.DeviceError,
             match="Operation BasisState cannot be used after other Operations have already been applied "
             "on a default.qubit.legacy device.",
         ):
@@ -2107,7 +2103,7 @@ class TestApplyOps:
             return qml.expval(qml.PauliZ(0))
 
         with pytest.raises(
-            DeviceError,
+            qml.DeviceError,
             match="Gate ParametrizedEvolution not supported on device default.qubit.",
         ):
             circuit()

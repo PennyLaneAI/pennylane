@@ -59,7 +59,6 @@ from gate_data import (
 )
 
 import pennylane as qml
-from pennylane import DeviceError
 from pennylane import numpy as pnp
 
 torch = pytest.importorskip("torch", minversion="1.8.1")
@@ -197,7 +196,7 @@ def test_analytic_deprecation():
     msg = "The analytic argument has been replaced by shots=None. "
     msg += "Please use shots=None instead of analytic=True."
 
-    with pytest.raises(DeviceError, match=msg):
+    with pytest.raises(qml.DeviceError, match=msg):
         qml.device("default.qubit.torch", wires=1, shots=1, analytic=True)
 
 

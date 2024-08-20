@@ -22,7 +22,7 @@ import pytest
 from scipy.stats import unitary_group
 
 import pennylane as qml
-from pennylane import DeviceError, QubitDevice, QutritDevice
+from pennylane import QubitDevice, QutritDevice
 from pennylane import numpy as pnp
 from pennylane.measurements import (
     Counts,
@@ -198,7 +198,7 @@ class TestOperations:
 
         tape = QuantumScript(queue, observables)
         dev = mock_qutrit_device()
-        with pytest.raises(DeviceError, match="Gate Hadamard not supported on device"):
+        with pytest.raises(qml.DeviceError, match="Gate Hadamard not supported on device"):
             dev.execute(tape)
 
     unitaries = [unitary_group.rvs(3, random_state=1967) for _ in range(3)]
@@ -260,7 +260,7 @@ class TestObservables:
 
         tape = QuantumScript(queue, observables)
         dev = mock_qutrit_device()
-        with pytest.raises(DeviceError, match="Observable Hadamard not supported on device"):
+        with pytest.raises(qml.DeviceError, match="Observable Hadamard not supported on device"):
             dev.execute(tape)
 
     def test_unsupported_observable_return_type_raise_error(self, mock_qutrit_device, monkeypatch):

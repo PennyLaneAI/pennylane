@@ -46,6 +46,7 @@ from .jacobian_products import (
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
+SupportedDeviceAPIs = Union["qml.devices.LegacyDevice", "qml.devices.Device"]
 
 jpc_interfaces = {
     "autograd",
@@ -365,7 +366,7 @@ def _update_mcm_config(mcm_config: "qml.devices.MCMConfig", interface: str, fini
 
 def execute(
     tapes: QuantumTapeBatch,
-    device: "qml.devices.Device",
+    device: SupportedDeviceAPIs,
     gradient_fn: Optional[Union[Callable, str]] = None,
     interface: Optional[str] = "auto",
     transform_program=None,

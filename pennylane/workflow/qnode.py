@@ -26,7 +26,6 @@ from typing import Any, Literal, Optional, Union, get_args
 from cachetools import Cache
 
 import pennylane as qml
-from pennylane import Device
 from pennylane.debugging import pldb_device_manager
 from pennylane.logging import debug_logger
 from pennylane.measurements import CountsMP, MidMeasureMP
@@ -37,6 +36,8 @@ from .execution import INTERFACE_MAP, SUPPORTED_INTERFACES, SupportedInterfaceUs
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
+
+SupportedDeviceAPIs = Union["qml.devices.LegacyDevice", "qml.devices.Device"]
 
 SupportedDiffMethods = Literal[
     None,
@@ -49,8 +50,6 @@ SupportedDiffMethods = Literal[
     "finite-diff",
     "spsa",
 ]
-
-SupportedDeviceAPIs = Union[Device, "qml.devices.Device"]
 
 
 def _convert_to_interface(res, interface):
@@ -682,7 +681,7 @@ class QNode:
         for a requested device, interface, and diff method.
 
         Args:
-            device (.Device): PennyLane device
+            device (.device.Device): PennyLane device
             interface (str): name of the requested interface
             diff_method (str or .TransformDispatcher): The requested method of differentiation.
                 If a string, allowed options are ``"best"``, ``"backprop"``, ``"adjoint"``,
@@ -691,7 +690,7 @@ class QNode:
             tape (Optional[.QuantumTape]): the circuit that will be differentiated. Should include shots information.
 
         Returns:
-            tuple[str or .TransformDispatcher, dict, .Device: Tuple containing the ``gradient_fn``,
+            tuple[str or .TransformDispatcher, dict, .device.Device: Tuple containing the ``gradient_fn``,
             ``gradient_kwargs``, and the device to use when calling the execute function.
         """
 
@@ -763,12 +762,12 @@ class QNode:
         are not included here.
 
         Args:
-            device (.Device): PennyLane device
+            device (.devices.Device): PennyLane device
             interface (str): name of the requested interface
             shots
 
         Returns:
-            tuple[str or .TransformDispatcher, dict, .Device: Tuple containing the ``gradient_fn``,
+            tuple[str or .TransformDispatcher, dict, .device.Device: Tuple containing the ``gradient_fn``,
             ``gradient_kwargs``, and the device to use when calling the execute function.
         """
         if not isinstance(device, qml.devices.Device):
@@ -807,7 +806,7 @@ class QNode:
         :meth:`~.get_best_method` should be used instead.
 
         Args:
-            device (.Device): PennyLane device
+            device (.devices.Device): PennyLane device
             interface (str): name of the requested interface
 
         Returns:
