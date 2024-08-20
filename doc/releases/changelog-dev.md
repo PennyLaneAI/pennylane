@@ -41,6 +41,10 @@
   users to have more control over the error mitigation protocol without needing to add further dependencies.
   [(#5972)](https://github.com/PennyLaneAI/pennylane/pull/5972)
 
+* New function to generate transverse-field Ising Hamiltonian and the required helper functions to generate the lattice
+  have been added.
+  [(#6106)](https://github.com/PennyLaneAI/pennylane/pull/6106)
+
 <h3>Improvements 🛠</h3>
 
 * `QNGOptimizer` now supports cost functions with multiple arguments, updating each argument independently.
@@ -342,6 +346,7 @@ Ahmed Darwish,
 Astral Cai,
 Yushao Chen,
 Ahmed Darwish,
+Diksha Dhawan,
 Maja Franz,
 Lillian M. A. Frederiksen,
 Pietropaolo Frisoni,

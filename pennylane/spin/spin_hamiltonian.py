@@ -15,41 +15,15 @@
 This file contains functions to create different templates of spin Hamiltonians.
 """
 
-from pennylane import X, Z
-from pennylane import numpy as np
+from pennylane import X, Z, math
 
-from .lattice_shapes import Chain, Honeycomb, Rectangle, Square, Triangle
+from .lattice import _generate_lattice
 
 # pylint: disable=too-many-arguments
 
 
-def generate_lattice(lattice, n_cells, boundary_condition=False, neighbour_order=1):
-    r"""Generates the lattice object for given attributes."""
-
-    lattice_shape = lattice.strip().lower()
-
-    if lattice_shape not in ["chain", "square", "rectangle", "honeycomb", "triangle"]:
-        raise ValueError(
-            f"Lattice shape, '{lattice}' is not supported."
-            f"Please set lattice to: chain, square, rectangle, honeycomb, or triangle"
-        )
-
-    if lattice_shape == "chain":
-        lattice = Chain(n_cells, boundary_condition, neighbour_order)
-    elif lattice_shape == "square":
-        lattice = Square(n_cells, boundary_condition, neighbour_order)
-    elif lattice_shape == "rectangle":
-        lattice = Rectangle(n_cells, boundary_condition, neighbour_order)
-    elif lattice_shape == "honeycomb":
-        lattice = Honeycomb(n_cells, boundary_condition, neighbour_order)
-    elif lattice_shape == "triangle":
-        lattice = Triangle(n_cells, boundary_condition, neighbour_order)
-
-    return lattice
-
-
 def transverse_ising(
-    lattice, n_cells, coupling, h=1.0, boundary_condition=False, neighbour_order=1
+    lattice, n_cells, coupling=None, h=1.0, boundary_condition=False, neighbour_order=1
 ):
     r"""Generates the transverse field Ising model on a lattice.
     The Hamiltonian is represented as:
@@ -61,18 +35,37 @@ def transverse_ising(
     magnetic field and i,j represent the indices for neighbouring spins.
 
     Args:
-       lattice: Shape of the lattice. Input Values can be ``'Chain'``, ``'Square'``, ``'Rectangle'``, ``'Honeycomb'``, or ``'Triangle'``.
-       n_cells: A list containing umber of unit cells in each direction.
-       coupling: Coupling between spins, it can be a constant or a 2D array of shape number of spins * number of spins.
-       h: Value of external magnetic field.
-       boundary_condition: defines boundary conditions, boolean or series of bools with dimensions same as L.
-       neighbour_order: Range of neighbours a spin interacts with.
+       lattice (str): Shape of the lattice. Input Values can be ``'Chain'``, ``'Square'``, ``'Rectangle'``, ``'Honeycomb'``, ``'Triangle'``, or ``'Kagome'``.
+       n_cells (list[int]): Number of cells in each direction of the grid.
+       coupling (List[float] or List[math.array[float]]): Coupling between spins, it can be a list of length equal to neighbour_order or a 2D array of shape number of spins * number of spins. Default value is [1.0].
+       h (float): Value of external magnetic field. Default is 1.0.
+       boundary_condition (bool or list[bool]): Defines boundary conditions, False for open boundary condition, each element represents the axis for lattice. It defaults to False.
+       neighbour_order (int): Range of neighbours a spin interacts with. Default is 1.
 
     Returns:
        pennylane.LinearCombination: Hamiltonian for the transverse-field ising model.
+
+    **Example**
+    >>> lattice = "Square"
+    >>> n_cells = [2,2]
+    >>> J = 0.5
+    >>> h = 0.1
+    >>> spin_ham = transverse_ising(lattice, n_cells, coupling=J, h=h)
+    >>> print(spin_ham)
+    -0.5 * (Z(0) @ Z(1))
+    + -0.5 * (Z(0) @ Z(2))
+    + -0.5 * (Z(1) @ Z(3))
+    + -0.5 * (Z(2) @ Z(3))
+    + -0.1 * X(0)
+    + -0.1 * X(1)
+    + -0.1 * X(2)
+    + -0.1 * X(3)
+
     """
-    lattice = generate_lattice(lattice, n_cells, boundary_condition, neighbour_order)
-    coupling = np.asarray(coupling)
+    lattice = _generate_lattice(lattice, n_cells, boundary_condition, neighbour_order)
+    if coupling is None:
+        coupling = [1.0]
+    coupling = math.asarray(coupling)
     hamiltonian = 0.0
     print(coupling.shape)
     if coupling.shape not in [(neighbour_order,), (lattice.n_sites, lattice.n_sites)]:

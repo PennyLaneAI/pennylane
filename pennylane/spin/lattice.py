@@ -19,7 +19,9 @@ the necessary information about a lattice.
 import itertools
 
 import numpy as np
-from scipy.spatial import cKDTree
+from scipy.spatial import KDTree
+
+from pennylane import math
 
 # pylint: disable=too-many-arguments, too-many-instance-attributes
 # pylint: disable=use-a-generator, too-few-public-methods
@@ -29,81 +31,91 @@ class Lattice:
     r"""Constructs a Lattice object.
 
     Args:
-       L: Number of unit cells in each direction.
-       unit_cell: Primitive vectors for the lattice.
-       basis: Initial positions of spins.
-       boundary_condition: defines boundary conditions, boolean or series of bools with dimensions same as L.
-       neighbour_order: Range of neighbours a spin interacts with.
-       distance_tol: Distance below which spatial points are considered equal for the purpose of identifying nearest neighbours.
+       n_cells (list[int]): Number of cells in each direction of the grid.
+       vectors (list[list[float]]): Primitive vectors for the lattice.
+       positions (list[list[float]]): Initial positions of spins. Default value is [[0.0]*number of dimensions].
+       boundary_condition (bool or list[bool]): Defines boundary conditions, False for open boundary condition, each element represents the axis for lattice. It defaults to False.
+       neighbour_order (int): Range of neighbours a spin interacts with. Default is 1.
+       distance_tol (float): Distance below which spatial points are considered equal for the purpose of identifying nearest neighbours, default value is 1e-5.
 
     Returns:
        Lattice object
+
+    **Example**
+    >>> n_cells = [2,2]
+    >>> vectors = [[0, 1], [1, 0]]
+    >>> boundary_condition = [True, False]
+    >>> lattice = Lattice(n_cells, vectors,
+    >>>       boundary_condition=boundary_condition)
+    >>> print(lattice.edges)
+    [(3, 4, 0), (0, 3, 0), (4, 5, 0), (1, 4, 0),
+                (2, 5, 0), (0, 1, 0), (1, 2, 0)]
     """
 
     def __init__(
         self,
-        L,
-        unit_cell,
-        basis=None,
+        n_cells,
+        vectors,
+        positions=None,
         boundary_condition=False,
         neighbour_order=1,
         distance_tol=1e-5,
     ):
 
-        self.L = np.asarray(L)
-        self.n_dim = len(L)
-        self.unit_cell = np.asarray(unit_cell)
-        if basis is None:
-            basis = np.zeros(self.unit_cell.shape[0])[None, :]
-
-        self.basis = np.asarray(basis)
-        self.n_sl = len(self.basis)
-        self.n_sites = np.prod(L) * self.n_sl
-
-        if isinstance(boundary_condition, bool):
-            boundary_condition = [boundary_condition for _ in range(self.n_dim)]
-
-        self.boundary_condition = boundary_condition
-        self._test_input_accuracy()
-
-        self.lattice_points, lattice_map = self._generate_grid(neighbour_order)
-
-        cutoff = neighbour_order * np.linalg.norm(self.unit_cell, axis=1).max() + distance_tol
-        edges = self._identify_neighbours(cutoff)
-        self._generate_true_edges(edges, lattice_map, neighbour_order)
-
-    def _test_input_accuracy(self):
-        r"""Tests the accuracy of the input provided"""
-
-        for l in self.L:
+        for l in math.asarray(n_cells):
             if (not isinstance(l, np.int64)) or l <= 0:
-                raise TypeError("Argument `L` must be a list of positive integers")
+                raise TypeError("Argument `n_cells` must be a list of positive integers")
 
-        if self.unit_cell.ndim != 2:
-            raise ValueError("'unit_cell' must have ndim==2, as array of primitive vectors.")
+        vectors = math.asarray(vectors)
 
-        if self.basis.ndim != 2:
-            raise ValueError("'basis' must have ndim==2, as array of initial coordinates.")
+        if vectors.ndim != 2:
+            raise ValueError("'vectors' must have ndim==2, as array of primitive vectors.")
 
-        if self.unit_cell.shape[0] != self.unit_cell.shape[1]:
+        if vectors.shape[0] != vectors.shape[1]:
             raise ValueError("The number of primitive vectors must match their length")
 
-        if not all(isinstance(b, bool) for b in self.boundary_condition):
+        if positions is None:
+            positions = math.zeros(vectors.shape[0])[None, :]
+        positions = math.asarray(positions)
+
+        if positions.ndim != 2:
+            raise ValueError("'positions' must have ndim==2, as array of initial coordinates.")
+
+        if isinstance(boundary_condition, bool):
+            boundary_condition = [boundary_condition for _ in range(len(n_cells))]
+
+        if not all(isinstance(b, bool) for b in boundary_condition):
             raise ValueError(
-                "Argument 'boundary_condition' must be a bool or a list of bools of same dimensions as the unit_cell"
+                "Argument 'boundary_condition' must be a bool or a list of bools of same dimensions as the vectors"
             )
 
-        if len(self.boundary_condition) != self.n_dim:
+        if len(boundary_condition) != len(n_cells):
             raise ValueError(
-                "Argument 'boundary_condition' must be a bool or a list of bools of same dimensions as the unit_cell"
+                "Argument 'boundary_condition' must be a bool or a list of bools of same dimensions as the vectors"
             )
+
+        self.n_cells = n_cells
+        self.n_dim = len(n_cells)
+        self.vectors = math.asarray(vectors)
+        self.positions = math.asarray(positions)
+        self.boundary_condition = boundary_condition
+
+        n_sl = len(self.positions)
+        self.n_sites = math.prod(n_cells) * n_sl
+        self.lattice_points, lattice_map = self._generate_grid(neighbour_order)
+
+        cutoff = neighbour_order * math.linalg.norm(self.vectors, axis=1).max() + distance_tol
+        edges = self._identify_neighbours(cutoff)
+        self._generate_true_edges(edges, lattice_map, neighbour_order)
 
     def _identify_neighbours(self, cutoff):
         r"""Identifies the connections between lattice points and returns the unique connections
         based on the neighbour_order"""
 
-        tree = cKDTree(self.lattice_points)
+        tree = KDTree(self.lattice_points)
         indices = tree.query_ball_tree(tree, cutoff)
+        # Number to Scale the distance
+        bin_density = 21621600  # multiple of expected denominators
         unique_pairs = set()
         edges = {}
         for i, neighbours in enumerate(indices):
@@ -112,23 +124,23 @@ class Lattice:
                     pair = (min(i, neighbour), max(i, neighbour))
                     if pair not in unique_pairs:
                         unique_pairs.add(pair)
-                        dist = np.linalg.norm(
+                        dist = math.linalg.norm(
                             self.lattice_points[i] - self.lattice_points[neighbour]
                         )
-                        # Scale the distance
-                        bin_density = 21621600  # multiple of expected denominators
-                        scaled_dist = np.rint(dist * bin_density)
+                        scaled_dist = math.rint(dist * bin_density)
 
                         if scaled_dist not in edges:
                             edges[scaled_dist] = []
                         edges[scaled_dist].append((i, neighbour))
+
+        edges = [value for key, value in sorted(edges.items())]
         return edges
 
     def _generate_true_edges(self, edges, map, neighbour_order):
         r"""Modifies the edges to remove hidden nodes and create connections based on boundary_conditions"""
 
         self.edges = []
-        for i, (_, edge) in enumerate(sorted(edges.items())):
+        for i, edge in enumerate(edges):
             if i >= neighbour_order:
                 break
             for e1, e2 in edge:
@@ -146,33 +158,35 @@ class Lattice:
            lattice_map: A list to represent the node number for each lattice_point
         """
 
-        n_sl = len(self.basis)
+        n_sl = len(self.positions)
         if self.boundary_condition:
-            wrap_grid = np.where(self.boundary_condition, neighbour_order, 0)
+            wrap_grid = math.where(self.boundary_condition, neighbour_order, 0)
         else:
-            wrap_grid = np.zeros(self.L.size, dtype=int)
+            wrap_grid = math.zeros(self.n_cells.size, dtype=int)
 
-        ranges_dim = [range(-wrap_grid[i], Lx + wrap_grid[i]) for i, Lx in enumerate(self.L)]
+        ranges_dim = [range(-wrap_grid[i], Lx + wrap_grid[i]) for i, Lx in enumerate(self.n_cells)]
         ranges_dim.append(range(n_sl))
         lattice_points = []
         lattice_map = []
 
         for Lx in itertools.product(*ranges_dim):
-            point = np.dot(Lx[:-1], self.unit_cell) + self.basis[Lx[-1]]
+            point = math.dot(Lx[:-1], self.vectors) + self.positions[Lx[-1]]
             node_index = 0
             for i in range(self.n_dim):
                 node_index += (
-                    (Lx[i] % self.L[i]) * np.prod(self.L[self.n_dim - 1 - i : 0 : -1]) * n_sl
+                    (Lx[i] % self.n_cells[i])
+                    * math.prod(self.n_cells[self.n_dim - 1 - i : 0 : -1])
+                    * n_sl
                 )
             node_index += Lx[-1]
             lattice_points.append(point)
             lattice_map.append(node_index)
 
-        return np.array(lattice_points), np.array(lattice_map)
+        return math.array(lattice_points), math.array(lattice_map)
 
     def add_edge(self, edge_indices):
         r"""Adds a specific edge based on the site index without translating it.
-        
+
         Args:
           edge_indices: List of edges to be added.
         Returns:
@@ -195,3 +209,137 @@ class Lattice:
                 new_edge = edge_index
 
             self.edges.append(new_edge)
+
+
+def _chain(n_cells, boundary_condition=False, neighbour_order=1):
+    r"""Generates a chain lattice"""
+    vectors = [[1]]
+    n_cells = n_cells[0:1]
+    lattice_chain = Lattice(
+        n_cells=n_cells,
+        vectors=vectors,
+        neighbour_order=neighbour_order,
+        boundary_condition=boundary_condition,
+    )
+    return lattice_chain
+
+
+def _square(n_cells, boundary_condition=False, neighbour_order=1):
+    r"""Generates a square lattice"""
+    vectors = [[1, 0], [0, 1]]
+    positions = [[0, 0]]
+    n_cells = n_cells[0:2]
+    lattice_square = Lattice(
+        n_cells=n_cells,
+        vectors=vectors,
+        positions=positions,
+        neighbour_order=neighbour_order,
+        boundary_condition=boundary_condition,
+    )
+
+    return lattice_square
+
+
+def _rectangle(n_cells, boundary_condition=False, neighbour_order=1):
+    r"""Generates a rectangle lattice"""
+    vectors = [[1, 0], [0, 1]]
+    positions = [[0, 0]]
+
+    n_cells = n_cells[0:2]
+    lattice_rec = Lattice(
+        n_cells=n_cells,
+        vectors=vectors,
+        positions=positions,
+        neighbour_order=neighbour_order,
+        boundary_condition=boundary_condition,
+    )
+
+    return lattice_rec
+
+
+def _honeycomb(n_cells, boundary_condition=False, neighbour_order=1):
+    r"""Generates a honeycomb lattice"""
+    vectors = [[1, 0], [0.5, math.sqrt(3) / 2]]
+    positions = [[0, 0], [0.5, 0.5 / 3**0.5]]
+
+    n_cells = n_cells[0:2]
+    lattice_honeycomb = Lattice(
+        n_cells=n_cells,
+        vectors=vectors,
+        positions=positions,
+        neighbour_order=neighbour_order,
+        boundary_condition=boundary_condition,
+    )
+
+    return lattice_honeycomb
+
+
+def _triangle(n_cells, boundary_condition=False, neighbour_order=1):
+    r"""Generates a triangular lattice"""
+    vectors = [[1, 0], [0.5, math.sqrt(3) / 2]]
+    positions = [[0, 0]]
+
+    n_cells = n_cells[0:2]
+    lattice_triangle = Lattice(
+        n_cells=n_cells,
+        vectors=vectors,
+        positions=positions,
+        neighbour_order=neighbour_order,
+        boundary_condition=boundary_condition,
+    )
+
+    return lattice_triangle
+
+
+def _kagome(n_cells, boundary_condition=False, neighbour_order=1):
+    r"""Generates a kagome lattice"""
+    vectors = [[1, 0], [0.5, math.sqrt(3) / 2]]
+    positions = [[0.0, 0], [-0.25, math.sqrt(3) / 4], [0.25, math.sqrt(3) / 4]]
+
+    n_cells = n_cells[0:2]
+    lattice_kagome = Lattice(
+        n_cells=n_cells,
+        vectors=vectors,
+        positions=positions,
+        neighbour_order=neighbour_order,
+        boundary_condition=boundary_condition,
+    )
+
+    return lattice_kagome
+
+
+def _generate_lattice(lattice, n_cells, boundary_condition=False, neighbour_order=1):
+    r"""Generates the lattice object for given shape and n_cells.
+
+    Args:
+        lattice (str): Shape of the lattice. Input Values can be ``'Chain'``, ``'Square'``, ``'Rectangle'``, ``'Honeycomb'``, ``'Triangle'``, or ``'Kagome'``.
+        n_cells (list[int]): Number of cells in each direction of the grid.
+        boundary_condition (bool or list[bool]): Defines boundary conditions, False for open boundary condition, each element represents the axis for lattice. It defaults to False.
+        neighbour_order (int): Range of neighbours a spin interacts with. Default is 1.
+
+    Returns:
+        lattice object
+    """
+
+    lattice_shape = lattice.strip().lower()
+
+    if lattice_shape not in ["chain", "square", "rectangle", "honeycomb", "triangle", "kagome"]:
+        raise ValueError(
+            f"Lattice shape, '{lattice}' is not supported."
+            f"Please set lattice to: chain, square, rectangle, honeycomb, triangle, or kagome"
+        )
+
+    if lattice_shape == "chain":
+        lattice = _chain(n_cells, boundary_condition, neighbour_order)
+    elif lattice_shape == "square":
+        lattice = _square(n_cells, boundary_condition, neighbour_order)
+    elif lattice_shape == "rectangle":
+        lattice = _rectangle(n_cells, boundary_condition, neighbour_order)
+    elif lattice_shape == "honeycomb":
+        lattice = _honeycomb(n_cells, boundary_condition, neighbour_order)
+    elif lattice_shape == "triangle":
+        lattice = _triangle(n_cells, boundary_condition, neighbour_order)
+    elif lattice_shape == "kagome":
+        lattice = _kagome(n_cells, boundary_condition, neighbour_order)
+
+    return lattice

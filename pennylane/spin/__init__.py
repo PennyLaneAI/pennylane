@@ -16,5 +16,4 @@ This module provides the functionality to create Lattices and spin Hamiltonians.
 """
 
 from .lattice import Lattice
-from .lattice_shapes import Chain, Honeycomb, Rectangle, Square, Triangle
-from .spin_hamiltonian import generate_lattice, transverse_ising
+from .spin_hamiltonian import transverse_ising
