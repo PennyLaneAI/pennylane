@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains functions and classes to create a
+This file contains functions and classes to create a
 :class:`~pennylane.spin.lattice` object. This object stores all
 the necessary information about a lattice.
 """
