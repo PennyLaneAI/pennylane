@@ -92,10 +92,6 @@ class TestControlledDecompositionZYZ:
         qml.RY(0.123, wires=0),
         qml.RZ(0.123, wires=0),
         qml.Rot(0.123, 0.456, 0.789, wires=0),
-        qml.Hadamard(0),
-        qml.PauliZ(0),
-        qml.S(0),
-        qml.PhaseShift(1.5, wires=0),
     ]
 
     general_unitary_ops = [
@@ -109,6 +105,10 @@ class TestControlledDecompositionZYZ:
             wires=0,
         ),
         qml.DiagonalQubitUnitary(np.array([1, -1]), wires=0),
+        qml.Hadamard(0),
+        qml.PauliZ(0),
+        qml.S(0),
+        qml.PhaseShift(1.5, wires=0),
     ]
 
     @pytest.mark.parametrize("op", su2_ops + general_unitary_ops)
