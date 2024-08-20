@@ -50,10 +50,7 @@ from pennylane.qchem import (
     from_openfermion,
     to_openfermion,
 )
-from pennylane._device import Device, DeviceError
 from pennylane._grad import grad, jacobian, vjp, jvp
-from pennylane._qubit_device import QubitDevice
-from pennylane._qutrit_device import QutritDevice
 from pennylane._version import __version__
 from pennylane.about import about
 from pennylane.circuit_graph import CircuitGraph
@@ -158,6 +155,10 @@ from pennylane.devices.device_constructor import device, refresh_devices
 default_config = Configuration("config.toml")
 
 
+class DeviceError(Exception):
+    """Exception raised when it encounters an illegal operation in the quantum circuit."""
+
+
 class QuantumFunctionError(Exception):
     """Exception raised when an illegal operation is defined in a quantum function."""
 
@@ -177,6 +178,15 @@ def __getattr__(name):
 
     if name == "plugin_devices":
         return pennylane.devices.device_constructor.plugin_devices
+
+    if name == "QubitDevice":
+        return pennylane.devices._qubit_device.QubitDevice  # pylint:disable=protected-access
+
+    if name == "QutritDevice":
+        return pennylane.devices._qutrit_device.QutritDevice  # pylint:disable=protected-access
+
+    if name == "Device":
+        return pennylane.devices._legacy_device.Device  # pylint:disable=protected-access
 
     raise AttributeError(f"module 'pennylane' has no attribute '{name}'")
 

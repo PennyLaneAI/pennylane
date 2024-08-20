@@ -23,9 +23,10 @@ import itertools
 import numpy as np
 
 import pennylane as qml
-from pennylane import QubitDevice
 from pennylane.measurements import MeasurementProcess
 from pennylane.wires import Wires
+
+from ._qubit_device import QubitDevice
 
 
 class QutritDevice(QubitDevice):  # pylint: disable=too-many-public-methods
@@ -210,9 +211,9 @@ class QutritDevice(QubitDevice):  # pylint: disable=too-many-public-methods
         """
         Returns the measured trits and recipes in the classical shadow protocol.
 
-        Please refer to :func:`~.pennylane.classical_shadow` for detailed documentation.
+        Please refer to :func:`~.pennylane.measurements.classical_shadow` for detailed documentation.
 
-        .. seealso:: :func:`~pennylane.classical_shadow`
+        .. seealso:: :func:`~pennylane.measurements.classical_shadow`
 
         Args:
             obs (~.pennylane.measurements.ClassicalShadowMP): The classical shadow measurement process
