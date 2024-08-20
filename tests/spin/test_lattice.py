@@ -87,20 +87,79 @@ def test_n_cells_type_error():
 
 
 @pytest.mark.parametrize(
-    ("vectors", "positions", "n_cells"),
+    # expected_points here were calculated manually.
+    ("vectors", "positions", "n_cells", "expected_points"),
     [
-        ([[0, 1], [1, 0]], [[1.5, 1.5]], [3, 3]),
-        ([[0, 1], [1, 0]], [[-1, -1]], [3, 3]),
-        ([[0, 1], [1, 0]], [[10, 10]], [3, 3]),
-        ([[1, 0], [0.5, np.sqrt(3) / 2]], [[0.5, 0.5 / 3**0.5], [1, 1 / 3**0.5]], [2, 2]),
+        (
+            [[0, 1], [1, 0]],
+            [[1.5, 1.5]],
+            [3, 3],
+            [
+                [1.5, 1.5],
+                [2.5, 1.5],
+                [3.5, 1.5],
+                [1.5, 2.5],
+                [2.5, 2.5],
+                [3.5, 2.5],
+                [1.5, 3.5],
+                [2.5, 3.5],
+                [3.5, 3.5],
+            ],
+        ),
+        (
+            [[0, 1], [1, 0]],
+            [[-1, -1]],
+            [3, 3],
+            [
+                [-1.0, -1.0],
+                [0.0, -1.0],
+                [1.0, -1.0],
+                [-1.0, 0.0],
+                [0.0, 0.0],
+                [1.0, 0.0],
+                [-1.0, 1.0],
+                [0.0, 1.0],
+                [1.0, 1.0],
+            ],
+        ),
+        (
+            [[0, 1], [1, 0]],
+            [[10, 10]],
+            [3, 3],
+            [
+                [10.0, 10.0],
+                [11.0, 10.0],
+                [12.0, 10.0],
+                [10.0, 11.0],
+                [11.0, 11.0],
+                [12.0, 11.0],
+                [10.0, 12.0],
+                [11.0, 12.0],
+                [12.0, 12.0],
+            ],
+        ),
+        (
+            [[1, 0], [0.5, np.sqrt(3) / 2]],
+            [[0.5, 0.5 / 3**0.5], [1, 1 / 3**0.5]],
+            [2, 2],
+            [
+                [0.5, 0.28867513],
+                [1.0, 0.57735027],
+                [1.0, 1.15470054],
+                [1.5, 1.44337567],
+                [1.5, 0.28867513],
+                [2.0, 0.57735027],
+                [2.0, 1.15470054],
+                [2.5, 1.44337567],
+            ],
+        ),
     ],
 )
-def test_positions(vectors, positions, n_cells):
+def test_positions(vectors, positions, n_cells, expected_points):
     r"""Test that the lattice points start from the coordinates provided in the positions"""
 
     lattice = Lattice(n_cells=n_cells, vectors=vectors, positions=positions)
-    for i, b in enumerate(positions):
-        assert np.allclose(b, lattice.lattice_points[i])
+    assert np.allclose(expected_points, lattice.lattice_points)
 
 
 @pytest.mark.parametrize(
