@@ -226,9 +226,6 @@ def _diagonalize_observable(
 
     # also validates that the wire hasn't already been diagonalized and updated _visited_obs
     switch_basis = type(observable) not in supported_base_obs
-    print(supported_base_obs)
-    print(type(observable))
-    print(switch_basis)
     diagonalize, _visited_obs = _check_if_diagonalizing(observable, _visited_obs, switch_basis)
 
     if isinstance(observable, qml.Z):  # maybe kind of redundant
