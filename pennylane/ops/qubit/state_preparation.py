@@ -28,6 +28,7 @@ from pennylane.wires import WireError, Wires, WiresLike
 
 state_prep_ops = {"BasisState", "StatePrep", "QubitDensityMatrix"}
 
+# TODO: Remove TOLERANCE as global variable
 TOLERANCE = 1e-10
 
 
@@ -310,6 +311,8 @@ class StatePrep(StatePrepBase):
         # normalize
         if "int" in str(state.dtype):
             state = math.cast_like(state, 0.0)
+
+        # TODO: update so that the norm is only calculated if 'normalize = True'
         norm = math.linalg.norm(state, axis=-1)
 
         if math.is_abstract(norm):
