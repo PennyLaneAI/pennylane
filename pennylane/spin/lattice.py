@@ -172,6 +172,7 @@ class Lattice:
 
     def add_edge(self, edge_indices):
         r"""Adds a specific edge based on the site index without translating it.
+        
         Args:
           edge_indices: List of edges to be added.
         Returns:
