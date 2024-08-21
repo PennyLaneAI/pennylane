@@ -38,6 +38,8 @@ DATA_STRUCT_URL = f"{S3_URL}/data_struct.json"
 
 
 class GraphQLError(BaseException):
+    """Exception for GraphQL"""
+
     pass
 
 
@@ -294,7 +296,6 @@ def load(  # pylint: disable=too-many-arguments
     >>> print(circuit())
     -1.0791430411076344
     """
-    foldermap = _get_foldermap()
     data_struct = _get_data_struct()
 
     params = format_params(**params)
@@ -412,6 +413,7 @@ def list_attributes(data_name):
           }
         }
         """,
+        {"input": {"datasetClassId": data_name}},
     )
 
     return response["data"]  # TODO: Validate against actual response
