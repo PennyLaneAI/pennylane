@@ -189,6 +189,7 @@ class Lattice:
 
         Args:
           edge_indices: List of edges to be added.
+
         Returns:
           Updates the edges attribute to include provided edges.
         """
