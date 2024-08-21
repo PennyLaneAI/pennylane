@@ -14,9 +14,9 @@
 """
 Unit tests for functions needed for computing the lattice.
 """
+import numpy as np
 import pytest
 
-import numpy as np
 from pennylane.spin import Lattice
 from pennylane.spin.lattice import _generate_lattice
 
