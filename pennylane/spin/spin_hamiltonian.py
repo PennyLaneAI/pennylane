@@ -50,7 +50,7 @@ def transverse_ising(
     >>> n_cells = [2,2]
     >>> J = 0.5
     >>> h = 0.1
-    >>> spin_ham = transverse_ising(lattice, n_cells, coupling=J, h=h)
+    >>> spin_ham = transverse_ising("Square", n_cells, coupling=J, h=h)
     >>> print(spin_ham)
     -0.5 * (Z(0) @ Z(1))
     + -0.5 * (Z(0) @ Z(2))
