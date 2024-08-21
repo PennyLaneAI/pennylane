@@ -731,7 +731,7 @@ class TestModifiedTemplates:
             "k": 3,
             "x_wires": [0, 1],
             "mod": None,
-            "work_wire": None,
+            "work_wires": None,
         }
 
         def qfunc():
