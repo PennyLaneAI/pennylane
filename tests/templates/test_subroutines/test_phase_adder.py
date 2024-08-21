@@ -100,7 +100,7 @@ class TestPhaseAdder:
             qml.adjoint(qml.QFT)(wires=x_wires)
             return qml.sample(wires=x_wires)
 
-        for x in range(0, max / 2):
+        for x in range(0, max // 2):
             assert np.allclose(
                 sum(bit * (2**i) for i, bit in enumerate(reversed(circuit(x)))), (x + k) % max
             )

@@ -123,7 +123,7 @@ class TestAdder:
         mod = 7
         x_wires = [0, 1, 2]
         work_wire = [3]
-        adder_decomposition = Adder(k, x_wires, mod, work_wire).compute_decomposition(
+        adder_decomposition = qml.Adder(k, x_wires, mod, work_wire).compute_decomposition(
             k, x_wires, mod, work_wire
         )
         op_list = []
@@ -131,7 +131,7 @@ class TestAdder:
         op_list.append(qml.PhaseAdder(k, x_wires, mod, work_wire))
         op_list.append(qml.adjoint(qml.QFT)(x_wires))
 
-        for op1, op2 in zip(Adder_decomposition, op_list):
+        for op1, op2 in zip(adder_decomposition, op_list):
             qml.assert_equal(op1, op2)
 
     @pytest.mark.jax
