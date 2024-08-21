@@ -36,9 +36,9 @@ class PhaseAdder(Operation):
 
     .. math::
 
-        \text{PhaseAdder}(k,mod) |\phi (x) \rangle = |\phi (x+k \, \text{mod} \, mod) \rangle,
+        \text{PhaseAdder}(k,mod) |\phi (x) \rangle = |\phi (x+k \quad \text{mod}) \rangle,
 
-    where :math:`|\phi (x) \rangle` represents the :math:`| x \rangle`: state in the Fourier basis such:
+    where :math:`|\phi (x) \rangle` represents the :math:`| x \rangle` : state in the Fourier basis such:
 
     .. math::
 
@@ -61,23 +61,25 @@ class PhaseAdder(Operation):
         x = 5
         k = 4
         mod = 7
+
         x_wires =[0,1,2,3]
         work_wire=[4]
+
         dev = qml.device("default.qubit", shots=1)
         @qml.qnode(dev)
-        def adder_modulo(x, k, mod, wires_m, work_wire):
+        def adder_modulo(x, k, mod, x_wires, work_wire):
             qml.BasisEmbedding(x, wires=x_wires)
             qml.QFT(wires=x_wires)
-            PhaseAdder(k, x_wires, mod, work_wire)
+            qml.PhaseAdder(k, x_wires, mod, work_wire)
             qml.adjoint(qml.QFT)(wires=x_wires)
             return qml.sample(wires=x_wires)
 
     .. code-block:: pycon
 
         >>> adder_modulo(x, k, mod, x_wires, work_wire)
-        [0 1 0]
+            [0 0 1 0]
 
-    The result [0 1 0] is the ket representation of :math:`5 + 4  \text{mod} \, 7 = 2`.
+    The result [0 0 1 0] is the ket representation of :math:`5 + 4  \text{mod} \, 7 = 2`.
     """
 
     grad_method = None
@@ -86,21 +88,21 @@ class PhaseAdder(Operation):
         self, k, x_wires, mod=None, work_wire=None, id=None
     ):  # pylint: disable=too-many-arguments
 
+        x_wires = qml.wires.Wires(x_wires)
         if mod is None:
             mod = 2 ** len(x_wires)
-        elif work_wire is None:
+        elif work_wire is None and mod != 2 ** len(x_wires):
             raise ValueError(f"If mod is not 2^{len(x_wires)} you should provide one work_wire")
-        k = k % mod
-        if not hasattr(x_wires, "__len__") or mod > 2 ** len(x_wires):
+        if mod > 2 ** len(x_wires):
             raise ValueError("PhaseAdder must have at least enough x_wires to represent mod.")
         if work_wire is not None:
             if any(wire in work_wire for wire in x_wires):
                 raise ValueError("work_wire should not be included in x_wires.")
 
-        self.hyperparameters["k"] = k
+        self.hyperparameters["k"] = k % mod
         self.hyperparameters["mod"] = mod
         self.hyperparameters["work_wire"] = qml.wires.Wires(work_wire)
-        self.hyperparameters["x_wires"] = qml.wires.Wires(x_wires)
+        self.hyperparameters["x_wires"] = x_wires
         all_wires = qml.wires.Wires(x_wires) + qml.wires.Wires(work_wire)
         super().__init__(wires=all_wires, id=id)
 
@@ -140,19 +142,8 @@ class PhaseAdder(Operation):
         """The work_wire."""
         return self.hyperparameters["work_wire"]
 
-    @property
-    def wires(self):
-        """All wires involved in the operation."""
-        return self.hyperparameters["x_wires"] + self.hyperparameters["work_wire"]
-
     def decomposition(self):  # pylint: disable=arguments-differ
-
-        return self.compute_decomposition(
-            self.hyperparameters["k"],
-            self.hyperparameters["x_wires"],
-            self.hyperparameters["mod"],
-            self.hyperparameters["work_wire"],
-        )
+        return self.compute_decomposition(**self.hyperparameters)
 
     @classmethod
     def _primitive_bind_call(cls, *args, **kwargs):
@@ -178,7 +169,7 @@ class PhaseAdder(Operation):
         """
         op_list = []
 
-        if mod == 2 ** (len(x_wires)):
+        if mod == 2 ** len(x_wires):
             op_list.extend(_add_k_fourier(k, x_wires))
         else:
             aux_k = x_wires[0]
