@@ -23,28 +23,35 @@ from pennylane.spin import transverse_ising
 
 
 def test_coupling_error():
-    r"""Test that an error is raised when the provided coupling shape is wrong"""
+    r"""Test that an error is raised when the provided coupling shape is wrong for
+    transverse_ising Hamiltonian."""
     n_cells = [4, 4]
     lattice = "Square"
     with pytest.raises(ValueError, match="Coupling shape should be equal to 1 or 16x16"):
         transverse_ising(lattice=lattice, n_cells=n_cells, coupling=1.0, neighbour_order=1)
 
 
-def test_shape_error():
-    r"""Test that an error is raised if wrong shape is provided"""
-    n_cells = [5, 5, 5]
-    lattice = "Octagon"
-    with pytest.raises(ValueError, match="Lattice shape, 'Octagon' is not supported."):
-        transverse_ising(lattice=lattice, n_cells=n_cells, coupling=1.0)
-
-
 @pytest.mark.parametrize(
     # expected_ham here was obtained from datasets
-    ("shape", "n_cells", "h", "expected_ham"),
+    ("shape", "n_cells", "J", "h", "expected_ham"),
     [
         (
             "chain",
             [4, 0, 0],
+            None,
+            0,
+            -1.0 * (Z(0) @ Z(1))
+            + -1.0 * (Z(1) @ Z(2))
+            + -1.0 * (Z(2) @ Z(3))
+            + 0.0 * X(0)
+            + 0.0 * X(1)
+            + 0.0 * X(2)
+            + 0.0 * X(3),
+        ),
+        (
+            "chain",
+            [4, 0, 0],
+            [1.0],
             0,
             -1.0 * (Z(0) @ Z(1))
             + -1.0 * (Z(1) @ Z(2))
@@ -57,6 +64,7 @@ def test_shape_error():
         (
             "chain",
             [8, 0, 0],
+            [1.0],
             -0.17676768,
             -1.0 * (Z(0) @ Z(1))
             + -1.0 * (Z(1) @ Z(2))
@@ -77,6 +85,7 @@ def test_shape_error():
         (
             "rectangle",
             [4, 2, 0],
+            [1.0],
             -0.25252525,
             -1.0 * (Z(0) @ Z(1))
             + -1.0 * (Z(0) @ Z(2))
@@ -100,6 +109,7 @@ def test_shape_error():
         (
             "rectangle",
             [8, 2, 0],
+            [1.0],
             -0.44444444,
             -1.0 * (Z(0) @ Z(1))
             + -1.0 * (Z(0) @ Z(2))
@@ -142,10 +152,49 @@ def test_shape_error():
         ),
     ],
 )
-def test_ising_hamiltonian(shape, n_cells, h, expected_ham):
+def test_ising_hamiltonian(shape, n_cells, J, h, expected_ham):
     r"""Test that the correct Hamiltonian is generated compared to the datasets"""
 
-    J = [1.0]
+    ising_ham = transverse_ising(lattice=shape, n_cells=n_cells, coupling=J, h=h, neighbour_order=1)
+
+    qml.assert_equal(ising_ham, expected_ham)
+
+
+@pytest.mark.parametrize(
+    # expected_ham here was obtained manually.
+    ("shape", "n_cells", "J", "h", "expected_ham"),
+    [
+        (
+            "chain",
+            [4, 0, 0],
+            [[0, 1, 0, 0], [1, 0, 1, 0], [0, 1, 0, 1], [0, 0, 1, 0]],
+            0,
+            -1.0 * (Z(0) @ Z(1))
+            + -1.0 * (Z(1) @ Z(2))
+            + -1.0 * (Z(2) @ Z(3))
+            + 0.0 * X(0)
+            + 0.0 * X(1)
+            + 0.0 * X(2)
+            + 0.0 * X(3),
+        ),
+        (
+            "square",
+            [2, 2, 0],
+            [[0, 0.5, 0.5, 0], [0.5, 0, 0, 0.5], [0.5, 0, 0, 0.5], [0, 0.5, 0.5, 0]],
+            -1.0,
+            -0.5 * (Z(0) @ Z(1))
+            + -0.5 * (Z(0) @ Z(2))
+            + -0.5 * (Z(2) @ Z(3))
+            + -0.5 * (Z(1) @ Z(3))
+            + 1.0 * X(0)
+            + 1.0 * X(1)
+            + 1.0 * X(2)
+            + 1.0 * X(3),
+        ),
+    ],
+)
+def test_ising_hamiltonian_matrix(shape, n_cells, J, h, expected_ham):
+    r"""Test that the correct Hamiltonian is generated when coupling is provided as a matrix"""
 
     ising_ham = transverse_ising(lattice=shape, n_cells=n_cells, coupling=J, h=h, neighbour_order=1)
 

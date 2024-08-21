@@ -97,7 +97,7 @@ class Lattice:
                 "Argument 'boundary_condition' must be a bool or a list of bools with length equal to number of vectors"
             )
 
-        self.n_cells = n_cells
+        self.n_cells = math.asarray(n_cells)
         self.n_dim = len(n_cells)
         self.vectors = math.asarray(vectors)
         self.positions = math.asarray(positions)
@@ -164,10 +164,7 @@ class Lattice:
         """
 
         n_sl = len(self.positions)
-        if self.boundary_condition:
-            wrap_grid = math.where(self.boundary_condition, neighbour_order, 0)
-        else:
-            wrap_grid = math.zeros(self.n_cells.size, dtype=int)
+        wrap_grid = math.where(self.boundary_condition, neighbour_order, 0)
 
         ranges_dim = [range(-wrap_grid[i], Lx + wrap_grid[i]) for i, Lx in enumerate(self.n_cells)]
         ranges_dim.append(range(n_sl))

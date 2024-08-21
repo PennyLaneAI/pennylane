@@ -392,6 +392,10 @@ def test_add_edge_error():
     with pytest.raises(ValueError, match="Edge is already present"):
         lattice.add_edge(edge_indices)
 
+    edge_indices = [[4, 5, 0]]
+    with pytest.raises(ValueError, match="Edge is already present"):
+        lattice.add_edge(edge_indices)
+
 
 def test_add_edge_error_wrong_type():
     r"""Test that an error is raised if the tuple representing the edge if of wrong length"""
@@ -525,3 +529,11 @@ def test_edges_for_shapes(shape, n_cells, expected_edges):
     r"""Test that correct edges are obtained for given lattice shapes"""
     lattice = _generate_lattice(lattice=shape, n_cells=n_cells)
     assert sorted(lattice.edges) == sorted(expected_edges)
+
+
+def test_shape_error():
+    r"""Test that an error is raised if wrong shape is provided."""
+    n_cells = [5, 5, 5]
+    lattice = "Octagon"
+    with pytest.raises(ValueError, match="Lattice shape, 'Octagon' is not supported."):
+        _generate_lattice(lattice=lattice, n_cells=n_cells)
