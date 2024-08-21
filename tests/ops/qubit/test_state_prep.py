@@ -66,8 +66,8 @@ class TestDecomposition:
         ops2 = qml.BasisState(n, wires=wires).decomposition()
 
         assert len(ops1) == len(ops2) == 1
-        assert isinstance(ops1[0], qml.PauliX)
-        assert isinstance(ops2[0], qml.PauliX)
+        assert isinstance(ops1[0], qml.X)
+        assert isinstance(ops2[0], qml.X)
 
     def test_StatePrep_decomposition(self):
         """Test the decomposition for StatePrep."""
@@ -354,6 +354,6 @@ class TestStateVector:
     def test_BasisState_wrong_param_size(self):
         """Tests that the parameter must be of length num_wires."""
         with pytest.raises(
-            ValueError, match=r"Features must be of length 2; got length 1 \(features=\[0\]\)."
+            ValueError, match=r"State must be of length 2; got length 1 \(state=\[0\]\)."
         ):
             _ = qml.BasisState([0], wires=[0, 1])

@@ -657,7 +657,7 @@ class TestApply:
             qubit_device_2_wires.apply([qml.BasisState(np.array([-0.2, 4.2]), wires=[0, 1])])
 
         with pytest.raises(
-            ValueError, match=r"Features must be of length 1; got length 2 \(features=\[0 1\]\)\."
+            ValueError, match=r"State must be of length 1; got length 2 \(features=\[0 1\]\)\."
         ):
             qubit_device_2_wires.apply([qml.BasisState(np.array([0, 1]), wires=[0])])
 

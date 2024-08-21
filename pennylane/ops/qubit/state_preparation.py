@@ -31,7 +31,7 @@ state_prep_ops = {"BasisState", "StatePrep", "QubitDensityMatrix"}
 
 
 class BasisState(StatePrepBase):
-    r"""BasisState(features, wires)
+    r"""BasisState(state, wires)
     Prepares a single computational basis state.
 
     **Details:**
@@ -51,7 +51,7 @@ class BasisState(StatePrepBase):
         as :math:`U|0\rangle = |\psi\rangle`
 
     Args:
-        features (tensor_like): binary input of shape ``(len(wires), )``. For example, for ``features=np.array([0, 1, 0])`` or ``features=2`` (binary 010), the quantum system will be prepared in state :math:`|010 \rangle`.
+        state (tensor_like): binary input of shape ``(len(wires), )``, e.g., for ``state=np.array([0, 1, 0])`` or ``state=2`` (binary 010), the quantum system will be prepared in state :math:`|010 \rangle`.
 
         wires (Sequence[int] or int): the wire(s) the operation acts on
         id (str): custom label given to an operator instance,
@@ -68,51 +68,52 @@ class BasisState(StatePrepBase):
     [0.+0.j 0.+0.j 0.+0.j 1.+0.j]
     """
 
-    def __init__(self, features, wires, id=None):
+    def __init__(self, state, wires, id=None):
 
-        if isinstance(features, list):
-            features = qml.math.stack(features)
+        if isinstance(state, list):
+            state = qml.math.stack(state)
 
-        tracing = qml.math.is_abstract(features)
+        tracing = qml.math.is_abstract(state)
 
-        if qml.math.shape(features) == ():
-            if not tracing and features >= 2 ** len(wires):
+        if not qml.math.shape(state):
+            if not tracing and state >= 2 ** len(wires):
                 raise ValueError(
-                    f"Features must be of length {len(wires)}, got features={features} which is >= {2 ** len(wires)}"
+                    f"Integer state must be < {2 ** len(wires)} to have a feasible binary representation, got {state}"
+                    f"State must be of length {len(wires)}, got state={state} which is >= {2 ** len(wires)}"
                 )
             bin = 2 ** math.arange(len(wires))[::-1]
-            features = qml.math.where((features & bin) > 0, 1, 0)
+            state = qml.math.where((state & bin) > 0, 1, 0)
 
         wires = Wires(wires)
-        shape = qml.math.shape(features)
+        shape = qml.math.shape(state)
 
         if len(shape) != 1:
-            raise ValueError(f"Features must be one-dimensional; got shape {shape}.")
+            raise ValueError(f"State must be one-dimensional; got shape {shape}.")
 
-        n_features = shape[0]
-        if n_features != len(wires):
+        n_states = shape[0]
+        if n_states != len(wires):
             raise ValueError(
-                f"Features must be of length {len(wires)}; got length {n_features} (features={features})."
+                f"State must be of length {len(wires)}; got length {n_states} (state={state})."
             )
 
         if not tracing:
-            features_list = list(qml.math.toarray(features))
-            if not set(features_list).issubset({0, 1}):
-                raise ValueError(f"Basis state must only consist of 0s and 1s; got {features_list}")
+            state_list = list(qml.math.toarray(state))
+            if not set(state_list).issubset({0, 1}):
+                raise ValueError(f"Basis state must only consist of 0s and 1s; got {state_list}")
 
-        super().__init__(features, wires=wires, id=id)
+        super().__init__(state, wires=wires, id=id)
 
     def _flatten(self):
-        features = self.parameters[0]
-        features = tuple(features) if isinstance(features, list) else features
-        return (features,), (self.wires,)
+        state = self.parameters[0]
+        state = tuple(state) if isinstance(state, list) else state
+        return (state,), (self.wires,)
 
     @classmethod
     def _unflatten(cls, data, metadata) -> "BasisState":
         return cls(data[0], wires=metadata[0])
 
     @staticmethod
-    def compute_decomposition(features: TensorLike, wires: WiresLike) -> list[Operator]:
+    def compute_decomposition(state: TensorLike, wires: WiresLike) -> list[Operator]:
         r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -121,8 +122,7 @@ class BasisState(StatePrepBase):
         .. seealso:: :meth:`~.BasisState.decomposition`.
 
         Args:
-            n (array): prepares the basis state :math:`\ket{n}`, where ``n`` is an
-                array of integers from the set :math:`\{0, 1\}`
+            state (array): the basis state to be prepared
             wires (Iterable, Wires): the wire(s) the operation acts on
 
         Returns:
@@ -135,18 +135,14 @@ class BasisState(StatePrepBase):
 
         """
 
-        if not qml.math.is_abstract(features):
-            op_list = []
-            for wire, state in zip(wires, features):
-                if state == 1:
-                    op_list.append(qml.X(wire))
-            return op_list
+        if not qml.math.is_abstract(state):
+            return [qml.X(wire) for wire, basis in zip(wires, state) if basis == 1]
 
         op_list = []
-        for wire, state in zip(wires, features):
-            op_list.append(qml.PhaseShift(state * np.pi / 2, wire))
-            op_list.append(qml.RX(state * np.pi, wire))
-            op_list.append(qml.PhaseShift(state * np.pi / 2, wire))
+        for wire, basis in zip(wires, state):
+            op_list.append(qml.PhaseShift(basis * np.pi / 2, wire))
+            op_list.append(qml.RX(basis * np.pi, wire))
+            op_list.append(qml.PhaseShift(basis * np.pi / 2, wire))
 
         return op_list
 

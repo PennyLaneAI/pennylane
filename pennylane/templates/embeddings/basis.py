@@ -19,7 +19,6 @@ Contains the BasisEmbedding template.
 from pennylane.ops.qubit.state_preparation import BasisState
 
 
-# pylint: disable=missing-class-docstring
 class BasisEmbedding(BasisState):
     r"""Encodes :math:`n` binary features into a basis state of :math:`n` qubits.
 
@@ -67,3 +66,6 @@ class BasisEmbedding(BasisState):
         Thus, ``[1,1,1]`` is mapped to :math:`|111 \rangle`.
 
     """
+
+    def __init__(self, features, wires, id=None):
+        super().__init__(features, wires=wires, id=id)
