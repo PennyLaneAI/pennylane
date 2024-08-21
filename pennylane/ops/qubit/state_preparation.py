@@ -80,7 +80,6 @@ class BasisState(StatePrepBase):
             if not tracing and state >= 2 ** len(wires):
                 raise ValueError(
                     f"Integer state must be < {2 ** len(wires)} to have a feasible binary representation, got {state}"
-                    f"State must be of length {len(wires)}, got state={state} which is >= {2 ** len(wires)}"
                 )
             bin = 2 ** math.arange(len(wires))[::-1]
             state = qml.math.where((state & bin) > 0, 1, 0)
@@ -150,7 +149,7 @@ class BasisState(StatePrepBase):
     def state_vector(self, wire_order: Optional[WiresLike] = None) -> TensorLike:
         """Returns a statevector of shape ``(2,) * num_wires``."""
         prep_vals = self.parameters[0]
-        prep_vals_int = math.cast(prep_vals, int)
+        prep_vals_int = math.cast(self.parameters[0], int)
 
         if wire_order is None:
             indices = prep_vals_int

@@ -377,7 +377,7 @@
 * `qml.AmplitudeEmbedding` has better support for features using low precision integer data types.
   [(#5969)](https://github.com/PennyLaneAI/pennylane/pull/5969)
 
-* `qml.BasisState` and `qml.BasisEmbedding` now works with jax.jit, lightning.qubit and now gives the correct decomposition.
+* `qml.BasisState` and `qml.BasisEmbedding` now works with jax.jit, lightning.qubit and give the correct decomposition.
   [(#6021)](https://github.com/PennyLaneAI/pennylane/pull/6021)
 
 * Jacobian shape is fixed for measurements with dimension in `qml.gradients.vjp.compute_vjp_single`.
