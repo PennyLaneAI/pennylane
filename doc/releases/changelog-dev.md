@@ -26,8 +26,7 @@
 
 <h4>Creating spin Hamiltonians 🧑‍🎨</h4>
 
-* New function to generate transverse-field Ising Hamiltonian and the required helper functions to generate the lattice
-  have been added.
+* The function ``transverse_ising`` is added to generate transverse-field Ising Hamiltonian.
   [(#6106)](https://github.com/PennyLaneAI/pennylane/pull/6106)
 
 <h3>Improvements 🛠</h3>
