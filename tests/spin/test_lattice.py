@@ -398,7 +398,7 @@ def test_add_edge_error():
 
 
 def test_add_edge_error_wrong_type():
-    r"""Test that an error is raised if the tuple representing the edge if of wrong length"""
+    r"""Test that an error is raised if the tuple representing the edge is of wrong length"""
     edge_indices = [[4, 5, 1, 0]]
     vectors = [[0, 1], [1, 0]]
     n_cells = [3, 3]
@@ -416,9 +416,11 @@ def test_add_edge():
     vectors = [[0, 1], [1, 0]]
     n_cells = [3, 3]
     lattice = Lattice(n_cells=n_cells, vectors=vectors)
-
     lattice.add_edge(edge_indices)
+    lattice.add_edge([[0, 2, 1]])
     assert np.all(np.isin(edge_indices, lattice.edges))
+    print(lattice.edges)
+    assert np.all(np.isin([0, 2, 1], lattice.edges))
 
 
 @pytest.mark.parametrize(
