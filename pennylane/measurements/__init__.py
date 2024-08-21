@@ -290,7 +290,7 @@ from .measurements import (
     VnEntropy,
     VnEntanglementEntropy,
 )
-from .mid_measure import MeasurementValue, MidMeasureMP, measure
+from .mid_measure import MeasurementValue, MidMeasureMP, measure, find_post_processed_mcms
 from .mutual_info import MutualInfoMP, mutual_info
 from .probs import ProbabilityMP, probs
 from .purity import PurityMP, purity
