@@ -26,7 +26,7 @@ def transverse_ising(
     lattice, n_cells, coupling=None, h=1.0, boundary_condition=False, neighbour_order=1
 ):
     r"""Generates the transverse field Ising model on a lattice.
-    
+
     The Hamiltonian is represented as:
 
     .. math::

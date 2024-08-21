@@ -72,20 +72,22 @@ class Lattice:
         if not all(isinstance(l, int) for l in n_cells) or any(l <= 0 for l in n_cells):
             raise TypeError("Argument `n_cells` must be a list of positive integers")
 
-        vectors = math.asarray(vectors)
+        self.vectors = math.asarray(vectors)
 
-        if vectors.ndim != 2:
-            raise ValueError(f"The dimensions of vectors array must be 2, got {vectors.ndim}.")
+        if self.vectors.ndim != 2:
+            raise ValueError(f"The dimensions of vectors array must be 2, got {self.vectors.ndim}.")
 
-        if vectors.shape[0] != vectors.shape[1]:
+        if self.vectors.shape[0] != self.vectors.shape[1]:
             raise ValueError("The number of primitive vectors must match their length")
 
         if positions is None:
-            positions = math.zeros(vectors.shape[0])[None, :]
-        positions = math.asarray(positions)
+            positions = math.zeros(self.vectors.shape[0])[None, :]
+        self.positions = math.asarray(positions)
 
-        if positions.ndim != 2:
-            raise ValueError(f"The dimensions of positions array must be 2, got {positions.ndim}.")
+        if self.positions.ndim != 2:
+            raise ValueError(
+                f"The dimensions of positions array must be 2, got {self.positions.ndim}."
+            )
 
         if isinstance(boundary_condition, bool):
             boundary_condition = [boundary_condition] * len(n_cells)
@@ -99,8 +101,6 @@ class Lattice:
 
         self.n_cells = math.asarray(n_cells)
         self.n_dim = len(n_cells)
-        self.vectors = math.asarray(vectors)
-        self.positions = math.asarray(positions)
         self.boundary_condition = boundary_condition
 
         n_sl = len(self.positions)
@@ -120,7 +120,8 @@ class Lattice:
         tree = KDTree(self.lattice_points)
         indices = tree.query_ball_tree(tree, cutoff)
         # Number to Scale the distance
-        bin_density = 21621600  # multiple of expected denominators
+        # Scales the distance to sort edges into appropriate bins
+        bin_density = 2 ^ 5 * 3 ^ 3 * 5 ^ 2 * 7 * 11 * 13  # multiple of expected denominators
         unique_pairs = set()
         edges = {}
         for i, neighbours in enumerate(indices):
@@ -305,6 +306,7 @@ def _kagome(n_cells, boundary_condition=False, neighbour_order=1):
     return lattice_kagome
 
 
+## Todo: Check the efficiency of this function with a dictionary instead.
 def _generate_lattice(lattice, n_cells, boundary_condition=False, neighbour_order=1):
     r"""Generates the lattice object for given shape and n_cells.
 

@@ -23,20 +23,13 @@ from pennylane.spin.lattice import _generate_lattice
 # pylint: disable=too-many-arguments, too-many-instance-attributes
 
 
-def test_boundary_condition_dimension_error():
-    r"""Test that an error is raised if a wrong dimensions are entered for boundary_condition."""
-    vectors = [[1]]
-    n_cells = [10]
-    with pytest.raises(ValueError, match="Argument 'boundary_condition' must be a bool"):
-        Lattice(n_cells=n_cells, vectors=vectors, boundary_condition=[True, True])
-
-
-def test_boundary_condition_type_error():
+@pytest.mark.parametrize(("boundary_condition"), [([True, True]), ([4])])
+def test_boundary_condition_type_error(boundary_condition):
     r"""Test that an error is raised if a wrong type is entered for boundary_condition."""
     vectors = [[1]]
     n_cells = [10]
     with pytest.raises(ValueError, match="Argument 'boundary_condition' must be a bool"):
-        Lattice(n_cells=n_cells, vectors=vectors, boundary_condition=[4])
+        Lattice(n_cells=n_cells, vectors=vectors, boundary_condition=boundary_condition)
 
 
 def test_vectors_error():
@@ -64,20 +57,11 @@ def test_vectors_shape_error():
         Lattice(n_cells=n_cells, vectors=vectors)
 
 
-def test_n_cells_error():
-    r"""Test that an error is raised if length of vectors is provided in negative."""
-
-    vectors = [[0, 1], [1, 0]]
-    n_cells = [2, -2]
-    with pytest.raises(TypeError, match="Argument `n_cells` must be a list of positive integers"):
-        Lattice(n_cells=n_cells, vectors=vectors)
-
-
-def test_n_cells_type_error():
+@pytest.mark.parametrize(("n_cells"), [([2, -2]), ([2, 2.4])])
+def test_n_cells_type_error(n_cells):
     r"""Test that an error is raised if length of vectors is provided not as an int."""
 
     vectors = [[0, 1], [1, 0]]
-    n_cells = [2, 2.4]
     with pytest.raises(TypeError, match="Argument `n_cells` must be a list of positive integers"):
         Lattice(n_cells=n_cells, vectors=vectors)
 
