@@ -171,19 +171,13 @@ class Lattice:
 
         ranges_dim = [range(-wrap_grid[i], Lx + wrap_grid[i]) for i, Lx in enumerate(self.n_cells)]
         ranges_dim.append(range(n_sl))
+        nsites_axis = math.cumprod([n_sl, *self.n_cells[:0:-1]])[::-1]
         lattice_points = []
         lattice_map = []
 
         for Lx in itertools.product(*ranges_dim):
             point = math.dot(Lx[:-1], self.vectors) + self.positions[Lx[-1]]
-            node_index = 0
-            for i in range(self.n_dim):
-                node_index += (
-                    (Lx[i] % self.n_cells[i])
-                    * math.prod(self.n_cells[self.n_dim - 1 - i : 0 : -1])
-                    * n_sl
-                )
-            node_index += Lx[-1]
+            node_index = math.dot(math.mod(Lx[:-1], self.n_cells), nsites_axis) + Lx[-1]
             lattice_points.append(point)
             lattice_map.append(node_index)
 
