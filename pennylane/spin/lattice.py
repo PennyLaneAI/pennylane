@@ -138,7 +138,7 @@ class Lattice:
                             edges[scaled_dist] = []
                         edges[scaled_dist].append((i, neighbour))
 
-        edges = [value for key, value in sorted(edges.items())]
+        edges = [value for _, value in sorted(edges.items())]
         return edges
 
     def _generate_true_edges(self, edges, map, neighbour_order):
