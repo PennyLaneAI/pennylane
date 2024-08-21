@@ -35,61 +35,67 @@ class TestAdder:
     """Test the qml.Adder template."""
 
     @pytest.mark.parametrize(
-        ("k", "x_wires", "mod", "work_wires"),
+        ("k", "x_wires", "mod", "work_wires", "x"),
         [
+            (6, [0, 1, 2], 8, [4, 5], 1),
             (
                 6,
-                [0, 1, 2],
+                ["a", "b", "c"],
                 8,
-                [4, 5],
+                ["d", "e"],
+                2,
             ),
             (
                 1,
                 [0, 1, 2, 3],
                 9,
                 [4, 5],
+                3,
             ),
             (
                 2,
                 [0, 1, 4],
                 4,
                 [3, 2],
+                2,
             ),
             (
                 -3,
                 [0, 1, 4],
                 4,
                 [3, 2],
+                1,
             ),
             (
                 10,
                 [0, 1, 2, 5],
                 9,
                 [3, 4],
+                2,
             ),
             (
                 1,
                 [0, 1, 2],
                 7,
                 [3, 4],
+                3,
             ),
             (
                 6,
                 [0, 1, 2, 3],
                 None,
                 [4, 5],
+                3,
             ),
         ],
     )
     def test_operation_result(
-        self, k, x_wires, mod, work_wires
+        self, k, x_wires, mod, work_wires, x
     ):  # pylint: disable=too-many-arguments
         """Test the correctness of the PhaseAdder template output."""
         dev = qml.device("default.qubit", shots=1)
         if mod is None:
-            max = 2 ** len(x_wires)
-        else:
-            max = mod
+            mod = 2 ** len(x_wires)
 
         @qml.qnode(dev)
         def circuit(x):
@@ -97,20 +103,41 @@ class TestAdder:
             qml.Adder(k, x_wires, mod, work_wires)
             return qml.sample(wires=x_wires)
 
-        for x in range(0, max // 2):
-            assert np.allclose(
-                sum(bit * (2**i) for i, bit in enumerate(reversed(circuit(x)))), (x + k) % max
-            )
-
-    def test_wires_error(self):  # pylint: disable=too-many-arguments
-        """Test an error is raised when some wire in work_wires is in wires"""
-        k, x_wires, mod, work_wires, msg_match = (
-            3,
-            [0, 1, 2, 3, 4],
-            12,
-            [4, 5],
-            "None wire in work_wires should be included in x_wires.",
+        assert np.allclose(
+            sum(bit * (2**i) for i, bit in enumerate(reversed(circuit(x)))), (x + k) % mod
         )
+
+    @pytest.mark.parametrize(
+        ("k", "x_wires", "mod", "work_wires", "msg_match"),
+        [
+            (
+                1,
+                [0, 1, 2],
+                9,
+                [3, 4],
+                ("Adder must have at least enough x_wires to represent mod."),
+            ),
+            (
+                1,
+                [0, 1, 2],
+                9,
+                None,
+                (r"If mod is not"),
+            ),
+            (
+                3,
+                [0, 1, 2, 3, 4],
+                12,
+                [4, 5],
+                "None wire in work_wires should be included in x_wires.",
+            ),
+        ],
+    )
+    def test_operation_and_test_wires_error(
+        self, k, x_wires, mod, work_wires, msg_match
+    ):  # pylint: disable=too-many-arguments
+        """Test errors are raised"""
+
         with pytest.raises(ValueError, match=msg_match):
             qml.Adder(k, x_wires, mod, work_wires)
 

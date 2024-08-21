@@ -26,7 +26,7 @@ class Adder(Operation):
 
     .. math::
 
-        \text{Adder}(k,mod) |x \rangle = | x+k \, \text{mod} \, mod \rangle,
+        \text{Adder}(k,mod) |x \rangle = | x+k \quad (\text{mod}) \rangle,
 
     The decomposition of this operator is based on the QFT-based method presented in `arXiv:2311.08555 <https://arxiv.org/abs/2311.08555>`_.
 
@@ -45,8 +45,10 @@ class Adder(Operation):
         x = 8
         k = 5
         mod = 15
+
         x_wires =[0,1,2,3]
         work_wires=[4,5]
+
         dev = qml.device("default.qubit", shots=1)
         @qml.qnode(dev)
         def adder_modulo(x, k, mod, x_wires, work_wires):
@@ -57,7 +59,7 @@ class Adder(Operation):
     .. code-block:: pycon
 
         >>> adder_modulo(x, k, mod,x_wires, work_wire)
-        [1 1 0 1]
+            [1 1 0 1]
 
     The result [1 1 0 1] is the ket representation of :math:`8 + 5  \, \text{mod} \, 15 = 13`.
     """
@@ -68,14 +70,21 @@ class Adder(Operation):
         self, k, x_wires, mod=None, work_wires=None, id=None
     ):  # pylint: disable=too-many-arguments
 
+        x_wires = qml.wires.Wires(x_wires)
+        if mod is None:
+            mod = 2 ** len(x_wires)
+        elif work_wires is None and mod != 2 ** len(x_wires):
+            raise ValueError(f"If mod is not 2^{len(x_wires)} you should provide two work_wire")
         if work_wires is not None:
             if any(wire in work_wires for wire in x_wires):
                 raise ValueError("None wire in work_wires should be included in x_wires.")
+        if mod > 2 ** len(x_wires):
+            raise ValueError("Adder must have at least enough x_wires to represent mod.")
 
         self.hyperparameters["k"] = k
         self.hyperparameters["mod"] = mod
         self.hyperparameters["work_wires"] = qml.wires.Wires(work_wires)
-        self.hyperparameters["x_wires"] = qml.wires.Wires(x_wires)
+        self.hyperparameters["x_wires"] = x_wires
         all_wires = qml.wires.Wires(x_wires) + qml.wires.Wires(work_wires)
         super().__init__(wires=all_wires, id=id)
 
@@ -107,7 +116,7 @@ class Adder(Operation):
 
     @property
     def x_wires(self):
-        """The wires where x is loaded."""
+        """The wires where the operator is applied."""
         return self.hyperparameters["x_wires"]
 
     @property
@@ -115,19 +124,8 @@ class Adder(Operation):
         """The work_wires."""
         return self.hyperparameters["work_wires"]
 
-    @property
-    def wires(self):
-        """All wires involved in the operation."""
-        return self.hyperparameters["x_wires"] + self.hyperparameters["work_wires"]
-
     def decomposition(self):  # pylint: disable=arguments-differ
-
-        return self.compute_decomposition(
-            self.hyperparameters["k"],
-            self.hyperparameters["x_wires"],
-            self.hyperparameters["mod"],
-            self.hyperparameters["work_wires"],
-        )
+        return self.compute_decomposition(**self.hyperparameters)
 
     @classmethod
     def _primitive_bind_call(cls, *args, **kwargs):
