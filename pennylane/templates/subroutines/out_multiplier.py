@@ -15,7 +15,6 @@
 Contains the OutMultiplier template.
 """
 
-import numpy as np
 import pennylane as qml
 from pennylane.operation import Operation
 
@@ -70,36 +69,106 @@ class OutMultiplier(Operation):
 
     def __init__(self, x_wires, y_wires, output_wires, mod=None, work_wires=None, id=None):
 
-        if mod == None:
-            mod = 2 ** (len(output_wires))
+        if mod is None:
+            mod = 2 ** len(output_wires)
+        if mod != 2 ** len(output_wires):
+            if work_wires is None:
+                raise ValueError(
+                    f"If mod is not 2^{len(output_wires)} you should provide two work_wires"
+                )
         if (not hasattr(output_wires, "__len__")) or (mod > 2 ** (len(output_wires))):
-            raise ValueError("OutAdder must have at least enough wires to represent mod.")
-        if work_wires != None:
+            raise ValueError("OutMultiplier must have at least enough wires to represent mod.")
+        if work_wires is not None:
             if any(wire in work_wires for wire in x_wires):
-                raise ValueError("Any wire in work_wires should not be included in x_wires.")
+                raise ValueError("None of the wires in work_wires should be included in x_wires.")
             if any(wire in work_wires for wire in y_wires):
-                raise ValueError("Any wire in work_wires should not be included in y_wires.")
-        else:
-            max_wire = max(max(x_wires), max(y_wires), max(output_wires))
-            work_wires = [max_wire + 1, max_wire + 2]
-        x_wires = qml.wires.Wires(x_wires)
-        y_wires = qml.wires.Wires(y_wires)
-        output_wires = qml.wires.Wires(output_wires)
-        work_wires = qml.wires.Wires(work_wires)
-        self.hyperparameters["x_wires"] = x_wires
-        self.hyperparameters["y_wires"] = y_wires
-        self.hyperparameters["output_wires"] = output_wires
+                raise ValueError("None of the wires in work_wires should be included in y_wires.")
+        if any(wire in y_wires for wire in x_wires):
+            raise ValueError("None of the wires in y_wires should be included in x_wires.")
+        if any(wire in x_wires for wire in output_wires):
+            raise ValueError("None of the wires in x_wires should be included in output_wires.")
+        if any(wire in y_wires for wire in output_wires):
+            raise ValueError("None of the wires in y_wires should be included in output_wires.")
+        wires_list = ["x_wires", "y_wires", "output_wires", "work_wires"]
+        for key in wires_list:
+            self.hyperparameters[key] = qml.wires.Wires(locals()[key])
         self.hyperparameters["mod"] = mod
-        self.hyperparameters["work_wires"] = work_wires
-        all_wires = x_wires + y_wires + output_wires + work_wires
+        all_wires = sum(self.hyperparameters[key] for key in wires_list)
         super().__init__(wires=all_wires, id=id)
 
     @property
     def num_params(self):
         return 0
 
+    def _flatten(self):
+        metadata = tuple((key, value) for key, value in self.hyperparameters.items())
+        return tuple(), metadata
+
+    @classmethod
+    def _unflatten(cls, data, metadata):
+        hyperparams_dict = dict(metadata)
+        return cls(**hyperparams_dict)
+
+    def map_wires(self, wire_map: dict):
+        new_dict = {
+            key: [wire_map.get(w, w) for w in self.hyperparameters[key]]
+            for key in ["x_wires", "y_wires", "output_wires", "work_wires"]
+        }
+
+        return OutMultiplier(
+            new_dict["x_wires"],
+            new_dict["y_wires"],
+            new_dict["output_wires"],
+            self.hyperparameters["mod"],
+            new_dict["work_wires"],
+        )
+
+    @property
+    def x_wires(self):
+        """The wires where x is loaded."""
+        return self.hyperparameters["x_wires"]
+
+    @property
+    def y_wires(self):
+        """The wires where y is loaded."""
+        return self.hyperparameters["y_wires"]
+
+    @property
+    def output_wires(self):
+        """The wires where the output is stored."""
+        return self.hyperparameters["output_wires"]
+
+    @property
+    def work_wire(self):
+        """The work_wire."""
+        return self.hyperparameters["work_wires"]
+
+    @property
+    def wires(self):
+        """All wires involved in the operation."""
+        return (
+            self.hyperparameters["x_wires"]
+            + self.hyperparameters["y_wires"]
+            + self.hyperparameters["output_wires"]
+            + self.hyperparameters["work_wires"]
+        )
+
+    def decomposition(self):  # pylint: disable=arguments-differ
+
+        return self.compute_decomposition(
+            self.hyperparameters["x_wires"],
+            self.hyperparameters["y_wires"],
+            self.hyperparameters["output_wires"],
+            self.hyperparameters["mod"],
+            self.hyperparameters["work_wires"],
+        )
+
+    @classmethod
+    def _primitive_bind_call(cls, *args, **kwargs):
+        return cls._primitive.bind(*args, **kwargs)
+
     @staticmethod
-    def compute_decomposition(x_wires, y_wires, output_wires, mod, work_wires, **kwargs):
+    def compute_decomposition(x_wires, y_wires, output_wires, mod, work_wires):
         r"""Representation of the operator as a product of other operators.
         Args:
             x_wires (Sequence[int]): the wires that stores the integer :math:`x`.
@@ -118,7 +187,7 @@ class OutMultiplier(Operation):
         Adjoint(QFT(wires=[5, 6]))]
         """
         op_list = []
-        if mod != 2 ** (len(output_wires)):
+        if mod != 2 ** len(output_wires):
             qft_output_wires = work_wires[:1] + output_wires
         else:
             qft_output_wires = output_wires
@@ -126,7 +195,7 @@ class OutMultiplier(Operation):
         op_list.append(
             qml.ControlledSequence(
                 qml.ControlledSequence(
-                    qml.PhaseAdder(1, output_wires, mod, work_wires), control=x_wires
+                    qml.PhaseAdder(1, qft_output_wires, mod, work_wires[1:]), control=x_wires
                 ),
                 control=y_wires,
             )
