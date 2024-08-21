@@ -259,7 +259,7 @@ class TestApply:
 
         with pytest.raises(
             ValueError,
-            match=r"State must be of length 3; got length 4 \(features=tensor\(\[0, 0, 1, 0\]\)\)",
+            match=r"State must be of length 3; got length 4 \(state=tensor\(\[0, 0, 1, 0\]\)\)",
         ):
             dev.apply([qml.BasisState(state, wires=[0, 1, 2])])
 
