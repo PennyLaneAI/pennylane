@@ -253,6 +253,22 @@ def test_lattice_points(vectors, positions, n_cells, expected_number):
                 (4, 7, 0),
             ],
         ),
+        (
+            [[1, 0], [0.5, np.sqrt(3) / 2]],
+            [[0.5, 0.5 / 3**0.5], [1, 1 / 3**0.5]],
+            [2, 2],
+            False,
+            [
+                (0, 1, 0),
+                (1, 2, 0),
+                (1, 4, 0),
+                (2, 3, 0),
+                (3, 6, 0),
+                (4, 5, 0),
+                (5, 6, 0),
+                (6, 7, 0),
+            ],
+        ),
     ],
 )
 def test_boundary_condition(vectors, positions, n_cells, boundary_condition, expected_edges):

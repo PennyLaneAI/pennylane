@@ -114,7 +114,8 @@ class Lattice:
 
     def _identify_neighbours(self, cutoff):
         r"""Identifies the connections between lattice points and returns the unique connections
-        based on the neighbour_order"""
+        based on the neighbour_order. This function uses KDTree to identify neighbours, which follows
+        depth first search traversal."""
 
         tree = KDTree(self.lattice_points)
         indices = tree.query_ball_tree(tree, cutoff)

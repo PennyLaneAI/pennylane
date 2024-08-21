@@ -50,6 +50,7 @@ def transverse_ising(
        pennylane.LinearCombination: Hamiltonian for the transverse-field ising model.
 
     **Example**
+
     >>> n_cells = [2,2]
     >>> J = 0.5
     >>> h = 0.1
@@ -69,11 +70,12 @@ def transverse_ising(
     if coupling is None:
         coupling = [1.0]
     coupling = math.asarray(coupling)
+
     hamiltonian = 0.0
-    print(coupling.shape)
+
     if coupling.shape not in [(neighbour_order,), (lattice.n_sites, lattice.n_sites)]:
         raise ValueError(
-            f"Coupling shape should be equal to {neighbour_order} or {lattice.n_sites}x{lattice.n_sites}"
+            f"Coupling shape should be equal to {neighbour_order}x1 or {lattice.n_sites}x{lattice.n_sites}"
         )
 
     if coupling.shape == (neighbour_order,):
