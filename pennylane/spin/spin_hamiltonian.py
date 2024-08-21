@@ -46,7 +46,6 @@ def transverse_ising(
        pennylane.LinearCombination: Hamiltonian for the transverse-field ising model.
 
     **Example**
-    >>> lattice = "Square"
     >>> n_cells = [2,2]
     >>> J = 0.5
     >>> h = 0.1
