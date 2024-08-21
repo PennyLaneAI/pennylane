@@ -189,8 +189,8 @@ unmodified_templates_cases = [
     ),
     (qml.Adder, (4, [0, 2, 3]), {"mod": None, "work_wires": [1, 4]}),
     (qml.Adder, (5, [0, 1]), {"mod": 3, "work_wires": [3, 6]}),
-    (qml.PhaseAdder, (4, [0, 2, 3]), {"mod": None, "work_wires": [1, 4]}),
-    (qml.PhaseAdder, (5, [0, 1, 4]), {"mod": 7, "work_wires": [3, 6]}),
+    (qml.PhaseAdder, (4, [0, 2, 3]), {"mod": None, "work_wire": [1]}),
+    (qml.PhaseAdder, (5, [0, 1, 4]), {"mod": 7, "work_wire": [3]}),
 ]
 
 
