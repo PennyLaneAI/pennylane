@@ -250,7 +250,7 @@ after execution, you need to overwrite the following method:
 
     generate_samples
 
-:meth:`~.generate_samples` should return samples with shape ``(dev.shots, dev.num_wires)``.
+:meth:`~.QubitDevice.generate_samples` should return samples with shape ``(dev.shots, dev.num_wires)``.
 Furthermore, PennyLane uses the convention :math:`|q_0,q_1,\dots,q_{N-1}\rangle` where
 :math:`q_0` is the most significant bit.
 
