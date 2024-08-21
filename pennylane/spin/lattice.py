@@ -107,7 +107,7 @@ class Lattice:
         self.n_sites = math.prod(n_cells) * n_sl
         self.lattice_points, lattice_map = self._generate_grid(neighbour_order)
 
-        cutoff = neighbour_order * math.linalg.norm(self.vectors, axis=1).max() + distance_tol
+        cutoff = neighbour_order * math.max(math.linalg.norm(self.vectors, axis=1)) + distance_tol
         edges = self._identify_neighbours(cutoff)
         self._generate_true_edges(edges, lattice_map, neighbour_order)
         self.edges_indices = [(v1, v2) for (v1, v2, color) in self.edges]
