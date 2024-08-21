@@ -191,11 +191,16 @@ class StatePrep(StatePrepBase):
         pad_with=None,
         normalize=False,
         id: Optional[str] = None,
+        validate_norm: bool = True,
     ):
 
-        state = self._preprocess(state, wires, pad_with, normalize)
+        state = self._preprocess(state, wires, pad_with, normalize, validate_norm)
 
-        self._hyperparameters = {"pad_with": pad_with, "normalize": normalize}
+        self._hyperparameters = {
+            "pad_with": pad_with,
+            "normalize": normalize,
+            "validate_norm": validate_norm,
+        }
 
         super().__init__(state, wires=wires, id=id)
 
@@ -260,7 +265,7 @@ class StatePrep(StatePrepBase):
         return math.transpose(op_vector, transpose_axes)
 
     @staticmethod
-    def _preprocess(state, wires, pad_with, normalize):
+    def _preprocess(state, wires, pad_with, normalize, validate_norm):
         """Validate and pre-process inputs as follows:
 
         * If state is batched, the processing that follows is applied to each state set in the batch.
@@ -307,11 +312,13 @@ class StatePrep(StatePrepBase):
                 padding = math.convert_like(padding, state)
                 state = math.hstack([state, padding])
 
+        if not validate_norm:
+            return state
+
         # normalize
         if "int" in str(state.dtype):
             state = math.cast_like(state, 0.0)
 
-        # TODO: update so that the norm is only calculated if 'normalize = True'
         norm = math.linalg.norm(state, axis=-1)
 
         if math.is_abstract(norm):
