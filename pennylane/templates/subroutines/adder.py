@@ -98,7 +98,7 @@ class Adder(Operation):
             for key in ["x_wires", "work_wire"]
         }
 
-        return PhaseAdder(
+        return Adder(
             self.hyperparameters["k"],
             new_dict["x_wires"],
             self.hyperparameters["mod"],
