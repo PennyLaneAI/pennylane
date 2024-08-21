@@ -236,6 +236,9 @@
 * Observable validation for `default.qubit` is now based on execution mode (analytic vs. finite shots) and measurement type (sample measurement vs. state measurement).
   [(#5890)](https://github.com/PennyLaneAI/pennylane/pull/5890)
 
+* Added `is_leaf` parameter to function `flatten` in the `qml.pytrees` module. This is to allow node flattening to be stopped for any node where the `is_leaf` optional argument evaluates to being `True`.
+  [(#6107)](https://github.com/PennyLaneAI/pennylane/issues/6107)
+
 <h3>Breaking changes 💔</h3>
 
 * `GlobalPhase` is considered non-differentiable with tape transforms.
@@ -382,6 +385,7 @@ This release contains contributions from (in alphabetical order):
 Tarun Kumar Allamsetty,
 Guillermo Alonso,
 Utkarsh Azad,
+Tonmoy T. Bhattacharya,
 Gabriel Bottrill,
 Ahmed Darwish,
 Astral Cai,
