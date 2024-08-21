@@ -102,9 +102,7 @@ class TestAdder:
                 sum(bit * (2**i) for i, bit in enumerate(reversed(circuit(x)))), (x + k) % max
             )
 
-    def test_wires_error(
-        self, k, x_wires, mod, work_wires, msg_match
-    ):  # pylint: disable=too-many-arguments
+    def test_wires_error(self):  # pylint: disable=too-many-arguments
         """Test an error is raised when some wire in work_wires is in wires"""
         k, x_wires, mod, work_wires, msg_match = (
             3,
