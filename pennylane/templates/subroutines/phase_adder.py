@@ -44,17 +44,17 @@ class PhaseAdder(Operation):
 
         QFT |x \rangle = |\phi (x) \rangle.
 
-    The decomposition of this operator is based on the QFT-based method presented in `Atchade-Adelomou and Gonzalez (2023) <https://arxiv.org/abs/2311.08555>`_.
+    The decomposition of this operator is based on the QFT-based method presented in `arXiv:2311.08555 <https://arxiv.org/abs/2311.08555>`_.
 
     Args:
-        k (int): number that wants to be added. Note there are no restrictions for :math:`k>mod` or :math:`k<0` as we will be taking :math:`k \, \text{mod} \, mod`
-        x_wires (Sequence[int]): the wires the operation acts on. There are needed at least enough wires to represent mod.
-        mod (int): modulo with respect to which the sum is performed, default value will be ``2^len(x_wires)``.
-        work_wire (Sequence[int]): the auxiliary wire to use for the sum modulo :math:`mod` when :math:`mod \neq 2^{\text{len(x_wires)}}`.
+        k (int): the number that needs to be added
+        x_wires (Sequence[int]): the wires the operation acts on
+        mod (int): modulo with respect to which the sum is performed, default value will be ``2^len(wires)``.
+        work_wire (Sequence[int]): the auxiliary wires to use for the sum modulo :math:`mod` when :math:`mod \neq 2^{\text{len(x_wires)}}`
 
     **Example**
 
-    Sum of two integers :math:`x=5` and :math:`k=4` modulo :math:`mod=7`. Note that to perform this sum using qml.PhaseAdder, when :math:`mod \neq \text{len(x_wires)}` we need that :math:`x < \text{len(wires)}/2`.
+    This example computes the sum of two integers :math:`x=5` and :math:`k=4` modulo :math:`mod=7`. Note that to perform this sum using qml.PhaseAdder, when :math:`mod \neq \text{len(x_wires)}` we need that :math:`x < \text{len(wires)}/2`.
 
     .. code-block::
 
@@ -66,7 +66,6 @@ class PhaseAdder(Operation):
         dev = qml.device("default.qubit", shots=1)
         @qml.qnode(dev)
         def adder_modulo(x, k, mod, wires_m, work_wire):
-            # Function that performs m + k modulo mod in the computational basis
             qml.BasisEmbedding(x, wires=x_wires)
             qml.QFT(wires=x_wires)
             PhaseAdder(k, x_wires, mod, work_wire)
@@ -75,10 +74,10 @@ class PhaseAdder(Operation):
 
     .. code-block:: pycon
 
-        >>> print(f"The ket representation of {x} + {k} mod {mod} is {adder_modulo(x, k, mod,x_wires,work_wire)}")
-        The ket representation of 5 + 4 mod 7 is [0 1 0]
+        >>> adder_modulo(x, k, mod, x_wires, work_wire)
+        [0 1 0]
 
-    We can see that the result [0 1 0] corresponds to 2, which comes from :math:`5+4=9 \longrightarrow 9 \, \text{mod} \,  7 = 2`.
+    The result [0 1 0] is the ket representation of :math:`5 + 4  \text{mod} \, 7 = 2`.
     """
 
     grad_method = None
@@ -86,12 +85,12 @@ class PhaseAdder(Operation):
     def __init__(
         self, k, x_wires, mod=None, work_wire=None, id=None
     ):  # pylint: disable=too-many-arguments
-        
+
         if mod is None:
             mod = 2 ** len(x_wires)
         elif work_wire is None:
-                raise ValueError(f"If mod is not 2^{len(x_wires)} you should provide one work_wire")
-        k=k%mod
+            raise ValueError(f"If mod is not 2^{len(x_wires)} you should provide one work_wire")
+        k = k % mod
         if not hasattr(x_wires, "__len__") or mod > 2 ** len(x_wires):
             raise ValueError("PhaseAdder must have at least enough x_wires to represent mod.")
         if work_wire is not None:
@@ -102,13 +101,13 @@ class PhaseAdder(Operation):
         self.hyperparameters["mod"] = mod
         self.hyperparameters["work_wire"] = qml.wires.Wires(work_wire)
         self.hyperparameters["x_wires"] = qml.wires.Wires(x_wires)
-        all_wires=qml.wires.Wires(x_wires)+qml.wires.Wires(work_wire)
+        all_wires = qml.wires.Wires(x_wires) + qml.wires.Wires(work_wire)
         super().__init__(wires=all_wires, id=id)
 
     @property
     def num_params(self):
         return 0
-    
+
     def _flatten(self):
         metadata = tuple((key, value) for key, value in self.hyperparameters.items())
         return tuple(), metadata
@@ -117,7 +116,7 @@ class PhaseAdder(Operation):
     def _unflatten(cls, data, metadata):
         hyperparams_dict = dict(metadata)
         return cls(**hyperparams_dict)
-    
+
     def map_wires(self, wire_map: dict):
         new_dict = {
             key: [wire_map.get(w, w) for w in self.hyperparameters[key]]
@@ -128,7 +127,7 @@ class PhaseAdder(Operation):
             self.hyperparameters["k"],
             new_dict["x_wires"],
             self.hyperparameters["mod"],
-            new_dict["work_wire"]
+            new_dict["work_wire"],
         )
 
     @property
@@ -144,10 +143,8 @@ class PhaseAdder(Operation):
     @property
     def wires(self):
         """All wires involved in the operation."""
-        return (
-            self.hyperparameters["x_wires"]
-            + self.hyperparameters["work_wire"]
-        )
+        return self.hyperparameters["x_wires"] + self.hyperparameters["work_wire"]
+
     def decomposition(self):  # pylint: disable=arguments-differ
 
         return self.compute_decomposition(
@@ -156,9 +153,11 @@ class PhaseAdder(Operation):
             self.hyperparameters["mod"],
             self.hyperparameters["work_wire"],
         )
+
     @classmethod
     def _primitive_bind_call(cls, *args, **kwargs):
         return cls._primitive.bind(*args, **kwargs)
+
     @staticmethod
     def compute_decomposition(k, x_wires, mod, work_wire):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators.

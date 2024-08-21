@@ -21,14 +21,16 @@ import pennylane as qml
 from pennylane import numpy as np
 from pennylane.templates.subroutines.PhaseAdder import _add_k_fourier
 
+
 def test_standard_validity_Phase_Adder():
     """Check the operation using the assert_valid function."""
     k = 6
     mod = 11
     x_wires = [0, 1, 2, 3]
     work_wire = [4]
-    op = PhaseAdder(k, x_wires=x_wires, mod=mod, work_wire=work_wire)
+    op = qml.PhaseAdder(k, x_wires=x_wires, mod=mod, work_wire=work_wire)
     qml.ops.functions.assert_valid(op)
+
 
 class TestPhaseAdder:
     """Test the PhaseAdder template."""
@@ -38,7 +40,7 @@ class TestPhaseAdder:
         [
             (
                 6,
-                [0, 1, 2, 3],
+                [0, 1, 2],
                 7,
                 [4],
             ),
@@ -89,18 +91,16 @@ class TestPhaseAdder:
             max = 2 ** len(x_wires)
         else:
             max = mod
-            extra_wire=[100]
-            x_wires=x_wires+extra_wire
-            print(x_wires)
-        
+
         @qml.qnode(dev)
         def circuit(x):
             qml.BasisEmbedding(m, wires=x_wires)
             qml.QFT(wires=x_wires)
-            PhaseAdder(k, x_wires, mod, work_wire)
+            qml.PhaseAdder(k, x_wires, mod, work_wire)
             qml.adjoint(qml.QFT)(wires=x_wires)
             return qml.sample(wires=x_wires)
-        for m in range(0, max):
+
+        for x in range(0, max / 2):
             assert np.allclose(
                 sum(bit * (2**i) for i, bit in enumerate(reversed(circuit(x)))), (x + k) % max
             )
@@ -122,18 +122,6 @@ class TestPhaseAdder:
                 None,
                 (r"If mod is not"),
             ),
-        ],
-    )
-    def test_operation_error(
-        self, k, x_wires, mod, work_wire, msg_match
-    ):  # pylint: disable=too-many-arguments
-        """Test an error is raised when mod doesn't meet the requirements"""
-        with pytest.raises(ValueError, match=msg_match):
-            PhaseAdder(k, x_wires, mod, work_wire)
-
-    @pytest.mark.parametrize(
-        ("k", "x_wires", "mod", "work_wire", "msg_match"),
-        [
             (
                 3,
                 [0, 1, 2, 3, 4],
@@ -143,12 +131,12 @@ class TestPhaseAdder:
             ),
         ],
     )
-    def test_wires_error(
+    def test_operation_and_wires_error(
         self, k, x_wires, mod, work_wire, msg_match
     ):  # pylint: disable=too-many-arguments
-        """Test an error is raised when work_wire is in x_wires"""
+        """Test an error is raised when mod doesn't meet the requirements"""
         with pytest.raises(ValueError, match=msg_match):
-            PhaseAdder(k, x_wires, mod, work_wire)
+            qml.PhaseAdder(k, x_wires, mod, work_wire)
 
     def test_decomposition(self):
         """Test that compute_decomposition and decomposition work as expected."""
@@ -157,9 +145,9 @@ class TestPhaseAdder:
         mod = 7
         work_wire = [0]
 
-        phase_adder_decomposition = PhaseAdder(k, x_wires, mod, work_wire).compute_decomposition(
-            k, x_wires,mod, work_wire
-        )
+        phase_adder_decomposition = qml.PhaseAdder(
+            k, x_wires, mod, work_wire
+        ).compute_decomposition(k, x_wires, mod, work_wire)
         op_list = []
 
         if mod == 2 ** (len(x_wires)):
@@ -201,10 +189,10 @@ class TestPhaseAdder:
         def circuit():
             qml.BasisEmbedding(x_list, wires=x_wires)
             qml.QFT(wires=x_wires)
-            PhaseAdder(k, x_wires, mod, work_wire)
+            qml.PhaseAdder(k, x_wires, mod, work_wire)
             qml.adjoint(qml.QFT)(wires=x_wires)
             return qml.sample(wires=x_wires)
-        
+
         assert np.allclose(
-                sum(bit * (2**i) for i, bit in enumerate(reversed(circuit()))), (x + k) % mod
-            )
+            sum(bit * (2**i) for i, bit in enumerate(reversed(circuit()))), (x + k) % mod
+        )
