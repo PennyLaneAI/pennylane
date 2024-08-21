@@ -35,12 +35,16 @@ def transverse_ising(
     magnetic field and ``i,j`` represent the indices for neighbouring spins.
 
     Args:
-       lattice (str): Shape of the lattice. Input Values can be ``'Chain'``, ``'Square'``, ``'Rectangle'``, ``'Honeycomb'``, ``'Triangle'``, or ``'Kagome'``.
+       lattice (str): Shape of the lattice. Input Values can be ``'Chain'``, ``'Square'``,
+                      ``'Rectangle'``, ``'Honeycomb'``, ``'Triangle'``, or ``'Kagome'``.
        n_cells (list[int]): Number of cells in each direction of the grid.
-       coupling (List[float] or List[math.array[float]]): Coupling between spins, it can be a list of length equal to ``neighbour_order`` or a square matrix of size ``(num_spins,  num_spins)``. Default value is [1.0].
+       coupling (List[float] or List[math.array[float]]): Coupling between spins, it can be a
+                      list of length equal to ``neighbour_order`` or a square matrix of size
+                      ``(num_spins,  num_spins)``. Default value is [1.0].
        h (float): Value of external magnetic field. Default is 1.0.
-       boundary_condition (bool or list[bool]): Defines boundary conditions, False for open boundary condition, each element represents the axis for lattice. It defaults to False.
-       neighbour_order (int): Range of neighbours a spin interacts with. Default is 1.
+       boundary_condition (bool or list[bool]): Defines boundary conditions, False for open boundary condition,
+                                        each element represents the axis for lattice. It defaults to False.
+        neighbour_order (int): Range of neighbours a spin interacts with. Default is 1.
 
     Returns:
        pennylane.LinearCombination: Hamiltonian for the transverse-field ising model.

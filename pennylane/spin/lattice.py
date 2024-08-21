@@ -18,7 +18,6 @@ the necessary information about a lattice.
 """
 import itertools
 
-import numpy as np
 from scipy.spatial import KDTree
 
 from pennylane import math
@@ -35,8 +34,16 @@ class Lattice:
        vectors (list[list[float]]): Primitive vectors for the lattice.
        positions (list[list[float]]): Initial positions of spins. Default value is [[0.0]*number of dimensions].
        boundary_condition (bool or list[bool]): Defines boundary conditions, False for open boundary condition, each element represents the axis for lattice. It defaults to False.
-       neighbour_order (int): Range of neighbours a spin interacts with. Default is 1.
+       neighbour_order (int): Specifies the interaction level for neighbors within the lattice. Default is 1 (nearest neighbour).
        distance_tol (float): Distance below which spatial points are considered equal for the purpose of identifying nearest neighbours, default value is 1e-5.
+
+    Raises:
+       TypeError:
+          if ``n_cells`` contains numbers other than positive integers.
+       ValueError:
+          if ``positions`` doesn't have a dimension of 2.
+          if ``vectors`` doesn't have a dimension of 2 or the length of vectors is not equal to the number of vectors.
+          if ``boundary_condition`` is not a bool or a list of bools with length equal to the number of vectors
 
     Returns:
        Lattice object
@@ -62,14 +69,13 @@ class Lattice:
         distance_tol=1e-5,
     ):
 
-        for l in math.asarray(n_cells):
-            if (not isinstance(l, np.int64)) or l <= 0:
-                raise TypeError("Argument `n_cells` must be a list of positive integers")
+        if not all(isinstance(l, int) for l in n_cells) or any(l <= 0 for l in n_cells):
+            raise TypeError("Argument `n_cells` must be a list of positive integers")
 
         vectors = math.asarray(vectors)
 
         if vectors.ndim != 2:
-            raise ValueError("'vectors' must have ndim==2, as array of primitive vectors.")
+            raise ValueError(f"The dimensions of vectors array must be 2, got {vectors.ndim}.")
 
         if vectors.shape[0] != vectors.shape[1]:
             raise ValueError("The number of primitive vectors must match their length")
@@ -79,19 +85,16 @@ class Lattice:
         positions = math.asarray(positions)
 
         if positions.ndim != 2:
-            raise ValueError("'positions' must have ndim==2, as array of initial coordinates.")
+            raise ValueError(f"The dimensions of positions array must be 2, got {positions.ndim}.")
 
         if isinstance(boundary_condition, bool):
             boundary_condition = [boundary_condition] * len(n_cells)
 
-        if not all(isinstance(b, bool) for b in boundary_condition):
+        if not all(isinstance(b, bool) for b in boundary_condition) or len(
+            boundary_condition
+        ) != len(n_cells):
             raise ValueError(
-                "Argument 'boundary_condition' must be a bool or a list of bools of same dimensions as the vectors"
-            )
-
-        if len(boundary_condition) != len(n_cells):
-            raise ValueError(
-                "Argument 'boundary_condition' must be a bool or a list of bools of same dimensions as the vectors"
+                "Argument 'boundary_condition' must be a bool or a list of bools with length equal to number of vectors"
             )
 
         self.n_cells = n_cells
@@ -107,6 +110,7 @@ class Lattice:
         cutoff = neighbour_order * math.linalg.norm(self.vectors, axis=1).max() + distance_tol
         edges = self._identify_neighbours(cutoff)
         self._generate_true_edges(edges, lattice_map, neighbour_order)
+        self.edges_indices = [(v1, v2) for (v1, v2, color) in self.edges]
 
     def _identify_neighbours(self, cutoff):
         r"""Identifies the connections between lattice points and returns the unique connections
@@ -152,7 +156,8 @@ class Lattice:
         """Generates the coordinates of all lattice sites and their indices.
 
         Args:
-           neighbour_order: The number of nearest neighbour interactions.
+           neighbour_order (int): Specifies the interaction level for neighbors within the lattice.
+
         Returns:
            lattice_points: The coordinates of all lattice sites.
            lattice_map: A list to represent the node number for each lattice_point
@@ -194,14 +199,13 @@ class Lattice:
           Updates the edges attribute to include provided edges.
         """
 
-        edges_nocolor = [(v1, v2) for (v1, v2, _) in self.edges]
         for edge_index in edge_indices:
             edge_index = tuple(edge_index)
             if len(edge_index) > 3 or len(edge_index) < 2:
-                raise ValueError("Edge length can only be 2 or 3.")
+                raise TypeError("Length of the tuple representing each edge can only be 2 or 3.")
 
             if len(edge_index) == 2:
-                if edge_index in edges_nocolor:
+                if edge_index in self.edges_indices:
                     raise ValueError("Edge is already present")
                 new_edge = (*edge_index, 0)
             else:
@@ -316,7 +320,7 @@ def _generate_lattice(lattice, n_cells, boundary_condition=False, neighbour_orde
         lattice (str): Shape of the lattice. Input Values can be ``'Chain'``, ``'Square'``, ``'Rectangle'``, ``'Honeycomb'``, ``'Triangle'``, or ``'Kagome'``.
         n_cells (list[int]): Number of cells in each direction of the grid.
         boundary_condition (bool or list[bool]): Defines boundary conditions, False for open boundary condition, each element represents the axis for lattice. It defaults to False.
-        neighbour_order (int): Range of neighbours a spin interacts with. Default is 1.
+        neighbour_order (int): Specifies the interaction level for neighbors within the lattice. Default is 1 (nearest neighbour).
 
     Returns:
         lattice object

@@ -149,4 +149,4 @@ def test_ising_hamiltonian(shape, n_cells, h, expected_ham):
 
     ising_ham = transverse_ising(lattice=shape, n_cells=n_cells, coupling=J, h=h, neighbour_order=1)
 
-    assert qml.equal(ising_ham, expected_ham)
+    qml.assert_equal(ising_ham, expected_ham)

@@ -16,7 +16,7 @@ Unit tests for functions needed for computing the lattice.
 """
 import pytest
 
-from pennylane import numpy as np
+import numpy as np
 from pennylane.spin import Lattice
 from pennylane.spin.lattice import _generate_lattice
 
@@ -43,9 +43,7 @@ def test_vectors_error():
     r"""Test that an error is raised if a wrong dimension is entered for vectors."""
     vectors = [0, 1]
     n_cells = [2, 2]
-    with pytest.raises(
-        ValueError, match="'vectors' must have ndim==2, as array of primitive vectors."
-    ):
+    with pytest.raises(ValueError, match="The dimensions of vectors array must be 2, got 1"):
         Lattice(n_cells=n_cells, vectors=vectors)
 
 
@@ -54,9 +52,7 @@ def test_positions_error():
     vectors = [[0, 1], [1, 0]]
     n_cells = [2, 2]
     positions = [0, 0]
-    with pytest.raises(
-        ValueError, match="'positions' must have ndim==2, as array of initial coordinates."
-    ):
+    with pytest.raises(ValueError, match="The dimensions of positions array must be 2, got 1."):
         Lattice(n_cells=n_cells, vectors=vectors, positions=positions)
 
 
@@ -380,10 +376,10 @@ def test_attributes(vectors, positions, n_cells, boundary_condition, n_dim, expe
         n_cells=n_cells, vectors=vectors, positions=positions, boundary_condition=boundary_condition
     )
 
-    assert np.all(lattice.vectors == vectors)
-    assert np.all(lattice.positions == positions)
+    assert np.allclose(lattice.vectors, vectors)
+    assert np.allclose(lattice.positions, positions)
     assert lattice.n_dim == n_dim
-    assert np.all(lattice.boundary_condition == expected_bc)
+    assert np.allclose(lattice.boundary_condition, expected_bc)
 
 
 def test_add_edge_error():
@@ -394,6 +390,19 @@ def test_add_edge_error():
     lattice = Lattice(n_cells=n_cells, vectors=vectors)
 
     with pytest.raises(ValueError, match="Edge is already present"):
+        lattice.add_edge(edge_indices)
+
+
+def test_add_edge_error_wrong_type():
+    r"""Test that an error is raised if the tuple representing the edge if of wrong length"""
+    edge_indices = [[4, 5, 1, 0]]
+    vectors = [[0, 1], [1, 0]]
+    n_cells = [3, 3]
+    lattice = Lattice(n_cells=n_cells, vectors=vectors)
+
+    with pytest.raises(
+        TypeError, match="Length of the tuple representing each edge can only be 2 or 3."
+    ):
         lattice.add_edge(edge_indices)
 
 
