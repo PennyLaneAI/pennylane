@@ -19,9 +19,10 @@ import numpy as np
 import pennylane as qml
 from pennylane.operation import Operation
 
+
 class Adder(Operation):
     r"""Performs the Inplace Addition operation.
-    
+
     This operator adds the integer :math:`k` modulo :math:`mod` in the computational basis:
 
     .. math::
@@ -31,7 +32,7 @@ class Adder(Operation):
     TO DO
 
     Args:
-        k (int): number that wants to be added 
+        k (int): number that wants to be added
         wires (Sequence[int]): the wires the operation acts on. There are needed at least enough wires to represent k and mod.
         mod (int): modulo with respect to which the sum is performed, default value will be ``2^len(wires)``
         work_wires (Sequence[int]): the auxiliary wires to use for the sum modulo :math:`mod` when :math:`mod \neq 2^{\textrm{len(wires)}}`
@@ -39,7 +40,7 @@ class Adder(Operation):
     **Example**
 
     Sum of two integers :math:`m=8` and :math:`k=5` modulo :math:`mod=15`. Note that to perform this sum using qml.Adder we need that :math:`m,k < mod`
-    
+
     .. code-block::
         m = 8
         k = 5
@@ -50,7 +51,7 @@ class Adder(Operation):
         @qml.qnode(dev)
         def adder_modulo(m, k, mod, wires_m, work_wires):
             # Function that performs m + k modulo mod in the computational basis
-            qml.BasisEmbedding(m, wires=wires_m) 
+            qml.BasisEmbedding(m, wires=wires_m)
             qml.Adder(k, wires_m, mod, work_wires)
             return qml.sample(wires=wires_m)
 
@@ -58,23 +59,23 @@ class Adder(Operation):
 
         >>> print(f"The ket representation of {m} + {k} mod {mod} is {adder_modulo(m, k, mod,wires_m, work_wires)}")
         The ket representation of 8 + 5 mod 15 is [1 1 0 1]
-    
+
     We can see that the result [1 1 0 1] corresponds to 13, which comes from :math:`8+5=13 \longrightarrow 13 mod 15 = 13`.
     """
 
     grad_method = None
 
     def __init__(self, k, wires, mod=None, work_wires=None, id=None):
-        if mod==None: 
-            mod=2**(len(wires))
-        if work_wires!=None:
+        if mod == None:
+            mod = 2 ** (len(wires))
+        if work_wires != None:
             if any(wire in work_wires for wire in wires):
                 raise ValueError("Any wire in work_wires should not be included in wires.")
         else:
             work_wires = [wires[-1] + 1, wires[-1] + 2]
         self.hyperparameters["k"] = k
         self.hyperparameters["mod"] = mod
-        self.hyperparameters["work_wires"] = qml.wires.Wires(work_wires)  
+        self.hyperparameters["work_wires"] = qml.wires.Wires(work_wires)
         super().__init__(wires=wires, id=id)
 
     @property
@@ -85,7 +86,7 @@ class Adder(Operation):
     def compute_decomposition(k, mod, work_wires, wires):
         r"""Representation of the operator as a product of other operators.
         Args:
-            k (int): number that wants to be added 
+            k (int): number that wants to be added
             mod (int): modulo of the sum
             work_wires (Sequence[int]): the auxiliary wires to use for the sum modulo :math:`mod` when :math:`mod \neq 2^{\textrm{len(wires)}}`
             wires (Sequence[int]): the wires the operation acts on
@@ -100,13 +101,13 @@ class Adder(Operation):
         Adjoint(QFT(wires=[0, 1, 2]))]
         """
         op_list = []
-        if (mod==2**(len(wires))):
-            qft_wires=wires
+        if mod == 2 ** (len(wires)):
+            qft_wires = wires
         else:
-            qft_wires=work_wires[:1]+wires
+            qft_wires = work_wires[:1] + wires
         # we perform m+k modulo mod
         op_list.append(qml.QFT(qft_wires))
-        op_list.append(qml.PhaseAdder(k,wires,mod,work_wires))
+        op_list.append(qml.PhaseAdder(k, wires, mod, work_wires))
         op_list.append(qml.adjoint(qml.QFT)(qft_wires))
-        
+
         return op_list

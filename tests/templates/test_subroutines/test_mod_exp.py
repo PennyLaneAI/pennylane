@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Tests for the Multiplier template.
+Tests for the OutAdder template.
 """
 
 import pytest
@@ -21,7 +21,7 @@ import pennylane as qml
 from pennylane import numpy as np
 
 
-def test_standard_validity_Multiplier():
+def test_standard_validity_OutAdder():
     """Check the operation using the assert_valid function."""
     k = 6
     mod = 11
