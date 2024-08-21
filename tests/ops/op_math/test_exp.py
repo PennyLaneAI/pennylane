@@ -33,7 +33,6 @@ from pennylane.ops.op_math import Evolution, Exp
 class TestInitialization:
     """Test the initialization process and standard properties."""
 
-    @pytest.mark.usefixtures("use_legacy_and_new_opmath")
     def test_pauli_base(self, constructor):
         """Test initialization with no coeff and a simple base."""
         base = qml.PauliX("a")
@@ -421,7 +420,7 @@ class TestDecomposition:
         assert not op.has_decomposition
         with pytest.raises(
             DecompositionUndefinedError,
-            match=re.escape(f"The decomposition of the {op} operator is not defined. "),
+            match=re.escape(f"The decomposition of the {op} operator is not defined."),
         ):
             op.decomposition()
 
@@ -429,11 +428,11 @@ class TestDecomposition:
         assert not op.has_decomposition
         with pytest.raises(
             DecompositionUndefinedError,
-            match=re.escape(f"The decomposition of the {op} operator is not defined. "),
+            match=re.escape(f"The decomposition of the {op} operator is not defined."),
         ):
             op.decomposition()
 
-    @pytest.mark.usefixtures("use_legacy_opmath")
+    @pytest.mark.usefixtures("legacy_opmath_only")
     def test_nontensor_tensor_no_decomposition(self):
         """Checks that accessing the decomposition throws an error if the base is a Tensor
         object that is not a mathematical tensor"""
@@ -477,7 +476,6 @@ class TestDecomposition:
 
     @pytest.mark.parametrize("op_name", all_qubit_operators)
     @pytest.mark.parametrize("str_wires", (True, False))
-    @pytest.mark.usefixtures("use_legacy_and_new_opmath")
     def test_generator_decomposition(self, op_name, str_wires):
         """Check that Exp decomposes into a specific operator if ``base`` corresponds to the
         generator of that operator."""
@@ -794,6 +792,46 @@ class TestIntegration:
         res = circ(phi)
         assert qml.math.allclose(res, jnp.cos(phi))
         grad = jax.grad(circ)(phi)
+        assert qml.math.allclose(grad, -jnp.sin(phi))
+
+    @pytest.mark.catalyst
+    @pytest.mark.external
+    def test_catalyst_qnode(self):
+        """Test with Catalyst interface"""
+
+        pytest.importorskip("catalyst")
+
+        phi = 0.345
+
+        @qml.qjit
+        @qml.qnode(qml.device("lightning.qubit", wires=1))
+        def func(params):
+            qml.exp(qml.X(0), -0.5j * params)
+            return qml.expval(qml.Z(0))
+
+        res = func(phi)
+        assert qml.math.allclose(res, np.cos(phi))
+        grad = qml.grad(func)(phi)
+        assert qml.math.allclose(grad, -np.sin(phi))
+
+    @pytest.mark.jax
+    def test_jax_jit_qnode(self):
+        """Tests with jax.jit"""
+
+        import jax
+        from jax import numpy as jnp
+
+        phi = jnp.array(0.345)
+
+        @jax.jit
+        @qml.qnode(qml.device("lightning.qubit", wires=1))
+        def func(params):
+            qml.exp(qml.X(0), -0.5j * params)
+            return qml.expval(qml.Z(0))
+
+        res = func(phi)
+        assert qml.math.allclose(res, jnp.cos(phi))
+        grad = jax.grad(func)(phi)
         assert qml.math.allclose(grad, -jnp.sin(phi))
 
     @pytest.mark.tf

@@ -25,6 +25,8 @@ from networkx import MultiDiGraph
 import pennylane as qml
 from pennylane.ops.meta import WireCut
 
+SupportedDeviceAPIs = Union["qml.devices.LegacyDevice", "qml.devices.Device"]
+
 
 @dataclass()
 class CutStrategy:
@@ -82,7 +84,7 @@ class CutStrategy:
     # pylint: disable=too-many-arguments, too-many-instance-attributes
 
     #: Initialization argument only, used to derive ``max_free_wires`` and ``min_free_wires``.
-    devices: InitVar[Union[qml.Device, Sequence[qml.Device]]] = None
+    devices: InitVar[Union[SupportedDeviceAPIs, Sequence[SupportedDeviceAPIs]]] = None
 
     #: Number of wires for the largest available device.
     max_free_wires: int = None

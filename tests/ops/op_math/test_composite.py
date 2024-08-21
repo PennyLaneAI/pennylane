@@ -357,8 +357,8 @@ class TestProperties:
             [
                 qml.sum(qml.PauliX(0), qml.PauliY(5), qml.PauliZ(10)),
                 qml.prod(qml.PauliX(10), qml.PauliY(2)),
-                qml.Hamiltonian([1, 1], [qml.PauliX(2), qml.PauliZ(7)]),
                 qml.PauliY(7),
+                qml.Hamiltonian([1, 1], [qml.PauliX(2), qml.PauliZ(7)]),
             ],
             [
                 qml.sum(qml.PauliX(1), qml.PauliY(4), qml.PauliZ(6)),
