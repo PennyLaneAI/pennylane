@@ -19,7 +19,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.templates.subroutines.PhaseAdder import _add_k_fourier
+from pennylane.templates.subroutines.phase_adder import _add_k_fourier
 
 
 def test_standard_validity_Phase_Adder():
