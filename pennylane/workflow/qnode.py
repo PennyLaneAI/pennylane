@@ -919,7 +919,7 @@ class QNode:
         mcm_config = copy.copy(execute_kwargs["mcm_config"])
         if not self._tape.shots:
             mcm_config.postselect_mode = None
-            if mcm_config.mcm_method in ("one-shot", "tree-traversal"):
+            if mcm_config.mcm_method == "one-shot":
                 raise ValueError(
                     f"Cannot use the '{mcm_config.mcm_method}' method for mid-circuit measurements with analytic mode."
                 )

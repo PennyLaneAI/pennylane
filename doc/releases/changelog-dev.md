@@ -72,6 +72,17 @@
 * Port the fast `apply_operation` implementation of `PauliZ` to `PhaseShift`, `S` and `T`.
   [(#5876)](https://github.com/PennyLaneAI/pennylane/pull/5876)
 
+* The `tree-traversal` algorithm implemented in `default.qubit` is refactored
+  into an iterative (instead of recursive) implementation, doing away with
+  potential stack overflow for deep circuits.
+  [(#5868)](https://github.com/PennyLaneAI/pennylane/pull/5868)
+  
+* The `tree-traversal` algorithm is compatible with analytic-mode execution (`shots=None`).
+  [(#5868)](https://github.com/PennyLaneAI/pennylane/pull/5868)
+  
+* `fuse_rot_angles` now respects the global phase of the combined rotations.
+  [(#6031)](https://github.com/PennyLaneAI/pennylane/pull/6031)
+
 * The `CNOT` operator no longer decomposes to itself. Instead, it raises a `qml.DecompositionUndefinedError`.
   [(#6039)](https://github.com/PennyLaneAI/pennylane/pull/6039)
 
@@ -204,6 +215,9 @@
   [(#5842)](https://github.com/PennyLaneAI/pennylane/pull/5842)s
 
 <h4>Other improvements</h4>
+
+* Added the decomposition of zyz for special unitaries with multiple control wires.
+  [(#6042)](https://github.com/PennyLaneAI/pennylane/pull/6042)
 
 * A new method `process_density_matrix` has been added to the `ProbabilityMP` and `DensityMatrixMP`
   classes, allowing for more efficient handling of quantum density matrices, particularly with batch
@@ -388,6 +402,7 @@ This release contains contributions from (in alphabetical order):
 
 Tarun Kumar Allamsetty,
 Guillermo Alonso,
+Ali Asadi,
 Utkarsh Azad,
 Tonmoy T. Bhattacharya,
 Gabriel Bottrill,
