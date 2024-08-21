@@ -48,9 +48,9 @@ class Multiplier(Operation):
 
     Args:
         k (int): number that wants to be added
-        wires (Sequence[int]): the wires the operation acts on. There are needed at least enough wires to represent :math:`k` and :math:`mod`.
+        x_wires (Sequence[int]): the wires the operation acts on. There are needed at least enough wires to represent :math:`k` and :math:`mod`.
         mod (int): modulo with respect to which the multiplication is performed, default value will be ``2^len(wires)``
-        work_wires (Sequence[int]): the auxiliary wires to use for the multiplication modulo :math:`mod`
+        work_wires (Sequence[int]): the auxiliary wires to use for the multiplication modulo :math:`mod`. There are need x_wires plus two work_wires.
 
     **Example**
 
@@ -81,20 +81,19 @@ class Multiplier(Operation):
 
     grad_method = None
 
-    def __init__(self, k, wires, mod=None, work_wires=None, id=None):
-        if mod == None:
-            mod = 2 ** (len(wires))
-        if k >= mod:
-            raise ValueError("The module mod must be larger than k.")
-        if (not hasattr(wires, "__len__")) or (mod > 2 ** (len(wires))):
+    def __init__(self, k, x_wires, work_wires, mod=None, id=None):
+        if any(wire in work_wires for wire in x_wires):
+            raise ValueError("None wire in work_wires should be included in x_wires.")
+        if mod is None:
+            mod = 2 ** len(x_wires)
+        if mod != 2 ** len(x_wires):
+            if len(work_wires) < (len(x_wires) + 2):
+                raise ValueError("Multiplier needs as many work_wires as x_wires plus two.")
+        elif len(work_wires) < len(x_wires):
+            raise ValueError("Multiplier needs as many work_wires as x_wires.")
+        k = k % mod
+        if (not hasattr(x_wires, "__len__")) or (mod > 2 ** len(x_wires)):
             raise ValueError("Multiplier must have at least enough wires to represent mod.")
-        if work_wires != None:
-            if any(wire in work_wires for wire in wires):
-                raise ValueError("Any wire in work_wires should not be included in wires.")
-            if len(work_wires) < (len(wires) + 2):
-                raise ValueError("Multiplier needs as many work_wires as wires plus two.")
-        else:
-            work_wires = list(range(len(wires), 2 * len(wires) + 2))
 
         if np.gcd(k, mod) != 1:
             raise ValueError("Since k has no inverse modulo mod, the work_wires cannot be cleaned.")
@@ -102,14 +101,64 @@ class Multiplier(Operation):
         self.hyperparameters["k"] = k
         self.hyperparameters["mod"] = mod
         self.hyperparameters["work_wires"] = qml.wires.Wires(work_wires)
-        super().__init__(wires=wires, id=id)
+        super().__init__(wires=qml.wires.Wires(x_wires) + qml.wires.Wires(work_wires), id=id)
 
     @property
     def num_params(self):
         return 0
 
+    def _flatten(self):
+        metadata = tuple((key, value) for key, value in self.hyperparameters.items())
+        return tuple(), metadata
+
+    @classmethod
+    def _unflatten(cls, metadata):
+        hyperparams_dict = dict(metadata)
+        return cls(**hyperparams_dict)
+
+    def map_wires(self, wire_map: dict):
+        new_dict = {
+            key: [wire_map.get(w, w) for w in self.hyperparameters[key]]
+            for key in ["x_wires", "work_wires"]
+        }
+
+        return Multiplier(
+            self.hyperparameters["k"],
+            new_dict["x_wires"],
+            self.hyperparameters["mod"],
+            new_dict["work_wires"],
+        )
+
+    @property
+    def x_wires(self):
+        """The wires where x is loaded."""
+        return self.hyperparameters["x_wires"]
+
+    @property
+    def work_wire(self):
+        """The work_wire."""
+        return self.hyperparameters["work_wire"]
+
+    @property
+    def wires(self):
+        """All wires involved in the operation."""
+        return self.hyperparameters["x_wires"] + self.hyperparameters["work_wires"]
+
+    def decomposition(self):  # pylint: disable=arguments-differ
+
+        return self.compute_decomposition(
+            self.hyperparameters["k"],
+            self.hyperparameters["x_wires"],
+            self.hyperparameters["mod"],
+            self.hyperparameters["work_wires"],
+        )
+
+    @classmethod
+    def _primitive_bind_call(cls, *args, **kwargs):
+        return cls._primitive.bind(*args, **kwargs)
+
     @staticmethod
-    def compute_decomposition(k, mod, work_wires, wires):
+    def compute_decomposition(k, x_wires, mod, work_wires):
         r"""Representation of the operator as a product of other operators.
         Args:
             k (int): number that wants to be added
@@ -136,9 +185,9 @@ class Multiplier(Operation):
         op_list = []
         work_wires_aux = work_wires[0:2]
         wires_aux = work_wires[2:]
-        op_list.extend(_mul_out_k_mod(k, wires, mod, work_wires_aux, wires_aux))
-        for i in range(len(wires)):
-            op_list.append(qml.SWAP(wires=[wires[i], wires_aux[i]]))
+        op_list.extend(_mul_out_k_mod(k, x_wires, mod, work_wires_aux, wires_aux))
+        for i in range(len(x_wires)):
+            op_list.append(qml.SWAP(wires=[x_wires[i], wires_aux[i]]))
         inv_k = pow(k, -1, mod)
-        op_list.extend(qml.adjoint(_mul_out_k_mod)(inv_k, wires, mod, work_wires_aux, wires_aux))
+        op_list.extend(qml.adjoint(_mul_out_k_mod)(inv_k, x_wires, mod, work_wires_aux, wires_aux))
         return op_list
