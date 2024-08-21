@@ -18,6 +18,7 @@ from functools import reduce
 
 import numpy as np
 import pytest
+from dummy_debugger import Debugger
 from scipy.stats import unitary_group
 
 import pennylane as qml
@@ -27,7 +28,6 @@ from pennylane.devices.qubit.apply_operation import (
     apply_operation_tensordot,
 )
 from pennylane.operation import _UNSET_BATCH_SIZE, Operation
-from tests.dummy_debugger import Debugger
 
 ml_frameworks_list = [
     "numpy",
