@@ -88,7 +88,7 @@ class PhaseAdder(Operation):
 
         if mod is None:
             mod = 2 ** len(x_wires)
-        elif work_wire is None:
+        elif work_wire is None and mod != 2 ** len(x_wires):
             raise ValueError(f"If mod is not 2^{len(x_wires)} you should provide one work_wire")
         k = k % mod
         if not hasattr(x_wires, "__len__") or mod > 2 ** len(x_wires):
@@ -153,10 +153,6 @@ class PhaseAdder(Operation):
             self.hyperparameters["mod"],
             self.hyperparameters["work_wire"],
         )
-
-    @classmethod
-    def _primitive_bind_call(cls, *args, **kwargs):
-        return cls._primitive.bind(*args, **kwargs)
 
     @staticmethod
     def compute_decomposition(k, x_wires, mod, work_wire):  # pylint: disable=arguments-differ

@@ -111,9 +111,9 @@ class Adder(Operation):
         return self.hyperparameters["x_wires"]
 
     @property
-    def work_wire(self):
-        """The work_wire."""
-        return self.hyperparameters["work_wire"]
+    def work_wires(self):
+        """The work_wires."""
+        return self.hyperparameters["work_wires"]
 
     @property
     def wires(self):
@@ -128,10 +128,6 @@ class Adder(Operation):
             self.hyperparameters["mod"],
             self.hyperparameters["work_wires"],
         )
-
-    @classmethod
-    def _primitive_bind_call(cls, *args, **kwargs):
-        return cls._primitive.bind(*args, **kwargs)
 
     @staticmethod
     def compute_decomposition(k, x_wires, mod, work_wires):  # pylint: disable=arguments-differ
