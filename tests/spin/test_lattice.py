@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for functions needed for computing the lattice.
+Unit tests for functions and classes needed for construct a lattice.
 """
 import numpy as np
 import pytest

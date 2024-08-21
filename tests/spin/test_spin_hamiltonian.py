@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for functions needed for computing the spin Hamiltonians.
+Unit tests for functions needed for computing a spin Hamiltonian.
 """
 
 import pytest
