@@ -220,7 +220,13 @@ class StatePrep(StatePrepBase):
     ndim_params = (1,)
     """int: Number of dimensions per trainable parameter of the operator."""
 
-    def __init__(self, state: TensorLike, wires: WiresLike, id: Optional[str] = None):
+    def __init__(
+        self,
+        state: TensorLike,
+        wires: WiresLike,
+        id: Optional[str] = None,
+        validate_norm: bool = True,
+    ):
         super().__init__(state, wires=wires, id=id)
         state = self.parameters[0]
 
@@ -228,12 +234,12 @@ class StatePrep(StatePrepBase):
             state = math.reshape(state, (1, state.shape[0]))
         if state.shape[1] != 2 ** len(self.wires):
             raise ValueError("State vector must have shape (2**wires,) or (batch_size, 2**wires).")
-
-        param = math.cast(state, np.complex128)
-        if not math.is_abstract(param):
-            norm = math.linalg.norm(param, axis=-1, ord=2)
-            if not math.allclose(norm, 1.0, atol=1e-10):
-                raise ValueError("Sum of amplitudes-squared does not equal one.")
+        if validate_norm:
+            param = math.cast(state, np.complex128)
+            if not math.is_abstract(param):
+                norm = math.linalg.norm(param, axis=-1, ord=2)
+                if not math.allclose(norm, 1.0, atol=1e-10):
+                    raise ValueError("Sum of amplitudes-squared does not equal one.")
 
     @staticmethod
     def compute_decomposition(state: TensorLike, wires: WiresLike) -> list[Operator]:
