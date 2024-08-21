@@ -94,7 +94,7 @@ class TestPhaseAdder:
 
         @qml.qnode(dev)
         def circuit(x):
-            qml.BasisEmbedding(m, wires=x_wires)
+            qml.BasisEmbedding(x, wires=x_wires)
             qml.QFT(wires=x_wires)
             qml.PhaseAdder(k, x_wires, mod, work_wire)
             qml.adjoint(qml.QFT)(wires=x_wires)
