@@ -157,7 +157,7 @@ class Adder(Operation):
         else:
             qft_wires = work_wires[:1] + x_wires
         op_list.append(qml.QFT(qft_wires))
-        op_list.append(qml.PhaseAdder(k, x_wires, mod, work_wires))
+        op_list.append(qml.PhaseAdder(k, x_wires, mod, work_wires[1:]))
         op_list.append(qml.adjoint(qml.QFT)(qft_wires))
 
         return op_list
