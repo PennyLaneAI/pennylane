@@ -56,12 +56,92 @@ def _get_shapes_for(*measurements, shots=None, num_device_wires=0):
     return shapes
 
 
+def _get_zeros_for(*measurements, shots=None, num_device_wires=0):
+    if jax.config.jax_enable_x64:  # pylint: disable=no-member
+        dtype_map = {
+            float: jax.numpy.float64,
+            int: jax.numpy.int64,
+            complex: jax.numpy.complex128,
+        }
+    else:
+        dtype_map = {
+            float: jax.numpy.float32,
+            int: jax.numpy.int32,
+            complex: jax.numpy.complex64,
+        }
+
+    shapes = []
+    if not shots:
+        shots = [None]
+
+    for s in shots:
+        for m in measurements:
+            shape, dtype = m.aval.abstract_eval(shots=s, num_device_wires=num_device_wires)
+            shapes.append(jax.numpy.zeros(shape, dtype=dtype_map.get(dtype, dtype)))
+    return shapes
+
+
+def _param_shift(args: tuple, d_args: tuple, **kwargs):
+    shifts = jax.numpy.array([-jax.numpy.pi / 2, jax.numpy.pi / 2])
+    coeffs = jax.numpy.array([-1 / 2, 1 / 2])
+
+    zeros = _get_zeros_for(
+        *kwargs["qfunc_jaxpr"].outvars,
+        shots=kwargs["shots"],
+        num_device_wires=len(kwargs["device"].wires),
+    )
+    dy = list(zeros)
+
+    for arg_ind in range(len(args)):
+
+        @qml.for_loop(0, 2, 1)
+        def calc_term(i, res):
+            new_args = list(args)
+            new_args[arg_ind] += shifts[i]
+            val = _get_qnode_prim().bind(*new_args, **kwargs)
+            return [r + coeffs[i] * v for r, v in zip(res, val)]
+
+        out = calc_term(zeros)
+        for i, o in enumerate(out):
+            if not isinstance(
+                d_args[arg_ind],
+                (
+                    jax.custom_derivatives.SymbolicZero,
+                    jax._src.ad_util.Zero,
+                ),
+            ):
+                dy[i] += o * d_args[arg_ind]
+
+    return dy
+
+
+def _circuit_jvp(arg_values, arg_tangents, **kwargs):
+    diff_method = kwargs["qnode_kwargs"]["diff_method"]
+
+    if diff_method == "adjoint":
+        device = kwargs["device"]
+        qfunc_jaxpr = kwargs["qfunc_jaxpr"]
+
+        # no consts for now
+        return device.jaxpr_execute_and_jvp(qfunc_jaxpr, [], arg_values, arg_tangents)
+
+    if diff_method not in {"parameter-shift", "best"}:
+        raise NotImplementedError(f"diff_method {diff_method} not yet implemented with capture.")
+
+    res = _get_qnode_prim().bind(*arg_values, **kwargs)
+
+    dy = _param_shift(arg_values, arg_tangents, **kwargs)
+
+    return (res, dy)
+
+
 @lru_cache()
-def _get_qnode_prim():
+def _get_qnode_prim() -> "jax.core.Primitive":
     if not has_jax:
         return None
     qnode_prim = jax.core.Primitive("qnode")
     qnode_prim.multiple_results = True
+    jax.interpreters.ad.primitive_jvps[qnode_prim] = _circuit_jvp
 
     # pylint: disable=too-many-arguments
     @qnode_prim.def_impl
