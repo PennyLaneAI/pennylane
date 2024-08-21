@@ -20,9 +20,10 @@ from typing import Optional
 
 import numpy as np
 
+import pennylane as qml
 from pennylane import math
 from pennylane.operation import AnyWires, Operation, Operator, StatePrepBase
-from pennylane.templates.state_preparations import BasisStatePreparation, MottonenStatePreparation
+from pennylane.templates.state_preparations import MottonenStatePreparation
 from pennylane.typing import TensorLike
 from pennylane.wires import WireError, Wires, WiresLike
 
@@ -33,14 +34,14 @@ TOLERANCE = 1e-10
 
 
 class BasisState(StatePrepBase):
-    r"""BasisState(n, wires)
+    r"""BasisState(state, wires)
     Prepares a single computational basis state.
 
     **Details:**
 
     * Number of wires: Any (the operation can act on any number of wires)
     * Number of parameters: 1
-    * Gradient recipe: None (integer parameters not supported)
+    * Gradient recipe: None
 
     .. note::
 
@@ -54,9 +55,8 @@ class BasisState(StatePrepBase):
         as :math:`U|0\rangle = |\psi\rangle`
 
     Args:
-        n (array): prepares the basis state :math:`\ket{n}`, where ``n`` is an
-            array of integers from the set :math:`\{0, 1\}`, i.e.,
-            if ``n = np.array([0, 1, 0])``, prepares the state :math:`|010\rangle`.
+        state (tensor_like): binary input of shape ``(len(wires), )``, e.g., for ``state=np.array([0, 1, 0])`` or ``state=2`` (binary 010), the quantum system will be prepared in state :math:`|010 \rangle`.
+
         wires (Sequence[int] or int): the wire(s) the operation acts on
         id (str): custom label given to an operator instance,
             can be useful for some applications where the instance has to be identified.
@@ -72,15 +72,51 @@ class BasisState(StatePrepBase):
     [0.+0.j 0.+0.j 0.+0.j 1.+0.j]
     """
 
-    num_wires = AnyWires
-    num_params = 1
-    """int: Number of trainable parameters that the operator depends on."""
+    def __init__(self, state, wires, id=None):
 
-    ndim_params = (1,)
-    """int: Number of dimensions per trainable parameter of the operator."""
+        if isinstance(state, list):
+            state = qml.math.stack(state)
+
+        tracing = qml.math.is_abstract(state)
+
+        if not qml.math.shape(state):
+            if not tracing and state >= 2 ** len(wires):
+                raise ValueError(
+                    f"Integer state must be < {2 ** len(wires)} to have a feasible binary representation, got {state}"
+                )
+            bin = 2 ** math.arange(len(wires))[::-1]
+            state = qml.math.where((state & bin) > 0, 1, 0)
+
+        wires = Wires(wires)
+        shape = qml.math.shape(state)
+
+        if len(shape) != 1:
+            raise ValueError(f"State must be one-dimensional; got shape {shape}.")
+
+        n_states = shape[0]
+        if n_states != len(wires):
+            raise ValueError(
+                f"State must be of length {len(wires)}; got length {n_states} (state={state})."
+            )
+
+        if not tracing:
+            state_list = list(qml.math.toarray(state))
+            if not set(state_list).issubset({0, 1}):
+                raise ValueError(f"Basis state must only consist of 0s and 1s; got {state_list}")
+
+        super().__init__(state, wires=wires, id=id)
+
+    def _flatten(self):
+        state = self.parameters[0]
+        state = tuple(state) if isinstance(state, list) else state
+        return (state,), (self.wires,)
+
+    @classmethod
+    def _unflatten(cls, data, metadata) -> "BasisState":
+        return cls(data[0], wires=metadata[0])
 
     @staticmethod
-    def compute_decomposition(n: TensorLike, wires: WiresLike) -> list[Operator]:
+    def compute_decomposition(state: TensorLike, wires: WiresLike) -> list[Operator]:
         r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -89,8 +125,7 @@ class BasisState(StatePrepBase):
         .. seealso:: :meth:`~.BasisState.decomposition`.
 
         Args:
-            n (array): prepares the basis state :math:`\ket{n}`, where ``n`` is an
-                array of integers from the set :math:`\{0, 1\}`
+            state (array): the basis state to be prepared
             wires (Iterable, Wires): the wire(s) the operation acts on
 
         Returns:
@@ -99,33 +134,45 @@ class BasisState(StatePrepBase):
         **Example:**
 
         >>> qml.BasisState.compute_decomposition([1,0], wires=(0,1))
-        [BasisStatePreparation([1, 0], wires=[0, 1])]
+        [X(0)]
 
         """
-        return [BasisStatePreparation(n, wires)]
+
+        if not qml.math.is_abstract(state):
+            return [qml.X(wire) for wire, basis in zip(wires, state) if basis == 1]
+
+        op_list = []
+        for wire, basis in zip(wires, state):
+            op_list.append(qml.PhaseShift(basis * np.pi / 2, wire))
+            op_list.append(qml.RX(basis * np.pi, wire))
+            op_list.append(qml.PhaseShift(basis * np.pi / 2, wire))
+
+        return op_list
 
     def state_vector(self, wire_order: Optional[WiresLike] = None) -> TensorLike:
         """Returns a statevector of shape ``(2,) * num_wires``."""
         prep_vals = self.parameters[0]
-        if any(i not in [0, 1] for i in prep_vals):
-            raise ValueError("BasisState parameter must consist of 0 or 1 integers.")
+        prep_vals_int = math.cast(self.parameters[0], int)
 
-        if (num_wires := len(self.wires)) != len(prep_vals):
-            raise ValueError("BasisState parameter and wires must be of equal length.")
-
-        prep_vals = math.cast(prep_vals, int)
         if wire_order is None:
-            indices = prep_vals
+            indices = prep_vals_int
+            num_wires = len(indices)
         else:
             if not Wires(wire_order).contains_wires(self.wires):
                 raise WireError("Custom wire_order must contain all BasisState wires")
             num_wires = len(wire_order)
             indices = [0] * num_wires
-            for base_wire_label, value in zip(self.wires, prep_vals):
+            for base_wire_label, value in zip(self.wires, prep_vals_int):
                 indices[wire_order.index(base_wire_label)] = value
 
-        ket = np.zeros((2,) * num_wires)
-        ket[tuple(indices)] = 1
+        if qml.math.get_interface(prep_vals_int) == "jax":
+            ket = math.array(math.zeros((2,) * num_wires), like="jax")
+            ket = ket.at[tuple(indices)].set(1)
+
+        else:
+            ket = math.zeros((2,) * num_wires)
+            ket[tuple(indices)] = 1
+
         return math.convert_like(ket, prep_vals)
 
 

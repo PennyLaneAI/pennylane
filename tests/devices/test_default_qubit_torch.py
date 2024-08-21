@@ -257,7 +257,8 @@ class TestApply:
         state = torch.tensor([0, 0, 1, 0])
 
         with pytest.raises(
-            ValueError, match=r"BasisState parameter and wires must be of equal length"
+            ValueError,
+            match=r"State must be of length 3; got length 4 \(state=tensor\(\[0, 0, 1, 0\]\)\)",
         ):
             dev.apply([qml.BasisState(state, wires=[0, 1, 2])])
 
@@ -267,7 +268,7 @@ class TestApply:
         state = torch.tensor([0, 0, 1, 2])
 
         with pytest.raises(
-            ValueError, match=r"BasisState parameter must consist of 0 or 1 integers"
+            ValueError, match=r"Basis state must only consist of 0s and 1s; got \[0, 0, 1, 2\]"
         ):
             dev.apply([qml.BasisState(state, wires=[0, 1, 2, 3])])
 
