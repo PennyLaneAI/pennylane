@@ -15,11 +15,12 @@
 
 import numpy as np
 import pytest
+from scipy.stats import ttest_1samp
 from dummy_debugger import Debugger
 
 import pennylane as qml
 from pennylane.devices.qubit import get_final_state, measure_final_state, simulate
-from pennylane.devices.qubit.simulate import _FlexShots
+from pennylane.devices.qubit.simulate import _FlexShots, simulate_one_shot_native_mcm
 
 
 class TestCurrentlyUnsupportedCases:
@@ -1178,3 +1179,68 @@ class TestQInfoMeasurements:
 
         grad5 = grad_tape.jacobian(results[5], phi)
         assert qml.math.allclose(grad5, expected_grads[5])
+
+
+ml_frameworks_list = [
+    "numpy",
+    pytest.param("autograd", marks=pytest.mark.autograd),
+    pytest.param("jax", marks=pytest.mark.jax),
+    pytest.param("torch", marks=pytest.mark.torch),
+    pytest.param("tensorflow", marks=pytest.mark.tf),
+]
+
+
+# pylint:disable=too-few-public-methods
+class TestMidCircuitMeasurements:
+    """Unit tests for simulating mid-circuit measurements."""
+
+    @pytest.mark.parametrize("ml_framework", ml_frameworks_list)
+    @pytest.mark.parametrize(
+        "postselect_mode", [None, "hw-like", "pad-invalid-samples", "fill-shots"]
+    )
+    def test_simulate_one_shot_native_mcm(self, ml_framework, postselect_mode):
+        """Unit tests for simulate_one_shot_native_mcm"""
+
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.RX(np.pi / 4, wires=0)
+            m = qml.measure(wires=0, postselect=0)
+            qml.RX(np.pi / 4, wires=0)
+
+        circuit = qml.tape.QuantumScript(q.queue, [qml.expval(qml.Z(0)), qml.sample(m)], shots=[1])
+
+        rng = np.random.default_rng(1)
+        rng_keys = [np.random.default_rng(x) for x in rng.integers(0, 2**32, size=100)]
+
+        n_shots = 100
+        mcm_results = []
+        terminal_results = []
+        for i in range(n_shots):
+            result = simulate_one_shot_native_mcm(
+                circuit,
+                n_shots,
+                rng=rng_keys[i],
+                interface=ml_framework,
+                postselect_mode=postselect_mode,
+            )
+            terminal_results.append(result[0])
+            mcm_results.append(result[1])
+
+        if postselect_mode == "fill-shots":
+            assert all(ms == 0 for ms in mcm_results)
+            ttest_result = ttest_1samp(terminal_results, np.cos(np.pi / 4))
+            assert ttest_result.pvalue > 0.05
+
+        else:
+            expected_mcm_average = (1 - np.cos(np.pi / 4)) / 2
+            ttest_result = ttest_1samp(mcm_results, expected_mcm_average)
+            assert ttest_result.pvalue > 0.05
+
+            subset = [ts for ms, ts in zip(mcm_results, terminal_results) if ms == 0]
+            expected_average = np.cos(np.pi / 4)
+            ttest_result = ttest_1samp(subset, expected_average)
+            assert ttest_result.pvalue > 0.05
+
+            subset = [ts for ms, ts in zip(mcm_results, terminal_results) if ms == 1]
+            expected_average = -np.cos(np.pi / 4)
+            ttest_result = ttest_1samp(subset, expected_average)
+            assert ttest_result.pvalue > 0.05
