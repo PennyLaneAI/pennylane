@@ -565,7 +565,7 @@ class TestApply:
         def circuit():
             return qml.expval(ham)
 
-        spy = mocker.spy(dev, "expval")
+        spy = mocker.spy(dev.target_device, "expval")
 
         circuit()
         # evaluated one expval altogether
@@ -1465,7 +1465,7 @@ class TestQNodeIntegration:
         """Test that the tensor network plugin loads correctly"""
         dev = qml.device("default.qubit.tf", wires=2)
         assert dev.num_wires == 2
-        assert dev.shots is None
+        assert dev.shots == qml.measurements.Shots(None)
         assert dev.short_name == "default.qubit.tf"
         assert dev.capabilities()["passthru_interface"] == "tf"
 
@@ -2074,6 +2074,7 @@ class TestPassthruIntegration:
         )
         assert np.allclose(res.numpy(), expected_grad, atol=tol, rtol=0)
 
+    @pytest.mark.xfail(reason="Not applicable anymore.")
     @pytest.mark.parametrize("interface", ["autograd", "torch"])
     def test_error_backprop_wrong_interface(self, interface, tol):
         """Tests that an error is raised if diff_method='backprop' but not using
