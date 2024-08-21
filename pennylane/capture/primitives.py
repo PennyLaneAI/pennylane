@@ -165,21 +165,24 @@ def _get_abstract_measurement():
 
 @lru_cache
 def create_non_jvp_primitive():
+    """Create a primitive type NonJVPPrimitive which binds to JVPTrace like a standard
+    Python function and otherwise behaves like jax.core.Primitive."""
+
     if not has_jax:
         return None
 
-    from jax._src.util import safe_map
-    from jax.core import full_lower
-
+    # pylint: disable=too-few-public-methods
     class NonJVPPrimitive(jax.core.Primitive):
         """A subclass to JAX's Primitive that works like a Python function
         when evaluating JVPTracers."""
 
         def bind_with_trace(self, trace, args, params):
+            """Bind the NonJVPPrimitive with a trace. If the trace is a JVPTrace,
+            binding falls back to a standard Python function call. Otherwise, the
+            bind call of JAX's standard Primitive is used."""
             if isinstance(trace, jax.interpreters.ad.JVPTrace):
                 return self.impl(*args, **params)
-            out = trace.process_primitive(self, safe_map(trace.full_raise, args), params)
-            return safe_map(full_lower, out) if self.multiple_results else full_lower(out)
+            return super().bind_with_trace(trace, args, params)
 
     return NonJVPPrimitive
 
