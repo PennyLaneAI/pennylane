@@ -115,28 +115,12 @@ class Multiplier(Operation):
         )
 
     @property
-    def x_wires(self):
-        """The wires where x is loaded."""
-        return self.hyperparameters["x_wires"]
-
-    @property
-    def work_wires(self):
-        """The work_wires."""
-        return self.hyperparameters["work_wires"]
-
-    @property
     def wires(self):
         """All wires involved in the operation."""
         return self.hyperparameters["x_wires"] + self.hyperparameters["work_wires"]
 
     def decomposition(self):  # pylint: disable=arguments-differ
-
-        return self.compute_decomposition(
-            self.hyperparameters["k"],
-            self.hyperparameters["x_wires"],
-            self.hyperparameters["mod"],
-            self.hyperparameters["work_wires"],
-        )
+        return self.compute_decomposition(**self.hyperparameters)
 
     @classmethod
     def _primitive_bind_call(cls, *args, **kwargs):
@@ -168,9 +152,14 @@ class Multiplier(Operation):
         """
 
         op_list = []
-        work_wire_aux = work_wires[:1]
-        wires_aux = work_wires[1:]
-        wires_aux_swap = wires_aux[1:]
+        if mod != 2 ** len(x_wires):
+            work_wire_aux = work_wires[:1]
+            wires_aux = work_wires[1:]
+            wires_aux_swap = wires_aux[1:]
+        else:
+            work_wire_aux = None
+            wires_aux = work_wires[:3]
+            wires_aux_swap = wires_aux
         op_list.extend(_mul_out_k_mod(k, x_wires, mod, work_wire_aux, wires_aux))
         for i in range(len(x_wires)):
             op_list.append(qml.SWAP(wires=[x_wires[i], wires_aux_swap[i]]))

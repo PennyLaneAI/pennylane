@@ -62,6 +62,12 @@ class TestMultiplier:
                 None,
                 [5, 6, 7, 8, 9, 10, 11],
             ),
+            (
+                5,
+                [0, 1, 2, 3, 4],
+                None,
+                [5, 6, 7, 8, 9],
+            ),
         ],
     )
     def test_operation_result(
@@ -125,7 +131,9 @@ class TestMultiplier:
             ),
         ],
     )
-    def test_operation_and_wires_error(self, k, x_wires, mod, work_wires, msg_match):
+    def test_operation_and_wires_error(
+        self, k, x_wires, mod, work_wires, msg_match
+    ):  # pylint: disable=too-many-arguments
         """Test an error is raised when k or mod don't meet the requirements"""
         with pytest.raises(ValueError, match=msg_match):
             Multiplier(k, x_wires, mod, work_wires)
@@ -141,8 +149,8 @@ class TestMultiplier:
         wires_aux = work_wires[1:]
         wires_aux_swap = wires_aux[1:]
         op_list.extend(_mul_out_k_mod(k, x_wires, mod, work_wire_aux, wires_aux))
-        for i in range(len(x_wires)):
-            op_list.append(qml.SWAP(wires=[x_wires[i], wires_aux_swap[i]]))
+        for i, (x_wire, aux_wire) in enumerate(zip(x_wires, wires_aux_swap)):
+            op_list.append(qml.SWAP(wires=[x_wire, aux_wire]))
         inv_k = pow(k, -1, mod)
         op_list.extend(qml.adjoint(_mul_out_k_mod)(inv_k, x_wires, mod, work_wire_aux, wires_aux))
 

@@ -124,26 +124,6 @@ class OutMultiplier(Operation):
         )
 
     @property
-    def x_wires(self):
-        """The wires where x is loaded."""
-        return self.hyperparameters["x_wires"]
-
-    @property
-    def y_wires(self):
-        """The wires where y is loaded."""
-        return self.hyperparameters["y_wires"]
-
-    @property
-    def output_wires(self):
-        """The wires where the output is stored."""
-        return self.hyperparameters["output_wires"]
-
-    @property
-    def work_wire(self):
-        """The work_wire."""
-        return self.hyperparameters["work_wires"]
-
-    @property
     def wires(self):
         """All wires involved in the operation."""
         return (
@@ -154,14 +134,7 @@ class OutMultiplier(Operation):
         )
 
     def decomposition(self):  # pylint: disable=arguments-differ
-
-        return self.compute_decomposition(
-            self.hyperparameters["x_wires"],
-            self.hyperparameters["y_wires"],
-            self.hyperparameters["output_wires"],
-            self.hyperparameters["mod"],
-            self.hyperparameters["work_wires"],
-        )
+        return self.compute_decomposition(**self.hyperparameters)
 
     @classmethod
     def _primitive_bind_call(cls, *args, **kwargs):
@@ -173,7 +146,7 @@ class OutMultiplier(Operation):
         Args:
             x_wires (Sequence[int]): the wires that stores the integer :math:`x`.
             y_wires (Sequence[int]): the wires that stores the integer :math:`y`.
-            output_wires (Sequence[int]): the wires that stores the sum modulo mod :math:`x+y mod mod`.
+            output_wires (Sequence[int]): the wires that stores the multiplication modulo mod :math:`x*y mod mod`.
             mod (int): modulo with respect to which the sum is performed, default value will be ``2^len(output_wires)``
             work_wires (Sequence[int]): the auxiliary wires to use for the sum modulo :math:`mod` when :math:`mod \neq 2^{\textrm{len(output_wires)}}`
         Returns:
@@ -189,13 +162,15 @@ class OutMultiplier(Operation):
         op_list = []
         if mod != 2 ** len(output_wires):
             qft_output_wires = work_wires[:1] + output_wires
+            work_wire = work_wires[1:]
         else:
             qft_output_wires = output_wires
+            work_wire = None
         op_list.append(qml.QFT(wires=qft_output_wires))
         op_list.append(
             qml.ControlledSequence(
                 qml.ControlledSequence(
-                    qml.PhaseAdder(1, qft_output_wires, mod, work_wires[1:]), control=x_wires
+                    qml.PhaseAdder(1, qft_output_wires, mod, work_wire), control=x_wires
                 ),
                 control=y_wires,
             )
