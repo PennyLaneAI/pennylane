@@ -15,8 +15,8 @@
 
 import numpy as np
 import pytest
-from scipy.stats import ttest_1samp
 from dummy_debugger import Debugger
+from scipy.stats import ttest_1samp
 
 import pennylane as qml
 from pennylane.devices.qubit import get_final_state, measure_final_state, simulate
