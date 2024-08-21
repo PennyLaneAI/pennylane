@@ -72,6 +72,17 @@
 * Port the fast `apply_operation` implementation of `PauliZ` to `PhaseShift`, `S` and `T`.
   [(#5876)](https://github.com/PennyLaneAI/pennylane/pull/5876)
 
+* The `tree-traversal` algorithm implemented in `default.qubit` is refactored
+  into an iterative (instead of recursive) implementation, doing away with
+  potential stack overflow for deep circuits.
+  [(#5868)](https://github.com/PennyLaneAI/pennylane/pull/5868)
+  
+* The `tree-traversal` algorithm is compatible with analytic-mode execution (`shots=None`).
+  [(#5868)](https://github.com/PennyLaneAI/pennylane/pull/5868)
+  
+* `fuse_rot_angles` now respects the global phase of the combined rotations.
+  [(#6031)](https://github.com/PennyLaneAI/pennylane/pull/6031)
+
 * The `CNOT` operator no longer decomposes to itself. Instead, it raises a `qml.DecompositionUndefinedError`.
   [(#6039)](https://github.com/PennyLaneAI/pennylane/pull/6039)
 
@@ -205,6 +216,9 @@
 
 <h4>Other improvements</h4>
 
+* Added the decomposition of zyz for special unitaries with multiple control wires.
+  [(#6042)](https://github.com/PennyLaneAI/pennylane/pull/6042)
+
 * A new method `process_density_matrix` has been added to the `ProbabilityMP` and `DensityMatrixMP`
   classes, allowing for more efficient handling of quantum density matrices, particularly with batch
   processing support. This method simplifies the calculation of probabilities from quantum states
@@ -235,6 +249,9 @@
 
 * Observable validation for `default.qubit` is now based on execution mode (analytic vs. finite shots) and measurement type (sample measurement vs. state measurement).
   [(#5890)](https://github.com/PennyLaneAI/pennylane/pull/5890)
+
+* Added `is_leaf` parameter to function `flatten` in the `qml.pytrees` module. This is to allow node flattening to be stopped for any node where the `is_leaf` optional argument evaluates to being `True`.
+  [(#6107)](https://github.com/PennyLaneAI/pennylane/issues/6107)
 
 <h3>Breaking changes 💔</h3>
 
@@ -381,7 +398,9 @@ This release contains contributions from (in alphabetical order):
 
 Tarun Kumar Allamsetty,
 Guillermo Alonso,
+Ali Asadi,
 Utkarsh Azad,
+Tonmoy T. Bhattacharya,
 Gabriel Bottrill,
 Ahmed Darwish,
 Astral Cai,

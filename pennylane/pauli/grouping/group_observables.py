@@ -177,10 +177,14 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
         # Use upper triangle since adjacency matrix is symmetric and we have an undirected graph
         edges = list(zip(*np.where(np.triu(self.adj_matrix, k=1))))
         # Create complement graph
-        graph = rx.PyGraph(
-            node_count_hint=len(self.observables),
-            edge_count_hint=len(edges),
-        )
+        if new_rx:
+            # node/edge hinting was introduced on version 0.15
+            graph = rx.PyGraph(
+                node_count_hint=len(self.observables),
+                edge_count_hint=len(edges),
+            )
+        else:
+            graph = rx.PyGraph()
 
         graph.add_nodes_from(self.observables)
         graph.add_edges_from_no_data(edges)
@@ -330,7 +334,7 @@ def items_partitions_from_idx_partitions(
     return items_partitioned
 
 
-def _adj_matrix_from_symplectic(symplectic_matrix: np.ndarray, grouping_type: str):
+def _adj_matrix_from_symplectic(symplectic_matrix: np.ndarray, grouping_type: str) -> np.ndarray:
     """Get adjacency matrix of (anti-)commuting graph based on grouping type.
 
     This is the adjacency matrix of the complement graph. Based on symplectic representations and inner product of [1].
