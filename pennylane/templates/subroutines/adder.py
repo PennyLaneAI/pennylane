@@ -152,12 +152,12 @@ class Adder(Operation):
         Adjoint(QFT(wires=[0, 1, 2]))]
         """
         op_list = []
-        if mod == 2 ** (len(x_wires)):
+        if mod == 2 ** len(x_wires):
             qft_wires = x_wires
         else:
             qft_wires = work_wires[:1] + x_wires
         op_list.append(qml.QFT(qft_wires))
-        op_list.append(qml.PhaseAdder(k, x_wires, mod, work_wires[1:]))
+        op_list.append(qml.PhaseAdder(k, qft_wires, mod, work_wires[1:]))
         op_list.append(qml.adjoint(qml.QFT)(qft_wires))
 
         return op_list

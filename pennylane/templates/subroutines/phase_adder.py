@@ -113,7 +113,7 @@ class PhaseAdder(Operation):
         return tuple(), metadata
 
     @classmethod
-    def _unflatten(cls, data, metadata):
+    def _unflatten(cls, metadata):
         hyperparams_dict = dict(metadata)
         return cls(**hyperparams_dict)
 

@@ -125,9 +125,9 @@ class TestAdder:
             k, x_wires, mod, work_wires
         )
         op_list = []
-        op_list.append(qml.QFT(x_wires))
-        op_list.append(qml.PhaseAdder(k, x_wires, mod, work_wires))
-        op_list.append(qml.adjoint(qml.QFT)(x_wires))
+        op_list.append(qml.QFT(work_wires[:1] + x_wires))
+        op_list.append(PhaseAdder(k, work_wires[:1] + x_wires, mod, work_wires[1:]))
+        op_list.append(qml.adjoint(qml.QFT)(work_wires[:1] + x_wires))
 
         for op1, op2 in zip(adder_decomposition, op_list):
             qml.assert_equal(op1, op2)

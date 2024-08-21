@@ -46,7 +46,7 @@ class TestPhaseAdder:
             ),
             (
                 0,
-                [0, 1, 2, 3],
+                [0, 1, 2, 3, 5],
                 9,
                 [4],
             ),
@@ -70,7 +70,7 @@ class TestPhaseAdder:
             ),
             (
                 1,
-                [0, 1, 2],
+                [0, 1, 2, 4],
                 7,
                 [3],
             ),
@@ -193,6 +193,6 @@ class TestPhaseAdder:
             qml.adjoint(qml.QFT)(wires=x_wires)
             return qml.sample(wires=x_wires)
 
-        assert np.allclose(
+        assert jax.numpy.allclose(
             sum(bit * (2**i) for i, bit in enumerate(reversed(circuit()))), (x + k) % mod
         )
