@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This file contains functions to create different templates of spin Hamiltonians.
+This file contains functions to create spin Hamiltonians.
 """
 
 from pennylane import X, Z, math
@@ -25,27 +25,27 @@ from .lattice import _generate_lattice
 def transverse_ising(
     lattice, n_cells, coupling=None, h=1.0, boundary_condition=False, neighbour_order=1
 ):
-    r"""Generates the transverse field Ising model on a lattice.
+    r"""Generates the transverse-field Ising model on a lattice.
 
     The Hamiltonian is represented as:
 
     .. math::
 
-        \hat{H} =  -J \sum_{<i,j>} \sigma_i^{z} \sigma_j^{z} - h\sum{i} \sigma_{i}^{x}
+        \hat{H} =  -J \sum_{<i,j>} \sigma_i^{z} \sigma_j^{z} - h\sum_{i} \sigma_{i}^{x}
 
-    where ``J`` is the coupling defined for the Hamiltonian, ``h`` is the strength of the transverse
-    magnetic field and ``i,j`` represent the indices for neighbouring spins.
+    where ``J`` is the coupling parameter defined for the Hamiltonian, ``h`` is the strength of the
+    transverse magnetic field and ``i,j`` represent the indices for neighbouring spins.
 
     Args:
-       lattice (str): Shape of the lattice. Input Values can be ``'Chain'``, ``'Square'``,
-                      ``'Rectangle'``, ``'Honeycomb'``, ``'Triangle'``, or ``'Kagome'``.
+       lattice (str): Shape of the lattice. Input Values can be ``'chain'``, ``'square'``,
+           ``'rectangle'``, ``'honeycomb'``, ``'triangle'``, or ``'kagome'``.
        n_cells (list[int]): Number of cells in each direction of the grid.
        coupling (List[float] or List[math.array[float]]): Coupling between spins, it can be a
-                      list of length equal to ``neighbour_order`` or a square matrix of size
-                      ``(num_spins,  num_spins)``. Default value is [1.0].
+           list of length equal to ``neighbour_order`` or a square matrix of size
+           ``(num_spins,  num_spins)``. Default value is [1.0].
        h (float): Value of external magnetic field. Default is 1.0.
-       boundary_condition (bool or list[bool]): Defines boundary conditions, False for open boundary condition,
-                                        each element represents the axis for lattice. It defaults to False.
+       boundary_condition (bool or list[bool]): Defines boundary conditions different lattice axes,
+           default is ``False`` indicating open boundary condition.
         neighbour_order (int): Range of neighbours a spin interacts with. Default is 1.
 
     Returns:
