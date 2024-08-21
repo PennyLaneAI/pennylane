@@ -67,7 +67,9 @@ class OutMultiplier(Operation):
 
     grad_method = None
 
-    def __init__(self, x_wires, y_wires, output_wires, mod=None, work_wires=None, id=None):
+    def __init__(
+        self, x_wires, y_wires, output_wires, mod=None, work_wires=None, id=None
+    ):  # pylint: disable=too-many-arguments
 
         if mod is None:
             mod = 2 ** len(output_wires)
@@ -141,7 +143,9 @@ class OutMultiplier(Operation):
         return cls._primitive.bind(*args, **kwargs)
 
     @staticmethod
-    def compute_decomposition(x_wires, y_wires, output_wires, mod, work_wires):
+    def compute_decomposition(
+        x_wires, y_wires, output_wires, mod, work_wires
+    ):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators.
         Args:
             x_wires (Sequence[int]): the wires that stores the integer :math:`x`.
