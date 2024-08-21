@@ -194,7 +194,7 @@ class Lattice:
           Updates the edges attribute to include provided edges.
         """
 
-        edges_nocolor = [(v1, v2) for (v1, v2, color) in self.edges]
+        edges_nocolor = [(v1, v2) for (v1, v2, _) in self.edges]
         for edge_index in edge_indices:
             edge_index = tuple(edge_index)
             if len(edge_index) > 3 or len(edge_index) < 2:
