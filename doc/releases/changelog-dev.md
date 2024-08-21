@@ -72,6 +72,17 @@
 * Port the fast `apply_operation` implementation of `PauliZ` to `PhaseShift`, `S` and `T`.
   [(#5876)](https://github.com/PennyLaneAI/pennylane/pull/5876)
 
+* The `tree-traversal` algorithm implemented in `default.qubit` is refactored
+  into an iterative (instead of recursive) implementation, doing away with
+  potential stack overflow for deep circuits.
+  [(#5868)](https://github.com/PennyLaneAI/pennylane/pull/5868)
+  
+* The `tree-traversal` algorithm is compatible with analytic-mode execution (`shots=None`).
+  [(#5868)](https://github.com/PennyLaneAI/pennylane/pull/5868)
+  
+* `fuse_rot_angles` now respects the global phase of the combined rotations.
+  [(#6031)](https://github.com/PennyLaneAI/pennylane/pull/6031)
+
 * The `CNOT` operator no longer decomposes to itself. Instead, it raises a `qml.DecompositionUndefinedError`.
   [(#6039)](https://github.com/PennyLaneAI/pennylane/pull/6039)
 
