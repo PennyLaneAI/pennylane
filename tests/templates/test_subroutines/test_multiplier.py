@@ -145,11 +145,16 @@ class TestMultiplier:
             k, x_wires, mod, work_wires
         )
         op_list = []
-        work_wire_aux = work_wires[:1]
-        wires_aux = work_wires[1:]
-        wires_aux_swap = wires_aux[1:]
+        if mod != 2 ** len(x_wires):
+            work_wire_aux = work_wires[:1]
+            wires_aux = work_wires[1:]
+            wires_aux_swap = wires_aux[1:]
+        else:
+            work_wire_aux = None
+            wires_aux = work_wires[:3]
+            wires_aux_swap = wires_aux
         op_list.extend(_mul_out_k_mod(k, x_wires, mod, work_wire_aux, wires_aux))
-        for i, (x_wire, aux_wire) in enumerate(zip(x_wires, wires_aux_swap)):
+        for x_wire, aux_wire in zip(x_wires, wires_aux_swap):
             op_list.append(qml.SWAP(wires=[x_wire, aux_wire]))
         inv_k = pow(k, -1, mod)
         op_list.extend(qml.adjoint(_mul_out_k_mod)(inv_k, x_wires, mod, work_wire_aux, wires_aux))
