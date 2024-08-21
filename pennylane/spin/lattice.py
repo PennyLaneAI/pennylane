@@ -82,7 +82,7 @@ class Lattice:
             raise ValueError("'positions' must have ndim==2, as array of initial coordinates.")
 
         if isinstance(boundary_condition, bool):
-            boundary_condition = [boundary_condition for _ in range(len(n_cells))]
+            boundary_condition = [boundary_condition] * len(n_cells)
 
         if not all(isinstance(b, bool) for b in boundary_condition):
             raise ValueError(
