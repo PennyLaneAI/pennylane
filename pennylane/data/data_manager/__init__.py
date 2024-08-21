@@ -22,7 +22,7 @@ from concurrent.futures import FIRST_EXCEPTION, ThreadPoolExecutor, wait
 from functools import lru_cache
 from pathlib import Path
 from time import sleep
-from typing import Optional, Union
+from typing import Optional, Union, Any
 
 from requests import get
 
@@ -35,6 +35,10 @@ from .params import DEFAULT, FULL, format_params
 S3_URL = "https://datasets.cloud.pennylane.ai/datasets/h5"
 FOLDERMAP_URL = f"{S3_URL}/foldermap.json"
 DATA_STRUCT_URL = f"{S3_URL}/data_struct.json"
+
+
+class GraphQLError(BaseException):
+    pass
 
 
 @lru_cache(maxsize=1)
@@ -109,14 +113,64 @@ def _download_full(s3_url: str, dest: Path):
         f.write(resp.content)
 
 
+def _get_graphql(url: str, query: str, variables: dict[str, Any] = None):
+
+    json = {"query": query}
+
+    if variables:
+        json["variables"] = variables
+
+    response = get(url=url, json=json, timeout=10)
+    response.raise_for_status()
+
+    if "errors" in response.json():
+        all_errors = ",".join(error["message"] for error in response.json()["errors"])
+        raise GraphQLError(f"Errors in request: {all_errors}")
+
+    return response
+
+
+def _get_dataset_urls(class_id: str, parameters: dict[str, list[str]]) -> list[tuple[str, str]]:
+    """
+    Args:
+        class_id: Dataset class id ('qchem', 'qspin')
+        parameters: Dataset parameters ('molname'), etc
+
+    Returns:
+        list of tuples (dataset_id, dataset_url)
+
+    Example usage:
+    >>> _get_dataset_urls("qchem", {"molname": ["H2"], "basis": ["STO-3G"], "bondlength": ["0.5"]})
+    [("H2_STO-3G_0.5", "https://cloud.pennylane.ai/datasets/h5/qchem/h2/sto-3g/0.5.h5")]
+    """
+
+    response = _get_graphql(
+        "https://cloud.pennylane.ai/graphql",
+        """
+        query DatasetClass($datasetClassId: String!, $parameters: [DatasetParameterInput!]) {
+          datasetClass(id: $datasetClassId) {
+            datasets(parameters: $parameters) {
+              id
+              downloadUrl
+            }
+          }
+        }
+        """,
+        {"input": {"datasetClassId": class_id, "parameters": parameters}},
+    )
+    return [
+        (resp["data"]["id"], resp["data"]["downloadUrl"]) for resp in response
+    ]  # TODO: Validate against actual response
+
+
 def _download_dataset(
-    data_path: DataPath,
+    dataset_url: str,
     dest: Path,
     attributes: Optional[Iterable[str]],
     block_size: int,
     force: bool = False,
 ) -> None:
-    """Downloads the dataset at ``data_path`` to ``dest``, optionally downloading
+    """Downloads the dataset at ``dataset_url`` to ``dest``, optionally downloading
     only requested attributes. If ``attributes`` is not provided, every attribute
     will be requested.
 
@@ -124,16 +178,12 @@ def _download_dataset(
     they will not be overwritten unless ``force`` is True.
     """
 
-    # URL-escape special characters like '+', '$', and '%' in the data path
-    url_safe_datapath = urllib.parse.quote(str(data_path))
-    s3_url = f"{S3_URL}/{url_safe_datapath}"
-
     if attributes is not None or dest.exists():
         _download_partial(
-            s3_url, dest=dest, attributes=attributes, overwrite=force, block_size=block_size
+            dataset_url, dest=dest, attributes=attributes, overwrite=force, block_size=block_size
         )
     else:
-        _download_full(s3_url, dest=dest)
+        _download_full(dataset_url, dest=dest)
 
 
 def _validate_attributes(data_struct: dict, data_name: str, attributes: Iterable[str]):
@@ -254,9 +304,12 @@ def load(  # pylint: disable=too-many-arguments
 
     folder_path = Path(folder_path)
 
-    data_paths = [data_path for _, data_path in foldermap.find(data_name, **params)]
+    dataset_ids_and_urls = _get_dataset_urls(data_name, params)
 
-    dest_paths = [folder_path / data_path for data_path in data_paths]
+    dataset_ids = [dataset_id for dataset_id, _ in dataset_ids_and_urls]
+    dataset_urls = [dataset_url for _, dataset_url in dataset_ids_and_urls]
+
+    dest_paths = [folder_path / data_id for data_id in dataset_ids]
 
     for path_parents in set(path.parent for path in dest_paths):
         path_parents.mkdir(parents=True, exist_ok=True)
@@ -265,13 +318,13 @@ def load(  # pylint: disable=too-many-arguments
         futures = [
             pool.submit(
                 _download_dataset,
-                data_path,
+                dataset_url,
                 dest_path,
                 attributes,
                 force=force,
                 block_size=block_size,
             )
-            for data_path, dest_path in zip(data_paths, dest_paths)
+            for dataset_url, dest_path in zip(dataset_urls, dest_paths)
         ]
         results = wait(futures, return_when=FIRST_EXCEPTION)
         for result in results.done:
@@ -309,17 +362,21 @@ def list_datasets() -> dict:
     function calls will change.
     """
 
-    def remove_paths(foldermap):
-        """Copies the foldermap, converting the bottom-level mapping of parameters
-        to Paths to a list of the parameters."""
-        value = next(iter(foldermap.values()))
+    response = _get_graphql(
+        "https://cloud.pennylane.ai/graphql",
+        """
+        query ListDatasets($datasetClassId: String!) {
+          datasetClasses {
+            slug 
+            datasets {
+                parameterValues
+            }
+          }
+        }
+        """,
+    )
 
-        if not isinstance(value, Mapping):
-            return sorted(foldermap.keys())
-
-        return {param: remove_paths(foldermap[param]) for param in foldermap.keys()}
-
-    return remove_paths(_get_foldermap())
+    return response["data"]  # TODO: Validate against actual response
 
 
 def list_attributes(data_name):
@@ -343,12 +400,21 @@ def list_attributes(data_name):
      'vqe_params',
      'vqe_energy']
     """
-    data_struct = _get_data_struct()
-    if data_name not in data_struct:
-        raise ValueError(
-            f"Currently the hosted datasets are of types: {list(data_struct)}, but got {data_name}."
-        )
-    return data_struct[data_name]["attributes"]
+
+    response = _get_graphql(
+        "https://cloud.pennylane.ai/graphql",
+        """
+        query ListAttributes($datasetClassId: String!) {
+          datasetClasses($datasetClassId: String!) {
+            attributes {
+                name
+            }
+          }
+        }
+        """,
+    )
+
+    return response["data"]  # TODO: Validate against actual response
 
 
 def _interactive_request_attributes(options):
