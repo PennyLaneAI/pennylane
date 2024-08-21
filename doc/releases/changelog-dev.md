@@ -216,6 +216,9 @@
 
 <h4>Other improvements</h4>
 
+* Added the decomposition of zyz for special unitaries with multiple control wires.
+  [(#6042)](https://github.com/PennyLaneAI/pennylane/pull/6042)
+
 * A new method `process_density_matrix` has been added to the `ProbabilityMP` and `DensityMatrixMP`
   classes, allowing for more efficient handling of quantum density matrices, particularly with batch
   processing support. This method simplifies the calculation of probabilities from quantum states
@@ -395,6 +398,7 @@ This release contains contributions from (in alphabetical order):
 
 Tarun Kumar Allamsetty,
 Guillermo Alonso,
+Ali Asadi,
 Utkarsh Azad,
 Tonmoy T. Bhattacharya,
 Gabriel Bottrill,
