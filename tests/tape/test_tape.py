@@ -1007,7 +1007,7 @@ class TestExpand:
             [
                 qml.PauliX(0),
                 qml.MottonenStatePreparation([0, 1, 0, 0], wires=[0, 1]),
-                qml.StatePrep([0, 1, 0, 0], wires=[0, 1]),  # still a StatePrepBase :/
+                qml.StatePrep([0, 1, 0, 0], wires=[0, 1]),
                 qml.PauliZ(0),
             ],
         ),
