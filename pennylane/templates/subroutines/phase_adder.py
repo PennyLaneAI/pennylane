@@ -154,6 +154,10 @@ class PhaseAdder(Operation):
             self.hyperparameters["work_wire"],
         )
 
+    @classmethod
+    def _primitive_bind_call(cls, *args, **kwargs):
+        return cls._primitive.bind(*args, **kwargs)
+
     @staticmethod
     def compute_decomposition(k, x_wires, mod, work_wire):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators.
