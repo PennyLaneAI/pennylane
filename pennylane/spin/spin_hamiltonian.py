@@ -31,7 +31,7 @@ def transverse_ising(
 
         \hat{H} =  -J \sum_{<i,j>} \sigma_i^{z} \sigma_j^{z} - h\sum{i} \sigma_{i}^{x}
 
-    where J is the coupling defined for the Hamiltonian, h is the strength of transverse
+    where ``J`` is the coupling defined for the Hamiltonian, ``h`` is the strength of the transverse
     magnetic field and i,j represent the indices for neighbouring spins.
 
     Args:
