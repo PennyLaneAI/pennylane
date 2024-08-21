@@ -14,9 +14,10 @@
 """
 Contains unit tests for the LegacyDeviceFacade class.
 """
-import numpy as np
-
 # pylint: disable=protected-access
+import copy
+
+import numpy as np
 import pytest
 
 import pennylane as qml
@@ -53,12 +54,30 @@ class DummyDevice(qml.devices.LegacyDevice):
         return 0.0
 
 
+def test_double_facade_raises_error():
+    """Test that a RuntimeError is raised if a facaded device is passed to constructor"""
+    dev = qml.device("default.mixed", wires=1)
+
+    with pytest.raises(RuntimeError, match="already-facaded device can not be wrapped"):
+        qml.devices.LegacyDeviceFacade(dev)
+
+
 def test_error_if_not_legacy_device():
-    """Test that a ValueError is raiuised if the target is not a legacy device."""
+    """Test that a ValueError is raised if the target is not a legacy device."""
 
     target = qml.devices.DefaultQubit()
     with pytest.raises(ValueError, match="The LegacyDeviceFacade only accepts"):
         LegacyDeviceFacade(target)
+
+
+def test_copy():
+    """Test that copy works correctly"""
+    dev = qml.device("default.mixed", wires=1)
+
+    for copied_devs in (copy.copy(dev), copy.deepcopy(dev)):
+        assert copied_devs is not dev
+        assert copied_devs.target_device is not dev.target_device
+        assert isinstance(copied_devs.target_device, type(dev.target_device))
 
 
 def test_shots():
@@ -109,7 +128,7 @@ def test_shot_distribution():
 
         _capabilities = {"provides_jacobian": True}
 
-        def jacobian(self, circuit):  # pylint: disable=unused-argument
+        def adjoint_jacobian(self, circuit):  # pylint: disable=unused-argument
             return 0
 
     dev = LegacyDeviceFacade(DummyJacobianDevice())
@@ -117,17 +136,18 @@ def test_shot_distribution():
     tape1 = qml.tape.QuantumScript([], [qml.expval(qml.Z(0))], shots=5)
     tape2 = qml.tape.QuantumScript([], [qml.expval(qml.Z(0))], shots=100)
 
+    execution_config = ExecutionConfig(gradient_keyword_arguments={"method": "adjoint_jacobian"})
     with dev.tracker:
         dev.execute((tape1, tape2))
     assert dev.tracker.history["shots"] == [5, 100]
 
     with dev.tracker:
-        dev.compute_derivatives((tape1, tape2))
+        dev.compute_derivatives((tape1, tape2), execution_config)
 
     assert dev.tracker.history["derivatives"] == [1, 1]  # two calls
 
     with dev.tracker:
-        dev.execute_and_compute_derivatives((tape1, tape2))
+        dev.execute_and_compute_derivatives((tape1, tape2), execution_config)
 
     assert dev.tracker.history["batches"] == [1, 1]  # broken up into multiple calls
     assert dev.tracker.history["shots"] == [5, 100]
@@ -281,9 +301,10 @@ class TestGradientSupport:
         with pytest.raises(qml.DeviceError):
             dev.preprocess(ExecutionConfig(gradient_method="backprop"))
 
-    @pytest.mark.parametrize("gradient_method", ("best", "adjoint"))
-    def test_adjoint_support(self, gradient_method):
+    def test_adjoint_support(self):
         """Test that the facade can handle devices that support adjoint."""
+
+        gradient_method = "adjoint"
 
         # pylint: disable=unnecessary-lambda-assignment
         class AdjointDev(DummyDevice):
@@ -306,6 +327,9 @@ class TestGradientSupport:
         config = qml.devices.ExecutionConfig(gradient_method=gradient_method)
         assert dev.supports_derivatives(config, tape)
         assert not dev.supports_derivatives(config, tape_shots)
+
+        unsupported_tape = qml.tape.QuantumScript([], [qml.state()])
+        assert not dev.supports_derivatives(config, unsupported_tape)
 
         program, processed_config = dev.preprocess(config)
         assert processed_config.use_device_gradient is True

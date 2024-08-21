@@ -1470,6 +1470,9 @@ class TestResourcesTracker:
     def test_tracker_single_execution(self, dev_name, qs_shots_wires, expected_resource):
         """Test that the tracker accurately tracks resources in a single execution"""
         qs, shots, wires = qs_shots_wires
+
+        qs._shots = qml.measurements.Shots(shots)
+
         dev = qml.device(dev_name, shots=shots, wires=wires)
 
         with qml.Tracker(dev) as tracker:
@@ -1542,8 +1545,8 @@ class TestSamplesToCounts:
         # generate 1000 samples for 2 wires, randomly distributed between 0 and 1
         device = qml.device("default.mixed", wires=2, shots=1000)
         sv = [0.5 + 0.0j, 0.5 + 0.0j, 0.5 + 0.0j, 0.5 + 0.0j]
-        device._state = np.outer(sv, sv)
-        device._samples = device.generate_samples()
+        device.target_device._state = np.outer(sv, sv)
+        device.target_device._samples = device.generate_samples()
         samples = device.sample(qml.measurements.CountsMP())
 
         # imitate hardware return with NaNs (requires dtype float)
@@ -1574,8 +1577,8 @@ class TestSamplesToCounts:
         sv = np.random.rand(*([2] * n_wires))
         state = sv / np.linalg.norm(sv)
 
-        device._state = np.outer(state, state)
-        device._samples = device.generate_samples()
+        device.target_device._state = np.outer(state, state)
+        device.target_device._samples = device.generate_samples()
         samples = device.sample(qml.measurements.CountsMP(all_outcomes=all_outcomes))
 
         result = device._samples_to_counts(
