@@ -321,6 +321,10 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Catalyst replaced `argnum` with `argnums` in gradient related functions, therefore we update the Catalyst
+  calls to those functions in PennyLane.
+  [(#6117)](https://github.com/PennyLaneAI/pennylane/pull/6117)
+
 * `fuse_rot_angles` no longer returns wrong derivatives at singular points but returns NaN.
   [(#6031)](https://github.com/PennyLaneAI/pennylane/pull/6031)
 
