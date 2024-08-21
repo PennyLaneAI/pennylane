@@ -160,7 +160,7 @@ class StatePrep(StatePrepBase):
     Args:
         state (array[complex]): the state vector to prepare
         wires (Sequence[int] or int): the wire(s) the operation acts on
-        pad_with (float or complex): the value to pad the state vector with
+        pad_with (float or complex):  if not None, the input is padded with this constant to size :math:`2^n`
         normalize (bool): whether to normalize the state vector
         id (str): custom label given to an operator instance,
             can be useful for some applications where the instance has to be identified

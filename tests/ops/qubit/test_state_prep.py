@@ -82,10 +82,17 @@ class TestDecomposition:
         assert isinstance(ops1[0], qml.MottonenStatePreparation)
         assert isinstance(ops2[0], qml.MottonenStatePreparation)
 
-    def test_StatePrep_padding(self):
+    @pytest.mark.parametrize(
+        "state, expected",
+        [
+            (np.array([1, 0]), np.array([1, 0, 0, 0])),
+            (np.array([1j, 1]) / np.sqrt(2), np.array([1j, 1, 0, 0]) / np.sqrt(2)),
+        ],
+    )
+    def test_StatePrep_padding(self, state, expected):
         """Test that StatePrep pads the input state correctly."""
 
-        state = np.array([1, 0])
+        print(state)
         wires = (0, 1)
 
         @qml.qnode(qml.device("default.qubit", wires=2))
@@ -93,12 +100,18 @@ class TestDecomposition:
             qml.StatePrep(state, pad_with=0, wires=wires)
             return qml.state()
 
-        assert np.allclose(circuit(), np.array([1, 0, 0, 0]))
+        assert np.allclose(circuit(), expected)
 
-    def test_StatePrep_normalize(self):
+    @pytest.mark.parametrize(
+        "state",
+        [
+            (np.array([1, 1, 1, 1])),
+            (np.array([1, 1j, 1j, 1])),
+        ],
+    )
+    def test_StatePrep_normalize(self, state):
         """Test that StatePrep normalizes the input state correctly."""
 
-        state = np.array([1, 1, 1, 1])
         wires = (0, 1)
 
         @qml.qnode(qml.device("default.qubit", wires=2))
@@ -106,7 +119,7 @@ class TestDecomposition:
             qml.StatePrep(state, normalize=True, wires=wires)
             return qml.state()
 
-        assert np.allclose(circuit(), np.array([1, 1, 1, 1]) / 2)
+        assert np.allclose(circuit(), state / 2)
 
     def test_StatePrep_broadcasting(self):
         """Test broadcasting for StatePrep."""
