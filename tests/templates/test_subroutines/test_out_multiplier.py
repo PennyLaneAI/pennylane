@@ -19,6 +19,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
+from pennylane.templates.subroutines.out_multiplier import OutMultiplier
 
 
 def test_standard_validity_OutMultiplier():
@@ -28,7 +29,7 @@ def test_standard_validity_OutMultiplier():
     y_wires = [2, 3, 4]
     output_wires = [6, 7, 8, 9]
     work_wires = [5, 10]
-    op = qml.OutMultiplier(x_wires, y_wires, output_wires, mod, work_wires)
+    op = OutMultiplier(x_wires, y_wires, output_wires, mod, work_wires)
     qml.ops.functions.assert_valid(op)
 
 
@@ -92,7 +93,7 @@ class TestOutMultiplier:
         def circuit(x, y):
             qml.BasisEmbedding(x, wires=x_wires)
             qml.BasisEmbedding(y, wires=y_wires)
-            qml.OutMultiplier(x_wires, y_wires, output_wires, mod, work_wires)
+            OutMultiplier(x_wires, y_wires, output_wires, mod, work_wires)
             return qml.sample(wires=output_wires)
 
         if mod is None:
@@ -168,9 +169,9 @@ class TestOutMultiplier:
     def test_wires_error(self, x_wires, y_wires, output_wires, mod, work_wires, msg_match):
         """Test an error is raised when some work_wires don't meet the requirements"""
         with pytest.raises(ValueError, match=msg_match):
-            qml.OutMultiplier(x_wires, y_wires, output_wires, mod, work_wires)
+            OutMultiplier(x_wires, y_wires, output_wires, mod, work_wires)
 
-    def test_decomposition(self, x_wires, y_wires, output_wires, mod, work_wires):
+    def test_decomposition(self):
         """Test that compute_decomposition and decomposition work as expected."""
         x_wires, y_wires, output_wires, mod, work_wires = (
             [0, 1, 2],
@@ -179,7 +180,7 @@ class TestOutMultiplier:
             3,
             [9, 10],
         )
-        multiplier_decomposition = qml.OutMultiplier(
+        multiplier_decomposition = OutMultiplier(
             x_wires, y_wires, output_wires, mod, work_wires
         ).compute_decomposition(x_wires, y_wires, output_wires, mod, work_wires)
         op_list = []
@@ -191,7 +192,7 @@ class TestOutMultiplier:
         op_list.append(
             qml.ControlledSequence(
                 qml.ControlledSequence(
-                    qml.PhaseAdder(1, output_wires, mod, work_wires), control=x_wires
+                    qml.PhaseAdder(1, qft_output_wires, mod, work_wires[1:]), control=x_wires
                 ),
                 control=y_wires,
             )
@@ -201,7 +202,7 @@ class TestOutMultiplier:
         for op1, op2 in zip(multiplier_decomposition, op_list):
             qml.assert_equal(op1, op2)
 
-    # @pytest.mark.jax
+    @pytest.mark.jax
     def test_jit_compatible(self):
         """Test that the template is compatible with the JIT compiler."""
 
@@ -210,8 +211,8 @@ class TestOutMultiplier:
         jax.config.update("jax_enable_x64", True)
 
         x, y = 2, 3
-        x_list = [0, 1, 0]
-        y_list = [0, 1, 1]
+        x_list = [1, 0]
+        y_list = [1, 1]
         mod = 12
         x_wires = [0, 1]
         y_wires = [2, 3]
@@ -224,7 +225,7 @@ class TestOutMultiplier:
         def circuit():
             qml.BasisEmbedding(x_list, wires=x_wires)
             qml.BasisEmbedding(y_list, wires=y_wires)
-            qml.OutMultiplier(x_wires, y_wires, output_wires, mod, work_wires)
+            OutMultiplier(x_wires, y_wires, output_wires, mod, work_wires)
             return qml.sample(wires=output_wires)
 
         assert jax.numpy.allclose(

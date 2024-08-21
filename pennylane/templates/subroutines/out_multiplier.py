@@ -15,7 +15,6 @@
 Contains the OutMultiplier template.
 """
 
-import numpy as np
 import pennylane as qml
 from pennylane.operation import Operation
 
@@ -72,24 +71,24 @@ class OutMultiplier(Operation):
 
         if mod is None:
             mod = 2 ** len(output_wires)
-        if mod == 2 ** len(output_wires):
+        if mod != 2 ** len(output_wires):
             if work_wires is None:
                 raise ValueError(
-                    f"If mod is not 2^{len(x_wires)} you should provide two work_wires"
+                    f"If mod is not 2^{len(output_wires)} you should provide two work_wires"
                 )
         if (not hasattr(output_wires, "__len__")) or (mod > 2 ** (len(output_wires))):
             raise ValueError("OutMultiplier must have at least enough wires to represent mod.")
         if work_wires is not None:
             if any(wire in work_wires for wire in x_wires):
-                raise ValueError("None wire in work_wires should be included in x_wires.")
+                raise ValueError("None of the wires in work_wires should be included in x_wires.")
             if any(wire in work_wires for wire in y_wires):
-                raise ValueError("None wire in work_wires should be included in y_wires.")
+                raise ValueError("None of the wires in work_wires should be included in y_wires.")
         if any(wire in y_wires for wire in x_wires):
-            raise ValueError("None wire in y_wires should be included in x_wires.")
+            raise ValueError("None of the wires in y_wires should be included in x_wires.")
         if any(wire in x_wires for wire in output_wires):
-            raise ValueError("None wire in x_wires should be included in output_wires.")
+            raise ValueError("None of the wires in x_wires should be included in output_wires.")
         if any(wire in y_wires for wire in output_wires):
-            raise ValueError("None wire in y_wires should be included in output_wires.")
+            raise ValueError("None of the wires in y_wires should be included in output_wires.")
         wires_list = ["x_wires", "y_wires", "output_wires", "work_wires"]
         for key in wires_list:
             self.hyperparameters[key] = qml.wires.Wires(locals()[key])
@@ -106,7 +105,7 @@ class OutMultiplier(Operation):
         return tuple(), metadata
 
     @classmethod
-    def _unflatten(cls, metadata):
+    def _unflatten(cls, data, metadata):
         hyperparams_dict = dict(metadata)
         return cls(**hyperparams_dict)
 
@@ -196,7 +195,7 @@ class OutMultiplier(Operation):
         op_list.append(
             qml.ControlledSequence(
                 qml.ControlledSequence(
-                    qml.PhaseAdder(1, output_wires, mod, work_wires), control=x_wires
+                    qml.PhaseAdder(1, qft_output_wires, mod, work_wires[1:]), control=x_wires
                 ),
                 control=y_wires,
             )
