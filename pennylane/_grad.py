@@ -157,7 +157,6 @@ class grad:
         calculated during the forward pass in :attr:`.forward`."""
         grad_fn, argnum = self._get_grad_fn(args)
 
-        # TODO: Do we want to have this clause within grad_call?
         if not isinstance(argnum, int) and not argnum:
             warnings.warn(
                 "Attempted to differentiate a function with no trainable parameters. "
@@ -208,7 +207,6 @@ def _get_grad_prim():
     def _(*args, argnum, jaxpr, n_consts):
         consts = args[:n_consts]
         args = args[n_consts:]
-        # TODO: Make sure the output is scalar
         assert len(jaxpr.outvars) == 1 and jaxpr.outvars[0].aval.shape == ()
 
         def func(*inner_args):
@@ -231,6 +229,8 @@ def _capture_grad(func, argnum=None):
     grad_prim = _get_grad_prim()
     if argnum_is_int := isinstance(argnum, int):
         argnum = [argnum]
+    if argnum is None:
+        argnum = [0]
 
     @wraps(func)
     def new_func(*args, **kwargs):
