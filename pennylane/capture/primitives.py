@@ -168,7 +168,7 @@ def create_non_jvp_primitive():
     """Create a primitive type NonJVPPrimitive which binds to JVPTrace like a standard
     Python function and otherwise behaves like jax.core.Primitive."""
 
-    if not has_jax:
+    if not has_jax:  # pragma: no cover
         return None
 
     # pylint: disable=too-few-public-methods
