@@ -92,7 +92,6 @@ class TestDecomposition:
     def test_StatePrep_padding(self, state, expected):
         """Test that StatePrep pads the input state correctly."""
 
-        print(state)
         wires = (0, 1)
 
         @qml.qnode(qml.device("default.qubit", wires=2))
