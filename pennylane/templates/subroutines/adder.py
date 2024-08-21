@@ -34,7 +34,7 @@ class Adder(Operation):
         k (int): the number that needs to be added
         x_wires (Sequence[int]): the wires the operation acts on
         mod (int): modulo with respect to which the sum is performed, default value will be ``2^len(wires)``.
-        work_wire (Sequence[int]): the auxiliary wires to use for the sum modulo :math:`mod` when :math:`mod \neq 2^{\text{len(x_wires)}}`
+        work_wires (Sequence[int]): the auxiliary wires to use for the sum modulo :math:`mod` when :math:`mod \neq 2^{\text{len(x_wires)}}`
 
     **Example**
 
@@ -46,7 +46,7 @@ class Adder(Operation):
         k = 5
         mod = 15
         x_wires =[0,1,2,3]
-        work_wires=[4]
+        work_wires=[4,5]
         dev = qml.device("default.qubit", shots=1)
         @qml.qnode(dev)
         def adder_modulo(x, k, mod, x_wires, work_wires):
@@ -65,18 +65,18 @@ class Adder(Operation):
     grad_method = None
 
     def __init__(
-        self, k, x_wires, mod=None, work_wire=None, id=None
+        self, k, x_wires, mod=None, work_wires=None, id=None
     ):  # pylint: disable=too-many-arguments
 
-        if work_wire is not None:
-            if any(wire in work_wire for wire in x_wires):
-                raise ValueError("work_wire should not be included in x_wires.")
+        if work_wires is not None:
+            if any(wire in work_wires for wire in x_wires):
+                raise ValueError("None wire in work_wires should be included in x_wires.")
 
         self.hyperparameters["k"] = k
         self.hyperparameters["mod"] = mod
-        self.hyperparameters["work_wire"] = qml.wires.Wires(work_wire)
+        self.hyperparameters["work_wires"] = qml.wires.Wires(work_wires)
         self.hyperparameters["x_wires"] = qml.wires.Wires(x_wires)
-        all_wires = qml.wires.Wires(x_wires) + qml.wires.Wires(work_wire)
+        all_wires = qml.wires.Wires(x_wires) + qml.wires.Wires(work_wires)
         super().__init__(wires=all_wires, id=id)
 
     @property
@@ -95,14 +95,14 @@ class Adder(Operation):
     def map_wires(self, wire_map: dict):
         new_dict = {
             key: [wire_map.get(w, w) for w in self.hyperparameters[key]]
-            for key in ["x_wires", "work_wire"]
+            for key in ["x_wires", "work_wires"]
         }
 
         return Adder(
             self.hyperparameters["k"],
             new_dict["x_wires"],
             self.hyperparameters["mod"],
-            new_dict["work_wire"],
+            new_dict["work_wires"],
         )
 
     @property
@@ -118,7 +118,7 @@ class Adder(Operation):
     @property
     def wires(self):
         """All wires involved in the operation."""
-        return self.hyperparameters["x_wires"] + self.hyperparameters["work_wire"]
+        return self.hyperparameters["x_wires"] + self.hyperparameters["work_wires"]
 
     def decomposition(self):  # pylint: disable=arguments-differ
 
@@ -126,7 +126,7 @@ class Adder(Operation):
             self.hyperparameters["k"],
             self.hyperparameters["x_wires"],
             self.hyperparameters["mod"],
-            self.hyperparameters["work_wire"],
+            self.hyperparameters["work_wires"],
         )
 
     @classmethod
@@ -134,26 +134,30 @@ class Adder(Operation):
         return cls._primitive.bind(*args, **kwargs)
 
     @staticmethod
-    def compute_decomposition(k, x_wires, mod, work_wire):  # pylint: disable=arguments-differ
+    def compute_decomposition(k, x_wires, mod, work_wires):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators.
         Args:
             k (int): number that wants to be added
             x_wires (Sequence[int]): the wires the operation acts on. There are needed at least enough wires to represent mod.
             mod (int): modulo of the sum
-            work_wire (Sequence[int]): the auxiliary wires to use for the sum modulo :math:`mod` when :math:`mod \neq 2^{\textrm{len(wires)}}`
+            work_wires (Sequence[int]): the auxiliary wires to use for the sum modulo :math:`mod` when :math:`mod \neq 2^{\textrm{len(x_wires)}}`
         Returns:
             list[.Operator]: Decomposition of the operator
 
         **Example**
 
-        >>> qml.Adder.compute_decomposition(k=2,x_wires=[0,1,2], mod = 8, work_wire=None)
+        >>> qml.Adder.compute_decomposition(k=2,x_wires=[0,1,2], mod = 8, work_wires=None)
         [QFT(wires=[0, 1, 2]),
         PhaseAdder(wires=[0, 1, 2]),
         Adjoint(QFT(wires=[0, 1, 2]))]
         """
         op_list = []
-        op_list.append(qml.QFT(x_wires))
-        op_list.append(qml.PhaseAdder(k, x_wires, mod, work_wire))
-        op_list.append(qml.adjoint(qml.QFT)(x_wires))
+        if mod == 2 ** (len(x_wires)):
+            qft_wires = x_wires
+        else:
+            qft_wires = work_wires[:1] + x_wires
+        op_list.append(qml.QFT(qft_wires))
+        op_list.append(qml.PhaseAdder(k, x_wires, mod, work_wires))
+        op_list.append(qml.adjoint(qml.QFT)(qft_wires))
 
         return op_list

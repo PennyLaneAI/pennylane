@@ -26,8 +26,8 @@ def test_standard_validity_Adder():
     k = 6
     mod = 11
     x_wires = [0, 1, 2, 3]
-    work_wire = [4]
-    op = qml.Adder(k, x_wires=x_wires, mod=mod, work_wire=work_wire)
+    work_wires = [4, 5]
+    op = qml.Adder(k, x_wires=x_wires, mod=mod, work_wires=work_wires)
     qml.ops.functions.assert_valid(op)
 
 
@@ -35,31 +35,31 @@ class TestAdder:
     """Test the qml.Adder template."""
 
     @pytest.mark.parametrize(
-        ("k", "x_wires", "mod", "work_wire"),
+        ("k", "x_wires", "mod", "work_wires"),
         [
             (
                 6,
                 [0, 1, 2],
                 8,
-                [4],
+                [4, 5],
             ),
             (
                 1,
                 [0, 1, 2, 3],
                 9,
-                [4],
+                [4, 5],
             ),
             (
                 2,
                 [0, 1, 4],
                 4,
-                [3],
+                [3, 2],
             ),
             (
                 -3,
                 [0, 1, 4],
                 4,
-                [3],
+                [3, 2],
             ),
             (
                 10,
@@ -71,18 +71,18 @@ class TestAdder:
                 1,
                 [0, 1, 2],
                 7,
-                [3],
+                [3, 4],
             ),
             (
                 6,
                 [0, 1, 2, 3],
                 None,
-                [4],
+                [4, 5],
             ),
         ],
     )
     def test_operation_result(
-        self, k, x_wires, mod, work_wire
+        self, k, x_wires, mod, work_wires
     ):  # pylint: disable=too-many-arguments
         """Test the correctness of the PhaseAdder template output."""
         dev = qml.device("default.qubit", shots=1)
@@ -94,27 +94,27 @@ class TestAdder:
         @qml.qnode(dev)
         def circuit(x):
             qml.BasisEmbedding(x, wires=x_wires)
-            qml.Adder(k, x_wires, mod, work_wire)
+            qml.Adder(k, x_wires, mod, work_wires)
             return qml.sample(wires=x_wires)
 
-        for x in range(0, max / 2):
+        for x in range(0, max // 2):
             assert np.allclose(
                 sum(bit * (2**i) for i, bit in enumerate(reversed(circuit(x)))), (x + k) % max
             )
 
     def test_wires_error(
-        self, k, x_wires, mod, work_wire, msg_match
+        self, k, x_wires, mod, work_wires, msg_match
     ):  # pylint: disable=too-many-arguments
-        """Test an error is raised when some wire in work_wire is in wires"""
-        k, x_wires, mod, work_wire, msg_match = (
+        """Test an error is raised when some wire in work_wires is in wires"""
+        k, x_wires, mod, work_wires, msg_match = (
             3,
             [0, 1, 2, 3, 4],
             12,
-            [4],
-            "work_wire should not be included in x_wires.",
+            [4, 5],
+            "None wire in work_wires should be included in x_wires.",
         )
         with pytest.raises(ValueError, match=msg_match):
-            qml.Adder(k, x_wires, mod, work_wire)
+            qml.Adder(k, x_wires, mod, work_wires)
 
     def test_decomposition(self):
         """Test that compute_decomposition and decomposition work as expected."""
@@ -122,13 +122,13 @@ class TestAdder:
         k = 2
         mod = 7
         x_wires = [0, 1, 2]
-        work_wire = [3]
-        adder_decomposition = qml.Adder(k, x_wires, mod, work_wire).compute_decomposition(
-            k, x_wires, mod, work_wire
+        work_wires = [3, 4]
+        adder_decomposition = qml.Adder(k, x_wires, mod, work_wires).compute_decomposition(
+            k, x_wires, mod, work_wires
         )
         op_list = []
         op_list.append(qml.QFT(x_wires))
-        op_list.append(qml.PhaseAdder(k, x_wires, mod, work_wire))
+        op_list.append(qml.PhaseAdder(k, x_wires, mod, work_wires))
         op_list.append(qml.adjoint(qml.QFT)(x_wires))
 
         for op1, op2 in zip(adder_decomposition, op_list):
@@ -146,14 +146,14 @@ class TestAdder:
         k = 6
         mod = 7
         x_wires = [0, 1, 2]
-        work_wire = [3]
+        work_wires = [3, 4]
         dev = qml.device("default.qubit", shots=1)
 
         @jax.jit
         @qml.qnode(dev)
         def circuit():
             qml.BasisEmbedding(x_list, wires=x_wires)
-            qml.Adder(k, x_wires, mod, work_wire)
+            qml.Adder(k, x_wires, mod, work_wires)
             return qml.sample(wires=x_wires)
 
         assert jax.numpy.allclose(
