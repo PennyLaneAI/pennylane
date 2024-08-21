@@ -110,5 +110,5 @@ class AmplitudeEmbedding(StatePrep):
 
     """
 
-    def __init__(self, features, wires, pad_with=None, normalize=False, id=None):
-        super().__init__(features, wires=wires, pad_with=pad_with, normalize=normalize, id=id)
+    def __init__(self, features, wires, pad_with=None, normalize=False, id=None, validate_norm = True):
+        super().__init__(features, wires=wires, pad_with=pad_with, normalize=normalize, validate_norm = validate_norm, id=id)
