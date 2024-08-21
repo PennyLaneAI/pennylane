@@ -348,6 +348,7 @@ def test_qnode_pytree_output():
     assert qml.math.allclose(out["b"], -jax.numpy.sin(1.2))
     assert list(out.keys()) == ["a", "b"]
 
+
 def test_qnode_jvp():
     """Test that JAX can compute the JVP of the QNode primitive via a registered JVP rule."""
 
@@ -360,5 +361,3 @@ def test_qnode_jvp():
     xt = -0.6
     jvp = jax.jvp(circuit, (x,), (xt,))
     assert qml.math.allclose(jvp, (qml.math.cos(x), -qml.math.sin(x) * xt))
-
-

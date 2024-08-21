@@ -14,8 +14,8 @@
 """
 This module contains the autograd wrappers :class:`grad` and :func:`jacobian`
 """
-from functools import lru_cache, partial, wraps
 import warnings
+from functools import lru_cache, partial, wraps
 
 from autograd import jacobian as _jacobian
 from autograd.core import make_vjp as _make_vjp
@@ -23,9 +23,9 @@ from autograd.extend import vspace
 from autograd.numpy.numpy_boxes import ArrayBox
 from autograd.wrap_util import unary_to_nary
 
+from pennylane.capture import enabled
 from pennylane.compiler import compiler
 from pennylane.compiler.compiler import CompileError
-from pennylane.capture import enabled
 
 make_vjp = unary_to_nary(_make_vjp)
 
@@ -195,6 +195,7 @@ class grad:
         grad_value = vjp(vspace(ans).ones())
         return grad_value, ans
 
+
 @lru_cache  # only create the first time requested
 def _get_grad_prim():
     import jax  # pylint: disable=import-outside-toplevel
@@ -221,6 +222,7 @@ def _get_grad_prim():
         return tuple(jaxpr.invars[i].aval for i in argnum)
 
     return grad_prim
+
 
 def _capture_grad(func, argnum=None):
     """Capture-compatible gradient computation."""

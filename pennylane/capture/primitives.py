@@ -162,13 +162,14 @@ def _get_abstract_measurement():
 
     return AbstractMeasurement
 
+
 @lru_cache
 def create_non_jvp_primitive():
     if not has_jax:
         return None
 
-    from jax.core import full_lower
     from jax._src.util import safe_map
+    from jax.core import full_lower
 
     class NonJVPPrimitive(jax.core.Primitive):
         """A subclass to JAX's Primitive that works like a Python function
@@ -181,6 +182,7 @@ def create_non_jvp_primitive():
             return safe_map(full_lower, out) if self.multiple_results else full_lower(out)
 
     return NonJVPPrimitive
+
 
 def create_operator_primitive(
     operator_type: Type["qml.operation.Operator"],
