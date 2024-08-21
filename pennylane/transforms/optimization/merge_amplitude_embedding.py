@@ -13,8 +13,8 @@
 # limitations under the License.
 """Transform for merging AmplitudeEmbedding gates in a quantum circuit."""
 
+import pennylane as qml
 from pennylane import AmplitudeEmbedding
-from pennylane._device import DeviceError
 from pennylane.math import flatten, reshape
 from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumScript, QuantumScriptBatch
@@ -94,7 +94,7 @@ def merge_amplitude_embedding(tape: QuantumScript) -> tuple[QuantumScriptBatch, 
 
         # Check the qubits have not been used.
         if len(visited_wires.intersection(wires_set)) > 0:
-            raise DeviceError(
+            raise qml.DeviceError(
                 f"Operation {current_gate.name} cannot be used after other Operation applied in the same qubit "
             )
         input_wires.append(current_gate.wires)

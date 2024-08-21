@@ -31,7 +31,6 @@ from typing import Union
 import numpy as np
 
 import pennylane as qml
-from pennylane import Device, DeviceError
 from pennylane.math import multiply as qmlmul
 from pennylane.math import sum as qmlsum
 from pennylane.measurements import (
@@ -57,6 +56,8 @@ from pennylane.operation import Operation, operation_derivative
 from pennylane.resource import Resources
 from pennylane.tape import QuantumScript
 from pennylane.wires import Wires
+
+from ._legacy_device import Device
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -205,9 +206,9 @@ class QubitDevice(Device):
         super().__init__(wires=wires, shots=shots, analytic=analytic)
 
         if "float" not in str(r_dtype):
-            raise DeviceError("Real datatype must be a floating point type.")
+            raise qml.DeviceError("Real datatype must be a floating point type.")
         if "complex" not in str(c_dtype):
-            raise DeviceError("Complex datatype must be a complex floating point type.")
+            raise qml.DeviceError("Complex datatype must be a complex floating point type.")
 
         self.C_DTYPE = c_dtype
         self.R_DTYPE = r_dtype

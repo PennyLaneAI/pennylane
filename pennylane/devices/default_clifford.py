@@ -24,7 +24,6 @@ from typing import Union
 import numpy as np
 
 import pennylane as qml
-from pennylane._device import DeviceError
 from pennylane.measurements import (
     ClassicalShadowMP,
     CountsMP,
@@ -630,7 +629,7 @@ class DefaultClifford(Device):
             measurement_func = self._analytical_measurement_map.get(type(meas), None)
 
             if measurement_func is None:  # pragma: no cover
-                raise DeviceError(
+                raise qml.DeviceError(
                     f"Snapshots of {type(meas)} are not yet supported on default.clifford."
                 )
 

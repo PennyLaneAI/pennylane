@@ -24,7 +24,7 @@ import pennylane as qml
 from pennylane.tape import QuantumScriptBatch
 from pennylane.typing import PostprocessingFn
 
-from .qnode import QNode, _get_device_shots, _make_execution_config
+from .qnode import QNode, _make_execution_config
 
 
 def null_postprocessing(results):
@@ -65,14 +65,8 @@ def _get_full_transform_program(qnode: QNode) -> "qml.transforms.core.TransformP
             **qnode.gradient_kwargs,
         )
 
-    if isinstance(qnode.device, qml.devices.Device):
-        config = _make_execution_config(qnode, qnode.gradient_fn)
-        return program + qnode.device.preprocess(config)[0]
-
-    program.add_transform(qml.transform(qnode.device.batch_transform))
-    program.add_transform(expand_fn_transform(qnode.device.expand_fn))
-
-    return program
+    config = _make_execution_config(qnode, qnode.gradient_fn)
+    return program + qnode.device.preprocess(config)[0]
 
 
 def get_transform_program(qnode: "QNode", level=None) -> "qml.transforms.core.TransformProgram":
@@ -322,9 +316,9 @@ def construct_batch(
     def batch_constructor(*args, **kwargs) -> tuple[QuantumScriptBatch, PostprocessingFn]:
         """Create a batch of tapes and a post processing function."""
         if "shots" in inspect.signature(qnode.func).parameters:
-            shots = _get_device_shots(qnode.device)
+            shots = qnode.device.shots
         else:
-            shots = kwargs.pop("shots", _get_device_shots(qnode.device))
+            shots = kwargs.pop("shots", qnode.device.shots)
 
         context_fn = nullcontext
 

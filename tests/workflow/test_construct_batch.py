@@ -168,12 +168,15 @@ class TestTransformProgramGetter:
         program = get_transform_program(circuit)
 
         m1 = TransformContainer(qml.transforms.merge_rotations.transform)
-        m2 = TransformContainer(dev.batch_transform)
-        assert program[0:2] == TransformProgram([m1, m2])
+        assert program[:1] == TransformProgram([m1])
 
-        # a little hard to check the contents of a expand_fn_transform
+        m2 = TransformContainer(qml.devices.legacy_facade.legacy_device_batch_transform)
+        assert program[1].transform == m2.transform.transform
+        assert program[1].kwargs["device"] == dev.target_device
+
+        # a little hard to check the contents of a expand_fn transform
         # this is the best proxy I can find
-        assert program[2].transform.__wrapped__ == dev.expand_fn
+        assert program[2].transform == qml.devices.legacy_facade.legacy_device_expand_fn.transform
 
     def test_get_transform_program_final_transform(self):
         """Test that gradient preprocessing and device transform occur before a final transform."""
@@ -428,11 +431,13 @@ class TestConstructBatch:
 
         dev = qml.device("default.qubit", shots=100)
 
-        @qml.qnode(dev)
-        def circuit(shots):
-            for _ in range(shots):
-                qml.S(0)
-            return qml.expval(qml.PauliZ(0))
+        with pytest.warns(UserWarning, match="Detected 'shots' as an argument"):
+
+            @qml.qnode(dev)
+            def circuit(shots):
+                for _ in range(shots):
+                    qml.S(0)
+                return qml.expval(qml.PauliZ(0))
 
         batch, fn = construct_batch(circuit, level=None)(shots=2)
         assert len(batch) == 1

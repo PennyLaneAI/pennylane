@@ -41,7 +41,7 @@ class TestQNodeIntegration:
         """Test that the plugin device loads correctly"""
         dev = qml.device("default.mixed", wires=2)
         assert dev.num_wires == 2
-        assert dev.shots is None
+        assert dev.shots == qml.measurements.Shots(None)
         assert dev.short_name == "default.mixed"
         assert dev.capabilities()["passthru_devices"]["jax"] == "default.mixed"
 
@@ -93,7 +93,7 @@ class TestQNodeIntegration:
         """Test that _apply_density_matrix works with jax-jit"""
 
         dev = qml.device("default.mixed", wires=n_qubits)
-        spy = mocker.spy(dev, "_apply_density_matrix")
+        spy = mocker.spy(dev.target_device, "_apply_density_matrix")
 
         @jax.jit
         @qml.qnode(dev, interface="jax")
@@ -376,8 +376,8 @@ class TestApplyChannelMethodChoice:
         dev = qml.device("default.mixed", wires=dev_wires)
         state = np.zeros((2**dev_wires, 2**dev_wires))
         state[0, 0] = 1.0
-        dev._state = jnp.array(state).reshape([2] * (2 * dev_wires))
-        dev._apply_operation(op)
+        dev.target_device._state = jnp.array(state).reshape([2] * (2 * dev_wires))
+        dev.target_device._apply_operation(op)
 
         spy_unexp.assert_not_called()
         spy_exp.assert_called_once()
@@ -624,7 +624,7 @@ class TestPassthruIntegration:
         # pylint: disable=unused-variable
         dev = qml.device("default.mixed", wires=1, shots=100)
 
-        msg = "Backpropagation is only supported when shots=None"
+        msg = "does not support backprop with requested circuit"
 
         with pytest.raises(qml.QuantumFunctionError, match=msg):
 
@@ -891,7 +891,10 @@ class TestHighLevelIntegration:
 
             tape2 = qml.tape.QuantumScript.from_queue(q2)
             return [
-                device.execute(tape, interface=interface, gradient_func=gradient_func)
+                device.execute(
+                    tape,
+                    qml.devices.ExecutionConfig(interface=interface, gradient_method=gradient_func),
+                )
                 for tape in [tape1, tape2]
             ]
 

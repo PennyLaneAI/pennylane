@@ -228,16 +228,11 @@ def snapshots_qnode(self, qnode, targs, tkwargs):
 
         with _SnapshotDebugger(qnode.device) as dbg:
             # pylint: disable=protected-access
-            if qnode._original_device:
-                qnode._original_device._debugger = qnode.device._debugger
-
             results = qnode(*args, **kwargs)
 
             # Reset interface
             if old_interface == "auto":
                 qnode.interface = "auto"
-            if qnode._original_device:
-                qnode.device._debugger = None
 
         dbg.snapshots["execution_results"] = results
         return dbg.snapshots
