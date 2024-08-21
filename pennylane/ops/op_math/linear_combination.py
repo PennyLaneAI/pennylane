@@ -38,15 +38,19 @@ class LinearCombination(Sum):
         coeffs (tensor_like): coefficients of the ``LinearCombination`` expression
         observables (Iterable[Observable]): observables in the ``LinearCombination`` expression, of same length as ``coeffs``
         simplify (bool): Specifies whether the ``LinearCombination`` is simplified upon initialization
-                         (like-terms are combined). The default value is `False`. Note that ``coeffs`` cannot
-                         be differentiated when using the ``'torch'`` interface and ``simplify=True``. Use of this argument is deprecated.
+                        (like-terms are combined). The default value is `False`. Note that ``coeffs`` cannot
+                        be differentiated when using the ``'torch'`` interface and ``simplify=True``. Use of this argument is deprecated.
         grouping_type (str): If not ``None``, compute and store information on how to group commuting
             observables upon initialization. This information may be accessed when a :class:`~.QNode` containing this
             ``LinearCombination`` is executed on devices. The string refers to the type of binary relation between Pauli words.
             Can be ``'qwc'`` (qubit-wise commuting), ``'commuting'``, or ``'anticommuting'``.
-        method (str): The graph coloring heuristic to use in solving minimum clique cover for grouping, which
-            can be ``'lf'`` (Largest First) or ``'rlf'`` (Recursive Largest First). Ignored if ``grouping_type=None``.
+        method (str): The graph colouring heuristic to use in solving minimum clique cover for grouping, which
+            can be ``'lf'`` (Largest First), ``'rlf'`` (Recursive Largest First), ``'dsatur'`` (Degree of Saturation), or ``'gis'`` (IndependentSet).
+            Defaults to ``'lf'``. Ignored if ``grouping_type=None``.
         id (str): name to be assigned to this ``LinearCombination`` instance
+
+    .. seealso:: `rustworkx.ColoringStrategy <https://www.rustworkx.org/apiref/rustworkx.ColoringStrategy.html#coloringstrategy>`_
+        for more information on the ``('lf', 'dsatur', 'gis')`` strategies.
 
     .. warning::
         The ``simplify`` argument is deprecated and will be removed in a future release.
@@ -122,7 +126,7 @@ class LinearCombination(Sum):
         observables: list[Operator],
         simplify=False,
         grouping_type=None,
-        method="rlf",
+        method="lf",
         _grouping_indices=None,
         _pauli_rep=None,
         id=None,
@@ -229,7 +233,7 @@ class LinearCombination(Sum):
         """
         return self.coeffs, self.ops
 
-    def compute_grouping(self, grouping_type="qwc", method="rlf"):
+    def compute_grouping(self, grouping_type="qwc", method="lf"):
         """
         Compute groups of operators and coefficients corresponding to commuting
         observables of this ``LinearCombination``.
@@ -242,9 +246,10 @@ class LinearCombination(Sum):
         Args:
             grouping_type (str): The type of binary relation between Pauli words used to compute
                 the grouping. Can be ``'qwc'``, ``'commuting'``, or ``'anticommuting'``.
-            method (str): The graph coloring heuristic to use in solving minimum clique cover for
+                Defaults to ``'qwc'``.
+            method (str): The graph colouring heuristic to use in solving minimum clique cover for
                 grouping, which can be ``'lf'`` (Largest First) or ``'rlf'`` (Recursive Largest
-                First).
+                First). Defaults to ``'lf'``.
 
         **Example**
 
@@ -271,27 +276,9 @@ class LinearCombination(Sum):
 
         _, ops = self.terms()
 
-        with qml.QueuingManager.stop_recording():
-            op_groups = qml.pauli.group_observables(ops, grouping_type=grouping_type, method=method)
-
-        ops = copy(ops)
-
-        indices = []
-        available_indices = list(range(len(ops)))
-        for partition in op_groups:  # pylint:disable=too-many-nested-blocks
-            indices_this_group = []
-            for pauli_word in partition:
-                # find index of this pauli word in remaining original observables,
-                for ind, observable in enumerate(ops):
-                    if qml.pauli.are_identical_pauli_words(pauli_word, observable):
-                        indices_this_group.append(available_indices[ind])
-                        # delete this observable and its index, so it cannot be found again
-                        ops.pop(ind)
-                        available_indices.pop(ind)
-                        break
-            indices.append(tuple(indices_this_group))
-
-        self._grouping_indices = tuple(indices)
+        self._grouping_indices = qml.pauli.compute_partition_indices(
+            ops, grouping_type=grouping_type, method=method
+        )
 
     @property
     def wires(self):
