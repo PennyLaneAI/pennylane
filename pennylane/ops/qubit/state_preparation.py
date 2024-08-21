@@ -15,7 +15,7 @@
 This submodule contains the discrete-variable quantum operations concerned
 with preparing a certain state on the device.
 """
-# pylint:disable=abstract-method,arguments-differ,protected-access,no-member
+# pylint:disable=too-many-branches,abstract-method,arguments-differ,protected-access,no-member
 from typing import Optional
 
 import numpy as np
@@ -28,6 +28,9 @@ from pennylane.typing import TensorLike
 from pennylane.wires import WireError, Wires, WiresLike
 
 state_prep_ops = {"BasisState", "StatePrep", "QubitDensityMatrix"}
+
+# TODO: Remove TOLERANCE as global variable
+TOLERANCE = 1e-10
 
 
 class BasisState(StatePrepBase):
@@ -174,8 +177,14 @@ class BasisState(StatePrepBase):
 
 
 class StatePrep(StatePrepBase):
-    r"""StatePrep(state, wires)
+    r"""StatePrep(state, wires, pad_with = None, normalize = False, validate_norm = True)
     Prepare subsystems using the given ket vector in the computational basis.
+
+    By setting ``pad_with`` to a real or complex number, ``state`` is automatically padded to dimension
+    :math:`2^n` where :math:`n` is the number of qubits used in the template.
+
+    To represent a valid quantum state vector, the L2-norm of ``state`` must be one.
+    The argument ``normalize`` can be set to ``True`` to automatically normalize the state.
 
     **Details:**
 
@@ -196,10 +205,14 @@ class StatePrep(StatePrepBase):
         as :math:`U|0\rangle = |\psi\rangle`
 
     Args:
-        state (array[complex]): a state vector of size 2**len(wires)
+        state (array[complex]): the state vector to prepare
         wires (Sequence[int] or int): the wire(s) the operation acts on
+        pad_with (float or complex):  if not None, the input is padded with this constant to size :math:`2^n`
+        normalize (bool): whether to normalize the state vector
         id (str): custom label given to an operator instance,
-            can be useful for some applications where the instance has to be identified.
+            can be useful for some applications where the instance has to be identified
+        validate_norm (bool): whether to validate the norm of the input state
+
 
     **Example**
 
@@ -219,29 +232,30 @@ class StatePrep(StatePrepBase):
     ndim_params = (1,)
     """int: Number of dimensions per trainable parameter of the operator."""
 
+    # pylint: disable=too-many-arguments
     def __init__(
         self,
         state: TensorLike,
         wires: WiresLike,
+        pad_with=None,
+        normalize=False,
         id: Optional[str] = None,
         validate_norm: bool = True,
     ):
+
+        state = self._preprocess(state, wires, pad_with, normalize, validate_norm)
+
+        self._hyperparameters = {
+            "pad_with": pad_with,
+            "normalize": normalize,
+            "validate_norm": validate_norm,
+        }
+
         super().__init__(state, wires=wires, id=id)
-        state = self.parameters[0]
 
-        if len(state.shape) == 1:
-            state = math.reshape(state, (1, state.shape[0]))
-        if state.shape[1] != 2 ** len(self.wires):
-            raise ValueError("State vector must have shape (2**wires,) or (batch_size, 2**wires).")
-        if validate_norm:
-            param = math.cast(state, np.complex128)
-            if not math.is_abstract(param):
-                norm = math.linalg.norm(param, axis=-1, ord=2)
-                if not math.allclose(norm, 1.0, atol=1e-10):
-                    raise ValueError("Sum of amplitudes-squared does not equal one.")
-
+    # pylint: disable=unused-argument
     @staticmethod
-    def compute_decomposition(state: TensorLike, wires: WiresLike) -> list[Operator]:
+    def compute_decomposition(state: TensorLike, wires: WiresLike, **kwargs) -> list[Operator]:
         r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -263,6 +277,17 @@ class StatePrep(StatePrepBase):
 
         """
         return [MottonenStatePreparation(state, wires)]
+
+    def _flatten(self):
+        metadata = tuple((key, value) for key, value in self.hyperparameters.items())
+
+        return tuple(
+            self.parameters,
+        ), (metadata, self.wires)
+
+    @classmethod
+    def _unflatten(cls, data, metadata):
+        return cls(*data, **dict(metadata[0]), wires=metadata[1])
 
     def state_vector(self, wire_order: Optional[WiresLike] = None):
         num_op_wires = len(self.wires)
@@ -287,6 +312,78 @@ class StatePrep(StatePrepBase):
         if self.batch_size:
             transpose_axes = [0] + [a + 1 for a in transpose_axes]
         return math.transpose(op_vector, transpose_axes)
+
+    @staticmethod
+    def _preprocess(state, wires, pad_with, normalize, validate_norm):
+        """Validate and pre-process inputs as follows:
+
+        * If state is batched, the processing that follows is applied to each state set in the batch.
+        * Check that the state tensor is one-dimensional.
+        * If pad_with is None, check that the last dimension of the state tensor
+          has length :math:`2^n` where :math:`n` is the number of qubits. Else check that the
+          last dimension of the state tensor is not larger than :math:`2^n` and pad state
+          with value if necessary.
+        * If normalize is false, check that last dimension of state is normalised to one. Else, normalise the
+          state tensor.
+        """
+        if isinstance(state, (list, tuple)):
+            state = math.array(state)
+
+        shape = math.shape(state)
+
+        # check shape
+        if len(shape) not in (1, 2):
+            raise ValueError(
+                f"State must be a one-dimensional tensor, or two-dimensional with batching; got shape {shape}."
+            )
+
+        n_states = shape[-1]
+        dim = 2 ** len(Wires(wires))
+        if pad_with is None and n_states != dim:
+            raise ValueError(
+                f"State must be of length {dim}; got length {n_states}. "
+                f"Use the 'pad_with' argument for automated padding."
+            )
+
+        if pad_with is not None:
+            normalize = True
+            if n_states > dim:
+                raise ValueError(
+                    f"Input state must be of length {dim} or "
+                    f"smaller to be padded; got length {n_states}."
+                )
+
+            # pad
+            if n_states < dim:
+                padding = [pad_with] * (dim - n_states)
+                if len(shape) > 1:
+                    padding = [padding] * shape[0]
+                padding = math.convert_like(padding, state)
+                state = math.hstack([state, padding])
+
+        if not validate_norm:
+            return state
+
+        # normalize
+        if "int" in str(state.dtype):
+            state = math.cast_like(state, 0.0)
+
+        norm = math.linalg.norm(state, axis=-1)
+
+        if math.is_abstract(norm):
+            if normalize:
+                state = state / math.reshape(norm, (*shape[:-1], 1))
+
+        elif not math.allclose(norm, 1.0, atol=TOLERANCE):
+            if normalize:
+                state = state / math.reshape(norm, (*shape[:-1], 1))
+            else:
+                raise ValueError(
+                    f"The state must be a vector of norm 1.0; got norm {norm}. "
+                    "Use 'normalize=True' to automatically normalize."
+                )
+
+        return state
 
 
 # pylint: disable=missing-class-docstring

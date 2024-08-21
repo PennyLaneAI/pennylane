@@ -445,18 +445,18 @@ class TestApplyBroadcasted:
 
     def test_apply_errors_qubit_state_vector_broadcasted(self, qubit_device_2_wires):
         """Test that apply fails for incorrect state preparation, and > 2 qubit gates"""
-        with pytest.raises(ValueError, match="Sum of amplitudes-squared does not equal one."):
+        with pytest.raises(ValueError, match="The state must be a vector of norm 1.0"):
             qubit_device_2_wires.apply([qml.StatePrep(np.array([[1, -1], [0, 2]]), wires=[0])])
 
         # Also test that the sum-check is *not* performed along the broadcasting dimension
         qubit_device_2_wires.apply([qml.StatePrep(np.array([[0.6, 0.8], [0.6, 0.8]]), wires=[0])])
 
-        with pytest.raises(ValueError, match=r"State vector must have shape \(2\*\*wires,\)."):
+        with pytest.raises(ValueError, match=r"State must be of length 4"):
             # Second dimension does not match 2**num_wires
             p = np.array([[1, 0, 1, 1, 0], [0, 1, 1, 0, 1]]) / np.sqrt(3)
             qubit_device_2_wires.apply([qml.StatePrep(p, wires=[0, 1])])
 
-        with pytest.raises(ValueError, match=r"State vector must have shape \(2\*\*wires,\)."):
+        with pytest.raises(ValueError, match=r"State must be of length 4"):
             # Broadcasting dimension is not first dimension
             p = np.array([[1, 1, 0], [0, 1, 1], [1, 0, 1], [0, 1, 1]]) / np.sqrt(2)
             qubit_device_2_wires.apply([qml.StatePrep(p, wires=[0, 1])])
