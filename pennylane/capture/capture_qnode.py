@@ -116,10 +116,17 @@ def _param_shift(args: tuple, d_args: tuple, **kwargs):
 
 
 def _circuit_jvp(arg_values, arg_tangents, **kwargs):
-    if kwargs["qnode_kwargs"]["diff_method"] not in {"parameter-shift", "best"}:
-        raise NotImplementedError(
-            f"diff_method {kwargs['qnode_kwargs']['diff_method']} not yet implemented with capture."
-        )
+    diff_method = kwargs["qnode_kwargs"]["diff_method"]
+
+    if diff_method == "adjoint":
+        device = kwargs["device"]
+        qfunc_jaxpr = kwargs["qfunc_jaxpr"]
+
+        # no consts for now
+        return device.jaxpr_execute_and_jvp(qfunc_jaxpr, [], arg_values, arg_tangents)
+
+    if diff_method not in {"parameter-shift", "best"}:
+        raise NotImplementedError(f"diff_method {diff_method} not yet implemented with capture.")
 
     res = _get_qnode_prim().bind(*arg_values, **kwargs)
 

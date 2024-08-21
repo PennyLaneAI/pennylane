@@ -893,6 +893,18 @@ class DefaultQubit(Device):
 
         return tuple(zip(*results))
 
+    def jaxpr_execute(self, jaxpr, consts, *args):
+        from pennylane.capture.interpreters import DefaultQubitInterpreter
+
+        dq = DefaultQubitInterpreter(num_wires=len(self.wires))
+        return dq.eval(jaxpr, consts, *args)
+
+    def jaxpr_execute_and_jvp(self, jaxpr, consts, args, d_args):
+        from pennylane.capture.interpreters import DefaultQubitInterpreter
+
+        dq = DefaultQubitInterpreter(num_wires=len(self.wires))
+        return dq.eval_and_jvp(jaxpr, consts, args, d_args)
+
 
 def _simulate_wrapper(circuit, kwargs):
     return simulate(circuit, **kwargs)

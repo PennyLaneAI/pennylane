@@ -3,6 +3,7 @@ from functools import partial, wraps
 import jax
 from jax.tree_util import tree_flatten, tree_unflatten
 
+import pennylane as qml
 from pennylane.compiler.qjit_api import (
     _get_for_loop_qfunc_prim,
     _get_while_loop_qfunc_prim,
@@ -11,14 +12,26 @@ from pennylane.compiler.qjit_api import (
 )
 from pennylane.devices.qubit import apply_operation, create_initial_state, measure
 from pennylane.measurements.mid_measure import MidMeasureMP, _create_mid_measure_primitive
+from pennylane.operation import operation_derivative
 from pennylane.ops.op_math.condition import _get_cond_qfunc_prim
 from pennylane.tape import QuantumScript
 
 from .base_interpreter import PlxprInterpreter
+from .primitives import _get_abstract_measurement, _get_abstract_operator
 
 for_prim = _get_for_loop_qfunc_prim()
 midmeasure_prim = _create_mid_measure_primitive()
 cond_prim = _get_cond_qfunc_prim()
+
+AbstractOperator = _get_abstract_operator()
+AbstractMeasurement = _get_abstract_measurement()
+
+
+def _dot_product_real(bra, ket, num_wires):
+    """Helper for calculating the inner product for adjoint differentiation."""
+    # broadcasted inner product not summing over first dimension of the bra tensor
+    sum_axes = tuple(range(num_wires))
+    return jax.numpy.real(jax.numpy.sum(jax.numpy.conj(bra) * ket, axis=sum_axes))
 
 
 class DefaultQubitInterpreter(PlxprInterpreter):
@@ -39,11 +52,7 @@ class DefaultQubitInterpreter(PlxprInterpreter):
             self.state["statevector"] = val
 
     def setup(self):
-        if self.statevector is None:
-            self.statevector = create_initial_state(range(self.num_wires))
-
-    def cleanup(self):
-        self.state = None
+        self.statevector = create_initial_state(range(self.num_wires))
 
     def interpret_operation(self, op):
         self.statevector = apply_operation(op, self.statevector)
@@ -53,6 +62,50 @@ class DefaultQubitInterpreter(PlxprInterpreter):
         invals = [self.read(invar) for invar in eqn.invars]
         mp = eqn.primitive.impl(*invals, **eqn.params)
         return measure(mp, self.statevector)
+
+    def eval_and_jvp(self, jaxpr, consts, args, d_args):
+        self.state = None
+        res = self.eval(jaxpr, consts, *args)
+        # gets statevector in correct state and populates env
+        bra = self.statevector
+        ket = self.statevector
+
+        jvps = 0
+        for eqn in reversed(jaxpr.eqns):
+            invals = [self.read(invar) for invar in eqn.invars]
+            if isinstance(eqn.outvars[0].aval, AbstractMeasurement):
+                # assume single measurement for now
+                mp = eqn.primitive.bind(*invals, **eqn.params)
+                bra = apply_operation(mp.obs, bra)
+            if isinstance(eqn.outvars[0].aval, AbstractOperator) and isinstance(
+                eqn.outvars[0], jax.core.DropVar
+            ):
+                op = eqn.primitive.impl(*invals, **eqn.params)
+                adj_op = qml.adjoint(op)
+                ket = apply_operation(adj_op, ket)
+
+                if eqn.invars[0] in jaxpr.invars:
+                    invar_ind = jaxpr.invars.index(eqn.invars[0])
+                    if not isinstance(
+                        d_args[invar_ind],
+                        (
+                            jax.custom_derivatives.SymbolicZero,
+                            jax._src.ad_util.Zero,
+                        ),
+                    ):
+
+                        d_op_matrix = operation_derivative(op)
+                        ket_temp = apply_operation(
+                            qml.QubitUnitary(d_op_matrix, wires=op.wires), ket
+                        )
+
+                        jvps += (
+                            2 * _dot_product_real(bra, ket_temp, self.num_wires) * d_args[invar_ind]
+                        )
+
+                bra = apply_operation(adj_op, bra)
+
+        return res, [jvps]
 
 
 @DefaultQubitInterpreter.register_primitive(for_prim)
