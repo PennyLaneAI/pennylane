@@ -130,7 +130,7 @@ class BasisState(StatePrepBase):
 
 
 class StatePrep(StatePrepBase):
-    r"""StatePrep(state, wires, pad_with = None, normalize = False)
+    r"""StatePrep(state, wires, pad_with = None, normalize = False, validate_norm = True)
     Prepare subsystems using the given ket vector in the computational basis.
 
     By setting ``pad_with`` to a real or complex number, ``state`` is automatically padded to dimension
@@ -164,6 +164,8 @@ class StatePrep(StatePrepBase):
         normalize (bool): whether to normalize the state vector
         id (str): custom label given to an operator instance,
             can be useful for some applications where the instance has to be identified
+        validate_norm (bool): whether to validate the norm of the input state
+
 
     **Example**
 
