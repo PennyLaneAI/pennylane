@@ -162,6 +162,25 @@ def _get_abstract_measurement():
 
     return AbstractMeasurement
 
+@lru_cache
+def create_non_jvp_primitive():
+    if not has_jax:
+        return None
+
+    from jax.core import full_lower
+    from jax._src.util import safe_map
+
+    class NonJVPPrimitive(jax.core.Primitive):
+        """A subclass to JAX's Primitive that works like a Python function
+        when evaluating JVPTracers."""
+
+        def bind_with_trace(self, trace, args, params):
+            if isinstance(trace, jax.interpreters.ad.JVPTrace):
+                return self.impl(*args, **params)
+            out = trace.process_primitive(self, safe_map(trace.full_raise, args), params)
+            return safe_map(full_lower, out) if self.multiple_results else full_lower(out)
+
+    return NonJVPPrimitive
 
 def create_operator_primitive(
     operator_type: Type["qml.operation.Operator"],
@@ -182,7 +201,7 @@ def create_operator_primitive(
     if not has_jax:
         return None
 
-    primitive = jax.core.Primitive(operator_type.__name__)
+    primitive = create_non_jvp_primitive()(operator_type.__name__)
 
     @primitive.def_impl
     def _(*args, **kwargs):

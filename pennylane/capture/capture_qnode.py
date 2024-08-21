@@ -27,6 +27,8 @@ from .flatfn import FlatFn
 has_jax = True
 try:
     import jax
+    from jax.interpreters import ad
+
 except ImportError:
     has_jax = False
 
@@ -86,6 +88,11 @@ def _get_qnode_prim():
     def _(*args, qnode, shots, device, qnode_kwargs, qfunc_jaxpr, n_consts):
         mps = qfunc_jaxpr.outvars
         return _get_shapes_for(*mps, shots=shots, num_device_wires=len(device.wires))
+
+    def _qnode_jvp(*args_and_tangents, **impl_kwargs):
+        return jax.jvp(partial(qnode_prim.impl, **impl_kwargs), *args_and_tangents)
+
+    ad.primitive_jvps[qnode_prim] = _qnode_jvp
 
     return qnode_prim
 

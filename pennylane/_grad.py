@@ -14,6 +14,7 @@
 """
 This module contains the autograd wrappers :class:`grad` and :func:`jacobian`
 """
+from functools import lru_cache, partial, wraps
 import warnings
 
 from autograd import jacobian as _jacobian
@@ -24,6 +25,7 @@ from autograd.wrap_util import unary_to_nary
 
 from pennylane.compiler import compiler
 from pennylane.compiler.compiler import CompileError
+from pennylane.capture import enabled
 
 make_vjp = unary_to_nary(_make_vjp)
 
@@ -97,9 +99,10 @@ class grad:
             return ops_loader.grad(func, method=method, h=h, argnum=argnum)
 
         if method or h:  # pragma: no cover
-            raise ValueError(
-                f"Invalid values for 'method={method}' and 'h={h}' in interpreted mode"
-            )
+            raise ValueError(f"Invalid values '{method=}' and '{h=}' without QJIT.")
+
+        if enabled():
+            return _capture_grad(func, argnum)
 
         return super().__new__(cls)
 
@@ -154,6 +157,7 @@ class grad:
         calculated during the forward pass in :attr:`.forward`."""
         grad_fn, argnum = self._get_grad_fn(args)
 
+        # TODO: Do we want to have this clause within grad_call?
         if not isinstance(argnum, int) and not argnum:
             warnings.warn(
                 "Attempted to differentiate a function with no trainable parameters. "
@@ -191,6 +195,53 @@ class grad:
 
         grad_value = vjp(vspace(ans).ones())
         return grad_value, ans
+
+@lru_cache  # only create the first time requested
+def _get_grad_prim():
+    import jax  # pylint: disable=import-outside-toplevel
+
+    grad_prim = jax.core.Primitive("grad")
+    grad_prim.multiple_results = True
+
+    # pylint: disable=too-many-arguments
+    @grad_prim.def_impl
+    def _(*args, argnum, jaxpr, n_consts):
+        consts = args[:n_consts]
+        args = args[n_consts:]
+        # TODO: Make sure the output is scalar
+        assert len(jaxpr.outvars) == 1 and jaxpr.outvars[0].aval.shape == ()
+
+        def func(*inner_args):
+            return jax.core.eval_jaxpr(jaxpr, consts, *inner_args)[0]
+
+        return jax.grad(func, argnums=argnum)(*args)
+
+    # pylint: disable=unused-argument
+    @grad_prim.def_abstract_eval
+    def _(*args, argnum, jaxpr, n_consts):
+        assert len(jaxpr.outvars) == 1 and jaxpr.outvars[0].aval.shape == ()
+        return tuple(jaxpr.invars[i].aval for i in argnum)
+
+    return grad_prim
+
+def _capture_grad(func, argnum=None):
+    """Capture-compatible gradient computation."""
+    import jax  # pylint: disable=import-outside-toplevel
+
+    grad_prim = _get_grad_prim()
+    if argnum_is_int := isinstance(argnum, int):
+        argnum = [argnum]
+
+    @wraps(func)
+    def new_func(*args, **kwargs):
+        jaxpr = jax.make_jaxpr(partial(func, **kwargs))(*args)
+        prim_kwargs = {"argnum": argnum, "jaxpr": jaxpr.jaxpr, "n_consts": len(jaxpr.consts)}
+        out = grad_prim.bind(*jaxpr.consts, *args, **prim_kwargs)
+        if argnum_is_int:
+            out = out[0]
+        return out
+
+    return new_func
 
 
 def jacobian(func, argnum=None, method=None, h=None):
