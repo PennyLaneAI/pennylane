@@ -21,7 +21,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane import DeviceError, QubitDevice
+from pennylane import QubitDevice
 from pennylane import numpy as pnp
 from pennylane.measurements import (
     Expectation,
@@ -222,7 +222,7 @@ class TestOperations:
             qml.var(qml.PauliZ(1))
 
         tape = QuantumScript.from_queue(q)
-        with pytest.raises(DeviceError, match="Gate Hadamard not supported on device"):
+        with pytest.raises(qml.DeviceError, match="Gate Hadamard not supported on device"):
             dev = mock_qubit_device_with_paulis_and_methods()
             dev.execute(tape)
 
@@ -284,7 +284,7 @@ class TestObservables:
             qml.sample(qml.PauliZ(2))
 
         tape = QuantumScript.from_queue(q)
-        with pytest.raises(DeviceError, match="Observable Hadamard not supported on device"):
+        with pytest.raises(qml.DeviceError, match="Observable Hadamard not supported on device"):
             dev = mock_qubit_device_with_paulis_and_methods()
             dev.execute(tape)
 
@@ -1211,7 +1211,7 @@ class TestExecution:
         """Test the number of times a qubit device is executed over a QNode's
         lifetime is tracked by `num_executions`"""
 
-        dev_1 = qml.device("default.qubit.legacy", wires=2)
+        dev_1 = qml.device("default.mixed", wires=2)
 
         def circuit_1(x, y):
             qml.RX(x, wires=[0])
@@ -1227,7 +1227,7 @@ class TestExecution:
         assert dev_1.num_executions == num_evals_1
 
         # test a second instance of a default qubit device
-        dev_2 = qml.device("default.qubit.legacy", wires=2)
+        dev_2 = qml.device("default.mixed", wires=2)
 
         def circuit_2(x):
             qml.RX(x, wires=[0])
@@ -1272,7 +1272,7 @@ class TestExecutionBroadcasted:
         """Test the number of times a qubit device is executed over a QNode's
         lifetime is tracked by `num_executions`"""
 
-        dev_1 = qml.device("default.qubit.legacy", wires=2)
+        dev_1 = qml.device("default.mixed", wires=2)
 
         def circuit_1(x, y):
             qml.RX(x, wires=[0])
@@ -1285,10 +1285,10 @@ class TestExecutionBroadcasted:
 
         for _ in range(num_evals_1):
             node_1(0.432, np.array([0.12, 0.5, 3.2]))
-        assert dev_1.num_executions == num_evals_1
+        assert dev_1.num_executions == num_evals_1 * 3
 
         # test a second instance of a default qubit device
-        dev_2 = qml.device("default.qubit.legacy", wires=2)
+        dev_2 = qml.device("default.mixed", wires=2)
 
         assert dev_2.num_executions == 0
 
@@ -1302,7 +1302,7 @@ class TestExecutionBroadcasted:
 
         for _ in range(num_evals_2):
             node_2(np.array([0.432, 0.61, 8.2]), 0.12)
-        assert dev_2.num_executions == num_evals_2
+        assert dev_2.num_executions == num_evals_2 * 3
 
         # test a new circuit on an existing instance of a qubit device
         def circuit_3(x, y):
@@ -1315,7 +1315,7 @@ class TestExecutionBroadcasted:
 
         for _ in range(num_evals_3):
             node_3(np.array([0.432, 0.2]), np.array([0.12, 1.214]))
-        assert dev_1.num_executions == num_evals_1 + num_evals_3
+        assert dev_1.num_executions == num_evals_1 * 3 + num_evals_3 * 2
 
 
 class TestBatchExecution:
@@ -1470,6 +1470,9 @@ class TestResourcesTracker:
     def test_tracker_single_execution(self, dev_name, qs_shots_wires, expected_resource):
         """Test that the tracker accurately tracks resources in a single execution"""
         qs, shots, wires = qs_shots_wires
+
+        qs._shots = qml.measurements.Shots(shots)
+
         dev = qml.device(dev_name, shots=shots, wires=wires)
 
         with qml.Tracker(dev) as tracker:
@@ -1504,7 +1507,7 @@ class TestResourcesTracker:
     @pytest.mark.autograd
     def test_tracker_grad(self):
         """Test that the tracker can track resources through a gradient computation"""
-        dev = qml.device("default.qubit.legacy", wires=1, shots=100)
+        dev = qml.device("default.qubit", wires=1, shots=100)
 
         @qml.qnode(dev, diff_method="parameter-shift")
         def circuit(x):
@@ -1540,9 +1543,10 @@ class TestSamplesToCounts:
         """Test that the counts function disregards failed measurements (samples including
         NaN values) when totalling counts"""
         # generate 1000 samples for 2 wires, randomly distributed between 0 and 1
-        device = qml.device("default.qubit.legacy", wires=2, shots=1000)
-        device._state = [0.5 + 0.0j, 0.5 + 0.0j, 0.5 + 0.0j, 0.5 + 0.0j]
-        device._samples = device.generate_samples()
+        device = qml.device("default.mixed", wires=2, shots=1000)
+        sv = [0.5 + 0.0j, 0.5 + 0.0j, 0.5 + 0.0j, 0.5 + 0.0j]
+        device.target_device._state = np.outer(sv, sv)
+        device.target_device._samples = device.generate_samples()
         samples = device.sample(qml.measurements.CountsMP())
 
         # imitate hardware return with NaNs (requires dtype float)
@@ -1568,10 +1572,13 @@ class TestSamplesToCounts:
         # generate 1000 samples for 10 wires, randomly distributed between 0 and 1
         n_wires = 10
         shots = 100
-        device = qml.device("default.qubit.legacy", wires=n_wires, shots=shots)
-        state = np.random.rand(*([2] * n_wires))
-        device._state = state / np.linalg.norm(state)
-        device._samples = device.generate_samples()
+        device = qml.device("default.mixed", wires=n_wires, shots=shots)
+
+        sv = np.random.rand(*([2] * n_wires))
+        state = sv / np.linalg.norm(sv)
+
+        device.target_device._state = np.outer(state, state)
+        device.target_device._samples = device.generate_samples()
         samples = device.sample(qml.measurements.CountsMP(all_outcomes=all_outcomes))
 
         result = device._samples_to_counts(

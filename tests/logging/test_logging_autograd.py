@@ -143,7 +143,8 @@ class TestLogging:
 
         for expected, actual in zip(log_records_expected, caplog.records[:2]):
             assert expected[0] in actual.name
-            assert all(msg in actual.getMessage() for msg in expected[1])
+            for exp_msg in expected[1]:
+                assert exp_msg in actual.getMessage()
 
     def test_execution_debugging_qutrit_mixed(self, caplog):
         """Test logging of QNode forward pass from default qutrit mixed."""

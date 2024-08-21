@@ -47,7 +47,7 @@ def test_work_wires():
 
     assert op.hyperparameters["work_wires"] == work_wire
 
-    ops = op.expand().operations
+    ops = op.decomposition()
 
     assert ops[2].hyperparameters["work_wires"] == work_wire
 
@@ -191,7 +191,7 @@ def test_expand(wires):
     """Asserts decomposition uses expected operations and wires"""
     op = qml.GroverOperator(wires=wires)
 
-    decomp = op.expand().operations
+    decomp = op.decomposition()
 
     expected_wires = decomposition_wires(wires)
 

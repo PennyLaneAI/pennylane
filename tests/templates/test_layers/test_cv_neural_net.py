@@ -76,7 +76,7 @@ class TestDecomposition:
         weights = [np.random.random(shape) for shape in shapes]
 
         op = qml.CVNeuralNetLayers(*weights, wires=range(n_wires))
-        tape = op.expand()
+        tape = qml.tape.QuantumScript(op.decomposition())
 
         i = 0
         for gate in tape.operations:
@@ -85,7 +85,7 @@ class TestDecomposition:
                 assert gate.wires.labels == tuple(expected_wires[i])
                 i = i + 1
             else:
-                for gate_inter in gate.expand().operations:
+                for gate_inter in gate.decomposition():
                     assert gate_inter.name == expected_names[i]
                     assert gate_inter.wires.labels == tuple(expected_wires[i])
                     i = i + 1

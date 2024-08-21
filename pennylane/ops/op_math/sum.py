@@ -22,7 +22,6 @@ import warnings
 from collections import Counter
 from collections.abc import Iterable
 from copy import copy
-from typing import List
 
 import pennylane as qml
 from pennylane import math
@@ -44,7 +43,7 @@ def sum(*summands, grouping_type=None, method="rlf", id=None, lazy=True):
             of the operators is already a sum operator, its operands (summands) will be used instead.
         grouping_type (str): The type of binary relation between Pauli words used to compute
             the grouping. Can be ``'qwc'``, ``'commuting'``, or ``'anticommuting'``.
-        method (str): The graph coloring heuristic to use in solving minimum clique cover for
+        method (str): The graph colouring heuristic to use in solving minimum clique cover for
             grouping, which can be ``'lf'`` (Largest First) or ``'rlf'`` (Recursive Largest
             First). This keyword argument is ignored if ``grouping_type`` is ``None``.
 
@@ -130,7 +129,7 @@ class Sum(CompositeOp):
     Keyword Args:
         grouping_type (str): The type of binary relation between Pauli words used to compute
             the grouping. Can be ``'qwc'``, ``'commuting'``, or ``'anticommuting'``.
-        method (str): The graph coloring heuristic to use in solving minimum clique cover for
+        method (str): The graph colouring heuristic to use in solving minimum clique cover for
             grouping, which can be ``'lf'`` (Largest First) or ``'rlf'`` (Recursive Largest
             First). This keyword argument is ignored if ``grouping_type`` is ``None``.
         id (str or None): id for the sum operator. Default is None.
@@ -381,7 +380,7 @@ class Sum(CompositeOp):
         return None
 
     @classmethod
-    def _simplify_summands(cls, summands: List[Operator]):
+    def _simplify_summands(cls, summands: list[Operator]):
         """Reduces the depth of nested summands and groups equal terms together.
 
         Args:
@@ -481,7 +480,7 @@ class Sum(CompositeOp):
         Args:
             grouping_type (str): The type of binary relation between Pauli words used to compute
                 the grouping. Can be ``'qwc'``, ``'commuting'``, or ``'anticommuting'``.
-            method (str): The graph coloring heuristic to use in solving minimum clique cover for
+            method (str): The graph colouring heuristic to use in solving minimum clique cover for
                 grouping, which can be ``'lf'`` (Largest First) or ``'rlf'`` (Recursive Largest
                 First).
 
@@ -547,7 +546,7 @@ class Sum(CompositeOp):
         return ops
 
     @classmethod
-    def _sort(cls, op_list, wire_map: dict = None) -> List[Operator]:
+    def _sort(cls, op_list, wire_map: dict = None) -> list[Operator]:
         """Sort algorithm that sorts a list of sum summands by their wire indices.
 
         Args:

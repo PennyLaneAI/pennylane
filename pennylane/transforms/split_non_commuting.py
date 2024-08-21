@@ -19,7 +19,7 @@ Contains the tape transform that splits a tape into tapes measuring commuting ob
 # pylint: disable=too-many-arguments,too-many-boolean-expressions,too-many-branches
 
 from functools import partial
-from typing import Callable, Dict, List, Literal, NamedTuple, Optional, Sequence, Tuple
+from typing import Literal, NamedTuple, Optional
 
 import numpy as np
 from scipy.stats import binom
@@ -27,8 +27,9 @@ from scipy.stats import binom
 import pennylane as qml
 from pennylane.measurements import ExpectationMP, MeasurementProcess, Shots, StateMP
 from pennylane.ops import Hamiltonian, LinearCombination, Prod, SProd, Sum
+from pennylane.tape import QuantumTapeBatch
 from pennylane.transforms import transform
-from pennylane.typing import Result, ResultBatch
+from pennylane.typing import PostprocessingFn, Result, ResultBatch
 
 
 class _ObsMetadata(NamedTuple):
@@ -54,7 +55,7 @@ def split_non_commuting(
     tape: qml.tape.QuantumScript,
     grouping_strategy: Optional[str] = "default",
     term_sampling: Optional[Literal["weighted", "uniform"]] = None,
-) -> Tuple[Sequence[qml.tape.QuantumTape], Callable]:
+) -> tuple[QuantumTapeBatch, PostprocessingFn]:
     r"""Splits a circuit into tapes measuring groups of commuting observables.
 
     Args:
@@ -507,8 +508,8 @@ def _split_ham_with_grouping(tape: qml.tape.QuantumScript):
 
 def _split_using_qwc_grouping(
     tape: qml.tape.QuantumScript,
-    single_term_obs_mps: Dict[MeasurementProcess, Tuple[List[int], List[float]]],
-    offsets: List[float],
+    single_term_obs_mps: dict[MeasurementProcess, tuple[list[int], list[float]]],
+    offsets: list[float],
 ):
     """Split tapes using group_observables in the Pauli module.
 
@@ -573,8 +574,8 @@ def _split_using_qwc_grouping(
 
 def _split_using_wires_grouping(
     tape: qml.tape.QuantumScript,
-    single_term_obs_mps: Dict[MeasurementProcess, Tuple[List[int], List[float]]],
-    offsets: List[float],
+    single_term_obs_mps: dict[MeasurementProcess, tuple[list[int], list[float]]],
+    offsets: list[float],
 ):
     """Split tapes by grouping observables based on overlapping wires.
 
@@ -714,8 +715,8 @@ def _split_all_multi_term_obs_mps(tape: qml.tape.QuantumScript):
 
 def _processing_fn_no_grouping(
     res: ResultBatch,
-    single_term_obs_mps: Dict[MeasurementProcess, Tuple[List[int], List[float]]],
-    offsets: List[float],
+    single_term_obs_mps: dict[MeasurementProcess, tuple[list[int], list[float]]],
+    offsets: list[float],
     shots: Shots,
     batch_size: int,
     term_sampling_used: bool = False,
@@ -786,9 +787,9 @@ def _processing_fn_no_grouping(
 
 def _processing_fn_with_grouping(
     res: ResultBatch,
-    single_term_obs_mps: Dict[MeasurementProcess, Tuple[List[int], List[float], int, int]],
-    offsets: List[float],
-    group_sizes: List[int],
+    single_term_obs_mps: dict[MeasurementProcess, tuple[list[int], list[float], int, int]],
+    offsets: list[float],
+    group_sizes: list[int],
     shots: Shots,
     batch_size: int,
 ):
@@ -854,7 +855,7 @@ def _processing_fn_with_grouping(
     return tuple(res_for_each_mp)
 
 
-def _sum_terms(res: ResultBatch, coeffs: List[float], offset: float, shape: Tuple) -> Result:
+def _sum_terms(res: ResultBatch, coeffs: list[float], offset: float, shape: tuple) -> Result:
     """Sum results from measurements of multiple terms in a multi-term observable."""
 
     # Trivially return the original result
@@ -888,7 +889,7 @@ def _mp_to_obs(mp: MeasurementProcess, tape: qml.tape.QuantumScript) -> qml.oper
     return qml.prod(*(qml.Z(wire) for wire in obs_wires))
 
 
-def _infer_result_shape(shots: Shots, batch_size: int) -> Tuple:
+def _infer_result_shape(shots: Shots, batch_size: int) -> tuple:
     """Based on the result, infer the ([,n_shots] [,batch_size]) shape of the result."""
 
     shape = ()

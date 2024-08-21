@@ -26,12 +26,11 @@ import itertools
 import logging
 import warnings
 from collections import defaultdict
-from typing import List, Union
+from typing import Union
 
 import numpy as np
 
 import pennylane as qml
-from pennylane import Device, DeviceError
 from pennylane.math import multiply as qmlmul
 from pennylane.math import sum as qmlsum
 from pennylane.measurements import (
@@ -57,6 +56,8 @@ from pennylane.operation import Operation, operation_derivative
 from pennylane.resource import Resources
 from pennylane.tape import QuantumTape
 from pennylane.wires import Wires
+
+from ._legacy_device import Device
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -205,9 +206,9 @@ class QubitDevice(Device):
         super().__init__(wires=wires, shots=shots, analytic=analytic)
 
         if "float" not in str(r_dtype):
-            raise DeviceError("Real datatype must be a floating point type.")
+            raise qml.DeviceError("Real datatype must be a floating point type.")
         if "complex" not in str(c_dtype):
-            raise DeviceError("Complex datatype must be a complex floating point type.")
+            raise qml.DeviceError("Complex datatype must be a complex floating point type.")
 
         self.C_DTYPE = c_dtype
         self.R_DTYPE = r_dtype
@@ -283,10 +284,15 @@ class QubitDevice(Device):
                 shots=[1],
                 trainable_params=circuit.trainable_params,
             )
+            # Some devices like Lightning-Kokkos use `self.shots` to update `_samples`,
+            # and hence we update `self.shots` temporarily for this loop
+            shots_copy = self.shots
+            self.shots = 1
             for _ in circuit.shots:
                 kwargs["mid_measurements"] = {}
                 self.reset()
                 results.append(self.execute(aux_circ, **kwargs))
+            self.shots = shots_copy
             return tuple(results)
         # apply all circuit operations
         self.apply(
@@ -1772,7 +1778,7 @@ class QubitDevice(Device):
         # must be 2-dimensional
         return tuple(tuple(np.array(j_) for j_ in j) for j in jac)
 
-    def _get_diagonalizing_gates(self, circuit: QuantumTape) -> List[Operation]:
+    def _get_diagonalizing_gates(self, circuit: QuantumTape) -> list[Operation]:
         """Returns the gates that diagonalize the measured wires such that they
         are in the eigenbasis of the circuit observables.
 

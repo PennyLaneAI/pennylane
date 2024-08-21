@@ -93,6 +93,7 @@ Transforms for error mitigation
     ~transforms.fold_global
     ~transforms.poly_extrapolate
     ~transforms.richardson_extrapolate
+    ~transforms.exponential_extrapolate
 
 Other transforms
 ~~~~~~~~~~~~~~~~
@@ -109,6 +110,7 @@ preprocessing, getting information from a circuit, and more.
     ~transforms.insert
     ~transforms.add_noise
     ~defer_measurements
+    ~transforms.diagonalize_measurements
     ~transforms.split_non_commuting
     ~transforms.split_to_single_terms
     ~transforms.broadcast_expand
@@ -199,10 +201,10 @@ function in this scenario, we include a function that simply returns the first a
 
 .. code-block:: python
 
-    from typing import Sequence, Callable
-    from pennylane.tape import QuantumTape
+    from pennylane.tape import QuantumTape, QuantumTapeBatch
+    from pennylane.typing import PostprocessingFn
 
-    def remove_rx(tape: QuantumTape) -> (Sequence[QuantumTape], Callable):
+    def remove_rx(tape: QuantumTape) -> tuple[QuantumTapeBatch, PostprocessingFn]:
 
         operations = filter(lambda op: op.name != "RX", tape.operations)
         new_tape = type(tape)(operations, tape.measurements, shots=tape.shots)
@@ -226,11 +228,11 @@ function into a quantum transform.
 
 .. code-block:: python
 
-    from typing import Sequence, Callable
-    from pennylane.tape import QuantumTape
+    from pennylane.tape import QuantumTape, QuantumTapeBatch
+    from pennylane.typing import PostprocessingFn
 
     @qml.transform
-    def sum_circuit_and_adjoint(tape: QuantumTape) -> (Sequence[QuantumTape], Callable):
+    def sum_circuit_and_adjoint(tape: QuantumTape) -> tuple[QuantumTapeBatch, PostprocessingFn]:
 
         operations = [qml.adjoint(op) for op in tape.operation]
         new_tape = type(tape)(operations, tape.measurements, shots=tape.shots)
@@ -315,6 +317,7 @@ from .add_noise import add_noise
 
 from .decompositions import clifford_t_decomposition
 from .defer_measurements import defer_measurements
+from .diagonalize_measurements import diagonalize_measurements
 from .dynamic_one_shot import dynamic_one_shot, is_mcm
 from .sign_expand import sign_expand
 from .hamiltonian_expand import hamiltonian_expand, sum_expand
@@ -322,7 +325,13 @@ from .split_non_commuting import split_non_commuting
 from .split_to_single_terms import split_to_single_terms
 from .insert_ops import insert
 
-from .mitigate import mitigate_with_zne, fold_global, poly_extrapolate, richardson_extrapolate
+from .mitigate import (
+    mitigate_with_zne,
+    fold_global,
+    poly_extrapolate,
+    richardson_extrapolate,
+    exponential_extrapolate,
+)
 from .optimization import (
     cancel_inverses,
     commute_controlled,

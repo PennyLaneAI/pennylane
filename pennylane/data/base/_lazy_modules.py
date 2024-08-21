@@ -1,8 +1,9 @@
 """Contains a lazy-loaded interface to the HDF5 module. For internal use only."""
 
 import importlib
+from collections.abc import Callable
 from types import ModuleType
-from typing import Any, Callable, Optional, Union
+from typing import Any, Optional, Union
 
 _MISSING_MODULES_EXC = ImportError(
     "This feature requires the 'aiohttp', 'h5py' and 'fsspec' packages. "

@@ -20,25 +20,30 @@ import warnings
 from functools import wraps
 
 import pennylane as qml
+from pennylane.data.base.typing_util import UNSET
 
 from .tape_mpl import tape_mpl
 from .tape_text import tape_text
 
-_level_sentinel = object()
-
 
 def _determine_draw_level(kwargs, qnode=None):
-    sentinel = _level_sentinel
+    level = kwargs.get("level", UNSET)
+    expansion_strategy = kwargs.get("expansion_strategy", UNSET)
 
-    level = kwargs.get("level", sentinel)
-    expansion_strategy = kwargs.get("expansion_strategy", sentinel)
-
-    if all(val != sentinel for val in (level, expansion_strategy)):
+    if all(val != UNSET for val in (level, expansion_strategy)):
         raise ValueError("Either 'level' or 'expansion_strategy' need to be set, but not both.")
 
-    if level == sentinel:
-        if expansion_strategy == sentinel:
-            return qnode.expansion_strategy if qnode else sentinel
+    if expansion_strategy != UNSET:
+        warnings.warn(
+            "The 'expansion_strategy' argument is deprecated and will be removed in "
+            "version 0.39. Instead, use the 'level' argument which offers more flexibility "
+            "and options.",
+            qml.PennyLaneDeprecationWarning,
+        )
+
+    if level == UNSET:
+        if expansion_strategy == UNSET:
+            return qnode.expansion_strategy if qnode else UNSET
         return expansion_strategy
     return level
 
@@ -95,6 +100,9 @@ def draw(
         as it allows for the same values as ``expansion_strategy`` and offers more flexibility in choosing
         the desired transforms/expansions.
 
+    .. warning::
+        The ``expansion_strategy`` argument is deprecated and will be removed in version 0.39. Use the ``level``
+        argument instead to specify the resulting tape you want.
 
     **Example**
 
@@ -173,7 +181,7 @@ def draw(
                 qml.StronglyEntanglingLayers(params, wires=range(3))
                 return [qml.expval(qml.Z(i)) for i in range(3)]
 
-        >>> print(qml.draw(longer_circuit, max_length=60, expansion_strategy="device")(params))
+        >>> print(qml.draw(longer_circuit, max_length=60, level="device")(params))
         0: ──Rot(0.77,0.44,0.86)─╭●────╭X──Rot(0.45,0.37,0.93)─╭●─╭X
         1: ──Rot(0.70,0.09,0.98)─╰X─╭●─│───Rot(0.64,0.82,0.44)─│──╰●
         2: ──Rot(0.76,0.79,0.13)────╰X─╰●──Rot(0.23,0.55,0.06)─╰X───
@@ -293,7 +301,7 @@ def draw(
             level=_determine_draw_level(kwargs, qnode),
         )
 
-    if _determine_draw_level(kwargs) != _level_sentinel:
+    if _determine_draw_level(kwargs) != UNSET:
         warnings.warn(
             "When the input to qml.draw is not a QNode, the expansion_strategy and level arguments are ignored.",
             UserWarning,
@@ -442,6 +450,10 @@ def draw_mpl(
         ``qnode.expansion_strategy`` will be used instead. Users are encouraged to predominantly use ``level``,
         as it allows for the same values as ``expansion_strategy`` and offers more flexibility in choosing
         the desired transforms/expansions.
+
+    .. warning::
+        The ``expansion_strategy`` argument is deprecated and will be removed in version 0.39. Use the ``level``
+        argument instead to specify the resulting tape you want.
 
     .. warning::
 
@@ -701,7 +713,7 @@ def draw_mpl(
             **kwargs,
         )
 
-    if _determine_draw_level(kwargs) != _level_sentinel:
+    if _determine_draw_level(kwargs) != UNSET:
         warnings.warn(
             "When the input to qml.draw is not a QNode, the expansion_strategy and level arguments are ignored.",
             UserWarning,

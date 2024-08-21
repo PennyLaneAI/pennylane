@@ -25,7 +25,8 @@ def _get_absolute_import_path(fn):
 def _determine_spec_level(kwargs, qnode):
     if "max_expansion" in kwargs:
         warnings.warn(
-            "'max_expansion' has no effect on the output of 'specs()' and should not be used."
+            "'max_expansion' has no effect on the output of 'specs()' and should not be used.",
+            qml.PennyLaneDeprecationWarning,
         )
 
     sentinel = object()
@@ -35,6 +36,14 @@ def _determine_spec_level(kwargs, qnode):
 
     if all(val != sentinel for val in (level, expansion_strategy)):
         raise ValueError("Either 'level' or 'expansion_strategy' need to be set, but not both.")
+
+    if expansion_strategy != sentinel:
+        warnings.warn(
+            "The 'expansion_strategy' argument is deprecated and will be removed in "
+            "version 0.39. Instead, use the 'level' argument which offers more flexibility "
+            "and options.",
+            qml.PennyLaneDeprecationWarning,
+        )
 
     if level == sentinel:
         if expansion_strategy == sentinel:
@@ -86,6 +95,9 @@ def specs(qnode, **kwargs):
         ``max_expansion`` and ``qnode.max_expansion`` have no effect on the return of this function and will
         be ignored.
 
+    .. warning::
+        The ``expansion_strategy`` argument is deprecated and will be removed in version 0.39. Use the ``level``
+        argument instead to specify the resulting tape you want.
 
     **Example**
 
@@ -198,7 +210,7 @@ def specs(qnode, **kwargs):
 
             H = qml.Hamiltonian([0.2, -0.543], [qml.X(0) @ qml.Z(1), qml.Z(0) @ qml.Y(2)])
 
-            @qml.transforms.hamiltonian_expand
+            @qml.transforms.split_non_commuting
             @qml.qnode(qml.device("default.qubit"), diff_method="parameter-shift", shifts=np.pi / 4)
             def circuit():
                 qml.RandomLayers(qml.numpy.array([[1.0, 2.0]]), wires=(0, 1))

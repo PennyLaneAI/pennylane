@@ -16,6 +16,7 @@ This module contains the base quantum tape.
 """
 # pylint: disable=too-many-instance-attributes,protected-access,too-many-branches,too-many-public-methods, too-many-arguments
 import copy
+from collections.abc import Sequence
 from threading import RLock
 
 import pennylane as qml
@@ -477,11 +478,7 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
     """threading.RLock: Used to synchronize appending to/popping from global QueueingContext."""
 
     def __init__(
-        self,
-        ops=None,
-        measurements=None,
-        shots=None,
-        trainable_params=None,
+        self, ops=None, measurements=None, shots=None, trainable_params=None
     ):  # pylint: disable=too-many-arguments
         AnnotatedQueue.__init__(self)
         QuantumScript.__init__(self, ops, measurements, shots, trainable_params=trainable_params)
@@ -540,5 +537,7 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
     def __hash__(self):
         return QuantumScript.__hash__(self)
 
+
+QuantumTapeBatch = Sequence[QuantumTape]
 
 register_pytree(QuantumTape, QuantumTape._flatten, QuantumTape._unflatten)

@@ -14,20 +14,20 @@
 r"""
 This module contains the legacy implementation of default.qubit.
 
-It implements the necessary :class:`~pennylane._device.Device` methods as well as some built-in
+It implements the necessary :class:`~pennylane.devices._legacy_device.Device` methods as well as some built-in
 :mod:`qubit operations <pennylane.ops.qubit>`, and provides a very simple pure state
 simulation of a qubit-based quantum circuit architecture.
 """
 import functools
 import itertools
+import warnings
 from string import ascii_letters as ABC
-from typing import List
 
 import numpy as np
 from scipy.sparse import csr_matrix
 
 import pennylane as qml
-from pennylane import BasisState, DeviceError, QubitDevice, Snapshot, StatePrep
+from pennylane import BasisState, Snapshot, StatePrep
 from pennylane.devices.qubit import measure
 from pennylane.measurements import ExpectationMP
 from pennylane.operation import Operation
@@ -38,6 +38,7 @@ from pennylane.typing import TensorLike
 from pennylane.wires import WireError
 
 from .._version import __version__
+from ._qubit_device import QubitDevice
 
 ABC_ARRAY = np.array(list(ABC))
 
@@ -78,13 +79,13 @@ def _get_slice(index, axis, num_axes):
 
 # pylint: disable=unused-argument
 class DefaultQubitLegacy(QubitDevice):
-    """Default qubit device for PennyLane.
+    r"""Default qubit device for PennyLane.
 
     .. warning::
 
-        This is the legacy implementation of DefaultQubit. It has been replaced by
-        ``qml.devices.DefaultQubit``, which can be accessed with the familiar constructor,
-        ``qml.device("default.qubit")``.
+        This is the legacy implementation of DefaultQubit and is deprecated. It has been replaced by
+        :class:`~pennylane.devices.DefaultQubit`, which can be accessed with the familiar constructor,
+        ``qml.device("default.qubit")``, and now supports backpropagation.
 
         This change will not alter device behaviour for most workflows, but may have implications for
         plugin developers and users who directly interact with device methods. Please consult
@@ -207,6 +208,14 @@ class DefaultQubitLegacy(QubitDevice):
     def __init__(
         self, wires, *, r_dtype=np.float64, c_dtype=np.complex128, shots=None, analytic=None
     ):
+        warnings.warn(
+            f"Use of '{self.short_name}' is deprecated. Instead, use 'default.qubit', "
+            "which supports backpropagation. "
+            "If you experience issues, reach out to the PennyLane team on "
+            "the discussion forum: https://discuss.pennylane.ai/",
+            qml.PennyLaneDeprecationWarning,
+        )
+
         super().__init__(wires, shots, r_dtype=r_dtype, c_dtype=c_dtype, analytic=analytic)
         self._debugger = None
 
@@ -281,7 +290,7 @@ class DefaultQubitLegacy(QubitDevice):
         # apply the circuit operations
         for i, operation in enumerate(operations):
             if i > 0 and isinstance(operation, (StatePrep, BasisState)):
-                raise DeviceError(
+                raise qml.DeviceError(
                     f"Operation {operation.name} cannot be used after other Operations have already been applied "
                     f"on a {self.short_name} device."
                 )
@@ -1090,7 +1099,7 @@ class DefaultQubitLegacy(QubitDevice):
 
         return self._cast(self._stack([outcomes, recipes]), dtype=np.int8)
 
-    def _get_diagonalizing_gates(self, circuit: qml.tape.QuantumTape) -> List[Operation]:
+    def _get_diagonalizing_gates(self, circuit: qml.tape.QuantumTape) -> list[Operation]:
         meas_filtered = [
             m
             for m in circuit.measurements

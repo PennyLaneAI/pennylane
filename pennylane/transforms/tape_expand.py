@@ -297,14 +297,17 @@ def _custom_decomp_context(custom_decomps):
             obj = getattr(qml, obj)
 
         original_decomp_method = obj.compute_decomposition
+        original_has_decomp_property = obj.has_decomposition
 
         try:
             # Explicitly set the new compute_decomposition method
             obj.compute_decomposition = staticmethod(fn)
+            obj.has_decomposition = lambda obj: True
             yield
 
         finally:
             obj.compute_decomposition = staticmethod(original_decomp_method)
+            obj.has_decomposition = original_has_decomp_property
 
     # Loop through the decomposition dictionary and create all the contexts
     try:
@@ -502,7 +505,9 @@ def set_decomposition(custom_decomps, dev, decomp_depth=10):
     1: ──H─╰Z──H─┤
 
     """
-    if isinstance(dev, qml.devices.LegacyDevice):
+    if isinstance(dev, qml.devices.LegacyDeviceFacade):
+        dev = dev.target_device
+
         original_custom_expand_fn = dev.custom_expand_fn
 
         # Create a new expansion function; stop at things that do not have

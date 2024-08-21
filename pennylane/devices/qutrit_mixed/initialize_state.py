@@ -13,7 +13,8 @@
 # limitations under the License.
 """Functions to prepare a qutrit mixed state."""
 
-from typing import Iterable, Union
+from collections.abc import Iterable
+from typing import Union
 
 import pennylane as qml
 from pennylane.operation import StatePrepBase

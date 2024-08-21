@@ -52,34 +52,6 @@ class TestDecompositionErrors:
         with pytest.raises(AssertionError, match="decomposition must match queued operations"):
             assert_valid(BadDecomp(wires=0), skip_pickle=True)
 
-    def test_expand_must_be_qscript(self):
-        """Test that an error is raised if expand does not return a QuantumScript"""
-
-        class BadDecomp(Operator):
-            @staticmethod
-            def compute_decomposition(wires):
-                return [qml.RY(2.3, 0)]
-
-            def expand(self):
-                return [qml.S(0)]
-
-        with pytest.raises(AssertionError, match=r"expand must return a QuantumScript"):
-            assert_valid(BadDecomp(wires=0), skip_pickle=True)
-
-    def test_decomposition_must_match_expand(self):
-        """Test that decomposition and expand must match."""
-
-        class BadDecomp(Operator):
-            @staticmethod
-            def compute_decomposition(wires):
-                return [qml.RY(2.3, 0)]
-
-            def expand(self):
-                return qml.tape.QuantumScript([qml.S(0)])
-
-        with pytest.raises(AssertionError, match="decomposition must match expansion"):
-            assert_valid(BadDecomp(wires=0), skip_pickle=True)
-
     def test_decomposition_wires_must_be_mapped(self):
         """Test that the operators in decomposition have mapped wires after mapping the op."""
 
@@ -106,6 +78,17 @@ class TestDecompositionErrors:
             has_decomposition = False
 
         with pytest.raises(AssertionError, match="If has_decomposition is False"):
+            assert_valid(BadDecomp(wires=0), skip_pickle=True)
+
+    def test_decomposition_must_not_contain_op(self):
+        """Test that the decomposition of an operator doesn't include the operator itself"""
+
+        class BadDecomp(Operator):
+            @staticmethod
+            def compute_decomposition(wires):
+                return [BadDecomp(wires)]
+
+        with pytest.raises(AssertionError, match="should not be included in its own decomposition"):
             assert_valid(BadDecomp(wires=0), skip_pickle=True)
 
 

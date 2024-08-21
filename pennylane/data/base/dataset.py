@@ -16,24 +16,11 @@ Contains the :class:`~pennylane.data.Dataset` base class, and `qml.data.Attribut
 for declaratively defining dataset classes.
 """
 
-import typing
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from pathlib import Path
 from types import MappingProxyType
-from typing import (
-    Any,
-    ClassVar,
-    Generic,
-    List,
-    Literal,
-    Optional,
-    Tuple,
-    Type,
-    TypeVar,
-    Union,
-    cast,
-    get_origin,
-)
+from typing import Any, ClassVar, Generic, Literal, Optional, Type, TypeVar, Union, cast, get_origin
 
 # pylint doesn't think this exists
 from typing_extensions import dataclass_transform  # pylint: disable=no-name-in-module
@@ -154,9 +141,9 @@ class Dataset(MapperMixin, _DatasetTransform):
     """
 
     __data_name__: ClassVar[str]
-    __identifiers__: ClassVar[Tuple[str, ...]]
+    __identifiers__: ClassVar[tuple[str, ...]]
 
-    fields: ClassVar[typing.Mapping[str, Field]]
+    fields: ClassVar[Mapping[str, Field]]
     """
     A mapping of attribute names to their ``Attribute`` information. Note that
     this contains attributes declared on the class, not attributes added to
@@ -171,7 +158,7 @@ class Dataset(MapperMixin, _DatasetTransform):
         bind: Optional[HDF5Group] = None,
         *,
         data_name: Optional[str] = None,
-        identifiers: Optional[Tuple[str, ...]] = None,
+        identifiers: Optional[tuple[str, ...]] = None,
         **attrs: Any,
     ):
         """
@@ -245,7 +232,7 @@ class Dataset(MapperMixin, _DatasetTransform):
         return self.info.get("data_name", self.__data_name__)
 
     @property
-    def identifiers(self) -> typing.Mapping[str, str]:  # pylint: disable=function-redefined
+    def identifiers(self) -> Mapping[str, str]:  # pylint: disable=function-redefined
         """Returns this dataset's parameters."""
         return {
             attr_name: getattr(self, attr_name)
@@ -264,12 +251,12 @@ class Dataset(MapperMixin, _DatasetTransform):
         return self._bind
 
     @property
-    def attrs(self) -> typing.Mapping[str, DatasetAttribute]:
+    def attrs(self) -> Mapping[str, DatasetAttribute]:
         """Returns all attributes of this Dataset."""
         return self._mapper.view()
 
     @property
-    def attr_info(self) -> typing.Mapping[str, AttributeInfo]:
+    def attr_info(self) -> Mapping[str, AttributeInfo]:
         """Returns a mapping of the ``AttributeInfo`` for each of this dataset's attributes."""
         return MappingProxyType(
             {
@@ -278,14 +265,14 @@ class Dataset(MapperMixin, _DatasetTransform):
             }
         )
 
-    def list_attributes(self) -> List[str]:
+    def list_attributes(self) -> list[str]:
         """Returns a list of this dataset's attributes."""
         return list(self.attrs.keys())
 
     def read(
         self,
         source: Union[str, Path, "Dataset"],
-        attributes: Optional[typing.Iterable[str]] = None,
+        attributes: Optional[Iterable[str]] = None,
         *,
         overwrite: bool = False,
     ) -> None:
@@ -311,7 +298,7 @@ class Dataset(MapperMixin, _DatasetTransform):
         self,
         dest: Union[str, Path, "Dataset"],
         mode: Literal["w", "w-", "a"] = "a",
-        attributes: Optional[typing.Iterable[str]] = None,
+        attributes: Optional[Iterable[str]] = None,
         *,
         overwrite: bool = False,
     ) -> None:
@@ -345,7 +332,7 @@ class Dataset(MapperMixin, _DatasetTransform):
             hdf5.copy_all(self.bind, dest.bind, *missing_identifiers)
 
     def _init_bind(
-        self, data_name: Optional[str] = None, identifiers: Optional[Tuple[str, ...]] = None
+        self, data_name: Optional[str] = None, identifiers: Optional[tuple[str, ...]] = None
     ):
         if self.bind.file.mode == "r+":
             if "type_id" not in self.info:
@@ -400,7 +387,7 @@ class Dataset(MapperMixin, _DatasetTransform):
         return f"<{type(self).__name__} = {repr_items}>"
 
     def __init_subclass__(
-        cls, *, data_name: Optional[str] = None, identifiers: Optional[Tuple[str, ...]] = None
+        cls, *, data_name: Optional[str] = None, identifiers: Optional[tuple[str, ...]] = None
     ) -> None:
         """Initializes the ``fields`` dict of a Dataset subclass using
         the declared ``Attributes`` and their type annotations."""

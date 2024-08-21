@@ -22,7 +22,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane import Device, DeviceError
+from pennylane import Device
 from pennylane.wires import Wires
 
 mock_device_paulis = ["PauliX", "PauliY", "PauliZ"]
@@ -188,6 +188,12 @@ def mock_device_supporting_prod(monkeypatch):
         yield get_device
 
 
+# pylint: disable=pointless-statement
+def test_invalid_attribute_in_devices_raises_error():
+    with pytest.raises(AttributeError, match="'pennylane.devices' has no attribute 'blabla'"):
+        qml.devices.blabla
+
+
 def test_gradients_record():
     """Test that execute_and_gradients and gradient both track the number of gradients requested."""
 
@@ -340,10 +346,7 @@ class TestInternalFunctions:  # pylint:disable=too-many-public-methods
             qml.expval(qml.PauliZ(0) @ (qml.PauliX(1) @ qml.PauliY(2)))
         ]
 
-        with pytest.raises(
-            DeviceError,
-            match="Observable PauliY not supported",
-        ):
+        with pytest.raises(qml.DeviceError, match="Observable PauliY not supported"):
             dev.check_validity(queue, unsupported_nested_observables)
 
     @pytest.mark.usefixtures("use_legacy_opmath")
@@ -360,7 +363,7 @@ class TestInternalFunctions:  # pylint:disable=too-many-public-methods
         observables = [qml.expval(qml.PauliZ(0) @ qml.PauliX(1))]
 
         # mock device does not support Tensor product
-        with pytest.raises(DeviceError, match="Tensor observables not supported"):
+        with pytest.raises(qml.DeviceError, match="Tensor observables not supported"):
             dev.check_validity(queue, observables)
 
     @pytest.mark.usefixtures("use_new_opmath")
@@ -377,7 +380,7 @@ class TestInternalFunctions:  # pylint:disable=too-many-public-methods
         observables = [qml.expval(qml.PauliZ(0) @ qml.PauliX(1))]
 
         # mock device does not support Tensor product
-        with pytest.raises(DeviceError, match="Observable Prod not supported"):
+        with pytest.raises(qml.DeviceError, match="Observable Prod not supported"):
             dev.check_validity(queue, observables)
 
     @pytest.mark.usefixtures("use_legacy_opmath")
@@ -403,7 +406,7 @@ class TestInternalFunctions:  # pylint:disable=too-many-public-methods
             dev = D()
 
             # mock device supports Tensor products but not hadamard
-            with pytest.raises(DeviceError, match="Observable Hadamard not supported"):
+            with pytest.raises(qml.DeviceError, match="Observable Hadamard not supported"):
                 dev.check_validity(queue, observables)
 
     def test_check_validity_on_invalid_queue(self, mock_device_supporting_paulis):
@@ -418,7 +421,7 @@ class TestInternalFunctions:  # pylint:disable=too-many-public-methods
 
         observables = [qml.expval(qml.PauliZ(0))]
 
-        with pytest.raises(DeviceError, match="Gate RX not supported on device"):
+        with pytest.raises(qml.DeviceError, match="Gate RX not supported on device"):
             dev.check_validity(queue, observables)
 
     def test_check_validity_on_invalid_observable(self, mock_device_supporting_paulis):
@@ -433,7 +436,7 @@ class TestInternalFunctions:  # pylint:disable=too-many-public-methods
 
         observables = [qml.expval(qml.Hadamard(0))]
 
-        with pytest.raises(DeviceError, match="Observable Hadamard not supported on device"):
+        with pytest.raises(qml.DeviceError, match="Observable Hadamard not supported on device"):
             dev.check_validity(queue, observables)
 
     def test_check_validity_on_projector_as_operation(self, mock_device_supporting_paulis):
@@ -572,22 +575,7 @@ class TestInternalFunctions:  # pylint:disable=too-many-public-methods
 
         tape = qml.tape.QuantumScript.from_queue(q)
         # Raises an error for device that doesn't support mid-circuit measurements natively
-        with pytest.raises(DeviceError, match="Mid-circuit measurements are not natively"):
-            dev.check_validity(tape.operations, tape.observables)
-
-    def test_conditional_ops_unsupported_error(self, mock_device_with_paulis_and_methods):
-        """Test that an error is raised for conditional operations if
-        mid-circuit measurements are not supported natively"""
-        dev = mock_device_with_paulis_and_methods(wires=2)
-
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.cond(0, qml.RY)(0.3, wires=0)
-            qml.PauliZ(0)
-
-        tape = qml.tape.QuantumScript.from_queue(q)
-        # Raises an error for device that doesn't support conditional
-        # operations natively
-        with pytest.raises(DeviceError, match="Gate Conditional\\(RY\\) not supported on device"):
+        with pytest.raises(qml.DeviceError, match="Mid-circuit measurements are not natively"):
             dev.check_validity(tape.operations, tape.observables)
 
     @pytest.mark.parametrize(
@@ -642,7 +630,7 @@ class TestInternalFunctions:  # pylint:disable=too-many-public-methods
         prep = [op]
         ops = [qml.AngleEmbedding(features=[0.1], wires=[0], rotation="Z"), op, qml.PauliZ(wires=2)]
 
-        dev = qml.device("default.qubit.legacy", wires=3)
+        dev = qml.device("default.mixed", wires=3)
         tape = qml.tape.QuantumTape(ops=prep + ops, measurements=[], shots=100)
         new_tape = dev.default_expand_fn(tape)
 
@@ -803,7 +791,7 @@ class TestOperations:
             qml.sample(qml.PauliZ(2)),
         ]
 
-        with pytest.raises(DeviceError, match="Gate Hadamard not supported on device"):
+        with pytest.raises(qml.DeviceError, match="Gate Hadamard not supported on device"):
             dev.execute(queue, observables)
 
     def test_execute_obs_probs(self, mock_device_supporting_paulis):
@@ -918,7 +906,7 @@ class TestObservables:
             qml.sample(qml.PauliZ(2)),
         ]
 
-        with pytest.raises(DeviceError, match="Observable Hadamard not supported on device"):
+        with pytest.raises(qml.DeviceError, match="Observable Hadamard not supported on device"):
             dev.execute(queue, observables)
 
     def test_unsupported_observable_return_type_raise_error(
@@ -989,7 +977,7 @@ class TestDeviceInit:
     def test_no_device(self):
         """Test that an exception is raised for a device that doesn't exist"""
 
-        with pytest.raises(DeviceError, match="Device None does not exist"):
+        with pytest.raises(qml.DeviceError, match="Device None does not exist"):
             qml.device("None", wires=0)
 
     def test_outdated_API(self, monkeypatch):
@@ -997,8 +985,15 @@ class TestDeviceInit:
 
         with monkeypatch.context() as m:
             m.setattr(qml, "version", lambda: "0.0.1")
-            with pytest.raises(DeviceError, match="plugin requires PennyLane versions"):
-                qml.device("default.qubit.legacy", wires=0)
+            with pytest.raises(qml.DeviceError, match="plugin requires PennyLane versions"):
+                qml.device("default.mixed", wires=0)
+
+    def test_plugin_devices_from_devices_triggers_getattr(self, mocker):
+        spied = mocker.spy(qml.devices, "__getattr__")
+
+        qml.devices.plugin_devices
+
+        spied.assert_called_once()
 
     def test_refresh_entrypoints(self, monkeypatch):
         """Test that new entrypoints are found by the refresh_devices function"""
@@ -1011,6 +1006,7 @@ class TestDeviceInit:
 
             # reimporting PennyLane within the context sets qml.plugin_devices to {}
             reload(qml)
+            reload(qml.devices.device_constructor)
 
             # since there are no entry points, there will be no plugin devices
             assert not qml.plugin_devices
@@ -1023,6 +1019,7 @@ class TestDeviceInit:
         # Test teardown: re-import PennyLane to revert all changes and
         # restore the plugin_device dictionary
         reload(qml)
+        reload(qml.devices.device_constructor)
 
     def test_hot_refresh_entrypoints(self, monkeypatch):
         """Test that new entrypoints are found by the device loader if not currently present"""
@@ -1034,13 +1031,14 @@ class TestDeviceInit:
             m.setattr(metadata, "entry_points", lambda **kwargs: retval)
 
             # reimporting PennyLane within the context sets qml.plugin_devices to {}
-            reload(qml)
+            reload(qml.devices)
+            reload(qml.devices.device_constructor)
 
-            m.setattr(qml, "refresh_devices", lambda: None)
+            m.setattr(qml.devices.device_constructor, "refresh_devices", lambda: None)
             assert not qml.plugin_devices
 
             # since there are no entry points, there will be no plugin devices
-            with pytest.raises(DeviceError, match="Device default.qubit does not exist"):
+            with pytest.raises(qml.DeviceError, match="Device default.qubit does not exist"):
                 qml.device("default.qubit", wires=0)
 
         # outside of the context, entrypoints will now be found automatically
@@ -1052,10 +1050,11 @@ class TestDeviceInit:
         # Test teardown: re-import PennyLane to revert all changes and
         # restore the plugin_device dictionary
         reload(qml)
+        reload(qml.devices.device_constructor)
 
     def test_shot_vector_property(self):
         """Tests shot vector initialization."""
-        dev = qml.device("default.qubit.legacy", wires=1, shots=[1, 3, 3, 4, 4, 4, 3])
+        dev = qml.device("default.mixed", wires=1, shots=[1, 3, 3, 4, 4, 4, 3])
         shot_vector = dev.shot_vector
         assert len(shot_vector) == 4
         assert shot_vector[0].shots == 1
@@ -1067,7 +1066,16 @@ class TestDeviceInit:
         assert shot_vector[3].shots == 3
         assert shot_vector[3].copies == 1
 
-        assert dev.shots == 22
+        assert dev.shots.total_shots == 22
+
+    def test_decomp_depth_is_deprecated(self):
+        """Test that a warning is raised when using the deprecated decomp_depth argument"""
+
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match="The decomp_depth argument is deprecated",
+        ):
+            qml.device("default.qubit", decomp_depth=1)
 
 
 class TestBatchExecution:

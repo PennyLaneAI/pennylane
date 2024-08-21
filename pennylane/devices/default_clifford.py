@@ -16,14 +16,14 @@ This module contains the Clifford simulator using ``stim``.
 """
 
 import concurrent.futures
+from collections.abc import Sequence
 from dataclasses import replace
 from functools import partial
-from typing import Sequence, Tuple, Union
+from typing import Union
 
 import numpy as np
 
 import pennylane as qml
-from pennylane._device import DeviceError
 from pennylane.measurements import (
     ClassicalShadowMP,
     CountsMP,
@@ -39,7 +39,7 @@ from pennylane.measurements import (
     VnEntropyMP,
 )
 from pennylane.ops.qubit.observables import BasisStateProjector
-from pennylane.tape import QuantumTape
+from pennylane.tape import QuantumTape, QuantumTapeBatch
 from pennylane.transforms import convert_to_numpy_parameters
 from pennylane.transforms.core import TransformProgram
 from pennylane.typing import Result, ResultBatch
@@ -64,8 +64,6 @@ try:
 except (ModuleNotFoundError, ImportError) as import_error:  # pragma: no cover
     has_stim = False
 
-Result_or_ResultBatch = Union[Result, ResultBatch]
-QuantumTape_or_Batch = Union[QuantumTape, Sequence[QuantumTape]]
 
 # Updated observable list
 _OBSERVABLES_MAP = {
@@ -451,7 +449,7 @@ class DefaultClifford(Device):
     def preprocess(
         self,
         execution_config: ExecutionConfig = DefaultExecutionConfig,
-    ) -> Tuple[TransformProgram, ExecutionConfig]:
+    ) -> tuple[TransformProgram, ExecutionConfig]:
         """This function defines the device transform program to be applied and an updated device configuration.
 
         Args:
@@ -499,9 +497,9 @@ class DefaultClifford(Device):
 
     def execute(
         self,
-        circuits: QuantumTape_or_Batch,
+        circuits: Union[QuantumTape, QuantumTapeBatch],
         execution_config: ExecutionConfig = DefaultExecutionConfig,
-    ) -> Result_or_ResultBatch:
+    ) -> Union[Result, ResultBatch]:
         max_workers = execution_config.device_options.get("max_workers", self._max_workers)
         if max_workers is None:
             seeds = self._rng.integers(2**31 - 1, size=len(circuits))
@@ -631,7 +629,7 @@ class DefaultClifford(Device):
             measurement_func = self._analytical_measurement_map.get(type(meas), None)
 
             if measurement_func is None:  # pragma: no cover
-                raise DeviceError(
+                raise qml.DeviceError(
                     f"Snapshots of {type(meas)} are not yet supported on default.clifford."
                 )
 

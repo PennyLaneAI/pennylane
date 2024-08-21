@@ -15,7 +15,6 @@
 Unit tests for the Sum arithmetic class of qubit operations
 """
 # pylint: disable=eval-used, unused-argument
-from typing import Tuple
 
 import gate_data as gd  # a file containing matrix rep of each gate
 import numpy as np
@@ -359,8 +358,8 @@ class TestMatrix:
     @pytest.mark.parametrize("op_and_mat2", non_param_ops)
     def test_non_parametric_ops_two_terms(
         self,
-        op_and_mat1: Tuple[Operator, np.ndarray],
-        op_and_mat2: Tuple[Operator, np.ndarray],
+        op_and_mat1: tuple[Operator, np.ndarray],
+        op_and_mat2: tuple[Operator, np.ndarray],
     ):
         """Test matrix method for a sum of non_parametric ops"""
         op1, mat1 = op_and_mat1
@@ -379,7 +378,7 @@ class TestMatrix:
     @pytest.mark.parametrize("op_mat1", param_ops)
     @pytest.mark.parametrize("op_mat2", param_ops)
     def test_parametric_ops_two_terms(
-        self, op_mat1: Tuple[Operator, np.ndarray], op_mat2: Tuple[Operator, np.ndarray]
+        self, op_mat1: tuple[Operator, np.ndarray], op_mat2: tuple[Operator, np.ndarray]
     ):
         """Test matrix method for a sum of parametric ops"""
         op1, mat1 = op_mat1
@@ -1438,7 +1437,7 @@ class TestGrouping:
 
     def test_grouping_method_can_be_set(self):
         """Tests that the grouping method can be controlled by kwargs.
-        This is done by changing from default to 'rlf' and checking the result."""
+        This is done by changing from default to 'lf' and checking the result."""
         a = qml.PauliX(0)
         b = qml.PauliX(1)
         c = qml.PauliZ(0)
@@ -1447,21 +1446,21 @@ class TestGrouping:
 
         # compute grouping during construction with qml.dot
         op1 = qml.dot(coeffs, obs, grouping_type="qwc", method="lf")
-        assert op1.grouping_indices == ((2, 1), (0,))
+        assert set(op1.grouping_indices) == set(((0, 1), (2,)))
 
         # compute grouping during construction with qml.sum
         sprods = [qml.s_prod(c, o) for c, o in zip(coeffs, obs)]
         op2 = qml.sum(*sprods, grouping_type="qwc", method="lf")
-        assert op2.grouping_indices == ((2, 1), (0,))
+        assert set(op2.grouping_indices) == set(((0, 1), (2,)))
 
         # compute grouping during construction with Sum
         op3 = Sum(*sprods, grouping_type="qwc", method="lf")
-        assert op3.grouping_indices == ((2, 1), (0,))
+        assert set(op3.grouping_indices) == set(((0, 1), (2,)))
 
         # compute grouping separately
         op4 = qml.dot(coeffs, obs, grouping_type=None)
         op4.compute_grouping(method="lf")
-        assert op4.grouping_indices == ((2, 1), (0,))
+        assert set(op4.grouping_indices) == set(((0, 1), (2,)))
 
     @pytest.mark.parametrize(
         "grouping_type, grouping_indices",

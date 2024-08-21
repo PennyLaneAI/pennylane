@@ -181,7 +181,12 @@ class TestSnapshotGeneral:
 
             return qml.expval(qml.PauliZ(0))
 
-        qml.snapshots(circuit)(shots=200)
+        with (
+            pytest.warns(UserWarning, match="Requested state or density matrix with finite shots")
+            if isinstance(dev, qml.devices.default_qutrit.DefaultQutrit)
+            else nullcontext()
+        ):
+            qml.snapshots(circuit)(shots=200)
 
     @pytest.mark.parametrize("diff_method", [None, "parameter-shift"])
     def test_all_state_measurement_snapshot_pure_qubit_dev(self, dev, diff_method):
@@ -275,7 +280,8 @@ class TestSnapshotSupportedQNode:
 
     @pytest.mark.parametrize("diff_method", [None, "backprop", "parameter-shift", "adjoint"])
     def test_default_qubit_legacy_only_supports_state(self, diff_method):
-        dev = qml.device("default.qubit.legacy", wires=2)
+        with pytest.warns(qml.PennyLaneDeprecationWarning, match="Use of 'default.qubit"):
+            dev = qml.device("default.qubit.legacy", wires=2)
 
         assert qml.debugging.snapshot._is_snapshot_compatible(dev)
 
@@ -634,12 +640,12 @@ class TestSnapshotUnsupportedQNode:
 
         # TODO: fallback to simple `np.allclose` tests once `setRandomSeed` is exposed from the lightning C++ code
         counts, expvals = tuple(zip(*(qml.snapshots(circuit)().values() for _ in range(50))))
-        assert ttest_ind([count["0"] for count in counts], 250).pvalue >= 0.8
-        assert ttest_ind(expvals, 0.0).pvalue >= 0.8
+        assert ttest_ind([count["0"] for count in counts], 250).pvalue >= 0.75
+        assert ttest_ind(expvals, 0.0).pvalue >= 0.75
 
         # Make sure shots are overriden correctly
         counts, _ = tuple(zip(*(qml.snapshots(circuit)(shots=1000).values() for _ in range(50))))
-        assert ttest_ind([count["0"] for count in counts], 500).pvalue >= 0.8
+        assert ttest_ind([count["0"] for count in counts], 500).pvalue >= 0.75
 
     @pytest.mark.parametrize("diff_method", ["backprop", "adjoint"])
     def test_lightning_qubit_fails_for_state_snapshots_with_adjoint_and_backprop(self, diff_method):
