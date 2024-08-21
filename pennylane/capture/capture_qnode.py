@@ -92,16 +92,16 @@ def _param_shift(args: tuple, d_args: tuple, **kwargs):
     )
     dy = list(zeros)
 
-    @qml.for_loop(0, 2, 1)
-    def calc_term(i, res, arg_ind):
-        new_args = list(args)
-        new_args[arg_ind] += shifts[i]
-        val = _get_qnode_prim().bind(*new_args, **kwargs)
-        return [r + coeffs[i] * v for r, v in zip(res, val)], arg_ind
-
     for arg_ind in range(len(args)):
 
-        out, _ = calc_term(zeros, arg_ind)
+        @qml.for_loop(0, 2, 1)
+        def calc_term(i, res):
+            new_args = list(args)
+            new_args[arg_ind] += shifts[i]
+            val = _get_qnode_prim().bind(*new_args, **kwargs)
+            return [r + coeffs[i] * v for r, v in zip(res, val)]
+
+        out = calc_term(zeros)
         for i, o in enumerate(out):
             if not isinstance(
                 d_args[arg_ind],
