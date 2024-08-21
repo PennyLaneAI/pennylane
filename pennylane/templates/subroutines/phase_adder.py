@@ -132,16 +132,6 @@ class PhaseAdder(Operation):
             new_dict["work_wire"],
         )
 
-    @property
-    def x_wires(self):
-        """The wires where x is loaded."""
-        return self.hyperparameters["x_wires"]
-
-    @property
-    def work_wire(self):
-        """The work_wire."""
-        return self.hyperparameters["work_wire"]
-
     def decomposition(self):  # pylint: disable=arguments-differ
         return self.compute_decomposition(**self.hyperparameters)
 

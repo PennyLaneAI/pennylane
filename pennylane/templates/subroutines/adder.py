@@ -114,15 +114,6 @@ class Adder(Operation):
             new_dict["work_wires"],
         )
 
-    @property
-    def x_wires(self):
-        """The wires where the operator is applied."""
-        return self.hyperparameters["x_wires"]
-
-    @property
-    def work_wires(self):
-        """The work_wires."""
-        return self.hyperparameters["work_wires"]
 
     def decomposition(self):  # pylint: disable=arguments-differ
         return self.compute_decomposition(**self.hyperparameters)
