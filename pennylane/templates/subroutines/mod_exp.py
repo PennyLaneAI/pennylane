@@ -69,11 +69,11 @@ class ModExp(Operation):
 
     def __init__(self, x_wires, output_wires, base, mod=None, work_wires=None, id=None):
 
-        if mod == None:
+        if mod is None:
             mod = 2 ** (len(output_wires))
         if (not hasattr(output_wires, "__len__")) or (mod > 2 ** (len(output_wires))):
             raise ValueError("ModExp must have at least enough wires to represent mod.")
-        if work_wires != None:
+        if work_wires is not None:
             if any(wire in work_wires for wire in x_wires):
                 raise ValueError("None of the wires in work_wires should be included in x_wires.")
             if any(wire in work_wires for wire in output_wires):
@@ -119,16 +119,6 @@ class ModExp(Operation):
         )
 
     @property
-    def x_wires(self):
-        """The wires where x is loaded."""
-        return self.hyperparameters["x_wires"]
-
-    @property
-    def work_wires(self):
-        """The work_wires."""
-        return self.hyperparameters["work_wires"]
-
-    @property
     def wires(self):
         """All wires involved in the operation."""
         return (
@@ -152,7 +142,9 @@ class ModExp(Operation):
         return cls._primitive.bind(*args, **kwargs)
 
     @staticmethod
-    def compute_decomposition(x_wires, output_wires, base, mod, work_wires):
+    def compute_decomposition(
+        x_wires, output_wires, base, mod, work_wires
+    ):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators.
         Args:
             x_wires (Sequence[int]): the wires that stores the integer :math:`x`.
