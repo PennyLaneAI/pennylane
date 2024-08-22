@@ -54,6 +54,14 @@ def test_error_with_non_scalar_function():
         jax.make_jaxpr(qml.grad(jnp.sin))(jnp.array([0.5, 0.2]))
 
 
+def grad_eqn_assertions(eqn, argnum=None, n_consts=0):
+    argnum = [0] if argnum is None else argnum
+    assert eqn.primitive == grad_prim
+    assert set(eqn.params.keys()) == {"argnum", "n_consts", "jaxpr"}
+    assert eqn.params["argnum"] == argnum
+    assert eqn.params["n_consts"] == n_consts
+
+
 @pytest.mark.parametrize("x64_mode", (True, False))
 @pytest.mark.parametrize("argnum", ([0, 1], [0], [1], 0, 1))
 def test_classical_grad(x64_mode, argnum):
@@ -85,11 +93,8 @@ def test_classical_grad(x64_mode, argnum):
     assert jaxpr.out_avals == [jax.core.ShapedArray((), fdtype, weak_type=True)] * len(argnum)
 
     grad_eqn = jaxpr.eqns[2]
-    assert grad_eqn.primitive == grad_prim
+    grad_eqn_assertions(grad_eqn, argnum=argnum)
     assert [var.aval for var in grad_eqn.outvars] == jaxpr.out_avals
-    assert set(grad_eqn.params.keys()) == {"argnum", "n_consts", "jaxpr"}
-    assert grad_eqn.params["argnum"] == argnum
-    assert grad_eqn.params["n_consts"] == 0
     assert len(grad_eqn.params["jaxpr"].eqns) == 6  # 5 numeric eqns, 1 conversion eqn
 
     manual_eval = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)
@@ -170,6 +175,86 @@ def test_classical_jacobian(x64_mode, argnum):
 
 
 @pytest.mark.parametrize("x64_mode", (True, False))
+def test_nested_grad(x64_mode):
+    """Test that nested qml.grad primitives can be captured.
+    We use the function
+    f(x) = sin(x)^3
+    f'(x) = 3 sin(x)^2 cos(x)
+    f''(x) = 6 sin(x) cos(x)^2 - 3 sin(x)^3
+    f'''(x) = 6 cos(x)^3 - 12 sin(x)^2 cos(x) - 9 sin(x)^2 cos(x)
+    """
+    initial_mode = jax.config.jax_enable_x64
+    jax.config.update("jax_enable_x64", x64_mode)
+    fdtype = jnp.float64 if x64_mode else jnp.float32
+
+    def func(x):
+        return jnp.sin(x) ** 3
+
+    x = 0.7
+
+    # 1st order
+    qml_func_1 = qml.grad(func)
+    expected_1 = 3 * jnp.sin(x) ** 2 * jnp.cos(x)
+    assert qml.math.allclose(qml_func_1(x), expected_1)
+
+    jaxpr_1 = jax.make_jaxpr(qml_func_1)(x)
+    assert jaxpr_1.in_avals == [jax.core.ShapedArray((), fdtype, weak_type=True)]
+    assert len(jaxpr_1.eqns) == 1
+    assert jaxpr_1.out_avals == [jax.core.ShapedArray((), fdtype, weak_type=True)]
+
+    grad_eqn = jaxpr_1.eqns[0]
+    assert [var.aval for var in grad_eqn.outvars] == jaxpr_1.out_avals
+    grad_eqn_assertions(grad_eqn)
+    assert len(grad_eqn.params["jaxpr"].eqns) == 2
+
+    manual_eval_1 = jax.core.eval_jaxpr(jaxpr_1.jaxpr, jaxpr_1.consts, x)
+    assert qml.math.allclose(manual_eval_1, expected_1)
+
+    # 2nd order
+    qml_func_2 = qml.grad(qml_func_1)
+    expected_2 = 6 * jnp.sin(x) * jnp.cos(x) ** 2 - 3 * jnp.sin(x) ** 3
+    assert qml.math.allclose(qml_func_2(x), expected_2)
+
+    jaxpr_2 = jax.make_jaxpr(qml_func_2)(x)
+    assert jaxpr_2.in_avals == [jax.core.ShapedArray((), fdtype, weak_type=True)]
+    assert len(jaxpr_2.eqns) == 1
+    assert jaxpr_2.out_avals == [jax.core.ShapedArray((), fdtype, weak_type=True)]
+
+    grad_eqn = jaxpr_2.eqns[0]
+    assert [var.aval for var in grad_eqn.outvars] == jaxpr_2.out_avals
+    grad_eqn_assertions(grad_eqn)
+    assert len(grad_eqn.params["jaxpr"].eqns) == 1  # inner grad equation
+    assert grad_eqn.params["jaxpr"].eqns[0].primitive == grad_prim
+
+    manual_eval_2 = jax.core.eval_jaxpr(jaxpr_2.jaxpr, jaxpr_2.consts, x)
+    assert qml.math.allclose(manual_eval_2, expected_2)
+
+    # 3rd order
+    qml_func_3 = qml.grad(qml_func_2)
+    expected_3 = (
+        6 * jnp.cos(x) ** 3 - 12 * jnp.sin(x) ** 2 * jnp.cos(x) - 9 * jnp.sin(x) ** 2 * jnp.cos(x)
+    )
+
+    assert qml.math.allclose(qml_func_3(x), expected_3)
+
+    jaxpr_3 = jax.make_jaxpr(qml_func_3)(x)
+    assert jaxpr_3.in_avals == [jax.core.ShapedArray((), fdtype, weak_type=True)]
+    assert len(jaxpr_3.eqns) == 1
+    assert jaxpr_3.out_avals == [jax.core.ShapedArray((), fdtype, weak_type=True)]
+
+    grad_eqn = jaxpr_3.eqns[0]
+    assert [var.aval for var in grad_eqn.outvars] == jaxpr_3.out_avals
+    grad_eqn_assertions(grad_eqn)
+    assert len(grad_eqn.params["jaxpr"].eqns) == 1  # inner grad equation
+    assert grad_eqn.params["jaxpr"].eqns[0].primitive == grad_prim
+
+    manual_eval_3 = jax.core.eval_jaxpr(jaxpr_3.jaxpr, jaxpr_3.consts, x)
+    assert qml.math.allclose(manual_eval_3, expected_3)
+
+    jax.config.update("jax_enable_x64", initial_mode)
+
+
+@pytest.mark.parametrize("x64_mode", (True, False))
 @pytest.mark.parametrize("diff_method", ("backprop", "parameter-shift"))
 def test_grad_of_simple_qnode(x64_mode, diff_method, mocker):
     """Test capturing the gradient of a simple qnode."""
@@ -199,12 +284,8 @@ def test_grad_of_simple_qnode(x64_mode, diff_method, mocker):
     assert jaxpr.out_avals == [jax.core.ShapedArray((2,), fdtype)]
 
     grad_eqn = jaxpr.eqns[0]
-    assert grad_eqn.primitive == grad_prim
     assert grad_eqn.invars[0].aval == jaxpr.in_avals[0]
-    assert set(grad_eqn.params.keys()) == {"argnum", "n_consts", "jaxpr"}
-    assert grad_eqn.params["argnum"] == [0]
-    assert grad_eqn.params["n_consts"] == 0
-
+    grad_eqn_assertions(grad_eqn)
     grad_jaxpr = grad_eqn.params["jaxpr"]
     assert len(grad_jaxpr.eqns) == 1  # qnode equation
 

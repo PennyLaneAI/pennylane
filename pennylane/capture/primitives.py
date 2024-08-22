@@ -350,8 +350,8 @@ def create_grad_primitive():
     """Create a primitive for gradient computations.
     This primitive is used when capturing ``qml.grad``.
     """
-    grad_prim = jax.core.Primitive("grad")
-    grad_prim.multiple_results = True
+    grad_prim = create_non_jvp_primitive()("grad")
+    grad_prim.multiple_results = True  # pylint: disable=attribute-defined-outside-init
 
     # pylint: disable=too-many-arguments
     @grad_prim.def_impl

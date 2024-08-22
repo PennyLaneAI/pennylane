@@ -138,7 +138,9 @@ def test_legacy_new_opmath():
         (
             qml.ops.LinearCombination(np.array([1.0, 1.0]), [qml.PauliX(0), qml.PauliZ(0)]),
             [
-                qml.AmplitudeEmbedding(np.array([1.0, 1.0]) / np.sqrt(2), wires=[1]),
+                qml.AmplitudeEmbedding(
+                    np.array([1.0, 1.0]) / np.sqrt(2), wires=[1], pad_with=0, normalize=True
+                ),
                 qml.Select(
                     ops=(
                         qml.PauliX(0) @ qml.GlobalPhase(np.array(0.0), wires=0),
@@ -146,14 +148,20 @@ def test_legacy_new_opmath():
                     ),
                     control=[1],
                 ),
-                qml.adjoint(qml.AmplitudeEmbedding(np.array([1.0, 1.0]) / np.sqrt(2), wires=[1])),
+                qml.adjoint(
+                    qml.AmplitudeEmbedding(
+                        np.array([1.0, 1.0]) / np.sqrt(2), wires=[1], pad_with=0, normalize=True
+                    )
+                ),
                 qml.Reflection(qml.Identity(wires=[1])),
             ],
         ),
         (
             qml.ops.LinearCombination(np.array([-1.0, 1.0]), [qml.PauliX(0), qml.PauliZ(0)]),
             [
-                qml.AmplitudeEmbedding(np.array([1.0, 1.0]) / np.sqrt(2), wires=[1]),
+                qml.AmplitudeEmbedding(
+                    np.array([1.0, 1.0]) / np.sqrt(2), wires=[1], pad_with=0, normalize=True
+                ),
                 qml.Select(
                     ops=(
                         qml.PauliX(0) @ qml.GlobalPhase(np.array(np.pi), wires=0),
@@ -161,7 +169,11 @@ def test_legacy_new_opmath():
                     ),
                     control=[1],
                 ),
-                qml.adjoint(qml.AmplitudeEmbedding(np.array([1.0, 1.0]) / np.sqrt(2), wires=[1])),
+                qml.adjoint(
+                    qml.AmplitudeEmbedding(
+                        np.array([1.0, 1.0]) / np.sqrt(2), wires=[1], pad_with=0, normalize=True
+                    )
+                ),
                 qml.Reflection(qml.Identity(wires=[1])),
             ],
         ),
