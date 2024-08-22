@@ -71,10 +71,11 @@ class Adder(Operation):
     ):  # pylint: disable=too-many-arguments
 
         x_wires = qml.wires.Wires(x_wires)
+
         if mod is None:
             mod = 2 ** len(x_wires)
         elif work_wires is None and mod != 2 ** len(x_wires):
-            raise ValueError(f"If mod is not 2^{len(x_wires)} you should provide two work_wire")
+            raise ValueError(f"If mod is not 2^{len(x_wires)}, two work wires should be provided")
         if work_wires is not None:
             if any(wire in work_wires for wire in x_wires):
                 raise ValueError("None wire in work_wires should be included in x_wires.")
@@ -142,10 +143,12 @@ class Adder(Operation):
         op_list = []
         if mod == 2 ** len(x_wires):
             qft_wires = x_wires
+            work_wire = None
         else:
             qft_wires = work_wires[:1] + x_wires
+            work_wire = work_wires[1:]
         op_list.append(qml.QFT(qft_wires))
-        op_list.append(qml.PhaseAdder(k, qft_wires, mod, work_wires[1:]))
+        op_list.append(qml.PhaseAdder(k, qft_wires, mod, work_wire))
         op_list.append(qml.adjoint(qml.QFT)(qft_wires))
 
         return op_list

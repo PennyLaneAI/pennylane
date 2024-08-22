@@ -67,6 +67,13 @@ class TestPhaseAdder:
                 1,
             ),
             (
+                0,
+                [0, 1, 4],
+                4,
+                [3],
+                0,
+            ),
+            (
                 -2,
                 [0, 1, 4],
                 4,
@@ -143,6 +150,32 @@ class TestPhaseAdder:
         ],
     )
     def test_operation_and_wires_error(
+        self, k, x_wires, mod, work_wire, msg_match
+    ):  # pylint: disable=too-many-arguments
+        """Test errors are raised"""
+        with pytest.raises(ValueError, match=msg_match):
+            qml.PhaseAdder(k, x_wires, mod, work_wire)
+
+    @pytest.mark.parametrize(
+        ("k", "x_wires", "mod", "work_wire", "msg_match"),
+        [
+            (
+                2.3,
+                [0, 1, 2],
+                9,
+                [3],
+                ("Both k and mod must be integers"),
+            ),
+            (
+                2,
+                [0, 1, 2],
+                3.2,
+                [3],
+                ("Both k and mod must be integers"),
+            ),
+        ],
+    )
+    def test_types_error(
         self, k, x_wires, mod, work_wire, msg_match
     ):  # pylint: disable=too-many-arguments
         """Test errors are raised"""
