@@ -112,7 +112,7 @@ class Lattice:
 
         cutoff = neighbour_order * math.max(math.linalg.norm(self.vectors, axis=1)) + distance_tol
         edges = self._identify_neighbours(cutoff)
-        self.edges = self._generate_true_edges(edges, lattice_map, neighbour_order)
+        self.edges = Lattice._generate_true_edges(edges, lattice_map, neighbour_order)
         self.edges_indices = [(v1, v2) for (v1, v2, color) in self.edges]
 
     def _identify_neighbours(self, cutoff):
@@ -145,7 +145,8 @@ class Lattice:
         edges = [value for _, value in sorted(edges.items())]
         return edges
 
-    def _generate_true_edges(self, edges, map, neighbour_order):
+    @staticmethod
+    def _generate_true_edges(edges, map, neighbour_order):
         r"""Modifies the edges to remove hidden nodes and create connections based on boundary_conditions"""
 
         true_edges = []
