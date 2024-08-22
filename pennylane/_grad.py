@@ -15,7 +15,7 @@
 This module contains the autograd wrappers :class:`grad` and :func:`jacobian`
 """
 import warnings
-from functools import lru_cache, partial, wraps
+from functools import partial, wraps
 
 from autograd import jacobian as _jacobian
 from autograd.core import make_vjp as _make_vjp
