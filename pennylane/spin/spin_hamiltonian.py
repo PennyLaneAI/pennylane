@@ -57,27 +57,27 @@ def transverse_ising(
     >>> J = 0.5
     >>> h = 0.1
     >>> spin_ham = transverse_ising("Square", n_cells, coupling=J, h=h)
-    >>> print(spin_ham)
+    >>> spin_ham
     -0.5 * (Z(0) @ Z(1))
     + -0.5 * (Z(0) @ Z(2))
     + -0.5 * (Z(1) @ Z(3))
     + -0.5 * (Z(2) @ Z(3))
-    + -0.1 * X(0)
-    + -0.1 * X(1)
-    + -0.1 * X(2)
-    + -0.1 * X(3)
+    + -0.1 * X(0) + -0.1 * X(1)
+    + -0.1 * X(2) + -0.1 * X(3)
 
     """
     lattice = _generate_lattice(lattice, n_cells, boundary_condition, neighbour_order)
     if coupling is None:
         coupling = [1.0]
+    elif isinstance(coupling, (int, float, complex)):
+        coupling = [coupling]
     coupling = math.asarray(coupling)
 
     hamiltonian = 0.0
 
     if coupling.shape not in [(neighbour_order,), (lattice.n_sites, lattice.n_sites)]:
         raise ValueError(
-            f"Coupling shape should be equal to {neighbour_order}x1 or {lattice.n_sites}x{lattice.n_sites}"
+            f"Coupling should be a number or an array of shape {neighbour_order}x1 or {lattice.n_sites}x{lattice.n_sites}"
         )
 
     if coupling.shape == (neighbour_order,):

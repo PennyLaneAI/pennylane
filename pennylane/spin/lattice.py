@@ -112,7 +112,7 @@ class Lattice:
 
         cutoff = neighbour_order * math.max(math.linalg.norm(self.vectors, axis=1)) + distance_tol
         edges = self._identify_neighbours(cutoff)
-        self._generate_true_edges(edges, lattice_map, neighbour_order)
+        self.edges = self._generate_true_edges(edges, lattice_map, neighbour_order)
         self.edges_indices = [(v1, v2) for (v1, v2, color) in self.edges]
 
     def _identify_neighbours(self, cutoff):
@@ -148,14 +148,15 @@ class Lattice:
     def _generate_true_edges(self, edges, map, neighbour_order):
         r"""Modifies the edges to remove hidden nodes and create connections based on boundary_conditions"""
 
-        self.edges = []
+        true_edges = []
         for i, edge in enumerate(edges):
             if i >= neighbour_order:
                 break
             for e1, e2 in edge:
                 true_edge = (min(map[e1], map[e2]), max(map[e1], map[e2]), i)
-                if true_edge not in self.edges:
-                    self.edges.append(true_edge)
+                if true_edge not in true_edges:
+                    true_edges.append(true_edge)
+        return true_edges
 
     def _generate_grid(self, neighbour_order):
         """Generates the coordinates of all lattice sites and their indices.
@@ -171,15 +172,17 @@ class Lattice:
         n_sl = len(self.positions)
         wrap_grid = math.where(self.boundary_condition, neighbour_order, 0)
 
-        ranges_dim = [range(-wrap_grid[i], Lx + wrap_grid[i]) for i, Lx in enumerate(self.n_cells)]
+        ranges_dim = [
+            range(-wrap_grid[i], cell + wrap_grid[i]) for i, cell in enumerate(self.n_cells)
+        ]
         ranges_dim.append(range(n_sl))
         nsites_axis = math.cumprod([n_sl, *self.n_cells[:0:-1]])[::-1]
         lattice_points = []
         lattice_map = []
 
-        for Lx in itertools.product(*ranges_dim):
-            point = math.dot(Lx[:-1], self.vectors) + self.positions[Lx[-1]]
-            node_index = math.dot(math.mod(Lx[:-1], self.n_cells), nsites_axis) + Lx[-1]
+        for cell in itertools.product(*ranges_dim):
+            point = math.dot(cell[:-1], self.vectors) + self.positions[cell[-1]]
+            node_index = math.dot(math.mod(cell[:-1], self.n_cells), nsites_axis) + cell[-1]
             lattice_points.append(point)
             lattice_map.append(node_index)
 
@@ -189,7 +192,8 @@ class Lattice:
         r"""Adds a specific edge based on the site index without translating it.
 
         Args:
-          edge_indices: List of edges to be added.
+          edge_indices: List of edges to be added, an edge is defined as a list of integers
+               specifying the corresponding node indices.
 
         Returns:
           Updates the edges attribute to include provided edges.
