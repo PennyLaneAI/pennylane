@@ -128,7 +128,7 @@ class TestAdder:
                 [0, 1, 2],
                 9,
                 [3, 4],
-                ("Adder must have at least enough x_wires to represent mod."),
+                ("Adder must have enough x_wires to represent mod."),
             ),
             (
                 1,
@@ -180,7 +180,6 @@ class TestAdder:
 
         jax.config.update("jax_enable_x64", True)
         x = 2
-        x_list = [0, 1, 0]
         k = 6
         mod = 7
         x_wires = [0, 1, 2]
@@ -190,7 +189,7 @@ class TestAdder:
         @jax.jit
         @qml.qnode(dev)
         def circuit():
-            qml.BasisEmbedding(x_list, wires=x_wires)
+            qml.BasisEmbedding(x, wires=x_wires)
             qml.Adder(k, x_wires, mod, work_wires)
             return qml.sample(wires=x_wires)
 

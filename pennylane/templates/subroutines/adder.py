@@ -30,7 +30,7 @@ class Adder(Operation):
 
     The decomposition of this operator is based on the QFT-based method presented in `arXiv:2311.08555 <https://arxiv.org/abs/2311.08555>`_.
 
-    Args: 
+    Args:
         k (int): the number that needs to be added
         x_wires (Sequence[int]): the wires the operation acts on
         mod (int): the modulus for performing the addition, default value is :math:`2^{len(wires)}`
