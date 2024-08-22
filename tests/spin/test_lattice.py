@@ -136,7 +136,7 @@ def test_n_cells_type_error(n_cells):
     ],
 )
 def test_positions(vectors, positions, n_cells, expected_points):
-    r"""Test that the lattice points start from the coordinates provided in the positions"""
+    r"""Test that the lattice points are translated according to coordinates provided in the positions."""
 
     lattice = Lattice(n_cells=n_cells, vectors=vectors, positions=positions)
     assert np.allclose(expected_points, lattice.lattice_points)
