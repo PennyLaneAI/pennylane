@@ -93,7 +93,7 @@ class PhaseAdder(Operation):
             mod = 2 ** len(x_wires)
         elif work_wire is None and mod != 2 ** len(x_wires):
             raise ValueError(f"If mod is not 2^{len(x_wires)} you should provide one work_wire")
-        if type(k) is not int or type(mod) is not int:
+        if not isinstance(k, int) or not isinstance(mod, int):
             raise ValueError("Both k and mod must be integers")
         if mod > 2 ** len(x_wires):
             raise ValueError("PhaseAdder must have enough x_wires to represent mod.")
