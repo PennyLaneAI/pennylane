@@ -253,6 +253,7 @@ def test_nested_grad(x64_mode):
 
     jax.config.update("jax_enable_x64", initial_mode)
 
+
 @pytest.mark.parametrize("x64_mode", (True, False))
 def test_nested_jacobian(x64_mode):
     r"""Test that nested qml.jacobian primitives can be captured.
@@ -270,7 +271,7 @@ def test_nested_jacobian(x64_mode):
     fdtype = jnp.float64 if x64_mode else jnp.float32
 
     def func(x):
-        return jnp.prod(x) * jnp.sin(x), jnp.sum(x ** 2)
+        return jnp.prod(x) * jnp.sin(x), jnp.sum(x**2)
 
     x = jnp.array([0.7, -0.9, 0.6, 0.3])
     x = x[:1]
@@ -280,7 +281,7 @@ def test_nested_jacobian(x64_mode):
     # 1st order
     qml_func_1 = qml.jacobian(func)
     prod_sin = jnp.prod(x) * jnp.sin(x)
-    prod_cos_e_i = jnp.prod(x) * jnp.cos(x)) * eye
+    prod_cos_e_i = jnp.prod(x) * jnp.cos(x) * eye
     expected_1 = (prod_sin[:, None] / x[None, :] + prod_cos_e_i, 2 * x)
     assert _diff_allclose(qml_func_1(x), expected_1, 1)
 
@@ -304,7 +305,7 @@ def test_nested_jacobian(x64_mode):
         + prod_cos[:, :, None] / x[None, None, :]
         + prod_cos[:, None, :] / x[None, :, None]
         - jnp.tensordot(prod_sin, eye + eye / x**2, axes=0),
-        jnp.tensordot(jnp.ones(dim), eye * 2, axes=0)
+        jnp.tensordot(jnp.ones(dim), eye * 2, axes=0),
     )
     # Output only has one tuple axis
     assert _diff_allclose(qml_func_2(x), expected_2, 1)
@@ -312,7 +313,9 @@ def test_nested_jacobian(x64_mode):
     jaxpr_2 = jax.make_jaxpr(qml_func_2)(x)
     assert jaxpr_2.in_avals == [jax.core.ShapedArray((dim,), fdtype)]
     assert len(jaxpr_2.eqns) == 1
-    assert jaxpr_2.out_avals == [jax.core.ShapedArray(sh, fdtype) for sh in [(dim, dim, dim), (dim, dim)]]
+    assert jaxpr_2.out_avals == [
+        jax.core.ShapedArray(sh, fdtype) for sh in [(dim, dim, dim), (dim, dim)]
+    ]
 
     jac_eqn = jaxpr_2.eqns[0]
     assert [var.aval for var in jac_eqn.outvars] == jaxpr_2.out_avals
@@ -324,6 +327,7 @@ def test_nested_jacobian(x64_mode):
     assert _diff_allclose(manual_eval_2, expected_2, 1)
 
     jax.config.update("jax_enable_x64", initial_mode)
+
 
 @pytest.mark.parametrize("x64_mode", (True, False))
 @pytest.mark.parametrize("diff_method", ("backprop", "parameter-shift"))
