@@ -232,7 +232,6 @@ class TestPhaseAdder:
 
         jax.config.update("jax_enable_x64", True)
         x = 2
-        x_list = [0, 1, 0]
         k = 6
         mod = 7
         x_wires = [0, 1, 2]
@@ -242,7 +241,7 @@ class TestPhaseAdder:
         @jax.jit
         @qml.qnode(dev)
         def circuit():
-            qml.BasisEmbedding(x_list, wires=x_wires)
+            qml.BasisEmbedding(x, wires=x_wires)
             qml.QFT(wires=x_wires)
             qml.PhaseAdder(k, x_wires, mod, work_wire)
             qml.adjoint(qml.QFT)(wires=x_wires)
