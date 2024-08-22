@@ -26,6 +26,9 @@
 
 <h4>Creating spin Hamiltonians 🧑‍🎨</h4>
 
+* The function ``transverse_ising`` is added to generate transverse-field Ising Hamiltonian.
+  [(#6106)](https://github.com/PennyLaneAI/pennylane/pull/6106)
+
 <h3>Improvements 🛠</h3>
 
 <h4>A Prep-Select-Prep template</h4>
@@ -413,6 +416,7 @@ Ahmed Darwish,
 Astral Cai,
 Yushao Chen,
 Ahmed Darwish,
+Diksha Dhawan
 Maja Franz,
 Lillian M. A. Frederiksen,
 Pietropaolo Frisoni,
