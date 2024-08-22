@@ -295,7 +295,8 @@ class TestApply:
         state = np.array([0, 0, 1, 0])
 
         with pytest.raises(
-            ValueError, match=r"BasisState parameter and wires must be of equal length"
+            ValueError,
+            match=r"State must be of length 3; got length 4 \(state=\[0 0 1 0\]\)",
         ):
             dev.apply([qml.BasisState(state, wires=[0, 1, 2])])
 
@@ -305,7 +306,7 @@ class TestApply:
         state = np.array([0, 0, 1, 2])
 
         with pytest.raises(
-            ValueError, match=r"BasisState parameter must consist of 0 or 1 integers"
+            ValueError, match=r"Basis state must only consist of 0s and 1s; got \[0, 0, 1, 2\]"
         ):
             dev.apply([qml.BasisState(state, wires=[0, 1, 2, 3])])
 
@@ -352,7 +353,7 @@ class TestApply:
         dev = DefaultQubitTF(wires=2)
         state = np.array([0, 1])
 
-        with pytest.raises(ValueError, match=r"State vector must have shape \(2\*\*wires,\)"):
+        with pytest.raises(ValueError, match=r"State must be of length 4"):
             dev.apply([qml.StatePrep(state, wires=[0, 1])])
 
     def test_invalid_state_prep_norm(self):
@@ -361,7 +362,7 @@ class TestApply:
         dev = DefaultQubitTF(wires=2)
         state = np.array([0, 12])
 
-        with pytest.raises(ValueError, match=r"Sum of amplitudes-squared does not equal one"):
+        with pytest.raises(ValueError, match=r"The state must be a vector of norm 1.0"):
             dev.apply([qml.StatePrep(state, wires=[0])])
 
     def test_invalid_state_prep(self):
@@ -661,7 +662,7 @@ class TestApplyBroadcasted:
         dev = DefaultQubitTF(wires=2)
         state = np.array([[0, 1], [1, 0], [1, 1], [0, 0]])
 
-        with pytest.raises(ValueError, match=r"State vector must have shape \(2\*\*wires,\)"):
+        with pytest.raises(ValueError, match=r"State must be of length 4"):
             dev.apply([qml.StatePrep(state, wires=[0, 1])])
 
     def test_invalid_qubit_state_vector_norm_broadcasted(self):
@@ -670,7 +671,7 @@ class TestApplyBroadcasted:
         dev = DefaultQubitTF(wires=2)
         state = np.array([[1, 0], [0, 12], [1.3, 1]])
 
-        with pytest.raises(ValueError, match=r"Sum of amplitudes-squared does not equal one"):
+        with pytest.raises(ValueError, match=r"The state must be a vector of norm 1.0"):
             dev.apply([qml.StatePrep(state, wires=[0])])
 
     @pytest.mark.parametrize("op,mat", single_qubit)

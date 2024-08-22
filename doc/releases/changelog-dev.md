@@ -342,6 +342,10 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Catalyst replaced `argnum` with `argnums` in gradient related functions, therefore we update the Catalyst
+  calls to those functions in PennyLane.
+  [(#6117)](https://github.com/PennyLaneAI/pennylane/pull/6117)
+
 * `fuse_rot_angles` no longer returns wrong derivatives at singular points but returns NaN.
   [(#6031)](https://github.com/PennyLaneAI/pennylane/pull/6031)
 
@@ -375,7 +379,10 @@
   [(#5978)](https://github.com/PennyLaneAI/pennylane/pull/5978)
 
 * `qml.AmplitudeEmbedding` has better support for features using low precision integer data types.
-[(#5969)](https://github.com/PennyLaneAI/pennylane/pull/5969)
+  [(#5969)](https://github.com/PennyLaneAI/pennylane/pull/5969)
+
+* `qml.BasisState` and `qml.BasisEmbedding` now works with jax.jit, lightning.qubit and give the correct decomposition.
+  [(#6021)](https://github.com/PennyLaneAI/pennylane/pull/6021)
 
 * Jacobian shape is fixed for measurements with dimension in `qml.gradients.vjp.compute_vjp_single`.
 [(5986)](https://github.com/PennyLaneAI/pennylane/pull/5986)
