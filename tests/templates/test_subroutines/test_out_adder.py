@@ -40,6 +40,7 @@ class TestOutAdder:
         [
             ([0, 1, 2], [3, 4, 5], [9, 10, 11], 7, [7, 8]),
             ([0, 1, 2], [3, 4], [5, 6], 3, [7, 8]),
+            ([0, 1, 2], [3, 4], [5, 6, 9, 10], 3, [7, 8]),
             (
                 [0, 1, 2],
                 [3, 4, 5],
@@ -71,13 +72,11 @@ class TestOutAdder:
             return qml.sample(wires=output_wires)
 
         if mod is None:
-            max = 2 ** len(output_wires)
-        else:
-            max = mod
+            mod = 2 ** len(output_wires)
         for x, y, z in zip(range(len(x_wires)), range(len(y_wires)), range(len(output_wires))):
             assert np.allclose(
                 sum(bit * (2**i) for i, bit in enumerate(reversed(circuit(x, y, z)))),
-                (x + y + z) % max,
+                (x + y + z) % mod,
             )
 
     @pytest.mark.parametrize(
@@ -131,7 +130,6 @@ class TestOutAdder:
                 [9, 10],
                 "None of the wires in x_wires should be included in output_wires.",
             ),
-            ([0, 1, 2], [3, 4], [6, 7, 8], 7, [9, 10], "len"),
         ],
     )
     def test_wires_error(
