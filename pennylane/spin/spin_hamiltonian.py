@@ -105,7 +105,7 @@ def heisenberg(lattice, n_cells, coupling=None, boundary_condition=False, neighb
 
          \hat{H} = J\sum_{<i,j>}(\sigma_i^x\sigma_j^x + \sigma_i^y\sigma_j^y + \sigma_i^z\sigma_j^z)
 
-    where J is the coupling constant defined for the Hamiltonian, and i,j represent the indices for neighbouring spins.
+    where ``J`` is the coupling constant defined for the Hamiltonian, and ``i``, ``j`` represent the indices for neighbouring spins.
 
     Args:
        lattice (str): Shape of the lattice. Input Values can be ``'chain'``, ``'square'``, ``'rectangle'``,
