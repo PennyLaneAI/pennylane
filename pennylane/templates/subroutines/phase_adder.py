@@ -91,10 +91,10 @@ class PhaseAdder(Operation):
         x_wires = qml.wires.Wires(x_wires)
         if mod is None:
             mod = 2 ** len(x_wires)
-        if type(k) is not int or type(mod) is not int:
-            raise ValueError("Both k and mod must be integers")
         elif work_wire is None and mod != 2 ** len(x_wires):
             raise ValueError(f"If mod is not 2^{len(x_wires)} you should provide one work_wire")
+        if type(k) is not int or type(mod) is not int:
+            raise ValueError("Both k and mod must be integers")
         if mod > 2 ** len(x_wires):
             raise ValueError("PhaseAdder must have enough x_wires to represent mod.")
         if work_wire is not None:
