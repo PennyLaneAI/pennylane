@@ -338,7 +338,7 @@ def test_grad_of_simple_qnode(x64_mode, diff_method, mocker):
     jax.config.update("jax_enable_x64", x64_mode)
     fdtype = jax.numpy.float64 if x64_mode else jax.numpy.float32
 
-    dev = qml.device("default.qubit", wires=4)
+    dev = qml.device("default.qubit", wires=2)
 
     @qml.grad
     @qml.qnode(dev, diff_method=diff_method)
@@ -388,5 +388,71 @@ def test_grad_of_simple_qnode(x64_mode, diff_method, mocker):
     else:
         spy.assert_not_called()
     assert qml.math.allclose(manual_res, expected_res)
+
+    jax.config.update("jax_enable_x64", initial_mode)
+
+
+@pytest.mark.parametrize("x64_mode", (True, False))
+@pytest.mark.parametrize("diff_method", ("backprop", "parameter-shift"))
+def test_jacobian_of_simple_qnode(x64_mode, diff_method, mocker):
+    """Test capturing the gradient of a simple qnode."""
+    # pylint: disable=protected-access
+    initial_mode = jax.config.jax_enable_x64
+    jax.config.update("jax_enable_x64", x64_mode)
+    fdtype = jax.numpy.float64 if x64_mode else jax.numpy.float32
+
+    dev = qml.device("default.qubit", wires=2)
+
+    # Note the decorator
+    @qml.jacobian
+    @qml.qnode(dev, diff_method=diff_method)
+    def circuit(x):
+        qml.RX(x[0], wires=0)
+        qml.RY(x[1], wires=0)
+        return qml.expval(qml.Z(0)), qml.probs(0)
+
+    x = jnp.array([0.5, 0.9])
+    res = circuit(x)
+    expval_diff = -jnp.sin(x) * jnp.cos(x[::-1])
+    expected_res = (expval_diff, jnp.stack([expval_diff / 2, -expval_diff / 2]))
+
+    assert _diff_allclose(res, expected_res, 1)
+
+    jaxpr = jax.make_jaxpr(circuit)(x)
+
+    assert len(jaxpr.eqns) == 1  # Jacobian equation
+    assert jaxpr.in_avals == [jax.core.ShapedArray((2,), fdtype)]
+    assert jaxpr.out_avals == [jax.core.ShapedArray(sh, fdtype) for sh in [(2,), (2, 2)]]
+
+    jac_eqn = jaxpr.eqns[0]
+    assert jac_eqn.invars[0].aval == jaxpr.in_avals[0]
+    diff_eqn_assertions(jac_eqn, jacobian_prim)
+    jac_jaxpr = jac_eqn.params["jaxpr"]
+    assert len(jac_jaxpr.eqns) == 1  # qnode equation
+
+    qnode_eqn = jac_jaxpr.eqns[0]
+    assert qnode_eqn.primitive == qnode_prim
+    assert qnode_eqn.invars[0].aval == jaxpr.in_avals[0]
+
+    qfunc_jaxpr = qnode_eqn.params["qfunc_jaxpr"]
+    # Skipping a few equations related to indexing
+    assert qfunc_jaxpr.eqns[2].primitive == qml.RX._primitive
+    assert qfunc_jaxpr.eqns[5].primitive == qml.RY._primitive
+    assert qfunc_jaxpr.eqns[6].primitive == qml.Z._primitive
+    assert qfunc_jaxpr.eqns[7].primitive == qml.measurements.ExpectationMP._obs_primitive
+
+    assert len(qnode_eqn.outvars) == 2
+    assert qnode_eqn.outvars[0].aval == jax.core.ShapedArray((), fdtype)
+    assert qnode_eqn.outvars[1].aval == jax.core.ShapedArray((2,), fdtype)
+
+    assert [outvar.aval for outvar in jac_eqn.outvars] == jaxpr.out_avals
+
+    spy = mocker.spy(qml.gradients.parameter_shift, "expval_param_shift")
+    manual_res = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)
+    if diff_method == "parameter-shift":
+        spy.assert_called_once()
+    else:
+        spy.assert_not_called()
+    assert _diff_allclose(manual_res, expected_res, 1)
 
     jax.config.update("jax_enable_x64", initial_mode)
