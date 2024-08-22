@@ -759,7 +759,7 @@ class TestCatalystGrad:
 
         with pytest.raises(
             ValueError,
-            match="Invalid values 'method=fd' and 'h=0.3' without QJIT",
+            match="Invalid values 'method='fd'' and 'h=0.3' without QJIT",
         ):
             workflow(np.array([2.0, 1.0]))
 
