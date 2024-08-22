@@ -302,8 +302,8 @@ def test_nested_jacobian(x64_mode):
     qml_func_2 = qml.jacobian(qml_func_1)
     expected_2 = (
         prod_sin[:, None, None] / x[None, :, None] / x[None, None, :]
-        + prod_cos[:, :, None] / x[None, None, :]
-        + prod_cos[:, None, :] / x[None, :, None]
+        + prod_cos_e_i[:, :, None] / x[None, None, :]
+        + prod_cos_e_i[:, None, :] / x[None, :, None]
         - jnp.tensordot(prod_sin, eye + eye / x**2, axes=0),
         jnp.tensordot(jnp.ones(dim), eye * 2, axes=0),
     )
