@@ -181,4 +181,4 @@ class TestAdder:
             return qml.sample(wires=x_wires)
 
         result = sum(bit * (2**i) for i, bit in enumerate(reversed(circuit())))
-        assert jax.numpy.allclose(result , (x + k) % mod)
+        assert jax.numpy.allclose(result, (x + k) % mod)
