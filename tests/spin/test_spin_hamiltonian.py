@@ -204,7 +204,7 @@ def test_ising_hamiltonian_matrix(shape, n_cells, J, h, expected_ham):
 
 def test_coupling_error_heisenberg():
     r"""Test that an error is raised when the provided coupling shape is wrong for
-    heisenberg Hamiltonian."""
+    Heisenberg Hamiltonian."""
     n_cells = [4, 4]
     lattice = "Square"
     with pytest.raises(ValueError, match="Coupling shape should be equal to 1x3 or 3x16x16"):
