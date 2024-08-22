@@ -18,33 +18,40 @@ Unit tests for functions needed for computing the spin Hamiltonians.
 import pytest
 
 import pennylane as qml
-from pennylane import X, Z
-from pennylane.spin import transverse_ising
+from pennylane import I, X, Y, Z
+from pennylane.spin import fermihubbard, heisenberg, transverse_ising
 
 
 def test_coupling_error():
-    r"""Test that an error is raised when the provided coupling shape is wrong"""
+    r"""Test that an error is raised when the provided coupling shape is wrong for
+    transverse_ising Hamiltonian."""
     n_cells = [4, 4]
     lattice = "Square"
     with pytest.raises(ValueError, match="Coupling shape should be equal to 1 or 16x16"):
         transverse_ising(lattice=lattice, n_cells=n_cells, coupling=1.0, neighbour_order=1)
 
 
-def test_shape_error():
-    r"""Test that an error is raised if wrong shape is provided"""
-    n_cells = [5, 5, 5]
-    lattice = "Octagon"
-    with pytest.raises(ValueError, match="Lattice shape, 'Octagon' is not supported."):
-        transverse_ising(lattice=lattice, n_cells=n_cells, coupling=1.0)
-
-
 @pytest.mark.parametrize(
     # expected_ham here was obtained from datasets
-    ("shape", "n_cells", "h", "expected_ham"),
+    ("shape", "n_cells", "J", "h", "expected_ham"),
     [
         (
             "chain",
             [4, 0, 0],
+            None,
+            0,
+            -1.0 * (Z(0) @ Z(1))
+            + -1.0 * (Z(1) @ Z(2))
+            + -1.0 * (Z(2) @ Z(3))
+            + 0.0 * X(0)
+            + 0.0 * X(1)
+            + 0.0 * X(2)
+            + 0.0 * X(3),
+        ),
+        (
+            "chain",
+            [4, 0, 0],
+            [1.0],
             0,
             -1.0 * (Z(0) @ Z(1))
             + -1.0 * (Z(1) @ Z(2))
@@ -57,6 +64,7 @@ def test_shape_error():
         (
             "chain",
             [8, 0, 0],
+            [1.0],
             -0.17676768,
             -1.0 * (Z(0) @ Z(1))
             + -1.0 * (Z(1) @ Z(2))
@@ -77,6 +85,7 @@ def test_shape_error():
         (
             "rectangle",
             [4, 2, 0],
+            [1.0],
             -0.25252525,
             -1.0 * (Z(0) @ Z(1))
             + -1.0 * (Z(0) @ Z(2))
@@ -100,6 +109,7 @@ def test_shape_error():
         (
             "rectangle",
             [8, 2, 0],
+            [1.0],
             -0.44444444,
             -1.0 * (Z(0) @ Z(1))
             + -1.0 * (Z(0) @ Z(2))
@@ -142,11 +152,410 @@ def test_shape_error():
         ),
     ],
 )
-def test_ising_hamiltonian(shape, n_cells, h, expected_ham):
+def test_ising_hamiltonian(shape, n_cells, J, h, expected_ham):
     r"""Test that the correct Hamiltonian is generated compared to the datasets"""
-
-    J = [1.0]
 
     ising_ham = transverse_ising(lattice=shape, n_cells=n_cells, coupling=J, h=h, neighbour_order=1)
 
     qml.assert_equal(ising_ham, expected_ham)
+
+
+@pytest.mark.parametrize(
+    # expected_ham here was obtained manually.
+    ("shape", "n_cells", "J", "h", "expected_ham"),
+    [
+        (
+            "chain",
+            [4, 0, 0],
+            [[0, 1, 0, 0], [1, 0, 1, 0], [0, 1, 0, 1], [0, 0, 1, 0]],
+            0,
+            -1.0 * (Z(0) @ Z(1))
+            + -1.0 * (Z(1) @ Z(2))
+            + -1.0 * (Z(2) @ Z(3))
+            + 0.0 * X(0)
+            + 0.0 * X(1)
+            + 0.0 * X(2)
+            + 0.0 * X(3),
+        ),
+        (
+            "square",
+            [2, 2, 0],
+            [[0, 0.5, 0.5, 0], [0.5, 0, 0, 0.5], [0.5, 0, 0, 0.5], [0, 0.5, 0.5, 0]],
+            -1.0,
+            -0.5 * (Z(0) @ Z(1))
+            + -0.5 * (Z(0) @ Z(2))
+            + -0.5 * (Z(2) @ Z(3))
+            + -0.5 * (Z(1) @ Z(3))
+            + 1.0 * X(0)
+            + 1.0 * X(1)
+            + 1.0 * X(2)
+            + 1.0 * X(3),
+        ),
+    ],
+)
+def test_ising_hamiltonian_matrix(shape, n_cells, J, h, expected_ham):
+    r"""Test that the correct Hamiltonian is generated when coupling is provided as a matrix"""
+
+    ising_ham = transverse_ising(lattice=shape, n_cells=n_cells, coupling=J, h=h, neighbour_order=1)
+
+    qml.assert_equal(ising_ham, expected_ham)
+
+
+def test_coupling_error_heisenberg():
+    r"""Test that an error is raised when the provided coupling shape is wrong for
+    heisenberg Hamiltonian."""
+    n_cells = [4, 4]
+    lattice = "Square"
+    with pytest.raises(ValueError, match="Coupling shape should be equal to 1x3 or 3x16x16"):
+        heisenberg(lattice=lattice, n_cells=n_cells, coupling=[1.0, 2.0], neighbour_order=1)
+
+
+@pytest.mark.parametrize(
+    # expected_ham here was obtained from datasets
+    ("shape", "n_cells", "J", "expected_ham"),
+    [
+        (
+            "chain",
+            [4, 0, 0],
+            None,
+            1.0 * (Z(0) @ Z(1))
+            + 1.0 * (Z(1) @ Z(2))
+            + 1.0 * (Z(2) @ Z(3))
+            + 1.0 * (X(0) @ X(1))
+            + 1.0 * (X(1) @ X(2))
+            + 1.0 * (X(2) @ X(3))
+            + 1.0 * (Y(0) @ Y(1))
+            + 1.0 * (Y(1) @ Y(2))
+            + 1.0 * (Y(2) @ Y(3)),
+        ),
+        (
+            "chain",
+            [4, 0, 0],
+            [[-1.0, -1.0, -0.16161616]],
+            -0.16161616161616163 * (Z(0) @ Z(1))
+            + -0.16161616161616163 * (Z(1) @ Z(2))
+            + -0.16161616161616163 * (Z(2) @ Z(3))
+            + -1.0 * (X(0) @ X(1))
+            + -1.0 * (X(1) @ X(2))
+            + -1.0 * (X(2) @ X(3))
+            + -1.0 * (Y(0) @ Y(1))
+            + -1.0 * (Y(1) @ Y(2))
+            + -1.0 * (Y(2) @ Y(3)),
+        ),
+        (
+            "chain",
+            [8, 0, 0],
+            [[-1.0, -1.0, -0.08080808]],
+            -0.08080808080808081 * (Z(0) @ Z(1))
+            + -0.08080808080808081 * (Z(1) @ Z(2))
+            + -0.08080808080808081 * (Z(2) @ Z(3))
+            + -0.08080808080808081 * (Z(3) @ Z(4))
+            + -0.08080808080808081 * (Z(4) @ Z(5))
+            + -0.08080808080808081 * (Z(5) @ Z(6))
+            + -0.08080808080808081 * (Z(6) @ Z(7))
+            + -1.0 * (X(0) @ X(1))
+            + -1.0 * (X(1) @ X(2))
+            + -1.0 * (X(2) @ X(3))
+            + -1.0 * (X(3) @ X(4))
+            + -1.0 * (X(4) @ X(5))
+            + -1.0 * (X(5) @ X(6))
+            + -1.0 * (X(6) @ X(7))
+            + -1.0 * (Y(0) @ Y(1))
+            + -1.0 * (Y(1) @ Y(2))
+            + -1.0 * (Y(2) @ Y(3))
+            + -1.0 * (Y(3) @ Y(4))
+            + -1.0 * (Y(4) @ Y(5))
+            + -1.0 * (Y(5) @ Y(6))
+            + -1.0 * (Y(6) @ Y(7)),
+        ),
+        (
+            "rectangle",
+            [4, 2, 0],
+            [[-1.0, -1.0, -0.08080808]],
+            -0.08080808080808081 * (Z(0) @ Z(1))
+            + -0.08080808080808081 * (Z(0) @ Z(2))
+            + -0.08080808080808081 * (Z(2) @ Z(3))
+            + -0.08080808080808081 * (Z(2) @ Z(4))
+            + -0.08080808080808081 * (Z(4) @ Z(5))
+            + -0.08080808080808081 * (Z(4) @ Z(6))
+            + -0.08080808080808081 * (Z(6) @ Z(7))
+            + -0.08080808080808081 * (Z(1) @ Z(3))
+            + -0.08080808080808081 * (Z(3) @ Z(5))
+            + -0.08080808080808081 * (Z(5) @ Z(7))
+            + -1.0 * (X(0) @ X(1))
+            + -1.0 * (X(0) @ X(2))
+            + -1.0 * (X(2) @ X(3))
+            + -1.0 * (X(2) @ X(4))
+            + -1.0 * (X(4) @ X(5))
+            + -1.0 * (X(4) @ X(6))
+            + -1.0 * (X(6) @ X(7))
+            + -1.0 * (X(1) @ X(3))
+            + -1.0 * (X(3) @ X(5))
+            + -1.0 * (X(5) @ X(7))
+            + -1.0 * (Y(0) @ Y(1))
+            + -1.0 * (Y(0) @ Y(2))
+            + -1.0 * (Y(2) @ Y(3))
+            + -1.0 * (Y(2) @ Y(4))
+            + -1.0 * (Y(4) @ Y(5))
+            + -1.0 * (Y(4) @ Y(6))
+            + -1.0 * (Y(6) @ Y(7))
+            + -1.0 * (Y(1) @ Y(3))
+            + -1.0 * (Y(3) @ Y(5))
+            + -1.0 * (Y(5) @ Y(7)),
+        ),
+        (
+            "rectangle",
+            [8, 2, 0],
+            [[-1.0, -1.0, -0.12121212]],
+            -0.12121212121212122 * (Z(0) @ Z(1))
+            + -0.12121212121212122 * (Z(0) @ Z(2))
+            + -0.12121212121212122 * (Z(2) @ Z(3))
+            + -0.12121212121212122 * (Z(2) @ Z(4))
+            + -0.12121212121212122 * (Z(4) @ Z(5))
+            + -0.12121212121212122 * (Z(4) @ Z(6))
+            + -0.12121212121212122 * (Z(6) @ Z(7))
+            + -0.12121212121212122 * (Z(6) @ Z(8))
+            + -0.12121212121212122 * (Z(8) @ Z(9))
+            + -0.12121212121212122 * (Z(8) @ Z(10))
+            + -0.12121212121212122 * (Z(10) @ Z(11))
+            + -0.12121212121212122 * (Z(10) @ Z(12))
+            + -0.12121212121212122 * (Z(12) @ Z(13))
+            + -0.12121212121212122 * (Z(12) @ Z(14))
+            + -0.12121212121212122 * (Z(14) @ Z(15))
+            + -0.12121212121212122 * (Z(1) @ Z(3))
+            + -0.12121212121212122 * (Z(3) @ Z(5))
+            + -0.12121212121212122 * (Z(5) @ Z(7))
+            + -0.12121212121212122 * (Z(7) @ Z(9))
+            + -0.12121212121212122 * (Z(9) @ Z(11))
+            + -0.12121212121212122 * (Z(11) @ Z(13))
+            + -0.12121212121212122 * (Z(13) @ Z(15))
+            + -1.0 * (X(0) @ X(1))
+            + -1.0 * (X(0) @ X(2))
+            + -1.0 * (X(2) @ X(3))
+            + -1.0 * (X(2) @ X(4))
+            + -1.0 * (X(4) @ X(5))
+            + -1.0 * (X(4) @ X(6))
+            + -1.0 * (X(6) @ X(7))
+            + -1.0 * (X(6) @ X(8))
+            + -1.0 * (X(8) @ X(9))
+            + -1.0 * (X(8) @ X(10))
+            + -1.0 * (X(10) @ X(11))
+            + -1.0 * (X(10) @ X(12))
+            + -1.0 * (X(12) @ X(13))
+            + -1.0 * (X(12) @ X(14))
+            + -1.0 * (X(14) @ X(15))
+            + -1.0 * (X(1) @ X(3))
+            + -1.0 * (X(3) @ X(5))
+            + -1.0 * (X(5) @ X(7))
+            + -1.0 * (X(7) @ X(9))
+            + -1.0 * (X(9) @ X(11))
+            + -1.0 * (X(11) @ X(13))
+            + -1.0 * (X(13) @ X(15))
+            + -1.0 * (Y(0) @ Y(1))
+            + -1.0 * (Y(0) @ Y(2))
+            + -1.0 * (Y(2) @ Y(3))
+            + -1.0 * (Y(2) @ Y(4))
+            + -1.0 * (Y(4) @ Y(5))
+            + -1.0 * (Y(4) @ Y(6))
+            + -1.0 * (Y(6) @ Y(7))
+            + -1.0 * (Y(6) @ Y(8))
+            + -1.0 * (Y(8) @ Y(9))
+            + -1.0 * (Y(8) @ Y(10))
+            + -1.0 * (Y(10) @ Y(11))
+            + -1.0 * (Y(10) @ Y(12))
+            + -1.0 * (Y(12) @ Y(13))
+            + -1.0 * (Y(12) @ Y(14))
+            + -1.0 * (Y(14) @ Y(15))
+            + -1.0 * (Y(1) @ Y(3))
+            + -1.0 * (Y(3) @ Y(5))
+            + -1.0 * (Y(5) @ Y(7))
+            + -1.0 * (Y(7) @ Y(9))
+            + -1.0 * (Y(9) @ Y(11))
+            + -1.0 * (Y(11) @ Y(13))
+            + -1.0 * (Y(13) @ Y(15)),
+        ),
+    ],
+)
+def test_heisenberg_hamiltonian(shape, n_cells, J, expected_ham):
+    r"""Test that the correct Hamiltonian is generated compared to the datasets"""
+    heisenberg_ham = heisenberg(lattice=shape, n_cells=n_cells, coupling=J, neighbour_order=1)
+
+    qml.assert_equal(heisenberg_ham, expected_ham)
+
+
+def test_hopping_error_fermihubbard():
+    r"""Test that an error is raised when the provided hopping shape is wrong for
+    fermihubbard Hamiltonian."""
+    n_cells = [4, 4]
+    lattice = "Square"
+    with pytest.raises(ValueError, match="hopping shape should be equal to 1 or 16x16"):
+        fermihubbard(lattice=lattice, n_cells=n_cells, hopping=[1.0, 2.0], neighbour_order=1)
+
+
+@pytest.mark.parametrize(
+    # expected_ham here was obtained from openfermion and converted to PennyLane format using from_openfermion
+    ("shape", "n_cells", "hopping", "interaction", "expected_ham"),
+    [
+        (
+            "chain",
+            [4],
+            None,
+            0.5,
+            -0.5 * (Y(0) @ Z(1) @ Y(2))
+            + -0.5 * (X(0) @ Z(1) @ X(2))
+            + -0.5 * (Y(1) @ Z(2) @ Y(3))
+            + -0.5 * (X(1) @ Z(2) @ X(3))
+            + 0.5 * I(0)
+            + -0.125 * Z(1)
+            + -0.125 * Z(0)
+            + 0.125 * (Z(0) @ Z(1))
+            + -0.5 * (Y(2) @ Z(3) @ Y(4))
+            + -0.5 * (X(2) @ Z(3) @ X(4))
+            + -0.5 * (Y(3) @ Z(4) @ Y(5))
+            + -0.5 * (X(3) @ Z(4) @ X(5))
+            + -0.125 * Z(3)
+            + -0.125 * Z(2)
+            + 0.125 * (Z(2) @ Z(3))
+            + -0.5 * (Y(4) @ Z(5) @ Y(6))
+            + -0.5 * (X(4) @ Z(5) @ X(6))
+            + -0.5 * (Y(5) @ Z(6) @ Y(7))
+            + -0.5 * (X(5) @ Z(6) @ X(7))
+            + -0.125 * Z(5)
+            + -0.125 * Z(4)
+            + 0.125 * (Z(4) @ Z(5))
+            + -0.125 * Z(7)
+            + -0.125 * Z(6)
+            + 0.125 * (Z(6) @ Z(7)),
+        ),
+        (
+            "chain",
+            [8, 0, 0],
+            [-1.0],
+            0.0,
+            0.5 * (Y(0) @ Z(1) @ Y(2))
+            + 0.5 * (X(0) @ Z(1) @ X(2))
+            + 0.5 * (Y(1) @ Z(2) @ Y(3))
+            + 0.5 * (X(1) @ Z(2) @ X(3))
+            + 0.5 * (Y(2) @ Z(3) @ Y(4))
+            + 0.5 * (X(2) @ Z(3) @ X(4))
+            + 0.5 * (Y(3) @ Z(4) @ Y(5))
+            + 0.5 * (X(3) @ Z(4) @ X(5))
+            + 0.5 * (Y(4) @ Z(5) @ Y(6))
+            + 0.5 * (X(4) @ Z(5) @ X(6))
+            + 0.5 * (Y(5) @ Z(6) @ Y(7))
+            + 0.5 * (X(5) @ Z(6) @ X(7))
+            + 0.5 * (Y(6) @ Z(7) @ Y(8))
+            + 0.5 * (X(6) @ Z(7) @ X(8))
+            + 0.5 * (Y(7) @ Z(8) @ Y(9))
+            + 0.5 * (X(7) @ Z(8) @ X(9))
+            + 0.5 * (Y(8) @ Z(9) @ Y(10))
+            + 0.5 * (X(8) @ Z(9) @ X(10))
+            + 0.5 * (Y(9) @ Z(10) @ Y(11))
+            + 0.5 * (X(9) @ Z(10) @ X(11))
+            + 0.5 * (Y(10) @ Z(11) @ Y(12))
+            + 0.5 * (X(10) @ Z(11) @ X(12))
+            + 0.5 * (Y(11) @ Z(12) @ Y(13))
+            + 0.5 * (X(11) @ Z(12) @ X(13))
+            + 0.5 * (Y(12) @ Z(13) @ Y(14))
+            + 0.5 * (X(12) @ Z(13) @ X(14))
+            + 0.5 * (Y(13) @ Z(14) @ Y(15))
+            + 0.5 * (X(13) @ Z(14) @ X(15)),
+        ),
+        (
+            "square",
+            [2, 2],
+            [1.0],
+            3.0,
+            -0.5 * (Y(0) @ Z(1) @ Y(2))
+            + -0.5 * (X(0) @ Z(1) @ X(2))
+            + -0.5 * (Y(1) @ Z(2) @ Y(3))
+            + -0.5 * (X(1) @ Z(2) @ X(3))
+            + -0.5 * (Y(0) @ Z(1) @ Z(2) @ Z(3) @ Y(4))
+            + -0.5 * (X(0) @ Z(1) @ Z(2) @ Z(3) @ X(4))
+            + -0.5 * (Y(1) @ Z(2) @ Z(3) @ Z(4) @ Y(5))
+            + -0.5 * (X(1) @ Z(2) @ Z(3) @ Z(4) @ X(5))
+            + 3.0 * I(0)
+            + -0.75 * Z(1)
+            + -0.75 * Z(0)
+            + 0.75 * (Z(0) @ Z(1))
+            + -0.5 * (Y(2) @ Z(3) @ Z(4) @ Z(5) @ Y(6))
+            + -0.5 * (X(2) @ Z(3) @ Z(4) @ Z(5) @ X(6))
+            + -0.5 * (Y(3) @ Z(4) @ Z(5) @ Z(6) @ Y(7))
+            + -0.5 * (X(3) @ Z(4) @ Z(5) @ Z(6) @ X(7))
+            + -0.75 * Z(3)
+            + -0.75 * Z(2)
+            + 0.75 * (Z(2) @ Z(3))
+            + -0.5 * (Y(4) @ Z(5) @ Y(6))
+            + -0.5 * (X(4) @ Z(5) @ X(6))
+            + -0.5 * (Y(5) @ Z(6) @ Y(7))
+            + -0.5 * (X(5) @ Z(6) @ X(7))
+            + -0.75 * Z(5)
+            + -0.75 * Z(4)
+            + 0.75 * (Z(4) @ Z(5))
+            + -0.75 * Z(7)
+            + -0.75 * Z(6)
+            + 0.75 * (Z(6) @ Z(7)),
+        ),
+        (
+            "rectangle",
+            [2, 3],
+            [0.1],
+            0.2,
+            -0.05 * (Y(0) @ Z(1) @ Y(2))
+            + -0.05 * (X(0) @ Z(1) @ X(2))
+            + -0.05 * (Y(1) @ Z(2) @ Y(3))
+            + -0.05 * (X(1) @ Z(2) @ X(3))
+            + -0.05 * (Y(0) @ Z(1) @ Z(2) @ Z(3) @ Z(4) @ Z(5) @ Y(6))
+            + -0.05 * (X(0) @ Z(1) @ Z(2) @ Z(3) @ Z(4) @ Z(5) @ X(6))
+            + -0.05 * (Y(1) @ Z(2) @ Z(3) @ Z(4) @ Z(5) @ Z(6) @ Y(7))
+            + -0.05 * (X(1) @ Z(2) @ Z(3) @ Z(4) @ Z(5) @ Z(6) @ X(7))
+            + 0.3 * I(0)
+            + -0.05 * Z(1)
+            + -0.05 * Z(0)
+            + 0.05 * (Z(0) @ Z(1))
+            + -0.05 * (Y(2) @ Z(3) @ Y(4))
+            + -0.05 * (X(2) @ Z(3) @ X(4))
+            + -0.05 * (Y(3) @ Z(4) @ Y(5))
+            + -0.05 * (X(3) @ Z(4) @ X(5))
+            + -0.05 * (Y(2) @ Z(3) @ Z(4) @ Z(5) @ Z(6) @ Z(7) @ Y(8))
+            + -0.05 * (X(2) @ Z(3) @ Z(4) @ Z(5) @ Z(6) @ Z(7) @ X(8))
+            + -0.05 * (Y(3) @ Z(4) @ Z(5) @ Z(6) @ Z(7) @ Z(8) @ Y(9))
+            + -0.05 * (X(3) @ Z(4) @ Z(5) @ Z(6) @ Z(7) @ Z(8) @ X(9))
+            + -0.05 * Z(3)
+            + -0.05 * Z(2)
+            + 0.05 * (Z(2) @ Z(3))
+            + -0.05 * (Y(4) @ Z(5) @ Z(6) @ Z(7) @ Z(8) @ Z(9) @ Y(10))
+            + -0.05 * (X(4) @ Z(5) @ Z(6) @ Z(7) @ Z(8) @ Z(9) @ X(10))
+            + -0.05 * (Y(5) @ Z(6) @ Z(7) @ Z(8) @ Z(9) @ Z(10) @ Y(11))
+            + -0.05 * (X(5) @ Z(6) @ Z(7) @ Z(8) @ Z(9) @ Z(10) @ X(11))
+            + -0.05 * Z(5)
+            + -0.05 * Z(4)
+            + 0.05 * (Z(4) @ Z(5))
+            + -0.05 * (Y(6) @ Z(7) @ Y(8))
+            + -0.05 * (X(6) @ Z(7) @ X(8))
+            + -0.05 * (Y(7) @ Z(8) @ Y(9))
+            + -0.05 * (X(7) @ Z(8) @ X(9))
+            + -0.05 * Z(7)
+            + -0.05 * Z(6)
+            + 0.05 * (Z(6) @ Z(7))
+            + -0.05 * (Y(8) @ Z(9) @ Y(10))
+            + -0.05 * (X(8) @ Z(9) @ X(10))
+            + -0.05 * (Y(9) @ Z(10) @ Y(11))
+            + -0.05 * (X(9) @ Z(10) @ X(11))
+            + -0.05 * Z(9)
+            + -0.05 * Z(8)
+            + 0.05 * (Z(8) @ Z(9))
+            + -0.05 * Z(11)
+            + -0.05 * Z(10)
+            + 0.05 * (Z(10) @ Z(11)),
+        ),
+    ],
+)
+def test_fermihubbard_hamiltonian(shape, n_cells, hopping, interaction, expected_ham):
+    r"""Test that the correct Hamiltonian is generated compared to the datasets"""
+
+    fermihubbard_ham = fermihubbard(
+        lattice=shape, n_cells=n_cells, hopping=hopping, interaction=interaction, neighbour_order=1
+    )
+
+    qml.assert_equal(fermihubbard_ham, expected_ham)

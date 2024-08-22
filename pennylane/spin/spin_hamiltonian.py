@@ -15,8 +15,10 @@
 This file contains functions to create different templates of spin Hamiltonians.
 """
 
-from pennylane import X, Z, math
+import pennylane as qml
 
+from pennylane import X, Y, Z, math
+from pennylane.fermi import FermiWord
 from .lattice import _generate_lattice
 
 # pylint: disable=too-many-arguments
@@ -43,8 +45,9 @@ def transverse_ising(
                       ``(num_spins,  num_spins)``. Default value is [1.0].
        h (float): Value of external magnetic field. Default is 1.0.
        boundary_condition (bool or list[bool]): Defines boundary conditions, False for open boundary condition,
-                                        each element represents the axis for lattice. It defaults to False.
-        neighbour_order (int): Range of neighbours a spin interacts with. Default is 1.
+                       each element represents the axis for lattice. It defaults to False.
+       neighbour_order (int): Specifies the interaction level for neighbors within the lattice.
+                       Default is 1 (nearest neighbour).
 
     Returns:
        pennylane.LinearCombination: Hamiltonian for the transverse-field ising model.
@@ -66,11 +69,12 @@ def transverse_ising(
 
     """
     lattice = _generate_lattice(lattice, n_cells, boundary_condition, neighbour_order)
+
     if coupling is None:
         coupling = [1.0]
     coupling = math.asarray(coupling)
     hamiltonian = 0.0
-    print(coupling.shape)
+
     if coupling.shape not in [(neighbour_order,), (lattice.n_sites, lattice.n_sites)]:
         raise ValueError(
             f"Coupling shape should be equal to {neighbour_order} or {lattice.n_sites}x{lattice.n_sites}"
@@ -89,3 +93,178 @@ def transverse_ising(
         hamiltonian += -h * X(vertex)
 
     return hamiltonian
+
+
+def heisenberg(lattice, n_cells, coupling=None, boundary_condition=False, neighbour_order=1):
+    r"""Generates the Heisenberg model on a lattice.
+    The Hamiltonian is represented as:
+    .. math::
+
+         \hat{H} = J\sum_{<i,j>}(\sigma_i^x\sigma_j^x + \sigma_i^y\sigma_j^y + \sigma_i^z\sigma_j^z)
+
+    where J is the coupling constant defined for the Hamiltonian, and i,j represent the indices for neighbouring spins.
+
+    Args:
+       lattice (str): Shape of the lattice. Input Values can be ``'Chain'``, ``'Square'``, ``'Rectangle'``,
+                   ``'Honeycomb'``, ``'Triangle'``, or ``'Kagome'``.
+       n_cells (list[int]): Number of cells in each direction of the grid.
+       coupling (List[List[float]] or List[math.array[float]]): Coupling between spins, it can be a 2D array
+                    of shape (neighbour_order, 3) or a 3D array of shape 3 * number of spins * number of spins.
+                    Default value is [1.0, 1.0, 1.0].
+       boundary_condition (bool or list[bool]): Defines boundary conditions, False for open boundary condition,
+                    each element represents the axis for lattice. It defaults to False.
+       neighbour_order (int): Specifies the interaction level for neighbors within the lattice.
+                    Default is 1 (nearest neighbour).
+
+
+    Returns:
+       pennylane.LinearCombination: Hamiltonian for the heisenberg model.
+
+    **Example**
+
+    >>> n_cells = [2,2]
+    >>> J = [[0.5, 0.5, 0.5]]
+    >>> spin_ham = heisenberg("Square", n_cells, coupling=J)
+    >>> print(spin_ham)
+    0.5 * (X(0) @ X(1)) + 0.5 * (Y(0) @ Y(1)) + 0.5 * (Z(0) @ Z(1)) + 0.5 * (X(0) @ X(2)) +
+    0.5 * (Y(0) @ Y(2)) + 0.5 * (Z(0) @ Z(2)) + 0.5 * (X(1) @ X(3)) + 0.5 * (Y(1) @ Y(3)) +
+    0.5 * (Z(1) @ Z(3)) + 0.5 * (X(2) @ X(3)) + 0.5 * (Y(2) @ Y(3)) + 0.5 * (Z(2) @ Z(3))
+    """
+
+    lattice = _generate_lattice(lattice, n_cells, boundary_condition, neighbour_order)
+
+    if coupling is None:
+        coupling = [[1.0, 1.0, 1.0]]
+    coupling = math.asarray(coupling)
+    if coupling.ndim == 1:
+        coupling = math.asarray([coupling])
+
+    if coupling.shape not in [(neighbour_order, 3), (3, lattice.n_sites, lattice.n_sites)]:
+        raise ValueError(
+            f"Coupling shape should be equal to {neighbour_order}x3 or 3x{lattice.n_sites}x{lattice.n_sites}"
+        )
+
+    hamiltonian = 0.0
+    if coupling.shape == (neighbour_order, 3):
+        for edge in lattice.edges:
+            i, j, order = edge[0], edge[1], edge[2]
+            hamiltonian += (
+                coupling[order][0] * (X(i) @ X(j))
+                + coupling[order][1] * (Y(i) @ Y(j))
+                + coupling[order][2] * (Z(i) @ Z(j))
+            )
+    else:
+        for edge in lattice.edges:
+            i, j = edge[0], edge[1]
+            hamiltonian += (
+                coupling[0][i][j] * X(i) @ X(j)
+                + coupling[1][i][j] * Y(i) @ Y(j)
+                + coupling[2][i][j] * Z(i) @ Z(j)
+            )
+
+    return hamiltonian
+
+
+def fermihubbard(
+    lattice,
+    n_cells,
+    hopping=None,
+    interaction=1.0,
+    boundary_condition=False,
+    neighbour_order=1,
+    mapping="jordan_wigner",
+):
+    r"""Generates the Hubbard model on a lattice.
+    The Hamiltonian is represented as:
+    .. math::
+
+        \hat{H} = -t\sum_{<i,j>, \sigma}(c_{i\sigma}^{\dagger}c_{j\sigma}) + U\sum_{i}n_{i \uparrow} n_{i\downarrow}
+
+    where t is the hopping term representing the kinetic energy of electrons, and U is the on-site Coulomb interaction,
+    representing the repulsion between electrons.
+
+    Args:
+       lattice (str): Shape of the lattice. Input Values can be ``'Chain'``, ``'Square'``,
+                      ``'Rectangle'``, ``'Honeycomb'``, ``'Triangle'``, or ``'Kagome'``.
+       n_cells (List[int]): Number of cells in each direction of the grid.
+       hopping (List[float] or List[math.array(float)]):Hopping interaction between spins, it can be a
+                      list of length equal to ``neighbour_order`` or a square matrix of size
+                      ``(num_spins, num_spins)``. Default value is [1.0].
+       interaction: Coulomb interaction between spins, it is a constant and default value is 1.0
+       boundary_condition (bool or list[bool]): Defines boundary conditions, False for open boundary condition,
+                       each element represents the axis for lattice. It defaults to False.
+       neighbour_order (int): Specifies the interaction level for neighbors within the lattice.
+                       Default is 1 (nearest neighbour).
+       mapping (str): Specifies the fermion-to-qubit mapping. Input values can be
+                      ``'jordan_wigner'``, ``'parity'`` or ``'bravyi_kitaev'``.
+
+    Returns:
+       pennylane.operator: Hamiltonian for the Fermi-Hubbard model.
+
+    **Example**
+
+    >>> n_cells = [2,2]
+    >>> h = [[0.5]]
+    >>> u = [[1.0]]
+    >>> spin_ham = fermihubbard("Square", n_cells, hopping=h, interaction=u)
+    >>> print(spin_ham)
+
+    """
+
+    lattice = _generate_lattice(lattice, n_cells, boundary_condition, neighbour_order)
+
+    if hopping is None:
+        hopping = [1.0]
+    elif isinstance(hopping, (int, float, complex)):
+        hopping = [hopping]
+
+    hopping = math.asarray(hopping)
+
+    if hopping.shape not in [(neighbour_order,), (lattice.n_sites, lattice.n_sites)]:
+        raise ValueError(
+            f"hopping shape should be equal to {neighbour_order} or {lattice.n_sites}x{lattice.n_sites}"
+        )
+
+    spin = 2
+    hopping_ham = 0.0
+    if hopping.shape == (neighbour_order,):
+        for edge in lattice.edges:
+            for s in range(spin):
+                i, j, order = edge[0], edge[1], edge[2]
+                s1 = i * spin + s
+                s2 = j * spin + s
+                hopping_term = -hopping[order] * (
+                    FermiWord({(0, s1): "+", (1, s2): "-"})
+                    + FermiWord({(0, s2): "+", (1, s1): "-"})
+                )
+                hopping_ham += hopping_term
+    else:
+        for edge in lattice.edges:
+            for s in range(spin):
+                i, j, order = edge[0], edge[1], edge[2]
+                s1 = i * spin + s
+                s2 = j * spin + s
+                hopping_term = -hopping[i][j] * (
+                    FermiWord({(0, s1): "+", (1, s2): "-"})
+                    + FermiWord({(0, s2): "+", (1, s1): "-"})
+                )
+                hopping_ham += hopping_term
+
+    int_term = 0
+    for i in range(int(lattice.n_sites)):
+        up_spin = i * spin
+        down_spin = i * spin + 1
+        int_term += interaction * FermiWord(
+            {(0, up_spin): "+", (1, up_spin): "-", (2, down_spin): "+", (3, down_spin): "-"}
+        )
+
+    hamiltonian = hopping_ham + int_term
+
+    if mapping not in ["jordan_wigner", "parity", "bravyi_kitaev"]:
+        raise ValueError(
+            f"The '{mapping}' transformation is not available."
+            f"Please set mapping to 'jordan_wigner', 'parity', or 'bravyi_kitaev'"
+        )
+    qubit_ham = qml.qchem.qubit_observable(hamiltonian, mapping=mapping)
+
+    return qubit_ham.simplify()

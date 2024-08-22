@@ -16,4 +16,4 @@ This module provides the functionality to create Lattices and spin Hamiltonians.
 """
 
 from .lattice import Lattice
-from .spin_hamiltonian import transverse_ising
+from .spin_hamiltonian import transverse_ising, heisenberg, fermihubbard
