@@ -160,6 +160,7 @@
 
 * Capture project objects with jax dependencies can now be accessed via the `pennylane.capture.primitives`
   submodule.  This module is not automatically imported with pennylane.
+  [(#6129)](https://github.com/PennyLaneAI/pennylane/pull/6129)
 
 * `qml.for_loop` and `qml.while_loop` now fallback to standard Python control
   flow if `@qjit` is not present, allowing the same code to work with and without
