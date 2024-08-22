@@ -98,7 +98,8 @@ def test_classical_grad(x64_mode, argnum):
 
 
 @pytest.mark.parametrize("x64_mode", (True, False))
-def test_grad_of_simple_qnode(x64_mode):
+@pytest.mark.parametrize("diff_method", ("backprop", "parameter-shift"))
+def test_grad_of_simple_qnode(x64_mode, diff_method, mocker):
     """Test capturing the gradient of a simple qnode."""
     # pylint: disable=protected-access
     initial_mode = jax.config.jax_enable_x64
@@ -108,7 +109,7 @@ def test_grad_of_simple_qnode(x64_mode):
     dev = qml.device("default.qubit", wires=4)
 
     @qml.grad
-    @qml.qnode(dev)
+    @qml.qnode(dev, diff_method=diff_method)
     def circuit(x):
         qml.RX(x[0], wires=0)
         qml.RY(x[1], wires=0)
@@ -152,7 +153,12 @@ def test_grad_of_simple_qnode(x64_mode):
     assert len(grad_eqn.outvars) == 1
     assert grad_eqn.outvars[0].aval == jax.core.ShapedArray((2,), fdtype)
 
+    spy = mocker.spy(qml.gradients.parameter_shift, "expval_param_shift")
     manual_res = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)
+    if diff_method == "parameter-shift":
+        spy.assert_called_once()
+    else:
+        spy.assert_not_called()
     assert qml.math.allclose(manual_res, expected_res)
 
     jax.config.update("jax_enable_x64", initial_mode)
