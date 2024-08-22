@@ -111,7 +111,9 @@ class TestModExp:
             ),
         ],
     )
-    def test_wires_error(self, x_wires, output_wires, base, mod, work_wires, msg_match):
+    def test_wires_error(
+        self, x_wires, output_wires, base, mod, work_wires, msg_match
+    ):  # pylint: disable=too-many-arguments
         """Test an error is raised when some wires don't meet the requirements"""
         with pytest.raises(ValueError, match=msg_match):
             qml.ModExp(x_wires, output_wires, base, mod, work_wires)

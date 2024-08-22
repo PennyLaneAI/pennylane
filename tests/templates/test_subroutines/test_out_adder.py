@@ -63,7 +63,7 @@ class TestOutAdder:
         dev = qml.device("default.qubit", shots=1)
 
         @qml.qnode(dev)
-        def circuit(x, y):
+        def circuit(x, y, z):
             qml.BasisEmbedding(x, wires=x_wires)
             qml.BasisEmbedding(y, wires=y_wires)
             qml.BasisEmbedding(z, wires=output_wires)
@@ -76,7 +76,7 @@ class TestOutAdder:
             max = mod
         for x, y, z in zip(range(len(x_wires)), range(len(y_wires)), range(len(output_wires))):
             assert np.allclose(
-                sum(bit * (2**i) for i, bit in enumerate(reversed(circuit(x, y)))),
+                sum(bit * (2**i) for i, bit in enumerate(reversed(circuit(x, y, z)))),
                 (x + y + z) % max,
             )
 
@@ -134,7 +134,9 @@ class TestOutAdder:
             ([0, 1, 2], [3, 4], [6, 7, 8], 7, [9, 10], "len"),
         ],
     )
-    def test_wires_error(self, x_wires, y_wires, output_wires, mod, work_wires, msg_match):
+    def test_wires_error(
+        self, x_wires, y_wires, output_wires, mod, work_wires, msg_match
+    ):  # pylint: disable=too-many-arguments
         """Test an error is raised when some work_wires don't meet the requirements"""
         with pytest.raises(ValueError, match=msg_match):
             qml.OutAdder(x_wires, y_wires, output_wires, mod, work_wires)
