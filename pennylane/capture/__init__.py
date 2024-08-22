@@ -172,6 +172,7 @@ __all__ = (
     "create_measurement_obs_primitive",
     "create_measurement_wires_primitive",
     "create_measurement_mcm_primitive",
+    "create_grad_primitive",
     "qnode_call",
     "AbstractOperator",
     "AbstractMeasurement",

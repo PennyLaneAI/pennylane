@@ -342,3 +342,32 @@ def create_measurement_wires_primitive(
         return abstract_type(abstract_eval, n_wires=n_wires, has_eigvals=has_eigvals)
 
     return primitive
+
+
+@lru_cache
+def create_grad_primitive():
+    import jax  # pylint: disable=import-outside-toplevel
+    from jax._src.api import _check_output_dtype_grad
+
+    grad_prim = jax.core.Primitive("grad")
+    grad_prim.multiple_results = True
+
+    # pylint: disable=too-many-arguments
+    @grad_prim.def_impl
+    def _(*args, argnum, jaxpr, n_consts):
+        consts = args[:n_consts]
+        args = args[n_consts:]
+
+        def func(*inner_args):
+            return jax.core.eval_jaxpr(jaxpr, consts, *inner_args)[0]
+
+        return jax.grad(func, argnums=argnum)(*args)
+
+    # pylint: disable=unused-argument
+    @grad_prim.def_abstract_eval
+    def _(*args, argnum, jaxpr, n_consts):
+        if len(jaxpr.outvars) != 1 or jaxpr.outvars[0].aval.shape != ():
+            raise TypeError("Grad only applies to scalar-output functions. Try jacobian or egrad.")
+        return tuple(jaxpr.invars[i].aval for i in argnum)
+
+    return grad_prim

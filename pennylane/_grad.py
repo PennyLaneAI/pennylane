@@ -23,7 +23,7 @@ from autograd.extend import vspace
 from autograd.numpy.numpy_boxes import ArrayBox
 from autograd.wrap_util import unary_to_nary
 
-from pennylane.capture import enabled
+from pennylane.capture import create_grad_primitive, enabled
 from pennylane.compiler import compiler
 from pennylane.compiler.compiler import CompileError
 
@@ -196,52 +196,22 @@ class grad:
         return grad_value, ans
 
 
-@lru_cache  # only create the first time requested
-def _get_grad_prim():
-    import jax  # pylint: disable=import-outside-toplevel
-
-    grad_prim = jax.core.Primitive("grad")
-    grad_prim.multiple_results = True
-
-    # pylint: disable=too-many-arguments
-    @grad_prim.def_impl
-    def _(*args, argnum, jaxpr, n_consts):
-        consts = args[:n_consts]
-        args = args[n_consts:]
-        assert len(jaxpr.outvars) == 1 and jaxpr.outvars[0].aval.shape == ()
-
-        def func(*inner_args):
-            return jax.core.eval_jaxpr(jaxpr, consts, *inner_args)[0]
-
-        return jax.grad(func, argnums=argnum)(*args)
-
-    # pylint: disable=unused-argument
-    @grad_prim.def_abstract_eval
-    def _(*args, argnum, jaxpr, n_consts):
-        assert len(jaxpr.outvars) == 1 and jaxpr.outvars[0].aval.shape == ()
-        return tuple(jaxpr.invars[i].aval for i in argnum)
-
-    return grad_prim
-
-
 def _capture_grad(func, argnum=None):
     """Capture-compatible gradient computation."""
     import jax  # pylint: disable=import-outside-toplevel
 
-    grad_prim = _get_grad_prim()
-    if argnum_is_int := isinstance(argnum, int):
+    if isinstance(argnum, int):
         argnum = [argnum]
     if argnum is None:
         argnum = [0]
+
+    grad_prim = create_grad_primitive()
 
     @wraps(func)
     def new_func(*args, **kwargs):
         jaxpr = jax.make_jaxpr(partial(func, **kwargs))(*args)
         prim_kwargs = {"argnum": argnum, "jaxpr": jaxpr.jaxpr, "n_consts": len(jaxpr.consts)}
-        out = grad_prim.bind(*jaxpr.consts, *args, **prim_kwargs)
-        if argnum_is_int:
-            out = out[0]
-        return out
+        return grad_prim.bind(*jaxpr.consts, *args, **prim_kwargs)
 
     return new_func
 

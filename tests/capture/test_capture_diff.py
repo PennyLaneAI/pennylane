@@ -17,15 +17,14 @@ Tests for capturing differentiation into jaxpr.
 import pytest
 
 import pennylane as qml
-from pennylane._grad import _get_grad_prim
-from pennylane.capture import qnode_prim
+from pennylane.capture import create_grad_primitive, qnode_prim
 
 pytestmark = pytest.mark.jax
 
 jax = pytest.importorskip("jax")
 jnp = jax.numpy
 
-grad_prim = _get_grad_prim()
+grad_prim = create_grad_primitive()
 
 
 @pytest.fixture(autouse=True)
@@ -46,6 +45,12 @@ def test_error_with_method_or_h(kwargs):
     h = kwargs.get("h", None)
     with pytest.raises(ValueError, match=f"'{method=}' and '{h=}' without QJIT"):
         jax.make_jaxpr(func)(0.6)
+
+
+def test_error_with_non_scalar_function():
+    """Test that an error is raised if the differentiated function has non-scalar outputs."""
+    with pytest.raises(TypeError, match="Grad only applies to scalar-output functions."):
+        jax.make_jaxpr(qml.grad(jnp.sin))(jnp.array([0.5, 0.2]))
 
 
 @pytest.mark.parametrize("x64_mode", (True, False))
@@ -95,7 +100,7 @@ def test_classical_grad(x64_mode, argnum):
 @pytest.mark.parametrize("x64_mode", (True, False))
 def test_grad_of_simple_qnode(x64_mode):
     """Test capturing the gradient of a simple qnode."""
-
+    # pylint: disable=protected-access
     initial_mode = jax.config.jax_enable_x64
     jax.config.update("jax_enable_x64", x64_mode)
     fdtype = jax.numpy.float64 if x64_mode else jax.numpy.float32

@@ -197,7 +197,7 @@ def test_parametrized_op_jvp_tracer():
     """Test that passing a JVP tracer to a parametrized op just creates
     the op with the tracer as argument(s)."""
 
-    from pennylane._grad import _get_grad_prim
+    from pennylane.capture import create_grad_primitive
 
     def func(x):
         qml.RX(x, 0)
@@ -205,7 +205,7 @@ def test_parametrized_op_jvp_tracer():
 
     jaxpr = jax.make_jaxpr(qml.grad(func))(0.5)
     assert len(jaxpr.eqns) == 1
-    assert jaxpr.eqns[0].primitive == _get_grad_prim()
+    assert jaxpr.eqns[0].primitive == create_grad_primitive()
 
     with qml.queuing.AnnotatedQueue() as q:
         jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0.5)
