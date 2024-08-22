@@ -53,7 +53,7 @@ class Adder(Operation):
         @qml.qnode(dev)
         def adder_modulo(x, k, mod, x_wires, work_wires):
             qml.BasisEmbedding(x, wires=x_wires)
-            qml.Adder(k, x_wires, mod, work_wire)
+            qml.Adder(k, x_wires, mod, work_wires)
             return qml.sample(wires=x_wires)
 
     .. code-block:: pycon
@@ -80,7 +80,7 @@ class Adder(Operation):
             if any(wire in work_wires for wire in x_wires):
                 raise ValueError("None wire in work_wires should be included in x_wires.")
         if mod > 2 ** len(x_wires):
-            raise ValueError("Adder must have at least enough x_wires to represent mod.")
+            raise ValueError("Adder must have enough x_wires to represent mod.")
 
         self.hyperparameters["k"] = k
         self.hyperparameters["mod"] = mod
