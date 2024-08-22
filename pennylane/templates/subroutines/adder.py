@@ -20,7 +20,7 @@ from pennylane.operation import Operation
 
 
 class Adder(Operation):
-    r"""Performs the Inplace Addition operation.
+    r"""Performs the in-place modular addition operation.
 
     This operator adds the integer :math:`k` modulo :math:`mod` in the computational basis:
 
@@ -33,8 +33,8 @@ class Adder(Operation):
     Args:
         k (int): the number that needs to be added
         x_wires (Sequence[int]): the wires the operation acts on
-        mod (int): modulo with respect to which the sum is performed, default value will be ``2^len(wires)``.
-        work_wires (Sequence[int]): the auxiliary wires to use for the sum modulo :math:`mod` when :math:`mod \neq 2^{\text{len(x_wires)}}`
+        mod (int): the modulus for performing the addition, default value is :math:`2^{len(wires)}`
+        work_wires (Sequence[int]): the auxiliary wires to be used for performing the addition
 
     **Example**
 

@@ -103,9 +103,8 @@ class TestAdder:
             qml.Adder(k, x_wires, mod, work_wires)
             return qml.sample(wires=x_wires)
 
-        assert np.allclose(
-            sum(bit * (2**i) for i, bit in enumerate(reversed(circuit(x)))), (x + k) % mod
-        )
+        result = sum(bit * (2**i) for i, bit in enumerate(reversed(circuit(x))))
+        assert np.allclose(result, (x + k) % mod)
 
     @pytest.mark.parametrize(
         ("k", "x_wires", "mod", "work_wires", "msg_match"),
@@ -136,7 +135,7 @@ class TestAdder:
     def test_operation_and_test_wires_error(
         self, k, x_wires, mod, work_wires, msg_match
     ):  # pylint: disable=too-many-arguments
-        """Test errors are raised"""
+        """Test that proper errors are raised"""
 
         with pytest.raises(ValueError, match=msg_match):
             qml.Adder(k, x_wires, mod, work_wires)
@@ -181,6 +180,5 @@ class TestAdder:
             qml.Adder(k, x_wires, mod, work_wires)
             return qml.sample(wires=x_wires)
 
-        assert jax.numpy.allclose(
-            sum(bit * (2**i) for i, bit in enumerate(reversed(circuit()))), (x + k) % mod
-        )
+        result = sum(bit * (2**i) for i, bit in enumerate(reversed(circuit())))
+        assert jax.numpy.allclose(result , (x + k) % mod)
