@@ -16,9 +16,9 @@ This file contains functions to create spin Hamiltonians.
 """
 
 import pennylane as qml
-
 from pennylane import X, Y, Z, math
 from pennylane.fermi import FermiWord
+
 from .lattice import _generate_lattice
 
 # pylint: disable=too-many-arguments
@@ -108,14 +108,14 @@ def heisenberg(lattice, n_cells, coupling=None, boundary_condition=False, neighb
     where J is the coupling constant defined for the Hamiltonian, and i,j represent the indices for neighbouring spins.
 
     Args:
-       lattice (str): Shape of the lattice. Input Values can be ``'Chain'``, ``'Square'``, ``'Rectangle'``,
-                   ``'Honeycomb'``, ``'Triangle'``, or ``'Kagome'``.
+       lattice (str): Shape of the lattice. Input Values can be ``'chain'``, ``'square'``, ``'rectangle'``,
+                   ``'honeycomb'``, ``'triangle'``, or ``'kagome'``.
        n_cells (list[int]): Number of cells in each direction of the grid.
        coupling (List[List[float]] or List[math.array[float]]): Coupling between spins, it can be a 2D array
                     of shape (neighbour_order, 3) or a 3D array of shape 3 * number of spins * number of spins.
                     Default value is [1.0, 1.0, 1.0].
-       boundary_condition (bool or list[bool]): Defines boundary conditions, False for open boundary condition,
-                    each element represents the axis for lattice. It defaults to False.
+       boundary_condition (bool or list[bool]): Defines boundary conditions different lattice axes,
+           default is ``False`` indicating open boundary condition.
        neighbour_order (int): Specifies the interaction level for neighbors within the lattice.
                     Default is 1 (nearest neighbour).
 
@@ -187,15 +187,15 @@ def fermihubbard(
     representing the repulsion between electrons.
 
     Args:
-       lattice (str): Shape of the lattice. Input Values can be ``'Chain'``, ``'Square'``,
-                      ``'Rectangle'``, ``'Honeycomb'``, ``'Triangle'``, or ``'Kagome'``.
+       lattice (str): Shape of the lattice. Input Values can be ``'chain'``, ``'square'``,
+                      ``'rectangle'``, ``'honeycomb'``, ``'triangle'``, or ``'kagome'``.
        n_cells (List[int]): Number of cells in each direction of the grid.
-       hopping (List[float] or List[math.array(float)]):Hopping interaction between spins, it can be a
+       hopping (float or List[float] or List[math.array(float)]):Hopping interaction between spins, it can be a
                       list of length equal to ``neighbour_order`` or a square matrix of size
                       ``(num_spins, num_spins)``. Default value is [1.0].
-       interaction: Coulomb interaction between spins, it is a constant and default value is 1.0
-       boundary_condition (bool or list[bool]): Defines boundary conditions, False for open boundary condition,
-                       each element represents the axis for lattice. It defaults to False.
+       interaction (float or List[float]): Coulomb interaction between spins, it can be a constant or a list of length ``num_spins``.
+       boundary_condition (bool or list[bool]): Defines boundary conditions different lattice axes,
+           default is ``False`` indicating open boundary condition.
        neighbour_order (int): Specifies the interaction level for neighbors within the lattice.
                        Default is 1 (nearest neighbour).
        mapping (str): Specifies the fermion-to-qubit mapping. Input values can be
@@ -225,7 +225,7 @@ def fermihubbard(
 
     if hopping.shape not in [(neighbour_order,), (lattice.n_sites, lattice.n_sites)]:
         raise ValueError(
-            f"hopping shape should be equal to {neighbour_order} or {lattice.n_sites}x{lattice.n_sites}"
+            f"hopping should be a number or an array of shape {neighbour_order}x1 or {lattice.n_sites}x{lattice.n_sites}"
         )
 
     spin = 2
@@ -254,10 +254,13 @@ def fermihubbard(
                 hopping_ham += hopping_term
 
     int_term = 0
-    for i in range(int(lattice.n_sites)):
+    if isinstance(interaction, (int, float, complex)):
+        interaction = math.ones(lattice.n_sites) * interaction
+
+    for i in range(lattice.n_sites):
         up_spin = i * spin
         down_spin = i * spin + 1
-        int_term += interaction * FermiWord(
+        int_term += interaction[i] * FermiWord(
             {(0, up_spin): "+", (1, up_spin): "-", (2, down_spin): "+", (3, down_spin): "-"}
         )
 

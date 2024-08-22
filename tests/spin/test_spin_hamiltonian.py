@@ -218,7 +218,7 @@ def test_coupling_error_heisenberg():
     [
         (
             "chain",
-            [4, 0, 0],
+            [4, 1, 1],
             None,
             1.0 * (Z(0) @ Z(1))
             + 1.0 * (Z(1) @ Z(2))
@@ -232,7 +232,7 @@ def test_coupling_error_heisenberg():
         ),
         (
             "chain",
-            [4, 0, 0],
+            [4, 1, 1],
             [[-1.0, -1.0, -0.16161616]],
             -0.16161616161616163 * (Z(0) @ Z(1))
             + -0.16161616161616163 * (Z(1) @ Z(2))
@@ -246,8 +246,8 @@ def test_coupling_error_heisenberg():
         ),
         (
             "chain",
-            [8, 0, 0],
-            [[-1.0, -1.0, -0.08080808]],
+            [8],
+            [-1.0, -1.0, -0.08080808],
             -0.08080808080808081 * (Z(0) @ Z(1))
             + -0.08080808080808081 * (Z(1) @ Z(2))
             + -0.08080808080808081 * (Z(2) @ Z(3))
@@ -272,7 +272,7 @@ def test_coupling_error_heisenberg():
         ),
         (
             "rectangle",
-            [4, 2, 0],
+            [4, 2, 1],
             [[-1.0, -1.0, -0.08080808]],
             -0.08080808080808081 * (Z(0) @ Z(1))
             + -0.08080808080808081 * (Z(0) @ Z(2))
@@ -307,7 +307,7 @@ def test_coupling_error_heisenberg():
         ),
         (
             "rectangle",
-            [8, 2, 0],
+            [8, 2, 1],
             [[-1.0, -1.0, -0.12121212]],
             -0.12121212121212122 * (Z(0) @ Z(1))
             + -0.12121212121212122 * (Z(0) @ Z(2))
@@ -385,13 +385,76 @@ def test_heisenberg_hamiltonian(shape, n_cells, J, expected_ham):
     qml.assert_equal(heisenberg_ham, expected_ham)
 
 
+@pytest.mark.parametrize(
+    # expected_ham here was obtained manually.
+    ("shape", "n_cells", "J", "expected_ham"),
+    [
+        (
+            "chain",
+            [4],
+            [
+                [[0, 1, 0, 0], [1, 0, 1, 0], [0, 1, 0, 1], [0, 0, 1, 0]],
+                [[0, 2, 0, 0], [2, 0, 2, 0], [0, 2, 0, 2], [0, 0, 2, 0]],
+                [[0, 3, 0, 0], [3, 0, 3, 0], [0, 3, 0, 3], [0, 0, 3, 0]],
+            ],
+            (1 * X(0)) @ X(1)
+            + (2 * Y(0)) @ Y(1)
+            + (3 * Z(0)) @ Z(1)
+            + (1 * X(1)) @ X(2)
+            + (2 * Y(1)) @ Y(2)
+            + (3 * Z(1)) @ Z(2)
+            + (1 * X(2)) @ X(3)
+            + (2 * Y(2)) @ Y(3)
+            + (3 * Z(2)) @ Z(3),
+        ),
+        (
+            "square",
+            [2, 2, 1],
+            [
+                [[0, 0.5, 0.5, 0], [0.5, 0, 0, 0.5], [0.5, 0, 0, 0.5], [0, 0.5, 0.5, 0]],
+                [[0, 1.0, 1.0, 0], [1.0, 0, 0, 1.0], [1.0, 0, 0, 1.0], [0, 1.0, 1.0, 0]],
+                [[0, 1.0, 1.0, 0], [1.0, 0, 0, 1.0], [1.0, 0, 0, 1.0], [0, 1.0, 1.0, 0]],
+            ],
+            (0.5 * X(0)) @ X(1)
+            + (1.0 * Y(0)) @ Y(1)
+            + (1.0 * Z(0)) @ Z(1)
+            + (0.5 * X(0)) @ X(2)
+            + (1.0 * Y(0)) @ Y(2)
+            + (1.0 * Z(0)) @ Z(2)
+            + (0.5 * X(1)) @ X(3)
+            + (1.0 * Y(1)) @ Y(3)
+            + (1.0 * Z(1)) @ Z(3)
+            + (0.5 * X(2)) @ X(3)
+            + (1.0 * Y(2)) @ Y(3)
+            + (1.0 * Z(2)) @ Z(3),
+        ),
+    ],
+)
+def test_heisenberg_hamiltonian_matrix(shape, n_cells, J, expected_ham):
+    r"""Test that the correct Hamiltonian is generated when coupling is provided as a matrix"""
+
+    heisenberg_ham = heisenberg(lattice=shape, n_cells=n_cells, coupling=J)
+
+    qml.assert_equal(heisenberg_ham, expected_ham)
+
+
 def test_hopping_error_fermihubbard():
     r"""Test that an error is raised when the provided hopping shape is wrong for
     fermihubbard Hamiltonian."""
     n_cells = [4, 4]
     lattice = "Square"
-    with pytest.raises(ValueError, match="hopping shape should be equal to 1 or 16x16"):
+    with pytest.raises(
+        ValueError, match="hopping should be a number or an array of shape 1x1 or 16x16"
+    ):
         fermihubbard(lattice=lattice, n_cells=n_cells, hopping=[1.0, 2.0], neighbour_order=1)
+
+
+def test_mapping_error_fermihubbard():
+    r"""Test that an error is raised when unsupported mapping is provided"""
+    n_cells = [4, 4]
+    lattice = "Square"
+    with pytest.raises(ValueError, match="The 'bk_sf' transformation is not available."):
+        fermihubbard(lattice=lattice, n_cells=n_cells, mapping="bk_sf")
 
 
 @pytest.mark.parametrize(
@@ -554,10 +617,165 @@ def test_hopping_error_fermihubbard():
     ],
 )
 def test_fermihubbard_hamiltonian(shape, n_cells, hopping, interaction, expected_ham):
-    r"""Test that the correct Hamiltonian is generated compared to the datasets"""
+    r"""Test that the correct Hamiltonian is generated"""
 
     fermihubbard_ham = fermihubbard(
         lattice=shape, n_cells=n_cells, hopping=hopping, interaction=interaction, neighbour_order=1
     )
 
     qml.assert_equal(fermihubbard_ham, expected_ham)
+
+
+@pytest.mark.parametrize(
+    # expected_ham here was obtained from openfermion and converted to PennyLane format using from_openfermion
+    ("shape", "n_cells", "hopping", "mapping", "expected_ham"),
+    [
+        (
+            "chain",
+            [4],
+            1.0,
+            "parity",
+            0.5 * (Y(0) @ Y(1))
+            + 0.5 * (X(0) @ X(1) @ Z(2))
+            + 0.5 * (Y(1) @ Y(2))
+            + 0.5 * (Z(0) @ X(1) @ X(2) @ Z(3))
+            + 1.0 * I(0)
+            + -0.25 * Z(0)
+            + -0.25 * (Z(0) @ Z(1))
+            + 0.25 * Z(1)
+            + 0.5 * (Y(2) @ Y(3))
+            + 0.5 * (Z(1) @ X(2) @ X(3) @ Z(4))
+            + 0.5 * (Y(3) @ Y(4))
+            + 0.5 * (Z(2) @ X(3) @ X(4) @ Z(5))
+            + -0.25 * (Z(1) @ Z(2))
+            + -0.25 * (Z(2) @ Z(3))
+            + 0.25 * (Z(1) @ Z(3))
+            + 0.5 * (Y(4) @ Y(5))
+            + 0.5 * (Z(3) @ X(4) @ X(5) @ Z(6))
+            + 0.5 * (Y(5) @ Y(6))
+            + 0.5 * (Z(4) @ X(5) @ X(6) @ Z(7))
+            + -0.25 * (Z(3) @ Z(4))
+            + -0.25 * (Z(4) @ Z(5))
+            + 0.25 * (Z(3) @ Z(5))
+            + -0.25 * (Z(5) @ Z(6))
+            + -0.25 * (Z(6) @ Z(7))
+            + 0.25 * (Z(5) @ Z(7)),
+        ),
+        (
+            "square",
+            [2, 2],
+            2.0,
+            "bravyi_kitaev",
+            -1.0 * (X(0) @ Y(1) @ Y(2))
+            + 1.0 * (Y(0) @ Y(1) @ X(2))
+            + 1.0 * (Z(0) @ X(1) @ Z(3))
+            + -1.0 * (X(1) @ Z(2))
+            + -1.0 * (X(0) @ X(1) @ Y(3) @ Y(4) @ X(5))
+            + 1.0 * (Y(0) @ X(1) @ Y(3) @ X(4) @ X(5))
+            + -1.0 * (Z(0) @ X(1) @ Y(3) @ Y(5))
+            + 1.0 * (Y(1) @ Y(3) @ Z(4) @ X(5))
+            + 1.0 * I(0)
+            + -0.25 * (Z(0) @ Z(1))
+            + -0.25 * Z(0)
+            + 0.25 * Z(1)
+            + -1.0 * (Z(1) @ X(2) @ Y(3) @ Z(5) @ Y(6))
+            + 1.0 * (Z(1) @ Y(2) @ Y(3) @ Z(5) @ X(6))
+            + 1.0 * (Z(1) @ Z(2) @ X(3) @ Z(7))
+            + -1.0 * (X(3) @ Z(5) @ Z(6))
+            + -0.25 * (Z(1) @ Z(2) @ Z(3))
+            + -0.25 * Z(2)
+            + 0.25 * (Z(1) @ Z(3))
+            + -1.0 * (X(4) @ Y(5) @ Y(6))
+            + 1.0 * (Y(4) @ Y(5) @ X(6))
+            + 1.0 * (Z(3) @ Z(4) @ X(5) @ Z(7))
+            + -1.0 * (X(5) @ Z(6))
+            + -0.25 * (Z(4) @ Z(5))
+            + -0.25 * Z(4)
+            + 0.25 * Z(5)
+            + -0.25 * (Z(3) @ Z(5) @ Z(6) @ Z(7))
+            + -0.25 * Z(6)
+            + 0.25 * (Z(3) @ Z(5) @ Z(7)),
+        ),
+    ],
+)
+def test_fermihubbard_mapping(shape, n_cells, hopping, mapping, expected_ham):
+    r"""Test that the correct Hamiltonian is generated with different mappings"""
+
+    fermihubbard_ham = fermihubbard(
+        lattice=shape, n_cells=n_cells, hopping=hopping, mapping=mapping
+    )
+
+    qml.assert_equal(fermihubbard_ham, expected_ham)
+
+
+@pytest.mark.parametrize(
+    # expected_ham here was obtained manually.
+    ("shape", "n_cells", "t", "U", "expected_ham"),
+    [
+        (
+            "chain",
+            [4, 0, 0],
+            [[0, 1, 0, 0], [1, 0, 1, 0], [0, 1, 0, 1], [0, 0, 1, 0]],
+            0.1,
+            -0.5 * (Y(0) @ Z(1) @ Y(2))
+            + -0.5 * (X(0) @ Z(1) @ X(2))
+            + 0.1 * I(0)
+            + -0.5 * (Y(1) @ Z(2) @ Y(3))
+            + -0.5 * (X(1) @ Z(2) @ X(3))
+            + -0.5 * (Y(2) @ Z(3) @ Y(4))
+            + -0.5 * (X(2) @ Z(3) @ X(4))
+            + -0.5 * (Y(3) @ Z(4) @ Y(5))
+            + -0.5 * (X(3) @ Z(4) @ X(5))
+            + -0.5 * (Y(4) @ Z(5) @ Y(6))
+            + -0.5 * (X(4) @ Z(5) @ X(6))
+            + -0.5 * (Y(5) @ Z(6) @ Y(7))
+            + -0.5 * (X(5) @ Z(6) @ X(7))
+            + -0.025 * Z(1)
+            + -0.025 * Z(0)
+            + 0.025 * (Z(0) @ Z(1))
+            + -0.025 * Z(3)
+            + -0.025 * Z(2)
+            + 0.025 * (Z(2) @ Z(3))
+            + -0.025 * Z(5)
+            + -0.025 * Z(4)
+            + 0.025 * (Z(4) @ Z(5))
+            + -0.025 * Z(7)
+            + -0.025 * Z(6)
+            + 0.025 * (Z(6) @ Z(7)),
+        ),
+        (
+            "square",
+            [2, 2, 0],
+            [[0, 0.5, 0.5, 0], [0.5, 0, 0, 0.5], [0.5, 0, 0, 0.5], [0, 0.5, 0.5, 0]],
+            [-1.0, 0.0, 1.0, 0],
+            -0.25 * (Y(0) @ Z(1) @ Y(2))
+            + -0.25 * (X(0) @ Z(1) @ X(2))
+            + -0.25 * (Y(1) @ Z(2) @ Y(3))
+            + -0.25 * (X(1) @ Z(2) @ X(3))
+            + -0.25 * (Y(0) @ Z(1) @ Z(2) @ Z(3) @ Y(4))
+            + -0.25 * (X(0) @ Z(1) @ Z(2) @ Z(3) @ X(4))
+            + -0.25 * (Y(1) @ Z(2) @ Z(3) @ Z(4) @ Y(5))
+            + -0.25 * (X(1) @ Z(2) @ Z(3) @ Z(4) @ X(5))
+            + -0.25 * (Y(2) @ Z(3) @ Z(4) @ Z(5) @ Y(6))
+            + -0.25 * (X(2) @ Z(3) @ Z(4) @ Z(5) @ X(6))
+            + -0.25 * (Y(3) @ Z(4) @ Z(5) @ Z(6) @ Y(7))
+            + -0.25 * (X(3) @ Z(4) @ Z(5) @ Z(6) @ X(7))
+            + -0.25 * (Y(4) @ Z(5) @ Y(6))
+            + -0.25 * (X(4) @ Z(5) @ X(6))
+            + -0.25 * (Y(5) @ Z(6) @ Y(7))
+            + -0.25 * (X(5) @ Z(6) @ X(7))
+            + 0.25 * Z(1)
+            + 0.25 * Z(0)
+            + -0.25 * (Z(0) @ Z(1))
+            + -0.25 * Z(5)
+            + -0.25 * Z(4)
+            + 0.25 * (Z(4) @ Z(5)),
+        ),
+    ],
+)
+def test_fermihubbard_hamiltonian_matrix(shape, n_cells, t, U, expected_ham):
+    r"""Test that the correct Hamiltonian is generated when hopping or interaction is provided as a matrix"""
+
+    fermihub_ham = fermihubbard(lattice=shape, n_cells=n_cells, hopping=t, interaction=U)
+
+    qml.assert_equal(fermihub_ham, expected_ham)
