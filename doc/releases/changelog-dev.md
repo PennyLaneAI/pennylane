@@ -29,6 +29,9 @@
 * The function ``transverse_ising`` is added to generate transverse-field Ising Hamiltonian.
   [(#6106)](https://github.com/PennyLaneAI/pennylane/pull/6106)
 
+* The functions ``heisenberg`` and ``fermihubbard`` are added to generate Heisenberg and Fermi-Hubbard Hamiltonians respectively.
+  [(#6128)](https://github.com/PennyLaneAI/pennylane/pull/6128)
+
 <h3>Improvements 🛠</h3>
 
 <h4>A Prep-Select-Prep template</h4>

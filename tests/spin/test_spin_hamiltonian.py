@@ -42,26 +42,14 @@ def test_coupling_error():
             [4, 0, 0],
             None,
             0,
-            -1.0 * (Z(0) @ Z(1))
-            + -1.0 * (Z(1) @ Z(2))
-            + -1.0 * (Z(2) @ Z(3))
-            + 0.0 * X(0)
-            + 0.0 * X(1)
-            + 0.0 * X(2)
-            + 0.0 * X(3),
+            -1.0 * (Z(0) @ Z(1)) + -1.0 * (Z(1) @ Z(2)) + -1.0 * (Z(2) @ Z(3)),
         ),
         (
             "chain",
             [4, 0, 0],
             1.0,
             0,
-            -1.0 * (Z(0) @ Z(1))
-            + -1.0 * (Z(1) @ Z(2))
-            + -1.0 * (Z(2) @ Z(3))
-            + 0.0 * X(0)
-            + 0.0 * X(1)
-            + 0.0 * X(2)
-            + 0.0 * X(3),
+            -1.0 * (Z(0) @ Z(1)) + -1.0 * (Z(1) @ Z(2)) + -1.0 * (Z(2) @ Z(3)),
         ),
         (
             "chain",
@@ -171,13 +159,7 @@ def test_ising_hamiltonian(shape, n_cells, J, h, expected_ham):
             [4, 0, 0],
             [[0, 1, 0, 0], [1, 0, 1, 0], [0, 1, 0, 1], [0, 0, 1, 0]],
             0,
-            -1.0 * (Z(0) @ Z(1))
-            + -1.0 * (Z(1) @ Z(2))
-            + -1.0 * (Z(2) @ Z(3))
-            + 0.0 * X(0)
-            + 0.0 * X(1)
-            + 0.0 * X(2)
-            + 0.0 * X(3),
+            -1.0 * (Z(0) @ Z(1)) + -1.0 * (Z(1) @ Z(2)) + -1.0 * (Z(2) @ Z(3)),
         ),
         (
             "square",
@@ -201,6 +183,7 @@ def test_ising_hamiltonian_matrix(shape, n_cells, J, h, expected_ham):
     ising_ham = transverse_ising(lattice=shape, n_cells=n_cells, coupling=J, h=h, neighbour_order=1)
 
     qml.assert_equal(ising_ham, expected_ham)
+
 
 def test_coupling_error_heisenberg():
     r"""Test that an error is raised when the provided coupling shape is wrong for

@@ -77,7 +77,7 @@ def transverse_ising(
         coupling = [coupling]
     coupling = math.asarray(coupling)
 
-    hamiltonian = 0.0
+    hamiltonian = 0.0 * qml.I(0)
 
     if coupling.shape not in [(neighbour_order,), (lattice.n_sites, lattice.n_sites)]:
         raise ValueError(
@@ -96,7 +96,8 @@ def transverse_ising(
     for vertex in range(lattice.n_sites):
         hamiltonian += -h * X(vertex)
 
-    return hamiltonian
+    return hamiltonian.simplify()
+
 
 def heisenberg(lattice, n_cells, coupling=None, boundary_condition=False, neighbour_order=1):
     r"""Generates the Heisenberg model on a lattice.
@@ -149,7 +150,7 @@ def heisenberg(lattice, n_cells, coupling=None, boundary_condition=False, neighb
             f"Coupling shape should be equal to {neighbour_order}x3 or 3x{lattice.n_sites}x{lattice.n_sites}"
         )
 
-    hamiltonian = 0.0
+    hamiltonian = 0.0 * qml.I(0)
     if coupling.shape == (neighbour_order, 3):
         for edge in lattice.edges:
             i, j, order = edge[0], edge[1], edge[2]
@@ -167,7 +168,7 @@ def heisenberg(lattice, n_cells, coupling=None, boundary_condition=False, neighb
                 + coupling[2][i][j] * Z(i) @ Z(j)
             )
 
-    return hamiltonian
+    return hamiltonian.simplify()
 
 
 def fermihubbard(
@@ -189,6 +190,7 @@ def fermihubbard(
 
     where ``t`` is the hopping term representing the kinetic energy of electrons, and ``U`` is the on-site Coulomb interaction,
     representing the repulsion between electrons.
+    This function assumes there are two fermions with opposite spins on each site.
 
     Args:
        lattice (str): Shape of the lattice. Input Values can be ``'chain'``, ``'square'``,
@@ -257,7 +259,7 @@ def fermihubbard(
                 )
                 hopping_ham += hopping_term
 
-    int_term = 0
+    int_term = 0.0
     if isinstance(interaction, (int, float, complex)):
         interaction = math.ones(lattice.n_sites) * interaction
 

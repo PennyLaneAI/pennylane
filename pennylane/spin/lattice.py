@@ -147,7 +147,6 @@ class Lattice:
 
     @staticmethod
     def _generate_true_edges(edges, map, neighbour_order):
-
         r"""Modifies the edges to remove hidden nodes and create connections based on boundary_conditions"""
 
         true_edges = []
