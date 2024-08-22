@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module provides the functionality to create Lattices and spin Hamiltonians.
+This module provides the functionality to create spin Hamiltonians.
 """
 
 from .lattice import Lattice

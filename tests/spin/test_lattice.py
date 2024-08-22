@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for functions needed for computing the lattice.
+Unit tests for functions and classes needed for construct a lattice.
 """
 import numpy as np
 import pytest
@@ -23,20 +23,13 @@ from pennylane.spin.lattice import _generate_lattice
 # pylint: disable=too-many-arguments, too-many-instance-attributes
 
 
-def test_boundary_condition_dimension_error():
-    r"""Test that an error is raised if a wrong dimensions are entered for boundary_condition."""
-    vectors = [[1]]
-    n_cells = [10]
-    with pytest.raises(ValueError, match="Argument 'boundary_condition' must be a bool"):
-        Lattice(n_cells=n_cells, vectors=vectors, boundary_condition=[True, True])
-
-
-def test_boundary_condition_type_error():
+@pytest.mark.parametrize(("boundary_condition"), [([True, True]), ([4])])
+def test_boundary_condition_type_error(boundary_condition):
     r"""Test that an error is raised if a wrong type is entered for boundary_condition."""
     vectors = [[1]]
     n_cells = [10]
     with pytest.raises(ValueError, match="Argument 'boundary_condition' must be a bool"):
-        Lattice(n_cells=n_cells, vectors=vectors, boundary_condition=[4])
+        Lattice(n_cells=n_cells, vectors=vectors, boundary_condition=boundary_condition)
 
 
 def test_vectors_error():
@@ -64,20 +57,11 @@ def test_vectors_shape_error():
         Lattice(n_cells=n_cells, vectors=vectors)
 
 
-def test_n_cells_error():
-    r"""Test that an error is raised if length of vectors is provided in negative."""
-
-    vectors = [[0, 1], [1, 0]]
-    n_cells = [2, -2]
-    with pytest.raises(TypeError, match="Argument `n_cells` must be a list of positive integers"):
-        Lattice(n_cells=n_cells, vectors=vectors)
-
-
-def test_n_cells_type_error():
+@pytest.mark.parametrize(("n_cells"), [([2, -2]), ([2, 2.4])])
+def test_n_cells_type_error(n_cells):
     r"""Test that an error is raised if length of vectors is provided not as an int."""
 
     vectors = [[0, 1], [1, 0]]
-    n_cells = [2, 2.4]
     with pytest.raises(TypeError, match="Argument `n_cells` must be a list of positive integers"):
         Lattice(n_cells=n_cells, vectors=vectors)
 
@@ -253,6 +237,22 @@ def test_lattice_points(vectors, positions, n_cells, expected_number):
                 (4, 7, 0),
             ],
         ),
+        (
+            [[1, 0], [0.5, np.sqrt(3) / 2]],
+            [[0.5, 0.5 / 3**0.5], [1, 1 / 3**0.5]],
+            [2, 2],
+            False,
+            [
+                (0, 1, 0),
+                (1, 2, 0),
+                (1, 4, 0),
+                (2, 3, 0),
+                (3, 6, 0),
+                (4, 5, 0),
+                (5, 6, 0),
+                (6, 7, 0),
+            ],
+        ),
     ],
 )
 def test_boundary_condition(vectors, positions, n_cells, boundary_condition, expected_edges):
@@ -398,7 +398,7 @@ def test_add_edge_error():
 
 
 def test_add_edge_error_wrong_type():
-    r"""Test that an error is raised if the tuple representing the edge if of wrong length"""
+    r"""Test that an error is raised if the tuple representing the edge is of wrong length"""
     edge_indices = [[4, 5, 1, 0]]
     vectors = [[0, 1], [1, 0]]
     n_cells = [3, 3]
@@ -416,9 +416,11 @@ def test_add_edge():
     vectors = [[0, 1], [1, 0]]
     n_cells = [3, 3]
     lattice = Lattice(n_cells=n_cells, vectors=vectors)
-
     lattice.add_edge(edge_indices)
+    lattice.add_edge([[0, 2, 1]])
     assert np.all(np.isin(edge_indices, lattice.edges))
+    print(lattice.edges)
+    assert np.all(np.isin([0, 2, 1], lattice.edges))
 
 
 @pytest.mark.parametrize(

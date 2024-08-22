@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for functions needed for computing the spin Hamiltonians.
+Unit tests for functions needed for computing a spin Hamiltonian.
 """
 
 import pytest
@@ -27,8 +27,10 @@ def test_coupling_error():
     transverse_ising Hamiltonian."""
     n_cells = [4, 4]
     lattice = "Square"
-    with pytest.raises(ValueError, match="Coupling shape should be equal to 1 or 16x16"):
-        transverse_ising(lattice=lattice, n_cells=n_cells, coupling=1.0, neighbour_order=1)
+    with pytest.raises(
+        ValueError, match="Coupling should be a number or an array of shape 1x1 or 16x16"
+    ):
+        transverse_ising(lattice=lattice, n_cells=n_cells, coupling=[1.0, 2.0], neighbour_order=1)
 
 
 @pytest.mark.parametrize(
