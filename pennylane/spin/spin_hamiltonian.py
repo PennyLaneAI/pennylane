@@ -180,7 +180,9 @@ def fermihubbard(
     mapping="jordan_wigner",
 ):
     r"""Generates the Hubbard model on a lattice.
+
     The Hamiltonian is represented as:
+
     .. math::
 
         \hat{H} = -t\sum_{<i,j>, \sigma}(c_{i\sigma}^{\dagger}c_{j\sigma}) + U\sum_{i}n_{i \uparrow} n_{i\downarrow}
