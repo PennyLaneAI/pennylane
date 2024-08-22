@@ -37,6 +37,7 @@ dev_lightning = qml.device("lightning.qubit", wires=5)
 adjoint_config = qml.devices.ExecutionConfig(gradient_method="adjoint")
 dev_ps = ParamShiftDerivativesDevice()
 ps_config = qml.devices.ExecutionConfig(gradient_method="parameter-shift")
+aj_config = qml.devices.ExecutionConfig(gradient_keyword_arguments={"method": "adjoint_jacobian"})
 
 
 def inner_execute_numpy(tapes):
@@ -51,7 +52,7 @@ hadamard_grad_jpc = TransformJacobianProducts(
     inner_execute_numpy, qml.gradients.hadamard_grad, {"aux_wire": "aux"}
 )
 device_jacs = DeviceDerivatives(dev, adjoint_config)
-legacy_device_jacs = DeviceDerivatives(dev_old, gradient_kwargs={"method": "adjoint_jacobian"})
+legacy_device_jacs = DeviceDerivatives(dev_old, execution_config=aj_config)
 device_ps_jacs = DeviceDerivatives(dev_ps, ps_config)
 device_native_jps = DeviceJacobianProducts(dev, adjoint_config)
 device_ps_native_jps = DeviceJacobianProducts(dev_ps, ps_config)
@@ -106,6 +107,13 @@ class TestBasics:
         )
         assert repr(jpc) == expected_repr
 
+    def test_no_config_falls_back_to_default_config(self):
+        device = qml.device("default.qubit")
+
+        jpc = DeviceDerivatives(device)
+
+        assert jpc._execution_config == qml.devices.DefaultExecutionConfig
+
     def test_device_jacobians_initialization_new_dev(self):
         """Tests the private attributes are set during initialization of a DeviceDerivatives class."""
 
@@ -116,8 +124,6 @@ class TestBasics:
 
         assert jpc._device is device
         assert jpc._execution_config is config
-        assert jpc._gradient_kwargs == {}
-        assert jpc._uses_new_device is True
         assert isinstance(jpc._results_cache, LRUCache)
         assert len(jpc._results_cache) == 0
         assert isinstance(jpc._jacs_cache, LRUCache)
@@ -128,13 +134,11 @@ class TestBasics:
         old device interface."""
 
         device = qml.devices.DefaultQubitLegacy(wires=5)
-        gradient_kwargs = {"method": "adjoint_jacobian"}
 
-        jpc = DeviceDerivatives(device, gradient_kwargs=gradient_kwargs)
+        jpc = DeviceDerivatives(device, aj_config)
 
         assert jpc._device is device
-        assert jpc._gradient_kwargs == gradient_kwargs
-        assert jpc._uses_new_device is False
+        assert jpc._execution_config == aj_config
         assert isinstance(jpc._results_cache, LRUCache)
         assert len(jpc._results_cache) == 0
         assert isinstance(jpc._jacs_cache, LRUCache)
@@ -148,7 +152,7 @@ class TestBasics:
         jpc = DeviceDerivatives(device, config)
 
         expected = (
-            r"<DeviceDerivatives: default.qubit, {},"
+            r"<DeviceDerivatives: default.qubit,"
             r" ExecutionConfig(grad_on_execution=None, use_device_gradient=None,"
             r" use_device_jacobian_product=None,"
             r" gradient_method='adjoint', gradient_keyword_arguments={},"
@@ -181,17 +185,22 @@ class TestBasics:
         """Test the repr method for lightning vjps."""
 
         device = qml.device("lightning.qubit", wires=5)
-        gradient_kwargs = {"use_device_state": True}
 
-        jpc = LightningVJPs(device, gradient_kwargs)
+        jpc = LightningVJPs(
+            device,
+            qml.devices.ExecutionConfig(gradient_keyword_arguments={"use_device_state": True}),
+        )
 
         assert repr(jpc) == "<LightningVJPs: lightning.qubit, {'use_device_state': True}>"
 
     def test_lightning_vjps_exp_error(self):
         """Test that having non-expval measurements when computing VJPs raises an error."""
         device = qml.device("lightning.qubit", wires=5)
-        gradient_kwargs = {"use_device_state": True}
-        jpc = LightningVJPs(device, gradient_kwargs)
+
+        jpc = LightningVJPs(
+            device,
+            qml.devices.ExecutionConfig(gradient_keyword_arguments={"use_device_state": True}),
+        )
 
         tape = qml.tape.QuantumScript(
             [qml.RX(0.123, wires=0)], [qml.expval(qml.PauliZ(0)), qml.probs(wires=[0, 1])]
@@ -205,8 +214,11 @@ class TestBasics:
     def test_lightning_vjps_batched_dy(self):
         """Test that computing VJPs with batched dys raise an error."""
         device = qml.device("lightning.qubit", wires=5)
-        gradient_kwargs = {"use_device_state": True}
-        jpc = LightningVJPs(device, gradient_kwargs)
+
+        jpc = LightningVJPs(
+            device,
+            qml.devices.ExecutionConfig(gradient_keyword_arguments={"use_device_state": True}),
+        )
 
         tape = qml.tape.QuantumScript(
             [qml.RX(0.123, wires=0)], [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliX(1))]
@@ -490,11 +502,14 @@ class TestCachingDeviceDerivatives:
         assert jpc._device.tracker.totals["execute_and_derivative_batches"] == 1
         assert jpc._device.tracker.totals["derivatives"] == 1
 
-        # extra execution since needs to do the forward pass again.
-        if jpc._uses_new_device:
-            expected_execs = 3 if isinstance(jpc._device, ParamShiftDerivativesDevice) else 1
-        else:
+        if isinstance(jpc._device, ParamShiftDerivativesDevice):
+            # extra execution since needs to do the forward pass again.
+            expected_execs = 3
+        elif isinstance(jpc._device, qml.devices.LegacyDevice):
             expected_execs = 2
+        else:
+            expected_execs = 1
+
         assert jpc._device.tracker.totals["executions"] == expected_execs
 
         # Test reuse with jacobian
@@ -531,10 +546,15 @@ class TestCachingDeviceDerivatives:
 
         assert qml.math.allclose(jac, jac2)
         assert jpc._device.tracker.totals["derivatives"] == 1
-        if jpc._uses_new_device:
-            expected_execs = 2 if isinstance(jpc._device, ParamShiftDerivativesDevice) else 0
-        else:
+
+        if isinstance(jpc._device, ParamShiftDerivativesDevice):
+            # extra execution since needs to do the forward pass again.
+            expected_execs = 2
+        elif isinstance(jpc._device, qml.devices.LegacyDevice):
             expected_execs = 1
+        else:
+            expected_execs = 0
+
         assert jpc._device.tracker.totals.get("executions", 0) == expected_execs
 
     def test_cached_on_execute_and_compute_jvps(self, jpc):
@@ -599,10 +619,10 @@ class TestCachingDeviceDerivatives:
 
         if isinstance(jpc._device, ParamShiftDerivativesDevice):
             expected = 2
-        elif isinstance(jpc._device, qml.devices.Device):
-            expected = 0
-        else:
+        elif isinstance(jpc._device, qml.devices.LegacyDevice):
             expected = 1
+        else:
+            expected = 0
 
         assert jpc._device.tracker.totals.get("executions", 0) == expected
 
