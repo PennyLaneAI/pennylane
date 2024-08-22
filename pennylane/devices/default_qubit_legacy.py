@@ -14,7 +14,7 @@
 r"""
 This module contains the legacy implementation of default.qubit.
 
-It implements the necessary :class:`~pennylane._device.Device` methods as well as some built-in
+It implements the necessary :class:`~pennylane.devices._legacy_device.Device` methods as well as some built-in
 :mod:`qubit operations <pennylane.ops.qubit>`, and provides a very simple pure state
 simulation of a qubit-based quantum circuit architecture.
 """
@@ -27,7 +27,7 @@ import numpy as np
 from scipy.sparse import csr_matrix
 
 import pennylane as qml
-from pennylane import BasisState, DeviceError, QubitDevice, Snapshot, StatePrep
+from pennylane import BasisState, Snapshot, StatePrep
 from pennylane.devices.qubit import measure
 from pennylane.measurements import ExpectationMP
 from pennylane.operation import Operation
@@ -38,6 +38,7 @@ from pennylane.typing import TensorLike
 from pennylane.wires import WireError
 
 from .._version import __version__
+from ._qubit_device import QubitDevice
 
 ABC_ARRAY = np.array(list(ABC))
 
@@ -289,7 +290,7 @@ class DefaultQubitLegacy(QubitDevice):
         # apply the circuit operations
         for i, operation in enumerate(operations):
             if i > 0 and isinstance(operation, (StatePrep, BasisState)):
-                raise DeviceError(
+                raise qml.DeviceError(
                     f"Operation {operation.name} cannot be used after other Operations have already been applied "
                     f"on a {self.short_name} device."
                 )

@@ -114,7 +114,7 @@ class grad:
         if active_jit := compiler.active_compiler():
             available_eps = compiler.AvailableCompilers.names_entrypoints
             ops_loader = available_eps[active_jit]["ops"].load()
-            return ops_loader.grad(func, method=method, h=h, argnum=argnum)
+            return ops_loader.grad(func, method=method, h=h, argnums=argnum)
 
         if method or h:  # pragma: no cover
             raise ValueError(f"Invalid values '{method=}' and '{h=}' without QJIT.")
@@ -431,7 +431,7 @@ def jacobian(func, argnum=None, method=None, h=None):
     if active_jit := compiler.active_compiler():
         available_eps = compiler.AvailableCompilers.names_entrypoints
         ops_loader = available_eps[active_jit]["ops"].load()
-        return ops_loader.jacobian(func, method=method, h=h, argnum=argnum)
+        return ops_loader.jacobian(func, method=method, h=h, argnums=argnum)
 
     if method or h:
         raise ValueError(f"Invalid values for 'method={method}' and 'h={h}' in interpreted mode")
@@ -542,7 +542,7 @@ def vjp(f, params, cotangents, method=None, h=None, argnum=None):
     if active_jit := compiler.active_compiler():
         available_eps = compiler.AvailableCompilers.names_entrypoints
         ops_loader = available_eps[active_jit]["ops"].load()
-        return ops_loader.vjp(f, params, cotangents, method=method, h=h, argnum=argnum)
+        return ops_loader.vjp(f, params, cotangents, method=method, h=h, argnums=argnum)
 
     raise CompileError("Pennylane does not support the VJP function without QJIT.")
 
@@ -633,6 +633,6 @@ def jvp(f, params, tangents, method=None, h=None, argnum=None):
     if active_jit := compiler.active_compiler():
         available_eps = compiler.AvailableCompilers.names_entrypoints
         ops_loader = available_eps[active_jit]["ops"].load()
-        return ops_loader.jvp(f, params, tangents, method=method, h=h, argnum=argnum)
+        return ops_loader.jvp(f, params, tangents, method=method, h=h, argnums=argnum)
 
     raise CompileError("Pennylane does not support the JVP function without QJIT.")
