@@ -372,3 +372,32 @@ def create_grad_primitive():
         return tuple(jaxpr.invars[i].aval for i in argnum)
 
     return grad_prim
+
+
+@lru_cache
+def create_jacobian_primitive():
+    """Create a primitive for Jacobian computations.
+    This primitive is used when capturing ``qml.jacobian``.
+    """
+    jacobian_prim = jax.core.Primitive("jacobian")
+    jacobian_prim.multiple_results = True
+
+    # pylint: disable=too-many-arguments
+    @jacobian_prim.def_impl
+    def _(*args, argnum, jaxpr, n_consts):
+        consts = args[:n_consts]
+        args = args[n_consts:]
+
+        def func(*inner_args):
+            return jax.core.eval_jaxpr(jaxpr, consts, *inner_args)
+
+        return jax.jacobian
+
+    # pylint: disable=unused-argument
+    @jacobian_prim.def_abstract_eval
+    def _(*args, argnum, jaxpr, n_consts):
+        # TODO
+        raise NotImplementedError
+        return tuple(jaxpr.invars[i].aval for i in argnum)
+
+    return jacobian_prim

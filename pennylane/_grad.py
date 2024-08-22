@@ -23,11 +23,29 @@ from autograd.extend import vspace
 from autograd.numpy.numpy_boxes import ArrayBox
 from autograd.wrap_util import unary_to_nary
 
-from pennylane.capture import create_grad_primitive, enabled
+from pennylane.capture import create_grad_primitive, create_jacobian_primitive, enabled
 from pennylane.compiler import compiler
 from pennylane.compiler.compiler import CompileError
 
 make_vjp = unary_to_nary(_make_vjp)
+
+
+def _capture_diff(func, argnum=None, diff_prim=None):
+    """Capture-compatible gradient computation."""
+    import jax  # pylint: disable=import-outside-toplevel
+
+    if isinstance(argnum, int):
+        argnum = [argnum]
+    if argnum is None:
+        argnum = [0]
+
+    @wraps(func)
+    def new_func(*args, **kwargs):
+        jaxpr = jax.make_jaxpr(partial(func, **kwargs))(*args)
+        prim_kwargs = {"argnum": argnum, "jaxpr": jaxpr.jaxpr, "n_consts": len(jaxpr.consts)}
+        return diff_prim.bind(*jaxpr.consts, *args, **prim_kwargs)
+
+    return new_func
 
 
 class grad:
@@ -102,7 +120,7 @@ class grad:
             raise ValueError(f"Invalid values '{method=}' and '{h=}' without QJIT.")
 
         if enabled():
-            return _capture_grad(func, argnum)
+            return _capture_diff(func, argnum, create_grad_primitive())
 
         return super().__new__(cls)
 
@@ -194,26 +212,6 @@ class grad:
 
         grad_value = vjp(vspace(ans).ones())
         return grad_value, ans
-
-
-def _capture_grad(func, argnum=None):
-    """Capture-compatible gradient computation."""
-    import jax  # pylint: disable=import-outside-toplevel
-
-    if isinstance(argnum, int):
-        argnum = [argnum]
-    if argnum is None:
-        argnum = [0]
-
-    grad_prim = create_grad_primitive()
-
-    @wraps(func)
-    def new_func(*args, **kwargs):
-        jaxpr = jax.make_jaxpr(partial(func, **kwargs))(*args)
-        prim_kwargs = {"argnum": argnum, "jaxpr": jaxpr.jaxpr, "n_consts": len(jaxpr.consts)}
-        return grad_prim.bind(*jaxpr.consts, *args, **prim_kwargs)
-
-    return new_func
 
 
 def jacobian(func, argnum=None, method=None, h=None):
@@ -436,7 +434,10 @@ def jacobian(func, argnum=None, method=None, h=None):
         return ops_loader.jacobian(func, method=method, h=h, argnum=argnum)
 
     if method or h:
-        raise ValueError(f"Invalid values for 'method={method}' and 'h={h}' in interpreted mode")
+        raise ValueError(f"Invalid values '{method=}' and '{h=}' without QJIT.")
+
+    if enabled():
+        return _capture_diff(func, argnum, create_jacobian_primitive())
 
     def _get_argnum(args):
         """Inspect the arguments for differentiability and return the
