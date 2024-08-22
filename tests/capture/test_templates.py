@@ -259,6 +259,8 @@ tested_modified_templates = [
     qml.QROM,
     qml.PhaseAdder,
     qml.Adder,
+    qml.Multiplier,
+    qml.OutMultiplier,
 ]
 
 
@@ -757,6 +759,77 @@ class TestModifiedTemplates:
 
         assert len(q) == 1
         qml.assert_equal(q.queue[0], qml.Adder(**kwargs))
+
+    @pytest.mark.usefixtures("new_opmath_only")
+    def test_multiplier(self):
+        """Test the primitive bind call of Multiplier."""
+
+        kwargs = {
+            "k": 3,
+            "x_wires": [0, 1],
+            "mod": None,
+            "work_wires": [2, 3],
+        }
+
+        def qfunc():
+            qml.Multiplier(**kwargs)
+
+        # Validate inputs
+        qfunc()
+
+        # Actually test primitive bind
+        jaxpr = jax.make_jaxpr(qfunc)()
+
+        assert len(jaxpr.eqns) == 1
+
+        eqn = jaxpr.eqns[0]
+        assert eqn.primitive == qml.Multiplier._primitive
+        assert eqn.invars == jaxpr.jaxpr.invars
+        assert eqn.params == kwargs
+        assert len(eqn.outvars) == 1
+        assert isinstance(eqn.outvars[0], jax.core.DropVar)
+
+        with qml.queuing.AnnotatedQueue() as q:
+            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+
+        assert len(q) == 1
+        qml.assert_equal(q.queue[0], qml.Multiplier(**kwargs))
+
+    @pytest.mark.usefixtures("new_opmath_only")
+    def test_out_multiplier(self):
+        """Test the primitive bind call of OutMultiplier."""
+
+        kwargs = {
+            "x_wires": [0, 1],
+            "y_wires": [2, 3],
+            "output_wires": [4, 5],
+            "mod": None,
+            "work_wires": None,
+        }
+
+        def qfunc():
+            qml.OutMultiplier(**kwargs)
+
+        # Validate inputs
+        qfunc()
+
+        # Actually test primitive bind
+        jaxpr = jax.make_jaxpr(qfunc)()
+
+        assert len(jaxpr.eqns) == 1
+
+        eqn = jaxpr.eqns[0]
+        assert eqn.primitive == qml.OutMultiplier._primitive
+        assert eqn.invars == jaxpr.jaxpr.invars
+        assert eqn.params == kwargs
+        assert len(eqn.outvars) == 1
+        assert isinstance(eqn.outvars[0], jax.core.DropVar)
+
+        with qml.queuing.AnnotatedQueue() as q:
+            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+
+        assert len(q) == 1
+        qml.assert_equal(q.queue[0], qml.OutMultiplier(**kwargs))
 
     @pytest.mark.parametrize(
         "template, kwargs",

@@ -15,11 +15,11 @@
 Tests for the Multiplier template.
 """
 
+import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane import numpy as np
-from pennylane.templates.subroutines.multiplier import _mul_out_k_mod, Multiplier
+from pennylane.templates.subroutines.multiplier import _mul_out_k_mod
 
 
 def test_standard_validity_Multiplier():
@@ -28,7 +28,7 @@ def test_standard_validity_Multiplier():
     mod = 11
     x_wires = [0, 1, 2, 3]
     work_wires = [4, 5, 6, 7, 8, 9]
-    op = Multiplier(k, x_wires=x_wires, mod=mod, work_wires=work_wires)
+    op = qml.Multiplier(k, x_wires=x_wires, mod=mod, work_wires=work_wires)
     qml.ops.functions.assert_valid(op)
 
 
@@ -62,6 +62,12 @@ class TestMultiplier:
                 None,
                 [5, 6, 7, 8, 9, 10, 11],
             ),
+            (
+                5,
+                [0, 1, 2, 3, 4],
+                None,
+                [5, 6, 7, 8, 9],
+            ),
         ],
     )
     def test_operation_result(
@@ -73,7 +79,7 @@ class TestMultiplier:
         @qml.qnode(dev)
         def circuit(x):
             qml.BasisEmbedding(x, wires=x_wires)
-            Multiplier(k, x_wires, mod, work_wires)
+            qml.Multiplier(k, x_wires, mod, work_wires)
             return qml.sample(wires=x_wires)
 
         if mod is None:
@@ -125,24 +131,31 @@ class TestMultiplier:
             ),
         ],
     )
-    def test_operation_and_wires_error(self, k, x_wires, mod, work_wires, msg_match):
+    def test_operation_and_wires_error(
+        self, k, x_wires, mod, work_wires, msg_match
+    ):  # pylint: disable=too-many-arguments
         """Test an error is raised when k or mod don't meet the requirements"""
         with pytest.raises(ValueError, match=msg_match):
-            Multiplier(k, x_wires, mod, work_wires)
+            qml.Multiplier(k, x_wires, mod, work_wires)
 
     def test_decomposition(self):
         """Test that compute_decomposition and decomposition work as expected."""
         k, x_wires, mod, work_wires = 4, [0, 1, 2], 7, [3, 4, 5, 6, 7]
-        multiplier_decomposition = Multiplier(k, x_wires, mod, work_wires).compute_decomposition(
+        multiplier_decomposition = qml.Multiplier(
             k, x_wires, mod, work_wires
-        )
+        ).compute_decomposition(k, x_wires, mod, work_wires)
         op_list = []
-        work_wire_aux = work_wires[:1]
-        wires_aux = work_wires[1:]
-        wires_aux_swap = wires_aux[1:]
+        if mod != 2 ** len(x_wires):
+            work_wire_aux = work_wires[:1]
+            wires_aux = work_wires[1:]
+            wires_aux_swap = wires_aux[1:]
+        else:
+            work_wire_aux = None
+            wires_aux = work_wires[:3]
+            wires_aux_swap = wires_aux
         op_list.extend(_mul_out_k_mod(k, x_wires, mod, work_wire_aux, wires_aux))
-        for i in range(len(x_wires)):
-            op_list.append(qml.SWAP(wires=[x_wires[i], wires_aux_swap[i]]))
+        for x_wire, aux_wire in zip(x_wires, wires_aux_swap):
+            op_list.append(qml.SWAP(wires=[x_wire, aux_wire]))
         inv_k = pow(k, -1, mod)
         op_list.extend(qml.adjoint(_mul_out_k_mod)(inv_k, x_wires, mod, work_wire_aux, wires_aux))
 
@@ -168,7 +181,7 @@ class TestMultiplier:
         @qml.qnode(dev)
         def circuit():
             qml.BasisEmbedding(x_list, wires=x_wires)
-            Multiplier(k, x_wires, mod, work_wires)
+            qml.Multiplier(k, x_wires, mod, work_wires)
             return qml.sample(wires=x_wires)
 
         assert jax.numpy.allclose(

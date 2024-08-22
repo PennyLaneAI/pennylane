@@ -1,3 +1,22 @@
+# Copyright 2018-2024 Xanadu Quantum Technologies Inc.
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""
+Contains the Multiplier template.
+"""
+
+import numpy as np
+
 import pennylane as qml
 from pennylane.operation import Operation
 
@@ -113,35 +132,19 @@ class Multiplier(Operation):
         )
 
     @property
-    def x_wires(self):
-        """The wires where x is loaded."""
-        return self.hyperparameters["x_wires"]
-
-    @property
-    def work_wires(self):
-        """The work_wires."""
-        return self.hyperparameters["work_wires"]
-
-    @property
     def wires(self):
         """All wires involved in the operation."""
         return self.hyperparameters["x_wires"] + self.hyperparameters["work_wires"]
 
     def decomposition(self):  # pylint: disable=arguments-differ
-
-        return self.compute_decomposition(
-            self.hyperparameters["k"],
-            self.hyperparameters["x_wires"],
-            self.hyperparameters["mod"],
-            self.hyperparameters["work_wires"],
-        )
+        return self.compute_decomposition(**self.hyperparameters)
 
     @classmethod
     def _primitive_bind_call(cls, *args, **kwargs):
         return cls._primitive.bind(*args, **kwargs)
 
     @staticmethod
-    def compute_decomposition(k, x_wires, mod, work_wires):
+    def compute_decomposition(k, x_wires, mod, work_wires):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators.
         Args:
             k (int): number that wants to be added
@@ -166,12 +169,17 @@ class Multiplier(Operation):
         """
 
         op_list = []
-        work_wire_aux = work_wires[:1]
-        wires_aux = work_wires[1:]
-        wires_aux_swap = wires_aux[1:]
+        if mod != 2 ** len(x_wires):
+            work_wire_aux = work_wires[:1]
+            wires_aux = work_wires[1:]
+            wires_aux_swap = wires_aux[1:]
+        else:
+            work_wire_aux = None
+            wires_aux = work_wires[: len(x_wires)]
+            wires_aux_swap = wires_aux
         op_list.extend(_mul_out_k_mod(k, x_wires, mod, work_wire_aux, wires_aux))
-        for i in range(len(x_wires)):
-            op_list.append(qml.SWAP(wires=[x_wires[i], wires_aux_swap[i]]))
+        for x_wire, aux_wire in zip(x_wires, wires_aux_swap):
+            op_list.append(qml.SWAP(wires=[x_wire, aux_wire]))
         inv_k = pow(k, -1, mod)
         op_list.extend(qml.adjoint(_mul_out_k_mod)(inv_k, x_wires, mod, work_wire_aux, wires_aux))
         return op_list

@@ -166,7 +166,9 @@ class TestOutMultiplier:
             ),
         ],
     )
-    def test_wires_error(self, x_wires, y_wires, output_wires, mod, work_wires, msg_match):
+    def test_wires_error(
+        self, x_wires, y_wires, output_wires, mod, work_wires, msg_match
+    ):  # pylint: disable=too-many-arguments
         """Test an error is raised when some work_wires don't meet the requirements"""
         with pytest.raises(ValueError, match=msg_match):
             OutMultiplier(x_wires, y_wires, output_wires, mod, work_wires)
@@ -186,13 +188,15 @@ class TestOutMultiplier:
         op_list = []
         if mod != 2 ** len(output_wires):
             qft_output_wires = work_wires[:1] + output_wires
+            work_wire = work_wires[1:]
         else:
             qft_output_wires = output_wires
+            work_wire = None
         op_list.append(qml.QFT(wires=qft_output_wires))
         op_list.append(
             qml.ControlledSequence(
                 qml.ControlledSequence(
-                    qml.PhaseAdder(1, qft_output_wires, mod, work_wires[1:]), control=x_wires
+                    qml.PhaseAdder(1, qft_output_wires, mod, work_wire), control=x_wires
                 ),
                 control=y_wires,
             )
