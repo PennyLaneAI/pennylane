@@ -346,9 +346,9 @@ def create_measurement_wires_primitive(
 
 @lru_cache
 def create_grad_primitive():
-    import jax  # pylint: disable=import-outside-toplevel
-    from jax._src.api import _check_output_dtype_grad
-
+    """Create a primitive for gradient computations.
+    This primitive is used when capturing ``qml.grad``.
+    """
     grad_prim = jax.core.Primitive("grad")
     grad_prim.multiple_results = True
 
