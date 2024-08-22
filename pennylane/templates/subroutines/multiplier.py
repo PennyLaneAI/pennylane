@@ -92,7 +92,7 @@ class Multiplier(Operation):
             mod = 2 ** len(x_wires)
         if mod != 2 ** len(x_wires) and len(work_wires) < (len(x_wires) + 2):
             raise ValueError("Multiplier needs as many work_wires as x_wires plus two.")
-        elif len(work_wires) < len(x_wires):
+        if len(work_wires) < len(x_wires):
             raise ValueError("Multiplier needs as many work_wires as x_wires.")
         if (not hasattr(x_wires, "__len__")) or (mod > 2 ** len(x_wires)):
             raise ValueError("Multiplier must have at least enough wires to represent mod.")
