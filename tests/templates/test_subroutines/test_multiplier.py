@@ -15,11 +15,11 @@
 Tests for the Multiplier template.
 """
 
+import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane import numpy as np
-from pennylane.templates.subroutines.multiplier import _mul_out_k_mod, Multiplier
+from pennylane.templates.subroutines.multiplier import _mul_out_k_mod
 
 
 def test_standard_validity_Multiplier():
@@ -28,7 +28,7 @@ def test_standard_validity_Multiplier():
     mod = 11
     x_wires = [0, 1, 2, 3]
     work_wires = [4, 5, 6, 7, 8, 9]
-    op = Multiplier(k, x_wires=x_wires, mod=mod, work_wires=work_wires)
+    op = qml.Multiplier(k, x_wires=x_wires, mod=mod, work_wires=work_wires)
     qml.ops.functions.assert_valid(op)
 
 
@@ -79,7 +79,7 @@ class TestMultiplier:
         @qml.qnode(dev)
         def circuit(x):
             qml.BasisEmbedding(x, wires=x_wires)
-            Multiplier(k, x_wires, mod, work_wires)
+            qml.Multiplier(k, x_wires, mod, work_wires)
             return qml.sample(wires=x_wires)
 
         if mod is None:
@@ -136,14 +136,14 @@ class TestMultiplier:
     ):  # pylint: disable=too-many-arguments
         """Test an error is raised when k or mod don't meet the requirements"""
         with pytest.raises(ValueError, match=msg_match):
-            Multiplier(k, x_wires, mod, work_wires)
+            qml.Multiplier(k, x_wires, mod, work_wires)
 
     def test_decomposition(self):
         """Test that compute_decomposition and decomposition work as expected."""
         k, x_wires, mod, work_wires = 4, [0, 1, 2], 7, [3, 4, 5, 6, 7]
-        multiplier_decomposition = Multiplier(k, x_wires, mod, work_wires).compute_decomposition(
+        multiplier_decomposition = qml.Multiplier(
             k, x_wires, mod, work_wires
-        )
+        ).compute_decomposition(k, x_wires, mod, work_wires)
         op_list = []
         if mod != 2 ** len(x_wires):
             work_wire_aux = work_wires[:1]
@@ -181,7 +181,7 @@ class TestMultiplier:
         @qml.qnode(dev)
         def circuit():
             qml.BasisEmbedding(x_list, wires=x_wires)
-            Multiplier(k, x_wires, mod, work_wires)
+            qml.Multiplier(k, x_wires, mod, work_wires)
             return qml.sample(wires=x_wires)
 
         assert jax.numpy.allclose(
