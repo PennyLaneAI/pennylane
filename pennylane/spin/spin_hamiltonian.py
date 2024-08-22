@@ -187,7 +187,7 @@ def fermihubbard(
 
         \hat{H} = -t\sum_{<i,j>, \sigma}(c_{i\sigma}^{\dagger}c_{j\sigma}) + U\sum_{i}n_{i \uparrow} n_{i\downarrow}
 
-    where t is the hopping term representing the kinetic energy of electrons, and U is the on-site Coulomb interaction,
+    where ``t`` is the hopping term representing the kinetic energy of electrons, and ``U`` is the on-site Coulomb interaction,
     representing the repulsion between electrons.
 
     Args:
