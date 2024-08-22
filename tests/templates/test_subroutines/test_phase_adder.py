@@ -32,6 +32,17 @@ def test_standard_validity_Phase_Adder():
     qml.ops.functions.assert_valid(op)
 
 
+def test_add_k_fourier():
+    """Test the private _add_k_fourier function."""
+
+    ops = _add_k_fourier(2, wires=range(2))
+    assert len(ops) == 2
+    assert ops[0].name == "PhaseShift"
+    assert ops[1].name == "PhaseShift"
+    assert np.isclose(ops[0].parameters[0], 2 * np.pi)
+    assert np.isclose(ops[1].parameters[0], np.pi)
+
+
 class TestPhaseAdder:
     """Test the PhaseAdder template."""
 
@@ -131,7 +142,7 @@ class TestPhaseAdder:
                 [0, 1, 2],
                 9,
                 [3],
-                ("PhaseAdder must have at least enough x_wires to represent mod."),
+                ("PhaseAdder must have enough x_wires to represent mod."),
             ),
             (
                 1,
