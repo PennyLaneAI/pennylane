@@ -66,6 +66,7 @@ class TestOutAdder:
         def circuit(x, y):
             qml.BasisEmbedding(x, wires=x_wires)
             qml.BasisEmbedding(y, wires=y_wires)
+            qml.BasisEmbedding(z, wires=output_wires)
             qml.OutAdder(x_wires, y_wires, output_wires, mod, work_wires)
             return qml.sample(wires=output_wires)
 
@@ -73,9 +74,10 @@ class TestOutAdder:
             max = 2 ** len(output_wires)
         else:
             max = mod
-        for x, y in zip(range(len(x_wires)), range(len(y_wires))):
+        for x, y, z in zip(range(len(x_wires)), range(len(y_wires)), range(len(output_wires))):
             assert np.allclose(
-                sum(bit * (2**i) for i, bit in enumerate(reversed(circuit(x, y)))), (x + y) % max
+                sum(bit * (2**i) for i, bit in enumerate(reversed(circuit(x, y)))),
+                (x + y + z) % max,
             )
 
     @pytest.mark.parametrize(
@@ -150,16 +152,21 @@ class TestOutAdder:
             x_wires, y_wires, output_wires, mod, work_wires
         ).compute_decomposition(x_wires, y_wires, output_wires, mod, work_wires)
         op_list = []
-        if mod != 2 ** len(output_wires):
+        if mod != 2 ** len(output_wires) and mod is not None:
             qft_new_output_wires = work_wires[:1] + output_wires
+            work_wire = work_wires[1:]
         else:
             qft_new_output_wires = output_wires
-        for i in range(len(y_wires)):
-            op_list.append(qml.CNOT(wires=[y_wires[i], output_wires[i]]))
+            work_wire = None
         op_list.append(qml.QFT(wires=qft_new_output_wires))
         op_list.append(
             qml.ControlledSequence(
-                qml.PhaseAdder(1, qft_new_output_wires, mod, work_wires[1:]), control=x_wires
+                qml.PhaseAdder(1, qft_new_output_wires, mod, work_wire), control=x_wires
+            )
+        )
+        op_list.append(
+            qml.ControlledSequence(
+                qml.PhaseAdder(1, qft_new_output_wires, mod, work_wire), control=y_wires
             )
         )
         op_list.append(qml.adjoint(qml.QFT)(wires=qft_new_output_wires))

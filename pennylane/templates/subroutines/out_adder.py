@@ -122,26 +122,6 @@ class OutAdder(Operation):
         )
 
     @property
-    def x_wires(self):
-        """The wires where x is loaded."""
-        return self.hyperparameters["x_wires"]
-
-    @property
-    def y_wires(self):
-        """The wires where y is loaded."""
-        return self.hyperparameters["y_wires"]
-
-    @property
-    def output_wires(self):
-        """The wires where the output is stored."""
-        return self.hyperparameters["output_wires"]
-
-    @property
-    def work_wires(self):
-        """The work_wires."""
-        return self.hyperparameters["work_wires"]
-
-    @property
     def wires(self):
         """All wires involved in the operation."""
         return self.hyperparameters["x_wires"] + self.hyperparameters["work_wires"]
@@ -182,16 +162,21 @@ class OutAdder(Operation):
         Adjoint(QFT(wires=[5, 6]))]
         """
         op_list = []
-        if mod != 2 ** len(output_wires):
+        if mod != 2 ** len(output_wires) and mod is not None:
             qft_new_output_wires = work_wires[:1] + output_wires
+            work_wire = work_wires[1:]
         else:
             qft_new_output_wires = output_wires
-        for i in range(len(y_wires)):
-            op_list.append(qml.CNOT(wires=[y_wires[i], output_wires[i]]))
+            work_wire = None
         op_list.append(qml.QFT(wires=qft_new_output_wires))
         op_list.append(
             qml.ControlledSequence(
-                qml.PhaseAdder(1, qft_new_output_wires, mod, work_wires[1:]), control=x_wires
+                qml.PhaseAdder(1, qft_new_output_wires, mod, work_wire), control=x_wires
+            )
+        )
+        op_list.append(
+            qml.ControlledSequence(
+                qml.PhaseAdder(1, qft_new_output_wires, mod, work_wire), control=y_wires
             )
         )
         op_list.append(qml.adjoint(qml.QFT)(wires=qft_new_output_wires))
