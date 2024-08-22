@@ -40,7 +40,7 @@ class Multiplier(Operation):
 
     .. math::
 
-        \text{Multiplier}(k,mod) |x \rangle = | x*k mod mod \rangle,
+        \text{Multiplier}(k,mod) |x \rangle = | x \cdot k \quad \text{mod} \rangle,
 
     The quantum circuit that represents the Multiplier operator is:
 
@@ -57,11 +57,14 @@ class Multiplier(Operation):
     and that :math:`k` has inverse, :math:`k^-1`, modulo :math:`mod`. That means :math:`k*k^-1 modulo mod = 1`, which will only be possible if :math:`k` and :math:`mod` are coprime.
 
     .. code-block::
+
         x = 3
         k = 4
         mod = 7
+
         wires_m =[0,1,2]
         work_wires=[3,4,5,6,7]
+
         dev = qml.device("default.qubit", shots=1)
         @qml.qnode(dev)
         def multiplier_modulo(x, k, mod, wires_m, work_wires):
@@ -74,7 +77,7 @@ class Multiplier(Operation):
         >>> print(f"The ket representation of {m} * {k} mod {mod} is {multiplier_modulo(m, k, mod, wires_m, work_wires)}")
             The ket representation of 3 * 4 mod 7 is [1 0 1]
 
-    We can see that the result [1 0 1] corresponds to 5, which comes from :math:`3+4=12 \longrightarrow 12 mod 7 = 5`.
+    We can see that the result [1 0 1] corresponds to 5, which comes from :math:`3 \cdot 4=12 \longrightarrow 12 mod 7 = 5`.
     """
 
     grad_method = None

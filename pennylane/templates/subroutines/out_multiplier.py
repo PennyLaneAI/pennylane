@@ -42,13 +42,16 @@ class OutMultiplier(Operation):
     Multiplication of two integers :math:`x=2` and :math:`y=7` modulo :math:`mod=12`. Note that to perform this multiplication using qml.OutMultiplier we need that :math:`m,k < mod`.
 
     .. code-block::
+
         x=2
         y=7
         mod=12
+
         x_wires=[0,1]
         y_wires=[2,3,4]
         output_wires=[6,7,8,9]
         work_wires=[5,10]
+
         dev = qml.device("default.qubit", shots=1)
         @qml.qnode(dev)
         def circuit_OutMultiplier():
@@ -62,7 +65,7 @@ class OutMultiplier(Operation):
         >>> print(f"The ket representation of {x} * {y} mod {mod} is {circuit_OutMultiplier()}")
             The ket representation of 2 * 7 mod 12 is [0 0 1 0]
 
-    We can see that the result [0 0 1 0] corresponds to 2, which comes from :math:`2*7=14 \longrightarrow 14 mod 12 = 2`.
+    We can see that the result [0 0 1 0] corresponds to 2, which comes from :math:`2 \cdot 7=14 \longrightarrow 14 mod 12 = 2`.
     """
 
     grad_method = None
