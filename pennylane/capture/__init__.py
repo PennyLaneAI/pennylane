@@ -35,6 +35,25 @@ quantum-classical programs.
     ~create_measurement_mcm_primitive
     ~qnode_call
 
+
+The ``primitives`` submodule is offers easy access to objects with jax dependencies.
+It is not available with ``import pennylane``, but the contents can be access via manual
+import ``from pennylane.capture.primitives import *``.
+
+.. currentmodule:: pennylane.capture.primitives
+
+.. autosummary::
+    :toctree: api
+
+    AbstractOperator
+    AbstractMeasurement
+    adjoint_transform_prim
+    cond_prim
+    ctrl_transform_prim
+    for_loop_prim
+    qnode_prim
+    while_loop_prim
+
 To activate and deactivate the new PennyLane program capturing mechanism, use
 the switches ``qml.capture.enable`` and ``qml.capture.disable``.
 Whether or not the capturing mechanism is currently being used can be
@@ -127,8 +146,8 @@ If needed, developers can also override the implementation method of the primiti
 """
 from .switches import disable, enable, enabled
 from .capture_meta import CaptureMeta, ABCCaptureMeta
-from .primitives import (
-    create_operator_primitive,
+from .capture_operators import create_operator_primitive
+from .capture_measurements import (
     create_measurement_obs_primitive,
     create_measurement_wires_primitive,
     create_measurement_mcm_primitive,
@@ -140,7 +159,6 @@ from .capture_qnode import qnode_call
 # on use of from capture import AbstractOperator
 AbstractOperator: type
 AbstractMeasurement: type
-qnode_prim: "jax.core.Primitive"
 
 
 def __getattr__(key):
@@ -153,11 +171,6 @@ def __getattr__(key):
         from .primitives import _get_abstract_measurement  # pylint: disable=import-outside-toplevel
 
         return _get_abstract_measurement()
-
-    if key == "qnode_prim":
-        from .capture_qnode import _get_qnode_prim  # pylint: disable=import-outside-toplevel
-
-        return _get_qnode_prim()
 
     raise AttributeError(f"module 'pennylane.capture' has no attribute '{key}'")
 
@@ -175,5 +188,4 @@ __all__ = (
     "qnode_call",
     "AbstractOperator",
     "AbstractMeasurement",
-    "qnode_prim",
 )
