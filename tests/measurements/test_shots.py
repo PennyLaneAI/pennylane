@@ -53,6 +53,11 @@ class TestShotCopies:
         """Test the repr method works well"""
         assert expected_str == repr(sc)
 
+    @pytest.mark.parametrize("sc", sc_data)
+    def test_iter(self, sc):
+        """Test the iter method works well"""
+        assert list(sc) == [sc.shots, sc.copies]
+
 
 class TestShotsConstruction:
     """Tests the Shots class."""
