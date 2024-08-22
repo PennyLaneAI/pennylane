@@ -60,7 +60,7 @@ class OutMultiplier(Operation):
     .. code-block:: pycon
 
         >>> print(f"The ket representation of {x} * {y} mod {mod} is {circuit_OutMultiplier()}")
-        The ket representation of 2 * 7 mod 12 is [0 0 1 0]
+            The ket representation of 2 * 7 mod 12 is [0 0 1 0]
 
     We can see that the result [0 0 1 0] corresponds to 2, which comes from :math:`2*7=14 \longrightarrow 14 mod 12 = 2`.
     """
