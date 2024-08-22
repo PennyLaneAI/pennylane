@@ -36,8 +36,9 @@ quantum-classical programs.
     ~qnode_call
 
 
-The ``primitives`` submodule is offers easy access to objects with jax dependencies.
-It is not available with ``import pennylane``, but the contents can be access via manual
+The ``primitives`` submodule offers easy access to objects with jax dependencies such as
+primitives and abstract types.
+It is not available with ``import pennylane``, but the contents can be accessed via manual
 import ``from pennylane.capture.primitives import *``.
 
 .. currentmodule:: pennylane.capture.primitives
