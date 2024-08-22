@@ -47,9 +47,9 @@ class Multiplier(Operation):
 
     Args:
         k (int): number that wants to be added
-        wires (Sequence[int]): the wires the operation acts on. There are needed at least enough wires to represent :math:`k` and :math:`mod`.
+        x_wires (Sequence[int]): the wires the operation acts on. There are needed at least enough wires to represent :math:`k` and :math:`mod`.
         mod (int): modulo with respect to which the multiplication is performed, default value will be ``2^len(wires)``
-        work_wires (Sequence[int]): the auxiliary wires to use for the multiplication modulo :math:`mod`
+        work_wires (Sequence[int]): the auxiliary wires to use for the multiplication modulo :math:`mod`. There must be as many as x_wires and if a module not power of two is specified, two more auxiliaries must be added.
 
     **Example**
 
@@ -62,14 +62,14 @@ class Multiplier(Operation):
         k = 4
         mod = 7
 
-        wires_m =[0,1,2]
+        x_wires =[0,1,2]
         work_wires=[3,4,5,6,7]
 
         dev = qml.device("default.qubit", shots=1)
         @qml.qnode(dev)
         def multiplier_modulo(x, k, mod, wires_m, work_wires):
             qml.BasisEmbedding(x, wires=wires_m)
-            qml.Multiplier(k, wires_m, mod, work_wires)
+            qml.Multiplier(k, x_wires, mod, work_wires)
             return qml.sample(wires=wires_m)
 
     .. code-block:: pycon
@@ -87,19 +87,19 @@ class Multiplier(Operation):
     ):  # pylint: disable=too-many-arguments
         if any(wire in work_wires for wire in x_wires):
             raise ValueError("None wire in work_wires should be included in x_wires.")
+
         if mod is None:
             mod = 2 ** len(x_wires)
-        if mod != 2 ** len(x_wires):
-            if len(work_wires) < (len(x_wires) + 2):
-                raise ValueError("Multiplier needs as many work_wires as x_wires plus two.")
+        if mod != 2 ** len(x_wires) and len(work_wires) < (len(x_wires) + 2):
+            raise ValueError("Multiplier needs as many work_wires as x_wires plus two.")
         elif len(work_wires) < len(x_wires):
             raise ValueError("Multiplier needs as many work_wires as x_wires.")
-        k = k % mod
         if (not hasattr(x_wires, "__len__")) or (mod > 2 ** len(x_wires)):
             raise ValueError("Multiplier must have at least enough wires to represent mod.")
 
+        k = k % mod
         if np.gcd(k, mod) != 1:
-            raise ValueError("Since k has no inverse modulo mod, the work_wires cannot be cleaned.")
+            raise ValueError("Since k has no inverse modulo mod, the operator cannot be built.")
 
         self.hyperparameters["k"] = k
         self.hyperparameters["mod"] = mod
@@ -159,16 +159,16 @@ class Multiplier(Operation):
 
         **Example**
 
-        >>> qml.Multiplier.compute_decomposition(k=3,mod=8,wires=[0,1,2],work_wires=[3,4,5,6,7])
-        [QFT(wires=[5, 6, 7]),
-        ControlledSequence(PhaseAdder(wires=[5, 6, 7]), control=[0, 1, 2]),
-        Adjoint(QFT(wires=[5, 6, 7])),
-        SWAP(wires=[0, 5]),
-        SWAP(wires=[1, 6]),
-        SWAP(wires=[2, 7]),
-        Adjoint(Adjoint(QFT(wires=[5, 6, 7]))),
-        Adjoint(ControlledSequence(PhaseAdder(wires=[5, 6, 7]), control=[0, 1, 2])),
-        Adjoint(QFT(wires=[5, 6, 7]))]
+        >>> qml.Multiplier.compute_decomposition(k=3,mod=8,wires=[0,1,2],work_wires=[3,4,5])
+        [QFT(wires=[3, 4, 5]),
+        ControlledSequence(PhaseAdder(wires=[3, 4 ,5 ,None]), control=[0, 1, 2]),
+        Adjoint(QFT(wires=[3, 4, 5])),
+        SWAP(wires=[0, 3]),
+        SWAP(wires=[1, 4]),
+        SWAP(wires=[2, 5]),
+        Adjoint(Adjoint(QFT(wires=[3, 4, 5]))),
+        Adjoint(ControlledSequence(PhaseAdder(wires=[3, 4, 5, None]), control=[0, 1, 2])),
+        Adjoint(QFT(wires=[3, 4, 5]))]
         """
 
         op_list = []

@@ -25,15 +25,15 @@ class OutMultiplier(Operation):
     This operator multiplies the integers :math:`x` and :math:`y` modulo :math:`mod` in the computational basis:
 
     .. math::
-        OutMultiplier(mod) |x \rangle |y \rangle |0 \rangle = |x \rangle |y \rangle |x*y \textrm{mod} mod \rangle,
+        OutMultiplier(mod) |x \rangle |y \rangle |0 \rangle = |x \rangle |y \rangle |x \cdot y \text{mod} \rangle,
 
     The quantum circuit that represents the OutMultiplier operator is:
 
 
     Args:
-        x_wires (Sequence[int]): the wires that stores the integer :math:`x`.
-        y_wires (Sequence[int]): the wires that stores the integer :math:`y`.
-        output_wires (Sequence[int]): the wires that stores the multiplication modulo mod :math:`x*y \textrm{mod} mod`.
+        x_wires (Sequence[int]): the wires that store the integer :math:`x`.
+        y_wires (Sequence[int]): the wires that store the integer :math:`y`.
+        output_wires (Sequence[int]): the wires that store the multiplication modulo mod :math:`x \codt y \text{mod}`.
         mod (int): modulo with respect to which the multiplication is performed, default value will be ``2^len(output_wires)``
         work_wires (Sequence[int]): the auxiliary wires to use for the multiplication modulo :math:`mod` when :math:`mod \neq 2^{\textrm{len(output_wires)}}`
 
@@ -76,25 +76,28 @@ class OutMultiplier(Operation):
 
         if mod is None:
             mod = 2 ** len(output_wires)
-        if mod != 2 ** len(output_wires):
-            if work_wires is None:
-                raise ValueError(
-                    f"If mod is not 2^{len(output_wires)} you should provide two work_wires"
-                )
+        if mod != 2 ** len(output_wires) and work_wires is None:
+            raise ValueError(
+                f"If mod is not 2^{len(output_wires)} you should provide two work_wires"
+            )
         if (not hasattr(output_wires, "__len__")) or (mod > 2 ** (len(output_wires))):
             raise ValueError("OutMultiplier must have at least enough wires to represent mod.")
+
         if work_wires is not None:
             if any(wire in work_wires for wire in x_wires):
                 raise ValueError("None of the wires in work_wires should be included in x_wires.")
             if any(wire in work_wires for wire in y_wires):
                 raise ValueError("None of the wires in work_wires should be included in y_wires.")
+
         if any(wire in y_wires for wire in x_wires):
             raise ValueError("None of the wires in y_wires should be included in x_wires.")
         if any(wire in x_wires for wire in output_wires):
             raise ValueError("None of the wires in x_wires should be included in output_wires.")
         if any(wire in y_wires for wire in output_wires):
             raise ValueError("None of the wires in y_wires should be included in output_wires.")
+
         wires_list = ["x_wires", "y_wires", "output_wires", "work_wires"]
+
         for key in wires_list:
             self.hyperparameters[key] = qml.wires.Wires(locals()[key])
         self.hyperparameters["mod"] = mod

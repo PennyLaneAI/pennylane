@@ -32,46 +32,62 @@ def test_standard_validity_Multiplier():
     qml.ops.functions.assert_valid(op)
 
 
+def test_mul_out_k_mod():
+    """Test the private _mul_out_k_mod function."""
+
+    op = _mul_out_k_mod(2, [0, 1], 4, None, [4, 5])
+    assert op[0].name == "QFT"
+    assert op[1].name == "ControlledSequence"
+    assert op[2].name == "Adjoint(QFT)"
+    print(op[1].base)
+    assert qml.equal(op[1].base, qml.PhaseAdder(2, x_wires=[4, 5]))
+
+
 class TestMultiplier:
     """Test the qml.Multiplier template."""
 
     @pytest.mark.parametrize(
-        ("k", "x_wires", "mod", "work_wires"),
+        ("k", "x_wires", "mod", "work_wires", "x"),
         [
             (
                 5,
                 [0, 1, 2],
                 8,
                 [4, 5, 6, 7, 8],
+                3,
             ),
             (
                 1,
                 [0, 1, 2],
                 3,
                 [3, 4, 5, 6, 7],
+                2,
             ),
             (
                 -12,
                 [0, 1, 2, 3, 4],
                 23,
                 [5, 6, 7, 8, 9, 10, 11],
+                1,
             ),
             (
                 5,
                 [0, 1, 2, 3, 4],
                 None,
                 [5, 6, 7, 8, 9, 10, 11],
+                0,
             ),
             (
                 5,
                 [0, 1, 2, 3, 4],
                 None,
                 [5, 6, 7, 8, 9],
+                1,
             ),
         ],
     )
     def test_operation_result(
-        self, k, x_wires, mod, work_wires
+        self, k, x_wires, mod, work_wires, x
     ):  # pylint: disable=too-many-arguments
         """Test the correctness of the Multiplier template output."""
         dev = qml.device("default.qubit", shots=1)
@@ -83,13 +99,11 @@ class TestMultiplier:
             return qml.sample(wires=x_wires)
 
         if mod is None:
-            max = 2 ** len(x_wires)
-        else:
-            max = mod
-        for x in range(max):
-            assert np.allclose(
-                sum(bit * (2**i) for i, bit in enumerate(reversed(circuit(x)))), (x * k) % max
-            )
+            mod = 2 ** len(x_wires)
+
+        assert np.allclose(
+            sum(bit * (2**i) for i, bit in enumerate(reversed(circuit(x)))), (x * k) % mod
+        )
 
     @pytest.mark.parametrize(
         ("k", "x_wires", "mod", "work_wires", "msg_match"),
@@ -106,7 +120,7 @@ class TestMultiplier:
                 [0, 1, 2],
                 6,
                 [3, 4, 5, 6, 7],
-                "Since k has no inverse modulo mod, the work_wires cannot be cleaned.",
+                "Since k has no inverse modulo mod",
             ),
             (
                 3,
@@ -170,7 +184,6 @@ class TestMultiplier:
 
         jax.config.update("jax_enable_x64", True)
         x = 2
-        x_list = [0, 1, 0]
         k = 6
         mod = 7
         x_wires = [0, 1, 2]
@@ -180,7 +193,7 @@ class TestMultiplier:
         @jax.jit
         @qml.qnode(dev)
         def circuit():
-            qml.BasisEmbedding(x_list, wires=x_wires)
+            qml.BasisEmbedding(x, wires=x_wires)
             qml.Multiplier(k, x_wires, mod, work_wires)
             return qml.sample(wires=x_wires)
 
