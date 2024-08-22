@@ -54,9 +54,9 @@ def test_error_with_non_scalar_function():
         jax.make_jaxpr(qml.grad(jnp.sin))(jnp.array([0.5, 0.2]))
 
 
-def grad_eqn_assertions(eqn, argnum=None, n_consts=0):
+def diff_eqn_assertions(eqn, primitive, argnum=None, n_consts=0):
     argnum = [0] if argnum is None else argnum
-    assert eqn.primitive == grad_prim
+    assert eqn.primitive == primitive
     assert set(eqn.params.keys()) == {"argnum", "n_consts", "jaxpr"}
     assert eqn.params["argnum"] == argnum
     assert eqn.params["n_consts"] == n_consts
@@ -93,7 +93,7 @@ def test_classical_grad(x64_mode, argnum):
     assert jaxpr.out_avals == [jax.core.ShapedArray((), fdtype, weak_type=True)] * len(argnum)
 
     grad_eqn = jaxpr.eqns[2]
-    grad_eqn_assertions(grad_eqn, argnum=argnum)
+    diff_eqn_assertions(grad_eqn, grad_prim, argnum=argnum)
     assert [var.aval for var in grad_eqn.outvars] == jaxpr.out_avals
     assert len(grad_eqn.params["jaxpr"].eqns) == 6  # 5 numeric eqns, 1 conversion eqn
 
@@ -204,7 +204,7 @@ def test_nested_grad(x64_mode):
 
     grad_eqn = jaxpr_1.eqns[0]
     assert [var.aval for var in grad_eqn.outvars] == jaxpr_1.out_avals
-    grad_eqn_assertions(grad_eqn)
+    diff_eqn_assertions(grad_eqn, grad_prim)
     assert len(grad_eqn.params["jaxpr"].eqns) == 2
 
     manual_eval_1 = jax.core.eval_jaxpr(jaxpr_1.jaxpr, jaxpr_1.consts, x)
@@ -222,7 +222,7 @@ def test_nested_grad(x64_mode):
 
     grad_eqn = jaxpr_2.eqns[0]
     assert [var.aval for var in grad_eqn.outvars] == jaxpr_2.out_avals
-    grad_eqn_assertions(grad_eqn)
+    diff_eqn_assertions(grad_eqn, grad_prim)
     assert len(grad_eqn.params["jaxpr"].eqns) == 1  # inner grad equation
     assert grad_eqn.params["jaxpr"].eqns[0].primitive == grad_prim
 
@@ -244,7 +244,7 @@ def test_nested_grad(x64_mode):
 
     grad_eqn = jaxpr_3.eqns[0]
     assert [var.aval for var in grad_eqn.outvars] == jaxpr_3.out_avals
-    grad_eqn_assertions(grad_eqn)
+    diff_eqn_assertions(grad_eqn, grad_prim)
     assert len(grad_eqn.params["jaxpr"].eqns) == 1  # inner grad equation
     assert grad_eqn.params["jaxpr"].eqns[0].primitive == grad_prim
 
@@ -253,6 +253,77 @@ def test_nested_grad(x64_mode):
 
     jax.config.update("jax_enable_x64", initial_mode)
 
+@pytest.mark.parametrize("x64_mode", (True, False))
+def test_nested_jacobian(x64_mode):
+    r"""Test that nested qml.jacobian primitives can be captured.
+    We use the function
+    f(x) = (prod(x) * sin(x), sum(x**2))
+    f'(x) = (prod(x)/x_i * sin(x) + prod(x) cos(x) e_i, 2 x_i)
+    f''(x) = | (prod(x)/x_i x_j * sin(x) + prod(x)cos(x) (e_j/x_i + e_i/x_j)
+             | - prod(x) sin(x) e_i e_j, 0)                              for i != j
+             |
+             | (2 prod(x)/x_i * cos(x) e_i - prod(x) sin(x) e_i e_i, 2)  for i = j
+    """
+    # pylint: disable=too-many-statements
+    initial_mode = jax.config.jax_enable_x64
+    jax.config.update("jax_enable_x64", x64_mode)
+    fdtype = jnp.float64 if x64_mode else jnp.float32
+
+    def func(x):
+        return jnp.prod(x) * jnp.sin(x), jnp.sum(x ** 2)
+
+    x = jnp.array([0.7, -0.9, 0.6, 0.3])
+    x = x[:1]
+    dim = len(x)
+    eye = jnp.eye(dim)
+
+    # 1st order
+    qml_func_1 = qml.jacobian(func)
+    prod_sin = jnp.prod(x) * jnp.sin(x)
+    prod_cos_e_i = jnp.prod(x) * jnp.cos(x)) * eye
+    expected_1 = (prod_sin[:, None] / x[None, :] + prod_cos_e_i, 2 * x)
+    assert _diff_allclose(qml_func_1(x), expected_1, 1)
+
+    jaxpr_1 = jax.make_jaxpr(qml_func_1)(x)
+    assert jaxpr_1.in_avals == [jax.core.ShapedArray((dim,), fdtype)]
+    assert len(jaxpr_1.eqns) == 1
+    assert jaxpr_1.out_avals == [jax.core.ShapedArray(sh, fdtype) for sh in [(dim, dim), (dim,)]]
+
+    jac_eqn = jaxpr_1.eqns[0]
+    assert [var.aval for var in jac_eqn.outvars] == jaxpr_1.out_avals
+    diff_eqn_assertions(jac_eqn, jacobian_prim)
+    assert len(jac_eqn.params["jaxpr"].eqns) == 5
+
+    manual_eval_1 = jax.core.eval_jaxpr(jaxpr_1.jaxpr, jaxpr_1.consts, x)
+    assert _diff_allclose(manual_eval_1, expected_1, 1)
+
+    # 2nd order
+    qml_func_2 = qml.jacobian(qml_func_1)
+    expected_2 = (
+        prod_sin[:, None, None] / x[None, :, None] / x[None, None, :]
+        + prod_cos[:, :, None] / x[None, None, :]
+        + prod_cos[:, None, :] / x[None, :, None]
+        - jnp.tensordot(prod_sin, eye + eye / x**2, axes=0),
+        jnp.tensordot(jnp.ones(dim), eye * 2, axes=0)
+    )
+    # Output only has one tuple axis
+    assert _diff_allclose(qml_func_2(x), expected_2, 1)
+
+    jaxpr_2 = jax.make_jaxpr(qml_func_2)(x)
+    assert jaxpr_2.in_avals == [jax.core.ShapedArray((dim,), fdtype)]
+    assert len(jaxpr_2.eqns) == 1
+    assert jaxpr_2.out_avals == [jax.core.ShapedArray(sh, fdtype) for sh in [(dim, dim, dim), (dim, dim)]]
+
+    jac_eqn = jaxpr_2.eqns[0]
+    assert [var.aval for var in jac_eqn.outvars] == jaxpr_2.out_avals
+    diff_eqn_assertions(jac_eqn, jacobian_prim)
+    assert len(jac_eqn.params["jaxpr"].eqns) == 1  # inner jacobian equation
+    assert jac_eqn.params["jaxpr"].eqns[0].primitive == jacobian_prim
+
+    manual_eval_2 = jax.core.eval_jaxpr(jaxpr_2.jaxpr, jaxpr_2.consts, x)
+    assert _diff_allclose(manual_eval_2, expected_2, 1)
+
+    jax.config.update("jax_enable_x64", initial_mode)
 
 @pytest.mark.parametrize("x64_mode", (True, False))
 @pytest.mark.parametrize("diff_method", ("backprop", "parameter-shift"))
@@ -285,7 +356,7 @@ def test_grad_of_simple_qnode(x64_mode, diff_method, mocker):
 
     grad_eqn = jaxpr.eqns[0]
     assert grad_eqn.invars[0].aval == jaxpr.in_avals[0]
-    grad_eqn_assertions(grad_eqn)
+    diff_eqn_assertions(grad_eqn, grad_prim)
     grad_jaxpr = grad_eqn.params["jaxpr"]
     assert len(grad_jaxpr.eqns) == 1  # qnode equation
 
