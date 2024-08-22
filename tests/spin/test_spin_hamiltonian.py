@@ -773,7 +773,7 @@ def test_fermihubbard_mapping(shape, n_cells, hopping, mapping, expected_ham):
     ],
 )
 def test_fermihubbard_hamiltonian_matrix(shape, n_cells, t, U, expected_ham):
-    r"""Test that the correct Hamiltonian is generated when hopping or interaction is provided as a matrix"""
+    r"""Test that the correct fermi Hubbard Hamiltonian is generated when hopping or interaction is provided as a matrix"""
 
     fermihub_ham = fermihubbard(lattice=shape, n_cells=n_cells, hopping=t, interaction=U)
 
