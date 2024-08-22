@@ -58,12 +58,12 @@ class PhaseAdder(Operation):
 
     .. code-block::
 
-        x = 5
-        k = 4
-        mod = 7
+        x = 8
+        k = 5
+        mod = 15
 
-        x_wires =[0,1,2,3]
-        work_wire=[4]
+        x_wires =[0,1,2,3,4]
+        work_wire=[5]
 
         dev = qml.device("default.qubit", shots=1)
         @qml.qnode(dev)
@@ -77,9 +77,9 @@ class PhaseAdder(Operation):
     .. code-block:: pycon
 
         >>> adder_modulo(x, k, mod, x_wires, work_wire)
-            [0 0 1 0]
+            [1 1 0 1]
 
-    The result [0 0 1 0] is the ket representation of :math:`5 + 4  \text{mod} \, 7 = 2`.
+    The result [1 1 0 1] is the ket representation of :math:`8 + 5  \, \text{mod} \, 15 = 13`.
     """
 
     grad_method = None
