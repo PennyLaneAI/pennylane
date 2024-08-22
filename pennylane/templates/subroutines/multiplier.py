@@ -175,7 +175,7 @@ class Multiplier(Operation):
             wires_aux_swap = wires_aux[1:]
         else:
             work_wire_aux = None
-            wires_aux = work_wires[:3]
+            wires_aux = work_wires[: len(x_wires)]
             wires_aux_swap = wires_aux
         op_list.extend(_mul_out_k_mod(k, x_wires, mod, work_wire_aux, wires_aux))
         for x_wire, aux_wire in zip(x_wires, wires_aux_swap):
