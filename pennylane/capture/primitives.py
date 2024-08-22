@@ -379,6 +379,8 @@ def create_jacobian_primitive():
     """Create a primitive for Jacobian computations.
     This primitive is used when capturing ``qml.jacobian``.
     """
+    from jax.core import ShapedArray
+
     jacobian_prim = jax.core.Primitive("jacobian")
     jacobian_prim.multiple_results = True
 
@@ -391,13 +393,19 @@ def create_jacobian_primitive():
         def func(*inner_args):
             return jax.core.eval_jaxpr(jaxpr, consts, *inner_args)
 
-        return jax.jacobian
+        # TODO pytree support
+        return jax.jacobian(func, argnums=argnum)(*args)
 
     # pylint: disable=unused-argument
     @jacobian_prim.def_abstract_eval
     def _(*args, argnum, jaxpr, n_consts):
-        # TODO
-        raise NotImplementedError
-        return tuple(jaxpr.invars[i].aval for i in argnum)
+        in_avals = [jaxpr.invars[i].aval for i in argnum]
+        out_shapes = (outvar.aval.shape for outvar in jaxpr.outvars)
+        # TODO pytree support
+        return [
+            ShapedArray(out_shape + in_aval.shape, in_aval.dtype)
+            for out_shape in out_shapes
+            for in_aval in in_avals
+        ]
 
     return jacobian_prim

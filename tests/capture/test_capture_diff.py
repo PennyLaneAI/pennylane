@@ -17,7 +17,7 @@ Tests for capturing differentiation into jaxpr.
 import pytest
 
 import pennylane as qml
-from pennylane.capture import create_grad_primitive, qnode_prim
+from pennylane.capture import create_grad_primitive, create_jacobian_primitive, qnode_prim
 
 pytestmark = pytest.mark.jax
 
@@ -25,6 +25,7 @@ jax = pytest.importorskip("jax")
 jnp = jax.numpy
 
 grad_prim = create_grad_primitive()
+jacobian_prim = create_jacobian_primitive()
 
 
 @pytest.fixture(autouse=True)
@@ -93,6 +94,77 @@ def test_classical_grad(x64_mode, argnum):
 
     manual_eval = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)
     assert qml.math.allclose(manual_eval, jax_out)
+
+    jax.config.update("jax_enable_x64", initial_mode)
+
+
+def _diff_allclose(jac1, jac2, num_axes, atol=1e-8):
+    if num_axes == 0:
+        return qml.math.allclose(jac1, jac2, atol=atol)
+    if len(jac1) != len(jac2):
+        return False
+    return all(
+        _diff_allclose(_jac1, _jac2, num_axes - 1, atol=atol) for _jac1, _jac2 in zip(jac1, jac2)
+    )
+
+
+@pytest.mark.parametrize("x64_mode", (True, False))
+@pytest.mark.parametrize("argnum", ([0, 1], [0], [1], 0, 1))
+def test_classical_jacobian(x64_mode, argnum):
+    """Test that the qml.jacobian primitive can be captured with classical nodes."""
+    if isinstance(argnum, list) and len(argnum) > 1:
+        # These cases will only be unlocked with Pytree support
+        pytest.xfail()
+
+    initial_mode = jax.config.jax_enable_x64
+    jax.config.update("jax_enable_x64", x64_mode)
+    fdtype = jnp.float64 if x64_mode else jnp.float32
+
+    def shaped_array(shape):
+        """Make a ShapedArray with a given shape."""
+        return jax.core.ShapedArray(shape, fdtype)
+
+    def inner_func(x, y):
+        """A function with output signature
+        (4,), (2, 3) -> (2,), (4, 3), ()
+        """
+        return (x[0:2] * y[:, 1], jnp.outer(x, y[0]).astype(jnp.float32), jnp.prod(y) - jnp.sum(x))
+
+    x = jnp.array([0.3, 0.2, 0.1, 0.6])
+    y = jnp.array([[0.4, -0.7, 0.2], [1.2, -7.2, 0.2]])
+    func_qml = qml.jacobian(inner_func, argnum=argnum)
+    func_jax = jax.jacobian(inner_func, argnums=argnum)
+
+    jax_out = func_jax(x, y)
+    num_axes = 1 if isinstance(argnum, int) else 2
+    assert _diff_allclose(func_qml(x, y), jax_out, num_axes)
+
+    # Check overall jaxpr properties
+    jaxpr = jax.make_jaxpr(func_jax)(x, y)
+    jaxpr = jax.make_jaxpr(func_qml)(x, y)
+
+    if isinstance(argnum, int):
+        argnum = [argnum]
+
+    exp_in_avals = [shaped_array(shape) for shape in [(4,), (2, 3)]]
+    # Expected Jacobian shapes for argnum=[0, 1]
+    exp_out_shapes = [[(2, 4), (2, 2, 3)], [(4, 3, 4), (4, 3, 2, 3)], [(4,), (2, 3)]]
+    # Slice out shapes corresponding to the actual argnum
+    exp_out_avals = [shaped_array(shapes[i]) for shapes in exp_out_shapes for i in argnum]
+
+    assert jaxpr.in_avals == exp_in_avals
+    assert len(jaxpr.eqns) == 1
+    assert jaxpr.out_avals == exp_out_avals
+
+    jac_eqn = jaxpr.eqns[0]
+    assert jac_eqn.primitive == jacobian_prim
+    assert [var.aval for var in jac_eqn.outvars] == jaxpr.out_avals
+    assert set(jac_eqn.params.keys()) == {"argnum", "n_consts", "jaxpr"}
+    assert jac_eqn.params["argnum"] == argnum
+    assert jac_eqn.params["n_consts"] == 0
+
+    manual_eval = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x, y)
+    assert _diff_allclose(manual_eval, jax_out, num_axes)
 
     jax.config.update("jax_enable_x64", initial_mode)
 
