@@ -67,7 +67,9 @@ class ModExp(Operation):
 
     grad_method = None
 
-    def __init__(self, x_wires, output_wires, base, mod=None, work_wires=None, id=None):
+    def __init__(
+        self, x_wires, output_wires, base, mod=None, work_wires=None, id=None
+    ):  # pylint: disable=too-many-arguments
 
         if mod is None:
             mod = 2 ** (len(output_wires))
