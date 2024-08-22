@@ -22,7 +22,7 @@ import numpy as np
 import pennylane as qml
 from pennylane import transform
 from pennylane.gradients.gradient_transform import _contract_qjac_with_cjac
-from pennylane.tape import QuantumTapeBatch
+from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms.tape_expand import expand_invalid_trainable
 from pennylane.typing import PostprocessingFn
 
@@ -62,7 +62,7 @@ def _rademacher_sampler(indices, num_params, *args, rng):
 
 
 def _expand_transform_spsa(
-    tape: qml.tape.QuantumTape,
+    tape: QuantumScript,
     argnum=None,
     h=1e-5,
     approx_order=2,
@@ -73,7 +73,7 @@ def _expand_transform_spsa(
     num_directions=1,
     sampler=_rademacher_sampler,
     sampler_rng=None,
-) -> tuple[QuantumTapeBatch, PostprocessingFn]:
+) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Expand function to be applied before spsa gradient."""
     expanded_tape = expand_invalid_trainable(tape)
 
@@ -93,7 +93,7 @@ def _expand_transform_spsa(
     final_transform=True,
 )
 def spsa_grad(
-    tape: qml.tape.QuantumTape,
+    tape: QuantumScript,
     argnum=None,
     h=1e-5,
     approx_order=2,
@@ -104,7 +104,7 @@ def spsa_grad(
     num_directions=1,
     sampler=_rademacher_sampler,
     sampler_rng=None,
-) -> tuple[QuantumTapeBatch, PostprocessingFn]:
+) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     r"""Transform a circuit to compute the SPSA gradient of all gate
     parameters with respect to its inputs. This estimator shifts all parameters
     simultaneously and approximates the gradient based on these shifts and a

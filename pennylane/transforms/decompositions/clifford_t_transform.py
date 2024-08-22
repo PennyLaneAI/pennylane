@@ -21,7 +21,7 @@ import pennylane as qml
 from pennylane.ops import Adjoint
 from pennylane.ops.op_math.decompositions.solovay_kitaev import sk_decomposition
 from pennylane.queuing import QueuingManager
-from pennylane.tape import QuantumTape, QuantumTapeBatch
+from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms.core import transform
 from pennylane.transforms.optimization import (
     cancel_inverses,
@@ -309,12 +309,12 @@ def _merge_param_gates(operations, merge_ops=None):
 # pylint: disable= too-many-nested-blocks, too-many-branches, too-many-statements, unnecessary-lambda-assignment
 @transform
 def clifford_t_decomposition(
-    tape: QuantumTape,
+    tape: QuantumScript,
     epsilon=1e-4,
     max_expansion=6,
     method="sk",
     **method_kwargs,
-) -> tuple[QuantumTapeBatch, PostprocessingFn]:
+) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     r"""Decomposes a circuit into the Clifford+T basis.
 
     This method first decomposes the gate operations to a basis comprised of Clifford, :class:`~.T`, :class:`~.RZ` and
