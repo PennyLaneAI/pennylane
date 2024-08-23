@@ -20,27 +20,31 @@ from pennylane.operation import Operation
 
 
 class OutMultiplier(Operation):
-    r"""Performs the Outplace Multiplication operation in the computational basis.
+    r"""Performs the out-place modular multiplication operation.
 
-    This operator multiplies the integers :math:`x` and :math:`y` modulo :math:`mod` in the computational basis:
+    This operator performs the modular multiplication of integers :math:`x` and :math:`y` modulo
+    :math:`mod` in the computational basis:
 
     .. math::
-        OutMultiplier(mod) |x \rangle |y \rangle |b \rangle = |x \rangle |y \rangle |b + x \cdot y \text{mod} \rangle,
+        \text{OutMultiplier}(mod) |x \rangle |y \rangle |b \rangle = |x \rangle |y \rangle |b + x \cdot y \; \text{modulo} \; mod \rangle,
 
     The implementation is based on the quantum Fourier transform method presented in
     `arXiv:2311.08555 <https://arxiv.org/abs/2311.08555>`_.
 
+    .. note::
+
+        Note that :math:`x` and :math:`y` must be smaller than :math:`mod` to get the correct result.
+
     Args:
-        x_wires (Sequence[int]): the wires that store the integer :math:`x`.
-        y_wires (Sequence[int]): the wires that store the integer :math:`y`.
-        output_wires (Sequence[int]): the wires that store the multiplication modulo mod :math:`x \cdot y \text{mod}`.
+        x_wires (Sequence[int]): the wires that store the integer :math:`x`
+        y_wires (Sequence[int]): the wires that store the integer :math:`y`
+        output_wires (Sequence[int]): the wires that store the multiplication result
         mod (int): the modulus for performing the multiplication, default value is :math:`2^{len(output\_wires)}`
-        work_wires (Sequence[int]): the auxiliary wires to use for the multiplication modulo :math:`mod` when
-        :math:`mod \neq 2^{\text{len(output_wires)}}`
+        work_wires (Sequence[int]): the auxiliary wires to use for the multiplication modulo
 
     **Example**
 
-    Multiplication of two integers :math:`x=2` and :math:`y=7` modulo :math:`mod=12`.
+    This example performs the multiplication of two integers :math:`x=2` and :math:`y=7` modulo :math:`mod=12`.
 
     .. code-block::
 
@@ -63,10 +67,11 @@ class OutMultiplier(Operation):
 
     .. code-block:: pycon
 
-        >>> print(f"The ket representation of {x} * {y} mod {mod} is {circuit()}")
-            The ket representation of 2 * 7 mod 12 is [0 0 1 0]
+        >>> print(circuit())
+        [0 0 1 0]
 
-    We can see that the result [0 0 1 0] corresponds to 2, which comes from :math:`2 \cdot 7=14 \longrightarrow 14 mod 12 = 2`.
+    The result :math:`[0 0 1 0]`, is the ket representation of
+    :math:`2 \cdot 7 \, \text{modulo} \, 12 = 2`.
     """
 
     grad_method = None
@@ -79,7 +84,7 @@ class OutMultiplier(Operation):
             mod = 2 ** len(output_wires)
         if mod != 2 ** len(output_wires) and work_wires is None:
             raise ValueError(
-                f"If mod is not 2^{len(output_wires)} you should provide two work_wires"
+                f"If mod is not 2^{len(output_wires)}, two work wires should be provided."
             )
         if (not hasattr(output_wires, "__len__")) or (mod > 2 ** (len(output_wires))):
             raise ValueError("OutMultiplier must have enough wires to represent mod.")
@@ -155,18 +160,17 @@ class OutMultiplier(Operation):
     ):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators.
         Args:
-            x_wires (Sequence[int]): the wires that store the integer :math:`x`.
-            y_wires (Sequence[int]): the wires that store the integer :math:`y`.
-            output_wires (Sequence[int]): the wires that store the multiplication modulo mod :math:`x \cdot y \text{mod}`.
+            x_wires (Sequence[int]): the wires that store the integer :math:`x`
+            y_wires (Sequence[int]): the wires that store the integer :math:`y`
+            output_wires (Sequence[int]): the wires that store the multiplication result
             mod (int): the modulus for performing the multiplication, default value is :math:`2^{len(output\_wires)}`
-            work_wires (Sequence[int]): the auxiliary wires to use for the multiplication modulo :math:`mod` when
-            :math:`mod \neq 2^{\text{len(output_wires)}}`
+            work_wires (Sequence[int]): the auxiliary wires to use for the multiplication modulo
         Returns:
             list[.Operator]: Decomposition of the operator
 
         **Example**
 
-        >>> qml.OutMultiplier.compute_decomposition(x_wires = [0, 1], y_wires = [2, 3], output_wires = [5, 6], mod = 4, work_wires = [4, 7])
+        >>> qml.OutMultiplier.compute_decomposition(x_wires=[0,1], y_wires=[2,3], output_wires=[5,6], mod=4, work_wires=[4,7])
         [QFT(wires=[5, 6]),
         ControlledSequence(ControlledSequence(PhaseAdder(wires=[5, 6]), control=[0, 1]), control=[2, 3]),
         Adjoint(QFT(wires=[5, 6]))]
