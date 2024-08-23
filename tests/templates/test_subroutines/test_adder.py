@@ -175,7 +175,7 @@ class TestAdder:
         ],
     )
     def test_types_error(
-        self, k, x_wires, mod, work_wire, msg_match
+        self, k, x_wires, mod, work_wires, msg_match
     ):  # pylint: disable=too-many-arguments
         """Test errors are raised"""
         with pytest.raises(ValueError, match=msg_match):
