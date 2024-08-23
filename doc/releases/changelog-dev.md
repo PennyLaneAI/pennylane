@@ -150,12 +150,12 @@
 * `qml.for_loop` now supports `range`-like syntax with default `step=1`.
   [(#6068)](https://github.com/PennyLaneAI/pennylane/pull/6068)
 
-* Differentiation of hybrid programs via `qml.grad` can now be captured into plxpr.
-  When evaluating a captured `qml.grad` instruction, it will dispatch to `jax.grad`,
-  which differs from the Autograd implementation of `qml.grad` itself.
-  Pytree inputs and outputs are supported.
+* Differentiation of hybrid programs via `qml.grad` and `qml.jacobian` can now be captured
+  into plxpr. When evaluating a captured `qml.grad` (`qml.jacobian`) instruction, it will
+  dispatch to `jax.grad` (`jax.jacobian`), which differs from the Autograd implementation
+  without capture.
   [(#6120)](https://github.com/PennyLaneAI/pennylane/pull/6120)
-  [(#6134)](https://github.com/PennyLaneAI/pennylane/pull/6134)
+  [(#6127)](https://github.com/PennyLaneAI/pennylane/pull/6127)
  
 * Applying `adjoint` and `ctrl` to a quantum function can now be captured into plxpr.
   Furthermore, the `qml.cond` function can be captured into plxpr.
