@@ -11,9 +11,26 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""
-This module provides the functionality to create spin Hamiltonians.
+"""Functions wrapping ANSI terminal control sequences. See:
+https://en.wikipedia.org/wiki/ANSI_escape_code#CSI_(Control_Sequence_Introducer)_sequences
 """
 
-from .lattice import Lattice
-from .spin_hamiltonian import fermi_hubbard, heisenberg, transverse_ising
+
+def cursor_up(n: int) -> str:
+    """Return 'A' control sequence, which to moves the cursor up ``n`` columns.
+
+    >>> cursor_up(2)
+    '\x1B[2;A'
+
+    """
+    return f"\x1B[{n};A"
+
+
+def erase_line() -> str:
+    """Return 'K' control sequence, which erases the current line starting from
+    the cursor.
+
+    >>> erase_line()
+    '\x1B[0;K'
+    """
+    return "\x1B[0;K"
