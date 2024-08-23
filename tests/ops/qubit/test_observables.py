@@ -331,11 +331,11 @@ class TestHermitian:  # pylint: disable=too-many-public-methods
 
         # test int as wire type
         A_decomp = qml.Hermitian.compute_decomposition(single_wire_observable, wires=0)
-        assert np.allclose(A_decomp[0].matrix(), single_wire_observable, rtol=0)
+        assert np.allclose(qml.matrix(A_decomp[0]), single_wire_observable, rtol=0)
 
         # test str as wire type
         A_decomp = qml.Hermitian.compute_decomposition(single_wire_observable, wires="aux")
-        assert np.allclose(A_decomp[0].matrix(), single_wire_observable, rtol=0)
+        assert np.allclose(qml.matrix(A_decomp[0]), single_wire_observable, rtol=0)
 
     def test_hermitian_compute_decomposition_inefficiency_warning(self):
         """Tests user inefficiency warning associated with large matrix decomposition"""

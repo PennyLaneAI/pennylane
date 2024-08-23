@@ -505,7 +505,9 @@ def set_decomposition(custom_decomps, dev, decomp_depth=10):
     1: ──H─╰Z──H─┤
 
     """
-    if isinstance(dev, qml.devices.LegacyDevice):
+    if isinstance(dev, qml.devices.LegacyDeviceFacade):
+        dev = dev.target_device
+
         original_custom_expand_fn = dev.custom_expand_fn
 
         # Create a new expansion function; stop at things that do not have

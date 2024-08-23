@@ -806,7 +806,7 @@ class TestParameters:
         assert tape.num_params == len(params)
         assert tape.get_parameters() == params
 
-        b = np.array([0, 1, 0, 0])
+        b = np.array([0.0, 1.0, 0.0, 0.0])
         new_params = [b, 0.543, 0.654, 0.123]
         new_tape = tape.bind_new_parameters(new_params, [0, 1, 2, 3])
         assert new_tape.get_parameters() == new_params
@@ -896,8 +896,7 @@ class TestExpand:
         with QuantumTape() as tape:
             qml.BasisState(np.array([1]), wires=0)
 
-        # since expansion calls `BasisStatePreparation` we have to expand twice
-        new_tape = tape.expand(depth=2)
+        new_tape = tape.expand(depth=1)
 
         assert len(new_tape.operations) == 1
         assert new_tape.operations[0].name == "PauliX"
@@ -958,7 +957,8 @@ class TestExpand:
             qml.probs(wires="a")
 
         new_tape = tape.expand()
-        assert len(new_tape.operations) == 4
+
+        assert len(new_tape.operations) == 5
         assert new_tape.shots is tape.shots
 
     def test_stopping_criterion(self):
@@ -991,7 +991,7 @@ class TestExpand:
             qml.probs(wires=0)
             qml.probs(wires="a")
 
-        new_tape = tape.expand(depth=3)
+        new_tape = tape.expand(depth=2)
         assert len(new_tape.operations) == 11
 
     @pytest.mark.parametrize("skip_first", (True, False))
@@ -1005,9 +1005,9 @@ class TestExpand:
                 qml.PauliZ(0),
             ],
             [
-                qml.BasisStatePreparation([1, 0], wires=[0, 1]),
+                qml.PauliX(0),
                 qml.MottonenStatePreparation([0, 1, 0, 0], wires=[0, 1]),
-                qml.StatePrep([0, 1, 0, 0], wires=[0, 1]),  # still a StatePrepBase :/
+                qml.MottonenStatePreparation([0, 1, 0, 0], wires=[0, 1]),
                 qml.PauliZ(0),
             ],
         ),
@@ -1034,7 +1034,6 @@ class TestExpand:
         true_decomposition += [
             qml.PauliZ(wires=0),
             qml.Rot(0.1, 0.2, 0.3, wires=0),
-            qml.BasisStatePreparation([0], wires=[1]),
             qml.MottonenStatePreparation([0, 1], wires=[0]),
         ]
 
@@ -1079,7 +1078,7 @@ class TestExpand:
 
         new_tape = tape.expand(expand_measurements=True)
 
-        assert len(new_tape.operations) == 5
+        assert len(new_tape.operations) == 6
 
         expected = [
             qml.measurements.Probability,
