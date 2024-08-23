@@ -178,53 +178,10 @@ class TestAutogradExecuteUnitTests:
         spy_gradients.assert_called()
 
 
+# pylint: disable=too-few-public-methods
 class TestBatchTransformExecution:
     """Tests to ensure batch transforms can be correctly executed
     via qml.execute and batch_transform"""
-
-    def test_no_batch_transform(self, mocker):
-        """Test that batch transforms can be disabled and enabled"""
-        dev = qml.device("default.qubit.legacy", wires=2, shots=100000)
-
-        H = qml.PauliZ(0) @ qml.PauliZ(1) - qml.PauliX(0)
-        x = 0.6
-        y = 0.2
-
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.RX(x, wires=0)
-            qml.RY(y, wires=1)
-            qml.CNOT(wires=[0, 1])
-            qml.expval(H)
-
-        tape = qml.tape.QuantumScript.from_queue(q)
-        spy = mocker.spy(dev.target_device, "batch_transform")
-
-        if not qml.operation.active_new_opmath():
-            with pytest.raises(AssertionError, match="Hamiltonian must be used with shots=None"):
-                with pytest.warns(
-                    qml.PennyLaneDeprecationWarning,
-                    match="The device_batch_transform argument is deprecated",
-                ):
-                    _ = qml.execute([tape], dev, None, device_batch_transform=False)
-        else:
-            with pytest.warns(
-                qml.PennyLaneDeprecationWarning,
-                match="The device_batch_transform argument is deprecated",
-            ):
-                res = qml.execute([tape], dev, None, device_batch_transform=False)
-            assert np.allclose(res[0], np.cos(y), atol=0.1)
-
-        spy.assert_called()
-
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning,
-            match="The device_batch_transform argument is deprecated",
-        ):
-            res = qml.execute([tape], dev, None, device_batch_transform=True)
-        spy.assert_called()
-
-        assert qml.math.shape(res[0]) == ()
-        assert np.allclose(res[0], np.cos(y), rtol=0.05)
 
     def test_batch_transform_dynamic_shots(self):
         """Tests that the batch transform considers the number of shots for the execution, not those
