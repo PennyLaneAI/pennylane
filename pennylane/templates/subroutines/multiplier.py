@@ -74,7 +74,7 @@ class Multiplier(Operation):
 
     .. code-block:: pycon
 
-        >>> print(f"The ket representation of {m} * {k} mod {mod} is {multiplier_modulo(m, k, mod, wires_m, work_wires)}")
+        >>> print(f"The ket representation of {x} * {k} mod {mod} is {multiplier_modulo(x, k, mod, x_wires, work_wires)}")
             The ket representation of 3 * 4 mod 7 is [1 0 1]
 
     We can see that the result [1 0 1] corresponds to 5, which comes from :math:`3 \cdot 4=12 \longrightarrow 12 mod 7 = 5`.
