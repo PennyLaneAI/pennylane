@@ -142,7 +142,7 @@ def _get_num_executions_for_sum(obs):
 
 
 # pylint: disable=no-member
-def get_num_shots_and_executions(tape: qml.tape.QuantumTape) -> tuple[int, int]:
+def get_num_shots_and_executions(tape: qml.tape.QuantumScript) -> tuple[int, int]:
     """Get the total number of qpu executions and shots.
 
     Args:
