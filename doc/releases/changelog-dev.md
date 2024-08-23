@@ -144,7 +144,9 @@
 * Differentiation of hybrid programs via `qml.grad` can now be captured into plxpr.
   When evaluating a captured `qml.grad` instruction, it will dispatch to `jax.grad`,
   which differs from the Autograd implementation of `qml.grad` itself.
+  Pytree inputs and outputs are supported.
   [(#6120)](https://github.com/PennyLaneAI/pennylane/pull/6120)
+  [(#6134)](https://github.com/PennyLaneAI/pennylane/pull/6134)
  
 * Applying `adjoint` and `ctrl` to a quantum function can now be captured into plxpr.
   Furthermore, the `qml.cond` function can be captured into plxpr.
