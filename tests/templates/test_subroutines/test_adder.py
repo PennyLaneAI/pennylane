@@ -60,6 +60,20 @@ class TestAdder:
                 2,
             ),
             (
+                0,
+                [0, 1, 4],
+                4,
+                [3, 2],
+                2,
+            ),
+            (
+                1,
+                [0, 1, 4],
+                4,
+                [3, 2],
+                0,
+            ),
+            (
                 -3,
                 [0, 1, 4],
                 4,
@@ -94,8 +108,6 @@ class TestAdder:
     ):  # pylint: disable=too-many-arguments
         """Test the correctness of the PhaseAdder template output."""
         dev = qml.device("default.qubit", shots=1)
-        if mod is None:
-            mod = 2 ** len(x_wires)
 
         @qml.qnode(dev)
         def circuit(x):
@@ -103,9 +115,11 @@ class TestAdder:
             qml.Adder(k, x_wires, mod, work_wires)
             return qml.sample(wires=x_wires)
 
-        assert np.allclose(
-            sum(bit * (2**i) for i, bit in enumerate(reversed(circuit(x)))), (x + k) % mod
-        )
+        if mod is None:
+            mod = 2 ** len(x_wires)
+
+        result = sum(bit * (2**i) for i, bit in enumerate(reversed(circuit(x))))
+        assert np.allclose(result, (x + k) % mod)
 
     @pytest.mark.parametrize(
         ("k", "x_wires", "mod", "work_wires", "msg_match"),
@@ -115,7 +129,7 @@ class TestAdder:
                 [0, 1, 2],
                 9,
                 [3, 4],
-                ("Adder must have at least enough x_wires to represent mod."),
+                ("Adder must have enough x_wires to represent mod."),
             ),
             (
                 1,
@@ -129,15 +143,41 @@ class TestAdder:
                 [0, 1, 2, 3, 4],
                 12,
                 [4, 5],
-                "None wire in work_wires should be included in x_wires.",
+                "None of the wires in work_wires should be included in x_wires.",
             ),
         ],
     )
     def test_operation_and_test_wires_error(
         self, k, x_wires, mod, work_wires, msg_match
     ):  # pylint: disable=too-many-arguments
-        """Test errors are raised"""
+        """Test that proper errors are raised"""
 
+        with pytest.raises(ValueError, match=msg_match):
+            qml.Adder(k, x_wires, mod, work_wires)
+
+    @pytest.mark.parametrize(
+        ("k", "x_wires", "mod", "work_wires", "msg_match"),
+        [
+            (
+                2.3,
+                [0, 1, 2],
+                9,
+                [3, 4],
+                ("Both k and mod must be integers"),
+            ),
+            (
+                2,
+                [0, 1, 2],
+                3.2,
+                [3, 4],
+                ("Both k and mod must be integers"),
+            ),
+        ],
+    )
+    def test_types_error(
+        self, k, x_wires, mod, work_wires, msg_match
+    ):  # pylint: disable=too-many-arguments
+        """Test errors are raised"""
         with pytest.raises(ValueError, match=msg_match):
             qml.Adder(k, x_wires, mod, work_wires)
 
@@ -167,7 +207,6 @@ class TestAdder:
 
         jax.config.update("jax_enable_x64", True)
         x = 2
-        x_list = [0, 1, 0]
         k = 6
         mod = 7
         x_wires = [0, 1, 2]
@@ -177,10 +216,9 @@ class TestAdder:
         @jax.jit
         @qml.qnode(dev)
         def circuit():
-            qml.BasisEmbedding(x_list, wires=x_wires)
+            qml.BasisEmbedding(x, wires=x_wires)
             qml.Adder(k, x_wires, mod, work_wires)
             return qml.sample(wires=x_wires)
 
-        assert jax.numpy.allclose(
-            sum(bit * (2**i) for i, bit in enumerate(reversed(circuit()))), (x + k) % mod
-        )
+        result = sum(bit * (2**i) for i, bit in enumerate(reversed(circuit())))
+        assert jax.numpy.allclose(result, (x + k) % mod)

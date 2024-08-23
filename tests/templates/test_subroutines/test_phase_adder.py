@@ -32,6 +32,17 @@ def test_standard_validity_Phase_Adder():
     qml.ops.functions.assert_valid(op)
 
 
+def test_add_k_fourier():
+    """Test the private _add_k_fourier function."""
+
+    ops = _add_k_fourier(2, wires=range(2))
+    assert len(ops) == 2
+    assert ops[0].name == "PhaseShift"
+    assert ops[1].name == "PhaseShift"
+    assert np.isclose(ops[0].parameters[0], 2 * np.pi)
+    assert np.isclose(ops[1].parameters[0], np.pi)
+
+
 class TestPhaseAdder:
     """Test the PhaseAdder template."""
 
@@ -65,6 +76,13 @@ class TestPhaseAdder:
                 4,
                 [3],
                 1,
+            ),
+            (
+                0,
+                [0, 1, 4],
+                4,
+                [3],
+                0,
             ),
             (
                 -2,
@@ -101,8 +119,6 @@ class TestPhaseAdder:
     ):  # pylint: disable=too-many-arguments
         """Test the correctness of the PhaseAdder template output."""
         dev = qml.device("default.qubit", shots=1)
-        if mod is None:
-            mod = 2 ** len(x_wires)
 
         @qml.qnode(dev)
         def circuit(x):
@@ -111,6 +127,9 @@ class TestPhaseAdder:
             qml.PhaseAdder(k, x_wires, mod, work_wire)
             qml.adjoint(qml.QFT)(wires=x_wires)
             return qml.sample(wires=x_wires)
+
+        if mod is None:
+            mod = 2 ** len(x_wires)
 
         assert np.allclose(
             sum(bit * (2**i) for i, bit in enumerate(reversed(circuit(x)))), (x + k) % mod
@@ -124,7 +143,7 @@ class TestPhaseAdder:
                 [0, 1, 2],
                 9,
                 [3],
-                ("PhaseAdder must have at least enough x_wires to represent mod."),
+                ("PhaseAdder must have enough x_wires to represent mod."),
             ),
             (
                 1,
@@ -138,11 +157,37 @@ class TestPhaseAdder:
                 [0, 1, 2, 3, 4],
                 12,
                 [4],
-                "work_wire should not be included in x_wires.",
+                "None of the wires in work_wire should be included in x_wires.",
             ),
         ],
     )
     def test_operation_and_wires_error(
+        self, k, x_wires, mod, work_wire, msg_match
+    ):  # pylint: disable=too-many-arguments
+        """Test errors are raised"""
+        with pytest.raises(ValueError, match=msg_match):
+            qml.PhaseAdder(k, x_wires, mod, work_wire)
+
+    @pytest.mark.parametrize(
+        ("k", "x_wires", "mod", "work_wire", "msg_match"),
+        [
+            (
+                2.3,
+                [0, 1, 2],
+                9,
+                [3],
+                ("Both k and mod must be integers"),
+            ),
+            (
+                2,
+                [0, 1, 2],
+                3.2,
+                [3],
+                ("Both k and mod must be integers"),
+            ),
+        ],
+    )
+    def test_types_error(
         self, k, x_wires, mod, work_wire, msg_match
     ):  # pylint: disable=too-many-arguments
         """Test errors are raised"""
@@ -188,7 +233,6 @@ class TestPhaseAdder:
 
         jax.config.update("jax_enable_x64", True)
         x = 2
-        x_list = [0, 1, 0]
         k = 6
         mod = 7
         x_wires = [0, 1, 2]
@@ -198,7 +242,7 @@ class TestPhaseAdder:
         @jax.jit
         @qml.qnode(dev)
         def circuit():
-            qml.BasisEmbedding(x_list, wires=x_wires)
+            qml.BasisEmbedding(x, wires=x_wires)
             qml.QFT(wires=x_wires)
             qml.PhaseAdder(k, x_wires, mod, work_wire)
             qml.adjoint(qml.QFT)(wires=x_wires)

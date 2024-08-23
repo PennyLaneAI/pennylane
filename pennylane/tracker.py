@@ -42,7 +42,7 @@ class Tracker:
     manually triggered by setting ``tracker.active = True`` without the use of a context manager.
 
     Args:
-        dev (Device): A PennyLane compatible device
+        dev (.devices.Device): A PennyLane compatible device
         callback=None (callable or None): A function of the keywords ``totals``,
             ``history`` and ``latest``.  Run on each ``record`` call with current values of
             the corresponding attributes.

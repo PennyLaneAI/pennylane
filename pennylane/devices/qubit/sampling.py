@@ -63,7 +63,6 @@ def _group_measurements(mps: list[Union[SampleMeasurement, ClassicalShadowMP, Sh
     # measurements with no observables
     mp_no_obs = []
     mp_no_obs_indices = []
-
     for i, mp in enumerate(mps):
         if isinstance(mp.obs, (Sum, SProd, Prod)):
             mps[i].obs = qml.simplify(mp.obs)
@@ -78,13 +77,11 @@ def _group_measurements(mps: list[Union[SampleMeasurement, ClassicalShadowMP, Sh
         else:
             mp_other_obs.append([mp])
             mp_other_obs_indices.append([i])
-
     if mp_pauli_obs:
         i_to_pauli_mp = dict(mp_pauli_obs)
         _, group_indices = qml.pauli.group_observables(
             [mp.obs for mp in i_to_pauli_mp.values()], list(i_to_pauli_mp.keys())
         )
-
         mp_pauli_groups = []
         for indices in group_indices:
             mp_group = [i_to_pauli_mp[i] for i in indices]
@@ -94,7 +91,6 @@ def _group_measurements(mps: list[Union[SampleMeasurement, ClassicalShadowMP, Sh
 
     mp_no_obs_indices = [mp_no_obs_indices] if mp_no_obs else []
     mp_no_obs = [mp_no_obs] if mp_no_obs else []
-
     all_mp_groups = mp_pauli_groups + mp_no_obs + mp_other_obs
     all_indices = group_indices + mp_no_obs_indices + mp_other_obs_indices
 
@@ -146,7 +142,7 @@ def _get_num_executions_for_sum(obs):
 
 
 # pylint: disable=no-member
-def get_num_shots_and_executions(tape: qml.tape.QuantumTape) -> tuple[int, int]:
+def get_num_shots_and_executions(tape: qml.tape.QuantumScript) -> tuple[int, int]:
     """Get the total number of qpu executions and shots.
 
     Args:
@@ -240,7 +236,6 @@ def measure_with_samples(
     mps = measurements[0 : -len(mid_measurements)] if mid_measurements else measurements
 
     groups, indices = _group_measurements(mps)
-
     all_res = []
     for group in groups:
         if isinstance(group[0], ExpectationMP) and isinstance(

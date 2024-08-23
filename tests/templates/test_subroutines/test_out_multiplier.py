@@ -37,7 +37,7 @@ class TestOutMultiplier:
     """Test the qml.OutMultiplier template."""
 
     @pytest.mark.parametrize(
-        ("x_wires", "y_wires", "output_wires", "mod", "work_wires"),
+        ("x_wires", "y_wires", "output_wires", "mod", "work_wires", "x", "y"),
         [
             (
                 [0, 1, 2],
@@ -45,6 +45,8 @@ class TestOutMultiplier:
                 [6, 7, 8],
                 7,
                 [9, 10],
+                2,
+                3,
             ),
             (
                 [0, 1],
@@ -52,6 +54,8 @@ class TestOutMultiplier:
                 [6, 7, 8, 2],
                 14,
                 [9, 10],
+                1,
+                2,
             ),
             (
                 [0, 1, 2],
@@ -59,6 +63,8 @@ class TestOutMultiplier:
                 [5, 6, 7, 8],
                 8,
                 [9, 10],
+                3,
+                3,
             ),
             (
                 [0, 1, 2, 3],
@@ -66,6 +72,8 @@ class TestOutMultiplier:
                 [6, 7, 8, 9, 10],
                 22,
                 [11, 12],
+                0,
+                0,
             ),
             (
                 [0, 1, 2],
@@ -73,6 +81,8 @@ class TestOutMultiplier:
                 [6, 7, 8],
                 None,
                 [9, 10],
+                1,
+                3,
             ),
             (
                 [0, 1],
@@ -80,11 +90,13 @@ class TestOutMultiplier:
                 [6, 7, 8],
                 None,
                 None,
+                3,
+                3,
             ),
         ],
     )
     def test_operation_result(
-        self, x_wires, y_wires, output_wires, mod, work_wires
+        self, x_wires, y_wires, output_wires, mod, work_wires, x, y
     ):  # pylint: disable=too-many-arguments
         """Test the correctness of the OutMultiplier template output."""
         dev = qml.device("default.qubit", shots=1)
@@ -97,13 +109,11 @@ class TestOutMultiplier:
             return qml.sample(wires=output_wires)
 
         if mod is None:
-            max = 2 ** len(output_wires)
-        else:
-            max = mod
-        for x, y in zip(range(len(x_wires)), range(len(y_wires))):
-            assert np.allclose(
-                sum(bit * (2**i) for i, bit in enumerate(reversed(circuit(x, y)))), (x * y) % max
-            )
+            mod = 2 ** len(output_wires)
+
+        assert np.allclose(
+            sum(bit * (2**i) for i, bit in enumerate(reversed(circuit(x, y)))), (x * y) % mod
+        )
 
     @pytest.mark.parametrize(
         ("x_wires", "y_wires", "output_wires", "mod", "work_wires", "msg_match"),
@@ -154,7 +164,7 @@ class TestOutMultiplier:
                 [6, 7, 8],
                 9,
                 [9, 10],
-                "OutMultiplier must have at least enough wires to represent mod.",
+                "OutMultiplier must have enough wires to represent mod.",
             ),
             (
                 [0, 1, 2],
