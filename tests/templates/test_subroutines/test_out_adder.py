@@ -94,7 +94,7 @@ class TestOutAdder:
                 [6, 7, 8],
                 9,
                 [9, 10],
-                "OutAdder must have at least enough wires to represent mod.",
+                "OutAdder must have enough wires to represent mod.",
             ),
             (
                 [0, 1, 2],

@@ -26,20 +26,26 @@ class OutAdder(Operation):
 
     .. math::
 
-        \text{OutAdder}(mod) |m \rangle | k \rangle | 0 \rangle = |m \rangle | k \rangle | m+k \, \text{mod} \, mod \rangle ,
+        \text{OutAdder}(mod) |x \rangle | k \rangle | 0 \rangle = |x \rangle | k \rangle | x+k \, \text{mod} \, mod \rangle ,
 
-    The decomposition of this operator is based on the QFT-based method presented in `Atchade-Adelomou and Gonzalez (2023) <https://arxiv.org/abs/2311.08555>`_.
+    The implementation is based on the quantum Fourier transform method presented in
+    `arXiv:2311.08555 <https://arxiv.org/abs/2311.08555>`_.
+
+    .. note::
+
+        Note that :math:`x` and :math:`y` must be smaller than :math:`mod` to get the correct result.
 
     Args:
-        x_wires (Sequence[int]): the wires that stores the integer :math:`x`.
-        y_wires (Sequence[int]): the wires that stores the integer :math:`y`.
-        output_wires (Sequence[int]): the wires that stores the sum modulo mod :math:`x+y \, \text{mod} \, mod`.
-        mod (int): modulo with respect to which the sum is performed, default value will be ``2^len(wires)``.
-        work_wires (Sequence[int]): the auxiliary wires to use for the sum modulo :math:`mod` when :math:`mod \neq 2^{\text{len(wires)}}`
+        x_wires (Sequence[int]): the wires that store the integer :math:`x`.
+        y_wires (Sequence[int]): the wires that store the integer :math:`y`.
+        output_wires (Sequence[int]): the wires that store the addition modulo mod :math:`x + y \text{mod}`.
+        mod (int): the modulus for performing the addition, default value is :math:`2^{\text{len(output\_wires)}`
+        work_wires (Sequence[int]): the auxiliary wires to use for the addition modulo :math:`mod` when
+        :math:`mod \neq 2^{\text{len(output\_wires)}}`.
 
     **Example**
 
-    Sum of two integers :math:`x=8` and :math:`y=5` modulo :math:`mod=15`. Note that to perform this sum using qml.OutAdder we need that :math:`x,y < mod`.
+    Sum of two integers :math:`x=8` and :math:`y=5` modulo :math:`mod=15`.
 
     .. code-block::
 
@@ -52,7 +58,7 @@ class OutAdder(Operation):
         work_wires=[6,10]
         dev = qml.device("default.qubit", shots=1)
         @qml.qnode(dev)
-        def circuit_OutAdder():
+        def circuit():
             qml.BasisEmbedding(x, wires=x_wires)
             qml.BasisEmbedding(y, wires=y_wires)
             qml.OutAdder(x_wires, y_wires, output_wires, mod, work_wires)
@@ -60,7 +66,7 @@ class OutAdder(Operation):
 
     .. code-block:: pycon
 
-        >>> print(f"The ket representation of {x} + {y} mod {mod} is {circuit_OutAdder()}")
+        >>> print(f"The ket representation of {x} + {y} mod {mod} is {circuit()}")
         The ket representation of 5 + 6 mod 7 is [1 0 0]
 
     We can see that the result [1 0 0] corresponds to 4, which comes from :math:`5+6=11 \longrightarrow 11 \, \text{mod} \, 7 = 4`.
@@ -75,7 +81,7 @@ class OutAdder(Operation):
         if mod is None:
             mod = 2 ** (len(output_wires))
         if (not hasattr(output_wires, "__len__")) or (mod > 2 ** len(output_wires)):
-            raise ValueError("OutAdder must have at least enough wires to represent mod.")
+            raise ValueError("OutAdder must have enough wires to represent mod.")
         if work_wires is not None:
             if any(wire in work_wires for wire in x_wires):
                 raise ValueError("None of the wires in work_wires should be included in x_wires.")
@@ -142,17 +148,18 @@ class OutAdder(Operation):
     ):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators.
         Args:
-            x_wires (Sequence[int]): the wires that stores the integer :math:`x`.
-            y_wires (Sequence[int]): the wires that stores the integer :math:`y`.
-            output_wires (Sequence[int]): the wires that stores the sum modulo mod :math:`x+y mod mod`.
-            mod (int): modulo with respect to which the sum is performed, default value will be ``2^len(output_wires)``.
-            work_wires (Sequence[int]): the auxiliary wires to use for the sum modulo :math:`mod` when :math:`mod \neq 2^{\textrm{len(output_wires)}}`.
+            x_wires (Sequence[int]): the wires that store the integer :math:`x`.
+            y_wires (Sequence[int]): the wires that store the integer :math:`y`.
+            output_wires (Sequence[int]): the wires that store the addition modulo mod :math:`x + y \text{mod}`.
+            mod (int): the modulus for performing the addition, default value is :math:`2^{\text{len(output\_wires)}`
+            work_wires (Sequence[int]): the auxiliary wires to use for the addition modulo :math:`mod` when
+            :math:`mod \neq 2^{\text{len(output\_wires)}}`.
         Returns:
             list[.Operator]: Decomposition of the operator
 
         **Example**
 
-        >>> qml.OutAdder.compute_decomposition(x_wires=[0,1], y_wires=[2,3], output_wires=[5,6], mod=4, work_wires=[4,7])
+        >>> qml.OutAdder.compute_decomposition(x_wires = [0, 1], y_wires = [2, 3], output_wires = [5, 6], mod = 4, work_wires = [4, 7])
         [QFT(wires=[5, 6]),
         ControlledSequence(PhaseAdder(wires=[5, 6, None]), control=[0, 1])
         ControlledSequence(PhaseAdder(wires=[5, 6, None]), control=[2, 3]),

@@ -83,7 +83,7 @@ class TestModExp:
                 8,
                 9,
                 [9, 10, 11, 12, 13],
-                "ModExp must have at least enough wires to represent mod.",
+                "ModExp must have enough wires to represent mod.",
             ),
             (
                 [0, 1, 2],
@@ -92,6 +92,14 @@ class TestModExp:
                 6,
                 [9, 10, 11, 12],
                 "ModExp needs as many work_wires as output_wires plus two.",
+            ),
+            (
+                [0, 1, 2],
+                [3, 4, 5],
+                5,
+                8,
+                [9, 10],
+                "ModExp needs as many work_wires as output_wires.",
             ),
             (
                 [0, 1, 2],

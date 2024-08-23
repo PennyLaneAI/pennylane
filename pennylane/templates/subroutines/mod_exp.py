@@ -27,19 +27,27 @@ class ModExp(Operation):
 
         \text{ModExp}(base,mod) |x \rangle |k \rangle = |x \rangle |k*base^x \, \text{mod} \, mod \rangle,
 
-    The decomposition of this operator is based on the QFT-based method presented in `Atchade-Adelomou and Gonzalez (2023) <https://arxiv.org/abs/2311.08555>`_.
+    The implementation is based on the quantum Fourier transform method presented in
+    `arXiv:2311.08555 <https://arxiv.org/abs/2311.08555>`_.
+
+    .. note::
+
+        Note that :math:`x` must be smaller than :math:`mod` to get the correct result.
+        Also, it is required that :math:`base` has inverse, :math:`base^-1` modulo :math:`mod`.
+        That means :math:`base*base^-1 modulo mod = 1`, which will only be possible if :math:`base`
+        and :math:`mod` are coprime.
 
     Args:
-        x_wires (Sequence[int]): the wires that stores the integer :math:`x`.
-        output_wires (Sequence[int]): the wires that stores the exponentiation modulo mod :math:`base^x \, \text{mod} \, mod`.
-        base (int): integer we want to exponentiate.
-        mod (int): modulo with respect to which the exponentiation is performed, default value will be ``2^len(output_wires)``.
-        work_wires (Sequence[int]): the auxiliary wires to use for the exponentiation modulo :math:`mod` when :math:`mod \neq 2^{\text{len(output_wires)}}`
+        x_wires (Sequence[int]): the wires that stores the integer :math:`x`
+        output_wires (Sequence[int]): the wires that stores the exponentiation modulo mod :math:`base^x \, \text{mod} \, mod`
+        base (int): integer we want to exponentiate
+        mod (int): the modulus for performing the exponentiation, default value is :math:`2^{len(output\_wires)}`
+        work_wires (Sequence[int]): the auxiliary wires to be used for the exponentiation modulo :math:`mod`.
+        There must be as many as ``output_wires`` and if :math:`mod \neq 2^{len(x\_wires)}`, two more auxiliaries must be added.
 
     **Example**
 
-    Exponentiation of :math:`base=2` to the power :math:`x=3` modulo :math:`mod=7`. Note that to perform this multiplication using qml.ModExp we need that :math:`x < mod`
-    and that :math:`base` has inverse, :math:`base^-1` modulo :math:`mod`. That means :math:`base*base^-1 modulo mod = 1`, which will only be possible if :math:`base` and :math:`mod` are coprime.
+    Exponentiation of :math:`base=2` to the power :math:`x=3` modulo :math:`mod=7`.
 
     .. code-block::
 
@@ -51,7 +59,7 @@ class ModExp(Operation):
         work_wires = [5, 6, 7, 8, 9]
         dev = qml.device("default.qubit", shots=1)
         @qml.qnode(dev)
-        def circuit_ModExp():
+        def circuit():
             qml.BasisEmbedding(x, wires = x_wires)
             qml.BasisEmbedding(k, wires = output_wires)
             qml.ModExp(input_wires, output_wires, base, mod, work_wires)
@@ -59,7 +67,7 @@ class ModExp(Operation):
 
     .. code-block:: pycon
 
-        >>> print(f"The ket representation of {base} ^ {x} mod {mod} is {circuit_ModExp()}")
+        >>> print(f"The ket representation of {base} ^ {x} mod {mod} is {circuit()}")
         The ket representation of 2 ^ 3 mod 7 is [0 0 1]
 
     We can see that the result [0 0 1] corresponds to 1, which comes from :math:`2^3=8 \longrightarrow 8 \, \text{mod} \, 7 = 1`.
@@ -76,10 +84,13 @@ class ModExp(Operation):
         if mod is None:
             mod = 2 ** (len(output_wires))
         if len(output_wires) == 0 or (mod > 2 ** (len(output_wires))):
-            raise ValueError("ModExp must have at least enough wires to represent mod.")
+            raise ValueError("ModExp must have enough wires to represent mod.")
         if mod != 2 ** len(x_wires):
             if len(work_wires) < (len(output_wires) + 2):
                 raise ValueError("ModExp needs as many work_wires as output_wires plus two.")
+        else:
+            if len(work_wires) < len(output_wires):
+                raise ValueError("ModExp needs as many work_wires as output_wires.")
         if work_wires is not None:
             if any(wire in work_wires for wire in x_wires):
                 raise ValueError("None of the wires in work_wires should be included in x_wires.")
@@ -148,11 +159,13 @@ class ModExp(Operation):
     ):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators.
         Args:
-            x_wires (Sequence[int]): the wires that stores the integer :math:`x`.
-            output_wires (Sequence[int]): the wires that stores the exponentiation modulo mod :math:`base^x \, \text{mod} \, mod`.
-            base (int): integer we want to exponentiate.
-            mod (int): modulo with respect to which the exponentiation is performed, default value will be ``2^len(output_wires)``
-            work_wires (Sequence[int]): the auxiliary wires to use for the exponentiation modulo :math:`mod` when :math:`mod \neq 2^{\textrm{len(output_wires)}}`
+            x_wires (Sequence[int]): the wires that stores the integer :math:`x`
+            output_wires (Sequence[int]): the wires that stores the exponentiation modulo mod :math:`base^x \, \text{mod} \, mod`
+            base (int): integer we want to exponentiate
+            mod (int): the modulus for performing the exponentiation, default value is :math:`2^{len(output\_wires)}`
+            work_wires (Sequence[int]): the auxiliary wires to be used for the exponentiation. They need to be of length ``len(output_wires)``.
+            However, when :math:`mod \neq 2^{\text{len(output_wires)}}` two extra work_wires will be required.
+
         Returns:
             list[.Operator]: Decomposition of the operator
 
