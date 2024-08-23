@@ -23,7 +23,7 @@ import pennylane as qml
 from pennylane import transform
 from pennylane.operation import Operator
 from pennylane.pauli import PauliSentence, PauliWord
-from pennylane.tape import QuantumTapeBatch
+from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import TransformError
 from pennylane.typing import PostprocessingFn, TensorLike
 
@@ -196,7 +196,7 @@ def matrix(op: Union[Operator, PauliWord, PauliSentence], wire_order=None) -> Te
                 )
             return op.to_mat(wire_order=wire_order)
 
-        if isinstance(op, qml.tape.QuantumScript):
+        if isinstance(op, QuantumScript):
             if wire_order is None and len(op.wires) > 1:
                 raise ValueError(
                     "wire_order is required by qml.matrix() for tapes with more than one wire."
@@ -228,13 +228,13 @@ def matrix(op: Union[Operator, PauliWord, PauliSentence], wire_order=None) -> Te
     try:
         return op.matrix(wire_order=wire_order)
     except:  # pylint: disable=bare-except
-        return matrix(qml.tape.QuantumScript(op.decomposition()), wire_order=wire_order or op.wires)
+        return matrix(QuantumScript(op.decomposition()), wire_order=wire_order or op.wires)
 
 
 @partial(transform, is_informative=True)
 def _matrix_transform(
-    tape: qml.tape.QuantumTape, wire_order=None, **kwargs
-) -> tuple[QuantumTapeBatch, PostprocessingFn]:
+    tape: QuantumScript, wire_order=None, **kwargs
+) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     if not tape.wires:
         raise qml.operation.MatrixUndefinedError
 

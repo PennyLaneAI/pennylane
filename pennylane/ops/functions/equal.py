@@ -40,7 +40,7 @@ from pennylane.ops import (
     SProd,
 )
 from pennylane.pulse.parametrized_evolution import ParametrizedEvolution
-from pennylane.tape import QuantumTape
+from pennylane.tape import QuantumScript
 from pennylane.templates.subroutines import ControlledSequence
 
 OPERANDS_MISMATCH_ERROR_MESSAGE = "op1 and op2 have different operands because "
@@ -49,8 +49,8 @@ BASE_OPERATION_MISMATCH_ERROR_MESSAGE = "op1 and op2 have different base operati
 
 
 def equal(
-    op1: Union[Operator, MeasurementProcess, QuantumTape],
-    op2: Union[Operator, MeasurementProcess, QuantumTape],
+    op1: Union[Operator, MeasurementProcess, QuantumScript],
+    op2: Union[Operator, MeasurementProcess, QuantumScript],
     check_interface=True,
     check_trainability=True,
     rtol=1e-5,
@@ -169,8 +169,8 @@ def equal(
 
 
 def assert_equal(
-    op1: Union[Operator, MeasurementProcess, QuantumTape],
-    op2: Union[Operator, MeasurementProcess, QuantumTape],
+    op1: Union[Operator, MeasurementProcess, QuantumScript],
+    op2: Union[Operator, MeasurementProcess, QuantumScript],
     check_interface=True,
     check_trainability=True,
     rtol=1e-5,
