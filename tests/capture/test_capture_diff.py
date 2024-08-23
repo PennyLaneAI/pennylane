@@ -181,6 +181,42 @@ def test_nested_grad(x64_mode):
 
     jax.config.update("jax_enable_x64", initial_mode)
 
+@pytest.mark.parametrize("argnum", ([0, 1], [0], [1]))
+def test_grad_pytree_input(argnum):
+    """Test that the qml.grad primitive can be captured with classical nodes."""
+
+    x64_mode = jax.config.jax_enable_x64
+    fdtype = jnp.float64 if x64_mode else jnp.float32
+
+    def inner_func(x, y):
+        return jnp.prod(jnp.sin(x["a"]) * jnp.cos(y[0]["b"][1]) ** 2)
+
+    def func_qml(x):
+        return qml.grad(inner_func, argnum=argnum)({"a": x}, ({"b": [None, 0.4 * jnp.sqrt(x)]},))
+
+    def func_jax(x):
+        return jax.grad(inner_func, argnums=argnum)({"a": x}, ({"b": [None, 0.4 * jnp.sqrt(x)]},))
+
+    x = 0.7
+    jax_out = func_jax(x)
+    assert qml.math.allclose(func_qml(x), jax_out)
+
+    # Check overall jaxpr properties
+    if isinstance(argnum, int):
+        argnum = [argnum]
+    jaxpr = jax.make_jaxpr(func_qml)(x)
+    assert jaxpr.in_avals == [jax.core.ShapedArray((), fdtype, weak_type=True)]
+    assert len(jaxpr.eqns) == 3
+    assert jaxpr.out_avals == [jax.core.ShapedArray((), fdtype, weak_type=True)] * len(argnum)
+
+    grad_eqn = jaxpr.eqns[2]
+    grad_eqn_assertions(grad_eqn, argnum=argnum)
+    assert [var.aval for var in grad_eqn.outvars] == jaxpr.out_avals
+    assert len(grad_eqn.params["jaxpr"].eqns) == 6  # 5 numeric eqns, 1 conversion eqn
+
+    manual_eval = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)
+    assert jax.tree_util.tree_map(qml.math.allclose, manual_eval, jax_out)
+
 
 @pytest.mark.parametrize("x64_mode", (True, False))
 @pytest.mark.parametrize("diff_method", ("backprop", "parameter-shift"))

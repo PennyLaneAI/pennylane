@@ -24,6 +24,7 @@ from autograd.numpy.numpy_boxes import ArrayBox
 from autograd.wrap_util import unary_to_nary
 
 from pennylane.capture import create_grad_primitive, enabled
+from pennylane.capture.flatfn import FlatFn
 from pennylane.compiler import compiler
 from pennylane.compiler.compiler import CompileError
 
@@ -41,9 +42,20 @@ def _capture_diff(func, argnum=None, diff_prim=None):
 
     @wraps(func)
     def new_func(*args, **kwargs):
-        jaxpr = jax.make_jaxpr(partial(func, **kwargs))(*args)
+        _, trainable_in_tree = jax.tree_util.tree_flatten(tuple(args[i] for i in argnum))
+        flat_args, in_tree = jax.tree_util.tree_flatten(args)
+        partial_fn = partial(func, **kwargs) if kwargs else func
+        flat_fn = FlatFn(partial_fn)
+
+        def full_flat_fn(*flat_args):
+            return flat_fn(*jax.tree_util.tree_unflatten(in_tree, flat_args))
+
+        jaxpr = jax.make_jaxpr(full_flat_fn)(*flat_args)
         prim_kwargs = {"argnum": argnum, "jaxpr": jaxpr.jaxpr, "n_consts": len(jaxpr.consts)}
-        return diff_prim.bind(*jaxpr.consts, *args, **prim_kwargs)
+        out_flat = diff_prim.bind(*jaxpr.consts, *flat_args, **prim_kwargs)
+        assert flat_fn.out_tree is not None, "out_tree should be set after executing flat_fn"
+        combined_tree = flat_fn.out_tree.compose(in_tree)
+        return jax.tree_util.tree_unflatten(combined_tree, out_flat)
 
     return new_func
 
