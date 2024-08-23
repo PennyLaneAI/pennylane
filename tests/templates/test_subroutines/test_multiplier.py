@@ -113,7 +113,7 @@ class TestMultiplier:
                 [0, 1],
                 7,
                 [3, 4, 5, 6],
-                "Multiplier must have at least enough wires to represent mod.",
+                "Multiplier must have enough wires to represent mod.",
             ),
             (
                 2,

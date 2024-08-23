@@ -164,7 +164,7 @@ class TestOutMultiplier:
                 [6, 7, 8],
                 9,
                 [9, 10],
-                "OutMultiplier must have at least enough wires to represent mod.",
+                "OutMultiplier must have enough wires to represent mod.",
             ),
             (
                 [0, 1, 2],

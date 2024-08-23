@@ -42,19 +42,25 @@ class Multiplier(Operation):
 
         \text{Multiplier}(k,mod) |x \rangle = | x \cdot k \quad \text{mod} \rangle,
 
-    The quantum circuit that represents the Multiplier operator is:
+    The implementation is based on the quantum Fourier transform method presented in
+    `arXiv:2311.08555 <https://arxiv.org/abs/2311.08555>`_.
 
+    .. note::
+
+        Note that :math:`x` must be smaller than :math:`mod` to get the correct result. Also, it
+        is required that :math:`k` has inverse, :math:`k^-1`, modulo :math:`mod`. That means
+        :math:`k*k^-1 modulo mod = 1`, which will only be possible if :math:`k` and :math:`mod` are coprime.
 
     Args:
-        k (int): number that wants to be added
-        x_wires (Sequence[int]): the wires the operation acts on. There are needed at least enough wires to represent :math:`k` and :math:`mod`.
-        mod (int): modulo with respect to which the multiplication is performed, default value will be ``2^len(wires)``
-        work_wires (Sequence[int]): the auxiliary wires to use for the multiplication modulo :math:`mod`. There must be as many as x_wires and if a module not power of two is specified, two more auxiliaries must be added.
+        k (int): the number that needs to be added
+        x_wires (Sequence[int]): the wires the operation acts on
+        mod (int): the modulus for performing the multiplication, default value is :math:`2^{len(x\_wires)}`
+        work_wires (Sequence[int]): the auxiliary wires to use for the multiplication modulo :math:`mod`.
+        There must be as many as ``x_wires`` and if :math:`mod \neq 2^{len(x\_wires)}`, two more auxiliaries must be added.
 
     **Example**
 
-    Multiplication of two integers :math:`m=3` and :math:`k=4` modulo :math:`mod=7`. Note that to perform this multiplication using qml.Multiplier we need that :math:`m,k < mod`
-    and that :math:`k` has inverse, :math:`k^-1`, modulo :math:`mod`. That means :math:`k*k^-1 modulo mod = 1`, which will only be possible if :math:`k` and :math:`mod` are coprime.
+    Multiplication of two integers :math:`m=3` and :math:`k=4` modulo :math:`mod=7`.
 
     .. code-block::
 
@@ -95,7 +101,7 @@ class Multiplier(Operation):
         if len(work_wires) < len(x_wires):
             raise ValueError("Multiplier needs as many work_wires as x_wires.")
         if (not hasattr(x_wires, "__len__")) or (mod > 2 ** len(x_wires)):
-            raise ValueError("Multiplier must have at least enough wires to represent mod.")
+            raise ValueError("Multiplier must have enough wires to represent mod.")
 
         k = k % mod
         if np.gcd(k, mod) != 1:
@@ -150,18 +156,19 @@ class Multiplier(Operation):
     def compute_decomposition(k, x_wires, mod, work_wires):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators.
         Args:
-            k (int): number that wants to be added
-            mod (int): modulo of the sum
-            work_wires (Sequence[int]): the auxiliary wires to use for the sum modulo :math:`mod` when :math:`mod \neq 2^{\textrm{len(wires)}}`
-            wires (Sequence[int]): the wires the operation acts on
+            k (int): the number that needs to be added
+            x_wires (Sequence[int]): the wires the operation acts on
+            mod (int): the modulus for performing the multiplication, default value is :math:`2^{len(x\_wires)}`
+            work_wires (Sequence[int]): the auxiliary wires to use for the multiplication modulo :math:`mod`.
+            There must be as many as ``x_wires`` and if :math:`mod \neq 2^{len(x\_wires)}`, two more auxiliaries must be added.
         Returns:
             list[.Operator]: Decomposition of the operator
 
         **Example**
 
-        >>> qml.Multiplier.compute_decomposition(k=3,mod=8,wires=[0,1,2],work_wires=[3,4,5])
+        >>> qml.Multiplier.compute_decomposition(k = 3, mod = 8, wires = [0, 1, 2], work_wires = [3, 4, 5])
         [QFT(wires=[3, 4, 5]),
-        ControlledSequence(PhaseAdder(wires=[3, 4 ,5 ,None]), control=[0, 1, 2]),
+        ControlledSequence(PhaseAdder(wires=[3, 4 , 5 , None]), control=[0, 1, 2]),
         Adjoint(QFT(wires=[3, 4, 5])),
         SWAP(wires=[0, 3]),
         SWAP(wires=[1, 4]),
