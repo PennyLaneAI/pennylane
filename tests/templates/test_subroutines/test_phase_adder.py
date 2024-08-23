@@ -157,7 +157,7 @@ class TestPhaseAdder:
                 [0, 1, 2, 3, 4],
                 12,
                 [4],
-                "work_wire should not be included in x_wires.",
+                "None of the wires in work_wire should be included in x_wires.",
             ),
         ],
     )
