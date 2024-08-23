@@ -181,6 +181,7 @@ def test_nested_grad(x64_mode):
 
     jax.config.update("jax_enable_x64", initial_mode)
 
+
 @pytest.mark.parametrize("argnum", ([0, 1], [0], [1]))
 def test_grad_pytree_input(argnum):
     """Test that the qml.grad primitive can be captured with classical nodes."""
@@ -199,7 +200,10 @@ def test_grad_pytree_input(argnum):
 
     x = 0.7
     jax_out = func_jax(x)
-    assert qml.math.allclose(func_qml(x), jax_out)
+    jax_out_flat, jax_out_tree = jax.tree_util.tree_flatten(jax_out)
+    qml_out_flat, qml_out_tree = jax.tree_util.tree_flatten(func_qml(x))
+    assert jax_out_tree == qml_out_tree
+    assert qml.math.allclose(jax_out_flat, qml_out_flat)
 
     # Check overall jaxpr properties
     if isinstance(argnum, int):
@@ -214,8 +218,11 @@ def test_grad_pytree_input(argnum):
     assert [var.aval for var in grad_eqn.outvars] == jaxpr.out_avals
     assert len(grad_eqn.params["jaxpr"].eqns) == 6  # 5 numeric eqns, 1 conversion eqn
 
-    manual_eval = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)
-    assert jax.tree_util.tree_map(qml.math.allclose, manual_eval, jax_out)
+    manual_out = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)
+    manual_out_flat, manual_out_tree = jax.tree_util.tree_flatten(manual_out)
+    # Assert that the output from the manual evaluation is flat
+    assert manual_out_tree == jax.tree_util.tree_flatten(manual_out_flat)[1]
+    assert qml.math.allclose(jax_out_flat, manual_out_flat)
 
 
 @pytest.mark.parametrize("x64_mode", (True, False))

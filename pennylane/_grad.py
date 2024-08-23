@@ -54,7 +54,7 @@ def _capture_diff(func, argnum=None, diff_prim=None):
         prim_kwargs = {"argnum": argnum, "jaxpr": jaxpr.jaxpr, "n_consts": len(jaxpr.consts)}
         out_flat = diff_prim.bind(*jaxpr.consts, *flat_args, **prim_kwargs)
         assert flat_fn.out_tree is not None, "out_tree should be set after executing flat_fn"
-        combined_tree = flat_fn.out_tree.compose(in_tree)
+        combined_tree = flat_fn.out_tree.compose(trainable_in_tree)
         return jax.tree_util.tree_unflatten(combined_tree, out_flat)
 
     return new_func
