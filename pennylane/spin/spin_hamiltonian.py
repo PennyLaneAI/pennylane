@@ -215,7 +215,7 @@ def fermihubbard(
     >>> n_cells = [2,2]
     >>> h = [[0.5]]
     >>> u = [[1.0]]
-    >>> spin_ham = fermihubbard("Square", n_cells, hopping=h, interaction=u)
+    >>> spin_ham = qml.spin.fermihubbard("Square", n_cells, hopping=h, interaction=u)
     >>> print(spin_ham)
 
     """
