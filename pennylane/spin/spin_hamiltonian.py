@@ -120,7 +120,6 @@ def heisenberg(lattice, n_cells, coupling=None, boundary_condition=False, neighb
        neighbour_order (int): Specifies the interaction level for neighbors within the lattice.
                     Default is 1, indicating nearest neighbours.
 
-
     Returns:
        pennylane.LinearCombination: Hamiltonian for the heisenberg model.
 
