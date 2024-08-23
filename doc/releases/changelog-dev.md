@@ -30,6 +30,10 @@
 * The `qml.Multiplier` and `qml.OutMultiplier` templates are added to perform modular multiplication.
   [(#6112)](https://github.com/PennyLaneAI/pennylane/pull/6112)
 
+* The `qml.OutAdder` and `qml.ModExp` templates are added to perform out-of-place modular addition and modular exponentiation.
+  [(#6121)](https://github.com/PennyLaneAI/pennylane/pull/6121)
+
+
 <h4>Creating spin Hamiltonians 🧑‍🎨</h4>
 
 * The function ``transverse_ising`` is added to generate transverse-field Ising Hamiltonian.
