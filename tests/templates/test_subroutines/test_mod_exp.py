@@ -51,6 +51,7 @@ class TestModExp:
                 [9, 10, 11],
                 3,
             ),
+            ([0, 1, 2], [3, 4, 5], 5, 6, [6, 7, 8, 9, 10], 3),
         ],
     )
     def test_operation_result(
@@ -83,6 +84,14 @@ class TestModExp:
                 9,
                 [9, 10, 11, 12, 13],
                 "ModExp must have at least enough wires to represent mod.",
+            ),
+            (
+                [0, 1, 2],
+                [3, 4, 5],
+                5,
+                6,
+                [9, 10, 11, 12],
+                "ModExp needs as many work_wires as output_wires plus two.",
             ),
             (
                 [0, 1, 2],

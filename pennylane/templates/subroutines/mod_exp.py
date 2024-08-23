@@ -71,10 +71,15 @@ class ModExp(Operation):
         self, x_wires, output_wires, base, mod=None, work_wires=None, id=None
     ):  # pylint: disable=too-many-arguments
 
+        output_wires = qml.wires.Wires(output_wires)
+
         if mod is None:
             mod = 2 ** (len(output_wires))
-        if (not hasattr(output_wires, "__len__")) or (mod > 2 ** (len(output_wires))):
+        if len(output_wires) == 0 or (mod > 2 ** (len(output_wires))):
             raise ValueError("ModExp must have at least enough wires to represent mod.")
+        if mod != 2 ** len(x_wires):
+            if len(work_wires) < (len(output_wires) + 2):
+                raise ValueError("ModExp needs as many work_wires as output_wires plus two.")
         if work_wires is not None:
             if any(wire in work_wires for wire in x_wires):
                 raise ValueError("None of the wires in work_wires should be included in x_wires.")
@@ -162,6 +167,8 @@ class ModExp(Operation):
         >>> qml.ModExp.compute_decomposition(x_wires = [0, 1], output_wires = [2, 3, 4], base = 3, mod = 8, work_wires = [5, 6, 7, 8, 9])
         [ControlledSequence(Multiplier(wires=[2, 3, 4]), control=[0, 1])]
         """
+
+        # TODO: Cancel the QFTs of consecutive Multipliers
         op_list = []
         op_list.append(
             qml.ControlledSequence(

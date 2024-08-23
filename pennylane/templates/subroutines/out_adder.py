@@ -159,10 +159,9 @@ class OutAdder(Operation):
         **Example**
 
         >>> qml.OutAdder.compute_decomposition(x_wires=[0,1], y_wires=[2,3], output_wires=[5,6], mod=4, work_wires=[4,7])
-        [CNOT(wires=[2, 5]),
-        CNOT(wires=[3, 6]),
-        QFT(wires=[5, 6]),
-        ControlledSequence(PhaseAdder(wires=[5, 6]), control=[0, 1]),
+        [QFT(wires=[5, 6]),
+        ControlledSequence(PhaseAdder(wires=[5, 6, None]), control=[0, 1])
+        ControlledSequence(PhaseAdder(wires=[5, 6, None]), control=[2, 3]),
         Adjoint(QFT(wires=[5, 6]))]
         """
         op_list = []
