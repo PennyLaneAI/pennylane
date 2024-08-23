@@ -31,7 +31,6 @@ from typing import Union
 import numpy as np
 
 import pennylane as qml
-from pennylane import Device, DeviceError
 from pennylane.math import multiply as qmlmul
 from pennylane.math import sum as qmlsum
 from pennylane.measurements import (
@@ -55,8 +54,10 @@ from pennylane.measurements import (
 )
 from pennylane.operation import Operation, operation_derivative
 from pennylane.resource import Resources
-from pennylane.tape import QuantumTape
+from pennylane.tape import QuantumScript
 from pennylane.wires import Wires
+
+from ._legacy_device import Device
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -205,9 +206,9 @@ class QubitDevice(Device):
         super().__init__(wires=wires, shots=shots, analytic=analytic)
 
         if "float" not in str(r_dtype):
-            raise DeviceError("Real datatype must be a floating point type.")
+            raise qml.DeviceError("Real datatype must be a floating point type.")
         if "complex" not in str(c_dtype):
-            raise DeviceError("Complex datatype must be a complex floating point type.")
+            raise qml.DeviceError("Complex datatype must be a complex floating point type.")
 
         self.C_DTYPE = c_dtype
         self.R_DTYPE = r_dtype
@@ -359,7 +360,7 @@ class QubitDevice(Device):
 
         return results
 
-    def shot_vec_statistics(self, circuit: QuantumTape):
+    def shot_vec_statistics(self, circuit: QuantumScript):
         """Process measurement results from circuit execution using a device
         with a shot vector and return statistics.
 
@@ -437,7 +438,7 @@ class QubitDevice(Device):
 
         return tuple(results)
 
-    def _multi_meas_with_counts_shot_vec(self, circuit: QuantumTape, shot_tuple, r):
+    def _multi_meas_with_counts_shot_vec(self, circuit: QuantumScript, shot_tuple, r):
         """Auxiliary function of the shot_vec_statistics and execute
         functions for post-processing the results of multiple measurements at
         least one of which was a counts measurement.
@@ -610,7 +611,7 @@ class QubitDevice(Device):
         )
 
     def statistics(
-        self, circuit: QuantumTape, shot_range=None, bin_size=None
+        self, circuit: QuantumScript, shot_range=None, bin_size=None
     ):  # pylint: disable=too-many-statements
         """Process measurement results from circuit execution and return statistics.
 
@@ -1622,7 +1623,7 @@ class QubitDevice(Device):
         )
 
     def adjoint_jacobian(
-        self, tape: QuantumTape, starting_state=None, use_device_state=False
+        self, tape: QuantumScript, starting_state=None, use_device_state=False
     ):  # pylint: disable=too-many-statements
         """Implements the adjoint method outlined in
         `Jones and Gacon <https://arxiv.org/abs/2009.02823>`__ to differentiate an input tape.
@@ -1777,7 +1778,7 @@ class QubitDevice(Device):
         # must be 2-dimensional
         return tuple(tuple(np.array(j_) for j_ in j) for j in jac)
 
-    def _get_diagonalizing_gates(self, circuit: QuantumTape) -> list[Operation]:
+    def _get_diagonalizing_gates(self, circuit: QuantumScript) -> list[Operation]:
         """Returns the gates that diagonalize the measured wires such that they
         are in the eigenbasis of the circuit observables.
 

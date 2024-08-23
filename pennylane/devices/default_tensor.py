@@ -43,13 +43,11 @@ from pennylane.measurements import (
 )
 from pennylane.operation import Observable, Operation, Tensor
 from pennylane.ops import LinearCombination, Prod, SProd, Sum
-from pennylane.tape import QuantumScript, QuantumTape, QuantumTapeBatch
+from pennylane.tape import QuantumScript, QuantumScriptOrBatch
 from pennylane.templates.subroutines.trotter import _recursive_expression
 from pennylane.transforms.core import TransformProgram
 from pennylane.typing import Result, ResultBatch, TensorLike
 from pennylane.wires import WireError
-
-QuantumTape_or_Batch = Union[QuantumTape, QuantumTapeBatch]
 
 has_quimb = True
 
@@ -624,7 +622,7 @@ class DefaultTensor(Device):
 
     def execute(
         self,
-        circuits: QuantumTape_or_Batch,
+        circuits: QuantumScriptOrBatch,
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ) -> Union[Result, ResultBatch]:
         """Execute a circuit or a batch of circuits and turn it into results.
@@ -829,7 +827,7 @@ class DefaultTensor(Device):
 
     def compute_derivatives(
         self,
-        circuits: QuantumTape_or_Batch,
+        circuits: QuantumScriptOrBatch,
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ):
         """Calculate the Jacobian of either a single or a batch of circuits on the device.
@@ -847,7 +845,7 @@ class DefaultTensor(Device):
 
     def execute_and_compute_derivatives(
         self,
-        circuits: QuantumTape_or_Batch,
+        circuits: QuantumScriptOrBatch,
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ):
         """Compute the results and Jacobians of circuits at the same time.
@@ -867,7 +865,7 @@ class DefaultTensor(Device):
     def supports_vjp(
         self,
         execution_config: Optional[ExecutionConfig] = None,
-        circuit: Optional[QuantumTape] = None,
+        circuit: Optional[QuantumScript] = None,
     ) -> bool:
         """Whether or not this device defines a custom vector-Jacobian product.
 
@@ -882,7 +880,7 @@ class DefaultTensor(Device):
 
     def compute_vjp(
         self,
-        circuits: QuantumTape_or_Batch,
+        circuits: QuantumScriptOrBatch,
         cotangents: tuple[Number, ...],
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ):
@@ -904,7 +902,7 @@ class DefaultTensor(Device):
 
     def execute_and_compute_vjp(
         self,
-        circuits: QuantumTape_or_Batch,
+        circuits: QuantumScriptOrBatch,
         cotangents: tuple[Number, ...],
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ):
