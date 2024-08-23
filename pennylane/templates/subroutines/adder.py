@@ -30,9 +30,13 @@ class Adder(Operation):
          \text{Adder}(k, mod) |x \rangle = | x+k \; \text{modulo} \; mod \rangle.
 
      The implementation is based on the quantum Fourier transform method presented in
-
-
      `arXiv:2311.08555 <https://arxiv.org/abs/2311.08555>`_.
+
+    .. note::
+
+        Note that :math:`x` must be smaller than :math:`mod` to get the correct result. Also, when
+        :math:`mod \neq 2^{\text{len(x\_wires)}}` we need :math:`x < 2^{\text{len(x\_wires)}}/2`,
+        which means that we need one extra wire in ``x_wires``.
 
      Args:
          k (int): the number that needs to be added
@@ -79,8 +83,10 @@ class Adder(Operation):
 
         if mod is None:
             mod = 2 ** len(x_wires)
-        if work_wires is None and mod != 2 ** len(x_wires):
+        elif work_wires is None and mod != 2 ** len(x_wires):
             raise ValueError(f"If mod is not 2^{len(x_wires)}, two work wires should be provided.")
+        if not isinstance(k, int) or not isinstance(mod, int):
+            raise ValueError("Both k and mod must be integers")
         if work_wires is not None:
             if any(wire in work_wires for wire in x_wires):
                 raise ValueError("None of the wires in work_wires should be included in x_wires.")
@@ -133,7 +139,7 @@ class Adder(Operation):
         Args:
             k (int): the number that needs to be added
             x_wires (Sequence[int]): the wires the operation acts on
-            mod (int): the modulus for performing the addition, default value is :math:`2^{len(wires)}`
+            mod (int): the modulus for performing the addition, default value is :math:`2^{len(x\_wires)}`
             work_wires (Sequence[int]): the auxiliary wires to be used for performing the addition
         Returns:
             list[.Operator]: Decomposition of the operator

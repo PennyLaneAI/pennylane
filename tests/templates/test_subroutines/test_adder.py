@@ -155,6 +155,32 @@ class TestAdder:
         with pytest.raises(ValueError, match=msg_match):
             qml.Adder(k, x_wires, mod, work_wires)
 
+    @pytest.mark.parametrize(
+        ("k", "x_wires", "mod", "work_wires", "msg_match"),
+        [
+            (
+                2.3,
+                [0, 1, 2],
+                9,
+                [3, 4],
+                ("Both k and mod must be integers"),
+            ),
+            (
+                2,
+                [0, 1, 2],
+                3.2,
+                [3, 4],
+                ("Both k and mod must be integers"),
+            ),
+        ],
+    )
+    def test_types_error(
+        self, k, x_wires, mod, work_wire, msg_match
+    ):  # pylint: disable=too-many-arguments
+        """Test errors are raised"""
+        with pytest.raises(ValueError, match=msg_match):
+            qml.Adder(k, x_wires, mod, work_wires)
+
     def test_decomposition(self):
         """Test that compute_decomposition and decomposition work as expected."""
 
