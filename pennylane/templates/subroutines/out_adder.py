@@ -40,7 +40,7 @@ class OutAdder(Operation):
         x_wires (Sequence[int]): the wires that store the integer :math:`x`.
         y_wires (Sequence[int]): the wires that store the integer :math:`y`.
         output_wires (Sequence[int]): the wires that store the addition modulo mod :math:`x + y \text{mod}`.
-        mod (int): the modulus for performing the addition, default value is :math:`2^{\text{len(output\_wires)}`
+        mod (int): the modulus for performing the addition, default value is :math:`2^{\text{len(output\_wires)}}`
         work_wires (Sequence[int]): the auxiliary wires to use for the addition modulo :math:`mod` when
         :math:`mod \neq 2^{\text{len(output\_wires)}}`.
 
@@ -53,10 +53,12 @@ class OutAdder(Operation):
         x=5
         y=6
         mod=7
+
         x_wires=[0,1,2]
         y_wires=[3,4,5]
         output_wires=[7,8,9]
         work_wires=[6,10]
+        
         dev = qml.device("default.qubit", shots=1)
         @qml.qnode(dev)
         def circuit():

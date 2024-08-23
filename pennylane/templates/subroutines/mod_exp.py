@@ -63,7 +63,7 @@ class ModExp(Operation):
         def circuit():
             qml.BasisEmbedding(x, wires = x_wires)
             qml.BasisEmbedding(k, wires = output_wires)
-            qml.ModExp(input_wires, output_wires, base, mod, work_wires)
+            qml.ModExp(x_wires, output_wires, base, mod, work_wires)
             return qml.sample(wires = output_wires)
 
     .. code-block:: pycon
