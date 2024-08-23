@@ -16,10 +16,17 @@
 
 name: "Documentation check"
 on:
-- pull_request
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - ready_for_review
+      - labeled
 
 jobs:
   sphinx:
+    if: github.event.pull_request.draft == false
     env:
       DEPS_BRANCH: bot/stable-deps-update
     runs-on: ubuntu-latest
