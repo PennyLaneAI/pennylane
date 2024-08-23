@@ -30,6 +30,10 @@ class OutMultiplier(Operation):
     The implementation is based on the quantum Fourier transform method presented in
     `arXiv:2311.08555 <https://arxiv.org/abs/2311.08555>`_.
 
+    .. note::
+
+        Note that :math:`x` and :math:`y` must be smaller than :math:`mod` to get the correct result.
+
     Args:
         x_wires (Sequence[int]): the wires that store the integer :math:`x`.
         y_wires (Sequence[int]): the wires that store the integer :math:`y`.

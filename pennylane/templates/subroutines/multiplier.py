@@ -22,7 +22,7 @@ from pennylane.operation import Operation
 
 
 def _mul_out_k_mod(k, x_wires, mod, work_wire_aux, wires_aux):
-    """Performs x*k in the registers wires_aux"""
+    """Performs :math:`x \times k` in the registers wires wires_aux"""
     op_list = []
 
     op_list.append(qml.QFT(wires=wires_aux))
@@ -34,13 +34,14 @@ def _mul_out_k_mod(k, x_wires, mod, work_wire_aux, wires_aux):
 
 
 class Multiplier(Operation):
-    r"""Performs the Inplace Multiplication operation.
+    r"""Performs the in-place modular multiplication operation.
 
-    This operator multiplies the integer :math:`k` modulo :math:`mod` in the computational basis:
+    This operator performs the modular multiplication by an integer :math:`k` modulo :math:`mod` in
+    the computational basis:
 
     .. math::
 
-        \text{Multiplier}(k,mod) |x \rangle = | x \cdot k \quad \text{mod} \rangle,
+        \text{Multiplier}(k,mod) |x \rangle = | x \cdot k \; \text{modulo} \; \text{mod} \rangle.
 
     The implementation is based on the quantum Fourier transform method presented in
     `arXiv:2311.08555 <https://arxiv.org/abs/2311.08555>`_.
@@ -49,18 +50,19 @@ class Multiplier(Operation):
 
         Note that :math:`x` must be smaller than :math:`mod` to get the correct result. Also, it
         is required that :math:`k` has inverse, :math:`k^-1`, modulo :math:`mod`. That means
-        :math:`k*k^-1 modulo mod = 1`, which will only be possible if :math:`k` and :math:`mod` are coprime.
+        :math:`k*k^-1 modulo mod is equal to 1`, which will only be possible if :math:`k` and
+        :math:`mod` are coprime. Furthermore, if :math:`mod \neq 2^{len(x\_wires)}`, two more
+        auxiliaries must be added.
 
     Args:
-        k (int): the number that needs to be added
+        k (int): the number that needs to be multiplied
         x_wires (Sequence[int]): the wires the operation acts on
         mod (int): the modulus for performing the multiplication, default value is :math:`2^{len(x\_wires)}`
-        work_wires (Sequence[int]): the auxiliary wires to use for the multiplication modulo :math:`mod`.
-        There must be as many as ``x_wires`` and if :math:`mod \neq 2^{len(x\_wires)}`, two more auxiliaries must be added.
+        work_wires (Sequence[int]): the auxiliary wires to be used for performing the multiplication
 
     **Example**
 
-    Multiplication of two integers :math:`m=3` and :math:`k=4` modulo :math:`mod=7`.
+    This example performs the multiplication of two integers :math:`x=3` and :math:`k=4` modulo :math:`mod=7`.
 
     .. code-block::
 
@@ -73,17 +75,18 @@ class Multiplier(Operation):
 
         dev = qml.device("default.qubit", shots=1)
         @qml.qnode(dev)
-        def multiplier_modulo(x, k, mod, wires_m, work_wires):
+        def circuit(x, k, mod, wires_m, work_wires):
             qml.BasisEmbedding(x, wires=wires_m)
             qml.Multiplier(k, x_wires, mod, work_wires)
             return qml.sample(wires=wires_m)
 
     .. code-block:: pycon
 
-        >>> print(f"The ket representation of {x} * {k} mod {mod} is {multiplier_modulo(x, k, mod, x_wires, work_wires)}")
-            The ket representation of 3 * 4 mod 7 is [1 0 1]
+        >>> print(circuit(x, k, mod, x_wires, work_wires))
+        [1 0 1]
 
-    We can see that the result [1 0 1] corresponds to 5, which comes from :math:`3 \cdot 4=12 \longrightarrow 12 mod 7 = 5`.
+    The result :math:`[1 0 1]`, is the ket representation of
+    :math:`3 \cdot 4 \, \text{modulo} \, 12 = 5`.
     """
 
     grad_method = None
@@ -92,7 +95,7 @@ class Multiplier(Operation):
         self, k, x_wires, mod=None, work_wires=None, id=None
     ):  # pylint: disable=too-many-arguments
         if any(wire in work_wires for wire in x_wires):
-            raise ValueError("None wire in work_wires should be included in x_wires.")
+            raise ValueError("None of the wire in work_wires should be included in x_wires.")
 
         if mod is None:
             mod = 2 ** len(x_wires)
@@ -105,7 +108,7 @@ class Multiplier(Operation):
 
         k = k % mod
         if np.gcd(k, mod) != 1:
-            raise ValueError("Since k has no inverse modulo mod, the operator cannot be built.")
+            raise ValueError("The operator cannot be built because k has no inverse modulo mod.")
 
         self.hyperparameters["k"] = k
         self.hyperparameters["mod"] = mod
@@ -156,17 +159,16 @@ class Multiplier(Operation):
     def compute_decomposition(k, x_wires, mod, work_wires):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators.
         Args:
-            k (int): the number that needs to be added
+            k (int): the number that needs to be multiplied
             x_wires (Sequence[int]): the wires the operation acts on
             mod (int): the modulus for performing the multiplication, default value is :math:`2^{len(x\_wires)}`
-            work_wires (Sequence[int]): the auxiliary wires to use for the multiplication modulo :math:`mod`.
-            There must be as many as ``x_wires`` and if :math:`mod \neq 2^{len(x\_wires)}`, two more auxiliaries must be added.
+            work_wires (Sequence[int]): the auxiliary wires to be used for performing the multiplication
         Returns:
             list[.Operator]: Decomposition of the operator
 
         **Example**
 
-        >>> qml.Multiplier.compute_decomposition(k = 3, mod = 8, wires = [0, 1, 2], work_wires = [3, 4, 5])
+        >>> qml.Multiplier.compute_decomposition(k=3, mod=8, x_wires=[0,1,2], work_wires=[3,4,5])
         [QFT(wires=[3, 4, 5]),
         ControlledSequence(PhaseAdder(wires=[3, 4 , 5 , None]), control=[0, 1, 2]),
         Adjoint(QFT(wires=[3, 4, 5])),
