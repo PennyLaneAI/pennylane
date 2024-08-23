@@ -32,7 +32,7 @@ from cachetools import Cache, LRUCache
 
 import pennylane as qml
 from pennylane.data.base.attribute import UNSET
-from pennylane.tape import QuantumTape, QuantumTapeBatch
+from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
 from pennylane.typing import Result, ResultBatch
 
@@ -188,7 +188,7 @@ def _make_inner_execute(
     For higher order derivatives, the "inner execute" will be another ml framework execute.
     """
 
-    def inner_execute(tapes: QuantumTapeBatch, **_) -> ResultBatch:
+    def inner_execute(tapes: QuantumScriptBatch, **_) -> ResultBatch:
         """Execution that occurs within a machine learning framework boundary.
 
         Closure Variables:
@@ -219,7 +219,7 @@ def _make_inner_execute(
 
 
 @transform
-def _cache_transform(tape: QuantumTape, cache: MutableMapping):
+def _cache_transform(tape: QuantumScript, cache: MutableMapping):
     """Caches the result of ``tape`` using the provided ``cache``.
 
     .. note::
@@ -365,7 +365,7 @@ def _update_mcm_config(mcm_config: "qml.devices.MCMConfig", interface: str, fini
 
 
 def execute(
-    tapes: QuantumTapeBatch,
+    tapes: QuantumScriptBatch,
     device: SupportedDeviceAPIs,
     gradient_fn: Optional[Union[Callable, str]] = None,
     interface: Optional[str] = "auto",

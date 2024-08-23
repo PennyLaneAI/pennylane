@@ -438,7 +438,7 @@ class TestQNodeIntegration:
                 qml.RZ(x, wires=w, id="x")
             return qml.expval(qml.PauliZ(wires=0))
 
-        with pytest.raises(ValueError, match="Sum of amplitudes-squared does not equal one."):
+        with pytest.raises(ValueError, match="The state must be a vector of norm 1.0"):
             circuit(0.1)
 
     def test_sampling_op_by_op(self):

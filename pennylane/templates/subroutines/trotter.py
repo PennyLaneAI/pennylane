@@ -265,7 +265,7 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
         num_wires = len(self.wires)
         num_gates = len(decomp)
 
-        depth = qml.tape.QuantumTape(ops=decomp).graph.get_depth()
+        depth = qml.tape.QuantumScript(ops=decomp).graph.get_depth()
 
         gate_types = defaultdict(int)
         gate_sizes = defaultdict(int)
