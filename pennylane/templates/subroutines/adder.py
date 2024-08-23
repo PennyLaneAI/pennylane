@@ -22,23 +22,27 @@ from pennylane.operation import Operation
 class Adder(Operation):
     r"""Performs the in-place modular addition operation.
 
-     This operator performs the modular addition by an integer :math:`k` modulo :math:`mod` in the computational basis:
+     This operator performs the modular addition by an integer :math:`k` modulo :math:`mod` in the
+     computational basis:
 
      .. math::
 
          \text{Adder}(k, mod) |x \rangle = | x+k \; \text{modulo} \; mod \rangle.
 
-     The implementation is based on the quantum Fourier transform method presented in `arXiv:2311.08555 <https://arxiv.org/abs/2311.08555>`_.
+     The implementation is based on the quantum Fourier transform method presented in
+
+
+     `arXiv:2311.08555 <https://arxiv.org/abs/2311.08555>`_.
 
      Args:
          k (int): the number that needs to be added
          x_wires (Sequence[int]): the wires the operation acts on
-         mod (int): the modulus for performing the addition, default value is :math:`2^{len(x_wires)}`
+         mod (int): the modulus for performing the addition, default value is :math:`2^{len(x\_wires)}`
          work_wires (Sequence[int]): the auxiliary wires to be used for performing the addition
 
      **Example**
 
-    This example computes the sum of two integers :math:`x=8` and :math:`k=5` modulo :math:`mod=15`. Note that to perform this sum using qml.Adder, when :math:`mod \neq 2^{\text{len(x_wires)}}` we need that :math:`x < 2^{\text{len(x_wires)}}/2`.
+    This example computes the sum of two integers :math:`x=8` and :math:`k=5` modulo :math:`mod=15`.
 
      .. code-block::
 
@@ -58,10 +62,11 @@ class Adder(Operation):
 
      .. code-block:: pycon
 
-         >>> circuit(x, k, mod,x_wires, work_wires)
-             [1 1 0 1]
+         >>> print(circuit(x, k, mod,x_wires, work_wires))
+         [1 1 0 1]
 
-     The result, :math:`[1 1 0 1]`, is the ket representation of :math:`8 + 5  \, \text{modulo} \, 15 = 13`.
+    The result, :math:`[1 1 0 1]`, is the ket representation of
+    :math:`8 + 5  \, \text{modulo} \, 15 = 13`.
     """
 
     grad_method = None
@@ -74,7 +79,7 @@ class Adder(Operation):
 
         if mod is None:
             mod = 2 ** len(x_wires)
-        elif work_wires is None and mod != 2 ** len(x_wires):
+        if work_wires is None and mod != 2 ** len(x_wires):
             raise ValueError(f"If mod is not 2^{len(x_wires)}, two work wires should be provided")
         if work_wires is not None:
             if any(wire in work_wires for wire in x_wires):
@@ -135,7 +140,7 @@ class Adder(Operation):
 
         **Example**
 
-        >>> qml.Adder.compute_decomposition(k = 2, x_wires = [0, 1 , 2], mod = 8, work_wires = None)
+        >>> qml.Adder.compute_decomposition(k=2, x_wires=[0,1,2], mod=8, work_wires=[3])
         [QFT(wires=[0, 1, 2]),
         PhaseAdder(wires=[0, 1, 2]),
         Adjoint(QFT(wires=[0, 1, 2]))]
