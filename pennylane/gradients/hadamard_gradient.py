@@ -23,7 +23,7 @@ import pennylane as qml
 from pennylane import transform
 from pennylane.gradients.gradient_transform import _contract_qjac_with_cjac
 from pennylane.gradients.metric_tensor import _get_aux_wire
-from pennylane.tape import QuantumTapeBatch
+from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms.tape_expand import expand_invalid_trainable_hadamard_gradient
 from pennylane.typing import PostprocessingFn
 
@@ -41,11 +41,11 @@ from .gradient_transform import (
 
 
 def _expand_transform_hadamard(
-    tape: qml.tape.QuantumTape,
+    tape: QuantumScript,
     argnum=None,
     aux_wire=None,
     device_wires=None,
-) -> tuple[QuantumTapeBatch, PostprocessingFn]:
+) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Expand function to be applied before hadamard gradient."""
     expanded_tape = expand_invalid_trainable_hadamard_gradient(tape)
 
@@ -65,11 +65,11 @@ def _expand_transform_hadamard(
     final_transform=True,
 )
 def hadamard_grad(
-    tape: qml.tape.QuantumTape,
+    tape: QuantumScript,
     argnum=None,
     aux_wire=None,
     device_wires=None,
-) -> tuple[QuantumTapeBatch, PostprocessingFn]:
+) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     r"""Transform a circuit to compute the Hadamard test gradient of all gates
     with respect to their inputs.
 

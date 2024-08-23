@@ -24,10 +24,19 @@
 
 <h4>Quantum arithmetic operations 🧮</h4>
 
+* The `qml.Adder` and `qml.PhaseAdder` templates are added to perform in-place modular addition.
+  [(#6109)](https://github.com/PennyLaneAI/pennylane/pull/6109)
+
+* The `qml.Multiplier` and `qml.OutMultiplier` templates are added to perform modular multiplication.
+  [(#6112)](https://github.com/PennyLaneAI/pennylane/pull/6112)
+
 <h4>Creating spin Hamiltonians 🧑‍🎨</h4>
 
 * The function ``transverse_ising`` is added to generate transverse-field Ising Hamiltonian.
   [(#6106)](https://github.com/PennyLaneAI/pennylane/pull/6106)
+
+* The functions ``heisenberg`` and ``fermi_hubbard`` are added to generate Heisenberg and Fermi-Hubbard Hamiltonians respectively.
+  [(#6128)](https://github.com/PennyLaneAI/pennylane/pull/6128)
 
 <h3>Improvements 🛠</h3>
 
@@ -263,6 +272,9 @@
 * Added `is_leaf` parameter to function `flatten` in the `qml.pytrees` module. This is to allow node flattening to be stopped for any node where the `is_leaf` optional argument evaluates to being `True`.
   [(#6107)](https://github.com/PennyLaneAI/pennylane/issues/6107)
 
+* Added a progress bar when downloading datasets with `qml.data.load()`
+  [(#5560)](https://github.com/PennyLaneAI/pennylane/pull/5560)
+
 <h3>Breaking changes 💔</h3>
 
 * `GlobalPhase` is considered non-differentiable with tape transforms.
@@ -419,6 +431,7 @@ Ali Asadi,
 Utkarsh Azad,
 Tonmoy T. Bhattacharya,
 Gabriel Bottrill,
+Jack Brown,
 Ahmed Darwish,
 Astral Cai,
 Yushao Chen,
@@ -434,6 +447,7 @@ Josh Izaac,
 Soran Jahangiri,
 Korbinian Kottmann,
 Christina Lee,
+Jorge Martinez de Lejarza,
 William Maxwell,
 Vincent Michaud-Rioux,
 Anurav Modak,
