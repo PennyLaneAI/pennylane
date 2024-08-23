@@ -18,7 +18,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.measurements import Expectation, Shots
+from pennylane.measurements import Expectation
 from pennylane.measurements.expval import ExpectationMP
 
 
@@ -180,23 +180,11 @@ class TestExpval:
     )
     def test_shape(self, obs):
         """Test that the shape is correct."""
-        dev = qml.device("default.qubit", wires=1)
 
         res = qml.expval(obs)
         # pylint: disable=use-implicit-booleaness-not-comparison
-        assert res.shape(dev, Shots(None)) == ()
-        assert res.shape(dev, Shots(100)) == ()
-
-    @pytest.mark.parametrize(
-        "obs",
-        [qml.PauliZ(0), qml.Hermitian(np.diag([1, 2]), 0), qml.Hermitian(np.diag([1.0, 2.0]), 0)],
-    )
-    def test_shape_shot_vector(self, obs):
-        """Test that the shape is correct with the shot vector too."""
-        res = qml.expval(obs)
-        shot_vector = (1, 2, 3)
-        dev = qml.device("default.qubit", wires=3, shots=shot_vector)
-        assert res.shape(dev, Shots(shot_vector)) == ((), (), ())
+        assert res.shape(None, 1) == ()
+        assert res.shape(100, 1) == ()
 
     @pytest.mark.parametrize("state", [np.array([0, 0, 0]), np.array([1, 0, 0, 0, 0, 0, 0, 0])])
     @pytest.mark.parametrize("shots", [None, 1000, [1000, 1111]])

@@ -884,6 +884,22 @@ class TestVectorValuedJIT:
             assert jax.numpy.allclose(r, e, atol=1e-7)
 
 
+def test_jit_allcounts():
+    """Test jitting with counts with all_outcomes == True."""
+
+    tape = qml.tape.QuantumScript(
+        [qml.RX(0, 0)], [qml.counts(wires=(0, 1), all_outcomes=True)], shots=50
+    )
+    device = qml.device("default.qubit")
+
+    res = jax.jit(qml.execute, static_argnums=(1, 2))((tape,), device, qml.gradients.param_shift)[0]
+
+    assert set(res.keys()) == {"00", "01", "10", "11"}
+    assert qml.math.allclose(res["00"], 50)
+    for val in ["01", "10", "11"]:
+        assert qml.math.allclose(res[val], 0)
+
+
 @pytest.mark.xfail(reason="Need to figure out how to handle this case in a less ambiguous manner")
 def test_diff_method_None_jit():
     """Test that jitted execution works when `gradient_fn=None`."""
