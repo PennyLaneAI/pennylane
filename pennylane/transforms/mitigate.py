@@ -20,13 +20,13 @@ import pennylane as qml
 from pennylane import adjoint, apply
 from pennylane.math import mean, round, shape
 from pennylane.queuing import AnnotatedQueue
-from pennylane.tape import QuantumScript, QuantumTape, QuantumTapeBatch
+from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
 
 
 @transform
-def fold_global(tape: QuantumTape, scale_factor) -> tuple[QuantumTapeBatch, PostprocessingFn]:
+def fold_global(tape: QuantumScript, scale_factor) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     r"""Differentiable circuit folding of the global unitary ``circuit``.
 
     For a unitary circuit :math:`U = L_d .. L_1`, where :math:`L_i` can be either a gate or layer, ``fold_global`` constructs
@@ -365,14 +365,14 @@ def exponential_extrapolate(x, y, asymptote=None, eps=1.0e-6):
 # pylint: disable=too-many-arguments, protected-access
 @transform
 def mitigate_with_zne(
-    tape: QuantumTape,
+    tape: QuantumScript,
     scale_factors: Sequence[float],
     folding: callable,
     extrapolate: callable,
     folding_kwargs: Optional[dict[str, Any]] = None,
     extrapolate_kwargs: Optional[dict[str, Any]] = None,
     reps_per_factor=1,
-) -> tuple[QuantumTapeBatch, PostprocessingFn]:
+) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     r"""Mitigate an input circuit using zero-noise extrapolation.
 
     Error mitigation is a precursor to error correction and is compatible with near-term quantum

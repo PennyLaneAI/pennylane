@@ -36,6 +36,7 @@ class Adder(Operation):
 
         Note that :math:`x` must be smaller than :math:`mod` to get the correct result.
 
+
      Args:
          k (int): the number that needs to be added
          x_wires (Sequence[int]): the wires the operation acts on
