@@ -59,7 +59,7 @@ def transverse_ising(
     >>> n_cells = [2,2]
     >>> j = 0.5
     >>> h = 0.1
-    >>> spin_ham = qml.spin.transverse_ising("Square", n_cells, coupling=j, h=h)
+    >>> spin_ham = qml.spin.transverse_ising("square", n_cells, coupling=j, h=h)
     >>> spin_ham
     -0.5 * (Z(0) @ Z(1))
     + -0.5 * (Z(0) @ Z(2))
