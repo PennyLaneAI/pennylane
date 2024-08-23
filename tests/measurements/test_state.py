@@ -20,15 +20,7 @@ from pennylane import numpy as pnp
 from pennylane.devices import DefaultMixed
 from pennylane.math.matrix_manipulation import _permute_dense_matrix
 from pennylane.math.quantum import reduce_dm, reduce_statevector
-from pennylane.measurements import (
-    DensityMatrixMP,
-    Shots,
-    State,
-    StateMP,
-    density_matrix,
-    expval,
-    state,
-)
+from pennylane.measurements import DensityMatrixMP, State, StateMP, density_matrix, expval, state
 from pennylane.wires import WireError, Wires
 
 
@@ -521,16 +513,8 @@ class TestState:
     @pytest.mark.parametrize("shots", [None, 1, 10])
     def test_shape(self, shots):
         """Test that the shape is correct for qml.state."""
-        dev = qml.device("default.qubit", wires=3, shots=shots)
         res = qml.state()
-        assert res.shape(dev, Shots(shots)) == (2**3,)
-
-    @pytest.mark.parametrize("s_vec", [(3, 2, 1), (1, 5, 10), (3, 1, 20)])
-    def test_shape_shot_vector(self, s_vec):
-        """Test that the shape is correct for qml.state with the shot vector too."""
-        dev = qml.device("default.qubit", wires=3, shots=s_vec)
-        res = qml.state()
-        assert res.shape(dev, Shots(s_vec)) == ((2**3,), (2**3,), (2**3,))
+        assert res.shape(shots, 3) == (2**3,)
 
     def test_numeric_type(self):
         """Test that the numeric type of state measurements."""
@@ -1091,17 +1075,5 @@ class TestDensityMatrix:
     @pytest.mark.parametrize("shots", [None, 1, 10])
     def test_shape(self, shots):
         """Test that the shape is correct for qml.density_matrix."""
-        dev = qml.device("default.qubit", wires=3, shots=shots)
         res = qml.density_matrix(wires=[0, 1])
-        assert res.shape(dev, Shots(shots)) == (2**2, 2**2)
-
-    @pytest.mark.parametrize("s_vec", [(3, 2, 1), (1, 5, 10), (3, 1, 20)])
-    def test_shape_shot_vector(self, s_vec):
-        """Test that the shape is correct for qml.density_matrix with the shot vector too."""
-        dev = qml.device("default.qubit", wires=3, shots=s_vec)
-        res = qml.density_matrix(wires=[0, 1])
-        assert res.shape(dev, Shots(s_vec)) == (
-            (2**2, 2**2),
-            (2**2, 2**2),
-            (2**2, 2**2),
-        )
+        assert res.shape(shots, 3) == (2**2, 2**2)

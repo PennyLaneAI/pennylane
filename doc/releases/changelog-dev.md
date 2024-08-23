@@ -44,6 +44,11 @@
 
 <h3>Improvements 🛠</h3>
 
+* Counts measurements with `all_outcomes=True` can now be used with jax jitting. Measurements
+  broadcasted across all available wires (`qml.probs()`) can now be used with jit and devices that
+  allow variable numbers of wires (`qml.device('default.qubit')`).
+  [(#6108)](https://github.com/PennyLaneAI/pennylane/pull/6108/)
+
 <h4>A Prep-Select-Prep template</h4>
 
 * The `qml.PrepSelPrep` template is added. The template implements a block-encoding of a linear
@@ -273,6 +278,15 @@
   [(#5560)](https://github.com/PennyLaneAI/pennylane/pull/5560)
 
 <h3>Breaking changes 💔</h3>
+
+* `MeasurementProcess.shape(shots: Shots, device:Device)` is now
+  `MeasurementProcess.shape(shots: Optional[int], num_device_wires:int = 0)`. This has been done to allow
+  jitting when a measurement is broadcasted across all available wires, but the device does not specify wires.
+  [(#6108)](https://github.com/PennyLaneAI/pennylane/pull/6108/)
+
+* If the shape of a probability measurement is affected by a `Device.cutoff` property, it will no longer work with
+  jitting.
+  [(#6108)](https://github.com/PennyLaneAI/pennylane/pull/6108/)
 
 * `GlobalPhase` is considered non-differentiable with tape transforms.
   As a consequence, `qml.gradients.finite_diff` and `qml.gradients.spsa_grad` no longer
