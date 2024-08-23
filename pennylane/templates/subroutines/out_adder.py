@@ -20,13 +20,14 @@ from pennylane.operation import Operation
 
 
 class OutAdder(Operation):
-    r"""Performs the Outplace Addition operation.
+    r"""Performs the out-place modular addition operation.
 
-    This operator adds the integer :math:`k` modulo :math:`mod` in the computational basis:
+    This operator performs the modular addition of two integers :math:`x` and :math:`y` modulo :math:`mod` in the
+     computational basis:
 
     .. math::
 
-        \text{OutAdder}(mod) |x \rangle | k \rangle | 0 \rangle = |x \rangle | k \rangle | x+k \, \text{mod} \, mod \rangle ,
+        \text{OutAdder}(mod) |x \rangle | y \rangle | b \rangle = |x \rangle | y \rangle | b+x+y \, \text{mod} \, mod \rangle ,
 
     The implementation is based on the quantum Fourier transform method presented in
     `arXiv:2311.08555 <https://arxiv.org/abs/2311.08555>`_.

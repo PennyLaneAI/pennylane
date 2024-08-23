@@ -19,9 +19,10 @@ from pennylane.operation import Operation
 
 
 class ModExp(Operation):
-    r"""Performs the Exponentiation operation outplace in the computational basis.
+    r"""Performs the out-place modular exponentiation operation.
 
-    This operator exponentiates the integer :math:`base` to the power :math:`x` modulo :math:`mod` in the computational basis:
+    This operator performs the modular exponentiation of the integer :math:`base` to the power :math:`x` modulo :math:`mod`
+    in the computational basis:
 
     .. math::
 

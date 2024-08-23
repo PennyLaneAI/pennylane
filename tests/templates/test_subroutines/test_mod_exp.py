@@ -38,11 +38,11 @@ class TestModExp:
     """Test the qml.ModExp template."""
 
     @pytest.mark.parametrize(
-        ("x_wires", "output_wires", "base", "mod", "work_wires", "x"),
+        ("x_wires", "output_wires", "base", "mod", "work_wires", "x", "k"),
         [
-            ([0, 1], [3, 4, 5], 2, 7, [7, 8, 9, 10, 11], 1),
-            ([0, 1, 2], [3, 4, 5], 3, 7, [7, 8, 9, 10, 11], 2),
-            ([0, 1, 2], [3, 4], 4, 3, [7, 8, 9, 10], 0),
+            ([0, 1], [3, 4, 5], 2, 7, [7, 8, 9, 10, 11], 1, 1),
+            ([0, 1, 2], [3, 4, 5], 3, 7, [7, 8, 9, 10, 11], 2, 2),
+            ([0, 1, 2], [3, 4], 4, 3, [7, 8, 9, 10], 0, 0),
             (
                 [0, 1, 2],
                 [3, 4, 5],
@@ -50,20 +50,21 @@ class TestModExp:
                 None,
                 [9, 10, 11],
                 3,
+                2,
             ),
-            ([0, 1, 2], [3, 4, 5], 5, 6, [6, 7, 8, 9, 10], 3),
+            ([0, 1, 2], [3, 4, 5], 5, 6, [6, 7, 8, 9, 10], 3, 0),
         ],
     )
     def test_operation_result(
-        self, x_wires, output_wires, base, mod, work_wires, x
+        self, x_wires, output_wires, base, mod, work_wires, x, k
     ):  # pylint: disable=too-many-arguments
         """Test the correctness of the ModExp template output."""
         dev = qml.device("default.qubit", shots=1)
 
         @qml.qnode(dev)
-        def circuit(x):
+        def circuit(x, k):
             qml.BasisEmbedding(x, wires=x_wires)
-            qml.BasisEmbedding(1, wires=output_wires)
+            qml.BasisEmbedding(k, wires=output_wires)
             qml.ModExp(x_wires, output_wires, base, mod, work_wires)
             return qml.sample(wires=output_wires)
 
@@ -71,7 +72,8 @@ class TestModExp:
             mod = 2 ** len(output_wires)
 
         assert np.allclose(
-            sum(bit * (2**i) for i, bit in enumerate(reversed(circuit(x)))), (base**x) % mod
+            sum(bit * (2**i) for i, bit in enumerate(reversed(circuit(x, k)))),
+            (k * (base**x)) % mod,
         )
 
     @pytest.mark.parametrize(
