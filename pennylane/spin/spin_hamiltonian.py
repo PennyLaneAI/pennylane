@@ -231,7 +231,7 @@ def fermihubbard(
 
     if hopping.shape not in [(neighbour_order,), (lattice.n_sites, lattice.n_sites)]:
         raise ValueError(
-            f"hopping should be a number or an array of shape {neighbour_order}x1 or {lattice.n_sites}x{lattice.n_sites}"
+            f"The hopping parameter should be a number or an array of shape {neighbour_order}x1 or {lattice.n_sites}x{lattice.n_sites}"
         )
 
     spin = 2
