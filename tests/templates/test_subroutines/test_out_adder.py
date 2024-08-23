@@ -36,17 +36,20 @@ class TestOutAdder:
     """Test the qml.OutAdder template."""
 
     @pytest.mark.parametrize(
-        ("x_wires", "y_wires", "output_wires", "mod", "work_wires"),
+        ("x_wires", "y_wires", "output_wires", "mod", "work_wires", "x", "y", "z"),
         [
-            ([0, 1, 2], [3, 4, 5], [9, 10, 11], 7, [7, 8]),
-            ([0, 1, 2], [3, 4], [5, 6], 3, [7, 8]),
-            ([0, 1, 2], [3, 4], [5, 6, 9, 10], 3, [7, 8]),
+            ([0, 1, 2], [3, 4, 5], [9, 10, 11], 7, [7, 8], 1, 2, 3),
+            ([0, 1, 2], [3, 4], [5, 6], 3, [7, 8], 2, 3, 0),
+            ([0, 1, 2], [3, 4], [5, 6, 9, 10], 3, [7, 8], 1, 3, 1),
             (
                 [0, 1, 2],
                 [3, 4, 5],
                 [6, 7, 8],
                 None,
                 [9, 10],
+                1,
+                2,
+                3,
             ),
             (
                 [0, 1],
@@ -54,11 +57,14 @@ class TestOutAdder:
                 [6, 7, 8],
                 None,
                 None,
+                2,
+                3,
+                4,
             ),
         ],
     )
     def test_operation_result(
-        self, x_wires, y_wires, output_wires, mod, work_wires
+        self, x_wires, y_wires, output_wires, mod, work_wires, x, y, z
     ):  # pylint: disable=too-many-arguments
         """Test the correctness of the OutAdder template output."""
         dev = qml.device("default.qubit", shots=1)
@@ -73,11 +79,11 @@ class TestOutAdder:
 
         if mod is None:
             mod = 2 ** len(output_wires)
-        for x, y, z in zip(range(len(x_wires)), range(len(y_wires)), range(len(output_wires))):
-            assert np.allclose(
-                sum(bit * (2**i) for i, bit in enumerate(reversed(circuit(x, y, z)))),
-                (x + y + z) % mod,
-            )
+
+        assert np.allclose(
+            sum(bit * (2**i) for i, bit in enumerate(reversed(circuit(x, y, z)))),
+            (x + y + z) % mod,
+        )
 
     @pytest.mark.parametrize(
         ("x_wires", "y_wires", "output_wires", "mod", "work_wires", "msg_match"),
@@ -184,9 +190,6 @@ class TestOutAdder:
 
         x, y = 2, 3
 
-        # x, y in binary
-        x_list = [0, 1, 0]
-        y_list = [0, 1, 1]
         mod = 7
         x_wires = [0, 1, 4]
         y_wires = [2, 3, 5]
@@ -197,8 +200,8 @@ class TestOutAdder:
         @jax.jit
         @qml.qnode(dev)
         def circuit():
-            qml.BasisEmbedding(x_list, wires=x_wires)
-            qml.BasisEmbedding(y_list, wires=y_wires)
+            qml.BasisEmbedding(x, wires=x_wires)
+            qml.BasisEmbedding(y, wires=y_wires)
             qml.OutAdder(x_wires, y_wires, output_wires, mod, work_wires)
             return qml.sample(wires=output_wires)
 

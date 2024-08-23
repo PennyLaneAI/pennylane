@@ -38,22 +38,23 @@ class TestModExp:
     """Test the qml.ModExp template."""
 
     @pytest.mark.parametrize(
-        ("x_wires", "output_wires", "base", "mod", "work_wires"),
+        ("x_wires", "output_wires", "base", "mod", "work_wires", "x"),
         [
-            ([0, 1], [3, 4, 5], 2, 7, [7, 8, 9, 10, 11]),
-            ([0, 1, 2], [3, 4, 5], 3, 7, [7, 8, 9, 10, 11]),
-            ([0, 1, 2], [3, 4], 4, 3, [7, 8, 9, 10]),
+            ([0, 1], [3, 4, 5], 2, 7, [7, 8, 9, 10, 11], 1),
+            ([0, 1, 2], [3, 4, 5], 3, 7, [7, 8, 9, 10, 11], 2),
+            ([0, 1, 2], [3, 4], 4, 3, [7, 8, 9, 10], 0),
             (
                 [0, 1, 2],
                 [3, 4, 5],
                 7,
                 None,
                 [9, 10, 11],
+                3,
             ),
         ],
     )
     def test_operation_result(
-        self, x_wires, output_wires, base, mod, work_wires
+        self, x_wires, output_wires, base, mod, work_wires, x
     ):  # pylint: disable=too-many-arguments
         """Test the correctness of the ModExp template output."""
         dev = qml.device("default.qubit", shots=1)
@@ -66,13 +67,11 @@ class TestModExp:
             return qml.sample(wires=output_wires)
 
         if mod is None:
-            max = 2 ** len(output_wires)
-        else:
-            max = mod
-        for x in range(1, len(x_wires)):
-            assert np.allclose(
-                sum(bit * (2**i) for i, bit in enumerate(reversed(circuit(x)))), (base**x) % max
-            )
+            mod = 2 ** len(output_wires)
+
+        assert np.allclose(
+            sum(bit * (2**i) for i, bit in enumerate(reversed(circuit(x)))), (base**x) % mod
+        )
 
     @pytest.mark.parametrize(
         ("x_wires", "output_wires", "base", "mod", "work_wires", "msg_match"),
