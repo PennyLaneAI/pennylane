@@ -164,7 +164,7 @@ class OutMultiplier(Operation):
             y_wires (Sequence[int]): the wires that store the integer :math:`y`
             output_wires (Sequence[int]): the wires that store the multiplication result
             mod (int): the modulus for performing the multiplication, default value is :math:`2^{len(output\_wires)}`
-            work_wires (Sequence[int]): the auxiliary wires to use for the multiplication modulo
+            work_wires (Sequence[int]): the auxiliary wires to use for the multiplication
         Returns:
             list[.Operator]: Decomposition of the operator
 
