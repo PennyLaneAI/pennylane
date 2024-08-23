@@ -80,7 +80,7 @@ class Adder(Operation):
         if mod is None:
             mod = 2 ** len(x_wires)
         if work_wires is None and mod != 2 ** len(x_wires):
-            raise ValueError(f"If mod is not 2^{len(x_wires)}, two work wires should be provided")
+            raise ValueError(f"If mod is not 2^{len(x_wires)}, two work wires should be provided.")
         if work_wires is not None:
             if any(wire in work_wires for wire in x_wires):
                 raise ValueError("None of the wires in work_wires should be included in x_wires.")

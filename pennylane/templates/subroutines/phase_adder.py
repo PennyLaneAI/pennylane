@@ -32,54 +32,57 @@ def _add_k_fourier(k, wires):
 class PhaseAdder(Operation):
     r"""Performs the in-place modular phase addition operation.
 
-     This operator performs the modular addition by an integer :math:`k` modulo :math:`mod` in the Fourier basis:
+    This operator performs the modular addition by an integer :math:`k` modulo :math:`mod` in the
+    Fourier basis:
 
-     .. math::
+    .. math::
 
-         \text{PhaseAdder}(k,mod) |\phi (x) \rangle = |\phi (x+k \quad \text{mod}) \rangle,
+         \text{PhaseAdder}(k,mod) |\phi (x) \rangle = |\phi (x+k \; \text{modulo} \; mod) \rangle,
 
-     where :math:`|\phi (x) \rangle` represents the :math:`| x \rangle` : state in the Fourier basis such:
+    where :math:`|\phi (x) \rangle` represents the :math:`| x \rangle` : state in the Fourier basis,
 
      .. math::
 
          \text{QFT} |x \rangle = |\phi (x) \rangle.
 
-     The implementation is based on the quantum Fourier transform method presented in `arXiv:2311.08555 <https://arxiv.org/abs/2311.08555>`_.
+    The implementation is based on the quantum Fourier transform method presented in
+    `arXiv:2311.08555 <https://arxiv.org/abs/2311.08555>`_.
 
-     Args:
-         k (int): the number that needs to be added
-         x_wires (Sequence[int]): the wires the operation acts on
-         mod (int): the modulus for performing the addition, default value is :math:`2^{len(x_wires)}`
-         work_wire (Sequence[int]): the auxiliary wire to be used for performing the addition
+    Args:
+        k (int): the number that needs to be added
+        x_wires (Sequence[int]): the wires the operation acts on
+        mod (int): the modulus for performing the addition, default value is :math:`2^{len(x_wires)}`
+        work_wire (Sequence[int]): the auxiliary wire to be used for performing the addition
 
-     **Example**
+    **Example**
 
     This example computes the sum of two integers :math:`x=8` and :math:`k=5` modulo :math:`mod=15`. Note that to perform this sum using qml.Adder, when :math:`mod \neq 2^{\text{len(x_wires)}}` we need that :math:`x < 2^{\text{len(x_wires)}}/2`.
 
-     .. code-block::
+    .. code-block::
 
-         x = 8
-         k = 5
-         mod = 15
+        x = 8
+        k = 5
+        mod = 15
 
-         x_wires =[0,1,2,3,4]
-         work_wire=[5]
+        x_wires =[0,1,2,3]
+        work_wire=[5]
 
-         dev = qml.device("default.qubit", shots=1)
-         @qml.qnode(dev)
-         def circuit(x, k, mod, x_wires, work_wire):
-             qml.BasisEmbedding(x, wires=x_wires)
-             qml.QFT(wires=x_wires)
-             qml.PhaseAdder(k, x_wires, mod, work_wire)
-             qml.adjoint(qml.QFT)(wires=x_wires)
-             return qml.sample(wires=x_wires)
+        dev = qml.device("default.qubit", shots=1)
+        @qml.qnode(dev)
+        def circuit(x, k, mod, x_wires, work_wire):
+            qml.BasisEmbedding(x, wires=x_wires)
+            qml.QFT(wires=x_wires)
+            qml.PhaseAdder(k, x_wires, mod, work_wire)
+            qml.adjoint(qml.QFT)(wires=x_wires)
+            return qml.sample(wires=x_wires)
 
-     .. code-block:: pycon
+    .. code-block:: pycon
 
-         >>> circuit(x, k, mod, x_wires, work_wire)
-             [1 1 0 1]
+        >>> print(circuit(x, k, mod, x_wires, work_wire))
+        [1 1 0 1]
 
-     The result, :math:`[1 1 0 1]`, is the ket representation of :math:`8 + 5  \, \text{modulo} \, 15 = 13`.
+    The result, :math:`[1 1 0 1]`, is the ket representation of
+    :math:`8 + 5  \, \text{modulo} \, 15 = 13`.
     """
 
     grad_method = None
@@ -92,14 +95,14 @@ class PhaseAdder(Operation):
         if mod is None:
             mod = 2 ** len(x_wires)
         elif work_wire is None and mod != 2 ** len(x_wires):
-            raise ValueError(f"If mod is not 2^{len(x_wires)} you should provide one work_wire")
+            raise ValueError(f"If mod is not 2^{len(x_wires)}, one work wires should be provided.")
         if not isinstance(k, int) or not isinstance(mod, int):
             raise ValueError("Both k and mod must be integers")
         if mod > 2 ** len(x_wires):
             raise ValueError("PhaseAdder must have enough x_wires to represent mod.")
         if work_wire is not None:
             if any(wire in work_wire for wire in x_wires):
-                raise ValueError("work_wire should not be included in x_wires.")
+                raise ValueError("None of the wires in work_wire should be included in x_wires.")
 
         self.hyperparameters["k"] = k % mod
         self.hyperparameters["mod"] = mod
