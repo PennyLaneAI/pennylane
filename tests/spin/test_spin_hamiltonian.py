@@ -15,11 +15,13 @@
 Unit tests for functions needed for computing a spin Hamiltonian.
 """
 
+import re
+
 import pytest
 
 import pennylane as qml
 from pennylane import I, X, Y, Z
-from pennylane.spin import fermihubbard, heisenberg, transverse_ising
+from pennylane.spin import fermi_hubbard, heisenberg, transverse_ising
 
 
 def test_coupling_error():
@@ -28,19 +30,22 @@ def test_coupling_error():
     n_cells = [4, 4]
     lattice = "Square"
     with pytest.raises(
-        ValueError, match="Coupling should be a number or an array of shape 1x1 or 16x16"
+        ValueError,
+        match=re.escape(
+            "The coupling parameter should be a number or an array of shape (1,) or (16,16)"
+        ),
     ):
         transverse_ising(lattice=lattice, n_cells=n_cells, coupling=[1.0, 2.0], neighbour_order=1)
 
 
 @pytest.mark.parametrize(
     # expected_ham here was obtained from datasets
-    ("shape", "n_cells", "J", "h", "expected_ham"),
+    ("shape", "n_cells", "j", "h", "expected_ham"),
     [
         (
             "chain",
             [4, 0, 0],
-            None,
+            1.0,
             0,
             -1.0 * (Z(0) @ Z(1)) + -1.0 * (Z(1) @ Z(2)) + -1.0 * (Z(2) @ Z(3)),
         ),
@@ -142,17 +147,17 @@ def test_coupling_error():
         ),
     ],
 )
-def test_ising_hamiltonian(shape, n_cells, J, h, expected_ham):
+def test_ising_hamiltonian(shape, n_cells, j, h, expected_ham):
     r"""Test that the correct Hamiltonian is generated compared to the datasets"""
 
-    ising_ham = transverse_ising(lattice=shape, n_cells=n_cells, coupling=J, h=h, neighbour_order=1)
+    ising_ham = transverse_ising(lattice=shape, n_cells=n_cells, coupling=j, h=h, neighbour_order=1)
 
     qml.assert_equal(ising_ham, expected_ham)
 
 
 @pytest.mark.parametrize(
     # expected_ham here was obtained manually.
-    ("shape", "n_cells", "J", "h", "expected_ham"),
+    ("shape", "n_cells", "j", "h", "expected_ham"),
     [
         (
             "chain",
@@ -177,10 +182,10 @@ def test_ising_hamiltonian(shape, n_cells, J, h, expected_ham):
         ),
     ],
 )
-def test_ising_hamiltonian_matrix(shape, n_cells, J, h, expected_ham):
+def test_ising_hamiltonian_matrix(shape, n_cells, j, h, expected_ham):
     r"""Test that the correct Hamiltonian is generated when coupling is provided as a matrix"""
 
-    ising_ham = transverse_ising(lattice=shape, n_cells=n_cells, coupling=J, h=h, neighbour_order=1)
+    ising_ham = transverse_ising(lattice=shape, n_cells=n_cells, coupling=j, h=h, neighbour_order=1)
 
     qml.assert_equal(ising_ham, expected_ham)
 
@@ -190,13 +195,16 @@ def test_coupling_error_heisenberg():
     Heisenberg Hamiltonian."""
     n_cells = [4, 4]
     lattice = "Square"
-    with pytest.raises(ValueError, match="Coupling shape should be equal to 1x3 or 3x16x16"):
+    with pytest.raises(
+        ValueError,
+        match=re.escape("The coupling parameter shape should be equal to (1,3) or (3,16,16)"),
+    ):
         heisenberg(lattice=lattice, n_cells=n_cells, coupling=[1.0, 2.0], neighbour_order=1)
 
 
 @pytest.mark.parametrize(
     # expected_ham here was obtained from datasets
-    ("shape", "n_cells", "J", "expected_ham"),
+    ("shape", "n_cells", "j", "expected_ham"),
     [
         (
             "chain",
@@ -360,16 +368,16 @@ def test_coupling_error_heisenberg():
         ),
     ],
 )
-def test_heisenberg_hamiltonian(shape, n_cells, J, expected_ham):
+def test_heisenberg_hamiltonian(shape, n_cells, j, expected_ham):
     r"""Test that the correct Hamiltonian is generated compared to the datasets"""
-    heisenberg_ham = heisenberg(lattice=shape, n_cells=n_cells, coupling=J, neighbour_order=1)
+    heisenberg_ham = heisenberg(lattice=shape, n_cells=n_cells, coupling=j, neighbour_order=1)
 
     qml.assert_equal(heisenberg_ham, expected_ham)
 
 
 @pytest.mark.parametrize(
     # expected_ham here was obtained manually.
-    ("shape", "n_cells", "J", "expected_ham"),
+    ("shape", "n_cells", "j", "expected_ham"),
     [
         (
             "chain",
@@ -412,41 +420,48 @@ def test_heisenberg_hamiltonian(shape, n_cells, J, expected_ham):
         ),
     ],
 )
-def test_heisenberg_hamiltonian_matrix(shape, n_cells, J, expected_ham):
+def test_heisenberg_hamiltonian_matrix(shape, n_cells, j, expected_ham):
     r"""Test that the correct Hamiltonian is generated when coupling is provided as a matrix"""
 
-    heisenberg_ham = heisenberg(lattice=shape, n_cells=n_cells, coupling=J)
+    heisenberg_ham = heisenberg(lattice=shape, n_cells=n_cells, coupling=j)
 
     qml.assert_equal(heisenberg_ham, expected_ham)
 
 
-def test_hopping_error_fermihubbard():
+def test_hopping_error_fermi_hubbard():
     r"""Test that an error is raised when the provided hopping shape is wrong for
-    fermihubbard Hamiltonian."""
+    fermi_hubbard Hamiltonian."""
     n_cells = [4, 4]
     lattice = "Square"
     with pytest.raises(
-        ValueError, match="hopping should be a number or an array of shape 1x1 or 16x16"
+        ValueError,
+        match=re.escape(
+            "The hopping parameter should be a number or an array of shape (1,) or (16,16)"
+        ),
     ):
-        fermihubbard(lattice=lattice, n_cells=n_cells, hopping=[1.0, 2.0], neighbour_order=1)
+        fermi_hubbard(lattice=lattice, n_cells=n_cells, hopping=[1.0, 2.0], neighbour_order=1)
 
 
-def test_mapping_error_fermihubbard():
+def test_mapping_error_fermi_hubbard():
     r"""Test that an error is raised when unsupported mapping is provided"""
     n_cells = [4, 4]
     lattice = "Square"
     with pytest.raises(ValueError, match="The 'bk_sf' transformation is not available."):
-        fermihubbard(lattice=lattice, n_cells=n_cells, mapping="bk_sf")
+        fermi_hubbard(lattice=lattice, n_cells=n_cells, mapping="bk_sf")
 
 
 @pytest.mark.parametrize(
-    # expected_ham here was obtained from openfermion and converted to PennyLane format using from_openfermion
-    ("shape", "n_cells", "hopping", "interaction", "expected_ham"),
+    # expected_ham in Jordan-Wigner transformation was obtained from openfermion and converted to
+    # PennyLane format using from_openfermion
+    # ham = openfermion.hamiltonians.fermi_hubbard(xaxis=n_cells[0], yaxis=n_cells[1], tunneling=hopping, coulomb=coulomb)
+    # jw_ham = openfermion.transforms.jordan_wigner(ham)
+    # pl_ham = qml.from_openfermion(jw_ham)
+    ("shape", "n_cells", "hopping", "coulomb", "expected_ham"),
     [
         (
             "chain",
             [4],
-            None,
+            1.0,
             0.5,
             -0.5 * (Y(0) @ Z(1) @ Y(2))
             + -0.5 * (X(0) @ Z(1) @ X(2))
@@ -598,18 +613,22 @@ def test_mapping_error_fermihubbard():
         ),
     ],
 )
-def test_fermihubbard_hamiltonian(shape, n_cells, hopping, interaction, expected_ham):
+def test_fermi_hubbard_hamiltonian(shape, n_cells, hopping, coulomb, expected_ham):
     r"""Test that the correct Hamiltonian is generated"""
 
-    fermihubbard_ham = fermihubbard(
-        lattice=shape, n_cells=n_cells, hopping=hopping, interaction=interaction, neighbour_order=1
+    fermi_hubbard_ham = fermi_hubbard(
+        lattice=shape, n_cells=n_cells, hopping=hopping, coulomb=coulomb, neighbour_order=1
     )
 
-    qml.assert_equal(fermihubbard_ham, expected_ham)
+    qml.assert_equal(fermi_hubbard_ham, expected_ham)
 
 
 @pytest.mark.parametrize(
-    # expected_ham here was obtained from openfermion and converted to PennyLane format using from_openfermion
+    # expected_ham in Jordan-Wigner transformation was obtained from openfermion and converted to
+    # PennyLane format using from_openfermion
+    # ham = openfermion.hamiltonians.fermi_hubbard(xaxis=n_cells[0], yaxis=n_cells[1], tunneling=hopping, coulomb=coulomb)
+    # jw_ham = openfermion.transforms.jordan_wigner(ham)
+    # pl_ham = qml.from_openfermion(jw_ham)
     ("shape", "n_cells", "hopping", "mapping", "expected_ham"),
     [
         (
@@ -680,19 +699,19 @@ def test_fermihubbard_hamiltonian(shape, n_cells, hopping, interaction, expected
         ),
     ],
 )
-def test_fermihubbard_mapping(shape, n_cells, hopping, mapping, expected_ham):
+def test_fermi_hubbard_mapping(shape, n_cells, hopping, mapping, expected_ham):
     r"""Test that the correct Hamiltonian is generated with different mappings"""
 
-    fermihubbard_ham = fermihubbard(
+    fermi_hubbard_ham = fermi_hubbard(
         lattice=shape, n_cells=n_cells, hopping=hopping, mapping=mapping
     )
 
-    qml.assert_equal(fermihubbard_ham, expected_ham)
+    qml.assert_equal(fermi_hubbard_ham, expected_ham)
 
 
 @pytest.mark.parametrize(
     # expected_ham here was obtained manually.
-    ("shape", "n_cells", "t", "U", "expected_ham"),
+    ("shape", "n_cells", "t", "coulomb", "expected_ham"),
     [
         (
             "chain",
@@ -755,9 +774,9 @@ def test_fermihubbard_mapping(shape, n_cells, hopping, mapping, expected_ham):
         ),
     ],
 )
-def test_fermihubbard_hamiltonian_matrix(shape, n_cells, t, U, expected_ham):
-    r"""Test that the correct fermi Hubbard Hamiltonian is generated when hopping or interaction is provided as a matrix"""
+def test_fermi_hubbard_hamiltonian_matrix(shape, n_cells, t, coulomb, expected_ham):
+    r"""Test that the correct fermi Hubbard Hamiltonian is generated when hopping or coulomb is provided as a matrix"""
 
-    fermihub_ham = fermihubbard(lattice=shape, n_cells=n_cells, hopping=t, interaction=U)
+    fermi_hub_ham = fermi_hubbard(lattice=shape, n_cells=n_cells, hopping=t, coulomb=coulomb)
 
-    qml.assert_equal(fermihub_ham, expected_ham)
+    qml.assert_equal(fermi_hub_ham, expected_ham)

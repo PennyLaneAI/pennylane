@@ -25,7 +25,7 @@ from .lattice import _generate_lattice
 
 
 def transverse_ising(
-    lattice, n_cells, coupling=None, h=1.0, boundary_condition=False, neighbour_order=1
+    lattice, n_cells, coupling=1.0, h=1.0, boundary_condition=False, neighbour_order=1
 ):
     r"""Generates the transverse-field Ising model on a lattice.
 
@@ -44,12 +44,12 @@ def transverse_ising(
        n_cells (list[int]): Number of cells in each direction of the grid.
        coupling (float or List[float] or List[math.array[float]]): Coupling between spins, it can be a
            list of length equal to ``neighbour_order`` or a square matrix of size
-           ``(num_spins,  num_spins)``. Default value is [1.0].
+           ``(num_spins,  num_spins)``. Default value is 1.0.
        h (float): Value of external magnetic field. Default is 1.0.
-       boundary_condition (bool or list[bool]): Defines boundary conditions different lattice axes,
+       boundary_condition (bool or list[bool]): Defines boundary conditions for different lattice axes,
            default is ``False`` indicating open boundary condition.
        neighbour_order (int): Specifies the interaction level for neighbors within the lattice.
-           Default is 1 (nearest neighbour).
+           Default is 1, indicating nearest neighbours.
 
     Returns:
        pennylane.LinearCombination: Hamiltonian for the transverse-field ising model.
@@ -57,9 +57,9 @@ def transverse_ising(
     **Example**
 
     >>> n_cells = [2,2]
-    >>> J = 0.5
+    >>> j = 0.5
     >>> h = 0.1
-    >>> spin_ham = transverse_ising("Square", n_cells, coupling=J, h=h)
+    >>> spin_ham = qml.spin.transverse_ising("Square", n_cells, coupling=j, h=h)
     >>> spin_ham
     -0.5 * (Z(0) @ Z(1))
     + -0.5 * (Z(0) @ Z(2))
@@ -71,9 +71,7 @@ def transverse_ising(
     """
     lattice = _generate_lattice(lattice, n_cells, boundary_condition, neighbour_order)
 
-    if coupling is None:
-        coupling = [1.0]
-    elif isinstance(coupling, (int, float, complex)):
+    if isinstance(coupling, (int, float, complex)):
         coupling = [coupling]
     coupling = math.asarray(coupling)
 
@@ -81,7 +79,7 @@ def transverse_ising(
 
     if coupling.shape not in [(neighbour_order,), (lattice.n_sites, lattice.n_sites)]:
         raise ValueError(
-            f"Coupling should be a number or an array of shape {neighbour_order}x1 or {lattice.n_sites}x{lattice.n_sites}"
+            f"The coupling parameter should be a number or an array of shape ({neighbour_order},) or ({lattice.n_sites},{lattice.n_sites})"
         )
 
     if coupling.shape == (neighbour_order,):
@@ -120,7 +118,7 @@ def heisenberg(lattice, n_cells, coupling=None, boundary_condition=False, neighb
        boundary_condition (bool or list[bool]): Defines boundary conditions for different lattice axes,
            default is ``False`` indicating open boundary condition.
        neighbour_order (int): Specifies the interaction level for neighbors within the lattice.
-                    Default is 1 indicating nearest neighbours.
+                    Default is 1, indicating nearest neighbours.
 
 
     Returns:
@@ -129,8 +127,8 @@ def heisenberg(lattice, n_cells, coupling=None, boundary_condition=False, neighb
     **Example**
 
     >>> n_cells = [2,2]
-    >>> J = [[0.5, 0.5, 0.5]]
-    >>> spin_ham = qml.spin.heisenberg("Square", n_cells, coupling=J)
+    >>> j = [[0.5, 0.5, 0.5]]
+    >>> spin_ham = qml.spin.heisenberg("Square", n_cells, coupling=j)
     >>> spin_ham
     0.5 * (X(0) @ X(1)) + 0.5 * (Y(0) @ Y(1)) + 0.5 * (Z(0) @ Z(1)) + 0.5 * (X(0) @ X(2)) +
     0.5 * (Y(0) @ Y(2)) + 0.5 * (Z(0) @ Z(2)) + 0.5 * (X(1) @ X(3)) + 0.5 * (Y(1) @ Y(3)) +
@@ -147,7 +145,7 @@ def heisenberg(lattice, n_cells, coupling=None, boundary_condition=False, neighb
 
     if coupling.shape not in [(neighbour_order, 3), (3, lattice.n_sites, lattice.n_sites)]:
         raise ValueError(
-            f"Coupling shape should be equal to {neighbour_order}x3 or 3x{lattice.n_sites}x{lattice.n_sites}"
+            f"The coupling parameter shape should be equal to ({neighbour_order},3) or (3,{lattice.n_sites},{lattice.n_sites})"
         )
 
     hamiltonian = 0.0 * qml.I(0)
@@ -171,16 +169,16 @@ def heisenberg(lattice, n_cells, coupling=None, boundary_condition=False, neighb
     return hamiltonian.simplify()
 
 
-def fermihubbard(
+def fermi_hubbard(
     lattice,
     n_cells,
-    hopping=None,
-    interaction=1.0,
+    hopping=1.0,
+    coulomb=1.0,
     boundary_condition=False,
     neighbour_order=1,
     mapping="jordan_wigner",
 ):
-    r"""Generates the Hubbard model on a lattice.
+    r"""Generates the Fermi-Hubbard model on a lattice.
 
     The Hamiltonian is represented as:
 
@@ -188,22 +186,24 @@ def fermihubbard(
 
         \hat{H} = -t\sum_{<i,j>, \sigma}(c_{i\sigma}^{\dagger}c_{j\sigma}) + U\sum_{i}n_{i \uparrow} n_{i\downarrow}
 
-    where ``t`` is the hopping term representing the kinetic energy of electrons and ``U`` is the on-site Coulomb interaction,
-    representing the repulsion between electrons.
+    where ``t`` is the hopping term representing the kinetic energy of electrons``U`` is the on-site Coulomb interaction,
+    representing the repulsion between electrons, ``i,j`` represent the indices for neighbouring spins, ``\sigma``
+    represents the spin degree of freedom, and ``n_{i \uparrow}, n_{i \downarrow}`` are number operators for spin-up and
+    spin-down fermions at site (i).
     This function assumes there are two fermions with opposite spins on each site.
 
     Args:
        lattice (str): Shape of the lattice. Input Values can be ``'chain'``, ``'square'``,
                       ``'rectangle'``, ``'honeycomb'``, ``'triangle'``, or ``'kagome'``.
        n_cells (List[int]): Number of cells in each direction of the grid.
-       hopping (float or List[float] or List[math.array(float)]):Hopping interaction between spins, it can be a
+       hopping (float or List[float] or List[math.array(float)]): Hopping interaction between spins, it can be a
                       list of length equal to ``neighbour_order`` or a square matrix of size
-                      ``(num_spins, num_spins)``. Default value is [1.0].
-       interaction (float or List[float]): Coulomb interaction between spins, it can be a constant or a list of length ``num_spins``.
-       boundary_condition (bool or list[bool]): Defines boundary conditions different lattice axes,
+                      ``(num_spins, num_spins)``. Default value is 1.0.
+       coulomb (float or List[float]): Coulomb interaction between spins, it can be a constant or a list of length ``num_spins``.
+       boundary_condition (bool or list[bool]): Defines boundary conditions for different lattice axes,
            default is ``False`` indicating open boundary condition.
        neighbour_order (int): Specifies the interaction level for neighbors within the lattice.
-                       Default is 1 (nearest neighbour).
+                       Default is 1, indicating nearest neighbours.
        mapping (str): Specifies the fermion-to-qubit mapping. Input values can be
                       ``'jordan_wigner'``, ``'parity'`` or ``'bravyi_kitaev'``.
 
@@ -212,30 +212,32 @@ def fermihubbard(
 
     **Example**
 
-    >>> n_cells = [2,2]
-    >>> h = [[0.5]]
-    >>> u = [[1.0]]
-    >>> spin_ham = qml.spin.fermihubbard("Square", n_cells, hopping=h, interaction=u)
-    >>> print(spin_ham)
-
+    >>> n_cells = [2]
+    >>> h = [0.5]
+    >>> u = [1.0]
+    >>> spin_ham = qml.spin.fermihubbard("chain", n_cells, hopping=h, coulomb=u)
+    >>> spin_ham
+    -0.25 * (Y(0) @ Z(1) @ Y(2)) + -0.25 * (X(0) @ Z(1) @ X(2))
+    + 0.5 * I(0) + -0.25 * (Y(1) @ Z(2) @ Y(3))
+    + -0.25 * (X(1) @ Z(2) @ X(3)) + -0.25 * Z(1)
+    + -0.25 * Z(0) + 0.25 * (Z(0) @ Z(1)) + -0.25 * Z(3)
+    + -0.25 * Z(2) + 0.25 * (Z(2) @ Z(3))
     """
 
     lattice = _generate_lattice(lattice, n_cells, boundary_condition, neighbour_order)
 
-    if hopping is None:
-        hopping = [1.0]
-    elif isinstance(hopping, (int, float, complex)):
+    if isinstance(hopping, (int, float, complex)):
         hopping = [hopping]
 
     hopping = math.asarray(hopping)
 
     if hopping.shape not in [(neighbour_order,), (lattice.n_sites, lattice.n_sites)]:
         raise ValueError(
-            f"The hopping parameter should be a number or an array of shape {neighbour_order}x1 or {lattice.n_sites}x{lattice.n_sites}"
+            f"The hopping parameter should be a number or an array of shape ({neighbour_order},) or ({lattice.n_sites},{lattice.n_sites})"
         )
 
     spin = 2
-    hopping_ham = 0.0
+    hopping_ham = 0.0 * FermiWord({})
     if hopping.shape == (neighbour_order,):
         for edge in lattice.edges:
             for s in range(spin):
@@ -259,14 +261,14 @@ def fermihubbard(
                 )
                 hopping_ham += hopping_term
 
-    int_term = 0.0
-    if isinstance(interaction, (int, float, complex)):
-        interaction = math.ones(lattice.n_sites) * interaction
+    int_term = 0.0 * FermiWord({})
+    if isinstance(coulomb, (int, float, complex)):
+        coulomb = math.ones(lattice.n_sites) * coulomb
 
     for i in range(lattice.n_sites):
         up_spin = i * spin
         down_spin = i * spin + 1
-        int_term += interaction[i] * FermiWord(
+        int_term += coulomb[i] * FermiWord(
             {(0, up_spin): "+", (1, up_spin): "-", (2, down_spin): "+", (3, down_spin): "-"}
         )
 
