@@ -21,8 +21,8 @@ from pennylane.operation import Operation
 class ModExp(Operation):
     r"""Performs the out-place modular exponentiation operation.
 
-    This operator performs the modular exponentiation of the integer :math:`base` to the power :math:`x` modulo :math:`mod`
-    in the computational basis:
+    This operator performs the modular exponentiation of the integer :math:`base` to the power
+    :math:`x` modulo :math:`mod` in the computational basis:
 
     .. math::
 
@@ -39,16 +39,17 @@ class ModExp(Operation):
         and :math:`mod` are coprime.
 
     Args:
-        x_wires (Sequence[int]): the wires that stores the integer :math:`x`
-        output_wires (Sequence[int]): the wires that stores the exponentiation modulo mod :math:`base^x \, \text{mod} \, mod`
-        base (int): integer we want to exponentiate
+        x_wires (Sequence[int]): the wires that store the integer :math:`x`
+        output_wires (Sequence[int]): the wires that store the exponentiation result
+        base (int): integer that needs to be exponentiated
         mod (int): the modulus for performing the exponentiation, default value is :math:`2^{len(output\_wires)}`
-        work_wires (Sequence[int]): the auxiliary wires to be used for the exponentiation modulo :math:`mod`.
-        There must be as many as ``output_wires`` and if :math:`mod \neq 2^{len(x\_wires)}`, two more auxiliaries must be added.
+        work_wires (Sequence[int]): the auxiliary wires to be used for the exponentiation. There
+            must be as many as ``output_wires`` and if :math:`mod \neq 2^{len(x\_wires)}`, two more
+            wires must be added.
 
     **Example**
 
-    Exponentiation of :math:`base=2` to the power :math:`x=3` modulo :math:`mod=7`.
+    This example performs the exponentiation of :math:`base=2` to the power :math:`x=3` modulo :math:`mod=7`.
 
     .. code-block::
 
@@ -68,10 +69,11 @@ class ModExp(Operation):
 
     .. code-block:: pycon
 
-        >>> print(f"The ket representation of {base} ^ {x} mod {mod} is {circuit()}")
-        The ket representation of 2 ^ 3 mod 7 is [0 0 1]
+        >>> print(circuit())
+        [0 0 1]
 
-    We can see that the result [0 0 1] corresponds to 1, which comes from :math:`2^3=8 \longrightarrow 8 \, \text{mod} \, 7 = 1`.
+    The result :math:`[0 0 1]`, is the ket representation of
+    :math:`2^3 \, \text{modulo} \, 7 = 1`.
     """
 
     grad_method = None
@@ -160,20 +162,21 @@ class ModExp(Operation):
     ):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators.
         Args:
-            x_wires (Sequence[int]): the wires that stores the integer :math:`x`
-            output_wires (Sequence[int]): the wires that stores the exponentiation modulo mod :math:`base^x \, \text{mod} \, mod`
-            base (int): integer we want to exponentiate
+            x_wires (Sequence[int]): the wires that store the integer :math:`x`
+            output_wires (Sequence[int]): the wires that store the exponentiation result
+            base (int): integer that needs to be exponentiated
             mod (int): the modulus for performing the exponentiation, default value is :math:`2^{len(output\_wires)}`
-            work_wires (Sequence[int]): the auxiliary wires to be used for the exponentiation. They need to be of length ``len(output_wires)``.
-            However, when :math:`mod \neq 2^{\text{len(output_wires)}}` two extra work_wires will be required.
+            work_wires (Sequence[int]): the auxiliary wires to be used for the exponentiation. There
+                must be as many as ``output_wires`` and if :math:`mod \neq 2^{len(x\_wires)}`, two more
+                wires must be added.
 
         Returns:
             list[.Operator]: Decomposition of the operator
 
         **Example**
 
-        >>> qml.ModExp.compute_decomposition(x_wires = [0, 1], output_wires = [2, 3, 4], base = 3, mod = 8, work_wires = [5, 6, 7, 8, 9])
-        [ControlledSequence(Multiplier(wires=[2, 3, 4]), control=[0, 1])]
+        >>> qml.ModExp.compute_decomposition(x_wires=[0,1], output_wires=[2,3,4], base=3, mod=8, work_wires=[5,6,7,8,9])
+        [ControlledSequence(Multiplier(wires=[2, 3, 4, 5, 6, 7, 8, 9]), control=[0, 1])]
         """
 
         # TODO: Cancel the QFTs of consecutive Multipliers
