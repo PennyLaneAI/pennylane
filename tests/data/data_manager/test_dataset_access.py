@@ -24,7 +24,7 @@ import requests
 import pennylane as qml
 import pennylane.data.data_manager
 from pennylane.data import Dataset
-from pennylane.data.data_manager import S3_URL, DataPath, _validate_attributes
+from pennylane.data.data_manager import S3_URL, DataPath, _get_graphql, _validate_attributes
 
 # pylint:disable=protected-access,redefined-outer-name
 
@@ -67,6 +67,53 @@ _data_struct = {
 }
 
 
+_list_attrs_resp = {
+    "data": {
+        "datasetClass": {
+            "attributes": ["molecule", "hamiltonian", "sparse_hamiltonian", "hf_state", "full"]
+        }
+    }
+}
+
+_list_datasets_resp = {
+    "data": {
+        "datasetClasses": {
+            "id": "qchem",
+            "datasets": [
+                {
+                    "parameterValues": [
+                        {"name": "molname", "value": "H2"},
+                        {"name": "bondlength", "value": "1.16"},
+                        {"name": "basis", "value": "STO-3G"},
+                    ]
+                }
+            ],
+        }
+    }
+}
+
+_get_urls_resp = {
+    "data": {
+        "datasetClass": {
+            "datasets": [
+                {
+                    "id": "h2_sto-3g_0.46",
+                    "downloadUrl": "https://cloud.pennylane.ai/datasets/download/h2_sto-3g_0.46",
+                },
+                {
+                    "id": "h2_sto-3g_1.16",
+                    "downloadUrl": "https://cloud.pennylane.ai/datasets/download/h2_sto-3g_1.16",
+                },
+                {
+                    "id": "h2_sto-3g_1.0",
+                    "downloadUrl": "https://cloud.pennylane.ai/datasets/download/h2_sto-3g_1.0",
+                },
+            ]
+        }
+    }
+}
+
+
 @pytest.fixture(scope="session")
 def httpserver_listen_address():
     return ("localhost", 8888)
@@ -78,6 +125,20 @@ def get_mock(url, timeout=1.0):
     resp = MagicMock(ok=True)
     resp.json.return_value = _folder_map if "foldermap" in url else _data_struct
     return resp
+
+
+# pylint:disable=unused-argument
+def graphql_mock(url, query, variables=None):
+    """Return the JSON according to the query"""
+    mock_resp = MagicMock(ok=True)
+    if "ListAttributes" in query:
+        json_data = _list_attrs_resp
+    elif "ListDatasets" in query:
+        json_data = _list_datasets_resp
+    elif "GetDatasetsForDownload" in query:
+        json_data = _get_urls_resp
+
+    return json_data
 
 
 @pytest.fixture
@@ -214,22 +275,34 @@ class TestLoadInteractive:
             qml.data.load_interactive()
 
 
-@patch.object(requests, "get", get_mock)
+@patch.object(pennylane.data.data_manager, "_get_graphql", graphql_mock)
 class TestMiscHelpers:
     """Test miscellaneous helper functions in data_manager."""
 
-    def test_list_datasets(self, tmp_path):
-        """Test that list_datasets returns either the S3 foldermap, or the local tree."""
+    def test_list_datasets(self):
+        """Test that list_datasets."""
         assert qml.data.list_datasets() == {
-            "qspin": {"Heisenberg": {"closed": {"chain": ["1x4"]}}},
-            "qchem": {"H2": {"6-31G": ["0.46", "1.0", "1.16"]}},
+            "id": "qchem",
+            "datasets": [
+                {
+                    "parameterValues": [
+                        {"name": "molname", "value": "H2"},
+                        {"name": "bondlength", "value": "1.16"},
+                        {"name": "basis", "value": "STO-3G"},
+                    ]
+                }
+            ],
         }
 
     def test_list_attributes(self):
-        """Test list_attributes"""
-        assert qml.data.list_attributes("qchem") == _data_struct["qchem"]["attributes"]
-        with pytest.raises(ValueError, match="Currently the hosted datasets are of types"):
-            qml.data.list_attributes("invalid_data_name")
+        """Test list_attributes.s"""
+        assert qml.data.list_attributes("qchem") == [
+            "molecule",
+            "hamiltonian",
+            "sparse_hamiltonian",
+            "hf_state",
+            "full",
+        ]
 
 
 @pytest.fixture
@@ -243,6 +316,7 @@ def mock_download_dataset(monkeypatch):
     return mock
 
 
+@patch.object(pennylane.data.data_manager, "_get_graphql", graphql_mock)
 @pytest.mark.usefixtures("mock_download_dataset")
 @pytest.mark.parametrize(
     "data_name, params, expect_paths",
@@ -271,6 +345,7 @@ def test_load(tmp_path, data_name, params, expect_paths):
     }
 
 
+@patch.object(pennylane.data.data_manager, "_get_graphql", graphql_mock)
 def test_load_except(monkeypatch, tmp_path):
     """Test that an exception raised by _download_dataset is propagated."""
     monkeypatch.setattr(
@@ -309,6 +384,7 @@ def test_download_dataset_full_or_partial(
     assert download_full.called is not called_partial
 
 
+@patch.object(pennylane.data.data_manager, "_get_graphql", graphql_mock)
 @pytest.mark.parametrize("force", (True, False))
 @patch("pennylane.data.data_manager._download_full")
 def test_download_dataset_full_call(download_full, force):
@@ -325,6 +401,7 @@ def test_download_dataset_full_call(download_full, force):
     download_full.assert_called_once_with(f"{S3_URL}/dataset/path", dest=dest)
 
 
+@patch.object(pennylane.data.data_manager, "_get_graphql", graphql_mock)
 @pytest.mark.parametrize("attributes", [None, ["x"]])
 @pytest.mark.parametrize("force", (True, False))
 @patch("pennylane.data.data_manager._download_partial")
@@ -449,6 +526,7 @@ def test_download_partial_no_check_remote(open_hdf5_s3, tmp_path):
     open_hdf5_s3.assert_not_called()
 
 
+@patch.object(pennylane.data.data_manager, "_get_graphql", graphql_mock)
 @patch("builtins.open")
 @pytest.mark.parametrize(
     "datapath, escaped",

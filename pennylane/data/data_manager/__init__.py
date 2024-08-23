@@ -131,7 +131,7 @@ def _get_graphql(url: str, query: str, variables: dict[str, Any] = None):
         all_errors = ",".join(error["message"] for error in response.json()["errors"])
         raise GraphQLError(f"Errors in request: {all_errors}")
 
-    return response
+    return response.json()
 
 
 def _get_dataset_urls(class_id: str, parameters: dict[str, list[str]]) -> list[tuple[str, str]]:
@@ -151,7 +151,7 @@ def _get_dataset_urls(class_id: str, parameters: dict[str, list[str]]) -> list[t
     response = _get_graphql(
         GRAPHQL_URL,
         """
-        query DatasetClass($datasetClassId: String!, $parameters: [DatasetParameterInput!]) {
+        query GetDatasetsForDownload($datasetClassId: String!, $parameters: [DatasetParameterInput!]) {
           datasetClass(id: $datasetClassId) {
             datasets(parameters: $parameters) {
               id
@@ -162,9 +162,10 @@ def _get_dataset_urls(class_id: str, parameters: dict[str, list[str]]) -> list[t
         """,
         {"input": {"datasetClassId": class_id, "parameters": parameters}},
     )
+
     return [
-        (resp["data"]["id"], resp["data"]["downloadUrl"]) for resp in response
-    ]  # TODO: Validate against actual response
+        (resp["id"], resp["downloadUrl"]) for resp in response["data"]["datasetClass"]["datasets"]
+    ]
 
 
 def _download_dataset(
@@ -370,16 +371,19 @@ def list_datasets() -> dict:
         """
         query ListDatasets($datasetClassId: String!) {
           datasetClasses {
-            slug 
+            id
             datasets {
-                parameterValues
+                parameterValues{
+                    name
+                    value
+                }
             }
           }
         }
         """,
     )
 
-    return response["data"]  # TODO: Validate against actual response
+    return response["data"]["datasetClasses"]
 
 
 def list_attributes(data_name):
@@ -408,7 +412,7 @@ def list_attributes(data_name):
         GRAPHQL_URL,
         """
         query ListAttributes($datasetClassId: String!) {
-          datasetClasses($datasetClassId: String!) {
+          datasetClass($datasetClassId: String!) {
             attributes {
                 name
             }
@@ -418,7 +422,7 @@ def list_attributes(data_name):
         {"input": {"datasetClassId": data_name}},
     )
 
-    return response["data"]  # TODO: Validate against actual response
+    return response["data"]["datasetClass"]["attributes"]
 
 
 def _interactive_request_attributes(options):
