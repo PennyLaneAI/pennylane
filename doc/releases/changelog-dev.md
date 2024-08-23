@@ -24,6 +24,9 @@
 
 <h4>Quantum arithmetic operations 🧮</h4>
 
+* The `qml.Adder` and `qml.PhaseAdder` templates are added to perform in-place modular addition.
+  [(#6109)](https://github.com/PennyLaneAI/pennylane/pull/6109)
+
 <h4>Creating spin Hamiltonians 🧑‍🎨</h4>
 
 * The function ``transverse_ising`` is added to generate transverse-field Ising Hamiltonian.
@@ -430,6 +433,7 @@ Josh Izaac,
 Soran Jahangiri,
 Korbinian Kottmann,
 Christina Lee,
+Jorge Martinez de Lejarza,
 William Maxwell,
 Vincent Michaud-Rioux,
 Anurav Modak,
