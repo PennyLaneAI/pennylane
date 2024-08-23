@@ -45,12 +45,8 @@ def _capture_diff(func, argnum=None, diff_prim=None):
         _, trainable_in_tree = jax.tree_util.tree_flatten(tuple(args[i] for i in argnum))
         flat_args, in_tree = jax.tree_util.tree_flatten(args)
         partial_fn = partial(func, **kwargs) if kwargs else func
-        flat_fn = FlatFn(partial_fn)
-
-        def full_flat_fn(*flat_args):
-            return flat_fn(*jax.tree_util.tree_unflatten(in_tree, flat_args))
-
-        jaxpr = jax.make_jaxpr(full_flat_fn)(*flat_args)
+        flat_fn = FlatFn(partial_fn, in_tree)
+        jaxpr = jax.make_jaxpr(flat_fn)(*flat_args)
         prim_kwargs = {"argnum": argnum, "jaxpr": jaxpr.jaxpr, "n_consts": len(jaxpr.consts)}
         out_flat = diff_prim.bind(*jaxpr.consts, *flat_args, **prim_kwargs)
         assert flat_fn.out_tree is not None, "out_tree should be set after executing flat_fn"
