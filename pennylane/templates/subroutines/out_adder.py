@@ -58,7 +58,7 @@ class OutAdder(Operation):
         y_wires=[3,4,5]
         output_wires=[7,8,9]
         work_wires=[6,10]
-        
+
         dev = qml.device("default.qubit", shots=1)
         @qml.qnode(dev)
         def circuit():
