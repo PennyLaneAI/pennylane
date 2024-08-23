@@ -41,9 +41,9 @@ def transverse_ising(
     Args:
        lattice (str): Shape of the lattice. Input Values can be ``'chain'``, ``'square'``,
            ``'rectangle'``, ``'honeycomb'``, ``'triangle'``, or ``'kagome'``.
-       n_cells (list[int]): Number of cells in each direction of the grid.
+       n_cells (List[int]): Number of cells in each direction of the grid.
        coupling (float or List[float] or List[math.array[float]]): Coupling between spins, it can be a
-           list of length equal to ``neighbour_order`` or a square matrix of size
+           number, a list of length equal to ``neighbour_order`` or a square matrix of size
            ``(num_spins,  num_spins)``. Default value is 1.0.
        h (float): Value of external magnetic field. Default is 1.0.
        boundary_condition (bool or list[bool]): Defines boundary conditions for different lattice axes,
@@ -106,12 +106,12 @@ def heisenberg(lattice, n_cells, coupling=None, boundary_condition=False, neighb
 
          \hat{H} = J\sum_{<i,j>}(\sigma_i^x\sigma_j^x + \sigma_i^y\sigma_j^y + \sigma_i^z\sigma_j^z)
 
-    where ``J`` is the coupling constant defined for the Hamiltonian, and ``i``, ``j`` represent the indices for neighbouring spins.
+    where ``J`` is the coupling constant defined for the Hamiltonian, and ``i,j`` represent the indices for neighbouring spins.
 
     Args:
        lattice (str): Shape of the lattice. Input Values can be ``'chain'``, ``'square'``, ``'rectangle'``,
                    ``'honeycomb'``, ``'triangle'``, or ``'kagome'``.
-       n_cells (list[int]): Number of cells in each direction of the grid.
+       n_cells (List[int]): Number of cells in each direction of the grid.
        coupling (List[List[float]] or List[math.array[float]]): Coupling between spins, it can be a 2D array
                     of shape (neighbour_order, 3) or a 3D array of shape 3 * number of spins * number of spins.
                     Default value is [1.0, 1.0, 1.0].
@@ -186,18 +186,18 @@ def fermi_hubbard(
 
         \hat{H} = -t\sum_{<i,j>, \sigma}(c_{i\sigma}^{\dagger}c_{j\sigma}) + U\sum_{i}n_{i \uparrow} n_{i\downarrow}
 
-    where ``t`` is the hopping term representing the kinetic energy of electrons``U`` is the on-site Coulomb interaction,
+    where ``t`` is the hopping term representing the kinetic energy of electrons, ``U`` is the on-site Coulomb interaction,
     representing the repulsion between electrons, ``i,j`` represent the indices for neighbouring spins, ``\sigma``
-    represents the spin degree of freedom, and ``n_{i \uparrow}, n_{i \downarrow}`` are number operators for spin-up and
-    spin-down fermions at site (i).
-    This function assumes there are two fermions with opposite spins on each site.
+    is the spin degree of freedom, and ``n_{i \uparrow}, n_{i \downarrow}`` are number operators for spin-up and
+    spin-down fermions at site ``i``.
+    This function assumes there are two fermions with opposite spins on each lattice site.
 
     Args:
        lattice (str): Shape of the lattice. Input Values can be ``'chain'``, ``'square'``,
                       ``'rectangle'``, ``'honeycomb'``, ``'triangle'``, or ``'kagome'``.
        n_cells (List[int]): Number of cells in each direction of the grid.
        hopping (float or List[float] or List[math.array(float)]): Hopping interaction between spins, it can be a
-                      list of length equal to ``neighbour_order`` or a square matrix of size
+                      number, a list of length equal to ``neighbour_order`` or a square matrix of size
                       ``(num_spins, num_spins)``. Default value is 1.0.
        coulomb (float or List[float]): Coulomb interaction between spins, it can be a constant or a list of length ``num_spins``.
        boundary_condition (bool or list[bool]): Defines boundary conditions for different lattice axes,
@@ -215,7 +215,7 @@ def fermi_hubbard(
     >>> n_cells = [2]
     >>> h = [0.5]
     >>> u = [1.0]
-    >>> spin_ham = qml.spin.fermihubbard("chain", n_cells, hopping=h, coulomb=u)
+    >>> spin_ham = qml.spin.fermi_hubbard("chain", n_cells, hopping=h, coulomb=u)
     >>> spin_ham
     -0.25 * (Y(0) @ Z(1) @ Y(2)) + -0.25 * (X(0) @ Z(1) @ X(2))
     + 0.5 * I(0) + -0.25 * (Y(1) @ Z(2) @ Y(3))
