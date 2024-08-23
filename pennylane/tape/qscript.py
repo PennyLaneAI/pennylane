@@ -1319,4 +1319,7 @@ def make_qscript(
     return wrapper
 
 
+QuantumScriptBatch = Sequence[QuantumScript]
+QuantumScriptOrBatch = Union[QuantumScript, QuantumScriptBatch]
+
 register_pytree(QuantumScript, QuantumScript._flatten, QuantumScript._unflatten)

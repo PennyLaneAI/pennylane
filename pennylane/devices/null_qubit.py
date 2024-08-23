@@ -39,7 +39,7 @@ from pennylane.measurements import (
     ProbabilityMP,
     StateMP,
 )
-from pennylane.tape import QuantumTape, QuantumTapeBatch
+from pennylane.tape import QuantumScriptOrBatch
 from pennylane.transforms.core import TransformProgram
 from pennylane.typing import Result, ResultBatch
 
@@ -49,8 +49,6 @@ from .preprocess import decompose
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
-
-QuantumTape_or_Batch = Union[QuantumTape, QuantumTapeBatch]
 
 
 @singledispatch
@@ -316,7 +314,7 @@ class NullQubit(Device):
 
     def execute(
         self,
-        circuits: QuantumTape_or_Batch,
+        circuits: QuantumScriptOrBatch,
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ) -> Union[Result, ResultBatch]:
         if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
@@ -355,7 +353,7 @@ class NullQubit(Device):
 
     def compute_derivatives(
         self,
-        circuits: QuantumTape_or_Batch,
+        circuits: QuantumScriptOrBatch,
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ):
         return tuple(
@@ -364,7 +362,7 @@ class NullQubit(Device):
 
     def execute_and_compute_derivatives(
         self,
-        circuits: QuantumTape_or_Batch,
+        circuits: QuantumScriptOrBatch,
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ):
         results = tuple(
@@ -378,7 +376,7 @@ class NullQubit(Device):
 
     def compute_jvp(
         self,
-        circuits: QuantumTape_or_Batch,
+        circuits: QuantumScriptOrBatch,
         tangents: tuple[Number],
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ):
@@ -386,7 +384,7 @@ class NullQubit(Device):
 
     def execute_and_compute_jvp(
         self,
-        circuits: QuantumTape_or_Batch,
+        circuits: QuantumScriptOrBatch,
         tangents: tuple[Number],
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ):
@@ -399,7 +397,7 @@ class NullQubit(Device):
 
     def compute_vjp(
         self,
-        circuits: QuantumTape_or_Batch,
+        circuits: QuantumScriptOrBatch,
         cotangents: tuple[Number],
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ):
@@ -407,7 +405,7 @@ class NullQubit(Device):
 
     def execute_and_compute_vjp(
         self,
-        circuits: QuantumTape_or_Batch,
+        circuits: QuantumScriptOrBatch,
         cotangents: tuple[Number],
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ):

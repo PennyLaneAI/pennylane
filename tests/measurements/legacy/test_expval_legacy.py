@@ -36,13 +36,13 @@ def custom_measurement_process(device, spy):
         # no need to use op, because the observable has already been applied to ``self.dev._state``
         meas = qml.expval(op=obs)
         old_res = device.expval(obs, shot_range=shot_range, bin_size=bin_size)
-        if device.shots is None:
+        if not device.shots:
             new_res = meas.process_state(state=state, wire_order=device.wires)
         else:
             new_res = meas.process_samples(
                 samples=samples, wire_order=device.wires, shot_range=shot_range, bin_size=bin_size
             )
-        assert qml.math.allclose(old_res, new_res)
+        assert qml.math.allclose(old_res, new_res, atol=0.05, rtol=0)
 
 
 class TestExpval:
@@ -52,8 +52,9 @@ class TestExpval:
     @pytest.mark.parametrize("r_dtype", [np.float32, np.float64])
     def test_value(self, tol, r_dtype, mocker, shots):
         """Test that the expval interface works"""
+
         dev = qml.device("default.qubit.legacy", wires=2, shots=shots)
-        dev.R_DTYPE = r_dtype
+        dev.target_device.R_DTYPE = r_dtype
 
         @qml.qnode(dev, diff_method="parameter-shift")
         def circuit(x):
@@ -167,6 +168,10 @@ class TestExpval:
         assert np.allclose(np.array(res), expected, atol=atol, rtol=0)
 
         if device_name != "default.mixed":
+            if shots:
+                new_dev.target_device._samples = (  # pylint:disable=protected-access
+                    new_dev.generate_samples()
+                )
             custom_measurement_process(new_dev, spy)
 
     @pytest.mark.parametrize("state", [np.array([0, 0, 0]), np.array([1, 0, 0, 0, 0, 0, 0, 0])])

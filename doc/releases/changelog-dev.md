@@ -24,7 +24,13 @@
 
 <h4>Quantum arithmetic operations 🧮</h4>
 
+* The `qml.Adder` and `qml.PhaseAdder` templates are added to perform in-place modular addition.
+  [(#6109)](https://github.com/PennyLaneAI/pennylane/pull/6109)
+
 <h4>Creating spin Hamiltonians 🧑‍🎨</h4>
+
+* The function ``transverse_ising`` is added to generate transverse-field Ising Hamiltonian.
+  [(#6106)](https://github.com/PennyLaneAI/pennylane/pull/6106)
 
 <h3>Improvements 🛠</h3>
 
@@ -57,6 +63,14 @@
 * A new method `to_mat` has been added to the `FermiWord` and `FermiSentence` classes, which allows
   computing the matrix representation of these Fermi operators.
   [(#5920)](https://github.com/PennyLaneAI/pennylane/pull/5920)
+  
+* `qml.pauli.group_observables` now uses `Rustworkx` colouring algorithms to solve the Minimum Clique Cover problem.
+  This adds two new options for the `method` argument: `dsatur` and `gis`. In addition, the creation of the adjancecy matrix 
+  now takes advantage of the symplectic representation of the Pauli observables. An additional function `qml.pauli.compute_partition_indices` 
+  is added to calculate the indices from the partitioned observables more efficiently. `qml.pauli.grouping.PauliGroupingStrategy.idx_partitions_from_graph` 
+  can be used to compute partitions of custom indices. These changes improve the wall time of `qml.LinearCombination.compute_grouping` 
+  and the `grouping_type='qwc'` by orders of magnitude. 
+  [(#6043)](https://github.com/PennyLaneAI/pennylane/pull/6043)
 
 <h4>Improvements to operators</h4>
 
@@ -68,6 +82,17 @@
 
 * Port the fast `apply_operation` implementation of `PauliZ` to `PhaseShift`, `S` and `T`.
   [(#5876)](https://github.com/PennyLaneAI/pennylane/pull/5876)
+
+* The `tree-traversal` algorithm implemented in `default.qubit` is refactored
+  into an iterative (instead of recursive) implementation, doing away with
+  potential stack overflow for deep circuits.
+  [(#5868)](https://github.com/PennyLaneAI/pennylane/pull/5868)
+  
+* The `tree-traversal` algorithm is compatible with analytic-mode execution (`shots=None`).
+  [(#5868)](https://github.com/PennyLaneAI/pennylane/pull/5868)
+  
+* `fuse_rot_angles` now respects the global phase of the combined rotations.
+  [(#6031)](https://github.com/PennyLaneAI/pennylane/pull/6031)
 
 * The `CNOT` operator no longer decomposes to itself. Instead, it raises a `qml.DecompositionUndefinedError`.
   [(#6039)](https://github.com/PennyLaneAI/pennylane/pull/6039)
@@ -202,6 +227,9 @@
 
 <h4>Other improvements</h4>
 
+* Added the decomposition of zyz for special unitaries with multiple control wires.
+  [(#6042)](https://github.com/PennyLaneAI/pennylane/pull/6042)
+
 * A new method `process_density_matrix` has been added to the `ProbabilityMP` and `DensityMatrixMP`
   classes, allowing for more efficient handling of quantum density matrices, particularly with batch
   processing support. This method simplifies the calculation of probabilities from quantum states
@@ -232,6 +260,9 @@
 
 * Observable validation for `default.qubit` is now based on execution mode (analytic vs. finite shots) and measurement type (sample measurement vs. state measurement).
   [(#5890)](https://github.com/PennyLaneAI/pennylane/pull/5890)
+
+* Added `is_leaf` parameter to function `flatten` in the `qml.pytrees` module. This is to allow node flattening to be stopped for any node where the `is_leaf` optional argument evaluates to being `True`.
+  [(#6107)](https://github.com/PennyLaneAI/pennylane/issues/6107)
 
 <h3>Breaking changes 💔</h3>
 
@@ -331,6 +362,10 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Catalyst replaced `argnum` with `argnums` in gradient related functions, therefore we update the Catalyst
+  calls to those functions in PennyLane.
+  [(#6117)](https://github.com/PennyLaneAI/pennylane/pull/6117)
+
 * `fuse_rot_angles` no longer returns wrong derivatives at singular points but returns NaN.
   [(#6031)](https://github.com/PennyLaneAI/pennylane/pull/6031)
 
@@ -364,7 +399,10 @@
   [(#5978)](https://github.com/PennyLaneAI/pennylane/pull/5978)
 
 * `qml.AmplitudeEmbedding` has better support for features using low precision integer data types.
-[(#5969)](https://github.com/PennyLaneAI/pennylane/pull/5969)
+  [(#5969)](https://github.com/PennyLaneAI/pennylane/pull/5969)
+
+* `qml.BasisState` and `qml.BasisEmbedding` now works with jax.jit, lightning.qubit and give the correct decomposition.
+  [(#6021)](https://github.com/PennyLaneAI/pennylane/pull/6021)
 
 * Jacobian shape is fixed for measurements with dimension in `qml.gradients.vjp.compute_vjp_single`.
 [(5986)](https://github.com/PennyLaneAI/pennylane/pull/5986)
@@ -387,12 +425,15 @@ This release contains contributions from (in alphabetical order):
 
 Tarun Kumar Allamsetty,
 Guillermo Alonso,
+Ali Asadi,
 Utkarsh Azad,
+Tonmoy T. Bhattacharya,
 Gabriel Bottrill,
 Ahmed Darwish,
 Astral Cai,
 Yushao Chen,
 Ahmed Darwish,
+Diksha Dhawan
 Maja Franz,
 Lillian M. A. Frederiksen,
 Pietropaolo Frisoni,
@@ -403,6 +444,7 @@ Josh Izaac,
 Soran Jahangiri,
 Korbinian Kottmann,
 Christina Lee,
+Jorge Martinez de Lejarza,
 William Maxwell,
 Vincent Michaud-Rioux,
 Anurav Modak,

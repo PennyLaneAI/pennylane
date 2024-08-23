@@ -45,3 +45,5 @@ from .amplitude_amplification import AmplitudeAmplification
 from .qubitization import Qubitization
 from .prepselprep import PrepSelPrep
 from .qrom import QROM
+from .phase_adder import PhaseAdder
+from .adder import Adder
