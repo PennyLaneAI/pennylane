@@ -241,7 +241,7 @@ def fermi_hubbard(
     if hopping.shape == (neighbour_order,):
         for edge in lattice.edges:
             for s in range(spin):
-                i, j, order = edge[0], edge[1], edge[2]
+                i, j, order = edge
                 s1 = i * spin + s
                 s2 = j * spin + s
                 hopping_term = -hopping[order] * (
