@@ -131,13 +131,7 @@ class ModExp(Operation):
 
     def decomposition(self):  # pylint: disable=arguments-differ
 
-        return self.compute_decomposition(
-            self.hyperparameters["x_wires"],
-            self.hyperparameters["output_wires"],
-            self.hyperparameters["base"],
-            self.hyperparameters["mod"],
-            self.hyperparameters["work_wires"],
-        )
+        return self.compute_decomposition(**self.hyperparameters)
 
     @classmethod
     def _primitive_bind_call(cls, *args, **kwargs):
