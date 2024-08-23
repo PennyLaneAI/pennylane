@@ -120,7 +120,7 @@ def heisenberg(lattice, n_cells, coupling=None, boundary_condition=False, neighb
        boundary_condition (bool or list[bool]): Defines boundary conditions for different lattice axes,
            default is ``False`` indicating open boundary condition.
        neighbour_order (int): Specifies the interaction level for neighbors within the lattice.
-                    Default is 1 (nearest neighbour).
+                    Default is 1 indicating nearest neighbours.
 
 
     Returns:
