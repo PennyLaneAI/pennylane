@@ -22,46 +22,46 @@ from pennylane.operation import Operation
 class Adder(Operation):
     r"""Performs the in-place modular addition operation.
 
-    This operator adds the integer :math:`k` modulo :math:`mod` in the computational basis:
+     This operator performs the modular addition by an integer :math:`k` modulo :math:`mod` in the computational basis:
 
-    .. math::
+     .. math::
 
-        \text{Adder}(k,mod) |x \rangle = | x+k \quad (\text{mod}) \rangle,
+         \text{Adder}(k, mod) |x \rangle = | x+k \; \text{modulo} \; mod \rangle.
 
-    The decomposition of this operator is based on the QFT-based method presented in `arXiv:2311.08555 <https://arxiv.org/abs/2311.08555>`_.
+     The implementation is based on the quantum Fourier transform method presented in `arXiv:2311.08555 <https://arxiv.org/abs/2311.08555>`_.
 
-    Args:
-        k (int): the number that needs to be added
-        x_wires (Sequence[int]): the wires the operation acts on
-        mod (int): the modulus for performing the addition, default value is :math:`2^{len(wires)}`
-        work_wires (Sequence[int]): the auxiliary wires to be used for performing the addition
+     Args:
+         k (int): the number that needs to be added
+         x_wires (Sequence[int]): the wires the operation acts on
+         mod (int): the modulus for performing the addition, default value is :math:`2^{len(x_wires)}`
+         work_wires (Sequence[int]): the auxiliary wires to be used for performing the addition
 
-    **Example**
+     **Example**
 
-    This example computes the sum of two integers :math:`x=8` and :math:`k=5` modulo :math:`mod=15`. Note that to perform this sum using qml.Adder, when :math:`mod \neq \text{len(x_wires)}` we need that :math:`x < \text{len(x_wires)}/2`.
+    This example computes the sum of two integers :math:`x=8` and :math:`k=5` modulo :math:`mod=15`. Note that to perform this sum using qml.Adder, when :math:`mod \neq 2^{\text{len(x_wires)}}` we need that :math:`x < 2^{\text{len(x_wires)}}/2`.
 
-    .. code-block::
+     .. code-block::
 
-        x = 8
-        k = 5
-        mod = 15
+         x = 8
+         k = 5
+         mod = 15
 
-        x_wires =[0,1,2,3]
-        work_wires=[4,5]
+         x_wires =[0,1,2,3]
+         work_wires=[4,5]
 
-        dev = qml.device("default.qubit", shots=1)
-        @qml.qnode(dev)
-        def adder_modulo(x, k, mod, x_wires, work_wires):
-            qml.BasisEmbedding(x, wires=x_wires)
-            qml.Adder(k, x_wires, mod, work_wires)
-            return qml.sample(wires=x_wires)
+         dev = qml.device("default.qubit", shots=1)
+         @qml.qnode(dev)
+         def circuit(x, k, mod, x_wires, work_wires):
+             qml.BasisEmbedding(x, wires=x_wires)
+             qml.Adder(k, x_wires, mod, work_wires)
+             return qml.sample(wires=x_wires)
 
-    .. code-block:: pycon
+     .. code-block:: pycon
 
-        >>> adder_modulo(x, k, mod,x_wires, work_wire)
-            [1 1 0 1]
+         >>> circuit(x, k, mod,x_wires, work_wires)
+             [1 1 0 1]
 
-    The result [1 1 0 1] is the ket representation of :math:`8 + 5  \, \text{mod} \, 15 = 13`.
+     The result, :math:`[1 1 0 1]`, is the ket representation of :math:`8 + 5  \, \text{modulo} \, 15 = 13`.
     """
 
     grad_method = None
@@ -78,7 +78,7 @@ class Adder(Operation):
             raise ValueError(f"If mod is not 2^{len(x_wires)}, two work wires should be provided")
         if work_wires is not None:
             if any(wire in work_wires for wire in x_wires):
-                raise ValueError("None wire in work_wires should be included in x_wires.")
+                raise ValueError("None of the wires in work_wires should be included in x_wires.")
         if mod > 2 ** len(x_wires):
             raise ValueError("Adder must have enough x_wires to represent mod.")
 
@@ -126,16 +126,16 @@ class Adder(Operation):
     def compute_decomposition(k, x_wires, mod, work_wires):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators.
         Args:
-            k (int): number that wants to be added
-            x_wires (Sequence[int]): the wires the operation acts on. There are needed at least enough wires to represent mod.
-            mod (int): modulo of the sum
-            work_wires (Sequence[int]): the auxiliary wires to use for the sum modulo :math:`mod` when :math:`mod \neq 2^{\textrm{len(x_wires)}}`
+            k (int): the number that needs to be added
+            x_wires (Sequence[int]): the wires the operation acts on
+            mod (int): the modulus for performing the addition, default value is :math:`2^{len(wires)}`
+            work_wires (Sequence[int]): the auxiliary wires to be used for performing the addition
         Returns:
             list[.Operator]: Decomposition of the operator
 
         **Example**
 
-        >>> qml.Adder.compute_decomposition(k=2,x_wires=[0,1,2], mod = 8, work_wires=None)
+        >>> qml.Adder.compute_decomposition(k = 2, x_wires = [0, 1 , 2], mod = 8, work_wires = None)
         [QFT(wires=[0, 1, 2]),
         PhaseAdder(wires=[0, 1, 2]),
         Adjoint(QFT(wires=[0, 1, 2]))]

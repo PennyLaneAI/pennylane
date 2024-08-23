@@ -30,56 +30,56 @@ def _add_k_fourier(k, wires):
 
 
 class PhaseAdder(Operation):
-    r"""Performs the Inplace Phase Addition operation.
+    r"""Performs the in-place modular phase addition operation.
 
-    This operator adds the integer :math:`k` modulo :math:`mod` in the Fourier basis:
+     This operator performs the modular addition by an integer :math:`k` modulo :math:`mod` in the Fourier basis:
 
-    .. math::
+     .. math::
 
-        \text{PhaseAdder}(k,mod) |\phi (x) \rangle = |\phi (x+k \quad \text{mod}) \rangle,
+         \text{PhaseAdder}(k,mod) |\phi (x) \rangle = |\phi (x+k \quad \text{mod}) \rangle,
 
-    where :math:`|\phi (x) \rangle` represents the :math:`| x \rangle` : state in the Fourier basis such:
+     where :math:`|\phi (x) \rangle` represents the :math:`| x \rangle` : state in the Fourier basis such:
 
-    .. math::
+     .. math::
 
-        QFT |x \rangle = |\phi (x) \rangle.
+         \text{QFT} |x \rangle = |\phi (x) \rangle.
 
-    The decomposition of this operator is based on the QFT-based method presented in `arXiv:2311.08555 <https://arxiv.org/abs/2311.08555>`_.
+     The implementation is based on the quantum Fourier transform method presented in `arXiv:2311.08555 <https://arxiv.org/abs/2311.08555>`_.
 
-    Args:
-        k (int): the number that needs to be added
-        x_wires (Sequence[int]): the wires the operation acts on
-        mod (int): modulo with respect to which the sum is performed, default value will be ``2^len(wires)``.
-        work_wire (Sequence[int]): the auxiliary wires to use for the sum modulo :math:`mod` when :math:`mod \neq 2^{\text{len(x_wires)}}`
+     Args:
+         k (int): the number that needs to be added
+         x_wires (Sequence[int]): the wires the operation acts on
+         mod (int): the modulus for performing the addition, default value is :math:`2^{len(x_wires)}`
+         work_wire (Sequence[int]): the auxiliary wire to be used for performing the addition
 
-    **Example**
+     **Example**
 
-    This example computes the sum of two integers :math:`x=5` and :math:`k=4` modulo :math:`mod=7`. Note that to perform this sum using qml.PhaseAdder, when :math:`mod \neq \text{len(x_wires)}` we need that :math:`x < \text{len(wires)}/2`.
+    This example computes the sum of two integers :math:`x=8` and :math:`k=5` modulo :math:`mod=15`. Note that to perform this sum using qml.Adder, when :math:`mod \neq 2^{\text{len(x_wires)}}` we need that :math:`x < 2^{\text{len(x_wires)}}/2`.
 
-    .. code-block::
+     .. code-block::
 
-        x = 8
-        k = 5
-        mod = 15
+         x = 8
+         k = 5
+         mod = 15
 
-        x_wires =[0,1,2,3,4]
-        work_wire=[5]
+         x_wires =[0,1,2,3,4]
+         work_wire=[5]
 
-        dev = qml.device("default.qubit", shots=1)
-        @qml.qnode(dev)
-        def adder_modulo(x, k, mod, x_wires, work_wire):
-            qml.BasisEmbedding(x, wires=x_wires)
-            qml.QFT(wires=x_wires)
-            qml.PhaseAdder(k, x_wires, mod, work_wire)
-            qml.adjoint(qml.QFT)(wires=x_wires)
-            return qml.sample(wires=x_wires)
+         dev = qml.device("default.qubit", shots=1)
+         @qml.qnode(dev)
+         def circuit(x, k, mod, x_wires, work_wire):
+             qml.BasisEmbedding(x, wires=x_wires)
+             qml.QFT(wires=x_wires)
+             qml.PhaseAdder(k, x_wires, mod, work_wire)
+             qml.adjoint(qml.QFT)(wires=x_wires)
+             return qml.sample(wires=x_wires)
 
-    .. code-block:: pycon
+     .. code-block:: pycon
 
-        >>> adder_modulo(x, k, mod, x_wires, work_wire)
-            [1 1 0 1]
+         >>> circuit(x, k, mod, x_wires, work_wire)
+             [1 1 0 1]
 
-    The result [1 1 0 1] is the ket representation of :math:`8 + 5  \, \text{mod} \, 15 = 13`.
+     The result, :math:`[1 1 0 1]`, is the ket representation of :math:`8 + 5  \, \text{modulo} \, 15 = 13`.
     """
 
     grad_method = None
@@ -145,16 +145,16 @@ class PhaseAdder(Operation):
     def compute_decomposition(k, x_wires, mod, work_wire):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators.
         Args:
-            k (int): number that wants to be added
-            x_wires (Sequence[int]): the wires the operation acts on. There are needed at least enough wires to represent mod.
-            mod (int): modulo of the sum
-            work_wire (Sequence[int]): the auxiliary wires to use for the sum modulo :math:`mod` when :math:`mod \neq 2^{\textrm{len(wires)}}`
+            k (int): the number that needs to be added
+            x_wires (Sequence[int]): the wires the operation acts on
+            mod (int): the modulus for performing the addition, default value is :math:`2^{len(x_wires)}`
+            work_wire (Sequence[int]): the auxiliary wire to be used for performing the addition
         Returns:
             list[.Operator]: Decomposition of the operator
 
         **Example**
 
-        >>> qml.PhaseAdder.compute_decomposition(k=2,x_wires=[0,1,2],mod=8,work_wire=None)
+        >>> qml.PhaseAdder.compute_decomposition(k = 2, x_wires = [0, 1, 2], mod = 8, work_wire = None)
         [PhaseShift(6.283185307179586, wires=[1]),
         PhaseShift(3.141592653589793, wires=[2]),
         PhaseShift(1.5707963267948966, wires=[3])]

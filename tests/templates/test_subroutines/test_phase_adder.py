@@ -119,8 +119,6 @@ class TestPhaseAdder:
     ):  # pylint: disable=too-many-arguments
         """Test the correctness of the PhaseAdder template output."""
         dev = qml.device("default.qubit", shots=1)
-        if mod is None:
-            mod = 2 ** len(x_wires)
 
         @qml.qnode(dev)
         def circuit(x):
@@ -129,6 +127,9 @@ class TestPhaseAdder:
             qml.PhaseAdder(k, x_wires, mod, work_wire)
             qml.adjoint(qml.QFT)(wires=x_wires)
             return qml.sample(wires=x_wires)
+
+        if mod is None:
+            mod = 2 ** len(x_wires)
 
         assert np.allclose(
             sum(bit * (2**i) for i, bit in enumerate(reversed(circuit(x)))), (x + k) % mod
