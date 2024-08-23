@@ -27,6 +27,9 @@
 * The `qml.Adder` and `qml.PhaseAdder` templates are added to perform in-place modular addition.
   [(#6109)](https://github.com/PennyLaneAI/pennylane/pull/6109)
 
+* The `qml.Multiplier` and `qml.OutMultiplier` templates are added to perform modular multiplication.
+  [(#6112)](https://github.com/PennyLaneAI/pennylane/pull/6112)
+
 <h4>Creating spin Hamiltonians 🧑‍🎨</h4>
 
 * The function ``transverse_ising`` is added to generate transverse-field Ising Hamiltonian.
