@@ -84,11 +84,11 @@ def transverse_ising(
 
     if coupling.shape == (neighbour_order,):
         for edge in lattice.edges:
-            i, j, order = edge[0], edge[1], edge[2]
+            i, j, order = edge
             hamiltonian += -coupling[order] * (Z(i) @ Z(j))
     else:
         for edge in lattice.edges:
-            i, j = edge[0], edge[1]
+            i, j = edge[0:2]
             hamiltonian += -coupling[i][j] * (Z(i) @ Z(j))
 
     for vertex in range(lattice.n_sites):
@@ -127,7 +127,7 @@ def heisenberg(lattice, n_cells, coupling=None, boundary_condition=False, neighb
 
     >>> n_cells = [2,2]
     >>> j = [[0.5, 0.5, 0.5]]
-    >>> spin_ham = qml.spin.heisenberg("Square", n_cells, coupling=j)
+    >>> spin_ham = qml.spin.heisenberg("square", n_cells, coupling=j)
     >>> spin_ham
     0.5 * (X(0) @ X(1)) + 0.5 * (Y(0) @ Y(1)) + 0.5 * (Z(0) @ Z(1)) + 0.5 * (X(0) @ X(2)) +
     0.5 * (Y(0) @ Y(2)) + 0.5 * (Z(0) @ Z(2)) + 0.5 * (X(1) @ X(3)) + 0.5 * (Y(1) @ Y(3)) +
@@ -158,7 +158,7 @@ def heisenberg(lattice, n_cells, coupling=None, boundary_condition=False, neighb
             )
     else:
         for edge in lattice.edges:
-            i, j = edge[0], edge[1]
+            i, j = edge[0:2]
             hamiltonian += (
                 coupling[0][i][j] * X(i) @ X(j)
                 + coupling[1][i][j] * Y(i) @ Y(j)
@@ -195,7 +195,7 @@ def fermi_hubbard(
        lattice (str): Shape of the lattice. Input Values can be ``'chain'``, ``'square'``,
                       ``'rectangle'``, ``'honeycomb'``, ``'triangle'``, or ``'kagome'``.
        n_cells (List[int]): Number of cells in each direction of the grid.
-       hopping (float or List[float] or List[math.array(float)]): Hopping interaction between spins, it can be a
+       hopping (float or List[float] or List[math.array(float)]): Hopping strength between neighbouring sites, it can be a
                       number, a list of length equal to ``neighbour_order`` or a square matrix of size
                       ``(num_spins, num_spins)``. Default value is 1.0.
        coulomb (float or List[float]): Coulomb interaction between spins, it can be a constant or a list of length ``num_spins``.
@@ -251,7 +251,7 @@ def fermi_hubbard(
     else:
         for edge in lattice.edges:
             for s in range(spin):
-                i, j, order = edge
+                i, j = edge[0:2]
                 s1 = i * spin + s
                 s2 = j * spin + s
                 hopping_term = -hopping[i][j] * (
