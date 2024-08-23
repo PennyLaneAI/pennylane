@@ -92,6 +92,8 @@ class OutMultiplier(Operation):
         if work_wires is not None:
             if any(wire in work_wires for wire in x_wires):
                 raise ValueError("None of the wires in work_wires should be included in x_wires.")
+            if any(wire in work_wires for wire in y_wires):
+                raise ValueError("None of the wires in work_wires should be included in y_wires.")
 
         if any(wire in y_wires for wire in x_wires):
             raise ValueError("None of the wires in y_wires should be included in x_wires.")

@@ -33,7 +33,7 @@ def test_standard_validity_Multiplier():
 
 
 def test_mul_out_k_mod():
-    """Test the private _mul_out_k_mod function."""
+    """Test the _mul_out_k_mod function."""
 
     op = _mul_out_k_mod(2, [0, 1], 4, None, [4, 5])
     assert op[0].name == "QFT"
@@ -120,14 +120,14 @@ class TestMultiplier:
                 [0, 1, 2],
                 6,
                 [3, 4, 5, 6, 7],
-                "Since k has no inverse modulo mod",
+                "The operator cannot be built because k has no inverse modulo mod",
             ),
             (
                 3,
                 [0, 1, 2, 3, 4],
                 11,
                 [4, 5],
-                "None wire in work_wires should be included in x_wires.",
+                "None of the wire in work_wires should be included in x_wires.",
             ),
             (
                 3,
