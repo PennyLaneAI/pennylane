@@ -18,7 +18,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.measurements import MutualInfo, Shots
+from pennylane.measurements import MutualInfo
 from pennylane.measurements.mutual_info import MutualInfoMP
 from pennylane.wires import Wires
 
@@ -41,12 +41,11 @@ class TestMutualInfoUnitTests:
         assert q.queue[0] is m
         assert isinstance(q.queue[0], MutualInfoMP)
 
-    @pytest.mark.parametrize("shots, shape", [(None, ()), (10, ()), ([1, 10], ((), ()))])
+    @pytest.mark.parametrize("shots, shape", [(None, ()), (10, ())])
     def test_shape(self, shots, shape):
         """Test that the shape is correct."""
-        dev = qml.device("default.qubit", wires=3, shots=shots)
         res = qml.mutual_info(wires0=[0], wires1=[1])
-        assert res.shape(dev, Shots(shots)) == shape
+        assert res.shape(shots, 3) == shape
 
     def test_properties(self):
         """Test that the properties are correct."""

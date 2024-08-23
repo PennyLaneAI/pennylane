@@ -17,7 +17,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.measurements import PurityMP, Shots
+from pennylane.measurements import PurityMP
 
 # pylint: disable=too-many-arguments
 
@@ -66,12 +66,11 @@ class TestPurityUnitTest:
         m = PurityMP(wires=qml.wires.Wires(0))
         assert m.numeric_type is float
 
-    @pytest.mark.parametrize("shots, shape", [(None, ()), (10, ()), ((1, 10), ((), ()))])
+    @pytest.mark.parametrize("shots, shape", [(None, ()), (10, ())])
     def test_shape_new(self, shots, shape):
         """Test the ``shape_new`` method."""
         meas = qml.purity(wires=0)
-        dev = qml.device("default.qubit", wires=1, shots=shots)
-        assert meas.shape(dev, Shots(shots)) == shape
+        assert meas.shape(shots, 1) == shape
 
 
 class TestPurityIntegration:
