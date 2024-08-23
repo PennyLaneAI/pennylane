@@ -29,7 +29,7 @@ import numpy as np
 
 import pennylane as qml
 import pennylane.math as qnp
-from pennylane import BasisState, DeviceError, QubitDensityMatrix, QubitDevice, Snapshot, StatePrep
+from pennylane import BasisState, QubitDensityMatrix, Snapshot, StatePrep
 from pennylane.logging import debug_logger, debug_logger_init
 from pennylane.measurements import (
     CountsMP,
@@ -48,6 +48,7 @@ from pennylane.ops.qubit.attributes import diagonal_in_z_basis
 from pennylane.wires import Wires
 
 from .._version import __version__
+from ._qubit_device import QubitDevice
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -648,7 +649,7 @@ class DefaultMixed(QubitDevice):
             )
 
         else:
-            raise DeviceError(
+            raise qml.DeviceError(
                 f"Snapshots of {type(measurement)} are not yet supported on default.mixed"
             )
 
@@ -776,7 +777,7 @@ class DefaultMixed(QubitDevice):
         # apply the circuit operations
         for i, operation in enumerate(operations):
             if i > 0 and isinstance(operation, (StatePrep, BasisState)):
-                raise DeviceError(
+                raise qml.DeviceError(
                     f"Operation {operation.name} cannot be used after other Operations have already been applied "
                     f"on a {self.short_name} device."
                 )

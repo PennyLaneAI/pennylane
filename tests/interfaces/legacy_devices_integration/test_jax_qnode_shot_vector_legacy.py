@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Integration tests for using the jax interface with shot vectors and with a QNode"""
+from contextlib import nullcontext
+
 # pylint: disable=too-many-arguments,too-many-public-methods
 import pytest
 from flaky import flaky
@@ -774,8 +776,13 @@ class TestReturnShotVectorsDevice:
         """Test that an error is raised for adjoint forward."""
         dev = qml.device("default.qubit.legacy", wires=1, shots=shots)
 
-        with pytest.warns(
-            UserWarning, match="Requested adjoint differentiation to be computed with finite shots."
+        with (
+            pytest.raises(
+                qml.QuantumFunctionError,
+                match="adjoint with requested circuit.",
+            )
+            if isinstance(shots, tuple)
+            else nullcontext()
         ):
 
             @qnode(dev, interface="jax", diff_method="adjoint", grad_on_execution=True)
@@ -784,21 +791,17 @@ class TestReturnShotVectorsDevice:
                 qml.RX(0.2, wires=0)
                 return qml.expval(qml.PauliZ(0))
 
-        a = jax.numpy.array(0.1)
+            a = jax.numpy.array(0.1)
 
-        if isinstance(shots, tuple):
-            with pytest.raises(
-                qml.QuantumFunctionError,
-                match="Adjoint does not support shot vectors.",
-            ):
-                jax.jacobian(circuit)(a)
+            jax.jacobian(circuit)(a)
 
     def test_jac_adjoint_bwd_error(self, shots):
         """Test that an error is raised for adjoint backward."""
         dev = qml.device("default.qubit.legacy", wires=1, shots=shots)
 
-        with pytest.warns(
-            UserWarning, match="Requested adjoint differentiation to be computed with finite shots."
+        with pytest.raises(
+            qml.QuantumFunctionError,
+            match="adjoint with requested circuit.",
         ):
 
             @qnode(dev, interface="jax", diff_method="adjoint", grad_on_execution=False)
@@ -807,12 +810,8 @@ class TestReturnShotVectorsDevice:
                 qml.RX(0.2, wires=0)
                 return qml.expval(qml.PauliZ(0))
 
-        a = jax.numpy.array(0.1)
+            a = jax.numpy.array(0.1)
 
-        with pytest.raises(
-            qml.QuantumFunctionError,
-            match="Adjoint does not support shot vectors.",
-        ):
             jax.jacobian(circuit)(a)
 
 
