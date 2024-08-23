@@ -34,9 +34,7 @@ class Adder(Operation):
 
     .. note::
 
-        Note that :math:`x` must be smaller than :math:`mod` to get the correct result. Also, when
-        :math:`mod \neq 2^{\text{len(x\_wires)}}` we need :math:`x < 2^{\text{len(x\_wires)}}/2`,
-        which means that we need one extra wire in ``x_wires``.
+        Note that :math:`x` must be smaller than :math:`mod` to get the correct result.
 
      Args:
          k (int): the number that needs to be added
