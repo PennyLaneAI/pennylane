@@ -151,7 +151,7 @@ def heisenberg(lattice, n_cells, coupling=None, boundary_condition=False, neighb
     hamiltonian = 0.0 * qml.I(0)
     if coupling.shape == (neighbour_order, 3):
         for edge in lattice.edges:
-            i, j, order = edge[0], edge[1], edge[2]
+            i, j, order = edge
             hamiltonian += (
                 coupling[order][0] * (X(i) @ X(j))
                 + coupling[order][1] * (Y(i) @ Y(j))
