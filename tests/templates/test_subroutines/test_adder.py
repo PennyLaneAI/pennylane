@@ -143,7 +143,7 @@ class TestAdder:
                 [0, 1, 2, 3, 4],
                 12,
                 [4, 5],
-                "None wire in work_wires should be included in x_wires.",
+                "None of the wires in work_wires should be included in x_wires.",
             ),
         ],
     )
