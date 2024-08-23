@@ -18,6 +18,7 @@ Contains the tape transform that splits a tape into tapes measuring commuting ob
 
 # pylint: disable=too-many-arguments,too-many-boolean-expressions,too-many-branches
 
+import warnings
 from functools import partial
 from typing import Literal, NamedTuple, Optional
 
@@ -35,10 +36,10 @@ from pennylane.typing import PostprocessingFn, Result, ResultBatch
 class _ObsMetadata(NamedTuple):
     """
     Measurements metadata tuple
-    (Count of non-identity terms, Sum of non-identity term coefficients, offsets arising from Identity)
+    (Count of observable terms, Sum of non-identity term coefficients, offsets arising from Identity)
     """
 
-    non_id_terms_counts: int
+    observables_count: int
     sum_non_id_coefficients: float
     id_offset: float
 
@@ -307,14 +308,22 @@ def split_non_commuting(
     offsets = [metadata.id_offset for metadata in metadatas]
 
     if grouping_strategy is None:
-        if (
-            all(
-                isinstance(meas, ExpectationMP)
-                and isinstance(meas.obs, (Hamiltonian, Sum, Prod, SProd))
-                for meas in tape.measurements
+        # We carry out sophisticated term sampling only if there's at least
+        # one measurement on the tape that contains some sort of summation.
+        # Otherwise, we just go ahead with the simple approach
+        need_term_sampling = term_sampling and any(
+            isinstance(meas, ExpectationMP) and isinstance(meas.obs, (Hamiltonian, Sum))
+            for meas in tape.measurements
+        )
+
+        if term_sampling and not need_term_sampling:
+            warnings.warn(
+                "Term sampling was requested, but the measurements on the passed tape "
+                "do not require it as none of them includes a summation of observables. "
+                "Default splitting of the tape will be carried out."
             )
-            and term_sampling
-        ):
+
+        if need_term_sampling:
             tapes, single_term_obs_mps = _split_ham_term_sampling(
                 tape, term_sampling, single_term_obs_mps, metadatas
             )
@@ -328,7 +337,7 @@ def split_non_commuting(
             offsets=offsets,
             shots=tape.shots,
             batch_size=tape.batch_size,
-            term_sampling_used=term_sampling is not None,
+            term_sampling_used=need_term_sampling,
         )
 
     if (
@@ -381,7 +390,7 @@ def _split_ham_term_sampling(
         (
             metadata.sum_non_id_coefficients
             if term_sampling == "weighted"
-            else metadata.non_id_terms_counts
+            else metadata.observables_count
         )
         for metadata in metadatas
     ]
@@ -667,7 +676,7 @@ def _split_all_multi_term_obs_mps(tape: qml.tape.QuantumScript):
         obs = mp.obs
         offset = 0
         coeff_sum = 0
-        non_id_obs_count = 0
+        obs_count = 0
         if isinstance(mp, ExpectationMP) and isinstance(obs, (Hamiltonian, Sum, Prod, SProd)):
             # Break the observable into terms, and construct an ExpectationMP with each term.
 
@@ -687,13 +696,13 @@ def _split_all_multi_term_obs_mps(tape: qml.tape.QuantumScript):
                         single_term_obs_mps[sm][0].append(mp_idx)
                         single_term_obs_mps[sm][1].append(c)
                         coeff_sum += qml.math.abs(c)
-                        non_id_obs_count += 1
+                        obs_count += 1
 
                 # Otherwise, add this new measurement to the list of single-term measurements.
                 else:
                     single_term_obs_mps[sm] = ([mp_idx], [c])
                     coeff_sum += qml.math.abs(c)
-                    non_id_obs_count += 1
+                    obs_count += 1
         else:
             if isinstance(obs, SProd):
                 obs = obs.simplify()
@@ -708,7 +717,11 @@ def _split_all_multi_term_obs_mps(tape: qml.tape.QuantumScript):
                 single_term_obs_mps[mp][0].append(mp_idx)
                 single_term_obs_mps[mp][1].append(1)
 
-        metadatas.append(_ObsMetadata(non_id_obs_count, coeff_sum, offset))
+            obs_count += 1
+
+            coeff_sum = 1
+
+        metadatas.append(_ObsMetadata(obs_count, coeff_sum, offset))
 
     return single_term_obs_mps, metadatas
 

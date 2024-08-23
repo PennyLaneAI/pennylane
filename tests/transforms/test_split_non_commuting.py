@@ -17,6 +17,7 @@
 # pylint: disable=import-outside-toplevel,unnecessary-lambda
 
 import itertools
+from contextlib import nullcontext
 from functools import partial
 
 import numpy as np
@@ -85,7 +86,13 @@ def _convert_obs_to_legacy_opmath(obs):
 
 def _extract_non_id_terms_and_coefficients(meas, sampling_technique):
     terms, coeffs = tuple(
-        zip(*[(term, coeff) for coeff, term in zip(*meas.terms()) if not isinstance(term, qml.I)])
+        zip(
+            *(
+                [(term, coeff) for coeff, term in zip(*meas.terms()) if not isinstance(term, qml.I)]
+                if not isinstance(meas, qml.operation.Observable)
+                else [(meas, 1.0)]
+            )
+        )
     )
 
     probs = (
@@ -666,13 +673,35 @@ class TestTermSampling:
         with pytest.raises(ValueError, match="are 'uniform' and 'weighted'"):
             split_non_commuting(tape, term_sampling="blabla", grouping_strategy=None)
 
+    def test_unnecessary_sampling_request_raises_warning(self, sampling_technique):
+        tape = qml.tape.QuantumScript(
+            [qml.RY(0.5, 0)], [qml.expval(qml.X(0))], shots=qml.measurements.Shots(100)
+        )
+
+        with pytest.warns(UserWarning, match="Default splitting of the tape will be carried out"):
+            split_non_commuting(tape, term_sampling=sampling_technique, grouping_strategy=None)
+
     @pytest.mark.parametrize(
-        "measurement",
-        [*complex_obs_list, (complex_obs_list[-2], complex_obs_list[-2][0] + qml.X(0))],
+        "measurement,is_expected_sampling",
+        zip(
+            [
+                # This includes: Observable, SProd, Sum, Hamiltonian, Identity
+                *complex_obs_list,
+                # A Hamiltonian and a Sum with a common term
+                (complex_obs_list[-2], complex_obs_list[-2][0] + qml.X(0)),
+                # Two Observables
+                (qml.X(0), qml.Y(0)),
+                # A Hamiltonian and an Observable (a common term)
+                (complex_obs_list[-2], qml.X(0)),
+                #  A Hamiltonian and an Identity
+                (complex_obs_list[-2], qml.I(0)),
+            ],
+            [False, False, True, True, False, True, False, True, True],
+        ),
     )
     @pytest.mark.parametrize("shots", ([100], [100, (200, 2)], [2], [3, (200, 2)], [2, 3]))
     def test_term_sampling_returns_correct_number_of_shots(
-        self, sampling_technique, measurement, shots
+        self, sampling_technique, measurement, is_expected_sampling, shots
     ):
         shots = qml.measurements.Shots(shots)
         measurement = (measurement,) if not isinstance(measurement, tuple) else measurement
@@ -683,24 +712,32 @@ class TestTermSampling:
             shots=shots,
         )
 
-        out, post_fn = split_non_commuting(
-            tape, term_sampling=sampling_technique, grouping_strategy=None
-        )
+        with pytest.warns(UserWarning) if not is_expected_sampling else nullcontext():
+            out, post_fn = split_non_commuting(
+                tape, term_sampling=sampling_technique, grouping_strategy=None
+            )
+
         single_term_obs_mps = post_fn.keywords["single_term_obs_mps"]
 
-        if not isinstance(measurement[0], qml.ops.op_math.Sum):
-            # Non-sum instances have no len function so we just test quickly
-            # for the two cases of identity and non-identity
-            meas = measurement[0]
-            if isinstance(getattr(meas, "base", None) or meas, qml.Identity):
-                assert len(out) == 0
-            else:
-                assert len(out) == 1
-                assert out[0].shots == shots
+        if not is_expected_sampling:
+            expected_out = 0
+            for meas in measurement:
+                if not isinstance(getattr(meas, "base", None) or meas, qml.Identity):
+                    expected_out += 1
+
+            assert len(out) == expected_out
+            assert all(ot.shots == shots for ot in out)
             return
 
         assert len(out) == len(single_term_obs_mps)
-        num_identities = sum(meas.obs.terms()[1].count(qml.I()) for meas in tape.measurements)
+        num_identities = sum(
+            (
+                meas.obs.terms()[1].count(qml.I())
+                if not isinstance(meas.obs, qml.operation.Observable)
+                else 0
+            )
+            for meas in tape.measurements
+        )
         common_terms_count = sum(([1 for val in single_term_obs_mps.values() if len(val[0]) > 1]))
 
         terms, probs = tuple(
@@ -708,6 +745,7 @@ class TestTermSampling:
                 *(
                     _extract_non_id_terms_and_coefficients(meas.obs, sampling_technique)
                     for meas in tape.measurements
+                    if not isinstance(meas, qml.I)
                 )
             )
         )
@@ -716,7 +754,13 @@ class TestTermSampling:
         # it has the correct keys and all tape.measurements correspond to the
         # ones in the dictionary
         assert (
-            len(out) <= sum(len(meas) for meas in measurement) - common_terms_count - num_identities
+            len(out)
+            <= sum(
+                (len(meas) if not isinstance(meas, qml.operation.Observable) else 1)
+                for meas in measurement
+            )
+            - common_terms_count
+            - num_identities
         )
 
         # Re-gather the shot information from the tapes for statistical verification
@@ -778,6 +822,53 @@ class TestTermSampling:
 
                 # If np.allclose is sufficient, avoid doing the statistical test
                 assert np.allclose(act, exp) or ttest_ind(act, exp).pvalue > 0.95
+
+    @pytest.mark.parametrize(
+        "measurement", [(complex_obs_list[-2], qml.X(0))]
+    )  # , complex_obs_list[2]])
+    @pytest.mark.parametrize("shots", ([100]))  # , [100, (200, 2)], [2], [3, (200, 2)], [2, 3]))
+    def test_term_sampling_post_processing_returns_correct_shape(
+        self, sampling_technique, measurement, shots
+    ):
+        shots = qml.measurements.Shots(shots)
+        measurement = (measurement,) if not isinstance(measurement, tuple) else measurement
+
+        tape = qml.tape.QuantumScript(
+            [qml.RY(0.5, 0)],
+            [qml.expval(meas) for meas in measurement],
+            shots=shots,
+        )
+
+        out, post_fn = split_non_commuting(
+            tape, term_sampling=sampling_technique, grouping_strategy=None
+        )
+
+        res = post_fn(qml.execute(out, qml.device("default.qubit")))
+        # breakpoint()
+        # assert res.shape ==
+        print(shots)
+        print(res)
+        # print(res.shape)
+        print("-" * 20)
+
+    def test_term_sampling_post_processing_is_correct(self, sampling_technique):
+        shots = qml.measurements.Shots(((2, 2), 100))
+        tape = qml.tape.QuantumScript(
+            [], [qml.expval(10 * qml.Z(0) + 20 * qml.Z(1) + 30 * qml.Z(2))], shots=shots
+        )
+
+        sums = np.array([0.0, 0.0, 0.0])
+        for _ in range(100):
+            out, post_fn = split_non_commuting(
+                tape, term_sampling=sampling_technique, grouping_strategy=None
+            )
+
+            tape_results = qml.execute(out, qml.device("default.qubit"))
+            sums += post_fn(tape_results)
+
+        # array([19.39      , 58.79664422]) # uniform
+        # array([23.18      , 58.74988519]) # weighted
+        print(sums / 100)
 
 
 class TestIntegration:
