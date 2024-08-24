@@ -193,12 +193,12 @@ def compile(
                 if isinstance(item, type) and not issubclass(item, qml.operation.Operator):
                     raise ValueError(f"{item} is not a subclass of qml.operation.Operator.")
 
-                # Handle the case where basis_set becomes equivalent to an empty list due to improper types
-                class_types = tuple(o for o in basis_set if isinstance(o, type))
-                class_names = set(o for o in basis_set if isinstance(o, str))
+            # Handle the case where basis_set becomes equivalent to an empty list due to improper types
+            class_types = tuple(o for o in basis_set if isinstance(o, type))
+            class_names = set(o for o in basis_set if isinstance(o, str))
 
-                if not class_names and not class_types:
-                    raise ValueError("basis_set contains no valid operation names or types.")
+            if not class_names and not class_types:
+                raise ValueError("basis_set contains no valid operation names or types.")
 
         def stop_at(obj):
             if not isinstance(obj, qml.operation.Operator):
