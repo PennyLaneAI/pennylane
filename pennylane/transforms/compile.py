@@ -182,6 +182,13 @@ def compile(
     with QueuingManager.stop_recording():
         basis_set = basis_set or all_ops
 
+        if basis_set:
+            for item in basis_set:
+                if not isinstance(item, (str, type)):
+                    raise ValueError("basis_set must contain only strings or Operator subclasses.")
+                if isinstance(item, type) and not issubclass(item, qml.operation.Operator):
+                    raise ValueError(f"{item} is not a subclass of qml.operation.Operator.")
+
         def stop_at(obj):
             if not isinstance(obj, qml.operation.Operator):
                 return True
