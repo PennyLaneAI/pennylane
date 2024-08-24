@@ -54,7 +54,11 @@ def compile(
             expansion will continue until gates in the specific set are
             reached. If no basis set is specified, a default of
             ``pennylane.ops.__all__`` will be used. This decomposes templates and
-            operator arithmetic.
+            operator arithmetic. If the basis set contains
+            any items that are not strings or subclasses of ``qml.operation.Operator``,
+            a ValueError will be raised. Additionally, if the basis set contains
+            operator types instead of names and results in an empty set, an error
+            will be raised.
         num_passes (int): The number of times to apply the set of transforms in
             ``pipeline``. The default is to perform each transform once;
             however, doing so may produce a new circuit where applying the set
@@ -188,6 +192,13 @@ def compile(
                     raise ValueError("basis_set must contain only strings or Operator subclasses.")
                 if isinstance(item, type) and not issubclass(item, qml.operation.Operator):
                     raise ValueError(f"{item} is not a subclass of qml.operation.Operator.")
+
+                # Handle the case where basis_set becomes equivalent to an empty list due to improper types
+                class_types = tuple(o for o in basis_set if isinstance(o, type))
+                class_names = set(o for o in basis_set if isinstance(o, str))
+
+                if not class_names and not class_types:
+                    raise ValueError("basis_set contains no valid operation names or types.")
 
         def stop_at(obj):
             if not isinstance(obj, qml.operation.Operator):
