@@ -72,7 +72,7 @@ class TestCompile:
         with pytest.raises(ValueError, match="Number of passes must be an integer"):
             transformed_qnode(0.1, 0.2, 0.3)
 
-    def test_stop_at_with_simple_basis():
+    def test_stop_at_with_simple_basis(self):
         """
         Test the stop_at function with a valid basis set and a simple quantum function.
         """
@@ -81,6 +81,7 @@ class TestCompile:
         def qfunc(x):
             qml.RX(x, wires=0)
             qml.RY(x, wires=0)
+            return qml.expval(qml.PauliZ(0))  # Return a measurement
 
         # Define a valid basis set
         basis_set = ["RX"]
