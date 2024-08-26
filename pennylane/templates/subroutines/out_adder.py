@@ -36,6 +36,8 @@ class OutAdder(Operation):
 
         Note that :math:`x` and :math:`y` must be smaller than :math:`mod` to get the correct result.
 
+    .. seealso:: :class:`~.PhaseAdder`.
+
     Args:
         x_wires (Sequence[int]): the wires that store the integer :math:`x`
         y_wires (Sequence[int]): the wires that store the integer :math:`y`

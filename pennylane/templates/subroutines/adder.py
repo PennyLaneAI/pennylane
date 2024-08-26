@@ -36,6 +36,7 @@ class Adder(Operation):
 
         Note that :math:`x` must be smaller than :math:`mod` to get the correct result.
 
+    .. seealso:: :class:`~.PhaseAdder`.
 
      Args:
          k (int): the number that needs to be added

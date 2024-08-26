@@ -38,6 +38,8 @@ class ModExp(Operation):
         That means :math:`base*base^-1 modulo mod = 1`, which will only be possible if :math:`base`
         and :math:`mod` are coprime.
 
+    .. seealso:: :class:`~.Multiplier`.
+
     Args:
         x_wires (Sequence[int]): the wires that store the integer :math:`x`
         output_wires (Sequence[int]): the wires that store the exponentiation result

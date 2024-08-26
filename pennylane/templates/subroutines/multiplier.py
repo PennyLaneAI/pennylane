@@ -54,6 +54,8 @@ class Multiplier(Operation):
         :math:`mod` are coprime. Furthermore, if :math:`mod \neq 2^{len(x\_wires)}`, two more
         auxiliaries must be added.
 
+    .. seealso:: :class:`~.PhaseAdder` and :class:`~.OutMultiplier`.
+
     Args:
         k (int): the number that needs to be multiplied
         x_wires (Sequence[int]): the wires the operation acts on

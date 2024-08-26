@@ -128,7 +128,7 @@ Arithmetic templates
 -----------------
 
 Quantum arithmetic templates to perform in-place and out-place modular operations such 
-as addition, multiplication and exponentiation
+as addition, multiplication and exponentiation.
 
 .. gallery-item::
     :description: :doc:`PhaseAdder <../code/api/pennylane.PhaseAdder>`
@@ -153,6 +153,11 @@ as addition, multiplication and exponentiation
 .. gallery-item::
     :description: :doc:`ModExp <../code/api/pennylane.ModExp>`
     :figure: _static/templates/arithmetic/modexp.png
+
+.. gallery-item::
+    :description: :doc:`IntegerComparator <../code/api/pennylane.IntegerComparator>`
+    :figure: _static/templates/arithmetic/integercomparator.png
+
 
 .. raw:: html
 

@@ -54,6 +54,8 @@ class PhaseAdder(Operation):
         :math:`mod \neq 2^{\text{len(x\_wires)}}` we need :math:`x < 2^{\text{len(x\_wires)}}/2`,
         which means that we need one extra wire in ``x_wires``.
 
+    .. seealso:: :class:`~.QFT`.
+
     Args:
         k (int): the number that needs to be added
         x_wires (Sequence[int]): the wires the operation acts on
