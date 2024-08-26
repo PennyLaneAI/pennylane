@@ -154,14 +154,14 @@
 * Several new operator templates have been added to PennyLane that let you perform quantum arithmetic 
   operations.
 
-  * In-place operations: :math:`\texttt{SomeOp}(k, mod) \vert x \rangle = \vert x * k \texttt{ modulo } mod \rangle` 
+  * In-place operations: :math:`\texttt{SomeOp}(k, mod) \vert x \rangle = \vert x * k \; \text{modulo} \; mod \rangle` 
     where :math:`*` denotes addition (:math:`+`) or multiplication (:math:`\times`). Each of the following 
     operations has the same call signature: `SomeOp(k, x_wires, mod, work_wires=None)`, where `x_wires` 
     denotes the wires we operate on, :math:`\texttt{mod} = 2^{\texttt{len(x_wires)}}` by default, and
     `work_wires` are auxiliary wires that may be required to perform the operation.
   
     * `qml.Adder` performs in-place modular addition: 
-      :math:`\texttt{Adder}(k, mod)\vert x \rangle = \vert x + k \texttt{ modulo } mod \rangle`. 
+      :math:`\texttt{Adder}(k, mod)\vert x \rangle = \vert x + k \; \text{modulo} \; mod \rangle`. 
       [(#6109)](https://github.com/PennyLaneAI/pennylane/pull/6109)
 
       ```python
@@ -216,7 +216,7 @@
       ```
 
     * `qml.Multiplier` performs in-place multiplication: 
-      :math:`\texttt{Multiplier}(k, mod)\vert x \rangle = \vert x \times k \texttt{ modulo } mod \rangle`.
+      :math:`\texttt{Multiplier}(k, mod)\vert x \rangle = \vert x \times k \; \text{modulo} \; mod \rangle`.
       [(#6112)](https://github.com/PennyLaneAI/pennylane/pull/6112)
 
       Note, the algorithm that underpins `qml.Multiplier` requires that `len(work_wires) >= len(x_wires)`.
@@ -242,12 +242,12 @@
     register, unlike the in-place operators above.
 
     * `qml.OutAdder` performs out-place addition:
-      :math:`\texttt{OutAdder}(mod)\vert x \rangle \vert y \rangle \vert b \rangle = \vert x \rangle \vert y \rangle \vert b + x + y \texttt{ modulo } mod \rangle`.
+      :math:`\texttt{OutAdder}(mod)\vert x \rangle \vert y \rangle \vert b \rangle = \vert x \rangle \vert y \rangle \vert b + x + y \; \text{modulo} \; mod \rangle`.
       [(#6121)](https://github.com/PennyLaneAI/pennylane/pull/6121)
 
       `qml.OutAdder` requires that you specify three different registers: `x_wires`, `y_wires`, and 
       `output_wires`, belonging to :math:`\vert x \rangle`, :math:`\vert y \rangle`, and :math:`\vert b \rangle`, 
-      respectively. Here is an example of performing :math:`2 + 3 \texttt{ modulo } 2^2 = 5 \texttt{ modulo } 4 = 1`.
+      respectively. Here is an example of performing :math:`2 + 3 \; \text{modulo} \; 2^2 = 5 \; \text{modulo} \; 4 = 1`.
 
       ```python
       x = 2
@@ -274,12 +274,12 @@
       ```
 
     * `qml.OutMultiplier` performs modular multiplication: 
-      :math:`\texttt{OutMultiplier}(mod)\vert x \rangle \vert y \rangle \vert b \rangle = \vert x \rangle \vert y \rangle \vert b + x \times y \texttt{ modulo } mod \rangle`.
+      :math:`\texttt{OutMultiplier}(mod)\vert x \rangle \vert y \rangle \vert b \rangle = \vert x \rangle \vert y \rangle \vert b + x \times y \; \text{modulo} \; mod \rangle`.
       [(#6112)](https://github.com/PennyLaneAI/pennylane/pull/6112)
 
       `qml.OutMultiplier` requires that you specify three different registers: `x_wires`, `y_wires`, 
       and `output_wires`, belonging to :math:`\vert x \rangle`, :math:`\vert y \rangle`, and :math:`\vert b \rangle`, 
-      respectively. Using the above code example, we can perform :math:`2 \times 3 \texttt{ modulo } 2^2 = 6 \texttt{ modulo } 4 = 2`.
+      respectively. Using the above code example, we can perform :math:`2 \times 3 \; \text{modulo} \; 2^2 = 6 \; \text{modulo} \; 4 = 2`.
 
       ```pycon
       >>> circuit(qml.OutMultiplier)
@@ -287,12 +287,12 @@
       ```
 
     * `qml.ModExp` performs modular exponentiation: 
-      :math:`\texttt{ModExp}(base, mod) \vert x \rangle \vert k \rangle = \vert x \rangle \vert k \times base^x \texttt{ modulo } mod \rangle`.
+      :math:`\texttt{ModExp}(base, mod) \vert x \rangle \vert k \rangle = \vert x \rangle \vert k \times base^x \; \text{modulo} \; mod \rangle`.
       [(#6121)](https://github.com/PennyLaneAI/pennylane/pull/6121)
 
       `qml.ModExp` requires that you specify two different registers: `x_wires` and `output_wires`, 
       belonging to :math:`\vert x \rangle` and :math:`\vert k \rangle`, respectively. Here is an example 
-      of performing :math:`1 \times 2^3 \texttt{ modulo } 7 = 8 \texttt{ modulo } 7 = 1`.
+      of performing :math:`1 \times 2^3 \; \text{modulo} \; 7 = 8 \; \text{modulo} \; 7 = 1`.
 
       ```python
       x, k = 3, 1
@@ -320,18 +320,53 @@
 
 <h4>Creating spin Hamiltonians</h4>
 
-* The function ``transverse_ising`` is added to generate transverse-field Ising Hamiltonian.
+* Three new functions are now available for creating commonly-used spin Hamiltonians in PennyLane:
+  * `qml.spin.transverse_ising`: creates the [transverse-field Ising model](https://en.wikipedia.org/wiki/Transverse-field_Ising_model) Hamiltonian.
   [(#6106)](https://github.com/PennyLaneAI/pennylane/pull/6106)
-
-* The functions ``heisenberg`` and ``fermi_hubbard`` are added to generate Heisenberg and Fermi-Hubbard Hamiltonians respectively.
+  * `qml.spin.heisenberg`: creates the [Heisenberg model](https://en.wikipedia.org/wiki/Quantum_Heisenberg_model) Hamiltonian.
+  * `qml.spin.fermi_hubbard`: creates the [Fermi-Hubbard model](https://en.wikipedia.org/wiki/Hubbard_model) Hamiltonian.
   [(#6128)](https://github.com/PennyLaneAI/pennylane/pull/6128)
+
+  ```pycon
+  # TODO code example
+  ```
 
 <h4>A Prep-Select-Prep template</h4>
 
-* The `qml.PrepSelPrep` template is added. The template implements a block-encoding of a linear
-  combination of unitaries.
+* A new template called `qml.PrepSelPrep` has been added that implements a block-encoding of a linear
+  combination of unitaries. 
   [(#5756)](https://github.com/PennyLaneAI/pennylane/pull/5756)
   [(#5987)](https://github.com/PennyLaneAI/pennylane/pull/5987)
+
+  This operator acts as a nice wrapper for having to perform `qml.StatePrep`, `qml.Select`, and `qml.adjoint(qml.StatePrep)`
+  in succession, which is quite common in many quantum algorithms. Here is an example showing the equivalence
+  between using `qml.PrepSelPrep` and `qml.StatePrep`, `qml.Select`, and `qml.adjoint(qml.StatePrep)`.
+
+  ```python
+  coeffs = [0.3, 0.1]
+  alphas = (np.sqrt(coeffs) / np.linalg.norm(np.sqrt(coeffs)))
+  unitaries = [qml.X(2), qml.Z(2)]
+
+  lcu = qml.dot(coeffs, unitaries)
+  control = [0, 1]
+
+  def prep_sel_prep(alphas, unitaries):
+      qml.StatePrep(alphas, wires=control, pad_with=0)
+      qml.Select(unitaries, control=control)
+      qml.adjoint(qml.StatePrep)(alphas, wires=control, pad_with=0)
+
+  @qml.qnode(qml.device("default.qubit"))
+  def circuit(lcu, control, alphas, unitaries):
+      qml.PrepSelPrep(lcu, control)
+      qml.adjoint(prep_sel_prep)(alphas, unitaries)
+      return qml.state()
+  ```
+
+  ```pycon
+  >>> import numpy as np
+  >>> np.round(circuit(lcu, control, alphas, unitaries), decimals=2)
+  [ 1.+0.j -0.+0.j -0.+0.j -0.+0.j  0.+0.j  0.+0.j  0.+0.j  0.+0.j]
+  ```
 
 <h4>QChem improvements</h4>
 
