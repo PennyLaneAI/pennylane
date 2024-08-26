@@ -134,12 +134,12 @@ def diagonalize_measurements(tape, supported_base_obs=_default_supported_obs, to
     ):
         if tape.samples_computational_basis and len(tape.measurements) > 1:
             _validate_computational_basis_sampling(tape)
-        diagonalizing_gates, new_measurements = diagonalize_all_pauli_obs(
+        diagonalizing_gates, new_measurements = _diagonalize_all_pauli_obs(
             tape, to_eigvals=to_eigvals
         )
 
     else:
-        diagonalizing_gates, new_measurements = diagonalize_subset_of_pauli_obs(
+        diagonalizing_gates, new_measurements = _diagonalize_subset_of_pauli_obs(
             tape, supported_base_obs, to_eigvals=to_eigvals
         )
 
@@ -155,7 +155,7 @@ def diagonalize_measurements(tape, supported_base_obs=_default_supported_obs, to
     return (new_tape,), null_postprocessing
 
 
-def diagonalize_all_pauli_obs(tape, to_eigvals=False):
+def _diagonalize_all_pauli_obs(tape, to_eigvals=False):
     """Takes a tape and changes all observables to the measurement basis. Assumes all
     measurements on the tape are qwc.
 
@@ -188,7 +188,7 @@ def diagonalize_all_pauli_obs(tape, to_eigvals=False):
     return diagonalizing_gates, new_measurements
 
 
-def diagonalize_subset_of_pauli_obs(tape, supported_base_obs, to_eigvals=False):
+def _diagonalize_subset_of_pauli_obs(tape, supported_base_obs, to_eigvals=False):
     """Takes a tape and changes a subset of observables to the measurement basis. Assumes all
     measurements on the tape are qwc.
 
@@ -204,11 +204,9 @@ def diagonalize_subset_of_pauli_obs(tape, supported_base_obs, to_eigvals=False):
             correct measurement output
 
     Raises:
+        ValueError: if non-commuting observables are ecountered on the tape
 
     """
-
-    # ToDo: make this also work with either eigvals or diagonalizing gates, if it takes less than 20 minutes
-    #  otherwise raise ValueError if to_eigvals in this part
 
     supported_base_obs = set(list(supported_base_obs) + [qml.Z, qml.Identity])
 
