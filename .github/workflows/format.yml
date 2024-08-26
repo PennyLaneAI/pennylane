@@ -1,9 +1,16 @@
 name: Formatting check
 on:
-- pull_request
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - ready_for_review
+      - labeled
 
 jobs:
   black-pylint:
+    if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
 
     steps:

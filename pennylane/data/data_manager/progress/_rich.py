@@ -11,9 +11,23 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""
-This module provides the functionality to create spin Hamiltonians.
-"""
+"""Progress bar using ``rich``."""
 
-from .lattice import Lattice
-from .spin_hamiltonian import fermi_hubbard, heisenberg, transverse_ising
+import rich.progress
+from rich.progress import Progress as RichProgress
+
+
+def make_progress() -> RichProgress:
+    """Factory function for a progress instance."""
+    return rich.progress.Progress(
+        rich.progress.TextColumn("[progress.description]{task.description}"),
+        rich.progress.BarColumn(),
+        rich.progress.TaskProgressColumn(),
+        rich.progress.TransferSpeedColumn(),
+        rich.progress.DownloadColumn(),
+        refresh_per_second=10,
+        transient=False,
+    )
+
+
+__all__ = ["make_progress", "RichProgress"]

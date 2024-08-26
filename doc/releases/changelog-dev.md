@@ -27,12 +27,27 @@
 * The `qml.Adder` and `qml.PhaseAdder` templates are added to perform in-place modular addition.
   [(#6109)](https://github.com/PennyLaneAI/pennylane/pull/6109)
 
+* The `qml.Multiplier` and `qml.OutMultiplier` templates are added to perform modular multiplication.
+  [(#6112)](https://github.com/PennyLaneAI/pennylane/pull/6112)
+
+* The `qml.OutAdder` and `qml.ModExp` templates are added to perform out-of-place modular addition and modular exponentiation.
+  [(#6121)](https://github.com/PennyLaneAI/pennylane/pull/6121)
+
+
 <h4>Creating spin Hamiltonians 🧑‍🎨</h4>
 
 * The function ``transverse_ising`` is added to generate transverse-field Ising Hamiltonian.
   [(#6106)](https://github.com/PennyLaneAI/pennylane/pull/6106)
 
+* The functions ``heisenberg`` and ``fermi_hubbard`` are added to generate Heisenberg and Fermi-Hubbard Hamiltonians respectively.
+  [(#6128)](https://github.com/PennyLaneAI/pennylane/pull/6128)
+
 <h3>Improvements 🛠</h3>
+
+* Counts measurements with `all_outcomes=True` can now be used with jax jitting. Measurements
+  broadcasted across all available wires (`qml.probs()`) can now be used with jit and devices that
+  allow variable numbers of wires (`qml.device('default.qubit')`).
+  [(#6108)](https://github.com/PennyLaneAI/pennylane/pull/6108/)
 
 <h4>A Prep-Select-Prep template</h4>
 
@@ -259,7 +274,19 @@
 * Added `is_leaf` parameter to function `flatten` in the `qml.pytrees` module. This is to allow node flattening to be stopped for any node where the `is_leaf` optional argument evaluates to being `True`.
   [(#6107)](https://github.com/PennyLaneAI/pennylane/issues/6107)
 
+* Added a progress bar when downloading datasets with `qml.data.load()`
+  [(#5560)](https://github.com/PennyLaneAI/pennylane/pull/5560)
+
 <h3>Breaking changes 💔</h3>
+
+* `MeasurementProcess.shape(shots: Shots, device:Device)` is now
+  `MeasurementProcess.shape(shots: Optional[int], num_device_wires:int = 0)`. This has been done to allow
+  jitting when a measurement is broadcasted across all available wires, but the device does not specify wires.
+  [(#6108)](https://github.com/PennyLaneAI/pennylane/pull/6108/)
+
+* If the shape of a probability measurement is affected by a `Device.cutoff` property, it will no longer work with
+  jitting.
+  [(#6108)](https://github.com/PennyLaneAI/pennylane/pull/6108/)
 
 * `GlobalPhase` is considered non-differentiable with tape transforms.
   As a consequence, `qml.gradients.finite_diff` and `qml.gradients.spsa_grad` no longer
@@ -415,6 +442,7 @@ Ali Asadi,
 Utkarsh Azad,
 Tonmoy T. Bhattacharya,
 Gabriel Bottrill,
+Jack Brown,
 Ahmed Darwish,
 Astral Cai,
 Yushao Chen,
