@@ -437,7 +437,7 @@ def khk_decompose(
 
         correct_CSA_dim = CSA_dim == len(h)
         print(f"Correct CSA dimension of {CSA_dim}: {correct_CSA_dim} (i.e. len(h) = {len(h)})")
-    
+
     h = orthonormalize(h)
     k = orthonormalize(k)
     mtilde = orthonormalize(mtilde)
