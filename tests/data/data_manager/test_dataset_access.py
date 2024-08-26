@@ -25,7 +25,7 @@ import requests
 import pennylane as qml
 import pennylane.data.data_manager
 from pennylane.data import Dataset
-from pennylane.data.data_manager import GRAPHQL_URL, DataPath, _get_graphql, _validate_attributes
+from pennylane.data.data_manager import GRAPHQL_URL, _validate_attributes
 
 has_rich = False
 try:
@@ -139,7 +139,6 @@ def get_mock(url, timeout=1.0):
 # pylint:disable=unused-argument
 def graphql_mock(url, query, variables=None):
     """Return the JSON according to the query"""
-    mock_resp = MagicMock(ok=True)
     if "ListAttributes" in query:
         json_data = _list_attrs_resp
     elif "ListDatasets" in query:
@@ -303,7 +302,7 @@ class TestMiscHelpers:
     """Test miscellaneous helper functions in data_manager."""
 
     def test_list_datasets(self):
-        """Test that list_datasets."""
+        """Test list_datasets."""
         assert qml.data.list_datasets() == {
             "id": "qchem",
             "datasets": [
@@ -318,7 +317,7 @@ class TestMiscHelpers:
         }
 
     def test_list_attributes(self):
-        """Test list_attributes.s"""
+        """Test list_attributes."""
         assert qml.data.list_attributes("qchem") == [
             "molecule",
             "hamiltonian",

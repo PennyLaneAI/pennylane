@@ -6,6 +6,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* Datasets now downloaded via Dataset API.
+  [(#6126)](https://github.com/PennyLaneAI/pennylane/pull/6126)
+
 <h3>Breaking changes 💔</h3>
 
 <h3>Deprecations 👋</h3>
@@ -17,3 +20,5 @@
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
+
+Anthony Hayes,
