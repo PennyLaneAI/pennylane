@@ -67,7 +67,7 @@ class TestQNodeIntegration:
         """Test that the plugin device loads correctly"""
         dev = qml.device("default.mixed", wires=2)
         assert dev.num_wires == 2
-        assert dev.shots is None
+        assert dev.shots == qml.measurements.Shots(None)
         assert dev.short_name == "default.mixed"
         assert dev.capabilities()["passthru_devices"]["autograd"] == "default.mixed"
 
@@ -136,7 +136,7 @@ class TestDtypePreserved:
         p = 0.543
 
         dev = qml.device("default.mixed", wires=3)
-        dev.R_DTYPE = r_dtype
+        dev.target_device.R_DTYPE = r_dtype
 
         @qml.qnode(dev, diff_method="backprop")
         def circuit(x):
@@ -146,15 +146,16 @@ class TestDtypePreserved:
         res = circuit(p)
         assert res.dtype == r_dtype
 
-    @pytest.mark.parametrize("c_dtype", [np.complex64, np.complex128])
+    @pytest.mark.parametrize("c_dtype_name", ["complex64", "complex128"])
     @pytest.mark.parametrize(
         "measurement",
         [qml.state(), qml.density_matrix(wires=[1]), qml.density_matrix(wires=[2, 0])],
     )
-    def test_complex_dtype(self, c_dtype, measurement):
+    def test_complex_dtype(self, c_dtype_name, measurement):
         """Test that the user-defined dtype of the device is preserved
         for QNodes with complex-valued outputs"""
         p = 0.543
+        c_dtype = np.dtype(c_dtype_name)
 
         dev = qml.device("default.mixed", wires=3, c_dtype=c_dtype)
 
@@ -467,7 +468,7 @@ class TestPassthruIntegration:
         # pylint: disable=unused-variable
         dev = qml.device("default.mixed", wires=1, shots=100)
 
-        msg = "Backpropagation is only supported when shots=None"
+        msg = "does not support backprop with requested circuit"
 
         with pytest.raises(qml.QuantumFunctionError, match=msg):
 

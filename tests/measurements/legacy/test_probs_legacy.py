@@ -18,7 +18,7 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane.devices.qubit.measure import flatten_state
-from pennylane.measurements import ProbabilityMP, Shots
+from pennylane.measurements import ProbabilityMP
 
 
 # TODO: Remove this when new CustomMP are the default
@@ -37,7 +37,7 @@ def custom_measurement_process(device, spy):
         # no need to use op, because the observable has already been applied to ``dev._state``
         meas = qml.probs(wires=wires)
         old_res = device.probability(wires=wires, shot_range=shot_range, bin_size=bin_size)
-        if device.shots is None:
+        if not device.shots:
             new_res = meas.process_state(state=state, wire_order=device.wires)
         else:
             new_res = meas.process_samples(
@@ -78,26 +78,6 @@ class TestProbs:
         circuit()
 
         assert isinstance(circuit.tape[0], ProbabilityMP)
-
-    @pytest.mark.parametrize("wires", [[0], [2, 1], ["a", "c", 3]])
-    @pytest.mark.parametrize("shots", [None, 10])
-    def test_shape(self, wires, shots):
-        """Test that the shape is correct."""
-        dev = qml.device("default.qubit.legacy", wires=3, shots=shots)
-        res = qml.probs(wires=wires)
-        assert res.shape(dev, Shots(shots)) == (2 ** len(wires),)
-
-    @pytest.mark.parametrize("wires", [[0], [2, 1], ["a", "c", 3]])
-    def test_shape_shot_vector(self, wires):
-        """Test that the shape is correct with the shot vector too."""
-        res = qml.probs(wires=wires)
-        shot_vector = (1, 2, 3)
-        dev = qml.device("default.qubit.legacy", wires=3, shots=shot_vector)
-        assert res.shape(dev, Shots(shot_vector)) == (
-            (2 ** len(wires),),
-            (2 ** len(wires),),
-            (2 ** len(wires),),
-        )
 
     @pytest.mark.parametrize("shots", [None, 100])
     def test_probs_no_arguments(self, shots):

@@ -37,6 +37,9 @@ to verify and test quantum gradient computations.
     default_qutrit_mixed
     default_clifford
     default_tensor
+    _legacy_device
+    _qubit_device
+    _qutrit_device
     null_qubit
     tests
 
@@ -149,6 +152,7 @@ Qutrit Mixed-State Simulation Tools
 
 """
 
+
 from .execution_config import ExecutionConfig, DefaultExecutionConfig, MCMConfig
 from .device_constructor import device, refresh_devices
 from .device_api import Device
@@ -168,8 +172,9 @@ from .default_tensor import DefaultTensor
 from .null_qubit import NullQubit
 from .default_qutrit import DefaultQutrit
 from .default_qutrit_mixed import DefaultQutritMixed
-from .._device import Device as LegacyDevice
-from .._device import DeviceError
+from ._legacy_device import Device as LegacyDevice
+from ._qubit_device import QubitDevice
+from ._qutrit_device import QutritDevice
 
 
 # pylint: disable=undefined-variable

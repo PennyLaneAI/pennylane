@@ -18,6 +18,8 @@ TensorFlow, and PyTorch.
     details on creating QNodes, as well as the :func:`~pennylane.qnode` decorator
     and :func:`~pennylane.QNode` constructor.
 
+.. _tape-vs-script:
+
 QuantumTape versus QuantumScript
 --------------------------------
 
@@ -66,6 +68,6 @@ and a reduction in unintended side effects, ``QuantumScript`` is strictly used i
 
 .. automodapi:: pennylane.tape
     :no-main-docstr:
+    :skip: QuantumTapeBatch, QuantumScriptBatch
     :include-all-objects:
-    :skip: QuantumTapeBatch
     :inheritance-diagram:
