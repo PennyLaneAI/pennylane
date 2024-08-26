@@ -427,12 +427,12 @@ def khk_decompose(
 
     if validate:
         ranks = []
-        for adrep in ad[-len(m):]:
+        for adrep in ad[-len(m) :]:
             kernel = null_space(adrep, rcond=tol)
             ranks.append(kernel.shape[1])
 
         CSA_dim = np.min(ranks)
-        
+
         correct_CSA_dim = CSA_dim == len(h)
         print(f"Correct CSA dimension of {CSA_dim}: {correct_CSA_dim} (i.e. len(h) = {len(h)})")
 
