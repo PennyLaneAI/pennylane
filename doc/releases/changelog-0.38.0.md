@@ -373,37 +373,51 @@
 * Molecules and Hamiltonians can now be constructed for all the elements present in the periodic table.
   [(#5821)](https://github.com/PennyLaneAI/pennylane/pull/5821)
 
+  This new feature is made possible by integrating with the [`basis-set-exchange` package](https://pypi.org/project/basis-set-exchange/).
+  If loading basis sets from `basis-set-exchange` is needed for your molecule, make sure that you 
+  `pip install basis-set-exchange` and set `load_data=True`.
+
+  ```python
+  symbols  = ['Ti', 'Ti']
+  geometry = np.array([[0.0, 0.0, -1.1967],
+                      [0.0, 0.0,  1.1967]], requires_grad=True)
+  mol = qml.qchem.Molecule(symbols, geometry, load_data=True)
+  ```
+
+  ```pycon
+  >>> mol.n_electrons
+  44
+  ```
+
 * `qml.UCCSD` now accepts an additional optional argument, `n_repeats`, which defines the number of
   times the UCCSD template is repeated. This can improve the accuracy of the template by reducing
-  the Trotter error but would result in deeper circuits.
+  the Trotter error, but would result in deeper circuits.
   [(#5801)](https://github.com/PennyLaneAI/pennylane/pull/5801)
 
-* The `qubit_observable` function is modified to return an ascending wire order for molecular 
+* The `qml.qchem.qubit_observable` function has been modified to return an ascending wire order for molecular 
   Hamiltonians.
   [(#5950)](https://github.com/PennyLaneAI/pennylane/pull/5950)
 
-* A new method `to_mat` has been added to the `FermiWord` and `FermiSentence` classes, which allows
-  computing the matrix representation of these Fermi operators.
+* A new method called `to_mat` has been added to the `qml.FermiWord` and `qml.FermiSentence` classes, 
+  which allows for computing the matrix representation of these Fermi operators.
   [(#5920)](https://github.com/PennyLaneAI/pennylane/pull/5920)
-  
-* `qml.pauli.group_observables` now uses `Rustworkx` colouring algorithms to solve the Minimum Clique Cover problem.
-  This adds two new options for the `method` argument: `dsatur` and `gis`. In addition, the creation of the adjancecy matrix 
-  now takes advantage of the symplectic representation of the Pauli observables. An additional function `qml.pauli.compute_partition_indices` 
-  is added to calculate the indices from the partitioned observables more efficiently. `qml.pauli.grouping.PauliGroupingStrategy.idx_partitions_from_graph` 
-  can be used to compute partitions of custom indices. These changes improve the wall time of `qml.LinearCombination.compute_grouping` 
-  and the `grouping_type='qwc'` by orders of magnitude. 
-  [(#6043)](https://github.com/PennyLaneAI/pennylane/pull/6043)
 
 <h4>Improvements to operators</h4>
 
-* `GlobalPhase` now supports parameter broadcasting.
+* `qml.GlobalPhase` now supports parameter broadcasting.
   [(#5923)](https://github.com/PennyLaneAI/pennylane/pull/5923)
 
-* Added the `compute_decomposition` method for `qml.Hermitian`.
+* The `compute_decomposition` method has been added to `qml.Hermitian`.
   [(#6062)](https://github.com/PennyLaneAI/pennylane/pull/6062)
 
-* Port the fast `apply_operation` implementation of `PauliZ` to `PhaseShift`, `S` and `T`.
+* The implementation of `qml.PhaseShift`, `qml.S`, and `qml.T` has been improved, resulting in faster
+  circuit execution times.
   [(#5876)](https://github.com/PennyLaneAI/pennylane/pull/5876)
+
+* The `CNOT` operator no longer decomposes to itself. Instead, it raises a `qml.DecompositionUndefinedError`.
+  [(#6039)](https://github.com/PennyLaneAI/pennylane/pull/6039)
+
+<h4>Mid-circuit measurement improvements</h4>
 
 * The `tree-traversal` algorithm implemented in `default.qubit` is refactored
   into an iterative (instead of recursive) implementation, doing away with
@@ -412,14 +426,6 @@
   
 * The `tree-traversal` algorithm is compatible with analytic-mode execution (`shots=None`).
   [(#5868)](https://github.com/PennyLaneAI/pennylane/pull/5868)
-  
-* `fuse_rot_angles` now respects the global phase of the combined rotations.
-  [(#6031)](https://github.com/PennyLaneAI/pennylane/pull/6031)
-
-* The `CNOT` operator no longer decomposes to itself. Instead, it raises a `qml.DecompositionUndefinedError`.
-  [(#6039)](https://github.com/PennyLaneAI/pennylane/pull/6039)
-
-<h4>Mid-circuit measurement improvements</h4>
 
 * `qml.dynamic_one_shot` now supports circuits using the `"tensorflow"` interface.
   [(#5973)](https://github.com/PennyLaneAI/pennylane/pull/5973)
@@ -449,39 +455,41 @@
 
 <h4>Transforms</h4>
 
-* The `diagonalize_measurements` transform is added. This transform converts measurements
-  to the Z basis by applying the relevant diagonalizing gates. It can be set to diagonalize only 
-  a subset of the base observables `{X, Y, Z, Hadamard}`.
+* `qml.transforms.single_qubit_fusion` and `qml.transforms.merge_rotations` now respect global phases.
+  [(#6031)](https://github.com/PennyLaneAI/pennylane/pull/6031)
+
+* A new transform called `qml.transforms.diagonalize_measurements` has been added. This transform converts 
+  measurements to the computational basis by applying the relevant diagonalizing gates. It can be set 
+  to diagonalize only a subset of the base observables `{qml.X, qml.Y, qml.Z, qml.Hadamard}`.
   [(#5829)](https://github.com/PennyLaneAI/pennylane/pull/5829)
 
-* The `split_to_single_terms` transform is added. This transform splits expectation values of sums
-  into multiple single-term measurements on a single tape, providing better support for simulators
+* A new transform called `split_to_single_terms` has been added. This transform splits expectation values 
+  of sums into multiple single-term measurements on a single tape, providing better support for simulators
   that can handle non-commuting observables but don't natively support multi-term observables.
   [(#5884)](https://github.com/PennyLaneAI/pennylane/pull/5884)
 
-* New functionality has been added to natively support exponential extrapolation when using the `mitigate_with_zne`. This allows
-  users to have more control over the error mitigation protocol without needing to add further dependencies.
+* New functionality has been added to natively support exponential extrapolation when using `qml.transforms.mitigate_with_zne`. 
+  This allows users to have more control over the error mitigation protocol without needing to add further 
+  dependencies.
   [(#5972)](https://github.com/PennyLaneAI/pennylane/pull/5972)
-
-* `fuse_rot_angles` now respects the global phase of the combined rotations.
-  [(#6031)](https://github.com/PennyLaneAI/pennylane/pull/6031)
 
 <h4>Capturing and representing hybrid programs</h4>
 
 * `qml.for_loop` now supports `range`-like syntax with default `step=1`.
   [(#6068)](https://github.com/PennyLaneAI/pennylane/pull/6068)
 
-* Applying `adjoint` and `ctrl` to a quantum function can now be captured into plxpr.
-  Furthermore, the `qml.cond` function can be captured into plxpr.
+* Applying `adjoint` and `ctrl` to a quantum function can now be captured into plxpr. Furthermore, the 
+  `qml.cond` function can be captured into plxpr.
   [(#5966)](https://github.com/PennyLaneAI/pennylane/pull/5966)
   [(#5967)](https://github.com/PennyLaneAI/pennylane/pull/5967)
   [(#5999)](https://github.com/PennyLaneAI/pennylane/pull/5999)
   [(#6058)](https://github.com/PennyLaneAI/pennylane/pull/6058)
 
-* During experimental program capture, functions that accept and/or return `pytree` structures can now be handled in the `QNode` call, `cond`, `for_loop` and `while_loop`. 
+* During experimental program capture, functions that accept and/or return `pytree` structures can now 
+  be handled in the `qml.QNode` call, `qml.cond`, `qml.for_loop` and `qml.while_loop`. 
   [(#6081)](https://github.com/PennyLaneAI/pennylane/pull/6081)
 
-* During experimental program capture, the qnode can now use closure variables.
+* During experimental program capture, QNodes can now use closure variables.
   [(#6052)](https://github.com/PennyLaneAI/pennylane/pull/6052)
 
 * Mid-circuit measurements can now be captured with `qml.capture` enabled.
@@ -491,9 +499,8 @@
   [(#6041)](https://github.com/PennyLaneAI/pennylane/pull/6041)
   [(#6064)](https://github.com/PennyLaneAI/pennylane/pull/6064)
 
-* `qml.for_loop` and `qml.while_loop` now fallback to standard Python control
-  flow if `@qjit` is not present, allowing the same code to work with and without
-  `@qjit` without any rewrites.
+* `qml.for_loop` and `qml.while_loop` now fallback to standard Python control flow if `@qjit` is not 
+  present, allowing the same code to work with and without `@qjit` without any rewrites.
   [(#6014)](https://github.com/PennyLaneAI/pennylane/pull/6014)
 
   ```python
@@ -538,16 +545,25 @@
 
 <h4>Community contributions 🥳</h4>
 
-* Resolved the bug in `qml.ThermalRelaxationError` where there was a typo from `tq` to `tg`.
+* Fixed a bug in `qml.ThermalRelaxationError` where there was a typo from `tq` to `tg`.
   [(#5988)](https://github.com/PennyLaneAI/pennylane/issues/5988)
 
-* `DefaultQutritMixed` readout error has been added using parameters `readout_relaxation_probs` and 
-  `readout_misclassification_probs` on the `default.qutrit.mixed` device. These parameters add a `~.QutritAmplitudeDamping`  and a `~.TritFlip` channel, respectively,
-  after measurement diagonalization. The amplitude damping error represents the potential for
-  relaxation to occur during longer measurements. The trit flip error represents misclassification during readout.
+* Readout error has been added using parameters `readout_relaxation_probs` and `readout_misclassification_probs` 
+  on the `default.qutrit.mixed` device. These parameters add a `qml.QutritAmplitudeDamping`  and a `qml.TritFlip` 
+  channel, respectively, after measurement diagonalization. The amplitude damping error represents the 
+  potential for relaxation to occur during longer measurements. The trit flip error represents misclassification 
+  during readout.
   [(#5842)](https://github.com/PennyLaneAI/pennylane/pull/5842)s
 
 <h4>Other improvements</h4>
+
+* `qml.pauli.group_observables` now uses `Rustworkx` colouring algorithms to solve the Minimum Clique Cover problem.
+  This adds two new options for the `method` argument: `dsatur` and `gis`. In addition, the creation of the adjancecy matrix 
+  now takes advantage of the symplectic representation of the Pauli observables. An additional function `qml.pauli.compute_partition_indices` 
+  is added to calculate the indices from the partitioned observables more efficiently. `qml.pauli.grouping.PauliGroupingStrategy.idx_partitions_from_graph` 
+  can be used to compute partitions of custom indices. These changes improve the wall time of `qml.LinearCombination.compute_grouping` 
+  and the `grouping_type='qwc'` by orders of magnitude. 
+  [(#6043)](https://github.com/PennyLaneAI/pennylane/pull/6043)
 
 * Counts measurements with `all_outcomes=True` can now be used with jax jitting. Measurements
   broadcasted across all available wires (`qml.probs()`) can now be used with jit and devices that
