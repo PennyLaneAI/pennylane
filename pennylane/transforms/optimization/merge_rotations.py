@@ -18,7 +18,7 @@ import pennylane as qml
 from pennylane.ops.op_math import Adjoint
 from pennylane.ops.qubit.attributes import composable_rotations
 from pennylane.queuing import QueuingManager
-from pennylane.tape import QuantumTape, QuantumTapeBatch
+from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
 
@@ -27,8 +27,8 @@ from .optimization_utils import find_next_gate, fuse_rot_angles
 
 @transform
 def merge_rotations(
-    tape: QuantumTape, atol=1e-8, include_gates=None
-) -> tuple[QuantumTapeBatch, PostprocessingFn]:
+    tape: QuantumScript, atol=1e-8, include_gates=None
+) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     r"""Quantum transform to combine rotation gates of the same type that act sequentially.
 
     If the combination of two rotation produces an angle that is close to 0,

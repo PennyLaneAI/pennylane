@@ -128,7 +128,13 @@ class TestDiagonalizeObservable:
 
     def test_legacy_hamiltonian(self):
         """Test that _diagonalize_observable works on legacy Hamiltonians observables"""
-        with pytest.warns():
+
+        if qml.operation.active_new_opmath():
+            with pytest.warns():
+                compound_obs = qml.ops.Hamiltonian([2, 3], [Y(0), X(1)])
+                expected_res = qml.ops.Hamiltonian([2, 3], [Z(0), Z(1)])
+                diagonalizing_gates, new_obs, visited_obs = _diagonalize_observable(compound_obs)
+        else:
             compound_obs = qml.ops.Hamiltonian([2, 3], [Y(0), X(1)])
             expected_res = qml.ops.Hamiltonian([2, 3], [Z(0), Z(1)])
             diagonalizing_gates, new_obs, visited_obs = _diagonalize_observable(compound_obs)
@@ -389,6 +395,7 @@ class TestDiagonalizeTapeMeasurements:
                 QuantumScript([], measurements=[]), supported_base_obs=supported_base_obs
             )
 
+    @pytest.mark.usefixtures("new_opmath_only")
     @pytest.mark.parametrize("supported_base_obs", ([qml.Z], [qml.Z, qml.X], [qml.Z, qml.X, qml.Y]))
     @pytest.mark.parametrize("shots", [None, 2000, (4000, 5000, 6000)])
     def test_qnode_integration(self, supported_base_obs, shots):
