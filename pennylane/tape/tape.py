@@ -349,7 +349,7 @@ def expand_tape_state_prep(tape, skip_first=True):
 
 # pylint: disable=too-many-public-methods
 class QuantumTape(QuantumScript, AnnotatedQueue):
-    """A quantum tape recorder, that records and stores variational quantum programs.
+    r"""A quantum tape recorder, that records and stores variational quantum programs.
 
     Args:
         ops (Iterable[Operator]): An iterable of the operations to be performed
@@ -362,6 +362,12 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
         shots (None, int, Sequence[int], ~.Shots): Number and/or batches of shots for execution.
             Note that this property is still experimental and under development.
         trainable_params (None, Sequence[int]): the indices for which parameters are trainable
+
+    .. note::
+        If performance and memory usage is a concern, and the queueing capabilities of this class are not
+        crucial to your use case, we recommend using the :class:`~.QuantumScript` class instead,
+        which is a drop-in replacement with a similar interface.
+        For more information, check :ref:`tape-vs-script`.
 
     **Example**
 
@@ -478,11 +484,7 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
     """threading.RLock: Used to synchronize appending to/popping from global QueueingContext."""
 
     def __init__(
-        self,
-        ops=None,
-        measurements=None,
-        shots=None,
-        trainable_params=None,
+        self, ops=None, measurements=None, shots=None, trainable_params=None
     ):  # pylint: disable=too-many-arguments
         AnnotatedQueue.__init__(self)
         QuantumScript.__init__(self, ops, measurements, shots, trainable_params=trainable_params)

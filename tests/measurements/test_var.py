@@ -18,7 +18,7 @@ import pytest
 from flaky import flaky
 
 import pennylane as qml
-from pennylane.measurements import Shots, Variance, VarianceMP
+from pennylane.measurements import Variance, VarianceMP
 
 
 class TestVar:
@@ -156,22 +156,10 @@ class TestVar:
     )
     def test_shape(self, obs):
         """Test that the shape is correct."""
-        dev = qml.device("default.qubit", wires=1)
         res = qml.var(obs)
         # pylint: disable=use-implicit-booleaness-not-comparison
-        assert res.shape(dev, Shots(None)) == ()
-        assert res.shape(dev, Shots(100)) == ()
-
-    @pytest.mark.parametrize(
-        "obs",
-        [qml.PauliZ(0), qml.Hermitian(np.diag([1, 2]), 0), qml.Hermitian(np.diag([1.0, 2.0]), 0)],
-    )
-    def test_shape_shot_vector(self, obs):
-        """Test that the shape is correct with the shot vector too."""
-        res = qml.var(obs)
-        shot_vector = (1, 2, 3)
-        dev = qml.device("default.qubit", wires=3, shots=shot_vector)
-        assert res.shape(dev, Shots(shot_vector)) == ((), (), ())
+        assert res.shape(None, 1) == ()
+        assert res.shape(100, 1) == ()
 
     @pytest.mark.parametrize("state", [np.array([0, 0, 0]), np.array([1, 0, 0, 0, 0, 0, 0, 0])])
     @pytest.mark.parametrize("shots", [None, 1000, [1000, 1111]])

@@ -19,7 +19,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as pnp
-from pennylane.measurements import MeasurementProcess, Probability, ProbabilityMP, Shots
+from pennylane.measurements import MeasurementProcess, Probability, ProbabilityMP
 from pennylane.queuing import AnnotatedQueue
 
 
@@ -63,31 +63,16 @@ class TestProbs:
     @pytest.mark.parametrize("shots", [None, 10])
     def test_shape(self, wires, shots):
         """Test that the shape is correct."""
-        dev = qml.device("default.qubit", wires=3, shots=shots)
         res = qml.probs(wires=wires)
-        assert res.shape(dev, Shots(shots)) == (2 ** len(wires),)
+        assert res.shape(shots, 3) == (2 ** len(wires),)
 
     def test_shape_empty_wires(self):
         """Test that shape works when probs is broadcasted onto all available wires."""
-        dev = qml.device("default.qubit", wires=(1, 2, 3))
         res = qml.probs()
-        assert res.shape(dev, Shots(None)) == (8,)
+        assert res.shape(None, 3) == (8,)
 
-        dev2 = qml.device("default.qubit")
         res = qml.probs()
-        assert res.shape(dev2, Shots(None)) == (1,)
-
-    @pytest.mark.parametrize("wires", [[0], [2, 1], ["a", "c", 3]])
-    def test_shape_shot_vector(self, wires):
-        """Test that the shape is correct with the shot vector too."""
-        res = qml.probs(wires=wires)
-        shot_vector = (1, 2, 3)
-        dev = qml.device("default.qubit", wires=3, shots=shot_vector)
-        assert res.shape(dev, Shots(shot_vector)) == (
-            (2 ** len(wires),),
-            (2 ** len(wires),),
-            (2 ** len(wires),),
-        )
+        assert res.shape(None, 0) == (1,)
 
     @pytest.mark.parametrize("wires", [[0], [0, 1], [1, 0, 2]])
     def test_annotating_probs(self, wires):

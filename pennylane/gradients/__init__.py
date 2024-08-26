@@ -318,11 +318,11 @@ can be created:
 
 .. code-block:: python
 
-    from pennylane.tape import QuantumTapeBatch
+    from pennylane.tape import QuantumScriptBatch
     from pennylane.typing import PostprocessingFn
 
     @transform
-    def my_custom_gradient(tape: qml.tape.QuantumTape, **kwargs) -> tuple[QuantumTapeBatch, PostprocessingFn]:
+    def my_custom_gradient(tape: qml.tape.QuantumScript, **kwargs) -> tuple[QuantumScriptBatch, PostprocessingFn]:
         ...
         return gradient_tapes, processing_fn
 

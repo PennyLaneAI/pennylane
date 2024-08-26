@@ -23,13 +23,13 @@ from pennylane import transform
 from pennylane.measurements import MeasurementProcess
 from pennylane.operation import Operator
 from pennylane.queuing import QueuingManager
-from pennylane.tape import QuantumScript, QuantumTape, QuantumTapeBatch
+from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.typing import PostprocessingFn
 from pennylane.workflow import QNode
 
 
 def map_wires(
-    input: Union[Operator, MeasurementProcess, QuantumTape, QNode, Callable],
+    input: Union[Operator, MeasurementProcess, QuantumScript, QNode, Callable],
     wire_map: dict,
     queue=False,
     replace=False,
@@ -109,8 +109,8 @@ def map_wires(
 
 @partial(transform)
 def _map_wires_transform(
-    tape: qml.tape.QuantumTape, wire_map=None, queue=False
-) -> tuple[QuantumTapeBatch, PostprocessingFn]:
+    tape: QuantumScript, wire_map=None, queue=False
+) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     ops = [
         (
             map_wires(op, wire_map, queue=queue)
