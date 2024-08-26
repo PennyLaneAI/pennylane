@@ -178,7 +178,7 @@ def _get_dataset_urls(class_id: str, parameters: dict[str, list[str]]) -> list[t
     ]
 
 
-def _download_dataset(
+def _download_dataset( # pylint: disable=too-many-arguments
     dataset_url: str,
     dest: Path,
     attributes: Optional[Iterable[str]],
