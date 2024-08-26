@@ -16,16 +16,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.measurements import Shots
 from pennylane.workflow import INTERFACE_MAP
-
-
-@pytest.mark.parametrize("shots, shape", [(None, ()), (10, ()), ([1, 10], ((), ()))])
-def test_shape(shots, shape):
-    """Test that the shape is correct."""
-    dev = qml.device("default.qubit.legacy", wires=3, shots=shots)
-    res = qml.mutual_info(wires0=[0], wires1=[1])
-    assert res.shape(dev, Shots(shots)) == shape
 
 
 class TestIntegration:
