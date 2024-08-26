@@ -45,7 +45,7 @@ def transform(
               returns a sequence of :class:`~.QuantumTape` and a processing function.
 
             * The transform must have the following structure (type hinting is optional): ``my_quantum_transform(tape:
-              qml.tape.QuantumTape, ...) -> tuple[qml.tape.QuantumTapeBatch, qml.typing.PostprocessingFn]``
+              qml.tape.QuantumScript, ...) -> tuple[qml.tape.QuantumScriptBatch, qml.typing.PostprocessingFn]``
 
     Keyword Args:
         expand_transform=None (Optional[Callable]): An optional expand transform is applied directly before the input
@@ -72,10 +72,10 @@ def transform(
 
     .. code-block:: python
 
-        from pennylane.tape import QuantumTapeBatch
+        from pennylane.tape import QuantumScript, QuantumScriptBatch
         from pennylane.typing import PostprocessingFn
 
-        def my_quantum_transform(tape: qml.tape.QuantumTape) -> tuple[QuantumTapeBatch, PostprocessingFn]:
+        def my_quantum_transform(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
             tape1 = tape
             tape2 = tape.copy()
 
