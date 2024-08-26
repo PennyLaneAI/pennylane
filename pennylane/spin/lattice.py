@@ -34,12 +34,12 @@ class Lattice:
        vectors (list[list[float]]): Primitive vectors for the lattice.
        positions (list[list[float]]): Initial positions of spin cites. Default value is
            ``[[0.0]*number of dimensions]``.
-       boundary_condition (bool or list[bool]): Defines boundary conditions different lattice axes,
+       boundary_condition (bool or list[bool]): Defines boundary conditions in different lattice axes,
            default is ``False`` indicating open boundary condition.
        neighbour_order (int): Specifies the interaction level for neighbors within the lattice.
            Default is 1 (nearest neighbour).
        distance_tol (float): Distance below which spatial points are considered equal for the
-           purpose of identifying nearest neighbours, default value is 1e-5.
+           purpose of identifying nearest neighbours. Default value is 1e-5.
 
     Raises:
        TypeError:
