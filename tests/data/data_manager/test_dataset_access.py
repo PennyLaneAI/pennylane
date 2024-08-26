@@ -24,7 +24,7 @@ import requests
 import pennylane as qml
 import pennylane.data.data_manager
 from pennylane.data import Dataset
-from pennylane.data.data_manager import S3_URL, DataPath, _get_graphql, _validate_attributes
+from pennylane.data.data_manager import GRAPHQL_URL, DataPath, _get_graphql, _validate_attributes
 
 # pylint:disable=protected-access,redefined-outer-name
 
@@ -323,8 +323,8 @@ def mock_download_dataset(monkeypatch):
     [
         (
             "qchem",
-            {"molname": "H2", "basis": "6-31G", "bondlength": ["0.46", "1.16"]},
-            ["qchem/H2/6-31G/0.46.h5", "qchem/H2/6-31G/1.16.h5"],
+            {"molname": "H2", "basis": "STO-3G", "bondlength": ["1.0", "0.46", "1.16"]},
+            ["qchem/h2_sto-3g_1.0.h5", "qchem/h2_sto-3g_0.46.h5", "qchem/h2_sto-3g_1.16.h5"],
         )
     ],
 )
@@ -339,7 +339,6 @@ def test_load(tmp_path, data_name, params, expect_paths):
         block_size=1,
         **params,
     )
-
     assert {Path(dset.bind.filename) for dset in dsets} == {
         Path(tmp_path, path) for path in expect_paths
     }
@@ -395,10 +394,10 @@ def test_download_dataset_full_call(download_full, force):
     dest.exists.return_value = False
 
     pennylane.data.data_manager._download_dataset(
-        "dataset/path", attributes=None, dest=dest, force=force, block_size=1
+        f"{GRAPHQL_URL}/dataset/path", attributes=None, dest=dest, force=force, block_size=1
     )
 
-    download_full.assert_called_once_with(f"{S3_URL}/dataset/path", dest=dest)
+    download_full.assert_called_once_with(f"{GRAPHQL_URL}/dataset/path", dest=dest)
 
 
 @patch.object(pennylane.data.data_manager, "_get_graphql", graphql_mock)
@@ -413,11 +412,15 @@ def test_download_dataset_partial_call(download_partial, attributes, force):
     dest.exists.return_value = True
 
     pennylane.data.data_manager._download_dataset(
-        "dataset/path", attributes=attributes, dest=dest, force=force, block_size=1
+        f"{GRAPHQL_URL}/dataset/path", attributes=attributes, dest=dest, force=force, block_size=1
     )
 
     download_partial.assert_called_once_with(
-        f"{S3_URL}/dataset/path", dest=dest, attributes=attributes, overwrite=force, block_size=1
+        f"{GRAPHQL_URL}/dataset/path",
+        dest=dest,
+        attributes=attributes,
+        overwrite=force,
+        block_size=1,
     )
 
 
@@ -529,29 +532,35 @@ def test_download_partial_no_check_remote(open_hdf5_s3, tmp_path):
 @patch.object(pennylane.data.data_manager, "_get_graphql", graphql_mock)
 @patch("builtins.open")
 @pytest.mark.parametrize(
-    "datapath, escaped",
-    [("data/NH3+/data.h5", "data/NH3%2B/data.h5"), ("data/CA$H/money.h5", "data/CA%24H/money.h5")],
+    "dataset_url, escaped",
+    [
+        (f"{GRAPHQL_URL}/data/NH3+/data.h5", f"{GRAPHQL_URL}/data/NH3%2B/data.h5"),
+        (f"{GRAPHQL_URL}/data/CA$H/money.h5", f"{GRAPHQL_URL}/data/CA%24H/money.h5"),
+    ],
 )
-def test_download_dataset_escapes_url(_, mock_get_args, datapath, escaped):
+def test_download_dataset_escapes_url(_, mock_get_args, dataset_url, escaped):
     """Tests that _download_dataset escapes special characters in a URL when doing a full download."""
 
     dest = MagicMock()
     dest.exists.return_value = False
 
     pennylane.data.data_manager._download_dataset(
-        DataPath(datapath), dest=dest, attributes=None, block_size=1
+        dataset_url, dest=dest, attributes=None, block_size=1
     )
 
     mock_get_args.assert_called_once()
-    assert mock_get_args.call_args[0] == (f"{S3_URL}/{escaped}",)
+    assert mock_get_args.call_args[0] == (f"{escaped}",)
 
 
 @patch("pennylane.data.data_manager._download_partial")
 @pytest.mark.parametrize(
-    "datapath, escaped",
-    [("data/NH3+/data.h5", "data/NH3%2B/data.h5"), ("data/CA$H/money.h5", "data/CA%24H/money.h5")],
+    "dataset_url, escaped",
+    [
+        (f"{GRAPHQL_URL}/data/NH3+/data.h5", f"{GRAPHQL_URL}/data/NH3%2B/data.h5"),
+        (f"{GRAPHQL_URL}/data/CA$H/money.h5", f"{GRAPHQL_URL}/data/CA%24H/money.h5"),
+    ],
 )
-def test_download_dataset_escapes_url_partial(download_partial, datapath, escaped):
+def test_download_dataset_escapes_url_partial(download_partial, dataset_url, escaped):
     """Tests that _download_dataset escapes special characters in a URL when doing a partial
     download."""
     dest = Path("dest")
@@ -559,11 +568,11 @@ def test_download_dataset_escapes_url_partial(download_partial, datapath, escape
     force = False
 
     pennylane.data.data_manager._download_dataset(
-        DataPath(datapath), dest=dest, attributes=attributes, force=force, block_size=1
+        dataset_url, dest=dest, attributes=attributes, force=force, block_size=1
     )
 
     download_partial.assert_called_once_with(
-        f"{S3_URL}/{escaped}", dest=dest, attributes=attributes, overwrite=force, block_size=1
+        f"{escaped}", dest=dest, attributes=attributes, overwrite=force, block_size=1
     )
 
 

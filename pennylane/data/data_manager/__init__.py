@@ -182,13 +182,20 @@ def _download_dataset(
     If any of the attributes of the remote dataset are already downloaded locally,
     they will not be overwritten unless ``force`` is True.
     """
+    split_url = list(urllib.parse.urlsplit(str(dataset_url), "2"))
+    split_url[2] = urllib.parse.quote(str(split_url[2]))
+    safe_dataset_url = urllib.parse.urlunsplit(split_url)
 
     if attributes is not None or dest.exists():
         _download_partial(
-            dataset_url, dest=dest, attributes=attributes, overwrite=force, block_size=block_size
+            safe_dataset_url,
+            dest=dest,
+            attributes=attributes,
+            overwrite=force,
+            block_size=block_size,
         )
     else:
-        _download_full(dataset_url, dest=dest)
+        _download_full(safe_dataset_url, dest=dest)
 
 
 def _validate_attributes(data_struct: dict, data_name: str, attributes: Iterable[str]):
@@ -310,10 +317,10 @@ def load(  # pylint: disable=too-many-arguments
 
     dataset_ids_and_urls = _get_dataset_urls(data_name, params)
 
-    dataset_ids = [dataset_id for dataset_id, _ in dataset_ids_and_urls]
+    file_names = [dataset_id + ".h5" for dataset_id, _ in dataset_ids_and_urls]
     dataset_urls = [dataset_url for _, dataset_url in dataset_ids_and_urls]
 
-    dest_paths = [folder_path / data_id for data_id in dataset_ids]
+    dest_paths = [folder_path / data_name / data_id for data_id in file_names]
 
     for path_parents in set(path.parent for path in dest_paths):
         path_parents.mkdir(parents=True, exist_ok=True)
