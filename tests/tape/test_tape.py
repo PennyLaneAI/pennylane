@@ -806,7 +806,7 @@ class TestParameters:
         assert tape.num_params == len(params)
         assert tape.get_parameters() == params
 
-        b = np.array([0, 1, 0, 0])
+        b = np.array([0.0, 1.0, 0.0, 0.0])
         new_params = [b, 0.543, 0.654, 0.123]
         new_tape = tape.bind_new_parameters(new_params, [0, 1, 2, 3])
         assert new_tape.get_parameters() == new_params
@@ -1007,7 +1007,7 @@ class TestExpand:
             [
                 qml.PauliX(0),
                 qml.MottonenStatePreparation([0, 1, 0, 0], wires=[0, 1]),
-                qml.StatePrep([0, 1, 0, 0], wires=[0, 1]),  # still a StatePrepBase :/
+                qml.MottonenStatePreparation([0, 1, 0, 0], wires=[0, 1]),
                 qml.PauliZ(0),
             ],
         ),
@@ -1891,54 +1891,6 @@ class TestOutputShape:
 
         res_shape = res_shape if res_shape != tuple() else ()
         assert tape.shape(dev) == res_shape
-
-    def test_output_shapes_single_qnode_check_cutoff(self):
-        """Test that the tape output shape is correct when computing
-        probabilities with a dummy device that defines a cutoff value."""
-
-        class CustomDevice(qml.QubitDevice):
-            """A dummy device that has a cutoff value specified and returns
-            analytic probabilities in a fashion similar to the
-            strawberryfields.fock device.
-
-            Note: this device definition is used as PennyLane-SF is not a
-            dependency of PennyLane core and there are no CV device in
-            PennyLane core using a cutoff value.
-            """
-
-            name = "Device with cutoff"
-            short_name = "dummy.device"
-            pennylane_requires = "0.1.0"
-            version = "0.0.1"
-            author = "CV quantum"
-
-            operations = {}
-            observables = {"Identity"}
-
-            def __init__(self, shots=None, wires=None, cutoff=None):
-                super().__init__(wires=wires, shots=shots)
-                self.cutoff = cutoff
-
-            def apply(self, operations, **kwargs):
-                pass
-
-            def analytic_probability(self, wires=None):
-                if wires is None:
-                    wires = self.wires
-                return np.zeros(self.cutoff ** len(wires))
-
-        dev = CustomDevice(wires=2, cutoff=13)
-
-        # If PennyLane-SF is installed, the following can be checked e.g., locally:
-        # dev = qml.device("strawberryfields.fock", wires=2, cutoff_dim=13)
-
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.probs(wires=[0])
-
-        tape = qml.tape.QuantumScript.from_queue(q)
-
-        res_shape = qml.execute([tape], dev, gradient_fn=qml.gradients.param_shift_cv)[0]
-        assert tape.shape(dev) == res_shape.shape
 
     @pytest.mark.autograd
     @pytest.mark.parametrize("measurements, expected", multi_measurements)

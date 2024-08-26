@@ -106,7 +106,9 @@ class TestApplyBroadcasted:
         """Tests that applying an operation yields the expected output state for single wire
         operations that have no parameters."""
 
-        qubit_device_1_wire._state = np.array(input, dtype=qubit_device_1_wire.C_DTYPE)
+        qubit_device_1_wire.target_device._state = np.array(
+            input, dtype=qubit_device_1_wire.C_DTYPE
+        )
         qubit_device_1_wire.apply([operation(wires=[0])])
 
         assert np.allclose(qubit_device_1_wire._state, np.array(expected_output), atol=tol, rtol=0)
@@ -133,9 +135,9 @@ class TestApplyBroadcasted:
         """Tests that applying an operation yields the expected output state for two wire
         operations that have no parameters."""
 
-        qubit_device_2_wires._state = np.array(input, dtype=qubit_device_2_wires.C_DTYPE).reshape(
-            (-1, 2, 2)
-        )
+        qubit_device_2_wires.target_device._state = np.array(
+            input, dtype=qubit_device_2_wires.C_DTYPE
+        ).reshape((-1, 2, 2))
         qubit_device_2_wires.apply([operation(wires=[0, 1])])
 
         assert np.allclose(
@@ -163,9 +165,9 @@ class TestApplyBroadcasted:
         """Tests that applying an operation yields the expected output state for three wire
         operations that have no parameters."""
 
-        qubit_device_3_wires._state = np.array(input, dtype=qubit_device_3_wires.C_DTYPE).reshape(
-            (-1, 2, 2, 2)
-        )
+        qubit_device_3_wires.target_device._state = np.array(
+            input, dtype=qubit_device_3_wires.C_DTYPE
+        ).reshape((-1, 2, 2, 2))
         qubit_device_3_wires.apply([operation(wires=[0, 1, 2])])
 
         assert np.allclose(
@@ -308,7 +310,9 @@ class TestApplyBroadcasted:
         """Tests that applying an operation yields the expected output state for single wire
         operations that have parameters."""
 
-        qubit_device_1_wire._state = np.array(input, dtype=qubit_device_1_wire.C_DTYPE)
+        qubit_device_1_wire.target_device._state = np.array(
+            input, dtype=qubit_device_1_wire.C_DTYPE
+        )
 
         par = tuple(np.array(p) for p in par)
         qubit_device_1_wire.apply([operation(*par, wires=[0])])
@@ -430,7 +434,7 @@ class TestApplyBroadcasted:
 
         shape = (5, 2, 2) if np.array(input).size == 20 else (2, 2)
         dtype = qubit_device_2_wires.C_DTYPE
-        qubit_device_2_wires._state = np.array(input, dtype=dtype).reshape(shape)
+        qubit_device_2_wires.target_device._state = np.array(input, dtype=dtype).reshape(shape)
         par = tuple(np.array(p) for p in par)
         qubit_device_2_wires.apply([operation(*par, wires=[0, 1])])
 
@@ -441,18 +445,18 @@ class TestApplyBroadcasted:
 
     def test_apply_errors_qubit_state_vector_broadcasted(self, qubit_device_2_wires):
         """Test that apply fails for incorrect state preparation, and > 2 qubit gates"""
-        with pytest.raises(ValueError, match="Sum of amplitudes-squared does not equal one."):
+        with pytest.raises(ValueError, match="The state must be a vector of norm 1.0"):
             qubit_device_2_wires.apply([qml.StatePrep(np.array([[1, -1], [0, 2]]), wires=[0])])
 
         # Also test that the sum-check is *not* performed along the broadcasting dimension
         qubit_device_2_wires.apply([qml.StatePrep(np.array([[0.6, 0.8], [0.6, 0.8]]), wires=[0])])
 
-        with pytest.raises(ValueError, match=r"State vector must have shape \(2\*\*wires,\)."):
+        with pytest.raises(ValueError, match=r"State must be of length 4"):
             # Second dimension does not match 2**num_wires
             p = np.array([[1, 0, 1, 1, 0], [0, 1, 1, 0, 1]]) / np.sqrt(3)
             qubit_device_2_wires.apply([qml.StatePrep(p, wires=[0, 1])])
 
-        with pytest.raises(ValueError, match=r"State vector must have shape \(2\*\*wires,\)."):
+        with pytest.raises(ValueError, match=r"State must be of length 4"):
             # Broadcasting dimension is not first dimension
             p = np.array([[1, 1, 0], [0, 1, 1], [1, 0, 1], [0, 1, 1]]) / np.sqrt(2)
             qubit_device_2_wires.apply([qml.StatePrep(p, wires=[0, 1])])
@@ -720,9 +724,9 @@ class TestSampleBroadcasted:
 
         dev.apply([qml.RX(np.array([np.pi / 2, 0.0]), 0), qml.RX(np.array([np.pi / 2, 0.0]), 1)])
 
-        dev.shots = 10
-        dev._wires_measured = {0}
-        dev._samples = dev.generate_samples()
+        dev.target_device.shots = 10
+        dev.target_device._wires_measured = {0}
+        dev.target_device._samples = dev.generate_samples()
         s1 = dev.sample(qml.PauliZ(0))
         assert s1.shape == (
             2,
@@ -730,17 +734,17 @@ class TestSampleBroadcasted:
         )
 
         dev.reset()
-        dev.shots = 12
-        dev._wires_measured = {1}
-        dev._samples = dev.generate_samples()
+        dev.target_device.shots = 12
+        dev.target_device._wires_measured = {1}
+        dev.target_device._samples = dev.generate_samples()
         s2 = dev.sample(qml.PauliZ(wires=[1]))
         assert s2.shape == (12,)
 
         dev.reset()
         dev.apply([qml.RX(np.ones(5), 0), qml.RX(np.ones(5), 1)])
-        dev.shots = 17
-        dev._wires_measured = {0, 1}
-        dev._samples = dev.generate_samples()
+        dev.target_device.shots = 17
+        dev.target_device._wires_measured = {0, 1}
+        dev.target_device._samples = dev.generate_samples()
         s3 = dev.sample(qml.PauliX(0) @ qml.PauliZ(1))
         assert s3.shape == (5, 17)
 
@@ -755,8 +759,8 @@ class TestSampleBroadcasted:
         dev = qml.device("default.qubit.legacy", wires=2, shots=1000)
 
         dev.apply([qml.RX(np.ones(3), wires=[0])])
-        dev._wires_measured = {0}
-        dev._samples = dev.generate_samples()
+        dev.target_device._wires_measured = {0}
+        dev.target_device._samples = dev.generate_samples()
 
         s1 = dev.sample(qml.PauliZ(0))
 
@@ -776,7 +780,7 @@ class TestDefaultQubitIntegrationBroadcasted:
         p = np.array([0.543, np.pi / 2, 0.0, 1.0])
 
         dev = qubit_device_1_wire
-        dev.R_DTYPE = r_dtype
+        dev.target_device.R_DTYPE = r_dtype
 
         @qml.qnode(dev, diff_method="parameter-shift")
         def circuit(x):
@@ -1310,8 +1314,8 @@ class TestTensorSampleBroadcasted:
             obs.diagonalizing_gates(),
         )
 
-        dev._wires_measured = {0, 1, 2}
-        dev._samples = dev.generate_samples()
+        dev.target_device._wires_measured = {0, 1, 2}
+        dev.target_device._samples = dev.generate_samples()
         dev.sample(obs)
 
         s1 = obs.eigvals()
@@ -1350,8 +1354,8 @@ class TestTensorSampleBroadcasted:
             obs.diagonalizing_gates(),
         )
 
-        dev._wires_measured = {0, 1, 2}
-        dev._samples = dev.generate_samples()
+        dev.target_device._wires_measured = {0, 1, 2}
+        dev.target_device._samples = dev.generate_samples()
         dev.sample(obs)
 
         s1 = obs.eigvals()
@@ -1398,8 +1402,8 @@ class TestTensorSampleBroadcasted:
             obs.diagonalizing_gates(),
         )
 
-        dev._wires_measured = {0, 1, 2}
-        dev._samples = dev.generate_samples()
+        dev.target_device._wires_measured = {0, 1, 2}
+        dev.target_device._samples = dev.generate_samples()
         dev.sample(obs)
 
         s1 = obs.eigvals()
@@ -1756,7 +1760,7 @@ class TestApplyOperationBroadcasted:
 
         with monkeypatch.context() as m:
             # Set the internal ops implementations dict
-            m.setattr(dev, "_apply_ops", {"PauliX": supported_gate_application})
+            m.setattr(dev.target_device, "_apply_ops", {"PauliX": supported_gate_application})
 
             op = qml.PauliX(0)
 
@@ -1778,7 +1782,7 @@ class TestApplyOperationBroadcasted:
         history = []
         mock_apply_diag = lambda state, matrix, wires: history.append((state, matrix, wires))
         with monkeypatch.context() as m:
-            m.setattr(dev, "_apply_diagonal_unitary", mock_apply_diag)
+            m.setattr(dev.target_device, "_apply_diagonal_unitary", mock_apply_diag)
             assert dev._apply_diagonal_unitary == mock_apply_diag
 
             dev._apply_operation(test_state, op)
@@ -1818,7 +1822,7 @@ class TestApplyOperationBroadcasted:
         history = []
         mock_apply_einsum = lambda state, matrix, wires: history.append((state, matrix, wires))
         with monkeypatch.context() as m:
-            m.setattr(dev, "_apply_unitary_einsum", mock_apply_einsum)
+            m.setattr(dev.target_device, "_apply_unitary_einsum", mock_apply_einsum)
 
             dev._apply_operation(test_state, op)
 
@@ -1858,7 +1862,7 @@ class TestApplyOperationBroadcasted:
         mock_apply_tensordot = lambda state, matrix, wires: history.append((state, matrix, wires))
 
         with monkeypatch.context() as m:
-            m.setattr(dev, "_apply_unitary", mock_apply_tensordot)
+            m.setattr(dev.target_device, "_apply_unitary", mock_apply_tensordot)
 
             dev._apply_operation(test_state, op)
 
@@ -1875,9 +1879,9 @@ class TestApplyOperationBroadcasted:
         starting_state = np.array([[1, 0], [INVSQ2, INVSQ2], [0, 1]])
         op = qml.Identity(0)
 
-        spy_diagonal = mocker.spy(dev, "_apply_diagonal_unitary")
-        spy_einsum = mocker.spy(dev, "_apply_unitary_einsum")
-        spy_unitary = mocker.spy(dev, "_apply_unitary")
+        spy_diagonal = mocker.spy(dev.target_device, "_apply_diagonal_unitary")
+        spy_einsum = mocker.spy(dev.target_device, "_apply_unitary_einsum")
+        spy_unitary = mocker.spy(dev.target_device, "_apply_unitary")
 
         res = dev._apply_operation(starting_state, op)
         assert res is starting_state
@@ -1900,7 +1904,7 @@ class TestHamiltonianSupportBroadcasted:
             qml.RX(np.zeros(5), 0)  # Broadcast the state by applying a broadcasted identity
             return qml.expval(Ham)
 
-        spy = mocker.spy(dev, "expval")
+        spy = mocker.spy(dev.target_device, "expval")
 
         circuit()
         # evaluated one expval altogether
@@ -1909,7 +1913,7 @@ class TestHamiltonianSupportBroadcasted:
     def test_split_finite_shots_broadcasted(self, mocker):
         """Tests that the Hamiltonian is split for finite shots."""
         dev = qml.device("default.qubit.legacy", wires=2, shots=10)
-        spy = mocker.spy(dev, "expval")
+        spy = mocker.spy(dev.target_device, "expval")
 
         ham = qml.Hamiltonian(np.array([0.1, 0.2]), [qml.PauliX(0), qml.PauliZ(1)])
 

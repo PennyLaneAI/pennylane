@@ -28,7 +28,7 @@ import pennylane as qml
 from pennylane.logging import debug_logger, debug_logger_init
 from pennylane.measurements.mid_measure import MidMeasureMP
 from pennylane.ops.op_math.condition import Conditional
-from pennylane.tape import QuantumTape, QuantumTapeBatch
+from pennylane.tape import QuantumScript, QuantumScriptBatch, QuantumScriptOrBatch
 from pennylane.transforms import convert_to_numpy_parameters
 from pennylane.transforms.core import TransformProgram
 from pennylane.typing import PostprocessingFn, Result, ResultBatch
@@ -53,8 +53,6 @@ from .qubit.simulate import get_final_state, measure_final_state, simulate
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
-QuantumTape_or_Batch = Union[QuantumTape, QuantumTapeBatch]
-
 
 def stopping_condition(op: qml.operation.Operator) -> bool:
     """Specify whether or not an Operator object is supported by the device."""
@@ -67,12 +65,20 @@ def stopping_condition(op: qml.operation.Operator) -> bool:
     if op.__class__.__name__[:3] == "Pow" and qml.operation.is_trainable(op):
         return False
 
-    return op.has_matrix
+    return (
+        (isinstance(op, Conditional) and stopping_condition(op.base))
+        or isinstance(op, MidMeasureMP)
+        or op.has_matrix
+    )
 
 
 def stopping_condition_shots(op: qml.operation.Operator) -> bool:
     """Specify whether or not an Operator object is supported by the device with shots."""
-    return isinstance(op, (Conditional, MidMeasureMP)) or stopping_condition(op)
+    return (
+        (isinstance(op, Conditional) and stopping_condition_shots(op.base))
+        or isinstance(op, MidMeasureMP)
+        or stopping_condition(op)
+    )
 
 
 def observable_accepts_sampling(obs: qml.operation.Operator) -> bool:
@@ -158,8 +164,8 @@ def all_state_postprocessing(results, measurements, wire_order):
 
 @qml.transform
 def adjoint_state_measurements(
-    tape: QuantumTape, device_vjp=False
-) -> tuple[QuantumTapeBatch, PostprocessingFn]:
+    tape: QuantumScript, device_vjp=False
+) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Perform adjoint measurement preprocessing.
 
     * Allows a tape with only expectation values through unmodified
@@ -202,7 +208,7 @@ def adjoint_state_measurements(
 
 def adjoint_ops(op: qml.operation.Operator) -> bool:
     """Specify whether or not an Operator is supported by adjoint differentiation."""
-    return not isinstance(op, MidMeasureMP) and (
+    return not isinstance(op, (Conditional, MidMeasureMP)) and (
         op.num_params == 0
         or not qml.operation.is_trainable(op)
         or (op.num_params == 1 and op.has_generator)
@@ -475,7 +481,7 @@ class DefaultQubit(Device):
     def supports_derivatives(
         self,
         execution_config: Optional[ExecutionConfig] = None,
-        circuit: Optional[QuantumTape] = None,
+        circuit: Optional[QuantumScript] = None,
     ) -> bool:
         """Check whether or not derivatives are available for a given configuration and circuit.
 
@@ -606,7 +612,7 @@ class DefaultQubit(Device):
     @debug_logger
     def execute(
         self,
-        circuits: QuantumTape_or_Batch,
+        circuits: QuantumScriptOrBatch,
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ) -> Union[Result, ResultBatch]:
         self.reset_prng_key()
@@ -661,7 +667,7 @@ class DefaultQubit(Device):
     @debug_logger
     def compute_derivatives(
         self,
-        circuits: QuantumTape_or_Batch,
+        circuits: QuantumScriptOrBatch,
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ):
         max_workers = execution_config.device_options.get("max_workers", self._max_workers)
@@ -681,7 +687,7 @@ class DefaultQubit(Device):
     @debug_logger
     def execute_and_compute_derivatives(
         self,
-        circuits: QuantumTape_or_Batch,
+        circuits: QuantumScriptOrBatch,
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ):
         self.reset_prng_key()
@@ -705,7 +711,7 @@ class DefaultQubit(Device):
     def supports_jvp(
         self,
         execution_config: Optional[ExecutionConfig] = None,
-        circuit: Optional[QuantumTape] = None,
+        circuit: Optional[QuantumScript] = None,
     ) -> bool:
         """Whether or not this device defines a custom jacobian vector product.
 
@@ -724,7 +730,7 @@ class DefaultQubit(Device):
     @debug_logger
     def compute_jvp(
         self,
-        circuits: QuantumTape_or_Batch,
+        circuits: QuantumScriptOrBatch,
         tangents: tuple[Number, ...],
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ):
@@ -744,7 +750,7 @@ class DefaultQubit(Device):
     @debug_logger
     def execute_and_compute_jvp(
         self,
-        circuits: QuantumTape_or_Batch,
+        circuits: QuantumScriptOrBatch,
         tangents: tuple[Number, ...],
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ):
@@ -773,7 +779,7 @@ class DefaultQubit(Device):
     def supports_vjp(
         self,
         execution_config: Optional[ExecutionConfig] = None,
-        circuit: Optional[QuantumTape] = None,
+        circuit: Optional[QuantumScript] = None,
     ) -> bool:
         """Whether or not this device defines a custom vector jacobian product.
 
@@ -792,7 +798,7 @@ class DefaultQubit(Device):
     @debug_logger
     def compute_vjp(
         self,
-        circuits: QuantumTape_or_Batch,
+        circuits: QuantumScriptOrBatch,
         cotangents: tuple[Number, ...],
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ):
@@ -860,7 +866,7 @@ class DefaultQubit(Device):
     @debug_logger
     def execute_and_compute_vjp(
         self,
-        circuits: QuantumTape_or_Batch,
+        circuits: QuantumScriptOrBatch,
         cotangents: tuple[Number, ...],
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ):

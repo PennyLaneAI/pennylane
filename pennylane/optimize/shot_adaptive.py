@@ -277,7 +277,7 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
         r"""Verifies that the device used by the objective function is non-analytic.
 
         Args:
-            dev (.Device): the device to verify
+            dev (.devices.Device): the device to verify
 
         Raises:
             ValueError: if the device is analytic
