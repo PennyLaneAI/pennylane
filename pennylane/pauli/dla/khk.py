@@ -1,22 +1,19 @@
-from functools import reduce
 import warnings
+from datetime import datetime
+from functools import reduce
 
-import pennylane as qml
 import jax
 import jax.numpy as jnp
+import matplotlib.pyplot as plt
 import numpy as np
-
+import optax
 from scipy.linalg import null_space
 
+import pennylane as qml
 import pennylane.numpy as pnp
-from pennylane import X, Y, Z, I
-from pennylane.pauli import PauliSentence, PauliWord, PauliVSpace
+from pennylane import I, X, Y, Z
+from pennylane.pauli import PauliSentence, PauliVSpace, PauliWord
 from pennylane.pauli.dla.center import _intersect_bases  # From the fix-center branch
-
-import matplotlib.pyplot as plt
-
-import optax
-from datetime import datetime
 
 jax.config.update("jax_enable_x64", True)
 jax.config.update("jax_platform_name", "cpu")
@@ -303,7 +300,7 @@ def compute_csa_new(g, m, ad, which=0, tol=1e-14, verbose=0):
             new_kernel = null_space(adjoint_of_h_i)
 
             # intersect kernel to stay in m
-            kernel_intersection = _intersect_bases(kernel_intersection, new_kernel)
+            kernel_intersection = _intersect_bases(kernel_intersection, new_kernel, rcond=tol)
 
         if kernel_intersection.shape[1] == len(np_h):
             # No new vector was added from all the kernels
