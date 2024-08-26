@@ -318,4 +318,4 @@ def handle_qnode(self, *invals, shots, qnode, device, qnode_kwargs, qfunc_jaxpr,
     def new_qnode(*args):
         return type(self)(state=self.state).eval(qfunc_jaxpr, consts, *args)
 
-    return new_qnode(invals[n_consts:], shots=shots)
+    return new_qnode(*invals[n_consts:], shots=shots)
