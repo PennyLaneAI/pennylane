@@ -21,6 +21,7 @@ from typing import Callable, Optional, Type
 import pennylane as qml
 from pennylane import QueuingManager
 from pennylane.capture.flatfn import FlatFn
+from pennylane.capture.primitives import create_non_jvp_primitive
 from pennylane.compiler import compiler
 from pennylane.measurements import MeasurementValue
 from pennylane.operation import AnyWires, Operation, Operator
@@ -680,7 +681,8 @@ def _get_cond_qfunc_prim():
 
     import jax  # pylint: disable=import-outside-toplevel
 
-    cond_prim = jax.core.Primitive("cond")
+    cond_prim = create_non_jvp_primitive()("cond")
+    # cond_prim = jax.core.Primitive("cond")
     cond_prim.multiple_results = True
 
     @cond_prim.def_impl
