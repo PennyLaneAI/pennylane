@@ -377,6 +377,7 @@
 
 * `qml.transforms.broadcast_expand` no longer squeezes out batch sizes of size 1, as a batch size of 1 is still a
   batch size.
+  [(#6147)](https://github.com/PennyLaneAI/pennylane/pull/6147)
 
 * Catalyst replaced `argnum` with `argnums` in gradient related functions, therefore we update the Catalyst
   calls to those functions in PennyLane.
