@@ -601,13 +601,23 @@ def test_download_partial_no_check_remote(open_hdf5_s3, tmp_path):
 @patch("builtins.open")
 @patch.object(pennylane.data.data_manager, "head", head_mock)
 @pytest.mark.parametrize(
-    "dataset_url, escaped",
+    "dataset_url, escaped, dataset_id",
     [
-        (f"{GRAPHQL_URL}/data/NH3+/data.h5", f"{GRAPHQL_URL}/data/NH3%2B/data.h5"),
-        (f"{GRAPHQL_URL}/data/CA$H/money.h5", f"{GRAPHQL_URL}/data/CA%24H/money.h5"),
+        (
+            f"{GRAPHQL_URL}/data/NH3+/data.h5",
+            f"{GRAPHQL_URL}/data/NH3%2B/data.h5",
+            "h2_sto-3g_0.46",
+        ),
+        (
+            f"{GRAPHQL_URL}/data/CA$H/money.h5",
+            f"{GRAPHQL_URL}/data/CA%24H/money.h5",
+            "h2_sto-3g_0.46",
+        ),
     ],
 )
-def test_download_datasets_escapes_url(_, tmp_path, mock_get_args, dataset_url, escaped):
+def test_download_datasets_escapes_url(
+    _, tmp_path, mock_get_args, dataset_url, escaped, dataset_id
+):
     """Tests that _download_dataset escapes special characters in a URL when doing a full download."""
 
     dest = MagicMock()
@@ -617,6 +627,7 @@ def test_download_datasets_escapes_url(_, tmp_path, mock_get_args, dataset_url, 
         "qchem",
         folder_path=tmp_path,
         dataset_urls=[dataset_url],
+        dataset_ids=[dataset_id],
         attributes=None,
         force=True,
         block_size=1,
@@ -631,13 +642,23 @@ def test_download_datasets_escapes_url(_, tmp_path, mock_get_args, dataset_url, 
 @patch.object(pennylane.data.data_manager, "_get_graphql", graphql_mock)
 @patch("pennylane.data.data_manager._download_partial")
 @pytest.mark.parametrize(
-    "dataset_url, escaped, data_id",
+    "dataset_url, escaped, dataset_id",
     [
-        (f"{GRAPHQL_URL}/data/NH3+/data.h5", f"{GRAPHQL_URL}/data/NH3%2B/data.h5", "h2_sto-3g_0.46.h5"),
-        (f"{GRAPHQL_URL}/data/CA$H/money.h5", f"{GRAPHQL_URL}/data/CA%24H/money.h5", "h2_sto-3g_0.46.h5"),
+        (
+            f"{GRAPHQL_URL}/data/NH3+/data.h5",
+            f"{GRAPHQL_URL}/data/NH3%2B/data.h5",
+            "h2_sto-3g_0.46",
+        ),
+        (
+            f"{GRAPHQL_URL}/data/CA$H/money.h5",
+            f"{GRAPHQL_URL}/data/CA%24H/money.h5",
+            "h2_sto-3g_0.46",
+        ),
     ],
 )
-def test_download_datasets_escapes_url_partial(download_partial, tmp_path, dataset_url, escaped, data_id):
+def test_download_datasets_escapes_url_partial(
+    download_partial, tmp_path, dataset_url, escaped, dataset_id
+):
     """Tests that _download_dataset escapes special characters in a URL when doing a partial
     download."""
     attributes = ["attr"]
@@ -646,11 +667,13 @@ def test_download_datasets_escapes_url_partial(download_partial, tmp_path, datas
     pbar_task = MagicMock()
     pbar.add_task.return_value = pbar_task
     data_name = "data_name"
+    file_name = dataset_id + ".h5"
 
     pennylane.data.data_manager._download_datasets(
         data_name=data_name,
         folder_path=tmp_path,
         dataset_urls=[dataset_url],
+        dataset_ids=[dataset_id],
         attributes=attributes,
         force=force,
         block_size=1,
@@ -660,7 +683,7 @@ def test_download_datasets_escapes_url_partial(download_partial, tmp_path, datas
 
     download_partial.assert_called_once_with(
         f"{escaped}",
-        dest=tmp_path / data_name / data_id,
+        dest=tmp_path / data_name / file_name,
         attributes=attributes,
         overwrite=force,
         block_size=1,

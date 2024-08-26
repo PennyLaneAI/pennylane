@@ -211,6 +211,7 @@ def _download_datasets(  # pylint: disable=too-many-arguments
     data_name: str,
     folder_path: Path,
     dataset_urls: list[str],
+    dataset_ids: list[str],
     attributes: Optional[Iterable[str]],
     force: bool,
     block_size: int,
@@ -231,13 +232,9 @@ def _download_datasets(  # pylint: disable=too-many-arguments
         split_url[2] = urllib.parse.quote(str(split_url[2]))
         safe_urls.append(urllib.parse.urlunsplit(split_url))
 
-
-    # s3_urls = [f"{s3_base_url}/{urllib.parse.quote(str(data_path))}" for data_path in data_paths]
-
-    dataset_ids_and_urls = _get_dataset_urls(data_name, params)
-    file_names = [dataset_id + ".h5" for dataset_id, _ in dataset_ids_and_urls]
+    file_names = [dataset_id + ".h5" for dataset_id in dataset_ids]
     dest_paths = [folder_path / data_name / data_id for data_id in file_names]
-    
+
     for path_parents in set(path.parent for path in dest_paths):
         path_parents.mkdir(parents=True, exist_ok=True)
 
@@ -397,6 +394,7 @@ def load(  # pylint: disable=too-many-arguments
 
     dataset_ids_and_urls = _get_dataset_urls(data_name, params)
     dataset_urls = [dataset_url for _, dataset_url in dataset_ids_and_urls]
+    dataset_ids = [dataset_id for dataset_id, _ in dataset_ids_and_urls]
 
     progress_bar = progress_bar if progress_bar is not None else sys.stdout.isatty()
 
@@ -406,6 +404,7 @@ def load(  # pylint: disable=too-many-arguments
                 data_name,
                 folder_path,
                 dataset_urls,
+                dataset_ids,
                 attributes,
                 force=force,
                 block_size=block_size,
@@ -418,6 +417,7 @@ def load(  # pylint: disable=too-many-arguments
             data_name,
             folder_path,
             dataset_urls,
+            dataset_ids,
             attributes,
             force=force,
             block_size=block_size,
