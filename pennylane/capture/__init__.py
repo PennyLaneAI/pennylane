@@ -141,23 +141,32 @@ from .capture_qnode import qnode_call
 AbstractOperator: type
 AbstractMeasurement: type
 qnode_prim: "jax.core.Primitive"
+PlxprInterpreter: type  # pylint: disable=redefined-outer-name
 
 
+# pylint: disable=import-outside-toplevel, redefined-outer-name
 def __getattr__(key):
     if key == "AbstractOperator":
-        from .primitives import _get_abstract_operator  # pylint: disable=import-outside-toplevel
+        from .primitives import _get_abstract_operator
 
         return _get_abstract_operator()
 
     if key == "AbstractMeasurement":
-        from .primitives import _get_abstract_measurement  # pylint: disable=import-outside-toplevel
+        from .primitives import _get_abstract_measurement
 
         return _get_abstract_measurement()
 
     if key == "qnode_prim":
-        from .capture_qnode import _get_qnode_prim  # pylint: disable=import-outside-toplevel
+        from .capture_qnode import _get_qnode_prim
 
         return _get_qnode_prim()
+
+    if key == "PlxprInterpreter":
+        from .base_interpreter import (
+            PlxprInterpreter,
+        )
+
+        return PlxprInterpreter
 
     raise AttributeError(f"module 'pennylane.capture' has no attribute '{key}'")
 
@@ -176,4 +185,5 @@ __all__ = (
     "AbstractOperator",
     "AbstractMeasurement",
     "qnode_prim",
+    "PlxprInterpreter",
 )
