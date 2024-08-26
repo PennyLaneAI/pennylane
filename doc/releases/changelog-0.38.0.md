@@ -154,14 +154,14 @@
 * Several new operator templates have been added to PennyLane that let you perform quantum arithmetic 
   operations.
 
-  * In-place operations: :math:`\texttt{SomeOp}(k, mod) \vert x \rangle = \vert x * k \texttt{modulo} mod \rangle` 
-    where :math:`*` denotes addition (:math:`+`) or multiplication :math:(`\times`). Each of the following 
+  * In-place operations: :math:`\texttt{SomeOp}(k, mod) \vert x \rangle = \vert x * k \texttt{ modulo } mod \rangle` 
+    where :math:`*` denotes addition (:math:`+`) or multiplication (:math:`\times`). Each of the following 
     operations has the same call signature: `SomeOp(k, x_wires, mod, work_wires=None)`, where `x_wires` 
     denotes the wires we operate on, :math:`\texttt{mod} = 2^{\texttt{len(x_wires)}}` by default, and
     `work_wires` are auxiliary wires that may be required to perform the operation.
   
     * `qml.Adder` performs in-place modular addition: 
-      :math:`\texttt{Adder}(k, mod)\vert x \rangle = \vert x + k \texttt{modulo} mod \rangle`. 
+      :math:`\texttt{Adder}(k, mod)\vert x \rangle = \vert x + k \texttt{ modulo } mod \rangle`. 
       [(#6109)](https://github.com/PennyLaneAI/pennylane/pull/6109)
 
       ```python
@@ -216,10 +216,10 @@
       ```
 
     * `qml.Multiplier` performs in-place multiplication: 
-      :math:`\texttt{Multiplier}(k, mod)\vert x \rangle = \vert x \times k \texttt{modulo} mod \rangle`.
+      :math:`\texttt{Multiplier}(k, mod)\vert x \rangle = \vert x \times k \texttt{ modulo } mod \rangle`.
       [(#6112)](https://github.com/PennyLaneAI/pennylane/pull/6112)
 
-      Note, the algorithm that underpins `qml.Multiplier` requires `len(work_wires) >= len(x_wires)`.
+      Note, the algorithm that underpins `qml.Multiplier` requires that `len(work_wires) >= len(x_wires)`.
 
       ```python
       dev = qml.device("default.qubit", shots=1)
@@ -242,13 +242,12 @@
     register, unlike the in-place operators above.
 
     * `qml.OutAdder` performs out-place addition:
-      :math:`\texttt{OutAdder}(mod)\vert x \rangle \vert y \rangle \vert b \rangle = \vert x \rangle \vert y \rangle \vert b + x + y \texttt{modulo} mod \rangle`.
+      :math:`\texttt{OutAdder}(mod)\vert x \rangle \vert y \rangle \vert b \rangle = \vert x \rangle \vert y \rangle \vert b + x + y \texttt{ modulo } mod \rangle`.
       [(#6121)](https://github.com/PennyLaneAI/pennylane/pull/6121)
 
-      The call signature of this operator is `qml.OutAdder(x_wires, y_wires, output_wires, mod, work_wires)`, 
-      where `x_wires`, `y_wires`, and `output_wires` are the wires belonging to :math:`\vert x \rangle`, 
-      :math:`\vert y \rangle`, and :math:`\vert b \rangle`, respectively. Here is an example of performing
-      :math:`2 + 3 \texttt{modulo} 2^2 = 5 \texttt{modulo} 4 = 1`.
+      `qml.OutAdder` requires that you specify three different registers: `x_wires`, `y_wires`, and 
+      `output_wires`, belonging to :math:`\vert x \rangle`, :math:`\vert y \rangle`, and :math:`\vert b \rangle`, 
+      respectively. Here is an example of performing :math:`2 + 3 \texttt{ modulo } 2^2 = 5 \texttt{ modulo } 4 = 1`.
 
       ```python
       x = 2
@@ -275,13 +274,12 @@
       ```
 
     * `qml.OutMultiplier` performs modular multiplication: 
-      :math:`\texttt{OutMultiplier}(mod)\vert x \rangle \vert y \rangle \vert b \rangle = \vert x \rangle \vert y \rangle \vert b + x \times y \texttt{modulo} mod \rangle`.
+      :math:`\texttt{OutMultiplier}(mod)\vert x \rangle \vert y \rangle \vert b \rangle = \vert x \rangle \vert y \rangle \vert b + x \times y \texttt{ modulo } mod \rangle`.
       [(#6112)](https://github.com/PennyLaneAI/pennylane/pull/6112)
 
-      The call signature of this operator is `qml.OutMultiplier(x_wires, y_wires, output_wires, mod, work_wires)`, 
-      where `x_wires`, `y_wires`, and `output_wires` are the wires belonging to :math:`\vert x \rangle`, 
-      :math:`\vert y \rangle`, and :math:`\vert b \rangle`, respectively. Using the above code example, 
-      we can perform :math:`2 \times 3 \texttt{modulo} 2^2 = 6 \texttt{modulo} 4 = 2`.
+      `qml.OutMultiplier` requires that you specify three different registers: `x_wires`, `y_wires`, 
+      and `output_wires`, belonging to :math:`\vert x \rangle`, :math:`\vert y \rangle`, and :math:`\vert b \rangle`, 
+      respectively. Using the above code example, we can perform :math:`2 \times 3 \texttt{ modulo } 2^2 = 6 \texttt{ modulo } 4 = 2`.
 
       ```pycon
       >>> circuit(qml.OutMultiplier)
@@ -289,12 +287,12 @@
       ```
 
     * `qml.ModExp` performs modular exponentiation: 
-      :math:`\texttt{ModExp}(base, mod) \vert x \rangle \vert k \rangle = \vert x \rangle \vert k \times base^x \texttt{modulo} mod \rangle`.
+      :math:`\texttt{ModExp}(base, mod) \vert x \rangle \vert k \rangle = \vert x \rangle \vert k \times base^x \texttt{ modulo } mod \rangle`.
       [(#6121)](https://github.com/PennyLaneAI/pennylane/pull/6121)
 
-      The call signature of this operator is `qml.ModExp(x_wires, output_wires, base, mod, work_wires)`, 
-      where `x_wires` and `output_wires` are the wires belonging to :math:`\vert x \rangle` and :math:`\vert k \rangle`, 
-      respectively. Here is an example of performing :math:`1 \times 2^3 \texttt{modulo} 7 = 8 \texttt{modulo} 7 = 1`.
+      `qml.ModExp` requires that you specify two different registers: `x_wires` and `output_wires`, 
+      belonging to :math:`\vert x \rangle` and :math:`\vert k \rangle`, respectively. Here is an example 
+      of performing :math:`1 \times 2^3 \texttt{ modulo } 7 = 8 \texttt{ modulo } 7 = 1`.
 
       ```python
       x, k = 3, 1
@@ -319,11 +317,6 @@
       ```
 
 <h3>Improvements 🛠</h3>
-
-* Counts measurements with `all_outcomes=True` can now be used with jax jitting. Measurements
-  broadcasted across all available wires (`qml.probs()`) can now be used with jit and devices that
-  allow variable numbers of wires (`qml.device('default.qubit')`).
-  [(#6108)](https://github.com/PennyLaneAI/pennylane/pull/6108/)
 
 <h4>Creating spin Hamiltonians</h4>
 
@@ -520,6 +513,11 @@
   [(#5842)](https://github.com/PennyLaneAI/pennylane/pull/5842)s
 
 <h4>Other improvements</h4>
+
+* Counts measurements with `all_outcomes=True` can now be used with jax jitting. Measurements
+  broadcasted across all available wires (`qml.probs()`) can now be used with jit and devices that
+  allow variable numbers of wires (`qml.device('default.qubit')`).
+  [(#6108)](https://github.com/PennyLaneAI/pennylane/pull/6108/)
 
 * Added the decomposition of zyz for special unitaries with multiple control wires.
   [(#6042)](https://github.com/PennyLaneAI/pennylane/pull/6042)
