@@ -23,7 +23,6 @@ from functools import partial
 import pytest
 
 import pennylane as qml
-from pennylane import DeviceError
 from pennylane import numpy as np
 from pennylane.devices.default_qubit_legacy import DefaultQubitLegacy, _get_slice
 from pennylane.pulse import ParametrizedHamiltonian
@@ -93,19 +92,16 @@ def test_analytic_deprecation():
     msg = "The analytic argument has been replaced by shots=None. "
     msg += "Please use shots=None instead of analytic=True."
 
-    with pytest.raises(
-        DeviceError,
-        match=msg,
-    ):
+    with pytest.raises(qml.DeviceError, match=msg):
         qml.device("default.qubit.legacy", wires=1, shots=1, analytic=True)
 
 
 def test_dtype_errors():
     """Test that if an incorrect dtype is provided to the device then an error is raised."""
-    with pytest.raises(DeviceError, match="Real datatype must be a floating point type."):
+    with pytest.raises(qml.DeviceError, match="Real datatype must be a floating point type."):
         qml.device("default.qubit.legacy", wires=1, r_dtype=np.complex128)
     with pytest.raises(
-        DeviceError, match="Complex datatype must be a complex floating point type."
+        qml.DeviceError, match="Complex datatype must be a complex floating point type."
     ):
         qml.device("default.qubit.legacy", wires=1, c_dtype=np.float64)
 
@@ -161,7 +157,9 @@ class TestApply:
         """Tests that applying an operation yields the expected output state for single wire
         operations that have no parameters."""
 
-        qubit_device_1_wire._state = np.array(input, dtype=qubit_device_1_wire.C_DTYPE)
+        qubit_device_1_wire.target_device._state = np.array(
+            input, dtype=qubit_device_1_wire.C_DTYPE
+        )
         qubit_device_1_wire.apply([operation(wires=[0])])
 
         assert np.allclose(qubit_device_1_wire._state, np.array(expected_output), atol=tol, rtol=0)
@@ -232,9 +230,9 @@ class TestApply:
         """Tests that applying an operation yields the expected output state for two wire
         operations that have no parameters."""
 
-        qubit_device_2_wires._state = np.array(input, dtype=qubit_device_2_wires.C_DTYPE).reshape(
-            (2, 2)
-        )
+        qubit_device_2_wires.target_device._state = np.array(
+            input, dtype=qubit_device_2_wires.C_DTYPE
+        ).reshape((2, 2))
         qubit_device_2_wires.apply([operation(wires=[0, 1])])
 
         assert np.allclose(
@@ -255,9 +253,9 @@ class TestApply:
         """Tests that applying an operation yields the expected output state for three wire
         operations that have no parameters."""
 
-        qubit_device_3_wires._state = np.array(input, dtype=qubit_device_3_wires.C_DTYPE).reshape(
-            (2, 2, 2)
-        )
+        qubit_device_3_wires.target_device._state = np.array(
+            input, dtype=qubit_device_3_wires.C_DTYPE
+        ).reshape((2, 2, 2))
         qubit_device_3_wires.apply([operation(wires=[0, 1, 2])])
 
         assert np.allclose(
@@ -429,7 +427,9 @@ class TestApply:
         """Tests that applying an operation yields the expected output state for single wire
         operations that have parameters."""
 
-        qubit_device_1_wire._state = np.array(input, dtype=qubit_device_1_wire.C_DTYPE)
+        qubit_device_1_wire.target_device._state = np.array(
+            input, dtype=qubit_device_1_wire.C_DTYPE
+        )
 
         qubit_device_1_wire.apply([operation(*par, wires=[0])])
 
@@ -603,9 +603,9 @@ class TestApply:
         """Tests that applying an operation yields the expected output state for two wire
         operations that have parameters."""
 
-        qubit_device_2_wires._state = np.array(input, dtype=qubit_device_2_wires.C_DTYPE).reshape(
-            (2, 2)
-        )
+        qubit_device_2_wires.target_device._state = np.array(
+            input, dtype=qubit_device_2_wires.C_DTYPE
+        ).reshape((2, 2))
         qubit_device_2_wires.apply([operation(*par, wires=[0, 1])])
 
         assert np.allclose(
@@ -621,7 +621,9 @@ class TestApply:
         """Tests that applying an operation yields the expected output state for single wire
         operations that have parameters."""
 
-        qubit_device_3_wires._state = np.array(input_state, dtype=qubit_device_3_wires.C_DTYPE)
+        qubit_device_3_wires.target_device._state = np.array(
+            input_state, dtype=qubit_device_3_wires.C_DTYPE
+        )
         phase = 0.234
 
         qubit_device_3_wires.apply([qml.GlobalPhase(phase, wires=wire)])
@@ -632,15 +634,15 @@ class TestApply:
 
     def test_apply_errors_qubit_state_vector(self, qubit_device_2_wires):
         """Test that apply fails for incorrect state preparation, and > 2 qubit gates"""
-        with pytest.raises(ValueError, match="Sum of amplitudes-squared does not equal one."):
+        with pytest.raises(ValueError, match="The state must be a vector of norm 1.0"):
             qubit_device_2_wires.apply([qml.StatePrep(np.array([1, -1]), wires=[0])])
 
-        with pytest.raises(ValueError, match=r"State vector must have shape \(2\*\*wires,\)."):
+        with pytest.raises(ValueError, match=r"State must be of length 4"):
             p = np.array([1, 0, 1, 1, 0]) / np.sqrt(3)
             qubit_device_2_wires.apply([qml.StatePrep(p, wires=[0, 1])])
 
         with pytest.raises(
-            DeviceError,
+            qml.DeviceError,
             match="Operation StatePrep cannot be used after other Operations have already been applied "
             "on a default.qubit.legacy device.",
         ):
@@ -650,18 +652,19 @@ class TestApply:
             )
 
     def test_apply_errors_basis_state(self, qubit_device_2_wires):
+
         with pytest.raises(
-            ValueError, match="BasisState parameter must consist of 0 or 1 integers."
+            ValueError, match=r"Basis state must only consist of 0s and 1s; got \[-0\.2, 4\.2\]"
         ):
             qubit_device_2_wires.apply([qml.BasisState(np.array([-0.2, 4.2]), wires=[0, 1])])
 
         with pytest.raises(
-            ValueError, match="BasisState parameter and wires must be of equal length."
+            ValueError, match=r"State must be of length 1; got length 2 \(state=\[0 1\]\)\."
         ):
             qubit_device_2_wires.apply([qml.BasisState(np.array([0, 1]), wires=[0])])
 
         with pytest.raises(
-            DeviceError,
+            qml.DeviceError,
             match="Operation BasisState cannot be used after other Operations have already been applied "
             "on a default.qubit.legacy device.",
         ):
@@ -946,23 +949,23 @@ class TestSample:
 
         dev.apply([qml.RX(1.5708, wires=[0]), qml.RX(1.5708, wires=[1])])
 
-        dev.shots = 10
-        dev._wires_measured = {0}
-        dev._samples = dev.generate_samples()
+        dev.target_device.shots = 10
+        dev.target_device._wires_measured = {0}
+        dev.target_device._samples = dev.generate_samples()
         s1 = dev.sample(qml.PauliZ(wires=[0]))
         assert np.array_equal(s1.shape, (10,))
 
         dev.reset()
-        dev.shots = 12
-        dev._wires_measured = {1}
-        dev._samples = dev.generate_samples()
+        dev.target_device.shots = 12
+        dev.target_device._wires_measured = {1}
+        dev.target_device._samples = dev.generate_samples()
         s2 = dev.sample(qml.PauliZ(wires=[1]))
         assert np.array_equal(s2.shape, (12,))
 
         dev.reset()
-        dev.shots = 17
-        dev._wires_measured = {0, 1}
-        dev._samples = dev.generate_samples()
+        dev.target_device.shots = 17
+        dev.target_device._wires_measured = {0, 1}
+        dev.target_device._samples = dev.generate_samples()
         s3 = dev.sample(qml.PauliX(0) @ qml.PauliZ(1))
         assert np.array_equal(s3.shape, (17,))
 
@@ -977,8 +980,8 @@ class TestSample:
         dev = qml.device("default.qubit.legacy", wires=2, shots=1000)
 
         dev.apply([qml.RX(1.5708, wires=[0])])
-        dev._wires_measured = {0}
-        dev._samples = dev.generate_samples()
+        dev.target_device._wires_measured = {0}
+        dev.target_device._samples = dev.generate_samples()
 
         s1 = dev.sample(qml.PauliZ(0))
 
@@ -1021,7 +1024,7 @@ class TestDefaultQubitLegacyIntegration:
         p = 0.543
 
         dev = qubit_device_1_wire
-        dev.R_DTYPE = r_dtype
+        dev.target_device.R_DTYPE = r_dtype
 
         @qml.qnode(dev, diff_method="parameter-shift")
         def circuit(x):
@@ -1584,8 +1587,8 @@ class TestTensorSample:
             obs.diagonalizing_gates(),
         )
 
-        dev._wires_measured = {0, 1, 2}
-        dev._samples = dev.generate_samples()
+        dev.target_device._wires_measured = {0, 1, 2}
+        dev.target_device._samples = dev.generate_samples()
         dev.sample(obs)
 
         s1 = obs.eigvals()
@@ -1624,8 +1627,8 @@ class TestTensorSample:
             obs.diagonalizing_gates(),
         )
 
-        dev._wires_measured = {0, 1, 2}
-        dev._samples = dev.generate_samples()
+        dev.target_device._wires_measured = {0, 1, 2}
+        dev.target_device._samples = dev.generate_samples()
         dev.sample(obs)
 
         s1 = obs.eigvals()
@@ -1672,8 +1675,8 @@ class TestTensorSample:
             obs.diagonalizing_gates(),
         )
 
-        dev._wires_measured = {0, 1, 2}
-        dev._samples = dev.generate_samples()
+        dev.target_device._wires_measured = {0, 1, 2}
+        dev.target_device._samples = dev.generate_samples()
         dev.sample(obs)
 
         s1 = obs.eigvals()
@@ -1857,7 +1860,7 @@ class TestProbabilityIntegration:
         self.analytic_counter = False
 
         dev = qml.device("default.qubit.legacy", wires=2, shots=1000)
-        monkeypatch.setattr(dev, "analytic_probability", self.mock_analytic_counter)
+        monkeypatch.setattr(dev.target_device, "analytic_probability", self.mock_analytic_counter)
 
         # generate samples through `generate_samples` (using 'analytic_probability')
         dev.generate_samples()
@@ -1868,7 +1871,7 @@ class TestProbabilityIntegration:
     def test_stateless_analytic_return(self):
         """Test that analytic_probability returns None if device is stateless"""
         dev = qml.device("default.qubit.legacy", wires=2)
-        dev._state = None
+        dev.target_device._state = None
 
         assert dev.analytic_probability() is None
 
@@ -2101,15 +2104,15 @@ class TestApplyOps:
             return qml.expval(qml.PauliZ(0))
 
         with pytest.raises(
-            DeviceError,
-            match="Gate ParametrizedEvolution not supported on device default.qubit.autograd",
+            qml.DeviceError,
+            match="Gate ParametrizedEvolution not supported on device default.qubit.",
         ):
             circuit()
 
         self.dev.operations.add("ParametrizedEvolution")
         with pytest.raises(
             NotImplementedError,
-            match="The device default.qubit.autograd cannot execute a ParametrizedEvolution operation",
+            match="The device default.qubit.legacy cannot execute a ParametrizedEvolution operation",
         ):
             circuit()
 
@@ -2163,7 +2166,7 @@ class TestApplyOperationUnit:
 
         with monkeypatch.context() as m:
             # Set the internal ops implementations dict
-            m.setattr(dev, "_apply_ops", {"PauliX": supported_gate_application})
+            m.setattr(dev.target_device, "_apply_ops", {"PauliX": supported_gate_application})
 
             test_state = np.array([1, 0])
             op = qml.PauliX(0)
@@ -2186,7 +2189,7 @@ class TestApplyOperationUnit:
         history = []
         mock_apply_diag = lambda state, matrix, wires: history.append((state, matrix, wires))
         with monkeypatch.context() as m:
-            m.setattr(dev, "_apply_diagonal_unitary", mock_apply_diag)
+            m.setattr(dev.target_device, "_apply_diagonal_unitary", mock_apply_diag)
             assert dev._apply_diagonal_unitary == mock_apply_diag
 
             dev._apply_operation(test_state, op)
@@ -2225,7 +2228,7 @@ class TestApplyOperationUnit:
         history = []
         mock_apply_einsum = lambda state, matrix, wires: history.append((state, matrix, wires))
         with monkeypatch.context() as m:
-            m.setattr(dev, "_apply_unitary_einsum", mock_apply_einsum)
+            m.setattr(dev.target_device, "_apply_unitary_einsum", mock_apply_einsum)
 
             dev._apply_operation(test_state, op)
 
@@ -2264,7 +2267,7 @@ class TestApplyOperationUnit:
         mock_apply_tensordot = lambda state, matrix, wires: history.append((state, matrix, wires))
 
         with monkeypatch.context() as m:
-            m.setattr(dev, "_apply_unitary", mock_apply_tensordot)
+            m.setattr(dev.target_device, "_apply_unitary", mock_apply_tensordot)
 
             dev._apply_operation(test_state, op)
 
@@ -2303,9 +2306,9 @@ class TestApplyOperationUnit:
         starting_state = np.array([1, 0])
         op = qml.Identity(0)
 
-        spy_diagonal = mocker.spy(dev, "_apply_diagonal_unitary")
-        spy_einsum = mocker.spy(dev, "_apply_unitary_einsum")
-        spy_unitary = mocker.spy(dev, "_apply_unitary")
+        spy_diagonal = mocker.spy(dev.target_device, "_apply_diagonal_unitary")
+        spy_einsum = mocker.spy(dev.target_device, "_apply_unitary_einsum")
+        spy_unitary = mocker.spy(dev.target_device, "_apply_unitary")
 
         res = dev._apply_operation(starting_state, op)
         assert res is starting_state
@@ -2327,7 +2330,7 @@ class TestHamiltonianSupport:
         def circuit():
             return qml.expval(H)
 
-        spy = mocker.spy(dev, "expval")
+        spy = mocker.spy(dev.target_device, "expval")
 
         circuit()
         # evaluated one expval altogether
@@ -2336,7 +2339,7 @@ class TestHamiltonianSupport:
     def test_split_finite_shots(self, mocker):
         """Tests that the Hamiltonian is split for finite shots."""
         dev = qml.device("default.qubit.legacy", wires=2, shots=10)
-        spy = mocker.spy(dev, "expval")
+        spy = mocker.spy(dev.target_device, "expval")
 
         H = qml.Hamiltonian(np.array([0.1, 0.2]), [qml.PauliX(0), qml.PauliZ(1)])
 

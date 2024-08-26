@@ -19,7 +19,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as pnp
-from pennylane.tape import QuantumTapeBatch
+from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.typing import PostprocessingFn
 
 with pytest.warns(qml.PennyLaneDeprecationWarning):
@@ -320,10 +320,8 @@ class TestSpecsTransform:
         """Test that a custom gradient transform is properly labelled"""
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.transforms.core.transform
-        def my_transform(
-            tape: qml.tape.QuantumTape,
-        ) -> tuple[QuantumTapeBatch, PostprocessingFn]:
+        @qml.transform
+        def my_transform(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
             return tape, None
 
         @qml.qnode(dev, diff_method=my_transform)
