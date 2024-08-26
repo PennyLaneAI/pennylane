@@ -139,30 +139,9 @@ def diagonalize_measurements(tape, supported_base_obs=_default_supported_obs, to
         )
 
     else:
-        # ToDo: separate this out and make it a separate function returning diagonalizing_gates and new measurements
-
-        # ToDo: make this also work with either eigvals or diagonalizing gates, if it takes less than 20 minutes
-        #  otherwise raise ValueError if to_eigvals in this part
-
-        # ToDo: tests
-        supported_base_obs = set(list(supported_base_obs) + [qml.Z, qml.Identity])
-
-        _visited_obs = (set(), set())  # tracks which observables and wires have been diagonalized
-        diagonalizing_gates = []
-        new_measurements = []
-
-        for m in tape.measurements:
-            if m.obs:
-                gates, new_obs, _visited_obs = _diagonalize_observable(
-                    m.obs, _visited_obs, supported_base_obs
-                )
-                diagonalizing_gates.extend(gates)
-
-                meas = copy(m)
-                meas.obs = new_obs
-                new_measurements.append(meas)
-            else:
-                new_measurements.append(m)
+        diagonalizing_gates, new_measurements = diagonalize_subset_of_pauli_obs(
+            tape, supported_base_obs, to_eigvals=to_eigvals
+        )
 
     new_operations = tape.operations + diagonalizing_gates
 
@@ -184,6 +163,7 @@ def diagonalize_all_pauli_obs(tape, to_eigvals=False):
         tape: the observable to be diagonalized
         to_eigvals: whether the diagonalization should create measurements using
         eigvals and wires rather than observables
+
     Returns:
         diagonalizing_gates: A list of operations to be applied to diagonalize the observable
         new_measurements: the relevant measurement to perform after applying diagonalzing_gates to get the
@@ -201,6 +181,51 @@ def diagonalize_all_pauli_obs(tape, to_eigvals=False):
                 gates, new_obs = _change_obs_to_Z(m.obs)
                 new_meas = type(m)(new_obs)
             diagonalizing_gates.extend(gates)
+            new_measurements.append(new_meas)
+        else:
+            new_measurements.append(m)
+
+    return diagonalizing_gates, new_measurements
+
+
+def diagonalize_subset_of_pauli_obs(tape, supported_base_obs, to_eigvals=False):
+    """Takes a tape and changes a subset of observables to the measurement basis. Assumes all
+    measurements on the tape are qwc.
+
+    Args:
+        tape: the observable to be diagonalized
+        supported_base_obs:
+        to_eigvals: whether the diagonalization should create measurements using
+        eigvals and wires rather than observables
+
+    Returns:
+        diagonalizing_gates: A list of operations to be applied to diagonalize the observable
+        new_measurements: the relevant measurement to perform after applying diagonalzing_gates to get the
+            correct measurement output
+
+    Raises:
+
+    """
+
+    # ToDo: make this also work with either eigvals or diagonalizing gates, if it takes less than 20 minutes
+    #  otherwise raise ValueError if to_eigvals in this part
+
+    supported_base_obs = set(list(supported_base_obs) + [qml.Z, qml.Identity])
+
+    _visited_obs = (set(), set())  # tracks which observables and wires have been diagonalized
+    diagonalizing_gates = []
+    new_measurements = []
+
+    for m in tape.measurements:
+        if m.obs:
+            gates, new_obs, _visited_obs = _diagonalize_observable(
+                m.obs, _visited_obs, supported_base_obs
+            )
+            diagonalizing_gates.extend(gates)
+            if to_eigvals:
+                new_meas = type(m)(eigvals=m.eigvals(), wires=m.wires)
+            else:
+                new_meas = type(m)(new_obs)
             new_measurements.append(new_meas)
         else:
             new_measurements.append(m)
