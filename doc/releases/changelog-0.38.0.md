@@ -151,14 +151,172 @@
 
 <h4>Quantum arithmetic operations 🧮</h4>
 
-* The `qml.Adder` and `qml.PhaseAdder` templates are added to perform in-place modular addition.
-  [(#6109)](https://github.com/PennyLaneAI/pennylane/pull/6109)
+* Several new operator templates have been added to PennyLane that let you perform quantum arithmetic 
+  operations.
 
-* The `qml.Multiplier` and `qml.OutMultiplier` templates are added to perform modular multiplication.
-  [(#6112)](https://github.com/PennyLaneAI/pennylane/pull/6112)
+  * In-place operations: :math:`\texttt{SomeOp}(k, mod) \vert x \rangle = \vert x * k \texttt{modulo} mod \rangle` 
+    where :math:`*` denotes addition (:math:`+`) or multiplication :math:(`\times`). Each of the following 
+    operations has the same call signature: `SomeOp(k, x_wires, mod, work_wires=None)`, where `x_wires` 
+    denotes the wires we operate on, :math:`\texttt{mod} = 2^{\texttt{len(x_wires)}}` by default, and
+    `work_wires` are auxiliary wires that may be required to perform the operation.
+  
+    * `qml.Adder` performs in-place modular addition: 
+      :math:`\texttt{Adder}(k, mod)\vert x \rangle = \vert x + k \texttt{modulo} mod \rangle`. 
+      [(#6109)](https://github.com/PennyLaneAI/pennylane/pull/6109)
 
-* The `qml.OutAdder` and `qml.ModExp` templates are added to perform out-of-place modular addition and modular exponentiation.
-  [(#6121)](https://github.com/PennyLaneAI/pennylane/pull/6121)
+      ```python
+      dev = qml.device("default.qubit", shots=1)
+
+      @qml.qnode(dev)
+      def circuit():
+          qml.X(0) # |2> = |10> state
+          qml.Adder(1, x_wires = [0, 1])
+          # add 1 
+          # 2 + 1 = 3, or |11> 
+          return qml.sample(wires=[0, 1])
+      ```
+
+      ```pycon
+      >>> circuit()
+      tensor([1, 1], requires_grad=True)
+      ```
+
+    * `qml.PhaseAdder` is similar to `qml.Adder`, but it performs in-place modular addition in the Fourier 
+      basis. 
+      [(#6109)](https://github.com/PennyLaneAI/pennylane/pull/6109)
+
+      ```python
+      x = 2
+      k = 3
+      mod = 4
+
+      x_wires = [0, 1]
+
+      dev = qml.device("default.qubit", shots=1)
+
+      @qml.qnode(dev)
+      def circuit():
+          # init state = |10>
+          qml.BasisEmbedding(x, wires=x_wires)
+          # transform into Fourier basis
+          qml.QFT(wires=x_wires)
+          # Perform addition
+          # x + k = 2 + 3 = 5
+          # 5 mod 4 = 1, or |01>
+          qml.PhaseAdder(k, x_wires, mod = mod)
+          # transform out of Fourier basis
+          qml.adjoint(qml.QFT)(wires=x_wires)
+          
+          return qml.sample(wires=x_wires)
+      ```
+
+      ```pycon
+      >>> circuit()
+      array([0, 1])
+      ```
+
+    * `qml.Multiplier` performs in-place multiplication: 
+      :math:`\texttt{Multiplier}(k, mod)\vert x \rangle = \vert x \times k \texttt{modulo} mod \rangle`.
+      [(#6112)](https://github.com/PennyLaneAI/pennylane/pull/6112)
+
+      Note, the algorithm that underpins `qml.Multiplier` requires `len(work_wires) >= len(x_wires)`.
+
+      ```python
+      dev = qml.device("default.qubit", shots=1)
+
+      @qml.qnode(dev)
+      def circuit():
+          qml.X(1) # |1> = |01> state
+          qml.Multiplier(3, x_wires = [0, 1], work_wires=[2, 3])
+          # multiply by 3 
+          # 1 times 3 = 3, or |11> 
+          return qml.sample(wires=[0, 1])
+      ```
+
+      ```pycon
+      >>> circuit()
+      tensor([1, 1], requires_grad=True)
+      ```
+
+  * Out-place operators that act on more than one register of wires and store the result in a different 
+    register, unlike the in-place operators above.
+
+    * `qml.OutAdder` performs out-place addition:
+      :math:`\texttt{OutAdder}(mod)\vert x \rangle \vert y \rangle \vert b \rangle = \vert x \rangle \vert y \rangle \vert b + x + y \texttt{modulo} mod \rangle`.
+      [(#6121)](https://github.com/PennyLaneAI/pennylane/pull/6121)
+
+      The call signature of this operator is `qml.OutAdder(x_wires, y_wires, output_wires, mod, work_wires)`, 
+      where `x_wires`, `y_wires`, and `output_wires` are the wires belonging to :math:`\vert x \rangle`, 
+      :math:`\vert y \rangle`, and :math:`\vert b \rangle`, respectively. Here is an example of performing
+      :math:`2 + 3 \texttt{modulo} 2^2 = 5 \texttt{modulo} 4 = 1`.
+
+      ```python
+      x = 2
+      y = 3
+      mod = 2**x
+
+      x_wires = [0, 1] # belongs to |x>
+      y_wires = [2, 3] # belongs to |y>
+      output_wires = [4, 5, 6] # belong to |b>
+      work_wires = [7, 8]
+
+      dev = qml.device("default.qubit", shots=1)
+      @qml.qnode(dev)
+      def circuit(op):
+          qml.BasisEmbedding(x, wires=x_wires)
+          qml.BasisEmbedding(y, wires=y_wires)
+          op(x_wires, y_wires, output_wires, mod, work_wires)
+          return qml.sample(wires=output_wires)
+      ```
+
+      ```pycon
+      >>> circuit(qml.OutAdder)
+      array([0, 0, 1])
+      ```
+
+    * `qml.OutMultiplier` performs modular multiplication: 
+      :math:`\texttt{OutMultiplier}(mod)\vert x \rangle \vert y \rangle \vert b \rangle = \vert x \rangle \vert y \rangle \vert b + x \times y \texttt{modulo} mod \rangle`.
+      [(#6112)](https://github.com/PennyLaneAI/pennylane/pull/6112)
+
+      The call signature of this operator is `qml.OutMultiplier(x_wires, y_wires, output_wires, mod, work_wires)`, 
+      where `x_wires`, `y_wires`, and `output_wires` are the wires belonging to :math:`\vert x \rangle`, 
+      :math:`\vert y \rangle`, and :math:`\vert b \rangle`, respectively. Using the above code example, 
+      we can perform :math:`2 \times 3 \texttt{modulo} 2^2 = 6 \texttt{modulo} 4 = 2`.
+
+      ```pycon
+      >>> circuit(qml.OutMultiplier)
+      array([0, 1, 0])
+      ```
+
+    * `qml.ModExp` performs modular exponentiation: 
+      :math:`\texttt{ModExp}(base, mod) \vert x \rangle \vert k \rangle = \vert x \rangle \vert k \times base^x \texttt{modulo} mod \rangle`.
+      [(#6121)](https://github.com/PennyLaneAI/pennylane/pull/6121)
+
+      The call signature of this operator is `qml.ModExp(x_wires, output_wires, base, mod, work_wires)`, 
+      where `x_wires` and `output_wires` are the wires belonging to :math:`\vert x \rangle` and :math:`\vert k \rangle`, 
+      respectively. Here is an example of performing :math:`1 \times 2^3 \texttt{modulo} 7 = 8 \texttt{modulo} 7 = 1`.
+
+      ```python
+      x, k = 3, 1
+      base = 2
+      mod = 7
+      x_wires = [0, 1]
+      output_wires = [2, 3, 4]
+      work_wires = [5, 6, 7, 8, 9]
+
+      dev = qml.device("default.qubit", shots=1)
+      @qml.qnode(dev)
+      def circuit():
+          qml.BasisEmbedding(x, wires = x_wires)
+          qml.BasisEmbedding(k, wires = output_wires)
+          qml.ModExp(x_wires, output_wires, base, mod, work_wires)
+          return qml.sample(wires = output_wires)
+      ```
+
+      ```pycon
+      >>> circuit()
+      array([0, 0, 1])
+      ```
 
 <h3>Improvements 🛠</h3>
 
