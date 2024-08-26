@@ -65,7 +65,7 @@ class BasisStatePreparation(Operation):
     def __init__(self, basis_state, wires, id=None):
 
         warnings.warn(
-            "BasisStatePreparation is deprecated and will be removed in version 0.39. "
+            "BasisStatePreparation is deprecated and will be removed in version 0.40. "
             "Instead, please use BasisState.",
             qml.PennyLaneDeprecationWarning,
         )
