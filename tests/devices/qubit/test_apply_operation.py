@@ -1282,9 +1282,9 @@ class TestConditionalsAndMidMeasure:
 
     @pytest.mark.parametrize("ml_framework", ml_frameworks_list)
     @pytest.mark.parametrize("batched", (False, True))
-    @pytest.mark.parametrize("measure", (0, 1))
+    @pytest.mark.parametrize("unitary", (qml.CRX, qml.CRZ))
     @pytest.mark.parametrize("wires", ([0, 1], [1, 0]))
-    def test_conditional(self, wires, measure, batched, ml_framework):
+    def test_conditional(self, wires, unitary, batched, ml_framework):
         """Test the application of a Conditional on an arbitrary state."""
 
         n_states = int(batched) + 1
@@ -1305,7 +1305,6 @@ class TestConditionalsAndMidMeasure:
             ][:n_states]
         )
 
-        unitary = qml.CRX if measure else qml.CRZ
         rotated_state = qml.math.dot(
             initial_state, qml.matrix(unitary(-0.238, wires), wire_order=[0, 1]).T
         )
@@ -1329,26 +1328,30 @@ class TestConditionalsAndMidMeasure:
             qml.math.squeeze(initial_state), qml.math.reshape(new_state, (n_states, 4))
         )
 
-    @pytest.mark.parametrize("m_res", ([0, 0], [0, 1], [1, 0], [1, 1]))
-    def test_mid_measure(self, m_res):
+    @pytest.mark.parametrize("rng_seed, m_res", ((12, (0, 0)), (42, (1, 1))))
+    def test_mid_measure(self, rng_seed, m_res):
         """Test the application of a MidMeasureMP on a basis state."""
 
-        zo_state = np.array([[1.0, 0.0], [0.0, 1.0]])
-        initial_state = np.kron(zo_state[m_res[0]], zo_state[m_res[1]]).reshape(2, 2)
+        initial_state = np.array(
+            [
+                [0.09068964 + 0.36775595j, 0.37578343 + 0.4786927j],
+                [0.3537292 + 0.27214766j, 0.01928256 + 0.53536021j],
+            ]
+        )
 
-        end_state = np.zeros((4, 4))
-        end_state[2 * m_res[0] + m_res[1], 2 * m_res[0] + m_res[1]] = 1.0
+        mid_state, end_state = np.zeros((2, 2), dtype=complex), np.zeros((2, 2), dtype=complex)
+        mid_state[m_res[0]] = initial_state[m_res[0]] / np.linalg.norm(initial_state[m_res[0]])
+        end_state[m_res] = mid_state[m_res] / np.abs(mid_state[m_res])
 
+        rng = np.random.default_rng(rng_seed)
         m0, m1 = qml.measure(0).measurements[0], qml.measure(1).measurements[0]
         mid_meas = {m0: m_res[0], m1: m_res[1]}
 
-        new_state = apply_operation(m0, initial_state, mid_measurements=mid_meas)
-        res_state = qml.math.reshape(new_state, 4)
-        assert qml.math.allclose(end_state, qml.math.outer(res_state, res_state))
+        res_state = apply_operation(m0, initial_state, mid_measurements=mid_meas, rng=rng)
+        assert qml.math.allclose(mid_state, res_state)
 
-        new_state = apply_operation(m1, new_state, mid_measurements=mid_meas)
-        res_state = qml.math.reshape(new_state, 4)
-        assert qml.math.allclose(end_state, qml.math.outer(res_state, res_state))
+        res_state = apply_operation(m1, res_state, mid_measurements=mid_meas, rng=rng)
+        assert qml.math.allclose(end_state, res_state)
 
     @pytest.mark.parametrize("reset", (False, True))
     @pytest.mark.parametrize("m_res", ([0, 0], [0, 1], [1, 0], [1, 1]))
