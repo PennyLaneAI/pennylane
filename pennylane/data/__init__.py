@@ -207,11 +207,11 @@ from .attributes import (
     DatasetMolecule,
     DatasetNone,
     DatasetOperator,
+    DatasetPyTree,
     DatasetScalar,
     DatasetSparseArray,
     DatasetString,
     DatasetTuple,
-    DatasetPyTree,
 )
 from .base import DatasetNotWriteableError
 from .base.attribute import AttributeInfo, DatasetAttribute, attribute
