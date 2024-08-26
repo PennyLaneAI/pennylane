@@ -118,7 +118,7 @@ class Lattice:
     def _identify_neighbours(self, cutoff):
         r"""Identifies the connections between lattice points and returns the unique connections
         based on the neighbour_order. This function uses KDTree to identify neighbours, which
-        follows depth first search traversal."""
+        follows depth-first search traversal."""
 
         tree = KDTree(self.lattice_points)
         indices = tree.query_ball_tree(tree, cutoff)
@@ -316,7 +316,7 @@ def _kagome(n_cells, boundary_condition=False, neighbour_order=1):
 
 # TODO Check the efficiency of this function with a dictionary instead.
 def _generate_lattice(lattice, n_cells, boundary_condition=False, neighbour_order=1):
-    r"""Generates the lattice object for given shape and n_cells.
+    r"""Generates the lattice object for a given shape and n_cells.
 
     Args:
         lattice (str): Shape of the lattice. Input Values can be ``'chain'``, ``'square'``, ``'rectangle'``, ``'honeycomb'``, ``'triangle'``, or ``'kagome'``.
@@ -325,7 +325,7 @@ def _generate_lattice(lattice, n_cells, boundary_condition=False, neighbour_orde
         neighbour_order (int): Specifies the interaction level for neighbors within the lattice. Default is 1 (nearest neighbour).
 
     Returns:
-        lattice object
+        lattice object.
     """
 
     lattice_shape = lattice.strip().lower()
