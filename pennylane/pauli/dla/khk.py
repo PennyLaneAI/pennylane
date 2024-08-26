@@ -300,10 +300,10 @@ def compute_csa_new(g, m, ad, which=0, tol=1e-14, verbose=0):
             # obtain adjoint rep of candidate h_i
             adjoint_of_h_i = np.einsum("gab,a->gb", ad, h_i)
             # compute kernel of adjoint
-            new_kernel = null_space(adjoint_of_h_i)
+            new_kernel = null_space(adjoint_of_h_i, rcond=tol)
 
             # intersect kernel to stay in m
-            kernel_intersection = _intersect_bases(kernel_intersection, new_kernel)
+            kernel_intersection = _intersect_bases(kernel_intersection, new_kernel, rcond=tol)
 
         if kernel_intersection.shape[1] == len(np_h):
             # No new vector was added from all the kernels
