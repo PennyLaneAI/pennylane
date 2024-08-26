@@ -1330,7 +1330,7 @@ class TestConditionalsAndMidMeasure:
 
     @pytest.mark.parametrize("rng_seed, m_res", ((12, (0, 0)), (42, (1, 1))))
     def test_mid_measure(self, rng_seed, m_res):
-        """Test the application of a MidMeasureMP on a basis state."""
+        """Test the application of a MidMeasureMP on an arbitrary state to give a basis state."""
 
         initial_state = np.array(
             [
