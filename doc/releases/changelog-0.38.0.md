@@ -375,6 +375,8 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixes an error in the `dynamic_one_shot` transform when used with sampling a single shot.
+
 * Catalyst replaced `argnum` with `argnums` in gradient related functions, therefore we update the Catalyst
   calls to those functions in PennyLane.
   [(#6117)](https://github.com/PennyLaneAI/pennylane/pull/6117)
