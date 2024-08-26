@@ -34,6 +34,7 @@ make_vjp = unary_to_nary(_make_vjp)
 def _capture_diff(func, argnum=None, diff_prim=None):
     """Capture-compatible gradient computation."""
     import jax  # pylint: disable=import-outside-toplevel
+    from jax.tree_util import tree_flatten, tree_unflatten, treedef_tuple
 
     if isinstance(argnum, int):
         argnum = [argnum]
@@ -42,16 +43,20 @@ def _capture_diff(func, argnum=None, diff_prim=None):
 
     @wraps(func)
     def new_func(*args, **kwargs):
-        _, trainable_in_tree = jax.tree_util.tree_flatten(tuple(args[i] for i in argnum))
-        flat_args, in_tree = jax.tree_util.tree_flatten(args)
-        partial_fn = partial(func, **kwargs) if kwargs else func
-        flat_fn = FlatFn(partial_fn, in_tree)
+        flat_args, in_tree = tree_flatten(args)
+        # Create a new input tree that only takes inputs marked by argnum into account
+        subtrees = (subtree for i, subtree in enumerate(in_tree.children()) if i in arnum)
+        trainable_in_tree = treedef_tuple(subtrees)
+        # Create fully flattened function (flat inputs & outputs)
+        flat_fn = FlatFn(partial(func, **kwargs) if kwargs else func, in_tree)
         jaxpr = jax.make_jaxpr(flat_fn)(*flat_args)
         prim_kwargs = {"argnum": argnum, "jaxpr": jaxpr.jaxpr, "n_consts": len(jaxpr.consts)}
         out_flat = diff_prim.bind(*jaxpr.consts, *flat_args, **prim_kwargs)
         assert flat_fn.out_tree is not None, "out_tree should be set after executing flat_fn"
+        # The derivative output tree is given by composition of the output tree
+        # and the trainable inputs tree
         combined_tree = flat_fn.out_tree.compose(trainable_in_tree)
-        return jax.tree_util.tree_unflatten(combined_tree, out_flat)
+        return tree_unflatten(combined_tree, out_flat)
 
     return new_func
 
