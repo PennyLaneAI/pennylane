@@ -6,21 +6,148 @@
 
 <h4>Converting noise models from Qiskit ♻️</h4>
 
-* A new `qml.from_qiskit_noise` method now allows one to convert a Qiskit ``NoiseModel`` to a
-  PennyLane ``NoiseModel`` via the Pennylane-Qiskit plugin.
+* Convert Qiskit noise models into a PennyLane `NoiseModel` with `qml.from_qiskit_noise`.
   [(#5996)](https://github.com/PennyLaneAI/pennylane/pull/5996)
 
-<h4>Registers of wires 🌈</h4>
+  In the last few releases, we've added substantial improvements and new features to the 
+  [Pennylane-Qiskit plugin](https://docs.pennylane.ai/projects/qiskit/en/latest/installation.html).
+  With this release, a new `qml.from_qiskit_noise` function allows you to convert a Qiskit noise model 
+  into a PennyLane ``NoiseModel``. Here is a simple example with two quantum errors that add two different 
+  depolarizing errors based on the presence of different gates in the circuit:
 
-* Set operations are now supported by Wires.
-  [(#5983)](https://github.com/PennyLaneAI/pennylane/pull/5983)
+  ```python
+  import pennylane as qml
+  import qiskit_aer.noise as noise
 
-* The representation for `Wires` has now changed to be more copy-paste friendly.
-  [(#5958)](https://github.com/PennyLaneAI/pennylane/pull/5958)
+  error_1 = noise.depolarizing_error(0.001, 1) # 1-qubit noise
+  error_2 = noise.depolarizing_error(0.01, 2) # 2-qubit noise
 
-* A new function `qml.registers` has been added, enabling the creation of registers, which are implemented as a dictionary of `Wires` instances.
+  noise_model = noise.NoiseModel()
+
+  noise_model.add_all_qubit_quantum_error(error_1, ['rz', 'ry'])
+  noise_model.add_all_qubit_quantum_error(error_2, ['cx'])
+  ```
+  
+  ```pycon
+  >>> qml.from_qiskit_noise(noise_model)
+  NoiseModel({
+    OpIn(['RZ', 'RY']): QubitChannel(num_kraus=4, num_wires=1)
+    OpIn(['CNOT']): QubitChannel(num_kraus=16, num_wires=2)
+  })
+  ```
+
+  Under the hood, PennyLane converts each quantum error in the Qiskit noise model into an equivalent 
+  `qml.QubitChannel` operator with the same canonical 
+  [Kraus representation](https://en.wikipedia.org/wiki/Quantum_operation#Kraus_operators). Currently, 
+  noise models in PennyLane do not support readout errors. As such, those will be skipped during conversion
+  if they are present in the Qiskit noise model.
+
+<h4>Registers of wires 🧸</h4>
+
+* A new function called `qml.registers` has been added that lets you seamlessly create registers of 
+  wires.
   [(#5957)](https://github.com/PennyLaneAI/pennylane/pull/5957)
   [(#6102)](https://github.com/PennyLaneAI/pennylane/pull/6102)
+
+  With quantum algorithms getting larger and larger, the less you need to deal with gates and operations
+  on the level of individual wire labels / indices the better. With `qml.registers`, you can create 
+  registers of wires by providing a dictionary whose keys are register names and whose values are the 
+  number of wires in each register.
+
+  ```python
+  >>> wire_reg = qml.registers({"alice": 4, "bob": 3})
+  >>> wire_reg
+  {'alice': Wires([0, 1, 2, 3]), 'bob': Wires([4, 5, 6])}
+  ```
+
+  The resulting data structure of `qml.registers` is a dictionary with the same register names as keys, 
+  but the values are `qml.wires.Wires` instances.
+
+  Nesting registers within other registers can be done by providing a nested dictionary, where the ordering 
+  of wire labels is based on the order of appearance and nestedness.
+
+  ```python
+  >>> wire_reg = qml.registers({"alice": {"alice1": 1, "alice2": 2}, "bob": {"bob1": 2, "bob2": 1}})
+  >>> wire_reg
+  {'alice1': Wires([0]), 'alice2': Wires([1, 2]), 'alice': Wires([0, 1, 2]), 'bob1': Wires([3, 4]), 'bob2': Wires([5]), 'bob': Wires([3, 4, 5])}
+  ```
+
+  Since the values of the dictionary are `Wires` instances, their use within quantum circuits is very 
+  similar to that of a `list` of integers.
+
+  ```python
+  dev = qml.device("default.qubit")
+
+  @qml.qnode(dev)
+  def circuit():
+      for w in wire_reg["alice"]:
+          qml.Hadamard(w)
+
+      for w in wire_reg["bob1"]:
+          qml.RX(0.1967, wires=w)
+
+      qml.CNOT(wires=[wire_reg["alice1"][0], wire_reg["bob2"][0]])
+
+      return [qml.expval(qml.Y(w)) for w in wire_reg["bob1"]]
+
+  print(qml.draw(circuit)())
+  ```
+
+  ```pycon
+  0: ──H────────╭●─┤     
+  1: ──H────────│──┤     
+  2: ──H────────│──┤     
+  3: ──RX(0.20)─│──┤  <Y>
+  4: ──RX(0.20)─│──┤  <Y>
+  5: ───────────╰X─┤  
+  ```
+
+  In tandem with `qml.registers`, we've also made the following improvements to `qml.wires.Wires`:
+
+  * `Wires` instances now have a more copy-paste friendly representation when printed.
+    [(#5958)](https://github.com/PennyLaneAI/pennylane/pull/5958)
+
+    ```python
+    >>> from pennylane.wires import Wires
+    >>> w = Wires([1, 2, 3])
+    >>> w
+    Wires([1, 2, 3])
+    ```
+
+  * Python set-based combinations are now supported by `Wires`.
+    [(#5983)](https://github.com/PennyLaneAI/pennylane/pull/5983)
+
+    This new feature unlocks the ability to combine `Wires` instances in the following ways:
+
+    * intersection with `&` or `intersection()`: 
+
+      ```python
+      >>> wires1 = Wires([1, 2, 3])
+      >>> wires2 = Wires([2, 3, 4])
+      >>> wires1.intersection(wires2) # or wires1 & wires2
+      Wires([2, 3])
+      ```
+
+    * symmetric difference with `^` or `symmetric_difference()`:
+
+      ```python
+      >>> wires1.symmetric_difference(wires2) # or wires1 ^ wires2
+      Wires([1, 4])
+      ```
+
+    * union with `|` or `union()`:
+
+      ```python
+      >>> wires1.union(wires2) # or wires1 | wires2
+      Wires([1, 2, 3, 4])
+      ```
+
+    * difference with `-` or `difference()`:
+
+      ```python
+      >>> wires1.difference(wires2) # or wires1 - wires2
+      Wires([1])
+      ```
 
 <h4>Quantum arithmetic operations 🧮</h4>
 
@@ -33,21 +160,20 @@
 * The `qml.OutAdder` and `qml.ModExp` templates are added to perform out-of-place modular addition and modular exponentiation.
   [(#6121)](https://github.com/PennyLaneAI/pennylane/pull/6121)
 
-
-<h4>Creating spin Hamiltonians 🧑‍🎨</h4>
-
-* The function ``transverse_ising`` is added to generate transverse-field Ising Hamiltonian.
-  [(#6106)](https://github.com/PennyLaneAI/pennylane/pull/6106)
-
-* The functions ``heisenberg`` and ``fermi_hubbard`` are added to generate Heisenberg and Fermi-Hubbard Hamiltonians respectively.
-  [(#6128)](https://github.com/PennyLaneAI/pennylane/pull/6128)
-
 <h3>Improvements 🛠</h3>
 
 * Counts measurements with `all_outcomes=True` can now be used with jax jitting. Measurements
   broadcasted across all available wires (`qml.probs()`) can now be used with jit and devices that
   allow variable numbers of wires (`qml.device('default.qubit')`).
   [(#6108)](https://github.com/PennyLaneAI/pennylane/pull/6108/)
+
+<h4>Creating spin Hamiltonians</h4>
+
+* The function ``transverse_ising`` is added to generate transverse-field Ising Hamiltonian.
+  [(#6106)](https://github.com/PennyLaneAI/pennylane/pull/6106)
+
+* The functions ``heisenberg`` and ``fermi_hubbard`` are added to generate Heisenberg and Fermi-Hubbard Hamiltonians respectively.
+  [(#6128)](https://github.com/PennyLaneAI/pennylane/pull/6128)
 
 <h4>A Prep-Select-Prep template</h4>
 
