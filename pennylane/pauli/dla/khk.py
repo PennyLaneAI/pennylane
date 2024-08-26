@@ -372,7 +372,7 @@ def _compute_csa_words(m, which=0):
 
 
 def khk_decompose(
-    generators, H, theta0=None, n_epochs=500, validate=True, involution=None, verbose=1
+    generators, H, theta0=None, n_epochs=500, validate=True, involution=None, verbose=1, tol=1e-12
 ):
     r"""The full KhK decomposition of a Hamiltonian H
 
@@ -423,7 +423,18 @@ def khk_decompose(
     ad = qml.structure_constants(g)
 
     print("Computing Cartan subalgebra m = mtilde + h") if verbose else None
-    mtilde, h = compute_csa_new(g, m, ad)
+    mtilde, h = compute_csa_new(g, m, ad, tol=tol)
+
+    if validate:
+        ranks = []
+        for adrep in ad[-len(m):]:
+            kernel = null_space(adrep, rcond=tol)
+            ranks.append(kernel.shape[1])
+
+        CSA_dim = np.min(ranks)
+        
+        correct_CSA_dim = CSA_dim == len(h)
+        print(f"Correct CSA dimension of {CSA_dim}: {correct_CSA_dim} (i.e. len(h) = {len(h)})")
 
     g = k + mtilde + h  # reorder g
 
