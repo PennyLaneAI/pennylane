@@ -88,8 +88,8 @@ Pending deprecations
 * The ``BasisStatePreparation`` template is deprecated.
   Instead, use ``BasisState``.
 
-  - Deprecated in v0.38
-  - Will be removed in v0.39
+  - Deprecated in v0.39
+  - Will be removed in v0.40
 
 New operator arithmetic deprecations
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
