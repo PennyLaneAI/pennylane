@@ -202,8 +202,8 @@ def test_flatten_is_leaf():
 
 
 def test_unflatten_is_leaf():
-    """Tests for unflatten function following flatten function's is_leaf parameter
-    objective is to confirm that data processed with the flatten function
+    """Tests for unflatten function following flatten function's is_leaf parameter.
+    Objective is to confirm that data processed with the flatten function
     becomes correctly reconstituted with the unflatten function.
     """
     # case 1 - is_leaf given a None argument explcitly

@@ -133,6 +133,7 @@ def heisenberg(lattice, n_cells, coupling=None, boundary_condition=False, neighb
     >>> j = [[0.5, 0.5, 0.5]]
     >>> spin_ham = qml.spin.heisenberg("square", n_cells, coupling=j)
     >>> spin_ham
+    (
     0.5 * (X(0) @ X(1))
     + 0.5 * (Y(0) @ Y(1))
     + 0.5 * (Z(0) @ Z(1))
@@ -145,7 +146,7 @@ def heisenberg(lattice, n_cells, coupling=None, boundary_condition=False, neighb
     + 0.5 * (X(2) @ X(3))
     + 0.5 * (Y(2) @ Y(3))
     + 0.5 * (Z(2) @ Z(3))
-
+    )
     """
 
     lattice = _generate_lattice(lattice, n_cells, boundary_condition, neighbour_order)
