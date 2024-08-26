@@ -450,9 +450,9 @@ class ClassicalShadowMP(MeasurementTransform):
     ) -> tuple:
         return (2, shots, n_wires), np.int8
 
-    def shape(self, device, shots):  # pylint: disable=unused-argument
+    def shape(self, shots: Optional[int] = None, num_device_wires: int = 0) -> tuple[int, int, int]:
         # otherwise, the return type requires a device
-        if not shots:
+        if shots is None:
             raise MeasurementShapeError(
                 "Shots must be specified to obtain the shape of a classical "
                 "shadow measurement process."
@@ -460,7 +460,7 @@ class ClassicalShadowMP(MeasurementTransform):
 
         # the first entry of the tensor represents the measured bits,
         # and the second indicate the indices of the unitaries used
-        return (2, shots.total_shots, len(self.wires))
+        return (2, shots, len(self.wires))
 
     def __copy__(self):
         return self.__class__(
@@ -559,12 +559,8 @@ class ShadowExpvalMP(MeasurementTransform):
     def return_type(self):
         return ShadowExpval
 
-    def shape(self, device, shots):
-        is_single_op = isinstance(self.H, Operator)
-        if not shots.has_partitioned_shots:
-            return () if is_single_op else (len(self.H),)
-        base = () if is_single_op else (len(self.H),)
-        return (base,) * sum(s.copies for s in shots.shot_vector)
+    def shape(self, shots: Optional[int] = None, num_device_wires: int = 0) -> tuple:
+        return () if isinstance(self.H, Operator) else (len(self.H),)
 
     @property
     def wires(self):
