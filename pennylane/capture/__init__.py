@@ -159,6 +159,7 @@ from .capture_qnode import qnode_call
 # on use of from capture import AbstractOperator
 AbstractOperator: type
 AbstractMeasurement: type
+qnode_prim: "jax.core.Primitive"
 
 
 def __getattr__(key):
@@ -171,6 +172,11 @@ def __getattr__(key):
         from .primitives import _get_abstract_measurement  # pylint: disable=import-outside-toplevel
 
         return _get_abstract_measurement()
+
+    if key == "qnode_prim":
+        from .capture_qnode import _get_qnode_prim  # pylint: disable=import-outside-toplevel
+
+        return _get_qnode_prim()
 
     raise AttributeError(f"module 'pennylane.capture' has no attribute '{key}'")
 
@@ -188,4 +194,5 @@ __all__ = (
     "qnode_call",
     "AbstractOperator",
     "AbstractMeasurement",
+    "qnode_prim",
 )
