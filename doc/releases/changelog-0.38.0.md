@@ -437,7 +437,7 @@
   [(#6105)](https://github.com/PennyLaneAI/pennylane/pull/6105)
 
 * Basis set data from the Basis Set Exchange library can now be loaded for elements with `SPD`-type orbitals.
-  [(#)](https://github.com/PennyLaneAI/pennylane/pull/)
+  [(#6159)](https://github.com/PennyLaneAI/pennylane/pull/6159)
 
 <h3>Contributors ✍️</h3>
 
