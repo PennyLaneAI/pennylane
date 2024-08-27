@@ -804,6 +804,7 @@ def load_basisset(basis, element):
     orbital_map = {
         "[0]": "S",
         "[0, 1]": "SP",
+        "[0, 1, 2]": "SPD",
         "[1]": "P",
         "[2]": "D",
         "[3]": "F",
