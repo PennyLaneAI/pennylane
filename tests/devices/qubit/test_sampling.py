@@ -593,7 +593,7 @@ class TestInvalidStateSamples:
         mp = qml.expval(qml.PauliZ(0))
         _shots = Shots(shots)
 
-        with pytest.raises(ValueError, match="probabilities do not sum to 1"):
+        with pytest.raises(ValueError, match=r"(?i)probabilities do not sum to 1"):
             _ = measure_with_samples([mp], state, _shots)
 
     @pytest.mark.all_interfaces
@@ -758,7 +758,7 @@ class TestRenormalization:
         """Test that renormalization does not occur if the error is too large."""
 
         state = qml.math.array(two_qubit_state_not_normalized, like=interface)
-        with pytest.raises(ValueError, match="probabilities do not sum to 1"):
+        with pytest.raises(ValueError, match=r"(?i)probabilities do not sum to 1"):
             _ = sample_state(state, 10)
 
     @pytest.mark.all_interfaces
@@ -775,7 +775,7 @@ class TestRenormalization:
         """Test that renormalization does not occur if the error is too large."""
 
         state = qml.math.array(batched_state_not_normalized, like=interface)
-        with pytest.raises(ValueError, match="probabilities do not sum to 1"):
+        with pytest.raises(ValueError, match=r"(?i)probabilities do not sum to 1"):
             _ = sample_state(state, 10, is_state_batched=True)
 
 
