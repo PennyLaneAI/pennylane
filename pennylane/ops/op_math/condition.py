@@ -682,7 +682,6 @@ def _get_cond_qfunc_prim():
     import jax  # pylint: disable=import-outside-toplevel
 
     cond_prim = create_non_jvp_primitive()("cond")
-    # cond_prim = jax.core.Primitive("cond")
     cond_prim.multiple_results = True
 
     @cond_prim.def_impl
