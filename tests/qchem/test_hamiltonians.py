@@ -187,7 +187,7 @@ def test_fermionic_hamiltonian(use_jax):
         + 0.36941834777609744 * from_string("3+ 3+ 3 3")
     )
 
-    mol = qchem.Molecule(symbols, geometry, alpha=alpha, alpha_opt=True)
+    mol = qchem.Molecule(symbols, geometry, alpha=alpha, argnum=2)
     args = [alpha]
     h = qchem.fermionic_hamiltonian(mol)(*args)
 
@@ -402,7 +402,7 @@ def create_jax_like_array(values):
 class TestJax:
     def test_gradient_jax_array(self):
         r"""Test that the gradient of expval(H) computed with ``jax.grad`` is equal to the value
-        obtained with the finite difference method when using ``alpha_opt`` and jax."""
+        obtained with the finite difference method when using ``argnum`` and jax."""
         import jax
 
         symbols = ["H", "H"]
