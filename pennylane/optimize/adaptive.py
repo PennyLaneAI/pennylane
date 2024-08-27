@@ -18,12 +18,12 @@ import copy
 import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane import transform
-from pennylane.tape import QuantumTape, QuantumTapeBatch
+from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.typing import PostprocessingFn
 
 
 @transform
-def append_gate(tape: QuantumTape, params, gates) -> tuple[QuantumTapeBatch, PostprocessingFn]:
+def append_gate(tape: QuantumScript, params, gates) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Append parameterized gates to an existing tape.
 
     Args:

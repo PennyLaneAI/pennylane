@@ -23,7 +23,7 @@ import numpy as np
 import pennylane as qml
 from pennylane import transform
 from pennylane.pulse import HardwareHamiltonian, ParametrizedEvolution
-from pennylane.tape import QuantumTapeBatch
+from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.typing import PostprocessingFn
 
 from .general_shift_rules import eigvals_to_frequencies, generate_shift_rule
@@ -287,12 +287,12 @@ def _parshift_and_integrate(
 # pylint: disable=too-many-arguments
 @partial(transform, final_transform=True)
 def stoch_pulse_grad(
-    tape: qml.tape.QuantumTape,
+    tape: QuantumScript,
     argnum=None,
     num_split_times=1,
     sampler_seed=None,
     use_broadcasting=False,
-) -> tuple[QuantumTapeBatch, PostprocessingFn]:
+) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     r"""Compute the gradient of a quantum circuit composed of pulse sequences by applying the
     stochastic parameter shift rule.
 

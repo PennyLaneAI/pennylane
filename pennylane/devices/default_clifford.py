@@ -39,7 +39,7 @@ from pennylane.measurements import (
     VnEntropyMP,
 )
 from pennylane.ops.qubit.observables import BasisStateProjector
-from pennylane.tape import QuantumTape, QuantumTapeBatch
+from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import convert_to_numpy_parameters
 from pennylane.transforms.core import TransformProgram
 from pennylane.typing import Result, ResultBatch
@@ -497,7 +497,7 @@ class DefaultClifford(Device):
 
     def execute(
         self,
-        circuits: Union[QuantumTape, QuantumTapeBatch],
+        circuits: Union[QuantumScript, QuantumScriptBatch],
         execution_config: ExecutionConfig = DefaultExecutionConfig,
     ) -> Union[Result, ResultBatch]:
         max_workers = execution_config.device_options.get("max_workers", self._max_workers)
