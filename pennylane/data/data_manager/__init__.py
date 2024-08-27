@@ -467,16 +467,6 @@ def _interactive_request_single(node, param):
     return options[choice - 1]
 
 
-def load_interactive_2():
-
-    avaialable_class_ids = get_class_ids()
-    chosen_class_id = prompt_for_class_id(avaialable_class_ids)
-
-    parameters = get_parameters(chosen_class_id)
-    for parameter in parameters:
-        options = get_parameter_options(chosen_class_id, parameter)
-
-
 def load_interactive():
     r"""Download a dataset using an interactive load prompt.
 
