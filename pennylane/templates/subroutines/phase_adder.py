@@ -44,7 +44,7 @@ class PhaseAdder(Operation):
     .. math::
 
         \text{QFT} |x \rangle = |\phi (x) \rangle.
-    
+
     This operation can be represented in a quantum circuit as:
 
     .. figure:: ../../_static/templates/arithmetic/phaseadder.png
@@ -103,24 +103,24 @@ class PhaseAdder(Operation):
     .. details::
         :title: Usage Details
 
-        This template takes as input two different sets of wires. 
-        
-        The first one is ``x_wires`` which is used
-        to encode the integer :math:`x < mod` in the Fourier basis. Therefore, we need at least 
-        :math:`\lceil \log_2(x)\rceil` ``x_wires`` to represent :math:`x`. After performing the modular addition operation, the resulting integer
-        encoded in the Fourier basis can be as large as :math:`mod-1`. Hence, we need at least 
-        :math:`\lceil \log_2(mod)\rceil` ``x_wires`` 
-        to represent all the possible results. Since :math:`x < mod` by definition, we just need at least :math:`\lceil \log_2(mod)\rceil` ``x_wires``.
-        An exception occur when :math:`mod \neq 2^{\text{len(x_wires)}}`. In that case we will need one extra wire in ``x_wires`` to correctly perform the phase 
-        addition operation. 
+        This template takes as input two different sets of wires.
 
-        The second set of wires is ``work_wire`` which consist of the auxiliary qubit used to perform the modular phase addition operation. 
+        The first one is ``x_wires`` which is used
+        to encode the integer :math:`x < mod` in the Fourier basis. Therefore, we need at least
+        :math:`\lceil \log_2(x)\rceil` ``x_wires`` to represent :math:`x`. After performing the modular addition operation, the resulting integer
+        encoded in the Fourier basis can be as large as :math:`mod-1`. Hence, we need at least
+        :math:`\lceil \log_2(mod)\rceil` ``x_wires``
+        to represent all the possible results. Since :math:`x < mod` by definition, we just need at least :math:`\lceil \log_2(mod)\rceil` ``x_wires``.
+        An exception occur when :math:`mod \neq 2^{\text{len(x_wires)}}`. In that case we will need one extra wire in ``x_wires`` to correctly perform the phase
+        addition operation.
+
+        The second set of wires is ``work_wire`` which consist of the auxiliary qubit used to perform the modular phase addition operation.
 
         - If :math:`mod = 2^{\text{len(x_wires)}}`, there will be no need for ``work_wire``, hence ``work_wire=None``. This is the case by default.
 
         - If :math:`mod \neq 2^{\text{len(x_wires)}}`, one ``work_wire`` has to be provided.
 
-        Note that the ``PhaseAdder`` template allows us to perform modular addition in the Fourier basis. However if one just wants to perform standard addition (with no modulo), the modulo 
+        Note that the ``PhaseAdder`` template allows us to perform modular addition in the Fourier basis. However if one just wants to perform standard addition (with no modulo), the modulo
         :math:`mod` has to be set large enough to ensure that :math:`x+k < mod`.
     """
 

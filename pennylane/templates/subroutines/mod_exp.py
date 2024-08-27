@@ -27,7 +27,7 @@ class ModExp(Operation):
     .. math::
 
         \text{ModExp}(base,mod) |x \rangle |b \rangle = |x \rangle |b \cdot base^x \, (mod) \rangle,
-    
+
     This operation can be represented in a quantum circuit as:
 
     .. figure:: ../../_static/templates/arithmetic/modexp.png
@@ -89,24 +89,24 @@ class ModExp(Operation):
     .. details::
         :title: Usage Details
 
-        This template takes as input three different sets of wires. 
-        
+        This template takes as input three different sets of wires.
+
         The first one is ``x_wires`` which is used
-        to encode the integer :math:`x < mod` in the computational basis. Therefore, we need at least 
+        to encode the integer :math:`x < mod` in the computational basis. Therefore, we need at least
         :math:`\lceil \log_2(x)\rceil` ``x_wires`` to represent :math:`x`.
 
         The second one is ``output_wires`` which is used
-        to encode the integer :math:`b \cdot base^x (mod)` in the computational basis. Therefore, we need at least 
-        :math:`\lceil \log_2(mod)\rceil` ``output_wires`` to represent :math:`b \cdot base^x (mod)`. Note that these wires can be initialized with any integer 
+        to encode the integer :math:`b \cdot base^x (mod)` in the computational basis. Therefore, we need at least
+        :math:`\lceil \log_2(mod)\rceil` ``output_wires`` to represent :math:`b \cdot base^x (mod)`. Note that these wires can be initialized with any integer
         :math:`b`, but the most common choice is :math:`b=1` to obtain as a final result :math:`base^x (mod)`.
 
-        The third set of wires is ``work_wires`` which consist of the auxiliary qubits used to perform the modular exponentiation operation. 
+        The third set of wires is ``work_wires`` which consist of the auxiliary qubits used to perform the modular exponentiation operation.
 
         - If :math:`mod = 2^{\text{len(``output_wires``)}}`, we will need as many as ``output_wires``.
-        
+
         - If :math:`mod \neq 2^{\text{len(output_wires)}}`, we will need as many as ``output_wires`` plu two extra that have to be provided.
 
-        Note that the ``ModExp`` template allows us to perform modular exponentiation in the computational basis. However if one just wants to perform standard exponentiation (with no modulo), the modulo 
+        Note that the ``ModExp`` template allows us to perform modular exponentiation in the computational basis. However if one just wants to perform standard exponentiation (with no modulo), the modulo
         :math:`mod` has to be set large enough to ensure that :math:`base^x (mod)`.
 
         Also, to perform the out-place modular exponentiation operator it is required that :math:`base` has inverse, :math:`base^{-1} (mod)`. That means

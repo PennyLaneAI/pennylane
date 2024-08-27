@@ -101,22 +101,22 @@ class Multiplier(Operation):
     .. details::
         :title: Usage Details
 
-        This template takes as input two different sets of wires. 
+        This template takes as input two different sets of wires.
 
         The first one is ``x_wires`` which is used
-        to encode the integer :math:`x < mod` in the computational basis. Therefore, we need at least 
+        to encode the integer :math:`x < mod` in the computational basis. Therefore, we need at least
         :math:`\lceil \log_2(x)\rceil` ``x_wires`` to represent :math:`x`. After performing the modular multiplication operation, the resulting integer
-        encoded in the computational basis can be as large as :math:`mod-1`. Hence, we need at least 
-        :math:`\lceil \log_2(mod)\rceil` ``x_wires`` 
-        to represent all the possible results. Since :math:`x < mod` by definition, we just need at least :math:`\lceil \log_2(mod)\rceil` ``x_wires``.   
+        encoded in the computational basis can be as large as :math:`mod-1`. Hence, we need at least
+        :math:`\lceil \log_2(mod)\rceil` ``x_wires``
+        to represent all the possible results. Since :math:`x < mod` by definition, we just need at least :math:`\lceil \log_2(mod)\rceil` ``x_wires``.
 
-        The second set of wires is ``work_wires`` which consist of the auxiliary qubits used to perform the modular multiplication operation. 
+        The second set of wires is ``work_wires`` which consist of the auxiliary qubits used to perform the modular multiplication operation.
 
         - If :math:`mod = 2^{\text{len(x_wires)}}`, we will need as many as ``x_wires``.
-        
+
         - If :math:`mod \neq 2^{\text{len(x_wires)}}`, we will need as many as ``x_wires`` plu two extra that have to be provided.
 
-        Note that the Multiplier template allows us to perform modular multiplication in the computational basis. However if one just want to perform standard multiplication (with no modulo), the modulo 
+        Note that the Multiplier template allows us to perform modular multiplication in the computational basis. However if one just want to perform standard multiplication (with no modulo), the modulo
         :math:`mod` has to be set large enough to ensure that :math:`x \cdot k < mod`.
 
         Also, to perform the in-place multiplication operator it is required that :math:`k` has inverse, :math:`k^{-1} (mod)`. That means

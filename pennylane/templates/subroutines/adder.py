@@ -28,7 +28,7 @@ class Adder(Operation):
     .. math::
 
         \text{Adder}(k, mod) |x \rangle = | x+k \; (mod) \rangle.
-    
+
     This operation can be represented in a quantum circuit as:
 
     .. figure:: ../../_static/templates/arithmetic/adder.png
@@ -83,22 +83,22 @@ class Adder(Operation):
     .. details::
         :title: Usage Details
 
-        This template takes as input two different sets of wires. 
-        
+        This template takes as input two different sets of wires.
+
         The first one is ``x_wires`` which is used
-        to encode the integer :math:`x < mod` in the computational basis. Therefore, we need at least 
+        to encode the integer :math:`x < mod` in the computational basis. Therefore, we need at least
         :math:`\lceil \log_2(x)\rceil` ``x_wires`` to represent :math:`x`. After performing the modular addition operation, the resulting integer
-        encoded in the computational basis can be as large as :math:`mod-1`. Hence, we need at least 
-        :math:`\lceil \log_2(mod)\rceil` ``x_wires`` 
+        encoded in the computational basis can be as large as :math:`mod-1`. Hence, we need at least
+        :math:`\lceil \log_2(mod)\rceil` ``x_wires``
         to represent all the possible results. Since :math:`x < mod` by definition, we just need at least :math:`\lceil \log_2(mod)\rceil` ``x_wires``.
 
-        The second set of wires is ``work_wires`` which consist of the auxiliary qubits used to perform the modular addition operation. 
+        The second set of wires is ``work_wires`` which consist of the auxiliary qubits used to perform the modular addition operation.
 
         - If :math:`mod = 2^{\text{len(x_wires)}}`, there will be no need for ``work_wires``, hence ``work_wires=None``. This is the case by default.
-        
+
         - If :math:`mod \neq 2^{\text{len(x_wires)}}`, two ``work_wires`` have to be provided.
 
-        Note that the ``Adder`` template allows us to perform modular addition in the computational basis. However if one just wants to perform standard addition (with no modulo), the modulo 
+        Note that the ``Adder`` template allows us to perform modular addition in the computational basis. However if one just wants to perform standard addition (with no modulo), the modulo
         :math:`mod` has to be set large enough to ensure that :math:`x+k < mod`.
     """
 

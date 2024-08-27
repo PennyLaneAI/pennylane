@@ -27,7 +27,7 @@ class OutMultiplier(Operation):
 
     .. math::
         \text{OutMultiplier}(mod) |x \rangle |y \rangle |b \rangle = |x \rangle |y \rangle |b + x \cdot y \; (mod) \rangle,
-    
+
     This operation can be represented in a quantum circuit as:
 
     .. figure:: ../../_static/templates/arithmetic/outmultiplier.png
@@ -85,28 +85,28 @@ class OutMultiplier(Operation):
     .. details::
         :title: Usage Details
 
-        This template takes as input four different sets of wires. 
-        
+        This template takes as input four different sets of wires.
+
         The first one is ``x_wires`` which is used
-        to encode the integer :math:`x < mod` in the computational basis. Therefore, we need at least 
+        to encode the integer :math:`x < mod` in the computational basis. Therefore, we need at least
         :math:`\lceil \log_2(x)\rceil` ``x_wires`` to represent :math:`x`.
 
         The second one is ``y_wires`` which is used
-        to encode the integer :math:`y < mod` in the computational basis. Therefore, we need at least 
+        to encode the integer :math:`y < mod` in the computational basis. Therefore, we need at least
         :math:`\lceil \log_2(y)\rceil` ``y_wires`` to represent :math:`y`.
 
         The third one is ``output_wires`` which is used
-        to encode the integer :math:`b+ x \cdot y (mod)` in the computational basis. Therefore, we need at least 
-        :math:`\lceil \log_2(mod)\rceil` ``output_wires`` to represent :math:`b + x \cdot y (mod)`.  Note that these wires can be initialized with any integer 
+        to encode the integer :math:`b+ x \cdot y (mod)` in the computational basis. Therefore, we need at least
+        :math:`\lceil \log_2(mod)\rceil` ``output_wires`` to represent :math:`b + x \cdot y (mod)`.  Note that these wires can be initialized with any integer
         :math:`b`, but the most common choice is :math:`b=0` to obtain as a final result :math:`x \cdot y (mod)`.
 
-        The fourth set of wires is ``work_wires`` which consist of the auxiliary qubits used to perform the modular multiplication operation. 
+        The fourth set of wires is ``work_wires`` which consist of the auxiliary qubits used to perform the modular multiplication operation.
 
         - If :math:`mod = 2^{\text{len(output_wires)}}`, there will be no need for ``work_wires``, hence ``work_wires=None``. This is the case by default.
-        
+
         - If :math:`mod \neq 2^{\text{len(output_wires)}}`, two ``work_wires`` have to be provided.
 
-        Note that the OutMultiplier template allows us to perform modular multiplication in the computational basis. However if one just wants to perform 
+        Note that the OutMultiplier template allows us to perform modular multiplication in the computational basis. However if one just wants to perform
         standard multiplication (with no modulo), the modulo :math:`mod` has to be set large enough to ensure that :math:`x \cdot k < mod`.
     """
 
