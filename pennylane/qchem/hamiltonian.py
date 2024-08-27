@@ -425,9 +425,7 @@ def _(
         args,
         molecule.load_data,
         convert_tol,
-        molecule.coord_opt,
-        molecule.alpha_opt,
-        molecule.coeff_opt,
+        molecule.argnum,
     )
 
 
@@ -451,9 +449,7 @@ def _(
     args=None,
     load_data=False,
     convert_tol=1e12,
-    coord_opt=False,
-    alpha_opt=False,
-    coeff_opt=False,
+    argnum=None,
 ):
 
     if (coord_unit := unit.strip().lower()) not in ("angstrom", "bohr"):
@@ -483,9 +479,7 @@ def _(
         args=args,
         load_data=load_data,
         convert_tol=convert_tol,
-        coord_opt=coord_opt,
-        alpha_opt=alpha_opt,
-        coeff_opt=coeff_opt,
+        argnum=argnum,
     )
 
 
@@ -507,9 +501,7 @@ def _molecular_hamiltonian(
     args=None,
     load_data=False,
     convert_tol=1e12,
-    coord_opt=False,
-    alpha_opt=False,
-    coeff_opt=False,
+    argnum=None,
 ):  # pylint:disable=too-many-arguments, too-many-statements
     r"""Generate the qubit Hamiltonian of a molecule."""
 
@@ -557,9 +549,7 @@ def _molecular_hamiltonian(
             load_data=load_data,
             alpha=alpha,
             coeff=coeff,
-            coord_opt=coord_opt,
-            alpha_opt=alpha_opt,
-            coeff_opt=coeff_opt,
+            argnum=argnum,
         )
         core, active = qml.qchem.active_space(
             mol.n_electrons, mol.n_orbitals, mult, active_electrons, active_orbitals
