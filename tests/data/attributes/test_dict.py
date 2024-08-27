@@ -15,12 +15,10 @@
 Tests for the ``DatasetDict`` attribute type.
 """
 
-import numpy as np
 import pytest
 
 from pennylane.data.attributes import DatasetDict
 
-np.set_printoptions(legacy="1.25")
 pytestmark = pytest.mark.data
 
 
