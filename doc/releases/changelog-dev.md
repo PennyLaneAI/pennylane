@@ -5,6 +5,9 @@
 <h3>New features since last release</h3>
 
 <h3>Improvements 🛠</h3>
+* The `diagonalize_measurements` transform now uses a more efficient method of diagonalization 
+  when possible, based on the `pauli_rep` of the relevant observables.
+  [#6113](https://github.com/PennyLaneAI/pennylane/pull/6113/)
 
 <h3>Breaking changes 💔</h3>
 
@@ -17,3 +20,4 @@
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
+Lillian M. A. Frederiksen
