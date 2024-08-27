@@ -324,7 +324,6 @@ def repulsion_tensor(basis_functions, argnum=None):
         Returns:
             array[array[float]]: the electron repulsion tensor
         """
-        local_argnum = argnum if argnum is not None else [False, False, False]
         n = len(basis_functions)
         tensor = qml.math.zeros((n, n, n, n))
         e_calc = qml.math.full((n, n, n, n), np.nan)
@@ -334,7 +333,7 @@ def repulsion_tensor(basis_functions, argnum=None):
                 args_abcd = []
                 if args:
                     args_abcd.extend([arg[i], arg[j], arg[k], arg[l]] for arg in args)
-                integral = repulsion_integral(a, b, c, d, local_argnum, normalize=False)(*args_abcd)
+                integral = repulsion_integral(a, b, c, d, argnum, normalize=False)(*args_abcd)
 
                 permutations = [
                     (i, j, k, l),
@@ -392,14 +391,14 @@ def core_matrix(basis_functions, charges, r, argnum=None):
         Returns:
             array[array[float]]: the core matrix
         """
-        local_argnum = argnum if argnum is not None else [False, False, False]
+        argbools = [i in (argnum if isinstance(argnum, list) else [argnum]) for i in range(3)]
 
-        if getattr(r, "requires_grad", False) or local_argnum[0]:
-            t = kinetic_matrix(basis_functions, local_argnum)(*args[1:])
+        if getattr(r, "requires_grad", False) or argbools[0]:
+            t = kinetic_matrix(basis_functions, argnum)(*args[1:])
         else:
-            t = kinetic_matrix(basis_functions, local_argnum)(*args)
+            t = kinetic_matrix(basis_functions, argnum)(*args)
 
-        a = attraction_matrix(basis_functions, charges, r, local_argnum)(*args)
+        a = attraction_matrix(basis_functions, charges, r, argnum)(*args)
         return t + a
 
     return core

@@ -302,33 +302,33 @@ class TestJax:
         assert np.allclose(g, g_ref)
 
     @pytest.mark.parametrize(
-        ("symbols", "geometry", "e_ref", "argnums"),
+        ("symbols", "geometry", "e_ref", "argnum"),
         [
             # e_repulsion = \sum_{ij} (q_i * q_j / r_{ij})
             (
                 ["H", "H"],
                 np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]),
                 np.array([1.0]),
-                [False, False, False],
+                [],
             ),
             (
                 ["H", "F"],
                 np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]]),
                 np.array([4.5]),
-                [True, False, False],
+                [0],
             ),
             (
                 ["H", "O", "H"],
                 np.array([[0.0, 1.0, 0.0], [0.0, 0.0, 0.0], [1.0, 0.0, 0.0]]),
                 np.array([16.707106781186546]),
-                [False, False, False],
+                [],
             ),
         ],
     )
-    def test_nuclear_energy(self, symbols, geometry, e_ref, argnums):
+    def test_nuclear_energy(self, symbols, geometry, e_ref, argnum):
         r"""Test that nuclear_energy returns the correct energy when using jax."""
         geometry = create_jax_like_array(geometry)
         mol = qchem.Molecule(symbols, geometry)
         args = [mol.coordinates]
-        e = qchem.nuclear_energy(mol.nuclear_charges, mol.coordinates, argnums)(*args)
+        e = qchem.nuclear_energy(mol.nuclear_charges, mol.coordinates, argnum)(*args)
         assert np.allclose(e, e_ref)
