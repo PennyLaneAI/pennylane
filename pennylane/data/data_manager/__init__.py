@@ -128,6 +128,16 @@ def _download_full(s3_url: str, dest: Path, block_size: int, pbar_task: Optional
 
 
 def _get_graphql(url: str, query: str, variables: dict[str, Any] = None):
+    """
+    Args:
+        url: The URL to send a query to.
+        query: The main body of the query to be sent.
+        variables: Additional input variables to the query body.
+
+    Returns:
+        string: json response.
+        GraphQLError: if there no response is received or errors are received in the json response.
+    """
 
     json = {"query": query}
 
@@ -137,7 +147,9 @@ def _get_graphql(url: str, query: str, variables: dict[str, Any] = None):
     response = get(url=url, json=json, timeout=10)
     response.raise_for_status()
 
-    if "errors" in response.json():
+    if response.json() is None:
+        raise GraphQLError(f"No Response")
+    elif "errors" in response.json():
         all_errors = ",".join(error["message"] for error in response.json()["errors"])
         raise GraphQLError(f"Errors in request: {all_errors}")
 
@@ -147,8 +159,8 @@ def _get_graphql(url: str, query: str, variables: dict[str, Any] = None):
 def _get_dataset_urls(class_id: str, parameters: dict[str, list[str]]) -> list[tuple[str, str]]:
     """
     Args:
-        class_id: Dataset class id ('qchem', 'qspin')
-        parameters: Dataset parameters ('molname'), etc
+        class_id: Dataset class id e.g 'qchem', 'qspin'
+        parameters: Dataset parameters e.g 'molname', 'basis'
 
     Returns:
         list of tuples (dataset_id, dataset_url)
@@ -192,6 +204,8 @@ def _download_dataset( # pylint: disable=too-many-arguments
 
     If any of the attributes of the remote dataset are already downloaded locally,
     they will not be overwritten unless ``force`` is True.
+
+    If ``pbar_task`` is provided, it will be updated with the download progress.
     """
 
     if attributes is not None or dest.exists():
