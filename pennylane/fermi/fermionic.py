@@ -55,6 +55,18 @@ class FermiWord(dict):
 
         super().__init__(operator)
 
+    def adjoint(self):
+        r"""Return the adjiont of the FermiWord"""
+        n = len(self.items())
+        adjoint_dict = {}
+        for key, value in self.items():
+            position = n - key[0] - 1
+            orbital = key[1]
+            fermi = '+' if value == '-' else '-'
+            adjoint_dict[(position, orbital)] = fermi
+
+        return FermiWord(adjoint_dict)
+
     @property
     def wires(self):
         r"""Return wires in a FermiWord."""
@@ -123,7 +135,7 @@ class FermiWord(dict):
 
     def __repr__(self):
         r"""Terminal representation of a FermiWord"""
-        return str(self)
+        return str(dict(self))
 
     def __add__(self, other):
         """Add a FermiSentence, FermiWord or constant to a FermiWord. Converts both
@@ -326,6 +338,17 @@ class FermiSentence(dict):
     def __init__(self, operator):
         super().__init__(operator)
 
+    def adjoint(self):
+        r"""Return the adjoint of the FermiSentence"""
+        adjoint_dict = {}
+        for key, value in self.items():
+            word = key.adjoint()
+            scalar = qml.math.conj(value)
+
+            adjoint_dict[word] = scalar
+
+        return FermiSentence(adjoint_dict)
+
     @property
     def wires(self):
         r"""Return wires of the FermiSentence."""
@@ -339,7 +362,7 @@ class FermiSentence(dict):
 
     def __repr__(self):
         r"""Terminal representation for FermiSentence."""
-        return str(self)
+        return str(dict(self))
 
     def __missing__(self, key):
         r"""If the FermiSentence does not contain a FermiWord then the associated value will be 0."""
@@ -647,8 +670,12 @@ class FermiC(FermiWord):
             raise ValueError(
                 f"FermiC: expected a single, positive integer value for orbital, but received {orbital}"
             )
+        self.orbital = orbital
         operator = {(0, orbital): "+"}
         super().__init__(operator)
+
+    def adjoint(self):
+        return FermiA(self.orbital)
 
 
 class FermiA(FermiWord):
@@ -684,5 +711,9 @@ class FermiA(FermiWord):
             raise ValueError(
                 f"FermiA: expected a single, positive integer value for orbital, but received {orbital}"
             )
+        self.orbital = orbital
         operator = {(0, orbital): "-"}
         super().__init__(operator)
+
+    def adjoint(self):
+        return FermiC(self.orbital)
