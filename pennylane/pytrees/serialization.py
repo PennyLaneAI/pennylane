@@ -126,6 +126,9 @@ def _wires_to_json(obj: Wires) -> JSON:
 
 def _shots_to_json(obj: Shots) -> JSON:
     """JSON handler for serializing ``Shots``."""
+    if obj.total_shots is None:
+        return None
+
     return obj.shot_vector
 
 
