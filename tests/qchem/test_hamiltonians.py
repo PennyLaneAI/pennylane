@@ -414,7 +414,7 @@ class TestJax:
             [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
             like="jax",
         )
-        mol = qchem.Molecule(symbols, geometry, alpha=alpha, alpha_opt=True)
+        mol = qchem.Molecule(symbols, geometry, alpha=alpha, argnum=2)
         args = [mol.alpha]
         dev = qml.device("default.qubit", wires=4)
 
