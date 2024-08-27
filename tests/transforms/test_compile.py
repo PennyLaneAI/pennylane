@@ -98,17 +98,13 @@ class TestCompile:
         # Evaluate the QNode with an input
         result = qnode(0.5)
 
-        # Check that the result is a valid numerical value
-        assert isinstance(result, qml.numpy.ndarray) or isinstance(
-            result, float
-        ), "Result is not a valid numerical value"
-
-        if isinstance(result, qml.numpy.ndarray):
-            # If result is a tensor (qml.numpy.ndarray), convert it to a float
-            result = result.item()
-
-        # Check that the result is now a float
-        assert isinstance(result, float), "Result is not a float after conversion"
+        # Merged isinstance checks to resolve pylint error
+        if isinstance(result, (float, qml.numpy.ndarray)):
+            if isinstance(result, qml.numpy.ndarray):
+                # If result is a tensor (qml.numpy.ndarray), convert it to a float
+                result = result.item()
+        else:
+            raise ValueError("Result is not a valid numerical value")
 
         # Verify the QNode's operations are within the allowed basis set
         allowed_ops = ["RX"]

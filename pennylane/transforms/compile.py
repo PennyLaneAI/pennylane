@@ -187,17 +187,18 @@ def compile(
         basis_set = basis_set or all_ops
 
         if basis_set:
-            for item in basis_set:
-                if not isinstance(item, (str, type)):
-                    raise ValueError("basis_set must contain only strings or Operator subclasses.")
-                if isinstance(item, type) and not issubclass(item, qml.operation.Operator):
-                    raise ValueError(f"{item} is not a subclass of qml.operation.Operator.")
-
             # Handle the case where basis_set becomes equivalent to an empty list due to improper types
-            class_types = tuple(o for o in basis_set if isinstance(o, type))
+            class_types = tuple(
+                o
+                for o in basis_set
+                if isinstance(o, type) and issubclass(o, qml.operation.Operator)
+            )
             class_names = set(o for o in basis_set if isinstance(o, str))
 
-            if not class_names and not class_types:
+            # Convert operator types to their names and merge with string-based names
+            basis_set = class_names.union({op.name for op in class_types})
+
+            if not basis_set:
                 raise ValueError("basis_set contains no valid operation names or types.")
 
         def stop_at(obj):
