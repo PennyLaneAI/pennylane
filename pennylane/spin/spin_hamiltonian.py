@@ -39,7 +39,7 @@ def transverse_ising(
     transverse magnetic field and ``i,j`` represent the indices for neighbouring spins.
 
     Args:
-       lattice (str): Shape of the lattice. Input Values can be ``'chain'``, ``'square'``,
+       lattice (str): Shape of the lattice. Input values can be ``'chain'``, ``'square'``,
            ``'rectangle'``, ``'honeycomb'``, ``'triangle'``, or ``'kagome'``.
        n_cells (List[int]): Number of cells in each direction of the grid.
        coupling (float or List[float] or List[math.array[float]]): Coupling between spins, it can be a
@@ -109,7 +109,7 @@ def heisenberg(lattice, n_cells, coupling=None, boundary_condition=False, neighb
     where ``J`` is the coupling constant defined for the Hamiltonian, and ``i,j`` represent the indices for neighbouring spins.
 
     Args:
-       lattice (str): Shape of the lattice. Input Values can be ``'chain'``, ``'square'``, ``'rectangle'``,
+       lattice (str): Shape of the lattice. Input values can be ``'chain'``, ``'square'``, ``'rectangle'``,
                    ``'honeycomb'``, ``'triangle'``, or ``'kagome'``.
        n_cells (List[int]): Number of cells in each direction of the grid.
        coupling (List[List[float]] or List[math.array[float]]): Coupling between spins, it can be a 2D array
@@ -196,13 +196,13 @@ def fermi_hubbard(
         \hat{H} = -t\sum_{<i,j>, \sigma}(c_{i\sigma}^{\dagger}c_{j\sigma}) + U\sum_{i}n_{i \uparrow} n_{i\downarrow}
 
     where ``t`` is the hopping term representing the kinetic energy of electrons, ``U`` is the on-site Coulomb interaction,
-    representing the repulsion between electrons, ``i,j`` represent the indices for neighbouring spins, ``\sigma``
-    is the spin degree of freedom, and ``n_{i \uparrow}, n_{i \downarrow}`` are number operators for spin-up and
+    representing the repulsion between electrons, ``i,j`` represent the indices for neighbouring spins, :math:`\sigma`
+    is the spin degree of freedom, and :math:`n_{i \uparrow}, n_{i \downarrow}` are number operators for spin-up and
     spin-down fermions at site ``i``.
     This function assumes there are two fermions with opposite spins on each lattice site.
 
     Args:
-       lattice (str): Shape of the lattice. Input Values can be ``'chain'``, ``'square'``,
+       lattice (str): Shape of the lattice. Input values can be ``'chain'``, ``'square'``,
                       ``'rectangle'``, ``'honeycomb'``, ``'triangle'``, or ``'kagome'``.
        n_cells (List[int]): Number of cells in each direction of the grid.
        hopping (float or List[float] or List[math.array(float)]): Hopping strength between neighbouring sites, it can be a
@@ -223,7 +223,7 @@ def fermi_hubbard(
 
     >>> n_cells = [2]
     >>> h = [0.5]
-    >>> u = [1.0]
+    >>> u = 1.0
     >>> spin_ham = qml.spin.fermi_hubbard("chain", n_cells, hopping=h, coulomb=u)
     >>> spin_ham
     -0.25 * (Y(0) @ Z(1) @ Y(2))
