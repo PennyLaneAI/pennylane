@@ -30,7 +30,7 @@ class OutMultiplier(Operation):
     
     This operation can be represented in a quantum circuit as:
 
-    .. figure:: ../../_static/templates/subroutines/arithmetic/outmultiplier.png
+    .. figure:: ../../_static/templates/arithmetic/outmultiplier.png
         :align: center
         :width: 60%
         :target: javascript:void(0);

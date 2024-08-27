@@ -31,7 +31,7 @@ class OutAdder(Operation):
     
     This operation can be represented in a quantum circuit as:
 
-    .. figure:: ../../_static/templates/subroutines/arithmetic/outadder.png
+    .. figure:: ../../_static/templates/arithmetic/outadder.png
         :align: center
         :width: 60%
         :target: javascript:void(0);

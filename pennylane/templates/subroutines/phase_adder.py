@@ -47,7 +47,7 @@ class PhaseAdder(Operation):
     
     This operation can be represented in a quantum circuit as:
 
-    .. figure:: ../../_static/templates/subroutines/arithmetic/phaseadder.png
+    .. figure:: ../../_static/templates/arithmetic/phaseadder.png
         :align: center
         :width: 60%
         :target: javascript:void(0);

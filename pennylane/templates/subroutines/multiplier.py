@@ -45,7 +45,7 @@ class Multiplier(Operation):
 
     This operation can be represented in a quantum circuit as:
 
-    .. figure:: ../../_static/templates/subroutines/arithmetic/multiplier.png
+    .. figure:: ../../_static/templates/arithmetic/multiplier.png
         :align: center
         :width: 60%
         :target: javascript:void(0);

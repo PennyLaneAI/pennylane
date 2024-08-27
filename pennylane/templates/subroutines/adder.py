@@ -31,7 +31,7 @@ class Adder(Operation):
     
     This operation can be represented in a quantum circuit as:
 
-    .. figure:: ../../_static/templates/subroutines/arithmetic/adder.png
+    .. figure:: ../../_static/templates/arithmetic/adder.png
         :align: center
         :width: 60%
         :target: javascript:void(0);
