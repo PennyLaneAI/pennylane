@@ -59,7 +59,7 @@ def registers(register_dict):
     .. code-block::
 
         dev = qml.device("default.qubit")
-        reg = registers({"aux": 1, "phi": 5, "psi": 5})
+        reg = qml.registers({"aux": 1, "phi": 5, "psi": 5})
 
         @qml.qnode(dev)
         def circuit():
@@ -74,7 +74,7 @@ def registers(register_dict):
             return qml.expval(qml.Z(wires=reg["aux"]))
 
     >>> circuit()
-    0.9999999999999996
+    tensor(1., requires_grad=True)
     """
 
     def _registers(register_dict, _start_wire_index=0):
