@@ -22,6 +22,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
+from pennylane.measurements import Shots
 from pennylane.ops import PauliX, Prod, Sum
 from pennylane.pytrees import PyTreeStructure, flatten, is_pytree, leaf, unflatten
 from pennylane.pytrees.pytrees import (
@@ -116,6 +117,23 @@ def test_pytree_structure_dump(decode):
             ["test.CustomNode", {"wires": [1, "a", 3.4, None]}, [None, None, None]],
         ],
     ]
+
+
+@pytest.mark.parametrize(
+    "shots, expect_metadata",
+    [
+        (Shots(), None),
+        (Shots(1), [[1, 1]]),
+        (Shots([1, 2]), [[1, 1], [2, 1]]),
+    ],
+)
+def test_pytree_structure_dump_shots(shots, expect_metadata):
+    """Test that ``pytree_structure_dump`` handles all forms of shots."""
+    data, struct = flatten(CustomNode([], {"shots": shots}))
+
+    flattened = pytree_structure_dump(struct)
+
+    assert json.loads(flattened) == ["test.CustomNode", {"shots": expect_metadata}, []]
 
 
 def test_pytree_structure_dump_unserializable_metadata():
