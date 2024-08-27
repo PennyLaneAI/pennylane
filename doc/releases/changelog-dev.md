@@ -14,6 +14,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Basis set data from the Basis Set Exchange library can now be loaded for elements with `SPD`-type orbitals.
+  [(#)](https://github.com/PennyLaneAI/pennylane/pull/)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
