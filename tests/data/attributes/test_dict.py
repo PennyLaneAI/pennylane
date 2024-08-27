@@ -15,6 +15,7 @@
 Tests for the ``DatasetDict`` attribute type.
 """
 
+import numpy as np
 import pytest
 
 from pennylane.data.attributes import DatasetDict
@@ -38,14 +39,15 @@ class TestDatasetDict:
     )
     def test_value_init(self, value):
         """Test that a DatasetDict is correctly value-initialized."""
-        dset_dict = DatasetDict(value)
+        with np.printoptions(legacy="1.21"):
+            dset_dict = DatasetDict(value)
 
-        assert dset_dict == value
-        assert dset_dict.info.type_id == "dict"
-        assert dset_dict.info.py_type == "dict"
-        assert dset_dict.bind.keys() == value.keys()
-        assert len(dset_dict) == len(value)
-        assert repr(value) == repr(dset_dict)
+            assert dset_dict == value
+            assert dset_dict.info.type_id == "dict"
+            assert dset_dict.info.py_type == "dict"
+            assert dset_dict.bind.keys() == value.keys()
+            assert len(dset_dict) == len(value)
+            assert repr(value) == repr(dset_dict)
 
     @pytest.mark.parametrize(
         "value", [{"a": 1, "b": 2}, {}, {"a": 1, "b": {"x": "y", "z": [1, 2]}}]
@@ -85,15 +87,16 @@ class TestDatasetDict:
     )
     def test_copy(self, value):
         """Test that `DatasetDict.copy` can copy contents to a built-in dictionary."""
-        dset_dict = DatasetDict(value)
-        builtin_dict = dset_dict.copy()
+        with np.printoptions(legacy="1.21"):
+            dset_dict = DatasetDict(value)
+            builtin_dict = dset_dict.copy()
 
-        assert isinstance(builtin_dict, dict)
-        assert builtin_dict == value
+            assert isinstance(builtin_dict, dict)
+            assert builtin_dict == value
 
-        assert builtin_dict.keys() == value.keys()
-        assert len(builtin_dict) == len(value)
-        assert repr(builtin_dict) == repr(value)
+            assert builtin_dict.keys() == value.keys()
+            assert len(builtin_dict) == len(value)
+            assert repr(builtin_dict) == repr(value)
 
     @pytest.mark.parametrize(
         "value", [{"a": 1, "b": 2}, {}, {"a": 1, "b": {"x": "y", "z": [1, 2]}}]
@@ -120,5 +123,6 @@ class TestDatasetDict:
         "value", [{"a": 1, "b": 2}, {}, {"a": 1, "b": {"x": "y", "z": [1, 2]}}]
     )
     def test_string_conversion(self, value):
-        dset_dict = DatasetDict(value)
-        assert str(dset_dict) == str(value)
+        with np.printoptions(legacy="1.21"):
+            dset_dict = DatasetDict(value)
+            assert str(dset_dict) == str(value)
