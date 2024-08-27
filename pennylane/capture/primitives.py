@@ -15,7 +15,7 @@
 This submodule offers all the non-operator/ measurement custom primitives
 created in pennylane.
 
-It has a jax dependency and should be be located in a standard import path.
+It has a jax dependency and should be located in a standard import path.
 """
 
 from pennylane.compiler.qjit_api import _get_for_loop_qfunc_prim, _get_while_loop_qfunc_prim
