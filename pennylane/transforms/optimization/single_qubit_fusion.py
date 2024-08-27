@@ -17,7 +17,7 @@
 import pennylane as qml
 from pennylane.ops.qubit import Rot
 from pennylane.queuing import QueuingManager
-from pennylane.tape import QuantumTape, QuantumTapeBatch
+from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
 
@@ -26,8 +26,8 @@ from .optimization_utils import find_next_gate, fuse_rot_angles
 
 @transform
 def single_qubit_fusion(
-    tape: QuantumTape, atol=1e-8, exclude_gates=None
-) -> tuple[QuantumTapeBatch, PostprocessingFn]:
+    tape: QuantumScript, atol=1e-8, exclude_gates=None
+) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     r"""Quantum function transform to fuse together groups of single-qubit
     operations into a general single-qubit unitary operation (:class:`~.Rot`).
 

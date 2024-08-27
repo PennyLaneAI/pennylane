@@ -17,13 +17,13 @@ import pennylane as qml
 from pennylane import AmplitudeEmbedding
 from pennylane.math import flatten, reshape
 from pennylane.queuing import QueuingManager
-from pennylane.tape import QuantumTape, QuantumTapeBatch
+from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
 
 
 @transform
-def merge_amplitude_embedding(tape: QuantumTape) -> tuple[QuantumTapeBatch, PostprocessingFn]:
+def merge_amplitude_embedding(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     r"""Quantum function transform to combine amplitude embedding templates that act on different qubits.
 
     Args:

@@ -27,7 +27,7 @@ import pennylane as qml
 from pennylane import QNode
 from pennylane import numpy as pnp
 from pennylane import qnode
-from pennylane.tape import QuantumScript, QuantumTapeBatch
+from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.typing import PostprocessingFn
 from pennylane.workflow.qnode import _prune_dynamic_transform
 
@@ -644,7 +644,7 @@ class TestTapeConstruction:
         jitted_qnode1 = jax.jit(qn)
 
         with pytest.raises(
-            qml.QuantumFunctionError, match="Can't JIT a quantum function that returns counts."
+            NotImplementedError, match="The JAX-JIT interface doesn't support qml.counts."
         ):
             jitted_qnode1(0.123)
 
@@ -659,7 +659,7 @@ class TestTapeConstruction:
         jitted_qnode2 = jax.jit(circuit2)
 
         with pytest.raises(
-            qml.QuantumFunctionError, match="Can't JIT a quantum function that returns counts."
+            NotImplementedError, match="The JAX-JIT interface doesn't support qml.counts."
         ):
             jitted_qnode2(0.123)
 
@@ -1328,10 +1328,10 @@ class TestTransformProgramIntegration:
         def null_postprocessing(results):
             return results[0]
 
-        @qml.transforms.core.transform
+        @qml.transform
         def just_pauli_x_out(
-            tape: qml.tape.QuantumTape,
-        ) -> tuple[QuantumTapeBatch, PostprocessingFn]:
+            tape: QuantumScript,
+        ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
             return (
                 qml.tape.QuantumScript([qml.PauliX(0)], tape.measurements),
             ), null_postprocessing
@@ -1358,10 +1358,10 @@ class TestTransformProgramIntegration:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.transforms.core.transform
+        @qml.transform
         def pin_result(
-            tape: qml.tape.QuantumTape, requested_result
-        ) -> tuple[QuantumTapeBatch, PostprocessingFn]:
+            tape: QuantumScript, requested_result
+        ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
             def postprocessing(_: qml.typing.ResultBatch) -> qml.typing.Result:
                 return requested_result
 
@@ -1386,18 +1386,18 @@ class TestTransformProgramIntegration:
         def null_postprocessing(results):
             return results[0]
 
-        @qml.transforms.core.transform
+        @qml.transform
         def just_pauli_x_out(
-            tape: qml.tape.QuantumTape,
-        ) -> tuple[QuantumTapeBatch, PostprocessingFn]:
+            tape: QuantumScript,
+        ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
             return (
                 qml.tape.QuantumScript([qml.PauliX(0)], tape.measurements),
             ), null_postprocessing
 
-        @qml.transforms.core.transform
+        @qml.transform
         def repeat_operations(
-            tape: qml.tape.QuantumTape,
-        ) -> tuple[QuantumTapeBatch, PostprocessingFn]:
+            tape: QuantumScript,
+        ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
             new_tape = qml.tape.QuantumScript(
                 tape.operations + copy.deepcopy(tape.operations), tape.measurements
             )
@@ -1438,16 +1438,14 @@ class TestTransformProgramIntegration:
         def add_shift(results, shift):
             return results[0] + shift
 
-        @qml.transforms.core.transform
+        @qml.transform
         def scale_output(
-            tape: qml.tape.QuantumTape, factor
-        ) -> tuple[QuantumTapeBatch, PostprocessingFn]:
+            tape: QuantumScript, factor
+        ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
             return (tape,), partial(scale_by_factor, factor=factor)
 
-        @qml.transforms.core.transform
-        def shift_output(
-            tape: qml.tape.QuantumTape, shift
-        ) -> tuple[QuantumTapeBatch, PostprocessingFn]:
+        @qml.transform
+        def shift_output(tape: QuantumScript, shift) -> tuple[QuantumScriptBatch, PostprocessingFn]:
             return (tape,), partial(add_shift, shift=shift)
 
         @partial(shift_output, shift=1.0)
@@ -1477,8 +1475,8 @@ class TestTransformProgramIntegration:
         def num_of_shots_from_sample(results):
             return len(results[0])
 
-        @qml.transforms.core.transform
-        def use_n_shots(tape: qml.tape.QuantumTape, n) -> tuple[QuantumTapeBatch, PostprocessingFn]:
+        @qml.transform
+        def use_n_shots(tape: QuantumScript, n) -> tuple[QuantumScriptBatch, PostprocessingFn]:
             return (
                 qml.tape.QuantumScript(tape.operations, tape.measurements, shots=n),
             ), num_of_shots_from_sample
