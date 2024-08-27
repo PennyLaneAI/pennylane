@@ -1191,6 +1191,7 @@ ml_frameworks_list = [
 
 
 # pylint:disable=too-few-public-methods
+@pytest.mark.unit
 class TestMidCircuitMeasurements:
     """Unit tests for simulating mid-circuit measurements."""
 
