@@ -17,7 +17,6 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.measurements import Shots
 
 # pylint: disable=too-many-arguments
 
@@ -51,14 +50,6 @@ def expected_purity_grad_ising_xx(param):
         / np.sqrt(1 - 4 * np.sin(param / 2) ** 2 * np.cos(param / 2) ** 2)
     )
     return grad_expected_purity
-
-
-@pytest.mark.parametrize("shots, shape", [(None, ()), (10, ()), ((1, 10), ((), ()))])
-def test_shape_new(shots, shape):
-    """Test the ``shape_new`` method."""
-    meas = qml.purity(wires=0)
-    dev = qml.device("default.qubit.legacy", wires=1, shots=shots)
-    assert meas.shape(dev, Shots(shots)) == shape
 
 
 class TestPurityIntegration:

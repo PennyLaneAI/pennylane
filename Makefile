@@ -70,17 +70,17 @@ coverage:
 .PHONY:format
 format:
 ifdef check
-	isort --py 311 --profile black -l 100 -o autoray -p ./pennylane --skip __init__.py --filter-files ./pennylane ./tests --check
-	black -t py39 -t py310 -t py311 -l 100 ./pennylane ./tests --check
+	$(PYTHON) -m isort --py 311 --profile black -l 100 -o autoray -p ./pennylane --skip __init__.py --filter-files ./pennylane ./tests --check
+	$(PYTHON) -m black -t py39 -t py310 -t py311 -l 100 ./pennylane ./tests --check
 else
-	isort --py 311 --profile black -l 100 -o autoray -p ./pennylane --skip __init__.py --filter-files ./pennylane ./tests
-	black -t py39 -t py310 -t py311 -l 100 ./pennylane ./tests
+	$(PYTHON) -m isort --py 311 --profile black -l 100 -o autoray -p ./pennylane --skip __init__.py --filter-files ./pennylane ./tests
+	$(PYTHON) -m black -t py39 -t py310 -t py311 -l 100 ./pennylane ./tests
 endif
 
 .PHONY: lint
 lint:
-	pylint pennylane --rcfile .pylintrc
+	$(PYTHON) -m pylint pennylane --rcfile .pylintrc
 
 .PHONY: lint-test
 lint-test:
-	pylint tests pennylane/devices/tests --rcfile tests/.pylintrc
+	$(PYTHON) -m pylint tests pennylane/devices/tests --rcfile tests/.pylintrc

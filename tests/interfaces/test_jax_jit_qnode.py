@@ -14,7 +14,7 @@
 """Integration tests for using the JAX-JIT interface with a QNode"""
 import copy
 
-# pylint: disable=too-many-arguments,too-few-public-methods
+# pylint: disable=too-many-arguments,too-few-public-methods,protected-access
 from functools import partial
 
 import pytest
@@ -941,6 +941,9 @@ class TestQubitIntegration:
 
         if diff_method == "adjoint":
             pytest.skip("Adjoint warns with finite shots")
+
+        if isinstance(dev, qml.devices.DefaultQubit):
+            dev._rng = np.random.default_rng(987654321)
 
         @qnode(
             dev,

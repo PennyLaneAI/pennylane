@@ -21,7 +21,7 @@ from typing import Optional, Union
 
 import pennylane as qml
 from pennylane.measurements import ExpectationMP
-from pennylane.tape import QuantumTape, QuantumTapeBatch
+from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
 from pennylane.wires import Wires
@@ -34,13 +34,13 @@ from .utils import find_and_place_cuts, fragment_graph, replace_wire_cut_nodes
 
 
 def _cut_circuit_expand(
-    tape: QuantumTape,
+    tape: QuantumScript,
     use_opt_einsum: bool = False,
     device_wires: Optional[Wires] = None,
     max_depth: int = 1,
     auto_cutter: Union[bool, Callable] = False,
     **kwargs,
-) -> tuple[QuantumTapeBatch, PostprocessingFn]:
+) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Main entry point for expanding operations until reaching a depth that
     includes :class:`~.WireCut` operations."""
     # pylint: disable=unused-argument
@@ -72,13 +72,13 @@ def _cut_circuit_expand(
 
 @partial(transform, expand_transform=_cut_circuit_expand)
 def cut_circuit(
-    tape: QuantumTape,
+    tape: QuantumScript,
     auto_cutter: Union[bool, Callable] = False,
     use_opt_einsum: bool = False,
     device_wires: Optional[Wires] = None,
     max_depth: int = 1,
     **kwargs,
-) -> tuple[QuantumTapeBatch, PostprocessingFn]:
+) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """
     Cut up a quantum circuit into smaller circuit fragments.
 
