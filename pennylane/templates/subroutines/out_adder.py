@@ -36,14 +36,15 @@ class OutAdder(Operation):
 
         Note that :math:`x` and :math:`y` must be smaller than :math:`mod` to get the correct result.
 
-    .. seealso:: :class:`~.PhaseAdder`.
+    .. seealso:: :class:`~.PhaseAdder` and :class:`~.Adder`.
 
     Args:
         x_wires (Sequence[int]): the wires that store the integer :math:`x`
         y_wires (Sequence[int]): the wires that store the integer :math:`y`
         output_wires (Sequence[int]): the wires that store the addition result
-        mod (int): the modulus for performing the addition, default value is :math:`2^{\text{len(output\_wires)}}`
-        work_wires (Sequence[int]): the auxiliary wires to use for the addition
+        mod (int): the modulus for performing the addition, default value is :math:`2^{\text{len(output_wires)}}`
+        work_wires (Sequence[int]): the two auxiliary wires to use for the addition
+            when :math:`mod \neq 2^{\text{len(output_wires)}}`
 
     **Example**
 
@@ -152,12 +153,14 @@ class OutAdder(Operation):
         x_wires, y_wires, output_wires, mod, work_wires
     ):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators.
+
         Args:
             x_wires (Sequence[int]): the wires that store the integer :math:`x`
             y_wires (Sequence[int]): the wires that store the integer :math:`y`
             output_wires (Sequence[int]): the wires that store the addition result
-            mod (int): the modulus for performing the addition, default value is :math:`2^{\text{len(output\_wires)}}`
-            work_wires (Sequence[int]): the auxiliary wires to use for the addition
+            mod (int): the modulus for performing the addition, default value is :math:`2^{\text{len(output_wires)}}`
+            work_wires (Sequence[int]): the two auxiliary wires to use for the addition
+                when :math:`mod \neq 2^{\text{len(output_wires)}}`
         Returns:
             list[.Operator]: Decomposition of the operator
 

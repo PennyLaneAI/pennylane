@@ -50,8 +50,8 @@ class Multiplier(Operation):
 
         Note that :math:`x` must be smaller than :math:`mod` to get the correct result. Also, it
         is required that :math:`k` has inverse, :math:`k^-1`, modulo :math:`mod`. That means
-        :math:`k*k^-1 modulo mod is equal to 1`, which will only be possible if :math:`k` and
-        :math:`mod` are coprime. Furthermore, if :math:`mod \neq 2^{len(x\_wires)}`, two more
+        :math:`k*k^-1` modulo mod is equal to 1, which will only be possible if :math:`k` and
+        :math:`mod` are coprime. Furthermore, if :math:`mod \neq 2^{\text{len(x_wires)}}`, two more
         auxiliaries must be added.
 
     .. seealso:: :class:`~.PhaseAdder` and :class:`~.OutMultiplier`.
@@ -59,8 +59,10 @@ class Multiplier(Operation):
     Args:
         k (int): the number that needs to be multiplied
         x_wires (Sequence[int]): the wires the operation acts on
-        mod (int): the modulus for performing the multiplication, default value is :math:`2^{len(x\_wires)}`
-        work_wires (Sequence[int]): the auxiliary wires to be used for performing the multiplication
+        mod (int): the modulus for performing the multiplication, default value is :math:`2^{\text{len(x_wires)}}`
+        work_wires (Sequence[int]): the auxiliary wires to be used for performing the multiplication. There
+            must be as many as ``x_wires`` and if :math:`mod \neq 2^{\text{len(x_wires)}}`, two more
+            wires must be added.
 
     **Example**
 
@@ -77,14 +79,14 @@ class Multiplier(Operation):
 
         dev = qml.device("default.qubit", shots=1)
         @qml.qnode(dev)
-        def circuit(x, k, mod, wires_m, work_wires):
+        def circuit():
             qml.BasisEmbedding(x, wires=wires_m)
             qml.Multiplier(k, x_wires, mod, work_wires)
             return qml.sample(wires=wires_m)
 
     .. code-block:: pycon
 
-        >>> print(circuit(x, k, mod, x_wires, work_wires))
+        >>> print(circuit())
         [1 0 1]
 
     The result :math:`[1 0 1]`, is the ket representation of
@@ -160,11 +162,14 @@ class Multiplier(Operation):
     @staticmethod
     def compute_decomposition(k, x_wires, mod, work_wires):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators.
+
         Args:
             k (int): the number that needs to be multiplied
             x_wires (Sequence[int]): the wires the operation acts on
-            mod (int): the modulus for performing the multiplication, default value is :math:`2^{len(x\_wires)}`
-            work_wires (Sequence[int]): the auxiliary wires to be used for performing the multiplication
+            mod (int): the modulus for performing the multiplication, default value is :math:`2^{\text{len(x_wires)}}`
+            work_wires (Sequence[int]): the auxiliary wires to be used for performing the multiplication. There
+                must be as many as ``x_wires`` and if :math:`mod \neq 2^{\text{len(x_wires)}}`, two more
+                wires must be added.
         Returns:
             list[.Operator]: Decomposition of the operator
 

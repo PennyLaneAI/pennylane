@@ -26,7 +26,7 @@ class ModExp(Operation):
 
     .. math::
 
-        \text{ModExp}(base,mod) |x \rangle |k \rangle = |x \rangle |k*base^x \, \text{mod} \, mod \rangle,
+        \text{ModExp}(base,mod) |x \rangle |b \rangle = |x \rangle |b*base^x \, \text{mod} \, mod \rangle,
 
     The implementation is based on the quantum Fourier transform method presented in
     `arXiv:2311.08555 <https://arxiv.org/abs/2311.08555>`_.
@@ -35,7 +35,7 @@ class ModExp(Operation):
 
         Note that :math:`x` must be smaller than :math:`mod` to get the correct result.
         Also, it is required that :math:`base` has inverse, :math:`base^-1` modulo :math:`mod`.
-        That means :math:`base*base^-1 modulo mod = 1`, which will only be possible if :math:`base`
+        That means :math:`base*base^-1` modulo :math:`mod` is equal to 1, which will only be possible if :math:`base`
         and :math:`mod` are coprime.
 
     .. seealso:: :class:`~.Multiplier`.
@@ -44,9 +44,9 @@ class ModExp(Operation):
         x_wires (Sequence[int]): the wires that store the integer :math:`x`
         output_wires (Sequence[int]): the wires that store the exponentiation result
         base (int): integer that needs to be exponentiated
-        mod (int): the modulus for performing the exponentiation, default value is :math:`2^{len(output\_wires)}`
+        mod (int): the modulus for performing the exponentiation, default value is :math:`2^{\text{len(output_wires)}}`
         work_wires (Sequence[int]): the auxiliary wires to be used for the exponentiation. There
-            must be as many as ``output_wires`` and if :math:`mod \neq 2^{len(x\_wires)}`, two more
+            must be as many as ``output_wires`` and if :math:`mod \neq 2^{\text{len(output_wires)}}`, two more
             wires must be added.
 
     **Example**
@@ -55,17 +55,19 @@ class ModExp(Operation):
 
     .. code-block::
 
-        x, k = 3, 1
+        x, b = 3, 1
         base = 2
         mod = 7
+
         x_wires = [0, 1]
         output_wires = [2, 3, 4]
         work_wires = [5, 6, 7, 8, 9]
+
         dev = qml.device("default.qubit", shots=1)
         @qml.qnode(dev)
         def circuit():
             qml.BasisEmbedding(x, wires = x_wires)
-            qml.BasisEmbedding(k, wires = output_wires)
+            qml.BasisEmbedding(b, wires = output_wires)
             qml.ModExp(x_wires, output_wires, base, mod, work_wires)
             return qml.sample(wires = output_wires)
 
@@ -167,9 +169,10 @@ class ModExp(Operation):
             x_wires (Sequence[int]): the wires that store the integer :math:`x`
             output_wires (Sequence[int]): the wires that store the exponentiation result
             base (int): integer that needs to be exponentiated
-            mod (int): the modulus for performing the exponentiation, default value is :math:`2^{len(output\_wires)}`
-            work_wires (Sequence[int]): the auxiliary wires to be used for the exponentiation. There must be as many as ``output_wires`` and if :math:`mod \neq 2^{len(x\_wires)}`, two more wires must be added.
-
+            mod (int): the modulus for performing the exponentiation, default value is :math:`2^{\text{len(output_wires)}}`
+            work_wires (Sequence[int]): the auxiliary wires to be used for the exponentiation. There
+                must be as many as ``output_wires`` and if :math:`mod \neq 2^{\text{len(output_wires)}}`, two more
+                wires must be added.
         Returns:
             list[.Operator]: Decomposition of the operator
 

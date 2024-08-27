@@ -22,27 +22,28 @@ from pennylane.operation import Operation
 class Adder(Operation):
     r"""Performs the in-place modular addition operation.
 
-     This operator performs the modular addition by an integer :math:`k` modulo :math:`mod` in the
-     computational basis:
+    This operator performs the modular addition by an integer :math:`k` modulo :math:`mod` in the
+    computational basis:
 
-     .. math::
+    .. math::
 
-         \text{Adder}(k, mod) |x \rangle = | x+k \; \text{modulo} \; mod \rangle.
+        \text{Adder}(k, mod) |x \rangle = | x+k \; \text{modulo} \; mod \rangle.
 
-     The implementation is based on the quantum Fourier transform method presented in
-     `arXiv:2311.08555 <https://arxiv.org/abs/2311.08555>`_.
+    The implementation is based on the quantum Fourier transform method presented in
+    `arXiv:2311.08555 <https://arxiv.org/abs/2311.08555>`_.
 
     .. note::
 
         Note that :math:`x` must be smaller than :math:`mod` to get the correct result.
 
-    .. seealso:: :class:`~.PhaseAdder`.
+    .. seealso:: :class:`~.PhaseAdder` and :class:`~.OutAdder`.
 
-     Args:
-         k (int): the number that needs to be added
-         x_wires (Sequence[int]): the wires the operation acts on
-         mod (int): the modulus for performing the addition, default value is :math:`2^{len(x\_wires)}`
-         work_wires (Sequence[int]): the auxiliary wires to be used for performing the addition
+    Args:
+        k (int): the number that needs to be added
+        x_wires (Sequence[int]): the wires the operation acts on
+        mod (int): the modulus for performing the addition, default value is :math:`2^{\text{len(x_wires)}}`
+        work_wires (Sequence[int]): the two auxiliary wires to be used for performing the addition
+            when :math:`mod \neq 2^{\text{len(x_wires)}}`
 
      **Example**
 
@@ -59,14 +60,14 @@ class Adder(Operation):
 
          dev = qml.device("default.qubit", shots=1)
          @qml.qnode(dev)
-         def circuit(x, k, mod, x_wires, work_wires):
+         def circuit():
              qml.BasisEmbedding(x, wires=x_wires)
              qml.Adder(k, x_wires, mod, work_wires)
              return qml.sample(wires=x_wires)
 
      .. code-block:: pycon
 
-         >>> print(circuit(x, k, mod,x_wires, work_wires))
+         >>> print(circuit())
          [1 1 0 1]
 
     The result, :math:`[1 1 0 1]`, is the ket representation of
@@ -136,11 +137,13 @@ class Adder(Operation):
     @staticmethod
     def compute_decomposition(k, x_wires, mod, work_wires):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators.
+
         Args:
             k (int): the number that needs to be added
             x_wires (Sequence[int]): the wires the operation acts on
-            mod (int): the modulus for performing the addition, default value is :math:`2^{len(x\_wires)}`
-            work_wires (Sequence[int]): the auxiliary wires to be used for performing the addition
+            mod (int): the modulus for performing the addition, default value is :math:`2^{\text{len(x_wires)}}`
+            work_wires (Sequence[int]): the two auxiliary wires to be used for performing the addition
+                when :math:`mod \neq 2^{\text{len(x_wires)}}`
         Returns:
             list[.Operator]: Decomposition of the operator
 

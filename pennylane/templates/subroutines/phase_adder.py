@@ -37,13 +37,13 @@ class PhaseAdder(Operation):
 
     .. math::
 
-         \text{PhaseAdder}(k,mod) |\phi (x) \rangle = |\phi (x+k \; \text{modulo} \; mod) \rangle,
+        \text{PhaseAdder}(k,mod) |\phi (x) \rangle = |\phi (x+k \; \text{modulo} \; mod) \rangle,
 
-    where :math:`|\phi (x) \rangle` represents the :math:`| x \rangle` : state in the Fourier basis,
+    where :math:`|\phi (x) \rangle` represents the :math:`| x \rangle` state in the Fourier basis,
 
-     .. math::
+    .. math::
 
-         \text{QFT} |x \rangle = |\phi (x) \rangle.
+        \text{QFT} |x \rangle = |\phi (x) \rangle.
 
     The implementation is based on the quantum Fourier transform method presented in
     `arXiv:2311.08555 <https://arxiv.org/abs/2311.08555>`_.
@@ -51,16 +51,17 @@ class PhaseAdder(Operation):
     .. note::
 
         Note that :math:`x` must be smaller than :math:`mod` to get the correct result. Also, when
-        :math:`mod \neq 2^{\text{len(x\_wires)}}` we need :math:`x < 2^{\text{len(x\_wires)}}/2`,
+        :math:`mod \neq 2^{\text{len(x_wires)}}` we need :math:`x < 2^{\text{len(x_wires)}}/2`,
         which means that we need one extra wire in ``x_wires``.
 
-    .. seealso:: :class:`~.QFT`.
+    .. seealso:: :class:`~.QFT` and :class:`~.Adder`.
 
     Args:
         k (int): the number that needs to be added
         x_wires (Sequence[int]): the wires the operation acts on
-        mod (int): the modulus for performing the addition, default value is :math:`2^{len(x\_wires)}`
+        mod (int): the modulus for performing the addition, default value is :math:`2^{\text{len(x_wires)}}`
         work_wire (Sequence[int]): the auxiliary wire to be used for performing the addition
+            when :math:`mod \neq 2^{\text{len(x_wires)}}`
 
     **Example**
 
@@ -77,7 +78,7 @@ class PhaseAdder(Operation):
 
         dev = qml.device("default.qubit", shots=1)
         @qml.qnode(dev)
-        def circuit(x, k, mod, x_wires, work_wire):
+        def circuit():
             qml.BasisEmbedding(x, wires=x_wires)
             qml.QFT(wires=x_wires)
             qml.PhaseAdder(k, x_wires, mod, work_wire)
@@ -86,7 +87,7 @@ class PhaseAdder(Operation):
 
     .. code-block:: pycon
 
-        >>> print(circuit(x, k, mod, x_wires, work_wire))
+        >>> print(circuit())
         [1 1 0 1]
 
     The result, :math:`[1 1 0 1]`, is the ket representation of
@@ -155,11 +156,13 @@ class PhaseAdder(Operation):
     @staticmethod
     def compute_decomposition(k, x_wires, mod, work_wire):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators.
+
         Args:
             k (int): the number that needs to be added
             x_wires (Sequence[int]): the wires the operation acts on
-            mod (int): the modulus for performing the addition, default value is :math:`2^{len(x_wires)}`
+            mod (int): the modulus for performing the addition, default value is :math:`2^{\text{len(x_wires)}}`
             work_wire (Sequence[int]): the auxiliary wire to be used for performing the addition
+                when :math:`mod \neq 2^{\text{len(x_wires)}}`
         Returns:
             list[.Operator]: Decomposition of the operator
 

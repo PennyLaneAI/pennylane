@@ -35,14 +35,14 @@ class OutMultiplier(Operation):
 
         Note that :math:`x` and :math:`y` must be smaller than :math:`mod` to get the correct result.
 
-    .. seealso:: :class:`~.PhaseAdder`.
+    .. seealso:: :class:`~.PhaseAdder` and :class:`~.Multiplier`.
 
     Args:
         x_wires (Sequence[int]): the wires that store the integer :math:`x`
         y_wires (Sequence[int]): the wires that store the integer :math:`y`
         output_wires (Sequence[int]): the wires that store the multiplication result
-        mod (int): the modulus for performing the multiplication, default value is :math:`2^{len(output\_wires)}`
-        work_wires (Sequence[int]): the auxiliary wires to use for the multiplication modulo
+        mod (int): the modulus for performing the multiplication, default value is :math:`2^{\text{len(output_wires)}}`
+        work_wires (Sequence[int]): the two auxiliary wires to be used for the multiplication when :math:`mod \neq 2^{\text{len(output_wires)}}`
 
     **Example**
 
@@ -165,8 +165,8 @@ class OutMultiplier(Operation):
             x_wires (Sequence[int]): the wires that store the integer :math:`x`
             y_wires (Sequence[int]): the wires that store the integer :math:`y`
             output_wires (Sequence[int]): the wires that store the multiplication result
-            mod (int): the modulus for performing the multiplication, default value is :math:`2^{len(output\_wires)}`
-            work_wires (Sequence[int]): the auxiliary wires to use for the multiplication
+            mod (int): the modulus for performing the multiplication, default value is :math:`2^{\text{len(output_wires)}}`
+            work_wires (Sequence[int]): the two auxiliary wires to be used for the multiplication when :math:`mod \neq 2^{\text{len(output_wires)}}`
         Returns:
             list[.Operator]: Decomposition of the operator
 
