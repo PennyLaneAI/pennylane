@@ -156,10 +156,10 @@
 
   * **In-place operations**: :math:`\text{SomeOp}(k, mod) \vert x \rangle = \vert x * k \; \text{modulo} \; mod \rangle` 
     where :math:`*` denotes addition (:math:`+`) or multiplication (:math:`\times`). Each of the following 
-    operations has the same call signature: `SomeOp(k, x_wires, mod, work_wires=None)`, where `x_wires` 
-    denotes the wires we operate on, :math:`\text{mod} = 2^{\text{len(x_wires)}}` by default, and
-    `work_wires` are auxiliary wires that may be required to perform the operation.
-  
+    operations require that you specify `k` and `x_wires` (the wires we operate on and store the result).
+    Optionally, you can override the default modulus value (`2**len(x_wires)`) with the `mod` keyword 
+    argument.
+    
     * `qml.Adder` performs in-place modular addition: 
       :math:`\text{Adder}(k, mod)\vert x \rangle = \vert x + k \; \text{modulo} \; mod \rangle`. 
       [(#6109)](https://github.com/PennyLaneAI/pennylane/pull/6109)
