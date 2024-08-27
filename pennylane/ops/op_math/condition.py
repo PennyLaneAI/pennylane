@@ -345,8 +345,8 @@ def cond(condition, true_fn: Callable = None, false_fn: Optional[Callable] = Non
 
     .. code-block :: pycon
 
-        >>> first_par = np.array(0.3, requires_grad=True)
-        >>> sec_par = np.array(1.23, requires_grad=True)
+        >>> first_par = pnp.array(0.3, requires_grad=True)
+        >>> sec_par = pnp.array(1.23, requires_grad=True)
         >>> qnode(first_par, sec_par)
         tensor(0.32677361, requires_grad=True)
 
