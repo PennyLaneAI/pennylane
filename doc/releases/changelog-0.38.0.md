@@ -159,7 +159,7 @@
     operations require that you specify `k` and `x_wires` (the wires we operate on and store the result).
     Optionally, you can override the default modulus value (`2**len(x_wires)`) with the `mod` keyword 
     argument.
-    
+
     * `qml.Adder` performs in-place modular addition: 
       :math:`\text{Adder}(k, mod)\vert x \rangle = \vert x + k \; \text{modulo} \; mod \rangle`. 
       [(#6109)](https://github.com/PennyLaneAI/pennylane/pull/6109)
@@ -313,6 +313,50 @@
       array([0, 0, 1])
       ```
 
+<h4>Substantial upgrades to MCMs using tree-traversal 🌳</h4>
+
+* The `"tree-traversal"` algorithm for MCMs on `default.qubit` has been internally redesigned for better 
+  performance.
+  [(#5868)](https://github.com/PennyLaneAI/pennylane/pull/5868)
+
+  In the last release (v0.37), we introduced the tree-traversal MCM method, which was implemented in 
+  a recursive way for simplicity. However, this had the unintended consequence of very deep [stack calls](https://en.wikipedia.org/wiki/Call_stack) 
+  for circuits with many MCMs, resulting in [stack overflows](https://en.wikipedia.org/wiki/Stack_overflow) 
+  in some cases. With this release, we've refactored the implementation of the tree-traversal method 
+  into an iterative approach, which solves those inefficiencies when many MCMs are present in a circuit.
+ 
+* The `tree-traversal` algorithm is compatible with analytic-mode execution (`shots=None`).
+  [(#5868)](https://github.com/PennyLaneAI/pennylane/pull/5868)
+
+  ```python
+  dev = qml.device("default.qubit")
+
+  n_qubits = 5
+
+  @qml.qnode(dev, mcm_method="tree-traversal")
+  def circuit():
+      for w in range(n_qubits):
+          qml.Hadamard(w)
+      
+      for w in range(n_qubits - 1):
+          qml.CNOT(wires=[w, w+1])
+
+      for w in range(n_qubits):
+          m = qml.measure(w)
+          qml.cond(m == 1, qml.RX)(0.1967 * (w + 1), w)
+
+      return [qml.expval(qml.Z(w)) for w in range(n_qubits)]
+  ```
+
+  ```pycon
+  >>> circuit()
+  [tensor(0.00964158, requires_grad=True),
+   tensor(0.03819446, requires_grad=True),
+   tensor(0.08455748, requires_grad=True),
+   tensor(0.14694258, requires_grad=True),
+   tensor(0.2229438, requires_grad=True)]
+  ```
+
 <h3>Improvements 🛠</h3>
 
 <h4>Creating spin Hamiltonians</h4>
@@ -414,15 +458,7 @@
 * The `CNOT` operator no longer decomposes to itself. Instead, it raises a `qml.DecompositionUndefinedError`.
   [(#6039)](https://github.com/PennyLaneAI/pennylane/pull/6039)
 
-<h4>Mid-circuit measurement improvements</h4>
-
-* The `tree-traversal` algorithm implemented in `default.qubit` is refactored
-  into an iterative (instead of recursive) implementation, doing away with
-  potential stack overflow for deep circuits.
-  [(#5868)](https://github.com/PennyLaneAI/pennylane/pull/5868)
-  
-* The `tree-traversal` algorithm is compatible with analytic-mode execution (`shots=None`).
-  [(#5868)](https://github.com/PennyLaneAI/pennylane/pull/5868)
+<h4>Mid-circuit measurements</h4>
 
 * `qml.dynamic_one_shot` now supports circuits using the `"tensorflow"` interface.
   [(#5973)](https://github.com/PennyLaneAI/pennylane/pull/5973)
