@@ -436,6 +436,9 @@
 * `qml.qsvt` now works with "Wx" convention and any number of angles.
   [(#6105)](https://github.com/PennyLaneAI/pennylane/pull/6105)
 
+* Basis set data from the Basis Set Exchange library can now be loaded for elements with `SPD`-type orbitals.
+  [(#)](https://github.com/PennyLaneAI/pennylane/pull/)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
