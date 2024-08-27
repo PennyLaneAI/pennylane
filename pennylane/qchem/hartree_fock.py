@@ -125,18 +125,18 @@ def scf(mol, n_steps=50, tol=1e-8):
         charges = mol.nuclear_charges
         r = mol.coordinates
         n_electron = mol.n_electrons
-        argnums = [mol.coord_opt, mol.coeff_opt, mol.alpha_opt]
+        argnum = mol.argnum
 
-        if getattr(r, "requires_grad", False) or argnums[0]:
+        if getattr(r, "requires_grad", False) or argnum[0]:
             args_r = [[args[0][i]] * mol.n_basis[i] for i in range(len(mol.n_basis))]
             args_ = [*args] + [qml.math.vstack(list(itertools.chain(*args_r)))]
-            rep_tensor = repulsion_tensor(basis_functions, argnums)(*args_[1:])
-            s = overlap_matrix(basis_functions, argnums)(*args_[1:])
-            h_core = core_matrix(basis_functions, charges, r, argnums)(*args_)
+            rep_tensor = repulsion_tensor(basis_functions, argnum)(*args_[1:])
+            s = overlap_matrix(basis_functions, argnum)(*args_[1:])
+            h_core = core_matrix(basis_functions, charges, r, argnum)(*args_)
         else:
-            rep_tensor = repulsion_tensor(basis_functions, argnums)(*args)
-            s = overlap_matrix(basis_functions, argnums)(*args)
-            h_core = core_matrix(basis_functions, charges, r, argnums)(*args)
+            rep_tensor = repulsion_tensor(basis_functions, argnum)(*args)
+            s = overlap_matrix(basis_functions, argnum)(*args)
+            h_core = core_matrix(basis_functions, charges, r, argnum)(*args)
 
         rng = qml.math.random.default_rng(2030)
         s = s + qml.math.diag(rng.random(len(s)) * 1.0e-12)
@@ -175,7 +175,7 @@ def scf(mol, n_steps=50, tol=1e-8):
     return _scf
 
 
-def nuclear_energy(charges, r, argnums=None):
+def nuclear_energy(charges, r, argnum=None):
     r"""Return a function that computes the nuclear-repulsion energy.
 
     The nuclear-repulsion energy is computed as
@@ -190,7 +190,7 @@ def nuclear_energy(charges, r, argnums=None):
     Args:
         charges (list[int]): nuclear charges in atomic units
         r (array[float]): nuclear positions
-        argnums (list[bool], optional): differentiability of coords, coeffs, and alpha (in that order)
+        argnum (list[bool], optional): differentiability of coords, coeffs, and alpha (in that order)
 
     Returns:
         function: function that computes the nuclear-repulsion energy
@@ -215,9 +215,9 @@ def nuclear_energy(charges, r, argnums=None):
         Returns:
             array[float]: nuclear-repulsion energy
         """
-        local_argnums = argnums if argnums is not None else [False, False, False]
+        local_argnum = argnum if argnum is not None else [False, False, False]
 
-        if getattr(r, "requires_grad", False) or local_argnums[0]:
+        if getattr(r, "requires_grad", False) or local_argnum[0]:
             coor = args[0]
         else:
             coor = r
@@ -260,9 +260,9 @@ def hf_energy(mol):
         Returns:
             float: the Hartree-Fock energy
         """
-        argnums = [mol.coord_opt, mol.coeff_opt, mol.alpha_opt]
+        argnum = mol.argnum
         _, coeffs, fock_matrix, h_core, _ = scf(mol)(*args)
-        e_rep = nuclear_energy(mol.nuclear_charges, mol.coordinates, argnums)(*args)
+        e_rep = nuclear_energy(mol.nuclear_charges, mol.coordinates, argnum)(*args)
         e_elec = qml.math.einsum(
             "pq,qp", fock_matrix + h_core, mol_density_matrix(mol.n_electrons, coeffs)
         )

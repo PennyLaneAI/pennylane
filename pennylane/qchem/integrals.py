@@ -127,26 +127,26 @@ def _fac2(n):
     return int(fac2(n) if n != -1 else 1)
 
 
-def _generate_params(params, args, argnums=None):
+def _generate_params(params, args, argnum=None):
     """Generate basis set parameters. The default values are used for the non-differentiable
     parameters and the user-defined values are used for the differentiable ones.
 
     Args:
         params (list(array[float])): default values of the basis set parameters
         args (list(array[float])): initial values of the differentiable basis set parameters
-        argnums (list[bool], optional): differentiability of coords, coeffs, and alpha (in that order)
+        argnum (list[bool], optional): differentiability of coords, coeffs, and alpha (in that order)
 
     Returns:
         list(array[float]): basis set parameters
     """
 
-    local_argnums = argnums if argnums is not None else [False, False, False]
+    local_argnum = argnum if argnum is not None else [False, False, False]
 
     basis_params = []
     c = 0
     for i, p in enumerate(params):
-        # we iterate through argnums backwards because params order goes [alpha, coeff, r]
-        if getattr(p, "requires_grad", False) or local_argnums[2 - i]:
+        # we iterate through argnum backwards because params order goes [alpha, coeff, r]
+        if getattr(p, "requires_grad", False) or local_argnum[2 - i]:
             basis_params.append(args[c])
             c += 1
         else:
@@ -279,13 +279,13 @@ def gaussian_overlap(la, lb, ra, rb, alpha, beta):
     return s
 
 
-def overlap_integral(basis_a, basis_b, argnums=None, normalize=True):
+def overlap_integral(basis_a, basis_b, argnum=None, normalize=True):
     r"""Return a function that computes the overlap integral for two contracted Gaussian functions.
 
     Args:
         basis_a (~qchem.basis_set.BasisFunction): first basis function
         basis_b (~qchem.basis_set.BasisFunction): second basis function
-        argnums (list[bool], optional): differentiability of coords, coeffs, and alpha (in that order)
+        argnum (list[bool], optional): differentiability of coords, coeffs, and alpha (in that order)
         normalize (bool): if True, the basis functions get normalized
 
     Returns:
@@ -311,14 +311,14 @@ def overlap_integral(basis_a, basis_b, argnums=None, normalize=True):
             array[float]: the overlap integral between two contracted Gaussian orbitals
         """
 
-        local_argnums = argnums if argnums is not None else [False, False, False]
+        local_argnum = argnum if argnum is not None else [False, False, False]
 
         args_a = [arg[0] for arg in args]
         args_b = [arg[1] for arg in args]
-        alpha, ca, ra = _generate_params(basis_a.params, args_a, local_argnums)
-        beta, cb, rb = _generate_params(basis_b.params, args_b, local_argnums)
+        alpha, ca, ra = _generate_params(basis_a.params, args_a, local_argnum)
+        beta, cb, rb = _generate_params(basis_b.params, args_b, local_argnum)
 
-        if getattr(basis_a.params[1], "requires_grad", False) or normalize or local_argnums[1]:
+        if getattr(basis_a.params[1], "requires_grad", False) or normalize or local_argnum[1]:
             ca = ca * primitive_norm(basis_a.l, alpha)
             cb = cb * primitive_norm(basis_b.l, beta)
             na = contracted_norm(basis_a.l, alpha, ca)
@@ -455,7 +455,7 @@ def gaussian_moment(li, lj, ri, rj, alpha, beta, order, r):
     return s
 
 
-def moment_integral(basis_a, basis_b, order, idx, argnums=None, normalize=True):
+def moment_integral(basis_a, basis_b, order, idx, argnum=None, normalize=True):
     r"""Return a function that computes the multipole moment integral for two contracted Gaussians.
 
     The multipole moment integral for two primitive Gaussian functions is computed as
@@ -480,7 +480,7 @@ def moment_integral(basis_a, basis_b, order, idx, argnums=None, normalize=True):
         basis_b (~qchem.basis_set.BasisFunction): right basis function
         order (integer): exponent of the position component
         idx (integer): index determining the dimension of the multipole moment integral
-        argnums (list[bool], optional): differentiability of coords, coeffs, and alpha (in that order)
+        argnum (list[bool], optional): differentiability of coords, coeffs, and alpha (in that order)
         normalize (bool): if True, the basis functions get normalized
 
     Returns:
@@ -506,7 +506,7 @@ def moment_integral(basis_a, basis_b, order, idx, argnums=None, normalize=True):
         Returns:
             array[float]: the multipole moment integral between two contracted Gaussian orbitals
         """
-        local_argnums = argnums if argnums is not None else [False, False, False]
+        local_argnum = argnum if argnum is not None else [False, False, False]
 
         args_a = [arg[0] for arg in args]
         args_b = [arg[1] for arg in args]
@@ -514,10 +514,10 @@ def moment_integral(basis_a, basis_b, order, idx, argnums=None, normalize=True):
         la = basis_a.l
         lb = basis_b.l
 
-        alpha, ca, ra = _generate_params(basis_a.params, args_a, local_argnums)
-        beta, cb, rb = _generate_params(basis_b.params, args_b, local_argnums)
+        alpha, ca, ra = _generate_params(basis_a.params, args_a, local_argnum)
+        beta, cb, rb = _generate_params(basis_b.params, args_b, local_argnum)
 
-        if getattr(basis_a.params[1], "requires_grad", False) or normalize or local_argnums[1]:
+        if getattr(basis_a.params[1], "requires_grad", False) or normalize or local_argnum[1]:
             ca = ca * primitive_norm(basis_a.l, alpha)
             cb = cb * primitive_norm(basis_b.l, beta)
             na = contracted_norm(basis_a.l, alpha, ca)
@@ -651,14 +651,14 @@ def gaussian_kinetic(la, lb, ra, rb, alpha, beta):
     return -0.5 * (t1 + t2 + t3)
 
 
-def kinetic_integral(basis_a, basis_b, argnums=None, normalize=True):
+def kinetic_integral(basis_a, basis_b, argnum=None, normalize=True):
     r"""Return a function that computes the kinetic integral for two contracted Gaussian functions.
 
     Args:
         basis_a (~qchem.basis_set.BasisFunction): first basis function
         basis_b (~qchem.basis_set.BasisFunction): second basis function
         normalize (bool): if True, the basis functions get normalized
-        argnums (list[bool], optional): differentiability of coords, coeffs, and alpha (in that order)
+        argnum (list[bool], optional): differentiability of coords, coeffs, and alpha (in that order)
 
     Returns:
         function: function that computes the kinetic integral
@@ -684,14 +684,14 @@ def kinetic_integral(basis_a, basis_b, argnums=None, normalize=True):
         Returns:
             array[float]: the kinetic integral between two contracted Gaussian orbitals
         """
-        local_argnums = argnums if argnums is not None else [False, False, False]
+        local_argnum = argnum if argnum is not None else [False, False, False]
 
         args_a = [arg[0] for arg in args]
         args_b = [arg[1] for arg in args]
-        alpha, ca, ra = _generate_params(basis_a.params, args_a, local_argnums)
-        beta, cb, rb = _generate_params(basis_b.params, args_b, local_argnums)
+        alpha, ca, ra = _generate_params(basis_a.params, args_a, local_argnum)
+        beta, cb, rb = _generate_params(basis_b.params, args_b, local_argnum)
 
-        if getattr(basis_a.params[1], "requires_grad", False) or local_argnums[1] or normalize:
+        if getattr(basis_a.params[1], "requires_grad", False) or local_argnum[1] or normalize:
             ca = ca * primitive_norm(basis_a.l, alpha)
             cb = cb * primitive_norm(basis_b.l, beta)
             na = contracted_norm(basis_a.l, alpha, ca)
@@ -858,7 +858,7 @@ def nuclear_attraction(la, lb, ra, rb, alpha, beta, r):
     return a
 
 
-def attraction_integral(r, basis_a, basis_b, argnums=None, normalize=True):
+def attraction_integral(r, basis_a, basis_b, argnum=None, normalize=True):
     r"""Return a function that computes the nuclear attraction integral for two contracted Gaussian
     functions.
 
@@ -867,7 +867,7 @@ def attraction_integral(r, basis_a, basis_b, argnums=None, normalize=True):
         basis_a (~qchem.basis_set.BasisFunction): first basis function
         basis_b (~qchem.basis_set.BasisFunction): second basis function
         normalize (bool): if True, the basis functions get normalized
-        argnums (list[bool], optional): differentiability of coords, coeffs, and alpha (in that order)
+        argnum (list[bool], optional): differentiability of coords, coeffs, and alpha (in that order)
 
     Returns:
         function: function that computes the electron-nuclear attraction integral
@@ -895,9 +895,9 @@ def attraction_integral(r, basis_a, basis_b, argnums=None, normalize=True):
         Returns:
             array[float]: the electron-nuclear attraction integral
         """
-        local_argnums = argnums if argnums is not None else [False, False, False]
+        local_argnum = argnum if argnum is not None else [False, False, False]
 
-        if getattr(r, "requires_grad", False) or local_argnums[0]:
+        if getattr(r, "requires_grad", False) or local_argnum[0]:
             coor = args[0]
             args_a = [arg[0] for arg in args[1:]]
             args_b = [arg[1] for arg in args[1:]]
@@ -906,10 +906,10 @@ def attraction_integral(r, basis_a, basis_b, argnums=None, normalize=True):
             args_a = [arg[0] for arg in args]
             args_b = [arg[1] for arg in args]
 
-        alpha, ca, ra = _generate_params(basis_a.params, args_a, local_argnums)
-        beta, cb, rb = _generate_params(basis_b.params, args_b, local_argnums)
+        alpha, ca, ra = _generate_params(basis_a.params, args_a, local_argnum)
+        beta, cb, rb = _generate_params(basis_b.params, args_b, local_argnum)
 
-        if getattr(basis_a.params[1], "requires_grad", False) or normalize or local_argnums[1]:
+        if getattr(basis_a.params[1], "requires_grad", False) or normalize or local_argnum[1]:
             ca = ca * primitive_norm(basis_a.l, alpha)
             cb = cb * primitive_norm(basis_b.l, beta)
             na = contracted_norm(basis_a.l, alpha, ca)
@@ -1008,7 +1008,7 @@ def electron_repulsion(la, lb, lc, ld, ra, rb, rc, rd, alpha, beta, gamma, delta
     return g
 
 
-def repulsion_integral(basis_a, basis_b, basis_c, basis_d, argnums=None, normalize=True):
+def repulsion_integral(basis_a, basis_b, basis_c, basis_d, argnum=None, normalize=True):
     r"""Return a function that computes the electron-electron repulsion integral for four contracted
     Gaussian functions.
 
@@ -1017,7 +1017,7 @@ def repulsion_integral(basis_a, basis_b, basis_c, basis_d, argnums=None, normali
         basis_b (~qchem.basis_set.BasisFunction): second basis function
         basis_c (~qchem.basis_set.BasisFunction): third basis function
         basis_d (~qchem.basis_set.BasisFunction): fourth basis function
-        argnums (list[bool], optional): differentiability of coords, coeffs, and alpha (in that order)
+        argnum (list[bool], optional): differentiability of coords, coeffs, and alpha (in that order)
         normalize (bool): if True, the basis functions get normalized
 
     Returns:
@@ -1048,19 +1048,19 @@ def repulsion_integral(basis_a, basis_b, basis_c, basis_d, argnums=None, normali
         Returns:
             array[float]: the electron repulsion integral between four contracted Gaussian functions
         """
-        local_argnums = argnums if argnums is not None else [False, False, False]
+        local_argnum = argnum if argnum is not None else [False, False, False]
 
         args_a = [arg[0] for arg in args]
         args_b = [arg[1] for arg in args]
         args_c = [arg[2] for arg in args]
         args_d = [arg[3] for arg in args]
 
-        alpha, ca, ra = _generate_params(basis_a.params, args_a, local_argnums)
-        beta, cb, rb = _generate_params(basis_b.params, args_b, local_argnums)
-        gamma, cc, rc = _generate_params(basis_c.params, args_c, local_argnums)
-        delta, cd, rd = _generate_params(basis_d.params, args_d, local_argnums)
+        alpha, ca, ra = _generate_params(basis_a.params, args_a, local_argnum)
+        beta, cb, rb = _generate_params(basis_b.params, args_b, local_argnum)
+        gamma, cc, rc = _generate_params(basis_c.params, args_c, local_argnum)
+        delta, cd, rd = _generate_params(basis_d.params, args_d, local_argnum)
 
-        if getattr(basis_a.params[1], "requires_grad", False) or normalize or local_argnums[1]:
+        if getattr(basis_a.params[1], "requires_grad", False) or normalize or local_argnum[1]:
             ca = ca * primitive_norm(basis_a.l, alpha)
             cb = cb * primitive_norm(basis_b.l, beta)
             cc = cc * primitive_norm(basis_c.l, gamma)

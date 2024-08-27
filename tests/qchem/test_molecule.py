@@ -72,19 +72,15 @@ class TestMolecule:
         assert mol.charge == charge
         assert mol.mult == mult
         assert mol.basis_name == basis_name
-        assert mol.coord_opt is False
-        assert mol.alpha_opt is False
-        assert mol.coeff_opt is False
+        assert mol.argnum == None
 
     def test_molecule_opt_coeffs(self):
         r"""Test that the molecule object contains the correct optimization flags."""
         symbols = ["H", "H"]
         geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])
-        mol = qchem.Molecule(symbols, geometry, coeff_opt=True, coord_opt=True, alpha_opt=True)
+        mol = qchem.Molecule(symbols, geometry, argnum=[1, 2])
 
-        assert mol.coord_opt is True
-        assert mol.coeff_opt is True
-        assert mol.alpha_opt is True
+        assert mol.argnum == [1, 2]
 
     @pytest.mark.parametrize(
         ("symbols", "geometry", "n_electrons", "n_orbitals", "nuclear_charges"),
