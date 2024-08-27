@@ -376,6 +376,7 @@
 <h3>Bug fixes 🐛</h3>
 
 * Fixes an error in the `dynamic_one_shot` transform when used with sampling a single shot.
+  [(#6149)](https://github.com/PennyLaneAI/pennylane/pull/6149)
 
 * `qml.transforms.broadcast_expand` no longer squeezes out batch sizes of size 1, as a batch size of 1 is still a
   batch size.
