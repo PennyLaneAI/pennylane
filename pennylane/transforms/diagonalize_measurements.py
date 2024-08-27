@@ -250,8 +250,8 @@ def _change_obs_to_Z(observable):
 
 @_change_obs_to_Z.register
 def _change_symbolic_op(observable: SymbolicOp):
-    diagonalizing_gates, new_base = diagonalize_qwc_pauli_words(
-        observable.base,
+    diagonalizing_gates, [new_base] = diagonalize_qwc_pauli_words(
+        [observable.base],
     )
 
     params, hyperparams = observable.parameters, observable.hyperparameters
