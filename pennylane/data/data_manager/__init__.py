@@ -148,8 +148,9 @@ def _get_graphql(url: str, query: str, variables: dict[str, Any] = None):
     response.raise_for_status()
 
     if response.json() is None:
-        raise GraphQLError(f"No Response")
-    elif "errors" in response.json():
+        raise GraphQLError("No Response")
+
+    if "errors" in response.json():
         all_errors = ",".join(error["message"] for error in response.json()["errors"])
         raise GraphQLError(f"Errors in request: {all_errors}")
 
