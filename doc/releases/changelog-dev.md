@@ -17,7 +17,12 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fix Pytree serialization of operators with empty shot vectors:
+  [(#6155)](https://github.com/PennyLaneAI/pennylane/pull/6155)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
+
+Jack Brown
 Lillian M. A. Frederiksen
