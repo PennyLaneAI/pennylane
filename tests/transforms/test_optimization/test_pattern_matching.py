@@ -72,6 +72,8 @@ class TestPatternMatchingOptimization:
         assert len(optimized_qnode.qtape.operations) == 7
         assert cnots_optimized_qnode == 3
 
+        assert optimized_qnode.qtape.measurements == qnode.qtape.measurements
+
         assert np.allclose(qml.matrix(optimized_qnode)(), qml.matrix(qnode)())
 
     def test_simple_quantum_function_pattern_matching_qnode(self):
@@ -146,6 +148,8 @@ class TestPatternMatchingOptimization:
         assert len(optimized_qnode.qtape.operations) == 7
         assert cnots_optimized_qnode == 3
 
+        assert optimized_qnode.qtape.measurements == qnode.qtape.measurements
+
         assert np.allclose(qml.matrix(optimized_qnode)(), qml.matrix(qnode)())
 
     def test_no_match_not_optimized(self):
@@ -184,6 +188,8 @@ class TestPatternMatchingOptimization:
 
         assert len(optimized_qnode.qtape.operations) == 8
         assert cnots_optimized_qnode == 4
+
+        assert optimized_qnode.qtape.measurements == qnode.qtape.measurements
 
         assert np.allclose(qml.matrix(optimized_qnode)(), qml.matrix(qnode)())
 
@@ -224,6 +230,8 @@ class TestPatternMatchingOptimization:
 
         assert len(optimized_qnode.qtape.operations) == 5
         assert s_adjoint_optimized_qnode == 1
+
+        assert optimized_qnode.qtape.measurements == qnode.qtape.measurements
 
     def test_template_with_toffoli(self):
         """Test pattern matching algorithm for circuit optimization with a template having Toffoli gates."""
@@ -318,6 +326,8 @@ class TestPatternMatchingOptimization:
         assert len(optimized_qnode.qtape.operations) == 10
         assert swap_optimized_qnode == 0
         assert cnot_optimized_qnode == 4
+
+        assert optimized_qnode.qtape.measurements == qnode.qtape.measurements
 
         assert np.allclose(qml.matrix(optimized_qnode)(), qml.matrix(qnode)())
 
@@ -524,6 +534,8 @@ class TestPatternMatchingOptimization:
         assert len(optimized_qnode.qtape.operations) == 1
         assert cnots_optimized_qnode == 1
 
+        assert optimized_qnode.qtape.measurements == qnode.qtape.measurements
+
         assert np.allclose(qml.matrix(optimized_qnode)(), qml.matrix(qnode)())
 
     def test_mod_5_4_pattern_matching(self):
@@ -608,6 +620,8 @@ class TestPatternMatchingOptimization:
 
         assert len(optimized_qnode.qtape.operations) == 49
         assert cnots_optimized_qnode == 26
+
+        assert optimized_qnode.qtape.measurements == qnode.qtape.measurements
 
         assert np.allclose(qml.matrix(optimized_qnode)(), qml.matrix(qnode)())
 
@@ -732,6 +746,8 @@ class TestPatternMatchingOptimization:
 
         assert len(optimized_qnode.qtape.operations) == 84
         assert cnots_optimized_qnode == 45
+
+        assert optimized_qnode.qtape.measurements == qnode.qtape.measurements
 
         assert np.allclose(qml.matrix(optimized_qnode)(), qml.matrix(qnode)())
 
