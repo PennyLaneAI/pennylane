@@ -128,15 +128,27 @@ def diagonalize_measurements(tape, supported_base_obs=_default_supported_obs, to
 
     diagonalize_all = set(supported_base_obs).issubset(set(_default_supported_obs))
 
+    if to_eigvals and not diagonalize_all:
+        raise ValueError(
+            f"Using to_eigvals=True requires diagonalizing all observables to the measurement basis. Observables {set(supported_base_obs)-set(_default_supported_obs)} can't be supported when using eigvals."
+        )
+
     if (
         all(m.obs.pauli_rep is not None for m in tape.measurements if m.obs is not None)
         and diagonalize_all
     ):
-        if tape.samples_computational_basis and len(tape.measurements) > 1:
-            _validate_computational_basis_sampling(tape)
-        diagonalizing_gates, new_measurements = _diagonalize_all_pauli_obs(
-            tape, to_eigvals=to_eigvals
-        )
+        try:
+            if tape.samples_computational_basis and len(tape.measurements) > 1:
+                _validate_computational_basis_sampling(tape)
+            diagonalizing_gates, new_measurements = _diagonalize_all_pauli_obs(
+                tape, to_eigvals=to_eigvals
+            )
+        except qml.QuantumFunctionError:
+            # the pauli_rep based method sometimes fails unnecessarily -
+            # if it fails, fall back on the less efficient method (which may also fail)
+            diagonalizing_gates, new_measurements = _diagonalize_subset_of_pauli_obs(
+                tape, supported_base_obs, to_eigvals=to_eigvals
+            )
 
     else:
         diagonalizing_gates, new_measurements = _diagonalize_subset_of_pauli_obs(
@@ -174,11 +186,10 @@ def _diagonalize_all_pauli_obs(tape, to_eigvals=False):
     diagonalizing_gates, diagonal_measurements = rotations_and_diagonal_measurements(tape)
     for m in diagonal_measurements:
         if m.obs is not None:
+            gates, new_obs = _change_obs_to_Z(m.obs)
             if to_eigvals:
-                gates = m.obs.diagonalizing_gates()
                 new_meas = type(m)(eigvals=m.eigvals(), wires=m.wires)
             else:
-                gates, new_obs = _change_obs_to_Z(m.obs)
                 new_meas = type(m)(new_obs)
             diagonalizing_gates.extend(gates)
             new_measurements.append(new_meas)
@@ -207,7 +218,6 @@ def _diagonalize_subset_of_pauli_obs(tape, supported_base_obs, to_eigvals=False)
         ValueError: if non-commuting observables are ecountered on the tape
 
     """
-
     supported_base_obs = set(list(supported_base_obs) + [qml.Z, qml.Identity])
 
     _visited_obs = (set(), set())  # tracks which observables and wires have been diagonalized
