@@ -326,7 +326,7 @@
   in some cases. With this release, we've refactored the implementation of the tree-traversal method 
   into an iterative approach, which solves those inefficiencies when many MCMs are present in a circuit.
  
-* The `tree-traversal` algorithm is compatible with analytic-mode execution (`shots=None`).
+* The `tree-traversal` algorithm is now compatible with analytic-mode execution (`shots=None`).
   [(#5868)](https://github.com/PennyLaneAI/pennylane/pull/5868)
 
   ```python
@@ -595,7 +595,7 @@
 
 <h4>Other improvements</h4>
 
-* `qml.pauli.group_observables` now uses `Rustworkx` colouring algorithms to solve the 
+* `qml.pauli.group_observables` now uses `rustworkx` colouring algorithms to solve the 
   [Minimum Clique Cover problem](https://en.wikipedia.org/wiki/Clique_cover), resulting in orders of
   magnitude performance improvements.
   [(#6043)](https://github.com/PennyLaneAI/pennylane/pull/6043)
@@ -647,42 +647,45 @@
   for example, non-hermitian operators are given to `qml.expval`.
   [(#5890)](https://github.com/PennyLaneAI/pennylane/pull/5890)
 
-* Added `is_leaf` parameter to function `flatten` in the `qml.pytrees` module. This is to allow node flattening to be stopped for any node where the `is_leaf` optional argument evaluates to being `True`.
+* A new `is_leaf` parameter has been added to the function `flatten` in the `qml.pytrees` module. This 
+  is to allow for node flattening to be stopped for any node where the `is_leaf` optional argument evaluates 
+  to being `True`.
   [(#6107)](https://github.com/PennyLaneAI/pennylane/issues/6107)
 
-* Added a progress bar when downloading datasets with `qml.data.load()`
+* A progress bar has been added to `qml.data.load()` when downloading a dataset.
   [(#5560)](https://github.com/PennyLaneAI/pennylane/pull/5560)
 
 <h3>Breaking changes 💔</h3>
 
 * `MeasurementProcess.shape(shots: Shots, device:Device)` is now
-  `MeasurementProcess.shape(shots: Optional[int], num_device_wires:int = 0)`. This has been done to allow
-  jitting when a measurement is broadcasted across all available wires, but the device does not specify wires.
+  `MeasurementProcess.shape(shots: Optional[int], num_device_wires:int = 0)`. This has been done to 
+  allow for jitting when a measurement is broadcasted across all available wires, but the device does 
+  not specify wires.
   [(#6108)](https://github.com/PennyLaneAI/pennylane/pull/6108/)
 
-* If the shape of a probability measurement is affected by a `Device.cutoff` property, it will no longer work with
-  jitting.
+* If the shape of a probability measurement is affected by a `Device.cutoff` property, it will no longer 
+  work with jitting.
   [(#6108)](https://github.com/PennyLaneAI/pennylane/pull/6108/)
 
-* `GlobalPhase` is considered non-differentiable with tape transforms.
-  As a consequence, `qml.gradients.finite_diff` and `qml.gradients.spsa_grad` no longer
-  support differentiation of `GlobalPhase` with state-based outputs.
+* `qml.GlobalPhase` is considered non-differentiable with tape transforms. As a consequence, `qml.gradients.finite_diff` 
+  and `qml.gradients.spsa_grad` no longer support differentiating `qml.GlobalPhase` with state-based 
+  outputs.
   [(#5620)](https://github.com/PennyLaneAI/pennylane/pull/5620) 
 
-* The `CircuitGraph.graph` rustworkx graph now stores indices into the circuit as the node labels,
-  instead of the operator/ measurement itself.  This allows the same operator to occur multiple times in
-  the circuit.
+* The `CircuitGraph.graph` `rustworkx` graph now stores indices into the circuit as the node labels,
+  instead of the operator/ measurement itself. This allows the same operator to occur multiple times 
+  in the circuit.
   [(#5907)](https://github.com/PennyLaneAI/pennylane/pull/5907)
 
-* `queue_idx` attribute has been removed from the `Operator`, `CompositeOp`, and `SymbolicOp` classes.
+* The `queue_idx` attribute has been removed from the `Operator`, `CompositeOp`, and `SymbolicOp` classes.
   [(#6005)](https://github.com/PennyLaneAI/pennylane/pull/6005)
 
-* `qml.from_qasm` no longer removes measurements from the QASM code. Use 
-  `measurements=[]` to remove measurements from the original circuit.
+* `qml.from_qasm` no longer removes measurements from the QASM code. Use `measurements=[]` to remove 
+  measurements from the original circuit.
   [(#5982)](https://github.com/PennyLaneAI/pennylane/pull/5982)
 
-* `qml.transforms.map_batch_transform` has been removed, since transforms can be applied directly to a batch of tapes.
-  See :func:`~.pennylane.transform` for more information.
+* `qml.transforms.map_batch_transform` has been removed, since transforms can be applied directly to 
+  a batch of tapes. See `qml.transform` for more information.
   [(#5981)](https://github.com/PennyLaneAI/pennylane/pull/5981)
 
 * `QuantumScript.interface` has been removed.
@@ -696,7 +699,7 @@
 * The `max_expansion` argument in `qml.QNode` has been deprecated.
   [(#6026)](https://github.com/PennyLaneAI/pennylane/pull/6026)
 
-* The `expansion_strategy` attribute in the `QNode` class is deprecated.
+* The `expansion_strategy` attribute in the `QNode` class has been deprecated.
   [(#5989)](https://github.com/PennyLaneAI/pennylane/pull/5989)
 
 * The `expansion_strategy` argument has been deprecated in all of `qml.draw`, `qml.draw_mpl`, and `qml.specs`.
@@ -707,32 +710,33 @@
   for equivalent behaviour.
   [(#5994)](https://github.com/PennyLaneAI/pennylane/pull/5994)
 
-* `pennylane.transforms.sum_expand` and `pennylane.transforms.hamiltonian_expand` have been deprecated.
-  Users should instead use `pennylane.transforms.split_non_commuting` for equivalent behaviour.
+* `qml.transforms.sum_expand` and `qml.transforms.hamiltonian_expand` have been deprecated. Users should 
+  instead use `qml.transforms.split_non_commuting` for equivalent behaviour.
   [(#6003)](https://github.com/PennyLaneAI/pennylane/pull/6003)
 
-* The `expand_fn` argument in `qml.execute` has been deprecated.
-  Instead, please create a `qml.transforms.core.TransformProgram` with the desired preprocessing and pass it to the `transform_program` argument of `qml.execute`.
+* The `expand_fn` argument in `qml.execute` has been deprecated. Instead, please create a `qml.transforms.core.TransformProgram` 
+  with the desired preprocessing and pass it to the `transform_program` argument of `qml.execute`.
   [(#5984)](https://github.com/PennyLaneAI/pennylane/pull/5984)
 
 * The `max_expansion` argument in `qml.execute` has been deprecated.
-  Instead, please use `qml.devices.preprocess.decompose` with the desired expansion level, add it to a `TransformProgram` and pass it to the `transform_program` argument of `qml.execute`.
+  Instead, please use `qml.devices.preprocess.decompose` with the desired expansion level, add it to 
+  a `qml.transforms.core.TransformProgram` and pass it to the `transform_program` argument of `qml.execute`.
   [(#5984)](https://github.com/PennyLaneAI/pennylane/pull/5984)
 
-* The `override_shots` argument in `qml.execute` is deprecated.
-  Instead, please add the shots to the `QuantumTape`'s to be executed.
+* The `override_shots` argument in `qml.execute` has been deprecated.
+  Instead, please add the shots to the `QuantumTape`s to be executed.
   [(#5984)](https://github.com/PennyLaneAI/pennylane/pull/5984)
 
-* The `device_batch_transform` argument in `qml.execute` is deprecated.
+* The `device_batch_transform` argument in `qml.execute` has been deprecated.
   Instead, please create a `qml.transforms.core.TransformProgram` with the desired preprocessing and pass it to the `transform_program` argument of `qml.execute`.
   [(#5984)](https://github.com/PennyLaneAI/pennylane/pull/5984)
 
-* `pennylane.qinfo.classical_fisher` and `pennylane.qinfo.quantum_fisher` have been deprecated.
-  Instead, use `pennylane.gradients.classical_fisher` and `pennylane.gradients.quantum_fisher`.
+* `qml.qinfo.classical_fisher` and `qml.qinfo.quantum_fisher` have been deprecated.
+  Instead, use `qml.gradients.classical_fisher` and `qml.gradients.quantum_fisher`.
   [(#5985)](https://github.com/PennyLaneAI/pennylane/pull/5985)
 
-* The legacy devices `default.qubit.{autograd,torch,tf,jax,legacy}` are deprecated.
-  Instead, use `default.qubit` as it now supports backpropagation through the several backends.
+* The legacy devices `default.qubit.{autograd,torch,tf,jax,legacy}` have been deprecated.
+  Instead, use `default.qubit`, as it now supports backpropagation through the several backends.
   [(#5997)](https://github.com/PennyLaneAI/pennylane/pull/5997)
 
 * The logic for internally switching a device for a different backpropagation
