@@ -94,13 +94,12 @@ def overlap_matrix(basis_functions, argnum=None):
         """
         n = len(basis_functions)
         matrix = qml.math.eye(n)
-        local_argnum = argnum if argnum is not None else [False, False, False]
 
         for (i, a), (j, b) in it.combinations(enumerate(basis_functions), r=2):
             args_ab = []
             if args:
                 args_ab.extend([arg[i], arg[j]] for arg in args)
-            integral = overlap_integral(a, b, local_argnum, normalize=False)(*args_ab)
+            integral = overlap_integral(a, b, argnum, normalize=False)(*args_ab)
 
             o = qml.math.zeros((n, n))
             o[i, j] = o[j, i] = 1.0
@@ -145,7 +144,6 @@ def moment_matrix(basis_functions, order, idx, argnum=None):
         Returns:
             array[array[float]]: the multipole moment matrix
         """
-        local_argnum = argnum if argnum is not None else [False, False, False]
         n = len(basis_functions)
         matrix = qml.math.zeros((n, n))
 
@@ -153,7 +151,7 @@ def moment_matrix(basis_functions, order, idx, argnum=None):
             args_ab = []
             if args:
                 args_ab.extend([arg[i], arg[j]] for arg in args)
-            integral = moment_integral(a, b, order, idx, local_argnum, normalize=False)(*args_ab)
+            integral = moment_integral(a, b, order, idx, argnum, normalize=False)(*args_ab)
 
             o = qml.math.zeros((n, n))
             o[i, j] = o[j, i] = 1.0
@@ -195,7 +193,6 @@ def kinetic_matrix(basis_functions, argnum=None):
         Returns:
             array[array[float]]: the kinetic matrix
         """
-        local_argnum = argnum if argnum is not None else [False, False, False]
         n = len(basis_functions)
         matrix = qml.math.zeros((n, n))
 
@@ -203,7 +200,7 @@ def kinetic_matrix(basis_functions, argnum=None):
             args_ab = []
             if args:
                 args_ab.extend([arg[i], arg[j]] for arg in args)
-            integral = kinetic_integral(a, b, local_argnum, normalize=False)(*args_ab)
+            integral = kinetic_integral(a, b, argnum, normalize=False)(*args_ab)
 
             o = qml.math.zeros((n, n))
             o[i, j] = o[j, i] = 1.0
@@ -248,7 +245,7 @@ def attraction_matrix(basis_functions, charges, r, argnum=None):
         Returns:
             array[array[float]]: the electron-nuclear attraction matrix
         """
-        local_argnum = argnum if argnum is not None else [False, False, False]
+        argbools = [i in (argnum if isinstance(argnum, list) else [argnum]) for i in range(3)]
 
         n = len(basis_functions)
         matrix = qml.math.zeros((n, n))
@@ -257,24 +254,24 @@ def attraction_matrix(basis_functions, charges, r, argnum=None):
             if args:
                 args_ab = []
 
-                if getattr(r, "requires_grad", False) or local_argnum[0]:
+                if getattr(r, "requires_grad", False) or argbools[0]:
                     args_ab.extend([arg[i], arg[j]] for arg in args[1:])
                 else:
                     args_ab.extend([arg[i], arg[j]] for arg in args)
 
                 for k, c in enumerate(r):
-                    if getattr(c, "requires_grad", False) or local_argnum[0]:
+                    if getattr(c, "requires_grad", False) or argbools[0]:
                         args_ab = [args[0][k]] + args_ab
                     integral = integral - charges[k] * attraction_integral(
                         c, a, b, argnum, normalize=False
                     )(*args_ab)
-                    if getattr(c, "requires_grad", False) or local_argnum[0]:
+                    if getattr(c, "requires_grad", False) or argbools[0]:
                         args_ab = args_ab[1:]
             else:
                 for k, c in enumerate(r):
                     integral = (
                         integral
-                        - charges[k] * attraction_integral(c, a, b, local_argnum, normalize=False)()
+                        - charges[k] * attraction_integral(c, a, b, argnum, normalize=False)()
                     )
 
             o = qml.math.zeros((n, n))

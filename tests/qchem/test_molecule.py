@@ -72,7 +72,7 @@ class TestMolecule:
         assert mol.charge == charge
         assert mol.mult == mult
         assert mol.basis_name == basis_name
-        assert mol.argnum == None
+        assert mol.argnum is None
 
     def test_molecule_opt_coeffs(self):
         r"""Test that the molecule object contains the correct optimization flags."""
