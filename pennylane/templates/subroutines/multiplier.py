@@ -55,7 +55,7 @@ class Multiplier(Operation):
 
     .. note::
 
-        Note that :math:`x` must be smaller than :math:`mod` to get the correct result. Also, it
+        :math:`x` must be smaller than :math:`mod` to get the correct result. Also, it
         is required that :math:`k` has inverse, :math:`k^{-1}`, modulo :math:`mod`. That means
         :math:`k \cdot k^{-1}` modulo :math:`mod` is equal to 1, which will only be possible if :math:`k` and
         :math:`mod` are coprime.
@@ -102,18 +102,19 @@ class Multiplier(Operation):
         :title: Usage Details
 
         This template takes as input two different sets of wires. 
-        
+
         The first one is ``x_wires`` which is used
-        to encode the integer :math:`x < mod` in the computational basis. After performing the modular multiplication operation the result integer
-        encoded in the computational basis can be as large as :math:`mod-1`. Therefore, we need at least 
-        :math:`\lceil \log_2(x)\rceil` ``x_wires`` to represent :math:`x` and at least :math:`\lceil \log_2(mod)\rceil` ``x_wires`` 
-        to represent all the possible results. Since :math:`x < mod` by definition, we just need at least :math:`\lceil \log_2(mod)\rceil` ``x_wires``.
+        to encode the integer :math:`x < mod` in the computational basis. Therefore, we need at least 
+        :math:`\lceil \log_2(x)\rceil` ``x_wires`` to represent :math:`x`. After performing the modular multiplication operation, the resulting integer
+        encoded in the computational basis can be as large as :math:`mod-1`. Hence, we need at least 
+        :math:`\lceil \log_2(mod)\rceil` ``x_wires`` 
+        to represent all the possible results. Since :math:`x < mod` by definition, we just need at least :math:`\lceil \log_2(mod)\rceil` ``x_wires``.   
 
         The second set of wires is ``work_wires`` which consist of the auxiliary qubits used to perform the modular multiplication operation. 
 
-        If :math:`mod = 2^{\text{len(x_wires)}}`, we will need as many as ``x_wires``.
+        - If :math:`mod = 2^{\text{len(x_wires)}}`, we will need as many as ``x_wires``.
         
-        If :math:`mod \neq 2^{\text{len(x_wires)}}`, we will need as many as ``x_wires`` plu two extra that have to be provided.
+        - If :math:`mod \neq 2^{\text{len(x_wires)}}`, we will need as many as ``x_wires`` plu two extra that have to be provided.
 
         Note that the Multiplier template allows us to perform modular multiplication in the computational basis. However if one just want to perform standard multiplication (with no modulo), the modulo 
         :math:`mod` has to be set large enough to ensure that :math:`x \cdot k < mod`.

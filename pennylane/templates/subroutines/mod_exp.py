@@ -40,7 +40,7 @@ class ModExp(Operation):
 
     .. note::
 
-        Note that :math:`x` must be smaller than :math:`mod` to get the correct result.
+        :math:`x` must be smaller than :math:`mod` to get the correct result.
         Also, it is required that :math:`base` has inverse, :math:`base^{-1}` modulo :math:`mod`.
         That means :math:`base \cdot base^{-1}` modulo :math:`mod` is equal to 1, which will only be possible if :math:`base`
         and :math:`mod` are coprime.
@@ -102,11 +102,11 @@ class ModExp(Operation):
 
         The third set of wires is ``work_wires`` which consist of the auxiliary qubits used to perform the modular exponentiation operation. 
 
-        If :math:`mod = 2^{\text{len(output_wires)}}`, we will need as many as ``output_wires``.
+        - If :math:`mod = 2^{\text{len(``output_wires``)}}`, we will need as many as ``output_wires``.
         
-        If :math:`mod \neq 2^{\text{len(output_wires)}}`, we will need as many as ``output_wires`` plu two extra that have to be provided.
+        - If :math:`mod \neq 2^{\text{len(output_wires)}}`, we will need as many as ``output_wires`` plu two extra that have to be provided.
 
-        Note that the ModExp template allows us to perform modular exponentiation in the computational basis. However if one just want to perform standard exponentiation (with no modulo), the modulo 
+        Note that the ``ModExp`` template allows us to perform modular exponentiation in the computational basis. However if one just wants to perform standard exponentiation (with no modulo), the modulo 
         :math:`mod` has to be set large enough to ensure that :math:`base^x (mod)`.
 
         Also, to perform the out-place modular exponentiation operator it is required that :math:`base` has inverse, :math:`base^{-1} (mod)`. That means
