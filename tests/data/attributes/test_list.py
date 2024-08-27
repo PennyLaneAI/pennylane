@@ -18,10 +18,12 @@ Tests for the ``DatasetList`` attribute type.
 
 from itertools import combinations
 
+import numpy as np
 import pytest
 
 from pennylane.data import DatasetList
 
+np.set_printoptions(legacy="1.25")
 pytestmark = pytest.mark.data
 
 

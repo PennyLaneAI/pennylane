@@ -26,6 +26,8 @@ from pennylane.data.attributes import DatasetOperator, DatasetPyTree
 from pennylane.data.base.typing_util import get_type_str
 from pennylane.operation import Operator, Tensor
 
+np.set_printoptions(legacy="1.25")
+
 pytestmark = pytest.mark.data
 
 H_ONE_QUBIT = np.array([[1.0, 0.5j], [-0.5j, 2.5]])

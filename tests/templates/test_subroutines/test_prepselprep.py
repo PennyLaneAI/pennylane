@@ -22,6 +22,8 @@ import pytest
 
 import pennylane as qml
 
+np.set_printoptions(legacy="1.25")
+
 
 @pytest.mark.parametrize(
     ("lcu", "control"),

@@ -43,6 +43,7 @@ from pennylane.data.base.attribute import (
 )
 from pennylane.data.base.hdf5 import HDF5Group, create_group
 
+np.set_printoptions(legacy="1.25")
 pytestmark = pytest.mark.data
 
 pytest.importorskip("h5py")

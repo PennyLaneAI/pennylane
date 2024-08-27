@@ -66,6 +66,8 @@ from pennylane.devices.default_qubit_torch import (  # pylint: disable=wrong-imp
     DefaultQubitTorch,
 )
 
+np.set_printoptions(legacy="1.25")
+
 pytestmark = pytest.mark.gpu
 
 torch_devices = [None]
