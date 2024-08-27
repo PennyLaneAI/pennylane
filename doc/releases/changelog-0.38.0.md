@@ -42,6 +42,8 @@
   noise models in PennyLane do not support readout errors. As such, those will be skipped during conversion
   if they are present in the Qiskit noise model.
 
+  Make sure to `pip install pennylane-qiskit` access this new feature!
+
 <h4>Registers of wires 🧸</h4>
 
 * A new function called `qml.registers` has been added that lets you seamlessly create registers of 
