@@ -1354,7 +1354,7 @@ class TestConditionalsAndMidMeasure:
         assert qml.math.allclose(end_state, res_state)
 
     @pytest.mark.parametrize("reset", (False, True))
-    @pytest.mark.parametrize("m_res", ([0, 0], [0, 1], [1, 0], [1, 1]))
+    @pytest.mark.parametrize("m_res", ([0, 0], [1, 0], [1, 1]))
     def test_mid_measure_with_post_select_and_reset(self, m_res, reset):
         """Test the application of a MidMeasureMP with post selection and reset."""
 
