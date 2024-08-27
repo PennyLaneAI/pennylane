@@ -264,13 +264,14 @@ class TestApply:
 
     def test_invalid_basis_state(self, device, torch_device):
         """Test that an exception is raised if the basis state is invalid"""
-        dev = device(wires=4, torch_device=torch_device)
-        state = torch.tensor([0, 0, 1, 2])
+        with np.printoptions(legacy="1.21"):
+            dev = device(wires=4, torch_device=torch_device)
+            state = torch.tensor([0, 0, 1, 2])
 
-        with pytest.raises(
-            ValueError, match=r"Basis state must only consist of 0s and 1s; got \[0, 0, 1, 2\]"
-        ):
-            dev.apply([qml.BasisState(state, wires=[0, 1, 2, 3])])
+            with pytest.raises(
+                ValueError, match=r"Basis state must only consist of 0s and 1s; got \[0, 0, 1, 2\]"
+            ):
+                dev.apply([qml.BasisState(state, wires=[0, 1, 2, 3])])
 
     def test_qubit_state_vector(self, device, torch_device, init_state, tol):
         """Test qubit state vector application"""
