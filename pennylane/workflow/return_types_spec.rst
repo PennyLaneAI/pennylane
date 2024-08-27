@@ -71,7 +71,8 @@ Broadcasting
 Parameter broadcasting adds a leading dimension to the numeric array itself.
 
 If the corresponding tape has a ``batch_size`` and the result object is numeric, then the numeric object should
-gain a leading dimension.
+gain a leading dimension.  Note that a batch size of ``1`` is still a batch size,
+and still should correspond to a leading dimension.
 
 >>> op = qml.RX((0, np.pi/4, np.pi/2), wires=0)
 >>> tape = qml.tape.QuantumScript((op,), [qml.probs(wires=0)])
