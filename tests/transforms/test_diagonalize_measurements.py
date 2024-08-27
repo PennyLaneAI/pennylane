@@ -23,6 +23,8 @@ import pytest
 
 import pennylane as qml
 from pennylane import Hadamard, X, Y, Z
+from pennylane.measurements import ExpectationMP, SampleMP, VarianceMP
+from pennylane.pauli import diagonalize_qwc_pauli_words
 from pennylane.tape import QuantumScript
 from pennylane.transforms.diagonalize_measurements import (
     _check_if_diagonalizing,
@@ -289,12 +291,34 @@ class TestDiagonalizeObservable:
 class TestDiagonalizeTapeMeasurements:
     """Tests the diagonalize_measurements transform"""
 
-    def test_diagonalize_measurements(self):
+    @pytest.mark.parametrize("to_eigvals", [True, False])
+    def test_diagonalize_measurements(self, to_eigvals):
         """Test that the diagonalize_measurements transform diagonalizes the measurements on the tape"""
+
         measurements = [qml.expval(X(0)), qml.var(X(1) + Y(2))]
 
         tape = QuantumScript([], measurements=measurements)
-        tapes, fn = diagonalize_measurements(tape)
+        tapes, fn = diagonalize_measurements(tape, to_eigvals=to_eigvals)
+        new_tape = tapes[0]
+
+        if to_eigvals:
+            assert new_tape.measurements == [
+                ExpectationMP(eigvals=[1.0, -1.0], wires=[0]),
+                VarianceMP(eigvals=[2.0, 0.0, 0.0, -2.0], wires=[1, 2]),
+            ]
+        else:
+            assert new_tape.measurements == [qml.expval(Z(0)), qml.var(Z(1) + Z(2))]
+        assert new_tape.operations == diagonalize_qwc_pauli_words([X(0), X(1), Y(2)])[0]
+
+        assert fn == null_postprocessing
+
+    def test_diagonalize_subset_of_measurements(self):
+        """Test that the diagonalize_measurements transform diagonalizes the measurements on the tape
+        when diagonalizing a subset of the measurements"""
+        measurements = [qml.expval(X(0)), qml.var(X(1) + Y(2))]
+
+        tape = QuantumScript([], measurements=measurements)
+        tapes, fn = diagonalize_measurements(tape, supported_base_obs={qml.Z, qml.Hadamard})
         new_tape = tapes[0]
 
         assert new_tape.measurements == [qml.expval(Z(0)), qml.var(Z(1) + Z(2))]
@@ -305,20 +329,35 @@ class TestDiagonalizeTapeMeasurements:
 
         assert fn == null_postprocessing
 
-    def test_with_duplicate_measurements(self):
+    @pytest.mark.parametrize("to_eigvals", [True, False])
+    @pytest.mark.parametrize("supported_base_obs", [{qml.Z}, {qml.Z, qml.Hadamard}])
+    def test_with_duplicate_measurements(self, to_eigvals, supported_base_obs):
         """Test that the diagonalize_measurements transform diagonalizes the measurements
         on the tape correctly when the same observable is used more than once"""
+
+        if to_eigvals and supported_base_obs != {qml.Z}:
+            pytest.skip("to_eigvals is not supported when not diagonalizing all gates")
+
         measurements = [qml.expval(X(0)), qml.var(X(1) + Y(2)), qml.sample(X(0) @ Y(2))]
 
         tape = QuantumScript([], measurements=measurements)
-        tapes, fn = diagonalize_measurements(tape)
+        tapes, fn = diagonalize_measurements(
+            tape, supported_base_obs=supported_base_obs, to_eigvals=to_eigvals
+        )
         new_tape = tapes[0]
 
-        assert new_tape.measurements == [
-            qml.expval(Z(0)),
-            qml.var(Z(1) + Z(2)),
-            qml.sample(Z(0) @ Z(2)),
-        ]
+        if to_eigvals:
+            assert new_tape.measurements == [
+                ExpectationMP(eigvals=[1.0, -1], wires=[0]),
+                VarianceMP(eigvals=[2.0, 0.0, 0.0, -2.0], wires=[1, 2]),
+                SampleMP(eigvals=[1.0, -1.0, -1.0, 1.0], wires=[0, 2]),
+            ]
+        else:
+            assert new_tape.measurements == [
+                qml.expval(Z(0)),
+                qml.var(Z(1) + Z(2)),
+                qml.sample(Z(0) @ Z(2)),
+            ]
         assert (
             new_tape.operations
             == X(0).diagonalizing_gates() + X(1).diagonalizing_gates() + Y(2).diagonalizing_gates()
@@ -326,7 +365,8 @@ class TestDiagonalizeTapeMeasurements:
 
         assert fn == null_postprocessing
 
-    def test_non_commuting_observables_raise_an_error(self):
+    @pytest.mark.parametrize("supported_base_obs", [{qml.Z}, {qml.Z, qml.Hadamard}])
+    def test_non_commuting_observables_raise_an_error(self, supported_base_obs):
         """Test that the diagonalize_measurements raises an error as expected if the tape contains
         non-commuting observables"""
         measurements = [qml.expval(X(0)), qml.var(Z(0) + Y(2))]
@@ -334,19 +374,33 @@ class TestDiagonalizeTapeMeasurements:
         tape = QuantumScript([], measurements=measurements)
 
         with pytest.raises(ValueError, match="Expected measurements on the same wire to commute"):
-            _ = diagonalize_measurements(tape)
+            _ = diagonalize_measurements(tape, supported_base_obs=supported_base_obs)
 
-    def test_measurements_with_no_obs(self):
+    @pytest.mark.parametrize("to_eigvals", [True, False])
+    @pytest.mark.parametrize("supported_base_obs", [{qml.Z}, {qml.Z, qml.Hadamard}])
+    def test_measurements_with_no_obs(self, to_eigvals, supported_base_obs):
         """Test that the transform correctly handles tapes where some measurements don't
         have an observable"""
+
+        if to_eigvals and supported_base_obs != {qml.Z}:
+            pytest.skip("to_eigvals is not supported when not diagonalizing all gates")
 
         measurements = [qml.expval(X(0)), qml.var(X(1) + Y(2)), qml.sample()]
 
         tape = QuantumScript([], measurements=measurements)
-        tapes, fn = diagonalize_measurements(tape)
+        tapes, fn = diagonalize_measurements(
+            tape, supported_base_obs=supported_base_obs, to_eigvals=to_eigvals
+        )
         new_tape = tapes[0]
 
-        assert new_tape.measurements == [qml.expval(Z(0)), qml.var(Z(1) + Z(2)), qml.sample()]
+        if to_eigvals:
+            assert new_tape.measurements == [
+                ExpectationMP(eigvals=[1.0, -1], wires=[0]),
+                VarianceMP(eigvals=[2.0, 0.0, 0.0, -2.0], wires=[1, 2]),
+                SampleMP(),
+            ]
+        else:
+            assert new_tape.measurements == [qml.expval(Z(0)), qml.var(Z(1) + Z(2)), qml.sample()]
         assert (
             new_tape.operations
             == X(0).diagonalizing_gates() + X(1).diagonalizing_gates() + Y(2).diagonalizing_gates()
@@ -389,9 +443,24 @@ class TestDiagonalizeTapeMeasurements:
                 QuantumScript([], measurements=[]), supported_base_obs=supported_base_obs
             )
 
+    @pytest.mark.parametrize("supported_base_obs", [{qml.Z, qml.X}, {qml.X, qml.Hadamard}])
+    def test_bad_to_eigvals_input_raises_error(self, supported_base_obs):
+        """Test that to_eigvals=True raises an error if only using a subset of operators"""
+
+        with pytest.raises(
+            ValueError, match="Using to_eigvals=True requires diagonalizing all observables"
+        ):
+            _ = diagonalize_measurements(
+                QuantumScript([]), supported_base_obs=supported_base_obs, to_eigvals=True
+            )
+
+    @pytest.mark.parametrize("to_eigvals", [True, False])
     @pytest.mark.parametrize("supported_base_obs", ([qml.Z], [qml.Z, qml.X], [qml.Z, qml.X, qml.Y]))
     @pytest.mark.parametrize("shots", [None, 2000, (4000, 5000, 6000)])
-    def test_qnode_integration(self, supported_base_obs, shots):
+    def test_qnode_integration(self, to_eigvals, supported_base_obs, shots):
+
+        if to_eigvals and supported_base_obs != [qml.Z]:
+            pytest.skip("to_eigvals is not supported when not diagonalizing all gates")
 
         dev = qml.device("default.qubit", shots=shots)
 
