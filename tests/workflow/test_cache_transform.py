@@ -22,7 +22,7 @@ import pytest
 
 import pennylane as qml
 from pennylane.tape import QuantumScript
-from pennylane.workflow.execution import _apply_cache_transform, _cache_transform
+from pennylane.workflow.execution import _cache_transform
 
 
 @pytest.fixture
@@ -112,19 +112,3 @@ def test_finite_shots_with_persistent_cache_warning(cache):
 
     with pytest.warns(UserWarning, match=r"Cached execution with finite shots detected!"):
         batch_fns(((1.23,),))
-
-
-def test_apply_cache_transform_with_cache(transform_spy, tape, cache):
-    """Tests that calling ``_apply_cache_transform()`` with a cache returns a
-    function that applies the cache transform.
-    """
-    _apply_cache_transform(MagicMock(return_value=[1.23]), cache=cache)([tape])
-    transform_spy.assert_called_once_with(tape, cache=cache)
-
-
-def test_apply_cache_transform_without_cache(transform_spy, tape):
-    """Tests that calling ``_apply_cache_transform()`` without a cache returns a
-    function that does not apply the cache transform.
-    """
-    _apply_cache_transform(MagicMock(return_value=[1.23]), cache=None)([tape])
-    transform_spy.assert_not_called()

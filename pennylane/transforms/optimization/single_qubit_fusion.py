@@ -14,10 +14,10 @@
 """Transform for fusing sequences of single-qubit gates."""
 # pylint: disable=too-many-branches
 
-from pennylane.math import allclose, is_abstract, stack
+import pennylane as qml
 from pennylane.ops.qubit import Rot
 from pennylane.queuing import QueuingManager
-from pennylane.tape import QuantumTape, QuantumTapeBatch
+from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
 
@@ -26,8 +26,8 @@ from .optimization_utils import find_next_gate, fuse_rot_angles
 
 @transform
 def single_qubit_fusion(
-    tape: QuantumTape, atol=1e-8, exclude_gates=None
-) -> tuple[QuantumTapeBatch, PostprocessingFn]:
+    tape: QuantumScript, atol=1e-8, exclude_gates=None
+) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     r"""Quantum function transform to fuse together groups of single-qubit
     operations into a general single-qubit unitary operation (:class:`~.Rot`).
 
@@ -257,7 +257,7 @@ def single_qubit_fusion(
         # Look for single_qubit_rot_angles; if not available, queue and move on.
         # If available, grab the angles and try to fuse.
         try:
-            cumulative_angles = stack(current_gate.single_qubit_rot_angles())
+            cumulative_angles = qml.math.stack(current_gate.single_qubit_rot_angles())
         except (NotImplementedError, AttributeError):
             new_operations.append(current_gate)
             list_copy.pop(0)
@@ -295,31 +295,30 @@ def single_qubit_fusion(
             # the gate in question, only valid single-qubit gates on the same
             # wire as the current gate will be fused.
             try:
-                next_gate_angles = stack(next_gate.single_qubit_rot_angles())
+                next_gate_angles = qml.math.stack(next_gate.single_qubit_rot_angles())
             except (NotImplementedError, AttributeError):
                 break
-
-            cumulative_angles = fuse_rot_angles(cumulative_angles, stack(next_gate_angles))
+            cumulative_angles = fuse_rot_angles(cumulative_angles, next_gate_angles)
 
             list_copy.pop(next_gate_idx + 1)
             next_gate_idx = find_next_gate(current_gate.wires, list_copy[1:])
 
-        # If we are tracing/jitting, don't perform any conditional checks and
+        # If we are tracing/jitting or differentiating, don't perform any conditional checks and
         # apply the rotation regardless of the angles.
-        if is_abstract(cumulative_angles):
-            with QueuingManager.stop_recording():
-                new_operations.append(Rot(*cumulative_angles, wires=current_gate.wires))
-        # If not tracing, check whether all angles are 0 (or equivalently, if the RY
-        # angle is close to 0, and so is the sum of the RZ angles
-        else:
-            if not allclose(
-                stack([cumulative_angles[0] + cumulative_angles[2], cumulative_angles[1]]),
-                [0.0, 0.0],
+        # If not tracing or differentiating, check whether total rotation is trivial by checking
+        # if the RY angle and the sum of the RZ angles are close to 0
+        if (
+            qml.math.is_abstract(cumulative_angles)
+            or qml.math.requires_grad(cumulative_angles)
+            or not qml.math.allclose(
+                qml.math.stack([cumulative_angles[0] + cumulative_angles[2], cumulative_angles[1]]),
+                0.0,
                 atol=atol,
                 rtol=0,
-            ):
-                with QueuingManager.stop_recording():
-                    new_operations.append(Rot(*cumulative_angles, wires=current_gate.wires))
+            )
+        ):
+            with QueuingManager.stop_recording():
+                new_operations.append(Rot(*cumulative_angles, wires=current_gate.wires))
 
         # Remove the starting gate from the list
         list_copy.pop(0)

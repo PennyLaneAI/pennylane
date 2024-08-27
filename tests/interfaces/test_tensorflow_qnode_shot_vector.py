@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Integration tests for using the TF interface with shot vectors and with a QNode"""
-# pylint: disable=too-many-arguments,unexpected-keyword-arg
+# pylint: disable=too-many-arguments,unexpected-keyword-arg,redefined-outer-name
 import pytest
 
 import pennylane as qml
@@ -28,10 +28,16 @@ shots_and_num_copies = [(((5, 2), 1, 10), 4), ((1, 10, (5, 2)), 4)]
 shots_and_num_copies_hess = [((10, (5, 1)), 2)]
 
 qubit_device_and_diff_method = [
-    [DefaultQubit(), "finite-diff", {"h": 10e-2}],
-    [DefaultQubit(), "parameter-shift", {}],
-    [DefaultQubit(), "spsa", {"h": 10e-2, "num_directions": 20}],
+    [DefaultQubit(), "finite-diff"],
+    [DefaultQubit(), "parameter-shift"],
+    [DefaultQubit(), "spsa"],
 ]
+
+kwargs = {
+    "finite-diff": {"h": 10e-2},
+    "parameter-shift": {},
+    "spsa": {"h": 10e-2, "num_directions": 20},
+}
 
 TOLS = {
     "finite-diff": 0.3,
@@ -44,10 +50,16 @@ interface_and_qubit_device_and_diff_method = [
 ]
 
 
+@pytest.fixture
+def gradient_kwargs(request):
+    diff_method = request.node.funcargs["diff_method"]
+    return kwargs[diff_method] | (
+        {"sampler_rng": np.random.default_rng(42)} if diff_method == "spsa" else {}
+    )
+
+
 @pytest.mark.parametrize("shots,num_copies", shots_and_num_copies)
-@pytest.mark.parametrize(
-    "interface,dev,diff_method,gradient_kwargs", interface_and_qubit_device_and_diff_method
-)
+@pytest.mark.parametrize("interface,dev,diff_method", interface_and_qubit_device_and_diff_method)
 class TestReturnWithShotVectors:
     """Class to test the shape of the Grad/Jacobian/Hessian with different return types and shot vectors."""
 
@@ -317,9 +329,7 @@ class TestReturnWithShotVectors:
 
 @pytest.mark.slow
 @pytest.mark.parametrize("shots,num_copies", shots_and_num_copies_hess)
-@pytest.mark.parametrize(
-    "interface,dev,diff_method,gradient_kwargs", interface_and_qubit_device_and_diff_method
-)
+@pytest.mark.parametrize("interface,dev,diff_method", interface_and_qubit_device_and_diff_method)
 class TestReturnShotVectorHessian:
     """Class to test the shape of the Hessian with different return types and shot vectors."""
 
@@ -442,9 +452,7 @@ shots_and_num_copies = [((30000, 28000, 26000), 3), ((30000, (28000, 2)), 3)]
 
 
 @pytest.mark.parametrize("shots,num_copies", shots_and_num_copies)
-@pytest.mark.parametrize(
-    "interface,dev,diff_method,gradient_kwargs", interface_and_qubit_device_and_diff_method
-)
+@pytest.mark.parametrize("interface,dev,diff_method", interface_and_qubit_device_and_diff_method)
 class TestReturnShotVectorIntegration:
     """Tests for the integration of shots with the TF interface."""
 
@@ -454,8 +462,8 @@ class TestReturnShotVectorIntegration:
         """Tests correct output shape and evaluation for a tape
         with a single expval output"""
 
-        x = tf.Variable(0.543)
-        y = tf.Variable(-0.654)
+        x = tf.Variable(0.543, dtype=tf.float64)
+        y = tf.Variable(-0.654, dtype=tf.float64)
 
         @qnode(dev, diff_method=diff_method, interface=interface, **gradient_kwargs)
         def circuit(x, y):
@@ -487,8 +495,8 @@ class TestReturnShotVectorIntegration:
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
 
-        x = tf.Variable(0.543)
-        y = tf.Variable(-0.654)
+        x = tf.Variable(0.543, dtype=tf.float64)
+        y = tf.Variable(-0.654, dtype=tf.float64)
 
         @qnode(dev, diff_method=diff_method, interface=interface, **gradient_kwargs)
         def circuit(x, y):

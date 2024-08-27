@@ -4,6 +4,12 @@ on:
     branches:
       - master
   pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - ready_for_review
+      - labeled
 
 concurrency:
   group: unit-tests-${{ github.ref }}
@@ -14,6 +20,7 @@ env:
 
 jobs:
   tests:
+    if: github.event.pull_request.draft == false
     uses: ./.github/workflows/interface-unit-tests.yml
     secrets:
       codecov_token: ${{ secrets.CODECOV_TOKEN }}

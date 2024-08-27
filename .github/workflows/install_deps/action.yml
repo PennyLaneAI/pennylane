@@ -98,7 +98,8 @@ runs:
     - name: Install Catalyst
       shell: bash
       if: inputs.install_catalyst_after_pennylane == 'true'
-      run: pip install --upgrade pennylane-catalyst
+      # TODO: replace after release
+      run: pip install --extra-index-url https://test.pypi.org/simple/ pennylane-catalyst==0.8.0.dev14 --pre
 
     - name: Install PennyLane-Lightning master
       shell: bash
