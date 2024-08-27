@@ -246,6 +246,7 @@ def generate_dummy_raw_results(measure_f, n_mcms, shots, postselect, interface):
         raw_results = (single_shot_res,) * shots
 
     else:
+
         # When postselecting, we start by creating results for two shots as alternating indices
         # will have valid results.
         # Alternating tuple. Only the values at odd indices are valid
@@ -276,7 +277,7 @@ class TestInterfaces:
     """Unit tests for ML interfaces with dynamic_one_shot"""
 
     @pytest.mark.parametrize("measure_f", (qml.expval, qml.probs, qml.sample, qml.var))
-    @pytest.mark.parametrize("shots", [20, [20, 21]])
+    @pytest.mark.parametrize("shots", [1, 20, [20, 21]])
     @pytest.mark.parametrize("n_mcms", [1, 3])
     def test_interface_tape_results(
         self, shots, n_mcms, measure_f, interface, use_interface_for_results
@@ -325,7 +326,7 @@ class TestInterfaces:
             (qml.var, 0.0, 0.0),
         ],
     )
-    @pytest.mark.parametrize("shots", [20, [20, 21]])
+    @pytest.mark.parametrize("shots", [1, 20, [20, 21]])
     @pytest.mark.parametrize("n_mcms", [1, 3])
     def test_interface_results_processing(
         self, shots, n_mcms, measure_f, expected1, expected2, interface, use_interface_for_results
@@ -394,7 +395,7 @@ class TestInterfaces:
             (qml.var, 0.0, 0.0),
         ],
     )
-    @pytest.mark.parametrize("shots", [20, [20, 22]])
+    @pytest.mark.parametrize("shots", [1, 20, [20, 22]])
     def test_interface_results_postselection_processing(
         self, shots, measure_f, expected1, expected2, interface, use_interface_for_results
     ):
