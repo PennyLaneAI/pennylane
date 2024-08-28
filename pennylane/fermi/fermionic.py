@@ -524,7 +524,7 @@ class FermiSentence(dict):
         if format == "dense":
             return qml.jordan_wigner(self, ps=True).to_mat(wire_order=list(range(largest_order)))
 
-        return qml.jordan_wigner(self, ps=True).to_mat(wire_order=list(range(largest_order)), format="sparse")
+        return qml.jordan_wigner(self, ps=True).to_mat(wire_order=list(range(largest_order)), format=format)
 
 
 def from_string(fermi_string):
