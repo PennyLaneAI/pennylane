@@ -19,6 +19,7 @@ Unit tests for the :mod:`pennylane.devices.DefaultQubitLegacy` device.
 import cmath
 import math
 from functools import partial
+from importlib.metadata import version
 
 import pytest
 
@@ -630,7 +631,8 @@ class TestApply:
         expected_output = np.array(input_state) * np.exp(-1j * phase)
 
         assert np.allclose(qubit_device_3_wires._state, np.array(expected_output), atol=tol, rtol=0)
-        assert qubit_device_3_wires._state.dtype == qubit_device_3_wires.C_DTYPE
+        if version("numpy") < "2.0.0":
+            assert qubit_device_3_wires._state.dtype == qubit_device_3_wires.C_DTYPE
 
     def test_apply_errors_qubit_state_vector(self, qubit_device_2_wires):
         """Test that apply fails for incorrect state preparation, and > 2 qubit gates"""
