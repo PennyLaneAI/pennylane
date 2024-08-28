@@ -16,10 +16,11 @@ This submodule defines the symbolic operation that indicates the control of an o
 """
 import functools
 import warnings
+from collections.abc import Callable, Sequence
 from copy import copy
 from functools import wraps
 from inspect import signature
-from typing import Any, Callable, Optional, Sequence, overload
+from typing import Any, Optional, overload
 
 import numpy as np
 from scipy import sparse
@@ -863,7 +864,7 @@ def _decompose_custom_ops(op: Controlled) -> list["operation.Operator"]:
     return None
 
 
-def _decompose_no_control_values(op: Controlled) -> list["operation.Operator"]:
+def _decompose_no_control_values(op: Controlled) -> Optional[list["operation.Operator"]]:
     """Decompose without considering control values. Returns None if no decomposition."""
 
     decomp = _decompose_custom_ops(op)
@@ -873,7 +874,7 @@ def _decompose_no_control_values(op: Controlled) -> list["operation.Operator"]:
     if _is_single_qubit_special_unitary(op.base):
         if len(op.control_wires) >= 2 and qmlmath.get_interface(*op.data) == "numpy":
             return ctrl_decomp_bisect(op.base, op.control_wires)
-        return ctrl_decomp_zyz(op.base, op.control_wires)
+        return ctrl_decomp_zyz(op.base, op.control_wires, work_wires=op.work_wires)
 
     if not op.base.has_decomposition:
         return None

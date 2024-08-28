@@ -4,6 +4,12 @@ on:
     branches:
       - master
   pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - ready_for_review
+      - labeled
   schedule:
   - cron: '47 2 * * 1'
 
@@ -16,6 +22,7 @@ env:
 
 jobs:
   tests:
+    if: github.event.pull_request.draft == false
     uses: ./.github/workflows/interface-unit-tests.yml
     secrets:
       codecov_token: ${{ secrets.CODECOV_TOKEN }}
