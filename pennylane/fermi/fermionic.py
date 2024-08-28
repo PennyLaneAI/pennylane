@@ -303,7 +303,10 @@ class FermiWord(dict):
         if format == "dense":
             return qml.jordan_wigner(self, ps=True).to_mat(wire_order=list(range(largest_order)))
 
-        return qml.jordan_wigner(self, ps=True).to_mat(wire_order=list(range(largest_order)), format=format)
+        return qml.jordan_wigner(self, ps=True).to_mat(
+            wire_order=list(range(largest_order)), format=format
+        )
+
 
 # pylint: disable=useless-super-delegation
 class FermiSentence(dict):
@@ -524,7 +527,9 @@ class FermiSentence(dict):
         if format == "dense":
             return qml.jordan_wigner(self, ps=True).to_mat(wire_order=list(range(largest_order)))
 
-        return qml.jordan_wigner(self, ps=True).to_mat(wire_order=list(range(largest_order)), format=format)
+        return qml.jordan_wigner(self, ps=True).to_mat(
+            wire_order=list(range(largest_order)), format=format
+        )
 
 
 def from_string(fermi_string):
