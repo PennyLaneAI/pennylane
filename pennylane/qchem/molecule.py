@@ -55,9 +55,7 @@ class Molecule:
         r (array[float]): positions of the Gaussian functions
         normalize (bool): if True, the basis functions get normalized
         unit (str): unit of atomic coordinates. Available options are ``unit="bohr"`` and ``unit="angstrom"``.
-        coord_opt (bool): differentiability of coordinates
-        coeff_opt (bool): differentiability of coeffs
-        alpha_opt (bool): differentiability of alpha
+        argnum (int, list(int), None): differentiability of coords, coeffs, and alpha (in that order)
 
     **Example**
 
