@@ -73,8 +73,8 @@ class Adder(Operation):
 
     .. code-block:: pycon
 
-         >>> print(circuit())
-         [1 1 0 1]
+        >>> print(circuit())
+        [1 1 0 1]
 
     The result, :math:`[1 1 0 1]`, is the ket representation of
     :math:`8 + 5  \, \text{modulo} \, 15 = 13`.
