@@ -32,10 +32,6 @@ class AmplitudeEmbedding(StatePrep):
 
     If both automatic padding and normalization are used, padding is executed *before* normalizing.
 
-    .. note::
-
-        On some devices, ``AmplitudeEmbedding`` must be the first operation of a quantum circuit.
-
     Args:
         features (tensor_like): input tensor of dimension ``(2^len(wires),)``, or less if `pad_with` is specified
         wires (Any or Iterable[Any]): wires that the template acts on
