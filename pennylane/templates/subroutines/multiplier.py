@@ -96,7 +96,7 @@ class Multiplier(Operation):
         [1 0 1]
 
     The result :math:`[1 0 1]`, is the ket representation of
-    :math:`3 \cdot 4 \, \text{modulo} \, 12 = 5`.
+    :math:`3 \cdot 4 \, \text{modulo} \, 7 = 5`.
 
     .. details::
         :title: Usage Details
@@ -114,7 +114,7 @@ class Multiplier(Operation):
 
         - If :math:`mod = 2^{\text{len(x_wires)}}`, we will need as many as ``x_wires``.
 
-        - If :math:`mod \neq 2^{\text{len(x_wires)}}`, we will need as many as ``x_wires`` plu two extra that have to be provided.
+        - If :math:`mod \neq 2^{\text{len(x_wires)}}`, we will need as many as ``x_wires`` plus two extra wires that have to be provided.
 
         Note that the Multiplier template allows us to perform modular multiplication in the computational basis. However if one just want to perform standard multiplication (with no modulo), the modulo
         :math:`mod` has to be set large enough to ensure that :math:`x \cdot k < mod`.

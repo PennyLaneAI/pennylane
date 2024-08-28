@@ -58,7 +58,7 @@ class PhaseAdder(Operation):
     .. note::
 
         :math:`x` must be smaller than :math:`mod` to get the correct result. Also, when
-        :math:`mod \neq 2^{\text{len(x_wires)}}` we need :math:`x < 2^{\text{len(x_wires)}}/2`,
+        :math:`mod \neq 2^{\text{len(x_wires)}}` we need :math:`x < 2^{\text{len(x_wires)}-1}`,
         which means that we need one extra wire in ``x_wires``.
 
     .. seealso:: :class:`~.QFT` and :class:`~.Adder`.
@@ -96,7 +96,7 @@ class PhaseAdder(Operation):
         >>> print(circuit())
         [1 1 0 1]
 
-    The result, :math:`[1 1 0 1]`, is the ket representation of
+    The result, :math:`[1 1 0 1]`, is the binary representation of
     :math:`8 + 5  \, \text{modulo} \, 15 = 13`.
 
     .. details::
