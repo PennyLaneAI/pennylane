@@ -140,15 +140,15 @@ def classical_fisher(qnode, argnums=0):
     >>> pnp.random.seed(25)
     >>> params = pnp.random.random(2)
     >>> circ(params)
-    [0.41850088 0.41850088 0.08149912 0.08149912]
+    tensor([0.41850088, 0.41850088, 0.08149912, 0.08149912], requires_grad=True)
 
     We can obtain its ``(2, 2)`` classical fisher information matrix (CFIM) by simply calling the function returned
     by ``classical_fisher()``:
 
-    >>> cfim_func = qml.gradient.classical_fisher(circ)
+    >>> cfim_func = qml.gradients.classical_fisher(circ)
     >>> cfim_func(params)
-    [[ 0.901561 -0.125558]
-     [-0.125558  0.017486]]
+    tensor([[ 0.90156094, -0.12555804],
+        [-0.12555804,  0.01748614]], requires_grad=True)
 
     This function has the same signature as the :class:`.QNode`. Here is a small example with multiple arguments:
 
@@ -158,13 +158,14 @@ def classical_fisher(qnode, argnums=0):
         def circ(x, y):
             qml.RX(x, wires=0)
             qml.RY(y, wires=0)
-            return qml.probs(wires=range(n_wires))
+            return qml.probs(wires=range(1))
 
     >>> x, y = pnp.array([0.5, 0.6], requires_grad=True)
     >>> circ(x, y)
-    [0.86215007 0.         0.13784993 0.        ]
-    >>> qml.gradient.classical_fisher(circ)(x, y)
-    [array([[0.32934729]]), array([[0.51650396]])]
+    tensor([0.86215007, 0.13784993], requires_grad=True)
+    >>> qml.gradients.classical_fisher(circ)(x, y)
+    [tensor([[0.32934729]], requires_grad=True),
+    tensor([[0.51650396]], requires_grad=True)]
 
     Note how in the case of multiple variables we get a list of matrices with sizes
     ``[(n_params0, n_params0), (n_params1, n_params1)]``, which in this case is simply two ``(1, 1)`` matrices.
@@ -194,7 +195,7 @@ def classical_fisher(qnode, argnums=0):
     in this example since ``classical_fisher()`` ignores the return types and assumes ``qml.probs()`` for all wires.
 
     >>> grad = qml.grad(circ)(params)
-    >>> cfim = qml.gradient.classical_fisher(circ)(params)
+    >>> cfim = qml.gradients.classical_fisher(circ)(params)
     >>> print(grad.shape, cfim.shape)
     (4,) (4, 4)
 
@@ -219,10 +220,10 @@ def classical_fisher(qnode, argnums=0):
 
         params = pnp.random.random(2)
 
-    >>> qml.gradient.classical_fisher(circ)(params)
-    [[4.18575068e-06 2.34443943e-03]
-     [2.34443943e-03 1.31312079e+00]]
-    >>> qml.jacobian(qml.gradient.classical_fisher(circ))(params)
+    >>> qml.gradients.classical_fisher(circ)(params)
+    tensor([[0.00237263, 0.04541869],
+        [0.04541869, 0.86943754]], requires_grad=True)
+    >>> qml.jacobian(qml.gradients.classical_fisher(circ))(params)
     array([[[9.98030491e-01, 3.46944695e-18],
             [1.36541817e-01, 5.15248592e-01]],
            [[1.36541817e-01, 5.15248592e-01],
@@ -341,12 +342,12 @@ def quantum_fisher(
 
     >>> grad = qml.grad(circ)(params)
     >>> grad
-    [ 0.59422561 -0.02615095 -0.05146226]
-    >>> qfim = qml.gradient.quantum_fisher(circ)(params)
+    array([ 0.59422561, -0.02615095, -0.05146226])
+    >>> qfim = qml.gradients.quantum_fisher(circ)(params)
     >>> qfim
-    [[1.         0.         0.        ]
-     [0.         1.         0.        ]
-     [0.         0.         0.77517241]]
+    tensor([[1.        , 0.        , 0.        ],
+        [0.        , 1.        , 0.        ],
+        [0.        , 0.        , 0.77517241]], requires_grad=True)
     >>> qfim @ grad
     tensor([ 0.59422561, -0.02615095, -0.03989212], requires_grad=True)
 
@@ -361,11 +362,11 @@ def quantum_fisher(
     ...     qml.RY(params[1], wires=1)
     ...     qml.RZ(params[2], wires=1)
     ...     return qml.expval(H)
-    >>> qfim = qml.gradient.quantum_fisher(circ)(params)
+    >>> qfim = qml.gradients.quantum_fisher(circ)(params)
 
     Alternatively, we can fall back on the block-diagonal QFIM without the additional wire.
 
-    >>> qfim = qml.gradient.quantum_fisher(circ, approx="block-diag")(params)
+    >>> qfim = qml.gradients.quantum_fisher(circ, approx="block-diag")(params)
 
     """
 
