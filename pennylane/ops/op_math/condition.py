@@ -16,7 +16,7 @@ Contains the condition transform.
 """
 import functools
 from functools import wraps
-from typing import Callable, Optional, Type
+from typing import Callable, Optional, Sequence, Type
 
 import pennylane as qml
 from pennylane import QueuingManager
@@ -274,7 +274,9 @@ class CondCallable:  # pylint:disable=too-few-public-methods
         return self.__call_capture_disabled(*args, **kwargs)
 
 
-def cond(condition, true_fn: Callable = None, false_fn: Optional[Callable] = None, elifs=()):
+def cond(
+    condition, true_fn: Callable = None, false_fn: Optional[Callable] = None, elifs: Sequence = ()
+):
     """Quantum-compatible if-else conditionals --- condition quantum operations
     on parameters such as the results of mid-circuit qubit measurements.
 
@@ -303,7 +305,7 @@ def cond(condition, true_fn: Callable = None, false_fn: Optional[Callable] = Non
 
     .. note::
 
-        When used with :func:`~.pennylane.capture.enabled`, this function allows for general
+        When used with :func:`.pennylane.capture.enabled`, this function allows for general
         if-elif-else constructs. As with the JIT mode, all branches are captured,
         with the executed branch determined at runtime.
 
@@ -317,7 +319,7 @@ def cond(condition, true_fn: Callable = None, false_fn: Optional[Callable] = Non
             apply if ``condition`` is ``True``
         false_fn (callable): The quantum function or PennyLane operation to
             apply if ``condition`` is ``False``
-        elifs (List(Tuple(bool, callable))): A list of (bool, elif_fn) clauses. Can only
+        elifs (Sequence(Tuple(bool, callable))): A sequence of (bool, elif_fn) clauses. Can only
             be used when decorated by :func:`~.qjit` or if the condition is not
             a mid-circuit measurement.
 
