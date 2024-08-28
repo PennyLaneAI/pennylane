@@ -1,4 +1,4 @@
-qml.fermi
+qml.spin
 =========
 
 Overview

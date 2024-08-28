@@ -33,7 +33,7 @@ class Lattice:
        n_cells (list[int]): Number of cells in each direction of the grid.
        vectors (list[list[float]]): Primitive vectors for the lattice.
        positions (list[list[float]]): Initial positions of spin cites. Default value is
-           ``[[0.0]*number of dimensions]``.
+           ``[[0.0]`` :math:`\times` ``number of dimensions]``.
        boundary_condition (bool or list[bool]): Defines boundary conditions different lattice axes,
            default is ``False`` indicating open boundary condition.
        neighbour_order (int): Specifies the interaction level for neighbors within the lattice.
@@ -53,13 +53,15 @@ class Lattice:
        Lattice object
 
     **Example**
+    
     >>> n_cells = [2,2]
     >>> vectors = [[0, 1], [1, 0]]
     >>> boundary_condition = [True, False]
     >>> lattice = qml.spin.Lattice(n_cells, vectors,
     >>>           boundary_condition=boundary_condition)
-    >>> print(lattice.edges)
+    >>> lattice.edges
     [(2, 3, 0), (0, 2, 0), (1, 3, 0), (0, 1, 0)]
+
     """
 
     def __init__(

@@ -27,7 +27,7 @@ from .lattice import _generate_lattice
 def transverse_ising(
     lattice, n_cells, coupling=1.0, h=1.0, boundary_condition=False, neighbour_order=1
 ):
-    r"""Generates the transverse-field Ising model on a lattice.
+    r"""Generates the transverse-field Ising Hamiltonian on a lattice.
 
     The Hamiltonian is represented as:
 
@@ -44,7 +44,7 @@ def transverse_ising(
        n_cells (List[int]): Number of cells in each direction of the grid.
        coupling (float or List[float] or List[math.array[float]]): Coupling between spins, it can be a
            number, a list of length equal to ``neighbour_order`` or a square matrix of size
-           ``(num_spins,  num_spins)``. Default value is 1.0.
+           ``(number of spins,  number of spins)``. Default value is 1.0.
        h (float): Value of external magnetic field. Default is 1.0.
        boundary_condition (bool or list[bool]): Defines boundary conditions for different lattice axes,
            default is ``False`` indicating open boundary condition.
@@ -65,8 +65,10 @@ def transverse_ising(
     + -0.5 * (Z(0) @ Z(2))
     + -0.5 * (Z(1) @ Z(3))
     + -0.5 * (Z(2) @ Z(3))
-    + -0.1 * X(0) + -0.1 * X(1)
-    + -0.1 * X(2) + -0.1 * X(3)
+    + -0.1 * X(0)
+    + -0.1 * X(1)
+    + -0.1 * X(2)
+    + -0.1 * X(3)
 
     """
     lattice = _generate_lattice(lattice, n_cells, boundary_condition, neighbour_order)
@@ -98,7 +100,7 @@ def transverse_ising(
 
 
 def heisenberg(lattice, n_cells, coupling=None, boundary_condition=False, neighbour_order=1):
-    r"""Generates the Heisenberg model on a lattice.
+    r"""Generates the Heisenberg Hamiltonian on a lattice.
 
     The Hamiltonian is represented as:
 
@@ -113,8 +115,8 @@ def heisenberg(lattice, n_cells, coupling=None, boundary_condition=False, neighb
                    ``'honeycomb'``, ``'triangle'``, or ``'kagome'``.
        n_cells (List[int]): Number of cells in each direction of the grid.
        coupling (List[List[float]] or List[math.array[float]]): Coupling between spins, it can be a 2D array
-                    of shape (neighbour_order, 3) or a 3D array of shape 3 * number of spins * number of spins.
-                    Default value is [1.0, 1.0, 1.0].
+                    of shape (neighbour_order, 3) or a 3D array of shape 3 :math:`\times` number of spins
+                    :math:`\times` number of spins. Default value is [1.0, 1.0, 1.0].
        boundary_condition (bool or list[bool]): Defines boundary conditions for different lattice axes,
            default is ``False`` indicating open boundary condition.
        neighbour_order (int): Specifies the interaction level for neighbors within the lattice.
@@ -187,7 +189,7 @@ def fermi_hubbard(
     neighbour_order=1,
     mapping="jordan_wigner",
 ):
-    r"""Generates the Fermi-Hubbard model on a lattice.
+    r"""Generates the Fermi-Hubbard Hamiltonian on a lattice.
 
     The Hamiltonian is represented as:
 
@@ -207,8 +209,9 @@ def fermi_hubbard(
        n_cells (List[int]): Number of cells in each direction of the grid.
        hopping (float or List[float] or List[math.array(float)]): Hopping strength between neighbouring sites, it can be a
                       number, a list of length equal to ``neighbour_order`` or a square matrix of size
-                      ``(num_spins, num_spins)``. Default value is 1.0.
-       coulomb (float or List[float]): Coulomb interaction between spins, it can be a constant or a list of length ``num_spins``.
+                      ``(number of spins, number of spins)``. Default value is 1.0.
+       coulomb (float or List[float]): Coulomb interaction between spins, it can be a constant or a list of length equal to
+                       ``number of spins``.
        boundary_condition (bool or list[bool]): Defines boundary conditions for different lattice axes,
            default is ``False`` indicating open boundary condition.
        neighbour_order (int): Specifies the interaction level for neighbors within the lattice.
