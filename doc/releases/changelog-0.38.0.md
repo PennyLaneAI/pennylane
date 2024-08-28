@@ -382,6 +382,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* `qml.transforms.pattern_matching_optimization` now preserves the tape measurements.
+  [(#6153)](https://github.com/PennyLaneAI/pennylane/pull/6153)
+
 * `qml.transforms.broadcast_expand` no longer squeezes out batch sizes of size 1, as a batch size of 1 is still a
   batch size.
   [(#6147)](https://github.com/PennyLaneAI/pennylane/pull/6147)
