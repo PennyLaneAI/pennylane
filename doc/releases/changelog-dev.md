@@ -10,6 +10,10 @@
 
 <h3>Deprecations 👋</h3>
 
+* The ``QubitStateVector`` template is deprecated.
+   Instead, use ``StatePrep``.
+   [(#___)](______)
+
 <h3>Documentation 📝</h3>
 
 <h3>Bug fixes 🐛</h3>
@@ -21,4 +25,5 @@
 
 This release contains contributions from (in alphabetical order):
 
+Guillermo Alonso
 Jack Brown
