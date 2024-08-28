@@ -763,9 +763,9 @@ class TestPatternMatchingOptimization:
             qml.S(2),
         ]
         measurement = [qml.expval(qml.X(0))]
-        tape = qml.tape.QuantumTape(operations, measurement)
+        tape = qml.tape.QuantumScript(operations, measurement)
 
-        pattern = qml.tape.QuantumTape([qml.S(0), qml.S(0), qml.Z(0)])
+        pattern = qml.tape.QuantumScript([qml.S(0), qml.S(0), qml.Z(0)])
 
         batch, postprocessing_fn = qml.transforms.pattern_matching_optimization(
             tape, pattern_tapes=[pattern]
