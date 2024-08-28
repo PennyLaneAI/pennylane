@@ -273,7 +273,7 @@ class FermiWord(dict):
 
         return operator
 
-    def to_mat(self, n_orbitals=None):
+    def to_mat(self, n_orbitals=None, format="dense"):
         r"""Return the matrix representation.
 
         Args:
@@ -299,10 +299,11 @@ class FermiWord(dict):
             )
 
         largest_order = n_orbitals or largest_orb_id
-        mat = qml.jordan_wigner(self, ps=True).to_mat(wire_order=list(range(largest_order)))
 
-        return mat
+        if format == "dense":
+            return qml.jordan_wigner(self, ps=True).to_mat(wire_order=list(range(largest_order)))
 
+        return qml.jordan_wigner(self, ps=True).to_mat(wire_order=list(range(largest_order)), format=format)
 
 # pylint: disable=useless-super-delegation
 class FermiSentence(dict):
@@ -493,7 +494,7 @@ class FermiSentence(dict):
             if abs(coeff) <= tol:
                 del self[fw]
 
-    def to_mat(self, n_orbitals=None):
+    def to_mat(self, n_orbitals=None, format="dense"):
         r"""Return the matrix representation.
 
         Args:
@@ -519,9 +520,11 @@ class FermiSentence(dict):
             )
 
         largest_order = n_orbitals or largest_orb_id
-        mat = qml.jordan_wigner(self, ps=True).to_mat(wire_order=list(range(largest_order)))
 
-        return mat
+        if format == "dense":
+            return qml.jordan_wigner(self, ps=True).to_mat(wire_order=list(range(largest_order)))
+
+        return qml.jordan_wigner(self, ps=True).to_mat(wire_order=list(range(largest_order)), format="sparse")
 
 
 def from_string(fermi_string):
