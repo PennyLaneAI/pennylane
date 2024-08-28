@@ -230,7 +230,7 @@ class StatePrep(StatePrepBase):
                 qml.StatePrep(state, wires=range(2))
                 return qml.expval(qml.Z(0)), qml.state()
 
-            res, state = circuit(f=[1/2, 1/2, 1/2, 1/2])
+            res, state = circuit([1/2, 1/2, 1/2, 1/2])
 
         The final state of the device is - up to a global phase - equivalent to the input passed to the circuit:
 
