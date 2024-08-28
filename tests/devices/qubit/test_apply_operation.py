@@ -1355,8 +1355,8 @@ class TestConditionalsAndMidMeasure:
 
     @pytest.mark.parametrize("reset", (False, True))
     @pytest.mark.parametrize("m_res", ([0, 0], [1, 0], [1, 1]))
-    def test_mid_measure_with_post_select_and_reset(self, m_res, reset):
-        """Test the application of a MidMeasureMP with post selection and reset."""
+    def test_mid_measure_with_postselect_and_reset(self, m_res, reset):
+        """Test the application of a MidMeasureMP with postselection and reset."""
 
         initial_state = np.array([[0.5 + 0.0j, 0.5 + 0.0j], [0.5 + 0.0j, 0.5 + 0.0j]])
         mid_state, end_state = np.zeros((4, 4)), np.zeros((4, 4))
