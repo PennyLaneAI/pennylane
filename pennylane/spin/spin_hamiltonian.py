@@ -352,7 +352,6 @@ def kitaev(n_cells, coupling=None, boundary_condition=False):
         boundary_condition=boundary_condition,
         custom_edges=custom_edges,
     )
-    print(lattice.edges)
     opmap = {"X": X, "Y": Y, "Z": Z}
     hamiltonian = 0.0 * qml.I(0)
     for edge in lattice.edges:
