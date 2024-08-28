@@ -30,7 +30,7 @@ from pennylane.compiler.compiler import CompileError
 make_vjp = unary_to_nary(_make_vjp)
 
 
-def _capture_diff(func, argnum=None, diff_prim=None):
+def _capture_diff(func, argnum=None, diff_prim=None, method=None, h=None):
     """Capture-compatible gradient computation."""
     import jax  # pylint: disable=import-outside-toplevel
 
@@ -43,7 +43,7 @@ def _capture_diff(func, argnum=None, diff_prim=None):
     def new_func(*args, **kwargs):
         jaxpr = jax.make_jaxpr(partial(func, **kwargs))(*args)
         prim_kwargs = {"argnum": argnum, "jaxpr": jaxpr.jaxpr, "n_consts": len(jaxpr.consts)}
-        return diff_prim.bind(*jaxpr.consts, *args, **prim_kwargs)
+        return diff_prim.bind(*jaxpr.consts, *args, **prim_kwargs, method=method, h=h)
 
     return new_func
 
@@ -116,11 +116,11 @@ class grad:
             ops_loader = available_eps[active_jit]["ops"].load()
             return ops_loader.grad(func, method=method, h=h, argnums=argnum)
 
+        if enabled():
+            return _capture_diff(func, argnum, create_grad_primitive(), method=method, h=h)
+
         if method or h:  # pragma: no cover
             raise ValueError(f"Invalid values '{method=}' and '{h=}' without QJIT.")
-
-        if enabled():
-            return _capture_diff(func, argnum, create_grad_primitive())
 
         return super().__new__(cls)
 
@@ -433,11 +433,11 @@ def jacobian(func, argnum=None, method=None, h=None):
         ops_loader = available_eps[active_jit]["ops"].load()
         return ops_loader.jacobian(func, method=method, h=h, argnums=argnum)
 
+    if enabled():
+        return _capture_diff(func, argnum, create_jacobian_primitive(), method=method, h=h)
+
     if method or h:
         raise ValueError(f"Invalid values '{method=}' and '{h=}' without QJIT.")
-
-    if enabled():
-        return _capture_diff(func, argnum, create_jacobian_primitive())
 
     def _get_argnum(args):
         """Inspect the arguments for differentiability and return the

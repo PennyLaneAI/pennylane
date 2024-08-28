@@ -18,6 +18,7 @@ from collections.abc import Callable
 
 import pennylane as qml
 from pennylane.capture.flatfn import FlatFn
+from pennylane.capture.primitives import create_non_jvp_primitive
 
 from .compiler import (
     AvailableCompilers,
@@ -621,7 +622,7 @@ def _get_for_loop_qfunc_prim():
 
     import jax  # pylint: disable=import-outside-toplevel
 
-    for_loop_prim = jax.core.Primitive("for_loop")
+    for_loop_prim = create_non_jvp_primitive()("for_loop")
     for_loop_prim.multiple_results = True
 
     @for_loop_prim.def_impl
