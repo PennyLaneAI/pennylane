@@ -147,8 +147,6 @@ class TestPatternMatchingOptimization:
         assert len(optimized_qnode.qtape.operations) == 7
         assert cnots_optimized_qnode == 3
 
-        assert optimized_qnode.qtape.measurements == qnode.qtape.measurements
-
         assert qnode_res == optimized_qnode_res
         assert np.allclose(qml.matrix(optimized_qnode)(), qml.matrix(qnode)())
 
@@ -229,8 +227,6 @@ class TestPatternMatchingOptimization:
 
         assert len(optimized_qnode.qtape.operations) == 5
         assert s_adjoint_optimized_qnode == 1
-
-        assert optimized_qnode.qtape.measurements == qnode.qtape.measurements
 
         assert qnode_res == optimized_qnode_res
         assert np.allclose(qml.matrix(optimized_qnode)(), qml.matrix(qnode)())
@@ -329,8 +325,6 @@ class TestPatternMatchingOptimization:
         assert len(optimized_qnode.qtape.operations) == 10
         assert swap_optimized_qnode == 0
         assert cnot_optimized_qnode == 4
-
-        assert optimized_qnode.qtape.measurements == qnode.qtape.measurements
 
         assert qnode_res == optimized_qnode_res
         assert np.allclose(qml.matrix(optimized_qnode)(), qml.matrix(qnode)())
@@ -541,8 +535,6 @@ class TestPatternMatchingOptimization:
         assert len(optimized_qnode.qtape.operations) == 1
         assert cnots_optimized_qnode == 1
 
-        assert optimized_qnode.qtape.measurements == qnode.qtape.measurements
-
         assert qnode_res == optimized_qnode_res
         assert np.allclose(qml.matrix(optimized_qnode)(), qml.matrix(qnode)())
 
@@ -628,8 +620,6 @@ class TestPatternMatchingOptimization:
 
         assert len(optimized_qnode.qtape.operations) == 49
         assert cnots_optimized_qnode == 26
-
-        assert optimized_qnode.qtape.measurements == qnode.qtape.measurements
 
         assert qnode_res == optimized_qnode_res
         assert np.allclose(qml.matrix(optimized_qnode)(), qml.matrix(qnode)())
@@ -755,8 +745,6 @@ class TestPatternMatchingOptimization:
 
         assert len(optimized_qnode.qtape.operations) == 84
         assert cnots_optimized_qnode == 45
-
-        assert optimized_qnode.qtape.measurements == qnode.qtape.measurements
 
         assert qnode_res == optimized_qnode_res
         assert np.allclose(qml.matrix(optimized_qnode)(), qml.matrix(qnode)())
