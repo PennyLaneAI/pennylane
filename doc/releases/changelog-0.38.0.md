@@ -631,7 +631,7 @@
 * The `max_expansion` argument in `qml.QNode` has been deprecated.
   [(#6026)](https://github.com/PennyLaneAI/pennylane/pull/6026)
 
-* The `expansion_strategy` attribute in the `QNode` class has been deprecated.
+* The `expansion_strategy` attribute `qml.QNode` has been deprecated.
   [(#5989)](https://github.com/PennyLaneAI/pennylane/pull/5989)
 
 * The `expansion_strategy` argument has been deprecated in all of `qml.draw`, `qml.draw_mpl`, and `qml.specs`.
