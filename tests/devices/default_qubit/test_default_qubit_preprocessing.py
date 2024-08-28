@@ -437,7 +437,7 @@ class TestPreprocessingIntegration:
     def test_preprocess_batch_transform_adjoint(self):
         """Test that preprocess returns the correct tapes when a batch transform
         is needed."""
-        ops = [qml.Hadamard(0), qml.CNOT([0, 1]), qml.RX([np.pi, np.pi / 2], wires=1)]
+        ops = [qml.Hadamard(0), qml.CNOT([0, 1]), qml.RX([np.pi, np.pi / 2, 2.5], wires=1)]
         # Need to specify grouping type to transform tape
         measurements = [qml.expval(qml.PauliX(0)), qml.expval(qml.PauliZ(1))]
         tapes = [
@@ -453,20 +453,23 @@ class TestPreprocessingIntegration:
         expected_ops = [
             [qml.Hadamard(0), qml.CNOT([0, 1]), qml.RX(np.pi, wires=1)],
             [qml.Hadamard(0), qml.CNOT([0, 1]), qml.RX(np.pi / 2, wires=1)],
+            [qml.Hadamard(0), qml.CNOT([0, 1]), qml.RX(2.5, wires=1)],
         ]
 
-        assert len(res_tapes) == 4
+        assert len(res_tapes) == 6
         for i, t in enumerate(res_tapes):
-            for op, expected_op in zip(t.operations, expected_ops[i % 2]):
+            for op, expected_op in zip(t.operations, expected_ops[i % 3]):
                 qml.assert_equal(op, expected_op)
             assert len(t.measurements) == 1
-            if i < 2:
+            if i < 3:
                 qml.assert_equal(t.measurements[0], measurements[0])
             else:
                 qml.assert_equal(t.measurements[0], measurements[1])
 
-        val = ([[1, 2]], [[3, 4]], [[5, 6]], [[7, 8]])
-        assert np.array_equal(batch_fn(val), np.array([[[1, 2], [3, 4]], [[5, 6], [7, 8]]]))
+        # outer dimension = tapes, each has one meausrement
+        val = (1, 2, 3, 4, 5, 6)
+        expected = (np.array([1, 2, 3]), np.array([4, 5, 6]))
+        assert np.array_equal(batch_fn(val), expected)
 
     def test_preprocess_expand(self):
         """Test that preprocess returns the correct tapes when expansion is needed."""
@@ -526,7 +529,7 @@ class TestPreprocessingIntegration:
     def test_preprocess_split_and_expand_adjoint(self):
         """Test that preprocess returns the correct tapes when splitting and expanding
         is needed."""
-        ops = [qml.Hadamard(0), NoMatOp(1), qml.RX([np.pi, np.pi / 2], wires=1)]
+        ops = [qml.Hadamard(0), NoMatOp(1), qml.RX([np.pi, np.pi / 2, 1.23], wires=1)]
         # Need to specify grouping type to transform tape
         measurements = [qml.expval(qml.PauliX(0)), qml.expval(qml.PauliZ(1))]
         tapes = [
@@ -542,20 +545,22 @@ class TestPreprocessingIntegration:
         expected_ops = [
             [qml.Hadamard(0), qml.PauliX(1), qml.PauliY(1), qml.RX(np.pi, wires=1)],
             [qml.Hadamard(0), qml.PauliX(1), qml.PauliY(1), qml.RX(np.pi / 2, wires=1)],
+            [qml.Hadamard(0), qml.PauliX(1), qml.PauliY(1), qml.RX(1.23, wires=1)],
         ]
 
-        assert len(res_tapes) == 4
+        assert len(res_tapes) == 6
         for i, t in enumerate(res_tapes):
-            for op, expected_op in zip(t.operations, expected_ops[i % 2]):
+            for op, expected_op in zip(t.operations, expected_ops[i % 3]):
                 qml.assert_equal(op, expected_op)
             assert len(t.measurements) == 1
-            if i < 2:
+            if i < 3:
                 qml.assert_equal(t.measurements[0], measurements[0])
             else:
                 qml.assert_equal(t.measurements[0], measurements[1])
 
-        val = ([[1, 2]], [[3, 4]], [[5, 6]], [[7, 8]])
-        assert np.array_equal(batch_fn(val), np.array([[[1, 2], [3, 4]], [[5, 6], [7, 8]]]))
+        val = (1, 2, 3, 4, 5, 6)
+        expected = (np.array([1, 2, 3]), np.array([4, 5, 6]))
+        assert np.array_equal(batch_fn(val), expected)
 
     def test_preprocess_check_validity_fail(self):
         """Test that preprocess throws an error if the split and expanded tapes have
