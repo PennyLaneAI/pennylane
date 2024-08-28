@@ -119,24 +119,24 @@
   [(#6121)](https://github.com/PennyLaneAI/pennylane/pull/6121)
 
   * `qml.Adder` performs in-place modular addition: 
-    :math:`\text{Adder}(k, mod)\vert x \rangle = \vert x + k \; \text{modulo} \; mod \rangle`. 
+    :math:`\text{Adder}(k, mod)\vert x \rangle = \vert x + k \; \text{mod} \; m\rangle`. 
 
   * `qml.PhaseAdder` is similar to `qml.Adder`, but it performs in-place modular addition in the Fourier 
     basis. 
 
   * `qml.Multiplier` performs in-place multiplication: 
-    :math:`\text{Multiplier}(k, mod)\vert x \rangle = \vert x \times k \; \text{modulo} \; mod \rangle`.
+    :math:`\text{Multiplier}(k, mod)\vert x \rangle = \vert x \times k \; \text{mod} \; m \rangle`.
 
   * `qml.OutAdder` performs out-place modular addition:
-    :math:`\text{OutAdder}(mod)\vert x \rangle \vert y \rangle \vert b \rangle = \vert x \rangle \vert y \rangle \vert b + x + y \; \text{modulo} \; mod \rangle`.
+    :math:`\text{OutAdder}(mod)\vert x \rangle \vert y \rangle \vert b \rangle = \vert x \rangle \vert y \rangle \vert b + x + y \; \text{mod} \; m \rangle`.
 
   * `qml.OutMultiplier` performs out-place modular multiplication: 
-    :math:`\text{OutMultiplier}(mod)\vert x \rangle \vert y \rangle \vert b \rangle = \vert x \rangle \vert y \rangle \vert b + x \times y \; \text{modulo} \; mod \rangle`.
+    :math:`\text{OutMultiplier}(mod)\vert x \rangle \vert y \rangle \vert b \rangle = \vert x \rangle \vert y \rangle \vert b + x \times y \; \text{mod} \; m \rangle`.
 
   * `qml.ModExp` performs modular exponentiation: 
-    :math:`\text{ModExp}(base, mod) \vert x \rangle \vert k \rangle = \vert x \rangle \vert k \times base^x \; \text{modulo} \; mod \rangle`.
+    :math:`\text{ModExp}(base, mod) \vert x \rangle \vert k \rangle = \vert x \rangle \vert k \times base^x \; \text{mod} \; m \rangle`.
 
-  Here is a comprehensive example that performs the following calculation: `(2 + 1) * 3 \; \text{modulo} 7 \; = 2`.
+  Here is a comprehensive example that performs the following calculation: `(2 + 1) * 3 \; \text{mod} 7 \; = 2`.
 
   ```python
   dev = qml.device("default.qubit", shots=1)
@@ -144,7 +144,7 @@
   wire_reg = qml.registers({
       "x_wires": 2, # |x>: stores the result of 2 + 1 = 3
       "y_wires": 2, # |y>: multiples x by 3
-      "output_wires": 3, # stores the result of (2 + 1) * 3 mod 7 = 2
+      "output_wires": 3, # stores the result of (2 + 1) * 3 m 7 = 2
       "work_wires": 2 # for qml.OutMultiplier
   })
 
@@ -431,7 +431,7 @@
   [(#6041)](https://github.com/PennyLaneAI/pennylane/pull/6041)
   [(#6064)](https://github.com/PennyLaneAI/pennylane/pull/6064)
 
-* `qml.for_loop` and `qml.while_loop` now fallback to standard Python control flow if `@qjit` is not 
+* `qml.for_loop` and `qml.while_loop` now fall back to standard Python control flow if `@qjit` is not 
   present, allowing the same code to work with and without `@qjit` without any rewrites.
   [(#6014)](https://github.com/PennyLaneAI/pennylane/pull/6014)
 
@@ -499,7 +499,7 @@
   [(#6043)](https://github.com/PennyLaneAI/pennylane/pull/6043)
 
   This adds two new options for the `method` argument: `dsatur` (degree of saturation) and `gis` (independent 
-  set). In addition, the creation of the adjancecy matrix now takes advantage of the symplectic representation 
+  set). In addition, the creation of the adjacency matrix now takes advantage of the symplectic representation 
   of the Pauli observables. 
   
   Additionally, a new function called `qml.pauli.compute_partition_indices` has been added to calculate 
