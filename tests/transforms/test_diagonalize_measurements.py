@@ -457,11 +457,17 @@ class TestDiagonalizeTapeMeasurements:
 
         assert fn == null_postprocessing
 
+    @pytest.mark.parametrize(
+        "measurements",
+        (
+            [qml.expval(X(0)), qml.var(Z(0) + Y(2))],
+            [qml.expval(X(0)), qml.var(X(0) + Y(2)), qml.sample()],
+        ),
+    )
     @pytest.mark.parametrize("supported_base_obs", [{qml.Z}, {qml.Z, qml.Hadamard}])
-    def test_non_commuting_observables_raise_an_error(self, supported_base_obs):
+    def test_non_commuting_observables_raise_an_error(self, measurements, supported_base_obs):
         """Test that the diagonalize_measurements raises an error as expected if the tape contains
         non-commuting observables"""
-        measurements = [qml.expval(X(0)), qml.var(Z(0) + Y(2))]
 
         tape = QuantumScript([], measurements=measurements)
 
@@ -523,6 +529,39 @@ class TestDiagonalizeTapeMeasurements:
                 qml.sample(wires=[2, 3]),
             ]
         assert diagonalizing_gates == X(0).diagonalizing_gates() + Y(1).diagonalizing_gates()
+
+    @pytest.mark.parametrize("supported_base_obs", [{qml.Z}, {qml.Z, qml.Hadamard}])
+    @pytest.mark.parametrize("to_eigvals", [True, False])
+    def test_diagonalize_subset_of_pauli_obs_with_overlapping_basis_sampling(
+        self, supported_base_obs, to_eigvals
+    ):
+        """Test that _diagonalize_subset_of_pauli_obs correctly handles tapes where some
+        measurements sample the computational basis states and don't have an observable,
+        and other observables are on overlapping wires, but all measurements are commuting"""
+
+        if to_eigvals and supported_base_obs != {qml.Z}:
+            pytest.skip("to_eigvals is not supported when not diagonalizing all gates")
+
+        measurements = [qml.expval(Z(0)), qml.var(Y(1)), qml.sample(wires=[0])]
+
+        tape = QuantumScript([], measurements=measurements)
+        diagonalizing_gates, new_measurements = _diagonalize_subset_of_pauli_obs(
+            tape, supported_base_obs=supported_base_obs, to_eigvals=to_eigvals
+        )
+
+        if to_eigvals:
+            assert new_measurements == [
+                ExpectationMP(eigvals=[1.0, -1], wires=[0]),
+                VarianceMP(eigvals=[1.0, -1], wires=[1]),
+                SampleMP(wires=[0]),
+            ]
+        else:
+            assert new_measurements == [
+                qml.expval(Z(0)),
+                qml.var(Z(1)),
+                qml.sample(wires=[0]),
+            ]
+        assert diagonalizing_gates == Y(1).diagonalizing_gates()
 
     def test_decomposing_subset_of_obs(self):
         """Test that passing a list of supported obs to the diagonalize_measurements transform
