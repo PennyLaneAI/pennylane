@@ -345,8 +345,8 @@ def cond(condition, true_fn: Callable = None, false_fn: Optional[Callable] = Non
 
     .. code-block :: pycon
 
-        >>> first_par = pnp.array(0.3, requires_grad=True)
-        >>> sec_par = pnp.array(1.23, requires_grad=True)
+        >>> first_par = np.array(0.3)
+        >>> sec_par = np.array(1.23)
         >>> qnode(first_par, sec_par)
         tensor(0.32677361, requires_grad=True)
 
@@ -412,9 +412,11 @@ def cond(condition, true_fn: Callable = None, false_fn: Optional[Callable] = Non
     >>> circuit(1.2)
     Array(0.13042371, dtype=float64)
 
-    If the above syntax is used with a ``QNode`` that is not decorated with
-    :func:`~pennylane.qjit` and none of the predicates contain mid-circuit measurements,
-    ``qml.cond`` will fall back to using native Python ``if``-``elif``-``else`` blocks.
+    .. note::
+
+        If the above syntax is used with a ``QNode`` that is not decorated with
+        :func:`~pennylane.qjit` and none of the predicates contain mid-circuit measurements,
+        ``qml.cond`` will fall back to using native Python ``if``-``elif``-``else`` blocks.
 
     .. details::
         :title: Usage Details
