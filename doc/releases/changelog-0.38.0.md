@@ -119,24 +119,25 @@
   [(#6121)](https://github.com/PennyLaneAI/pennylane/pull/6121)
 
   * `qml.Adder` performs in-place modular addition: 
-    :math:`\text{Adder}(k, mod)\vert x \rangle = \vert x + k \; \text{mod} \; m\rangle`. 
+    :math:`\text{Adder}(k, m)\vert x \rangle = \vert x + k \; \text{mod} \; m\rangle`. 
 
   * `qml.PhaseAdder` is similar to `qml.Adder`, but it performs in-place modular addition in the Fourier 
     basis. 
 
   * `qml.Multiplier` performs in-place multiplication: 
-    :math:`\text{Multiplier}(k, mod)\vert x \rangle = \vert x \times k \; \text{mod} \; m \rangle`.
+    :math:`\text{Multiplier}(k, m)\vert x \rangle = \vert x \times k \; \text{mod} \; m \rangle`.
 
   * `qml.OutAdder` performs out-place modular addition:
-    :math:`\text{OutAdder}(mod)\vert x \rangle \vert y \rangle \vert b \rangle = \vert x \rangle \vert y \rangle \vert b + x + y \; \text{mod} \; m \rangle`.
+    :math:`\text{OutAdder}(m)\vert x \rangle \vert y \rangle \vert b \rangle = \vert x \rangle \vert y \rangle \vert b + x + y \; \text{mod} \; m \rangle`.
 
   * `qml.OutMultiplier` performs out-place modular multiplication: 
-    :math:`\text{OutMultiplier}(mod)\vert x \rangle \vert y \rangle \vert b \rangle = \vert x \rangle \vert y \rangle \vert b + x \times y \; \text{mod} \; m \rangle`.
+    :math:`\text{OutMultiplier}(m)\vert x \rangle \vert y \rangle \vert b \rangle = \vert x \rangle \vert y \rangle \vert b + x \times y \; \text{mod} \; m \rangle`.
 
   * `qml.ModExp` performs modular exponentiation: 
-    :math:`\text{ModExp}(base, mod) \vert x \rangle \vert k \rangle = \vert x \rangle \vert k \times base^x \; \text{mod} \; m \rangle`.
+    :math:`\text{ModExp}(base, m) \vert x \rangle \vert k \rangle = \vert x \rangle \vert k \times base^x \; \text{mod} \; m \rangle`.
 
-  Here is a comprehensive example that performs the following calculation: `(2 + 1) * 3 \; \text{mod} 7 \; = 2`.
+  Here is a comprehensive example that performs the following calculation: `(2 + 1) * 3 mod 7 = 2` (or 
+  `010` in binary).
 
   ```python
   dev = qml.device("default.qubit", shots=1)
