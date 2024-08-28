@@ -4,46 +4,6 @@
 
 <h3>New features since last release</h3>
 
-<h4>Converting noise models from Qiskit ♻️</h4>
-
-* Convert Qiskit noise models into a PennyLane `NoiseModel` with `qml.from_qiskit_noise`.
-  [(#5996)](https://github.com/PennyLaneAI/pennylane/pull/5996)
-
-  In the last few releases, we've added substantial improvements and new features to the 
-  [Pennylane-Qiskit plugin](https://docs.pennylane.ai/projects/qiskit/en/latest/installation.html).
-  With this release, a new `qml.from_qiskit_noise` function allows you to convert a Qiskit noise model 
-  into a PennyLane `NoiseModel`. Here is a simple example with two quantum errors that add two different 
-  depolarizing errors based on the presence of different gates in the circuit:
-
-  ```python
-  import pennylane as qml
-  import qiskit_aer.noise as noise
-
-  error_1 = noise.depolarizing_error(0.001, 1) # 1-qubit noise
-  error_2 = noise.depolarizing_error(0.01, 2) # 2-qubit noise
-
-  noise_model = noise.NoiseModel()
-
-  noise_model.add_all_qubit_quantum_error(error_1, ['rz', 'ry'])
-  noise_model.add_all_qubit_quantum_error(error_2, ['cx'])
-  ```
-  
-  ```pycon
-  >>> qml.from_qiskit_noise(noise_model)
-  NoiseModel({
-    OpIn(['RZ', 'RY']): QubitChannel(num_kraus=4, num_wires=1)
-    OpIn(['CNOT']): QubitChannel(num_kraus=16, num_wires=2)
-  })
-  ```
-
-  Under the hood, PennyLane converts each quantum error in the Qiskit noise model into an equivalent 
-  `qml.QubitChannel` operator with the same canonical 
-  [Kraus representation](https://en.wikipedia.org/wiki/Quantum_operation#Kraus_operators). Currently, 
-  noise models in PennyLane do not support readout errors. As such, those will be skipped during conversion
-  if they are present in the Qiskit noise model.
-
-  Make sure to `pip install pennylane-qiskit` to access this new feature!
-
 <h4>Registers of wires 🧸</h4>
 
 * A new function called `qml.registers` has been added that lets you seamlessly create registers of 
@@ -120,7 +80,7 @@
 
     This new feature unlocks the ability to combine `Wires` instances in the following ways:
 
-    * intersection with `&` or `intersection()`: 
+    * intersection with `&` or `intersection()`:
 
       ```python
       >>> wires1 = Wires([1, 2, 3])
@@ -154,165 +114,103 @@
 
 * Several new operator templates have been added to PennyLane that let you perform quantum arithmetic 
   operations.
+  [(#6109)](https://github.com/PennyLaneAI/pennylane/pull/6109)
+  [(#6112)](https://github.com/PennyLaneAI/pennylane/pull/6112)
+  [(#6121)](https://github.com/PennyLaneAI/pennylane/pull/6121)
 
-  * **In-place operations**: :math:`\text{SomeOp}(k, mod) \vert x \rangle = \vert x * k \; \text{modulo} \; mod \rangle` 
-    where :math:`*` denotes addition (:math:`+`) or multiplication (:math:`\times`). Each of the following 
-    operations require that you specify `k` and `x_wires` (the wires we operate on and store the result).
-    Optionally, you can override the default modulus value (`2**len(x_wires)`) with the `mod` keyword 
-    argument.
+  * `qml.Adder` performs in-place modular addition: 
+    :math:`\text{Adder}(k, mod)\vert x \rangle = \vert x + k \; \text{modulo} \; mod \rangle`. 
 
-    * `qml.Adder` performs in-place modular addition: 
-      :math:`\text{Adder}(k, mod)\vert x \rangle = \vert x + k \; \text{modulo} \; mod \rangle`. 
-      [(#6109)](https://github.com/PennyLaneAI/pennylane/pull/6109)
+  * `qml.PhaseAdder` is similar to `qml.Adder`, but it performs in-place modular addition in the Fourier 
+    basis. 
 
-      ```python
-      dev = qml.device("default.qubit", shots=1)
+  * `qml.Multiplier` performs in-place multiplication: 
+    :math:`\text{Multiplier}(k, mod)\vert x \rangle = \vert x \times k \; \text{modulo} \; mod \rangle`.
 
-      @qml.qnode(dev)
-      def circuit():
-          qml.X(0) # |10>
-          qml.Adder(1, x_wires = [0, 1]) # add 1 to wires [0, 1] 
+  * `qml.OutAdder` performs out-place modular addition:
+    :math:`\text{OutAdder}(mod)\vert x \rangle \vert y \rangle \vert b \rangle = \vert x \rangle \vert y \rangle \vert b + x + y \; \text{modulo} \; mod \rangle`.
 
-          return qml.sample(wires=[0, 1]) # 2 + 1 = 3, or |11> 
-      ```
+  * `qml.OutMultiplier` performs out-place modular multiplication: 
+    :math:`\text{OutMultiplier}(mod)\vert x \rangle \vert y \rangle \vert b \rangle = \vert x \rangle \vert y \rangle \vert b + x \times y \; \text{modulo} \; mod \rangle`.
 
-      ```pycon
-      >>> circuit()
-      tensor([1, 1], requires_grad=True)
-      ```
+  * `qml.ModExp` performs modular exponentiation: 
+    :math:`\text{ModExp}(base, mod) \vert x \rangle \vert k \rangle = \vert x \rangle \vert k \times base^x \; \text{modulo} \; mod \rangle`.
 
-    * `qml.PhaseAdder` is similar to `qml.Adder`, but it performs in-place modular addition in the Fourier 
-      basis. 
-      [(#6109)](https://github.com/PennyLaneAI/pennylane/pull/6109)
+  Here is a comprehensive example that performs the following calculation: `(2 + 1) * 3 \; \text{modulo} 7 \; = 2`.
 
-      ```python
-      x_wires = [0, 1]
+  ```python
+  dev = qml.device("default.qubit", shots=1)
 
-      dev = qml.device("default.qubit", shots=1)
+  wire_reg = qml.registers({
+      "x_wires": 2, # |x>: stores the result of 2 + 1 = 3
+      "y_wires": 2, # |y>: multiples x by 3
+      "output_wires": 3, # stores the result of (2 + 1) * 3 mod 7 = 2
+      "work_wires": 2 # for qml.OutMultiplier
+  })
 
-      @qml.qnode(dev)
-      def circuit():
-          qml.BasisEmbedding(2, wires=x_wires) # |2> = |10>
-          qml.QFT(wires=x_wires) # transform into Fourier basis
-          qml.PhaseAdder(3, x_wires, mod=4) # add 3 to wires [0, 1]
-          qml.adjoint(qml.QFT)(wires=x_wires) # transform out of Fourier basis
+  @qml.qnode(dev)
+  def circuit():
+      # In-place addition
+      qml.BasisEmbedding(2, wires=wire_reg["x_wires"])
+      qml.Adder(1, x_wires=wire_reg["x_wires"]) # add 1 to wires [0, 1] 
 
-          return qml.sample(wires=x_wires) # 2 + 3 = 5, 5 mod 4 = 1 or |01>
-      ```
+      # Out-place multiplication
+      qml.BasisEmbedding(3, wires=wire_reg["y_wires"])
+      qml.OutMultiplier(
+          wire_reg["x_wires"], 
+          wire_reg["y_wires"], 
+          wire_reg["output_wires"], 
+          work_wires=wire_reg["work_wires"], 
+          mod=7
+      ) 
 
-      ```pycon
-      >>> circuit()
-      array([0, 1])
-      ```
+      return qml.sample(wires=wire_reg["output_wires"])
+  ```
 
-    * `qml.Multiplier` performs in-place multiplication: 
-      :math:`\text{Multiplier}(k, mod)\vert x \rangle = \vert x \times k \; \text{modulo} \; mod \rangle`.
-      [(#6112)](https://github.com/PennyLaneAI/pennylane/pull/6112)
+  ```
+  >>> circuit()
+  array([0, 1, 0])
+  ```
 
-      Note that the algorithm that underpins `qml.Multiplier` requires that `len(work_wires) >= len(x_wires)`.
+<h4>Converting noise models from Qiskit ♻️</h4>
 
-      ```python
-      dev = qml.device("default.qubit", shots=1)
+* Convert Qiskit noise models into a PennyLane `NoiseModel` with `qml.from_qiskit_noise`.
+  [(#5996)](https://github.com/PennyLaneAI/pennylane/pull/5996)
 
-      @qml.qnode(dev)
-      def circuit():
-          qml.X(1) # |01>
-          qml.Multiplier(3, x_wires = [0, 1], work_wires=[2, 3]) # multiply wires [0, 1] by 3 
+  In the last few releases, we've added substantial improvements and new features to the 
+  [Pennylane-Qiskit plugin](https://docs.pennylane.ai/projects/qiskit/en/latest/installation.html).
+  With this release, a new `qml.from_qiskit_noise` function allows you to convert a Qiskit noise model 
+  into a PennyLane `NoiseModel`. Here is a simple example with two quantum errors that add two different 
+  depolarizing errors based on the presence of different gates in the circuit:
 
-          return qml.sample(wires=[0, 1]) # 1 times 3 = 3, or |11> 
-      ```
+  ```python
+  import pennylane as qml
+  import qiskit_aer.noise as noise
 
-      ```pycon
-      >>> circuit()
-      tensor([1, 1], requires_grad=True)
-      ```
+  error_1 = noise.depolarizing_error(0.001, 1) # 1-qubit noise
+  error_2 = noise.depolarizing_error(0.01, 2) # 2-qubit noise
 
-  * **Out-place operators** that act on more than one register of wires and store the result in a different 
-    register, unlike the in-place operators above.
+  noise_model = noise.NoiseModel()
 
-    * `qml.OutAdder` performs out-place addition:
-      :math:`\text{OutAdder}(mod)\vert x \rangle \vert y \rangle \vert b \rangle = \vert x \rangle \vert y \rangle \vert b + x + y \; \text{modulo} \; mod \rangle`.
-      [(#6121)](https://github.com/PennyLaneAI/pennylane/pull/6121)
+  noise_model.add_all_qubit_quantum_error(error_1, ['rz', 'ry'])
+  noise_model.add_all_qubit_quantum_error(error_2, ['cx'])
+  ```
+  
+  ```pycon
+  >>> qml.from_qiskit_noise(noise_model)
+  NoiseModel({
+    OpIn(['RZ', 'RY']): QubitChannel(num_kraus=4, num_wires=1)
+    OpIn(['CNOT']): QubitChannel(num_kraus=16, num_wires=2)
+  })
+  ```
 
-      `qml.OutAdder` requires that you specify three different registers: `x_wires`, `y_wires`, and 
-      `output_wires`, belonging to :math:`\vert x \rangle`, :math:`\vert y \rangle`, and :math:`\vert b \rangle`, 
-      respectively. Here is an example of performing :math:`2 + 3 \; \text{modulo} \; 2^2 = 5 \; \text{modulo} \; 4 = 1`.
+  Under the hood, PennyLane converts each quantum error in the Qiskit noise model into an equivalent 
+  `qml.QubitChannel` operator with the same canonical 
+  [Kraus representation](https://en.wikipedia.org/wiki/Quantum_operation#Kraus_operators). Currently, 
+  noise models in PennyLane do not support readout errors. As such, those will be skipped during conversion
+  if they are present in the Qiskit noise model.
 
-      ```python
-      x_wires = [0, 1] # belongs to |x>
-      y_wires = [2, 3] # belongs to |y>
-      output_wires = [4, 5, 6] # belong to |b>
-      work_wires = [7, 8]
-
-      dev = qml.device("default.qubit", shots=1)
-
-      @qml.qnode(dev)
-      def circuit(op):
-          qml.BasisEmbedding(2, wires=x_wires) # |x> = |2> = |01>
-          qml.BasisEmbedding(3, wires=y_wires) # |y> = |3> = |11>
-          # Add x, y, and b (b=0) and put result in output_wires
-          qml.OutAdder(x_wires, y_wires, output_wires, work_wires, mod=2**2) 
-
-          return qml.sample(wires=output_wires) # 3 + 2 = 5, 5 mod 4 = 1, or |001>
-      ```
-
-      ```pycon
-      >>> circuit()
-      array([0, 0, 1])
-      ```
-
-    * `qml.OutMultiplier` performs modular multiplication: 
-      :math:`\text{OutMultiplier}(mod)\vert x \rangle \vert y \rangle \vert b \rangle = \vert x \rangle \vert y \rangle \vert b + x \times y \; \text{modulo} \; mod \rangle`.
-      [(#6112)](https://github.com/PennyLaneAI/pennylane/pull/6112)
-
-      `qml.OutMultiplier` requires that you specify three different registers: `x_wires`, `y_wires`, 
-      and `output_wires`, belonging to :math:`\vert x \rangle`, :math:`\vert y \rangle`, and :math:`\vert b \rangle`, 
-      respectively. Using the above code example, we can perform :math:`2 \times 3 \; \text{modulo} \; 2^2 = 6 \; \text{modulo} \; 4 = 2`.
-
-      ```python
-      @qml.qnode(dev)
-      def circuit(op):
-          qml.BasisEmbedding(2, wires=x_wires) # |x> = |2> = |01>
-          qml.BasisEmbedding(3, wires=y_wires) # |y> = |3> = |11>
-          # Mult x, y, and add b (b=0), put result in output_wires
-          qml.OutMultiplier(x_wires, y_wires, output_wires, work_wires, mod=2**2) 
-
-          return qml.sample(wires=output_wires) # 3 * 2 = 6, 6 mod 4 = 2, or |010>
-      ```
-
-      ```pycon
-      >>> circuit()
-      array([0, 1, 0])
-      ```
-
-    * `qml.ModExp` performs modular exponentiation: 
-      :math:`\text{ModExp}(base, mod) \vert x \rangle \vert k \rangle = \vert x \rangle \vert k \times base^x \; \text{modulo} \; mod \rangle`.
-      [(#6121)](https://github.com/PennyLaneAI/pennylane/pull/6121)
-
-      `qml.ModExp` requires that you specify two different registers: `x_wires` and `output_wires`, 
-      belonging to :math:`\vert x \rangle` and :math:`\vert k \rangle`, respectively. Here is an example 
-      of performing :math:`1 \times 2^3 \; \text{modulo} \; 7 = 8 \; \text{modulo} \; 7 = 1`.
-
-      ```python
-      x_wires = [0, 1]
-      output_wires = [2, 3, 4]
-      work_wires = [5, 6, 7, 8, 9]
-
-      dev = qml.device("default.qubit", shots=1)
-      @qml.qnode(dev)
-      def circuit():
-          qml.BasisEmbedding(3, wires = x_wires) # |x> = |3> = |11>
-          qml.BasisEmbedding(1, wires = output_wires) # |k> = |1> = |001>
-          # Perform 1 * 2**3 and put result in output_wires
-          qml.ModExp(x_wires, output_wires, work_wires, base=2, mod=7)
-
-          return qml.sample(wires = output_wires) # 1 * 2**3 = 8, 8 mod 7 = 1, or |001>
-      ```
-
-      ```pycon
-      >>> circuit()
-      array([0, 0, 1])
-      ```
+  Make sure to `pip install pennylane-qiskit` to access this new feature!
 
 <h4>Substantial upgrades to MCMs using tree-traversal 🌳</h4>
 
