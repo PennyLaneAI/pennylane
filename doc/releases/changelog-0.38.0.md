@@ -746,26 +746,26 @@
 
 <h3>Documentation 📝</h3>
 
-* Improves the docstring for `qinfo.quantum_fisher` regarding the internally used functions and
-  potentially required auxiliary wires.
+* The docstring for `qml.qinfo.quantum_fisher`, regarding the internally used functions and potentially 
+  required auxiliary wires, has been improved.
   [(#6074)](https://github.com/PennyLaneAI/pennylane/pull/6074)
 
-* Improves the docstring for `QuantumScript.expand` and `qml.tape.tape.expand_tape`.
+* The docstring for `QuantumScript.expand` and `qml.tape.tape.expand_tape` has been improved.
   [(#5974)](https://github.com/PennyLaneAI/pennylane/pull/5974)
 
 <h3>Bug fixes 🐛</h3>
 
-* Catalyst replaced `argnum` with `argnums` in gradient related functions, therefore we update the Catalyst
+* Catalyst replaced `argnum` with `argnums` in gradient related functions, therefore we updated the Catalyst
   calls to those functions in PennyLane.
   [(#6117)](https://github.com/PennyLaneAI/pennylane/pull/6117)
 
-* `fuse_rot_angles` no longer returns wrong derivatives at singular points but returns NaN.
+* `fuse_rot_angles` now returns NaN instead of incorrect derivatives at singular points.
   [(#6031)](https://github.com/PennyLaneAI/pennylane/pull/6031)
 
-* `qml.GlobalPhase` and `qml.I` can now be captured when acting on no wires.
+* `qml.GlobalPhase` and `qml.Identity` can now be captured with plxpr when acting on no wires.
   [(#6060)](https://github.com/PennyLaneAI/pennylane/pull/6060)
 
-* Fix `jax.grad` + `jax.jit` not working for `AmplitudeEmbedding`, `StatePrep` and `MottonenStatePreparation`.
+* Fixed `jax.grad` and `jax.jit` to work for `qml.AmplitudeEmbedding`, `qml.StatePrep` and `qml.MottonenStatePreparation`.
   [(#5620)](https://github.com/PennyLaneAI/pennylane/pull/5620) 
 
 * Fixed a bug in `qml.center` that omitted elements from the center if they were
@@ -778,35 +778,37 @@
 * Fixed a bug in `qml.SPSAOptimizer` that ignored keyword arguments in the objective function.
   [(#6027)](https://github.com/PennyLaneAI/pennylane/pull/6027)
 
-* `dynamic_one_shot` was broken for old-API devices since `override_shots` was deprecated.
+* Fixed `dynamic_one_shot` for use with devices using the old device API, since `override_shots` was deprecated.
   [(#6024)](https://github.com/PennyLaneAI/pennylane/pull/6024)
 
 * `CircuitGraph` can now handle circuits with the same operation instance occuring multiple times.
   [(#5907)](https://github.com/PennyLaneAI/pennylane/pull/5907)
 
-* `qml.QSVT` is updated to store wire order correctly.
+* `qml.QSVT` has been updated to store wire order correctly.
   [(#5959)](https://github.com/PennyLaneAI/pennylane/pull/5959)
 
 * `qml.devices.qubit.measure_with_samples` now returns the correct result if the provided measurements
-  contain sum of operators acting on the same wire.
+  contain a sum of operators acting on the same wire.
   [(#5978)](https://github.com/PennyLaneAI/pennylane/pull/5978)
 
 * `qml.AmplitudeEmbedding` has better support for features using low precision integer data types.
   [(#5969)](https://github.com/PennyLaneAI/pennylane/pull/5969)
 
-* `qml.BasisState` and `qml.BasisEmbedding` now works with jax.jit, lightning.qubit and give the correct decomposition.
+* `qml.BasisState` and `qml.BasisEmbedding` now works with jax.jit, `lightning.qubit`, and give the correct 
+  decomposition.
   [(#6021)](https://github.com/PennyLaneAI/pennylane/pull/6021)
 
-* Jacobian shape is fixed for measurements with dimension in `qml.gradients.vjp.compute_vjp_single`.
-[(5986)](https://github.com/PennyLaneAI/pennylane/pull/5986)
+* Jacobian shape has been fixed for measurements with dimension in `qml.gradients.vjp.compute_vjp_single`.
+  [(5986)](https://github.com/PennyLaneAI/pennylane/pull/5986)
 
-* `qml.lie_closure` works with sums of Paulis.
+* `qml.lie_closure` now works with sums of Paulis.
   [(#6023)](https://github.com/PennyLaneAI/pennylane/pull/6023)
 
 * Workflows that parameterize the coefficients of `qml.exp` are now jit-compatible.
   [(#6082)](https://github.com/PennyLaneAI/pennylane/pull/6082)
 
-* Fixes a bug where `CompositeOp.overlapping_ops` changes the original ordering of ops, causing incorrect matrix generated for `Prod` with `Sum` as operands.
+* Fixed a bug where `CompositeOp.overlapping_ops` changes the original ordering of operators, causing 
+  an incorrect matrix to be generated for `Prod` with `Sum` as operands.
   [(#6091)](https://github.com/PennyLaneAI/pennylane/pull/6091)
 
 * `qml.qsvt` now works with "Wx" convention and any number of angles.
