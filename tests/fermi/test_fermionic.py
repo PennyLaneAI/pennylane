@@ -17,7 +17,6 @@ from copy import copy, deepcopy
 
 import numpy as np
 import pytest
-from scipy import sparse
 
 import pennylane as qml
 from pennylane import numpy as pnp
