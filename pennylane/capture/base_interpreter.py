@@ -65,12 +65,14 @@ class PlxprInterpreter:
 
     _env: dict
     _primitive_registrations: dict["jax.core.Primitive", Callable] = {}
+    _op_math_cache: dict
 
     def __init_subclass__(cls) -> None:
         cls._primitive_registrations = copy.copy(cls._primitive_registrations)
 
     def __init__(self, state=None):
         self._env = {}
+        self._op_math_cache = {}
         self.state = state
 
     @classmethod
@@ -108,6 +110,8 @@ class PlxprInterpreter:
         """Extract the value corresponding to a variable."""
         if self._env is None:
             raise ValueError("_env not yet initialized.")
+        if type(var) is jax.core.Literal:
+            return var.val
         return var.val if type(var) is jax.core.Literal else self._env[var]
 
     def setup(self):
@@ -143,24 +147,35 @@ class PlxprInterpreter:
         """
         return op
 
-    def interpret_operation_eqn(self, primitive, *invals, is_drop_var, **params):
+    def interpret_operation_eqn(self, eqn: "jax.core.JaxprEqn"):
         """Interpret an equation corresponding to an operator.
 
         Args:
             primitive (jax.core.Primitive): a jax primitive corresponding to an operation
+            outvar
             *invals (Any): the positional input variables for the equation
 
         Keyword Args:
-            is_drop_var (bool): whether or not the equation's output is a dropped variable
             **params: The equations parameters dictionary
 
         See also: :meth:`~.interpret_operation`.
 
         """
-        if is_drop_var:
-            op = primitive.impl(*invals, **params)
+
+        invals = [
+            (
+                invar.val
+                if type(invar) is jax.core.Literal
+                else self._op_math_cache.get(invar, self.read(invar))
+            )
+            for invar in eqn.invars
+        ]
+        op = eqn.primitive.impl(*invals, **eqn.params)
+        if isinstance(eqn.outvars[0], jax.core.DropVar):
             return self.interpret_operation(op)
-        return primitive.bind(*invals, **params)
+
+        self._op_math_cache[eqn.outvars[0]] = op
+        return op
 
     def interpret_measurement_eqn(self, primitive, *invals, **params):
         """Interpret an equation corresponding to a measurement process.
@@ -188,6 +203,7 @@ class PlxprInterpreter:
 
         """
         self._env = {}
+        self._op_math_cache = {}
         self.setup()
 
         for arg, invar in zip(args, jaxpr.invars):
@@ -196,19 +212,18 @@ class PlxprInterpreter:
             self._env[constvar] = const
 
         for eqn in jaxpr.eqns:
-            invals = [self.read(invar) for invar in eqn.invars]
 
             custom_handler = self._primitive_registrations.get(eqn.primitive, None)
             if custom_handler:
+                invals = [self.read(invar) for invar in eqn.invars]
                 outvals = custom_handler(self, *invals, **eqn.params)
             elif isinstance(eqn.outvars[0].aval, AbstractOperator):
-                is_drop_var = isinstance(eqn.outvars[0], jax.core.DropVar)
-                outvals = self.interpret_operation_eqn(
-                    eqn.primitive, *invals, is_drop_var=is_drop_var, **eqn.params
-                )
+                outvals = self.interpret_operation_eqn(eqn)
             elif isinstance(eqn.outvars[0].aval, AbstractMeasurement):
+                invals = [self.read(invar) for invar in eqn.invars]
                 outvals = self.interpret_measurement_eqn(eqn.primitive, *invals, **eqn.params)
             else:
+                invals = [self.read(invar) for invar in eqn.invars]
                 outvals = eqn.primitive.bind(*invals, **eqn.params)
 
             if not eqn.primitive.multiple_results:
@@ -218,7 +233,15 @@ class PlxprInterpreter:
 
         self.cleanup()
         # Read the final result of the Jaxpr from the environment
-        return [self.read(outvar) for outvar in jaxpr.outvars]
+        outvals = []
+        for var in jaxpr.outvars:
+            if var in self._op_math_cache:
+                outvals.append(self.interpret_operation(self._op_math_cache[var]))
+            else:
+                outvals.append(self.read(var))
+        self._op_math_cache = {}
+        self._env = {}
+        return outvals
 
     def __call__(self, f: Callable) -> Callable:
         @wraps(f)
