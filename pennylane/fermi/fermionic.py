@@ -123,7 +123,7 @@ class FermiWord(dict):
 
     def __repr__(self):
         r"""Terminal representation of a FermiWord"""
-        return str(self)
+        return str(dict(self))
 
     def __add__(self, other):
         """Add a FermiSentence, FermiWord or constant to a FermiWord. Converts both
@@ -339,7 +339,7 @@ class FermiSentence(dict):
 
     def __repr__(self):
         r"""Terminal representation for FermiSentence."""
-        return str(self)
+        return str(dict(self))
 
     def __missing__(self, key):
         r"""If the FermiSentence does not contain a FermiWord then the associated value will be 0."""
