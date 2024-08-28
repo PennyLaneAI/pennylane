@@ -200,6 +200,7 @@ def pattern_matching_optimization(
     # pylint: disable=too-many-branches
     consecutive_wires = Wires(range(len(tape.wires)))
     inverse_wires_map = OrderedDict(zip(consecutive_wires, tape.wires))
+    original_tape_meas = tape.measurements
 
     for pattern in pattern_tapes:
         # Check the validity of the pattern
@@ -281,7 +282,7 @@ def pattern_matching_optimization(
                 qscript = QuantumScript.from_queue(q_inside)
                 [tape], _ = qml.map_wires(input=qscript, wire_map=inverse_wires_map)
 
-    new_tape = type(tape)(tape.operations, tape.measurements, shots=tape.shots)
+    new_tape = type(tape)(tape.operations, original_tape_meas, shots=tape.shots)
 
     def null_postprocessing(results):
         """A postprocesing function returned by a transform that only converts the batch of results
