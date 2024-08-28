@@ -388,12 +388,12 @@ class StatePrep(StatePrepBase):
         return state
 
 
-# pylint: disable=missing-class-docstring
 class QubitStateVector(StatePrep):
     r"""
     ``QubitStateVector`` is deprecated and will be removed in version 0.40. Instead, please use ``StatePrep``.
     """
 
+    # pylint: disable=too-many-arguments
     def __init__(self, state, wires, pad_with=None, normalize=False, validate_norm=True):
         warnings.warn(
             "QubitStateVector is deprecated and will be removed in version 0.40. "
@@ -401,7 +401,6 @@ class QubitStateVector(StatePrep):
             qml.PennyLaneDeprecationWarning,
         )
         super().__init__(state, wires, pad_with, normalize, validate_norm)
-    pass  # QSV is still available
 
 
 class QubitDensityMatrix(Operation):

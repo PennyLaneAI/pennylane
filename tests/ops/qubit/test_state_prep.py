@@ -41,6 +41,7 @@ def test_QubitStateVector_is_deprecated():
     with pytest.warns(qml.PennyLaneDeprecationWarning, match="QubitStateVector is deprecated"):
         _ = qml.QubitStateVector([1, 0, 0, 0], wires=[0, 1])
 
+
 @pytest.mark.parametrize(
     "op, mat, base",
     [
