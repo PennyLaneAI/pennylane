@@ -385,9 +385,9 @@ def cond(condition, true_fn: Callable = None, false_fn: Optional[Callable] = Non
             return qml.expval(qml.Z(0))
 
     >>> circuit(1.4)
-    array(0.16996714)
+    Array(0.16996714, dtype=float64)
     >>> circuit(1.6)
-    array(0.)
+    Array(0., dtype=float64)
 
     Additional 'else-if' clauses can also be included via the ``elif`` argument:
 
@@ -410,7 +410,11 @@ def cond(condition, true_fn: Callable = None, false_fn: Optional[Callable] = Non
             return qml.expval(qml.Z(0))
 
     >>> circuit(1.2)
-    array(0.13042371)
+    Array(0.13042371, dtype=float64)
+
+    If the above syntax is used with a ``QNode`` that is not decorated with
+    :func:`~pennylane.qjit` and none of the predicates contain mid-circuit measurements,
+    ``qml.cond`` will fall back to using native Python ``if``-``elif``-``else`` blocks.
 
     .. details::
         :title: Usage Details
@@ -436,7 +440,7 @@ def cond(condition, true_fn: Callable = None, false_fn: Optional[Callable] = Non
 
         .. code-block :: pycon
 
-            >>> par = np.array(0.3, requires_grad=True)
+            >>> par = np.array(0.3)
             >>> qnode(par)
             tensor(0.3522399, requires_grad=True)
 
@@ -491,7 +495,7 @@ def cond(condition, true_fn: Callable = None, false_fn: Optional[Callable] = Non
 
         .. code-block :: pycon
 
-            >>> par = np.array(0.3, requires_grad=True)
+            >>> par = np.array(0.3)
             >>> qnode1(par)
             tensor(-0.1477601, requires_grad=True)
 
@@ -541,10 +545,10 @@ def cond(condition, true_fn: Callable = None, false_fn: Optional[Callable] = Non
 
         .. code-block :: pycon
 
-            >>> par = np.array(0.3, requires_grad=True)
-            >>> x = np.array(1.2, requires_grad=True)
-            >>> y = np.array(1.1, requires_grad=True)
-            >>> z = np.array(0.3, requires_grad=True)
+            >>> par = np.array(0.3)
+            >>> x = np.array(1.2)
+            >>> y = np.array(1.1)
+            >>> z = np.array(0.3)
             >>> qnode(par, x, y, z)
             tensor(-0.30922805, requires_grad=True)
     """
