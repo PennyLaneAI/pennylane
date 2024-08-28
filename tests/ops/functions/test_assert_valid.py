@@ -342,7 +342,11 @@ def create_op_instance(c, str_wires=False):
     if dim == 0:
         params = [1] * len(ndim_params)
     elif dim == 1:
-        params = [[1] * 2**n_wires] * len(ndim_params)
+
+        if c == qml.QubitStateVector:
+            params = [[1] + [0] * (2**n_wires - 1)] * len(ndim_params)
+        else:
+            params = [[1] * 2**n_wires] * len(ndim_params)
     elif dim == 2:
         params = [np.eye(2)] * len(ndim_params)
     else:
@@ -352,8 +356,19 @@ def create_op_instance(c, str_wires=False):
 
 
 @pytest.mark.jax
+@pytest.fixture(scope="function", autouse=True)
+def capture_warnings(recwarn):
+    """Capture warnings."""
+    yield
+    if len(recwarn) > 0:
+        for w in recwarn:
+            assert isinstance(w.message, qml.PennyLaneDeprecationWarning)
+            assert "QubitStateVector is deprecated" in str(w.message)
+
+
 @pytest.mark.parametrize("str_wires", (True, False))
 def test_generated_list_of_ops(class_to_validate, str_wires):
+    """Test every auto-generated operator instance."""
     """Test every auto-generated operator instance."""
     if class_to_validate.__module__[14:20] == "qutrit":
         pytest.xfail(reason="qutrit ops fail matrix validation")
@@ -390,4 +405,5 @@ def test_explicit_list_of_failing_ops(invalid_instance_and_error):
     """Test instances of ops that fail validation."""
     op, exc_type = invalid_instance_and_error
     with pytest.raises(exc_type):
+        print(op)
         assert_valid(op)

@@ -12,7 +12,7 @@
 
 * The ``QubitStateVector`` template is deprecated.
    Instead, use ``StatePrep``.
-   [(#___)](______)
+   [(#6172)](https://github.com/PennyLaneAI/pennylane/pull/6172)
 
 <h3>Documentation 📝</h3>
 
