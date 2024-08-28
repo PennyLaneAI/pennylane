@@ -375,6 +375,10 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* `qml.transforms.broadcast_expand` no longer squeezes out batch sizes of size 1, as a batch size of 1 is still a
+  batch size.
+  [(#6147)](https://github.com/PennyLaneAI/pennylane/pull/6147)
+
 * Catalyst replaced `argnum` with `argnums` in gradient related functions, therefore we update the Catalyst
   calls to those functions in PennyLane.
   [(#6117)](https://github.com/PennyLaneAI/pennylane/pull/6117)
@@ -431,6 +435,9 @@
 
 * `qml.qsvt` now works with "Wx" convention and any number of angles.
   [(#6105)](https://github.com/PennyLaneAI/pennylane/pull/6105)
+
+* Basis set data from the Basis Set Exchange library can now be loaded for elements with `SPD`-type orbitals.
+  [(#6159)](https://github.com/PennyLaneAI/pennylane/pull/6159)
 
 <h3>Contributors ✍️</h3>
 
