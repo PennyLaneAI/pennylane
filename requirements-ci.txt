@@ -7,9 +7,9 @@ rustworkx
 autograd
 toml
 appdirs
-semantic_version
 packaging
 autoray>=0.6.1,<0.6.10
 matplotlib
 requests
+rich
 tomli # Drop once minimum Python version is 3.11

@@ -16,7 +16,6 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.measurements import Shots
 from pennylane.measurements.vn_entropy import VnEntropyMP
 from pennylane.workflow import INTERFACE_MAP
 
@@ -100,14 +99,6 @@ class TestInitialization:
         circuit()
 
         assert isinstance(circuit.tape[0], VnEntropyMP)
-
-    @pytest.mark.parametrize("shots, shape", [(None, ()), (10, ()), ((1, 10), ((), ()))])
-    def test_shape(self, shots, shape):
-        """Test the ``shape`` method."""
-        meas = qml.vn_entropy(wires=0)
-        dev = qml.device("default.qubit.legacy", wires=1, shots=shots)
-
-        assert meas.shape(dev, Shots(shots)) == shape
 
 
 class TestIntegration:

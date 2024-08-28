@@ -539,7 +539,7 @@ class TestShotsIntegration:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliY(1))
 
-        spy = mocker.spy(dev, "sample")
+        spy = mocker.spy(dev.target_device, "sample")
 
         # execute with device default shots (None)
         res = circuit(a, b)
@@ -552,7 +552,7 @@ class TestShotsIntegration:
         assert spy.spy_return.shape == (100,)
 
         # device state has been unaffected
-        assert dev.shots is None
+        assert not dev.shots
         res = circuit(a, b)
         assert torch.allclose(res, -torch.cos(a) * torch.sin(b), atol=tol, rtol=0)
         spy.assert_called_once()  # only same call as above
@@ -656,7 +656,7 @@ class TestAdjoint:
 
         expected_grad = lambda x: torch.tensor([-torch.sin(x[0]), torch.cos(x[1])])
 
-        spy = mocker.spy(dev, "adjoint_jacobian")
+        spy = mocker.spy(dev.target_device, "adjoint_jacobian")
 
         x1 = torch.tensor([1.0, 1.0], requires_grad=True)
         res = circ(x1)
@@ -666,7 +666,7 @@ class TestAdjoint:
         assert circ.device.num_executions == 1
         spy.assert_called_with(mocker.ANY, use_device_state=mocker.ANY)
 
-    def test_resuse_state_multiple_evals(self, mocker, tol):
+    def test_reuse_state_multiple_evals(self, mocker, tol):
         """Tests that the Torch interface reuses the device state for adjoint differentiation,
         even where there are intermediate evaluations."""
         dev = qml.device("default.qubit.legacy", wires=2)
@@ -683,7 +683,7 @@ class TestAdjoint:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0))
 
-        spy = mocker.spy(dev, "adjoint_jacobian")
+        spy = mocker.spy(dev.target_device, "adjoint_jacobian")
 
         res1 = circuit(x, y)
         assert np.allclose(res1.detach(), np.cos(x_val), atol=tol, rtol=0)

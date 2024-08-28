@@ -159,7 +159,6 @@ class TestOptimize:
         assert np.isclose(cost1, expected_cost)
         assert np.isclose(cost2, expected_cost)
 
-    @pytest.mark.skip("QNGOptimizer is not yet implemented for split inputs.")
     def test_step_and_cost_with_grad_fn_split_input(self):
         """Test that the correct cost and update is returned via the step_and_cost
         method for the QNG optimizer when providing an explicit grad_fn.
@@ -190,6 +189,59 @@ class TestOptimize:
         expected_cost = circuit(*var)
 
         for step in [step1, step2, step3, step3]:
+            assert np.allclose(step, expected_step)
+        assert np.isclose(cost1, expected_cost)
+        assert np.isclose(cost2, expected_cost)
+
+    @pytest.mark.parametrize("trainable_idx", [0, 1])
+    def test_step_and_cost_split_input_one_trainable(self, trainable_idx):
+        """Test that the correct cost and update is returned via the step_and_cost
+        method for the QNG optimizer when providing an explicit grad_fn or not.
+        Using a circuit with multiple inputs, one of which is trainable."""
+
+        dev = qml.device("default.qubit")
+
+        @qml.qnode(dev)
+        def circuit(x, y):
+            """A cost function with two arguments."""
+            qml.RX(x, 0)
+            qml.RY(-y, 0)
+            return qml.expval(qml.Z(0))
+
+        grad_fn = qml.grad(circuit)
+        mt_fn = qml.metric_tensor(circuit)
+
+        params = np.array(0.2, requires_grad=False), np.array(-0.8, requires_grad=False)
+        params[trainable_idx].requires_grad = True
+        opt = qml.QNGOptimizer(stepsize=0.01)
+
+        # Without manually provided functions
+        step1, cost1 = opt.step_and_cost(circuit, *params)
+        step2 = opt.step(circuit, *params)
+
+        # With modified autograd gradient function
+        fake_grad_fn = lambda *args, **kwargs: grad_fn(*args, **kwargs) * 2
+        step3, cost2 = opt.step_and_cost(circuit, *params, grad_fn=fake_grad_fn)
+        step4 = opt.step(circuit, *params, grad_fn=fake_grad_fn)
+
+        # With modified metric tensor function
+        fake_mt_fn = lambda *args, **kwargs: mt_fn(*args, **kwargs) * 4
+        step5 = opt.step(circuit, *params, metric_tensor_fn=fake_mt_fn)
+
+        # Expectations
+        if trainable_idx == 1:
+            mt_inv = 1 / (np.cos(2 * params[0]) + 1) * 8
+        else:
+            mt_inv = 4
+        exact_update = -opt.stepsize * grad_fn(*params) * mt_inv
+        factors = [1.0, 1.0, 2.0, 2.0, 0.25]
+        expected_cost = circuit(*params)
+
+        for factor, step in zip(factors, [step1, step2, step3, step4, step5]):
+            expected_step = tuple(
+                par + exact_update * factor if i == trainable_idx else par
+                for i, par in enumerate(params)
+            )
             assert np.allclose(step, expected_step)
         assert np.isclose(cost1, expected_cost)
         assert np.isclose(cost2, expected_cost)
@@ -238,7 +290,6 @@ class TestOptimize:
         # check final cost
         assert np.allclose(circuit(theta), -0.9963791, atol=tol, rtol=0)
 
-    @pytest.mark.skip("QNGOptimizer is not yet implemented for split inputs.")
     def test_single_qubit_vqe_using_expval_h_multiple_input_params(self, tol, recwarn):
         """Test single-qubit VQE by returning qml.expval(H) in the QNode and
         check for the correct QNG value every step, the correct parameter updates, and
@@ -277,13 +328,14 @@ class TestOptimize:
 
             # check metric tensor
             res = opt.metric_tensor
-            exp = np.diag([0.25, (np.cos(x) ** 2) / 4])
-            assert np.allclose(res, exp, atol=0.00001, rtol=0)
+            exp = (np.array([[0.25]]), np.array([[(np.cos(2 * theta[0]) + 1) / 8]]))
+            assert np.allclose(res, exp)
 
             # check parameter update
-            theta_new = np.array([x, y])
-            dtheta = eta * sp.linalg.pinvh(exp) @ gradient(theta)
-            assert np.allclose(dtheta, theta - theta_new, atol=0.000001, rtol=0)
+            theta_new = (x, y)
+            grad = gradient(theta)
+            dtheta = tuple(eta * g / e[0, 0] for e, g in zip(exp, grad))
+            assert np.allclose(dtheta, theta - theta_new)
 
         # check final cost
         assert np.allclose(circuit(x, y), -1.41421356, atol=tol, rtol=0)

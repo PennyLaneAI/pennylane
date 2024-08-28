@@ -24,7 +24,7 @@ from typing import Optional
 import pennylane as qml
 from pennylane.measurements import ExpectationMP, MeasurementProcess, Shots, StateMP
 from pennylane.ops import Hamiltonian, LinearCombination, Prod, SProd, Sum
-from pennylane.tape import QuantumTapeBatch
+from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn, Result, ResultBatch, TensorLike, Union
 
@@ -38,9 +38,8 @@ def null_postprocessing(results):
 
 @transform
 def split_non_commuting(
-    tape: qml.tape.QuantumScript,
-    grouping_strategy: Optional[str] = "default",
-) -> tuple[QuantumTapeBatch, PostprocessingFn]:
+    tape: QuantumScript, grouping_strategy: Optional[str] = "default"
+) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     r"""Splits a circuit into tapes measuring groups of commuting observables.
 
     Args:
