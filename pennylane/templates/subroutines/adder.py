@@ -55,7 +55,7 @@ class Adder(Operation):
 
     This example computes the sum of two integers :math:`x=8` and :math:`k=5` modulo :math:`mod=15`.
 
-     .. code-block::
+    .. code-block::
 
         x = 8
         k = 5
@@ -71,7 +71,7 @@ class Adder(Operation):
             qml.Adder(k, x_wires, mod, work_wires)
             return qml.sample(wires=x_wires)
 
-     .. code-block:: pycon
+    .. code-block:: pycon
 
          >>> print(circuit())
          [1 1 0 1]
