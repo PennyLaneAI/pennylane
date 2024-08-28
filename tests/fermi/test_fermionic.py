@@ -161,8 +161,9 @@ class TestFermiWord:
         (fw4, fw4_dag),
         (fw5, fw5_dag),
         (fw6, fw6_dag),
-        (fw7, fw7_dag)
+        (fw7, fw7_dag),
     )
+
     @pytest.mark.parametrize("fw, fw_dag", tup_fw_dag)
     def test_adjoint(self, fw, fw_dag):
         assert fw.adjoint() == fw_dag
@@ -686,15 +687,16 @@ class TestFermiSentence:
             fs7.to_mat(n_orbitals=2)
 
     fs_dag_tup = (
-            (fs1, fs1_dag),
-            (fs2, fs2_dag),
-            (fs3, fs3_dag),
-            (fs4, fs4_dag),
-            (fs5, fs5_dag),
-            (fs6, fs6_dag),
-            (fs1_hamiltonian, fs1_hamiltonian_dag),
-            (fs2_hamiltonian, fs2_hamiltonian_dag)
+        (fs1, fs1_dag),
+        (fs2, fs2_dag),
+        (fs3, fs3_dag),
+        (fs4, fs4_dag),
+        (fs5, fs5_dag),
+        (fs6, fs6_dag),
+        (fs1_hamiltonian, fs1_hamiltonian_dag),
+        (fs2_hamiltonian, fs2_hamiltonian_dag),
     )
+
     @pytest.mark.parametrize("fs, fs_dag", fs_dag_tup)
     def test_adjoint(self, fs, fs_dag):
         assert fs.adjoint() == fs_dag

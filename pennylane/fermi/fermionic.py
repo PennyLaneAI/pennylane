@@ -62,7 +62,7 @@ class FermiWord(dict):
         for key, value in self.items():
             position = n - key[0] - 1
             orbital = key[1]
-            fermi = '+' if value == '-' else '-'
+            fermi = "+" if value == "-" else "-"
             adjoint_dict[(position, orbital)] = fermi
 
         return FermiWord(adjoint_dict)
