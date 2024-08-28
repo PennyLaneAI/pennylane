@@ -105,7 +105,11 @@ def _result_shape_dtype_struct(tape: "qml.tape.QuantumScript", device: "qml.Devi
     def struct(mp, shots):
         # depends on num_device_wires and tape.batch_size from closure
         if isinstance(mp, qml.measurements.CountsMP):
-            return _get_counts_shape(mp)
+            counts_shape = _get_counts_shape(mp, num_device_wires=num_device_wires)
+            if tape.batch_size:
+                return tuple(counts_shape for _ in range(tape.batch_size))
+            return counts_shape
+
         mp_shape = mp.shape(shots=shots, num_device_wires=num_device_wires)
         if tape.batch_size:
             mp_shape = (tape.batch_size, *mp_shape)
