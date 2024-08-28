@@ -69,6 +69,7 @@ class Lattice:
         positions=None,
         boundary_condition=False,
         neighbour_order=1,
+        custom_edges=None,
         distance_tol=1e-5,
     ):
 
@@ -109,10 +110,19 @@ class Lattice:
         n_sl = len(self.positions)
         self.n_sites = math.prod(n_cells) * n_sl
         self.lattice_points, lattice_map = self._generate_grid(neighbour_order)
+        if custom_edges is None:
+            cutoff = (
+                neighbour_order * math.max(math.linalg.norm(self.vectors, axis=1)) + distance_tol
+            )
+            edges = self._identify_neighbours(cutoff)
+            self.edges = Lattice._generate_true_edges(edges, lattice_map, neighbour_order)
+        else:
+            if neighbour_order > 1:
+                raise ValueError(
+                    "custom_edges and neighbour_order cannot be specified at the same time"
+                )
+            self.edges = self.get_custom_edges(custom_edges, lattice_map)
 
-        cutoff = neighbour_order * math.max(math.linalg.norm(self.vectors, axis=1)) + distance_tol
-        edges = self._identify_neighbours(cutoff)
-        self.edges = Lattice._generate_true_edges(edges, lattice_map, neighbour_order)
         self.edges_indices = [(v1, v2) for (v1, v2, color) in self.edges]
 
     def _identify_neighbours(self, cutoff):
@@ -187,7 +197,58 @@ class Lattice:
             lattice_points.append(point)
             lattice_map.append(node_index)
 
-        return math.array(lattice_points), math.array(lattice_map)
+        return math.array(lattice_points), lattice_map
+
+    def get_custom_edges(self, custom_edges, lattice_map):
+        """Generates the edges described in `custom_edges` for all unit cells."""
+
+        if not all([len(edge) in (1, 2) for edge in custom_edges]):
+            raise TypeError(
+                """
+                custom_edges must be a list of tuples of length 1 or 2.
+                Every tuple must contain two lattice indices to represent the edge
+                and can optionally include a list to represent the operation and coefficient for that edge.
+                """
+            )
+
+        edges = []
+        n_sl = len(self.positions)
+        nsites_axis = math.cumprod([n_sl, *self.n_cells[:0:-1]])[::-1]
+
+        for i, custom_edge in enumerate(custom_edges):
+            edge = custom_edge[0]
+
+            if edge[0] >= self.n_sites or edge[1] >= self.n_sites:
+                raise ValueError(
+                    f"The edge {edge} has vertices greater than n_sites, {self.n_sites}"
+                )
+
+            edge_operation = custom_edge[1] if len(custom_edge) == 2 else i
+            map_edge1 = lattice_map.index(edge[0])
+            map_edge2 = lattice_map.index(edge[1])
+            edge_distance = self.lattice_points[map_edge2] - self.lattice_points[map_edge1]
+            v1, v2 = math.mod(edge, n_sl)
+            dist_cell = (edge_distance + self.positions[v1] - self.positions[v2]) @ math.linalg.inv(
+                self.vectors
+            )
+            dist_cell = math.asarray(math.rint(dist_cell), dtype=int)
+            edge_ranges = []
+            for idx, cell in enumerate(self.n_cells):
+                if self.boundary_condition[idx]:
+                    edge_ranges.append(range(0, cell))
+                else:
+                    edge_ranges.append(
+                        range(
+                            math.maximum(0, -dist_cell[idx]), cell - math.maximum(0, dist_cell[idx])
+                        )
+                    )
+
+            for cell in itertools.product(*edge_ranges):
+                node1_idx = math.dot(math.mod(cell, self.n_cells), nsites_axis) + v1
+                node2_idx = math.dot(math.mod(cell + dist_cell, self.n_cells), nsites_axis) + v2
+                edges.append((node1_idx, node2_idx, edge_operation))
+
+        return edges
 
     def add_edge(self, edge_indices):
         r"""Adds a specific edge based on the site index without translating it.

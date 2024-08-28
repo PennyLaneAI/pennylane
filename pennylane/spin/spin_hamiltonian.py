@@ -19,7 +19,7 @@ import pennylane as qml
 from pennylane import X, Y, Z, math
 from pennylane.fermi import FermiWord
 
-from .lattice import _generate_lattice
+from .lattice import Lattice, _generate_lattice
 
 # pylint: disable=too-many-arguments
 
@@ -298,3 +298,67 @@ def fermi_hubbard(
     qubit_ham = qml.qchem.qubit_observable(hamiltonian, mapping=mapping)
 
     return qubit_ham.simplify()
+
+
+def kitaev(n_cells, coupling=None, boundary_condition=False):
+    r"""Generates the Kitaev Hamiltonian on the Honeycomb lattice.
+
+    The Hamiltonian is represented as:
+
+    .. math::
+
+         \hat{H} = K_x.\sum_{<i,j>}\sigma_i^x\sigma_j^x + K_y.\sum_{<i,j>}\sigma_i^y\sigma_j^y + K_z.\sum_{<i,j>}\sigma_i^z\sigma_j^z
+
+    where :math:`K_x`, :math:`K_y`, :math:`K_z` are the coupling constants defined for the Hamiltonian, and ``i,j`` represent
+    the indices for neighbouring spins.
+
+    Args:
+       n_cells (List[int]): Number of cells in each direction of the grid.
+       coupling (List[math.array[float]]): Coupling between spins, it is a list of length 3.
+                            Default value is [1.0, 1.0, 1.0].
+       boundary_condition (bool or list[bool]): Defines boundary conditions for different lattice axes,
+           default is ``False`` indicating open boundary condition.
+
+    Returns:
+       pennylane.LinearCombination: Hamiltonian for the Kitaev model.
+
+    **Example**
+
+    >>> n_cells = [2,2]
+    >>> k = [0.5, 0.6, 0.7]
+    >>> spin_ham = qml.spin.kitaev(n_cells, coupling=k)
+    >>> spin_ham
+
+    """
+
+    if coupling is None:
+        coupling = [1.0, 1.0, 1.0]
+
+    if len(coupling) != 3:
+        raise ValueError("The coupling parameter should be a list of length 3")
+
+    vectors = [[1, 0], [0.5, 0.75**0.5]]
+    positions = [[0, 0], [0.5, 0.5 / 3**0.5]]
+    custom_edges = [
+        [(0, 1), ("XX", coupling[0])],
+        [(1, 2), ("YY", coupling[1])],
+        [(1, n_cells[1] * 2), ("ZZ", coupling[2])],
+    ]
+
+    lattice = Lattice(
+        n_cells=n_cells[0:2],
+        vectors=vectors,
+        positions=positions,
+        boundary_condition=boundary_condition,
+        custom_edges=custom_edges,
+    )
+    print(lattice.edges)
+    opmap = {"X": X, "Y": Y, "Z": Z}
+    hamiltonian = 0.0 * qml.I(0)
+    for edge in lattice.edges:
+        v1, v2 = edge[0:2]
+        op1, op2 = edge[2][0]
+        coeff = edge[2][1]
+        hamiltonian += coeff * (opmap[op1](v1) @ opmap[op2](v2))
+
+    return hamiltonian.simplify()
