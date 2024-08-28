@@ -277,6 +277,13 @@
 * Added a progress bar when downloading datasets with `qml.data.load()`
   [(#5560)](https://github.com/PennyLaneAI/pennylane/pull/5560)
 
+* Upgraded and simplified `StatePrep` and `AmplitudeEmbedding` templates.
+  [(#6034)](https://github.com/PennyLaneAI/pennylane/pull/6034)
+  [(#6170)](https://github.com/PennyLaneAI/pennylane/pull/6170)
+
+* Upgraded and simplified `BasisState` and `BasisEmbedding` templates.
+  [(#6021)](https://github.com/PennyLaneAI/pennylane/pull/6021)
+  
 <h3>Breaking changes 💔</h3>
 
 * `MeasurementProcess.shape(shots: Shots, device:Device)` is now
@@ -374,6 +381,9 @@
   [(#5974)](https://github.com/PennyLaneAI/pennylane/pull/5974)
 
 <h3>Bug fixes 🐛</h3>
+
+* `qml.transforms.pattern_matching_optimization` now preserves the tape measurements.
+  [(#6153)](https://github.com/PennyLaneAI/pennylane/pull/6153)
 
 * `qml.transforms.broadcast_expand` no longer squeezes out batch sizes of size 1, as a batch size of 1 is still a
   batch size.
