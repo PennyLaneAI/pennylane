@@ -20,7 +20,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as pnp
-from pennylane.fermi.fermionic import FermiSentence, FermiWord, _to_string, from_string
+from pennylane.fermi.fermionic import FermiA, FermiC, FermiSentence, FermiWord, _to_string, from_string
 
 # pylint: disable=too-many-public-methods
 
@@ -167,6 +167,8 @@ class TestFermiWord:
     @pytest.mark.parametrize("fw, fw_dag", tup_fw_dag)
     def test_adjoint(self, fw, fw_dag):
         assert fw.adjoint() == fw_dag
+        assert FermiA(0).adjoint() == FermiC(0)
+        assert FermiC(0).adjoint() == FermiA(0)
 
 
 class TestFermiWordArithmetic:
