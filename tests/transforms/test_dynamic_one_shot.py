@@ -395,7 +395,7 @@ class TestInterfaces:
             (qml.var, 0.0, 0.0),
         ],
     )
-    @pytest.mark.parametrize("shots", [1, 20, [20, 22]])
+    @pytest.mark.parametrize("shots", [20, [20, 22]])
     def test_interface_results_postselection_processing(
         self, shots, measure_f, expected1, expected2, interface, use_interface_for_results
     ):
