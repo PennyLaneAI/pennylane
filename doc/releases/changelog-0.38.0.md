@@ -261,15 +261,48 @@
 <h4>Creating spin Hamiltonians</h4>
 
 * Three new functions are now available for creating commonly-used spin Hamiltonians in PennyLane:
-  * `qml.spin.transverse_ising`: creates the [transverse-field Ising model](https://en.wikipedia.org/wiki/Transverse-field_Ising_model) Hamiltonian.
   [(#6106)](https://github.com/PennyLaneAI/pennylane/pull/6106)
-  * `qml.spin.heisenberg`: creates the [Heisenberg model](https://en.wikipedia.org/wiki/Quantum_Heisenberg_model) Hamiltonian.
-  * `qml.spin.fermi_hubbard`: creates the [Fermi-Hubbard model](https://en.wikipedia.org/wiki/Hubbard_model) Hamiltonian.
   [(#6128)](https://github.com/PennyLaneAI/pennylane/pull/6128)
 
+  * `qml.spin.transverse_ising`: creates the [transverse-field Ising model](https://en.wikipedia.org/wiki/Transverse-field_Ising_model) Hamiltonian.
+  * `qml.spin.heisenberg`: creates the [Heisenberg model](https://en.wikipedia.org/wiki/Quantum_Heisenberg_model) Hamiltonian.
+  * `qml.spin.fermi_hubbard`: creates the [Fermi-Hubbard model](https://en.wikipedia.org/wiki/Hubbard_model) Hamiltonian.
+
+  Each Hamiltonian can be instantiated by specifying a `lattice`, the number of [unit cells](https://en.wikipedia.org/wiki/Unit_cell), 
+  `n_cells`, and the Hamiltonian parameters as keyword arguments. Here is an example with the transverse-field 
+  Ising model:
+
   ```pycon
-  # TODO code example
+  >>> tfim_ham = qml.spin.transverse_ising(lattice="square", n_cells=[2, 2], coupling=0.5, h=0.2)
+  >>> tfim_ham
+  (
+      -0.5 * (Z(0) @ Z(1))
+    + -0.5 * (Z(0) @ Z(2))
+    + -0.5 * (Z(1) @ Z(3))
+    + -0.5 * (Z(2) @ Z(3))
+    + -0.2 * X(0)
+    + -0.2 * X(1)
+    + -0.2 * X(2)
+    + -0.2 * X(3)
+  )
   ```
+
+  The resulting object is a `qml.Hamiltonian` instance, making it easy to use in circuits like the following.
+
+  ```python
+  dev = qml.device("default.qubit", shots=1)
+
+  @qml.qnode(dev)
+  def circuit():
+      return qml.expval(tfim_ham)
+  ```
+
+  ```
+  >>> circuit()
+  -2.0
+  ```
+
+  More features will be added to the `qml.spin` module in the coming releases, so stay tuned!
 
 <h4>A Prep-Select-Prep template</h4>
 
