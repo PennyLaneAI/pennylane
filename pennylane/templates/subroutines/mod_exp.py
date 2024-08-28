@@ -52,9 +52,7 @@ class ModExp(Operation):
         output_wires (Sequence[int]): the wires that store the exponentiation result
         base (int): integer that needs to be exponentiated
         mod (int): the modulus for performing the exponentiation, default value is :math:`2^{\text{len(output_wires)}}`
-        work_wires (Sequence[int]): the auxiliary wires to be used for the exponentiation. There
-            must be as many as ``output_wires`` and if :math:`mod \neq 2^{\text{len(output_wires)}}`, two more
-            wires must be added.
+        work_wires (Sequence[int]): the auxiliary wires to be used for the exponentiation. There must be as many as ``output_wires`` and if :math:`mod \neq 2^{\text{len(output_wires)}}`, two more wires must be added.
 
     **Example**
 
@@ -199,14 +197,13 @@ class ModExp(Operation):
         x_wires, output_wires, base, mod, work_wires
     ):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators.
+
         Args:
             x_wires (Sequence[int]): the wires that store the integer :math:`x`
             output_wires (Sequence[int]): the wires that store the exponentiation result
             base (int): integer that needs to be exponentiated
             mod (int): the modulus for performing the exponentiation, default value is :math:`2^{\text{len(output_wires)}}`
-            work_wires (Sequence[int]): the auxiliary wires to be used for the exponentiation. There
-                must be as many as ``output_wires`` and if :math:`mod \neq 2^{\text{len(output_wires)}}`, two more
-                wires must be added.
+            work_wires (Sequence[int]): the auxiliary wires to be used for the exponentiation. There must be as many as ``output_wires`` and if :math:`mod \neq 2^{\text{len(output_wires)}}`, two more wires must be added.
         Returns:
             list[.Operator]: Decomposition of the operator
 

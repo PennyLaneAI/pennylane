@@ -50,8 +50,7 @@ class OutAdder(Operation):
         y_wires (Sequence[int]): the wires that store the integer :math:`y`
         output_wires (Sequence[int]): the wires that store the addition result
         mod (int): the modulus for performing the addition, default value is :math:`2^{\text{len(output_wires)}}`
-        work_wires (Sequence[int]): the two auxiliary wires to use for the addition
-            when :math:`mod \neq 2^{\text{len(output_wires)}}`
+        work_wires (Sequence[int]): the two auxiliary wires to use for the addition when :math:`mod \neq 2^{\text{len(output_wires)}}`
 
     **Example**
 

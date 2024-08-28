@@ -125,7 +125,7 @@ state preparation is typically used as the first operation.
 .. _intro_ref_temp_subroutines:
 
 Arithmetic templates
------------------
+--------------------
 
 Quantum arithmetic templates to perform in-place and out-place modular operations such 
 as addition, multiplication and exponentiation.
