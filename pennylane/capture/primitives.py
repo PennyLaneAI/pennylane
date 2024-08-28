@@ -355,7 +355,10 @@ def create_grad_primitive():
 
     # pylint: disable=too-many-arguments
     @grad_prim.def_impl
-    def _(*args, argnum, jaxpr, n_consts):
+    def _(*args, argnum, jaxpr, n_consts, method, h):
+        if method or h:  # pragma: no cover
+            raise ValueError(f"Invalid values '{method=}' and '{h=}' without QJIT.")
+
         consts = args[:n_consts]
         args = args[n_consts:]
 
@@ -366,7 +369,7 @@ def create_grad_primitive():
 
     # pylint: disable=unused-argument
     @grad_prim.def_abstract_eval
-    def _(*args, argnum, jaxpr, n_consts):
+    def _(*args, argnum, jaxpr, n_consts, method, h):
         if len(jaxpr.outvars) != 1 or jaxpr.outvars[0].aval.shape != ():
             raise TypeError("Grad only applies to scalar-output functions. Try jacobian or egrad.")
         return tuple(jaxpr.invars[i].aval for i in argnum)

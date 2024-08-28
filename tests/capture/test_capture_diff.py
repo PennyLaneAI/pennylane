@@ -43,8 +43,11 @@ def test_error_with_method_or_h(kwargs):
 
     method = kwargs.get("method", None)
     h = kwargs.get("h", None)
+    jaxpr = jax.make_jaxpr(func)(0.6)
     with pytest.raises(ValueError, match=f"'{method=}' and '{h=}' without QJIT"):
-        jax.make_jaxpr(func)(0.6)
+        func(0.6)
+    with pytest.raises(ValueError, match=f"'{method=}' and '{h=}' without QJIT"):
+        jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0.6)
 
 
 def test_error_with_non_scalar_function():
@@ -56,9 +59,11 @@ def test_error_with_non_scalar_function():
 def grad_eqn_assertions(eqn, argnum=None, n_consts=0):
     argnum = [0] if argnum is None else argnum
     assert eqn.primitive == grad_prim
-    assert set(eqn.params.keys()) == {"argnum", "n_consts", "jaxpr"}
+    assert set(eqn.params.keys()) == {"argnum", "n_consts", "jaxpr", "method", "h"}
     assert eqn.params["argnum"] == argnum
     assert eqn.params["n_consts"] == n_consts
+    assert eqn.params["method"] is None
+    assert eqn.params["h"] is None
 
 
 @pytest.mark.parametrize("x64_mode", (True, False))
@@ -240,12 +245,15 @@ def test_grad_of_simple_qnode(x64_mode, diff_method, mocker):
     @qml.qnode(dev, diff_method=diff_method)
     def circuit(x):
         qml.RX(x[0], wires=0)
-        qml.RY(x[1], wires=0)
+        qml.RY(x[1] ** 2, wires=0)
         return qml.expval(qml.Z(0))
 
     x = jnp.array([0.5, 0.9])
     res = circuit(x)
-    expected_res = (-jnp.sin(x[0]) * jnp.cos(x[1]), -jnp.sin(x[1]) * jnp.cos(x[0]))
+    expected_res = (
+        -jnp.sin(x[0]) * jnp.cos(x[1] ** 2),
+        -2 * x[1] * jnp.sin(x[1] ** 2) * jnp.cos(x[0]),
+    )
     assert qml.math.allclose(res, expected_res)
 
     jaxpr = jax.make_jaxpr(circuit)(x)
@@ -265,11 +273,11 @@ def test_grad_of_simple_qnode(x64_mode, diff_method, mocker):
     assert qnode_eqn.invars[0].aval == jaxpr.in_avals[0]
 
     qfunc_jaxpr = qnode_eqn.params["qfunc_jaxpr"]
-    # Skipping a few equations related to indexing
+    # Skipping a few equations related to indexing and preprocessing
     assert qfunc_jaxpr.eqns[2].primitive == qml.RX._primitive
-    assert qfunc_jaxpr.eqns[5].primitive == qml.RY._primitive
-    assert qfunc_jaxpr.eqns[6].primitive == qml.Z._primitive
-    assert qfunc_jaxpr.eqns[7].primitive == qml.measurements.ExpectationMP._obs_primitive
+    assert qfunc_jaxpr.eqns[6].primitive == qml.RY._primitive
+    assert qfunc_jaxpr.eqns[7].primitive == qml.Z._primitive
+    assert qfunc_jaxpr.eqns[8].primitive == qml.measurements.ExpectationMP._obs_primitive
 
     assert len(qnode_eqn.outvars) == 1
     assert qnode_eqn.outvars[0].aval == jax.core.ShapedArray((), fdtype)

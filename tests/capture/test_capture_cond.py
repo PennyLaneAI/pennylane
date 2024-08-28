@@ -203,6 +203,44 @@ class TestCond:
     @pytest.mark.parametrize(
         "selector, arg, expected",
         [
+            (1, 10.0, 2),
+            (0, 10.0, 3),
+        ],
+    )
+    def test_gradient(self, testing_functions, selector, arg, expected, decorator):
+        """Test the gradient of the conditional."""
+        from pennylane.capture import create_grad_primitive
+
+        grad_prim = create_grad_primitive()
+        true_fn, false_fn, _, _, _, _ = testing_functions
+
+        def func(pred):
+            if decorator:
+                conditional = qml.cond(pred > 0)(true_fn)
+                conditional.otherwise(false_fn)
+                return conditional
+
+            return qml.cond(
+                pred > 0,
+                true_fn,
+                false_fn,
+            )
+
+        test_func = qml.grad(func(selector))
+        correct_func = jax.grad(func(selector))
+        assert np.allclose(correct_func(arg), expected)
+        assert np.allclose(test_func(arg), correct_func(arg))
+
+        jaxpr = jax.make_jaxpr(test_func)(arg)
+        assert len(jaxpr.eqns) == 1
+        assert jaxpr.eqns[0].primitive == grad_prim
+
+        manual_res = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, arg)
+        assert np.allclose(manual_res, correct_func(arg))
+
+    @pytest.mark.parametrize(
+        "selector, arg, expected",
+        [
             (1, jax.numpy.array([2, 3]), 12),
             (0, jax.numpy.array([2, 3]), 15),
         ],
