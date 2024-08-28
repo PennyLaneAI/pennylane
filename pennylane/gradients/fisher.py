@@ -221,13 +221,13 @@ def classical_fisher(qnode, argnums=0):
         params = pnp.random.random(2)
 
     >>> qml.gradients.classical_fisher(circ)(params)
-    tensor([[0.00237263, 0.04541869],
-        [0.04541869, 0.86943754]], requires_grad=True)
+    tensor([[0.86929514, 0.76134441],
+        [0.76134441, 0.6667992 ]], requires_grad=True)
     >>> qml.jacobian(qml.gradients.classical_fisher(circ))(params)
-    array([[[9.98030491e-01, 3.46944695e-18],
-            [1.36541817e-01, 5.15248592e-01]],
-           [[1.36541817e-01, 5.15248592e-01],
-            [2.16840434e-18, 2.81967252e-01]]]))
+    array([[[ 1.98284265e+00, -1.60461922e-16],
+        [ 8.68304725e-01,  1.07654307e+00]],
+       [[ 8.68304725e-01,  1.07654307e+00],
+        [ 7.30752264e-17,  1.88571178e+00]]])
 
     """
     new_qnode = _make_probs(qnode)
