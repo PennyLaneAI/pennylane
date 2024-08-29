@@ -6,6 +6,10 @@
 
 <h3>Improvements 🛠</h3>
 
+* Some custom primitives for the capture project can now be imported via
+  `from pennylane.capture.primitives import *`.
+  [(#6129)](https://github.com/PennyLaneAI/pennylane/pull/6129)
+
 <h3>Breaking changes 💔</h3>
 
 <h3>Deprecations 👋</h3>
@@ -22,3 +26,4 @@
 This release contains contributions from (in alphabetical order):
 
 Jack Brown
+Christina Lee
