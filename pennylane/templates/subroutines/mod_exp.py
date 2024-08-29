@@ -93,9 +93,9 @@ class ModExp(Operation):
 
         The third set of wires is ``work_wires`` which consist of the auxiliary qubits used to perform the modular exponentiation operation.
 
-        - If :math:`mod = 2^{\text{len(output_wires)}}`, we will need as many as ``output_wires``.
+        - If :math:`mod = 2^{\text{len(output_wires)}}`,  it is needed as many as ``output_wires``.
 
-        - If :math:`mod \neq 2^{\text{len(output_wires)}}`, we will need as many as ``output_wires`` plus two extra that have to be provided.
+        - If :math:`mod \neq 2^{\text{len(output_wires)}}`, it is needed as many as ``output_wires`` plus two extra that have to be provided.
 
         Note that the ``ModExp`` template allows us to perform modular exponentiation in the computational basis. However if one just wants to perform standard exponentiation (with no modulo),
         that would be equivalent to setting the modulo :math:`mod` to a large enough value to ensure that :math:`base^x < mod`.
@@ -195,8 +195,8 @@ class ModExp(Operation):
             x_wires (Sequence[int]): the wires that store the integer :math:`x`
             output_wires (Sequence[int]): the wires that store the exponentiation result
             base (int): integer that needs to be exponentiated
-            mod (int): the modulo for performing the exponentiation, default value is :math:`2^{\text{len(output_wires)}}`
-            work_wires (Sequence[int]): the auxiliary wires to be used for the exponentiation. There must be as many as ``output_wires`` and if :math:`mod \neq 2^{\text{len(output_wires)}}`, two more wires must be added.
+            mod (int): the modulo for performing the exponentiation. If not provided, it will be set to :math:`2^{\text{len(output_wires)}}`
+            work_wires (Sequence[int]): the auxiliary wires to use for the exponentiation, default is ``None``
         Returns:
             list[.Operator]: Decomposition of the operator
 

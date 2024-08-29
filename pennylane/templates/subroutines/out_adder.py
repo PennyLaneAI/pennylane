@@ -184,9 +184,8 @@ class OutAdder(Operation):
             x_wires (Sequence[int]): the wires that store the integer :math:`x`
             y_wires (Sequence[int]): the wires that store the integer :math:`y`
             output_wires (Sequence[int]): the wires that store the addition result
-            mod (int): the modulo for performing the addition, default value is :math:`2^{\text{len(output_wires)}}`
-            work_wires (Sequence[int]): the two auxiliary wires to use for the addition
-                when :math:`mod \neq 2^{\text{len(output_wires)}}`
+            mod (int): the modulo for performing the addition. If not provided, it will be set to :math:`2^{\text{len(output_wires)}}`
+            work_wires (Sequence[int]): the auxiliary wires to use for the addition, default is ``None``
         Returns:
             list[.Operator]: Decomposition of the operator
 

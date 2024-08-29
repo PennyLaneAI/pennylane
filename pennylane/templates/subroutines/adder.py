@@ -80,8 +80,8 @@ class Adder(Operation):
         The first one is ``x_wires``, used to encode the integer :math:`x < \text{mod}` in the Fourier basis.
         To represent :math:`x`, it is needed at least :math:`\lceil \log_2(x) \rceil` ``x_wires``.
         After the modular addition, the result can be as large as :math:`\text{mod} - 1`,
-        requiring at least :math:`\lceil \log_2(\text{mod}) \rceil` ``x_wires``. Since :math:`x < \text{mod}`, we
-        simply need :math:`\lceil \log_2(\text{mod}) \rceil` ``x_wires`` to cover all possible inputs and outputs.
+        requiring at least :math:`\lceil \log_2(\text{mod}) \rceil` ``x_wires``. Since :math:`x < \text{mod}`, it is
+        simply needed :math:`\lceil \log_2(\text{mod}) \rceil` ``x_wires`` to cover all possible inputs and outputs.
 
         The second set of wires is ``work_wires`` which consist of the auxiliary qubits used to perform the modular addition operation.
 
@@ -160,9 +160,8 @@ class Adder(Operation):
         Args:
             k (int): the number that needs to be added
             x_wires (Sequence[int]): the wires the operation acts on
-            mod (int): the modulo for performing the addition, default value is :math:`2^{\text{len(x_wires)}}`
-            work_wires (Sequence[int]): the two auxiliary wires to be used for performing the addition
-                when :math:`mod \neq 2^{\text{len(x_wires)}}`
+            mod (int): the modulo for performing the addition. If not provided, it will be set to :math:`2^{\text{len(output_wires)}}`
+            work_wires (Sequence[int]): the auxiliary wires to use for the addition, default is ``None``
         Returns:
             list[.Operator]: Decomposition of the operator
 
