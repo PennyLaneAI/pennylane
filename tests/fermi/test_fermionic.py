@@ -17,6 +17,7 @@ from copy import copy, deepcopy
 
 import numpy as np
 import pytest
+import re
 
 import pennylane as qml
 from pennylane import numpy as pnp
@@ -206,6 +207,19 @@ class TestFermiWord:
     @pytest.mark.parametrize("fw, i, j, fs", tup_fw_commute)
     def test_commute(self, fw, i, j, fs):
         assert fw.commute(i, j) == fs
+
+    def test_commute_errors(self):
+        with pytest.raises(ValueError, match="Indices must be positive integers"):
+            fw8.commute(0.5, 1)
+
+        with pytest.raises(ValueError, match="Indices must be positive integers"):
+            fw8.commute(-1, 0)
+
+        with pytest.raises(ValueError, match="Indices must be consecutive with j = i \\+ 1"):
+            fw17.commute(0, 2)   
+
+        with pytest.raises(ValueError, match="Indices out of range"):
+            fw8.commute(1, 2)
 
 
 class TestFermiWordArithmetic:
@@ -718,6 +732,10 @@ class TestFermiSentence:
     @pytest.mark.parametrize("fs, fw, i, j, fsc", tup_fs_commute)
     def test_commute(self, fs, fw, i, j, fsc):
         assert fs.commute(fw, i, j) == fsc
+
+    def test_commute_errors(self):
+        with pytest.raises(ValueError, match=re.escape(f"The FermiWord {fw11} does not appear in the FermiSentence")):
+            fs8.commute(fw11, 0, 1)
 
 
 class TestFermiSentenceArithmetic:
