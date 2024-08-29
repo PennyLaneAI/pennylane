@@ -97,7 +97,7 @@ class Adder(Operation):
 
         - If :math:`mod \neq 2^{\text{len(x_wires)}}`, two ``work_wires`` have to be provided.
 
-        Note that the ``Adder`` template allows us to perform modular addition in the computational basis. However if one just wants to perform standard addition (with no modulo), that would be equivalent to setting 
+        Note that the ``Adder`` template allows us to perform modular addition in the computational basis. However if one just wants to perform standard addition (with no modulo), that would be equivalent to setting
         the modulo :math:`mod` to a large enough value to ensure that :math:`x+k < mod`.
     """
 
