@@ -341,7 +341,7 @@ def molecular_hamiltonian(*args, **kwargs):
 
             ``molecular_hamiltonian``\\ (`symbols, coordinates, name='molecule', charge=0, mult=1, basis='sto-3g',`
             `method='dhf', active_electrons=None, active_orbitals=None, mapping='jordan_wigner', outpath='.',`
-            `wires=None, coeff=None, alpha=None,  args=None, load_data=False, convert_tol=1e12`)
+            `wires=None, coeff=None, alpha=None, args=None, load_data=False, convert_tol=1e12`)
 
         Molecule-based Arguments:
           - **symbols** (list[str]): symbols of the atomic species in the molecule
