@@ -59,7 +59,7 @@ class PhaseAdder(Operation):
     Args:
         k (int): the number that needs to be added
         x_wires (Sequence[int]): the wires the operation acts on
-        mod (int): the modulo for performing the addition. If not provided, it will be set to :math:`2^{\text{len(output_wires)}}`.
+        mod (int): the modulo for performing the addition. If not provided, it will be set to :math:`2^{\text{len(output_wires)}}`
         work_wire (Sequence[int]): the auxiliary wire to use for the addition, default is ``None``
 
     **Example**

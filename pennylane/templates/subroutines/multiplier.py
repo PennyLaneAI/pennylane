@@ -60,7 +60,7 @@ class Multiplier(Operation):
     Args:
         k (int): the number that needs to be multiplied
         x_wires (Sequence[int]): the wires the operation acts on
-        mod (int): the modulo for performing the multiplication. If not provided, it will be set to :math:`2^{\text{len(output_wires)}}`.
+        mod (int): the modulo for performing the multiplication. If not provided, it will be set to :math:`2^{\text{len(output_wires)}}`
         work_wires (Sequence[int]): the auxiliary wires to use for the multiplication, default is ``None``
 
     **Example**
@@ -108,7 +108,7 @@ class Multiplier(Operation):
 
         - If :math:`mod \neq 2^{\text{len(x_wires)}}`, we will need as many as ``x_wires`` plus two extra wires that have to be provided.
 
-        Note that the Multiplier template allows us to perform modular multiplication in the computational basis. However if one just want to perform standard multiplication (with no modulo),
+        Note that the ``Multiplier`` template allows us to perform modular multiplication in the computational basis. However if one just want to perform standard multiplication (with no modulo),
         that would be equivalent to setting the modulo :math:`mod` to a large enough value to ensure that :math:`x \cdot k < mod`.
 
         Also, to perform the in-place multiplication operator it is required that :math:`k` has inverse, :math:`k^{-1} \; \text{mod} \; mod`. That means
