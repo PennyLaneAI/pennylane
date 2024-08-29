@@ -213,9 +213,9 @@
 
   Make sure to `pip install pennylane-qiskit` to access this new feature!
 
-<h4>Substantial upgrades to MCMs using tree-traversal 🌳</h4>
+<h4>Substantial upgrades to mid-circuit measurements using tree-traversal 🌳</h4>
 
-* The `"tree-traversal"` algorithm for MCMs on `default.qubit` has been internally redesigned for better 
+* The `"tree-traversal"` algorithm for mid-circuit measurements (MCMs) on `default.qubit` has been internally redesigned for better 
   performance.
   [(#5868)](https://github.com/PennyLaneAI/pennylane/pull/5868)
 
