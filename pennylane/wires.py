@@ -513,7 +513,7 @@ class Wires(Sequence):
         >>> wires1.union(wires2)
         Wires([1, 2, 3, 4, 5])
 
-        Alternatively, use thei ``|`` operator:
+        Alternatively, use the ``|`` operator:
 
         >>> wires1 | wires2
         Wires([1, 2, 3, 4, 5])
