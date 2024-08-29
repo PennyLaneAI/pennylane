@@ -382,6 +382,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fix Pytree serialization of operators with empty shot vectors
+  [(#6155)](https://github.com/PennyLaneAI/pennylane/pull/6155)
+
 * Fixes an error in the `dynamic_one_shot` transform when used with sampling a single shot.
   [(#6149)](https://github.com/PennyLaneAI/pennylane/pull/6149)
 
