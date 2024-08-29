@@ -98,10 +98,6 @@ class Wires(Sequence):
         For example, running ``qml.RX(1.1, qml.numpy.array(0))`` on a device initialized with ``wires=[0]``
         will fail because ``qml.numpy.array(0)`` does not exist in the device's wire map.
 
-    .. note::
-
-        Unlike ``NumPy`` arrays, 0-dimensional arrays in ``pennylane.numpy`` are hashable.
-
     Args:
          wires (Any): the wire label(s)
     """
