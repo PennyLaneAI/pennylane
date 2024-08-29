@@ -80,6 +80,7 @@ def _get_grad_prim():
 
     return grad_prim
 
+
 @lru_cache
 def _get_jacobian_prim():
     """Create a primitive for Jacobian computations.

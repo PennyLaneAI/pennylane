@@ -25,6 +25,7 @@ pytestmark = pytest.mark.jax
 jax = pytest.importorskip("jax")
 jnp = jax.numpy
 
+
 @pytest.fixture(autouse=True)
 def enable_disable_plxpr():
     qml.capture.enable()
