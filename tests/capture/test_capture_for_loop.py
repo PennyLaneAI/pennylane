@@ -138,9 +138,7 @@ class TestCaptureForLoop:
 
     def test_for_loop_grad(self):
         """Test simple for-loop primitive using default values."""
-        from pennylane.capture import create_grad_primitive
-
-        grad_prim = create_grad_primitive()
+        from pennylane.capture.primitives import grad_prim
 
         @qml.qnode(qml.device("default.qubit", wires=2))
         def inner_func(x):

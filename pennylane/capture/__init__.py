@@ -147,7 +147,6 @@ If needed, developers can also override the implementation method of the primiti
 """
 from .switches import disable, enable, enabled
 from .capture_meta import CaptureMeta, ABCCaptureMeta
-from .primitives import create_grad_primitive
 from .capture_operators import create_operator_primitive
 from .capture_measurements import (
     create_measurement_obs_primitive,
@@ -193,7 +192,6 @@ __all__ = (
     "create_measurement_obs_primitive",
     "create_measurement_wires_primitive",
     "create_measurement_mcm_primitive",
-    "create_grad_primitive",
     "qnode_call",
     "AbstractOperator",
     "AbstractMeasurement",

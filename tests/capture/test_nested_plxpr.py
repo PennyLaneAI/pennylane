@@ -163,9 +163,7 @@ class TestAdjointQfunc:
 
     def test_adjoint_grad(self):
         """Test that adjoint differentiated with grad can be captured."""
-        from pennylane.capture import create_grad_primitive, qnode_prim
-
-        grad_prim = create_grad_primitive()
+        from pennylane.capture.primitives import grad_prim, qnode_prim
 
         @qml.grad
         @qml.qnode(qml.device("default.qubit", wires=1))
@@ -339,9 +337,7 @@ class TestCtrlQfunc:
 
     def test_ctrl_grad(self):
         """Test that ctrl differentiated with grad can be captured."""
-        from pennylane.capture import create_grad_primitive, qnode_prim
-
-        grad_prim = create_grad_primitive()
+        from pennylane.capture.primitives import grad_prim, qnode_prim
 
         @qml.grad
         @qml.qnode(qml.device("default.qubit", wires=2))

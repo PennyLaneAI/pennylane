@@ -17,14 +17,13 @@ Tests for capturing differentiation into jaxpr.
 import pytest
 
 import pennylane as qml
-from pennylane.capture import create_grad_primitive, qnode_prim
+from pennylane.capture import qnode_prim
+from pennylane.capture.primitives import grad_prim
 
 pytestmark = pytest.mark.jax
 
 jax = pytest.importorskip("jax")
 jnp = jax.numpy
-
-grad_prim = create_grad_primitive()
 
 
 @pytest.fixture(autouse=True)

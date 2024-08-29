@@ -213,9 +213,8 @@ class TestCond:
     )
     def test_gradient(self, testing_functions, selector, arg, expected, decorator):
         """Test the gradient of the conditional."""
-        from pennylane.capture import create_grad_primitive
+        from pennylane.capture.primitives import grad_prim
 
-        grad_prim = create_grad_primitive()
         true_fn, false_fn, _, _, _, _ = testing_functions
 
         def func(pred):
