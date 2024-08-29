@@ -673,7 +673,7 @@ class TestJax:
     def test_overlap_matrix_jax(self):
         r"""Test that overlap_matrix returns the correct matrix when using jax."""
         s_ref = np.array([[1.0, 0.7965883009074122], [0.7965883009074122, 1.0]])
-        argnum = 2
+        argnum = [2]
         symbols, geometry, alpha = generate_symbols_geometry_alpha()
 
         mol = qchem.Molecule(symbols, geometry, alpha=alpha)
@@ -685,7 +685,7 @@ class TestJax:
         r"""Test that moment_matrix returns the correct matrix when using jax."""
         symbols, _, alpha = generate_symbols_geometry_alpha()
         geometry = qml.math.array([[0.0, 0.0, 0.0], [2.0, 0.0, 0.0]], like="jax")
-        argnum = 2
+        argnum = [2]
         e = 1
         idx = 0
         s_ref = np.array([[0.0, 0.4627777], [0.4627777, 2.0]])
@@ -705,7 +705,7 @@ class TestJax:
             ]
         )
 
-        argnum = 2
+        argnum = [2]
 
         mol = qchem.Molecule(symbols, geometry, alpha=alpha)
         args = [alpha]
@@ -747,7 +747,7 @@ class TestJax:
             ]
         )
 
-        argnum = 2
+        argnum = [2]
         mol = qchem.Molecule(symbols, geometry, alpha=alpha)
         args = [mol.alpha]
         e = qchem.repulsion_tensor(mol.basis_set, argnum)(*args)
