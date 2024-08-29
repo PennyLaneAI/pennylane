@@ -28,7 +28,7 @@ from scipy import sparse
 import pennylane as qml
 from pennylane import math as qmlmath
 from pennylane import operation
-from pennylane.capture.primitives import create_non_jvp_primitive
+from pennylane.capture.capture_diff import create_non_jvp_primitive
 from pennylane.compiler import compiler
 from pennylane.operation import Operator
 from pennylane.wires import Wires

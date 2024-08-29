@@ -23,8 +23,9 @@ from autograd.extend import vspace
 from autograd.numpy.numpy_boxes import ArrayBox
 from autograd.wrap_util import unary_to_nary
 
-from pennylane.capture import create_grad_primitive, enabled
+from pennylane.capture import enabled
 from pennylane.capture.flatfn import FlatFn
+from pennylane.capture.primitives import grad_prim
 from pennylane.compiler import compiler
 from pennylane.compiler.compiler import CompileError
 
@@ -130,7 +131,7 @@ class grad:
             return ops_loader.grad(func, method=method, h=h, argnums=argnum)
 
         if enabled():
-            return _capture_diff(func, argnum, create_grad_primitive(), method=method, h=h)
+            return _capture_diff(func, argnum, grad_prim, method=method, h=h)
 
         if method or h:  # pragma: no cover
             raise ValueError(f"Invalid values '{method=}' and '{h=}' without QJIT.")

@@ -18,7 +18,7 @@ from functools import lru_cache, partial, wraps
 from typing import Callable, overload
 
 import pennylane as qml
-from pennylane.capture.primitives import create_non_jvp_primitive
+from pennylane.capture.capture_diff import create_non_jvp_primitive
 from pennylane.compiler import compiler
 from pennylane.math import conj, moveaxis, transpose
 from pennylane.operation import Observable, Operation, Operator

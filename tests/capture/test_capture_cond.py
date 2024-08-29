@@ -28,6 +28,9 @@ pytestmark = pytest.mark.jax
 
 jax = pytest.importorskip("jax")
 
+# must be below jax importorskip
+from pennylane.capture.primitives import cond_prim  # pylint: disable=wrong-import-position
+
 
 @pytest.fixture(autouse=True)
 def enable_disable_plxpr():
@@ -107,6 +110,7 @@ class TestCond:
         assert np.allclose(result, expected), f"Expected {expected}, but got {result}"
 
         jaxpr = jax.make_jaxpr(test_func(selector))(arg)
+        assert jaxpr.eqns[0].primitive == cond_prim
         res_ev_jxpr = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, arg)
         assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
 
@@ -209,9 +213,8 @@ class TestCond:
     )
     def test_gradient(self, testing_functions, selector, arg, expected, decorator):
         """Test the gradient of the conditional."""
-        from pennylane.capture import create_grad_primitive
+        from pennylane.capture.primitives import grad_prim
 
-        grad_prim = create_grad_primitive()
         true_fn, false_fn, _, _, _, _ = testing_functions
 
         def func(pred):
