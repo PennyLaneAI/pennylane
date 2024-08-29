@@ -27,7 +27,7 @@ from .lattice import _generate_lattice
 def transverse_ising(
     lattice, n_cells, coupling=1.0, h=1.0, boundary_condition=False, neighbour_order=1
 ):
-    r"""Generates the transverse-field Ising Hamiltonian on a lattice.
+    r"""Generates the Hamiltonian for a transverse-field Ising model on a lattice.
 
     The Hamiltonian is represented as:
 
