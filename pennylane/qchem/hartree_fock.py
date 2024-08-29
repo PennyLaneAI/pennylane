@@ -127,7 +127,7 @@ def scf(mol, n_steps=50, tol=1e-8):
         n_electron = mol.n_electrons
         argnum = mol.argnum
 
-        if getattr(r, "requires_grad", False) or 0 in argnum:
+        if getattr(r, "requires_grad", False) or (argnum is not None and 0 in argnum):
             args_r = [[args[0][i]] * mol.n_basis[i] for i in range(len(mol.n_basis))]
             args_ = [*args] + [qml.math.vstack(list(itertools.chain(*args_r)))]
             rep_tensor = repulsion_tensor(basis_functions, argnum)(*args_[1:])
@@ -190,7 +190,7 @@ def nuclear_energy(charges, r, argnum=None):
     Args:
         charges (list[int]): nuclear charges in atomic units
         r (array[float]): nuclear positions
-        argnum (int | list(int) | None): index (indices) of the positional argument(s) -
+        argnum (Sequence[int] | None): index (indices) of the positional argument(s) -
         [``coordinates``, ``coeff``, ``alpha``] that should support differentiation. For example,
         ``argnums=[0, 2]`` would mean derivatives can be computed with respect to both
         ``coordinates`` and ``coeff``.
@@ -218,7 +218,7 @@ def nuclear_energy(charges, r, argnum=None):
         Returns:
             array[float]: nuclear-repulsion energy
         """
-        if getattr(r, "requires_grad", False) or 0 in argnum:
+        if getattr(r, "requires_grad", False) or (argnum is not None and 0 in argnum):
             coor = args[0]
         else:
             coor = r
