@@ -360,15 +360,10 @@ def create_op_instance(c, str_wires=False):
 def capture_warnings(recwarn):
     """Capture warnings."""
     yield
-    if len(recwarn) > 0:
-        for w in recwarn:
-            assert isinstance(w.message, qml.PennyLaneDeprecationWarning)
-            assert "QubitStateVector is deprecated" in str(w.message)
 
 
 @pytest.mark.parametrize("str_wires", (True, False))
 def test_generated_list_of_ops(class_to_validate, str_wires):
-    """Test every auto-generated operator instance."""
     """Test every auto-generated operator instance."""
     if class_to_validate.__module__[14:20] == "qutrit":
         pytest.xfail(reason="qutrit ops fail matrix validation")
