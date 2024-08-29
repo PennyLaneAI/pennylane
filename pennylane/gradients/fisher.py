@@ -148,7 +148,7 @@ def classical_fisher(qnode, argnums=0):
     >>> cfim_func = qml.gradients.classical_fisher(circ)
     >>> cfim_func(params)
     tensor([[ 0.90156094, -0.12555804],
-        [-0.12555804,  0.01748614]], requires_grad=True)
+            [-0.12555804,  0.01748614]], requires_grad=True)
 
     This function has the same signature as the :class:`.QNode`. Here is a small example with multiple arguments:
 
@@ -222,12 +222,12 @@ def classical_fisher(qnode, argnums=0):
 
     >>> qml.gradients.classical_fisher(circ)(params)
     tensor([[0.86929514, 0.76134441],
-        [0.76134441, 0.6667992 ]], requires_grad=True)
+            [0.76134441, 0.6667992 ]], requires_grad=True)
     >>> qml.jacobian(qml.gradients.classical_fisher(circ))(params)
     array([[[ 1.98284265e+00, -1.60461922e-16],
-        [ 8.68304725e-01,  1.07654307e+00]],
-       [[ 8.68304725e-01,  1.07654307e+00],
-        [ 7.30752264e-17,  1.88571178e+00]]])
+            [ 8.68304725e-01,  1.07654307e+00]],
+           [[ 8.68304725e-01,  1.07654307e+00],
+            [ 7.30752264e-17,  1.88571178e+00]]])
 
     """
     new_qnode = _make_probs(qnode)
@@ -346,8 +346,8 @@ def quantum_fisher(
     >>> qfim = qml.gradients.quantum_fisher(circ)(params)
     >>> qfim
     tensor([[1.        , 0.        , 0.        ],
-        [0.        , 1.        , 0.        ],
-        [0.        , 0.        , 0.77517241]], requires_grad=True)
+            [0.        , 1.        , 0.        ],
+            [0.        , 0.        , 0.77517241]], requires_grad=True)
     >>> qfim @ grad
     tensor([ 0.59422561, -0.02615095, -0.03989212], requires_grad=True)
 
