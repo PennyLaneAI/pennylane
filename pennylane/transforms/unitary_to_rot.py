@@ -18,13 +18,13 @@ A transform for decomposing arbitrary single-qubit QubitUnitary gates into eleme
 import pennylane as qml
 from pennylane.ops.op_math.decompositions import one_qubit_decomposition, two_qubit_decomposition
 from pennylane.queuing import QueuingManager
-from pennylane.tape import QuantumTape, QuantumTapeBatch
+from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
 
 
 @transform
-def unitary_to_rot(tape: QuantumTape) -> tuple[QuantumTapeBatch, PostprocessingFn]:
+def unitary_to_rot(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     r"""Quantum function transform to decomposes all instances of single-qubit and
     select instances of two-qubit :class:`~.QubitUnitary` operations to
     parametrized single-qubit operations.
