@@ -6,7 +6,7 @@
 
 <h3>Improvements 🛠</h3>
 
-* Some custom primitives can for the capture project can now be imported via
+* Some custom primitives for the capture project can now be imported via
   `from pennylane.capture.primitives import *`.
   [(#6129)](https://github.com/PennyLaneAI/pennylane/pull/6129)
 
