@@ -29,6 +29,9 @@ pytestmark = pytest.mark.jax
 
 jax = pytest.importorskip("jax")
 
+# must be below jax importorskip
+from pennylane.capture.primitives import for_loop_prim  # pylint: disable=wrong-import-position
+
 
 @pytest.fixture(autouse=True)
 def enable_disable_plxpr():
@@ -57,6 +60,75 @@ class TestCaptureForLoop:
             return a2
 
         expected = jax.numpy.ones(array.shape)
+        result = fn(array)
+        assert np.allclose(result, expected), f"Expected {expected}, but got {result}"
+
+        jaxpr = jax.make_jaxpr(fn)(array)
+        assert jaxpr.eqns[1].primitive == for_loop_prim
+        res_ev_jxpr = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, array)
+        assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
+
+    @pytest.mark.parametrize("array", [jax.numpy.zeros(0), jax.numpy.zeros(5)])
+    def test_for_loop_defaults(self, array):
+        """Test simple for-loop primitive using default values."""
+
+        def fn(arg):
+
+            a = jax.numpy.ones(arg.shape)
+
+            @qml.for_loop(0, 10, 1)
+            def loop1(_, a):
+                return a
+
+            @qml.for_loop(10, 1)
+            def loop2(_, a):
+                return a
+
+            @qml.for_loop(10)
+            def loop3(_, a):
+                return a
+
+            r1, r2, r3 = loop1(a), loop2(a), loop3(a)
+            return r1, r2, r3
+
+        expected = jax.numpy.ones(array.shape)
+        result = fn(array)
+        assert np.allclose(result, expected), f"Expected {expected}, but got {result}"
+
+        jaxpr = jax.make_jaxpr(fn)(array)
+        res_ev_jxpr = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, array)
+        assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
+
+    @pytest.mark.parametrize(
+        "array, expected",
+        [
+            (jax.numpy.zeros(5), jax.numpy.array([0, 1, 4, 9, 16])),
+            (jax.numpy.zeros(10), jax.numpy.array([0, 1, 4, 9, 16, 25, 36, 49, 64, 81])),
+        ],
+    )
+    def test_for_loop_default(self, array, expected):
+        """Test simple for-loop primitive using default values."""
+
+        def fn(arg):
+
+            stop = arg.shape[0]
+            a = jax.numpy.ones(stop)
+
+            @qml.for_loop(0, stop, 1)
+            def loop1(i, a):
+                return a.at[i].set(i**2)
+
+            @qml.for_loop(0, stop)
+            def loop2(i, a):
+                return a.at[i].set(i**2)
+
+            @qml.for_loop(stop)
+            def loop3(i, a):
+                return a.at[i].set(i**2)
+
+            r1, r2, r3 = loop1(a), loop2(a), loop3(a)
+            return r1, r2, r3
+
         result = fn(array)
         assert np.allclose(result, expected), f"Expected {expected}, but got {result}"
 
@@ -299,3 +371,16 @@ class TestCaptureCircuitsForLoop:
         jaxpr = jax.make_jaxpr(circuit)(*args)
         res_ev_jxpr = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *args)
         assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
+
+
+def test_pytree_inputs():
+    """Test that for_loop works with pytree inputs and outputs."""
+
+    @qml.for_loop(1, 7, 2)
+    def f(i, x):
+        return {"x": i + x["x"]}
+
+    x = {"x": 0}
+    out = f(x)
+    assert list(out.keys()) == ["x"]
+    assert qml.math.allclose(out["x"], 9)  # 1 + 3 + 5 = 9

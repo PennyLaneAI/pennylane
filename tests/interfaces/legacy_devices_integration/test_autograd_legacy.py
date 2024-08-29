@@ -123,7 +123,7 @@ class TestAutogradExecuteUnitTests:
     def test_grad_on_execution(self, mocker):
         """Test that grad on execution uses the `device.execute_and_gradients` pathway"""
         dev = qml.device("default.qubit.legacy", wires=1)
-        spy = mocker.spy(dev, "execute_and_gradients")
+        spy = mocker.spy(dev, "execute_and_compute_derivatives")
 
         def cost(a):
             with qml.queuing.AnnotatedQueue() as q:
@@ -183,7 +183,8 @@ class TestBatchTransformExecution:
     via qml.execute and batch_transform"""
 
     def test_no_batch_transform(self, mocker):
-        """Test that batch transforms can be disabled and enabled"""
+        """Test that batch transforms cannot be disabled"""
+
         dev = qml.device("default.qubit.legacy", wires=2, shots=100000)
 
         H = qml.PauliZ(0) @ qml.PauliZ(1) - qml.PauliX(0)
@@ -196,31 +197,24 @@ class TestBatchTransformExecution:
             qml.CNOT(wires=[0, 1])
             qml.expval(H)
 
-        tape = qml.tape.QuantumScript.from_queue(q)
-        spy = mocker.spy(dev, "batch_transform")
+        tape = qml.tape.QuantumScript.from_queue(q, shots=100000)
+        spy = mocker.spy(dev.target_device, "batch_transform")
 
-        if not qml.operation.active_new_opmath():
-            with pytest.raises(AssertionError, match="Hamiltonian must be used with shots=None"):
-                with pytest.warns(
-                    qml.PennyLaneDeprecationWarning,
-                    match="The device_batch_transform argument is deprecated",
-                ):
-                    _ = qml.execute([tape], dev, None, device_batch_transform=False)
-        else:
-            with pytest.warns(
-                qml.PennyLaneDeprecationWarning,
-                match="The device_batch_transform argument is deprecated",
-            ):
-                res = qml.execute([tape], dev, None, device_batch_transform=False)
-            assert np.allclose(res[0], np.cos(y), atol=0.1)
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match="The device_batch_transform argument is deprecated",
+        ):
+            res = qml.execute([tape], dev, None, device_batch_transform=False)
+        assert np.allclose(res[0], np.cos(y), atol=0.1)
 
-        spy.assert_not_called()
+        spy.assert_called()
 
         with pytest.warns(
             qml.PennyLaneDeprecationWarning,
             match="The device_batch_transform argument is deprecated",
         ):
             res = qml.execute([tape], dev, None, device_batch_transform=True)
+
         spy.assert_called()
 
         assert qml.math.shape(res[0]) == ()
@@ -306,7 +300,7 @@ class TestCaching:
 
         # With caching, 5 evaluations are required to compute
         # the Jacobian: 1 (forward pass) + (2 shifts * 2 params)
-        dev._num_executions = 0
+        dev.target_device._num_executions = 0
         jac_fn = qml.jacobian(cost)
         grad1 = jac_fn(params, cache=True)
         assert dev.num_executions == 5
@@ -378,7 +372,7 @@ class TestCaching:
         assert dev.num_executions == expected_runs
 
         # Use caching: number of executions is ideal
-        dev._num_executions = 0
+        dev.target_device._num_executions = 0
         hess2 = qml.jacobian(qml.grad(cost))(params, cache=True)
         assert np.allclose(hess1, hess2, atol=tol, rtol=0)
 
@@ -417,14 +411,13 @@ class TestCaching:
 
         # no caching, but jac for each batch still stored.
         qml.jacobian(cost)(params, cache=None)
-        assert dev.num_executions == 2
+        assert dev.num_executions == 1
 
-        # With caching, only 2 evaluations are required. One
-        # for the forward pass, and one for the backward pass.
-        dev._num_executions = 0
+        # With caching, only 1 evaluation required.
+        dev.target_device._num_executions = 0
         jac_fn = qml.jacobian(cost)
         jac_fn(params, cache=True)
-        assert dev.num_executions == 2
+        assert dev.num_executions == 1
 
     def test_single_backward_pass_batch(self):
         """Tests that the backward pass is one single batch, not a bunch of batches, when parameter shift
@@ -465,7 +458,7 @@ class TestCaching:
             out = qml.grad(f)(x)
 
         assert dev.tracker.totals["batches"] == 2
-        assert dev.tracker.history["batch_len"] == [2, 4]
+        assert dev.tracker.history["batch_len"] == [1, 2]
 
         assert qml.math.allclose(out, -np.cos(x) - np.sin(x), atol=0.05)
 
@@ -931,11 +924,13 @@ class TestAutogradExecuteIntegration:
 
     def test_sampling(self, execute_kwargs):
         """Test sampling works as expected"""
-        if (
-            execute_kwargs["gradient_fn"] == "device"
-            and execute_kwargs["grad_on_execution"] is True
+        if execute_kwargs["gradient_fn"] == "device" and (
+            execute_kwargs["grad_on_execution"] is True
+            or execute_kwargs["gradient_kwargs"]["method"] == "adjoint_jacobian"
         ):
             pytest.skip("Adjoint differentiation does not support samples")
+
+        shots = 10
 
         def cost(device):
             with qml.queuing.AnnotatedQueue() as q:
@@ -944,10 +939,9 @@ class TestAutogradExecuteIntegration:
                 qml.sample(qml.PauliZ(0))
                 qml.sample(qml.PauliX(1))
 
-            tape = qml.tape.QuantumScript.from_queue(q)
+            tape = qml.tape.QuantumScript.from_queue(q, shots=10)
             return qml.execute([tape], device, **execute_kwargs)[0]
 
-        shots = 10
         dev = qml.device("default.qubit.legacy", wires=2, shots=shots)
         res = cost(device=dev)
         assert isinstance(res, tuple)
@@ -1122,7 +1116,7 @@ class TestOverridingShots:
             qml.expval(qml.PauliY(1))
 
         tape = qml.tape.QuantumScript.from_queue(q)
-        spy = mocker.spy(dev, "sample")
+        spy = mocker.spy(dev.target_device, "sample")
 
         # execute with device default shots (None)
         res = qml.execute([tape], dev, gradient_fn=param_shift)
@@ -1138,7 +1132,7 @@ class TestOverridingShots:
         assert spy.spy_return.shape == (100,)
 
         # device state has been unaffected
-        assert dev.shots is None
+        assert not dev.shots
         res = qml.execute([tape], dev, gradient_fn=param_shift)
         assert np.allclose(res, -np.cos(a) * np.sin(b), atol=tol, rtol=0)
         spy.assert_called_once()  # same single call from above, no additional calls
@@ -1175,17 +1169,18 @@ class TestOverridingShots:
         spy.assert_called()
 
         # shots were temporarily set to the overriden value
-        assert spy.call_args_list[0][0] == (dev, 100)
+        assert spy.call_args_list[0][0] == (dev.target_device, 100)
         # shots were then returned to the built-in value
-        assert spy.call_args_list[1][0] == (dev, 123)
+        assert spy.call_args_list[1][0] == (dev.target_device, 123)
 
     def test_overriding_device_with_shot_vector(self):
         """Overriding a device that has a batch of shots set
         results in original shots being returned after execution"""
         dev = qml.device("default.qubit.legacy", wires=2, shots=[10, (1, 3), 5])
 
-        assert dev.shots == 18
-        assert dev._shot_vector == [(10, 1), (1, 3), (5, 1)]
+        shots_obj = qml.measurements.Shots([10, (1, 3), 5])
+        assert dev.shots == shots_obj
+        assert dev.shots.shot_vector == shots_obj.shot_vector
 
         a, b = np.array([0.543, -0.654], requires_grad=True)
 
@@ -1205,9 +1200,10 @@ class TestOverridingShots:
         assert res.shape == ()
 
         # device is unchanged
-        assert dev.shots == 18
-        assert dev._shot_vector == [(10, 1), (1, 3), (5, 1)]
+        assert dev.shots == shots_obj
+        assert dev.shots.shot_vector == shots_obj.shot_vector
 
+        tape = qml.tape.QuantumScript.from_queue(q, shots=shots_obj)
         res = qml.execute([tape], dev, gradient_fn=param_shift)[0]
         assert len(res) == 5
 

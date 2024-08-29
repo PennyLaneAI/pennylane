@@ -466,13 +466,11 @@ class TestSampleMeasurements:
 
         dev = NullQubit()
         result = dev.execute(qs)
-        print(result)
 
-        assert (
-            result == tuple([{"00": s, "01": 0, "10": 0, "11": 0}] * 2 for s in qs.shots)
-            if all_outcomes
-            else tuple([{"00": s}] * 2 for s in qs.shots)
-        )
+        if all_outcomes:
+            assert result == tuple(({"00": s, "01": 0, "10": 0, "11": 0},) * 2 for s in qs.shots)
+        else:
+            assert result == tuple(({"00": s},) * 2 for s in qs.shots)
 
     @pytest.mark.parametrize("all_outcomes", [False, True])
     def test_counts_obs(self, all_outcomes):
@@ -500,11 +498,10 @@ class TestSampleMeasurements:
 
         dev = NullQubit()
         result = dev.execute(qs)
-        print(result)
         assert (
-            result == tuple([{-1: s, 1: 0}] * 2 for s in qs.shots)
+            result == tuple(({-1: s, 1: 0},) * 2 for s in qs.shots)
             if all_outcomes
-            else tuple([{-1: s}] * 2 for s in qs.shots)
+            else tuple(({-1: s},) * 2 for s in qs.shots)
         )
 
 
@@ -929,7 +926,6 @@ class TestDeviceDifferentiation:
         cotangents = [(0.456,), (0.789, 0.123)]
 
         actual_grad = dev.compute_vjp([single_meas, multi_meas], cotangents, self.ec)
-        print(actual_grad)
         assert actual_grad == ((0.0,), (0.0,))
 
         actual_val, actual_grad = dev.execute_and_compute_vjp(
@@ -956,7 +952,6 @@ class TestDeviceDifferentiation:
 
         assert new_ec.use_device_gradient
         assert new_ec.grad_on_execution
-        print(actual_grad)
         assert actual_grad == ((0.0,), (0.0,))
 
 

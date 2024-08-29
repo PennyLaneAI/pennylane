@@ -313,10 +313,6 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
 
         r = qml.resource.resources_from_sequence_ops(decomp, gate_set, estimate, epsilon)
 
-        # for op in decomp:
-        #     gate_types[op.name] += 1
-        #     gate_sizes[len(op.wires)] += 1
-
         return Resources(num_wires, r.num_gates, r.gate_types, r.gate_sizes, depth)
 
     def error(

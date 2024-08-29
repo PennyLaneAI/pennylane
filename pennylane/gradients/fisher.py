@@ -13,13 +13,13 @@
 # limitations under the License.
 """Contains functions for computing classical and quantum fisher information matrices."""
 # pylint: disable=import-outside-toplevel, not-callable
-from collections.abc import Callable, Sequence
 from functools import partial
 
 import pennylane as qml
 from pennylane import transform
 from pennylane.devices import DefaultQubit, DefaultQubitLegacy
 from pennylane.gradients import adjoint_metric_tensor
+from pennylane.typing import PostprocessingFn
 
 
 # TODO: create qml.math.jacobian and replace it here
@@ -72,7 +72,9 @@ def _compute_cfim(p, dp):
 
 
 @transform
-def _make_probs(tape: qml.tape.QuantumTape) -> tuple[Sequence[qml.tape.QuantumTape], Callable]:
+def _make_probs(
+    tape: qml.tape.QuantumScript,
+) -> tuple[qml.tape.QuantumScriptBatch, PostprocessingFn]:
     """Ignores the return types of the provided circuit and creates a new one
     that outputs probabilities"""
     qscript = qml.tape.QuantumScript(tape.operations, [qml.probs(tape.wires)], shots=tape.shots)
@@ -275,8 +277,8 @@ def classical_fisher(qnode, argnums=0):
 
 @partial(transform, is_informative=True)
 def quantum_fisher(
-    tape: qml.tape.QuantumTape, device, *args, **kwargs
-) -> tuple[Sequence[qml.tape.QuantumTape], Callable]:
+    tape: qml.tape.QuantumScript, device, *args, **kwargs
+) -> tuple[qml.tape.QuantumScriptBatch, PostprocessingFn]:
     r"""Returns a function that computes the quantum fisher information matrix (QFIM) of a given :class:`.QNode`.
 
     Given a parametrized quantum state :math:`|\psi(\bm{\theta})\rangle`, the quantum fisher information matrix (QFIM) quantifies how changes to the parameters :math:`\bm{\theta}`
@@ -305,9 +307,12 @@ def quantum_fisher(
 
     .. note::
 
-        ``quantum_fisher`` coincides with the ``metric_tensor`` with a prefactor of :math:`4`. Internally, :func:`~.pennylane.adjoint_metric_tensor` is used when executing on a device with
-        exact expectations (``shots=None``) that inherits from ``"default.qubit"``. In all other cases, i.e. if a device with finite shots is used, the hardware compatible transform :func:`~.pennylane.metric_tensor` is used.
-        Please refer to their respective documentations for details on the arguments.
+        ``quantum_fisher`` coincides with the ``metric_tensor`` with a prefactor of :math:`4`.
+        Internally, :func:`~.pennylane.adjoint_metric_tensor` is used when executing on ``"default.qubit"``
+        with exact expectations (``shots=None``). In all other cases, e.g. if a device with finite shots
+        is used, the hardware-compatible transform :func:`~.pennylane.metric_tensor` is used, which
+        may require an additional wire on the device.
+        Please refer to the respective documentations for details.
 
     **Example**
 
