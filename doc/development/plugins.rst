@@ -316,8 +316,9 @@ Wire handling
 
 PennyLane uses the :class:`~.wires.Wires` class for the internal representation of wires. :class:`~.wires.Wires`
 inherits from Python's ``Sequence``, and represents an ordered set of unique wire labels.
-Indexing a ``Wires`` instance will return another ``Wires`` instance of length one.
 The ``labels`` attribute stores a tuple of the wire labels.
+Indexing a ``Wires`` instance with an integer will return the corresponding label.
+Indexing with a  ``slice`` will return a ``Wires`` instance.
 
 For example:
 
@@ -326,8 +327,9 @@ For example:
     from pennylane.wires import Wires
 
     wires = Wires(['auxiliary', 0, 1])
-    print(wires[0]) # Wires(['auxiliary'])
     print(wires.labels) # ('auxiliary', 0, 1)
+    print(wires[0]) # 'auxiliary'
+    print(wires[0:1]) # Wires(['auxiliary'])
 
 As shown in the section on :doc:`/introduction/circuits`, a device can be created with custom wire labels:
 
