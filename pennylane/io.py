@@ -562,7 +562,7 @@ def from_qasm(quantum_circuit: str, measurements=None):
             @qml.qnode(dev)
             def circuit():
                 mid_measure, *_ = loaded_circuit()
-                qml.cond(mid_measure == 0, qml.RX)(np.pi / 2, 0)
+                qml.cond(mid_measure == 0, qml.RX)(pnp.pi / 2, 0)
                 return [qml.expval(qml.Z(0))]
 
         >>> print(qml.draw(circuit)())
