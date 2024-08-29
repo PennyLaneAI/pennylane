@@ -25,16 +25,16 @@ def registers(register_dict):
     This function helps to group qubits and abstract away the finer details of running quantum
     algorithms. Register names and their total number of wires are typically known in advance,
     but managing the specific wire range for each register can be a challenge. The ``qml.registers()``
-    function creates a dictionary that maps register name to :class:`~.Wires` object. Moreover,
+    function creates a dictionary that maps register names to :class:`~.Wires` objects. Moreover,
     it allows one to input a nested structure where registers contain sub-registers, as illustrated
     in the examples below.
 
     Args:
-        register_dict (dict): a dictionary where keys are register names and values are either
+        register_dict (dict): A dictionary where keys are register names and values are either
             positive integers indicating the number of qubits or nested dictionaries of more registers.
 
     Returns:
-        dict (Wires): dictionary where the keys are the names (str) of the registers, and the
+        dict: Dictionary where the keys are the names (str) of the registers, and the
         values are :class:`~.Wires` objects.
 
     **Example**
@@ -59,7 +59,7 @@ def registers(register_dict):
     .. code-block::
 
         dev = qml.device("default.qubit")
-        reg = registers({"aux": 1, "phi": 5, "psi": 5})
+        reg = qml.registers({"aux": 1, "phi": 5, "psi": 5})
 
         @qml.qnode(dev)
         def circuit():
@@ -73,8 +73,8 @@ def registers(register_dict):
 
             return qml.expval(qml.Z(wires=reg["aux"]))
 
-        >>> circuit()
-        0.9999999999999996
+    >>> circuit()
+    tensor(1., requires_grad=True)
     """
 
     def _registers(register_dict, _start_wire_index=0):
