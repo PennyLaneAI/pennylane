@@ -80,7 +80,7 @@ class TestMolecule:
         geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])
         mol = qchem.Molecule(symbols, geometry, argnum=[1, 2])
 
-        assert mol.argnum == [1, 2]
+        assert mol.argnum == (1, 2)
 
     @pytest.mark.parametrize(
         ("symbols", "geometry", "n_electrons", "n_orbitals", "nuclear_charges"),
