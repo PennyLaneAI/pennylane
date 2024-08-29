@@ -18,7 +18,6 @@ Contains the PrepSelPrep template.
 import copy
 
 import pennylane as qml
-import numpy as np
 from pennylane.operation import Operation
 
 
