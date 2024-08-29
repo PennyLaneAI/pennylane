@@ -53,7 +53,7 @@ class Lattice:
        Lattice object
 
     **Example**
-    
+
     >>> n_cells = [2,2]
     >>> vectors = [[0, 1], [1, 0]]
     >>> boundary_condition = [True, False]
