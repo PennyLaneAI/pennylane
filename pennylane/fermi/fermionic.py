@@ -303,6 +303,41 @@ class FermiWord(dict):
 
         return mat
 
+    def commute(self, i, j):
+        if not isinstance(i, int) or not isinstance(j, int) or i < 0 or j < 0:
+            raise ValueError("Indices must be positive integers")
+
+        if j != i + 1:
+            raise ValueError("Indices must be consecutive with j = i + 1")
+
+        if j > len(self.sorted_dic) - 1:
+            raise ValueError("Indices out of range")
+
+        indices = [i for i in self.sorted_dic.keys()]
+        i_idx = indices[i]
+        j_idx = indices[j]
+
+        i_val = self[i_idx]
+        j_val = self[j_idx]
+
+        new_i_idx = (i + 1, i_idx[1])
+        new_j_idx = (j - 1, j_idx[1])
+
+        fw = dict(self)
+        fw[new_i_idx] = i_val
+        fw[new_j_idx] = j_val
+
+        if i_idx[1] != j_idx[1]:
+            del fw[i_idx]
+            del fw[j_idx]
+
+        fw = FermiWord(fw)
+
+        if i_val == j_val or i_idx[1] != j_idx[1]:
+            return -1 * FermiSentence({fw: 1})
+        else:
+            return 1 - FermiSentence({fw: 1})
+
 
 # pylint: disable=useless-super-delegation
 class FermiSentence(dict):
@@ -522,6 +557,17 @@ class FermiSentence(dict):
         mat = qml.jordan_wigner(self, ps=True).to_mat(wire_order=list(range(largest_order)))
 
         return mat
+
+    def commute(self, fw, i, j):
+        if fw not in self.keys():
+            raise ValueError(f"The FermiWord {fw} does not appear in the FermiSentence")
+
+        fs = dict(self)
+        coeff = fs[fw]
+        del fs[fw]
+
+        return FermiSentence(fs) + coeff*fw.commute(i, j)
+
 
 
 def from_string(fermi_string):

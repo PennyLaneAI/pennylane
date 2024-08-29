@@ -32,6 +32,55 @@ fw5 = FermiWord({(0, 10): "+", (1, 30): "-", (2, 0): "+", (3, 400): "-"})
 fw6 = FermiWord({(0, 10): "+", (1, 30): "+", (2, 0): "-", (3, 400): "-"})
 fw7 = FermiWord({(0, 10): "-", (1, 30): "+", (2, 0): "-", (3, 400): "+"})
 
+fw8 = FermiWord({(0, 0): '-', (1, 1): '+'})
+fw8c = FermiWord({(0, 1): '+', (1, 0): '-'})
+fw8cs = FermiSentence({fw8c: -1})
+
+fw9 = FermiWord({(0, 0): '-', (1, 1): '-'})
+fw9c = FermiWord({(0, 1): '-', (1, 0): '-'})
+fw9cs = FermiSentence({fw9c: -1})
+
+fw10 = FermiWord({(0, 0) : '+', (1, 1) : '+'})
+fw10c = FermiWord({(0, 1) : '+', (1, 0) : '+'})
+fw10cs = FermiSentence({fw10c: -1})
+
+fw11 = FermiWord({(0, 0) : '-', (1, 0) : '+'})
+fw11c = FermiWord({(0, 0) : '+', (1, 0) : '-'})
+fw11cs = 1 + FermiSentence({fw11c: -1})
+
+fw12 = FermiWord({(0, 0) : '+', (1, 0) : '+'})
+fw12c = FermiWord({(0, 0) : '+', (1, 0) : '+'})
+fw12cs = FermiSentence({fw12c: -1})
+
+fw13 = FermiWord({(0, 0) : '-', (1, 0) : '-'})
+fw13c = FermiWord({(0, 0) : '-', (1, 0) : '-'})
+fw13cs = FermiSentence({fw13c: -1})
+
+fw14 = FermiWord({(0, 0) : '+', (1, 0) : '+'})
+fw14c = FermiWord({(0, 0) : '+', (1, 0) : '+'})
+fw14cs = FermiSentence({fw14c: -1})
+
+fw15 = FermiWord({(0, 0): '-', (1, 1): '+', (2, 2): '+'})
+fw15c = FermiWord({(0, 1): '+', (1, 0): '-', (2, 2): '+'})
+fw15cs = FermiSentence({fw15c: -1})
+
+fw16 = FermiWord({(0, 0): '-', (1, 1): '+', (2, 2): '-'})
+fw16c = FermiWord({(0, 0): '-', (1, 2): '-', (2, 1): '+'})
+fw16cs = FermiSentence({fw16c: -1})
+
+fw17 = FermiWord({(0, 0) : '-', (1, 0) : '+', (2, 2): '-'})
+fw17c = FermiWord({(0, 0) : '+', (1, 0) : '-', (2, 2): '-'})
+fw17cs = 1 + FermiSentence({fw17c: -1})
+
+#MOVE THESE
+fs8 = fw8 + fw9
+fs8c = fw8 + fw9cs
+
+fs9 = 1.3*fw8 + (1.4 + 3.8j)*fw9
+fs9c = 1.3*fw8 + (1.4 + 3.8j)*fw9cs
+
+fs10 = -1.3*fw11 + 2.3*fw9
+fs10c = -1.3*fw11cs + 2.3*fw9
 
 class TestFermiWord:
     def test_missing(self):
@@ -140,6 +189,23 @@ class TestFermiWord:
         """
         with pytest.raises(ValueError, match="n_orbitals cannot be smaller than 2"):
             fw1.to_mat(n_orbitals=1)
+
+    tup_fw_commute = (
+        (fw8, 0, 1, fw8cs),
+        (fw9, 0, 1, fw9cs),
+        (fw10, 0, 1, fw10cs),
+        (fw11, 0, 1, fw11cs),
+        (fw12, 0, 1, fw12cs),
+        (fw13, 0, 1, fw13cs),
+        (fw14, 0, 1, fw14cs),
+        (fw15, 0, 1, fw15cs),
+        (fw16, 1, 2, fw16cs),
+        (fw17, 0, 1, fw17cs),
+    )
+
+    @pytest.mark.parametrize("fw, i, j, fs", tup_fw_commute)
+    def test_commute(self, fw, i, j, fs):
+        assert fw.commute(i, j) == fs
 
 
 class TestFermiWordArithmetic:
@@ -642,6 +708,16 @@ class TestFermiSentence:
         """
         with pytest.raises(ValueError, match="n_orbitals cannot be smaller than 3"):
             fs7.to_mat(n_orbitals=2)
+
+    tup_fs_commute = (
+        (fs8, fw9, 0, 1, fs8c),
+        (fs9, fw9, 0, 1, fs9c),
+        (fs10, fw11, 0, 1, fs10c),
+    )
+
+    @pytest.mark.parametrize("fs, fw, i, j, fsc", tup_fs_commute)
+    def test_commute(self, fs, fw, i, j, fsc):
+        assert fs.commute(fw, i, j) == fsc
 
 
 class TestFermiSentenceArithmetic:
