@@ -28,13 +28,6 @@ class OutMultiplier(Operation):
     .. math::
         \text{OutMultiplier}(mod) |x \rangle |y \rangle |b \rangle = |x \rangle |y \rangle |b + x \cdot y \; (mod) \rangle,
 
-    This operation can be represented in a quantum circuit as:
-
-    .. figure:: ../../_static/templates/arithmetic/outmultiplier.png
-        :align: center
-        :width: 60%
-        :target: javascript:void(0);
-
     The implementation is based on the quantum Fourier transform method presented in
     `arXiv:2311.08555 <https://arxiv.org/abs/2311.08555>`_.
 
@@ -48,8 +41,8 @@ class OutMultiplier(Operation):
         x_wires (Sequence[int]): the wires that store the integer :math:`x`
         y_wires (Sequence[int]): the wires that store the integer :math:`y`
         output_wires (Sequence[int]): the wires that store the multiplication result
-        mod (int): the modulo for performing the multiplication, default value is :math:`2^{\text{len(output_wires)}}`
-        work_wires (Sequence[int]): the two auxiliary wires to be used for the multiplication when :math:`mod \neq 2^{\text{len(output_wires)}}`
+        mod (int): the modulo for performing the multiplication. If not provided, it will be set to :math:`2^{\text{len(output_wires)}}`.
+        work_wires (Sequence[int]): the auxiliary wires to use for the multiplication, default is ``None``
 
     **Example**
 

@@ -45,13 +45,6 @@ class PhaseAdder(Operation):
 
         \text{QFT} |x \rangle = |\phi (x) \rangle.
 
-    This operation can be represented in a quantum circuit as:
-
-    .. figure:: ../../_static/templates/arithmetic/phaseadder.png
-        :align: center
-        :width: 60%
-        :target: javascript:void(0);
-
     The implementation is based on the quantum Fourier transform method presented in
     `arXiv:2311.08555 <https://arxiv.org/abs/2311.08555>`_.
 
@@ -66,8 +59,8 @@ class PhaseAdder(Operation):
     Args:
         k (int): the number that needs to be added
         x_wires (Sequence[int]): the wires the operation acts on
-        mod (int): the modulo for performing the addition, default value is :math:`2^{\text{len(x_wires)}}`
-        work_wire (Sequence[int]): the auxiliary wire to be used for performing the addition when :math:`mod \neq 2^{\text{len(x_wires)}}`
+        mod (int): the modulo for performing the addition. If not provided, it will be set to :math:`2^{\text{len(output_wires)}}`.
+        work_wire (Sequence[int]): the auxiliary wire to use for the addition, default is ``None``
 
     **Example**
 

@@ -45,11 +45,6 @@ class Multiplier(Operation):
 
     This operation can be represented in a quantum circuit as:
 
-    .. figure:: ../../_static/templates/arithmetic/multiplier.png
-        :align: center
-        :width: 60%
-        :target: javascript:void(0);
-
     The implementation is based on the quantum Fourier transform method presented in
     `arXiv:2311.08555 <https://arxiv.org/abs/2311.08555>`_.
 
@@ -65,10 +60,8 @@ class Multiplier(Operation):
     Args:
         k (int): the number that needs to be multiplied
         x_wires (Sequence[int]): the wires the operation acts on
-        mod (int): the modulo for performing the multiplication, default value is :math:`2^{\text{len(x_wires)}}`
-        work_wires (Sequence[int]): the auxiliary wires to be used for performing the multiplication. There
-            must be as many as ``x_wires`` and if :math:`mod \neq 2^{\text{len(x_wires)}}`, two more
-            wires must be added.
+        mod (int): the modulo for performing the multiplication. If not provided, it will be set to :math:`2^{\text{len(output_wires)}}`.
+        work_wires (Sequence[int]): the auxiliary wires to use for the multiplication, default is ``None``
 
     **Example**
 
