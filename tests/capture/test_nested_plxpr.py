@@ -186,7 +186,7 @@ class TestAdjointQfunc:
         qnode_eqn = grad_eqn.params["jaxpr"].eqns[0]
         assert qnode_eqn.primitive == qnode_prim
         adjoint_eqn = qnode_eqn.params["qfunc_jaxpr"].eqns[1]
-        assert adjoint_eqn.primitive == adjoint_prim
+        assert adjoint_eqn.primitive == adjoint_transform_prim
         assert adjoint_eqn.params["jaxpr"].eqns[0].primitive == qml.RX._primitive
 
         out = jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, 0.5)
@@ -361,7 +361,7 @@ class TestCtrlQfunc:
         qnode_eqn = grad_eqn.params["jaxpr"].eqns[0]
         assert qnode_eqn.primitive == qnode_prim
         ctrl_eqn = qnode_eqn.params["qfunc_jaxpr"].eqns[2]
-        assert ctrl_eqn.primitive == ctrl_prim
+        assert ctrl_eqn.primitive == ctrl_transform_prim
         assert ctrl_eqn.params["jaxpr"].eqns[0].primitive == qml.RX._primitive
 
         out = jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, 0.5)
