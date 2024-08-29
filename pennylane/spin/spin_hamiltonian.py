@@ -115,8 +115,8 @@ def heisenberg(lattice, n_cells, coupling=None, boundary_condition=False, neighb
                    ``'honeycomb'``, ``'triangle'``, or ``'kagome'``.
        n_cells (List[int]): Number of cells in each direction of the grid.
        coupling (List[List[float]] or List[math.array[float]]): Coupling between spins, it can be a 2D array
-                    of shape (``neighbour_order``, 3) or a 3D array of shape :math:`3 \times` ``number of spins``
-                    :math:`\times` ``number of spins``. Default value is [1.0, 1.0, 1.0].
+                    of shape (``neighbour_order``, 3) or a 3D array of shape :math:`3 \times` ``num_spins``
+                    :math:`\times` ``num_spins``, where ``num_spins`` is the total number of spins. Default value is [1.0, 1.0, 1.0].
        boundary_condition (bool or list[bool]): Defines boundary conditions for different lattice axes,
            default is ``False`` indicating open boundary condition.
        neighbour_order (int): Specifies the interaction level for neighbors within the lattice.
