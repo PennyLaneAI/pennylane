@@ -83,11 +83,11 @@ class ModExp(Operation):
         This template takes as input three different sets of wires.
 
         The first one is ``x_wires`` which is used
-        to encode the integer :math:`x < mod` in the computational basis. Therefore, we need at least
+        to encode the integer :math:`x < mod` in the computational basis. Therefore, it is needed at least
         :math:`\lceil \log_2(x)\rceil` ``x_wires`` to represent :math:`x`.
 
         The second one is ``output_wires`` which is used
-        to encode the integer :math:`b \cdot base^x \; \text{mod} \; mod` in the computational basis. Therefore, we need at least
+        to encode the integer :math:`b \cdot base^x \; \text{mod} \; mod` in the computational basis. Therefore, it is needed at least
         :math:`\lceil \log_2(mod)\rceil` ``output_wires`` to represent :math:`b \cdot base^x \; \text{mod} \; mod`. Note that these wires can be initialized with any integer
         :math:`b`, but the most common choice is :math:`b=1` to obtain as a final result :math:`base^x \; \text{mod} \; mod`.
 

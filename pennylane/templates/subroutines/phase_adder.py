@@ -51,8 +51,8 @@ class PhaseAdder(Operation):
     .. note::
 
         To obtain the correct result, :math:`x` must be smaller than :math:`mod`. Also, when
-        :math:`mod \neq 2^{\text{len(x_wires)}}` we need :math:`x < 2^{\text{len(x_wires)}-1}`,
-        which means that we need one extra wire in ``x_wires``.
+        :math:`mod \neq 2^{\text{len(x_wires)}}` it is needed :math:`x < 2^{\text{len(x_wires)}-1}`,
+        which means that one extra wire in ``x_wires`` is required.
 
     .. seealso:: :class:`~.QFT` and :class:`~.Adder`.
 
@@ -98,7 +98,7 @@ class PhaseAdder(Operation):
         This template takes as input two different sets of wires.
 
         The first one is ``x_wires``, used to encode the integer :math:`x < \text{mod}` in the Fourier basis.
-        To represent :math:`x`, we need at least :math:`\lceil \log_2(x) \rceil` ``x_wires``.
+        To represent :math:`x`, it is needed at least :math:`\lceil \log_2(x) \rceil` ``x_wires``.
         After the modular addition, the result can be as large as :math:`\text{mod} - 1`,
         requiring at least :math:`\lceil \log_2(\text{mod}) \rceil` ``x_wires``. Since :math:`x < \text{mod}`, we
         simply need :math:`\lceil \log_2(\text{mod}) \rceil` ``x_wires`` to cover all possible inputs and outputs.
