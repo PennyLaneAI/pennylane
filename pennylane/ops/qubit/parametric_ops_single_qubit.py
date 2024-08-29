@@ -94,8 +94,6 @@ class RX(ResourcesOperation):
         
         return qml.resource.resource.Resources(num_gates=num_gates, gate_types=gate_types, gate_sizes=gate_sizes)
 
-
-    
     @staticmethod
     def compute_matrix(theta: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
