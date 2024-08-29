@@ -18,15 +18,13 @@ Tests for capturing nested plxpr.
 import pytest
 
 import pennylane as qml
-from pennylane.ops.op_math.adjoint import _get_adjoint_qfunc_prim
-from pennylane.ops.op_math.controlled import _get_ctrl_qfunc_prim
 
 pytestmark = pytest.mark.jax
 
 jax = pytest.importorskip("jax")
 
-adjoint_prim = _get_adjoint_qfunc_prim()
-ctrl_prim = _get_ctrl_qfunc_prim()
+# pylint: disable=wrong-import-position
+from pennylane.capture.primitives import adjoint_transform_prim, ctrl_transform_prim
 
 
 @pytest.fixture(autouse=True)
@@ -48,7 +46,7 @@ class TestAdjointQfunc:
         plxpr = jax.make_jaxpr(workflow)(0.5)
 
         assert len(plxpr.eqns) == 1
-        assert plxpr.eqns[0].primitive == adjoint_prim
+        assert plxpr.eqns[0].primitive == adjoint_transform_prim
 
         nested_jaxpr = plxpr.eqns[0].params["jaxpr"]
         assert nested_jaxpr.eqns[0].primitive == qml.PauliRot._primitive
@@ -71,7 +69,7 @@ class TestAdjointQfunc:
         plxpr = jax.make_jaxpr(workflow)(0.5, 0.7, 0.8)
 
         assert len(plxpr.eqns) == 1
-        assert plxpr.eqns[0].primitive == adjoint_prim
+        assert plxpr.eqns[0].primitive == adjoint_transform_prim
 
         nested_jaxpr = plxpr.eqns[0].params["jaxpr"]
         assert nested_jaxpr.eqns[0].primitive == qml.Rot._primitive
@@ -115,7 +113,7 @@ class TestAdjointQfunc:
 
         assert len(q.queue) == 2
 
-        assert plxpr.eqns[0].primitive == adjoint_prim
+        assert plxpr.eqns[0].primitive == adjoint_transform_prim
         assert plxpr.eqns[0].params["lazy"] is True
 
         inner_plxpr = plxpr.eqns[0].params["jaxpr"]
@@ -129,8 +127,8 @@ class TestAdjointQfunc:
 
         plxpr = jax.make_jaxpr(workflow)(10)
 
-        assert plxpr.eqns[0].primitive == adjoint_prim
-        assert plxpr.eqns[0].params["jaxpr"].eqns[0].primitive == adjoint_prim
+        assert plxpr.eqns[0].primitive == adjoint_transform_prim
+        assert plxpr.eqns[0].params["jaxpr"].eqns[0].primitive == adjoint_transform_prim
         assert (
             plxpr.eqns[0].params["jaxpr"].eqns[0].params["jaxpr"].eqns[0].primitive
             == qml.PauliX._primitive
@@ -153,7 +151,7 @@ class TestAdjointQfunc:
 
         jaxpr = jax.make_jaxpr(workflow)(0.5)
 
-        assert jaxpr.eqns[0].primitive == adjoint_prim
+        assert jaxpr.eqns[0].primitive == adjoint_transform_prim
         assert jaxpr.eqns[0].params["n_consts"] == 1
         assert len(jaxpr.eqns[0].invars) == 2  # one const, one arg
 
@@ -183,7 +181,7 @@ class TestCtrlQfunc:
         expected = qml.ctrl(qml.RX(1.2, 2), 1)
         qml.assert_equal(q.queue[0], expected)
 
-        assert plxpr.eqns[0].primitive == ctrl_prim
+        assert plxpr.eqns[0].primitive == ctrl_transform_prim
         assert plxpr.eqns[0].params["control_values"] == [True]
         assert plxpr.eqns[0].params["n_control"] == 1
         assert plxpr.eqns[0].params["work_wires"] is None
@@ -205,7 +203,7 @@ class TestCtrlQfunc:
         qml.assert_equal(q.queue[0], expected)
         assert len(q) == 1
 
-        assert plxpr.eqns[0].primitive == ctrl_prim
+        assert plxpr.eqns[0].primitive == ctrl_transform_prim
         assert plxpr.eqns[0].params["control_values"] == [True, True]
         assert plxpr.eqns[0].params["n_control"] == 2
         assert plxpr.eqns[0].params["work_wires"] is None
