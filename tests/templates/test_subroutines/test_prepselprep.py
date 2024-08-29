@@ -47,11 +47,12 @@ def test_standard_checks(lcu, control):
 
 def test_repr():
     """Test the repr method."""
-    with np.printoptions(legacy="1.21"):
-        lcu = qml.dot([0.25, 0.75], [qml.Z(2), qml.X(1) @ qml.X(2)])
-        control = [0]
 
-        op = qml.PrepSelPrep(lcu, control)
+    lcu = qml.dot([0.25, 0.75], [qml.Z(2), qml.X(1) @ qml.X(2)])
+    control = [0]
+
+    op = qml.PrepSelPrep(lcu, control)
+    with np.printoptions(legacy="1.21"):
         assert (
             repr(op)
             == "PrepSelPrep(coeffs=(0.25, 0.75), ops=(Z(2), X(1) @ X(2)), control=Wires([0]))"

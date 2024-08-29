@@ -174,20 +174,19 @@ class TestDatasetOperator:
         """Test that a DatasetOperator can be value-initialized
         from an operator, and that the deserialized operator
         is equivalent."""
+
+        if not qml.operation.active_new_opmath() and isinstance(op_in, qml.ops.LinearCombination):
+            op_in = qml.operation.convert_to_legacy_H(op_in)
+
+        dset_op = attribute_cls(op_in)
+
+        assert dset_op.info["type_id"] == attribute_cls.type_id
+        assert dset_op.info["py_type"] == get_type_str(type(op_in))
+
+        op_out = dset_op.get_value()
         with np.printoptions(legacy="1.21"):
-            if not qml.operation.active_new_opmath() and isinstance(
-                op_in, qml.ops.LinearCombination
-            ):
-                op_in = qml.operation.convert_to_legacy_H(op_in)
-
-            dset_op = attribute_cls(op_in)
-
-            assert dset_op.info["type_id"] == attribute_cls.type_id
-            assert dset_op.info["py_type"] == get_type_str(type(op_in))
-
-            op_out = dset_op.get_value()
             assert repr(op_out) == repr(op_in)
-            assert op_in.data == op_out.data
+        assert op_in.data == op_out.data
 
     @pytest.mark.parametrize(
         "op_in",
@@ -202,23 +201,23 @@ class TestDatasetOperator:
         """Test that a DatasetOperator can be bind-initialized
         from an operator, and that the deserialized operator
         is equivalent."""
+
+        if not qml.operation.active_new_opmath() and isinstance(op_in, qml.ops.LinearCombination):
+            op_in = qml.operation.convert_to_legacy_H(op_in)
+
+        bind = attribute_cls(op_in).bind
+
+        dset_op = attribute_cls(bind=bind)
+
+        assert dset_op.info["type_id"] == attribute_cls.type_id
+        assert dset_op.info["py_type"] == get_type_str(type(op_in))
+
+        op_out = dset_op.get_value()
         with np.printoptions(legacy="1.21"):
-            if not qml.operation.active_new_opmath() and isinstance(
-                op_in, qml.ops.LinearCombination
-            ):
-                op_in = qml.operation.convert_to_legacy_H(op_in)
-
-            bind = attribute_cls(op_in).bind
-
-            dset_op = attribute_cls(bind=bind)
-
-            assert dset_op.info["type_id"] == attribute_cls.type_id
-            assert dset_op.info["py_type"] == get_type_str(type(op_in))
-
-            op_out = dset_op.get_value()
             assert repr(op_out) == repr(op_in)
-            assert op_in.data == op_out.data
-            assert op_in.wires == op_out.wires
+        assert op_in.data == op_out.data
+        assert op_in.wires == op_out.wires
+        with np.printoptions(legacy="1.21"):
             assert repr(op_in) == repr(op_out)
 
 

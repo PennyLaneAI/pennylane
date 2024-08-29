@@ -26,12 +26,6 @@ from .wrapper import tensor_wrapper, wrap_arrays
 
 wrap_arrays(_random.__dict__, globals())
 
-# np_version = semantic_version.version("numpy")
-
-# # Ensure pre/post release tags are compatible with SemVer
-# if any((match := s) in np_version for s in ["rc", "dev", "post"]):
-#     np_version = (f"-{match}").join(np_version.split("rc"))
-
 if Version(np_version) in SpecifierSet(">=0.17.0"):
 
     # pylint: disable=too-few-public-methods
