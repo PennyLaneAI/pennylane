@@ -21,7 +21,7 @@ from pennylane.measurements.mid_measure import MeasurementValue, MidMeasureMP
 jax = pytest.importorskip("jax")
 import jax.numpy as jnp
 
-from pennylane.capture import AbstractOperator
+from pennylane.capture.primitives import AbstractOperator
 
 pytestmark = pytest.mark.jax
 
