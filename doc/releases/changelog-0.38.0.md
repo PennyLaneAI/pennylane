@@ -384,6 +384,7 @@
 
 * For `default.qubit`, jax is now used for sampling whenever the state is jax. This fixes normalization issues
   that can occur when the state is complex64 precision.
+  [(#6190)](https://github.com/PennyLaneAI/pennylane/pull/6190)
 
 * `qml.transforms.pattern_matching_optimization` now preserves the tape measurements.
   [(#6153)](https://github.com/PennyLaneAI/pennylane/pull/6153)
