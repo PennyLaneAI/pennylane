@@ -73,15 +73,15 @@ class Multiplier(Operation):
         k = 4
         mod = 7
 
-        x_wires =[0,1,2]
-        work_wires=[3,4,5,6,7]
+        x_wires = [0,1,2]
+        work_wires = [3,4,5,6,7]
 
         dev = qml.device("default.qubit", shots=1)
         @qml.qnode(dev)
         def circuit():
-            qml.BasisEmbedding(x, wires=wires_m)
+            qml.BasisEmbedding(x, wires = x_wires)
             qml.Multiplier(k, x_wires, mod, work_wires)
-            return qml.sample(wires=wires_m)
+            return qml.sample(wires = x_wires)
 
     .. code-block:: pycon
 
