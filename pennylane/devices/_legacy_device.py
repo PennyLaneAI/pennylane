@@ -784,11 +784,27 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
             # Hamiltonian/Sum with grouping indices already calculated.
             circuits, processing_fn = qml.transforms.split_non_commuting(circuit, "qwc")
 
-        elif any(isinstance(m.obs, (Hamiltonian, LinearCombination)) for m in circuit.measurements):
+        elif any(
+            isinstance(m.obs, (Hamiltonian, LinearCombination, Sum)) for m in circuit.measurements
+        ):
 
             # Otherwise, use wire-based grouping if the circuit contains a Hamiltonian
             # that is potentially very large.
             circuits, processing_fn = qml.transforms.split_non_commuting(circuit, "wires")
+
+            if all_obs_usable and not circuit.shots and len(circuits) > len(circuit.measurements):
+                circuits = [
+                    qml.tape.QuantumScript(
+                        circuit.operations,
+                        [m],
+                        shots=circuit.shots,
+                        trainable_params=circuit.trainable_params,
+                    )
+                    for m in circuit.measurements
+                ]
+
+                def processing_fn(results):
+                    return results[0] if len(circuit.measurements) == 1 else results
 
         else:
             circuits, processing_fn = qml.transforms.split_non_commuting(circuit)
