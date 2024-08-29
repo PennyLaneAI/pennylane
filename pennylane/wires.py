@@ -31,28 +31,17 @@ class WireError(Exception):
 def _process(wires):
     """Converts the input to a tuple of wire labels.
 
-    If ``wires`` can be iterated over, its elements are interpreted as wire labels
-    and converted into a tuple. If ``wires`` is not iterable, it is interpreted as
-    a single wire label and returned as a tuple containing just that element.
+    If `wires` can be iterated over, its elements are interpreted as wire labels
+    and turned into a tuple. Otherwise, `wires` is interpreted as a single wire label.
 
-    Strings are always treated as single wire labels, allowing users to address
-    wires with labels such as ``"ancilla"``. Any hashable type can be a wire label,
-    ensuring the uniqueness of wire labels. For example, ``0`` and ``0.0`` are treated
-    as the same wire label because ``hash(0.0) == hash(0)``.
+    The only exception to this are strings, which are always interpreted as a single
+    wire label, so users can address wires with labels such as `"ancilla"`.
 
-    .. note::
+    Any type can be a wire label, as long as it is hashable. We need this to establish
+    the uniqueness of two labels. For example, `0` and `0.` are interpreted as
+    the same wire label because `hash(0.) == hash(0)` evaluates to true.
 
-        Unlike ``NumPy`` arrays, 0-dimensional arrays in ``pennylane.numpy`` are hashable.
-
-    Args:
-        wires (Any): :class:`~.Wires` object or any iterable that can be interpreted like a :class:`~.Wires` object.
-
-    Returns:
-        tuple: A tuple containing the wire labels. If ``wires`` is not iterable, the tuple
-        contains a single element.
-
-    Raises:
-        WireError: If the wire labels are not hashable or if the wire labels are not unique.
+    Note that opposed to numpy arrays, `pennylane.numpy` 0-dim array are hashable.
     """
 
     if isinstance(wires, str):
