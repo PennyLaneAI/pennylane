@@ -339,7 +339,7 @@
   ```pycon
   >>> import numpy as np
   >>> np.round(circuit(lcu, control, alphas, unitaries), decimals=2)
-  [ 1.+0.j -0.+0.j -0.+0.j -0.+0.j  0.+0.j  0.+0.j  0.+0.j  0.+0.j]
+  tensor([1.+0.j -0.+0.j -0.+0.j -0.+0.j  0.+0.j  0.+0.j  0.+0.j  0.+0.j], requires_grad=True)
   ```
 
 <h4>QChem improvements</h4>
