@@ -75,11 +75,11 @@
   [(#5920)](https://github.com/PennyLaneAI/pennylane/pull/5920)
   
 * `qml.pauli.group_observables` now uses `Rustworkx` colouring algorithms to solve the Minimum Clique Cover problem.
-  This adds two new options for the `method` argument: `dsatur` and `gis`. In addition, the creation of the adjancecy matrix 
-  now takes advantage of the symplectic representation of the Pauli observables. An additional function `qml.pauli.compute_partition_indices` 
-  is added to calculate the indices from the partitioned observables more efficiently. `qml.pauli.grouping.PauliGroupingStrategy.idx_partitions_from_graph` 
-  can be used to compute partitions of custom indices. These changes improve the wall time of `qml.LinearCombination.compute_grouping` 
-  and the `grouping_type='qwc'` by orders of magnitude. 
+  This adds two new options for the `method` argument: `dsatur` and `gis`. In addition, the creation of the adjacency matrix
+  now takes advantage of the symplectic representation of the Pauli observables. An additional function `qml.pauli.compute_partition_indices`
+  is added to calculate the indices from the partitioned observables more efficiently. `qml.pauli.grouping.PauliGroupingStrategy.idx_partitions_from_graph`
+  can be used to compute partitions of custom indices. These changes improve the wall time of `qml.LinearCombination.compute_grouping`
+  and `grouping_type='qwc'` by orders of magnitude.
   [(#6043)](https://github.com/PennyLaneAI/pennylane/pull/6043)
 
 <h4>Improvements to operators</h4>
@@ -277,6 +277,13 @@
 * Added a progress bar when downloading datasets with `qml.data.load()`
   [(#5560)](https://github.com/PennyLaneAI/pennylane/pull/5560)
 
+* Upgraded and simplified `StatePrep` and `AmplitudeEmbedding` templates.
+  [(#6034)](https://github.com/PennyLaneAI/pennylane/pull/6034)
+  [(#6170)](https://github.com/PennyLaneAI/pennylane/pull/6170)
+
+* Upgraded and simplified `BasisState` and `BasisEmbedding` templates.
+  [(#6021)](https://github.com/PennyLaneAI/pennylane/pull/6021)
+  
 <h3>Breaking changes 💔</h3>
 
 * `MeasurementProcess.shape(shots: Shots, device:Device)` is now
