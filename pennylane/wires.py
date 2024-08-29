@@ -496,7 +496,7 @@ class Wires(Sequence):
 
     def union(self, other):
         """Return the union of the current :class:`~.Wires` object and either another :class:`~.Wires` object or an
-        iterable that can be interpreted like a :class:`~.Wires` object e.g., a ``List``.
+        iterable that can be interpreted like a :class:`~.Wires` object, e.g., a ``list``.
 
         Args:
             other (Any): :class:`~.Wires` or any iterable that can be interpreted like a :class:`~.Wires` object
@@ -547,11 +547,11 @@ class Wires(Sequence):
 
     def intersection(self, other):
         """Return the intersection of the current :class:`~.Wires` object and either another :class:`~.Wires` object or
-        an iterable that can be interpreted like a :class:`~.Wires` object e.g., ``List``.
+        an iterable that can be interpreted like a :class:`~.Wires` object, e.g., a ``list``.
 
         Args:
             other (Any): :class:`~.Wires` or any iterable that can be interpreted like a :class:`~.Wires` object
-                to perform the union with. See ``_process`` for details on the interpretation.
+                to perform the intersection with. See ``_process`` for details on the interpretation.
 
         Returns:
             Wires: A new :class:`~.Wires` object representing the intersection of the two :class:`~.Wires` objects.
@@ -598,11 +598,11 @@ class Wires(Sequence):
 
     def difference(self, other):
         """Return the difference of the current :class:`~.Wires` object and either another :class:`~.Wires` object or
-        an iterable that can be interpreted like a :class:`~.Wires` object e.g., a ``List``.
+        an iterable that can be interpreted like a :class:`~.Wires` object, e.g., a ``list``.
 
         Args:
             other (Any): :class:`~.Wires` object or any iterable that can be interpreted like a :class:`~.Wires` object
-                to perform the union with. See ``_process`` for details on the interpretation.
+                to perform the difference with. See ``_process`` for details on the interpretation.
 
         Returns:
             Wires: A new :class:`~.Wires` object representing the difference of the two :class:`~.Wires` objects.
@@ -649,11 +649,11 @@ class Wires(Sequence):
 
     def symmetric_difference(self, other):
         """Return the symmetric difference of the current :class:`~.Wires` object and either another :class:`~.Wires`
-        object or an iterable that can be interpreted like a :class:`~.Wires` object e.g., ``List``.
+        object or an iterable that can be interpreted like a :class:`~.Wires` object, e.g., a ``list``.
 
         Args:
             other (Any): :class:`~.Wires` or any iterable that can be interpreted like a :class:`~.Wires` object
-                to perform the union with. See ``_process`` for details on the interpretation.
+                to perform the symmetric difference with. See ``_process`` for details on the interpretation.
 
         Returns:
             Wires: A new :class:`~.Wires` object representing the symmetric difference of the two :class:`~.Wires` objects.

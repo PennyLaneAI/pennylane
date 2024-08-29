@@ -318,7 +318,7 @@ PennyLane uses the :class:`~.wires.Wires` class for the internal representation 
 inherits from Python's ``Sequence``, and represents an ordered set of unique wire labels.
 The ``labels`` attribute stores a tuple of the wire labels.
 Indexing a ``Wires`` instance with an integer will return the corresponding label.
-Indexing with a  ``slice`` will return a ``Wires`` instance.
+Indexing with a ``slice`` will return a ``Wires`` instance.
 
 For example:
 
