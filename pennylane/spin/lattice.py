@@ -33,13 +33,13 @@ class Lattice:
        n_cells (list[int]): Number of cells in each direction of the grid.
        vectors (list[list[float]]): Primitive vectors for the lattice.
        positions (list[list[float]]): Initial positions of spin cites. Default value is
-           ``[[0.0]`` :math:`\times` ``number of dimensions]``.
-       boundary_condition (bool or list[bool]): Defines boundary conditions different lattice axes,
+           ``[[0.0]*number of dimensions]``.
+       boundary_condition (bool or list[bool]): Defines boundary conditions in different lattice axes,
            default is ``False`` indicating open boundary condition.
        neighbour_order (int): Specifies the interaction level for neighbors within the lattice.
            Default is 1 (nearest neighbour).
        distance_tol (float): Distance below which spatial points are considered equal for the
-           purpose of identifying nearest neighbours, default value is 1e-5.
+           purpose of identifying nearest neighbours. Default value is 1e-5.
 
     Raises:
        TypeError:
@@ -53,15 +53,13 @@ class Lattice:
        Lattice object
 
     **Example**
-
     >>> n_cells = [2,2]
     >>> vectors = [[0, 1], [1, 0]]
     >>> boundary_condition = [True, False]
     >>> lattice = qml.spin.Lattice(n_cells, vectors,
     >>>           boundary_condition=boundary_condition)
-    >>> lattice.edges
+    >>> print(lattice.edges)
     [(2, 3, 0), (0, 2, 0), (1, 3, 0), (0, 1, 0)]
-
     """
 
     def __init__(
@@ -120,7 +118,7 @@ class Lattice:
     def _identify_neighbours(self, cutoff):
         r"""Identifies the connections between lattice points and returns the unique connections
         based on the neighbour_order. This function uses KDTree to identify neighbours, which
-        follows depth first search traversal."""
+        follows depth-first search traversal."""
 
         tree = KDTree(self.lattice_points)
         indices = tree.query_ball_tree(tree, cutoff)
@@ -318,7 +316,7 @@ def _kagome(n_cells, boundary_condition=False, neighbour_order=1):
 
 # TODO Check the efficiency of this function with a dictionary instead.
 def _generate_lattice(lattice, n_cells, boundary_condition=False, neighbour_order=1):
-    r"""Generates the lattice object for given shape and n_cells.
+    r"""Generates the lattice object for a given shape and n_cells.
 
     Args:
         lattice (str): Shape of the lattice. Input Values can be ``'chain'``, ``'square'``, ``'rectangle'``, ``'honeycomb'``, ``'triangle'``, or ``'kagome'``.
@@ -327,7 +325,7 @@ def _generate_lattice(lattice, n_cells, boundary_condition=False, neighbour_orde
         neighbour_order (int): Specifies the interaction level for neighbors within the lattice. Default is 1 (nearest neighbour).
 
     Returns:
-        lattice object
+        lattice object.
     """
 
     lattice_shape = lattice.strip().lower()
