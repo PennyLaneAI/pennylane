@@ -44,7 +44,7 @@ def transverse_ising(
        n_cells (List[int]): Number of cells in each direction of the grid.
        coupling (float or List[float] or List[math.array[float]]): Coupling between spins, it can be a
            number, a list of length equal to ``neighbour_order`` or a square matrix of size
-           ``(number of spins,  number of spins)``. Default value is 1.0.
+           ``(num_spins,  num_spins)``, where ``num_spins`` is the total number of spins. Default value is 1.0.
        h (float): Value of external magnetic field. Default is 1.0.
        boundary_condition (bool or list[bool]): Defines boundary conditions for different lattice axes,
            default is ``False`` indicating open boundary condition.
