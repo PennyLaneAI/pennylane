@@ -198,6 +198,30 @@ def test_batch_transform_supports_hamiltonian():
     assert len(batch) == 2
 
 
+def test_batch_transform_does_not_decompose_hamiltonian():
+    """Assert that the legacy device batch transform does not expand hamiltonians if it creates too many tapes."""
+
+    class HamiltonianDev(DummyDevice):
+        """A device that supports a hamiltonian."""
+
+        observables = {"Hamiltonian"}
+
+    nq = 20
+    H = qml.Hamiltonian(
+        np.ones(nq * 2),
+        [qml.PauliX(i % nq) @ qml.PauliZ(i + 1 % nq) for i in range(nq)]
+        + [qml.PauliZ(i % nq) @ qml.PauliY(i + 1 % nq) @ qml.PauliX(i + 2 % nq) for i in range(nq)],
+    )
+
+    tape = qml.tape.QuantumScript([], [qml.expval(H), qml.expval(qml.PauliY(0))], shots=None)
+    batch, _ = legacy_device_batch_transform(tape, device=HamiltonianDev())
+    assert len(batch) == 2
+
+    tape = qml.tape.QuantumScript([], [qml.expval(H), qml.expval(qml.PauliY(0))], shots=50)
+    batch, _ = legacy_device_batch_transform(tape, device=HamiltonianDev())
+    assert len(batch) == 5
+
+
 def test_basic_properties():
     """Test the basic properties of the device."""
 
