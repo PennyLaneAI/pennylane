@@ -513,7 +513,8 @@ class Wires(Sequence):
         >>> wires1.union(wires2)
         Wires([1, 2, 3, 4, 5])
 
-        Alternatively, use the | operator:
+        Alternatively, use thei ``|`` operator:
+
         >>> wires1 | wires2
         Wires([1, 2, 3, 4, 5])
         """
@@ -563,7 +564,8 @@ class Wires(Sequence):
         >>> wires1.intersection(wires2)
         Wires([2, 3])
 
-        Alternatively, use the & operator:
+        Alternatively, use the ``&`` operator:
+
         >>> wires1 & wires2
         Wires([2, 3])
         """
@@ -613,7 +615,8 @@ class Wires(Sequence):
         >>> wires1.difference(wires2)
         Wires([1])
 
-        Alternatively, use the - operator:
+        Alternatively, use the ``-`` operator:
+
         >>> wires1 - wires2
         Wires([1])
         """
@@ -663,7 +666,8 @@ class Wires(Sequence):
         >>> wires1.symmetric_difference(wires2)
         Wires([1, 2, 4, 5])
 
-        Alternatively, use the ^ operator:
+        Alternatively, use the ``^`` operator:
+
         >>> wires1 ^ wires2
         Wires([1, 2, 4, 5])
         """
