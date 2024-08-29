@@ -400,5 +400,4 @@ def test_explicit_list_of_failing_ops(invalid_instance_and_error):
     """Test instances of ops that fail validation."""
     op, exc_type = invalid_instance_and_error
     with pytest.raises(exc_type):
-        print(op)
         assert_valid(op)
