@@ -77,8 +77,8 @@ class Molecule:
         name="molecule",
         load_data=False,
         l=None,
-        alpha=None,
         coeff=None,
+        alpha=None,
         normalize=True,
         unit="bohr",
         argnum=None,
@@ -111,7 +111,11 @@ class Molecule:
         self.name = name
         self.load_data = load_data
         self.n_basis, self.basis_data = mol_basis_data(self.basis_name, self.symbols, load_data)
-        self.argnum = argnum
+        self.argnum = (
+            (argnum,)
+            if isinstance(argnum, int)
+            else tuple(argnum) if isinstance(argnum, list) else argnum
+        )
 
         if self.unit not in ("angstrom", "bohr"):
             raise ValueError(
