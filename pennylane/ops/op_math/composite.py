@@ -207,7 +207,6 @@ class CompositeOp(Operator):
             while i < len(groups):
                 if first_group_idx is None and any(wire in op.wires for wire in groups[i][1]):
                     # Found the first group that has overlapping wires with this op
-                    groups[i][0].append(op)
                     groups[i][1] = groups[i][1] + op.wires
                     first_group_idx = i  # record the index of this group
                     i += 1
@@ -219,7 +218,9 @@ class CompositeOp(Operator):
                     groups[first_group_idx][1] = groups[first_group_idx][1] + wires
                 else:
                     i += 1
-            if first_group_idx is None:
+            if first_group_idx is not None:
+                groups[first_group_idx][0].append(op)
+            else:
                 # Create new group
                 groups.append([[op], op.wires])
 

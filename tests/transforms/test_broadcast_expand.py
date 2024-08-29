@@ -56,13 +56,11 @@ H0 = qml.Hamiltonian(qml.math.array(coeffs0), [qml.PauliZ(0), qml.PauliY(1)])
 
 # Here we exploit the product structure of our circuit
 def exp_fn_Z0(x, y, z):
-    out = -qml.math.cos(x) * qml.math.ones_like(y) * qml.math.ones_like(z)
-    return out[0] if len(out) == 1 else out
+    return -qml.math.cos(x) * qml.math.ones_like(y) * qml.math.ones_like(z)
 
 
 def exp_fn_Y1(x, y, z):
-    out = qml.math.sin(y) * qml.math.cos(z) * qml.math.ones_like(x)
-    return out[0] if len(out) == 1 else out
+    return qml.math.sin(y) * qml.math.cos(z) * qml.math.ones_like(x)
 
 
 def exp_fn_Z0Y1(x, y, z):

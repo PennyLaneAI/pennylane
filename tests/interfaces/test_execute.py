@@ -12,117 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests for exeuction with default qubit 2 independent of any interface."""
+from contextlib import nullcontext
+
 import pytest
 
 import pennylane as qml
-from pennylane import numpy as np
 from pennylane.devices import DefaultQubit
-from pennylane.workflow.execution import _preprocess_expand_fn
-
-
-class TestPreprocessExpandFn:
-    """Tests the _preprocess_expand_fn helper function."""
-
-    def test_provided_is_callable(self):
-        """Test that if the expand_fn is not "device", it is simply returned."""
-
-        dev = DefaultQubit()
-
-        def f(tape):
-            return tape
-
-        out = _preprocess_expand_fn(f, dev, 10)
-        assert out is f
-
-    def test_new_device_blank_expand_fn(self):
-        """Test that the expand_fn is blank if is new device."""
-
-        dev = DefaultQubit()
-
-        out = _preprocess_expand_fn("device", dev, 10)
-
-        x = [1]
-        assert out(x) is x
-
-
-class TestBatchTransformHelper:
-    """Unit tests for the _batch_transform helper function."""
-
-    def test_warns_if_requested_off(self):
-        """Test that a warning is raised if the the batch transform is requested to not be used."""
-
-        # pylint: disable=too-few-public-methods
-        class CustomOp(qml.operation.Operator):
-            """Dummy operator."""
-
-            def decomposition(self):
-                return [qml.PauliX(self.wires[0])]
-
-        dev = DefaultQubit()
-
-        qs = qml.tape.QuantumScript([CustomOp(0)], [qml.expval(qml.PauliZ(0))])
-
-        with pytest.warns(UserWarning, match="device batch transforms cannot be turned off"):
-            program, _ = dev.preprocess()
-            with pytest.warns(
-                qml.PennyLaneDeprecationWarning,
-                match="The device_batch_transform argument is deprecated",
-            ):
-                qml.execute(
-                    (qs, qs), device=dev, device_batch_transform=False, transform_program=program
-                )
-
-    def test_split_and_expand_performed(self):
-        """Test that preprocess returns the correct tapes when splitting and expanding
-        is needed."""
-
-        class NoMatOp(qml.operation.Operation):
-            """Dummy operation for expanding circuit."""
-
-            # pylint: disable=missing-function-docstring
-            num_wires = 1
-
-            # pylint: disable=arguments-renamed, invalid-overridden-method
-            @property
-            def has_matrix(self):
-                return False
-
-            def decomposition(self):
-                return [qml.PauliX(self.wires), qml.PauliY(self.wires)]
-
-        ops = [qml.Hadamard(0), NoMatOp(1), qml.RX([np.pi, np.pi / 2], wires=1)]
-        # Need to specify grouping type to transform tape
-        measurements = [qml.expval(qml.PauliX(0)), qml.expval(qml.PauliZ(1))]
-        tapes = [
-            qml.tape.QuantumScript(ops=ops, measurements=[measurements[0]]),
-            qml.tape.QuantumScript(ops=ops, measurements=[measurements[1]]),
-        ]
-
-        dev = DefaultQubit()
-        config = qml.devices.ExecutionConfig(gradient_method="adjoint")
-
-        program, new_config = dev.preprocess(config)
-        res_tapes, batch_fn = program(tapes)
-        expected_ops = [
-            [qml.Hadamard(0), qml.PauliX(1), qml.PauliY(1), qml.RX(np.pi, wires=1)],
-            [qml.Hadamard(0), qml.PauliX(1), qml.PauliY(1), qml.RX(np.pi / 2, wires=1)],
-        ]
-
-        assert len(res_tapes) == 4
-        for i, t in enumerate(res_tapes):
-            for op, expected_op in zip(t.operations, expected_ops[i % 2]):
-                qml.assert_equal(op, expected_op)
-            assert len(t.measurements) == 1
-            if i < 2:
-                qml.assert_equal(t.measurements[0], measurements[0])
-            else:
-                qml.assert_equal(t.measurements[0], measurements[1])
-
-        input = ([[1, 2]], [[3, 4]], [[5, 6]], [[7, 8]])
-        assert np.array_equal(batch_fn(input), np.array([[[1, 2], [3, 4]], [[5, 6], [7, 8]]]))
-
-        assert new_config.grad_on_execution
-        assert new_config.use_device_gradient
 
 
 def test_warning_if_not_device_batch_transform():
@@ -139,7 +34,7 @@ def test_warning_if_not_device_batch_transform():
 
     qs = qml.tape.QuantumScript([CustomOp(0)], [qml.expval(qml.PauliZ(0))])
 
-    with pytest.warns(UserWarning, match="device batch transforms cannot be turned off"):
+    with pytest.warns(UserWarning, match="Device batch transforms cannot be turned off"):
         program, _ = dev.preprocess()
         with pytest.warns(
             qml.PennyLaneDeprecationWarning,
@@ -222,8 +117,13 @@ class TestExecuteDeprecations:
 
         qs = qml.tape.QuantumScript([qml.PauliX(0)], [qml.expval(qml.PauliZ(0))])
 
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning,
-            match="The device_batch_transform argument is deprecated",
+        with (
+            pytest.warns(UserWarning, match="Device batch transforms cannot be turned off")
+            if not device_batch_transform
+            else nullcontext()
         ):
-            qml.execute([qs], dev, device_batch_transform=device_batch_transform)
+            with pytest.warns(
+                qml.PennyLaneDeprecationWarning,
+                match="The device_batch_transform argument is deprecated",
+            ):
+                qml.execute([qs], dev, device_batch_transform=device_batch_transform)
