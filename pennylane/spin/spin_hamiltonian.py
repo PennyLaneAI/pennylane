@@ -100,7 +100,7 @@ def transverse_ising(
 
 
 def heisenberg(lattice, n_cells, coupling=None, boundary_condition=False, neighbour_order=1):
-    r"""Generates the Heisenberg Hamiltonian on a lattice.
+    r"""Generates the Hamiltonian for a Heisenberg model on a lattice.
 
     The Hamiltonian is represented as:
 
