@@ -115,35 +115,6 @@ class Wires(Sequence):
 
     Args:
          wires (Any): the wire label(s)
-
-    Raises:
-        WireError: If the wire labels are not hashable or if the wire labels are not unique.
-
-    **Example**:
-
-    Strings are always treated as single wire labels, allowing users to construct
-    wires with labels such as ``"ancilla"``.
-
-    .. code-block:: python
-
-        from pennylane.wires import Wires
-
-        wires = Wires("ancilla")
-
-    >>> wires
-    Wires(['ancilla'])
-
-    If ``wires`` can be iterated over, its elements are interpreted as wire labels.
-
-    >>> wires = Wires(["a",1])
-    >>> wires
-    Wires(['a', 1])
-
-    If ``wires`` is not iterable, it is interpreted as a single wire label.
-
-    >>> wires = Wires(100)
-    >>> wires
-    Wires([100])
     """
 
     def _flatten(self):
@@ -544,7 +515,7 @@ class Wires(Sequence):
 
         Args:
             other (Any): :class:`~.Wires` or any iterable that can be interpreted like a :class:`~.Wires` object
-                to perform the union with. See :func:`~.process` for details on the interpretation.
+                to perform the union with.
 
         Returns:
             Wires: A new :class:`~.Wires` object representing the union of the two :class:`~.Wires` objects.
@@ -570,7 +541,7 @@ class Wires(Sequence):
 
         Args:
             other (Any): Wires or any iterable that can be interpreted like a Wires object
-                to perform the union with. See _process for details on the interpretation.
+                to perform the union with.
 
         Returns:
             Wires: A new Wires object representing the union of the two Wires objects.
@@ -595,7 +566,7 @@ class Wires(Sequence):
 
         Args:
             other (Any): :class:`~.Wires` or any iterable that can be interpreted like a :class:`~.Wires` object
-                to perform the intersection with. See :func:`~.process` for details on the interpretation.
+                to perform the intersection with.
 
         Returns:
             Wires: A new :class:`~.Wires` object representing the intersection of the two :class:`~.Wires` objects.
@@ -621,7 +592,7 @@ class Wires(Sequence):
 
         Args:
             other (Any): Wires or any iterable that can be interpreted like a Wires object
-                to perform the union with. See _process for details on the interpretation.
+                to perform the union with.
 
         Returns:
             Wires: A new Wires object representing the intersection of the two Wires objects.
@@ -646,7 +617,7 @@ class Wires(Sequence):
 
         Args:
             other (Any): :class:`~.Wires` object or any iterable that can be interpreted like a :class:`~.Wires` object
-                to perform the difference with. See :func:`~.process` for details on the interpretation.
+                to perform the difference with.
 
         Returns:
             Wires: A new :class:`~.Wires` object representing the difference of the two :class:`~.Wires` objects.
@@ -672,7 +643,7 @@ class Wires(Sequence):
 
         Args:
             other (Any): Wires or any iterable that can be interpreted like a Wires object
-                to perform the union with. See _process for details on the interpretation.
+                to perform the union with.
 
         Returns:
             Wires: A new Wires object representing the difference of the two Wires objects.
@@ -697,7 +668,7 @@ class Wires(Sequence):
 
         Args:
             other (Any): :class:`~.Wires` or any iterable that can be interpreted like a :class:`~.Wires` object
-                to perform the symmetric difference with. See :func:`~.process` for details on the interpretation.
+                to perform the symmetric difference with.
 
         Returns:
             Wires: A new :class:`~.Wires` object representing the symmetric difference of the two :class:`~.Wires` objects.
@@ -724,7 +695,7 @@ class Wires(Sequence):
 
         Args:
             other (Any): Wires or any iterable that can be interpreted like a Wires object
-                to perform the union with. See _process for details on the interpretation.
+                to perform the union with.
 
         Returns:
             Wires: A new Wires object representing the symmetric difference of the two Wires objects.
