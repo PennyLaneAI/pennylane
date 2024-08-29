@@ -354,8 +354,8 @@ def molecular_hamiltonian(*args, **kwargs):
             unpaired electrons occupying the HF orbitals. Possible values of ``mult`` are :math:`1, 2, 3, \\ldots`.
             If not specified, a closed-shell HF state is assumed.
           - **basis** (str): atomic basis set used to represent the molecular orbitals
-          - **alpha** (array[float]): exponents of the primitive Gaussian functions
           - **coeff** (array[float]): coefficients of the contracted Gaussian functions
+          - **alpha** (array[float]): exponents of the primitive Gaussian functions
 
         Therefore, a molecular Hamiltonian had to be constructed in the following manner:
 
@@ -420,8 +420,8 @@ def _(
         mapping,
         outpath,
         wires,
-        molecule.alpha,
         molecule.coeff,
+        molecule.alpha,
         args,
         molecule.load_data,
         convert_tol,
