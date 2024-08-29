@@ -28,7 +28,7 @@ class WireError(Exception):
     """Exception raised by a :class:`~.pennylane.wires.Wire` object when it is unable to process wires."""
 
 
-def process(wires):
+def _process(wires):
     """Converts the input to a tuple of wire labels.
 
     If ``wires`` can be iterated over, its elements are interpreted as wire labels
@@ -37,12 +37,12 @@ def process(wires):
 
     Strings are always treated as single wire labels, allowing users to address
     wires with labels such as ``"ancilla"``. Any hashable type can be a wire label,
-    ensuring the uniqueness of wire labels. For example, ``0`` and ``0.`` are treated
-    as the same wire label because ``hash(0.) == hash(0)``.
+    ensuring the uniqueness of wire labels. For example, ``0`` and ``0.0`` are treated
+    as the same wire label because ``hash(0.0) == hash(0)``.
 
     .. note::
 
-        Unlike NumPy arrays, 0-dimensional arrays in ``pennylane.numpy`` are hashable.
+        Unlike ``NumPy`` arrays, 0-dimensional arrays in ``pennylane.numpy`` are hashable.
 
     Args:
         wires (Any): :class:`~.Wires` object or any iterable that can be interpreted like a :class:`~.Wires` object.
@@ -94,7 +94,7 @@ class Wires(Sequence):
     r"""
     A bookkeeping class for wires, which are ordered collections of unique objects.
 
-    If the input `wires` can be iterated over, it is interpreted as a sequence of wire labels that have to be
+    If the input ``wires`` can be iterated over, it is interpreted as a sequence of wire labels that have to be
     unique and hashable. Else it is interpreted as a single wire label that has to be hashable. The
     only exception are strings which are interpreted as wire labels.
 
@@ -109,8 +109,41 @@ class Wires(Sequence):
         For example, running ``qml.RX(1.1, qml.numpy.array(0))`` on a device initialized with ``wires=[0]``
         will fail because ``qml.numpy.array(0)`` does not exist in the device's wire map.
 
+    .. note::
+
+        Unlike ``NumPy`` arrays, 0-dimensional arrays in ``pennylane.numpy`` are hashable.
+
     Args:
          wires (Any): the wire label(s)
+
+    Raises:
+        WireError: If the wire labels are not hashable or if the wire labels are not unique.
+
+    **Example**:
+
+    Strings are always treated as single wire labels, allowing users to construct
+    wires with labels such as ``"ancilla"``.
+
+    .. code-block:: python
+
+        from pennylane.wires import Wires
+
+        wires = Wires("ancilla")
+
+    >>> wires
+    Wires(['ancilla'])
+
+    If ``wires`` can be iterated over, its elements are interpreted as wire labels.
+
+    >>> wires = Wires(["a",1])
+    >>> wires
+    Wires(['a', 1])
+
+    If ``wires`` is not iterable, it is interpreted as a single wire label.
+
+    >>> wires = Wires(100)
+    >>> wires
+    Wires([100])
     """
 
     def _flatten(self):
@@ -126,7 +159,7 @@ class Wires(Sequence):
         if _override:
             self._labels = wires
         else:
-            self._labels = process(wires)
+            self._labels = _process(wires)
 
         self._hash = None
 
@@ -529,7 +562,7 @@ class Wires(Sequence):
         >>> wires1 | wires2
         Wires([1, 2, 3, 4, 5])
         """
-        return Wires((set(self.labels) | set(process(other))))
+        return Wires((set(self.labels) | set(_process(other))))
 
     def __or__(self, other):
         """Return the union of the current Wires object and either another Wires object or an
@@ -580,7 +613,7 @@ class Wires(Sequence):
         >>> wires1 & wires2
         Wires([2, 3])
         """
-        return Wires((set(self.labels) & set(process(other))))
+        return Wires((set(self.labels) & set(_process(other))))
 
     def __and__(self, other):
         """Return the intersection of the current Wires object and either another Wires object or
@@ -631,7 +664,7 @@ class Wires(Sequence):
         >>> wires1 - wires2
         Wires([1])
         """
-        return Wires((set(self.labels) - set(process(other))))
+        return Wires((set(self.labels) - set(_process(other))))
 
     def __sub__(self, other):
         """Return the difference of the current Wires object and either another Wires object or
@@ -656,7 +689,7 @@ class Wires(Sequence):
 
     def __rsub__(self, other):
         """Right-hand version of __sub__."""
-        return Wires((set(process(other)) - set(self.labels)))
+        return Wires((set(_process(other)) - set(self.labels)))
 
     def symmetric_difference(self, other):
         """Return the symmetric difference of the current :class:`~.Wires` object and either another :class:`~.Wires`
@@ -683,7 +716,7 @@ class Wires(Sequence):
         Wires([1, 2, 4, 5])
         """
 
-        return Wires((set(self.labels) ^ set(process(other))))
+        return Wires((set(self.labels) ^ set(_process(other))))
 
     def __xor__(self, other):
         """Return the symmetric difference of the current Wires object and either another Wires
@@ -708,7 +741,7 @@ class Wires(Sequence):
 
     def __rxor__(self, other):
         """Right-hand version of __xor__."""
-        return Wires((set(process(other)) ^ set(self.labels)))
+        return Wires((set(_process(other)) ^ set(self.labels)))
 
 
 WiresLike = Union[Wires, Iterable[Hashable], Hashable]
