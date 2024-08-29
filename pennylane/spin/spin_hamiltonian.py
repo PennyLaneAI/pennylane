@@ -114,14 +114,14 @@ def heisenberg(lattice, n_cells, coupling=None, boundary_condition=False, neighb
 
     Args:
         lattice (str): Shape of the lattice. Input values can be ``'chain'``, ``'square'``,
-        ``'rectangle'``, ``'honeycomb'``, ``'triangle'``, or ``'kagome'``.
+            ``'rectangle'``, ``'honeycomb'``, ``'triangle'``, or ``'kagome'``.
         n_cells (List[int]): Number of cells in each direction of the grid.
         coupling (List[List[float]] or List[math.array[float]]): Coupling between spins, it can be a
             2D array of shape ``(neighbour_order, 3)`` or a 3D array of shape
             ``(3, num_spins, num_spins)``, where ``num_spins`` is the total number of spins. Default
             value is [1.0, 1.0, 1.0].
         boundary_condition (bool or list[bool]): Defines boundary conditions for different lattice
-        axes, default is ``False`` indicating open boundary condition.
+            axes, default is ``False`` indicating open boundary condition.
         neighbour_order (int): Specifies the interaction level for neighbors within the lattice.
             Default is 1, indicating nearest neighbours.
 
@@ -218,7 +218,7 @@ def fermi_hubbard(
         coulomb (float or List[float]): Coulomb interaction between spins, it can be a constant or a
             list of length equal to number of spins.
         boundary_condition (bool or list[bool]): Defines boundary conditions for different lattice
-        axes, default is ``False`` indicating open boundary condition.
+            axes, default is ``False`` indicating open boundary condition.
         neighbour_order (int): Specifies the interaction level for neighbors within the lattice.
             Default is 1, indicating nearest neighbours.
         mapping (str): Specifies the fermion-to-qubit mapping. Input values can be
