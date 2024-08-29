@@ -40,7 +40,7 @@ class ModExp(Operation):
 
     .. note::
 
-        :math:`x` must be smaller than :math:`mod` to get the correct result.
+        To obtain the correct result, :math:`x` must be smaller than :math:`mod`.
         Also, it is required that :math:`base` has inverse, :math:`base^{-1}` modulo :math:`mod`.
         That means :math:`base \cdot base^{-1}` modulo :math:`mod` is equal to 1, which will only be possible if :math:`base`
         and :math:`mod` are coprime.

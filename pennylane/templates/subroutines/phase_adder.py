@@ -57,7 +57,7 @@ class PhaseAdder(Operation):
 
     .. note::
 
-        :math:`x` must be smaller than :math:`mod` to get the correct result. Also, when
+        To obtain the correct result, :math:`x` must be smaller than :math:`mod`. Also, when
         :math:`mod \neq 2^{\text{len(x_wires)}}` we need :math:`x < 2^{\text{len(x_wires)}-1}`,
         which means that we need one extra wire in ``x_wires``.
 
@@ -104,12 +104,11 @@ class PhaseAdder(Operation):
 
         This template takes as input two different sets of wires.
 
-        The first one is ``x_wires`` which is used
-        to encode the integer :math:`x < mod` in the Fourier basis. Therefore, we need at least
-        :math:`\lceil \log_2(x)\rceil` ``x_wires`` to represent :math:`x`. After performing the modular addition operation, the resulting integer
-        encoded in the Fourier basis can be as large as :math:`mod-1`. Hence, we need at least
-        :math:`\lceil \log_2(mod)\rceil` ``x_wires``
-        to represent all the possible results. Since :math:`x < mod` by definition, we just need at least :math:`\lceil \log_2(mod)\rceil` ``x_wires``.
+        The first one is ``x_wires``, used to encode the integer :math:`x < \text{mod}` in the Fourier basis.
+        To represent :math:`x`, we need at least :math:`\lceil \log_2(x) \rceil` ``x_wires``.
+        After the modular addition, the result can be as large as :math:`\text{mod} - 1`,
+        requiring at least :math:`\lceil \log_2(\text{mod}) \rceil` ``x_wires``. Since :math:`x < \text{mod}`, we
+        simply need :math:`\lceil \log_2(\text{mod}) \rceil` ``x_wires`` to cover all possible inputs and outputs.
         An exception occur when :math:`mod \neq 2^{\text{len(x_wires)}}`. In that case we will need one extra wire in ``x_wires`` to correctly perform the phase
         addition operation.
 

@@ -41,7 +41,7 @@ class OutAdder(Operation):
 
     .. note::
 
-        :math:`x` and :math:`y` must be smaller than :math:`mod` to get the correct result.
+        To obtain the correct result, :math:`x` and :math:`y` must be smaller than :math:`mod`.
 
     .. seealso:: :class:`~.PhaseAdder` and :class:`~.Adder`.
 
@@ -106,6 +106,7 @@ class OutAdder(Operation):
         - If :math:`mod = 2^{\text{len(output_wires)}}`, there will be no need for ``work_wires``, hence ``work_wires=None``. This is the case by default.
 
         - If :math:`mod \neq 2^{\text{len(output_wires)}}`, two ``work_wires`` have to be provided.
+
         Note that the OutAdder template allows us to perform modular addition in the computational basis. However if one just wants to perform standard addition (with no modulo),
         that would be equivalent to setting the modulo :math:`mod` to a large enough value to ensure that :math:`x+k < mod`.
     """

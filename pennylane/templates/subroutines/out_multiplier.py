@@ -40,7 +40,7 @@ class OutMultiplier(Operation):
 
     .. note::
 
-        :math:`x` and :math:`y` must be smaller than :math:`mod` to get the correct result.
+        To obtain the correct result, :math:`x` and :math:`y` must be smaller than :math:`mod`.
 
     .. seealso:: :class:`~.PhaseAdder` and :class:`~.Multiplier`.
 

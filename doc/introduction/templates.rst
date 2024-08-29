@@ -127,7 +127,7 @@ state preparation is typically used as the first operation.
 Arithmetic templates
 --------------------
 
-Quantum arithmetic templates to perform in-place and out-place modular operations such 
+Quantum arithmetic templates enable in-place and out-place modular operations such 
 as addition, multiplication and exponentiation.
 
 .. gallery-item::
