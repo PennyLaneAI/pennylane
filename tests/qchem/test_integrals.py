@@ -835,12 +835,12 @@ class TestRepulsion:
         basis_b = mol.basis_set[1]
         args = [mol.alpha, mol.coeff]
 
-        g_alpha = qml.grad(qchem.repulsion_integral(basis_a, basis_b, basis_a, basis_b), argnum=[0])(
-            *args
-        )
-        g_coeff = qml.grad(qchem.repulsion_integral(basis_a, basis_b, basis_a, basis_b), argnum=[1])(
-            *args
-        )
+        g_alpha = qml.grad(
+            qchem.repulsion_integral(basis_a, basis_b, basis_a, basis_b), argnum=[0]
+        )(*args)
+        g_coeff = qml.grad(
+            qchem.repulsion_integral(basis_a, basis_b, basis_a, basis_b), argnum=[1]
+        )(*args)
 
         # compute repulsion gradients with respect to alpha and coeff using finite diff
         delta = 0.0001
