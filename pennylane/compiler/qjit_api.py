@@ -17,8 +17,8 @@ import functools
 from collections.abc import Callable
 
 import pennylane as qml
+from pennylane.capture.capture_diff import create_non_jvp_primitive
 from pennylane.capture.flatfn import FlatFn
-from pennylane.capture.primitives import create_non_jvp_primitive
 
 from .compiler import (
     AvailableCompilers,

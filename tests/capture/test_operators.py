@@ -21,7 +21,7 @@ import pennylane as qml
 
 jax = pytest.importorskip("jax")
 
-from pennylane.capture import AbstractOperator  # pylint: disable=wrong-import-position
+from pennylane.capture.primitives import AbstractOperator  # pylint: disable=wrong-import-position
 
 pytestmark = pytest.mark.jax
 

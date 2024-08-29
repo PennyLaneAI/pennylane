@@ -1,3 +1,16 @@
+# Copyright 2018-2024 Xanadu Quantum Technologies Inc.
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 """Transform to diagonalize measurements on a tape, assuming all measurements are commuting."""
 
 from copy import copy
@@ -30,10 +43,10 @@ def diagonalize_measurements(tape, supported_base_obs=_default_supported_obs):
     Args:
         tape (QNode or QuantumScript or Callable): The quantum circuit to modify the measurements of.
         supported_base_obs (Optional, Iterable(Observable)): A list of supported base observable classes.
-            Allowed observables are X, Y, Z, Hadamarda and Identity. Z and Identity are always treated
-            as supported, regardless of input. If no list is provided, the transform will diagonalize
-            everything into the Z basis. If a list is provided, only unsupported observables will be
-            diagonalized to the Z basis.
+            Allowed observables are ``qml.X``, ``qml.Y``, ``qml.Z``, ``qml.Hadamard`` and ``qml.Identity``.
+            Z and Identity are always treated as supported, regardless of input. If no list is provided,
+            the transform will diagonalize everything into the Z basis. If a list is provided, only
+            unsupported observables will be diagonalized to the Z basis.
 
     Returns:
         qnode (QNode) or tuple[List[QuantumScript], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.

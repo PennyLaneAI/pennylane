@@ -29,6 +29,9 @@ pytestmark = pytest.mark.jax
 
 jax = pytest.importorskip("jax")
 
+# must be below jax importorskip
+from pennylane.capture.primitives import for_loop_prim  # pylint: disable=wrong-import-position
+
 
 @pytest.fixture(autouse=True)
 def enable_disable_plxpr():
@@ -61,6 +64,7 @@ class TestCaptureForLoop:
         assert np.allclose(result, expected), f"Expected {expected}, but got {result}"
 
         jaxpr = jax.make_jaxpr(fn)(array)
+        assert jaxpr.eqns[1].primitive == for_loop_prim
         res_ev_jxpr = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, array)
         assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
 

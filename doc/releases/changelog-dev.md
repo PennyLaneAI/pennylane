@@ -13,6 +13,10 @@
   which differs from the Autograd implementation of `qml.grad` itself.
   [(#6120)](https://github.com/PennyLaneAI/pennylane/pull/6120)
 
+* Some custom primitives for the capture project can now be imported via
+  `from pennylane.capture.primitives import *`.
+  [(#6129)](https://github.com/PennyLaneAI/pennylane/pull/6129)
+
 <h3>Breaking changes 💔</h3>
 
 <h3>Deprecations 👋</h3>
@@ -27,5 +31,7 @@
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
-Jack Brown,
-David Wierichs,
+
+Jack Brown
+Christina Lee
+David Wierichs
