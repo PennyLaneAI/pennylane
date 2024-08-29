@@ -41,7 +41,7 @@ class Multiplier(Operation):
 
     .. math::
 
-        \text{Multiplier}(k,mod) |x \rangle = | x \cdot k \; (mod) \rangle.
+        \text{Multiplier}(k,mod) |x \rangle = | x \cdot k \; \text{mod} \; mod \rangle.
 
     This operation can be represented in a quantum circuit as:
 
@@ -111,7 +111,7 @@ class Multiplier(Operation):
         Note that the Multiplier template allows us to perform modular multiplication in the computational basis. However if one just want to perform standard multiplication (with no modulo),
         that would be equivalent to setting the modulo :math:`mod` to a large enough value to ensure that :math:`x \cdot k < mod`.
 
-        Also, to perform the in-place multiplication operator it is required that :math:`k` has inverse, :math:`k^{-1} (mod)`. That means
+        Also, to perform the in-place multiplication operator it is required that :math:`k` has inverse, :math:`k^{-1} \; \text{mod} \; mod`. That means
         :math:`k \cdot k^{-1}` modulo :math:`mod` is equal to 1, which will only be possible if :math:`k` and
         :math:`mod` are coprime. In other words, :math:`k` and :math:`mod` should not have any common factors other than 1.
     """

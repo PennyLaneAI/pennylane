@@ -26,7 +26,7 @@ class ModExp(Operation):
 
     .. math::
 
-        \text{ModExp}(base,mod) |x \rangle |b \rangle = |x \rangle |b \cdot base^x \; (mod) \rangle,
+        \text{ModExp}(base,mod) |x \rangle |b \rangle = |x \rangle |b \cdot base^x \; \text{mod} \; mod \rangle,
 
     The implementation is based on the quantum Fourier transform method presented in
     `arXiv:2311.08555 <https://arxiv.org/abs/2311.08555>`_.
@@ -87,9 +87,9 @@ class ModExp(Operation):
         :math:`\lceil \log_2(x)\rceil` ``x_wires`` to represent :math:`x`.
 
         The second one is ``output_wires`` which is used
-        to encode the integer :math:`b \cdot base^x \; (mod)` in the computational basis. Therefore, we need at least
-        :math:`\lceil \log_2(mod)\rceil` ``output_wires`` to represent :math:`b \cdot base^x \; (mod)`. Note that these wires can be initialized with any integer
-        :math:`b`, but the most common choice is :math:`b=1` to obtain as a final result :math:`base^x \; (mod)`.
+        to encode the integer :math:`b \cdot base^x \; \text{mod} \; mod` in the computational basis. Therefore, we need at least
+        :math:`\lceil \log_2(mod)\rceil` ``output_wires`` to represent :math:`b \cdot base^x \; \text{mod} \; mod`. Note that these wires can be initialized with any integer
+        :math:`b`, but the most common choice is :math:`b=1` to obtain as a final result :math:`base^x \; \text{mod} \; mod`.
 
         The third set of wires is ``work_wires`` which consist of the auxiliary qubits used to perform the modular exponentiation operation.
 
@@ -100,7 +100,7 @@ class ModExp(Operation):
         Note that the ``ModExp`` template allows us to perform modular exponentiation in the computational basis. However if one just wants to perform standard exponentiation (with no modulo),
         that would be equivalent to setting the modulo :math:`mod` to a large enough value to ensure that :math:`base^x < mod`.
 
-        Also, to perform the out-place modular exponentiation operator it is required that :math:`base` has inverse, :math:`base^{-1} (mod)`. That means
+        Also, to perform the out-place modular exponentiation operator it is required that :math:`base` has inverse, :math:`base^{-1} \; \text{mod} \; mod`. That means
         :math:`base \cdot base^{-1}` modulo :math:`mod` is equal to 1, which will only be possible if :math:`base` and
         :math:`mod` are coprime. In other words, :math:`base` and :math:`mod` should not have any common factors other than 1.
     """

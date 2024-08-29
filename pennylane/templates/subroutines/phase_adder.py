@@ -37,7 +37,7 @@ class PhaseAdder(Operation):
 
     .. math::
 
-        \text{PhaseAdder}(k,mod) |\phi (x) \rangle = |\phi (x+k \; (mod)) \rangle,
+        \text{PhaseAdder}(k,mod) |\phi (x) \rangle = |\phi (x+k \; \text{mod} \; mod) \rangle,
 
     where :math:`|\phi (x) \rangle` represents the :math:`| x \rangle` state in the Fourier basis,
 

@@ -26,7 +26,7 @@ class OutMultiplier(Operation):
     :math:`mod` in the computational basis:
 
     .. math::
-        \text{OutMultiplier}(mod) |x \rangle |y \rangle |b \rangle = |x \rangle |y \rangle |b + x \cdot y \; (mod) \rangle,
+        \text{OutMultiplier}(mod) |x \rangle |y \rangle |b \rangle = |x \rangle |y \rangle |b + x \cdot y \; \text{mod} \; mod \rangle,
 
     The implementation is based on the quantum Fourier transform method presented in
     `arXiv:2311.08555 <https://arxiv.org/abs/2311.08555>`_.
@@ -89,9 +89,9 @@ class OutMultiplier(Operation):
         :math:`\lceil \log_2(y)\rceil` ``y_wires`` to represent :math:`y`.
 
         The third one is ``output_wires`` which is used
-        to encode the integer :math:`b+ x \cdot y \; (mod)` in the computational basis. Therefore, we need at least
-        :math:`\lceil \log_2(mod)\rceil` ``output_wires`` to represent :math:`b + x \cdot y \; (mod)`.  Note that these wires can be initialized with any integer
-        :math:`b`, but the most common choice is :math:`b=0` to obtain as a final result :math:`x \cdot y \; (mod)`.
+        to encode the integer :math:`b+ x \cdot y \; \text{mod} \; mod` in the computational basis. Therefore, we need at least
+        :math:`\lceil \log_2(mod)\rceil` ``output_wires`` to represent :math:`b + x \cdot y \; \text{mod} \; mod`.  Note that these wires can be initialized with any integer
+        :math:`b`, but the most common choice is :math:`b=0` to obtain as a final result :math:`x \cdot y \; \text{mod} \; mod`.
 
         The fourth set of wires is ``work_wires`` which consist of the auxiliary qubits used to perform the modular multiplication operation.
 

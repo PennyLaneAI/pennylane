@@ -27,7 +27,7 @@ class Adder(Operation):
 
     .. math::
 
-        \text{Adder}(k, mod) |x \rangle = | x+k \; (mod) \rangle.
+        \text{Adder}(k, mod) |x \rangle = | x+k \; \text{mod} \; mod \rangle.
 
     The implementation is based on the quantum Fourier transform method presented in
     `arXiv:2311.08555 <https://arxiv.org/abs/2311.08555>`_.
