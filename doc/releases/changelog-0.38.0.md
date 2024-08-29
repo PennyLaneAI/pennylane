@@ -382,6 +382,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Bypass `split_non_commuting` in legacy devices when the transform yields more tapes than measurements and all observables are supported.
+  [(#6183)](https://github.com/PennyLaneAI/pennylane/pull/6183)
+
 * `qml.transforms.pattern_matching_optimization` now preserves the tape measurements.
   [(#6153)](https://github.com/PennyLaneAI/pennylane/pull/6153)
 
