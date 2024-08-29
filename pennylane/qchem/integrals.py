@@ -142,14 +142,11 @@ def _generate_params(params, args, argnum=None):
     Returns:
         list(array[float]): basis set parameters
     """
-
-    argbools = [i in (argnum if isinstance(argnum, list) else [argnum]) for i in range(3)]
-
     basis_params = []
     c = 0
     for i, p in enumerate(params):
         # we iterate through argnum backwards because params order goes [alpha, coeff, r]
-        if getattr(p, "requires_grad", False) or argbools[2 - i]:
+        if getattr(p, "requires_grad", False) or 2 - i in argnum:
             basis_params.append(args[c])
             c += 1
         else:
@@ -316,15 +313,12 @@ def overlap_integral(basis_a, basis_b, argnum=None, normalize=True):
         Returns:
             array[float]: the overlap integral between two contracted Gaussian orbitals
         """
-
-        argbools = [i in (argnum if isinstance(argnum, list) else [argnum]) for i in range(3)]
-
         args_a = [arg[0] for arg in args]
         args_b = [arg[1] for arg in args]
         alpha, ca, ra = _generate_params(basis_a.params, args_a, argnum)
         beta, cb, rb = _generate_params(basis_b.params, args_b, argnum)
 
-        if getattr(basis_a.params[1], "requires_grad", False) or normalize or argbools[1]:
+        if getattr(basis_a.params[1], "requires_grad", False) or normalize or 1 in argnum:
             ca = ca * primitive_norm(basis_a.l, alpha)
             cb = cb * primitive_norm(basis_b.l, beta)
             na = contracted_norm(basis_a.l, alpha, ca)
@@ -515,8 +509,6 @@ def moment_integral(basis_a, basis_b, order, idx, argnum=None, normalize=True):
         Returns:
             array[float]: the multipole moment integral between two contracted Gaussian orbitals
         """
-        argbools = [i in (argnum if isinstance(argnum, list) else [argnum]) for i in range(3)]
-
         args_a = [arg[0] for arg in args]
         args_b = [arg[1] for arg in args]
 
@@ -526,7 +518,7 @@ def moment_integral(basis_a, basis_b, order, idx, argnum=None, normalize=True):
         alpha, ca, ra = _generate_params(basis_a.params, args_a, argnum)
         beta, cb, rb = _generate_params(basis_b.params, args_b, argnum)
 
-        if getattr(basis_a.params[1], "requires_grad", False) or normalize or argbools[1]:
+        if getattr(basis_a.params[1], "requires_grad", False) or normalize or 1 in argnum:
             ca = ca * primitive_norm(basis_a.l, alpha)
             cb = cb * primitive_norm(basis_b.l, beta)
             na = contracted_norm(basis_a.l, alpha, ca)
@@ -696,14 +688,13 @@ def kinetic_integral(basis_a, basis_b, argnum=None, normalize=True):
         Returns:
             array[float]: the kinetic integral between two contracted Gaussian orbitals
         """
-        argbools = [i in (argnum if isinstance(argnum, list) else [argnum]) for i in range(3)]
 
         args_a = [arg[0] for arg in args]
         args_b = [arg[1] for arg in args]
         alpha, ca, ra = _generate_params(basis_a.params, args_a, argnum)
         beta, cb, rb = _generate_params(basis_b.params, args_b, argnum)
 
-        if getattr(basis_a.params[1], "requires_grad", False) or argbools[1] or normalize:
+        if getattr(basis_a.params[1], "requires_grad", False) or 1 in argnum or normalize:
             ca = ca * primitive_norm(basis_a.l, alpha)
             cb = cb * primitive_norm(basis_b.l, beta)
             na = contracted_norm(basis_a.l, alpha, ca)
@@ -910,9 +901,7 @@ def attraction_integral(r, basis_a, basis_b, argnum=None, normalize=True):
         Returns:
             array[float]: the electron-nuclear attraction integral
         """
-        argbools = [i in (argnum if isinstance(argnum, list) else [argnum]) for i in range(3)]
-
-        if getattr(r, "requires_grad", False) or argbools[0]:
+        if getattr(r, "requires_grad", False) or 0 in argnum:
             coor = args[0]
             args_a = [arg[0] for arg in args[1:]]
             args_b = [arg[1] for arg in args[1:]]
@@ -924,7 +913,7 @@ def attraction_integral(r, basis_a, basis_b, argnum=None, normalize=True):
         alpha, ca, ra = _generate_params(basis_a.params, args_a, argnum)
         beta, cb, rb = _generate_params(basis_b.params, args_b, argnum)
 
-        if getattr(basis_a.params[1], "requires_grad", False) or normalize or argbools[1]:
+        if getattr(basis_a.params[1], "requires_grad", False) or normalize or 1 in argnum:
             ca = ca * primitive_norm(basis_a.l, alpha)
             cb = cb * primitive_norm(basis_b.l, beta)
             na = contracted_norm(basis_a.l, alpha, ca)
@@ -1066,8 +1055,6 @@ def repulsion_integral(basis_a, basis_b, basis_c, basis_d, argnum=None, normaliz
         Returns:
             array[float]: the electron repulsion integral between four contracted Gaussian functions
         """
-        argbools = [i in (argnum if isinstance(argnum, list) else [argnum]) for i in range(3)]
-
         args_a = [arg[0] for arg in args]
         args_b = [arg[1] for arg in args]
         args_c = [arg[2] for arg in args]
@@ -1078,7 +1065,7 @@ def repulsion_integral(basis_a, basis_b, basis_c, basis_d, argnum=None, normaliz
         gamma, cc, rc = _generate_params(basis_c.params, args_c, argnum)
         delta, cd, rd = _generate_params(basis_d.params, args_d, argnum)
 
-        if getattr(basis_a.params[1], "requires_grad", False) or normalize or argbools[1]:
+        if getattr(basis_a.params[1], "requires_grad", False) or normalize or 1 in argnum:
             ca = ca * primitive_norm(basis_a.l, alpha)
             cb = cb * primitive_norm(basis_b.l, beta)
             cc = cc * primitive_norm(basis_c.l, gamma)

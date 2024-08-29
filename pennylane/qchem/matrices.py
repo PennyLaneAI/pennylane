@@ -257,8 +257,6 @@ def attraction_matrix(basis_functions, charges, r, argnum=None):
         Returns:
             array[array[float]]: the electron-nuclear attraction matrix
         """
-        argbools = [i in (argnum if isinstance(argnum, list) else [argnum]) for i in range(3)]
-
         n = len(basis_functions)
         matrix = qml.math.zeros((n, n))
         for (i, a), (j, b) in it.combinations_with_replacement(enumerate(basis_functions), r=2):
@@ -266,18 +264,18 @@ def attraction_matrix(basis_functions, charges, r, argnum=None):
             if args:
                 args_ab = []
 
-                if getattr(r, "requires_grad", False) or argbools[0]:
+                if getattr(r, "requires_grad", False) or 0 in argnum:
                     args_ab.extend([arg[i], arg[j]] for arg in args[1:])
                 else:
                     args_ab.extend([arg[i], arg[j]] for arg in args)
 
                 for k, c in enumerate(r):
-                    if getattr(c, "requires_grad", False) or argbools[0]:
+                    if getattr(c, "requires_grad", False) or 0 in argnum:
                         args_ab = [args[0][k]] + args_ab
                     integral = integral - charges[k] * attraction_integral(
                         c, a, b, argnum, normalize=False
                     )(*args_ab)
-                    if getattr(c, "requires_grad", False) or argbools[0]:
+                    if getattr(c, "requires_grad", False) or 0 in argnum:
                         args_ab = args_ab[1:]
             else:
                 for k, c in enumerate(r):
@@ -406,9 +404,7 @@ def core_matrix(basis_functions, charges, r, argnum=None):
         Returns:
             array[array[float]]: the core matrix
         """
-        argbools = [i in (argnum if isinstance(argnum, list) else [argnum]) for i in range(3)]
-
-        if getattr(r, "requires_grad", False) or argbools[0]:
+        if getattr(r, "requires_grad", False) or 0 in argnum:
             t = kinetic_matrix(basis_functions, argnum)(*args[1:])
         else:
             t = kinetic_matrix(basis_functions, argnum)(*args)
