@@ -42,7 +42,7 @@ def transverse_ising(
         lattice (str): Shape of the lattice. Input values can be ``'chain'``, ``'square'``,
             ``'rectangle'``, ``'honeycomb'``, ``'triangle'``, or ``'kagome'``.
         n_cells (List[int]): Number of cells in each direction of the grid.
-        coupling (float or List[float] or List[math.array[float]]): Coupling between spins, it can
+        coupling (float or List[float] or List[math.array[float]]): Coupling between spins. It can
             be a number, a list of length equal to ``neighbour_order`` or a square matrix of shape
             ``(num_spins,  num_spins)``, where ``num_spins`` is the total number of spins. Default
             value is 1.0.
@@ -53,7 +53,7 @@ def transverse_ising(
             Default is 1, indicating nearest neighbours.
 
     Returns:
-        ~ops.op_math.Sum: Hamiltonian for the transverse-field ising model.
+        ~ops.op_math.Sum: Hamiltonian for the transverse-field Ising model.
 
     **Example**
 
@@ -62,6 +62,7 @@ def transverse_ising(
     >>> h = 0.1
     >>> spin_ham = qml.spin.transverse_ising("square", n_cells, coupling=j, h=h)
     >>> spin_ham
+    (
     -0.5 * (Z(0) @ Z(1))
     + -0.5 * (Z(0) @ Z(2))
     + -0.5 * (Z(1) @ Z(3))
@@ -70,7 +71,7 @@ def transverse_ising(
     + -0.1 * X(1)
     + -0.1 * X(2)
     + -0.1 * X(3)
-
+    )
     """
     lattice = _generate_lattice(lattice, n_cells, boundary_condition, neighbour_order)
 
@@ -116,7 +117,7 @@ def heisenberg(lattice, n_cells, coupling=None, boundary_condition=False, neighb
         lattice (str): Shape of the lattice. Input values can be ``'chain'``, ``'square'``,
             ``'rectangle'``, ``'honeycomb'``, ``'triangle'``, or ``'kagome'``.
         n_cells (List[int]): Number of cells in each direction of the grid.
-        coupling (List[List[float]] or List[math.array[float]]): Coupling between spins, it can be a
+        coupling (List[List[float]] or List[math.array[float]]): Coupling between spins. It can be a
             2D array of shape ``(neighbour_order, 3)`` or a 3D array of shape
             ``(3, num_spins, num_spins)``, where ``num_spins`` is the total number of spins.
         boundary_condition (bool or list[bool]): Defines boundary conditions for different lattice
@@ -214,7 +215,7 @@ def fermi_hubbard(
             neighbouring sites, it can be a number, a list of length equal to ``neighbour_order`` or
             a square matrix of size ``(num_spins, num_spins)``, where ``num_spins`` is the total
             number of spins. Default value is 1.0.
-        coulomb (float or List[float]): Coulomb interaction between spins, it can be a constant or a
+        coulomb (float or List[float]): Coulomb interaction between spins. It can be a constant or a
             list of length equal to number of spins.
         boundary_condition (bool or list[bool]): Defines boundary conditions for different lattice
             axes, default is ``False`` indicating open boundary condition.
@@ -233,6 +234,7 @@ def fermi_hubbard(
     >>> u = 1.0
     >>> spin_ham = qml.spin.fermi_hubbard("chain", n_cells, hopping=h, coulomb=u)
     >>> spin_ham
+    (
     -0.25 * (Y(0) @ Z(1) @ Y(2))
     + -0.25 * (X(0) @ Z(1) @ X(2))
     + 0.5 * I(0)
@@ -244,7 +246,7 @@ def fermi_hubbard(
     + -0.25 * Z(3)
     + -0.25 * Z(2)
     + 0.25 * (Z(2) @ Z(3))
-
+    )
     """
 
     lattice = _generate_lattice(lattice, n_cells, boundary_condition, neighbour_order)
