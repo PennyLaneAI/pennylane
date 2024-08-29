@@ -21,7 +21,7 @@ import pennylane as qml
 
 jax = pytest.importorskip("jax")
 
-from pennylane.capture import AbstractOperator  # pylint: disable=wrong-import-position
+from pennylane.capture.primitives import AbstractOperator  # pylint: disable=wrong-import-position
 
 pytestmark = pytest.mark.jax
 
@@ -196,8 +196,7 @@ def test_parametrized_op():
 def test_parametrized_op_jvp_tracer():
     """Test that passing a JVP tracer to a parametrized op just creates
     the op with the tracer as argument(s)."""
-
-    from pennylane.capture import create_grad_primitive
+    from pennylane.capture.primitives import grad_prim
 
     def func(x):
         qml.RX(x, 0)
@@ -205,7 +204,7 @@ def test_parametrized_op_jvp_tracer():
 
     jaxpr = jax.make_jaxpr(qml.grad(func))(0.5)
     assert len(jaxpr.eqns) == 1
-    assert jaxpr.eqns[0].primitive == create_grad_primitive()
+    assert jaxpr.eqns[0].primitive == grad_prim
 
     with qml.queuing.AnnotatedQueue() as q:
         jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0.5)

@@ -16,12 +16,12 @@ Contains the condition transform.
 """
 import functools
 from functools import wraps
-from typing import Callable, Optional, Type
+from typing import Callable, Optional, Sequence, Type
 
 import pennylane as qml
 from pennylane import QueuingManager
+from pennylane.capture.capture_diff import create_non_jvp_primitive
 from pennylane.capture.flatfn import FlatFn
-from pennylane.capture.primitives import create_non_jvp_primitive
 from pennylane.compiler import compiler
 from pennylane.measurements import MeasurementValue
 from pennylane.operation import AnyWires, Operation, Operator
@@ -275,7 +275,9 @@ class CondCallable:  # pylint:disable=too-few-public-methods
         return self.__call_capture_disabled(*args, **kwargs)
 
 
-def cond(condition, true_fn: Callable = None, false_fn: Optional[Callable] = None, elifs=()):
+def cond(
+    condition, true_fn: Callable = None, false_fn: Optional[Callable] = None, elifs: Sequence = ()
+):
     """Quantum-compatible if-else conditionals --- condition quantum operations
     on parameters such as the results of mid-circuit qubit measurements.
 
@@ -304,7 +306,7 @@ def cond(condition, true_fn: Callable = None, false_fn: Optional[Callable] = Non
 
     .. note::
 
-        When used with :func:`~.pennylane.capture.enabled`, this function allows for general
+        When used with :func:`.pennylane.capture.enabled`, this function allows for general
         if-elif-else constructs. As with the JIT mode, all branches are captured,
         with the executed branch determined at runtime.
 
@@ -318,7 +320,7 @@ def cond(condition, true_fn: Callable = None, false_fn: Optional[Callable] = Non
             apply if ``condition`` is ``True``
         false_fn (callable): The quantum function or PennyLane operation to
             apply if ``condition`` is ``False``
-        elifs (List(Tuple(bool, callable))): A list of (bool, elif_fn) clauses. Can only
+        elifs (Sequence(Tuple(bool, callable))): A sequence of (bool, elif_fn) clauses. Can only
             be used when decorated by :func:`~.qjit` or if the condition is not
             a mid-circuit measurement.
 
@@ -346,8 +348,8 @@ def cond(condition, true_fn: Callable = None, false_fn: Optional[Callable] = Non
 
     .. code-block :: pycon
 
-        >>> first_par = np.array(0.3, requires_grad=True)
-        >>> sec_par = np.array(1.23, requires_grad=True)
+        >>> first_par = np.array(0.3)
+        >>> sec_par = np.array(1.23)
         >>> qnode(first_par, sec_par)
         tensor(0.32677361, requires_grad=True)
 
@@ -386,9 +388,9 @@ def cond(condition, true_fn: Callable = None, false_fn: Optional[Callable] = Non
             return qml.expval(qml.Z(0))
 
     >>> circuit(1.4)
-    array(0.16996714)
+    Array(0.16996714, dtype=float64)
     >>> circuit(1.6)
-    array(0.)
+    Array(0., dtype=float64)
 
     Additional 'else-if' clauses can also be included via the ``elif`` argument:
 
@@ -411,7 +413,13 @@ def cond(condition, true_fn: Callable = None, false_fn: Optional[Callable] = Non
             return qml.expval(qml.Z(0))
 
     >>> circuit(1.2)
-    array(0.13042371)
+    Array(0.13042371, dtype=float64)
+
+    .. note::
+
+        If the above syntax is used with a ``QNode`` that is not decorated with
+        :func:`~pennylane.qjit` and none of the predicates contain mid-circuit measurements,
+        ``qml.cond`` will fall back to using native Python ``if``-``elif``-``else`` blocks.
 
     .. details::
         :title: Usage Details
@@ -437,7 +445,7 @@ def cond(condition, true_fn: Callable = None, false_fn: Optional[Callable] = Non
 
         .. code-block :: pycon
 
-            >>> par = np.array(0.3, requires_grad=True)
+            >>> par = np.array(0.3)
             >>> qnode(par)
             tensor(0.3522399, requires_grad=True)
 
@@ -492,7 +500,7 @@ def cond(condition, true_fn: Callable = None, false_fn: Optional[Callable] = Non
 
         .. code-block :: pycon
 
-            >>> par = np.array(0.3, requires_grad=True)
+            >>> par = np.array(0.3)
             >>> qnode1(par)
             tensor(-0.1477601, requires_grad=True)
 
@@ -542,10 +550,10 @@ def cond(condition, true_fn: Callable = None, false_fn: Optional[Callable] = Non
 
         .. code-block :: pycon
 
-            >>> par = np.array(0.3, requires_grad=True)
-            >>> x = np.array(1.2, requires_grad=True)
-            >>> y = np.array(1.1, requires_grad=True)
-            >>> z = np.array(0.3, requires_grad=True)
+            >>> par = np.array(0.3)
+            >>> x = np.array(1.2)
+            >>> y = np.array(1.1)
+            >>> z = np.array(0.3)
             >>> qnode(par, x, y, z)
             tensor(-0.30922805, requires_grad=True)
     """
