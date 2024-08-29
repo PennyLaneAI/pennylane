@@ -37,28 +37,37 @@ class PhaseAdder(Operation):
 
     .. math::
 
-         \text{PhaseAdder}(k,mod) |\phi (x) \rangle = |\phi (x+k \; \text{modulo} \; mod) \rangle,
+        \text{PhaseAdder}(k,mod) |\phi (x) \rangle = |\phi (x+k \; (mod)) \rangle,
 
-    where :math:`|\phi (x) \rangle` represents the :math:`| x \rangle` : state in the Fourier basis,
+    where :math:`|\phi (x) \rangle` represents the :math:`| x \rangle` state in the Fourier basis,
 
-     .. math::
+    .. math::
 
-         \text{QFT} |x \rangle = |\phi (x) \rangle.
+        \text{QFT} |x \rangle = |\phi (x) \rangle.
+
+    This operation can be represented in a quantum circuit as:
+
+    .. figure:: ../../_static/templates/arithmetic/phaseadder.png
+        :align: center
+        :width: 60%
+        :target: javascript:void(0);
 
     The implementation is based on the quantum Fourier transform method presented in
     `arXiv:2311.08555 <https://arxiv.org/abs/2311.08555>`_.
 
     .. note::
 
-        Note that :math:`x` must be smaller than :math:`mod` to get the correct result. Also, when
-        :math:`mod \neq 2^{\text{len(x\_wires)}}` we need :math:`x < 2^{\text{len(x\_wires)}}/2`,
+        :math:`x` must be smaller than :math:`mod` to get the correct result. Also, when
+        :math:`mod \neq 2^{\text{len(x_wires)}}` we need :math:`x < 2^{\text{len(x_wires)}-1}`,
         which means that we need one extra wire in ``x_wires``.
+
+    .. seealso:: :class:`~.QFT` and :class:`~.Adder`.
 
     Args:
         k (int): the number that needs to be added
         x_wires (Sequence[int]): the wires the operation acts on
-        mod (int): the modulus for performing the addition, default value is :math:`2^{len(x\_wires)}`
-        work_wire (Sequence[int]): the auxiliary wire to be used for performing the addition
+        mod (int): the modulo for performing the addition, default value is :math:`2^{\text{len(x_wires)}}`
+        work_wire (Sequence[int]): the auxiliary wire to be used for performing the addition when :math:`mod \neq 2^{\text{len(x_wires)}}`
 
     **Example**
 
@@ -75,7 +84,7 @@ class PhaseAdder(Operation):
 
         dev = qml.device("default.qubit", shots=1)
         @qml.qnode(dev)
-        def circuit(x, k, mod, x_wires, work_wire):
+        def circuit():
             qml.BasisEmbedding(x, wires=x_wires)
             qml.QFT(wires=x_wires)
             qml.PhaseAdder(k, x_wires, mod, work_wire)
@@ -84,11 +93,34 @@ class PhaseAdder(Operation):
 
     .. code-block:: pycon
 
-        >>> print(circuit(x, k, mod, x_wires, work_wire))
+        >>> print(circuit())
         [1 1 0 1]
 
-    The result, :math:`[1 1 0 1]`, is the ket representation of
-    :math:`8 + 5  \, \text{modulo} \, 15 = 13`.
+    The result, :math:`[1 1 0 1]`, is the binary representation of
+    :math:`8 + 5  \; \text{modulo} \; 15 = 13`.
+
+    .. details::
+        :title: Usage Details
+
+        This template takes as input two different sets of wires.
+
+        The first one is ``x_wires`` which is used
+        to encode the integer :math:`x < mod` in the Fourier basis. Therefore, we need at least
+        :math:`\lceil \log_2(x)\rceil` ``x_wires`` to represent :math:`x`. After performing the modular addition operation, the resulting integer
+        encoded in the Fourier basis can be as large as :math:`mod-1`. Hence, we need at least
+        :math:`\lceil \log_2(mod)\rceil` ``x_wires``
+        to represent all the possible results. Since :math:`x < mod` by definition, we just need at least :math:`\lceil \log_2(mod)\rceil` ``x_wires``.
+        An exception occur when :math:`mod \neq 2^{\text{len(x_wires)}}`. In that case we will need one extra wire in ``x_wires`` to correctly perform the phase
+        addition operation.
+
+        The second set of wires is ``work_wire`` which consist of the auxiliary qubit used to perform the modular phase addition operation.
+
+        - If :math:`mod = 2^{\text{len(x_wires)}}`, there will be no need for ``work_wire``, hence ``work_wire=None``. This is the case by default.
+
+        - If :math:`mod \neq 2^{\text{len(x_wires)}}`, one ``work_wire`` has to be provided.
+
+        Note that the ``PhaseAdder`` template allows us to perform modular addition in the Fourier basis. However if one just wants to perform standard addition (with no modulo),
+        that would be equivalent to setting the modulo :math:`mod` to a large enough value to ensure that :math:`x+k < mod`.
     """
 
     grad_method = None
@@ -153,11 +185,13 @@ class PhaseAdder(Operation):
     @staticmethod
     def compute_decomposition(k, x_wires, mod, work_wire):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators.
+
         Args:
             k (int): the number that needs to be added
             x_wires (Sequence[int]): the wires the operation acts on
-            mod (int): the modulus for performing the addition, default value is :math:`2^{len(x_wires)}`
+            mod (int): the modulo for performing the addition, default value is :math:`2^{\text{len(x_wires)}}`
             work_wire (Sequence[int]): the auxiliary wire to be used for performing the addition
+                when :math:`mod \neq 2^{\text{len(x_wires)}}`
         Returns:
             list[.Operator]: Decomposition of the operator
 
