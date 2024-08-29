@@ -134,7 +134,10 @@ def _generate_params(params, args, argnum=None):
     Args:
         params (list(array[float])): default values of the basis set parameters
         args (list(array[float])): initial values of the differentiable basis set parameters
-        argnum (int, list(int), None): differentiability of coords, coeffs, and alpha (in that order)
+        argnum (int | list(int) | None): index (indices) of the positional argument(s) -
+        [``coordinates``, ``coeff``, ``alpha``] that should support differentiation. For example,
+        ``argnums=[0, 2]`` would mean derivatives can be computed with respect to both
+        ``coordinates`` and ``coeff``.
 
     Returns:
         list(array[float]): basis set parameters
@@ -285,7 +288,10 @@ def overlap_integral(basis_a, basis_b, argnum=None, normalize=True):
     Args:
         basis_a (~qchem.basis_set.BasisFunction): first basis function
         basis_b (~qchem.basis_set.BasisFunction): second basis function
-        argnum (int, list(int), None): differentiability of coords, coeffs, and alpha (in that order)
+        argnum (int | list(int) | None): index (indices) of the positional argument(s) -
+        [``coordinates``, ``coeff``, ``alpha``] that should support differentiation. For example,
+        ``argnums=[0, 2]`` would mean derivatives can be computed with respect to both
+        ``coordinates`` and ``coeff``.
         normalize (bool): if True, the basis functions get normalized
 
     Returns:
@@ -480,7 +486,10 @@ def moment_integral(basis_a, basis_b, order, idx, argnum=None, normalize=True):
         basis_b (~qchem.basis_set.BasisFunction): right basis function
         order (integer): exponent of the position component
         idx (integer): index determining the dimension of the multipole moment integral
-        argnum (int, list(int), None): differentiability of coords, coeffs, and alpha (in that order)
+        argnum (int | list(int) | None): index (indices) of the positional argument(s) -
+        [``coordinates``, ``coeff``, ``alpha``] that should support differentiation. For example,
+        ``argnums=[0, 2]`` would mean derivatives can be computed with respect to both
+        ``coordinates`` and ``coeff``.
         normalize (bool): if True, the basis functions get normalized
 
     Returns:
@@ -658,7 +667,10 @@ def kinetic_integral(basis_a, basis_b, argnum=None, normalize=True):
         basis_a (~qchem.basis_set.BasisFunction): first basis function
         basis_b (~qchem.basis_set.BasisFunction): second basis function
         normalize (bool): if True, the basis functions get normalized
-        argnum (int, list(int), None): differentiability of coords, coeffs, and alpha (in that order)
+        argnum (int | list(int) | None): index (indices) of the positional argument(s) -
+        [``coordinates``, ``coeff``, ``alpha``] that should support differentiation. For example,
+        ``argnums=[0, 2]`` would mean derivatives can be computed with respect to both
+        ``coordinates`` and ``coeff``.
 
     Returns:
         function: function that computes the kinetic integral
@@ -867,7 +879,10 @@ def attraction_integral(r, basis_a, basis_b, argnum=None, normalize=True):
         basis_a (~qchem.basis_set.BasisFunction): first basis function
         basis_b (~qchem.basis_set.BasisFunction): second basis function
         normalize (bool): if True, the basis functions get normalized
-        argnum (int, list(int), None): differentiability of coords, coeffs, and alpha (in that order)
+        argnum (int | list(int) | None): index (indices) of the positional argument(s) -
+        [``coordinates``, ``coeff``, ``alpha``] that should support differentiation. For example,
+        ``argnums=[0, 2]`` would mean derivatives can be computed with respect to both
+        ``coordinates`` and ``coeff``.
 
     Returns:
         function: function that computes the electron-nuclear attraction integral
@@ -1017,7 +1032,10 @@ def repulsion_integral(basis_a, basis_b, basis_c, basis_d, argnum=None, normaliz
         basis_b (~qchem.basis_set.BasisFunction): second basis function
         basis_c (~qchem.basis_set.BasisFunction): third basis function
         basis_d (~qchem.basis_set.BasisFunction): fourth basis function
-        argnum (int, list(int), None): differentiability of coords, coeffs, and alpha (in that order)
+        argnum (int | list(int) | None): index (indices) of the positional argument(s) -
+        [``coordinates``, ``coeff``, ``alpha``] that should support differentiation. For example,
+        ``argnums=[0, 2]`` would mean derivatives can be computed with respect to both
+        ``coordinates`` and ``coeff``.
         normalize (bool): if True, the basis functions get normalized
 
     Returns:

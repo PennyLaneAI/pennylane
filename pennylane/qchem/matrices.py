@@ -66,7 +66,10 @@ def overlap_matrix(basis_functions, argnum=None):
 
     Args:
         basis_functions (list[~qchem.basis_set.BasisFunction]): basis functions
-        argnum (int, list(int), None): differentiability of coords, coeffs, and alpha (in that order)
+        argnum (int | list(int) | None): index (indices) of the positional argument(s) -
+        [``coordinates``, ``coeff``, ``alpha``] that should support differentiation. For example,
+        ``argnums=[0, 2]`` would mean derivatives can be computed with respect to both
+        ``coordinates`` and ``coeff``.
 
     Returns:
         function: function that computes the overlap matrix
@@ -117,7 +120,10 @@ def moment_matrix(basis_functions, order, idx, argnum=None):
         basis_functions (list[~qchem.basis_set.BasisFunction]): basis functions
         order (integer): exponent of the position component
         idx (integer): index determining the dimension of the multipole moment integral
-        argnum (int, list(int), None): differentiability of coords, coeffs, and alpha (in that order)
+        argnum (int | list(int) | None): index (indices) of the positional argument(s) -
+        [``coordinates``, ``coeff``, ``alpha``] that should support differentiation. For example,
+        ``argnums=[0, 2]`` would mean derivatives can be computed with respect to both
+        ``coordinates`` and ``coeff``.
 
     Returns:
         function: function that computes the multipole moment matrix
@@ -167,7 +173,10 @@ def kinetic_matrix(basis_functions, argnum=None):
 
     Args:
         basis_functions (list[~qchem.basis_set.BasisFunction]): basis functions
-        argnum (int, list(int), None): differentiability of coords, coeffs, and alpha (in that order)
+        argnum (int | list(int) | None): index (indices) of the positional argument(s) -
+        [``coordinates``, ``coeff``, ``alpha``] that should support differentiation. For example,
+        ``argnums=[0, 2]`` would mean derivatives can be computed with respect to both
+        ``coordinates`` and ``coeff``.
 
     Returns:
         function: function that computes the kinetic matrix
@@ -219,7 +228,10 @@ def attraction_matrix(basis_functions, charges, r, argnum=None):
         basis_functions (list[~qchem.basis_set.BasisFunction]): basis functions
         charges (list[int]): nuclear charges
         r (array[float]): nuclear positions
-        argnum (int, list(int), None): differentiability of coords, coeffs, and alpha (in that order)
+        argnum (int | list(int) | None): index (indices) of the positional argument(s) -
+        [``coordinates``, ``coeff``, ``alpha``] that should support differentiation. For example,
+        ``argnums=[0, 2]`` would mean derivatives can be computed with respect to both
+        ``coordinates`` and ``coeff``.
 
     Returns:
         function: function that computes the electron-nuclear attraction matrix
@@ -289,7 +301,10 @@ def repulsion_tensor(basis_functions, argnum=None):
 
     Args:
         basis_functions (list[~qchem.basis_set.BasisFunction]): basis functions
-        argnum (int, list(int), None): differentiability of coords, coeffs, and alpha (in that order)
+        argnum (int | list(int) | None): index (indices) of the positional argument(s) -
+        [``coordinates``, ``coeff``, ``alpha``] that should support differentiation. For example,
+        ``argnums=[0, 2]`` would mean derivatives can be computed with respect to both
+        ``coordinates`` and ``coeff``.
 
     Returns:
         function: function that computes the electron repulsion tensor
@@ -362,7 +377,10 @@ def core_matrix(basis_functions, charges, r, argnum=None):
         basis_functions (list[~qchem.basis_set.BasisFunction]): basis functions
         charges (list[int]): nuclear charges
         r (array[float]): nuclear positions
-        argnum (int, list(int), None): differentiability of coords, coeffs, and alpha (in that order)
+        argnum (int | list(int) | None): index (indices) of the positional argument(s) -
+        [``coordinates``, ``coeff``, ``alpha``] that should support differentiation. For example,
+        ``argnums=[0, 2]`` would mean derivatives can be computed with respect to both
+        ``coordinates`` and ``coeff``.
 
     Returns:
         function: function that computes the core matrix
