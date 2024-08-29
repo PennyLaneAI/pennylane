@@ -9,6 +9,6 @@ This module contains functions and classes for creating and manipulating Hamilto
 .. currentmodule:: pennylane.spin
 
 .. automodapi:: pennylane.spin
-    :no-main-docstr:
+    :no-heading:
     :skip: Lattice
     :include-all-objects:
