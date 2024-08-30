@@ -372,8 +372,9 @@ def gather_non_mcm(measurement, samples, is_valid, postselect_mode=None):
         tmp = Counter()
         for i, d in enumerate(samples):
             tmp.update(
-                dict((k if isinstance(k, str) else float(k), v * is_valid[i]) for k, v in d.items())
+                {k if isinstance(k, str) else float(k): v * is_valid[i] for k, v in d.items()}
             )
+
         if not measurement.all_outcomes:
             tmp = Counter({k: v for k, v in tmp.items() if v > 0})
         return dict(sorted(tmp.items()))
@@ -381,11 +382,11 @@ def gather_non_mcm(measurement, samples, is_valid, postselect_mode=None):
     if isinstance(measurement, SampleMP):
         if postselect_mode == "pad-invalid-samples" and samples.ndim == 2:
             is_valid = qml.math.reshape(is_valid, (-1, 1))
-        return (
-            qml.math.where(is_valid, samples, fill_in_value)
-            if postselect_mode == "pad-invalid-samples"
-            else samples[is_valid]
-        )
+        if postselect_mode == "pad-invalid-samples":
+            return qml.math.where(is_valid, samples, fill_in_value)
+        if qml.math.shape(samples) == ():  # single shot case
+            samples = qml.math.reshape(samples, (-1, 1))
+        return samples[is_valid]
 
     if (interface := qml.math.get_interface(is_valid)) == "tensorflow":
         # Tensorflow requires arrays that are used for arithmetic with each other to have the
