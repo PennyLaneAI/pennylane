@@ -42,12 +42,12 @@ class ModExp(Operation):
 
     Args:
         x_wires (Sequence[int]): the wires that store the integer :math:`x`
-        output_wires (Sequence[int]): the wires that store the operator result. :math:`b` has to be encoded in these wires.
+        output_wires (Sequence[int]): the wires that store the operator result. These wires also have to encode :math:`b`.
         base (int): integer that needs to be exponentiated
         mod (int): the modulo for performing the exponentiation. If not provided, it will be set to its maximum value, :math:`2^{\text{len(output_wires)}}`
         work_wires (Sequence[int]): the auxiliary wires to use for the exponentiation. If
-        `mod`=:math:`2^{len(output_wires)}`, the number of auxiliary wires must be ``len(output_wires)``. Otherwise
-        ``len(output_wires) + 2`` auxiliary wires are needed.
+            `mod`=:math:`2^{len(output_wires)}`, the number of auxiliary wires must be ``len(output_wires)``. Otherwise
+            ``len(output_wires) + 2`` auxiliary wires are needed.
 
     **Example**
 
@@ -195,10 +195,12 @@ class ModExp(Operation):
 
         Args:
             x_wires (Sequence[int]): the wires that store the integer :math:`x`
-            output_wires (Sequence[int]): the wires that store the operator result. :math:`b` has to be encoded in these wires.
+            output_wires (Sequence[int]): the wires that store the operator result. These wires also have to encode :math:`b`.
             base (int): integer that needs to be exponentiated
-            mod (int): the modulo for performing the exponentiation. If not provided, it will be set to :math:`2^{\text{len(output_wires)}}`
-            work_wires (Sequence[int]): the auxiliary wires to use for the exponentiation, default is ``None``
+            mod (int): the modulo for performing the exponentiation. If not provided, it will be set to its maximum value, :math:`2^{\text{len(output_wires)}}`
+            work_wires (Sequence[int]): the auxiliary wires to use for the exponentiation. If
+                `mod`=:math:`2^{len(output_wires)}`, the number of auxiliary wires must be ``len(output_wires)``. Otherwise
+                ``len(output_wires) + 2`` auxiliary wires are needed.
         Returns:
             list[.Operator]: Decomposition of the operator
 

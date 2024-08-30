@@ -41,7 +41,7 @@ class OutAdder(Operation):
     Args:
         x_wires (Sequence[int]): the wires that store the integer :math:`x`
         y_wires (Sequence[int]): the wires that store the integer :math:`y`
-        output_wires (Sequence[int]): the wires that store the addition result. If the register is in a non-zero state :math:`b`, the solution will be added to this value
+        output_wires (Sequence[int]): the wires that store the addition result. If the register is in a non-zero state :math:`b`, the solution will be added to this value.
         mod (int): the modulo for performing the addition. If not provided, it will be set to its maximum value, :math:`2^{\text{len(output_wires)}}`.
         work_wires (Sequence[int]): the auxiliary wires to use for the addition. The work wires are not needed if `mod`=:math:`2^{len(x\_wires)}`, otherwise two work wires should be provided. Defaults to None.
 
@@ -214,11 +214,9 @@ class OutAdder(Operation):
         Args:
             x_wires (Sequence[int]): the wires that store the integer :math:`x`
             y_wires (Sequence[int]): the wires that store the integer :math:`y`
-            output_wires (Sequence[int]): the wires that store the addition result. If the register is in a non-zero state :math:`b`, the solution will be added to this value
-            mod (int): the modulo for performing the addition. If not provided, it will be set to :math:`2^{\text{len(output_wires)}}`
-            work_wires (Sequence[int]): the auxiliary wires to use for the addition. The
-            work wires are not needed if `mod`=:math:`2^{len(output_wires)}`, otherwise two work wires
-            should be provided. Defaults to ``None``.
+            output_wires (Sequence[int]): the wires that store the addition result. If the register is in a non-zero state :math:`b`, the solution will be added to this value.
+            mod (int): the modulo for performing the addition. If not provided, it will be set to its maximum value, :math:`2^{\text{len(output_wires)}}`.
+            work_wires (Sequence[int]): the auxiliary wires to use for the addition. The work wires are not needed if `mod`=:math:`2^{len(x\_wires)}`, otherwise two work wires should be provided. Defaults to None.
         Returns:
             list[.Operator]: Decomposition of the operator
 
