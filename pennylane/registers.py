@@ -59,7 +59,7 @@ def registers(register_dict):
     .. code-block::
 
         dev = qml.device("default.qubit")
-        reg = registers({"aux": 1, "phi": 5, "psi": 5})
+        reg = qml.registers({"aux": 1, "phi": 5, "psi": 5})
 
         @qml.qnode(dev)
         def circuit():
