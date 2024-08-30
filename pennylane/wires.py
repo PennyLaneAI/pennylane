@@ -500,7 +500,7 @@ class Wires(Sequence):
 
         Args:
             other (Any): :class:`~.Wires` or any iterable that can be interpreted like a :class:`~.Wires` object
-                to perform the union with.
+                to perform the union with
 
         Returns:
             Wires: A new :class:`~.Wires` object representing the union of the two :class:`~.Wires` objects.
@@ -526,7 +526,7 @@ class Wires(Sequence):
 
         Args:
             other (Any): Wires or any iterable that can be interpreted like a Wires object
-                to perform the union with.
+                to perform the union with
 
         Returns:
             Wires: A new Wires object representing the union of the two Wires objects.
@@ -551,7 +551,7 @@ class Wires(Sequence):
 
         Args:
             other (Any): :class:`~.Wires` or any iterable that can be interpreted like a :class:`~.Wires` object
-                to perform the intersection with.
+                to perform the intersection with
 
         Returns:
             Wires: A new :class:`~.Wires` object representing the intersection of the two :class:`~.Wires` objects.
@@ -577,7 +577,7 @@ class Wires(Sequence):
 
         Args:
             other (Any): Wires or any iterable that can be interpreted like a Wires object
-                to perform the union with.
+                to perform the union with
 
         Returns:
             Wires: A new Wires object representing the intersection of the two Wires objects.
@@ -602,7 +602,7 @@ class Wires(Sequence):
 
         Args:
             other (Any): :class:`~.Wires` object or any iterable that can be interpreted like a :class:`~.Wires` object
-                to perform the difference with.
+                to perform the difference with
 
         Returns:
             Wires: A new :class:`~.Wires` object representing the difference of the two :class:`~.Wires` objects.
@@ -628,7 +628,7 @@ class Wires(Sequence):
 
         Args:
             other (Any): Wires or any iterable that can be interpreted like a Wires object
-                to perform the union with.
+                to perform the union with
 
         Returns:
             Wires: A new Wires object representing the difference of the two Wires objects.
@@ -653,7 +653,7 @@ class Wires(Sequence):
 
         Args:
             other (Any): :class:`~.Wires` or any iterable that can be interpreted like a :class:`~.Wires` object
-                to perform the symmetric difference with.
+                to perform the symmetric difference with
 
         Returns:
             Wires: A new :class:`~.Wires` object representing the symmetric difference of the two :class:`~.Wires` objects.
@@ -680,7 +680,7 @@ class Wires(Sequence):
 
         Args:
             other (Any): Wires or any iterable that can be interpreted like a Wires object
-                to perform the union with.
+                to perform the union with
 
         Returns:
             Wires: A new Wires object representing the symmetric difference of the two Wires objects.
