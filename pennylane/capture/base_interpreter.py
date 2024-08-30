@@ -30,11 +30,12 @@ from pennylane.compiler.qjit_api import (
     for_loop,
     while_loop,
 )
-from pennylane.ops.op_math.adjoint import _get_adjoint_qfunc_prim, adjoint
+from pennylane.ops.op_math.adjoint import _get_adjoint_qfunc_prim
 from pennylane.ops.op_math.condition import _get_cond_qfunc_prim
-from pennylane.ops.op_math.controlled import _get_ctrl_qfunc_prim, ctrl
+from pennylane.ops.op_math.controlled import _get_ctrl_qfunc_prim
 
 from .capture_qnode import _get_qnode_prim
+from .flatfn import FlatFn
 from .primitives import _get_abstract_measurement, _get_abstract_operator
 
 for_prim = _get_for_loop_qfunc_prim()
@@ -46,6 +47,15 @@ ctrl_transform_prim = _get_ctrl_qfunc_prim()
 
 AbstractOperator = _get_abstract_operator()
 AbstractMeasurement = _get_abstract_measurement()
+
+
+def jaxpr_to_jaxpr(
+    interpreter: "PlxprInterpreter", jaxpr: "jax.core.Jaxpr", consts, *args
+) -> "jax.core.Jaxpr":
+    def f(*inner_args):
+        return interpreter.eval(jaxpr, consts, *inner_args)
+
+    return jax.make_jaxpr(f)(*args).jaxpr
 
 
 class PlxprInterpreter:
@@ -127,7 +137,7 @@ class PlxprInterpreter:
             raise ValueError("_env not yet initialized.")
         if type(var) is jax.core.Literal:
             return var.val
-        return var.val if type(var) is jax.core.Literal else self._env[var]
+        return self._op_math_cache.get(var, self._env[var])
 
     def setup(self):
         """Initialize the instance before interpretting equations.
@@ -177,14 +187,7 @@ class PlxprInterpreter:
 
         """
 
-        invals = [
-            (
-                invar.val
-                if type(invar) is jax.core.Literal
-                else self._op_math_cache.get(invar, self.read(invar))
-            )
-            for invar in eqn.invars
-        ]
+        invals = [self.read(invar) for invar in eqn.invars]
         op = eqn.primitive.impl(*invals, **eqn.params)
         if isinstance(eqn.outvars[0], jax.core.DropVar):
             return self.interpret_operation(op)
@@ -203,6 +206,9 @@ class PlxprInterpreter:
             **params: The equations parameters dictionary
 
         """
+        invals = [
+            self.interpret_operation(op) for op in invals if isinstance(op, qml.operation.Operator)
+        ]
         return primitive.bind(*invals, **params)
 
     def eval(self, jaxpr: "jax.core.Jaxpr", consts: list, *args) -> list:
@@ -259,10 +265,15 @@ class PlxprInterpreter:
         return outvals
 
     def __call__(self, f: Callable) -> Callable:
+
+        flat_f = FlatFn(f)
+
         @wraps(f)
         def wrapper(*args, **kwargs):
-            jaxpr = jax.make_jaxpr(partial(f, **kwargs))(*args)
-            return self.eval(jaxpr.jaxpr, jaxpr.consts, *args)
+            jaxpr = jax.make_jaxpr(partial(flat_f, **kwargs))(*args)
+            results = self.eval(jaxpr.jaxpr, jaxpr.consts, *args)
+            assert flat_f.out_tree
+            return jax.tree_util.tree_unflatten(flat_f.out_tree, results)
 
         return wrapper
 
@@ -273,12 +284,8 @@ def handle_adjoint_transform(self, *invals, jaxpr, lazy, n_consts):
     consts = invals[:n_consts]
     args = invals[n_consts:]
 
-    def new_qfunc(*inner_args):
-        return type(self)(state=self.state).eval(jaxpr, consts, *inner_args)
-
-    jaxpr = jax.make_jaxpr(new_qfunc)(*args)
-
-    return adjoint_transform_prim.bind(*invals, jaxpr=jaxpr.jaxpr, lazy=lazy, n_consts=n_consts)
+    jaxpr = jaxpr_to_jaxpr(type(self)(state=self.state), jaxpr, consts, *args)
+    return adjoint_transform_prim.bind(*invals, jaxpr=jaxpr, lazy=lazy, n_consts=n_consts)
 
 
 # pylint: disable=too-many-arguments
@@ -286,18 +293,13 @@ def handle_adjoint_transform(self, *invals, jaxpr, lazy, n_consts):
 def handle_ctrl_transform(self, *invals, n_control, jaxpr, control_values, work_wires, n_consts):
     """Interpret a ctrl transform primitive."""
     consts = invals[:n_consts]
-    control_wires = invals[-n_control:]
     args = invals[n_consts:-n_control]
-
-    def new_qfunc(*inner_args):
-        return type(self)(state=self.state).eval(jaxpr, consts, *inner_args)
-
-    jaxpr = jax.make_jaxpr(new_qfunc)(*args)
+    jaxpr = jaxpr_to_jaxpr(type(self)(state=self.state), jaxpr, consts, *args)
 
     return ctrl_transform_prim.bind(
         *invals,
         n_control=n_control,
-        jaxpr=jaxpr.jaxpr,
+        jaxpr=jaxpr,
         control_values=control_values,
         work_wires=work_wires,
         n_consts=n_consts,
@@ -307,14 +309,16 @@ def handle_ctrl_transform(self, *invals, n_control, jaxpr, control_values, work_
 @PlxprInterpreter.register_primitive(for_prim)
 def handle_for_loop(self, *invals, jaxpr_body_fn, n_consts):
     """Handle a for loop primitive."""
-    start, stop, step = invals[0], invals[1], invals[2]
+    start = invals[0]
     consts = invals[3 : 3 + n_consts]
+    init_state = invals[3 + n_consts :]
 
-    @for_loop(start, stop, step)
-    def g(i, *init_state):
-        return type(self)(state=self.state).eval(jaxpr_body_fn.jaxpr, consts, i, *init_state)
+    new_jaxpr_body_fn = jaxpr_to_jaxpr(
+        type(self)(state=self.state), jaxpr_body_fn.jaxpr, consts, start, *init_state
+    )
 
-    return g(*invals[3 + n_consts :])
+    new_jaxpr_body_fn = jax.core.ClosedJaxpr(new_jaxpr_body_fn, consts)
+    return for_prim.bind(*invals, jaxpr_body_fn=new_jaxpr_body_fn, n_consts=n_consts)
 
 
 @PlxprInterpreter.register_primitive(cond_prim)
@@ -361,8 +365,16 @@ def handle_qnode(self, *invals, shots, qnode, device, qnode_kwargs, qfunc_jaxpr,
     """Handle a qnode primitive."""
     consts = invals[:n_consts]
 
-    @qml.qnode(device, **qnode_kwargs)
-    def new_qnode(*args):
-        return type(self)(state=self.state).eval(qfunc_jaxpr, consts, *args)
+    new_qfunc_jaxpr = jaxpr_to_jaxpr(
+        type(self)(state=self.state), qfunc_jaxpr, consts, *invals[n_consts:]
+    )
 
-    return new_qnode(*invals[n_consts:], shots=shots)
+    return qnode_prim.bind(
+        *invals,
+        shots=shots,
+        qnode=qnode,
+        device=device,
+        qnode_kwargs=qnode_kwargs,
+        qfunc_jaxpr=new_qfunc_jaxpr,
+        n_consts=n_consts,
+    )
