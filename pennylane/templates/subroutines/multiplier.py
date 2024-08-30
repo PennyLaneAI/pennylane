@@ -59,7 +59,9 @@ class Multiplier(Operation):
 
     Args:
         k (int): the number that needs to be multiplied
-        x_wires (Sequence[int]): the wires the operation acts on
+        x_wires (Sequence[int]): the wires the operation acts on. The number of wires must be enough
+            for a binary representation of the value being targeted, `x`. The number of wires also limits the 
+            maximum value for `mod`.
         mod (int): the modulo for performing the multiplication. If not provided, it will be set to its maximum value, :math:`2^{\text{len(x_wires)}}`.
         work_wires (Sequence[int]): the auxiliary wires to use for the multiplication. If 
         `mod`=:math:`2^{len(x_wires)}`, the number of auxiliary wires must be ``len(x_wires)``. Otherwise 
