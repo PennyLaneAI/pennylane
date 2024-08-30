@@ -105,7 +105,7 @@ class PhaseAdder(Operation):
         To represent :math:`x`, at least :math:`\lceil \log_2(x) \rceil` wires are needed.
         After the modular addition, the result can be as large as :math:`\text{mod} - 1`,
         requiring at least :math:`\lceil \log_2(\text{mod}) \rceil` wires. Since :math:`x < \text{mod}`, a length of
-        :math:`\lceil \log_2(\text{mod}) \rceil` is sufficient for ``x_wires`` to cover all possible inputs and 
+        :math:`\lceil \log_2(\text{mod}) \rceil` is sufficient for ``x_wires`` to cover all possible inputs and
         outputs when :math:`mod \eq 2^{\text{len(x_wires)}}`.
         An exception occurs when :math:`mod \neq 2^{\text{len(x_wires)}}`. In that case one extra wire in ``x_wires`` will be needed to correctly perform the phase
         addition operation.

@@ -83,11 +83,11 @@ class OutAdder(Operation):
         This template takes as input four different sets of wires.
 
         The first one is ``x_wires`` which is used
-        to encode the integer :math:`x < mod` in the computational basis. Therefore, ``x_wires`` must contain 
+        to encode the integer :math:`x < mod` in the computational basis. Therefore, ``x_wires`` must contain
         at least :math:`\lceil \log_2(x)\rceil` to represent :math:`x`.
 
         The second one is ``y_wires`` which is used
-        to encode the integer :math:`y < mod` in the computational basis. Therefore, ``y_wires`` must contain 
+        to encode the integer :math:`y < mod` in the computational basis. Therefore, ``y_wires`` must contain
         at least :math:`\lceil \log_2(y)\rceil` wires to represent :math:`y`.
 
         The third one is ``output_wires`` which is used
