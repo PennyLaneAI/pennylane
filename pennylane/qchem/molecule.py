@@ -58,7 +58,7 @@ class Molecule:
         argnum (int | Sequence(int) | None): index (indices) of the positional argument(s) -
             [``coordinates``, ``coeff``, ``alpha``] that should support differentiation. For
             example, ``argnum=[0, 2]`` would mean derivatives can be computed with respect to both
-            ``coordinates`` and ``coeff``.
+            ``coordinates`` and ``alpha``.
 
     **Example**
 
