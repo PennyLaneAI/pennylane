@@ -542,7 +542,7 @@ def _sample_state_jax(
             the key to the JAX pseudo random number generator.
         is_state_batched (bool): whether the state is batched or not
         wires (Sequence[int]): The wires to sample
-        seed=None: seed to use to generate a key if a ``prng_key`` is not present.
+        seed (numpy.random.Generator): seed to use to generate a key if a ``prng_key`` is not present. ``None`` by default.
 
     Returns:
         ndarray[int]: Sample values of the shape (shots, num_wires)
