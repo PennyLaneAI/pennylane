@@ -304,6 +304,23 @@ class FermiWord(dict):
         return mat
 
     def commute(self, source, target):
+        r"""Apply anti-commuting relations until the operator in position source is in position target.
+
+        Args:
+            source (int): The position of the operator to be commuted.
+
+            target (int): The desired position of the operator occupying the source position.
+
+        Returns:
+            FermiSentence: The FermiSentence obtained after applying the anti-commutator relations.
+
+        **Example**
+
+        >>> w = FermiWord({(0, 0): '+', (1, 1): '-'})
+        >>> w.commute(0, 1)
+        -1 * a(1) a⁺(0)
+        """
+
         if not isinstance(source, int) or not isinstance(target, int) or source < 0 or target < 0:
             raise ValueError("Indices must be positive integers")
 
@@ -317,13 +334,8 @@ class FermiWord(dict):
         fs = FermiSentence({self: 1})
         delta = 1 if source < target else -1
 
-        print(fs)
-        print("\n")
-
         while source != target:
             fs, fw = _commute_adjacent(fs, fw, source, source + delta)
-            print(fs)
-            print("\n")
             source += delta
 
         return fs
@@ -336,7 +348,7 @@ def _commute_adjacent(fs, fw, i, j):
     small = min(i, j)
     big = max(i, j)
 
-    indices = [i for i in fw.sorted_dic.keys()]
+    indices = list(fw.sorted_dic.keys())
     small_idx = indices[small]
     big_idx = indices[big]
 
@@ -619,6 +631,26 @@ class FermiSentence(dict):
         return mat
 
     def commute(self, fw, source, target):
+        r"""Apply anti-commuting relations until the operator in position source is in position target.
+
+        Args:
+            fw (FermiWord): The FermiWord within the FermiSentence that contains the operator to be commuted.
+
+            source (int): The position of the operator to be commuted.
+
+            target (int): The desired position of the operator occupying the source position.
+
+        Returns:
+            FermiSentence: The FermiSentence obtained after applying the anti-commutator relations.
+
+        **Example**
+
+        >>> w = FermiWord({(0, 0): '+', (1, 1): '-'})
+        >>> s = FermiSentence({w: 1})
+        >>> w.commute(0, 1)
+        -1 * a(1) a⁺(0)
+        """
+
         if fw not in self.keys():
             raise ValueError(f"The FermiWord {fw} does not appear in the FermiSentence")
 
