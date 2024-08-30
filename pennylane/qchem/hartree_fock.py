@@ -218,7 +218,8 @@ def nuclear_energy(charges, r, argnum=None):
         Returns:
             array[float]: nuclear-repulsion energy
         """
-        if getattr(r, "requires_grad", False) or (argnum is not None and 0 in argnum):
+        argnums = () if argnum is None else ((argnum) if isinstance(argnum, int) else argnum)
+        if getattr(r, "requires_grad", False) or 0 in argnums:
             coor = args[0]
         else:
             coor = r
