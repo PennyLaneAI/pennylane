@@ -102,16 +102,15 @@ class Multiplier(Operation):
 
         if mod is None:
             mod = 2 ** len(x_wires)
+        if mod != 2 ** len(x_wires) and len(work_wires) != (len(x_wires) + 2):
+            raise ValueError("Multiplier needs as many work_wires as x_wires plus two.")
+        if len(work_wires) < len(x_wires):
+            raise ValueError("Multiplier needs as many work_wires as x_wires.")
         if mod > 2 ** len(x_wires):
             raise ValueError(
                 "Multiplier must have enough wires to represent mod. The maximum mod "
                 f"with len(x_wires)={len(x_wires)} is {2 ** len(x_wires)}, but received {mod}."
             )
-
-        if mod != 2 ** len(x_wires) and len(work_wires) != (len(x_wires) + 2):
-            raise ValueError("Multiplier needs as many work_wires as x_wires plus two.")
-        if len(work_wires) < len(x_wires):
-            raise ValueError("Multiplier needs as many work_wires as x_wires.")
 
         k = k % mod
         if np.gcd(k, mod) != 1:

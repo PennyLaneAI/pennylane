@@ -85,7 +85,7 @@ class Adder(Operation):
         if mod is None:
             mod = 2 ** len(x_wires)
         elif mod != 2 ** len(x_wires) and num_works_wires != 2:
-            raise ValueError(f"Adder expected two work_wires, but received {work_wires}.")
+            raise ValueError(f"If mod is not 2^{len(x_wires)}, two work wires should be provided")
         if not isinstance(k, int) or not isinstance(mod, int):
             raise ValueError("Both k and mod must be integers")
         if work_wires is not None:
