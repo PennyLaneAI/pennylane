@@ -34,18 +34,21 @@ def enable_disable_plxpr():
     qml.capture.disable()
 
 
-class MapWiresInterpreter(PlxprInterpreter):
+class SimplifyInterpreter(PlxprInterpreter):
 
     def interpret_operation(self, op):
-        # fairly limited use case, but good enough for testing.
-        wire_map = {0: 5, 1: 6, 2: 7}
-        return type(op)(*op.data, wires=tuple(wire_map[w] for w in op.wires))
+        new_op = op.simplify()
+        if new_op is op:
+            # if new op isn't queued, need to requeue op.
+            data, struct = jax.tree_util.tree_flatten(new_op)
+            new_op = jax.tree_util.tree_unflatten(struct, data)
+        return new_op
 
 
 def test_env_and_state_initialized():
     """Test that env and state are initialized at the start."""
 
-    interpreter = MapWiresInterpreter()
+    interpreter = SimplifyInterpreter()
     assert interpreter._env == {}
     assert interpreter.state is None
 
@@ -55,26 +58,63 @@ def test_primitive_registrations():
     not effect PlxprInterpreeter."""
 
     assert (
-        MapWiresInterpreter._primitive_registrations
+        SimplifyInterpreter._primitive_registrations
         is not PlxprInterpreter._primitive_registrations
     )
 
-    @MapWiresInterpreter.register_primitive(qml.X._primitive)
+    @SimplifyInterpreter.register_primitive(qml.X._primitive)
     def _(self, *invals, **params):
-        return qml.X(*invals)
+        print("in custom interpreter")
+        return qml.Z(*invals)
 
-    assert qml.X._primitive in MapWiresInterpreter._primitive_registrations
+    assert qml.X._primitive in SimplifyInterpreter._primitive_registrations
     assert qml.X._primitive not in PlxprInterpreter._primitive_registrations
 
-    @MapWiresInterpreter()
+    @SimplifyInterpreter()
     def f():
         qml.X(0)
-        qml.Y(0)
+        qml.Y(5)
 
     jaxpr = jax.make_jaxpr(f)()
 
     with qml.queuing.AnnotatedQueue() as q:
         jax.core.eval_jaxpr(jaxpr.jaxpr, [])
 
-    qml.assert_equal(q.queue[0], qml.X(0))  # not mapped due to primitive registration
+    print(jaxpr)
+    print(q.queue)
+    qml.assert_equal(q.queue[0], qml.Z(0))  # turned into a Y
     qml.assert_equal(q.queue[1], qml.Y(5))  # mapped wire
+
+    # restore simplify interpreter to its previous state
+    SimplifyInterpreter._primitive_registrations.pop(qml.X._primitive)
+
+
+class TestHigherOrderPrimitiveRegistrations:
+
+    @pytest.mark.parametrize("lazy", (True, False))
+    def test_adjoint_transform(self, lazy):
+        """Test the higher order adjoint transform."""
+
+        @SimplifyInterpreter()
+        def f(x):
+            def g(y):
+                qml.RX(y, 0) ** 3
+
+            qml.adjoint(g, lazy=lazy)(x)
+
+        jaxpr = jax.make_jaxpr(f)(0.5)
+
+        assert jaxpr.eqns[0].params["lazy"] == lazy
+        # assert jaxpr.eqns[0].primitive == adjoint_transform_primitive
+        inner_jaxpr = jaxpr.eqns[0].params["jaxpr"]
+        # first eqn mul, second RX
+        assert inner_jaxpr.eqns[1].primitive == qml.RX._primitive
+        assert len(inner_jaxpr.eqns) == 2
+
+        with qml.queuing.AnnotatedQueue() as q:
+            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0.5)
+
+        if lazy:
+            qml.assert_equal(q.queue[0], qml.adjoint(qml.RX(jax.numpy.array(1.5), 0)))
+        else:
+            qml.assert_equal(q.queue[0], qml.RX(jax.numpy.array(-1.5), 0))

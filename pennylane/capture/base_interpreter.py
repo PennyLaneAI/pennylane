@@ -61,6 +61,21 @@ class PlxprInterpreter:
     and measurement lists. By maintaining this information in the optional ``state`` property, this information can automatically
     by passed to new sub-interpreters.
 
+
+    **Examples:**
+
+    .. code-block:: python
+
+        class SimplifyInterpreter(PlxprInterpreter):
+
+        def interpret_operation(self, op):
+            new_op = op.simplify()
+            if new_op is op:
+                # if new op isn't queued, need to requeue op.
+                data, struct = jax.tree_util.tree_flatten(new_op)
+                new_op = jax.tree_util.tree_unflatten(struct, data)
+            return new_op
+
     """
 
     _env: dict
@@ -261,7 +276,9 @@ def handle_adjoint_transform(self, *invals, jaxpr, lazy, n_consts):
     def new_qfunc(*inner_args):
         return type(self)(state=self.state).eval(jaxpr, consts, *inner_args)
 
-    return adjoint(new_qfunc, lazy=lazy)(*args)
+    jaxpr = jax.make_jaxpr(new_qfunc)(*args)
+
+    return adjoint_transform_prim.bind(*invals, jaxpr=jaxpr.jaxpr, lazy=lazy, n_consts=n_consts)
 
 
 # pylint: disable=too-many-arguments
@@ -275,9 +292,16 @@ def handle_ctrl_transform(self, *invals, n_control, jaxpr, control_values, work_
     def new_qfunc(*inner_args):
         return type(self)(state=self.state).eval(jaxpr, consts, *inner_args)
 
-    return ctrl(
-        new_qfunc, control_values=control_values, control=control_wires, work_wires=work_wires
-    )(*args)
+    jaxpr = jax.make_jaxpr(new_qfunc)(*args)
+
+    return ctrl_transform_prim.bind(
+        *invals,
+        n_control=n_control,
+        jaxpr=jaxpr.jaxpr,
+        control_values=control_values,
+        work_wires=work_wires,
+        n_consts=n_consts,
+    )
 
 
 @PlxprInterpreter.register_primitive(for_prim)
