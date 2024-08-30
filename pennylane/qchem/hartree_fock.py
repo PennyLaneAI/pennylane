@@ -127,7 +127,7 @@ def scf(mol, n_steps=50, tol=1e-8):
         n_electron = mol.n_electrons
         argnum = mol.argnum if mol.argnum is not None else ()
 
-        if getattr(r, "requires_grad", False) or (argnum is not None and 0 in argnum):
+        if getattr(r, "requires_grad", False) or 0 in argnum:
             args_r = [[args[0][i]] * mol.n_basis[i] for i in range(len(mol.n_basis))]
             args_ = [*args] + [qml.math.vstack(list(itertools.chain(*args_r)))]
             rep_tensor = repulsion_tensor(basis_functions, argnum)(*args_[1:])
