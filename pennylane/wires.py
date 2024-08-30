@@ -237,7 +237,7 @@ class Wires(Sequence):
                 representing the wire.
 
         Returns:
-            int: Index of the input.
+            int: index of the input
         """
         # pylint: disable=arguments-differ
 
@@ -260,7 +260,7 @@ class Wires(Sequence):
             wires (Iterable[Number, str], Number, str, Wires): Wire(s) whose indices are to be found
 
         Returns:
-            list: Index list.
+            list: index list
 
         **Example**
 
@@ -379,7 +379,7 @@ class Wires(Sequence):
         This is similar to a set intersection method, but keeps the order of wires as they appear in the list.
 
         Args:
-            list_of_wires (list[Wires]): List of Wires objects.
+            list_of_wires (list[Wires]): list of Wires objects
 
         Returns:
             Wires: shared wires
@@ -418,7 +418,7 @@ class Wires(Sequence):
         This is similar to a set combine method, but keeps the order of wires as they appear in the list.
 
         Args:
-            list_of_wires (list[Wires]): List of Wires objects.
+            list_of_wires (list[Wires]): list of Wires objects
             sort (bool): Toggle for sorting the combined wire labels. The sorting is based on
                 value if all keys are int, else labels' str representations are used.
 
@@ -453,7 +453,7 @@ class Wires(Sequence):
         """Return the wires that are unique to any Wire object in the list.
 
         Args:
-            list_of_wires (list[Wires]): List of Wires objects.
+            list_of_wires (list[Wires]): list of Wires objects
 
         Returns:
             Wires: unique wires
