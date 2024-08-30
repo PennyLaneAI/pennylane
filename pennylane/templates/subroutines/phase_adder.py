@@ -185,9 +185,13 @@ class PhaseAdder(Operation):
 
         Args:
             k (int): the number that needs to be added
-            x_wires (Sequence[int]): the wires the operation acts on
-            mod (int): the modulo for performing the addition. If not provided, it will be set to :math:`2^{\text{len(output_wires)}}`
-            work_wire (Sequence[int]): the auxiliary wire to use for the addition, default is ``None``
+            x_wires (Sequence[int]): the wires the operation acts on. The number of wires must be enough
+                for a binary representation of the value being targeted, :math:`x`. In some cases an additional
+                wire is needed, see usage details below. The number of wires also limits the maximum
+                value for `mod`.
+            mod (int): the modulo for performing the addition. If not provided, it will be set to its maximum value, :math:`2^{\text{len(x_wires)}}`.
+            work_wire (Sequence[int]): the auxiliary wire to use for the addition. Optional
+                when `mod` is :math:`2^{len(x\_wires)}`. Defaults to None.
         Returns:
             list[.Operator]: Decomposition of the operator
 

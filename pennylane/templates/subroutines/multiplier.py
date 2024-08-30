@@ -186,9 +186,9 @@ class Multiplier(Operation):
 
         Args:
             k (int): the number that needs to be multiplied
-            x_wires (Sequence[int]): the wires the operation acts on
-            mod (int): the modulo for performing the multiplication. If not provided, it will be set to :math:`2^{\text{len(output_wires)}}`
-            work_wires (Sequence[int]): the auxiliary wires to use for the multiplication, default is ``None``
+            x_wires (Sequence[int]): the wires the operation acts on. The number of wires must be enough for encoding `x` in the computational basis. The number of wires also limits the maximum value for `mod`.
+            mod (int): the modulo for performing the multiplication. If not provided, it will be set to its maximum value, :math:`2^{\text{len(x_wires)}}`.
+            work_wires (Sequence[int]): the auxiliary wires to use for the multiplication. If `mod`=:math:`2^{len(x_wires)}`, the number of auxiliary wires must be ``len(x_wires)``. Otherwise ``len(x_wires) + 2`` auxiliary wires are needed.
         Returns:
             list[.Operator]: Decomposition of the operator
 
