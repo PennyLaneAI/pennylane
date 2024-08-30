@@ -313,7 +313,7 @@
   [(#5987)](https://github.com/PennyLaneAI/pennylane/pull/5987)
 
   This operator acts as a nice wrapper for having to perform `qml.StatePrep`, `qml.Select`, and `qml.adjoint(qml.StatePrep)`
-  in succession, which is quite common in many quantum algorithms. Here is an example showing the equivalence
+  in succession, which is quite common in many quantum algorithms (e.g., [LCU and block encoding](https://pennylane.ai/qml/demos/tutorial_lcu_blockencoding/)). Here is an example showing the equivalence
   between using `qml.PrepSelPrep` and `qml.StatePrep`, `qml.Select`, and `qml.adjoint(qml.StatePrep)`.
 
   ```python
