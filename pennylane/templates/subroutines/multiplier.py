@@ -97,6 +97,9 @@ class Multiplier(Operation):
         if work_wires is None:
             raise ValueError("Work wires must be specified for Multiplier")
 
+        x_wires = qml.wires.Wires(x_wires)
+        work_wires = qml.wires.Wires(work_wires)
+
         if any(wire in work_wires for wire in x_wires):
             raise ValueError("None of the wire in work_wires should be included in x_wires.")
 

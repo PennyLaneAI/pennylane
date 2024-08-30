@@ -80,6 +80,10 @@ class OutMultiplier(Operation):
         self, x_wires, y_wires, output_wires, mod=None, work_wires=None, id=None
     ):  # pylint: disable=too-many-arguments
 
+        x_wires = qml.wires.Wires(x_wires)
+        y_wires = qml.wires.Wires(y_wires)
+        output_wires = qml.wires.Wires(output_wires)
+
         num_work_wires = 0 if work_wires is None else len(work_wires)
 
         if mod is None:
