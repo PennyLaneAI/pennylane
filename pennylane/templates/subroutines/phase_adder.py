@@ -97,11 +97,14 @@ class PhaseAdder(Operation):
         self, k, x_wires, mod=None, work_wire=None, id=None
     ):  # pylint: disable=too-many-arguments
 
-        work_wire = qml.wires.Wires(work_wire)
+        work_wire = qml.wires.Wires(work_wire) if work_wire is not None else work_wire
         x_wires = qml.wires.Wires(x_wires)
+
+        num_work_wires = 0 if work_wire is None else len(work_wire)
+
         if mod is None:
             mod = 2 ** len(x_wires)
-        elif work_wire is None and mod != 2 ** len(x_wires):
+        elif mod != 2 ** len(x_wires) and num_work_wires != 1:
             raise ValueError(f"If mod is not 2^{len(x_wires)}, one work wire should be provided.")
         if not isinstance(k, int) or not isinstance(mod, int):
             raise ValueError("Both k and mod must be integers")
@@ -111,8 +114,6 @@ class PhaseAdder(Operation):
                 f"with len(x_wires)={len(x_wires)} is {2 ** len(x_wires)}, but received {mod}."
             )
         if work_wire is not None:
-            if len(work_wire) != 1:
-                raise ValueError(f"Expected a single work_wire, but received {work_wire}")
             if any(wire in work_wire for wire in x_wires):
                 raise ValueError("None of the wires in work_wire should be included in x_wires.")
 
