@@ -97,6 +97,7 @@ class PhaseAdder(Operation):
         self, k, x_wires, mod=None, work_wire=None, id=None
     ):  # pylint: disable=too-many-arguments
 
+        work_wire = qml.wires.Wires(work_wire)
         x_wires = qml.wires.Wires(x_wires)
         if mod is None:
             mod = 2 ** len(x_wires)
