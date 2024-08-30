@@ -303,40 +303,65 @@ class FermiWord(dict):
 
         return mat
 
-    def commute(self, i, j):
-        if not isinstance(i, int) or not isinstance(j, int) or i < 0 or j < 0:
+    def commute(self, source, target):
+        if not isinstance(source, int) or not isinstance(target, int) or source < 0 or target < 0:
             raise ValueError("Indices must be positive integers")
 
-        if j != i + 1:
-            raise ValueError("Indices must be consecutive with j = i + 1")
-
-        if j > len(self.sorted_dic) - 1:
+        if source > len(self.sorted_dic) - 1 or target > len(self.sorted_dic) - 1:
             raise ValueError("Indices out of range")
 
-        indices = [i for i in self.sorted_dic.keys()]
-        i_idx = indices[i]
-        j_idx = indices[j]
+        if source == target:
+            return FermiSentence({self: 1})
 
-        i_val = self[i_idx]
-        j_val = self[j_idx]
+        fw = self
+        fs = FermiSentence({self: 1})
+        delta =  1 if source < target else -1
 
-        new_i_idx = (i + 1, i_idx[1])
-        new_j_idx = (j - 1, j_idx[1])
+        while source != target:
+            fs, fw = _commute_adjacent(fs, fw, source, source + delta)
+            source += delta
 
-        fw = dict(self)
-        fw[new_i_idx] = i_val
-        fw[new_j_idx] = j_val
+        return fs
 
-        if i_idx[1] != j_idx[1]:
-            del fw[i_idx]
-            del fw[j_idx]
 
-        fw = FermiWord(fw)
+def _commute_adjacent(fs, fw, i, j):
+    if i != j + 1 and j != i + 1:
+        raise ValueError("Indices must be consecutive integers")
 
-        if i_val == j_val or i_idx[1] != j_idx[1]:
-            return -1 * FermiSentence({fw: 1})
-        else:
-            return 1 - FermiSentence({fw: 1})
+    small = min(i, j)
+    big = max(i, j)
+
+    indices = [i for i in fw.sorted_dic.keys()]
+    small_idx = indices[small]
+    big_idx = indices[big]
+
+    small_val = fw[small_idx]
+    big_val = fw[big_idx]
+
+    new_small_idx = (small + 1, small_idx[1])
+    new_big_idx = (big - 1, big_idx[1])
+
+    coeff = fs[fw]
+    del fs[fw]
+    fw = dict(fw)
+    fw[new_small_idx] = small_val
+    fw[new_big_idx] = big_val
+
+    if small_idx[1] != big_idx[1]:
+        del fw[small_idx]
+        del fw[big_idx]
+
+    fw = FermiWord(fw)
+
+    fs = dict(fs)
+    fs = FermiSentence(fs)
+
+    if small_val == big_val or small_idx[1] != big_idx[1]:
+        fs = fs + (-1 * FermiSentence({fw: coeff}))
+    else:
+        fs = fs + (1 - FermiSentence({fw: coeff}))
+
+    return fs, fw
 
 
 # pylint: disable=useless-super-delegation
@@ -558,7 +583,7 @@ class FermiSentence(dict):
 
         return mat
 
-    def commute(self, fw, i, j):
+    def commute(self, fw, source, target):
         if fw not in self.keys():
             raise ValueError(f"The FermiWord {fw} does not appear in the FermiSentence")
 
@@ -566,7 +591,7 @@ class FermiSentence(dict):
         coeff = fs[fw]
         del fs[fw]
 
-        return FermiSentence(fs) + coeff*fw.commute(i, j)
+        return FermiSentence(fs) + coeff*fw.commute(source, target)
 
 
 

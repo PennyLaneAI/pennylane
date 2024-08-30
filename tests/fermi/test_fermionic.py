@@ -21,7 +21,7 @@ import re
 
 import pennylane as qml
 from pennylane import numpy as pnp
-from pennylane.fermi.fermionic import FermiSentence, FermiWord, _to_string, from_string
+from pennylane.fermi.fermionic import FermiSentence, FermiWord, _to_string, from_string, _commute_adjacent
 
 # pylint: disable=too-many-public-methods
 
@@ -202,6 +202,8 @@ class TestFermiWord:
         (fw15, 0, 1, fw15cs),
         (fw16, 1, 2, fw16cs),
         (fw17, 0, 1, fw17cs),
+        (fw8, 0, 0, FermiSentence({fw8: 1})),
+        (fw8, 1, 0, fw8cs),
     )
 
     @pytest.mark.parametrize("fw, i, j, fs", tup_fw_commute)
@@ -215,8 +217,8 @@ class TestFermiWord:
         with pytest.raises(ValueError, match="Indices must be positive integers"):
             fw8.commute(-1, 0)
 
-        with pytest.raises(ValueError, match="Indices must be consecutive with j = i \\+ 1"):
-            fw17.commute(0, 2)   
+        with pytest.raises(ValueError, match="Indices must be consecutive integers"):
+            _commute_adjacent(FermiSentence({fw17: 1}), fw17, 0, 2)   
 
         with pytest.raises(ValueError, match="Indices out of range"):
             fw8.commute(1, 2)
