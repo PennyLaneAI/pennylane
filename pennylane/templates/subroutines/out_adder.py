@@ -34,22 +34,21 @@ class OutAdder(Operation):
 
     .. note::
 
-        To obtain the correct result, :math:`x` and :math:`y` must be smaller than :math:`mod`.
+        To obtain the correct result, :math:`x`, :math:`y` and :math:`b` must be smaller than :math:`mod`.
 
     .. seealso:: :class:`~.PhaseAdder` and :class:`~.Adder`.
 
     Args:
         x_wires (Sequence[int]): the wires that store the integer :math:`x`
         y_wires (Sequence[int]): the wires that store the integer :math:`y`
-        output_wires (Sequence[int]): the wires that store the addition result
+        output_wires (Sequence[int]): the wires that store the addition result. If the register is in a non-zero state :math:`b`, the solution will be added to this value
         mod (int): the modulo for performing the addition. If not provided, it will be set to its maximum value, :math:`2^{\text{len(output_wires)}}`.
-        work_wires (Sequence[int]): the auxiliary wires to use for the addition. The
-            work wires are not needed if `mod`=:math:`2^{len(x\_wires)}`, otherwise two work wires
-            should be provided. Defaults to None.
+        work_wires (Sequence[int]): the auxiliary wires to use for the addition. The work wires are not needed if `mod`=:math:`2^{len(x\_wires)}`, otherwise two work wires should be provided. Defaults to None.
 
     **Example**
 
     This example computes the sum of two integers :math:`x=5` and :math:`y=6` modulo :math:`mod=7`.
+    We'll let :math:`b=0`. See Usage Details for :math:`b \neq 0`.
 
     .. code-block::
 
@@ -94,7 +93,37 @@ class OutAdder(Operation):
         The third one is ``output_wires`` which is used
         to encode the integer :math:`b+x+y \; \text{mod} \; mod` in the computational basis. Therefore, it will require at least
         :math:`\lceil \log_2(mod)\rceil` ``output_wires`` to represent :math:`b+x+y \; \text{mod} \; mod`. Note that these wires can be initialized with any integer
-        :math:`b`, but the most common choice is :math:`b=0` to obtain as a final result :math:`x + y \; \text{mod} \; mod`.
+        :math:`b < mod`, but the most common choice is :math:`b=0` to obtain as a final result :math:`x + y \; \text{mod} \; mod`.
+        The following is an example for :math:`b = 1`.
+
+        .. code-block::
+
+            b=1
+            x=5
+            y=6
+            mod=7
+
+            x_wires=[0,1,2]
+            y_wires=[3,4,5]
+            output_wires=[7,8,9]
+            work_wires=[6,10]
+
+            dev = qml.device("default.qubit", shots=1)
+            @qml.qnode(dev)
+            def circuit():
+                qml.BasisEmbedding(x, wires=x_wires)
+                qml.BasisEmbedding(y, wires=y_wires)
+                qml.BasisEmbedding(b, wires=output_wires)
+                qml.OutAdder(x_wires, y_wires, output_wires, mod, work_wires)
+                return qml.sample(wires=output_wires)
+
+        .. code-block:: pycon
+
+            >>> print(circuit())
+            [1 0 1]
+
+        The result :math:`[1 0 1]`, is the binary representation of
+        :math:`5 + 6 + 1\; \text{modulo} \; 7 = 5`.
 
         The fourth set of wires is ``work_wires`` which consist of the auxiliary qubits used to perform the modular addition operation.
 
@@ -185,7 +214,7 @@ class OutAdder(Operation):
         Args:
             x_wires (Sequence[int]): the wires that store the integer :math:`x`
             y_wires (Sequence[int]): the wires that store the integer :math:`y`
-            output_wires (Sequence[int]): the wires that store the addition result
+            output_wires (Sequence[int]): the wires that store the addition result. If the register is in a non-zero state :math:`b`, the solution will be added to this value
             mod (int): the modulo for performing the addition. If not provided, it will be set to :math:`2^{\text{len(output_wires)}}`
             work_wires (Sequence[int]): the auxiliary wires to use for the addition. The
             work wires are not needed if `mod`=:math:`2^{len(output_wires)}`, otherwise two work wires
