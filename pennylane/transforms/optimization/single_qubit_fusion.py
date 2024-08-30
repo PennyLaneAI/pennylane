@@ -56,7 +56,7 @@ def single_qubit_fusion(
 
     .. code-block:: python
 
-        @single_qubit_fusion
+        @qml.transforms.single_qubit_fusion
         @qml.qnode(device=dev)
         def qfunc(r1, r2):
             qml.Hadamard(wires=0)
@@ -108,7 +108,7 @@ def single_qubit_fusion(
         Full single-qubit gate fusion allows us to collapse this entire sequence into a
         single ``qml.Rot`` rotation gate.
 
-        >>> optimized_qfunc = single_qubit_fusion(qfunc)
+        >>> optimized_qfunc = qml.transforms.single_qubit_fusion(qfunc)
         >>> optimized_qnode = qml.QNode(optimized_qfunc, dev)
         >>> print(qml.draw(optimized_qnode)([0.1, 0.2, 0.3], [0.4, 0.5, 0.6]))
         0: ──Rot(3.57, 2.09, 2.05)──┤ ⟨X⟩
@@ -117,7 +117,7 @@ def single_qubit_fusion(
         :title: Derivation
         :href: derivation
 
-        The matrices for the two individual rotations are given by
+        The matrix for an individual rotation is given by
 
         .. math::
 

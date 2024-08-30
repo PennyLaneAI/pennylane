@@ -223,7 +223,7 @@ def flatten(
     """Flattens a pytree into leaves and a structure.
 
     Args:
-        obj (Any): any object
+        obj (Any): any object.
         is_leaf (Callable[[Any], bool] | None = None): an optionally specified
             function that will be called at each flattening step. It should return
             a boolean, with ``True`` stopping the traversal and the whole subtree being
