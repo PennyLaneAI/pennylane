@@ -21,7 +21,13 @@ import re
 
 import pennylane as qml
 from pennylane import numpy as pnp
-from pennylane.fermi.fermionic import FermiSentence, FermiWord, _to_string, from_string, _commute_adjacent
+from pennylane.fermi.fermionic import (
+    FermiSentence,
+    FermiWord,
+    _to_string,
+    from_string,
+    _commute_adjacent,
+)
 
 # pylint: disable=too-many-public-methods
 
@@ -33,71 +39,72 @@ fw5 = FermiWord({(0, 10): "+", (1, 30): "-", (2, 0): "+", (3, 400): "-"})
 fw6 = FermiWord({(0, 10): "+", (1, 30): "+", (2, 0): "-", (3, 400): "-"})
 fw7 = FermiWord({(0, 10): "-", (1, 30): "+", (2, 0): "-", (3, 400): "+"})
 
-fw8 = FermiWord({(0, 0): '-', (1, 1): '+'})
-fw8c = FermiWord({(0, 1): '+', (1, 0): '-'})
+fw8 = FermiWord({(0, 0): "-", (1, 1): "+"})
+fw8c = FermiWord({(0, 1): "+", (1, 0): "-"})
 fw8cs = FermiSentence({fw8c: -1})
 
-fw9 = FermiWord({(0, 0): '-', (1, 1): '-'})
-fw9c = FermiWord({(0, 1): '-', (1, 0): '-'})
+fw9 = FermiWord({(0, 0): "-", (1, 1): "-"})
+fw9c = FermiWord({(0, 1): "-", (1, 0): "-"})
 fw9cs = FermiSentence({fw9c: -1})
 
-fw10 = FermiWord({(0, 0) : '+', (1, 1) : '+'})
-fw10c = FermiWord({(0, 1) : '+', (1, 0) : '+'})
+fw10 = FermiWord({(0, 0): "+", (1, 1): "+"})
+fw10c = FermiWord({(0, 1): "+", (1, 0): "+"})
 fw10cs = FermiSentence({fw10c: -1})
 
-fw11 = FermiWord({(0, 0) : '-', (1, 0) : '+'})
-fw11c = FermiWord({(0, 0) : '+', (1, 0) : '-'})
+fw11 = FermiWord({(0, 0): "-", (1, 0): "+"})
+fw11c = FermiWord({(0, 0): "+", (1, 0): "-"})
 fw11cs = 1 + FermiSentence({fw11c: -1})
 
-fw12 = FermiWord({(0, 0) : '+', (1, 0) : '+'})
-fw12c = FermiWord({(0, 0) : '+', (1, 0) : '+'})
+fw12 = FermiWord({(0, 0): "+", (1, 0): "+"})
+fw12c = FermiWord({(0, 0): "+", (1, 0): "+"})
 fw12cs = FermiSentence({fw12c: 1})
 
-fw13 = FermiWord({(0, 0) : '-', (1, 0) : '-'})
-fw13c = FermiWord({(0, 0) : '-', (1, 0) : '-'})
+fw13 = FermiWord({(0, 0): "-", (1, 0): "-"})
+fw13c = FermiWord({(0, 0): "-", (1, 0): "-"})
 fw13cs = FermiSentence({fw13c: 1})
 
-fw14 = FermiWord({(0, 0) : '+', (1, 0) : '-'})
-fw14c = FermiWord({(0, 0) : '-', (1, 0) : '+'})
+fw14 = FermiWord({(0, 0): "+", (1, 0): "-"})
+fw14c = FermiWord({(0, 0): "-", (1, 0): "+"})
 fw14cs = 1 + FermiSentence({fw14c: -1})
 
-fw15 = FermiWord({(0, 0): '-', (1, 1): '+', (2, 2): '+'})
-fw15c = FermiWord({(0, 1): '+', (1, 0): '-', (2, 2): '+'})
+fw15 = FermiWord({(0, 0): "-", (1, 1): "+", (2, 2): "+"})
+fw15c = FermiWord({(0, 1): "+", (1, 0): "-", (2, 2): "+"})
 fw15cs = FermiSentence({fw15c: -1})
 
-fw16 = FermiWord({(0, 0): '-', (1, 1): '+', (2, 2): '-'})
-fw16c = FermiWord({(0, 0): '-', (1, 2): '-', (2, 1): '+'})
+fw16 = FermiWord({(0, 0): "-", (1, 1): "+", (2, 2): "-"})
+fw16c = FermiWord({(0, 0): "-", (1, 2): "-", (2, 1): "+"})
 fw16cs = FermiSentence({fw16c: -1})
 
-fw17 = FermiWord({(0, 0) : '-', (1, 0) : '+', (2, 2): '-'})
-fw17c1 = FermiWord({(0, 2): '-'})
-fw17c2 = FermiWord({(0, 0): '+', (1, 0): '-', (2, 2): '-'})
+fw17 = FermiWord({(0, 0): "-", (1, 0): "+", (2, 2): "-"})
+fw17c1 = FermiWord({(0, 2): "-"})
+fw17c2 = FermiWord({(0, 0): "+", (1, 0): "-", (2, 2): "-"})
 fw17cs = fw17c1 - fw17c2
 
-fw18 = FermiWord({(0, 0): '+', (1, 1): '+', (2, 2): '-', (3, 3): '-'})
-fw18c = FermiWord({(0, 0): '+', (1, 3): '-', (2, 1): '+', (3, 2): '-'})
+fw18 = FermiWord({(0, 0): "+", (1, 1): "+", (2, 2): "-", (3, 3): "-"})
+fw18c = FermiWord({(0, 0): "+", (1, 3): "-", (2, 1): "+", (3, 2): "-"})
 fw18cs = FermiSentence({fw18c: 1})
 
-fw19 = FermiWord({(0, 0): '+', (1, 1): '+', (2, 2): '-', (3, 2): '+'})
-fw19c1 = FermiWord({(0, 0): '+', (1, 1): '+'})
-fw19c2 = FermiWord({(0, 2): '+', (1, 0): '+', (2, 1): '+', (3, 2): '-'})
+fw19 = FermiWord({(0, 0): "+", (1, 1): "+", (2, 2): "-", (3, 2): "+"})
+fw19c1 = FermiWord({(0, 0): "+", (1, 1): "+"})
+fw19c2 = FermiWord({(0, 2): "+", (1, 0): "+", (2, 1): "+", (3, 2): "-"})
 fw19cs = FermiSentence({fw19c1: 1, fw19c2: -1})
 
-fw20 = FermiWord({(0, 0): '-', (1, 0): '+', (2, 1): '-', (3, 0): '-', (4, 0): '+'})
-fw20c1 = FermiWord({(0, 0): '-', (1, 0): '+', (2, 1): '-'})
-fw20c2 = FermiWord({(0, 0): '+', (1, 1): '-', (2, 0): '-'})
-fw20c3 = FermiWord({(0, 0): '+', (1, 0): '-', (2, 0): '+', (3, 1): '-', (4, 0): '-'})
+fw20 = FermiWord({(0, 0): "-", (1, 0): "+", (2, 1): "-", (3, 0): "-", (4, 0): "+"})
+fw20c1 = FermiWord({(0, 0): "-", (1, 0): "+", (2, 1): "-"})
+fw20c2 = FermiWord({(0, 0): "+", (1, 1): "-", (2, 0): "-"})
+fw20c3 = FermiWord({(0, 0): "+", (1, 0): "-", (2, 0): "+", (3, 1): "-", (4, 0): "-"})
 fw20cs = fw20c1 + fw20c2 - fw20c3
 
-#MOVE THESE
+# MOVE THESE
 fs8 = fw8 + fw9
 fs8c = fw8 + fw9cs
 
-fs9 = 1.3*fw8 + (1.4 + 3.8j)*fw9
-fs9c = 1.3*fw8 + (1.4 + 3.8j)*fw9cs
+fs9 = 1.3 * fw8 + (1.4 + 3.8j) * fw9
+fs9c = 1.3 * fw8 + (1.4 + 3.8j) * fw9cs
 
-fs10 = -1.3*fw11 + 2.3*fw9
-fs10c = -1.3*fw11cs + 2.3*fw9
+fs10 = -1.3 * fw11 + 2.3 * fw9
+fs10c = -1.3 * fw11cs + 2.3 * fw9
+
 
 class TestFermiWord:
     def test_missing(self):
@@ -238,7 +245,7 @@ class TestFermiWord:
             fw8.commute(-1, 0)
 
         with pytest.raises(ValueError, match="Indices must be consecutive integers"):
-            _commute_adjacent(FermiSentence({fw17: 1}), fw17, 0, 2)   
+            _commute_adjacent(FermiSentence({fw17: 1}), fw17, 0, 2)
 
         with pytest.raises(ValueError, match="Indices out of range"):
             fw8.commute(1, 2)
@@ -756,7 +763,10 @@ class TestFermiSentence:
         assert fs.commute(fw, i, j) == fsc
 
     def test_commute_errors(self):
-        with pytest.raises(ValueError, match=re.escape(f"The FermiWord {fw11} does not appear in the FermiSentence")):
+        with pytest.raises(
+            ValueError,
+            match=re.escape(f"The FermiWord {fw11} does not appear in the FermiSentence"),
+        ):
             fs8.commute(fw11, 0, 1)
 
 

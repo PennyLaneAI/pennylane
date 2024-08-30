@@ -315,7 +315,7 @@ class FermiWord(dict):
 
         fw = self
         fs = FermiSentence({self: 1})
-        delta =  1 if source < target else -1
+        delta = 1 if source < target else -1
 
         print(fs)
         print("\n")
@@ -393,7 +393,7 @@ def _commute_adjacent(fs, fw, i, j):
         rfw = FermiWord(right)
 
         terms = lfw * (1 - FermiSentence({mfw: 1})) * rfw
-        
+
         fs = fs + coeff * terms
 
     return fs, fw
@@ -626,8 +626,7 @@ class FermiSentence(dict):
         coeff = fs[fw]
         del fs[fw]
 
-        return FermiSentence(fs) + coeff*fw.commute(source, target)
-
+        return FermiSentence(fs) + coeff * fw.commute(source, target)
 
 
 def from_string(fermi_string):
