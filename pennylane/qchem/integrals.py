@@ -136,17 +136,18 @@ def _generate_params(params, args, argnum=None):
         args (list(array[float])): initial values of the differentiable basis set parameters
         argnum (int | Sequence[int] | None): index (indices) of the positional argument(s) -
             [``coordinates``, ``coeff``, ``alpha``] that should support differentiation. For
-            example, ``argnums=[0, 2]`` would mean derivatives can be computed with respect to both
+            example, ``argnum=[0, 2]`` would mean derivatives can be computed with respect to both
             ``coordinates`` and ``coeff``.
 
     Returns:
         list(array[float]): basis set parameters
     """
+    argnums = () if argnum is None else ((argnum) if isinstance(argnum, int) else argnum)
     basis_params = []
     c = 0
     for i, p in enumerate(params):
         # we iterate through argnum backwards because params order goes [alpha, coeff, r]
-        if getattr(p, "requires_grad", False) or (argnum is not None and 2 - i in argnum):
+        if getattr(p, "requires_grad", False) or 2 - i in argnums:
             basis_params.append(args[c])
             c += 1
         else:
@@ -287,7 +288,7 @@ def overlap_integral(basis_a, basis_b, argnum=None, normalize=True):
         basis_b (~qchem.basis_set.BasisFunction): second basis function
         argnum (int | Sequence[int] | None): index (indices) of the positional argument(s) -
             [``coordinates``, ``coeff``, ``alpha``] that should support differentiation. For
-            example, ``argnums=[0, 2]`` would mean derivatives can be computed with respect to both
+            example, ``argnum=[0, 2]`` would mean derivatives can be computed with respect to both
             ``coordinates`` and ``coeff``.
         normalize (bool): if True, the basis functions get normalized
 
@@ -313,16 +314,14 @@ def overlap_integral(basis_a, basis_b, argnum=None, normalize=True):
         Returns:
             array[float]: the overlap integral between two contracted Gaussian orbitals
         """
+        argnums = () if argnum is None else ((argnum) if isinstance(argnum, int) else argnum)
+
         args_a = [arg[0] for arg in args]
         args_b = [arg[1] for arg in args]
         alpha, ca, ra = _generate_params(basis_a.params, args_a, argnum)
         beta, cb, rb = _generate_params(basis_b.params, args_b, argnum)
 
-        if (
-            getattr(basis_a.params[1], "requires_grad", False)
-            or normalize
-            or (argnum is not None and 1 in argnum)
-        ):
+        if getattr(basis_a.params[1], "requires_grad", False) or normalize or 1 in argnums:
             ca = ca * primitive_norm(basis_a.l, alpha)
             cb = cb * primitive_norm(basis_b.l, beta)
             na = contracted_norm(basis_a.l, alpha, ca)
@@ -486,7 +485,7 @@ def moment_integral(basis_a, basis_b, order, idx, argnum=None, normalize=True):
         idx (integer): index determining the dimension of the multipole moment integral
         argnum (int | Sequence[int] | None): index (indices) of the positional argument(s) -
             [``coordinates``, ``coeff``, ``alpha``] that should support differentiation. For
-            example, ``argnums=[0, 2]`` would mean derivatives can be computed with respect to both
+            example, ``argnum=[0, 2]`` would mean derivatives can be computed with respect to both
             ``coordinates`` and ``coeff``.
         normalize (bool): if True, the basis functions get normalized
 
@@ -513,6 +512,8 @@ def moment_integral(basis_a, basis_b, order, idx, argnum=None, normalize=True):
         Returns:
             array[float]: the multipole moment integral between two contracted Gaussian orbitals
         """
+        argnums = () if argnum is None else ((argnum) if isinstance(argnum, int) else argnum)
+
         args_a = [arg[0] for arg in args]
         args_b = [arg[1] for arg in args]
 
@@ -522,11 +523,7 @@ def moment_integral(basis_a, basis_b, order, idx, argnum=None, normalize=True):
         alpha, ca, ra = _generate_params(basis_a.params, args_a, argnum)
         beta, cb, rb = _generate_params(basis_b.params, args_b, argnum)
 
-        if (
-            getattr(basis_a.params[1], "requires_grad", False)
-            or normalize
-            or (argnum is not None and 1 in argnum)
-        ):
+        if getattr(basis_a.params[1], "requires_grad", False) or normalize or 1 in argnums:
             ca = ca * primitive_norm(basis_a.l, alpha)
             cb = cb * primitive_norm(basis_b.l, beta)
             na = contracted_norm(basis_a.l, alpha, ca)
@@ -669,7 +666,7 @@ def kinetic_integral(basis_a, basis_b, argnum=None, normalize=True):
         normalize (bool): if True, the basis functions get normalized
         argnum (int | Sequence[int] | None): index (indices) of the positional argument(s) -
             [``coordinates``, ``coeff``, ``alpha``] that should support differentiation. For
-            example, ``argnums=[0, 2]`` would mean derivatives can be computed with respect to both
+            example, ``argnum=[0, 2]`` would mean derivatives can be computed with respect to both
             ``coordinates`` and ``coeff``.
 
     Returns:
@@ -696,17 +693,14 @@ def kinetic_integral(basis_a, basis_b, argnum=None, normalize=True):
         Returns:
             array[float]: the kinetic integral between two contracted Gaussian orbitals
         """
+        argnums = () if argnum is None else ((argnum) if isinstance(argnum, int) else argnum)
 
         args_a = [arg[0] for arg in args]
         args_b = [arg[1] for arg in args]
         alpha, ca, ra = _generate_params(basis_a.params, args_a, argnum)
         beta, cb, rb = _generate_params(basis_b.params, args_b, argnum)
 
-        if (
-            getattr(basis_a.params[1], "requires_grad", False)
-            or (argnum is not None and 1 in argnum)
-            or normalize
-        ):
+        if getattr(basis_a.params[1], "requires_grad", False) or 1 in argnums or normalize:
             ca = ca * primitive_norm(basis_a.l, alpha)
             cb = cb * primitive_norm(basis_b.l, beta)
             na = contracted_norm(basis_a.l, alpha, ca)
@@ -884,7 +878,7 @@ def attraction_integral(r, basis_a, basis_b, argnum=None, normalize=True):
         normalize (bool): if True, the basis functions get normalized
         argnum (int | Sequence[int] | None): index (indices) of the positional argument(s) -
             [``coordinates``, ``coeff``, ``alpha``] that should support differentiation. For
-            example, ``argnums=[0, 2]`` would mean derivatives can be computed with respect to both
+            example, ``argnum=[0, 2]`` would mean derivatives can be computed with respect to both
             ``coordinates`` and ``coeff``.
 
     Returns:
@@ -926,11 +920,7 @@ def attraction_integral(r, basis_a, basis_b, argnum=None, normalize=True):
         alpha, ca, ra = _generate_params(basis_a.params, args_a, argnum)
         beta, cb, rb = _generate_params(basis_b.params, args_b, argnum)
 
-        if (
-            getattr(basis_a.params[1], "requires_grad", False)
-            or normalize
-            or (argnum is not None and 1 in argnum)
-        ):
+        if getattr(basis_a.params[1], "requires_grad", False) or normalize or 1 in argnums:
             ca = ca * primitive_norm(basis_a.l, alpha)
             cb = cb * primitive_norm(basis_b.l, beta)
             na = contracted_norm(basis_a.l, alpha, ca)
@@ -1040,7 +1030,7 @@ def repulsion_integral(basis_a, basis_b, basis_c, basis_d, argnum=None, normaliz
         basis_d (~qchem.basis_set.BasisFunction): fourth basis function
         argnum (int | Sequence[int] | None): index (indices) of the positional argument(s) -
             [``coordinates``, ``coeff``, ``alpha``] that should support differentiation. For
-            example, ``argnums=[0, 2]`` would mean derivatives can be computed with respect to both
+            example, ``argnum=[0, 2]`` would mean derivatives can be computed with respect to both
             ``coordinates`` and ``coeff``.
         normalize (bool): if True, the basis functions get normalized
 
@@ -1072,6 +1062,8 @@ def repulsion_integral(basis_a, basis_b, basis_c, basis_d, argnum=None, normaliz
         Returns:
             array[float]: the electron repulsion integral between four contracted Gaussian functions
         """
+        argnums = () if argnum is None else ((argnum) if isinstance(argnum, int) else argnum)
+
         args_a = [arg[0] for arg in args]
         args_b = [arg[1] for arg in args]
         args_c = [arg[2] for arg in args]
@@ -1082,11 +1074,7 @@ def repulsion_integral(basis_a, basis_b, basis_c, basis_d, argnum=None, normaliz
         gamma, cc, rc = _generate_params(basis_c.params, args_c, argnum)
         delta, cd, rd = _generate_params(basis_d.params, args_d, argnum)
 
-        if (
-            getattr(basis_a.params[1], "requires_grad", False)
-            or normalize
-            or (argnum is not None and 1 in argnum)
-        ):
+        if getattr(basis_a.params[1], "requires_grad", False) or normalize or 1 in argnums:
             ca = ca * primitive_norm(basis_a.l, alpha)
             cb = cb * primitive_norm(basis_b.l, beta)
             cc = cc * primitive_norm(basis_c.l, gamma)

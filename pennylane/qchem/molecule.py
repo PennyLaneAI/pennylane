@@ -57,7 +57,7 @@ class Molecule:
         unit (str): unit of atomic coordinates. Available options are ``unit="bohr"`` and ``unit="angstrom"``.
         argnum (int | Sequence(int) | None): index (indices) of the positional argument(s) -
             [``coordinates``, ``coeff``, ``alpha``] that should support differentiation. For
-            example, ``argnums=[0, 2]`` would mean derivatives can be computed with respect to both
+            example, ``argnum=[0, 2]`` would mean derivatives can be computed with respect to both
             ``coordinates`` and ``coeff``.
 
     **Example**
