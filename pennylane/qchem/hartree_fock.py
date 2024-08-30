@@ -125,7 +125,7 @@ def scf(mol, n_steps=50, tol=1e-8):
         charges = mol.nuclear_charges
         r = mol.coordinates
         n_electron = mol.n_electrons
-        argnum = mol.argnum
+        argnum = mol.argnum if mol.argnum is not None else ()
 
         if getattr(r, "requires_grad", False) or (argnum is not None and 0 in argnum):
             args_r = [[args[0][i]] * mol.n_basis[i] for i in range(len(mol.n_basis))]
