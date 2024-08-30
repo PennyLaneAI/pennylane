@@ -15,9 +15,9 @@
 import pickle
 from copy import copy, deepcopy
 
+import re
 import numpy as np
 import pytest
-import re
 
 import pennylane as qml
 from pennylane import numpy as pnp
@@ -94,16 +94,6 @@ fw20c1 = FermiWord({(0, 0): "-", (1, 0): "+", (2, 1): "-"})
 fw20c2 = FermiWord({(0, 0): "+", (1, 1): "-", (2, 0): "-"})
 fw20c3 = FermiWord({(0, 0): "+", (1, 0): "-", (2, 0): "+", (3, 1): "-", (4, 0): "-"})
 fw20cs = fw20c1 + fw20c2 - fw20c3
-
-# MOVE THESE
-fs8 = fw8 + fw9
-fs8c = fw8 + fw9cs
-
-fs9 = 1.3 * fw8 + (1.4 + 3.8j) * fw9
-fs9c = 1.3 * fw8 + (1.4 + 3.8j) * fw9cs
-
-fs10 = -1.3 * fw11 + 2.3 * fw9
-fs10c = -1.3 * fw11cs + 2.3 * fw9
 
 
 class TestFermiWord:
@@ -637,6 +627,15 @@ fs1_x_fs2 = FermiSentence(  # fs1 * fs1, computed by hand
     }
 )
 
+fs8 = fw8 + fw9
+fs8c = fw8 + fw9cs
+
+fs9 = 1.3 * fw8 + (1.4 + 3.8j) * fw9
+fs9c = 1.3 * fw8 + (1.4 + 3.8j) * fw9cs
+
+fs10 = -1.3 * fw11 + 2.3 * fw9
+fs10c = -1.3 * fw11cs + 2.3 * fw9
+
 
 class TestFermiSentence:
     def test_missing(self):
@@ -758,6 +757,7 @@ class TestFermiSentence:
         (fs10, fw11, 0, 1, fs10c),
     )
 
+    # pylint: disable=too-many-arguments
     @pytest.mark.parametrize("fs, fw, i, j, fsc", tup_fs_commute)
     def test_commute(self, fs, fw, i, j, fsc):
         assert fs.commute(fw, i, j) == fsc
