@@ -125,18 +125,18 @@ def scf(mol, n_steps=50, tol=1e-8):
         charges = mol.nuclear_charges
         r = mol.coordinates
         n_electron = mol.n_electrons
-        argnum = mol.argnum if mol.argnum is not None else ()
+        argnums = mol.argnum if mol.argnum is not None else ()
 
-        if getattr(r, "requires_grad", False) or 0 in argnum:
+        if getattr(r, "requires_grad", False) or 0 in argnums:
             args_r = [[args[0][i]] * mol.n_basis[i] for i in range(len(mol.n_basis))]
             args_ = [*args] + [qml.math.vstack(list(itertools.chain(*args_r)))]
-            rep_tensor = repulsion_tensor(basis_functions, argnum)(*args_[1:])
-            s = overlap_matrix(basis_functions, argnum)(*args_[1:])
-            h_core = core_matrix(basis_functions, charges, r, argnum)(*args_)
+            rep_tensor = repulsion_tensor(basis_functions, argnums)(*args_[1:])
+            s = overlap_matrix(basis_functions, argnums)(*args_[1:])
+            h_core = core_matrix(basis_functions, charges, r, argnums)(*args_)
         else:
-            rep_tensor = repulsion_tensor(basis_functions, argnum)(*args)
-            s = overlap_matrix(basis_functions, argnum)(*args)
-            h_core = core_matrix(basis_functions, charges, r, argnum)(*args)
+            rep_tensor = repulsion_tensor(basis_functions, argnums)(*args)
+            s = overlap_matrix(basis_functions, argnums)(*args)
+            h_core = core_matrix(basis_functions, charges, r, argnums)(*args)
 
         rng = qml.math.random.default_rng(2030)
         s = s + qml.math.diag(rng.random(len(s)) * 1.0e-12)
@@ -190,7 +190,7 @@ def nuclear_energy(charges, r, argnum=None):
     Args:
         charges (list[int]): nuclear charges in atomic units
         r (array[float]): nuclear positions
-        argnum (Sequence[int] | None): index (indices) of the positional argument(s) -
+        argnum (int | Sequence[int] | None): index (indices) of the positional argument(s) -
             [``coordinates``, ``coeff``, ``alpha``] that should support differentiation. For
             example, ``argnums=[0, 2]`` would mean derivatives can be computed with respect to both
             ``coordinates`` and ``coeff``.

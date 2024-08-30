@@ -66,7 +66,7 @@ def overlap_matrix(basis_functions, argnum=None):
 
     Args:
         basis_functions (list[~qchem.basis_set.BasisFunction]): basis functions
-        argnum (Sequence[int] | None): index (indices) of the positional argument(s) -
+        argnum (int | Sequence[int] | None): index (indices) of the positional argument(s) -
             [``coordinates``, ``coeff``, ``alpha``] that should support differentiation. For
             example, ``argnums=[0, 2]`` would mean derivatives can be computed with respect to both
             ``coordinates`` and ``coeff``.
@@ -120,7 +120,7 @@ def moment_matrix(basis_functions, order, idx, argnum=None):
         basis_functions (list[~qchem.basis_set.BasisFunction]): basis functions
         order (integer): exponent of the position component
         idx (integer): index determining the dimension of the multipole moment integral
-        argnum (Sequence[int] | None): index (indices) of the positional argument(s) -
+        argnum (int | Sequence[int] | None): index (indices) of the positional argument(s) -
             [``coordinates``, ``coeff``, ``alpha``] that should support differentiation. For
             example, ``argnums=[0, 2]`` would mean derivatives can be computed with respect to both
             ``coordinates`` and ``coeff``.
@@ -173,7 +173,7 @@ def kinetic_matrix(basis_functions, argnum=None):
 
     Args:
         basis_functions (list[~qchem.basis_set.BasisFunction]): basis functions
-        argnum (Sequence[int] | None): index (indices) of the positional argument(s) -
+        argnum (int | Sequence[int] | None): index (indices) of the positional argument(s) -
             [``coordinates``, ``coeff``, ``alpha``] that should support differentiation. For
             example, ``argnums=[0, 2]`` would mean derivatives can be computed with respect to both
             ``coordinates`` and ``coeff``.
@@ -228,7 +228,7 @@ def attraction_matrix(basis_functions, charges, r, argnum=None):
         basis_functions (list[~qchem.basis_set.BasisFunction]): basis functions
         charges (list[int]): nuclear charges
         r (array[float]): nuclear positions
-        argnum (Sequence[int] | None): index (indices) of the positional argument(s) -
+        argnum (int | Sequence[int] | None): index (indices) of the positional argument(s) -
             [``coordinates``, ``coeff``, ``alpha``] that should support differentiation. For
             example, ``argnums=[0, 2]`` would mean derivatives can be computed with respect to both
             ``coordinates`` and ``coeff``.
@@ -257,6 +257,7 @@ def attraction_matrix(basis_functions, charges, r, argnum=None):
         Returns:
             array[array[float]]: the electron-nuclear attraction matrix
         """
+        argnums = () if argnum is None else ((argnum) if isinstance(argnum, int) else argnum)
         n = len(basis_functions)
         matrix = qml.math.zeros((n, n))
         for (i, a), (j, b) in it.combinations_with_replacement(enumerate(basis_functions), r=2):
@@ -264,18 +265,18 @@ def attraction_matrix(basis_functions, charges, r, argnum=None):
             if args:
                 args_ab = []
 
-                if getattr(r, "requires_grad", False) or (argnum is not None and 0 in argnum):
+                if getattr(r, "requires_grad", False) or 0 in argnums:
                     args_ab.extend([arg[i], arg[j]] for arg in args[1:])
                 else:
                     args_ab.extend([arg[i], arg[j]] for arg in args)
 
                 for k, c in enumerate(r):
-                    if getattr(c, "requires_grad", False) or (argnum is not None and 0 in argnum):
+                    if getattr(c, "requires_grad", False) or 0 in argnums:
                         args_ab = [args[0][k]] + args_ab
                     integral = integral - charges[k] * attraction_integral(
                         c, a, b, argnum, normalize=False
                     )(*args_ab)
-                    if getattr(c, "requires_grad", False) or (argnum is not None and 0 in argnum):
+                    if getattr(c, "requires_grad", False) or 0 in argnums:
                         args_ab = args_ab[1:]
             else:
                 for k, c in enumerate(r):
@@ -299,7 +300,7 @@ def repulsion_tensor(basis_functions, argnum=None):
 
     Args:
         basis_functions (list[~qchem.basis_set.BasisFunction]): basis functions
-        argnum (Sequence[int] | None): index (indices) of the positional argument(s) -
+        argnum (int | Sequence[int] | None): index (indices) of the positional argument(s) -
             [``coordinates``, ``coeff``, ``alpha``] that should support differentiation. For
             example, ``argnums=[0, 2]`` would mean derivatives can be computed with respect to both
             ``coordinates`` and ``coeff``.
@@ -375,7 +376,7 @@ def core_matrix(basis_functions, charges, r, argnum=None):
         basis_functions (list[~qchem.basis_set.BasisFunction]): basis functions
         charges (list[int]): nuclear charges
         r (array[float]): nuclear positions
-        argnum (Sequence[int] | None): index (indices) of the positional argument(s) -
+        argnum (int | Sequence[int] | None): index (indices) of the positional argument(s) -
             [``coordinates``, ``coeff``, ``alpha``] that should support differentiation. For
             example, ``argnums=[0, 2]`` would mean derivatives can be computed with respect to both
             ``coordinates`` and ``coeff``.
@@ -404,7 +405,8 @@ def core_matrix(basis_functions, charges, r, argnum=None):
         Returns:
             array[array[float]]: the core matrix
         """
-        if getattr(r, "requires_grad", False) or (argnum is not None and 0 in argnum):
+        argnums = () if argnum is None else ((argnum) if isinstance(argnum, int) else argnum)
+        if getattr(r, "requires_grad", False) or 0 in argnums:
             t = kinetic_matrix(basis_functions, argnum)(*args[1:])
         else:
             t = kinetic_matrix(basis_functions, argnum)(*args)

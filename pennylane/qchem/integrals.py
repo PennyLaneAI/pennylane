@@ -134,7 +134,7 @@ def _generate_params(params, args, argnum=None):
     Args:
         params (list(array[float])): default values of the basis set parameters
         args (list(array[float])): initial values of the differentiable basis set parameters
-        argnum (Sequence[int] | None): index (indices) of the positional argument(s) -
+        argnum (int | Sequence[int] | None): index (indices) of the positional argument(s) -
             [``coordinates``, ``coeff``, ``alpha``] that should support differentiation. For
             example, ``argnums=[0, 2]`` would mean derivatives can be computed with respect to both
             ``coordinates`` and ``coeff``.
@@ -285,7 +285,7 @@ def overlap_integral(basis_a, basis_b, argnum=None, normalize=True):
     Args:
         basis_a (~qchem.basis_set.BasisFunction): first basis function
         basis_b (~qchem.basis_set.BasisFunction): second basis function
-        argnum (Sequence[int] | None): index (indices) of the positional argument(s) -
+        argnum (int | Sequence[int] | None): index (indices) of the positional argument(s) -
             [``coordinates``, ``coeff``, ``alpha``] that should support differentiation. For
             example, ``argnums=[0, 2]`` would mean derivatives can be computed with respect to both
             ``coordinates`` and ``coeff``.
@@ -484,7 +484,7 @@ def moment_integral(basis_a, basis_b, order, idx, argnum=None, normalize=True):
         basis_b (~qchem.basis_set.BasisFunction): right basis function
         order (integer): exponent of the position component
         idx (integer): index determining the dimension of the multipole moment integral
-        argnum (Sequence[int] | None): index (indices) of the positional argument(s) -
+        argnum (int | Sequence[int] | None): index (indices) of the positional argument(s) -
             [``coordinates``, ``coeff``, ``alpha``] that should support differentiation. For
             example, ``argnums=[0, 2]`` would mean derivatives can be computed with respect to both
             ``coordinates`` and ``coeff``.
@@ -667,7 +667,7 @@ def kinetic_integral(basis_a, basis_b, argnum=None, normalize=True):
         basis_a (~qchem.basis_set.BasisFunction): first basis function
         basis_b (~qchem.basis_set.BasisFunction): second basis function
         normalize (bool): if True, the basis functions get normalized
-        argnum (Sequence[int] | None): index (indices) of the positional argument(s) -
+        argnum (int | Sequence[int] | None): index (indices) of the positional argument(s) -
             [``coordinates``, ``coeff``, ``alpha``] that should support differentiation. For
             example, ``argnums=[0, 2]`` would mean derivatives can be computed with respect to both
             ``coordinates`` and ``coeff``.
@@ -882,7 +882,7 @@ def attraction_integral(r, basis_a, basis_b, argnum=None, normalize=True):
         basis_a (~qchem.basis_set.BasisFunction): first basis function
         basis_b (~qchem.basis_set.BasisFunction): second basis function
         normalize (bool): if True, the basis functions get normalized
-        argnum (Sequence[int] | None): index (indices) of the positional argument(s) -
+        argnum (int | Sequence[int] | None): index (indices) of the positional argument(s) -
             [``coordinates``, ``coeff``, ``alpha``] that should support differentiation. For
             example, ``argnums=[0, 2]`` would mean derivatives can be computed with respect to both
             ``coordinates`` and ``coeff``.
@@ -913,7 +913,8 @@ def attraction_integral(r, basis_a, basis_b, argnum=None, normalize=True):
         Returns:
             array[float]: the electron-nuclear attraction integral
         """
-        if getattr(r, "requires_grad", False) or (argnum is not None and 0 in argnum):
+        argnums = () if argnum is None else ((argnum) if isinstance(argnum, int) else argnum)
+        if getattr(r, "requires_grad", False) or 0 in argnums:
             coor = args[0]
             args_a = [arg[0] for arg in args[1:]]
             args_b = [arg[1] for arg in args[1:]]
@@ -1037,7 +1038,7 @@ def repulsion_integral(basis_a, basis_b, basis_c, basis_d, argnum=None, normaliz
         basis_b (~qchem.basis_set.BasisFunction): second basis function
         basis_c (~qchem.basis_set.BasisFunction): third basis function
         basis_d (~qchem.basis_set.BasisFunction): fourth basis function
-        argnum (Sequence[int] | None): index (indices) of the positional argument(s) -
+        argnum (int | Sequence[int] | None): index (indices) of the positional argument(s) -
             [``coordinates``, ``coeff``, ``alpha``] that should support differentiation. For
             example, ``argnums=[0, 2]`` would mean derivatives can be computed with respect to both
             ``coordinates`` and ``coeff``.
