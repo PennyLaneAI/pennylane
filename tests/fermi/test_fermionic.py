@@ -51,15 +51,15 @@ fw11cs = 1 + FermiSentence({fw11c: -1})
 
 fw12 = FermiWord({(0, 0) : '+', (1, 0) : '+'})
 fw12c = FermiWord({(0, 0) : '+', (1, 0) : '+'})
-fw12cs = FermiSentence({fw12c: -1})
+fw12cs = FermiSentence({fw12c: 1})
 
 fw13 = FermiWord({(0, 0) : '-', (1, 0) : '-'})
 fw13c = FermiWord({(0, 0) : '-', (1, 0) : '-'})
-fw13cs = FermiSentence({fw13c: -1})
+fw13cs = FermiSentence({fw13c: 1})
 
-fw14 = FermiWord({(0, 0) : '+', (1, 0) : '+'})
-fw14c = FermiWord({(0, 0) : '+', (1, 0) : '+'})
-fw14cs = FermiSentence({fw14c: -1})
+fw14 = FermiWord({(0, 0) : '+', (1, 0) : '-'})
+fw14c = FermiWord({(0, 0) : '-', (1, 0) : '+'})
+fw14cs = 1 + FermiSentence({fw14c: -1})
 
 fw15 = FermiWord({(0, 0): '-', (1, 1): '+', (2, 2): '+'})
 fw15c = FermiWord({(0, 1): '+', (1, 0): '-', (2, 2): '+'})
@@ -70,8 +70,24 @@ fw16c = FermiWord({(0, 0): '-', (1, 2): '-', (2, 1): '+'})
 fw16cs = FermiSentence({fw16c: -1})
 
 fw17 = FermiWord({(0, 0) : '-', (1, 0) : '+', (2, 2): '-'})
-fw17c = FermiWord({(0, 0) : '+', (1, 0) : '-', (2, 2): '-'})
-fw17cs = 1 + FermiSentence({fw17c: -1})
+fw17c1 = FermiWord({(0, 2): '-'})
+fw17c2 = FermiWord({(0, 0): '+', (1, 0): '-', (2, 2): '-'})
+fw17cs = fw17c1 - fw17c2
+
+fw18 = FermiWord({(0, 0): '+', (1, 1): '+', (2, 2): '-', (3, 3): '-'})
+fw18c = FermiWord({(0, 0): '+', (1, 3): '-', (2, 1): '+', (3, 2): '-'})
+fw18cs = FermiSentence({fw18c: 1})
+
+fw19 = FermiWord({(0, 0): '+', (1, 1): '+', (2, 2): '-', (3, 2): '+'})
+fw19c1 = FermiWord({(0, 0): '+', (1, 1): '+'})
+fw19c2 = FermiWord({(0, 2): '+', (1, 0): '+', (2, 1): '+', (3, 2): '-'})
+fw19cs = FermiSentence({fw19c1: 1, fw19c2: -1})
+
+fw20 = FermiWord({(0, 0): '-', (1, 0): '+', (2, 1): '-', (3, 0): '-', (4, 0): '+'})
+fw20c1 = FermiWord({(0, 0): '-', (1, 0): '+', (2, 1): '-'})
+fw20c2 = FermiWord({(0, 0): '+', (1, 1): '-', (2, 0): '-'})
+fw20c3 = FermiWord({(0, 0): '+', (1, 0): '-', (2, 0): '+', (3, 1): '-', (4, 0): '-'})
+fw20cs = fw20c1 + fw20c2 - fw20c3
 
 #MOVE THESE
 fs8 = fw8 + fw9
@@ -204,6 +220,10 @@ class TestFermiWord:
         (fw17, 0, 1, fw17cs),
         (fw8, 0, 0, FermiSentence({fw8: 1})),
         (fw8, 1, 0, fw8cs),
+        (fw11, 1, 0, fw11cs),
+        (fw18, 3, 1, fw18cs),
+        (fw19, 3, 0, fw19cs),
+        (fw20, 4, 0, fw20cs),
     )
 
     @pytest.mark.parametrize("fw, i, j, fs", tup_fw_commute)

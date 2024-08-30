@@ -317,8 +317,13 @@ class FermiWord(dict):
         fs = FermiSentence({self: 1})
         delta =  1 if source < target else -1
 
+        print(fs)
+        print("\n")
+
         while source != target:
             fs, fw = _commute_adjacent(fs, fw, source, source + delta)
+            print(fs)
+            print("\n")
             source += delta
 
         return fs
@@ -338,14 +343,18 @@ def _commute_adjacent(fs, fw, i, j):
     small_val = fw[small_idx]
     big_val = fw[big_idx]
 
-    new_small_idx = (small + 1, small_idx[1])
-    new_big_idx = (big - 1, big_idx[1])
+    # commuting identical terms
+    if small_idx[1] == big_idx[1] and small_val == big_val:
+        return fs, fw
+
+    new_small_idx = (big - 1, big_idx[1])
+    new_big_idx = (small + 1, small_idx[1])
 
     coeff = fs[fw]
     del fs[fw]
     fw = dict(fw)
-    fw[new_small_idx] = small_val
-    fw[new_big_idx] = big_val
+    fw[new_big_idx] = small_val
+    fw[new_small_idx] = big_val
 
     if small_idx[1] != big_idx[1]:
         del fw[small_idx]
@@ -359,7 +368,33 @@ def _commute_adjacent(fs, fw, i, j):
     if small_val == big_val or small_idx[1] != big_idx[1]:
         fs = fs + (-1 * FermiSentence({fw: coeff}))
     else:
-        fs = fs + (1 - FermiSentence({fw: coeff}))
+        left = {}
+        lpos = 0
+
+        middle = {}
+        mpos = 0
+
+        right = {}
+        rpos = 0
+
+        for key, value in fw.sorted_dic.items():
+            if key[0] < small:
+                left[(lpos, key[1])] = value
+                lpos += 1
+            elif key[0] > big:
+                right[(rpos, key[1])] = value
+                rpos += 1
+            else:
+                middle[(mpos, key[1])] = value
+                mpos += 1
+
+        lfw = FermiWord(left)
+        mfw = FermiWord(middle)
+        rfw = FermiWord(right)
+
+        terms = lfw * (1 - FermiSentence({mfw: 1})) * rfw
+        
+        fs = fs + coeff * terms
 
     return fs, fw
 
