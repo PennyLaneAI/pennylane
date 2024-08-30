@@ -347,7 +347,7 @@
 * Molecules and Hamiltonians can now be constructed for all the elements present in the periodic table.
   [(#5821)](https://github.com/PennyLaneAI/pennylane/pull/5821)
 
-  This new feature is made possible by integrating with the [`basis-set-exchange` package](https://pypi.org/project/basis-set-exchange/).
+  This new feature is made possible by integrating with the [basis-set-exchange package](https://pypi.org/project/basis-set-exchange/).
   If loading basis sets from `basis-set-exchange` is needed for your molecule, make sure that you 
   `pip install basis-set-exchange` and set `load_data=True`.
 
