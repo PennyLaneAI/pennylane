@@ -43,7 +43,7 @@ class OutMultiplier(Operation):
         output_wires (Sequence[int]): the wires that store the multiplication result. If the register is in a non-zero state :math:`b`, the solution will be added to this value
         mod (int): the modulo for performing the multiplication. If not provided, it will be set to its maximum value, :math:`2^{\text{len(output_wires)}}`
         work_wires (Sequence[int]): the auxiliary wires to use for the multiplication. The
-            work wires are not needed if :math:`mod=2^{\text{len(x_wires)}}`, otherwise two work wires
+            work wires are not needed if :math:`mod=2^{\text{len(output_wires)}}`, otherwise two work wires
             should be provided. Defaults to ``None``.
 
     **Example**
@@ -228,7 +228,7 @@ class OutMultiplier(Operation):
             output_wires (Sequence[int]): the wires that store the multiplication result. If the register is in a non-zero state :math:`b`, the solution will be added to this value
             mod (int): the modulo for performing the multiplication. If not provided, it will be set to its maximum value, :math:`2^{\text{len(output_wires)}}`
             work_wires (Sequence[int]): the auxiliary wires to use for the multiplication. The
-                work wires are not needed if :math:`mod=2^{\text{len(x_wires)}}`, otherwise two work wires
+                work wires are not needed if :math:`mod=2^{\text{len(output_wires)}}`, otherwise two work wires
                 should be provided. Defaults to ``None``.
 
         Returns:
