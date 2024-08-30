@@ -41,8 +41,10 @@ class OutMultiplier(Operation):
         x_wires (Sequence[int]): the wires that store the integer :math:`x`
         y_wires (Sequence[int]): the wires that store the integer :math:`y`
         output_wires (Sequence[int]): the wires that store the multiplication result
-        mod (int): the modulo for performing the multiplication. If not provided, it will be set to :math:`2^{\text{len(output_wires)}}`
-        work_wires (Sequence[int]): the auxiliary wires to use for the multiplication, default is ``None``
+        mod (int): the modulo for performing the multiplication. If not provided, it will be set to its maximum value, :math:`2^{\text{len(output_wires)}}`
+        work_wires (Sequence[int]): the auxiliary wires to use for the multiplication. The
+            work wires are not needed if `mod`=:math:`2^{len(output_wires)}`, otherwise two work wires
+            should be provided. Defaults to ``None``.
 
     **Example**
 
@@ -81,15 +83,15 @@ class OutMultiplier(Operation):
         This template takes as input four different sets of wires.
 
         The first one is ``x_wires`` which is used
-        to encode the integer :math:`x < mod` in the computational basis. Therefore, it is needed at least
-        :math:`\lceil \log_2(x)\rceil` ``x_wires`` to represent :math:`x`.
+        to encode the integer :math:`x < mod` in the computational basis. Therefore, ``x_wires`` must contain 
+        at least :math:`\lceil \log_2(x)\rceil` wires to represent :math:`x`.
 
         The second one is ``y_wires`` which is used
-        to encode the integer :math:`y < mod` in the computational basis. Therefore, it is needed at least
-        :math:`\lceil \log_2(y)\rceil` ``y_wires`` to represent :math:`y`.
+        to encode the integer :math:`y < mod` in the computational basis. Therefore, ``y_wires`` must contain 
+        at least :math:`\lceil \log_2(y)\rceil` wires to represent :math:`y`.
 
         The third one is ``output_wires`` which is used
-        to encode the integer :math:`b+ x \cdot y \; \text{mod} \; mod` in the computational basis. Therefore, it is needed at least
+        to encode the integer :math:`b+ x \cdot y \; \text{mod} \; mod` in the computational basis. Therefore, it will require at least
         :math:`\lceil \log_2(mod)\rceil` ``output_wires`` to represent :math:`b + x \cdot y \; \text{mod} \; mod`.  Note that these wires can be initialized with any integer
         :math:`b`, but the most common choice is :math:`b=0` to obtain as a final result :math:`x \cdot y \; \text{mod} \; mod`.
 

@@ -51,7 +51,7 @@ class Multiplier(Operation):
     .. note::
 
         To obtain the correct result, :math:`x` must be smaller than :math:`mod`. Also, it
-        is required that :math:`k` has inverse, :math:`k^{-1}`, modulo :math:`mod`. That means
+        is required that :math:`k` has modular inverse :math:`k^{-1}` with respect to :math:`mod`. That means
         :math:`k \cdot k^{-1}` modulo :math:`mod` is equal to 1, which will only be possible if :math:`k` and
         :math:`mod` are coprime.
 
@@ -60,8 +60,10 @@ class Multiplier(Operation):
     Args:
         k (int): the number that needs to be multiplied
         x_wires (Sequence[int]): the wires the operation acts on
-        mod (int): the modulo for performing the multiplication. If not provided, it will be set to :math:`2^{\text{len(output_wires)}}`
-        work_wires (Sequence[int]): the auxiliary wires to use for the multiplication, default is ``None``
+        mod (int): the modulo for performing the multiplication. If not provided, it will be set to its maximum value, :math:`2^{\text{len(x_wires)}}`.
+        work_wires (Sequence[int]): the auxiliary wires to use for the multiplication. If 
+        `mod`=:math:`2^{len(x_wires)}`, the number of auxiliary wires must be ``len(x_wires)``. Otherwise 
+        ``len(x_wires) + 2`` auxiliary wires are needed.
 
     **Example**
 
@@ -79,9 +81,9 @@ class Multiplier(Operation):
         dev = qml.device("default.qubit", shots=1)
         @qml.qnode(dev)
         def circuit():
-            qml.BasisEmbedding(x, wires = x_wires)
+            qml.BasisEmbedding(x, wires=x_wires)
             qml.Multiplier(k, x_wires, mod, work_wires)
-            return qml.sample(wires = x_wires)
+            return qml.sample(wires=x_wires)
 
     .. code-block:: pycon
 
@@ -97,16 +99,16 @@ class Multiplier(Operation):
         This template takes as input two different sets of wires.
 
         The first one is ``x_wires``, used to encode the integer :math:`x < \text{mod}` in the Fourier basis.
-        To represent :math:`x`, it is needed at least :math:`\lceil \log_2(x) \rceil` ``x_wires``.
+        To represent :math:`x`, ``x_wires`` must include at least :math:`\lceil \log_2(x) \rceil` wires.
         After the modular addition, the result can be as large as :math:`\text{mod} - 1`,
-        requiring at least :math:`\lceil \log_2(\text{mod}) \rceil` ``x_wires``. Since :math:`x < \text{mod}`, it is
-        simply needed :math:`\lceil \log_2(\text{mod}) \rceil` ``x_wires`` to cover all possible inputs and outputs.
+        requiring at least :math:`\lceil \log_2(\text{mod}) \rceil` wires. Since :math:`x < \text{mod}`,
+        :math:`\lceil \log_2(\text{mod}) \rceil` is a sufficient length for``x_wires`` to cover all possible inputs and outputs.
 
         The second set of wires is ``work_wires`` which consist of the auxiliary qubits used to perform the modular multiplication operation.
 
-        - If :math:`mod = 2^{\text{len(x_wires)}}`, it is needed as many as ``x_wires``.
+        - If :math:`mod = 2^{\text{len(x_wires)}}`, the length of ``work_wires`` must be equal to the length of ``x_wires``.
 
-        - If :math:`mod \neq 2^{\text{len(x_wires)}}`, it is needed as many as ``x_wires`` plus two extra wires that have to be provided.
+        - If :math:`mod \neq 2^{\text{len(x_wires)}}`, the length of ``work_wires`` must be ``len(x_wires) + 2``.
 
         Note that the ``Multiplier`` template allows us to perform modular multiplication in the computational basis. However if one just want to perform standard multiplication (with no modulo),
         that would be equivalent to setting the modulo :math:`mod` to a large enough value to ensure that :math:`x \cdot k < mod`.

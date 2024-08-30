@@ -34,7 +34,7 @@ class ModExp(Operation):
     .. note::
 
         To obtain the correct result, :math:`x` must be smaller than :math:`mod`.
-        Also, it is required that :math:`base` has inverse, :math:`base^{-1}` modulo :math:`mod`.
+        Also, it is required that :math:`base` has a modular inverse, :math:`base^{-1}`, with respect to :math:`mod`.
         That means :math:`base \cdot base^{-1}` modulo :math:`mod` is equal to 1, which will only be possible if :math:`base`
         and :math:`mod` are coprime.
 
@@ -44,8 +44,10 @@ class ModExp(Operation):
         x_wires (Sequence[int]): the wires that store the integer :math:`x`
         output_wires (Sequence[int]): the wires that store the exponentiation result
         base (int): integer that needs to be exponentiated
-        mod (int): the modulo for performing the exponentiation. If not provided, it will be set to :math:`2^{\text{len(output_wires)}}`
-        work_wires (Sequence[int]): the auxiliary wires to use for the exponentiation, default is ``None``
+        mod (int): the modulo for performing the exponentiation. If not provided, it will be set to its maximum value, :math:`2^{\text{len(output_wires)}}`
+        work_wires (Sequence[int]): the auxiliary wires to use for the exponentiation. If 
+        `mod`=:math:`2^{len(output_wires)}`, the number of auxiliary wires must be ``len(output_wires)``. Otherwise 
+        ``len(output_wires) + 2`` auxiliary wires are needed.
 
     **Example**
 
@@ -83,19 +85,19 @@ class ModExp(Operation):
         This template takes as input three different sets of wires.
 
         The first one is ``x_wires`` which is used
-        to encode the integer :math:`x < mod` in the computational basis. Therefore, it is needed at least
-        :math:`\lceil \log_2(x)\rceil` ``x_wires`` to represent :math:`x`.
+        to encode the integer :math:`x < mod` in the computational basis. Therefore, ``x_wires`` must contain at least
+        :math:`\lceil \log_2(x)\rceil` wires to represent :math:`x`.
 
         The second one is ``output_wires`` which is used
-        to encode the integer :math:`b \cdot base^x \; \text{mod} \; mod` in the computational basis. Therefore, it is needed at least
-        :math:`\lceil \log_2(mod)\rceil` ``output_wires`` to represent :math:`b \cdot base^x \; \text{mod} \; mod`. Note that these wires can be initialized with any integer
+        to encode the integer :math:`b \cdot base^x \; \text{mod} \; mod` in the computational basis. Therefore, at least
+        :math:`\lceil \log_2(mod)\rceil` ``output_wires`` are required to represent :math:`b \cdot base^x \; \text{mod} \; mod`. Note that these wires can be initialized with any integer
         :math:`b`, but the most common choice is :math:`b=1` to obtain as a final result :math:`base^x \; \text{mod} \; mod`.
 
         The third set of wires is ``work_wires`` which consist of the auxiliary qubits used to perform the modular exponentiation operation.
 
-        - If :math:`mod = 2^{\text{len(output_wires)}}`,  it is needed as many as ``output_wires``.
+        - If :math:`mod = 2^{\text{len(output_wires)}}`,  the length of ``work_wires`` must be equal to the length of ``output_wires``.
 
-        - If :math:`mod \neq 2^{\text{len(output_wires)}}`, it is needed as many as ``output_wires`` plus two extra that have to be provided.
+        - If :math:`mod \neq 2^{\text{len(output_wires)}}`, the length of ``work_wires`` must be ``len(output_wires) + 2``
 
         Note that the ``ModExp`` template allows us to perform modular exponentiation in the computational basis. However if one just wants to perform standard exponentiation (with no modulo),
         that would be equivalent to setting the modulo :math:`mod` to a large enough value to ensure that :math:`base^x < mod`.
