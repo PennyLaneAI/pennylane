@@ -265,9 +265,9 @@
   [(#6106)](https://github.com/PennyLaneAI/pennylane/pull/6106)
   [(#6128)](https://github.com/PennyLaneAI/pennylane/pull/6128)
 
-  * `qml.spin.transverse_ising`: creates the [transverse-field Ising model](https://en.wikipedia.org/wiki/Transverse-field_Ising_model) Hamiltonian.
-  * `qml.spin.heisenberg`: creates the [Heisenberg model](https://en.wikipedia.org/wiki/Quantum_Heisenberg_model) Hamiltonian.
-  * `qml.spin.fermi_hubbard`: creates the [Fermi-Hubbard model](https://en.wikipedia.org/wiki/Hubbard_model) Hamiltonian.
+  * `qml.spin.transverse_ising` creates the [transverse-field Ising model](https://en.wikipedia.org/wiki/Transverse-field_Ising_model) Hamiltonian.
+  * `qml.spin.heisenberg` creates the [Heisenberg model](https://en.wikipedia.org/wiki/Quantum_Heisenberg_model) Hamiltonian.
+  * `qml.spin.fermi_hubbard` creates the [Fermi-Hubbard model](https://en.wikipedia.org/wiki/Hubbard_model) Hamiltonian.
 
   Each Hamiltonian can be instantiated by specifying a `lattice`, the number of [unit cells](https://en.wikipedia.org/wiki/Unit_cell), 
   `n_cells`, and the Hamiltonian parameters as keyword arguments. Here is an example with the transverse-field 
