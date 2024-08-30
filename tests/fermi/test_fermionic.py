@@ -13,20 +13,19 @@
 # limitations under the License.
 """Unit Tests for the Fermionic representation classes."""
 import pickle
+import re
 from copy import copy, deepcopy
 
-import re
 import numpy as np
-import pytest
-
 import pennylane as qml
+import pytest
 from pennylane import numpy as pnp
 from pennylane.fermi.fermionic import (
     FermiSentence,
     FermiWord,
+    _commute_adjacent,
     _to_string,
     from_string,
-    _commute_adjacent,
 )
 
 # pylint: disable=too-many-public-methods
