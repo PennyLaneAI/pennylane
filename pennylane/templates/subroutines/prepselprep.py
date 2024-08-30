@@ -24,11 +24,10 @@ from pennylane.operation import Operation
 def _get_new_terms(lcu):
     """Compute a new sum of unitaries with positive coefficients"""
     coeffs, ops = lcu.terms()
+    angles = qml.math.angle(coeffs)
     new_ops = []
 
-    for coeff, op in zip(coeffs, ops):
-        angle = qml.math.angle(coeff)
-
+    for angle, op in zip(angles, ops):
         new_op = op @ qml.GlobalPhase(-angle, wires=op.wires)
         new_ops.append(new_op)
 
