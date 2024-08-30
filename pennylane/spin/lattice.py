@@ -34,6 +34,7 @@ class Lattice:
        vectors (list[list[float]]): Primitive vectors for the lattice.
        positions (list[list[float]]): Initial positions of spin cites. Default value is
            ``[[0.0]`` :math:`\times` ``number of dimensions]``.
+
        boundary_condition (bool or list[bool]): Defines boundary conditions in different lattice axes,
            default is ``False`` indicating open boundary condition.
        neighbour_order (int): Specifies the interaction level for neighbors within the lattice.
@@ -120,7 +121,7 @@ class Lattice:
     def _identify_neighbours(self, cutoff):
         r"""Identifies the connections between lattice points and returns the unique connections
         based on the neighbour_order. This function uses KDTree to identify neighbours, which
-        follows depth first search traversal."""
+        follows depth-first search traversal."""
 
         tree = KDTree(self.lattice_points)
         indices = tree.query_ball_tree(tree, cutoff)
