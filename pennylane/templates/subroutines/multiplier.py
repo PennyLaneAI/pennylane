@@ -59,7 +59,7 @@ class Multiplier(Operation):
         k (int): the number that needs to be multiplied
         x_wires (Sequence[int]): the wires the operation acts on. The number of wires must be enough for encoding `x` in the computational basis. The number of wires also limits the maximum value for `mod`.
         mod (int): the modulo for performing the multiplication. If not provided, it will be set to its maximum value, :math:`2^{\text{len(x_wires)}}`.
-        work_wires (Sequence[int]): the auxiliary wires to use for the multiplication. If `mod`=:math:`2^{len(x_wires)}`, the number of auxiliary wires must be ``len(x_wires)``. Otherwise ``len(x_wires) + 2`` auxiliary wires are needed.
+        work_wires (Sequence[int]): the auxiliary wires to use for the multiplication. If :math:`mod=2^{\text{len(x_wires)}}`, the number of auxiliary wires must be ``len(x_wires)``. Otherwise ``len(x_wires) + 2`` auxiliary wires are needed.
 
     **Example**
 
@@ -98,7 +98,7 @@ class Multiplier(Operation):
         To represent :math:`x`, ``x_wires`` must include at least :math:`\lceil \log_2(x) \rceil` wires.
         After the modular addition, the result can be as large as :math:`\text{mod} - 1`,
         requiring at least :math:`\lceil \log_2(\text{mod}) \rceil` wires. Since :math:`x < \text{mod}`,
-        :math:`\lceil \log_2(\text{mod}) \rceil` is a sufficient length for``x_wires`` to cover all possible inputs and outputs.
+        :math:`\lceil \log_2(\text{mod}) \rceil` is a sufficient length for ``x_wires`` to cover all possible inputs and outputs.
 
         The second set of wires is ``work_wires`` which consist of the auxiliary qubits used to perform the modular multiplication operation.
 
@@ -188,7 +188,7 @@ class Multiplier(Operation):
             k (int): the number that needs to be multiplied
             x_wires (Sequence[int]): the wires the operation acts on. The number of wires must be enough for encoding `x` in the computational basis. The number of wires also limits the maximum value for `mod`.
             mod (int): the modulo for performing the multiplication. If not provided, it will be set to its maximum value, :math:`2^{\text{len(x_wires)}}`.
-            work_wires (Sequence[int]): the auxiliary wires to use for the multiplication. If `mod`=:math:`2^{len(x_wires)}`, the number of auxiliary wires must be ``len(x_wires)``. Otherwise ``len(x_wires) + 2`` auxiliary wires are needed.
+            work_wires (Sequence[int]): the auxiliary wires to use for the multiplication. If :math:`mod=2^{\text{len(x_wires)}}`, the number of auxiliary wires must be ``len(x_wires)``. Otherwise ``len(x_wires) + 2`` auxiliary wires are needed.
         Returns:
             list[.Operator]: Decomposition of the operator
 

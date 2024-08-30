@@ -64,7 +64,7 @@ class PhaseAdder(Operation):
             value for `mod`.
         mod (int): the modulo for performing the addition. If not provided, it will be set to its maximum value, :math:`2^{\text{len(x_wires)}}`.
         work_wire (Sequence[int]): the auxiliary wire to use for the addition. Optional
-            when `mod` is :math:`2^{len(x\_wires)}`. Defaults to None.
+            when `mod` is :math:`2^{len(x\_wires)}`. Defaults to ``None``.
 
     **Example**
 
@@ -106,7 +106,7 @@ class PhaseAdder(Operation):
         After the modular addition, the result can be as large as :math:`\text{mod} - 1`,
         requiring at least :math:`\lceil \log_2(\text{mod}) \rceil` wires. Since :math:`x < \text{mod}`, a length of
         :math:`\lceil \log_2(\text{mod}) \rceil` is sufficient for ``x_wires`` to cover all possible inputs and
-        outputs when :math:`mod \eq 2^{\text{len(x_wires)}}`.
+        outputs when :math:`mod = 2^{\text{len(x_wires)}}`.
         An exception occurs when :math:`mod \neq 2^{\text{len(x_wires)}}`. In that case one extra wire in ``x_wires`` will be needed to correctly perform the phase
         addition operation.
 
@@ -191,7 +191,7 @@ class PhaseAdder(Operation):
                 value for `mod`.
             mod (int): the modulo for performing the addition. If not provided, it will be set to its maximum value, :math:`2^{\text{len(x_wires)}}`.
             work_wire (Sequence[int]): the auxiliary wire to use for the addition. Optional
-                when `mod` is :math:`2^{len(x\_wires)}`. Defaults to None.
+                when `mod` is :math:`2^{len(x\_wires)}`. Defaults to ``None``.
         Returns:
             list[.Operator]: Decomposition of the operator
 

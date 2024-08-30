@@ -42,7 +42,7 @@ class ModExp(Operation):
 
     Args:
         x_wires (Sequence[int]): the wires that store the integer :math:`x`
-        output_wires (Sequence[int]): the wires that store the operator result. These wires also have to encode :math:`b`.
+        output_wires (Sequence[int]): the wires that store the operator result. These wires also encode :math:`b`.
         base (int): integer that needs to be exponentiated
         mod (int): the modulo for performing the exponentiation. If not provided, it will be set to its maximum value, :math:`2^{\text{len(output_wires)}}`
         work_wires (Sequence[int]): the auxiliary wires to use for the exponentiation. If
@@ -195,7 +195,7 @@ class ModExp(Operation):
 
         Args:
             x_wires (Sequence[int]): the wires that store the integer :math:`x`
-            output_wires (Sequence[int]): the wires that store the operator result. These wires also have to encode :math:`b`.
+            output_wires (Sequence[int]): the wires that store the operator result. These wires also encode :math:`b`.
             base (int): integer that needs to be exponentiated
             mod (int): the modulo for performing the exponentiation. If not provided, it will be set to its maximum value, :math:`2^{\text{len(output_wires)}}`
             work_wires (Sequence[int]): the auxiliary wires to use for the exponentiation. If

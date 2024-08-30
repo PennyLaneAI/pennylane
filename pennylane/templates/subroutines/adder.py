@@ -45,8 +45,8 @@ class Adder(Operation):
             maximum value for `mod`.
         mod (int): the modulo for performing the addition. If not provided, it will be set to its maximum value, :math:`2^{\text{len(x_wires)}}`.
         work_wires (Sequence[int]): the auxiliary wires to use for the addition. The
-            work wires are not needed if `mod`=:math:`2^{len(x\_wires)}`, otherwise two work wires
-            should be provided. Defaults to None.
+            work wires are not needed if :math:`mod=2^{\text{len(x_wires)}}`, otherwise two work wires
+            should be provided. Defaults to ``None``.
 
     **Example**
 
@@ -85,7 +85,7 @@ class Adder(Operation):
         To represent :math:`x`, ``x_wires`` must include at least :math:`\lceil \log_2(x) \rceil` wires.
         After the modular addition, the result can be as large as :math:`\text{mod} - 1`,
         requiring at least :math:`\lceil \log_2(\text{mod}) \rceil` wires. Since :math:`x < \text{mod}`,
-        :math:`\lceil \log_2(\text{mod}) \rceil` is a sufficient length for``x_wires`` to cover all possible inputs and outputs.
+        :math:`\lceil \log_2(\text{mod}) \rceil` is a sufficient length for ``x_wires`` to cover all possible inputs and outputs.
 
         The second set of wires is ``work_wires`` which consist of the auxiliary qubits used to perform the modular addition operation.
 
@@ -168,8 +168,8 @@ class Adder(Operation):
                 maximum value for `mod`.
             mod (int): the modulo for performing the addition. If not provided, it will be set to its maximum value, :math:`2^{\text{len(x_wires)}}`.
             work_wires (Sequence[int]): the auxiliary wires to use for the addition. The
-                work wires are not needed if `mod`=:math:`2^{len(x\_wires)}`, otherwise two work wires
-                should be provided. Defaults to None.
+                work wires are not needed if :math:`mod=2^{\text{len(x_wires)}}`, otherwise two work wires
+                should be provided. Defaults to ``None``.
         Returns:
             list[.Operator]: Decomposition of the operator
 
