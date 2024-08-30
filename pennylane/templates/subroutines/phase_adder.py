@@ -105,8 +105,13 @@ class PhaseAdder(Operation):
         if not isinstance(k, int) or not isinstance(mod, int):
             raise ValueError("Both k and mod must be integers")
         if mod > 2 ** len(x_wires):
-            raise ValueError("PhaseAdder must have enough x_wires to represent mod.")
+            raise ValueError(
+                "PhaseAdder must have enough x_wires to represent mod. The maximum mod "
+                f"with len(x_wires)={len(x_wires)} is {2 ** len(x_wires)}, but received {mod}."
+            )
         if work_wire is not None:
+            if len(work_wire) != 1:
+                raise ValueError(f"Expected a single work_wire, but received {work_wire}")
             if any(wire in work_wire for wire in x_wires):
                 raise ValueError("None of the wires in work_wire should be included in x_wires.")
 

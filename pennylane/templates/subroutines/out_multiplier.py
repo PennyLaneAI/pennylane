@@ -80,14 +80,19 @@ class OutMultiplier(Operation):
         self, x_wires, y_wires, output_wires, mod=None, work_wires=None, id=None
     ):  # pylint: disable=too-many-arguments
 
+        num_work_wires = 0 if work_wires is None else len(work_wires)
+
         if mod is None:
             mod = 2 ** len(output_wires)
-        if mod != 2 ** len(output_wires) and work_wires is None:
+        if mod != 2 ** len(output_wires) and num_work_wires != 2:
             raise ValueError(
                 f"If mod is not 2^{len(output_wires)}, two work wires should be provided."
             )
-        if (not hasattr(output_wires, "__len__")) or (mod > 2 ** (len(output_wires))):
-            raise ValueError("OutMultiplier must have enough wires to represent mod.")
+        if mod > 2 ** (len(output_wires)):
+            raise ValueError(
+                "OutMultiplier must have enough wires to represent mod. The maximum mod "
+                f"with len(output_wires)={len(output_wires)} is {2 ** len(output_wires)}, but received {mod}."
+            )
 
         if work_wires is not None:
             if any(wire in work_wires for wire in x_wires):

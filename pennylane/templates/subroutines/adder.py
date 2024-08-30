@@ -80,17 +80,22 @@ class Adder(Operation):
 
         x_wires = qml.wires.Wires(x_wires)
 
+        num_works_wires = 0 if work_wires is None else len(work_wires)
+
         if mod is None:
             mod = 2 ** len(x_wires)
-        elif work_wires is None and mod != 2 ** len(x_wires):
-            raise ValueError(f"If mod is not 2^{len(x_wires)}, two work wires should be provided.")
+        elif mod != 2 ** len(x_wires) and num_works_wires != 2:
+            raise ValueError(f"Adder expected two work_wires, but received {work_wires}.")
         if not isinstance(k, int) or not isinstance(mod, int):
             raise ValueError("Both k and mod must be integers")
         if work_wires is not None:
             if any(wire in work_wires for wire in x_wires):
                 raise ValueError("None of the wires in work_wires should be included in x_wires.")
         if mod > 2 ** len(x_wires):
-            raise ValueError("Adder must have enough x_wires to represent mod.")
+            raise ValueError(
+                "Adder must have enough x_wires to represent mod. The maximum mod "
+                f"with len(x_wires)={len(x_wires)} is {2 ** len(x_wires)}, but received {mod}."
+            )
 
         self.hyperparameters["k"] = k
         self.hyperparameters["mod"] = mod

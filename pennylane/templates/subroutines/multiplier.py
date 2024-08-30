@@ -94,17 +94,24 @@ class Multiplier(Operation):
     def __init__(
         self, k, x_wires, mod=None, work_wires=None, id=None
     ):  # pylint: disable=too-many-arguments
+        if work_wires is None:
+            raise ValueError("Work wires must be specified for Multiplier")
+
         if any(wire in work_wires for wire in x_wires):
             raise ValueError("None of the wire in work_wires should be included in x_wires.")
 
         if mod is None:
             mod = 2 ** len(x_wires)
-        if mod != 2 ** len(x_wires) and len(work_wires) < (len(x_wires) + 2):
+        if mod > 2 ** len(x_wires):
+            raise ValueError(
+                "Multiplier must have enough wires to represent mod. The maximum mod "
+                f"with len(x_wires)={len(x_wires)} is {2 ** len(x_wires)}, but received {mod}."
+            )
+
+        if mod != 2 ** len(x_wires) and len(work_wires) != (len(x_wires) + 2):
             raise ValueError("Multiplier needs as many work_wires as x_wires plus two.")
         if len(work_wires) < len(x_wires):
             raise ValueError("Multiplier needs as many work_wires as x_wires.")
-        if (not hasattr(x_wires, "__len__")) or (mod > 2 ** len(x_wires)):
-            raise ValueError("Multiplier must have enough wires to represent mod.")
 
         k = k % mod
         if np.gcd(k, mod) != 1:

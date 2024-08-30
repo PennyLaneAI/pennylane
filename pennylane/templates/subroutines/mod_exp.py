@@ -14,6 +14,8 @@
 """
 Contains the ModExp template.
 """
+import numpy as np
+
 import pennylane as qml
 from pennylane.operation import Operation
 
@@ -84,11 +86,14 @@ class ModExp(Operation):
 
         output_wires = qml.wires.Wires(output_wires)
 
+        if work_wires is None:
+            raise ValueError("Work wires must be specified for ModExp")
+
         if mod is None:
             mod = 2 ** (len(output_wires))
         if len(output_wires) == 0 or (mod > 2 ** (len(output_wires))):
             raise ValueError("ModExp must have enough wires to represent mod.")
-        if mod != 2 ** len(x_wires):
+        if mod != 2 ** len(output_wires):
             if len(work_wires) < (len(output_wires) + 2):
                 raise ValueError("ModExp needs as many work_wires as output_wires plus two.")
         else:
@@ -103,6 +108,10 @@ class ModExp(Operation):
                 )
         if any(wire in x_wires for wire in output_wires):
             raise ValueError("None of the wires in x_wires should be included in output_wires.")
+
+        if np.gcd(base, mod) != 1:
+            raise ValueError("The operator cannot be built because base has no inverse modulo mod.")
+
         wire_keys = ["x_wires", "output_wires", "work_wires"]
         for key in wire_keys:
             self.hyperparameters[key] = qml.wires.Wires(locals()[key])
