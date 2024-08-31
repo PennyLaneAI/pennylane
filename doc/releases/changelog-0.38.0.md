@@ -382,6 +382,10 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* The sparse matrix can now be computed for a product operator when one operand is a `GlobalPhase`
+  on no wires.
+  [(#6197)](https://github.com/PennyLaneAI/pennylane/pull/6197)
+
 * For `default.qubit`, JAX is now used for sampling whenever the state is a JAX array. This fixes normalization issues
   that can occur when the state uses 32-bit precision.
   [(#6190)](https://github.com/PennyLaneAI/pennylane/pull/6190)
