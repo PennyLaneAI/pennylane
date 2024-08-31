@@ -896,6 +896,18 @@ class TestProperties:
         ):
             H.grouping_indices = [[0, 1, 3], [2]]
 
+    def test_label(self):
+        """Tests the label method of Sum when <=3 coefficients."""
+        H = qml.ops.Sum(-0.8 * Z(0))
+        assert H.label() == "𝓗"
+        assert H.label(decimals=2) == "𝓗\n(-0.80)"
+
+    def test_label_many_coefficients(self):
+        """Tests the label method of Sum when >3 coefficients."""
+        H = qml.ops.Sum(*(0.1 * qml.Z(0) for _ in range(5)))
+        assert H.label() == "𝓗"
+        assert H.label(decimals=2) == "𝓗"
+
 
 class TestSimplify:
     """Test Sum simplify method and depth property."""
