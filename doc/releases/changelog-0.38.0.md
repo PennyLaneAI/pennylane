@@ -382,6 +382,16 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* For `default.qubit`, JAX is now used for sampling whenever the state is a JAX array. This fixes normalization issues
+  that can occur when the state uses 32-bit precision.
+  [(#6190)](https://github.com/PennyLaneAI/pennylane/pull/6190)
+
+* Fix Pytree serialization of operators with empty shot vectors
+  [(#6155)](https://github.com/PennyLaneAI/pennylane/pull/6155)
+
+* Fixes an error in the `dynamic_one_shot` transform when used with sampling a single shot.
+  [(#6149)](https://github.com/PennyLaneAI/pennylane/pull/6149)
+
 * `qml.transforms.pattern_matching_optimization` now preserves the tape measurements.
   [(#6153)](https://github.com/PennyLaneAI/pennylane/pull/6153)
 
