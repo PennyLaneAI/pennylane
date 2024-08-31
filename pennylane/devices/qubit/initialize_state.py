@@ -49,4 +49,4 @@ def create_initial_state(
     floating_single = "float32" in dtype or "complex64" in dtype
     dtype = "complex64" if floating_single else "complex128"
     dtype = "complex128" if like == "tensorflow" else dtype
-    return qml.math.asarray(state_vector, like=like, dtype=dtype)
+    return qml.math.cast(qml.math.asarray(state_vector, like=like), dtype)
