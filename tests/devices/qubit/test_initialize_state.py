@@ -30,8 +30,11 @@ class TestInitializeState:
 
         num_wires = qml.operation.AllWires
 
-        def state_vector(self, wire_order=None):
-            return self.parameters[0]
+        def state_vector(self, wire_order=None, dtype=None):
+            sv = self.parameters[0]
+            if dtype is not None:
+                sv = qml.math.cast(sv, dtype)
+            return sv
 
     @pytest.mark.all_interfaces
     @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "tensorflow"])
@@ -84,7 +87,21 @@ class TestInitializeState:
         state = create_initial_state([0, 1], prep_operation=prep_op, like="torch")
         assert qml.math.get_interface(state) == "torch"
 
+    @pytest.mark.all_interfaces
+    @pytest.mark.parametrize("interface", ["torch", "tensorflow"])
+    @pytest.mark.parametrize("dtype", ["float32", "float64"])
+    def test_create_initial_state_casts_to_complex(self, dtype, interface):
+        if interface == "tensorflow":
+            expected_dtype = "complex128"
+        else:
+            expected_dtype = "complex128" if dtype == "float64" else "complex64"
+
+        prep_op = self.DefaultPrep([0, 0, 0, 1], wires=[0, 1], dtype=dtype)
+        res_dtype = create_initial_state([0, 1], prep_operation=prep_op, like="torch").dtype
+        assert expected_dtype in str(res_dtype)
+
     def test_create_initial_state_defaults_to_numpy(self):
         """Tests that the default interface is vanilla numpy."""
         state = qml.devices.qubit.create_initial_state((0, 1))
         assert qml.math.get_interface(state) == "numpy"
+        assert state.dtype == np.complex128
