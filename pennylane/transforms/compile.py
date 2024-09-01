@@ -206,7 +206,7 @@ def compile(
                 return True
             if not obj.has_decomposition:
                 return True
-            return obj.name in basis_set and (not getattr(obj, "only_visual", False))
+            return obj.name in class_names or isinstance(obj, class_types)
 
         [expanded_tape], _ = qml.devices.preprocess.decompose(
             tape,
