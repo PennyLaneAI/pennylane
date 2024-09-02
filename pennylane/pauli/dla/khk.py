@@ -414,6 +414,7 @@ def khk_decompose(
     g = k + m  # reorder g
 
     k = orthonormalize(k)
+    m = orthonormalize(m)
 
     (
         print(f"Cartan decomposition g = k + m with dimensions {len(g)} = {len(k)} + {len(m)}")
