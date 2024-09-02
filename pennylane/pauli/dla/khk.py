@@ -486,10 +486,11 @@ def khk_decompose(
     value_and_grad = jax.jit(jax.value_and_grad(loss))
 
     thetas, energy, _ = run_opt(value_and_grad, theta0, n_epochs=n_epochs)
-    plt.plot(energy)
-    plt.xlabel("epochs")
-    plt.ylabel("loss")
-    plt.show
+    if verbose:
+        plt.plot(energy)
+        plt.xlabel("epochs")
+        plt.ylabel("loss")
+        plt.show()
 
     theta_opt = thetas[-1]
 
