@@ -42,7 +42,7 @@ def transverse_ising(
        lattice (str): Shape of the lattice. Input Values can be ``'chain'``, ``'square'``,
            ``'rectangle'``, ``'honeycomb'``, ``'triangle'``, or ``'kagome'``.
        n_cells (List[int]): Number of cells in each direction of the grid.
-       coupling (float or List[float] or List[math.array[float]]): Coupling between spins, it can be a
+       coupling (float or List[float] or List[math.array[float]]): Coupling between spins. It can be a
            number, a list of length equal to ``neighbour_order`` or a square matrix of size
            ``(num_spins,  num_spins)``. Default value is 1.0.
        h (float): Value of external magnetic field. Default is 1.0.
@@ -52,7 +52,7 @@ def transverse_ising(
            Default is 1, indicating nearest neighbours.
 
     Returns:
-       pennylane.LinearCombination: Hamiltonian for the transverse-field ising model.
+       pennylane.LinearCombination: Hamiltonian for the transverse-field Ising model.
 
     **Example**
 
@@ -61,12 +61,16 @@ def transverse_ising(
     >>> h = 0.1
     >>> spin_ham = qml.spin.transverse_ising("square", n_cells, coupling=j, h=h)
     >>> spin_ham
+    (
     -0.5 * (Z(0) @ Z(1))
     + -0.5 * (Z(0) @ Z(2))
     + -0.5 * (Z(1) @ Z(3))
     + -0.5 * (Z(2) @ Z(3))
-    + -0.1 * X(0) + -0.1 * X(1)
-    + -0.1 * X(2) + -0.1 * X(3)
+    + -0.1 * X(0)
+    + -0.1 * X(1)
+    + -0.1 * X(2)
+    + -0.1 * X(3)
+    )
 
     """
     lattice = _generate_lattice(lattice, n_cells, boundary_condition, neighbour_order)
@@ -112,7 +116,7 @@ def heisenberg(lattice, n_cells, coupling=None, boundary_condition=False, neighb
        lattice (str): Shape of the lattice. Input Values can be ``'chain'``, ``'square'``, ``'rectangle'``,
                    ``'honeycomb'``, ``'triangle'``, or ``'kagome'``.
        n_cells (List[int]): Number of cells in each direction of the grid.
-       coupling (List[List[float]] or List[math.array[float]]): Coupling between spins, it can be a 2D array
+       coupling (List[List[float]] or List[math.array[float]]): Coupling between spins. It can be a 2D array
                     of shape (neighbour_order, 3) or a 3D array of shape 3 * number of spins * number of spins.
                     Default value is [1.0, 1.0, 1.0].
        boundary_condition (bool or list[bool]): Defines boundary conditions for different lattice axes,
@@ -129,6 +133,7 @@ def heisenberg(lattice, n_cells, coupling=None, boundary_condition=False, neighb
     >>> j = [[0.5, 0.5, 0.5]]
     >>> spin_ham = qml.spin.heisenberg("square", n_cells, coupling=j)
     >>> spin_ham
+    (
     0.5 * (X(0) @ X(1))
     + 0.5 * (Y(0) @ Y(1))
     + 0.5 * (Z(0) @ Z(1))
@@ -141,7 +146,7 @@ def heisenberg(lattice, n_cells, coupling=None, boundary_condition=False, neighb
     + 0.5 * (X(2) @ X(3))
     + 0.5 * (Y(2) @ Y(3))
     + 0.5 * (Z(2) @ Z(3))
-
+    )
     """
 
     lattice = _generate_lattice(lattice, n_cells, boundary_condition, neighbour_order)
