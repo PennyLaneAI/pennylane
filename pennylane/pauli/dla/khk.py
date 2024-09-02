@@ -580,6 +580,7 @@ def orthonormalize(vspace):
 
     return generators_orthogonal
 
+
 def check_all_commuting(h):
     h = [op.pauli_rep for op in h]
     for i, hi in enumerate(h):
@@ -587,5 +588,5 @@ def check_all_commuting(h):
             com = hi.commutator(hj)
             com.simplify()
             assert len(com) == 0, f"{hi} and {hj} do not commute"
-    
+
     print("all terms commute")
