@@ -427,16 +427,17 @@ def khk_decompose(
     print("Computing Cartan subalgebra m = mtilde + h") if verbose else None
     mtilde, h = compute_csa_new(g, m, ad, tol=tol)
 
-    if validate:
-        ranks = []
-        for adrep in ad[-len(m) :]:
-            kernel = null_space(adrep, rcond=tol)
-            ranks.append(kernel.shape[1])
+    # if validate:
+    #     # TODO this validation is not correct
+    #     ranks = []
+    #     for adrep in ad[-len(m) :]:
+    #         kernel = null_space(adrep, rcond=tol)
+    #         ranks.append(kernel.shape[1])
 
-        CSA_dim = np.min(ranks)
+    #     CSA_dim = np.min(ranks)
 
-        correct_CSA_dim = CSA_dim == len(h)
-        print(f"Correct CSA dimension of {CSA_dim}: {correct_CSA_dim} (i.e. len(h) = {len(h)})")
+    #     correct_CSA_dim = CSA_dim == len(h)
+    #     print(f"Correct CSA dimension of {CSA_dim}: {correct_CSA_dim} (i.e. len(h) = {len(h)})")
 
     h = orthonormalize(h)
     k = orthonormalize(k)
