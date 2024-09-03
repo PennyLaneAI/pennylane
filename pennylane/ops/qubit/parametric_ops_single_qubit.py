@@ -84,13 +84,15 @@ class RX(ResourcesOperation):
     def __init__(self, phi: TensorLike, wires: WiresLike, id: Optional[str] = None):
         super().__init__(phi, wires=wires, id=id)
 
-    def resources(self, gate_set=None, estimate=True, epsilon=None):
+    def resources(self, gate_set=None, epsilon=1e-3):
         gate_types = defaultdict(int)
         gate_sizes = defaultdict(int)
 
-        gate_types["T"] = 3 * sympy.log(1 / sympy.Symbol("epsilon"))
-        gate_sizes[1] = 3 * sympy.log(1 / sympy.Symbol("epsilon"))
-        num_gates = 3 * sympy.log(1 / sympy.Symbol("epsilon"))
+        log_e = sympy.log(1/epsilon) if isinstance(epsilon, sympy.Symbol) else np.log(1/epsilon)
+
+        num_gates = 3 * log_e
+        gate_sizes[1] = 3 * log_e
+        gate_types["T"] = 3 * log_e
         
         return qml.resource.resource.Resources(num_gates=num_gates, gate_types=gate_types, gate_sizes=gate_sizes)
 
@@ -190,13 +192,15 @@ class RY(ResourcesOperation):
     def __init__(self, phi: TensorLike, wires: WiresLike, id: Optional[str] = None):
         super().__init__(phi, wires=wires, id=id)
 
-    def resources(self, gate_set=None, estimate=True, epsilon=None):
+    def resources(self, gate_set=None, epsilon=1e-3):
         gate_types = defaultdict(int)
         gate_sizes = defaultdict(int)
 
-        gate_types["T"] = 3 * sympy.log(1 / sympy.Symbol("epsilon"))
-        gate_sizes[1] = 3 * sympy.log(1 / sympy.Symbol("epsilon"))
-        num_gates = 3 * sympy.log(1 / sympy.Symbol("epsilon"))
+        log_e = sympy.log(1/epsilon) if isinstance(epsilon, sympy.Symbol) else np.log(1/epsilon)
+
+        num_gates = 3 * log_e
+        gate_sizes[1] = 3 * log_e
+        gate_types["T"] = 3 * log_e
         
         return qml.resource.resource.Resources(num_gates=num_gates, gate_types=gate_types, gate_sizes=gate_sizes)
     
@@ -295,14 +299,16 @@ class RZ(ResourcesOperation):
     def __init__(self, phi: TensorLike, wires: WiresLike, id: Optional[str] = None):
         super().__init__(phi, wires=wires, id=id)
 
-    def resources(self, gate_set=None, estimate=True, epsilon=None):
+    def resources(self, gate_set=None, epsilon=1e-3):
         gate_types = defaultdict(int)
         gate_sizes = defaultdict(int)
 
-        gate_types["T"] = 3 * sympy.log(1 / sympy.Symbol("epsilon"))
-        gate_sizes[1] = 3 * sympy.log(1 / sympy.Symbol("epsilon"))
-        num_gates = 3 * sympy.log(1 / sympy.Symbol("epsilon"))
-        
+        log_e = sympy.log(1/epsilon) if isinstance(epsilon, sympy.Symbol) else np.log(1/epsilon)
+
+        num_gates = 3 * log_e
+        gate_sizes[1] = 3 * log_e
+        gate_types["T"] = 3 * log_e
+
         return qml.resource.resource.Resources(num_gates=num_gates, gate_types=gate_types, gate_sizes=gate_sizes)
     
     @staticmethod

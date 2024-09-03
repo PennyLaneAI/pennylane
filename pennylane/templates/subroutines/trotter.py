@@ -256,7 +256,7 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
         context.append(self)
         return self
 
-    def resources(self, gate_set=None, estimate=False, epsilon=None) -> Resources:
+    def resources(self, gate_set=None, estimate=False) -> Resources:
         """The resource requirements for a given instance of the Suzuki-Trotter product.
 
         Returns:
@@ -276,7 +276,7 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
             gate_sizes = defaultdict(int)
 
             if order == 1: 
-                r_all = qml.resource.resources_from_sequence_ops(first_order_expansion, gate_set, estimate, epsilon)
+                r_all = qml.resource.resources_from_sequence_ops(first_order_expansion, gate_set)
                 for gate in r_all.gate_types:
                     gate_types[gate] = r_all.gate_types[gate] * n
                 
@@ -285,9 +285,9 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
 
                 return Resources(num_gates=r_all.num_gates*n, gate_types=gate_types, gate_sizes=gate_sizes)
 
-            r_first = qml.resource.resources_from_op(first_order_expansion[0], gate_set, estimate, epsilon)
-            r_last = qml.resource.resources_from_op(first_order_expansion[-1], gate_set, estimate, epsilon)
-            r_rest = qml.resource.resources_from_sequence_ops(first_order_expansion[1:-1], gate_set, estimate, epsilon)
+            r_first = qml.resource.resources_from_op(first_order_expansion[0], gate_set)
+            r_last = qml.resource.resources_from_op(first_order_expansion[-1], gate_set)
+            r_rest = qml.resource.resources_from_sequence_ops(first_order_expansion[1:-1], gate_set)
 
             for gate in set((*r_first.gate_types.keys(),*r_rest.gate_types.keys(),*r_last.gate_types.keys())) :
                 gate_types[gate] = (
@@ -311,7 +311,7 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
         num_wires = len(self.wires)
         depth = qml.tape.QuantumTape(ops=decomp).graph.get_depth()
 
-        r = qml.resource.resources_from_sequence_ops(decomp, gate_set, estimate, epsilon)
+        r = qml.resource.resources_from_sequence_ops(decomp, gate_set)
 
         return Resources(num_wires, r.num_gates, r.gate_types, r.gate_sizes, depth)
 
@@ -505,7 +505,7 @@ class TrotterizedQfunc(ResourcesOperation):
             self._name = name
     
     @qml.QueuingManager.stop_recording()
-    def resources(self, gate_set=None, estimate=True, epsilon=None):  # Update
+    def resources(self, gate_set=None, estimate=True):
         if estimate:
             k = self._order // 2
             gate_types = defaultdict(int)
@@ -515,7 +515,7 @@ class TrotterizedQfunc(ResourcesOperation):
                 self.qfunc(self.data[0]/self._n, *(self.data[1:]), wires=self.wires, **self.hyperparameters)
 
             first_order_expansion = q.queue
-            r_all = qml.resource.resources_from_sequence_ops(first_order_expansion, gate_set, estimate, epsilon)
+            r_all = qml.resource.resources_from_sequence_ops(first_order_expansion, gate_set)
 
             c = self._n if k == 0 else self._n * 2 * (5 ** (k - 1))
 
@@ -527,7 +527,7 @@ class TrotterizedQfunc(ResourcesOperation):
             
             return Resources(num_gates=sum(gate_types.values()), gate_types=gate_types, gate_sizes=gate_sizes)
 
-        return qml.resource.resources_from_sequence_ops(self.decomposition(), gate_set=gate_set, estimate=estimate, epsilon=epsilon)
+        return qml.resource.resources_from_sequence_ops(self.decomposition(), gate_set=gate_set)
 
 
     def decomposition(self) -> list[Operator]:  # Update

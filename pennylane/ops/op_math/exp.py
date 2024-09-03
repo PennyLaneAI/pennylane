@@ -213,7 +213,7 @@ class Exp(ScalarSymbolicOp, ResourcesOperation):
     def _queue_category(self):
         return "_ops"
 
-    def resources(self, gate_set=None, estimate=True, epsilon=None):
+    def resources(self, gate_set=None):
         """Temporary hack resources"""
         base = self.base
         coeff = self.coeff
@@ -248,27 +248,12 @@ class Exp(ScalarSymbolicOp, ResourcesOperation):
 
                 num_gates += 2 * int(math.ceil(base.num_wires / 3))
                 gate_sizes_dict[1] += 2 * int(math.ceil(base.num_wires / 3))
-                gate_types_dict["H"] += 2 * int(math.ceil(base.num_wires / 3))
+                gate_types_dict["Hadamard"] += 2 * int(math.ceil(base.num_wires / 3))
 
             modified_resources = qml.resource.Resources(num_gates=num_gates, gate_sizes=gate_sizes_dict, gate_types=gate_types_dict)
-
-            if "RX" not in gate_set: 
-                modified_resources = modified_resources.substitute("RX", qml.RX(1.23, 0).resoruces(gate_set, estimate, epsilon))
-            
-            if "RY" not in gate_set: 
-                modified_resources = modified_resources.substitute("RY", qml.RY(1.23, 0).resoruces(gate_set, estimate, epsilon))
-            
-            if "RZ" not in gate_set: 
-                modified_resources = modified_resources.substitute("RZ", qml.RZ(1.23, 0).resoruces(gate_set, estimate, epsilon))
-
             return modified_resources
         
-        return qml.resource.resource.resources_from_sequence_ops(
-            self.decomposition(), 
-            gate_set=gate_set,
-            estimate=estimate,
-            epsilon=epsilon,
-        )
+        return qml.resource.resource.resources_from_sequence_ops(self.decomposition(), gate_set=gate_set)
     
     # pylint: disable=invalid-overridden-method, arguments-renamed
     @property

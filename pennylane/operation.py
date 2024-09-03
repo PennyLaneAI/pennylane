@@ -2643,7 +2643,7 @@ class ResourcesOperation(Operation):
     """
 
     @abc.abstractmethod
-    def resources(self, gate_set=None, estimate=True, epsilon=None):
+    def resources(self, gate_set=None, **kwargs):
         r"""Compute the resources required for this operation.
 
         Returns:
@@ -2685,18 +2685,17 @@ class QFuncResourceOperator(ResourcesOperation):
             self.qfunc(*self.data, self.wires, **self.hyperparameters)
         return q.queue
 
-    def resources(self, gate_set=None, estimate=True, epsilon=None):
+    def resources(self, gate_set=None, **kwargs):
         if self.resource_fn:
             return self.resource_fn(
                 *self.data, 
                 self.wires, 
                 **self.hyperparameters, 
                 gate_set=gate_set, 
-                estimate=estimate, 
-                epsilon=epsilon,
+                **kwargs,
             )
 
-        return qml.resource.resources_from_sequence_ops(self.decomposition(), gate_set=gate_set, estimate=estimate, epsilon=epsilon)
+        return qml.resource.resources_from_sequence_ops(self.decomposition(), gate_set=gate_set, **kwargs)
 
 
 def resource_node(qfunc, resource_fn=None, name=None):
