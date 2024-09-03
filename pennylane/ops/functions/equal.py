@@ -810,7 +810,9 @@ def _equal_hilbert_schmidt(
 
 
 @_equal_dispatch.register
-def _equal_prep_sel_prep(op1: PrepSelPrep, op2: PrepSelPrep, **kwargs):
+def _equal_prep_sel_prep(
+    op1: PrepSelPrep, op2: PrepSelPrep, **kwargs
+):  # pylint: disable=unused-argument
     """Determine whether two PrepSelPrep are equal"""
     if op1.wires != op2.wires:
         return f"op1 and op2 have different wires. Got {op1.wires} and {op2.wires}."
