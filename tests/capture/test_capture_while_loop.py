@@ -24,6 +24,8 @@ pytestmark = pytest.mark.jax
 
 jax = pytest.importorskip("jax")
 
+from pennylane.capture.primitives import while_loop_prim  # pylint: disable=wrong-import-position
+
 
 @pytest.fixture(autouse=True)
 def enable_disable_plxpr():
@@ -54,6 +56,7 @@ class TestCaptureWhileLoop:
         assert np.allclose(result, expected), f"Expected {expected}, but got {result}"
 
         jaxpr = jax.make_jaxpr(fn)(x)
+        assert jaxpr.eqns[0].primitive == while_loop_prim
         res_ev_jxpr = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)
         assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
 
@@ -215,6 +218,43 @@ class TestCaptureCircuitsWhileLoop:
         jaxpr = jax.make_jaxpr(circuit)(*args)
         res_ev_jxpr = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *args)
         assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
+
+    @pytest.mark.parametrize("upper_bound, arg", [(3, 0.5), (2, 12)])
+    def test_while_and_for_loop_nested(self, upper_bound, arg):
+        """Test that a nested while and for loop is correctly captured into a jaxpr."""
+
+        dev = qml.device("default.qubit", wires=3)
+
+        def ry_fn(arg):
+            qml.RY(arg, wires=1)
+
+        @qml.qnode(dev)
+        def circuit(upper_bound, arg):
+
+            # while loop with dynamic bounds
+            @qml.while_loop(lambda i: i < upper_bound)
+            def loop_fn(i):
+                qml.Hadamard(wires=i)
+
+                @qml.for_loop(0, i, 1)
+                def loop_fn_returns(i, x):
+                    qml.RX(x, wires=i)
+                    m_0 = qml.measure(0)
+                    qml.cond(m_0, ry_fn)(x)
+                    return i + 1
+
+                loop_fn_returns(arg)
+                return i + 1
+
+            loop_fn(0)
+
+            return qml.expval(qml.Z(0))
+
+        args = [upper_bound, arg]
+        result = circuit(*args)
+        jaxpr = jax.make_jaxpr(circuit)(*args)
+        res_ev_jxpr = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *args)
+        assert np.allclose(result, res_ev_jxpr), f"Expected {result}, but got {res_ev_jxpr}"
 
 
 def test_pytree_input_output():
