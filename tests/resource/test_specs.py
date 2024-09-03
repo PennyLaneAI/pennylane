@@ -233,34 +233,6 @@ class TestSpecsTransform:
 
         return circuit, params
 
-    @pytest.mark.xfail(reason="DefaultQubit2 does not support custom expansion depths")
-    def test_max_expansion(self):
-        """Test that a user can calculate specifications for a different max
-        expansion parameter."""
-
-        circuit, params = self.make_qnode_and_params()
-
-        assert circuit.max_expansion == 10
-
-        with pytest.warns(UserWarning, match="'max_expansion' has no effect"):
-            info = qml.specs(circuit, max_expansion=0)(params)
-
-        assert circuit.max_expansion == 10
-
-        assert len(info) == 11
-
-        gate_sizes = defaultdict(int, {5: 1})
-        gate_types = defaultdict(int, {"BasicEntanglerLayers": 1})
-        expected_resources = qml.resource.Resources(
-            num_wires=5, num_gates=1, gate_types=gate_types, gate_sizes=gate_sizes, depth=1
-        )
-        assert info["resources"] == expected_resources
-        assert info["num_observables"] == 1
-        assert info["num_device_wires"] == 5
-        assert info["device_name"] == "default.qubit"
-        assert info["diff_method"] == "best"
-        assert info["gradient_fn"] == "backprop"
-
     def test_gradient_transform(self):
         """Test that a gradient transform is properly labelled"""
         dev = qml.device("default.qubit", wires=2)
