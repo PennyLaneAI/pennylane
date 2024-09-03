@@ -418,7 +418,7 @@ def mitigate_with_zne(
         noise_strength = 0.05
 
         dev = qml.device("default.mixed", wires=2)
-        dev = qml.transforms.insert(qml.AmplitudeDamping, noise_strength)(dev)
+        dev = qml.transforms.insert(dev, qml.AmplitudeDamping, noise_strength)
 
     We can now set up a mitigated QNode by passing a ``folding`` and ``extrapolate`` function. PennyLane provides native
     functions :func:`~.pennylane.transforms.fold_global` and :func:`~.pennylane.transforms.poly_extrapolate` or :func:`~.pennylane.transforms.richardson_extrapolate` that
@@ -427,8 +427,8 @@ def mitigate_with_zne(
 
     .. code-block:: python3
 
+        import numpy as np
         from functools import partial
-        from pennylane import numpy as np
         from pennylane import qnode
 
         from pennylane.transforms import fold_global, poly_extrapolate
@@ -440,7 +440,12 @@ def mitigate_with_zne(
         np.random.seed(0)
         w1, w2 = [np.random.random(s) for s in shapes]
 
-        @partial(qml.transforms.mitigate_with_zne, [1., 2., 3.], fold_global, poly_extrapolate, extrapolate_kwargs={'order': 2})
+        @partial(
+            qml.transforms.mitigate_with_zne,
+            scale_factors=[1., 2., 3.],
+            folding=fold_global,
+            extrapolate=poly_extrapolate,
+            extrapolate_kwargs={'order': 2})
         @qnode(dev)
         def circuit(w1, w2):
             qml.SimplifiedTwoDesign(w1, w2, wires=range(2))
