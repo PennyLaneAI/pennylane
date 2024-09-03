@@ -231,6 +231,25 @@ class TestCompileIntegration:
 
         compare_operation_lists(transformed_qnode.qtape.operations, names_expected, wires_expected)
 
+    def test_compile_decomposes_state_prep(self):
+        """Test that compile decomposes state prep operations"""
+
+        class DummyStatePrep(qml.operation.StatePrepBase):
+            """Dummy state prep operation for unit testing"""
+
+            def decomposition(self):
+                return [qml.Hadamard(i) for i in self.wires]
+
+            def state_vector(self, wire_order=None):
+                return self.parameters[0]
+
+        state_prep_op = DummyStatePrep([1, 1], wires=[0, 1])
+        tape = qml.tape.QuantumScript([state_prep_op])
+
+        [compiled_tape], _ = qml.compile(tape)
+        expected = qml.tape.QuantumScript(state_prep_op.decomposition())
+        qml.assert_equal(compiled_tape, expected)
+
     @pytest.mark.parametrize(("wires"), [["a", "b", "c"], [0, 1, 2], [3, 1, 2], [0, "a", 4]])
     def test_compile_multiple_passes(self, wires):
         """Test that running multiple passes produces the correct results."""
