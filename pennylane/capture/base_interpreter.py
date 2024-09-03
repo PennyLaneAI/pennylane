@@ -325,21 +325,19 @@ def handle_for_loop(self, *invals, jaxpr_body_fn, n_consts):
 def handle_cond(self, *invals, jaxpr_branches, n_consts_per_branch, n_args):
     """Handle a cond primitive."""
     n_branches = len(jaxpr_branches)
-    conditions = invals[:n_branches]
     consts_flat = invals[n_branches + n_args :]
+    args = invals[n_branches : n_branches + n_args]
 
-    def true_fn(*args):
-        return type(self)(state=self.state).eval(
-            jaxpr_branches[0].jaxpr, consts_flat[: n_consts_per_branch[0]], *args
-        )
+    new_jaxprs = []
+    start = 0
+    for n_consts, jaxpr in zip(n_consts_per_branch, jaxpr_branches):
+        consts = consts_flat[start : start + n_consts]
+        start += n_consts
+        new_jaxprs.append(jaxpr_to_jaxpr(type(self)(state=self.state), jaxpr.jaxpr, consts, *args))
 
-    def false_fn(*args):
-        return type(self)(state=self.state).eval(
-            jaxpr_branches[-1].jaxpr, consts_flat[n_consts_per_branch[0] :], *args
-        )
-
-    cond_fn = cond(conditions[0], true_fn, false_fn=false_fn)
-    return cond_fn(*invals[n_branches : n_branches + n_args])
+    return cond_prim.bind(
+        *invals, jaxpr_brances=new_jaxprs, n_consts_per_branch=n_consts_per_branch, n_args=n_args
+    )
 
 
 @PlxprInterpreter.register_primitive(while_prim)
@@ -349,14 +347,22 @@ def handle_while_loop(self, *invals, jaxpr_body_fn, jaxpr_cond_fn, n_consts_body
     consts_cond = invals[n_consts_body : n_consts_body + n_consts_cond]
     init_state = invals[n_consts_body + n_consts_cond :]
 
-    def cond_fn(*args):
-        return jax.core.eval_jaxpr(jaxpr_cond_fn.jaxpr, consts_cond, *args)
+    new_jaxpr_body_fn = jaxpr_to_jaxpr(
+        type(self)(state=self.state), jaxpr_body_fn.jaxpr, consts_body, *init_state
+    )
+    new_jaxpr_body_fn = jax.core.ClosedJaxpr(new_jaxpr_body_fn, consts_body)
+    new_jaxpr_cond_fn = jaxpr_to_jaxpr(
+        type(self)(state=self.state), jaxpr_cond_fn.jaxpr, consts_cond, *init_state
+    )
+    new_jaxpr_cond_fn = jax.core.ClosedJaxpr(new_jaxpr_cond_fn, consts_cond)
 
-    @while_loop(cond_fn)
-    def loop(*args):
-        return type(self)(state=self.state).eval(jaxpr_body_fn.jaxpr, consts_body, *args)
-
-    return loop(*init_state)
+    return while_prim.bind(
+        *invals,
+        jaxpr_body_fn=new_jaxpr_body_fn,
+        jaxpr_bond_fn=new_jaxpr_cond_fn,
+        n_consts_body=n_consts_body,
+        n_consts_cond=n_consts_cond,
+    )
 
 
 # pylint: disable=unused-argument, too-many-arguments
