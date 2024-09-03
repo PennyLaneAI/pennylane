@@ -123,7 +123,7 @@ class FermiWord(dict):
 
     def __repr__(self):
         r"""Terminal representation of a FermiWord"""
-        return str(dict(self))
+        return str(self.sorted_dic)
 
     def __add__(self, other):
         """Add a FermiSentence, FermiWord or constant to a FermiWord. Converts both
