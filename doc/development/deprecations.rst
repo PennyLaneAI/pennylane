@@ -31,12 +31,6 @@ Pending deprecations
   - Deprecated in v0.38
   - Will be removed in v0.39
 
-* The functions ``qml.transforms.sum_expand`` and ``qml.transforms.hamiltonian_expand`` are deprecated.
-  Instead, ``qml.transforms.split_non_commuting`` can be used for equivalent behaviour.
-
-  - Deprecated in v0.38
-  - Will be removed in v0.39
-
 * The ``expansion_strategy`` attribute of ``qml.QNode`` is deprecated. 
   Users should make use of ``qml.workflow.construct_batch``, should they require fine control over the output tape(s).
 
@@ -128,6 +122,12 @@ Other deprecations
 
 Completed deprecation cycles
 ----------------------------
+
+* The functions ``qml.transforms.sum_expand`` and ``qml.transforms.hamiltonian_expand`` are deprecated.
+  Instead, ``qml.transforms.split_non_commuting`` can be used for equivalent behaviour.
+
+  - Deprecated in v0.38
+  - Removed in v0.39
 
 * ``queue_idx`` attribute has been removed from the ``Operator``, ``CompositeOp``, and ``SymboliOp`` classes. Instead, the index is now stored as the label of the ``CircuitGraph.graph`` nodes.
 
