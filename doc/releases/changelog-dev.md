@@ -13,6 +13,9 @@
   which differs from the Autograd implementation of `qml.grad` itself.
   [(#6120)](https://github.com/PennyLaneAI/pennylane/pull/6120)
 
+* Improve unit testing for capturing of nested control flows.
+  [(#6111)](https://github.com/PennyLaneAI/pennylane/pull/6111)
+
 * Some custom primitives for the capture project can now be imported via
   `from pennylane.capture.primitives import *`.
   [(#6129)](https://github.com/PennyLaneAI/pennylane/pull/6129)
@@ -32,6 +35,7 @@
 
 This release contains contributions from (in alphabetical order):
 
+Utkarsh Azad
 Jack Brown
 Christina Lee
 David Wierichs
