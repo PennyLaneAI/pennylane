@@ -191,9 +191,9 @@ def nuclear_energy(charges, r, argnum=None):
         charges (list[int]): nuclear charges in atomic units
         r (array[float]): nuclear positions
         argnum (int | Sequence[int] | None): index (indices) of the positional argument(s) -
-            [``coordinates``, ``coeff``, ``alpha``] that should support differentiation. For
-            example, ``argnum=[0, 2]`` would mean derivatives can be computed with respect to both
-            ``coordinates`` and ``alpha``.
+            [``coordinates``, ``coeff``, ``alpha``] that should support differentiation, where 
+            ``coordinates`` is equivalent to ``r``. Therefore, any index other than ``0`` will be
+            ignored.
 
     Returns:
         function: function that computes the nuclear-repulsion energy
