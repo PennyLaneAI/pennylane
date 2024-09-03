@@ -2197,3 +2197,49 @@ def test_broadcasted_parameter(max_workers):
     results = dev.execute(batch, config)
     processed_results = pre_processing_fn(results)
     assert qml.math.allclose(processed_results, np.cos(x))
+
+
+@pytest.mark.jax
+def test_renomalization_issue():
+    """Test that no normalization error occurs with the following workflow in float32 mode.
+    Just tests executes without error.  Not producing a more minimal example due to difficulty
+    finding an exact case that leads to renomalization issues.
+    """
+    import jax
+    from jax import numpy as jnp
+
+    initial_mode = jax.config.jax_enable_x64
+    jax.config.update("jax_enable_x64", False)
+
+    def gaussian_fn(p, t):
+        return p[0] * jnp.exp(-((t - p[1]) ** 2) / (2 * p[2] ** 2))
+
+    global_drive = qml.pulse.rydberg_drive(
+        amplitude=gaussian_fn, phase=0, detuning=0, wires=[0, 1, 2]
+    )
+
+    a = 5
+
+    coordinates = [(0, 0), (a, 0), (a / 2, np.sqrt(a**2 - (a / 2) ** 2))]
+
+    settings = {"interaction_coeff": 862619.7915580727}
+
+    H_interaction = qml.pulse.rydberg_interaction(coordinates, **settings)
+
+    max_amplitude = 2.0
+    displacement = 1.0
+    sigma = 0.3
+
+    amplitude_params = [max_amplitude, displacement, sigma]
+
+    params = [amplitude_params]
+    ts = [0.0, 1.75]
+
+    def circuit(params):
+        qml.evolve(H_interaction + global_drive)(params, ts)
+        return qml.counts()
+
+    circuit_qml = qml.QNode(circuit, qml.device("default.qubit", shots=1000), interface="jax")
+
+    circuit_qml(params)
+    jax.config.update("jax_enable_x64", initial_mode)

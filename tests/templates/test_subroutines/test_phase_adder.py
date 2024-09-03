@@ -131,6 +131,7 @@ class TestPhaseAdder:
         if mod is None:
             mod = 2 ** len(x_wires)
 
+        # pylint: disable=bad-reversed-sequence
         assert np.allclose(
             sum(bit * (2**i) for i, bit in enumerate(reversed(circuit(x)))), (x + k) % mod
         )
@@ -167,6 +168,26 @@ class TestPhaseAdder:
         """Test errors are raised"""
         with pytest.raises(ValueError, match=msg_match):
             qml.PhaseAdder(k, x_wires, mod, work_wire)
+
+    @pytest.mark.parametrize("work_wire", [None, [], [3, 4]])
+    def test_validation_of_num_work_wires(self, work_wire):
+        """Test that when mod is not 2**len(x_wires), validation confirms two
+        work wires are present, while any work wires are accepted for mod=2**len(x_wires)"""
+
+        # if mod=2**len(x_wires), anything goes
+        qml.PhaseAdder(3, [0, 1, 2], mod=8, work_wire=work_wire)
+
+        with pytest.raises(ValueError, match="one work wire should be provided"):
+            qml.PhaseAdder(3, [0, 1, 2], mod=7, work_wire=work_wire)
+
+    def test_valid_inputs_for_work_wires(self):
+        """Test that both an integer and a list with a length of 1 are valid
+        inputs for work_wires, and have the same result"""
+
+        op1 = qml.PhaseAdder(3, [0, 1, 2], mod=8, work_wire=[3])
+        op2 = qml.PhaseAdder(3, [0, 1, 2], mod=8, work_wire=3)
+
+        assert op1.hyperparameters["work_wire"] == op2.hyperparameters["work_wire"]
 
     @pytest.mark.parametrize(
         ("k", "x_wires", "mod", "work_wire", "msg_match"),
@@ -248,6 +269,7 @@ class TestPhaseAdder:
             qml.adjoint(qml.QFT)(wires=x_wires)
             return qml.sample(wires=x_wires)
 
+        # pylint: disable=bad-reversed-sequence
         assert jax.numpy.allclose(
             sum(bit * (2**i) for i, bit in enumerate(reversed(circuit()))), (x + k) % mod
         )
