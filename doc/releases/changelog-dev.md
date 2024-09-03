@@ -13,13 +13,12 @@
   `from pennylane.capture.primitives import *`.
   [(#6129)](https://github.com/PennyLaneAI/pennylane/pull/6129)
 
+* Improve ``qml.Qubitization`` decomposition.
+  [(#6182)](https://github.com/PennyLaneAI/pennylane/pull/6182)
+
 <h3>Breaking changes 💔</h3>
 
 <h3>Deprecations 👋</h3>
-
-* The ``QubitStateVector`` template is deprecated.
-   Instead, use ``StatePrep``.
-   [(#___)](______)
 
 <h3>Documentation 📝</h3>
 
