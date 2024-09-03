@@ -23,27 +23,6 @@ from pennylane.operation import Operation
 from pennylane.wires import Wires
 
 
-def _positive_coeffs_hamiltonian(hamiltonian):
-    """Transforms a Hamiltonian to ensure that the coefficients are positive.
-
-    Args:
-        hamiltonian (Union[.Hamiltonian, .Sum, .Prod, .SProd, .LinearCombination]): The Hamiltonian written as a linear combination of unitaries.
-
-    Returns:
-        list(float), list(.Operation): The coefficients and unitaries of the transformed Hamiltonian.
-    """
-
-    new_unitaries = []
-
-    coeffs, ops = hamiltonian.terms()
-
-    for op, coeff in zip(ops, coeffs):
-        angle = np.pi * (0.5 * (1 - qml.math.sign(coeff)))
-        new_unitaries.append(op @ qml.GlobalPhase(angle, wires=op.wires))
-
-    return qml.math.abs(coeffs), new_unitaries
-
-
 class Qubitization(Operation):
     r"""Applies the `Qubitization <https://arxiv.org/abs/2204.11890>`__ operator.
 
