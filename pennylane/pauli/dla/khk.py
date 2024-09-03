@@ -544,7 +544,7 @@ def orthonormalize(vspace):
     if not all(isinstance(op, PauliSentence) for op in vspace):
         vspace = [op.pauli_rep for op in vspace]
 
-    all_pws = list(reduce(set.__or__, [set(ps.keys()) for ps in vspace]))
+    all_pws = sorted(reduce(set.__or__, [set(ps.keys()) for ps in vspace]))
     num_pw = len(all_pws)
 
     _pw_to_idx = {pw: i for i, pw in enumerate(all_pws)}
@@ -579,6 +579,7 @@ def orthonormalize(vspace):
         generators_orthogonal.append(u1)
 
     return generators_orthogonal
+
 
 def check_all_commuting(h):
     h = [op.pauli_rep for op in h]

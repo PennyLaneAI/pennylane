@@ -210,6 +210,9 @@ class PauliWord(dict):
         memo[id(self)] = res
         return res
 
+    def __gt__(self, other):
+        return str(self) > str(other)
+
     def __setitem__(self, key, item):
         """Restrict setting items after instantiation."""
         raise TypeError("PauliWord object does not support assignment")
