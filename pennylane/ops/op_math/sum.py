@@ -470,7 +470,7 @@ class Sum(CompositeOp):
                 ops.append(factor)
         return coeffs, ops
 
-    def compute_grouping(self, grouping_type="qwc", method="rlf"):
+    def compute_grouping(self, grouping_type="qwc", method="lf"):
         """
         Compute groups of operators and coefficients corresponding to commuting
         observables of this Sum.
