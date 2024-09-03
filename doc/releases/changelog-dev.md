@@ -15,6 +15,13 @@
 
 <h3>Breaking changes 💔</h3>
 
+* `expand_fn`, `max_expansion`, `override_shots`, and `device_batch_transform` are removed from the
+  signature of `qml.execute`.
+
+* `max_expansion` and `expansion_strategy` are removed from the `QNode`.
+
+* `expansion_strategy` is removed from `qml.draw`, `qml.draw_mpl`, and `qml.specs`. `max_expansion` is removed from `qml.specs`, as it had no impact on the output.
+
 <h3>Deprecations 👋</h3>
 
 <h3>Documentation 📝</h3>

@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the specs transform"""
+# pylint: disable=invalid-sequence-index
 from collections import defaultdict
 from contextlib import nullcontext
 
@@ -48,31 +49,6 @@ class TestSpecsTransform:
             return qml.expval(qml.sum(qml.X(0), qml.Y(1)))
 
         return circuit
-
-    def test_max_expansion_throws_warning(self):
-        dev = qml.device("default.qubit", wires=1)
-
-        @qml.qnode(dev, diff_method="backprop")
-        def circ():
-            return qml.expval(qml.PauliZ(0))
-
-        with pytest.warns(qml.PennyLaneDeprecationWarning, match="'max_expansion' has no effect"):
-            qml.specs(circ, max_expansion=10)()
-
-    def test_only_one_of_level_or_expansion_strategy_passed(self):
-        dev = qml.device("default.qubit", wires=1)
-
-        @qml.qnode(dev, diff_method="backprop")
-        def circ():
-            return qml.expval(qml.PauliZ(0))
-
-        with pytest.raises(ValueError, match="Either 'level' or 'expansion_strategy'"):
-            qml.specs(circ, level="device", expansion_strategy="gradient")
-
-    def test_disallow_pos_args(self):
-        circ = self.sample_circuit()
-        with pytest.raises(TypeError, match="takes 1 positional argument"):
-            qml.specs(circ, "device")(0.1)
 
     @pytest.mark.parametrize(
         "level,expected_gates,exptected_train_params",
@@ -239,14 +215,14 @@ class TestSpecsTransform:
         assert specs_list[1]["num_device_wires"] == specs_list[1]["num_tape_wires"] == 3
         assert specs_list[2]["num_device_wires"] == specs_list[1]["num_tape_wires"] == 3
 
-    def make_qnode_and_params(self, initial_expansion_strategy):
+    def make_qnode_and_params(self):
         """Generates a qnode and params for use in other tests"""
         n_layers = 2
         n_wires = 5
 
         dev = qml.device("default.qubit", wires=n_wires)
 
-        @qml.qnode(dev, expansion_strategy=initial_expansion_strategy)
+        @qml.qnode(dev)
         def circuit(params):
             qml.BasicEntanglerLayers(params, wires=range(n_wires))
             return qml.expval(qml.PauliZ(0))
@@ -262,7 +238,7 @@ class TestSpecsTransform:
         """Test that a user can calculate specifications for a different max
         expansion parameter."""
 
-        circuit, params = self.make_qnode_and_params("device")
+        circuit, params = self.make_qnode_and_params()
 
         assert circuit.max_expansion == 10
 
@@ -284,24 +260,6 @@ class TestSpecsTransform:
         assert info["device_name"] == "default.qubit"
         assert info["diff_method"] == "best"
         assert info["gradient_fn"] == "backprop"
-
-    def test_expansion_strategy(self):
-        """Test that a user can calculate specs for different expansion strategies."""
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning, match="'expansion_strategy' attribute is deprecated"
-        ):
-            circuit, params = self.make_qnode_and_params("gradient")
-
-        assert circuit.expansion_strategy == "gradient"
-
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning, match="'expansion_strategy' argument is deprecated"
-        ):
-            info = qml.specs(circuit, expansion_strategy="device")(params)
-
-        assert circuit.expansion_strategy == "gradient"
-
-        assert len(info) == 13
 
     def test_gradient_transform(self):
         """Test that a gradient transform is properly labelled"""

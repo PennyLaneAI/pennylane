@@ -77,7 +77,6 @@ def test_copy():
     assert copied_qn.device is qn.device
     assert copied_qn.interface is qn.interface
     assert copied_qn.diff_method == qn.diff_method
-    assert copied_qn.expansion_strategy == qn.expansion_strategy
 
 
 class TestInitialization:
@@ -100,15 +99,6 @@ class TestInitialization:
             return qml.state()
 
         assert f.execute_kwargs["cache"] is True
-
-    def test_max_expansion_is_deprecated(self):
-        """Test that a warning is raised when using the deprecated max_expansion argument"""
-        dev = qml.device("default.qubit", wires=1)
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning,
-            match="The max_expansion argument is deprecated",
-        ):
-            QNode(dummyfunc, dev, max_expansion=10)
 
 
 # pylint: disable=too-many-public-methods
@@ -1908,69 +1898,6 @@ class TestTapeExpansion:
 
         res = circuit()
         assert np.allclose(res, c[2], atol=0.1)
-
-    def test_device_expansion_strategy(self, mocker):
-        """Test that the device expansion strategy performs the device
-        decomposition at construction time, and not at execution time"""
-        dev = qml.device("default.qubit", wires=2)
-        x = pnp.array(0.5, requires_grad=True)
-
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning,
-            match="'expansion_strategy' attribute is deprecated",
-        ):
-
-            @qnode(dev, diff_method="parameter-shift", expansion_strategy="device")
-            def circuit(x):
-                qml.SingleExcitation(x, wires=[0, 1])
-                return qml.expval(qml.PauliX(0))
-
-        assert circuit.expansion_strategy == "device"
-        assert circuit.execute_kwargs["expand_fn"] is None
-
-        spy_expand = mocker.spy(circuit.device, "preprocess")
-
-        circuit.construct([x], {})
-        assert len(circuit.tape.operations) > 0
-        assert spy_expand.call_count == 1
-
-        circuit(x)
-        assert spy_expand.call_count == 3
-
-        qml.grad(circuit)(x)
-        assert spy_expand.call_count == 5
-
-    def test_device_expansion_strategy_raises_error(self, monkeypatch):
-        """Test that an error is raised if the preprocessing function returns
-        a batch of tapes and the expansion strategy is 'device'"""
-
-        def preprocess_with_batchtransform(execution_config=None):
-            def transform_program(tapes):
-                new_tape = qml.transforms.broadcast_expand(tapes[0])
-                return new_tape, None
-
-            config = qml.devices.execution_config.DefaultExecutionConfig
-            return transform_program, config
-
-        dev = qml.device("default.qubit", wires=2)
-        monkeypatch.setattr(dev, "preprocess", preprocess_with_batchtransform)
-
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning,
-            match="'expansion_strategy' attribute is deprecated",
-        ):
-
-            @qnode(dev, diff_method="parameter-shift", expansion_strategy="device")
-            def circuit(x):
-                qml.SingleExcitation(x, wires=[0, 1])
-                return qml.expval(qml.PauliX(0))
-
-        with pytest.raises(
-            ValueError,
-            match="Using 'device' for the `expansion_strategy` is not supported for batches of tapes",
-        ):
-            x = pnp.array([0.5, 0.4, 0.3], requires_grad=True)
-            circuit.construct([x], {})
 
 
 def test_resets_after_execution_error():
