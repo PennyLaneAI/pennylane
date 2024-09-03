@@ -312,7 +312,7 @@ def test_control_in_ops():
 class TestInterfaces:
     """Tests that the template is compatible with interfaces used to compute gradients"""
 
-    params = [0.4, 0.5, 0.1, 0.3]
+    params = np.array([0.4, 0.5, 0.1, 0.3])
     exp_grad = [0.41177732, -0.21262349, 1.6437038, -0.74256516]
 
     @pytest.mark.torch
