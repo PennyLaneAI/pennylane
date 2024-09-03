@@ -40,7 +40,7 @@ jax==0.4.16
 jaxlib==0.4.16
 Jinja2==3.0.3
 keras==2.11.0
-kiwisolver==1.4.5
+kiwisolver==1.4.6
 latexcodec==3.0.0
 libclang==18.1.1
 m2r2==0.3.2
