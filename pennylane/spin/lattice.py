@@ -35,7 +35,7 @@ class Lattice:
        positions (list[list[float]]): Initial positions of spin cites. Default value is
            ``[[0.0]`` :math:`\times` ``number of dimensions]``.
 
-       boundary_condition (bool or list[bool]): Defines boundary conditions different lattice axes,
+       boundary_condition (bool or list[bool]): Defines boundary conditions for different lattice axes,
            default is ``False`` indicating open boundary condition.
        neighbour_order (int): Specifies the interaction level for neighbors within the lattice.
            Default is 1 (nearest neighbour).

@@ -23,6 +23,8 @@ import pennylane as qml
 from pennylane import I, X, Y, Z
 from pennylane.spin import fermi_hubbard, heisenberg, kitaev, transverse_ising
 
+pytestmark = pytest.mark.usefixtures("new_opmath_only")
+
 
 def test_coupling_error():
     r"""Test that an error is raised when the provided coupling shape is wrong for

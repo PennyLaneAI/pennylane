@@ -29,6 +29,9 @@ pytestmark = pytest.mark.jax
 
 jax = pytest.importorskip("jax")
 
+# must be below jax importorskip
+from pennylane.capture.primitives import for_loop_prim  # pylint: disable=wrong-import-position
+
 
 @pytest.fixture(autouse=True)
 def enable_disable_plxpr():
@@ -61,6 +64,7 @@ class TestCaptureForLoop:
         assert np.allclose(result, expected), f"Expected {expected}, but got {result}"
 
         jaxpr = jax.make_jaxpr(fn)(array)
+        assert jaxpr.eqns[1].primitive == for_loop_prim
         res_ev_jxpr = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, array)
         assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
 
@@ -352,6 +356,51 @@ class TestCaptureCircuitsForLoop:
                     qml.RY(x**2, wires=0)
 
                 inner()
+
+                return x + 0.1
+
+            loop_fn()
+            loop_fn_returns(arg)
+
+            return qml.expval(qml.Z(0))
+
+        args = [upper_bound, arg]
+        result = circuit(*args)
+        assert np.allclose(result, expected), f"Expected {expected}, but got {result}"
+
+        jaxpr = jax.make_jaxpr(circuit)(*args)
+        res_ev_jxpr = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *args)
+        assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
+
+    @pytest.mark.parametrize(
+        "upper_bound, arg, expected", [(3, 0.5, 0.00223126), (2, 12, 0.2653001)]
+    )
+    def test_nested_for_and_while_loop(self, upper_bound, arg, expected):
+        """Test that a nested for loop and while loop is correctly captured into a jaxpr."""
+
+        dev = qml.device("default.qubit", wires=3)
+
+        @qml.qnode(dev)
+        def circuit(upper_bound, arg):
+
+            # for loop with dynamic bounds
+            @qml.for_loop(0, upper_bound, 1)
+            def loop_fn(i):
+                qml.Hadamard(wires=i)
+
+            # nested for-while loops.
+            @qml.for_loop(0, upper_bound, 1)
+            def loop_fn_returns(i, x):
+                qml.RX(x, wires=i)
+
+                # inner while loop
+                @qml.while_loop(lambda j: j < upper_bound)
+                def inner(j):
+                    qml.RZ(j, wires=0)
+                    qml.RY(x**2, wires=0)
+                    return j + 1
+
+                inner(i + 1)
 
                 return x + 0.1
 
