@@ -116,11 +116,7 @@ def test_decomposition(hamiltonian, expected_decomposition):
     """Tests that the Qubitization template is correctly decomposed."""
 
     decomposition = qml.Qubitization.compute_decomposition(hamiltonian=hamiltonian, control=[1])
-    print(decomposition)
-    print(expected_decomposition)
     for i, op in enumerate(decomposition):
-        print(type(op))
-        print(type(expected_decomposition[i]))
         assert qml.equal(op, expected_decomposition[i])
 
 
