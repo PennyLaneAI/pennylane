@@ -21,7 +21,6 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.templates.subroutines.qubitization import _positive_coeffs_hamiltonian
 
 
 @pytest.mark.parametrize(
