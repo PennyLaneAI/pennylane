@@ -24,6 +24,7 @@ from pennylane.operation import AnyWires, Operation
 from pennylane.ops import BasisState
 from pennylane.wires import Wires
 
+import jax
 
 class UCCSD(Operation):
     r"""Implements the Unitary Coupled-Cluster Singles and Doubles (UCCSD) ansatz.
@@ -202,6 +203,8 @@ class UCCSD(Operation):
                 f"For one-dimensional weights tensor, the shape must be {expected_shape}, and n_repeats should be 1; "
                 f"got {shape} and {n_repeats}, respectively."
             )
+
+
         if len(shape) != 1 and shape != (n_repeats,) + expected_shape:
             raise ValueError(
                 f"Weights tensor must be of shape {(n_repeats,) + expected_shape}; got {shape}."
