@@ -285,8 +285,8 @@ def compute_csa_new(g, m, ad, which=0, tol=1e-14, verbose=0):
     #     return _compute_csa_words(m, which)
 
     g_vspace = PauliVSpace(g)
-    np_m = np.array([project(mop, g_vspace) for mop in m]).T
-    np_h = [project(m[which], g_vspace)]
+    np_m = np.array([project(mop, g_vspace).real for mop in m]).T
+    np_h = [project(m[which], g_vspace).real]
 
     iteration = 1
     while True:
@@ -372,7 +372,7 @@ def _compute_csa_words(m, which=0):
 
 
 def khk_decompose(
-    generators, H, theta0=None, n_epochs=500, validate=True, involution=None, verbose=1, tol=1e-12
+    generators, H, theta0=None, n_epochs=500, validate=True, involution=None, verbose=1, tol=1e-12, which=0
 ):
     r"""The full KhK decomposition of a Hamiltonian H
 
@@ -426,7 +426,7 @@ def khk_decompose(
     ad = qml.structure_constants(g)
 
     print("Computing Cartan subalgebra m = mtilde + h") if verbose else None
-    mtilde, h = compute_csa_new(g, m, ad, tol=tol)
+    mtilde, h = compute_csa_new(g, m, ad, tol=tol, which=which)
 
     # if validate:
     #     # TODO this validation is not correct
@@ -582,10 +582,12 @@ def orthonormalize(vspace):
 
 def check_all_commuting(h):
     h = [op.pauli_rep for op in h]
+    commutes = []
     for i, hi in enumerate(h):
         for j, hj in enumerate(h):
             com = hi.commutator(hj)
             com.simplify()
-            assert len(com) == 0, f"{hi} and {hj} do not commute"
+            commutes.append(len(com) == 0)
     
     print("all terms commute")
+    return all(commutes)
