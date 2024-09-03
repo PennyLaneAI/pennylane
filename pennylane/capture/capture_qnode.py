@@ -20,6 +20,8 @@ from copy import copy
 from dataclasses import asdict
 from functools import lru_cache, partial
 
+from jax.interpreters import batching
+
 import pennylane as qml
 
 from .flatfn import FlatFn
@@ -86,6 +88,34 @@ def _get_qnode_prim():
     def _(*args, qnode, shots, device, qnode_kwargs, qfunc_jaxpr, n_consts):
         mps = qfunc_jaxpr.outvars
         return _get_shapes_for(*mps, shots=shots, num_device_wires=len(device.wires))
+
+    # We define here our custom batching rule
+    def _qnode_batching_rule(
+        batched_args, batch_dims, qnode, shots, device, qnode_kwargs, qfunc_jaxpr, n_consts
+    ):
+
+        def reshape_arg(arg, dim):
+            if dim is not batching.not_mapped:
+                return jax.numpy.moveaxis(arg, dim, 0)
+            return arg
+
+        reshaped_args = [reshape_arg(arg, dim) for arg, dim in zip(batched_args, batch_dims)]
+
+        # Right now, this does not work since we get errors from the `create_operator_primitive` function.
+        # We most probably need to start by fixing this
+
+        # We try to apply the QNode to each batch instance. Notice that `inner_args` is traced by JAX
+        # For simplicity, let's forget about consts for now
+        def apply_qnode_single(*inner_args):
+            return jax.core.eval_jaxpr(qfunc_jaxpr, (), *inner_args)
+
+        # The idea is to use jax.vmap to apply the QNode across all batches
+        # and return the batched results with the appropriate batch dimension
+        batched_results = jax.vmap(apply_qnode_single, in_axes=(0,))(reshaped_args)
+
+        return batched_results, (0,) * len(batched_results)
+
+    jax.interpreters.batching.primitive_batchers[qnode_prim] = _qnode_batching_rule
 
     return qnode_prim
 
