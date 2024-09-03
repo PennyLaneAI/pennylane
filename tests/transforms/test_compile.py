@@ -240,7 +240,7 @@ class TestCompileIntegration:
             def decomposition(self):
                 return [qml.Hadamard(i) for i in self.wires]
 
-            def state_vector(self, wire_order=None):
+            def state_vector(self, wire_order=None):  # pylint: disable=unused-argument
                 return self.parameters[0]
 
         state_prep_op = DummyStatePrep([1, 1], wires=[0, 1])
