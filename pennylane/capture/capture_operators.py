@@ -122,4 +122,36 @@ def create_operator_primitive(
     def _(*_, **__):
         return abstract_type()
 
+    def _operator_batching_rule(batched_args, batch_dims, **kwargs):
+
+        # Extract the batched data
+        batched_data = batched_args[0][0]
+
+        # Handle non-batched arguments
+        non_batched_args = batched_args[1:]
+
+        n_wires = kwargs.pop("n_wires", 0)
+
+        # Calculate the index where wire arguments start
+        split = None if n_wires == 0 else -n_wires
+
+        def single_op(*args):
+            # Convert the wire arguments to integers
+            wires = tuple(int(w) for w in args[split:])
+            # Pass the batched data and static arguments to the operator
+            return primitive.bind(*args[:split], *wires, **kwargs)
+
+        # Ensure batched_data is at least 1D
+        if batched_data.ndim == 0:
+            batched_data = jax.numpy.expand_dims(batched_data, axis=0)
+
+        # Use jax.vmap to vectorize the single_op over the batched data
+        batched_result = jax.vmap(single_op, in_axes=(0, *[None] * len(non_batched_args)))(
+            batched_data, *non_batched_args
+        )
+
+        return batched_result, batch_dims[0]
+
+    jax.interpreters.batching.primitive_batchers[primitive] = _operator_batching_rule
+
     return primitive
