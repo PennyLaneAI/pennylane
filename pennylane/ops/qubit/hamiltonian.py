@@ -39,7 +39,7 @@ OBS_MAP = {"PauliX": "X", "PauliY": "Y", "PauliZ": "Z", "Hadamard": "H", "Identi
 def _compute_grouping_indices(
     observables: list[Observable],
     grouping_type: Literal["qwc", "commuting", "anticommuting"] = "qwc",
-    method: Literal["lf", "rlf"] = "rlf",
+    method: Literal["lf", "rlf"] = "lf",
 ):
     # todo: directly compute the
     # indices, instead of extracting groups of observables first
@@ -467,7 +467,7 @@ class Hamiltonian(Observable):
     def compute_grouping(
         self,
         grouping_type: Literal["qwc", "commuting", "anticommuting"] = "qwc",
-        method: Literal["lf", "rlf"] = "rlf",
+        method: Literal["lf", "rlf"] = "lf",
     ):
         """
         Compute groups of indices corresponding to commuting observables of this

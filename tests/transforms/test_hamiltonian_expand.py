@@ -381,17 +381,17 @@ class TestHamiltonianExpand:
 
         assert len(batch) == 2
 
-        tape_0 = qml.tape.QuantumScript([], [qml.expval(qml.Z(0))], shots=50)
-        tape_1 = qml.tape.QuantumScript(
+        tape_0 = qml.tape.QuantumScript(
             [qml.RY(-np.pi / 2, 0), qml.RX(np.pi / 2, 1)],
             [qml.expval(qml.Z(0)), qml.expval(qml.Z(0) @ qml.Z(1))],
             shots=50,
         )
+        tape_1 = qml.tape.QuantumScript([], [qml.expval(qml.Z(0))], shots=50)
 
         qml.assert_equal(batch[0], tape_0)
         qml.assert_equal(batch[1], tape_1)
 
-        dummy_res = (1.0, (1.0, 1.0))
+        dummy_res = ((1.0, 1.0), 1.0)
         processed_res = fn(dummy_res)
         assert qml.math.allclose(processed_res, 10.0)
 
