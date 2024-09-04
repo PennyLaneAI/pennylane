@@ -304,6 +304,10 @@ class Sum(CompositeOp):
 
         return all(s.is_hermitian for s in self)
 
+    def label(self, decimals=None, base_label=None, cache=None):
+        decimals = None if (len(self.parameters) > 3) else decimals
+        return Operator.label(self, decimals=decimals, base_label=base_label or "𝓗", cache=cache)
+
     def matrix(self, wire_order=None):
         r"""Representation of the operator as a matrix in the computational basis.
 
@@ -466,7 +470,7 @@ class Sum(CompositeOp):
                 ops.append(factor)
         return coeffs, ops
 
-    def compute_grouping(self, grouping_type="qwc", method="rlf"):
+    def compute_grouping(self, grouping_type="qwc", method="lf"):
         """
         Compute groups of operators and coefficients corresponding to commuting
         observables of this Sum.
