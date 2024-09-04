@@ -22,7 +22,7 @@ from dataclasses import dataclass, field
 
 import pennylane as qml
 from pennylane.queuing import AnnotatedQueue
-from pennylane.measurements import Shots
+from pennylane.measurements import Shots, MeasurementProcess
 from pennylane.operation import Operator, ResourcesOperation, DecompositionUndefinedError
 
 
@@ -36,9 +36,9 @@ class ResourceConfig(dict):
 
 __resource_kwarg_config = ResourceConfig(
     {
-        "RX": {"epsilon": None}, 
-        "RY": {"epsilon": None}, 
-        "RZ": {"epsilon": None},
+        "RX": {"epsilon": 1e-3}, 
+        "RY": {"epsilon": 1e-3}, 
+        "RZ": {"epsilon": 1e-3},
         "TrotterProduct": {"estimate": True},
         "TrotterizedQfunc": {"estimate": True},
     }
@@ -138,9 +138,27 @@ class Resources:
             return Resources(num_gates=new_num_gates, gate_types=new_gate_types, gate_sizes=new_gate_sizes)
         
         raise NotImplementedError
-
+    
     __rmul__ = __mul__
 
+    def __add__(self, other):
+        if isinstance(other, self.__class__):
+            new_gate_types = copy(self.gate_types)
+            new_gate_sizes = copy(self.gate_sizes)
+
+            for gate, count in other.gate_types.items(): 
+                new_gate_types[gate] += count
+            
+            for size, count in other.gate_sizes.items(): 
+                new_gate_sizes[size] += count
+            
+            return Resources(
+                num_gates=self.num_gates+other.num_gates,
+                gate_types=new_gate_types,
+                gate_sizes=new_gate_sizes,
+            )
+
+        raise NotImplementedError
 
 def substitute(primary_resources, gate_info, replacement_resources):
     """Replace a certain gate with some fixed resources."""
@@ -264,6 +282,9 @@ def resources_from_op(op, gate_set) -> Resources:
         op_resources = op.resources(gate_set, **op_kwargs)
         return op_resources
 
+    if op.name in gate_set:
+        return Resources(num_gates=1, gate_types=defaultdict(int, {op.name: 1}), gate_sizes=defaultdict(int, {len(op.wires): 1}))
+
     else: 
         try:
             return resources_from_sequence_ops(op.decomposition(), gate_set)
@@ -277,6 +298,9 @@ def resources_from_sequence_ops(ops_lst, gate_set):
     gate_sizes = defaultdict(int)
 
     for op in ops_lst:
+        if isinstance(op, MeasurementProcess):
+            continue
+
         if op.name in gate_set:
             gate_types[op.name] += 1
             gate_sizes[len(op.wires)] += 1
