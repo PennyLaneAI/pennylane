@@ -856,22 +856,14 @@ class TestCatalystSample:
         assert circuit(0.0) == 0
         assert circuit(jnp.pi) == 1
 
-    # def test_sample_with_tracer_indices(self):
-    #     """Test that qml.sample can be used with an observable and the
-    #     measurement_from_samples transform (sample indices are a Tracer)"""
+    def test_process_samples_with_jax_tracer(self):
+        """Test that qml.sample can be used with a JAX Tracer"""
 
-    #     dev = qml.device("lightning.qubit", wires=2, shots=100)
+        def f(samples):
+            return qml.sample(op=2*qml.X(0)).process_samples(samples, wire_order=qml.wires.Wires((0,1)))
 
-    #     @qml.qjit
-    #     @catalyst.device.decomposition.measurements_from_samples
-    #     @qml.qnode(dev)
-    #     def circuit(x):
-    #         qml.RX(x, wires=1)
-    #         qml.PauliX(0)
-    #         return qml.sample(qml.Z(0)@qml.Z(1))
-
-    #     assert np.allclose(circuit(0), -1)
-    #     assert np.allclose(circuit(jnp.pi), 1)
+        samples = jax.numpy.zeros((10, 2), dtype=int)
+        jax.jit(f)(samples)
 
 
 class TestCatalystMCMs:
