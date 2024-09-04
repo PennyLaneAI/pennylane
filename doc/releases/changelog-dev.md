@@ -15,7 +15,8 @@
 
 <h3>Breaking changes 💔</h3>
 
-* `DefaultQubitTF` and `DefaultQubitTorch` are removed. Please use `default.qubit` for all interfaces.
+* `DefaultQubitTF`, `DefaultQubitTorch`, `DefaultQubitJax`, and `DefaultQubitAutograd` are removed.
+  Please use `default.qubit` for all interfaces.
 
 <h3>Deprecations 👋</h3>
 

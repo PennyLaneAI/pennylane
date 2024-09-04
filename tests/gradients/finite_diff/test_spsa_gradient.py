@@ -985,12 +985,11 @@ class TestSpsaGradientDifferentiation:
     """Test that the transform is differentiable"""
 
     @pytest.mark.autograd
-    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.autograd"])
-    def test_autograd(self, dev_name, sampler, num_directions, atol):
+    def test_autograd(self, sampler, num_directions, atol):
         """Tests that the output of the SPSA gradient transform
         can be differentiated using autograd, yielding second derivatives."""
-        dev = qml.device(dev_name, wires=2)
-        execute_fn = dev.execute if dev_name == "default.qubit" else dev.batch_execute
+        dev = qml.device("default.qubit", wires=2)
+        execute_fn = dev.execute
         params = np.array([0.543, -0.654], requires_grad=True)
         rng = np.random.default_rng(42)
 
@@ -1023,12 +1022,11 @@ class TestSpsaGradientDifferentiation:
         assert np.allclose(res, expected, atol=atol, rtol=0)
 
     @pytest.mark.autograd
-    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.autograd"])
-    def test_autograd_ragged(self, dev_name, sampler, num_directions, atol):
+    def test_autograd_ragged(self, sampler, num_directions, atol):
         """Tests that the output of the SPSA gradient transform
         of a ragged tape can be differentiated using autograd, yielding second derivatives."""
-        dev = qml.device(dev_name, wires=2)
-        execute_fn = dev.execute if dev_name == "default.qubit" else dev.batch_execute
+        dev = qml.device("default.qubit", wires=2)
+        execute_fn = dev.execute
         params = np.array([0.543, -0.654], requires_grad=True)
         rng = np.random.default_rng(42)
 

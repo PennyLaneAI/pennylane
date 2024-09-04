@@ -766,14 +766,11 @@ class TestParameterShiftRule:
                 assert np.allclose(g, grad_F2[idx1][idx2], atol=finite_diff_tol, rtol=0)
 
     @pytest.mark.autograd
-    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.autograd"])
-    def test_fallback(self, dev_name, mocker, broadcast):
+    def test_fallback(self, mocker, broadcast):
         """Test that fallback gradient functions are correctly used"""
-        if broadcast and dev_name == "default.qubit.autograd":
-            pytest.xfail(reason="Return types + autograd + broadcasting does not work")
         spy = mocker.spy(qml.gradients, "finite_diff")
-        dev = qml.device(dev_name, wires=3, shots=fallback_shot_vec)
-        execute_fn = dev.execute if dev_name == "default.qubit" else dev.batch_execute
+        dev = qml.device("default.qubit", wires=3, shots=fallback_shot_vec)
+        execute_fn = dev.execute
         x = 0.543
         y = -0.654
 
@@ -827,15 +824,12 @@ class TestParameterShiftRule:
             # assert np.allclose(jac[1, 1, 1], -2 * np.cos(2 * y), atol=shot_vec_tol, rtol=0)
 
     @pytest.mark.autograd
-    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.autograd"])
-    def test_fallback_single_meas(self, dev_name, mocker, broadcast):
+    def test_fallback_single_meas(self, mocker, broadcast):
         """Test that fallback gradient functions are correctly used for a single measurement."""
-        if broadcast and dev_name == "default.qubit.autograd":
-            pytest.xfail(reason="Return types + autograd + broadcasting does not work")
         spy = mocker.spy(qml.gradients, "finite_diff")
         shot_vec = tuple([1000000] * 4)
-        dev = qml.device(dev_name, wires=3, shots=shot_vec)
-        execute_fn = dev.execute if dev_name == "default.qubit" else dev.batch_execute
+        dev = qml.device("default.qubit", wires=3, shots=shot_vec)
+        execute_fn = dev.execute
         x = 0.543
         y = -0.654
 
@@ -873,19 +867,13 @@ class TestParameterShiftRule:
             assert np.allclose(res[1], expval_expected[1], atol=finite_diff_tol)
 
     @pytest.mark.autograd
-    @pytest.mark.parametrize("RX, RY, argnum", [(RX_with_F, qml.RY, 0), (qml.RX, RY_with_F, 1)])
-    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.autograd"])
     def test_fallback_probs(
-        self, dev_name, RX, RY, argnum, mocker, broadcast
+        self, RX, RY, argnum, mocker, broadcast
     ):  # pylint:disable=too-many-arguments
         """Test that fallback gradient functions are correctly used with probs"""
-        if broadcast and dev_name == "default.qubit.autograd":
-            pytest.xfail(
-                reason="Return types + autograd + old device API + broadcasting does not work"
-            )
         spy = mocker.spy(qml.gradients, "finite_diff")
-        dev = qml.device(dev_name, wires=3, shots=fallback_shot_vec)
-        execute_fn = dev.execute if dev_name == "default.qubit" else dev.batch_execute
+        dev = qml.device("default.qubit", wires=3, shots=fallback_shot_vec)
+        execute_fn = dev.execute
         x = 0.543
         y = -0.654
 
@@ -969,8 +957,7 @@ class TestParameterShiftRule:
             assert np.allclose(res[1][1], probs_expected[:, 1], atol=finite_diff_tol)
 
     @pytest.mark.autograd
-    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.autograd"])
-    def test_all_fallback(self, dev_name, mocker, broadcast):
+    def test_all_fallback(self, mocker, broadcast):
         """Test that *only* the fallback logic is called if no parameters
         support the parameter-shift rule"""
         if broadcast:
@@ -978,8 +965,8 @@ class TestParameterShiftRule:
         spy_fd = mocker.spy(qml.gradients, "finite_diff")
         spy_ps = mocker.spy(qml.gradients.parameter_shift, "expval_param_shift")
 
-        dev = qml.device(dev_name, wires=3, shots=fallback_shot_vec)
-        execute_fn = dev.execute if dev_name == "default.qubit" else dev.batch_execute
+        dev = qml.device("default.qubit", wires=3, shots=fallback_shot_vec)
+        execute_fn = dev.execute
         x = 0.543
         y = -0.654
 
@@ -2268,15 +2255,14 @@ class TestHamiltonianExpvalGradients:
 
     @pytest.mark.xfail(reason="TODO")
     @pytest.mark.autograd
-    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.autograd"])
-    def test_autograd(self, dev_name, broadcast, tol):
+    def test_autograd(self, broadcast, tol):
         """Test gradient of multiple trainable Hamiltonian coefficients
         using autograd"""
         coeffs1 = np.array([0.1, 0.2, 0.3], requires_grad=True)
         coeffs2 = np.array([0.7], requires_grad=True)
         weights = np.array([0.4, 0.5], requires_grad=True)
         shot_vec = many_shots_shot_vector
-        dev = qml.device(dev_name, wires=2, shots=shot_vec)
+        dev = qml.device("default.qubit", wires=2, shots=shot_vec)
 
         if broadcast:
             with pytest.raises(

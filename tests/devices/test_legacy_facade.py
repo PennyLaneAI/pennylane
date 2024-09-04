@@ -21,7 +21,6 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.devices.default_qubit_autograd import DefaultQubitAutograd
 from pennylane.devices.execution_config import ExecutionConfig
 from pennylane.devices.legacy_facade import (
     LegacyDeviceFacade,
@@ -410,28 +409,6 @@ class TestGradientSupport:
         config = qml.devices.ExecutionConfig(gradient_method="backprop", use_device_gradient=True)
         assert dev.preprocess(config)[1] is config  # unchanged
 
-    def test_backprop_has_passthru_devices(self):
-        """Test that backprop is supported if the device has passthru devices."""
-
-        class BackpropDevice(DummyDevice):
-
-            _capabilities = {"passthru_devices": {"autograd": "default.qubit.autograd"}}
-
-        dev = LegacyDeviceFacade(BackpropDevice(shots=None))
-
-        x = qml.numpy.array(0.1)
-        tape = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.Z(0))])
-        assert dev.supports_derivatives()
-        assert dev.supports_derivatives(ExecutionConfig(gradient_method="backprop"))
-        assert dev.supports_derivatives(ExecutionConfig(gradient_method="backprop"), tape)
-
-        config = qml.devices.ExecutionConfig(gradient_method="backprop", use_device_gradient=True)
-        assert dev.preprocess(config)[1] is config  # unchanged
-
-        with pytest.warns(qml.PennyLaneDeprecationWarning, match="switching of devices"):
-            tmp_device = dev._create_temp_device((tape,))
-        assert tmp_device.short_name == "default.qubit.autograd"
-
     def test_backprop_passthru_device_self(self):
         """Test that the temporary device is the original device if the passthru device is itself."""
 
@@ -458,23 +435,3 @@ class TestGradientSupport:
         config = qml.devices.ExecutionConfig(gradient_method="backprop")
         with pytest.raises(qml.DeviceError, match=r"does not support backpropagation"):
             dev.execute(tape, config)
-
-    @pytest.mark.parametrize("dev_class", (qml.devices.DefaultQubitLegacy, DefaultQubitAutograd))
-    def test_backprop_device_substitution(self, dev_class):
-        """Test that default.qubit.legacy is substituted for a backprop device during backprop execution."""
-
-        with pytest.warns(qml.PennyLaneDeprecationWarning, match="use 'default.qubit'"):
-            dq_legacy = dev_class(wires=2)
-        dev = LegacyDeviceFacade(dq_legacy)
-
-        def f(x):
-            tape = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.Z(0))])
-            return dev.execute(tape, qml.devices.ExecutionConfig(gradient_method="backprop"))
-
-        assert qml.math.allclose(dq_legacy.state, np.array([1, 0, 0, 0]))
-
-        with dev.tracker:
-            g = qml.grad(f)(qml.numpy.array(0.5))
-        assert qml.math.allclose(g, -np.sin(0.5))
-        assert dev.tracker.totals["executions"] == 1
-        assert not qml.math.allclose(dq_legacy.state, np.array([1, 0, 0, 0]))

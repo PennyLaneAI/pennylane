@@ -1007,9 +1007,7 @@ class TestDefaultQubitLegacyIntegration:
             "supports_inverse_operations": True,
             "supports_analytic_computation": True,
             "supports_broadcasting": True,
-            "passthru_devices": {
-                "autograd": "default.qubit.autograd",
-            },
+            "passthru_devices": {},
         }
         assert cap == capabilities
 

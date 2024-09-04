@@ -844,12 +844,11 @@ class TestFiniteDiffGradients:
     """Test that the transform is differentiable"""
 
     @pytest.mark.autograd
-    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.autograd"])
-    def test_autograd(self, dev_name, approx_order, strategy):
+    def test_autograd(self, approx_order, strategy):
         """Tests that the output of the finite-difference transform
         can be differentiated using autograd, yielding second derivatives."""
-        dev = qml.device(dev_name, wires=2, shots=many_shots_shot_vector)
-        execute_fn = dev.execute if dev_name == "default.qubit" else dev.batch_execute
+        dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector)
+        execute_fn = dev.execute
         params = np.array([0.543, -0.654], requires_grad=True)
 
         def cost_fn(x):
@@ -888,12 +887,11 @@ class TestFiniteDiffGradients:
             assert np.allclose(res, expected, atol=0.3, rtol=0)
 
     @pytest.mark.autograd
-    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.autograd"])
-    def test_autograd_ragged(self, dev_name, approx_order, strategy):
+    def test_autograd_ragged(self, approx_order, strategy):
         """Tests that the output of the finite-difference transform
         of a ragged tape can be differentiated using autograd, yielding second derivatives."""
-        dev = qml.device(dev_name, wires=2, shots=many_shots_shot_vector)
-        execute_fn = dev.execute if dev_name == "default.qubit" else dev.batch_execute
+        dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector)
+        execute_fn = dev.execute
         params = np.array([0.543, -0.654], requires_grad=True)
 
         def cost_fn(x):

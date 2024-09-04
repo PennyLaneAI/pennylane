@@ -653,12 +653,11 @@ class TestJVPGradients:
     # Include batch_dim!=None cases once #4462 is resolved
     @pytest.mark.autograd
     @pytest.mark.parametrize("batch_dim", [None])  # , 1, 3])
-    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.autograd"])
-    def test_autograd(self, tol, dev_name, batch_dim):
+    def test_autograd(self, tol, batch_dim):
         """Tests that the output of the JVP transform
         can be differentiated using autograd."""
-        dev = qml.device(dev_name, wires=2)
-        execute_fn = dev.execute if dev_name == "default.qubit" else dev.batch_execute
+        dev = qml.device("default.qubit", wires=2)
+        execute_fn = dev.execute
         params = np.array([0.543, -0.654], requires_grad=True)
         if batch_dim is not None:
             params = np.outer(np.arange(1, 1 + batch_dim), params, requires_grad=True)

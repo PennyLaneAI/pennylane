@@ -1032,12 +1032,11 @@ class TestHadamardTestGradDiff:
     """Test that the transform is differentiable"""
 
     @pytest.mark.autograd
-    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.autograd"])
-    def test_autograd(self, dev_name):
+    def test_autograd(self):
         """Tests that the output of the hadamard gradient transform
         can be differentiated using autograd, yielding second derivatives."""
-        dev = qml.device(dev_name, wires=3)
-        execute_fn = dev.execute if dev_name == "default.qubit" else dev.batch_execute
+        dev = qml.device("default.qubit", wires=3)
+        execute_fn = dev.execute
         params = np.array([0.543, -0.654], requires_grad=True)
 
         def cost_fn_hadamard(x):

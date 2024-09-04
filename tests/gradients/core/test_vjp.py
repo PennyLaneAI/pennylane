@@ -371,12 +371,11 @@ class TestVJPGradients:
     """Gradient tests for the vjp function"""
 
     @pytest.mark.autograd
-    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.autograd"])
-    def test_autograd(self, dev_name, tol):
+    def test_autograd(self, tol):
         """Tests that the output of the VJP transform
         can be differentiated using autograd."""
-        dev = qml.device(dev_name, wires=2)
-        execute_fn = dev.execute if dev_name == "default.qubit" else dev.batch_execute
+        dev = qml.device("default.qubit", wires=2)
+        execute_fn = dev.execute
         params = np.array([0.543, -0.654], requires_grad=True)
 
         def cost_fn(x, dy):
