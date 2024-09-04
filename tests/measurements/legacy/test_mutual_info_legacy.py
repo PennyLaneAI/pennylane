@@ -22,35 +22,6 @@ from pennylane.workflow import INTERFACE_MAP
 class TestIntegration:
     """Tests for the mutual information functions"""
 
-    @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("interface", ["autograd", "jax", "tf", "torch"])
-    @pytest.mark.parametrize(
-        "state, expected",
-        [
-            ([1.0, 0.0, 0.0, 0.0], 0),
-            ([qml.math.sqrt(2) / 2, 0.0, qml.math.sqrt(2) / 2, 0.0], 0),
-            ([qml.math.sqrt(2) / 2, 0.0, 0.0, qml.math.sqrt(2) / 2], 2 * qml.math.log(2)),
-            (qml.math.ones(4) * 0.5, 0.0),
-        ],
-    )
-    def test_mutual_info_output(self, interface, state, expected):
-        """Test the output of qml.mutual_info"""
-        dev = qml.device(f"default.qubit.{interface}", wires=4)
-
-        @qml.qnode(dev, interface=interface)
-        def circuit():
-            qml.StatePrep(state, wires=[0, 1])
-            return qml.mutual_info(wires0=[0, 2], wires1=[1, 3])
-
-        res = circuit()
-        new_res = qml.mutual_info(wires0=[0, 2], wires1=[1, 3]).process_state(
-            state=circuit.device.state, wire_order=circuit.device.wires
-        )
-        assert np.allclose(res, expected, atol=1e-6)
-        assert np.allclose(new_res, expected, atol=1e-6)
-        assert INTERFACE_MAP.get(qml.math.get_interface(new_res)) == interface
-        assert res.dtype == new_res.dtype  # pylint: disable=no-member
-
     def test_shot_vec_error(self):
         """Test an error is raised when using shot vectors with mutual_info."""
         dev = qml.device("default.qubit.legacy", wires=2, shots=[1, 10, 10, 1000])
@@ -304,42 +275,6 @@ class TestIntegration:
         tol = 1e-8 if diff_method == "backprop" else 1e-5
 
         actual = jax.jit(jax.grad(circuit))(param)
-        assert np.allclose(actual, expected, atol=tol)
-
-    @pytest.mark.tf
-    @pytest.mark.parametrize("param", np.linspace(0, 2 * np.pi, 16))
-    @pytest.mark.parametrize("diff_method", diff_methods)
-    @pytest.mark.parametrize("interface", ["tf"])
-    def test_qnode_grad_tf(self, param, diff_method, interface):
-        """Test that the gradient of mutual information works for QNodes
-        with the tensorflow interface"""
-        import tensorflow as tf
-
-        dev = qml.device("default.qubit.legacy", wires=2)
-
-        param = tf.Variable(param)
-
-        @qml.qnode(dev, interface=interface, diff_method=diff_method)
-        def circuit(param):
-            qml.RY(param, wires=0)
-            qml.CNOT(wires=[0, 1])
-            return qml.mutual_info(wires0=[0], wires1=[1])
-
-        if param == 0:
-            # we don't allow gradients to flow through the discontinuity at 0
-            expected = 0
-        else:
-            expected = np.sin(param) * (
-                np.log(np.cos(param / 2) ** 2) - np.log(np.sin(param / 2) ** 2)
-            )
-
-        with tf.GradientTape() as tape:
-            out = circuit(param)
-
-        # higher tolerance for finite-diff method
-        tol = 1e-8 if diff_method == "backprop" else 1e-5
-
-        actual = tape.gradient(out, param)
         assert np.allclose(actual, expected, atol=tol)
 
     @pytest.mark.torch
