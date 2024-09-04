@@ -15,7 +15,6 @@
 This submodule defines a capture compatible call to QNodes.
 """
 
-import warnings
 from copy import copy
 from dataclasses import asdict
 from functools import lru_cache, partial
@@ -72,13 +71,7 @@ def _get_qnode_prim():
         def qfunc(*inner_args):
             return jax.core.eval_jaxpr(qfunc_jaxpr, consts, *inner_args)
 
-        with warnings.catch_warnings():
-            warnings.filterwarnings(
-                action="ignore",
-                message=r"The max_expansion argument is deprecated and will be removed in version 0.39.",
-                category=qml.PennyLaneDeprecationWarning,
-            )
-            qnode = qml.QNode(qfunc, device, **qnode_kwargs)
+        qnode = qml.QNode(qfunc, device, **qnode_kwargs)
         return qnode._impl_call(*args, shots=shots)  # pylint: disable=protected-access
 
     # pylint: disable=unused-argument

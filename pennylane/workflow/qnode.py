@@ -111,6 +111,36 @@ def _to_qfunc_output_type(
     return type(qfunc_output)(results)
 
 
+def _validate_gradient_kwargs(gradient_kwargs: dict) -> None:
+    for kwarg in gradient_kwargs:
+        if kwarg == "expansion_strategy":
+            raise ValueError(
+                "expansion_strategy is no longer a valid keyword argument to QNode."
+                " To inspect the circuit at a given stage in the transform program, please"
+                " use qml.workflow.construct_batch instead."
+            )
+
+        if kwarg == "max_expansion":
+            raise ValueError("max_expansion his no longer a valid keyword argument to QNode.")
+        if kwarg in ["gradient_fn", "grad_method"]:
+            warnings.warn(
+                "It appears you may be trying to set the method of differentiation via the "
+                f"keyword argument {kwarg}. This is not supported in qnode and will default to "
+                "backpropogation. Use diff_method instead."
+            )
+        elif kwarg == "shots":
+            raise ValueError(
+                "'shots' is not a valid gradient_kwarg. If your quantum function takes the "
+                "argument 'shots' or if you want to set the number of shots with which the "
+                "QNode is executed, pass it to the QNode call, not its definition."
+            )
+        elif kwarg not in qml.gradients.SUPPORTED_GRADIENT_KWARGS:
+            warnings.warn(
+                f"Received gradient_kwarg {kwarg}, which is not included in the list of "
+                "standard qnode gradient kwargs."
+            )
+
+
 class QNode:
     r"""Represents a quantum node in the hybrid computational graph.
 
@@ -479,6 +509,7 @@ class QNode:
         if not isinstance(device, qml.devices.Device):
             device = qml.devices.LegacyDeviceFacade(device)
 
+        _validate_gradient_kwargs(gradient_kwargs)
         if "shots" in inspect.signature(func).parameters:
             warnings.warn(
                 "Detected 'shots' as an argument to the given quantum function. "
@@ -489,25 +520,6 @@ class QNode:
             self._qfunc_uses_shots_arg = True
         else:
             self._qfunc_uses_shots_arg = False
-
-        for kwarg in gradient_kwargs:
-            if kwarg in ["gradient_fn", "grad_method"]:
-                warnings.warn(
-                    "It appears you may be trying to set the method of differentiation via the "
-                    f"keyword argument {kwarg}. This is not supported in qnode and will default to "
-                    "backpropogation. Use diff_method instead."
-                )
-            elif kwarg == "shots":
-                raise ValueError(
-                    "'shots' is not a valid gradient_kwarg. If your quantum function takes the "
-                    "argument 'shots' or if you want to set the number of shots with which the "
-                    "QNode is executed, pass it to the QNode call, not its definition."
-                )
-            elif kwarg not in qml.gradients.SUPPORTED_GRADIENT_KWARGS:
-                warnings.warn(
-                    f"Received gradient_kwarg {kwarg}, which is not included in the list of "
-                    "standard qnode gradient kwargs."
-                )
 
         # input arguments
         self.func = func
