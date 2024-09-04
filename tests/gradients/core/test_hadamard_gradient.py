@@ -1095,7 +1095,7 @@ class TestHadamardTestGradDiff:
         assert np.allclose(res_hadamard, res_param_shift)
 
     @pytest.mark.tf
-    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.tf"])
+    @pytest.mark.parametrize("dev_name", ["default.qubit"])
     def test_tf(self, dev_name):
         """Tests that the output of the hadamard gradient transform
         can be differentiated using TF, yielding second derivatives."""

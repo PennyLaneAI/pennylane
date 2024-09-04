@@ -221,26 +221,6 @@ class TestState:
         assert np.allclose(state_val, state_expected)
         assert np.allclose(state_val, dev.state)
 
-    @pytest.mark.tf
-    @pytest.mark.parametrize("diff_method", ["best", "finite-diff", "parameter-shift"])
-    def test_default_qubit_tf(self, diff_method):
-        """Test that the returned state is equal to the expected returned state for all of
-        PennyLane's built in statevector devices"""
-
-        dev = qml.device("default.qubit.tf", wires=4)
-
-        @qml.qnode(dev, diff_method=diff_method)
-        def func():
-            for i in range(4):
-                qml.Hadamard(i)
-            return state()
-
-        state_val = func()
-        state_expected = 0.25 * np.ones(16)
-
-        assert np.allclose(state_val, state_expected)
-        assert np.allclose(state_val, dev.state)
-
     @pytest.mark.autograd
     @pytest.mark.parametrize("diff_method", ["best", "finite-diff", "parameter-shift"])
     def test_default_qubit_autograd(self, diff_method):
@@ -260,28 +240,6 @@ class TestState:
 
         assert np.allclose(state_val, state_expected)
         assert np.allclose(state_val, dev.state)
-
-    @pytest.mark.tf
-    def test_gradient_with_passthru_tf(self):
-        """Test that the gradient of the state is accessible when using default.qubit.tf with the
-        backprop diff_method."""
-        import tensorflow as tf
-
-        dev = qml.device("default.qubit.tf", wires=1)
-
-        @qml.qnode(dev, interface="tf", diff_method="backprop")
-        def func(x):
-            qml.RY(x, wires=0)
-            return state()
-
-        x = tf.Variable(0.1, dtype=tf.float64)
-
-        with tf.GradientTape() as tape:
-            result = func(x)
-
-        grad = tape.jacobian(result, x)
-        expected = tf.stack([-0.5 * tf.sin(x / 2), 0.5 * tf.cos(x / 2)])
-        assert np.allclose(grad, expected)
 
     @pytest.mark.autograd
     def test_gradient_with_passthru_autograd(self):

@@ -15,6 +15,8 @@
 
 <h3>Breaking changes 💔</h3>
 
+* `DefaultQubitTF` is removed. Please use `default.qubit` for all interfaces.
+
 <h3>Deprecations 👋</h3>
 
 <h3>Documentation 📝</h3>

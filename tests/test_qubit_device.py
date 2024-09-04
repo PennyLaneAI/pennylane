@@ -1459,7 +1459,6 @@ class TestResourcesTracker:
         "default.qubit.autograd",
         "default.qubit.jax",
         "default.qubit.torch",
-        "default.qubit.tf",
     )
 
     @pytest.mark.all_interfaces
