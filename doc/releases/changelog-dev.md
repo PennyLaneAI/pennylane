@@ -19,6 +19,9 @@
 
 <h3>Breaking changes 💔</h3>
 
+* `qml.transforms.hamiltonian_expand` and `qml.transforms.sum_expand` are removed.
+  Please use `qml.transforms.split_non_commuting` instead.
+
 <h3>Deprecations 👋</h3>
 
 <h3>Documentation 📝</h3>
