@@ -234,7 +234,7 @@ def excitations(electrons, orbitals, delta_sz=0, fermionic=False):
     Returns:
         tuple(list, list): lists with the indices of the spin orbitals involved in the
         single and double excitations. By default the lists contain lists, otherwise
-        if fermionic=True they contain FermiWords
+        if ``fermionic=True`` they contain ``FermiWord`` objects.
 
     **Example**
 
