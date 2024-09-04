@@ -13,6 +13,10 @@
   `from pennylane.capture.primitives import *`.
   [(#6129)](https://github.com/PennyLaneAI/pennylane/pull/6129)
 
+* The `__repr__` methods for `FermiWord` and `FermiSentence` now returns a
+  unique representation of the object.
+  [(#6167)](https://github.com/PennyLaneAI/pennylane/pull/6167)
+
 <h3>Breaking changes 💔</h3>
 
 <h3>Deprecations 👋</h3>
