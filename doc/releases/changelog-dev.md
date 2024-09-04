@@ -15,7 +15,8 @@
 
 <h3>Breaking changes 💔</h3>
 
-* `DefaultQubitTF` and `DefaultQubitTorch` are removed. Please use `default.qubit` for all interfaces.
+* `DefaultQubitTF`, `DefaultQubitTorch`, and `DefaultQubitJax` are removed. Please use `default.qubit` for all interfaces.
+[(#6209)](https://github.com/PennyLaneAI/pennylane/pull/6209)
 
 <h3>Deprecations 👋</h3>
 
