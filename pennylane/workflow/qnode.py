@@ -111,6 +111,13 @@ def _to_qfunc_output_type(
     return type(qfunc_output)(results)
 
 
+def _get_new_signature(qfunc):
+    initial_signature = inspect.signature(qfunc)
+    params = list(initial_signature.parameters.values())
+    params.append(inspect.Parameter("shots", default="device", kind=inspect.Parameter.KEYWORD_ONLY))
+    return inspect.Signature(params, return_annotation=qml.typing.Result)
+
+
 class QNode:
     r"""Represents a quantum node in the hybrid computational graph.
 
@@ -590,6 +597,7 @@ class QNode:
         self._transform_program = TransformProgram()
         self._update_gradient_fn()
         functools.update_wrapper(self, func)
+        self.__signature__ = _get_new_signature(func)
 
     def __copy__(self) -> "QNode":
         copied_qnode = QNode.__new__(QNode)
