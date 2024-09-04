@@ -13,6 +13,10 @@
   `from pennylane.capture.primitives import *`.
   [(#6129)](https://github.com/PennyLaneAI/pennylane/pull/6129)
 
+* `FermiWord` and `FermiSentence` classes now have methods to apply
+   anti-commutator relations.
+   [(#6196)](https://github.com/PennyLaneAI/pennylane/pull/6196)
+
 <h3>Breaking changes 💔</h3>
 
 <h3>Deprecations 👋</h3>
