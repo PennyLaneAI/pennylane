@@ -39,7 +39,7 @@ jobs:
           && !contains(github.event.pull_request.labels.*.name, 'ci:run-full-test-suite')
           || false
          }}
-      pytest_store_durations: false
+      pytest_store_durations: true
 
   upload-stable-deps:
     needs: tests
