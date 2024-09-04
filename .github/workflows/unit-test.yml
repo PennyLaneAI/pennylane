@@ -89,11 +89,11 @@ on:
         required: false
         type: string
         default: ''
-      pytest_store_durations:
-        description: Whether or not to store durations file as an artifact
+      pytest_durations_file_path:
+        description: Path to test durations file
         required: false
-        type: boolean
-        default: false
+        type: string
+        default: ''
       additional_pip_packages:
         description: Additional packages to install. Values will be passed to pip install {value}
         required: false
@@ -170,7 +170,7 @@ jobs:
           PYTEST_PARALLELISE_ARGS: -n auto
           PYTEST_BENCHMARKS_ARGS: --benchmark-enable --benchmark-only --benchmark-json=benchmarks.json
           PYTEST_ADDITIONAL_ARGS: ${{ inputs.pytest_additional_args }}
-          PYTEST_STORE_DURATIONS: $([ ${{ inputs.pytest_store_durations }} = true ] && echo '--store-durations' || echo '')
+          PYTEST_STORE_DURATIONS: $([ ${{ inputs.pytest_durations_file_path }} != '' ] && echo '--durations-path=${{ inputs.pytest_durations_file_path }} --store-durations --clean-durations' || echo '')
         run: |
           if [[ "$PIPELINE_MODE" =~ .*"benchmarks".* ]]; then
             echo "args=$PYTEST_BENCHMARKS_ARGS $PYTEST_ADDITIONAL_ARGS" >> $GITHUB_OUTPUT
@@ -187,14 +187,18 @@ jobs:
           COV_CORE_DATAFILE: .coverage.eager
           TF_USE_LEGACY_KERAS: "1"  # sets to use tf-keras (Keras2) instead of keras (Keras3) when running TF tests
         # Calling PyTest by invoking Python first as that adds the current directory to sys.path
-        run: python -m pytest ${{ inputs.pytest_test_directory }} ${{ steps.pytest_args.outputs.args }} ${{ env.PYTEST_MARKER }} --disable-opmath=${{ inputs.disable_new_opmath }}; echo $(ls)
+        run: python -m pytest ${{ inputs.pytest_test_directory }} ${{ steps.pytest_args.outputs.args }} ${{ env.PYTEST_MARKER }} --disable-opmath=${{ inputs.disable_new_opmath }}
+
+      - name: View durations file
+        if: ${{ inputs.pytest_durations_file_path != '' }}
+        run: cat .github/workflows/core_tests_durations.json
 
       - name: Upload Durations file as artifact
-        if: ${{ inputs.pytest_store_durations == true }}
+        if: ${{ inputs.pytest_durations_file_path != '' }}
         uses: actions/upload-artifact@v3
         with:
           name: 'durations.json'
-          path: .test_durations
+          path: ${{ inputs.pytest_durations_file_path }}
           include-hidden-files: true
 
       - name: Adjust coverage file for Codecov
