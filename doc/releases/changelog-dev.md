@@ -16,6 +16,7 @@
 <h3>Breaking changes 💔</h3>
 
 * `DefaultQubitTF` is removed. Please use `default.qubit` for all interfaces.
+  [(#6207)](https://github.com/PennyLaneAI/pennylane/pull/6207)
 
 <h3>Deprecations 👋</h3>
 
