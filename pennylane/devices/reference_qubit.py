@@ -22,12 +22,8 @@ import pennylane as qml
 
 from .device_api import Device
 from .execution_config import DefaultExecutionConfig
-from .preprocess import (
-    decompose,
-    validate_measurements,
-    validate_device_wires,
-)
-from .modifiers import single_tape_support, simulator_tracking
+from .modifiers import simulator_tracking, single_tape_support
+from .preprocess import decompose, validate_device_wires, validate_measurements
 
 
 def sample_state(state: np.ndarray, shots: int, seed=None):
