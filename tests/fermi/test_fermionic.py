@@ -17,6 +17,7 @@ from copy import copy, deepcopy
 
 import numpy as np
 import pytest
+from scipy import sparse
 
 import pennylane as qml
 from pennylane import numpy as pnp
@@ -133,9 +134,11 @@ class TestFermiWord:
 
         mat = fw1.to_mat()
         assert np.allclose(mat, expected_mat)
+        assert isinstance(mat, np.ndarray)
 
         mat = fw1.to_mat(format="csr")
         assert np.allclose(mat.toarray(), expected_mat)
+        assert isinstance(mat, sparse.csr_matrix)
 
     def test_to_mat_error(self):
         """Test that an error is raised if the requested matrix dimension is smaller than the
