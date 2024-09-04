@@ -183,7 +183,8 @@ class TestBatchTransformExecution:
     via qml.execute and batch_transform"""
 
     def test_no_batch_transform(self, mocker):
-        """Test that batch transforms can be disabled and enabled"""
+        """Test that batch transforms cannot be disabled"""
+
         dev = qml.device("default.qubit.legacy", wires=2, shots=100000)
 
         H = qml.PauliZ(0) @ qml.PauliZ(1) - qml.PauliX(0)
@@ -196,23 +197,15 @@ class TestBatchTransformExecution:
             qml.CNOT(wires=[0, 1])
             qml.expval(H)
 
-        tape = qml.tape.QuantumScript.from_queue(q)
+        tape = qml.tape.QuantumScript.from_queue(q, shots=100000)
         spy = mocker.spy(dev.target_device, "batch_transform")
 
-        if not qml.operation.active_new_opmath():
-            with pytest.raises(AssertionError, match="Hamiltonian must be used with shots=None"):
-                with pytest.warns(
-                    qml.PennyLaneDeprecationWarning,
-                    match="The device_batch_transform argument is deprecated",
-                ):
-                    _ = qml.execute([tape], dev, None, device_batch_transform=False)
-        else:
-            with pytest.warns(
-                qml.PennyLaneDeprecationWarning,
-                match="The device_batch_transform argument is deprecated",
-            ):
-                res = qml.execute([tape], dev, None, device_batch_transform=False)
-            assert np.allclose(res[0], np.cos(y), atol=0.1)
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match="The device_batch_transform argument is deprecated",
+        ):
+            res = qml.execute([tape], dev, None, device_batch_transform=False)
+        assert np.allclose(res[0], np.cos(y), atol=0.1)
 
         spy.assert_called()
 
@@ -221,6 +214,7 @@ class TestBatchTransformExecution:
             match="The device_batch_transform argument is deprecated",
         ):
             res = qml.execute([tape], dev, None, device_batch_transform=True)
+
         spy.assert_called()
 
         assert qml.math.shape(res[0]) == ()
