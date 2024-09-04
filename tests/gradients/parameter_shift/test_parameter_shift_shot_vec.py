@@ -866,6 +866,7 @@ class TestParameterShiftRule:
             assert np.allclose(res[0], expval_expected[0], atol=finite_diff_tol)
             assert np.allclose(res[1], expval_expected[1], atol=finite_diff_tol)
 
+    @pytest.mark.parametrize("RX, RY, argnum", [(RX_with_F, qml.RY, 0), (qml.RX, RY_with_F, 1)])
     @pytest.mark.autograd
     def test_fallback_probs(
         self, RX, RY, argnum, mocker, broadcast
