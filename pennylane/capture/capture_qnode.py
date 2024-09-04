@@ -95,7 +95,7 @@ def _get_qnode_prim():
     ):
 
         # TODO: This is an experimental attempt to implement batching for QNodes (probably needs more work).
-        # Right now, the batching rule is not implemented for PL custom operators.
+        # Right now, the batching rule is not implemented for PL custom operators and measurements.
         consts = batched_args[:n_consts]
         args = batched_args[n_consts:]
 
