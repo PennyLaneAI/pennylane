@@ -59,7 +59,7 @@ class FermiWord(dict):
         r"""Return the adjoint of the ``FermiWord``"""
         n = len(self.items())
         adjoint_dict = {}
-        for key, value in self.items():
+        for key, value in reversed(self.items()):
             position = n - key[0] - 1
             orbital = key[1]
             fermi = "+" if value == "-" else "-"
