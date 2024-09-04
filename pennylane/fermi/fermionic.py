@@ -308,11 +308,15 @@ class FermiWord(dict):
 
         Args:
             source (int): The position of the operator to be commuted.
-
             target (int): The desired position of the operator occupying the source position.
 
         Returns:
-            FermiSentence: The FermiSentence obtained after applying the anti-commutator relations.
+            FermiSentence: The ``FermiSentence`` obtained after applying the anti-commutator relations.
+
+        Raises:
+            TypeError: If the source or target is not an integer
+            ValueError: If the source or target are outside the range [0, len(self) - 1]
+
 
         **Example**
 
@@ -321,7 +325,10 @@ class FermiWord(dict):
         -1 * a(1) a⁺(0)
         """
 
-        if not isinstance(source, int) or not isinstance(target, int) or source < 0 or target < 0:
+        if not isinstance(source, int) or not isinstance(target, int):
+            raise TypeError("Indices must be integers")
+
+        if source < 0 or target < 0:
             raise ValueError("Indices must be positive integers")
 
         if source > len(self.sorted_dic) - 1 or target > len(self.sorted_dic) - 1:
@@ -342,6 +349,21 @@ class FermiWord(dict):
 
 
 def _commute_adjacent(fs, fw, i, j):
+    """Commutes two adjacent operators within a ``FermiSentence``
+
+    Args:
+        fs (``FermiSentence``): The ``FermiSentence`` to be modified
+        fw (``FermiWord``): The ``FermiWord`` within ``fs`` that contains the operators
+            to be commuted.
+        source (int): The position of the operator to be commuted.
+        target (int): The desired position of the operator occupying the source position.
+
+    Returns:
+        FermiSentence: The ``FermiSentence`` obtained after applying the anti-commutator relations.
+
+    Raises:
+        ValueError: If the source and target positions are not consecutive
+    """
     if i != j + 1 and j != i + 1:
         raise ValueError("Indices must be consecutive integers")
 
@@ -635,9 +657,7 @@ class FermiSentence(dict):
 
         Args:
             fw (FermiWord): The FermiWord within the FermiSentence that contains the operator to be commuted.
-
             source (int): The position of the operator to be commuted.
-
             target (int): The desired position of the operator occupying the source position.
 
         Returns:
@@ -647,7 +667,7 @@ class FermiSentence(dict):
 
         >>> w = FermiWord({(0, 0): '+', (1, 1): '-'})
         >>> s = FermiSentence({w: 1})
-        >>> w.commute(0, 1)
+        >>> s.commute(w, 0, 1)
         -1 * a(1) a⁺(0)
         """
 

@@ -227,7 +227,7 @@ class TestFermiWord:
         assert fw.commute(i, j) == fs
 
     def test_commute_errors(self):
-        with pytest.raises(ValueError, match="Indices must be positive integers"):
+        with pytest.raises(TypeError, match="Indices must be integers"):
             fw8.commute(0.5, 1)
 
         with pytest.raises(ValueError, match="Indices must be positive integers"):
