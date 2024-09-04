@@ -25,6 +25,7 @@ from pennylane.spin import (emery, fermi_hubbard, haldane, heisenberg,
                             transverse_ising)
 
 # pylint: disable=too-many-arguments
+pytestmark = pytest.mark.usefixtures("new_opmath_only")
 
 def test_coupling_error():
     r"""Test that an error is raised when the provided coupling shape is wrong for
