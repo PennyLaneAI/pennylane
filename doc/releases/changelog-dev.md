@@ -13,6 +13,9 @@
   `from pennylane.capture.primitives import *`.
   [(#6129)](https://github.com/PennyLaneAI/pennylane/pull/6129)
 
+* JAX compatibility for processing samples in `SampleMP` is improved.
+  [(#6211)](https://github.com/PennyLaneAI/pennylane/pull/6211)
+
 <h3>Breaking changes 💔</h3>
 
 <h3>Deprecations 👋</h3>
