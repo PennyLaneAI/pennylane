@@ -176,6 +176,7 @@ jobs:
             echo "args=$PYTEST_BENCHMARKS_ARGS $PYTEST_ADDITIONAL_ARGS" >> $GITHUB_OUTPUT
           else
             echo "args=$PYTEST_COVERAGE_ARGS $PYTEST_PARALLELISE_ARGS $PYTEST_ADDITIONAL_ARGS $PYTEST_DURATIONS_ARGS" >> $GITHUB_OUTPUT
+            echo $PYTEST_DURATIONS_ARGS
           fi
 
       - name: Run PennyLane Unit Tests
@@ -189,15 +190,11 @@ jobs:
         # Calling PyTest by invoking Python first as that adds the current directory to sys.path
         run: python -m pytest ${{ inputs.pytest_test_directory }} ${{ steps.pytest_args.outputs.args }} ${{ env.PYTEST_MARKER }} --disable-opmath=${{ inputs.disable_new_opmath }}
 
-      - name: View durations file
-        if: ${{ inputs.pytest_durations_file_path != '' }}
-        run: cat .github/workflows/core_tests_durations.json
-
       - name: Upload Durations file as artifact
         if: ${{ inputs.pytest_durations_file_path != '' }}
         uses: actions/upload-artifact@v3
         with:
-          name: 'durations.json'
+          name: ${{ inputs.job_name }}.json
           path: ${{ inputs.pytest_durations_file_path }}
           include-hidden-files: true
 
