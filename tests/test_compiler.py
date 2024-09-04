@@ -856,7 +856,6 @@ class TestCatalystSample:
         assert circuit(0.0) == 0
         assert circuit(jnp.pi) == 1
 
-
     def test_sample_with_tracer_indices(self):
         """Test that qml.sample can be used with an observable and the 
         measurement_from_samples transform (sample indices are a Tracer)"""
