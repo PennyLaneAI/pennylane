@@ -2801,3 +2801,14 @@ def test_ops_with_abstract_parameters_not_equal():
     assert not jax.jit(qml.equal)(qml.RX(0.1, 0), qml.RX(0.1, 0))
     with pytest.raises(AssertionError, match="Data contains a tracer"):
         jax.jit(assert_equal)(qml.RX(0.1, 0), qml.RX(0.1, 0))
+
+
+def test_not_equal_prep_sel_prep():
+    """Test that two PrepSelPrep operators with different Hamiltonian are not equal."""
+
+    H1 = qml.dot([1.0, 2.0], [qml.Z(0), qml.X(0)])
+    H2 = qml.dot([1.0, -2.0], [qml.Z(0), qml.X(0)])
+    H3 = qml.dot([1.0, 2.0], [qml.Y(0), qml.X(0)])
+
+    assert not qml.equal(qml.PrepSelPrep(H1, control=1), qml.PrepSelPrep(H2, control=1))
+    assert not qml.equal(qml.PrepSelPrep(H1, control=1), qml.PrepSelPrep(H3, control=1))
