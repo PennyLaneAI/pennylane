@@ -40,7 +40,7 @@ jax==0.4.16
 jaxlib==0.4.16
 Jinja2==3.0.3
 keras==2.11.0
-kiwisolver==1.4.6
+kiwisolver==1.4.7
 latexcodec==3.0.0
 libclang==18.1.1
 m2r2==0.3.2
@@ -116,5 +116,5 @@ urllib3==1.26.20
 Werkzeug==3.0.4
 wrapt==1.16.0
 xanadu-sphinx-theme==0.5.0
-yarl==1.9.7
+yarl==1.9.8
 zipp==3.20.1
