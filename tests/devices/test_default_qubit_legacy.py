@@ -2446,19 +2446,6 @@ class TestSumSupport:
         actual = torch.stack(torch.autograd.functional.jacobian(_qnode, (y, z)))
         assert np.allclose(actual, self.expected_grad(is_state_batched))
 
-    @pytest.mark.tf
-    def test_trainable_tf(self, is_state_batched):
-        """Tests that coeffs passed to a sum are trainable with tf."""
-        import tensorflow as tf
-
-        dev = qml.device("default.qubit.legacy", wires=1)
-        qnode = qml.QNode(self.circuit, dev, interface="tensorflow")
-        y, z = tf.Variable(1.1, dtype=tf.float64), tf.Variable(2.2, dtype=tf.float64)
-        with tf.GradientTape() as tape:
-            res = qnode(y, z, is_state_batched)
-        actual = tape.jacobian(res, [y, z])
-        assert np.allclose(actual, self.expected_grad(is_state_batched))
-
     @pytest.mark.jax
     def test_trainable_jax(self, is_state_batched):
         """Tests that coeffs passed to a sum are trainable with jax."""

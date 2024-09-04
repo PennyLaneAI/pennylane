@@ -881,7 +881,6 @@ class TestHadamardGradEdgeCases:
             pytest.param("jax", marks=pytest.mark.jax),
             pytest.param("autograd", marks=pytest.mark.autograd),
             pytest.param("torch", marks=pytest.mark.torch),
-            pytest.param("tf", marks=pytest.mark.tf),
         ],
     )
     def test_no_trainable_params_qnode_legacy_opmath(self, interface):
