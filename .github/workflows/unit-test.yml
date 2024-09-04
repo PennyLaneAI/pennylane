@@ -187,7 +187,7 @@ jobs:
           COV_CORE_DATAFILE: .coverage.eager
           TF_USE_LEGACY_KERAS: "1"  # sets to use tf-keras (Keras2) instead of keras (Keras3) when running TF tests
         # Calling PyTest by invoking Python first as that adds the current directory to sys.path
-        run: python -m pytest ${{ inputs.pytest_test_directory }} ${{ steps.pytest_args.outputs.args }} ${{ env.PYTEST_MARKER }} --disable-opmath=${{ inputs.disable_new_opmath }}
+        run: python -m pytest ${{ inputs.pytest_test_directory }} ${{ steps.pytest_args.outputs.args }} ${{ env.PYTEST_MARKER }} --disable-opmath=${{ inputs.disable_new_opmath }}; echo $(ls)
 
       - name: Upload Durations file as artifact
         if: ${{ inputs.pytest_store_durations == true }}
@@ -195,6 +195,7 @@ jobs:
         with:
           name: 'durations.json'
           path: .test_durations
+          include-hidden-files: true
 
       - name: Adjust coverage file for Codecov
         if: inputs.pipeline_mode == 'unit-tests'
