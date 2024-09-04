@@ -1591,7 +1591,7 @@ class TestStochPulseGradIntegration:
 
         with qml.Tracker(dev) as tracker:
             grad_pulse_grad = jax.grad(qnode_pulse_grad)(params)
-        assert tracker.totals["executions"] == 1
+        assert tracker.totals["executions"] == 1 + 2 * 3 * num_split_times
         grad_backprop = jax.grad(qnode_backprop)(params)
 
         assert all(
