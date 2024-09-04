@@ -105,6 +105,10 @@ def expand_matrix(mat, wires, wire_order=None, sparse_format="csr"):
     if (wire_order is None) or (wire_order == wires):
         return mat
 
+    if not wires and qml.math.shape(mat) == (2, 2):
+        # global phase
+        wires = wire_order[0:1]
+
     wires = list(wires)
     wire_order = list(wire_order)
 
