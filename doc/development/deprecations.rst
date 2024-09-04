@@ -16,7 +16,7 @@ Pending deprecations
   - Will be removed in v0.39
 
 * The logic for internally switching a device for a different backpropagation
-  compatible device is now deprecated, as it was in place for the deprecated `default.qubit.legacy`.
+  compatible device is now deprecated, as it was in place for the deprecated ``default.qubit.legacy``.
 
   - Deprecated in v0.38
   - Will be removed in v0.39  
