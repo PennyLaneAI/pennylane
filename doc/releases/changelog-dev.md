@@ -24,3 +24,4 @@
 This release contains contributions from (in alphabetical order):
 
 Jack Brown
+William Maxwell
