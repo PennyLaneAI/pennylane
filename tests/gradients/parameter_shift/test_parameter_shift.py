@@ -3654,7 +3654,7 @@ class TestHamiltonianExpvalGradients:
         # assert np.allclose(hess[1][:, -1], np.zeros([2, 1, 1]), atol=tol, rtol=0)
 
     @pytest.mark.torch
-    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.torch"])
+    @pytest.mark.parametrize("dev_name", ["default.qubit"])
     def test_torch(self, dev_name, tol, broadcast):
         """Test gradient of multiple trainable Hamiltonian coefficients
         using torch"""

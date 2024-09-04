@@ -1137,7 +1137,7 @@ class TestHadamardTestGradDiff:
         assert np.allclose(res_hadamard, res_param_shift)
 
     @pytest.mark.torch
-    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.torch"])
+    @pytest.mark.parametrize("dev_name", ["default.qubit"])
     def test_torch(self, dev_name):
         """Tests that the output of the hadamard gradient transform
         can be differentiated using Torch, yielding second derivatives."""

@@ -1009,7 +1009,6 @@ class TestDefaultQubitLegacyIntegration:
             "supports_analytic_computation": True,
             "supports_broadcasting": True,
             "passthru_devices": {
-                "torch": "default.qubit.torch",
                 "autograd": "default.qubit.autograd",
                 "jax": "default.qubit.jax",
             },
