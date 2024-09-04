@@ -316,24 +316,26 @@ def emery(
     n_cells,
     hopping=1.0,
     coulomb=1.0,
-    intersite_int=1.0,
+    intersite_coupling=1.0,
     boundary_condition=False,
     neighbour_order=1,
     mapping="jordan_wigner",
 ):
-    r"""Generates the Hamiltonian for the Emery model on a lattice.
+    r"""Generates the Hamiltonian for the Emery model on a lattice defined in `<https://arxiv.org/pdf/2309.11786>`__.
 
     The Hamiltonian is represented as:
 
     .. math::
-
-        \hat{H} = -t\sum_{<i,j>, \sigma}(c_{i\sigma}^{\dagger}c_{j\sigma}) + U\sum_{i}n_{i \uparrow} n_{i\downarrow} + V\sum_{<i,j>}(n_{i}n_{j})
+        \begin{align*}
+          \hat{H} & = -t\sum_{\langle i,j \rangle, \sigma}(c_{i\sigma}^{\dagger}c_{j\sigma})
+          + U\sum_{i}n_{i \uparrow} n_{i\downarrow} + V\sum_{<i,j>}(n_{i}n_{j})
+        \end{align*}
 
     where ``t`` is the hopping term representing the kinetic energy of electrons, ``U`` is the on-site Coulomb interaction,
     representing the repulsion between electrons, ``V`` is the intersite interaction,
-    ``i,j`` represent the indices for neighbouring spins, ``\sigma`` is the spin degree of freedom, and
-    ``n_{i \uparrow}, n_{i \downarrow}`` are number operators for spin-up and
-    spin-down fermions at site ``i``.
+    ``i,j`` represent the indices for neighbouring spins, :math:`\sigma` is the spin degree of freedom,
+    :math:`n_{i \uparrow}`, :math:`n_{i \downarrow}` are number operators for spin-up and
+    spin-down fermions at site ``i``, and :math:`n_{i}`, :math:`n_{j}` are number operators at sites ``i`` and ``j``.
     This function assumes there are two fermions with opposite spins on each lattice site.
 
     Args:
@@ -346,7 +348,7 @@ def emery(
             number of spins. Default value is 1.0.
         coulomb (float or List[float]): Coulomb interaction between spins. It can be a constant or a
             list of length equal to number of spins.
-        intersite_int (float or List[float] or List[math.array(float)]): Interaction strength between spins on
+        intersite_coupling (float or List[float] or List[math.array(float)]): Interaction strength between spins on
             neighbouring sites, it can be a number, a list of length equal to ``neighbour_order`` or
             a square matrix of size ``(num_spins, num_spins)``, where ``num_spins`` is the total
             number of spins. Default value is 1.0.
@@ -366,7 +368,7 @@ def emery(
     >>> h = [0.5]
     >>> u = 1.0
     >>> v = 0.2
-    >>> spin_ham = qml.spin.emery("chain", n_cells, hopping=h, coulomb=u, intersite_int=v)
+    >>> spin_ham = qml.spin.emery("chain", n_cells, hopping=h, coulomb=u, intersite_coupling=v)
     >>> spin_ham
     (
     -0.25 * (Y(0) @ Z(1) @ Y(2))
@@ -395,94 +397,55 @@ def emery(
 
     hopping = math.asarray(hopping)
 
-    if isinstance(intersite_int, (int, float, complex)):
-        intersite_int = [intersite_int]
+    if isinstance(intersite_coupling, (int, float, complex)):
+        intersite_coupling = [intersite_coupling]
 
-    intersite_int = math.asarray(intersite_int)
+    intersite_coupling = math.asarray(intersite_coupling)
 
     if hopping.shape not in [(neighbour_order,), (lattice.n_sites, lattice.n_sites)]:
         raise ValueError(
-            f"The hopping parameter should be a number or an array of shape ({neighbour_order},) or ({lattice.n_sites},{lattice.n_sites})"
+            f"The hopping parameter should be a number or an "
+            f"array of shape ({neighbour_order},) or ({lattice.n_sites},{lattice.n_sites})"
         )
 
-    if intersite_int.shape not in [(neighbour_order,), (lattice.n_sites, lattice.n_sites)]:
+    if intersite_coupling.shape not in [(neighbour_order,), (lattice.n_sites, lattice.n_sites)]:
         raise ValueError(
-            f"The intersite_int parameter should be a number or an array of shape ({neighbour_order},) or ({lattice.n_sites},{lattice.n_sites})"
+            f"The intersite_coupling parameter should be a number or"
+            f"an array of shape ({neighbour_order},) or ({lattice.n_sites},{lattice.n_sites})"
         )
 
     spin = 2
     hopping_ham = 0.0 * FermiWord({})
     intersite_term = 0.0 * FermiWord({})
-    if hopping.shape == (neighbour_order,):
-        for edge in lattice.edges:
-            i, j, order = edge
-            for s in range(spin):
-                s1 = i * spin + s
-                s2 = j * spin + s
-                hopping_ham -= hopping[order] * (
-                    FermiWord({(0, s1): "+", (1, s2): "-"})
-                    + FermiWord({(0, s2): "+", (1, s1): "-"})
-                )
-            if intersite_int.shape == (neighbour_order,):
-                intersite_term += (
-                    intersite_int[order]
-                    * (
-                        FermiWord({(0, i * spin): "+", (1, i * spin): "-"})
-                        + FermiWord({(0, i * spin + 1): "+", (1, i * spin + 1): "-"})
-                    )
-                    * (
-                        FermiWord({(0, j * spin): "+", (1, j * spin): "-"})
-                        + FermiWord({(0, j * spin + 1): "+", (1, j * spin + 1): "-"})
-                    )
-                )
-            else:
-                intersite_term += (
-                    intersite_int[i][j]
-                    * (
-                        FermiWord({(0, i * spin): "+", (1, i * spin): "-"})
-                        + FermiWord({(0, i * spin + 1): "+", (1, i * spin + 1): "-"})
-                    )
-                    * (
-                        FermiWord({(0, j * spin): "+", (1, j * spin): "-"})
-                        + FermiWord({(0, j * spin + 1): "+", (1, j * spin + 1): "-"})
-                    )
-                )
+    for edge in lattice.edges:
+        i, j, order = edge
+        if hopping.shape == (neighbour_order,):
+            hop = hopping[order]
+        else:
+            hop = hopping[i][j]
 
-    else:
-        for edge in lattice.edges:
-            i, j, order = edge
-            for s in range(spin):
-                s1 = i * spin + s
-                s2 = j * spin + s
-                hopping_ham -= hopping[i][j] * (
-                    FermiWord({(0, s1): "+", (1, s2): "-"})
-                    + FermiWord({(0, s2): "+", (1, s1): "-"})
-                )
+        if intersite_coupling.shape == (neighbour_order,):
+            intersite = intersite_coupling[order]
+        else:
+            intersite = intersite_coupling[i][j]
 
-            if intersite_int.shape == (neighbour_order,):
-                intersite_term += (
-                    intersite_int[order]
-                    * (
-                        FermiWord({(0, i * spin): "+", (1, i * spin): "-"})
-                        + FermiWord({(0, i * spin + 1): "+", (1, i * spin + 1): "-"})
-                    )
-                    * (
-                        FermiWord({(0, j * spin): "+", (1, j * spin): "-"})
-                        + FermiWord({(0, j * spin + 1): "+", (1, j * spin + 1): "-"})
-                    )
-                )
-            else:
-                intersite_term += (
-                    intersite_int[i][j]
-                    * (
-                        FermiWord({(0, i * spin): "+", (1, i * spin): "-"})
-                        + FermiWord({(0, i * spin + 1): "+", (1, i * spin + 1): "-"})
-                    )
-                    * (
-                        FermiWord({(0, j * spin): "+", (1, j * spin): "-"})
-                        + FermiWord({(0, j * spin + 1): "+", (1, j * spin + 1): "-"})
-                    )
-                )
+        for s in range(spin):
+            s1 = i * spin + s
+            s2 = j * spin + s
+            hopping_ham -= hop * (
+                FermiWord({(0, s1): "+", (1, s2): "-"}) + FermiWord({(0, s2): "+", (1, s1): "-"})
+            )
+        intersite_term += (
+            intersite
+            * (
+                FermiWord({(0, i * spin): "+", (1, i * spin): "-"})
+                + FermiWord({(0, i * spin + 1): "+", (1, i * spin + 1): "-"})
+            )
+            * (
+                FermiWord({(0, j * spin): "+", (1, j * spin): "-"})
+                + FermiWord({(0, j * spin + 1): "+", (1, j * spin + 1): "-"})
+            )
+        )
 
     coulomb_term = 0.0 * FermiWord({})
     if isinstance(coulomb, (int, float, complex)):
@@ -516,17 +479,26 @@ def haldane(
     boundary_condition=False,
     mapping="jordan_wigner",
 ):
-    r"""Generates the Haldane Hamiltonian on a lattice.
+    r"""Generates the Haldane Hamiltonian on a lattice defined in
+    `<https://arxiv.org/pdf/2211.13615>`__.
 
     The Hamiltonian is represented as:
 
     .. math::
 
-        \hat{H} = -t_1\sum_{<i,j>, \sigma}(c_{i\sigma}^{\dagger}c_{j\sigma}) -t_2 \sum_{<<i,j>>, \sigma}(e^{i\phi_{ij}}c_{i\sigma}^{\dagger}c_{j\sigma+e^{-i\phi_{ij}}c_{j\sigma}^{\dagger}c_{i\sigma})
+        \begin{align*}
+          \hat{H} & = -t_1 \sum_{\langle i,j \rangle} 
+          (c_{i\sigma}^\dagger c_{j\sigma} + c_{j\sigma}^\dagger c_{i\sigma}) \\
+          & \quad - t_2 \sum_{\langle\langle i,j \rangle\rangle, \sigma} 
+          \left( e^{i\phi_{ij}} c_{i\sigma}^\dagger c_{j\sigma} + e^{-i\phi_{ij}} c_{j\sigma}^\dagger c_{i\sigma} \right)
+        \end{align*}
+    
 
-    where :math:`t_1` is the hopping term representing the hopping amplitude between neighbouring sites, :math:`t_2` is the
-    hopping amplitude between next nearest neighbours, :math:`\phi` is the phase factor,
-    ``i,j`` represent the indices for neighbouring spins, and ``\sigma`` is the spin degree of freedom.
+    where :math:`t_1` is the hopping term representing the hopping amplitude between neighbouring
+    sites, :math:`t_2` is the hopping amplitude between next nearest neighbours, :math:`\phi` is the phase
+    factor, :math:`\langle i,j \rangle`, :math:`\langle \langle i,j \rangle \rangle` represent the
+    indices for nearest neighbour and next nearest neighbour spins respectively,
+    and :math:`\sigma` is the spin degree of freedom.
     This function assumes there are two fermions with opposite spins on each lattice site.
 
     Args:
@@ -595,53 +567,36 @@ def haldane(
     hopping_ham = 0.0 * FermiWord({})
     for edge in lattice.edges:
         i, j, order = edge
+        if hopping1.shape == (1,):
+            hop1 = hopping1[0]
+        else:
+            hop1 = hopping1[i][j]
+
+        if hopping2.shape == (1,):
+            hop2 = hopping2[0]
+        else:
+            hop2 = hopping2[i][j]
+
+        if phi.shape == (1,):
+            phi_term = phi[0]
+        else:
+            phi_term = phi[i][j]
+
         for s in range(spin):
             s1 = i * spin + s
             s2 = j * spin + s
             if order == 0:
-                if hopping1.shape == (1,):
-                    hopping_ham -= hopping1[0] * (
-                        FermiWord({(0, s1): "+", (1, s2): "-"})
-                        + FermiWord({(0, s2): "+", (1, s1): "-"})
-                    )
-                else:
-                    hopping_ham -= hopping1[i][j] * (
-                        FermiWord({(0, s1): "+", (1, s2): "-"})
-                        + FermiWord({(0, s2): "+", (1, s1): "-"})
-                    )
-                print("order", hopping_ham)
-
+                hopping_ham -= hop1 * (
+                    FermiWord({(0, s1): "+", (1, s2): "-"})
+                    + FermiWord({(0, s2): "+", (1, s1): "-"})
+                )
             else:
-                if hopping2.shape == (1,):
-                    if phi.shape == (1,):
-                        hopping_ham -= hopping2[0] * (
-                            math.exp(1j * phi[0]) * FermiWord({(0, s1): "+", (1, s2): "-"})
-                        )
-                        hopping_ham -= hopping2[0] * (
-                            math.exp(-1j * phi[0]) * FermiWord({(0, s2): "+", (1, s1): "-"})
-                        )
-                    else:
-                        hopping_ham -= hopping2 * (
-                            math.exp(1j * phi[i][j]) * FermiWord({(0, s1): "+", (1, s2): "-"})
-                        )
-                        hopping_ham -= hopping2 * (
-                            math.exp(-1j * phi[i][j]) * FermiWord({(0, s2): "+", (1, s1): "-"})
-                        )
-                else:
-                    if phi.shape == (1,):
-                        hopping_ham -= hopping2[i][j] * (
-                            math.exp(1j * phi[0]) * FermiWord({(0, s1): "+", (1, s2): "-"})
-                        )
-                        hopping_ham -= hopping2[i][j] * (
-                            math.exp(-1j * phi[0]) * FermiWord({(0, s2): "+", (1, s1): "-"})
-                        )
-                    else:
-                        hopping_ham -= hopping2[i][j] * (
-                            math.exp(1j * phi[i][j]) * FermiWord({(0, s1): "+", (1, s2): "-"})
-                        )
-                        hopping_ham -= hopping2[i][j] * (
-                            math.exp(-1j * phi[i][j]) * FermiWord({(0, s2): "+", (1, s1): "-"})
-                        )
+                hopping_ham -= hop2 * (
+                    math.exp(1j * phi_term) * FermiWord({(0, s1): "+", (1, s2): "-"})
+                )
+                hopping_ham -= hop2 * (
+                    math.exp(-1j * phi_term) * FermiWord({(0, s2): "+", (1, s1): "-"})
+                )
 
     hamiltonian = hopping_ham
 

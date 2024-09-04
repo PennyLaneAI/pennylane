@@ -21,11 +21,11 @@ import pytest
 
 import pennylane as qml
 from pennylane import I, X, Y, Z
-from pennylane.spin import (emery, fermi_hubbard, haldane, heisenberg,
-                            transverse_ising)
+from pennylane.spin import emery, fermi_hubbard, haldane, heisenberg, transverse_ising
 
 # pylint: disable=too-many-arguments
 pytestmark = pytest.mark.usefixtures("new_opmath_only")
+
 
 def test_coupling_error():
     r"""Test that an error is raised when the provided coupling shape is wrong for
@@ -1234,7 +1234,7 @@ def test_emery_hamiltonian(shape, n_cells, t, u, v, boundary_condition, expected
         n_cells=n_cells,
         hopping=t,
         coulomb=u,
-        intersite_int=v,
+        intersite_coupling=v,
         boundary_condition=boundary_condition,
     )
 
@@ -1361,7 +1361,7 @@ def test_emery_hamiltonian(shape, n_cells, t, u, v, boundary_condition, expected
 def test_emery_hamiltonian_matrix(shape, n_cells, t, u, v, expected_ham):
     r"""Test that the correct Emery Hamiltonian is generated when interaction parameters are provided as a matrix"""
 
-    emery_ham = emery(lattice=shape, n_cells=n_cells, hopping=t, coulomb=u, intersite_int=v)
+    emery_ham = emery(lattice=shape, n_cells=n_cells, hopping=t, coulomb=u, intersite_coupling=v)
 
     qml.assert_equal(emery_ham, expected_ham)
 

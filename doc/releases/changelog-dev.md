@@ -4,6 +4,10 @@
 
 <h3>New features since last release</h3>
 
+* Functions are now available for generating spin Hamiltonians in Emery and Haldane
+  models on a lattice
+  [(#6201)](https://github.com/PennyLaneAI/pennylane/pull/6201/)
+
 <h3>Improvements 🛠</h3>
 
 * Improve unit testing for capturing of nested control flows.
@@ -33,5 +37,6 @@ This release contains contributions from (in alphabetical order):
 
 Utkarsh Azad
 Jack Brown
+Diksha Dhawan
 Christina Lee
 William Maxwell
