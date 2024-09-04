@@ -2679,7 +2679,7 @@ class QFuncResourceOperator(ResourcesOperation):
 
         if name:
             self._name = name
-    
+
     def decomposition(self) -> list[Operator]:
         with qml.queuing.AnnotatedQueue() as q:
             self.qfunc(*self.data, self.wires, **self.hyperparameters)
@@ -2688,20 +2688,23 @@ class QFuncResourceOperator(ResourcesOperation):
     def resources(self, gate_set=None, **kwargs):
         if self.resource_fn:
             return self.resource_fn(
-                *self.data, 
-                self.wires, 
-                **self.hyperparameters, 
-                gate_set=gate_set, 
+                *self.data,
+                self.wires,
+                **self.hyperparameters,
+                gate_set=gate_set,
                 **kwargs,
             )
 
-        return qml.resource.resources_from_sequence_ops(self.decomposition(), gate_set=gate_set, **kwargs)
+        return qml.resource.resources_from_sequence_ops(
+            self.decomposition(), gate_set=gate_set, **kwargs
+        )
 
 
 def resource_node(qfunc, resource_fn=None, name=None):
     @functools.wraps(qfunc)
     def wrapper(*args, **kwargs):
         return QFuncResourceOperator(qfunc, *args, resource_fn=resource_fn, name=name, **kwargs)
+
     return wrapper
 
 

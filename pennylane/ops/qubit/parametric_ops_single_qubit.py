@@ -16,17 +16,16 @@
 This submodule contains the discrete-variable quantum operations that are the
 core parameterized gates.
 """
-# pylint:disable=abstract-method,arguments-differ,protected-access,invalid-overridden-method
-import sympy
 import functools
+from collections import defaultdict
 from typing import Optional, Union
 
 import numpy as np
 
-from collections import defaultdict
+# pylint:disable=abstract-method,arguments-differ,protected-access,invalid-overridden-method
+import sympy
 
 import pennylane as qml
-
 from pennylane.operation import Operation, ResourcesOperation
 from pennylane.typing import TensorLike
 from pennylane.wires import WiresLike
@@ -88,11 +87,17 @@ class RX(ResourcesOperation):
         gate_types = defaultdict(int)
         gate_sizes = defaultdict(int)
 
-        num_gates = 3 * sympy.log(1/epsilon) if isinstance(epsilon, sympy.Symbol) else round(3 * np.log(1/epsilon))
+        num_gates = (
+            3 * sympy.log(1 / epsilon)
+            if isinstance(epsilon, sympy.Symbol)
+            else round(3 * np.log(1 / epsilon))
+        )
         gate_sizes[1] = num_gates
         gate_types["T"] = num_gates
-        
-        return qml.resource.resource.Resources(num_gates=num_gates, gate_types=gate_types, gate_sizes=gate_sizes)
+
+        return qml.resource.resource.Resources(
+            num_gates=num_gates, gate_types=gate_types, gate_sizes=gate_sizes
+        )
 
     @staticmethod
     def compute_matrix(theta: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
@@ -194,12 +199,18 @@ class RY(ResourcesOperation):
         gate_types = defaultdict(int)
         gate_sizes = defaultdict(int)
 
-        num_gates = 3 * sympy.log(1/epsilon) if isinstance(epsilon, sympy.Symbol) else round(3 * np.log(1/epsilon))
+        num_gates = (
+            3 * sympy.log(1 / epsilon)
+            if isinstance(epsilon, sympy.Symbol)
+            else round(3 * np.log(1 / epsilon))
+        )
         gate_sizes[1] = num_gates
         gate_types["T"] = num_gates
-        
-        return qml.resource.resource.Resources(num_gates=num_gates, gate_types=gate_types, gate_sizes=gate_sizes)
-    
+
+        return qml.resource.resource.Resources(
+            num_gates=num_gates, gate_types=gate_types, gate_sizes=gate_sizes
+        )
+
     @staticmethod
     def compute_matrix(theta: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
@@ -299,12 +310,18 @@ class RZ(ResourcesOperation):
         gate_types = defaultdict(int)
         gate_sizes = defaultdict(int)
 
-        num_gates = 3 * sympy.log(1/epsilon) if isinstance(epsilon, sympy.Symbol) else round(3 * np.log(1/epsilon))
+        num_gates = (
+            3 * sympy.log(1 / epsilon)
+            if isinstance(epsilon, sympy.Symbol)
+            else round(3 * np.log(1 / epsilon))
+        )
         gate_sizes[1] = num_gates
         gate_types["T"] = num_gates
 
-        return qml.resource.resource.Resources(num_gates=num_gates, gate_types=gate_types, gate_sizes=gate_sizes)
-    
+        return qml.resource.resource.Resources(
+            num_gates=num_gates, gate_types=gate_types, gate_sizes=gate_sizes
+        )
+
     @staticmethod
     def compute_matrix(theta: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).

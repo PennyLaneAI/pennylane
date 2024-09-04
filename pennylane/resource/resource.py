@@ -14,20 +14,20 @@
 """
 Stores classes and logic to aggregate all the resource information from a quantum workflow.
 """
+from collections import defaultdict
 from copy import copy
+from dataclasses import dataclass, field
 from functools import wraps
 from typing import Callable
-from collections import defaultdict
-from dataclasses import dataclass, field
 
 import pennylane as qml
+from pennylane.measurements import MeasurementProcess, Shots
+from pennylane.operation import DecompositionUndefinedError, Operator, ResourcesOperation
 from pennylane.queuing import AnnotatedQueue
-from pennylane.measurements import Shots, MeasurementProcess
-from pennylane.operation import Operator, ResourcesOperation, DecompositionUndefinedError
 
 
 class ResourceConfig(dict):
-    """A class to contains the keyword arguments 
+    """A class to contains the keyword arguments
     for all resource methods."""
 
     def __missing__(self, key):
@@ -36,8 +36,8 @@ class ResourceConfig(dict):
 
 __resource_kwarg_config = ResourceConfig(
     {
-        "RX": {"epsilon": 1e-3}, 
-        "RY": {"epsilon": 1e-3}, 
+        "RX": {"epsilon": 1e-3},
+        "RY": {"epsilon": 1e-3},
         "RZ": {"epsilon": 1e-3},
         "TrotterProduct": {"estimate": True},
         "TrotterizedQfunc": {"estimate": True},
@@ -122,7 +122,7 @@ class Resources:
     def _ipython_display_(self):
         """Displays __str__ in ipython instead of __repr__"""
         print(str(self))
-    
+
     def __mul__(self, other):
         if isinstance(other, int):
             new_num_gates = self.num_gates * other
@@ -131,14 +131,16 @@ class Resources:
 
             for k, v in new_gate_types.items():
                 new_gate_types[k] = v * other
-            
-            for k, v in new_gate_sizes.items():
-                new_gate_sizes[k] = v * other 
 
-            return Resources(num_gates=new_num_gates, gate_types=new_gate_types, gate_sizes=new_gate_sizes)
-        
+            for k, v in new_gate_sizes.items():
+                new_gate_sizes[k] = v * other
+
+            return Resources(
+                num_gates=new_num_gates, gate_types=new_gate_types, gate_sizes=new_gate_sizes
+            )
+
         raise NotImplementedError
-    
+
     __rmul__ = __mul__
 
     def __add__(self, other):
@@ -146,19 +148,20 @@ class Resources:
             new_gate_types = copy(self.gate_types)
             new_gate_sizes = copy(self.gate_sizes)
 
-            for gate, count in other.gate_types.items(): 
+            for gate, count in other.gate_types.items():
                 new_gate_types[gate] += count
-            
-            for size, count in other.gate_sizes.items(): 
+
+            for size, count in other.gate_sizes.items():
                 new_gate_sizes[size] += count
-            
+
             return Resources(
-                num_gates=self.num_gates+other.num_gates,
+                num_gates=self.num_gates + other.num_gates,
                 gate_types=new_gate_types,
                 gate_sizes=new_gate_sizes,
             )
 
         raise NotImplementedError
+
 
 def substitute(primary_resources, gate_info, replacement_resources):
     """Replace a certain gate with some fixed resources."""
@@ -178,11 +181,11 @@ def substitute(primary_resources, gate_info, replacement_resources):
 
     # Replace
     scaled_replacement_resources = replacement_resources * counts_of_gate_to_replace
-    
+
     num_gates = num_gates + scaled_replacement_resources.num_gates
     _combine_dicts(gate_types, scaled_replacement_resources.gate_types)  # update in place
     _combine_dicts(gate_sizes, scaled_replacement_resources.gate_sizes)  # update in place
-    
+
     return Resources(num_gates=num_gates, gate_sizes=gate_sizes, gate_types=gate_types)
 
 
@@ -222,7 +225,7 @@ def _count_resources(tape) -> Resources:
     return Resources(num_wires, num_gates, gate_types, gate_sizes, depth, shots)
 
 
-def _combine_dicts(base_dict, other_dict): 
+def _combine_dicts(base_dict, other_dict):
     for k, v in other_dict.items():
         base_dict[k] += v
 
@@ -238,34 +241,36 @@ StandardGateSet = {
     "Adjoint(S)",  # <-- Clifford Gates
     "T",
     "Adjoint(T)",
-    "Toffoli",     # <-- Non-Clifford Gates
+    "Toffoli",  # <-- Non-Clifford Gates
     "RX",
     "RY",
-    "RZ", 
+    "RZ",
 }
 
 
 def get_resources(obj, gate_set=StandardGateSet):
     if isinstance(obj, Callable):
+
         @wraps(obj)
         def wrapper(*args, **kwargs):
-            with AnnotatedQueue() as q: 
+            with AnnotatedQueue() as q:
                 obj(*args, **kwargs)
-            
+
             res = resources_from_sequence_ops(q.queue, gate_set)
             return validate_resources(res, gate_set)
+
         return wrapper
-    
+
     if isinstance(obj, Operator):
         res = resources_from_op(obj, gate_set)
         return validate_resources(res, gate_set)
-    
+
     res = resources_from_sequence_ops(obj, gate_set)
     return validate_resources(res, gate_set)
 
 
 def resources_from_op(op, gate_set) -> Resources:
-    """Compute the resources for a single operator 
+    """Compute the resources for a single operator
 
     Args:
         op (.Operator): The operation for which we must compute resoruces
@@ -275,21 +280,27 @@ def resources_from_op(op, gate_set) -> Resources:
         ValueError: Cannot obtain resources for the operator in the target gate_set
 
     Returns:
-        Resources: 
+        Resources:
     """
-    if isinstance(op, ResourcesOperation): 
+    if isinstance(op, ResourcesOperation):
         op_kwargs = get_resource_kwargs(op.name)
         op_resources = op.resources(gate_set, **op_kwargs)
         return op_resources
 
     if op.name in gate_set:
-        return Resources(num_gates=1, gate_types=defaultdict(int, {op.name: 1}), gate_sizes=defaultdict(int, {len(op.wires): 1}))
+        return Resources(
+            num_gates=1,
+            gate_types=defaultdict(int, {op.name: 1}),
+            gate_sizes=defaultdict(int, {len(op.wires): 1}),
+        )
 
-    else: 
+    else:
         try:
             return resources_from_sequence_ops(op.decomposition(), gate_set)
         except DecompositionUndefinedError as e:
-            raise ValueError(f"Cannot obtain the resources for type {type(op)} in terms of the gate-set:\n {gate_set}") from e
+            raise ValueError(
+                f"Cannot obtain the resources for type {type(op)} in terms of the gate-set:\n {gate_set}"
+            ) from e
 
 
 def resources_from_sequence_ops(ops_lst, gate_set):
@@ -305,8 +316,8 @@ def resources_from_sequence_ops(ops_lst, gate_set):
             gate_types[op.name] += 1
             gate_sizes[len(op.wires)] += 1
             num_gates += 1
-        
-        else: 
+
+        else:
             op_resources = resources_from_op(op, gate_set)
             num_gates += op_resources.num_gates
             _combine_dicts(gate_types, op_resources.gate_types)  # update in place
@@ -316,9 +327,9 @@ def resources_from_sequence_ops(ops_lst, gate_set):
 
 
 def validate_resources(resources, gate_set):
-    """Ensure that the resources generated respect the gate_set provided. 
-    
-    If so, return the resources provided. If not, attempt to fix it and 
+    """Ensure that the resources generated respect the gate_set provided.
+
+    If so, return the resources provided. If not, attempt to fix it and
     return the modified resources, otherwise raise an error.
 
     Args:
@@ -329,14 +340,20 @@ def validate_resources(resources, gate_set):
     modified_resources = resources
     original_gate_types = resources.gate_types
 
-    if "RX" in original_gate_types and "RX" not in gate_set: 
-        modified_resources = substitute(modified_resources, ("RX", 1), qml.RX(1.23, 0).resources(gate_set))
-    
-    if "RY" in original_gate_types and "RY" not in gate_set: 
-        modified_resources = substitute(modified_resources, ("RY", 1), qml.RY(1.23, 0).resources(gate_set))
-    
-    if "RZ" in original_gate_types and "RZ" not in gate_set: 
-        modified_resources = substitute(modified_resources, ("RZ", 1), qml.RZ(1.23, 0).resources(gate_set))
+    if "RX" in original_gate_types and "RX" not in gate_set:
+        modified_resources = substitute(
+            modified_resources, ("RX", 1), qml.RX(1.23, 0).resources(gate_set)
+        )
+
+    if "RY" in original_gate_types and "RY" not in gate_set:
+        modified_resources = substitute(
+            modified_resources, ("RY", 1), qml.RY(1.23, 0).resources(gate_set)
+        )
+
+    if "RZ" in original_gate_types and "RZ" not in gate_set:
+        modified_resources = substitute(
+            modified_resources, ("RZ", 1), qml.RZ(1.23, 0).resources(gate_set)
+        )
 
     for gate in modified_resources.gate_types:
         if gate not in gate_set:
