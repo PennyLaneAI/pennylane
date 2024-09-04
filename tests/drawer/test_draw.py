@@ -951,7 +951,7 @@ class TestLevelExpansionStrategy:
         )
         assert out == expected
 
-    def test_draw_with_qfunc_warns_with_expansion_strategy_or_level(self):
+    def test_draw_with_qfunc_warns_with_level(self):
         """Test that draw warns the user about level being ignored."""
 
         def qfunc():

@@ -115,13 +115,13 @@ def _validate_gradient_kwargs(gradient_kwargs: dict) -> None:
     for kwarg in gradient_kwargs:
         if kwarg == "expansion_strategy":
             raise ValueError(
-                "expansion_strategy is no longer a valid keyword argument to QNode."
+                "'expansion_strategy' is no longer a valid keyword argument to QNode."
                 " To inspect the circuit at a given stage in the transform program, please"
                 " use qml.workflow.construct_batch instead."
             )
 
         if kwarg == "max_expansion":
-            raise ValueError("max_expansion is no longer a valid keyword argument to QNode.")
+            raise ValueError("'max_expansion' is no longer a valid keyword argument to QNode.")
         if kwarg in ["gradient_fn", "grad_method"]:
             warnings.warn(
                 "It appears you may be trying to set the method of differentiation via the "
@@ -848,13 +848,12 @@ class QNode:
                 # check here only if enough wires
                 raise qml.QuantumFunctionError(f"Operator {obj.name} must act on all wires")
 
-    def _execution_component(self, args: tuple, kwargs: dict, override_shots) -> qml.typing.Result:
+    def _execution_component(self, args: tuple, kwargs: dict) -> qml.typing.Result:
         """Construct the transform program and execute the tapes. Helper function for ``__call__``
 
         Args:
             args (tuple): the arguments the QNode is called with
             kwargs (dict): the keyword arguments the QNode is called with
-            override_shots : the shots to use for the execution.
 
         Returns:
             Result
@@ -897,25 +896,18 @@ class QNode:
 
         execute_kwargs["mcm_config"] = mcm_config
 
-        with warnings.catch_warnings():
-            # TODO: remove this once the cycle for the arguments have finished, i.e. 0.39.
-            warnings.filterwarnings(
-                action="ignore",
-                message=r".*argument is deprecated and will be removed in version 0.39.*",
-                category=qml.PennyLaneDeprecationWarning,
-            )
-            # pylint: disable=unexpected-keyword-arg
-            res = qml.execute(
-                (self._tape,),
-                device=self.device,
-                gradient_fn=self.gradient_fn,
-                interface=self.interface,
-                transform_program=full_transform_program,
-                inner_transform=inner_transform_program,
-                config=config,
-                gradient_kwargs=self.gradient_kwargs,
-                **execute_kwargs,
-            )
+        # pylint: disable=unexpected-keyword-arg
+        res = qml.execute(
+            (self._tape,),
+            device=self.device,
+            gradient_fn=self.gradient_fn,
+            interface=self.interface,
+            transform_program=full_transform_program,
+            inner_transform=inner_transform_program,
+            config=config,
+            gradient_kwargs=self.gradient_kwargs,
+            **execute_kwargs,
+        )
         res = res[0]
 
         # convert result to the interface in case the qfunc has no parameters
@@ -955,7 +947,7 @@ class QNode:
         self._update_gradient_fn(shots=override_shots, tape=self._tape)
 
         try:
-            res = self._execution_component(args, kwargs, override_shots=override_shots)
+            res = self._execution_component(args, kwargs)
         finally:
             if old_interface == "auto":
                 self._interface = "auto"
