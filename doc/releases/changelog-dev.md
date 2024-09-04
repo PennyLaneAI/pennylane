@@ -27,10 +27,14 @@
 * Fix `qml.PrepSelPrep` template to work with `torch`:
   [(#6191)](https://github.com/PennyLaneAI/pennylane/pull/6191)
 
-<h3>Contributors ✍️</h3>
+* The wires of the ``qml.QSVT`` template take first the ``projector`` wires and then the ``UA`` wires following the expected order of the decomposition.
+  [(#6212)](https://github.com/PennyLaneAI/pennylane/pull/6212)
+
+* <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
 
+Guillermo Alonso
 Utkarsh Azad
 Jack Brown
 Christina Lee
