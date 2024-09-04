@@ -170,12 +170,12 @@ jobs:
           PYTEST_PARALLELISE_ARGS: -n auto
           PYTEST_BENCHMARKS_ARGS: --benchmark-enable --benchmark-only --benchmark-json=benchmarks.json
           PYTEST_ADDITIONAL_ARGS: ${{ inputs.pytest_additional_args }}
-          PYTEST_STORE_DURATIONS: $([ ${{ inputs.pytest_durations_file_path }} != '' ] && echo '--durations-path=${{ inputs.pytest_durations_file_path }} --store-durations --clean-durations' || echo '')
+          PYTEST_DURATIONS_ARGS: $([ ${{ inputs.pytest_durations_file_path }} != '' ] && echo '--durations-path=${{ inputs.pytest_durations_file_path }} --store-durations --clean-durations' || echo '')
         run: |
           if [[ "$PIPELINE_MODE" =~ .*"benchmarks".* ]]; then
             echo "args=$PYTEST_BENCHMARKS_ARGS $PYTEST_ADDITIONAL_ARGS" >> $GITHUB_OUTPUT
           else
-            echo "args=$PYTEST_COVERAGE_ARGS $PYTEST_PARALLELISE_ARGS $PYTEST_ADDITIONAL_ARGS $PYTEST_STORE_DURATIONS" >> $GITHUB_OUTPUT
+            echo "args=$PYTEST_COVERAGE_ARGS $PYTEST_PARALLELISE_ARGS $PYTEST_ADDITIONAL_ARGS $PYTEST_DURATIONS_ARGS" >> $GITHUB_OUTPUT
           fi
 
       - name: Run PennyLane Unit Tests
