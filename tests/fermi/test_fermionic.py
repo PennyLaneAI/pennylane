@@ -169,13 +169,13 @@ class TestFermiWord:
         (fw5, fw5_dag),
         (fw6, fw6_dag),
         (fw7, fw7_dag),
+        (FermiA(0), FermiC(0)),
+        (FermiC(0), FermiA(0)),
     )
 
     @pytest.mark.parametrize("fw, fw_dag", tup_fw_dag)
     def test_adjoint(self, fw, fw_dag):
         assert fw.adjoint() == fw_dag
-        assert FermiA(0).adjoint() == FermiC(0)
-        assert FermiC(0).adjoint() == FermiA(0)
 
 
 class TestFermiWordArithmetic:
