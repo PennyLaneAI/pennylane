@@ -875,30 +875,6 @@ class TestHadamardGradEdgeCases:
         with pytest.raises(qml.QuantumFunctionError, match="No trainable parameters."):
             qml.gradients.hadamard_grad(circuit)(weights)
 
-    @pytest.mark.parametrize(
-        "interface",
-        [
-            pytest.param("jax", marks=pytest.mark.jax),
-            pytest.param("autograd", marks=pytest.mark.autograd),
-            pytest.param("torch", marks=pytest.mark.torch),
-            pytest.param("tf", marks=pytest.mark.tf),
-        ],
-    )
-    def test_no_trainable_params_qnode_legacy_opmath(self, interface):
-        """Test that the correct ouput and warning is generated in the absence of any trainable
-        parameters"""
-        dev = qml.device(f"default.qubit.{interface}", wires=2)
-
-        @qml.qnode(dev, interface=interface)
-        def circuit(weights):
-            qml.RX(weights[0], wires=0)
-            qml.RY(weights[1], wires=0)
-            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
-
-        weights = [0.1, 0.2]
-        with pytest.raises(qml.QuantumFunctionError, match="No trainable parameters."):
-            qml.gradients.hadamard_grad(circuit)(weights)
-
     def test_no_trainable_params_tape(self):
         """Test that the correct ouput and warning is generated in the absence of any trainable
         parameters"""

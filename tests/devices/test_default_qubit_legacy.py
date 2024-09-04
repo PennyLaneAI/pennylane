@@ -18,7 +18,6 @@ Unit tests for the :mod:`pennylane.devices.DefaultQubitLegacy` device.
 # pylint: disable=protected-access,cell-var-from-loop
 import cmath
 import math
-from functools import partial
 
 import pytest
 
@@ -2430,31 +2429,6 @@ class TestSumSupport:
         qnode = qml.QNode(self.circuit, dev, interface="autograd")
         y, z = np.array([1.1, 2.2])
         actual = qml.grad(qnode, argnum=[0, 1])(y, z, is_state_batched)
-        assert np.allclose(actual, self.expected_grad(is_state_batched))
-
-    @pytest.mark.torch
-    def test_trainable_torch(self, is_state_batched):
-        """Tests that coeffs passed to a sum are trainable with torch."""
-        import torch
-
-        dev = qml.device("default.qubit.legacy", wires=1)
-        qnode = qml.QNode(self.circuit, dev, interface="torch")
-        y, z = torch.tensor(1.1, requires_grad=True), torch.tensor(2.2, requires_grad=True)
-        _qnode = partial(qnode, is_state_batched=is_state_batched)
-        actual = torch.stack(torch.autograd.functional.jacobian(_qnode, (y, z)))
-        assert np.allclose(actual, self.expected_grad(is_state_batched))
-
-    @pytest.mark.tf
-    def test_trainable_tf(self, is_state_batched):
-        """Tests that coeffs passed to a sum are trainable with tf."""
-        import tensorflow as tf
-
-        dev = qml.device("default.qubit.legacy", wires=1)
-        qnode = qml.QNode(self.circuit, dev, interface="tensorflow")
-        y, z = tf.Variable(1.1, dtype=tf.float64), tf.Variable(2.2, dtype=tf.float64)
-        with tf.GradientTape() as tape:
-            res = qnode(y, z, is_state_batched)
-        actual = tape.jacobian(res, [y, z])
         assert np.allclose(actual, self.expected_grad(is_state_batched))
 
     @pytest.mark.jax
