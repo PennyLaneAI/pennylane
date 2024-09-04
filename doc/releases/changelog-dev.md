@@ -13,6 +13,10 @@
   `from pennylane.capture.primitives import *`.
   [(#6129)](https://github.com/PennyLaneAI/pennylane/pull/6129)
 
+* The `__repr__` methods for `FermiWord` and `FermiSentence` now returns a
+  unique representation of the object.
+  [(#6167)](https://github.com/PennyLaneAI/pennylane/pull/6167)
+
 <h3>Breaking changes 💔</h3>
 
 * `expand_fn`, `max_expansion`, `override_shots`, and `device_batch_transform` are removed from the
@@ -24,6 +28,10 @@
 
 * `expansion_strategy` is removed from `qml.draw`, `qml.draw_mpl`, and `qml.specs`. `max_expansion` is removed from `qml.specs`, as it had no impact on the output.
   [(#6203)](https://github.com/PennyLaneAI/pennylane/pull/6203)
+
+* `qml.transforms.hamiltonian_expand` and `qml.transforms.sum_expand` are removed.
+  Please use `qml.transforms.split_non_commuting` instead.
+  [(#6204)](https://github.com/PennyLaneAI/pennylane/pull/6204)
 
 <h3>Deprecations 👋</h3>
 
