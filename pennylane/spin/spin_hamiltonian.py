@@ -487,12 +487,11 @@ def haldane(
     .. math::
 
         \begin{align*}
-          \hat{H} & = -t_1 \sum_{\langle i,j \rangle} 
+          \hat{H} & = -t_1 \sum_{\langle i,j \rangle}
           (c_{i\sigma}^\dagger c_{j\sigma} + c_{j\sigma}^\dagger c_{i\sigma}) \\
-          & \quad - t_2 \sum_{\langle\langle i,j \rangle\rangle, \sigma} 
+          & \quad - t_2 \sum_{\langle\langle i,j \rangle\rangle, \sigma}
           \left( e^{i\phi_{ij}} c_{i\sigma}^\dagger c_{j\sigma} + e^{-i\phi_{ij}} c_{j\sigma}^\dagger c_{i\sigma} \right)
         \end{align*}
-    
 
     where :math:`t_1` is the hopping term representing the hopping amplitude between neighbouring
     sites, :math:`t_2` is the hopping amplitude between next nearest neighbours, :math:`\phi` is the phase
