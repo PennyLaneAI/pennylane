@@ -125,10 +125,6 @@ def create_operator_primitive(
     def _operator_batching_rule(batched_args, batch_dims, **kwargs):
         """Batching rule for custom quantum operators in JAX."""
 
-        print(f"Batched args: {batched_args}")
-        print(f"Batch dims: {batch_dims}")
-        print(f"kwargs: {kwargs}")
-
         # TODO: implement batching rule for custom operators
         raise NotImplementedError("Batching rule for custom operators not yet implemented.")
 

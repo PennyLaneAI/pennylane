@@ -219,4 +219,12 @@ def create_measurement_wires_primitive(
         n_wires = len(args) - 1 if has_eigvals else len(args)
         return abstract_type(abstract_eval, n_wires=n_wires, has_eigvals=has_eigvals)
 
+    def _measurements_batching_rule(batched_args, batch_dims, **kwargs):
+        """Batching rule for custom quantum measurements in JAX."""
+
+        # TODO: implement batching rule for custom measurements
+        raise NotImplementedError("Batching rule for custom measurements not yet implemented.")
+
+    jax.interpreters.batching.primitive_batchers[primitive] = _measurements_batching_rule
+
     return primitive
