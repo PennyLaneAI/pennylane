@@ -279,6 +279,10 @@ class FermiWord(dict):
         Args:
             n_orbitals (int or None): Number of orbitals. If not provided, it will be inferred from
                 the largest orbital index in the Fermi operator.
+            format (str): The format of the matrix. It is "dense" by default. Use "csr" for sparse.
+            buffer_size (int or None)`: The maximum allowed memory in bytes to store intermediate results
+                in the calculation of sparse matrices. It defaults to ``2 ** 30`` bytes that make
+                1GB of memory. In general, larger buffers allow faster computations.
 
         Returns:
             NumpyArray: Matrix representation of the :class:`~.FermiWord`.
@@ -500,6 +504,10 @@ class FermiSentence(dict):
         Args:
             n_orbitals (int or None): Number of orbitals. If not provided, it will be inferred from
                 the largest orbital index in the Fermi operator
+            format (str): The format of the matrix. It is "dense" by default. Use "csr" for sparse.
+            buffer_size (int or None)`: The maximum allowed memory in bytes to store intermediate results
+                in the calculation of sparse matrices. It defaults to ``2 ** 30`` bytes that make
+                1GB of memory. In general, larger buffers allow faster computations.
 
         Returns:
             NumpyArray: Matrix representation of the :class:`~.FermiSentence`.
