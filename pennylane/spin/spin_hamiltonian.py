@@ -317,8 +317,11 @@ def kitaev(n_cells, coupling=None, boundary_condition=False):
     The Hamiltonian is represented as:
 
     .. math::
-
-         \hat{H} = K_x.\sum_{<i,j>}\sigma_i^x\sigma_j^x + K_y.\sum_{<i,j>}\sigma_i^y\sigma_j^y + K_z.\sum_{<i,j>}\sigma_i^z\sigma_j^z
+        \begin{align*}
+          \hat{H} = K_x.\sum_{\langle i,j \rangle \epsilon X}\sigma_i^x\sigma_j^x +
+          K_y.\sum_{\langle i,j \rangle \epsilon Y}\sigma_i^y\sigma_j^y +
+          K_z.\sum_{\langle i,j \rangle \epsilon Z}\sigma_i^z\sigma_j^z
+        \end{align*}
 
     where :math:`K_x`, :math:`K_y`, :math:`K_z` are the coupling constants defined for the Hamiltonian, and ``i,j`` represent
     the indices for neighbouring spins.
