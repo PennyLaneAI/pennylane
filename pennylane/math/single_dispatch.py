@@ -789,7 +789,6 @@ def _to_numpy_jax(x):
 
 
 ar.register_function("jax", "flatten", lambda x: x.flatten())
-
 ar.register_function(
     "jax",
     "take",
