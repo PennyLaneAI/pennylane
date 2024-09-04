@@ -17,8 +17,8 @@ import re
 from copy import copy, deepcopy
 
 import numpy as np
-import pytest
 import pennylane as qml
+import pytest
 from pennylane import numpy as pnp
 from pennylane.fermi.fermionic import (
     FermiSentence,
