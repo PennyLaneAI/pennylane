@@ -111,7 +111,7 @@ class TestValidation:
         with pytest.raises(ValueError, match=r"expansion_strategy is no longer"):
 
             @qml.qnode(qml.device("default.qubit"), expansion_strategy="device")
-            def circuit():
+            def _():
                 return qml.state()
 
     def test_max_expansion_error(self):
@@ -120,7 +120,7 @@ class TestValidation:
         with pytest.raises(ValueError, match="max_expansion is no longer a valid"):
 
             @qml.qnode(qml.device("default.qubit"), max_expansion=1)
-            def f():
+            def _():
                 qml.state()
 
     def test_invalid_interface(self):
