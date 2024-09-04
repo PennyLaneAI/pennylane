@@ -16,6 +16,11 @@
 * JAX compatibility for processing samples in `SampleMP` is improved.
   [(#6211)](https://github.com/PennyLaneAI/pennylane/pull/6211)
 
+* The `__repr__` methods for `FermiWord` and `FermiSentence` now returns a
+  unique representation of the object.
+  [(#6167)](https://github.com/PennyLaneAI/pennylane/pull/6167)
+
+
 <h3>Breaking changes 💔</h3>
 
 <h3>Deprecations 👋</h3>
@@ -36,5 +41,6 @@ This release contains contributions from (in alphabetical order):
 
 Utkarsh Azad
 Jack Brown
+Lillian M. A. Frederiksen
 Christina Lee
 William Maxwell

@@ -195,6 +195,7 @@ def compile(
             max_expansion=expand_depth,
             name="compile",
             error=qml.operation.DecompositionUndefinedError,
+            skip_initial_state_prep=False,
         )
 
         # Apply the full set of compilation transforms num_passes times
