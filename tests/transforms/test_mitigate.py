@@ -229,6 +229,7 @@ def skip_if_no_pl_qiskit_support():
     pytest.importorskip("pennylane_qiskit")
 
 
+@pytest.mark.external
 @pytest.mark.usefixtures("skip_if_no_pl_qiskit_support")
 @pytest.mark.usefixtures("skip_if_no_mitiq_support")
 class TestMitiqIntegration:
