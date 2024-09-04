@@ -70,13 +70,16 @@ def simulate(tape: qml.tape.QuantumTape, seed=None) -> qml.typing.Result:
             results.append(
                 tuple(mp.process_samples(sub_samples, tape.wires) for mp in tape.measurements)
             )
+        if len(tape.measurements) == 1:
+            results = [res[0] for res in results]
         if not tape.shots.has_partitioned_shots:
             results = results[0]
     else:
-        # diagonalize measurement transform handled diagonalizing gates
-        # otherwise we would need to apply them
         results = tuple(mp.process_state(state, tape.wires) for mp in tape.measurements)
-    return results[0] if len(tape.measurements) == 1 else results
+        if len(tape.measurements) == 1:
+            results = results[0]
+
+    return results
 
 
 operations = frozenset({"PauliX", "PauliY", "PauliZ", "Hadamard", "CNOT", "CZ", "RX", "RY", "RZ"})
@@ -129,14 +132,14 @@ class ReferenceQubit(Device):
         program = qml.transforms.core.TransformProgram()
         program.add_transform(validate_device_wires, wires=self.wires, name="reference.qubit")
         program.add_transform(qml.defer_measurements)
-        program.add_transform(qml.transforms.split_non_commuting, name="reference.qubit")
+        program.add_transform(qml.transforms.split_non_commuting)
         program.add_transform(
             decompose,
             stopping_condition=supports_operation,
             skip_initial_state_prep=False,
             name="mini.qubit",
         )
-        program.add_transform(qml.transforms.diagonalize_measurements, name="reference.qubit")
+        program.add_transform(qml.transforms.diagonalize_measurements)
         program.add_transform(validate_measurements, name="reference.qubit")
         program.add_transform(qml.transforms.broadcast_expand)
 
