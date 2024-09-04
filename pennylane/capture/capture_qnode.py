@@ -93,22 +93,25 @@ def _get_qnode_prim():
     def _qnode_batching_rule(
         batched_args, batch_dims, qnode, shots, device, qnode_kwargs, qfunc_jaxpr, n_consts
     ):
+
+        # TODO: This is an experimental attempt to implement batching for QNodes (probably needs more work).
+        # Right now, the batching rule is not implemented for PL custom operators.
         consts = batched_args[:n_consts]
         args = batched_args[n_consts:]
 
         def qfunc(*inner_args):
             return jax.core.eval_jaxpr(qfunc_jaxpr, consts, *inner_args)
 
-        # Apply the batch dimension
-        in_axes = batch_dims[n_consts:]  # Skip the constants
+        # We apply the batch dimension and skip the constants
+        in_axes = batch_dims[n_consts:]
 
         # Vectorize the quantum function over the specified axes
+        # and recreate the QNode with the batched function
         batched_qfunc = jax.vmap(qfunc, in_axes=in_axes)
-
-        # Recreate the QNode with the batched function
         batched_qnode = qml.QNode(batched_qfunc, device, **qnode_kwargs)
 
         # Execute the batched QNode with the batched arguments
+        # This currently does not work because the batching rule for custom operators is not implemented
         batched_results = batched_qnode._impl_call(
             *args, shots=shots
         )  # pylint: disable=protected-access
