@@ -56,7 +56,7 @@ class FermiWord(dict):
         super().__init__(operator)
 
     def adjoint(self):
-        r"""Return the adjiont of the FermiWord"""
+        r"""Return the adjoint of the ``FermiWord``"""
         n = len(self.items())
         adjoint_dict = {}
         for key, value in self.items():
@@ -66,6 +66,9 @@ class FermiWord(dict):
             adjoint_dict[(position, orbital)] = fermi
 
         return FermiWord(adjoint_dict)
+
+    def items(self):
+        return self.sorted_dic.items()
 
     @property
     def wires(self):
@@ -344,7 +347,6 @@ class FermiSentence(dict):
         for key, value in self.items():
             word = key.adjoint()
             scalar = qml.math.conj(value)
-
             adjoint_dict[word] = scalar
 
         return FermiSentence(adjoint_dict)
