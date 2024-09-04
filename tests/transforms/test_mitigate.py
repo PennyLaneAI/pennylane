@@ -229,7 +229,6 @@ def skip_if_no_pl_qiskit_support():
     pytest.importorskip("pennylane_qiskit")
 
 
-@pytest.mark.external
 @pytest.mark.usefixtures("skip_if_no_pl_qiskit_support")
 @pytest.mark.usefixtures("skip_if_no_mitiq_support")
 class TestMitiqIntegration:
@@ -242,7 +241,7 @@ class TestMitiqIntegration:
         noise_strength = 0.05
 
         dev_noise_free = qml.device("default.mixed", wires=2)
-        dev = qml.transforms.insert(dev_noise_free, qml.AmplitudeDamping, noise_strength)
+        dev = qml.transforms.insert(qml.AmplitudeDamping, noise_strength)(dev_noise_free)
 
         n_wires = 2
         n_layers = 2
@@ -291,7 +290,7 @@ class TestMitiqIntegration:
         noise_strength = 0.05
 
         dev_noise_free = qml.device("default.mixed", wires=2)
-        dev = qml.transforms.insert(dev_noise_free, qml.AmplitudeDamping, noise_strength)
+        dev = qml.transforms.insert(qml.AmplitudeDamping, noise_strength)(dev_noise_free)
 
         n_wires = 2
         n_layers = 2
@@ -330,7 +329,7 @@ class TestMitiqIntegration:
         noise_strength = 0.05
 
         dev_noise_free = qml.device("default.mixed", wires=2)
-        dev = qml.transforms.insert(dev_noise_free, qml.AmplitudeDamping, noise_strength)
+        dev = qml.transforms.insert(qml.AmplitudeDamping, noise_strength)(dev_noise_free)
 
         n_wires = 2
         n_layers = 2
@@ -369,7 +368,7 @@ class TestMitiqIntegration:
         noise_strength = 0.05
 
         dev_noise_free = qml.device("default.mixed", wires=2)
-        dev = qml.transforms.insert(dev_noise_free, qml.AmplitudeDamping, noise_strength)
+        dev = qml.transforms.insert(qml.AmplitudeDamping, noise_strength)(dev_noise_free)
 
         n_wires = 2
         n_layers = 2
@@ -426,7 +425,7 @@ class TestMitiqIntegration:
         noise_strength = 0.05
 
         dev_noise_free = qml.device("default.mixed", wires=2)
-        dev = qml.transforms.insert(dev_noise_free, qml.AmplitudeDamping, noise_strength)
+        dev = qml.transforms.insert(qml.AmplitudeDamping, noise_strength)(dev_noise_free)
 
         n_wires = 2
         n_layers = 2
