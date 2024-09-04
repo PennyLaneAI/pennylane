@@ -857,7 +857,7 @@ class TestCatalystSample:
         assert circuit(jnp.pi) == 1
 
     # def test_sample_with_tracer_indices(self):
-    #     """Test that qml.sample can be used with an observable and the 
+    #     """Test that qml.sample can be used with an observable and the
     #     measurement_from_samples transform (sample indices are a Tracer)"""
 
     #     dev = qml.device("lightning.qubit", wires=2, shots=100)
