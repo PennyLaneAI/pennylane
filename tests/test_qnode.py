@@ -105,6 +105,24 @@ class TestInitialization:
 class TestValidation:
     """Tests for QNode creation and validation"""
 
+    def test_expansion_strategy_error(self):
+        """Test that an error is raised if expansion_strategy is passed to the qnode."""
+
+        with pytest.raises(ValueError, match=r"expansion_strategy is no longer"):
+
+            @qml.qnode(qml.device("default.qubit"), expansion_strategy="device")
+            def circuit():
+                return qml.state()
+
+    def test_max_expansion_error(self):
+        """Test that an error is raised if max_expansion is passed to the QNode."""
+
+        with pytest.raises(ValueError, match="max_expansion is no longer a valid"):
+
+            @qml.qnode(qml.device("default.qubit"), max_expansion=1)
+            def f():
+                qml.state()
+
     def test_invalid_interface(self):
         """Test that an exception is raised for an invalid interface"""
         dev = qml.device("default.qubit", wires=1)

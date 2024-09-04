@@ -17,10 +17,13 @@
 
 * `expand_fn`, `max_expansion`, `override_shots`, and `device_batch_transform` are removed from the
   signature of `qml.execute`.
+  [(#6203)](https://github.com/PennyLaneAI/pennylane/pull/6203)
 
 * `max_expansion` and `expansion_strategy` are removed from the `QNode`.
+  [(#6203)](https://github.com/PennyLaneAI/pennylane/pull/6203)
 
 * `expansion_strategy` is removed from `qml.draw`, `qml.draw_mpl`, and `qml.specs`. `max_expansion` is removed from `qml.specs`, as it had no impact on the output.
+  [(#6203)](https://github.com/PennyLaneAI/pennylane/pull/6203)
 
 <h3>Deprecations 👋</h3>
 

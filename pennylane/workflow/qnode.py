@@ -121,7 +121,7 @@ def _validate_gradient_kwargs(gradient_kwargs: dict) -> None:
             )
 
         if kwarg == "max_expansion":
-            raise ValueError("max_expansion his no longer a valid keyword argument to QNode.")
+            raise ValueError("max_expansion is no longer a valid keyword argument to QNode.")
         if kwarg in ["gradient_fn", "grad_method"]:
             warnings.warn(
                 "It appears you may be trying to set the method of differentiation via the "
