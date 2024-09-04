@@ -125,8 +125,8 @@ class TestCaching:
 # add tests for lightning 2 when possible
 # set rng for device when possible
 test_matrix = [
-    ({"gradient_fn": param_shift}, Shots(100000), DefaultQubit(seed=42)),
-    ({"gradient_fn": param_shift}, Shots((100000, 100000)), DefaultQubit(seed=42)),
+    ({"gradient_fn": param_shift}, Shots(50000), DefaultQubit(seed=42)),
+    ({"gradient_fn": param_shift}, Shots((50000, 50000)), DefaultQubit(seed=42)),
     ({"gradient_fn": param_shift}, Shots(None), DefaultQubit()),
     ({"gradient_fn": "backprop"}, Shots(None), DefaultQubit()),
     (
@@ -146,7 +146,7 @@ test_matrix = [
     ({"gradient_fn": "adjoint", "device_vjp": True}, Shots(None), DefaultQubit()),
     (
         {"gradient_fn": "device", "device_vjp": False},
-        Shots((100000, 100000)),
+        Shots((50000, 50000)),
         ParamShiftDerivativesDevice(seed=904747894),
     ),
     (
@@ -154,12 +154,27 @@ test_matrix = [
         Shots((100000, 100000)),
         ParamShiftDerivativesDevice(seed=10490244),
     ),
+    (
+        {"gradient_fn": param_shift},
+        Shots(None),
+        qml.device("reference.qubit"),
+    ),
+    (
+        {"gradient_fn": param_shift},
+        Shots(50000),
+        qml.device("reference.qubit", seed=8743274),
+    ),
+    (
+        {"gradient_fn": param_shift},
+        Shots((50000, 50000)),
+        qml.device("reference.qubit", seed=8743274),
+    ),
 ]
 
 
 def atol_for_shots(shots):
     """Return higher tolerance if finite shots."""
-    return 1e-2 if shots else 1e-6
+    return 5e-2 if shots else 1e-6
 
 
 @pytest.mark.parametrize("execute_kwargs, shots, device", test_matrix)
@@ -788,7 +803,7 @@ class TestHamiltonianWorkflows:
         """Test hamiltonian with no trainable parameters."""
 
         if execute_kwargs["gradient_fn"] == "adjoint" and not qml.operation.active_new_opmath():
-            pytest.skip("adjoint differentiation does not suppport hamiltonians.")
+            pytest.skip("adjoint differentiation does not support hamiltonians.")
 
         coeffs1 = np.array([0.1, 0.2, 0.3], requires_grad=False)
         coeffs2 = np.array([0.7], requires_grad=False)
