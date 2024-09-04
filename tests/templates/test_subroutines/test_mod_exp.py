@@ -71,6 +71,7 @@ class TestModExp:
         if mod is None:
             mod = 2 ** len(output_wires)
 
+        # pylint: disable=bad-reversed-sequence
         assert np.allclose(
             sum(bit * (2**i) for i, bit in enumerate(reversed(circuit(x, k)))),
             (k * (base**x)) % mod,
@@ -79,6 +80,14 @@ class TestModExp:
     @pytest.mark.parametrize(
         ("x_wires", "output_wires", "base", "mod", "work_wires", "msg_match"),
         [
+            (
+                [0, 1, 2],
+                [3, 4, 5],
+                8,
+                5,
+                None,
+                "Work wires must be specified for ModExp",
+            ),
             (
                 [0, 1, 2],
                 [3, 4, 5],
@@ -136,6 +145,18 @@ class TestModExp:
         with pytest.raises(ValueError, match=msg_match):
             qml.ModExp(x_wires, output_wires, base, mod, work_wires)
 
+    def test_check_base_and_mod_are_coprime(self):
+        """Test that an error is raised when base and mod are not coprime"""
+
+        with pytest.raises(ValueError, match="base has no inverse modulo mod"):
+            qml.ModExp(
+                x_wires=[0, 1, 2],
+                output_wires=[3, 4, 5],
+                base=8,
+                mod=6,
+                work_wires=[6, 7, 8, 9, 10],
+            )
+
     def test_decomposition(self):
         """Test that compute_decomposition and decomposition work as expected."""
         x_wires, output_wires, base, mod, work_wires = (
@@ -183,6 +204,7 @@ class TestModExp:
             qml.ModExp(x_wires, output_wires, base, mod, work_wires)
             return qml.sample(wires=output_wires)
 
+        # pylint: disable=bad-reversed-sequence
         assert jax.numpy.allclose(
             sum(bit * (2**i) for i, bit in enumerate(reversed(circuit()))), (base**x) % mod
         )
