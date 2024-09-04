@@ -997,7 +997,7 @@ class TestPulseOdegenEdgeCases:
 
 
 @pytest.mark.jax
-@pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.jax"])
+@pytest.mark.parametrize("dev_name", ["default.qubit"])
 class TestPulseOdegenTape:
     """Test that differentiating tapes with ``pulse_odegen`` works."""
 
@@ -1009,8 +1009,7 @@ class TestPulseOdegenTape:
         import jax.numpy as jnp
 
         prng_key = jax.random.PRNGKey(8251)
-        key = "prng_key" if dev_name == "default.qubit.jax" else "seed"
-        dev = qml.device(dev_name, wires=1, shots=shots, **{key: prng_key})
+        dev = qml.device(dev_name, wires=1, shots=shots, seed=prng_key)
 
         H = jnp.polyval * X(0)
         x = jnp.array([0.4, 0.2, 0.1])
@@ -1046,8 +1045,7 @@ class TestPulseOdegenTape:
 
         prng_key = jax.random.PRNGKey(8251)
         dev = qml.device(dev_name, wires=1, shots=None)
-        key = "prng_key" if dev_name == "default.qubit.jax" else "seed"
-        dev_shots = qml.device(dev_name, wires=1, shots=shots, **{key: prng_key})
+        dev_shots = qml.device(dev_name, wires=1, shots=shots, seed=prng_key)
 
         H = 0.1 * Z(0) + jnp.polyval * X(0) + qml.pulse.constant * Y(0)
         x = jnp.array([0.4, 0.2, 0.1])
@@ -1127,8 +1125,7 @@ class TestPulseOdegenTape:
 
         prng_key = jax.random.PRNGKey(8251)
         dev = qml.device(dev_name, wires=1, shots=None)
-        key = "prng_key" if dev_name == "default.qubit.jax" else "seed"
-        dev_shots = qml.device(dev_name, wires=1, shots=shots, **{key: prng_key})
+        dev_shots = qml.device(dev_name, wires=1, shots=shots, seed=prng_key)
 
         H0 = 0.1 * Z(0) + jnp.polyval * X(0)
         H1 = 0.2 * Y(0) + qml.pulse.constant * Y(0) + jnp.polyval * Z(0)
@@ -1164,7 +1161,7 @@ class TestPulseOdegenTape:
 
 
 @pytest.mark.jax
-@pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.jax"])
+@pytest.mark.parametrize("dev_name", ["default.qubit"])
 class TestPulseOdegenQNode:
     """Test that pulse_odegen integrates correctly with QNodes."""
 
@@ -1284,7 +1281,7 @@ class TestPulseOdegenQNode:
 
 
 @pytest.mark.jax
-@pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.jax"])
+@pytest.mark.parametrize("dev_name", ["default.qubit"])
 class TestPulseOdegenIntegration:
     """Test that pulse_odegen integrates correctly with QNodes."""
 
@@ -1481,7 +1478,7 @@ class TestPulseOdegenIntegration:
 
 
 @pytest.mark.jax
-@pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.jax"])
+@pytest.mark.parametrize("dev_name", ["default.qubit"])
 class TestPulseOdegenDiff:
     """Test that pulse_odegen is differentiable, i.e. that computing
     the derivative with pulse_odegen is differentiable a second time,

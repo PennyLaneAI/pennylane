@@ -2889,7 +2889,7 @@ class TestParameterShiftRuleBroadcast:
                 assert np.allclose(g, grad_F2[idx1][idx2], atol=tol, rtol=0)
 
     @pytest.mark.jax
-    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.jax"])
+    @pytest.mark.parametrize("dev_name", ["default.qubit"])
     def test_fallback(self, dev_name, mocker, tol):
         """Test that fallback gradient functions are correctly used"""
 
@@ -3688,7 +3688,7 @@ class TestHamiltonianExpvalGradients:
         # assert np.allclose(hess[2][:, -1], np.zeros([2, 1, 1]), atol=tol, rtol=0)
 
     @pytest.mark.jax
-    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.jax"])
+    @pytest.mark.parametrize("dev_name", ["default.qubit"])
     def test_jax(self, dev_name, tol, broadcast):
         """Test gradient of multiple trainable Hamiltonian coefficients
         using JAX"""

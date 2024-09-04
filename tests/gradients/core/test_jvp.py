@@ -761,7 +761,7 @@ class TestJVPGradients:
     # Include batch_dim!=None cases once #4462 is resolved
     @pytest.mark.jax
     @pytest.mark.parametrize("batch_dim", [None])  # , 1, 3])
-    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.jax"])
+    @pytest.mark.parametrize("dev_name", ["default.qubit"])
     def test_jax(self, tol, dev_name, batch_dim):
         """Tests that the output of the JVP transform
         can be differentiated using JAX."""

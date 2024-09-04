@@ -1180,7 +1180,7 @@ class TestSpsaGradientDifferentiation:
         assert np.allclose(hess[1].detach().numpy(), expected[1], atol=atol, rtol=0)
 
     @pytest.mark.jax
-    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.jax"])
+    @pytest.mark.parametrize("dev_name", ["default.qubit"])
     def test_jax(self, dev_name, sampler, num_directions, atol):
         """Tests that the output of the SPSA gradient transform
         can be differentiated using JAX, yielding second derivatives."""

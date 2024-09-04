@@ -1180,7 +1180,7 @@ class TestHadamardTestGradDiff:
         assert np.allclose(res_hadamard[1].detach(), res_param_shift[1].detach())
 
     @pytest.mark.jax
-    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.jax"])
+    @pytest.mark.parametrize("dev_name", ["default.qubit"])
     def test_jax(self, dev_name):
         """Tests that the output of the hadamard gradient transform
         can be differentiated using JAX, yielding second derivatives."""

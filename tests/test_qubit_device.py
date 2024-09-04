@@ -1457,7 +1457,6 @@ class TestResourcesTracker:
     devices = (
         "default.qubit.legacy",
         "default.qubit.autograd",
-        "default.qubit.jax",
     )
 
     @pytest.mark.all_interfaces

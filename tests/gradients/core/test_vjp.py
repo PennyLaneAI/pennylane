@@ -492,7 +492,7 @@ class TestVJPGradients:
 
     @pytest.mark.jax
     @pytest.mark.slow
-    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.jax"])
+    @pytest.mark.parametrize("dev_name", ["default.qubit"])
     def test_jax(self, dev_name, tol):
         """Tests that the output of the VJP transform
         can be differentiated using JAX."""

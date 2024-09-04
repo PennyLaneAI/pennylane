@@ -2367,7 +2367,7 @@ class TestHamiltonianExpvalGradients:
         assert np.allclose(hess[2][:, -1], np.zeros([2, 1, 1]), atol=tol, rtol=0)
 
     @pytest.mark.jax
-    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.jax"])
+    @pytest.mark.parametrize("dev_name", ["default.qubit"])
     def test_jax(self, dev_name, broadcast, tol):
         """Test gradient of multiple trainable Hamiltonian coefficients
         using JAX"""

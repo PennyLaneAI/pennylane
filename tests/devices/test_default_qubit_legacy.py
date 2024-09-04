@@ -1010,7 +1010,6 @@ class TestDefaultQubitLegacyIntegration:
             "supports_broadcasting": True,
             "passthru_devices": {
                 "autograd": "default.qubit.autograd",
-                "jax": "default.qubit.jax",
             },
         }
         assert cap == capabilities
