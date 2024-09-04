@@ -367,39 +367,36 @@ def _commute_adjacent(fs, fw, i, j):
     if i != j + 1 and j != i + 1:
         raise ValueError("Indices must be consecutive integers")
 
-    small = min(i, j)
-    big = max(i, j)
-
     indices = list(fw.sorted_dic.keys())
-    small_idx = indices[small]
-    big_idx = indices[big]
+    i_idx = indices[i]
+    j_idx = indices[j]
 
-    small_val = fw[small_idx]
-    big_val = fw[big_idx]
+    i_val = fw[i_idx]
+    j_val = fw[j_idx]
 
     # commuting identical terms
-    if small_idx[1] == big_idx[1] and small_val == big_val:
+    if i_idx[1] == j_idx[1] and i_val == j_val:
         return fs, fw
 
-    new_small_idx = (big - 1, big_idx[1])
-    new_big_idx = (small + 1, small_idx[1])
+    new_i_idx = (i, j_idx[1])
+    new_j_idx = (j, i_idx[1])
 
     coeff = fs[fw]
     del fs[fw]
     fw = dict(fw)
-    fw[new_big_idx] = small_val
-    fw[new_small_idx] = big_val
+    fw[new_i_idx] = j_val
+    fw[new_j_idx] = i_val
 
-    if small_idx[1] != big_idx[1]:
-        del fw[small_idx]
-        del fw[big_idx]
+    if i_idx[1] != j_idx[1]:
+        del fw[i_idx]
+        del fw[j_idx]
 
     fw = FermiWord(fw)
 
     fs = dict(fs)
     fs = FermiSentence(fs)
 
-    if small_val == big_val or small_idx[1] != big_idx[1]:
+    if i_val == j_val or i_idx[1] != j_idx[1]:
         fs = fs + (-1 * FermiSentence({fw: coeff}))
     else:
         left = {}
@@ -412,10 +409,10 @@ def _commute_adjacent(fs, fw, i, j):
         rpos = 0
 
         for key, value in fw.sorted_dic.items():
-            if key[0] < small:
+            if key[0] < min(i, j):
                 left[(lpos, key[1])] = value
                 lpos += 1
-            elif key[0] > big:
+            elif key[0] > max(i, j):
                 right[(rpos, key[1])] = value
                 rpos += 1
             else:
