@@ -111,6 +111,7 @@ class TestOutMultiplier:
         if mod is None:
             mod = 2 ** len(output_wires)
 
+        # pylint: disable=bad-reversed-sequence
         assert np.allclose(
             sum(bit * (2**i) for i, bit in enumerate(reversed(circuit(x, y)))), (x * y) % mod
         )
@@ -183,6 +184,29 @@ class TestOutMultiplier:
         with pytest.raises(ValueError, match=msg_match):
             OutMultiplier(x_wires, y_wires, output_wires, mod, work_wires)
 
+    @pytest.mark.parametrize("work_wires", [None, [9], [9, 10, 11]])
+    def test_validation_of_num_work_wires(self, work_wires):
+        """Test that when mod is not 2**len(output_wires), validation confirms two
+        work wires are present, while any work wires are accepted for mod=2**len(output_wires)"""
+
+        # if mod=2**len(output_wires), anything goes
+        OutMultiplier(
+            x_wires=[0, 1, 2],
+            y_wires=[3, 4, 5],
+            output_wires=[6, 7, 8],
+            mod=8,
+            work_wires=work_wires,
+        )
+
+        with pytest.raises(ValueError, match="two work wires should be provided"):
+            OutMultiplier(
+                x_wires=[0, 1, 2],
+                y_wires=[3, 4, 5],
+                output_wires=[6, 7, 8],
+                mod=7,
+                work_wires=work_wires,
+            )
+
     def test_decomposition(self):
         """Test that compute_decomposition and decomposition work as expected."""
         x_wires, y_wires, output_wires, mod, work_wires = (
@@ -242,6 +266,7 @@ class TestOutMultiplier:
             OutMultiplier(x_wires, y_wires, output_wires, mod, work_wires)
             return qml.sample(wires=output_wires)
 
+        # pylint: disable=bad-reversed-sequence
         assert jax.numpy.allclose(
             sum(bit * (2**i) for i, bit in enumerate(reversed(circuit()))), (x * y) % mod
         )
