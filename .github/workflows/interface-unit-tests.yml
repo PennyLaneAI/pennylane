@@ -523,7 +523,6 @@ jobs:
             shots: None
           - device: default.qubit
             shots: 10000
-            skip_interface: jax,tf,torch
           - device: default.mixed
             shots: None
         python-version: >-
