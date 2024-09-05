@@ -593,7 +593,6 @@ class QubitDevice(Device):
         if self.shots is None:
             if isinstance(measurement, StateMeasurement):
                 return measurement.process_state(state=self.state, wire_order=self.wires)
-
             raise ValueError(
                 "Shots must be specified in the device to compute the measurement "
                 f"{measurement.__class__.__name__}"
