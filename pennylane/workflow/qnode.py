@@ -989,8 +989,10 @@ class QNode:
                 if qml.capture.enabled()
                 else qml.math.get_interface(*args, *list(kwargs.values()))
             )
+            if interface == "numpy":
+                # Internally stop treating numpy as autograd
+                interface = None
             self._interface = INTERFACE_MAP[interface]
-
         if self._qfunc_uses_shots_arg:
             override_shots = False
         else:
