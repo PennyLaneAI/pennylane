@@ -13,10 +13,17 @@
   `from pennylane.capture.primitives import *`.
   [(#6129)](https://github.com/PennyLaneAI/pennylane/pull/6129)
 
+* The `__repr__` methods for `FermiWord` and `FermiSentence` now returns a
+  unique representation of the object.
+  [(#6167)](https://github.com/PennyLaneAI/pennylane/pull/6167)
+
 <h3>Breaking changes 💔</h3>
 
 * `DefaultQubitTF` is removed. Please use `default.qubit` for all interfaces.
   [(#6207)](https://github.com/PennyLaneAI/pennylane/pull/6207)
+
+* `qml.transforms.hamiltonian_expand` and `qml.transforms.sum_expand` are removed.
+  Please use `qml.transforms.split_non_commuting` instead.
 
 <h3>Deprecations 👋</h3>
 
