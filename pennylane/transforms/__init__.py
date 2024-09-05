@@ -114,9 +114,7 @@ preprocessing, getting information from a circuit, and more.
     ~transforms.split_non_commuting
     ~transforms.split_to_single_terms
     ~transforms.broadcast_expand
-    ~transforms.hamiltonian_expand
     ~transforms.sign_expand
-    ~transforms.sum_expand
     ~transforms.convert_to_numpy_parameters
     ~apply_controlled_Q
     ~quantum_monte_carlo
@@ -320,7 +318,6 @@ from .defer_measurements import defer_measurements
 from .diagonalize_measurements import diagonalize_measurements
 from .dynamic_one_shot import dynamic_one_shot, is_mcm
 from .sign_expand import sign_expand
-from .hamiltonian_expand import hamiltonian_expand, sum_expand
 from .split_non_commuting import split_non_commuting
 from .split_to_single_terms import split_to_single_terms
 from .insert_ops import insert
