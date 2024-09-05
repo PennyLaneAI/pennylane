@@ -23,7 +23,7 @@ from typing import List, Optional
 
 from packaging.version import Version
 
-PL_CATALYST_MIN_VERSION = Version("0.7.0")
+PL_CATALYST_MIN_VERSION = Version("0.8.0")
 
 
 class CompileError(Exception):
