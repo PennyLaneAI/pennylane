@@ -130,7 +130,10 @@ class TestDtypePreserved:
             expected_dtype = c_dtype
         else:
             expected_dtype = np.float64 if c_dtype == np.complex128 else np.float32
-        if isinstance(res, np.ndarray):
+        if isinstance(res, np.ndarray) and res.size > 1:
             assert res.dtype == expected_dtype
+        elif isinstance(res, np.ndarray):
+            # default dtype of np.array() of a regular float
+            assert res.dtype == np.float64
         else:
             assert isinstance(res, float)
