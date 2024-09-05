@@ -124,6 +124,45 @@ state preparation is typically used as the first operation.
 
 .. _intro_ref_temp_subroutines:
 
+Arithmetic templates
+--------------------
+
+Quantum arithmetic templates enable in-place and out-place modular operations such 
+as addition, multiplication and exponentiation.
+
+.. gallery-item::
+    :description: :doc:`PhaseAdder <../code/api/pennylane.PhaseAdder>`
+    :figure: _static/templates/arithmetic/phaseadder.png
+
+.. gallery-item::
+    :description: :doc:`Adder <../code/api/pennylane.Adder>`
+    :figure: _static/templates/arithmetic/adder.png
+
+.. gallery-item::
+    :description: :doc:`OutAdder <../code/api/pennylane.OutAdder>`
+    :figure: _static/templates/arithmetic/outadder.png
+
+.. gallery-item::
+    :description: :doc:`Multiplier <../code/api/pennylane.Multiplier>`
+    :figure: _static/templates/arithmetic/multiplier.png
+
+.. gallery-item::
+    :description: :doc:`OutMultiplier <../code/api/pennylane.OutMultiplier>`
+    :figure: _static/templates/arithmetic/outmultiplier.png
+
+.. gallery-item::
+    :description: :doc:`ModExp <../code/api/pennylane.ModExp>`
+    :figure: _static/templates/arithmetic/modexp.png
+
+.. gallery-item::
+    :description: :doc:`IntegerComparator <../code/api/pennylane.IntegerComparator>`
+    :figure: _static/templates/arithmetic/integercomparator.png
+
+
+.. raw:: html
+
+        <div style='clear:both'></div>
+
 Quantum Chemistry templates
 ---------------------------
 
@@ -302,6 +341,14 @@ Other useful templates which do not belong to the previous categories can be fou
 .. gallery-item::
     :description: :doc:`Qubitization <../code/api/pennylane.Qubitization>`
     :figure: _static/templates/qubitization/thumbnail_qubitization.png
+
+.. gallery-item::
+    :description: :doc:`QROM <../code/api/pennylane.QROM>`
+    :figure: _static/templates/qrom/qrom_thumbnail.png
+
+.. gallery-item::
+    :description: :doc:`PrepSelPrep <../code/api/pennylane.PrepSelPrep>`
+    :figure: _static/templates/prepselprep/prepselprep.png
 
 .. raw:: html
 

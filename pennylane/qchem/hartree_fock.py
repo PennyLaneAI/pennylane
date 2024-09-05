@@ -116,6 +116,11 @@ def scf(mol, n_steps=50, tol=1e-8):
             tuple(array[float]): eigenvalues of the Fock matrix, molecular orbital coefficients,
             Fock matrix, core matrix
         """
+        if mol.n_electrons % 2 == 1 or mol.mult != 1:
+            raise ValueError(
+                "Open-shell systems are not supported. Change the charge or spin multiplicity of the molecule."
+            )
+
         basis_functions = mol.basis_set
         charges = mol.nuclear_charges
         r = mol.coordinates

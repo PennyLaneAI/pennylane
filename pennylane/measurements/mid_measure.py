@@ -15,7 +15,8 @@
 This module contains the qml.measure measurement.
 """
 import uuid
-from typing import Generic, Optional, TypeVar
+from functools import lru_cache
+from typing import Generic, Hashable, Optional, TypeVar, Union
 
 import pennylane as qml
 from pennylane.wires import Wires
@@ -23,7 +24,9 @@ from pennylane.wires import Wires
 from .measurements import MeasurementProcess, MidMeasure
 
 
-def measure(wires: Wires, reset: Optional[bool] = False, postselect: Optional[int] = None):
+def measure(
+    wires: Union[Hashable, Wires], reset: Optional[bool] = False, postselect: Optional[int] = None
+):
     r"""Perform a mid-circuit measurement in the computational basis on the
     supplied qubit.
 
@@ -207,17 +210,54 @@ def measure(wires: Wires, reset: Optional[bool] = False, postselect: Optional[in
               samples, leading to unexpected or incorrect results.
 
     """
+    if qml.capture.enabled():
+        primitive = _create_mid_measure_primitive()
+        return primitive.bind(wires, reset=reset, postselect=postselect)
 
-    wire = Wires(wires)
-    if len(wire) > 1:
+    return _measure_impl(wires, reset=reset, postselect=postselect)
+
+
+def _measure_impl(
+    wires: Union[Hashable, Wires], reset: Optional[bool] = False, postselect: Optional[int] = None
+):
+    """Concrete implementation of qml.measure"""
+    wires = Wires(wires)
+    if len(wires) > 1:
         raise qml.QuantumFunctionError(
             "Only a single qubit can be measured in the middle of the circuit"
         )
 
     # Create a UUID and a map between MP and MV to support serialization
     measurement_id = str(uuid.uuid4())[:8]
-    mp = MidMeasureMP(wires=wire, reset=reset, postselect=postselect, id=measurement_id)
+    mp = MidMeasureMP(wires=wires, reset=reset, postselect=postselect, id=measurement_id)
     return MeasurementValue([mp], processing_fn=lambda v: v)
+
+
+@lru_cache
+def _create_mid_measure_primitive():
+    """Create a primitive corresponding to an mid-circuit measurement type.
+
+    Called when using :func:`~pennylane.measure`.
+
+    Returns:
+        jax.core.Primitive: A new jax primitive corresponding to a mid-circuit
+        measurement.
+
+    """
+    import jax  # pylint: disable=import-outside-toplevel
+
+    mid_measure_p = jax.core.Primitive("measure")
+
+    @mid_measure_p.def_impl
+    def _(wires, reset=False, postselect=None):
+        return _measure_impl(wires, reset=reset, postselect=postselect)
+
+    @mid_measure_p.def_abstract_eval
+    def _(*_, **__):
+        dtype = jax.numpy.int64 if jax.config.jax_enable_x64 else jax.numpy.int32
+        return jax.core.ShapedArray((), dtype)
+
+    return mid_measure_p
 
 
 T = TypeVar("T")
@@ -229,7 +269,7 @@ class MidMeasureMP(MeasurementProcess):
     This class additionally stores information about unknown measurement outcomes in the qubit model.
     Measurements on a single qubit in the computational basis are assumed.
 
-    Please refer to :func:`measure` for detailed documentation.
+    Please refer to :func:`pennylane.measure` for detailed documentation.
 
     Args:
         wires (.Wires): The wires the measurement process applies to.
@@ -256,6 +296,22 @@ class MidMeasureMP(MeasurementProcess):
         super().__init__(wires=Wires(wires), id=id)
         self.reset = reset
         self.postselect = postselect
+
+    # pylint: disable=arguments-renamed, arguments-differ
+    @classmethod
+    def _primitive_bind_call(cls, wires=None, reset=False, postselect=None, id=None):
+        wires = () if wires is None else wires
+        return cls._wires_primitive.bind(*wires, reset=reset, postselect=postselect, id=id)
+
+    @classmethod
+    def _abstract_eval(
+        cls,
+        n_wires: Optional[int] = None,
+        has_eigvals=False,
+        shots: Optional[int] = None,
+        num_device_wires: int = 0,
+    ) -> tuple:
+        return (), int
 
     def label(self, decimals=None, base_label=None, cache=None):  # pylint: disable=unused-argument
         r"""How the mid-circuit measurement is represented in diagrams and drawings.
@@ -310,7 +366,7 @@ class MidMeasureMP(MeasurementProcess):
     @property
     def name(self):
         """The name of the measurement. Needed to match the Operator API."""
-        return "MidMeasureMP"
+        return self.__class__.__name__
 
 
 class MeasurementValue(Generic[T]):
@@ -398,7 +454,7 @@ class MeasurementValue(Generic[T]):
     def __invert__(self):
         """Return a copy of the measurement value with an inverted control
         value."""
-        return self._apply(lambda v: not v)
+        return self._apply(qml.math.logical_not)
 
     def __eq__(self, other):
         return self._transform_bin_op(lambda a, b: a == b, other)
@@ -422,7 +478,7 @@ class MeasurementValue(Generic[T]):
         return self._transform_bin_op(lambda a, b: a * b, other)
 
     def __rmul__(self, other):
-        return self._apply(lambda v: other * v)
+        return self._apply(lambda v: other * qml.math.cast_like(v, other))
 
     def __truediv__(self, other):
         return self._transform_bin_op(lambda a, b: a / b, other)
@@ -495,3 +551,23 @@ class MeasurementValue(Generic[T]):
 
     def __repr__(self):
         return f"MeasurementValue(wires={self.wires.tolist()})"
+
+
+def find_post_processed_mcms(circuit):
+    """Return the subset of mid-circuit measurements which are required for post-processing.
+
+    This includes any mid-circuit measurement that is post-selected or the object of a terminal
+    measurement.
+    """
+    post_processed_mcms = set(
+        op
+        for op in circuit.operations
+        if isinstance(op, MidMeasureMP) and op.postselect is not None
+    )
+    for m in circuit.measurements:
+        if isinstance(m.mv, list):
+            for mv in m.mv:
+                post_processed_mcms = post_processed_mcms | set(mv.measurements)
+        elif m.mv:
+            post_processed_mcms = post_processed_mcms | set(m.mv.measurements)
+    return post_processed_mcms

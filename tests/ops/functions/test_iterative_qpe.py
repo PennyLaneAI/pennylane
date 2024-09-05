@@ -23,15 +23,15 @@ import pennylane as qml
 class TestIQPE:
     """Test to check that the iterative quantum phase estimation function works as expected."""
 
+    @pytest.mark.parametrize("mcm_method", ["deferred", "tree-traversal"])
     @pytest.mark.parametrize("phi", (1.0, 2.0, 3.0))
-    def test_compare_qpe(self, phi):
+    def test_compare_qpe(self, mcm_method, phi):
         """Test to check that the results obtained are equivalent to those of QuantumPhaseEstimation"""
 
         # TODO: When we have general statistics on measurements we can calculate it exactly with qml.probs
         dev = qml.device("default.qubit", shots=10000000)
 
-        @qml.defer_measurements
-        @qml.qnode(dev)
+        @qml.qnode(dev, mcm_method=mcm_method)
         def circuit_iterative():
             # Initial state
             qml.PauliX(wires=[0])
@@ -168,7 +168,7 @@ class TestIQPE:
 
         dev = qml.device("default.qubit", shots=1)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, mcm_method="one-shot")
         def circuit():
             m = qml.iterative_qpe(qml.RZ(1.0, wires=[0]), [1], iters=iters)
             return [qml.sample(op=meas) for meas in m]

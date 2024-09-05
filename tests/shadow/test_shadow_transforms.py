@@ -364,7 +364,8 @@ class TestExpvalTransform:
         shadow_circuit = qml.shadows.shadow_expval(shadow_circuit, obs)
         exact_circuit = basic_entangler_circuit_exact_expval(3, "autograd")
 
-        x = np.random.uniform(0.8, 2, size=qml.BasicEntanglerLayers.shape(n_layers=1, n_wires=3))
+        rng = np.random.default_rng(123)
+        x = rng.uniform(0.8, 2, size=qml.BasicEntanglerLayers.shape(n_layers=1, n_wires=3))
 
         def shadow_cost(x):
             res = shadow_circuit(x)

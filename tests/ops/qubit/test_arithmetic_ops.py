@@ -194,7 +194,7 @@ class TestQubitSum:
         if expand:
             ops = [
                 qml.StatePrep(input_state, wires=[0, 1, 2]),
-                *qml.QubitSum(wires=wires).expand(),
+                *qml.tape.QuantumScript(qml.QubitSum(wires=wires).decomposition()),
             ]
         else:
             ops = [qml.StatePrep(input_state, wires=[0, 1, 2]), qml.QubitSum(wires=wires)]
@@ -269,7 +269,7 @@ class TestIntegerComparator:
         assert hash(metadata)
 
         new_op = type(op)._unflatten(*op._flatten())
-        assert qml.equal(new_op, op)
+        qml.assert_equal(new_op, op)
         assert new_op is not op
 
     @pytest.mark.parametrize(

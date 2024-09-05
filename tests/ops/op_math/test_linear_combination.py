@@ -53,11 +53,27 @@ class TestParityWithHamiltonian:
         assert isinstance(H, qml.Hamiltonian)
 
 
-@pytest.mark.filterwarnings(
-    "ignore:Using 'qml.ops.Hamiltonian' with new operator arithmetic is deprecated"
-)
+@pytest.mark.usefixtures("new_opmath_only")
 def test_mixed_legacy_warning_Hamiltonian():
     """Test that mixing legacy ops and LinearCombination.compare raises a warning"""
+    op1 = qml.ops.LinearCombination([0.5, 0.5], [X(0) @ X(1), qml.Hadamard(0)])
+
+    with pytest.warns(
+        qml.PennyLaneDeprecationWarning,
+        match="Using 'qml.ops.Hamiltonian' with new operator arithmetic is deprecated",
+    ):
+        op2 = qml.ops.Hamiltonian([0.5, 0.5], [qml.operation.Tensor(X(0), X(1)), qml.Hadamard(0)])
+
+    with pytest.warns(UserWarning, match="Attempting to compare a legacy operator class instance"):
+        res = op1.compare(op2)
+
+    assert res
+
+
+@pytest.mark.usefixtures("legacy_opmath_only")
+def test_mixed_legacy_warning_Hamiltonian_legacy():
+    """Test that mixing legacy ops and LinearCombination.compare raises a warning in legacy opmath"""
+
     op1 = qml.ops.LinearCombination([0.5, 0.5], [X(0) @ X(1), qml.Hadamard(0)])
     op2 = qml.ops.Hamiltonian([0.5, 0.5], [qml.operation.Tensor(X(0), X(1)), qml.Hadamard(0)])
 
@@ -671,7 +687,7 @@ class TestLinearCombination:
         assert data[1] == H._ops
 
         new_H = LinearCombination._unflatten(*H._flatten())
-        assert qml.equal(H, new_H)
+        qml.assert_equal(H, new_H)
         assert new_H.grouping_indices == H.grouping_indices
 
     @pytest.mark.parametrize("coeffs, ops", valid_LinearCombinations)
@@ -954,7 +970,7 @@ class TestLinearCombination:
         assert h.wires == Wires([0, 1, 2])
         assert mapped_h.wires == Wires([10, 11, 12])
         for obs1, obs2 in zip(mapped_h.ops, final_obs):
-            assert qml.equal(obs1, obs2)
+            qml.assert_equal(obs1, obs2)
         for coeff1, coeff2 in zip(mapped_h.coeffs, h.coeffs):
             assert coeff1 == coeff2
 
@@ -971,7 +987,7 @@ class TestLinearCombination:
         assert h.wires == Wires([0, 1, 2])
         assert mapped_h.wires == Wires([10, 11, 12])
         for obs1, obs2 in zip(mapped_h.ops, final_obs):
-            assert qml.equal(obs1, obs2)
+            qml.assert_equal(obs1, obs2)
         for coeff1, coeff2 in zip(mapped_h.coeffs, h.coeffs):
             assert coeff1 == coeff2
         assert group_indices_before == mapped_h.grouping_indices
@@ -1567,21 +1583,22 @@ class TestGrouping:
 
     def test_grouping_method_can_be_set(self):
         r"""Tests that the grouping method can be controlled by kwargs.
-        This is done by changing from default to 'rlf' and checking the result."""
+        This is done by changing from default to 'lf' and checking the result."""
+        # Create a graph with unique solution so that test does not depend on solver/implementation
         a = X(0)
-        b = X(1)
+        b = X(0)
         c = Z(0)
         obs = [a, b, c]
         coeffs = [1.0, 2.0, 3.0]
 
         # compute grouping during construction
         H2 = qml.ops.LinearCombination(coeffs, obs, grouping_type="qwc", method="lf")
-        assert H2.grouping_indices == ((2, 1), (0,))
+        assert set(H2.grouping_indices) == set(((0, 1), (2,)))
 
         # compute grouping separately
         H3 = qml.ops.LinearCombination(coeffs, obs, grouping_type=None)
         H3.compute_grouping(method="lf")
-        assert H3.grouping_indices == ((2, 1), (0,))
+        assert set(H3.grouping_indices) == set(((0, 1), (2,)))
 
     def test_grouping_with_duplicate_terms(self):
         """Test that the grouping indices are correct when the LinearCombination has duplicate

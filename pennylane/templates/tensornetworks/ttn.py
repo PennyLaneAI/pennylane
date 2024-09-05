@@ -131,7 +131,7 @@ class TTN(Operation):
                 qml.TTN(range(n_wires),n_block_wires,block, n_params_block, template_weights)
                 return qml.expval(qml.Z(n_wires-1))
 
-        >>> print(qml.draw(circuit, expansion_strategy='device')(template_weights))
+        >>> print(qml.draw(circuit, level='device')(template_weights))
         0: ─╭●──RY(0.10)────────────────┤
         1: ─╰X──RY(-0.30)─╭●──RY(0.10)──┤
         2: ─╭●──RY(0.10)──│─────────────┤
@@ -145,6 +145,19 @@ class TTN(Operation):
     @property
     def num_params(self):
         return 1
+
+    @classmethod
+    def _primitive_bind_call(
+        cls, wires, n_block_wires, block, n_params_block, template_weights=None, id=None
+    ):  # pylint: disable=arguments-differ
+        return super()._primitive_bind_call(
+            wires=wires,
+            n_block_wires=n_block_wires,
+            block=block,
+            n_params_block=n_params_block,
+            template_weights=template_weights,
+            id=id,
+        )
 
     @classmethod
     def _unflatten(cls, data, metadata):

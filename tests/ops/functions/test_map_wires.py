@@ -134,7 +134,7 @@ class TestMapWiresTapes:
         m_tape = m_tapes[0]
         m_op = m_tape.operations[0]
         m_obs = m_tape.observables[0]
-        assert qml.equal(m_op, mapped_op)
+        qml.assert_equal(m_op, mapped_op)
         assert tape.shots == m_tape.shots
         assert m_obs.wires == Wires(wire_map[1])
         assert qml.math.allclose(dev.execute(tape), dev.execute(m_tape), atol=0.05)
@@ -186,8 +186,8 @@ class TestMapWiresQNodes:
 
         m_op = tapes[0].operations
         m_obs = tapes[0].observables
-        assert qml.equal(m_op[0], mapped_op)
-        assert qml.equal(m_obs[0], mapped_obs)
+        qml.assert_equal(m_op[0], mapped_op)
+        qml.assert_equal(m_obs[0], mapped_obs)
 
 
 class TestMapWiresCallables:

@@ -27,6 +27,12 @@ def hadamards(wires):
         qml.Hadamard(wires=wire)
 
 
+def test_standard_validity():
+    """Test standard validity criteria using assert_valid."""
+    op = qml.Reflection(qml.Hadamard(wires=0), 0.5, reflection_wires=[0])
+    qml.ops.functions.assert_valid(op)
+
+
 @pytest.mark.parametrize(
     ("prod", "reflection_wires"),
     [
@@ -157,28 +163,40 @@ class TestIntegration:
         assert np.allclose(res, self.exp_result, atol=0.002)
 
     @pytest.mark.autograd
-    def test_qnode_autograd(self):
+    @pytest.mark.parametrize("shots", [None, 50000])
+    @pytest.mark.parametrize("device", ["default.qubit", "default.qubit.legacy"])
+    def test_qnode_autograd(self, shots, device):
         """Test that the QNode executes with Autograd."""
 
-        dev = qml.device("default.qubit")
-        qnode = qml.QNode(self.circuit, dev, interface="autograd")
+        dev = qml.device(device, shots=shots, wires=3)
+        diff_method = "backprop" if shots is None else "parameter-shift"
+        qnode = qml.QNode(self.circuit, dev, interface="autograd", diff_method=diff_method)
 
         x = qml.numpy.array(self.x, requires_grad=True)
         res = qnode(x)
         assert qml.math.shape(res) == (8,)
-        assert np.allclose(res, self.exp_result, atol=0.002)
+        assert np.allclose(res, self.exp_result, atol=0.005)
+
+        res = qml.jacobian(qnode)(x)
+        assert np.shape(res) == (8,)
+        assert np.allclose(res, self.exp_jac, atol=0.005)
 
     @pytest.mark.jax
     @pytest.mark.parametrize("use_jit", [False, True])
     @pytest.mark.parametrize("shots", [None, 50000])
-    def test_qnode_jax(self, shots, use_jit):
+    @pytest.mark.parametrize("device", ["default.qubit", "default.qubit.legacy"])
+    def test_qnode_jax(self, shots, use_jit, device):
         """Test that the QNode executes and is differentiable with JAX. The shots
         argument controls whether autodiff or parameter-shift gradients are used."""
         import jax
 
         jax.config.update("jax_enable_x64", True)
 
-        dev = qml.device("default.qubit", shots=shots, seed=10)
+        if device == "default.qubit":
+            dev = qml.device("default.qubit", shots=shots, seed=10)
+        else:
+            dev = qml.device("default.qubit.legacy", shots=shots, wires=3)
+
         diff_method = "backprop" if shots is None else "parameter-shift"
         qnode = qml.QNode(self.circuit, dev, interface="jax", diff_method=diff_method)
         if use_jit:
@@ -195,27 +213,33 @@ class TestIntegration:
 
         jac = jac_fn(x)
         assert jac.shape == (8,)
-        assert np.allclose(jac, self.exp_jac, atol=0.006)
+        assert np.allclose(jac, self.exp_jac, atol=0.005)
 
     @pytest.mark.torch
     @pytest.mark.parametrize("shots", [None, 50000])
-    def test_qnode_torch(self, shots):
+    @pytest.mark.parametrize("device", ["default.qubit", "default.qubit.legacy"])
+    def test_qnode_torch(self, shots, device):
         """Test that the QNode executes and is differentiable with Torch. The shots
         argument controls whether autodiff or parameter-shift gradients are used."""
+
         import torch
 
-        dev = qml.device("default.qubit", shots=shots, seed=10)
+        if device == "default.qubit":
+            dev = qml.device("default.qubit", shots=shots, seed=10)
+        else:
+            dev = qml.device("default.qubit.legacy", shots=shots, wires=3)
+
         diff_method = "backprop" if shots is None else "parameter-shift"
         qnode = qml.QNode(self.circuit, dev, interface="torch", diff_method=diff_method)
 
         x = torch.tensor(self.x, requires_grad=True)
         res = qnode(x)
         assert qml.math.shape(res) == (8,)
-        assert qml.math.allclose(res, self.exp_result, atol=0.002)
+        assert qml.math.allclose(res, self.exp_result, atol=0.005)
 
         jac = torch.autograd.functional.jacobian(qnode, x)
         assert qml.math.shape(jac) == (8,)
-        assert qml.math.allclose(jac, self.exp_jac, atol=0.006)
+        assert qml.math.allclose(jac, self.exp_jac, atol=0.005)
 
     @pytest.mark.tf
     @pytest.mark.parametrize("shots", [None, 50000])
@@ -296,20 +320,3 @@ def test_correct_reflection(state):
     expected = np.array(output[::-1])
 
     assert np.allclose(state, expected)
-
-
-# pylint: disable=protected-access
-def test_flatten_and_unflatten():
-    """Test the _flatten and _unflatten methods for Reflection."""
-
-    op = qml.Reflection(qml.RX(0.25, wires=0), alpha=0.5)
-    data, metadata = op._flatten()
-
-    assert len(data) == 2
-    assert len(metadata) == 1
-
-    new_op = type(op)._unflatten(*op._flatten())
-    assert qml.equal(op, new_op)
-    assert op is not new_op
-
-    assert hash(metadata)

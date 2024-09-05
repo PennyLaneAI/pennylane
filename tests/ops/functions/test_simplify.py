@@ -80,7 +80,7 @@ class TestSimplifyOperators:
         sum_op = qml.sum(qml.PauliX(0), qml.PauliX(0))
         simp_op = jax.jit(qml.simplify)(sum_op)
 
-        assert qml.equal(
+        qml.assert_equal(
             simp_op, qml.s_prod(2.0, qml.PauliX(0)), check_interface=False, check_trainability=False
         )
 

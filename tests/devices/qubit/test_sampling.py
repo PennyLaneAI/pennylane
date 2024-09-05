@@ -34,7 +34,8 @@ def fixture_init_state():
 
     def _init_state(n):
         """random initial state"""
-        state = np.random.random([1 << n]) + np.random.random([1 << n]) * 1j
+        rng = np.random.default_rng(123)
+        state = rng.random([1 << n]) + rng.random([1 << n]) * 1j
         state /= np.linalg.norm(state)
         return state.reshape((2,) * n)
 
@@ -93,8 +94,6 @@ class TestSampleState:
 
         # prng_key specified, should call _sample_state_jax
         _ = sample_state(state, 10, prng_key=jax.random.PRNGKey(15))
-        # prng_key defaults to None, should NOT call _sample_state_jax
-        _ = sample_state(state, 10, rng=15)
 
         spy.assert_called_once()
 
@@ -189,6 +188,7 @@ class TestSampleState:
         assert np.allclose(reordered_probs, random_probs, atol=APPROX_ATOL)
 
 
+# pylint: disable=too-many-public-methods
 class TestMeasureSamples:
     """Test that the measure_with_samples function works as expected"""
 
@@ -517,11 +517,9 @@ class TestMeasureSamples:
         [result] = measure_with_samples([mp], state, shots=qml.measurements.Shots(1))
         assert qml.math.allclose(result, 1.0)
 
+    @pytest.mark.usefixtures("new_opmath_only")
     def test_identity_on_no_wires_with_other_observables(self):
         """Test that measuring an identity on no wires can be used in conjunction with other measurements."""
-
-        if not qml.operation.active_new_opmath():
-            pytest.skip("Identity with no wires is not supported with legacy opmath.")
 
         state = np.array([0, 1])
 
@@ -543,6 +541,44 @@ class TestMeasureSamples:
         mp = qml.expval(qml.Z(0) + 2 * qml.I())
         [result] = measure_with_samples([mp], state, shots=qml.measurements.Shots(1))
         assert qml.math.allclose(result, 1)  # -1 + 2
+
+    @pytest.mark.parametrize(
+        "state, measurements, expected_results",
+        [
+            [
+                np.array([[0.5, 0.5j], [-0.5j, 0.5]]),
+                [qml.expval(qml.Y(0) + qml.Y(0)), qml.expval(qml.Y(1))],
+                (-2.0, 1.0),
+            ],
+            [
+                np.array([[0.5, -0.5j], [0.5j, 0.5]]),
+                [qml.expval(qml.Y(0) + qml.Y(0)), qml.expval(qml.Y(1))],
+                (2.0, -1.0),
+            ],
+            [
+                np.array([[0.5, 0.5j], [-0.5j, 0.5]]),
+                [qml.expval(qml.Y(1)), qml.expval(qml.Y(0) + qml.Y(0))],
+                (1.0, -2.0),
+            ],
+            [
+                np.array([[0.5, 0.5j], [-0.5j, 0.5]]),
+                [
+                    qml.expval(qml.Y(1) - qml.Y(1)),
+                    qml.expval(2 * (qml.Y(0) + qml.Y(0) - 5 * (qml.Y(0) + qml.Y(0)))),
+                    qml.expval(
+                        (2 * (qml.Y(0) + qml.Y(0)))
+                        @ ((5 * (qml.Y(0) + qml.Y(0)) + 3 * (qml.Y(0) + qml.Y(0))))
+                    ),
+                ],
+                (0.0, 16.0, 64.0),
+            ],
+        ],
+    )
+    def test_sum_same_wires(self, state, measurements, expected_results):
+        """Test that the sum of observables acting on the same wires works as expected."""
+
+        results = measure_with_samples(measurements, state, qml.measurements.Shots(1000))
+        assert qml.math.allclose(results, expected_results)
 
 
 class TestInvalidStateSamples:
@@ -685,7 +721,7 @@ class TestInvalidStateSamples:
 
 
 two_qubit_state_to_be_normalized = np.array([[0, 1.0000000005j], [-1, 0]]) / np.sqrt(2)
-two_qubit_state_not_normalized = np.array([[0, 1.0000005j], [-1.00000001, 0]]) / np.sqrt(2)
+two_qubit_state_not_normalized = np.array([[0, 1.00005j], [-1.00000001, 0]]) / np.sqrt(2)
 
 batched_state_to_be_normalized = np.stack(
     [
@@ -714,8 +750,9 @@ class TestRenormalization:
         state = qml.math.array(two_qubit_state_to_be_normalized, like=interface)
         _ = sample_state(state, 10)
 
+    # jax.random.choice accepts unnormalized probabilities
     @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "tensorflow"])
+    @pytest.mark.parametrize("interface", ["numpy", "torch", "tensorflow"])
     def test_sample_state_renorm_error(self, interface):
         """Test that renormalization does not occur if the error is too large."""
 
@@ -724,15 +761,16 @@ class TestRenormalization:
             _ = sample_state(state, 10)
 
     @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "tensorflow"])
+    @pytest.mark.parametrize("interface", ["numpy", "torch", "jax", "tensorflow"])
     def test_sample_batched_state_renorm(self, interface):
         """Test renormalization for a batched state."""
 
         state = qml.math.array(batched_state_to_be_normalized, like=interface)
         _ = sample_state(state, 10, is_state_batched=True)
 
+    # jax.random.choices accepts unnormalized probabilities
     @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "tensorflow"])
+    @pytest.mark.parametrize("interface", ["numpy", "torch", "tensorflow"])
     def test_sample_batched_state_renorm_error(self, interface):
         """Test that renormalization does not occur if the error is too large."""
 

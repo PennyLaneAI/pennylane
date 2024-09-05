@@ -19,7 +19,7 @@ import functools
 import os
 import types
 import warnings
-from typing import Sequence
+from collections.abc import Sequence
 
 import pennylane as qml
 from pennylane.typing import ResultBatch
@@ -118,11 +118,14 @@ class TransformDispatcher:
 
         if isinstance(obj, qml.QNode):
             return self._qnode_transform(obj, targs, tkwargs)
-        # TODO: Remove with the previous device generation
-        if isinstance(obj, qml.devices.LegacyDevice):
-            return self._old_device_transform(obj, targs, tkwargs)
         if isinstance(obj, qml.devices.Device):
             return self._device_transform(obj, targs, tkwargs)
+        if obj.__class__.__name__ == "QJIT":
+            raise TransformError(
+                "Functions that are wrapped / decorated with qjit cannot subsequently be"
+                f" transformed with a PennyLane transform (attempted {self})."
+                f" For the desired affect, ensure that qjit is applied after {self}."
+            )
         if callable(obj):
             return self._qfunc_transform(obj, targs, tkwargs)
         if isinstance(obj, Sequence) and all(isinstance(q, qml.tape.QuantumScript) for q in obj):
@@ -229,6 +232,7 @@ class TransformDispatcher:
     def _qfunc_transform(self, qfunc, targs, tkwargs):
         """Apply the transform on a quantum function."""
 
+        @functools.wraps(qfunc)
         def qfunc_transformed(*args, **kwargs):
             with qml.queuing.AnnotatedQueue() as q:
                 qfunc_output = qfunc(*args, **kwargs)
@@ -266,25 +270,6 @@ class TransformDispatcher:
             return qml.math.asarray(mps, like=interface)
 
         return qfunc_transformed
-
-    def _old_device_transform(self, original_device, targs, tkwargs):
-        """Apply the transform on a device"""
-        if self._expand_transform:
-            raise TransformError("Device transform does not support expand transforms.")
-        if self._is_informative:
-            raise TransformError("Device transform does not support informative transforms.")
-        if self._final_transform:
-            raise TransformError("Device transform does not support final transforms.")
-        new_dev = copy.deepcopy(original_device)
-        transform = self._transform
-
-        @new_dev.custom_expand
-        def new_expand_fn(self, tape, *args, **kwargs):  # pylint: disable=unused-variable
-            tapes, _ = transform(tape, *targs, **tkwargs)
-            tape = tapes[0]
-            return self.default_expand_fn(tape, *args, **kwargs)
-
-        return new_dev
 
     def _device_transform(self, original_device, targs, tkwargs):
         """Apply the transform on a device"""

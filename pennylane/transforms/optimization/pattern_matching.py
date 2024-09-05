@@ -17,24 +17,24 @@ substitution."""
 import copy
 import itertools
 from collections import OrderedDict
-from typing import Callable, Sequence
 
 import numpy as np
 
 import pennylane as qml
 from pennylane import adjoint
 from pennylane.ops.qubit.attributes import symmetric_over_all_wires
-from pennylane.tape import QuantumScript, QuantumTape
+from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
 from pennylane.transforms.commutation_dag import commutation_dag
+from pennylane.typing import PostprocessingFn
 from pennylane.wires import Wires
 
 
 # pylint: disable=too-many-statements
 @transform
 def pattern_matching_optimization(
-    tape: QuantumTape, pattern_tapes, custom_quantum_cost=None
-) -> (Sequence[QuantumTape], Callable):
+    tape: QuantumScript, pattern_tapes, custom_quantum_cost=None
+) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     r"""Quantum function transform to optimize a circuit given a list of patterns (templates).
 
     Args:
@@ -200,6 +200,7 @@ def pattern_matching_optimization(
     # pylint: disable=too-many-branches
     consecutive_wires = Wires(range(len(tape.wires)))
     inverse_wires_map = OrderedDict(zip(consecutive_wires, tape.wires))
+    original_tape_meas = tape.measurements
 
     for pattern in pattern_tapes:
         # Check the validity of the pattern
@@ -281,7 +282,7 @@ def pattern_matching_optimization(
                 qscript = QuantumScript.from_queue(q_inside)
                 [tape], _ = qml.map_wires(input=qscript, wire_map=inverse_wires_map)
 
-    new_tape = type(tape)(tape.operations, tape.measurements, shots=tape.shots)
+    new_tape = type(tape)(tape.operations, original_tape_meas, shots=tape.shots)
 
     def null_postprocessing(results):
         """A postprocesing function returned by a transform that only converts the batch of results

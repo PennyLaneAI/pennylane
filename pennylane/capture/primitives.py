@@ -12,108 +12,38 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This submodule defines the abstract classes and primitives for capture.
+This submodule offers all the non-operator/ measurement custom primitives
+created in pennylane.
+
+It has a jax dependency and should be located in a standard import path.
 """
 
-from functools import lru_cache
-from typing import Optional
+from pennylane.compiler.qjit_api import _get_for_loop_qfunc_prim, _get_while_loop_qfunc_prim
+from pennylane.ops.op_math.adjoint import _get_adjoint_qfunc_prim
+from pennylane.ops.op_math.condition import _get_cond_qfunc_prim
+from pennylane.ops.op_math.controlled import _get_ctrl_qfunc_prim
 
-import pennylane as qml
+from .capture_measurements import _get_abstract_measurement
+from .capture_operators import _get_abstract_operator
+from .capture_qnode import _get_qnode_prim
 
-has_jax = True
-try:
-    import jax
-except ImportError:
-    has_jax = False
-
-
-@lru_cache  # construct the first time lazily
-def _get_abstract_operator() -> type:
-    """Create an AbstractOperator once in a way protected from lack of a jax install."""
-    if not has_jax:  # pragma: no cover
-        raise ImportError("Jax is required for plxpr.")  # pragma: no cover
-
-    class AbstractOperator(jax.core.AbstractValue):
-        """An operator captured into plxpr."""
-
-        # pylint: disable=missing-function-docstring
-        def at_least_vspace(self):
-            # TODO: investigate the proper definition of this method
-            raise NotImplementedError
-
-        # pylint: disable=missing-function-docstring
-        def join(self, other):
-            # TODO: investigate the proper definition of this method
-            raise NotImplementedError
-
-        # pylint: disable=missing-function-docstring
-        def update(self, **kwargs):
-            # TODO: investigate the proper definition of this method
-            raise NotImplementedError
-
-        def __eq__(self, other):
-            return isinstance(other, AbstractOperator)
-
-        def __hash__(self):
-            return hash("AbstractOperator")
-
-        @staticmethod
-        def _matmul(*args):
-            return qml.prod(*args)
-
-        @staticmethod
-        def _mul(a, b):
-            return qml.s_prod(b, a)
-
-        @staticmethod
-        def _rmul(a, b):
-            return qml.s_prod(b, a)
-
-        @staticmethod
-        def _add(a, b):
-            return qml.sum(a, b)
-
-        @staticmethod
-        def _pow(a, b):
-            return qml.pow(a, b)
-
-    jax.core.raise_to_shaped_mappings[AbstractOperator] = lambda aval, _: aval
-
-    return AbstractOperator
+AbstractOperator = _get_abstract_operator()
+AbstractMeasurement = _get_abstract_measurement()
+adjoint_transform_prim = _get_adjoint_qfunc_prim()
+ctrl_transform_prim = _get_ctrl_qfunc_prim()
+qnode_prim = _get_qnode_prim()
+cond_prim = _get_cond_qfunc_prim()
+for_loop_prim = _get_for_loop_qfunc_prim()
+while_loop_prim = _get_while_loop_qfunc_prim()
 
 
-def create_operator_primitive(operator_type: type) -> Optional["jax.core.Primitive"]:
-    """Create a primitive corresponding to an operator type.
-
-    Args:
-        operator_type (type): a subclass of qml.operation.Operator
-
-    Returns:
-        Optional[jax.core.Primitive]: A new jax primitive with the same name as the operator subclass.
-        ``None`` is returned if jax is not available.
-
-    """
-    if not has_jax:
-        return None
-
-    primitive = jax.core.Primitive(operator_type.__name__)
-
-    @primitive.def_impl
-    def _(*args, **kwargs):
-        if "n_wires" not in kwargs:
-            return type.__call__(operator_type, *args, **kwargs)
-        n_wires = kwargs.pop("n_wires")
-
-        # need to convert array values into integers
-        # for plxpr, all wires must be integers
-        wires = tuple(int(w) for w in args[-n_wires:])
-        args = args[:-n_wires]
-        return type.__call__(operator_type, *args, wires=wires, **kwargs)
-
-    abstract_type = _get_abstract_operator()
-
-    @primitive.def_abstract_eval
-    def _(*_, **__):
-        return abstract_type()
-
-    return primitive
+__all__ = [
+    "AbstractOperator",
+    "AbstractMeasurement",
+    "adjoint_transform_prim",
+    "ctrl_transform_prim",
+    "qnode_prim",
+    "cond_prim",
+    "for_loop_prim",
+    "while_loop_prim",
+]

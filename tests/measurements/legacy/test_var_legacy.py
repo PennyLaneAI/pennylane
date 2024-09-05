@@ -17,7 +17,7 @@ import pytest
 
 import pennylane as qml
 from pennylane.devices.qubit.measure import flatten_state
-from pennylane.measurements import Shots, Variance
+from pennylane.measurements import Variance
 
 
 # TODO: Remove this when new CustomMP are the default
@@ -52,9 +52,10 @@ class TestVar:
     @pytest.mark.parametrize("r_dtype", [np.float32, np.float64])
     def test_value(self, tol, r_dtype, mocker, shots):
         """Test that the var function works"""
+
         dev = qml.device("default.qubit.legacy", wires=2, shots=shots)
         spy = mocker.spy(qml.QubitDevice, "var")
-        dev.R_DTYPE = r_dtype
+        dev.target_device.R_DTYPE = r_dtype
 
         @qml.qnode(dev, diff_method="parameter-shift")
         def circuit(x):
@@ -100,7 +101,6 @@ class TestVar:
     ):  # pylint: disable=too-many-arguments
         """Test that variances for mid-circuit measurement values
         are correct for a single measurement value."""
-        np.random.seed(42)
         dev = qml.device(device_name, wires=2, shots=shots)
 
         @qml.qnode(dev)
@@ -126,10 +126,9 @@ class TestVar:
     @pytest.mark.parametrize("device_name", ["default.qubit.legacy", "default.mixed"])
     def test_observable_is_composite_measurement_value(
         self, shots, phi, mocker, tol, tol_stochastic, device_name
-    ):  # pylint: disable=too-many-arguments
+    ):  # pylint: disable=too-many-arguments,disable=protected-access
         """Test that variances for mid-circuit measurement values
         are correct for a composite measurement value."""
-        np.random.seed(42)
         dev = qml.device(device_name, wires=6, shots=shots)
 
         @qml.qnode(dev)
@@ -166,30 +165,9 @@ class TestVar:
         assert np.allclose(np.array(res), expected, atol=atol, rtol=0)
 
         if device_name != "default.mixed":
+            if shots:
+                new_dev.target_device._samples = new_dev.generate_samples()
             custom_measurement_process(new_dev, spy)
-
-    @pytest.mark.parametrize(
-        "obs",
-        [qml.PauliZ(0), qml.Hermitian(np.diag([1, 2]), 0), qml.Hermitian(np.diag([1.0, 2.0]), 0)],
-    )
-    def test_shape(self, obs):
-        """Test that the shape is correct."""
-        dev = qml.device("default.qubit.legacy", wires=1)
-        res = qml.var(obs)
-        # pylint: disable=use-implicit-booleaness-not-comparison
-        assert res.shape(dev, Shots(None)) == ()
-        assert res.shape(dev, Shots(100)) == ()
-
-    @pytest.mark.parametrize(
-        "obs",
-        [qml.PauliZ(0), qml.Hermitian(np.diag([1, 2]), 0), qml.Hermitian(np.diag([1.0, 2.0]), 0)],
-    )
-    def test_shape_shot_vector(self, obs):
-        """Test that the shape is correct with the shot vector too."""
-        res = qml.var(obs)
-        shot_vector = (1, 2, 3)
-        dev = qml.device("default.qubit.legacy", wires=3, shots=shot_vector)
-        assert res.shape(dev, Shots(shot_vector)) == ((), (), ())
 
     @pytest.mark.parametrize("state", [np.array([0, 0, 0]), np.array([1, 0, 0, 0, 0, 0, 0, 0])])
     @pytest.mark.parametrize("shots", [None, 1000, [1000, 10000]])

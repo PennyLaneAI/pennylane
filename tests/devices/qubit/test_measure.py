@@ -179,21 +179,16 @@ class TestMeasurements:
 
         dev = qml.device("default.qubit", wires=4)
 
-        O1 = qml.X(0)
-        O2 = qml.X(0)
-
         @qml.qnode(dev, interface="jax")
         def qnode(t1, t2):
-            return qml.expval(qml.prod(O1, qml.RX(t1, 0), O2, qml.RX(t2, 0)))
+            return qml.expval((t1 * qml.X(0)) @ (t2 * qml.Y(1)))
 
         t1, t2 = 0.5, 1.0
         assert qml.math.allclose(qnode(t1, t2), jax.jit(qnode)(t1, t2))
 
+    @pytest.mark.usefixtures("new_opmath_only")
     def test_measure_identity_no_wires(self):
         """Test that measure can handle the expectation value of identity on no wires."""
-
-        if not qml.operation.active_new_opmath():
-            pytest.skip("Identity with no wires is not supported with legacy opmath.")
 
         state = np.random.random([2, 2, 2])
         out = measure(qml.measurements.ExpectationMP(qml.I()), state)

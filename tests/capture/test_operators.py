@@ -18,13 +18,12 @@ Integration tests for the capture of pennylane operations into jaxpr.
 import pytest
 
 import pennylane as qml
-from pennylane.capture.primitives import _get_abstract_operator
 
 jax = pytest.importorskip("jax")
 
-pytestmark = pytest.mark.jax
+from pennylane.capture.primitives import AbstractOperator  # pylint: disable=wrong-import-position
 
-AbstractOperator = _get_abstract_operator()
+pytestmark = pytest.mark.jax
 
 
 @pytest.fixture(autouse=True)
@@ -54,6 +53,7 @@ def test_abstract_operator():
     # arithmetic dunders integration tested
 
 
+@pytest.mark.usefixtures("new_opmath_only")
 def test_operators_constructed_when_plxpr_enabled():
     """Test that normal operators can still be constructed when plxpr is enabled."""
 
@@ -105,7 +105,7 @@ def test_hybrid_capture_wires():
         jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 1, 2)
 
     assert len(q) == 1
-    assert qml.equal(q.queue[0], qml.X(3))
+    qml.assert_equal(q.queue[0], qml.X(3))
 
 
 def test_hybrid_capture_parametrization():
@@ -133,7 +133,7 @@ def test_hybrid_capture_parametrization():
         jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0.5)
 
     assert len(q) == 1
-    assert qml.equal(
+    qml.assert_equal(
         q.queue[0], qml.Rot(1.0, jax.numpy.sqrt(0.5), 0.25, wires=1), check_interface=False
     )
 
@@ -168,7 +168,7 @@ def test_different_wires(w, as_kwarg):
         jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
 
     assert len(q) == 1
-    assert qml.equal(q.queue[0], qml.X(0))
+    qml.assert_equal(q.queue[0], qml.X(0))
 
 
 def test_parametrized_op():
@@ -190,30 +190,67 @@ def test_parametrized_op():
         jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 1.0, 2.0, 3.0, 10)
 
     assert len(q) == 1
-    assert qml.equal(q.queue[0], qml.Rot(1.0, 2.0, 3.0, 10))
+    qml.assert_equal(q.queue[0], qml.Rot(1.0, 2.0, 3.0, 10))
 
 
-def test_pauli_rot():
-    """Test a special operation that has positional metadata and overrides binding."""
+class TestSpecialOps:
 
-    def qfunc(a, wire0, wire1):
-        qml.PauliRot(a, "XY", (wire0, wire1))
+    def test_pauli_rot(self):
+        """Test a special operation that has positional metadata and overrides binding."""
 
-    jaxpr = jax.make_jaxpr(qfunc)(0.5, 2, 3)
-    assert len(jaxpr.eqns) == 1
-    eqn = jaxpr.eqns[0]
+        def qfunc(a, wire0, wire1):
+            qml.PauliRot(a, "XY", (wire0, wire1))
 
-    assert eqn.primitive == qml.PauliRot._primitive
-    assert eqn.params == {"pauli_word": "XY", "id": None, "n_wires": 2}
+        jaxpr = jax.make_jaxpr(qfunc)(0.5, 2, 3)
+        assert len(jaxpr.eqns) == 1
+        eqn = jaxpr.eqns[0]
 
-    assert len(eqn.invars) == 3  # The rotation parameter and the two wires
-    assert jaxpr.jaxpr.invars == eqn.invars
+        assert eqn.primitive == qml.PauliRot._primitive
+        assert eqn.params == {"pauli_word": "XY", "id": None, "n_wires": 2}
 
-    with qml.queuing.AnnotatedQueue() as q:
-        jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2.5, 3, 4)
+        assert len(eqn.invars) == 3  # The rotation parameter and the two wires
+        assert jaxpr.jaxpr.invars == eqn.invars
 
-    assert len(q) == 1
-    assert qml.equal(q.queue[0], qml.PauliRot(2.5, "XY", (3, 4)))
+        with qml.queuing.AnnotatedQueue() as q:
+            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2.5, 3, 4)
+
+        assert len(q) == 1
+        qml.assert_equal(q.queue[0], qml.PauliRot(2.5, "XY", (3, 4)))
+
+    def test_GlobalPhase(self):
+        """Test that a global phase on no wires can be captured."""
+
+        def qfunc(phi):
+            return qml.GlobalPhase(phi)
+
+        jaxpr = jax.make_jaxpr(qfunc)(0.5)
+        assert len(jaxpr.eqns) == 1
+
+        assert jaxpr.eqns[0].primitive == qml.GlobalPhase._primitive
+        assert len(jaxpr.eqns[0].invars) == 1
+        assert jaxpr.eqns[0].params == {"n_wires": 0}
+
+        with qml.queuing.AnnotatedQueue() as q:
+            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 1.2)
+
+        assert len(q.queue) == 1
+        qml.assert_equal(q.queue[0], qml.GlobalPhase(1.2))
+
+    def test_identity_no_wires(self):
+        """Test that an identity on no wires can be captured."""
+
+        jaxpr = jax.make_jaxpr(qml.I)()
+        assert len(jaxpr.eqns) == 1
+
+        assert jaxpr.eqns[0].primitive == qml.I._primitive
+        assert len(jaxpr.eqns[0].invars) == 0
+        assert jaxpr.eqns[0].params == {"n_wires": 0}
+
+        with qml.queuing.AnnotatedQueue() as q:
+            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+
+        assert len(q.queue) == 1
+        qml.assert_equal(q.queue[0], qml.I())
 
 
 class TestTemplates:
@@ -286,7 +323,7 @@ class TestOpmath:
             jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
 
         assert len(q) == 1
-        assert qml.equal(q.queue[0], qml.adjoint(qml.X(0)))
+        qml.assert_equal(q.queue[0], qml.adjoint(qml.X(0)))
 
     def test_Controlled(self):
         """Test a nested control operation."""
@@ -313,7 +350,7 @@ class TestOpmath:
 
         assert len(q) == 1
         expected = qml.ctrl(qml.IsingXX(3.4, wires=(0, 1)), control=(3, 4), control_values=[0, 1])
-        assert qml.equal(q.queue[0], expected)
+        qml.assert_equal(q.queue[0], expected)
 
 
 class TestAbstractDunders:
@@ -363,6 +400,7 @@ class TestAbstractDunders:
 
         assert isinstance(eqn.outvars[0].aval, AbstractOperator)
 
+    @pytest.mark.usefixtures("new_opmath_only")
     def test_mul(self):
         """Test that the scalar multiplication dunder works."""
 

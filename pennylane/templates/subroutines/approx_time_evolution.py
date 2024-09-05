@@ -15,9 +15,12 @@ r"""
 Contains the ApproxTimeEvolution template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
+import copy
+
 import pennylane as qml
 from pennylane.operation import AnyWires, Operation
 from pennylane.ops import PauliRot
+from pennylane.wires import Wires
 
 
 class ApproxTimeEvolution(Operation):
@@ -122,6 +125,10 @@ class ApproxTimeEvolution(Operation):
         return data, (self.hyperparameters["n"],)
 
     @classmethod
+    def _primitive_bind_call(cls, *args, **kwargs):
+        return cls._primitive.bind(*args, **kwargs)
+
+    @classmethod
     def _unflatten(cls, data, metadata):
         return cls(data[0], data[1], n=metadata[0])
 
@@ -138,6 +145,14 @@ class ApproxTimeEvolution(Operation):
 
         # trainable parameters are passed to the base init method
         super().__init__(*hamiltonian.data, time, wires=wires, id=id)
+
+    def map_wires(self, wire_map: dict):
+        new_op = copy.deepcopy(self)
+        new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
+        new_op._hyperparameters["hamiltonian"] = qml.map_wires(
+            new_op._hyperparameters["hamiltonian"], wire_map
+        )
+        return new_op
 
     def queue(self, context=qml.QueuingManager):
         context.remove(self.hyperparameters["hamiltonian"])

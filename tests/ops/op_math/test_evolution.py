@@ -146,7 +146,7 @@ class TestEvolution:
 
         op = Exp(orig_base, coeff=0.2)
         new_op = op.simplify()
-        assert qml.equal(new_op.base, qml.PauliX(0))
+        qml.assert_equal(new_op.base, qml.PauliX(0))
         assert new_op.coeff == 0.2
 
     def test_simplify_s_prod(self):
@@ -156,7 +156,7 @@ class TestEvolution:
         op = Evolution(base, 3)
         new_op = op.simplify()
 
-        assert qml.equal(new_op.base, qml.PauliX(0))
+        qml.assert_equal(new_op.base, qml.PauliX(0))
         assert new_op.coeff == -12j
 
     @pytest.mark.jax
@@ -172,7 +172,7 @@ class TestEvolution:
             Evolution(base, -0.5 * x)
             return qml.expval(qml.PauliZ(0))
 
-        @qml.qnode(qml.device("default.qubit.jax", wires=1), interface="jax")
+        @qml.qnode(qml.device("default.qubit"), interface="jax")
         def circ(x):
             Evolution(qml.PauliX(0), -0.5 * x)
             return qml.expval(qml.PauliZ(0))
@@ -192,7 +192,7 @@ class TestEvolution:
         base = qml.PauliX(0) + qml.PauliX(1) + qml.PauliX(0)
         op = Evolution(base, 2)
 
-        assert qml.equal(op.simplify(), Evolution(base.simplify(), 2))
+        qml.assert_equal(op.simplify(), Evolution(base.simplify(), 2))
 
     @pytest.mark.parametrize(
         "base",
@@ -206,7 +206,7 @@ class TestEvolution:
         """Test that qml.generator will return generator if it is_hermitian, but is not a subclass of Observable"""
         op = Evolution(base, 1)
         gen, c = qml.generator(op)
-        assert qml.equal(gen if c == 1 else qml.s_prod(c, gen), base)
+        qml.assert_equal(gen if c == 1 else qml.s_prod(c, gen), base)
 
     def test_generator_error_if_not_hermitian(self):
         """Tests that an error is raised if the generator is not hermitian."""

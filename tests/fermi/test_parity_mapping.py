@@ -894,7 +894,7 @@ def test_parity_transform_fermi_word_operation(fermionic_op, n_qubits, result):
     expected_op = pauli_sentence(qml.Hamiltonian(result[0], result[1]))
     expected_op = expected_op.operation(wires)
 
-    assert qml.equal(qubit_op.simplify(), expected_op.simplify())
+    qml.assert_equal(qubit_op.simplify(), expected_op.simplify())
 
 
 @pytest.mark.usefixtures("use_legacy_opmath")
@@ -907,12 +907,12 @@ def test_parity_transform_fermi_word_operation_legacy(fermionic_op, n_qubits, re
     expected_op = pauli_sentence(qml.Hamiltonian(result[0], result[1]))
     expected_op = expected_op.operation(wires)
 
-    assert qml.equal(qubit_op.simplify(), expected_op.simplify())
+    qml.assert_equal(qubit_op.simplify(), expected_op.simplify())
 
 
 def test_parity_transform_for_identity():
     """Test that the parity_transform function returns the correct qubit operator for Identity."""
-    assert qml.equal(parity_transform(FermiWord({}), 2), qml.Identity(0))
+    qml.assert_equal(parity_transform(FermiWord({}), 2), qml.Identity(0))
 
 
 def test_parity_transform_for_identity_ps():
@@ -948,6 +948,8 @@ fw1 = FermiWord({(0, 0): "+", (1, 1): "-"})
 fw2 = FermiWord({(0, 0): "+", (1, 0): "-"})
 fw3 = FermiWord({(0, 0): "+", (1, 3): "-", (2, 0): "+", (3, 4): "-"})
 fw4 = FermiWord({})
+fw5 = FermiWord({(0, 3): "+", (1, 2): "-"})
+fw6 = FermiWord({(0, 1): "+", (1, 4): "-"})
 
 
 def test_empty_fermi_sentence():
@@ -977,7 +979,7 @@ def test_fermi_sentence_identity():
     assert ps_op == ps
 
     result = ps.operation(wire_order=[0])
-    assert qml.equal(qubit_op.simplify(), result.simplify())
+    qml.assert_equal(qubit_op.simplify(), result.simplify())
 
 
 FERMI_AND_PAULI_SENTENCES = [
@@ -1015,6 +1017,52 @@ FERMI_AND_PAULI_SENTENCES = [
             }
         ),
     ),
+    (
+        FermiSentence({fw1: -2, fw5: 1j}),
+        4,
+        PauliSentence(
+            {
+                PauliWord({0: "X"}): -0.5,
+                PauliWord({0: "X", 1: "Z"}): 0.5,
+                PauliWord({0: "Y"}): 0.5j,
+                PauliWord({0: "Y", 1: "Z"}): -0.5j,
+                PauliWord({1: "Z", 2: "X", 3: "Z"}): -0.25j,
+                PauliWord({1: "Z", 2: "Y"}): -0.25,
+                PauliWord({2: "X"}): 0.25j,
+                PauliWord({2: "Y", 3: "Z"}): 0.25,
+            }
+        ),
+    ),
+    (
+        FermiSentence({fw6: 1, fw2: 2}),
+        5,
+        PauliSentence(
+            {
+                PauliWord({0: "I"}): 1.0,
+                PauliWord({0: "Z"}): -1.0,
+                PauliWord({0: "Z", 1: "X", 2: "X", 3: "X", 4: "Z"}): -0.25,
+                PauliWord({0: "Z", 1: "X", 2: "X", 3: "Y"}): -0.25j,
+                PauliWord({1: "Y", 2: "X", 3: "X", 4: "Z"}): 0.25j,
+                PauliWord({1: "Y", 2: "X", 3: "Y"}): -0.25,
+            }
+        ),
+    ),
+    (
+        FermiSentence({fw5: 1, fw6: 1}),
+        5,
+        PauliSentence(
+            {
+                PauliWord({0: "Z", 1: "X", 2: "X", 3: "X", 4: "Z"}): -0.25,
+                PauliWord({0: "Z", 1: "X", 2: "X", 3: "Y"}): -0.25j,
+                PauliWord({1: "Y", 2: "X", 3: "X", 4: "Z"}): 0.25j,
+                PauliWord({1: "Y", 2: "X", 3: "Y"}): -0.25,
+                PauliWord({1: "Z", 2: "X", 3: "Z"}): -0.25,
+                PauliWord({1: "Z", 2: "Y"}): 0.25j,
+                PauliWord({2: "X"}): 0.25,
+                PauliWord({2: "Y", 3: "Z"}): -0.25j,
+            }
+        ),
+    ),
 ]
 
 
@@ -1033,7 +1081,7 @@ def test_parity_transform_for_fermi_sentence_operation(fermionic_op, n_qubits, r
     qubit_op = parity_transform(fermionic_op, n_qubits)
     result = result.operation(wires)
 
-    assert qml.equal(qubit_op.simplify(), result.simplify())
+    qml.assert_equal(qubit_op.simplify(), result.simplify())
 
 
 WIRE_MAP_FOR_FERMI_SENTENCE = [

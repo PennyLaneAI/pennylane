@@ -13,17 +13,17 @@
 # limitations under the License.
 """Adaptive optimizer"""
 import copy
-from typing import Callable, Sequence
 
 # pylint: disable= no-value-for-parameter, protected-access, not-callable
 import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane import transform
-from pennylane.tape import QuantumTape
+from pennylane.tape import QuantumScript, QuantumScriptBatch
+from pennylane.typing import PostprocessingFn
 
 
 @transform
-def append_gate(tape: QuantumTape, params, gates) -> (Sequence[QuantumTape], Callable):
+def append_gate(tape: QuantumScript, params, gates) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Append parameterized gates to an existing tape.
 
     Args:

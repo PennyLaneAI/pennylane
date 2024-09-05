@@ -31,7 +31,7 @@ class TestIdentity:
         assert metadata[1] == tuple()
 
         new_op = Identity._unflatten(*op._flatten())
-        assert qml.equal(op, new_op)
+        qml.assert_equal(op, new_op)
 
     def test_class_name(self, wires):
         """Test the class name of either I and Identity is by default 'Identity'"""
@@ -50,7 +50,7 @@ class TestIdentity:
 
         adj_op = jax.jit(lambda op: qml.adjoint(op, lazy=False))(op)
 
-        assert qml.equal(op, adj_op)
+        qml.assert_equal(op, adj_op)
 
     def test_identity_eigvals(self, wires, tol):
         """Test identity eigenvalues are correct"""

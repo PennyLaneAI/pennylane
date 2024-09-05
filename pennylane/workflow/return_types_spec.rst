@@ -58,7 +58,7 @@ or ``qml.state()``. In such a case, the measurement process instance should have
 The shape of the result object may be dictated either by the device or the other operations present in the circuit.
 
 >>> qml.probs().wires
-<Wires = []>
+Wires([])
 >>> tape = qml.tape.QuantumScript([qml.S(0)], (qml.probs(),))
 >>> qml.device('default.qubit').execute(tape)
 array([1., 0.])
@@ -71,7 +71,8 @@ Broadcasting
 Parameter broadcasting adds a leading dimension to the numeric array itself.
 
 If the corresponding tape has a ``batch_size`` and the result object is numeric, then the numeric object should
-gain a leading dimension.
+gain a leading dimension.  Note that a batch size of ``1`` is still a batch size,
+and still should correspond to a leading dimension.
 
 >>> op = qml.RX((0, np.pi/4, np.pi/2), wires=0)
 >>> tape = qml.tape.QuantumScript((op,), [qml.probs(wires=0)])

@@ -64,7 +64,7 @@ class TestDecomposition:
         initial_layer = np.random.randn(n_wires)
 
         op = qml.SimplifiedTwoDesign(initial_layer, weights, wires=range(n_wires))
-        queue = op.expand().operations
+        queue = op.decomposition()
 
         for i, gate in enumerate(queue):
             assert gate.name == expected_names[i]
@@ -81,7 +81,7 @@ class TestDecomposition:
         weights = np.random.randn(*shape_weights)
 
         op = qml.SimplifiedTwoDesign(initial_layer, weights, wires=range(n_wires))
-        queue = op.expand().operations
+        queue = op.decomposition()
 
         # test the device parameters
         for _ in range(n_layers):

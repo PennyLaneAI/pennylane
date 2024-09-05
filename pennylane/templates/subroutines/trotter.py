@@ -14,11 +14,15 @@
 """
 Contains templates for Suzuki-Trotter approximation based subroutines.
 """
+import copy
+from collections import defaultdict
 
 import pennylane as qml
 from pennylane.ops import Sum
 from pennylane.ops.op_math import SProd
+from pennylane.resource import Resources, ResourcesOperation
 from pennylane.resource.error import ErrorOperation, SpectralNormError
+from pennylane.wires import Wires
 
 
 def _scalar(order):
@@ -62,7 +66,7 @@ def _recursive_expression(x, order, ops):
     return (2 * ops_lst_1) + ops_lst_2 + (2 * ops_lst_1)
 
 
-class TrotterProduct(ErrorOperation):
+class TrotterProduct(ErrorOperation, ResourcesOperation):
     r"""An operation representing the Suzuki-Trotter product approximation for the complex matrix
     exponential of a given Hamiltonian.
 
@@ -235,12 +239,42 @@ class TrotterProduct(ErrorOperation):
             "check_hermitian": check_hermitian,
         }
 
-        super().__init__(time, wires=hamiltonian.wires, id=id)
+        super().__init__(*hamiltonian.data, time, wires=hamiltonian.wires, id=id)
+
+    def map_wires(self, wire_map: dict):
+        # pylint: disable=protected-access
+        new_op = copy.deepcopy(self)
+        new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
+        new_op._hyperparameters["base"] = qml.map_wires(new_op._hyperparameters["base"], wire_map)
+        return new_op
 
     def queue(self, context=qml.QueuingManager):
         context.remove(self.hyperparameters["base"])
         context.append(self)
         return self
+
+    def resources(self) -> Resources:
+        """The resource requirements for a given instance of the Suzuki-Trotter product.
+
+        Returns:
+            Resources: The resources for an instance of ``TrotterProduct``.
+        """
+        with qml.QueuingManager.stop_recording():
+            decomp = self.compute_decomposition(*self.parameters, **self.hyperparameters)
+
+        num_wires = len(self.wires)
+        num_gates = len(decomp)
+
+        depth = qml.tape.QuantumScript(ops=decomp).graph.get_depth()
+
+        gate_types = defaultdict(int)
+        gate_sizes = defaultdict(int)
+
+        for op in decomp:
+            gate_types[op.name] += 1
+            gate_sizes[len(op.wires)] += 1
+
+        return Resources(num_wires, num_gates, gate_types, gate_sizes, depth)
 
     def error(
         self, method: str = "commutator-bound", fast: bool = True
@@ -288,7 +322,7 @@ class TrotterProduct(ErrorOperation):
             SpectralNormError: The spectral norm error.
         """
         base_unitary = self.hyperparameters["base"]
-        t, p, n = (self.parameters[0], self.hyperparameters["order"], self.hyperparameters["n"])
+        t, p, n = (self.parameters[-1], self.hyperparameters["order"], self.hyperparameters["n"])
 
         parameters = [t] + base_unitary.parameters
         if any(
@@ -340,13 +374,13 @@ class TrotterProduct(ErrorOperation):
         >>> op = qml.ctrl(qml.U2(3.4, 4.5, wires="a"), ("b", "c") )
         >>> op._flatten()
         ((U2(3.4, 4.5, wires=['a']),),
-        (<Wires = ['b', 'c']>, (True, True), <Wires = []>))
+        (Wires(['b', 'c']), (True, True), Wires([])))
         """
         hamiltonian = self.hyperparameters["base"]
-        time = self.parameters[0]
+        time = self.data[-1]
 
         hashable_hyperparameters = tuple(
-            (key, value) for key, value in self.hyperparameters.items() if key != "base"
+            item for item in self.hyperparameters.items() if item[0] != "base"
         )
         return (hamiltonian, time), hashable_hyperparameters
 
@@ -365,18 +399,17 @@ class TrotterProduct(ErrorOperation):
 
         >>> op = qml.Rot(1.2, 2.3, 3.4, wires=0)
         >>> op._flatten()
-        ((1.2, 2.3, 3.4), (<Wires = [0]>, ()))
+        ((1.2, 2.3, 3.4), (Wires([0]), ()))
         >>> qml.Rot._unflatten(*op._flatten())
         >>> op = qml.PauliRot(1.2, "XY", wires=(0,1))
         >>> op._flatten()
-        ((1.2,), (<Wires = [0, 1]>, (('pauli_word', 'XY'),)))
+        ((1.2,), (Wires([0, 1]), (('pauli_word', 'XY'),)))
         >>> op = qml.ctrl(qml.U2(3.4, 4.5, wires="a"), ("b", "c") )
         >>> type(op)._unflatten(*op._flatten())
         Controlled(U2(3.4, 4.5, wires=['a']), control_wires=['b', 'c'])
 
         """
-        hyperparameters_dict = dict(metadata)
-        return cls(*data, **hyperparameters_dict)
+        return cls(*data, **dict(metadata))
 
     @staticmethod
     def compute_decomposition(*args, **kwargs):
@@ -399,7 +432,7 @@ class TrotterProduct(ErrorOperation):
         Returns:
             list[Operator]: decomposition of the operator
         """
-        time = args[0]
+        time = args[-1]
         n = kwargs["n"]
         order = kwargs["order"]
         ops = kwargs["base"].operands

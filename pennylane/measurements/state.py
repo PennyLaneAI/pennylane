@@ -14,9 +14,11 @@
 """
 This module contains the qml.state measurement.
 """
-from typing import Optional, Sequence
+from collections.abc import Sequence
+from typing import Optional
 
 import pennylane as qml
+from pennylane.typing import TensorLike
 from pennylane.wires import WireError, Wires
 
 from .measurements import State, StateMeasurement
@@ -128,7 +130,7 @@ def density_matrix(wires) -> "DensityMatrixMP":
 class StateMP(StateMeasurement):
     """Measurement process that returns the quantum state in the computational basis.
 
-    Please refer to :func:`state` for detailed documentation.
+    Please refer to :func:`pennylane.state` for detailed documentation.
 
     Args:
         wires (.Wires): The wires the measurement process applies to.
@@ -139,27 +141,42 @@ class StateMP(StateMeasurement):
     def __init__(self, wires: Optional[Wires] = None, id: Optional[str] = None):
         super().__init__(wires=wires, id=id)
 
-    @property
-    def return_type(self):
-        return State
+    return_type = State
+
+    @classmethod
+    def _abstract_eval(
+        cls,
+        n_wires: Optional[int] = None,
+        has_eigvals=False,
+        shots: Optional[int] = None,
+        num_device_wires: int = 0,
+    ):
+        n_wires = n_wires or num_device_wires
+        shape = (2**n_wires,)
+        return shape, complex
 
     @property
     def numeric_type(self):
         return complex
 
-    def shape(self, device, shots):
-        num_shot_elements = (
-            sum(s.copies for s in shots.shot_vector) if shots.has_partitioned_shots else 1
-        )
-        dim = 2 ** len(self.wires) if self.wires else 2 ** len(device.wires)
-        return (dim,) if num_shot_elements == 1 else tuple((dim,) for _ in range(num_shot_elements))
+    def shape(self, shots: Optional[int] = None, num_device_wires: int = 0) -> tuple[int]:
+        num_wires = len(self.wires) if self.wires else num_device_wires
+        return (2**num_wires,)
 
     def process_state(self, state: Sequence[complex], wire_order: Wires):
         # pylint:disable=redefined-outer-name
-        is_tf_interface = qml.math.get_deep_interface(state) == "tensorflow"
+        def cast_to_complex(state):
+            dtype = str(state.dtype)
+            if "complex" in dtype:
+                return state
+            if qml.math.get_interface(state) == "tensorflow":
+                return qml.math.cast(state, "complex128")
+            floating_single = "float32" in dtype or "complex64" in dtype
+            return qml.math.cast(state, "complex64" if floating_single else "complex128")
+
         wires = self.wires
         if not wires or wire_order == wires:
-            return qml.math.cast(state, "complex128") if is_tf_interface else state + 0.0j
+            return cast_to_complex(state)
 
         if set(wires) != set(wire_order):
             raise WireError(
@@ -179,7 +196,11 @@ class StateMP(StateMeasurement):
         state = qml.math.reshape(state, shape)
         state = qml.math.transpose(state, desired_axes)
         state = qml.math.reshape(state, flat_shape)
-        return qml.math.cast(state, "complex128") if is_tf_interface else state + 0.0j
+        return cast_to_complex(state)
+
+    def process_density_matrix(self, density_matrix: Sequence[complex], wire_order: Wires):
+        # pylint:disable=redefined-outer-name
+        raise ValueError("Processing from density matrix to state is not supported.")
 
 
 class DensityMatrixMP(StateMP):
@@ -196,17 +217,21 @@ class DensityMatrixMP(StateMP):
     def __init__(self, wires: Wires, id: Optional[str] = None):
         super().__init__(wires=wires, id=id)
 
-    def shape(self, device, shots):
-        num_shot_elements = (
-            sum(s.copies for s in shots.shot_vector) if shots.has_partitioned_shots else 1
-        )
+    @classmethod
+    def _abstract_eval(
+        cls,
+        n_wires: Optional[int] = None,
+        has_eigvals=False,
+        shots: Optional[int] = None,
+        num_device_wires: int = 0,
+    ):
+        n_wires = n_wires or num_device_wires
+        shape = (2**n_wires, 2**n_wires)
+        return shape, complex
 
+    def shape(self, shots: Optional[int] = None, num_device_wires: int = 0) -> tuple[int, int]:
         dim = 2 ** len(self.wires)
-        return (
-            (dim, dim)
-            if num_shot_elements == 1
-            else tuple((dim, dim) for _ in range(num_shot_elements))
-        )
+        return (dim, dim)
 
     def process_state(self, state: Sequence[complex], wire_order: Wires):
         # pylint:disable=redefined-outer-name
@@ -216,3 +241,14 @@ class DensityMatrixMP(StateMP):
         if not qml.math.is_abstract(state) and qml.math.any(qml.math.iscomplex(state)):
             kwargs["c_dtype"] = state.dtype
         return qml.math.reduce_statevector(state, **kwargs)
+
+    def process_density_matrix(self, density_matrix: TensorLike, wire_order: Wires):
+        # pylint:disable=redefined-outer-name
+        wire_map = dict(zip(wire_order, range(len(wire_order))))
+        mapped_wires = [wire_map[w] for w in self.wires]
+        kwargs = {"indices": mapped_wires, "c_dtype": "complex128"}
+        if not qml.math.is_abstract(density_matrix) and qml.math.any(
+            qml.math.iscomplex(density_matrix)
+        ):
+            kwargs["c_dtype"] = density_matrix.dtype
+        return qml.math.reduce_dm(density_matrix, **kwargs)

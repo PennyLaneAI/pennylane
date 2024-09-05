@@ -14,6 +14,7 @@
 """Utility functions"""
 import warnings
 
+# pylint: disable=wrong-import-order
 import autoray as ar
 import numpy as _np
 
@@ -226,7 +227,7 @@ def get_interface(*values):
         # contains autograd and another interface
         warnings.warn(
             f"Contains tensors of types {non_numpy_scipy_interfaces}; dispatch will prioritize "
-            "TensorFlow, PyTorch, and  Jax over Autograd. Consider replacing Autograd with vanilla NumPy.",
+            "TensorFlow, PyTorch, and Jax over Autograd. Consider replacing Autograd with vanilla NumPy.",
             UserWarning,
         )
 
@@ -301,7 +302,7 @@ def get_deep_interface(value):
 
     >>> qml.math.asarray(x, like=qml.math.get_deep_interface(x))
     Array([[1, 2],
-       [3, 4]], dtype=int64)
+           [3, 4]], dtype=int64)
 
     """
     itr = value

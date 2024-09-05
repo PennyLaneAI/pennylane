@@ -15,7 +15,8 @@
 This module contains the qml.sample measurement.
 """
 import functools
-from typing import Optional, Sequence, Tuple, Union
+from collections.abc import Sequence
+from typing import Optional, Union
 
 import numpy as np
 
@@ -28,7 +29,7 @@ from .mid_measure import MeasurementValue
 
 
 def sample(
-    op: Optional[Union[Operator, MeasurementValue]] = None,
+    op: Optional[Union[Operator, MeasurementValue, Sequence[MeasurementValue]]] = None,
     wires=None,
 ) -> "SampleMP":
     r"""Sample from the supplied observable, with the number of shots
@@ -134,14 +135,14 @@ def sample(
            [0, 0]])
 
     """
-    return SampleMP(obs=op, wires=wires)
+    return SampleMP(obs=op, wires=None if wires is None else qml.wires.Wires(wires))
 
 
 class SampleMP(SampleMeasurement):
     """Measurement process that returns the samples of a given observable. If no observable is
     provided then basis state samples are returned directly from the device.
 
-    Please refer to :func:`sample` for detailed documentation.
+    Please refer to :func:`pennylane.sample` for detailed documentation.
 
     Args:
         obs (Union[.Operator, .MeasurementValue]): The observable that is to be measured
@@ -182,9 +183,34 @@ class SampleMP(SampleMeasurement):
 
         super().__init__(obs=obs, wires=wires, eigvals=eigvals, id=id)
 
-    @property
-    def return_type(self):
-        return Sample
+    return_type = Sample
+
+    @classmethod
+    def _abstract_eval(
+        cls,
+        n_wires: Optional[int] = None,
+        has_eigvals=False,
+        shots: Optional[int] = None,
+        num_device_wires: int = 0,
+    ):
+        if shots is None:
+            raise ValueError("finite shots are required to use SampleMP")
+        sample_eigvals = n_wires is None or has_eigvals
+        dtype = float if sample_eigvals else int
+
+        if n_wires == 0:
+            dim = num_device_wires
+        elif sample_eigvals:
+            dim = 1
+        else:
+            dim = n_wires
+
+        shape = []
+        if shots != 1:
+            shape.append(shots)
+        if dim != 1:
+            shape.append(dim)
+        return tuple(shape), dtype
 
     @property
     @functools.lru_cache()
@@ -194,7 +220,7 @@ class SampleMP(SampleMeasurement):
             return int
         return float
 
-    def shape(self, device, shots):
+    def shape(self, shots: Optional[int] = None, num_device_wires: int = 0) -> tuple:
         if not shots:
             raise MeasurementShapeError(
                 "Shots are required to obtain the shape of the measurement "
@@ -204,32 +230,20 @@ class SampleMP(SampleMeasurement):
             num_values_per_shot = 1  # one single eigenvalue
         else:
             # one value per wire
-            num_values_per_shot = len(self.wires) if len(self.wires) > 0 else len(device.wires)
-
-        def _single_int_shape(shot_val, num_values):
-            # singleton dimensions, whether in shot val or num_wires are squeezed away
-            inner_shape = []
-            if shot_val != 1:
-                inner_shape.append(shot_val)
-            if num_values != 1:
-                inner_shape.append(num_values)
-            return tuple(inner_shape)
-
-        if not shots.has_partitioned_shots:
-            return _single_int_shape(shots.total_shots, num_values_per_shot)
+            num_values_per_shot = len(self.wires) if len(self.wires) > 0 else num_device_wires
 
         shape = []
-        for s in shots.shot_vector:
-            for _ in range(s.copies):
-                shape.append(_single_int_shape(s.shots, num_values_per_shot))
-
+        if shots != 1:
+            shape.append(shots)
+        if num_values_per_shot != 1:
+            shape.append(num_values_per_shot)
         return tuple(shape)
 
     def process_samples(
         self,
         samples: Sequence[complex],
         wire_order: Wires,
-        shot_range: Tuple[int] = None,
+        shot_range: tuple[int, ...] = None,
         bin_size: int = None,
     ):
         wire_map = dict(zip(wire_order, range(len(wire_order))))

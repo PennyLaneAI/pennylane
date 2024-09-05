@@ -21,6 +21,39 @@ quantum-classical programs.
 
     This module is experimental and will change significantly in the future.
 
+.. currentmodule:: pennylane.capture
+
+.. autosummary::
+    :toctree: api
+
+    ~disable
+    ~enable
+    ~enabled
+    ~create_operator_primitive
+    ~create_measurement_obs_primitive
+    ~create_measurement_wires_primitive
+    ~create_measurement_mcm_primitive
+    ~qnode_call
+
+
+The ``primitives`` submodule offers easy access to objects with jax dependencies such as
+primitives and abstract types.
+It is not available with ``import pennylane``, but the contents can be accessed via manual
+import ``from pennylane.capture.primitives import *``.
+
+.. currentmodule:: pennylane.capture.primitives
+
+.. autosummary::
+    :toctree: api
+
+    AbstractOperator
+    AbstractMeasurement
+    adjoint_transform_prim
+    cond_prim
+    ctrl_transform_prim
+    for_loop_prim
+    qnode_prim
+    while_loop_prim
 
 To activate and deactivate the new PennyLane program capturing mechanism, use
 the switches ``qml.capture.enable`` and ``qml.capture.disable``.
@@ -69,7 +102,7 @@ But an operator developer may need to override custom behavior for calling ``cls
 (where ``cls`` indicates the class) if:
 
 * The operator does not accept wires, like :class:`~.SymbolicOp` or :class:`~.CompositeOp`.
-* The operator needs to enforce a data/ metadata distinction, like :class:`~.PauliRot`.
+* The operator needs to enforce a data / metadata distinction, like :class:`~.PauliRot`.
 
 In such cases, the operator developer can override ``cls._primitive_bind_call``, which
 will be called when constructing a new class instance instead of ``type.__call__``.  For example,
@@ -113,5 +146,54 @@ If needed, developers can also override the implementation method of the primiti
         return type.__call__(MyCustomOp, *args, **kwargs)
 """
 from .switches import disable, enable, enabled
-from .capture_meta import CaptureMeta
-from .primitives import create_operator_primitive
+from .capture_meta import CaptureMeta, ABCCaptureMeta
+from .capture_operators import create_operator_primitive
+from .capture_measurements import (
+    create_measurement_obs_primitive,
+    create_measurement_wires_primitive,
+    create_measurement_mcm_primitive,
+)
+from .capture_qnode import qnode_call
+
+# by defining this here, we avoid
+# E0611: No name 'AbstractOperator' in module 'pennylane.capture' (no-name-in-module)
+# on use of from capture import AbstractOperator
+AbstractOperator: type
+AbstractMeasurement: type
+qnode_prim: "jax.core.Primitive"
+
+
+def __getattr__(key):
+    if key == "AbstractOperator":
+        from .primitives import _get_abstract_operator  # pylint: disable=import-outside-toplevel
+
+        return _get_abstract_operator()
+
+    if key == "AbstractMeasurement":
+        from .primitives import _get_abstract_measurement  # pylint: disable=import-outside-toplevel
+
+        return _get_abstract_measurement()
+
+    if key == "qnode_prim":
+        from .capture_qnode import _get_qnode_prim  # pylint: disable=import-outside-toplevel
+
+        return _get_qnode_prim()
+
+    raise AttributeError(f"module 'pennylane.capture' has no attribute '{key}'")
+
+
+__all__ = (
+    "disable",
+    "enable",
+    "enabled",
+    "CaptureMeta",
+    "ABCCaptureMeta",
+    "create_operator_primitive",
+    "create_measurement_obs_primitive",
+    "create_measurement_wires_primitive",
+    "create_measurement_mcm_primitive",
+    "qnode_call",
+    "AbstractOperator",
+    "AbstractMeasurement",
+    "qnode_prim",
+)

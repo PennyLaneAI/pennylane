@@ -109,7 +109,6 @@ class TestInitialization:
         assert sprod_op.num_wires == 1
         assert sprod_op.name == "SProd"
         assert sprod_op.id == test_id
-        assert sprod_op.queue_idx is None
 
         assert sprod_op.data == (3.14, 0.23)
         assert sprod_op.parameters == [3.14, 0.23]
@@ -162,7 +161,25 @@ class TestInitialization:
 
         assert coeff == [scalar]
         for op1, op2 in zip(op2, [op]):
-            assert qml.equal(op1, op2)
+            qml.assert_equal(op1, op2)
+
+    @pytest.mark.parametrize(
+        "sprod_op, coeffs_exp, ops_exp",
+        [
+            (qml.s_prod(1.23, qml.sum(qml.X(0), qml.Y(0))), [1.23, 1.23], [qml.X(0), qml.Y(0)]),
+            (
+                qml.s_prod(1.23, qml.Hamiltonian([0.1, 0.2], [qml.X(0), qml.Y(0)])),
+                [0.123, 0.246],
+                [qml.X(0), qml.Y(0)],
+            ),
+        ],
+    )
+    def test_terms_nested(self, sprod_op, coeffs_exp, ops_exp):
+        """Tests that SProd.terms() flattens a nested structure."""
+        coeffs, ops_actual = sprod_op.terms()
+        assert coeffs == coeffs_exp
+        for op1, op2 in zip(ops_actual, ops_exp):
+            qml.assert_equal(op1, op2)
 
     def test_decomposition_raises_error(self):
         sprod_op = s_prod(3.14, qml.Identity(wires=1))
@@ -240,7 +257,7 @@ class TestMscMethods:
         assert metadata == tuple()
 
         new_op = type(sprod_op)._unflatten(*sprod_op._flatten())
-        assert qml.equal(new_op, sprod_op)
+        qml.assert_equal(new_op, sprod_op)
         assert new_op is not sprod_op
 
     @pytest.mark.parametrize("op_scalar_tup", ops)
@@ -896,7 +913,7 @@ class TestSimplify:
         result = s_prod(c3, qml.PauliX(0))
         simplified_op = op.simplify()
 
-        assert qml.equal(simplified_op, result)
+        qml.assert_equal(simplified_op, result)
 
     @pytest.mark.tf
     def test_simplify_pauli_rep_tf(self):
@@ -926,7 +943,7 @@ class TestSimplify:
         result = s_prod(c3, qml.PauliX(0))
         simplified_op = op.simplify()
 
-        assert qml.equal(simplified_op, result)
+        qml.assert_equal(simplified_op, result)
 
 
 class TestWrapperFunc:
@@ -963,7 +980,7 @@ class TestWrapperFunc:
 
         assert isinstance(op, SProd)
         assert op.scalar == 12
-        assert qml.equal(op.base, qml.PauliX(0))
+        qml.assert_equal(op.base, qml.PauliX(0))
 
     def test_non_lazy_mode_queueing(self):
         """Test that if a simpification is accomplished, the metadata for the original op

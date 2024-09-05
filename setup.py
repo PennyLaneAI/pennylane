@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2024 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -24,16 +24,16 @@ requirements = [
     "numpy<2.0",
     "scipy",
     "networkx",
-    "rustworkx",
+    "rustworkx>=0.14.0",
     "autograd",
     "toml",
     "appdirs",
-    "semantic-version>=2.7",
     "autoray>=0.6.11",
     "cachetools",
-    "pennylane-lightning>=0.36",
+    "pennylane-lightning>=0.38",
     "requests",
     "typing_extensions",
+    "packaging",
 ]
 
 info = {

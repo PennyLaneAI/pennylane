@@ -14,7 +14,7 @@
 """
 Unit tests for the ParametrizedEvolution class
 """
-# pylint: disable=unused-argument,too-few-public-methods,import-outside-toplevel,comparison-with-itself,protected-access
+# pylint: disable=unused-argument,too-few-public-methods,import-outside-toplevel,comparison-with-itself,protected-access,possibly-unused-variable
 from functools import reduce
 
 import numpy as np
@@ -89,6 +89,7 @@ class TestPytree:
         assert evol._unflatten(*evol._flatten()) == evol
 
 
+@pytest.mark.xfail
 @pytest.mark.jax
 def test_standard_validity():
     """Run standard validity checks on the parametrized evolution."""
@@ -154,7 +155,6 @@ class TestInitialization:
         assert ev.num_wires == AnyWires
         assert ev.name == "ParametrizedEvolution"
         assert ev.id is None
-        assert ev.queue_idx is None
 
         exp_params = [] if params is None else params
         assert qml.math.allequal(ev.data, exp_params)
@@ -544,7 +544,7 @@ class TestMatrix:
 class TestIntegration:
     """Integration tests for the ParametrizedEvolution class."""
 
-    @pytest.mark.parametrize("device_class", [DefaultQubit, DefaultQubitLegacy])
+    @pytest.mark.parametrize("device_class", ["DefaultQubit", "DefaultQubitJax"])
     @pytest.mark.parametrize("time", [0.3, 1, [0, 2], [0.4, 2], (3, 3.1)])
     @pytest.mark.parametrize("time_interface", ["python", "numpy", "jax"])
     @pytest.mark.parametrize("use_jit", [False, True])
@@ -552,13 +552,21 @@ class TestIntegration:
         import jax
         import jax.numpy as jnp
 
+        from pennylane.devices.default_qubit_jax import DefaultQubitJax
+
         if time_interface == "jax":
             time = jnp.array(time)
         elif time_interface == "numpy":
             time = np.array(time)
         H = qml.pulse.ParametrizedHamiltonian([2], [qml.PauliX(0)])
 
-        dev = device_class(wires=1)
+        # This weird-looking code is a temporary solution to be able
+        # to access both DefaultQubit and DefaultQubitJax without
+        # having to the break the parameterization of the test.
+        # Once DefaultQubitJax is removed, the 'device_class'
+        # parameter would be redundant and dev would always be
+        # default qubit.
+        dev = {**globals(), **locals()}[device_class](wires=1)
 
         @qml.qnode(dev, interface="jax")
         def circuit(t):

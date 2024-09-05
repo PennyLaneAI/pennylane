@@ -17,18 +17,10 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as pnp
-from pennylane.devices import DefaultQubitLegacy
+from pennylane.devices import DefaultMixed
 from pennylane.math.matrix_manipulation import _permute_dense_matrix
 from pennylane.math.quantum import reduce_dm, reduce_statevector
-from pennylane.measurements import (
-    DensityMatrixMP,
-    Shots,
-    State,
-    StateMP,
-    density_matrix,
-    expval,
-    state,
-)
+from pennylane.measurements import DensityMatrixMP, State, StateMP, density_matrix, expval, state
 from pennylane.wires import WireError, Wires
 
 
@@ -126,8 +118,26 @@ class TestStateMP:
 
     def test_wire_ordering_error(self):
         """Test that a wire order error is raised when unknown wires are given."""
-        with pytest.raises(WireError, match=r"Unexpected unique wires <Wires = \[0, 1, 2\]> found"):
+        with pytest.raises(WireError, match=r"Unexpected unique wires Wires\(\[0, 1, 2\]\) found"):
             StateMP(wires=[0, 1]).process_state([1, 0], wire_order=Wires(2))
+
+    @pytest.mark.parametrize(
+        "dm",
+        [(np.array([[1, 0, 1, 23], [0, 0, 0, 0], [1, 0, 1, 23], [23, 0, 23, 529]]) / 531 + 0.0j)],
+    )
+    def test_process_density_matrix(self, dm):
+        """Test the processing of a state vector."""
+
+        mp = StateMP(wires=None)
+        assert mp.return_type == State
+        assert mp.numeric_type is complex
+
+        # Expecting a NotImplementedError to be raised when process_density_matrix is called
+
+        with pytest.raises(
+            ValueError, match="Processing from density matrix to state is not supported."
+        ):
+            mp.process_density_matrix(dm, [0, 1])
 
 
 class TestDensityMatrixMP:
@@ -158,9 +168,6 @@ class TestDensityMatrixMP:
             exp = reduce_statevector(vec, wires)
         assert qml.math.allclose(processed, exp)
 
-    @pytest.mark.xfail(
-        reason="DensityMatrixMP.process_state no longer supports density matrix parameters"
-    )
     @pytest.mark.parametrize(
         "mat, wires",
         [
@@ -181,7 +188,7 @@ class TestDensityMatrixMP:
 
         num_wires = int(np.log2(len(mat)))
         order = list(range(num_wires))
-        processed = mp.process_state(mat, order)
+        processed = mp.process_density_matrix(mat, order)
         assert qml.math.shape(processed) == (2 ** len(wires), 2 ** len(wires))
         if len(wires) == num_wires:
             exp = _permute_dense_matrix(mat, wires, order, None)
@@ -346,7 +353,7 @@ class TestState:
     def test_no_state_capability(self, monkeypatch):
         """Test if an error is raised for devices that are not capable of returning the state.
         This is tested by changing the capability of default.qubit"""
-        dev = qml.device("default.qubit.legacy", wires=1)
+        dev = qml.device("default.mixed", wires=1)
         capabilities = dev.capabilities().copy()
         capabilities["returns_state"] = False
 
@@ -355,7 +362,7 @@ class TestState:
             return state()
 
         with monkeypatch.context() as m:
-            m.setattr(DefaultQubitLegacy, "capabilities", lambda *args, **kwargs: capabilities)
+            m.setattr(DefaultMixed, "capabilities", lambda *args, **kwargs: capabilities)
             with pytest.raises(qml.QuantumFunctionError, match="The current device is not capable"):
                 func()
 
@@ -395,9 +402,9 @@ class TestState:
         """Test that the returned state is equal to the expected returned state for all of
         PennyLane's built in statevector devices"""
 
-        dev = qml.device("default.qubit.tf", wires=4)
+        dev = qml.device("default.qubit", wires=4)
 
-        @qml.qnode(dev, diff_method=diff_method)
+        @qml.qnode(dev, interface="tf", diff_method=diff_method)
         def func():
             for i in range(4):
                 qml.Hadamard(i)
@@ -414,9 +421,9 @@ class TestState:
         """Test that the returned state is equal to the expected returned state for all of
         PennyLane's built in statevector devices"""
 
-        dev = qml.device("default.qubit.autograd", wires=4)
+        dev = qml.device("default.qubit", wires=4)
 
-        @qml.qnode(dev, diff_method=diff_method)
+        @qml.qnode(dev, interface="autograd", diff_method=diff_method)
         def func():
             for i in range(4):
                 qml.Hadamard(i)
@@ -429,11 +436,11 @@ class TestState:
 
     @pytest.mark.tf
     def test_gradient_with_passthru_tf(self):
-        """Test that the gradient of the state is accessible when using default.qubit.tf with the
-        backprop diff_method."""
+        """Test that the gradient of the state is accessible when using default.qubit with the
+        tf interface and backprop diff_method."""
         import tensorflow as tf
 
-        dev = qml.device("default.qubit.tf", wires=1)
+        dev = qml.device("default.qubit", wires=1)
 
         @qml.qnode(dev, interface="tf", diff_method="backprop")
         def func(x):
@@ -451,10 +458,10 @@ class TestState:
 
     @pytest.mark.autograd
     def test_gradient_with_passthru_autograd(self):
-        """Test that the gradient of the state is accessible when using default.qubit.autograd
-        with the backprop diff_method."""
+        """Test that the gradient of the state is accessible when using default.qubit
+        with autograd interface and the backprop diff_method."""
 
-        dev = qml.device("default.qubit.autograd", wires=1)
+        dev = qml.device("default.qubit", wires=1)
 
         @qml.qnode(dev, interface="autograd", diff_method="backprop")
         def func(x):
@@ -506,16 +513,8 @@ class TestState:
     @pytest.mark.parametrize("shots", [None, 1, 10])
     def test_shape(self, shots):
         """Test that the shape is correct for qml.state."""
-        dev = qml.device("default.qubit", wires=3, shots=shots)
         res = qml.state()
-        assert res.shape(dev, Shots(shots)) == (2**3,)
-
-    @pytest.mark.parametrize("s_vec", [(3, 2, 1), (1, 5, 10), (3, 1, 20)])
-    def test_shape_shot_vector(self, s_vec):
-        """Test that the shape is correct for qml.state with the shot vector too."""
-        dev = qml.device("default.qubit", wires=3, shots=s_vec)
-        res = qml.state()
-        assert res.shape(dev, Shots(s_vec)) == ((2**3,), (2**3,), (2**3,))
+        assert res.shape(shots, 3) == (2**3,)
 
     def test_numeric_type(self):
         """Test that the numeric type of state measurements."""
@@ -999,7 +998,7 @@ class TestDensityMatrix:
     def test_no_state_capability(self, monkeypatch):
         """Test if an error is raised for devices that are not capable of returning
         the density matrix. This is tested by changing the capability of default.qubit"""
-        dev = qml.device("default.qubit.legacy", wires=2)
+        dev = qml.device("default.mixed", wires=2)
         capabilities = dev.capabilities().copy()
         capabilities["returns_state"] = False
 
@@ -1008,7 +1007,7 @@ class TestDensityMatrix:
             return density_matrix(0)
 
         with monkeypatch.context() as m:
-            m.setattr(DefaultQubitLegacy, "capabilities", lambda *args, **kwargs: capabilities)
+            m.setattr(DefaultMixed, "capabilities", lambda *args, **kwargs: capabilities)
             with pytest.raises(
                 qml.QuantumFunctionError,
                 match="The current device is not capable" " of returning the state",
@@ -1076,17 +1075,5 @@ class TestDensityMatrix:
     @pytest.mark.parametrize("shots", [None, 1, 10])
     def test_shape(self, shots):
         """Test that the shape is correct for qml.density_matrix."""
-        dev = qml.device("default.qubit", wires=3, shots=shots)
         res = qml.density_matrix(wires=[0, 1])
-        assert res.shape(dev, Shots(shots)) == (2**2, 2**2)
-
-    @pytest.mark.parametrize("s_vec", [(3, 2, 1), (1, 5, 10), (3, 1, 20)])
-    def test_shape_shot_vector(self, s_vec):
-        """Test that the shape is correct for qml.density_matrix with the shot vector too."""
-        dev = qml.device("default.qubit", wires=3, shots=s_vec)
-        res = qml.density_matrix(wires=[0, 1])
-        assert res.shape(dev, Shots(s_vec)) == (
-            (2**2, 2**2),
-            (2**2, 2**2),
-            (2**2, 2**2),
-        )
+        assert res.shape(shots, 3) == (2**2, 2**2)

@@ -17,7 +17,7 @@ Unit tests for the :class:`~pennylane.devices.ExecutionConfig` class.
 
 import pytest
 
-from pennylane.devices import ExecutionConfig
+from pennylane.devices.execution_config import ExecutionConfig, MCMConfig
 
 
 def test_default_values():
@@ -30,6 +30,14 @@ def test_default_values():
     assert config.gradient_keyword_arguments == {}
     assert config.grad_on_execution is None
     assert config.use_device_gradient is None
+    assert config.mcm_config == MCMConfig()
+
+
+def test_mcm_config_default_values():
+    """Test that the default values of MCMConfig are correct"""
+    mcm_config = MCMConfig()
+    assert mcm_config.postselect_mode is None
+    assert mcm_config.mcm_method is None
 
 
 def test_invalid_interface():
@@ -49,3 +57,36 @@ def test_invalid_grad_on_execution():
     """Test invalid values for grad on execution raise an error."""
     with pytest.raises(ValueError, match=r"grad_on_execution must be True, False,"):
         ExecutionConfig(grad_on_execution="forward")
+
+
+@pytest.mark.parametrize(
+    "option", [MCMConfig(mcm_method="deferred"), {"mcm_method": "deferred"}, None]
+)
+def test_valid_execution_config_mcm_config(option):
+    """Test that the mcm_config attribute is set correctly"""
+    config = ExecutionConfig(mcm_config=option) if option else ExecutionConfig()
+    if option is None:
+        assert config.mcm_config == MCMConfig()
+    else:
+        assert config.mcm_config == MCMConfig(mcm_method="deferred")
+
+
+def test_invalid_execution_config_mcm_config():
+    """Test that an error is raised if mcm_config is set incorrectly"""
+    option = "foo"
+    with pytest.raises(ValueError, match="Got invalid type"):
+        _ = ExecutionConfig(mcm_config=option)
+
+
+def test_mcm_config_invalid_mcm_method():
+    """Test that an error is raised if creating MCMConfig with invalid mcm_method"""
+    option = "foo"
+    with pytest.raises(ValueError, match="Invalid mid-circuit measurements method"):
+        _ = MCMConfig(mcm_method=option)
+
+
+def test_mcm_config_invalid_postselect_mode():
+    """Test that an error is raised if creating MCMConfig with invalid postselect_mode"""
+    option = "foo"
+    with pytest.raises(ValueError, match="Invalid postselection mode"):
+        _ = MCMConfig(postselect_mode=option)

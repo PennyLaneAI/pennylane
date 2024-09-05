@@ -22,8 +22,6 @@ import pytest
 import pennylane as qml
 from pennylane import expval, sample, var
 
-np.random.seed(0)
-
 Z = np.array([[1, 0], [0, -1]])
 THETA = np.linspace(0.11, 3, 5)
 PHI = np.linspace(0.32, 3, 5)

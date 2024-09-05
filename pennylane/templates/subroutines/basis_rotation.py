@@ -100,6 +100,15 @@ class BasisRotation(Operation):
     num_wires = AnyWires
     grad_method = None
 
+    @classmethod
+    def _primitive_bind_call(cls, wires, unitary_matrix, check=False, id=None):
+        # pylint: disable=arguments-differ
+        if cls._primitive is None:
+            # guard against this being called when primitive is not defined.
+            return type.__call__(cls, wires, unitary_matrix, check=check, id=id)  # pragma: no cover
+
+        return cls._primitive.bind(*wires, unitary_matrix, check=check, id=id)
+
     def __init__(self, wires, unitary_matrix, check=False, id=None):
         M, N = unitary_matrix.shape
         if M != N:
@@ -176,3 +185,18 @@ class BasisRotation(Operation):
                 op_list.append(qml.PhaseShift(phi, wires=wires[indices[0]]))
 
         return op_list
+
+
+# Program capture needs to unpack and re-pack the wires to support dynamic wires. For
+# BasisRotation, the unconventional argument ordering requires custom def_impl code.
+# See capture module for more information on primitives
+# If None, jax isn't installed so the class never got a primitive.
+if BasisRotation._primitive is not None:  # pylint: disable=protected-access
+
+    @BasisRotation._primitive.def_impl  # pylint: disable=protected-access
+    def _(*args, **kwargs):
+        # If there are more than two args, we are calling with unpacked wires, so that
+        # we have to repack them. This replaces the n_wires logic in the general case.
+        if len(args) != 2:
+            args = (args[:-1], args[-1])
+        return type.__call__(BasisRotation, *args, **kwargs)

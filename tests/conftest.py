@@ -15,8 +15,11 @@
 Pytest configuration file for PennyLane test suite.
 """
 # pylint: disable=unused-import
+import contextlib
 import os
 import pathlib
+import sys
+import warnings
 
 import numpy as np
 import pytest
@@ -24,6 +27,8 @@ import pytest
 import pennylane as qml
 from pennylane.devices import DefaultGaussian
 from pennylane.operation import disable_new_opmath_cm, enable_new_opmath_cm
+
+sys.path.append(os.path.join(os.path.dirname(__file__), "helpers"))
 
 # defaults
 TOL = 1e-3
@@ -43,6 +48,23 @@ class DummyDevice(DefaultGaussian):
 def set_numpy_seed():
     np.random.seed(9872653)
     yield
+
+
+@pytest.fixture(scope="function", autouse=True)
+def capture_legacy_device_deprecation_warnings():
+    with warnings.catch_warnings(record=True) as recwarn:
+        warnings.simplefilter("always")
+        yield
+
+        for w in recwarn:
+            if isinstance(w, qml.PennyLaneDeprecationWarning):
+                assert "Use of 'default.qubit." in str(w.message)
+                assert "is deprecated" in str(w.message)
+                assert "use 'default.qubit'" in str(w.message)
+
+    for w in recwarn:
+        if "Use of 'default.qubit." not in str(w.message):
+            warnings.warn(message=w.message, category=w.category)
 
 
 @pytest.fixture(scope="session")
@@ -77,7 +99,8 @@ def n_subsystems_fixture(request):
 
 @pytest.fixture(scope="session")
 def qubit_device(n_subsystems):
-    return qml.device("default.qubit.legacy", wires=n_subsystems)
+    with pytest.warns(qml.PennyLaneDeprecationWarning, match="Use of 'default.qubit.legacy'"):
+        return qml.device("default.qubit.legacy", wires=n_subsystems)
 
 
 @pytest.fixture(scope="function", params=[(np.float32, np.complex64), (np.float64, np.complex128)])
@@ -205,6 +228,7 @@ def use_legacy_opmath():
         yield cm
 
 
+# pylint: disable=contextmanager-generator-missing-cleanup
 @pytest.fixture(scope="function")
 def use_new_opmath():
     with enable_new_opmath_cm() as cm:
@@ -215,6 +239,18 @@ def use_new_opmath():
 def use_legacy_and_new_opmath(request):
     with request.param() as cm:
         yield cm
+
+
+@pytest.fixture
+def new_opmath_only():
+    if not qml.operation.active_new_opmath():
+        pytest.skip("This feature only works with new opmath enabled")
+
+
+@pytest.fixture
+def legacy_opmath_only():
+    if qml.operation.active_new_opmath():
+        pytest.skip("This test exclusively tests legacy opmath")
 
 
 #######################################################################

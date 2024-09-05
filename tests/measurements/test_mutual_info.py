@@ -18,7 +18,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.measurements import MutualInfo, Shots
+from pennylane.measurements import MutualInfo
 from pennylane.measurements.mutual_info import MutualInfoMP
 from pennylane.wires import Wires
 
@@ -35,12 +35,11 @@ class TestMutualInfoUnitTests:
         assert q.queue[0] is m
         assert isinstance(q.queue[0], MutualInfoMP)
 
-    @pytest.mark.parametrize("shots, shape", [(None, ()), (10, ()), ([1, 10], ((), ()))])
+    @pytest.mark.parametrize("shots, shape", [(None, ()), (10, ())])
     def test_shape(self, shots, shape):
         """Test that the shape is correct."""
-        dev = qml.device("default.qubit", wires=3, shots=shots)
         res = qml.mutual_info(wires0=[0], wires1=[1])
-        assert res.shape(dev, Shots(shots)) == shape
+        assert res.shape(shots, 3) == shape
 
     def test_properties(self):
         """Test that the properties are correct."""
@@ -74,13 +73,13 @@ class TestMutualInfoUnitTests:
         """Test that map_wires works as expected."""
         mapped1 = MutualInfoMP(wires=[Wires([0]), Wires([1])]).map_wires({0: 1, 1: 0})
         assert mapped1.raw_wires == [Wires([1]), Wires([0])]
-        assert qml.equal(mapped1, MutualInfoMP(wires=[Wires([1]), Wires([0])]))
+        qml.assert_equal(mapped1, MutualInfoMP(wires=[Wires([1]), Wires([0])]))
 
         mapped2 = MutualInfoMP(wires=[Wires(["a", "b"]), Wires(["c"])]).map_wires(
             {"a": 0, "b": 1, "c": 2}
         )
         assert mapped2.raw_wires == [Wires([0, 1]), Wires([2])]
-        assert qml.equal(mapped2, MutualInfoMP(wires=[Wires([0, 1]), Wires([2])]))
+        qml.assert_equal(mapped2, MutualInfoMP(wires=[Wires([0, 1]), Wires([2])]))
 
 
 class TestIntegration:
