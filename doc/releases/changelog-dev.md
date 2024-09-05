@@ -30,6 +30,9 @@
 * Fix `qml.PrepSelPrep` template to work with `torch`:
   [(#6191)](https://github.com/PennyLaneAI/pennylane/pull/6191)
 
+* Now `qml.equal` compares correctly `qml.PrepSelPrep` operators.
+  [(#6182)](https://github.com/PennyLaneAI/pennylane/pull/6182)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
