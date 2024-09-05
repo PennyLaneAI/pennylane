@@ -102,7 +102,7 @@ runs:
     - name: Install Catalyst from nightly build
       shell: bash
       if: inputs.install_catalyst_nightly == 'true'
-      run: pip install --extra-index-url https://test.pypi.org/simple/ PennyLane-Catalyst --pre --upgrade
+      run: pip install --extra-index-url https://test.pypi.org/simple/ PennyLane-Catalyst --pre
 
     - name: Install PennyLane-Lightning master
       shell: bash
