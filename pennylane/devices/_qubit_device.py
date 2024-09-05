@@ -665,7 +665,7 @@ class QubitDevice(Device):
             if isinstance(m.mv, list):
                 # MeasurementProcess stores information needed for processing if terminal measurement
                 # uses a list of mid-circuit measurement values
-                obs = m  # pragma: no-cover
+                obs = m  # pragma: no cover
             else:
                 obs = m.obs or m.mv or m
             # Check if there is an overriden version of the measurement process
