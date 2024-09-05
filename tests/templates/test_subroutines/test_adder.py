@@ -118,6 +118,7 @@ class TestAdder:
         if mod is None:
             mod = 2 ** len(x_wires)
 
+        # pylint: disable=bad-reversed-sequence
         result = sum(bit * (2**i) for i, bit in enumerate(reversed(circuit(x))))
         assert np.allclose(result, (x + k) % mod)
 
@@ -130,13 +131,6 @@ class TestAdder:
                 9,
                 [3, 4],
                 ("Adder must have enough x_wires to represent mod."),
-            ),
-            (
-                1,
-                [0, 1, 2],
-                9,
-                None,
-                (r"If mod is not"),
             ),
             (
                 3,
@@ -154,6 +148,17 @@ class TestAdder:
 
         with pytest.raises(ValueError, match=msg_match):
             qml.Adder(k, x_wires, mod, work_wires)
+
+    @pytest.mark.parametrize("work_wires", [None, [3], [3, 4, 5]])
+    def test_validation_of_num_work_wires(self, work_wires):
+        """Test that when mod is not 2**len(x_wires), validation confirms two
+        work wires are present, while any work wires are accepted for mod=2**len(x_wires)"""
+
+        # if mod=2**len(x_wires), anything goes
+        qml.Adder(1, [0, 1, 2], mod=8, work_wires=work_wires)
+
+        with pytest.raises(ValueError, match="two work wires should be provided"):
+            qml.Adder(1, [0, 1, 2], mod=9, work_wires=work_wires)
 
     @pytest.mark.parametrize(
         ("k", "x_wires", "mod", "work_wires", "msg_match"),
@@ -220,5 +225,6 @@ class TestAdder:
             qml.Adder(k, x_wires, mod, work_wires)
             return qml.sample(wires=x_wires)
 
+        # pylint: disable=bad-reversed-sequence
         result = sum(bit * (2**i) for i, bit in enumerate(reversed(circuit())))
         assert jax.numpy.allclose(result, (x + k) % mod)
