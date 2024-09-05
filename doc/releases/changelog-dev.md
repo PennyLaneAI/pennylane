@@ -37,12 +37,16 @@
 * The ``qml.QSVT`` template now orders the ``projector`` wires first and the ``UA`` wires second, which is the expected order of the decomposition.
   [(#6212)](https://github.com/PennyLaneAI/pennylane/pull/6212)
 
+* Fixes a bug where shot vectors are not taken into account correctly when doing parameter shift of a tape without differentiable parameters.
+  [(#6221)](https://github.com/PennyLaneAI/pennylane/pull/6221)
+
 * <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
 
-Guillermo Alonso
-Utkarsh Azad
-Jack Brown
-Christina Lee
-William Maxwell
+Guillermo Alonso,
+Utkarsh Azad,
+Jack Brown,
+Astral Cai,
+Christina Lee,
+William Maxwell,
