@@ -860,6 +860,34 @@ class TestBatchJVP:
         assert qml.math.allclose(fn([])[0], np.array(0.0))
         assert qml.math.allclose(fn([])[1], np.array(0.0))
 
+    def test_some_tapes_no_trainable_parameters(self):
+        """If some tapes have no trainable parameters all outputs will be None"""
+
+        with qml.queuing.AnnotatedQueue() as q1:
+            qml.RX(0.4, wires=0)
+            qml.expval(qml.PauliZ(0))
+
+        tape1 = qml.tape.QuantumScript.from_queue(q1)
+        with qml.queuing.AnnotatedQueue() as q2:
+            qml.RX(0.4, wires=0)
+            qml.RX(0.6, wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.expval(qml.PauliZ(0))
+
+        tape2 = qml.tape.QuantumScript.from_queue(q2)
+        tape1.trainable_params = {0}
+        tape2.trainable_params = set()
+
+        tapes = [tape1, tape2]
+        tangents = [np.array([0.7]), np.array([1.0, 0.0])]
+
+        v_tapes, fn = qml.gradients.batch_jvp(tapes, tangents, param_shift)
+
+        assert len(v_tapes) == 2
+        ps_res = [np.cos(0.4+np.pi/2), np.cos(0.4-np.pi/2)]
+        assert qml.math.allclose(fn(ps_res)[0], -np.sin(0.4) * 0.7)
+        assert qml.math.allclose(fn(ps_res)[1], np.array(0.0))
+
     def test_zero_tangent(self):
         """A zero dy vector will return no tapes and a zero matrix"""
         dev = qml.device("default.qubit", wires=2)
