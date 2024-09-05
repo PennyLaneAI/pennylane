@@ -4,7 +4,7 @@
 
 <h3>New features since last release</h3>
 
-* Functions are now available for generating spin Hamiltonians in Emery and Haldane
+* Functions are now available for generating spin Hamiltonians in Emery and Haldane.
   models on a lattice
   [(#6201)](https://github.com/PennyLaneAI/pennylane/pull/6201/)
 
