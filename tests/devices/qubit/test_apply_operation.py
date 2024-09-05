@@ -1280,6 +1280,7 @@ class TestLargeTFCornerCases:
 class TestConditionalsAndMidMeasure:
     """Test dispatching for mid-circuit measurements and conditionals."""
 
+    @pytest.mark.all_interfaces
     @pytest.mark.parametrize("ml_framework", ml_frameworks_list)
     @pytest.mark.parametrize("batched", (False, True))
     @pytest.mark.parametrize("unitary", (qml.CRX, qml.CRZ))
@@ -1345,13 +1346,16 @@ class TestConditionalsAndMidMeasure:
 
         rng = np.random.default_rng(rng_seed)
         m0, m1 = qml.measure(0).measurements[0], qml.measure(1).measurements[0]
-        mid_meas = {m0: m_res[0], m1: m_res[1]}
+        mid_meas = {}
 
         res_state = apply_operation(m0, initial_state, mid_measurements=mid_meas, rng=rng)
         assert qml.math.allclose(mid_state, res_state)
 
         res_state = apply_operation(m1, res_state, mid_measurements=mid_meas, rng=rng)
         assert qml.math.allclose(end_state, res_state)
+
+        assert mid_meas == {m0: m_res[0], m1: m_res[1]}
+
 
     @pytest.mark.parametrize("reset", (False, True))
     @pytest.mark.parametrize("m_res", ([0, 0], [1, 0], [1, 1]))
