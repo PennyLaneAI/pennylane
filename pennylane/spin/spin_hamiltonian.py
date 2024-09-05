@@ -349,7 +349,7 @@ def emery(
         coulomb (float or List[float]): Coulomb interaction between spins. It can be a constant or a
             list of length equal to number of spins.
         intersite_coupling (float | list[float] | list[math.array(float)]): Interaction strength between spins on
-            neighbouring sites, it can be a number, a list of length equal to ``neighbour_order`` or
+            neighbouring sites. It can be a number, a list with length equal to ``neighbour_order`` or
             a square matrix of size ``(num_spins, num_spins)``, where ``num_spins`` is the total
             number of spins. Default value is 1.0.
         boundary_condition (bool or list[bool]): Defines boundary conditions for different lattice
