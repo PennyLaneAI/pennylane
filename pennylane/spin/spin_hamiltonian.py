@@ -526,11 +526,18 @@ def haldane(
     **Example**
 
     >>> n_cells = [2]
-    >>> h = [0.5]
-    >>> u = 1.0
-    >>> v = 0.2
-    >>> spin_ham = qml.spin.haldane("chain", n_cells, hopping1=h1, hopping2=h2)
+    >>> h1 = 0.5
+    >>> h2 = 1.0
+    >>> phi = 0.1
+    >>> spin_ham = qml.spin.haldane("chain", n_cells, hopping1=h1, hopping2=h2, phi=phi)
     >>> spin_ham
+    (
+    -0.25 * (Y(0) @ Z(1) @ Y(2))
+    + -0.25 * (X(0) @ Z(1) @ X(2))
+    + -0.25 * (Y(1) @ Z(2) @ Y(3))
+    + -0.25 * (X(1) @ Z(2) @ X(3))
+    )
+
     """
 
     lattice = _generate_lattice(lattice, n_cells, boundary_condition, neighbour_order=2)
