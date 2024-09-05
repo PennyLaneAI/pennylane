@@ -101,6 +101,7 @@ class TestMultiplier:
         if mod is None:
             mod = 2 ** len(x_wires)
 
+        # pylint: disable=bad-reversed-sequence
         assert np.allclose(
             sum(bit * (2**i) for i, bit in enumerate(reversed(circuit(x)))), (x * k) % mod
         )
@@ -108,6 +109,13 @@ class TestMultiplier:
     @pytest.mark.parametrize(
         ("k", "x_wires", "mod", "work_wires", "msg_match"),
         [
+            (
+                3,
+                [0, 1, 2, 3, 4],
+                11,
+                None,
+                "Work wires must be specified for Multiplier",
+            ),
             (
                 6,
                 [0, 1],
@@ -133,7 +141,14 @@ class TestMultiplier:
                 3,
                 [0, 1, 2, 3, 4],
                 11,
-                [5, 6, 7, 8, 9, 10],
+                [5, 6, 7, 8, 9, 10],  # not enough
+                "Multiplier needs as many work_wires as x_wires plus two.",
+            ),
+            (
+                3,
+                [0, 1, 2, 3, 4],
+                11,
+                [5, 6, 7, 8, 9, 10, 11, 12],  # too many
                 "Multiplier needs as many work_wires as x_wires plus two.",
             ),
             (
@@ -197,6 +212,7 @@ class TestMultiplier:
             qml.Multiplier(k, x_wires, mod, work_wires)
             return qml.sample(wires=x_wires)
 
+        # pylint: disable=bad-reversed-sequence
         assert jax.numpy.allclose(
             sum(bit * (2**i) for i, bit in enumerate(reversed(circuit()))), (x * k) % mod
         )
