@@ -115,10 +115,10 @@ def _get_new_signature(qfunc):
     initial_signature = inspect.signature(qfunc)
     params = list(initial_signature.parameters.values())
     shots_par = inspect.Parameter("shots", default="device", kind=inspect.Parameter.KEYWORD_ONLY)
-    if params[-1].kind == params[-1].VAR_KEYWORD:
-        params.insert(-1, shots_par)
-    else:
+    if len(params) == 0 or params[-1].kind != params[-1].VAR_KEYWORD:
         params.append(shots_par)
+    else:
+        params.insert(-1, shots_par)
     return inspect.Signature(params, return_annotation=qml.typing.Result)
 
 
