@@ -123,6 +123,11 @@ Other deprecations
 Completed deprecation cycles
 ----------------------------
 
+* `Operator.expand` is now removed.
+
+  - Deprecated in v0.38
+  - Removed in v0.39
+
 * The functions ``qml.transforms.sum_expand`` and ``qml.transforms.hamiltonian_expand`` are deprecated.
   Instead, ``qml.transforms.split_non_commuting`` can be used for equivalent behaviour.
 
