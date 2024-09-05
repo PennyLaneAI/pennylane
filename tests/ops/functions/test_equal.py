@@ -2811,6 +2811,10 @@ def test_ops_with_abstract_parameters_not_equal():
             qml.PrepSelPrep(qml.dot([1.0, 2.0], [qml.Z(0), qml.X(0)]), control=2),
         ),
         (
+            qml.PrepSelPrep(qml.dot([1.0, 2.0], [qml.Z(2), qml.X(2)]), control=1),
+            qml.PrepSelPrep(qml.dot([1.0, 2.0], [qml.Z(0), qml.X(0)]), control=1),
+        ),
+        (
             qml.PrepSelPrep(qml.dot([1.0, -2.0], [qml.Z(0), qml.X(0)]), control=1),
             qml.PrepSelPrep(qml.dot([1.0, 2.0], [qml.Z(0), qml.X(0)]), control=1),
         ),
