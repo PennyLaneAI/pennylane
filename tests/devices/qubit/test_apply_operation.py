@@ -1356,7 +1356,6 @@ class TestConditionalsAndMidMeasure:
 
         assert mid_meas == {m0: m_res[0], m1: m_res[1]}
 
-
     @pytest.mark.parametrize("reset", (False, True))
     @pytest.mark.parametrize("m_res", ([0, 0], [1, 0], [1, 1]))
     def test_mid_measure_with_postselect_and_reset(self, m_res, reset):
