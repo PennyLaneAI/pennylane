@@ -323,7 +323,8 @@ def kitaev(n_cells, coupling=None, boundary_condition=False):
           K_z.\sum_{\langle i,j \rangle \in Z}\sigma_i^z\sigma_j^z
         \end{align*}
 
-    where :math:`K_x`, :math:`K_y`, :math:`K_z` are the coupling constants defined for the Hamiltonian, and ``i,j`` represent
+    where :math:`K_x`, :math:`K_y`, :math:`K_z` are the coupling constants defined for the Hamiltonian,
+    ``X``, ``Y``, ``Z``, represent the distinct edges in the Honeycomb lattice, and ``i,j`` represent
     the indices for neighbouring spins.
 
     Args:
