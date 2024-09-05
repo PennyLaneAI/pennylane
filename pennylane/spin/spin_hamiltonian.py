@@ -342,7 +342,7 @@ def emery(
         lattice (str): Shape of the lattice. Input values can be ``'chain'``, ``'square'``,
             ``'rectangle'``, ``'honeycomb'``, ``'triangle'``, or ``'kagome'``.
         n_cells (list[int]): Number of cells in each direction of the grid.
-        hopping (float or List[float] or List[math.array(float)]): Hopping strength between
+        hopping (float | list[float] | list[math.array(float)]): Hopping strength between
             neighbouring sites, it can be a number, a list of length equal to ``neighbour_order`` or
             a square matrix of size ``(num_spins, num_spins)``, where ``num_spins`` is the total
             number of spins. Default value is 1.0.
