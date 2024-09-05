@@ -324,8 +324,9 @@ def kitaev(n_cells, coupling=None, boundary_condition=False):
         \end{align*}
 
     where :math:`K_x`, :math:`K_y`, :math:`K_z` are the coupling constants defined for the Hamiltonian,
-    ``X``, ``Y``, ``Z``, represent the distinct edges in the Honeycomb lattice, and ``i,j`` represent
-    the indices for neighbouring spins.
+    and :math:`X`, :math:`Y`, :math:`Z` represent the set of edges in the Honeycomb lattice between spins
+    :math:`i` and :math:`j` with real-space bond directions :math:`[0, 1], [\frac{\sqrt{3}}{2}, \frac{1}{2}],
+    \frac{\sqrt{3}}{2}, -\frac{1}{2}]`, respectively.
 
     Args:
        n_cells (List[int]): Number of cells in each direction of the grid.
