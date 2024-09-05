@@ -787,3 +787,30 @@ def test_return_distribution(wires, interface, circuit_basis, basis_recipe):
     new_bits2 = new_bits[new_recipes == (basis_recipe + 2) % 3]
     new_ratios2 = np.unique(new_bits2, return_counts=True)[1] / new_bits2.shape[0]
     assert np.allclose(new_ratios2, 1 / 2, atol=1e-1)
+
+
+def hadamard_circuit_legacy(wires, shots=10000, interface="autograd"):
+    dev = qml.device("default.mixed", wires=wires, shots=shots)
+
+    @qml.qnode(dev, interface=interface)
+    def circuit(obs, k=1):
+        for i in range(wires):
+            qml.Hadamard(wires=i)
+        return qml.shadow_expval(obs, k=k)
+
+    return circuit
+
+
+def test_hadamard_expval(k=1, obs=obs_hadamard, expected=expected_hadamard):
+    """Test that the expval estimation is correct for a uniform
+    superposition of qubits"""
+    circuit = hadamard_circuit_legacy(3, shots=50000)
+    actual = circuit(obs, k=k)
+
+    print(circuit.tape)
+    new_actual = circuit.tape.measurements[0].process(circuit.tape, circuit.device.target_device)
+
+    assert actual.shape == (len(obs_hadamard),)
+    assert actual.dtype == np.float64
+    assert qml.math.allclose(actual, expected, atol=1e-1)
+    assert qml.math.allclose(new_actual, expected, atol=1e-1)
