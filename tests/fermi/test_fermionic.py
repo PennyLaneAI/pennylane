@@ -123,7 +123,7 @@ class TestFermiWord:
     def test_str(self, fw, str_rep):
         """Test __str__ and __repr__ methods"""
         assert str(fw) == str_rep
-        assert repr(fw) == str_rep
+        assert repr(fw) == f"FermiWord({fw.sorted_dic})"
 
     def test_pickling(self):
         """Check that FermiWords can be pickled and unpickled."""
@@ -625,7 +625,7 @@ class TestFermiSentence:
         """Test the string representation of the FermiSentence."""
         print(str(fs))
         assert str(fs) == str_rep
-        assert repr(fs) == str_rep
+        assert repr(fs) == f"FermiSentence({dict(fs)})"
 
     tup_fs_wires = (
         (fs1, {0, 1, 3, 4}),
