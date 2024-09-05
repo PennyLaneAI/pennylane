@@ -23,22 +23,15 @@ from pennylane.operation import Operation
 
 def _get_new_terms(lcu):
     """Compute a new sum of unitaries with positive coefficients"""
-
-    new_coeffs = []
+    coeffs, ops = lcu.terms()
+    angles = qml.math.angle(coeffs)
     new_ops = []
 
-    for coeff, op in zip(*lcu.terms()):
-
-        angle = qml.math.angle(coeff)
-        new_coeffs.append(qml.math.abs(coeff))
-
+    for angle, op in zip(angles, ops):
         new_op = op @ qml.GlobalPhase(-angle, wires=op.wires)
         new_ops.append(new_op)
 
-    interface = qml.math.get_interface(lcu.terms()[0])
-    new_coeffs = qml.math.array(new_coeffs, like=interface)
-
-    return new_coeffs, new_ops
+    return qml.math.abs(coeffs), new_ops
 
 
 class PrepSelPrep(Operation):
