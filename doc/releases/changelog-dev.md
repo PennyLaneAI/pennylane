@@ -13,6 +13,9 @@
   `from pennylane.capture.primitives import *`.
   [(#6129)](https://github.com/PennyLaneAI/pennylane/pull/6129)
 
+* Improve `qml.Qubitization` decomposition.
+  [(#6182)](https://github.com/PennyLaneAI/pennylane/pull/6182)
+
 * The `__repr__` methods for `FermiWord` and `FermiSentence` now returns a
   unique representation of the object.
   [(#6167)](https://github.com/PennyLaneAI/pennylane/pull/6167)
@@ -30,6 +33,9 @@
 
 * Fix `qml.PrepSelPrep` template to work with `torch`:
   [(#6191)](https://github.com/PennyLaneAI/pennylane/pull/6191)
+
+* Now `qml.equal` compares correctly `qml.PrepSelPrep` operators.
+  [(#6182)](https://github.com/PennyLaneAI/pennylane/pull/6182)
 
 * The ``qml.QSVT`` template now orders the ``projector`` wires first and the ``UA`` wires second, which is the expected order of the decomposition.
   [(#6212)](https://github.com/PennyLaneAI/pennylane/pull/6212)
