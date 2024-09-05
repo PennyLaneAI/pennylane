@@ -40,8 +40,13 @@ def create_initial_state(
     """
     if not prep_operation:
         num_wires = len(wires)
-        state = np.zeros((2,) * num_wires)
+        state = np.zeros((2,) * num_wires, dtype=complex)
         state[(0,) * num_wires] = 1
         return qml.math.asarray(state, like=like)
 
-    return qml.math.asarray(prep_operation.state_vector(wire_order=list(wires)), like=like)
+    state_vector = prep_operation.state_vector(wire_order=list(wires))
+    dtype = str(state_vector.dtype)
+    floating_single = "float32" in dtype or "complex64" in dtype
+    dtype = "complex64" if floating_single else "complex128"
+    dtype = "complex128" if like == "tensorflow" else dtype
+    return qml.math.cast(qml.math.asarray(state_vector, like=like), dtype)
