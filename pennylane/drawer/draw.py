@@ -18,7 +18,7 @@ Contains the drawing function.
 """
 import warnings
 from functools import wraps
-from typing import Literal, Optional, Union
+from typing import Literal, Union
 
 import pennylane as qml
 
@@ -356,7 +356,6 @@ def draw_mpl(
     *,
     fig=None,
     level: Union[None, Literal["top", "user", "device", "gradient"], int, slice] = "gradient",
-
     **kwargs,
 ):
     r"""Draw a qnode with matplotlib
