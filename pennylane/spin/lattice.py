@@ -39,6 +39,12 @@ class Lattice:
            default is ``False`` indicating open boundary condition.
        neighbour_order (int): Specifies the interaction level for neighbors within the lattice.
            Default is 1 (nearest neighbour).
+       custom_edges (list(list(tuples))): Specifies the edges to be added in the lattice.
+           Default value is None, which adds the edges based on neighbour_order.
+           Each element in the list is for a separate edge, and can contain 1 or 2 tuples.
+           First tuple contains the index of the starting and ending vertex of the edge.
+           Second tuple is optional and contains the operator on that edge and coefficient
+           of that operator.
        distance_tol (float): Distance below which spatial points are considered equal for the
            purpose of identifying nearest neighbours. Default value is 1e-5.
 
@@ -203,7 +209,22 @@ class Lattice:
         return math.array(lattice_points), lattice_map
 
     def get_custom_edges(self, custom_edges, lattice_map):
-        """Generates the edges described in `custom_edges` for all unit cells."""
+        """Generates the edges described in `custom_edges` for all unit cells.
+
+        **Example**
+
+        Generates a square lattice with a single diagonal and assigns a different operation
+        to horizontal, vertical, and diagonal edges.
+        >>> n_cells = [3,3]
+        >>> vectors = [[1, 0], [0,1]]
+        >>> custom_edges = [
+                [(0, 1), ("XX", 0.1)],
+                [(0, 3), ("YY", 0.2)],
+                [(0, 4), ("XY", 0.3)],
+                ]
+        >>> lattice = Lattice(n_cells=n_cells, vectors=vectors, custom_edges=custom_edges)
+
+        """
 
         if not all([len(edge) in (1, 2) for edge in custom_edges]):
             raise TypeError(
