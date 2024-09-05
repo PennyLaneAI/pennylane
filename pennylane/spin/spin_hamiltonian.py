@@ -332,7 +332,7 @@ def emery(
         \end{align*}
 
     where ``t`` is the hopping term representing the kinetic energy of electrons, ``U`` is the on-site Coulomb interaction,
-    representing the repulsion between electrons, ``V`` is the intersite interaction,
+    representing the repulsion between electrons, ``V`` is the intersite coupling,
     ``i,j`` represent the indices for neighbouring spins, :math:`\sigma` is the spin degree of freedom,
     :math:`n_{i \uparrow}`, :math:`n_{i \downarrow}` are number operators for spin-up and
     spin-down fermions at site ``i``, and :math:`n_{i}`, :math:`n_{j}` are number operators at sites ``i`` and ``j``.
