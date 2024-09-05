@@ -353,7 +353,7 @@ def emery(
             a square matrix of size ``(num_spins, num_spins)``, where ``num_spins`` is the total
             number of spins. Default value is 1.0.
         boundary_condition (bool or list[bool]): Defines boundary conditions for different lattice
-            axes, default is ``False`` indicating open boundary condition.
+            axes. Default is ``False`` indicating open boundary condition.
         neighbour_order (int): Specifies the interaction level for neighbors within the lattice.
             Default is 1, indicating nearest neighbours.
         mapping (str): Specifies the fermion-to-qubit mapping. Input values can be
