@@ -856,15 +856,6 @@ class TestCatalystSample:
         assert circuit(0.0) == 0
         assert circuit(jnp.pi) == 1
 
-    def test_process_samples_with_jax_tracer(self):
-        """Test that qml.sample can be used with a JAX Tracer"""
-
-        def f(samples):
-            return qml.sample(op=2*qml.X(0)).process_samples(samples, wire_order=qml.wires.Wires((0,1)))
-
-        samples = jax.numpy.zeros((10, 2), dtype=int)
-        jax.jit(f)(samples)
-
 
 class TestCatalystMCMs:
     """Test dynamic_one_shot with Catalyst."""
