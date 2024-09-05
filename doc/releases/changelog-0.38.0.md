@@ -455,6 +455,9 @@
 * Basis set data from the Basis Set Exchange library can now be loaded for elements with `SPD`-type orbitals.
   [(#6159)](https://github.com/PennyLaneAI/pennylane/pull/6159)
 
+* Now `qml.equal` compares correctly `qml.PrepSelPrep` operators.
+  [(#6182)](https://github.com/PennyLaneAI/pennylane/pull/6182)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):

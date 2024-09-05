@@ -814,6 +814,8 @@ def _equal_prep_sel_prep(
     op1: PrepSelPrep, op2: PrepSelPrep, **kwargs
 ):  # pylint: disable=unused-argument
     """Determine whether two PrepSelPrep are equal"""
+    if op1.control != op2.control:
+        return f"op1 and op2 have different control wires. Got {op1.control} and {op2.control}."
     if op1.wires != op2.wires:
         return f"op1 and op2 have different wires. Got {op1.wires} and {op2.wires}."
     if not qml.equal(op1.lcu, op2.lcu):
