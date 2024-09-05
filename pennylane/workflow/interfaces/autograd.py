@@ -147,21 +147,6 @@ def autograd_execute(
     return _execute(parameters, tuple(tapes), execute_fn, jpc)
 
 
-def _to_autograd(result: qml.typing.ResultBatch) -> qml.typing.ResultBatch:
-    """Converts an arbitrary result batch to one with autograd arrays.
-    Args:
-        result (ResultBatch): a nested structure of lists, tuples, dicts, and numpy arrays
-    Returns:
-        ResultBatch: a nested structure of tuples, dicts, and jax arrays
-    """
-    if isinstance(result, dict):
-        return result
-    # pylint: disable=no-member
-    if isinstance(result, (list, tuple, autograd.builtins.tuple, autograd.builtins.list)):
-        return tuple(_to_autograd(r) for r in result)
-    return autograd.numpy.array(result)
-
-
 @autograd.extend.primitive
 def _execute(
     parameters,
@@ -180,7 +165,7 @@ def _execute(
             for the input tapes.
 
     """
-    return _to_autograd(execute_fn(tapes))
+    return execute_fn(tapes)
 
 
 # pylint: disable=unused-argument
