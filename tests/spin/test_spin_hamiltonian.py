@@ -785,8 +785,8 @@ def test_fermi_hubbard_hamiltonian_matrix(shape, n_cells, t, coulomb, expected_h
     qml.assert_equal(fermi_hub_ham, expected_ham)
 
 
-def test_hopping_error_emery():
-    r"""Test that an error is raised when the provided hopping shape is wrong for
+def test_interaction_parameter_error_emery():
+    r"""Test that an error is raised when the provided interaction parameters are wrong of wrong shape
     emery Hamiltonian."""
     n_cells = [4, 4]
     lattice = "Square"
@@ -797,6 +797,20 @@ def test_hopping_error_emery():
         ),
     ):
         emery(lattice=lattice, n_cells=n_cells, hopping=[1.0, 2.0], neighbour_order=1)
+
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            "The intersite_coupling parameter should be a number or an array of shape (1,) or (16,16)"
+        ),
+    ):
+        emery(
+            lattice=lattice,
+            n_cells=n_cells,
+            hopping=[1.0],
+            intersite_coupling=[1.0, 2.0],
+            neighbour_order=1,
+        )
 
 
 def test_mapping_error_emery():

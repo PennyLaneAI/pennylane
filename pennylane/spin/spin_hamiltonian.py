@@ -41,14 +41,14 @@ def transverse_ising(
     Args:
         lattice (str): Shape of the lattice. Input values can be ``'chain'``, ``'square'``,
             ``'rectangle'``, ``'honeycomb'``, ``'triangle'``, or ``'kagome'``.
-        n_cells (List[int]): Number of cells in each direction of the grid.
-        coupling (float or List[float] or List[math.array[float]]): Coupling between spins. It can
+        n_cells (list[int]): Number of cells in each direction of the grid.
+        coupling (float | list[float] | list[math.array[float]]): Coupling between spins. It can
             be a number, a list of length equal to ``neighbour_order`` or a square matrix of shape
             ``(num_spins,  num_spins)``, where ``num_spins`` is the total number of spins. Default
             value is 1.0.
         h (float): Value of external magnetic field. Default is 1.0.
-        boundary_condition (bool or list[bool]): Defines boundary conditions for different lattice
-            axes, default is ``False`` indicating open boundary condition.
+        boundary_condition (bool | list[bool]): Defines boundary conditions for different lattice
+            axes. Default is ``False`` indicating open boundary condition.
         neighbour_order (int): Specifies the interaction level for neighbors within the lattice.
             Default is 1, indicating nearest neighbours.
 
@@ -117,12 +117,12 @@ def heisenberg(lattice, n_cells, coupling=None, boundary_condition=False, neighb
     Args:
         lattice (str): Shape of the lattice. Input values can be ``'chain'``, ``'square'``,
             ``'rectangle'``, ``'honeycomb'``, ``'triangle'``, or ``'kagome'``.
-        n_cells (List[int]): Number of cells in each direction of the grid.
-        coupling (List[List[float]] or List[math.array[float]]): Coupling between spins. It can be a
+        n_cells (list[int]): Number of cells in each direction of the grid.
+        coupling (list[list[float]] | list[math.array[float]]): Coupling between spins. It can be a
             2D array of shape ``(neighbour_order, 3)`` or a 3D array of shape
             ``(3, num_spins, num_spins)``, where ``num_spins`` is the total number of spins.
-        boundary_condition (bool or list[bool]): Defines boundary conditions for different lattice
-            axes, default is ``False`` indicating open boundary condition.
+        boundary_condition (bool | list[bool]): Defines boundary conditions for different lattice
+            axes. Default is ``False`` indicating open boundary condition.
         neighbour_order (int): Specifies the interaction level for neighbors within the lattice.
             Default is 1, indicating nearest neighbours.
 
@@ -212,15 +212,15 @@ def fermi_hubbard(
     Args:
         lattice (str): Shape of the lattice. Input values can be ``'chain'``, ``'square'``,
             ``'rectangle'``, ``'honeycomb'``, ``'triangle'``, or ``'kagome'``.
-        n_cells (List[int]): Number of cells in each direction of the grid.
-        hopping (float or List[float] or List[math.array(float)]): Hopping strength between
-            neighbouring sites, it can be a number, a list of length equal to ``neighbour_order`` or
+        n_cells (list[int]): Number of cells in each direction of the grid.
+        hopping (float | list[float] | list[math.array(float)]): Hopping strength between
+            neighbouring sites. It can be a number, a list of length equal to ``neighbour_order`` or
             a square matrix of size ``(num_spins, num_spins)``, where ``num_spins`` is the total
             number of spins. Default value is 1.0.
-        coulomb (float or List[float]): Coulomb interaction between spins. It can be a constant or a
+        coulomb (float | list[float]): Coulomb interaction between spins. It can be a constant or a
             list of length equal to number of spins.
-        boundary_condition (bool or list[bool]): Defines boundary conditions for different lattice
-            axes, default is ``False`` indicating open boundary condition.
+        boundary_condition (bool | list[bool]): Defines boundary conditions for different lattice
+            axes. Default is ``False`` indicating open boundary condition.
         neighbour_order (int): Specifies the interaction level for neighbors within the lattice.
             Default is 1, indicating nearest neighbours.
         mapping (str): Specifies the fermion-to-qubit mapping. Input values can be
@@ -343,7 +343,7 @@ def emery(
             ``'rectangle'``, ``'honeycomb'``, ``'triangle'``, or ``'kagome'``.
         n_cells (list[int]): Number of cells in each direction of the grid.
         hopping (float | list[float] | list[math.array(float)]): Hopping strength between
-            neighbouring sites, it can be a number, a list of length equal to ``neighbour_order`` or
+            neighbouring sites. It can be a number, a list of length equal to ``neighbour_order`` or
             a square matrix of size ``(num_spins, num_spins)``, where ``num_spins`` is the total
             number of spins. Default value is 1.0.
         coulomb (float | list[float]): Coulomb interaction between spins. It can be a constant or a
@@ -410,7 +410,7 @@ def emery(
 
     if intersite_coupling.shape not in [(neighbour_order,), (lattice.n_sites, lattice.n_sites)]:
         raise ValueError(
-            f"The intersite_coupling parameter should be a number or"
+            f"The intersite_coupling parameter should be a number or "
             f"an array of shape ({neighbour_order},) or ({lattice.n_sites},{lattice.n_sites})"
         )
 
@@ -503,20 +503,20 @@ def haldane(
     Args:
         lattice (str): Shape of the lattice. Input values can be ``'chain'``, ``'square'``,
             ``'rectangle'``, ``'honeycomb'``, ``'triangle'``, or ``'kagome'``.
-        n_cells (List[int]): Number of cells in each direction of the grid.
-        hopping1 (float or List[math.array(float)]): Hopping strength between
-            nearest neighbouring sites,, it can be a number, or
+        n_cells (list[int]): Number of cells in each direction of the grid.
+        hopping1 (float | list[math.array(float)]): Hopping strength between
+            nearest neighbouring sites. It can be a number, or
             a square matrix of size ``(num_spins, num_spins)``, where ``num_spins`` is the total
             number of spins. Default value is 1.0.
-        hopping2 (float or List[math.array(float)]): Hopping strength between next
-            nearest neighbouring sites, it can be a number, or
+        hopping2 (float | list[math.array(float)]): Hopping strength between next
+            nearest neighbouring sites. It can be a number, or
             a square matrix of size ``(num_spins, num_spins)``, where ``num_spins`` is the total
             number of spins. Default value is 1.0.
-        phi (float or List[math.array(float)]): Phase Factor, it can be a number, or
+        phi (float | list[math.array(float)]): Phase Factor, it can be a number, or
             a square matrix of size ``(num_spins, num_spins)``, where ``num_spins`` is the total
             number of spins. Default value is 1.0.
-        boundary_condition (bool or list[bool]): Defines boundary conditions for different lattice
-            axes, default is ``False`` indicating open boundary condition.
+        boundary_condition (bool | list[bool]): Defines boundary conditions for different lattice
+            axes. Default is ``False`` indicating open boundary condition.
         mapping (str): Specifies the fermion-to-qubit mapping. Input values can be
             ``'jordan_wigner'``, ``'parity'`` or ``'bravyi_kitaev'``.
 
