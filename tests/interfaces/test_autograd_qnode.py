@@ -1371,6 +1371,8 @@ class TestQubitIntegration:
         """Test that the variance of a projector is correctly returned"""
         if diff_method == "adjoint":
             pytest.skip("adjoint supports either expvals or diagonal measurements.")
+        if dev.name == "reference.qubit":
+            pytest.xfail("diagonalize_measurements do not support projectors (sc-72911)")
         kwargs = dict(
             diff_method=diff_method,
             interface=interface,
