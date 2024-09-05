@@ -20,7 +20,7 @@
 <h3>Breaking changes 💔</h3>
 
 * Remove support for Python 3.9.
-  [#6223](https://github.com/PennyLaneAI/pennylane/pull/6223)
+  [(#6223)](https://github.com/PennyLaneAI/pennylane/pull/6223)
 
 * `qml.transforms.hamiltonian_expand` and `qml.transforms.sum_expand` are removed.
   Please use `qml.transforms.split_non_commuting` instead.
