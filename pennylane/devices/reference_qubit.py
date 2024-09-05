@@ -57,7 +57,7 @@ def simulate(tape: qml.tape.QuantumTape, seed=None) -> qml.typing.Result:
     # 2) apply all the operations
     for op in tape.operations:
         op_mat = op.matrix(wire_order=tape.wires)
-        state = op_mat @ state
+        state = qml.math.matmul(op_mat, state)
 
     # 3) perform measurements
     # note that shots are pulled from the tape, not from the device
