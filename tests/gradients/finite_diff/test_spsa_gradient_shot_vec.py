@@ -499,8 +499,10 @@ class TestSpsaGradient:
             return qml.expval(qml.PauliZ(wires=0))
 
         par = np.array(0.2, requires_grad=True)
-        assert np.isclose(qnode(par).item().val, reference_qnode(par))
-        assert np.isclose(qml.jacobian(qnode)(par).item().val, qml.jacobian(reference_qnode)(par))
+        assert np.isclose(qnode(par).item().val, reference_qnode(par).item())
+        assert np.isclose(
+            qml.jacobian(qnode)(par).item().val, qml.jacobian(reference_qnode)(par).item()
+        )
 
 
 @pytest.mark.parametrize("approx_order", [2, 4])
