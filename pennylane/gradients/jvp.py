@@ -296,8 +296,12 @@ def jvp(tape, tangent, gradient_fn, gradient_kwargs=None):
         # The tape has no trainable parameters; the JVP
         # is simply none.
         def zero_vjp(_):
-            res = tuple(np.zeros(mp.shape(None, tape.shots)) for mp in tape.measurements)
-            return res[0] if len(tape.measurements) == 1 else res
+            res = tuple(np.zeros(mp.shape(tape.shots)) for mp in tape.measurements)
+            if len(tape.measurements) == 1:
+                res = res[0]
+            if tape.shots.has_partitioned_shots:
+                res = tuple(res for _ in range(tape.shots.num_copies))
+            return res
 
         return tuple(), zero_vjp
 
