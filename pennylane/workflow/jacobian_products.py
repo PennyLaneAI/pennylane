@@ -46,6 +46,17 @@ def _compute_vjps(jacs, dys, tapes):
     return tuple(vjps)
 
 
+def _zero_jvp_single_shots(shots, tape):
+    jvp = tuple(np.zeros(mp.shape(shots=shots), dtype=mp.numeric_type) for mp in tape.measurements)
+    return jvp[0] if len(tape.measurements) == 1 else jvp
+
+
+def _zero_jvp(tape):
+    if tape.shots.has_partitioned_shots:
+        return tuple(_zero_jvp_single_shots(s, tape) for s in tape.shots)
+    return _zero_jvp_single_shots(tape.shots, tape)
+
+
 def _compute_jvps(jacs, tangents, tapes):
     """Compute the jvps of multiple tapes, directly for a Jacobian and tangents."""
     f = {True: qml.gradients.compute_jvp_multi, False: qml.gradients.compute_jvp_single}
@@ -54,16 +65,7 @@ def _compute_jvps(jacs, tangents, tapes):
     for jac, dx, t in zip(jacs, tangents, tapes):
         multi = len(t.measurements) > 1
         if len(t.trainable_params) == 0:
-            empty_shots = qml.measurements.Shots(None)
-            zeros_jvp = tuple(
-                np.zeros(mp.shape(None, empty_shots), dtype=mp.numeric_type)
-                for mp in t.measurements
-            )
-            zeros_jvp = zeros_jvp[0] if len(t.measurements) == 1 else zeros_jvp
-            if t.shots.has_partitioned_shots:
-                jvps.append(tuple(zeros_jvp for _ in range(t.shots.num_copies)))
-            else:
-                jvps.append(zeros_jvp)
+            jvps.append(_zero_jvp(t))
         elif t.shots.has_partitioned_shots:
             jvps.append(tuple(f[multi](dx, j) for j in jac))
         else:
