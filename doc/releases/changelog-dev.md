@@ -5,7 +5,7 @@
 <h3>New features since last release</h3>
 
 <h3>Improvements 🛠</h3>
-* `qml.qchem.excitations` now optionally returns fermionic operator
+* `qml.qchem.excitations` now optionally returns fermionic operators.
    [(#6171)](https://github.com/PennyLaneAI/pennylane/pull/6171)
 
 * Improve unit testing for capturing of nested control flows.
