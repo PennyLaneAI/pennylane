@@ -438,7 +438,7 @@ class TestMiscMethods:
 
         base = qml.S(0) + qml.T(0)
         op = Adjoint(base)
-        assert op.label() == "(S+T)†"
+        assert op.label() == "𝓗†"
 
     def test_adjoint_of_adjoint(self):
         """Test that the adjoint of an adjoint is the original operation."""
