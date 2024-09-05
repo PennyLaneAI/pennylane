@@ -137,7 +137,7 @@ class TestCaptureForLoop:
         assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
 
     def test_for_loop_grad(self):
-        """Test simple for-loop primitive using default values."""
+        """Test simple for-loop primitive with gradient."""
         from pennylane.capture.primitives import grad_prim
 
         @qml.qnode(qml.device("default.qubit", wires=2))

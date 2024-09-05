@@ -407,7 +407,7 @@ def _get_while_loop_qfunc_prim():
 
     import jax  # pylint: disable=import-outside-toplevel
 
-    while_loop_prim = jax.core.Primitive("while_loop")
+    while_loop_prim = create_non_jvp_primitive()("while_loop")
     while_loop_prim.multiple_results = True
 
     @while_loop_prim.def_impl
