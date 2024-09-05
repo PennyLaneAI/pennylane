@@ -13,7 +13,8 @@
   `from pennylane.capture.primitives import *`.
   [(#6129)](https://github.com/PennyLaneAI/pennylane/pull/6129)
 
-* JAX compatibility for processing samples in `SampleMP` is improved.
+* The `SampleMP.process_samples` method is updated to support using JAX tracers
+  for samples, allowing compatiblity with Catalyst workflows.
   [(#6211)](https://github.com/PennyLaneAI/pennylane/pull/6211)
 
 * The `__repr__` methods for `FermiWord` and `FermiSentence` now returns a
@@ -42,8 +43,8 @@
 
 This release contains contributions from (in alphabetical order):
 
-Utkarsh Azad
-Jack Brown
-Lillian M. A. Frederiksen
-Christina Lee
-William Maxwell
+Utkarsh Azad,
+Jack Brown,
+Lillian M. A. Frederiksen,
+Christina Lee,
+William Maxwell.
