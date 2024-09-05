@@ -32,9 +32,6 @@
 
 <h3>Bug fixes 🐛</h3>
 
-* Fix Pytree serialization of operators with empty shot vectors:
-  [(#6155)](https://github.com/PennyLaneAI/pennylane/pull/6155)
-
 * Fix `qml.PrepSelPrep` template to work with `torch`:
   [(#6191)](https://github.com/PennyLaneAI/pennylane/pull/6191)
 
@@ -47,6 +44,5 @@ This release contains contributions from (in alphabetical order):
 
 Guillermo Alonso
 Utkarsh Azad
-Jack Brown
 Christina Lee
 William Maxwell
