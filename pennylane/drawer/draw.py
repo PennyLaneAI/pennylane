@@ -355,7 +355,8 @@ def draw_mpl(
     style=None,
     *,
     fig=None,
-    level: Optional[Union[Literal["top", "user", "device", "gradient"], int, slice]] = "gradient",
+    level: Union[None, Literal["top", "user", "device", "gradient"], int, slice] = "gradient",
+
     **kwargs,
 ):
     r"""Draw a qnode with matplotlib
