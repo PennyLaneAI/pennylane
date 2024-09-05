@@ -31,6 +31,8 @@ def _convert_to_args(sig, args, kwargs):
             # first check if the name is provided in the keyword arguments
             new_args.append(kwargs[param])
         else:
+            if param == "shots":
+                continue
             # if not, then the argument must be positional
             new_args.append(args[i])
 
@@ -144,12 +146,12 @@ def batch_partial(qnode, all_operations=False, preprocess=None, **partial_kwargs
     if is_partial:
         # the batched partial function must have at least one more
         # parameter, otherwise batching doesn't make sense
-        if len(sig) <= len(partial_kwargs):
+        if len(sig) - 1 <= len(partial_kwargs):
             raise ValueError("Partial evaluation must leave at least one unevaluated parameter")
     else:
         # if used to wrap a QNode in a lambda statement, then check that
         # all arguments are provided
-        if len(sig) > len(partial_kwargs) + len(preprocess):
+        if len(sig) - 1 > len(partial_kwargs) + len(preprocess):  # minus one is for shots
             raise ValueError("Callable argument requires all other arguments to QNode be provided")
 
     @functools.wraps(qnode)

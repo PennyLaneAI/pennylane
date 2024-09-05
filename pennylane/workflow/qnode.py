@@ -114,7 +114,11 @@ def _to_qfunc_output_type(
 def _get_new_signature(qfunc):
     initial_signature = inspect.signature(qfunc)
     params = list(initial_signature.parameters.values())
-    params.append(inspect.Parameter("shots", default="device", kind=inspect.Parameter.KEYWORD_ONLY))
+    shots_par = inspect.Parameter("shots", default="device", kind=inspect.Parameter.KEYWORD_ONLY)
+    if params[-1].kind == params[-1].VAR_KEYWORD:
+        params.insert(-1, shots_par)
+    else:
+        params.append(shots_par)
     return inspect.Signature(params, return_annotation=qml.typing.Result)
 
 
@@ -1022,10 +1026,11 @@ class QNode:
 
         return res
 
-    def __call__(self, *args, **kwargs) -> qml.typing.Result:
+    def __call__(self, *args, shots="device", **kwargs) -> qml.typing.Result:
+        shots = self.device.shots if shots == "device" else shots
         if qml.capture.enabled():
-            return qml.capture.qnode_call(self, *args, **kwargs)
-        return self._impl_call(*args, **kwargs)
+            return qml.capture.qnode_call(self, *args, shots=shots, **kwargs)
+        return self._impl_call(*args, shots=shots, **kwargs)
 
 
 qnode = lambda device, **kwargs: functools.partial(QNode, device=device, **kwargs)
