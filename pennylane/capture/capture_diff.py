@@ -54,6 +54,9 @@ def _get_grad_prim():
     """Create a primitive for gradient computations.
     This primitive is used when capturing ``qml.grad``.
     """
+    if not has_jax:  # pragma: no cover
+        return None
+
     grad_prim = create_non_jvp_primitive()("grad")
     grad_prim.multiple_results = True  # pylint: disable=attribute-defined-outside-init
 
