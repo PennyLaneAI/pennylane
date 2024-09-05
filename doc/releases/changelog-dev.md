@@ -13,7 +13,7 @@
   `from pennylane.capture.primitives import *`.
   [(#6129)](https://github.com/PennyLaneAI/pennylane/pull/6129)
 
-* `FermiWord` and `FermiSentence` classes now have methods to compute adjoints
+* `FermiWord` and `FermiSentence` classes now have methods to compute adjoints.
   [(#6166)](https://github.com/PennyLaneAI/pennylane/pull/6166)
 
 <h3>Breaking changes 💔</h3>
