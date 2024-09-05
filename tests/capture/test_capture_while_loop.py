@@ -265,7 +265,7 @@ class TestCaptureCircuitsWhileLoop:
 
             @qml.while_loop(lambda i: i < 3)
             def loop_fn(i):
-                qml.RX(i, wires=0)
+                qml.RX(i * x, wires=0)
                 return i + 1
 
             _ = loop_fn(0)
