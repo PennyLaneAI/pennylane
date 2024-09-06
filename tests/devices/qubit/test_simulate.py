@@ -1181,32 +1181,84 @@ class TestQInfoMeasurements:
 
 
 class TestMidMeasurements:
-    """Tests for simulating scripts with mid-circuit measurements using the ``simulate_tree_mcm``.""" 
+    """Tests for simulating scripts with mid-circuit measurements using the ``simulate_tree_mcm``."""
 
-    @pytest.mark.parametrize("postselect", [0, 1])
-    def test_basic_mid_meas_circuit(self, postselect):
+    @pytest.mark.parametrize("val", [0, 1])
+    def test_basic_mid_meas_circuit(self, val):
         """Test execution with a basic circuit with mid-circuit measurements."""
         qs = qml.tape.QuantumScript(
-            [qml.Hadamard(0), qml.CNOT([0, 1]), qml.measurements.MidMeasureMP(0, postselect=1)],
-            [qml.expval(qml.X(0)), qml.expval(qml.Z(0))]
+            [qml.Hadamard(0), qml.CNOT([0, 1]), qml.measurements.MidMeasureMP(0, postselect=val)],
+            [qml.expval(qml.X(0)), qml.expval(qml.Z(0))],
         )
         result = simulate_tree_mcm(qs)
-        assert result == (0, -1 ** postselect)
-
+        assert result == (0, (-1.0) ** val)
 
     def test_basic_mid_meas_circuit_with_reset(self):
         """Test execution with a basic circuit with mid-circuit measurements."""
-        phi = np.array(0.397)
         qs = qml.tape.QuantumScript(
-            [qml.RX(phi, wires=0)], [qml.expval(qml.PauliY(0)), qml.expval(qml.PauliZ(0))]
+            [
+                qml.Hadamard(0),
+                qml.Hadamard(1),
+                qml.CNOT([0, 1]),
+                (m0 := qml.measure(0, reset=True)).measurements[0],
+                qml.Hadamard(0),
+                qml.CNOT([1, 0]),
+            ],  # equivalent to a circuit that gives equiprobable basis states
+            [qml.probs(op=m0), qml.probs(op=qml.Z(0)), qml.probs(op=qml.Z(1))],
         )
-        result = simulate(qs)
+        result = simulate_tree_mcm(qs)
+        assert qml.math.allclose(result, qml.math.array([0.5, 0.5]))
 
-    def test_dynamic_mid_meas_circuit(self):
+    @pytest.mark.parametrize("shots", [None, int(5e5), [int(4e5), int(6e5)]])
+    @pytest.mark.parametrize("rng", [None, 42, np.array([37])])
+    @pytest.mark.parametrize("angles", [(0.123, 0.015), (0.543, 0.057)])
+    def test_dynamic_mid_meas_circuit(self, shots, rng, angles):
         """Test execution with a basic circuit with mid-circuit measurements."""
-        # qs = qml.tape.QuantumScript(
-        #     []
-
-        #     [qml.RX(phi, wires=0)], [qml.expval(qml.PauliY(0)), qml.expval(qml.PauliZ(0))]
-        # )
-        result = simulate(qs)
+        qs_with_mid_meas = qml.tape.QuantumScript(
+            [
+                qml.Hadamard(0),
+                qml.Hadamard(1),
+                qml.CZ([0, 1]),
+                qml.CNOT([0, 2]),
+                qml.CNOT([2, 3]),
+                qml.CZ([1, 3]),
+                qml.Toffoli([3, 2, 0]),
+                (m0 := qml.measure(0)).measurements[0],
+                qml.ops.op_math.Conditional(m0, qml.RZ(angles[0], 1)),
+                qml.Hadamard(1),
+                qml.Z(1),
+                (m1 := qml.measure(1)).measurements[0],
+                qml.ops.op_math.Conditional(m1, qml.RX(angles[1], 3)),
+            ],
+            [
+                qml.probs(wires=[0, 1, 2, 3]),
+                qml.var(qml.X(0) @ qml.X(1) @ qml.Z(2) @ qml.Z(3)),
+            ],
+            shots=shots,
+        )
+        qs_without_mid_meas = qml.tape.QuantumScript(
+            [
+                qml.Hadamard(0),
+                qml.Hadamard(1),
+                qml.CZ([0, 1]),
+                qml.CNOT([0, 2]),
+                qml.CNOT([2, 3]),
+                qml.CZ([1, 3]),
+                qml.Toffoli([3, 2, 0]),
+                qml.Hadamard(1),
+                qml.Z(1),
+                qml.RX(angles[1], 3),
+            ],
+            [
+                qml.probs(wires=[0, 1, 2, 3]),
+                qml.var(qml.X(0) @ qml.X(1) @ qml.Z(2) @ qml.Z(3)),
+            ],
+            shots=shots,
+        )  # approximate compiled circuit of the above
+        res1 = simulate_tree_mcm(qs_with_mid_meas, rng=rng)
+        res2 = simulate(qs_without_mid_meas, rng=rng)
+        if not isinstance(shots, list):
+            assert all(qml.math.allclose(r1, r2, atol=1e-2) for r1, r2 in zip(res1, res2))
+        else:
+            for rs1, rs2 in zip(res1, res2):
+                assert all(qml.math.allclose(r1, r2, atol=1e-2) for r1, r2 in zip(rs1, rs2))
