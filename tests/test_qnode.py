@@ -59,6 +59,20 @@ class CustomDeviceWithDiffMethod(qml.devices.Device):
         return 0
 
 
+def test_no_measure():
+    """Test that failing to specify a measurement
+    raises an exception"""
+    dev = qml.device("default.qubit")
+
+    @qml.qnode(dev)
+    def circuit(x):
+        qml.RX(x, wires=0)
+        return qml.PauliY(0)
+
+    with pytest.raises(qml.QuantumFunctionError, match="must return either a single measurement"):
+        _ = circuit(0.65)
+
+
 def test_copy():
     """Test that a shallow copy also copies the execute kwargs, gradient kwargs, and transform program."""
     dev = CustomDevice()

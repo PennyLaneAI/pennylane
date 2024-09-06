@@ -1029,7 +1029,7 @@ class TestSpsaGradientDifferentiation:
 
     @pytest.mark.tf
     @pytest.mark.slow
-    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.tf"])
+    @pytest.mark.parametrize("dev_name", ["default.qubit"])
     def test_tf(self, dev_name, approx_order, strategy):
         """Tests that the output of the SPSA gradient transform
         can be differentiated using TF, yielding second derivatives."""
@@ -1073,7 +1073,7 @@ class TestSpsaGradientDifferentiation:
         assert np.allclose([res_0, res_1], expected, atol=spsa_shot_vec_tol, rtol=0)
 
     @pytest.mark.tf
-    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.tf"])
+    @pytest.mark.parametrize("dev_name", ["default.qubit"])
     def test_tf_ragged(self, dev_name, approx_order, strategy):
         """Tests that the output of the SPSA gradient transform
         of a ragged tape can be differentiated using TF, yielding second derivatives."""
