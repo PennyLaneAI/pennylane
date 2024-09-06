@@ -507,8 +507,8 @@ def haldane(
             nearest neighbouring sites. It can be a number, or
             a square matrix of size ``(num_spins, num_spins)``, where ``num_spins`` is the total
             number of spins. Default value is 1.0.
-        hopping2 (float | list[math.array(float)]): Hopping strength between next
-            nearest neighbouring sites. It can be a number, or
+        hopping2 (float | list[math.array(float)]): Hopping strength between next-nearest
+            neighbouring sites. It can be a number, or
             a square matrix of size ``(num_spins, num_spins)``, where ``num_spins`` is the total
             number of spins. Default value is 1.0.
         phi (float | list[math.array(float)]): Phase Factor, it can be a number, or
