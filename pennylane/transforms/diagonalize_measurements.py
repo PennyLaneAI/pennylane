@@ -143,7 +143,10 @@ def diagonalize_measurements(tape, supported_base_obs=_default_supported_obs, to
 
     if to_eigvals and not diagonalize_all:
         raise ValueError(
-            f"Using to_eigvals=True requires diagonalizing all observables to the measurement basis. Observables {set(supported_base_obs)-set(_default_supported_obs)} can't be supported when using eigvals."
+            "Using to_eigvals=True requires diagonalizing all observables to the "
+            "measurement basis. Observables "
+            f"{set(supported_base_obs)-set(_default_supported_obs)} can't "
+            "be supported when using eigvals."
         )
 
     if (
@@ -187,7 +190,7 @@ def _diagonalize_all_pauli_obs(tape, to_eigvals=False):
     Args:
         tape: the observable to be diagonalized
         to_eigvals: whether the diagonalization should create measurements using
-        eigvals and wires rather than observables
+            eigvals and wires rather than observables
 
     Returns:
         diagonalizing_gates: A list of operations to be applied to diagonalize the observable
@@ -218,9 +221,13 @@ def _diagonalize_subset_of_pauli_obs(tape, supported_base_obs, to_eigvals=False)
 
     Args:
         tape: the observable to be diagonalized
-        supported_base_obs:
+        supported_base_obs (Optional, Iterable(Observable)): A list of supported base observable classes.
+            Allowed observables are ``qml.X``, ``qml.Y``, ``qml.Z``, ``qml.Hadamard`` and ``qml.Identity``.
+            Z and Identity are always treated as supported, regardless of input. If no list is provided,
+            the transform will diagonalize everything into the Z basis. If a list is provided, only
+            unsupported observables will be diagonalized to the Z basis.
         to_eigvals: whether the diagonalization should create measurements using
-        eigvals and wires rather than observables
+            eigvals and wires rather than observables
 
     Returns:
         diagonalizing_gates: A list of operations to be applied to diagonalize the observable
