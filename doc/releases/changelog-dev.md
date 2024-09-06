@@ -23,6 +23,7 @@
   Please use `qml.transforms.split_non_commuting` instead.
 
 * `Operator.expand` is now removed. Use `qml.tape.QuantumScript(op.deocomposition())` instead.
+  [(#6227)](https://github.com/PennyLaneAI/pennylane/pull/6227)
 
 <h3>Deprecations 👋</h3>
 
