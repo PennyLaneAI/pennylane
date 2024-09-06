@@ -638,7 +638,7 @@ class FermiSentence(dict):
         r"""Apply anti-commuting relations until the operator in position source is in position target.
 
         Args:
-            fw (FermiWord): The FermiWord within the FermiSentence that contains the operator to be commuted.
+            fw (FermiWord): The ``FermiWord`` within the ``FermiSentence`` that contains the operator to be commuted.
             source (int): The position of the operator to be commuted.
             target (int): The desired position of the operator occupying the source position.
 
