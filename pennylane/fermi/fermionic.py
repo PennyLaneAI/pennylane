@@ -410,7 +410,7 @@ def _commute_adjacent(fs, fw, source, target):
 
     terms = lfw * (1 - FermiSentence({mfw: 1})) * rfw
 
-    fs = fs + coeff * terms
+    fs += coeff * terms
 
     return fs, fw
 
@@ -660,8 +660,7 @@ class FermiSentence(dict):
             raise ValueError(f"The FermiWord {fw} does not appear in the FermiSentence")
 
         fs = dict(self)
-        coeff = fs[fw]
-        del fs[fw]
+        coeff = fs.pop(fw)
 
         return FermiSentence(fs) + coeff * fw.commute(source, target)
 
