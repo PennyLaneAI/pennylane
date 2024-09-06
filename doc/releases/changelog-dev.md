@@ -27,6 +27,10 @@
 
 <h3>Breaking changes 💔</h3>
 
+* `qml.qinfo.classical_fisher` and `qml.qinfo.quantum_fisher` have been removed in favour of `qml.gradients.classical_fisher`
+  and `qml.gradients.quantum_fisher`.
+  [(#6239)](https://github.com/PennyLaneAI/pennylane/pull/6239)
+
 * Remove support for Python 3.9.
   [(#6223)](https://github.com/PennyLaneAI/pennylane/pull/6223)
 
@@ -48,6 +52,12 @@
   [(#6204)](https://github.com/PennyLaneAI/pennylane/pull/6204)
 
 <h3>Deprecations 👋</h3>
+
+* `qml.qinfo.trace_distance` have been deprecated. Instead, use `qml.math.trace_distance`.
+  [(#6239)](https://github.com/PennyLaneAI/pennylane/pull/6239)
+
+* `qml.qinfo.relative_entropy` have been deprecated. Instead, use `qml.math.relative_entropy`.
+  [(#6239)](https://github.com/PennyLaneAI/pennylane/pull/6239)
 
 <h3>Documentation 📝</h3>
 
@@ -72,3 +82,4 @@ Lillian M. A. Frederiksen,
 Christina Lee,
 William Maxwell,
 Lee J. O'Riordan,
+Mudit Pandey,
