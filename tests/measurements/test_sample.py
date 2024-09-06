@@ -422,6 +422,14 @@ class TestSample:
         with pytest.raises(EigvalsUndefinedError, match="Cannot compute samples of"):
             qml.sample(op=DummyOp(0)).process_samples(samples=np.array([[1, 0]]), wire_order=[0])
 
+    def test_process_sample_shot_range(self):
+        """Test process_samples with a shot range."""
+        mp = qml.sample(wires=0)
+
+        samples = np.zeros((10, 2))
+        out = mp.process_samples(samples, wire_order=qml.wires.Wires((0, 1)), shot_range=(0, 5))
+        assert qml.math.allclose(out, np.zeros((5,)))
+
     def test_sample_allowed_with_parameter_shift(self):
         """Test that qml.sample doesn't raise an error with parameter-shift and autograd."""
         dev = qml.device("default.qubit", shots=10)

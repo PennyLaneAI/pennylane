@@ -59,8 +59,8 @@ on:
         required: false
         type: string
         default: ''
-      install_catalyst_after_pennylane:
-        description: Indicate if the latest Catalyst should be installed after PennyLane
+      install_catalyst_nightly:
+        description: Indicate if PennyLane-Catalyst should be installed from TestPyPi
         required: false
         type: boolean
         default: false
@@ -89,6 +89,16 @@ on:
         required: false
         type: string
         default: ''
+      pytest_durations_file_path:
+        description: Path to test durations file
+        required: false
+        type: string
+        default: ''
+      pytest_store_durations:
+        description: Whether to store artifacts for test durations
+        required: false
+        type: boolean
+        default: false
       additional_pip_packages:
         description: Additional packages to install. Values will be passed to pip install {value}
         required: false
@@ -152,7 +162,7 @@ jobs:
           install_tensorflow: ${{ inputs.install_tensorflow }}
           install_jax: ${{ inputs.install_jax }}
           additional_pip_packages: ${{ inputs.additional_pip_packages }}
-          install_catalyst_after_pennylane: ${{ inputs.install_catalyst_after_pennylane }}
+          install_catalyst_nightly: ${{ inputs.install_catalyst_nightly }}
           install_pennylane_lightning_master: ${{ inputs.install_pennylane_lightning_master }}
           requirements_file: ${{ inputs.requirements_file }}
 
@@ -165,11 +175,13 @@ jobs:
           PYTEST_PARALLELISE_ARGS: -n auto
           PYTEST_BENCHMARKS_ARGS: --benchmark-enable --benchmark-only --benchmark-json=benchmarks.json
           PYTEST_ADDITIONAL_ARGS: ${{ inputs.pytest_additional_args }}
+          PYTEST_DURATIONS_ARGS: ${{ inputs.pytest_durations_file_path != '' && format('--durations-path="{0}"', inputs.pytest_durations_file_path) || '' }}
+          PYTEST_STORE_ARGS: ${{ inputs.pytest_store_durations == true && '--store-durations --clean-durations' || '' }}
         run: |
           if [[ "$PIPELINE_MODE" =~ .*"benchmarks".* ]]; then
             echo "args=$PYTEST_BENCHMARKS_ARGS $PYTEST_ADDITIONAL_ARGS" >> $GITHUB_OUTPUT
           else
-            echo "args=$PYTEST_COVERAGE_ARGS $PYTEST_PARALLELISE_ARGS $PYTEST_ADDITIONAL_ARGS" >> $GITHUB_OUTPUT
+            echo "args=$PYTEST_COVERAGE_ARGS $PYTEST_PARALLELISE_ARGS $PYTEST_ADDITIONAL_ARGS $PYTEST_DURATIONS_ARGS $PYTEST_STORE_ARGS" >> $GITHUB_OUTPUT
           fi
 
       - name: Run PennyLane Unit Tests
@@ -183,13 +195,21 @@ jobs:
         # Calling PyTest by invoking Python first as that adds the current directory to sys.path
         run: python -m pytest ${{ inputs.pytest_test_directory }} ${{ steps.pytest_args.outputs.args }} ${{ env.PYTEST_MARKER }} --disable-opmath=${{ inputs.disable_new_opmath }}
 
+      - name: Upload Durations file as artifact
+        if: ${{ inputs.pytest_store_durations == true }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.job_name }}-durations.json
+          path: ${{ inputs.pytest_durations_file_path }}
+          include-hidden-files: true
+
       - name: Adjust coverage file for Codecov
         if: inputs.pipeline_mode == 'unit-tests'
         run: bash <(sed -i 's/filename=\"/filename=\"pennylane\//g' coverage.xml)
 
       - name: Upload Coverage File
         if: inputs.pipeline_mode == 'unit-tests'
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ inputs.coverage_artifact_name }}
           path: coverage.xml
@@ -220,7 +240,7 @@ jobs:
       # If this is an assessment benchmark, upload the data as an artifact.
       - name: Upload pytest benchmark results
         if: inputs.pipeline_mode == 'benchmarks'
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ steps.benchmark_name.outputs.benchmark_name }}-benchmarks
           path: ${{ github.workspace }}/benchmark_results
