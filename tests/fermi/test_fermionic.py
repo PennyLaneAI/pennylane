@@ -17,16 +17,13 @@ import re
 from copy import copy, deepcopy
 
 import numpy as np
-import pennylane as qml
 import pytest
+
+import pennylane as qml
 from pennylane import numpy as pnp
-from pennylane.fermi.fermionic import (
-    FermiSentence,
-    FermiWord,
-    _commute_adjacent,
-    _to_string,
-    from_string,
-)
+from pennylane.fermi.fermionic import (FermiSentence, FermiWord,
+                                       _commute_adjacent, _to_string,
+                                       from_string)
 
 # pylint: disable=too-many-public-methods
 
