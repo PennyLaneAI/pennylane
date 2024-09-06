@@ -24,7 +24,6 @@
   unique representation of the object.
   [(#6167)](https://github.com/PennyLaneAI/pennylane/pull/6167)
 
-
 <h3>Breaking changes 💔</h3>
 
 * `expand_fn`, `max_expansion`, `override_shots`, and `device_batch_transform` are removed from the
