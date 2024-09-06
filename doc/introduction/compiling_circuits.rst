@@ -225,7 +225,7 @@ For example, suppose we would like to implement the following QNode:
     original_qnode = qml.QNode(circuit, original_dev)
 
 >>> weights = np.array([[0.4, 0.5, 0.6]])
->>> print(qml.draw(original_qnode, expansion_strategy="device")(weights))
+>>> print(qml.draw(original_qnode, level="device")(weights))
 0: ──RX(0.40)─╭●────╭X─┤  <Z>
 1: ──RX(0.50)─╰X─╭●─│──┤     
 2: ──RX(0.60)────╰X─╰●─┤     
@@ -253,7 +253,7 @@ Note that custom decomposition functions should accept keyword arguments even wh
 Now when we draw or run a QNode on this device, the gates will be expanded
 according to our specifications:
 
->>> print(qml.draw(decomp_qnode, expansion_strategy="device")(weights))
+>>> print(qml.draw(decomp_qnode, level="device")(weights))
 0: ──RX(0.40)────╭●──H───────╭Z──H─┤  <Z>
 1: ──RX(0.50)──H─╰Z──H─╭●────│─────┤     
 2: ──RX(0.60)──H───────╰Z──H─╰●────┤     
