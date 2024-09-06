@@ -84,7 +84,7 @@ def transverse_ising(
 
     if coupling.shape not in [(neighbour_order,), (lattice.n_sites, lattice.n_sites)]:
         raise ValueError(
-            f"The coupling parameter should be a number or an array of shape ({neighbour_order},) or ({lattice.n_sites},{lattice.n_sites})"
+            f"The coupling parameter should be a number or an array of shape ({neighbour_order},) or ({lattice.n_sites},{lattice.n_sites})."
         )
 
     if coupling.shape == (neighbour_order,):
@@ -161,7 +161,7 @@ def heisenberg(lattice, n_cells, coupling=None, boundary_condition=False, neighb
 
     if coupling.shape not in [(neighbour_order, 3), (3, lattice.n_sites, lattice.n_sites)]:
         raise ValueError(
-            f"The coupling parameter shape should be equal to ({neighbour_order},3) or (3,{lattice.n_sites},{lattice.n_sites})"
+            f"The coupling parameter shape should be equal to ({neighbour_order},3) or (3,{lattice.n_sites},{lattice.n_sites})."
         )
 
     hamiltonian = 0.0 * qml.I(0)
@@ -260,7 +260,7 @@ def fermi_hubbard(
 
     if hopping.shape not in [(neighbour_order,), (lattice.n_sites, lattice.n_sites)]:
         raise ValueError(
-            f"The hopping parameter should be a number or an array of shape ({neighbour_order},) or ({lattice.n_sites},{lattice.n_sites})"
+            f"The hopping parameter should be a number or an array of shape ({neighbour_order},) or ({lattice.n_sites},{lattice.n_sites})."
         )
 
     spin = 2
@@ -304,7 +304,7 @@ def fermi_hubbard(
     if mapping not in ["jordan_wigner", "parity", "bravyi_kitaev"]:
         raise ValueError(
             f"The '{mapping}' transformation is not available."
-            f"Please set mapping to 'jordan_wigner', 'parity', or 'bravyi_kitaev'"
+            f"Please set mapping to 'jordan_wigner', 'parity', or 'bravyi_kitaev'."
         )
     qubit_ham = qml.qchem.qubit_observable(hamiltonian, mapping=mapping)
 
@@ -362,8 +362,8 @@ def emery(
 
     Raises:
        ValueError:
-          If ``hopping``, ``coulomb``, or ``intersite_coupling`` doesn't have correct dimensions.
-          Or if ``mapping`` is not available.
+          If ``hopping``, ``coulomb``, or ``intersite_coupling`` doesn't have correct dimensions,
+          or if ``mapping`` is not available.
 
     Returns:
        ~ops.op_math.Sum: Hamiltonian for the Emery model.
@@ -374,24 +374,25 @@ def emery(
     >>> h = [0.5]
     >>> u = 1.0
     >>> v = 0.2
-    >>> spin_ham = qml.spin.emery("chain", n_cells, hopping=h, coulomb=u, intersite_coupling=v)
+    >>> spin_ham = qml.spin.emery("chain", n_cells, hopping=h, coulomb=u,
+                   intersite_coupling=v)
     >>> spin_ham
     (
-    -0.25 * (Y(0) @ Z(1) @ Y(2))
-    + -0.25 * (X(0) @ Z(1) @ X(2))
-    + 0.7000000000000002 * I(0)
-    + -0.25 * (Y(1) @ Z(2) @ Y(3))
-    + -0.25 * (X(1) @ Z(2) @ X(3))
-    + -0.35 * Z(1)
-    + -0.35 * Z(0)
-    + 0.25 * (Z(0) @ Z(1))
-    + -0.35 * Z(3)
-    + -0.35 * Z(2)
-    + 0.25 * (Z(2) @ Z(3))
-    + 0.05 * (Z(0) @ Z(2))
-    + 0.05 * (Z(0) @ Z(3))
-    + 0.05 * (Z(1) @ Z(2))
-    + 0.05 * (Z(1) @ Z(3))
+      -0.25 * (Y(0) @ Z(1) @ Y(2))
+      + -0.25 * (X(0) @ Z(1) @ X(2))
+      + 0.7000000000000002 * I(0)
+      + -0.25 * (Y(1) @ Z(2) @ Y(3))
+      + -0.25 * (X(1) @ Z(2) @ X(3))
+      + -0.35 * Z(1)
+      + -0.35 * Z(0)
+      + 0.25 * (Z(0) @ Z(1))
+      + -0.35 * Z(3)
+      + -0.35 * Z(2)
+      + 0.25 * (Z(2) @ Z(3))
+      + 0.05 * (Z(0) @ Z(2))
+      + 0.05 * (Z(0) @ Z(3))
+      + 0.05 * (Z(1) @ Z(2))
+      + 0.05 * (Z(1) @ Z(3))
     )
 
     """
@@ -524,8 +525,8 @@ def haldane(
 
     Raises:
        ValueError:
-          if ``hopping1``, ``hopping2``, or ``phi`` doesn't have correct dimensions.
-          if ``mapping`` is not available.
+          If ``hopping1``, ``hopping2``, or ``phi`` doesn't have correct dimensions,
+          or if ``mapping`` is not available.
 
     Returns:
        ~ops.op_math.Sum: Hamiltonian for the Haldane model.
@@ -539,10 +540,10 @@ def haldane(
     >>> spin_ham = qml.spin.haldane("chain", n_cells, hopping1=h1, hopping2=h2, phi=phi)
     >>> spin_ham
     (
-    -0.25 * (Y(0) @ Z(1) @ Y(2))
-    + -0.25 * (X(0) @ Z(1) @ X(2))
-    + -0.25 * (Y(1) @ Z(2) @ Y(3))
-    + -0.25 * (X(1) @ Z(2) @ X(3))
+      -0.25 * (Y(0) @ Z(1) @ Y(2))
+      + -0.25 * (X(0) @ Z(1) @ X(2))
+      + -0.25 * (Y(1) @ Z(2) @ Y(3))
+      + -0.25 * (X(1) @ Z(2) @ X(3))
     )
 
     """
