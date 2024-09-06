@@ -195,12 +195,12 @@ def device(name, *args, **kwargs):
             'default.qubit', wires=2, custom_decomps={"CNOT" : ion_trap_cnot}
         )
 
-        @qml.qnode(dev, expansion_strategy="device")
+        @qml.qnode(dev)
         def run_cnot():
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.X(1))
 
-    >>> print(qml.draw(run_cnot)())
+    >>> print(qml.draw(run_cnot, level="device")())
     0: ──RY(1.57)─╭IsingXX(1.57)──RX(-1.57)──RY(-1.57)─┤
     1: ───────────╰IsingXX(1.57)──RY(-1.57)────────────┤  <X>
 
