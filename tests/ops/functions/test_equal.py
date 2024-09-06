@@ -2801,3 +2801,29 @@ def test_ops_with_abstract_parameters_not_equal():
     assert not jax.jit(qml.equal)(qml.RX(0.1, 0), qml.RX(0.1, 0))
     with pytest.raises(AssertionError, match="Data contains a tracer"):
         jax.jit(assert_equal)(qml.RX(0.1, 0), qml.RX(0.1, 0))
+
+
+@pytest.mark.parametrize(
+    "op, other_op",
+    [
+        (
+            qml.PrepSelPrep(qml.dot([1.0, 2.0], [qml.Z(0), qml.X(0)]), control=1),
+            qml.PrepSelPrep(qml.dot([1.0, 2.0], [qml.Z(0), qml.X(0)]), control=2),
+        ),
+        (
+            qml.PrepSelPrep(qml.dot([1.0, 2.0], [qml.Z(2), qml.X(2)]), control=1),
+            qml.PrepSelPrep(qml.dot([1.0, 2.0], [qml.Z(0), qml.X(0)]), control=1),
+        ),
+        (
+            qml.PrepSelPrep(qml.dot([1.0, -2.0], [qml.Z(0), qml.X(0)]), control=1),
+            qml.PrepSelPrep(qml.dot([1.0, 2.0], [qml.Z(0), qml.X(0)]), control=1),
+        ),
+        (
+            qml.PrepSelPrep(qml.dot([1.0, 2.0], [qml.Z(0), qml.X(0)]), control=1),
+            qml.PrepSelPrep(qml.dot([1.0, 2.0], [qml.Y(0), qml.X(0)]), control=1),
+        ),
+    ],
+)
+def test_not_equal_prep_sel_prep(op, other_op):
+    """Test that two PrepSelPrep operators with different Hamiltonian are not equal."""
+    assert not qml.equal(op, other_op)
