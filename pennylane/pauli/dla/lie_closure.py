@@ -411,7 +411,7 @@ def lie_closure(
 #             # Add new PauliSentence entries to matrix
 #             for pw, value in pauli_sentence.items():
 #                 M[new_pw_to_idx[pw], rank] = value
-            
+
 #             M[:, rank] /= np.linalg.norm(M[:, rank])
 
 #             return M, new_pw_to_idx, rank + 1, new_num_pw, True
@@ -419,7 +419,7 @@ def lie_closure(
 #         # Add new PauliSentence entries to matrix
 #         for pw, value in pauli_sentence.items():
 #             M[pw_to_idx[pw], rank] = value
-        
+
 #         M[:, rank] /= np.linalg.norm(M[:, rank])
 
 #         # Check if new vector is linearly dependent on the current basis
@@ -503,7 +503,7 @@ class PauliVSpace:
         num_pw = self._num_pw
         M = self._M
 
-        idx_to_pw = {value : key for key, value in pw_to_idx.items()}
+        idx_to_pw = {value: key for key, value in pw_to_idx.items()}
 
         basis = []
         for j, vec in enumerate(M.T):
@@ -518,7 +518,7 @@ class PauliVSpace:
         return len(self.basis)
 
     def add(self, other, tol=None):
-        if len(other)==0:
+        if len(other) == 0:
             return
         if not all(isinstance(op, PauliSentence) for op in other):
             other = [_.pauli_rep for _ in other]
@@ -537,7 +537,7 @@ class PauliVSpace:
         new_pw_to_idx = copy(pw_to_idx)
         for i, pw in enumerate(new_pws, start=num_pw):
             new_pw_to_idx[pw] = i
-        
+
         print(new_pw_to_idx, new_pws)
 
         M = np.pad(M, ((0, new_num_pw - num_pw), (0, len(other))))
@@ -547,7 +547,6 @@ class PauliVSpace:
             for pw, value in pauli_sentence.items():
                 M[new_pw_to_idx[pw], rank + i] = value
 
-
         # Check if new vector is linearly dependent on the current basis
         U, s, _ = np.linalg.svd(M, full_matrices=False)
         new_rank = np.sum(s > tol)
@@ -556,7 +555,6 @@ class PauliVSpace:
         self._rank = new_rank
         self._num_pw = new_num_pw
         self._M = U[:, :new_rank]
-
 
     def __repr__(self):
         return str(self.basis)

@@ -551,7 +551,7 @@ def orthonormalize(vspace):
 
     if not all(isinstance(op, PauliSentence) for op in vspace):
         vspace = [op.pauli_rep for op in vspace]
-    
+
     if len(vspace) == 0:
         return vspace
 
@@ -604,7 +604,8 @@ def check_all_commuting(h):
     print("all terms commute")
     return all(commutes)
 
+
 def trace_distance(A, B):
     assert np.all(A.shape == B.shape)
-    res = 1 - np.trace(A.conj().T @ B)/len(A)
+    res = 1 - np.trace(A.conj().T @ B) / len(A)
     return res.real
