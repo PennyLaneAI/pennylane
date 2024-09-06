@@ -362,8 +362,8 @@ def emery(
 
     Raises:
        ValueError:
-          if ``hopping``, ``coulomb``, or ``intersite_coupling`` doesn't have correct dimensions.
-          if ``mapping`` is not available.
+          If ``hopping``, ``coulomb``, or ``intersite_coupling`` doesn't have correct dimensions.
+          Or if ``mapping`` is not available.
 
     Returns:
        ~ops.op_math.Sum: Hamiltonian for the Emery model.
