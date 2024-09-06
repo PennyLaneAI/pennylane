@@ -111,6 +111,36 @@ def _to_qfunc_output_type(
     return type(qfunc_output)(results)
 
 
+def _validate_gradient_kwargs(gradient_kwargs: dict) -> None:
+    for kwarg in gradient_kwargs:
+        if kwarg == "expansion_strategy":
+            raise ValueError(
+                "'expansion_strategy' is no longer a valid keyword argument to QNode."
+                " To inspect the circuit at a given stage in the transform program, please"
+                " use qml.workflow.construct_batch instead."
+            )
+
+        if kwarg == "max_expansion":
+            raise ValueError("'max_expansion' is no longer a valid keyword argument to QNode.")
+        if kwarg in ["gradient_fn", "grad_method"]:
+            warnings.warn(
+                "It appears you may be trying to set the method of differentiation via the "
+                f"keyword argument {kwarg}. This is not supported in qnode and will default to "
+                "backpropogation. Use diff_method instead."
+            )
+        elif kwarg == "shots":
+            raise ValueError(
+                "'shots' is not a valid gradient_kwarg. If your quantum function takes the "
+                "argument 'shots' or if you want to set the number of shots with which the "
+                "QNode is executed, pass it to the QNode call, not its definition."
+            )
+        elif kwarg not in qml.gradients.SUPPORTED_GRADIENT_KWARGS:
+            warnings.warn(
+                f"Received gradient_kwarg {kwarg}, which is not included in the list of "
+                "standard qnode gradient kwargs."
+            )
+
+
 class QNode:
     r"""Represents a quantum node in the hybrid computational graph.
 
@@ -191,23 +221,6 @@ class QNode:
 
             * ``None``: QNode cannot be differentiated. Works the same as ``interface=None``.
 
-        expansion_strategy (str): The strategy to use when circuit expansions or decompositions
-            are required.
-
-            - ``gradient``: The QNode will attempt to decompose
-              the internal circuit such that all circuit operations are supported by the gradient
-              method. Further decompositions required for device execution are performed by the
-              device prior to circuit execution.
-
-            - ``device``: The QNode will attempt to decompose the internal circuit
-              such that all circuit operations are natively supported by the device.
-
-            The ``gradient`` strategy typically results in a reduction in quantum device evaluations
-            required during optimization, at the expense of an increase in classical preprocessing.
-        max_expansion (int): The number of times the internal circuit should be expanded when
-            executed on a device. Expansion occurs when an operation or measurement is not
-            supported, and results in a gate decomposition. If any operations in the decomposition
-            remain unsupported by the device, another expansion occurs.
         grad_on_execution (bool, str): Whether the gradients should be computed on the execution or not.
             Only applies if the device is queried for the gradient; gradient transform
             functions available in ``qml.gradients`` are only supported on the backward
@@ -243,14 +256,6 @@ class QNode:
         **kwargs: Any additional keyword arguments provided are passed to the differentiation
             method. Please refer to the :mod:`qml.gradients <.gradients>` module for details
             on supported options for your chosen gradient transform.
-
-    .. warning::
-
-        The ``expansion_strategy`` argument is deprecated and will be removed in version 0.39.
-
-    .. warning::
-
-        The ``max_expansion`` argument is deprecated and will be removed in version 0.39.
 
     **Example**
 
@@ -462,8 +467,6 @@ class QNode:
         device: SupportedDeviceAPIs,
         interface: SupportedInterfaceUserInput = "auto",
         diff_method: Union[TransformDispatcher, SupportedDiffMethods] = "best",
-        expansion_strategy: Literal[None, "device", "gradient"] = None,
-        max_expansion: Optional[int] = None,
         grad_on_execution: Literal[True, False, "best"] = "best",
         cache: Union[Cache, Literal["auto", True, False]] = "auto",
         cachesize: int = 10000,
@@ -473,28 +476,10 @@ class QNode:
         mcm_method: Literal[None, "deferred", "one-shot", "tree-traversal"] = None,
         **gradient_kwargs,
     ):
-        # Moving it here since the old default value is checked on debugging
-        if max_expansion is not None:
-            warnings.warn(
-                "The max_expansion argument is deprecated and will be removed in version 0.39. ",
-                qml.PennyLaneDeprecationWarning,
-            )
-        else:
-            max_expansion = 10
-
-        if expansion_strategy is not None:
-            warnings.warn(
-                "The 'expansion_strategy' attribute is deprecated and will be removed  "
-                "in version 0.39. For full control over the stage to which the tape is "
-                "constructed, use the 'pennylane.workflow.construct_batch' function.",
-                qml.PennyLaneDeprecationWarning,
-            )
-        # Default to "gradient" to maintain default behaviour of "draw" and "specs"
-        expansion_strategy = expansion_strategy or "gradient"
 
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(
-                """Creating QNode(func=%s, device=%s, interface=%s, diff_method=%s, expansion_strategy=%s, max_expansion=%s, grad_on_execution=%s, cache=%s, cachesize=%s, max_diff=%s, gradient_kwargs=%s""",
+                """Creating QNode(func=%s, device=%s, interface=%s, diff_method=%s, grad_on_execution=%s, cache=%s, cachesize=%s, max_diff=%s, gradient_kwargs=%s""",
                 (
                     func
                     if not (logger.isEnabledFor(qml.logging.TRACE) and inspect.isfunction(func))
@@ -503,8 +488,6 @@ class QNode:
                 repr(device),
                 interface,
                 diff_method,
-                expansion_strategy,
-                max_expansion,
                 grad_on_execution,
                 cache,
                 cachesize,
@@ -526,6 +509,7 @@ class QNode:
         if not isinstance(device, qml.devices.Device):
             device = qml.devices.LegacyDeviceFacade(device)
 
+        _validate_gradient_kwargs(gradient_kwargs)
         if "shots" in inspect.signature(func).parameters:
             warnings.warn(
                 "Detected 'shots' as an argument to the given quantum function. "
@@ -537,32 +521,11 @@ class QNode:
         else:
             self._qfunc_uses_shots_arg = False
 
-        for kwarg in gradient_kwargs:
-            if kwarg in ["gradient_fn", "grad_method"]:
-                warnings.warn(
-                    "It appears you may be trying to set the method of differentiation via the "
-                    f"keyword argument {kwarg}. This is not supported in qnode and will default to "
-                    "backpropogation. Use diff_method instead."
-                )
-            elif kwarg == "shots":
-                raise ValueError(
-                    "'shots' is not a valid gradient_kwarg. If your quantum function takes the "
-                    "argument 'shots' or if you want to set the number of shots with which the "
-                    "QNode is executed, pass it to the QNode call, not its definition."
-                )
-            elif kwarg not in qml.gradients.SUPPORTED_GRADIENT_KWARGS:
-                warnings.warn(
-                    f"Received gradient_kwarg {kwarg}, which is not included in the list of "
-                    "standard qnode gradient kwargs."
-                )
-
         # input arguments
         self.func = func
         self.device = device
         self._interface = interface
         self.diff_method = diff_method
-        self.expansion_strategy = expansion_strategy
-        self.max_expansion = max_expansion
         mcm_config = qml.devices.MCMConfig(mcm_method=mcm_method, postselect_mode=postselect_mode)
         cache = (max_diff > 1) if cache == "auto" else cache
 
@@ -572,13 +535,9 @@ class QNode:
             "cache": cache,
             "cachesize": cachesize,
             "max_diff": max_diff,
-            "max_expansion": max_expansion,
             "device_vjp": device_vjp,
             "mcm_config": mcm_config,
         }
-
-        if self.expansion_strategy == "device":
-            self.execute_kwargs["expand_fn"] = None
 
         # internal data attributes
         self._tape = None
@@ -889,21 +848,12 @@ class QNode:
                 # check here only if enough wires
                 raise qml.QuantumFunctionError(f"Operator {obj.name} must act on all wires")
 
-        if self.expansion_strategy == "device":
-            tape, _ = self.device.preprocess()[0]([self.tape])
-            if len(tape) != 1:
-                raise ValueError(
-                    "Using 'device' for the `expansion_strategy` is not supported for batches of tapes"
-                )
-            self._tape = tape[0]
-
-    def _execution_component(self, args: tuple, kwargs: dict, override_shots) -> qml.typing.Result:
+    def _execution_component(self, args: tuple, kwargs: dict) -> qml.typing.Result:
         """Construct the transform program and execute the tapes. Helper function for ``__call__``
 
         Args:
             args (tuple): the arguments the QNode is called with
             kwargs (dict): the keyword arguments the QNode is called with
-            override_shots : the shots to use for the execution.
 
         Returns:
             Result
@@ -946,26 +896,18 @@ class QNode:
 
         execute_kwargs["mcm_config"] = mcm_config
 
-        with warnings.catch_warnings():
-            # TODO: remove this once the cycle for the arguments have finished, i.e. 0.39.
-            warnings.filterwarnings(
-                action="ignore",
-                message=r".*argument is deprecated and will be removed in version 0.39.*",
-                category=qml.PennyLaneDeprecationWarning,
-            )
-            # pylint: disable=unexpected-keyword-arg
-            res = qml.execute(
-                (self._tape,),
-                device=self.device,
-                gradient_fn=self.gradient_fn,
-                interface=self.interface,
-                transform_program=full_transform_program,
-                inner_transform=inner_transform_program,
-                config=config,
-                gradient_kwargs=self.gradient_kwargs,
-                override_shots=override_shots,
-                **execute_kwargs,
-            )
+        # pylint: disable=unexpected-keyword-arg
+        res = qml.execute(
+            (self._tape,),
+            device=self.device,
+            gradient_fn=self.gradient_fn,
+            interface=self.interface,
+            transform_program=full_transform_program,
+            inner_transform=inner_transform_program,
+            config=config,
+            gradient_kwargs=self.gradient_kwargs,
+            **execute_kwargs,
+        )
         res = res[0]
 
         # convert result to the interface in case the qfunc has no parameters
@@ -1005,7 +947,7 @@ class QNode:
         self._update_gradient_fn(shots=override_shots, tape=self._tape)
 
         try:
-            res = self._execution_component(args, kwargs, override_shots=override_shots)
+            res = self._execution_component(args, kwargs)
         finally:
             if old_interface == "auto":
                 self._interface = "auto"

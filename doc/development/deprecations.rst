@@ -31,47 +31,6 @@ Pending deprecations
   - Deprecated in v0.38
   - Will be removed in v0.39
 
-* The ``max_expansion`` argument in ``qml.QNode`` is deprecated. 
-
-  - Deprecated in v0.38
-  - Will be removed in v0.39
-
-* The ``expansion_strategy`` attribute of ``qml.QNode`` is deprecated. 
-  Users should make use of ``qml.workflow.construct_batch``, should they require fine control over the output tape(s).
-
-  - Deprecated in v0.38
-  - Will be removed in v0.39
-
-* The ``expansion_strategy`` argument in ``qml.specs``, ``qml.draw``, and ``qml.draw_mpl`` is deprecated. 
-  Instead, use the ``level`` argument which provides a superset of options.
-
-  - Deprecated in v0.38
-  - Will be removed in v0.39
-
-* The ``expand_fn`` argument in ``qml.execute`` is deprecated. 
-  Instead, please create a ``qml.transforms.core.TransformProgram`` with the desired preprocessing and pass it to the ``transform_program`` argument of ``qml.execute``.
-
-  - Deprecated in v0.38
-  - Will be removed in v0.39
-
-* The ``max_expansion`` argument in ``qml.execute`` is deprecated. 
-  Instead, please use ``qml.devices.preprocess.decompose`` with the desired expansion level, add it to a ``TransformProgram``, and pass it to the ``transform_program`` argument of ``qml.execute``.
-
-  - Deprecated in v0.38
-  - Will be removed in v0.39
-
-* The ``override_shots`` argument in ``qml.execute`` is deprecated.
-  Instead, please add the shots to the ``QuantumTape``\ s to be executed.
-
-  - Deprecated in v0.38
-  - Will be removed in v0.39
-
-* The ``device_batch_transform`` argument in ``qml.execute`` is deprecated. 
-  Instead, please create a ``qml.transforms.core.TransformProgram`` with the desired preprocessing and pass it to the ``transform_program`` argument of ``qml.execute``.
-
-  - Deprecated in v0.38
-  - Will be removed in v0.39
-
 * The ``simplify`` argument in ``qml.Hamiltonian`` and ``qml.ops.LinearCombination`` is deprecated. 
   Instead, ``qml.simplify()`` can be called on the constructed operator.
 
@@ -124,6 +83,53 @@ Completed deprecation cycles
 
 * The functions ``qml.qinfo.classical_fisher`` and ``qml.qinfo.quantum_fisher`` have been removed and migrate to the ``qml.gradients``
   module. Therefore, ``qml.gradients.classical_fisher`` and ``qml.gradients.quantum_fisher`` should be used instead.
+
+  - Deprecated in v0.38
+  - Removed in v0.39
+
+* The ``expansion_strategy`` attribute of ``qml.QNode`` is removed.
+  Users should make use of ``qml.workflow.construct_batch``, should they require fine control over the output tape(s).
+
+  - Deprecated in v0.38
+  - Removed in v0.39
+
+* The ``expansion_strategy`` argument in ``qml.specs``, ``qml.draw``, and ``qml.draw_mpl`` is removed. 
+  Instead, use the ``level`` argument which provides a superset of options.
+
+  - Deprecated in v0.38
+  - Removed in v0.39
+
+* The ``max_expansion`` argument in ``qml.QNode`` is removed.
+
+  - Deprecated in v0.38
+  - Removed in v0.39
+
+* The ``expand_fn`` argument in ``qml.execute`` is removed.
+  Instead, please create a ``qml.transforms.core.TransformProgram`` with the desired preprocessing and pass it to the ``transform_program`` argument of ``qml.execute``.
+
+  - Deprecated in v0.38
+  - Removed in v0.39
+
+* The ``max_expansion`` argument in ``qml.execute`` is removed.
+  Instead, please use ``qml.devices.preprocess.decompose`` with the desired expansion level, add it to a ``TransformProgram``, and pass it to the ``transform_program`` argument of ``qml.execute``.
+
+  - Deprecated in v0.38
+  - Removed in v0.39
+
+* The ``override_shots`` argument in ``qml.execute`` is removed.
+  Instead, please add the shots to the ``QuantumTape``\ s to be executed.
+
+  - Deprecated in v0.38
+  - Removed in v0.39
+
+* The ``device_batch_transform`` argument in ``qml.execute`` is removed.
+  Instead, please create a ``qml.transforms.core.TransformProgram`` with the desired preprocessing and pass it to the ``transform_program`` argument of ``qml.execute``.
+
+  - Deprecated in v0.38
+  - Removed in v0.39
+
+* The functions ``qml.transforms.sum_expand`` and ``qml.transforms.hamiltonian_expand`` are removed.
+  Instead, ``qml.transforms.split_non_commuting`` can be used for equivalent behaviour.
 
   - Deprecated and Duplicated in v0.38
   - Removed in v0.39
