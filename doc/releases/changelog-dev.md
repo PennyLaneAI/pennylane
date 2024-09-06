@@ -25,6 +25,8 @@
 * `qml.transforms.hamiltonian_expand` and `qml.transforms.sum_expand` are removed.
   Please use `qml.transforms.split_non_commuting` instead.
 
+* The `decomp_depth` keyword argument to `qml.device` is removed.
+
 <h3>Deprecations 👋</h3>
 
 <h3>Documentation 📝</h3>
