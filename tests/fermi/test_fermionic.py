@@ -171,6 +171,8 @@ class TestFermiWord:
         (fw7, fw7_dag),
         (FermiA(0), FermiC(0)),
         (FermiC(0), FermiA(0)),
+        (FermiA(1), FermiC(1)),
+        (FermiC(1), FermiA(1)),
     )
 
     @pytest.mark.parametrize("fw, fw_dag", tup_fw_dag)
