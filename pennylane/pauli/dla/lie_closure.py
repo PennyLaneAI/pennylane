@@ -20,8 +20,8 @@ from copy import copy
 from functools import reduce
 from typing import Union
 
-import scipy
 import numpy as np
+import scipy
 
 import pennylane as qml
 from pennylane.operation import Operator
