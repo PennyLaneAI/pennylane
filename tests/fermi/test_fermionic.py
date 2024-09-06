@@ -227,16 +227,16 @@ class TestFermiWord:
         assert fw.commute(i, j) == fs
 
     def test_commute_errors(self):
-        with pytest.raises(TypeError, match="Indices must be integers"):
+        with pytest.raises(TypeError, match="Positions must be integers"):
             fw8.commute(0.5, 1)
 
-        with pytest.raises(ValueError, match="Indices must be positive integers"):
+        with pytest.raises(ValueError, match="Positions must be positive integers"):
             fw8.commute(-1, 0)
 
-        with pytest.raises(ValueError, match="Indices must be consecutive integers"):
+        with pytest.raises(ValueError, match="Positions must be consecutive integers"):
             _commute_adjacent(FermiSentence({fw17: 1}), fw17, 0, 2)
 
-        with pytest.raises(ValueError, match="Indices out of range"):
+        with pytest.raises(ValueError, match="Positions out of range"):
             fw8.commute(1, 2)
 
 

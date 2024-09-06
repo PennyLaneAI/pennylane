@@ -314,8 +314,8 @@ class FermiWord(dict):
             FermiSentence: The ``FermiSentence`` obtained after applying the anti-commutator relations.
 
         Raises:
-            TypeError: If the source or target is not an integer
-            ValueError: If the source or target are outside the range [0, len(self) - 1]
+            TypeError: if the source or target is not an integer
+            ValueError: if the source or target are outside the range [0, len(self) - 1]
 
 
         **Example**
@@ -326,13 +326,13 @@ class FermiWord(dict):
         """
 
         if not isinstance(source, int) or not isinstance(target, int):
-            raise TypeError("Indices must be integers")
+            raise TypeError("Positions must be integers")
 
         if source < 0 or target < 0:
-            raise ValueError("Indices must be positive integers")
+            raise ValueError("Positions must be positive integers")
 
         if source > len(self.sorted_dic) - 1 or target > len(self.sorted_dic) - 1:
-            raise ValueError("Indices out of range")
+            raise ValueError("Positions out of range")
 
         if source == target:
             return FermiSentence({self: 1})
@@ -362,10 +362,10 @@ def _commute_adjacent(fs, fw, i, j):
         FermiSentence: The ``FermiSentence`` obtained after applying the anti-commutator relations.
 
     Raises:
-        ValueError: If the source and target positions are not consecutive
+        ValueError: if the source and target positions are not consecutive
     """
     if i != j + 1 and j != i + 1:
-        raise ValueError("Indices must be consecutive integers")
+        raise ValueError("Positions must be consecutive integers")
 
     indices = list(fw.sorted_dic.keys())
     i_idx = indices[i]
@@ -397,35 +397,35 @@ def _commute_adjacent(fs, fw, i, j):
     fs = FermiSentence(fs)
 
     if i_val == j_val or i_idx[1] != j_idx[1]:
-        fs = fs + (-1 * FermiSentence({fw: coeff}))
-    else:
-        left = {}
-        lpos = 0
+        return fs + (-1 * FermiSentence({fw: coeff})), fw
 
-        middle = {}
-        mpos = 0
+    left = {}
+    lpos = 0
 
-        right = {}
-        rpos = 0
+    middle = {}
+    mpos = 0
 
-        for key, value in fw.sorted_dic.items():
-            if key[0] < min(i, j):
-                left[(lpos, key[1])] = value
-                lpos += 1
-            elif key[0] > max(i, j):
-                right[(rpos, key[1])] = value
-                rpos += 1
-            else:
-                middle[(mpos, key[1])] = value
-                mpos += 1
+    right = {}
+    rpos = 0
 
-        lfw = FermiWord(left)
-        mfw = FermiWord(middle)
-        rfw = FermiWord(right)
+    for key, value in fw.sorted_dic.items():
+        if key[0] < min(i, j):
+            left[(lpos, key[1])] = value
+            lpos += 1
+        elif key[0] > max(i, j):
+            right[(rpos, key[1])] = value
+            rpos += 1
+        else:
+            middle[(mpos, key[1])] = value
+            mpos += 1
 
-        terms = lfw * (1 - FermiSentence({mfw: 1})) * rfw
+    lfw = FermiWord(left)
+    mfw = FermiWord(middle)
+    rfw = FermiWord(right)
 
-        fs = fs + coeff * terms
+    terms = lfw * (1 - FermiSentence({mfw: 1})) * rfw
+
+    fs = fs + coeff * terms
 
     return fs, fw
 
