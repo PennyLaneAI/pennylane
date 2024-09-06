@@ -563,12 +563,12 @@ def haldane(
 
     if hopping1.shape not in [(1,), (lattice.n_sites, lattice.n_sites)]:
         raise ValueError(
-            f"The hopping1 parameter should be a constant or an array of shape ({lattice.n_sites},{lattice.n_sites})"
+            f"The hopping1 parameter should be a constant or an array of shape ({lattice.n_sites},{lattice.n_sites})."
         )
 
     if hopping2.shape not in [(1,), (lattice.n_sites, lattice.n_sites)]:
         raise ValueError(
-            f"The hopping2 parameter should be a constant or an array of shape ({lattice.n_sites},{lattice.n_sites})"
+            f"The hopping2 parameter should be a constant or an array of shape ({lattice.n_sites},{lattice.n_sites})."
         )
 
     if phi.shape not in [(1,), (lattice.n_sites, lattice.n_sites)]:
