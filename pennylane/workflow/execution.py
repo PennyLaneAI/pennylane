@@ -79,7 +79,7 @@ SupportedInterfaceUserInput = Literal[
 ]
 
 _mapping_output = (
-    "Numpy",
+    "numpy",
     "auto",
     "autograd",
     "autograd",

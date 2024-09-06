@@ -408,13 +408,13 @@ class LegacyDeviceFacade(Device):
 
         if backprop_interface is not None:
             # device supports backpropagation natively
-            return mapped_interface in [backprop_interface, "Numpy"]
+            return mapped_interface in [backprop_interface, "numpy"]
         # determine if the device has any child devices that support backpropagation
         backprop_devices = self._device.capabilities().get("passthru_devices", None)
 
         if backprop_devices is None:
             return False
-        return mapped_interface in backprop_devices or mapped_interface == "Numpy"
+        return mapped_interface in backprop_devices or mapped_interface == "numpy"
 
     def _validate_adjoint_method(self, tape):
         # The conditions below provide a minimal set of requirements that we can likely improve upon in

@@ -58,7 +58,7 @@ def _convert_to_interface(res, interface):
     """
     interface = INTERFACE_MAP[interface]
 
-    if interface in ["Numpy"]:
+    if interface == "numpy":
         return res
 
     if isinstance(res, (list, tuple)):
@@ -989,9 +989,9 @@ class QNode:
                 if qml.capture.enabled()
                 else qml.math.get_interface(*args, *list(kwargs.values()))
             )
-            if interface == "numpy":
-                # Internally stop treating numpy as autograd
-                interface = None
+            # if interface == "numpy":
+            #     # Internally stop treating numpy as autograd
+            #     interface = None
             self._interface = INTERFACE_MAP[interface]
         if self._qfunc_uses_shots_arg:
             override_shots = False
