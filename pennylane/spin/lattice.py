@@ -317,6 +317,73 @@ def _kagome(n_cells, boundary_condition=False, neighbour_order=1):
     return lattice_kagome
 
 
+def _lieb(n_cells, boundary_condition=False, neighbour_order=1):
+    r"""Generates a lieb lattice"""
+    vectors = [[0, 1], [1, 0]]
+    positions = [[0, 0], [0.5, 0], [0, 0.5]]
+
+    n_cells = n_cells[0:2]
+    lattice_lieb = Lattice(
+        n_cells=n_cells,
+        vectors=vectors,
+        positions=positions,
+        neighbour_order=neighbour_order,
+        boundary_condition=boundary_condition,
+    )
+
+    return lattice_lieb
+
+
+def _cubic(n_cells, boundary_condition=False, neighbour_order=1):
+    r"""Generates a cubic lattice"""
+    vectors = math.eye(3)
+
+    n_cells = n_cells[0:3]
+    lattice_cubic = Lattice(
+        n_cells=n_cells,
+        vectors=vectors,
+        neighbour_order=neighbour_order,
+        boundary_condition=boundary_condition,
+    )
+
+    return lattice_cubic
+
+
+def _bcc(n_cells, boundary_condition=False, neighbour_order=1):
+    r"""Generates a body centered cubic lattice"""
+    vectors = math.eye(3)
+    positions = [[0, 0, 0], [0.5, 0.5, 0.5]]
+
+    n_cells = n_cells[0:3]
+    lattice_bcc = Lattice(
+        n_cells=n_cells,
+        vectors=vectors,
+        positions=positions,
+        neighbour_order=neighbour_order,
+        boundary_condition=boundary_condition,
+    )
+    print(lattice_bcc.edges)
+
+    return lattice_bcc
+
+
+def _fcc(n_cells, boundary_condition=False, neighbour_order=1):
+    r"""Generates a face centered cubic lattice"""
+    vectors = math.eye(3)
+    positions = [[0, 0, 0], [0.5, 0.5, 0.0], [0.5, 0, 0.5], [0.0, 0.5, 0.5]]
+
+    n_cells = n_cells[0:3]
+    lattice_fcc = Lattice(
+        n_cells=n_cells,
+        vectors=vectors,
+        positions=positions,
+        neighbour_order=neighbour_order,
+        boundary_condition=boundary_condition,
+    )
+
+    return lattice_fcc
+
+
 # TODO Check the efficiency of this function with a dictionary instead.
 def _generate_lattice(lattice, n_cells, boundary_condition=False, neighbour_order=1):
     r"""Generates the lattice object for a given shape and n_cells.
@@ -333,10 +400,22 @@ def _generate_lattice(lattice, n_cells, boundary_condition=False, neighbour_orde
 
     lattice_shape = lattice.strip().lower()
 
-    if lattice_shape not in ["chain", "square", "rectangle", "honeycomb", "triangle", "kagome"]:
+    if lattice_shape not in [
+        "chain",
+        "square",
+        "rectangle",
+        "honeycomb",
+        "triangle",
+        "kagome",
+        "lieb",
+        "cubic",
+        "bcc",
+        "fcc",
+    ]:
         raise ValueError(
             f"Lattice shape, '{lattice}' is not supported."
-            f"Please set lattice to: chain, square, rectangle, honeycomb, triangle, or kagome"
+            f"Please set lattice to: chain, square, rectangle, honeycomb, triangle, kagome, lieb,"
+            f"cubic, bcc or fcc."
         )
 
     if lattice_shape == "chain":
@@ -351,5 +430,13 @@ def _generate_lattice(lattice, n_cells, boundary_condition=False, neighbour_orde
         lattice = _triangle(n_cells, boundary_condition, neighbour_order)
     elif lattice_shape == "kagome":
         lattice = _kagome(n_cells, boundary_condition, neighbour_order)
+    elif lattice_shape == "lieb":
+        lattice = _lieb(n_cells, boundary_condition, neighbour_order)
+    elif lattice_shape == "cubic":
+        lattice = _cubic(n_cells, boundary_condition, neighbour_order)
+    elif lattice_shape == "bcc":
+        lattice = _bcc(n_cells, boundary_condition, neighbour_order)
+    elif lattice_shape == "fcc":
+        lattice = _fcc(n_cells, boundary_condition, neighbour_order)
 
     return lattice
