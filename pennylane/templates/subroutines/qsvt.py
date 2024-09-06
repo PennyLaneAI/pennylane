@@ -285,9 +285,9 @@ class QSVT(Operation):
             "projectors": projectors,
         }
 
-        total_wires = qml.wires.Wires(UA.wires) + qml.wires.Wires.all_wires(
+        total_wires = qml.wires.Wires.all_wires(
             [proj.wires for proj in projectors]
-        )
+        ) + qml.wires.Wires(UA.wires)
 
         super().__init__(wires=total_wires, id=id)
 
