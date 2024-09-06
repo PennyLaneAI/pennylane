@@ -117,7 +117,7 @@ def test_decomposition(hamiltonian, expected_decomposition):
 
     decomposition = qml.Qubitization.compute_decomposition(hamiltonian=hamiltonian, control=[1])
     for i, op in enumerate(decomposition):
-        assert qml.equal(op, expected_decomposition[i])
+        qml.assert_equal(op, expected_decomposition[i])
 
 
 def test_lightning_qubit():
