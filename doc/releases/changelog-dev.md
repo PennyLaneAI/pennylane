@@ -23,7 +23,6 @@
   unique representation of the object.
   [(#6167)](https://github.com/PennyLaneAI/pennylane/pull/6167)
 
-
 <h3>Breaking changes 💔</h3>
 
 * `DefaultQubitTF` is removed. Please use `default.qubit` for all interfaces.
