@@ -352,7 +352,7 @@ def _commute_adjacent(fs, fw, source, target):
     """Commutes two adjacent operators within a ``FermiSentence``.
 
     Args:
-        fs (``FermiSentence``): The ``FermiSentence`` to be modified
+        fs (``FermiSentence``): The ``FermiSentence`` to be modified.
         fw (``FermiWord``): The ``FermiWord`` within ``fs`` that contains the operators
             to be commuted.
         source (int): The position of the operator to be commuted.
@@ -638,12 +638,12 @@ class FermiSentence(dict):
         r"""Apply anti-commuting relations until the operator in position source is in position target.
 
         Args:
-            fw (FermiWord): The FermiWord within the FermiSentence that contains the operator to be commuted.
+            fw (FermiWord): The ``FermiWord`` within the ``FermiSentence`` that contains the operator to be commuted.
             source (int): The position of the operator to be commuted.
             target (int): The desired position of the operator occupying the source position.
 
         Returns:
-            FermiSentence: The FermiSentence obtained after applying the anti-commutator relations.
+            FermiSentence: The ``FermiSentence`` obtained after applying the anti-commutator relations.
 
         Raises:
             ValueError: if the provided ``FermiWord`` is not in the ``FermiSentence`` dictionary
