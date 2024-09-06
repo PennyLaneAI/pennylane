@@ -417,8 +417,7 @@ def emery(
     spin = 2
     hopping_ham = 0.0 * FermiWord({})
     intersite_term = 0.0 * FermiWord({})
-    for edge in lattice.edges:
-        i, j, order = edge
+    for i, j, order in lattice.edges:
         if hopping.shape == (neighbour_order,):
             hop = hopping[order]
         else:
