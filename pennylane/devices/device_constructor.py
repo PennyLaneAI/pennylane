@@ -127,10 +127,10 @@ def device(name, *args, **kwargs):
         dev = qml.device('default.qubit', wires=['ancilla', 'q11', 'q12', -1, 1])
 
         def circuit():
-`           qml.Hadamard(wires='q11')
+            qml.Hadamard(wires='q11')
             qml.Hadamard(wires=['ancilla'])
             qml.CNOT(wires=['q12', -1])
-            ...`
+            ...
 
     On some newer devices, such as ``default.qubit``, the ``wires`` argument can be omitted altogether,
     and instead the wires will be computed when executing a circuit depending on its contents.
