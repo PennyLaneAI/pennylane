@@ -381,6 +381,17 @@ class TestProcessSamples:
         assert result2["10"] == 0
         assert result2["11"] == 0
 
+    def test_counts_binsize(self):
+        counts = qml.counts(wires=0)
+        samples = np.zeros((10, 2))
+        output = counts.process_samples(
+            samples, wire_order=qml.wires.Wires((0, 1)), shot_range=(0, 10), bin_size=2
+        )
+        assert len(output) == 5
+
+        for r in output:
+            assert r == {"0": 2}
+
 
 class TestCountsIntegration:
     # pylint:disable=too-many-public-methods,not-an-iterable

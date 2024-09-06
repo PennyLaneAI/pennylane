@@ -336,10 +336,10 @@ class GlobalPhase(Operation):
         >>> qml.GlobalPhase.compute_eigvals(np.pi/2)
         array([6.123234e-17+1.j, 6.123234e-17+1.j])
         """
+        if qml.math.get_interface(phi) == "tensorflow":
+            phi = qml.math.cast_like(phi, 1j)
         exp = qml.math.exp(-1j * phi)
         ones = qml.math.ones(2**n_wires, like=phi)
-        if qml.math.get_interface(phi) == "tensorflow":
-            ones = qml.math.cast_like(ones, 1j)
 
         if qml.math.ndim(phi) == 0:
             return exp * ones
