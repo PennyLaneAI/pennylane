@@ -229,7 +229,7 @@ class Lattice:
         if not all([len(edge) in (1, 2) for edge in custom_edges]):
             raise TypeError(
                 """
-                custom_edges must be a list of tuples of length 1 or 2.
+                The elements of custom_edges should be lists of length 1 or 2. Inside said lists should be a tuple that contains two lattice indices to represent the edge and, optionally, a tuple that represents the operation and coefficient for that edge.
                 Every tuple must contain two lattice indices to represent the edge
                 and can optionally include a list to represent the operation and coefficient for that edge.
                 """
