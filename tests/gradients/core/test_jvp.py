@@ -723,7 +723,7 @@ class TestJVPGradients:
     @pytest.mark.tf
     @pytest.mark.slow
     @pytest.mark.parametrize("batch_dim", [None])  # , 1, 3])
-    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.tf"])
+    @pytest.mark.parametrize("dev_name", ["default.qubit"])
     def test_tf(self, tol, dev_name, batch_dim):
         """Tests that the output of the JVP transform
         can be differentiated using Tensorflow."""

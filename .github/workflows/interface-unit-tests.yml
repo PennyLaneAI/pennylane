@@ -532,19 +532,10 @@ jobs:
          }}
       matrix:
         config:
-          - device: default.qubit.legacy
-            shots: None
           - device: default.qubit
             shots: None
           - device: default.qubit
             shots: 10000
-          - device: default.qubit.legacy
-            shots: 10000
-          # - device: default.qubit.tf
-          #   shots: None
-          - device: default.qubit.autograd
-            shots: None
-            skip_interface: jax,tf,torch
           - device: default.mixed
             shots: None
         python-version: >-
@@ -604,7 +595,7 @@ jobs:
           ref: ${{ inputs.branch }}
 
       - name: Down Coverage Artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
 
       - name: Upload to Codecov
         uses: codecov/codecov-action@v4

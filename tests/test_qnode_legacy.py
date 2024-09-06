@@ -1749,37 +1749,6 @@ class TestTapeExpansion:
         assert qml.math.allclose(res, [0.54, 0.54], atol=0.05)
         assert res[0] == res[1]
 
-    def test_device_expansion_strategy(self, mocker):
-        """Test that the device expansion strategy performs the device
-        decomposition at construction time, and not at execution time"""
-        dev = qml.device("default.qubit.legacy", wires=2)
-        x = pnp.array(0.5, requires_grad=True)
-
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning,
-            match="'expansion_strategy' attribute is deprecated",
-        ):
-
-            @qnode(dev, diff_method="parameter-shift", expansion_strategy="device")
-            def circuit(x):
-                qml.SingleExcitation(x, wires=[0, 1])
-                return qml.expval(qml.PauliX(0))
-
-        assert circuit.expansion_strategy == "device"
-        assert circuit.execute_kwargs["expand_fn"] is None
-
-        spy_expand = mocker.spy(circuit.device.target_device, "expand_fn")
-
-        circuit.construct([x], {})
-        assert len(circuit.tape.operations) > 0
-        spy_expand.assert_called_once()
-        circuit(x)
-
-        assert len(spy_expand.call_args_list) == 3
-
-        qml.grad(circuit)(x)
-        assert len(spy_expand.call_args_list) == 9
-
     def test_expansion_multiple_qwc_observables(self, mocker):
         """Test that the QNode correctly expands tapes that return
         multiple measurements of commuting observables"""
