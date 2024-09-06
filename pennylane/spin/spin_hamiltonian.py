@@ -495,7 +495,7 @@ def haldane(
     where :math:`t_1` is the hopping term representing the hopping amplitude between neighbouring
     sites, :math:`t_2` is the hopping amplitude between next nearest neighbours, :math:`\phi` is the phase
     factor, :math:`\langle i,j \rangle`, :math:`\langle \langle i,j \rangle \rangle` represent the
-    indices for nearest neighbour and next nearest neighbour spins respectively,
+    indices for nearest neighbour and next-nearest neighbour spins respectively,
     and :math:`\sigma` is the spin degree of freedom.
     This function assumes there are two fermions with opposite spins on each lattice site.
 
