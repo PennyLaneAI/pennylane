@@ -26,12 +26,6 @@ Pending deprecations
   - Deprecated in v0.38
   - Will be removed in v0.39
 
-* The functions ``qml.qinfo.classical_fisher`` and ``qml.qinfo.quantum_fisher`` are deprecated since they are being migrated
-  to the ``qml.gradients`` module. Therefore, ``qml.gradients.classical_fisher`` and ``qml.gradients.quantum_fisher`` should be used instead.
-
-  - Deprecated and Duplicated in v0.38
-  - Will be removed in v0.39
-
 * The ``simplify`` argument in ``qml.Hamiltonian`` and ``qml.ops.LinearCombination`` is deprecated. 
   Instead, ``qml.simplify()`` can be called on the constructed operator.
 
@@ -81,6 +75,12 @@ Other deprecations
 
 Completed deprecation cycles
 ----------------------------
+
+* The functions ``qml.qinfo.classical_fisher`` and ``qml.qinfo.quantum_fisher`` have been removed. Instead, please use
+  ``qml.gradients.classical_fisher`` and ``qml.gradients.quantum_fisher``.
+
+  - Deprecated and Duplicated in v0.38
+  - Removed in v0.39
 
 * The ``expansion_strategy`` attribute of ``qml.QNode`` is removed.
   Users should make use of ``qml.workflow.construct_batch``, should they require fine control over the output tape(s).
