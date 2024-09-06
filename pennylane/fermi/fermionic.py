@@ -349,7 +349,7 @@ class FermiWord(dict):
 
 
 def _commute_adjacent(fs, fw, i, j):
-    """Commutes two adjacent operators within a ``FermiSentence``
+    """Commutes two adjacent operators within a ``FermiSentence``.
 
     Args:
         fs (``FermiSentence``): The ``FermiSentence`` to be modified
