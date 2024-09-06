@@ -16,7 +16,7 @@ Pending deprecations
   - Will be removed in v0.39
 
 * The logic for internally switching a device for a different backpropagation
-  compatible device is now deprecated, as it was in place for the deprecated `default.qubit.legacy`.
+  compatible device is now deprecated, as it was in place for the deprecated ``default.qubit.legacy``.
 
   - Deprecated in v0.38
   - Will be removed in v0.39  
@@ -27,12 +27,6 @@ Pending deprecations
   - Will be removed in v0.39
 
 * The ``max_expansion`` argument in ``qml.QNode`` is deprecated. 
-
-  - Deprecated in v0.38
-  - Will be removed in v0.39
-
-* The functions ``qml.transforms.sum_expand`` and ``qml.transforms.hamiltonian_expand`` are deprecated.
-  Instead, ``qml.transforms.split_non_commuting`` can be used for equivalent behaviour.
 
   - Deprecated in v0.38
   - Will be removed in v0.39
@@ -134,6 +128,12 @@ Other deprecations
 
 Completed deprecation cycles
 ----------------------------
+
+* The functions ``qml.transforms.sum_expand`` and ``qml.transforms.hamiltonian_expand`` are deprecated.
+  Instead, ``qml.transforms.split_non_commuting`` can be used for equivalent behaviour.
+
+  - Deprecated in v0.38
+  - Removed in v0.39
 
 * ``queue_idx`` attribute has been removed from the ``Operator``, ``CompositeOp``, and ``SymboliOp`` classes. Instead, the index is now stored as the label of the ``CircuitGraph.graph`` nodes.
 

@@ -172,9 +172,10 @@ class TestQSVT:
     def test_wire_order(self):
         """Test that the wire order is preserved."""
 
-        op = qml.QFT(wires=[2, 1])
-        qsvt_wires = qml.QSVT(op, [op]).wires
-        assert qsvt_wires == op.wires
+        op1 = qml.GroverOperator(wires=[0, 3])
+        op2 = qml.QFT(wires=[2, 1])
+        qsvt_wires = qml.QSVT(op2, [op1]).wires
+        assert qsvt_wires == op1.wires + op2.wires
 
     @pytest.mark.parametrize(
         ("quantum_function", "phi_func", "A", "phis", "results"),

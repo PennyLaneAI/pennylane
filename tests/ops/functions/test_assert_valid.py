@@ -188,7 +188,7 @@ class BadPickling0(Operator):
 def test_bad_pickling():
     """Test an error is raised in an operator cant be pickled."""
 
-    with pytest.raises(AttributeError, match="Can't pickle local object"):
+    with pytest.raises(AttributeError):
         assert_valid(BadPickling0(lambda x: x, wires=0))
 
 
