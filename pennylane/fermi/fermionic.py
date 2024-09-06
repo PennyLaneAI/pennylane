@@ -348,7 +348,7 @@ class FermiWord(dict):
         return fs
 
 
-def _commute_adjacent(fs, fw, i, j):
+def _commute_adjacent(fs, fw, source, target):
     """Commutes two adjacent operators within a ``FermiSentence``.
 
     Args:
@@ -364,39 +364,39 @@ def _commute_adjacent(fs, fw, i, j):
     Raises:
         ValueError: if the source and target positions are not consecutive
     """
-    if i != j + 1 and j != i + 1:
+    if source != target + 1 and target != source + 1:
         raise ValueError("Positions must be consecutive integers")
 
     indices = list(fw.sorted_dic.keys())
-    i_idx = indices[i]
-    j_idx = indices[j]
+    source_idx = indices[source]
+    target_idx = indices[target]
 
-    i_val = fw[i_idx]
-    j_val = fw[j_idx]
+    source_val = fw[source_idx]
+    target_val = fw[target_idx]
 
     # commuting identical terms
-    if i_idx[1] == j_idx[1] and i_val == j_val:
+    if source_idx[1] == target_idx[1] and source_val == target_val:
         return fs, fw
 
-    new_i_idx = (i, j_idx[1])
-    new_j_idx = (j, i_idx[1])
+    new_source_idx = (source, target_idx[1])
+    new_target_idx = (target, source_idx[1])
 
     coeff = fs[fw]
     del fs[fw]
     fw = dict(fw)
-    fw[new_i_idx] = j_val
-    fw[new_j_idx] = i_val
+    fw[new_source_idx] = target_val
+    fw[new_target_idx] = source_val
 
-    if i_idx[1] != j_idx[1]:
-        del fw[i_idx]
-        del fw[j_idx]
+    if source_idx[1] != target_idx[1]:
+        del fw[source_idx]
+        del fw[target_idx]
 
     fw = FermiWord(fw)
 
     fs = dict(fs)
     fs = FermiSentence(fs)
 
-    if i_val == j_val or i_idx[1] != j_idx[1]:
+    if source_val == target_val or source_idx[1] != target_idx[1]:
         return fs + (-1 * FermiSentence({fw: coeff})), fw
 
     left = {}
@@ -408,11 +408,13 @@ def _commute_adjacent(fs, fw, i, j):
     right = {}
     rpos = 0
 
+    _min = min(source, target)
+    _max = max(source, target)
     for key, value in fw.sorted_dic.items():
-        if key[0] < min(i, j):
+        if key[0] < _min:
             left[(lpos, key[1])] = value
             lpos += 1
-        elif key[0] > max(i, j):
+        elif key[0] > _max:
             right[(rpos, key[1])] = value
             rpos += 1
         else:
