@@ -13,12 +13,17 @@
   `from pennylane.capture.primitives import *`.
   [(#6129)](https://github.com/PennyLaneAI/pennylane/pull/6129)
 
+* The `SampleMP.process_samples` method is updated to support using JAX tracers
+  for samples, allowing compatiblity with Catalyst workflows.
+  [(#6211)](https://github.com/PennyLaneAI/pennylane/pull/6211)
+
 * Improve `qml.Qubitization` decomposition.
   [(#6182)](https://github.com/PennyLaneAI/pennylane/pull/6182)
 
 * The `__repr__` methods for `FermiWord` and `FermiSentence` now returns a
   unique representation of the object.
   [(#6167)](https://github.com/PennyLaneAI/pennylane/pull/6167)
+
 
 <h3>Breaking changes 💔</h3>
 
@@ -61,8 +66,9 @@
 
 This release contains contributions from (in alphabetical order):
 
-Guillermo Alonso
-Utkarsh Azad
-Christina Lee
-William Maxwell
-Lee J. O'Riordan
+Guillermo Alonso,
+Utkarsh Azad,
+Lillian M. A. Frederiksen,
+Christina Lee,
+William Maxwell,
+Lee J. O'Riordan,
