@@ -16,6 +16,10 @@
 * `FermiWord` and `FermiSentence` classes now have methods to compute adjoints.
   [(#6166)](https://github.com/PennyLaneAI/pennylane/pull/6166)
 
+* The `SampleMP.process_samples` method is updated to support using JAX tracers
+  for samples, allowing compatiblity with Catalyst workflows.
+  [(#6211)](https://github.com/PennyLaneAI/pennylane/pull/6211)
+
 * Improve `qml.Qubitization` decomposition.
   [(#6182)](https://github.com/PennyLaneAI/pennylane/pull/6182)
 
@@ -64,8 +68,9 @@
 
 This release contains contributions from (in alphabetical order):
 
-Guillermo Alonso
-Utkarsh Azad
-Christina Lee
-William Maxwell
-Lee J. O'Riordan
+Guillermo Alonso,
+Utkarsh Azad,
+Lillian M. A. Frederiksen,
+Christina Lee,
+William Maxwell,
+Lee J. O'Riordan,
