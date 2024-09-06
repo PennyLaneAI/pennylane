@@ -312,7 +312,8 @@ def fermi_hubbard(
 
 
 def kitaev(n_cells, coupling=None, boundary_condition=False):
-    r"""Generates the Hamiltonian for the Kitaev model on the Honeycomb lattice.
+    r"""Generates the Hamiltonian for the `Kitaev model <https://arxiv.org/pdf/2406.06625>`_
+    on the Honeycomb lattice.
 
     The Hamiltonian is represented as:
 
@@ -330,10 +331,14 @@ def kitaev(n_cells, coupling=None, boundary_condition=False):
 
     Args:
        n_cells (list[int]): Number of cells in each direction of the grid.
-       coupling (Optional[list[math.array[float]]]): Coupling between spins, it is a list of length 3.
+       coupling (Optional[list[float] | tensor_like(float)]): Coupling between spins, it is a list of length 3.
                             Default value is [1.0, 1.0, 1.0].
-       boundary_condition (bool | list[bool]): Defines boundary conditions for different lattice axes,
+       boundary_condition (Optional[bool | list[bool]]): Defines boundary conditions for different lattice axes,
            default is ``False`` indicating open boundary condition.
+
+    Raises:
+       TypeError:
+          if ``coupling`` doesn't have correct dimensions.
 
     Returns:
        ~ops.op_math.Sum: Hamiltonian for the Kitaev model.
@@ -361,7 +366,7 @@ def kitaev(n_cells, coupling=None, boundary_condition=False):
         coupling = [1.0, 1.0, 1.0]
 
     if len(coupling) != 3:
-        raise ValueError("The coupling parameter should be a list of length 3")
+        raise ValueError("The coupling parameter should be a list of length 3.")
 
     vectors = [[1, 0], [0.5, 0.75**0.5]]
     positions = [[0, 0], [0.5, 0.5 / 3**0.5]]
