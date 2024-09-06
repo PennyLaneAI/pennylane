@@ -328,7 +328,7 @@ def emery(
     .. math::
         \begin{align*}
           \hat{H} & = -t\sum_{\langle i,j \rangle, \sigma}(c_{i\sigma}^{\dagger}c_{j\sigma})
-          + U\sum_{i}n_{i \uparrow} n_{i\downarrow} + V\sum_{<i,j>}(n_{i}n_{j})
+          + U\sum_{i}n_{i \uparrow} n_{i\downarrow} + V\sum_{<i,j>}(n_{i \uparrow} + n_{i \downarrow})(n_{j \uparrow} + n_{j \downarrow})
         \end{align*}
 
     where ``t`` is the hopping term representing the kinetic energy of electrons, ``U`` is the on-site Coulomb interaction,
