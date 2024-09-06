@@ -115,10 +115,10 @@ def device(name, *args, **kwargs):
             dev = qml.device('default.qubit', wires=5)
 
             def circuit():
-               qml.Hadamard(wires=1)
-               qml.Hadamard(wires=[0])
-               qml.CNOT(wires=[3, 4])
-               ...
+                qml.Hadamard(wires=1)
+                qml.Hadamard(wires=[0])
+                qml.CNOT(wires=[3, 4])
+                ...
 
         The ``wires`` argument can also be a sequence of unique numbers or strings, specifying custom wire labels
         that the user employs to address the wires:
