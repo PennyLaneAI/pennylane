@@ -295,7 +295,6 @@ def test_capture_qnode_kwargs():
         "cache": True,
         "cachesize": 10,
         "max_diff": 2,
-        "max_expansion": 10,
         "device_vjp": False,
         "mcm_method": None,
         "postselect_mode": None,
