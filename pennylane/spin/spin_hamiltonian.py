@@ -321,7 +321,7 @@ def emery(
     neighbour_order=1,
     mapping="jordan_wigner",
 ):
-    r"""Generates the Hamiltonian for the Emery model on a lattice defined in `<https://arxiv.org/pdf/2309.11786>`__.
+    r"""Generates the Hamiltonian for the `Emery model < https://arxiv.org/pdf/2309.11786>`_ on a lattice.
 
     The Hamiltonian is represented as:
 
