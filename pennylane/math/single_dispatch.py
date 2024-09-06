@@ -793,7 +793,7 @@ ar.register_function(
     "jax",
     "take",
     lambda x, indices, axis=None, **kwargs: _i("jax").numpy.take(
-        x, np.array(indices), axis=axis, **kwargs
+        x, _i("jax").numpy.asarray(indices), axis=axis, **kwargs
     ),
 )
 ar.register_function("jax", "coerce", lambda x: x)
