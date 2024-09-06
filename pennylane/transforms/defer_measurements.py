@@ -268,7 +268,6 @@ def defer_measurements(
 
         There is only one controlled gate with only one control wire.
     """
-
     if not any(isinstance(o, MidMeasureMP) for o in tape.operations):
         return (tape,), null_postprocessing
 
