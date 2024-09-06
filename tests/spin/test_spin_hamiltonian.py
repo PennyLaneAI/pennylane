@@ -786,7 +786,7 @@ def test_fermi_hubbard_hamiltonian_matrix(shape, n_cells, t, coulomb, expected_h
 
 
 def test_interaction_parameter_error_emery():
-    r"""Test that an error is raised when the provided interaction parameters are wrong of wrong shape
+    r"""Test that an error is raised when the provided interaction parameters are of wrong shape for
     emery Hamiltonian."""
     n_cells = [4, 4]
     lattice = "Square"

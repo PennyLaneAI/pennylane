@@ -4,8 +4,10 @@
 
 <h3>New features since last release</h3>
 
-* Functions are now available for generating spin Hamiltonians in Emery and Haldane.
-  models on a lattice
+* Functions are added for generating spin Hamiltonians for Emery and Haldane
+  models on a lattice.
+  * `qml.spin.emery` creates the [Emery model](https://arxiv.org/pdf/2309.11786) Hamiltonian.
+    * `qml.spin.haldane` creates the [Haldane model](https://arxiv.org/pdf/2211.13615) Hamiltonian.
   [(#6201)](https://github.com/PennyLaneAI/pennylane/pull/6201/)
 
 <h3>Improvements 🛠</h3>
