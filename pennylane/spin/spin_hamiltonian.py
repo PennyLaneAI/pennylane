@@ -573,7 +573,7 @@ def haldane(
 
     if phi.shape not in [(1,), (lattice.n_sites, lattice.n_sites)]:
         raise ValueError(
-            f"The phi parameter should be a constant or an array of shape ({lattice.n_sites},{lattice.n_sites})"
+            f"The phi parameter should be a constant or an array of shape ({lattice.n_sites},{lattice.n_sites})."
         )
 
     spin = 2
