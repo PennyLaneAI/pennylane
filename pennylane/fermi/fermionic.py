@@ -352,7 +352,7 @@ def _commute_adjacent(fs, fw, source, target):
     """Commutes two adjacent operators within a ``FermiSentence``.
 
     Args:
-        fs (``FermiSentence``): The ``FermiSentence`` to be modified
+        fs (``FermiSentence``): The ``FermiSentence`` to be modified.
         fw (``FermiWord``): The ``FermiWord`` within ``fs`` that contains the operators
             to be commuted.
         source (int): The position of the operator to be commuted.
