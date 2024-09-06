@@ -12,9 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """QNode transforms for the quantum information quantities."""
-# pylint: disable=import-outside-toplevel, not-callable
 from collections.abc import Callable, Sequence
 from functools import partial
+
+# pylint: disable=import-outside-toplevel, not-callable
+from warnings import warn
 
 import pennylane as qml
 from pennylane import transform
@@ -668,6 +670,10 @@ def relative_entropy(qnode0, qnode1, wires0, wires1):
         func: A function that takes as input the joint arguments of the two QNodes,
         and returns the relative entropy from their output states.
 
+    .. warning::
+
+        :func:`pennylane.qinfo.relative_entropy` is deprecated. Instead, use :func:`pennylane.math.relative_entropy`.
+
     **Example**
 
     Consider the following QNode:
@@ -707,6 +713,10 @@ def relative_entropy(qnode0, qnode1, wires0, wires1):
     (tensor(-0.16458856, requires_grad=True),
      tensor(0.16953273, requires_grad=True))
     """
+    warn(
+        "qml.qinfo.relative_entropy is deprecated. Instead, use qml.math.relative_entropy.",
+        qml.PennyLaneDeprecationWarning,
+    )
 
     if len(wires0) != len(wires1):
         raise qml.QuantumFunctionError("The two states must have the same number of wires.")
@@ -789,6 +799,10 @@ def trace_distance(qnode0, qnode1, wires0, wires1):
         func: A function that takes as input the joint arguments of the two QNodes,
         and returns the trace distance between their output states.
 
+    .. warning::
+
+        :func:`pennylane.qinfo.trace_distance` is deprecated. Instead, use :func:`pennylane.math.trace_distance`.
+
     **Example**
 
     Consider the following QNode:
@@ -828,6 +842,10 @@ def trace_distance(qnode0, qnode1, wires0, wires1):
     (tensor(-0.19470917, requires_grad=True),
      tensor(0.28232124, requires_grad=True))
     """
+    warn(
+        "qml.qinfo.trace_distance is deprecated. Instead, use qml.math.trace_distance.",
+        qml.PennyLaneDeprecationWarning,
+    )
 
     if len(wires0) != len(wires1):
         raise qml.QuantumFunctionError("The two states must have the same number of wires.")

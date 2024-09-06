@@ -415,6 +415,21 @@ class TestRelativeEntropy:
     # to avoid nan values in the gradient for relative entropy
     grad_params = [[0.123, 0.456], [0.789, 1.618]]
 
+    def test_relative_entropy_deprecation(self):
+        """Test that a deprecation warning is raised when using relative_entropy"""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit0():
+            return qml.state()
+
+        @qml.qnode(dev)
+        def circuit1():
+            return qml.state()
+
+        with pytest.warns(qml.PennyLaneDeprecationWarning, match="relative_entropy is deprecated"):
+            qml.qinfo.relative_entropy(circuit0, circuit1, wires0=[0, 1], wires1=[0, 1])
+
     @pytest.mark.all_interfaces
     @pytest.mark.parametrize("device", ["default.qubit", "default.mixed", "lightning.qubit"])
     @pytest.mark.parametrize("interface", ["autograd", "jax", "tensorflow", "torch"])

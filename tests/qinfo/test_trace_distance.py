@@ -41,6 +41,21 @@ class TestTraceDistanceQnode:
 
     devices = ["default.qubit", "lightning.qubit", "default.mixed"]
 
+    def test_trace_distance_deprecation(self):
+        """Test that a deprecation warning is raised when using trace_distance"""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit0():
+            return qml.state()
+
+        @qml.qnode(dev)
+        def circuit1():
+            return qml.state()
+
+        with pytest.warns(qml.PennyLaneDeprecationWarning, match="trace_distance is deprecated"):
+            qml.qinfo.trace_distance(circuit0, circuit1, wires0=[0, 1], wires1=[0, 1])
+
     @pytest.mark.parametrize("device", devices)
     def test_not_same_number_wires(self, device):
         """Test that wires must have the same length."""
