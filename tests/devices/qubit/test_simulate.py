@@ -19,7 +19,7 @@ from dummy_debugger import Debugger
 
 import pennylane as qml
 from pennylane.devices.qubit import get_final_state, measure_final_state, simulate
-from pennylane.devices.qubit.simulate import _FlexShots
+from pennylane.devices.qubit.simulate import _FlexShots, simulate_tree_mcm
 
 
 class TestCurrentlyUnsupportedCases:
@@ -1178,3 +1178,35 @@ class TestQInfoMeasurements:
 
         grad5 = grad_tape.jacobian(results[5], phi)
         assert qml.math.allclose(grad5, expected_grads[5])
+
+
+class TestMidMeasurements:
+    """Tests for simulating scripts with mid-circuit measurements using the ``simulate_tree_mcm``.""" 
+
+    @pytest.mark.parametrize("postselect", [0, 1])
+    def test_basic_mid_meas_circuit(self, postselect):
+        """Test execution with a basic circuit with mid-circuit measurements."""
+        qs = qml.tape.QuantumScript(
+            [qml.Hadamard(0), qml.CNOT([0, 1]), qml.measurements.MidMeasureMP(0, postselect=1)],
+            [qml.expval(qml.X(0)), qml.expval(qml.Z(0))]
+        )
+        result = simulate_tree_mcm(qs)
+        assert result == (0, -1 ** postselect)
+
+
+    def test_basic_mid_meas_circuit_with_reset(self):
+        """Test execution with a basic circuit with mid-circuit measurements."""
+        phi = np.array(0.397)
+        qs = qml.tape.QuantumScript(
+            [qml.RX(phi, wires=0)], [qml.expval(qml.PauliY(0)), qml.expval(qml.PauliZ(0))]
+        )
+        result = simulate(qs)
+
+    def test_dynamic_mid_meas_circuit(self):
+        """Test execution with a basic circuit with mid-circuit measurements."""
+        # qs = qml.tape.QuantumScript(
+        #     []
+
+        #     [qml.RX(phi, wires=0)], [qml.expval(qml.PauliY(0)), qml.expval(qml.PauliZ(0))]
+        # )
+        result = simulate(qs)
