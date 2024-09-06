@@ -372,7 +372,15 @@ def _compute_csa_words(m, which=0):
 
 
 def khk_decompose(
-    generators, H, theta0=None, n_epochs=500, validate=True, involution=None, verbose=1, tol=1e-12, which=0
+    generators,
+    H,
+    theta0=None,
+    n_epochs=500,
+    validate=True,
+    involution=None,
+    verbose=1,
+    tol=1e-12,
+    which=0,
 ):
     r"""The full KhK decomposition of a Hamiltonian H
 
@@ -589,6 +597,6 @@ def check_all_commuting(h):
             com = hi.commutator(hj)
             com.simplify()
             commutes.append(len(com) == 0)
-    
+
     print("all terms commute")
     return all(commutes)

@@ -423,10 +423,10 @@ class PauliVSpace:
             M[pw_to_idx[pw], rank] = value
 
         # Check if new vector is linearly dependent on the current basis
-        s = scipy.linalg.svdvals(M) #, full_matrices=False)
+        s = scipy.linalg.svdvals(M)  # , full_matrices=False)
         new_rank = np.sum(s > tol)
 
-        if rank + 1 ==new_rank:
+        if rank + 1 == new_rank:
             return M, pw_to_idx, new_rank, new_num_pw, True
 
         return M[:num_pw, :rank], pw_to_idx, rank, num_pw, False
