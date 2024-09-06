@@ -569,8 +569,7 @@ def haldane(
 
     spin = 2
     hopping_ham = 0.0 * FermiWord({})
-    for edge in lattice.edges:
-        i, j, order = edge
+    for i, j, order in lattice.edges:
         if hopping1.shape == (1,):
             hop1 = hopping1[0]
         else:
