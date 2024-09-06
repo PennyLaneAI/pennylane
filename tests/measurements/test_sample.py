@@ -456,7 +456,7 @@ class TestSample:
 class TestJAXCompatibility:
 
     @pytest.mark.parametrize("samples", (1, 10))
-    def test_jitting_with_sampling_on_subset_of_wires(samples):
+    def test_jitting_with_sampling_on_subset_of_wires(self, samples):
         """Test case covering bug in Issue #3904.  Sampling should be jit-able
         when sampling occurs on a subset of wires. The bug was occuring due an improperly
         set shape method."""
@@ -477,7 +477,7 @@ class TestJAXCompatibility:
         assert results.shape == expected
         assert circuit._qfunc_output.shape(samples, 3) == (samples, 2) if samples != 1 else (2,)
 
-    def test_sample_with_boolean_tracer():
+    def test_sample_with_boolean_tracer(self):
         """Test that qml.sample can be used with Catalyst measurement values (Boolean tracer)."""
         import jax
 
@@ -504,7 +504,7 @@ class TestJAXCompatibility:
             (qml.Identity(0)),
         ],
     )
-    def test_jitting_with_sampling_on_different_observables(obs):
+    def test_jitting_with_sampling_on_different_observables(self, obs):
         """Test that jitting works when sampling observables (using their eigvals) rather than returning raw samples"""
         import jax
 
