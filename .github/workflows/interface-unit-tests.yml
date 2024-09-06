@@ -25,7 +25,7 @@ on:
           Indicate if a lightened version of the CI should be run instead of the entire suite.
 
           The lightened version of the CI includes the following changes:
-          - Only Python 3.9 is tested against, instead of 3.9, 3.10, 3.11, 3.12
+          - Only Python 3.10 is tested against, instead of 3.10, 3.11, 3.12
         required: false
         type: boolean
         default: false
@@ -63,23 +63,23 @@ jobs:
           then
             cat >python_versions.json <<-EOF
           {
-            "default": ["3.9"]
+            "default": ["3.10"]
           }
           EOF
           else
             cat >python_versions.json <<-EOF
           {
-            "default": ["3.9", "3.10", "3.11", "3.12"],
-            "torch-tests": ["3.9", "3.11"],
-            "tf-tests": ["3.9", "3.11"],
-            "jax-tests": ["3.9", "3.12"],
-            "all-interfaces-tests": ["3.9"],
-            "external-libraries-tests": ["3.9"],
-            "qcut-tests": ["3.9"],
-            "qchem-tests": ["3.9"],
-            "gradients-tests": ["3.9"],
-            "data-tests": ["3.9", "3.10"],
-            "device-tests": ["3.9"]
+            "default": ["3.10", "3.11", "3.12"],
+            "torch-tests": ["3.10", "3.12"],
+            "tf-tests": ["3.10", "3.12"],
+            "jax-tests": ["3.10", "3.12"],
+            "all-interfaces-tests": ["3.10"],
+            "external-libraries-tests": ["3.10"],
+            "qcut-tests": ["3.10"],
+            "qchem-tests": ["3.10"],
+            "gradients-tests": ["3.10"],
+            "data-tests": ["3.10"],
+            "device-tests": ["3.10"]
           }
           EOF
           fi
@@ -532,19 +532,10 @@ jobs:
          }}
       matrix:
         config:
-          - device: default.qubit.legacy
-            shots: None
           - device: default.qubit
             shots: None
           - device: default.qubit
             shots: 10000
-          - device: default.qubit.legacy
-            shots: 10000
-          # - device: default.qubit.tf
-          #   shots: None
-          - device: default.qubit.autograd
-            shots: None
-            skip_interface: jax,tf,torch
           - device: default.mixed
             shots: None
         python-version: >-
@@ -604,7 +595,7 @@ jobs:
           ref: ${{ inputs.branch }}
 
       - name: Down Coverage Artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
 
       - name: Upload to Codecov
         uses: codecov/codecov-action@v4

@@ -349,7 +349,6 @@ def quantum_monte_carlo(
          'num_trainable_params': 15433,
          'num_device_wires': 12,
          'device_name': 'default.qubit',
-         'expansion_strategy': 'gradient',
          'gradient_options': {},
          'interface': 'auto',
          'diff_method': 'best',
