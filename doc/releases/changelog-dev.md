@@ -26,6 +26,9 @@
 
 <h3>Breaking changes 💔</h3>
 
+* Remove support for Python 3.9.
+  [(#6223)](https://github.com/PennyLaneAI/pennylane/pull/6223)
+
 * `DefaultQubitTF` is removed. Please use `default.qubit` for all interfaces.
   [(#6207)](https://github.com/PennyLaneAI/pennylane/pull/6207)
 
@@ -66,3 +69,4 @@ Guillermo Alonso
 Utkarsh Azad
 Christina Lee
 William Maxwell
+Lee J. O'Riordan
