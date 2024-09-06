@@ -400,15 +400,11 @@ def _commute_adjacent(fs, fw, source, target):
     _max = max(source, target)
 
     items = list(fw.sorted_dic.items())
-    left = {(i, key[1]): value for i, (key, value) in enumerate(items[:_min])}
-    middle = {(i, key[1]): value for i, (key, value) in enumerate(items[_min : _max + 1])}
-    right = {(i, key[1]): value for i, (key, value) in enumerate(items[_max + 1 :])}
+    left = FermiWord({(i, key[1]): value for i, (key, value) in enumerate(items[:_min])})
+    middle = FermiWord({(i, key[1]): value for i, (key, value) in enumerate(items[_min : _max + 1])})
+    right = FermiWord({(i, key[1]): value for i, (key, value) in enumerate(items[_max + 1 :])})
 
-    lfw = FermiWord(left)
-    mfw = FermiWord(middle)
-    rfw = FermiWord(right)
-
-    terms = lfw * (1 - FermiSentence({mfw: 1})) * rfw
+    terms = left * (1 - middle) * right
 
     fs += coeff * terms
 
