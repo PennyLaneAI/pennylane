@@ -18,30 +18,8 @@ This submodule contains the template for Qubitization.
 import copy
 
 import pennylane as qml
-from pennylane import numpy as np
 from pennylane.operation import Operation
 from pennylane.wires import Wires
-
-
-def _positive_coeffs_hamiltonian(hamiltonian):
-    """Transforms a Hamiltonian to ensure that the coefficients are positive.
-
-    Args:
-        hamiltonian (Union[.Hamiltonian, .Sum, .Prod, .SProd, .LinearCombination]): The Hamiltonian written as a linear combination of unitaries.
-
-    Returns:
-        list(float), list(.Operation): The coefficients and unitaries of the transformed Hamiltonian.
-    """
-
-    new_unitaries = []
-
-    coeffs, ops = hamiltonian.terms()
-
-    for op, coeff in zip(ops, coeffs):
-        angle = np.pi * (0.5 * (1 - qml.math.sign(coeff)))
-        new_unitaries.append(op @ qml.GlobalPhase(angle, wires=op.wires))
-
-    return qml.math.abs(coeffs), new_unitaries
 
 
 class Qubitization(Operation):
@@ -163,31 +141,16 @@ class Qubitization(Operation):
 
         **Example:**
 
-        >>> print(qml.Qubitization.compute_decomposition(hamiltonian = 0.1 * qml.Z(0), control = 1))
-        [AmplitudeEmbedding(array([1., 0.]), wires=[1]), Select(ops=(Z(0),), control=Wires([1])), Adjoint(AmplitudeEmbedding(array([1., 0.]), wires=[1])), Reflection(, wires=[0])]
-
+        >>> print(qml.Qubitization.compute_decomposition(hamiltonian = 0.1 * qml.Z(0), control = 1)
+        [Reflection(3.141592653589793, wires=[1]), PrepSelPrep(coeffs=(0.1,), ops=(Z(0),), control=Wires([1]))]
         """
 
         hamiltonian = kwargs["hamiltonian"]
         control = kwargs["control"]
 
-        coeffs, unitaries = _positive_coeffs_hamiltonian(hamiltonian)
-
         decomp_ops = []
 
-        decomp_ops.append(
-            qml.AmplitudeEmbedding(qml.math.sqrt(coeffs), normalize=True, pad_with=0, wires=control)
-        )
-
-        decomp_ops.append(qml.Select(unitaries, control=control))
-        decomp_ops.append(
-            qml.adjoint(
-                qml.AmplitudeEmbedding(
-                    qml.math.sqrt(coeffs), normalize=True, pad_with=0, wires=control
-                )
-            )
-        )
-
         decomp_ops.append(qml.Reflection(qml.Identity(control)))
+        decomp_ops.append(qml.PrepSelPrep(hamiltonian, control=control))
 
         return decomp_ops
