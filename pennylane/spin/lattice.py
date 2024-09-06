@@ -39,7 +39,7 @@ class Lattice:
            default is ``False`` indicating open boundary condition.
        neighbour_order (int): Specifies the interaction level for neighbors within the lattice.
            Default is 1 (nearest neighbour).
-       custom_edges (list(list(tuples))): Specifies the edges to be added in the lattice.
+       custom_edges (Optional[list(list(tuples))]): Specifies the edges to be added in the lattice.
            Default value is None, which adds the edges based on neighbour_order.
            Each element in the list is for a separate edge, and can contain 1 or 2 tuples.
            First tuple contains the index of the starting and ending vertex of the edge.
