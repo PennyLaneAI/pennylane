@@ -334,7 +334,7 @@ def emery(
 
     where :math:`t_{ij}` is the hopping term representing the kinetic energy of electrons,
     :math:`U_{i}` is the on-site Coulomb interaction, representing the repulsion between electrons,
-    :math:`V_{ij}` is the intersite coupling, ``i,j`` represent the indices for neighbouring spins,
+    :math:`V_{ij}` is the intersite coupling, ``i,j`` are the indices for neighbouring spins,
     :math:`\sigma` is the spin degree of freedom, :math:`n_{k \uparrow}`, :math:`n_{k \downarrow}`
     are number operators for spin-up and spin-down fermions at site :math:`k`.
     This function assumes there are two fermions with opposite spins on each lattice site.
