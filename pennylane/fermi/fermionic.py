@@ -660,6 +660,9 @@ class FermiSentence(dict):
         Returns:
             FermiSentence: The FermiSentence obtained after applying the anti-commutator relations.
 
+        Raises:
+            ValueError: if the provided ``FermiWord`` is not in the ``FermiSentence`` dictionary
+
         **Example**
 
         >>> w = FermiWord({(0, 0): '+', (1, 1): '-'})
