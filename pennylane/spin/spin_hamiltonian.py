@@ -605,7 +605,7 @@ def haldane(
     if mapping not in ["jordan_wigner", "parity", "bravyi_kitaev"]:
         raise ValueError(
             f"The '{mapping}' transformation is not available."
-            f"Please set mapping to 'jordan_wigner', 'parity', or 'bravyi_kitaev'"
+            f"Please set mapping to 'jordan_wigner', 'parity', or 'bravyi_kitaev'."
         )
     qubit_ham = qml.qchem.qubit_observable(hamiltonian, mapping=mapping)
 
