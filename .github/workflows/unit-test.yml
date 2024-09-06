@@ -197,7 +197,7 @@ jobs:
 
       - name: Upload Durations file as artifact
         if: ${{ inputs.pytest_store_durations == true }}
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ inputs.job_name }}-durations.json
           path: ${{ inputs.pytest_durations_file_path }}
@@ -209,7 +209,7 @@ jobs:
 
       - name: Upload Coverage File
         if: inputs.pipeline_mode == 'unit-tests'
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ inputs.coverage_artifact_name }}
           path: coverage.xml
@@ -240,7 +240,7 @@ jobs:
       # If this is an assessment benchmark, upload the data as an artifact.
       - name: Upload pytest benchmark results
         if: inputs.pipeline_mode == 'benchmarks'
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ steps.benchmark_name.outputs.benchmark_name }}-benchmarks
           path: ${{ github.workspace }}/benchmark_results
