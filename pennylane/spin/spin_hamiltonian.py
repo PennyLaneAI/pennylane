@@ -329,10 +329,10 @@ def kitaev(n_cells, coupling=None, boundary_condition=False):
     \frac{\sqrt{3}}{2}, -\frac{1}{2}]`, respectively.
 
     Args:
-       n_cells (List[int]): Number of cells in each direction of the grid.
-       coupling (List[math.array[float]]): Coupling between spins, it is a list of length 3.
+       n_cells (list[int]): Number of cells in each direction of the grid.
+       coupling (Optional[list[math.array[float]]]): Coupling between spins, it is a list of length 3.
                             Default value is [1.0, 1.0, 1.0].
-       boundary_condition (bool or list[bool]): Defines boundary conditions for different lattice axes,
+       boundary_condition (bool | list[bool]): Defines boundary conditions for different lattice axes,
            default is ``False`` indicating open boundary condition.
 
     Returns:
