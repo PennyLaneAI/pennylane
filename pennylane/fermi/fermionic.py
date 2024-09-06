@@ -360,6 +360,7 @@ def _commute_adjacent(fs, fw, source, target):
 
     Returns:
         FermiSentence: The ``FermiSentence`` obtained after applying the anti-commutator relations.
+        FermiWord: The ``FermiWord`` that was modified by the commutation.
 
     Raises:
         ValueError: if the source and target positions are not consecutive
@@ -381,8 +382,7 @@ def _commute_adjacent(fs, fw, source, target):
     new_source_idx = (source, target_idx[1])
     new_target_idx = (target, source_idx[1])
 
-    coeff = fs[fw]
-    del fs[fw]
+    coeff = fs.pop(fw)
     fw = dict(fw)
     fw[new_source_idx] = target_val
     fw[new_target_idx] = source_val
@@ -393,33 +393,16 @@ def _commute_adjacent(fs, fw, source, target):
 
     fw = FermiWord(fw)
 
-    fs = dict(fs)
-    fs = FermiSentence(fs)
-
     if source_val == target_val or source_idx[1] != target_idx[1]:
         return fs + (-1 * FermiSentence({fw: coeff})), fw
 
-    left = {}
-    lpos = 0
-
-    middle = {}
-    mpos = 0
-
-    right = {}
-    rpos = 0
-
     _min = min(source, target)
     _max = max(source, target)
-    for key, value in fw.sorted_dic.items():
-        if key[0] < _min:
-            left[(lpos, key[1])] = value
-            lpos += 1
-        elif key[0] > _max:
-            right[(rpos, key[1])] = value
-            rpos += 1
-        else:
-            middle[(mpos, key[1])] = value
-            mpos += 1
+
+    items = list(fw.sorted_dic.items())
+    left = {(i, key[1]): value for i, (key, value) in enumerate(items[:_min])}
+    middle = {(i, key[1]): value for i, (key, value) in enumerate(items[_min:_max+1])}
+    right = {(i, key[1]): value for i, (key, value) in enumerate(items[_max+1:])}
 
     lfw = FermiWord(left)
     mfw = FermiWord(middle)
