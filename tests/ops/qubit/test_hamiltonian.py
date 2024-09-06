@@ -703,15 +703,6 @@ def test_deprecation_with_new_opmath(recwarn):
         assert len(recwarn) == 0
 
 
-def test_deprecation_simplify_argument():
-    """Test that a deprecation warning is raised if the simplify argument is True."""
-    with pytest.warns(
-        qml.PennyLaneDeprecationWarning,
-        match="deprecated",
-    ):
-        _ = qml.ops.Hamiltonian([1.0], [qml.X(0)], simplify=True)
-
-
 @pytest.mark.usefixtures("use_legacy_opmath")
 class TestHamiltonian:
     """Test the Hamiltonian class"""
@@ -1710,7 +1701,7 @@ class TestGrouping:
 
 
 @pytest.mark.usefixtures("use_legacy_opmath")
-class TestHamiltonianEvaluation:
+class TestHamiltonianEvaluation:  # pylint: disable=too-few-public-methods
     """Test the usage of a Hamiltonian as an observable"""
 
     @pytest.mark.parametrize("coeffs, param, interface", COEFFS_PARAM_INTERFACE)
@@ -1742,34 +1733,13 @@ class TestHamiltonianEvaluation:
         res_expected = coeffs[0] * node1() + coeffs[1] * node2()
         assert np.isclose(res, res_expected)
 
-    def test_simplify_reduces_tape_parameters(self):
-        """Test that simplifying a Hamiltonian reduces the number of parameters on a tape"""
-        device = qml.device("default.qubit", wires=2)
-
-        @qml.qnode(device)
-        def circuit():
-            qml.RY(0.1, wires=0)
-            return qml.expval(
-                qml.Hamiltonian([1.0, 2.0], [qml.PauliX(1), qml.PauliX(1)], simplify=True)
-            )
-
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning,
-            match="deprecated",
-        ):
-            circuit()
-        pars = circuit.qtape.get_parameters(trainable_only=False)
-        # simplify worked and added 1. and 2.
-        assert pars == [0.1, 3.0]
-
 
 @pytest.mark.usefixtures("use_legacy_opmath")
 class TestHamiltonianDifferentiation:
     """Test that the Hamiltonian coefficients are differentiable"""
 
-    @pytest.mark.parametrize("simplify", [True, False])
     @pytest.mark.parametrize("group", [None, "qwc"])
-    def test_trainable_coeffs_paramshift(self, simplify, group):
+    def test_trainable_coeffs_paramshift(self, group):
         """Test the parameter-shift method by comparing the differentiation of linearly combined subcircuits
         with the differentiation of a Hamiltonian expectation"""
         coeffs = pnp.array([-0.05, 0.17], requires_grad=True)
@@ -1781,24 +1751,11 @@ class TestHamiltonianDifferentiation:
             qml.RX(param, wires=0)
             qml.RY(param, wires=0)
             return qml.expval(
-                qml.Hamiltonian(
-                    coeffs,
-                    [qml.PauliX(0), qml.PauliZ(0)],
-                    simplify=simplify,
-                    grouping_type=group,
-                )
+                qml.Hamiltonian(coeffs, [qml.PauliX(0), qml.PauliZ(0)], grouping_type=group)
             )
 
         grad_fn = qml.grad(circuit)
-
-        if simplify:
-            with pytest.warns(
-                qml.PennyLaneDeprecationWarning,
-                match="deprecated",
-            ):
-                grad = grad_fn(coeffs, param)
-        else:
-            grad = grad_fn(coeffs, param)
+        grad = grad_fn(coeffs, param)
 
         # differentiating a cost that combines circuits with
         # measurements expval(Pauli)
@@ -1849,9 +1806,8 @@ class TestHamiltonianDifferentiation:
         assert np.allclose(grad, grad_expected)
 
     @pytest.mark.autograd
-    @pytest.mark.parametrize("simplify", [True, False])
     @pytest.mark.parametrize("group", [None, "qwc"])
-    def test_trainable_coeffs_autograd(self, simplify, group):
+    def test_trainable_coeffs_autograd(self, group):
         """Test the autograd interface by comparing the differentiation of linearly combined subcircuits
         with the differentiation of a Hamiltonian expectation"""
         coeffs = pnp.array([-0.05, 0.17], requires_grad=True)
@@ -1863,24 +1819,11 @@ class TestHamiltonianDifferentiation:
             qml.RX(param, wires=0)
             qml.RY(param, wires=0)
             return qml.expval(
-                qml.Hamiltonian(
-                    coeffs,
-                    [qml.PauliX(0), qml.PauliZ(0)],
-                    simplify=simplify,
-                    grouping_type=group,
-                )
+                qml.Hamiltonian(coeffs, [qml.PauliX(0), qml.PauliZ(0)], grouping_type=group)
             )
 
         grad_fn = qml.grad(circuit)
-
-        if simplify:
-            with pytest.warns(
-                qml.PennyLaneDeprecationWarning,
-                match="deprecated",
-            ):
-                grad = grad_fn(coeffs, param)
-        else:
-            grad = grad_fn(coeffs, param)
+        grad = grad_fn(coeffs, param)
 
         # differentiating a cost that combines circuits with
         # measurements expval(Pauli)
@@ -1926,9 +1869,8 @@ class TestHamiltonianDifferentiation:
         assert np.allclose(grad, grad_expected)
 
     @pytest.mark.jax
-    @pytest.mark.parametrize("simplify", [True, False])
     @pytest.mark.parametrize("group", [None, "qwc"])
-    def test_trainable_coeffs_jax(self, simplify, group):
+    def test_trainable_coeffs_jax(self, group):
         """Test the jax interface by comparing the differentiation of linearly
         combined subcircuits with the differentiation of a Hamiltonian expectation"""
 
@@ -1941,23 +1883,11 @@ class TestHamiltonianDifferentiation:
             qml.RX(param, wires=0)
             qml.RY(param, wires=0)
             return qml.expval(
-                qml.Hamiltonian(
-                    coeffs,
-                    [qml.PauliX(0), qml.PauliZ(0)],
-                    simplify=simplify,
-                    grouping_type=group,
-                )
+                qml.Hamiltonian(coeffs, [qml.PauliX(0), qml.PauliZ(0)], grouping_type=group)
             )
 
         grad_fn = jax.grad(circuit)
-        if simplify:
-            with pytest.warns(
-                qml.PennyLaneDeprecationWarning,
-                match="deprecated",
-            ):
-                grad = grad_fn(coeffs, param)
-        else:
-            grad = grad_fn(coeffs, param)
+        grad = grad_fn(coeffs, param)
 
         # differentiating a cost that combines circuits with
         # measurements expval(Pauli)
@@ -2003,9 +1933,8 @@ class TestHamiltonianDifferentiation:
         assert np.allclose(grad, grad_expected)
 
     @pytest.mark.torch
-    @pytest.mark.parametrize("simplify", [True, False])
     @pytest.mark.parametrize("group", [None, "qwc"])
-    def test_trainable_coeffs_torch(self, simplify, group):
+    def test_trainable_coeffs_torch(self, group):
         """Test the torch interface by comparing the differentiation of linearly combined subcircuits
         with the differentiation of a Hamiltonian expectation"""
         coeffs = torch.tensor([-0.05, 0.17], requires_grad=True)
@@ -2017,23 +1946,10 @@ class TestHamiltonianDifferentiation:
             qml.RX(param, wires=0)
             qml.RY(param, wires=0)
             return qml.expval(
-                qml.Hamiltonian(
-                    coeffs,
-                    [qml.PauliX(0), qml.PauliZ(0)],
-                    simplify=simplify,
-                    grouping_type=group,
-                )
+                qml.Hamiltonian(coeffs, [qml.PauliX(0), qml.PauliZ(0)], grouping_type=group)
             )
 
-        if simplify:
-            with pytest.warns(
-                qml.PennyLaneDeprecationWarning,
-                match="deprecated",
-            ):
-                res = circuit(coeffs, param)
-        else:
-            res = circuit(coeffs, param)
-
+        res = circuit(coeffs, param)
         res.backward()  # pylint:disable=no-member
         grad = (coeffs.grad, param.grad)
 
@@ -2098,9 +2014,8 @@ class TestHamiltonianDifferentiation:
         assert np.allclose(param.grad, param2.grad)
 
     @pytest.mark.tf
-    @pytest.mark.parametrize("simplify", [True, False])
     @pytest.mark.parametrize("group", [None, "qwc"])
-    def test_trainable_coeffs_tf(self, simplify, group):
+    def test_trainable_coeffs_tf(self, group):
         """Test the tf interface by comparing the differentiation of linearly combined subcircuits
         with the differentiation of a Hamiltonian expectation"""
         coeffs = tf.Variable([-0.05, 0.17], dtype=tf.double)
@@ -2112,24 +2027,11 @@ class TestHamiltonianDifferentiation:
             qml.RX(param, wires=0)
             qml.RY(param, wires=0)
             return qml.expval(
-                qml.Hamiltonian(
-                    coeffs,
-                    [qml.PauliX(0), qml.PauliZ(0)],
-                    simplify=simplify,
-                    grouping_type=group,
-                )
+                qml.Hamiltonian(coeffs, [qml.PauliX(0), qml.PauliZ(0)], grouping_type=group)
             )
 
         with tf.GradientTape() as tape:
-            if simplify:
-                with pytest.warns(
-                    qml.PennyLaneDeprecationWarning,
-                    match="deprecated",
-                ):
-                    res = circuit(coeffs, param)
-            else:
-                res = circuit(coeffs, param)
-
+            res = circuit(coeffs, param)
         grad = tape.gradient(res, [coeffs, param])
 
         # differentiating a cost that combines circuits with

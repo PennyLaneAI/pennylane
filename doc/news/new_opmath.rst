@@ -247,8 +247,8 @@ To help identify a fix, select the option below that describes your situation.
 
     The API of :class:`~.ops.op_math.LinearCombination` is identical to that of :class:`~.Hamiltonian`. We can group observables or simplify upon initialization.
 
-    >>> H1 = qml.Hamiltonian([0.5, 0.5, 0.5], [X(0) @ X(1), X(0), Y(0)], grouping_type="qwc", simplify=True)
-    >>> H2 = qml.ops.LinearCombination([0.5, 0.5, 0.5], [X(0) @ X(1), X(0), Y(0)], grouping_type="qwc", simplify=True)
+    >>> H1 = qml.Hamiltonian([0.5, 0.5, 0.5], [X(0) @ X(1), X(0), Y(0)], grouping_type="qwc")
+    >>> H2 = qml.ops.LinearCombination([0.5, 0.5, 0.5], [X(0) @ X(1), X(0), Y(0)], grouping_type="qwc")
     >>> H1 == H2
     True
 

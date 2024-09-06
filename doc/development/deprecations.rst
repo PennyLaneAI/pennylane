@@ -32,12 +32,6 @@ Pending deprecations
   - Deprecated and Duplicated in v0.38
   - Will be removed in v0.39
 
-* The ``simplify`` argument in ``qml.Hamiltonian`` and ``qml.ops.LinearCombination`` is deprecated. 
-  Instead, ``qml.simplify()`` can be called on the constructed operator.
-
-  - Deprecated in v0.37
-  - Will be removed in v0.39
-
 New operator arithmetic deprecations
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -81,6 +75,12 @@ Other deprecations
 
 Completed deprecation cycles
 ----------------------------
+
+* The ``simplify`` argument in ``qml.Hamiltonian`` and ``qml.ops.LinearCombination`` has been removed.
+  Instead, ``qml.simplify()`` can be called on the constructed operator.
+
+  - Deprecated in v0.37
+  - Removed in v0.39
 
 * The ``expansion_strategy`` attribute of ``qml.QNode`` is removed.
   Users should make use of ``qml.workflow.construct_batch``, should they require fine control over the output tape(s).
