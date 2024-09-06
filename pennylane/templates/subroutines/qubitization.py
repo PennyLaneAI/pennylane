@@ -77,7 +77,7 @@ class Qubitization(Operation):
         return cls._primitive.bind(*args, **kwargs)
 
     def __init__(self, hamiltonian, control, id=None):
-        wires = hamiltonian.wires + qml.wires.Wires(control)
+        wires = qml.wires.Wires(control) + hamiltonian.wires
 
         self._hyperparameters = {
             "hamiltonian": hamiltonian,

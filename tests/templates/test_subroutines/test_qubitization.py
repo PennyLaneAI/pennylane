@@ -290,4 +290,16 @@ def test_map_wires():
     op = qml.Qubitization(H, control=[2, 3])
     op2 = op.map_wires({0: 5, 1: 6, 2: 7, 3: 8})
 
-    assert op2.wires == qml.wires.Wires([5, 6, 7, 8])
+    assert op2.wires == qml.wires.Wires([7, 8, 5, 6])
+
+
+def test_order_wires():
+    """Test that the Qubitization operator orders the wires according to other templates."""
+
+    H = qml.dot([1.0, 2.0], [qml.PauliX("a"), qml.PauliZ(1)])
+
+    op1 = qml.Qubitization(H, control=[0])
+    op2 = qml.PrepSelPrep(H, control=[0])
+    op3 = qml.Select(H.terms()[1], control=[0])
+
+    assert op1.wires == op2.wires == op3.wires
