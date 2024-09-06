@@ -182,54 +182,13 @@ class TestBatchTransformExecution:
     """Tests to ensure batch transforms can be correctly executed
     via qml.execute and batch_transform"""
 
-    def test_no_batch_transform(self, mocker):
-        """Test that batch transforms cannot be disabled"""
-
-        dev = qml.device("default.qubit.legacy", wires=2, shots=100000)
-
-        H = qml.PauliZ(0) @ qml.PauliZ(1) - qml.PauliX(0)
-        x = 0.6
-        y = 0.2
-
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.RX(x, wires=0)
-            qml.RY(y, wires=1)
-            qml.CNOT(wires=[0, 1])
-            qml.expval(H)
-
-        tape = qml.tape.QuantumScript.from_queue(q, shots=100000)
-        spy = mocker.spy(dev.target_device, "batch_transform")
-
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning,
-            match="The device_batch_transform argument is deprecated",
-        ):
-            res = qml.execute([tape], dev, None, device_batch_transform=False)
-        assert np.allclose(res[0], np.cos(y), atol=0.1)
-
-        spy.assert_called()
-
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning,
-            match="The device_batch_transform argument is deprecated",
-        ):
-            res = qml.execute([tape], dev, None, device_batch_transform=True)
-
-        spy.assert_called()
-
-        assert qml.math.shape(res[0]) == ()
-        assert np.allclose(res[0], np.cos(y), rtol=0.05)
-
     def test_batch_transform_dynamic_shots(self):
         """Tests that the batch transform considers the number of shots for the execution, not those
         statically on the device."""
         dev = qml.device("default.qubit.legacy", wires=1)
         H = 2.0 * qml.PauliZ(0)
         qscript = qml.tape.QuantumScript(measurements=[qml.expval(H)])
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning, match="The override_shots argument is deprecated"
-        ):
-            res = qml.execute([qscript], dev, interface=None, override_shots=10)
+        res = qml.execute([qscript], dev, interface=None)
         assert res == (2.0,)
 
 
@@ -1099,146 +1058,6 @@ class TestHigherOrderDerivatives:
 
         expected = np.zeros([2, 2])
         assert np.allclose(res, expected, atol=tol, rtol=0)
-
-
-class TestOverridingShots:
-    """Test overriding shots on execution"""
-
-    def test_changing_shots(self, mocker, tol):
-        """Test that changing shots works on execution"""
-        dev = qml.device("default.qubit.legacy", wires=2, shots=None)
-        a, b = np.array([0.543, -0.654], requires_grad=True)
-
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.RY(a, wires=0)
-            qml.RX(b, wires=1)
-            qml.CNOT(wires=[0, 1])
-            qml.expval(qml.PauliY(1))
-
-        tape = qml.tape.QuantumScript.from_queue(q)
-        spy = mocker.spy(dev.target_device, "sample")
-
-        # execute with device default shots (None)
-        res = qml.execute([tape], dev, gradient_fn=param_shift)
-        assert np.allclose(res, -np.cos(a) * np.sin(b), atol=tol, rtol=0)
-        spy.assert_not_called()
-
-        # execute with shots=100
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning, match="The override_shots argument is deprecated"
-        ):
-            res = qml.execute([tape], dev, gradient_fn=param_shift, override_shots=100)
-        spy.assert_called_once()
-        assert spy.spy_return.shape == (100,)
-
-        # device state has been unaffected
-        assert not dev.shots
-        res = qml.execute([tape], dev, gradient_fn=param_shift)
-        assert np.allclose(res, -np.cos(a) * np.sin(b), atol=tol, rtol=0)
-        spy.assert_called_once()  # same single call from above, no additional calls
-
-    def test_overriding_shots_with_same_value(self, mocker):
-        """Overriding shots with the same value as the device will have no effect"""
-        dev = qml.device("default.qubit.legacy", wires=2, shots=123)
-        a, b = np.array([0.543, -0.654], requires_grad=True)
-
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.RY(a, wires=0)
-            qml.RX(b, wires=1)
-            qml.CNOT(wires=[0, 1])
-            qml.expval(qml.PauliY(1))
-
-        tape = qml.tape.QuantumScript.from_queue(q)
-        spy = mocker.Mock(wraps=qml.Device.shots.fset)
-        # pylint:disable=assignment-from-no-return,too-many-function-args
-        mock_property = qml.Device.shots.setter(spy)
-        mocker.patch.object(qml.Device, "shots", mock_property)
-
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning, match="The override_shots argument is deprecated"
-        ):
-            qml.execute([tape], dev, gradient_fn=param_shift, override_shots=123)
-        # overriden shots is the same, no change
-        spy.assert_not_called()
-
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning, match="The override_shots argument is deprecated"
-        ):
-            qml.execute([tape], dev, gradient_fn=param_shift, override_shots=100)
-        # overriden shots is not the same, shots were changed
-        spy.assert_called()
-
-        # shots were temporarily set to the overriden value
-        assert spy.call_args_list[0][0] == (dev.target_device, 100)
-        # shots were then returned to the built-in value
-        assert spy.call_args_list[1][0] == (dev.target_device, 123)
-
-    def test_overriding_device_with_shot_vector(self):
-        """Overriding a device that has a batch of shots set
-        results in original shots being returned after execution"""
-        dev = qml.device("default.qubit.legacy", wires=2, shots=[10, (1, 3), 5])
-
-        shots_obj = qml.measurements.Shots([10, (1, 3), 5])
-        assert dev.shots == shots_obj
-        assert dev.shots.shot_vector == shots_obj.shot_vector
-
-        a, b = np.array([0.543, -0.654], requires_grad=True)
-
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.RY(a, wires=0)
-            qml.RX(b, wires=1)
-            qml.CNOT(wires=[0, 1])
-            qml.expval(qml.PauliY(1))
-
-        tape = qml.tape.QuantumScript.from_queue(q)
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning, match="The override_shots argument is deprecated"
-        ):
-            res = qml.execute([tape], dev, gradient_fn=param_shift, override_shots=100)[0]
-
-        assert isinstance(res, np.ndarray)
-        assert res.shape == ()
-
-        # device is unchanged
-        assert dev.shots == shots_obj
-        assert dev.shots.shot_vector == shots_obj.shot_vector
-
-        tape = qml.tape.QuantumScript.from_queue(q, shots=shots_obj)
-        res = qml.execute([tape], dev, gradient_fn=param_shift)[0]
-        assert len(res) == 5
-
-    @pytest.mark.xfail(reason="Shots vector must be adapted for new return types.")
-    def test_gradient_integration(self):
-        """Test that temporarily setting the shots works
-        for gradient computations"""
-        # TODO: Update here when shot vectors are supported
-        dev = qml.device("default.qubit.legacy", wires=2, shots=None)
-        a, b = np.array([0.543, -0.654], requires_grad=True)
-
-        def cost_fn(a, b, shots):
-            with qml.queuing.AnnotatedQueue() as q:
-                qml.RY(a, wires=0)
-                qml.RX(b, wires=1)
-                qml.CNOT(wires=[0, 1])
-                qml.expval(qml.PauliY(1))
-
-            tape = qml.tape.QuantumScript.from_queue(q)
-            with pytest.warns(
-                qml.PennyLaneDeprecationWarning, match="The override_shots argument is deprecated"
-            ):
-                result = qml.execute([tape], dev, gradient_fn=param_shift, override_shots=shots)
-            return result[0]
-
-        res = qml.jacobian(cost_fn)(a, b, shots=[10000, 10000, 10000])
-        assert dev.shots is None
-        assert isinstance(res, tuple) and len(res) == 2
-        assert res[0].shape == (3,)
-        assert res[1].shape == (3,)
-
-        expected = [np.sin(a) * np.sin(b), -np.cos(a) * np.cos(b)]
-        assert all(
-            np.allclose(np.mean(r, axis=0), e, atol=0.1, rtol=0) for r, e in zip(res, expected)
-        )
 
 
 execute_kwargs_hamiltonian = [

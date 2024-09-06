@@ -25,8 +25,22 @@
 * Remove support for Python 3.9.
   [(#6223)](https://github.com/PennyLaneAI/pennylane/pull/6223)
 
+* `DefaultQubitTF` is removed. Please use `default.qubit` for all interfaces.
+  [(#6207)](https://github.com/PennyLaneAI/pennylane/pull/6207)
+
+* `expand_fn`, `max_expansion`, `override_shots`, and `device_batch_transform` are removed from the
+  signature of `qml.execute`.
+  [(#6203)](https://github.com/PennyLaneAI/pennylane/pull/6203)
+
+* `max_expansion` and `expansion_strategy` are removed from the `QNode`.
+  [(#6203)](https://github.com/PennyLaneAI/pennylane/pull/6203)
+
+* `expansion_strategy` is removed from `qml.draw`, `qml.draw_mpl`, and `qml.specs`. `max_expansion` is removed from `qml.specs`, as it had no impact on the output.
+  [(#6203)](https://github.com/PennyLaneAI/pennylane/pull/6203)
+
 * `qml.transforms.hamiltonian_expand` and `qml.transforms.sum_expand` are removed.
   Please use `qml.transforms.split_non_commuting` instead.
+  [(#6204)](https://github.com/PennyLaneAI/pennylane/pull/6204)
 
 <h3>Deprecations 👋</h3>
 
@@ -51,3 +65,4 @@ Guillermo Alonso
 Utkarsh Azad
 Christina Lee
 William Maxwell
+Lee J. O'Riordan
