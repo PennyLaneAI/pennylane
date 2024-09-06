@@ -21,8 +21,8 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane import QubitDevice
 from pennylane import numpy as pnp
+from pennylane.devices import QubitDevice
 from pennylane.measurements import (
     Expectation,
     ExpectationMP,

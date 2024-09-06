@@ -9,6 +9,13 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
+* `Device`, `QubitDevice`, and `QutritDevice` will no longer be imported top level in v0.40.  They instead
+  we be available as `qml.devices.LegacyDevice`, `qml.devices.QubitDevice`, and `qml.devices.QutritDevice`
+  respectively.
+
+  - Deprecated top level access in v0.39
+  - Top level access removed in v0.40
+
 * All of the legacy devices (any with the name ``default.qubit.{autograd,torch,tf,jax,legacy}``) are deprecated. Use ``default.qubit`` instead,
   as it supports backpropagation for the many backends the legacy devices support.
 

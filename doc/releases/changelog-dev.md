@@ -44,6 +44,10 @@
 
 <h3>Deprecations 👋</h3>
 
+* `Device`, `QubitDevice`, and `QutritDevice` will no longer be accessible via top-level import in v0.40.
+  They will still be accessible as `qml.devices.LegacyDevice`, `qml.devices.QubitDevice`, and `qml.devices.QutritDevice`
+  respectively.
+
 <h3>Documentation 📝</h3>
 
 <h3>Bug fixes 🐛</h3>

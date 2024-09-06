@@ -22,8 +22,8 @@ import pytest
 from scipy.stats import unitary_group
 
 import pennylane as qml
-from pennylane import QubitDevice, QutritDevice
 from pennylane import numpy as pnp
+from pennylane.devices import QubitDevice, QutritDevice
 from pennylane.measurements import (
     Counts,
     CountsMP,
