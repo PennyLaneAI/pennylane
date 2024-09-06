@@ -412,13 +412,13 @@ def emery(
     if hopping.shape not in [(neighbour_order,), (lattice.n_sites, lattice.n_sites)]:
         raise ValueError(
             f"The hopping parameter should be a number or an "
-            f"array of shape ({neighbour_order},) or ({lattice.n_sites},{lattice.n_sites})"
+            f"array of shape ({neighbour_order},) or ({lattice.n_sites},{lattice.n_sites})."
         )
 
     if intersite_coupling.shape not in [(neighbour_order,), (lattice.n_sites, lattice.n_sites)]:
         raise ValueError(
             f"The intersite_coupling parameter should be a number or "
-            f"an array of shape ({neighbour_order},) or ({lattice.n_sites},{lattice.n_sites})"
+            f"an array of shape ({neighbour_order},) or ({lattice.n_sites},{lattice.n_sites})."
         )
 
     spin = 2
