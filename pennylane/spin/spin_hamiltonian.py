@@ -514,7 +514,7 @@ def haldane(
             neighbouring sites. It can be a number, or
             a square matrix of size ``(n_sites, n_sites)``, where ``n_sites`` is the total
             number of sites. Default value is 1.0.
-        phi (Optional[float | tensor_like(float)]): Phase Factor, it can be a number, or
+        phi (Optional[float | tensor_like(float)]): Phase Factor. It can be a number, or
             a square matrix of size ``(n_sites, n_sites)``, where ``n_sites`` is the total
             number of sites. Default value is 1.0.
         boundary_condition (Optional[bool | list[bool]]): Defines boundary conditions for different lattice
