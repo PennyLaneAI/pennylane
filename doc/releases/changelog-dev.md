@@ -42,12 +42,6 @@
 
 <h3>Bug fixes 🐛</h3>
 
-* Fix a bug where zero-valued JVPs were calculated wrongly in the presence of shot vectors.
-  [(#6219)](https://github.com/PennyLaneAI/pennylane/pull/6219)
-
-* Fix Pytree serialization of operators with empty shot vectors:
-  [(#6155)](https://github.com/PennyLaneAI/pennylane/pull/6155)
-
 * Fix `qml.PrepSelPrep` template to work with `torch`:
   [(#6191)](https://github.com/PennyLaneAI/pennylane/pull/6191)
 
@@ -65,4 +59,3 @@ Guillermo Alonso
 Utkarsh Azad
 Christina Lee
 William Maxwell
-David Wierichs
