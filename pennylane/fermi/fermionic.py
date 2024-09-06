@@ -643,7 +643,7 @@ class FermiSentence(dict):
             target (int): The desired position of the operator occupying the source position.
 
         Returns:
-            FermiSentence: The FermiSentence obtained after applying the anti-commutator relations.
+            FermiSentence: The ``FermiSentence`` obtained after applying the anti-commutator relations.
 
         Raises:
             ValueError: if the provided ``FermiWord`` is not in the ``FermiSentence`` dictionary
