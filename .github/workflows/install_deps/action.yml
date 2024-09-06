@@ -36,6 +36,10 @@ inputs:
     description: Indicate if PennyLane-Lightning should be installed from the master branch
     required: false
     default: 'true'
+  install_catalyst_nightly:
+    description: Indicate if PennyLane-Catalyst should be installed from TestPyPi
+    required: false
+    default: 'false'
   additional_pip_packages:
     description: Additional packages to install. Values will be passed to pip install {value}
     required: false
@@ -95,11 +99,10 @@ runs:
         python setup.py bdist_wheel
         pip install dist/PennyLane*.whl
 
-    - name: Install Catalyst
+    - name: Install Catalyst from nightly build
       shell: bash
-      if: inputs.install_catalyst_after_pennylane == 'true'
-      # TODO: replace after release
-      run: pip install --extra-index-url https://test.pypi.org/simple/ pennylane-catalyst==0.8.0.dev14 --pre
+      if: inputs.install_catalyst_nightly == 'true'
+      run: pip install --extra-index-url https://test.pypi.org/simple/ PennyLane-Catalyst --pre
 
     - name: Install PennyLane-Lightning master
       shell: bash
