@@ -258,15 +258,10 @@ class Lattice:
             translation_vector = math.asarray(math.rint(translation_vector), dtype=int)
             edge_ranges = []
             for idx, cell in enumerate(self.n_cells):
-                if self.boundary_condition[idx]:
-                    edge_ranges.append(range(0, cell))
-                else:
-                    edge_ranges.append(
-                        range(
-                            math.maximum(0, -translation_vector[idx]),
-                            cell - math.maximum(0, translation_vector[idx]),
-                        )
-                    )
+                t_point = 0 if self.boundary_condition[idx] else translation_vector[idx]
+                edge_ranges.append(
+                    range(math.maximum(0, -t_point), cell - math.maximum(0, t_point))
+                )
 
             for cell in itertools.product(*edge_ranges):
                 node1_idx = math.dot(math.mod(cell, self.n_cells), nsites_axis) + v1
