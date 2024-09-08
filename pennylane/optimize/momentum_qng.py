@@ -167,5 +167,5 @@ class MomentumQNGOptimizer(QNGOptimizer):
                 trained_index += 1
 
         
-
+ 
         return tuple(args_new)
