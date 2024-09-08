@@ -822,7 +822,7 @@ def test_mapping_error_emery():
 
 
 @pytest.mark.parametrize(
-    # expected_ham here was obtained from datasets
+    # expected_ham here was obtained manually
     ("shape", "n_cells", "t", "u", "v", "boundary_condition", "expected_ham"),
     [
         (
@@ -1413,7 +1413,7 @@ def test_mapping_error_haldane():
 
 
 @pytest.mark.parametrize(
-    # expected_ham here was obtained from manually
+    # expected_ham here was obtained manually.
     ("shape", "n_cells", "t1", "t2", "phi", "boundary_condition", "expected_ham"),
     [
         (

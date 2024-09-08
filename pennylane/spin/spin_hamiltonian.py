@@ -491,8 +491,8 @@ def haldane(
 
         \begin{align*}
           \hat{H} & = -\sum_{\langle i,j \rangle}t_{ij}^{1}
-          (c_{i\sigma}^\dagger c_{j\sigma} + c_{j\sigma}^\dagger c_{i\sigma}) \\
-          & \quad - \sum_{\langle\langle i,j \rangle\rangle, \sigma} t_{ij}^{2}
+          (c_{i\sigma}^\dagger c_{j\sigma} + c_{j\sigma}^\dagger c_{i\sigma})
+          - \sum_{\langle\langle i,j \rangle\rangle, \sigma} t_{ij}^{2}
           \left( e^{i\phi_{ij}} c_{i\sigma}^\dagger c_{j\sigma} + e^{-i\phi_{ij}} c_{j\sigma}^\dagger c_{i\sigma} \right)
         \end{align*}
 
