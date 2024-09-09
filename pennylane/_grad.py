@@ -24,7 +24,7 @@ from autograd.numpy.numpy_boxes import ArrayBox
 from autograd.wrap_util import unary_to_nary
 
 from pennylane.capture import enabled
-from pennylane.capture.capture_diff import _get_grad_prim
+from pennylane.capture.capture_diff import _get_grad_prim, _get_jacobian_prim
 from pennylane.compiler import compiler
 from pennylane.compiler.compiler import CompileError
 
@@ -434,8 +434,11 @@ def jacobian(func, argnum=None, method=None, h=None):
         ops_loader = available_eps[active_jit]["ops"].load()
         return ops_loader.jacobian(func, method=method, h=h, argnums=argnum)
 
+    if enabled():
+        return _capture_diff(func, argnum, _get_jacobian_prim(), method=method, h=h)
+
     if method or h:
-        raise ValueError(f"Invalid values for 'method={method}' and 'h={h}' in interpreted mode")
+        raise ValueError(f"Invalid values '{method=}' and '{h=}' without QJIT.")
 
     def _get_argnum(args):
         """Inspect the arguments for differentiability and return the
