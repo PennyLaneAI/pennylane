@@ -59,6 +59,8 @@
 
 <h3>Deprecations 👋</h3>
 
+* `QNode.gradient_fn` is deprecated. Please use `QNode.diff_method` and `QNode.get_gradient_fn` instead.
+
 <h3>Documentation 📝</h3>
 
 <h3>Bug fixes 🐛</h3>

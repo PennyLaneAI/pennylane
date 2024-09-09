@@ -684,7 +684,6 @@ class TestPassthruIntegration:
             qml.RX(p[2] / 2, wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        assert circuit.gradient_fn == "backprop"
         res = circuit(weights)
 
         expected = jnp.cos(3 * x) * jnp.cos(y) * jnp.cos(z / 2) - jnp.sin(3 * x) * jnp.sin(z / 2)

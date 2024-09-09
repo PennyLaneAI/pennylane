@@ -1638,7 +1638,6 @@ class TestQNodeIntegration:
 
         expected = -torch.sin(p)
 
-        assert circuit.gradient_fn == "backprop"
         assert torch.allclose(circuit(p), expected, atol=tol, rtol=0)
 
     def test_qubit_circuit_broadcasted(self, torch_device, tol):
@@ -1654,8 +1653,6 @@ class TestQNodeIntegration:
             return qml.expval(qml.PauliY(0))
 
         expected = -torch.sin(p)
-
-        assert circuit.gradient_fn == "backprop"
         assert torch.allclose(circuit(p), expected, atol=tol, rtol=0)
 
     def test_correct_state(self, torch_device, tol):
@@ -2178,12 +2175,6 @@ class TestPassthruIntegration:
             qml.StatePrep(input_state, wires=w)
             operation(x, weights[0], weights[1], wires=w)
             return qml.expval(qml.PauliX(w))
-
-        # Check that the correct QNode type is being used.
-        if diff_method == "backprop":
-            assert circuit.gradient_fn == "backprop"
-        elif diff_method == "finite-diff":
-            assert circuit.gradient_fn is qml.gradients.finite_diff
 
         def cost(params):
             """Perform some classical processing"""
