@@ -37,7 +37,6 @@ N_SHOTS = 1e6
 LIST_CORE_DEVICES = {
     "default.qubit",
     "default.qubit.torch",
-    "default.qubit.tf",
     "default.qubit.autograd",
 }
 
