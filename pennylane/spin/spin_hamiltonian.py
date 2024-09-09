@@ -505,18 +505,18 @@ def haldane(
         lattice (str): Shape of the lattice. Input values can be ``'chain'``, ``'square'``,
             ``'rectangle'``, ``'honeycomb'``, ``'triangle'``, or ``'kagome'``.
         n_cells (list[int]): Number of cells in each direction of the grid.
-        hopping1 (Optional[float | tensor_like(float)]): Hopping strength between
+        hopping1 (float | tensor_like(float)): Hopping strength between
             nearest neighbouring sites. It can be a number, or
             a square matrix of size ``(n_sites, n_sites)``, where ``n_sites`` is the total
             number of sites. Default value is 1.0.
-        hopping2 (Optional[float | tensor_like(float)]): Hopping strength between next-nearest
+        hopping2 (float | tensor_like(float)): Hopping strength between next-nearest
             neighbouring sites. It can be a number, or
             a square matrix of size ``(n_sites, n_sites)``, where ``n_sites`` is the total
             number of sites. Default value is 1.0.
-        phi (Optional[float | tensor_like(float)]): Phase factor in the system. It can be a number, or
+        phi (float | tensor_like(float)): Phase factor in the system. It can be a number, or
             a square matrix of size ``(n_sites, n_sites)``, where ``n_sites`` is the total
             number of sites. Default value is 1.0.
-        boundary_condition (Optional[bool | list[bool]]): Defines boundary conditions for different lattice
+        boundary_condition (bool | list[bool]): Defines boundary conditions for different lattice
             axes. Default is ``False`` indicating open boundary condition.
         mapping (str): Specifies the fermion-to-qubit mapping. Input values can be
             ``'jordan_wigner'``, ``'parity'`` or ``'bravyi_kitaev'``.
