@@ -26,8 +26,6 @@ from pennylane.workflow import SUPPORTED_INTERFACES
 class MCMConfig:
     """A class to store mid-circuit measurement configurations."""
 
-    _frozen: bool = False
-
     mcm_method: Optional[
         Literal["deferred", "one-shot", "tree-traversal", "single-branch-statistics"]
     ] = None
@@ -41,6 +39,8 @@ class MCMConfig:
     ``"hw-like"``, invalid shots will be discarded and only results for valid shots will
     be returned. If ``"fill-shots"``, results corresponding to the original number of
     shots will be returned. If not specified, the device will decide which mode to use."""
+
+    _frozen: bool = False
 
     def __setattr__(self, key, value):
         if self._frozen:
