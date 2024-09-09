@@ -46,16 +46,23 @@ def _capture_diff(func, argnum=None, diff_prim=None, method=None, h=None):
     def new_func(*args, **kwargs):
         flat_args, in_tree = tree_flatten(args)
         # Create a new input tree that only takes inputs marked by argnum into account
-        subtrees = (subtree for i, subtree in enumerate(in_tree.children()) if i in arnum)
+        subtrees = (subtree for i, subtree in enumerate(in_tree.children()) if i in argnum)
         trainable_in_tree = treedef_tuple(subtrees)
         # Create fully flattened function (flat inputs & outputs)
         flat_fn = FlatFn(partial(func, **kwargs) if kwargs else func, in_tree)
         jaxpr = jax.make_jaxpr(flat_fn)(*flat_args)
+        print(jaxpr)
         prim_kwargs = {"argnum": argnum, "jaxpr": jaxpr.jaxpr, "n_consts": len(jaxpr.consts)}
         out_flat = diff_prim.bind(*jaxpr.consts, *flat_args, **prim_kwargs, method=method, h=h)
+        print(out_flat)
+        # flatten once more to go from 2D derivative structure (outputs, args) to flat structure
+        out_flat, _ = tree_flatten(out_flat)
         assert flat_fn.out_tree is not None, "out_tree should be set after executing flat_fn"
         # The derivative output tree is given by composition of the output tree
         # and the trainable inputs tree
+        print(out_flat)
+        print(f"{trainable_in_tree=}")
+        print(f"{flat_fn.out_tree=}")
         combined_tree = flat_fn.out_tree.compose(trainable_in_tree)
         return tree_unflatten(combined_tree, out_flat)
 

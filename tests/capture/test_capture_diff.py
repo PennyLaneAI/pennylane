@@ -262,7 +262,7 @@ class TestGrad:
 
     @pytest.mark.parametrize("argnum", ([0, 1], [0], [1]))
     def test_grad_pytree_input(self, x64_mode, argnum):
-        """Test that the qml.grad primitive can be captured with classical nodes."""
+        """Test that the qml.grad primitive can be captured with pytree inputs."""
 
         initial_mode = jax.config.jax_enable_x64
         jax.config.update("jax_enable_x64", x64_mode)
@@ -297,7 +297,7 @@ class TestGrad:
         assert jaxpr.out_avals == [jax.core.ShapedArray((), fdtype, weak_type=True)] * len(argnum)
 
         grad_eqn = jaxpr.eqns[2]
-        grad_eqn_assertions(grad_eqn, argnum=argnum)
+        diff_eqn_assertions(grad_eqn, grad_prim, argnum=argnum)
         assert [var.aval for var in grad_eqn.outvars] == jaxpr.out_avals
         assert len(grad_eqn.params["jaxpr"].eqns) == 6  # 5 numeric eqns, 1 conversion eqn
 
@@ -328,10 +328,6 @@ class TestJacobian:
     @pytest.mark.parametrize("argnum", ([0, 1], [0], [1], 0, 1))
     def test_classical_jacobian(self, x64_mode, argnum):
         """Test that the qml.jacobian primitive can be captured with classical nodes."""
-        if isinstance(argnum, list) and len(argnum) > 1:
-            # These cases will only be unlocked with Pytree support
-            pytest.xfail()
-
         initial_mode = jax.config.jax_enable_x64
         jax.config.update("jax_enable_x64", x64_mode)
         fdtype = jnp.float64 if x64_mode else jnp.float32
@@ -380,6 +376,8 @@ class TestJacobian:
         diff_eqn_assertions(jac_eqn, jacobian_prim, argnum=argnum)
 
         manual_eval = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x, y)
+        # Evaluating jaxpr gives flat list results. Need to adapt the JAX output to that
+        jax_out = sum(jax_out, start=())
         assert _jac_allclose(manual_eval, jax_out, num_axes)
 
         jax.config.update("jax_enable_x64", initial_mode)
@@ -520,5 +518,58 @@ class TestJacobian:
         else:
             spy.assert_not_called()
         assert _jac_allclose(manual_res, expected_res, 1)
+
+        jax.config.update("jax_enable_x64", initial_mode)
+
+    @pytest.mark.parametrize("argnum", ([0, 1], [0], [1]))
+    def test_jacobian_pytrees(self, x64_mode, argnum):
+        """Test that the qml.jacobian primitive can be captured with
+        pytree inputs and outputs."""
+
+        initial_mode = jax.config.jax_enable_x64
+        jax.config.update("jax_enable_x64", x64_mode)
+        fdtype = jax.numpy.float64 if x64_mode else jax.numpy.float32
+
+        def inner_func(x, y):
+            return {
+                "prod_cos": jnp.prod(jnp.sin(x["a"]) * jnp.cos(y[0]["b"][1]) ** 2),
+                "sum_sin": jnp.sum(jnp.sin(x["a"]) * jnp.sin(y[1]["c"]) ** 2),
+            }
+
+        def func_qml(x):
+            return qml.jacobian(inner_func, argnum=argnum)(
+                {"a": x}, ({"b": [None, 0.4 * jnp.sqrt(x)]}, {"c": 0.5})
+            )
+
+        def func_jax(x):
+            return jax.jacobian(inner_func, argnums=argnum)(
+                {"a": x}, ({"b": [None, 0.4 * jnp.sqrt(x)]}, {"c": 0.5})
+            )
+
+        x = 0.7
+        jax_out = func_jax(x)
+        jax_out_flat, jax_out_tree = jax.tree_util.tree_flatten(jax_out)
+        qml_out_flat, qml_out_tree = jax.tree_util.tree_flatten(func_qml(x))
+        assert jax_out_tree == qml_out_tree
+        assert qml.math.allclose(jax_out_flat, qml_out_flat)
+
+        # Check overall jaxpr properties
+        if isinstance(argnum, int):
+            argnum = [argnum]
+        jaxpr = jax.make_jaxpr(func_qml)(x)
+        assert jaxpr.in_avals == [jax.core.ShapedArray((), fdtype, weak_type=True)]
+        assert len(jaxpr.eqns) == 3
+        assert jaxpr.out_avals == [jax.core.ShapedArray((), fdtype, weak_type=True)] * len(argnum)
+
+        jac_eqn = jaxpr.eqns[2]
+        diff_eqn_assertions(jac_eqn, jacobian_prim, argnum=argnum)
+        assert [var.aval for var in jac_eqn.outvars] == jaxpr.out_avals
+        assert len(jac_eqn.params["jaxpr"].eqns) == 6  # 5 numeric eqns, 1 conversion eqn
+
+        manual_out = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)
+        manual_out_flat, manual_out_tree = jax.tree_util.tree_flatten(manual_out)
+        # Assert that the output from the manual evaluation is flat
+        assert manual_out_tree == jax.tree_util.tree_flatten(manual_out_flat)[1]
+        assert qml.math.allclose(jax_out_flat, manual_out_flat)
 
         jax.config.update("jax_enable_x64", initial_mode)
