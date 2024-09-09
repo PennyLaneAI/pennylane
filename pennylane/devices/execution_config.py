@@ -14,8 +14,10 @@
 """
 Contains the :class:`ExecutionConfig` data class.
 """
+from collections.abc import Mapping
 from dataclasses import dataclass, field
-from typing import Optional, Union
+from types import MappingProxyType
+from typing import Literal, Optional, Union
 
 from pennylane.workflow import SUPPORTED_INTERFACES
 
@@ -24,17 +26,29 @@ from pennylane.workflow import SUPPORTED_INTERFACES
 class MCMConfig:
     """A class to store mid-circuit measurement configurations."""
 
-    mcm_method: Optional[str] = None
+    _frozen: bool = False
+
+    mcm_method: Optional[
+        Literal["deferred", "one-shot", "tree-traversal", "single-branch-statistics"]
+    ] = None
     """Which mid-circuit measurement strategy to use. Use ``deferred`` for the deferred
     measurements principle and "one-shot" if using finite shots to execute the circuit
     for each shot separately. If not specified, the device will decide which method to
     use."""
 
-    postselect_mode: Optional[str] = None
+    postselect_mode: Optional[Literal["hw-like", "fill-shots", "pad-invalid-samples"]] = None
     """Configuration for handling shots with mid-circuit measurement postselection. If
     ``"hw-like"``, invalid shots will be discarded and only results for valid shots will
     be returned. If ``"fill-shots"``, results corresponding to the original number of
     shots will be returned. If not specified, the device will decide which mode to use."""
+
+    def __setattr__(self, key, value):
+        if self._frozen:
+            raise AttributeError(
+                f"{self} is frozen and does not support assignment. "
+                "Please use dataclasses.replace instead."
+            )
+        super().__setattr__(key, value)
 
     def __post_init__(self):
         """
@@ -63,6 +77,8 @@ class ExecutionConfig:
     See the Attributes section to learn more about the various configurable options.
     """
 
+    _frozen: bool = False
+
     grad_on_execution: Optional[bool] = None
     """Whether or not to compute the gradient at the same time as the execution.
 
@@ -89,10 +105,10 @@ class ExecutionConfig:
     gradient_method: Optional[str] = None
     """The method used to compute the gradient of the quantum circuit being executed"""
 
-    gradient_keyword_arguments: Optional[dict] = None
+    gradient_keyword_arguments: Mapping = field(default_factory=dict)
     """Arguments used to control a gradient transform"""
 
-    device_options: Optional[dict] = None
+    device_options: Mapping = field(default_factory=dict)
     """Various options for the device executing a quantum circuit"""
 
     interface: Optional[str] = None
@@ -103,6 +119,18 @@ class ExecutionConfig:
 
     mcm_config: Union[MCMConfig, dict] = field(default_factory=MCMConfig)
     """Configuration options for handling mid-circuit measurements"""
+
+    def __setattr__(self, key, value):
+        if self._frozen:
+            raise AttributeError(
+                f"{self} is frozen and does not support assignment."
+                " Please use dataclasses.replace instead."
+            )
+        if key == "_frozen" and value:
+            self.gradient_keyword_arguments = MappingProxyType(self.gradient_keyword_arguments)
+            self.device_options = MappingProxyType(self.device_options)
+            self.mcm_config._frozen = True  # pylint: disable=protected-access
+        super().__setattr__(key, value)
 
     def __post_init__(self):
         """
@@ -133,3 +161,4 @@ class ExecutionConfig:
 
 
 DefaultExecutionConfig = ExecutionConfig()
+DefaultExecutionConfig._frozen = True  # pylint: disable=protected-access

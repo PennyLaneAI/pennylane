@@ -13,6 +13,9 @@
   when possible, based on the `pauli_rep` of the relevant observables.
   [#6113](https://github.com/PennyLaneAI/pennylane/pull/6113/)
 
+* `qml.devices.ExecutionConfig` and `qml.devices.MCMConfig` objects can now be made frozen, and
+  `qml.devices.DefaultExecutionConfig` is immutable.
+
 <h4>Capturing and representing hybrid programs</h4>
 
 * Differentiation of hybrid programs via `qml.grad` can now be captured into plxpr.
