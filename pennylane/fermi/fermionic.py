@@ -68,6 +68,7 @@ class FermiWord(dict):
         return FermiWord(adjoint_dict)
 
     def items(self):
+        """Returns the dictionary items in sorted order."""
         return self.sorted_dic.items()
 
     @property
