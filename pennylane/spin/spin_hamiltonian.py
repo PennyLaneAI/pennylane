@@ -121,7 +121,7 @@ def heisenberg(lattice, n_cells, coupling=None, boundary_condition=False, neighb
         coupling (list[list[float]] | list[math.array[float]]): Coupling between spins. It can be a
             2D array of shape ``(neighbour_order, 3)`` or a 3D array of shape
             ``(3, num_spins, num_spins)``, where ``num_spins`` is the total number of spins.
-        boundary_condition (Optional[bool | list[bool]]): Defines boundary conditions for different lattice
+        boundary_condition (bool | list[bool]): Defines boundary conditions for different lattice
             axes. Default is ``False`` indicating open boundary condition.
         neighbour_order (int): Specifies the interaction level for neighbors within the lattice.
             Default is 1, indicating nearest neighbours.
