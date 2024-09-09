@@ -21,7 +21,6 @@ from pennylane.measurements import (
     MeasurementTransform,
     SampleMeasurement,
     SampleMP,
-    Shots,
     StateMeasurement,
     StateMP,
 )
@@ -34,32 +33,6 @@ class NotValidMeasurement(MeasurementProcess):
     @property
     def return_type(self):
         return "NotValidReturnType"
-
-
-def test_no_measure():
-    """Test that failing to specify a measurement
-    raises an exception"""
-    dev = qml.device("default.qubit.legacy", wires=2)
-
-    @qml.qnode(dev)
-    def circuit(x):
-        qml.RX(x, wires=0)
-        return qml.PauliY(0)
-
-    with pytest.raises(qml.QuantumFunctionError, match="must return either a single measurement"):
-        _ = circuit(0.65)
-
-
-def test_shape_unrecognized_error():
-    """Test that querying the shape of a measurement process with an
-    unrecognized return type raises an error."""
-    dev = qml.device("default.qubit.legacy", wires=2)
-    mp = NotValidMeasurement()
-    with pytest.raises(
-        qml.QuantumFunctionError,
-        match="The shape of the measurement NotValidMeasurement is not defined",
-    ):
-        mp.shape(dev, Shots(None))
 
 
 class TestSampleMeasurement:
@@ -76,7 +49,7 @@ class TestSampleMeasurement:
             def process_counts(self, counts: dict, wire_order: Wires):
                 return counts
 
-        dev = qml.device("default.qubit.legacy", wires=2, shots=1000)
+        dev = qml.device("default.mixed", wires=2, shots=1000)
 
         @qml.qnode(dev)
         def circuit():
@@ -96,7 +69,7 @@ class TestSampleMeasurement:
             def process_counts(self, counts: dict, wire_order: Wires):
                 return counts
 
-        dev = qml.device("default.qubit.legacy", wires=2)
+        dev = qml.device("default.mixed", wires=2)
 
         @qml.qnode(dev)
         def circuit():
@@ -111,7 +84,7 @@ class TestSampleMeasurement:
     def test_method_overridden_by_device(self):
         """Test that the device can override a measurement process."""
 
-        dev = qml.device("default.qubit.legacy", wires=2, shots=1000)
+        dev = qml.device("default.mixed", wires=2, shots=1000)
 
         @qml.qnode(dev, diff_method="parameter-shift")
         def circuit():
@@ -134,7 +107,7 @@ class TestStateMeasurement:
             def process_state(self, state, wire_order):
                 return qml.math.sum(state)
 
-        dev = qml.device("default.qubit.legacy", wires=2)
+        dev = qml.device("default.mixed", wires=2)
 
         @qml.qnode(dev)
         def circuit():
@@ -149,7 +122,7 @@ class TestStateMeasurement:
             def process_state(self, state, wire_order):
                 return qml.math.sum(state)
 
-        dev = qml.device("default.qubit.legacy", wires=2, shots=1000)
+        dev = qml.device("default.mixed", wires=2, shots=1000)
 
         @qml.qnode(dev)
         def circuit():
@@ -164,7 +137,7 @@ class TestStateMeasurement:
     def test_method_overriden_by_device(self):
         """Test that the device can override a measurement process."""
 
-        dev = qml.device("default.qubit.legacy", wires=2)
+        dev = qml.device("default.mixed", wires=2)
 
         @qml.qnode(dev, interface="autograd", diff_method="parameter-shift")
         def circuit():
@@ -186,7 +159,7 @@ class TestMeasurementTransform:
             def process(self, tape, device):
                 return {device.shots: len(tape)}
 
-        dev = qml.device("default.qubit.legacy", wires=2, shots=1000)
+        dev = qml.device("default.mixed", wires=2, shots=1000)
 
         @qml.qnode(dev)
         def circuit():
@@ -197,7 +170,7 @@ class TestMeasurementTransform:
     def test_method_overriden_by_device(self):
         """Test that the device can override a measurement process."""
 
-        dev = qml.device("default.qubit.legacy", wires=2, shots=1000)
+        dev = qml.device("default.mixed", wires=2, shots=1000)
 
         @qml.qnode(dev)
         def circuit():
