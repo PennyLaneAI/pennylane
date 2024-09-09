@@ -103,10 +103,10 @@ class MomentumQNGOptimizer(QNGOptimizer):
 
     .. seealso::
 
-        See the next examples of the Pennylane code, benchmarking the Momentum-QNG optimizer 
-        together with the basic QNG, Momentum and Adam: 
-            QAOA:     https://github.com/borbysh/Momentum-QNG/blob/main/QAOA_depth4.ipynb
-            VQE:      https://github.com/borbysh/Momentum-QNG/blob/main/portfolio_optimization.ipynb
+        Also see the examples from the reference above, benchmarking the Momentum-QNG optimizer 
+        against the basic QNG, Momentum and Adam: 
+        - `QAOA <https://github.com/borbysh/Momentum-QNG/blob/main/QAOA_depth4.ipynb>`__
+        - `VQE <https://github.com/borbysh/Momentum-QNG/blob/main/portfolio_optimization.ipynb>`__
 
     Keyword Args:
         momentum=0.9 (float): the user-defined hyperparameter :math:`\rho`
