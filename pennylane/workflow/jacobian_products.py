@@ -54,7 +54,7 @@ def _zero_jvp_single_shots(shots, tape):
 def _zero_jvp(tape):
     if tape.shots.has_partitioned_shots:
         return tuple(_zero_jvp_single_shots(s, tape) for s in tape.shots)
-    return _zero_jvp_single_shots(tape.shots, tape)
+    return _zero_jvp_single_shots(tape.shots.total_shots, tape)
 
 
 def _compute_jvps(jacs, tangents, tapes):
