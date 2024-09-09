@@ -3,8 +3,18 @@
 # Release 0.39.0-dev (development release)
 
 <h3>New features since last release</h3>
-
+ 
 <h3>Improvements 🛠</h3>
+* The `diagonalize_measurements` transform now uses a more efficient method of diagonalization 
+  when possible, based on the `pauli_rep` of the relevant observables.
+  [#6113](https://github.com/PennyLaneAI/pennylane/pull/6113/)
+
+<h4>Capturing and representing hybrid programs</h4>
+
+* Differentiation of hybrid programs via `qml.grad` can now be captured into plxpr.
+  When evaluating a captured `qml.grad` instruction, it will dispatch to `jax.grad`,
+  which differs from the Autograd implementation of `qml.grad` itself.
+  [(#6120)](https://github.com/PennyLaneAI/pennylane/pull/6120)
 
 * Improve unit testing for capturing of nested control flows.
   [(#6111)](https://github.com/PennyLaneAI/pennylane/pull/6111)
@@ -13,6 +23,10 @@
   `from pennylane.capture.primitives import *`.
   [(#6129)](https://github.com/PennyLaneAI/pennylane/pull/6129)
 
+* The `SampleMP.process_samples` method is updated to support using JAX tracers
+  for samples, allowing compatiblity with Catalyst workflows.
+  [(#6211)](https://github.com/PennyLaneAI/pennylane/pull/6211)
+
 * Improve `qml.Qubitization` decomposition.
   [(#6182)](https://github.com/PennyLaneAI/pennylane/pull/6182)
 
@@ -20,7 +34,11 @@
   unique representation of the object.
   [(#6167)](https://github.com/PennyLaneAI/pennylane/pull/6167)
 
+
 <h3>Breaking changes 💔</h3>
+
+* Remove support for Python 3.9.
+  [(#6223)](https://github.com/PennyLaneAI/pennylane/pull/6223)
 
 * `DefaultQubitTF` and `DefaultQubitTorch` are removed. Please use `default.qubit` for all interfaces.
   [(#6207)](https://github.com/PennyLaneAI/pennylane/pull/6207)
@@ -59,7 +77,10 @@
 
 This release contains contributions from (in alphabetical order):
 
-Guillermo Alonso
-Utkarsh Azad
-Christina Lee
-William Maxwell
+Guillermo Alonso,
+Utkarsh Azad,
+Lillian M. A. Frederiksen,
+Christina Lee,
+William Maxwell,
+Lee J. O'Riordan,
+David Wierichs,
