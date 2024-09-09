@@ -77,8 +77,6 @@ class ExecutionConfig:
     See the Attributes section to learn more about the various configurable options.
     """
 
-    _frozen: bool = False
-
     grad_on_execution: Optional[bool] = None
     """Whether or not to compute the gradient at the same time as the execution.
 
@@ -120,6 +118,8 @@ class ExecutionConfig:
     mcm_config: Union[MCMConfig, dict] = field(default_factory=MCMConfig)
     """Configuration options for handling mid-circuit measurements"""
 
+    _frozen: bool = False  # must be set last
+
     def __setattr__(self, key, value):
         if self._frozen:
             raise AttributeError(
@@ -129,7 +129,8 @@ class ExecutionConfig:
         if key == "_frozen" and value:
             self.gradient_keyword_arguments = MappingProxyType(self.gradient_keyword_arguments)
             self.device_options = MappingProxyType(self.device_options)
-            self.mcm_config._frozen = True  # pylint: disable=protected-access
+            if not self.mcm_config._frozen:
+                self.mcm_config._frozen = True  # pylint: disable=protected-access
         super().__setattr__(key, value)
 
     def __post_init__(self):
