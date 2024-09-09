@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Tests for the QNG optimizer"""
+"""Tests for the Momentum-QNG optimizer"""
 # pylint: disable=too-few-public-methods
 import pytest
 import scipy as sp
@@ -37,7 +37,7 @@ class TestExceptions:
         def cost(a):
             return circuit(a)
 
-        opt = qml.QNGOptimizer()
+        opt = qml.MomentumQNGOptimizer()
         params = 0.5
 
         with pytest.raises(
@@ -52,7 +52,7 @@ class TestOptimize:
 
     def test_step_and_cost_autograd(self):
         """Test that the correct cost and step is returned via the
-        step_and_cost method for the QNG optimizer"""
+        step_and_cost method for the MomentumQNG optimizer"""
         dev = qml.device("default.qubit", wires=1)
 
         @qml.qnode(dev)
@@ -62,7 +62,7 @@ class TestOptimize:
             return qml.expval(qml.PauliZ(0))
 
         var = np.array([0.011, 0.012])
-        opt = qml.QNGOptimizer(stepsize=0.01)
+        opt = qml.MomentumQNGOptimizer(stepsize=0.01, momentum=0.9)
 
         step1, res = opt.step_and_cost(circuit, var)
         step2 = opt.step(circuit, var)
