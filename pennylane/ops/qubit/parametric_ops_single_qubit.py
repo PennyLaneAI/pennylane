@@ -16,14 +16,17 @@
 This submodule contains the discrete-variable quantum operations that are the
 core parameterized gates.
 """
-# pylint:disable=abstract-method,arguments-differ,protected-access,invalid-overridden-method
 import functools
+from collections import defaultdict
 from typing import Optional, Union
 
 import numpy as np
 
+# pylint:disable=abstract-method,arguments-differ,protected-access,invalid-overridden-method
+import sympy
+
 import pennylane as qml
-from pennylane.operation import Operation
+from pennylane.operation import Operation, ResourcesOperation
 from pennylane.typing import TensorLike
 from pennylane.wires import WiresLike
 
@@ -40,7 +43,7 @@ def _can_replace(x, y):
     return not qml.math.is_abstract(x) and not qml.math.requires_grad(x) and qml.math.allclose(x, y)
 
 
-class RX(Operation):
+class RX(ResourcesOperation):
     r"""
     The single qubit X rotation
 
@@ -79,6 +82,22 @@ class RX(Operation):
 
     def __init__(self, phi: TensorLike, wires: WiresLike, id: Optional[str] = None):
         super().__init__(phi, wires=wires, id=id)
+
+    def resources(self, gate_set=None, epsilon=1e-3):
+        gate_types = defaultdict(int)
+        gate_sizes = defaultdict(int)
+
+        num_gates = (
+            3 * sympy.log(1 / epsilon)
+            if isinstance(epsilon, sympy.Symbol)
+            else round(3 * np.log(1 / epsilon))
+        )
+        gate_sizes[1] = num_gates
+        gate_types["T"] = num_gates
+
+        return qml.resource.resource.Resources(
+            num_gates=num_gates, gate_types=gate_types, gate_sizes=gate_sizes
+        )
 
     @staticmethod
     def compute_matrix(theta: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
@@ -136,7 +155,7 @@ class RX(Operation):
         return [pi_half, self.data[0], -pi_half]
 
 
-class RY(Operation):
+class RY(ResourcesOperation):
     r"""
     The single qubit Y rotation
 
@@ -175,6 +194,22 @@ class RY(Operation):
 
     def __init__(self, phi: TensorLike, wires: WiresLike, id: Optional[str] = None):
         super().__init__(phi, wires=wires, id=id)
+
+    def resources(self, gate_set=None, epsilon=1e-3):
+        gate_types = defaultdict(int)
+        gate_sizes = defaultdict(int)
+
+        num_gates = (
+            3 * sympy.log(1 / epsilon)
+            if isinstance(epsilon, sympy.Symbol)
+            else round(3 * np.log(1 / epsilon))
+        )
+        gate_sizes[1] = num_gates
+        gate_types["T"] = num_gates
+
+        return qml.resource.resource.Resources(
+            num_gates=num_gates, gate_types=gate_types, gate_sizes=gate_sizes
+        )
 
     @staticmethod
     def compute_matrix(theta: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
@@ -231,7 +266,7 @@ class RY(Operation):
         return [0.0, self.data[0], 0.0]
 
 
-class RZ(Operation):
+class RZ(ResourcesOperation):
     r"""
     The single qubit Z rotation
 
@@ -270,6 +305,22 @@ class RZ(Operation):
 
     def __init__(self, phi: TensorLike, wires: WiresLike, id: Optional[str] = None):
         super().__init__(phi, wires=wires, id=id)
+
+    def resources(self, gate_set=None, epsilon=1e-3):
+        gate_types = defaultdict(int)
+        gate_sizes = defaultdict(int)
+
+        num_gates = (
+            3 * sympy.log(1 / epsilon)
+            if isinstance(epsilon, sympy.Symbol)
+            else round(3 * np.log(1 / epsilon))
+        )
+        gate_sizes[1] = num_gates
+        gate_types["T"] = num_gates
+
+        return qml.resource.resource.Resources(
+            num_gates=num_gates, gate_types=gate_types, gate_sizes=gate_sizes
+        )
 
     @staticmethod
     def compute_matrix(theta: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ

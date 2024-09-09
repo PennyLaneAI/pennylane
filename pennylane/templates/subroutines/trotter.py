@@ -15,10 +15,11 @@
 Contains templates for Suzuki-Trotter approximation based subroutines.
 """
 import copy
+import functools
 from collections import defaultdict
 
 import pennylane as qml
-from pennylane.operation import ResourcesOperation
+from pennylane.operation import Operator, QFuncResourceOperator, ResourcesOperation
 from pennylane.ops import Sum
 from pennylane.ops.op_math import SProd
 from pennylane.resource import Resources
@@ -254,28 +255,72 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
         context.append(self)
         return self
 
-    def resources(self) -> Resources:
+    def resources(self, gate_set=None, estimate=False) -> Resources:
         """The resource requirements for a given instance of the Suzuki-Trotter product.
 
         Returns:
             Resources: The resources for an instance of ``TrotterProduct``.
         """
+        if estimate:
+            time = self.parameters[-1]
+            n = self.hyperparameters["n"]
+
+            order = self.hyperparameters["order"]
+            k = order // 2
+
+            ops = self.hyperparameters["base"].operands
+            first_order_expansion = [qml.exp(op, (time / n) * 1j) for op in ops]
+
+            gate_types = defaultdict(int)
+            gate_sizes = defaultdict(int)
+
+            if order == 1:
+                r_all = qml.resource.resources_from_sequence_ops(first_order_expansion, gate_set)
+                for gate in r_all.gate_types:
+                    gate_types[gate] = r_all.gate_types[gate] * n
+
+                for size in r_all.gate_sizes:
+                    gate_sizes[size] = r_all.gate_sizes[size] * n
+
+                return Resources(
+                    num_gates=r_all.num_gates * n, gate_types=gate_types, gate_sizes=gate_sizes
+                )
+
+            r_first = qml.resource.resources_from_op(first_order_expansion[0], gate_set)
+            r_last = qml.resource.resources_from_op(first_order_expansion[-1], gate_set)
+            r_rest = qml.resource.resources_from_sequence_ops(first_order_expansion[1:-1], gate_set)
+
+            for gate in set(
+                (*r_first.gate_types.keys(), *r_rest.gate_types.keys(), *r_last.gate_types.keys())
+            ):
+                gate_types[gate] = (
+                    r_first.gate_types[gate] * n * (5 ** (k - 1) + 1)
+                    + r_rest.gate_types[gate] * n * 2 * (5 ** (k - 1))
+                    + r_last.gate_types[gate] * n * (5 ** (k - 1))
+                )
+
+            for size in set(
+                (*r_first.gate_sizes.keys(), *r_rest.gate_sizes.keys(), *r_last.gate_sizes.keys())
+            ):
+                gate_sizes[size] = (
+                    r_first.gate_sizes[size] * n * (5 ** (k - 1) + 1)
+                    + r_rest.gate_sizes[size] * n * 2 * (5 ** (k - 1))
+                    + r_last.gate_sizes[size] * n * (5 ** (k - 1))
+                )
+
+            return Resources(
+                num_gates=sum(gate_types.values()), gate_types=gate_types, gate_sizes=gate_sizes
+            )
+
         with qml.QueuingManager.stop_recording():
             decomp = self.compute_decomposition(*self.parameters, **self.hyperparameters)
 
         num_wires = len(self.wires)
-        num_gates = len(decomp)
+        depth = qml.tape.QuantumTape(ops=decomp).graph.get_depth()
 
-        depth = qml.tape.QuantumScript(ops=decomp).graph.get_depth()
+        r = qml.resource.resources_from_sequence_ops(decomp, gate_set)
 
-        gate_types = defaultdict(int)
-        gate_sizes = defaultdict(int)
-
-        for op in decomp:
-            gate_types[op.name] += 1
-            gate_sizes[len(op.wires)] += 1
-
-        return Resources(num_wires, num_gates, gate_types, gate_sizes, depth)
+        return Resources(num_wires, r.num_gates, r.gate_types, r.gate_sizes, depth)
 
     def error(
         self, method: str = "commutator-bound", fast: bool = True
@@ -445,3 +490,129 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
                 qml.apply(op)
 
         return decomp
+
+
+class TrotterizedQfunc(ResourcesOperation):
+
+    def __init__(
+        self, qfunc, *args, wires, num_steps=1, order=1, reverse=False, name=None, **kwargs
+    ):
+        self.qfunc = qfunc
+        self._n = num_steps
+        self._order = order
+        self._reverse = reverse
+        self._hyperparameters = kwargs
+
+        if order <= 0 or order != 1 and order % 2 != 0:
+            raise ValueError(
+                f"The order of a TrotterProduct must be 1 or a positive even integer, got {order}."
+            )
+
+        super().__init__(*args, wires=wires)
+
+        if name:
+            self._name = name
+
+    @qml.QueuingManager.stop_recording()
+    def resources(self, gate_set=None, estimate=True):
+        if estimate:
+            k = self._order // 2
+            gate_types = defaultdict(int)
+            gate_sizes = defaultdict(int)
+
+            with qml.queuing.AnnotatedQueue() as q:
+                self.qfunc(
+                    self.data[0] / self._n,
+                    *(self.data[1:]),
+                    wires=self.wires,
+                    **self.hyperparameters,
+                )
+
+            first_order_expansion = q.queue
+            r_all = qml.resource.resources_from_sequence_ops(first_order_expansion, gate_set)
+
+            c = self._n if k == 0 else self._n * 2 * (5 ** (k - 1))
+
+            for gate in r_all.gate_types:
+                gate_types[gate] = r_all.gate_types[gate] * c
+
+            for size in r_all.gate_sizes:
+                gate_sizes[size] = r_all.gate_sizes[size] * c
+
+            return Resources(
+                num_gates=sum(gate_types.values()), gate_types=gate_types, gate_sizes=gate_sizes
+            )
+
+        return qml.resource.resources_from_sequence_ops(self.decomposition(), gate_set=gate_set)
+
+    def decomposition(self) -> list[Operator]:  # Update
+        decomp = (
+            _recursive_qfunc(
+                1 / self._n,
+                self._order,
+                self.qfunc,
+                self.wires,
+                *self.data,
+                reverse=self._reverse,
+                **self.hyperparameters,
+            )
+            * self._n
+        )
+
+        if qml.QueuingManager.recording():
+            for op in decomp:  # apply operators in reverse order of expression
+                qml.apply(op)
+
+        return decomp
+
+
+def trotterize(qfunc, num_steps=1, order=1, reverse=False, name=None):
+    """Return a qfunc which trotterizes the gates in the qfunc assuming time is the first argument"""
+
+    @functools.wraps(qfunc)
+    def wrapper(*args, **kwargs):
+        return TrotterizedQfunc(
+            qfunc, *args, num_steps=num_steps, order=order, reverse=reverse, name=name, **kwargs
+        )
+
+    return wrapper
+
+
+@qml.QueuingManager.stop_recording()
+def _recursive_qfunc(x, order, qfunc, wires, *args, reverse=False, **kwargs):
+    """Generate a list of operations using the
+    recursive expression which defines the Trotter product.
+
+    Args:
+        x (complex): the evolution 'time'
+        order (int): the order of the Trotter expansion
+        ops (Iterable(~.Operators)): a list of terms in the Hamiltonian
+
+    Returns:
+        list: the approximation as product of exponentials of the Hamiltonian terms
+    """
+    if order == 1:
+        with qml.tape.QuantumTape() as tape:
+            qfunc(x * args[0], *(args[1:]), wires, **kwargs)
+        return tape.operations[::-1] if reverse else tape.operations
+
+    if order == 2:
+        with qml.tape.QuantumTape() as tape:
+            qfunc(x / 2 * args[0], *(args[1:]), wires, **kwargs)
+        return (
+            tape.operations[::-1] + tape.operations
+            if reverse
+            else tape.operations + tape.operations[::-1]
+        )
+
+    scalar_1 = _scalar(order)
+    scalar_2 = 1 - 4 * scalar_1
+
+    ops_lst_1 = _recursive_qfunc(
+        scalar_1 * x, order - 2, qfunc, wires, *args, reverse=reverse, **kwargs
+    )
+    ops_lst_2 = _recursive_qfunc(
+        scalar_2 * x, order - 2, qfunc, wires, *args, reverse=reverse, **kwargs
+    )
+
+    return (2 * ops_lst_1) + ops_lst_2 + (2 * ops_lst_1)
