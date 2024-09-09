@@ -589,7 +589,7 @@ class QNode:
                 f"Unknown interface {value}. Interface must be one of {SUPPORTED_INTERFACES}."
             )
 
-        self._interface = INTERFACE_MAP[value]
+        self._interface = value
         self._update_gradient_fn(shots=self.device.shots)
 
     @property
@@ -934,7 +934,7 @@ class QNode:
             if interface == "numpy":
                 # Internally stop treating numpy as autograd
                 interface = None
-            self._interface = INTERFACE_MAP[interface]
+            self._interface = interface
         if self._qfunc_uses_shots_arg:
             override_shots = False
         else:
