@@ -56,7 +56,7 @@ class FermiWord(dict):
         super().__init__(operator)
 
     def adjoint(self):
-        r"""Return the adjoint of the ``FermiWord``"""
+        r"""Return the adjoint of FermiWord."""
         n = len(self.items())
         adjoint_dict = {}
         for key, value in reversed(self.items()):
