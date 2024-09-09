@@ -20,6 +20,8 @@ from typing import Optional, Type
 
 import pennylane as qml
 
+from .capture_diff import create_non_jvp_primitive
+
 has_jax = True
 try:
     import jax
@@ -101,7 +103,7 @@ def create_operator_primitive(
     if not has_jax:
         return None
 
-    primitive = jax.core.Primitive(operator_type.__name__)
+    primitive = create_non_jvp_primitive()(operator_type.__name__)
 
     @primitive.def_impl
     def _(*args, **kwargs):

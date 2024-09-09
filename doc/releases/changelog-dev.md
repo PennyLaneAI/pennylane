@@ -3,8 +3,18 @@
 # Release 0.39.0-dev (development release)
 
 <h3>New features since last release</h3>
-
+ 
 <h3>Improvements 🛠</h3>
+* The `diagonalize_measurements` transform now uses a more efficient method of diagonalization 
+  when possible, based on the `pauli_rep` of the relevant observables.
+  [#6113](https://github.com/PennyLaneAI/pennylane/pull/6113/)
+
+<h4>Capturing and representing hybrid programs</h4>
+
+* Differentiation of hybrid programs via `qml.grad` can now be captured into plxpr.
+  When evaluating a captured `qml.grad` instruction, it will dispatch to `jax.grad`,
+  which differs from the Autograd implementation of `qml.grad` itself.
+  [(#6120)](https://github.com/PennyLaneAI/pennylane/pull/6120)
 
 * Improve unit testing for capturing of nested control flows.
   [(#6111)](https://github.com/PennyLaneAI/pennylane/pull/6111)
@@ -71,6 +81,9 @@
 
 * The ``qml.QSVT`` template now orders the ``projector`` wires first and the ``UA`` wires second, which is the expected order of the decomposition.
   [(#6212)](https://github.com/PennyLaneAI/pennylane/pull/6212)
+  
+* The ``qml.Qubitization`` template now orders the ``control`` wires first and the ``hamiltonian`` wires second, which is the expected according to other templates.
+  [(#6229)](https://github.com/PennyLaneAI/pennylane/pull/6229)
 
 * <h3>Contributors ✍️</h3>
 
@@ -83,3 +96,4 @@ Christina Lee,
 William Maxwell,
 Lee J. O'Riordan,
 Mudit Pandey,
+David Wierichs,
