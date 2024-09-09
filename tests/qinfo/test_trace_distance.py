@@ -18,7 +18,12 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 
-pytestmark = pytest.mark.all_interfaces
+pytestmark = [
+    pytest.mark.all_interfaces,
+    pytest.mark.filterwarnings(
+        "ignore:qml.qinfo.trace_distance is deprecated:pennylane.PennyLaneDeprecationWarning"
+    ),
+]
 
 tf = pytest.importorskip("tensorflow", minversion="2.1")
 torch = pytest.importorskip("torch")

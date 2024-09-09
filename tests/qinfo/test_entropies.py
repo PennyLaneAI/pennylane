@@ -19,6 +19,10 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 
+pytestmark = pytest.mark.filterwarnings(
+    "ignore:qml.qinfo.relative_entropy is deprecated:pennylane.PennyLaneDeprecationWarning"
+)
+
 
 def expected_entropy_ising_xx(param):
     """
