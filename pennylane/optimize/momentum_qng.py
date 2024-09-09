@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Quantum natural gradient optimizer with momentum"""
-import pennylane as qml
 
 # pylint: disable=too-many-branches
 # pylint: disable=too-many-arguments
