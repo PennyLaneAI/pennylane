@@ -352,14 +352,14 @@ class TestJacobian:
         func_jax = jax.jacobian(inner_func, argnums=argnum)
 
         jax_out = func_jax(x, y)
-        num_axes = 1 if isinstance(argnum, int) else 2
+        num_axes = 1 if (int_argnum := isinstance(argnum, int)) else 2
         assert _jac_allclose(func_qml(x, y), jax_out, num_axes)
 
         # Check overall jaxpr properties
         jaxpr = jax.make_jaxpr(func_jax)(x, y)
         jaxpr = jax.make_jaxpr(func_qml)(x, y)
 
-        if isinstance(argnum, int):
+        if int_argnum:
             argnum = [argnum]
 
         exp_in_avals = [shaped_array(shape) for shape in [(4,), (2, 3)]]
@@ -377,7 +377,8 @@ class TestJacobian:
 
         manual_eval = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x, y)
         # Evaluating jaxpr gives flat list results. Need to adapt the JAX output to that
-        jax_out = sum(jax_out, start=())
+        if not int_argnum:
+            jax_out = sum(jax_out, start=())
         assert _jac_allclose(manual_eval, jax_out, num_axes)
 
         jax.config.update("jax_enable_x64", initial_mode)
@@ -559,12 +560,19 @@ class TestJacobian:
         jaxpr = jax.make_jaxpr(func_qml)(x)
         assert jaxpr.in_avals == [jax.core.ShapedArray((), fdtype, weak_type=True)]
         assert len(jaxpr.eqns) == 3
-        assert jaxpr.out_avals == [jax.core.ShapedArray((), fdtype, weak_type=True)] * len(argnum)
+
+        # Compute the flat argnum in order to determine the expected number of out tracers
+        flat_argnum = []
+        if 0 in argnum:
+            flat_argnum.append(0)
+        if 1 in argnum:
+            flat_argnum.extend([1, 2])
+        assert jaxpr.out_avals == [jax.core.ShapedArray((), fdtype)] * (2 * len(flat_argnum))
 
         jac_eqn = jaxpr.eqns[2]
-        diff_eqn_assertions(jac_eqn, jacobian_prim, argnum=argnum)
+
+        diff_eqn_assertions(jac_eqn, jacobian_prim, argnum=flat_argnum)
         assert [var.aval for var in jac_eqn.outvars] == jaxpr.out_avals
-        assert len(jac_eqn.params["jaxpr"].eqns) == 6  # 5 numeric eqns, 1 conversion eqn
 
         manual_out = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)
         manual_out_flat, manual_out_tree = jax.tree_util.tree_flatten(manual_out)

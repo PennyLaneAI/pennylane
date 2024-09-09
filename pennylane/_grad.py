@@ -44,25 +44,38 @@ def _capture_diff(func, argnum=None, diff_prim=None, method=None, h=None):
 
     @wraps(func)
     def new_func(*args, **kwargs):
-        flat_args, in_tree = tree_flatten(args)
+        flat_args, in_trees = zip(*(tree_flatten(arg) for arg in args))
+        full_in_tree = treedef_tuple(in_trees)
+
         # Create a new input tree that only takes inputs marked by argnum into account
-        subtrees = (subtree for i, subtree in enumerate(in_tree.children()) if i in argnum)
-        trainable_in_tree = treedef_tuple(subtrees)
+        trainable_in_trees = (in_tree for i, in_tree in enumerate(in_trees) if i in argnum)
+        trainable_in_tree = treedef_tuple(trainable_in_trees)
+
+        # Create argnum for the flat list of input arrays. For each flattened argument,
+        # add a list of flat argnums if the argument is trainable and an empty list otherwise.
+        start = 0
+        flat_argnum = sum(
+            (
+                (
+                    list(range(start, (start := start + len(flat_arg))))
+                    if i in argnum
+                    else list(range((start := start + len(flat_arg)), start))
+                )
+                for i, flat_arg in enumerate(flat_args)
+            ),
+            start=[],
+        )
+
         # Create fully flattened function (flat inputs & outputs)
-        flat_fn = FlatFn(partial(func, **kwargs) if kwargs else func, in_tree)
+        flat_fn = FlatFn(partial(func, **kwargs) if kwargs else func, full_in_tree)
+        flat_args = sum(flat_args, start=[])
         jaxpr = jax.make_jaxpr(flat_fn)(*flat_args)
-        print(jaxpr)
-        prim_kwargs = {"argnum": argnum, "jaxpr": jaxpr.jaxpr, "n_consts": len(jaxpr.consts)}
+        prim_kwargs = {"argnum": flat_argnum, "jaxpr": jaxpr.jaxpr, "n_consts": len(jaxpr.consts)}
         out_flat = diff_prim.bind(*jaxpr.consts, *flat_args, **prim_kwargs, method=method, h=h)
-        print(out_flat)
         # flatten once more to go from 2D derivative structure (outputs, args) to flat structure
         out_flat, _ = tree_flatten(out_flat)
         assert flat_fn.out_tree is not None, "out_tree should be set after executing flat_fn"
-        # The derivative output tree is given by composition of the output tree
-        # and the trainable inputs tree
-        print(out_flat)
-        print(f"{trainable_in_tree=}")
-        print(f"{flat_fn.out_tree=}")
+        # The derivative output tree is the composition of output tree and trainable input trees
         combined_tree = flat_fn.out_tree.compose(trainable_in_tree)
         return tree_unflatten(combined_tree, out_flat)
 
