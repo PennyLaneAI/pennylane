@@ -343,17 +343,17 @@ def emery(
         lattice (str): Shape of the lattice. Input values can be ``'chain'``, ``'square'``,
             ``'rectangle'``, ``'honeycomb'``, ``'triangle'``, or ``'kagome'``.
         n_cells (list[int]): Number of cells in each direction of the grid.
-        hopping (Optional[float | list[float] | tensor_like(float)]): Hopping strength between
+        hopping (float | list[float] | tensor_like(float)): Hopping strength between
             neighbouring sites. It can be a number, a list of length equal to ``neighbour_order`` or
             a square matrix of size ``(n_sites, n_sites)``, where ``n_sites`` is the total
             number of sites. Default value is 1.0.
-        coulomb (Optional[float | list[float]]): Coulomb interaction between spins. It can be a constant or a
+        coulomb (float | list[float]): Coulomb interaction between spins. It can be a constant or a
             list of length equal to number of spins.
-        intersite_coupling (Optional[float | list[float] | tensor_like(float)]): Interaction strength between spins on
+        intersite_coupling (float | list[float] | tensor_like(float)): Interaction strength between spins on
             neighbouring sites. It can be a number, a list with length equal to ``neighbour_order`` or
             a square matrix of size ``(n_sites, n_sites)``, where ``n_sites`` is the total
             number of sites. Default value is 1.0.
-        boundary_condition (Optional[bool | list[bool]]): Defines boundary conditions for different lattice
+        boundary_condition (bool | list[bool]): Defines boundary conditions for different lattice
             axes. Default is ``False`` indicating open boundary condition.
         neighbour_order (int): Specifies the interaction level for neighbors within the lattice.
             Default is 1, indicating nearest neighbours.
