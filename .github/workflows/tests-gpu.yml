@@ -9,7 +9,6 @@ on:
       - reopened
       - synchronize
       - ready_for_review
-      - labeled
 
 concurrency:
   group: gpu-test-${{ github.ref }}
