@@ -28,7 +28,6 @@ to verify and test quantum gradient computations.
     default_qubit
     default_qubit_legacy
     default_qubit_jax
-    default_qubit_torch
     default_qubit_autograd
     default_gaussian
     default_mixed

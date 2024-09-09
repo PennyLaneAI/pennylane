@@ -508,7 +508,7 @@ jobs:
     with:
       job_name: data-tests (${{ matrix.python-version }})
       branch: ${{ inputs.branch }}
-      coverage_artifact_name: data-coverage
+      coverage_artifact_name: data-coverage-${{ matrix.python-version }}
       python_version: ${{ matrix.python-version }}
       pipeline_mode: ${{ inputs.pipeline_mode }}
       install_jax: false
