@@ -42,7 +42,7 @@ def transverse_ising(
         lattice (str): Shape of the lattice. Input values can be ``'chain'``, ``'square'``,
             ``'rectangle'``, ``'honeycomb'``, ``'triangle'``, or ``'kagome'``.
         n_cells (list[int]): Number of cells in each direction of the grid.
-        coupling (Optional[float | list[float]] | list[math.array[float]]): Coupling between spins. It can
+        coupling (float | list[float]] | list[math.array[float]): Coupling between spins. It can
             be a number, a list of length equal to ``neighbour_order`` or a square matrix of shape
             ``(num_spins,  num_spins)``, where ``num_spins`` is the total number of spins. Default
             value is 1.0.
