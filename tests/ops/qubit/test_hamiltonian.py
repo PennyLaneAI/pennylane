@@ -28,11 +28,7 @@ import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane.wires import Wires
 
-pytestmark = pytest.mark.filterwarnings(
-    r"ignore:qml\.(operation|ops)\.\w+ uses the old approach:pennylane.PennyLaneDeprecationWarning"
-)
-
-
+# Tensors, Hamiltonians created outside tests will not be covered by suppression in pytest.ini
 warnings.filterwarnings(
     action="ignore",
     message=r"qml\.(operation|ops)\.\w+ uses the old approach to operator arithmetic",
