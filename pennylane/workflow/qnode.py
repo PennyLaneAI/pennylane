@@ -562,6 +562,9 @@ class QNode:
             "QNode.gradient_fn is deprecated. Please use QNode.diff_method instead.",
             qml.PennyLaneDeprecationWarning,
         )
+        self._update_gradient_fn(
+            shots=self.tape.shots if self.tape else self.device.shots, tape=self.tape
+        )
         return self._gradient_fn
 
     def __copy__(self) -> "QNode":
@@ -665,6 +668,8 @@ class QNode:
             tuple[str or .TransformDispatcher, dict, .device.Device: Tuple containing the ``gradient_fn``,
             ``gradient_kwargs``, and the device to use when calling the execute function.
         """
+        if diff_method is None:
+            return None, {}, device
 
         config = _make_execution_config(None, diff_method)
 
@@ -872,11 +877,17 @@ class QNode:
             Result
 
         """
+        assert (
+            self._tape is not None
+        ), "tape should be set in construct call prior to _execution_component"
 
+        gradient_fn = QNode.get_gradient_fn(
+            self.device, self.interface, self.diff_method, tape=self.tape
+        )[0]
         execute_kwargs = copy.copy(self.execute_kwargs)
 
         gradient_kwargs = copy.copy(self.gradient_kwargs)
-        if self._gradient_fn is qml.gradients.param_shift_cv:
+        if gradient_fn is qml.gradients.param_shift_cv:
             gradient_kwargs["dev"] = self.device
 
         mcm_config = copy.copy(execute_kwargs["mcm_config"])
@@ -893,7 +904,7 @@ class QNode:
         full_transform_program = qml.transforms.core.TransformProgram(self.transform_program)
         inner_transform_program = qml.transforms.core.TransformProgram()
 
-        config = _make_execution_config(self, self._gradient_fn, mcm_config)
+        config = _make_execution_config(self, gradient_fn, mcm_config)
         device_transform_program, config = self.device.preprocess(execution_config=config)
 
         if config.use_device_gradient:
@@ -902,9 +913,9 @@ class QNode:
             inner_transform_program += device_transform_program
 
         # Add the gradient expand to the program if necessary
-        if getattr(self._gradient_fn, "expand_transform", False):
+        if getattr(gradient_fn, "expand_transform", False):
             full_transform_program.insert_front_transform(
-                qml.transform(self._gradient_fn.expand_transform),
+                qml.transform(gradient_fn.expand_transform),
                 **gradient_kwargs,
             )
 
@@ -918,7 +929,7 @@ class QNode:
         res = qml.execute(
             (self._tape,),
             device=self.device,
-            gradient_fn=self._gradient_fn,
+            gradient_fn=gradient_fn,
             interface=self.interface,
             transform_program=full_transform_program,
             inner_transform=inner_transform_program,
@@ -942,6 +953,9 @@ class QNode:
 
     def _impl_call(self, *args, **kwargs) -> qml.typing.Result:
 
+        # construct the tape
+        self.construct(args, kwargs)
+
         old_interface = self.interface
         if old_interface == "auto":
             interface = (
@@ -950,17 +964,6 @@ class QNode:
                 else qml.math.get_interface(*args, *list(kwargs.values()))
             )
             self._interface = INTERFACE_MAP[interface]
-
-        if self._qfunc_uses_shots_arg:
-            override_shots = False
-        else:
-            if "shots" not in kwargs:
-                kwargs["shots"] = self.device.shots
-            override_shots = kwargs["shots"]
-
-        # construct the tape
-        self.construct(args, kwargs)
-        self._update_gradient_fn(shots=override_shots, tape=self._tape)
 
         try:
             res = self._execution_component(args, kwargs)
