@@ -27,9 +27,13 @@
 
 <h3>Breaking changes 💔</h3>
 
-* The ``simplify`` argument in ``qml.Hamiltonian`` and ``qml.ops.LinearCombination`` has been removed.
-  Instead, ``qml.simplify()`` can be called on the constructed operator.
-  [(#)]()
+* The `simplify` argument in `qml.Hamiltonian` and `qml.ops.LinearCombination` has been removed.
+  Instead, `qml.simplify()` can be called on the constructed operator.
+  [(#6242)](https://github.com/PennyLaneAI/pennylane/pull/6242)
+
+* Legacy operator arithmetic has been deprecated. This includes `qml.operation.enable_new_opmath`,
+  `qml.operation.disable_new_opmath`, `qml.ops.Hamiltonian`, and `qml.operation.Tensor`.
+  [(#6242)](https://github.com/PennyLaneAI/pennylane/pull/6242)
 
 * Remove support for Python 3.9.
   [(#6223)](https://github.com/PennyLaneAI/pennylane/pull/6223)

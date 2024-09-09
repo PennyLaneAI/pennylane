@@ -3050,6 +3050,11 @@ def enable_new_opmath(warn=True):
     """
     Change dunder methods to return arithmetic operators instead of Hamiltonians and Tensors
 
+    .. warning::
+
+        Using legacy operator arithmetic is deprecated, and will be removed in PennyLane v0.40.
+        For further details, see :doc:`Updated Operators </news/new_opmath/>`.
+
     Args:
         warn (bool): Whether or not to emit a warning for re-enabling new opmath. Default is ``True``.
 
@@ -3065,9 +3070,11 @@ def enable_new_opmath(warn=True):
     """
     if warn:
         warnings.warn(
-            "Re-enabling the new Operator arithmetic system after disabling it is not advised. "
-            "Please visit https://docs.pennylane.ai/en/stable/news/new_opmath.html for help troubleshooting.",
-            UserWarning,
+            "Toggling the new approach to operator arithmetic is deprecated. From version 0.40 of "
+            "PennyLane, only the new approach to operator arithmetic will be available. If you are "
+            "experiencing issues, visit https://docs.pennylane.ai/en/stable/news/new_opmath.html "
+            "or contact the PennyLane team on the discussion forum: https://discuss.pennylane.ai/.",
+            qml.PennyLaneDeprecationWarning,
         )
     global __use_new_opmath
     __use_new_opmath = True
@@ -3076,6 +3083,11 @@ def enable_new_opmath(warn=True):
 def disable_new_opmath(warn=True):
     """
     Change dunder methods to return Hamiltonians and Tensors instead of arithmetic operators
+
+    .. warning::
+
+        Using legacy operator arithmetic is deprecated, and will be removed in PennyLane v0.40.
+        For further details, see :doc:`Updated Operators </news/new_opmath/>`.
 
     Args:
         warn (bool): Whether or not to emit a warning for disabling new opmath. Default is ``True``.
@@ -3092,10 +3104,11 @@ def disable_new_opmath(warn=True):
     """
     if warn:
         warnings.warn(
-            "Disabling the new Operator arithmetic system for legacy support. "
-            "If you need help troubleshooting your code, please visit "
-            "https://docs.pennylane.ai/en/stable/news/new_opmath.html",
-            UserWarning,
+            "Disabling the new approach to operator arithmetic is deprecated. From version 0.40 of "
+            "PennyLane, only the new approach to operator arithmetic will be available. If you are "
+            "experiencing issues, visit https://docs.pennylane.ai/en/stable/news/new_opmath.html "
+            "or contact the PennyLane team on the discussion forum: https://discuss.pennylane.ai/.",
+            qml.PennyLaneDeprecationWarning,
         )
     global __use_new_opmath
     __use_new_opmath = False
@@ -3147,37 +3160,53 @@ def convert_to_opmath(op):
 
 
 @contextmanager
-def disable_new_opmath_cm():
+def disable_new_opmath_cm(warn=True):
     r"""Allows to use the old operator arithmetic within a
     temporary context using the `with` statement."""
+    if warn:
+        warnings.warn(
+            "Disabling the new approach to operator arithmetic is deprecated. From version 0.40 of "
+            "PennyLane, only the new approach to operator arithmetic will be available. If you are "
+            "experiencing issues, visit https://docs.pennylane.ai/en/stable/news/new_opmath.html "
+            "or contact the PennyLane team on the discussion forum: https://discuss.pennylane.ai/.",
+            qml.PennyLaneDeprecationWarning,
+        )
 
     was_active = qml.operation.active_new_opmath()
     try:
         if was_active:
-            disable_new_opmath(warn=False)
+            disable_new_opmath(warn=False)  # Only warn once
         yield
     except Exception as e:
         raise e
     finally:
         if was_active:
-            enable_new_opmath(warn=False)
+            enable_new_opmath(warn=False)  # Only warn once
         else:
-            disable_new_opmath(warn=False)
+            disable_new_opmath(warn=False)  # Only warn once
 
 
 @contextmanager
-def enable_new_opmath_cm():
+def enable_new_opmath_cm(warn=True):
     r"""Allows to use the new operator arithmetic within a
     temporary context using the `with` statement."""
+    if warn:
+        warnings.warn(
+            "Toggling the new approach to operator arithmetic is deprecated. From version 0.40 of "
+            "PennyLane, only the new approach to operator arithmetic will be available. If you are "
+            "experiencing issues, visit https://docs.pennylane.ai/en/stable/news/new_opmath.html "
+            "or contact the PennyLane team on the discussion forum: https://discuss.pennylane.ai/.",
+            qml.PennyLaneDeprecationWarning,
+        )
 
     was_active = qml.operation.active_new_opmath()
     if not was_active:
-        enable_new_opmath(warn=False)
+        enable_new_opmath(warn=False)  # Only warn once
     yield
     if was_active:
-        enable_new_opmath(warn=False)
+        enable_new_opmath(warn=False)  # Only warn once
     else:
-        disable_new_opmath(warn=False)
+        disable_new_opmath(warn=False)  # Only warn once
 
 
 # pylint: disable=too-many-branches
@@ -3259,6 +3288,11 @@ def convert_to_legacy_H(op):
 
     Arithmetic operators include :class:`~pennylane.ops.op_math.Prod`,
     :class:`~pennylane.ops.op_math.Sum` and :class:`~pennylane.ops.op_math.SProd`.
+
+    .. warning::
+
+        Using legacy operator arithmetic is deprecated, and will be removed in PennyLane v0.40.
+        For further details, see :doc:`Updated Operators </news/new_opmath/>`.
 
     Args:
         op (Operator): The operator instance to convert.
