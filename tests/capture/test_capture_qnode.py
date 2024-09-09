@@ -124,6 +124,7 @@ def test_simple_qnode(x64_mode):
     expected_kwargs = {"diff_method": "best"}
     expected_kwargs.update(circuit.execute_kwargs)
     expected_kwargs.update(asdict(expected_kwargs.pop("mcm_config")))
+    expected_kwargs.pop("_frozen")
     assert eqn0.params["qnode_kwargs"] == expected_kwargs
 
     qfunc_jaxpr = eqn0.params["qfunc_jaxpr"]

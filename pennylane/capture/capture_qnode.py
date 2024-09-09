@@ -171,6 +171,7 @@ def qnode_call(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
     qfunc_jaxpr = jax.make_jaxpr(flat_fn)(*args)
     execute_kwargs = copy(qnode.execute_kwargs)
     mcm_config = asdict(execute_kwargs.pop("mcm_config"))
+    mcm_config.pop("_frozen")
     qnode_kwargs = {"diff_method": qnode.diff_method, **execute_kwargs, **mcm_config}
     qnode_prim = _get_qnode_prim()
 
