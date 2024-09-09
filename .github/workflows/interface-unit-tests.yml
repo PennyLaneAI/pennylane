@@ -188,6 +188,7 @@ jobs:
             fromJSON(needs.setup-ci-load.outputs.python-version).autograd-tests
             || fromJSON(needs.setup-ci-load.outputs.python-version).default
            }}
+        numpy-2-install: [true]   
     if: ${{ !contains(fromJSON(needs.setup-ci-load.outputs.jobs-to-skip), 'autograd-tests') }}
     uses: ./.github/workflows/unit-test.yml
     with:
@@ -196,6 +197,7 @@ jobs:
       coverage_artifact_name: core-interfaces-coverage-autograd-${{ matrix.python-version }}
       python_version: ${{ matrix.python-version }}
       pipeline_mode: ${{ inputs.pipeline_mode }}
+      install_numpy_2: ${{ matrix.numpy-2-install }}
       install_jax: false
       install_tensorflow: false
       install_pytorch: false
