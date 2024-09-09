@@ -22,12 +22,12 @@ import pytest
 import pennylane as qml
 from pennylane import I, X, Y, Z
 from pennylane.spin import (
+    Lattice,
     fermi_hubbard,
     heisenberg,
     kitaev,
     transverse_ising,
     custom_hamiltonian_from_lattice,
-    Lattice,
 )
 
 pytestmark = pytest.mark.usefixtures("new_opmath_only")
