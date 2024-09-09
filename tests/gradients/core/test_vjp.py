@@ -427,7 +427,7 @@ class TestVJPGradients:
 
     @pytest.mark.tf
     @pytest.mark.slow
-    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.tf"])
+    @pytest.mark.parametrize("dev_name", ["default.qubit"])
     def test_tf(self, dev_name, tol):
         """Tests that the output of the VJP transform
         can be differentiated using TF."""

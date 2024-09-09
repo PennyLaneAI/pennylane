@@ -13,6 +13,10 @@
   `from pennylane.capture.primitives import *`.
   [(#6129)](https://github.com/PennyLaneAI/pennylane/pull/6129)
 
+* The `SampleMP.process_samples` method is updated to support using JAX tracers
+  for samples, allowing compatiblity with Catalyst workflows.
+  [(#6211)](https://github.com/PennyLaneAI/pennylane/pull/6211)
+
 * Improve `qml.Qubitization` decomposition.
   [(#6182)](https://github.com/PennyLaneAI/pennylane/pull/6182)
 
@@ -20,7 +24,14 @@
   unique representation of the object.
   [(#6167)](https://github.com/PennyLaneAI/pennylane/pull/6167)
 
+
 <h3>Breaking changes 💔</h3>
+
+* Remove support for Python 3.9.
+  [(#6223)](https://github.com/PennyLaneAI/pennylane/pull/6223)
+
+* `DefaultQubitTF` is removed. Please use `default.qubit` for all interfaces.
+  [(#6207)](https://github.com/PennyLaneAI/pennylane/pull/6207)
 
 * `expand_fn`, `max_expansion`, `override_shots`, and `device_batch_transform` are removed from the
   signature of `qml.execute`.
