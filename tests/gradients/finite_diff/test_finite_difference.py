@@ -988,7 +988,7 @@ class TestFiniteDiffGradients:
         assert np.allclose(res_01[0], expected, atol=tol, rtol=0)
 
     @pytest.mark.torch
-    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.torch"])
+    @pytest.mark.parametrize("dev_name", ["default.qubit"])
     def test_torch(self, dev_name, approx_order, strategy, tol):
         """Tests that the output of the finite-difference transform
         can be differentiated using Torch, yielding second derivatives."""

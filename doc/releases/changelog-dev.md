@@ -42,8 +42,9 @@
 * Remove support for Python 3.9.
   [(#6223)](https://github.com/PennyLaneAI/pennylane/pull/6223)
 
-* `DefaultQubitTF` is removed. Please use `default.qubit` for all interfaces.
+* `DefaultQubitTF` and `DefaultQubitTorch` are removed. Please use `default.qubit` for all interfaces.
   [(#6207)](https://github.com/PennyLaneAI/pennylane/pull/6207)
+  [(#6208)](https://github.com/PennyLaneAI/pennylane/pull/6208)
 
 * `expand_fn`, `max_expansion`, `override_shots`, and `device_batch_transform` are removed from the
   signature of `qml.execute`.
