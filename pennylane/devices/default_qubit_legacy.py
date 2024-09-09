@@ -714,7 +714,6 @@ class DefaultQubitLegacy(QubitDevice):
             supports_broadcasting=True,
             returns_state=True,
             passthru_devices={
-                "torch": "default.qubit.torch",
                 "autograd": "default.qubit.autograd",
                 "jax": "default.qubit.jax",
             },
