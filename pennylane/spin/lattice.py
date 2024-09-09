@@ -130,7 +130,7 @@ class Lattice:
                 raise ValueError(
                     "custom_edges and neighbour_order cannot be specified at the same time"
                 )
-            self.edges = self.get_custom_edges(custom_edges, lattice_map)
+            self.edges = self._get_custom_edges(custom_edges, lattice_map)
 
         self.edges_indices = [(v1, v2) for (v1, v2, color) in self.edges]
 
@@ -208,8 +208,17 @@ class Lattice:
 
         return math.array(lattice_points), lattice_map
 
-    def get_custom_edges(self, custom_edges, lattice_map):
+    def _get_custom_edges(self, custom_edges, lattice_map):
         """Generates the edges described in `custom_edges` for all unit cells.
+
+        Args:
+          custom_edges (Optional[list(list(tuples))]): Specifies the edges to be added in the lattice.
+              Default value is None, which adds the edges based on neighbour_order.
+              Each element in the list is for a separate edge, and can contain 1 or 2 tuples.
+              First tuple contains the index of the starting and ending vertex of the edge.
+              Second tuple is optional and contains the operator on that edge and coefficient
+              of that operator.
+          lattice_map (list[int]): A list to represent the node number for each lattice_point.
 
         **Example**
 
