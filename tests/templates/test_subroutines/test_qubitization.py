@@ -290,4 +290,28 @@ def test_map_wires():
     op = qml.Qubitization(H, control=[2, 3])
     op2 = op.map_wires({0: 5, 1: 6, 2: 7, 3: 8})
 
-    assert op2.wires == qml.wires.Wires([5, 6, 7, 8])
+    assert op2.wires == qml.wires.Wires([7, 8, 5, 6])
+
+
+@pytest.mark.parametrize(
+    "hamiltonian, control",
+    [
+        (qml.dot([1.0, 2.0], [qml.PauliX("a"), qml.PauliZ(1)]), [0]),
+        (qml.dot([1.0, -2.0], [qml.PauliX("a"), qml.PauliZ(1)]), [0]),
+        (
+            qml.dot(
+                [1.0, 2.0, 1.0, 1.0],
+                [qml.PauliZ("a"), qml.PauliX("a") @ qml.PauliZ(4), qml.PauliX("a"), qml.PauliZ(4)],
+            ),
+            [0, 1],
+        ),
+    ],
+)
+def test_order_wires(hamiltonian, control):
+    """Test that the Qubitization operator orders the wires according to other templates."""
+
+    op1 = qml.Qubitization(hamiltonian, control=control)
+    op2 = qml.PrepSelPrep(hamiltonian, control=control)
+    op3 = qml.Select(hamiltonian.terms()[1], control=control)
+
+    assert op1.wires == op2.wires == op3.wires
