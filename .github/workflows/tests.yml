@@ -9,7 +9,6 @@ on:
       - reopened
       - synchronize
       - ready_for_review
-      - labeled
   # Scheduled trigger on Monday at 2:47am UTC
   schedule:
   - cron: '47 2 * * 1'
