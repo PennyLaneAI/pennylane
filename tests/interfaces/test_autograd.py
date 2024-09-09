@@ -13,8 +13,8 @@
 # limitations under the License.
 """Autograd specific tests for execute and default qubit 2."""
 import autograd
-import pytest
 import numpy as np
+import pytest
 from param_shift_dev import ParamShiftDerivativesDevice
 
 import pennylane as qml
