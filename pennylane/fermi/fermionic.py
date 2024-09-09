@@ -677,7 +677,7 @@ class FermiC(FermiWord):
         super().__init__(operator)
 
     def adjoint(self):
-        """Return the adjoint of FermiC"""
+        """Return the adjoint of FermiC."""
         return FermiA(self.orbital)
 
 
