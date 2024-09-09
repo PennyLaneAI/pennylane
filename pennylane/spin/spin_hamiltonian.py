@@ -47,7 +47,7 @@ def transverse_ising(
             ``(num_spins,  num_spins)``, where ``num_spins`` is the total number of spins. Default
             value is 1.0.
         h (float): Value of external magnetic field. Default is 1.0.
-        boundary_condition (Optional[bool | list[bool]]): Defines boundary conditions for different lattice
+        boundary_condition (bool | list[bool]): Defines boundary conditions for different lattice
             axes. Default is ``False`` indicating open boundary condition.
         neighbour_order (int): Specifies the interaction level for neighbors within the lattice.
             Default is 1, indicating nearest neighbours.
