@@ -143,6 +143,7 @@ separately_tested_ops = [
     "IQPEmbedding",
     "QAOAEmbedding",
     "PCPhase",
+    "QubitStateVector",
 ]
 
 
