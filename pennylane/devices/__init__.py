@@ -88,10 +88,7 @@ Other transforms that may be relevant to device preprocessing include:
 
     defer_measurements
     transforms.broadcast_expand
-    transforms.sum_expand
     transforms.split_non_commuting
-    transforms.hamiltonian_expand
-
 
 Modifiers
 ---------
