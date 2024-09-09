@@ -2297,7 +2297,7 @@ class TestHamiltonianExpvalGradients:
 
     @pytest.mark.xfail(reason="TODO")
     @pytest.mark.tf
-    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.tf"])
+    @pytest.mark.parametrize("dev_name", ["default.qubit"])
     def test_tf(self, dev_name, broadcast, tol):
         """Test gradient of multiple trainable Hamiltonian coefficients
         using tf"""
@@ -2335,7 +2335,7 @@ class TestHamiltonianExpvalGradients:
     # TODO: Torch support for param-shift
     @pytest.mark.torch
     @pytest.mark.xfail
-    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.torch"])
+    @pytest.mark.parametrize("dev_name", ["default.qubit"])
     def test_torch(self, dev_name, broadcast, tol):
         """Test gradient of multiple trainable Hamiltonian coefficients
         using torch"""

@@ -331,7 +331,7 @@ class TestIntegrationSingleReturn:
         assert sum(res.values()) == shots
 
 
-devices = ["default.qubit.tf", "default.mixed"]
+devices = ["default.mixed"]
 
 
 @pytest.mark.tf
@@ -343,7 +343,7 @@ class TestIntegrationSingleReturnTensorFlow:
         """Return state with default.qubit."""
         import tensorflow as tf
 
-        dev = qml.device("default.qubit.tf", wires=wires)
+        dev = qml.device("default.qubit", wires=wires)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
@@ -547,7 +547,7 @@ class TestIntegrationSingleReturnTensorFlow:
         assert sum(res.values()) == shots
 
 
-devices = ["default.qubit.torch", "default.mixed"]
+devices = ["default.mixed"]
 
 
 @pytest.mark.torch
@@ -559,7 +559,7 @@ class TestIntegrationSingleReturnTorch:
         """Return state with default.qubit."""
         import torch
 
-        dev = qml.device("default.qubit.torch", wires=wires)
+        dev = qml.device("default.qubit", wires=wires)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
@@ -1370,7 +1370,7 @@ class TestIntegrationMultipleReturns:
         assert res[2].shape == (2,)
 
 
-devices = ["default.qubit.tf", "default.mixed"]
+devices = ["default.mixed"]
 
 
 @pytest.mark.tf
@@ -1604,9 +1604,6 @@ class TestIntegrationMultipleReturnsTensorflow:
         if device == "default.mixed" and shot_vector:
             pytest.skip("No support for shot vector and Tensorflow because use of .T in statistics")
 
-        if device == "default.qubit.tf" and shot_vector:
-            pytest.skip("No support for shot vector and mixed device with Tensorflow.")
-
         dev = qml.device(device, wires=wires, shots=shot_vector)
 
         def circuit(x):
@@ -1634,7 +1631,7 @@ class TestIntegrationMultipleReturnsTensorflow:
                     assert t.shape == ()
 
 
-devices = ["default.qubit.torch", "default.mixed"]
+devices = ["default.mixed"]
 
 
 @pytest.mark.torch

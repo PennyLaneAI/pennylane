@@ -288,7 +288,10 @@ class SampleMP(SampleMeasurement):
             indices = qml.math.array(indices)  # Add np.array here for Jax support.
             # This also covers statistics for mid-circuit measurements manipulated using
             # arithmetic operators
-            samples = eigvals[indices]
+            if qml.math.is_abstract(indices):
+                samples = qml.math.take(eigvals, indices, like=indices)
+            else:
+                samples = eigvals[indices]
 
         return samples if bin_size is None else samples.reshape((bin_size, -1))
 
