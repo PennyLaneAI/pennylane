@@ -23,7 +23,7 @@ pytestmark = pytest.mark.jax
 
 jax = pytest.importorskip("jax")
 
-from pennylane.capture.primitives import grad_prim
+from pennylane.capture.primitives import grad_prim  # pylint: disable=wrong-import-position
 
 jnp = jax.numpy
 
