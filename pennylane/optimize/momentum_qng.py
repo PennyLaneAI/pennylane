@@ -109,8 +109,8 @@ class MomentumQNGOptimizer(QNGOptimizer):
         - `VQE <https://github.com/borbysh/Momentum-QNG/blob/main/portfolio_optimization.ipynb>`__
 
     Keyword Args:
-        momentum=0.9 (float): the user-defined hyperparameter :math:`\rho`
         stepsize=0.01 (float): the user-defined hyperparameter :math:`\eta`
+        momentum=0.9 (float): the user-defined hyperparameter :math:`\rho`
         approx (str): Which approximation of the metric tensor to compute.
 
             - If ``None``, the full metric tensor is computed
