@@ -393,35 +393,37 @@ def custom_hamiltonian_from_lattice(lattice):
     r"""Generates the Hamiltonian for a custom lattice.
 
     Args:
-       lattice (Lattice): custom lattice defined with custom_edges
+        lattice (Lattice): custom lattice defined with custom_edges
 
     Raises:
         ValueError: if ``custom_edges`` are not defined or not defined with operators
 
     Returns:
-       ~ops.op_math.Sum: Hamiltonian for the lattice
+        ~ops.op_math.Sum: Hamiltonian for the lattice
 
     **Example**
 
-    lattice = Lattice(
-        n_cells=[2, 2],
-        vectors=[[1, 0], [0, 1]],
-        positions=[[0, 0], [1, 5]],
-        boundary_condition=False,
-        custom_edges=[[(0, 1), ("XX", 0.5)], [(1, 2), ("YY", 0.6)], [(1, 4), ("ZZ", 0.7)]],
-    )
+    .. code-block:: python
 
-    >>> custom_hamiltonian_from_lattice(lattice=lattice)
-    >>> (
-            0.5 * (X(0) @ X(1))
-            + 0.5 * (X(2) @ X(3))
-            + 0.5 * (X(4) @ X(5))
-            + 0.5 * (X(6) @ X(7))
-            + 0.6 * (Y(1) @ Y(2))
-            + 0.6 * (Y(5) @ Y(6))
-            + 0.7 * (Z(1) @ Z(4))
-            + 0.7 * (Z(3) @ Z(6))
+        lattice = Lattice(
+            n_cells=[2, 2],
+            vectors=[[1, 0], [0, 1]],
+            positions=[[0, 0], [1, 5]],
+            boundary_condition=False,
+            custom_edges=[[(0, 1), ("XX", 0.5)], [(1, 2), ("YY", 0.6)], [(1, 4), ("ZZ", 0.7)]],
         )
+
+        >>> custom_hamiltonian_from_lattice(lattice=lattice)
+        >>> (
+                0.5 * (X(0) @ X(1))
+                + 0.5 * (X(2) @ X(3))
+                + 0.5 * (X(4) @ X(5))
+                + 0.5 * (X(6) @ X(7))
+                + 0.6 * (Y(1) @ Y(2))
+                + 0.6 * (Y(5) @ Y(6))
+                + 0.7 * (Z(1) @ Z(4))
+                + 0.7 * (Z(3) @ Z(6))
+            )
 
     """
     if not isinstance(lattice.edges[0][2], tuple):
