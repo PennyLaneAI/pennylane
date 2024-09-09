@@ -479,12 +479,12 @@ def execute(
         cache = None
 
     # changing this set of conditions causes a bunch of tests to break.
-    no_interface_boundary_required = interface is None or config.gradient_method in {
+    no_interface_boundary_required = interface in (None, "numpy") or config.gradient_method in {
         None,
         "backprop",
     }
     device_supports_interface_data = no_interface_boundary_required and (
-        interface is None
+        interface in (None, "numpy")
         or config.gradient_method == "backprop"
         or getattr(device, "short_name", "") == "default.mixed"
     )

@@ -56,7 +56,6 @@ def _convert_to_interface(res, interface):
     """
     Recursively convert res to the given interface.
     """
-    interface = INTERFACE_MAP[interface]
 
     if interface == "numpy":
         return res
@@ -589,7 +588,7 @@ class QNode:
                 f"Unknown interface {value}. Interface must be one of {SUPPORTED_INTERFACES}."
             )
 
-        self._interface = value
+        self._interface = INTERFACE_MAP[value]
         self._update_gradient_fn(shots=self.device.shots)
 
     @property
@@ -934,7 +933,7 @@ class QNode:
             if interface == "numpy":
                 # Internally stop treating numpy as autograd
                 interface = None
-            self._interface = interface
+            self._interface = INTERFACE_MAP[interface]
         if self._qfunc_uses_shots_arg:
             override_shots = False
         else:
