@@ -422,6 +422,7 @@ def custom_hamiltonian_from_lattice(lattice):
             + 0.7 * (Z(1) @ Z(4))
             + 0.7 * (Z(3) @ Z(6))
         )
+
     """
     if not isinstance(lattice.edges[0][2], tuple):
         raise ValueError(
