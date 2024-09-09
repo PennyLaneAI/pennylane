@@ -561,7 +561,9 @@ def test_custom_edge_type_error():
     vectors = [[0, 1], [1, 0]]
     n_cells = [3, 3]
     custom_edges = [[(0, 1), 1, 3], [(0, 5)], [(0, 4)]]
-    with pytest.raises(TypeError, match="custom_edges must be a list of tuples of length 1 or 2."):
+    with pytest.raises(
+        TypeError, match="The elements of custom_edges should be lists of length 1 or 2."
+    ):
         Lattice(n_cells=n_cells, vectors=vectors, custom_edges=custom_edges)
 
 
