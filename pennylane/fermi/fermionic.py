@@ -342,7 +342,7 @@ class FermiSentence(dict):
         super().__init__(operator)
 
     def adjoint(self):
-        r"""Return the adjoint of the ``FermiSentence``"""
+        r"""Return the adjoint of FermiSentence."""
         adjoint_dict = {}
         for key, value in self.items():
             word = key.adjoint()
