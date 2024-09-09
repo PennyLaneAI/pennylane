@@ -881,7 +881,6 @@ class TestHadamardGradEdgeCases:
             pytest.param("jax", marks=pytest.mark.jax),
             pytest.param("autograd", marks=pytest.mark.autograd),
             pytest.param("torch", marks=pytest.mark.torch),
-            pytest.param("tf", marks=pytest.mark.tf),
         ],
     )
     def test_no_trainable_params_qnode_legacy_opmath(self, interface):
@@ -1095,7 +1094,7 @@ class TestHadamardTestGradDiff:
         assert np.allclose(res_hadamard, res_param_shift)
 
     @pytest.mark.tf
-    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.tf"])
+    @pytest.mark.parametrize("dev_name", ["default.qubit"])
     def test_tf(self, dev_name):
         """Tests that the output of the hadamard gradient transform
         can be differentiated using TF, yielding second derivatives."""

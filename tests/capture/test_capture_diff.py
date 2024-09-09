@@ -18,11 +18,13 @@ import pytest
 
 import pennylane as qml
 from pennylane.capture import qnode_prim
-from pennylane.capture.primitives import grad_prim, jacobian_prim
 
 pytestmark = pytest.mark.jax
 
 jax = pytest.importorskip("jax")
+
+from pennylane.capture.primitives import grad_prim, jacobian_prim
+
 jnp = jax.numpy
 
 

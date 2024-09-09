@@ -15,7 +15,6 @@
 This submodule defines a capture compatible call to QNodes.
 """
 
-import warnings
 from copy import copy
 from dataclasses import asdict
 from functools import lru_cache, partial
@@ -74,13 +73,7 @@ def _get_qnode_prim():
         def qfunc(*inner_args):
             return jax.core.eval_jaxpr(qfunc_jaxpr, consts, *inner_args)
 
-        with warnings.catch_warnings():
-            warnings.filterwarnings(
-                action="ignore",
-                message=r"The max_expansion argument is deprecated and will be removed in version 0.39.",
-                category=qml.PennyLaneDeprecationWarning,
-            )
-            qnode = qml.QNode(qfunc, device, **qnode_kwargs)
+        qnode = qml.QNode(qfunc, device, **qnode_kwargs)
         return qnode._impl_call(*args, shots=shots)  # pylint: disable=protected-access
 
     # pylint: disable=unused-argument
@@ -149,7 +142,7 @@ def qnode_call(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
                   h:AbstractMeasurement(n_wires=0) = probs_wires
                 in (g, h) }
               qnode=<QNode: device='<lightning.qubit device (wires=1) at 0x10557a070>', interface='auto', diff_method='best'>
-              qnode_kwargs={'diff_method': 'best', 'grad_on_execution': 'best', 'cache': False, 'cachesize': 10000, 'max_diff': 1, 'max_expansion': 10, 'device_vjp': False, 'mcm_method': None, 'postselect_mode': None}
+              qnode_kwargs={'diff_method': 'best', 'grad_on_execution': 'best', 'cache': False, 'cachesize': 10000, 'max_diff': 1, 'device_vjp': False, 'mcm_method': None, 'postselect_mode': None}
               shots=Shots(total=50000)
             ] b
             i:f32[] = mul 2.0 c
