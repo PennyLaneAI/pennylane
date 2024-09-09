@@ -1138,7 +1138,7 @@ class TestSpsaGradientDifferentiation:
         assert np.allclose(res_01[0], expected, atol=atol, rtol=0)
 
     @pytest.mark.torch
-    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.torch"])
+    @pytest.mark.parametrize("dev_name", ["default.qubit"])
     def test_torch(self, dev_name, sampler, num_directions, atol):
         """Tests that the output of the SPSA gradient transform
         can be differentiated using Torch, yielding second derivatives."""
