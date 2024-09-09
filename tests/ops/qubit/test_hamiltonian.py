@@ -14,6 +14,8 @@
 """
 Tests for the Hamiltonian class.
 """
+import warnings
+
 # pylint: disable=too-many-public-methods, superfluous-parens, unnecessary-dunder-call
 from collections.abc import Iterable
 from unittest.mock import patch
@@ -25,6 +27,18 @@ import scipy
 import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane.wires import Wires
+
+pytestmark = pytest.mark.filterwarnings(
+    r"ignore:qml\.(operation|ops)\.\w+ uses the old approach:pennylane.PennyLaneDeprecationWarning"
+)
+
+
+warnings.filterwarnings(
+    action="ignore",
+    message=r"qml\.(operation|ops)\.\w+ uses the old approach to operator arithmetic",
+    category=qml.PennyLaneDeprecationWarning,
+)
+
 
 # Make test data in different interfaces, if installed
 COEFFS_PARAM_INTERFACE = [
@@ -65,7 +79,8 @@ H_TWO_QUBITS = np.array(
 
 COEFFS = [(0.5, 1.2, -0.7), (2.2, -0.2, 0.0), (0.33,)]
 
-with qml.operation.disable_new_opmath_cm():
+
+with qml.operation.disable_new_opmath_cm(warn=False):
 
     OBSERVABLES = [
         (qml.PauliZ(0), qml.PauliY(0), qml.PauliZ(1)),
@@ -688,19 +703,15 @@ def test_matmul_queuing():
 
 
 @pytest.mark.usefixtures("use_legacy_and_new_opmath")
-def test_deprecation_with_new_opmath(recwarn):
-    """Test that a warning is raised if attempting to create a Hamiltonian with new operator
-    arithmetic enabled."""
-    if qml.operation.active_new_opmath():
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning,
-            match="Using 'qml.ops.Hamiltonian' with new operator arithmetic is deprecated",
-        ):
+def test_deprecation_warning():
+    """Test that a warning when constructin a legacy Hamiltonian."""
+    with pytest.warns(
+        qml.PennyLaneDeprecationWarning, match="qml.ops.Hamiltonian uses the old approach"
+    ):
+        if qml.operation.active_new_opmath():
             _ = qml.ops.Hamiltonian([1.0], [qml.X(0)])
-
-    else:
-        _ = qml.Hamiltonian([1.0], [qml.X(0)])
-        assert len(recwarn) == 0
+        else:
+            _ = qml.Hamiltonian([1.0], [qml.X(0)])
 
 
 @pytest.mark.usefixtures("use_legacy_opmath")
@@ -1357,7 +1368,7 @@ class TestHamiltonianArithmeticAutograd:
         assert H.compare(H1 @ H2)
 
 
-with qml.operation.disable_new_opmath_cm():
+with qml.operation.disable_new_opmath_cm(warn=False):
     TEST_SPARSE_MATRIX = [
         (
             [1, -0.45],

@@ -41,8 +41,8 @@
   Instead, `qml.simplify()` can be called on the constructed operator.
   [(#6242)](https://github.com/PennyLaneAI/pennylane/pull/6242)
 
-* Legacy operator arithmetic has been deprecated. This includes `qml.operation.enable_new_opmath`,
-  `qml.operation.disable_new_opmath`, `qml.ops.Hamiltonian`, and `qml.operation.Tensor`.
+* Legacy operator arithmetic has been deprecated. This includes `qml.ops.Hamiltonian`, `qml.operation.Tensor`,
+  `qml.operation.enable_new_opmath`, `qml.operation.disable_new_opmath`, and `qml.operation.convert_to_legacy_H`.
   [(#6242)](https://github.com/PennyLaneAI/pennylane/pull/6242)
 
 * Remove support for Python 3.9.

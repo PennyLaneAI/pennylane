@@ -2110,9 +2110,10 @@ class Tensor(Observable):
 
     >>> T = qml.X(0) @ qml.Hadamard(2)
 
-    .. note:
+    .. warning::
 
-        This class is marked for deletion or overhaul.
+        As of ``v0.39``, ``qml.operation.Tensor`` is deprecated. See :doc:`Updated Operators </news/new_opmath/>`
+        for more details.
     """
 
     # pylint: disable=abstract-method
@@ -2131,6 +2132,14 @@ class Tensor(Observable):
         return cls._primitive.bind(*args)
 
     def __init__(self, *args):  # pylint: disable=super-init-not-called
+        warnings.warn(
+            "qml.operation.Tensor uses the old approach to operator arithmetic, which will become "
+            "unavailable in version 0.40 of PennyLane. If you are experiencing issues, visit "
+            "https://docs.pennylane.ai/en/stable/news/new_opmath.html or contact the PennyLane "
+            "team on the discussion forum: https://discuss.pennylane.ai/.",
+            qml.PennyLaneDeprecationWarning,
+        )
+
         self._eigvals_cache = None
         self.obs: list[Observable] = []
         self._args = args
@@ -3300,7 +3309,7 @@ def convert_to_legacy_H(op):
     Returns:
         Operator: The operator as a :class:`~pennylane.Hamiltonian` instance
     """
-    with disable_new_opmath_cm():
+    with disable_new_opmath_cm(warn=False):
         res = convert_to_H(op)
     return res
 

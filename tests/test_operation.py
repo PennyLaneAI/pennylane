@@ -16,6 +16,7 @@ Unit tests for :mod:`pennylane.operation`.
 """
 import copy
 import itertools
+import warnings
 from functools import reduce
 
 import numpy as np
@@ -40,6 +41,16 @@ from pennylane.wires import Wires
 # pylint: disable=no-self-use, no-member, protected-access, redefined-outer-name, too-few-public-methods
 # pylint: disable=too-many-public-methods, unused-argument, unnecessary-lambda-assignment, unnecessary-dunder-call
 # pylint: disable=use-implicit-booleaness-not-comparison
+
+pytestmark = pytest.mark.filterwarnings(
+    r"ignore:qml\.(operation|ops)\.\w+ uses the old approach:pennylane.PennyLaneDeprecationWarning"
+)
+
+warnings.filterwarnings(
+    action="ignore",
+    message=r"qml\.(operation|ops)\.\w+ uses the old approach to operator arithmetic",
+    category=qml.PennyLaneDeprecationWarning,
+)
 
 Toffoli_broadcasted = np.tensordot([0.1, -4.2j], Toffoli, axes=0)
 CNOT_broadcasted = np.tensordot([1.4], CNOT, axes=0)
@@ -1374,6 +1385,14 @@ class TestOperatorIntegration:
 @pytest.mark.usefixtures("use_legacy_opmath")
 class TestTensor:
     """Unit tests for the Tensor class"""
+
+    def test_tensor_deprecation(self):
+        """Test that a deprecation warning is raised when initializing a Tensor"""
+        obs = [qml.Z(0), qml.X(1)]
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match="qml.operation.Tensor uses the old approach"
+        ):
+            _ = qml.operation.Tensor(*obs)
 
     def test_construct(self):
         """Test construction of a tensor product"""
@@ -3002,35 +3021,17 @@ CONVERT_HAMILTONAIN = [
 
 @pytest.mark.usefixtures("use_new_opmath")
 @pytest.mark.parametrize("coeffs, obs", CONVERT_HAMILTONAIN)
-def test_convert_to_hamiltonian(coeffs, obs):
-    """Test that arithmetic operators can be converted to Hamiltonian instances"""
+def test_convert_to_legacy_H(coeffs, obs):
+    """Test that arithmetic operators can be converted to legacy Hamiltonian instances"""
 
     opmath_instance = qml.dot(coeffs, obs)
-    with pytest.warns(qml.PennyLaneDeprecationWarning, match="Disabling the new approach"):
-        converted_opmath = convert_to_legacy_H(opmath_instance)
+    converted_opmath = convert_to_legacy_H(opmath_instance)
 
     with qml.operation.disable_new_opmath_cm(warn=False):
         assert isinstance(converted_opmath, qml.Hamiltonian)
 
-    with pytest.warns(
-        qml.PennyLaneDeprecationWarning, match="with new operator arithmetic is deprecated"
-    ):
-        hamiltonian_instance = qml.ops.Hamiltonian(coeffs, obs)
-
+    hamiltonian_instance = qml.ops.Hamiltonian(coeffs, obs)
     qml.assert_equal(converted_opmath, hamiltonian_instance)
-
-
-@pytest.mark.parametrize(
-    "coeffs, obs", [([1], [qml.Hadamard(1)]), ([0.5, 0.5], [qml.Identity(1), qml.Identity(1)])]
-)
-def test_convert_to_hamiltonian_trivial(coeffs, obs):
-    """Test that non-arithmetic operator after simplification is returned as an Observable"""
-
-    with qml.operation.disable_new_opmath_cm(warn=False):
-        opmath_instance = qml.dot(coeffs, obs)
-        with pytest.warns(qml.PennyLaneDeprecationWarning, match="Disabling the new approach"):
-            converted_opmath = convert_to_legacy_H(opmath_instance)
-            assert isinstance(converted_opmath, qml.operation.Observable)
 
 
 @pytest.mark.parametrize(
@@ -3042,12 +3043,25 @@ def test_convert_to_hamiltonian_trivial(coeffs, obs):
         ([0.5, 0.5], [qml.T(0), qml.T(0)]),
     ],
 )
-def test_convert_to_hamiltonian_error(coeffs, obs):
+def test_convert_to_legacy_H_error(coeffs, obs):
     """Test that arithmetic operator raise an error if there is a non-Observable"""
+    with pytest.raises(ValueError):
+        convert_to_legacy_H(qml.dot(coeffs, obs))
 
-    with pytest.warns(qml.PennyLaneDeprecationWarning):
-        with pytest.raises(ValueError):
-            convert_to_legacy_H(qml.dot(coeffs, obs))
+
+@pytest.mark.usefixtures("use_new_opmath")
+@pytest.mark.parametrize("obs", [qml.Z(0), qml.prod(qml.Z(0), qml.X(1))])
+def test_convert_to_legacy_H_deprecation_warning(obs):
+    """Test that convert_to_legacy_H raises a deprecation warning"""
+    opmath_instance = qml.dot([1.5], [obs])
+
+    with pytest.warns() as record:
+        _ = convert_to_legacy_H(opmath_instance)
+
+    assert len(record) == 2 if isinstance(obs, qml.ops.Prod) else 1
+    for warning in record:
+        assert "uses the old approach" in str(warning.message)
+        assert warning.category == qml.PennyLaneDeprecationWarning
 
 
 @pytest.mark.usefixtures("use_new_opmath")
