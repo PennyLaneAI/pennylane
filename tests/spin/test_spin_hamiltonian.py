@@ -913,3 +913,12 @@ def test_custom_hamiltonian(lattice, expected_ham):
     custom_ham = custom_hamiltonian_from_lattice(lattice=lattice)
 
     qml.assert_equal(custom_ham, expected_ham)
+
+
+def test_custom_hamiltonian_error():
+    r"""Test that the correct Hamiltonian is generated"""
+    lattice = Lattice(n_cells=[2, 2], vectors=[[1, 0], [0, 1]], positions=[[0, 0], [1, 1]])
+    with pytest.raises(
+        ValueError, match="Custom edges need to be defined and should have an operator"
+    ):
+        custom_hamiltonian_from_lattice(lattice=lattice)

@@ -423,7 +423,7 @@ def custom_hamiltonian_from_lattice(lattice):
             + 0.7 * (Z(3) @ Z(6))
         )
     """
-    if not isinstance(lattice.edges[0][2][0], str):
+    if not isinstance(lattice.edges[0][2], tuple):
         raise ValueError(
             "Custom edges need to be defined and should have an operator defined as a `str`"
         )
