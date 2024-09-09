@@ -56,8 +56,9 @@
 * Remove support for Python 3.9.
   [(#6223)](https://github.com/PennyLaneAI/pennylane/pull/6223)
 
-* `DefaultQubitTF` is removed. Please use `default.qubit` for all interfaces.
+* `DefaultQubitTF` and `DefaultQubitTorch` are removed. Please use `default.qubit` for all interfaces.
   [(#6207)](https://github.com/PennyLaneAI/pennylane/pull/6207)
+  [(#6208)](https://github.com/PennyLaneAI/pennylane/pull/6208)
 
 * `expand_fn`, `max_expansion`, `override_shots`, and `device_batch_transform` are removed from the
   signature of `qml.execute`.
@@ -87,6 +88,9 @@
 
 * The ``qml.QSVT`` template now orders the ``projector`` wires first and the ``UA`` wires second, which is the expected order of the decomposition.
   [(#6212)](https://github.com/PennyLaneAI/pennylane/pull/6212)
+  
+* The ``qml.Qubitization`` template now orders the ``control`` wires first and the ``hamiltonian`` wires second, which is the expected according to other templates.
+  [(#6229)](https://github.com/PennyLaneAI/pennylane/pull/6229)
 
 * <h3>Contributors ✍️</h3>
 
