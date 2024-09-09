@@ -1,0 +1,83 @@
+name: Update Durations Files
+on:
+  # Scheduled trigger on the 15th of every month at 2:47am UTC
+  schedule:
+  - cron: '47 2 15 * *'
+  workflow_dispatch:
+
+concurrency:
+  group: unit-tests-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DURATIONS_BRANCH: bot/stable-deps-update
+
+jobs:
+  tests:
+    uses: ./.github/workflows/interface-unit-tests.yml
+    with:
+      branch: ${{ github.ref }}
+
+      # Run a 'lightened' version of the CI on Pull Requests by default
+      # Unless the label `ci:run-full-test-suite` is attached to the PR.
+      # Always runs the full suite for push events.
+      pipeline_mode: 'update-durations'
+      run_lightened_ci: true
+      skip_ci_test_jobs: 'torch-tests,autograd-tests,all-interfaces-tests,external-libraries-tests,qcut-tests,qchem-tests,gradients-tests,data-tests,device-tests'
+
+  # Add job for downloading artifacts and opening PR
+  upload-durations-files:
+  needs: tests
+  runs-on: ubuntu-latest
+  steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+        ref: master
+        # ref: ${{ github.ref }}
+
+    - name: Prepare local repo
+      run: |
+        git config user.name "GitHub Actions Bot"
+        git config user.email "<>"
+        if git ls-remote --exit-code origin "refs/heads/${{ env.DURATIONS_BRANCH }}"; then
+          git checkout "${{ env.DURATIONS_BRANCH }}"
+        else
+          git checkout -b "${{ env.DURATIONS_BRANCH }}"
+        fi
+
+    - name: Download artifacts
+      uses: actions/download-artifact@v4
+      with:
+        pattern: durations-*
+        path: .github/durations/
+        merge-multiple: true
+
+    - name: Stage changes
+      run: |
+        git add .github/durations/
+        git commit -m "Update durations files"
+        git push -f --set-upstream origin "${{ env.DURATIONS_BRANCH }}"
+
+    # Create PR to master
+    - name: Create pull request
+      uses: repo-sync/pull-request@v2
+      with:
+        source_branch: "${{ env.DURATIONS_BRANCH }}"
+        destination_branch: "master"
+        github_token: "${{ secrets.GITHUB_TOKEN }}"
+        pr_title: "Update test duration files"
+        # if updating the pr_body, please also update the same text in the docs.yml file
+        pr_body: |
+          Automatic update of test duration files.
+
+          Because bots are not able to trigger CI on their own, please do so by pushing an empty commit to this branch using the following command:
+
+          ```
+          git commit --allow-empty -m 'trigger ci'
+          ```
+
+          Alternatively, wait for this branch to be out-of-date with master, then just use the "Update branch" button!
+        pr_allow_empty: false
+        pr_draft: false
