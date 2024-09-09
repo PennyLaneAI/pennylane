@@ -118,7 +118,7 @@ def heisenberg(lattice, n_cells, coupling=None, boundary_condition=False, neighb
         lattice (str): Shape of the lattice. Input values can be ``'chain'``, ``'square'``,
             ``'rectangle'``, ``'honeycomb'``, ``'triangle'``, or ``'kagome'``.
         n_cells (list[int]): Number of cells in each direction of the grid.
-        coupling (Optional[list[list[float]] | list[math.array[float]]]): Coupling between spins. It can be a
+        coupling (list[list[float]] | list[math.array[float]]): Coupling between spins. It can be a
             2D array of shape ``(neighbour_order, 3)`` or a 3D array of shape
             ``(3, num_spins, num_spins)``, where ``num_spins`` is the total number of spins.
         boundary_condition (Optional[bool | list[bool]]): Defines boundary conditions for different lattice
