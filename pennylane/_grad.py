@@ -15,6 +15,7 @@
 This module contains the autograd wrappers :class:`grad` and :func:`jacobian`
 """
 import warnings
+from functools import partial, wraps
 
 from autograd import jacobian as _jacobian
 from autograd.core import make_vjp as _make_vjp
@@ -22,10 +23,30 @@ from autograd.extend import vspace
 from autograd.numpy.numpy_boxes import ArrayBox
 from autograd.wrap_util import unary_to_nary
 
+from pennylane.capture import enabled
+from pennylane.capture.capture_diff import _get_grad_prim
 from pennylane.compiler import compiler
 from pennylane.compiler.compiler import CompileError
 
 make_vjp = unary_to_nary(_make_vjp)
+
+
+def _capture_diff(func, argnum=None, diff_prim=None, method=None, h=None):
+    """Capture-compatible gradient computation."""
+    import jax  # pylint: disable=import-outside-toplevel
+
+    if isinstance(argnum, int):
+        argnum = [argnum]
+    if argnum is None:
+        argnum = [0]
+
+    @wraps(func)
+    def new_func(*args, **kwargs):
+        jaxpr = jax.make_jaxpr(partial(func, **kwargs))(*args)
+        prim_kwargs = {"argnum": argnum, "jaxpr": jaxpr.jaxpr, "n_consts": len(jaxpr.consts)}
+        return diff_prim.bind(*jaxpr.consts, *args, **prim_kwargs, method=method, h=h)
+
+    return new_func
 
 
 class grad:
@@ -96,10 +117,11 @@ class grad:
             ops_loader = available_eps[active_jit]["ops"].load()
             return ops_loader.grad(func, method=method, h=h, argnums=argnum)
 
+        if enabled():
+            return _capture_diff(func, argnum, _get_grad_prim(), method=method, h=h)
+
         if method or h:  # pragma: no cover
-            raise ValueError(
-                f"Invalid values for 'method={method}' and 'h={h}' in interpreted mode"
-            )
+            raise ValueError(f"Invalid values '{method=}' and '{h=}' without QJIT.")
 
         return super().__new__(cls)
 
