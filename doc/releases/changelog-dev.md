@@ -24,6 +24,8 @@
   unique representation of the object.
   [(#6167)](https://github.com/PennyLaneAI/pennylane/pull/6167)
 
+* A `ReferenceQubit` is introduced for testing purposes and as a reference for future plugin development.
+  [(#6181)](https://github.com/PennyLaneAI/pennylane/pull/6181)
 
 <h3>Breaking changes 💔</h3>
 
@@ -66,7 +68,10 @@
 
 This release contains contributions from (in alphabetical order):
 
-Guillermo Alonso
-Utkarsh Azad
-Christina Lee
-William Maxwell
+Guillermo Alonso,
+Utkarsh Azad,
+Astral Cai,
+Lillian M. A. Frederiksen,
+Christina Lee,
+William Maxwell,
+Lee J. O'Riordan,
