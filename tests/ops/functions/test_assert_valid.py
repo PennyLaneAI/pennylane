@@ -342,11 +342,7 @@ def create_op_instance(c, str_wires=False):
     if dim == 0:
         params = [1] * len(ndim_params)
     elif dim == 1:
-
-        if c == qml.QubitStateVector:
-            params = [[1] + [0] * (2**n_wires - 1)] * len(ndim_params)
-        else:
-            params = [[1] * 2**n_wires] * len(ndim_params)
+        params = [[1] * 2**n_wires] * len(ndim_params)
     elif dim == 2:
         params = [np.eye(2)] * len(ndim_params)
     else:
@@ -356,12 +352,6 @@ def create_op_instance(c, str_wires=False):
 
 
 @pytest.mark.jax
-@pytest.fixture(scope="function", autouse=True)
-def capture_warnings(recwarn):
-    """Capture warnings."""
-    yield
-
-
 @pytest.mark.parametrize("str_wires", (True, False))
 def test_generated_list_of_ops(class_to_validate, str_wires):
     """Test every auto-generated operator instance."""

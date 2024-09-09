@@ -137,7 +137,6 @@ separately_tested_ops = [
     "SpecialUnitary",
     "PauliRot",
     "MultiRZ",
-    "QubitStateVector",
     "StatePrep",
     "AmplitudeEmbedding",
     "AngleEmbedding",
@@ -150,15 +149,6 @@ separately_tested_ops = [
 class TestSupportsBroadcasting:
     """Test that all operations in the ``supports_broadcasting`` attribute
     actually support broadcasting."""
-
-    @pytest.fixture(scope="function", autouse=False)
-    def capture_warnings(self, recwarn):
-        """Capture warnings."""
-        yield
-        if len(recwarn) > 0:
-            for w in recwarn:
-                assert isinstance(w.message, qml.PennyLaneDeprecationWarning)
-                assert "QubitStateVector is deprecated" in str(w.message)
 
     def test_all_marked_operations_are_tested(self):
         """Test that the subsets of the ``supports_broadcasting`` attribute
