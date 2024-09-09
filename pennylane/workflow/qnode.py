@@ -542,13 +542,27 @@ class QNode:
         # internal data attributes
         self._tape = None
         self._qfunc_output = None
-        self._user_gradient_kwargs = gradient_kwargs
-        self.gradient_fn = None
-        self.gradient_kwargs = {}
+        self._gradient_fn = None
+        self.gradient_kwargs = gradient_kwargs
 
         self._transform_program = TransformProgram()
         self._update_gradient_fn()
         functools.update_wrapper(self, func)
+
+    @property
+    def gradient_fn(self):
+        """**DEPRECATED:** A processed version of ``QNode.diff_method``.
+
+        This property is deprecated in v0.39 and will be removed in v0.40.
+
+        Please see ``QNode.diff_method`` instead.
+
+        """
+        warnings.warn(
+            "QNode.gradient_fn is deprecated. Please use QNode.diff_method instead.",
+            qml.PennyLaneDeprecationWarning,
+        )
+        return self._gradient_fn
 
     def __copy__(self) -> "QNode":
         copied_qnode = QNode.__new__(QNode)
@@ -608,7 +622,7 @@ class QNode:
     def _update_gradient_fn(self, shots=None, tape: Optional["qml.tape.QuantumTape"] = None):
         if self.diff_method is None:
             self._interface = None
-            self.gradient_fn = None
+            self._gradient_fn = None
             self.gradient_kwargs = {}
             return
         if tape is None and shots:
@@ -622,10 +636,9 @@ class QNode:
         ):
             diff_method = "parameter-shift"
 
-        self.gradient_fn, self.gradient_kwargs, self.device = QNode.get_gradient_fn(
+        self._gradient_fn, _, _ = QNode.get_gradient_fn(
             self.device, self.interface, diff_method, tape=tape
         )
-        self.gradient_kwargs.update(self._user_gradient_kwargs or {})
 
     # pylint: disable=too-many-return-statements
     @staticmethod
@@ -861,6 +874,11 @@ class QNode:
         """
 
         execute_kwargs = copy.copy(self.execute_kwargs)
+
+        gradient_kwargs = copy.copy(self.gradient_kwargs)
+        if self._gradient_fn is qml.gradients.param_shift_cv:
+            gradient_kwargs["dev"] = self.device
+
         mcm_config = copy.copy(execute_kwargs["mcm_config"])
         if not self._tape.shots:
             mcm_config.postselect_mode = None
@@ -875,7 +893,7 @@ class QNode:
         full_transform_program = qml.transforms.core.TransformProgram(self.transform_program)
         inner_transform_program = qml.transforms.core.TransformProgram()
 
-        config = _make_execution_config(self, self.gradient_fn, mcm_config)
+        config = _make_execution_config(self, self._gradient_fn, mcm_config)
         device_transform_program, config = self.device.preprocess(execution_config=config)
 
         if config.use_device_gradient:
@@ -884,10 +902,10 @@ class QNode:
             inner_transform_program += device_transform_program
 
         # Add the gradient expand to the program if necessary
-        if getattr(self.gradient_fn, "expand_transform", False):
+        if getattr(self._gradient_fn, "expand_transform", False):
             full_transform_program.insert_front_transform(
-                qml.transform(self.gradient_fn.expand_transform),
-                **self.gradient_kwargs,
+                qml.transform(self._gradient_fn.expand_transform),
+                **gradient_kwargs,
             )
 
         # Calculate the classical jacobians if necessary
@@ -900,12 +918,12 @@ class QNode:
         res = qml.execute(
             (self._tape,),
             device=self.device,
-            gradient_fn=self.gradient_fn,
+            gradient_fn=self._gradient_fn,
             interface=self.interface,
             transform_program=full_transform_program,
             inner_transform=inner_transform_program,
             config=config,
-            gradient_kwargs=self.gradient_kwargs,
+            gradient_kwargs=gradient_kwargs,
             **execute_kwargs,
         )
         res = res[0]
@@ -942,8 +960,6 @@ class QNode:
 
         # construct the tape
         self.construct(args, kwargs)
-
-        original_grad_fn = [self.gradient_fn, self.gradient_kwargs, self.device]
         self._update_gradient_fn(shots=override_shots, tape=self._tape)
 
         try:
@@ -951,8 +967,6 @@ class QNode:
         finally:
             if old_interface == "auto":
                 self._interface = "auto"
-
-            _, self.gradient_kwargs, self.device = original_grad_fn
 
         return res
 

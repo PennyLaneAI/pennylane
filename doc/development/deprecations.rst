@@ -9,6 +9,8 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
+* `QNode.gradient_fn` is deprecated. Please use `QNode.diff_method` instead.
+
 * All of the legacy devices (any with the name ``default.qubit.{autograd,torch,tf,jax,legacy}``) are deprecated. Use ``default.qubit`` instead,
   as it supports backpropagation for the many backends the legacy devices support.
 
