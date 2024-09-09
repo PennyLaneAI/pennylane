@@ -182,7 +182,9 @@ ANSAETZE = [
 EMPTY_PARAMS = pnp.array([])
 VAR_PARAMS = pnp.array([0.5])
 EMBED_PARAMS = pnp.array([1 / np.sqrt(2**3)] * 2**3)
-LAYER_PARAMS = pnp.random.random(qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=3))
+LAYER_PARAMS = pnp.random.random(
+    qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=3)
+)
 
 CIRCUITS = [
     (lambda params, wires=None: None, EMPTY_PARAMS),
