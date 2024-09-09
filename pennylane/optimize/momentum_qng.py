@@ -27,7 +27,7 @@ class MomentumQNGOptimizer(QNGOptimizer):
         Oleksandr Borysenko, Mykhailo Bratchenko, Ilya Lukin, Mykola Luhanko, Ihor Omelchenko,
         Andrii Sotnikov and Alessandro Lomi.
         "Application of Langevin Dynamics to Advance the Quantum Natural Gradient Optimization Algorithm"
-        <https://arxiv.org/abs/2409.01978>
+        `arXiv:2409.01978 <https://arxiv.org/abs/2409.01978>`__
 
     We are grateful to David Wierichs for his generous help with the multi-argument variant of the MomentumQNGOptimizer class.
     
