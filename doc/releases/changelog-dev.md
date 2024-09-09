@@ -3,7 +3,7 @@
 # Release 0.39.0-dev (development release)
 
 <h3>New features since last release</h3>
-* A new class MomentumQNGOptimizer is added. It inherits the basic QNGOptimizer class and requires one additional hyperparameter (the     
+* A new class `MomentumQNGOptimizer` is added. It inherits the basic `QNGOptimizer` class and requires one additional hyperparameter (the     
   momentum coefficient) :math:`0 \leq \rho < 1`, the default value being :math:`\rho=0.9`. For :math:`\rho=0` Momentum-QNG
   reduces to the basic QNG.
   
