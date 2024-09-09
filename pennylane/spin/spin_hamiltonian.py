@@ -219,7 +219,7 @@ def fermi_hubbard(
             number of sites. Default value is 1.0.
         coulomb (Optional[float | list[float]]): Coulomb interaction between spins. It can be a constant or a
             list of length equal to number of spins.
-        boundary_condition (Optional[bool | list[bool]]): Defines boundary conditions for different lattice
+        boundary_condition (bool | list[bool]): Defines boundary conditions for different lattice
             axes. Default is ``False`` indicating open boundary condition.
         neighbour_order (int): Specifies the interaction level for neighbors within the lattice.
             Default is 1, indicating nearest neighbours.
