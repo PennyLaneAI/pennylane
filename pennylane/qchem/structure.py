@@ -229,11 +229,11 @@ def excitations(electrons, orbitals, delta_sz=0, fermionic=False):
             ``sz[p] + sz[p] - sz[r] - sz[s] = delta_sz`` for the spin-projection ``sz`` of
             the orbitals involved in the single and double excitations, respectively.
             ``delta_sz`` can take the values :math:`0`, :math:`\pm 1` and :math:`\pm 2`.
-        fermionic (bool): Return a list of ``FermiWord`` objects instead of a list of lists
+        fermionic (bool): Return a list of ``FermiWord`` objects instead of the list of orbital indices, if set to ``True``. Default is ``False``.
 
     Returns:
         tuple(list, list): lists with the indices of the spin orbitals involved in the
-        single and double excitations. By default the lists contain lists, otherwise
+        single and double excitations. By default the lists contain integers representing the orbitals, otherwise
         if ``fermionic=True`` they contain ``FermiWord`` objects.
 
     **Example**
@@ -245,6 +245,12 @@ def excitations(electrons, orbitals, delta_sz=0, fermionic=False):
     [[0, 2], [1, 3]]
     >>> print(doubles)
     [[0, 1, 2, 3]]
+
+    >>> singles, doubles = excitations(electrons, orbitals, fermionic=True)
+    >>> print(singles)
+    [FermiWord({(0, 0): '+', (1, 2): '-'}), FermiWord({(0, 1): '+', (1, 3): '-'})]
+    >>> print(doubles)
+    [FermiWord({(0, 0): '+', (1, 1): '+', (2, 2): '-', (3, 3): '-'})]
     """
 
     if not electrons > 0:
