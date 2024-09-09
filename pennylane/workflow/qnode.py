@@ -523,7 +523,7 @@ class QNode:
         # input arguments
         self.func = func
         self.device = device
-        self._interface = interface
+        self._interface = INTERFACE_MAP[interface]
         self.diff_method = diff_method
         mcm_config = qml.devices.MCMConfig(mcm_method=mcm_method, postselect_mode=postselect_mode)
         cache = (max_diff > 1) if cache == "auto" else cache
