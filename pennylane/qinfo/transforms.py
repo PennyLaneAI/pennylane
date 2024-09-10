@@ -520,7 +520,6 @@ def vn_entanglement_entropy(
 
     return _bipartite_qinfo_transform(
         qml.math.vn_entanglement_entropy, tape, wires0, wires1, base, **kwargs
-    )
 
 
 def fidelity(qnode0, qnode1, wires0, wires1):

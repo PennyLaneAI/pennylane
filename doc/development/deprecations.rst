@@ -136,7 +136,7 @@ Completed deprecation cycles
 * The functions ``qml.transforms.sum_expand`` and ``qml.transforms.hamiltonian_expand`` are removed.
   Instead, ``qml.transforms.split_non_commuting`` can be used for equivalent behaviour.
 
-  - Deprecated and Duplicated in v0.38
+  - Deprecated in v0.38
   - Removed in v0.39
 
 * ``queue_idx`` attribute has been removed from the ``Operator``, ``CompositeOp``, and ``SymboliOp`` classes. Instead, the index is now stored as the label of the ``CircuitGraph.graph`` nodes.
