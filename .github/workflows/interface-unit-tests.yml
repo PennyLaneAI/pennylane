@@ -214,7 +214,7 @@ jobs:
            || fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).default
          }}
       matrix:
-        group: ${{ inputs.pipeline_mode == 'update-durations' && [1] || [1, 2, 3] }}
+        group: ${{ inputs.pipeline_mode == 'update-durations' && fromJSON('[1]') || fromJSON('[1, 2, 3]') }}
         python-version: >-
           ${{
             fromJSON(needs.setup-ci-load.outputs.python-version).tf-tests
@@ -251,7 +251,7 @@ jobs:
            || fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).default
          }}
       matrix:
-        group: ${{ inputs.pipeline_mode == 'update-durations' && [1] || [1, 2, 3, 4, 5] }}
+        group: ${{ inputs.pipeline_mode == 'update-durations' && fromJSON('[1]') || fromJSON('[1, 2, 3, 4, 5]') }}
         python-version: >-
           ${{
             fromJSON(needs.setup-ci-load.outputs.python-version).jax-tests
@@ -288,7 +288,7 @@ jobs:
            || fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).default
          }}
       matrix:
-        group: ${{ inputs.pipeline_mode == 'update-durations' && [1] || [1, 2, 3, 4, 5] }}
+        group: ${{ inputs.pipeline_mode == 'update-durations' && fromJSON('[1]') || fromJSON('[1, 2, 3, 4, 5]') }}
         python-version: >-
           ${{
             fromJSON(needs.setup-ci-load.outputs.python-version).core-tests
