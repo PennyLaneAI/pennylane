@@ -546,7 +546,6 @@ class QNode:
         self.gradient_kwargs = gradient_kwargs
 
         self._transform_program = TransformProgram()
-        self._update_gradient_fn()
         functools.update_wrapper(self, func)
 
     @property
@@ -564,10 +563,22 @@ class QNode:
             "QNode.gradient_fn is deprecated. Please use QNode.diff_method instead.",
             qml.PennyLaneDeprecationWarning,
         )
-        self._update_gradient_fn(
-            shots=self.tape.shots if self.tape else self.device.shots, tape=self.tape
-        )
-        return self._gradient_fn
+        if self.diff_method is None:
+            return None
+
+        if (
+            self.device.name == "lightning.qubit"
+            and qml.metric_tensor in self.transform_program
+            and self.diff_method == "best"
+        ):
+            return qml.gradients.param_shift
+
+        if self.tape is None and self.device.shots:
+            tape = qml.tape.QuantumScript([], [], shots=self.device.shots)
+        else:
+            tape = self.tape
+
+        return QNode.get_gradient_fn(self.device, self.interface, self.diff_method, tape=tape)[0]
 
     def __copy__(self) -> "QNode":
         copied_qnode = QNode.__new__(QNode)
@@ -609,7 +620,6 @@ class QNode:
             )
 
         self._interface = INTERFACE_MAP[value]
-        self._update_gradient_fn(shots=self.device.shots)
 
     @property
     def transform_program(self) -> TransformProgram:
@@ -623,27 +633,6 @@ class QNode:
         .. warning:: This is a developer facing feature and is called when a transform is applied on a QNode.
         """
         self._transform_program.push_back(transform_container=transform_container)
-
-    def _update_gradient_fn(self, shots=None, tape: Optional["qml.tape.QuantumTape"] = None):
-        if self.diff_method is None:
-            self._interface = None
-            self._gradient_fn = None
-            self.gradient_kwargs = {}
-            return
-        if tape is None and shots:
-            tape = qml.tape.QuantumScript([], [], shots=shots)
-
-        diff_method = self.diff_method
-        if (
-            self.device.name == "lightning.qubit"
-            and qml.metric_tensor in self.transform_program
-            and self.diff_method == "best"
-        ):
-            diff_method = "parameter-shift"
-
-        self._gradient_fn, _, _ = QNode.get_gradient_fn(
-            self.device, self.interface, diff_method, tape=tape
-        )
 
     # pylint: disable=too-many-return-statements
     @staticmethod
