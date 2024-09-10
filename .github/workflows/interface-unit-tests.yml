@@ -152,14 +152,14 @@ jobs:
             fromJSON(needs.setup-ci-load.outputs.python-version).torch-tests
             || fromJSON(needs.setup-ci-load.outputs.python-version).default
            }}
-        numpy-2-install: [true]
+        numpy-2-install: [true, false]
 
     if: ${{ !contains(fromJSON(needs.setup-ci-load.outputs.jobs-to-skip), 'torch-tests') }}
     uses: ./.github/workflows/unit-test.yml
     with:
-      job_name: torch-tests (${{ matrix.python-version }})
+      job_name: torch-tests (${{ matrix.python-version }}, ${{ matrix.numpy-2-install }})
       branch: ${{ inputs.branch }}
-      coverage_artifact_name: core-interfaces-coverage-torch-${{ matrix.python-version }}
+      coverage_artifact_name: core-interfaces-coverage-torch-${{ matrix.python-version }}-${{ matrix.numpy-2-install }}
       python_version: ${{ matrix.python-version }}
       pipeline_mode: ${{ inputs.pipeline_mode }}
       install_numpy_2: ${{ matrix.numpy-2-install }}
