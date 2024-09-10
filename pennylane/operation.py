@@ -1517,33 +1517,6 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         """
         raise AdjointUndefinedError
 
-    def expand(self) -> "qml.tape.QuantumScript":
-        """Returns a tape that contains the decomposition of the operator.
-
-        .. warning::
-            This function is deprecated and will be removed in version 0.39.
-            The same behaviour can be achieved simply through 'qml.tape.QuantumScript(self.decomposition())'.
-
-        Returns:
-            .QuantumTape: quantum tape
-        """
-        warnings.warn(
-            "'Operator.expand' is deprecated and will be removed in version 0.39. "
-            "The same behaviour can be achieved simply through 'qml.tape.QuantumScript(self.decomposition())'.",
-            qml.PennyLaneDeprecationWarning,
-        )
-
-        if not self.has_decomposition:
-            raise DecompositionUndefinedError
-
-        qscript = qml.tape.QuantumScript(self.decomposition())
-
-        if not self.data:
-            # original operation has no trainable parameters
-            qscript.trainable_params = {}
-
-        return qscript
-
     @property
     def arithmetic_depth(self) -> int:
         """Arithmetic depth of the operator."""
