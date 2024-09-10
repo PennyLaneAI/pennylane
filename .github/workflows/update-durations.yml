@@ -19,7 +19,7 @@ env:
   DURATIONS_BRANCH: bot/durations-update
 
 jobs:
-  tests:
+  update-durations:
     # if: >-
     #   ${{
     #     github.event_name == 'schedule' ||
@@ -44,7 +44,7 @@ jobs:
 
   # Add job for downloading artifacts and opening PR
   upload-durations-files:
-    needs: tests
+    needs: update-durations
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
