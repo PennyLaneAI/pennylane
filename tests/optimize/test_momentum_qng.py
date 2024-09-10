@@ -213,7 +213,7 @@ class TestOptimize:
 
         params = np.array(0.2, requires_grad=False), np.array(-0.8, requires_grad=False)
         params[trainable_idx].requires_grad = True
-        opt = qml.QNGOptimizer(stepsize=0.01)
+        opt = qml.MomentumQNGOptimizer(stepsize=0.01)
 
         # Without manually provided functions
         step1, cost1 = opt.step_and_cost(circuit, *params)
