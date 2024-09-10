@@ -4,6 +4,7 @@ on:
   schedule:
   - cron: '47 2 * * 6'
   workflow_dispatch:
+  pull_request:
 
 concurrency:
   group: unit-tests-${{ github.ref }}
@@ -60,14 +61,10 @@ jobs:
 
       # Create PR to master
       - name: Create pull request
-        uses: repo-sync/pull-request@v2
-        with:
-          source_branch: "${{ env.DURATIONS_BRANCH }}"
-          destination_branch: "master"
-          github_token: "${{ secrets.GITHUB_TOKEN }}"
-          pr_title: "Update test duration files"
-          # if updating the pr_body, please also update the same text in the docs.yml file
-          pr_body: |
+        env:
+          DESTINATION_BRANCH: "master"
+          PR_TITLE: "Update test duration files"
+          PR_BODY: |
             Automatic update of test duration files.
 
             Because bots are not able to trigger CI on their own, please do so by pushing an empty commit to this branch using the following command:
@@ -77,5 +74,7 @@ jobs:
             ```
 
             Alternatively, wait for this branch to be out-of-date with master, then just use the "Update branch" button!
-          pr_allow_empty: false
-          pr_draft: false
+        run: |
+          echo $(git branch --show-current)
+          gh_pr_up() { gh pr create $* || gh pr edit $* }
+          gh_pr_up --title $PR_TITLE --body $PR_BODY --base $DESTINATION_BRANCH
