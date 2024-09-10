@@ -5,6 +5,10 @@
 <h3>New features since last release</h3>
  
 <h3>Improvements 🛠</h3>
+
+* `qml.qchem.excitations` now optionally returns fermionic operators.
+   [(#6171)](https://github.com/PennyLaneAI/pennylane/pull/6171)
+
 * The `diagonalize_measurements` transform now uses a more efficient method of diagonalization 
   when possible, based on the `pauli_rep` of the relevant observables.
   [#6113](https://github.com/PennyLaneAI/pennylane/pull/6113/)
@@ -17,11 +21,6 @@
   [(#6120)](https://github.com/PennyLaneAI/pennylane/pull/6120)
 
 <h4>Capturing and representing hybrid programs</h4>
-
-* Differentiation of hybrid programs via `qml.grad` can now be captured into plxpr.
-  When evaluating a captured `qml.grad` instruction, it will dispatch to `jax.grad`,
-  which differs from the Autograd implementation of `qml.grad` itself.
-  [(#6120)](https://github.com/PennyLaneAI/pennylane/pull/6120)
 
 * Differentiation of hybrid programs via `qml.grad` and `qml.jacobian` can now be captured
   into plxpr. When evaluating a captured `qml.grad` (`qml.jacobian`) instruction, it will
@@ -50,6 +49,9 @@
   unique representation of the object.
   [(#6167)](https://github.com/PennyLaneAI/pennylane/pull/6167)
 
+* The `to_mat` methods for `FermiWord` and `FermiSentence` now optionally return
+  a sparse matrix.
+  [(#6173)](https://github.com/PennyLaneAI/pennylane/pull/6173)
 
 <h3>Breaking changes 💔</h3>
 
