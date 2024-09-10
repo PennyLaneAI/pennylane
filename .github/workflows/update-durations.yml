@@ -61,9 +61,9 @@ jobs:
       - name: Stage changes
         # if: steps.changed.outputs.has_changes != '0'
         run: |
-          echo "Bleah" >> .github/durations/tf_tests_durations.json
-          echo "Bleah" >> .github/durations/jax_tests_durations.json
-          echo "Bleah" >> .github/durations/core_tests_durations.json
+          echo "Blseah" >> .github/durations/tf_tests_durations.json
+          echo "Blesah" >> .github/durations/jax_tests_durations.json
+          echo "Blesah" >> .github/durations/core_tests_durations.json
           git add .github/durations/
           git commit -m "Update durations files"
           git push -f --set-upstream origin "${{ env.DURATIONS_BRANCH }}"
@@ -82,5 +82,5 @@ jobs:
 
             Alternatively, wait for this branch to be out-of-date with master, then just use the 'Update branch' button.
         run: |
-          gh_pr_up() { gh pr create "$@" || { gh pr reopen $(git branch --show-current); gh pr edit "$@"; } }
-          gh_pr_up --title $PR_TITLE --body $PR_BODY --reviewer $PR_REVIEWER
+          gh_pr_up() { gh pr create "$@" --reviewer $PR_REVIEWER || { gh pr reopen $(git branch --show-current); gh pr edit "$@" --add-reviewer $PR_REVIEWER; } }
+          gh_pr_up --title $PR_TITLE --body $PR_BODY
