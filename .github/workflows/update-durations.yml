@@ -3,7 +3,7 @@ on:
   # Scheduled trigger on the 15th of every month at 2:47am UTC
   # schedule:
   # - cron: '47 2 15 * *'
-  # pull_request:
+  pull_request:
   #   types:
   #     - opened
   #     - reopened
