@@ -20,7 +20,12 @@ from dummy_debugger import Debugger
 
 import pennylane as qml
 from pennylane.devices.qubit import get_final_state, measure_final_state, simulate
-from pennylane.devices.qubit.simulate import _FlexShots, simulate_tree_mcm, split_circuit_at_mcms
+from pennylane.devices.qubit.simulate import (
+    _FlexShots,
+    find_post_processed_mcms,
+    simulate_tree_mcm,
+    split_circuit_at_mcms,
+)
 
 
 class TestCurrentlyUnsupportedCases:
@@ -1274,7 +1279,7 @@ class TestMidMeasurements:
                             (
                                 m0
                                 if meas_obj == "mcm"
-                                else (0.5 * m0 if meas_obj == "composite_mcm" else [m0, m1])
+                                else (0.5 * m0 + m1 if meas_obj == "composite_mcm" else [m0, m1])
                             )
                             if isinstance(meas_obj, str)
                             else meas_obj
@@ -1284,7 +1289,7 @@ class TestMidMeasurements:
             ],
             shots=shots,
         )
-        print(qscript.measurements)
+
         results0 = simulate(qscript, mcm_method="tree-traversal")
 
         deferred_tapes, deferred_func = qml.defer_measurements(qscript)
@@ -1298,7 +1303,7 @@ class TestMidMeasurements:
             )
             mcm_utils.validate_measurements(measure_f, shots, results2, results0)
 
-    @pytest.mark.parametrize("shots", [None, int(5e5), [int(4e5), int(6e5)]])
+    @pytest.mark.parametrize("shots", [None, 5000, [5000, 5001]])
     @pytest.mark.parametrize("rng", [None, 42, np.array([37])])
     @pytest.mark.parametrize("angles", [(0.123, 0.015), (0.543, 0.057)])
     def test_approx_dynamic_mid_meas_circuit(self, shots, rng, angles):
@@ -1376,18 +1381,31 @@ class TestMidMeasurements:
         """Test that `simulate_tree_mcm` works with circuits with many mid-circuit measurements"""
 
         n_circs = 500
+        operations = []
+        for _ in range(n_circs):
+            operations.extend(
+                [
+                    qml.RX(1.234, 0),
+                    (m0 := qml.measure(0, postselect=1)).measurements[0],
+                    qml.CNOT([0, 1]),
+                    qml.ops.op_math.Conditional(m0, qml.RZ(1.786, 1)),
+                ]
+            )
+
         qscript = qml.tape.QuantumScript(
-            [
-                qml.RX(1.234, 0),
-                (m0 := qml.measure(0)).measurements[0],
-                qml.ops.op_math.Conditional(m0, qml.RZ(1.786, 1)),
-            ]
-            * n_circs,
-            [qml.sample(wires=[0, 1]), qml.expval(m0)],
+            operations,
+            [qml.sample(wires=[0, 1]), qml.counts(wires=[0, 1])],
             shots=20,
         )
 
-        res = simulate_tree_mcm(qscript)
-        assert len(res[0]) == 40
-        assert isinstance(res[1], np.float64)
-        assert len(split_circuit_at_mcms(qscript)) == n_circs + 1
+        mcms = find_post_processed_mcms(qscript)
+        assert len(mcms) == n_circs
+
+        split_circs = split_circuit_at_mcms(qscript)
+        assert len(split_circs) == n_circs + 1
+        for circ in split_circs:
+            assert not [o for o in circ.operations if isinstance(o, qml.measurements.MidMeasureMP)]
+
+        res = simulate_tree_mcm(qscript, postselect_mode="fill-shots")
+        assert len(res[0]) == 20
+        assert isinstance(res[1], dict) and sum(list(res[1].values())) == 20

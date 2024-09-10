@@ -942,7 +942,7 @@ def _(original_measurement: ProbabilityMP, measures):  # pylint: disable=unused-
 
 @combine_measurements_core.register
 def _(original_measurement: SampleMP, measures):  # pylint: disable=unused-argument
-    """The combined samples of two branches is obtained by concatenating the sample if each branch.."""
+    """The combined samples of two branches is obtained by concatenating the sample of each branch."""
     new_sample = tuple(
         qml.math.atleast_1d(m[1]) for m in measures.values() if m[0] and not m[1] is tuple()
     )
