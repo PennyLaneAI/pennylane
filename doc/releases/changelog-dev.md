@@ -4,6 +4,7 @@
 
 <h3>New features since last release</h3>
 
+
 <h3>Improvements 🛠</h3>
 
 * Improve unit testing for capturing of nested control flows.
@@ -16,6 +17,9 @@
 * The `__repr__` methods for `FermiWord` and `FermiSentence` now returns a
   unique representation of the object.
   [(#6167)](https://github.com/PennyLaneAI/pennylane/pull/6167)
+
+* More predefined lattice shapes can now be generated.
+  [(6237)](https://github.com/PennyLaneAI/pennylane/pull/6237)
 
 <h3>Breaking changes 💔</h3>
 
