@@ -621,7 +621,7 @@ class QNode:
 
     def _update_gradient_fn(self, shots=None, tape: Optional["qml.tape.QuantumTape"] = None):
         if self.diff_method is None:
-            self._interface = None
+            self._interface = "numpy"
             self.gradient_fn = None
             self.gradient_kwargs = {}
             return
