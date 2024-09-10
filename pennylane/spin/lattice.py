@@ -250,27 +250,33 @@ def _generate_lattice(lattice, n_cells, boundary_condition=False, neighbour_orde
             f"cubic, bcc or fcc."
         )
 
-    lattice_dict={
-                  "chain":{"dim":1, "vectors":[[1]], "positions":None}, 
-                  "square":{"dim":2, "vectors":[[0,1],[1,0]], "positions":None},
-                  "rectangle":{"dim":2, "vectors":[[0,1], [1,0]], "positions":None},
-                  "triangle":{"dim":2, "vectors":[[1, 0], [0.5, math.sqrt(3) / 2]], "positions":None},
-                  "honeycomb":{"dim":2, "vectors":[[1, 0], [0.5, math.sqrt(3) / 2]],
-                               "positions":[[0, 0], [0.5, 0.5 / 3**0.5]]},
-                  "kagome":{"dim":2, "vectors":[[1, 0], [0.5, math.sqrt(3) / 2]],
-                            "positions":[[0.0, 0], [-0.25, math.sqrt(3) / 4], [0.25, math.sqrt(3) / 4]]},
-                  "lieb":{"dim":2, "vectors":[[0, 1], [1, 0]],
-                            "positions":[[0, 0], [0.5, 0], [0, 0.5]]},
-                  "cubic":{"dim":3, "vectors":math.eye(3),
-                            "positions":None},
-                  "bcc":{"dim":3, "vectors":math.eye(3),
-                            "positions":[[0, 0, 0], [0.5, 0.5, 0.5]]},
-                  "fcc":{"dim":3, "vectors":math.eye(3),
-                            "positions":[[0, 0, 0], [0.5, 0.5, 0], [0.5, 0, 0.5], [0, 0.5, 0.5]]},
-                 }
+    lattice_dict = {
+        "chain": {"dim": 1, "vectors": [[1]], "positions": None},
+        "square": {"dim": 2, "vectors": [[0, 1], [1, 0]], "positions": None},
+        "rectangle": {"dim": 2, "vectors": [[0, 1], [1, 0]], "positions": None},
+        "triangle": {"dim": 2, "vectors": [[1, 0], [0.5, math.sqrt(3) / 2]], "positions": None},
+        "honeycomb": {
+            "dim": 2,
+            "vectors": [[1, 0], [0.5, math.sqrt(3) / 2]],
+            "positions": [[0, 0], [0.5, 0.5 / 3**0.5]],
+        },
+        "kagome": {
+            "dim": 2,
+            "vectors": [[1, 0], [0.5, math.sqrt(3) / 2]],
+            "positions": [[0.0, 0], [-0.25, math.sqrt(3) / 4], [0.25, math.sqrt(3) / 4]],
+        },
+        "lieb": {"dim": 2, "vectors": [[0, 1], [1, 0]], "positions": [[0, 0], [0.5, 0], [0, 0.5]]},
+        "cubic": {"dim": 3, "vectors": math.eye(3), "positions": None},
+        "bcc": {"dim": 3, "vectors": math.eye(3), "positions": [[0, 0, 0], [0.5, 0.5, 0.5]]},
+        "fcc": {
+            "dim": 3,
+            "vectors": math.eye(3),
+            "positions": [[0, 0, 0], [0.5, 0.5, 0], [0.5, 0, 0.5], [0, 0.5, 0.5]],
+        },
+    }
 
     lattice_obj = Lattice(
-        n_cells=n_cells[0:lattice_dict[lattice_shape]["dim"]],
+        n_cells=n_cells[0 : lattice_dict[lattice_shape]["dim"]],
         vectors=lattice_dict[lattice_shape]["vectors"],
         positions=lattice_dict[lattice_shape]["positions"],
         neighbour_order=neighbour_order,
