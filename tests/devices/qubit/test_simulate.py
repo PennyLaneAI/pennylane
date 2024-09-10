@@ -1189,6 +1189,7 @@ class TestQInfoMeasurements:
 class TestMidMeasurements:
     """Tests for simulating scripts with mid-circuit measurements using the ``simulate_tree_mcm``."""
 
+    @pytest.mark.unit
     @pytest.mark.parametrize("val", [0, 1])
     def test_basic_mid_meas_circuit(self, val):
         """Test execution with a basic circuit with mid-circuit measurements."""
@@ -1199,6 +1200,7 @@ class TestMidMeasurements:
         result = simulate_tree_mcm(qs)
         assert result == (0, (-1.0) ** val)
 
+    @pytest.mark.unit
     def test_basic_mid_meas_circuit_with_reset(self):
         """Test execution with a basic circuit with mid-circuit measurements."""
         qs = qml.tape.QuantumScript(
@@ -1216,13 +1218,13 @@ class TestMidMeasurements:
         assert qml.math.allclose(result, qml.math.array([0.5, 0.5]))
 
     # pylint: disable=too-many-arguments
+    @pytest.mark.unit
     @pytest.mark.parametrize("shots", [None, 5500])
     @pytest.mark.parametrize("postselect", [None, 0])
     @pytest.mark.parametrize("reset", [False, True])
     @pytest.mark.parametrize("measure_f", [qml.counts, qml.expval, qml.probs, qml.sample, qml.var])
     @pytest.mark.parametrize(
-        "meas_obj",
-        [qml.Y(0), [1], [1, 0], "mcm", "composite_mcm", "mcm_list"],
+        "meas_obj", [qml.Y(0), [1], [1, 0], "mcm", "composite_mcm", "mcm_list"]
     )
     def test_simple_dynamic_circuit(self, shots, measure_f, postselect, reset, meas_obj):
         """Tests that `simulate` can handles a simple dynamic circuit with the following measurements:
@@ -1357,6 +1359,7 @@ class TestMidMeasurements:
             for rs1, rs2 in zip(res1, res2):
                 assert all(qml.math.allclose(r1, r2, atol=1e-2) for r1, r2 in zip(rs1, rs2))
 
+    @pytest.mark.unit
     @pytest.mark.parametrize("postselect_mode", ["hw-like", "fill-shots"])
     def test_tree_traversal_postselect_mode(self, postselect_mode):
         """Test that invalid shots are discarded if requested"""
@@ -1377,6 +1380,7 @@ class TestMidMeasurements:
         assert (len(res) < shots) if postselect_mode == "hw-like" else (len(res) == shots)
         assert np.all(res != np.iinfo(np.int32).min)
 
+    @pytest.mark.unit
     def test_tree_traversal_deep_circuit(self):
         """Test that `simulate_tree_mcm` works with circuits with many mid-circuit measurements"""
 
