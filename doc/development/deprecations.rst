@@ -88,6 +88,11 @@ Other deprecations
 Completed deprecation cycles
 ----------------------------
 
+* `Operator.expand` is now removed. Use `qml.tape.QuantumScript(op.deocomposition())` instead.
+
+  - Deprecated in v0.38
+  - Removed in v0.39
+
 * The ``expansion_strategy`` attribute of ``qml.QNode`` is removed.
   Users should make use of ``qml.workflow.construct_batch``, should they require fine control over the output tape(s).
 
