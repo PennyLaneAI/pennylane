@@ -35,10 +35,10 @@ class Lattice:
        positions (list[list[float]]): Initial positions of spin cites. Default value is
            ``[[0.0]`` :math:`\times` ``number of dimensions]``.
 
-       boundary_condition (bool or list[bool]): Defines boundary conditions in different lattice axes,
-           default is ``False`` indicating open boundary condition.
+       boundary_condition (bool or list[bool]): Defines boundary conditions in different lattice axes.
+           Default is ``False`` indicating open boundary condition.
        neighbour_order (int): Specifies the interaction level for neighbors within the lattice.
-           Default is 1 (nearest neighbour).
+           Default is 1, indicating nearest neighbour.
        distance_tol (float): Distance below which spatial points are considered equal for the
            purpose of identifying nearest neighbours. Default value is 1e-5.
 
@@ -221,10 +221,13 @@ def _generate_lattice(lattice, n_cells, boundary_condition=False, neighbour_orde
     r"""Generates the lattice object for a given shape and n_cells.
 
     Args:
-        lattice (str): Shape of the lattice. Input Values can be ``'chain'``, ``'square'``, ``'rectangle'``, ``'honeycomb'``, ``'triangle'``, or ``'kagome'``.
+        lattice (str): Shape of the lattice. Input Values can be ``'chain'``, ``'square'``, ``'rectangle'``,
+              ``'honeycomb'``, ``'triangle'``, ``'kagome'``, ``'lieb'``, ``'cubic'``, ``'bcc'``, or ``'fcc'``.
         n_cells (list[int]): Number of cells in each direction of the grid.
-        boundary_condition (bool or list[bool]): Defines boundary conditions, False for open boundary condition, each element represents the axis for lattice. It defaults to False.
-        neighbour_order (int): Specifies the interaction level for neighbors within the lattice. Default is 1 (nearest neighbour).
+        boundary_condition (bool or list[bool]): Defines boundary conditions in different lattice axes.
+                               Default is ``False`` indicating open boundary condition.
+        neighbour_order (int): Specifies the interaction level for neighbors within the lattice.
+                               Default is 1, indicating nearest neighbour.
 
     Returns:
         lattice object.
