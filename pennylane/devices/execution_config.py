@@ -17,7 +17,7 @@ Contains the :class:`ExecutionConfig` data class.
 from dataclasses import dataclass, field
 from typing import Optional, Union
 
-from pennylane.workflow import SUPPORTED_INTERFACES
+from pennylane.workflow import SUPPORTED_INTERFACE_INPUTS
 
 
 @dataclass
@@ -110,9 +110,9 @@ class ExecutionConfig:
 
         Note that this hook is automatically called after init via the dataclass integration.
         """
-        if self.interface not in SUPPORTED_INTERFACES:
+        if self.interface not in SUPPORTED_INTERFACE_INPUTS:
             raise ValueError(
-                f"Unknown interface. interface must be in {SUPPORTED_INTERFACES}, got {self.interface} instead."
+                f"Unknown interface. interface must be in {SUPPORTED_INTERFACE_INPUTS}, got {self.interface} instead."
             )
 
         if self.grad_on_execution not in {True, False, None}:

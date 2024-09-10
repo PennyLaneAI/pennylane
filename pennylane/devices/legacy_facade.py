@@ -25,6 +25,7 @@ from dataclasses import replace
 import pennylane as qml
 from pennylane.measurements import MidMeasureMP, Shots
 from pennylane.transforms.core.transform_program import TransformProgram
+from pennylane.workflow.execution import USER_INPUT_TO_INTERFACE_MAP
 
 from .device_api import Device
 from .execution_config import DefaultExecutionConfig
@@ -325,13 +326,11 @@ class LegacyDeviceFacade(Device):
         for t in batch:
             params.extend(t.get_parameters(trainable_only=False))
         interface = qml.math.get_interface(*params)
-        if interface == "numpy":
-            return self._device
-
-        mapped_interface = qml.workflow.execution.INTERFACE_MAP.get(interface, interface)
+        if interface != "numpy":
+            interface = USER_INPUT_TO_INTERFACE_MAP.get(interface, interface)
 
         backprop_interface = self._device.capabilities().get("passthru_interface", None)
-        if mapped_interface == backprop_interface:
+        if interface == backprop_interface:
             return self._device
 
         backprop_devices = self._device.capabilities().get("passthru_devices", None)
@@ -339,7 +338,7 @@ class LegacyDeviceFacade(Device):
         if backprop_devices is None:
             raise qml.DeviceError(f"Device {self} does not support backpropagation.")
 
-        if backprop_devices[mapped_interface] == self._device.short_name:
+        if backprop_devices[interface] == self._device.short_name:
             return self._device
 
         if self.target_device.short_name != "default.qubit.legacy":
@@ -367,7 +366,7 @@ class LegacyDeviceFacade(Device):
             )
             # we already warned about backprop device switching
             new_device = qml.device(
-                backprop_devices[mapped_interface],
+                backprop_devices[interface],
                 wires=self._device.wires,
                 shots=self._device.shots,
             ).target_device
@@ -396,25 +395,24 @@ class LegacyDeviceFacade(Device):
             return False
         params = tape.get_parameters(trainable_only=False)
         interface = qml.math.get_interface(*params)
+        if interface != "numpy":
+            interface = USER_INPUT_TO_INTERFACE_MAP.get(interface, interface)
 
         if tape and any(isinstance(m.obs, qml.SparseHamiltonian) for m in tape.measurements):
             return False
-        if interface == "numpy":
-            interface = None
-        mapped_interface = qml.workflow.execution.INTERFACE_MAP.get(interface, interface)
 
         # determine if the device supports backpropagation
         backprop_interface = self._device.capabilities().get("passthru_interface", None)
 
         if backprop_interface is not None:
             # device supports backpropagation natively
-            return mapped_interface in [backprop_interface, "numpy"]
+            return interface in [backprop_interface, "numpy"]
         # determine if the device has any child devices that support backpropagation
         backprop_devices = self._device.capabilities().get("passthru_devices", None)
 
         if backprop_devices is None:
             return False
-        return mapped_interface in backprop_devices or mapped_interface == "numpy"
+        return interface in backprop_devices or interface == "numpy"
 
     def _validate_adjoint_method(self, tape):
         # The conditions below provide a minimal set of requirements that we can likely improve upon in

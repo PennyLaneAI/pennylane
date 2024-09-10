@@ -32,7 +32,11 @@ from pennylane.measurements import MidMeasureMP
 from pennylane.tape import QuantumScript, QuantumTape
 from pennylane.transforms.core import TransformContainer, TransformDispatcher, TransformProgram
 
-from .execution import INTERFACE_MAP, SUPPORTED_INTERFACES, SupportedInterfaceUserInput
+from .execution import (
+    USER_INPUT_TO_INTERFACE_MAP,
+    SUPPORTED_INTERFACE_INPUTS,
+    SupportedInterfaceUserInput,
+)
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -66,7 +70,18 @@ def _convert_to_interface(res, interface):
     if isinstance(res, dict):
         return {k: _convert_to_interface(v, interface) for k, v in res.items()}
 
-    return qml.math.asarray(res, like=interface if interface != "tf" else "tensorflow")
+    interface_conversion_map = {
+        "autograd": "autograd",
+        "jax": "jax",
+        "jax-jit": "jax",
+        "torch": "torch",
+        "tf": "tensorflow",
+        "tf-autograph": "tensorflow",
+    }
+
+    interface_name = interface_conversion_map[interface]
+
+    return qml.math.asarray(res, like=interface_name)
 
 
 def _make_execution_config(
@@ -494,10 +509,10 @@ class QNode:
                 gradient_kwargs,
             )
 
-        if interface not in SUPPORTED_INTERFACES:
+        if interface not in SUPPORTED_INTERFACE_INPUTS:
             raise qml.QuantumFunctionError(
                 f"Unknown interface {interface}. Interface must be "
-                f"one of {SUPPORTED_INTERFACES}."
+                f"one of {SUPPORTED_INTERFACE_INPUTS}."
             )
 
         if not isinstance(device, (qml.devices.LegacyDevice, qml.devices.Device)):
@@ -523,7 +538,7 @@ class QNode:
         # input arguments
         self.func = func
         self.device = device
-        self._interface = INTERFACE_MAP[interface]
+        self._interface = USER_INPUT_TO_INTERFACE_MAP[interface]
         self.diff_method = diff_method
         mcm_config = qml.devices.MCMConfig(mcm_method=mcm_method, postselect_mode=postselect_mode)
         cache = (max_diff > 1) if cache == "auto" else cache
@@ -582,13 +597,13 @@ class QNode:
 
     @interface.setter
     def interface(self, value: SupportedInterfaceUserInput):
-        if value not in SUPPORTED_INTERFACES:
+        if value not in SUPPORTED_INTERFACE_INPUTS:
 
             raise qml.QuantumFunctionError(
-                f"Unknown interface {value}. Interface must be one of {SUPPORTED_INTERFACES}."
+                f"Unknown interface {value}. Interface must be one of {SUPPORTED_INTERFACE_INPUTS}."
             )
 
-        self._interface = INTERFACE_MAP[value]
+        self._interface = USER_INPUT_TO_INTERFACE_MAP[value]
         self._update_gradient_fn(shots=self.device.shots)
 
     @property
@@ -895,12 +910,18 @@ class QNode:
 
         execute_kwargs["mcm_config"] = mcm_config
 
+        # Mapping numpy to None here because `qml.execute` will map None back into
+        # numpy. If we do not do this, numpy will become autograd in `qml.execute`.
+        # If the user specified interface="numpy", it would've already been converted to
+        # "autograd", and it wouldn't be affected.
+        interface = self.interface if self.interface != "numpy" else None
+
         # pylint: disable=unexpected-keyword-arg
         res = qml.execute(
             (self._tape,),
             device=self.device,
             gradient_fn=self.gradient_fn,
-            interface=self.interface,
+            interface=interface,
             transform_program=full_transform_program,
             inner_transform=inner_transform_program,
             config=config,
@@ -930,10 +951,9 @@ class QNode:
                 if qml.capture.enabled()
                 else qml.math.get_interface(*args, *list(kwargs.values()))
             )
-            if interface == "numpy":
-                # Internally stop treating numpy as autograd
-                interface = None
-            self._interface = INTERFACE_MAP[interface]
+            if interface != "numpy":
+                interface = USER_INPUT_TO_INTERFACE_MAP[interface]
+            self._interface = interface
         if self._qfunc_uses_shots_arg:
             override_shots = False
         else:
