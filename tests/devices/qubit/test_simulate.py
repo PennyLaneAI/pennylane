@@ -1210,6 +1210,7 @@ class TestMidMeasurements:
         result = simulate_tree_mcm(qs)
         assert qml.math.allclose(result, qml.math.array([0.5, 0.5]))
 
+    # pylint: disable=too-many-arguments
     @pytest.mark.parametrize("shots", [None, 5500])
     @pytest.mark.parametrize("postselect", [None, 0])
     @pytest.mark.parametrize("reset", [False, True])
