@@ -53,14 +53,24 @@ jobs:
           path: .github/durations/
           merge-multiple: true
 
+      # - name: Determine if changes have been made
+      #   id: changed
+      #   run: |
+      #     echo "has_changes=$(git status --porcelain | wc -l | awk '{print $1}')" >> $GITHUB_OUTPUT
+
       - name: Stage changes
+        # if: steps.changed.outputs.has_changes != '0'
         run: |
+          echo "Bleh" >> .github/durations/tf_tests_durations.json
+          echo "Bleh" >> .github/durations/jax_tests_durations.json
+          echo "Bleh" >> .github/durations/core_tests_durations.json
           git add .github/durations/
           git commit -m "Update durations files"
           git push -f --set-upstream origin "${{ env.DURATIONS_BRANCH }}"
 
       # Create PR to master
       - name: Create pull request
+        # if: steps.changed.outputs.has_changes != '0'
         env:
           PR_REVIEWER: PennyLaneAI/core
           PR_TITLE: "Update test duration files"
