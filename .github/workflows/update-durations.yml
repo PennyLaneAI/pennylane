@@ -78,7 +78,7 @@ jobs:
         run: |
           gh_pr_up() {
             # Create a new pull request with provided arguments
-            gh pr create --title $PR_TITLE --reviewer $PR_REVIEWER || {
+            gh pr create --title "$PR_TITLE" --reviewer "$PR_REVIEWER" || {
               # If PR creation fails, reopen the PR associated with the current branch
               gh pr reopen $(git branch --show-current)
               
