@@ -81,7 +81,7 @@ Other deprecations
 Completed deprecation cycles
 ----------------------------
 
-* The functions ``qml.qinfo.classical_fisher`` and ``qml.qinfo.quantum_fisher`` have been removed and migrate to the ``qml.gradients``
+* The functions ``qml.qinfo.classical_fisher`` and ``qml.qinfo.quantum_fisher`` have been removed and migrated to the ``qml.gradients``
   module. Therefore, ``qml.gradients.classical_fisher`` and ``qml.gradients.quantum_fisher`` should be used instead.
 
   - Deprecated in v0.38

@@ -56,6 +56,10 @@
 
 <h3>Breaking changes 💔</h3>
 
+* The functions `qml.qinfo.classical_fisher` and `qml.qinfo.quantum_fisher` have been removed and migrated to the `qml.gradients`
+  module. Therefore, `qml.gradients.classical_fisher` and `qml.gradients.quantum_fisher` should be used instead.
+  [(#5911)](https://github.com/PennyLaneAI/pennylane/pull/5911)
+
 * Remove support for Python 3.9.
   [(#6223)](https://github.com/PennyLaneAI/pennylane/pull/6223)
 
@@ -82,6 +86,9 @@
 
 <h3>Deprecations 👋</h3>
 
+* The `qml.qinfo` module has been deprecated.
+  [(#5911)](https://github.com/PennyLaneAI/pennylane/pull/5911)
+
 <h3>Documentation 📝</h3>
 
 <h3>Bug fixes 🐛</h3>
@@ -107,8 +114,10 @@ This release contains contributions from (in alphabetical order):
 
 Guillermo Alonso,
 Utkarsh Azad,
+Isaac De Vlugt,
 Lillian M. A. Frederiksen,
 Christina Lee,
 William Maxwell,
 Lee J. O'Riordan,
+Mudit Pandey,
 David Wierichs,
