@@ -64,8 +64,6 @@ class TestQNodeIntegration:
             "supports_broadcasting": True,
             "passthru_interface": "jax",
             "passthru_devices": {
-                "torch": "default.qubit.torch",
-                "tf": "default.qubit.tf",
                 "autograd": "default.qubit.autograd",
                 "jax": "default.qubit.jax",
             },

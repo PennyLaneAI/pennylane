@@ -928,7 +928,7 @@ class TestFiniteDiffGradients:
 
     @pytest.mark.tf
     @pytest.mark.slow
-    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.tf"])
+    @pytest.mark.parametrize("dev_name", ["default.qubit"])
     def test_tf(self, dev_name, approx_order, strategy):
         """Tests that the output of the finite-difference transform
         can be differentiated using TF, yielding second derivatives."""
@@ -970,7 +970,7 @@ class TestFiniteDiffGradients:
         assert np.allclose([res_0, res_1], expected, atol=0.3, rtol=0)
 
     @pytest.mark.tf
-    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.tf"])
+    @pytest.mark.parametrize("dev_name", ["default.qubit"])
     def test_tf_ragged(self, dev_name, approx_order, strategy):
         """Tests that the output of the finite-difference transform
         of a ragged tape can be differentiated using TF, yielding second derivatives."""
@@ -1009,7 +1009,7 @@ class TestFiniteDiffGradients:
         assert np.allclose(res_01[0], expected, atol=0.3, rtol=0)
 
     @pytest.mark.torch
-    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.torch"])
+    @pytest.mark.parametrize("dev_name", ["default.qubit"])
     def test_torch(self, dev_name, approx_order, strategy):
         """Tests that the output of the finite-difference transform
         can be differentiated using Torch, yielding second derivatives."""
