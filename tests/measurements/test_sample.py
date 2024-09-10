@@ -63,8 +63,8 @@ class TestSample:
         assert len(result) == 3
         assert np.array_equal(result[0].shape, (n_sample,))
         assert circuit._qfunc_output[0].shape(shots=n_sample, num_device_wires=3) == (n_sample,)
-        assert np.shape(result[1]) == ()
-        assert np.shape(result[2]) == ()
+        assert isinstance(result[1], np.float64)
+        assert isinstance(result[2], np.float64)
 
     def test_single_wire_sample(self):
         """Test the return type and shape of sampling a single wire"""
@@ -121,8 +121,8 @@ class TestSample:
 
         # If all the dimensions are equal the result will end up to be a proper rectangular array
         assert len(result) == 3
-        assert isinstance(result[0], np.ndarray)
-        assert isinstance(result[1], np.ndarray)
+        assert isinstance(result[0], float)
+        assert isinstance(result[1], float)
         assert result[2].dtype == np.dtype("float")
         assert np.array_equal(result[2].shape, (n_sample,))
 
