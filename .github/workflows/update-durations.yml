@@ -62,7 +62,6 @@ jobs:
       # Create PR to master
       - name: Create pull request
         env:
-          DESTINATION_BRANCH: "master"
           PR_TITLE: "Update test duration files"
           PR_BODY: |
             Automatic update of test duration files.
@@ -73,8 +72,7 @@ jobs:
             git commit --allow-empty -m 'trigger ci'
             ```
 
-            Alternatively, wait for this branch to be out-of-date with master, then just use the "Update branch" button!
+            Alternatively, wait for this branch to be out-of-date with master, then just use the 'Update branch' button!
         run: |
-          echo $(git branch --show-current)
-          gh_pr_up() { gh pr create $* || gh pr edit $* }
-          gh_pr_up --title $PR_TITLE --body $PR_BODY --base $DESTINATION_BRANCH
+          gh_pr_up() { gh pr create "$@" || { gh pr reopen --head $(git branch --show-current); gh pr edit "$@"; } }
+          gh_pr_up --title $PR_TITLE --body $PR_BODY
