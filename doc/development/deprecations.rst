@@ -13,7 +13,7 @@ Pending deprecations
   process the diff method.
 
   - Deprecated in v0.39
-  - Removed in v0.40
+  - Will be removed in v0.40
 
 * All of the legacy devices (any with the name ``default.qubit.{autograd,torch,tf,jax,legacy}``) are deprecated. Use ``default.qubit`` instead,
   as it supports backpropagation for the many backends the legacy devices support.
