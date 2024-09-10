@@ -25,7 +25,7 @@ on:
         type: string
         default: '3.10'
       pipeline_mode:
-        description: The pipeline mode can be unit-tests, benchmarks, or reference-benchmark
+        description: The pipeline mode can be unit-tests, update-durations, benchmarks, or reference-benchmark
         required: false
         type: string
         default: 'unit-tests'
