@@ -34,7 +34,8 @@ make_vjp = unary_to_nary(_make_vjp)
 
 def _capture_diff(func, argnum=None, diff_prim=None, method=None, h=None):
     """Capture-compatible gradient computation."""
-    import jax  # pylint: disable=import-outside-toplevel
+    # pylint: disable=import-outside-toplevel
+    import jax
     from jax.tree_util import tree_flatten, tree_unflatten, treedef_tuple
 
     if isinstance(argnum, int):
