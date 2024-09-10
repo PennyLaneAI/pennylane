@@ -16,3 +16,4 @@ Transforms
     :no-heading:
     :no-inherited-members:
     :skip: transform
+    :skip: warn
