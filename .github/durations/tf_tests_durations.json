@@ -6279,4 +6279,4 @@
     "transforms/test_unitary_to_rot.py::TestQubitUnitaryDifferentiability::test_gradient_unitary_to_rot_tf[rot_angles7-backprop]": 0.22068067700001848,
     "transforms/test_unitary_to_rot.py::TestTwoQubitUnitaryDifferentiability::test_gradient_unitary_to_rot_tf_two_qubits[backprop]": 0.47982578999994985,
     "transforms/test_unitary_to_rot.py::TestTwoQubitUnitaryDifferentiability::test_gradient_unitary_to_rot_tf_two_qubits[parameter-shift]": 0.32899128500002917
-}l      h
+}l   h
