@@ -67,13 +67,9 @@ jobs:
           PR_BODY: |
             Automatic update of test duration files.
 
-            Because bots are not able to trigger CI on their own, please do so by pushing an empty commit to this branch using the following command:
+            Because bots are not able to trigger CI on their own, please do so by pushing an empty commit to this branch.
 
-            ```
-            git commit --allow-empty -m 'trigger ci'
-            ```
-
-            Alternatively, wait for this branch to be out-of-date with master, then just use the 'Update branch' button!
+            Alternatively, wait for this branch to be out-of-date with master, then just use the 'Update branch' button.
         run: |
           gh_pr_up() { gh pr create "$@" || { gh pr reopen $(git branch --show-current); gh pr edit "$@"; } }
           gh_pr_up --title $PR_TITLE --body $PR_BODY --reviewer $PR_REVIEWER
