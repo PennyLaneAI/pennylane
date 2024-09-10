@@ -1,8 +1,14 @@
 name: Update Durations Files
 on:
   # Scheduled trigger on the 15th of every month at 2:47am UTC
-  schedule:
-  - cron: '47 2 15 * *'
+  # schedule:
+  # - cron: '47 2 15 * *'
+  # pull_request:
+  #   types:
+  #     - opened
+  #     - reopened
+  #     - synchronize
+  #     - ready_for_review
   workflow_dispatch:
 
 concurrency:
@@ -10,10 +16,21 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  DURATIONS_BRANCH: bot/stable-deps-update
+  DURATIONS_BRANCH: bot/durations-update
 
 jobs:
   tests:
+    # if: >-
+    #   ${{
+    #     github.event_name == 'schedule' ||
+    #     github.event_name == 'workflow_dispatch' ||
+    #     (
+    #       github.event_name == 'pull_request' &&
+    #       github.event.pull_request.draft == false &&
+    #       contains(github.event.pull_request.labels.*.name, 'ci:update-durations') &&
+    #       github.event.pull_request.state == 'open'
+    #     )
+    #   }}
     uses: ./.github/workflows/interface-unit-tests.yml
     with:
       branch: ${{ github.ref }}
