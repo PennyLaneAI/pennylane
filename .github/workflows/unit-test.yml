@@ -169,9 +169,9 @@ jobs:
           PYTEST_COVERAGE_ARGS: ${{ inputs.pytest_coverage_flags }}
           PYTEST_PARALLELISE_ARGS: -n auto
           PYTEST_BENCHMARKS_ARGS: --benchmark-enable --benchmark-only --benchmark-json=benchmarks.json
-          PYTEST_ADDITIONAL_ARGS: ${{ inputs.pipeline_mode == 'update-durations' && '' || inputs.pytest_additional_args }}
+          PYTEST_ADDITIONAL_ARGS: ${{ inputs.pytest_additional_args }}
           PYTEST_DURATIONS_ARGS: ${{ inputs.pytest_durations_file_path != '' && format('--durations-path="{0}"', inputs.pytest_durations_file_path) || '' }}
-          PYTEST_STORE_ARGS: ${{ inputs.pipeline_mode == 'update-durations' && '--store-durations --clean-durations' || '' }}
+          PYTEST_STORE_ARGS: --store-durations --clean-durations
         run: |
           if [[ "$PIPELINE_MODE" =~ .*"benchmarks".* ]]; then
             echo "args=$PYTEST_BENCHMARKS_ARGS $PYTEST_ADDITIONAL_ARGS" >> $GITHUB_OUTPUT
