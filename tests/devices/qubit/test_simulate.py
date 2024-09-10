@@ -17,9 +17,11 @@ import numpy as np
 import pytest
 from dummy_debugger import Debugger
 
+import mcm_utils
+
 import pennylane as qml
 from pennylane.devices.qubit import get_final_state, measure_final_state, simulate
-from pennylane.devices.qubit.simulate import _FlexShots, simulate_tree_mcm
+from pennylane.devices.qubit.simulate import _FlexShots, simulate_tree_mcm, split_circuit_at_mcms
 
 
 class TestCurrentlyUnsupportedCases:
@@ -1209,10 +1211,97 @@ class TestMidMeasurements:
         result = simulate_tree_mcm(qs)
         assert qml.math.allclose(result, qml.math.array([0.5, 0.5]))
 
+    @pytest.mark.parametrize("shots", [None, 5500])
+    @pytest.mark.parametrize("postselect", [None, 0])
+    @pytest.mark.parametrize("reset", [False, True])
+    @pytest.mark.parametrize("measure_f", [qml.counts, qml.expval, qml.probs, qml.sample, qml.var])
+    @pytest.mark.parametrize(
+        "meas_obj",
+        [qml.Y(0), [1], [1, 0], "mcm", "composite_mcm", "mcm_list"],
+    )
+    def test_simple_dynamic_circuit(self, shots, measure_f, postselect, reset, meas_obj):
+        """Tests that `simulate` can handles a simple dynamic circuit with the following measurements:
+
+            * qml.counts with obs (comp basis or not), single wire, multiple wires (ordered/unordered), MCM, f(MCM), MCM list
+            * qml.expval with obs (comp basis or not), MCM, f(MCM), MCM list
+            * qml.probs with obs (comp basis or not), single wire, multiple wires (ordered/unordered), MCM, f(MCM), MCM list
+            * qml.sample with obs (comp basis or not), single wire, multiple wires (ordered/unordered), MCM, f(MCM), MCM list
+            * qml.var with obs (comp basis or not), MCM, f(MCM), MCM list
+
+        The above combinations should work for finite shots, shot vectors and post-selecting of either the 0 or 1 branch.
+        """
+
+        if (
+            isinstance(meas_obj, (qml.X, qml.Z, qml.Y))
+            and measure_f in (qml.var,)
+            and not qml.operation.active_new_opmath()
+        ):
+            pytest.xfail(
+                "The tree-traversal method does not work with legacy opmath with "
+                "`qml.var` of pauli observables in the circuit."
+            )
+
+        if measure_f in (qml.expval, qml.var) and (
+            isinstance(meas_obj, list) or meas_obj == "mcm_list"
+        ):
+            pytest.skip("Can't use wires/mcm lists with var or expval")
+
+        if measure_f in (qml.counts, qml.sample) and shots is None:
+            pytest.skip("Can't measure counts/sample in analytic mode (`shots=None`)")
+
+        if measure_f in (qml.probs,) and meas_obj in ["composite_mcm"]:
+            pytest.skip(
+                "Cannot use qml.probs() when measuring multiple mid-circuit measurements collected using arithmetic operators."
+            )
+
+        qscript = qml.tape.QuantumScript(
+            [
+                qml.RX(np.pi / 2.5, 0),
+                qml.RZ(np.pi / 4, 0),
+                (m0 := qml.measure(0, reset=reset)).measurements[0],
+                qml.ops.op_math.Conditional(m0 == 0, qml.RX(np.pi / 4, 0)),
+                qml.ops.op_math.Conditional(m0 == 1, qml.RX(-np.pi / 4, 0)),
+                qml.RX(np.pi / 3, 1),
+                qml.RZ(np.pi / 4, 1),
+                (m1 := qml.measure(1, postselect=postselect)).measurements[0],
+                qml.ops.op_math.Conditional(m1 == 0, qml.RY(np.pi / 4, 1)),
+                qml.ops.op_math.Conditional(m1 == 1, qml.RY(-np.pi / 4, 1)),
+            ],
+            [
+                measure_f(
+                    **{
+                        "wires" if isinstance(meas_obj, list) else "op": (
+                            (
+                                m0
+                                if meas_obj == "mcm"
+                                else (0.5 * m0 if meas_obj == "composite_mcm" else [m0, m1])
+                            )
+                            if isinstance(meas_obj, str)
+                            else meas_obj
+                        )
+                    }
+                )
+            ],
+            shots=shots,
+        )
+        print(qscript.measurements)
+        results0 = simulate(qscript, mcm_method="tree-traversal")
+
+        deferred_tapes, deferred_func = qml.defer_measurements(qscript)
+        results1 = deferred_func([simulate(tape, mcm_method="deferred") for tape in deferred_tapes])
+        mcm_utils.validate_measurements(measure_f, shots, results1, results0)
+
+        if shots is not None:
+            one_shot_tapes, one_shot_func = qml.dynamic_one_shot(qscript)
+            results2 = one_shot_func(
+                [simulate(tape, mcm_method="one-shot") for tape in one_shot_tapes]
+            )
+            mcm_utils.validate_measurements(measure_f, shots, results2, results0)
+
     @pytest.mark.parametrize("shots", [None, int(5e5), [int(4e5), int(6e5)]])
     @pytest.mark.parametrize("rng", [None, 42, np.array([37])])
     @pytest.mark.parametrize("angles", [(0.123, 0.015), (0.543, 0.057)])
-    def test_dynamic_mid_meas_circuit(self, shots, rng, angles):
+    def test_approx_dynamic_mid_meas_circuit(self, shots, rng, angles):
         """Test execution with a basic circuit with mid-circuit measurements."""
         qs_with_mid_meas = qml.tape.QuantumScript(
             [
@@ -1262,3 +1351,43 @@ class TestMidMeasurements:
         else:
             for rs1, rs2 in zip(res1, res2):
                 assert all(qml.math.allclose(r1, r2, atol=1e-2) for r1, r2 in zip(rs1, rs2))
+
+    @pytest.mark.parametrize("postselect_mode", ["hw-like", "fill-shots"])
+    def test_tree_traversal_postselect_mode(self, postselect_mode):
+        """Test that invalid shots are discarded if requested"""
+
+        shots = 100
+        qscript = qml.tape.QuantumScript(
+            [
+                qml.RX(np.pi / 2, 0),
+                (m0 := qml.measure(0, postselect=1)).measurements[0],
+                qml.ops.op_math.Conditional(m0, qml.RZ(1.57, 1)),
+            ],
+            [qml.sample(wires=[0, 1])],
+            shots=shots,
+        )
+
+        res = simulate_tree_mcm(qscript, postselect_mode=postselect_mode)
+
+        assert (len(res) < shots) if postselect_mode == "hw-like" else (len(res) == shots)
+        assert np.all(res != np.iinfo(np.int32).min)
+
+    def test_tree_traversal_deep_circuit(self):
+        """Test that `simulate_tree_mcm` works with circuits with many mid-circuit measurements"""
+
+        n_circs = 500
+        qscript = qml.tape.QuantumScript(
+            [
+                qml.RX(1.234, 0),
+                (m0 := qml.measure(0)).measurements[0],
+                qml.ops.op_math.Conditional(m0, qml.RZ(1.786, 1)),
+            ]
+            * n_circs,
+            [qml.sample(wires=[0, 1]), qml.expval(m0)],
+            shots=20,
+        )
+
+        res = simulate_tree_mcm(qscript)
+        assert len(res[0]) == 40
+        assert isinstance(res[1], np.float64)
+        assert len(split_circuit_at_mcms(qscript)) == n_circs + 1
