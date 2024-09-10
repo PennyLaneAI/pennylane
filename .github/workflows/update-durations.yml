@@ -61,9 +61,9 @@ jobs:
       - name: Stage changes
         # if: steps.changed.outputs.has_changes != '0'
         run: |
-          echo "l  h" >> .github/durations/tf_tests_durations.json
-          echo "a  h" >> .github/durations/jax_tests_durations.json
-          echo "ash" >> .github/durations/core_tests_durations.json
+          echo "l    h" >> .github/durations/tf_tests_durations.json
+          echo "a    h" >> .github/durations/jax_tests_durations.json
+          echo "a  sh" >> .github/durations/core_tests_durations.json
           git add .github/durations/
           git commit -m "Update durations files"
           git push -f --set-upstream origin "${{ env.DURATIONS_BRANCH }}"
@@ -73,7 +73,7 @@ jobs:
         # if: steps.changed.outputs.has_changes != '0'
         env:
           GH_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
-          PR_REVIEWER: PennyLaneAI/core
+          PR_REVIEWER: PennyLaneAI/Core
           PR_TITLE: "Update test duration files"
         run: |
           gh_pr_up() {
