@@ -72,6 +72,7 @@ jobs:
       - name: Create pull request
         # if: steps.changed.outputs.has_changes != '0'
         env:
+          GH_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
           PR_REVIEWER: PennyLaneAI/core
           PR_TITLE: "Update test duration files"
           PR_BODY: |
