@@ -1303,7 +1303,7 @@ class TestMidMeasurements:
             )
             mcm_utils.validate_measurements(measure_f, shots, results2, results0)
 
-    @pytest.mark.parametrize("shots", [None, 5000, [5000, 5001]])
+    @pytest.mark.parametrize("shots", [None, 500000, [500000, 500001]])
     @pytest.mark.parametrize("rng", [None, 42, np.array([37])])
     @pytest.mark.parametrize("angles", [(0.123, 0.015), (0.543, 0.057)])
     def test_approx_dynamic_mid_meas_circuit(self, shots, rng, angles):
