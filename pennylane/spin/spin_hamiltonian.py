@@ -337,8 +337,7 @@ def kitaev(n_cells, coupling=None, boundary_condition=False):
            The default is ``False``, indicating open boundary conditions for all.
 
     Raises:
-       TypeError:
-          if ``coupling`` doesn't have correct dimensions.
+       ValueError: if ``coupling`` doesn't have correct dimensions.
 
     Returns:
        ~ops.op_math.Sum: Hamiltonian for the Kitaev model.
