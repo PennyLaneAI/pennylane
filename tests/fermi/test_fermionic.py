@@ -13,7 +13,6 @@
 # limitations under the License.
 """Unit Tests for the Fermionic representation classes."""
 import pickle
-import re
 from copy import copy, deepcopy
 
 import numpy as np
