@@ -326,8 +326,10 @@ class LegacyDeviceFacade(Device):
         for t in batch:
             params.extend(t.get_parameters(trainable_only=False))
         interface = qml.math.get_interface(*params)
-        if interface != "numpy":
-            interface = USER_INPUT_TO_INTERFACE_MAP.get(interface, interface)
+        if interface == "numpy":
+            return self._device
+
+        interface = USER_INPUT_TO_INTERFACE_MAP.get(interface, interface)
 
         backprop_interface = self._device.capabilities().get("passthru_interface", None)
         if interface == backprop_interface:

@@ -33,8 +33,8 @@ from pennylane.tape import QuantumScript, QuantumTape
 from pennylane.transforms.core import TransformContainer, TransformDispatcher, TransformProgram
 
 from .execution import (
-    USER_INPUT_TO_INTERFACE_MAP,
     SUPPORTED_INTERFACE_INPUTS,
+    USER_INPUT_TO_INTERFACE_MAP,
     SupportedInterfaceUserInput,
 )
 
