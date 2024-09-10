@@ -61,9 +61,9 @@ jobs:
       - name: Stage changes
         # if: steps.changed.outputs.has_changes != '0'
         run: |
-          echo "Blh" >> .github/durations/tf_tests_durations.json
-          echo "Bah" >> .github/durations/jax_tests_durations.json
-          echo "ah" >> .github/durations/core_tests_durations.json
+          echo "lh" >> .github/durations/tf_tests_durations.json
+          echo "ah" >> .github/durations/jax_tests_durations.json
+          echo "h" >> .github/durations/core_tests_durations.json
           git add .github/durations/
           git commit -m "Update durations files"
           git push -f --set-upstream origin "${{ env.DURATIONS_BRANCH }}"
