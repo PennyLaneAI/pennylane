@@ -56,6 +56,6 @@ Jacobian Product Calculation
 
 """
 from .construct_batch import construct_batch, get_transform_program
-from .execution import USER_INPUT_TO_INTERFACE_MAP, SUPPORTED_INTERFACE_INPUTS, execute
+from .execution import INTERFACE_MAP, SUPPORTED_INTERFACE_NAMES, execute
 from .qnode import QNode, qnode
 from .set_shots import set_shots

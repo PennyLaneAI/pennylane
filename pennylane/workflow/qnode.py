@@ -33,8 +33,8 @@ from pennylane.tape import QuantumScript, QuantumTape
 from pennylane.transforms.core import TransformContainer, TransformDispatcher, TransformProgram
 
 from .execution import (
-    SUPPORTED_INTERFACE_INPUTS,
-    USER_INPUT_TO_INTERFACE_MAP,
+    SUPPORTED_INTERFACE_NAMES,
+    INTERFACE_MAP,
     SupportedInterfaceUserInput,
 )
 
@@ -509,10 +509,10 @@ class QNode:
                 gradient_kwargs,
             )
 
-        if interface not in SUPPORTED_INTERFACE_INPUTS:
+        if interface not in SUPPORTED_INTERFACE_NAMES:
             raise qml.QuantumFunctionError(
                 f"Unknown interface {interface}. Interface must be "
-                f"one of {SUPPORTED_INTERFACE_INPUTS}."
+                f"one of {SUPPORTED_INTERFACE_NAMES}."
             )
 
         if not isinstance(device, (qml.devices.LegacyDevice, qml.devices.Device)):
@@ -538,7 +538,7 @@ class QNode:
         # input arguments
         self.func = func
         self.device = device
-        self._interface = USER_INPUT_TO_INTERFACE_MAP[interface]
+        self._interface = INTERFACE_MAP[interface]
         self.diff_method = diff_method
         mcm_config = qml.devices.MCMConfig(mcm_method=mcm_method, postselect_mode=postselect_mode)
         cache = (max_diff > 1) if cache == "auto" else cache
@@ -597,13 +597,13 @@ class QNode:
 
     @interface.setter
     def interface(self, value: SupportedInterfaceUserInput):
-        if value not in SUPPORTED_INTERFACE_INPUTS:
+        if value not in SUPPORTED_INTERFACE_NAMES:
 
             raise qml.QuantumFunctionError(
-                f"Unknown interface {value}. Interface must be one of {SUPPORTED_INTERFACE_INPUTS}."
+                f"Unknown interface {value}. Interface must be one of {SUPPORTED_INTERFACE_NAMES}."
             )
 
-        self._interface = USER_INPUT_TO_INTERFACE_MAP[value]
+        self._interface = INTERFACE_MAP[value]
         self._update_gradient_fn(shots=self.device.shots)
 
     @property
@@ -952,7 +952,7 @@ class QNode:
                 else qml.math.get_interface(*args, *list(kwargs.values()))
             )
             if interface != "numpy":
-                interface = USER_INPUT_TO_INTERFACE_MAP[interface]
+                interface = INTERFACE_MAP[interface]
             self._interface = interface
         if self._qfunc_uses_shots_arg:
             override_shots = False

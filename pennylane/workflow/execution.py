@@ -92,10 +92,10 @@ _mapping_output = (
     "tf-autograph",
 )
 
-USER_INPUT_TO_INTERFACE_MAP = dict(zip(get_args(SupportedInterfaceUserInput), _mapping_output))
+INTERFACE_MAP = dict(zip(get_args(SupportedInterfaceUserInput), _mapping_output))
 """dict[str, str]: maps an allowed interface specification to its canonical name."""
 
-SUPPORTED_INTERFACE_INPUTS = list(USER_INPUT_TO_INTERFACE_MAP)
+SUPPORTED_INTERFACE_NAMES = list(INTERFACE_MAP)
 """list[str]: allowed interface strings"""
 
 _CACHED_EXECUTION_WITH_FINITE_SHOTS_WARNINGS = (
@@ -260,12 +260,12 @@ def _get_interface_name(tapes, interface):
     Returns:
         str: Interface name"""
 
-    if interface not in SUPPORTED_INTERFACE_INPUTS:
+    if interface not in SUPPORTED_INTERFACE_NAMES:
         raise qml.QuantumFunctionError(
-            f"Unknown interface {interface}. Interface must be one of {SUPPORTED_INTERFACE_INPUTS}."
+            f"Unknown interface {interface}. Interface must be one of {SUPPORTED_INTERFACE_NAMES}."
         )
 
-    interface = USER_INPUT_TO_INTERFACE_MAP[interface]
+    interface = INTERFACE_MAP[interface]
 
     if interface == "auto":
         params = []
@@ -273,7 +273,7 @@ def _get_interface_name(tapes, interface):
             params.extend(tape.get_parameters(trainable_only=False))
         interface = qml.math.get_interface(*params)
         if interface != "numpy":
-            interface = USER_INPUT_TO_INTERFACE_MAP[interface]
+            interface = INTERFACE_MAP[interface]
     if interface == "tf" and _use_tensorflow_autograph():
         interface = "tf-autograph"
     if interface == "jax":

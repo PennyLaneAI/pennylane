@@ -635,7 +635,7 @@ def test_qnode_interface_not_mutated(interface):
     assert (
         qlayer.qnode.interface
         == circuit.interface
-        == qml.workflow.execution.USER_INPUT_TO_INTERFACE_MAP[interface]
+        == qml.workflow.execution.INTERFACE_MAP[interface]
     )
 
 
