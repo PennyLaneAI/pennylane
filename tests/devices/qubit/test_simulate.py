@@ -13,11 +13,10 @@
 # limitations under the License.
 """Unit tests for simulate in devices/qubit."""
 
+import mcm_utils
 import numpy as np
 import pytest
 from dummy_debugger import Debugger
-
-import mcm_utils
 
 import pennylane as qml
 from pennylane.devices.qubit import get_final_state, measure_final_state, simulate
