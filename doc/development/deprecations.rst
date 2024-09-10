@@ -82,7 +82,7 @@ Other deprecations
 Completed deprecation cycles
 ----------------------------
 
-* `Operator.expand` is now removed.
+* `Operator.expand` is now removed. Use `qml.tape.QuantumScript(op.deocomposition())` instead.
 
   - Deprecated in v0.38
   - Removed in v0.39
