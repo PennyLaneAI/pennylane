@@ -36,6 +36,9 @@
   `from pennylane.capture.primitives import *`.
   [(#6129)](https://github.com/PennyLaneAI/pennylane/pull/6129)
 
+* `FermiWord` and `FermiSentence` classes now have methods to compute adjoints.
+  [(#6166)](https://github.com/PennyLaneAI/pennylane/pull/6166)
+
 * The `SampleMP.process_samples` method is updated to support using JAX tracers
   for samples, allowing compatiblity with Catalyst workflows.
   [(#6211)](https://github.com/PennyLaneAI/pennylane/pull/6211)
