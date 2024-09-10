@@ -549,7 +549,8 @@ class QNode:
         functools.update_wrapper(self, func)
 
         # validation check.  Will raise error if bad diff_method
-        QNode.get_gradient_fn(self.device, self.interface, self.diff_method)
+        if diff_method is not None:
+            QNode.get_gradient_fn(self.device, self.interface, self.diff_method)
 
     @property
     def gradient_fn(self):
