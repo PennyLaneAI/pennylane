@@ -416,7 +416,7 @@ class TestValidation:
             qml.RX(x, wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        assert circuit.interface is None
+        assert circuit.interface is "numpy"
         assert circuit.gradient_fn is None
         assert circuit.device is dev
 
