@@ -26,9 +26,9 @@ from pennylane.fermi.fermionic import (
     FermiC,
     FermiSentence,
     FermiWord,
+    _commute_adjacent,
     _to_string,
     from_string,
-    _commute_adjacent
 )
 
 # pylint: disable=too-many-public-methods
@@ -224,7 +224,6 @@ class TestFermiWord:
         with pytest.raises(ValueError, match="n_orbitals cannot be smaller than 2"):
             fw1.to_mat(n_orbitals=1)
 
-            
     tup_fw_commute = (
         (fw8, 0, 1, fw8cs),
         (fw9, 0, 1, fw9cs),
