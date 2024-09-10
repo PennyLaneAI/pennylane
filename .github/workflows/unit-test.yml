@@ -184,14 +184,19 @@ jobs:
       - name: Run PennyLane Unit Tests
         if: steps.continue.outputs.confirm == 'true'
         env:
+          PIPELINE_MODE: ${{ inputs.pipeline_mode }}
           PYTEST_MARKER: ${{ inputs.pytest_markers != '' && format('-m "{0}"', inputs.pytest_markers) || '' }}
           COV_CORE_SOURCE: pennylane
           COV_CORE_CONFIG: .coveragerc
           COV_CORE_DATAFILE: .coverage.eager
           TF_USE_LEGACY_KERAS: "1"  # sets to use tf-keras (Keras2) instead of keras (Keras3) when running TF tests
         # Calling PyTest by invoking Python first as that adds the current directory to sys.path
-        # run: python -m pytest ${{ inputs.pytest_test_directory }} ${{ steps.pytest_args.outputs.args }} ${{ env.PYTEST_MARKER }} --disable-opmath=${{ inputs.disable_new_opmath }}
-        run: echo "NOT RUNNING TESTS WHILE DEBUGGING"
+        run: |
+          if [[ "$PIPELINE_MODE" == "update-durations" ]]; then
+            echo "NOT RUNNING TESTS FOR DEBUGGING"
+          else
+            python -m pytest ${{ inputs.pytest_test_directory }} ${{ steps.pytest_args.outputs.args }} ${{ env.PYTEST_MARKER }} --disable-opmath=${{ inputs.disable_new_opmath }}
+          fi
 
       - name: Upload Durations file as artifact
         if: ${{ inputs.pipeline_mode == 'update-durations' }}
