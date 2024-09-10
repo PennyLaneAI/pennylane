@@ -751,24 +751,6 @@ class TestFermiSentence:
         with pytest.raises(ValueError, match="n_orbitals cannot be smaller than 3"):
             fs7.to_mat(n_orbitals=2)
 
-    tup_fs_commute = (
-        (fs8, fw9, 0, 1, fs8c),
-        (fs9, fw9, 0, 1, fs9c),
-        (fs10, fw11, 0, 1, fs10c),
-    )
-
-    # pylint: disable=too-many-arguments
-    @pytest.mark.parametrize("fs, fw, i, j, fsc", tup_fs_commute)
-    def test_commute(self, fs, fw, i, j, fsc):
-        assert fs.commute(fw, i, j) == fsc
-
-    def test_commute_errors(self):
-        with pytest.raises(
-            ValueError,
-            match=re.escape(f"The FermiWord {fw11} does not appear in the FermiSentence"),
-        ):
-            fs8.commute(fw11, 0, 1)
-
 
 class TestFermiSentenceArithmetic:
     tup_fs_mult = (  # computed by hand

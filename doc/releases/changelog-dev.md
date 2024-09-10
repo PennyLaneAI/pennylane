@@ -13,8 +13,7 @@
   `from pennylane.capture.primitives import *`.
   [(#6129)](https://github.com/PennyLaneAI/pennylane/pull/6129)
 
-* `FermiWord` and `FermiSentence` classes now have methods to apply
-   anti-commutator relations.
+* `FermiWord` class now has a method to apply anti-commutator relations.
    [(#6196)](https://github.com/PennyLaneAI/pennylane/pull/6196)
 
 * The `SampleMP.process_samples` method is updated to support using JAX tracers

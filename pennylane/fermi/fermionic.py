@@ -304,7 +304,7 @@ class FermiWord(dict):
         return mat
 
     def commute(self, source, target):
-        r"""Apply anti-commuting relations until the operator in position source is in position target.
+        r"""Returns a ``FermiSentence`` built from the ``FermiWord`` by moving the operator in position ``source`` to position ``target`` and applying the fermionic anti-commutator relations.
 
         Args:
             source (int): The position of the operator to be commuted.
@@ -338,7 +338,7 @@ class FermiWord(dict):
             return FermiSentence({self: 1})
 
         fw = self
-        fs = FermiSentence({self: 1})
+        fs = FermiSentence({fw: 1})
         delta = 1 if source < target else -1
 
         while source != target:
@@ -369,23 +369,18 @@ def _commute_adjacent(fs, fw, source, target):
         raise ValueError("Positions must be consecutive integers")
 
     indices = list(fw.sorted_dic.keys())
-    source_idx = indices[source]
-    target_idx = indices[target]
-
-    source_val = fw[source_idx]
-    target_val = fw[target_idx]
+    source_idx, source_val = indices[source], fw[indices[source]]
+    target_idx, target_val = indices[target], fw[indices[target]]
 
     # commuting identical terms
     if source_idx[1] == target_idx[1] and source_val == target_val:
         return fs, fw
 
-    new_source_idx = (source, target_idx[1])
-    new_target_idx = (target, source_idx[1])
-
     coeff = fs.pop(fw)
+
     fw = dict(fw)
-    fw[new_source_idx] = target_val
-    fw[new_target_idx] = source_val
+    fw[(source, target_idx[1])] = target_val
+    fw[(target, source_idx[1])] = source_val
 
     if source_idx[1] != target_idx[1]:
         del fw[source_idx]
@@ -393,13 +388,15 @@ def _commute_adjacent(fs, fw, source, target):
 
     fw = FermiWord(fw)
 
+    # anti-commutator is 0
     if source_val == target_val or source_idx[1] != target_idx[1]:
         return fs + (-1 * FermiSentence({fw: coeff})), fw
 
+    # anti-commutator is 1
     _min = min(source, target)
     _max = max(source, target)
-
     items = list(fw.sorted_dic.items())
+
     left = FermiWord({(i, key[1]): value for i, (key, value) in enumerate(items[:_min])})
     middle = FermiWord(
         {(i, key[1]): value for i, (key, value) in enumerate(items[_min : _max + 1])}
@@ -407,7 +404,6 @@ def _commute_adjacent(fs, fw, source, target):
     right = FermiWord({(i, key[1]): value for i, (key, value) in enumerate(items[_max + 1 :])})
 
     terms = left * (1 - middle) * right
-
     fs += coeff * terms
 
     return fs, fw
@@ -631,36 +627,6 @@ class FermiSentence(dict):
         mat = qml.jordan_wigner(self, ps=True).to_mat(wire_order=list(range(largest_order)))
 
         return mat
-
-    def commute(self, fw, source, target):
-        r"""Apply anti-commuting relations until the operator in position source is in position target.
-
-        Args:
-            fw (FermiWord): The ``FermiWord`` within the ``FermiSentence`` that contains the operator to be commuted.
-            source (int): The position of the operator to be commuted.
-            target (int): The desired position of the operator occupying the source position.
-
-        Returns:
-            FermiSentence: The ``FermiSentence`` obtained after applying the anti-commutator relations.
-
-        Raises:
-            ValueError: if the provided ``FermiWord`` is not in the ``FermiSentence`` dictionary
-
-        **Example**
-
-        >>> w = FermiWord({(0, 0): '+', (1, 1): '-'})
-        >>> s = FermiSentence({w: 1})
-        >>> s.commute(w, 0, 1)
-        -1 * a(1) a⁺(0)
-        """
-
-        if fw not in self.keys():
-            raise ValueError(f"The FermiWord {fw} does not appear in the FermiSentence")
-
-        fs = dict(self)
-        coeff = fs.pop(fw)
-
-        return FermiSentence(fs) + coeff * fw.commute(source, target)
 
 
 def from_string(fermi_string):
