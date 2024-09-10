@@ -17,26 +17,42 @@ from copy import copy, deepcopy
 
 import numpy as np
 import pytest
+from scipy import sparse
 
 import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane.fermi.fermionic import (
+    FermiA,
+    FermiC,
     FermiSentence,
     FermiWord,
-    _commute_adjacent,
     _to_string,
     from_string,
+    _commute_adjacent
 )
 
 # pylint: disable=too-many-public-methods
 
 fw1 = FermiWord({(0, 0): "+", (1, 1): "-"})
+fw1_dag = FermiWord({(0, 1): "+", (1, 0): "-"})
+
 fw2 = FermiWord({(0, 0): "+", (1, 0): "-"})
+fw2_dag = FermiWord({(0, 0): "+", (1, 0): "-"})
+
 fw3 = FermiWord({(0, 0): "+", (1, 3): "-", (2, 0): "+", (3, 4): "-"})
+fw3_dag = FermiWord({(0, 4): "+", (1, 0): "-", (2, 3): "+", (3, 0): "-"})
+
 fw4 = FermiWord({})
+fw4_dag = FermiWord({})
+
 fw5 = FermiWord({(0, 10): "+", (1, 30): "-", (2, 0): "+", (3, 400): "-"})
+fw5_dag = FermiWord({(0, 400): "+", (1, 0): "-", (2, 30): "+", (3, 10): "-"})
+
 fw6 = FermiWord({(0, 10): "+", (1, 30): "+", (2, 0): "-", (3, 400): "-"})
+fw6_dag = FermiWord({(0, 400): "+", (1, 0): "+", (2, 30): "-", (3, 10): "-"})
+
 fw7 = FermiWord({(0, 10): "-", (1, 30): "+", (2, 0): "-", (3, 400): "+"})
+fw7_dag = FermiWord({(0, 400): "-", (1, 0): "+", (2, 30): "-", (3, 10): "+"})
 
 fw8 = FermiWord({(0, 0): "-", (1, 1): "+"})
 fw8c = FermiWord({(0, 1): "+", (1, 0): "-"})
@@ -195,6 +211,11 @@ class TestFermiWord:
 
         mat = fw1.to_mat()
         assert np.allclose(mat, expected_mat)
+        assert isinstance(mat, np.ndarray)
+
+        mat = fw1.to_mat(format="csr")
+        assert np.allclose(mat.toarray(), expected_mat)
+        assert isinstance(mat, sparse.csr_matrix)
 
     def test_to_mat_error(self):
         """Test that an error is raised if the requested matrix dimension is smaller than the
@@ -203,6 +224,7 @@ class TestFermiWord:
         with pytest.raises(ValueError, match="n_orbitals cannot be smaller than 2"):
             fw1.to_mat(n_orbitals=1)
 
+            
     tup_fw_commute = (
         (fw8, 0, 1, fw8cs),
         (fw9, 0, 1, fw9cs),
@@ -238,6 +260,24 @@ class TestFermiWord:
 
         with pytest.raises(ValueError, match="Positions out of range"):
             fw8.commute(1, 2)
+
+    tup_fw_dag = (
+        (fw1, fw1_dag),
+        (fw2, fw2_dag),
+        (fw3, fw3_dag),
+        (fw4, fw4_dag),
+        (fw5, fw5_dag),
+        (fw6, fw6_dag),
+        (fw7, fw7_dag),
+        (FermiA(0), FermiC(0)),
+        (FermiC(0), FermiA(0)),
+        (FermiA(1), FermiC(1)),
+        (FermiC(1), FermiA(1)),
+    )
+
+    @pytest.mark.parametrize("fw, fw_dag", tup_fw_dag)
+    def test_adjoint(self, fw, fw_dag):
+        assert fw.adjoint() == fw_dag
 
 
 class TestFermiWordArithmetic:
@@ -550,13 +590,29 @@ class TestFermiWordArithmetic:
 
 
 fs1 = FermiSentence({fw1: 1.23, fw2: 4j, fw3: -0.5})
+fs1_dag = FermiSentence({fw1_dag: 1.23, fw2_dag: -4j, fw3_dag: -0.5})
+
 fs2 = FermiSentence({fw1: -1.23, fw2: -4j, fw3: 0.5})
+fs2_dag = FermiSentence({fw1_dag: -1.23, fw2_dag: 4j, fw3_dag: 0.5})
+
 fs1_hamiltonian = FermiSentence({fw1: 1.23, fw2: 4, fw3: -0.5})
+fs1_hamiltonian_dag = FermiSentence({fw1_dag: 1.23, fw2_dag: 4, fw3_dag: -0.5})
+
 fs2_hamiltonian = FermiSentence({fw1: -1.23, fw2: -4, fw3: 0.5})
+fs2_hamiltonian_dag = FermiSentence({fw1_dag: -1.23, fw2_dag: -4, fw3_dag: 0.5})
+
 fs3 = FermiSentence({fw3: -0.5, fw4: 1})
+fs3_dag = FermiSentence({fw3_dag: -0.5, fw4_dag: 1})
+
 fs4 = FermiSentence({fw4: 1})
+fs4_dag = FermiSentence({fw4_dag: 1})
+
 fs5 = FermiSentence({})
+fs5_dag = FermiSentence({})
+
 fs6 = FermiSentence({fw1: 1.2, fw2: 3.1})
+fs6_dag = FermiSentence({fw1_dag: 1.2, fw2_dag: 3.1})
+
 fs7 = FermiSentence(
     {
         FermiWord({(0, 0): "+", (1, 1): "-"}): 1.23,  # a+(0) a(1)
@@ -743,12 +799,30 @@ class TestFermiSentence:
         mat = fs7.to_mat()
         assert np.allclose(mat, expected_mat)
 
+        mat = fs7.to_mat(format="csr")
+        assert np.allclose(mat.toarray(), expected_mat)
+
     def test_to_mat_error(self):
         """Test that an error is raised if the requested matrix dimension is smaller than the
         dimension inferred from the largest orbital index.
         """
         with pytest.raises(ValueError, match="n_orbitals cannot be smaller than 3"):
             fs7.to_mat(n_orbitals=2)
+
+    fs_dag_tup = (
+        (fs1, fs1_dag),
+        (fs2, fs2_dag),
+        (fs3, fs3_dag),
+        (fs4, fs4_dag),
+        (fs5, fs5_dag),
+        (fs6, fs6_dag),
+        (fs1_hamiltonian, fs1_hamiltonian_dag),
+        (fs2_hamiltonian, fs2_hamiltonian_dag),
+    )
+
+    @pytest.mark.parametrize("fs, fs_dag", fs_dag_tup)
+    def test_adjoint(self, fs, fs_dag):
+        assert fs.adjoint() == fs_dag
 
 
 class TestFermiSentenceArithmetic:
