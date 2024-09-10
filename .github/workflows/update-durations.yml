@@ -44,57 +44,57 @@ jobs:
 
   # Add job for downloading artifacts and opening PR
   upload-durations-files:
-  needs: tests
-  runs-on: ubuntu-latest
-  steps:
-    - name: Checkout
-      uses: actions/checkout@v3
-      with:
-        fetch-depth: 0
-        ref: master
-        # ref: ${{ github.ref }}
+    needs: tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          ref: master
+          # ref: ${{ github.ref }}
 
-    - name: Prepare local repo
-      run: |
-        git config user.name "GitHub Actions Bot"
-        git config user.email "<>"
-        if git ls-remote --exit-code origin "refs/heads/${{ env.DURATIONS_BRANCH }}"; then
-          git checkout "${{ env.DURATIONS_BRANCH }}"
-        else
-          git checkout -b "${{ env.DURATIONS_BRANCH }}"
-        fi
+      - name: Prepare local repo
+        run: |
+          git config user.name "GitHub Actions Bot"
+          git config user.email "<>"
+          if git ls-remote --exit-code origin "refs/heads/${{ env.DURATIONS_BRANCH }}"; then
+            git checkout "${{ env.DURATIONS_BRANCH }}"
+          else
+            git checkout -b "${{ env.DURATIONS_BRANCH }}"
+          fi
 
-    - name: Download artifacts
-      uses: actions/download-artifact@v4
-      with:
-        pattern: durations-*
-        path: .github/durations/
-        merge-multiple: true
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: durations-*
+          path: .github/durations/
+          merge-multiple: true
 
-    - name: Stage changes
-      run: |
-        git add .github/durations/
-        git commit -m "Update durations files"
-        git push -f --set-upstream origin "${{ env.DURATIONS_BRANCH }}"
+      - name: Stage changes
+        run: |
+          git add .github/durations/
+          git commit -m "Update durations files"
+          git push -f --set-upstream origin "${{ env.DURATIONS_BRANCH }}"
 
-    # Create PR to master
-    - name: Create pull request
-      uses: repo-sync/pull-request@v2
-      with:
-        source_branch: "${{ env.DURATIONS_BRANCH }}"
-        destination_branch: "master"
-        github_token: "${{ secrets.GITHUB_TOKEN }}"
-        pr_title: "Update test duration files"
-        # if updating the pr_body, please also update the same text in the docs.yml file
-        pr_body: |
-          Automatic update of test duration files.
+      # Create PR to master
+      - name: Create pull request
+        uses: repo-sync/pull-request@v2
+        with:
+          source_branch: "${{ env.DURATIONS_BRANCH }}"
+          destination_branch: "master"
+          github_token: "${{ secrets.GITHUB_TOKEN }}"
+          pr_title: "Update test duration files"
+          # if updating the pr_body, please also update the same text in the docs.yml file
+          pr_body: |
+            Automatic update of test duration files.
 
-          Because bots are not able to trigger CI on their own, please do so by pushing an empty commit to this branch using the following command:
+            Because bots are not able to trigger CI on their own, please do so by pushing an empty commit to this branch using the following command:
 
-          ```
-          git commit --allow-empty -m 'trigger ci'
-          ```
+            ```
+            git commit --allow-empty -m 'trigger ci'
+            ```
 
-          Alternatively, wait for this branch to be out-of-date with master, then just use the "Update branch" button!
-        pr_allow_empty: false
-        pr_draft: false
+            Alternatively, wait for this branch to be out-of-date with master, then just use the "Update branch" button!
+          pr_allow_empty: false
+          pr_draft: false
