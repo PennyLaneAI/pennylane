@@ -88,7 +88,7 @@ class TestOptimize:
             return qml.expval(qml.PauliZ(0))
 
         var = np.array([0.011, 0.012])
-        opt = qml.QNGOptimizer(stepsize=0.01)
+        opt = qml.MomentumQNGOptimizer(stepsize=0.01)
 
         step1, res = opt.step_and_cost(circuit, var)
         step2 = opt.step(circuit, var)
