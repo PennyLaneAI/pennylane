@@ -18,9 +18,8 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 
-DEP_WARNING_MESSAGE = (
-    "The qml.qinfo.fidelity transform is deprecated and will be removed "
-    "in 0.40. Use qml.math.fidelity instead."
+pytestmark = pytest.mark.filterwarnings(
+    "ignore:qml.qinfo.fidelity:pennylane.PennyLaneDeprecationWarning"
 )
 
 
@@ -50,7 +49,7 @@ class TestFidelityQnode:
 
         with pytest.warns(
             qml.PennyLaneDeprecationWarning,
-            match=DEP_WARNING_MESSAGE,
+            match="qml.qinfo.fidelity",
         ):
             _ = qml.qinfo.fidelity(circuit, circuit, wires0=[0], wires1=[1])()
 
@@ -67,14 +66,10 @@ class TestFidelityQnode:
         def circuit1():
             return qml.state()
 
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning,
-            match=DEP_WARNING_MESSAGE,
+        with pytest.raises(
+            qml.QuantumFunctionError, match="The two states must have the same number of wires"
         ):
-            with pytest.raises(
-                qml.QuantumFunctionError, match="The two states must have the same number of wires"
-            ):
-                qml.qinfo.fidelity(circuit0, circuit1, wires0=[0, 1], wires1=[0])()
+            qml.qinfo.fidelity(circuit0, circuit1, wires0=[0, 1], wires1=[0])()
 
     @pytest.mark.parametrize("device", devices)
     def test_fidelity_qnodes_rxs(self, device):
@@ -91,12 +86,7 @@ class TestFidelityQnode:
             qml.RX(y, wires=0)
             return qml.state()
 
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning,
-            match=DEP_WARNING_MESSAGE,
-        ):
-            fid = qml.qinfo.fidelity(circuit0, circuit1, wires0=[0], wires1=[0])((0.1), (0.1))
-
+        fid = qml.qinfo.fidelity(circuit0, circuit1, wires0=[0], wires1=[0])((0.1), (0.1))
         assert qml.math.allclose(fid, 1.0)
 
     @pytest.mark.parametrize("device", devices)
@@ -115,12 +105,7 @@ class TestFidelityQnode:
             qml.RY(y, wires=0)
             return qml.state()
 
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning,
-            match=DEP_WARNING_MESSAGE,
-        ):
-            fid = qml.qinfo.fidelity(circuit0, circuit1, wires0=[0], wires1=[0])((0.0, 0.2), (0.2))
-
+        fid = qml.qinfo.fidelity(circuit0, circuit1, wires0=[0], wires1=[0])((0.0, 0.2), (0.2))
         assert qml.math.allclose(fid, 1.0)
 
     @pytest.mark.parametrize("device", devices)
@@ -137,12 +122,7 @@ class TestFidelityQnode:
         def circuit1():
             return qml.state()
 
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning,
-            match=DEP_WARNING_MESSAGE,
-        ):
-            fid = qml.qinfo.fidelity(circuit0, circuit1, wires0=[0], wires1=[0])((np.pi))
-
+        fid = qml.qinfo.fidelity(circuit0, circuit1, wires0=[0], wires1=[0])((np.pi))
         assert qml.math.allclose(fid, 0.0)
 
     @pytest.mark.parametrize("device", devices)
@@ -159,12 +139,7 @@ class TestFidelityQnode:
             qml.RX(x, wires=0)
             return qml.state()
 
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning,
-            match=DEP_WARNING_MESSAGE,
-        ):
-            fid = qml.qinfo.fidelity(circuit0, circuit1, wires0=[0], wires1=[0])(all_args1=(np.pi))
-
+        fid = qml.qinfo.fidelity(circuit0, circuit1, wires0=[0], wires1=[0])(all_args1=(np.pi))
         assert qml.math.allclose(fid, 0.0)
 
     @pytest.mark.parametrize("device", devices)
@@ -184,19 +159,15 @@ class TestFidelityQnode:
             qml.RY(y, wires=0)
             return qml.state()
 
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning,
-            match=DEP_WARNING_MESSAGE,
-        ):
-            fid_args = qml.qinfo.fidelity(circuit0, circuit1, wires0=[0], wires1=[0])(
-                (0.0, np.pi), (0.0, 0.0)
-            )
-            fid_arg_kwarg = qml.qinfo.fidelity(circuit0, circuit1, wires0=[0], wires1=[0])(
-                (0.0, {"y": np.pi}), (0.0, {"y": 0})
-            )
-            fid_kwargs = qml.qinfo.fidelity(circuit0, circuit1, wires0=[0], wires1=[0])(
-                ({"x": 0, "y": np.pi}), ({"x": 0, "y": 0})
-            )
+        fid_args = qml.qinfo.fidelity(circuit0, circuit1, wires0=[0], wires1=[0])(
+            (0.0, np.pi), (0.0, 0.0)
+        )
+        fid_arg_kwarg = qml.qinfo.fidelity(circuit0, circuit1, wires0=[0], wires1=[0])(
+            (0.0, {"y": np.pi}), (0.0, {"y": 0})
+        )
+        fid_kwargs = qml.qinfo.fidelity(circuit0, circuit1, wires0=[0], wires1=[0])(
+            ({"x": 0, "y": np.pi}), ({"x": 0, "y": 0})
+        )
 
         assert qml.math.allclose(fid_args, 1.0)
         assert qml.math.allclose(fid_arg_kwarg, 1.0)
@@ -222,12 +193,7 @@ class TestFidelityQnode:
             qml.PauliZ(wires=wire)
             return qml.state()
 
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning,
-            match=DEP_WARNING_MESSAGE,
-        ):
-            fid = qml.qinfo.fidelity(circuit0, circuit1, wires0=[wire], wires1=[wire])((param))
-
+        fid = qml.qinfo.fidelity(circuit0, circuit1, wires0=[wire], wires1=[wire])((param))
         expected_fid = expected_fidelity_rx_pauliz(param)
         assert qml.math.allclose(fid, expected_fid)
 
@@ -248,14 +214,9 @@ class TestFidelityQnode:
             qml.PauliZ(wires=0)
             return qml.state()
 
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning,
-            match=DEP_WARNING_MESSAGE,
-        ):
-            fid_grad = qml.grad(qml.qinfo.fidelity(circuit0, circuit1, wires0=[0], wires1=[0]))(
-                (qml.numpy.array(param, requires_grad=True))
-            )
-
+        fid_grad = qml.grad(qml.qinfo.fidelity(circuit0, circuit1, wires0=[0], wires1=[0]))(
+            (qml.numpy.array(param, requires_grad=True))
+        )
         expected_fid = expected_grad_fidelity_rx_pauliz(param)
         assert qml.math.allclose(fid_grad, expected_fid)
 
@@ -272,12 +233,8 @@ class TestFidelityQnode:
             qml.IsingXX(x, wires=wires)
             return qml.state()
 
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning,
-            match=DEP_WARNING_MESSAGE,
-        ):
-            fid_circuit = qml.qinfo.fidelity(circuit, circuit, [wires[0]], [wires[1]])
-            actual = fid_circuit((param[0],), (param[1],))
+        fid_circuit = qml.qinfo.fidelity(circuit, circuit, [wires[0]], [wires[1]])
+        actual = fid_circuit((param[0],), (param[1],))
 
         expected = (
             np.sin(param[0] / 2) * np.cos(param[1] / 2)
@@ -305,13 +262,9 @@ class TestFidelityQnode:
             qml.RX(x, wires=0)
             return qml.state()
 
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning,
-            match=DEP_WARNING_MESSAGE,
-        ):
-            fid_grad = qml.grad(qml.qinfo.fidelity(circuit0, circuit1, wires0=[0], wires1=[0]))(
-                None, (qml.numpy.array(param, requires_grad=True))
-            )
+        fid_grad = qml.grad(qml.qinfo.fidelity(circuit0, circuit1, wires0=[0], wires1=[0]))(
+            None, (qml.numpy.array(param, requires_grad=True))
+        )
         expected_fid = expected_grad_fidelity_rx_pauliz(param)
         assert qml.math.allclose(fid_grad, expected_fid)
 
@@ -328,14 +281,10 @@ class TestFidelityQnode:
             qml.RX(x, wires=0)
             return qml.state()
 
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning,
-            match=DEP_WARNING_MESSAGE,
-        ):
-            fid_grad = qml.grad(qml.qinfo.fidelity(circuit, circuit, wires0=[0], wires1=[0]))(
-                (qml.numpy.array(param, requires_grad=True)),
-                (qml.numpy.array(2 * param, requires_grad=True)),
-            )
+        fid_grad = qml.grad(qml.qinfo.fidelity(circuit, circuit, wires0=[0], wires1=[0]))(
+            (qml.numpy.array(param, requires_grad=True)),
+            (qml.numpy.array(2 * param, requires_grad=True)),
+        )
 
         expected = expected_grad_fidelity_rx_pauliz(param)
         expected_fid = [-expected, expected]
@@ -364,14 +313,7 @@ class TestFidelityQnode:
             qml.PauliZ(wires=0)
             return qml.state()
 
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning,
-            match=DEP_WARNING_MESSAGE,
-        ):
-            fid = qml.qinfo.fidelity(circuit0, circuit1, wires0=[0], wires1=[0])(
-                (torch.tensor(param))
-            )
-
+        fid = qml.qinfo.fidelity(circuit0, circuit1, wires0=[0], wires1=[0])((torch.tensor(param)))
         expected_fid = expected_fidelity_rx_pauliz(param)
         assert qml.math.allclose(fid, expected_fid)
 
@@ -398,12 +340,7 @@ class TestFidelityQnode:
         expected_fid_grad = expected_grad_fidelity_rx_pauliz(param)
         param = torch.tensor(param, dtype=torch.float64, requires_grad=True)
 
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning,
-            match=DEP_WARNING_MESSAGE,
-        ):
-            fid = qml.qinfo.fidelity(circuit0, circuit1, wires0=[0], wires1=[0])((param))
-
+        fid = qml.qinfo.fidelity(circuit0, circuit1, wires0=[0], wires1=[0])((param))
         fid.backward()
         fid_grad = param.grad
 
@@ -432,12 +369,7 @@ class TestFidelityQnode:
         expected_fid = expected_grad_fidelity_rx_pauliz(param)
         param = torch.tensor(param, dtype=torch.float64, requires_grad=True)
 
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning,
-            match=DEP_WARNING_MESSAGE,
-        ):
-            fid = qml.qinfo.fidelity(circuit0, circuit1, wires0=[0], wires1=[0])(None, (param))
-
+        fid = qml.qinfo.fidelity(circuit0, circuit1, wires0=[0], wires1=[0])(None, (param))
         fid.backward()
         fid_grad = param.grad
 
@@ -465,12 +397,7 @@ class TestFidelityQnode:
             torch.tensor(2 * param, dtype=torch.float64, requires_grad=True),
         )
 
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning,
-            match=DEP_WARNING_MESSAGE,
-        ):
-            fid = qml.qinfo.fidelity(circuit, circuit, wires0=[0], wires1=[0])(*params)
-
+        fid = qml.qinfo.fidelity(circuit, circuit, wires0=[0], wires1=[0])(*params)
         fid.backward()
         fid_grad = [p.grad for p in params]
         assert qml.math.allclose(fid_grad, expected_fid)
@@ -498,14 +425,7 @@ class TestFidelityQnode:
             qml.PauliZ(wires=0)
             return qml.state()
 
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning,
-            match=DEP_WARNING_MESSAGE,
-        ):
-            fid = qml.qinfo.fidelity(circuit0, circuit1, wires0=[0], wires1=[0])(
-                (tf.Variable(param))
-            )
-
+        fid = qml.qinfo.fidelity(circuit0, circuit1, wires0=[0], wires1=[0])((tf.Variable(param)))
         expected_fid = expected_fidelity_rx_pauliz(param)
         assert qml.math.allclose(fid, expected_fid)
 
@@ -532,13 +452,8 @@ class TestFidelityQnode:
         expected_grad_fid = expected_grad_fidelity_rx_pauliz(param)
         param = tf.Variable(param)
 
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning,
-            match=DEP_WARNING_MESSAGE,
-        ):
-            with tf.GradientTape() as tape:
-                entropy = qml.qinfo.fidelity(circuit0, circuit1, wires0=[0], wires1=[0])((param))
-
+        with tf.GradientTape() as tape:
+            entropy = qml.qinfo.fidelity(circuit0, circuit1, wires0=[0], wires1=[0])((param))
         fid_grad = tape.gradient(entropy, param)
         assert qml.math.allclose(fid_grad, expected_grad_fid)
 
@@ -565,15 +480,8 @@ class TestFidelityQnode:
         expected_fid = expected_grad_fidelity_rx_pauliz(param)
         param = tf.Variable(param)
 
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning,
-            match=DEP_WARNING_MESSAGE,
-        ):
-            with tf.GradientTape() as tape:
-                entropy = qml.qinfo.fidelity(circuit0, circuit1, wires0=[0], wires1=[0])(
-                    None, (param)
-                )
-
+        with tf.GradientTape() as tape:
+            entropy = qml.qinfo.fidelity(circuit0, circuit1, wires0=[0], wires1=[0])(None, (param))
         fid_grad = tape.gradient(entropy, param)
         assert qml.math.allclose(fid_grad, expected_fid)
 
@@ -596,13 +504,8 @@ class TestFidelityQnode:
         expected_fid = [-expected, expected]
         params = (tf.Variable(param), tf.Variable(2 * param))
 
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning,
-            match=DEP_WARNING_MESSAGE,
-        ):
-            with tf.GradientTape() as tape:
-                fid = qml.qinfo.fidelity(circuit, circuit, wires0=[0], wires1=[0])(*params)
-
+        with tf.GradientTape() as tape:
+            fid = qml.qinfo.fidelity(circuit, circuit, wires0=[0], wires1=[0])(*params)
         fid_grad = tape.gradient(fid, params)
         assert qml.math.allclose(fid_grad, expected_fid)
 
@@ -629,14 +532,9 @@ class TestFidelityQnode:
             qml.PauliZ(wires=0)
             return qml.state()
 
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning,
-            match=DEP_WARNING_MESSAGE,
-        ):
-            fid = qml.qinfo.fidelity(circuit0, circuit1, wires0=[0], wires1=[0])(
-                (jax.numpy.array(param))
-            )
-
+        fid = qml.qinfo.fidelity(circuit0, circuit1, wires0=[0], wires1=[0])(
+            (jax.numpy.array(param))
+        )
         expected_fid = expected_fidelity_rx_pauliz(param)
         assert qml.math.allclose(fid, expected_fid, rtol=1e-03, atol=1e-04)
 
@@ -660,14 +558,9 @@ class TestFidelityQnode:
             qml.PauliZ(wires=0)
             return qml.state()
 
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning,
-            match=DEP_WARNING_MESSAGE,
-        ):
-            fid = jax.jit(qml.qinfo.fidelity(circuit0, circuit1, wires0=[0], wires1=[0]))(
-                (jax.numpy.array(param))
-            )
-
+        fid = jax.jit(qml.qinfo.fidelity(circuit0, circuit1, wires0=[0], wires1=[0]))(
+            (jax.numpy.array(param))
+        )
         expected_fid = expected_fidelity_rx_pauliz(param)
         assert qml.math.allclose(fid, expected_fid, rtol=1e-03, atol=1e-04)
 
@@ -691,14 +584,9 @@ class TestFidelityQnode:
             qml.PauliZ(wires=0)
             return qml.state()
 
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning,
-            match=DEP_WARNING_MESSAGE,
-        ):
-            fid_grad = jax.grad(qml.qinfo.fidelity(circuit0, circuit1, wires0=[0], wires1=[0]))(
-                (jax.numpy.array(param))
-            )
-
+        fid_grad = jax.grad(qml.qinfo.fidelity(circuit0, circuit1, wires0=[0], wires1=[0]))(
+            (jax.numpy.array(param))
+        )
         expected_fid = expected_grad_fidelity_rx_pauliz(param)
         assert qml.math.allclose(fid_grad, expected_fid, rtol=1e-04, atol=1e-03)
 
@@ -721,14 +609,9 @@ class TestFidelityQnode:
             qml.PauliZ(wires=0)
             return qml.state()
 
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning,
-            match=DEP_WARNING_MESSAGE,
-        ):
-            fid_grad = jax.jit(
-                jax.grad(qml.qinfo.fidelity(circuit0, circuit1, wires0=[0], wires1=[0]))
-            )((jax.numpy.array(param)))
-
+        fid_grad = jax.jit(
+            jax.grad(qml.qinfo.fidelity(circuit0, circuit1, wires0=[0], wires1=[0]))
+        )((jax.numpy.array(param)))
         expected_fid = expected_grad_fidelity_rx_pauliz(param)
         assert qml.math.allclose(fid_grad, expected_fid, rtol=1e-04, atol=1e-03)
 
@@ -752,14 +635,9 @@ class TestFidelityQnode:
             qml.RX(x, wires=0)
             return qml.state()
 
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning,
-            match=DEP_WARNING_MESSAGE,
-        ):
-            fid_grad = jax.grad(
-                qml.qinfo.fidelity(circuit0, circuit1, wires0=[0], wires1=[0]), argnums=1
-            )(None, (jax.numpy.array(param)))
-
+        fid_grad = jax.grad(
+            qml.qinfo.fidelity(circuit0, circuit1, wires0=[0], wires1=[0]), argnums=1
+        )(None, (jax.numpy.array(param)))
         expected_fid = expected_grad_fidelity_rx_pauliz(param)
         assert qml.math.allclose(fid_grad, expected_fid, rtol=1e-04, atol=1e-03)
 
@@ -782,14 +660,9 @@ class TestFidelityQnode:
             qml.RX(x, wires=0)
             return qml.state()
 
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning,
-            match=DEP_WARNING_MESSAGE,
-        ):
-            fid_grad = jax.jit(
-                jax.grad(qml.qinfo.fidelity(circuit0, circuit1, wires0=[0], wires1=[0]), argnums=1)
-            )(None, (jax.numpy.array(param)))
-
+        fid_grad = jax.jit(
+            jax.grad(qml.qinfo.fidelity(circuit0, circuit1, wires0=[0], wires1=[0]), argnums=1)
+        )(None, (jax.numpy.array(param)))
         expected_fid = expected_grad_fidelity_rx_pauliz(param)
         assert qml.math.allclose(fid_grad, expected_fid, rtol=1e-04, atol=1e-03)
 
@@ -808,17 +681,12 @@ class TestFidelityQnode:
             qml.RX(x, wires=0)
             return qml.state()
 
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning,
-            match=DEP_WARNING_MESSAGE,
-        ):
-            fid_grad = jax.grad(
-                qml.qinfo.fidelity(circuit, circuit, wires0=[0], wires1=[0]), argnums=[0, 1]
-            )(
-                (jax.numpy.array(param)),
-                (jax.numpy.array(2 * param)),
-            )
-
+        fid_grad = jax.grad(
+            qml.qinfo.fidelity(circuit, circuit, wires0=[0], wires1=[0]), argnums=[0, 1]
+        )(
+            (jax.numpy.array(param)),
+            (jax.numpy.array(2 * param)),
+        )
         expected = expected_grad_fidelity_rx_pauliz(param)
         expected_fid = [-expected, expected]
         assert qml.math.allclose(fid_grad, expected_fid, rtol=1e-04, atol=1e-03)
@@ -837,16 +705,9 @@ class TestFidelityQnode:
             qml.RX(x, wires=0)
             return qml.state()
 
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning,
-            match=DEP_WARNING_MESSAGE,
-        ):
-            fid_grad = jax.jit(
-                jax.grad(
-                    qml.qinfo.fidelity(circuit, circuit, wires0=[0], wires1=[0]), argnums=[0, 1]
-                )
-            )((jax.numpy.array(param)), (jax.numpy.array(2 * param)))
-
+        fid_grad = jax.jit(
+            jax.grad(qml.qinfo.fidelity(circuit, circuit, wires0=[0], wires1=[0]), argnums=[0, 1])
+        )((jax.numpy.array(param)), (jax.numpy.array(2 * param)))
         expected = expected_grad_fidelity_rx_pauliz(param)
         expected_fid = [-expected, expected]
         assert qml.math.allclose(fid_grad, expected_fid, rtol=1e-04, atol=1e-03)
@@ -873,15 +734,10 @@ class TestFidelityQnode:
             qml.PauliZ(wires=0)
             return qml.state()
 
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning,
-            match=DEP_WARNING_MESSAGE,
-        ):
-            fid_grad = qml.grad(qml.qinfo.fidelity(circuit0, circuit1, wires0=[0], wires1=[0]))(
-                (qml.numpy.array(param, requires_grad=True)),
-                (qml.numpy.array(2.0, requires_grad=True)),
-            )
-
+        fid_grad = qml.grad(qml.qinfo.fidelity(circuit0, circuit1, wires0=[0], wires1=[0]))(
+            (qml.numpy.array(param, requires_grad=True)),
+            (qml.numpy.array(2.0, requires_grad=True)),
+        )
         expected_fid_grad = expected_grad_fidelity_rx_pauliz(param)
         assert qml.math.allclose(fid_grad, (expected_fid_grad, 0.0))
 
@@ -913,12 +769,7 @@ class TestFidelityQnode:
         param = torch.tensor(param, dtype=torch.float64, requires_grad=True)
         param2 = torch.tensor(0, dtype=torch.float64, requires_grad=True)
 
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning,
-            match=DEP_WARNING_MESSAGE,
-        ):
-            fid = qml.qinfo.fidelity(circuit0, circuit1, wires0=[0], wires1=[0])((param), (param2))
-
+        fid = qml.qinfo.fidelity(circuit0, circuit1, wires0=[0], wires1=[0])((param), (param2))
         fid.backward()
         fid_grad = (param.grad, param2.grad)
         assert qml.math.allclose(fid_grad, (expected_fid_grad, 0.0))
@@ -952,15 +803,10 @@ class TestFidelityQnode:
         param1 = tf.Variable(param)
         params2 = tf.Variable(0.0)
 
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning,
-            match=DEP_WARNING_MESSAGE,
-        ):
-            with tf.GradientTape() as tape:
-                entropy = qml.qinfo.fidelity(circuit0, circuit1, wires0=[0], wires1=[0])(
-                    (param1), (params2)
-                )
-
+        with tf.GradientTape() as tape:
+            entropy = qml.qinfo.fidelity(circuit0, circuit1, wires0=[0], wires1=[0])(
+                (param1), (params2)
+            )
         fid_grad = tape.gradient(entropy, [param1, params2])
         assert qml.math.allclose(fid_grad, (expected_fid_grad, 0.0))
 
@@ -988,14 +834,9 @@ class TestFidelityQnode:
             qml.PauliZ(wires=0)
             return qml.state()
 
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning,
-            match=DEP_WARNING_MESSAGE,
-        ):
-            fid_grad = jax.grad(
-                qml.qinfo.fidelity(circuit0, circuit1, wires0=[0], wires1=[0]), argnums=[0, 1]
-            )((jax.numpy.array(param)), (jax.numpy.array(2.0)))
-
+        fid_grad = jax.grad(
+            qml.qinfo.fidelity(circuit0, circuit1, wires0=[0], wires1=[0]), argnums=[0, 1]
+        )((jax.numpy.array(param)), (jax.numpy.array(2.0)))
         expected_fid_grad = expected_grad_fidelity_rx_pauliz(param)
         assert qml.math.allclose(fid_grad, (expected_fid_grad, 0.0), rtol=1e-03, atol=1e-04)
 
@@ -1023,16 +864,9 @@ class TestFidelityQnode:
             qml.PauliZ(wires=0)
             return qml.state()
 
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning,
-            match=DEP_WARNING_MESSAGE,
-        ):
-            fid_grad = jax.jit(
-                jax.grad(
-                    qml.qinfo.fidelity(circuit0, circuit1, wires0=[0], wires1=[0]), argnums=[0, 1]
-                )
-            )((jax.numpy.array(param)), (jax.numpy.array(2.0)))
-
+        fid_grad = jax.jit(
+            jax.grad(qml.qinfo.fidelity(circuit0, circuit1, wires0=[0], wires1=[0]), argnums=[0, 1])
+        )((jax.numpy.array(param)), (jax.numpy.array(2.0)))
         expected_fid_grad = expected_grad_fidelity_rx_pauliz(param)
         assert qml.math.allclose(fid_grad, (expected_fid_grad, 0.0), rtol=1e-03, atol=1e-04)
 
@@ -1050,11 +884,6 @@ def test_broadcasting(device):
     x = np.array([0.4, 0.6, 0.8])
     y = np.array([0.6, 0.8, 1.0])
 
-    with pytest.warns(
-        qml.PennyLaneDeprecationWarning,
-        match=DEP_WARNING_MESSAGE,
-    ):
-        fid = qml.qinfo.fidelity(circuit_state, circuit_state, wires0=[0], wires1=[1])(x, y)
-
+    fid = qml.qinfo.fidelity(circuit_state, circuit_state, wires0=[0], wires1=[1])(x, y)
     expected = 0.5 * (np.sin(x) * np.sin(y) + np.cos(x) * np.cos(y) + 1)
     assert qml.math.allclose(fid, expected)
