@@ -333,7 +333,7 @@ def kitaev(n_cells, coupling=None, boundary_condition=False):
        n_cells (list[int]): Number of cells in each direction of the grid.
        coupling (Optional[list[float] | tensor_like(float)]): Coupling between spins, it is a list of length 3.
                             Default value is [1.0, 1.0, 1.0].
-       boundary_condition (Optional[bool | list[bool]]): Defines boundary conditions for different lattice axes.
+       boundary_condition (bool | list[bool]): Defines boundary conditions for different lattice axes.
            The default is ``False``, indicating open boundary conditions for all.
 
     Raises:
