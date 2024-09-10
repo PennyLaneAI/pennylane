@@ -319,7 +319,7 @@ class TestOptimize:
         eta = 0.01
         num_steps = 200
 
-        opt = qml.QNGOptimizer(eta)
+        opt = qml.MomentumQNGOptimizer(eta)
 
         # optimization for 200 steps total
         for _ in range(num_steps):
