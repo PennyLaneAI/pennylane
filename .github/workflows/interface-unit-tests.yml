@@ -97,13 +97,6 @@ jobs:
             "device-tests": 2
           }
           EOF
-          elif [ ${{ inputs.pipeline_mode }} == "update-durations" ];
-          then
-            cat >matrix_max_parallel.json <<-EOF
-          {
-            "default": 1
-          }
-          EOF
           else
             cat >matrix_max_parallel.json <<-EOF
           {
