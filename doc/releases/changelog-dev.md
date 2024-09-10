@@ -4,7 +4,7 @@
 
 <h3>New features since last release</h3>
 
-* Function is added for generating spin Hamiltonian for 
+* Function is added for generating the spin Hamiltonian for the
   [Kitaev](https://arxiv.org/pdf/2406.06625) model on a lattice.
   [(#6174)](https://github.com/PennyLaneAI/pennylane/pull/6174)
 
