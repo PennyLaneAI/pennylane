@@ -55,17 +55,15 @@ def _capture_diff(func, argnum=None, diff_prim=None, method=None, h=None):
         # Create argnum for the flat list of input arrays. For each flattened argument,
         # add a list of flat argnums if the argument is trainable and an empty list otherwise.
         start = 0
-        flat_argnum = sum(
+        flat_argnum_gen = (
             (
-                (
-                    list(range(start, (start := start + len(flat_arg))))
-                    if i in argnum
-                    else list(range((start := start + len(flat_arg)), start))
-                )
-                for i, flat_arg in enumerate(flat_args)
-            ),
-            start=[],
+                list(range(start, (start := start + len(flat_arg))))
+                if i in argnum
+                else list(range((start := start + len(flat_arg)), start))
+            )
+            for i, flat_arg in enumerate(flat_args)
         )
+        flat_argnum = sum(flat_argnum_gen, start=[])
 
         # Create fully flattened function (flat inputs & outputs)
         flat_fn = FlatFn(partial(func, **kwargs) if kwargs else func, full_in_tree)
