@@ -124,7 +124,7 @@ jobs:
           repository: PennyLaneAI/pennylane
 
       - name: Determine benchmark name
-        if: ${{ inputs.pipeline_mode != 'unit-tests' }}
+        if: ${{ !contains(fromJSON('["unit-tests", "update-durations"]'), inputs.pipeline_mode) }}
         id: benchmark_name
         run: |
           job_name="${{ inputs.job_name }}"
@@ -133,7 +133,7 @@ jobs:
           echo "benchmark_name=$_benchmark_name" >> $GITHUB_OUTPUT
 
       - name: Cache reference benchmarks
-        if: ${{ inputs.pipeline_mode != 'unit-tests' }}
+        if: ${{ !contains(fromJSON('["unit-tests", "update-durations"]'), inputs.pipeline_mode) }}
         id: benchmark-cache
         uses: actions/cache@v3
         with:
@@ -144,7 +144,7 @@ jobs:
         id: continue
         run: >-
           echo "confirm=${{
-            contains(fromJSON('["unit-tests", "benchmarks"]'), inputs.pipeline_mode)
+            contains(fromJSON('["unit-tests", "benchmarks", "update-durations"]'), inputs.pipeline_mode)
             || (inputs.pipeline_mode == 'reference-benchmarks'
             && steps.benchmark-cache.outputs.cache-hit != 'true' )}}" >> $GITHUB_OUTPUT
 
