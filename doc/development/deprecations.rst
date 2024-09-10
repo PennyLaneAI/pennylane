@@ -9,6 +9,11 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
+* The ``qml.qinfo`` module has been deprecated.
+
+  - Deprecated in v0.39
+  - Will be removed in v0.40
+
 * All of the legacy devices (any with the name ``default.qubit.{autograd,torch,tf,jax,legacy}``) are deprecated. Use ``default.qubit`` instead,
   as it supports backpropagation for the many backends the legacy devices support.
 
@@ -73,12 +78,6 @@ Pending deprecations
   - Deprecated in v0.38
   - Will be removed in v0.39
 
-* The functions ``qml.qinfo.classical_fisher`` and ``qml.qinfo.quantum_fisher`` are deprecated since they are being migrated
-  to the ``qml.gradients`` module. Therefore, ``qml.gradients.classical_fisher`` and ``qml.gradients.quantum_fisher`` should be used instead.
-
-  - Deprecated and Duplicated in v0.38
-  - Will be removed in v0.39
-
 * The ``simplify`` argument in ``qml.Hamiltonian`` and ``qml.ops.LinearCombination`` is deprecated. 
   Instead, ``qml.simplify()`` can be called on the constructed operator.
 
@@ -128,6 +127,12 @@ Other deprecations
 
 Completed deprecation cycles
 ----------------------------
+
+* The functions ``qml.qinfo.classical_fisher`` and ``qml.qinfo.quantum_fisher`` have been removed and migrate to the ``qml.gradients``
+  module. Therefore, ``qml.gradients.classical_fisher`` and ``qml.gradients.quantum_fisher`` should be used instead.
+
+  - Deprecated and Duplicated in v0.38
+  - Removed in v0.39
 
 * ``queue_idx`` attribute has been removed from the ``Operator``, ``CompositeOp``, and ``SymboliOp`` classes. Instead, the index is now stored as the label of the ``CircuitGraph.graph`` nodes.
 
