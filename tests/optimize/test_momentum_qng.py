@@ -172,7 +172,7 @@ class TestOptimize:
             return qml.expval(qml.PauliZ(0))
 
         var = np.array([0.011, 0.012])
-        opt = qml.QNGOptimizer(stepsize=0.01)
+        opt = qml.MomentumQNGOptimizer(stepsize=0.01)
 
         # With autograd gradient function
         grad_fn1 = qml.grad(circuit)
