@@ -524,7 +524,7 @@ class QNode:
         # input arguments
         self.func = func
         self.device = device
-        self._interface = interface
+        self._interface = None if diff_method is None else interface
         self.diff_method = diff_method
         mcm_config = qml.devices.MCMConfig(mcm_method=mcm_method, postselect_mode=postselect_mode)
         cache = (max_diff > 1) if cache == "auto" else cache
@@ -547,6 +547,9 @@ class QNode:
 
         self._transform_program = TransformProgram()
         functools.update_wrapper(self, func)
+
+        # validation check.  Will raise error if bad diff_method
+        QNode.get_gradient_fn(self.device, self.interface, self.diff_method)
 
     @property
     def gradient_fn(self):
