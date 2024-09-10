@@ -551,9 +551,11 @@ class QNode:
 
     @property
     def gradient_fn(self):
-        """**DEPRECATED:** A processed version of ``QNode.diff_method``.
+        """A processed version of ``QNode.diff_method``.
 
-        This property is deprecated in v0.39 and will be removed in v0.40.
+        .. warning::
+
+            This property is deprecated in v0.39 and will be removed in v0.40.
 
         Please see ``QNode.diff_method`` instead.
 
@@ -877,13 +879,16 @@ class QNode:
             Result
 
         """
-        assert (
-            self._tape is not None
-        ), "tape should be set in construct call prior to _execution_component"
-
-        gradient_fn = QNode.get_gradient_fn(
-            self.device, self.interface, self.diff_method, tape=self.tape
-        )[0]
+        if (
+            self.device.name == "lightning.qubit"
+            and qml.metric_tensor in self.transform_program
+            and self.diff_method == "best"
+        ):
+            gradient_fn = qml.gradients.param_shift
+        else:
+            gradient_fn = QNode.get_gradient_fn(
+                self.device, self.interface, self.diff_method, tape=self.tape
+            )[0]
         execute_kwargs = copy.copy(self.execute_kwargs)
 
         gradient_kwargs = copy.copy(self.gradient_kwargs)
