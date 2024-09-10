@@ -246,6 +246,13 @@ class TestValidation:
         ):
             assert qn.gradient_fn == "backprop"
 
+        dev_shots = qml.device("default.qubit", shots=45)
+        qn_shots = QNode(dummyfunc, dev_shots, diff_method="best")
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match=r"QNode.gradient_fn is deprecated"
+        ):
+            assert qn_shots.gradient_fn == qml.gradients.param_shift
+
         qn = QNode(dummyfunc, dev, interface="autograd", diff_method="best")
         assert qn.diff_method == "best"
         with pytest.warns(
@@ -2041,3 +2048,17 @@ def test_prune_dynamic_transform_with_mcm():
     assert len(program1) == 2
     assert qml.devices.preprocess.mid_circuit_measurements in program1
     assert len(program2) == 1
+
+
+def test_gradient_fn_lightning_metric_tensor():
+    """Test that if lightning is used with the metric tensor, the graident_fn is parameter shift."""
+
+    dev = qml.device("lightning.qubit", wires=2)
+
+    @qml.metric_tensor
+    @qml.qnode(dev)
+    def circuit():
+        return qml.expval(qml.Z(0))
+
+    with pytest.warns(qml.PennyLaneDeprecationWarning):
+        assert circuit.gradient_fn == qml.gradients.param_shift
