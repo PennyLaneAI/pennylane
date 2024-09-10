@@ -61,9 +61,9 @@ jobs:
       - name: Stage changes
         # if: steps.changed.outputs.has_changes != '0'
         run: |
-          echo "lh" >> .github/durations/tf_tests_durations.json
-          echo "ah" >> .github/durations/jax_tests_durations.json
-          echo "h" >> .github/durations/core_tests_durations.json
+          echo "l  h" >> .github/durations/tf_tests_durations.json
+          echo "a  h" >> .github/durations/jax_tests_durations.json
+          echo "ash" >> .github/durations/core_tests_durations.json
           git add .github/durations/
           git commit -m "Update durations files"
           git push -f --set-upstream origin "${{ env.DURATIONS_BRANCH }}"
@@ -78,12 +78,12 @@ jobs:
         run: |
           gh_pr_up() {
             # Create a new pull request with provided arguments
-            gh pr create --title "$PR_TITLE" --reviewer "$PR_REVIEWER" || {
+            gh pr create --title "$PR_TITLE" --body "" --reviewer "$PR_REVIEWER" || {
               # If PR creation fails, reopen the PR associated with the current branch
               gh pr reopen $(git branch --show-current)
               
               # Edit the existing PR to add the reviewer
-              gh pr edit --title $PR_TITLE --add-reviewer $PR_REVIEWER
+              gh pr edit --title $PR_TITLE --body "" --add-reviewer "$PR_REVIEWER"
             }
           }
           gh_pr_up
