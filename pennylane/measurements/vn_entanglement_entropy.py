@@ -74,11 +74,11 @@ def vn_entanglement_entropy(wires0, wires1, log_base=None):
 
     .. note::
 
-        Calculating the derivative of :func:`~.vn_entanglement_entropy` is currently supported when
+        Calculating the derivative of :func:`~pennylane.vn_entanglement_entropy` is currently supported when
         using the classical backpropagation differentiation method (``diff_method="backprop"``)
         with a compatible device and finite differences (``diff_method="finite-diff"``).
 
-    .. seealso:: :func:`~.vn_entropy` and :func:`pennylane.math.vn_entanglement_entropy`
+    .. seealso:: :func:`~pennylane.vn_entropy` and :func:`pennylane.math.vn_entanglement_entropy`
     """
     wires0 = qml.wires.Wires(wires0)
     wires1 = qml.wires.Wires(wires1)
@@ -96,7 +96,7 @@ def vn_entanglement_entropy(wires0, wires1, log_base=None):
 class VnEntanglementEntropyMP(StateMeasurement):
     """Measurement process that computes the Von Neumann entanglement entropy between the provided wires.
 
-    Please refer to :func:`~.vn_entanglement_entropy` for detailed documentation.
+    Please refer to :func:`~pennylane.vn_entanglement_entropy` for detailed documentation.
 
     Args:
         wires (Sequence[.Wires]): The wires the measurement process applies to.
@@ -158,7 +158,9 @@ class VnEntanglementEntropyMP(StateMeasurement):
         ]
         return new_measurement
 
-    def shape(self, device, shots):
+    def shape(
+        self, shots: Optional[int] = None, num_device_wires: int = 0
+    ):  # pylint: disable=unused-argument
         if not shots.has_partitioned_shots:
             return ()
         num_shot_elements = sum(s.copies for s in shots.shot_vector)

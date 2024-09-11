@@ -61,7 +61,7 @@ def vn_entropy(wires, log_base=None) -> "VnEntropyMP":
 
     .. note::
 
-        Calculating the derivative of :func:`~.vn_entropy` is currently supported when
+        Calculating the derivative of :func:`~pennylane.vn_entropy` is currently supported when
         using the classical backpropagation differentiation method (``diff_method="backprop"``)
         with a compatible device and finite differences (``diff_method="finite-diff"``).
 
@@ -74,7 +74,7 @@ def vn_entropy(wires, log_base=None) -> "VnEntropyMP":
 class VnEntropyMP(StateMeasurement):
     """Measurement process that computes the Von Neumann entropy of the system prior to measurement.
 
-    Please refer to :func:`~.vn_entropy` for detailed documentation.
+    Please refer to :func:`~pennylane.vn_entropy` for detailed documentation.
 
     Args:
         wires (.Wires): The wires the measurement process applies to.

@@ -24,7 +24,7 @@ from pennylane.wires import Wires
 
 DEP_WARNING_MESSAGE_MUTUAL_INFO = (
     "The qml.qinfo.mutual_info transform is deprecated and will be removed "
-    "in 0.40. Instead include the qml.mutual_info measurement process in the "
+    "in v0.40. Instead include the qml.mutual_info measurement process in the "
     "return line of your QNode."
 )
 
@@ -185,16 +185,13 @@ class TestIntegration:
             qml.RY(params[0], wires=0)
             qml.RY(params[1], wires=1)
             qml.CNOT(wires=[0, 1])
-            return qml.state()
+            return qml.density_matrix(wires=[0, 1])
 
         actual = circuit_mutual_info(params)
 
         # compare measurement results with transform results
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning,
-            match=DEP_WARNING_MESSAGE_MUTUAL_INFO,
-        ):
-            expected = qml.qinfo.mutual_info(circuit_state, wires0=[0], wires1=[1])(params)
+        dm = circuit_state(params)
+        expected = qml.math.mutual_info(dm, indices0=[0], indices1=[1])
 
         assert np.allclose(actual, expected)
 
@@ -316,16 +313,13 @@ class TestIntegration:
             qml.RY(params[0], wires=0)
             qml.RY(params[1], wires=1)
             qml.CNOT(wires=[0, 1])
-            return qml.state()
+            return qml.density_matrix(wires=[0, 1])
 
         actual = jax.jit(circuit_mutual_info)(params)
 
         # compare measurement results with transform results
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning,
-            match=DEP_WARNING_MESSAGE_MUTUAL_INFO,
-        ):
-            expected = jax.jit(qml.qinfo.mutual_info(circuit_state, wires0=[0], wires1=[1]))(params)
+        dm = circuit_state(params)
+        expected = qml.math.mutual_info(dm, indices0=[0], indices1=[1])
 
         assert np.allclose(actual, expected)
 
@@ -543,14 +537,11 @@ class TestIntegration:
             qml.RY(params[0], wires="a")
             qml.RY(params[1], wires="b")
             qml.CNOT(wires=["a", "b"])
-            return qml.state()
+            return qml.density_matrix(wires=["a", "b"])
 
         actual = circuit(params)
 
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning,
-            match=DEP_WARNING_MESSAGE_MUTUAL_INFO,
-        ):
-            expected = qml.qinfo.mutual_info(circuit_expected, wires0=["a"], wires1=["b"])(params)
+        dm = circuit_expected(params)
+        expected = qml.math.mutual_info(dm, indices0=[0], indices1=[1])
 
         assert np.allclose(actual, expected)

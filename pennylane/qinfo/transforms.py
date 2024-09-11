@@ -552,7 +552,7 @@ def fidelity(qnode0, qnode1, wires0, wires1):
     .. warning::
 
         ``qml.qinfo.fidelity`` is deprecated and will be removed in v0.40. Instead, use
-        :func:`~pennylane.math.fidelity`.
+        :func:`pennylane.math.fidelity`.
 
     Args:
         state0 (QNode): A :class:`.QNode` returning a :func:`~pennylane.state`.
