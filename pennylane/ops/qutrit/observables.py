@@ -110,13 +110,18 @@ class THermitian(Hermitian):
                 Hermitian observable
         """
         Hmat = self.matrix()
-        Hmat = qml.math.to_numpy(Hmat)
-        Hkey = tuple(Hmat.flatten().tolist())
-        if Hkey not in THermitian._eigs:
-            w, U = np.linalg.eigh(Hmat)
-            THermitian._eigs[Hkey] = {"eigvec": U, "eigval": w}
 
-        return THermitian._eigs[Hkey]
+        if not qml.math.is_abstract(Hmat):
+            Hmat = qml.math.to_numpy(Hmat)
+            Hkey = tuple(Hmat.flatten().tolist())
+            if Hkey not in THermitian._eigs:
+                w, U = qml.math.eigh(Hmat)
+                THermitian._eigs[Hkey] = {"eigvec": U, "eigval": w}
+
+            return THermitian._eigs[Hkey]
+
+        w, U = qml.math.eigh(Hmat)
+        return {"eigvec": U, "eigval": w}
 
     @staticmethod
     def compute_diagonalizing_gates(eigenvectors, wires):  # pylint: disable=arguments-differ

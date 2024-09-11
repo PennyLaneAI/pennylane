@@ -77,10 +77,11 @@ class QutritBasisStatePreparation(Operation):
                     f"Basis states must be of length {len(wires)}; state {i} has length {n_bits}."
                 )
 
-            if any(bit not in [0, 1, 2] for bit in state):
-                raise ValueError(
-                    f"Basis states must only consist of 0s, 1s, and 2s; state {i} is {state}"
-                )
+            if not qml.math.is_abstract(basis_state):
+                if any(bit not in [0, 1, 2] for bit in state):
+                    raise ValueError(
+                        f"Basis states must only consist of 0s, 1s, and 2s; state {i} is {state}"
+                    )
 
         # TODO: basis_state should be a hyperparameter, not a trainable parameter.
         # However, this breaks a test that ensures compatibility with batch_transform.
@@ -112,7 +113,10 @@ class QutritBasisStatePreparation(Operation):
         """
 
         op_list = []
+        tshift = qml.math.array([[0, 0, 1], [1, 0, 0], [0, 1, 0]])
         for wire, state in zip(wires, basis_state):
-            for _ in range(0, state):
-                op_list.append(qml.TShift(wire))
+            mat = qml.math.matrix_power(tshift, state)
+            op = qml.ops.QutritUnitary(mat, wires=wire)
+            op_list.append(op)
+
         return op_list
