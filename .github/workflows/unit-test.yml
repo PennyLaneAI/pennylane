@@ -149,7 +149,7 @@ jobs:
             && steps.benchmark-cache.outputs.cache-hit != 'true' )}}" >> $GITHUB_OUTPUT
 
       - name: Install PennyLane and dependencies
-        if: ${{ steps.continue.outputs.confirm == 'true' && inputs.pipeline_mode != "update-durations" }}
+        if: ${{ steps.continue.outputs.confirm == 'true' && inputs.pipeline_mode != 'update-durations' }}
         uses: ./.github/workflows/install_deps
         with:
           python_version: ${{ inputs.python_version }}
