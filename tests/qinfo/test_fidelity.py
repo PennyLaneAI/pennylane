@@ -19,7 +19,7 @@ import pennylane as qml
 from pennylane import numpy as np
 
 pytestmark = pytest.mark.filterwarnings(
-    "ignore:qml.qinfo.fidelity:pennylane.PennyLaneDeprecationWarning"
+    "ignore:qml.qinfo.fidelity is deprecated:pennylane.PennyLaneDeprecationWarning"
 )
 
 
@@ -49,7 +49,7 @@ class TestFidelityQnode:
 
         with pytest.warns(
             qml.PennyLaneDeprecationWarning,
-            match="qml.qinfo.fidelity",
+            match="qml.qinfo.fidelity is deprecated",
         ):
             _ = qml.qinfo.fidelity(circuit, circuit, wires0=[0], wires1=[1])()
 
@@ -139,7 +139,7 @@ class TestFidelityQnode:
             qml.RX(x, wires=0)
             return qml.state()
 
-        fid = qml.qinfo.fidelity(circuit0, circuit1, wires0=[0], wires1=[0])(all_args1=(np.pi))
+        fid = qml.qinfo.fidelity(circuit0, circuit1, wires0=[0], wires1=[0])(all_args1=np.pi)
         assert qml.math.allclose(fid, 0.0)
 
     @pytest.mark.parametrize("device", devices)

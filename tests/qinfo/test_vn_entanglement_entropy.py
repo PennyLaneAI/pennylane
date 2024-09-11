@@ -21,7 +21,7 @@ import pytest
 import pennylane as qml
 
 pytestmark = pytest.mark.filterwarnings(
-    "ignore:The qml.qinfo.vn_entanglement_entropy:pennylane.PennyLaneDeprecationWarning"
+    "ignore:The qml.qinfo.vn_entanglement_entropy transform is deprecated:pennylane.PennyLaneDeprecationWarning"
 )
 
 
@@ -39,7 +39,7 @@ class TestVnEntanglementEntropy:
 
         with pytest.warns(
             qml.PennyLaneDeprecationWarning,
-            match="The qml.qinfo.vn_entanglement_entropy",
+            match="The qml.qinfo.vn_entanglement_entropy transform is deprecated",
         ):
             _ = qml.qinfo.vn_entanglement_entropy(circuit, [0], [1])()
 

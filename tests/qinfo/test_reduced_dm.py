@@ -18,7 +18,12 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 
-pytestmark = pytest.mark.all_interfaces
+pytestmark = [
+    pytest.mark.all_interfaces,
+    pytest.mark.filterwarnings(
+        "ignore:The qml.qinfo.reduced_dm transform is deprecated:pennylane.PennyLaneDeprecationWarning"
+    ),
+]
 
 tf = pytest.importorskip("tensorflow", minversion="2.1")
 torch = pytest.importorskip("torch")
@@ -39,13 +44,6 @@ interfaces = [
 wires_list = [[0], [1], [0, 1], [1, 0]]
 
 
-DEP_WARNING_MESSAGE = (
-    "The qml.qinfo.reduced_dm transform is deprecated and will be removed "
-    "in 0.40. Instead include the qml.density_matrix measurement process in the "
-    "return line of your QNode."
-)
-
-
 class TestDensityMatrixQNode:
     """Tests for the (reduced) density matrix for QNodes returning states."""
 
@@ -60,7 +58,7 @@ class TestDensityMatrixQNode:
 
         with pytest.warns(
             qml.PennyLaneDeprecationWarning,
-            match=DEP_WARNING_MESSAGE,
+            match="The qml.qinfo.reduced_dm transform is deprecated",
         ):
             _ = qml.qinfo.reduced_dm(circuit, [0])()
 

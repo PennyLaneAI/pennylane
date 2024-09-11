@@ -20,7 +20,7 @@ import pennylane as qml
 from pennylane import numpy as np
 
 pytestmark = pytest.mark.filterwarnings(
-    "ignore:The qml.qinfo.purity:pennylane.PennyLaneDeprecationWarning"
+    "ignore:The qml.qinfo.purity transform is deprecated:pennylane.PennyLaneDeprecationWarning"
 )
 
 
@@ -76,7 +76,7 @@ class TestPurity:
 
         with pytest.warns(
             qml.PennyLaneDeprecationWarning,
-            match="The qml.qinfo.purity",
+            match="The qml.qinfo.purity transform is deprecated",
         ):
             _ = qml.qinfo.purity(circuit, [0])()
 

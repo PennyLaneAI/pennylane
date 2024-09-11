@@ -667,14 +667,14 @@ def fidelity(qnode0, qnode1, wires0, wires1):
     if len(wires0) != len(wires1):
         raise qml.QuantumFunctionError("The two states must have the same number of wires.")
 
-    with warnings.catch_warnings():
-        warnings.filterwarnings(
-            action="ignore",
-            message="The qml.qinfo.reduced_dm transform",
-            category=qml.PennyLaneDeprecationWarning,
-        )
-        state_qnode0 = qml.qinfo.reduced_dm(qnode0, wires=wires0)
-        state_qnode1 = qml.qinfo.reduced_dm(qnode1, wires=wires1)
+    # with warnings.catch_warnings():
+    warnings.filterwarnings(
+        action="ignore",
+        message="The qml.qinfo.reduced_dm transform",
+        category=qml.PennyLaneDeprecationWarning,
+    )
+    state_qnode0 = qml.qinfo.reduced_dm(qnode0, wires=wires0)
+    state_qnode1 = qml.qinfo.reduced_dm(qnode1, wires=wires1)
 
     def evaluate_fidelity(all_args0=None, all_args1=None):
         """Wrapper used for evaluation of the fidelity between two states computed from QNodes. It allows giving
@@ -804,14 +804,14 @@ def relative_entropy(qnode0, qnode1, wires0, wires1):
     if len(wires0) != len(wires1):
         raise qml.QuantumFunctionError("The two states must have the same number of wires.")
 
-    with warnings.catch_warnings():
-        warnings.filterwarnings(
-            action="ignore",
-            message="The qml.qinfo.reduced_dm transform",
-            category=qml.PennyLaneDeprecationWarning,
-        )
-        state_qnode0 = qml.qinfo.reduced_dm(qnode0, wires=wires0)
-        state_qnode1 = qml.qinfo.reduced_dm(qnode1, wires=wires1)
+    # with warnings.catch_warnings():
+    warnings.filterwarnings(
+        action="ignore",
+        message="The qml.qinfo.reduced_dm transform",
+        category=qml.PennyLaneDeprecationWarning,
+    )
+    state_qnode0 = qml.qinfo.reduced_dm(qnode0, wires=wires0)
+    state_qnode1 = qml.qinfo.reduced_dm(qnode1, wires=wires1)
 
     def evaluate_relative_entropy(all_args0=None, all_args1=None):
         """Wrapper used for evaluation of the relative entropy between two states computed from
@@ -942,14 +942,14 @@ def trace_distance(qnode0, qnode1, wires0, wires1):
     if len(wires0) != len(wires1):
         raise qml.QuantumFunctionError("The two states must have the same number of wires.")
 
-    with warnings.catch_warnings():
-        warnings.filterwarnings(
-            action="ignore",
-            message="The qml.qinfo.reduced_dm transform",
-            category=qml.PennyLaneDeprecationWarning,
-        )
-        state_qnode0 = qml.qinfo.reduced_dm(qnode0, wires=wires0)
-        state_qnode1 = qml.qinfo.reduced_dm(qnode1, wires=wires1)
+    # with warnings.catch_warnings():
+    warnings.filterwarnings(
+        action="ignore",
+        message="The qml.qinfo.reduced_dm transform",
+        category=qml.PennyLaneDeprecationWarning,
+    )
+    state_qnode0 = qml.qinfo.reduced_dm(qnode0, wires=wires0)
+    state_qnode1 = qml.qinfo.reduced_dm(qnode1, wires=wires1)
 
     def evaluate_trace_distance(all_args0=None, all_args1=None):
         """Wrapper used for evaluation of the trace distance between two states computed from

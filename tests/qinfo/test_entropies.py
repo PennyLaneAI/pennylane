@@ -19,10 +19,14 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 
-pytestmark = pytest.mark.filterwarnings(
-    r"ignore:The qml\.qinfo\.(relative_entropy|vn_entropy|mutual_info|reduced_dm) "
-    "transform:pennylane.PennyLaneDeprecationWarning"
-)
+pytestmark = [
+    pytest.mark.filterwarnings(
+        r"ignore:The qml\.qinfo\.(vn_entropy|mutual_info|reduced_dm) transform:pennylane.PennyLaneDeprecationWarning"
+    ),
+    pytest.mark.filterwarnings(
+        "ignore:qml.qinfo.relative_entropy is deprecated:pennylane.PennyLaneDeprecationWarning"
+    ),
+]
 
 
 def expected_entropy_ising_xx(param):
@@ -86,7 +90,7 @@ class TestVonNeumannEntropy:
 
         with pytest.warns(
             qml.PennyLaneDeprecationWarning,
-            match="The qml.qinfo.vn_entropy",
+            match="The qml.qinfo.vn_entropy transform is deprecated",
         ):
             _ = qml.qinfo.vn_entropy(circuit, [0])()
 
@@ -441,7 +445,7 @@ class TestRelativeEntropy:
 
         with pytest.warns(
             qml.PennyLaneDeprecationWarning,
-            match="The qml.qinfo.relative_entropy",
+            match="qml.qinfo.relative_entropy is deprecated",
         ):
             _ = qml.qinfo.relative_entropy(circuit, circuit, wires0=[0], wires1=[0])((x,), (y,))
 
@@ -759,7 +763,9 @@ class TestRelativeEntropy:
             qml.CNOT(wires=[0, 1])
             return qml.state()
 
-        qml.qinfo.relative_entropy(circuit1, circuit2, [0], [0, 1])
+        msg = "The two states must have the same number of wires"
+        with pytest.raises(qml.QuantumFunctionError, match=msg):
+            qml.qinfo.relative_entropy(circuit1, circuit2, [0], [0, 1])
 
     @pytest.mark.parametrize("device", ["default.qubit", "default.mixed", "lightning.qubit"])
     def test_full_wires(self, device):

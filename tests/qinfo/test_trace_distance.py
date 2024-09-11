@@ -21,7 +21,7 @@ from pennylane import numpy as np
 pytestmark = [
     pytest.mark.all_interfaces,
     pytest.mark.filterwarnings(
-        "ignore:qml.qinfo.trace_distance:pennylane.PennyLaneDeprecationWarning"
+        "ignore:qml.qinfo.trace_distance is deprecated:pennylane.PennyLaneDeprecationWarning"
     ),
 ]
 
@@ -57,7 +57,7 @@ class TestTraceDistanceQnode:
 
         with pytest.warns(
             qml.PennyLaneDeprecationWarning,
-            match="qml.qinfo.trace_distance",
+            match="qml.qinfo.trace_distance is deprecated",
         ):
             _ = qml.qinfo.trace_distance(circuit, circuit, wires0=[0], wires1=[1])()
 
