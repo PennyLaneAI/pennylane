@@ -1,10 +1,10 @@
 numpy
-scipy
+scipy<=1.13.0
 cvxpy
 cvxopt
 networkx
 rustworkx
-autograd~=1.7.0
+autograd
 toml
 appdirs
 packaging
