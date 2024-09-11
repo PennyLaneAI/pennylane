@@ -56,9 +56,6 @@ jobs:
       - name: Determine if changes have been made
         id: changed
         run: |
-          echo "l      h" >> .github/durations/tf_tests_durations.json
-          echo "a      h" >> .github/durations/jax_tests_durations.json
-          echo "a      h" >> .github/durations/core_tests_durations.json
           echo "has_changes=$(git status --porcelain | wc -l | awk '{print $1}')" >> $GITHUB_OUTPUT
 
       - name: Stage changes
@@ -72,8 +69,8 @@ jobs:
       - name: Create pull request
         if: steps.changed.outputs.has_changes != '0'
         env:
-          GH_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
-          PR_TITLE: "Update test duration files"
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_TITLE: 'Update test duration files'
           PR_BODY: |
             Automatic update of stable requirement files to snapshot valid python environments.
 
@@ -85,11 +82,5 @@ jobs:
 
             Alternatively, wait for this branch to be out-of-date with master, then just use the 'Update branch' button.
         run: |
-          # Open a PR and exit if successful
-          gh pr create --title "$PR_TITLE" --body "$PR_BODY" && exit 0
-
-          # If failed, try to reopen PR if closed
-          gh pr reopen $(git branch --show-current)
-
-          # Edit existing PR
-          gh pr edit "$PR_TITLE" --body "$PR_BODY"
+          gh_pr_up() { gh pr create "$@" || gh pr edit "$@" }
+          gh_pr_up --title "$PR_TITLE" --body "$PR_BODY"
