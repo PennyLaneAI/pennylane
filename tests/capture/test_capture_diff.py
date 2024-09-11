@@ -309,7 +309,7 @@ class TestGrad:
         jax.config.update("jax_enable_x64", initial_mode)
 
     @pytest.mark.parametrize("argnum", ([0, 1, 2], [0, 2], [1], 0))
-    def test_grad_qnode_with_pytrees(self, argnum, x64_mode, mocker):
+    def test_grad_qnode_with_pytrees(self, argnum, x64_mode):
         """Test capturing the gradient of a qnode that uses Pytrees."""
         # pylint: disable=protected-access
         initial_mode = jax.config.jax_enable_x64
