@@ -161,10 +161,7 @@ class VnEntanglementEntropyMP(StateMeasurement):
     def shape(
         self, shots: Optional[int] = None, num_device_wires: int = 0
     ):  # pylint: disable=unused-argument
-        if not shots.has_partitioned_shots:
-            return ()
-        num_shot_elements = sum(s.copies for s in shots.shot_vector)
-        return tuple(() for _ in range(num_shot_elements))
+        return ()
 
     def process_state(self, state: Sequence[complex], wire_order: Wires):
         state = qml.math.dm_from_state_vector(state)
