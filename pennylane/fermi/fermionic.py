@@ -328,8 +328,8 @@ class FermiWord(dict):
         r"""Returns a ``FermiSentence`` built from the ``FermiWord`` by moving the operator in position ``initial_position`` to position ``final_position`` and applying the fermionic anti-commutator relations.
 
         Args:
-            initial_position (int): The position of the operator to be commuted.
-            final_position (int): The desired position of the operator occupying the source position.
+            initial_position (int): The position of the operator to be shifted.
+            final_position (int): The desired position of the operator occupying the initial position.
 
         Returns:
             FermiSentence: The ``FermiSentence`` obtained after applying the anti-commutator relations.
