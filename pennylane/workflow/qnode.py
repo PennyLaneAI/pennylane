@@ -910,7 +910,7 @@ class QNode:
         # numpy. If we do not do this, numpy will become autograd in `qml.execute`.
         # If the user specified interface="numpy", it would've already been converted to
         # "autograd", and it wouldn't be affected.
-        interface = self.interface if self.interface != "numpy" else None
+        interface = None if self.interface == "numpy" else self.interface
 
         # pylint: disable=unexpected-keyword-arg
         res = qml.execute(
