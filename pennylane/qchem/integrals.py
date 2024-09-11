@@ -145,9 +145,9 @@ def _generate_params(params, args, argnum=None):
     argnums = () if argnum is None else ((argnum) if isinstance(argnum, int) else argnum)
     basis_params = []
     c = 0
-    for i, p in enumerate(params):
-        # we iterate through argnum backwards because params order goes [alpha, coeff, r]
-        if getattr(p, "requires_grad", False) or 2 - i in argnums:
+    for i, p in enumerate(params): # [r, coeff, alpha]
+        #print(i, args[i])# we iterate through argnum backwards because params order goes [alpha, coeff, r]
+        if getattr(p, "requires_grad", False) or (len(args) > 0 and qml.math.requires_grad(args[2-i])):
             basis_params.append(args[c])
             c += 1
         else:
@@ -315,7 +315,6 @@ def overlap_integral(basis_a, basis_b, argnum=None, normalize=True):
             array[float]: the overlap integral between two contracted Gaussian orbitals
         """
         argnums = () if argnum is None else ((argnum) if isinstance(argnum, int) else argnum)
-
         args_a = [arg[0] for arg in args]
         args_b = [arg[1] for arg in args]
         alpha, ca, ra = _generate_params(basis_a.params, args_a, argnum)

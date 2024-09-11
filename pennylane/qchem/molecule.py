@@ -22,6 +22,7 @@ import collections
 import itertools
 
 from pennylane import numpy as pnp
+from jax import numpy as jnp
 
 from .basis_data import atomic_numbers
 from .basis_set import BasisFunction, mol_basis_data
@@ -85,6 +86,7 @@ class Molecule:
         normalize=True,
         unit="bohr",
         argnum=None,
+        debug=False,
     ):
         if (
             basis_name.lower()
@@ -137,15 +139,26 @@ class Molecule:
             l = [i[0] for i in self.basis_data]
 
         if alpha is None:
-            alpha = [pnp.array(i[1], requires_grad=False) for i in self.basis_data]
+            if debug:
+                alpha = [jnp.array(i[1]) for i in self.basis_data]
+            else:
+                alpha = [pnp.array(i[1], requires_grad=False) for i in self.basis_data]
 
         if coeff is None:
-            coeff = [pnp.array(i[2], requires_grad=False) for i in self.basis_data]
-            if normalize:
-                coeff = [
-                    pnp.array(c * primitive_norm(l[i], alpha[i]), requires_grad=False)
-                    for i, c in enumerate(coeff)
+            if debug:
+                coeff = [jnp.array(i[2]) for i in self.basis_data]
+                if normalize:
+                    coeff = [
+                        jnp.array(c * primitive_norm(l[i], alpha[i]))
+                        for i, c in enumerate(coeff)
                 ]
+            else:
+                coeff = [pnp.array(i[2], requires_grad=False) for i in self.basis_data]
+                if normalize:
+                    coeff = [
+                        pnp.array(c * primitive_norm(l[i], alpha[i]), requires_grad=False)
+                        for i, c in enumerate(coeff)
+                    ]
 
         r = list(
             itertools.chain(
