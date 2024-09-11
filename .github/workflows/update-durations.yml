@@ -72,16 +72,6 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_TITLE: 'Update test duration files'
-          PR_BODY: |
-            Automatic update of stable requirement files to snapshot valid python environments.
-
-            Because bots are not able to trigger CI on their own, please do so by pushing an empty commit to this branch using the following command:
-
-            ```
-            git commit --allow-empty -m 'trigger ci'
-            ```
-
-            Alternatively, wait for this branch to be out-of-date with master, then just use the 'Update branch' button.
         run: |
           gh_pr_up() { gh pr create "$@" || gh pr edit "$@" }
-          gh_pr_up --title "$PR_TITLE" --body "$PR_BODY"
+          gh_pr_up --title "$PR_TITLE" --body ""
