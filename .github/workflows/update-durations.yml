@@ -55,9 +55,7 @@ jobs:
 
       - name: Determine if changes have been made
         id: changed
-        run: |
-          echo "bleh   bleh" >> ./.github/durations/core_tests_durations.json
-          echo "has_changes=$(git status --porcelain | wc -l | awk '{print $1}')" >> $GITHUB_OUTPUT
+        run: echo "has_changes=$(git status --porcelain | wc -l | awk '{print $1}')" >> $GITHUB_OUTPUT
 
       - name: Stage changes
         if: steps.changed.outputs.has_changes != '0'
