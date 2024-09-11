@@ -99,11 +99,11 @@ class TestGrad:
         assert qml.math.allclose(func_qml(x), jax_out)
 
         # Check overall jaxpr properties
-        if isinstance(argnum, int):
-            argnum = [argnum]
         jaxpr = jax.make_jaxpr(func_qml)(x)
         assert jaxpr.in_avals == [jax.core.ShapedArray((), fdtype, weak_type=True)]
         assert len(jaxpr.eqns) == 3
+        if isinstance(argnum, int):
+            argnum = [argnum]
         assert jaxpr.out_avals == [jax.core.ShapedArray((), fdtype, weak_type=True)] * len(argnum)
 
         grad_eqn = jaxpr.eqns[2]
@@ -289,11 +289,10 @@ class TestGrad:
         assert qml.math.allclose(jax_out_flat, qml_out_flat)
 
         # Check overall jaxpr properties
-        if isinstance(argnum, int):
-            argnum = [argnum]
         jaxpr = jax.make_jaxpr(func_qml)(x)
         assert jaxpr.in_avals == [jax.core.ShapedArray((), fdtype, weak_type=True)]
         assert len(jaxpr.eqns) == 3
+        argnum = [argnum] if isinstance(argnum, int) else argnum
         assert jaxpr.out_avals == [jax.core.ShapedArray((), fdtype, weak_type=True)] * len(argnum)
 
         grad_eqn = jaxpr.eqns[2]
@@ -321,18 +320,15 @@ class TestGrad:
 
         @qml.qnode(dev)
         def circuit(x, y, z):
-            # qml.RX(x["a"], wires=0)
-            # qml.RY(y, wires=0)
-            # qml.RZ(z[1][0], wires=0)
-            qml.RX(x, wires=0)
+            qml.RX(x["a"], wires=0)
             qml.RY(y, wires=0)
-            qml.RZ(z, wires=0)
+            qml.RZ(z[1][0], wires=0)
             return qml.expval(qml.X(0))
 
         dcircuit = qml.grad(circuit, argnum=argnum)
-        x = 0.5
+        x = {"a": 0.6, "b": 0.9}
         y = 0.6
-        z = 0.2
+        z = ({"c": 0.5}, [0.2, 0.3])
         qml_out = dcircuit(x, y, z)
         qml_out_flat, qml_out_tree = jax.tree_util.tree_flatten(qml_out)
         jax_out = jax.grad(circuit, argnums=argnum)(x, y, z)
@@ -407,11 +403,11 @@ class TestJacobian:
         func_jax = jax.jacobian(inner_func, argnums=argnum)
 
         jax_out = func_jax(x, y)
+        qml_out = func_qml(x, y)
         num_axes = 1 if (int_argnum := isinstance(argnum, int)) else 2
-        assert _jac_allclose(func_qml(x, y), jax_out, num_axes)
+        assert _jac_allclose(qml_out, jax_out, num_axes)
 
         # Check overall jaxpr properties
-        jaxpr = jax.make_jaxpr(func_jax)(x, y)
         jaxpr = jax.make_jaxpr(func_qml)(x, y)
 
         if int_argnum:
@@ -457,7 +453,6 @@ class TestJacobian:
             return jnp.prod(x) * jnp.sin(x), jnp.sum(x**2)
 
         x = jnp.array([0.7, -0.9, 0.6, 0.3])
-        x = x[:1]
         dim = len(x)
         eye = jnp.eye(dim)
 
@@ -485,15 +480,20 @@ class TestJacobian:
 
         # 2nd order
         qml_func_2 = qml.jacobian(qml_func_1)
+        hyperdiag = qml.numpy.zeros((4, 4, 4))
+        for i in range(4):
+            hyperdiag[i, i, i] = 1
         expected_2 = (
             prod_sin[:, None, None] / x[None, :, None] / x[None, None, :]
+            - jnp.tensordot(prod_sin, eye / x**2, axes=0)  # Correct diagonal entries
             + prod_cos_e_i[:, :, None] / x[None, None, :]
             + prod_cos_e_i[:, None, :] / x[None, :, None]
-            - jnp.tensordot(prod_sin, eye + eye / x**2, axes=0),
-            jnp.tensordot(jnp.ones(dim), eye * 2, axes=0),
+            - prod_sin * hyperdiag,
+            eye * 2,
         )
         # Output only has one tuple axis
-        assert _jac_allclose(qml_func_2(x), expected_2, 1)
+        atol = 1e-8 if x64_mode else 2e-7
+        assert _jac_allclose(qml_func_2(x), expected_2, 1, atol=atol)
 
         jaxpr_2 = jax.make_jaxpr(qml_func_2)(x)
         assert jaxpr_2.in_avals == [jax.core.ShapedArray((dim,), fdtype)]
@@ -509,7 +509,7 @@ class TestJacobian:
         assert jac_eqn.params["jaxpr"].eqns[0].primitive == jacobian_prim
 
         manual_eval_2 = jax.core.eval_jaxpr(jaxpr_2.jaxpr, jaxpr_2.consts, x)
-        assert _jac_allclose(manual_eval_2, expected_2, 1)
+        assert _jac_allclose(manual_eval_2, expected_2, 1, atol=atol)
 
         jax.config.update("jax_enable_x64", initial_mode)
 
@@ -610,18 +610,13 @@ class TestJacobian:
         assert qml.math.allclose(jax_out_flat, qml_out_flat)
 
         # Check overall jaxpr properties
-        if isinstance(argnum, int):
-            argnum = [argnum]
         jaxpr = jax.make_jaxpr(func_qml)(x)
         assert jaxpr.in_avals == [jax.core.ShapedArray((), fdtype, weak_type=True)]
         assert len(jaxpr.eqns) == 3
 
+        argnum = [argnum] if isinstance(argnum, int) else argnum
         # Compute the flat argnum in order to determine the expected number of out tracers
-        flat_argnum = []
-        if 0 in argnum:
-            flat_argnum.append(0)
-        if 1 in argnum:
-            flat_argnum.extend([1, 2])
+        flat_argnum = [0] * (0 in argnum) + [1, 2] * (1 in argnum)
         assert jaxpr.out_avals == [jax.core.ShapedArray((), fdtype)] * (2 * len(flat_argnum))
 
         jac_eqn = jaxpr.eqns[2]

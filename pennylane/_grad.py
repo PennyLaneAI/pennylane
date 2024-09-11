@@ -38,10 +38,10 @@ def _capture_diff(func, argnum=None, diff_prim=None, method=None, h=None):
     import jax
     from jax.tree_util import tree_flatten, tree_unflatten, treedef_tuple
 
-    if isinstance(argnum, int):
-        argnum = [argnum]
     if argnum is None:
-        argnum = [0]
+        argnum = 0
+    if argnum_is_int := isinstance(argnum, int):
+        argnum = [argnum]
 
     @wraps(func)
     def new_func(*args, **kwargs):
@@ -50,7 +50,11 @@ def _capture_diff(func, argnum=None, diff_prim=None, method=None, h=None):
 
         # Create a new input tree that only takes inputs marked by argnum into account
         trainable_in_trees = (in_tree for i, in_tree in enumerate(in_trees) if i in argnum)
-        trainable_in_tree = treedef_tuple(trainable_in_trees)
+        # If an integer was provided as argnum, unpack the arguments axis of the derivatives
+        if argnum_is_int:
+            trainable_in_tree = list(trainable_in_trees)[0]
+        else:
+            trainable_in_tree = treedef_tuple(trainable_in_trees)
 
         # Create argnum for the flat list of input arrays. For each flattened argument,
         # add a list of flat argnums if the argument is trainable and an empty list otherwise.
