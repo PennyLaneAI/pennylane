@@ -36,7 +36,7 @@ def _capture_diff(func, argnum=None, diff_prim=None, method=None, h=None):
     """Capture-compatible gradient computation."""
     # pylint: disable=import-outside-toplevel
     import jax
-    from jax.tree_util import tree_flatten, tree_unflatten, treedef_tuple
+    from jax.tree_util import tree_flatten, tree_leaves, tree_unflatten, treedef_tuple
 
     if argnum is None:
         argnum = 0
@@ -76,7 +76,7 @@ def _capture_diff(func, argnum=None, diff_prim=None, method=None, h=None):
         prim_kwargs = {"argnum": flat_argnum, "jaxpr": jaxpr.jaxpr, "n_consts": len(jaxpr.consts)}
         out_flat = diff_prim.bind(*jaxpr.consts, *flat_args, **prim_kwargs, method=method, h=h)
         # flatten once more to go from 2D derivative structure (outputs, args) to flat structure
-        out_flat, _ = tree_flatten(out_flat)
+        out_flat = tree_leaves(out_flat)
         assert flat_fn.out_tree is not None, "out_tree should be set after executing flat_fn"
         # The derivative output tree is the composition of output tree and trainable input trees
         combined_tree = flat_fn.out_tree.compose(trainable_in_tree)

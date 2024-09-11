@@ -178,7 +178,7 @@ def qnode_call(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
     qnode_kwargs = {"diff_method": qnode.diff_method, **execute_kwargs, **mcm_config}
     qnode_prim = _get_qnode_prim()
 
-    flat_args, _ = jax.tree_util.tree_flatten(args)
+    flat_args = jax.tree_util.tree_leaves(args)
     res = qnode_prim.bind(
         *qfunc_jaxpr.consts,
         *flat_args,
