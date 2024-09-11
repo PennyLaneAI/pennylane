@@ -324,12 +324,12 @@ class FermiWord(dict):
             wire_order=list(range(largest_order)), format=format, buffer_size=buffer_size
         )
 
-    def commute(self, source, target):
-        r"""Returns a ``FermiSentence`` built from the ``FermiWord`` by moving the operator in position ``source`` to position ``target`` and applying the fermionic anti-commutator relations.
+    def shift_operator(self, initial_position, final_position):
+        r"""Returns a ``FermiSentence`` built from the ``FermiWord`` by moving the operator in position ``initial_position`` to position ``final_position`` and applying the fermionic anti-commutator relations.
 
         Args:
-            source (int): The position of the operator to be commuted.
-            target (int): The desired position of the operator occupying the source position.
+            initial_position (int): The position of the operator to be commuted.
+            final_position (int): The desired position of the operator occupying the source position.
 
         Returns:
             FermiSentence: The ``FermiSentence`` obtained after applying the anti-commutator relations.
@@ -346,24 +346,24 @@ class FermiWord(dict):
         -1 * a(1) a⁺(0)
         """
 
-        if not isinstance(source, int) or not isinstance(target, int):
+        if not isinstance(initial_position, int) or not isinstance(final_position, int):
             raise TypeError("Positions must be integers")
 
-        if source < 0 or target < 0:
+        if initial_position < 0 or final_position < 0:
             raise ValueError("Positions must be positive integers")
 
-        if source > len(self.sorted_dic) - 1 or target > len(self.sorted_dic) - 1:
+        if initial_position > len(self.sorted_dic) - 1 or final_position > len(self.sorted_dic) - 1:
             raise ValueError("Positions out of range")
 
-        if source == target:
+        if initial_position == final_position:
             return FermiSentence({self: 1})
 
         fw = self
         fs = FermiSentence({fw: 1})
-        delta = 1 if source < target else -1
-        current = source
+        delta = 1 if initial_position < final_position else -1
+        current = initial_position
 
-        while current != target:
+        while current != final_position:
             indices = list(fw.sorted_dic.keys())
             next = current + delta
             curr_idx, curr_val = indices[current], fw[indices[current]]

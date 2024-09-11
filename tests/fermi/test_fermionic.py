@@ -223,7 +223,7 @@ class TestFermiWord:
         with pytest.raises(ValueError, match="n_orbitals cannot be smaller than 2"):
             fw1.to_mat(n_orbitals=1)
 
-    tup_fw_commute = (
+    tup_fw_shift = (
         (fw8, 0, 1, fw8cs),
         (fw9, 0, 1, fw9cs),
         (fw10, 0, 1, fw10cs),
@@ -242,19 +242,21 @@ class TestFermiWord:
         (fw20, 4, 0, fw20cs),
     )
 
-    @pytest.mark.parametrize("fw, i, j, fs", tup_fw_commute)
-    def test_commute(self, fw, i, j, fs):
-        assert fw.commute(i, j) == fs
+    @pytest.mark.parametrize("fw, i, j, fs", tup_fw_shift)
+    def test_shift_operator(self, fw, i, j, fs):
+        """Test that the shift_operator method correctly applies the anti-commutator relations."""
+        assert fw.shift_operator(i, j) == fs
 
-    def test_commute_errors(self):
+    def test_shift_operator_errors(self):
+        """Test that the shift_operator method correctly raises exceptions."""
         with pytest.raises(TypeError, match="Positions must be integers"):
-            fw8.commute(0.5, 1)
+            fw8.shift_operator(0.5, 1)
 
         with pytest.raises(ValueError, match="Positions must be positive integers"):
-            fw8.commute(-1, 0)
+            fw8.shift_operator(-1, 0)
 
         with pytest.raises(ValueError, match="Positions out of range"):
-            fw8.commute(1, 2)
+            fw8.shift_operator(1, 2)
 
     tup_fw_dag = (
         (fw1, fw1_dag),
