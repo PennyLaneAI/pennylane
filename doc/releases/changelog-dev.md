@@ -37,6 +37,9 @@
   `from pennylane.capture.primitives import *`.
   [(#6129)](https://github.com/PennyLaneAI/pennylane/pull/6129)
 
+* `FermiWord` and `FermiSentence` classes now have methods to compute adjoints.
+  [(#6166)](https://github.com/PennyLaneAI/pennylane/pull/6166)
+
 * The `SampleMP.process_samples` method is updated to support using JAX tracers
   for samples, allowing compatiblity with Catalyst workflows.
   [(#6211)](https://github.com/PennyLaneAI/pennylane/pull/6211)
@@ -75,11 +78,17 @@
   Please use `qml.transforms.split_non_commuting` instead.
   [(#6204)](https://github.com/PennyLaneAI/pennylane/pull/6204)
 
+* `Operator.expand` is now removed. Use `qml.tape.QuantumScript(op.deocomposition())` instead.
+  [(#6227)](https://github.com/PennyLaneAI/pennylane/pull/6227)
+
 <h3>Deprecations 👋</h3>
 
 <h3>Documentation 📝</h3>
 
 <h3>Bug fixes 🐛</h3>
+
+* Fix a bug where zero-valued JVPs were calculated wrongly in the presence of shot vectors.
+  [(#6219)](https://github.com/PennyLaneAI/pennylane/pull/6219)
 
 * Fix `qml.PrepSelPrep` template to work with `torch`:
   [(#6191)](https://github.com/PennyLaneAI/pennylane/pull/6191)
