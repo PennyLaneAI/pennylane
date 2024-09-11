@@ -309,6 +309,61 @@ class TestGrad:
 
         jax.config.update("jax_enable_x64", initial_mode)
 
+    @pytest.mark.parametrize("argnum", ([0, 1, 2], [0, 2], [1], 0))
+    def test_grad_qnode_with_pytrees(self, argnum, x64_mode, mocker):
+        """Test capturing the gradient of a qnode that uses Pytrees."""
+        # pylint: disable=protected-access
+        initial_mode = jax.config.jax_enable_x64
+        jax.config.update("jax_enable_x64", x64_mode)
+        fdtype = jax.numpy.float64 if x64_mode else jax.numpy.float32
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit(x, y, z):
+            # qml.RX(x["a"], wires=0)
+            # qml.RY(y, wires=0)
+            # qml.RZ(z[1][0], wires=0)
+            qml.RX(x, wires=0)
+            qml.RY(y, wires=0)
+            qml.RZ(z, wires=0)
+            return qml.expval(qml.X(0))
+
+        dcircuit = qml.grad(circuit, argnum=argnum)
+        x = 0.5
+        y = 0.6
+        z = 0.2
+        qml_out = dcircuit(x, y, z)
+        qml_out_flat, qml_out_tree = jax.tree_util.tree_flatten(qml_out)
+        jax_out = jax.grad(circuit, argnums=argnum)(x, y, z)
+        jax_out_flat, jax_out_tree = jax.tree_util.tree_flatten(jax_out)
+        assert jax_out_tree == qml_out_tree
+        assert qml.math.allclose(jax_out_flat, qml_out_flat)
+
+        jaxpr = jax.make_jaxpr(dcircuit)(x, y, z)
+
+        assert len(jaxpr.eqns) == 1  # grad equation
+        assert jaxpr.in_avals == [jax.core.ShapedArray((), fdtype, weak_type=True)] * 6
+        argnum = [argnum] if isinstance(argnum, int) else argnum
+        num_out_avals = 2 * (0 in argnum) + (1 in argnum) + 3 * (2 in argnum)
+        assert jaxpr.out_avals == [jax.core.ShapedArray((), fdtype, weak_type=True)] * num_out_avals
+
+        grad_eqn = jaxpr.eqns[0]
+        assert all(invar.aval == in_aval for invar, in_aval in zip(grad_eqn.invars, jaxpr.in_avals))
+        flat_argnum = [0, 1] * (0 in argnum) + [2] * (1 in argnum) + [3, 4, 5] * (2 in argnum)
+        diff_eqn_assertions(grad_eqn, grad_prim, argnum=flat_argnum)
+        grad_jaxpr = grad_eqn.params["jaxpr"]
+        assert len(grad_jaxpr.eqns) == 1  # qnode equation
+
+        flat_args = jax.tree_util.tree_leaves((x, y, z))
+        manual_out = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *flat_args)
+        manual_out_flat, manual_out_tree = jax.tree_util.tree_flatten(manual_out)
+        # Assert that the output from the manual evaluation is flat
+        assert manual_out_tree == jax.tree_util.tree_flatten(manual_out_flat)[1]
+        assert qml.math.allclose(jax_out_flat, manual_out_flat)
+
+        jax.config.update("jax_enable_x64", initial_mode)
+
 
 def _jac_allclose(jac1, jac2, num_axes, atol=1e-8):
     """Test that two Jacobians, given as nested sequences of arrays, are equal."""

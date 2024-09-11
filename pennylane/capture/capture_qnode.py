@@ -82,8 +82,8 @@ def _get_qnode_prim():
         mps = qfunc_jaxpr.outvars
         return _get_shapes_for(*mps, shots=shots, num_device_wires=len(device.wires))
 
-    def _qnode_jvp(*args_and_tangents, **impl_kwargs):
-        return jax.jvp(partial(qnode_prim.impl, **impl_kwargs), *args_and_tangents)
+    def _qnode_jvp(args, tangents, **impl_kwargs):
+        return jax.jvp(partial(qnode_prim.impl, **impl_kwargs), args, tangents)
 
     ad.primitive_jvps[qnode_prim] = _qnode_jvp
 
