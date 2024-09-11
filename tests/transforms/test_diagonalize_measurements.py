@@ -310,10 +310,16 @@ class TestDiagonalizeTapeMeasurements:
         new_tape = tapes[0]
 
         if to_eigvals:
-            assert new_tape.measurements == [
-                ExpectationMP(eigvals=[1.0, -1.0], wires=[0]),
-                VarianceMP(eigvals=[2.0, 0.0, 0.0, -2.0], wires=[1, 2]),
-            ]
+            if qml.operation.active_new_opmath():
+                assert new_tape.measurements == [
+                    ExpectationMP(eigvals=[1.0, -1.0], wires=[0]),
+                    VarianceMP(eigvals=[2.0, 0.0, 0.0, -2.0], wires=[1, 2]),
+                ]
+            else:
+                assert new_tape.measurements == [
+                    ExpectationMP(eigvals=[1.0, -1.0], wires=[0]),
+                    VarianceMP(eigvals=[-2.0, 0.0, 0.0, 2.0], wires=[1, 2]),
+                ]
         else:
             assert new_tape.measurements == [qml.expval(Z(0)), qml.var(Z(1) + Z(2))]
         assert new_tape.operations == diagonalize_qwc_pauli_words([X(0), X(1), Y(2)])[0]
