@@ -26,7 +26,6 @@ from pennylane.fermi.fermionic import (
     FermiC,
     FermiSentence,
     FermiWord,
-    _commute_adjacent,
     _to_string,
     from_string,
 )
@@ -253,9 +252,6 @@ class TestFermiWord:
 
         with pytest.raises(ValueError, match="Positions must be positive integers"):
             fw8.commute(-1, 0)
-
-        with pytest.raises(ValueError, match="Positions must be consecutive integers"):
-            _commute_adjacent(FermiSentence({fw17: 1}), fw17, 0, 2)
 
         with pytest.raises(ValueError, match="Positions out of range"):
             fw8.commute(1, 2)

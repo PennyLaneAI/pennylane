@@ -361,73 +361,56 @@ class FermiWord(dict):
         fw = self
         fs = FermiSentence({fw: 1})
         delta = 1 if source < target else -1
+        current = source
 
-        while source != target:
-            fs, fw = _commute_adjacent(fs, fw, source, source + delta)
-            source += delta
+        while current != target:
+            indices = list(fw.sorted_dic.keys())
+            next = current + delta
+            curr_idx, curr_val = indices[current], fw[indices[current]]
+            next_idx, next_val = indices[next], fw[indices[next]]
+
+            # commuting identical terms
+            if curr_idx[1] == next_idx[1] and curr_val == next_val:
+                current += delta
+                continue
+
+            coeff = fs.pop(fw)
+
+            fw = dict(fw)
+            fw[(current, next_idx[1])] = next_val
+            fw[(next, curr_idx[1])] = curr_val
+
+            if curr_idx[1] != next_idx[1]:
+                del fw[curr_idx]
+                del fw[next_idx]
+
+            fw = FermiWord(fw)
+
+            # anti-commutator is 0
+            if curr_val == next_val or curr_idx[1] != next_idx[1]:
+                current += delta
+                fs += -1 * FermiSentence({fw: coeff})
+                continue
+
+            # anti-commutator is 1
+            _min = min(current, next)
+            _max = max(current, next)
+            items = list(fw.sorted_dic.items())
+
+            left = FermiWord({(i, key[1]): value for i, (key, value) in enumerate(items[:_min])})
+            middle = FermiWord(
+                {(i, key[1]): value for i, (key, value) in enumerate(items[_min : _max + 1])}
+            )
+            right = FermiWord(
+                {(i, key[1]): value for i, (key, value) in enumerate(items[_max + 1 :])}
+            )
+
+            terms = left * (1 - middle) * right
+            fs += coeff * terms
+
+            current += delta
 
         return fs
-
-
-def _commute_adjacent(fs, fw, source, target):
-    """Commutes two adjacent operators within a ``FermiSentence``.
-
-    Args:
-        fs (``FermiSentence``): The ``FermiSentence`` to be modified.
-        fw (``FermiWord``): The ``FermiWord`` within ``fs`` that contains the operators
-            to be commuted.
-        source (int): The position of the operator to be commuted.
-        target (int): The desired position of the operator occupying the source position.
-
-    Returns:
-        FermiSentence: The ``FermiSentence`` obtained after applying the anti-commutator relations.
-        FermiWord: The ``FermiWord`` that was modified by the commutation.
-
-    Raises:
-        ValueError: if the source and target positions are not consecutive
-    """
-    if source != target + 1 and target != source + 1:
-        raise ValueError("Positions must be consecutive integers")
-
-    indices = list(fw.sorted_dic.keys())
-    source_idx, source_val = indices[source], fw[indices[source]]
-    target_idx, target_val = indices[target], fw[indices[target]]
-
-    # commuting identical terms
-    if source_idx[1] == target_idx[1] and source_val == target_val:
-        return fs, fw
-
-    coeff = fs.pop(fw)
-
-    fw = dict(fw)
-    fw[(source, target_idx[1])] = target_val
-    fw[(target, source_idx[1])] = source_val
-
-    if source_idx[1] != target_idx[1]:
-        del fw[source_idx]
-        del fw[target_idx]
-
-    fw = FermiWord(fw)
-
-    # anti-commutator is 0
-    if source_val == target_val or source_idx[1] != target_idx[1]:
-        return fs + (-1 * FermiSentence({fw: coeff})), fw
-
-    # anti-commutator is 1
-    _min = min(source, target)
-    _max = max(source, target)
-    items = list(fw.sorted_dic.items())
-
-    left = FermiWord({(i, key[1]): value for i, (key, value) in enumerate(items[:_min])})
-    middle = FermiWord(
-        {(i, key[1]): value for i, (key, value) in enumerate(items[_min : _max + 1])}
-    )
-    right = FermiWord({(i, key[1]): value for i, (key, value) in enumerate(items[_max + 1 :])})
-
-    terms = left * (1 - middle) * right
-    fs += coeff * terms
-
-    return fs, fw
 
 
 # pylint: disable=useless-super-delegation
