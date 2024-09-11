@@ -123,7 +123,9 @@ def eigvals(op: qml.operation.Operator, k=1, which="SA") -> TensorLike:
             "Consider using a sparse representation of the Hamiltonian with qml.SparseHamiltonian.",
             UserWarning,
         )
-        return qml.math.linalg.eigvalsh(qml.matrix(op))
+        # Use eigvals instead of eigvalsh because eigvalsh returns the eigenvalues
+        # in ascending order, while eigvals respects the underlying wire order.
+        return qml.math.linalg.eigvals(qml.matrix(op))
 
     if isinstance(op, qml.SparseHamiltonian):
         sparse_matrix = op.sparse_matrix()
