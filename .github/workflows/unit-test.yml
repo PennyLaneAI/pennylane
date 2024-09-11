@@ -33,7 +33,7 @@ on:
         description: The version of numpy 2.0 to use in order to run unit tests
         required: false
         type: string
-        default: '2.0.0'
+        default: '2.0'
       pipeline_mode:
         description: The pipeline mode can be unit-tests, benchmarks, or reference-benchmark
         required: false
