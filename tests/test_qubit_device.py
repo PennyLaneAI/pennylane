@@ -1660,7 +1660,7 @@ def test_generate_basis_states():
 def test_samples_to_counts_all_outomces():
     """Test that _samples_to_counts can handle counts with all outcomes."""
 
-    class DummyQubitDevice(qml.QubitDevice):
+    class DummyQubitDevice(qml.devices.QubitDevice):
 
         author = None
         name = "bla"

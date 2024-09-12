@@ -3575,8 +3575,7 @@ class TestHamiltonianExpvalGradients:
         tape = qml.tape.QuantumScript.from_queue(q)
         tape.trainable_params = {0, 1, 2, 3, 4, 5}
         tapes, fn = qml.gradients.param_shift(tape, broadcast=broadcast)
-        execute_fn = dev.batch_execute if isinstance(dev, qml.Device) else dev.execute
-        jac = fn(execute_fn(tapes))
+        jac = fn(dev.execute(tapes))
         return jac
 
     @staticmethod

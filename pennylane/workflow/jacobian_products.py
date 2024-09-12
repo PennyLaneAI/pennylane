@@ -18,7 +18,7 @@ import abc
 import inspect
 import logging
 from collections.abc import Callable, Sequence
-from typing import Optional, Union
+from typing import Optional
 
 import numpy as np
 from cachetools import LRUCache
@@ -332,7 +332,7 @@ class TransformJacobianProducts(JacobianProductCalculator):
 
 
 class DeviceDerivatives(JacobianProductCalculator):
-    """Calculate jacobian products via a device provided jacobian.  This class relies on either ``qml.Device.gradients`` or
+    """Calculate jacobian products via a device provided jacobian.  This class relies on
     ``qml.devices.Device.compute_derivatives``.
 
     Args:
@@ -397,7 +397,7 @@ class DeviceDerivatives(JacobianProductCalculator):
 
     def __init__(
         self,
-        device: Union["qml.devices.Device", "qml.Device"],
+        device: "qml.devices.Device",
         execution_config: Optional["qml.devices.ExecutionConfig"] = None,
     ):
         if execution_config is None:

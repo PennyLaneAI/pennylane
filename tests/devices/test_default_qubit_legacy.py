@@ -2378,7 +2378,7 @@ class TestHamiltonianSupport:
         dev = qml.device("default.qubit.legacy", wires=2, shots=10)
         H = qml.Hamiltonian([0.1, 0.2], [qml.PauliX(0), qml.PauliZ(1)])
 
-        spy = mocker.spy(qml.QubitDevice, "_get_diagonalizing_gates")
+        spy = mocker.spy(qml.devices.QubitDevice, "_get_diagonalizing_gates")
         qs = qml.tape.QuantumScript([qml.RX(1, 0)], [qml.expval(qml.PauliX(0)), qml.expval(H)])
         rotations = dev._get_diagonalizing_gates(qs)
 
@@ -2416,7 +2416,7 @@ class TestSumSupport:
     def test_super_expval_not_called(self, is_state_batched, mocker):
         """Tests basic expval result, and ensures QubitDevice.expval is not called."""
         dev = qml.device("default.qubit.legacy", wires=1)
-        spy = mocker.spy(qml.QubitDevice, "expval")
+        spy = mocker.spy(qml.devices.QubitDevice, "expval")
         obs = qml.sum(qml.s_prod(0.1, qml.PauliX(0)), qml.s_prod(0.2, qml.PauliZ(0)))
         assert np.isclose(dev.expval(obs), 0.2)
         spy.assert_not_called()

@@ -1151,7 +1151,7 @@ class TestGrouping:
     """Tests for the use_grouping option for devices."""
 
     # pylint: disable=too-few-public-methods, unused-argument, missing-function-docstring, missing-class-docstring
-    class SomeDevice(qml.Device):
+    class SomeDevice(qml.devices.LegacyDevice):
         name = ""
         short_name = ""
         pennylane_requires = ""
