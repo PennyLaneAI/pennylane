@@ -140,8 +140,16 @@ def _generate_params(params, args):
     """
     basis_params = []
     c = 0
-    for i, p in enumerate(params): # [r, coeff, alpha]
-        if getattr(p, "requires_grad", False) or (len(args) > 0 and qml.math.requires_grad(args[2-i])):
+    for i, p in enumerate(params):  # [r, coeff, alpha]
+        if len(args) == 0:
+            basis_params.append(p)
+            continue
+
+        interface = qml.math.get_interface(p)
+
+        if (interface == "autograd" and getattr(p, "requires_grad", False)) or (
+            interface != "autograd" and qml.math.requires_grad(args[2 - i])
+        ):
             basis_params.append(args[c])
             c += 1
         else:

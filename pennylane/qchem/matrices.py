@@ -264,8 +264,7 @@ def attraction_matrix(basis_functions, charges, r):
             else:
                 for k, c in enumerate(r):
                     integral = (
-                        integral
-                        - charges[k] * attraction_integral(c, a, b, normalize=False)()
+                        integral - charges[k] * attraction_integral(c, a, b, normalize=False)()
                     )
 
             o = qml.math.zeros((n, n))

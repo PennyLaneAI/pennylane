@@ -27,7 +27,9 @@ from jax import numpy as jnp
 from .basis_data import atomic_numbers
 from .basis_set import BasisFunction, mol_basis_data
 from .integrals import contracted_norm, primitive_norm
-from pennylane.pytrees import register_pytree # <- this will help register as a jax pytree if you have jax installed
+from pennylane.pytrees import (
+    register_pytree,
+)  # <- this will help register as a jax pytree if you have jax installed
 
 # Bohr-Angstrom correlation coefficient (https://physics.nist.gov/cgi-bin/cuu/Value?bohrrada0)
 bohr_angs = 0.529177210903
@@ -140,9 +142,8 @@ class Molecule:
                 coeff = [jnp.array(i[2]) for i in self.basis_data]
                 if normalize:
                     coeff = [
-                        jnp.array(c * primitive_norm(l[i], alpha[i]))
-                        for i, c in enumerate(coeff)
-                ]
+                        jnp.array(c * primitive_norm(l[i], alpha[i])) for i, c in enumerate(coeff)
+                    ]
             else:
                 coeff = [pnp.array(i[2], requires_grad=False) for i in self.basis_data]
                 if normalize:
@@ -264,14 +265,25 @@ class Molecule:
             return m
 
         return orbital
-    
+
     def _flatten(self):
         return (self.coordinates, self.alpha, self.coeff), (
-            self.symbols, self.charge, self.mult, self.basis_name, self.name, self.load_data, self.l, self.normalize, self.unit
-        ) # (differentiable), (non-differntiable)
+            self.symbols,
+            self.charge,
+            self.mult,
+            self.basis_name,
+            self.name,
+            self.load_data,
+            self.l,
+            self.normalize,
+            self.unit,
+        )  # (differentiable), (non-differntiable)
 
     @classmethod
-    def _unflatten(cls, data, metadata): # construct back the class from the flattened list of parameters
+    def _unflatten(
+        cls, data, metadata
+    ):  # construct back the class from the flattened list of parameters
         return cls(metadata[0], data[0], *metadata[1:7], *data[1:3], *metadata[7:9])
+
 
 register_pytree(Molecule, Molecule._flatten, Molecule._unflatten)
