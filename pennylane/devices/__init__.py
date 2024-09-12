@@ -28,8 +28,6 @@ to verify and test quantum gradient computations.
     default_qubit
     default_qubit_legacy
     default_qubit_jax
-    default_qubit_torch
-    default_qubit_tf
     default_qubit_autograd
     default_gaussian
     default_mixed
@@ -91,10 +89,7 @@ Other transforms that may be relevant to device preprocessing include:
 
     defer_measurements
     transforms.broadcast_expand
-    transforms.sum_expand
     transforms.split_non_commuting
-    transforms.hamiltonian_expand
-
 
 Modifiers
 ---------
