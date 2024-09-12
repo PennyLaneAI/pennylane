@@ -21,11 +21,13 @@ from functools import partial
 import pytest
 
 import pennylane as qml
-from pennylane.capture import qnode_prim
 
 pytestmark = pytest.mark.jax
 
 jax = pytest.importorskip("jax")
+
+# must be below jax importorskip
+from pennylane.capture.primitives import qnode_prim  # pylint: disable=wrong-import-position
 
 
 @pytest.fixture(autouse=True)
@@ -293,7 +295,6 @@ def test_capture_qnode_kwargs():
         "cache": True,
         "cachesize": 10,
         "max_diff": 2,
-        "max_expansion": 10,
         "device_vjp": False,
         "mcm_method": None,
         "postselect_mode": None,
@@ -347,3 +348,17 @@ def test_qnode_pytree_output():
     assert qml.math.allclose(out["a"], jax.numpy.cos(1.2))
     assert qml.math.allclose(out["b"], -jax.numpy.sin(1.2))
     assert list(out.keys()) == ["a", "b"]
+
+
+def test_qnode_jvp():
+    """Test that JAX can compute the JVP of the QNode primitive via a registered JVP rule."""
+
+    @qml.qnode(qml.device("default.qubit", wires=1))
+    def circuit(x):
+        qml.RX(x, 0)
+        return qml.expval(qml.Z(0))
+
+    x = 0.9
+    xt = -0.6
+    jvp = jax.jvp(circuit, (x,), (xt,))
+    assert qml.math.allclose(jvp, (qml.math.cos(x), -qml.math.sin(x) * xt))

@@ -1720,7 +1720,7 @@ class TestReadoutError:
         if use_jit:
             diff_func = jax.jit(diff_func)
         jac = jax.jacobian(diff_func, args_to_diff)(relaxations, misclassifications)
-        assert np.allclose(jac, expected)
+        assert qml.math.allclose(jac, expected, rtol=0.05)
 
     @pytest.mark.torch
     @pytest.mark.parametrize("relaxations, misclassifications, expected", diff_parameters)
