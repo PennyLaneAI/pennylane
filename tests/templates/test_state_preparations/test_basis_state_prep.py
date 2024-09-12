@@ -37,6 +37,12 @@ def test_standard_validity():
     qml.ops.functions.assert_valid(op)
 
 
+def test_BasisStatePreparation_is_deprecated():
+    """Test that my_feature is deprecated."""
+    with pytest.warns(qml.PennyLaneDeprecationWarning, match="BasisStatePreparation is deprecated"):
+        _ = qml.BasisStatePreparation([1, 0], wires=[0, 1])
+
+
 class TestDecomposition:
     """Tests that the template defines the correct decomposition."""
 
