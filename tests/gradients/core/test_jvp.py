@@ -17,6 +17,7 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.gradients import param_shift
+from pennylane.measurements.shots import Shots
 
 _x = np.arange(12).reshape((2, 3, 2))
 
@@ -685,7 +686,7 @@ class TestJVPGradients:
     # Include batch_dim!=None cases once #4462 is resolved
     @pytest.mark.torch
     @pytest.mark.parametrize("batch_dim", [None])  # , 1, 3])
-    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.torch"])
+    @pytest.mark.parametrize("dev_name", ["default.qubit"])
     def test_torch(self, tol, dev_name, batch_dim):
         """Tests that the output of the JVP transform
         can be differentiated using Torch."""
@@ -799,7 +800,8 @@ class TestJVPGradients:
 class TestBatchJVP:
     """Tests for the batch JVP function"""
 
-    def test_one_tape_no_trainable_parameters(self):
+    @pytest.mark.parametrize("shots", [Shots(None), Shots(10), Shots([20, 10])])
+    def test_one_tape_no_trainable_parameters(self, shots):
         """A tape with no trainable parameters will simply return None"""
         dev = qml.device("default.qubit", wires=2)
 
@@ -808,14 +810,14 @@ class TestBatchJVP:
             qml.CNOT(wires=[0, 1])
             qml.expval(qml.PauliZ(0))
 
-        tape1 = qml.tape.QuantumScript.from_queue(q1)
+        tape1 = qml.tape.QuantumScript.from_queue(q1, shots=shots)
         with qml.queuing.AnnotatedQueue() as q2:
             qml.RX(0.4, wires=0)
             qml.RX(0.6, wires=0)
             qml.CNOT(wires=[0, 1])
             qml.expval(qml.PauliZ(0))
 
-        tape2 = qml.tape.QuantumScript.from_queue(q2)
+        tape2 = qml.tape.QuantumScript.from_queue(q2, shots=shots)
         tape1.trainable_params = {}
         tape2.trainable_params = {0, 1}
 
@@ -823,16 +825,17 @@ class TestBatchJVP:
         tangents = [np.array([1.0, 1.0]), np.array([1.0, 1.0])]
 
         v_tapes, fn = qml.gradients.batch_jvp(tapes, tangents, param_shift)
-        assert len(v_tapes) == 4
 
         # Even though there are 3 parameters, only two contribute
         # to the JVP, so only 2*2=4 quantum evals
+        assert len(v_tapes) == 4
         res = fn(dev.execute(v_tapes))
 
         assert qml.math.allclose(res[0], np.array(0.0))
         assert res[1] is not None
 
-    def test_all_tapes_no_trainable_parameters(self):
+    @pytest.mark.parametrize("shots", [Shots(None), Shots(10), Shots([20, 10])])
+    def test_all_tapes_no_trainable_parameters(self, shots):
         """If all tapes have no trainable parameters all outputs will be None"""
 
         with qml.queuing.AnnotatedQueue() as q1:
@@ -840,14 +843,14 @@ class TestBatchJVP:
             qml.CNOT(wires=[0, 1])
             qml.expval(qml.PauliZ(0))
 
-        tape1 = qml.tape.QuantumScript.from_queue(q1)
+        tape1 = qml.tape.QuantumScript.from_queue(q1, shots=shots)
         with qml.queuing.AnnotatedQueue() as q2:
             qml.RX(0.4, wires=0)
             qml.RX(0.6, wires=0)
             qml.CNOT(wires=[0, 1])
             qml.expval(qml.PauliZ(0))
 
-        tape2 = qml.tape.QuantumScript.from_queue(q2)
+        tape2 = qml.tape.QuantumScript.from_queue(q2, shots=shots)
         tape1.trainable_params = set()
         tape2.trainable_params = set()
 
