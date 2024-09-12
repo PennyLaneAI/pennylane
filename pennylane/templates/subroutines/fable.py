@@ -170,7 +170,7 @@ class FABLE(Operation):
                 nots[wire_map[control_index]] = 1
                 continue
 
-            if abs(2 * theta) > tol:
+            if qml.math.abs(2 * theta) > tol:
                 for c_wire in nots:
                     op_list.append(qml.CNOT(wires=[c_wire] + ancilla))
                 op_list.append(qml.RY(2 * theta, wires=ancilla))
