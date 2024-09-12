@@ -95,10 +95,10 @@ jobs:
             cat >matrix_max_parallel.json <<-EOF
           {
             "default": 1,
-            "core-tests": 5,
+            "core-tests": 8,
             "gradients-tests": 2,
             "jax-tests": 5,
-            "tf-tests": 3,
+            "tf-tests": 2,
             "device-tests": 2
           }
           EOF
