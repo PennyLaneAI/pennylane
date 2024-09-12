@@ -272,13 +272,14 @@ class TestFable:
         input_jax_negative_delta = jnp.array(input_negative_delta)
         input_matrix_jax = jnp.array(input_matrix)
 
-        @jax.jit
         @qml.qnode(dev, diff_method="backprop")
         def circuit_jax(input_matrix):
             qml.FABLE(input_matrix, wires=range(5), tol=0)
             return qml.expval(qml.PauliZ(wires=0))
 
-        grad_fn = jax.grad(circuit_jax)
+        jitted_fn = jax.jit(circuit_jax)
+
+        grad_fn = jax.grad(jitted_fn)
         gradient_numeric = (
             circuit_jax(input_jax_positive_delta) - circuit_jax(input_jax_negative_delta)
         ) / (2 * delta)
@@ -286,7 +287,7 @@ class TestFable:
         assert np.allclose(gradient_numeric, gradient_jax[0, 0], rtol=0.001)
 
     @pytest.mark.jax
-    def test_jit_result(self):
+    def test_fable_jax_jit(self):
         """Test that the value returned in JIT mode equals the value returned without JIT."""
         import jax
 
