@@ -7,18 +7,14 @@
 <h3>Improvements 🛠</h3>
 
 * `qml.qchem.excitations` now optionally returns fermionic operators.
-   [(#6171)](https://github.com/PennyLaneAI/pennylane/pull/6171)
+  [(#6171)](https://github.com/PennyLaneAI/pennylane/pull/6171)
 
 * The `diagonalize_measurements` transform now uses a more efficient method of diagonalization 
   when possible, based on the `pauli_rep` of the relevant observables.
   [#6113](https://github.com/PennyLaneAI/pennylane/pull/6113/)
 
-<h4>Capturing and representing hybrid programs</h4>
-
-* Differentiation of hybrid programs via `qml.grad` can now be captured into plxpr.
-  When evaluating a captured `qml.grad` instruction, it will dispatch to `jax.grad`,
-  which differs from the Autograd implementation of `qml.grad` itself.
-  [(#6120)](https://github.com/PennyLaneAI/pennylane/pull/6120)
+* The `Hermitian` operator now has a `compute_sparse_matrix` implementation.
+  [(#6225)](https://github.com/PennyLaneAI/pennylane/pull/6225)
 
 <h4>Capturing and representing hybrid programs</h4>
 
@@ -62,9 +58,10 @@
 * Remove support for Python 3.9.
   [(#6223)](https://github.com/PennyLaneAI/pennylane/pull/6223)
 
-* `DefaultQubitTF` and `DefaultQubitTorch` are removed. Please use `default.qubit` for all interfaces.
+* `DefaultQubitTF`, `DefaultQubitTorch`, and `DefaultQubitJax` are removed. Please use `default.qubit` for all interfaces.
   [(#6207)](https://github.com/PennyLaneAI/pennylane/pull/6207)
   [(#6208)](https://github.com/PennyLaneAI/pennylane/pull/6208)
+  [(#6209)](https://github.com/PennyLaneAI/pennylane/pull/6209)
 
 * `expand_fn`, `max_expansion`, `override_shots`, and `device_batch_transform` are removed from the
   signature of `qml.execute`.
@@ -79,6 +76,9 @@
 * `qml.transforms.hamiltonian_expand` and `qml.transforms.sum_expand` are removed.
   Please use `qml.transforms.split_non_commuting` instead.
   [(#6204)](https://github.com/PennyLaneAI/pennylane/pull/6204)
+
+* `Operator.expand` is now removed. Use `qml.tape.QuantumScript(op.deocomposition())` instead.
+  [(#6227)](https://github.com/PennyLaneAI/pennylane/pull/6227)
 
 <h3>Deprecations 👋</h3>
 
@@ -101,7 +101,13 @@
 * The ``qml.Qubitization`` template now orders the ``control`` wires first and the ``hamiltonian`` wires second, which is the expected according to other templates.
   [(#6229)](https://github.com/PennyLaneAI/pennylane/pull/6229)
 
-* <h3>Contributors ✍️</h3>
+* Fixes a bug where a circuit using the `autograd` interface sometimes returns nested values that are not of the `autograd` interface.
+  [(#6225)](https://github.com/PennyLaneAI/pennylane/pull/6225)
+
+* Fixes a bug where a simple circuit with no parameters or only builtin/numpy arrays as parameters returns autograd tensors.
+  [(#6225)](https://github.com/PennyLaneAI/pennylane/pull/6225)
+
+<h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
 

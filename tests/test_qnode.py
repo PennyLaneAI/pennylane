@@ -388,7 +388,7 @@ class TestValidation:
             qml.RX(x, wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        assert circuit.interface is None
+        assert circuit.interface == "numpy"
         assert circuit.gradient_fn is None
         assert circuit.device is dev
 
@@ -1844,7 +1844,7 @@ class TestTapeExpansion:
         else:
             spy = mocker.spy(circuit.device, "execute")
 
-        x = np.array(0.5)
+        x = pnp.array(0.5)
         circuit(x)
 
         tape = spy.call_args[0][0][0]

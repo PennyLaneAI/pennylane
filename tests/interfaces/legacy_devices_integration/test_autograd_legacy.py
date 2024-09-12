@@ -117,7 +117,7 @@ class TestAutogradExecuteUnitTests:
             tape = qml.tape.QuantumScript.from_queue(q)
             return qml.execute([tape], device, gradient_fn=param_shift, interface="None")[0]
 
-        with pytest.raises(ValueError, match="interface must be in"):
+        with pytest.raises(qml.QuantumFunctionError, match="Unknown interface"):
             cost(a, device=dev)
 
     def test_grad_on_execution(self, mocker):
