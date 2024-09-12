@@ -316,11 +316,11 @@ class TestDiagonalizeTapeMeasurements:
             assert new_tape.measurements[0].wires == qml.wires.Wires([0])
             assert new_tape.measurements[1].wires == qml.wires.Wires([1, 2])
             assert qml.math.allclose(
-                sorted(new_tape.measurements[0]._eigvals),  # pylint :disable=protected-access
+                sorted(new_tape.measurements[0]._eigvals),  # pylint: disable=protected-access
                 [-1.0, 1.0],
             )
             assert qml.math.allclose(
-                sorted(new_tape.measurements[1]._eigvals),  # pylint :disable=protected-access
+                sorted(new_tape.measurements[1]._eigvals),  # pylint: disable=protected-access
                 [-2.0, 0.0, 0.0, 2.0],
             )
         else:
