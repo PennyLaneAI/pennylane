@@ -317,7 +317,10 @@ def overlap_integral(basis_a, basis_b, normalize=True):
         alpha, ca, ra = _generate_params(basis_a.params, args_a)
         beta, cb, rb = _generate_params(basis_b.params, args_b)
 
-        if getattr(basis_a.params[1], "requires_grad", False) or normalize:
+        if getattr(basis_a.params[1], "requires_grad", False) or normalize or (
+                qml.math.get_interface(basis_a.params[1]) == "jax"
+                and qml.math.requires_grad(args[1])
+            ):
             ca = ca * primitive_norm(basis_a.l, alpha)
             cb = cb * primitive_norm(basis_b.l, beta)
             na = contracted_norm(basis_a.l, alpha, ca)
@@ -513,7 +516,10 @@ def moment_integral(basis_a, basis_b, order, idx, normalize=True):
         alpha, ca, ra = _generate_params(basis_a.params, args_a)
         beta, cb, rb = _generate_params(basis_b.params, args_b)
 
-        if getattr(basis_a.params[1], "requires_grad", False) or normalize:
+        if getattr(basis_a.params[1], "requires_grad", False) or normalize or (
+                qml.math.get_interface(basis_a.params[1]) == "jax"
+                and qml.math.requires_grad(args[1])
+            ):
             ca = ca * primitive_norm(basis_a.l, alpha)
             cb = cb * primitive_norm(basis_b.l, beta)
             na = contracted_norm(basis_a.l, alpha, ca)
@@ -684,7 +690,10 @@ def kinetic_integral(basis_a, basis_b, normalize=True):
         alpha, ca, ra = _generate_params(basis_a.params, args_a)
         beta, cb, rb = _generate_params(basis_b.params, args_b)
 
-        if getattr(basis_a.params[1], "requires_grad", False) or normalize:
+        if getattr(basis_a.params[1], "requires_grad", False) or normalize or (
+                qml.math.get_interface(basis_a.params[1]) == "jax"
+                and qml.math.requires_grad(args[1])
+            ):
             ca = ca * primitive_norm(basis_a.l, alpha)
             cb = cb * primitive_norm(basis_b.l, beta)
             na = contracted_norm(basis_a.l, alpha, ca)
