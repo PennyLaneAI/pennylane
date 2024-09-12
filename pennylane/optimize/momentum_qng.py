@@ -45,62 +45,36 @@ class MomentumQNGOptimizer(QNGOptimizer):
     is an expectation value of some observable measured on the variational
     quantum circuit :math:`U(x^{(t)})`.
 
-    Consider a quantum node represented by the variational quantum circuit
-
-    .. math::
-
-        U(\mathbf{\theta}) = W(\theta_{i+1}, \dots, \theta_{N})X(\theta_{i})
-        V(\theta_1, \dots, \theta_{i-1}),
-
-    where all parametrized gates can be written of the form :math:`X(\theta_{i}) = e^{i\theta_i K_i}`.
-    That is, the gate :math:`K_i` is the *generator* of the parametrized operation :math:`X(\theta_i)`
-    corresponding to the :math:`i`-th parameter.
-
-    For each parametric layer :math:`\ell` in the variational quantum circuit
-    containing :math:`n` parameters, the :math:`n\times n` block-diagonal submatrix
-    of the Fubini-Study tensor :math:`g_{ij}^{(\ell)}` is calculated directly on the
-    quantum device in a single evaluation:
-
-    .. math::
-
-        g_{ij}^{(\ell)} = \langle \psi_\ell | K_i K_j | \psi_\ell \rangle
-        - \langle \psi_\ell | K_i | \psi_\ell\rangle
-        \langle \psi_\ell |K_j | \psi_\ell\rangle
-
-    where :math:`|\psi_\ell\rangle =  V(\theta_1, \dots, \theta_{i-1})|0\rangle`
-    (that is, :math:`|\psi_\ell\rangle` is the quantum state prior to the application
-    of parameterized layer :math:`\ell`).
-
-    Combining the quantum natural gradient optimizer with the analytic parameter-shift
-    rule to optimize a variational circuit with :math:`d` parameters and :math:`L` layers,
-    a total of :math:`2d+L` quantum evaluations are required per optimization step.
-
-    For more details, see:
-
-        James Stokes, Josh Izaac, Nathan Killoran, Giuseppe Carleo.
-        "Quantum Natural Gradient."
-        `Quantum 4, 269 <https://doi.org/10.22331/q-2020-05-25-269>`_, 2020.
-
-    .. note::
-
-        The QNG optimizer supports using a single :class:`~.QNode` as the objective function. Alternatively,
-        the metric tensor can directly be provided to the :func:`step` method of the optimizer,
-        using the ``metric_tensor_fn`` keyword argument.
-
-        For the following cases, providing ``metric_tensor_fn`` may be useful:
-
-        * For hybrid classical-quantum models, the "mixed geometry" of the model
-          makes it unclear which metric should be used for which parameter.
-          For example, parameters of quantum nodes are better suited to
-          one metric (such as the QNG), whereas others (e.g., parameters of classical nodes)
-          are likely better suited to another metric.
-
-        * For multi-QNode models, we don't know what geometry is appropriate
-          if a parameter is shared amongst several QNodes.
+    For details on quantum natural gradient, see :class:`~.pennylane.QNGOptimizer`.
+    Also see :class:`~.pennylane.MomentumOptimizer` for a first-order optimizer with momentum.
 
     **Examples:**
 
-    TODO
+    Consider an objective function realized as a :class:`~.QNode` that returns the
+    expectation value of a Hamiltonian.
+
+    >>> dev = qml.device("default.qubit", wires=(0, 1, "aux"))
+    >>> @qml.qnode(dev)
+    ... def circuit(params):
+    ...     qml.RX(params[0], wires=0)
+    ...     qml.RY(params[1], wires=0)
+    ...     return qml.expval(qml.X(0))
+
+    Once constructed, the cost function can be passed directly to the
+    optimizer's :meth:`~.step` function. In addition to the standard learning
+    rate, the ``MomentumQNGOptimizer`` takes a ``momentum`` parameter:
+
+    >>> eta = 0.01
+    >>> rho = 0.93
+    >>> init_params = qml.numpy.array([0.5, 0.23], requires_grad=True)
+    >>> opt = qml.MomentumQNGOptimizer(stepsize=eta, momentum=rho)
+    >>> theta_new = opt.step(circuit, init_params)
+    >>> theta_new
+    tensor([0.50437193, 0.18562052], requires_grad=True)
+
+    An alternative function to calculate the metric tensor of the QNode can be provided to ``step``
+    via the ``metric_tensor_fn`` keyword argument, see :class:`~.pennylane.QNGOptimizer` for
+    details.
 
     .. seealso::
 
