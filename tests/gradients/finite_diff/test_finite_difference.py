@@ -861,7 +861,6 @@ class TestFiniteDiffGradients:
         """Tests that the output of the finite-difference transform
         can be differentiated using autograd, yielding second derivatives."""
         dev = qml.device("default.qubit", wires=2)
-        execute_fn = dev.execute
         params = np.array([0.543, -0.654], requires_grad=True)
 
         def cost_fn(x):
@@ -874,8 +873,7 @@ class TestFiniteDiffGradients:
             tape = qml.tape.QuantumScript.from_queue(q)
             tape.trainable_params = {0, 1}
             tapes, fn = finite_diff(tape, n=1, approx_order=approx_order, strategy=strategy)
-            jac = np.array(fn(execute_fn(tapes)))
-            return jac
+            return np.array(fn(dev.execute(tapes)))
 
         res = qml.jacobian(cost_fn)(params)
         x, y = params
@@ -893,7 +891,6 @@ class TestFiniteDiffGradients:
         """Tests that the output of the finite-difference transform
         of a ragged tape can be differentiated using autograd, yielding second derivatives."""
         dev = qml.device("default.qubit", wires=2)
-        execute_fn = dev.execute
         params = np.array([0.543, -0.654], requires_grad=True)
 
         def cost_fn(x):
@@ -907,7 +904,7 @@ class TestFiniteDiffGradients:
             tape = qml.tape.QuantumScript.from_queue(q)
             tape.trainable_params = {0, 1}
             tapes, fn = finite_diff(tape, n=1, approx_order=approx_order, strategy=strategy)
-            jac = fn(execute_fn(tapes))
+            jac = fn(dev.execute(tapes))
             return jac[1][0]
 
         x, y = params
@@ -917,14 +914,12 @@ class TestFiniteDiffGradients:
 
     @pytest.mark.tf
     @pytest.mark.slow
-    @pytest.mark.parametrize("dev_name", ["default.qubit"])
-    def test_tf(self, dev_name, approx_order, strategy, tol):
+    def test_tf(self, approx_order, strategy, tol):
         """Tests that the output of the finite-difference transform
         can be differentiated using TF, yielding second derivatives."""
         import tensorflow as tf
 
-        dev = qml.device(dev_name, wires=2)
-        execute_fn = dev.execute if dev_name == "default.qubit" else dev.batch_execute
+        dev = qml.device("default.qubit", wires=2)
         params = tf.Variable([0.543, -0.654], dtype=tf.float64)
 
         with tf.GradientTape(persistent=True) as t:
@@ -937,7 +932,7 @@ class TestFiniteDiffGradients:
             tape = qml.tape.QuantumScript.from_queue(q)
             tape.trainable_params = {0, 1}
             tapes, fn = finite_diff(tape, n=1, approx_order=approx_order, strategy=strategy)
-            jac_0, jac_1 = fn(execute_fn(tapes))
+            jac_0, jac_1 = fn(dev.execute(tapes))
 
         x, y = 1.0 * params
 
@@ -953,14 +948,12 @@ class TestFiniteDiffGradients:
         assert np.allclose([res_0, res_1], expected, atol=tol, rtol=0)
 
     @pytest.mark.tf
-    @pytest.mark.parametrize("dev_name", ["default.qubit"])
-    def test_tf_ragged(self, dev_name, approx_order, strategy, tol):
+    def test_tf_ragged(self, approx_order, strategy, tol):
         """Tests that the output of the finite-difference transform
         of a ragged tape can be differentiated using TF, yielding second derivatives."""
         import tensorflow as tf
 
-        dev = qml.device(dev_name, wires=2)
-        execute_fn = dev.execute if dev_name == "default.qubit" else dev.batch_execute
+        dev = qml.device("default.qubit", wires=2)
         params = tf.Variable([0.543, -0.654], dtype=tf.float64)
 
         with tf.GradientTape(persistent=True) as t:
@@ -975,7 +968,7 @@ class TestFiniteDiffGradients:
             tape.trainable_params = {0, 1}
             tapes, fn = finite_diff(tape, n=1, approx_order=approx_order, strategy=strategy)
 
-            jac_01 = fn(execute_fn(tapes))[1][0]
+            jac_01 = fn(dev.execute(tapes))[1][0]
 
         x, y = 1.0 * params
 
@@ -986,14 +979,12 @@ class TestFiniteDiffGradients:
         assert np.allclose(res_01[0], expected, atol=tol, rtol=0)
 
     @pytest.mark.torch
-    @pytest.mark.parametrize("dev_name", ["default.qubit"])
-    def test_torch(self, dev_name, approx_order, strategy, tol):
+    def test_torch(self, approx_order, strategy, tol):
         """Tests that the output of the finite-difference transform
         can be differentiated using Torch, yielding second derivatives."""
         import torch
 
-        dev = qml.device(dev_name, wires=2)
-        execute_fn = dev.execute if dev_name == "default.qubit" else dev.batch_execute
+        dev = qml.device("default.qubit", wires=2)
         params = torch.tensor([0.543, -0.654], dtype=torch.float64, requires_grad=True)
 
         def cost_fn(params):
@@ -1005,7 +996,7 @@ class TestFiniteDiffGradients:
 
             tape = qml.tape.QuantumScript.from_queue(q)
             tapes, fn = finite_diff(tape, n=1, approx_order=approx_order, strategy=strategy)
-            jac = fn(execute_fn(tapes))
+            jac = fn(dev.execute(tapes))
             return jac
 
         hess = torch.autograd.functional.jacobian(cost_fn, params)
@@ -1023,15 +1014,13 @@ class TestFiniteDiffGradients:
         assert np.allclose(hess[1].detach().numpy(), expected[1], atol=tol, rtol=0)
 
     @pytest.mark.jax
-    @pytest.mark.parametrize("dev_name", ["default.qubit"])
-    def test_jax(self, dev_name, approx_order, strategy, tol):
+    def test_jax(self, approx_order, strategy, tol):
         """Tests that the output of the finite-difference transform
         can be differentiated using JAX, yielding second derivatives."""
         import jax
         from jax import numpy as jnp
 
-        dev = qml.device(dev_name, wires=2)
-        execute_fn = dev.execute if dev_name == "default.qubit" else dev.batch_execute
+        dev = qml.device("default.qubit", wires=2)
         params = jnp.array([0.543, -0.654])
 
         def cost_fn(x):
@@ -1044,8 +1033,7 @@ class TestFiniteDiffGradients:
             tape = qml.tape.QuantumScript.from_queue(q)
             tape.trainable_params = {0, 1}
             tapes, fn = finite_diff(tape, n=1, approx_order=approx_order, strategy=strategy)
-            jac = fn(execute_fn(tapes))
-            return jac
+            return fn(dev.execute(tapes))
 
         res = jax.jacobian(cost_fn)(params)
         assert isinstance(res, tuple)
@@ -1059,14 +1047,11 @@ class TestFiniteDiffGradients:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     @pytest.mark.jax
-    @pytest.mark.parametrize("dev_name", ["default.qubit"])
-    def test_jax_probs(
-        self, dev_name, approx_order, strategy, tol
-    ):  # pylint: disable=unused-argument
+    def test_jax_probs(self, approx_order, strategy, tol):  # pylint: disable=unused-argument
         """Tests that the output of the finite-difference transform is similar using or not diff method on the QNode."""
         import jax
 
-        dev = qml.device(dev_name, wires=2)
+        dev = qml.device("default.qubit", wires=2)
         x = jax.numpy.array(0.543)
 
         @qml.qnode(dev)

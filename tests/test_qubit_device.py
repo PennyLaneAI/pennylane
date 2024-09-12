@@ -165,6 +165,22 @@ def _working_get_batch_size(tensor, expected_shape, expected_size):
     return None
 
 
+def test_notimplemented_circuit_hash(mock_qubit_device):
+    """Test that the circuit hash property is not implemented"""
+    dev = mock_qubit_device()
+
+    with pytest.raises(NotImplementedError):
+        dev.circuit_hash  # pylint: disable=pointless-statement
+
+
+def test_notimplemented_analytic_probability(mock_qubit_device):
+    """Test that the analytic_probability method is not implemented"""
+    dev = mock_qubit_device()
+
+    with pytest.raises(NotImplementedError):
+        dev.analytic_probability(wires=0)
+
+
 class TestOperations:
     """Tests the logic related to operations"""
 
@@ -392,6 +408,44 @@ class TestExtractStatistics:
         with pytest.raises(qml.QuantumFunctionError, match="Unsupported return type"):
             dev = mock_qubit_device_extract_stats()
             dev.statistics(qscript)
+
+    def test_no_entropy_with_shot_vectors(self, mock_qubit_device_extract_stats):
+
+        dev = mock_qubit_device_extract_stats()
+        dev.shots = (10, 10)
+        tape = qml.tape.QuantumScript([], [qml.vn_entropy(wires=0)])
+
+        with pytest.raises(NotImplementedError, match="Returning the Von Neumann entropy"):
+            dev.statistics(tape)
+
+    def test_mutual_info_with_shot_vectors(self, mock_qubit_device_extract_stats):
+
+        dev = mock_qubit_device_extract_stats()
+        dev.shots = (10, 10)
+        tape = qml.tape.QuantumScript([], [qml.mutual_info(wires0=0, wires1=1)])
+
+        with pytest.raises(NotImplementedError, match="Returning the mutual information"):
+            dev.statistics(tape)
+
+    def test_no_classical_shadow_with_other_meas(self, mock_qubit_device_extract_stats):
+        """Test that classical shadows can't be performed with other measurements."""
+
+        dev = mock_qubit_device_extract_stats()
+
+        tape = qml.tape.QuantumScript([], [qml.classical_shadow(wires=0), qml.state()])
+
+        with pytest.raises(qml.QuantumFunctionError, match="Classical shadows cannot be returned"):
+            dev.statistics(tape)
+
+    def test_no_shadow_expval_with_other_meas(self, mock_qubit_device_extract_stats):
+        """Test that classical shadows can't be performed with other measurements."""
+
+        dev = mock_qubit_device_extract_stats()
+
+        tape = qml.tape.QuantumScript([], [qml.shadow_expval(qml.X(0)), qml.state()])
+
+        with pytest.raises(qml.QuantumFunctionError, match="Classical shadows cannot be"):
+            dev.statistics(tape)
 
 
 class TestGenerateSamples:
@@ -1585,3 +1639,64 @@ class TestSamplesToCounts:
         # # NaNs were not converted into "0", but were excluded from the counts
         total_counts = sum(result.values())
         assert total_counts == shots
+
+
+def test_generate_basis_states():
+    """Test the generate_basis_states method."""
+
+    num_wires = 3
+
+    out = QubitDevice.generate_basis_states(num_wires)
+
+    ints = np.sum(np.array([2 ** (num_wires - 1 - i) for i in range(num_wires)]) * out, axis=1)
+    assert np.allclose(ints, np.arange(2**num_wires))
+
+
+def test_samples_to_counts_all_outomces():
+    """Test that _samples_to_counts can handle counts with all outcomes."""
+
+    class DummyQubitDevice(qml.QubitDevice):
+
+        author = None
+        name = "bla"
+        operations = {None}
+        pennylane_requires = None
+        short_name = "bla"
+        version = 0
+
+        def apply(self, operations, **kwargs):
+            raise NotImplementedError
+
+    samples = np.zeros((10, 1))
+    dev = DummyQubitDevice(wires=1)
+    out = dev._samples_to_counts(samples, qml.counts(wires=0, all_outcomes=True), 1)
+    assert out == {"0": 10, "1": 0}
+
+
+def test_no_adjoint_jacobian_errors():
+    """Test that adjoint_jacobian errors with batching and shot vectors"""
+
+    class DummyQubitDevice(qml.QubitDevice):
+
+        author = None
+        name = "bla"
+        operations = {None}
+        pennylane_requires = None
+        short_name = "bla"
+        version = 0
+
+        def apply(self, operations, **kwargs):
+            raise NotImplementedError
+
+    tape = qml.tape.QuantumScript([qml.RX([0.1, 0.2], wires=0)], [qml.expval(qml.Z(0))])
+
+    dev = DummyQubitDevice(wires=0)
+
+    with pytest.raises(qml.QuantumFunctionError, match="Parameter broadcasting is not supported"):
+        dev.adjoint_jacobian(tape)
+
+    dev.shots = (10, 10)  # pylint: disable=attribute-defined-outside-init
+
+    tape2 = qml.tape.QuantumScript([qml.RX(0.1, 0)], [qml.expval(qml.Z(0))])
+    with pytest.raises(qml.QuantumFunctionError, match="Adjoint does not support shot vector"):
+        dev.adjoint_jacobian(tape2)

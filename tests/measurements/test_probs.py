@@ -850,6 +850,15 @@ class TestProbs:
 
         assert np.allclose(res, expected)
 
+    @pytest.mark.xfail  # TODO: fix this case
+    def test_process_samples_shot_range(self):
+        """Test the output of process samples with a specified shot range."""
+        samples = np.zeros((10, 2))
+        _ = qml.probs(wires=0).process_samples(
+            samples, wire_order=qml.wires.Wires((0, 1)), shot_range=(0, 10)
+        )
+        # check actual results once we can get actual results
+
     @pytest.mark.parametrize(
         "wires, expected",
         [
