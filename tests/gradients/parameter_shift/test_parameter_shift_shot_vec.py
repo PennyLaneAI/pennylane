@@ -766,14 +766,10 @@ class TestParameterShiftRule:
                 assert np.allclose(g, grad_F2[idx1][idx2], atol=finite_diff_tol, rtol=0)
 
     @pytest.mark.autograd
-    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.autograd"])
-    def test_fallback(self, dev_name, mocker, broadcast):
+    def test_fallback(self, mocker, broadcast):
         """Test that fallback gradient functions are correctly used"""
-        if broadcast and dev_name == "default.qubit.autograd":
-            pytest.xfail(reason="Return types + autograd + broadcasting does not work")
         spy = mocker.spy(qml.gradients, "finite_diff")
-        dev = qml.device(dev_name, wires=3, shots=fallback_shot_vec)
-        execute_fn = dev.execute if dev_name == "default.qubit" else dev.batch_execute
+        dev = qml.device("default.qubit", wires=3, shots=fallback_shot_vec)
         x = 0.543
         y = -0.654
 
@@ -798,7 +794,7 @@ class TestParameterShiftRule:
             spy.assert_called()
             assert spy.call_args[1]["argnum"] == {1}
 
-            return fn(execute_fn(tapes))
+            return fn(dev.execute(tapes))
 
         all_res = cost_fn(params)
 
@@ -827,15 +823,11 @@ class TestParameterShiftRule:
             # assert np.allclose(jac[1, 1, 1], -2 * np.cos(2 * y), atol=shot_vec_tol, rtol=0)
 
     @pytest.mark.autograd
-    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.autograd"])
-    def test_fallback_single_meas(self, dev_name, mocker, broadcast):
+    def test_fallback_single_meas(self, mocker, broadcast):
         """Test that fallback gradient functions are correctly used for a single measurement."""
-        if broadcast and dev_name == "default.qubit.autograd":
-            pytest.xfail(reason="Return types + autograd + broadcasting does not work")
         spy = mocker.spy(qml.gradients, "finite_diff")
         shot_vec = tuple([1000000] * 4)
-        dev = qml.device(dev_name, wires=3, shots=shot_vec)
-        execute_fn = dev.execute if dev_name == "default.qubit" else dev.batch_execute
+        dev = qml.device("default.qubit", wires=3, shots=shot_vec)
         x = 0.543
         y = -0.654
 
@@ -856,7 +848,7 @@ class TestParameterShiftRule:
             spy.assert_called()
             assert spy.call_args[1]["argnum"] == {1}
 
-            return fn(execute_fn(tapes))
+            return fn(dev.execute(tapes))
 
         all_res = cost_fn(params)
 
@@ -874,18 +866,12 @@ class TestParameterShiftRule:
 
     @pytest.mark.autograd
     @pytest.mark.parametrize("RX, RY, argnum", [(RX_with_F, qml.RY, 0), (qml.RX, RY_with_F, 1)])
-    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.autograd"])
     def test_fallback_probs(
-        self, dev_name, RX, RY, argnum, mocker, broadcast
+        self, RX, RY, argnum, mocker, broadcast
     ):  # pylint:disable=too-many-arguments
         """Test that fallback gradient functions are correctly used with probs"""
-        if broadcast and dev_name == "default.qubit.autograd":
-            pytest.xfail(
-                reason="Return types + autograd + old device API + broadcasting does not work"
-            )
         spy = mocker.spy(qml.gradients, "finite_diff")
-        dev = qml.device(dev_name, wires=3, shots=fallback_shot_vec)
-        execute_fn = dev.execute if dev_name == "default.qubit" else dev.batch_execute
+        dev = qml.device("default.qubit", wires=3, shots=fallback_shot_vec)
         x = 0.543
         y = -0.654
 
@@ -908,7 +894,7 @@ class TestParameterShiftRule:
             spy.assert_called()
 
             assert spy.call_args[1]["argnum"] == {argnum}
-            return fn(execute_fn(tapes))
+            return fn(dev.execute(tapes))
 
         all_res = cost_fn(params)
         assert isinstance(all_res, tuple)
@@ -969,8 +955,7 @@ class TestParameterShiftRule:
             assert np.allclose(res[1][1], probs_expected[:, 1], atol=finite_diff_tol)
 
     @pytest.mark.autograd
-    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.autograd"])
-    def test_all_fallback(self, dev_name, mocker, broadcast):
+    def test_all_fallback(self, mocker, broadcast):
         """Test that *only* the fallback logic is called if no parameters
         support the parameter-shift rule"""
         if broadcast:
@@ -978,8 +963,7 @@ class TestParameterShiftRule:
         spy_fd = mocker.spy(qml.gradients, "finite_diff")
         spy_ps = mocker.spy(qml.gradients.parameter_shift, "expval_param_shift")
 
-        dev = qml.device(dev_name, wires=3, shots=fallback_shot_vec)
-        execute_fn = dev.execute if dev_name == "default.qubit" else dev.batch_execute
+        dev = qml.device("default.qubit", wires=3, shots=fallback_shot_vec)
         x = 0.543
         y = -0.654
 
@@ -998,7 +982,7 @@ class TestParameterShiftRule:
         spy_fd.assert_called()
         spy_ps.assert_not_called()
 
-        all_res = fn(execute_fn(tapes))
+        all_res = fn(dev.execute(tapes))
         assert len(all_res) == len(fallback_shot_vec)
         assert isinstance(all_res, tuple)
 
@@ -2267,15 +2251,14 @@ class TestHamiltonianExpvalGradients:
 
     @pytest.mark.xfail(reason="TODO")
     @pytest.mark.autograd
-    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.autograd"])
-    def test_autograd(self, dev_name, broadcast, tol):
+    def test_autograd(self, broadcast, tol):
         """Test gradient of multiple trainable Hamiltonian coefficients
         using autograd"""
         coeffs1 = np.array([0.1, 0.2, 0.3], requires_grad=True)
         coeffs2 = np.array([0.7], requires_grad=True)
         weights = np.array([0.4, 0.5], requires_grad=True)
         shot_vec = many_shots_shot_vector
-        dev = qml.device(dev_name, wires=2, shots=shot_vec)
+        dev = qml.device("default.qubit", wires=2, shots=shot_vec)
 
         if broadcast:
             with pytest.raises(
@@ -2296,8 +2279,7 @@ class TestHamiltonianExpvalGradients:
 
     @pytest.mark.xfail(reason="TODO")
     @pytest.mark.tf
-    @pytest.mark.parametrize("dev_name", ["default.qubit"])
-    def test_tf(self, dev_name, broadcast, tol):
+    def test_tf(self, broadcast, tol):
         """Test gradient of multiple trainable Hamiltonian coefficients
         using tf"""
         import tensorflow as tf
@@ -2307,7 +2289,7 @@ class TestHamiltonianExpvalGradients:
         weights = tf.Variable([0.4, 0.5], dtype=tf.float64)
 
         shot_vec = many_shots_shot_vector
-        dev = qml.device(dev_name, wires=2, shots=shot_vec)
+        dev = qml.device("default.qubit", wires=2, shots=shot_vec)
 
         if broadcast:
             with pytest.raises(
@@ -2334,8 +2316,7 @@ class TestHamiltonianExpvalGradients:
     # TODO: Torch support for param-shift
     @pytest.mark.torch
     @pytest.mark.xfail
-    @pytest.mark.parametrize("dev_name", ["default.qubit"])
-    def test_torch(self, dev_name, broadcast, tol):
+    def test_torch(self, broadcast, tol):
         """Test gradient of multiple trainable Hamiltonian coefficients
         using torch"""
         import torch
@@ -2344,7 +2325,7 @@ class TestHamiltonianExpvalGradients:
         coeffs2 = torch.tensor([0.7], dtype=torch.float64, requires_grad=True)
         weights = torch.tensor([0.4, 0.5], dtype=torch.float64, requires_grad=True)
 
-        dev = qml.device(dev_name, wires=2)
+        dev = qml.device("default.qubit", wires=2)
 
         if broadcast:
             with pytest.raises(
@@ -2366,8 +2347,7 @@ class TestHamiltonianExpvalGradients:
         assert np.allclose(hess[2][:, -1], np.zeros([2, 1, 1]), atol=tol, rtol=0)
 
     @pytest.mark.jax
-    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.jax"])
-    def test_jax(self, dev_name, broadcast, tol):
+    def test_jax(self, broadcast, tol):
         """Test gradient of multiple trainable Hamiltonian coefficients
         using JAX"""
         import jax
@@ -2377,7 +2357,7 @@ class TestHamiltonianExpvalGradients:
         coeffs1 = jnp.array([0.1, 0.2, 0.3])
         coeffs2 = jnp.array([0.7])
         weights = jnp.array([0.4, 0.5])
-        dev = qml.device(dev_name, wires=2)
+        dev = qml.device("default.qubit", wires=2)
 
         if broadcast:
             with pytest.raises(

@@ -715,7 +715,6 @@ class DefaultQubitLegacy(QubitDevice):
             returns_state=True,
             passthru_devices={
                 "autograd": "default.qubit.autograd",
-                "jax": "default.qubit.jax",
             },
         )
         return capabilities

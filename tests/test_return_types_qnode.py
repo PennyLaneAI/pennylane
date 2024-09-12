@@ -762,7 +762,7 @@ class TestIntegrationSingleReturnTorch:
         assert sum(res.values()) == shots
 
 
-devices = ["default.qubit.jax", "default.mixed"]
+devices = ["default.mixed"]
 
 
 @pytest.mark.jax
@@ -775,7 +775,7 @@ class TestIntegrationSingleReturnJax:
 
         import jax
 
-        dev = qml.device("default.qubit.jax", wires=wires)
+        dev = qml.device("default.qubit", wires=wires)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
@@ -1893,7 +1893,7 @@ class TestIntegrationMultipleReturnsTorch:
                     assert t.shape == ()
 
 
-devices = ["default.qubit.jax", "default.mixed"]
+devices = ["default.mixed"]
 
 
 @pytest.mark.jax
