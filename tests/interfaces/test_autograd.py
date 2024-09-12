@@ -845,7 +845,7 @@ class TestHamiltonianWorkflows:
         else:
             assert np.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
 
-        res = np.hstack(qml.jacobian(cost_fn)(weights, coeffs1, coeffs2))
+        res = pnp.hstack(qml.jacobian(cost_fn)(weights, coeffs1, coeffs2))
         expected = self.cost_fn_jacobian(weights, coeffs1, coeffs2)
         if shots.has_partitioned_shots:
             pytest.xfail(
