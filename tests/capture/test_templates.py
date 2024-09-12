@@ -27,8 +27,12 @@ import pennylane as qml
 jax = pytest.importorskip("jax")
 jnp = jax.numpy
 
-pytestmark = pytest.mark.jax
-
+pytestmark = [
+    pytest.mark.jax,
+    pytest.mark.filterwarnings(
+        "ignore:BasisStatePreparation is deprecated:pennylane.PennyLaneDeprecationWarning"
+    ),
+]
 original_op_bind_code = qml.operation.Operator._primitive_bind_call.__code__
 
 
@@ -188,15 +192,6 @@ unmodified_templates_cases = [
         {"s_wires": [[0], [1]], "d_wires": [[[2], [3]]], "init_state": [0, 1, 1, 0]},
     ),
 ]
-
-
-@pytest.fixture(scope="function", autouse=True)
-def capture_warnings(recwarn):
-    yield
-    if len(recwarn) > 0:
-        for w in recwarn:
-            assert isinstance(w.message, qml.PennyLaneDeprecationWarning)
-            assert "BasisStatePreparation is deprecated" in str(w.message)
 
 
 @pytest.mark.parametrize("template, args, kwargs", unmodified_templates_cases)
