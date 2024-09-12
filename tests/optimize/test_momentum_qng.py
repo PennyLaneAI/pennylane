@@ -45,7 +45,7 @@ class TestOptimize:
         var1 = var2 = var
         accum = np.zeros_like(var)
 
-        for i in range(4):
+        for _ in range(4):
             var1, res = opt1.step_and_cost(circuit, var1)
             var2 = opt2.step(circuit, var2)
             # Analytic expressions
@@ -83,7 +83,7 @@ class TestOptimize:
         accum = np.zeros_like(var)
         expected_mt = np.array([1 / 16, 1 / 4])
 
-        for i in range(4):
+        for _ in range(4):
             var1, res = opt1.step_and_cost(circuit, var1)
             var2 = opt2.step(circuit, var2)
             # Analytic expressions
@@ -137,7 +137,7 @@ class TestOptimize:
 
         # With autograd gradient function
         grad_fn1 = qml.grad(circuit)
-        for i in range(4):
+        for _ in range(4):
             args1, cost1 = opt1.step_and_cost(circuit, *args1, grad_fn=grad_fn1)
             args2 = opt2.step(circuit, *args2, grad_fn=grad_fn1)
             if not split_input:
@@ -151,7 +151,7 @@ class TestOptimize:
         def grad_fn2(*args):
             return np.array(qml.grad(circuit)(*args))
 
-        for i in range(4):
+        for _ in range(4):
             args3, cost2 = opt3.step_and_cost(circuit, *args3, grad_fn=grad_fn2)
             args4 = opt4.step(circuit, *args4, grad_fn=grad_fn2)
 
@@ -196,7 +196,6 @@ class TestOptimize:
             return qml.expval(qml.Z(0))
 
         grad_fn = qml.grad(circuit)
-        mt_fn = qml.metric_tensor(circuit)
 
         params = np.array(0.2, requires_grad=False), np.array(-0.8, requires_grad=False)
         params[trainable_idx].requires_grad = True
@@ -205,11 +204,11 @@ class TestOptimize:
         params1 = params2 = params3 = params
 
         # Without manually provided functions
-        for i in range(4):
+        for _ in range(4):
             params1, cost1 = opt.step_and_cost(circuit, *params1)
 
         opt = qml.MomentumQNGOptimizer(stepsize=0.01, momentum=0.9)
-        for i in range(4):
+        for _ in range(4):
             params2 = opt.step(circuit, *params2)
 
         accum = np.zeros_like(params[0]), np.zeros_like(params[1])
@@ -222,7 +221,7 @@ class TestOptimize:
                 mt_i = 4
             return mt_i
 
-        for i in range(4):
+        for _ in range(4):
             inv_mt = mt_inv(trainable_idx, params3)
             expected_cost = circuit(*params3)
             if trainable_idx == 0:
