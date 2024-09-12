@@ -38,8 +38,8 @@ Pending deprecations
   - Deprecated in v0.37
   - Will be removed in v0.39
 
-* The ``BasisStatePreparation`` template is deprecated.
-  Instead, use ``BasisState``.
+* The :class:`~pennylane.BasisStatePreparation` template is deprecated.
+  Instead, use :class:`~pennylane.BasisState`.
 
   - Deprecated in v0.39
   - Will be removed in v0.40

@@ -82,8 +82,8 @@
 
 <h3>Deprecations 👋</h3>
 
-* The ``BasisStatePreparation`` template is deprecated.
-  Instead, use ``BasisState``.
+* The `qml.BasisStatePreparation` template is deprecated.
+  Instead, use `qml.BasisState`.
   [(#6021)](https://github.com/PennyLaneAI/pennylane/pull/6021)
 
 <h3>Documentation 📝</h3>

@@ -225,15 +225,7 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
             [math.fidelity_statevector(circuit(), exp_state)], [1.0], atol=tol(dev.shots)
         )
 
-    @pytest.fixture(scope="function", autouse=False)
-    def capture_warnings(self, recwarn):
-        """Capture warnings."""
-        yield
-        if len(recwarn) > 0:
-            for w in recwarn:
-                assert isinstance(w.message, qml.PennyLaneDeprecationWarning)
-                assert "BasisStatePreparation is deprecated" in str(w.message)
-
+    @pytest.mark.filterwarnings("ignore:BasisStatePreparation is deprecated:pennylane.PennyLaneDeprecationWarning")
     def test_BasisStatePreparation(self, device, tol):
         """Test the BasisStatePreparation template."""
         dev = device(4)
