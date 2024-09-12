@@ -56,10 +56,7 @@ class TestQNodeIntegration:
             "passthru_interface": "autograd",
             "supports_broadcasting": True,
             "passthru_devices": {
-                "torch": "default.qubit.torch",
-                "tf": "default.qubit.tf",
                 "autograd": "default.qubit.autograd",
-                "jax": "default.qubit.jax",
             },
         }
         assert cap == capabilities
