@@ -13,6 +13,8 @@ concurrency:
 jobs:
   test-warnings-as-errors:
     uses: ./.github/workflows/interface-unit-tests.yml
+    strategy:
+      fail-fast: false
     secrets:
       codecov_token: ${{ secrets.CODECOV_TOKEN }}
     with:
