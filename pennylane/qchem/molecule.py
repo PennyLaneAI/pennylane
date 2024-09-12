@@ -23,8 +23,6 @@ import itertools
 
 import pennylane as qml
 
-from pennylane import numpy as pnp
-
 from .basis_data import atomic_numbers
 from .basis_set import BasisFunction, mol_basis_data
 from .integrals import contracted_norm, primitive_norm
@@ -135,7 +133,7 @@ class Molecule:
                 (
                     qml.math.array(i[1], like="jax")
                     if use_jax
-                    else pnp.array(i[1], requires_grad=False)
+                    else qml.math.array(i[1], like="autograd", requires_grad=False)
                 )
                 for i in self.basis_data
             ]
@@ -145,7 +143,7 @@ class Molecule:
                 (
                     qml.math.array(i[2], like="jax")
                     if use_jax
-                    else pnp.array(i[2], requires_grad=False)
+                    else qml.math.array(i[2], like="autograd", requires_grad=False)
                 )
                 for i in self.basis_data
             ]
@@ -155,7 +153,9 @@ class Molecule:
                     (
                         qml.math.array(c * primitive_norm(l[i], alpha[i]), like="jax")
                         if use_jax
-                        else pnp.array(c * primitive_norm(l[i], alpha[i]), requires_grad=False)
+                        else qml.math.array(
+                            c * primitive_norm(l[i], alpha[i]), like="autograd", requires_grad=False
+                        )
                     )
                     for i, c in enumerate(coeff)
                 ]
@@ -229,8 +229,11 @@ class Molecule:
                 array[float]: value of a basis function
             """
             c = ((x - r[0]) ** lx) * ((y - r[1]) ** ly) * ((z - r[2]) ** lz)
-            e = [pnp.exp(-a * ((x - r[0]) ** 2 + (y - r[1]) ** 2 + (z - r[2]) ** 2)) for a in alpha]
-            return c * pnp.dot(coeff, e)
+            e = [
+                qml.math.exp(-a * ((x - r[0]) ** 2 + (y - r[1]) ** 2 + (z - r[2]) ** 2))
+                for a in alpha
+            ]
+            return c * qml.math.dot(coeff, e)
 
         return orbital
 
