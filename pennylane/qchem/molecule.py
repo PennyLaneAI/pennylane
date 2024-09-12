@@ -21,15 +21,13 @@ import collections
 # pylint: disable=too-few-public-methods, too-many-arguments, too-many-instance-attributes
 import itertools
 
+import pennylane as qml
+
 from pennylane import numpy as pnp
-from jax import numpy as jnp
 
 from .basis_data import atomic_numbers
 from .basis_set import BasisFunction, mol_basis_data
 from .integrals import contracted_norm, primitive_norm
-from pennylane.pytrees import (
-    register_pytree,
-)  # <- this will help register as a jax pytree if you have jax installed
 
 # Bohr-Angstrom correlation coefficient (https://physics.nist.gov/cgi-bin/cuu/Value?bohrrada0)
 bohr_angs = 0.529177210903
@@ -84,7 +82,6 @@ class Molecule:
         alpha=None,
         normalize=True,
         unit="bohr",
-        debug=False,
     ):
         if (
             basis_name.lower()
@@ -131,18 +128,21 @@ class Molecule:
         if l is None:
             l = [i[0] for i in self.basis_data]
 
+        use_jax = any(qml.math.get_interface(x) == "jax" for x in [coordinates, alpha, coeff])
+
         if alpha is None:
-            if debug:
-                alpha = [jnp.array(i[1]) for i in self.basis_data]
+            if use_jax:
+                alpha = [qml.math.array(i[1], like="jax") for i in self.basis_data]
             else:
                 alpha = [pnp.array(i[1], requires_grad=False) for i in self.basis_data]
 
         if coeff is None:
-            if debug:
-                coeff = [jnp.array(i[2]) for i in self.basis_data]
+            if use_jax:
+                coeff = [qml.math.array(i[2], like="jax") for i in self.basis_data]
                 if normalize:
                     coeff = [
-                        jnp.array(c * primitive_norm(l[i], alpha[i])) for i, c in enumerate(coeff)
+                        qml.math.array(c * primitive_norm(l[i], alpha[i]), like="jax")
+                        for i, c in enumerate(coeff)
                     ]
             else:
                 coeff = [pnp.array(i[2], requires_grad=False) for i in self.basis_data]
@@ -265,25 +265,3 @@ class Molecule:
             return m
 
         return orbital
-
-    def _flatten(self):
-        return (self.coordinates, self.alpha, self.coeff), (
-            self.symbols,
-            self.charge,
-            self.mult,
-            self.basis_name,
-            self.name,
-            self.load_data,
-            self.l,
-            self.normalize,
-            self.unit,
-        )  # (differentiable), (non-differntiable)
-
-    @classmethod
-    def _unflatten(
-        cls, data, metadata
-    ):  # construct back the class from the flattened list of parameters
-        return cls(metadata[0], data[0], *metadata[1:7], *data[1:3], *metadata[7:9])
-
-
-register_pytree(Molecule, Molecule._flatten, Molecule._unflatten)
