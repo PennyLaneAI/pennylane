@@ -20,25 +20,26 @@ from pennylane.utils import _flatten, unflatten
 
 from .qng import QNGOptimizer
 
+
 class MomentumQNGOptimizer(QNGOptimizer):
     r"""A generalization of the Quantum Natural Gradient (QNG) optimizer by considering a discrete-time Langevin equation
-    with QNG force. For details of the theory and derivation of Momentum-QNG, please, see: 
-    
+    with QNG force. For details of the theory and derivation of Momentum-QNG, please, see:
+
         Oleksandr Borysenko, Mykhailo Bratchenko, Ilya Lukin, Mykola Luhanko, Ihor Omelchenko,
         Andrii Sotnikov and Alessandro Lomi.
         "Application of Langevin Dynamics to Advance the Quantum Natural Gradient Optimization Algorithm"
         `arXiv:2409.01978 <https://arxiv.org/abs/2409.01978>`__
 
     We are grateful to David Wierichs for his generous help with the multi-argument variant of the MomentumQNGOptimizer class.
-    
-    ``MomentumQNGOptimizer`` is a subclass of the ``QNGOptimizer`` class and requires one additional 
+
+    ``MomentumQNGOptimizer`` is a subclass of the ``QNGOptimizer`` class and requires one additional
     hyperparameter (the momentum coefficient) :math:`0 \leq \rho < 1`, the default value being :math:`\rho=0.9`. For :math:`\rho=0` Momentum-QNG
     reduces to the basic QNG.
     In this way, the parameter update rule in Momentum-QNG reads:
 
     .. math::
         x^{(t+1)} = x^{(t)} + \rho (x^{(t)} - x^{(t-1)}) - \eta g(f(x^{(t)}))^{-1} \nabla f(x^{(t)}),
-    
+
     where :math:`\eta` is a stepsize (learning rate) value, :math:`g(f(x^{(t)}))^{-1}` is the pseudo-inverse
     of the Fubini-Study metric tensor and :math:`f(x^{(t)}) = \langle 0 | U(x^{(t)})^\dagger \hat{B} U(x^{(t)}) | 0 \rangle`
     is an expectation value of some observable measured on the variational
@@ -103,8 +104,8 @@ class MomentumQNGOptimizer(QNGOptimizer):
 
     .. seealso::
 
-        Also see the examples from the reference above, benchmarking the Momentum-QNG optimizer 
-        against the basic QNG, Momentum and Adam: 
+        Also see the examples from the reference above, benchmarking the Momentum-QNG optimizer
+        against the basic QNG, Momentum and Adam:
         - `QAOA <https://github.com/borbysh/Momentum-QNG/blob/main/QAOA_depth4.ipynb>`__
         - `VQE <https://github.com/borbysh/Momentum-QNG/blob/main/portfolio_optimization.ipynb>`__
 
@@ -125,7 +126,6 @@ class MomentumQNGOptimizer(QNGOptimizer):
         lam=0 (float): metric tensor regularization :math:`G_{ij}+\lambda I`
             to be applied at each optimization step
     """
-    
 
     def __init__(self, stepsize=0.01, momentum=0.9, approx="block-diag", lam=0):
         super().__init__(stepsize)
@@ -145,26 +145,26 @@ class MomentumQNGOptimizer(QNGOptimizer):
             array: the new values :math:`x^{(t+1)}`
         """
         args_new = list(args)
-        
+
         if self.accumulation is None:
             self.accumulation = [pnp.zeros_like(g) for g in grad]
-            
+
         mt = self.metric_tensor if isinstance(self.metric_tensor, tuple) else (self.metric_tensor,)
-        
+
         trained_index = 0
-        
+
         for index, arg in enumerate(args):
             if getattr(arg, "requires_grad", False):
                 grad_flat = pnp.array(list(_flatten(grad[trained_index])))
                 # self.metric_tensor has already been reshaped to 2D, matching flat gradient.
                 qng_update = pnp.linalg.solve(mt[trained_index], grad_flat)
-                
+
                 self.accumulation[trained_index] *= self.momentum
-                self.accumulation[trained_index] += self.stepsize * unflatten(qng_update, grad[trained_index])
+                self.accumulation[trained_index] += self.stepsize * unflatten(
+                    qng_update, grad[trained_index]
+                )
                 args_new[index] = arg - self.accumulation[trained_index]
 
                 trained_index += 1
 
-        
- 
         return tuple(args_new)
