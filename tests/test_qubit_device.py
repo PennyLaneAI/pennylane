@@ -1512,7 +1512,6 @@ class TestResourcesTracker:
         "default.qubit.legacy",
         "default.qubit.autograd",
         "default.qubit.jax",
-        "default.qubit.torch",
     )
 
     @pytest.mark.all_interfaces
