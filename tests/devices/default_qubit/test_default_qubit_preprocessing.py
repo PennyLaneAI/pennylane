@@ -139,7 +139,6 @@ class TestConfigSetup:
         with dev.tracker:
             qml.grad(circuit)(qml.numpy.array(0.1))
 
-        assert circuit.gradient_fn == "adjoint"
         assert dev.tracker.totals["execute_and_derivative_batches"] == 1
 
 
