@@ -21,14 +21,9 @@ import pytest
 
 import pennylane as qml
 
-
-@pytest.fixture(scope="function", autouse=True)
-def capture_warnings(recwarn):  # pylint: disable=function-redefined
-    yield
-    if len(recwarn) > 0:
-        for w in recwarn:
-            assert isinstance(w.message, qml.PennyLaneDeprecationWarning)
-            assert "BasisStatePreparation is deprecated" in str(w.message)
+pytestmark = pytest.mark.filterwarnings(
+    "ignore:BasisStatePreparation is deprecated:pennylane.PennyLaneDeprecationWarning"
+)
 
 
 def test_standard_validity():
@@ -44,14 +39,6 @@ def test_standard_validity():
 
 class TestDecomposition:
     """Tests that the template defines the correct decomposition."""
-
-    @pytest.fixture(scope="function", autouse=True)
-    def capture_warnings(self, recwarn):  # pylint: disable=function-redefined
-        yield
-        if len(recwarn) > 0:
-            for w in recwarn:
-                assert isinstance(w.message, qml.PennyLaneDeprecationWarning)
-                assert "BasisStatePreparation is deprecated" in str(w.message)
 
     # fmt: off
     @pytest.mark.parametrize("basis_state,wires,target_wires", [
@@ -77,14 +64,6 @@ class TestDecomposition:
         for id, gate in enumerate(queue):
             assert gate.name == "PauliX"
             assert gate.wires.tolist() == [target_wires[id]]
-
-    @pytest.fixture(scope="function", autouse=True)
-    def capture_warnings(self, recwarn):  # pylint: disable=function-redefined
-        yield
-        if len(recwarn) > 0:
-            for w in recwarn:
-                assert isinstance(w.message, qml.PennyLaneDeprecationWarning)
-                assert "BasisStatePreparation is deprecated" in str(w.message)
 
     # fmt: off
     @pytest.mark.parametrize("basis_state,wires,target_state", [
@@ -115,14 +94,6 @@ class TestDecomposition:
 
         assert np.allclose(output_state, target_state, atol=tol, rtol=0)
 
-    @pytest.fixture(scope="function", autouse=True)
-    def capture_warnings(self, recwarn):  # pylint: disable=function-redefined
-        yield
-        if len(recwarn) > 0:
-            for w in recwarn:
-                assert isinstance(w.message, qml.PennyLaneDeprecationWarning)
-                assert "BasisStatePreparation is deprecated" in str(w.message)
-
     @pytest.mark.jax
     @pytest.mark.parametrize(
         "basis_state,wires,target_state",
@@ -150,14 +121,6 @@ class TestDecomposition:
 
         assert np.allclose(output_state, target_state, atol=tol, rtol=0)
 
-    @pytest.fixture(scope="function", autouse=True)
-    def capture_warnings(self, recwarn):  # pylint: disable=function-redefined
-        yield
-        if len(recwarn) > 0:
-            for w in recwarn:
-                assert isinstance(w.message, qml.PennyLaneDeprecationWarning)
-                assert "BasisStatePreparation is deprecated" in str(w.message)
-
     @pytest.mark.tf
     @pytest.mark.parametrize(
         "basis_state,wires,target_state",
@@ -184,14 +147,6 @@ class TestDecomposition:
 
         assert np.allclose(output_state, target_state, atol=tol, rtol=0)
 
-    @pytest.fixture(scope="function", autouse=True)
-    def capture_warnings(self, recwarn):  # pylint: disable=function-redefined
-        yield
-        if len(recwarn) > 0:
-            for w in recwarn:
-                assert isinstance(w.message, qml.PennyLaneDeprecationWarning)
-                assert "BasisStatePreparation is deprecated" in str(w.message)
-
     def test_custom_wire_labels(self, tol):
         """Test that template can deal with non-numeric, nonconsecutive wire labels."""
         basis_state = [0, 1, 0]
@@ -215,14 +170,6 @@ class TestDecomposition:
         assert np.allclose(res1, res2, atol=tol, rtol=0)
         assert np.allclose(state1, state2, atol=tol, rtol=0)
 
-    @pytest.fixture(scope="function", autouse=True)
-    def capture_warnings(self, recwarn):  # pylint: disable=function-redefined
-        yield
-        if len(recwarn) > 0:
-            for w in recwarn:
-                assert isinstance(w.message, qml.PennyLaneDeprecationWarning)
-                assert "BasisStatePreparation is deprecated" in str(w.message)
-
     def test_batched_decomposition_fails(self):
         """Test that attempting to decompose a BasisStatePreparation operation with
         broadcasting raises an error."""
@@ -239,14 +186,6 @@ class TestDecomposition:
 class TestInputs:
     """Test inputs and pre-processing."""
 
-    @pytest.fixture(scope="function", autouse=True)
-    def capture_warnings(self, recwarn):  # pylint: disable=function-redefined
-        yield
-        if len(recwarn) > 0:
-            for w in recwarn:
-                assert isinstance(w.message, qml.PennyLaneDeprecationWarning)
-                assert "BasisStatePreparation is deprecated" in str(w.message)
-
     # fmt: off
     @pytest.mark.parametrize("basis_state,wires", [
         ([0], [0, 1]),
@@ -260,14 +199,6 @@ class TestInputs:
         with pytest.raises(ValueError, match="Basis states must be of (shape|length)"):
             qml.BasisStatePreparation(basis_state, wires)
 
-    @pytest.fixture(scope="function", autouse=True)
-    def capture_warnings(self, recwarn):  # pylint: disable=function-redefined
-        yield
-        if len(recwarn) > 0:
-            for w in recwarn:
-                assert isinstance(w.message, qml.PennyLaneDeprecationWarning)
-                assert "BasisStatePreparation is deprecated" in str(w.message)
-
     # fmt: off
     @pytest.mark.parametrize("basis_state,wires", [
         ([3], [0]),
@@ -280,14 +211,6 @@ class TestInputs:
 
         with pytest.raises(ValueError, match="Basis states must only (contain|consist)"):
             qml.BasisStatePreparation(basis_state, wires)
-
-    @pytest.fixture(scope="function", autouse=True)
-    def capture_warnings(self, recwarn):  # pylint: disable=function-redefined
-        yield
-        if len(recwarn) > 0:
-            for w in recwarn:
-                assert isinstance(w.message, qml.PennyLaneDeprecationWarning)
-                assert "BasisStatePreparation is deprecated" in str(w.message)
 
     def test_exception_wrong_dim(self):
         """Verifies that exception is raised if the
@@ -310,14 +233,6 @@ class TestInputs:
         with pytest.raises(ValueError, match="Basis states must only consist of"):
             basis_state = np.array([0, 2])
             circuit(basis_state)
-
-    @pytest.fixture(scope="function", autouse=True)
-    def capture_warnings(self, recwarn):  # pylint: disable=function-redefined
-        yield
-        if len(recwarn) > 0:
-            for w in recwarn:
-                assert isinstance(w.message, qml.PennyLaneDeprecationWarning)
-                assert "BasisStatePreparation is deprecated" in str(w.message)
 
     def test_id(self):
         """Tests that the id attribute can be set."""
