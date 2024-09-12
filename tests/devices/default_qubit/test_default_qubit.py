@@ -1822,6 +1822,7 @@ class TestPostselection:
         assert qml.math.allclose(res, expected)
         assert qml.math.get_interface(res) == qml.math.get_interface(expected)
 
+    @pytest.mark.xfail(reason="'shots' cannot be a static_argname for 'jit' in JAX 0.4.28")
     @pytest.mark.parametrize(
         "mp",
         [
@@ -2017,6 +2018,7 @@ class TestPostselection:
         assert qml.math.shape(res) == mp.shape(dev, qml.measurements.Shots(None))
         assert qml.math.allclose(res, expected)
 
+    @pytest.mark.xfail(reason="'shots' cannot be a static_argname for 'jit' in JAX 0.4.28")
     @pytest.mark.parametrize(
         "mp, expected_shape",
         [
