@@ -300,7 +300,7 @@ class TestDiagonalizeTapeMeasurements:
     """Tests the diagonalize_measurements transform"""
 
     @pytest.mark.parametrize("to_eigvals", [True, False])
-    def test_diagonalize_all_measurements(self, to_eigvals):
+    def test_diagonalize_all_measurements(self, to_eigvals):  # pylint :disable=protected-access
         """Test that the diagonalize_measurements transform diagonalizes the measurements on the tape"""
 
         measurements = [qml.expval(X(0)), qml.var(X(1) + Y(2))]
