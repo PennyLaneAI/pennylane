@@ -116,7 +116,7 @@ on:
         default: "False"
       python_warning_level:
         description: Sets the default Python warning level as defined by https://docs.python.org/3/using/cmdline.html#envvar-PYTHONWARNINGS
-        required: true
+        required: false
         type: string
         default: 'default'
 
