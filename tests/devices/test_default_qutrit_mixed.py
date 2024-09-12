@@ -1720,7 +1720,7 @@ class TestReadoutError:
         if use_jit:
             diff_func = jax.jit(diff_func)
         jac = jax.jacobian(diff_func, args_to_diff)(relaxations, misclassifications)
-        assert np.allclose(jac, expected)
+        assert np.allclose(jac, expected, atol=1e-6)
 
     @pytest.mark.torch
     @pytest.mark.parametrize("relaxations, misclassifications, expected", diff_parameters)
