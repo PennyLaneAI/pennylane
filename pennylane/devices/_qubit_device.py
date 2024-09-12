@@ -1145,7 +1145,7 @@ class QubitDevice(Device):
                 outcomes[t] = self.generate_samples()[0][mapped_wires]
         finally:
             self.shots = original_shots
-            self._shot_vector = original_shot_vector
+            self._shot_vector = original_shot_vector # pylint: disable=attribute-defined-outside-init
 
         return self._cast(self._stack([outcomes, recipes]), dtype=np.int8)
 
