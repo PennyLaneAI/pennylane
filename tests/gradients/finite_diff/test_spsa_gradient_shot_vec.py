@@ -941,12 +941,10 @@ class TestSpsaGradientDifferentiation:
     """Test that the transform is differentiable"""
 
     @pytest.mark.autograd
-    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.autograd"])
-    def test_autograd(self, dev_name, approx_order, strategy):
+    def test_autograd(self, approx_order, strategy):
         """Tests that the output of the SPSA gradient transform
         can be differentiated using autograd, yielding second derivatives."""
-        dev = qml.device(dev_name, wires=2, shots=many_shots_shot_vector)
-        execute_fn = dev.execute if dev_name == "default.qubit" else dev.batch_execute
+        dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector)
         params = pnp.array([0.543, -0.654], requires_grad=True)
         rng = np.random.default_rng(42)
 
@@ -967,8 +965,7 @@ class TestSpsaGradientDifferentiation:
                 h=h_val,
                 sampler_rng=rng,
             )
-            jac = np.array(fn(execute_fn(tapes)))
-            return jac
+            return np.array(fn(dev.execute(tapes)))
 
         all_res = qml.jacobian(cost_fn)(params)
 
@@ -987,12 +984,10 @@ class TestSpsaGradientDifferentiation:
             assert np.allclose(res, expected, atol=spsa_shot_vec_tol, rtol=0)
 
     @pytest.mark.autograd
-    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.autograd"])
-    def test_autograd_ragged(self, dev_name, approx_order, strategy):
+    def test_autograd_ragged(self, approx_order, strategy):
         """Tests that the output of the SPSA gradient transform
         of a ragged tape can be differentiated using autograd, yielding second derivatives."""
-        dev = qml.device(dev_name, wires=2, shots=many_shots_shot_vector)
-        execute_fn = dev.execute if dev_name == "default.qubit" else dev.batch_execute
+        dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector)
         params = pnp.array([0.543, -0.654], requires_grad=True)
         rng = np.random.default_rng(42)
 
@@ -1014,7 +1009,7 @@ class TestSpsaGradientDifferentiation:
                 h=h_val,
                 sampler_rng=rng,
             )
-            jac = fn(execute_fn(tapes))
+            jac = fn(dev.execute(tapes))
             return jac[1][0]
 
         x, y = params
@@ -1029,14 +1024,12 @@ class TestSpsaGradientDifferentiation:
 
     @pytest.mark.tf
     @pytest.mark.slow
-    @pytest.mark.parametrize("dev_name", ["default.qubit"])
-    def test_tf(self, dev_name, approx_order, strategy):
+    def test_tf(self, approx_order, strategy):
         """Tests that the output of the SPSA gradient transform
         can be differentiated using TF, yielding second derivatives."""
         import tensorflow as tf
 
-        dev = qml.device(dev_name, wires=2, shots=many_shots_shot_vector)
-        execute_fn = dev.execute if dev_name == "default.qubit" else dev.batch_execute
+        dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector)
         params = tf.Variable([0.543, -0.654], dtype=tf.float64)
         rng = np.random.default_rng(42)
 
@@ -1057,7 +1050,7 @@ class TestSpsaGradientDifferentiation:
                 h=h_val,
                 sampler_rng=rng,
             )
-            jac_0, jac_1 = fn(execute_fn(tapes))
+            jac_0, jac_1 = fn(dev.execute(tapes))
 
         x, y = 1.0 * params
 
@@ -1073,14 +1066,12 @@ class TestSpsaGradientDifferentiation:
         assert np.allclose([res_0, res_1], expected, atol=spsa_shot_vec_tol, rtol=0)
 
     @pytest.mark.tf
-    @pytest.mark.parametrize("dev_name", ["default.qubit"])
-    def test_tf_ragged(self, dev_name, approx_order, strategy):
+    def test_tf_ragged(self, approx_order, strategy):
         """Tests that the output of the SPSA gradient transform
         of a ragged tape can be differentiated using TF, yielding second derivatives."""
         import tensorflow as tf
 
-        dev = qml.device(dev_name, wires=2, shots=many_shots_shot_vector)
-        execute_fn = dev.execute if dev_name == "default.qubit" else dev.batch_execute
+        dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector)
         params = tf.Variable([0.543, -0.654], dtype=tf.float64)
         rng = np.random.default_rng(42)
 
@@ -1103,7 +1094,7 @@ class TestSpsaGradientDifferentiation:
                 sampler_rng=rng,
             )
 
-            jac_01 = fn(execute_fn(tapes))[1][0]
+            jac_01 = fn(dev.execute(tapes))[1][0]
 
         x, y = 1.0 * params
 
@@ -1114,14 +1105,12 @@ class TestSpsaGradientDifferentiation:
         assert np.allclose(res_01[0], expected, atol=spsa_shot_vec_tol, rtol=0)
 
     @pytest.mark.torch
-    @pytest.mark.parametrize("dev_name", ["default.qubit"])
-    def test_torch(self, dev_name, approx_order, strategy):
+    def test_torch(self, approx_order, strategy):
         """Tests that the output of the SPSA gradient transform
         can be differentiated using Torch, yielding second derivatives."""
         import torch
 
-        dev = qml.device(dev_name, wires=2, shots=many_shots_shot_vector)
-        execute_fn = dev.execute if dev_name == "default.qubit" else dev.batch_execute
+        dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector)
         params = torch.tensor([0.543, -0.654], dtype=torch.float64, requires_grad=True)
         rng = np.random.default_rng(42)
 
@@ -1141,8 +1130,7 @@ class TestSpsaGradientDifferentiation:
                 h=h_val,
                 sampler_rng=rng,
             )
-            jac = fn(execute_fn(tapes))
-            return jac
+            return fn(dev.execute(tapes))
 
         hess = torch.autograd.functional.jacobian(cost_fn, params)
 
@@ -1159,15 +1147,13 @@ class TestSpsaGradientDifferentiation:
         assert np.allclose(hess[1].detach().numpy(), expected[1], atol=spsa_shot_vec_tol, rtol=0)
 
     @pytest.mark.jax
-    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.jax"])
-    def test_jax(self, dev_name, approx_order, strategy):
+    def test_jax(self, approx_order, strategy):
         """Tests that the output of the SPSA gradient transform
         can be differentiated using JAX, yielding second derivatives."""
         import jax
         from jax import numpy as jnp
 
-        dev = qml.device(dev_name, wires=2, shots=many_shots_shot_vector)
-        execute_fn = dev.execute if dev_name == "default.qubit" else dev.batch_execute
+        dev = qml.device("default.qubit", wires=2, shots=many_shots_shot_vector)
         params = jnp.array([0.543, -0.654])
         rng = np.random.default_rng(42)
 
@@ -1188,8 +1174,7 @@ class TestSpsaGradientDifferentiation:
                 h=h_val,
                 sampler_rng=rng,
             )
-            jac = fn(execute_fn(tapes))
-            return jac
+            return fn(dev.execute(tapes))
 
         all_res = jax.jacobian(cost_fn)(params)
 
