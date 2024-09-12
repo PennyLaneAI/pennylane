@@ -1822,7 +1822,6 @@ class TestPostselection:
         assert qml.math.allclose(res, expected)
         assert qml.math.get_interface(res) == qml.math.get_interface(expected)
 
-    @pytest.mark.xfail(reason="'shots' cannot be a static_argname for 'jit' in JAX 0.4.28")
     @pytest.mark.parametrize(
         "mp",
         [
@@ -1865,6 +1864,7 @@ class TestPostselection:
         if use_jit:
             import jax
 
+            pytest.xfail(reason="'shots' cannot be a static_argname for 'jit' in JAX 0.4.28")
             circ_postselect = jax.jit(circ_postselect, static_argnames=["shots"])
 
         res = circ_postselect(param, shots=shots)
@@ -2018,7 +2018,6 @@ class TestPostselection:
         assert qml.math.shape(res) == mp.shape(dev, qml.measurements.Shots(None))
         assert qml.math.allclose(res, expected)
 
-    @pytest.mark.xfail(reason="'shots' cannot be a static_argname for 'jit' in JAX 0.4.28")
     @pytest.mark.parametrize(
         "mp, expected_shape",
         [
@@ -2053,6 +2052,7 @@ class TestPostselection:
         if use_jit:
             import jax
 
+            pytest.xfail(reason="'shots' cannot be a static_argname for 'jit' in JAX 0.4.28")
             circ = jax.jit(circ, static_argnames=["shots"])
 
         res = circ(shots=shots)
