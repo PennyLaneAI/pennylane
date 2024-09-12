@@ -1680,7 +1680,7 @@ def test_samples_to_counts_all_outomces():
 def test_no_adjoint_jacobian_errors():
     """Test that adjoint_jacobian errors with batching and shot vectors"""
 
-    class DummyQubitDevice(qml.QubitDevice):
+    class DummyQubitDevice(qml.devices.QubitDevice):
 
         author = None
         name = "bla"
