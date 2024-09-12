@@ -288,7 +288,7 @@ class TestOptimize:
             return mt_i
         
         for i in range(0, 8):
-            accum = opt.momentum * accum + opt.stepsize * grad_fn(*params6) * mt_inv(trainable_idx, *params6)
+            accum = opt.momentum * accum + opt.stepsize * grad_fn * mt_inv(trainable_idx, *params6)
             params6 -= accum
             
         exact_update = params6 - params
