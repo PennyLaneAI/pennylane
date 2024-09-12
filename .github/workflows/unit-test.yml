@@ -114,6 +114,11 @@ on:
         required: false
         type: string
         default: "False"
+      python_warning_level:
+        description: Sets the default Python warning level as defined by https://docs.python.org/3/using/cmdline.html#envvar-PYTHONWARNINGS
+        required: true
+        type: string
+        default: 'default'
 
 jobs:
   test:
@@ -187,6 +192,7 @@ jobs:
       - name: Run PennyLane Unit Tests
         if: steps.continue.outputs.confirm == 'true'
         env:
+          PYTHONWARNINGS: ${{ inputs.python_warning_level }} 
           PYTEST_MARKER: ${{ inputs.pytest_markers != '' && format('-m "{0}"', inputs.pytest_markers) || '' }}
           COV_CORE_SOURCE: pennylane
           COV_CORE_CONFIG: .coveragerc

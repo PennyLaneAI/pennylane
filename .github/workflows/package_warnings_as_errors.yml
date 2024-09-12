@@ -1,0 +1,25 @@
+name: Test-suite with warnings as error
+on:
+  # Scheduled trigger every Sunday at 2:35am UTC
+  schedule:
+  - cron: '35 2 * * 0'
+  workflow_dispatch:
+
+concurrency:
+  group: unit-tests-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DURATIONS_BRANCH: bot/durations-update
+
+jobs:
+  test-warnings-as-errors:
+    uses: ./.github/workflows/interface-unit-tests.yml
+    secrets:
+      codecov_token: ${{ secrets.CODECOV_TOKEN }}
+    with:
+      branch: ${{ github.ref }}
+      pipeline_mode: 'warnings-as-errors'
+      run_lightened_ci: false
+      skip_ci_test_jobs: 'qcut-tests'
+      python_warning_level: 'error'
