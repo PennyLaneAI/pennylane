@@ -167,20 +167,18 @@ class FABLE(Operation):
                     op_list.append(qml.CNOT(wires=[c_wire] + ancilla))
                 op_list.append(qml.RY(2 * theta, wires=ancilla))
                 nots = {}
-                if wire_map[control_index] in nots:
-                    del nots[wire_map[control_index]]
-                else:
-                    nots[wire_map[control_index]] = 1
+                nots[wire_map[control_index]] = 1
+                continue
+
+            if abs(2 * theta) > tol:
+                for c_wire in nots:
+                    op_list.append(qml.CNOT(wires=[c_wire] + ancilla))
+                op_list.append(qml.RY(2 * theta, wires=ancilla))
+                nots = {}
+            if wire_map[control_index] in nots:
+                del nots[wire_map[control_index]]
             else:
-                if abs(2 * theta) > tol:
-                    for c_wire in nots:
-                        op_list.append(qml.CNOT(wires=[c_wire] + ancilla))
-                    op_list.append(qml.RY(2 * theta, wires=ancilla))
-                    nots = {}
-                if wire_map[control_index] in nots:
-                    del nots[wire_map[control_index]]
-                else:
-                    nots[wire_map[control_index]] = 1
+                nots[wire_map[control_index]] = 1
 
         for c_wire in nots:
             op_list.append(qml.CNOT([c_wire] + ancilla))
