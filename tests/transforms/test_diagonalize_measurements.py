@@ -300,7 +300,7 @@ class TestDiagonalizeTapeMeasurements:
     """Tests the diagonalize_measurements transform"""
 
     @pytest.mark.parametrize("to_eigvals", [True, False])
-    def test_diagonalize_all_measurements(self, to_eigvals):  # pylint :disable=protected-access
+    def test_diagonalize_all_measurements(self, to_eigvals):
         """Test that the diagonalize_measurements transform diagonalizes the measurements on the tape"""
 
         measurements = [qml.expval(X(0)), qml.var(X(1) + Y(2))]
@@ -315,9 +315,13 @@ class TestDiagonalizeTapeMeasurements:
             assert isinstance(new_tape.measurements[1], VarianceMP)
             assert new_tape.measurements[0].wires == qml.wires.Wires([0])
             assert new_tape.measurements[1].wires == qml.wires.Wires([1, 2])
-            assert qml.math.allclose(sorted(new_tape.measurements[0]._eigvals), [-1.0, 1.0])
             assert qml.math.allclose(
-                sorted(new_tape.measurements[1]._eigvals), [-2.0, 0.0, 0.0, 2.0]
+                sorted(new_tape.measurements[0]._eigvals),  # pylint :disable=protected-access
+                [-1.0, 1.0],
+            )
+            assert qml.math.allclose(
+                sorted(new_tape.measurements[1]._eigvals),  # pylint :disable=protected-access
+                [-2.0, 0.0, 0.0, 2.0],
             )
         else:
             assert new_tape.measurements == [qml.expval(Z(0)), qml.var(Z(1) + Z(2))]
