@@ -125,18 +125,17 @@ def scf(mol, n_steps=50, tol=1e-8):
         charges = mol.nuclear_charges
         r = mol.coordinates
         n_electron = mol.n_electrons
-        argnums = mol.argnum if mol.argnum is not None else ()
 
-        if getattr(r, "requires_grad", False) or 0 in argnums:
+        if getattr(r, "requires_grad", False):
             args_r = [[args[0][i]] * mol.n_basis[i] for i in range(len(mol.n_basis))]
             args_ = [*args] + [qml.math.vstack(list(itertools.chain(*args_r)))]
-            rep_tensor = repulsion_tensor(basis_functions, argnums)(*args_[1:])
-            s = overlap_matrix(basis_functions, argnums)(*args_[1:])
-            h_core = core_matrix(basis_functions, charges, r, argnums)(*args_)
+            rep_tensor = repulsion_tensor(basis_functions)(*args_[1:])
+            s = overlap_matrix(basis_functions)(*args_[1:])
+            h_core = core_matrix(basis_functions, charges, r)(*args_)
         else:
-            rep_tensor = repulsion_tensor(basis_functions, argnums)(*args)
-            s = overlap_matrix(basis_functions, argnums)(*args)
-            h_core = core_matrix(basis_functions, charges, r, argnums)(*args)
+            rep_tensor = repulsion_tensor(basis_functions)(*args)
+            s = overlap_matrix(basis_functions)(*args)
+            h_core = core_matrix(basis_functions, charges, r)(*args)
 
         rng = qml.math.random.default_rng(2030)
         s = s + qml.math.diag(rng.random(len(s)) * 1.0e-12)
@@ -175,7 +174,7 @@ def scf(mol, n_steps=50, tol=1e-8):
     return _scf
 
 
-def nuclear_energy(charges, r, argnum=None):
+def nuclear_energy(charges, r):
     r"""Return a function that computes the nuclear-repulsion energy.
 
     The nuclear-repulsion energy is computed as
@@ -214,8 +213,7 @@ def nuclear_energy(charges, r, argnum=None):
         Returns:
             array[float]: nuclear-repulsion energy
         """
-        argnums = () if argnum is None else ((argnum) if isinstance(argnum, int) else argnum)
-        if getattr(r, "requires_grad", False) or 0 in argnums:
+        if getattr(r, "requires_grad", False):
             coor = args[0]
         else:
             coor = r
@@ -258,9 +256,8 @@ def hf_energy(mol):
         Returns:
             float: the Hartree-Fock energy
         """
-        argnum = mol.argnum
         _, coeffs, fock_matrix, h_core, _ = scf(mol)(*args)
-        e_rep = nuclear_energy(mol.nuclear_charges, mol.coordinates, argnum)(*args)
+        e_rep = nuclear_energy(mol.nuclear_charges, mol.coordinates)(*args)
         e_elec = qml.math.einsum(
             "pq,qp", fock_matrix + h_core, mol_density_matrix(mol.n_electrons, coeffs)
         )

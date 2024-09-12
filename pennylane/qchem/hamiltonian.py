@@ -126,7 +126,7 @@ def electron_integrals(mol, core=None, active=None):
             1,
             3,
         )
-        core_constant = nuclear_energy(mol.nuclear_charges, mol.coordinates, mol.argnum)(*args)
+        core_constant = nuclear_energy(mol.nuclear_charges, mol.coordinates)(*args)
 
         if core is None and active is None:
             return core_constant, one, two
@@ -424,7 +424,6 @@ def _(
         args,
         molecule.load_data,
         convert_tol,
-        molecule.argnum,
     )
 
 
@@ -448,7 +447,6 @@ def _(
     args=None,
     load_data=False,
     convert_tol=1e12,
-    argnum=None,
 ):
 
     if (coord_unit := unit.strip().lower()) not in ("angstrom", "bohr"):
@@ -478,7 +476,6 @@ def _(
         args=args,
         load_data=load_data,
         convert_tol=convert_tol,
-        argnum=argnum,
     )
 
 
@@ -500,7 +497,6 @@ def _molecular_hamiltonian(
     args=None,
     load_data=False,
     convert_tol=1e12,
-    argnum=None,
 ):  # pylint:disable=too-many-arguments, too-many-statements
     r"""Generate the qubit Hamiltonian of a molecule."""
 
@@ -548,7 +544,6 @@ def _molecular_hamiltonian(
             load_data=load_data,
             coeff=coeff,
             alpha=alpha,
-            argnum=argnum,
         )
         core, active = qml.qchem.active_space(
             mol.n_electrons, mol.n_orbitals, mult, active_electrons, active_orbitals

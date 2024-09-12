@@ -57,10 +57,6 @@ class Molecule:
         r (array[float]): positions of the Gaussian functions
         normalize (bool): if True, the basis functions get normalized
         unit (str): unit of atomic coordinates. Available options are ``unit="bohr"`` and ``unit="angstrom"``.
-        argnum (int | Sequence(int) | None): index (indices) of the positional argument(s) -
-            [``coordinates``, ``coeff``, ``alpha``] that should support differentiation. For
-            example, ``argnum=[0, 2]`` would mean derivatives can be computed with respect to both
-            ``coordinates`` and ``alpha``.
 
     **Example**
 
@@ -86,7 +82,6 @@ class Molecule:
         alpha=None,
         normalize=True,
         unit="bohr",
-        argnum=None,
         debug=False,
     ):
         if (
@@ -117,11 +112,6 @@ class Molecule:
         self.name = name
         self.load_data = load_data
         self.n_basis, self.basis_data = mol_basis_data(self.basis_name, self.symbols, load_data)
-        self.argnum = (
-            (argnum,)
-            if isinstance(argnum, int)
-            else tuple(argnum) if isinstance(argnum, list) else argnum
-        )
 
         if self.unit not in ("angstrom", "bohr"):
             raise ValueError(
