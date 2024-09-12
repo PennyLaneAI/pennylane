@@ -5,6 +5,10 @@
 <h3>New features since last release</h3>
  
 <h3>Improvements 🛠</h3>
+
+* `qml.qchem.excitations` now optionally returns fermionic operators.
+   [(#6171)](https://github.com/PennyLaneAI/pennylane/pull/6171)
+
 * The `diagonalize_measurements` transform now uses a more efficient method of diagonalization 
   when possible, based on the `pauli_rep` of the relevant observables.
   [#6113](https://github.com/PennyLaneAI/pennylane/pull/6113/)
@@ -16,12 +20,24 @@
   which differs from the Autograd implementation of `qml.grad` itself.
   [(#6120)](https://github.com/PennyLaneAI/pennylane/pull/6120)
 
+<h4>Capturing and representing hybrid programs</h4>
+
+* Differentiation of hybrid programs via `qml.grad` and `qml.jacobian` can now be captured
+  into plxpr. When evaluating a captured `qml.grad` (`qml.jacobian`) instruction, it will
+  dispatch to `jax.grad` (`jax.jacobian`), which differs from the Autograd implementation
+  without capture.
+  [(#6120)](https://github.com/PennyLaneAI/pennylane/pull/6120)
+  [(#6127)](https://github.com/PennyLaneAI/pennylane/pull/6127)
+
 * Improve unit testing for capturing of nested control flows.
   [(#6111)](https://github.com/PennyLaneAI/pennylane/pull/6111)
 
 * Some custom primitives for the capture project can now be imported via
   `from pennylane.capture.primitives import *`.
   [(#6129)](https://github.com/PennyLaneAI/pennylane/pull/6129)
+
+* `FermiWord` and `FermiSentence` classes now have methods to compute adjoints.
+  [(#6166)](https://github.com/PennyLaneAI/pennylane/pull/6166)
 
 * The `SampleMP.process_samples` method is updated to support using JAX tracers
   for samples, allowing compatiblity with Catalyst workflows.
@@ -34,15 +50,19 @@
   unique representation of the object.
   [(#6167)](https://github.com/PennyLaneAI/pennylane/pull/6167)
 
+* The `to_mat` methods for `FermiWord` and `FermiSentence` now optionally return
+  a sparse matrix.
+  [(#6173)](https://github.com/PennyLaneAI/pennylane/pull/6173)
 
 <h3>Breaking changes 💔</h3>
 
 * Remove support for Python 3.9.
   [(#6223)](https://github.com/PennyLaneAI/pennylane/pull/6223)
 
-* `DefaultQubitTF` and `DefaultQubitTorch` are removed. Please use `default.qubit` for all interfaces.
+* `DefaultQubitTF`, `DefaultQubitTorch`, and `DefaultQubitJax` are removed. Please use `default.qubit` for all interfaces.
   [(#6207)](https://github.com/PennyLaneAI/pennylane/pull/6207)
   [(#6208)](https://github.com/PennyLaneAI/pennylane/pull/6208)
+  [(#6209)](https://github.com/PennyLaneAI/pennylane/pull/6209)
 
 * `expand_fn`, `max_expansion`, `override_shots`, and `device_batch_transform` are removed from the
   signature of `qml.execute`.
@@ -58,11 +78,17 @@
   Please use `qml.transforms.split_non_commuting` instead.
   [(#6204)](https://github.com/PennyLaneAI/pennylane/pull/6204)
 
+* `Operator.expand` is now removed. Use `qml.tape.QuantumScript(op.deocomposition())` instead.
+  [(#6227)](https://github.com/PennyLaneAI/pennylane/pull/6227)
+
 <h3>Deprecations 👋</h3>
 
 <h3>Documentation 📝</h3>
 
 <h3>Bug fixes 🐛</h3>
+
+* Fix a bug where zero-valued JVPs were calculated wrongly in the presence of shot vectors.
+  [(#6219)](https://github.com/PennyLaneAI/pennylane/pull/6219)
 
 * Fix `qml.PrepSelPrep` template to work with `torch`:
   [(#6191)](https://github.com/PennyLaneAI/pennylane/pull/6191)
