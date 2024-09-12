@@ -896,102 +896,50 @@ def generate_symbols_alpha_coeff():
 
 @pytest.mark.jax
 class TestJax:
-
-    @pytest.mark.parametrize(
-        "argnum",
-        [
-            [1, 2],
-            [0],
-        ],
-    )
-    def test_generate_params_jax(self, argnum):
+    def test_generate_params_jax(self):
         """Test that test_generate_params_jax returns correct basis set parameters."""
         alpha = create_jax_like_array([3.42525091, 0.62391373, 0.1688554])
         coeff = create_jax_like_array([0.15432897, 0.53532814, 0.44463454])
         r = create_jax_like_array([0.0, 0.0, 0.0])
 
-        argnums = () if argnum is None else ((argnum) if isinstance(argnum, int) else argnum)
-
         params = [alpha, coeff, r]
-        args = [p for i, p in enumerate([alpha, coeff, r]) if 2 - i in argnums]
-        basis_params = qchem.integrals._generate_params(params, args, argnum)
+        args = [p for i, p in enumerate([alpha, coeff, r])]
+        basis_params = qchem.integrals._generate_params(params, args)
         assert np.allclose(basis_params, (alpha, coeff, r))
 
     @pytest.mark.parametrize(
-        (
-            "geometry_values",
-            "r_values",
-            "o_ref_values",
-            "argnum",
-        ),
+        ("geometry_values", "r_values", "o_ref_values"),
         [
-            (
-                [[0.0, 0.0, 0.0], [0.0, 0.0, 20.0]],
-                [[0.0, 0.0, 0.0], [0.0, 0.0, 20.0]],
-                [0.0],
-                [0, 1],
-            ),
-            (
-                [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]],
-                [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]],
-                [1.0],
-                [0],
-            ),
-            (
-                [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]],
-                [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]],
-                [1.0],
-                [0, 1, 2],
-            ),
+            ([[0.0, 0.0, 0.0], [0.0, 0.0, 20.0]], [[0.0, 0.0, 0.0], [0.0, 0.0, 20.0]], [0.0]),
+            ([[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]], [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]], [1.0]),
+            ([[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]], [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]], [1.0]),
         ],
     )
-    def test_overlap_integral_jax(self, geometry_values, r_values, o_ref_values, argnum):
+    def test_overlap_integral_jax(self, geometry_values, r_values, o_ref_values):
         r"""Test that overlap_integral function returns a correct value for the overlap
         integral when using jax."""
         symbols, alpha, coeff = generate_symbols_alpha_coeff()
         geometry = create_jax_like_array(geometry_values)
         r = create_jax_like_array(r_values)
         o_ref = create_jax_like_array(o_ref_values)
-        argnums = () if argnum is None else ((argnum) if isinstance(argnum, int) else argnum)
 
         mol = qchem.Molecule(symbols, geometry)
         basis_a = mol.basis_set[0]
         basis_b = mol.basis_set[1]
-        args = [p for i, p in enumerate([alpha, coeff, r]) if 2 - i in argnums]
+        args = [p for i, p in enumerate([alpha, coeff, r])]
 
-        o = qchem.overlap_integral(basis_a, basis_b, argnum)(*args)
+        o = qchem.overlap_integral(basis_a, basis_b)(*args)
         assert np.allclose(o, o_ref)
 
     @pytest.mark.parametrize(
-        ("symbols", "geometry_values", "e", "idx", "ref", "argnum"),
+        ("symbols", "geometry_values", "e", "idx", "ref"),
         [
-            (
-                ["H", "Li"],
-                [[0.0, 0.0, 0.0], [2.0, 0.0, 0.0]],
-                1,
-                0,
-                3.12846324e-01,
-                [],
-            ),
-            (
-                ["H", "Li"],
-                [[0.5, 0.1, -0.2], [2.1, -0.3, 0.1]],
-                1,
-                0,
-                4.82090830e-01,
-                [0],
-            ),
-            (
-                ["N", "N"],
-                [[0.5, 0.1, -0.2], [2.1, -0.3, 0.1]],
-                1,
-                2,
-                -4.70075530e-02,
-                [],
-            ),
+            (["H", "Li"], [[0.0, 0.0, 0.0], [2.0, 0.0, 0.0]], 1, 0, 3.12846324e-01),
+            (["H", "Li"], [[0.5, 0.1, -0.2], [2.1, -0.3, 0.1]], 1, 0, 4.82090830e-01),
+            (["N", "N"], [[0.5, 0.1, -0.2], [2.1, -0.3, 0.1]], 1, 2, -4.70075530e-02),
         ],
     )
-    def test_moment_integral_jax(self, symbols, geometry_values, e, idx, ref, argnum):
+    def test_moment_integral_jax(self, symbols, geometry_values, e, idx, ref):
         r"""Test that moment_integral function returns a correct value for the moment
         integral when using jax."""
         geometry = create_jax_like_array(geometry_values)
@@ -1000,29 +948,20 @@ class TestJax:
         basis_a = mol.basis_set[0]
         basis_b = mol.basis_set[1]
         args = []
-        argnums = () if argnum is None else ((argnum) if isinstance(argnum, int) else argnum)
-        if 0 in argnums:
-            args = [geometry]
-        s = qchem.moment_integral(basis_a, basis_b, e, idx, argnum, normalize=False)(*args)
+        # if 0 in argnums:
+        #     args = [geometry]
+        s = qchem.moment_integral(basis_a, basis_b, e, idx, normalize=False)(*args)
 
         assert np.allclose(s, ref)
 
     @pytest.mark.parametrize(
-        ("geometry_values", "t_ref_values", "argnum"),
+        ("geometry_values", "t_ref_values"),
         [
-            (
-                [[0.0, 0.0, 0.0], [0.0, 0.0, 20.0]],
-                [0.0],
-                [2],
-            ),
-            (
-                [[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]],
-                [0.38325384],
-                [2],
-            ),
+            ([[0.0, 0.0, 0.0], [0.0, 0.0, 20.0]], [0.0]),
+            ([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], [0.38325384]),
         ],
     )
-    def test_kinetic_integral_jax(self, geometry_values, t_ref_values, argnum):
+    def test_kinetic_integral_jax(self, geometry_values, t_ref_values):
         r"""Test that kinetic_integral function returns a correct value for the kinetic
         integral when using jax."""
         symbols, alpha, coeff = generate_symbols_alpha_coeff()
@@ -1032,28 +971,19 @@ class TestJax:
         mol = qchem.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
         basis_a = mol.basis_set[0]
         basis_b = mol.basis_set[1]
-        argnums = () if argnum is None else ((argnum) if isinstance(argnum, int) else argnum)
-        args = [p for i, p in enumerate([alpha, coeff, geometry]) if 2 - i in argnums]
+        args = [p for i, p in enumerate([alpha, coeff, geometry])]
 
-        t = qchem.kinetic_integral(basis_a, basis_b, argnum)(*args)
+        t = qchem.kinetic_integral(basis_a, basis_b)(*args)
         assert qml.math.allclose(t, t_ref)
 
     @pytest.mark.parametrize(
-        ("geometry_values", "a_ref_values", "argnum"),
+        ("geometry_values", "a_ref_values"),
         [
-            (
-                [[0.0, 0.0, 0.0], [0.0, 0.0, 20.0]],
-                [0.0],
-                [1, 2],
-            ),
-            (
-                [[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]],
-                [0.80120855],
-                [0, 1, 2],
-            ),
+            ([[0.0, 0.0, 0.0], [0.0, 0.0, 20.0]], [0.0]),
+            ([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], [0.80120855]),
         ],
     )
-    def test_attraction_integral_jax(self, geometry_values, a_ref_values, argnum):
+    def test_attraction_integral_jax(self, geometry_values, a_ref_values):
         r"""Test that attraction_integral function returns a correct value for the kinetic
         integral when using jax."""
         symbols, alpha, coeff = generate_symbols_alpha_coeff()
@@ -1063,26 +993,16 @@ class TestJax:
         mol = qchem.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
         basis_a = mol.basis_set[0]
         basis_b = mol.basis_set[1]
-        argnums = () if argnum is None else ((argnum) if isinstance(argnum, int) else argnum)
-        args = [p for i, p in enumerate([alpha, coeff, geometry]) if 2 - i in argnums]
+        args = [p for i, p in enumerate([alpha, coeff, geometry])]
 
-        if 0 in argnums:
-            args = [geometry[0]] + args + [geometry]
-
-        a = qchem.attraction_integral(geometry[0], basis_a, basis_b, argnum)(*args)
+        a = qchem.attraction_integral(geometry[0], basis_a, basis_b)(*args)
         assert np.allclose(a, a_ref)
 
     @pytest.mark.parametrize(
         ("geometry", "e_ref"),
         [
-            (
-                [[0.0, 0.0, 0.0], [0.0, 0.0, 20.0]],
-                [0.0],
-            ),
-            (
-                [[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]],
-                [0.45590169],
-            ),
+            ([[0.0, 0.0, 0.0], [0.0, 0.0, 20.0]], [0.0]),
+            ([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], [0.45590169]),
         ],
     )
     def test_repulsion_integral_jax(self, geometry, e_ref):
@@ -1115,6 +1035,6 @@ class TestJax:
         argnums = () if argnum is None else ((argnum) if isinstance(argnum, int) else argnum)
         args = [p for i, p in enumerate([alpha, coeff, geometry]) if 2 - i in argnums]
 
-        a = qchem.repulsion_integral(basis_a, basis_b, basis_a, basis_b, argnum)(*args)
+        a = qchem.repulsion_integral(basis_a, basis_b, basis_a, basis_b)(*args)
 
         assert np.allclose(a, e_ref)
