@@ -947,9 +947,7 @@ class TestJax:
         mol = qchem.Molecule(symbols, geometry)
         basis_a = mol.basis_set[0]
         basis_b = mol.basis_set[1]
-        args = []
-        # if 0 in argnums:
-        #     args = [geometry]
+        args = [geometry, mol.coeff, mol.alpha]
         s = qchem.moment_integral(basis_a, basis_b, e, idx, normalize=False)(*args)
 
         assert np.allclose(s, ref)
@@ -1027,13 +1025,11 @@ class TestJax:
             ]
         )
         e_ref = create_jax_like_array(e_ref)
-        argnum = [1]
 
         mol = qchem.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
         basis_a = mol.basis_set[0]
         basis_b = mol.basis_set[1]
-        argnums = () if argnum is None else ((argnum) if isinstance(argnum, int) else argnum)
-        args = [p for i, p in enumerate([alpha, coeff, geometry]) if 2 - i in argnums]
+        args = [p for i, p in enumerate([alpha, coeff, geometry])]
 
         a = qchem.repulsion_integral(basis_a, basis_b, basis_a, basis_b)(*args)
 

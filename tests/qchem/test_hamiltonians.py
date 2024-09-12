@@ -109,7 +109,11 @@ def test_electron_integrals(symbols, geometry, core, active, e_core, one_ref, tw
         geometry = create_jax_like_array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])
 
     mol = qchem.Molecule(symbols, geometry)
-    args = []
+
+    if use_jax:
+        args = [geometry, mol.coeff, mol.alpha]
+    else:
+        args = []
 
     e, one, two = qchem.electron_integrals(mol, core=core, active=active)(*args)
 
@@ -187,8 +191,11 @@ def test_fermionic_hamiltonian(use_jax):
         + 0.36941834777609744 * from_string("3+ 3+ 3 3")
     )
 
-    mol = qchem.Molecule(symbols, geometry, alpha=alpha, argnum=2)
-    args = [alpha]
+    mol = qchem.Molecule(symbols, geometry, alpha=alpha)
+    if use_jax:
+        args = [geometry, mol.coeff, alpha]
+    else:
+        args = [alpha]
     h = qchem.fermionic_hamiltonian(mol)(*args)
 
     h.simplify(tol=1e-7)
@@ -258,7 +265,12 @@ def test_diff_hamiltonian(use_jax):
     )
 
     mol = qchem.Molecule(symbols, geometry)
-    args = []
+
+    if use_jax:
+        args = [geometry, mol.coeff, mol.alpha]
+    else:
+        args = []
+
     h = qchem.diff_hamiltonian(mol)(*args)
 
     ops = [
@@ -298,7 +310,10 @@ def test_diff_hamiltonian_active_space(use_jax):
         geometry = create_jax_like_array([[0.0, 0.0, 0.0], [2.0, 0.0, 1.0], [0.0, 2.0, 0.0]])
 
     mol = qchem.Molecule(symbols, geometry, charge=1)
+
     args = [geometry]
+    if use_jax:
+        args = [geometry, mol.coeff, mol.alpha]
 
     h = qchem.diff_hamiltonian(mol, core=[0], active=[1, 2])(*args)
 
@@ -337,8 +352,10 @@ def test_diff_hamiltonian_wire_order(symbols, geometry, core, active, charge, us
     if use_jax:
         geometry = create_jax_like_array(geometry)
 
-    mol = qchem.Molecule(symbols, geometry, charge)
     args = [geometry]
+    mol = qchem.Molecule(symbols, geometry, charge)
+    if use_jax:
+        args = [geometry, mol.coeff, mol.alpha]
 
     h = qchem.diff_hamiltonian(mol, core=core, active=active)(*args)
 
@@ -414,8 +431,8 @@ class TestJax:
             [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
             like="jax",
         )
-        mol = qchem.Molecule(symbols, geometry, alpha=alpha, argnum=2)
-        args = [mol.alpha]
+        mol = qchem.Molecule(symbols, geometry, alpha=alpha)
+        args = [geometry, mol.coeff, mol.alpha]
         dev = qml.device("default.qubit", wires=4)
 
         def energy(mol):
@@ -429,7 +446,7 @@ class TestJax:
 
             return circuit
 
-        grad_jax = jax.grad(energy(mol), argnums=0)(*args)
+        grad_jax = jax.grad(energy(mol), argnums=2)(*args)
 
         alpha_1 = qml.math.array(
             [[3.42425091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
@@ -441,55 +458,8 @@ class TestJax:
             like="jax",
         )  # alpha[0][0] += 0.001
 
-        e_1 = energy(mol)(*[alpha_1])
-        e_2 = energy(mol)(*[alpha_2])
-
-        grad_finitediff = (e_2 - e_1) / 0.002
-
-        assert np.allclose(grad_jax[0][0], grad_finitediff, rtol=1e-02)
-
-    def test_gradient_expvalH_jax(self):
-        r"""Test that the gradient of expval(H) computed with ``jax.grad`` is equal to the value
-        obtained with the finite difference method."""
-        import jax
-
-        symbols = ["H", "H"]
-        geometry = (
-            np.array([[0.0, 0.0, -0.3674625962], [0.0, 0.0, 0.3674625962]], requires_grad=False)
-            / 0.529177210903
-        )
-        alpha = np.array(
-            [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
-            requires_grad=True,
-        )
-
-        mol = qchem.Molecule(symbols, geometry, alpha=alpha)
-        args = [jax.numpy.array(alpha)]
-        dev = qml.device("default.qubit", wires=4)
-
-        def energy(mol):
-            @qml.qnode(dev, interface="jax")
-            def circuit(*args):
-                qml.PauliX(0)
-                qml.PauliX(1)
-                qml.DoubleExcitation(0.22350048111151138, wires=[0, 1, 2, 3])
-                h_qubit = qchem.diff_hamiltonian(mol)(*args)
-                return qml.expval(h_qubit)
-
-            return circuit
-
-        grad_jax = jax.grad(energy(mol), argnums=0)(*args)
-
-        alpha_1 = np.array(
-            [[3.42425091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
-        )  # alpha[0][0] -= 0.001
-
-        alpha_2 = np.array(
-            [[3.42625091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
-        )  # alpha[0][0] += 0.001
-
-        e_1 = energy(mol)(*[alpha_1])
-        e_2 = energy(mol)(*[alpha_2])
+        e_1 = energy(mol)(geometry, mol.coeff, alpha_1)
+        e_2 = energy(mol)(geometry, mol.coeff, alpha_2)
 
         grad_finitediff = (e_2 - e_1) / 0.002
 

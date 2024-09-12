@@ -676,7 +676,7 @@ class TestJax:
         symbols, geometry, alpha = generate_symbols_geometry_alpha()
 
         mol = qchem.Molecule(symbols, geometry, alpha=alpha)
-        args = [alpha]
+        args = [geometry, mol.coeff, alpha]
         s = qchem.overlap_matrix(mol.basis_set)(*args)
         assert np.allclose(s, s_ref)
 
@@ -689,7 +689,7 @@ class TestJax:
         s_ref = np.array([[0.0, 0.4627777], [0.4627777, 2.0]])
 
         mol = qchem.Molecule(symbols, geometry, alpha=alpha)
-        args = [alpha]
+        args = [geometry, mol.coeff, alpha]
         s = qchem.moment_matrix(mol.basis_set, e, idx)(*args)
         assert np.allclose(s, s_ref)
 
@@ -704,7 +704,7 @@ class TestJax:
         )
 
         mol = qchem.Molecule(symbols, geometry, alpha=alpha)
-        args = [alpha]
+        args = [geometry, mol.coeff, alpha]
         t = qchem.kinetic_matrix(mol.basis_set)(*args)
         assert np.allclose(t, t_ref)
 
@@ -720,8 +720,7 @@ class TestJax:
         )
 
         mol = qchem.Molecule(symbols, geometry, alpha=alpha)
-        r_basis = mol.coordinates
-        args = [mol.coordinates, mol.alpha, r_basis]
+        args = [geometry, mol.coeff, alpha]
         c = qchem.core_matrix(mol.basis_set, mol.nuclear_charges, mol.coordinates)(*args)
         assert np.allclose(c, c_ref)
 
@@ -742,7 +741,7 @@ class TestJax:
         )
 
         mol = qchem.Molecule(symbols, geometry, alpha=alpha)
-        args = [mol.alpha]
+        args = [geometry, mol.coeff, alpha]
         e = qchem.repulsion_tensor(mol.basis_set)(*args)
         assert np.allclose(e, e_ref)
 
@@ -757,7 +756,6 @@ class TestJax:
             ]
         )
         mol = qchem.Molecule(symbols, geometry, alpha=alpha)
-        r_basis = mol.coordinates
-        args = [mol.coordinates, mol.alpha, r_basis]
+        args = [geometry, mol.coeff, alpha]
         v = qchem.attraction_matrix(mol.basis_set, mol.nuclear_charges, mol.coordinates)(*args)
         assert np.allclose(v, v_ref)

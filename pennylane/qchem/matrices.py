@@ -248,18 +248,24 @@ def attraction_matrix(basis_functions, charges, r):
             if args:
                 args_ab = []
 
-                if getattr(r, "requires_grad", False):
+                if getattr(r, "requires_grad", False) or (
+                    qml.math.get_interface(r) == "jax" and qml.math.requires_grad(args[0])
+                ):
                     args_ab.extend([arg[i], arg[j]] for arg in args[1:])
                 else:
                     args_ab.extend([arg[i], arg[j]] for arg in args)
 
                 for k, c in enumerate(r):
-                    if getattr(c, "requires_grad", False):
+                    if getattr(c, "requires_grad", False) or (
+                        qml.math.get_interface(r) == "jax" and qml.math.requires_grad(args[0])
+                    ):
                         args_ab = [args[0][k]] + args_ab
                     integral = integral - charges[k] * attraction_integral(
                         c, a, b, normalize=False
                     )(*args_ab)
-                    if getattr(c, "requires_grad", False):
+                    if getattr(c, "requires_grad", False) or (
+                        qml.math.get_interface(r) == "jax" and qml.math.requires_grad(args[0])
+                    ):
                         args_ab = args_ab[1:]
             else:
                 for k, c in enumerate(r):
@@ -379,7 +385,9 @@ def core_matrix(basis_functions, charges, r):
         Returns:
             array[array[float]]: the core matrix
         """
-        if getattr(r, "requires_grad", False):
+        if getattr(r, "requires_grad", False) or (
+            qml.math.get_interface(r) == "jax" and qml.math.requires_grad(args[0])
+        ):
             t = kinetic_matrix(basis_functions)(*args[1:])
         else:
             t = kinetic_matrix(basis_functions)(*args)

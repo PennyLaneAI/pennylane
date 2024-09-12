@@ -887,7 +887,9 @@ def attraction_integral(r, basis_a, basis_b, normalize=True):
         Returns:
             array[float]: the electron-nuclear attraction integral
         """
-        if getattr(r, "requires_grad", False):
+        if getattr(r, "requires_grad", False) or (
+            qml.math.get_interface(r) == "jax" and qml.math.requires_grad(args[0])
+        ):
             coor = args[0]
             args_a = [arg[0] for arg in args[1:]]
             args_b = [arg[1] for arg in args[1:]]
@@ -899,7 +901,14 @@ def attraction_integral(r, basis_a, basis_b, normalize=True):
         alpha, ca, ra = _generate_params(basis_a.params, args_a)
         beta, cb, rb = _generate_params(basis_b.params, args_b)
 
-        if getattr(basis_a.params[1], "requires_grad", False) or normalize:
+        if (
+            getattr(basis_a.params[1], "requires_grad", False)
+            or normalize
+            or (
+                qml.math.get_interface(basis_a.params[1]) == "jax"
+                and qml.math.requires_grad(args[1])
+            )
+        ):
             ca = ca * primitive_norm(basis_a.l, alpha)
             cb = cb * primitive_norm(basis_b.l, beta)
             na = contracted_norm(basis_a.l, alpha, ca)
@@ -1047,7 +1056,14 @@ def repulsion_integral(basis_a, basis_b, basis_c, basis_d, normalize=True):
         gamma, cc, rc = _generate_params(basis_c.params, args_c)
         delta, cd, rd = _generate_params(basis_d.params, args_d)
 
-        if getattr(basis_a.params[1], "requires_grad", False) or normalize:
+        if (
+            getattr(basis_a.params[1], "requires_grad", False)
+            or normalize
+            or (
+                qml.math.get_interface(basis_a.params[1]) == "jax"
+                and qml.math.requires_grad(args[1])
+            )
+        ):
             ca = ca * primitive_norm(basis_a.l, alpha)
             cb = cb * primitive_norm(basis_b.l, beta)
             cc = cc * primitive_norm(basis_c.l, gamma)
