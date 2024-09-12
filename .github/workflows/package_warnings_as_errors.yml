@@ -13,7 +13,10 @@ concurrency:
 jobs:
   test-warnings-as-errors:
     uses: ./.github/workflows/interface-unit-tests.yml
+    secrets:
+      codecov_token: ${{ secrets.CODECOV_TOKEN }}
     with:
+      token: ${{ secrets.codecov_token }}
       branch: ${{ github.ref }}
       skip_ci_test_jobs: 'qcut-tests'
       python_warning_level: 'error'
