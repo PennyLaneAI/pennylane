@@ -369,7 +369,7 @@ jobs:
           ${{
             fromJSON(needs.setup-ci-load.outputs.python-version).external-libraries-tests
             || fromJSON(needs.setup-ci-load.outputs.python-version).default
-           }}    
+           }}
     if: ${{ !contains(fromJSON(needs.setup-ci-load.outputs.jobs-to-skip), 'external-libraries-tests') }}
     uses: ./.github/workflows/unit-test.yml
     with:
@@ -408,7 +408,7 @@ jobs:
           ${{
             fromJSON(needs.setup-ci-load.outputs.python-version).qcut-tests
             || fromJSON(needs.setup-ci-load.outputs.python-version).default
-           }} 
+           }}
     if: ${{ !contains(fromJSON(needs.setup-ci-load.outputs.jobs-to-skip), 'qcut-tests') }}
     uses: ./.github/workflows/unit-test.yml
     with:
@@ -476,13 +476,13 @@ jobs:
           ${{
             fromJSON(needs.setup-ci-load.outputs.python-version).gradients-tests
             || fromJSON(needs.setup-ci-load.outputs.python-version).default
-           }}   
+           }}
     if: ${{ !contains(fromJSON(needs.setup-ci-load.outputs.jobs-to-skip), 'gradients-tests') }}
     uses: ./.github/workflows/unit-test.yml
     with:
       job_name: gradients-tests (${{ matrix.config.suite }}, ${{ matrix.python-version }})
       branch: ${{ inputs.branch }}
-      coverage_artifact_name: gradients-${{ matrix.config.suite }}
+      coverage_artifact_name: gradients-${{ matrix.config.suite }}-coverage
       python_version: ${{ matrix.python-version }}
       pipeline_mode: ${{ inputs.pipeline_mode }}
       install_jax: true
@@ -550,7 +550,7 @@ jobs:
           ${{
             fromJSON(needs.setup-ci-load.outputs.python-version).device-tests
             || fromJSON(needs.setup-ci-load.outputs.python-version).default
-           }}  
+           }}
     if: ${{ !contains(fromJSON(needs.setup-ci-load.outputs.jobs-to-skip), 'device-tests') }}
     uses: ./.github/workflows/unit-test.yml
     with:
