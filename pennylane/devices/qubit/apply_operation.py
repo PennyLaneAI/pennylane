@@ -71,7 +71,7 @@ def apply_operation_einsum(op: qml.operation.Operator, state, is_state_batched: 
     Returns:
         array[complex]: output_state
     """
-    mat = op.matrix()
+    mat = qml.math.cast_like(op.matrix(), 1j)
 
     total_indices = len(state.shape) - is_state_batched
     num_indices = len(op.wires)
@@ -114,7 +114,7 @@ def apply_operation_tensordot(op: qml.operation.Operator, state, is_state_batche
     Returns:
         array[complex]: output_state
     """
-    mat = op.matrix()
+    mat = qml.math.cast_like(op.matrix(), 1j)
     total_indices = len(state.shape) - is_state_batched
     num_indices = len(op.wires)
 
