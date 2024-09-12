@@ -547,7 +547,7 @@ class TestIntegrationSingleReturnTensorFlow:
         assert sum(res.values()) == shots
 
 
-devices = ["default.qubit.torch", "default.mixed"]
+devices = ["default.mixed"]
 
 
 @pytest.mark.torch
@@ -559,7 +559,7 @@ class TestIntegrationSingleReturnTorch:
         """Return state with default.qubit."""
         import torch
 
-        dev = qml.device("default.qubit.torch", wires=wires)
+        dev = qml.device("default.qubit", wires=wires)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
@@ -1631,7 +1631,7 @@ class TestIntegrationMultipleReturnsTensorflow:
                     assert t.shape == ()
 
 
-devices = ["default.qubit.torch", "default.mixed"]
+devices = ["default.mixed"]
 
 
 @pytest.mark.torch
