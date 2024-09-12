@@ -286,6 +286,29 @@ class TestFable:
         assert np.allclose(gradient_numeric, gradient_jax[0, 0], rtol=0.001)
 
     @pytest.mark.jax
+    def test_jit_result(self):
+        """Test that the value returned in JIT mode equals the value returned without JIT."""
+        import jax
+
+        def fable(input_matrix):
+            qml.FABLE(input_matrix, wires=range(5), tol=0)
+            return qml.expval(qml.PauliZ(wires=0))
+
+        input_matrix = np.array(
+            [
+                [-0.5, -0.4, 0.6, 0.7],
+                [0.9, 0.9, 0.8, 0.9],
+                [0.8, 0.7, 0.9, 0.8],
+                [0.9, 0.7, 0.8, 0.3],
+            ]
+        )
+
+        device = qml.device("default.qubit", wires=5)
+        interpreted_fn = qml.QNode(fable, device)
+        jitted_fn = jax.jit(interpreted_fn)
+        assert np.allclose(jitted_fn(input_matrix), interpreted_fn(input_matrix))
+
+    @pytest.mark.jax
     def test_fable_grad_jax_jit_error(self, input_matrix):
         """Test that FABLE is differentiable when using jax."""
         import jax
