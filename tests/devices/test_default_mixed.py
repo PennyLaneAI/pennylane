@@ -911,7 +911,6 @@ class TestApplyOperation:
             qml.probs(op=qml.Y(0)),
             qml.probs(op=qml.X(0) @ qml.Y(1)),
             qml.vn_entropy(wires=[0]),
-            qml.vn_entanglement_entropy(wires0=[1], wires1=[0]),
             qml.mutual_info(wires0=[1], wires1=[0]),
             qml.purity(wires=[1]),
         ],
@@ -1203,16 +1202,14 @@ class TestReadoutError:
 
     @pytest.mark.parametrize("prob", [0, 0.5, 1])
     @pytest.mark.parametrize("nr_wires", [2, 3])
-    def test_readout_vnentropy_and_vnentanglemententropy_and_mutualinfo(self, nr_wires, prob):
-        """Tests the output of qml.vn_entropy, qml.vn_entanglement_entropy, and qml.mutual_info
-        are not affected by readout error"""
+    def test_readout_vnentropy_and_mutualinfo(self, nr_wires, prob):
+        """Tests the output of qml.vn_entropy and qml.mutual_info are not affected by readout error"""
         dev = qml.device("default.mixed", wires=nr_wires, readout_prob=prob)
 
         @qml.qnode(dev)
         def circuit():
             return (
                 qml.vn_entropy(wires=0, log_base=2),
-                qml.vn_entanglement_entropy(wires0=[0], wires1=[1], log_base=2),
                 qml.mutual_info(wires0=[0], wires1=[1], log_base=2),
             )
 

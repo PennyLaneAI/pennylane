@@ -41,7 +41,6 @@ from pennylane.measurements import (
     SampleMP,
     StateMP,
     VarianceMP,
-    VnEntanglementEntropyMP,
     VnEntropyMP,
 )
 from pennylane.operation import Channel
@@ -638,17 +637,6 @@ class DefaultMixed(QubitDevice):
                 density_matrix, indices=map_wires, c_dtype=self.C_DTYPE, base=base
             )
 
-        elif isinstance(measurement, VnEntanglementEntropyMP):
-            base = measurement.log_base
-            wires0, wires1 = list(map(self.map_wires, measurement.raw_wires))
-            snap_result = qml.math.vn_entanglement_entropy(
-                density_matrix,
-                indices0=wires0,
-                indices1=wires1,
-                c_dtype=self.C_DTYPE,
-                base=base,
-            )
-
         elif isinstance(measurement, MutualInfoMP):
             base = measurement.log_base
             wires0, wires1 = list(map(self.map_wires, measurement.raw_wires))
@@ -774,8 +762,8 @@ class DefaultMixed(QubitDevice):
                     # not specified or all wires specified.
                     self.measured_wires = self.wires
                     return super().execute(circuit, **kwargs)
-                if isinstance(m, (VnEntropyMP, VnEntanglementEntropyMP, MutualInfoMP)):
-                    # VnEntropy, VnEntanglementEntropyMP, MutualInfo: Computed for the state
+                if isinstance(m, (VnEntropyMP, MutualInfoMP)):
+                    # VnEntropy, MutualInfo: Computed for the state
                     # prior to measurement. So, readout error need not be applied on the
                     # corresponding device wires.
                     continue
