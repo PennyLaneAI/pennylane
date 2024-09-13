@@ -327,19 +327,16 @@ class FermiWord(dict):
     def shift_operator(self, initial_position, final_position):
         r"""Shifts an operator in the FermiWord from ``initial_position`` to ``final_position`` by applying the fermionic anti-commutation relations.
 
-            There are four anti-commutator relations:
+    There are four `anti-commutator relations <https://en.wikipedia.org/wiki/Creation_and_annihilation_operators#Creation_and_annihilation_operators_in_quantum_field_theories>`_:
 
-            .. math::
+    .. math::
 
-                \begin{align*}
-                    a_0 a_1 &= -a_1 a_0\\
-                    a^{\dagger}_0 a^{\dagger}_1 &= -a^{\dagger}_1 a^{\dagger}_0\\
-                    a_0 a^{\dagger}_1 &= -a^{\dagger}_1 a_0\\
-                    a_0 a^{\dagger}_0 &= 1 - a^{\dagger}_0 a_0
-                \end{align*}
-
-
-            For more details see `Wikipedia <https://en.wikipedia.org/wiki/Creation_and_annihilation_operators#Creation_and_annihilation_operators_in_quantum_field_theories>`_.
+        \begin{align*}
+            a_0 a_1 &= -a_1 a_0\\
+            a^{\dagger}_0 a^{\dagger}_1 &= -a^{\dagger}_1 a^{\dagger}_0\\
+            a_0 a^{\dagger}_1 &= -a^{\dagger}_1 a_0\\
+            a_0 a^{\dagger}_0 &= 1 - a^{\dagger}_0 a_0
+        \end{align*}
 
 
         Args:
