@@ -127,10 +127,10 @@ def device(name, *args, **kwargs):
         dev = qml.device('default.qubit', wires=['ancilla', 'q11', 'q12', -1, 1])
 
         def circuit():
-`           qml.Hadamard(wires='q11')
+            qml.Hadamard(wires='q11')
             qml.Hadamard(wires=['ancilla'])
             qml.CNOT(wires=['q12', -1])
-            ...`
+            ...
 
     On some newer devices, such as ``default.qubit``, the ``wires`` argument can be omitted altogether,
     and instead the wires will be computed when executing a circuit depending on its contents.
@@ -195,12 +195,12 @@ def device(name, *args, **kwargs):
             'default.qubit', wires=2, custom_decomps={"CNOT" : ion_trap_cnot}
         )
 
-        @qml.qnode(dev, expansion_strategy="device")
+        @qml.qnode(dev)
         def run_cnot():
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.X(1))
 
-    >>> print(qml.draw(run_cnot)())
+    >>> print(qml.draw(run_cnot, level="device")())
     0: ──RY(1.57)─╭IsingXX(1.57)──RX(-1.57)──RY(-1.57)─┤
     1: ───────────╰IsingXX(1.57)──RY(-1.57)────────────┤  <X>
 
