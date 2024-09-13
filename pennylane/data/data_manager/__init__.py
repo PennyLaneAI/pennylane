@@ -35,32 +35,12 @@ from .params import DEFAULT, FULL, format_params
 
 GRAPHQL_URL = "https://cloud.pennylane.ai/graphql"
 S3_URL = "https://datasets.cloud.pennylane.ai/datasets/h5"
-# FOLDERMAP_URL = f"{S3_URL}/foldermap.json"
-# DATA_STRUCT_URL = f"{S3_URL}/data_struct.json"
 
 
 class GraphQLError(BaseException):
     """Exception for GraphQL"""
 
     pass
-
-
-# @lru_cache(maxsize=1)
-# def _get_foldermap():
-#     """Fetch the foldermap from S3."""
-#     response = get(FOLDERMAP_URL, timeout=5.0)
-#     response.raise_for_status()
-
-#     return FolderMapView(response.json())
-
-
-# @lru_cache(maxsize=1)
-# def _get_data_struct():
-#     """Fetch the data struct from S3."""
-#     response = get(DATA_STRUCT_URL, timeout=5.0)
-#     response.raise_for_status()
-
-#     return response.json()
 
 
 def _download_partial(  # pylint: disable=too-many-arguments
@@ -539,14 +519,14 @@ def _interactive_request_data_name(data_names):
 def _interactive_request_attributes(attribute_options):
     """Prompt the user to select a list of attributes."""
     print(
-        f'Please select a list of attributes from the following available attributes or "full" for all attributes.'
+        'Please select a list of attributes from the following available attributes or "full" for all attributes.'
     )
     for i, option in enumerate(attribute_options):
         print(f"{i + 1}: {option}")
     choice = input("Choice of attributes: ")
     if choice == "full":
         return attribute_options
-    elif choice not in attribute_options:
+    if choice not in attribute_options:
         raise ValueError(f"Must select a list of attributes from {attribute_options}")
     return choice
 
@@ -562,15 +542,14 @@ def _interactive_requests(parameters, parameter_tree):
         try:
             branch = branch["next"][user_value]
         except KeyError as e:
-            raise ValueError(f"Must enter a valid {param}:")
+            raise ValueError(f"Must enter a valid {param}:") from e
         choices.append(user_value)
         if "next" in branch:
             if len(branch["next"]) == 1:
                 branch = next(iter(branch["next"].values()))
             continue
-        else:
-            branch = branch["value"]
-            return branch
+        branch = branch["value"]
+        return branch
 
 
 def _get_parameter_tree(class_id) -> tuple[list[str], list[str], dict]:
