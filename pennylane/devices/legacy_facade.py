@@ -52,7 +52,6 @@ def _set_shots(device, shots):
 
     As a standard context manager:
 
-    >>> dev = qml.device("default.qubit.legacy", wires=2, shots=None)
     >>> with _set_shots(dev, shots=100):
     ...     print(dev.shots)
     100

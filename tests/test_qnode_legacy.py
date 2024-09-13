@@ -20,6 +20,7 @@ from functools import partial
 
 import numpy as np
 import pytest
+from default_qubit_legacy import DefaultQubitLegacy
 from scipy.sparse import csr_matrix
 
 import pennylane as qml
@@ -112,7 +113,7 @@ class TestValidation:
             QNode(dummyfunc, None)
 
     def test_best_method_wraps_legacy_device_correctly(self, mocker):
-        dev_legacy = qml.devices.DefaultQubitLegacy(wires=2)
+        dev_legacy = DefaultQubitLegacy(wires=2)
 
         spy = mocker.spy(qml.devices.LegacyDeviceFacade, "__init__")
 
@@ -172,7 +173,7 @@ class TestValidation:
             return capabilities
 
         # finite differences is the fallback when we know nothing about the device
-        monkeypatch.setattr(qml.devices.DefaultQubitLegacy, "capabilities", capabilities)
+        monkeypatch.setattr(DefaultQubitLegacy, "capabilities", capabilities)
 
         dev = qml.device("default.mixed", wires=1)
         monkeypatch.setitem(dev._capabilities, "passthru_interface", "some_interface")
@@ -210,7 +211,7 @@ class TestValidation:
         assert res == "backprop"
 
     def test_best_method_str_wraps_legacy_device_correctly(self, mocker):
-        dev_legacy = qml.devices.DefaultQubitLegacy(wires=2)
+        dev_legacy = DefaultQubitLegacy(wires=2)
 
         spy = mocker.spy(qml.devices.LegacyDeviceFacade, "__init__")
 

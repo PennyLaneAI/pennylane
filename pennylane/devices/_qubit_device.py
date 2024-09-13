@@ -176,28 +176,6 @@ class QubitDevice(Device):
 
         * tape: quantum tape to transform
 
-    **Example:**
-
-    Let's create a device that inherits from :class:`~pennylane.devices.DefaultQubitLegacy` and overrides the
-    logic of the `qml.sample` measurement. To do so we will need to update the ``measurement_map``
-    dictionary:
-
-    .. code-block:: python
-
-        class NewDevice(DefaultQubitLegacy):
-            def __init__(self, wires, shots):
-                super().__init__(wires=wires, shots=shots)
-                self.measurement_map[SampleMP] = "sample_measurement"
-
-            def sample_measurement(self, measurement, shot_range=None, bin_size=None):
-                return 2
-
-    >>> dev = NewDevice(wires=2, shots=1000)
-    >>> @qml.qnode(dev)
-    ... def circuit():
-    ...     return qml.sample()
-    >>> circuit()
-    tensor(2, requires_grad=True)
     """
 
     def __init__(

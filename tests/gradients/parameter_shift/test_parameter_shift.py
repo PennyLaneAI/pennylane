@@ -14,10 +14,10 @@
 """Tests for the gradients.parameter_shift module using the new return types."""
 # pylint: disable=use-implicit-booleaness-not-comparison
 import pytest
+from default_qubit_legacy import DefaultQubitLegacy
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.devices import DefaultQubitLegacy
 from pennylane.gradients import param_shift
 from pennylane.gradients.parameter_shift import (
     _evaluate_gradient,

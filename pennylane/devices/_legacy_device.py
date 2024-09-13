@@ -623,8 +623,6 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
 
         .. code-block:: python
 
-            dev = qml.device("default.qubit.legacy", wires=2)
-
             @dev.custom_expand
             def my_expansion_function(self, tape, max_expansion=10):
                 ...
