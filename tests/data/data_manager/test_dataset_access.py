@@ -193,13 +193,15 @@ class TestLoadInteractive:
     @pytest.mark.parametrize(
         ("side_effect"),
         [
-            (
-                ["qspin", "Heisenberg", "1x4", "open", "full", True, PosixPath("/my/path"), "Y"]
-            ),
+            (["qspin", "Heisenberg", "1x4", "open", "full", True, PosixPath("/my/path"), "Y"]),
         ],
     )
     def test_load_interactive_success(
-        self, mock_input, mock_sleep, mock_load, side_effect,
+        self,
+        mock_input,
+        mock_sleep,
+        mock_load,
+        side_effect,
     ):  # pylint:disable=too-many-arguments, redefined-outer-name
         """Test that load_interactive succeeds."""
         mock_input.side_effect = side_effect
@@ -209,7 +211,16 @@ class TestLoadInteractive:
         self, mock_input, _mock_sleep, mock_load
     ):  # pylint:disable=redefined-outer-name
         """Test that load_interactive returns None if the user doesn't confirm."""
-        mock_input.side_effect = ["qspin", "Heisenberg", "1x4", "open", "full", True, PosixPath("/my/path"), "n"]
+        mock_input.side_effect = [
+            "qspin",
+            "Heisenberg",
+            "1x4",
+            "open",
+            "full",
+            True,
+            PosixPath("/my/path"),
+            "n",
+        ]
         assert qml.data.load_interactive() is None
         mock_load.assert_not_called()
 
@@ -217,9 +228,9 @@ class TestLoadInteractive:
         ("side_effect", "error_message"),
         [
             (["foo"], re.escape("Must select a single data name from ['other', 'qchem', 'qspin']")),
-            (["qspin", "foo"], 'Must enter a valid sysname:'),
-            (["qspin", "Ising", "foo"], 'Must enter a valid layout:'),
-            (["qspin", "Ising", "1x4", "foo"], 'Must enter a valid periodicity:'),
+            (["qspin", "foo"], "Must enter a valid sysname:"),
+            (["qspin", "Ising", "foo"], "Must enter a valid layout:"),
+            (["qspin", "Ising", "1x4", "foo"], "Must enter a valid periodicity:"),
         ],
     )
     def test_load_interactive_invalid_inputs(
@@ -402,13 +413,14 @@ def test_download_dataset_partial_call(download_partial, attributes, force):
         pbar_task=pbar_task,
     )
 
+
 @pytest.mark.usefixtures("mock_requests_get")
 @pytest.mark.parametrize("mock_requests_get", [b"This is binary data"], indirect=True)
 def test_download_full(tmp_path):
     """Tests that _download_dataset will fetch the dataset file
     at ``s3_url`` into ``dest``."""
     pennylane.data.data_manager._download_full(
-       f"{GRAPHQL_URL}/dataset/path", tmp_path / "dataset", block_size=1, pbar_task=None
+        f"{GRAPHQL_URL}/dataset/path", tmp_path / "dataset", block_size=1, pbar_task=None
     )
 
     with open(tmp_path / "dataset", "rb") as f:

@@ -191,7 +191,7 @@ def _get_dataset_urls(class_id: str, parameters: dict[str, list[str]]) -> list[t
     ]
 
 
-def _download_dataset( # pylint: disable=too-many-arguments
+def _download_dataset(  # pylint: disable=too-many-arguments
     dataset_url: str,
     dest: Path,
     attributes: Optional[Iterable[str]],
@@ -291,9 +291,7 @@ def _validate_attributes(data_name: str, attributes: Iterable[str]):
     """Checks that ``attributes`` contains only valid attributes for the given
     ``data_name``. If any attributes do not exist, raise a ValueError."""
     valid_attributes = list_attributes(data_name)
-    invalid_attributes = [
-        attr for attr in attributes if attr not in valid_attributes
-    ]
+    invalid_attributes = [attr for attr in attributes if attr not in valid_attributes]
     if not invalid_attributes:
         return
 
@@ -540,8 +538,11 @@ def _interactive_request_data_name(data_names):
 
 def _interactive_request_attributes(attribute_options):
     """Prompt the user to select a list of attributes."""
-    print(f"Please select a list of attributes from the following available attributes or \"full\" for all attributes.")
-    for i, option in enumerate(attribute_options): print(f"{i + 1}: {option}")
+    print(
+        f'Please select a list of attributes from the following available attributes or "full" for all attributes.'
+    )
+    for i, option in enumerate(attribute_options):
+        print(f"{i + 1}: {option}")
     choice = input("Choice of attributes: ")
     if choice == "full":
         return attribute_options
@@ -555,7 +556,8 @@ def _interactive_requests(parameters, parameter_tree):
     choices = []
     for param in parameters:
         print(f"Avaliable options for {param}:")
-        for i, option in enumerate(branch["next"].keys()): print(f"{i + 1}: {option}")
+        for i, option in enumerate(branch["next"].keys()):
+            print(f"{i + 1}: {option}")
         user_value = input(f"Please select a {param}:")
         try:
             branch = branch["next"][user_value]
@@ -563,10 +565,10 @@ def _interactive_requests(parameters, parameter_tree):
             raise ValueError(f"Must enter a valid {param}:")
         choices.append(user_value)
         if "next" in branch:
-            if len(branch['next']) == 1:
+            if len(branch["next"]) == 1:
                 branch = next(iter(branch["next"].values()))
             continue
-        else: 
+        else:
             branch = branch["value"]
             return branch
 
@@ -592,10 +594,10 @@ def _get_parameter_tree(class_id) -> tuple[list[str], list[str], dict]:
         {"input": {"datasetClassId": class_id}},
     )
 
-    parameters = [param['name'] for param in  response['data']['datasetClass']['parameters']]
-    attributes = [atr['name'] for atr in  response['data']['datasetClass']['attributes']]
+    parameters = [param["name"] for param in response["data"]["datasetClass"]["parameters"]]
+    attributes = [atr["name"] for atr in response["data"]["datasetClass"]["attributes"]]
 
-    return (parameters, attributes, response['data']['datasetClass']['parameterTree'])
+    return (parameters, attributes, response["data"]["datasetClass"]["parameterTree"])
 
 
 def _get_data_names() -> list[str]:
@@ -608,9 +610,9 @@ def _get_data_names() -> list[str]:
             id
           }
         }
-        """
+        """,
     )
-    return [dsc['id'] for dsc in response['data']['datasetClasses']]
+    return [dsc["id"] for dsc in response["data"]["datasetClasses"]]
 
 
 def load_interactive():
