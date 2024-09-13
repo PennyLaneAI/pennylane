@@ -86,6 +86,7 @@
 * `Device`, `QubitDevice`, and `QutritDevice` will no longer be accessible via top-level import in v0.40.
   They will still be accessible as `qml.devices.LegacyDevice`, `qml.devices.QubitDevice`, and `qml.devices.QutritDevice`
   respectively.
+  [(#6238)](https://github.com/PennyLaneAI/pennylane/pull/6238/)
 
 * `QNode.gradient_fn` is deprecated. Please use `QNode.diff_method` and `QNode.get_gradient_fn` instead.
   [(#6244)](https://github.com/PennyLaneAI/pennylane/pull/6244)
