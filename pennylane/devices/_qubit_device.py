@@ -1468,7 +1468,7 @@ class QubitDevice(Device):
         **Example**
 
             >>> num_wires = 2
-            >>> dev = qml.device("default.qubit.legacy", wires=num_wires)
+            >>> dev = qml.device("default.mixed", wires=num_wires)
             >>> mp = qml.counts()
             >>> samples = pnp.array([[0, 0], [0, 0], [1, 0]])
             >>> dev._samples_to_counts(samples, mp, num_wires)

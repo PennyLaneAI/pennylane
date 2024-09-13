@@ -26,7 +26,6 @@ to verify and test quantum gradient computations.
 
 
     default_qubit
-    default_qubit_legacy
     default_gaussian
     default_mixed
     default_qutrit

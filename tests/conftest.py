@@ -36,35 +36,10 @@ TF_TOL = 2e-2
 TOL_STOCHASTIC = 0.05
 
 
-# pylint: disable=too-few-public-methods
-class DummyDevice(DefaultGaussian):
-    """Dummy device to allow Kerr operations"""
-
-    _operation_map = DefaultGaussian._operation_map.copy()
-    _operation_map["Kerr"] = lambda *x, **y: np.identity(2)
-
-
 @pytest.fixture(autouse=True)
 def set_numpy_seed():
     np.random.seed(9872653)
     yield
-
-
-@pytest.fixture(scope="function", autouse=True)
-def capture_legacy_device_deprecation_warnings():
-    with warnings.catch_warnings(record=True) as recwarn:
-        warnings.simplefilter("always")
-        yield
-
-        for w in recwarn:
-            if isinstance(w, qml.PennyLaneDeprecationWarning):
-                assert "Use of 'default.qubit." in str(w.message)
-                assert "is deprecated" in str(w.message)
-                assert "use 'default.qubit'" in str(w.message)
-
-    for w in recwarn:
-        if "Use of 'default.qubit." not in str(w.message):
-            warnings.warn(message=w.message, category=w.category)
 
 
 @pytest.fixture(scope="session")
@@ -99,29 +74,7 @@ def n_subsystems_fixture(request):
 
 @pytest.fixture(scope="session")
 def qubit_device(n_subsystems):
-    with pytest.warns(qml.PennyLaneDeprecationWarning, match="Use of 'default.qubit.legacy'"):
-        return qml.device("default.qubit.legacy", wires=n_subsystems)
-
-
-@pytest.fixture(scope="function", params=[(np.float32, np.complex64), (np.float64, np.complex128)])
-def qubit_device_1_wire(request):
-    return qml.device(
-        "default.qubit.legacy", wires=1, r_dtype=request.param[0], c_dtype=request.param[1]
-    )
-
-
-@pytest.fixture(scope="function", params=[(np.float32, np.complex64), (np.float64, np.complex128)])
-def qubit_device_2_wires(request):
-    return qml.device(
-        "default.qubit.legacy", wires=2, r_dtype=request.param[0], c_dtype=request.param[1]
-    )
-
-
-@pytest.fixture(scope="function", params=[(np.float32, np.complex64), (np.float64, np.complex128)])
-def qubit_device_3_wires(request):
-    return qml.device(
-        "default.qubit.legacy", wires=3, r_dtype=request.param[0], c_dtype=request.param[1]
-    )
+    return qml.device("default.qubit", wires=n_subsystems)
 
 
 # The following 3 fixtures are for default.qutrit devices to be used
@@ -141,30 +94,6 @@ def qutrit_device_2_wires(request):
 @pytest.fixture(scope="function", params=[(np.float32, np.complex64), (np.float64, np.complex128)])
 def qutrit_device_3_wires(request):
     return qml.device("default.qutrit", wires=3, r_dtype=request.param[0], c_dtype=request.param[1])
-
-
-@pytest.fixture(scope="session")
-def gaussian_device(n_subsystems):
-    """Number of qubits or modes."""
-    return DummyDevice(wires=n_subsystems)
-
-
-@pytest.fixture(scope="session")
-def gaussian_dummy():
-    """Gaussian device with dummy Kerr gate."""
-    return DummyDevice
-
-
-@pytest.fixture(scope="session")
-def gaussian_device_2_wires():
-    """A 2-mode Gaussian device."""
-    return DummyDevice(wires=2)
-
-
-@pytest.fixture(scope="session")
-def gaussian_device_4modes():
-    """A 4 mode Gaussian device."""
-    return DummyDevice(wires=4)
 
 
 #######################################################################
