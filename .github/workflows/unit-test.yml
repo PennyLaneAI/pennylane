@@ -25,7 +25,7 @@ on:
         type: string
         default: '3.10'
       pipeline_mode:
-        description: The pipeline mode can be unit-tests, benchmarks, or reference-benchmark
+        description: The pipeline mode can be unit-tests, benchmarks, reference-benchmark, or warnings
         required: false
         type: string
         default: 'unit-tests'
@@ -134,7 +134,7 @@ jobs:
           repository: PennyLaneAI/pennylane
 
       - name: Determine benchmark name
-        if: ${{ inputs.pipeline_mode != 'unit-tests' }}
+        if: ${{ inputs.pipeline_mode =~ .*"benchmarks".* }}
         id: benchmark_name
         run: |
           job_name="${{ inputs.job_name }}"
@@ -143,7 +143,7 @@ jobs:
           echo "benchmark_name=$_benchmark_name" >> $GITHUB_OUTPUT
 
       - name: Cache reference benchmarks
-        if: ${{ inputs.pipeline_mode != 'unit-tests' }}
+        if: ${{ inputs.pipeline_mode =~ .*"benchmarks".* }}
         id: benchmark-cache
         uses: actions/cache@v3
         with:
@@ -185,6 +185,8 @@ jobs:
         run: |
           if [[ "$PIPELINE_MODE" =~ .*"benchmarks".* ]]; then
             echo "args=$PYTEST_BENCHMARKS_ARGS $PYTEST_ADDITIONAL_ARGS" >> $GITHUB_OUTPUT
+          elif [[ "$PIPELINE_MODE" =~ .*"warnings".* ]]; then
+            echo "args=$PYTEST_ADDITIONAL_ARGS" >> $GITHUB_OUTPUT
           else
             echo "args=$PYTEST_COVERAGE_ARGS $PYTEST_PARALLELISE_ARGS $PYTEST_ADDITIONAL_ARGS $PYTEST_DURATIONS_ARGS $PYTEST_STORE_ARGS" >> $GITHUB_OUTPUT
           fi
