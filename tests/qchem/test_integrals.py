@@ -903,7 +903,7 @@ class TestJax:
         r = create_jax_like_array([0.0, 0.0, 0.0])
 
         params = [alpha, coeff, r]
-        args = [p for i, p in enumerate([alpha, coeff, r])]
+        args = [r, coeff, alpha]
         basis_params = qchem.integrals._generate_params(params, args)
         assert np.allclose(basis_params, (alpha, coeff, r))
 
@@ -926,7 +926,7 @@ class TestJax:
         mol = qchem.Molecule(symbols, geometry)
         basis_a = mol.basis_set[0]
         basis_b = mol.basis_set[1]
-        args = [p for i, p in enumerate([alpha, coeff, r])]
+        args = [r, coeff, alpha]
 
         o = qchem.overlap_integral(basis_a, basis_b)(*args)
         assert np.allclose(o, o_ref)
@@ -969,7 +969,7 @@ class TestJax:
         mol = qchem.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
         basis_a = mol.basis_set[0]
         basis_b = mol.basis_set[1]
-        args = [p for i, p in enumerate([alpha, coeff, geometry])]
+        args = [geometry, mol.coeff, mol.alpha]
 
         t = qchem.kinetic_integral(basis_a, basis_b)(*args)
         assert qml.math.allclose(t, t_ref)
@@ -991,7 +991,7 @@ class TestJax:
         mol = qchem.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
         basis_a = mol.basis_set[0]
         basis_b = mol.basis_set[1]
-        args = [p for i, p in enumerate([alpha, coeff, geometry])]
+        args = [geometry, mol.coeff, mol.alpha]
 
         a = qchem.attraction_integral(geometry[0], basis_a, basis_b)(*args)
         assert np.allclose(a, a_ref)
@@ -1029,7 +1029,7 @@ class TestJax:
         mol = qchem.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
         basis_a = mol.basis_set[0]
         basis_b = mol.basis_set[1]
-        args = [p for i, p in enumerate([alpha, coeff, geometry])]
+        args = [geometry, mol.coeff, mol.alpha]
 
         a = qchem.repulsion_integral(basis_a, basis_b, basis_a, basis_b)(*args)
 
