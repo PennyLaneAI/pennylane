@@ -142,6 +142,12 @@ def mock_qutrit_device_with_original_statistics(monkeypatch):
 # TODO: Add tests for expval, var after observables are added
 
 
+def test_deprecated_access():
+    """Test that accessing via top-level is deprecated."""
+    with pytest.warns(qml.PennyLaneDeprecationWarning, match="Device will no longer be accessible"):
+        qml.QutritDevice  # pylint: disable=pointless-statement
+
+
 class TestOperations:
     """Tests the logic related to operations"""
 

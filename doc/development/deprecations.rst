@@ -9,10 +9,12 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
-* The ``qml.qinfo`` module has been deprecated.
+* ``Device``, ``QubitDevice``, and ``QutritDevice`` will no longer be imported top level in v0.40.  They instead
+  we be available as ``qml.devices.LegacyDevice``, ``qml.devices.QubitDevice``, and ``qml.devices.QutritDevice``
+  respectively.
 
-  - Deprecated in v0.39
-  - Will be removed in v0.40
+  - Deprecated top level access in v0.39
+  - Top level access removed in v0.40
 
 * `QNode.gradient_fn` is deprecated. Please use `QNode.diff_method` instead. `QNode.get_gradient_fn` can also be used to
   process the diff method.
