@@ -67,10 +67,12 @@
 * Remove support for Python 3.9.
   [(#6223)](https://github.com/PennyLaneAI/pennylane/pull/6223)
 
-* `DefaultQubitTF`, `DefaultQubitTorch`, and `DefaultQubitJax` are removed. Please use `default.qubit` for all interfaces.
+* `DefaultQubitTF`, `DefaultQubitTorch`, `DefaultQubitJax`, and `DefaultQubitAutograd` are removed.
+  Please use `default.qubit` for all interfaces.
   [(#6207)](https://github.com/PennyLaneAI/pennylane/pull/6207)
   [(#6208)](https://github.com/PennyLaneAI/pennylane/pull/6208)
   [(#6209)](https://github.com/PennyLaneAI/pennylane/pull/6209)
+  [(#6210)](https://github.com/PennyLaneAI/pennylane/pull/6210)
 
 * `expand_fn`, `max_expansion`, `override_shots`, and `device_batch_transform` are removed from the
   signature of `qml.execute`.
@@ -88,6 +90,7 @@
 
 * `Operator.expand` is now removed. Use `qml.tape.QuantumScript(op.deocomposition())` instead.
   [(#6227)](https://github.com/PennyLaneAI/pennylane/pull/6227)
+
 
 <h3>Deprecations 👋</h3>
 
