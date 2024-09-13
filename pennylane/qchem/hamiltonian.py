@@ -340,7 +340,7 @@ def molecular_hamiltonian(*args, **kwargs):
 
             ``molecular_hamiltonian``\\ (`symbols, coordinates, name='molecule', charge=0, mult=1, basis='sto-3g',`
             `method='dhf', active_electrons=None, active_orbitals=None, mapping='jordan_wigner', outpath='.',`
-            `wires=None, coeff=None, alpha=None, args=None, load_data=False, convert_tol=1e12`)
+            `wires=None, alpha=None, coeff=None, args=None, load_data=False, convert_tol=1e12`)
 
         Molecule-based Arguments:
           - **symbols** (list[str]): symbols of the atomic species in the molecule
@@ -353,8 +353,8 @@ def molecular_hamiltonian(*args, **kwargs):
             unpaired electrons occupying the HF orbitals. Possible values of ``mult`` are :math:`1, 2, 3, \\ldots`.
             If not specified, a closed-shell HF state is assumed.
           - **basis** (str): atomic basis set used to represent the molecular orbitals
-          - **coeff** (array[float]): coefficients of the contracted Gaussian functions
           - **alpha** (array[float]): exponents of the primitive Gaussian functions
+          - **coeff** (array[float]): coefficients of the contracted Gaussian functions
 
         Therefore, a molecular Hamiltonian had to be constructed in the following manner:
 
@@ -419,8 +419,8 @@ def _(
         mapping,
         outpath,
         wires,
-        molecule.coeff,
         molecule.alpha,
+        molecule.coeff,
         args,
         molecule.load_data,
         convert_tol,
@@ -442,8 +442,8 @@ def _(
     mapping="jordan_wigner",
     outpath=".",
     wires=None,
-    coeff=None,
     alpha=None,
+    coeff=None,
     args=None,
     load_data=False,
     convert_tol=1e12,
@@ -471,8 +471,8 @@ def _(
         mapping=mapping,
         outpath=outpath,
         wires=wires,
-        coeff=coeff,
         alpha=alpha,
+        coeff=coeff,
         args=args,
         load_data=load_data,
         convert_tol=convert_tol,
@@ -492,8 +492,8 @@ def _molecular_hamiltonian(
     mapping="jordan_wigner",
     outpath=".",
     wires=None,
-    coeff=None,
     alpha=None,
+    coeff=None,
     args=None,
     load_data=False,
     convert_tol=1e12,
@@ -542,8 +542,8 @@ def _molecular_hamiltonian(
             mult=mult,
             basis_name=basis,
             load_data=load_data,
-            coeff=coeff,
             alpha=alpha,
+            coeff=coeff,
         )
         core, active = qml.qchem.active_space(
             mol.n_electrons, mol.n_orbitals, mult, active_electrons, active_orbitals

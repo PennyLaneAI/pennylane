@@ -468,8 +468,8 @@ def molecular_dipole(
             mult=molecule.mult,
             basis_name=molecule.basis_name,
             load_data=molecule.load_data,
-            coeff=molecule.coeff,
             alpha=molecule.alpha,
+            coeff=molecule.coeff,
         )
 
         requires_grad = args is not None
