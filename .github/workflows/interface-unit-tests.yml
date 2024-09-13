@@ -52,13 +52,13 @@ on:
         required: false
         type: string
         default: 'default'
+env:
+  ACTIONS_RUNNER_DEBUG: true
+  ACTIONS_STEP_DEBUG: true
 
 jobs:
   setup-ci-load:
     runs-on: ubuntu-latest
-    env:
-      ACTIONS_RUNNER_DEBUG: true
-      ACTIONS_STEP_DEBUG: true
 
     steps:
       - name: Setup Python Versions
@@ -182,9 +182,6 @@ jobs:
       enable-split: ${{ steps.jobs_to_skip.outputs.enable_split }}
 
   torch-tests:
-    env:
-      ACTIONS_RUNNER_DEBUG: true
-      ACTIONS_STEP_DEBUG: true
     needs:
       - setup-ci-load
     strategy:
@@ -252,9 +249,6 @@ jobs:
 
 
   tf-tests:
-    env:
-      ACTIONS_RUNNER_DEBUG: true
-      ACTIONS_STEP_DEBUG: true
     needs:
       - setup-ci-load
     strategy:
@@ -295,9 +289,6 @@ jobs:
 
 
   jax-tests:
-    env:
-      ACTIONS_RUNNER_DEBUG: true
-      ACTIONS_STEP_DEBUG: true
     needs:
       - setup-ci-load
     strategy:
