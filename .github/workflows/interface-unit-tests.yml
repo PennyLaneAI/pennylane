@@ -127,12 +127,7 @@ jobs:
           then
             cat >matrix_max_parallel.json <<-EOF
           {
-            "default": 1,
-            "core-tests": 1,
-            "gradients-tests": 1,
-            "jax-tests": 1,
-            "tf-tests": 1,
-            "device-tests": 1
+            "default": 1
           }
           EOF
           else
