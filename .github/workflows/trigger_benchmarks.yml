@@ -71,8 +71,8 @@ jobs:
           WEBHOOK_METADATA_PULL_REQUEST_NUMBER: ${{ github.event.issue.number }}
           WEBHOOK_METADATA_PULL_REQUEST_URL: ${{ github.event.issue.html_url }}
         with:
-          token: ${{ secrets.PENNYLANE_BENCHMARKS_WEBHOOK_TOKEN }}  # TODO: This secret needs to be created (ringo?)
-          repository: PennyLaneAI/${{ secrets.pennylane_benchmarks_repository_name }}  # TODO: This secret needs to be created
+          token: ${{ secrets.PENNYLANE_BENCHMARKS_WEBHOOK_TOKEN }}
+          repository: PennyLaneAI/${{ secrets.PENNYLANE_BENCHMARKS_REPOSITORY_NAME }}
           event-type: pull-request-benchmark
           client-payload: |
             {
