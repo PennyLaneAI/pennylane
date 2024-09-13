@@ -33,7 +33,7 @@ pytestmark = pytest.mark.skip_unsupported
 
 def check_op_supported(op, dev):
     """Skip test if device does not support an operation. Works with both device APIs"""
-    if isinstance(dev, qml.Device):
+    if isinstance(dev, qml.devices.LegacyDevice):
         if op.name not in dev.operations:
             pytest.skip("operation not supported.")
     else:
