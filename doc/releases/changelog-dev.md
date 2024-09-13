@@ -88,6 +88,9 @@
 
 <h3>Documentation 📝</h3>
 
+* Add `work_wires` parameter to `qml.MultiControlledX` docstring signature.
+  [(#6271)](https://github.com/PennyLaneAI/pennylane/pull/6271)  
+
 <h3>Bug fixes 🐛</h3>
 
 * Fix a bug where zero-valued JVPs were calculated wrongly in the presence of shot vectors.
