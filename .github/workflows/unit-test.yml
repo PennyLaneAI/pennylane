@@ -183,7 +183,6 @@ jobs:
           PYTEST_DURATIONS_ARGS: ${{ inputs.pytest_durations_file_path != '' && format('--durations-path="{0}"', inputs.pytest_durations_file_path) || '' }}
           PYTEST_STORE_ARGS: ${{ inputs.pytest_store_durations == true && '--store-durations --clean-durations' || '' }}
         run: |
-          echo "PYTEST_ADDITIONAL_ARGS=${PYTEST_ADDITIONAL_ARGS}"
           if [[ "$PIPELINE_MODE" =~ .*"benchmarks".* ]]; then
             echo "args=$PYTEST_BENCHMARKS_ARGS $PYTEST_ADDITIONAL_ARGS" >> $GITHUB_OUTPUT
           elif [[ "$PIPELINE_MODE" =~ .*"warnings".* ]]; then
