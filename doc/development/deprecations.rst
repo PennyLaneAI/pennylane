@@ -20,18 +20,6 @@ Pending deprecations
   - Deprecated in v0.39
   - Will be removed in v0.40
 
-* All of the legacy devices (any with the name ``default.qubit.{autograd,torch,tf,jax,legacy}``) are deprecated. Use ``default.qubit`` instead,
-  as it supports backpropagation for the many backends the legacy devices support.
-
-  - Deprecated in v0.38
-  - Will be removed in v0.39
-
-* The logic for internally switching a device for a different backpropagation
-  compatible device is now deprecated, as it was in place for the deprecated ``default.qubit.legacy``.
-
-  - Deprecated in v0.38
-  - Will be removed in v0.39  
-
 * The ``decomp_depth`` argument in ``qml.device`` is deprecated. 
 
   - Deprecated in v0.38
@@ -87,13 +75,19 @@ Other deprecations
 Completed deprecation cycles
 ----------------------------
 
-* The functions ``qml.qinfo.classical_fisher`` and ``qml.qinfo.quantum_fisher`` have been removed and migrated to the ``qml.gradients``
-  module. Therefore, ``qml.gradients.classical_fisher`` and ``qml.gradients.quantum_fisher`` should be used instead.
+* All of the legacy devices (any with the name ``default.qubit.{autograd,torch,tf,jax,legacy}``) are removed. Use ``default.qubit`` instead,
+  as it supports backpropagation for the many backends the legacy devices support.
 
   - Deprecated in v0.38
   - Removed in v0.39
 
-* `Operator.expand` is now removed. Use `qml.tape.QuantumScript(op.decomposition())` instead.
+* The logic for internally switching a device for a different backpropagation
+  compatible device is removed, as it was in place for removed ``default.qubit.legacy``.
+
+  - Deprecated in v0.38
+  - Removed in v0.39
+
+* `Operator.expand` is now removed. Use `qml.tape.QuantumScript(op.deocomposition())` instead.
 
   - Deprecated in v0.38
   - Removed in v0.39
