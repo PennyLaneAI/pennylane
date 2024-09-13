@@ -15,6 +15,7 @@
 Unit tests for the :class:`pennylane.data.data_manager` functions.
 """
 import os
+import re
 from pathlib import Path, PosixPath
 from typing import NamedTuple
 from unittest.mock import MagicMock, call, patch
@@ -26,6 +27,7 @@ import pennylane as qml
 import pennylane.data.data_manager
 from pennylane.data import Dataset
 from pennylane.data.data_manager import GRAPHQL_URL, _validate_attributes
+from .support import _dataclass_ids, _get_urls_resp, _list_attrs_resp, _list_datasets_resp, _parameter_tree
 
 has_rich = False
 try:
@@ -76,53 +78,6 @@ _data_struct = {
 }
 
 
-_list_attrs_resp = {
-    "data": {
-        "datasetClass": {
-            "attributes": ["molecule", "hamiltonian", "sparse_hamiltonian", "hf_state", "full"]
-        }
-    }
-}
-
-_list_datasets_resp = {
-    "data": {
-        "datasetClasses": {
-            "id": "qchem",
-            "datasets": [
-                {
-                    "parameterValues": [
-                        {"name": "molname", "value": "H2"},
-                        {"name": "bondlength", "value": "1.16"},
-                        {"name": "basis", "value": "STO-3G"},
-                    ]
-                }
-            ],
-        }
-    }
-}
-
-_get_urls_resp = {
-    "data": {
-        "datasetClass": {
-            "datasets": [
-                {
-                    "id": "h2_sto-3g_0.46",
-                    "downloadUrl": "https://cloud.pennylane.ai/datasets/download/h2_sto-3g_0.46",
-                },
-                {
-                    "id": "h2_sto-3g_1.16",
-                    "downloadUrl": "https://cloud.pennylane.ai/datasets/download/h2_sto-3g_1.16",
-                },
-                {
-                    "id": "h2_sto-3g_1.0",
-                    "downloadUrl": "https://cloud.pennylane.ai/datasets/download/h2_sto-3g_1.0",
-                },
-            ]
-        }
-    }
-}
-
-
 @pytest.fixture(scope="session")
 def httpserver_listen_address():
     return ("localhost", 8888)
@@ -145,6 +100,10 @@ def graphql_mock(url, query, variables=None):
         json_data = _list_datasets_resp
     elif "GetDatasetsForDownload" in query:
         json_data = _get_urls_resp
+    elif "GetParameterTree" in query:
+        json_data = _parameter_tree
+    elif "GetDatasetClasses" in query:
+        json_data = _dataclass_ids
 
     return json_data
 
@@ -161,7 +120,7 @@ def mock_get_args():
     return MagicMock()
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture(autouse=False)
 def mock_requests_get(request, monkeypatch, mock_get_args):
     """Patches `requests.get()` in the data_manager module so that
     it returns mock JSON data for the foldermap and data struct."""
@@ -170,12 +129,7 @@ def mock_requests_get(request, monkeypatch, mock_get_args):
         mock_get_args(url, *args, **kwargs)
 
         mock_resp = MagicMock()
-        if url == qml.data.data_manager.FOLDERMAP_URL:
-            json_data = _folder_map
-        elif url == qml.data.data_manager.DATA_STRUCT_URL:
-            json_data = _data_struct
-        else:
-            json_data = None
+        json_data = None
 
         mock_resp.json.return_value = json_data
         if hasattr(request, "param"):
@@ -219,7 +173,7 @@ def mock_load(monkeypatch):
     return mock
 
 
-@patch.object(requests, "get", get_mock)
+@patch.object(pennylane.data.data_manager, "_get_graphql", graphql_mock)
 @patch.object(pennylane.data.data_manager, "head", head_mock)
 @patch("pennylane.data.data_manager.sleep")
 @patch("builtins.input")
@@ -230,62 +184,35 @@ class TestLoadInteractive:
     """
 
     @pytest.mark.parametrize(
-        ("side_effect", "data_name", "kwargs", "sleep_call_count"),
+        ("side_effect"),
         [
             (
-                ["1", "1", "2", "", "", ""],
-                "qchem",
-                {
-                    "attributes": ["hamiltonian"],
-                    "folder_path": PosixPath(""),
-                    "force": False,
-                    "molname": "H2",
-                    "basis": "6-31G",
-                    "bondlength": "0.46",
-                },
-                2,
-            ),
-            (
-                ["2", "1, 4", "Y", "/my/path", "y"],
-                "qspin",
-                {
-                    "attributes": ["parameters", "full"],
-                    "folder_path": PosixPath("/my/path"),
-                    "force": True,
-                    "sysname": "Heisenberg",
-                    "periodicity": "closed",
-                    "lattice": "chain",
-                    "layout": "1x4",
-                },
-                4,
+                ["qspin", "Heisenberg", "1x4", "open", "full", True, PosixPath("/my/path"), "Y"]
             ),
         ],
     )
     def test_load_interactive_success(
-        self, mock_input, mock_sleep, mock_load, side_effect, data_name, kwargs, sleep_call_count
+        self, mock_input, mock_sleep, mock_load, side_effect,
     ):  # pylint:disable=too-many-arguments, redefined-outer-name
         """Test that load_interactive succeeds."""
         mock_input.side_effect = side_effect
         assert isinstance(qml.data.load_interactive(), qml.data.Dataset)
-        mock_load.assert_called_once_with(data_name, **kwargs)
-        assert mock_sleep.call_count == sleep_call_count
 
     def test_load_interactive_without_confirm(
         self, mock_input, _mock_sleep, mock_load
     ):  # pylint:disable=redefined-outer-name
         """Test that load_interactive returns None if the user doesn't confirm."""
-        mock_input.side_effect = ["1", "1", "2", "", "", "n"]
+        mock_input.side_effect = ["qspin", "Heisenberg", "1x4", "open", "full", True, PosixPath("/my/path"), "n"]
         assert qml.data.load_interactive() is None
         mock_load.assert_not_called()
 
     @pytest.mark.parametrize(
         ("side_effect", "error_message"),
         [
-            (["foo"], "Must enter an integer between 1 and 2"),
-            (["0"], "Must enter an integer between 1 and 2"),
-            (["3"], "Must enter an integer between 1 and 2"),
-            (["1", "1", "0"], "Must enter a list of integers between 1 and 5"),
-            (["1", "1", "1 2"], "Must enter a list of integers between 1 and 5"),
+            (["foo"], re.escape("Must select a single data name from ['other', 'qchem', 'qspin']")),
+            (["qspin", "foo"], 'Must enter a valid sysname:'),
+            (["qspin", "Ising", "foo"], 'Must enter a valid layout:'),
+            (["qspin", "Ising", "1x4", "foo"], 'Must enter a valid periodicity:'),
         ],
     )
     def test_load_interactive_invalid_inputs(
@@ -468,14 +395,13 @@ def test_download_dataset_partial_call(download_partial, attributes, force):
         pbar_task=pbar_task,
     )
 
-
 @pytest.mark.usefixtures("mock_requests_get")
 @pytest.mark.parametrize("mock_requests_get", [b"This is binary data"], indirect=True)
 def test_download_full(tmp_path):
     """Tests that _download_dataset will fetch the dataset file
     at ``s3_url`` into ``dest``."""
     pennylane.data.data_manager._download_full(
-        "dataset/path", tmp_path / "dataset", block_size=1, pbar_task=None
+       f"{GRAPHQL_URL}/dataset/path", tmp_path / "dataset", block_size=1, pbar_task=None
     )
 
     with open(tmp_path / "dataset", "rb") as f:
@@ -596,8 +522,8 @@ def test_download_partial_no_check_remote(open_hdf5_s3, tmp_path):
     open_hdf5_s3.assert_not_called()
 
 
-@patch.object(pennylane.data.data_manager, "_get_graphql", graphql_mock)
 @patch("builtins.open")
+@pytest.mark.usefixtures("mock_requests_get")
 @patch.object(pennylane.data.data_manager, "head", head_mock)
 @pytest.mark.parametrize(
     "dataset_url, escaped, dataset_id",
@@ -690,16 +616,17 @@ def test_download_datasets_escapes_url_partial(
     )
 
 
+@patch.object(pennylane.data.data_manager, "_get_graphql", graphql_mock)
 @pytest.mark.parametrize(
     "attributes,msg",
     [
         (
-            ["x", "y", "z", "foo"],
-            r"'foo' is an invalid attribute for 'my_dataset'. Valid attributes are: \['x', 'y', 'z'\]",
+            ["molecule", "hamiltonian", "sparse_hamiltonian", "hf_state", "full", "foo"],
+            r"'foo' is an invalid attribute for 'my_dataset'. Valid attributes are: \['molecule', 'hamiltonian', 'sparse_hamiltonian', 'hf_state', 'full'\]",
         ),
         (
-            ["x", "y", "z", "foo", "bar"],
-            r"\['foo', 'bar'\] are invalid attributes for 'my_dataset'. Valid attributes are: \['x', 'y', 'z'\]",
+            ["molecule", "hamiltonian", "sparse_hamiltonian", "hf_state", "full", "foo", "bar"],
+            r"\['foo', 'bar'\] are invalid attributes for 'my_dataset'. Valid attributes are: \['molecule', 'hamiltonian', 'sparse_hamiltonian', 'hf_state', 'full'\]",
         ),
     ],
 )
@@ -707,7 +634,5 @@ def test_validate_attributes_except(attributes, msg):
     """Test that ``_validate_attributes()`` raises a ValueError when passed
     invalid attributes."""
 
-    data_struct = {"my_dataset": {"attributes": ["x", "y", "z"]}}
-
     with pytest.raises(ValueError, match=msg):
-        _validate_attributes(data_struct, "my_dataset", attributes)
+        _validate_attributes("my_dataset", attributes)

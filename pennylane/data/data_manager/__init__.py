@@ -35,8 +35,8 @@ from .params import DEFAULT, FULL, format_params
 
 GRAPHQL_URL = "https://cloud.pennylane.ai/graphql"
 S3_URL = "https://datasets.cloud.pennylane.ai/datasets/h5"
-FOLDERMAP_URL = f"{S3_URL}/foldermap.json"
-DATA_STRUCT_URL = f"{S3_URL}/data_struct.json"
+# FOLDERMAP_URL = f"{S3_URL}/foldermap.json"
+# DATA_STRUCT_URL = f"{S3_URL}/data_struct.json"
 
 
 class GraphQLError(BaseException):
@@ -45,22 +45,22 @@ class GraphQLError(BaseException):
     pass
 
 
-@lru_cache(maxsize=1)
-def _get_foldermap():
-    """Fetch the foldermap from S3."""
-    response = get(FOLDERMAP_URL, timeout=5.0)
-    response.raise_for_status()
+# @lru_cache(maxsize=1)
+# def _get_foldermap():
+#     """Fetch the foldermap from S3."""
+#     response = get(FOLDERMAP_URL, timeout=5.0)
+#     response.raise_for_status()
 
-    return FolderMapView(response.json())
+#     return FolderMapView(response.json())
 
 
-@lru_cache(maxsize=1)
-def _get_data_struct():
-    """Fetch the data struct from S3."""
-    response = get(DATA_STRUCT_URL, timeout=5.0)
-    response.raise_for_status()
+# @lru_cache(maxsize=1)
+# def _get_data_struct():
+#     """Fetch the data struct from S3."""
+#     response = get(DATA_STRUCT_URL, timeout=5.0)
+#     response.raise_for_status()
 
-    return response.json()
+#     return response.json()
 
 
 def _download_partial(  # pylint: disable=too-many-arguments
@@ -287,11 +287,12 @@ def _download_datasets(  # pylint: disable=too-many-arguments
     return dest_paths
 
 
-def _validate_attributes(data_struct: dict, data_name: str, attributes: Iterable[str]):
+def _validate_attributes(data_name: str, attributes: Iterable[str]):
     """Checks that ``attributes`` contains only valid attributes for the given
     ``data_name``. If any attributes do not exist, raise a ValueError."""
+    valid_attributes = list_attributes(data_name)
     invalid_attributes = [
-        attr for attr in attributes if attr not in data_struct[data_name]["attributes"]
+        attr for attr in attributes if attr not in valid_attributes
     ]
     if not invalid_attributes:
         return
@@ -301,7 +302,7 @@ def _validate_attributes(data_struct: dict, data_name: str, attributes: Iterable
     else:
         values_err = f"{invalid_attributes} are invalid attributes for '{data_name}'"
 
-    raise ValueError(f"{values_err}. Valid attributes are: {data_struct[data_name]['attributes']}")
+    raise ValueError(f"{values_err}. Valid attributes are: {valid_attributes}")
 
 
 def load(  # pylint: disable=too-many-arguments
@@ -398,12 +399,10 @@ def load(  # pylint: disable=too-many-arguments
     >>> print(circuit())
     -1.0791430411076344
     """
-    data_struct = _get_data_struct()
-
     params = format_params(**params)
 
     if attributes:
-        _validate_attributes(data_struct, data_name, attributes)
+        _validate_attributes(data_name, attributes)
 
     folder_path = Path(folder_path)
 
@@ -530,40 +529,88 @@ def list_attributes(data_name):
     return response["data"]["datasetClass"]["attributes"]
 
 
-def _interactive_request_attributes(options):
+def _interactive_request_data_name(data_names):
+    """Prompt the user to select a data name."""
+    print(f"Please select the data name from the following {data_names}")
+    choice = input("Choice of data name: ")
+    if choice not in data_names:
+        raise ValueError(f"Must select a single data name from {data_names}")
+    return choice
+
+
+def _interactive_request_attributes(attribute_options):
     """Prompt the user to select a list of attributes."""
-    prompt = "Please select attributes:"
-    for i, option in enumerate(options):
-        if option == "full":
-            option = "full (all attributes)"
-        prompt += f"\n\t{i+1}) {option}"
-    print(prompt)
-    choices = input(f"Choice (comma-separated list of options) [1-{len(options)}]: ").split(",")
-    try:
-        choices = list(map(int, choices))
-    except ValueError as e:
-        raise ValueError(f"Must enter a list of integers between 1 and {len(options)}") from e
-    if any(choice < 1 or choice > len(options) for choice in choices):
-        raise ValueError(f"Must enter a list of integers between 1 and {len(options)}")
-    return [options[choice - 1] for choice in choices]
+    print(f"Please select a list of attributes from the following available attributes or \"full\" for all attributes.")
+    for i, option in enumerate(attribute_options): print(f"{i + 1}: {option}")
+    choice = input("Choice of attributes: ")
+    if choice == "full":
+        return attribute_options
+    elif choice not in attribute_options:
+        raise ValueError(f"Must select a list of attributes from {attribute_options}")
+    return choice
 
 
-def _interactive_request_single(node, param):
-    """Prompt the user to select a single option from a list."""
-    options = list(node)
-    if len(options) == 1:
-        print(f"Using {options[0]} as it is the only {param} available.")
-        sleep(1)
-        return options[0]
-    print(f"Please select a {param}:")
-    print("\n".join(f"\t{i+1}) {option}" for i, option in enumerate(options)))
-    try:
-        choice = int(input(f"Choice [1-{len(options)}]: "))
-    except ValueError as e:
-        raise ValueError(f"Must enter an integer between 1 and {len(options)}") from e
-    if choice < 1 or choice > len(options):
-        raise ValueError(f"Must enter an integer between 1 and {len(options)}")
-    return options[choice - 1]
+def _interactive_requests(parameters, parameter_tree):
+    branch = parameter_tree
+    choices = []
+    for param in parameters:
+        print(f"Avaliable options for {param}:")
+        for i, option in enumerate(branch["next"].keys()): print(f"{i + 1}: {option}")
+        user_value = input(f"Please select a {param}:")
+        try:
+            branch = branch["next"][user_value]
+        except KeyError as e:
+            raise ValueError(f"Must enter a valid {param}:")
+        choices.append(user_value)
+        if "next" in branch:
+            if len(branch['next']) == 1:
+                branch = next(iter(branch["next"].values()))
+            continue
+        else: 
+            branch = branch["value"]
+            return branch
+
+
+def _get_parameter_tree(class_id) -> tuple[list[str], list[str], dict]:
+    """Returns the (parameters, attributes, parameter_tree) for a given ``class_id``."""
+
+    response = _get_graphql(
+        GRAPHQL_URL,
+        """
+        query GetParameterTree($datasetClassId: String!) {
+          datasetClass(id: $datasetClassId) {
+            attributes {
+              name
+            }
+            parameters {
+              name
+            }
+            parameterTree
+          }
+        }
+        """,
+        {"input": {"datasetClassId": class_id}},
+    )
+
+    parameters = [param['name'] for param in  response['data']['datasetClass']['parameters']]
+    attributes = [atr['name'] for atr in  response['data']['datasetClass']['attributes']]
+
+    return (parameters, attributes, response['data']['datasetClass']['parameterTree'])
+
+
+def _get_data_names() -> list[str]:
+    """Get dataclass IDs."""
+    response = _get_graphql(
+        GRAPHQL_URL,
+        """
+        query GetDatasetClasses {
+          datasetClasses {
+            id
+          }
+        }
+        """
+    )
+    return [dsc['id'] for dsc in response['data']['datasetClasses']]
 
 
 def load_interactive():
@@ -605,34 +652,21 @@ def load_interactive():
         <Dataset = description: qspin/Ising/open/rectangular/4x4, attributes: ['parameters', 'ground_states']>
     """
 
-    foldermap = _get_foldermap()
-    data_struct = _get_data_struct()
+    data_names = _get_data_names()
+    data_name = _interactive_request_data_name(data_names)
 
-    node = foldermap
-    data_name = _interactive_request_single(node, "data name")
-
-    description = {}
-    value = data_name
-
-    params = data_struct[data_name]["params"]
-    for param in params:
-        node = node[value]
-        value = _interactive_request_single(node, param)
-        description[param] = value
-
-    attributes = _interactive_request_attributes(
-        [attribute for attribute in data_struct[data_name]["attributes"] if attribute not in params]
-    )
+    parameters, attribute_options, parameter_tree = _get_parameter_tree(data_name)
+    dataset_id = _interactive_requests(parameters, parameter_tree)
+    attributes = _interactive_request_attributes(attribute_options)
     force = input("Force download files? (Default is no) [y/N]: ") in ["y", "Y"]
     dest_folder = Path(
         input("Folder to download to? (Default is pwd, will download to /datasets subdirectory): ")
     )
-
     print("\nPlease confirm your choices:")
-    print("dataset:", "/".join([data_name] + [description[param] for param in params]))
     print("attributes:", attributes)
     print("force:", force)
     print("dest folder:", dest_folder / "datasets")
+    print("dataset:", dataset_id)
 
     approve = input("Would you like to continue? (Default is yes) [Y/n]: ")
     if approve not in ["Y", "", "y"]:
@@ -644,7 +678,6 @@ def load_interactive():
         attributes=attributes,
         folder_path=dest_folder,
         force=force,
-        **description,
     )[0]
 
 
