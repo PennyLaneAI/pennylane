@@ -139,7 +139,7 @@ class ReferenceQubit(Device):
             decompose,
             stopping_condition=supports_operation,
             skip_initial_state_prep=False,
-            name="mini.qubit",
+            name="reference.qubit",
         )
         program.add_transform(qml.transforms.diagonalize_measurements)
         program.add_transform(validate_measurements, name="reference.qubit")
