@@ -186,7 +186,7 @@ jobs:
           if [[ "$PIPELINE_MODE" =~ .*"benchmarks".* ]]; then
             echo "args=$PYTEST_BENCHMARKS_ARGS $PYTEST_ADDITIONAL_ARGS" >> $GITHUB_OUTPUT
           elif [[ "$PIPELINE_MODE" =~ .*"warnings".* ]]; then
-            echo "args=$PYTEST_ADDITIONAL_ARGS" >> $GITHUB_OUTPUT
+            echo "args=$PYTEST_ADDITIONAL_ARGS --continue-on-collection-errors" >> $GITHUB_OUTPUT
           else
             echo "args=$PYTEST_COVERAGE_ARGS $PYTEST_PARALLELISE_ARGS $PYTEST_ADDITIONAL_ARGS $PYTEST_DURATIONS_ARGS $PYTEST_STORE_ARGS" >> $GITHUB_OUTPUT
           fi
