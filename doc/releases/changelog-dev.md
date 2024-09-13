@@ -60,9 +60,10 @@
 * Remove support for Python 3.9.
   [(#6223)](https://github.com/PennyLaneAI/pennylane/pull/6223)
 
-* `DefaultQubitTF` and `DefaultQubitTorch` are removed. Please use `default.qubit` for all interfaces.
+* `DefaultQubitTF`, `DefaultQubitTorch`, and `DefaultQubitJax` are removed. Please use `default.qubit` for all interfaces.
   [(#6207)](https://github.com/PennyLaneAI/pennylane/pull/6207)
   [(#6208)](https://github.com/PennyLaneAI/pennylane/pull/6208)
+  [(#6209)](https://github.com/PennyLaneAI/pennylane/pull/6209)
 
 * `expand_fn`, `max_expansion`, `override_shots`, and `device_batch_transform` are removed from the
   signature of `qml.execute`.
@@ -83,6 +84,9 @@
 
 <h3>Deprecations 👋</h3>
 
+* `QNode.gradient_fn` is deprecated. Please use `QNode.diff_method` and `QNode.get_gradient_fn` instead.
+  [(#6244)](https://github.com/PennyLaneAI/pennylane/pull/6244)
+
 <h3>Documentation 📝</h3>
 
 <h3>Bug fixes 🐛</h3>
@@ -101,6 +105,9 @@
   
 * The ``qml.Qubitization`` template now orders the ``control`` wires first and the ``hamiltonian`` wires second, which is the expected according to other templates.
   [(#6229)](https://github.com/PennyLaneAI/pennylane/pull/6229)
+
+* The ``qml.FABLE`` template now returns the correct value when JIT is enabled.
+  [(#6263)](https://github.com/PennyLaneAI/pennylane/pull/6263)
 
 * <h3>Contributors ✍️</h3>
 
