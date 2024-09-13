@@ -275,7 +275,6 @@ def test_nuclear_energy_gradient(symbols, geometry, g_ref):
 def create_jax_like_array(values):
     return qml.math.array(values, like="jax")
 
-
 @pytest.mark.jax
 class TestJax:
     @pytest.mark.parametrize(
