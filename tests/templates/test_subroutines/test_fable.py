@@ -285,8 +285,8 @@ class TestFable:
         ) / (2 * delta)
         gradient_jax = grad_fn(input_matrix_jax)
 
-        assert np.allclose(gradient_numeric, gradient_jax[0, 0], rtol=0.001)
-        assert np.allclose(jitted_fn(input_matrix), circuit_jax(input_matrix))
+        assert qml.math.allclose(gradient_numeric, gradient_jax[0, 0], rtol=0.001)
+        assert qml.math.allclose(jitted_fn(input_matrix), circuit_jax(input_matrix))
 
     @pytest.mark.jax
     def test_fable_grad_jax_jit_error(self, input_matrix):
