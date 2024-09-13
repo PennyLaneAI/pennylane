@@ -5,8 +5,6 @@ on:
       - created
 
 env:
-  REPO_OWNER: PennyLaneAI
-  REPO_NAME: pennylane
   BENCHMARK_TRIGGER_COMMAND: /benchmark
 
 jobs:
@@ -17,20 +15,25 @@ jobs:
     if: github.event.issue.pull_request
 
     steps:
-      - name: Validate triggering repository
-        id: source_repo
-        run: echo "is_source_repo=${{ github.event.repository.full_name == format('{0}/{1}', env.REPO_OWNER, env.REPO_NAME) }}" >> $GITHUB_OUTPUT
-
-
       - name: Check Comment Body
         id: comment_body
-        if: steps.source_repo.outputs.is_source_repo == 'true'
         run: echo "triggers_benchmark=${{ github.event.comment.body == env.BENCHMARK_TRIGGER_COMMAND }}" >> $GITHUB_OUTPUT
+
+      - name: Set Repository Info
+        id: repo_info
+        env:
+          REPO_OWNER: ${{ github.repository_owner }}
+        run: |
+          echo "REPO_OWNER=$REPO_OWNER" >> $GITHUB_OUTPUT
+          echo "REPO_NAME=${GITHUB_REPOSITORY#$REPO_OWNER/}" >> $GITHUB_OUTPUT
 
       - name: Check if commenter has write access
         id: comment_user
         if: steps.comment_body.outputs.triggers_benchmark == 'true'
         uses: actions/github-script@v7
+        env:
+          REPO_OWNER: ${{ steps.repo_info.outputs.REPO_OWNER }}
+          REPO_NAME: ${{ steps.repo_info.outputs.REPO_NAME }}
         with:
           retries: 3
           result-encoding: string
@@ -38,24 +41,24 @@ jobs:
             const user = context.payload.sender.login;
             console.log(`Checking permissions for '${user}' on repository ${process.env.REPO_OWNER}/${process.env.REPO_NAME}}`);
 
-            const { data: { permission } } = await github.rest.repos.getCollaboratorPermissionLevel({
+            const { data } = await github.rest.repos.getCollaboratorPermissionLevel({
               owner: process.env.REPO_OWNER,
               repo: process.env.REPO_NAME,
               username: user
             });
-            console.log(`user_permission=${JSON.stringify(permission)}`);
+            const userPermissions = data.user.permissions;
+            const permission = userPermissions.admin || userPermissions.maintain;
 
-            const user_has_write_access = permission === 'write' || permission === 'admin';
-            console.log(`User has write acces => ${user_has_write_access}`);
+            console.log(`User '${user}' has role '${userRole}' with admin/maintain access => ${permission}`);
 
-            return user_has_write_access;
+            return permission;
       
       - name: Trigger Benchmark Webhook
         if: steps.comment_body.outputs.triggers_benchmark == 'true' && steps.comment_user.outputs.result == 'true'
         uses: peter-evans/repository-dispatch@v3
         env:
           # The repo that is triggering the source webhook
-          WEBHOOK_METADATA_SOURCE_REPO: ${{ env.REPO_OWNER }}/${{ env.REPO_NAME }}
+          WEBHOOK_METADATA_SOURCE_REPO: ${{ steps.repo_info.outputs.REPO_OWNER }}/${{ steps.repo_info.outputs.REPO_NAME }}
           
           # The URL of the actual actions run that triggered the webhook
           WEBHOOK_METADATA_ACTIONS_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
