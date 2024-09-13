@@ -25,7 +25,7 @@ inputs:
   jax_version:
     description: The version of JAX to install for any job that requires JAX
     required: false
-    default: '0.4.28'
+    default: '0.4.31'
   install_tensorflow:
     description: Indicate if TensorFlow should be installed or not
     required: false
