@@ -40,6 +40,7 @@
   [(#6204)](https://github.com/PennyLaneAI/pennylane/pull/6204)
 
 * The `decomp_depth` keyword argument to `qml.device` is removed.
+  [(#6234)](https://github.com/PennyLaneAI/pennylane/pull/6234)
 
 <h3>Deprecations 👋</h3>
 
