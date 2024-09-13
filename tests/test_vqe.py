@@ -194,33 +194,6 @@ CIRCUITS = [
 ]
 
 #####################################################
-# Device
-
-
-@pytest.fixture(scope="function", name="mock_device")
-def mock_device_fixture(monkeypatch):
-    with monkeypatch.context() as m:
-        m.setattr(qml.Device, "__abstractmethods__", frozenset())
-        m.setattr(
-            qml.Device, "_capabilities", {"supports_tensor_observables": True, "model": "qubit"}
-        )
-        m.setattr(qml.Device, "operations", ["RX", "RY", "Rot", "CNOT", "Hadamard", "StatePrep"])
-        m.setattr(
-            qml.Device, "observables", ["PauliX", "PauliY", "PauliZ", "Hadamard", "Hermitian"]
-        )
-        m.setattr(qml.Device, "short_name", "MockDevice")
-        m.setattr(qml.Device, "expval", lambda self, x, y, z: 1)
-        m.setattr(qml.Device, "var", lambda self, x, y, z: 2)
-        m.setattr(qml.Device, "sample", lambda self, x, y, z: 3)
-        m.setattr(qml.Device, "apply", lambda self, x, y, z: None)
-
-        def get_device(wires=1):
-            return qml.Device(wires=wires)  # pylint:disable=abstract-class-instantiated
-
-        yield get_device
-
-
-#####################################################
 # Queues
 
 QUEUE_HAMILTONIANS_1 = [
