@@ -83,6 +83,9 @@
 
 <h3>Deprecations 👋</h3>
 
+* `QNode.gradient_fn` is deprecated. Please use `QNode.diff_method` and `QNode.get_gradient_fn` instead.
+  [(#6244)](https://github.com/PennyLaneAI/pennylane/pull/6244)
+
 <h3>Documentation 📝</h3>
 
 <h3>Bug fixes 🐛</h3>
