@@ -149,4 +149,6 @@ class ReferenceQubit(Device):
         return program, execution_config
 
     def execute(self, circuits, execution_config=DefaultExecutionConfig):
+        for tape in circuits:
+            assert all(supports_operation(op) for op in tape.operations)
         return tuple(simulate(tape, seed=self._rng) for tape in circuits)
