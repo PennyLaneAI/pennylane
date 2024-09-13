@@ -126,18 +126,30 @@ def scf(mol, n_steps=50, tol=1e-8):
         r = mol.coordinates
         n_electron = mol.n_electrons
 
-        if getattr(r, "requires_grad", False) or (
-            qml.math.get_interface(r) == "jax" and qml.math.requires_grad(args[0])
-        ):
-            args_r = [[args[0][i]] * mol.n_basis[i] for i in range(len(mol.n_basis))]
-            args_ = [*args] + [qml.math.vstack(list(itertools.chain(*args_r)))]
-            rep_tensor = repulsion_tensor(basis_functions)(*args_[1:])
-            s = overlap_matrix(basis_functions)(*args_[1:])
-            h_core = core_matrix(basis_functions, charges, r)(*args_)
+        if qml.math.get_interface(r) == "autograd":
+            if getattr(r, "requires_grad", False):
+                args_r = [[args[0][i]] * mol.n_basis[i] for i in range(len(mol.n_basis))]
+                args_ = [*args] + [qml.math.vstack(list(itertools.chain(*args_r)))]
+                rep_tensor = repulsion_tensor(basis_functions)(*args_[1:])
+                s = overlap_matrix(basis_functions)(*args_[1:])
+                h_core = core_matrix(basis_functions, charges, r)(*args_)
+            else:
+                rep_tensor = repulsion_tensor(basis_functions)(*args)
+                s = overlap_matrix(basis_functions)(*args)
+                h_core = core_matrix(basis_functions, charges, r)(*args)
         else:
-            rep_tensor = repulsion_tensor(basis_functions)(*args)
-            s = overlap_matrix(basis_functions)(*args)
-            h_core = core_matrix(basis_functions, charges, r)(*args)
+            if qml.math.get_interface(r) == "jax" and qml.math.requires_grad(args[0]):
+                args_r = [[args[0][i]] * mol.n_basis[i] for i in range(len(mol.n_basis))]
+                args_ = [*args] + [qml.math.vstack(list(itertools.chain(*args_r)))]
+                rep_tensor = repulsion_tensor(basis_functions)(args_[2], args_[1], args_[3])
+                s = overlap_matrix(basis_functions)(args_[2], args_[1], args_[3])
+                h_core = core_matrix(basis_functions, charges, r)(
+                    args_[0], args_[2], args_[1], args_[3]
+                )
+            else:
+                rep_tensor = repulsion_tensor(basis_functions)(*args)
+                s = overlap_matrix(basis_functions)(*args)
+                h_core = core_matrix(basis_functions, charges, r)(*args)
 
         rng = qml.math.random.default_rng(2030)
         s = s + qml.math.diag(rng.random(len(s)) * 1.0e-12)
