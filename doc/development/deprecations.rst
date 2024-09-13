@@ -9,11 +9,11 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
-* All of the legacy devices (any with the name ``default.qubit.{autograd,torch,tf,jax,legacy}``) are deprecated. Use ``default.qubit`` instead,
-  as it supports backpropagation for the many backends the legacy devices support.
+* `QNode.gradient_fn` is deprecated. Please use `QNode.diff_method` instead. `QNode.get_gradient_fn` can also be used to
+  process the diff method.
 
-  - Deprecated in v0.38
-  - Will be removed in v0.39
+  - Deprecated in v0.39
+  - Will be removed in v0.40
 
 * The logic for internally switching a device for a different backpropagation
   compatible device is now deprecated, as it was in place for the deprecated ``default.qubit.legacy``.
@@ -81,6 +81,12 @@ Other deprecations
 
 Completed deprecation cycles
 ----------------------------
+
+* All of the legacy devices (any with the name ``default.qubit.{autograd,torch,tf,jax,legacy}``) are deprecated. Use ``default.qubit`` instead,
+  as it supports backpropagation for the many backends the legacy devices support.
+
+  - Deprecated in v0.38
+  - Removed in v0.39
 
 * `Operator.expand` is now removed. Use `qml.tape.QuantumScript(op.deocomposition())` instead.
 
