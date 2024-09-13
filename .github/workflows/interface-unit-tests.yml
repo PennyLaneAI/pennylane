@@ -151,11 +151,11 @@ jobs:
         run: |
           if [ "${{ inputs.python_warning_level }}" == "error" ];
           then
-            ENABLE_SPLIT='0'
+            export ENABLE_SPLIT='0'
           else
-            ENABLE_SPLIT='1'
+            export ENABLE_SPLIT='1'
           fi
-
+          echo "enable_split=$ENABLE_SPLIT
           echo "enable_split=$ENABLE_SPLIT" >> $GITHUB_OUTPUT
 
       - name: Setup Job to Skip
