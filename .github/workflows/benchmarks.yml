@@ -1,6 +1,5 @@
 name: Benchmarks
 on:
-  pull_request:
   workflow_call:
     inputs:
       ref_branch:
