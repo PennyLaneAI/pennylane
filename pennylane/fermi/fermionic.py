@@ -325,11 +325,18 @@ class FermiWord(dict):
         )
 
     def shift_operator(self, initial_position, final_position):
-        r"""Shifts an operator in the Fermi word from ``initial_position`` to ``final_position`` by applying the fermionic anti-commutation relations.
+        r"""Shifts an operator in the FermiWord from ``initial_position`` to ``final_position`` by applying the fermionic anti-commutation relations.
+            There are four anti-commutator relations:
+            1) a(0)a(1) = -a(1)a(0)
+            2) a⁺(0)a⁺(1) = -a⁺(1)a⁺(0)
+            3) a(0)a⁺(1) = -a⁺(1)a(0)
+            4) a(0)a⁺(0) = 1 - a⁺(0)a(0)
+            See https://en.wikipedia.org/wiki/Creation_and_annihilation_operators#Creation_and_annihilation_operators_in_quantum_field_theories for more information.
+
 
         Args:
             initial_position (int): The position of the operator to be shifted.
-            final_position (int): The desired position of the operator occupying the initial position.
+            final_position (int): The desired position of the operator.
 
         Returns:
             FermiSentence: The ``FermiSentence`` obtained after applying the anti-commutator relations.
@@ -341,19 +348,19 @@ class FermiWord(dict):
 
         **Example**
 
-        >>> w = FermiWord({(0, 0): '+', (1, 1): '-'})
-        >>> w.commute(0, 1)
+        >>> w = qml.fermi.FermiWord({(0, 0): '+', (1, 1): '-'})
+        >>> w.shift_operator(0, 1)
         -1 * a(1) a⁺(0)
         """
 
         if not isinstance(initial_position, int) or not isinstance(final_position, int):
-            raise TypeError("Positions must be integers")
+            raise TypeError("Positions must be integers.")
 
         if initial_position < 0 or final_position < 0:
-            raise ValueError("Positions must be positive integers")
+            raise ValueError("Positions must be positive integers.")
 
         if initial_position > len(self.sorted_dic) - 1 or final_position > len(self.sorted_dic) - 1:
-            raise ValueError("Positions out of range")
+            raise ValueError("Positions are out of range.")
 
         if initial_position == final_position:
             return FermiSentence({self: 1})

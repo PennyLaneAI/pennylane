@@ -249,13 +249,13 @@ class TestFermiWord:
 
     def test_shift_operator_errors(self):
         """Test that the shift_operator method correctly raises exceptions."""
-        with pytest.raises(TypeError, match="Positions must be integers"):
+        with pytest.raises(TypeError, match="Positions must be integers."):
             fw8.shift_operator(0.5, 1)
 
-        with pytest.raises(ValueError, match="Positions must be positive integers"):
+        with pytest.raises(ValueError, match="Positions must be positive integers."):
             fw8.shift_operator(-1, 0)
 
-        with pytest.raises(ValueError, match="Positions out of range"):
+        with pytest.raises(ValueError, match="Positions are out of range."):
             fw8.shift_operator(1, 2)
 
     tup_fw_dag = (
