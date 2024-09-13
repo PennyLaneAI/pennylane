@@ -15,9 +15,12 @@ jobs:
     uses: ./.github/workflows/interface-unit-tests.yml
     strategy:
       fail-fast: false
+      max-parallel: 1
     secrets:
       codecov_token: ${{ secrets.CODECOV_TOKEN }}
     with:
       branch: ${{ github.ref }}
       skip_ci_test_jobs: 'qcut-tests'
       python_warning_level: 'error'
+      pytest_durations_file_path: ''
+      pytest_store_durations: false
