@@ -301,7 +301,7 @@ jobs:
            || fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).default
          }}
       matrix:
-        group: ${{ needs.setup-ci-load.outputs.enable_split && [1, 2, 3, 4, 5] || [1] }}
+        group: ${{ needs.setup-ci-load.outputs.enable_split == '1' && fromJSON('[1, 2, 3, 4, 5]') || fromJSON('[1]') }}
         python-version: >-
           ${{
             fromJSON(needs.setup-ci-load.outputs.python-version).jax-tests
