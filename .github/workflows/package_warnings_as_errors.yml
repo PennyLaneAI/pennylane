@@ -23,3 +23,4 @@ jobs:
       skip_ci_test_jobs: 'qcut-tests'
       python_warning_level: 'error'
       pipeline_mode: 'warnings'
+      run_lightened_ci: false
