@@ -1006,9 +1006,7 @@ class TestDefaultQubitLegacyIntegration:
             "supports_inverse_operations": True,
             "supports_analytic_computation": True,
             "supports_broadcasting": True,
-            "passthru_devices": {
-                "autograd": "default.qubit.autograd",
-            },
+            "passthru_devices": {},
         }
         assert cap == capabilities
 
@@ -2388,19 +2386,6 @@ class TestSumSupport:
         obs = qml.sum(qml.s_prod(0.1, qml.PauliX(0)), qml.s_prod(0.2, qml.PauliZ(0)))
         assert np.isclose(dev.expval(obs), 0.2)
         spy.assert_not_called()
-
-    @pytest.mark.autograd
-    def test_trainable_autograd(self, is_state_batched):
-        """Tests that coeffs passed to a sum are trainable with autograd."""
-        if is_state_batched:
-            pytest.skip(
-                reason="Broadcasting, qml.jacobian and new return types do not work together"
-            )
-        dev = qml.device("default.qubit.legacy", wires=1)
-        qnode = qml.QNode(self.circuit, dev, interface="autograd")
-        y, z = np.array([1.1, 2.2])
-        actual = qml.grad(qnode, argnum=[0, 1])(y, z, is_state_batched)
-        assert np.allclose(actual, self.expected_grad(is_state_batched))
 
 
 class TestGetBatchSize:
