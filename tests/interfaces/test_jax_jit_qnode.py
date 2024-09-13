@@ -1514,7 +1514,10 @@ class TestTapeExpansion:
         and the first and second order gradients are correctly evaluated"""
         gradient_kwargs = {}
         if dev.name == "reference.qubit":
-            pytest.xfail("reference.qubit does not support hamiltonians")
+            pytest.skip(
+                "Cannot add transform to the transform program in preprocessing"
+                "when using mocker.spy on it."
+            )
         if dev.name == "param_shift.qubit":
             pytest.xfail("gradients transforms have a different vjp shape convention.")
         if diff_method == "adjoint":
