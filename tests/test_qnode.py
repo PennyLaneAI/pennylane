@@ -233,7 +233,7 @@ class TestValidation:
         res = QNode.get_best_method(dev, "another_interface")
         assert res == (qml.gradients.finite_diff, {}, dev)
 
-    # pylint: disable=protected-access
+    # pylint: disable=protected-access, too-many-statements
     def test_diff_method(self):
         """Test that a user-supplied diff method correctly returns the right
         diff method."""
@@ -241,52 +241,95 @@ class TestValidation:
 
         qn = QNode(dummyfunc, dev, diff_method="best")
         assert qn.diff_method == "best"
-        assert qn.gradient_fn == "backprop"
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match=r"QNode.gradient_fn is deprecated"
+        ):
+            assert qn.gradient_fn == "backprop"
+
+        dev_shots = qml.device("default.qubit", shots=45)
+        qn_shots = QNode(dummyfunc, dev_shots, diff_method="best")
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match=r"QNode.gradient_fn is deprecated"
+        ):
+            assert qn_shots.gradient_fn == qml.gradients.param_shift
 
         qn = QNode(dummyfunc, dev, interface="autograd", diff_method="best")
         assert qn.diff_method == "best"
-        assert qn.gradient_fn == "backprop"
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match=r"QNode.gradient_fn is deprecated"
+        ):
+            assert qn.gradient_fn == "backprop"
 
         qn = QNode(dummyfunc, dev, diff_method="backprop")
         assert qn.diff_method == "backprop"
-        assert qn.gradient_fn == "backprop"
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match=r"QNode.gradient_fn is deprecated"
+        ):
+            assert qn.gradient_fn == "backprop"
 
         qn = QNode(dummyfunc, dev, interface="autograd", diff_method="backprop")
         assert qn.diff_method == "backprop"
-        assert qn.gradient_fn == "backprop"
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match=r"QNode.gradient_fn is deprecated"
+        ):
+            assert qn.gradient_fn == "backprop"
 
         dev2 = CustomDeviceWithDiffMethod()
         qn = QNode(dummyfunc, dev2, diff_method="device")
         assert qn.diff_method == "device"
-        assert qn.gradient_fn == "device"
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match=r"QNode.gradient_fn is deprecated"
+        ):
+            assert qn.gradient_fn == "device"
 
         qn = QNode(dummyfunc, dev2, interface="autograd", diff_method="device")
         assert qn.diff_method == "device"
-        assert qn.gradient_fn == "device"
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match=r"QNode.gradient_fn is deprecated"
+        ):
+            assert qn.gradient_fn == "device"
 
         qn = QNode(dummyfunc, dev, diff_method="finite-diff")
         assert qn.diff_method == "finite-diff"
-        assert qn.gradient_fn is qml.gradients.finite_diff
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match=r"QNode.gradient_fn is deprecated"
+        ):
+            assert qn.gradient_fn is qml.gradients.finite_diff
 
         qn = QNode(dummyfunc, dev, interface="autograd", diff_method="finite-diff")
         assert qn.diff_method == "finite-diff"
-        assert qn.gradient_fn is qml.gradients.finite_diff
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match=r"QNode.gradient_fn is deprecated"
+        ):
+            assert qn.gradient_fn is qml.gradients.finite_diff
 
         qn = QNode(dummyfunc, dev, diff_method="spsa")
         assert qn.diff_method == "spsa"
-        assert qn.gradient_fn is qml.gradients.spsa_grad
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match=r"QNode.gradient_fn is deprecated"
+        ):
+            assert qn.gradient_fn is qml.gradients.spsa_grad
 
         qn = QNode(dummyfunc, dev, interface="autograd", diff_method="hadamard")
         assert qn.diff_method == "hadamard"
-        assert qn.gradient_fn is qml.gradients.hadamard_grad
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match=r"QNode.gradient_fn is deprecated"
+        ):
+            assert qn.gradient_fn is qml.gradients.hadamard_grad
 
         qn = QNode(dummyfunc, dev, diff_method="parameter-shift")
         assert qn.diff_method == "parameter-shift"
-        assert qn.gradient_fn is qml.gradients.param_shift
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match=r"QNode.gradient_fn is deprecated"
+        ):
+            assert qn.gradient_fn is qml.gradients.param_shift
 
         qn = QNode(dummyfunc, dev, interface="autograd", diff_method="parameter-shift")
         assert qn.diff_method == "parameter-shift"
-        assert qn.gradient_fn is qml.gradients.param_shift
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match=r"QNode.gradient_fn is deprecated"
+        ):
+            assert qn.gradient_fn is qml.gradients.param_shift
         # check that get_best_method was only ever called once
 
     @pytest.mark.autograd
@@ -301,7 +344,10 @@ class TestValidation:
             return qml.expval(qml.PauliZ(0))
 
         qml.grad(circuit)(pnp.array(0.5, requires_grad=True))
-        assert circuit.gradient_fn is qml.gradients.finite_diff
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match=r"QNode.gradient_fn is deprecated"
+        ):
+            assert circuit.gradient_fn is qml.gradients.finite_diff
         spy.assert_called()
 
     def test_unknown_diff_method_string(self):
@@ -389,7 +435,10 @@ class TestValidation:
             return qml.expval(qml.PauliZ(0))
 
         assert circuit.interface is None
-        assert circuit.gradient_fn is None
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match=r"QNode.gradient_fn is deprecated"
+        ):
+            assert circuit.gradient_fn is None
         assert circuit.device is dev
 
         # QNode can still be executed
@@ -497,9 +546,12 @@ class TestTapeConstruction:
         assert qn.gradient_kwargs["h"] == 1e-8
         assert qn.gradient_kwargs["approx_order"] == 2
 
-        jac = qn.gradient_fn(qn)(
-            pnp.array(0.45, requires_grad=True), pnp.array(0.1, requires_grad=True)
-        )
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match=r"QNode.gradient_fn is deprecated"
+        ):
+            jac = qn.gradient_fn(qn)(
+                pnp.array(0.45, requires_grad=True), pnp.array(0.1, requires_grad=True)
+            )
         assert isinstance(jac, tuple) and len(jac) == 2
         assert len(jac[0]) == 2
         assert len(jac[1]) == 2
@@ -1634,7 +1686,10 @@ class TestNewDeviceIntegration:
             return qml.expval(qml.PauliZ(0))
 
         assert circuit.diff_method == "hello"
-        assert circuit.gradient_fn == "hello"
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match=r"QNode.gradient_fn is deprecated"
+        ):
+            assert circuit.gradient_fn == "hello"
 
         with dev.tracker:
             qml.grad(circuit)(qml.numpy.array(0.5))
@@ -1991,3 +2046,17 @@ def test_prune_dynamic_transform_with_mcm():
     assert len(program1) == 2
     assert qml.devices.preprocess.mid_circuit_measurements in program1
     assert len(program2) == 1
+
+
+def test_gradient_fn_lightning_metric_tensor():
+    """Test that if lightning is used with the metric tensor, the graident_fn is parameter shift."""
+
+    dev = qml.device("lightning.qubit", wires=2)
+
+    @qml.metric_tensor
+    @qml.qnode(dev)
+    def circuit():
+        return qml.expval(qml.Z(0))
+
+    with pytest.warns(qml.PennyLaneDeprecationWarning):
+        assert circuit.gradient_fn == qml.gradients.param_shift

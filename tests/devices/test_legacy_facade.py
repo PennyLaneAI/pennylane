@@ -400,38 +400,7 @@ class TestGradientSupport:
 
         dev = LegacyDeviceFacade(BackpropDevice(wires=2, shots=None))
 
-        x = qml.numpy.array(0.1)
-        tape = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.Z(0))])
-
         assert dev.supports_derivatives(qml.devices.ExecutionConfig(gradient_method="backprop"))
-        assert dev._create_temp_device((tape,)) is dev.target_device
 
         config = qml.devices.ExecutionConfig(gradient_method="backprop", use_device_gradient=True)
         assert dev.preprocess(config)[1] is config  # unchanged
-
-    def test_backprop_passthru_device_self(self):
-        """Test that the temporary device is the original device if the passthru device is itself."""
-
-        class BackpropSelfDevice(DummyDevice):
-
-            short_name = "BackpropSelfDevice"
-
-            _capabilities = {"passthru_devices": {"autograd": "BackpropSelfDevice"}}
-
-        dev = LegacyDeviceFacade(BackpropSelfDevice(wires=2))
-
-        x = qml.numpy.array(0.1)
-        tape = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.Z(0))])
-        tmp_dev = dev._create_temp_device((tape,))
-        assert tmp_dev is dev.target_device
-
-    def test_passthru_device_does_not_exist(self):
-        """Test that if backprop is requested for a device that does not support it, a device error is raised."""
-
-        x = qml.numpy.array(0.1)
-        tape = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.Z(0))])
-
-        dev = LegacyDeviceFacade(DummyDevice(wires=2))
-        config = qml.devices.ExecutionConfig(gradient_method="backprop")
-        with pytest.raises(qml.DeviceError, match=r"does not support backpropagation"):
-            dev.execute(tape, config)

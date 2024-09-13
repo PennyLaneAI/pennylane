@@ -22,8 +22,8 @@ import pytest
 from default_qubit_legacy import DefaultQubitLegacy
 
 import pennylane as qml
-from pennylane import QubitDevice
 from pennylane import numpy as pnp
+from pennylane.devices import QubitDevice
 from pennylane.measurements import (
     Expectation,
     ExpectationMP,
@@ -1656,7 +1656,7 @@ def test_generate_basis_states():
 def test_samples_to_counts_all_outomces():
     """Test that _samples_to_counts can handle counts with all outcomes."""
 
-    class DummyQubitDevice(qml.QubitDevice):
+    class DummyQubitDevice(qml.devices.QubitDevice):
 
         author = None
         name = "bla"
@@ -1677,7 +1677,7 @@ def test_samples_to_counts_all_outomces():
 def test_no_adjoint_jacobian_errors():
     """Test that adjoint_jacobian errors with batching and shot vectors"""
 
-    class DummyQubitDevice(qml.QubitDevice):
+    class DummyQubitDevice(qml.devices.QubitDevice):
 
         author = None
         name = "bla"
