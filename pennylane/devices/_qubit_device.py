@@ -1110,7 +1110,11 @@ class QubitDevice(Device):
         n_snapshots = self.shots
         seed = obs.seed
 
-        with qml.workflow.set_shots(self, shots=1):
+        original_shots = self.shots
+        original_shot_vector = self._shot_vector
+
+        try:
+            self.shots = 1
             # slow implementation but works for all devices
             n_qubits = len(wires)
             mapped_wires = np.array(self.map_wires(wires))
@@ -1139,6 +1143,10 @@ class QubitDevice(Device):
                 )
 
                 outcomes[t] = self.generate_samples()[0][mapped_wires]
+        finally:
+            self.shots = original_shots
+            # pylint: disable=attribute-defined-outside-init
+            self._shot_vector = original_shot_vector
 
         return self._cast(self._stack([outcomes, recipes]), dtype=np.int8)
 

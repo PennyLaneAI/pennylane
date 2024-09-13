@@ -83,6 +83,9 @@
 
 <h3>Deprecations 👋</h3>
 
+* `QNode.gradient_fn` is deprecated. Please use `QNode.diff_method` and `QNode.get_gradient_fn` instead.
+  [(#6244)](https://github.com/PennyLaneAI/pennylane/pull/6244)
+
 <h3>Documentation 📝</h3>
 
 <h3>Bug fixes 🐛</h3>
@@ -101,6 +104,9 @@
   
 * The ``qml.Qubitization`` template now orders the ``control`` wires first and the ``hamiltonian`` wires second, which is the expected according to other templates.
   [(#6229)](https://github.com/PennyLaneAI/pennylane/pull/6229)
+
+* The ``qml.FABLE`` template now returns the correct value when JIT is enabled.
+  [(#6263)](https://github.com/PennyLaneAI/pennylane/pull/6263)
 
 * <h3>Contributors ✍️</h3>
 
