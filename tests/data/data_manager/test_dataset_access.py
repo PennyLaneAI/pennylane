@@ -27,7 +27,14 @@ import pennylane as qml
 import pennylane.data.data_manager
 from pennylane.data import Dataset
 from pennylane.data.data_manager import GRAPHQL_URL, _validate_attributes
-from .support import _dataclass_ids, _get_urls_resp, _list_attrs_resp, _list_datasets_resp, _parameter_tree
+
+from .support import (
+    _dataclass_ids,
+    _get_urls_resp,
+    _list_attrs_resp,
+    _list_datasets_resp,
+    _parameter_tree,
+)
 
 has_rich = False
 try:
