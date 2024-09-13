@@ -262,7 +262,7 @@ jobs:
          }}
       matrix:
         group: >-
-          ${{ fromJSON(needs.setup-ci-load.outputs.enable_split) == 1 && "[1, 2, 3]" || "[1]" }}
+          ${{ fromJSON(needs.setup-ci-load.outputs.enable_split) == 1 && [1, 2, 3] || [1] }}
         python-version: >-
           ${{
             fromJSON(needs.setup-ci-load.outputs.python-version).tf-tests
@@ -301,7 +301,7 @@ jobs:
            || fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).default
          }}
       matrix:
-        group: ${{ fromJSON(needs.setup-ci-load.outputs.enable_split) && "[1, 2, 3, 4, 5]" || "[1]" }}
+        group: ${{ fromJSON(needs.setup-ci-load.outputs.enable_split) && [1, 2, 3, 4, 5] || [1] }}
         python-version: >-
           ${{
             fromJSON(needs.setup-ci-load.outputs.python-version).jax-tests
@@ -342,7 +342,7 @@ jobs:
            || fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).default
          }}
       matrix:
-        group: ${{ fromJSON(needs.setup-ci-load.outputs.enable_split) && "[1, 2, 3, 4, 5]" || "[1]" }}
+        group: ${{ fromJSON(needs.setup-ci-load.outputs.enable_split) && [1, 2, 3, 4, 5] || [1] }}
         python-version: >-
           ${{
             fromJSON(needs.setup-ci-load.outputs.python-version).core-tests
