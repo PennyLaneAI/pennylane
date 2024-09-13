@@ -812,6 +812,7 @@ class TestShotsIntegration:
         res = circuit(a, b, shots=100)  # pylint: disable=unexpected-keyword-arg
         assert res.shape == (100, 2)  # pylint:disable=comparison-with-callable
 
+    @pytest.mark.xfail(reason="'shots' cannot be a static_argname for 'jit' in JAX 0.4.28")
     def test_gradient_integration(self, interface):
         """Test that temporarily setting the shots works
         for gradient computations"""
@@ -2865,6 +2866,7 @@ class TestReturnHessian:
 
         assert isinstance(hess[1], jax.numpy.ndarray)
         assert hess[1].shape == (2, 2, 2)
+
 
 @pytest.mark.xfail(reason="'shots' cannot be a static_argname for 'jit' in JAX 0.4.28")
 @pytest.mark.parametrize("hessian", hessian_fn)
