@@ -38,7 +38,7 @@ def test_standard_validity():
 
 
 def test_BasisStatePreparation_is_deprecated():
-    """Test that my_feature is deprecated."""
+    """Test that BasisStatePreparation is deprecated."""
     with pytest.warns(qml.PennyLaneDeprecationWarning, match="BasisStatePreparation is deprecated"):
         _ = qml.BasisStatePreparation([1, 0], wires=[0, 1])
 
