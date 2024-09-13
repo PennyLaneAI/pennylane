@@ -96,7 +96,7 @@ def _get_counts_shape(mp: "qml.measurements.CountsMP", num_device_wires=0):
     return outcome_counts
 
 
-def _result_shape_dtype_struct(tape: "qml.tape.QuantumScript", device: "qml.Device"):
+def _result_shape_dtype_struct(tape: "qml.tape.QuantumScript", device: "qml.devices.Device"):
     """Auxiliary function for creating the shape and dtype object structure
     given a tape."""
 
@@ -125,7 +125,7 @@ def _result_shape_dtype_struct(tape: "qml.tape.QuantumScript", device: "qml.Devi
     return tuple(shape) if tape.shots.has_partitioned_shots else shape[0]
 
 
-def _jac_shape_dtype_struct(tape: "qml.tape.QuantumScript", device: "qml.Device"):
+def _jac_shape_dtype_struct(tape: "qml.tape.QuantumScript", device: "qml.devices.Device"):
     """The shape of a jacobian for a single tape given a device.
 
     Args:
@@ -167,14 +167,9 @@ def _execute_wrapper_inner(params, tapes, execute_fn, _, device, is_vjp=False) -
         new_tapes = _set_fn(tapes.vals, p)
         return _to_jax(execute_fn(new_tapes))
 
-    if isinstance(device, qml.Device):
-        device_supports_vectorization = device.capabilities().get("supports_broadcasting")
-    else:
-        # first order way of determining native parameter broadcasting support
-        # will be inaccurate when inclusion of broadcast_expand depends on ExecutionConfig values (like adjoint)
-        device_supports_vectorization = (
-            qml.transforms.broadcast_expand not in device.preprocess()[0]
-        )
+    # first order way of determining native parameter broadcasting support
+    # will be inaccurate when inclusion of broadcast_expand depends on ExecutionConfig values (like adjoint)
+    device_supports_vectorization = qml.transforms.broadcast_expand not in device.preprocess()[0]
     out = jax.pure_callback(
         pure_callback_wrapper, shape_dtype_structs, params, vectorized=device_supports_vectorization
     )

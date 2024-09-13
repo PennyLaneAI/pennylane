@@ -21,8 +21,8 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane import QubitDevice
 from pennylane import numpy as pnp
+from pennylane.devices import QubitDevice
 from pennylane.measurements import (
     Expectation,
     ExpectationMP,
@@ -163,6 +163,12 @@ def _working_get_batch_size(tensor, expected_shape, expected_size):
         return size // expected_size
 
     return None
+
+
+def test_deprecated_access():
+    """Test that accessing via top-level is deprecated."""
+    with pytest.warns(qml.PennyLaneDeprecationWarning, match="Device will no longer be accessible"):
+        qml.QubitDevice  # pylint: disable=pointless-statement
 
 
 def test_notimplemented_circuit_hash(mock_qubit_device):
@@ -1655,7 +1661,7 @@ def test_generate_basis_states():
 def test_samples_to_counts_all_outomces():
     """Test that _samples_to_counts can handle counts with all outcomes."""
 
-    class DummyQubitDevice(qml.QubitDevice):
+    class DummyQubitDevice(qml.devices.QubitDevice):
 
         author = None
         name = "bla"
@@ -1676,7 +1682,7 @@ def test_samples_to_counts_all_outomces():
 def test_no_adjoint_jacobian_errors():
     """Test that adjoint_jacobian errors with batching and shot vectors"""
 
-    class DummyQubitDevice(qml.QubitDevice):
+    class DummyQubitDevice(qml.devices.QubitDevice):
 
         author = None
         name = "bla"
