@@ -1,6 +1,6 @@
 import warnings
 from datetime import datetime
-from functools import reduce
+from functools import partial, reduce
 
 import jax
 import jax.numpy as jnp
@@ -20,13 +20,21 @@ jax.config.update("jax_platform_name", "cpu")
 
 
 def run_opt(
-    value_and_grad, theta, n_epochs=100, lr=0.1, b1=0.9, b2=0.999, E_exact=0.0, verbose=True
+    value_and_grad,
+    theta,
+    n_epochs=100,
+    lr=0.1,
+    b1=0.9,
+    b2=0.999,
+    E_exact=0.0,
+    verbose=True,
+    interrupt_tol=None,
 ):
     """Boilerplate jax optimization"""
     optimizer = optax.adam(learning_rate=lr, b1=b1, b2=b2)
     opt_state = optimizer.init(theta)
 
-    energy = np.zeros(n_epochs)
+    energy = []
     gradients = []
     thetas = []
 
@@ -44,14 +52,24 @@ def run_opt(
         val, grad_circuit = value_and_grad(theta)
         opt_state, theta = partial_step(grad_circuit, opt_state, theta)
 
-        energy[n] = val
+        energy.append(val)
         gradients.append(grad_circuit)
         thetas.append(theta)
+        if interrupt_tol is not None and (norm := np.linalg.norm(gradients[-1])) < interrupt_tol:
+            print(
+                f"Interrupting after {n} epochs because gradient norm is {norm} < {interrupt_tol}"
+            )
+            break
     t1 = datetime.now()
     if verbose:
         print(f"final loss: {val - E_exact}; min loss: {np.min(energy) - E_exact}; after {t1 - t0}")
 
     return thetas, energy, gradients
+
+
+# run_opt_jit = jax.jit(
+# partial(run_opt, verbose=False), static_argnames=["value_and_grad", "n_epochs", "lr", "b1", "b2", "E_exact"]
+# )
 
 
 def EvenOdd(op: PauliSentence):
@@ -290,7 +308,8 @@ def compute_csa_new(g, m, ad, which=0, tol=1e-14, verbose=0):
 
     iteration = 1
     while True:
-        print(f"iteration: {iteration}") if verbose else None
+        if verbose:
+            print(f"iteration: {iteration}")
         kernel_intersection = np_m
         for h_i in np_h:
 
@@ -375,10 +394,10 @@ def khk_decompose(
     generators,
     H,
     theta0=None,
-    n_epochs=500,
     validate=True,
     involution=None,
     verbose=1,
+    opt_kwargs=None,
     tol=1e-12,
     which=0,
 ):
@@ -412,65 +431,84 @@ def khk_decompose(
     elif involution == "EvenOdd":
         involution = EvenOdd
 
-    generators = [op.pauli_rep for op in generators]
-    g = qml.lie_closure(generators, pauli=True)
-    g = orthonormalize(g)
+    assert involution(H) == 0
 
-    print("Computing Cartan decomposition g = m + k") if verbose else None
-    k, m = CartanDecomp(g, involution=involution)
+    if isinstance(generators, dict):
+        if verbose:
+            print(f"Retrieving stored algebra info and adjoint representation.")
+        g = generators["g"]
+        k = generators["k"]
+        mtilde = generators["mtilde"]
+        h = generators["h"]
+        ad = generators["ad"]
 
-    g = k + m  # reorder g
+    else:
+        generators = [op.pauli_rep for op in generators]
+        g = qml.lie_closure(generators, pauli=True)
+        g = orthonormalize(g)
 
-    k = orthonormalize(k)
-    m = orthonormalize(m)
+        if verbose:
+            print("Computing Cartan decomposition g = m + k")
+        k, m = CartanDecomp(g, involution=involution)
 
-    (
-        print(f"Cartan decomposition g = k + m with dimensions {len(g)} = {len(k)} + {len(m)}")
-        if verbose
-        else None
-    )
+        g = k + m  # reorder g
 
-    print("Computing adjoint representation of g = k + m") if verbose else None
-    ad = qml.structure_constants(g)
+        k = orthonormalize(k)
+        m = orthonormalize(m)
 
-    print("Computing Cartan subalgebra m = mtilde + h") if verbose else None
-    mtilde, h = compute_csa_new(g, m, ad, tol=tol, which=which)
+        if verbose:
+            print(f"Cartan decomposition g = k + m with dimensions {len(g)} = {len(k)} + {len(m)}")
 
-    # if validate:
-    #     # TODO this validation is not correct
-    #     ranks = []
-    #     for adrep in ad[-len(m) :]:
-    #         kernel = null_space(adrep, rcond=tol)
-    #         ranks.append(kernel.shape[1])
+        if verbose:
+            print("Computing adjoint representation of g = k + m", end=" ")
 
-    #     CSA_dim = np.min(ranks)
+        t0 = datetime.now()
+        ad = qml.structure_constants(g)
+        t1 = datetime.now()
 
-    #     correct_CSA_dim = CSA_dim == len(h)
-    #     print(f"Correct CSA dimension of {CSA_dim}: {correct_CSA_dim} (i.e. len(h) = {len(h)})")
+        if verbose:
+            print(f"took {t1 - t0}")
 
-    h = orthonormalize(h)
-    k = orthonormalize(k)
-    mtilde = orthonormalize(mtilde)
+        if verbose:
+            print("Computing Cartan subalgebra m = mtilde + h")
+        mtilde, h = compute_csa_new(g, m, ad, tol=tol, which=which)
 
-    g = k + mtilde + h  # reorder g
+        # if validate:
+        #     # TODO this validation is not correct
+        #     ranks = []
+        #     for adrep in ad[-len(m) :]:
+        #         kernel = null_space(adrep, rcond=tol)
+        #         ranks.append(kernel.shape[1])
 
-    (
-        print(
-            f"Cartan decomposition g = k + mtilde + h with dimensions {len(g)} = {len(k)} + {len(mtilde)} + {len(h)}"
-        )
-        if verbose
-        else None
-    )
+        #     CSA_dim = np.min(ranks)
 
-    print("Computing adjoint representation of g = k + mtilde + h") if verbose else None
-    ad = qml.structure_constants(g)
+        #     correct_CSA_dim = CSA_dim == len(h)
+        #     print(f"Correct CSA dimension of {CSA_dim}: {correct_CSA_dim} (i.e. len(h) = {len(h)})")
+
+        h = orthonormalize(h)
+        k = orthonormalize(k)
+        mtilde = orthonormalize(mtilde)
+
+        g = k + mtilde + h  # reorder g
+
+        if verbose:
+            print(
+                "Obtained Cartan decomposition g = k + mtilde + h with dimensions "
+                f"{len(g)} = {len(k)} + {len(mtilde)} + {len(h)}"
+            )
+            print("Computing adjoint representation of g = k + mtilde + h", end=" ")
+
+        t0 = datetime.now()
+        ad = qml.structure_constants(g)
+        t1 = datetime.now()
+
+        if verbose:
+            print(f"took {t1 - t0}")
 
     # khk decomposition
 
     # mututally irrational, see Example 10 on page 10 in https://arxiv.org/pdf/quant-ph/0505128
     gammas = [np.pi**i for i in range(len(h))]
-
-    vec_H = project(H.pauli_rep, g).real
 
     ## creating the gamma vector expanded on the whole g
     gammavec = np.zeros(len(g))
@@ -478,7 +516,7 @@ def khk_decompose(
 
     gammavec = jnp.array(gammavec)
 
-    def loss(theta):
+    def loss(theta, vec_H):
         # this is different to Appendix F 1 in https://arxiv.org/pdf/2104.00728
         # Making use of adjoint representation
         # should be faster, and most importantly allow for treatment of sums of paulis
@@ -495,51 +533,70 @@ def khk_decompose(
 
     value_and_grad = jax.jit(jax.value_and_grad(loss))
 
-    thetas, energy, _ = run_opt(value_and_grad, theta0, n_epochs=n_epochs)
-    if verbose:
-        plt.plot(energy)
-        plt.xlabel("epochs")
-        plt.ylabel("loss")
-        plt.show()
+    if single_H := not isinstance(H, list):
+        H = [H]
 
-    theta_opt = thetas[-1]
+    if opt_kwargs is None:
+        opt_kwargs = {"n_epochs": 500, "verbose": verbose}
 
-    M = jnp.eye(len(g))
+    vecs_h = []
+    thetas_opt = []
+    for i, _H in enumerate(H):
+        vec_H = project(_H.pauli_rep, g).real
 
-    for i in range(len(k)):
-        M @= jax.scipy.linalg.expm(theta_opt[i] * ad[i])
+        print(f"Running optimization for Hamiltonian {i+1} out of {len(H)}")
+        thetas, energy, _ = run_opt(partial(value_and_grad, vec_H=vec_H), theta0, **opt_kwargs)
+        if verbose > 1:
+            plt.plot(energy)
+            plt.xlabel("epochs")
+            plt.ylabel("loss")
+            plt.show()
 
-    vec_h = M @ vec_H
+        theta_opt = thetas[-1]
 
-    if validate:
-        h_elem = sum(c * op for c, op in zip(vec_h, g))
-        h_elem.simplify(1e-10)
+        M = jnp.eye(len(g))
 
-        n = len(H.wires)
+        for i in range(len(k)):
+            M @= jax.scipy.linalg.expm(theta_opt[i] * ad[i])
 
-        Km = jnp.eye(2**n)
-        for th, op in zip(theta_opt, k):
-            Km @= jax.scipy.linalg.expm(1j * th * qml.matrix(op.operation(), wire_order=range(n)))
+        vec_h = M @ vec_H
+        vecs_h.append(vec_h)
+        thetas_opt.append(theta_opt)
 
-        H_reconstructed = Km.conj().T @ qml.matrix(h_elem, wire_order=range(n)) @ Km
+        if validate:
+            h_elem = sum(c * op for c, op in zip(vec_h, g))
+            h_elem.simplify(1e-10)
 
-        H_m = qml.matrix(H, wire_order=range(len(H.wires)))
-        success = np.allclose(H_m, H_reconstructed)
+            n = len(_H.wires)
 
-        if not success:
-            # more expensive check for unitary equivalence
-            success = 1 - np.linalg.norm(
-                np.linalg.eigvalsh(H_m) - np.linalg.eigvalsh(H_reconstructed)
-            )
-            warnings.warn(
-                "The reconstructed H is not numerical identical to the original H.\n"
-                f"We can still check for unitary equivalence: {success}",
-                UserWarning,
-            )
+            Km = jnp.eye(2**n)
+            for th, op in zip(theta_opt, k):
+                Km @= jax.scipy.linalg.expm(
+                    1j * th * qml.matrix(op.operation(), wire_order=range(n))
+                )
 
-        print(f"success: {success}")
+            H_reconstructed = Km.conj().T @ qml.matrix(h_elem, wire_order=range(n)) @ Km
 
-    return vec_h, theta_opt, k, mtilde, h, ad
+            H_m = qml.matrix(_H, wire_order=range(len(_H.wires)))
+            success = np.allclose(H_m, H_reconstructed)
+
+            if not success:
+                # more expensive check for unitary equivalence
+                success = 1 - np.linalg.norm(
+                    np.linalg.eigvalsh(H_m) - np.linalg.eigvalsh(H_reconstructed)
+                )
+                warnings.warn(
+                    "The reconstructed H is not numerical identical to the original H.\n"
+                    f"We can still check for unitary equivalence: {success}",
+                    UserWarning,
+                )
+
+            print(f"success: {success}")
+
+    if single_H:
+        return vecs_h[0], thetas_opt[0], k, mtilde, h, ad
+
+    return vecs_h, thetas_opt, k, mtilde, h, ad
 
 
 # gram schmidt with respect to R2 metric
