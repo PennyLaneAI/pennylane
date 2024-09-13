@@ -127,7 +127,7 @@ def mock_get_args():
     return MagicMock()
 
 
-@pytest.fixture(autouse=False)
+@pytest.fixture(autouse=True)
 def mock_requests_get(request, monkeypatch, mock_get_args):
     """Patches `requests.get()` in the data_manager module so that
     it returns mock JSON data for the foldermap and data struct."""
