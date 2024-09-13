@@ -49,7 +49,7 @@ jobs:
             const userPermissions = data.user.permissions;
             const permission = userPermissions.admin || userPermissions.maintain;
 
-            console.log(`User '${user}' has role '${userRole}' with admin/maintain access => ${permission}`);
+            console.log(`User '${user}' has admin/maintain access => ${permission}`);
 
             return permission;
       
