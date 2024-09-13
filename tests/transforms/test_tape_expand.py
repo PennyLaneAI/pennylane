@@ -529,30 +529,6 @@ class TestCreateCustomDecompExpandFn:
         assert decomp_ops[2].name == "CNOT"
 
     @pytest.mark.parametrize("device_name", ["default.qubit", "default.qubit.legacy"])
-    def test_no_decomp_with_depth_zero(self, device_name):
-        """Test that specifying a single custom decomposition works as expected."""
-
-        custom_decomps = {"Hadamard": custom_hadamard, "CNOT": custom_cnot}
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning, match="The decomp_depth argument is deprecated"
-        ):
-            decomp_dev = qml.device(
-                device_name, wires=2, custom_decomps=custom_decomps, decomp_depth=0
-            )
-
-        @qml.qnode(decomp_dev)
-        def circuit():
-            qml.Hadamard(wires=0)
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(0))
-
-        decomp_ops = qml.workflow.construct_batch(circuit, level=None)()[0][0].operations
-
-        assert len(decomp_ops) == 2
-        assert decomp_ops[0].name == "Hadamard"
-        assert decomp_ops[1].name == "CNOT"
-
-    @pytest.mark.parametrize("device_name", ["default.qubit", "default.qubit.legacy"])
     def test_one_custom_decomp_gradient(self, device_name):
         """Test that gradients are still correctly computed after a decomposition
         that performs transpilation."""
@@ -701,52 +677,6 @@ class TestCreateCustomDecompExpandFn:
 
         assert decomp_ops[4].name == "CNOT"
         assert decomp_ops[4].wires == Wires([0, 1])
-
-    @pytest.mark.parametrize("device_name", ["default.qubit", "default.qubit.legacy"])
-    def test_custom_decomp_different_depth(self, device_name):
-        """Test that alternative expansion depths can be specified."""
-
-        # BasicEntanglerLayers custom decomposition involves AngleEmbedding. If
-        # expansion depth is 2, the AngleEmbedding will still be decomposed into
-        # RX (since it's not a supported operation on the device), but the RX will
-        # not be further decomposed even though the custom decomposition is specified.
-        custom_decomps = {"BasicEntanglerLayers": custom_basic_entangler_layers, "RX": custom_rx}
-
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning, match="The decomp_depth argument is deprecated"
-        ):
-            decomp_dev_2 = qml.device(
-                device_name, wires=2, custom_decomps=custom_decomps, decomp_depth=2
-            )
-
-            decomp_dev_3 = qml.device(
-                device_name, wires=2, custom_decomps=custom_decomps, decomp_depth=3
-            )
-
-        def circuit():
-            qml.BasicEntanglerLayers([[0.1, 0.2]], wires=[0, 1])
-            return qml.expval(qml.PauliZ(0))
-
-        circuit2 = qml.QNode(circuit, decomp_dev_2)
-        circuit3 = qml.QNode(circuit, decomp_dev_3)
-
-        decomp_ops = qml.workflow.construct_batch(circuit2, level=None)()[0][0].operations
-
-        assert len(decomp_ops) == 3
-
-        assert decomp_ops[0].name == "RX"
-        assert np.isclose(decomp_ops[0].parameters[0], 0.1)
-        assert decomp_ops[0].wires == Wires(0)
-
-        assert decomp_ops[1].name == "RX"
-        assert np.isclose(decomp_ops[1].parameters[0], 0.2)
-        assert decomp_ops[1].wires == Wires(1)
-
-        assert decomp_ops[2].name == "CNOT"
-        assert decomp_ops[2].wires == Wires([0, 1])
-
-        decomp_ops = qml.workflow.construct_batch(circuit3, level=None)()[0][0].operations
-        assert len(decomp_ops) == 5
 
     @pytest.mark.parametrize("device_name", ["default.qubit", "default.qubit.legacy"])
     def test_custom_decomp_with_adjoint(self, device_name):
