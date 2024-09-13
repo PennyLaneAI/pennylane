@@ -1508,10 +1508,7 @@ class TestResourcesTracker:
         Resources(2, 6, {"Hadamard": 3, "RX": 2, "CNOT": 1}, {1: 5, 2: 1}, 4, Shots((10, 10, 50))),
     )  # Resources(wires, gates, gate_types, gate_sizes, depth, shots)
 
-    devices = (
-        "default.qubit.legacy",
-        "default.qubit.autograd",
-    )
+    devices = ("default.qubit.legacy",)
 
     @pytest.mark.all_interfaces
     @pytest.mark.parametrize("dev_name", devices)

@@ -36,7 +36,6 @@ N_SHOTS = 1e6
 # List of all devices that are included in PennyLane
 LIST_CORE_DEVICES = {
     "default.qubit",
-    "default.qubit.autograd",
 }
 
 
