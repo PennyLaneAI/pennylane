@@ -317,17 +317,6 @@ class LegacyDeviceFacade(Device):
 
         return False
 
-    # pylint: disable=protected-access
-    def _update_original_device(self, temp_device):
-        """After performing an execution with a backprop device, update the state of the original device."""
-        # Update for state vector simulators that have the _pre_rotated_state attribute
-        if hasattr(self._device, "_pre_rotated_state"):
-            self._device._pre_rotated_state = temp_device._pre_rotated_state
-
-        # Update for state vector simulators that have the _state attribute
-        if hasattr(self._device, "_state"):
-            self._device._state = temp_device._state
-
     def _validate_backprop_method(self, tape):
         if tape.shots:
             return False
