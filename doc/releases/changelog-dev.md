@@ -108,6 +108,9 @@
 * The ``qml.Qubitization`` template now orders the ``control`` wires first and the ``hamiltonian`` wires second, which is the expected according to other templates.
   [(#6229)](https://github.com/PennyLaneAI/pennylane/pull/6229)
 
+* The ``qml.FABLE`` template now returns the correct value when JIT is enabled.
+  [(#6263)](https://github.com/PennyLaneAI/pennylane/pull/6263)
+
 * <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
