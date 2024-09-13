@@ -35,6 +35,8 @@ from pennylane.transforms.diagonalize_measurements import (
     null_postprocessing,
 )
 
+# pylint: disable=protected-access
+
 
 class TestDiagonalizeObservable:
     """Tests for the _diagonalize_observable method"""
@@ -315,13 +317,9 @@ class TestDiagonalizeTapeMeasurements:
             assert isinstance(new_tape.measurements[1], VarianceMP)
             assert new_tape.measurements[0].wires == qml.wires.Wires([0])
             assert new_tape.measurements[1].wires == qml.wires.Wires([1, 2])
+            assert qml.math.allclose(sorted(new_tape.measurements[0]._eigvals), [-1.0, 1.0])
             assert qml.math.allclose(
-                sorted(new_tape.measurements[0]._eigvals),  # pylint: disable=protected-access
-                [-1.0, 1.0],
-            )
-            assert qml.math.allclose(
-                sorted(new_tape.measurements[1]._eigvals),  # pylint: disable=protected-access
-                [-2.0, 0.0, 0.0, 2.0],
+                sorted(new_tape.measurements[1]._eigvals), [-2.0, 0.0, 0.0, 2.0]
             )
         else:
             assert new_tape.measurements == [qml.expval(Z(0)), qml.var(Z(1) + Z(2))]
