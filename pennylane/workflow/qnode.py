@@ -943,7 +943,7 @@ class QNode:
         res = qml.execute(
             (self._tape,),
             device=self.device,
-            gradient_fn=self.gradient_fn,
+            gradient_fn=gradient_fn,
             interface=interface,
             transform_program=full_transform_program,
             inner_transform=inner_transform_program,
