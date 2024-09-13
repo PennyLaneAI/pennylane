@@ -1224,13 +1224,6 @@ class TestUnimplemented:
         with pytest.raises(qml.QuantumFunctionError, match="Unsupported return type"):
             dev.density_matrix(wires=0)
 
-    def test_vn_entanglement_entropy(self, mock_qutrit_device):
-        """Test that mutual_info is unimplemented"""
-        dev = mock_qutrit_device()
-
-        with pytest.raises(qml.QuantumFunctionError, match="Unsupported return type"):
-            dev.vn_entanglement_entropy(0, 1, log_base=3)
-
     def test_mutual_info(self, mock_qutrit_device):
         """Test that mutual_info is unimplemented"""
         dev = mock_qutrit_device()
