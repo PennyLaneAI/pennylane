@@ -135,13 +135,13 @@ class ReferenceQubit(Device):
         program.add_transform(validate_device_wires, wires=self.wires, name="reference.qubit")
         program.add_transform(qml.defer_measurements)
         program.add_transform(qml.transforms.split_non_commuting)
+        program.add_transform(qml.transforms.diagonalize_measurements)
         program.add_transform(
             decompose,
             stopping_condition=supports_operation,
             skip_initial_state_prep=False,
             name="reference.qubit",
         )
-        program.add_transform(qml.transforms.diagonalize_measurements)
         program.add_transform(validate_measurements, name="reference.qubit")
         program.add_transform(qml.transforms.broadcast_expand)
 
