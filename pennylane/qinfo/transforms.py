@@ -19,7 +19,7 @@ from functools import partial
 
 import pennylane as qml
 from pennylane import transform
-from pennylane.devices import DefaultMixed, DefaultQubit, DefaultQubitLegacy
+from pennylane.devices import DefaultMixed, DefaultQubit
 from pennylane.gradients import adjoint_metric_tensor, metric_tensor
 from pennylane.measurements import DensityMatrixMP, StateMP
 from pennylane.tape import QuantumScript, QuantumScriptBatch
@@ -718,7 +718,7 @@ def quantum_fisher(
         qml.PennyLaneDeprecationWarning,
     )
 
-    if device.shots or not isinstance(device, (DefaultQubitLegacy, DefaultQubit)):
+    if device.shots or not isinstance(device, DefaultQubit):
         tapes, processing_fn = metric_tensor(tape, *args, **kwargs)
 
         def processing_fn_multiply(res):

@@ -19,6 +19,7 @@ from random import random
 
 import numpy as np
 import pytest
+from default_qubit_legacy import DefaultQubitLegacy
 
 import pennylane as qml
 from pennylane import QubitDevice
@@ -1205,7 +1206,7 @@ class TestCapabilities:
 class TestNativeMidCircuitMeasurements:
     """Unit tests for mid-circuit measurements related functionality"""
 
-    class MCMDevice(qml.devices.DefaultQubitLegacy):
+    class MCMDevice(DefaultQubitLegacy):
         def apply(self, *args, **kwargs):
             for op in args[0]:
                 if isinstance(op, qml.measurements.MidMeasureMP):
@@ -1213,7 +1214,7 @@ class TestNativeMidCircuitMeasurements:
 
         @classmethod
         def capabilities(cls):
-            default_capabilities = copy.copy(qml.devices.DefaultQubitLegacy.capabilities())
+            default_capabilities = copy.copy(DefaultQubitLegacy.capabilities())
             default_capabilities["supports_mid_measure"] = True
             return default_capabilities
 
@@ -1508,7 +1509,7 @@ class TestResourcesTracker:
         Resources(2, 6, {"Hadamard": 3, "RX": 2, "CNOT": 1}, {1: 5, 2: 1}, 4, Shots((10, 10, 50))),
     )  # Resources(wires, gates, gate_types, gate_sizes, depth, shots)
 
-    devices = ("default.qubit.legacy",)
+    devices = ("default.mixed",)
 
     @pytest.mark.all_interfaces
     @pytest.mark.parametrize("dev_name", devices)

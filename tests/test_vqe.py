@@ -306,16 +306,12 @@ class TestVQE:
     # pylint: disable=protected-access
     @pytest.mark.torch
     @pytest.mark.slow
-    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.legacy"])
     @pytest.mark.parametrize("shots", [None, [(8000, 5)], [(8000, 5), (9000, 4)]])
-    def test_optimize_torch(self, dev_name, shots):
+    def test_optimize_torch(self, shots):
         """Test that a Hamiltonian cost function is the same with and without
         grouping optimization when using the Torch interface."""
 
-        if dev_name == "default.qubit.legacy" and shots is None:
-            pytest.xfail(reason="DQ legacy does not count hardware executions in analytic mode")
-
-        dev = qml.device(dev_name, wires=4, shots=shots)
+        dev = qml.device("default.qubit", wires=4, shots=shots)
 
         hamiltonian1 = copy.copy(big_hamiltonian)
         hamiltonian2 = copy.copy(big_hamiltonian)
@@ -358,16 +354,12 @@ class TestVQE:
     # pylint: disable=protected-access
     @pytest.mark.tf
     @pytest.mark.slow
-    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.legacy"])
     @pytest.mark.parametrize("shots", [None, [(8000, 5)], [(8000, 5), (9000, 4)]])
-    def test_optimize_tf(self, shots, dev_name):
+    def test_optimize_tf(self, shots):
         """Test that a Hamiltonian cost function is the same with and without
         grouping optimization when using the TensorFlow interface."""
 
-        if dev_name == "default.qubit.legacy" and shots is None:
-            pytest.xfail(reason="DQ legacy does not count hardware executions in analytic mode")
-
-        dev = qml.device(dev_name, wires=4, shots=shots)
+        dev = qml.device("default.qubit", wires=4, shots=shots)
 
         hamiltonian1 = copy.copy(big_hamiltonian)
         hamiltonian2 = copy.copy(big_hamiltonian)
@@ -408,16 +400,12 @@ class TestVQE:
     # pylint: disable=protected-access
     @pytest.mark.autograd
     @pytest.mark.slow
-    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.legacy"])
     @pytest.mark.parametrize("shots", [None, [(8000, 5)], [(8000, 5), (9000, 4)]])
-    def test_optimize_autograd(self, shots, dev_name):
+    def test_optimize_autograd(self, shots):
         """Test that a Hamiltonian cost function is the same with and without
         grouping optimization when using the autograd interface."""
 
-        if dev_name == "default.qubit.legacy" and shots is None:
-            pytest.xfail(reason="DQ legacy does not count hardware executions in analytic mode")
-
-        dev = qml.device(dev_name, wires=4, shots=shots)
+        dev = qml.device("default.qubit", wires=4, shots=shots)
 
         hamiltonian1 = copy.copy(big_hamiltonian)
         hamiltonian2 = copy.copy(big_hamiltonian)

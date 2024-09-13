@@ -22,7 +22,7 @@ from pennylane.measurements import MeasurementProcess
 
 test_wires = [2, 3, 4]
 
-devices = ["default.qubit.legacy", "default.mixed"]
+devices = ["default.mixed"]
 
 
 @pytest.mark.parametrize("interface, shots", [["autograd", None], ["auto", 100]])
