@@ -178,10 +178,10 @@ def __getattr__(name):
     if name == "plugin_devices":
         return pennylane.devices.device_constructor.plugin_devices
 
-    import warnings  # pylint: disable=redefined-outer-name, import-outside-toplevel
+    from warnings import warn  # pylint: disable=import-outside-toplevel
 
     if name == "QubitDevice":
-        warnings.warn(
+        warn(
             "QubitDevice will no longer be accessible top level. Please access "
             " the class as pennylane.devices.QubitDevice",
             PennyLaneDeprecationWarning,
@@ -189,7 +189,7 @@ def __getattr__(name):
         return pennylane.devices._qubit_device.QubitDevice  # pylint:disable=protected-access
 
     if name == "QutritDevice":
-        warnings.warn(
+        warn(
             "QutritDevice will no longer be accessible top level. Please access "
             " the class as pennylane.devices.QutritDevice",
             PennyLaneDeprecationWarning,
@@ -197,7 +197,7 @@ def __getattr__(name):
         return pennylane.devices._qutrit_device.QutritDevice  # pylint:disable=protected-access
 
     if name == "Device":
-        warnings.warn(
+        warn(
             "Device will no longer be accessible top level. Please access "
             " the class as pennylane.devices.LegacyDevice",
             PennyLaneDeprecationWarning,
