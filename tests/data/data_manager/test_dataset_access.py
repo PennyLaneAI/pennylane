@@ -21,7 +21,6 @@ from typing import NamedTuple
 from unittest.mock import MagicMock, call, patch
 
 import pytest
-import requests
 
 import pennylane as qml
 import pennylane.data.data_manager

@@ -19,10 +19,9 @@ them.
 import sys
 import urllib.parse
 from concurrent import futures
-from functools import lru_cache
 from pathlib import Path
 from time import sleep
-from typing import Any, Iterable, Mapping, Optional, Union
+from typing import Any, Iterable, Optional, Union
 
 from requests import get, head
 
@@ -30,7 +29,7 @@ from pennylane.data.base import Dataset
 from pennylane.data.base.hdf5 import open_hdf5_s3
 from pennylane.data.data_manager import progress
 
-from .foldermap import DataPath, FolderMapView, ParamArg
+from .foldermap import ParamArg
 from .params import DEFAULT, FULL, format_params
 
 GRAPHQL_URL = "https://cloud.pennylane.ai/graphql"
@@ -39,8 +38,6 @@ S3_URL = "https://datasets.cloud.pennylane.ai/datasets/h5"
 
 class GraphQLError(BaseException):
     """Exception for GraphQL"""
-
-    pass
 
 
 def _download_partial(  # pylint: disable=too-many-arguments
