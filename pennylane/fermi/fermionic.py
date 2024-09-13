@@ -381,8 +381,7 @@ class FermiWord(dict):
             fw[(next, curr_idx[1])] = curr_val
 
             if curr_idx[1] != next_idx[1]:
-                del fw[curr_idx]
-                del fw[next_idx]
+                del fw[curr_idx], fw[next_idx]
 
             fw = FermiWord(fw)
 
