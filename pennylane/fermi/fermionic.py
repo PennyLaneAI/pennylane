@@ -389,7 +389,7 @@ class FermiWord(dict):
             # anti-commutator is 0
             if curr_val == next_val or curr_idx[1] != next_idx[1]:
                 current += delta
-                fs += -1 * FermiSentence({fw: coeff})
+                fs += -coeff * fw
                 continue
 
             # anti-commutator is 1
