@@ -1356,7 +1356,7 @@ class TestOperatorIntegration:
         assert prod_op.name == final_op.name
         assert prod_op.wires == final_op.wires
         assert prod_op.data == final_op.data
-        assert np.allclose(prod_op.matrix(), final_op.matrix(), rtol=0)
+        assert np.allcloselegacy_opmath_only, final_op.matrix(), rtol=0)
 
     def test_mul_with_not_supported_object_raises_error(self):
         """Test that the __mul__ dunder method raises an error when using a non-supported object."""
@@ -1379,7 +1379,7 @@ class TestOperatorIntegration:
         assert '"test_with_id"' not in op.label(decimals=2)
 
 
-@pytest.mark.usefixtures("use_legacy_opmath")
+@pytest.mark.usefixtures("legacy_opmath_only")
 class TestTensor:
     """Unit tests for the Tensor class"""
 
@@ -2189,7 +2189,7 @@ with qml.operation.disable_new_opmath_cm(warn=False):
         (
             qml.PauliX(0),
             qml.Hamiltonian([1.0], [qml.PauliY(1)]),
-            qml.Hamiltonian([1.0], [qml.PauliX(0) @ qml.PauliY(1)]),
+            qml.Hamiltonialegacy_opmath_onlyliX(0) @ qml.PauliY(1)]),
         ),  # obs @ hamiltonian
     ]
 
@@ -2220,7 +2220,7 @@ with qml.operation.disable_new_opmath_cm(warn=False):
     ]
 
 
-@pytest.mark.usefixtures("use_legacy_opmath")
+@pytest.mark.usefixtures("legacy_opmath_only")
 class TestTensorObservableOperations:
     """Tests arithmetic operations between observables/tensors"""
 
@@ -2783,7 +2783,7 @@ class TestNewOpMath:
             assert isinstance(op, Prod)
             qml.assert_equal(op[0], op0)
             if isinstance(op1, Prod):
-                qml.assert_equal(op[1], op1[0])
+                qml.assert_equlegacy_opmath_only
                 qml.assert_equal(op[2], op1[1])
             else:
                 qml.assert_equal(op[1], op1)
@@ -2814,7 +2814,7 @@ class TestHamiltonianLinearCombinationAlias:
         assert not isinstance(op, qml.ops.qubit.Hamiltonian)
         assert not isinstance(op, qml.ops.qubit.hamiltonian.Hamiltonian)
 
-    @pytest.mark.usefixtures("use_legacy_opmath")
+    @pytest.mark.usefixtures("legacy_opmath_only")
     def test_hamiltonian_linear_combination_alias_disabled(self):
         """Test that qml.Hamiltonian is not an alias for LinearCombination with new operator
         arithmetic disabled"""
@@ -2942,8 +2942,8 @@ def test_docstring_example_of_operator_class(tol):
     @qml.qnode(dev)
     def circuit(angle):
         FlipAndRotate(angle, wire_rot="q1", wire_flip="q1")
-        return qml.expval(qml.PauliZ("q1"))
-
+        return qml.expval(legacy_opmath_only
+legacy_opmath_only
     a = np.array(3.14)
     res = circuit(a)
     expected = -0.9999987318946099
@@ -2973,8 +2973,8 @@ def test_use_new_opmath_fixture():
     assert qml.operation.active_new_opmath()
 
 
-@pytest.mark.usefixtures("use_legacy_opmath")
-def test_use_legacy_opmath_fixture():
+@pytest.mark.usefixtures("legacy_opmath_only")
+def test_legacy_opmath_only_fixture():
     """Test that the fixture for using new opmath in a context works as expected"""
     assert not qml.operation.active_new_opmath()
 

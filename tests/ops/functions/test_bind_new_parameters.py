@@ -205,7 +205,7 @@ with qml.operation.disable_new_opmath_cm():
     ]
 
 
-@pytest.mark.usefixtures("use_legacy_opmath")
+@pytest.mark.usefixtures("legacy_opmath_only")
 @pytest.mark.parametrize(
     "H, new_coeffs, expected_H",
     TEST_BIND_LEGACY_HAMILTONIAN,

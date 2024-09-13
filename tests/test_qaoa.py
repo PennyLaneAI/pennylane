@@ -1139,7 +1139,7 @@ class TestUtils:
     """Tests that the utility functions are working properly"""
 
     # pylint: disable=protected-access
-    @pytest.mark.usefixtures("use_legacy_opmath")
+    @pytest.mark.usefixtures("legacy_opmath_only")
     @pytest.mark.parametrize(
         ("hamiltonian", "value"),
         (
@@ -1250,7 +1250,7 @@ class TestLayers:
     with qml.operation.disable_new_opmath_cm():
         mixer_layer_test_cases_legacy = make_mixer_layer_test_cases()
 
-    @pytest.mark.usefixtures("use_legacy_opmath")
+    @pytest.mark.usefixtures("legacy_opmath_only")
     @pytest.mark.parametrize(("mixer", "gates"), mixer_layer_test_cases_legacy)
     def test_mixer_layer_output_legacy_opmath(self, mixer, gates):
         """Tests that the gates of the mixer layer are correct"""
@@ -1293,7 +1293,7 @@ class TestLayers:
     with qml.operation.disable_new_opmath_cm():
         cost_layer_test_cases_legacy = make_cost_layer_test_cases()
 
-    @pytest.mark.usefixtures("use_legacy_opmath")
+    @pytest.mark.usefixtures("legacy_opmath_only")
     @pytest.mark.parametrize(("cost", "gates"), cost_layer_test_cases_legacy)
     def test_cost_layer_output_legacy_opmath(self, cost, gates):
         """Tests that the gates of the cost layer is correct"""
@@ -1518,7 +1518,7 @@ class TestCycles:
         assert all(op.wires == op_e.wires for op, op_e in zip(h.ops, ops_expected))
         assert all(op.name == op_e.name for op, op_e in zip(h.ops, ops_expected))
 
-    @pytest.mark.usefixtures("use_legacy_opmath")
+    @pytest.mark.usefixtures("legacy_opmath_only")
     @pytest.mark.parametrize(
         "g",
         [nx.complete_graph(4).to_directed(), rx.generators.directed_mesh_graph(4, [0, 1, 2, 3])],
@@ -1946,7 +1946,7 @@ class TestCycles:
         expected_hamiltonian = qml.Hamiltonian(expected_coeffs, expected_ops)
         assert h.compare(expected_hamiltonian)
 
-    @pytest.mark.usefixtures("use_legacy_opmath")
+    @pytest.mark.usefixtures("legacy_opmath_only")
     @pytest.mark.parametrize(
         "g", [nx.complete_graph(3).to_directed(), rx.generators.directed_mesh_graph(3, [0, 1, 2])]
     )
@@ -1999,7 +1999,7 @@ class TestCycles:
     @pytest.mark.parametrize(
         "g", [nx.complete_graph(3).to_directed(), rx.generators.directed_mesh_graph(3, [0, 1, 2])]
     )
-    @pytest.mark.usefixtures("use_legacy_opmath")
+    @pytest.mark.usefixtures("legacy_opmath_only")
     def test_inner_net_flow_constraint_hamiltonian_legacy_opmath(self, g):
         """Test if the _inner_net_flow_constraint_hamiltonian function returns the expected result on a manually-calculated
         example of a 3-node complete digraph relative to the 0 node"""
@@ -2049,7 +2049,7 @@ class TestCycles:
     @pytest.mark.parametrize(
         "g", [nx.complete_graph(3).to_directed(), rx.generators.directed_mesh_graph(3, [0, 1, 2])]
     )
-    @pytest.mark.usefixtures("use_legacy_opmath")
+    @pytest.mark.usefixtures("legacy_opmath_only")
     def test_inner_out_flow_constraint_hamiltonian_non_complete_legacy_opmath(self, g):
         """Test if the _inner_out_flow_constraint_hamiltonian function returns the expected result
         on a manually-calculated example of a 3-node complete digraph relative to the 0 node, with
@@ -2092,7 +2092,7 @@ class TestCycles:
     @pytest.mark.parametrize(
         "g", [nx.complete_graph(3).to_directed(), rx.generators.directed_mesh_graph(3, [0, 1, 2])]
     )
-    @pytest.mark.usefixtures("use_legacy_opmath")
+    @pytest.mark.usefixtures("legacy_opmath_only")
     def test_inner_net_flow_constraint_hamiltonian_non_complete_legacy_opmath(self, g):
         """Test if the _inner_net_flow_constraint_hamiltonian function returns the expected result on a manually-calculated
         example of a 3-node complete digraph relative to the 0 node, with the (1, 0) edge removed"""
@@ -2179,7 +2179,7 @@ class TestCycles:
     @pytest.mark.parametrize(
         "g", [nx.complete_graph(3).to_directed(), rx.generators.directed_mesh_graph(3, [0, 1, 2])]
     )
-    @pytest.mark.usefixtures("use_legacy_opmath")
+    @pytest.mark.usefixtures("legacy_opmath_only")
     def test_out_flow_constraint_legacy_opmath(self, g):
         """Test the out-flow constraint Hamiltonian is minimised by states that correspond to
         subgraphs that only ever have 0 or 1 edge leaving each node
@@ -2287,7 +2287,7 @@ class TestCycles:
     @pytest.mark.parametrize(
         "g", [nx.complete_graph(3).to_directed(), rx.generators.directed_mesh_graph(3, [0, 1, 2])]
     )
-    @pytest.mark.usefixtures("use_legacy_opmath")
+    @pytest.mark.usefixtures("legacy_opmath_only")
     def test_net_flow_constraint_legacy_opmath(self, g):
         """Test if the net_flow_constraint Hamiltonian is minimized by states that correspond to a
         collection of edges with zero flow"""
@@ -2426,7 +2426,7 @@ class TestCycles:
     @pytest.mark.parametrize(
         "g", [nx.complete_graph(3).to_directed(), rx.generators.directed_mesh_graph(3, [0, 1, 2])]
     )
-    @pytest.mark.usefixtures("use_legacy_opmath")
+    @pytest.mark.usefixtures("legacy_opmath_only")
     def test_net_flow_and_out_flow_constraint_legacy_opmath(self, g):
         """Test the combined net-flow and out-flow constraint Hamiltonian is minimised by states that correspond to subgraphs
         that qualify as simple_cycles

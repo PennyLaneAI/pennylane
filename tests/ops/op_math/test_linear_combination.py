@@ -31,7 +31,7 @@ from pennylane.pauli import PauliSentence, PauliWord
 from pennylane.wires import Wires
 
 
-@pytest.mark.usefixtures("use_legacy_opmath")
+@pytest.mark.usefixtures("legacy_opmath_only")
 def test_switching():
     """Test that switching to new from old opmath changes the dispatch of qml.Hamiltonian"""
     Ham = qml.Hamiltonian([1.0, 2.0, 3.0], [X(0), X(0) @ X(1), X(2)])

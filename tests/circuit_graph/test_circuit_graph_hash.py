@@ -23,7 +23,7 @@ from pennylane.operation import Tensor
 from pennylane.wires import Wires
 
 
-@pytest.mark.usefixtures("use_legacy_opmath")
+@pytest.mark.usefixtures("legacy_opmath_only")
 class TestCircuitGraphHash:
     """Test the creation of a hash on a CircuitGraph"""
 

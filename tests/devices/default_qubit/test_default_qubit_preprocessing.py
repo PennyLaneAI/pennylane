@@ -590,7 +590,7 @@ class TestPreprocessingIntegration:
             ),
         ]
 
-    @pytest.mark.usefixtures("use_legacy_opmath")
+    @pytest.mark.usefixtures("legacy_opmath_only")
     @pytest.mark.parametrize(
         "ops, measurement, message",
         invalid_tape_adjoint_test_cases,
@@ -881,7 +881,7 @@ class TestAdjointDiffTapeValidation:
         assert res.trainable_params == [0, 1, 2, 3, 4]
 
     @pytest.mark.usefixtures(
-        "use_legacy_opmath"
+        "legacy_opmath_only"
     )  # this is only an issue for legacy Hamiltonian that does not define a matrix method
     def test_unsupported_obs_legacy_opmath(self):
         """Test that the correct error is raised if a Hamiltonian measurement is differentiated"""

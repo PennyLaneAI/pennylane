@@ -441,7 +441,7 @@ class TestSPSAOptimizer:
         ):
             opt.step(cost, params)
 
-    @pytest.mark.usefixtures("use_legacy_opmath")
+    @pytest.mark.usefixtures("legacy_opmath_only")
     @pytest.mark.slow
     def test_lightning_device_legacy_opmath(self):
         """Test SPSAOptimizer implementation with lightning.qubit device."""

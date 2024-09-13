@@ -182,7 +182,7 @@ class TestSplitEvolOps:
             # Check that the inserted exponential is correct
             qml.assert_equal(qml.exp(qml.dot([-1j * exp_shift], [ob])), _ops[1])
 
-    @pytest.mark.usefixtures("use_legacy_opmath")  # this is only an issue with legacy Hamiltonian
+    @pytest.mark.usefixtures("legacy_opmath_only")  # this is only an issue with legacy Hamiltonian
     def test_warnings_legacy_opmath(self):
         """Test that a warning is raised for computing eigenvalues of a Hamiltonian
         for more than four wires but not for fewer wires."""

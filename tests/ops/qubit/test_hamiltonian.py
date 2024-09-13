@@ -710,7 +710,7 @@ def test_deprecation_warning():
             _ = qml.Hamiltonian([1.0], [qml.X(0)])
 
 
-@pytest.mark.usefixtures("use_legacy_opmath")
+@pytest.mark.usefixtures("legacy_opmath_only")
 class TestHamiltonian:
     """Test the Hamiltonian class"""
 
@@ -1115,7 +1115,7 @@ class TestHamiltonian:
         assert h.pauli_rep is None
 
 
-@pytest.mark.usefixtures("use_legacy_opmath")
+@pytest.mark.usefixtures("legacy_opmath_only")
 class TestHamiltonianCoefficients:
     """Test the creation of a Hamiltonian"""
 
@@ -1137,7 +1137,7 @@ class TestHamiltonianCoefficients:
 
 
 @pytest.mark.tf
-@pytest.mark.usefixtures("use_legacy_opmath")
+@pytest.mark.usefixtures("legacy_opmath_only")
 class TestHamiltonianArithmeticTF:
     """Tests creation of Hamiltonians using arithmetic
     operations with TensorFlow tensor coefficients."""
@@ -1210,7 +1210,7 @@ class TestHamiltonianArithmeticTF:
         assert H.compare(H1 @ H2)
 
 
-@pytest.mark.usefixtures("use_legacy_opmath")
+@pytest.mark.usefixtures("legacy_opmath_only")
 class TestHamiltonianArithmeticTorch:
     """Tests creation of Hamiltonians using arithmetic
     operations with torch tensor coefficients."""
@@ -1287,7 +1287,7 @@ class TestHamiltonianArithmeticTorch:
         assert H.compare(H1 @ H2)
 
 
-@pytest.mark.usefixtures("use_legacy_opmath")
+@pytest.mark.usefixtures("legacy_opmath_only")
 class TestHamiltonianArithmeticAutograd:
     """Tests creation of Hamiltonians using arithmetic
     operations with autograd tensor coefficients."""
@@ -1488,7 +1488,7 @@ with qml.operation.disable_new_opmath_cm(warn=False):
     ]
 
 
-@pytest.mark.usefixtures("use_legacy_opmath")
+@pytest.mark.usefixtures("legacy_opmath_only")
 class TestHamiltonianSparseMatrix:
     """Tests for sparse matrix representation."""
 
@@ -1526,7 +1526,7 @@ class TestHamiltonianSparseMatrix:
 
 
 @pytest.mark.jax
-@pytest.mark.usefixtures("use_legacy_opmath")
+@pytest.mark.usefixtures("legacy_opmath_only")
 class TestHamiltonianArithmeticJax:
     """Tests creation of Hamiltonians using arithmetic
     operations with jax tensor coefficients."""
@@ -1600,7 +1600,7 @@ class TestHamiltonianArithmeticJax:
         assert H.compare(H1 @ H2)
 
 
-@pytest.mark.usefixtures("use_legacy_opmath")
+@pytest.mark.usefixtures("legacy_opmath_only")
 class TestGrouping:
     """Tests for the grouping functionality"""
 
@@ -1707,8 +1707,8 @@ class TestGrouping:
         assert set(H3.grouping_indices) == set(((0, 1), (2,)))
 
 
-@pytest.mark.usefixtures("use_legacy_opmath")
-class TestHamiltonianEvaluation:  # pylint: disable=too-few-public-methods
+@pytest.mark.usefixtures("legacy_opmath_only")
+class TestHamiltonianEvaluation:
     """Test the usage of a Hamiltonian as an observable"""
 
     @pytest.mark.parametrize("coeffs, param, interface", COEFFS_PARAM_INTERFACE)
@@ -1741,7 +1741,7 @@ class TestHamiltonianEvaluation:  # pylint: disable=too-few-public-methods
         assert np.isclose(res, res_expected)
 
 
-@pytest.mark.usefixtures("use_legacy_opmath")
+@pytest.mark.usefixtures("legacy_opmath_only")
 class TestHamiltonianDifferentiation:
     """Test that the Hamiltonian coefficients are differentiable"""
 

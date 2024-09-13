@@ -495,7 +495,7 @@ class TestControlledMiscMethods:
             expected.matrix(wire_order=["a", "b", "c"]), op.matrix(wire_order=["a", "b", "c"])
         )
 
-    @pytest.mark.usefixtures("use_legacy_opmath")
+    @pytest.mark.usefixtures("legacy_opmath_only")
     def test_generator_legacy_opmath(self):
         """Test that the generator is a tensor product of projectors and the base's generator."""
 

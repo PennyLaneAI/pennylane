@@ -3054,7 +3054,7 @@ class TestPauliRot:
         exp = torch.tensor(np.diag([val, val]), device=torch_device)
         assert qml.math.allclose(mat, exp)
 
-    @pytest.mark.usefixtures("use_legacy_opmath")
+    @pytest.mark.usefixtures("legacy_opmath_only")
     def test_pauli_rot_generator_legacy_opmath(self):
         """Test that the generator of the PauliRot operation
         is correctly returned."""

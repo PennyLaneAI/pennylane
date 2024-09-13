@@ -71,7 +71,7 @@ class TestEvolution:
         U = Evolution(qml.PauliX(0), 3)
         assert U.base == U.generator()
 
-    @pytest.mark.usefixtures("use_legacy_opmath")
+    @pytest.mark.usefixtures("legacy_opmath_only")
     def test_num_params_for_parametric_base_legacy_opmath(self):
         base_op = 0.5 * qml.PauliY(0) + qml.PauliZ(0) @ qml.PauliX(1)
         op = Evolution(base_op, 1.23)
