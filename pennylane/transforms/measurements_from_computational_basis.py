@@ -27,6 +27,8 @@ def measurements_from_computational_basis(tape, from_counts=False):
 
     Args:
         tape (QNode or QuantumTape or Callable): A quantum circuit.
+        from_counts (bool): whether to convert to and from counts (instead of samples).
+            Defaults to False.
 
     Returns:
         qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: The
