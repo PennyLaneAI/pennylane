@@ -154,7 +154,7 @@ jobs:
         id: continue
         run: >-
           echo "confirm=${{
-            contains(fromJSON('["unit-tests", "benchmarks"]'), inputs.pipeline_mode)
+            contains(fromJSON('["unit-tests", "benchmarks", "warnings"]'), inputs.pipeline_mode)
             || (inputs.pipeline_mode == 'reference-benchmarks'
             && steps.benchmark-cache.outputs.cache-hit != 'true' )}}" >> $GITHUB_OUTPUT
 
