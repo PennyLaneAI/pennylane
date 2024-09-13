@@ -48,7 +48,7 @@ Markdown==3.7
 MarkupSafe==2.1.5
 matplotlib==3.8.0
 mistune==0.8.4
-ml-dtypes==0.4.0
+ml-dtypes==0.4.1
 mpmath==1.3.0
 multidict==6.1.0
 networkx==2.6
