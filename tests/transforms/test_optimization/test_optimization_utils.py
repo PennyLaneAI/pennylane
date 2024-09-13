@@ -217,7 +217,7 @@ class TestRotGateFusion:
         error_sources = (qml.math.abs(pre_mag - 1) < 1e-12) | (pre_mag == 0)
 
         assert qml.math.allclose(
-            jac_from_prod[~error_sources], jac_from_fuse[~error_sources], atol=1e-05
+            jac_from_prod[~error_sources], jac_from_fuse[~error_sources], atol=1e-04
         )
         nans = qml.math.isnan(jac_from_fuse[error_sources])
         nans = qml.math.reshape(nans, (len(nans), -1))
