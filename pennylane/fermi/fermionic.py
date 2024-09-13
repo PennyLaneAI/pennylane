@@ -332,10 +332,9 @@ class FermiWord(dict):
     .. math::
 
         \begin{align*}
-            a_0 a_1 &= -a_1 a_0\\
-            a^{\dagger}_0 a^{\dagger}_1 &= -a^{\dagger}_1 a^{\dagger}_0\\
-            a_0 a^{\dagger}_1 &= -a^{\dagger}_1 a_0\\
-            a_0 a^{\dagger}_0 &= 1 - a^{\dagger}_0 a_0
+            \left{ a_i a_j \right} &= 0\\
+            \left{ a^{\dagger}_i a^{\dagger}_j \right} &= 0\\
+            \left{ a_i a^{\dagger}_j \right} &= \delta_{ij}\\
         \end{align*}
 
 
