@@ -1139,6 +1139,20 @@ class TestIntegration:
         assert q.queue == []  # pylint: disable=use-implicit-booleaness-not-comparison
         assert len(circuit.tape.operations) == 1
 
+    def test_qnode_preserves_inferred_numpy_interface(self):
+        """Tests that the QNode respects the inferred numpy interface."""
+
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.RX(x, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        x = np.array(0.8)
+        res = circuit(x)
+        assert qml.math.get_interface(res) == "numpy"
+
 
 class TestShots:
     """Unit tests for specifying shots per call."""
