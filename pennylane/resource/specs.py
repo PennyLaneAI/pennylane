@@ -208,18 +208,24 @@ def specs(
                 else qnode.diff_method
             )
 
-            if isinstance(qnode.gradient_fn, qml.transforms.core.TransformDispatcher):
-                info["gradient_fn"] = _get_absolute_import_path(qnode.gradient_fn)
+            gradient_fn = qml.QNode.get_gradient_fn(
+                qnode.device,
+                qnode.interface,
+                qnode.diff_method,
+                tape=tape,
+            )[0]
+            if isinstance(gradient_fn, qml.transforms.core.TransformDispatcher):
+                info["gradient_fn"] = _get_absolute_import_path(gradient_fn)
 
                 try:
-                    info["num_gradient_executions"] = len(qnode.gradient_fn(tape)[0])
+                    info["num_gradient_executions"] = len(gradient_fn(tape)[0])
                 except Exception as e:  # pylint: disable=broad-except
                     # In the case of a broad exception, we don't want the `qml.specs` transform
                     # to fail. Instead, we simply indicate that the number of gradient executions
                     # is not supported for the reason specified.
                     info["num_gradient_executions"] = f"NotSupported: {str(e)}"
             else:
-                info["gradient_fn"] = qnode.gradient_fn
+                info["gradient_fn"] = gradient_fn
 
             infos.append(info)
 
