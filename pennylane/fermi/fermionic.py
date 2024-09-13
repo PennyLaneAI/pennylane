@@ -325,7 +325,7 @@ class FermiWord(dict):
         )
 
     def shift_operator(self, initial_position, final_position):
-        r"""Returns a ``FermiSentence`` built from the ``FermiWord`` by moving the operator in position ``initial_position`` to position ``final_position`` and applying the fermionic anti-commutator relations.
+        r"""Shifts an operator in the Fermi word from ``initial_position`` to ``final_position`` by applying the fermionic anti-commutation relations.
 
         Args:
             initial_position (int): The position of the operator to be shifted.
