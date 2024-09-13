@@ -331,13 +331,13 @@ class FermiWord(dict):
 
             .. math::
 
-                a_0 a_1 = -a_1 a_0
-                a^{\dagger}_0 a^{\dagger}_1 = -a^{\dagger}_1 a^{\dagger}_0
-                a_0 a^{\dagger}_1 = -a^{\dagger}_1 a_0
+                a_0 a_1 = -a_1 a_0\\
+                a^{\dagger}_0 a^{\dagger}_1 = -a^{\dagger}_1 a^{\dagger}_0\\
+                a_0 a^{\dagger}_1 = -a^{\dagger}_1 a_0\\
                 a_0 a^{\dagger}_0 = 1 - a^{\dagger}_0 a_0
 
 
-            For more details see `Wikipedia <https://en.wikipedia.org/wiki/Creation_and_annihilation_operators#Creation_and_annihilation_operators_in_quantum_field_theories>`.
+            For more details see `Wikipedia <https://en.wikipedia.org/wiki/Creation_and_annihilation_operators#Creation_and_annihilation_operators_in_quantum_field_theories>`_.
 
 
         Args:
