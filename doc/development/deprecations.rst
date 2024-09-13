@@ -9,6 +9,12 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
+* `QNode.gradient_fn` is deprecated. Please use `QNode.diff_method` instead. `QNode.get_gradient_fn` can also be used to
+  process the diff method.
+
+  - Deprecated in v0.39
+  - Will be removed in v0.40
+
 * All of the legacy devices (any with the name ``default.qubit.{autograd,torch,tf,jax,legacy}``) are deprecated. Use ``default.qubit`` instead,
   as it supports backpropagation for the many backends the legacy devices support.
 
@@ -82,6 +88,11 @@ Completed deprecation cycles
   - Deprecated in v0.38
   - Removed in v0.39
   
+* `Operator.expand` is now removed. Use `qml.tape.QuantumScript(op.deocomposition())` instead.
+
+  - Deprecated in v0.38
+  - Removed in v0.39
+
 * The ``expansion_strategy`` attribute of ``qml.QNode`` is removed.
   Users should make use of ``qml.workflow.construct_batch``, should they require fine control over the output tape(s).
 

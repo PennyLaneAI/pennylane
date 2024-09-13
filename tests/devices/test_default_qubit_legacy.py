@@ -18,14 +18,12 @@ Unit tests for the :mod:`pennylane.devices.DefaultQubitLegacy` device.
 # pylint: disable=protected-access,cell-var-from-loop
 import cmath
 import math
-from functools import partial
 
 import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.devices.default_qubit_legacy import DefaultQubitLegacy, _get_slice
-from pennylane.pulse import ParametrizedHamiltonian
 from pennylane.wires import WireError, Wires
 
 U = np.array(
@@ -1009,9 +1007,7 @@ class TestDefaultQubitLegacyIntegration:
             "supports_analytic_computation": True,
             "supports_broadcasting": True,
             "passthru_devices": {
-                "torch": "default.qubit.torch",
                 "autograd": "default.qubit.autograd",
-                "jax": "default.qubit.jax",
             },
         }
         assert cap == capabilities
@@ -2087,34 +2083,6 @@ class TestApplyOps:
         state_out_einsum = np.einsum("abcdef,kdfe->kacb", matrix, self.state)
         assert np.allclose(state_out, state_out_einsum)
 
-    @pytest.mark.jax
-    def test_apply_parametrized_evolution_raises_error(self):
-        """Test that applying a ParametrizedEvolution raises an error."""
-        param_ev = qml.evolve(ParametrizedHamiltonian([1], [qml.PauliX(0)]))
-        with pytest.raises(
-            NotImplementedError,
-            match="The device default.qubit.legacy cannot execute a ParametrizedEvolution operation",
-        ):
-            self.dev._apply_parametrized_evolution(state=self.state, operation=param_ev)
-
-        @qml.qnode(self.dev)
-        def circuit():
-            qml.apply(param_ev)
-            return qml.expval(qml.PauliZ(0))
-
-        with pytest.raises(
-            qml.DeviceError,
-            match="Gate ParametrizedEvolution not supported on device default.qubit.",
-        ):
-            circuit()
-
-        self.dev.operations.add("ParametrizedEvolution")
-        with pytest.raises(
-            NotImplementedError,
-            match="The device default.qubit.legacy cannot execute a ParametrizedEvolution operation",
-        ):
-            circuit()
-
 
 class TestStateVector:
     """Unit tests for the _apply_state_vector method"""
@@ -2432,29 +2400,6 @@ class TestSumSupport:
         qnode = qml.QNode(self.circuit, dev, interface="autograd")
         y, z = np.array([1.1, 2.2])
         actual = qml.grad(qnode, argnum=[0, 1])(y, z, is_state_batched)
-        assert np.allclose(actual, self.expected_grad(is_state_batched))
-
-    @pytest.mark.torch
-    def test_trainable_torch(self, is_state_batched):
-        """Tests that coeffs passed to a sum are trainable with torch."""
-        import torch
-
-        dev = qml.device("default.qubit.legacy", wires=1)
-        qnode = qml.QNode(self.circuit, dev, interface="torch")
-        y, z = torch.tensor(1.1, requires_grad=True), torch.tensor(2.2, requires_grad=True)
-        _qnode = partial(qnode, is_state_batched=is_state_batched)
-        actual = torch.stack(torch.autograd.functional.jacobian(_qnode, (y, z)))
-        assert np.allclose(actual, self.expected_grad(is_state_batched))
-
-    @pytest.mark.jax
-    def test_trainable_jax(self, is_state_batched):
-        """Tests that coeffs passed to a sum are trainable with jax."""
-        import jax
-
-        dev = qml.device("default.qubit.legacy", wires=1)
-        qnode = qml.QNode(self.circuit, dev, interface="jax")
-        y, z = jax.numpy.array([1.1, 2.2])
-        actual = jax.jacobian(qnode, argnums=[0, 1])(y, z, is_state_batched)
         assert np.allclose(actual, self.expected_grad(is_state_batched))
 
 
