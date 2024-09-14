@@ -22,15 +22,15 @@ from dummy_debugger import Debugger
 import pennylane as qml
 from pennylane.devices.qubit import get_final_state, measure_final_state, simulate
 from pennylane.devices.qubit.simulate import (
+    TreeTraversalStack,
     _FlexShots,
     branch_state,
     combine_measurements_core,
+    counts_to_probs,
     find_post_processed_mcms,
     samples_to_counts,
-    counts_to_probs,
     simulate_tree_mcm,
     split_circuit_at_mcms,
-    TreeTraversalStack,
 )
 
 
@@ -1205,10 +1205,10 @@ class TestTreeTraversalStack:
         tree_stack = TreeTraversalStack(max_depth)
 
         assert tree_stack.counts.count(None) == max_depth
-        assert tree_stack.counts.probs(None) == max_depth
-        assert tree_stack.counts.results_0(None) == max_depth
-        assert tree_stack.counts.results_1(None) == max_depth
-        assert tree_stack.counts.states(None) == max_depth
+        assert tree_stack.probs.count(None) == max_depth
+        assert tree_stack.results_0.count(None) == max_depth
+        assert tree_stack.results_1.count(None) == max_depth
+        assert tree_stack.states.count(None) == max_depth
 
     @pytest.mark.unit
     def test_full_prune_empty_methods(self):
