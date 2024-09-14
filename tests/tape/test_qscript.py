@@ -23,7 +23,7 @@ from pennylane.measurements import MutualInfo, Shots, State, VnEntropy
 from pennylane.operation import _UNSET_BATCH_SIZE
 from pennylane.tape import QuantumScript
 
-# pylint: disable=protected-access, unused-argument, too-few-public-methods
+# pylint: disable=protected-access, unused-argument, too-few-public-methods, use-implicit-booleaness-not-comparison
 
 
 class TestInitialization:
@@ -1414,3 +1414,54 @@ def test_jax_pytree_integration(qscript_type):
     assert data[3] == 3.4
     assert data[4] == 2.0
     assert qml.math.allclose(data[5], eye_mat)
+
+
+@pytest.mark.parametrize(
+    "update_input",
+    [
+        {"measurements": [qml.expval(qml.X(0))]},
+        {"operations": [qml.X(7)]},
+        {"shots": 100},
+        {"shots": None},
+        {"shots": 50, "measurements": [qml.sample(wires=[2, 3])]},
+        {"operations": [qml.RX(1.2, 0), qml.RY(2.3, 1)], "trainable_params": [0, 1]},
+    ],
+)
+@pytest.mark.parametrize("tape_class", [qml.tape.QuantumTape, QuantumScript])
+def test_public_update(self, update_input, tape_class):
+    """Test the public update method behaves as expected"""
+
+    initial_args = [[qml.X("b"), qml.RX(1.2, "a")]]
+    initial_kwargs = {
+        "measurements": [qml.counts()],
+        "shots": 2500,
+        "trainable_params": [1],
+    }
+
+    tape = tape_class(*initial_args, **initial_kwargs)
+
+    new_tape = tape.update(**update_input)
+
+    # original tape is unmodified
+    assert tape.operations == initial_args[0]
+    for kwarg, val in initial_kwargs.items():
+        if kwarg == "shots":
+            val = Shots(val)
+        assert getattr(tape, kwarg) == val
+
+    if "operations" in update_input:
+        assert new_tape.operations == update_input["operations"]
+        del update_input["operations"]
+    else:
+        assert new_tape.operations == tape.operations
+
+    for kwarg, val in update_input.items():
+        if kwarg == "shots":
+            val = Shots(val)
+        assert getattr(new_tape, kwarg) == val
+        del initial_kwargs[kwarg]
+
+    for kwarg, val in initial_kwargs.items():
+        if kwarg == "shots":
+            val = Shots(val)
+        assert getattr(new_tape, kwarg) == getattr(tape, kwarg)

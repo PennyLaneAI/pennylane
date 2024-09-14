@@ -373,6 +373,58 @@ class QuantumScript:
 
     ##### Update METHODS ###############
 
+    def update(
+        self,
+        operations: Optional[Iterable[Operator]] = None,
+        measurements: Optional[Iterable[MeasurementProcess]] = None,
+        shots: Optional[ShotsLike] = None,
+        trainable_params: Optional[Sequence[int]] = None,
+    ):
+        """Update attirbutes on the tape.
+
+        Keyword Args:
+            operations (Iterable[Operator]): An iterable of the operations to replace on the tape.
+                Defaults to None.
+            measurements (Iterable[MeasurementProcess]): All the measurements to replace on the
+                tape. Defaults to None.
+            shots (None, int, Sequence[int], ~.Shots): Number and/or batches of shots to replace
+                on the tape. Defaults to None.
+            trainable_params (None, Sequence[int]): the indices for which parameters are trainable.
+                Defaults to None.
+
+        Returns: A new tape instance, initialized with any kwargs passed to update.
+            Anything not set in update will be the same as the initial tape.
+
+        Anything not set by update will retain the values on the original tape.
+
+        ** Example **
+
+        .. python::
+
+            tape = qml.tape.QuantumScript(
+                ops= [qml.X(0), qml.Y(1)],
+                measurements=[qml.expval(qml.Z(0)],
+                shots=2000)
+
+            new_tape = tape.update(measurements=[qml.expval(qml.X(1))])
+
+        >>> tape.measurements
+        [qml.expval(qml.Z(0)]
+
+        >>> new_tape.measurements
+        [qml.expval(qml.X(1))]
+
+        >>> new_tape.shots
+        2000
+        """
+
+        ops = operations or self.operations
+        measurements = measurements or self.measurements
+        shots = shots or self.shots
+        trainable_params = trainable_params or self.trainable_params
+
+        return self.__class__(ops, measurements, shots, trainable_params)
+
     def _update(self):
         """Update all internal metadata regarding processed operations and observables"""
         self._graph = None
