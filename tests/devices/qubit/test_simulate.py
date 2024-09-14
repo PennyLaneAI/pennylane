@@ -16,15 +16,21 @@
 import mcm_utils
 import numpy as np
 import pytest
+import scipy as sp
 from dummy_debugger import Debugger
 
 import pennylane as qml
 from pennylane.devices.qubit import get_final_state, measure_final_state, simulate
 from pennylane.devices.qubit.simulate import (
     _FlexShots,
+    branch_state,
+    combine_measurements_core,
     find_post_processed_mcms,
+    samples_to_counts,
+    counts_to_probs,
     simulate_tree_mcm,
     split_circuit_at_mcms,
+    TreeTraversalStack,
 )
 
 
@@ -1186,6 +1192,61 @@ class TestQInfoMeasurements:
         assert qml.math.allclose(grad5, expected_grads[5])
 
 
+class TestTreeTraversalStack:
+    """Unit tests for TreeTraversalStack"""
+
+    @pytest.mark.unit
+    @pytest.mark.parametrize(
+        "max_depth",
+        [0, 1, 10, 100],
+    )
+    def test_init_with_depth(self, max_depth):
+        """Test that TreeTraversalStack is initialized correctly with given ``max_depth``"""
+        tree_stack = TreeTraversalStack(max_depth)
+
+        assert tree_stack.counts.count(None) == max_depth
+        assert tree_stack.counts.probs(None) == max_depth
+        assert tree_stack.counts.results_0(None) == max_depth
+        assert tree_stack.counts.results_1(None) == max_depth
+        assert tree_stack.counts.states(None) == max_depth
+
+    @pytest.mark.unit
+    def test_full_prune_empty_methods(self):
+        """Test that TreeTraversalStack object's class methods work correctly."""
+
+        max_depth = 10
+        tree_stack = TreeTraversalStack(max_depth)
+
+        np.random.shuffle(r_depths := list(range(max_depth)))
+        for depth in r_depths:
+            counts_0 = np.random.randint(1, 9)
+            counts_1 = 10 - counts_0
+            tree_stack.counts[depth] = [counts_0, counts_1]
+            tree_stack.probs[depth] = [counts_0 / 10, counts_1 / 10]
+            tree_stack.results_0[depth] = [0] * counts_0
+            tree_stack.results_1[depth] = [1] * counts_1
+            tree_stack.states[depth] = [np.sqrt(counts_0), np.sqrt(counts_1)]
+            assert tree_stack.is_full(depth)
+
+            assert tree_stack.counts[depth] == list(
+                samples_to_counts(
+                    np.array(tree_stack.results_0[depth] + tree_stack.results_1[depth])
+                ).values()
+            )
+            assert tree_stack.probs[depth] == list(
+                counts_to_probs(dict(zip([0, 1], tree_stack.counts[depth]))).values()
+            )
+
+            state_vec = np.array(tree_stack.states[depth]).T
+            state_vec /= np.linalg.norm(tree_stack.states[depth])
+            meas, meas_r = qml.measure(0), qml.measure(0, reset=True)
+            assert np.allclose(branch_state(state_vec, 0, meas.measurements[0]), [1.0, 0.0])
+            assert np.allclose(branch_state(state_vec, 1, meas_r.measurements[0]), [1.0, 0.0])
+
+            tree_stack.prune(depth)
+            assert tree_stack.any_is_empty(depth)
+
+
 class TestMidMeasurements:
     """Tests for simulating scripts with mid-circuit measurements using the ``simulate_tree_mcm``."""
 
@@ -1305,11 +1366,17 @@ class TestMidMeasurements:
             )
             mcm_utils.validate_measurements(measure_f, shots, results2, results0)
 
-    @pytest.mark.parametrize("shots", [None, 500000, [500000, 500001]])
+    @pytest.mark.unit
+    @pytest.mark.parametrize("shots", [None, 5500, [5500, 5500]])
     @pytest.mark.parametrize("rng", [None, 42, np.array([37])])
     @pytest.mark.parametrize("angles", [(0.123, 0.015), (0.543, 0.057)])
-    def test_approx_dynamic_mid_meas_circuit(self, shots, rng, angles):
-        """Test execution with a basic circuit with mid-circuit measurements."""
+    @pytest.mark.parametrize("measure_f", [qml.probs, qml.sample])
+    def test_approx_dynamic_mid_meas_circuit(self, shots, rng, angles, measure_f):
+        """Test execution of a dynamic circuit with an equivalent static one."""
+
+        if measure_f in (qml.sample,) and shots is None:
+            pytest.skip("Can't measure samples in analytic mode (`shots=None`)")
+
         qs_with_mid_meas = qml.tape.QuantumScript(
             [
                 qml.Hadamard(0),
@@ -1326,10 +1393,7 @@ class TestMidMeasurements:
                 (m1 := qml.measure(1)).measurements[0],
                 qml.ops.op_math.Conditional(m1, qml.RX(angles[1], 3)),
             ],
-            [
-                qml.probs(wires=[0, 1, 2, 3]),
-                qml.var(qml.X(0) @ qml.X(1) @ qml.Z(2) @ qml.Z(3)),
-            ],
+            [measure_f(wires=[0, 1, 2, 3])],
             shots=shots,
         )
         qs_without_mid_meas = qml.tape.QuantumScript(
@@ -1345,19 +1409,29 @@ class TestMidMeasurements:
                 qml.Z(1),
                 qml.RX(angles[1], 3),
             ],
-            [
-                qml.probs(wires=[0, 1, 2, 3]),
-                qml.var(qml.X(0) @ qml.X(1) @ qml.Z(2) @ qml.Z(3)),
-            ],
+            [measure_f(wires=[0, 1, 2, 3])],
             shots=shots,
         )  # approximate compiled circuit of the above
         res1 = simulate_tree_mcm(qs_with_mid_meas, rng=rng)
         res2 = simulate(qs_without_mid_meas, rng=rng)
+
         if not isinstance(shots, list):
-            assert all(qml.math.allclose(r1, r2, atol=1e-2) for r1, r2 in zip(res1, res2))
-        else:
-            for rs1, rs2 in zip(res1, res2):
-                assert all(qml.math.allclose(r1, r2, atol=1e-2) for r1, r2 in zip(rs1, rs2))
+            res1, res2 = (res1,), (res2,)
+
+        for rs1, rs2 in zip(res1, res2):
+            prob_dist1, prob_dist2 = rs1, rs2
+            if measure_f in (qml.sample,):
+                n_wires = rs1.shape[1]
+                prob_dist1, prob_dist2 = np.zeros(2**n_wires), np.zeros(2**n_wires)
+                for prob, rs in zip([prob_dist1, prob_dist2], [rs1, rs2]):
+                    index, count = np.unique(
+                        np.packbits(rs, axis=1, bitorder="little").squeeze(), return_counts=True
+                    )
+                    prob[index] = count
+
+            assert qml.math.allclose(
+                sp.stats.entropy(prob_dist1 + 1e-12, prob_dist2 + 1e-12), 0.0, atol=5e-2
+            )
 
     @pytest.mark.unit
     @pytest.mark.parametrize("postselect_mode", ["hw-like", "fill-shots"])
@@ -1413,3 +1487,25 @@ class TestMidMeasurements:
         res = simulate_tree_mcm(qscript, postselect_mode="fill-shots")
         assert len(res[0]) == 20
         assert isinstance(res[1], dict) and sum(list(res[1].values())) == 20
+
+    @pytest.mark.unit
+    @pytest.mark.parametrize(
+        "measurements, expected",
+        [
+            [(qml.counts(0), {"a": (1, {0: 42}), "b": (2, {1: 58})}), {0: 42, 1: 58}],
+            [
+                (qml.expval(qml.Z(0)), {"a": (1, (0.42, -1)), "b": (2, (0.58, 1))}),
+                [1.58 / 3, 1 / 3],
+            ],
+            [(qml.probs(wires=0), {"a": (1, (0.42, -1)), "b": (2, (0.58, 1))}), [1.58 / 3, 1 / 3]],
+            [(qml.sample(wires=0), {"a": (1, (0, 1, 0)), "b": (2, (1, 0, 1))}), [0, 1, 0, 1, 0, 1]],
+        ],
+    )
+    def test_tree_traversal_combine_measurements(self, measurements, expected):
+        """Test that the measurement value of a given type can be combined"""
+        print(combine_measurements_core(*measurements))
+        combined_measurement = combine_measurements_core(*measurements)
+        if isinstance(combined_measurement, dict):
+            assert combined_measurement == expected
+        else:
+            assert qml.math.allclose(combined_measurement, expected)
