@@ -60,12 +60,10 @@ clean-docs:
 
 test:
 	$(PYTHON) $(TESTRUNNER)
-	$(PYTHON) $(PLUGIN_TESTRUNNER) --device=default.qubit.autograd
 
 coverage:
 	@echo "Generating coverage report..."
 	$(PYTHON) $(TESTRUNNER) $(COVERAGE)
-	$(PYTHON) $(PLUGIN_TESTRUNNER) --device=default.qubit.autograd $(COVERAGE) --cov-append
 
 .PHONY:format
 format:

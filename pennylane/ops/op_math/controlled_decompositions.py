@@ -55,7 +55,7 @@ def _convert_to_su2(U, return_global_phase=False):
     with np.errstate(divide="ignore", invalid="ignore"):
         dets = math.linalg.det(U)
 
-    global_phase = math.cast_like(math.angle(dets), 1j) / 2
+    global_phase = math.cast_like(math.angle(dets), 1.0) / 2
     U_SU2 = math.cast_like(U, dets) * math.exp(-1j * global_phase)
     return (U_SU2, global_phase) if return_global_phase else U_SU2
 

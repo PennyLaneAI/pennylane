@@ -36,6 +36,9 @@
   `from pennylane.capture.primitives import *`.
   [(#6129)](https://github.com/PennyLaneAI/pennylane/pull/6129)
 
+* `FermiWord` and `FermiSentence` classes now have methods to compute adjoints.
+  [(#6166)](https://github.com/PennyLaneAI/pennylane/pull/6166)
+
 * The `SampleMP.process_samples` method is updated to support using JAX tracers
   for samples, allowing compatiblity with Catalyst workflows.
   [(#6211)](https://github.com/PennyLaneAI/pennylane/pull/6211)
@@ -56,9 +59,12 @@
 * Remove support for Python 3.9.
   [(#6223)](https://github.com/PennyLaneAI/pennylane/pull/6223)
 
-* `DefaultQubitTF` and `DefaultQubitTorch` are removed. Please use `default.qubit` for all interfaces.
+* `DefaultQubitTF`, `DefaultQubitTorch`, `DefaultQubitJax`, and `DefaultQubitAutograd` are removed.
+  Please use `default.qubit` for all interfaces.
   [(#6207)](https://github.com/PennyLaneAI/pennylane/pull/6207)
   [(#6208)](https://github.com/PennyLaneAI/pennylane/pull/6208)
+  [(#6209)](https://github.com/PennyLaneAI/pennylane/pull/6209)
+  [(#6210)](https://github.com/PennyLaneAI/pennylane/pull/6210)
 
 * `expand_fn`, `max_expansion`, `override_shots`, and `device_batch_transform` are removed from the
   signature of `qml.execute`.
@@ -74,11 +80,26 @@
   Please use `qml.transforms.split_non_commuting` instead.
   [(#6204)](https://github.com/PennyLaneAI/pennylane/pull/6204)
 
+* `Operator.expand` is now removed. Use `qml.tape.QuantumScript(op.deocomposition())` instead.
+  [(#6227)](https://github.com/PennyLaneAI/pennylane/pull/6227)
+
+
 <h3>Deprecations 👋</h3>
+
+* `Device`, `QubitDevice`, and `QutritDevice` will no longer be accessible via top-level import in v0.40.
+  They will still be accessible as `qml.devices.LegacyDevice`, `qml.devices.QubitDevice`, and `qml.devices.QutritDevice`
+  respectively.
+  [(#6238)](https://github.com/PennyLaneAI/pennylane/pull/6238/)
+
+* `QNode.gradient_fn` is deprecated. Please use `QNode.diff_method` and `QNode.get_gradient_fn` instead.
+  [(#6244)](https://github.com/PennyLaneAI/pennylane/pull/6244)
 
 <h3>Documentation 📝</h3>
 
 <h3>Bug fixes 🐛</h3>
+
+* Fix a bug where zero-valued JVPs were calculated wrongly in the presence of shot vectors.
+  [(#6219)](https://github.com/PennyLaneAI/pennylane/pull/6219)
 
 * Fix `qml.PrepSelPrep` template to work with `torch`:
   [(#6191)](https://github.com/PennyLaneAI/pennylane/pull/6191)
@@ -91,6 +112,9 @@
   
 * The ``qml.Qubitization`` template now orders the ``control`` wires first and the ``hamiltonian`` wires second, which is the expected according to other templates.
   [(#6229)](https://github.com/PennyLaneAI/pennylane/pull/6229)
+
+* The ``qml.FABLE`` template now returns the correct value when JIT is enabled.
+  [(#6263)](https://github.com/PennyLaneAI/pennylane/pull/6263)
 
 * <h3>Contributors ✍️</h3>
 

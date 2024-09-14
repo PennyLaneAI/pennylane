@@ -713,10 +713,7 @@ class DefaultQubitLegacy(QubitDevice):
             supports_analytic_computation=True,
             supports_broadcasting=True,
             returns_state=True,
-            passthru_devices={
-                "autograd": "default.qubit.autograd",
-                "jax": "default.qubit.jax",
-            },
+            passthru_devices={},
         )
         return capabilities
 
