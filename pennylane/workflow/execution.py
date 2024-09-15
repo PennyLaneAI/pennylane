@@ -165,7 +165,7 @@ def _get_ml_boundary_execute(
             else:
                 from .interfaces.jax import jax_jvp_execute as ml_boundary
 
-    except ImportError as e:  # pragma: no-cover
+    except ImportError as e:  # pragma: no cover
         raise qml.QuantumFunctionError(
             f"{mapped_interface} not found. Please install the latest "
             f"version of {mapped_interface} to enable the '{mapped_interface}' interface."
