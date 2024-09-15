@@ -95,10 +95,10 @@ jobs:
             cat >matrix_max_parallel.json <<-EOF
           {
             "default": 1,
-            "core-tests": 9,
+            "core-tests": 5,
             "gradients-tests": 2,
             "jax-tests": 5,
-            "tf-tests": 2,
+            "tf-tests": 3,
             "device-tests": 2
           }
           EOF
@@ -106,7 +106,7 @@ jobs:
             cat >matrix_max_parallel.json <<-EOF
           {
             "default": 1,
-            "core-tests": 9,
+            "core-tests": 5,
             "jax-tests": 10,
             "tf-tests": 6,
             "torch-tests": 2,
@@ -152,16 +152,14 @@ jobs:
             fromJSON(needs.setup-ci-load.outputs.python-version).torch-tests
             || fromJSON(needs.setup-ci-load.outputs.python-version).default
            }}
-        numpy-2-install: [true, false]
     if: ${{ !contains(fromJSON(needs.setup-ci-load.outputs.jobs-to-skip), 'torch-tests') }}
     uses: ./.github/workflows/unit-test.yml
     with:
-      job_name: torch-tests (${{ matrix.python-version }}, numpy 2.0 ${{ matrix.numpy-2-install }})
+      job_name: torch-tests (${{ matrix.python-version }})
       branch: ${{ inputs.branch }}
-      coverage_artifact_name: core-interfaces-coverage-torch-${{ matrix.python-version }}-${{ matrix.numpy-2-install }}
+      coverage_artifact_name: core-interfaces-coverage-torch-${{ matrix.python-version }}
       python_version: ${{ matrix.python-version }}
       pipeline_mode: ${{ inputs.pipeline_mode }}
-      install_numpy_2: ${{ matrix.numpy-2-install }}
       install_jax: false
       install_tensorflow: false
       install_pytorch: true
@@ -187,16 +185,14 @@ jobs:
             fromJSON(needs.setup-ci-load.outputs.python-version).autograd-tests
             || fromJSON(needs.setup-ci-load.outputs.python-version).default
            }}
-        numpy-2-install: [true]    
     if: ${{ !contains(fromJSON(needs.setup-ci-load.outputs.jobs-to-skip), 'autograd-tests') }}
     uses: ./.github/workflows/unit-test.yml
     with:
-      job_name: autograd-tests (${{ matrix.python-version }}, numpy 2.0 ${{ matrix.numpy-2-install }})
+      job_name: autograd-tests (${{ matrix.python-version }})
       branch: ${{ inputs.branch }}
-      coverage_artifact_name: core-interfaces-coverage-autograd-${{ matrix.python-version }}-${{ matrix.numpy-2-install }}
+      coverage_artifact_name: core-interfaces-coverage-autograd-${{ matrix.python-version }}
       python_version: ${{ matrix.python-version }}
       pipeline_mode: ${{ inputs.pipeline_mode }}
-      install_numpy_2: ${{ matrix.numpy-2-install }}
       install_jax: false
       install_tensorflow: false
       install_pytorch: false
@@ -298,16 +294,14 @@ jobs:
             fromJSON(needs.setup-ci-load.outputs.python-version).core-tests
             || fromJSON(needs.setup-ci-load.outputs.python-version).default
            }}
-        numpy-2-install: [true, false]    
     if: ${{ !contains(fromJSON(needs.setup-ci-load.outputs.jobs-to-skip), 'core-tests') }}
     uses: ./.github/workflows/unit-test.yml
     with:
-      job_name: core-tests (${{ matrix.group }}, ${{ matrix.python-version }}, numpy 2.0 ${{ matrix.numpy-2-install }})
+      job_name: core-tests (${{ matrix.group }}, ${{ matrix.python-version }})
       branch: ${{ inputs.branch }}
-      coverage_artifact_name: core-interfaces-coverage-core-${{ matrix.python-version }}-${{ matrix.group }}-${{ matrix.numpy-2-install }}
+      coverage_artifact_name: core-interfaces-coverage-core-${{ matrix.python-version }}-${{ matrix.group }}
       python_version: ${{ matrix.python-version }}
       pipeline_mode: ${{ inputs.pipeline_mode }}
-      install_numpy_2: ${{ matrix.numpy-2-install }}
       install_jax: false
       install_tensorflow: false
       install_pytorch: false
@@ -508,16 +502,14 @@ jobs:
             fromJSON(needs.setup-ci-load.outputs.python-version).data-tests
             || fromJSON(needs.setup-ci-load.outputs.python-version).default
            }}
-        numpy-2-install: [true, false]
     if: ${{ !contains(fromJSON(needs.setup-ci-load.outputs.jobs-to-skip), 'data-tests') }}
     uses: ./.github/workflows/unit-test.yml
     with:
-      job_name: data-tests (${{ matrix.python-version }}, numpy 2.0 ${{ matrix.numpy-2-install }})
+      job_name: data-tests (${{ matrix.python-version }})
       branch: ${{ inputs.branch }}
-      coverage_artifact_name: data-coverage-${{ matrix.python-version }}-${{ matrix.numpy-2-install }}
+      coverage_artifact_name: data-coverage-${{ matrix.python-version }}
       python_version: ${{ matrix.python-version }}
       pipeline_mode: ${{ inputs.pipeline_mode }}
-      install_numpy_2: ${{ matrix.numpy-2-install }}
       install_jax: false
       install_tensorflow: false
       install_pytorch: false
