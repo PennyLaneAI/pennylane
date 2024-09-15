@@ -76,21 +76,6 @@ class DeviceDerivatives(DummyDevice):
         return capabilities
 
 
-def test_backprop_switching_deprecation():
-    """Test that a PennyLaneDeprecationWarning is raised when a device is subtituted
-    for a different backprop device.
-    """
-
-    with pytest.warns(qml.PennyLaneDeprecationWarning):
-
-        @qml.qnode(DummyDevice(shots=None), interface="autograd")
-        def circ(x):
-            qml.RX(x, 0)
-            return qml.expval(qml.Z(0))
-
-        circ(pnp.array(3))
-
-
 # pylint: disable=too-many-public-methods
 class TestValidation:
     """Tests for QNode creation and validation"""
@@ -828,7 +813,9 @@ class TestIntegration:
         """Test that the defer_measurements transform is not used during
         QNode construction if the device supports mid-circuit measurements."""
         dev = qml.device("default.qubit.legacy", wires=3)
-        mocker.patch.object(qml.Device, "_capabilities", {"supports_mid_measure": True})
+        mocker.patch.object(
+            qml.devices.LegacyDevice, "_capabilities", {"supports_mid_measure": True}
+        )
         spy = mocker.spy(qml.defer_measurements, "_transform")
 
         @qml.qnode(dev)

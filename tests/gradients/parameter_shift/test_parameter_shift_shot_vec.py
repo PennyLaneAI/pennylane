@@ -864,7 +864,6 @@ class TestParameterShiftRule:
             assert np.allclose(res[0], expval_expected[0], atol=finite_diff_tol)
             assert np.allclose(res[1], expval_expected[1], atol=finite_diff_tol)
 
-    @pytest.mark.autograd
     @pytest.mark.parametrize("RX, RY, argnum", [(RX_with_F, qml.RY, 0), (qml.RX, RY_with_F, 1)])
     def test_fallback_probs(
         self, RX, RY, argnum, mocker, broadcast
@@ -2229,8 +2228,7 @@ class TestHamiltonianExpvalGradients:
         tape = qml.tape.QuantumScript.from_queue(q, shots=dev.shots)
         tape.trainable_params = {0, 1, 2, 3, 4, 5}
         tapes, fn = qml.gradients.param_shift(tape, broadcast=broadcast)
-        execute_fn = dev.batch_execute if isinstance(dev, qml.Device) else dev.execute
-        return fn(execute_fn(tapes))
+        return fn(dev.execute(tapes))
 
     @staticmethod
     def cost_fn_expected(weights, coeffs1, coeffs2):
