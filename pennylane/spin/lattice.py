@@ -128,7 +128,7 @@ class Lattice:
         else:
             if neighbour_order > 1:
                 raise ValueError(
-                    "custom_edges and neighbour_order cannot be specified at the same time"
+                    "custom_edges and neighbour_order cannot be specified at the same time."
                 )
             self.edges = self._get_custom_edges(custom_edges, lattice_map)
 
