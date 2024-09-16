@@ -138,9 +138,12 @@ def _generate_params(params, args):
     Returns:
         list(array[float]): basis set parameters
     """
+    # Friendly reference for JAX.
+    # params order is ALPHA COEFF COORD
+    # args order is COORD COEFF ALPHA
     basis_params = []
     c = 0
-    for i, p in enumerate(params):  # [r, coeff, alpha]
+    for i, p in enumerate(params):
         if len(args) == 0:
             basis_params.append(p)
             continue
@@ -312,10 +315,11 @@ def overlap_integral(basis_a, basis_b, normalize=True):
         Returns:
             array[float]: the overlap integral between two contracted Gaussian orbitals
         """
-        args_a = [arg[0] for arg in args]  # in autograd: coeff, alpha, coord
-        args_b = [arg[1] for arg in args]  # in jax: alpha, coeff, coord
+        args_a = [arg[0] for arg in args]
+        args_b = [arg[1] for arg in args]
 
-        alpha, ca, ra = _generate_params(basis_a.params, args_a)  # cca
+        # Generate params returns params in alpha, coeff, coord order
+        alpha, ca, ra = _generate_params(basis_a.params, args_a)
         beta, cb, rb = _generate_params(basis_b.params, args_b)
 
         if (
@@ -526,7 +530,7 @@ def moment_integral(basis_a, basis_b, order, idx, normalize=True):
             or normalize
             or (
                 qml.math.get_interface(basis_a.params[1]) == "jax"
-                and qml.math.requires_grad(args[1])
+                and qml.math.requires_grad(args[1][0])
             )
         ):
             ca = ca * primitive_norm(basis_a.l, alpha)
@@ -704,7 +708,7 @@ def kinetic_integral(basis_a, basis_b, normalize=True):
             or normalize
             or (
                 qml.math.get_interface(basis_a.params[1]) == "jax"
-                and qml.math.requires_grad(args[1])
+                and qml.math.requires_grad(args[1][0])
             )
         ):
             ca = ca * primitive_norm(basis_a.l, alpha)
@@ -928,7 +932,7 @@ def attraction_integral(r, basis_a, basis_b, normalize=True):
             or normalize
             or (
                 qml.math.get_interface(basis_a.params[1]) == "jax"
-                and qml.math.requires_grad(args[1])
+                and qml.math.requires_grad(args[1][0])
             )
         ):
             ca = ca * primitive_norm(basis_a.l, alpha)
@@ -1083,7 +1087,7 @@ def repulsion_integral(basis_a, basis_b, basis_c, basis_d, normalize=True):
             or normalize
             or (
                 qml.math.get_interface(basis_a.params[1]) == "jax"
-                and qml.math.requires_grad(args[1])
+                and qml.math.requires_grad(args[1][0])
             )
         ):
             ca = ca * primitive_norm(basis_a.l, alpha)
