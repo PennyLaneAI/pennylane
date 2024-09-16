@@ -249,8 +249,8 @@ def _generate_lattice(lattice, n_cells, boundary_condition=False, neighbour_orde
     ]:
         raise ValueError(
             f"Lattice shape, '{lattice}' is not supported."
-            f"Please set lattice to: chain, square, rectangle, honeycomb, triangle, kagome, lieb,"
-            f"cubic, bcc or fcc."
+            f"Please set lattice to: 'chain', 'square', 'rectangle', 'honeycomb', 'triangle', 'kagome', 'lieb',"
+            f"'cubic', 'bcc' or 'fcc'."
         )
 
     lattice_dict = {
