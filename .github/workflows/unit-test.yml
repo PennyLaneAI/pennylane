@@ -244,4 +244,3 @@ jobs:
         with:
           name: ${{ steps.benchmark_name.outputs.benchmark_name }}-benchmarks
           path: ${{ github.workspace }}/benchmark_results
-          
