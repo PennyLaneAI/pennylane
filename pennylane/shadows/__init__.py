@@ -20,8 +20,8 @@ Measurements
 .. autosummary::
     :toctree: api
 
-    ~classical_shadow
-    ~shadow_expval
+    ~pennylane.classical_shadow
+    ~pennylane.shadow_expval
 
 Shadow class for classical post-processing
 ------------------------------------------
@@ -70,7 +70,7 @@ One can in principle also reconstruct the global state :math:`\sum_t \rho^{(t)}/
 Basic usage
 -----------
 
-The easiest way of computing expectation values with classical shadows in PennyLane is to return :func:`shadow_expval` directly from the qnode.
+The easiest way of computing expectation values with classical shadows in PennyLane is to return :func:`~pennylane.shadow_expval` directly from the qnode.
 
 .. code-block:: python3
 

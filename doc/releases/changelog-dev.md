@@ -87,6 +87,10 @@
 
 <h3>Deprecations 👋</h3>
 
+* `qml.shadows.shadow_expval` has been deprecated. Instead, users should use the `qml.shadow_expval` measurement
+  process in their circuits.
+  [(#)]()
+
 * `qml.broadcast` has been deprecated. Users should use for loops instead.
   [(#)]()
 

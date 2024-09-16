@@ -9,7 +9,13 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
-* :func:`~pennylane.broadcast` has been deprecated. Users should use for loops instead.
+* The ``qml.shadows.shadow_expval`` transform has been deprecated. Instead, please use the
+  ``qml.shadow_expval`` measurement process.
+
+  - Deprecated in v0.39
+  - Will be removed in v0.40
+
+* ``qml.broadcast`` has been deprecated. Users should use for loops instead.
 
   - Deprecated in v0.39
   - Will be removed in v0.40
@@ -21,7 +27,7 @@ Pending deprecations
   - Deprecated top level access in v0.39
   - Top level access removed in v0.40
 
-* `QNode.gradient_fn` is deprecated. Please use `QNode.diff_method` instead. `QNode.get_gradient_fn` can also be used to
+* ``QNode.gradient_fn`` is deprecated. Please use ``QNode.diff_method`` instead. ``QNode.get_gradient_fn`` can also be used to
   process the diff method.
 
   - Deprecated in v0.39
