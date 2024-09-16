@@ -507,7 +507,9 @@ def list_attributes(data_name):
 
 def _interactive_request_data_name(data_names):
     """Prompt the user to select a data name."""
-    print(f"Please select the data name from the following {data_names}")
+    print("Please select the data name from the following:")
+    for i, option in enumerate(data_names):
+        print(f"{i + 1}: {option}")
     choice = input("Choice of data name: ")
     if choice not in data_names:
         raise ValueError(f"Must select a single data name from {data_names}")
@@ -530,10 +532,12 @@ def _interactive_request_attributes(attribute_options):
 
 
 def _interactive_requests(parameters, parameter_tree):
+    """Prompts the user to select parameters for datasets one at a time."""
+
     branch = parameter_tree
     choices = []
     for param in parameters:
-        print(f"Avaliable options for {param}:")
+        print(f"Available options for {param}:")
         for i, option in enumerate(branch["next"].keys()):
             print(f"{i + 1}: {option}")
         user_value = input(f"Please select a {param}:")
@@ -605,9 +609,10 @@ def load_interactive():
     .. code-block :: pycon
 
         >>> qml.data.load_interactive()
-        Please select a data name:
-            1) qspin
-            2) qchem
+        Please select the data name from the following:
+            1: qspin
+            2: qchem
+            3: other
         Choice [1-2]: 1
         Please select a sysname:
             ...
@@ -628,13 +633,13 @@ def load_interactive():
         force: False
         dest folder: /Users/jovyan/Downloads/datasets
         Would you like to continue? (Default is yes) [Y/n]:
-        <Dataset = description: qspin/Ising/open/rectangular/4x4, attributes: ['parameters', 'ground_states']>
     """
 
     data_names = _get_data_names()
     data_name = _interactive_request_data_name(data_names)
 
     parameters, attribute_options, parameter_tree = _get_parameter_tree(data_name)
+
     dataset_id = _interactive_requests(parameters, parameter_tree)
     attributes = _interactive_request_attributes(attribute_options)
     force = input("Force download files? (Default is no) [y/N]: ") in ["y", "Y"]
