@@ -1214,7 +1214,7 @@ class TestReadoutError:
             )
 
         res = circuit()
-        expected = np.array([0, 0, 0])
+        expected = np.array([0, 0])
         assert np.allclose(res, expected)
 
     @pytest.mark.parametrize("nr_wires", [2, 3])
