@@ -9,6 +9,7 @@
 * PennyLane is now compatible with NumPy 2.0.
   [(#6061)](https://github.com/PennyLaneAI/pennylane/pull/6061)
   [(#6258)](https://github.com/PennyLaneAI/pennylane/pull/6258)
+  [(#6255)](https://github.com/PennyLaneAI/pennylane/pull/6255)
 
 * `qml.qchem.excitations` now optionally returns fermionic operators.
   [(#6171)](https://github.com/PennyLaneAI/pennylane/pull/6171)
