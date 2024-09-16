@@ -6,6 +6,9 @@
  
 <h3>Improvements 🛠</h3>
 
+* PennyLane is now compatible with NumPy 2.0.
+   [(#6061)](https://github.com/PennyLaneAI/pennylane/pull/6061)
+
 * `qml.qchem.excitations` now optionally returns fermionic operators.
    [(#6171)](https://github.com/PennyLaneAI/pennylane/pull/6171)
 
@@ -133,6 +136,8 @@ Guillermo Alonso,
 Utkarsh Azad,
 Isaac De Vlugt,
 Lillian M. A. Frederiksen,
+Pietropaolo Frisoni,
+Emiliano Godinez,
 Christina Lee,
 William Maxwell,
 Lee J. O'Riordan,
