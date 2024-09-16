@@ -419,7 +419,6 @@ def test_add_edge():
     lattice.add_edge(edge_indices)
     lattice.add_edge([[0, 2, 1]])
     assert np.all(np.isin(edge_indices, lattice.edges))
-    print(lattice.edges)
     assert np.all(np.isin([0, 2, 1], lattice.edges))
 
 
@@ -764,3 +763,180 @@ def test_shape_error():
     lattice = "Octagon"
     with pytest.raises(ValueError, match="Lattice shape, 'Octagon' is not supported."):
         _generate_lattice(lattice=lattice, n_cells=n_cells)
+
+
+@pytest.mark.parametrize(
+    ("shape", "n_cells", "expected_number"),
+    # expected_number here was obtained manually.
+    [
+        ("fcc", [2, 2, 2], 32),
+        ("bcc", [2, 2, 2], 16),
+        ("kagome", [2, 2], 12),
+        ("lieb", [3, 3], 27),
+    ],
+)
+def test_num_sites_lattice_templates(shape, n_cells, expected_number):
+    r"""Test that the correct number of lattice points are generated for the given attributes"""
+    lattice = _generate_lattice(lattice=shape, n_cells=n_cells)
+    assert lattice.n_sites == expected_number
+
+
+@pytest.mark.parametrize(
+    # expected_points here were calculated manually.
+    ("shape", "n_cells", "expected_points"),
+    [
+        (
+            "kagome",
+            [2, 2],
+            [
+                [0, 0],
+                [-0.25, 0.4330127],
+                [0.25, 0.4330127],
+                [0.5, 0.8660254],
+                [0.25, 1.29903811],
+                [0.75, 1.29903811],
+                [1.0, 0.0],
+                [0.75, 0.4330127],
+                [1.25, 0.4330127],
+                [1.5, 0.8660254],
+                [1.25, 1.29903811],
+                [1.75, 1.29903811],
+            ],
+        ),
+        (
+            "lieb",
+            [3, 3],
+            [
+                [0, 0],
+                [0.5, 0],
+                [0, 0.5],
+                [1, 0],
+                [1.5, 0],
+                [1, 0.5],
+                [2, 0],
+                [2.5, 0],
+                [2, 0.5],
+                [0, 1],
+                [0.5, 1],
+                [0, 1.5],
+                [1, 1],
+                [1.5, 1],
+                [1, 1.5],
+                [2, 1],
+                [2.5, 1],
+                [2, 1.5],
+                [0, 2],
+                [0.5, 2],
+                [0, 2.5],
+                [1, 2],
+                [1.5, 2],
+                [1, 2.5],
+                [2, 2],
+                [2.5, 2],
+                [2, 2.5],
+            ],
+        ),
+        (
+            "fcc",
+            [2, 2, 2],
+            [
+                [0, 0, 0],
+                [0.5, 0.5, 0],
+                [0.5, 0, 0.5],
+                [0, 0.5, 0.5],
+                [0, 0, 1],
+                [0.5, 0.5, 1],
+                [0.5, 0, 1.5],
+                [0, 0.5, 1.5],
+                [0, 1, 0],
+                [0.5, 1.5, 0],
+                [0.5, 1, 0.5],
+                [0, 1.5, 0.5],
+                [0, 1, 1],
+                [0.5, 1.5, 1],
+                [0.5, 1, 1.5],
+                [0, 1.5, 1.5],
+                [1, 0, 0],
+                [1.5, 0.5, 0],
+                [1.5, 0, 0.5],
+                [1, 0.5, 0.5],
+                [1, 0, 1],
+                [1.5, 0.5, 1],
+                [1.5, 0, 1.5],
+                [1, 0.5, 1.5],
+                [1, 1, 0],
+                [1.5, 1.5, 0],
+                [1.5, 1, 0.5],
+                [1, 1.5, 0.5],
+                [1, 1, 1],
+                [1.5, 1.5, 1],
+                [1.5, 1, 1.5],
+                [1, 1.5, 1.5],
+            ],
+        ),
+        (
+            "bcc",
+            [2, 2, 2],
+            [
+                [
+                    0,
+                    0,
+                    0,
+                ],
+                [0.5, 0.5, 0.5],
+                [0, 0, 1],
+                [0.5, 0.5, 1.5],
+                [0, 1, 0],
+                [0.5, 1.5, 0.5],
+                [0, 1, 1],
+                [0.5, 1.5, 1.5],
+                [1, 0, 0],
+                [1.5, 0.5, 0.5],
+                [1, 0, 1],
+                [1.5, 0.5, 1.5],
+                [1, 1, 0],
+                [1.5, 1.5, 0.5],
+                [1, 1, 1],
+                [1.5, 1.5, 1.5],
+            ],
+        ),
+        (
+            "cubic",
+            [3, 3, 3],
+            [
+                [0, 0, 0],
+                [0, 0, 1],
+                [0, 0, 2],
+                [0, 1, 0],
+                [0, 1, 1],
+                [0, 1, 2],
+                [0, 2, 0],
+                [0, 2, 1],
+                [0, 2, 2],
+                [1, 0, 0],
+                [1, 0, 1],
+                [1, 0, 2],
+                [1, 1, 0],
+                [1, 1, 1],
+                [1, 1, 2],
+                [1, 2, 0],
+                [1, 2, 1],
+                [1, 2, 2],
+                [2, 0, 0],
+                [2, 0, 1],
+                [2, 0, 2],
+                [2, 1, 0],
+                [2, 1, 1],
+                [2, 1, 2],
+                [2, 2, 0],
+                [2, 2, 1],
+                [2, 2, 2],
+            ],
+        ),
+    ],
+)
+def test_lattice_points_templates(shape, n_cells, expected_points):
+    r"""Test that the correct lattice points are generated for a given template."""
+
+    lattice = _generate_lattice(lattice=shape, n_cells=n_cells)
+    assert np.allclose(expected_points, lattice.lattice_points)
