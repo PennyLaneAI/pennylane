@@ -65,7 +65,7 @@ def vn_entropy(wires, log_base=None) -> "VnEntropyMP":
         using the classical backpropagation differentiation method (``diff_method="backprop"``)
         with a compatible device and finite differences (``diff_method="finite-diff"``).
 
-    .. seealso:: :func:`pennylane.qinfo.transforms.vn_entropy` and :func:`pennylane.math.vn_entropy`
+    .. seealso:: :func:`pennylane.math.vn_entropy`
     """
     wires = Wires(wires)
     return VnEntropyMP(wires=wires, log_base=log_base)

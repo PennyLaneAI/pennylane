@@ -87,7 +87,8 @@
 
 <h3>Deprecations 👋</h3>
 
-* The `qml.qinfo` module has been deprecated.
+* The `qml.qinfo` module has been deprecated. Please see the respective functions in the `qml.math` and
+  `qml.measurements` modules instead.
   [(#5911)](https://github.com/PennyLaneAI/pennylane/pull/5911)
 
 * `QNode.gradient_fn` is deprecated. Please use `QNode.diff_method` and `QNode.get_gradient_fn` instead.

@@ -9,7 +9,8 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
-* The ``qml.qinfo`` module has been deprecated.
+* The ``qml.qinfo`` module has been deprecated. Please see the respective functions in the ``qml.math`` and ``qml.measurements``
+  modules instead.
 
   - Deprecated in v0.39
   - Will be removed in v0.40
