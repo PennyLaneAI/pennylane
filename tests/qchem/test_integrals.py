@@ -873,6 +873,7 @@ class TestRepulsion:
                 )
                 g_ref_coeff[i][j] = (e_plus - e_minus) / (2 * delta)
 
+        print(g_alpha)
         assert np.allclose(g_alpha, g_ref_alpha)
         assert np.allclose(g_coeff, g_ref_coeff)
 
@@ -1004,7 +1005,7 @@ class TestJax:
                 [[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]],
                 [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
                 [[0.15432897, 0.53532814, 0.44463454], [0.15432897, 0.53532814, 0.44463454]],
-            ),
+            )
         ],
     )
     def test_gradient_attraction_jax(self, symbols, geometry, alpha, coeff):
@@ -1096,3 +1097,79 @@ class TestJax:
         a = qchem.repulsion_integral(basis_a, basis_b, basis_a, basis_b)(*args)
 
         assert np.allclose(a, e_ref)
+
+    @pytest.mark.parametrize(
+        ("symbols", "geometry", "alpha", "coeff"),
+        [
+            (
+                ["H", "H"],
+                [[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]],
+                [
+                    [3.42525091, 0.62391373, 0.1688554],
+                    [3.42525091, 0.62391373, 0.1688554],
+                    [3.42525091, 0.62391373, 0.1688554],
+                    [3.42525091, 0.62391373, 0.1688554],
+                ],
+                [
+                    [0.15432897, 0.53532814, 0.44463454],
+                    [0.15432897, 0.53532814, 0.44463454],
+                    [0.15432897, 0.53532814, 0.44463454],
+                    [0.15432897, 0.53532814, 0.44463454],
+                ],
+            ),
+        ],
+    )
+    def test_gradient_repulsion_jax(self, symbols, geometry, alpha, coeff):
+        r"""Test that the repulsion gradient computed with respect to the basis parameters is
+        correct with jax."""
+        import jax
+        jax.config.update("jax_enable_x64", True)
+        geometry = create_jax_like_array(geometry)
+        alpha = create_jax_like_array(alpha)
+        coeff = create_jax_like_array(coeff)
+        mol = qchem.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
+        basis_a = mol.basis_set[0]
+        basis_b = mol.basis_set[1]
+        args = [geometry, coeff, alpha]
+
+        g_alpha = jax.grad(
+            qchem.repulsion_integral(basis_a, basis_b, basis_a, basis_b), argnums=[2]
+        )(*args)
+        g_coeff = jax.grad(
+            qchem.repulsion_integral(basis_a, basis_b, basis_a, basis_b), argnums=[1]
+        )(*args)
+
+        # compute repulsion gradients with respect to alpha and coeff using finite diff
+        delta = 0.0001
+        g_ref_alpha = jax.numpy.zeros(12).reshape(alpha.shape)
+        g_ref_coeff = jax.numpy.zeros(12).reshape(coeff.shape)
+
+        for i in range(len(alpha)):
+            for j in range(len(alpha[0])):
+                alpha_minus = alpha.copy()
+                alpha_plus = alpha.copy()
+                alpha_minus = alpha_minus.at[i, j].set(alpha_minus[i, j] - delta)
+                alpha_plus = alpha_plus.at[i, j].set(alpha_plus[i, j] + delta)
+                print(alpha_minus, alpha_plus)
+                e_minus = qchem.repulsion_integral(basis_a, basis_b, basis_a, basis_b)(
+                    *[geometry, coeff, alpha_minus]
+                )
+                e_plus = qchem.repulsion_integral(basis_a, basis_b, basis_a, basis_b)(
+                    *[geometry, coeff, alpha_plus]
+                )
+                g_ref_alpha = g_ref_alpha.at[i, j].set((e_plus - e_minus) / (2 * delta))
+
+                coeff_minus = coeff.copy()
+                coeff_plus = coeff.copy()
+                coeff_minus = coeff_minus.at[i, j].set(coeff_minus[i, j] - delta)
+                coeff_plus = coeff_plus.at[i, j].set(coeff_plus[i, j] + delta)
+                e_minus = qchem.repulsion_integral(basis_a, basis_b, basis_a, basis_b)(
+                    *[geometry, coeff_minus, alpha]
+                )
+                e_plus = qchem.repulsion_integral(basis_a, basis_b, basis_a, basis_b)(
+                    *[geometry, coeff_plus, alpha]
+                )
+                g_ref_coeff = g_ref_coeff.at[i, j].set((e_plus - e_minus) / (2 * delta))
+                
+        assert np.allclose(g_alpha, g_ref_alpha)
+        assert np.allclose(g_coeff, g_ref_coeff)

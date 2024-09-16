@@ -149,14 +149,18 @@ def _generate_params(params, args):
             continue
 
         interface = qml.math.get_interface(p)
-
-        if (interface == "autograd" and getattr(p, "requires_grad", False)) or (
-            interface != "autograd" and qml.math.requires_grad(args[2 - i])
-        ):
-            basis_params.append(args[c])
-            c += 1
+        if interface == "autograd":
+            if getattr(p, "requires_grad", False):
+                basis_params.append(args[c])
+                c += 1
+            else:
+                basis_params.append(p)
         else:
-            basis_params.append(p)
+            if qml.math.requires_grad(args[2-i]):
+                basis_params.append(args[2-i])
+            else:
+                basis_params.append(p)
+
     return basis_params
 
 
