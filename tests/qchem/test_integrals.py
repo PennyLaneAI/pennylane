@@ -1007,9 +1007,9 @@ class TestJax:
             ),
         ],
     )
-    def test_gradient_attraction(self, symbols, geometry, alpha, coeff):
+    def test_gradient_attraction_jax(self, symbols, geometry, alpha, coeff):
         r"""Test that the attraction gradient computed with respect to the basis parameters is
-        correct."""
+        correct for jax."""
         import jax
 
         geometry = create_jax_like_array(geometry)
