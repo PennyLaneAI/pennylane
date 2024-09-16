@@ -92,7 +92,7 @@ def httpserver_listen_address():
 
 # pylint:disable=unused-argument
 def get_mock(url, json, timeout=1.0):
-    """Return mocked error message."""
+    """Return mocked get response depending on json content."""
     resp = MagicMock(ok=True)
     if "ErrorQuery" in json["query"]:
         resp.json.return_value = _error_response
@@ -103,7 +103,7 @@ def get_mock(url, json, timeout=1.0):
 
 # pylint:disable=unused-argument
 def graphql_mock(url, query, variables=None):
-    """Return the JSON according to the query"""
+    """Return the JSON according to the query."""
     if "ListAttributes" in query:
         json_data = _list_attrs_resp
     elif "ListDatasets" in query:
