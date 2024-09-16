@@ -12,8 +12,8 @@ Pending deprecations
 * The ``qml.qinfo`` module has been deprecated. Please see the respective functions in the ``qml.math`` and ``qml.measurements``
   modules instead.
 
-  - Deprecated top level access in v0.39
-  - Top level access removed in v0.40
+  - Deprecated in v0.39
+  - Will be removed in v0.40
 
 * ``Device``, ``QubitDevice``, and ``QutritDevice`` will no longer be imported top level in v0.40.  They instead
   we be available as ``qml.devices.LegacyDevice``, ``qml.devices.QubitDevice``, and ``qml.devices.QutritDevice``
