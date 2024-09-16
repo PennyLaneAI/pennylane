@@ -120,9 +120,7 @@ class Lattice:
         self.n_sites = math.prod(n_cells) * n_sl
         self.lattice_points, lattice_map = self._generate_grid(neighbour_order)
         if custom_edges is None:
-            cutoff = (
-                neighbour_order * math.max(math.linalg.norm(self.vectors, axis=1)) + distance_tol
-            )
+            cutoff = neighbour_order * math.max(math.linalg.norm(self.vectors, axis=1)) + distance_tol
             edges = self._identify_neighbours(cutoff)
             self.edges = Lattice._generate_true_edges(edges, lattice_map, neighbour_order)
         else:
