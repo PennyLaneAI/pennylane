@@ -591,7 +591,7 @@ class TestInvalidStateSamples:
         mp = qml.expval(qml.PauliZ(0))
         _shots = Shots(shots)
 
-        with pytest.raises(ValueError, match="probabilities do not sum to 1"):
+        with pytest.raises(ValueError, match=r"(?i)probabilities do not sum to 1"):
             _ = measure_with_samples([mp], state, _shots)
 
     @pytest.mark.all_interfaces
@@ -619,7 +619,7 @@ class TestInvalidStateSamples:
     def test_nan_float_result(self, mp, interface, shots):
         """Test that the result of circuits with 0 probability postselections is NaN with the
         expected shape."""
-        state = qml.math.full((2, 2), np.NaN, like=interface)
+        state = qml.math.full((2, 2), np.nan, like=interface)
         res = measure_with_samples((mp,), state, _FlexShots(shots), is_state_batched=False)
 
         if not isinstance(shots, list):
@@ -646,7 +646,7 @@ class TestInvalidStateSamples:
     def test_nan_samples(self, mp, interface, shots):
         """Test that the result of circuits with 0 probability postselections is NaN with the
         expected shape."""
-        state = qml.math.full((2, 2), np.NaN, like=interface)
+        state = qml.math.full((2, 2), np.nan, like=interface)
         res = measure_with_samples((mp,), state, _FlexShots(shots), is_state_batched=False)
 
         if not isinstance(shots, list):
@@ -672,7 +672,7 @@ class TestInvalidStateSamples:
     def test_nan_classical_shadows(self, interface, shots):
         """Test that classical_shadows returns an empty array when the state has
         NaN values"""
-        state = qml.math.full((2, 2), np.NaN, like=interface)
+        state = qml.math.full((2, 2), np.nan, like=interface)
         res = measure_with_samples(
             (qml.classical_shadow([0]),), state, _FlexShots(shots), is_state_batched=False
         )
@@ -699,7 +699,7 @@ class TestInvalidStateSamples:
     def test_nan_shadow_expval(self, H, interface, shots):
         """Test that shadow_expval returns an empty array when the state has
         NaN values"""
-        state = qml.math.full((2, 2), np.NaN, like=interface)
+        state = qml.math.full((2, 2), np.nan, like=interface)
         res = measure_with_samples(
             (qml.shadow_expval(H),), state, _FlexShots(shots), is_state_batched=False
         )
@@ -757,7 +757,7 @@ class TestRenormalization:
         """Test that renormalization does not occur if the error is too large."""
 
         state = qml.math.array(two_qubit_state_not_normalized, like=interface)
-        with pytest.raises(ValueError, match="probabilities do not sum to 1"):
+        with pytest.raises(ValueError, match=r"(?i)probabilities do not sum to 1"):
             _ = sample_state(state, 10)
 
     @pytest.mark.all_interfaces
@@ -775,7 +775,7 @@ class TestRenormalization:
         """Test that renormalization does not occur if the error is too large."""
 
         state = qml.math.array(batched_state_not_normalized, like=interface)
-        with pytest.raises(ValueError, match="probabilities do not sum to 1"):
+        with pytest.raises(ValueError, match=r"(?i)probabilities do not sum to 1"):
             _ = sample_state(state, 10, is_state_batched=True)
 
 
