@@ -42,7 +42,7 @@ class Lattice:
        custom_edges (Optional[list(list(tuples))]): Specifies the edges to be added in the lattice.
            Default value is None, which adds the edges based on neighbour_order.
            Each element in the list is for a separate edge, and can contain 1 or 2 tuples.
-           First tuple contains the index of the starting and ending vertex of the edge.
+           First tuple contains the indices of the starting and ending vertices of the edge.
            Second tuple is optional and contains the operator on that edge and coefficient
            of that operator.
        distance_tol (float): Distance below which spatial points are considered equal for the
