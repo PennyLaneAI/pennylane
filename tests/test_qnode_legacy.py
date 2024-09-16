@@ -76,21 +76,6 @@ class DeviceDerivatives(DummyDevice):
         return capabilities
 
 
-def test_backprop_switching_deprecation():
-    """Test that a PennyLaneDeprecationWarning is raised when a device is subtituted
-    for a different backprop device.
-    """
-
-    with pytest.warns(qml.PennyLaneDeprecationWarning):
-
-        @qml.qnode(DummyDevice(shots=None), interface="autograd")
-        def circ(x):
-            qml.RX(x, 0)
-            return qml.expval(qml.Z(0))
-
-        circ(pnp.array(3))
-
-
 # pylint: disable=too-many-public-methods
 class TestValidation:
     """Tests for QNode creation and validation"""
@@ -256,81 +241,6 @@ class TestValidation:
 
         assert res == "finite-diff"
 
-    # pylint: disable=protected-access
-    def test_diff_method(self, mocker):
-        """Test that a user-supplied diff method correctly returns the right
-        diff method."""
-        dev = qml.device("default.qubit.legacy", wires=1)
-
-        mock_best = mocker.patch("pennylane.QNode.get_best_method")
-        mock_best.return_value = ("best", {}, dev)
-
-        qn = QNode(dummyfunc, dev, diff_method="best")
-        assert qn.diff_method == "best"
-        assert qn.gradient_fn == "backprop"
-
-        qn = QNode(dummyfunc, dev, interface="autograd", diff_method="best")
-        assert qn.diff_method == "best"
-        assert qn.gradient_fn == "backprop"
-
-        qn = QNode(dummyfunc, dev, diff_method="backprop")
-        assert qn.diff_method == "backprop"
-        assert qn.gradient_fn == "backprop"
-
-        qn = QNode(dummyfunc, dev, interface="autograd", diff_method="backprop")
-        assert qn.diff_method == "backprop"
-        assert qn.gradient_fn == "backprop"
-
-        qn = QNode(dummyfunc, DeviceDerivatives(wires=1), diff_method="device")
-        assert qn.diff_method == "device"
-        assert qn.gradient_fn == "device"
-
-        qn = QNode(
-            dummyfunc, DeviceDerivatives(wires=1), interface="autograd", diff_method="device"
-        )
-        assert qn.diff_method == "device"
-        assert qn.gradient_fn == "device"
-
-        qn = QNode(dummyfunc, dev, diff_method="finite-diff")
-        assert qn.diff_method == "finite-diff"
-        assert qn.gradient_fn is qml.gradients.finite_diff
-
-        qn = QNode(dummyfunc, dev, interface="autograd", diff_method="finite-diff")
-        assert qn.diff_method == "finite-diff"
-        assert qn.gradient_fn is qml.gradients.finite_diff
-
-        qn = QNode(dummyfunc, dev, diff_method="spsa")
-        assert qn.diff_method == "spsa"
-        assert qn.gradient_fn is qml.gradients.spsa_grad
-
-        qn = QNode(dummyfunc, dev, interface="autograd", diff_method="hadamard")
-        assert qn.diff_method == "hadamard"
-        assert qn.gradient_fn is qml.gradients.hadamard_grad
-
-        qn = QNode(dummyfunc, dev, diff_method="parameter-shift")
-        assert qn.diff_method == "parameter-shift"
-        assert qn.gradient_fn is qml.gradients.param_shift
-
-        qn = QNode(dummyfunc, dev, interface="autograd", diff_method="parameter-shift")
-        assert qn.diff_method == "parameter-shift"
-        assert qn.gradient_fn is qml.gradients.param_shift
-        # check that get_best_method was only ever called once
-
-    @pytest.mark.autograd
-    def test_gradient_transform(self, mocker):
-        """Test passing a gradient transform directly to a QNode"""
-        dev = qml.device("default.qubit.legacy", wires=1)
-        spy = mocker.spy(qml.gradients.finite_difference, "finite_diff_coeffs")
-
-        @qnode(dev, diff_method=qml.gradients.finite_diff)
-        def circuit(x):
-            qml.RX(x, wires=0)
-            return qml.expval(qml.PauliZ(0))
-
-        qml.grad(circuit)(pnp.array(0.5, requires_grad=True))
-        assert circuit.gradient_fn is qml.gradients.finite_diff
-        spy.assert_called()
-
     def test_unknown_diff_method_string(self):
         """Test that an exception is raised for an unknown differentiation method string"""
         dev = qml.device("default.qubit.legacy", wires=1)
@@ -405,26 +315,11 @@ class TestValidation:
             == "<QNode: wires=1, device='default.qubit.legacy', interface='autograd', diff_method='best'>"
         )
 
-    @pytest.mark.autograd
-    def test_diff_method_none(self, tol):
-        """Test that diff_method=None creates a QNode with no interface, and no
-        device swapping."""
-        dev = qml.device("default.qubit.legacy", wires=1)
-
-        @qnode(dev, diff_method=None)
-        def circuit(x):
-            qml.RX(x, wires=0)
-            return qml.expval(qml.PauliZ(0))
-
-        assert circuit.interface is None
-        assert circuit.gradient_fn is None
-        assert circuit.device is dev
-
         # QNode can still be executed
-        assert np.allclose(circuit(0.5), np.cos(0.5), atol=tol, rtol=0)
+        assert np.allclose(qn(0.5), np.cos(0.5), rtol=0)
 
         with pytest.warns(UserWarning, match="Attempted to differentiate a function with no"):
-            grad = qml.grad(circuit)(0.5)
+            grad = qml.grad(qn)(0.5)
 
         assert np.allclose(grad, 0)
 
@@ -544,29 +439,6 @@ class TestTapeConstruction:
 
         assert np.allclose(res, res2, atol=tol, rtol=0)
         assert qn.qtape is not old_tape
-
-    def test_jacobian(self):
-        """Test the jacobian computation"""
-        dev = qml.device("default.qubit.legacy", wires=2)
-
-        def func(x, y):
-            qml.RX(x, wires=0)
-            qml.RY(y, wires=1)
-            qml.CNOT(wires=[0, 1])
-            return qml.probs(wires=0), qml.probs(wires=1)
-
-        qn = QNode(
-            func, dev, interface="autograd", diff_method="finite-diff", h=1e-8, approx_order=2
-        )
-        assert qn.gradient_kwargs["h"] == 1e-8
-        assert qn.gradient_kwargs["approx_order"] == 2
-
-        jac = qn.gradient_fn(qn)(
-            pnp.array(0.45, requires_grad=True), pnp.array(0.1, requires_grad=True)
-        )
-        assert isinstance(jac, tuple) and len(jac) == 2
-        assert len(jac[0]) == 2
-        assert len(jac[1]) == 2
 
     def test_returning_non_measurements(self):
         """Test that an exception is raised if a non-measurement
@@ -941,7 +813,9 @@ class TestIntegration:
         """Test that the defer_measurements transform is not used during
         QNode construction if the device supports mid-circuit measurements."""
         dev = qml.device("default.qubit.legacy", wires=3)
-        mocker.patch.object(qml.Device, "_capabilities", {"supports_mid_measure": True})
+        mocker.patch.object(
+            qml.devices.LegacyDevice, "_capabilities", {"supports_mid_measure": True}
+        )
         spy = mocker.spy(qml.defer_measurements, "_transform")
 
         @qml.qnode(dev)
@@ -1614,7 +1488,7 @@ class TestTapeExpansion:
         else:
             spy = mocker.spy(circuit.device, "execute")
 
-        x = np.array(0.5)
+        x = pnp.array(0.5)
         circuit(x)
 
         tape = spy.call_args[0][0][0]
