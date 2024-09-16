@@ -239,7 +239,7 @@ def nuclear_energy(charges, r):
         for i, r1 in enumerate(coor):
             for j, r2 in enumerate(coor[i + 1 :]):
                 e = e + (charges[i] * charges[i + j + 1] / qml.math.linalg.norm(r1 - r2))
-        return e
+        return e[0]
 
     return _nuclear_energy
 

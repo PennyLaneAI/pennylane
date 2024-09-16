@@ -329,3 +329,59 @@ class TestJax:
         args = [mol.coordinates]
         e = qchem.nuclear_energy(mol.nuclear_charges, mol.coordinates)(*args)
         assert np.allclose(e, e_ref)
+
+    @pytest.mark.parametrize(
+        ("symbols", "geometry", "g_ref"),
+        [
+            # gradient = d(q_i * q_j / (xi - xj)) / dxi, ...
+            (
+                ["H", "H"],
+                [[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]],
+                [[0.0, 0.0, 1.0], [0.0, 0.0, -1.0]],
+            ),
+            (
+                ["H", "F"],
+                [[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]],
+                [[0.0, 0.0, 2.25], [0.0, 0.0, -2.25]],
+            ),
+        ],
+    )
+    def test_nuclear_energy_gradient_jax(self, symbols, geometry, g_ref):
+        r"""Test that nuclear energy gradients are correct for jax."""
+        import jax
+
+        geometry = create_jax_like_array(geometry)
+        mol = qchem.Molecule(symbols, geometry)
+        args = [geometry, mol.coeff, mol.alpha]
+        g = jax.grad(qchem.nuclear_energy(mol.nuclear_charges, mol.coordinates), argnums=0)(*args)
+        assert np.allclose(g, g_ref)
+
+    @pytest.mark.parametrize(
+        ("symbols", "geometry", "g_ref"),
+        [
+            (
+                ["H", "H"],
+                [[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]],
+                # HF gradient computed with pyscf using rnuc_grad_method().kernel()
+                [[0.0, 0.0, 0.3650435], [0.0, 0.0, -0.3650435]],
+            ),
+            (
+                ["H", "Li"],
+                [[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]],
+                # HF gradient computed with pyscf using rnuc_grad_method().kernel()
+                [[0.0, 0.0, 0.21034957], [0.0, 0.0, -0.21034957]],
+            ),
+        ],
+    )
+    def test_hf_energy_gradient(self, symbols, geometry, g_ref):
+        r"""Test that the gradient of the Hartree-Fock energy wrt differentiable parameters is
+        correct with jax."""
+        import jax
+
+        geometry = create_jax_like_array(geometry)
+
+        mol = qchem.Molecule(symbols, geometry)
+        args = [geometry, mol.coeff, mol.alpha]
+        g = jax.grad(qchem.hf_energy(mol), argnums=0)(*args)
+
+        assert np.allclose(g, g_ref)
