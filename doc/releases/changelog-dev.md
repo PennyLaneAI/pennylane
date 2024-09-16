@@ -4,8 +4,9 @@
 
 <h3>New features since last release</h3>
 
-* Functions are added for generating spin Hamiltonians for [Emery](https://arxiv.org/pdf/2309.11786)
-  and [Haldane](https://arxiv.org/pdf/2211.13615) models on a lattice.
+* Functions are added for generating spin Hamiltonians for [Emery]
+  (https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.58.2794) and
+  [Haldane](https://journals.aps.org/prl/pdf/10.1103/PhysRevLett.61.2015) models on a lattice.
   [(#6201)](https://github.com/PennyLaneAI/pennylane/pull/6201/)
 
 <h3>Improvements 🛠</h3>
@@ -133,11 +134,8 @@ This release contains contributions from (in alphabetical order):
 
 Guillermo Alonso,
 Utkarsh Azad,
-<<<<<<< emery_haldane_models
-Diksha Dhawan
-=======
 Astral Cai,
->>>>>>> master
+Diksha Dhawan,
 Lillian M. A. Frederiksen,
 Pietropaolo Frisoni,
 Emiliano Godinez,
