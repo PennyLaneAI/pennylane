@@ -156,8 +156,8 @@ def _generate_params(params, args):
             else:
                 basis_params.append(p)
         else:
-            if qml.math.requires_grad(args[2-i]):
-                basis_params.append(args[2-i])
+            if qml.math.requires_grad(args[2 - i]):
+                basis_params.append(args[2 - i])
             else:
                 basis_params.append(p)
 

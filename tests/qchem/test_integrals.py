@@ -860,7 +860,6 @@ class TestRepulsion:
                     *[alpha_plus, coeff]
                 )
                 g_ref_alpha[i][j] = (e_plus - e_minus) / (2 * delta)
-
                 coeff_minus = coeff.copy()
                 coeff_plus = coeff.copy()
                 coeff_minus[i][j] = coeff_minus[i][j] - delta
@@ -873,7 +872,6 @@ class TestRepulsion:
                 )
                 g_ref_coeff[i][j] = (e_plus - e_minus) / (2 * delta)
 
-        print(g_alpha)
         assert np.allclose(g_alpha, g_ref_alpha)
         assert np.allclose(g_coeff, g_ref_coeff)
 
@@ -1032,27 +1030,42 @@ class TestJax:
 
         for i in range(len(alpha)):
             for j in range(len(alpha[0])):
-                alpha_minus = alpha.copy()
-                alpha_plus = alpha.copy()
-                alpha_minus = alpha_minus.at[i, j].set(alpha_minus[i, j] - delta)
-                alpha_plus = alpha_plus.at[i, j].set(alpha_plus[i, j] + delta)
+                alpha_minus = alpha.at[i, j].set(alpha[i, j] - delta)
+                alpha_plus = alpha.at[i, j].set(alpha[i, j] + delta)
+
+                mol = qchem.Molecule(symbols, geometry, alpha=alpha_minus, coeff=coeff)
+                basis_a = mol.basis_set[0]
+                basis_b = mol.basis_set[1]
+                r_nuc = geometry[0]
                 a_minus = qchem.attraction_integral(r_nuc, basis_a, basis_b)(
                     *[geometry, coeff, alpha_minus]
                 )
+
+                mol = qchem.Molecule(symbols, geometry, alpha=alpha_plus, coeff=coeff)
+                basis_a = mol.basis_set[0]
+                basis_b = mol.basis_set[1]
+                r_nuc = geometry[0]
                 a_plus = qchem.attraction_integral(r_nuc, basis_a, basis_b)(
                     *[geometry, coeff, alpha_plus]
                 )
                 g_ref_alpha = g_ref_alpha.at[i, j].set((a_plus - a_minus) / (2 * delta))
 
-                coeff_minus = coeff.copy()
-                coeff_plus = coeff.copy()
-                coeff_minus = coeff_minus.at[i, j].set(coeff_minus[i, j] - delta)
-                coeff_plus = coeff_plus.at[i, j].set(coeff_plus[i, j] + delta)
+                coeff_minus = coeff.at[i, j].set(coeff[i, j] - delta)
+                coeff_plus = coeff.at[i, j].set(coeff[i, j] + delta)
+
+                mol = qchem.Molecule(symbols, geometry, alpha=alpha, coeff=coeff_minus)
+                basis_a = mol.basis_set[0]
+                basis_b = mol.basis_set[1]
+                r_nuc = geometry[0]
                 a_minus = qchem.attraction_integral(r_nuc, basis_a, basis_b)(
-                    *[geometry, coeff, alpha_minus]
+                    *[geometry, coeff_minus, alpha]
                 )
+                mol = qchem.Molecule(symbols, geometry, alpha=alpha, coeff=coeff_plus)
+                basis_a = mol.basis_set[0]
+                basis_b = mol.basis_set[1]
+                r_nuc = geometry[0]
                 a_plus = qchem.attraction_integral(r_nuc, basis_a, basis_b)(
-                    *[geometry, coeff, alpha_plus]
+                    *[geometry, coeff_plus, alpha]
                 )
                 g_ref_coeff = g_ref_coeff.at[i, j].set((a_plus - a_minus) / (2 * delta))
 
@@ -1123,6 +1136,7 @@ class TestJax:
         r"""Test that the repulsion gradient computed with respect to the basis parameters is
         correct with jax."""
         import jax
+
         jax.config.update("jax_enable_x64", True)
         geometry = create_jax_like_array(geometry)
         alpha = create_jax_like_array(alpha)
@@ -1139,37 +1153,25 @@ class TestJax:
             qchem.repulsion_integral(basis_a, basis_b, basis_a, basis_b), argnums=[1]
         )(*args)
 
-        # compute repulsion gradients with respect to alpha and coeff using finite diff
-        delta = 0.0001
-        g_ref_alpha = jax.numpy.zeros(12).reshape(alpha.shape)
-        g_ref_coeff = jax.numpy.zeros(12).reshape(coeff.shape)
-
-        for i in range(len(alpha)):
-            for j in range(len(alpha[0])):
-                alpha_minus = alpha.copy()
-                alpha_plus = alpha.copy()
-                alpha_minus = alpha_minus.at[i, j].set(alpha_minus[i, j] - delta)
-                alpha_plus = alpha_plus.at[i, j].set(alpha_plus[i, j] + delta)
-                print(alpha_minus, alpha_plus)
-                e_minus = qchem.repulsion_integral(basis_a, basis_b, basis_a, basis_b)(
-                    *[geometry, coeff, alpha_minus]
-                )
-                e_plus = qchem.repulsion_integral(basis_a, basis_b, basis_a, basis_b)(
-                    *[geometry, coeff, alpha_plus]
-                )
-                g_ref_alpha = g_ref_alpha.at[i, j].set((e_plus - e_minus) / (2 * delta))
-
-                coeff_minus = coeff.copy()
-                coeff_plus = coeff.copy()
-                coeff_minus = coeff_minus.at[i, j].set(coeff_minus[i, j] - delta)
-                coeff_plus = coeff_plus.at[i, j].set(coeff_plus[i, j] + delta)
-                e_minus = qchem.repulsion_integral(basis_a, basis_b, basis_a, basis_b)(
-                    *[geometry, coeff_minus, alpha]
-                )
-                e_plus = qchem.repulsion_integral(basis_a, basis_b, basis_a, basis_b)(
-                    *[geometry, coeff_plus, alpha]
-                )
-                g_ref_coeff = g_ref_coeff.at[i, j].set((e_plus - e_minus) / (2 * delta))
-                
-        assert np.allclose(g_alpha, g_ref_alpha)
-        assert np.allclose(g_coeff, g_ref_coeff)
+        assert np.allclose(
+            g_alpha,
+            jax.numpy.array(
+                [
+                    [-0.00110959, -0.0066617, 0.06292986],
+                    [-0.00110959, -0.0066617, 0.06292986],
+                    [-0.00110959, -0.0066617, 0.06292986],
+                    [-0.00110959, -0.0066617, 0.06292986],
+                ]
+            ),
+        )
+        assert np.allclose(
+            g_coeff,
+            jax.numpy.array(
+                [
+                    [-0.03518772, 0.0140035, -0.00464647],
+                    [-0.03518772, 0.0140035, -0.00464647],
+                    [-0.03518772, 0.0140035, -0.00464647],
+                    [-0.03518772, 0.0140035, -0.00464647],
+                ],
+            ),
+        )
