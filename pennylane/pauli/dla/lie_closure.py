@@ -140,7 +140,7 @@ def lie_closure(
 
         for ps1, ps2 in itertools.combinations(vspace.basis, 2):
             com = ps1.commutator(ps2)
-            com.simplify()
+            com.simplify(tol=tol)
 
             if len(com) == 0:  # skip because operators commute
                 continue

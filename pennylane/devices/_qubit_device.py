@@ -593,7 +593,6 @@ class QubitDevice(Device):
         if self.shots is None:
             if isinstance(measurement, StateMeasurement):
                 return measurement.process_state(state=self.state, wire_order=self.wires)
-
             raise ValueError(
                 "Shots must be specified in the device to compute the measurement "
                 f"{measurement.__class__.__name__}"
@@ -666,7 +665,7 @@ class QubitDevice(Device):
             if isinstance(m.mv, list):
                 # MeasurementProcess stores information needed for processing if terminal measurement
                 # uses a list of mid-circuit measurement values
-                obs = m
+                obs = m  # pragma: no cover
             else:
                 obs = m.obs or m.mv or m
             # Check if there is an overriden version of the measurement process
@@ -955,7 +954,7 @@ class QubitDevice(Device):
             return QubitDevice.states_to_binary(states_base_ten, num_wires, dtype=dtype)
 
         # A slower, but less memory intensive method
-        basis_states_generator = itertools.product((0, 1), repeat=num_wires)
+        basis_states_generator = itertools.product((0, 1), repeat=num_wires)  # pragma: no cover
         return np.fromiter(itertools.chain(*basis_states_generator), dtype=int).reshape(
             -1, num_wires
         )
@@ -1111,7 +1110,11 @@ class QubitDevice(Device):
         n_snapshots = self.shots
         seed = obs.seed
 
-        with qml.workflow.set_shots(self, shots=1):
+        original_shots = self.shots
+        original_shot_vector = self._shot_vector
+
+        try:
+            self.shots = 1
             # slow implementation but works for all devices
             n_qubits = len(wires)
             mapped_wires = np.array(self.map_wires(wires))
@@ -1140,6 +1143,10 @@ class QubitDevice(Device):
                 )
 
                 outcomes[t] = self.generate_samples()[0][mapped_wires]
+        finally:
+            self.shots = original_shots
+            # pylint: disable=attribute-defined-outside-init
+            self._shot_vector = original_shot_vector
 
         return self._cast(self._stack([outcomes, recipes]), dtype=np.int8)
 
@@ -1550,7 +1557,7 @@ class QubitDevice(Device):
             if mp.obs is not None:
                 observable = mp.obs
             elif mp.mv is not None and isinstance(mp.mv, MeasurementValue):
-                observable = mp.mv
+                observable = mp.mv  # pragma: no cover
             else:
                 no_observable_provided = True
 
@@ -1577,7 +1584,7 @@ class QubitDevice(Device):
         else:
             # get eigvals
             if isinstance(observable, MeasurementValue):
-                eigvals = self._asarray(
+                eigvals = self._asarray(  # pragma: no cover
                     [observable[i] for i in range(2 ** len(observable.measurements))],
                     dtype=self.R_DTYPE,
                 )

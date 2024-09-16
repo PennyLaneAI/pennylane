@@ -745,7 +745,7 @@ class TestSpecialUnitary:
         assert np.allclose(jac, expected)
 
 
-@pytest.mark.parametrize("dev_fn", [qml.devices.DefaultQubitLegacy, qml.devices.DefaultQubit])
+@pytest.mark.parametrize("dev_fn", [qml.devices.DefaultQubit])
 class TestSpecialUnitaryIntegration:
     """Test that the operation SpecialUnitary is executable and
     differentiable in a QNode context, both with automatic differentiation

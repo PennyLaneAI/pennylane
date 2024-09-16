@@ -36,9 +36,6 @@ N_SHOTS = 1e6
 # List of all devices that are included in PennyLane
 LIST_CORE_DEVICES = {
     "default.qubit",
-    "default.qubit.torch",
-    "default.qubit.tf",
-    "default.qubit.autograd",
 }
 
 
@@ -113,12 +110,6 @@ def validate_diff_method(device, diff_method, device_kwargs):
     if diff_method == "backprop" and device_kwargs.get("shots") is not None:
         pytest.skip(reason="test should only be run in analytic mode")
     dev = device(1)
-    if isinstance(dev, qml.Device):
-        passthru_devices = dev.capabilities().get("passthru_devices")
-        if diff_method == "backprop" and passthru_devices is None:
-            pytest.skip(reason="device does not support backprop")
-        return
-
     config = qml.devices.ExecutionConfig(gradient_method=diff_method)
     if not dev.supports_derivatives(execution_config=config):
         pytest.skip(reason="device does not support diff_method")
@@ -143,12 +134,6 @@ def fixture_device(device_kwargs):
                 f"Device {dev_name} cannot be created. To run the device tests on an external device, the "
                 f"plugin and all of its dependencies must be installed."
             )
-
-        if isinstance(dev, qml.Device):
-            capabilities = dev.capabilities()
-            if capabilities.get("model", None) != "qubit":
-                # exit the tests if device based on cv model (currently not supported)
-                pytest.exit("The device test suite currently only runs on qubit-based devices.")
 
         return dev
 

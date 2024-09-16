@@ -77,7 +77,7 @@ def _get_slice(index, axis, num_axes):
     return tuple(idx)
 
 
-# pylint: disable=unused-argument
+# pylint: disable=unused-argument, too-many-arguments
 class DefaultQubitLegacy(QubitDevice):
     r"""Default qubit device for PennyLane.
 
@@ -713,12 +713,7 @@ class DefaultQubitLegacy(QubitDevice):
             supports_analytic_computation=True,
             supports_broadcasting=True,
             returns_state=True,
-            passthru_devices={
-                "tf": "default.qubit.tf",
-                "torch": "default.qubit.torch",
-                "autograd": "default.qubit.autograd",
-                "jax": "default.qubit.jax",
-            },
+            passthru_devices={},
         )
         return capabilities
 

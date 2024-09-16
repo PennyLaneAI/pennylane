@@ -284,7 +284,11 @@ class ClassicalShadowMP(MeasurementTransform):
         n_snapshots = device.shots
         seed = self.seed
 
-        with qml.workflow.set_shots(device, shots=1):
+        original_shots = device.shots
+        original_shot_vector = device._shot_vector  # pylint: disable=protected-access
+
+        try:
+            device.shots = 1
             # slow implementation but works for all devices
             n_qubits = len(wires)
             mapped_wires = np.array(device.map_wires(wires))
@@ -311,6 +315,9 @@ class ClassicalShadowMP(MeasurementTransform):
                 device.apply(tape.operations, rotations=tape.diagonalizing_gates + rotations)
 
                 outcomes[t] = device.generate_samples()[0][mapped_wires]
+        finally:
+            device.shots = original_shots
+            device._shot_vector = original_shot_vector  # pylint: disable=protected-access
 
         return qml.math.cast(qml.math.stack([outcomes, recipes]), dtype=np.int8)
 
