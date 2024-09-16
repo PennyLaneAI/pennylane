@@ -1960,7 +1960,7 @@ class TestPostselection:
         dev = qml.device("default.qubit")
 
         @qml.defer_measurements
-        @qml.qnode(dev, interface=interface)
+        @qml.qnode(dev, interface=None if interface == "numpy" else interface)
         def circ():
             qml.RX(np.pi, 0)
             qml.CNOT([0, 1])
