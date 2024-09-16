@@ -69,7 +69,7 @@ class TestLogging:
                 return qml.expval(qml.PauliZ(0))
 
             circuit(params)
-        assert len(caplog.records) == 8
+        assert len(caplog.records) == 9
         log_records_expected = [
             (
                 "pennylane.workflow.qnode",
@@ -78,6 +78,10 @@ class TestLogging:
             (
                 "pennylane.workflow.qnode",
                 ["Calling <construct(self=<QNode: device='<default.qubit device"],
+            ),
+            (
+                "pennylane.workflow.qnode",
+                ["Calling <get_gradient_fn(device=<default.qubit"],
             ),
             (
                 "pennylane.devices.default_qubit",
@@ -92,7 +96,9 @@ class TestLogging:
             ),
         ]
 
-        for expected, actual in zip(log_records_expected, caplog.records[:3]):
+        for expected, actual in zip(log_records_expected, caplog.records[:4]):
+            print(expected)
+            print(actual, "\n")
             assert expected[0] in actual.name
             assert all(msg in actual.getMessage() for msg in expected[1])
 
@@ -160,7 +166,7 @@ class TestLogging:
 
             circuit(params)
 
-        assert len(caplog.records) == 6
+        assert len(caplog.records) == 7
 
         log_records_expected = [
             (
