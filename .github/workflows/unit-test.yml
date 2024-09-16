@@ -24,16 +24,6 @@ on:
         required: false
         type: string
         default: '3.10'
-      install_numpy_2:
-        description: Indicate if numpy 2.0+ should be installed or not
-        required: false
-        type: boolean
-        default: false
-      numpy_2_version:
-        description: The version of numpy 2.0 to use in order to run unit tests
-        required: false
-        type: string
-        default: '2.0'
       pipeline_mode:
         description: The pipeline mode can be unit-tests, benchmarks, or reference-benchmark
         required: false
@@ -168,8 +158,6 @@ jobs:
         uses: ./.github/workflows/install_deps
         with:
           python_version: ${{ inputs.python_version }}
-          numpy_2_version: ${{ inputs.numpy_2_version }}
-          install_numpy_2: ${{ inputs.install_numpy_2 }}
           install_pytorch: ${{ inputs.install_pytorch }}
           install_tensorflow: ${{ inputs.install_tensorflow }}
           install_jax: ${{ inputs.install_jax }}
