@@ -25,9 +25,10 @@
 * Differentiation of hybrid programs via `qml.grad` and `qml.jacobian` can now be captured
   into plxpr. When evaluating a captured `qml.grad` (`qml.jacobian`) instruction, it will
   dispatch to `jax.grad` (`jax.jacobian`), which differs from the Autograd implementation
-  without capture.
+  without capture. Pytree inputs and outputs are supported.
   [(#6120)](https://github.com/PennyLaneAI/pennylane/pull/6120)
   [(#6127)](https://github.com/PennyLaneAI/pennylane/pull/6127)
+  [(#6134)](https://github.com/PennyLaneAI/pennylane/pull/6134)
 
 * Improve unit testing for capturing of nested control flows.
   [(#6111)](https://github.com/PennyLaneAI/pennylane/pull/6111)
@@ -88,6 +89,11 @@
 
 
 <h3>Deprecations 👋</h3>
+
+* `Device`, `QubitDevice`, and `QutritDevice` will no longer be accessible via top-level import in v0.40.
+  They will still be accessible as `qml.devices.LegacyDevice`, `qml.devices.QubitDevice`, and `qml.devices.QutritDevice`
+  respectively.
+  [(#6238)](https://github.com/PennyLaneAI/pennylane/pull/6238/)
 
 * `QNode.gradient_fn` is deprecated. Please use `QNode.diff_method` and `QNode.get_gradient_fn` instead.
   [(#6244)](https://github.com/PennyLaneAI/pennylane/pull/6244)
