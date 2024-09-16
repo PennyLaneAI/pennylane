@@ -14,7 +14,7 @@
 r"""
 This module contains the legacy implementation of default.qubit.
 
-It implements the necessary :class:`~pennylane._device.Device` methods as well as some built-in
+It implements the necessary :class:`~pennylane.devices._legacy_device.Device` methods as well as some built-in
 :mod:`qubit operations <pennylane.ops.qubit>`, and provides a very simple pure state
 simulation of a qubit-based quantum circuit architecture.
 """
@@ -27,7 +27,7 @@ import numpy as np
 from scipy.sparse import csr_matrix
 
 import pennylane as qml
-from pennylane import BasisState, DeviceError, QubitDevice, Snapshot, StatePrep
+from pennylane import BasisState, Snapshot, StatePrep
 from pennylane.devices.qubit import measure
 from pennylane.measurements import ExpectationMP
 from pennylane.operation import Operation
@@ -38,6 +38,7 @@ from pennylane.typing import TensorLike
 from pennylane.wires import WireError
 
 from .._version import __version__
+from ._qubit_device import QubitDevice
 
 ABC_ARRAY = np.array(list(ABC))
 
@@ -76,7 +77,7 @@ def _get_slice(index, axis, num_axes):
     return tuple(idx)
 
 
-# pylint: disable=unused-argument
+# pylint: disable=unused-argument, too-many-arguments
 class DefaultQubitLegacy(QubitDevice):
     r"""Default qubit device for PennyLane.
 
@@ -289,7 +290,7 @@ class DefaultQubitLegacy(QubitDevice):
         # apply the circuit operations
         for i, operation in enumerate(operations):
             if i > 0 and isinstance(operation, (StatePrep, BasisState)):
-                raise DeviceError(
+                raise qml.DeviceError(
                     f"Operation {operation.name} cannot be used after other Operations have already been applied "
                     f"on a {self.short_name} device."
                 )
@@ -712,12 +713,7 @@ class DefaultQubitLegacy(QubitDevice):
             supports_analytic_computation=True,
             supports_broadcasting=True,
             returns_state=True,
-            passthru_devices={
-                "tf": "default.qubit.tf",
-                "torch": "default.qubit.torch",
-                "autograd": "default.qubit.autograd",
-                "jax": "default.qubit.jax",
-            },
+            passthru_devices={},
         )
         return capabilities
 
@@ -1098,7 +1094,7 @@ class DefaultQubitLegacy(QubitDevice):
 
         return self._cast(self._stack([outcomes, recipes]), dtype=np.int8)
 
-    def _get_diagonalizing_gates(self, circuit: qml.tape.QuantumTape) -> list[Operation]:
+    def _get_diagonalizing_gates(self, circuit: qml.tape.QuantumScript) -> list[Operation]:
         meas_filtered = [
             m
             for m in circuit.measurements

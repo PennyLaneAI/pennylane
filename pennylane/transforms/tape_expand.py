@@ -488,12 +488,12 @@ def set_decomposition(custom_decomps, dev, decomp_depth=10):
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, expansion_strategy="device")
+        @qml.qnode(dev)
         def circuit():
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.Z(0))
 
-    >>> print(qml.draw(circuit)())
+    >>> print(qml.draw(circuit, level=None)())
     0: ─╭●─┤  <Z>
     1: ─╰X─┤
 
@@ -505,7 +505,9 @@ def set_decomposition(custom_decomps, dev, decomp_depth=10):
     1: ──H─╰Z──H─┤
 
     """
-    if isinstance(dev, qml.devices.LegacyDevice):
+    if isinstance(dev, qml.devices.LegacyDeviceFacade):
+        dev = dev.target_device
+
         original_custom_expand_fn = dev.custom_expand_fn
 
         # Create a new expansion function; stop at things that do not have

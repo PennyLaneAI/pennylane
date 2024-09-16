@@ -14,7 +14,7 @@
 """Integration tests for using the JAX-JIT interface with a QNode"""
 import copy
 
-# pylint: disable=too-many-arguments,too-few-public-methods
+# pylint: disable=too-many-arguments,too-few-public-methods,protected-access
 from functools import partial
 
 import pytest
@@ -847,11 +847,17 @@ class TestShotsIntegration:
         cost_fn(a, b, shots=100)  # pylint:disable=unexpected-keyword-arg
         # since we are using finite shots, parameter-shift will
         # be chosen
-        assert cost_fn.gradient_fn == qml.gradients.param_shift
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match=r"QNode.gradient_fn is deprecated"
+        ):
+            assert cost_fn.gradient_fn == qml.gradients.param_shift
         assert spy.call_args[1]["gradient_fn"] is qml.gradients.param_shift
 
         cost_fn(a, b)
-        assert cost_fn.gradient_fn == "backprop"
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match=r"QNode.gradient_fn is deprecated"
+        ):
+            assert cost_fn.gradient_fn == "backprop"
         # if we set the shots to None, backprop can now be used
         assert spy.call_args[1]["gradient_fn"] == "backprop"
 
@@ -941,6 +947,9 @@ class TestQubitIntegration:
 
         if diff_method == "adjoint":
             pytest.skip("Adjoint warns with finite shots")
+
+        if isinstance(dev, qml.devices.DefaultQubit):
+            dev._rng = np.random.default_rng(987654321)
 
         @qnode(
             dev,

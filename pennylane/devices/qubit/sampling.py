@@ -63,7 +63,6 @@ def _group_measurements(mps: list[Union[SampleMeasurement, ClassicalShadowMP, Sh
     # measurements with no observables
     mp_no_obs = []
     mp_no_obs_indices = []
-
     for i, mp in enumerate(mps):
         if isinstance(mp.obs, (Sum, SProd, Prod)):
             mps[i].obs = qml.simplify(mp.obs)
@@ -78,13 +77,11 @@ def _group_measurements(mps: list[Union[SampleMeasurement, ClassicalShadowMP, Sh
         else:
             mp_other_obs.append([mp])
             mp_other_obs_indices.append([i])
-
     if mp_pauli_obs:
         i_to_pauli_mp = dict(mp_pauli_obs)
         _, group_indices = qml.pauli.group_observables(
             [mp.obs for mp in i_to_pauli_mp.values()], list(i_to_pauli_mp.keys())
         )
-
         mp_pauli_groups = []
         for indices in group_indices:
             mp_group = [i_to_pauli_mp[i] for i in indices]
@@ -94,7 +91,6 @@ def _group_measurements(mps: list[Union[SampleMeasurement, ClassicalShadowMP, Sh
 
     mp_no_obs_indices = [mp_no_obs_indices] if mp_no_obs else []
     mp_no_obs = [mp_no_obs] if mp_no_obs else []
-
     all_mp_groups = mp_pauli_groups + mp_no_obs + mp_other_obs
     all_indices = group_indices + mp_no_obs_indices + mp_other_obs_indices
 
@@ -146,7 +142,7 @@ def _get_num_executions_for_sum(obs):
 
 
 # pylint: disable=no-member
-def get_num_shots_and_executions(tape: qml.tape.QuantumTape) -> tuple[int, int]:
+def get_num_shots_and_executions(tape: qml.tape.QuantumScript) -> tuple[int, int]:
     """Get the total number of qpu executions and shots.
 
     Args:
@@ -240,7 +236,6 @@ def measure_with_samples(
     mps = measurements[0 : -len(mid_measurements)] if mid_measurements else measurements
 
     groups, indices = _group_measurements(mps)
-
     all_res = []
     for group in groups:
         if isinstance(group[0], ExpectationMP) and isinstance(
@@ -476,9 +471,9 @@ def sample_state(
     Returns:
         ndarray[int]: Sample values of the shape (shots, num_wires)
     """
-    if prng_key is not None:
+    if prng_key is not None or qml.math.get_interface(state) == "jax":
         return _sample_state_jax(
-            state, shots, prng_key, is_state_batched=is_state_batched, wires=wires
+            state, shots, prng_key, is_state_batched=is_state_batched, wires=wires, seed=rng
         )
 
     rng = np.random.default_rng(rng)
@@ -535,6 +530,7 @@ def _sample_state_jax(
     prng_key,
     is_state_batched: bool = False,
     wires=None,
+    seed=None,
 ) -> np.ndarray:
     """
     Returns a series of samples of a state for the JAX interface based on the PRNG.
@@ -546,6 +542,7 @@ def _sample_state_jax(
             the key to the JAX pseudo random number generator.
         is_state_batched (bool): whether the state is batched or not
         wires (Sequence[int]): The wires to sample
+        seed (numpy.random.Generator): seed to use to generate a key if a ``prng_key`` is not present. ``None`` by default.
 
     Returns:
         ndarray[int]: Sample values of the shape (shots, num_wires)
@@ -554,7 +551,8 @@ def _sample_state_jax(
     import jax
     import jax.numpy as jnp
 
-    key = prng_key
+    if prng_key is None:
+        prng_key = jax.random.PRNGKey(np.random.default_rng(seed).integers(100000))
 
     total_indices = len(state.shape) - is_state_batched
     state_wires = qml.wires.Wires(range(total_indices))
@@ -579,6 +577,6 @@ def _sample_state_jax(
         _, key = jax_random_split(prng_key)
         samples = jax.random.choice(key, basis_states, shape=(shots,), p=probs)
 
-    powers_of_two = 1 << np.arange(num_wires, dtype=np.int64)[::-1]
+    powers_of_two = 1 << np.arange(num_wires, dtype=int)[::-1]
     states_sampled_base_ten = samples[..., None] & powers_of_two
-    return (states_sampled_base_ten > 0).astype(np.int64)
+    return (states_sampled_base_ten > 0).astype(int)

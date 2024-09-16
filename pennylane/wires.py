@@ -16,7 +16,8 @@ This module contains the :class:`Wires` class, which takes care of wire bookkeep
 """
 import functools
 import itertools
-from collections.abc import Iterable, Sequence
+from collections.abc import Hashable, Iterable, Sequence
+from typing import Union
 
 import numpy as np
 
@@ -82,7 +83,7 @@ class Wires(Sequence):
     r"""
     A bookkeeping class for wires, which are ordered collections of unique objects.
 
-    If the input `wires` can be iterated over, it is interpreted as a sequence of wire labels that have to be
+    If the input ``wires`` can be iterated over, it is interpreted as a sequence of wire labels that have to be
     unique and hashable. Else it is interpreted as a single wire label that has to be hashable. The
     only exception are strings which are interpreted as wire labels.
 
@@ -259,7 +260,7 @@ class Wires(Sequence):
             wires (Iterable[Number, str], Number, str, Wires): Wire(s) whose indices are to be found
 
         Returns:
-            List: index list
+            list: index list
 
         **Example**
 
@@ -378,7 +379,7 @@ class Wires(Sequence):
         This is similar to a set intersection method, but keeps the order of wires as they appear in the list.
 
         Args:
-            list_of_wires (List[Wires]): list of Wires objects
+            list_of_wires (list[Wires]): list of Wires objects
 
         Returns:
             Wires: shared wires
@@ -417,7 +418,7 @@ class Wires(Sequence):
         This is similar to a set combine method, but keeps the order of wires as they appear in the list.
 
         Args:
-            list_of_wires (List[Wires]): List of Wires objects
+            list_of_wires (list[Wires]): list of Wires objects
             sort (bool): Toggle for sorting the combined wire labels. The sorting is based on
                 value if all keys are int, else labels' str representations are used.
 
@@ -452,7 +453,7 @@ class Wires(Sequence):
         """Return the wires that are unique to any Wire object in the list.
 
         Args:
-            list_of_wires (List[Wires]): list of Wires objects
+            list_of_wires (list[Wires]): list of Wires objects
 
         Returns:
             Wires: unique wires
@@ -494,15 +495,15 @@ class Wires(Sequence):
         return Wires(tuple(unique), _override=True)
 
     def union(self, other):
-        """Return the union of the current Wires object and either another Wires object or an
-        iterable that can be interpreted like a Wires object e.g., List.
+        """Return the union of the current :class:`~.Wires` object and either another :class:`~.Wires` object or an
+        iterable that can be interpreted like a :class:`~.Wires` object, e.g., a ``list``.
 
         Args:
-            other (Any): Wires or any iterable that can be interpreted like a Wires object
-                to perform the union with. See _process for details on the interpretation.
+            other (Any): :class:`~.Wires` or any iterable that can be interpreted like a :class:`~.Wires` object
+                to perform the union with
 
         Returns:
-            Wires: A new Wires object representing the union of the two Wires objects.
+            Wires: A new :class:`~.Wires` object representing the union of the two :class:`~.Wires` objects.
 
         **Example**
 
@@ -512,7 +513,8 @@ class Wires(Sequence):
         >>> wires1.union(wires2)
         Wires([1, 2, 3, 4, 5])
 
-        Alternatively, use the | operator:
+        Alternatively, use the ``|`` operator:
+
         >>> wires1 | wires2
         Wires([1, 2, 3, 4, 5])
         """
@@ -524,7 +526,7 @@ class Wires(Sequence):
 
         Args:
             other (Any): Wires or any iterable that can be interpreted like a Wires object
-                to perform the union with. See _process for details on the interpretation.
+                to perform the union with
 
         Returns:
             Wires: A new Wires object representing the union of the two Wires objects.
@@ -544,15 +546,15 @@ class Wires(Sequence):
         return self.union(other)
 
     def intersection(self, other):
-        """Return the intersection of the current Wires object and either another Wires object or
-        an iterable that can be interpreted like a Wires object e.g., List.
+        """Return the intersection of the current :class:`~.Wires` object and either another :class:`~.Wires` object or
+        an iterable that can be interpreted like a :class:`~.Wires` object, e.g., a ``list``.
 
         Args:
-            other (Any): Wires or any iterable that can be interpreted like a Wires object
-                to perform the union with. See _process for details on the interpretation.
+            other (Any): :class:`~.Wires` or any iterable that can be interpreted like a :class:`~.Wires` object
+                to perform the intersection with
 
         Returns:
-            Wires: A new Wires object representing the intersection of the two Wires objects.
+            Wires: A new :class:`~.Wires` object representing the intersection of the two :class:`~.Wires` objects.
 
         **Example**
 
@@ -562,7 +564,8 @@ class Wires(Sequence):
         >>> wires1.intersection(wires2)
         Wires([2, 3])
 
-        Alternatively, use the & operator:
+        Alternatively, use the ``&`` operator:
+
         >>> wires1 & wires2
         Wires([2, 3])
         """
@@ -574,7 +577,7 @@ class Wires(Sequence):
 
         Args:
             other (Any): Wires or any iterable that can be interpreted like a Wires object
-                to perform the union with. See _process for details on the interpretation.
+                to perform the union with
 
         Returns:
             Wires: A new Wires object representing the intersection of the two Wires objects.
@@ -594,15 +597,15 @@ class Wires(Sequence):
         return self.intersection(other)
 
     def difference(self, other):
-        """Return the difference of the current Wires object and either another Wires object or
-        an iterable that can be interpreted like a Wires object e.g., List.
+        """Return the difference of the current :class:`~.Wires` object and either another :class:`~.Wires` object or
+        an iterable that can be interpreted like a :class:`~.Wires` object, e.g., a ``list``.
 
         Args:
-            other (Any): Wires object or any iterable that can be interpreted like a Wires object
-                to perform the union with. See _process for details on the interpretation.
+            other (Any): :class:`~.Wires` object or any iterable that can be interpreted like a :class:`~.Wires` object
+                to perform the difference with
 
         Returns:
-            Wires: A new Wires object representing the difference of the two Wires objects.
+            Wires: A new :class:`~.Wires` object representing the difference of the two :class:`~.Wires` objects.
 
         **Example**
 
@@ -612,7 +615,8 @@ class Wires(Sequence):
         >>> wires1.difference(wires2)
         Wires([1])
 
-        Alternatively, use the - operator:
+        Alternatively, use the ``-`` operator:
+
         >>> wires1 - wires2
         Wires([1])
         """
@@ -624,7 +628,7 @@ class Wires(Sequence):
 
         Args:
             other (Any): Wires or any iterable that can be interpreted like a Wires object
-                to perform the union with. See _process for details on the interpretation.
+                to perform the union with
 
         Returns:
             Wires: A new Wires object representing the difference of the two Wires objects.
@@ -644,15 +648,15 @@ class Wires(Sequence):
         return Wires((set(_process(other)) - set(self.labels)))
 
     def symmetric_difference(self, other):
-        """Return the symmetric difference of the current Wires object and either another Wires
-        object or an iterable that can be interpreted like a Wires object e.g., List.
+        """Return the symmetric difference of the current :class:`~.Wires` object and either another :class:`~.Wires`
+        object or an iterable that can be interpreted like a :class:`~.Wires` object, e.g., a ``list``.
 
         Args:
-            other (Any): Wires or any iterable that can be interpreted like a Wires object
-                to perform the union with. See _process for details on the interpretation.
+            other (Any): :class:`~.Wires` or any iterable that can be interpreted like a :class:`~.Wires` object
+                to perform the symmetric difference with
 
         Returns:
-            Wires: A new Wires object representing the symmetric difference of the two Wires objects.
+            Wires: A new :class:`~.Wires` object representing the symmetric difference of the two :class:`~.Wires` objects.
 
         **Example**
 
@@ -662,7 +666,8 @@ class Wires(Sequence):
         >>> wires1.symmetric_difference(wires2)
         Wires([1, 2, 4, 5])
 
-        Alternatively, use the ^ operator:
+        Alternatively, use the ``^`` operator:
+
         >>> wires1 ^ wires2
         Wires([1, 2, 4, 5])
         """
@@ -675,7 +680,7 @@ class Wires(Sequence):
 
         Args:
             other (Any): Wires or any iterable that can be interpreted like a Wires object
-                to perform the union with. See _process for details on the interpretation.
+                to perform the union with
 
         Returns:
             Wires: A new Wires object representing the symmetric difference of the two Wires objects.
@@ -694,6 +699,8 @@ class Wires(Sequence):
         """Right-hand version of __xor__."""
         return Wires((set(_process(other)) ^ set(self.labels)))
 
+
+WiresLike = Union[Wires, Iterable[Hashable], Hashable]
 
 # Register Wires as a PyTree-serializable class
 register_pytree(Wires, Wires._flatten, Wires._unflatten)  # pylint: disable=protected-access

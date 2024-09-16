@@ -15,11 +15,11 @@
 
 import numpy as np
 import pytest
+from dummy_debugger import Debugger
 
 import pennylane as qml
 from pennylane.devices.qubit import get_final_state, measure_final_state, simulate
 from pennylane.devices.qubit.simulate import _FlexShots
-from tests.dummy_debugger import Debugger
 
 
 class TestCurrentlyUnsupportedCases:
@@ -205,7 +205,7 @@ class TestBasicCircuit:
     def test_expand_state_keeps_autograd_interface(self):
         """Test that expand_state doesn't convert autograd to numpy."""
 
-        @qml.qnode(qml.device("default.qubit", wires=2))
+        @qml.qnode(qml.device("default.qubit", wires=2), interface="autograd")
         def circuit(x):
             qml.RX(x, 0)
             return qml.probs(wires=[0, 1])

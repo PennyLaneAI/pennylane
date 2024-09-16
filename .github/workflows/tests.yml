@@ -4,6 +4,14 @@ on:
     branches:
       - master
   pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - ready_for_review
+  # Scheduled trigger on Monday at 2:47am UTC
+  schedule:
+  - cron: '47 2 * * 1'
 
 concurrency:
   group: unit-tests-${{ github.ref }}
@@ -14,6 +22,7 @@ env:
 
 jobs:
   tests:
+    if: github.event.pull_request.draft == false
     uses: ./.github/workflows/interface-unit-tests.yml
     secrets:
       codecov_token: ${{ secrets.CODECOV_TOKEN }}
@@ -29,6 +38,7 @@ jobs:
           && !contains(github.event.pull_request.labels.*.name, 'ci:run-full-test-suite')
           || false
          }}
+      pytest_store_durations: false
 
   upload-stable-deps:
     needs: tests

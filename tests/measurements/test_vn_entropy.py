@@ -18,7 +18,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.measurements import Shots, VnEntropy
+from pennylane.measurements import VnEntropy
 from pennylane.measurements.vn_entropy import VnEntropyMP
 from pennylane.wires import Wires
 
@@ -109,13 +109,12 @@ class TestInitialization:
         assert meas.numeric_type == float
         assert meas.return_type == VnEntropy
 
-    @pytest.mark.parametrize("shots, shape", [(None, ()), (10, ()), ((1, 10), ((), ()))])
+    @pytest.mark.parametrize("shots, shape", [(None, ()), (10, ())])
     def test_shape(self, shots, shape):
         """Test the ``shape`` method."""
         meas = qml.vn_entropy(wires=0)
-        dev = qml.device("default.qubit", wires=1, shots=shots)
 
-        assert meas.shape(dev, Shots(shots)) == shape
+        assert meas.shape(shots, 1) == shape
 
 
 class TestIntegration:

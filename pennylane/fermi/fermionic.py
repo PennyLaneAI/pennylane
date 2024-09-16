@@ -55,6 +55,22 @@ class FermiWord(dict):
 
         super().__init__(operator)
 
+    def adjoint(self):
+        r"""Return the adjoint of FermiWord."""
+        n = len(self.items())
+        adjoint_dict = {}
+        for key, value in reversed(self.items()):
+            position = n - key[0] - 1
+            orbital = key[1]
+            fermi = "+" if value == "-" else "-"
+            adjoint_dict[(position, orbital)] = fermi
+
+        return FermiWord(adjoint_dict)
+
+    def items(self):
+        """Returns the dictionary items in sorted order."""
+        return self.sorted_dic.items()
+
     @property
     def wires(self):
         r"""Return wires in a FermiWord."""
@@ -123,7 +139,7 @@ class FermiWord(dict):
 
     def __repr__(self):
         r"""Terminal representation of a FermiWord"""
-        return str(self)
+        return f"FermiWord({self.sorted_dic})"
 
     def __add__(self, other):
         """Add a FermiSentence, FermiWord or constant to a FermiWord. Converts both
@@ -273,12 +289,16 @@ class FermiWord(dict):
 
         return operator
 
-    def to_mat(self, n_orbitals=None):
+    def to_mat(self, n_orbitals=None, format="dense", buffer_size=None):
         r"""Return the matrix representation.
 
         Args:
             n_orbitals (int or None): Number of orbitals. If not provided, it will be inferred from
                 the largest orbital index in the Fermi operator.
+            format (str): The format of the matrix. It is "dense" by default. Use "csr" for sparse.
+            buffer_size (int or None)`: The maximum allowed memory in bytes to store intermediate results
+                in the calculation of sparse matrices. It defaults to ``2 ** 30`` bytes that make
+                1GB of memory. In general, larger buffers allow faster computations.
 
         Returns:
             NumpyArray: Matrix representation of the :class:`~.FermiWord`.
@@ -299,9 +319,10 @@ class FermiWord(dict):
             )
 
         largest_order = n_orbitals or largest_orb_id
-        mat = qml.jordan_wigner(self, ps=True).to_mat(wire_order=list(range(largest_order)))
 
-        return mat
+        return qml.jordan_wigner(self, ps=True).to_mat(
+            wire_order=list(range(largest_order)), format=format, buffer_size=buffer_size
+        )
 
 
 # pylint: disable=useless-super-delegation
@@ -326,6 +347,16 @@ class FermiSentence(dict):
     def __init__(self, operator):
         super().__init__(operator)
 
+    def adjoint(self):
+        r"""Return the adjoint of FermiSentence."""
+        adjoint_dict = {}
+        for key, value in self.items():
+            word = key.adjoint()
+            scalar = qml.math.conj(value)
+            adjoint_dict[word] = scalar
+
+        return FermiSentence(adjoint_dict)
+
     @property
     def wires(self):
         r"""Return wires of the FermiSentence."""
@@ -339,7 +370,7 @@ class FermiSentence(dict):
 
     def __repr__(self):
         r"""Terminal representation for FermiSentence."""
-        return str(self)
+        return f"FermiSentence({dict(self)})"
 
     def __missing__(self, key):
         r"""If the FermiSentence does not contain a FermiWord then the associated value will be 0."""
@@ -493,12 +524,16 @@ class FermiSentence(dict):
             if abs(coeff) <= tol:
                 del self[fw]
 
-    def to_mat(self, n_orbitals=None):
+    def to_mat(self, n_orbitals=None, format="dense", buffer_size=None):
         r"""Return the matrix representation.
 
         Args:
             n_orbitals (int or None): Number of orbitals. If not provided, it will be inferred from
                 the largest orbital index in the Fermi operator
+            format (str): The format of the matrix. It is "dense" by default. Use "csr" for sparse.
+            buffer_size (int or None)`: The maximum allowed memory in bytes to store intermediate results
+                in the calculation of sparse matrices. It defaults to ``2 ** 30`` bytes that make
+                1GB of memory. In general, larger buffers allow faster computations.
 
         Returns:
             NumpyArray: Matrix representation of the :class:`~.FermiSentence`.
@@ -519,9 +554,10 @@ class FermiSentence(dict):
             )
 
         largest_order = n_orbitals or largest_orb_id
-        mat = qml.jordan_wigner(self, ps=True).to_mat(wire_order=list(range(largest_order)))
 
-        return mat
+        return qml.jordan_wigner(self, ps=True).to_mat(
+            wire_order=list(range(largest_order)), format=format, buffer_size=buffer_size
+        )
 
 
 def from_string(fermi_string):
@@ -647,8 +683,13 @@ class FermiC(FermiWord):
             raise ValueError(
                 f"FermiC: expected a single, positive integer value for orbital, but received {orbital}"
             )
+        self.orbital = orbital
         operator = {(0, orbital): "+"}
         super().__init__(operator)
+
+    def adjoint(self):
+        """Return the adjoint of FermiC."""
+        return FermiA(self.orbital)
 
 
 class FermiA(FermiWord):
@@ -684,5 +725,10 @@ class FermiA(FermiWord):
             raise ValueError(
                 f"FermiA: expected a single, positive integer value for orbital, but received {orbital}"
             )
+        self.orbital = orbital
         operator = {(0, orbital): "-"}
         super().__init__(operator)
+
+    def adjoint(self):
+        """Return the adjoint of FermiA."""
+        return FermiC(self.orbital)

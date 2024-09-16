@@ -20,13 +20,13 @@ import pennylane as qml
 from pennylane import adjoint, apply
 from pennylane.math import mean, round, shape
 from pennylane.queuing import AnnotatedQueue
-from pennylane.tape import QuantumScript, QuantumTape, QuantumTapeBatch
+from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
 
 
 @transform
-def fold_global(tape: QuantumTape, scale_factor) -> tuple[QuantumTapeBatch, PostprocessingFn]:
+def fold_global(tape: QuantumScript, scale_factor) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     r"""Differentiable circuit folding of the global unitary ``circuit``.
 
     For a unitary circuit :math:`U = L_d .. L_1`, where :math:`L_i` can be either a gate or layer, ``fold_global`` constructs
@@ -365,14 +365,14 @@ def exponential_extrapolate(x, y, asymptote=None, eps=1.0e-6):
 # pylint: disable=too-many-arguments, protected-access
 @transform
 def mitigate_with_zne(
-    tape: QuantumTape,
+    tape: QuantumScript,
     scale_factors: Sequence[float],
     folding: callable,
     extrapolate: callable,
     folding_kwargs: Optional[dict[str, Any]] = None,
     extrapolate_kwargs: Optional[dict[str, Any]] = None,
     reps_per_factor=1,
-) -> tuple[QuantumTapeBatch, PostprocessingFn]:
+) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     r"""Mitigate an input circuit using zero-noise extrapolation.
 
     Error mitigation is a precursor to error correction and is compatible with near-term quantum
@@ -418,7 +418,7 @@ def mitigate_with_zne(
         noise_strength = 0.05
 
         dev = qml.device("default.mixed", wires=2)
-        dev = qml.transforms.insert(qml.AmplitudeDamping, noise_strength)(dev)
+        dev = qml.transforms.insert(dev, qml.AmplitudeDamping, noise_strength)
 
     We can now set up a mitigated QNode by passing a ``folding`` and ``extrapolate`` function. PennyLane provides native
     functions :func:`~.pennylane.transforms.fold_global` and :func:`~.pennylane.transforms.poly_extrapolate` or :func:`~.pennylane.transforms.richardson_extrapolate` that
@@ -427,8 +427,8 @@ def mitigate_with_zne(
 
     .. code-block:: python3
 
+        import numpy as np
         from functools import partial
-        from pennylane import numpy as np
         from pennylane import qnode
 
         from pennylane.transforms import fold_global, poly_extrapolate
@@ -440,7 +440,12 @@ def mitigate_with_zne(
         np.random.seed(0)
         w1, w2 = [np.random.random(s) for s in shapes]
 
-        @partial(qml.transforms.mitigate_with_zne, [1., 2., 3.], fold_global, poly_extrapolate, extrapolate_kwargs={'order': 2})
+        @partial(
+            qml.transforms.mitigate_with_zne,
+            scale_factors=[1., 2., 3.],
+            folding=fold_global,
+            extrapolate=poly_extrapolate,
+            extrapolate_kwargs={'order': 2})
         @qnode(dev)
         def circuit(w1, w2):
             qml.SimplifiedTwoDesign(w1, w2, wires=range(2))

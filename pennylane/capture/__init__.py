@@ -34,6 +34,27 @@ quantum-classical programs.
     ~create_measurement_wires_primitive
     ~create_measurement_mcm_primitive
     ~qnode_call
+    ~FlatFn
+
+
+The ``primitives`` submodule offers easy access to objects with jax dependencies such as
+primitives and abstract types.
+It is not available with ``import pennylane``, but the contents can be accessed via manual
+import ``from pennylane.capture.primitives import *``.
+
+.. currentmodule:: pennylane.capture.primitives
+
+.. autosummary::
+    :toctree: api
+
+    AbstractOperator
+    AbstractMeasurement
+    adjoint_transform_prim
+    cond_prim
+    ctrl_transform_prim
+    for_loop_prim
+    qnode_prim
+    while_loop_prim
 
 To activate and deactivate the new PennyLane program capturing mechanism, use
 the switches ``qml.capture.enable`` and ``qml.capture.disable``.
@@ -127,13 +148,14 @@ If needed, developers can also override the implementation method of the primiti
 """
 from .switches import disable, enable, enabled
 from .capture_meta import CaptureMeta, ABCCaptureMeta
-from .primitives import (
-    create_operator_primitive,
+from .capture_operators import create_operator_primitive
+from .capture_measurements import (
     create_measurement_obs_primitive,
     create_measurement_wires_primitive,
     create_measurement_mcm_primitive,
 )
 from .capture_qnode import qnode_call
+from .flatfn import FlatFn
 
 # by defining this here, we avoid
 # E0611: No name 'AbstractOperator' in module 'pennylane.capture' (no-name-in-module)
@@ -176,4 +198,5 @@ __all__ = (
     "AbstractOperator",
     "AbstractMeasurement",
     "qnode_prim",
+    "FlatFn",
 )

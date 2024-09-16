@@ -98,11 +98,8 @@ class ExpectationMP(SampleMeasurement, StateMeasurement):
     def numeric_type(self):
         return float
 
-    def shape(self, device, shots):
-        if not shots.has_partitioned_shots:
-            return ()
-        num_shot_elements = sum(s.copies for s in shots.shot_vector)
-        return tuple(() for _ in range(num_shot_elements))
+    def shape(self, shots: Optional[int] = None, num_device_wires: int = 0) -> tuple:
+        return ()
 
     def process_samples(
         self,
@@ -154,5 +151,5 @@ class ExpectationMP(SampleMeasurement, StateMeasurement):
         Args:
             probabilities (array): the probabilities of collapsing to eigen states
         """
-        eigvals = qml.math.asarray(self.eigvals(), dtype="float64")
+        eigvals = qml.math.cast_like(self.eigvals(), 1.0)
         return qml.math.dot(probabilities, eigvals)

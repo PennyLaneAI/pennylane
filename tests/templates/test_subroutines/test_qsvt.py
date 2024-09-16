@@ -172,9 +172,10 @@ class TestQSVT:
     def test_wire_order(self):
         """Test that the wire order is preserved."""
 
-        op = qml.QFT(wires=[2, 1])
-        qsvt_wires = qml.QSVT(op, [op]).wires
-        assert qsvt_wires == op.wires
+        op1 = qml.GroverOperator(wires=[0, 3])
+        op2 = qml.QFT(wires=[2, 1])
+        qsvt_wires = qml.QSVT(op2, [op1]).wires
+        assert qsvt_wires == op1.wires + op2.wires
 
     @pytest.mark.parametrize(
         ("quantum_function", "phi_func", "A", "phis", "results"),
@@ -612,3 +613,11 @@ def test_private_qsp_to_qsvt_jax(initial_angles, expected_angles):
 
     computed_angles = _qsp_to_qsvt(initial_angles)
     jnp.allclose(computed_angles, expected_angles)
+
+
+def test_global_phase_not_alway_applied():
+    """Test that the global phase is not applied if it is 0"""
+
+    decomposition = qml.qsvt([1], [0, 1, 2, 3, 4], wires=[0], convention="Wx").decomposition()
+    for op in decomposition:
+        assert not isinstance(op, qml.GlobalPhase)

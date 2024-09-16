@@ -7,7 +7,7 @@ inputs:
   python_version:
     description: The version of Python to use in order to run unit tests
     required: false
-    default: '3.9'
+    default: '3.10'
   install_jax:
     description: Indicate if JAX should be installed or not
     required: false
@@ -15,7 +15,7 @@ inputs:
   jax_version:
     description: The version of JAX to install for any job that requires JAX
     required: false
-    default: 0.4.23
+    default: '0.4.23'
   install_tensorflow:
     description: Indicate if TensorFlow should be installed or not
     required: false
@@ -23,7 +23,7 @@ inputs:
   tensorflow_version:
     description: The version of TensorFlow to install for any job that requires TensorFlow
     required: false
-    default: 2.16.0
+    default: '2.16.0'
   install_pytorch:
     description: Indicate if PyTorch should be installed or not
     required: false
@@ -31,11 +31,15 @@ inputs:
   pytorch_version:
     description: The version of PyTorch to install for any job that requires PyTorch
     required: false
-    default: 2.3.0
+    default: '2.3.0'
   install_pennylane_lightning_master:
     description: Indicate if PennyLane-Lightning should be installed from the master branch
     required: false
     default: 'true'
+  install_catalyst_nightly:
+    description: Indicate if PennyLane-Catalyst should be installed from TestPyPi
+    required: false
+    default: 'false'
   additional_pip_packages:
     description: Additional packages to install. Values will be passed to pip install {value}
     required: false
@@ -95,10 +99,10 @@ runs:
         python setup.py bdist_wheel
         pip install dist/PennyLane*.whl
 
-    - name: Install Catalyst
+    - name: Install Catalyst from nightly build
       shell: bash
-      if: inputs.install_catalyst_after_pennylane == 'true'
-      run: pip install --upgrade pennylane-catalyst
+      if: inputs.install_catalyst_nightly == 'true'
+      run: pip install --extra-index-url https://test.pypi.org/simple/ PennyLane-Catalyst --pre
 
     - name: Install PennyLane-Lightning master
       shell: bash

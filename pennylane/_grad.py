@@ -15,6 +15,7 @@
 This module contains the autograd wrappers :class:`grad` and :func:`jacobian`
 """
 import warnings
+from functools import partial, wraps
 
 from autograd import jacobian as _jacobian
 from autograd.core import make_vjp as _make_vjp
@@ -22,10 +23,66 @@ from autograd.extend import vspace
 from autograd.numpy.numpy_boxes import ArrayBox
 from autograd.wrap_util import unary_to_nary
 
+from pennylane.capture import enabled
+from pennylane.capture.capture_diff import _get_grad_prim, _get_jacobian_prim
+from pennylane.capture.flatfn import FlatFn
 from pennylane.compiler import compiler
 from pennylane.compiler.compiler import CompileError
 
 make_vjp = unary_to_nary(_make_vjp)
+
+
+def _capture_diff(func, argnum=None, diff_prim=None, method=None, h=None):
+    """Capture-compatible gradient computation."""
+    # pylint: disable=import-outside-toplevel
+    import jax
+    from jax.tree_util import tree_flatten, tree_leaves, tree_unflatten, treedef_tuple
+
+    if argnum is None:
+        argnum = 0
+    if argnum_is_int := isinstance(argnum, int):
+        argnum = [argnum]
+
+    @wraps(func)
+    def new_func(*args, **kwargs):
+        flat_args, in_trees = zip(*(tree_flatten(arg) for arg in args))
+        full_in_tree = treedef_tuple(in_trees)
+
+        # Create a new input tree that only takes inputs marked by argnum into account
+        trainable_in_trees = (in_tree for i, in_tree in enumerate(in_trees) if i in argnum)
+        # If an integer was provided as argnum, unpack the arguments axis of the derivatives
+        if argnum_is_int:
+            trainable_in_tree = list(trainable_in_trees)[0]
+        else:
+            trainable_in_tree = treedef_tuple(trainable_in_trees)
+
+        # Create argnum for the flat list of input arrays. For each flattened argument,
+        # add a list of flat argnums if the argument is trainable and an empty list otherwise.
+        start = 0
+        flat_argnum_gen = (
+            (
+                list(range(start, (start := start + len(flat_arg))))
+                if i in argnum
+                else list(range((start := start + len(flat_arg)), start))
+            )
+            for i, flat_arg in enumerate(flat_args)
+        )
+        flat_argnum = sum(flat_argnum_gen, start=[])
+
+        # Create fully flattened function (flat inputs & outputs)
+        flat_fn = FlatFn(partial(func, **kwargs) if kwargs else func, full_in_tree)
+        flat_args = sum(flat_args, start=[])
+        jaxpr = jax.make_jaxpr(flat_fn)(*flat_args)
+        prim_kwargs = {"argnum": flat_argnum, "jaxpr": jaxpr.jaxpr, "n_consts": len(jaxpr.consts)}
+        out_flat = diff_prim.bind(*jaxpr.consts, *flat_args, **prim_kwargs, method=method, h=h)
+        # flatten once more to go from 2D derivative structure (outputs, args) to flat structure
+        out_flat = tree_leaves(out_flat)
+        assert flat_fn.out_tree is not None, "out_tree should be set after executing flat_fn"
+        # The derivative output tree is the composition of output tree and trainable input trees
+        combined_tree = flat_fn.out_tree.compose(trainable_in_tree)
+        return tree_unflatten(combined_tree, out_flat)
+
+    return new_func
 
 
 class grad:
@@ -94,12 +151,13 @@ class grad:
         if active_jit := compiler.active_compiler():
             available_eps = compiler.AvailableCompilers.names_entrypoints
             ops_loader = available_eps[active_jit]["ops"].load()
-            return ops_loader.grad(func, method=method, h=h, argnum=argnum)
+            return ops_loader.grad(func, method=method, h=h, argnums=argnum)
+
+        if enabled():
+            return _capture_diff(func, argnum, _get_grad_prim(), method=method, h=h)
 
         if method or h:  # pragma: no cover
-            raise ValueError(
-                f"Invalid values for 'method={method}' and 'h={h}' in interpreted mode"
-            )
+            raise ValueError(f"Invalid values '{method=}' and '{h=}' without QJIT.")
 
         return super().__new__(cls)
 
@@ -410,10 +468,13 @@ def jacobian(func, argnum=None, method=None, h=None):
     if active_jit := compiler.active_compiler():
         available_eps = compiler.AvailableCompilers.names_entrypoints
         ops_loader = available_eps[active_jit]["ops"].load()
-        return ops_loader.jacobian(func, method=method, h=h, argnum=argnum)
+        return ops_loader.jacobian(func, method=method, h=h, argnums=argnum)
+
+    if enabled():
+        return _capture_diff(func, argnum, _get_jacobian_prim(), method=method, h=h)
 
     if method or h:
-        raise ValueError(f"Invalid values for 'method={method}' and 'h={h}' in interpreted mode")
+        raise ValueError(f"Invalid values '{method=}' and '{h=}' without QJIT.")
 
     def _get_argnum(args):
         """Inspect the arguments for differentiability and return the
@@ -521,7 +582,7 @@ def vjp(f, params, cotangents, method=None, h=None, argnum=None):
     if active_jit := compiler.active_compiler():
         available_eps = compiler.AvailableCompilers.names_entrypoints
         ops_loader = available_eps[active_jit]["ops"].load()
-        return ops_loader.vjp(f, params, cotangents, method=method, h=h, argnum=argnum)
+        return ops_loader.vjp(f, params, cotangents, method=method, h=h, argnums=argnum)
 
     raise CompileError("Pennylane does not support the VJP function without QJIT.")
 
@@ -612,6 +673,6 @@ def jvp(f, params, tangents, method=None, h=None, argnum=None):
     if active_jit := compiler.active_compiler():
         available_eps = compiler.AvailableCompilers.names_entrypoints
         ops_loader = available_eps[active_jit]["ops"].load()
-        return ops_loader.jvp(f, params, tangents, method=method, h=h, argnum=argnum)
+        return ops_loader.jvp(f, params, tangents, method=method, h=h, argnums=argnum)
 
     raise CompileError("Pennylane does not support the JVP function without QJIT.")

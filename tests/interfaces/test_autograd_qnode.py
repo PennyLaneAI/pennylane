@@ -17,12 +17,12 @@
 import autograd
 import autograd.numpy as anp
 import pytest
+from param_shift_dev import ParamShiftDerivativesDevice
 
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane import qnode
 from pennylane.devices import DefaultQubit
-from tests.param_shift_dev import ParamShiftDerivativesDevice
 
 # dev, diff_method, grad_on_execution, device_vjp
 qubit_device_and_diff_method = [
@@ -539,17 +539,26 @@ class TestShotsIntegration:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliY(1))
 
-        assert cost_fn.gradient_fn == "backprop"  # gets restored to default
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match=r"QNode.gradient_fn is deprecated"
+        ):
+            assert cost_fn.gradient_fn == "backprop"  # gets restored to default
 
         cost_fn(a, b, shots=100)
         # since we are using finite shots, parameter-shift will
         # be chosen
         assert spy.call_args[1]["gradient_fn"] is qml.gradients.param_shift
-        assert cost_fn.gradient_fn is qml.gradients.param_shift
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match=r"QNode.gradient_fn is deprecated"
+        ):
+            assert cost_fn.gradient_fn is qml.gradients.param_shift
 
         # if we use the default shots value of None, backprop can now be used
         cost_fn(a, b)
-        assert cost_fn.gradient_fn == "backprop"
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match=r"QNode.gradient_fn is deprecated"
+        ):
+            assert cost_fn.gradient_fn == "backprop"
         assert spy.call_args[1]["gradient_fn"] == "backprop"
 
 
