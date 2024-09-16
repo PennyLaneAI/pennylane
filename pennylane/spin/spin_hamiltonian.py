@@ -321,10 +321,9 @@ def emery(
     neighbour_order=1,
     mapping="jordan_wigner",
 ):
-    r"""Generates the Hamiltonian for the `Emery model <https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.58.2794>`
-    _ on a lattice.
+    r"""Generates the Hamiltonian for the Emery model on a lattice.
 
-    The Hamiltonian is represented as:
+    The `Emery <https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.58.2794>`_ model Hamiltonian is represented as:
 
     .. math::
         \begin{align*}
@@ -484,10 +483,9 @@ def haldane(
     boundary_condition=False,
     mapping="jordan_wigner",
 ):
-    r"""Generates the `Haldane model <https://journals.aps.org/prl/pdf/10.1103/PhysRevLett.61.2015>`_
-    Hamiltonian on a lattice.
+    r"""Generates the Hamiltonian for the the Haldane model on a lattice.
 
-    The Hamiltonian is represented as:
+    The `Haldane <https://journals.aps.org/prl/pdf/10.1103/PhysRevLett.61.2015>`_ model Hamiltonian is represented as:
 
     .. math::
 
