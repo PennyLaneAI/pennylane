@@ -121,8 +121,8 @@ class TestSample:
 
         # If all the dimensions are equal the result will end up to be a proper rectangular array
         assert len(result) == 3
-        assert isinstance(result[0], np.ndarray)
-        assert isinstance(result[1], np.ndarray)
+        assert isinstance(result[0], float)
+        assert isinstance(result[1], float)
         assert result[2].dtype == np.dtype("float")
         assert np.array_equal(result[2].shape, (n_sample,))
 
