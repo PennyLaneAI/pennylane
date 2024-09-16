@@ -330,32 +330,33 @@ class FermiWord(dict):
     There are four `anti-commutator relations <https://en.wikipedia.org/wiki/Creation_and_annihilation_operators#Creation_and_annihilation_operators_in_quantum_field_theories>`_:
 
     .. math::
-
         \begin{align*}
-            \left{ a_i, a_j \right} &= 0\\
-            \left{ a^{\dagger}_i, a^{\dagger}_j \right} &= 0\\
-            \left{ a_i, a^{\dagger}_j \right} &= \delta_{ij}
+            \left\{ a_i, a_j \right\} &= 0\\\\
+            \left\{ a^{\dagger}_i, a^{\dagger}_j \right\} &= 0\\\\
+            \left\{ a_i, a^{\dagger}_j \right\} &= \delta_{ij}\\\\
         \end{align*}
 
 
-        Args:
-            initial_position (int): The position of the operator to be shifted.
-            final_position (int): The desired position of the operator.
+    where :math:`\left\{a_i, a_j \right\} = a_i a_j + a_j a_i\,` and  :math:`\,\delta_{ij} = \begin{cases} 1 & i = j \\ 0 & i \neq j \end{cases}`.
 
-        Returns:
-            FermiSentence: The ``FermiSentence`` obtained after applying the anti-commutator relations.
+    Args:
+        initial_position (int): The position of the operator to be shifted.
+        final_position (int): The desired position of the operator.
 
-        Raises:
-            TypeError: if the source or target is not an integer
-            ValueError: if the source or target are outside the range [0, len(self) - 1]
+    Returns:
+        FermiSentence: The ``FermiSentence`` obtained after applying the anti-commutator relations.
+
+    Raises:
+        TypeError: if the source or target is not an integer
+        ValueError: if the source or target are outside the range [0, len(self) - 1]
 
 
-        **Example**
+    **Example**
 
-        >>> w = qml.fermi.FermiWord({(0, 0): '+', (1, 1): '-'})
-        >>> w.shift_operator(0, 1)
-        -1 * a(1) a⁺(0)
-        """
+    >>> w = qml.fermi.FermiWord({(0, 0): '+', (1, 1): '-'})
+    >>> w.shift_operator(0, 1)
+    -1 * a(1) a⁺(0)
+    """
 
         if not isinstance(initial_position, int) or not isinstance(final_position, int):
             raise TypeError("Positions must be integers.")
