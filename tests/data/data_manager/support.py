@@ -504,3 +504,5 @@ _parameter_tree = {
         }
     }
 }
+
+_error_response = {"data": None, "errors": [{"message": "Mock error message."}]}

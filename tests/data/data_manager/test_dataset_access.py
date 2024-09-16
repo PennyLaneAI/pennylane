@@ -29,6 +29,7 @@ from pennylane.data.data_manager import GRAPHQL_URL, _validate_attributes
 
 from .support import (
     _dataclass_ids,
+    _error_response,
     _get_urls_resp,
     _list_attrs_resp,
     _list_datasets_resp,
@@ -90,10 +91,10 @@ def httpserver_listen_address():
 
 
 # pylint:disable=unused-argument
-def get_mock(url, timeout=1.0):
-    """Return the foldermap or data_struct according to URL"""
+def get_mock(url, json, timeout=1.0):
+    """Return mocked error message."""
     resp = MagicMock(ok=True)
-    resp.json.return_value = _folder_map if "foldermap" in url else _data_struct
+    resp.json.return_value = _error_response
     return resp
 
 
@@ -110,7 +111,8 @@ def graphql_mock(url, query, variables=None):
         json_data = _parameter_tree
     elif "GetDatasetClasses" in query:
         json_data = _dataclass_ids
-
+    elif "ErrorQuery" in query:
+        json_data = _error_response
     return json_data
 
 
@@ -129,7 +131,7 @@ def mock_get_args():
 @pytest.fixture(autouse=True)
 def mock_requests_get(request, monkeypatch, mock_get_args):
     """Patches `requests.get()` in the data_manager module so that
-    it returns mock JSON data for the foldermap and data struct."""
+    it returns mock JSON data."""
 
     def mock_get(url, *args, **kwargs):
         mock_get_args(url, *args, **kwargs)
@@ -230,6 +232,12 @@ class TestLoadInteractive:
             (["qspin", "foo"], "Must enter a valid sysname:"),
             (["qspin", "Ising", "foo"], "Must enter a valid layout:"),
             (["qspin", "Ising", "1x4", "foo"], "Must enter a valid periodicity:"),
+            (
+                ["qspin", "Ising", "1x4", "open", "foo"],
+                re.escape(
+                    "Must select a list of attributes from ['ground_energies', 'ground_states', 'hamiltonians', 'num_phases', 'order_params', 'parameters', 'shadow_basis', 'shadow_meas', 'spin_system']"
+                ),
+            ),
         ],
     )
     def test_load_interactive_invalid_inputs(
@@ -654,3 +662,71 @@ def test_validate_attributes_except(attributes, msg):
 
     with pytest.raises(ValueError, match=msg):
         _validate_attributes("my_dataset", attributes)
+
+
+class TestGetGraphql:
+    """Tests for the ``_get_graphql()`` function."""
+
+    query = """
+            query GetDatasetClasses {
+            datasetClasses {
+                id
+            }
+            }
+            """
+
+    @patch.object(pennylane.data.data_manager, "_get_graphql", graphql_mock)
+    def test_return_json(self):
+        """Tests that an expected json response is returned for a valid query and url."""
+        response = pennylane.data.data_manager._get_graphql(
+            GRAPHQL_URL,
+            self.query,
+        )
+        assert response == {
+            "data": {"datasetClasses": [{"id": "other"}, {"id": "qchem"}, {"id": "qspin"}]}
+        }
+
+    def test_bad_url(self):
+        """Tests that a  GraphQLError is raised when given a bad url"""
+        with pytest.raises(pennylane.data.data_manager.GraphQLError, match="No Response"):
+            pennylane.data.data_manager._get_graphql(
+                "https://bad/dataset/url",
+                self.query,
+            )
+
+    def test_bad_query(self):
+        """Tests that GraphQLError is raised when given a bad query"""
+        bad_query = """
+            query BadQuery {
+            badQuery {
+                badField
+            }
+            }
+            """
+
+        with pytest.raises(pennylane.data.data_manager.GraphQLError, match="No Response"):
+            pennylane.data.data_manager._get_graphql(
+                GRAPHQL_URL,
+                bad_query,
+            )
+
+    @patch.object(pennylane.data.data_manager, "get", get_mock)
+    def test_error_response(self):
+        """Tests that GraphQLError is raised with error messages when
+        the returned json contains an error message.
+        """
+        error_query = """
+            query ErrorQuery {
+            errorQuery {
+                field
+            }
+            }
+            """
+
+        with pytest.raises(
+            pennylane.data.data_manager.GraphQLError, match="Errors in request: Mock error message."
+        ):
+            pennylane.data.data_manager._get_graphql(
+                GRAPHQL_URL,
+                error_query,
+            )
