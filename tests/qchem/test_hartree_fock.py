@@ -283,9 +283,9 @@ class TestJax:
         [
             (
                 ["H", "H"],
-                np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=True),
+                [[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]],
                 # HF gradient computed with pyscf using rnuc_grad_method().kernel()
-                np.array([[0.0, 0.0, 0.3650435], [0.0, 0.0, -0.3650435]]),
+                [[0.0, 0.0, 0.3650435], [0.0, 0.0, -0.3650435]],
             ),
         ],
     )
@@ -294,11 +294,11 @@ class TestJax:
         correct."""
         import jax
 
+        geometry = jax.numpy.array(geometry)
         mol = qchem.Molecule(symbols, geometry)
-        args = [jax.numpy.array(mol.coordinates)]
-        g = jax.grad(qchem.hf_energy(mol))(*args)
+        args = [geometry, mol.coeff, mol.alpha]
+        g = jax.grad(qchem.hf_energy(mol), argnums=0)(*args)
         g_ref = jax.numpy.array(g_ref)
-
         assert np.allclose(g, g_ref)
 
     @pytest.mark.parametrize(
