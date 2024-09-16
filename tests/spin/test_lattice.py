@@ -550,7 +550,8 @@ def test_neighbour_order_error():
     n_cells = [3, 3]
     custom_edges = [[(0, 1)], [(0, 5)], [(0, 4)]]
     with pytest.raises(
-        ValueError, match="custom_edges and neighbour_order cannot be specified at the same time"
+        ValueError,
+        match="custom_edges cannot be specified if neighbour_order argument is set to greater than 1.",
     ):
         Lattice(n_cells=n_cells, vectors=vectors, neighbour_order=2, custom_edges=custom_edges)
 

@@ -312,10 +312,9 @@ def fermi_hubbard(
 
 
 def kitaev(n_cells, coupling=None, boundary_condition=False):
-    r"""Generates the Hamiltonian for the `Kitaev model <https://arxiv.org/pdf/2406.06625>`_
-    on the Honeycomb lattice.
+    r"""Generates the Hamiltonian for the Kitaev model on the Honeycomb lattice.
 
-    The Hamiltonian is represented as:
+    The `Kitaev <https://arxiv.org/abs/cond-mat/0506438>`_ model Hamiltonian is represented as:
 
     .. math::
         \begin{align*}
@@ -349,14 +348,14 @@ def kitaev(n_cells, coupling=None, boundary_condition=False):
     >>> spin_ham = qml.spin.kitaev(n_cells, coupling=k)
     >>> spin_ham
     (
-    0.5 * (X(0) @ X(1))
-    + 0.5 * (X(2) @ X(3))
-    + 0.5 * (X(4) @ X(5))
-    + 0.5 * (X(6) @ X(7))
-    + 0.6 * (Y(1) @ Y(2))
-    + 0.6 * (Y(5) @ Y(6))
-    + 0.7 * (Z(1) @ Z(4))
-    + 0.7 * (Z(3) @ Z(6))
+      0.5 * (X(0) @ X(1))
+      + 0.5 * (X(2) @ X(3))
+      + 0.5 * (X(4) @ X(5))
+      + 0.5 * (X(6) @ X(7))
+      + 0.6 * (Y(1) @ Y(2))
+      + 0.6 * (Y(5) @ Y(6))
+      + 0.7 * (Z(1) @ Z(4))
+      + 0.7 * (Z(3) @ Z(6))
     )
 
     """
