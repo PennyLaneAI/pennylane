@@ -400,8 +400,7 @@ jobs:
       # catalyst requires the latest version of pennylane that is about to be released.
       # Installing catalyst after pennylane to make sure that the latest catalyst is used.
       install_catalyst_nightly: true
-      # using lightning master does not work for the tests with external libraries
-      install_pennylane_lightning_master: false
+      install_pennylane_lightning_master: true
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: external
       additional_pip_packages: pyzx matplotlib stim quimb mitiq pennylane-qiskit ply

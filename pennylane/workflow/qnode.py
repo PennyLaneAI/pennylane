@@ -32,7 +32,7 @@ from pennylane.measurements import MidMeasureMP
 from pennylane.tape import QuantumScript, QuantumTape
 from pennylane.transforms.core import TransformContainer, TransformDispatcher, TransformProgram
 
-from .execution import INTERFACE_MAP, SUPPORTED_INTERFACES, SupportedInterfaceUserInput
+from .execution import INTERFACE_MAP, SUPPORTED_INTERFACE_NAMES, SupportedInterfaceUserInput
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -56,9 +56,8 @@ def _convert_to_interface(res, interface):
     """
     Recursively convert res to the given interface.
     """
-    interface = INTERFACE_MAP[interface]
 
-    if interface in ["Numpy"]:
+    if interface == "numpy":
         return res
 
     if isinstance(res, (list, tuple)):
@@ -67,7 +66,18 @@ def _convert_to_interface(res, interface):
     if isinstance(res, dict):
         return {k: _convert_to_interface(v, interface) for k, v in res.items()}
 
-    return qml.math.asarray(res, like=interface if interface != "tf" else "tensorflow")
+    interface_conversion_map = {
+        "autograd": "autograd",
+        "jax": "jax",
+        "jax-jit": "jax",
+        "torch": "torch",
+        "tf": "tensorflow",
+        "tf-autograph": "tensorflow",
+    }
+
+    interface_name = interface_conversion_map[interface]
+
+    return qml.math.asarray(res, like=interface_name)
 
 
 def _make_execution_config(
@@ -495,10 +505,10 @@ class QNode:
                 gradient_kwargs,
             )
 
-        if interface not in SUPPORTED_INTERFACES:
+        if interface not in SUPPORTED_INTERFACE_NAMES:
             raise qml.QuantumFunctionError(
                 f"Unknown interface {interface}. Interface must be "
-                f"one of {SUPPORTED_INTERFACES}."
+                f"one of {SUPPORTED_INTERFACE_NAMES}."
             )
 
         if not isinstance(device, (qml.devices.LegacyDevice, qml.devices.Device)):
@@ -524,7 +534,7 @@ class QNode:
         # input arguments
         self.func = func
         self.device = device
-        self._interface = None if diff_method is None else interface
+        self._interface = "numpy" if diff_method is None else INTERFACE_MAP[interface]
         self.diff_method = diff_method
         mcm_config = qml.devices.MCMConfig(mcm_method=mcm_method, postselect_mode=postselect_mode)
         cache = (max_diff > 1) if cache == "auto" else cache
@@ -617,10 +627,10 @@ class QNode:
 
     @interface.setter
     def interface(self, value: SupportedInterfaceUserInput):
-        if value not in SUPPORTED_INTERFACES:
+        if value not in SUPPORTED_INTERFACE_NAMES:
 
             raise qml.QuantumFunctionError(
-                f"Unknown interface {value}. Interface must be one of {SUPPORTED_INTERFACES}."
+                f"Unknown interface {value}. Interface must be one of {SUPPORTED_INTERFACE_NAMES}."
             )
 
         self._interface = INTERFACE_MAP[value]
@@ -923,12 +933,18 @@ class QNode:
 
         execute_kwargs["mcm_config"] = mcm_config
 
+        # Mapping numpy to None here because `qml.execute` will map None back into
+        # numpy. If we do not do this, numpy will become autograd in `qml.execute`.
+        # If the user specified interface="numpy", it would've already been converted to
+        # "autograd", and it wouldn't be affected.
+        interface = None if self.interface == "numpy" else self.interface
+
         # pylint: disable=unexpected-keyword-arg
         res = qml.execute(
             (self._tape,),
             device=self.device,
             gradient_fn=gradient_fn,
-            interface=self.interface,
+            interface=interface,
             transform_program=full_transform_program,
             inner_transform=inner_transform_program,
             config=config,
@@ -961,7 +977,9 @@ class QNode:
                 if qml.capture.enabled()
                 else qml.math.get_interface(*args, *list(kwargs.values()))
             )
-            self._interface = INTERFACE_MAP[interface]
+            if interface != "numpy":
+                interface = INTERFACE_MAP[interface]
+            self._interface = interface
 
         try:
             res = self._execution_component(args, kwargs)

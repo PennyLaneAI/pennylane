@@ -35,6 +35,8 @@ from pennylane.transforms.diagonalize_measurements import (
     null_postprocessing,
 )
 
+# pylint: disable=protected-access
+
 
 class TestDiagonalizeObservable:
     """Tests for the _diagonalize_observable method"""
@@ -315,13 +317,9 @@ class TestDiagonalizeTapeMeasurements:
             assert isinstance(new_tape.measurements[1], VarianceMP)
             assert new_tape.measurements[0].wires == qml.wires.Wires([0])
             assert new_tape.measurements[1].wires == qml.wires.Wires([1, 2])
+            assert qml.math.allclose(sorted(new_tape.measurements[0]._eigvals), [-1.0, 1.0])
             assert qml.math.allclose(
-                sorted(new_tape.measurements[0]._eigvals),  # pylint: disable=protected-access
-                [-1.0, 1.0],
-            )
-            assert qml.math.allclose(
-                sorted(new_tape.measurements[1]._eigvals),  # pylint: disable=protected-access
-                [-2.0, 0.0, 0.0, 2.0],
+                sorted(new_tape.measurements[1]._eigvals), [-2.0, 0.0, 0.0, 2.0]
             )
         else:
             assert new_tape.measurements == [qml.expval(Z(0)), qml.var(Z(1) + Z(2))]
@@ -448,11 +446,16 @@ class TestDiagonalizeTapeMeasurements:
         new_tape = tapes[0]
 
         if to_eigvals:
-            assert new_tape.measurements == [
-                ExpectationMP(eigvals=[1.0, -1], wires=[0]),
-                VarianceMP(eigvals=[2.0, 0.0, 0.0, -2.0], wires=[1, 2]),
-                SampleMP(eigvals=[1.0, -1.0, -1.0, 1.0], wires=[0, 2]),
-            ]
+            assert len(new_tape.measurements) == 3
+            assert isinstance(new_tape.measurements[0], ExpectationMP)
+            assert isinstance(new_tape.measurements[1], VarianceMP)
+            assert isinstance(new_tape.measurements[2], SampleMP)
+            assert new_tape.measurements[0].wires == qml.wires.Wires([0])
+            assert new_tape.measurements[1].wires == qml.wires.Wires([1, 2])
+            assert new_tape.measurements[2].wires == qml.wires.Wires([0, 2])
+            assert np.allclose(sorted(new_tape.measurements[0]._eigvals), [-1.0, 1])
+            assert np.allclose(sorted(new_tape.measurements[1]._eigvals), [-2.0, 0, 0, 2.0])
+            assert np.allclose(sorted(new_tape.measurements[2]._eigvals), [-1.0, -1.0, 1.0, 1.0])
         else:
             assert new_tape.measurements == [
                 qml.expval(Z(0)),

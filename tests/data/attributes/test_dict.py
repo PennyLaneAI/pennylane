@@ -15,6 +15,7 @@
 Tests for the ``DatasetDict`` attribute type.
 """
 
+import numpy as np
 import pytest
 
 from pennylane.data.attributes import DatasetDict
@@ -45,7 +46,8 @@ class TestDatasetDict:
         assert dset_dict.info.py_type == "dict"
         assert dset_dict.bind.keys() == value.keys()
         assert len(dset_dict) == len(value)
-        assert repr(value) == repr(dset_dict)
+        with np.printoptions(legacy="1.21"):
+            assert repr(value) == repr(dset_dict)
 
     @pytest.mark.parametrize(
         "value", [{"a": 1, "b": 2}, {}, {"a": 1, "b": {"x": "y", "z": [1, 2]}}]
@@ -93,7 +95,8 @@ class TestDatasetDict:
 
         assert builtin_dict.keys() == value.keys()
         assert len(builtin_dict) == len(value)
-        assert repr(builtin_dict) == repr(value)
+        with np.printoptions(legacy="1.21"):
+            assert repr(builtin_dict) == repr(value)
 
     @pytest.mark.parametrize(
         "value", [{"a": 1, "b": 2}, {}, {"a": 1, "b": {"x": "y", "z": [1, 2]}}]
@@ -121,4 +124,5 @@ class TestDatasetDict:
     )
     def test_string_conversion(self, value):
         dset_dict = DatasetDict(value)
-        assert str(dset_dict) == str(value)
+        with np.printoptions(legacy="1.21"):
+            assert str(dset_dict) == str(value)
