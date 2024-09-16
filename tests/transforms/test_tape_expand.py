@@ -418,7 +418,15 @@ def custom_rot(phi, theta, omega, wires):
 # Decompose a template into another template
 def custom_basic_entangler_layers(weights, wires, **kwargs):
     # pylint: disable=unused-argument
-    cnot_broadcast = qml.tape.make_qscript(qml.broadcast)(qml.CNOT, pattern="ring", wires=wires)
+    def cnot_circuit(wires):
+        n_wires = len(wires)
+
+        for wire in wires:
+            op_wires = [wire % n_wires, (wire + 1) % n_wires]
+            qml.CNOT(op_wires)
+
+    # cnot_broadcast = qml.tape.make_qscript(qml.broadcast)(qml.CNOT, pattern="ring", wires=wires)
+    cnot_broadcast = qml.tape.make_qscript(cnot_circuit)(wires)
     return [
         qml.AngleEmbedding(weights[0], wires=wires),
         *cnot_broadcast,

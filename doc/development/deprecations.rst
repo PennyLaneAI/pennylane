@@ -9,6 +9,11 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
+* :func:`~pennylane.broadcast` has been deprecated. Users should use for loops instead.
+
+  - Deprecated in v0.39
+  - Will be removed in v0.40
+
 * ``Device``, ``QubitDevice``, and ``QutritDevice`` will no longer be imported top level in v0.40.  They instead
   we be available as ``qml.devices.LegacyDevice``, ``qml.devices.QubitDevice``, and ``qml.devices.QutritDevice``
   respectively.

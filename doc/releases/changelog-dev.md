@@ -87,6 +87,9 @@
 
 <h3>Deprecations 👋</h3>
 
+* `qml.broadcast` has been deprecated. Users should use for loops instead.
+  [(#)]()
+
 * `Device`, `QubitDevice`, and `QutritDevice` will no longer be accessible via top-level import in v0.40.
   They will still be accessible as `qml.devices.LegacyDevice`, `qml.devices.QubitDevice`, and `qml.devices.QutritDevice`
   respectively.

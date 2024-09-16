@@ -120,13 +120,15 @@ class TestControlledDecompositionZYZ:
 
         @qml.qnode(dev)
         def decomp_circuit():
-            qml.broadcast(unitary=qml.Hadamard, pattern="single", wires=control_wires)
+            for wire in control_wires:
+                qml.Hadamard(wire)
             ctrl_decomp_zyz(op, Wires(control_wires))
             return qml.probs()
 
         @qml.qnode(dev)
         def expected_circuit():
-            qml.broadcast(unitary=qml.Hadamard, pattern="single", wires=control_wires)
+            for wire in control_wires:
+                qml.Hadamard(wire)
             qml.ctrl(op, control_wires)
             return qml.probs()
 
@@ -144,7 +146,8 @@ class TestControlledDecompositionZYZ:
 
         @qml.qnode(dev)
         def decomp_circuit():
-            qml.broadcast(unitary=qml.Hadamard, pattern="single", wires=control_wires)
+            for wire in control_wires:
+                qml.Hadamard(wire)
             ctrl_decomp_zyz(op, Wires(control_wires))
             return qml.probs()
 
@@ -230,14 +233,16 @@ class TestControlledDecompositionZYZ:
 
         @qml.qnode(dev)
         def queue_from_list():
-            qml.broadcast(unitary=qml.Hadamard, pattern="single", wires=control_wires)
+            for wire in control_wires:
+                qml.Hadamard(wire)
             for o in decomp:
                 qml.apply(o)
             return qml.state()
 
         @qml.qnode(dev)
         def queue_from_qnode():
-            qml.broadcast(unitary=qml.Hadamard, pattern="single", wires=control_wires)
+            for wire in control_wires:
+                qml.Hadamard(wire)
             ctrl_decomp_zyz(op, control_wires=Wires(control_wires))
             return qml.state()
 
