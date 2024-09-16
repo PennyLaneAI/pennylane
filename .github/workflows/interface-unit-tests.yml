@@ -256,16 +256,14 @@ jobs:
             fromJSON(needs.setup-ci-load.outputs.python-version).jax-tests
             || fromJSON(needs.setup-ci-load.outputs.python-version).default
            }}
-        numpy-2-install: [true, false]    
     if: ${{ !contains(fromJSON(needs.setup-ci-load.outputs.jobs-to-skip), 'jax-tests') }}
     uses: ./.github/workflows/unit-test.yml
     with:
-      job_name: jax-tests (${{ matrix.group }}, ${{ matrix.python-version }}, numpy 2.0 ${{ matrix.numpy-2-install }})
+      job_name: jax-tests (${{ matrix.group }}, ${{ matrix.python-version }})
       branch: ${{ inputs.branch }}
-      coverage_artifact_name: core-interfaces-coverage-jax-${{ matrix.python-version }}-${{ matrix.group }}-${{ matrix.numpy-2-install }}
+      coverage_artifact_name: core-interfaces-coverage-jax-${{ matrix.python-version }}-${{ matrix.group }}
       python_version: ${{ matrix.python-version }}
       pipeline_mode: ${{ inputs.pipeline_mode }}
-      install_numpy_2: ${{ matrix.numpy-2-install }}
       install_jax: true
       install_tensorflow: false
       install_pytorch: false
