@@ -26,9 +26,10 @@ from typing import Optional, Union
 import pennylane as qml
 from pennylane import Snapshot, transform
 from pennylane.measurements import SampleMeasurement, StateMeasurement
-from pennylane.operation import StatePrepBase, Tensor
+from pennylane.operation import Tensor
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.typing import PostprocessingFn
+from pennylane.ops import StatePrep, BasisState
 from pennylane.wires import WireError
 
 from .execution_config import MCMConfig
@@ -289,7 +290,7 @@ def decompose(
             ``False``, the operator should be decomposed. This replaces ``stopping_condition``
             if and only if the tape has shots.
         skip_initial_state_prep (bool): If ``True``, the first operator will not be decomposed if
-            it inherits from :class:`~.StatePrepBase`. Defaults to ``True``.
+            it inherits from :class:`~.StatePrep` or :class:`~.BasisState`. Defaults to ``True``.
         decomposer (Callable): an optional callable that takes an operator and implements the
             relevant decomposition. If ``None``, defaults to using a callable returning
             ``op.decomposition()`` for any :class:`~.Operator` .
@@ -357,7 +358,7 @@ def decompose(
     if stopping_condition_shots is not None and tape.shots:
         stopping_condition = stopping_condition_shots
 
-    if tape.operations and isinstance(tape[0], StatePrepBase) and skip_initial_state_prep:
+    if tape.operations and isinstance(tape[0], (StatePrep, BasisState)) and skip_initial_state_prep:
         prep_op = [tape[0]]
     else:
         prep_op = []
