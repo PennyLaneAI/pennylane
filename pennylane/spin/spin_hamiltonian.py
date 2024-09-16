@@ -321,7 +321,8 @@ def emery(
     neighbour_order=1,
     mapping="jordan_wigner",
 ):
-    r"""Generates the Hamiltonian for the `Emery model <https://arxiv.org/pdf/2309.11786>`_ on a lattice.
+    r"""Generates the Hamiltonian for the `Emery model <https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.58.2794>`
+    _ on a lattice.
 
     The Hamiltonian is represented as:
 
@@ -477,13 +478,14 @@ def emery(
 def haldane(
     lattice,
     n_cells,
-    hopping1=1.0,
-    hopping2=1.0,
+    hopping_first=1.0,
+    hopping_second=1.0,
     phi=1.0,
     boundary_condition=False,
     mapping="jordan_wigner",
 ):
-    r"""Generates the `Haldane model <https://arxiv.org/pdf/2211.13615>`_ Hamiltonian on a lattice.
+    r"""Generates the `Haldane model <https://journals.aps.org/prl/pdf/10.1103/PhysRevLett.61.2015>`_
+    Hamiltonian on a lattice.
 
     The Hamiltonian is represented as:
 
@@ -505,11 +507,11 @@ def haldane(
         lattice (str): Shape of the lattice. Input values can be ``'chain'``, ``'square'``,
             ``'rectangle'``, ``'honeycomb'``, ``'triangle'``, or ``'kagome'``.
         n_cells (list[int]): Number of cells in each direction of the grid.
-        hopping1 (float | tensor_like(float)): Hopping strength between
+        hopping_first (float | tensor_like(float)): Hopping strength between
             nearest neighbouring sites. It can be a number, or
             a square matrix of size ``(n_sites, n_sites)``, where ``n_sites`` is the total
             number of sites. Default value is 1.0.
-        hopping2 (float | tensor_like(float)): Hopping strength between next-nearest
+        hopping_second (float | tensor_like(float)): Hopping strength between next-nearest
             neighbouring sites. It can be a number, or
             a square matrix of size ``(n_sites, n_sites)``, where ``n_sites`` is the total
             number of sites. Default value is 1.0.
@@ -523,7 +525,7 @@ def haldane(
 
     Raises:
        ValueError:
-          If ``hopping1``, ``hopping2``, or ``phi`` doesn't have correct dimensions,
+          If ``hopping_first``, ``hopping_second``, or ``phi`` doesn't have correct dimensions,
           or if ``mapping`` is not available.
 
     Returns:
@@ -535,7 +537,7 @@ def haldane(
     >>> h1 = 0.5
     >>> h2 = 1.0
     >>> phi = 0.1
-    >>> spin_ham = qml.spin.haldane("chain", n_cells, hopping1=h1, hopping2=h2, phi=phi)
+    >>> spin_ham = qml.spin.haldane("chain", n_cells, hopping_first=h1, hopping_second=h2, phi=phi)
     >>> spin_ham
     (
       -0.25 * (Y(0) @ Z(1) @ Y(2))
@@ -548,26 +550,26 @@ def haldane(
 
     lattice = _generate_lattice(lattice, n_cells, boundary_condition, neighbour_order=2)
 
-    hopping1 = (
-        math.asarray([hopping1])
-        if isinstance(hopping1, (int, float, complex))
-        else math.asarray(hopping1)
+    hopping_first = (
+        math.asarray([hopping_first])
+        if isinstance(hopping_first, (int, float, complex))
+        else math.asarray(hopping_first)
     )
-    hopping2 = (
-        math.asarray([hopping2])
-        if isinstance(hopping2, (int, float, complex))
-        else math.asarray(hopping2)
+    hopping_second = (
+        math.asarray([hopping_second])
+        if isinstance(hopping_second, (int, float, complex))
+        else math.asarray(hopping_second)
     )
     phi = math.asarray([phi]) if isinstance(phi, (int, float, complex)) else math.asarray(phi)
 
-    if hopping1.shape not in [(1,), (lattice.n_sites, lattice.n_sites)]:
+    if hopping_first.shape not in [(1,), (lattice.n_sites, lattice.n_sites)]:
         raise ValueError(
-            f"The hopping1 parameter should be a constant or an array of shape ({lattice.n_sites},{lattice.n_sites})."
+            f"The hopping_first parameter should be a constant or an array of shape ({lattice.n_sites},{lattice.n_sites})."
         )
 
-    if hopping2.shape not in [(1,), (lattice.n_sites, lattice.n_sites)]:
+    if hopping_second.shape not in [(1,), (lattice.n_sites, lattice.n_sites)]:
         raise ValueError(
-            f"The hopping2 parameter should be a constant or an array of shape ({lattice.n_sites},{lattice.n_sites})."
+            f"The hopping_second parameter should be a constant or an array of shape ({lattice.n_sites},{lattice.n_sites})."
         )
 
     if phi.shape not in [(1,), (lattice.n_sites, lattice.n_sites)]:
@@ -579,8 +581,8 @@ def haldane(
     hopping_ham = 0.0 * FermiWord({})
     for i, j, order in lattice.edges:
 
-        hop1 = hopping1[0] if hopping1.shape == (1,) else hopping1[i][j]
-        hop2 = hopping2[0] if hopping2.shape == (1,) else hopping2[i][j]
+        hop1 = hopping_first[0] if hopping_first.shape == (1,) else hopping_first[i][j]
+        hop2 = hopping_second[0] if hopping_second.shape == (1,) else hopping_second[i][j]
         phi_term = phi[0] if phi.shape == (1,) else phi[i][j]
 
         for s in range(spin):

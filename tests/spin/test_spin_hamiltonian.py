@@ -897,70 +897,12 @@ def test_mapping_error_emery():
             + (0.615 + 0j) * (X(0) @ Z(1) @ Z(2) @ Z(3) @ Z(4) @ Z(5) @ X(6))
             + (0.615 + 0j) * (Y(1) @ Z(2) @ Z(3) @ Z(4) @ Z(5) @ Z(6) @ Y(7))
             + (0.615 + 0j) * (X(1) @ Z(2) @ Z(3) @ Z(4) @ Z(5) @ Z(6) @ X(7))
-            + (0.615 + 0j)
-            * (
-                Y(0)
-                @ Z(1)
-                @ Z(2)
-                @ Z(3)
-                @ Z(4)
-                @ Z(5)
-                @ Z(6)
-                @ Z(7)
-                @ Z(8)
-                @ Z(9)
-                @ Z(10)
-                @ Z(11)
-                @ Y(12)
-            )
-            + (0.615 + 0j)
-            * (
-                X(0)
-                @ Z(1)
-                @ Z(2)
-                @ Z(3)
-                @ Z(4)
-                @ Z(5)
-                @ Z(6)
-                @ Z(7)
-                @ Z(8)
-                @ Z(9)
-                @ Z(10)
-                @ Z(11)
-                @ X(12)
-            )
-            + (0.615 + 0j)
-            * (
-                Y(1)
-                @ Z(2)
-                @ Z(3)
-                @ Z(4)
-                @ Z(5)
-                @ Z(6)
-                @ Z(7)
-                @ Z(8)
-                @ Z(9)
-                @ Z(10)
-                @ Z(11)
-                @ Z(12)
-                @ Y(13)
-            )
-            + (0.615 + 0j)
-            * (
-                X(1)
-                @ Z(2)
-                @ Z(3)
-                @ Z(4)
-                @ Z(5)
-                @ Z(6)
-                @ Z(7)
-                @ Z(8)
-                @ Z(9)
-                @ Z(10)
-                @ Z(11)
-                @ Z(12)
-                @ X(13)
-            )
+            # fmt: off
+            + (0.615 + 0j) * (Y(0) @ Z(1) @ Z(2) @ Z(3) @ Z(4) @ Z(5) @ Z(6) @ Z(7) @ Z(8) @ Z(9) @ Z(10) @ Z(11) @ Y(12))
+            + (0.615 + 0j) * (X(0) @ Z(1) @ Z(2) @ Z(3) @ Z(4) @ Z(5) @ Z(6) @ Z(7) @ Z(8) @ Z(9) @ Z(10) @ Z(11) @ X(12))
+            + (0.615 + 0j) * (Y(1) @ Z(2) @ Z(3) @ Z(4) @ Z(5) @ Z(6) @ Z(7) @ Z(8) @ Z(9) @ Z(10) @ Z(11) @ Z(12) @ Y(13))
+            + (0.615 + 0j) * (X(1) @ Z(2) @ Z(3) @ Z(4) @ Z(5) @ Z(6) @ Z(7) @ Z(8) @ Z(9) @ Z(10) @ Z(11) @ Z(12) @ X(13))
+            # fmt: on
             + (0.615 + 0j) * (Y(2) @ Z(3) @ Y(4))
             + (0.615 + 0j) * (X(2) @ Z(3) @ X(4))
             + (0.615 + 0j) * (Y(3) @ Z(4) @ Y(5))
@@ -969,138 +911,22 @@ def test_mapping_error_emery():
             + (0.615 + 0j) * (X(2) @ Z(3) @ Z(4) @ Z(5) @ Z(6) @ Z(7) @ X(8))
             + (0.615 + 0j) * (Y(3) @ Z(4) @ Z(5) @ Z(6) @ Z(7) @ Z(8) @ Y(9))
             + (0.615 + 0j) * (X(3) @ Z(4) @ Z(5) @ Z(6) @ Z(7) @ Z(8) @ X(9))
-            + (0.615 + 0j)
-            * (
-                Y(2)
-                @ Z(3)
-                @ Z(4)
-                @ Z(5)
-                @ Z(6)
-                @ Z(7)
-                @ Z(8)
-                @ Z(9)
-                @ Z(10)
-                @ Z(11)
-                @ Z(12)
-                @ Z(13)
-                @ Y(14)
-            )
-            + (0.615 + 0j)
-            * (
-                X(2)
-                @ Z(3)
-                @ Z(4)
-                @ Z(5)
-                @ Z(6)
-                @ Z(7)
-                @ Z(8)
-                @ Z(9)
-                @ Z(10)
-                @ Z(11)
-                @ Z(12)
-                @ Z(13)
-                @ X(14)
-            )
-            + (0.615 + 0j)
-            * (
-                Y(3)
-                @ Z(4)
-                @ Z(5)
-                @ Z(6)
-                @ Z(7)
-                @ Z(8)
-                @ Z(9)
-                @ Z(10)
-                @ Z(11)
-                @ Z(12)
-                @ Z(13)
-                @ Z(14)
-                @ Y(15)
-            )
-            + (0.615 + 0j)
-            * (
-                X(3)
-                @ Z(4)
-                @ Z(5)
-                @ Z(6)
-                @ Z(7)
-                @ Z(8)
-                @ Z(9)
-                @ Z(10)
-                @ Z(11)
-                @ Z(12)
-                @ Z(13)
-                @ Z(14)
-                @ X(15)
-            )
+            # fmt: off
+            + (0.615 + 0j) * (Y(2) @ Z(3) @ Z(4) @ Z(5) @ Z(6) @ Z(7) @ Z(8) @ Z(9) @ Z(10) @ Z(11) @ Z(12) @ Z(13) @ Y(14))
+            + (0.615 + 0j) * (X(2) @ Z(3) @ Z(4) @ Z(5) @ Z(6) @ Z(7) @ Z(8) @ Z(9) @ Z(10) @ Z(11) @ Z(12) @ Z(13) @ X(14))
+            + (0.615 + 0j) * (Y(3) @ Z(4) @ Z(5) @ Z(6) @ Z(7) @ Z(8) @ Z(9) @ Z(10) @ Z(11) @ Z(12) @ Z(13) @ Z(14) @ Y(15))
+            + (0.615 + 0j) * (X(3) @ Z(4) @ Z(5) @ Z(6) @ Z(7) @ Z(8) @ Z(9) @ Z(10) @ Z(11) @ Z(12) @ Z(13) @ Z(14) @ X(15))
+            # fmt: on
             + (0.615 + 0j) * (Y(4) @ Z(5) @ Z(6) @ Z(7) @ Z(8) @ Z(9) @ Y(10))
             + (0.615 + 0j) * (X(4) @ Z(5) @ Z(6) @ Z(7) @ Z(8) @ Z(9) @ X(10))
             + (0.615 + 0j) * (Y(5) @ Z(6) @ Z(7) @ Z(8) @ Z(9) @ Z(10) @ Y(11))
             + (0.615 + 0j) * (X(5) @ Z(6) @ Z(7) @ Z(8) @ Z(9) @ Z(10) @ X(11))
-            + (0.615 + 0j)
-            * (
-                Y(4)
-                @ Z(5)
-                @ Z(6)
-                @ Z(7)
-                @ Z(8)
-                @ Z(9)
-                @ Z(10)
-                @ Z(11)
-                @ Z(12)
-                @ Z(13)
-                @ Z(14)
-                @ Z(15)
-                @ Y(16)
-            )
-            + (0.615 + 0j)
-            * (
-                X(4)
-                @ Z(5)
-                @ Z(6)
-                @ Z(7)
-                @ Z(8)
-                @ Z(9)
-                @ Z(10)
-                @ Z(11)
-                @ Z(12)
-                @ Z(13)
-                @ Z(14)
-                @ Z(15)
-                @ X(16)
-            )
-            + (0.615 + 0j)
-            * (
-                Y(5)
-                @ Z(6)
-                @ Z(7)
-                @ Z(8)
-                @ Z(9)
-                @ Z(10)
-                @ Z(11)
-                @ Z(12)
-                @ Z(13)
-                @ Z(14)
-                @ Z(15)
-                @ Z(16)
-                @ Y(17)
-            )
-            + (0.615 + 0j)
-            * (
-                X(5)
-                @ Z(6)
-                @ Z(7)
-                @ Z(8)
-                @ Z(9)
-                @ Z(10)
-                @ Z(11)
-                @ Z(12)
-                @ Z(13)
-                @ Z(14)
-                @ Z(15)
-                @ Z(16)
-                @ X(17)
-            )
+            # fmt: off
+            + (0.615 + 0j) * (Y(4) @ Z(5) @ Z(6) @ Z(7) @ Z(8) @ Z(9) @ Z(10) @ Z(11) @ Z(12) @ Z(13) @ Z(14) @ Z(15) @ Y(16))
+            + (0.615 + 0j) * (X(4) @ Z(5) @ Z(6) @ Z(7) @ Z(8) @ Z(9) @ Z(10) @ Z(11) @ Z(12) @ Z(13) @ Z(14) @ Z(15)@ X(16))
+            + (0.615 + 0j) * (Y(5) @ Z(6) @ Z(7) @ Z(8) @ Z(9) @ Z(10) @ Z(11) @ Z(12) @ Z(13) @ Z(14) @ Z(15) @ Z(16) @ Y(17))
+            + (0.615 + 0j) * (X(5) @ Z(6) @ Z(7) @ Z(8) @ Z(9) @ Z(10) @ Z(11) @ Z(12) @ Z(13) @ Z(14) @ Z(15) @ Z(16) @ X(17))
+            # fmt: on
             + (0.615 + 0j) * (Y(6) @ Z(7) @ Y(8))
             + (0.615 + 0j) * (X(6) @ Z(7) @ X(8))
             + (0.615 + 0j) * (Y(7) @ Z(8) @ Y(9))
@@ -1387,21 +1213,27 @@ def test_hopping_error_haldane():
     lattice = "Square"
     with pytest.raises(
         ValueError,
-        match=re.escape("The hopping1 parameter should be a constant or an array of shape (16,16)"),
+        match=re.escape(
+            "The hopping_first parameter should be a constant or an array of shape (16,16)"
+        ),
     ):
-        haldane(lattice=lattice, n_cells=n_cells, hopping1=[1.0, 2.0])
+        haldane(lattice=lattice, n_cells=n_cells, hopping_first=[1.0, 2.0])
 
     with pytest.raises(
         ValueError,
-        match=re.escape("The hopping2 parameter should be a constant or an array of shape (16,16)"),
+        match=re.escape(
+            "The hopping_second parameter should be a constant or an array of shape (16,16)"
+        ),
     ):
-        haldane(lattice=lattice, n_cells=n_cells, hopping1=1.0, hopping2=[0.5, 0.6, 0.7])
+        haldane(lattice=lattice, n_cells=n_cells, hopping_first=1.0, hopping_second=[0.5, 0.6, 0.7])
 
     with pytest.raises(
         ValueError,
         match=re.escape("The phi parameter should be a constant or an array of shape (16,16)"),
     ):
-        haldane(lattice=lattice, n_cells=n_cells, hopping1=1.0, hopping2=0.1, phi=[0.5, 0.6])
+        haldane(
+            lattice=lattice, n_cells=n_cells, hopping_first=1.0, hopping_second=0.1, phi=[0.5, 0.6]
+        )
 
 
 def test_mapping_error_haldane():
@@ -1599,8 +1431,8 @@ def test_haldane_hamiltonian_matrix(shape, n_cells, t1, t2, phi, boundary_condit
     haldane_ham = haldane(
         lattice=shape,
         n_cells=n_cells,
-        hopping1=t1,
-        hopping2=t2,
+        hopping_first=t1,
+        hopping_second=t2,
         phi=phi,
         boundary_condition=boundary_condition,
     )
