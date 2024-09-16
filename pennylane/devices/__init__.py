@@ -27,8 +27,6 @@ to verify and test quantum gradient computations.
 
     default_qubit
     default_qubit_legacy
-    default_qubit_jax
-    default_qubit_autograd
     default_gaussian
     default_mixed
     default_qutrit
@@ -154,9 +152,6 @@ from .device_api import Device
 from .default_qubit import DefaultQubit
 from .legacy_facade import LegacyDeviceFacade
 
-# DefaultQubitTF and DefaultQubitAutograd not imported here since this
-# would lead to an automatic import of tensorflow and autograd, which are
-# not PennyLane core dependencies.
 # DefaultTensor is not imported here to avoid warnings
 # from quimb in case it is installed on the system.
 from .default_qubit_legacy import DefaultQubitLegacy
