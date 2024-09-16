@@ -457,7 +457,8 @@ class TestControlledBisectOD:
 
         @qml.qnode(dev)
         def decomp_circuit():
-            qml.broadcast(unitary=qml.Hadamard, pattern="single", wires=control_wires)
+            for wire in control_wires:
+                qml.Hadamard(wire)
             record_from_list(_ctrl_decomp_bisect_od)(
                 _convert_to_su2(op.matrix()), op.wires, Wires(control_wires)
             )
@@ -465,7 +466,8 @@ class TestControlledBisectOD:
 
         @qml.qnode(dev)
         def expected_circuit():
-            qml.broadcast(unitary=qml.Hadamard, pattern="single", wires=control_wires)
+            for wire in control_wires:
+                qml.Hadamard(wire)
             qml.ctrl(op, control_wires)
             return qml.probs()
 
@@ -609,7 +611,8 @@ class TestControlledBisectMD:
 
         @qml.qnode(dev)
         def decomp_circuit():
-            qml.broadcast(unitary=qml.Hadamard, pattern="single", wires=control_wires)
+            for wire in control_wires:
+                qml.Hadamard(wire)
             record_from_list(_ctrl_decomp_bisect_md)(
                 _convert_to_su2(op.matrix()), op.wires, Wires(control_wires)
             )
@@ -617,7 +620,8 @@ class TestControlledBisectMD:
 
         @qml.qnode(dev)
         def expected_circuit():
-            qml.broadcast(unitary=qml.Hadamard, pattern="single", wires=control_wires)
+            for wire in control_wires:
+                qml.Hadamard(wire)
             qml.ctrl(op, control_wires)
             return qml.probs()
 
@@ -738,7 +742,8 @@ class TestControlledBisectGeneral:
 
         @qml.qnode(dev)
         def decomp_circuit():
-            qml.broadcast(unitary=qml.Hadamard, pattern="single", wires=control_wires)
+            for wire in control_wires:
+                qml.Hadamard(wire)
             if auto:
                 ctrl_decomp_bisect(op, Wires(control_wires))
             else:
@@ -749,7 +754,8 @@ class TestControlledBisectGeneral:
 
         @qml.qnode(dev)
         def expected_circuit():
-            qml.broadcast(unitary=qml.Hadamard, pattern="single", wires=control_wires)
+            for wire in control_wires:
+                qml.Hadamard(wire)
             qml.ctrl(op, control_wires)
             return qml.probs()
 
@@ -882,13 +888,15 @@ class TestMultiControlledUnitary:
 
         @qml.qnode(dev)
         def decomp_circuit():
-            qml.broadcast(unitary=qml.Hadamard, pattern="single", wires=control_wires)
+            for wire in control_wires:
+                qml.Hadamard(wire)
             _decompose_multicontrolled_unitary(op, Wires(control_wires))
             return qml.probs()
 
         @qml.qnode(dev)
         def expected_circuit():
-            qml.broadcast(unitary=qml.Hadamard, pattern="single", wires=control_wires)
+            for wire in control_wires:
+                qml.Hadamard(wire)
             qml.ctrl(op, control_wires)
             return qml.probs()
 
@@ -987,7 +995,8 @@ class TestControlledUnitaryRecursive:
 
         @qml.qnode(dev)
         def decomp_circuit():
-            qml.broadcast(unitary=qml.Hadamard, pattern="single", wires=control_wires)
+            for wire in control_wires:
+                qml.Hadamard(wire)
             record_from_list(_decompose_recursive)(
                 op, 1.0, Wires(control_wires), op.wires, Wires([])
             )
@@ -995,7 +1004,8 @@ class TestControlledUnitaryRecursive:
 
         @qml.qnode(dev)
         def expected_circuit():
-            qml.broadcast(unitary=qml.Hadamard, pattern="single", wires=control_wires)
+            for wire in control_wires:
+                qml.Hadamard(wire)
             qml.ctrl(op, control_wires)
             return qml.probs()
 
