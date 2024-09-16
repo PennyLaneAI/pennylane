@@ -524,7 +524,7 @@ def _interactive_request_attributes(attribute_options):
     choice = input("Choice of attributes: ")
     if choice == "full":
         return attribute_options
-    if choice not in attribute_options:
+    if not set(choice).issubset(set(attribute_options)):
         raise ValueError(f"Must select a list of attributes from {attribute_options}")
     return choice
 

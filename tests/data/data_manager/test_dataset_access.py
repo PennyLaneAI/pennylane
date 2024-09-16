@@ -94,7 +94,10 @@ def httpserver_listen_address():
 def get_mock(url, json, timeout=1.0):
     """Return mocked error message."""
     resp = MagicMock(ok=True)
-    resp.json.return_value = _error_response
+    if "ErrorQuery" in json["query"]:
+        resp.json.return_value = _error_response
+    elif "ListAttributes" in json["query"][0]:
+        resp.json.return_value = _list_attrs_resp
     return resp
 
 
@@ -111,8 +114,6 @@ def graphql_mock(url, query, variables=None):
         json_data = _parameter_tree
     elif "GetDatasetClasses" in query:
         json_data = _dataclass_ids
-    elif "ErrorQuery" in query:
-        json_data = _error_response
     return json_data
 
 
@@ -195,6 +196,18 @@ class TestLoadInteractive:
         ("side_effect"),
         [
             (["qspin", "Heisenberg", "1x4", "open", "full", True, PosixPath("/my/path"), "Y"]),
+            (
+                [
+                    "qspin",
+                    "Heisenberg",
+                    "1x4",
+                    "open",
+                    ["parameters", "shadow_basis", "shadow_meas"],
+                    True,
+                    PosixPath("/my/path"),
+                    "Y",
+                ]
+            ),
         ],
     )
     def test_load_interactive_success(
@@ -667,23 +680,39 @@ def test_validate_attributes_except(attributes, msg):
 class TestGetGraphql:
     """Tests for the ``_get_graphql()`` function."""
 
-    query = """
-            query GetDatasetClasses {
-            datasetClasses {
-                id
+    query = (
+        """
+        query ListAttributes($datasetClassId: String!) {
+          datasetClass($datasetClassId: String!) {
+            attributes {
+                name
             }
-            }
-            """
+          }
+        }
+        """,
+    )
+    inputs = {"input": {"datasetClassId": "qchem"}}
 
-    @patch.object(pennylane.data.data_manager, "_get_graphql", graphql_mock)
+    @patch.object(pennylane.data.data_manager, "get", get_mock)
     def test_return_json(self):
         """Tests that an expected json response is returned for a valid query and url."""
         response = pennylane.data.data_manager._get_graphql(
             GRAPHQL_URL,
             self.query,
+            self.inputs,
         )
         assert response == {
-            "data": {"datasetClasses": [{"id": "other"}, {"id": "qchem"}, {"id": "qspin"}]}
+            "data": {
+                "datasetClass": {
+                    "attributes": [
+                        "molecule",
+                        "hamiltonian",
+                        "sparse_hamiltonian",
+                        "hf_state",
+                        "full",
+                    ]
+                }
+            }
         }
 
     def test_bad_url(self):
@@ -692,15 +721,16 @@ class TestGetGraphql:
             pennylane.data.data_manager._get_graphql(
                 "https://bad/dataset/url",
                 self.query,
+                self.inputs,
             )
 
     def test_bad_query(self):
         """Tests that GraphQLError is raised when given a bad query"""
         bad_query = """
             query BadQuery {
-            badQuery {
-                badField
-            }
+              badQuery {
+                  badField
+              }
             }
             """
 
@@ -717,9 +747,9 @@ class TestGetGraphql:
         """
         error_query = """
             query ErrorQuery {
-            errorQuery {
-                field
-            }
+              errorQuery {
+                  field
+              }
             }
             """
 
