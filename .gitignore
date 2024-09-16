@@ -27,3 +27,5 @@ config.toml
 qml_debug.log
 datasets/*
 .benchmarks/*
+*.h5
+*.hdf5
