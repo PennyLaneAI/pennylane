@@ -27,22 +27,30 @@ from .measurements import StateMeasurement, VnEntanglementEntropy
 def vn_entanglement_entropy(wires0, wires1, log_base=None):
     r"""Measures the `Von Neumann entanglement entropy <https://en.wikipedia.org/wiki/Entropy_of_entanglement>`_
     of a quantum state:
+
     .. math::
+
         S(\rho_A) = -\text{Tr}[\rho_A \log \rho_A] = -\text{Tr}[\rho_B \log \rho_B] = S(\rho_B)
+
     where :math:`S` is the Von Neumann entropy; :math:`\rho_A = \text{Tr}_B [\rho_{AB}]` and
     :math:`\rho_B = \text{Tr}_A [\rho_{AB}]` are the reduced density matrices for each partition.
     The Von Neumann entanglement entropy is a measure of the degree of quantum entanglement between
     two subsystems constituting a pure bipartite quantum state. The entropy of entanglement is the
     Von Neumann entropy of the reduced density matrix for any of the subsystems. If it is non-zero,
     it indicates the two subsystems are entangled.
+
     Args:
         wires0 (Sequence[int] or int): the wires of the first subsystem
         wires1 (Sequence[int] or int): the wires of the second subsystem
         log_base (float): Base for the logarithm.
+
     Returns:
         VnEntanglementEntropyMP: measurement process instance
+
     **Example:**
+
     .. code-block:: python3
+
         dev = qml.device("default.qubit", wires=2)
         @qml.qnode(dev)
         def circuit(x):
@@ -50,17 +58,24 @@ def vn_entanglement_entropy(wires0, wires1, log_base=None):
             qml.Hadamard(0)
             qml.CNOT([0, 1])
             return qml.vn_entanglement_entropy([0], [1])
+
     Executing this QNode:
+
     >>> circuit(1.967)
     0.16389850379003218
+
     It is also possible to get the gradient of the previous QNode:
+
     >>> param = np.array(np.pi/4, requires_grad=True)
     >>> qml.grad(circuit)(param)
     tensor(-0.62322524, requires_grad=True)
+
     .. note::
+
         Calculating the derivative of :func:`~pennylane.vn_entanglement_entropy` is currently supported when
         using the classical backpropagation differentiation method (``diff_method="backprop"``)
         with a compatible device and finite differences (``diff_method="finite-diff"``).
+
     .. seealso:: :func:`~pennylane.vn_entropy` and :func:`pennylane.math.vn_entanglement_entropy`
     """
     wires0 = qml.wires.Wires(wires0)
@@ -79,6 +94,7 @@ def vn_entanglement_entropy(wires0, wires1, log_base=None):
 class VnEntanglementEntropyMP(StateMeasurement):
     """Measurement process that computes the Von Neumann entanglement entropy between the provided wires.
     Please refer to :func:`~pennylane.vn_entanglement_entropy` for detailed documentation.
+
     Args:
         wires (Sequence[.Wires]): The wires the measurement process applies to.
         id (str): custom label given to a measurement instance, can be useful for some applications
