@@ -21,13 +21,6 @@ env:
   DEPS_BRANCH: bot/stable-deps-update
 
 jobs:
-  determine_runner:
-    if: github.event.pull_request.draft == false
-    name: Determine runner type to use
-    uses: ./.github/workflows/determine-workflow-runner.yml
-    with:
-      default_runner: ubuntu-latest
-
   tests:
     if: github.event.pull_request.draft == false
     uses: ./.github/workflows/interface-unit-tests.yml
@@ -48,9 +41,9 @@ jobs:
       pytest_store_durations: false
 
   upload-stable-deps:
-    needs: [tests, determine_runner]
-    runs-on: ${{ needs.determine_runner.outputs.runner_group }}
-    if: ${{ github.event_name == 'push' }}
+    needs: [tests]
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'schedule' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
