@@ -20,7 +20,7 @@ Pending deprecations
   respectively.
 
   - Deprecated top level access in v0.39
-  - Top level access removed in v0.40
+  - Top level access will be removed in v0.40
 
 * `QNode.gradient_fn` is deprecated. Please use `QNode.diff_method` instead. `QNode.get_gradient_fn` can also be used to
   process the diff method.
