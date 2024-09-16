@@ -922,7 +922,7 @@ def _(original_measurement: ExpectationMP, measures):  # pylint: disable=unused-
     for v in measures.values():
         if not v[0] or v[1] is tuple():
             continue
-        cum_value += v[0] * v[1]
+        cum_value += qml.math.multiply(v[0], v[1])
         total_counts += v[0]
     return cum_value / total_counts
 
@@ -935,7 +935,7 @@ def _(original_measurement: ProbabilityMP, measures):  # pylint: disable=unused-
     for v in measures.values():
         if not v[0] or v[1] is tuple():
             continue
-        cum_value += v[0] * v[1]
+        cum_value += qml.math.multiply(v[0], v[1])
         total_counts += v[0]
     return cum_value / total_counts
 
