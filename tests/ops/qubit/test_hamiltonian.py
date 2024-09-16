@@ -1708,7 +1708,7 @@ class TestGrouping:
 
 
 @pytest.mark.usefixtures("legacy_opmath_only")
-class TestHamiltonianEvaluation:
+class TestHamiltonianEvaluation:  # pylint: disable=too-few-public-methods
     """Test the usage of a Hamiltonian as an observable"""
 
     @pytest.mark.parametrize("coeffs, param, interface", COEFFS_PARAM_INTERFACE)

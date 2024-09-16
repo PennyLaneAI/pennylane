@@ -231,7 +231,12 @@ def bit_flip_mixer(graph: Union[nx.Graph, rx.PyGraph], b: int):
         ]
         n_coeffs = [[1, sign] for n in neighbours]
 
-        final_terms = [qml.operation.Tensor(*list(m)).prune() for m in itertools.product(*n_terms)]
+        prod_op = (
+            qml.prod
+            if qml.operation.active_new_opmath()
+            else lambda x: qml.operation.Tensor(x).prune()
+        )
+        final_terms = [prod_op(*list(m)) for m in itertools.product(*n_terms)]
         final_coeffs = [
             (0.5**degree) * functools.reduce(lambda x, y: x * y, list(m), 1)
             for m in itertools.product(*n_coeffs)

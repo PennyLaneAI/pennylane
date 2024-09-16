@@ -228,8 +228,8 @@ def _pennylane_to_openfermion(coeffs, ops, wires=None, tol=1.0e-16):
 
     >>> coeffs = np.array([0.1, 0.2, 0.3, 0.4])
     >>> ops = [
-    ...     qml.operation.Tensor(qml.X('w0')),
-    ...     qml.operation.Tensor(qml.Y('w0'), qml.Z('w2')),
+    ...     qml.X('w0'),
+    ...     qml.prod(qml.Y('w0'), qml.Z('w2')),
     ...     qml.sum(qml.Z('w0'), qml.s_prod(-0.5, qml.X('w0'))),
     ...     qml.prod(qml.X('w0'), qml.Z('w1')),
     ... ]

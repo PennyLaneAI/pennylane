@@ -81,7 +81,7 @@ def _validate_computational_basis_sampling(tape):
             pauliz_for_cb_obs = (
                 qml.Z(all_wires)
                 if len(all_wires) == 1
-                else qml.operation.Tensor(*[qml.Z(w) for w in all_wires])
+                else qml.prod(*[qml.Z(w) for w in all_wires])
             )
 
         for obs in non_comp_basis_sampling_obs:
