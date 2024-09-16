@@ -106,7 +106,7 @@ class ReferenceQubit(Device):
     Args:
         wires (int, Iterable[Number, str]): Number of wires present on the device, or iterable that
             contains unique labels for the wires as numbers (i.e., ``[-1, 0, 2]``) or strings
-            (``['ancilla', 'q1', 'q2']``). Default ``None`` if not specified. While this device allows
+            (``['aux', 'q1', 'q2']``). Default ``None`` if not specified. While this device allows
             for ``wires`` to be unspecified at construction time, other devices may make this argument
             mandatory. Devices can also implement additional restrictions on the possible wires.
         shots (int, Sequence[int], Sequence[Union[int, Sequence[int]]]): The default number of shots
