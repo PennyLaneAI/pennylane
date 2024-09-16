@@ -764,7 +764,7 @@ class DefaultMixed(QubitDevice):
                     return super().execute(circuit, **kwargs)
                 if isinstance(m, (VnEntropyMP, MutualInfoMP)):
                     # VnEntropy, MutualInfo: Computed for the state
-                    # prior to measurement. So, readout error need not be applied on the
+                    # prior to measurement. So, readout error need not be applied to the
                     # corresponding device wires.
                     continue
                 wires_list.append(m.wires)
