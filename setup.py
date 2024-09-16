@@ -51,7 +51,6 @@ info = {
             "default.qubit = pennylane.devices:DefaultQubit",
             "default.qubit.legacy = pennylane.devices:DefaultQubitLegacy",
             "default.gaussian = pennylane.devices:DefaultGaussian",
-            "default.qubit.autograd = pennylane.devices.default_qubit_autograd:DefaultQubitAutograd",
             "default.mixed = pennylane.devices.default_mixed:DefaultMixed",
             "null.qubit = pennylane.devices.null_qubit:NullQubit",
             "default.qutrit = pennylane.devices.default_qutrit:DefaultQutrit",
