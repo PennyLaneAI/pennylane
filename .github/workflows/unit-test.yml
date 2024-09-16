@@ -14,6 +14,11 @@ on:
         description: Name of the artifact file that will contain the coverage file for codevoc
         required: true
         type: string
+      job_runner_name:
+        description: The name of the runner to use for the job
+        required: false
+        type: string
+        default: 'ubuntu-latest'
       checkout_fetch_depth:
         description: How many commits to checkout from HEAD of branch passed
         required: false
@@ -116,17 +121,9 @@ on:
         default: "False"
 
 jobs:
-  determine_runner:
-    if: github.event.pull_request.draft == false
-    name: Determine runner type to use
-    uses: ./.github/workflows/determine-workflow-runner.yml
-    with:
-      default_runner: ubuntu-latest
-
   test:
     name: ${{ inputs.job_name }}
-    needs: [determine_runner]
-    runs-on: ${{ needs.determine_runner.outputs.runner }}
+    runs-on: ${{ inputs.job_runner_name }}
 
     steps:
       - name: Checkout

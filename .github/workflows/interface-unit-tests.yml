@@ -49,6 +49,13 @@ on:
         default: false
 
 jobs:
+  determine_runner:
+    if: github.event.pull_request.draft == false
+    name: Determine runner type to use
+    uses: ./.github/workflows/determine-workflow-runner.yml
+    with:
+      default_runner: ubuntu-latest
+
   setup-ci-load:
     runs-on: ubuntu-latest
 
@@ -140,6 +147,7 @@ jobs:
   torch-tests:
     needs:
       - setup-ci-load
+      - determine_runner
     strategy:
       max-parallel: >-
         ${{
@@ -156,6 +164,7 @@ jobs:
     uses: ./.github/workflows/unit-test.yml
     with:
       job_name: torch-tests (${{ matrix.python-version }})
+      job_runner_name: ${{ needs.determine_runner.outputs.runner_group }}
       branch: ${{ inputs.branch }}
       coverage_artifact_name: core-interfaces-coverage-torch-${{ matrix.python-version }}
       python_version: ${{ matrix.python-version }}
@@ -173,6 +182,7 @@ jobs:
   autograd-tests:
     needs:
       - setup-ci-load
+      - determine_runner
     strategy:
       max-parallel: >-
         ${{
@@ -189,6 +199,7 @@ jobs:
     uses: ./.github/workflows/unit-test.yml
     with:
       job_name: autograd-tests (${{ matrix.python-version }})
+      job_runner_name: ${{ needs.determine_runner.outputs.runner_group }}
       branch: ${{ inputs.branch }}
       coverage_artifact_name: core-interfaces-coverage-autograd-${{ matrix.python-version }}
       python_version: ${{ matrix.python-version }}
@@ -205,6 +216,7 @@ jobs:
   tf-tests:
     needs:
       - setup-ci-load
+      - determine_runner
     strategy:
       max-parallel: >-
         ${{
@@ -222,6 +234,7 @@ jobs:
     uses: ./.github/workflows/unit-test.yml
     with:
       job_name: tf-tests (${{ matrix.group }}, ${{ matrix.python-version }})
+      job_runner_name: ${{ needs.determine_runner.outputs.runner_group }}
       branch: ${{ inputs.branch }}
       coverage_artifact_name: core-interfaces-coverage-tf-${{ matrix.python-version }}-${{ matrix.group }}
       python_version: ${{ matrix.python-version }}
@@ -243,6 +256,7 @@ jobs:
   jax-tests:
     needs:
       - setup-ci-load
+      - determine_runner
     strategy:
       max-parallel: >-
         ${{
@@ -260,6 +274,7 @@ jobs:
     uses: ./.github/workflows/unit-test.yml
     with:
       job_name: jax-tests (${{ matrix.group }}, ${{ matrix.python-version }})
+      job_runner_name: ${{ needs.determine_runner.outputs.runner_group }}
       branch: ${{ inputs.branch }}
       coverage_artifact_name: core-interfaces-coverage-jax-${{ matrix.python-version }}-${{ matrix.group }}
       python_version: ${{ matrix.python-version }}
@@ -281,6 +296,7 @@ jobs:
   core-tests:
     needs:
       - setup-ci-load
+      - determine_runner
     strategy:
       max-parallel: >-
         ${{
@@ -298,6 +314,7 @@ jobs:
     uses: ./.github/workflows/unit-test.yml
     with:
       job_name: core-tests (${{ matrix.group }}, ${{ matrix.python-version }})
+      job_runner_name: ${{ needs.determine_runner.outputs.runner_group }}
       branch: ${{ inputs.branch }}
       coverage_artifact_name: core-interfaces-coverage-core-${{ matrix.python-version }}-${{ matrix.group }}
       python_version: ${{ matrix.python-version }}
@@ -319,6 +336,7 @@ jobs:
   all-interfaces-tests:
     needs:
       - setup-ci-load
+      - determine_runner
     strategy:
       max-parallel: >-
         ${{
@@ -335,6 +353,7 @@ jobs:
     uses: ./.github/workflows/unit-test.yml
     with:
       job_name: all-interfaces-tests (${{ matrix.python-version }})
+      job_runner_name: ${{ needs.determine_runner.outputs.runner_group }}
       branch: ${{ inputs.branch }}
       coverage_artifact_name: all-interfaces-coverage
       python_version: ${{ matrix.python-version }}
@@ -352,6 +371,7 @@ jobs:
   external-libraries-tests:
     needs:
       - setup-ci-load
+      - determine_runner
     strategy:
       max-parallel: >-
         ${{
@@ -368,6 +388,7 @@ jobs:
     uses: ./.github/workflows/unit-test.yml
     with:
       job_name: external-libraries-tests (${{ matrix.python-version }})
+      job_runner_name: ${{ needs.determine_runner.outputs.runner_group }}
       branch: ${{ inputs.branch }}
       coverage_artifact_name: external-libraries-tests-coverage
       python_version: ${{ matrix.python-version }}
@@ -391,6 +412,7 @@ jobs:
   qcut-tests:
     needs:
       - setup-ci-load
+      - determine_runner
     strategy:
       max-parallel: >-
         ${{
@@ -407,6 +429,7 @@ jobs:
     uses: ./.github/workflows/unit-test.yml
     with:
       job_name: qcut-tests (${{ matrix.python-version }})
+      job_runner_name: ${{ needs.determine_runner.outputs.runner_group }}
       branch: ${{ inputs.branch }}
       coverage_artifact_name: qcut-coverage
       python_version: ${{ matrix.python-version }}
@@ -424,6 +447,7 @@ jobs:
   qchem-tests:
     needs:
       - setup-ci-load
+      - determine_runner
     strategy:
       max-parallel: >-
         ${{
@@ -440,6 +464,7 @@ jobs:
     uses: ./.github/workflows/unit-test.yml
     with:
       job_name: qchem-tests (${{ matrix.python-version }})
+      job_runner_name: ${{ needs.determine_runner.outputs.runner_group }}
       branch: ${{ inputs.branch }}
       coverage_artifact_name: qchem-coverage
       python_version: ${{ matrix.python-version }}
@@ -456,6 +481,7 @@ jobs:
   gradients-tests:
     needs:
       - setup-ci-load
+      - determine_runner
     strategy:
       max-parallel: >-
         ${{
@@ -475,6 +501,7 @@ jobs:
     uses: ./.github/workflows/unit-test.yml
     with:
       job_name: gradients-tests (${{ matrix.config.suite }}, ${{ matrix.python-version }})
+      job_runner_name: ${{ needs.determine_runner.outputs.runner_group }}
       branch: ${{ inputs.branch }}
       coverage_artifact_name: gradients-${{ matrix.config.suite }}-coverage
       python_version: ${{ matrix.python-version }}
@@ -491,6 +518,7 @@ jobs:
   data-tests:
     needs:
       - setup-ci-load
+      - determine_runner
     strategy:
       max-parallel: >-
         ${{
@@ -507,6 +535,7 @@ jobs:
     uses: ./.github/workflows/unit-test.yml
     with:
       job_name: data-tests (${{ matrix.python-version }})
+      job_runner_name: ${{ needs.determine_runner.outputs.runner_group }}
       branch: ${{ inputs.branch }}
       coverage_artifact_name: data-coverage-${{ matrix.python-version }}
       python_version: ${{ matrix.python-version }}
@@ -524,6 +553,7 @@ jobs:
   device-tests:
     needs:
       - setup-ci-load
+      - determine_runner
     strategy:
       max-parallel: >-
         ${{
@@ -547,6 +577,7 @@ jobs:
     uses: ./.github/workflows/unit-test.yml
     with:
       job_name: device-tests (${{ matrix.config.device }}, ${{ matrix.config.shots }}, ${{ matrix.python-version }})
+      job_runner_name: ${{ needs.determine_runner.outputs.runner_group }}
       branch: ${{ inputs.branch }}
       coverage_artifact_name: devices-coverage-${{ matrix.config.device }}-${{ matrix.config.shots }}
       python_version: ${{ matrix.python-version }}
