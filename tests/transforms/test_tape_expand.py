@@ -19,6 +19,7 @@ Unit tests for tape expansion stopping criteria and expansion functions.
 
 import numpy as np
 import pytest
+from default_qubit_legacy import DefaultQubitLegacy
 
 import pennylane as qml
 from pennylane.wires import Wires
@@ -66,7 +67,7 @@ class TestCreateExpandFn:
         """Test that passing a device alongside a stopping condition ensures
         that all operations are expanded to match the devices default gate
         set"""
-        dev = qml.device("default.mixed", wires=1)
+        dev = DefaultQubitLegacy(wires=1)
         expand_fn = qml.transforms.create_expand_fn(device=dev, depth=10, stop_at=self.crit_0)
 
         with qml.queuing.AnnotatedQueue() as q:
@@ -82,7 +83,7 @@ class TestCreateExpandFn:
     def test_device_only_expansion(self):
         """Test that passing a device ensures that all operations are expanded
         to match the devices default gate set"""
-        dev = qml.device("default.mixed", wires=1)
+        dev = DefaultQubitLegacy(wires=1)
         expand_fn = qml.transforms.create_expand_fn(device=dev, depth=10)
 
         with qml.queuing.AnnotatedQueue() as q:
@@ -771,7 +772,7 @@ class TestCreateCustomDecompExpandFn:
         assert decomp_ops[1].name == "Hadamard"
         assert decomp_ops[1].wires == Wires("a")
 
-    @pytest.mark.parametrize("device_name", ["default.qubit", "default.mixed"])
+    @pytest.mark.parametrize("device_name", ["default.qubit", "default.qubit.legacy"])
     def test_custom_decomp_with_control(self, device_name):
         """Test that decomposing a controlled version of a gate uses the custom decomposition
         for the base gate."""
@@ -786,7 +787,12 @@ class TestCreateCustomDecompExpandFn:
         original_decomp = CustomOp(0).decomposition()
 
         custom_decomps = {CustomOp: lambda wires: [qml.T(wires), qml.T(wires)]}
-        decomp_dev = qml.device(device_name, wires=2, custom_decomps=custom_decomps)
+        if device_name == "default.qubit.legacy":
+            decomp_dev = DefaultQubitLegacy(wires=2)
+            expand_fn = qml.transforms.create_decomp_expand_fn(custom_decomps, decomp_dev)
+            decomp_dev.custom_expand(expand_fn)
+        else:
+            decomp_dev = qml.device(device_name, wires=2, custom_decomps=custom_decomps)
 
         @qml.qnode(decomp_dev)
         def circuit():
