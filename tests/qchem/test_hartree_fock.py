@@ -373,7 +373,7 @@ class TestJax:
             ),
         ],
     )
-    def test_hf_energy_gradient(self, symbols, geometry, g_ref):
+    def test_hf_energy_gradient_jax(self, symbols, geometry, g_ref):
         r"""Test that the gradient of the Hartree-Fock energy wrt differentiable parameters is
         correct with jax."""
         import jax

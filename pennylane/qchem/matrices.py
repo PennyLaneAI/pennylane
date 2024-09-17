@@ -198,7 +198,6 @@ def kinetic_matrix(basis_functions):
             if args:
                 args_ab.extend([arg[i], arg[j]] for arg in args)
             integral = kinetic_integral(a, b, normalize=False)(*args_ab)
-
             o = qml.math.zeros((n, n))
             o[i, j] = o[j, i] = 1.0
             matrix = matrix + integral * o

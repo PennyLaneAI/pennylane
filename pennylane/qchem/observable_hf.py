@@ -52,7 +52,8 @@ def fermionic_observable(constant, one=None, two=None, cutoff=1.0e-12):
     + 0.5 * a⁺(3) a(3)
     """
     coeffs = qml.math.array([])
-    constant = qml.math.array([constant])
+    if isinstance(constant, float):
+        constant = qml.math.array([constant])
 
     if not qml.math.allclose(constant, 0.0):
         coeffs = qml.math.concatenate((coeffs, constant))

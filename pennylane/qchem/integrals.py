@@ -534,7 +534,7 @@ def moment_integral(basis_a, basis_b, order, idx, normalize=True):
             or normalize
             or (
                 qml.math.get_interface(basis_a.params[1]) == "jax"
-                and qml.math.requires_grad(args[1])
+                and qml.math.requires_grad(args[1][0])
             )
         ):
             ca = ca * primitive_norm(basis_a.l, alpha)
@@ -712,7 +712,7 @@ def kinetic_integral(basis_a, basis_b, normalize=True):
             or normalize
             or (
                 qml.math.get_interface(basis_a.params[1]) == "jax"
-                and qml.math.requires_grad(args[1])
+                and qml.math.requires_grad(args[1][0])
             )
         ):
             ca = ca * primitive_norm(basis_a.l, alpha)
@@ -936,7 +936,7 @@ def attraction_integral(r, basis_a, basis_b, normalize=True):
             or normalize
             or (
                 qml.math.get_interface(basis_a.params[1]) == "jax"
-                and qml.math.requires_grad(args[1])
+                and qml.math.requires_grad(args[1][0])
             )
         ):
             ca = ca * primitive_norm(basis_a.l, alpha)
