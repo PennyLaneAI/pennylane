@@ -813,7 +813,9 @@ class TestIntegration:
         """Test that the defer_measurements transform is not used during
         QNode construction if the device supports mid-circuit measurements."""
         dev = qml.device("default.qubit.legacy", wires=3)
-        mocker.patch.object(qml.Device, "_capabilities", {"supports_mid_measure": True})
+        mocker.patch.object(
+            qml.devices.LegacyDevice, "_capabilities", {"supports_mid_measure": True}
+        )
         spy = mocker.spy(qml.defer_measurements, "_transform")
 
         @qml.qnode(dev)
@@ -1486,7 +1488,7 @@ class TestTapeExpansion:
         else:
             spy = mocker.spy(circuit.device, "execute")
 
-        x = np.array(0.5)
+        x = pnp.array(0.5)
         circuit(x)
 
         tape = spy.call_args[0][0][0]
