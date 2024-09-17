@@ -34,7 +34,7 @@ jobs:
                 "torch-tests": ["3.10", "3.12"],
                 "jax-tests": ["3.10", "3.12"],
                 "external-libraries-tests": ["3.10"],
-                "data-tests": ["3.10"],
+                "data-tests": ["3.10"]
             }
             EOF
         
@@ -55,7 +55,7 @@ jobs:
                 "default": 1,
                 "core-tests": 5,
                 "jax-tests": 10,
-                "torch-tests": 2,
+                "torch-tests": 2
             }
             EOF
 
