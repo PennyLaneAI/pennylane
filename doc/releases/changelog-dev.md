@@ -65,7 +65,7 @@
 
 * The `simplify` argument in `qml.Hamiltonian` and `qml.ops.LinearCombination` has been removed.
   Instead, `qml.simplify()` can be called on the constructed operator.
-  [(#)]()
+  [(#6279)](https://github.com/PennyLaneAI/pennylane/pull/6279)
 
 * The functions `qml.qinfo.classical_fisher` and `qml.qinfo.quantum_fisher` have been removed and migrated to the `qml.gradients`
   module. Therefore, `qml.gradients.classical_fisher` and `qml.gradients.quantum_fisher` should be used instead.
