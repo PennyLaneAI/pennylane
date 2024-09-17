@@ -217,7 +217,7 @@ def get_measurement_function(
                     # always use sum_of_terms_method for Sum observables in backprop mode
                     return sum_of_terms_method
 
-                if not all(obs.has_sparse_matrix() for _, obs in measurementprocess.obs.terms()):
+                if not all(obs.has_sparse_matrix for obs in measurementprocess.obs):
                     return sum_of_terms_method
 
                 if (
