@@ -64,28 +64,28 @@ def device(name, *args, **kwargs):
     PennyLane comes with support for the following devices:
 
     * :mod:`'default.qubit' <pennylane.devices.default_qubit>`: a simple
-        state simulator of qubit-based quantum circuit architectures.
+      state simulator of qubit-based quantum circuit architectures.
 
     * :mod:`'default.mixed' <pennylane.devices.default_mixed>`: a mixed-state
-        simulator of qubit-based quantum circuit architectures.
+      simulator of qubit-based quantum circuit architectures.
 
     * ``'lightning.qubit'``: a more performant state simulator of qubit-based
-        quantum circuit architectures written in C++.
+      quantum circuit architectures written in C++.
 
     * :mod:`'default.qutrit' <pennylane.devices.default_qutrit>`: a simple
-        state simulator of qutrit-based quantum circuit architectures.
+      state simulator of qutrit-based quantum circuit architectures.
 
     * :mod:`'default.qutrit.mixed' <pennylane.devices.default_qutrit_mixed>`: a
-        mixed-state simulator of qutrit-based quantum circuit architectures.
+      mixed-state simulator of qutrit-based quantum circuit architectures.
 
     * :mod:`'default.gaussian' <pennylane.devices.default_gaussian>`: a simple simulator
-        of Gaussian states and operations on continuous-variable circuit architectures.
+      of Gaussian states and operations on continuous-variable circuit architectures.
 
     * :mod:`'default.clifford' <pennylane.devices.default_clifford>`: an efficient
-        simulator of Clifford circuits.
+      simulator of Clifford circuits.
 
     * :mod:`'default.tensor' <pennylane.devices.default_tensor>`: a simulator
-        of quantum circuits based on tensor networks.
+      of quantum circuits based on tensor networks.
 
     Additional devices are supported through plugins — see
     the  `available plugins <https://pennylane.ai/plugins.html>`_ for more
