@@ -327,17 +327,21 @@ class FermiWord(dict):
     def shift_operator(self, initial_position, final_position):
         r"""Shifts an operator in the FermiWord from ``initial_position`` to ``final_position`` by applying the fermionic anti-commutation relations.
 
-    There are four `anti-commutator relations <https://en.wikipedia.org/wiki/Creation_and_annihilation_operators#Creation_and_annihilation_operators_in_quantum_field_theories>`_:
+    There are three `anti-commutator relations <https://en.wikipedia.org/wiki/Creation_and_annihilation_operators#Creation_and_annihilation_operators_in_quantum_field_theories>`_:
 
     .. math::
-        \begin{align*}
-            \left\{ a_i, a_j \right\} &= 0\\\\
-            \left\{ a^{\dagger}_i, a^{\dagger}_j \right\} &= 0\\\\
-            \left\{ a_i, a^{\dagger}_j \right\} &= \delta_{ij}\\\\
-        \end{align*}
+        \left\{ a_i, a_j \right\} = 0 \quad \left\{ a^{\dagger}_i, a^{\dagger}_j \right\} = 0 \quad \left\{ a_i, a^{\dagger}_j \right\} = \delta_{ij}
 
 
-    where :math:`\left\{a_i, a_j \right\} = a_i a_j + a_j a_i\,` and  :math:`\,\delta_{ij} = \begin{cases} 1 & i = j \\ 0 & i \neq j \end{cases}`.
+    where 
+
+    .. math::
+        \left\{a_i, a_j \right\} = a_i a_j + a_j a_i,
+
+    and  
+
+    .. math::
+        \delta_{ij} = \begin{cases} 1 & i = j \\ 0 & i \neq j \end{cases}.
 
     Args:
         initial_position (int): The position of the operator to be shifted.
@@ -347,8 +351,9 @@ class FermiWord(dict):
         FermiSentence: The ``FermiSentence`` obtained after applying the anti-commutator relations.
 
     Raises:
-        TypeError: if the source or target is not an integer
-        ValueError: if the source or target are outside the range [0, len(self) - 1]
+        TypeError: if ``initial_position`` or ``final_position`` is not an integer
+        ValueError: if ``initial_position`` or ``final_position`` are outside the range ``[0, len(self) - 1]``
+                    where ``len(self)`` is the number of operators in the FermiWord.
 
 
     **Example**
