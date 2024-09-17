@@ -56,6 +56,12 @@ Pending deprecations
   - Deprecated in v0.37
   - Will be removed in v0.39
 
+* The ``QubitStateVector`` template is deprecated.
+  Instead, use ``StatePrep``.
+
+  - Deprecated in v0.39
+  - Will be removed in v0.40
+
 New operator arithmetic deprecations
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
