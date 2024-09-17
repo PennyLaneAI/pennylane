@@ -90,6 +90,10 @@
 
 <h3>Deprecations 👋</h3>
 
+* The ``QubitStateVector`` template is deprecated.
+   Instead, use ``StatePrep``.
+   [(#6172)](https://github.com/PennyLaneAI/pennylane/pull/6172)
+
 * `Device`, `QubitDevice`, and `QutritDevice` will no longer be accessible via top-level import in v0.40.
   They will still be accessible as `qml.devices.LegacyDevice`, `qml.devices.QubitDevice`, and `qml.devices.QutritDevice`
   respectively.
