@@ -22,7 +22,7 @@ from pennylane.ops.op_math.adjoint import _get_adjoint_qfunc_prim
 from pennylane.ops.op_math.condition import _get_cond_qfunc_prim
 from pennylane.ops.op_math.controlled import _get_ctrl_qfunc_prim
 
-from .capture_diff import _get_grad_prim
+from .capture_diff import _get_grad_prim, _get_jacobian_prim
 from .capture_measurements import _get_abstract_measurement
 from .capture_operators import _get_abstract_operator
 from .capture_qnode import _get_qnode_prim
@@ -32,6 +32,7 @@ AbstractMeasurement = _get_abstract_measurement()
 adjoint_transform_prim = _get_adjoint_qfunc_prim()
 ctrl_transform_prim = _get_ctrl_qfunc_prim()
 grad_prim = _get_grad_prim()
+jacobian_prim = _get_jacobian_prim()
 qnode_prim = _get_qnode_prim()
 cond_prim = _get_cond_qfunc_prim()
 for_loop_prim = _get_for_loop_qfunc_prim()
@@ -44,6 +45,7 @@ __all__ = [
     "adjoint_transform_prim",
     "ctrl_transform_prim",
     "grad_prim",
+    "jacobian_prim",
     "qnode_prim",
     "cond_prim",
     "for_loop_prim",

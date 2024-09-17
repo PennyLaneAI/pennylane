@@ -47,6 +47,7 @@ qubit_device_and_diff_method = [
     [ParamShiftDerivativesDevice(), "best", False, False],
     [ParamShiftDerivativesDevice(), "parameter-shift", True, False],
     [ParamShiftDerivativesDevice(), "parameter-shift", False, True],
+    [qml.device("reference.qubit"), "parameter-shift", False, False],
 ]
 
 interface_and_qubit_device_and_diff_method = [
@@ -642,7 +643,10 @@ class TestShotsIntegration:
         cost_fn(a, b, shots=100)
         # since we are using finite shots, parameter-shift will
         # be chosen
-        assert cost_fn.gradient_fn == qml.gradients.param_shift
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match=r"QNode.gradient_fn is deprecated"
+        ):
+            assert cost_fn.gradient_fn == qml.gradients.param_shift
         assert spy.call_args[1]["gradient_fn"] is qml.gradients.param_shift
 
         # if we use the default shots value of None, backprop can now be used
@@ -1128,6 +1132,8 @@ class TestQubitIntegration:
             tol = TOL_FOR_SPSA
         elif diff_method == "hadamard":
             pytest.skip("Hadamard does not support variances.")
+        if dev.name == "reference.qubit":
+            pytest.xfail("diagonalize_measurements do not support projectors (sc-72911)")
 
         P = torch.tensor(state, requires_grad=False)
 
@@ -1163,6 +1169,9 @@ class TestQubitIntegration:
 
         if diff_method in ["adjoint", "spsa", "hadamard"]:
             pytest.skip("Diff method does not support postselection.")
+
+        if dev.name == "reference.qubit":
+            pytest.skip("reference.qubit does not support postselection.")
 
         @qml.qnode(
             dev,

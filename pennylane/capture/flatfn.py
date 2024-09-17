@@ -29,23 +29,48 @@ class FlatFn:
     property, so that the results can be repacked later. It also returns flattened results
     instead of the original result object.
 
+    If an ``in_tree`` is provided, the function accepts flattened inputs instead of the
+    original inputs with tree structure given by ``in_tree``.
+
+    **Example**
+
+    >>> import jax
+    >>> from pennylane.capture.flatfn import FlatFn
     >>> def f(x):
     ...     return {"y": 2+x["x"]}
     >>> flat_f = FlatFn(f)
-    >>> res = flat_f({"x": 0})
+    >>> arg = {"x": 0.5}
+    >>> res = flat_f(arg)
     >>> res
-    [2]
+    [2.5]
     >>> jax.tree_util.tree_unflatten(flat_f.out_tree, res)
     {'y': 2.5}
 
+    If we want to use a fully flattened function that also takes flat inputs instead of
+    the original inputs with tree structure, we can provide the treedef for this input
+    structure:
+
+    >>> flat_args, in_tree = jax.tree_util.tree_flatten((arg,))
+    >>> flat_f = FlatFn(f, in_tree)
+    >>> res = flat_f(*flat_args)
+    >>> res
+    [2.5]
+    >>> jax.tree_util.tree_unflatten(flat_f.out_tree, res)
+    {'y': 2.5}
+
+    Note that the ``in_tree`` has to be  created by flattening a tuple of all input
+    arguments, even if there is only a single argument.
     """
 
-    def __init__(self, f):
+    def __init__(self, f, in_tree=None):
         self.f = f
+        self.in_tree = in_tree
         self.out_tree = None
         update_wrapper(self, f)
 
     def __call__(self, *args):
+        if self.in_tree is not None:
+            args = jax.tree_util.tree_unflatten(self.in_tree, args)
         out = self.f(*args)
         out_flat, out_tree = jax.tree_util.tree_flatten(out)
         self.out_tree = out_tree
