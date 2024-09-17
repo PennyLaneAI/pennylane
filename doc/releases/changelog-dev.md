@@ -101,6 +101,10 @@
 
 <h3>Deprecations 👋</h3>
 
+* The `qml.qinfo` module has been deprecated. Please see the respective functions in the `qml.math` and
+  `qml.measurements` modules instead.
+  [(#5911)](https://github.com/PennyLaneAI/pennylane/pull/5911)
+
 * The ``QubitStateVector`` template is deprecated.
    Instead, use ``StatePrep``.
    [(#6172)](https://github.com/PennyLaneAI/pennylane/pull/6172)
