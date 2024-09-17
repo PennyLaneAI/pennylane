@@ -54,6 +54,9 @@
   unique representation of the object.
   [(#6167)](https://github.com/PennyLaneAI/pennylane/pull/6167)
 
+* A `ReferenceQubit` is introduced for testing purposes and as a reference for future plugin development.
+  [(#6181)](https://github.com/PennyLaneAI/pennylane/pull/6181)
+
 * The `to_mat` methods for `FermiWord` and `FermiSentence` now optionally return
   a sparse matrix.
   [(#6173)](https://github.com/PennyLaneAI/pennylane/pull/6173)
@@ -89,6 +92,10 @@
 
 
 <h3>Deprecations 👋</h3>
+
+* The ``QubitStateVector`` template is deprecated.
+   Instead, use ``StatePrep``.
+   [(#6172)](https://github.com/PennyLaneAI/pennylane/pull/6172)
 
 * `Device`, `QubitDevice`, and `QutritDevice` will no longer be accessible via top-level import in v0.40.
   They will still be accessible as `qml.devices.LegacyDevice`, `qml.devices.QubitDevice`, and `qml.devices.QutritDevice`
