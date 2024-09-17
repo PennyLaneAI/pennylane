@@ -18,13 +18,13 @@ Unit tests for the :mod:`pennylane.devices.DefaultQubitLegacy` device.
 # pylint: disable=protected-access,cell-var-from-loop
 import cmath
 import math
+from importlib.metadata import version
 
 import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.devices.default_qubit_legacy import DefaultQubitLegacy, _get_slice
-from pennylane.pulse import ParametrizedHamiltonian
 from pennylane.wires import WireError, Wires
 
 U = np.array(
@@ -629,7 +629,8 @@ class TestApply:
         expected_output = np.array(input_state) * np.exp(-1j * phase)
 
         assert np.allclose(qubit_device_3_wires._state, np.array(expected_output), atol=tol, rtol=0)
-        assert qubit_device_3_wires._state.dtype == qubit_device_3_wires.C_DTYPE
+        if version("numpy") < "2.0.0":
+            assert qubit_device_3_wires._state.dtype == qubit_device_3_wires.C_DTYPE
 
     def test_apply_errors_qubit_state_vector(self, qubit_device_2_wires):
         """Test that apply fails for incorrect state preparation, and > 2 qubit gates"""
@@ -651,26 +652,26 @@ class TestApply:
             )
 
     def test_apply_errors_basis_state(self, qubit_device_2_wires):
+        with np.printoptions(legacy="1.21"):
+            with pytest.raises(
+                ValueError, match=r"Basis state must only consist of 0s and 1s; got \[-0\.2, 4\.2\]"
+            ):
+                qubit_device_2_wires.apply([qml.BasisState(np.array([-0.2, 4.2]), wires=[0, 1])])
 
-        with pytest.raises(
-            ValueError, match=r"Basis state must only consist of 0s and 1s; got \[-0\.2, 4\.2\]"
-        ):
-            qubit_device_2_wires.apply([qml.BasisState(np.array([-0.2, 4.2]), wires=[0, 1])])
+            with pytest.raises(
+                ValueError, match=r"State must be of length 1; got length 2 \(state=\[0 1\]\)\."
+            ):
+                qubit_device_2_wires.apply([qml.BasisState(np.array([0, 1]), wires=[0])])
 
-        with pytest.raises(
-            ValueError, match=r"State must be of length 1; got length 2 \(state=\[0 1\]\)\."
-        ):
-            qubit_device_2_wires.apply([qml.BasisState(np.array([0, 1]), wires=[0])])
-
-        with pytest.raises(
-            qml.DeviceError,
-            match="Operation BasisState cannot be used after other Operations have already been applied "
-            "on a default.qubit.legacy device.",
-        ):
-            qubit_device_2_wires.reset()
-            qubit_device_2_wires.apply(
-                [qml.RZ(0.5, wires=[0]), qml.BasisState(np.array([1, 1]), wires=[0, 1])]
-            )
+            with pytest.raises(
+                qml.DeviceError,
+                match="Operation BasisState cannot be used after other Operations have already been applied "
+                "on a default.qubit.legacy device.",
+            ):
+                qubit_device_2_wires.reset()
+                qubit_device_2_wires.apply(
+                    [qml.RZ(0.5, wires=[0]), qml.BasisState(np.array([1, 1]), wires=[0, 1])]
+                )
 
 
 class TestExpval:
@@ -1007,10 +1008,7 @@ class TestDefaultQubitLegacyIntegration:
             "supports_inverse_operations": True,
             "supports_analytic_computation": True,
             "supports_broadcasting": True,
-            "passthru_devices": {
-                "autograd": "default.qubit.autograd",
-                "jax": "default.qubit.jax",
-            },
+            "passthru_devices": {},
         }
         assert cap == capabilities
 
@@ -2085,34 +2083,6 @@ class TestApplyOps:
         state_out_einsum = np.einsum("abcdef,kdfe->kacb", matrix, self.state)
         assert np.allclose(state_out, state_out_einsum)
 
-    @pytest.mark.jax
-    def test_apply_parametrized_evolution_raises_error(self):
-        """Test that applying a ParametrizedEvolution raises an error."""
-        param_ev = qml.evolve(ParametrizedHamiltonian([1], [qml.PauliX(0)]))
-        with pytest.raises(
-            NotImplementedError,
-            match="The device default.qubit.legacy cannot execute a ParametrizedEvolution operation",
-        ):
-            self.dev._apply_parametrized_evolution(state=self.state, operation=param_ev)
-
-        @qml.qnode(self.dev)
-        def circuit():
-            qml.apply(param_ev)
-            return qml.expval(qml.PauliZ(0))
-
-        with pytest.raises(
-            qml.DeviceError,
-            match="Gate ParametrizedEvolution not supported on device default.qubit.",
-        ):
-            circuit()
-
-        self.dev.operations.add("ParametrizedEvolution")
-        with pytest.raises(
-            NotImplementedError,
-            match="The device default.qubit.legacy cannot execute a ParametrizedEvolution operation",
-        ):
-            circuit()
-
 
 class TestStateVector:
     """Unit tests for the _apply_state_vector method"""
@@ -2376,7 +2346,7 @@ class TestHamiltonianSupport:
         dev = qml.device("default.qubit.legacy", wires=2, shots=10)
         H = qml.Hamiltonian([0.1, 0.2], [qml.PauliX(0), qml.PauliZ(1)])
 
-        spy = mocker.spy(qml.QubitDevice, "_get_diagonalizing_gates")
+        spy = mocker.spy(qml.devices.QubitDevice, "_get_diagonalizing_gates")
         qs = qml.tape.QuantumScript([qml.RX(1, 0)], [qml.expval(qml.PauliX(0)), qml.expval(H)])
         rotations = dev._get_diagonalizing_gates(qs)
 
@@ -2414,34 +2384,10 @@ class TestSumSupport:
     def test_super_expval_not_called(self, is_state_batched, mocker):
         """Tests basic expval result, and ensures QubitDevice.expval is not called."""
         dev = qml.device("default.qubit.legacy", wires=1)
-        spy = mocker.spy(qml.QubitDevice, "expval")
+        spy = mocker.spy(qml.devices.QubitDevice, "expval")
         obs = qml.sum(qml.s_prod(0.1, qml.PauliX(0)), qml.s_prod(0.2, qml.PauliZ(0)))
         assert np.isclose(dev.expval(obs), 0.2)
         spy.assert_not_called()
-
-    @pytest.mark.autograd
-    def test_trainable_autograd(self, is_state_batched):
-        """Tests that coeffs passed to a sum are trainable with autograd."""
-        if is_state_batched:
-            pytest.skip(
-                reason="Broadcasting, qml.jacobian and new return types do not work together"
-            )
-        dev = qml.device("default.qubit.legacy", wires=1)
-        qnode = qml.QNode(self.circuit, dev, interface="autograd")
-        y, z = np.array([1.1, 2.2])
-        actual = qml.grad(qnode, argnum=[0, 1])(y, z, is_state_batched)
-        assert np.allclose(actual, self.expected_grad(is_state_batched))
-
-    @pytest.mark.jax
-    def test_trainable_jax(self, is_state_batched):
-        """Tests that coeffs passed to a sum are trainable with jax."""
-        import jax
-
-        dev = qml.device("default.qubit.legacy", wires=1)
-        qnode = qml.QNode(self.circuit, dev, interface="jax")
-        y, z = jax.numpy.array([1.1, 2.2])
-        actual = jax.jacobian(qnode, argnums=[0, 1])(y, z, is_state_batched)
-        assert np.allclose(actual, self.expected_grad(is_state_batched))
 
 
 class TestGetBatchSize:

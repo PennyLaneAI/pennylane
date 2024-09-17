@@ -59,7 +59,6 @@ class TestQNodeIntegration:
 
         expected = -np.sin(p)
 
-        assert circuit.gradient_fn == "backprop"
         assert np.isclose(circuit(p), expected, atol=tol, rtol=0)
 
     def test_correct_state(self, tol):
@@ -405,7 +404,6 @@ class TestPassthruIntegration:
             qml.RX(p[2] / 2, wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        assert circuit.gradient_fn == "backprop"
         res = decorator(circuit)(weights)
 
         expected = np.cos(3 * x) * np.cos(y) * np.cos(z / 2) - np.sin(3 * x) * np.sin(z / 2)
@@ -476,9 +474,6 @@ class TestPassthruIntegration:
 
         res = decorator(circuit1)(p_jax)
         assert np.allclose(res, circuit2(p), atol=tol, rtol=0)
-
-        assert circuit1.gradient_fn == "backprop"
-        assert circuit2.gradient_fn is qml.gradients.param_shift
 
         res = decorator(jacobian_fn(circuit1, 0))(p_jax)
         assert np.allclose(res, jax.jacobian(circuit2)(p), atol=tol, rtol=0)
@@ -709,14 +704,6 @@ class TestPassthruIntegration:
         res = cost(params)
         expected_cost = (np.sin(lam) * np.sin(phi) - np.cos(theta) * np.cos(lam) * np.cos(phi)) ** 2
         assert np.allclose(res, expected_cost, atol=tol, rtol=0)
-
-        # Check that the correct differentiation method is being used.
-        if diff_method == "backprop":
-            assert circuit.gradient_fn == "backprop"
-        elif diff_method == "parameter-shift":
-            assert circuit.gradient_fn is qml.gradients.param_shift
-        else:
-            assert circuit.gradient_fn is qml.gradients.finite_diff
 
         res = jax.grad(cost)(params)
 
