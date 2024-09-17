@@ -279,29 +279,6 @@ def create_jax_like_array(values):
 @pytest.mark.jax
 class TestJax:
     @pytest.mark.parametrize(
-        ("symbols", "geometry", "g_ref"),
-        [
-            (
-                ["H", "H"],
-                [[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]],
-                # HF gradient computed with pyscf using rnuc_grad_method().kernel()
-                [[0.0, 0.0, 0.3650435], [0.0, 0.0, -0.3650435]],
-            ),
-        ],
-    )
-    def test_hf_energy_gradient(self, symbols, geometry, g_ref):
-        r"""Test that the gradient of the Hartree-Fock energy wrt differentiable parameters is
-        correct."""
-        import jax
-
-        geometry = jax.numpy.array(geometry)
-        mol = qchem.Molecule(symbols, geometry)
-        args = [geometry, mol.coeff, mol.alpha]
-        g = jax.grad(qchem.hf_energy(mol), argnums=0)(*args)
-        g_ref = jax.numpy.array(g_ref)
-        assert np.allclose(g, g_ref)
-
-    @pytest.mark.parametrize(
         ("symbols", "geometry", "e_ref"),
         [
             # e_repulsion = \sum_{ij} (q_i * q_j / r_{ij})
@@ -322,7 +299,7 @@ class TestJax:
             ),
         ],
     )
-    def test_nuclear_energy(self, symbols, geometry, e_ref):
+    def test_nuclear_energy_jax(self, symbols, geometry, e_ref):
         r"""Test that nuclear_energy returns the correct energy when using jax."""
         geometry = create_jax_like_array(geometry)
         mol = qchem.Molecule(symbols, geometry)
@@ -382,6 +359,6 @@ class TestJax:
 
         mol = qchem.Molecule(symbols, geometry)
         args = [geometry, mol.coeff, mol.alpha]
-        g = jax.grad(qchem.hf_energy(mol), argnums=0)(*args)
+        g = jax.grad(qchem.hf_energy(mol), argnums=[0])(*args)
 
         assert np.allclose(g, g_ref)

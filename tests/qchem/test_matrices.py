@@ -143,7 +143,7 @@ class TestOverlapMat:
         r"""Test that the overlap gradients are correct."""
         mol = qchem.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
         args = [mol.alpha, mol.coeff]
-        g_alpha = qml.jacobian(qchem.overlap_matrix(mol.basis_set), argnum=[0, 1])(*args)
+        g_alpha = qml.jacobian(qchem.overlap_matrix(mol.basis_set), argnum=[0])(*args)
         g_coeff = qml.jacobian(qchem.overlap_matrix(mol.basis_set), argnum=[1])(*args)
         assert np.allclose(g_alpha, g_alpha_ref)
         assert np.allclose(g_coeff, g_coeff_ref)
@@ -1024,8 +1024,7 @@ class TestJax:
         alpha = qml.math.array(alpha, like="jax")
         coeff = qml.math.array(coeff, like="jax")
         mol = qchem.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
-        r_basis = mol.coordinates
-        args = [mol.coordinates, r_basis, mol.coeff, mol.alpha]
+        args = [mol.coordinates, mol.coordinates, mol.coeff, mol.alpha]
 
         g_r, _, _, _ = jax.jacobian(
             qchem.attraction_matrix(mol.basis_set, mol.nuclear_charges, mol.coordinates),

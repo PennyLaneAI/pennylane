@@ -137,6 +137,8 @@ class Molecule:
                 )
                 for i in self.basis_data
             ]
+            if use_jax:
+                alpha = qml.math.array(alpha)
 
         if coeff is None:
             coeff = [
@@ -159,6 +161,8 @@ class Molecule:
                     )
                     for i, c in enumerate(coeff)
                 ]
+            if use_jax:
+                coeff = qml.math.array(coeff)
 
         r = list(
             itertools.chain(

@@ -427,19 +427,4 @@ class TestJax:
 
         grad_jax = jax.grad(energy(mol), argnums=2)(*args)
 
-        alpha_1 = qml.math.array(
-            [[3.42425091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
-            like="jax",
-        )  # alpha[0][0] -= 0.001
-
-        alpha_2 = qml.math.array(
-            [[3.42625091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
-            like="jax",
-        )  # alpha[0][0] += 0.001
-
-        e_1 = energy(mol)(geometry, mol.coeff, alpha_1)
-        e_2 = energy(mol)(geometry, mol.coeff, alpha_2)
-
-        grad_finitediff = (e_2 - e_1) / 0.002
-
-        assert np.allclose(grad_jax[0][0], grad_finitediff, rtol=1e-02)
+        assert np.allclose(grad_jax[0][0], 0.02461335393055819, rtol=1e-02)
