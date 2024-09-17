@@ -16,7 +16,7 @@
 import numpy as np
 import pytest
 from dummy_debugger import Debugger
-from scipy.stats import ttest_1samp, fisher_exact
+from stat_tests import fisher_exact_test
 
 import pennylane as qml
 from pennylane.devices.qubit import get_final_state, measure_final_state, simulate
@@ -1190,20 +1190,6 @@ ml_frameworks_list = [
 ]
 
 
-def verify_binary_sample(actual, expected, outcomes=(0, 1), threshold=0.1):
-    """Checks that a binary sample matches the expected distribution using the Fisher exact test."""
-
-    actual, expected = np.asarray(actual), np.asarray(expected)
-    contingency_table = np.array(
-        [
-            [np.sum(actual == outcomes[0]), np.sum(actual == outcomes[1])],
-            [np.sum(expected == outcomes[0]), np.sum(expected == outcomes[1])],
-        ]
-    )
-    _, p_value = fisher_exact(contingency_table)
-    assert p_value > threshold, "The sample does not match the expected distribution."
-
-
 # pylint:disable=too-few-public-methods
 @pytest.mark.unit
 class TestMidCircuitMeasurements:
@@ -1246,25 +1232,25 @@ class TestMidCircuitMeasurements:
                 [qml.RX(np.pi / 4, wires=0)], [qml.expval(qml.Z(0))], shots=n_shots
             )
             expected_sample = simulate(equivalent_tape, rng=rng)
-            verify_binary_sample(terminal_results, expected_sample, outcomes=(-1, 1))
+            fisher_exact_test(terminal_results, expected_sample, outcomes=(-1, 1))
 
         else:
             equivalent_tape = qml.tape.QuantumScript(
                 [qml.RX(np.pi / 4, wires=0)], [qml.sample(wires=0)], shots=n_shots
             )
             expected_result = simulate(equivalent_tape, rng=rng)
-            verify_binary_sample(mcm_results, expected_result)
+            fisher_exact_test(mcm_results, expected_result)
 
             subset = [ts for ms, ts in zip(mcm_results, terminal_results) if ms == 0]
             equivalent_tape = qml.tape.QuantumScript(
                 [qml.RX(np.pi / 4, wires=0)], [qml.expval(qml.Z(0))], shots=n_shots
             )
             expected_sample = simulate(equivalent_tape, rng=rng)
-            verify_binary_sample(subset, expected_sample, outcomes=(-1, 1))
+            fisher_exact_test(subset, expected_sample, outcomes=(-1, 1))
 
             subset = [ts for ms, ts in zip(mcm_results, terminal_results) if ms == 1]
             equivalent_tape = qml.tape.QuantumScript(
                 [qml.X(0), qml.RX(np.pi / 4, wires=0)], [qml.expval(qml.Z(0))], shots=n_shots
             )
             expected_sample = simulate(equivalent_tape, rng=rng)
-            verify_binary_sample(subset, expected_sample, outcomes=(-1, 1))
+            fisher_exact_test(subset, expected_sample, outcomes=(-1, 1))
