@@ -7,7 +7,8 @@
 <h3>Improvements 🛠</h3>
 
 * PennyLane is now compatible with NumPy 2.0.
-   [(#6061)](https://github.com/PennyLaneAI/pennylane/pull/6061)
+  [(#6061)](https://github.com/PennyLaneAI/pennylane/pull/6061)
+  [(#6258)](https://github.com/PennyLaneAI/pennylane/pull/6258)
 
 * `qml.qchem.excitations` now optionally returns fermionic operators.
   [(#6171)](https://github.com/PennyLaneAI/pennylane/pull/6171)
@@ -49,6 +50,9 @@
 * The `__repr__` methods for `FermiWord` and `FermiSentence` now returns a
   unique representation of the object.
   [(#6167)](https://github.com/PennyLaneAI/pennylane/pull/6167)
+
+* A `ReferenceQubit` is introduced for testing purposes and as a reference for future plugin development.
+  [(#6181)](https://github.com/PennyLaneAI/pennylane/pull/6181)
 
 * The `to_mat` methods for `FermiWord` and `FermiSentence` now optionally return
   a sparse matrix.

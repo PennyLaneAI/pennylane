@@ -41,6 +41,7 @@ qubit_device_and_diff_method = [
     [qml.device("lightning.qubit", wires=5), "adjoint", False, False],
     [qml.device("lightning.qubit", wires=5), "adjoint", True, True],
     [qml.device("lightning.qubit", wires=5), "parameter-shift", False, False],
+    [qml.device("reference.qubit"), "parameter-shift", False, False],
 ]
 interface_and_qubit_device_and_diff_method = [
     ["auto"] + inner_list for inner_list in qubit_device_and_diff_method
@@ -1040,6 +1041,8 @@ class TestQubitIntegration:
             pytest.xfail("gradient transforms have a different vjp shape convention")
         elif dev.name == "lightning.qubit":
             pytest.xfail("lightning qubit does not support postselection.")
+        if dev.name == "reference.qubit":
+            pytest.skip("reference.qubit does not support postselection.")
 
         @qml.qnode(
             dev, diff_method=diff_method, interface=interface, grad_on_execution=grad_on_execution
@@ -1431,6 +1434,8 @@ class TestQubitIntegrationHigherOrder:
         elif diff_method == "spsa":
             gradient_kwargs = {"h": H_FOR_SPSA, "sampler_rng": np.random.default_rng(SEED_FOR_SPSA)}
             tol = TOL_FOR_SPSA
+        if dev.name == "reference.qubit":
+            pytest.xfail("diagonalize_measurements do not support projectors (sc-72911)")
 
         P = jax.numpy.array(state)
         x, y = 0.765, -0.654
@@ -1514,6 +1519,11 @@ class TestTapeExpansion:
         are non-commuting groups and the number of shots is None
         and the first and second order gradients are correctly evaluated"""
         gradient_kwargs = {}
+        if dev.name == "reference.qubit":
+            pytest.skip(
+                "Cannot add transform to the transform program in preprocessing"
+                "when using mocker.spy on it."
+            )
         if dev.name == "param_shift.qubit":
             pytest.xfail("gradients transforms have a different vjp shape convention.")
         if diff_method == "adjoint":
@@ -1840,6 +1850,9 @@ class TestJIT:
         to different reasons, hence the parametrization in the test.
         """
         # pylint: disable=unused-argument
+        if dev.name == "reference.qubit":
+            pytest.xfail("diagonalize_measurements do not support Hermitians (sc-72911)")
+
         if diff_method == "backprop":
             pytest.skip("Backpropagation is unsupported if shots > 0.")
 
