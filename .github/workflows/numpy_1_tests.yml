@@ -1,5 +1,11 @@
 name: NumPy 1 - Tests
 on:
+
+  # This will be removed (I need to test it)  
+  pull_request: 
+    types:
+        - ready_for_review
+
   schedule:
     - cron: '0 6 * * *'  # Runs daily at 6 AM UTC (1 AM Toronto in winter, 2 AM in summer)
 
@@ -10,8 +16,5 @@ concurrency:
 jobs:
   tests:
     uses: ./.github/workflows/numpy_1_unit-tests.yml
-    secrets:
-      codecov_token: ${{ secrets.CODECOV_TOKEN }}
     with:
       branch: ${{ github.ref }}
-      
