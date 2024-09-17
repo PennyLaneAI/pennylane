@@ -1086,8 +1086,6 @@ class TestQubitIntegration:
 class TestQubitIntegrationHigherOrder:
     """Tests that ensure various qubit circuits integrate correctly when computing higher-order derivatives"""
 
-    jax.config.update("jax_enable_x64", True)
-
     def test_second_derivative(
         self, dev, diff_method, grad_on_execution, device_vjp, interface, tol
     ):
