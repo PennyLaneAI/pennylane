@@ -103,7 +103,7 @@ def _get_jacobian_prim():
         def func(*inner_args):
             return jax.core.eval_jaxpr(jaxpr, consts, *inner_args)
 
-        return jax.jacobian(func, argnums=argnum)(*args)
+        return jax.tree_util.tree_leaves(jax.jacobian(func, argnums=argnum)(*args))
 
     # pylint: disable=unused-argument
     @jacobian_prim.def_abstract_eval
