@@ -421,11 +421,14 @@ def custom_basic_entangler_layers(weights, wires, **kwargs):
     def cnot_circuit(wires):
         n_wires = len(wires)
 
+        if n_wires == 2:
+            qml.CNOT(wires)
+            return
+
         for wire in wires:
             op_wires = [wire % n_wires, (wire + 1) % n_wires]
             qml.CNOT(op_wires)
 
-    # cnot_broadcast = qml.tape.make_qscript(qml.broadcast)(qml.CNOT, pattern="ring", wires=wires)
     cnot_broadcast = qml.tape.make_qscript(cnot_circuit)(wires)
     return [
         qml.AngleEmbedding(weights[0], wires=wires),

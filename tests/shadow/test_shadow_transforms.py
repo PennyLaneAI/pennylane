@@ -112,7 +112,7 @@ class TestReplaceObs:
         new_tapes, _ = _replace_obs(tape, qml.probs, wires=0)
 
         assert len(new_tapes) == 1
-        assert new_tapes[0].operations == []
+        assert len(new_tapes[0].operations) == 0
         assert len(new_tapes[0].observables) == 1
         assert isinstance(new_tapes[0].observables[0], qml.measurements.ProbabilityMP)
 
@@ -332,7 +332,7 @@ class TestExpvalTransform:
 
     def test_shadow_expval_deprecation(self):
         """Test that the shadow_expval transform is deprecated"""
-        tape = qml.tape.QuantumScript([], [qml.expval(qml.Z(0))])
+        tape = qml.tape.QuantumScript([], [qml.classical_shadow(wires=[0, 1])])
 
         with pytest.warns(
             qml.PennyLaneDeprecationWarning, match="qml.shadows.shadow_expval is deprecated"
