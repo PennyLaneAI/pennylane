@@ -51,6 +51,47 @@
   unique representation of the object.
   [(#6167)](https://github.com/PennyLaneAI/pennylane/pull/6167)
 
+* If the conditional does not include a mid-circuit measurement, then `qml.cond`
+  will automatically evaluate conditionals using standard Python control flow.
+  [(#6016)](https://github.com/PennyLaneAI/pennylane/pull/6016)
+
+  This allows `qml.cond` to be used to represent a wider range of conditionals:
+
+  ```python
+  dev = qml.device("default.qubit", wires=1)
+
+  @qml.qnode(dev)
+  def circuit(x):
+      c = qml.cond(x > 2.7, qml.RX, qml.RZ)
+      c(x, wires=0)
+      return qml.probs(wires=0)
+  ```
+
+  ```pycon
+  >>> print(qml.draw(circuit)(3.8))
+  0: ──RX(3.80)─┤  Probs
+  >>> print(qml.draw(circuit)(0.54))
+  0: ──RZ(0.54)─┤  Probs
+  ```
+
+* The `qubit_observable` function is modified to return an ascending wire order for molecular 
+  Hamiltonians.
+  [(#5950)](https://github.com/PennyLaneAI/pennylane/pull/5950)
+  
+* `qml.BasisRotation` is now jit compatible.
+  [(#6019)](https://github.com/PennyLaneAI/pennylane/pull/6019)
+
+* The `CNOT` operator no longer decomposes to itself. Instead, it raises a `qml.DecompositionUndefinedError`.
+  [(#6039)](https://github.com/PennyLaneAI/pennylane/pull/6039)
+
+<h4>Community contributions 🥳</h4>
+
+* `DefaultQutritMixed` readout error has been added using parameters `readout_relaxation_probs` and 
+  `readout_misclassification_probs` on the `default.qutrit.mixed` device. These parameters add a `~.QutritAmplitudeDamping`  and a `~.TritFlip` channel, respectively,
+  after measurement diagonalization. The amplitude damping error represents the potential for
+  relaxation to occur during longer measurements. The trit flip error represents misclassification during readout.
+  [(#5842)](https://github.com/PennyLaneAI/pennylane/pull/5842)
+
 * The `to_mat` methods for `FermiWord` and `FermiSentence` now optionally return
   a sparse matrix.
   [(#6173)](https://github.com/PennyLaneAI/pennylane/pull/6173)
@@ -114,6 +155,9 @@
 * The ``qml.Qubitization`` template now orders the ``control`` wires first and the ``hamiltonian`` wires second, which is the expected according to other templates.
   [(#6229)](https://github.com/PennyLaneAI/pennylane/pull/6229)
 
+* `qml.AmplitudeEmbedding` has better support for features using low precision integer data types.
+  [(#5969)](https://github.com/PennyLaneAI/pennylane/pull/5969)
+
 * The ``qml.FABLE`` template now returns the correct value when JIT is enabled.
   [(#6263)](https://github.com/PennyLaneAI/pennylane/pull/6263)
 
@@ -136,4 +180,10 @@ Emiliano Godinez,
 Christina Lee,
 William Maxwell,
 Lee J. O'Riordan,
-David Wierichs,
+Vincent Michaud-Rioux,
+Anurav Modak,
+Pablo A. Moreno Casares,
+Mudit Pandey,
+Erik Schultheis,
+Nate Stemen,
+David Wierichs.
