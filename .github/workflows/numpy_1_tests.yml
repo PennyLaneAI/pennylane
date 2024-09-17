@@ -4,6 +4,9 @@ on:
   # This will be removed (I need to test it)  
   pull_request: 
     types:
+        - opened
+        - reopened
+        - synchronize
         - ready_for_review
 
   schedule:
