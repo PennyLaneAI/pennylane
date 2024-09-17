@@ -6,28 +6,29 @@
  
 <h3>Improvements 🛠</h3>
 
+* PennyLane is now compatible with NumPy 2.0.
+  [(#6061)](https://github.com/PennyLaneAI/pennylane/pull/6061)
+  [(#6258)](https://github.com/PennyLaneAI/pennylane/pull/6258)
+
 * `qml.qchem.excitations` now optionally returns fermionic operators.
-   [(#6171)](https://github.com/PennyLaneAI/pennylane/pull/6171)
+  [(#6171)](https://github.com/PennyLaneAI/pennylane/pull/6171)
 
 * The `diagonalize_measurements` transform now uses a more efficient method of diagonalization 
   when possible, based on the `pauli_rep` of the relevant observables.
   [#6113](https://github.com/PennyLaneAI/pennylane/pull/6113/)
 
-<h4>Capturing and representing hybrid programs</h4>
-
-* Differentiation of hybrid programs via `qml.grad` can now be captured into plxpr.
-  When evaluating a captured `qml.grad` instruction, it will dispatch to `jax.grad`,
-  which differs from the Autograd implementation of `qml.grad` itself.
-  [(#6120)](https://github.com/PennyLaneAI/pennylane/pull/6120)
+* The `Hermitian` operator now has a `compute_sparse_matrix` implementation.
+  [(#6225)](https://github.com/PennyLaneAI/pennylane/pull/6225)
 
 <h4>Capturing and representing hybrid programs</h4>
 
 * Differentiation of hybrid programs via `qml.grad` and `qml.jacobian` can now be captured
   into plxpr. When evaluating a captured `qml.grad` (`qml.jacobian`) instruction, it will
   dispatch to `jax.grad` (`jax.jacobian`), which differs from the Autograd implementation
-  without capture.
+  without capture. Pytree inputs and outputs are supported.
   [(#6120)](https://github.com/PennyLaneAI/pennylane/pull/6120)
   [(#6127)](https://github.com/PennyLaneAI/pennylane/pull/6127)
+  [(#6134)](https://github.com/PennyLaneAI/pennylane/pull/6134)
 
 * Improve unit testing for capturing of nested control flows.
   [(#6111)](https://github.com/PennyLaneAI/pennylane/pull/6111)
@@ -49,6 +50,9 @@
 * The `__repr__` methods for `FermiWord` and `FermiSentence` now returns a
   unique representation of the object.
   [(#6167)](https://github.com/PennyLaneAI/pennylane/pull/6167)
+
+* A `ReferenceQubit` is introduced for testing purposes and as a reference for future plugin development.
+  [(#6181)](https://github.com/PennyLaneAI/pennylane/pull/6181)
 
 * The `to_mat` methods for `FermiWord` and `FermiSentence` now optionally return
   a sparse matrix.
@@ -86,6 +90,10 @@
 
 <h3>Deprecations 👋</h3>
 
+* The ``QubitStateVector`` template is deprecated.
+   Instead, use ``StatePrep``.
+   [(#6172)](https://github.com/PennyLaneAI/pennylane/pull/6172)
+
 * `Device`, `QubitDevice`, and `QutritDevice` will no longer be accessible via top-level import in v0.40.
   They will still be accessible as `qml.devices.LegacyDevice`, `qml.devices.QubitDevice`, and `qml.devices.QutritDevice`
   respectively.
@@ -116,13 +124,22 @@
 * The ``qml.FABLE`` template now returns the correct value when JIT is enabled.
   [(#6263)](https://github.com/PennyLaneAI/pennylane/pull/6263)
 
-* <h3>Contributors ✍️</h3>
+* Fixes a bug where a circuit using the `autograd` interface sometimes returns nested values that are not of the `autograd` interface.
+  [(#6225)](https://github.com/PennyLaneAI/pennylane/pull/6225)
+
+* Fixes a bug where a simple circuit with no parameters or only builtin/numpy arrays as parameters returns autograd tensors.
+  [(#6225)](https://github.com/PennyLaneAI/pennylane/pull/6225)
+
+<h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
 
 Guillermo Alonso,
 Utkarsh Azad,
+Astral Cai,
 Lillian M. A. Frederiksen,
+Pietropaolo Frisoni,
+Emiliano Godinez,
 Christina Lee,
 William Maxwell,
 Lee J. O'Riordan,

@@ -36,6 +36,7 @@ to verify and test quantum gradient computations.
     _qubit_device
     _qutrit_device
     null_qubit
+    reference_qubit
     tests
 
 Next generation devices
@@ -57,6 +58,7 @@ accessible from the ``pennylane.devices`` submodule.
     DefaultQubit
     DefaultTensor
     NullQubit
+    ReferenceQubit
     DefaultQutritMixed
     LegacyDeviceFacade
 
@@ -158,6 +160,7 @@ from .default_mixed import DefaultMixed
 from .default_clifford import DefaultClifford
 from .default_tensor import DefaultTensor
 from .null_qubit import NullQubit
+from .reference_qubit import ReferenceQubit
 from .default_qutrit import DefaultQutrit
 from .default_qutrit_mixed import DefaultQutritMixed
 from ._legacy_device import Device as LegacyDevice

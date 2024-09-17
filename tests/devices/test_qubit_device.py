@@ -1606,9 +1606,9 @@ class TestSamplesToCounts:
 
         # imitate hardware return with NaNs (requires dtype float)
         samples = qml.math.cast_like(samples, np.array([1.2]))
-        samples[0][0] = np.NaN
-        samples[17][1] = np.NaN
-        samples[850][0] = np.NaN
+        samples[0][0] = np.nan
+        samples[17][1] = np.nan
+        samples[850][0] = np.nan
 
         result = device._samples_to_counts(samples, mp=qml.measurements.CountsMP(), num_wires=2)
 
