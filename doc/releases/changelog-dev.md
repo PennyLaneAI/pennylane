@@ -95,6 +95,9 @@
   Please use `qml.transforms.split_non_commuting` instead.
   [(#6204)](https://github.com/PennyLaneAI/pennylane/pull/6204)
 
+* The `decomp_depth` keyword argument to `qml.device` is removed.
+  [(#6234)](https://github.com/PennyLaneAI/pennylane/pull/6234)
+
 * `Operator.expand` is now removed. Use `qml.tape.QuantumScript(op.deocomposition())` instead.
   [(#6227)](https://github.com/PennyLaneAI/pennylane/pull/6227)
 
