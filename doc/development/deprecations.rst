@@ -9,23 +9,18 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
+* ``Device``, ``QubitDevice``, and ``QutritDevice`` will no longer be imported top level in v0.40.  They instead
+  we be available as ``qml.devices.LegacyDevice``, ``qml.devices.QubitDevice``, and ``qml.devices.QutritDevice``
+  respectively.
+
+  - Deprecated top level access in v0.39
+  - Top level access removed in v0.40
+
 * `QNode.gradient_fn` is deprecated. Please use `QNode.diff_method` instead. `QNode.get_gradient_fn` can also be used to
   process the diff method.
 
   - Deprecated in v0.39
   - Will be removed in v0.40
-
-* All of the legacy devices (any with the name ``default.qubit.{autograd,torch,tf,jax,legacy}``) are deprecated. Use ``default.qubit`` instead,
-  as it supports backpropagation for the many backends the legacy devices support.
-
-  - Deprecated in v0.38
-  - Will be removed in v0.39
-
-* The logic for internally switching a device for a different backpropagation
-  compatible device is now deprecated, as it was in place for the deprecated ``default.qubit.legacy``.
-
-  - Deprecated in v0.38
-  - Will be removed in v0.39  
 
 * The functions ``qml.qinfo.classical_fisher`` and ``qml.qinfo.quantum_fisher`` are deprecated since they are being migrated
   to the ``qml.gradients`` module. Therefore, ``qml.gradients.classical_fisher`` and ``qml.gradients.quantum_fisher`` should be used instead.
@@ -38,6 +33,12 @@ Pending deprecations
 
   - Deprecated in v0.37
   - Will be removed in v0.39
+
+* The ``QubitStateVector`` template is deprecated.
+  Instead, use ``StatePrep``.
+
+  - Deprecated in v0.39
+  - Will be removed in v0.40
 
 New operator arithmetic deprecations
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -87,7 +88,19 @@ Completed deprecation cycles
 
   - Deprecated in v0.38
   - Removed in v0.39
-  
+
+* All of the legacy devices (any with the name ``default.qubit.{autograd,torch,tf,jax,legacy}``) are removed. Use ``default.qubit`` instead,
+  as it supports backpropagation for the many backends the legacy devices support.
+
+  - Deprecated in v0.38
+  - Removed in v0.39
+
+* The logic for internally switching a device for a different backpropagation
+  compatible device is removed, as it was in place for removed ``default.qubit.legacy``.
+
+  - Deprecated in v0.38
+  - Removed in v0.39
+
 * `Operator.expand` is now removed. Use `qml.tape.QuantumScript(op.deocomposition())` instead.
 
   - Deprecated in v0.38

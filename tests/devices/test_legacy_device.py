@@ -22,7 +22,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane import Device
+from pennylane.devices import LegacyDevice as Device
 from pennylane.wires import Wires
 
 mock_device_paulis = ["PauliX", "PauliY", "PauliZ"]
@@ -186,6 +186,12 @@ def mock_device_supporting_prod(monkeypatch):
             return Device(wires=wires)
 
         yield get_device
+
+
+def test_deprecated_access():
+    """Test that accessing via top-level is deprecated."""
+    with pytest.warns(qml.PennyLaneDeprecationWarning, match="Device will no longer be accessible"):
+        qml.Device  # pylint: disable=pointless-statement
 
 
 # pylint: disable=pointless-statement
@@ -1142,7 +1148,7 @@ class TestGrouping:
     """Tests for the use_grouping option for devices."""
 
     # pylint: disable=too-few-public-methods, unused-argument, missing-function-docstring, missing-class-docstring
-    class SomeDevice(qml.Device):
+    class SomeDevice(qml.devices.LegacyDevice):
         name = ""
         short_name = ""
         pennylane_requires = ""
