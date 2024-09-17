@@ -1086,6 +1086,8 @@ class TestQubitIntegration:
 class TestQubitIntegrationHigherOrder:
     """Tests that ensure various qubit circuits integrate correctly when computing higher-order derivatives"""
 
+    jax.config.update("jax_enable_x64", True)
+
     def test_second_derivative(
         self, dev, diff_method, grad_on_execution, device_vjp, interface, tol
     ):
@@ -1387,6 +1389,8 @@ class TestQubitIntegrationHigherOrder:
 
         if dev.name == "lightning.qubit" and diff_method == "adjoint":
             pytest.xfail("lightning.qubit does not support adjoint with the state.")
+
+        jax.config.update("jax_enable_x64", True)    
 
         x = jax.numpy.array(0.543, dtype=jax.numpy.complex128)
         y = jax.numpy.array(-0.654, dtype=jax.numpy.complex128)
