@@ -396,13 +396,12 @@ class TestValidation:
         circuit(qml.numpy.array(0.1, requires_grad=True))
 
     def test_not_giving_mode_kwarg_does_not_raise_warning(self):
-        """Test that not providing a value for mode does not raise a warning
-        except for the deprecation warning."""
+        """Test that not providing a value for mode does not raise a warning."""
+
         with warnings.catch_warnings(record=True) as record:
             qml.QNode(lambda f: f, qml.device("default.mixed", wires=1))
 
-        assert len(record) == 1
-        assert record[0].category == qml.PennyLaneDeprecationWarning
+        assert len(record) == 0
 
 
 class TestTapeConstruction:
@@ -1468,7 +1467,8 @@ class TestTapeExpansion:
     )
     def test_device_expansion(self, diff_method, mode, mocker):
         """Test expansion of an unsupported operation on the device"""
-        dev = qml.device("default.mixed", wires=1)
+
+        dev = DefaultQubitLegacy(wires=1)
 
         # pylint: disable=too-few-public-methods
         class UnsupportedOp(qml.operation.Operation):

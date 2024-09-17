@@ -44,7 +44,7 @@ class TestAdjointJacobian:
     def test_finite_shots_warns(self):
         """Tests warning raised when finite shots specified"""
 
-        dev = DefaultQubitLegacy(wires=2)
+        dev = DefaultQubitLegacy(wires=2, shots=10)
 
         with qml.queuing.AnnotatedQueue() as q:
             qml.expval(qml.PauliZ(0))
