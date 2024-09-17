@@ -94,14 +94,14 @@
 <h3>Deprecations 👋</h3>
 
 * The `'ancilla'` argument for `qml.iterative_qpe` has been deprecated. Instead, use the `'aux_wire'` argument.
-  [(#)]()
+  [(#6277)](https://github.com/PennyLaneAI/pennylane/pull/6277)
 
 * `qml.shadows.shadow_expval` has been deprecated. Instead, users should use the `qml.shadow_expval` measurement
   process in their circuits.
-  [(#)]()
+  [(#6277)](https://github.com/PennyLaneAI/pennylane/pull/6277)
 
 * `qml.broadcast` has been deprecated. Users should use for loops instead.
-  [(#)]()
+  [(#6277)](https://github.com/PennyLaneAI/pennylane/pull/6277)
 
 * The ``QubitStateVector`` template is deprecated.
    Instead, use ``StatePrep``.
@@ -156,4 +156,5 @@ Emiliano Godinez,
 Christina Lee,
 William Maxwell,
 Lee J. O'Riordan,
+Mudit Pandey,
 David Wierichs,
