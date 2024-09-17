@@ -1131,7 +1131,7 @@ class QubitDevice(Device):
     def shadow_expval(self, obs, circuit):
         r"""Compute expectation values using classical shadows in a differentiable manner.
 
-        Please refer to :func:`~.pennylane.shadow_expval` for detailed documentation.
+        Please refer to :func:`~pennylane.shadow_expval` for detailed documentation.
 
         Args:
             obs (~.pennylane.measurements.ClassicalShadowMP): The classical shadow expectation
