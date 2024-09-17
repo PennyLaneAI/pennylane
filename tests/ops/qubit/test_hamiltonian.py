@@ -1744,11 +1744,7 @@ class TestHamiltonianEvaluation:
                 qml.simplify(qml.Hamiltonian([1.0, 2.0], [qml.PauliX(1), qml.PauliX(1)]))
             )
 
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning,
-            match="deprecated",
-        ):
-            circuit()
+        circuit()
         pars = circuit.qtape.get_parameters(trainable_only=False)
         # simplify worked and added 1. and 2.
         assert pars == [0.1, 3.0]
