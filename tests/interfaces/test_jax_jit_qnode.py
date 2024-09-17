@@ -1388,8 +1388,8 @@ class TestQubitIntegrationHigherOrder:
         if dev.name == "lightning.qubit" and diff_method == "adjoint":
             pytest.xfail("lightning.qubit does not support adjoint with the state.")
 
-        x = jax.numpy.array(0.543)
-        y = jax.numpy.array(-0.654)
+        x = jax.numpy.array(0.543, dtype=jax.numpy.complex128)
+        y = jax.numpy.array(-0.654, dtype=jax.numpy.complex128)
         if not dev.wires:
             dev = copy.copy(dev)
             dev._wires = qml.wires.Wires([0, 1])  # pylint:disable=protected-access
