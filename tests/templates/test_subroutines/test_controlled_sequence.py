@@ -193,11 +193,10 @@ class TestIntegration:
 
     @pytest.mark.autograd
     @pytest.mark.parametrize("shots", [None, 50000])
-    @pytest.mark.parametrize("device", ["default.qubit", "default.qubit.legacy"])
-    def test_qnode_autograd(self, shots, device):
+    def test_qnode_autograd(self, shots):
         """Test that the QNode executes with Autograd."""
 
-        dev = qml.device(device, wires=4, shots=shots)
+        dev = qml.device("default.qubit", wires=4, shots=shots)
         diff_method = "backprop" if shots is None else "parameter-shift"
         qnode = qml.QNode(self.circuit, dev, interface="autograd", diff_method=diff_method)
         x = qml.numpy.array(self.x, requires_grad=True)
@@ -213,8 +212,7 @@ class TestIntegration:
     @pytest.mark.jax
     @pytest.mark.parametrize("use_jit", [False, True])
     @pytest.mark.parametrize("shots", [None, 50000])
-    @pytest.mark.parametrize("device", ["default.qubit", "default.qubit.legacy"])
-    def test_qnode_jax(self, shots, use_jit, device):
+    def test_qnode_jax(self, shots, use_jit):
         """Test that the QNode executes and is differentiable with JAX. The shots
         argument controls whether autodiff or parameter-shift gradients are used."""
 
@@ -222,10 +220,7 @@ class TestIntegration:
 
         jax.config.update("jax_enable_x64", True)
 
-        if device == "default.qubit":
-            dev = qml.device("default.qubit", shots=shots, seed=10)
-        else:
-            dev = qml.device("default.qubit.legacy", shots=shots, wires=4)
+        dev = qml.device("default.qubit", shots=shots, seed=10)
 
         diff_method = "backprop" if shots is None else "parameter-shift"
         qnode = qml.QNode(self.circuit, dev, interface="jax", diff_method=diff_method)
@@ -247,17 +242,13 @@ class TestIntegration:
 
     @pytest.mark.torch
     @pytest.mark.parametrize("shots", [None, 50000])
-    @pytest.mark.parametrize("device", ["default.qubit", "default.qubit.legacy"])
-    def test_qnode_torch(self, shots, device):
+    def test_qnode_torch(self, shots):
         """Test that the QNode executes and is differentiable with Torch. The shots
         argument controls whether autodiff or parameter-shift gradients are used."""
 
         import torch
 
-        if device == "default.qubit":
-            dev = qml.device("default.qubit", shots=shots, seed=10)
-        else:
-            dev = qml.device("default.qubit.legacy", shots=shots, wires=4)
+        dev = qml.device("default.qubit", shots=shots, seed=10)
 
         diff_method = "backprop" if shots is None else "parameter-shift"
         qnode = qml.QNode(self.circuit, dev, interface="torch", diff_method=diff_method)

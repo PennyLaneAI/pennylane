@@ -25,7 +25,7 @@ on:
           Indicate if a lightened version of the CI should be run instead of the entire suite.
 
           The lightened version of the CI includes the following changes:
-          - Only Python 3.9 is tested against, instead of 3.9, 3.10, 3.11, 3.12
+          - Only Python 3.10 is tested against, instead of 3.10, 3.11, 3.12
         required: false
         type: boolean
         default: false
@@ -63,23 +63,23 @@ jobs:
           then
             cat >python_versions.json <<-EOF
           {
-            "default": ["3.9"]
+            "default": ["3.10"]
           }
           EOF
           else
             cat >python_versions.json <<-EOF
           {
-            "default": ["3.9", "3.10", "3.11", "3.12"],
-            "torch-tests": ["3.9", "3.11"],
-            "tf-tests": ["3.9", "3.11"],
-            "jax-tests": ["3.9", "3.12"],
-            "all-interfaces-tests": ["3.9"],
-            "external-libraries-tests": ["3.9"],
-            "qcut-tests": ["3.9"],
-            "qchem-tests": ["3.9"],
-            "gradients-tests": ["3.9"],
-            "data-tests": ["3.9", "3.10"],
-            "device-tests": ["3.9"]
+            "default": ["3.10", "3.11", "3.12"],
+            "torch-tests": ["3.10", "3.12"],
+            "tf-tests": ["3.10", "3.12"],
+            "jax-tests": ["3.10", "3.12"],
+            "all-interfaces-tests": ["3.10"],
+            "external-libraries-tests": ["3.10"],
+            "qcut-tests": ["3.10"],
+            "qchem-tests": ["3.10"],
+            "gradients-tests": ["3.10"],
+            "data-tests": ["3.10"],
+            "device-tests": ["3.10"]
           }
           EOF
           fi
@@ -379,8 +379,7 @@ jobs:
       # catalyst requires the latest version of pennylane that is about to be released.
       # Installing catalyst after pennylane to make sure that the latest catalyst is used.
       install_catalyst_nightly: true
-      # using lightning master does not work for the tests with external libraries
-      install_pennylane_lightning_master: false
+      install_pennylane_lightning_master: true
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: external
       additional_pip_packages: pyzx matplotlib stim quimb mitiq pennylane-qiskit ply
@@ -508,7 +507,7 @@ jobs:
     with:
       job_name: data-tests (${{ matrix.python-version }})
       branch: ${{ inputs.branch }}
-      coverage_artifact_name: data-coverage
+      coverage_artifact_name: data-coverage-${{ matrix.python-version }}
       python_version: ${{ matrix.python-version }}
       pipeline_mode: ${{ inputs.pipeline_mode }}
       install_jax: false

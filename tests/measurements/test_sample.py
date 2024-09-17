@@ -121,8 +121,8 @@ class TestSample:
 
         # If all the dimensions are equal the result will end up to be a proper rectangular array
         assert len(result) == 3
-        assert isinstance(result[0], np.ndarray)
-        assert isinstance(result[1], np.ndarray)
+        assert isinstance(result[0], float)
+        assert isinstance(result[1], float)
         assert result[2].dtype == np.dtype("float")
         assert np.array_equal(result[2].shape, (n_sample,))
 
@@ -422,14 +422,6 @@ class TestSample:
         with pytest.raises(EigvalsUndefinedError, match="Cannot compute samples of"):
             qml.sample(op=DummyOp(0)).process_samples(samples=np.array([[1, 0]]), wire_order=[0])
 
-    def test_process_sample_shot_range(self):
-        """Test process_samples with a shot range."""
-        mp = qml.sample(wires=0)
-
-        samples = np.zeros((10, 2))
-        out = mp.process_samples(samples, wire_order=qml.wires.Wires((0, 1)), shot_range=(0, 5))
-        assert qml.math.allclose(out, np.zeros((5,)))
-
     def test_sample_allowed_with_parameter_shift(self):
         """Test that qml.sample doesn't raise an error with parameter-shift and autograd."""
         dev = qml.device("default.qubit", shots=10)
@@ -461,76 +453,87 @@ class TestSample:
 
 
 @pytest.mark.jax
-@pytest.mark.parametrize("samples", (1, 10))
-def test_jitting_with_sampling_on_subset_of_wires(samples):
-    """Test case covering bug in Issue #3904.  Sampling should be jit-able
-    when sampling occurs on a subset of wires. The bug was occuring due an improperly
-    set shape method."""
-    import jax
+class TestJAXCompatibility:
 
-    jax.config.update("jax_enable_x64", True)
+    @pytest.mark.parametrize("samples", (1, 10))
+    def test_jitting_with_sampling_on_subset_of_wires(self, samples):
+        """Test case covering bug in Issue #3904.  Sampling should be jit-able
+        when sampling occurs on a subset of wires. The bug was occuring due an improperly
+        set shape method."""
+        import jax
 
-    dev = qml.device("default.qubit", wires=3, shots=samples)
+        jax.config.update("jax_enable_x64", True)
 
-    @qml.qnode(dev, interface="jax")
-    def circuit(x):
-        qml.RX(x, wires=0)
-        return qml.sample(wires=(0, 1))
+        dev = qml.device("default.qubit", wires=3, shots=samples)
 
-    results = jax.jit(circuit)(jax.numpy.array(0.123, dtype=jax.numpy.float64))
+        @qml.qnode(dev, interface="jax")
+        def circuit(x):
+            qml.RX(x, wires=0)
+            return qml.sample(wires=(0, 1))
 
-    expected = (2,) if samples == 1 else (samples, 2)
-    assert results.shape == expected
-    assert circuit._qfunc_output.shape(samples, 3) == (samples, 2) if samples != 1 else (2,)
+        results = jax.jit(circuit)(jax.numpy.array(0.123, dtype=jax.numpy.float64))
 
+        expected = (2,) if samples == 1 else (samples, 2)
+        assert results.shape == expected
+        assert circuit._qfunc_output.shape(samples, 3) == (samples, 2) if samples != 1 else (2,)
 
-@pytest.mark.jax
-def test_sample_with_boolean_tracer():
-    """Test that qml.sample can be used with Catalyst measurement values (Boolean tracer)."""
-    import jax
+    def test_sample_with_boolean_tracer(self):
+        """Test that qml.sample can be used with Catalyst measurement values (Boolean tracer)."""
+        import jax
 
-    def fun(b):
-        mp = qml.sample(b)
+        def fun(b):
+            mp = qml.sample(b)
 
-        assert mp.obs is None
-        assert isinstance(mp.mv, jax.interpreters.partial_eval.DynamicJaxprTracer)
-        assert mp.mv.dtype == bool
-        assert mp.mv.shape == ()
-        assert isinstance(mp.wires, qml.wires.Wires)
-        assert mp.wires == ()
+            assert mp.obs is None
+            assert isinstance(mp.mv, jax.interpreters.partial_eval.DynamicJaxprTracer)
+            assert mp.mv.dtype == bool
+            assert mp.mv.shape == ()
+            assert isinstance(mp.wires, qml.wires.Wires)
+            assert mp.wires == ()
 
-    jax.make_jaxpr(fun)(True)
+        jax.make_jaxpr(fun)(True)
 
+    @pytest.mark.parametrize(
+        "obs",
+        [
+            # Single observables
+            (qml.PauliX(0)),
+            (qml.PauliY(0)),
+            (qml.PauliZ(0)),
+            (qml.Hadamard(0)),
+            (qml.Identity(0)),
+        ],
+    )
+    def test_jitting_with_sampling_on_different_observables(self, obs):
+        """Test that jitting works when sampling observables (using their eigvals) rather than returning raw samples"""
+        import jax
 
-@pytest.mark.jax
-@pytest.mark.parametrize(
-    "obs",
-    [
-        # Single observables
-        (qml.PauliX(0)),
-        (qml.PauliY(0)),
-        (qml.PauliZ(0)),
-        (qml.Hadamard(0)),
-        (qml.Identity(0)),
-    ],
-)
-def test_jitting_with_sampling_on_different_observables(obs):
-    """Test that jitting works when sampling observables (using their eigvals) rather than returning raw samples"""
-    import jax
+        jax.config.update("jax_enable_x64", True)
 
-    jax.config.update("jax_enable_x64", True)
+        dev = qml.device("default.qubit", wires=5, shots=100)
 
-    dev = qml.device("default.qubit", wires=5, shots=100)
+        @qml.qnode(dev, interface="jax")
+        def circuit(x):
+            qml.RX(x, wires=0)
+            return qml.sample(obs)
 
-    @qml.qnode(dev, interface="jax")
-    def circuit(x):
-        qml.RX(x, wires=0)
-        return qml.sample(obs)
+        results = jax.jit(circuit)(jax.numpy.array(0.123, dtype=jax.numpy.float64))
 
-    results = jax.jit(circuit)(jax.numpy.array(0.123, dtype=jax.numpy.float64))
+        assert results.dtype == jax.numpy.float64
+        assert np.all([r in [1, -1] for r in results])
 
-    assert results.dtype == jax.numpy.float64
-    assert np.all([r in [1, -1] for r in results])
+    def test_process_samples_with_jax_tracer(self):
+        """Test that qml.sample can be used when samples is a JAX Tracer"""
+
+        import jax
+
+        def f(samples):
+            return qml.sample(op=2 * qml.X(0)).process_samples(
+                samples, wire_order=qml.wires.Wires((0, 1))
+            )
+
+        samples = jax.numpy.zeros((10, 2), dtype=int)
+        jax.jit(f)(samples)
 
 
 class TestSampleProcessCounts:
