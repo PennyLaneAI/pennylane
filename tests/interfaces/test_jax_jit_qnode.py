@@ -813,6 +813,7 @@ class TestShotsIntegration:
         res = circuit(a, b, shots=100)  # pylint: disable=unexpected-keyword-arg
         assert res.shape == (100, 2)  # pylint:disable=comparison-with-callable
 
+    @pytest.mark.xfail(reason="'shots' cannot be a static_argname for 'jit' in JAX 0.4.28")
     def test_gradient_integration(self, interface):
         """Test that temporarily setting the shots works
         for gradient computations"""
@@ -912,6 +913,7 @@ class TestShotsIntegration:
 class TestQubitIntegration:
     """Tests that ensure various qubit circuits integrate correctly"""
 
+    @pytest.mark.xfail(reason="'shots' cannot be a static_argname for 'jit' in JAX 0.4.28")
     def test_sampling(self, dev, diff_method, grad_on_execution, device_vjp, interface):
         """Test sampling works as expected"""
         if grad_on_execution:
@@ -941,6 +943,7 @@ class TestQubitIntegration:
         assert isinstance(res[1], jax.Array)
         assert res[1].shape == (10,)
 
+    @pytest.mark.xfail(reason="'shots' cannot be a static_argname for 'jit' in JAX 0.4.28")
     def test_counts(self, dev, diff_method, grad_on_execution, device_vjp, interface):
         """Test counts works as expected"""
         if grad_on_execution:
@@ -2041,6 +2044,7 @@ class TestJIT:
 class TestReturn:
     """Class to test the shape of the Grad/Jacobian with different return types."""
 
+    @pytest.mark.xfail(reason="'shots' cannot be a static_argname for 'jit' in JAX 0.4.28")
     def test_grad_single_measurement_param(
         self, dev, diff_method, grad_on_execution, device_vjp, jacobian, shots, interface
     ):
@@ -2073,6 +2077,7 @@ class TestReturn:
         assert isinstance(grad, jax.numpy.ndarray)
         assert grad.shape == ()
 
+    @pytest.mark.xfail(reason="'shots' cannot be a static_argname for 'jit' in JAX 0.4.28")
     def test_grad_single_measurement_multiple_param(
         self, dev, diff_method, grad_on_execution, device_vjp, jacobian, shots, interface
     ):
@@ -2110,6 +2115,7 @@ class TestReturn:
         assert grad[0].shape == ()
         assert grad[1].shape == ()
 
+    @pytest.mark.xfail(reason="'shots' cannot be a static_argname for 'jit' in JAX 0.4.28")
     def test_grad_single_measurement_multiple_param_array(
         self, dev, diff_method, grad_on_execution, device_vjp, jacobian, shots, interface
     ):
@@ -2142,6 +2148,7 @@ class TestReturn:
         assert isinstance(grad, jax.numpy.ndarray)
         assert grad.shape == (2,)
 
+    @pytest.mark.xfail(reason="'shots' cannot be a static_argname for 'jit' in JAX 0.4.28")
     def test_jacobian_single_measurement_param_probs(
         self, dev, diff_method, grad_on_execution, device_vjp, jacobian, shots, interface
     ):
@@ -2175,6 +2182,7 @@ class TestReturn:
         assert isinstance(jac, jax.numpy.ndarray)
         assert jac.shape == (4,)
 
+    @pytest.mark.xfail(reason="'shots' cannot be a static_argname for 'jit' in JAX 0.4.28")
     def test_jacobian_single_measurement_probs_multiple_param(
         self, dev, diff_method, grad_on_execution, device_vjp, jacobian, shots, interface
     ):
@@ -2214,6 +2222,7 @@ class TestReturn:
         assert isinstance(jac[1], jax.numpy.ndarray)
         assert jac[1].shape == (4,)
 
+    @pytest.mark.xfail(reason="'shots' cannot be a static_argname for 'jit' in JAX 0.4.28")
     def test_jacobian_single_measurement_probs_multiple_param_single_array(
         self, dev, diff_method, grad_on_execution, device_vjp, jacobian, shots, interface
     ):
@@ -2246,6 +2255,7 @@ class TestReturn:
         assert isinstance(jac, jax.numpy.ndarray)
         assert jac.shape == (4, 2)
 
+    @pytest.mark.xfail(reason="'shots' cannot be a static_argname for 'jit' in JAX 0.4.28")
     def test_jacobian_expval_expval_multiple_params(
         self, dev, diff_method, grad_on_execution, device_vjp, jacobian, shots, interface
     ):
@@ -2295,6 +2305,7 @@ class TestReturn:
         assert isinstance(jac[1][1], jax.numpy.ndarray)
         assert jac[1][1].shape == ()
 
+    @pytest.mark.xfail(reason="'shots' cannot be a static_argname for 'jit' in JAX 0.4.28")
     def test_jacobian_expval_expval_multiple_params_array(
         self, dev, diff_method, grad_on_execution, device_vjp, jacobian, shots, interface
     ):
@@ -2333,6 +2344,7 @@ class TestReturn:
         assert isinstance(jac[1], jax.numpy.ndarray)
         assert jac[1].shape == (2,)
 
+    @pytest.mark.xfail(reason="'shots' cannot be a static_argname for 'jit' in JAX 0.4.28")
     def test_jacobian_var_var_multiple_params(
         self, dev, diff_method, grad_on_execution, device_vjp, jacobian, shots, interface
     ):
@@ -2385,6 +2397,7 @@ class TestReturn:
         assert isinstance(jac[1][1], jax.numpy.ndarray)
         assert jac[1][1].shape == ()
 
+    @pytest.mark.xfail(reason="'shots' cannot be a static_argname for 'jit' in JAX 0.4.28")
     def test_jacobian_var_var_multiple_params_array(
         self, dev, diff_method, grad_on_execution, device_vjp, jacobian, shots, interface
     ):
@@ -2425,6 +2438,7 @@ class TestReturn:
         assert isinstance(jac[1], jax.numpy.ndarray)
         assert jac[1].shape == (2,)
 
+    @pytest.mark.xfail(reason="'shots' cannot be a static_argname for 'jit' in JAX 0.4.28")
     def test_jacobian_multiple_measurement_single_param(
         self, dev, diff_method, grad_on_execution, device_vjp, jacobian, shots, interface
     ):
@@ -2463,6 +2477,7 @@ class TestReturn:
         assert isinstance(jac[1], jax.numpy.ndarray)
         assert jac[1].shape == (4,)
 
+    @pytest.mark.xfail(reason="'shots' cannot be a static_argname for 'jit' in JAX 0.4.28")
     def test_jacobian_multiple_measurement_multiple_param(
         self, dev, diff_method, grad_on_execution, device_vjp, jacobian, shots, interface
     ):
@@ -2510,6 +2525,7 @@ class TestReturn:
         assert isinstance(jac[1][1], jax.numpy.ndarray)
         assert jac[1][1].shape == (4,)
 
+    @pytest.mark.xfail(reason="'shots' cannot be a static_argname for 'jit' in JAX 0.4.28")
     def test_jacobian_multiple_measurement_multiple_param_array(
         self, dev, diff_method, grad_on_execution, device_vjp, jacobian, shots, interface
     ):
@@ -2871,6 +2887,7 @@ class TestReturnHessian:
         assert hess[1].shape == (2, 2, 2)
 
 
+@pytest.mark.xfail(reason="'shots' cannot be a static_argname for 'jit' in JAX 0.4.28")
 @pytest.mark.parametrize("hessian", hessian_fn)
 @pytest.mark.parametrize("diff_method", ["parameter-shift", "hadamard"])
 def test_jax_device_hessian_shots(hessian, diff_method):
