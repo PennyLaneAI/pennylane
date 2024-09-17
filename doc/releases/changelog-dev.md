@@ -63,6 +63,10 @@
 
 <h3>Breaking changes 💔</h3>
 
+* The functions `qml.qinfo.classical_fisher` and `qml.qinfo.quantum_fisher` have been removed and migrated to the `qml.gradients`
+  module. Therefore, `qml.gradients.classical_fisher` and `qml.gradients.quantum_fisher` should be used instead.
+  [(#5911)](https://github.com/PennyLaneAI/pennylane/pull/5911)
+
 * Remove support for Python 3.9.
   [(#6223)](https://github.com/PennyLaneAI/pennylane/pull/6223)
 
@@ -92,6 +96,10 @@
 
 
 <h3>Deprecations 👋</h3>
+
+* The `qml.qinfo` module has been deprecated. Please see the respective functions in the `qml.math` and
+  `qml.measurements` modules instead.
+  [(#5911)](https://github.com/PennyLaneAI/pennylane/pull/5911)
 
 * The ``QubitStateVector`` template is deprecated.
    Instead, use ``StatePrep``.
@@ -140,10 +148,12 @@ This release contains contributions from (in alphabetical order):
 Guillermo Alonso,
 Utkarsh Azad,
 Astral Cai,
+Isaac De Vlugt,
 Lillian M. A. Frederiksen,
 Pietropaolo Frisoni,
 Emiliano Godinez,
 Christina Lee,
 William Maxwell,
 Lee J. O'Riordan,
+Mudit Pandey,
 David Wierichs,
