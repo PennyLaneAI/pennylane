@@ -1,7 +1,7 @@
 name: NumPy 1 - Tests
 on:
 
-  # This will be removed (I need to test it)  
+  # This will be removed (I need to test it on the PR at this stage)  
   pull_request: 
     types:
         - opened
