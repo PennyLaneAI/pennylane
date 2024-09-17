@@ -752,6 +752,7 @@ class TestJax:
     ):
         r"""Test that the overlap gradients are correct with jax."""
         import jax
+
         jax.config.update("jax_enable_x64", True)
 
         geometry = qml.math.array(geometry, like="jax")
@@ -760,7 +761,7 @@ class TestJax:
         mol = qchem.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
         args = [mol.coordinates, mol.coeff, mol.alpha]
         g_alpha, g_coeff = jax.jacobian(qchem.overlap_matrix(mol.basis_set), argnums=[2, 1])(*args)
-        
+
         assert np.allclose(g_alpha, g_alpha_ref)
         assert np.allclose(g_coeff, g_coeff_ref)
 
