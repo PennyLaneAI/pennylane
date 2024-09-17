@@ -66,7 +66,7 @@ class TestCreateExpandFn:
         """Test that passing a device alongside a stopping condition ensures
         that all operations are expanded to match the devices default gate
         set"""
-        dev = qml.device("defualt.mixed", wires=1)
+        dev = qml.device("default.mixed", wires=1)
         expand_fn = qml.transforms.create_expand_fn(device=dev, depth=10, stop_at=self.crit_0)
 
         with qml.queuing.AnnotatedQueue() as q:
@@ -82,7 +82,7 @@ class TestCreateExpandFn:
     def test_device_only_expansion(self):
         """Test that passing a device ensures that all operations are expanded
         to match the devices default gate set"""
-        dev = qml.device("defualt.mixed", wires=1)
+        dev = qml.device("default.mixed", wires=1)
         expand_fn = qml.transforms.create_expand_fn(device=dev, depth=10)
 
         with qml.queuing.AnnotatedQueue() as q:
@@ -428,7 +428,7 @@ def custom_basic_entangler_layers(weights, wires, **kwargs):
 class TestCreateCustomDecompExpandFn:
     """Tests for the custom_decomps argument for devices"""
 
-    @pytest.mark.parametrize("device_name", ["default.qubit", "defualt.mixed"])
+    @pytest.mark.parametrize("device_name", ["default.qubit", "default.mixed"])
     def test_string_and_operator_allowed(self, device_name):
         """Test that the custom_decomps dictionary accepts both strings and operator classes as keys."""
 
@@ -449,7 +449,7 @@ class TestCreateCustomDecompExpandFn:
             assert op.name != "Hadamard"
             assert op.name != "CNOT"
 
-    @pytest.mark.parametrize("device_name", ["default.qubit", "defualt.mixed"])
+    @pytest.mark.parametrize("device_name", ["default.qubit", "default.mixed"])
     def test_no_custom_decomp(self, device_name):
         """Test that sending an empty dictionary results in no decompositions."""
 
@@ -475,7 +475,7 @@ class TestCreateCustomDecompExpandFn:
             orig_op.name == decomp_op.name for orig_op, decomp_op in zip(original_ops, decomp_ops)
         ]
 
-    @pytest.mark.parametrize("device_name", ["default.qubit", "defualt.mixed"])
+    @pytest.mark.parametrize("device_name", ["default.qubit", "default.mixed"])
     def test_no_custom_decomp_template(self, device_name):
         """Test that sending an empty dictionary results in no decomposition
         when a template is involved, except the decomposition expected from the device."""
@@ -501,7 +501,7 @@ class TestCreateCustomDecompExpandFn:
             orig_op.name == decomp_op.name for orig_op, decomp_op in zip(original_ops, decomp_ops)
         ]
 
-    @pytest.mark.parametrize("device_name", ["default.qubit", "defualt.mixed", "lightning.qubit"])
+    @pytest.mark.parametrize("device_name", ["default.qubit", "default.mixed", "lightning.qubit"])
     def test_one_custom_decomp(self, device_name):
         """Test that specifying a single custom decomposition works as expected."""
 
@@ -526,7 +526,7 @@ class TestCreateCustomDecompExpandFn:
 
         assert decomp_ops[2].name == "CNOT"
 
-    @pytest.mark.parametrize("device_name", ["default.qubit", "defualt.mixed"])
+    @pytest.mark.parametrize("device_name", ["default.qubit", "default.mixed"])
     def test_no_decomp_with_depth_zero(self, device_name):
         """Test that specifying a single custom decomposition works as expected."""
 
@@ -550,7 +550,7 @@ class TestCreateCustomDecompExpandFn:
         assert decomp_ops[0].name == "Hadamard"
         assert decomp_ops[1].name == "CNOT"
 
-    @pytest.mark.parametrize("device_name", ["default.qubit", "defualt.mixed"])
+    @pytest.mark.parametrize("device_name", ["default.qubit", "default.mixed"])
     def test_one_custom_decomp_gradient(self, device_name):
         """Test that gradients are still correctly computed after a decomposition
         that performs transpilation."""
@@ -581,7 +581,7 @@ class TestCreateCustomDecompExpandFn:
         decomp_ops = qml.workflow.construct_batch(decomp_qnode, level=None)(x)[0][0].operations
         assert all(op.name == name for op, name in zip(decomp_ops, expected_ops))
 
-    @pytest.mark.parametrize("device_name", ["default.qubit", "defualt.mixed"])
+    @pytest.mark.parametrize("device_name", ["default.qubit", "default.mixed"])
     def test_nested_custom_decomp(self, device_name):
         """Test that specifying two custom decompositions that have interdependence
         works as expected."""
@@ -619,7 +619,7 @@ class TestCreateCustomDecompExpandFn:
 
         assert decomp_ops[4].name == "CZ"
 
-    @pytest.mark.parametrize("device_name", ["default.qubit", "defualt.mixed"])
+    @pytest.mark.parametrize("device_name", ["default.qubit", "default.mixed"])
     def test_nested_custom_decomp_with_template(self, device_name):
         """Test that specifying two custom decompositions that have interdependence
         works as expected even when there is a template."""
@@ -665,7 +665,7 @@ class TestCreateCustomDecompExpandFn:
         assert np.isclose(decomp_ops[6].parameters[0], np.pi / 2)
         assert decomp_ops[6].wires == Wires(1)
 
-    @pytest.mark.parametrize("device_name", ["default.qubit", "defualt.mixed"])
+    @pytest.mark.parametrize("device_name", ["default.qubit", "default.mixed"])
     def test_custom_decomp_template_to_template(self, device_name):
         """Test that decomposing a template into another template and some
         gates yields the correct results."""
@@ -700,7 +700,7 @@ class TestCreateCustomDecompExpandFn:
         assert decomp_ops[4].name == "CNOT"
         assert decomp_ops[4].wires == Wires([0, 1])
 
-    @pytest.mark.parametrize("device_name", ["default.qubit", "defualt.mixed"])
+    @pytest.mark.parametrize("device_name", ["default.qubit", "default.mixed"])
     def test_custom_decomp_different_depth(self, device_name):
         """Test that alternative expansion depths can be specified."""
 
@@ -746,7 +746,7 @@ class TestCreateCustomDecompExpandFn:
         decomp_ops = qml.workflow.construct_batch(circuit3, level=None)()[0][0].operations
         assert len(decomp_ops) == 5
 
-    @pytest.mark.parametrize("device_name", ["default.qubit", "defualt.mixed"])
+    @pytest.mark.parametrize("device_name", ["default.qubit", "default.mixed"])
     def test_custom_decomp_with_adjoint(self, device_name):
         """Test that applying an adjoint in the circuit results in the adjoint
         undergoing the custom decomposition."""
@@ -771,7 +771,7 @@ class TestCreateCustomDecompExpandFn:
         assert decomp_ops[1].name == "Hadamard"
         assert decomp_ops[1].wires == Wires("a")
 
-    @pytest.mark.parametrize("device_name", ["default.qubit", "defualt.mixed"])
+    @pytest.mark.parametrize("device_name", ["default.qubit", "default.mixed"])
     def test_custom_decomp_with_control(self, device_name):
         """Test that decomposing a controlled version of a gate uses the custom decomposition
         for the base gate."""
@@ -807,7 +807,7 @@ class TestCreateCustomDecompExpandFn:
     def test_custom_decomp_in_separate_context_legacy_opmath(self):
         """Test that the set_decomposition context manager works."""
 
-        dev = qml.device("defualt.mixed", wires=2)
+        dev = qml.device("default.mixed", wires=2)
 
         @qml.qnode(dev)
         def circuit():
