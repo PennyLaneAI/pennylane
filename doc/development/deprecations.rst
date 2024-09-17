@@ -21,7 +21,7 @@ Pending deprecations
   - Deprecated in v0.39
   - Will be removed in v0.40
 
-* ``qml.broadcast`` has been deprecated. Users should use for loops instead.
+* ``qml.broadcast`` has been deprecated. Users should use ``for`` loops instead.
 
   - Deprecated in v0.39
   - Will be removed in v0.40

@@ -96,16 +96,16 @@
 * The `'ancilla'` argument for `qml.iterative_qpe` has been deprecated. Instead, use the `'aux_wire'` argument.
   [(#6277)](https://github.com/PennyLaneAI/pennylane/pull/6277)
 
-* `qml.shadows.shadow_expval` has been deprecated. Instead, users should use the `qml.shadow_expval` measurement
-  process in their circuits.
+* `qml.shadows.shadow_expval` has been deprecated. Instead, use the `qml.shadow_expval` measurement
+  process.
   [(#6277)](https://github.com/PennyLaneAI/pennylane/pull/6277)
 
-* `qml.broadcast` has been deprecated. Users should use for loops instead.
+* `qml.broadcast` has been deprecated. Please use `for` loops instead.
   [(#6277)](https://github.com/PennyLaneAI/pennylane/pull/6277)
 
 * The ``QubitStateVector`` template is deprecated.
-   Instead, use ``StatePrep``.
-   [(#6172)](https://github.com/PennyLaneAI/pennylane/pull/6172)
+  Instead, use ``StatePrep``.
+  [(#6172)](https://github.com/PennyLaneAI/pennylane/pull/6172)
 
 * `Device`, `QubitDevice`, and `QutritDevice` will no longer be accessible via top-level import in v0.40.
   They will still be accessible as `qml.devices.LegacyDevice`, `qml.devices.QubitDevice`, and `qml.devices.QutritDevice`

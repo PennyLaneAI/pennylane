@@ -214,9 +214,9 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
 
     For more details, see *Usage Details* below.
 
-    .. warnings::
+    .. warning::
 
-        ``qml.broadcast`` has been deprecated. Please use for loops instead.
+        ``qml.broadcast`` has been deprecated. Please use ``for`` loops instead.
 
     Args:
         unitary (func): quantum gate or template
