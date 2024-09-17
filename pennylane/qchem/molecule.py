@@ -76,8 +76,8 @@ class Molecule:
         name="molecule",
         load_data=False,
         l=None,
-        coeff=None,
         alpha=None,
+        coeff=None,
         normalize=True,
         unit="bohr",
     ):
