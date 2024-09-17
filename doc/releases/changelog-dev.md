@@ -87,6 +87,9 @@
 
 <h3>Deprecations 👋</h3>
 
+* The `'ancilla'` argument for `qml.iterative_qpe` has been deprecated. Instead, use the `'aux_wire'` argument.
+  [(#)]()
+
 * `qml.shadows.shadow_expval` has been deprecated. Instead, users should use the `qml.shadow_expval` measurement
   process in their circuits.
   [(#)]()

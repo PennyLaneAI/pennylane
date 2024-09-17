@@ -9,6 +9,12 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
+* The ``'ancilla'`` argument for :func:`~pennylane.iterative_qpe` has been deprecated. Instead, use the ``'aux_wire'``
+  argument.
+
+  - Deprecated in v0.39
+  - Will be removed in v0.40
+
 * The ``qml.shadows.shadow_expval`` transform has been deprecated. Instead, please use the
   ``qml.shadow_expval`` measurement process.
 
