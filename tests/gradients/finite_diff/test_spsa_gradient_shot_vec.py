@@ -14,6 +14,9 @@
 """
 Tests for the gradients.spsa_gradient module using shot vectors.
 """
+
+# pylint: disable=abstract-method
+
 import numpy as np
 import pytest
 from default_qubit_legacy import DefaultQubitLegacy

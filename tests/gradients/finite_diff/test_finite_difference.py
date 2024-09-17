@@ -14,7 +14,7 @@
 """
 Tests for the gradients.finite_difference module.
 """
-# pylint: disable=use-implicit-booleaness-not-comparison
+# pylint: disable=use-implicit-booleaness-not-comparison,abstract-method
 import numpy
 import pytest
 from default_qubit_legacy import DefaultQubitLegacy

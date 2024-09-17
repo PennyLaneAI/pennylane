@@ -24,7 +24,7 @@ from pennylane.gradients import spsa_grad
 from pennylane.gradients.spsa_gradient import _rademacher_sampler
 from pennylane.operation import AnyWires, Observable
 
-# pylint:disable = use-implicit-booleaness-not-comparison
+# pylint:disable = use-implicit-booleaness-not-comparison,abstract-method
 
 
 def coordinate_sampler(indices, num_params, idx, rng=None):

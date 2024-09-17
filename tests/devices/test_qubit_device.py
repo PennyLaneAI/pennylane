@@ -46,7 +46,7 @@ mock_qubit_device_paulis = ["PauliX", "PauliY", "PauliZ"]
 mock_qubit_device_rotations = ["RX", "RY", "RZ"]
 
 
-# pylint: disable=abstract-class-instantiated, no-self-use, redefined-outer-name, invalid-name
+# pylint: disable=abstract-class-instantiated, no-self-use, redefined-outer-name, invalid-name,abstract-method
 
 
 @pytest.fixture(scope="function")
