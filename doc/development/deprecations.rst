@@ -50,12 +50,6 @@ Pending deprecations
   - Deprecated in v0.38
   - Will be removed in v0.39
 
-* The ``simplify`` argument in ``qml.Hamiltonian`` and ``qml.ops.LinearCombination`` is deprecated. 
-  Instead, ``qml.simplify()`` can be called on the constructed operator.
-
-  - Deprecated in v0.37
-  - Will be removed in v0.39
-
 * The ``QubitStateVector`` template is deprecated.
   Instead, use ``StatePrep``.
 
@@ -91,6 +85,12 @@ functionality will explicitly raise a deprecation warning when used:
 
 Other deprecations
 ~~~~~~~~~~~~~~~~~~
+
+* The ``simplify`` argument in ``qml.Hamiltonian`` and ``qml.ops.LinearCombination`` has been removed.
+  Instead, ``qml.simplify()`` can be called on the constructed operator.
+
+  - Deprecated in v0.37
+  - Removed in v0.39
 
 * PennyLane Lightning and Catalyst will no longer support ``manylinux2014`` (GLIBC 2.17) compatibile Linux operating systems, and will be migrated to ``manylinux_2_28`` (GLIBC 2.28). See `pypa/manylinux <https://github.com/pypa/manylinux>`_ for additional details.
   

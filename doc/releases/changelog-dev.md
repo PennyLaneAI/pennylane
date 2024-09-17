@@ -63,6 +63,10 @@
 
 <h3>Breaking changes 💔</h3>
 
+* The `simplify` argument in `qml.Hamiltonian` and `qml.ops.LinearCombination` has been removed.
+  Instead, `qml.simplify()` can be called on the constructed operator.
+  [(#)]()
+
 * The functions `qml.qinfo.classical_fisher` and `qml.qinfo.quantum_fisher` have been removed and migrated to the `qml.gradients`
   module. Therefore, `qml.gradients.classical_fisher` and `qml.gradients.quantum_fisher` should be used instead.
   [(#5911)](https://github.com/PennyLaneAI/pennylane/pull/5911)
