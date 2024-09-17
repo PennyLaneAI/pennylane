@@ -169,7 +169,7 @@ def sum_of_terms_method(
     )
 
 
-# pylint: disable=too-many-return-statements
+# pylint: disable=too-many-return-statements,too-many-branches
 def get_measurement_function(
     measurementprocess: MeasurementProcess, state: TensorLike
 ) -> Callable[[MeasurementProcess, TensorLike], TensorLike]:
