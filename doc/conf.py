@@ -41,6 +41,7 @@ extensions = [
     "sphinx.ext.inheritance_diagram",
     "sphinx.ext.viewcode",
     "sphinxcontrib.bibtex",
+    "sphinxcontrib.spelling",
     "sphinx.ext.graphviz",
     "sphinx.ext.intersphinx",
     "sphinx_automodapi.automodapi",

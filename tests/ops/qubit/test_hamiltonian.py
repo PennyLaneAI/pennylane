@@ -1103,7 +1103,7 @@ class TestHamiltonian:
         assert isinstance(ham, qml.Hamiltonian)
 
     def test_hamiltonian_pauli_rep(self):
-        """Test that the pauli rep is set for a hamiltonain that is a linear combination of paulis."""
+        """Test that the pauli rep is set for a hamiltonian that is a linear combination of paulis."""
         h = qml.Hamiltonian([1.0, 2.0], [qml.X(0) @ qml.Y(1), qml.Z(0) @ qml.Z(2)])
 
         pw1 = qml.pauli.PauliWord({0: "X", 1: "Y"})

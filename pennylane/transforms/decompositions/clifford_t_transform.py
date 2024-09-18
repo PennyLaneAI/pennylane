@@ -472,7 +472,7 @@ def clifford_t_decomposition(
 
         else:
             raise NotImplementedError(
-                f"Currently we only support Solovay-Kitaev ('sk') decompostion, got {method}"
+                f"Currently we only support Solovay-Kitaev ('sk') decomposition, got {method}"
             )
 
         decomp_ops = []

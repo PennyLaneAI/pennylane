@@ -314,7 +314,7 @@ class TestCliffordCompile:
 
         with pytest.raises(
             NotImplementedError,
-            match=r"Currently we only support Solovay-Kitaev \('sk'\) decompostion",
+            match=r"Currently we only support Solovay-Kitaev \('sk'\) decomposition",
         ):
             decomposed_qfunc()
 
