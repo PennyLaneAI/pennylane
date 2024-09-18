@@ -1,7 +1,8 @@
 name: NumPy 1 - Tests
 on:
 
-  # This will be removed (I need to test it on the PR at this stage)  
+  # The following lines will be removed once the workflow is fully implemented. 
+  # After that, the workflow will be triggered only on schedule.
   pull_request: 
     types:
         - opened

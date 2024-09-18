@@ -81,7 +81,6 @@ jobs:
             fromJSON(needs.setup-ci-load.outputs.python-version).torch-tests
             || fromJSON(needs.setup-ci-load.outputs.python-version).default
            }}
-        numpy-1-install: [true]
     uses: ./.github/workflows/unit-test.yml
     with:
       job_name: torch-tests (${{ matrix.python-version }}, numpy-1.26)
