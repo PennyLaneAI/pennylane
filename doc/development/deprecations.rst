@@ -45,11 +45,19 @@ Pending deprecations
   - Deprecated in v0.39
   - Will be removed in v0.40
 
+* The ``decomp_depth`` argument in ``qml.device`` is deprecated. 
+
+  - Deprecated in v0.38
+  - Will be removed in v0.39
+
 * The ``simplify`` argument in ``qml.Hamiltonian`` and ``qml.ops.LinearCombination`` is deprecated. 
   Instead, ``qml.simplify()`` can be called on the constructed operator.
 
   - Deprecated in v0.37
   - Will be removed in v0.39
+
+* The :class:`~pennylane.BasisStatePreparation` template is deprecated.
+  Instead, use :class:`~pennylane.BasisState`.
 
 * The ``QubitStateVector`` template is deprecated.
   Instead, use ``StatePrep``.
@@ -100,6 +108,12 @@ Other deprecations
 
 Completed deprecation cycles
 ----------------------------
+
+* The ``simplify`` argument in ``qml.Hamiltonian`` and ``qml.ops.LinearCombination`` has been removed.
+  Instead, ``qml.simplify()`` can be called on the constructed operator.
+
+  - Deprecated in v0.37
+  - Removed in v0.39
 
 * The ``decomp_depth`` argument in ``qml.device`` is removed.
 
