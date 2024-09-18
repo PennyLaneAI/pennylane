@@ -40,6 +40,9 @@
   `from pennylane.capture.primitives import *`.
   [(#6129)](https://github.com/PennyLaneAI/pennylane/pull/6129)
 
+* `FermiWord` class now has a method to apply anti-commutator relations.
+   [(#6196)](https://github.com/PennyLaneAI/pennylane/pull/6196)
+
 * `FermiWord` and `FermiSentence` classes now have methods to compute adjoints.
   [(#6166)](https://github.com/PennyLaneAI/pennylane/pull/6166)
 
@@ -62,6 +65,10 @@
   [(#6173)](https://github.com/PennyLaneAI/pennylane/pull/6173)
 
 <h3>Breaking changes 💔</h3>
+
+* The `simplify` argument in `qml.Hamiltonian` and `qml.ops.LinearCombination` has been removed.
+  Instead, `qml.simplify()` can be called on the constructed operator.
+  [(#6279)](https://github.com/PennyLaneAI/pennylane/pull/6279)
 
 * The functions `qml.qinfo.classical_fisher` and `qml.qinfo.quantum_fisher` have been removed and migrated to the `qml.gradients`
   module. Therefore, `qml.gradients.classical_fisher` and `qml.gradients.quantum_fisher` should be used instead.
@@ -99,6 +106,10 @@
 
 
 <h3>Deprecations 👋</h3>
+
+* The `qml.BasisStatePreparation` template is deprecated.
+  Instead, use `qml.BasisState`.
+  [(#6021)](https://github.com/PennyLaneAI/pennylane/pull/6021)
 
 * The `'ancilla'` argument for `qml.iterative_qpe` has been deprecated. Instead, use the `'aux_wire'` argument.
   [(#6277)](https://github.com/PennyLaneAI/pennylane/pull/6277)
