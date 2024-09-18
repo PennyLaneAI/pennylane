@@ -12,11 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for purities."""
+
 # pylint: disable=too-many-arguments
 import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
+
+pytestmark = pytest.mark.filterwarnings(
+    "ignore:The qml.qinfo.purity transform is deprecated:pennylane.PennyLaneDeprecationWarning"
+)
 
 
 def expected_purity_ising_xx(param):
@@ -59,6 +64,21 @@ class TestPurity:
     probs = np.array([0.001, 0.01, 0.1, 0.2])
 
     wires_list = [([0], True), ([1], True), ([0, 1], False)]
+
+    def test_qinfo_purity_deprecated(self):
+        """Test that qinfo.purity is deprecated."""
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit():
+            return qml.state()
+
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning,
+            match="The qml.qinfo.purity transform is deprecated",
+        ):
+            _ = qml.qinfo.purity(circuit, [0])()
 
     def test_purity_cannot_specify_device(self):
         """Test that an error is raised if a device or device wires are given
@@ -333,6 +353,7 @@ class TestPurity:
         expected_grad = expected_purity_grad_ising_xx(param) if is_partial else 0
 
         param = torch.tensor(param, dtype=torch.float64, requires_grad=True)
+
         purity = qml.qinfo.purity(circuit_state, wires=wires)(param)
         purity.backward()
         grad_purity = param.grad
@@ -385,6 +406,7 @@ class TestPurity:
         grad_expected_purity = expected_purity_grad_ising_xx(param) if is_partial else 0
 
         param = tf.Variable(param)
+
         with tf.GradientTape() as tape:
             purity = qml.qinfo.purity(circuit_state, wires=wires)(param)
 
@@ -407,6 +429,7 @@ class TestPurity:
 
         purity0 = qml.qinfo.purity(circuit_state, wires=[wires[0]])(param)
         purity1 = qml.qinfo.purity(circuit_state, wires=[wires[1]])(param)
+
         expected = expected_purity_ising_xx(param)
 
         assert qml.math.allclose(purity0, expected, atol=tol)
@@ -425,6 +448,5 @@ def test_broadcasting(device):
 
     x = np.array([0.4, 0.6, 0.8])
     purity = qml.qinfo.purity(circuit_state, wires=[0])(x)
-
     expected = expected_purity_ising_xx(x)
     assert qml.math.allclose(purity, expected)
