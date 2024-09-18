@@ -104,6 +104,10 @@
 
 <h3>Deprecations 👋</h3>
 
+* The `qml.BasisStatePreparation` template is deprecated.
+  Instead, use `qml.BasisState`.
+  [(#6021)](https://github.com/PennyLaneAI/pennylane/pull/6021)
+
 * The `'ancilla'` argument for `qml.iterative_qpe` has been deprecated. Instead, use the `'aux_wire'` argument.
   [(#6277)](https://github.com/PennyLaneAI/pennylane/pull/6277)
 

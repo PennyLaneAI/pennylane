@@ -225,6 +225,9 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
             [math.fidelity_statevector(circuit(), exp_state)], [1.0], atol=tol(dev.shots)
         )
 
+    @pytest.mark.filterwarnings(
+        "ignore:BasisStatePreparation is deprecated:pennylane.PennyLaneDeprecationWarning"
+    )
     def test_BasisStatePreparation(self, device, tol):
         """Test the BasisStatePreparation template."""
         dev = device(4)
