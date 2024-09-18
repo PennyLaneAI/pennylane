@@ -126,11 +126,10 @@ def scf(mol, n_steps=50, tol=1e-8):
         r = mol.coordinates
         n_electron = mol.n_electrons
 
-        # In autograd, _scf re-orders the arguments from r, alpha, coeff to alpha, coeff, r
-        # In JAX, we want to keep the ordering as r, coeff, alpha.
         if qml.math.get_interface(r) == "autograd":
             if getattr(r, "requires_grad", False):
                 args_r = [[args[0][i]] * mol.n_basis[i] for i in range(len(mol.n_basis))]
+                # In autograd, _scf re-orders args from r, alpha, coeff to args_ = r, alpha, coeff, r
                 args_ = [*args] + [qml.math.vstack(list(itertools.chain(*args_r)))]
                 rep_tensor = repulsion_tensor(basis_functions)(*args_[1:])
                 s = overlap_matrix(basis_functions)(*args_[1:])
@@ -140,6 +139,8 @@ def scf(mol, n_steps=50, tol=1e-8):
                 s = overlap_matrix(basis_functions)(*args)
                 h_core = core_matrix(basis_functions, charges, r)(*args)
         else:
+            # In JAX, we want to keep the ordering as r, coeff, alpha. But for core_matrix,
+            # we pass in r, r, coeff, alpha.
             if qml.math.get_interface(r) == "jax" and qml.math.requires_grad(args[0]):
                 args_r = [[args[0][i]] * mol.n_basis[i] for i in range(len(mol.n_basis))]
                 args_ = [*args] + [qml.math.vstack(list(itertools.chain(*args_r)))]
