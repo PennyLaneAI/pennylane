@@ -329,7 +329,7 @@ class FermiWord(dict):
         There are three `anti-commutator relations <https://en.wikipedia.org/wiki/Creation_and_annihilation_operators#Creation_and_annihilation_operators_in_quantum_field_theories>`_:
 
         .. math::
-            \left\{ a_i, a_j \right\} = 0 \quad \left\{ a^{\dagger}_i, a^{\dagger}_j \right\} = 0 \quad \left\{ a_i, a^{\dagger}_j \right\} = \delta_{ij}
+            \left\{ a_i, a_j \right\} = 0, \quad \left\{ a^{\dagger}_i, a^{\dagger}_j \right\} = 0, \quad \left\{ a_i, a^{\dagger}_j \right\} = \delta_{ij},
 
 
         where
