@@ -225,7 +225,7 @@ class TestBasicCircuit:
     def test_expand_state_keeps_autograd_interface(self):
         """Test that expand_state doesn't convert autograd to numpy."""
 
-        @qml.qnode(qml.device("default.qubit", wires=2))
+        @qml.qnode(qml.device("default.qubit", wires=2), interface="autograd")
         def circuit(x):
             qml.RX(x, 0)
             return qml.probs(wires=[0, 1])
