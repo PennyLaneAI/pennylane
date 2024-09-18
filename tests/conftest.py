@@ -19,7 +19,6 @@ import contextlib
 import os
 import pathlib
 import sys
-import warnings
 
 import numpy as np
 import pytest

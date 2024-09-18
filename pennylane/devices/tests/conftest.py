@@ -14,7 +14,6 @@
 """Contains shared fixtures for the device tests."""
 import argparse
 import os
-import warnings
 
 import numpy as np
 import pytest
