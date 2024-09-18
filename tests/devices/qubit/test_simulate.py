@@ -1213,9 +1213,17 @@ class TestMidCircuitMeasurements:
         rng_keys = [np.random.default_rng(x) for x in rng.integers(0, 2**32, size=100)]
 
         n_shots = 100
-            results = [simulate_one_shot_native_mcm(circuit, n_shots, rng=rng_keys[i], interface=ml_framework, postselect_mode=postselect_mode) for i in range(n_shots)]
-            mcm_results, terminal_results = zip(*results)
-             
+        results = [
+            simulate_one_shot_native_mcm(
+                circuit,
+                n_shots,
+                rng=rng_keys[i],
+                interface=ml_framework,
+                postselect_mode=postselect_mode,
+            )
+            for i in range(n_shots)
+        ]
+        mcm_results, terminal_results = zip(*results)
 
         if postselect_mode == "fill-shots":
             assert all(ms == 0 for ms in mcm_results)
