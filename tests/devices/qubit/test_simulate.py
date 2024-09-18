@@ -16,7 +16,7 @@
 import numpy as np
 import pytest
 from dummy_debugger import Debugger
-from stat_tests import fisher_exact_test
+from stat_utils import fisher_exact_test
 
 import pennylane as qml
 from pennylane.devices.qubit import get_final_state, measure_final_state, simulate
