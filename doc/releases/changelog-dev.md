@@ -131,6 +131,9 @@
 
 <h3>Documentation 📝</h3>
 
+* Add reporting of test warnings as failures.
+  [(#6217)](https://github.com/PennyLaneAI/pennylane/pull/6217)
+
 <h3>Bug fixes 🐛</h3>
 
 * Fix a bug where zero-valued JVPs were calculated wrongly in the presence of shot vectors.

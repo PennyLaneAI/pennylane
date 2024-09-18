@@ -25,7 +25,7 @@ on:
         type: string
         default: '3.10'
       pipeline_mode:
-        description: The pipeline mode can be unit-tests, benchmarks, or reference-benchmark
+        description: The pipeline mode can be unit-tests, benchmarks, reference-benchmark, or warnings
         required: false
         type: string
         default: 'unit-tests'
@@ -114,6 +114,11 @@ on:
         required: false
         type: string
         default: "False"
+      python_warning_level:
+        description: Sets the default Python warning level as defined by https://docs.python.org/3/using/cmdline.html#envvar-PYTHONWARNINGS
+        required: false
+        type: string
+        default: 'default'
 
 jobs:
   test:
@@ -129,7 +134,7 @@ jobs:
           repository: PennyLaneAI/pennylane
 
       - name: Determine benchmark name
-        if: ${{ inputs.pipeline_mode != 'unit-tests' }}
+        if: ${{ contains(fromJSON('["benchmarks"]'), inputs.pipeline_mode) }}
         id: benchmark_name
         run: |
           job_name="${{ inputs.job_name }}"
@@ -138,7 +143,7 @@ jobs:
           echo "benchmark_name=$_benchmark_name" >> $GITHUB_OUTPUT
 
       - name: Cache reference benchmarks
-        if: ${{ inputs.pipeline_mode != 'unit-tests' }}
+        if: ${{ contains(fromJSON('["benchmarks"]'), inputs.pipeline_mode) }}
         id: benchmark-cache
         uses: actions/cache@v3
         with:
@@ -149,7 +154,7 @@ jobs:
         id: continue
         run: >-
           echo "confirm=${{
-            contains(fromJSON('["unit-tests", "benchmarks"]'), inputs.pipeline_mode)
+            contains(fromJSON('["unit-tests", "benchmarks", "warnings"]'), inputs.pipeline_mode)
             || (inputs.pipeline_mode == 'reference-benchmarks'
             && steps.benchmark-cache.outputs.cache-hit != 'true' )}}" >> $GITHUB_OUTPUT
 
@@ -180,6 +185,8 @@ jobs:
         run: |
           if [[ "$PIPELINE_MODE" =~ .*"benchmarks".* ]]; then
             echo "args=$PYTEST_BENCHMARKS_ARGS $PYTEST_ADDITIONAL_ARGS" >> $GITHUB_OUTPUT
+          elif [[ "$PIPELINE_MODE" =~ .*"warnings".* ]]; then
+            echo "args=$PYTEST_ADDITIONAL_ARGS --continue-on-collection-errors" >> $GITHUB_OUTPUT
           else
             echo "args=$PYTEST_COVERAGE_ARGS $PYTEST_PARALLELISE_ARGS $PYTEST_ADDITIONAL_ARGS $PYTEST_DURATIONS_ARGS $PYTEST_STORE_ARGS" >> $GITHUB_OUTPUT
           fi
@@ -193,7 +200,7 @@ jobs:
           COV_CORE_DATAFILE: .coverage.eager
           TF_USE_LEGACY_KERAS: "1"  # sets to use tf-keras (Keras2) instead of keras (Keras3) when running TF tests
         # Calling PyTest by invoking Python first as that adds the current directory to sys.path
-        run: python -m pytest ${{ inputs.pytest_test_directory }} ${{ steps.pytest_args.outputs.args }} ${{ env.PYTEST_MARKER }} --disable-opmath=${{ inputs.disable_new_opmath }}
+        run: python -m pytest -W ${{ inputs.python_warning_level }} ${{ inputs.pytest_test_directory }} ${{ steps.pytest_args.outputs.args }} ${{ env.PYTEST_MARKER }} --disable-opmath=${{ inputs.disable_new_opmath }}
 
       - name: Upload Durations file as artifact
         if: ${{ inputs.pytest_store_durations == true }}
