@@ -36,23 +36,6 @@ TF_TOL = 2e-2
 TOL_STOCHASTIC = 0.05
 
 
-@pytest.fixture(scope="function", autouse=True)
-def capture_legacy_device_deprecation_warnings():
-    with warnings.catch_warnings(record=True) as recwarn:
-        warnings.simplefilter("always")
-        yield
-
-        for w in recwarn:
-            if isinstance(w, qml.PennyLaneDeprecationWarning):
-                assert "Use of 'default.qubit." in str(w.message)
-                assert "is deprecated" in str(w.message)
-                assert "use 'default.qubit'" in str(w.message)
-
-    for w in recwarn:
-        if "Use of 'default.qubit." not in str(w.message):
-            warnings.warn(message=w.message, category=w.category)
-
-
 # pylint: disable=too-few-public-methods
 class DummyDevice(DefaultGaussian):
     """Dummy device to allow Kerr operations"""

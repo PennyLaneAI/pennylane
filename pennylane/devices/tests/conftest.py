@@ -39,27 +39,6 @@ LIST_CORE_DEVICES = {
 }
 
 
-@pytest.fixture(scope="function", autouse=True)
-def capture_legacy_device_deprecation_warnings():
-    """Catches all warnings raised by a test and verifies that any Deprecation
-    warnings released are related to the legacy devices. Otherwise, it re-raises
-    any unrelated warnings"""
-
-    with warnings.catch_warnings(record=True) as recwarn:
-        warnings.simplefilter("always")
-        yield
-
-        for w in recwarn:
-            if isinstance(w, qml.PennyLaneDeprecationWarning):
-                assert "Use of 'default.qubit." in str(w.message)
-                assert "is deprecated" in str(w.message)
-                assert "use 'default.qubit'" in str(w.message)
-
-    for w in recwarn:
-        if "Use of 'default.qubit." not in str(w.message):
-            warnings.warn(message=w.message, category=w.category)
-
-
 @pytest.fixture(scope="function")
 def tol():
     """Numerical tolerance for equality tests. Returns a different tolerance for tests
