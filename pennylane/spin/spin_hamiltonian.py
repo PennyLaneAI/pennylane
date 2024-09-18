@@ -329,7 +329,7 @@ def emery(
         \begin{align*}
           \hat{H} & = -\sum_{\langle i,j \rangle, \sigma} t_{ij}(c_{i\sigma}^{\dagger}c_{j\sigma})
           + \sum_{i}U_{i}n_{i \uparrow} n_{i\downarrow} + \sum_{<i,j>}V_{ij}(n_{i \uparrow} +
-          n_{i \downarrow})(n_{j \uparrow} + n_{j \downarrow})
+          n_{i \downarrow})(n_{j \uparrow} + n_{j \downarrow})\ ,
         \end{align*}
 
     where :math:`t_{ij}` is the hopping term representing the kinetic energy of electrons,
