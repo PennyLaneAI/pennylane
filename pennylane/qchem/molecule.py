@@ -127,38 +127,18 @@ class Molecule:
             l = [i[0] for i in self.basis_data]
 
         use_jax = any(qml.math.get_interface(x) == "jax" for x in [coordinates, alpha, coeff])
-
+        interface_args = [{"like": "autograd", "requires_grad": False}, {"like": "jax"}][use_jax]
         if alpha is None:
-            alpha = [
-                (
-                    qml.math.array(i[1], like="jax")
-                    if use_jax
-                    else qml.math.array(i[1], like="autograd", requires_grad=False)
-                )
-                for i in self.basis_data
-            ]
+            alpha = [qml.math.array(i[1], **interface_args) for i in self.basis_data]
             if use_jax:
                 alpha = qml.math.array(alpha)
 
         if coeff is None:
-            coeff = [
-                (
-                    qml.math.array(i[2], like="jax")
-                    if use_jax
-                    else qml.math.array(i[2], like="autograd", requires_grad=False)
-                )
-                for i in self.basis_data
-            ]
+            coeff = [qml.math.array(i[2], **interface_args) for i in self.basis_data]
 
             if normalize:
                 coeff = [
-                    (
-                        qml.math.array(c * primitive_norm(l[i], alpha[i]), like="jax")
-                        if use_jax
-                        else qml.math.array(
-                            c * primitive_norm(l[i], alpha[i]), like="autograd", requires_grad=False
-                        )
-                    )
+                    qml.math.array(c * primitive_norm(l[i], alpha[i]), **interface_args)
                     for i, c in enumerate(coeff)
                 ]
             if use_jax:
