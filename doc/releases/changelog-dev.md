@@ -63,6 +63,10 @@
 
 <h3>Breaking changes 💔</h3>
 
+* The `simplify` argument in `qml.Hamiltonian` and `qml.ops.LinearCombination` has been removed.
+  Instead, `qml.simplify()` can be called on the constructed operator.
+  [(#6279)](https://github.com/PennyLaneAI/pennylane/pull/6279)
+
 * The functions `qml.qinfo.classical_fisher` and `qml.qinfo.quantum_fisher` have been removed and migrated to the `qml.gradients`
   module. Therefore, `qml.gradients.classical_fisher` and `qml.gradients.quantum_fisher` should be used instead.
   [(#5911)](https://github.com/PennyLaneAI/pennylane/pull/5911)
@@ -90,6 +94,9 @@
 * `qml.transforms.hamiltonian_expand` and `qml.transforms.sum_expand` are removed.
   Please use `qml.transforms.split_non_commuting` instead.
   [(#6204)](https://github.com/PennyLaneAI/pennylane/pull/6204)
+
+* The `decomp_depth` keyword argument to `qml.device` is removed.
+  [(#6234)](https://github.com/PennyLaneAI/pennylane/pull/6234)
 
 * `Operator.expand` is now removed. Use `qml.tape.QuantumScript(op.deocomposition())` instead.
   [(#6227)](https://github.com/PennyLaneAI/pennylane/pull/6227)
