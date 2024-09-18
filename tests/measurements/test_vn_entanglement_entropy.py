@@ -393,7 +393,8 @@ class TestIntegration:
 
     def test_qnode_entropy_custom_wires(self):
         """Test that entropy can be returned with custom wires."""
-
+        # Note that this test will only work with devices that map custom wires to standard labels
+        # before execution.
         dev = qml.device("default.qubit", wires=["a", 1])
 
         @qml.qnode(dev)
