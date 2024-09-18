@@ -1,3 +1,6 @@
+# TODO: remove this workflow once compatibility with NumPy 1.26 
+# will no longer be tested.
+
 name: NumPy 1 - Unit Tests - Interfaces
 on:
   workflow_call:
@@ -25,8 +28,6 @@ jobs:
       - name: Setup Python Versions
         id: python_versions
 
-        # All jobs will use the 'default' python versions listed in the dictionary below.
-        # Unless the job name exists as a key as well, in which case the python versions listed for the job itself will be used instead.
         run: |
             cat >python_versions.json <<-EOF
             {

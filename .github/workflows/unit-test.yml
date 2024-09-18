@@ -25,12 +25,12 @@ on:
         type: string
         default: '3.10'
       install_numpy_1:
-        description: Indicate if numpy 1.26 should be installed or not
+        description: Indicate if numpy 1 should be installed or not
         required: false
         type: boolean
         default: false
       numpy_1_version:
-        description: The version of numpy 1.26 to use in order to run unit tests
+        description: The version of numpy 1 to use in order to run unit tests
         required: false
         type: string
         default: '1.26.4'
