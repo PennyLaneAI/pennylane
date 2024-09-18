@@ -263,13 +263,15 @@ def attraction_matrix(basis_functions, charges, r):
         """
         n = len(basis_functions)
         matrix = qml.math.zeros((n, n))
+
+        requires_grad = getattr(r, "requires_grad", False) or (
+            qml.math.get_interface(r) == "jax" and qml.math.requires_grad(args[0])
+        )
         for (i, a), (j, b) in it.combinations_with_replacement(enumerate(basis_functions), r=2):
             integral = 0
             if args:
                 args_ab = []
-                if getattr(r, "requires_grad", False) or (
-                    qml.math.get_interface(r) == "jax" and qml.math.requires_grad(args[0])
-                ):
+                if requires_grad:
                     args_ab.extend(
                         (
                             qml.math.array([arg[i], arg[j]], like="jax")
