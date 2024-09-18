@@ -1223,7 +1223,7 @@ class TestMidCircuitMeasurements:
             )
             for i in range(n_shots)
         ]
-        mcm_results, terminal_results = zip(*results)
+        terminal_results, mcm_results = zip(*results)
 
         if postselect_mode == "fill-shots":
             assert all(ms == 0 for ms in mcm_results)
