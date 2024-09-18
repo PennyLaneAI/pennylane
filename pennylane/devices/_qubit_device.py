@@ -1065,16 +1065,16 @@ class QubitDevice(Device):
 
     def vn_entanglement_entropy(self, wires0, wires1, log_base):
         r"""Returns the Von Neumann entanglement entropy prior to measurement.
-        
+
         .. math::
-        
+
             S(\rho_A) = -\text{Tr}[\rho_A \log \rho_A] = -\text{Tr}[\rho_B \log \rho_B] = S(\rho_B)
-            
+
         Args:
             wires0 (Sequence[int] or int): the wires of the first subsystem
             wires1 (Sequence[int] or int): the wires of the second subsystem
             log_base (float): Base for the logarithm.
-            
+
         Returns:
             float: returns the Von Neumann entropy
         """
