@@ -1448,11 +1448,7 @@ class TestMidMeasurements:
     )
     def test_tree_traversal_interface_mcm(self, ml_framework, postselect_mode):
         """Test that tree traversal works numerically with different interfaces"""
-        # pylint:disable = singleton-comparison, import-outside-toplevel
-        if ml_framework == "tensorflow":
-            import tensorflow as tf
-
-            tf.experimental.numpy.experimental_enable_numpy_behavior()
+        # pylint:disable = singleton-comparison
 
         qscript = qml.tape.QuantumScript(
             [
