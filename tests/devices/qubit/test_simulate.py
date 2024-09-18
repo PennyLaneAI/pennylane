@@ -33,6 +33,14 @@ from pennylane.devices.qubit.simulate import (
     split_circuit_at_mcms,
 )
 
+ml_frameworks_list = [
+    "numpy",
+    pytest.param("autograd", marks=pytest.mark.autograd),
+    pytest.param("jax", marks=pytest.mark.jax),
+    pytest.param("torch", marks=pytest.mark.torch),
+    pytest.param("tensorflow", marks=pytest.mark.tf),
+]
+
 
 class TestCurrentlyUnsupportedCases:
     # pylint: disable=too-few-public-methods
@@ -1434,7 +1442,58 @@ class TestMidMeasurements:
             )
 
     @pytest.mark.unit
-    @pytest.mark.parametrize("postselect_mode", ["hw-like", "fill-shots"])
+    @pytest.mark.parametrize("ml_framework", ml_frameworks_list)
+    @pytest.mark.parametrize(
+        "postselect_mode", [None, "hw-like", "pad-invalid-samples", "fill-shots"]
+    )
+    def test_tree_traversal_interface_mcm(self, ml_framework, postselect_mode):
+        """Test that tree traversal works numerically with different interfaces"""
+        # pylint:disable = singleton-comparison, import-outside-toplevel
+        if ml_framework == "tensorflow":
+            import tensorflow as tf
+
+            tf.experimental.numpy.experimental_enable_numpy_behavior()
+
+        qscript = qml.tape.QuantumScript(
+            [
+                qml.RX(np.pi / 4, wires=0),
+                (m0 := qml.measure(0, reset=True)).measurements[0],
+                qml.RX(np.pi / 4, wires=0),
+            ],
+            [qml.sample(qml.Z(0)), qml.sample(m0)],
+            shots=5500,
+        )
+
+        res1, res2 = simulate_tree_mcm(qscript, interface=ml_framework)
+
+        p1 = [qml.math.mean(res1 == -1), qml.math.mean(res1 == 1)]
+        p2 = [qml.math.mean(res2 == True), qml.math.mean(res2 == False)]
+        assert qml.math.allclose(qml.math.sum(sp.special.rel_entr(p1, p2)), 0.0, atol=0.05)
+
+        qscript2 = qml.tape.QuantumScript(
+            [
+                qml.RX(np.pi / 4, wires=0),
+                (m0 := qml.measure(0, postselect=0)).measurements[0],
+                qml.RX(np.pi / 4, wires=0),
+            ],
+            [qml.sample(qml.Z(0))],
+            shots=5500,
+        )
+        qscript3 = qml.tape.QuantumScript(
+            [qml.RX(np.pi / 4, wires=0)], [qml.sample(qml.Z(0))], shots=5500
+        )
+
+        res3 = simulate_tree_mcm(qscript2, postselect_mode=postselect_mode)
+        res4 = simulate(qscript3)
+
+        p3 = [qml.math.mean(res3 == -1), qml.math.mean(res3 == 1)]
+        p4 = [qml.math.mean(res4 == -1), qml.math.mean(res4 == 1)]
+        assert qml.math.allclose(qml.math.sum(sp.special.rel_entr(p3, p4)), 0.0, atol=0.05)
+
+    @pytest.mark.unit
+    @pytest.mark.parametrize(
+        "postselect_mode", [None, "hw-like", "pad-invalid-samples", "fill-shots"]
+    )
     def test_tree_traversal_postselect_mode(self, postselect_mode):
         """Test that invalid shots are discarded if requested"""
 
