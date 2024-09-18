@@ -103,7 +103,7 @@ def get_metric_from_single_input_qnode(params, finite_diff_step, tensor_dirs):
     perturb2 = dir2 * finite_diff_step
 
     def get_state_overlap(params1, params2):
-        # analytically computed state overlap between two parameterized ansatzes
+        # analytically computed state overlap between two parametrized ansatzes
         # with input params1 and params2
         return (
             np.cos(params1[0][0] / 2) * np.cos(params2[0][0] / 2)

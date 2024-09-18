@@ -24,7 +24,7 @@ from pennylane.typing import PostprocessingFn
 
 @transform
 def append_gate(tape: QuantumScript, params, gates) -> tuple[QuantumScriptBatch, PostprocessingFn]:
-    """Append parameterized gates to an existing tape.
+    """Append parametrized gates to an existing tape.
 
     Args:
         tape (QuantumTape or QNode or Callable): quantum circuit to transform by adding gates
@@ -156,7 +156,7 @@ class AdaptiveOptimizer:
 
     @staticmethod
     def _circuit(params, gates, initial_circuit):
-        """Append parameterized gates to an existing circuit.
+        """Append parametrized gates to an existing circuit.
 
         Args:
             params (array[float]): parameters of the gates to be added

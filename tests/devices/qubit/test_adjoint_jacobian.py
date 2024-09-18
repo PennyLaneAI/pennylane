@@ -66,7 +66,7 @@ class TestAdjointJacobian:
     @pytest.mark.autograd
     @pytest.mark.parametrize("theta", np.linspace(-2 * np.pi, 2 * np.pi, 7))
     def test_Rot_gradient(self, theta, tol):
-        """Tests that the device gradient of an arbitrary Euler-angle-parameterized gate is
+        """Tests that the device gradient of an arbitrary Euler-angle-parametrized gate is
         correct."""
         params = np.array([theta, theta**3, np.sqrt(2) * theta])
         prep_op = qml.StatePrep(np.array([1.0, -1.0]) / np.sqrt(2), wires=0)

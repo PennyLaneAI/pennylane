@@ -112,7 +112,7 @@ class SProd(ScalarSymbolicOp):
         :title: Usage Details
 
         The SProd operation can also be measured inside a qnode as an observable.
-        If the circuit is parameterized, then we can also differentiate through the observable.
+        If the circuit is parametrized, then we can also differentiate through the observable.
 
         .. code-block:: python
 

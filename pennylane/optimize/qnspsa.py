@@ -61,7 +61,7 @@ class QNSPSAOptimizer:
 
     where :math:`F(\mathbf{x}', \mathbf{x}) = \bigr\rvert\langle \phi(\mathbf{x}') | \phi(\mathbf{x}) \rangle \bigr\rvert ^ 2`
     measures the state overlap between :math:`\phi(\mathbf{x}')` and :math:`\phi(\mathbf{x})`,
-    where :math:`\phi` is the parameterized ansatz. The finite difference :math:`\delta F` is
+    where :math:`\phi` is the parametrized ansatz. The finite difference :math:`\delta F` is
     computed from the two perturbations:
 
     .. math::

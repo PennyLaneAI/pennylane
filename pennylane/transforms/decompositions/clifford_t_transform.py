@@ -263,7 +263,7 @@ def _two_qubit_decompose(op):
 
 
 def _merge_param_gates(operations, merge_ops=None):
-    """Merge the provided parameterized gates on the same wires that are adjacent to each other"""
+    """Merge the provided parametrized gates on the same wires that are adjacent to each other"""
 
     copied_ops = operations.copy()
     merged_ops, number_ops = [], 0
