@@ -1217,7 +1217,7 @@ class TestUnimplemented:
             dev.state()
 
     def test_density_matrix(self, mock_qutrit_device):
-        """Test that vn_entropy is unimplemented"""
+        """Test that density_matrix is unimplemented"""
         dev = mock_qutrit_device()
 
         with pytest.raises(qml.QuantumFunctionError, match="Unsupported return type"):
