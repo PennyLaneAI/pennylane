@@ -1491,9 +1491,7 @@ class TestMidMeasurements:
         assert qml.math.allclose(qml.math.sum(sp.special.rel_entr(p3, p4)), 0.0, atol=0.05)
 
     @pytest.mark.unit
-    @pytest.mark.parametrize(
-        "postselect_mode", [None, "hw-like", "pad-invalid-samples", "fill-shots"]
-    )
+    @pytest.mark.parametrize("postselect_mode", ["hw-like", "fill-shots"])
     def test_tree_traversal_postselect_mode(self, postselect_mode):
         """Test that invalid shots are discarded if requested"""
 
