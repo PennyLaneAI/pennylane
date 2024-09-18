@@ -402,7 +402,7 @@ class TestInvalidSampling:
         mp = qml.sample(wires=range(2))
         _shots = Shots(shots)
 
-        with pytest.raises(ValueError, match="probabilities do not sum to 1"):
+        with pytest.raises(ValueError, match=r"(?i)probabilities do not sum to 1"):
             _ = measure_with_samples(mp, state, _shots)
 
     @pytest.mark.parametrize("mp", [qml.probs(0), qml.probs(op=qml.GellMann(0, 1))])
