@@ -19,8 +19,8 @@ import itertools
 from collections.abc import Iterable
 from typing import Union
 
-import networkx as nx
 import numpy as np
+import networkx as nx
 import rustworkx as rx
 
 import pennylane as qml
