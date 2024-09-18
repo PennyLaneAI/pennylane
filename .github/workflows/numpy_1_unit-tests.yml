@@ -1,4 +1,4 @@
-# TODO: remove this workflow once compatibility with NumPy 1.26 
+# TODO: remove this workflow once compatibility with NumPy 1
 # will no longer be tested.
 
 name: NumPy 1 - Unit Tests - Interfaces
@@ -44,8 +44,6 @@ jobs:
 
       - name: Set NumPy Version
         id: numpy_version
-
-        # All jobs in this workflow will use the same NumPy version.
         run: echo "NUMPY_VERSION=1.26" >> $GITHUB_ENV     
 
       - name: Setup Matrix Max Parallel
