@@ -254,7 +254,9 @@ def classical_fisher(qnode, argnums=0):
         elif interface == "tf":
             jac = _tf_jac(new_qnode)
         else:
-            raise ValueError(f"Interface {interface} not supported for jacobian calculations.")
+            raise ValueError(
+                f"Interface {interface} not supported for jacobian calculations."
+            )  # pragma: no cover
 
         j = jac(*args, **kwargs)
         p = new_qnode(*args, **kwargs)
