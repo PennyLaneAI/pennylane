@@ -1515,7 +1515,6 @@ class TestResourcesTracker:
         Resources(2, 6, {"Hadamard": 3, "RX": 2, "CNOT": 1}, {1: 5, 2: 1}, 4, Shots((10, 10, 50))),
     )  # Resources(wires, gates, gate_types, gate_sizes, depth, shots)
 
-
     @pytest.mark.all_interfaces
     @pytest.mark.parametrize(
         "qs_shots_wires, expected_resource", zip(qs_shots_wires_data, expected_resources)
