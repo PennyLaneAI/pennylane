@@ -639,15 +639,7 @@ class DefaultMixed(QubitDevice):
             )
 
         elif isinstance(measurement, VnEntanglementEntropyMP):
-            base = measurement.log_base
-            wires0, wires1 = list(map(self.map_wires, measurement.raw_wires))
-            snap_result = qml.math.vn_entanglement_entropy(
-                density_matrix,
-                indices0=wires0,
-                indices1=wires1,
-                c_dtype=self.C_DTYPE,
-                base=base,
-            )
+            snap_result = measurement.process_density_matrix(density_matrix, wire_order=self.wires)
 
         elif isinstance(measurement, MutualInfoMP):
             base = measurement.log_base

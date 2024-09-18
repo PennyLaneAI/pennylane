@@ -160,12 +160,17 @@ class VnEntanglementEntropyMP(StateMeasurement):
         return ()
 
     def process_state(self, state: Sequence[complex], wire_order: Wires):
-        state = qml.math.dm_from_state_vector(state)
+        density_matrix = qml.math.dm_from_state_vector(state)
+        return self.process_density_matrix(density_matrix=density_matrix, wire_order=wire_order)
+
+    def process_density_matrix(
+        self, density_matrix: Sequence[complex], wire_order: Wires
+    ):  # pylint: disable=unused-argument
         return qml.math.vn_entanglement_entropy(
-            state,
+            density_matrix,
             indices0=list(self._wires[0]),
             indices1=list(self._wires[1]),
-            c_dtype=state.dtype,
+            c_dtype=density_matrix.dtype,
             base=self.log_base,
         )
 
