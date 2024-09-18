@@ -330,7 +330,8 @@ def overlap_integral(basis_a, basis_b, normalize=True):
             getattr(basis_a.params[1], "requires_grad", False)
             or normalize
             or (
-                qml.math.get_interface(basis_a.params[1]) == "jax"
+                len(args) > 0
+                and qml.math.get_interface(basis_a.params[1]) == "jax"
                 and qml.math.requires_grad(args[1])
             )
         ):
@@ -533,7 +534,8 @@ def moment_integral(basis_a, basis_b, order, idx, normalize=True):
             getattr(basis_a.params[1], "requires_grad", False)
             or normalize
             or (
-                qml.math.get_interface(basis_a.params[1]) == "jax"
+                len(args) > 0
+                and qml.math.get_interface(basis_a.params[1]) == "jax"
                 and qml.math.requires_grad(args[1])
             )
         ):
@@ -711,7 +713,8 @@ def kinetic_integral(basis_a, basis_b, normalize=True):
             getattr(basis_a.params[1], "requires_grad", False)
             or normalize
             or (
-                qml.math.get_interface(basis_a.params[1]) == "jax"
+                len(args) > 0
+                and qml.math.get_interface(basis_a.params[1]) == "jax"
                 and qml.math.requires_grad(args[1])
             )
         ):
@@ -918,7 +921,7 @@ def attraction_integral(r, basis_a, basis_b, normalize=True):
             array[float]: the electron-nuclear attraction integral
         """
         if getattr(r, "requires_grad", False) or (
-            qml.math.get_interface(r) == "jax" and qml.math.requires_grad(args[0])
+            len(args) > 0 and qml.math.get_interface(r) == "jax" and qml.math.requires_grad(args[0])
         ):
             coor = args[0]
             args_a = [arg[0] for arg in args[1:]]
@@ -934,7 +937,8 @@ def attraction_integral(r, basis_a, basis_b, normalize=True):
             getattr(basis_a.params[1], "requires_grad", False)
             or normalize
             or (
-                qml.math.get_interface(basis_a.params[1]) == "jax"
+                len(args) > 0
+                and qml.math.get_interface(basis_a.params[1]) == "jax"
                 and qml.math.requires_grad(args[1])
             )
         ):
@@ -1089,7 +1093,8 @@ def repulsion_integral(basis_a, basis_b, basis_c, basis_d, normalize=True):
             getattr(basis_a.params[1], "requires_grad", False)
             or normalize
             or (
-                qml.math.get_interface(basis_a.params[1]) == "jax"
+                len(args) > 0
+                and qml.math.get_interface(basis_a.params[1]) == "jax"
                 and qml.math.requires_grad(args[1])
             )
         ):

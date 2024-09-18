@@ -265,7 +265,7 @@ def attraction_matrix(basis_functions, charges, r):
         matrix = qml.math.zeros((n, n))
 
         requires_grad = getattr(r, "requires_grad", False) or (
-            qml.math.get_interface(r) == "jax" and qml.math.requires_grad(args[0])
+            len(args) > 0 and qml.math.get_interface(r) == "jax" and qml.math.requires_grad(args[0])
         )
         for (i, a), (j, b) in it.combinations_with_replacement(enumerate(basis_functions), r=2):
             integral = 0
@@ -428,7 +428,7 @@ def core_matrix(basis_functions, charges, r):
             array[array[float]]: the core matrix
         """
         if getattr(r, "requires_grad", False) or (
-            qml.math.get_interface(r) == "jax" and qml.math.requires_grad(args[0])
+            len(args) > 0 and qml.math.get_interface(r) == "jax" and qml.math.requires_grad(args[0])
         ):
             t = kinetic_matrix(basis_functions)(*args[1:])
         else:

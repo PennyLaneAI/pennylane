@@ -141,7 +141,11 @@ def scf(mol, n_steps=50, tol=1e-8):
         else:
             # In JAX, we want to keep the ordering as r, coeff, alpha. But for core_matrix,
             # we pass in r, r, coeff, alpha.
-            if qml.math.get_interface(r) == "jax" and qml.math.requires_grad(args[0]):
+            if (
+                len(args) > 0
+                and qml.math.get_interface(r) == "jax"
+                and qml.math.requires_grad(args[0])
+            ):
                 args_r = [[args[0][i]] * mol.n_basis[i] for i in range(len(mol.n_basis))]
                 args_ = [*args] + [qml.math.vstack(list(itertools.chain(*args_r)))]
                 rep_tensor = repulsion_tensor(basis_functions)(args_[3], args_[1], args_[2])
@@ -231,7 +235,7 @@ def nuclear_energy(charges, r):
             array[float]: nuclear-repulsion energy
         """
         if getattr(r, "requires_grad", False) or (
-            qml.math.get_interface(r) == "jax" and qml.math.requires_grad(args[0])
+            len(args) > 0 and qml.math.get_interface(r) == "jax" and qml.math.requires_grad(args[0])
         ):
             coor = args[0]
         else:
@@ -242,7 +246,7 @@ def nuclear_energy(charges, r):
                 e = e + (charges[i] * charges[i + j + 1] / qml.math.linalg.norm(r1 - r2))
 
         # When you do grad, a scalar must be returned
-        if qml.math.get_interface(r) == "jax" and qml.math.requires_grad(args[0]):
+        if len(args) > 0 and qml.math.get_interface(r) == "jax" and qml.math.requires_grad(args[0]):
             return e[0]
 
         return e
