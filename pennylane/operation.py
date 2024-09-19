@@ -1499,7 +1499,11 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
     # pylint: disable=no-self-argument, comparison-with-callable
     @classproperty
     def has_adjoint(cls) -> bool:
-        r"""Bool: Whether or not the Operator can compute its own adjoint.
+        r"""
+        
+        .. attribute:: Operator.has_adjoint
+        
+            Bool: Whether or not the Operator can compute its own adjoint.
 
         Note: Child classes may have this as an instance property instead of as a class property.
         """
