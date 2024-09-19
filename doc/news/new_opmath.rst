@@ -36,6 +36,12 @@ Summary of the update
     If it still does, it likely only requires some minor changes. For that, see the :ref:`Troubleshooting_opmath` section.
     You can still opt-out and run legacy code via ``qml.operation.disable_new_opmath()``.
 
+.. warning::
+
+    In PennyLane v0.39, legacy operator arithmetic is deprecated and will be removed in v0.40. Check out the functions
+    :func:`~pennylane.operation.convert_to_opmath` and :func:`~pennylane.operation.convert_to_H` to convert legacy operators
+    into those using the new operator arithmetic.
+
 
 * The underlying system for performing arithmetic with operators has been changed. Arithmetic can be carried out using
   standard Python operations like ``+``, ``*`` and ``@`` or via arithmetic functions located in :mod:`~.op_math`.

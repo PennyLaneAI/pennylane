@@ -5097,7 +5097,7 @@ class TestKaHyPar:
             range(len(graph.nodes) + len(cut_edges))
         )
 
-    @pytest.mark.usefixtures("use_legacy_opmath")
+    @pytest.mark.usefixtures("legacy_opmath_only")
     @pytest.mark.parametrize("local_measurement", [False, True])
     @pytest.mark.parametrize("with_manual_cut", [False, True])
     @pytest.mark.parametrize(
@@ -5507,7 +5507,7 @@ class TestAutoCutCircuit:
         assert cut_res_bs.shape == target.shape
         assert isinstance(cut_res_bs, type(target))
 
-    @pytest.mark.usefixtures("use_legacy_opmath")
+    @pytest.mark.usefixtures("legacy_opmath_only")
     @pytest.mark.parametrize("measure_all_wires", [False, True])
     def test_cut_mps(self, measure_all_wires):
         """Test auto cut this circuit:
@@ -5657,7 +5657,7 @@ class TestAutoCutCircuit:
 class TestCutCircuitWithHamiltonians:
     """Integration tests for `cut_circuit` transform with Hamiltonians."""
 
-    @pytest.mark.usefixtures("use_legacy_opmath")
+    @pytest.mark.usefixtures("legacy_opmath_only")
     def test_circuit_with_hamiltonian(self, mocker):
         """
         Tests that the full automatic circuit cutting pipeline returns the correct value and

@@ -208,7 +208,7 @@ class TestAnnotatedQueue:
         assert q.queue == [tensor_op]
         assert tensor_op.obs == [A, B]
 
-    @pytest.mark.usefixtures("use_legacy_opmath")
+    @pytest.mark.usefixtures("legacy_opmath_only")
     def test_append_tensor_ops_overloaded(self):
         """Test that Tensor ops created using `@`
         are successfully added to the queue, as well as the `Tensor` object."""

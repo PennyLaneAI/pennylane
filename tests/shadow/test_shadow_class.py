@@ -341,7 +341,7 @@ class TestExpvalEstimation:
         assert actual.dtype == np.float64
         assert qml.math.allclose(actual, expected, atol=1e-1)
 
-    @pytest.mark.usefixtures("use_legacy_opmath")
+    @pytest.mark.usefixtures("legacy_opmath_only")
     def test_non_pauli_error(self):
         """Test that an error is raised when a non-Pauli observable is passed"""
         circuit = hadamard_circuit(3)

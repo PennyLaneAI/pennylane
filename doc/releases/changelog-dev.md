@@ -111,6 +111,10 @@
 
 <h3>Deprecations 👋</h3>
 
+* Legacy operator arithmetic has been deprecated. This includes `qml.ops.Hamiltonian`, `qml.operation.enable_new_opmath`,
+  `qml.operation.disable_new_opmath`, and `qml.operation.convert_to_legacy_H`.
+  [(#)]()
+
 * The `qml.BasisStatePreparation` template is deprecated.
   Instead, use `qml.BasisState`.
   [(#6021)](https://github.com/PennyLaneAI/pennylane/pull/6021)

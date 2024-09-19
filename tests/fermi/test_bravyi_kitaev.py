@@ -427,7 +427,7 @@ FERMI_OPS_COMPLEX = [
     ),
 ]
 
-with qml.operation.disable_new_opmath_cm():
+with qml.operation.disable_new_opmath_cm(warn=False):
     FERMI_WORDS_AND_OPS_LEGACY = [
         (
             FermiWord({(0, 0): "+"}),
@@ -847,7 +847,7 @@ def test_bravyi_kitaev_fermi_word_ps(fermionic_op, n_qubits, result):
     assert qubit_op == expected_op
 
 
-@pytest.mark.usefixtures("use_legacy_opmath")
+@pytest.mark.usefixtures("legacy_opmath_only")
 @pytest.mark.parametrize(
     "fermionic_op, n_qubits, result", FERMI_WORDS_AND_OPS_LEGACY + FERMI_OPS_COMPLEX_LEGACY
 )
@@ -877,7 +877,7 @@ def test_bravyi_kitaev_fermi_word_operation(fermionic_op, n_qubits, result):
     qml.assert_equal(qubit_op.simplify(), expected_op.simplify())
 
 
-@pytest.mark.usefixtures("use_legacy_opmath")
+@pytest.mark.usefixtures("legacy_opmath_only")
 @pytest.mark.parametrize("fermionic_op, n_qubits, result", FERMI_WORDS_AND_OPS_LEGACY)
 def test_bravyi_kitaev_fermi_word_operation_legacy(fermionic_op, n_qubits, result):
     wires = fermionic_op.wires or [0]

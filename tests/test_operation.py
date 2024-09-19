@@ -1356,7 +1356,7 @@ class TestOperatorIntegration:
         assert '"test_with_id"' not in op.label(decimals=2)
 
 
-@pytest.mark.usefixtures("use_legacy_opmath")
+@pytest.mark.usefixtures("legacy_opmath_only")
 class TestTensor:
     """Unit tests for the Tensor class"""
 
@@ -1854,7 +1854,7 @@ class TestTensor:
 
     herm_matrix = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]])
 
-    with qml.operation.disable_new_opmath_cm():
+    with qml.operation.disable_new_opmath_cm(warn=False):
         tensor_obs = [
             (qml.PauliZ(0) @ qml.Identity(1) @ qml.PauliZ(2), [qml.PauliZ(0), qml.PauliZ(2)]),
             (
@@ -1885,7 +1885,7 @@ class TestTensor:
             assert isinstance(obs, type(expected[idx]))
             assert obs.wires == expected[idx].wires
 
-    with qml.operation.disable_new_opmath_cm():
+    with qml.operation.disable_new_opmath_cm(warn=False):
         tensor_obs_pruning = [
             (qml.PauliZ(0) @ qml.Identity(1) @ qml.PauliZ(2), qml.PauliZ(0) @ qml.PauliZ(2)),
             (
@@ -2189,7 +2189,7 @@ with qml.operation.disable_new_opmath_cm():
     ]
 
 
-@pytest.mark.usefixtures("use_legacy_opmath")
+@pytest.mark.usefixtures("legacy_opmath_only")
 class TestTensorObservableOperations:
     """Tests arithmetic operations between observables/tensors"""
 
@@ -2783,7 +2783,7 @@ class TestHamiltonianLinearCombinationAlias:
         assert not isinstance(op, qml.ops.qubit.Hamiltonian)
         assert not isinstance(op, qml.ops.qubit.hamiltonian.Hamiltonian)
 
-    @pytest.mark.usefixtures("use_legacy_opmath")
+    @pytest.mark.usefixtures("legacy_opmath_only")
     def test_hamiltonian_linear_combination_alias_disabled(self):
         """Test that qml.Hamiltonian is not an alias for LinearCombination with new operator
         arithmetic disabled"""
@@ -2837,11 +2837,11 @@ def test_op_arithmetic_toggle():
     """Tests toggling op arithmetic on and off, and that it is on by default."""
     assert qml.operation.active_new_opmath()
 
-    with qml.operation.enable_new_opmath_cm():
+    with qml.operation.enable_new_opmath_cm(warn=False):
         assert qml.operation.active_new_opmath()
         assert isinstance(qml.PauliX(0) @ qml.PauliZ(1), Prod)
 
-    with qml.operation.disable_new_opmath_cm():
+    with qml.operation.disable_new_opmath_cm(warn=False):
         assert not qml.operation.active_new_opmath()
         assert isinstance(qml.PauliX(0) @ qml.PauliZ(1), Tensor)
 
@@ -2849,14 +2849,16 @@ def test_op_arithmetic_toggle():
 @pytest.mark.usefixtures("use_new_opmath")
 def test_disable_enable_new_opmath():
     """Test that disabling and re-enabling new opmath works and raises the correct warning"""
-    with pytest.warns(UserWarning, match="Disabling the new Operator arithmetic"):
+    with pytest.warns(
+        qml.PennyLaneDeprecationWarning, match="Disabling the new approach to operator arithmetic"
+    ):
         qml.operation.disable_new_opmath()
 
     assert not qml.operation.active_new_opmath()
 
     with pytest.warns(
-        UserWarning,
-        match="Re-enabling the new Operator arithmetic system after disabling it is not advised.",
+        qml.PennyLaneDeprecationWarning,
+        match="Toggling the new approach to operator arithmetic",
     ):
         qml.operation.enable_new_opmath()
 
@@ -2942,8 +2944,8 @@ def test_use_new_opmath_fixture():
     assert qml.operation.active_new_opmath()
 
 
-@pytest.mark.usefixtures("use_legacy_opmath")
-def test_use_legacy_opmath_fixture():
+@pytest.mark.usefixtures("legacy_opmath_only")
+def test_legacy_opmath_only_fixture():
     """Test that the fixture for using new opmath in a context works as expected"""
     assert not qml.operation.active_new_opmath()
 
@@ -2992,11 +2994,11 @@ def test_convert_to_hamiltonian(coeffs, obs):
 
     opmath_instance = qml.dot(coeffs, obs)
     converted_opmath = convert_to_legacy_H(opmath_instance)
-    with qml.operation.disable_new_opmath_cm():
+    with qml.operation.disable_new_opmath_cm(warn=False):
         assert isinstance(converted_opmath, qml.Hamiltonian)
 
     with pytest.warns(
-        qml.PennyLaneDeprecationWarning, match="with new operator arithmetic is deprecated"
+        qml.PennyLaneDeprecationWarning, match="qml.ops.Hamiltonian uses the old approach"
     ):
         hamiltonian_instance = qml.ops.Hamiltonian(coeffs, obs)
 
@@ -3009,7 +3011,7 @@ def test_convert_to_hamiltonian(coeffs, obs):
 def test_convert_to_hamiltonian_trivial(coeffs, obs):
     """Test that non-arithmetic operator after simplification is returned as an Observable"""
 
-    with qml.operation.disable_new_opmath_cm():
+    with qml.operation.disable_new_opmath_cm(warn=False):
         opmath_instance = qml.dot(coeffs, obs)
         converted_opmath = convert_to_legacy_H(opmath_instance)
         assert isinstance(converted_opmath, qml.operation.Observable)
@@ -3039,7 +3041,7 @@ def test_convert_to_H():
         + qml.Y(1) @ qml.Z(2) @ (2 * qml.X(3))
         + 2 * (qml.Hadamard(3) + 3 * qml.Z(2))
     )
-    with qml.operation.disable_new_opmath_cm():
+    with qml.operation.disable_new_opmath_cm(warn=False):
         legacy_H = qml.operation.convert_to_H(operator)
     linear_combination = qml.operation.convert_to_H(operator)
 

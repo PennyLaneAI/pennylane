@@ -14,6 +14,7 @@
 """
 This module contains unit tests for ``qml.bind_parameters``.
 """
+import warnings
 
 import numpy as np
 import pytest
@@ -184,28 +185,32 @@ def test_controlled_sequence():
     qml.assert_equal(new_op.base, qml.RX(0.5, wires=3))
 
 
-with qml.operation.disable_new_opmath_cm():
-    TEST_BIND_LEGACY_HAMILTONIAN = [
-        (
-            qml.ops.Hamiltonian(
-                [1.1, 2.1, 3.1],
-                [Tensor(qml.PauliZ(0), qml.PauliX(1)), qml.Hadamard(1), qml.PauliY(0)],
-            ),
-            [1.2, 2.2, 3.2],
-            qml.ops.Hamiltonian(
+with qml.operation.disable_new_opmath_cm(warn=False):
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", "qml.ops.Hamiltonian uses", qml.PennyLaneDeprecationWarning
+        )
+        TEST_BIND_LEGACY_HAMILTONIAN = [
+            (
+                qml.ops.Hamiltonian(
+                    [1.1, 2.1, 3.1],
+                    [Tensor(qml.PauliZ(0), qml.PauliX(1)), qml.Hadamard(1), qml.PauliY(0)],
+                ),
                 [1.2, 2.2, 3.2],
-                [Tensor(qml.PauliZ(0), qml.PauliX(1)), qml.Hadamard(1), qml.PauliY(0)],
+                qml.ops.Hamiltonian(
+                    [1.2, 2.2, 3.2],
+                    [Tensor(qml.PauliZ(0), qml.PauliX(1)), qml.Hadamard(1), qml.PauliY(0)],
+                ),
             ),
-        ),
-        (
-            qml.ops.Hamiltonian([1.6, -1], [qml.Hermitian(X, wires=1), qml.PauliX(1)]),
-            [-1, 1.6],
-            qml.ops.Hamiltonian([-1, 1.6], [qml.Hermitian(X, wires=1), qml.PauliX(1)]),
-        ),
-    ]
+            (
+                qml.ops.Hamiltonian([1.6, -1], [qml.Hermitian(X, wires=1), qml.PauliX(1)]),
+                [-1, 1.6],
+                qml.ops.Hamiltonian([-1, 1.6], [qml.Hermitian(X, wires=1), qml.PauliX(1)]),
+            ),
+        ]
 
 
-@pytest.mark.usefixtures("use_legacy_opmath")
+@pytest.mark.usefixtures("legacy_opmath_only")
 @pytest.mark.parametrize(
     "H, new_coeffs, expected_H",
     TEST_BIND_LEGACY_HAMILTONIAN,

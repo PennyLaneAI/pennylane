@@ -356,7 +356,7 @@ class TestInternalFunctions:  # pylint:disable=too-many-public-methods
         with pytest.raises(qml.DeviceError, match="Observable PauliY not supported"):
             dev.check_validity(queue, unsupported_nested_observables)
 
-    @pytest.mark.usefixtures("use_legacy_opmath")
+    @pytest.mark.usefixtures("legacy_opmath_only")
     def test_check_validity_on_tensor_support_legacy_opmath(self, mock_device_supporting_paulis):
         """Tests the function Device.check_validity with tensor support capability"""
         dev = mock_device_supporting_paulis()
@@ -390,7 +390,7 @@ class TestInternalFunctions:  # pylint:disable=too-many-public-methods
         with pytest.raises(qml.DeviceError, match="Observable Prod not supported"):
             dev.check_validity(queue, observables)
 
-    @pytest.mark.usefixtures("use_legacy_opmath")
+    @pytest.mark.usefixtures("legacy_opmath_only")
     def test_check_validity_on_invalid_observable_with_tensor_support(self, monkeypatch):
         """Tests the function Device.check_validity with tensor support capability
         but with an invalid observable"""

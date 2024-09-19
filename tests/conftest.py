@@ -19,6 +19,7 @@ import contextlib
 import os
 import pathlib
 import sys
+from warnings import warn
 
 import numpy as np
 import pytest
@@ -155,25 +156,31 @@ def disable_opmath_if_requested(request):
     disable_opmath = request.config.getoption("--disable-opmath")
     # value from yaml file is a string, convert to boolean
     if eval(disable_opmath):
-        qml.operation.disable_new_opmath(warn=True)
+        warn(
+            "Disabling the new Operator arithmetic system for legacy support. "
+            "If you need help troubleshooting your code, please visit "
+            "https://docs.pennylane.ai/en/stable/news/new_opmath.html",
+            UserWarning,
+        )
+        qml.operation.disable_new_opmath(warn=False)
 
 
 @pytest.fixture(scope="function")
 def use_legacy_opmath():
-    with disable_new_opmath_cm() as cm:
+    with disable_new_opmath_cm(warn=False) as cm:
         yield cm
 
 
 # pylint: disable=contextmanager-generator-missing-cleanup
 @pytest.fixture(scope="function")
 def use_new_opmath():
-    with enable_new_opmath_cm() as cm:
+    with enable_new_opmath_cm(warn=False) as cm:
         yield cm
 
 
 @pytest.fixture(params=[disable_new_opmath_cm, enable_new_opmath_cm], scope="function")
 def use_legacy_and_new_opmath(request):
-    with request.param() as cm:
+    with request.param(warn=False) as cm:
         yield cm
 
 

@@ -693,7 +693,7 @@ def test_jordan_wigner_fermi_word_ps(fermionic_op, result):
     assert qubit_op == expected_op
 
 
-@pytest.mark.usefixtures("use_legacy_opmath")
+@pytest.mark.usefixtures("legacy_opmath_only")
 @pytest.mark.parametrize(
     "fermionic_op, result", FERMI_WORDS_AND_OPS_LEGACY + FERMI_WORDS_AND_OPS_EXTENDED_LEGACY
 )
@@ -724,7 +724,7 @@ def test_jordan_wigner_fermi_word_operation(fermionic_op, result):
     qml.assert_equal(qubit_op.simplify(), expected_op.simplify())
 
 
-@pytest.mark.usefixtures("use_legacy_opmath")
+@pytest.mark.usefixtures("legacy_opmath_only")
 # TODO: if qml.equal is extended to compare layers of nested ops, also test with FERMI_WORDS_AND_OPS_EXTENDED
 @pytest.mark.parametrize("fermionic_op, result", FERMI_WORDS_AND_OPS_LEGACY)
 def test_jordan_wigner_fermi_word_operation_legacy(fermionic_op, result):
