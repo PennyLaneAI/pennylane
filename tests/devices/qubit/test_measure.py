@@ -122,7 +122,7 @@ class TestMeasurementDispatch:
         assert get_measurement_function(qml.expval(S), state) is sum_of_terms_method
 
     def test_no_sparse_matrix(self):
-        """Tests that Hamiltonians/Sums containing observables that does not have sparse matrix."""
+        """Tests Hamiltonians/Sums containing observables that do not have a sparse matrix."""
 
         class DummyOp(qml.operation.Operator):  # pylint: disable=too-few-public-methods
             num_wires = 1
