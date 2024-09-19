@@ -1500,9 +1500,9 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
     @classproperty
     def has_adjoint(cls) -> bool:
         r"""
-        
+
         .. attribute:: Operator.has_adjoint
-        
+
             Bool: Whether or not the Operator can compute its own adjoint.
 
         Note: Child classes may have this as an instance property instead of as a class property.
