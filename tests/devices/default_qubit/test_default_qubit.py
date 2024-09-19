@@ -83,7 +83,7 @@ def test_snapshot_multiprocessing_qnode():
 
 # pylint: disable=protected-access
 def test_applied_modifiers():
-    """Test that defualt qubit has the `single_tape_support` and `simulator_tracking`
+    """Test that default qubit has the `single_tape_support` and `simulator_tracking`
     modifiers applied.
     """
     dev = DefaultQubit()

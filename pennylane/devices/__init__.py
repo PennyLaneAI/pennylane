@@ -26,7 +26,6 @@ to verify and test quantum gradient computations.
 
 
     default_qubit
-    default_qubit_legacy
     default_gaussian
     default_mixed
     default_qutrit
@@ -156,7 +155,6 @@ from .legacy_facade import LegacyDeviceFacade
 
 # DefaultTensor is not imported here to avoid warnings
 # from quimb in case it is installed on the system.
-from .default_qubit_legacy import DefaultQubitLegacy
 from .default_gaussian import DefaultGaussian
 from .default_mixed import DefaultMixed
 from .default_clifford import DefaultClifford
