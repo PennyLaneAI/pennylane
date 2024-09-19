@@ -112,6 +112,7 @@ def _check_matrix(op):
             op.matrix, qml.operation.MatrixUndefinedError, failure_comment=failure_comment
         )()
 
+
 def _check_sparse_matrix(op):
     """Check that if the operation says it has a sparse matrix, it does. Otherwise a ``SparseMatrixUndefinedError`` should be raised."""
     if op.has_sparse_matrix:
@@ -121,13 +122,10 @@ def _check_sparse_matrix(op):
         failure_comment = f"matrix must be two dimensional with shape ({l}, {l})"
         assert qml.math.shape(mat) == (l, l), failure_comment
     else:
-        failure_comment = (
-            "If has_sparse_matrix is False, the matrix method must raise a ``SparseMatrixUndefinedError``."
-        )
+        failure_comment = "If has_sparse_matrix is False, the matrix method must raise a ``SparseMatrixUndefinedError``."
         _assert_error_raised(
             op.matrix, qml.operation.SparseMatrixUndefinedError, failure_comment=failure_comment
         )()
-
 
 
 def _check_matrix_matches_decomp(op):
