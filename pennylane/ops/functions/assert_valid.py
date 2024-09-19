@@ -175,7 +175,11 @@ def _check_generator(op):
     if op.has_generator:
         gen = op.generator()
         assert isinstance(gen, qml.operation.Operator)
-        new_op = qml.exp(gen, 1j * op.data[0])
+        new_op = (
+            qml.exp(gen, -1j * op.data[0])
+            if isinstance(op, qml.ops.Evolution)  # Is this consistency acceptable?
+            else qml.exp(gen, 1j * op.data[0])
+        )
         assert qml.math.allclose(
             qml.matrix(op, wire_order=op.wires), qml.matrix(new_op, wire_order=op.wires)
         )
