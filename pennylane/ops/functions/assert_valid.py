@@ -349,7 +349,7 @@ def assert_valid(op: qml.operation.Operator, skip_pickle=False, skip_wire_mappin
 
     _check_decomposition(op, skip_wire_mapping)
     _check_matrix(op)
-    _check_sparse_matrix(op)
     _check_matrix_matches_decomp(op)
+    _check_sparse_matrix(op)
     _check_eigendecomposition(op)
     _check_capture(op)
