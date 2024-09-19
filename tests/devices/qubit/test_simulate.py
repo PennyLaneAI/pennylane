@@ -15,8 +15,8 @@
 
 import numpy as np
 import pytest
-from flaky import flaky
 from dummy_debugger import Debugger
+from flaky import flaky
 from stat_utils import fisher_exact_test
 
 import pennylane as qml
