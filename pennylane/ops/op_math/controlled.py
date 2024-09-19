@@ -207,7 +207,7 @@ def remove_from_queue_args_and_kwargs(item):
     elif isinstance(item, dict):
         for key, value in item.items():
             remove_from_queue_args_and_kwargs(value)
-    else:
+    elif isinstance(item, qml.Operator):
         qml.queuing.QueuingManager.remove(item)
 
 
