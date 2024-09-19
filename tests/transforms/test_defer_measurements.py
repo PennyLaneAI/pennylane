@@ -1347,6 +1347,9 @@ class TestExpressionConditionals:
 class TestTemplates:
     """Tests templates being conditioned on mid-circuit measurement outcomes."""
 
+    @pytest.mark.filterwarnings(
+        "ignore:BasisStatePreparation is deprecated:pennylane.PennyLaneDeprecationWarning"
+    )
     def test_basis_state_prep(self):
         """Test the basis state prep template conditioned on mid-circuit
         measurement outcomes."""
