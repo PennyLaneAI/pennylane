@@ -20,6 +20,7 @@ import collections
 
 # pylint: disable=too-few-public-methods, too-many-arguments, too-many-instance-attributes
 import itertools
+import warnings
 
 import pennylane as qml
 
@@ -126,6 +127,7 @@ class Molecule:
         if l is None:
             l = [i[0] for i in self.basis_data]
 
+        #if len(set(qml.math.get_interface(x) for x in [coordinates, alpha, coeff])) > 1: warnings.warn("Not all elements in the array are of the same interface")
         use_jax = any(qml.math.get_interface(x) == "jax" for x in [coordinates, alpha, coeff])
         interface_args = [{"like": "autograd", "requires_grad": False}, {"like": "jax"}][use_jax]
         if alpha is None:
