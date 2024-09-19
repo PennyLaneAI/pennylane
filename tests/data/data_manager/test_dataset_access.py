@@ -32,7 +32,6 @@ from .support import (
     _error_response,
     _get_urls_resp,
     _list_attrs_resp,
-    _list_datasets_resp,
     _parameter_tree,
 )
 
@@ -50,48 +49,13 @@ except ImportError:
 pytestmark = pytest.mark.data
 
 
-_folder_map = {
-    "__params": {
-        "qchem": ["molname", "basis", "bondlength"],
-        "qspin": ["sysname", "periodicity", "lattice", "layout"],
-    },
-    "qchem": {
-        "H2": {
-            "6-31G": {
-                "0.46": PosixPath("qchem/H2/6-31G/0.46.h5"),
-                "1.16": PosixPath("qchem/H2/6-31G/1.16.h5"),
-                "1.0": PosixPath("qchem/H2/6-31G/1.0.h5"),
-            }
-        }
-    },
-    "qspin": {
-        "Heisenberg": {
-            "closed": {"chain": {"1x4": PosixPath("qspin/Heisenberg/closed/chain/1x4/1.4.h5")}}
-        }
-    },
-}
-
-_data_struct = {
-    "qchem": {
-        "docstr": "Quantum chemistry dataset.",
-        "params": ["molname", "basis", "bondlength"],
-        "attributes": ["molecule", "hamiltonian", "sparse_hamiltonian", "hf_state", "full"],
-    },
-    "qspin": {
-        "docstr": "Quantum many-body spin system dataset.",
-        "params": ["sysname", "periodicity", "lattice", "layout"],
-        "attributes": ["parameters", "hamiltonians", "ground_states", "full"],
-    },
-}
-
-
 @pytest.fixture(scope="session")
 def httpserver_listen_address():
     return ("localhost", 8888)
 
 
 # pylint:disable=unused-argument
-def get_mock(url, json, timeout=1.0):
+def post_mock(url, json, timeout=1.0):
     """Return mocked get response depending on json content."""
     resp = MagicMock(ok=True)
     if "ErrorQuery" in json["query"]:
@@ -268,27 +232,37 @@ class TestMiscHelpers:
 
     def test_list_datasets(self):
         """Test list_datasets."""
-        assert qml.data.list_datasets() == {
-            "id": "qchem",
-            "datasets": [
-                {
-                    "parameterValues": [
-                        {"name": "molname", "value": "H2"},
-                        {"name": "bondlength", "value": "1.16"},
-                        {"name": "basis", "value": "STO-3G"},
-                    ]
-                }
-            ],
-        }
+        assert qml.data.list_data_names() == ["other", "qchem", "qspin"]
 
     def test_list_attributes(self):
         """Test list_attributes."""
         assert qml.data.list_attributes("qchem") == [
-            "molecule",
+            "basis_rot_groupings",
+            "basis_rot_samples",
+            "dipole_op",
+            "fci_energy",
+            "fci_spectrum",
             "hamiltonian",
-            "sparse_hamiltonian",
             "hf_state",
-            "full",
+            "molecule",
+            "number_op",
+            "optimal_sector",
+            "paulix_ops",
+            "qwc_groupings",
+            "qwc_samples",
+            "sparse_hamiltonian",
+            "spin2_op",
+            "spinz_op",
+            "symmetries",
+            "tapered_dipole_op",
+            "tapered_hamiltonian",
+            "tapered_hf_state",
+            "tapered_num_op",
+            "tapered_spin2_op",
+            "tapered_spinz_op",
+            "vqe_energy",
+            "vqe_gates",
+            "vqe_params",
         ]
 
 
@@ -660,12 +634,12 @@ def test_download_datasets_escapes_url_partial(
     "attributes,msg",
     [
         (
-            ["molecule", "hamiltonian", "sparse_hamiltonian", "hf_state", "full", "foo"],
-            r"'foo' is an invalid attribute for 'my_dataset'. Valid attributes are: \['molecule', 'hamiltonian', 'sparse_hamiltonian', 'hf_state', 'full'\]",
+            ["basis_rot_groupings", "basis_rot_samples", "dipole_op", "fci_energy", "foo"],
+            r"'foo' is an invalid attribute for 'my_dataset'. Valid attributes are: \['basis_rot_groupings', 'basis_rot_samples', 'dipole_op', 'fci_energy', 'fci_spectrum', 'hamiltonian', 'hf_state', 'molecule', 'number_op', 'optimal_sector', 'paulix_ops', 'qwc_groupings', 'qwc_samples', 'sparse_hamiltonian', 'spin2_op', 'spinz_op', 'symmetries', 'tapered_dipole_op', 'tapered_hamiltonian', 'tapered_hf_state', 'tapered_num_op', 'tapered_spin2_op', 'tapered_spinz_op', 'vqe_energy', 'vqe_gates', 'vqe_params'\]",
         ),
         (
-            ["molecule", "hamiltonian", "sparse_hamiltonian", "hf_state", "full", "foo", "bar"],
-            r"\['foo', 'bar'\] are invalid attributes for 'my_dataset'. Valid attributes are: \['molecule', 'hamiltonian', 'sparse_hamiltonian', 'hf_state', 'full'\]",
+            ["basis_rot_groupings", "basis_rot_samples", "dipole_op", "fci_energy", "foo", "bar"],
+            r"\['foo', 'bar'\] are invalid attributes for 'my_dataset'. Valid attributes are: \['basis_rot_groupings', 'basis_rot_samples', 'dipole_op', 'fci_energy', 'fci_spectrum', 'hamiltonian', 'hf_state', 'molecule', 'number_op', 'optimal_sector', 'paulix_ops', 'qwc_groupings', 'qwc_samples', 'sparse_hamiltonian', 'spin2_op', 'spinz_op', 'symmetries', 'tapered_dipole_op', 'tapered_hamiltonian', 'tapered_hf_state', 'tapered_num_op', 'tapered_spin2_op', 'tapered_spinz_op', 'vqe_energy', 'vqe_gates', 'vqe_params'\]",
         ),
     ],
 )
@@ -691,9 +665,9 @@ class TestGetGraphql:
         }
         """,
     )
-    inputs = {"input": {"datasetClassId": "qchem"}}
+    inputs = {"input": {"datasetClassId": "qspin"}}
 
-    @patch.object(pennylane.data.data_manager, "get", get_mock)
+    @patch.object(pennylane.data.data_manager, "post", post_mock)
     def test_return_json(self):
         """Tests that an expected json response is returned for a valid query and url."""
         response = pennylane.data.data_manager._get_graphql(
@@ -701,46 +675,9 @@ class TestGetGraphql:
             self.query,
             self.inputs,
         )
-        assert response == {
-            "data": {
-                "datasetClass": {
-                    "attributes": [
-                        "molecule",
-                        "hamiltonian",
-                        "sparse_hamiltonian",
-                        "hf_state",
-                        "full",
-                    ]
-                }
-            }
-        }
+        assert response == _list_attrs_resp
 
-    def test_bad_url(self):
-        """Tests that a  GraphQLError is raised when given a bad url"""
-        with pytest.raises(pennylane.data.data_manager.GraphQLError, match="No Response"):
-            pennylane.data.data_manager._get_graphql(
-                "https://bad/dataset/url",
-                self.query,
-                self.inputs,
-            )
-
-    def test_bad_query(self):
-        """Tests that GraphQLError is raised when given a bad query"""
-        bad_query = """
-            query BadQuery {
-              badQuery {
-                  badField
-              }
-            }
-            """
-
-        with pytest.raises(pennylane.data.data_manager.GraphQLError, match="No Response"):
-            pennylane.data.data_manager._get_graphql(
-                GRAPHQL_URL,
-                bad_query,
-            )
-
-    @patch.object(pennylane.data.data_manager, "get", get_mock)
+    @patch.object(pennylane.data.data_manager, "post", post_mock)
     def test_error_response(self):
         """Tests that GraphQLError is raised with error messages when
         the returned json contains an error message.

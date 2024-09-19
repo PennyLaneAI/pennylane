@@ -216,7 +216,7 @@ from .attributes import (
 from .base import DatasetNotWriteableError
 from .base.attribute import AttributeInfo, DatasetAttribute, attribute
 from .base.dataset import Dataset, field
-from .data_manager import DEFAULT, FULL, list_attributes, list_datasets, load, load_interactive
+from .data_manager import DEFAULT, FULL, list_attributes, list_data_names, load, load_interactive
 
 __all__ = (
     "AttributeInfo",
@@ -240,7 +240,7 @@ __all__ = (
     "load",
     "load_interactive",
     "list_attributes",
-    "list_datasets",
+    "list_data_names",
     "DEFAULT",
     "FULL",
 )

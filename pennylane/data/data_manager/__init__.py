@@ -24,7 +24,7 @@ from pathlib import Path
 from time import sleep
 from typing import Any, Iterable, Mapping, Optional, Union
 
-from requests import get, head
+from requests import get, head, post
 
 from pennylane.data.base import Dataset
 from pennylane.data.base.hdf5 import open_hdf5_s3
@@ -122,11 +122,8 @@ def _get_graphql(url: str, query: str, variables: dict[str, Any] = None):
     if variables:
         json["variables"] = variables
 
-    response = get(url=url, json=json, timeout=10)
+    response = post(url=url, json=json, timeout=10)
     response.raise_for_status()
-
-    if response.json() is None:
-        raise GraphQLError("No Response")
 
     if "errors" in response.json():
         all_errors = ",".join(error["message"] for error in response.json()["errors"])
@@ -418,55 +415,22 @@ def load(  # pylint: disable=too-many-arguments
     return [Dataset.open(path, "a") for path in download_paths]
 
 
-def list_datasets() -> dict:
-    r"""Returns a dictionary of the available datasets.
-
-    Return:
-        dict: Nested dictionary representing the directory structure of the hosted datasets.
-
-    .. seealso:: :func:`~.load_interactive`, :func:`~.list_attributes`, :func:`~.load`.
-
-    **Example:**
-
-    Note that the results of calling this function may differ from this example as more datasets
-    are added. For updates on available data see the `datasets website <https://pennylane.ai/datasets>`_.
-
-    >>> available_data = qml.data.list_datasets()
-    >>> available_data.keys()
-    dict_keys(["qspin", "qchem"])
-    >>> available_data["qchem"].keys()
-    dict_keys(["H2", "LiH", ...])
-    >>> available_data['qchem']['H2'].keys()
-    dict_keys(["CC-PVDZ", "6-31G", "STO-3G"])
-    >>> print(available_data['qchem']['H2']['STO-3G'])
-    ["0.5", "0.54", "0.62", "0.66", ...]
-
-    Note that this example limits the results of the function calls for
-    clarity and that as more data becomes available, the results of these
-    function calls will change.
-    """
-
+def list_data_names() -> list[str]:
+    """Get list of dataclass IDs."""
     response = _get_graphql(
         GRAPHQL_URL,
         """
-        query ListDatasets($datasetClassId: String!) {
+        query GetDatasetClasses {
           datasetClasses {
             id
-            datasets {
-                parameterValues{
-                    name
-                    value
-                }
-            }
           }
         }
         """,
     )
+    return [dsc["id"] for dsc in response["data"]["datasetClasses"]]
 
-    return response["data"]["datasetClasses"]
 
-
-def list_attributes(data_name):
+def list_attributes(data_name) -> list[str]:
     r"""List the attributes that exist for a specific ``data_name``.
 
     Args:
@@ -502,7 +466,7 @@ def list_attributes(data_name):
         {"input": {"datasetClassId": data_name}},
     )
 
-    return response["data"]["datasetClass"]["attributes"]
+    return [attribute["name"] for attribute in response["data"]["datasetClass"]["attributes"]]
 
 
 def _interactive_request_data_name(data_names):
@@ -581,21 +545,6 @@ def _get_parameter_tree(class_id) -> tuple[list[str], list[str], dict]:
     return (parameters, attributes, response["data"]["datasetClass"]["parameterTree"])
 
 
-def _get_data_names() -> list[str]:
-    """Get dataclass IDs."""
-    response = _get_graphql(
-        GRAPHQL_URL,
-        """
-        query GetDatasetClasses {
-          datasetClasses {
-            id
-          }
-        }
-        """,
-    )
-    return [dsc["id"] for dsc in response["data"]["datasetClasses"]]
-
-
 def load_interactive():
     r"""Download a dataset using an interactive load prompt.
 
@@ -635,7 +584,7 @@ def load_interactive():
         Would you like to continue? (Default is yes) [Y/n]:
     """
 
-    data_names = _get_data_names()
+    data_names = list_data_names()
     data_name = _interactive_request_data_name(data_names)
 
     parameters, attribute_options, parameter_tree = _get_parameter_tree(data_name)
