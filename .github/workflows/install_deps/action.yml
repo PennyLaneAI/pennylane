@@ -12,12 +12,7 @@ inputs:
     description: Indicate if numpy 1 should be installed or not
     required: false
     type: boolean
-    default: false
-  numpy_1_version:
-    description: The version of numpy 1 to use in order to run unit tests
-    required: false
-    type: string
-    default: '1.26.4'    
+    default: false  
   install_jax:
     description: Indicate if JAX should be installed or not
     required: false
@@ -80,9 +75,7 @@ runs:
     - name: Install numpy 1 version
       shell: bash
       if: inputs.install_numpy_1 == 'true'
-      env:
-        NUMPY1_VERSION: ${{ inputs.numpy_1_version != '' && format('~={0}', inputs.numpy_1_version) || '' }}
-      run: pip install "numpy${{ env.NUMPY1_VERSION }}"  
+      run: pip install "numpy 1.26.4"  
 
     - name: Install PyTorch
       shell: bash
