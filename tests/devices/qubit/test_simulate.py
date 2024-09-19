@@ -16,10 +16,12 @@
 import numpy as np
 import pytest
 from dummy_debugger import Debugger
+from flaky import flaky
+from stat_utils import fisher_exact_test
 
 import pennylane as qml
 from pennylane.devices.qubit import get_final_state, measure_final_state, simulate
-from pennylane.devices.qubit.simulate import _FlexShots
+from pennylane.devices.qubit.simulate import _FlexShots, simulate_one_shot_native_mcm
 
 
 class TestCurrentlyUnsupportedCases:
@@ -1178,3 +1180,74 @@ class TestQInfoMeasurements:
 
         grad5 = grad_tape.jacobian(results[5], phi)
         assert qml.math.allclose(grad5, expected_grads[5])
+
+
+ml_frameworks_list = [
+    "numpy",
+    pytest.param("autograd", marks=pytest.mark.autograd),
+    pytest.param("jax", marks=pytest.mark.jax),
+    pytest.param("torch", marks=pytest.mark.torch),
+    pytest.param("tensorflow", marks=pytest.mark.tf),
+]
+
+
+# pylint:disable=too-few-public-methods
+@pytest.mark.unit
+class TestMidCircuitMeasurements:
+    """Unit tests for simulating mid-circuit measurements."""
+
+    @flaky(max_runs=3, min_passes=2)
+    @pytest.mark.parametrize("ml_framework", ml_frameworks_list)
+    @pytest.mark.parametrize(
+        "postselect_mode", [None, "hw-like", "pad-invalid-samples", "fill-shots"]
+    )
+    def test_simulate_one_shot_native_mcm(self, ml_framework, postselect_mode):
+        """Unit tests for simulate_one_shot_native_mcm"""
+
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.RX(np.pi / 4, wires=0)
+            m = qml.measure(wires=0, postselect=0)
+            qml.RX(np.pi / 4, wires=0)
+
+        circuit = qml.tape.QuantumScript(q.queue, [qml.expval(qml.Z(0)), qml.sample(m)], shots=[1])
+
+        n_shots = 200
+        results = [
+            simulate_one_shot_native_mcm(
+                circuit,
+                n_shots,
+                interface=ml_framework,
+                postselect_mode=postselect_mode,
+            )
+            for _ in range(n_shots)
+        ]
+        terminal_results, mcm_results = zip(*results)
+
+        if postselect_mode == "fill-shots":
+            assert all(ms == 0 for ms in mcm_results)
+            equivalent_tape = qml.tape.QuantumScript(
+                [qml.RX(np.pi / 4, wires=0)], [qml.expval(qml.Z(0))], shots=n_shots
+            )
+            expected_sample = simulate(equivalent_tape)
+            fisher_exact_test(terminal_results, expected_sample, outcomes=(-1, 1))
+
+        else:
+            equivalent_tape = qml.tape.QuantumScript(
+                [qml.RX(np.pi / 4, wires=0)], [qml.sample(wires=0)], shots=n_shots
+            )
+            expected_result = simulate(equivalent_tape)
+            fisher_exact_test(mcm_results, expected_result)
+
+            subset = [ts for ms, ts in zip(mcm_results, terminal_results) if ms == 0]
+            equivalent_tape = qml.tape.QuantumScript(
+                [qml.RX(np.pi / 4, wires=0)], [qml.expval(qml.Z(0))], shots=n_shots
+            )
+            expected_sample = simulate(equivalent_tape)
+            fisher_exact_test(subset, expected_sample, outcomes=(-1, 1))
+
+            subset = [ts for ms, ts in zip(mcm_results, terminal_results) if ms == 1]
+            equivalent_tape = qml.tape.QuantumScript(
+                [qml.X(0), qml.RX(np.pi / 4, wires=0)], [qml.expval(qml.Z(0))], shots=n_shots
+            )
+            expected_sample = simulate(equivalent_tape)
+            fisher_exact_test(subset, expected_sample, outcomes=(-1, 1))
