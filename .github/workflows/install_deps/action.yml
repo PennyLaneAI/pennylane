@@ -75,7 +75,7 @@ runs:
     - name: Install numpy 1 version
       shell: bash
       if: inputs.install_numpy_1 == 'true'
-      run: pip install "numpy 1.26.4"  
+      run: pip install "numpy==1.26.4"  
 
     - name: Install PyTorch
       shell: bash
