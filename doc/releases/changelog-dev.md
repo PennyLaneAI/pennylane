@@ -40,6 +40,9 @@
   `from pennylane.capture.primitives import *`.
   [(#6129)](https://github.com/PennyLaneAI/pennylane/pull/6129)
 
+* `FermiWord` class now has a method to apply anti-commutator relations.
+   [(#6196)](https://github.com/PennyLaneAI/pennylane/pull/6196)
+
 * `FermiWord` and `FermiSentence` classes now have methods to compute adjoints.
   [(#6166)](https://github.com/PennyLaneAI/pennylane/pull/6166)
 
@@ -104,6 +107,10 @@
 
 <h3>Deprecations 👋</h3>
 
+* The `qml.BasisStatePreparation` template is deprecated.
+  Instead, use `qml.BasisState`.
+  [(#6021)](https://github.com/PennyLaneAI/pennylane/pull/6021)
+
 * The `'ancilla'` argument for `qml.iterative_qpe` has been deprecated. Instead, use the `'aux_wire'` argument.
   [(#6277)](https://github.com/PennyLaneAI/pennylane/pull/6277)
 
@@ -130,6 +137,9 @@
   [(#6244)](https://github.com/PennyLaneAI/pennylane/pull/6244)
 
 <h3>Documentation 📝</h3>
+
+* Add `work_wires` parameter to `qml.MultiControlledX` docstring signature.
+  [(#6271)](https://github.com/PennyLaneAI/pennylane/pull/6271)  
 
 <h3>Bug fixes 🐛</h3>
 
