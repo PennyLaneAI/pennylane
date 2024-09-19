@@ -339,8 +339,10 @@ class QuantumScript:
         """
         rotation_gates = []
 
+        observables = set(_get_base_obs(self.observables))
+
         with qml.queuing.QueuingManager.stop_recording():
-            for observable in self.observables:
+            for observable in observables:
                 # some observables do not have diagonalizing gates,
                 # in which case we just don't append any
                 with contextlib.suppress(qml.operation.DiagGatesUndefinedError):
@@ -1323,3 +1325,22 @@ QuantumScriptBatch = Sequence[QuantumScript]
 QuantumScriptOrBatch = Union[QuantumScript, QuantumScriptBatch]
 
 register_pytree(QuantumScript, QuantumScript._flatten, QuantumScript._unflatten)
+
+
+def _get_base_obs(observables):
+    while any(isinstance(o, (qml.ops.CompositeOp, qml.ops.SymbolicOp)) for o in observables):
+
+        new_obs = []
+
+        for observable in observables:
+
+            if isinstance(observable, qml.ops.CompositeOp):
+                new_obs.extend(observable.operands)
+            elif isinstance(observable, qml.ops.SymbolicOp):
+                new_obs.append(observable.base)
+            else:
+                new_obs.append(observable)
+
+        observables = new_obs
+
+    return observables
