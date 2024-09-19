@@ -330,7 +330,9 @@ class TestJax:
         geometry = create_jax_like_array(geometry)
         mol = qchem.Molecule(symbols, geometry)
         args = [geometry, mol.coeff, mol.alpha]
-        g = jax.grad(qchem.nuclear_energy(mol.nuclear_charges, mol.coordinates), argnums=0)(*args)
+        g = jax.jacobian(qchem.nuclear_energy(mol.nuclear_charges, mol.coordinates), argnums=0)(
+            *args
+        )
         assert np.allclose(g, g_ref)
 
     @pytest.mark.parametrize(
