@@ -1200,10 +1200,10 @@ class TestQInfoMeasurements:
         assert qml.math.allclose(grad5, expected_grads[5])
 
 
+@pytest.mark.unit
 class TestTreeTraversalStack:
     """Unit tests for TreeTraversalStack"""
 
-    @pytest.mark.unit
     @pytest.mark.parametrize(
         "max_depth",
         [0, 1, 10, 100],
@@ -1218,7 +1218,6 @@ class TestTreeTraversalStack:
         assert tree_stack.results_1.count(None) == max_depth
         assert tree_stack.states.count(None) == max_depth
 
-    @pytest.mark.unit
     def test_full_prune_empty_methods(self):
         """Test that TreeTraversalStack object's class methods work correctly."""
 
@@ -1255,10 +1254,10 @@ class TestTreeTraversalStack:
             assert tree_stack.any_is_empty(depth)
 
 
+@pytest.mark.unit
 class TestMidMeasurements:
     """Tests for simulating scripts with mid-circuit measurements using the ``simulate_tree_mcm``."""
 
-    @pytest.mark.unit
     @pytest.mark.parametrize("val", [0, 1])
     def test_basic_mid_meas_circuit(self, val):
         """Test execution with a basic circuit with mid-circuit measurements."""
@@ -1269,7 +1268,6 @@ class TestMidMeasurements:
         result = simulate_tree_mcm(qs)
         assert result == (0, (-1.0) ** val)
 
-    @pytest.mark.unit
     def test_basic_mid_meas_circuit_with_reset(self):
         """Test execution with a basic circuit with mid-circuit measurements."""
         qs = qml.tape.QuantumScript(
@@ -1287,7 +1285,6 @@ class TestMidMeasurements:
         assert qml.math.allclose(result, qml.math.array([0.5, 0.5]))
 
     # pylint: disable=too-many-arguments
-    @pytest.mark.unit
     @pytest.mark.parametrize("shots", [None, 5500])
     @pytest.mark.parametrize("postselect", [None, 0])
     @pytest.mark.parametrize("reset", [False, True])
@@ -1374,7 +1371,6 @@ class TestMidMeasurements:
             )
             mcm_utils.validate_measurements(measure_f, shots, results2, results0)
 
-    @pytest.mark.unit
     @pytest.mark.parametrize("shots", [None, 5500, [5500, 5500]])
     @pytest.mark.parametrize("rng", [None, 42, np.array([37])])
     @pytest.mark.parametrize("angles", [(0.123, 0.015), (0.543, 0.057)])
@@ -1441,7 +1437,6 @@ class TestMidMeasurements:
                 sp.stats.entropy(prob_dist1 + 1e-12, prob_dist2 + 1e-12), 0.0, atol=5e-2
             )
 
-    @pytest.mark.unit
     @pytest.mark.parametrize("ml_framework", ml_frameworks_list)
     @pytest.mark.parametrize(
         "postselect_mode", [None, "hw-like", "pad-invalid-samples", "fill-shots"]
@@ -1490,7 +1485,6 @@ class TestMidMeasurements:
         p4 = [qml.math.mean(res4 == -1), qml.math.mean(res4 == 1)]
         assert qml.math.allclose(qml.math.sum(sp.special.rel_entr(p3, p4)), 0.0, atol=0.05)
 
-    @pytest.mark.unit
     @pytest.mark.parametrize("postselect_mode", ["hw-like", "fill-shots"])
     def test_tree_traversal_postselect_mode(self, postselect_mode):
         """Test that invalid shots are discarded if requested"""
@@ -1511,7 +1505,6 @@ class TestMidMeasurements:
         assert (len(res) < shots) if postselect_mode == "hw-like" else (len(res) == shots)
         assert np.all(res != np.iinfo(np.int32).min)
 
-    @pytest.mark.unit
     def test_tree_traversal_deep_circuit(self):
         """Test that `simulate_tree_mcm` works with circuits with many mid-circuit measurements"""
 
@@ -1545,7 +1538,6 @@ class TestMidMeasurements:
         assert len(res[0]) == 20
         assert isinstance(res[1], dict) and sum(list(res[1].values())) == 20
 
-    @pytest.mark.unit
     @pytest.mark.parametrize(
         "measurements, expected",
         [
