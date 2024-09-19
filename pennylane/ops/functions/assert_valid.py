@@ -184,7 +184,7 @@ def _check_generator(op):
             "If has_generator is False, the matrix method must raise a ``GeneratorUndefinedError``."
         )
         _assert_error_raised(
-            op.matrix, qml.operation.GeneratorUndefinedError, failure_comment=failure_comment
+            op.generator(), qml.operation.GeneratorUndefinedError, failure_comment=failure_comment
         )()
 
 
