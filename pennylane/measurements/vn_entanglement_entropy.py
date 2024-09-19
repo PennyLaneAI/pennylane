@@ -106,7 +106,6 @@ class VnEntanglementEntropyMP(StateMeasurement):
         metadata = (("wires", tuple(self.raw_wires)), ("log_base", self.log_base))
         return (None, None), metadata
 
-    # pylint: disable=too-many-arguments
     def __init__(
         self,
         wires: Optional[Sequence[Wires]] = None,

@@ -115,6 +115,14 @@ class TestInitialization:
 
         assert meas.shape(shots, 1) == shape
 
+    def test_overlapping_wires_error(self):
+        """Test that an error is raised if wires0 and wires1 have overlap"""
+        with pytest.raises(
+            qml.QuantumFunctionError,
+            match="Subsystems for computing entanglement entropy must not overlap",
+        ):
+            _ = qml.vn_entanglement_entropy(wires0=[0, 1], wires1=[1, 2])
+
 
 class TestIntegration:
     """Integration tests for the vn_entanglement_entropy measurement function."""
