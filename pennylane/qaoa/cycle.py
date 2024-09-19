@@ -20,7 +20,7 @@ from collections.abc import Iterable
 from typing import Union
 
 import networkx as nx
-import numpy as np
+import numpy as np #  pylint: disable=wrong-import-order
 import rustworkx as rx
 
 import pennylane as qml
