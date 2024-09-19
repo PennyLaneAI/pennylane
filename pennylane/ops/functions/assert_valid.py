@@ -169,6 +169,25 @@ def _check_eigendecomposition(op):
         assert qml.math.allclose(decomp_mat, original_mat), failure_comment
 
 
+def _check_generator(op):
+    """Checks that if an operator has a generator, it does."""
+
+    if op.has_generator:
+        gen = op.generator()
+        assert isinstance(gen, qml.Hamiltonian) or isinstance(gen, qml.ops.SparseHamiltonian)
+        new_op = qml.exp(gen, 1j * op.data[0])
+        assert qml.math.allclose(
+            qml.matrix(op, wire_order=op.wires), qml.matrix(new_op, wire_order=op.wires)
+        )
+    else:
+        failure_comment = (
+            "If has_generator is False, the matrix method must raise a ``GeneratorUndefinedError``."
+        )
+        _assert_error_raised(
+            op.matrix, qml.operation.GeneratorUndefinedError, failure_comment=failure_comment
+        )()
+
+
 def _check_copy(op):
     """Check that copies and deep copies give identical objects."""
     copied_op = copy.copy(op)
@@ -333,4 +352,5 @@ def assert_valid(op: qml.operation.Operator, skip_pickle=False, skip_wire_mappin
     _check_matrix(op)
     _check_matrix_matches_decomp(op)
     _check_eigendecomposition(op)
+    _check_generator(op)
     _check_capture(op)
