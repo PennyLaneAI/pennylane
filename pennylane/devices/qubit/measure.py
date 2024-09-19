@@ -204,6 +204,7 @@ def get_measurement_function(
                 if not all(obs.has_sparse_matrix for obs in measurementprocess.obs.terms()[1]):
                     return sum_of_terms_method
 
+                # Hamiltonian.sparse_matrix raises a ValueError for this scenario.
                 if isinstance(measurementprocess.obs, Hamiltonian) and any(
                     any(len(o.wires) > 1 for o in qml.operation.Tensor(op).obs)
                     for op in measurementprocess.obs.ops
