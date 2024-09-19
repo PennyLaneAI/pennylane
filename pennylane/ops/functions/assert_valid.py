@@ -116,7 +116,7 @@ def _check_sparse_matrix(op):
     """Check that if the operation says it has a sparse matrix, it does. Otherwise a ``SparseMatrixUndefinedError`` should be raised."""
     if op.has_sparse_matrix:
         mat = op.sparse_matrix()
-        assert isinstance(mat, scipy.sparse.csc_matrix), "matrix must be a TensorLike"
+        assert isinstance(mat, scipy.sparse.csr_matrix), "matrix must be a TensorLike"
         l = 2 ** len(op.wires)
         failure_comment = f"matrix must be two dimensional with shape ({l}, {l})"
         assert qml.math.shape(mat) == (l, l), failure_comment
