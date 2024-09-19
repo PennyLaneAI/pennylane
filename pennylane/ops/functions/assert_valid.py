@@ -124,7 +124,9 @@ def _check_sparse_matrix(op):
     else:
         failure_comment = "If has_sparse_matrix is False, the matrix method must raise a ``SparseMatrixUndefinedError``."
         _assert_error_raised(
-            op.matrix, qml.operation.SparseMatrixUndefinedError, failure_comment=failure_comment
+            op.sparse_matrix,
+            qml.operation.SparseMatrixUndefinedError,
+            failure_comment=failure_comment,
         )()
 
 
