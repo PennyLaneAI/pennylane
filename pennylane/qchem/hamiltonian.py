@@ -510,10 +510,10 @@ def _molecular_hamiltonian(
         )
 
     if len(coordinates) == len(symbols) * 3:
-        geometry_dhf = qml.numpy.array(coordinates.reshape(len(symbols), 3))
+        geometry_dhf = qml.math.array(coordinates.reshape(len(symbols), 3))
         geometry_hf = coordinates
     elif len(coordinates) == len(symbols):
-        geometry_dhf = qml.numpy.array(coordinates)
+        geometry_dhf = qml.math.array(coordinates)
         geometry_hf = coordinates.flatten()
 
     wires_map = None
@@ -550,6 +550,10 @@ def _molecular_hamiltonian(
         )
 
         requires_grad = args is not None
+        use_jax = any(qml.math.get_interface(x) == "jax" for x in [coordinates, alpha, coeff])
+        interface_args = [{"like": "autograd", "requires_grad": requires_grad}, {"like": "jax"}][
+            use_jax
+        ]
         h = (
             qml.qchem.diff_hamiltonian(mol, core=core, active=active, mapping=mapping)(*args)
             if requires_grad
@@ -558,8 +562,7 @@ def _molecular_hamiltonian(
 
         if active_new_opmath():
             h_as_ps = qml.pauli.pauli_sentence(h)
-            coeffs = qml.numpy.real(list(h_as_ps.values()), requires_grad=requires_grad)
-
+            coeffs = qml.math.real(qml.math.array(list(h_as_ps.values()), **interface_args))
             h_as_ps = qml.pauli.PauliSentence(dict(zip(h_as_ps.keys(), coeffs)))
             h = (
                 qml.s_prod(0, qml.Identity(h.wires[0]))
@@ -567,7 +570,7 @@ def _molecular_hamiltonian(
                 else h_as_ps.operation()
             )
         else:
-            coeffs = qml.numpy.real(h.coeffs, requires_grad=requires_grad)
+            coeffs = qml.math.real(qml.math.array(h.coeffs, **interface_args))
             h = qml.Hamiltonian(coeffs, h.ops)
 
         if wires:
