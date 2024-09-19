@@ -375,22 +375,23 @@ class QuantumScript:
 
     def update(
         self,
-        operations: Optional[Iterable[Operator]] = None,
-        measurements: Optional[Iterable[MeasurementProcess]] = None,
-        shots: Optional[ShotsLike] = None,
-        trainable_params: Optional[Sequence[int]] = None,
+        **kwargs,
+        # operations: Optional[Iterable[Operator]] = "unset",
+        # measurements: Optional[Iterable[MeasurementProcess]] = "unset",
+        # shots: Optional[ShotsLike] = "unset",
+        # trainable_params: Optional[Sequence[int]] = "unset",
     ):
-        """Update attirbutes on the tape.
+        r"""update(operations, measurements, shots, trainable_params)
+
+        Update attributes on the tape.
 
         Keyword Args:
             operations (Iterable[Operator]): An iterable of the operations to replace on the tape.
-                Defaults to None.
-            measurements (Iterable[MeasurementProcess]): All the measurements to replace on the
-                tape. Defaults to None.
+            measurements (Iterable[MeasurementProcess]): An iterable of all the measurements to
+                replace on the tape.
             shots (None, int, Sequence[int], ~.Shots): Number and/or batches of shots to replace
-                on the tape. Defaults to None.
+                on the tape.
             trainable_params (None, Sequence[int]): the indices for which parameters are trainable.
-                Defaults to None.
 
         Returns: A new tape instance, initialized with any kwargs passed to update.
             Anything not set in update will be the same as the initial tape.
@@ -417,11 +418,20 @@ class QuantumScript:
         >>> new_tape.shots
         2000
         """
+        for k in kwargs:
+            if k not in ["operations", "measurements", "shots", "trainable_params"]:
+                raise TypeError(
+                    f"{self.__class__}.update() got an unexpected keyword argument '{k}'"
+                )
 
-        ops = operations or self.operations
-        measurements = measurements or self.measurements
-        shots = shots or self.shots
-        trainable_params = trainable_params or self.trainable_params
+        ops = kwargs.get("operations") if "operations" in kwargs else self.operations
+        measurements = kwargs.get("measurements") if "measurements" in kwargs else self.measurements
+        shots = kwargs.get("shots") if "shots" in kwargs else self.shots
+        trainable_params = (
+            kwargs.get("trainable_params")
+            if "trainable_params" in kwargs
+            else self.trainable_params
+        )
 
         return self.__class__(ops, measurements, shots, trainable_params)
 
