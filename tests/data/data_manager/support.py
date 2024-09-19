@@ -1,90 +1,38 @@
 """Test support for mocking GraphQL queries"""
 
 _list_attrs_resp = {
-  "data": {
-    "datasetClass": {
-      "attributes": [
-        {
-          "name": "basis_rot_groupings"
-        },
-        {
-          "name": "basis_rot_samples"
-        },
-        {
-          "name": "dipole_op"
-        },
-        {
-          "name": "fci_energy"
-        },
-        {
-          "name": "fci_spectrum"
-        },
-        {
-          "name": "hamiltonian"
-        },
-        {
-          "name": "hf_state"
-        },
-        {
-          "name": "molecule"
-        },
-        {
-          "name": "number_op"
-        },
-        {
-          "name": "optimal_sector"
-        },
-        {
-          "name": "paulix_ops"
-        },
-        {
-          "name": "qwc_groupings"
-        },
-        {
-          "name": "qwc_samples"
-        },
-        {
-          "name": "sparse_hamiltonian"
-        },
-        {
-          "name": "spin2_op"
-        },
-        {
-          "name": "spinz_op"
-        },
-        {
-          "name": "symmetries"
-        },
-        {
-          "name": "tapered_dipole_op"
-        },
-        {
-          "name": "tapered_hamiltonian"
-        },
-        {
-          "name": "tapered_hf_state"
-        },
-        {
-          "name": "tapered_num_op"
-        },
-        {
-          "name": "tapered_spin2_op"
-        },
-        {
-          "name": "tapered_spinz_op"
-        },
-        {
-          "name": "vqe_energy"
-        },
-        {
-          "name": "vqe_gates"
-        },
-        {
-          "name": "vqe_params"
+    "data": {
+        "datasetClass": {
+            "attributes": [
+                {"name": "basis_rot_groupings"},
+                {"name": "basis_rot_samples"},
+                {"name": "dipole_op"},
+                {"name": "fci_energy"},
+                {"name": "fci_spectrum"},
+                {"name": "hamiltonian"},
+                {"name": "hf_state"},
+                {"name": "molecule"},
+                {"name": "number_op"},
+                {"name": "optimal_sector"},
+                {"name": "paulix_ops"},
+                {"name": "qwc_groupings"},
+                {"name": "qwc_samples"},
+                {"name": "sparse_hamiltonian"},
+                {"name": "spin2_op"},
+                {"name": "spinz_op"},
+                {"name": "symmetries"},
+                {"name": "tapered_dipole_op"},
+                {"name": "tapered_hamiltonian"},
+                {"name": "tapered_hf_state"},
+                {"name": "tapered_num_op"},
+                {"name": "tapered_spin2_op"},
+                {"name": "tapered_spinz_op"},
+                {"name": "vqe_energy"},
+                {"name": "vqe_gates"},
+                {"name": "vqe_params"},
+            ]
         }
-      ]
     }
-  }
 }
 
 _get_urls_resp = {

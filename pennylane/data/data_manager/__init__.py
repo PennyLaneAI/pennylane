@@ -309,7 +309,7 @@ def load(  # pylint: disable=too-many-arguments
     Returns:
         list[:class:`~pennylane.data.Dataset`]
 
-    .. seealso:: :func:`~.load_interactive`, :func:`~.list_attributes`, :func:`~.list_datasets`.
+    .. seealso:: :func:`~.load_interactive`, :func:`~.list_attributes`, :func:`~.list_data_names`.
 
     **Example**
 
@@ -439,7 +439,7 @@ def list_attributes(data_name) -> list[str]:
     Returns:
         list (str): A list of accepted attributes for a given data name
 
-    .. seealso:: :func:`~.load_interactive`, :func:`~.list_datasets`, :func:`~.load`.
+    .. seealso:: :func:`~.load_interactive`, :func:`~.list_data_names`, :func:`~.load`.
 
     **Example**
 
@@ -553,7 +553,7 @@ def load_interactive():
 
     **Example**
 
-    .. seealso:: :func:`~.load`, :func:`~.list_attributes`, :func:`~.list_datasets`.
+    .. seealso:: :func:`~.load`, :func:`~.list_attributes`, :func:`~.list_data_names`.
 
     .. code-block :: pycon
 
@@ -617,7 +617,7 @@ def load_interactive():
 __all__ = (
     "load",
     "load_interactive",
-    "list_datasets",
+    "list_data_names",
     "list_attributes",
     "FULL",
     "DEFAULT",

@@ -70,8 +70,6 @@ def graphql_mock(url, query, variables=None):
     """Return the JSON according to the query."""
     if "ListAttributes" in query:
         json_data = _list_attrs_resp
-    elif "ListDatasets" in query:
-        json_data = _list_datasets_resp
     elif "GetDatasetsForDownload" in query:
         json_data = _get_urls_resp
     elif "GetParameterTree" in query:
