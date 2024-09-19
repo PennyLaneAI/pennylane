@@ -27,6 +27,7 @@ from scipy.sparse import kron as sparse_kron
 import pennylane as qml
 from pennylane import math
 from pennylane.operation import Operator, convert_to_opmath
+from pennylane.ops.op_math.controlled import remove_from_queue_args_and_kwargs
 from pennylane.ops.op_math.pow import Pow
 from pennylane.ops.op_math.sprod import SProd
 from pennylane.ops.op_math.sum import Sum
@@ -111,6 +112,13 @@ def prod(*ops, id=None, lazy=True):
         @wraps(fn)
         def wrapper(*args, **kwargs):
             qs = qml.tape.make_qscript(fn)(*args, **kwargs)
+
+            for arg in args:
+                remove_from_queue_args_and_kwargs(arg)
+
+            for key, value in kwargs.items():
+                remove_from_queue_args_and_kwargs(value)
+
             if len(qs.operations) == 1:
                 if qml.QueuingManager.recording():
                     qml.apply(qs[0])
