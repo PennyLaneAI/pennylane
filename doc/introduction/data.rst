@@ -170,7 +170,7 @@ Quantum Datasets Functions and Classes
 .. autosummary::
     :nosignatures:
 
-    ~pennylane.data.list_datasets
+    ~pennylane.data.list_data_names
     ~pennylane.data.list_attributes
     ~pennylane.data.load
     ~pennylane.data.load_interactive
