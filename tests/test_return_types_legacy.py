@@ -1211,7 +1211,7 @@ class TestQubitDeviceNewUnits:
     def test_vn_entanglement_entropy_no_custom_wires(self):
         """Test that vn_entanglement_entropy cannot be returned with custom wires."""
 
-        dev = qml.device("default.qubit.legacy", wires=["a", 1])
+        dev = qml.device("default.mixed", wires=["a", 1])
 
         with qml.queuing.AnnotatedQueue() as q:
             qml.PauliX(wires="a")
