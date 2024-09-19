@@ -37,7 +37,7 @@ Additionally, users can easily create, write to disk, and read custom datasets u
     load
     load_interactive
     list_attributes
-    list_datasets
+    list_data_names
 
 In addition, various dataset types are provided
 

@@ -228,8 +228,8 @@ class TestLoadInteractive:
 class TestMiscHelpers:
     """Test miscellaneous helper functions in data_manager."""
 
-    def test_list_datasets(self):
-        """Test list_datasets."""
+    def test_list_data_names(self):
+        """Test list_data_names."""
         assert qml.data.list_data_names() == ["other", "qchem", "qspin"]
 
     def test_list_attributes(self):
