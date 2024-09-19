@@ -373,14 +373,7 @@ class QuantumScript:
 
     ##### Update METHODS ###############
 
-    def update(
-        self,
-        **kwargs,
-        # operations: Optional[Iterable[Operator]] = "unset",
-        # measurements: Optional[Iterable[MeasurementProcess]] = "unset",
-        # shots: Optional[ShotsLike] = "unset",
-        # trainable_params: Optional[Sequence[int]] = "unset",
-    ):
+    def update(self, **kwargs):
         r"""update(operations, measurements, shots, trainable_params)
 
         Update attributes on the tape.
