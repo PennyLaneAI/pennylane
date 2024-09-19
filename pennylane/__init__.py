@@ -184,7 +184,7 @@ def __getattr__(name):
     if name == "QubitDevice":
         warn(
             "QubitDevice will no longer be accessible top level. Please access "
-            " the class as pennylane.devices.QubitDevice",
+            "the class as pennylane.devices.QubitDevice",
             PennyLaneDeprecationWarning,
         )
         return pennylane.devices._qubit_device.QubitDevice  # pylint:disable=protected-access
@@ -192,7 +192,7 @@ def __getattr__(name):
     if name == "QutritDevice":
         warn(
             "QutritDevice will no longer be accessible top level. Please access "
-            " the class as pennylane.devices.QutritDevice",
+            "the class as pennylane.devices.QutritDevice",
             PennyLaneDeprecationWarning,
         )
         return pennylane.devices._qutrit_device.QutritDevice  # pylint:disable=protected-access
@@ -200,7 +200,7 @@ def __getattr__(name):
     if name == "Device":
         warn(
             "Device will no longer be accessible top level. Please access "
-            " the class as pennylane.devices.LegacyDevice",
+            "the class as pennylane.devices.LegacyDevice",
             PennyLaneDeprecationWarning,
         )
         return pennylane.devices._legacy_device.Device  # pylint:disable=protected-access
