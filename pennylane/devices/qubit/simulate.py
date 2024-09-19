@@ -955,6 +955,8 @@ def simulate_one_shot_native_mcm(
 ) -> Result:
     """Simulate a single shot of a single quantum script with native mid-circuit measurements.
 
+    Assumes that the circuit has been transformed by `dynamic_one_shot`.
+
     Args:
         circuit (QuantumTape): The single circuit to simulate
         debugger (_Debugger): The debugger to use
@@ -968,8 +970,8 @@ def simulate_one_shot_native_mcm(
             keep the same number of shots. Default is ``None``.
 
     Returns:
-        tuple(TensorLike): The results of the simulation
-        dict: The mid-circuit measurement results of the simulation
+        Result: The results of the simulation
+
     """
     prng_key = execution_kwargs.pop("prng_key", None)
 
