@@ -20,6 +20,7 @@ from sys import version_info
 
 import numpy as np
 import pytest
+from default_qubit_legacy import DefaultQubitLegacy
 
 import pennylane as qml
 from pennylane.devices import LegacyDevice as Device
@@ -203,7 +204,7 @@ def test_invalid_attribute_in_devices_raises_error():
 def test_gradients_record():
     """Test that execute_and_gradients and gradient both track the number of gradients requested."""
 
-    dev = qml.device("default.qubit.legacy", wires=1)
+    dev = DefaultQubitLegacy(wires=1)
 
     tape = qml.tape.QuantumScript([qml.RX(0.1, wires=0)], [qml.expval(qml.PauliZ(0))])
 
