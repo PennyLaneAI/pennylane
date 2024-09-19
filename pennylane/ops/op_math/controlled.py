@@ -205,7 +205,7 @@ def remove_from_queue_args_and_kwargs(item):
         for elem in item:
             remove_from_queue_args_and_kwargs(elem)
     elif isinstance(item, dict):
-        for key, value in item.items():
+        for value in item.values():
             remove_from_queue_args_and_kwargs(value)
     elif isinstance(item, Operator):
         qml.queuing.QueuingManager.remove(item)
@@ -219,7 +219,7 @@ def _ctrl_transform(op, control, control_values, work_wires):
         for arg in args:
             remove_from_queue_args_and_kwargs(arg)
 
-        for key, value in kwargs.items():
+        for value in kwargs.values():
             remove_from_queue_args_and_kwargs(value)
 
         # flip control_values == 0 wires here, so we don't have to do it for each individual op.

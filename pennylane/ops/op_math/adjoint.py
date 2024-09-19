@@ -241,7 +241,7 @@ def _adjoint_transform(qfunc: Callable, lazy=True) -> Callable:
         for arg in args:
             remove_from_queue_args_and_kwargs(arg)
 
-        for key, value in kwargs.items():
+        for value in kwargs.values():
             remove_from_queue_args_and_kwargs(value)
 
         if lazy:

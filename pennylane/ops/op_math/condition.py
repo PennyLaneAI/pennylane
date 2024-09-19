@@ -25,7 +25,6 @@ from pennylane.capture.flatfn import FlatFn
 from pennylane.compiler import compiler
 from pennylane.measurements import MeasurementValue
 from pennylane.operation import AnyWires, Operation, Operator
-from pennylane.ops.op_math.controlled import remove_from_queue_args_and_kwargs
 from pennylane.ops.op_math.symbolicop import SymbolicOp
 from pennylane.tape import make_qscript
 
@@ -623,12 +622,6 @@ def cond(
 
             # 1. Apply true_fn conditionally
             qscript = make_qscript(true_fn)(*args, **kwargs)
-
-            for arg in args:
-                remove_from_queue_args_and_kwargs(arg)
-
-            for key, value in kwargs.items():
-                remove_from_queue_args_and_kwargs(value)
 
             if qscript.measurements:
                 raise ConditionalTransformError(with_meas_err)

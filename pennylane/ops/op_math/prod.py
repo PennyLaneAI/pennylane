@@ -113,12 +113,6 @@ def prod(*ops, id=None, lazy=True):
         def wrapper(*args, **kwargs):
             qs = qml.tape.make_qscript(fn)(*args, **kwargs)
 
-            for arg in args:
-                remove_from_queue_args_and_kwargs(arg)
-
-            for key, value in kwargs.items():
-                remove_from_queue_args_and_kwargs(value)
-
             if len(qs.operations) == 1:
                 if qml.QueuingManager.recording():
                     qml.apply(qs[0])
