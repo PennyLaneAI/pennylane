@@ -11,7 +11,12 @@
 
 * The `diagonalize_measurements` transform now uses a more efficient method of diagonalization 
   when possible, based on the `pauli_rep` of the relevant observables.
-  [#6113](https://github.com/PennyLaneAI/pennylane/pull/6113/)
+  [(#6113)](https://github.com/PennyLaneAI/pennylane/pull/6113/)
+
+* An `update` method is added to `QuantumScript` to make it easier to create an updated version
+  of a tape where some of `tape.operations`, `tape.measurements`, `tape.shots` and 
+  `tape.trainable_params` are modified, while ensuring other attributes are unchanged.
+  [(#6285)](https://github.com/PennyLaneAI/pennylane/pull/6285)
 
 <h4>Capturing and representing hybrid programs</h4>
 
