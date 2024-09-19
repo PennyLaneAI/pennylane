@@ -174,7 +174,7 @@ def _check_generator(op):
 
     if op.has_generator:
         gen = op.generator()
-        assert isinstance(gen, qml.Hamiltonian) or isinstance(gen, qml.ops.SparseHamiltonian)
+        assert isinstance(gen, (qml.Hamiltonian, qml.ops.SparseHamiltonian))
         new_op = qml.exp(gen, 1j * op.data[0])
         assert qml.math.allclose(
             qml.matrix(op, wire_order=op.wires), qml.matrix(new_op, wire_order=op.wires)
