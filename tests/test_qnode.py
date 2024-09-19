@@ -229,7 +229,7 @@ class TestValidation:
             return capabilities
 
         # finite differences is the fallback when we know nothing about the device
-        monkeypatch.setattr(qml.devices.DefaultQubitLegacy, "capabilities", capabilities)
+        monkeypatch.setattr(qml.devices.DefaultMixed, "capabilities", capabilities)
         res = QNode.get_best_method(dev, "another_interface")
         assert res == (qml.gradients.finite_diff, {}, dev)
 
@@ -897,7 +897,7 @@ class TestIntegration:
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.legacy"])
+    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.mixed"])
     @pytest.mark.parametrize("first_par", np.linspace(0.15, np.pi - 0.3, 3))
     @pytest.mark.parametrize("sec_par", np.linspace(0.15, np.pi - 0.3, 3))
     @pytest.mark.parametrize(
@@ -945,12 +945,11 @@ class TestIntegration:
         assert np.allclose(r2[1], mv_res(first_par))
         assert spy.call_count == 2
 
-    @pytest.mark.parametrize("dev_name", ["default.qubit.legacy", "default.mixed"])
-    def test_dynamic_one_shot_if_mcm_unsupported(self, dev_name):
+    def test_dynamic_one_shot_if_mcm_unsupported(self):
         """Test an error is raised if the dynamic one shot transform is a applied to a qnode with a device that
         does not support mid circuit measurements.
         """
-        dev = qml.device(dev_name, wires=2, shots=100)
+        dev = qml.device("default.mixed", wires=2, shots=100)
 
         with pytest.raises(
             TypeError,
@@ -1734,10 +1733,9 @@ class TestNewDeviceIntegration:
 class TestMCMConfiguration:
     """Tests for MCM configuration arguments"""
 
-    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.legacy"])
-    def test_one_shot_error_without_shots(self, dev_name):
+    def test_one_shot_error_without_shots(self):
         """Test that an error is raised if mcm_method="one-shot" with no shots"""
-        dev = qml.device(dev_name, wires=3)
+        dev = qml.device("default.qubit", wires=3)
         param = np.pi / 4
 
         @qml.qnode(dev, mcm_method="one-shot")
