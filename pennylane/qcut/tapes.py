@@ -19,6 +19,7 @@ import copy
 from collections.abc import Callable, Sequence
 from itertools import product
 from typing import Union
+import warnings
 
 from networkx import MultiDiGraph
 
@@ -205,7 +206,11 @@ def graph_to_tape(graph: MultiDiGraph) -> QuantumScript:
         if measurement_type is ExpectationMP:
             if len(observables) > 1:
                 prod_type = qml.prod if qml.operation.active_new_opmath() else Tensor
-                measurements_from_graph.append(qml.expval(prod_type(*observables)))
+                with warnings.catch_warnings():
+                    warnings.filterwarnings(
+                        "ignore", "qml.operation.Tensor uses", qml.PennyLaneDeprecationWarning
+                    )
+                    measurements_from_graph.append(qml.expval(prod_type(*observables)))
             else:
                 measurements_from_graph.append(qml.expval(obs))
 

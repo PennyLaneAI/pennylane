@@ -23,6 +23,7 @@ representation of Pauli words and applications, see:
 from functools import lru_cache, singledispatch
 from itertools import product
 from typing import Union
+import warnings
 
 import numpy as np
 
@@ -1088,7 +1089,13 @@ def diagonalize_pauli_word(pauli_word):
         return qml.Identity(wires=pauli_word.wires)
 
     if isinstance(pauli_word, Tensor):
-        return components[0] if len(components) == 1 else Tensor(*components)
+
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                "ignore", "qml.operation.Tensor uses", qml.PennyLaneDeprecationWarning
+            )
+            tensor = components[0] if len(components) == 1 else Tensor(*components)
+        return tensor
 
     prod = qml.prod(*components)
     coeff = pauli_word.pauli_rep[pw]

@@ -168,7 +168,12 @@ def _openfermion_to_pennylane(qubit_operator, wires=None, tol=1.0e-16):
             if active_new_opmath():
                 return qml.prod(*[xyz2pauli[op[1]](wires=wires[op[0]]) for op in term])
 
-            return Tensor(*[xyz2pauli[op[1]](wires=wires[op[0]]) for op in term])
+            with warnings.catch_warnings():
+                warnings.filterwarnings(
+                    "ignore", "qml.operation.Tensor uses", qml.PennylaneDeprecationWarning
+                )
+                tensor = Tensor(*[xyz2pauli[op[1]](wires=wires[op[0]]) for op in term])
+            return tensor
 
         if len(term) == 1:
             return xyz2pauli[term[0][1]](wires=wires[term[0][0]])

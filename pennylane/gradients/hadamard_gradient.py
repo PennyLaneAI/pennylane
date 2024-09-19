@@ -16,6 +16,7 @@ This module contains functions for computing the Hadamard-test gradient
 of a qubit-based quantum tape.
 """
 from functools import partial
+import warnings
 
 import numpy as np
 
@@ -331,7 +332,11 @@ def _expval_hadamard_grad(tape, argnum, aux_wire):
 
                 obs_new.append(qml.Y(aux_wire))
                 obs_type = qml.prod if qml.operation.active_new_opmath() else qml.operation.Tensor
-                obs_new = obs_type(*obs_new)
+                with warnings.catch_warnings():
+                    warnings.filterwarnings(
+                        "ignore", "qml.operation.Tensor uses", qml.PennyLaneDeprecationWarning
+                    )
+                    obs_new = obs_type(*obs_new)
 
                 if isinstance(m, qml.measurements.ExpectationMP):
                     measurements.append(qml.expval(op=obs_new))

@@ -20,6 +20,7 @@ import copy
 from collections.abc import Sequence
 from functools import singledispatch
 from typing import Union
+import warnings
 
 import pennylane as qml
 from pennylane.operation import Operator, Tensor
@@ -250,7 +251,12 @@ def bind_new_parameters_tensor(op: Tensor, params: Sequence[TensorLike]):
         params = params[obs.num_params :]
         new_obs.append(bind_new_parameters(obs, sub_params))
 
-    return Tensor(*new_obs)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", "qml.operation.Tensor uses", qml.PennyLaneDeprecationWarning
+        )
+        new_op = Tensor(*new_obs)
+    return new_op
 
 
 @bind_new_parameters.register

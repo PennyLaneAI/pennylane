@@ -15,6 +15,7 @@
 # pylint:disable=protected-access
 from copy import copy
 from functools import lru_cache, reduce
+import warnings
 
 import numpy as np
 from scipy import sparse
@@ -507,25 +508,53 @@ class PauliWord(dict):
 
     def operation(self, wire_order=None, get_as_tensor=False):
         """Returns a native PennyLane :class:`~pennylane.operation.Operation` representing the PauliWord."""
+
         if len(self) == 0:
             return Identity(wires=wire_order)
 
         factors = [_make_operation(op, wire) for wire, op in self.items()]
 
         if get_as_tensor:
-            return factors[0] if len(factors) == 1 else Tensor(*factors)
+            warnings.warn(
+                "Using PauliWord.operation() with 'get_as_tensor=True' is deprecated, as it returns a "
+                "legacy qml.operation.Tensor, which is deprecated.",
+                qml.PennyLaneDeprecationWarning,
+            )
+
+            with warnings.catch_warnings():
+                warnings.filterwarnings(
+                    "ignore", "qml.operation.Tensor uses", qml.PennyLaneDeprecationWarning
+                )
+                tensor = factors[0] if len(factors) == 1 else Tensor(*factors)
+            return tensor
+
         pauli_rep = PauliSentence({self: 1})
         return factors[0] if len(factors) == 1 else Prod(*factors, _pauli_rep=pauli_rep)
 
     def hamiltonian(self, wire_order=None):
         """Return :class:`~pennylane.Hamiltonian` representing the PauliWord."""
+        warnings.warn(
+            "PauliWord.hamiltonian() is deprecated as it returns a legacy PennyLane "
+            "Hamiltonian. Please use PauliWord.operation() instead.",
+            qml.PennyLaneDeprecationWarning,
+        )
+
         if len(self) == 0:
             if wire_order in (None, [], Wires([])):
                 raise ValueError("Can't get the Hamiltonian for an empty PauliWord.")
             return qml.Hamiltonian([1], [Identity(wires=wire_order)])
 
         obs = [_make_operation(op, wire) for wire, op in self.items()]
-        return qml.Hamiltonian([1], [obs[0] if len(obs) == 1 else Tensor(*obs)])
+
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                "ignore", "qml.operation.Tensor uses", qml.PennyLaneDeprecationWarning
+            )
+            warnings.filterwarnings(
+                "ignore", "qml.ops.Hamiltonian uses", qml.PennyLaneDeprecationWarning
+            )
+            ham = qml.Hamiltonian([1], [obs[0] if len(obs) == 1 else Tensor(*obs)])
+        return ham
 
     def map_wires(self, wire_map: dict) -> "PauliWord":
         """Return a new PauliWord with the wires mapped."""
@@ -1022,7 +1051,13 @@ class PauliSentence(dict):
         return summands[0] if len(summands) == 1 else Sum(*summands, _pauli_rep=self)
 
     def hamiltonian(self, wire_order=None):
-        """Returns a native PennyLane :class:`~pennylane.Hamiltonian` representing the PauliSentence."""
+        """Returns a legacy PennyLane :class:`~pennylane.Hamiltonian` representing the PauliSentence."""
+        warnings.warn(
+            "PauliSentence.hamiltonian() is deprecated as it returns a legacy PennyLane "
+            "Hamiltonian. Please use PauliSentence.operation() instead.",
+            qml.PennyLaneDeprecationWarning,
+        )
+
         if len(self) == 0:
             if wire_order in (None, [], Wires([])):
                 raise ValueError("Can't get the Hamiltonian for an empty PauliSentence.")
@@ -1031,10 +1066,18 @@ class PauliSentence(dict):
         wire_order = wire_order or self.wires
         wire_order = list(wire_order)
 
-        return qml.Hamiltonian(
-            list(self.values()),
-            [pw.operation(wire_order=wire_order, get_as_tensor=True) for pw in self],
-        )
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                "ignore", "qml.ops.Hamiltonian uses", qml.PennyLaneDeprecationWarning
+            )
+            warnings.filterwarnings(
+                "ignore", "Using PauliWord.operation", qml.PennyLaneDeprecationWarning
+            )
+            ham = qml.Hamiltonian(
+                list(self.values()),
+                [pw.operation(wire_order=wire_order, get_as_tensor=True) for pw in self],
+            )
+        return ham
 
     def simplify(self, tol=1e-8):
         """Remove any PauliWords in the PauliSentence with coefficients less than the threshold tolerance."""

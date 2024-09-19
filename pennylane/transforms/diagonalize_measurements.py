@@ -15,6 +15,7 @@
 
 from copy import copy
 from functools import singledispatch
+import warnings
 
 import pennylane as qml
 from pennylane.operation import Tensor
@@ -300,7 +301,11 @@ def _change_tensor(observable: Tensor):
         observable.obs,
     )
 
-    new_observable = Tensor(*new_obs)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", "qml.operation.Tensor uses", qml.PennyLaneDeprecationWarning
+        )
+        new_observable = Tensor(*new_obs)
 
     return diagonalizing_gates, new_observable
 
@@ -479,7 +484,11 @@ def _diagonalize_tensor(
         observable.obs, _visited_obs, supported_base_obs
     )
 
-    new_observable = Tensor(*new_obs)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", "qml.operation.Tensor uses", qml.PennyLaneDeprecationWarning
+        )
+        new_observable = Tensor(*new_obs)
 
     return diagonalizing_gates, new_observable, _visited_obs
 

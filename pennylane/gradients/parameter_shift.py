@@ -16,6 +16,7 @@ This module contains functions for computing the parameter-shift gradient
 of a qubit-based quantum tape.
 """
 from functools import partial
+import warnings
 
 import numpy as np
 
@@ -69,7 +70,12 @@ def _square_observable(obs):
         components_squared = [
             NONINVOLUTORY_OBS[o.name](o) for o in obs.obs if o.name in NONINVOLUTORY_OBS
         ]
-        return qml.operation.Tensor(*components_squared)
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                "ignore", "qml.operation.Tensor uses", qml.PennyLaneDeprecationWarning
+            )
+            tensor_obs = qml.operation.Tensor(*components_squared)
+        return tensor_obs
 
     if isinstance(obs, qml.ops.Prod):
         components_squared = [

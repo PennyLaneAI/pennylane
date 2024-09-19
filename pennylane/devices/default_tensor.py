@@ -994,7 +994,7 @@ def expval_core(obs: Observable, device) -> float:
 @expval_core.register
 def expval_core_tensor(obs: Tensor, device) -> float:
     """Computes the expval of a Tensor."""
-    return expval_core(Prod(*obs._args), device)
+    return expval_core(Prod(*obs.obs), device)
 
 
 @expval_core.register

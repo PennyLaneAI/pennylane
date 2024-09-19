@@ -23,7 +23,7 @@ import numbers
 from collections.abc import Iterable
 from copy import copy
 from typing import Hashable, Literal, Optional, Union
-from warnings import warn
+import warnings
 
 import numpy as np
 import scipy
@@ -254,7 +254,7 @@ class Hamiltonian(Observable):
         method: Literal["lf", "rlf"] = "rlf",
         id: str = None,
     ):
-        warn(
+        warnings.warn(
             "qml.ops.Hamiltonian uses the old approach to operator arithmetic, which will become "
             "unavailable in version 0.40 of PennyLane. If you are experiencing issues, visit "
             "https://docs.pennylane.ai/en/stable/news/new_opmath.html or contact the PennyLane "
@@ -503,7 +503,14 @@ class Hamiltonian(Observable):
         temp_mats = []
         for coeff, op in zip(coeffs, self.ops):
             obs = []
-            for o in qml.operation.Tensor(op).obs:
+
+            with warnings.catch_warnings():
+                warnings.filterwarnings(
+                    "ignore", "qml.operation.Tensor uses", qml.PennyLaneDeprecationWarning
+                )
+                tensor_obs = qml.operation.Tensor(op)
+
+            for o in tensor_obs.obs:
                 if len(o.wires) > 1:
                     # todo: deal with operations created from multi-qubit operations such as Hermitian
                     raise ValueError(
@@ -575,7 +582,12 @@ class Hamiltonian(Observable):
         for i in range(len(self.ops)):  # pylint: disable=consider-using-enumerate
             op = self.ops[i]
             c = self.coeffs[i]
-            op = op if isinstance(op, Tensor) else Tensor(op)
+
+            with warnings.catch_warnings():
+                warnings.filterwarnings(
+                    "ignore", "qml.operation.Tensor uses", qml.PennyLaneDeprecationWarning
+                )
+                op = op if isinstance(op, Tensor) else Tensor(op)
 
             ind = next((j for j, o in enumerate(new_ops) if op.compare(o)), None)
             if ind is not None:
@@ -755,7 +767,13 @@ class Hamiltonian(Observable):
 
             coeffs = qml.math.kron(coeffs1, coeffs2)
             ops_list = itertools.product(ops1, ops2)
-            terms = [qml.operation.Tensor(t[0], t[1]) for t in ops_list]
+
+            with warnings.catch_warnings():
+                warnings.filterwarnings(
+                    "ignore", "qml.operation.Tensor uses", qml.PennyLaneDeprecationWarning
+                )
+                terms = [qml.operation.Tensor(t[0], t[1]) for t in ops_list]
+
             return qml.simplify(Hamiltonian(coeffs, terms))
 
         if isinstance(H, (Tensor, Observable)):

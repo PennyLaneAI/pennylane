@@ -15,6 +15,7 @@ r"""
 Methods for constructing QAOA mixer Hamiltonians.
 """
 import functools
+import warnings
 
 # pylint: disable=unnecessary-lambda-assignment
 import itertools
@@ -236,7 +237,11 @@ def bit_flip_mixer(graph: Union[nx.Graph, rx.PyGraph], b: int):
             if qml.operation.active_new_opmath()
             else lambda x: qml.operation.Tensor(x).prune()
         )
-        final_terms = [prod_op(*list(m)) for m in itertools.product(*n_terms)]
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                "ignore", "qml.operation.Tensor uses", qml.PennyLaneDeprecationWarning
+            )
+            final_terms = [prod_op(*list(m)) for m in itertools.product(*n_terms)]
         final_coeffs = [
             (0.5**degree) * functools.reduce(lambda x, y: x * y, list(m), 1)
             for m in itertools.product(*n_coeffs)
@@ -245,4 +250,10 @@ def bit_flip_mixer(graph: Union[nx.Graph, rx.PyGraph], b: int):
         coeffs.extend(final_coeffs)
         terms.extend(final_terms)
 
-    return qml.Hamiltonian(coeffs, terms)
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", "qml.ops.Hamiltonian uses", qml.PennyLaneDeprecationWarning
+        )
+        ham = qml.Hamiltonian(coeffs, terms)
+
+    return ham
