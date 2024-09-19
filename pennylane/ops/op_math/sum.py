@@ -342,8 +342,9 @@ class Sum(CompositeOp):
 
         return math.expand_matrix(reduced_mat, sum_wires, wire_order=wire_order)
 
+    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
-    def has_sparse_matrix(self) -> bool:  # pylint: disable=arguments-renamed
+    def has_sparse_matrix(self) -> bool:
         return self.pauli_rep is not None or all(op.has_sparse_matrix for op in self)
 
     def sparse_matrix(self, wire_order=None):
