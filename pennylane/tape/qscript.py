@@ -393,7 +393,7 @@ class QuantumScript:
 
         ** Example **
 
-        .. python::
+        .. code-block:: python
 
             tape = qml.tape.QuantumScript(
                 ops= [qml.X(0), qml.Y(1)],
