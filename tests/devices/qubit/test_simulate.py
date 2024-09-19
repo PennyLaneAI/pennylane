@@ -1573,7 +1573,7 @@ class TestMidMeasurements:
 
         circuit = qml.tape.QuantumScript(q.queue, [qml.expval(qml.Z(0)), qml.sample(m)], shots=[1])
 
-        n_shots = 200
+        n_shots = 500
         results = [
             simulate_one_shot_native_mcm(
                 circuit,
