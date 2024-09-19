@@ -391,7 +391,7 @@ class QuantumScript:
 
         Anything not set by update will retain the values on the original tape.
 
-        ** Example **
+        **Example**
 
         .. code-block:: python
 
