@@ -12,15 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests for the gradients.parameter_shift module using the new return types and devices that define a shot vector."""
-# pylint:disable=use-implicit-booleaness-not-comparison
+# pylint:disable=use-implicit-booleaness-not-comparison,abstract-method
 from functools import partial
 
 import pytest
+from default_qubit_legacy import DefaultQubitLegacy
 from flaky import flaky
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.devices import DefaultQubitLegacy
 from pennylane.gradients import param_shift
 from pennylane.measurements import Shots
 from pennylane.operation import AnyWires, Observable

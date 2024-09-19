@@ -14,12 +14,15 @@
 """
 Tests for the gradients.spsa_gradient module using shot vectors.
 """
+
+# pylint: disable=abstract-method
+
 import numpy as np
 import pytest
+from default_qubit_legacy import DefaultQubitLegacy
 
 import pennylane as qml
 from pennylane import numpy as pnp
-from pennylane.devices import DefaultQubitLegacy
 from pennylane.gradients import spsa_grad
 from pennylane.measurements import Shots
 from pennylane.operation import AnyWires, Observable
