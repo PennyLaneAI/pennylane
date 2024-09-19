@@ -15,6 +15,7 @@
 
 import numpy as np
 import pytest
+from flaky import flaky
 from dummy_debugger import Debugger
 from stat_utils import fisher_exact_test
 
@@ -1195,6 +1196,7 @@ ml_frameworks_list = [
 class TestMidCircuitMeasurements:
     """Unit tests for simulating mid-circuit measurements."""
 
+    @flaky(max_runs=3, min_passes=2)
     @pytest.mark.parametrize("ml_framework", ml_frameworks_list)
     @pytest.mark.parametrize(
         "postselect_mode", [None, "hw-like", "pad-invalid-samples", "fill-shots"]
@@ -1209,19 +1211,15 @@ class TestMidCircuitMeasurements:
 
         circuit = qml.tape.QuantumScript(q.queue, [qml.expval(qml.Z(0)), qml.sample(m)], shots=[1])
 
-        rng = np.random.default_rng(1)
-        rng_keys = [np.random.default_rng(x) for x in rng.integers(0, 2**32, size=100)]
-
-        n_shots = 100
+        n_shots = 200
         results = [
             simulate_one_shot_native_mcm(
                 circuit,
                 n_shots,
-                rng=rng_keys[i],
                 interface=ml_framework,
                 postselect_mode=postselect_mode,
             )
-            for i in range(n_shots)
+            for _ in range(n_shots)
         ]
         terminal_results, mcm_results = zip(*results)
 
@@ -1230,26 +1228,26 @@ class TestMidCircuitMeasurements:
             equivalent_tape = qml.tape.QuantumScript(
                 [qml.RX(np.pi / 4, wires=0)], [qml.expval(qml.Z(0))], shots=n_shots
             )
-            expected_sample = simulate(equivalent_tape, rng=rng)
+            expected_sample = simulate(equivalent_tape)
             fisher_exact_test(terminal_results, expected_sample, outcomes=(-1, 1))
 
         else:
             equivalent_tape = qml.tape.QuantumScript(
                 [qml.RX(np.pi / 4, wires=0)], [qml.sample(wires=0)], shots=n_shots
             )
-            expected_result = simulate(equivalent_tape, rng=rng)
+            expected_result = simulate(equivalent_tape)
             fisher_exact_test(mcm_results, expected_result)
 
             subset = [ts for ms, ts in zip(mcm_results, terminal_results) if ms == 0]
             equivalent_tape = qml.tape.QuantumScript(
                 [qml.RX(np.pi / 4, wires=0)], [qml.expval(qml.Z(0))], shots=n_shots
             )
-            expected_sample = simulate(equivalent_tape, rng=rng)
+            expected_sample = simulate(equivalent_tape)
             fisher_exact_test(subset, expected_sample, outcomes=(-1, 1))
 
             subset = [ts for ms, ts in zip(mcm_results, terminal_results) if ms == 1]
             equivalent_tape = qml.tape.QuantumScript(
                 [qml.X(0), qml.RX(np.pi / 4, wires=0)], [qml.expval(qml.Z(0))], shots=n_shots
             )
-            expected_sample = simulate(equivalent_tape, rng=rng)
+            expected_sample = simulate(equivalent_tape)
             fisher_exact_test(subset, expected_sample, outcomes=(-1, 1))
