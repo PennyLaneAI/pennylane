@@ -600,3 +600,8 @@ def check_all_commuting(h):
 
     print("all terms commute")
     return all(commutes)
+
+def trace_distance(A, B):
+    assert np.all(A.shape == B.shape)
+    res = 1 - np.trace(A.conj().T @ B)/len(A)
+    return res.real
