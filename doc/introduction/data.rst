@@ -101,18 +101,27 @@ Viewing Available Datasets
 --------------------------
 
 We can call the 
-:func:`~pennylane.data.list_datasets` function to get a snapshot of the currently available data.
+:func:`~pennylane.data.list_data_names` function to get a snapshot of the currently available data.
 This function returns a nested dictionary as shown below. 
 
->>> available_data = qml.data.list_datasets()
->>> available_data.keys()
-dict_keys(["qspin", "qchem"])
->>> available_data["qchem"].keys()
-dict_keys(["H2", "LiH", ...])
->>> available_data['qchem']['H2'].keys()
-dict_keys(["6-31G", "STO-3G"])
->>> print(available_data['qchem']['H2']['STO-3G'])
-["0.5", "0.54", "0.62", "0.66", ...]
+>>> qml.data.list_data_names()
+["bars-and-stripes",
+ "downscaled-mnist",
+ "hamlib-max-3-sat",
+ "hamlib-maxcut",
+ "hamlib-travelling-salesperson-problem",
+ "hidden-manifold",
+ "hyperplanes",
+ "ketgpt",
+ "learning-dynamics-incoherently",
+ "linearly-separable",
+ "mnisq",
+ "mqt-bench",
+ "plus-minus",
+ "qchem",
+ "qspin",
+ "rydberggpt",
+ "two-curves"]
 
 Note that this example limits the results
 of the function calls for clarity and that as more data becomes available, the results of these
