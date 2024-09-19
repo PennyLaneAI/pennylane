@@ -319,8 +319,8 @@ def kitaev(n_cells, coupling=None, boundary_condition=False):
     .. math::
         \begin{align*}
           \hat{H} = K_x.\sum_{\langle i,j \rangle \in X}\sigma_i^x\sigma_j^x +
-          K_y.\sum_{\langle i,j \rangle \in Y}\sigma_i^y\sigma_j^y +
-          K_z.\sum_{\langle i,j \rangle \in Z}\sigma_i^z\sigma_j^z
+          \:\: K_y.\sum_{\langle i,j \rangle \in Y}\sigma_i^y\sigma_j^y +
+          \:\: K_z.\sum_{\langle i,j \rangle \in Z}\sigma_i^z\sigma_j^z
         \end{align*}
 
     where :math:`K_x`, :math:`K_y`, :math:`K_z` are the coupling constants defined for the Hamiltonian,
