@@ -282,7 +282,8 @@ class Lattice:
 
             edge_operation = custom_edge[1] if len(custom_edge) == 2 else i
 
-            # Finds the coordinates of lattice vertices to be connected
+            # Finds the coordinates of starting and ending vertices of the edge
+            # and the vector distance between the coordinates
             map_edge1 = lattice_map.index(edge[0])
             map_edge2 = lattice_map.index(edge[1])
             edge_distance = self.lattice_points[map_edge2] - self.lattice_points[map_edge1]
