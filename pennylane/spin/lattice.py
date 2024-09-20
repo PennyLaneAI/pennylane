@@ -33,24 +33,24 @@ class Lattice:
        n_cells (list[int]): Number of cells in each direction of the grid.
        vectors (list[list[float]]): Primitive vectors for the lattice.
        positions (list[list[float]]): Initial positions of spin sites. Default value is
-            ``[[0.0]`` :math:`\times` ``number of dimensions]``.
+           ``[[0.0]`` :math:`\times` ``number of dimensions]``.
        boundary_condition (bool or list[bool]): Defines boundary conditions for different lattice axes,
-            default is ``False`` indicating open boundary condition.
+           default is ``False`` indicating open boundary condition.
        neighbour_order (int): Specifies the interaction level for neighbors within the lattice.
-            Default is 1, indicating nearest neighbour. This cannot be greater than 1 if custom_edges is defined.
+           Default is 1, indicating nearest neighbour. This cannot be greater than 1 if custom_edges is defined.
        custom_edges (Optional[list(list(tuples))]): Specifies the edges to be added in the lattice.
-            Default value is ``None``, which adds the edges based on ``neighbour_order``.
-            Each element in the list is for a separate edge, and can contain 1 or 2 tuples.
-            First tuple contains the indices of the starting and ending vertices of the edge.
-            Second tuple is optional and contains the operator on that edge and coefficient
-            of that operator. Default value is the index of edge in custom_edges list.
+           Default value is ``None``, which adds the edges based on ``neighbour_order``.
+           Each element in the list is for a separate edge, and can contain 1 or 2 tuples.
+           First tuple contains the indices of the starting and ending vertices of the edge.
+           Second tuple is optional and contains the operator on that edge and coefficient
+           of that operator. Default value is the index of edge in custom_edges list.
        custom_nodes (Optional(list(list(int, tuples)))): Specifies the on-site potentials and
-            operators for nodes in the lattice. Default value is None, which means no on-site
-            potentials. Each element in the list is for a separate node. For each element, the first
-            value is the index of the node, and the second element is a tuple which contains the
-            operator and coefficient.
+           operators for nodes in the lattice. Default value is None, which means no on-site
+           potentials. Each element in the list is for a separate node. For each element, the first
+           value is the index of the node, and the second element is a tuple which contains the
+        operator and coefficient.
        distance_tol (float): Distance below which spatial points are considered equal for the
-            purpose of identifying nearest neighbours. Default value is 1e-5.
+           purpose of identifying nearest neighbours. Default value is 1e-5.
 
     Raises:
         TypeError:
