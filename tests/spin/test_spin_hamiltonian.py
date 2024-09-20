@@ -942,6 +942,6 @@ def test_spin_hamiltonian_error():
     r"""Test that the correct Hamiltonian is generated"""
     lattice = Lattice(n_cells=[2, 2], vectors=[[1, 0], [0, 1]], positions=[[0, 0], [1, 1]])
     with pytest.raises(
-        ValueError, match="Custom edges need to be defined and should have an operator"
+        ValueError, match="Custom edges need to be defined and each edge should have an operator assigned to it."
     ):
         spin_hamiltonian(lattice=lattice)
