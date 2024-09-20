@@ -695,7 +695,7 @@ def spin_hamiltonian(lattice):
     r"""Generates a spin Hamiltonian for a custom lattice.
 
     Args:
-        lattice (Lattice): custom lattice defined with ``custom_edges`` and optional ``custom_nodes``
+        lattice (Lattice): custom lattice defined with custom_edges
 
     Raises:
         ValueError: if the provided Lattice does not have ``custom_edges`` defined with operators
@@ -707,7 +707,7 @@ def spin_hamiltonian(lattice):
 
     .. code-block:: python
 
-        >>> lattice = qml.spin.Lattice(
+        lattice = qml.spin.Lattice(
             n_cells=[2, 2],
             vectors=[[1, 0], [0, 1]],
             positions=[[0, 0], [1, 5]],
@@ -719,15 +719,15 @@ def spin_hamiltonian(lattice):
         >>> qml.spin.spin_hamiltonian(lattice=lattice)
         >>> (
                 0.5 * (X(0) @ X(1))
-                + 0.5 * (X(2) @ X(3))
-                + 0.5 * (X(4) @ X(5))
-                + 0.5 * (X(6) @ X(7))
-                + 0.6 * (Y(1) @ Y(2))
-                + 0.6 * (Y(5) @ Y(6))
-                + 0.7 * (Z(1) @ Z(4))
-                + 0.7 * (Z(3) @ Z(6))
-                + 0.5 * X(0)
-                + 0.3 * Y(1)
+              + 0.5 * (X(2) @ X(3))
+              + 0.5 * (X(4) @ X(5))
+              + 0.5 * (X(6) @ X(7))
+              + 0.6 * (Y(1) @ Y(2))
+              + 0.6 * (Y(5) @ Y(6))
+              + 0.7 * (Z(1) @ Z(4))
+              + 0.7 * (Z(3) @ Z(6))
+              + 0.5 * X(0)
+              + 0.3 * Y(1)
             )
 
     """
