@@ -458,7 +458,11 @@ class TestGroupingUtils:
         assert pauli_word_to_string(op) == "ZYX"
 
     with qml.operation.disable_new_opmath_cm(warn=False):
-        PAULI_WORD_STRINGS_LEGACY = _make_pauli_word_strings()
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                "ignore", "qml.ops.Hamiltonian uses", qml.PennyLaneDeprecationWarning
+            )
+            PAULI_WORD_STRINGS_LEGACY = _make_pauli_word_strings()
 
     @pytest.mark.usefixtures("legacy_opmath_only")
     @pytest.mark.parametrize("pauli_word,wire_map,expected_string", PAULI_WORD_STRINGS_LEGACY)

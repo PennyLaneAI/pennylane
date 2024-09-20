@@ -54,7 +54,7 @@ class TestCircuitGraphHash:
 
     observable1 = qml.PauliZ(wires=[0])
     observable2 = qml.Hermitian(np.array([[1, 0], [0, -1]]), wires=[0])
-    observable3 = Tensor(qml.PauliZ(0) @ qml.PauliZ(1))
+    observable3 = Tensor(qml.PauliZ(0), qml.PauliZ(1))
 
     numeric_observable_queue = [
         (returntype1, observable1, "|||ObservableReturnTypes.Expectation!PauliZ[0]"),

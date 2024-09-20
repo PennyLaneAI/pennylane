@@ -46,7 +46,7 @@ test_diff_matrix1 = [[[-2, -2 + 1j]], [[-2, -2 + 1j], [-1, -1j]]]
 test_diff_matrix2 = [[[-2, -2 + 1j], [-2 - 1j, 0]], [[2.5, -0.5], [-0.5, 2.5]]]
 
 with warnings.catch_warnings():
-    warnings.simplefilter("ignore")
+    warnings.filterwarnings("ignore", "qml.ops.Hamiltonian uses", qml.PennyLaneDeprecationWarning)
     hamiltonian_ps = (
         (
             qml.ops.Hamiltonian([], []),
@@ -553,6 +553,9 @@ class TestPauliSentence:
         with pytest.raises(ValueError, match="Op must be a linear combination of"):
             pauli_sentence(op)
 
+    @pytest.mark.filterwarnings(
+        "ignore:qml.ops.Hamiltonian uses:pennylane.PennyLaneDeprecationWarning"
+    )
     @pytest.mark.usefixtures("use_legacy_and_new_opmath")
     @pytest.mark.parametrize("op, ps", hamiltonian_ps)
     def test_hamiltonian(self, op, ps):
