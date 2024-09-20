@@ -716,19 +716,19 @@ def spin_hamiltonian(lattice):
             custom_nodes=[[0, ("X", 0.5)], [1, ("Y", 0.3)]],
         )
 
-        >>> qml.spin.spin_hamiltonian(lattice=lattice)
-        >>> (
-                0.5 * (X(0) @ X(1))
-              + 0.5 * (X(2) @ X(3))
-              + 0.5 * (X(4) @ X(5))
-              + 0.5 * (X(6) @ X(7))
-              + 0.6 * (Y(1) @ Y(2))
-              + 0.6 * (Y(5) @ Y(6))
-              + 0.7 * (Z(1) @ Z(4))
-              + 0.7 * (Z(3) @ Z(6))
-              + 0.5 * X(0)
-              + 0.3 * Y(1)
-            )
+        qml.spin.spin_hamiltonian(lattice=lattice)
+        (
+            0.5 * (X(0) @ X(1))
+          + 0.5 * (X(2) @ X(3))
+          + 0.5 * (X(4) @ X(5))
+          + 0.5 * (X(6) @ X(7))
+          + 0.6 * (Y(1) @ Y(2))
+          + 0.6 * (Y(5) @ Y(6))
+          + 0.7 * (Z(1) @ Z(4))
+          + 0.7 * (Z(3) @ Z(6))
+          + 0.5 * X(0)
+          + 0.3 * Y(1)
+        )
 
     """
     if not isinstance(lattice.edges[0][2], tuple):
