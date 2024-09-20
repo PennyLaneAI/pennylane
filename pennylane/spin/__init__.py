@@ -22,6 +22,6 @@ from .spin_hamiltonian import (
     haldane,
     heisenberg,
     kitaev,
-    transverse_ising,
     spin_hamiltonian,
+    transverse_ising,
 )
