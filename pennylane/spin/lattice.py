@@ -222,7 +222,8 @@ def _generate_lattice(lattice, n_cells, boundary_condition=False, neighbour_orde
 
     Args:
         lattice (str): Shape of the lattice. Input Values can be ``'chain'``, ``'square'``, ``'rectangle'``,
-              ``'honeycomb'``, ``'triangle'``, ``'kagome'``, ``'lieb'``, ``'cubic'``, ``'bcc'``, or ``'fcc'``.
+              ``'honeycomb'``, ``'triangle'``, ``'kagome'``, ``'lieb'``, ``'cubic'``, ``'bcc'``, ``'fcc'``,
+               or ``'diamond'``.
         n_cells (list[int]): Number of cells in each direction of the grid.
         boundary_condition (bool or list[bool]): Defines boundary conditions in different lattice axes.
                                Default is ``False`` indicating open boundary condition.
@@ -246,11 +247,12 @@ def _generate_lattice(lattice, n_cells, boundary_condition=False, neighbour_orde
         "cubic",
         "bcc",
         "fcc",
+        "diamond",
     ]:
         raise ValueError(
             f"Lattice shape, '{lattice}' is not supported."
             f"Please set lattice to: 'chain', 'square', 'rectangle', 'honeycomb', 'triangle', 'kagome', 'lieb',"
-            f"'cubic', 'bcc' or 'fcc'."
+            f"'cubic', 'bcc', 'fcc', or 'diamond'."
         )
 
     lattice_dict = {
@@ -275,6 +277,11 @@ def _generate_lattice(lattice, n_cells, boundary_condition=False, neighbour_orde
             "dim": 3,
             "vectors": math.eye(3),
             "positions": [[0, 0, 0], [0.5, 0.5, 0], [0.5, 0, 0.5], [0, 0.5, 0.5]],
+        },
+        "diamond": {
+            "dim": 3,
+            "vectors": [[0, 0.5, 0.5], [0.5, 0, 0.5], [0.5, 0.5, 0]],
+            "positions": [[0, 0, 0], [0.25, 0.25, 0.25]],
         },
     }
 

@@ -749,6 +749,32 @@ def test_add_edge():
                 (30, 31, 0),
             ],
         ),
+        (
+            "Diamond",
+            [2, 2, 2],
+            [
+                (0, 1, 0),
+                (1, 2, 0),
+                (1, 4, 0),
+                (1, 8, 0),
+                (2, 3, 0),
+                (3, 6, 0),
+                (3, 10, 0),
+                (4, 5, 0),
+                (5, 6, 0),
+                (5, 12, 0),
+                (6, 7, 0),
+                (7, 14, 0),
+                (8, 9, 0),
+                (9, 10, 0),
+                (9, 12, 0),
+                (10, 11, 0),
+                (11, 14, 0),
+                (12, 13, 0),
+                (13, 14, 0),
+                (14, 15, 0),
+            ],
+        ),
     ],
 )
 def test_edges_for_shapes(shape, n_cells, expected_edges):
@@ -766,19 +792,20 @@ def test_shape_error():
 
 
 @pytest.mark.parametrize(
-    ("shape", "n_cells", "expected_number"),
-    # expected_number here was obtained manually.
+    ("shape", "n_cells", "expected_n_sites"),
+    # expected_n_sites here was obtained manually.
     [
         ("fcc", [2, 2, 2], 32),
         ("bcc", [2, 2, 2], 16),
         ("kagome", [2, 2], 12),
         ("lieb", [3, 3], 27),
+        ("diamond", [2, 2, 2], 16),
     ],
 )
-def test_num_sites_lattice_templates(shape, n_cells, expected_number):
+def test_num_sites_lattice_templates(shape, n_cells, expected_n_sites):
     r"""Test that the correct number of lattice points are generated for the given attributes"""
     lattice = _generate_lattice(lattice=shape, n_cells=n_cells)
-    assert lattice.n_sites == expected_number
+    assert lattice.n_sites == expected_n_sites
 
 
 @pytest.mark.parametrize(
@@ -931,6 +958,28 @@ def test_num_sites_lattice_templates(shape, n_cells, expected_number):
                 [2, 2, 0],
                 [2, 2, 1],
                 [2, 2, 2],
+            ],
+        ),
+        (
+            "diamond",
+            [2, 2, 2],
+            [
+                [0, 0, 0],
+                [0.25, 0.25, 0.25],
+                [0.5, 0.5, 0],
+                [0.75, 0.75, 0.25],
+                [0.5, 0, 0.5],
+                [0.75, 0.25, 0.75],
+                [1, 0.5, 0.5],
+                [1.25, 0.75, 0.75],
+                [0, 0.5, 0.5],
+                [0.25, 0.75, 0.75],
+                [0.5, 1, 0.5],
+                [0.75, 1.25, 0.75],
+                [0.5, 0.5, 1],
+                [0.75, 0.75, 1.25],
+                [1, 1, 1],
+                [1.25, 1.25, 1.25],
             ],
         ),
     ],
