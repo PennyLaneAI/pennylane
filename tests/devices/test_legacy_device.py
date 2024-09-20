@@ -20,9 +20,10 @@ from sys import version_info
 
 import numpy as np
 import pytest
+from default_qubit_legacy import DefaultQubitLegacy
 
 import pennylane as qml
-from pennylane import Device
+from pennylane.devices import LegacyDevice as Device
 from pennylane.wires import Wires
 
 mock_device_paulis = ["PauliX", "PauliY", "PauliZ"]
@@ -188,6 +189,12 @@ def mock_device_supporting_prod(monkeypatch):
         yield get_device
 
 
+def test_deprecated_access():
+    """Test that accessing via top-level is deprecated."""
+    with pytest.warns(qml.PennyLaneDeprecationWarning, match="Device will no longer be accessible"):
+        qml.Device  # pylint: disable=pointless-statement
+
+
 # pylint: disable=pointless-statement
 def test_invalid_attribute_in_devices_raises_error():
     with pytest.raises(AttributeError, match="'pennylane.devices' has no attribute 'blabla'"):
@@ -197,7 +204,7 @@ def test_invalid_attribute_in_devices_raises_error():
 def test_gradients_record():
     """Test that execute_and_gradients and gradient both track the number of gradients requested."""
 
-    dev = qml.device("default.qubit.legacy", wires=1)
+    dev = DefaultQubitLegacy(wires=1)
 
     tape = qml.tape.QuantumScript([qml.RX(0.1, wires=0)], [qml.expval(qml.PauliZ(0))])
 
@@ -1068,15 +1075,6 @@ class TestDeviceInit:
 
         assert dev.shots.total_shots == 22
 
-    def test_decomp_depth_is_deprecated(self):
-        """Test that a warning is raised when using the deprecated decomp_depth argument"""
-
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning,
-            match="The decomp_depth argument is deprecated",
-        ):
-            qml.device("default.qubit", decomp_depth=1)
-
 
 class TestBatchExecution:
     """Tests for the batch_execute method."""
@@ -1151,7 +1149,7 @@ class TestGrouping:
     """Tests for the use_grouping option for devices."""
 
     # pylint: disable=too-few-public-methods, unused-argument, missing-function-docstring, missing-class-docstring
-    class SomeDevice(qml.Device):
+    class SomeDevice(qml.devices.LegacyDevice):
         name = ""
         short_name = ""
         pennylane_requires = ""

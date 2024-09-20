@@ -83,7 +83,7 @@ def test_snapshot_multiprocessing_qnode():
 
 # pylint: disable=protected-access
 def test_applied_modifiers():
-    """Test that defualt qubit has the `single_tape_support` and `simulator_tracking`
+    """Test that default qubit has the `single_tape_support` and `simulator_tracking`
     modifiers applied.
     """
     dev = DefaultQubit()
@@ -1864,6 +1864,7 @@ class TestPostselection:
         if use_jit:
             import jax
 
+            pytest.xfail(reason="'shots' cannot be a static_argname for 'jit' in JAX 0.4.28")
             circ_postselect = jax.jit(circ_postselect, static_argnames=["shots"])
 
         res = circ_postselect(param, shots=shots)
@@ -1960,7 +1961,7 @@ class TestPostselection:
         dev = qml.device("default.qubit")
 
         @qml.defer_measurements
-        @qml.qnode(dev, interface=interface)
+        @qml.qnode(dev, interface=None if interface == "numpy" else interface)
         def circ():
             qml.RX(np.pi, 0)
             qml.CNOT([0, 1])
@@ -2051,6 +2052,7 @@ class TestPostselection:
         if use_jit:
             import jax
 
+            pytest.xfail(reason="'shots' cannot be a static_argname for 'jit' in JAX 0.4.28")
             circ = jax.jit(circ, static_argnames=["shots"])
 
         res = circ(shots=shots)
