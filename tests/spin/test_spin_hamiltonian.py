@@ -1453,7 +1453,7 @@ def test_kitaev_hamiltonian(n_cells, j, boundary_condition, expected_ham):
     ],
 )
 def test_spin_hamiltonian(lattice, expected_ham):
-    r"""Test that the correct Hamiltonian is generated"""
+    r"""Test that the correct Hamiltonian is generated from a given Lattice"""
     spin_ham = spin_hamiltonian(lattice=lattice)
 
     qml.assert_equal(spin_ham, expected_ham)
