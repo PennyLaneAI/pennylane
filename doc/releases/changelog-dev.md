@@ -33,8 +33,9 @@
   when possible, based on the `pauli_rep` of the relevant observables.
   [#6113](https://github.com/PennyLaneAI/pennylane/pull/6113/)
 
-* The `Hermitian` operator now has a `compute_sparse_matrix` implementation.
-  [(#6225)](https://github.com/PennyLaneAI/pennylane/pull/6225)
+* Datasets are now downloaded via Dataset API.
+  [(#6126)](https://github.com/PennyLaneAI/pennylane/pull/6126)
+
 
 <h4>Capturing and representing hybrid programs</h4>
 
@@ -80,6 +81,9 @@
 * The `to_mat` methods for `FermiWord` and `FermiSentence` now optionally return
   a sparse matrix.
   [(#6173)](https://github.com/PennyLaneAI/pennylane/pull/6173)
+
+* The `Hermitian` operator now has a `compute_sparse_matrix` implementation.
+  [(#6225)](https://github.com/PennyLaneAI/pennylane/pull/6225)
 
 <h3>Breaking changes 💔</h3>
 
@@ -199,6 +203,7 @@ Diksha Dhawan,
 Lillian M. A. Frederiksen,
 Pietropaolo Frisoni,
 Emiliano Godinez,
+Anthony Hayes,
 Christina Lee,
 William Maxwell,
 Lee J. O'Riordan,
