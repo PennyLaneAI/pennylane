@@ -345,7 +345,7 @@ def emery(
         n_cells (list[int]): Number of cells in each direction of the grid.
         hopping (float | list[float] | tensor_like(float)): Hopping strength between
             neighbouring sites. It can be a number, a list of length equal to ``neighbour_order`` or
-            a square matrix of size ``(n_sites, n_sites)``, where ``n_sites`` is the total
+            a square matrix of shape ``(n_sites, n_sites)``, where ``n_sites`` is the total
             number of sites. Default value is 1.0.
         coulomb (float | list[float]): Coulomb interaction between spins. It can be a constant or a
             list of length equal to number of spins.
