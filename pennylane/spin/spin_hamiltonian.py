@@ -323,8 +323,7 @@ def emery(
 ):
     r"""Generates the Hamiltonian for the Emery model on a lattice.
 
-    The Emery model was proposed in this `paper <https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.58.2794>`_
-    and the `Hamiltonian <https://arxiv.org/pdf/2309.11786>`_ is represented as:
+    The `Hamiltonian <https://arxiv.org/pdf/2309.11786>`_ for the `Emery model <https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.58.2794>`_ is represented as:
 
     .. math::
         \begin{align*}
