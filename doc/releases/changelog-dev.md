@@ -51,7 +51,7 @@
   unique representation of the object.
   [(#6167)](https://github.com/PennyLaneAI/pennylane/pull/6167)
 
-* Predefined lattice shapes, lieb, cubic, bcc, and fcc, can now be generated.
+* Predefined lattice shapes such as `lieb`, `cubic`, `bcc`, and `fcc` can now be generated.
   [(6237)](https://github.com/PennyLaneAI/pennylane/pull/6237)
 
 * The `to_mat` methods for `FermiWord` and `FermiSentence` now optionally return
