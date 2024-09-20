@@ -1302,6 +1302,7 @@ def test_haldane_hamiltonian_matrix(shape, n_cells, t1, t2, phi, boundary_condit
 
     qml.assert_equal(haldane_ham, expected_ham)
 
+
 def test_coupling_error_kitaev():
     r"""Test that an error is raised when the provided coupling shape is wrong for
     Kitaev Hamiltonian."""
