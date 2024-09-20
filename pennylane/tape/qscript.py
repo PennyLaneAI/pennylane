@@ -417,9 +417,9 @@ class QuantumScript:
                     f"{self.__class__}.update() got an unexpected keyword argument '{k}'"
                 )
 
-        ops = kwargs.get("operations") if "operations" in kwargs else self.operations
-        measurements = kwargs.get("measurements") if "measurements" in kwargs else self.measurements
-        shots = kwargs.get("shots") if "shots" in kwargs else self.shots
+        ops = kwargs.get("operations", self.operations)
+        measurements = kwargs.get("measurements", self.measurements)
+        shots = kwargs.get("shots", self.shots)
         trainable_params = (
             kwargs.get("trainable_params")
             if "trainable_params" in kwargs
