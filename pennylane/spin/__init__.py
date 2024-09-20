@@ -20,6 +20,6 @@ from .spin_hamiltonian import (
     fermi_hubbard,
     heisenberg,
     kitaev,
+    spin_hamiltonian,
     transverse_ising,
-    custom_hamiltonian_from_lattice,
 )
