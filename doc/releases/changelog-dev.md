@@ -97,6 +97,9 @@
 
 <h3>Documentation 📝</h3>
 
+* Update `qml.Qubitization` documentation based on new decomposition.
+  [(#6276)](https://github.com/PennyLaneAI/pennylane/pull/6276)
+
 <h3>Bug fixes 🐛</h3>
 
 * Fix a bug where zero-valued JVPs were calculated wrongly in the presence of shot vectors.
