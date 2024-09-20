@@ -695,7 +695,7 @@ def spin_hamiltonian(lattice):
     r"""Generates a spin Hamiltonian for a custom lattice.
 
     Args:
-        lattice (Lattice): custom lattice defined with custom_edges
+        lattice (Lattice): custom lattice defined with ``custom_edges`` and optional ``custom_nodes``
 
     Raises:
         ValueError: if the provided Lattice does not have ``custom_edges`` defined with operators
