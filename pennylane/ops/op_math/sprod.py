@@ -264,6 +264,10 @@ class SProd(ScalarSymbolicOp):
         return mat
 
     @property
+    def has_sparse_matrix(self):
+        return self.pauli_rep is not None or self.base.has_sparse_matrix
+
+    @property
     def has_matrix(self):
         """Bool: Whether or not the Operator returns a defined matrix."""
         return isinstance(self.base, qml.ops.Hamiltonian) or self.base.has_matrix

@@ -324,6 +324,10 @@ class Prod(CompositeOp):
         full_mat = reduce(sparse_kron, mats)
         return math.expand_matrix(full_mat, self.wires, wire_order=wire_order)
 
+    @property
+    def has_sparse_matrix(self):
+        return self.pauli_rep is not None or all(op.has_sparse_matrix for op in self)
+
     # pylint: disable=protected-access
     @property
     def _queue_category(self):

@@ -4,6 +4,10 @@
 
 <h3>New features since last release</h3>
 
+* A new `qml.vn_entanglement_entropy` measurement process has been added which measures the
+  Von Neumann entanglement entropy of a quantum state.
+  [(#5911)](https://github.com/PennyLaneAI/pennylane/pull/5911)
+
 <h3>Improvements 🛠</h3>
 
 * PennyLane is now compatible with NumPy 2.0.
