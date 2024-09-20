@@ -637,6 +637,78 @@ class TestScriptCopying:
         # to support PyTorch, which does not support deep copying of tensors
         assert copied_qs.operations[0].data[0] is qs.operations[0].data[0]
 
+    @pytest.mark.parametrize("shots", [50, (1000, 2000), None])
+    def test_copy_update_shots(self, shots):
+        """Test that copy with update dict behaves as expected for setting shots"""
+
+        ops = [qml.X("b"), qml.RX(1.2, "a")]
+        tape = QuantumScript(ops, measurements=[qml.counts()], shots=2500, trainable_params=[1])
+
+        new_tape = tape.copy(update={"shots": shots})
+        assert tape.shots == Shots(2500)
+        assert new_tape.shots == Shots(shots)
+
+        assert new_tape.operations == tape.operations == ops
+        assert new_tape.measurements == tape.measurements == [qml.counts()]
+        assert new_tape.trainable_params == tape.trainable_params == [1]
+
+    def test_copy_update_measurements(self):
+        """Test that copy with update dict behaves as expected for setting measurements"""
+
+        ops = [qml.X("b"), qml.RX(1.2, "a")]
+        tape = QuantumScript(ops, measurements=[qml.counts()], shots=2500, trainable_params=[1])
+
+        new_measurements = [qml.expval(qml.X(0)), qml.sample()]
+        new_tape = tape.copy(update={"measurements": new_measurements})
+
+        assert tape.measurements == [qml.counts()]
+        assert new_tape.measurements == new_measurements
+
+        assert new_tape.operations == tape.operations == ops
+        assert new_tape.shots == tape.shots == Shots(2500)
+        assert new_tape.trainable_params == tape.trainable_params == [1]
+
+    def test_copy_update_operations(self):
+        """Test that copy with update dict behaves as expected for setting operations"""
+
+        ops = [qml.X("b"), qml.RX(1.2, "a")]
+        tape = QuantumScript(ops, measurements=[qml.counts()], shots=2500, trainable_params=[1])
+
+        new_ops = [qml.X(0)]
+        new_tape = tape.copy(update={"operations": new_ops})
+
+        assert tape.operations == ops
+        assert new_tape.operations == new_ops
+
+        assert new_tape.measurements == tape.measurements == [qml.counts()]
+        assert new_tape.shots == tape.shots == Shots(2500)
+        assert new_tape.trainable_params == tape.trainable_params == [1]
+
+    def test_copy_update_trainable_params(self):
+        """Test that copy with update dict behaves as expected for setting trainable parameters"""
+
+        ops = [qml.RX(1.23, "b"), qml.RX(4.56, "a")]
+        tape = QuantumScript(ops, measurements=[qml.counts()], shots=2500, trainable_params=[1])
+
+        new_tape = tape.copy(update={"trainable_params": [0]})
+
+        assert tape.trainable_params == [1]
+        assert tape.get_parameters() == [4.56]
+        assert new_tape.trainable_params == [0]
+        assert new_tape.get_parameters() == [1.23]
+
+        assert new_tape.operations == tape.operations == ops
+        assert new_tape.measurements == tape.measurements == [qml.counts()]
+        assert new_tape.shots == tape.shots == Shots(2500)
+
+    def test_copy_update_bad_key(self):
+        """Test that an unrecognized key in update dict raises an error"""
+
+        tape = QuantumScript([qml.X(0)], [qml.counts()], shots=2500)
+
+        with pytest.raises(TypeError, match="got an unexpected key"):
+            _ = tape.copy(update={"bad_kwarg": 3})
+
 
 def test_adjoint():
     """Tests taking the adjoint of a quantum script."""
@@ -1414,89 +1486,3 @@ def test_jax_pytree_integration(qscript_type):
     assert data[3] == 3.4
     assert data[4] == 2.0
     assert qml.math.allclose(data[5], eye_mat)
-
-
-class TestPublicUpdate:
-    """Test the public update method"""
-
-    @pytest.mark.parametrize("shots", [50, (1000, 2000), None])
-    def test_public_update_shots(self, shots):
-        """Test the public update method behaves as expected for setting shots"""
-
-        ops = [qml.X("b"), qml.RX(1.2, "a")]
-        tape = QuantumScript(ops, measurements=[qml.counts()], shots=2500, trainable_params=[1])
-
-        new_tape = tape.update(shots=shots)
-        assert tape.shots == Shots(2500)
-        assert new_tape.shots == Shots(shots)
-
-        assert new_tape.operations == tape.operations == ops
-        assert new_tape.measurements == tape.measurements == [qml.counts()]
-        assert new_tape.trainable_params == tape.trainable_params == [1]
-
-    def test_public_update_measurements(self):
-        """Test the public update method behaves as expected for setting measurements"""
-
-        ops = [qml.X("b"), qml.RX(1.2, "a")]
-        tape = QuantumScript(ops, measurements=[qml.counts()], shots=2500, trainable_params=[1])
-
-        new_measurements = [qml.expval(qml.X(0)), qml.sample()]
-        new_tape = tape.update(measurements=new_measurements)
-
-        assert tape.measurements == [qml.counts()]
-        assert new_tape.measurements == new_measurements
-
-        assert new_tape.operations == tape.operations == ops
-        assert new_tape.shots == tape.shots == Shots(2500)
-        assert new_tape.trainable_params == tape.trainable_params == [1]
-
-    def test_public_update_operations(self):
-        """Test the public update method behaves as expected for setting operations"""
-
-        ops = [qml.X("b"), qml.RX(1.2, "a")]
-        tape = QuantumScript(ops, measurements=[qml.counts()], shots=2500, trainable_params=[1])
-
-        new_ops = [qml.X(0)]
-        new_tape = tape.update(operations=new_ops)
-
-        assert tape.operations == ops
-        assert new_tape.operations == new_ops
-
-        assert new_tape.measurements == tape.measurements == [qml.counts()]
-        assert new_tape.shots == tape.shots == Shots(2500)
-        assert new_tape.trainable_params == tape.trainable_params == [1]
-
-    def test_public_update_trainable_params(self):
-        """Test the public update method behaves as expected for setting trainable parameters"""
-
-        ops = [qml.RX(1.23, "b"), qml.RX(4.56, "a")]
-        tape = QuantumScript(ops, measurements=[qml.counts()], shots=2500, trainable_params=[1])
-
-        new_tape = tape.update(trainable_params=[0])
-
-        assert tape.trainable_params == [1]
-        assert tape.get_parameters() == [4.56]
-        assert new_tape.trainable_params == [0]
-        assert new_tape.get_parameters() == [1.23]
-
-        assert new_tape.operations == tape.operations == ops
-        assert new_tape.measurements == tape.measurements == [qml.counts()]
-        assert new_tape.shots == tape.shots == Shots(2500)
-
-    def test_public_update_bad_kwarg(self):
-        """Test that an unrecognized keyword argument raises an error"""
-
-        tape = QuantumScript([qml.X(0)], [qml.counts()], shots=2500)
-
-        with pytest.raises(TypeError, match="unexpected keyword argument"):
-            _ = tape.update(bad_kwarg=3)
-
-    # pylint: disable = unidiomatic-typecheck
-    @pytest.mark.parametrize("qscript_type", (QuantumScript, qml.tape.QuantumTape))
-    def test_public_update_preserves_class(self, qscript_type):
-        """Test that the type of the updated tape is unaltered"""
-
-        tape = qscript_type([qml.X(0)], [qml.counts()], shots=2500)
-        new_tape = tape.update(operations=[qml.Y(1)])
-
-        assert type(new_tape) == type(tape) == qscript_type

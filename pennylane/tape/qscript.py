@@ -373,61 +373,6 @@ class QuantumScript:
 
     ##### Update METHODS ###############
 
-    def update(self, **kwargs):
-        r"""update(operations, measurements, shots, trainable_params)
-
-        Update attributes on the tape.
-
-        Keyword Args:
-            operations (Iterable[Operator]): An iterable of the operations to replace on the tape.
-            measurements (Iterable[MeasurementProcess]): An iterable of all the measurements to
-                replace on the tape.
-            shots (None, int, Sequence[int], ~.Shots): Number and/or batches of shots to replace
-                on the tape.
-            trainable_params (None, Sequence[int]): the indices for which parameters are trainable.
-
-        Returns: A new tape instance, initialized with any kwargs passed to update.
-            Anything not set in update will be the same as the initial tape.
-
-        Anything not set by update will retain the values on the original tape.
-
-        **Example**
-
-        .. code-block:: python
-
-            tape = qml.tape.QuantumScript(
-                ops= [qml.X(0), qml.Y(1)],
-                measurements=[qml.expval(qml.Z(0)],
-                shots=2000)
-
-            new_tape = tape.update(measurements=[qml.expval(qml.X(1))])
-
-        >>> tape.measurements
-        [qml.expval(qml.Z(0)]
-
-        >>> new_tape.measurements
-        [qml.expval(qml.X(1))]
-
-        >>> new_tape.shots
-        2000
-        """
-        for k in kwargs:
-            if k not in ["operations", "measurements", "shots", "trainable_params"]:
-                raise TypeError(
-                    f"{self.__class__}.update() got an unexpected keyword argument '{k}'"
-                )
-
-        ops = kwargs.get("operations", self.operations)
-        measurements = kwargs.get("measurements", self.measurements)
-        shots = kwargs.get("shots", self.shots)
-        trainable_params = (
-            kwargs.get("trainable_params")
-            if "trainable_params" in kwargs
-            else self.trainable_params
-        )
-
-        return self.__class__(ops, measurements, shots, trainable_params)
-
     def _update(self):
         """Update all internal metadata regarding processed operations and observables"""
         self._graph = None
@@ -889,7 +834,9 @@ class QuantumScript:
     # Transforms: QuantumScript to QuantumScript
     # ========================================================
 
-    def copy(self, copy_operations: bool = False) -> "QuantumScript":
+    def copy(
+        self, copy_operations: bool = False, update: Optional[Union[dict, bool]] = False
+    ) -> "QuantumScript":
         """Returns a shallow copy of the quantum script.
 
         Args:
@@ -897,17 +844,50 @@ class QuantumScript:
                 Otherwise, if False, the copied operations will simply be references
                 to the original operations; changing the parameters of one script will likewise
                 change the parameters of all copies.
+            update (dict): An optional dictionary to pass new operations, measurements, shots or
+                trainable_params with. These will be modified on the copied tape.
 
         Returns:
-            QuantumScript : a shallow copy of the quantum script
+            QuantumScript : a copy of the quantum script. If `update` was passed, the updated
+                attributes are modified, otherwise all attribute match the original tape.
+                The copy is a shallow copy if `copy_operations` and `upate` are both `False`.
+
+        **Example**
+
+        .. code-block:: python
+
+            tape = qml.tape.QuantumScript(
+                ops= [qml.X(0), qml.Y(1)],
+                measurements=[qml.expval(qml.Z(0))],
+                shots=2000)
+
+            new_tape = tape.copy(update={"measurements :[qml.expval(qml.X(1))]})
+
+        >>> tape.measurements
+        [qml.expval(qml.Z(0)]
+
+        >>> new_tape.measurements
+        [qml.expval(qml.X(1))]
+
+        >>> new_tape.shots
+        Shots(total_shots=2000, shot_vector=(ShotCopies(2000 shots x 1),))
         """
 
-        if copy_operations:
+        if update:
+            for k in update:
+                if k not in ["operations", "measurements", "shots", "trainable_params"]:
+                    raise TypeError(
+                        f"{self.__class__}.copy() got an unexpected key '{k}' in update dict"
+                    )
+        else:
+            update = {}
+
+        if copy_operations or update:
             # Perform a shallow copy of all operations in the operation and measurement
             # queues. The operations will continue to share data with the original script operations
             # unless modified.
-            _ops = [copy.copy(op) for op in self.operations]
-            _measurements = [copy.copy(op) for op in self.measurements]
+            _ops = update.get("operations", [copy.copy(op) for op in self.operations])
+            _measurements = update.get("measurements", [copy.copy(op) for op in self.measurements])
         else:
             # Perform a shallow copy of the operation and measurement queues. The
             # operations within the queues will be references to the original script operations;
@@ -920,9 +900,10 @@ class QuantumScript:
         new_qscript = self.__class__(
             ops=_ops,
             measurements=_measurements,
-            shots=self.shots,
-            trainable_params=list(self.trainable_params),
+            shots=update.get("shots", self.shots),
+            trainable_params=list(update.get("trainable_params", self.trainable_params)),
         )
+
         new_qscript._graph = None if copy_operations else self._graph
         new_qscript._specs = None
         new_qscript._batch_size = self._batch_size
