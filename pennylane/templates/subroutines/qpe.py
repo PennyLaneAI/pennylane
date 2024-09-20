@@ -18,13 +18,14 @@ Contains the QuantumPhaseEstimation template.
 import copy
 
 import pennylane as qml
-from pennylane.operation import AnyWires, Operator
+from pennylane.operation import AnyWires, Operator, ResourcesOperation
 from pennylane.queuing import QueuingManager
+from pennylane.resource import Resources, resources_from_op, resources_from_sequence_ops
 from pennylane.resource.error import ErrorOperation, SpectralNormError
 from pennylane.wires import Wires
 
 
-class QuantumPhaseEstimation(ErrorOperation):
+class QuantumPhaseEstimation(ErrorOperation, ResourcesOperation):
     r"""Performs the
     `quantum phase estimation <https://en.wikipedia.org/wiki/Quantum_phase_estimation_algorithm>`__
     circuit.
@@ -257,6 +258,21 @@ class QuantumPhaseEstimation(ErrorOperation):
         context.append(self)
         return self
 
+    def resources(self, gate_set=None, **kwargs):
+        unitary = self.hyperparameters["unitary"]
+        estimation_wires = self.hyperparameters["estimation_wires"]
+
+        with qml.QueuingManager.stop_recording():
+            op_list = [qml.Hadamard(w) for w in estimation_wires]
+            op_list.append(qml.adjoint(qml.QFT(wires=estimation_wires)))
+            hadamard_transform_and_qft_resources = resources_from_sequence_ops(op_list, gate_set=gate_set)
+
+            ctrl_pow_resources = (
+                resources_from_op(qml.ctrl(unitary, estimation_wires[0]), gate_set=gate_set) * (2**len(estimation_wires) - 1)
+            )
+
+        return hadamard_transform_and_qft_resources + ctrl_pow_resources
+    
     @staticmethod
     def compute_decomposition(
         wires, unitary, target_wires, estimation_wires
