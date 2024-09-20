@@ -29,50 +29,50 @@ from pennylane import math
 class Lattice:
     r"""Constructs a Lattice object.
 
-        Args:
-           n_cells (list[int]): Number of cells in each direction of the grid.
-           vectors (list[list[float]]): Primitive vectors for the lattice.
-           positions (list[list[float]]): Initial positions of spin sites. Default value is
-               ``[[0.0]`` :math:`\times` ``number of dimensions]``.
-           boundary_condition (bool or list[bool]): Defines boundary conditions for different lattice axes,
-               default is ``False`` indicating open boundary condition.
-           neighbour_order (int): Specifies the interaction level for neighbors within the lattice.
-               Default is 1, indicating nearest neighbour. This cannot be greater than 1 if custom_edges is defined.
-           custom_edges (Optional[list(list(tuples))]): Specifies the edges to be added in the lattice.
-               Default value is ``None``, which adds the edges based on ``neighbour_order``.
-               Each element in the list is for a separate edge, and can contain 1 or 2 tuples.
-               First tuple contains the indices of the starting and ending vertices of the edge.
-               Second tuple is optional and contains the operator on that edge and coefficient
-               of that operator. Default value is the index of edge in custom_edges list.
-           custom_nodes (Optional(list(list(int, tuples)))): Specifies the on-site potentials and
-               operators for nodes in the lattice. Default value is None, which means no on-site
-               potentials. Each element in the list is for a separate node. For each element, the first
-               value is the index of the node, and the second element is a tuple which contains the
-               operator and coefficient.
-           distance_tol (float): Distance below which spatial points are considered equal for the
-               purpose of identifying nearest neighbours. Default value is 1e-5.
+    Args:
+        n_cells (list[int]): Number of cells in each direction of the grid.
+        vectors (list[list[float]]): Primitive vectors for the lattice.
+        positions (list[list[float]]): Initial positions of spin sites. Default value is
+            ``[[0.0]`` :math:`\times` ``number of dimensions]``.
+        boundary_condition (bool or list[bool]): Defines boundary conditions for different lattice axes,
+            default is ``False`` indicating open boundary condition.
+        neighbour_order (int): Specifies the interaction level for neighbors within the lattice.
+            Default is 1, indicating nearest neighbour. This cannot be greater than 1 if custom_edges is defined.
+        custom_edges (Optional[list(list(tuples))]): Specifies the edges to be added in the lattice.
+            Default value is ``None``, which adds the edges based on ``neighbour_order``.
+            Each element in the list is for a separate edge, and can contain 1 or 2 tuples.
+            First tuple contains the indices of the starting and ending vertices of the edge.
+            Second tuple is optional and contains the operator on that edge and coefficient
+            of that operator. Default value is the index of edge in custom_edges list.
+        custom_nodes (Optional(list(list(int, tuples)))): Specifies the on-site potentials and
+            operators for nodes in the lattice. Default value is None, which means no on-site
+            potentials. Each element in the list is for a separate node. For each element, the first
+            value is the index of the node, and the second element is a tuple which contains the
+            operator and coefficient.
+        distance_tol (float): Distance below which spatial points are considered equal for the
+            purpose of identifying nearest neighbours. Default value is 1e-5.
 
-        Raises:
-           TypeError:
-              if ``n_cells`` contains numbers other than positive integers.
-           ValueError:
-              if ``positions`` doesn't have a dimension of 2.
-              if ``vectors`` doesn't have a dimension of 2 or the length of vectors is not equal to the number of vectors.
-              if ``boundary_condition`` is not a bool or a list of bools with length equal to the number of vectors
-              if ``custom_nodes`` contains nodes with negative indices or indices greater than number of sites
+    Raises:
+        TypeError:
+            if ``n_cells`` contains numbers other than positive integers.
+        ValueError:
+            if ``positions`` doesn't have a dimension of 2.
+            if ``vectors`` doesn't have a dimension of 2 or the length of vectors is not equal to the number of vectors.
+            if ``boundary_condition`` is not a bool or a list of bools with length equal to the number of vectors
+            if ``custom_nodes`` contains nodes with negative indices or indices greater than number of sites
 
-        Returns:
-           Lattice object
+    Returns:
+        Lattice object
 
-        **Example**
+    **Example**
 
-        >>> n_cells = [2,2]
-        >>> vectors = [[0, 1], [1, 0]]
-        >>> boundary_condition = [True, False]
-        >>> lattice = qml.spin.Lattice(n_cells, vectors,
-        >>>           boundary_condition=boundary_condition)
-        >>> lattice.edges
-        [(2, 3, 0), (0, 2, 0), (1, 3, 0), (0, 1, 0)]
+    >>> n_cells = [2,2]
+    >>> vectors = [[0, 1], [1, 0]]
+    >>> boundary_condition = [True, False]
+    >>> lattice = qml.spin.Lattice(n_cells, vectors,
+    >>>           boundary_condition=boundary_condition)
+    >>> lattice.edges
+    [(2, 3, 0), (0, 2, 0), (1, 3, 0), (0, 1, 0)]
 
     """
 
