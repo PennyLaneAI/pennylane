@@ -1902,17 +1902,19 @@ class TestCtrl:
     def test_correct_queued_operators(self):
         """Test that args and kwargs do not add operators to the queue."""
 
+        def func(dic):
+            for gate in dic.values():
+                qml.apply(gate)
+
         dev = qml.device("default.qubit")
 
         @qml.qnode(dev)
         def circuit():
-            qml.ctrl(qml.QSVT, control=0)(qml.X(1), [qml.Z(1)])
-            qml.ctrl(qml.QSVT(qml.X(1), [qml.Z(1)]), control=0)
+            qml.ctrl(func, control=0)({1: qml.X(1), 2: qml.Z(1)})
             return qml.state()
 
         circuit()
-        for op in circuit.tape.operations:
-            assert op.name == "C(QSVT)"
+        assert len(circuit.tape.operations) == 2
 
 
 class _Rot(Operation):

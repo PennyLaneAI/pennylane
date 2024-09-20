@@ -171,6 +171,9 @@
 * Fixes a bug where a simple circuit with no parameters or only builtin/numpy arrays as parameters returns autograd tensors.
   [(#6225)](https://github.com/PennyLaneAI/pennylane/pull/6225)
 
+* Fixes a bug where `qml.ctrl` and `qml.adjoint` queued extra operators if they were defined as the arguments.
+  [(#6284)](https://github.com/PennyLaneAI/pennylane/pull/6284)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
