@@ -4,6 +4,10 @@
 
 <h3>New features since last release</h3>
 
+* Function is added for generating the spin Hamiltonian for the
+  [Kitaev](https://arxiv.org/abs/cond-mat/0506438) model on a lattice.
+  [(#6174)](https://github.com/PennyLaneAI/pennylane/pull/6174)
+
 * Functions are added for generating spin Hamiltonians for [Emery]
   (https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.58.2794) and
   [Haldane](https://journals.aps.org/prl/pdf/10.1103/PhysRevLett.61.2015) models on a lattice.

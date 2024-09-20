@@ -19,7 +19,7 @@ import pennylane as qml
 from pennylane import X, Y, Z, math
 from pennylane.fermi import FermiWord
 
-from .lattice import _generate_lattice
+from .lattice import Lattice, _generate_lattice
 
 # pylint: disable=too-many-arguments, too-many-branches
 
@@ -608,3 +608,84 @@ def haldane(
     qubit_ham = qml.qchem.qubit_observable(hamiltonian, mapping=mapping)
 
     return qubit_ham.simplify()
+
+
+def kitaev(n_cells, coupling=None, boundary_condition=False):
+    r"""Generates the Hamiltonian for the Kitaev model on the Honeycomb lattice.
+
+    The `Kitaev <https://arxiv.org/abs/cond-mat/0506438>`_ model Hamiltonian is represented as:
+
+    .. math::
+        \begin{align*}
+          \hat{H} = K_x.\sum_{\langle i,j \rangle \in X}\sigma_i^x\sigma_j^x +
+          \:\: K_y.\sum_{\langle i,j \rangle \in Y}\sigma_i^y\sigma_j^y +
+          \:\: K_z.\sum_{\langle i,j \rangle \in Z}\sigma_i^z\sigma_j^z
+        \end{align*}
+
+    where :math:`K_x`, :math:`K_y`, :math:`K_z` are the coupling constants defined for the Hamiltonian,
+    and :math:`X`, :math:`Y`, :math:`Z` represent the set of edges in the Honeycomb lattice between spins
+    :math:`i` and :math:`j` with real-space bond directions :math:`[0, 1], [\frac{\sqrt{3}}{2}, \frac{1}{2}],
+    \frac{\sqrt{3}}{2}, -\frac{1}{2}]`, respectively.
+
+    Args:
+       n_cells (list[int]): Number of cells in each direction of the grid.
+       coupling (Optional[list[float] or tensor_like(float)]): Coupling between spins, it is a list of length 3.
+                            Default value is [1.0, 1.0, 1.0].
+       boundary_condition (bool or list[bool]): Defines boundary conditions for different lattice axes.
+           The default is ``False``, indicating open boundary conditions for all.
+
+    Raises:
+       ValueError: if ``coupling`` doesn't have correct dimensions.
+
+    Returns:
+       ~ops.op_math.Sum: Hamiltonian for the Kitaev model.
+
+    **Example**
+
+    >>> n_cells = [2,2]
+    >>> k = [0.5, 0.6, 0.7]
+    >>> spin_ham = qml.spin.kitaev(n_cells, coupling=k)
+    >>> spin_ham
+    (
+      0.5 * (X(0) @ X(1))
+      + 0.5 * (X(2) @ X(3))
+      + 0.5 * (X(4) @ X(5))
+      + 0.5 * (X(6) @ X(7))
+      + 0.6 * (Y(1) @ Y(2))
+      + 0.6 * (Y(5) @ Y(6))
+      + 0.7 * (Z(1) @ Z(4))
+      + 0.7 * (Z(3) @ Z(6))
+    )
+
+    """
+
+    if coupling is None:
+        coupling = [1.0, 1.0, 1.0]
+
+    if len(coupling) != 3:
+        raise ValueError("The coupling parameter should be a list of length 3.")
+
+    vectors = [[1, 0], [0.5, 0.75**0.5]]
+    positions = [[0, 0], [0.5, 0.5 / 3**0.5]]
+    custom_edges = [
+        [(0, 1), ("XX", coupling[0])],
+        [(1, 2), ("YY", coupling[1])],
+        [(1, n_cells[1] * 2), ("ZZ", coupling[2])],
+    ]
+
+    lattice = Lattice(
+        n_cells=n_cells[0:2],
+        vectors=vectors,
+        positions=positions,
+        boundary_condition=boundary_condition,
+        custom_edges=custom_edges,
+    )
+    opmap = {"X": X, "Y": Y, "Z": Z}
+    hamiltonian = 0.0 * qml.I(0)
+    for edge in lattice.edges:
+        v1, v2 = edge[0:2]
+        op1, op2 = edge[2][0]
+        coeff = edge[2][1]
+        hamiltonian += coeff * (opmap[op1](v1) @ opmap[op2](v2))
+
+    return hamiltonian.simplify()
