@@ -21,7 +21,16 @@ import pytest
 
 import pennylane as qml
 from pennylane import I, X, Y, Z
-from pennylane.spin import emery, fermi_hubbard, haldane, heisenberg, kitaev, transverse_ising
+from pennylane.spin import (
+    Lattice,
+    emery,
+    fermi_hubbard,
+    haldane,
+    heisenberg,
+    kitaev,
+    spin_hamiltonian,
+    transverse_ising,
+)
 
 # pylint: disable=too-many-arguments
 pytestmark = pytest.mark.usefixtures("new_opmath_only")
@@ -1394,3 +1403,89 @@ def test_kitaev_hamiltonian(n_cells, j, boundary_condition, expected_ham):
     kitaev_ham = kitaev(n_cells=n_cells, coupling=j, boundary_condition=boundary_condition)
 
     qml.assert_equal(kitaev_ham, expected_ham)
+
+
+@pytest.mark.parametrize(
+    ("lattice", "expected_ham"),
+    [
+        # This is the Hamiltonian for the Kitaev model on the Honeycomb lattice
+        (
+            Lattice(
+                n_cells=[2, 2],
+                vectors=[[1, 0], [0, 1]],
+                positions=[[0, 0], [1, 5]],
+                boundary_condition=False,
+                custom_edges=[[(0, 1), ("XX", 0.5)], [(1, 2), ("YY", 0.6)], [(1, 4), ("ZZ", 0.7)]],
+            ),
+            (
+                0.5 * (X(0) @ X(1))
+                + 0.5 * (X(2) @ X(3))
+                + 0.5 * (X(4) @ X(5))
+                + 0.5 * (X(6) @ X(7))
+                + 0.6 * (Y(1) @ Y(2))
+                + 0.6 * (Y(5) @ Y(6))
+                + 0.7 * (Z(1) @ Z(4))
+                + 0.7 * (Z(3) @ Z(6))
+            ),
+        ),
+        (
+            Lattice(
+                n_cells=[2, 2],
+                vectors=[[1, 0], [0, 1]],
+                positions=[[0, 0], [1, 5]],
+                boundary_condition=False,
+                custom_edges=[[(0, 1), ("XX", 0.5)], [(1, 2), ("YY", 0.6)], [(1, 4), ("ZZ", 0.7)]],
+                custom_nodes=[[0, ("X", 0.3)], [7, ("Y", 0.9)]],
+            ),
+            (
+                0.5 * (X(0) @ X(1))
+                + 0.5 * (X(2) @ X(3))
+                + 0.5 * (X(4) @ X(5))
+                + 0.5 * (X(6) @ X(7))
+                + 0.6 * (Y(1) @ Y(2))
+                + 0.6 * (Y(5) @ Y(6))
+                + 0.7 * (Z(1) @ Z(4))
+                + 0.7 * (Z(3) @ Z(6))
+                + 0.3 * X(0)
+                + 0.9 * Y(7)
+            ),
+        ),
+        (
+            Lattice(
+                n_cells=[2, 2],
+                vectors=[[1, 0], [0, 1]],
+                positions=[[0, 0], [1, 5]],
+                boundary_condition=False,
+                custom_edges=[[(0, 1), ("XX", 0.5)], [(1, 2), ("YY", 0.6)], [(1, 4), ("ZZ", 0.7)]],
+                custom_nodes=[[0, ("X", 0.3)], [7, ("Y", 0.9)], [0, ("X", 0.5)]],
+            ),
+            (
+                0.5 * (X(0) @ X(1))
+                + 0.5 * (X(2) @ X(3))
+                + 0.5 * (X(4) @ X(5))
+                + 0.5 * (X(6) @ X(7))
+                + 0.6 * (Y(1) @ Y(2))
+                + 0.6 * (Y(5) @ Y(6))
+                + 0.7 * (Z(1) @ Z(4))
+                + 0.7 * (Z(3) @ Z(6))
+                + 0.8 * X(0)
+                + 0.9 * Y(7)
+            ),
+        ),
+    ],
+)
+def test_spin_hamiltonian(lattice, expected_ham):
+    r"""Test that the correct Hamiltonian is generated from a given Lattice"""
+    spin_ham = spin_hamiltonian(lattice=lattice)
+
+    qml.assert_equal(spin_ham, expected_ham)
+
+
+def test_spin_hamiltonian_error():
+    r"""Test that the correct error is raised Hamiltonian with incompatible Lattice"""
+    lattice = Lattice(n_cells=[2, 2], vectors=[[1, 0], [0, 1]], positions=[[0, 0], [1, 1]])
+    with pytest.raises(
+        ValueError,
+        match="Custom edges need to be defined and should have an operator defined as a `str`",
+    ):
+        spin_hamiltonian(lattice=lattice)
