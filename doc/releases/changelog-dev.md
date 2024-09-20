@@ -66,6 +66,10 @@
   unique representation of the object.
   [(#6167)](https://github.com/PennyLaneAI/pennylane/pull/6167)
 
+* Predefined lattice shapes such as `lieb`, `cubic`, `bcc`, `fcc`, and `diamond`
+  can now be generated.
+  [(6237)](https://github.com/PennyLaneAI/pennylane/pull/6237)
+
 * A `ReferenceQubit` is introduced for testing purposes and as a reference for future plugin development.
   [(#6181)](https://github.com/PennyLaneAI/pennylane/pull/6181)
 
@@ -187,7 +191,7 @@ Guillermo Alonso,
 Utkarsh Azad,
 Astral Cai,
 Isaac De Vlugt,
-Diksha Dhawan
+Diksha Dhawan,
 Lillian M. A. Frederiksen,
 Pietropaolo Frisoni,
 Emiliano Godinez,
