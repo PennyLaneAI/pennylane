@@ -413,7 +413,7 @@ def spin_hamiltonian(lattice):
             custom_edges=[[(0, 1), ("XX", 0.5)], [(1, 2), ("YY", 0.6)], [(1, 4), ("ZZ", 0.7)]],
         )
 
-        >>> custom_hamiltonian_from_lattice(lattice=lattice)
+        >>> spin_hamiltonian(lattice=lattice)
         >>> (
                 0.5 * (X(0) @ X(1))
                 + 0.5 * (X(2) @ X(3))
