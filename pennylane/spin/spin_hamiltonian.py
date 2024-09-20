@@ -486,8 +486,7 @@ def haldane(
 ):
     r"""Generates the Hamiltonian for the Haldane model on a lattice.
 
-    The Haldane model was proposed in this `paper <https://journals.aps.org/prl/pdf/10.1103/PhysRevLett.61.2015>`_
-    and the `Hamiltonian <https://arxiv.org/pdf/2211.13615>`_ is represented as:
+    The `Hamiltonian <https://arxiv.org/pdf/2211.13615>`_ for the  `Haldane model <https://journals.aps.org/prl/pdf/10.1103/PhysRevLett.61.2015>`_  is represented as:
 
     .. math::
 
