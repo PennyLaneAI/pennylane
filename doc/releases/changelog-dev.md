@@ -163,6 +163,10 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fix float-to-complex casting in various places across PennyLane.
+ [(#6260)](https://github.com/PennyLaneAI/pennylane/pull/6260)
+ [(#6268)](https://github.com/PennyLaneAI/pennylane/pull/6268)
+
 * Fix a bug where zero-valued JVPs were calculated wrongly in the presence of shot vectors.
   [(#6219)](https://github.com/PennyLaneAI/pennylane/pull/6219)
 
