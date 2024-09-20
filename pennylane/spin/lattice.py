@@ -148,7 +148,7 @@ class Lattice:
                         "Provided a custom node with index larger than number of sites."
                     )
                 if node[0] < 0:
-                    raise ValueError("Provided a custom node with index less than 0")
+                    raise ValueError("Provided a custom node with index smaller than 0")
 
         self.nodes = custom_nodes
 
