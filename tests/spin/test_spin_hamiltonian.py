@@ -1460,7 +1460,7 @@ def test_spin_hamiltonian(lattice, expected_ham):
 
 
 def test_spin_hamiltonian_error():
-    r"""Test that the correct Hamiltonian is generated"""
+    r"""Test that the correct error is raised Hamiltonian with incompatible Lattice"""
     lattice = Lattice(n_cells=[2, 2], vectors=[[1, 0], [0, 1]], positions=[[0, 0], [1, 1]])
     with pytest.raises(
         ValueError,
