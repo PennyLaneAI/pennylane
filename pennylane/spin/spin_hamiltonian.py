@@ -389,8 +389,8 @@ def kitaev(n_cells, coupling=None, boundary_condition=False):
     return hamiltonian.simplify()
 
 
-def custom_hamiltonian_from_lattice(lattice):
-    r"""Generates the Hamiltonian for a custom lattice.
+def spin_hamiltonian(lattice):
+    r"""Generates a spin Hamiltonian for a custom lattice.
 
     Args:
         lattice (Lattice): custom lattice defined with custom_edges
@@ -432,7 +432,7 @@ def custom_hamiltonian_from_lattice(lattice):
         )
 
     opmap = {"X": X, "Y": Y, "Z": Z}
-    hamiltonian = 0
+    hamiltonian = 0.0 * qml.I(0)
     for edge in lattice.edges:
         v1, v2 = edge[0:2]
         op1, op2 = edge[2][0]
