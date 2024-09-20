@@ -21,7 +21,16 @@ import pytest
 
 import pennylane as qml
 from pennylane import I, X, Y, Z
-from pennylane.spin import emery, fermi_hubbard, haldane, heisenberg, kitaev, transverse_ising, spin_hamiltonian
+from pennylane.spin import (
+    Lattice,
+    emery,
+    fermi_hubbard,
+    haldane,
+    heisenberg,
+    kitaev,
+    transverse_ising,
+    spin_hamiltonian,
+)
 
 # pylint: disable=too-many-arguments
 pytestmark = pytest.mark.usefixtures("new_opmath_only")
@@ -1302,6 +1311,7 @@ def test_haldane_hamiltonian_matrix(shape, n_cells, t1, t2, phi, boundary_condit
 
     qml.assert_equal(haldane_ham, expected_ham)
 
+
 def test_coupling_error_kitaev():
     r"""Test that an error is raised when the provided coupling shape is wrong for
     Kitaev Hamiltonian."""
@@ -1453,6 +1463,7 @@ def test_spin_hamiltonian_error():
     r"""Test that the correct Hamiltonian is generated"""
     lattice = Lattice(n_cells=[2, 2], vectors=[[1, 0], [0, 1]], positions=[[0, 0], [1, 1]])
     with pytest.raises(
-        ValueError, match="Custom edges need to be defined and each edge should have an operator assigned to it."
+        ValueError,
+        match="Custom edges need to be defined and should have an operator defined as a `str`",
     ):
         spin_hamiltonian(lattice=lattice)

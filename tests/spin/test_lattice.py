@@ -792,6 +792,7 @@ def test_shape_error():
     with pytest.raises(ValueError, match="Lattice shape, 'Octagon' is not supported."):
         _generate_lattice(lattice=lattice, n_cells=n_cells)
 
+
 def test_neighbour_order_error():
     r"""Test that an error is raised if neighbour order is greater than 1 when custom_edges are provided."""
 
@@ -863,6 +864,7 @@ def test_custom_edges(vectors, positions, n_cells, custom_edges, expected_edges)
     )
     assert np.all(np.isin(expected_edges, lattice.edges))
 
+
 @pytest.mark.parametrize(
     # expected_nodes here were obtained manually
     ("vectors", "positions", "n_cells", "custom_nodes", "expected_nodes"),
@@ -914,6 +916,7 @@ def test_custom_nodes_error(vectors, positions, n_cells, custom_nodes):
 
     with pytest.raises(ValueError, match="Provided a custom"):
         Lattice(n_cells=n_cells, vectors=vectors, positions=positions, custom_nodes=custom_nodes)
+
 
 def test_dimension_error():
     r"""Test that an error is raised if wrong dimension is provided for a given lattice shape."""
