@@ -16,7 +16,7 @@ This file contains functions to create spin Hamiltonians.
 """
 
 import pennylane as qml
-from pennylane import X, Y, Z, math
+from pennylane import I, X, Y, Z, math
 from pennylane.fermi import FermiWord
 
 from .lattice import Lattice, _generate_lattice
@@ -736,7 +736,7 @@ def spin_hamiltonian(lattice):
             "Custom edges need to be defined and should have an operator defined as a `str`"
         )
 
-    opmap = {"X": X, "Y": Y, "Z": Z}
+    opmap = {"I": I, "X": X, "Y": Y, "Z": Z}
     hamiltonian = 0.0 * qml.I(0)
     for edge in lattice.edges:
         v1, v2 = edge[0:2]
