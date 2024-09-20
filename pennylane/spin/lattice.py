@@ -130,6 +130,7 @@ class Lattice:
                 raise ValueError(
                     "custom_edges cannot be specified if neighbour_order argument is set to greater than 1."
                 )
+            lattice_map = dict(zip(lattice_map, self.lattice_points))
             self.edges = self._get_custom_edges(custom_edges, lattice_map)
 
         self.edges_indices = [(v1, v2) for (v1, v2, color) in self.edges]
@@ -284,9 +285,9 @@ class Lattice:
 
             # Finds the coordinates of starting and ending vertices of the edge
             # and the vector distance between the coordinates
-            map_edge1 = lattice_map.index(edge[0])
-            map_edge2 = lattice_map.index(edge[1])
-            edge_distance = self.lattice_points[map_edge2] - self.lattice_points[map_edge1]
+            vertex1 = lattice_map[edge[0]]
+            vertex2 = lattice_map[edge[1]]
+            edge_distance = vertex2 - vertex1
 
             # Calculates the number of unit cells that a given edge spans in each direction
             v1, v2 = math.mod(edge, n_sl)
