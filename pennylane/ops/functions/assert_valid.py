@@ -316,12 +316,20 @@ def _check_differentiation(op):
         circuit, device=qml.device("reference.qubit"), diff_method="parameter-shift"
     )
 
-    ps = qml.jacobian(qnode_ps)(*(qml.numpy.array(x) for x in data))
-    expected_ps = qml.jacobian(qnode_ref)(*(qml.numpy.array(x) for x in data))
+    params = [x if isinstance(x, int) else qml.numpy.array(x) for x in data]
 
-    assert qml.math.allclose(
-        ps, expected_ps
-    ), "Parameter shift does not produce the expected Jacobian with this operator."
+    ps = qml.jacobian(qnode_ps)(*params)
+    expected_ps = qml.jacobian(qnode_ref)(*params)
+
+    if isinstance(ps, tuple):
+        for actual, expected in zip(ps, expected_ps):
+            assert qml.math.allclose(
+                actual, expected
+            ), "Backpropagation does not produce the expected Jacobian with this operator."
+    else:
+        assert qml.math.allclose(
+            ps, expected_ps
+        ), "Parameter shift does not produce the expected Jacobian with this operator."
 
 
 def _check_wires(op, skip_wire_mapping):
