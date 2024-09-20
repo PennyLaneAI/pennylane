@@ -257,17 +257,23 @@ class Lattice:
 
         """
 
-        if not all([len(edge) in (1, 2) for edge in custom_edges]):
-            raise TypeError(
-                """
-                The elements of custom_edges should be lists of length 1 or 2.
-                Inside said lists should be a tuple that contains two lattice
-                indices to represent the edge and, optionally, a tuple that represents
-                the operation and coefficient for that edge.
-                Every tuple must contain two lattice indices to represent the edge
-                and can optionally include a list to represent the operation and coefficient for that edge.
-                """
-            )
+        for edge in custom_edges:
+            if len(edge) not in (1, 2):
+                raise TypeError(
+                    """
+                    The elements of custom_edges should be lists of length 1 or 2.
+                    Inside said lists should be a tuple that contains two lattice
+                    indices to represent the edge and, optionally, a tuple that represents
+                    the operation and coefficient for that edge.
+                    Every tuple must contain two lattice indices to represent the edge
+                    and can optionally include a list to represent the operation and coefficient for that edge.
+                    """
+                )
+
+            if edge[0][0] >= self.n_sites or edge[0][1] >= self.n_sites:
+                raise ValueError(
+                    f"The edge {edge[0]} has vertices greater than n_sites, {self.n_sites}"
+                )
 
         edges = []
         n_sl = len(self.positions)
@@ -275,11 +281,6 @@ class Lattice:
 
         for i, custom_edge in enumerate(custom_edges):
             edge = custom_edge[0]
-
-            if edge[0] >= self.n_sites or edge[1] >= self.n_sites:
-                raise ValueError(
-                    f"The edge {edge} has vertices greater than n_sites, {self.n_sites}"
-                )
 
             edge_operation = custom_edge[1] if len(custom_edge) == 2 else i
 

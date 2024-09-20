@@ -8,6 +8,11 @@
   [Kitaev](https://arxiv.org/abs/cond-mat/0506438) model on a lattice.
   [(#6174)](https://github.com/PennyLaneAI/pennylane/pull/6174)
 
+* Functions are added for generating spin Hamiltonians for [Emery]
+  (https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.58.2794) and
+  [Haldane](https://journals.aps.org/prl/pdf/10.1103/PhysRevLett.61.2015) models on a lattice.
+  [(#6201)](https://github.com/PennyLaneAI/pennylane/pull/6201/)
+
 * A new `qml.vn_entanglement_entropy` measurement process has been added which measures the
   Von Neumann entanglement entropy of a quantum state.
   [(#5911)](https://github.com/PennyLaneAI/pennylane/pull/5911)
@@ -184,9 +189,9 @@ This release contains contributions from (in alphabetical order):
 
 Guillermo Alonso,
 Utkarsh Azad,
-Diksha Dhawan,
 Astral Cai,
 Isaac De Vlugt,
+Diksha Dhawan,
 Lillian M. A. Frederiksen,
 Pietropaolo Frisoni,
 Emiliano Godinez,
