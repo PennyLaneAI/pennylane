@@ -100,3 +100,23 @@ class TestQFT:
             [0.5 + 0.0j, -0.5 + 0.0j, -0.0 - 0.5j, 0.0 + 0.5j],
         ]
         assert np.allclose(res_reordered, expected_permuted, atol=tol, rtol=0)
+
+class TestInterfaces:
+
+    @pytest.mark.jax
+    def test_jit(self):
+        import jax
+        import jax.numpy as jnp
+
+        wires = 3
+
+        dev = qml.device('default.qubit', wires=wires)
+
+        @jax.jit
+        @qml.qnode(dev)
+        def circuit_qft(basis_state):
+            qml.BasisState(basis_state, wires=range(wires))
+            qml.QFT(wires=range(wires))
+            return qml.state()
+
+        circuit_qft(jnp.array([1.0, 0.0, 0.0]))

@@ -134,3 +134,23 @@ class TestFlipSign:
         """Assert error raised when given empty wires"""
         with pytest.raises(ValueError, match="expected at least one wire representing the qubit "):
             qml.FlipSign(n_status, wires=n_wires)
+
+class TestInterfaces:
+
+    @pytest.mark.jax
+    def test_jax_jit(self):
+        import jax
+
+        basis_state = [1, 0]
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @jax.jit
+        @qml.qnode(dev)
+        def circuit():
+            for wire in list(range(2)):
+                qml.Hadamard(wires=wire)
+            qml.FlipSign(basis_state, wires=list(range(2)))
+            return qml.state()
+
+        circuit()

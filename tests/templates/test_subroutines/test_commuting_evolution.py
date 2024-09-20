@@ -126,6 +126,26 @@ def test_forward_execution():
     expected = -np.cos(4)
     assert np.allclose(res, expected)
 
+@pytest.mark.jax
+def test_jax_jit():
+    import jax
+
+    n_wires = 2
+    dev = qml.device('default.qubit', wires=n_wires)
+
+    coeffs = [1, -1]
+    obs = [qml.X(0) @ qml.Y(1), qml.Y(0) @ qml.X(1)]
+    hamiltonian = qml.Hamiltonian(coeffs, obs)
+    frequencies = (2, 4)
+
+    @jax.jit
+    @qml.qnode(dev)
+    def circuit(time):
+        qml.X(0)
+        qml.CommutingEvolution(hamiltonian, time, frequencies)
+        return qml.expval(qml.Z(0))
+
+    circuit(1)
 
 class TestInputs:
     """Tests for input validation of `CommutingEvolution`."""
