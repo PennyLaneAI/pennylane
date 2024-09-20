@@ -932,9 +932,9 @@ def test_kitaev_hamiltonian(n_cells, j, boundary_condition, expected_ham):
 )
 def test_custom_hamiltonian(lattice, expected_ham):
     r"""Test that the correct Hamiltonian is generated"""
-    custom_ham = spin_hamiltonian(lattice=lattice)
+    spin_ham = spin_hamiltonian(lattice=lattice)
 
-    qml.assert_equal(custom_ham, expected_ham)
+    qml.assert_equal(spin_ham, expected_ham)
 
 
 def test_custom_hamiltonian_error():
@@ -943,4 +943,4 @@ def test_custom_hamiltonian_error():
     with pytest.raises(
         ValueError, match="Custom edges need to be defined and should have an operator"
     ):
-        custom_hamiltonian_from_lattice(lattice=lattice)
+        spin_hamiltonian(lattice=lattice)
