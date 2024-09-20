@@ -117,7 +117,7 @@
 * The ``qml.FABLE`` template now returns the correct value when JIT is enabled.
   [(#6263)](https://github.com/PennyLaneAI/pennylane/pull/6263)
 
-* ``qml.pauli.PauliVSpace`` now uses a more stable SVD based linear independence check to avoid running into `LinAlgError: Singular matrix`. This stabilizes the usage of ``qml.lie_closure``. Also introduces normalization of the internal representation ``_M`` of the basis vectors to avoid exploding coefficients.
+* ``qml.pauli.PauliVSpace`` now uses a more stable SVD-based linear independence check to avoid running into `LinAlgError: Singular matrix`. This stabilizes the usage of ``qml.lie_closure``. It also introduces normalization of the basis vector's internal representation ``_M``to avoid exploding coefficients.
   [(#6232)](https://github.com/PennyLaneAI/pennylane/pull/6232)
 
 * <h3>Contributors ✍️</h3>
