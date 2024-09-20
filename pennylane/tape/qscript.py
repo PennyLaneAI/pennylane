@@ -861,7 +861,7 @@ class QuantumScript:
                 measurements=[qml.expval(qml.Z(0))],
                 shots=2000)
 
-            new_tape = tape.copy(update={"measurements :[qml.expval(qml.X(1))]})
+            new_tape = tape.copy(update={"measurements" :[qml.expval(qml.X(1))]})
 
         >>> tape.measurements
         [qml.expval(qml.Z(0)]
