@@ -137,3 +137,25 @@ class TestStateVector:
         expected_10 = qml.CosineWindow([0, 1]).state_vector(wire_order=[1, 0])
         expected = np.stack([expected_10, np.zeros_like(expected_10)])
         assert np.allclose(res, expected)
+
+class TestInterfaces:
+    """Test that the template works with different interfaces""" 
+
+    @pytest.mark.jax
+    def test_jax_jit(self):
+        """Test that the template can be correctly used with the JAX-JIT interface."""
+        import jax
+        from jax import numpy as jnp
+
+        expected = [1.87469973e-33, 2.50000000e-01, 5.00000000e-01, 2.50000000e-01]
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @jax.jit
+        @qml.qnode(dev)
+        def circuit():
+            qml.CosineWindow(wires=[0, 1])
+            return qml.probs(wires=[0, 1])
+
+        res = circuit()
+        assert np.allclose(res, expected, atol=1e-6, rtol=0)
