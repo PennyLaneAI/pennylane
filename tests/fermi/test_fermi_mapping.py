@@ -349,7 +349,7 @@ FERMI_WORDS_AND_OPS_EXTENDED = [
 ]
 
 
-with qml.operation.disable_new_opmath_cm():
+with qml.operation.disable_new_opmath_cm(warn=False):
     FERMI_WORDS_AND_OPS_LEGACY = [
         (
             FermiWord({(0, 0): "+"}),
