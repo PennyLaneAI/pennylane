@@ -46,7 +46,7 @@ class Lattice:
            Second tuple is optional and contains the operator on that edge and coefficient
            of that operator. Default value is the index of edge in custom_edges list.
        custom_nodes (Optional(list(list(int, tuples)))): Specifies the on-site potentials and
-           operators for nodes in the lattice. Default value is None, which means no on-site
+           operators for nodes in the lattice. The default value is `None`, which means no on-site
            potentials. Each element in the list is for a separate node. For each element, the first
            value is the index of the node, and the second element is a tuple which contains the
            operator and coefficient.
