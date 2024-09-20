@@ -34,11 +34,16 @@ class Lattice:
        vectors (list[list[float]]): Primitive vectors for the lattice.
        positions (list[list[float]]): Initial positions of spin cites. Default value is
            ``[[0.0]`` :math:`\times` ``number of dimensions]``.
-
-       boundary_condition (bool or list[bool]): Defines boundary conditions in different lattice axes.
-           Default is ``False`` indicating open boundary condition.
+       boundary_condition (bool or list[bool]): Defines boundary conditions for different lattice axes,
+           default is ``False`` indicating open boundary condition.
        neighbour_order (int): Specifies the interaction level for neighbors within the lattice.
-           Default is 1, indicating nearest neighbour.
+           Default is 1, indicating nearest neighbour. This cannot be greater than 1 if custom_edges is defined.
+       custom_edges (Optional[list(list(tuples))]): Specifies the edges to be added in the lattice.
+           Default value is ``None``, which adds the edges based on ``neighbour_order``.
+           Each element in the list is for a separate edge, and can contain 1 or 2 tuples.
+           First tuple contains the indices of the starting and ending vertices of the edge.
+           Second tuple is optional and contains the operator on that edge and coefficient
+           of that operator. Default value is the index of edge in custom_edges list.
        distance_tol (float): Distance below which spatial points are considered equal for the
            purpose of identifying nearest neighbours. Default value is 1e-5.
 
@@ -72,6 +77,7 @@ class Lattice:
         positions=None,
         boundary_condition=False,
         neighbour_order=1,
+        custom_edges=None,
         distance_tol=1e-5,
     ):
 
@@ -112,10 +118,20 @@ class Lattice:
         n_sl = len(self.positions)
         self.n_sites = math.prod(n_cells) * n_sl
         self.lattice_points, lattice_map = self._generate_grid(neighbour_order)
+        if custom_edges is None:
+            cutoff = (
+                neighbour_order * math.max(math.linalg.norm(self.vectors, axis=1)) + distance_tol
+            )
+            edges = self._identify_neighbours(cutoff)
+            self.edges = Lattice._generate_true_edges(edges, lattice_map, neighbour_order)
+        else:
+            if neighbour_order > 1:
+                raise ValueError(
+                    "custom_edges cannot be specified if neighbour_order argument is set to greater than 1."
+                )
+            lattice_map = dict(zip(lattice_map, self.lattice_points))
+            self.edges = self._get_custom_edges(custom_edges, lattice_map)
 
-        cutoff = neighbour_order * math.max(math.linalg.norm(self.vectors, axis=1)) + distance_tol
-        edges = self._identify_neighbours(cutoff)
-        self.edges = Lattice._generate_true_edges(edges, lattice_map, neighbour_order)
         self.edges_indices = [(v1, v2) for (v1, v2, color) in self.edges]
 
     def _identify_neighbours(self, cutoff):
@@ -187,7 +203,113 @@ class Lattice:
             lattice_points.append(point)
             lattice_map.append(node_index)
 
-        return math.array(lattice_points), math.array(lattice_map)
+        return math.array(lattice_points), lattice_map
+
+    def _get_custom_edges(self, custom_edges, lattice_map):
+        """Generates the edges described in `custom_edges` for all unit cells.
+
+        Args:
+          custom_edges (Optional[list(list(tuples))]): Specifies the edges to be added in the lattice.
+              Default value is None, which adds the edges based on neighbour_order.
+              Each element in the list is for a separate edge, and can contain 1 or 2 tuples.
+              First tuple contains the index of the starting and ending vertex of the edge.
+              Second tuple is optional and contains the operator on that edge and coefficient
+              of that operator.
+          lattice_map (list[int]): A list to represent the node number for each lattice_point.
+
+        Returns:
+          List of edges.
+
+        **Example**
+
+        Generates a square lattice with a single diagonal and assigns a different operation
+        to horizontal, vertical, and diagonal edges.
+        >>> n_cells = [3,3]
+        >>> vectors = [[1, 0], [0,1]]
+        >>> custom_edges = [
+                [(0, 1), ("XX", 0.1)],
+                [(0, 3), ("YY", 0.2)],
+                [(0, 4), ("XY", 0.3)],
+            ]
+        >>> lattice = qml.spin.Lattice(n_cells=n_cells, vectors=vectors, custom_edges=custom_edges)
+        >>> lattice.edges
+        [(0, 1, ('XX', 0.1)),
+         (1, 2, ('XX', 0.1)),
+         (3, 4, ('XX', 0.1)),
+         (4, 5, ('XX', 0.1)),
+         (6, 7, ('XX', 0.1)),
+         (7, 8, ('XX', 0.1)),
+         (0, 3, ('YY', 0.2)),
+         (1, 4, ('YY', 0.2)),
+         (2, 5, ('YY', 0.2)),
+         (3, 6, ('YY', 0.2)),
+         (4, 7, ('YY', 0.2)),
+         (5, 8, ('YY', 0.2)),
+         (0, 4, ('XY', 0.3)),
+         (1, 5, ('XY', 0.3)),
+         (3, 7, ('XY', 0.3)),
+         (4, 8, ('XY', 0.3))
+        ]
+
+        """
+
+        for edge in custom_edges:
+            if len(edge) not in (1, 2):
+                raise TypeError(
+                    """
+                    The elements of custom_edges should be lists of length 1 or 2.
+                    Inside said lists should be a tuple that contains two lattice
+                    indices to represent the edge and, optionally, a tuple that represents
+                    the operation and coefficient for that edge.
+                    Every tuple must contain two lattice indices to represent the edge
+                    and can optionally include a list to represent the operation and coefficient for that edge.
+                    """
+                )
+
+            if edge[0][0] >= self.n_sites or edge[0][1] >= self.n_sites:
+                raise ValueError(
+                    f"The edge {edge[0]} has vertices greater than n_sites, {self.n_sites}"
+                )
+
+        edges = []
+        n_sl = len(self.positions)
+        nsites_axis = math.cumprod([n_sl, *self.n_cells[:0:-1]])[::-1]
+
+        for i, custom_edge in enumerate(custom_edges):
+            edge = custom_edge[0]
+
+            edge_operation = custom_edge[1] if len(custom_edge) == 2 else i
+
+            # Finds the coordinates of starting and ending vertices of the edge
+            # and the vector distance between the coordinates
+            vertex1 = lattice_map[edge[0]]
+            vertex2 = lattice_map[edge[1]]
+            edge_distance = vertex2 - vertex1
+
+            # Calculates the number of unit cells that a given edge spans in each direction
+            v1, v2 = math.mod(edge, n_sl)
+            translation_vector = (
+                edge_distance + self.positions[v1] - self.positions[v2]
+            ) @ math.linalg.inv(self.vectors)
+            translation_vector = math.asarray(math.rint(translation_vector), dtype=int)
+
+            # Finds the minimum and maximum range for a given edge based on boundary_conditions
+            edge_ranges = []
+            for idx, cell in enumerate(self.n_cells):
+                t_point = 0 if self.boundary_condition[idx] else translation_vector[idx]
+                edge_ranges.append(
+                    range(math.maximum(0, -t_point), cell - math.maximum(0, t_point))
+                )
+
+            # Finds the indices for starting and ending vertices of the edge
+            for cell in itertools.product(*edge_ranges):
+                node1_idx = math.dot(math.mod(cell, self.n_cells), nsites_axis) + v1
+                node2_idx = (
+                    math.dot(math.mod(cell + translation_vector, self.n_cells), nsites_axis) + v2
+                )
+                edges.append((node1_idx, node2_idx, edge_operation))
+
+        return edges
 
     def add_edge(self, edge_indices):
         r"""Adds a specific edge based on the site index without translating it.
