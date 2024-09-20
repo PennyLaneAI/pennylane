@@ -47,21 +47,21 @@ def test_coupling_error():
     [
         (
             "chain",
-            [4, 0, 0],
+            [4],
             1.0,
             0,
             -1.0 * (Z(0) @ Z(1)) + -1.0 * (Z(1) @ Z(2)) + -1.0 * (Z(2) @ Z(3)),
         ),
         (
             "chain",
-            [4, 0, 0],
+            [4],
             1.0,
             0,
             -1.0 * (Z(0) @ Z(1)) + -1.0 * (Z(1) @ Z(2)) + -1.0 * (Z(2) @ Z(3)),
         ),
         (
             "chain",
-            [8, 0, 0],
+            [8],
             [1.0],
             -0.17676768,
             -1.0 * (Z(0) @ Z(1))
@@ -82,7 +82,7 @@ def test_coupling_error():
         ),
         (
             "rectangle",
-            [4, 2, 0],
+            [4, 2],
             [1.0],
             -0.25252525,
             -1.0 * (Z(0) @ Z(1))
@@ -106,7 +106,7 @@ def test_coupling_error():
         ),
         (
             "rectangle",
-            [8, 2, 0],
+            [8, 2],
             [1.0],
             -0.44444444,
             -1.0 * (Z(0) @ Z(1))
@@ -164,14 +164,14 @@ def test_ising_hamiltonian(shape, n_cells, j, h, expected_ham):
     [
         (
             "chain",
-            [4, 0, 0],
+            [4],
             [[0, 1, 0, 0], [1, 0, 1, 0], [0, 1, 0, 1], [0, 0, 1, 0]],
             0,
             -1.0 * (Z(0) @ Z(1)) + -1.0 * (Z(1) @ Z(2)) + -1.0 * (Z(2) @ Z(3)),
         ),
         (
             "square",
-            [2, 2, 0],
+            [2, 2],
             [[0, 0.5, 0.5, 0], [0.5, 0, 0, 0.5], [0.5, 0, 0, 0.5], [0, 0.5, 0.5, 0]],
             -1.0,
             -0.5 * (Z(0) @ Z(1))
@@ -211,7 +211,7 @@ def test_coupling_error_heisenberg():
     [
         (
             "chain",
-            [4, 1, 1],
+            [4],
             None,
             1.0 * (Z(0) @ Z(1))
             + 1.0 * (Z(1) @ Z(2))
@@ -225,7 +225,7 @@ def test_coupling_error_heisenberg():
         ),
         (
             "chain",
-            [4, 1, 1],
+            [4],
             [[-1.0, -1.0, -0.16161616]],
             -0.16161616161616163 * (Z(0) @ Z(1))
             + -0.16161616161616163 * (Z(1) @ Z(2))
@@ -265,7 +265,7 @@ def test_coupling_error_heisenberg():
         ),
         (
             "rectangle",
-            [4, 2, 1],
+            [4, 2],
             [[-1.0, -1.0, -0.08080808]],
             -0.08080808080808081 * (Z(0) @ Z(1))
             + -0.08080808080808081 * (Z(0) @ Z(2))
@@ -300,7 +300,7 @@ def test_coupling_error_heisenberg():
         ),
         (
             "rectangle",
-            [8, 2, 1],
+            [8, 2],
             [[-1.0, -1.0, -0.12121212]],
             -0.12121212121212122 * (Z(0) @ Z(1))
             + -0.12121212121212122 * (Z(0) @ Z(2))
@@ -402,7 +402,7 @@ def test_heisenberg_hamiltonian(shape, n_cells, j, expected_ham):
         ),
         (
             "square",
-            [2, 2, 1],
+            [2, 2],
             [
                 [[0, 0.5, 0.5, 0], [0.5, 0, 0, 0.5], [0.5, 0, 0, 0.5], [0, 0.5, 0.5, 0]],
                 [[0, 1.0, 1.0, 0], [1.0, 0, 0, 1.0], [1.0, 0, 0, 1.0], [0, 1.0, 1.0, 0]],
@@ -494,7 +494,7 @@ def test_mapping_error_fermi_hubbard():
         ),
         (
             "chain",
-            [8, 0, 0],
+            [8],
             [-1.0],
             0.0,
             0.5 * (Y(0) @ Z(1) @ Y(2))
@@ -718,7 +718,7 @@ def test_fermi_hubbard_mapping(shape, n_cells, hopping, mapping, expected_ham):
     [
         (
             "chain",
-            [4, 0, 0],
+            [4],
             [[0, 1, 0, 0], [1, 0, 1, 0], [0, 1, 0, 1], [0, 0, 1, 0]],
             0.1,
             -0.5 * (Y(0) @ Z(1) @ Y(2))
@@ -749,7 +749,7 @@ def test_fermi_hubbard_mapping(shape, n_cells, hopping, mapping, expected_ham):
         ),
         (
             "square",
-            [2, 2, 0],
+            [2, 2],
             [[0, 0.5, 0.5, 0], [0.5, 0, 0, 0.5], [0.5, 0, 0, 0.5], [0, 0.5, 0.5, 0]],
             [-1.0, 0.0, 1.0, 0],
             -0.25 * (Y(0) @ Z(1) @ Y(2))
@@ -1301,7 +1301,6 @@ def test_haldane_hamiltonian_matrix(shape, n_cells, t1, t2, phi, boundary_condit
     )
 
     qml.assert_equal(haldane_ham, expected_ham)
-
 
 def test_coupling_error_kitaev():
     r"""Test that an error is raised when the provided coupling shape is wrong for
