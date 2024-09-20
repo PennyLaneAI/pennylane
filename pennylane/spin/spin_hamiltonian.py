@@ -483,7 +483,7 @@ def haldane(
     boundary_condition=False,
     mapping="jordan_wigner",
 ):
-    r"""Generates the Hamiltonian for the the Haldane model on a lattice.
+    r"""Generates the Hamiltonian for the Haldane model on a lattice.
 
     The `Haldane <https://journals.aps.org/prl/pdf/10.1103/PhysRevLett.61.2015>`_ model Hamiltonian is represented as:
 
