@@ -716,7 +716,7 @@ def spin_hamiltonian(lattice):
             custom_nodes=[[0, ("X", 0.5)], [1, ("Y", 0.3)]],
         )
 
-        >>> spin_hamiltonian(lattice=lattice)
+        >>> qml.spin.spin_hamiltonian(lattice=lattice)
         >>> (
                 0.5 * (X(0) @ X(1))
                 + 0.5 * (X(2) @ X(3))
