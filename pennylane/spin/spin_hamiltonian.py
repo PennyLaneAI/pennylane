@@ -707,7 +707,7 @@ def spin_hamiltonian(lattice):
 
     .. code-block:: python
 
-        lattice = Lattice(
+        lattice = qml.spin.Lattice(
             n_cells=[2, 2],
             vectors=[[1, 0], [0, 1]],
             positions=[[0, 0], [1, 5]],
