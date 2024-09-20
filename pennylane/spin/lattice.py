@@ -26,6 +26,7 @@ from pennylane import math
 # pylint: disable=use-a-generator, too-few-public-methods
 # pylint: disable=too-many-branches
 
+
 class Lattice:
     r"""Constructs a Lattice object.
 
@@ -140,7 +141,6 @@ class Lattice:
             self.edges = self._get_custom_edges(custom_edges, lattice_map)
 
         self.edges_indices = [(v1, v2) for (v1, v2, color) in self.edges]
-
 
         if custom_nodes is not None:
             for node in custom_nodes:
