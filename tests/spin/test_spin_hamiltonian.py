@@ -1080,9 +1080,7 @@ def test_hopping_error_haldane():
     lattice = "Square"
     with pytest.raises(
         ValueError,
-        match=re.escape(
-            "The hopping parameter should be a constant or an array of shape (16,16)"
-        ),
+        match=re.escape("The hopping parameter should be a constant or an array of shape (16,16)"),
     ):
         haldane(lattice=lattice, n_cells=n_cells, hopping=[1.0, 2.0])
 
@@ -1098,9 +1096,7 @@ def test_hopping_error_haldane():
         ValueError,
         match=re.escape("The phi parameter should be a constant or an array of shape (16,16)"),
     ):
-        haldane(
-            lattice=lattice, n_cells=n_cells, hopping=1.0, hopping_next=0.1, phi=[0.5, 0.6]
-        )
+        haldane(lattice=lattice, n_cells=n_cells, hopping=1.0, hopping_next=0.1, phi=[0.5, 0.6])
 
 
 def test_mapping_error_haldane():
