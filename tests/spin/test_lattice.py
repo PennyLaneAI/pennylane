@@ -886,7 +886,7 @@ def test_custom_edges(vectors, positions, n_cells, custom_edges, expected_edges)
     ],
 )
 def test_custom_nodes(vectors, positions, n_cells, custom_nodes, expected_nodes):
-    r"""Test that the edges are added as per custom_edges provided"""
+    r"""Test that the nodes are added as per custom_nodes provided"""
     lattice = Lattice(
         n_cells=n_cells, vectors=vectors, positions=positions, custom_nodes=custom_nodes
     )

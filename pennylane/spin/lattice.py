@@ -44,11 +44,11 @@ class Lattice:
            First tuple contains the indices of the starting and ending vertices of the edge.
            Second tuple is optional and contains the operator on that edge and coefficient
            of that operator. Default value is the index of edge in custom_edges list.
-       custom_nodes (Optional(list(list(int, tuples)))): Specifies the on-site potentials for nodes in
-           the lattice. Default value is None, which means no on-site potentials. Each element in
-           the list is for a separate node. For each element, the first value is
-           the index of the node, and the second element is a tuple which contains the operator and
-           coefficient.
+       custom_nodes (Optional(list(list(int, tuples)))): Specifies the on-site potentials and
+           operators for nodes in the lattice. Default value is None, which means no on-site
+           potentials. Each element in the list is for a separate node. For each element, the first
+           value is the index of the node, and the second element is a tuple which contains the
+           operator and coefficient.
        distance_tol (float): Distance below which spatial points are considered equal for the
            purpose of identifying nearest neighbours. Default value is 1e-5.
 
@@ -145,10 +145,10 @@ class Lattice:
             for node in custom_nodes:
                 if node[0] > self.n_sites:
                     raise ValueError(
-                        "Provided a custom node with index larger than number of sites."
+                        "The custom node has an index larger than the number of sites."
                     )
                 if node[0] < 0:
-                    raise ValueError("Provided a custom node with index smaller than 0")
+                    raise ValueError("The custom node has an index smaller than 0.")
 
         self.nodes = custom_nodes
 

@@ -1408,7 +1408,7 @@ def test_kitaev_hamiltonian(n_cells, j, boundary_condition, expected_ham):
 @pytest.mark.parametrize(
     ("lattice", "expected_ham"),
     [
-        # This is the kitaev model
+        # This is the Hamiltonian for the Kitaev model on the Honeycomb lattice
         (
             Lattice(
                 n_cells=[2, 2],
