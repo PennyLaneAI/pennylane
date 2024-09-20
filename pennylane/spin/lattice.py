@@ -49,7 +49,7 @@ class Lattice:
            operators for nodes in the lattice. Default value is None, which means no on-site
            potentials. Each element in the list is for a separate node. For each element, the first
            value is the index of the node, and the second element is a tuple which contains the
-        operator and coefficient.
+           operator and coefficient.
        distance_tol (float): Distance below which spatial points are considered equal for the
            purpose of identifying nearest neighbours. Default value is 1e-5.
 
