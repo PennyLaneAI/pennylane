@@ -53,9 +53,9 @@ class Lattice:
            purpose of identifying nearest neighbours. Default value is 1e-5.
 
     Raises:
-        TypeError:
+       TypeError:
            if ``n_cells`` contains numbers other than positive integers.
-        ValueError:
+       ValueError:
            if ``positions`` doesn't have a dimension of 2.
            if ``vectors`` doesn't have a dimension of 2 or the length of vectors is not equal to the number of vectors.
            if ``boundary_condition`` is not a bool or a list of bools with length equal to the number of vectors
