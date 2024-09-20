@@ -849,8 +849,8 @@ class QuantumScript:
 
         Returns:
             QuantumScript : a copy of the quantum script. If `update` was passed, the updated
-                attributes are modified, otherwise all attribute match the original tape.
-                The copy is a shallow copy if `copy_operations` and `upate` are both `False`.
+                attributes are modified, otherwise, all attributes match the original tape.
+                The copy is a shallow copy if `copy_operations` and `update` are both `False`.
 
         **Example**
 
