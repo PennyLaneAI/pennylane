@@ -196,7 +196,7 @@ class TestDrawableLayers:
         m1 = qml.measurements.MeasurementValue([mp1], lambda v: v)
 
         def teleport(state):
-            qml.QubitStateVector(state, wires=["A"])
+            qml.StatePrep(state, wires=["A"])
             qml.Hadamard(wires="a")
             qml.CNOT(wires=["a", "B"])
             qml.CNOT(wires=["A", "a"])

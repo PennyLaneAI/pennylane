@@ -53,6 +53,62 @@ fw6_dag = FermiWord({(0, 400): "+", (1, 0): "+", (2, 30): "-", (3, 10): "-"})
 fw7 = FermiWord({(0, 10): "-", (1, 30): "+", (2, 0): "-", (3, 400): "+"})
 fw7_dag = FermiWord({(0, 400): "-", (1, 0): "+", (2, 30): "-", (3, 10): "+"})
 
+fw8 = FermiWord({(0, 0): "-", (1, 1): "+"})
+fw8c = FermiWord({(0, 1): "+", (1, 0): "-"})
+fw8cs = FermiSentence({fw8c: -1})
+
+fw9 = FermiWord({(0, 0): "-", (1, 1): "-"})
+fw9c = FermiWord({(0, 1): "-", (1, 0): "-"})
+fw9cs = FermiSentence({fw9c: -1})
+
+fw10 = FermiWord({(0, 0): "+", (1, 1): "+"})
+fw10c = FermiWord({(0, 1): "+", (1, 0): "+"})
+fw10cs = FermiSentence({fw10c: -1})
+
+fw11 = FermiWord({(0, 0): "-", (1, 0): "+"})
+fw11c = FermiWord({(0, 0): "+", (1, 0): "-"})
+fw11cs = 1 + FermiSentence({fw11c: -1})
+
+fw12 = FermiWord({(0, 0): "+", (1, 0): "+"})
+fw12c = FermiWord({(0, 0): "+", (1, 0): "+"})
+fw12cs = FermiSentence({fw12c: 1})
+
+fw13 = FermiWord({(0, 0): "-", (1, 0): "-"})
+fw13c = FermiWord({(0, 0): "-", (1, 0): "-"})
+fw13cs = FermiSentence({fw13c: 1})
+
+fw14 = FermiWord({(0, 0): "+", (1, 0): "-"})
+fw14c = FermiWord({(0, 0): "-", (1, 0): "+"})
+fw14cs = 1 + FermiSentence({fw14c: -1})
+
+fw15 = FermiWord({(0, 0): "-", (1, 1): "+", (2, 2): "+"})
+fw15c = FermiWord({(0, 1): "+", (1, 0): "-", (2, 2): "+"})
+fw15cs = FermiSentence({fw15c: -1})
+
+fw16 = FermiWord({(0, 0): "-", (1, 1): "+", (2, 2): "-"})
+fw16c = FermiWord({(0, 0): "-", (1, 2): "-", (2, 1): "+"})
+fw16cs = FermiSentence({fw16c: -1})
+
+fw17 = FermiWord({(0, 0): "-", (1, 0): "+", (2, 2): "-"})
+fw17c1 = FermiWord({(0, 2): "-"})
+fw17c2 = FermiWord({(0, 0): "+", (1, 0): "-", (2, 2): "-"})
+fw17cs = fw17c1 - fw17c2
+
+fw18 = FermiWord({(0, 0): "+", (1, 1): "+", (2, 2): "-", (3, 3): "-"})
+fw18c = FermiWord({(0, 0): "+", (1, 3): "-", (2, 1): "+", (3, 2): "-"})
+fw18cs = FermiSentence({fw18c: 1})
+
+fw19 = FermiWord({(0, 0): "+", (1, 1): "+", (2, 2): "-", (3, 2): "+"})
+fw19c1 = FermiWord({(0, 0): "+", (1, 1): "+"})
+fw19c2 = FermiWord({(0, 2): "+", (1, 0): "+", (2, 1): "+", (3, 2): "-"})
+fw19cs = FermiSentence({fw19c1: 1, fw19c2: -1})
+
+fw20 = FermiWord({(0, 0): "-", (1, 0): "+", (2, 1): "-", (3, 0): "-", (4, 0): "+"})
+fw20c1 = FermiWord({(0, 0): "-", (1, 0): "+", (2, 1): "-"})
+fw20c2 = FermiWord({(0, 0): "+", (1, 1): "-", (2, 0): "-"})
+fw20c3 = FermiWord({(0, 0): "+", (1, 0): "-", (2, 0): "+", (3, 1): "-", (4, 0): "-"})
+fw20cs = fw20c1 + fw20c2 - fw20c3
+
 
 class TestFermiWord:
     def test_missing(self):
@@ -166,6 +222,41 @@ class TestFermiWord:
         """
         with pytest.raises(ValueError, match="n_orbitals cannot be smaller than 2"):
             fw1.to_mat(n_orbitals=1)
+
+    tup_fw_shift = (
+        (fw8, 0, 1, fw8cs),
+        (fw9, 0, 1, fw9cs),
+        (fw10, 0, 1, fw10cs),
+        (fw11, 0, 1, fw11cs),
+        (fw12, 0, 1, fw12cs),
+        (fw13, 0, 1, fw13cs),
+        (fw14, 0, 1, fw14cs),
+        (fw15, 0, 1, fw15cs),
+        (fw16, 1, 2, fw16cs),
+        (fw17, 0, 1, fw17cs),
+        (fw8, 0, 0, FermiSentence({fw8: 1})),
+        (fw8, 1, 0, fw8cs),
+        (fw11, 1, 0, fw11cs),
+        (fw18, 3, 1, fw18cs),
+        (fw19, 3, 0, fw19cs),
+        (fw20, 4, 0, fw20cs),
+    )
+
+    @pytest.mark.parametrize("fw, i, j, fs", tup_fw_shift)
+    def test_shift_operator(self, fw, i, j, fs):
+        """Test that the shift_operator method correctly applies the anti-commutator relations."""
+        assert fw.shift_operator(i, j) == fs
+
+    def test_shift_operator_errors(self):
+        """Test that the shift_operator method correctly raises exceptions."""
+        with pytest.raises(TypeError, match="Positions must be integers."):
+            fw8.shift_operator(0.5, 1)
+
+        with pytest.raises(ValueError, match="Positions must be positive integers."):
+            fw8.shift_operator(-1, 0)
+
+        with pytest.raises(ValueError, match="Positions are out of range."):
+            fw8.shift_operator(1, 2)
 
     tup_fw_dag = (
         (fw1, fw1_dag),
@@ -587,6 +678,15 @@ fs1_x_fs2 = FermiSentence(  # fs1 * fs1, computed by hand
         ): 0.25,
     }
 )
+
+fs8 = fw8 + fw9
+fs8c = fw8 + fw9cs
+
+fs9 = 1.3 * fw8 + (1.4 + 3.8j) * fw9
+fs9c = 1.3 * fw8 + (1.4 + 3.8j) * fw9cs
+
+fs10 = -1.3 * fw11 + 2.3 * fw9
+fs10c = -1.3 * fw11cs + 2.3 * fw9
 
 
 class TestFermiSentence:
