@@ -689,7 +689,8 @@ def prepend_state_prep(circuit, state, interface, wires):
         else state
     )
     return qml.tape.QuantumScript(
-        [qml.StatePrep(state.ravel(), wires=wires, validate_norm=False)] + circuit.operations,
+        [qml.StatePrep(qml.math.ravel(state), wires=wires, validate_norm=False)]
+        + circuit.operations,
         circuit.measurements,
         shots=circuit.shots,
     )
@@ -942,7 +943,7 @@ def _(original_measurement: ProbabilityMP, measures):  # pylint: disable=unused-
 
 @combine_measurements_core.register
 def _(original_measurement: SampleMP, measures):  # pylint: disable=unused-argument
-    """The combined samples of two branches is obtained by concatenating the sample if each branch.."""
+    """The combined samples of two branches is obtained by concatenating the sample of each branch."""
     new_sample = tuple(
         qml.math.atleast_1d(m[1]) for m in measures.values() if m[0] and not m[1] is tuple()
     )

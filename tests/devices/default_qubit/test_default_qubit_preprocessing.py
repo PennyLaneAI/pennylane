@@ -983,7 +983,7 @@ class TestAdjointDiffTapeValidation:
         assert qs.shots == qs_valid.shots
 
     def test_untrainable_operations(self):
-        """Tests that a parameterized QubitUnitary that is not trainable is not expanded"""
+        """Tests that a parametrized QubitUnitary that is not trainable is not expanded"""
 
         @qml.qnode(qml.device("default.qubit", wires=3), diff_method="adjoint")
         def circuit(x):

@@ -285,7 +285,7 @@ class TestCliffordCompile:
 
     @pytest.mark.parametrize("op", [qml.U1(1.0, wires=["b"])])
     def test_raise_with_rot_decomposition(self, op):
-        """Test that exception is correctly raise when decomposing parameterized gates for which we already don't have a recipe"""
+        """Test that exception is correctly raise when decomposing parametrized gates for which we already don't have a recipe"""
 
         with pytest.raises(
             ValueError,
@@ -314,7 +314,7 @@ class TestCliffordCompile:
 
         with pytest.raises(
             NotImplementedError,
-            match=r"Currently we only support Solovay-Kitaev \('sk'\) decompostion",
+            match=r"Currently we only support Solovay-Kitaev \('sk'\) decomposition",
         ):
             decomposed_qfunc()
 

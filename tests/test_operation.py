@@ -2956,7 +2956,7 @@ def test_legacy_opmath_only_fixture():
     assert not qml.operation.active_new_opmath()
 
 
-CONVERT_HAMILTONAIN = [
+CONVERT_HAMILTONIAN = [
     (
         [1.5, 0.5, 1, 1],
         [
@@ -2994,7 +2994,7 @@ CONVERT_HAMILTONAIN = [
 
 
 @pytest.mark.usefixtures("use_new_opmath")
-@pytest.mark.parametrize("coeffs, obs", CONVERT_HAMILTONAIN)
+@pytest.mark.parametrize("coeffs, obs", CONVERT_HAMILTONIAN)
 def test_convert_to_hamiltonian(coeffs, obs):
     """Test that arithmetic operators can be converted to Hamiltonian instances"""
 
