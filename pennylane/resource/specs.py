@@ -194,7 +194,13 @@ def specs(
         batch, _ = qml.workflow.construct_batch(qnode, level=level)(*args, **kwargs)
 
         for tape in batch:
+
+            program = qml.workflow.get_transform_program(qnode, level=level)
+            (diag_tape,), _ = program((qml.tape.QuantumTape(tape.diagonalizing_gates, [])))
+
             info = tape.specs.copy()
+
+            info["num_diagonalizing_gates"] = len(diag_tape.operations)
 
             info["num_device_wires"] = len(qnode.device.wires or tape.wires)
             info["num_tape_wires"] = tape.num_wires
