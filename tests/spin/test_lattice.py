@@ -862,7 +862,6 @@ def test_custom_edges(vectors, positions, n_cells, custom_edges, expected_edges)
         n_cells=n_cells, vectors=vectors, positions=positions, custom_edges=custom_edges
     )
     assert np.all(np.isin(expected_edges, lattice.edges))
-=======
 def test_dimension_error():
     r"""Test that an error is raised if wrong dimension is provided for a given lattice shape."""
     n_cells = [5, 5, 5]
