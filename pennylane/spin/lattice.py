@@ -54,15 +54,15 @@ class Lattice:
 
     Raises:
         TypeError:
-            if ``n_cells`` contains numbers other than positive integers.
+           if ``n_cells`` contains numbers other than positive integers.
         ValueError:
-            if ``positions`` doesn't have a dimension of 2.
-            if ``vectors`` doesn't have a dimension of 2 or the length of vectors is not equal to the number of vectors.
-            if ``boundary_condition`` is not a bool or a list of bools with length equal to the number of vectors
-            if ``custom_nodes`` contains nodes with negative indices or indices greater than number of sites
+           if ``positions`` doesn't have a dimension of 2.
+           if ``vectors`` doesn't have a dimension of 2 or the length of vectors is not equal to the number of vectors.
+           if ``boundary_condition`` is not a bool or a list of bools with length equal to the number of vectors
+           if ``custom_nodes`` contains nodes with negative indices or indices greater than number of sites
 
     Returns:
-        Lattice object
+       Lattice object
 
     **Example**
 
