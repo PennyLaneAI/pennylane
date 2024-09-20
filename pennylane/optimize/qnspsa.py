@@ -61,7 +61,7 @@ class QNSPSAOptimizer:
 
     where :math:`F(\mathbf{x}', \mathbf{x}) = \bigr\rvert\langle \phi(\mathbf{x}') | \phi(\mathbf{x}) \rangle \bigr\rvert ^ 2`
     measures the state overlap between :math:`\phi(\mathbf{x}')` and :math:`\phi(\mathbf{x})`,
-    where :math:`\phi` is the parameterized ansatz. The finite difference :math:`\delta F` is
+    where :math:`\phi` is the parametrized ansatz. The finite difference :math:`\delta F` is
     computed from the two perturbations:
 
     .. math::
@@ -110,7 +110,7 @@ class QNSPSAOptimizer:
 
     Keyword Args:
         stepsize (float): the user-defined hyperparameter :math:`\eta` for learning rate (default: 1e-3)
-        regularization (float): regularitzation term :math:`\beta` to the Fubini-Study metric tensor
+        regularization (float): regularization term :math:`\beta` to the Fubini-Study metric tensor
             for numerical stability (default: 1e-3)
         finite_diff_step (float): step size :math:`\epsilon` to compute the finite difference
             gradient and the Fubini-Study metric tensor (default: 1e-2)

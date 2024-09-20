@@ -57,7 +57,7 @@ def purity(wires) -> "PurityMP":
     >>> circuit_purity(0.1)
     array(0.7048)
 
-    .. seealso:: :func:`pennylane.qinfo.transforms.purity` and :func:`pennylane.math.purity`
+    .. seealso:: :func:`pennylane.math.purity`
     """
     wires = Wires(wires)
     return PurityMP(wires=wires)

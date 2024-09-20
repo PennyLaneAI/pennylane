@@ -719,12 +719,12 @@ class TestExpvalBackward:
         assert qml.math.allclose(actual, qml.math.stack(expected), atol=1e-1)
 
 
-def get_basis_circuit(wires, shots, basis, interface="autograd", device="default.qubit.legacy"):
+def get_basis_circuit(wires, shots, basis, interface="autograd", device="default.mixed"):
     """
     Return a QNode that prepares a state in a given computational basis
     and performs a classical shadow measurement
     """
-    dev = qml.device(device or "default.qubit.legacy", wires=wires, shots=shots)
+    dev = qml.device(device or "default.mixed", wires=wires, shots=shots)
 
     @qml.qnode(dev, interface=interface)
     def circuit():

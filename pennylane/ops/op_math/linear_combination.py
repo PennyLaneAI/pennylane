@@ -37,9 +37,6 @@ class LinearCombination(Sum):
     Args:
         coeffs (tensor_like): coefficients of the ``LinearCombination`` expression
         observables (Iterable[Observable]): observables in the ``LinearCombination`` expression, of same length as ``coeffs``
-        simplify (bool): Specifies whether the ``LinearCombination`` is simplified upon initialization
-            (like-terms are combined). The default value is `False`. Note that ``coeffs`` cannot
-            be differentiated when using the ``'torch'`` interface and ``simplify=True``. Use of this argument is deprecated.
         grouping_type (str): If not ``None``, compute and store information on how to group commuting
             observables upon initialization. This information may be accessed when a :class:`~.QNode` containing this
             ``LinearCombination`` is executed on devices. The string refers to the type of binary relation between Pauli words.
@@ -51,10 +48,6 @@ class LinearCombination(Sum):
 
     .. seealso:: `rustworkx.ColoringStrategy <https://www.rustworkx.org/apiref/rustworkx.ColoringStrategy.html#coloringstrategy>`_
         for more information on the ``('lf', 'dsatur', 'gis')`` strategies.
-
-    .. warning::
-        The ``simplify`` argument is deprecated and will be removed in a future release.
-        Instead, you can call ``qml.simplify`` on the constructed operator.
 
     **Example:**
 
@@ -124,7 +117,6 @@ class LinearCombination(Sum):
         self,
         coeffs,
         observables: list[Operator],
-        simplify=False,
         grouping_type=None,
         method="lf",
         _grouping_indices=None,
@@ -142,23 +134,6 @@ class LinearCombination(Sum):
             )
         if _pauli_rep is None:
             _pauli_rep = self._build_pauli_rep_static(coeffs, observables)
-
-        if simplify:
-
-            warnings.warn(
-                "The simplify argument in qml.Hamiltonian and qml.ops.LinearCombination is deprecated. "
-                "Instead, you can call qml.simplify on the constructed operator.",
-                qml.PennyLaneDeprecationWarning,
-            )
-
-            # simplify upon initialization changes ops such that they wouldnt be removed in self.queue() anymore
-            if qml.QueuingManager.recording():
-                for o in observables:
-                    qml.QueuingManager.remove(o)
-
-            coeffs, observables, _pauli_rep = self._simplify_coeffs_ops(
-                coeffs, observables, _pauli_rep
-            )
 
         self._coeffs = coeffs
 
