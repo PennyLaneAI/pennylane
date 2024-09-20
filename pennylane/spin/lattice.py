@@ -32,7 +32,7 @@ class Lattice:
     Args:
        n_cells (list[int]): Number of cells in each direction of the grid.
        vectors (list[list[float]]): Primitive vectors for the lattice.
-       positions (list[list[float]]): Initial positions of spin cites. Default value is
+       positions (list[list[float]]): Initial positions of spin sites. Default value is
            ``[[0.0]`` :math:`\times` ``number of dimensions]``.
 
        boundary_condition (bool or list[bool]): Defines boundary conditions for different lattice axes,
@@ -45,6 +45,11 @@ class Lattice:
            First tuple contains the index of the starting and ending vertex of the edge.
            Second tuple is optional and contains the operator on that edge and coefficient
            of that operator.
+       custom_nodes (Optional(list(list(int, tuples)))): Specifies the on-site potentials for nodes in
+           the lattice. Default value is None, which means no on-site potentials. Each element in
+           the list is for a separate node. For each element, the first value is
+           the index of the node, and the second element is a tuple which contains the operator and
+           coefficient.
        distance_tol (float): Distance below which spatial points are considered equal for the
            purpose of identifying nearest neighbours. Default value is 1e-5.
 
@@ -55,6 +60,7 @@ class Lattice:
           if ``positions`` doesn't have a dimension of 2.
           if ``vectors`` doesn't have a dimension of 2 or the length of vectors is not equal to the number of vectors.
           if ``boundary_condition`` is not a bool or a list of bools with length equal to the number of vectors
+          if ``custom_nodes`` contains nodes with negative indices or indices greater than number of sites
 
     Returns:
        Lattice object
@@ -79,6 +85,7 @@ class Lattice:
         boundary_condition=False,
         neighbour_order=1,
         custom_edges=None,
+        custom_nodes=None,
         distance_tol=1e-5,
     ):
 
@@ -133,6 +140,17 @@ class Lattice:
             self.edges = self.get_custom_edges(custom_edges, lattice_map)
 
         self.edges_indices = [(v1, v2) for (v1, v2, color) in self.edges]
+
+        if custom_nodes is not None:
+            for node in custom_nodes:
+                if node[0] > self.n_sites:
+                    raise ValueError(
+                        "Provided a custom node with index larger than number of sites."
+                    )
+                if node[0] < 0:
+                    raise ValueError("Provided a custom node with index less than 0")
+
+        self.nodes = custom_nodes
 
     def _identify_neighbours(self, cutoff):
         r"""Identifies the connections between lattice points and returns the unique connections

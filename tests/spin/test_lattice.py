@@ -610,3 +610,56 @@ def test_custom_edges(vectors, positions, n_cells, custom_edges, expected_edges)
         n_cells=n_cells, vectors=vectors, positions=positions, custom_edges=custom_edges
     )
     assert np.all(np.isin(expected_edges, lattice.edges))
+
+
+@pytest.mark.parametrize(
+    # expected_nodes here were obtained manually
+    ("vectors", "positions", "n_cells", "custom_nodes", "expected_nodes"),
+    [
+        (
+            [[0, 1], [1, 0]],
+            [[0, 0]],
+            [3, 3],
+            [[0, ("X", 0.3)], [2, ("Y", 0.3)]],
+            [[0, ("X", 0.3)], [2, ("Y", 0.3)]],
+        ),
+        (
+            [[1, 0], [0.5, np.sqrt(3) / 2]],
+            [[0.5, 0.5 / 3**0.5], [1, 1 / 3**0.5]],
+            [2, 2],
+            [[0, ("X", 0.3)], [2, ("Y", 0.3)], [1, ("Z", 0.9)]],
+            [[0, ("X", 0.3)], [2, ("Y", 0.3)], [1, ("Z", 0.9)]],
+        ),
+    ],
+)
+def test_custom_nodes(vectors, positions, n_cells, custom_nodes, expected_nodes):
+    r"""Test that the edges are added as per custom_edges provided"""
+    lattice = Lattice(
+        n_cells=n_cells, vectors=vectors, positions=positions, custom_nodes=custom_nodes
+    )
+
+    assert lattice.nodes == expected_nodes
+
+
+@pytest.mark.parametrize(
+    ("vectors", "positions", "n_cells", "custom_nodes"),
+    [
+        (
+            [[0, 1], [1, 0]],
+            [[0, 0]],
+            [3, 3],
+            [[0, ("X", 0.3)], [-202, ("Y", 0.3)]],
+        ),
+        (
+            [[1, 0], [0.5, np.sqrt(3) / 2]],
+            [[0.5, 0.5 / 3**0.5], [1, 1 / 3**0.5]],
+            [2, 2],
+            [[0, ("X", 0.3)], [204, ("Y", 0.3)], [1, ("Z", 0.9)]],
+        ),
+    ],
+)
+def test_custom_nodes_error(vectors, positions, n_cells, custom_nodes):
+    r"""Test that the edges are added as per custom_edges provided"""
+
+    with pytest.raises(ValueError, match="Provided a custom"):
+        Lattice(n_cells=n_cells, vectors=vectors, positions=positions, custom_nodes=custom_nodes)

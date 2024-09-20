@@ -389,7 +389,7 @@ def kitaev(n_cells, coupling=None, boundary_condition=False):
     return hamiltonian.simplify()
 
 
-def spin_hamiltonian(lattice, custom_nodes=None):
+def spin_hamiltonian(lattice):
     r"""Generates a spin Hamiltonian for a custom lattice.
 
     Args:
@@ -411,6 +411,7 @@ def spin_hamiltonian(lattice, custom_nodes=None):
             positions=[[0, 0], [1, 5]],
             boundary_condition=False,
             custom_edges=[[(0, 1), ("XX", 0.5)], [(1, 2), ("YY", 0.6)], [(1, 4), ("ZZ", 0.7)]],
+            custom_nodes=[[0, ("X", 0.5)], [1, ("Y", 0.3)]],
         )
 
         >>> spin_hamiltonian(lattice=lattice)
@@ -440,10 +441,11 @@ def spin_hamiltonian(lattice, custom_nodes=None):
 
         hamiltonian += coeff * (opmap[op1](v1) @ opmap[op2](v2))
 
-    for node in custom_nodes:
-        n = node[0]
-        op = node[1]
-        coeff = node[2]
-        hamiltonian += coeff * opmap[op](n)
+    if lattice.nodes is not None:
+        for node in lattice.nodes:
+            n = node[0]
+            op = node[1][0]
+            coeff = node[1][1]
+            hamiltonian += coeff * (opmap[op](n))
 
     return hamiltonian.simplify()
