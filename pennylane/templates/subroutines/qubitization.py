@@ -150,7 +150,12 @@ class Qubitization(Operation):
 
         decomp_ops = []
 
-        decomp_ops.append(qml.Reflection(qml.Identity(control)))
+
+        # QJIT is not compatible with qml.Identity(control), so we build the
+        # identity as a tensor product instead
+        identity = qml.prod(*[qml.Identity(wire) for wire in control])
+
+        decomp_ops.append(qml.Reflection(identity))
         decomp_ops.append(qml.PrepSelPrep(hamiltonian, control=control))
 
         return decomp_ops
