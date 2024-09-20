@@ -698,7 +698,7 @@ def spin_hamiltonian(lattice):
         lattice (Lattice): custom lattice defined with custom_edges
 
     Raises:
-        ValueError: if the input lattice does not have ``custom_edges`` defined with operators
+        ValueError: if the provided Lattice does not have ``custom_edges`` defined with operators
 
     Returns:
         ~ops.op_math.Sum: Hamiltonian for the lattice
