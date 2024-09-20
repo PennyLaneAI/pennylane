@@ -21,7 +21,7 @@ from pennylane.fermi import FermiWord
 
 from .lattice import _generate_lattice
 
-# pylint: disable=too-many-arguments
+# pylint: disable=too-many-arguments, too-many-branches
 
 
 def transverse_ising(
@@ -305,6 +305,305 @@ def fermi_hubbard(
         raise ValueError(
             f"The '{mapping}' transformation is not available."
             f"Please set mapping to 'jordan_wigner', 'parity', or 'bravyi_kitaev'"
+        )
+    qubit_ham = qml.qchem.qubit_observable(hamiltonian, mapping=mapping)
+
+    return qubit_ham.simplify()
+
+
+def emery(
+    lattice,
+    n_cells,
+    hopping=1.0,
+    coulomb=1.0,
+    intersite_coupling=1.0,
+    boundary_condition=False,
+    neighbour_order=1,
+    mapping="jordan_wigner",
+):
+    r"""Generates the Hamiltonian for the Emery model on a lattice.
+
+    The `Hamiltonian <https://arxiv.org/pdf/2309.11786>`_ for the `Emery model <https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.58.2794>`_ is represented as:
+
+    .. math::
+        \begin{align*}
+          \hat{H} & = -\sum_{\langle i,j \rangle, \sigma} t_{ij}(c_{i\sigma}^{\dagger}c_{j\sigma})
+          + \sum_{i}U_{i}n_{i \uparrow} n_{i\downarrow} + \sum_{<i,j>}V_{ij}(n_{i \uparrow} +
+          n_{i \downarrow})(n_{j \uparrow} + n_{j \downarrow})\ ,
+        \end{align*}
+
+    where :math:`t_{ij}` is the hopping term representing the kinetic energy of electrons,
+    :math:`U_{i}` is the on-site Coulomb interaction, representing the repulsion between electrons,
+    :math:`V_{ij}` is the intersite coupling, :math:`i, j` are the indices for neighbouring spins,
+    :math:`\sigma` is the spin degree of freedom, and :math:`n_{k \uparrow}`, :math:`n_{k \downarrow}`
+    are number operators for spin-up and spin-down fermions at site :math:`k`.
+    This function assumes there are two fermions with opposite spins on each lattice site.
+
+    Args:
+        lattice (str): Shape of the lattice. Input values can be ``'chain'``, ``'square'``,
+            ``'rectangle'``, ``'honeycomb'``, ``'triangle'``, or ``'kagome'``.
+        n_cells (list[int]): Number of cells in each direction of the grid.
+        hopping (float or list[float] or tensor_like[float]): Hopping strength between
+            neighbouring sites. It can be a number, a list of length equal to ``neighbour_order`` or
+            a square matrix of shape ``(n_sites, n_sites)``, where ``n_sites`` is the total
+            number of sites. Default value is 1.0.
+        coulomb (float or list[float]): Coulomb interaction between spins. It can be a constant or a
+            list of length equal to number of spins.
+        intersite_coupling (float or list[float] or tensor_like[float]): Interaction strength between spins on
+            neighbouring sites. It can be a number, a list with length equal to ``neighbour_order`` or
+            a square matrix of size ``(n_sites, n_sites)``, where ``n_sites`` is the total
+            number of sites. Default value is 1.0.
+        boundary_condition (bool or list[bool]): Defines boundary conditions for different lattice
+            axes. Default is ``False`` indicating open boundary condition.
+        neighbour_order (int): Specifies the interaction level for neighbors within the lattice.
+            Default is 1, indicating nearest neighbours.
+        mapping (str): Specifies the fermion-to-qubit mapping. Input values can be
+            ``'jordan_wigner'``, ``'parity'`` or ``'bravyi_kitaev'``.
+
+    Raises:
+       ValueError:
+          If ``hopping``, ``coulomb``, or ``intersite_coupling`` doesn't have correct dimensions,
+          or if ``mapping`` is not available.
+
+    Returns:
+       ~ops.op_math.Sum: Hamiltonian for the Emery model.
+
+    **Example**
+
+    >>> n_cells = [2]
+    >>> h = [0.5]
+    >>> u = 1.0
+    >>> v = 0.2
+    >>> spin_ham = qml.spin.emery("chain", n_cells, hopping=h, coulomb=u,
+                   intersite_coupling=v)
+    >>> spin_ham
+    (
+      -0.25 * (Y(0) @ Z(1) @ Y(2))
+      + -0.25 * (X(0) @ Z(1) @ X(2))
+      + 0.7000000000000002 * I(0)
+      + -0.25 * (Y(1) @ Z(2) @ Y(3))
+      + -0.25 * (X(1) @ Z(2) @ X(3))
+      + -0.35 * Z(1)
+      + -0.35 * Z(0)
+      + 0.25 * (Z(0) @ Z(1))
+      + -0.35 * Z(3)
+      + -0.35 * Z(2)
+      + 0.25 * (Z(2) @ Z(3))
+      + 0.05 * (Z(0) @ Z(2))
+      + 0.05 * (Z(0) @ Z(3))
+      + 0.05 * (Z(1) @ Z(2))
+      + 0.05 * (Z(1) @ Z(3))
+    )
+
+    """
+
+    lattice = _generate_lattice(lattice, n_cells, boundary_condition, neighbour_order)
+
+    hopping = (
+        math.asarray([hopping])
+        if isinstance(hopping, (int, float, complex))
+        else math.asarray(hopping)
+    )
+    intersite_coupling = (
+        math.asarray([intersite_coupling])
+        if isinstance(intersite_coupling, (int, float, complex))
+        else math.asarray(intersite_coupling)
+    )
+
+    if hopping.shape not in [(neighbour_order,), (lattice.n_sites, lattice.n_sites)]:
+        raise ValueError(
+            f"The hopping parameter should be a number or an "
+            f"array of shape ({neighbour_order},) or ({lattice.n_sites},{lattice.n_sites})."
+        )
+
+    if intersite_coupling.shape not in [(neighbour_order,), (lattice.n_sites, lattice.n_sites)]:
+        raise ValueError(
+            f"The intersite_coupling parameter should be a number or "
+            f"an array of shape ({neighbour_order},) or ({lattice.n_sites},{lattice.n_sites})."
+        )
+
+    spin = 2
+    hopping_term = 0.0 * FermiWord({})
+    intersite_term = 0.0 * FermiWord({})
+    for i, j, order in lattice.edges:
+        hop = hopping[order] if hopping.shape == (neighbour_order,) else hopping[i][j]
+
+        for s in range(spin):
+            s1 = i * spin + s
+            s2 = j * spin + s
+            hopping_term -= hop * (
+                FermiWord({(0, s1): "+", (1, s2): "-"}) + FermiWord({(0, s2): "+", (1, s1): "-"})
+            )
+
+        intersite = (
+            intersite_coupling[order]
+            if intersite_coupling.shape == (neighbour_order,)
+            else intersite_coupling[i][j]
+        )
+        intersite_term += (
+            intersite
+            * (
+                FermiWord({(0, i * spin): "+", (1, i * spin): "-"})
+                + FermiWord({(0, i * spin + 1): "+", (1, i * spin + 1): "-"})
+            )
+            * (
+                FermiWord({(0, j * spin): "+", (1, j * spin): "-"})
+                + FermiWord({(0, j * spin + 1): "+", (1, j * spin + 1): "-"})
+            )
+        )
+
+    if isinstance(coulomb, (int, float, complex)):
+        coulomb = math.ones(lattice.n_sites) * coulomb
+
+    coulomb_term = 0.0 * FermiWord({})
+    for i in range(lattice.n_sites):
+        up_spin = i * spin
+        down_spin = i * spin + 1
+        coulomb_term += coulomb[i] * FermiWord(
+            {(0, up_spin): "+", (1, up_spin): "-", (2, down_spin): "+", (3, down_spin): "-"}
+        )
+
+    hamiltonian = hopping_term + coulomb_term + intersite_term
+
+    if mapping not in ["jordan_wigner", "parity", "bravyi_kitaev"]:
+        raise ValueError(
+            f"The '{mapping}' transformation is not available."
+            f"Please set mapping to 'jordan_wigner', 'parity', or 'bravyi_kitaev'."
+        )
+    qubit_ham = qml.qchem.qubit_observable(hamiltonian, mapping=mapping)
+
+    return qubit_ham.simplify()
+
+
+def haldane(
+    lattice,
+    n_cells,
+    hopping=1.0,
+    hopping_next=1.0,
+    phi=1.0,
+    boundary_condition=False,
+    mapping="jordan_wigner",
+):
+    r"""Generates the Hamiltonian for the Haldane model on a lattice.
+
+    The `Hamiltonian <https://arxiv.org/pdf/2211.13615>`_ for the  `Haldane model <https://journals.aps.org/prl/pdf/10.1103/PhysRevLett.61.2015>`_  is represented as:
+
+    .. math::
+
+        \begin{align*}
+          \hat{H} & = -\sum_{\langle i,j \rangle}t_{ij}^{1}
+          (c_{i\sigma}^\dagger c_{j\sigma} + c_{j\sigma}^\dagger c_{i\sigma})
+          - \sum_{\langle\langle i,j \rangle\rangle, \sigma} t_{ij}^{2}
+          \left( e^{i\phi_{ij}} c_{i\sigma}^\dagger c_{j\sigma} + e^{-i\phi_{ij}} c_{j\sigma}^\dagger c_{i\sigma} \right)
+        \end{align*}
+
+    where :math:`t^{1}_{ij}` is the hopping term representing the hopping amplitude between neighbouring
+    sites :math:`\langle i,j \rangle`, :math:`t^{2}_{ij}` is the hopping amplitude between next-nearest neighbours :math:`\langle \langle i,j \rangle \rangle`, :math:`\phi_{ij}` is the phase
+    factor that breaks time-reversal symmetry in the system, and :math:`\sigma` is the spin degree of freedom.
+    This function assumes there are two fermions with opposite spins on each lattice site.
+
+    Args:
+        lattice (str): Shape of the lattice. Input values can be ``'chain'``, ``'square'``,
+            ``'rectangle'``, ``'honeycomb'``, ``'triangle'``, or ``'kagome'``.
+        n_cells (list[int]): Number of cells in each direction of the grid.
+        hopping (float or tensor_like[float]): Hopping strength between
+            nearest neighbouring sites. It can be a number, or
+            a square matrix of size ``(n_sites, n_sites)``, where ``n_sites`` is the total
+            number of sites. Default value is 1.0.
+        hopping_next (float or tensor_like[float]): Hopping strength between next-nearest
+            neighbouring sites. It can be a number, or
+            a square matrix of size ``(n_sites, n_sites)``, where ``n_sites`` is the total
+            number of sites. Default value is 1.0.
+        phi (float or tensor_like[float]): Phase factor in the system. It can be a number, or
+            a square matrix of size ``(n_sites, n_sites)``, where ``n_sites`` is the total
+            number of sites. Default value is 1.0.
+        boundary_condition (bool or list[bool]): Defines boundary conditions for different lattice
+            axes. Default is ``False`` indicating open boundary condition.
+        mapping (str): Specifies the fermion-to-qubit mapping. Input values can be
+            ``'jordan_wigner'``, ``'parity'`` or ``'bravyi_kitaev'``.
+
+    Raises:
+       ValueError:
+          If ``hopping``, ``hopping_next``, or ``phi`` doesn't have correct dimensions,
+          or if ``mapping`` is not available.
+
+    Returns:
+       ~ops.op_math.Sum: Hamiltonian for the Haldane model.
+
+    **Example**
+
+    >>> n_cells = [2]
+    >>> h1 = 0.5
+    >>> h2 = 1.0
+    >>> phi = 0.1
+    >>> spin_ham = qml.spin.haldane("chain", n_cells, hopping=h1, hopping_next=h2, phi=phi)
+    >>> spin_ham
+    (
+      -0.25 * (Y(0) @ Z(1) @ Y(2))
+      + -0.25 * (X(0) @ Z(1) @ X(2))
+      + -0.25 * (Y(1) @ Z(2) @ Y(3))
+      + -0.25 * (X(1) @ Z(2) @ X(3))
+    )
+
+    """
+
+    lattice = _generate_lattice(lattice, n_cells, boundary_condition, neighbour_order=2)
+
+    hopping = (
+        math.asarray([hopping])
+        if isinstance(hopping, (int, float, complex))
+        else math.asarray(hopping)
+    )
+    hopping_next = (
+        math.asarray([hopping_next])
+        if isinstance(hopping_next, (int, float, complex))
+        else math.asarray(hopping_next)
+    )
+    phi = math.asarray([phi]) if isinstance(phi, (int, float, complex)) else math.asarray(phi)
+
+    if hopping.shape not in [(1,), (lattice.n_sites, lattice.n_sites)]:
+        raise ValueError(
+            f"The hopping parameter should be a constant or an array of shape ({lattice.n_sites},{lattice.n_sites})."
+        )
+
+    if hopping_next.shape not in [(1,), (lattice.n_sites, lattice.n_sites)]:
+        raise ValueError(
+            f"The hopping_next parameter should be a constant or an array of shape ({lattice.n_sites},{lattice.n_sites})."
+        )
+
+    if phi.shape not in [(1,), (lattice.n_sites, lattice.n_sites)]:
+        raise ValueError(
+            f"The phi parameter should be a constant or an array of shape ({lattice.n_sites},{lattice.n_sites})."
+        )
+
+    spin = 2
+    hamiltonian = 0.0 * FermiWord({})
+    for i, j, order in lattice.edges:
+
+        hop1 = hopping[0] if hopping.shape == (1,) else hopping[i][j]
+        hop2 = hopping_next[0] if hopping_next.shape == (1,) else hopping_next[i][j]
+        phi_term = phi[0] if phi.shape == (1,) else phi[i][j]
+
+        for s in range(spin):
+            s1 = i * spin + s
+            s2 = j * spin + s
+            if order == 0:
+                hamiltonian -= hop1 * (
+                    FermiWord({(0, s1): "+", (1, s2): "-"})
+                    + FermiWord({(0, s2): "+", (1, s1): "-"})
+                )
+            else:
+                hamiltonian -= hop2 * (
+                    math.exp(1j * phi_term) * FermiWord({(0, s1): "+", (1, s2): "-"})
+                )
+                hamiltonian -= hop2 * (
+                    math.exp(-1j * phi_term) * FermiWord({(0, s2): "+", (1, s1): "-"})
+                )
+
+    if mapping not in ["jordan_wigner", "parity", "bravyi_kitaev"]:
+        raise ValueError(
+            f"The '{mapping}' transformation is not available."
+            f"Please set mapping to 'jordan_wigner', 'parity', or 'bravyi_kitaev'."
         )
     qubit_ham = qml.qchem.qubit_observable(hamiltonian, mapping=mapping)
 
