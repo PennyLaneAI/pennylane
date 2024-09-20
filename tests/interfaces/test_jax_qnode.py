@@ -40,6 +40,7 @@ device_and_diff_method = [
     [qml.device("lightning.qubit", wires=5), "adjoint", True, True],
     [qml.device("lightning.qubit", wires=5), "adjoint", False, False],
     [qml.device("lightning.qubit", wires=5), "adjoint", True, False],
+    [qml.device("reference.qubit"), "parameter-shift", False, False],
 ]
 
 interface_and_device_and_diff_method = [
@@ -779,12 +780,18 @@ class TestShotsIntegration:
         cost_fn(a, b, shots=100)
         # since we are using finite shots, parameter-shift will
         # be chosen
-        assert cost_fn.gradient_fn == qml.gradients.param_shift
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match=r"QNode.gradient_fn is deprecated"
+        ):
+            assert cost_fn.gradient_fn == qml.gradients.param_shift
         assert spy.call_args[1]["gradient_fn"] is qml.gradients.param_shift
 
         # if we use the default shots value of None, backprop can now be used
         cost_fn(a, b)
-        assert cost_fn.gradient_fn == "backprop"
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match=r"QNode.gradient_fn is deprecated"
+        ):
+            assert cost_fn.gradient_fn == "backprop"
         assert spy.call_args[1]["gradient_fn"] == "backprop"
 
 
@@ -839,7 +846,10 @@ class TestQubitIntegration:
         def circuit():
             qml.Hadamard(wires=[0])
             qml.CNOT(wires=[0, 1])
-            return qml.counts(qml.PauliZ(0)), qml.counts(qml.PauliX(1))
+            return (
+                qml.counts(qml.PauliZ(0), all_outcomes=True),
+                qml.counts(qml.PauliX(1), all_outcomes=True),
+            )
 
         res = circuit(shots=10)
 
@@ -905,6 +915,8 @@ class TestQubitIntegration:
 
         if diff_method in ["adjoint", "spsa", "hadamard"]:
             pytest.skip("Diff method does not support postselection.")
+        if dev.name == "reference.qubit":
+            pytest.xfail("reference.qubit does not support postselection.")
 
         @qml.qnode(
             dev,
@@ -1292,6 +1304,8 @@ class TestQubitIntegrationHigherOrder:
         elif diff_method == "spsa":
             gradient_kwargs = {"h": H_FOR_SPSA, "sampler_rng": np.random.default_rng(SEED_FOR_SPSA)}
             tol = TOL_FOR_SPSA
+        if dev.name == "reference.qubit":
+            pytest.xfail("diagonalize_measurements do not support projectors (sc-72911)")
 
         P = jax.numpy.array(state)
         x, y = 0.765, -0.654
@@ -1367,7 +1381,7 @@ class TestTapeExpansion:
         jax.grad(circuit, argnums=[0])(x, y)
 
     @pytest.mark.parametrize("max_diff", [1, 2])
-    def test_hamiltonian_expansion_analytic(
+    def test_split_non_commuting_analytic(
         self, dev, diff_method, grad_on_execution, max_diff, interface, device_vjp, mocker, tol
     ):
         """Test that the Hamiltonian is not expanded if there
@@ -1385,6 +1399,11 @@ class TestTapeExpansion:
                 "sampler_rng": np.random.default_rng(SEED_FOR_SPSA),
             }
             tol = TOL_FOR_SPSA
+        if dev.name == "reference.qubit":
+            pytest.skip(
+                "Cannot add transform to the transform program in preprocessing"
+                "when using mocker.spy on it."
+            )
 
         spy = mocker.spy(qml.transforms, "split_non_commuting")
         obs = [qml.PauliX(0), qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliZ(1)]
@@ -1445,6 +1464,13 @@ class TestTapeExpansion:
         """Test that the Hamiltonian is correctly measured (and not expanded)
         if there are non-commuting groups and the number of shots is finite
         and the first and second order gradients are correctly evaluated"""
+
+        if dev.name == "reference.qubit":
+            pytest.skip(
+                "Cannot added to a transform to the transform program in "
+                "preprocessing when using mocker.spy on it."
+            )
+
         gradient_kwargs = {}
         tol = 0.3
         if diff_method in ("adjoint", "backprop", "finite-diff"):

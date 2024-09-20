@@ -62,6 +62,11 @@ def shadow_expval(tape: QuantumScript, H, k=1) -> tuple[QuantumScriptBatch, Post
 
     See :func:`~.pennylane.shadow_expval` for more usage details.
 
+    .. warning::
+
+        ``qml.shadows.shadow_expval`` is deprecated. Please use the :func:`~pennylane.shadow_expval`
+        measurement process in your circuits instead.
+
     Args:
         tape (QNode or QuantumTape or Callable): A quantum circuit.
         H (:class:`~.pennylane.Observable` or list[:class:`~.pennylane.Observable`]): Observables
@@ -96,6 +101,13 @@ def shadow_expval(tape: QuantumScript, H, k=1) -> tuple[QuantumScriptBatch, Post
     >>> qml.grad(circuit)(x)
     -0.9323999999999998
     """
+
+    warnings.warn(
+        "qml.shadows.shadow_expval is deprecated. Instead, use the qml.shadow_expval "
+        "measurement process in your circuit.",
+        qml.PennyLaneDeprecationWarning,
+    )
+
     tapes, _ = _replace_obs(tape, qml.shadow_expval, H, k=k)
 
     def post_processing_fn(res):

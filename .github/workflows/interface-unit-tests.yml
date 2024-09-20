@@ -270,7 +270,7 @@ jobs:
       install_pennylane_lightning_master: true
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: jax and not qcut and not finite-diff and not param-shift
-      pytest_additional_args: --splits 5 --group ${{ matrix.group }}
+      pytest_additional_args: --dist=loadscope --splits 5 --group ${{ matrix.group }}
       pytest_durations_file_path: '.github/workflows/jax_tests_durations.json'
       pytest_store_durations: ${{ inputs.pytest_store_durations }}
       additional_pip_packages: pytest-split
@@ -379,8 +379,7 @@ jobs:
       # catalyst requires the latest version of pennylane that is about to be released.
       # Installing catalyst after pennylane to make sure that the latest catalyst is used.
       install_catalyst_nightly: true
-      # using lightning master does not work for the tests with external libraries
-      install_pennylane_lightning_master: false
+      install_pennylane_lightning_master: true
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: external
       additional_pip_packages: pyzx matplotlib stim quimb mitiq pennylane-qiskit ply
