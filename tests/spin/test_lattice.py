@@ -914,7 +914,7 @@ def test_custom_nodes(vectors, positions, n_cells, custom_nodes, expected_nodes)
 def test_custom_nodes_error(vectors, positions, n_cells, custom_nodes):
     r"""Test that the edges are added as per custom_edges provided"""
 
-    with pytest.raises(ValueError, match="Provided a custom"):
+    with pytest.raises(ValueError, match="The custom node has"):
         Lattice(n_cells=n_cells, vectors=vectors, positions=positions, custom_nodes=custom_nodes)
 
 
