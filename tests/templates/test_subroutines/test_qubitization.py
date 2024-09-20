@@ -49,7 +49,7 @@ def test_operator_definition_qpe(hamiltonian):
 
         # apply QPE (used iterative qpe here)
         measurements = qml.iterative_qpe(
-            qml.Qubitization(hamiltonian, control=[3, 4]), ancilla=5, iters=8
+            qml.Qubitization(hamiltonian, control=[3, 4]), aux_wire=5, iters=8
         )
 
         return qml.probs(op=measurements)

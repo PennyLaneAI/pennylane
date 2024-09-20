@@ -204,7 +204,7 @@ knows a native implementation for ``FlipAndRotate``). It also defines an adjoint
             # as the class differs from the standard `__init__` call signature of
             # (*data, wires=wires, **hyperparameters), the _unflatten method that
             # must be defined as well
-            # _unflatten recreates a opeartion from the serialized data and metadata of ``Operator._flatten``
+            # _unflatten recreates a operation from the serialized data and metadata of ``Operator._flatten``
             # copied_op = type(op)._unflatten(*op._flatten())
             wires = metadata[0]
             hyperparams = dict(metadata[1])
@@ -245,12 +245,7 @@ If the above operator omitted the ``_unflatten`` custom definition, it would rai
 The new gate can be used with PennyLane devices. Device support for an operation can be checked via
 ``dev.stopping_condition(op)``.  If ``True``, then the device supports the operation.
 
-``DefaultQubitLegacy`` first checks if the operator has a matrix using the :attr:`~.Operator.has_matrix` property.
-If the Operator doesn't have a matrix, the device then checks if the name of the Operator is explicitly specified in 
-:attr:`~DefaultQubitLegacy.operations` or :attr:`~DefaultQubitLegacy.observables`.
-
-Other devices that do not inherit from ``DefaultQubitLegacy`` only check if the name is explicitly specified in the ``operations``
-property.
+``DefaultQubit`` first checks if the operator has a matrix using the :attr:`~.Operator.has_matrix` property.
 
 - If the device registers support for an operation with the same name,
   PennyLane leaves the gate implementation up to the device. The device

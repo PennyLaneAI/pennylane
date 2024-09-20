@@ -16,15 +16,15 @@ Tests for the gradients.spsa_gradient module.
 """
 import numpy as np
 import pytest
+from default_qubit_legacy import DefaultQubitLegacy
 
 import pennylane as qml
 from pennylane import numpy as pnp
-from pennylane.devices import DefaultQubitLegacy
 from pennylane.gradients import spsa_grad
 from pennylane.gradients.spsa_gradient import _rademacher_sampler
 from pennylane.operation import AnyWires, Observable
 
-# pylint:disable = use-implicit-booleaness-not-comparison
+# pylint:disable = use-implicit-booleaness-not-comparison,abstract-method
 
 
 def coordinate_sampler(indices, num_params, idx, rng=None):
