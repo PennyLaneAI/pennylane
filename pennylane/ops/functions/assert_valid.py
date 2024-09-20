@@ -299,6 +299,31 @@ def _check_bind_new_parameters(op):
         assert qml.math.allclose(d1, d2), failure_comment
 
 
+def _check_differentiation(op):
+    """Checks that the operator can be executed and differentiated correctly."""
+
+    if op.num_params == 0:
+        return
+
+    data, struct = qml.pytrees.flatten(op)
+
+    def circuit(*args):
+        qml.apply(qml.pytrees.unflatten(args, struct))
+        return qml.probs()
+
+    qnode_ref = qml.QNode(circuit, device=qml.device("default.qubit"), diff_method="backprop")
+    qnode_ps = qml.QNode(
+        circuit, device=qml.device("reference.qubit"), diff_method="parameter-shift"
+    )
+
+    ps = qml.jacobian(qnode_ps)(*(qml.numpy.array(x) for x in data))
+    expected_ps = qml.jacobian(qnode_ref)(*(qml.numpy.array(x) for x in data))
+
+    assert qml.math.allclose(
+        ps, expected_ps
+    ), "Parameter shift does not produce the expected Jacobian with this operator."
+
+
 def _check_wires(op, skip_wire_mapping):
     """Check that wires are a ``Wires`` class and can be mapped."""
     assert isinstance(op.wires, qml.wires.Wires), "wires must be a wires instance"
@@ -376,4 +401,5 @@ def assert_valid(op: qml.operation.Operator, skip_pickle=False, skip_wire_mappin
     _check_sparse_matrix(op)
     _check_eigendecomposition(op)
     _check_generator(op)
+    _check_differentiation(op)
     _check_capture(op)
