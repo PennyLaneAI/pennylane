@@ -187,7 +187,7 @@ class Prod(CompositeOp):
                  0.        +0.j        ,  0.        +0.j        ]])
 
         The Prod operation can be used inside a `qnode` as an operation which,
-        if parameterized, can be differentiated.
+        if parametrized, can be differentiated.
 
         .. code-block:: python
 
@@ -205,7 +205,7 @@ class Prod(CompositeOp):
         tensor(-0.9424888, requires_grad=True)
 
         The Prod operation can also be measured as an observable.
-        If the circuit is parameterized, then we can also differentiate through the
+        If the circuit is parametrized, then we can also differentiate through the
         product observable.
 
         .. code-block:: python
@@ -324,6 +324,10 @@ class Prod(CompositeOp):
         mats = (op.sparse_matrix() for op in self)
         full_mat = reduce(sparse_kron, mats)
         return math.expand_matrix(full_mat, self.wires, wire_order=wire_order)
+
+    @property
+    def has_sparse_matrix(self):
+        return self.pauli_rep is not None or all(op.has_sparse_matrix for op in self)
 
     # pylint: disable=protected-access
     @property

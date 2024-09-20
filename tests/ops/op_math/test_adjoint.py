@@ -844,7 +844,7 @@ def test_error_adjoint_on_noncallable(obj):
 
 
 class TestAdjointConstructorPreconstructedOp:
-    """Test providing an already initalized operator to the transform."""
+    """Test providing an already initialized operator to the transform."""
 
     @pytest.mark.parametrize(
         "base", (qml.IsingXX(1.23, wires=("c", "d")), qml.QFT(wires=(0, 1, 2)))
