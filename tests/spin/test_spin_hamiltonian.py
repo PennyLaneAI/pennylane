@@ -954,7 +954,7 @@ def test_emery_hamiltonian(shape, n_cells, t, u, v, boundary_condition, expected
     [
         (
             "chain",
-            [4, 0, 0],
+            [4],
             [[0, 1, 0, 0], [1, 0, 1, 0], [0, 1, 0, 1], [0, 0, 1, 0]],
             0.1,
             0,
@@ -986,7 +986,7 @@ def test_emery_hamiltonian(shape, n_cells, t, u, v, boundary_condition, expected
         ),
         (
             "square",
-            [2, 2, 0],
+            [2, 2],
             [[0, 0.5, 0.5, 0], [0.5, 0, 0, 0.5], [0.5, 0, 0, 0.5], [0, 0.5, 0.5, 0]],
             [-1.0, 0.0, 1.0, 0],
             0,
@@ -1015,7 +1015,7 @@ def test_emery_hamiltonian(shape, n_cells, t, u, v, boundary_condition, expected
         ),
         (
             "square",
-            [2, 2, 1],
+            [2, 2],
             0.1,
             [-1.0, 0.0, 1.0, 0],
             [[0, 0.5, 0.5, 0], [0.5, 0, 0, 0.5], [0.5, 0, 0, 0.5], [0, 0.5, 0.5, 0]],
@@ -1081,25 +1081,25 @@ def test_hopping_error_haldane():
     with pytest.raises(
         ValueError,
         match=re.escape(
-            "The hopping_first parameter should be a constant or an array of shape (16,16)"
+            "The hopping parameter should be a constant or an array of shape (16,16)"
         ),
     ):
-        haldane(lattice=lattice, n_cells=n_cells, hopping_first=[1.0, 2.0])
+        haldane(lattice=lattice, n_cells=n_cells, hopping=[1.0, 2.0])
 
     with pytest.raises(
         ValueError,
         match=re.escape(
-            "The hopping_second parameter should be a constant or an array of shape (16,16)"
+            "The hopping_next parameter should be a constant or an array of shape (16,16)"
         ),
     ):
-        haldane(lattice=lattice, n_cells=n_cells, hopping_first=1.0, hopping_second=[0.5, 0.6, 0.7])
+        haldane(lattice=lattice, n_cells=n_cells, hopping=1.0, hopping_next=[0.5, 0.6, 0.7])
 
     with pytest.raises(
         ValueError,
         match=re.escape("The phi parameter should be a constant or an array of shape (16,16)"),
     ):
         haldane(
-            lattice=lattice, n_cells=n_cells, hopping_first=1.0, hopping_second=0.1, phi=[0.5, 0.6]
+            lattice=lattice, n_cells=n_cells, hopping=1.0, hopping_next=0.1, phi=[0.5, 0.6]
         )
 
 
@@ -1202,7 +1202,7 @@ def test_mapping_error_haldane():
         ),
         (
             "square",
-            [2, 2, 1],
+            [2, 2],
             [[0, 0.5, 0.5, 0], [0.5, 0, 0, 0.5], [0.5, 0, 0, 0.5], [0, 0.5, 0.5, 0]],
             1.0,
             [
@@ -1247,7 +1247,7 @@ def test_mapping_error_haldane():
         ),
         (
             "square",
-            [2, 2, 1],
+            [2, 2],
             [[0, 0.5, 0.5, 0], [0.5, 0, 0, 0.5], [0.5, 0, 0, 0.5], [0, 0.5, 0.5, 0]],
             [[0, 0, 0, 0.5], [0, 0, 0.5, 0], [0, 0.5, 0, 0], [0.5, 0.0, 0.0, 0]],
             [
@@ -1298,8 +1298,8 @@ def test_haldane_hamiltonian_matrix(shape, n_cells, t1, t2, phi, boundary_condit
     haldane_ham = haldane(
         lattice=shape,
         n_cells=n_cells,
-        hopping_first=t1,
-        hopping_second=t2,
+        hopping=t1,
+        hopping_next=t2,
         phi=phi,
         boundary_condition=boundary_condition,
     )

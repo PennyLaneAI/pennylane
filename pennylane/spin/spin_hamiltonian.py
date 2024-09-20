@@ -41,14 +41,14 @@ def transverse_ising(
     Args:
         lattice (str): Shape of the lattice. Input values can be ``'chain'``, ``'square'``,
             ``'rectangle'``, ``'honeycomb'``, ``'triangle'``, or ``'kagome'``.
-        n_cells (list[int]): Number of cells in each direction of the grid.
-        coupling (float | list[float]] | list[math.array[float]): Coupling between spins. It can
+        n_cells (List[int]): Number of cells in each direction of the grid.
+        coupling (float or List[float] or List[math.array[float]]): Coupling between spins. It can
             be a number, a list of length equal to ``neighbour_order`` or a square matrix of shape
             ``(num_spins,  num_spins)``, where ``num_spins`` is the total number of spins. Default
             value is 1.0.
         h (float): Value of external magnetic field. Default is 1.0.
-        boundary_condition (bool | list[bool]): Defines boundary conditions for different lattice
-            axes. Default is ``False`` indicating open boundary condition.
+        boundary_condition (bool or list[bool]): Defines boundary conditions for different lattice
+            axes, default is ``False`` indicating open boundary condition.
         neighbour_order (int): Specifies the interaction level for neighbors within the lattice.
             Default is 1, indicating nearest neighbours.
 
@@ -84,7 +84,7 @@ def transverse_ising(
 
     if coupling.shape not in [(neighbour_order,), (lattice.n_sites, lattice.n_sites)]:
         raise ValueError(
-            f"The coupling parameter should be a number or an array of shape ({neighbour_order},) or ({lattice.n_sites},{lattice.n_sites})."
+            f"The coupling parameter should be a number or an array of shape ({neighbour_order},) or ({lattice.n_sites},{lattice.n_sites})"
         )
 
     if coupling.shape == (neighbour_order,):
@@ -117,12 +117,12 @@ def heisenberg(lattice, n_cells, coupling=None, boundary_condition=False, neighb
     Args:
         lattice (str): Shape of the lattice. Input values can be ``'chain'``, ``'square'``,
             ``'rectangle'``, ``'honeycomb'``, ``'triangle'``, or ``'kagome'``.
-        n_cells (list[int]): Number of cells in each direction of the grid.
-        coupling (list[list[float]] | list[math.array[float]]): Coupling between spins. It can be a
+        n_cells (List[int]): Number of cells in each direction of the grid.
+        coupling (List[List[float]] or List[math.array[float]]): Coupling between spins. It can be a
             2D array of shape ``(neighbour_order, 3)`` or a 3D array of shape
             ``(3, num_spins, num_spins)``, where ``num_spins`` is the total number of spins.
-        boundary_condition (bool | list[bool]): Defines boundary conditions for different lattice
-            axes. Default is ``False`` indicating open boundary condition.
+        boundary_condition (bool or list[bool]): Defines boundary conditions for different lattice
+            axes, default is ``False`` indicating open boundary condition.
         neighbour_order (int): Specifies the interaction level for neighbors within the lattice.
             Default is 1, indicating nearest neighbours.
 
@@ -161,7 +161,7 @@ def heisenberg(lattice, n_cells, coupling=None, boundary_condition=False, neighb
 
     if coupling.shape not in [(neighbour_order, 3), (3, lattice.n_sites, lattice.n_sites)]:
         raise ValueError(
-            f"The coupling parameter shape should be equal to ({neighbour_order},3) or (3,{lattice.n_sites},{lattice.n_sites})."
+            f"The coupling parameter shape should be equal to ({neighbour_order},3) or (3,{lattice.n_sites},{lattice.n_sites})"
         )
 
     hamiltonian = 0.0 * qml.I(0)
@@ -212,15 +212,15 @@ def fermi_hubbard(
     Args:
         lattice (str): Shape of the lattice. Input values can be ``'chain'``, ``'square'``,
             ``'rectangle'``, ``'honeycomb'``, ``'triangle'``, or ``'kagome'``.
-        n_cells (list[int]): Number of cells in each direction of the grid.
-        hopping (float | list[float] | tensor_like(float)): Hopping strength between
-            neighbouring sites. It can be a number, a list of length equal to ``neighbour_order`` or
-            a square matrix of size ``(n_sites, n_sites)``, where ``n_sites`` is the total
-            number of sites. Default value is 1.0.
-        coulomb (float | list[float]): Coulomb interaction between spins. It can be a constant or a
+        n_cells (List[int]): Number of cells in each direction of the grid.
+        hopping (float or List[float] or List[math.array(float)]): Hopping strength between
+            neighbouring sites, it can be a number, a list of length equal to ``neighbour_order`` or
+            a square matrix of size ``(num_spins, num_spins)``, where ``num_spins`` is the total
+            number of spins. Default value is 1.0.
+        coulomb (float or List[float]): Coulomb interaction between spins. It can be a constant or a
             list of length equal to number of spins.
-        boundary_condition (bool | list[bool]): Defines boundary conditions for different lattice
-            axes. Default is ``False`` indicating open boundary condition.
+        boundary_condition (bool or list[bool]): Defines boundary conditions for different lattice
+            axes, default is ``False`` indicating open boundary condition.
         neighbour_order (int): Specifies the interaction level for neighbors within the lattice.
             Default is 1, indicating nearest neighbours.
         mapping (str): Specifies the fermion-to-qubit mapping. Input values can be
@@ -260,7 +260,7 @@ def fermi_hubbard(
 
     if hopping.shape not in [(neighbour_order,), (lattice.n_sites, lattice.n_sites)]:
         raise ValueError(
-            f"The hopping parameter should be a number or an array of shape ({neighbour_order},) or ({lattice.n_sites},{lattice.n_sites})."
+            f"The hopping parameter should be a number or an array of shape ({neighbour_order},) or ({lattice.n_sites},{lattice.n_sites})"
         )
 
     spin = 2
@@ -304,7 +304,7 @@ def fermi_hubbard(
     if mapping not in ["jordan_wigner", "parity", "bravyi_kitaev"]:
         raise ValueError(
             f"The '{mapping}' transformation is not available."
-            f"Please set mapping to 'jordan_wigner', 'parity', or 'bravyi_kitaev'."
+            f"Please set mapping to 'jordan_wigner', 'parity', or 'bravyi_kitaev'"
         )
     qubit_ham = qml.qchem.qubit_observable(hamiltonian, mapping=mapping)
 
@@ -323,7 +323,8 @@ def emery(
 ):
     r"""Generates the Hamiltonian for the Emery model on a lattice.
 
-    The `Emery <https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.58.2794>`_ model Hamiltonian is represented as:
+    The Emery model was proposed in this `paper <https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.58.2794>`_
+    and the `Hamiltonian <https://arxiv.org/pdf/2309.11786>`_ is represented as:
 
     .. math::
         \begin{align*}
@@ -343,17 +344,17 @@ def emery(
         lattice (str): Shape of the lattice. Input values can be ``'chain'``, ``'square'``,
             ``'rectangle'``, ``'honeycomb'``, ``'triangle'``, or ``'kagome'``.
         n_cells (list[int]): Number of cells in each direction of the grid.
-        hopping (float | list[float] | tensor_like(float)): Hopping strength between
+        hopping (float or list[float] or tensor_like[float]): Hopping strength between
             neighbouring sites. It can be a number, a list of length equal to ``neighbour_order`` or
             a square matrix of shape ``(n_sites, n_sites)``, where ``n_sites`` is the total
             number of sites. Default value is 1.0.
-        coulomb (float | list[float]): Coulomb interaction between spins. It can be a constant or a
+        coulomb (float or list[float]): Coulomb interaction between spins. It can be a constant or a
             list of length equal to number of spins.
-        intersite_coupling (float | list[float] | tensor_like(float)): Interaction strength between spins on
+        intersite_coupling (float or list[float] or tensor_like[float]): Interaction strength between spins on
             neighbouring sites. It can be a number, a list with length equal to ``neighbour_order`` or
             a square matrix of size ``(n_sites, n_sites)``, where ``n_sites`` is the total
             number of sites. Default value is 1.0.
-        boundary_condition (bool | list[bool]): Defines boundary conditions for different lattice
+        boundary_condition (bool or list[bool]): Defines boundary conditions for different lattice
             axes. Default is ``False`` indicating open boundary condition.
         neighbour_order (int): Specifies the interaction level for neighbors within the lattice.
             Default is 1, indicating nearest neighbours.
@@ -423,22 +424,23 @@ def emery(
         )
 
     spin = 2
-    hopping_ham = 0.0 * FermiWord({})
+    hopping_term = 0.0 * FermiWord({})
     intersite_term = 0.0 * FermiWord({})
     for i, j, order in lattice.edges:
         hop = hopping[order] if hopping.shape == (neighbour_order,) else hopping[i][j]
+
+        for s in range(spin):
+            s1 = i * spin + s
+            s2 = j * spin + s
+            hopping_term -= hop * (
+                FermiWord({(0, s1): "+", (1, s2): "-"}) + FermiWord({(0, s2): "+", (1, s1): "-"})
+            )
+
         intersite = (
             intersite_coupling[order]
             if intersite_coupling.shape == (neighbour_order,)
             else intersite_coupling[i][j]
         )
-
-        for s in range(spin):
-            s1 = i * spin + s
-            s2 = j * spin + s
-            hopping_ham -= hop * (
-                FermiWord({(0, s1): "+", (1, s2): "-"}) + FermiWord({(0, s2): "+", (1, s1): "-"})
-            )
         intersite_term += (
             intersite
             * (
@@ -451,10 +453,10 @@ def emery(
             )
         )
 
-    coulomb_term = 0.0 * FermiWord({})
     if isinstance(coulomb, (int, float, complex)):
         coulomb = math.ones(lattice.n_sites) * coulomb
 
+    coulomb_term = 0.0 * FermiWord({})
     for i in range(lattice.n_sites):
         up_spin = i * spin
         down_spin = i * spin + 1
@@ -462,7 +464,7 @@ def emery(
             {(0, up_spin): "+", (1, up_spin): "-", (2, down_spin): "+", (3, down_spin): "-"}
         )
 
-    hamiltonian = hopping_ham + coulomb_term + intersite_term
+    hamiltonian = hopping_term + coulomb_term + intersite_term
 
     if mapping not in ["jordan_wigner", "parity", "bravyi_kitaev"]:
         raise ValueError(
@@ -477,15 +479,16 @@ def emery(
 def haldane(
     lattice,
     n_cells,
-    hopping_first=1.0,
-    hopping_second=1.0,
+    hopping=1.0,
+    hopping_next=1.0,
     phi=1.0,
     boundary_condition=False,
     mapping="jordan_wigner",
 ):
     r"""Generates the Hamiltonian for the Haldane model on a lattice.
 
-    The `Haldane <https://journals.aps.org/prl/pdf/10.1103/PhysRevLett.61.2015>`_ model Hamiltonian is represented as:
+    The Haldane model was proposed in this `paper <https://journals.aps.org/prl/pdf/10.1103/PhysRevLett.61.2015>`_
+    and the `Hamiltonian <https://arxiv.org/pdf/2211.13615>`_ is represented as:
 
     .. math::
 
@@ -505,25 +508,25 @@ def haldane(
         lattice (str): Shape of the lattice. Input values can be ``'chain'``, ``'square'``,
             ``'rectangle'``, ``'honeycomb'``, ``'triangle'``, or ``'kagome'``.
         n_cells (list[int]): Number of cells in each direction of the grid.
-        hopping_first (float | tensor_like(float)): Hopping strength between
+        hopping (float or tensor_like[float]): Hopping strength between
             nearest neighbouring sites. It can be a number, or
             a square matrix of size ``(n_sites, n_sites)``, where ``n_sites`` is the total
             number of sites. Default value is 1.0.
-        hopping_second (float | tensor_like(float)): Hopping strength between next-nearest
+        hopping_next (float or tensor_like[float]): Hopping strength between next-nearest
             neighbouring sites. It can be a number, or
             a square matrix of size ``(n_sites, n_sites)``, where ``n_sites`` is the total
             number of sites. Default value is 1.0.
-        phi (float | tensor_like(float)): Phase factor in the system. It can be a number, or
+        phi (float or tensor_like[float]): Phase factor in the system. It can be a number, or
             a square matrix of size ``(n_sites, n_sites)``, where ``n_sites`` is the total
             number of sites. Default value is 1.0.
-        boundary_condition (bool | list[bool]): Defines boundary conditions for different lattice
+        boundary_condition (bool or list[bool]): Defines boundary conditions for different lattice
             axes. Default is ``False`` indicating open boundary condition.
         mapping (str): Specifies the fermion-to-qubit mapping. Input values can be
             ``'jordan_wigner'``, ``'parity'`` or ``'bravyi_kitaev'``.
 
     Raises:
        ValueError:
-          If ``hopping_first``, ``hopping_second``, or ``phi`` doesn't have correct dimensions,
+          If ``hopping``, ``hopping_next``, or ``phi`` doesn't have correct dimensions,
           or if ``mapping`` is not available.
 
     Returns:
@@ -535,7 +538,7 @@ def haldane(
     >>> h1 = 0.5
     >>> h2 = 1.0
     >>> phi = 0.1
-    >>> spin_ham = qml.spin.haldane("chain", n_cells, hopping_first=h1, hopping_second=h2, phi=phi)
+    >>> spin_ham = qml.spin.haldane("chain", n_cells, hopping=h1, hopping_next=h2, phi=phi)
     >>> spin_ham
     (
       -0.25 * (Y(0) @ Z(1) @ Y(2))
@@ -548,26 +551,26 @@ def haldane(
 
     lattice = _generate_lattice(lattice, n_cells, boundary_condition, neighbour_order=2)
 
-    hopping_first = (
-        math.asarray([hopping_first])
-        if isinstance(hopping_first, (int, float, complex))
-        else math.asarray(hopping_first)
+    hopping = (
+        math.asarray([hopping])
+        if isinstance(hopping, (int, float, complex))
+        else math.asarray(hopping)
     )
-    hopping_second = (
-        math.asarray([hopping_second])
-        if isinstance(hopping_second, (int, float, complex))
-        else math.asarray(hopping_second)
+    hopping_next = (
+        math.asarray([hopping_next])
+        if isinstance(hopping_next, (int, float, complex))
+        else math.asarray(hopping_next)
     )
     phi = math.asarray([phi]) if isinstance(phi, (int, float, complex)) else math.asarray(phi)
 
-    if hopping_first.shape not in [(1,), (lattice.n_sites, lattice.n_sites)]:
+    if hopping.shape not in [(1,), (lattice.n_sites, lattice.n_sites)]:
         raise ValueError(
-            f"The hopping_first parameter should be a constant or an array of shape ({lattice.n_sites},{lattice.n_sites})."
+            f"The hopping parameter should be a constant or an array of shape ({lattice.n_sites},{lattice.n_sites})."
         )
 
-    if hopping_second.shape not in [(1,), (lattice.n_sites, lattice.n_sites)]:
+    if hopping_next.shape not in [(1,), (lattice.n_sites, lattice.n_sites)]:
         raise ValueError(
-            f"The hopping_second parameter should be a constant or an array of shape ({lattice.n_sites},{lattice.n_sites})."
+            f"The hopping_next parameter should be a constant or an array of shape ({lattice.n_sites},{lattice.n_sites})."
         )
 
     if phi.shape not in [(1,), (lattice.n_sites, lattice.n_sites)]:
@@ -576,30 +579,28 @@ def haldane(
         )
 
     spin = 2
-    hopping_ham = 0.0 * FermiWord({})
+    hamiltonian = 0.0 * FermiWord({})
     for i, j, order in lattice.edges:
 
-        hop1 = hopping_first[0] if hopping_first.shape == (1,) else hopping_first[i][j]
-        hop2 = hopping_second[0] if hopping_second.shape == (1,) else hopping_second[i][j]
+        hop1 = hopping[0] if hopping.shape == (1,) else hopping[i][j]
+        hop2 = hopping_next[0] if hopping_next.shape == (1,) else hopping_next[i][j]
         phi_term = phi[0] if phi.shape == (1,) else phi[i][j]
 
         for s in range(spin):
             s1 = i * spin + s
             s2 = j * spin + s
             if order == 0:
-                hopping_ham -= hop1 * (
+                hamiltonian -= hop1 * (
                     FermiWord({(0, s1): "+", (1, s2): "-"})
                     + FermiWord({(0, s2): "+", (1, s1): "-"})
                 )
             else:
-                hopping_ham -= hop2 * (
+                hamiltonian -= hop2 * (
                     math.exp(1j * phi_term) * FermiWord({(0, s1): "+", (1, s2): "-"})
                 )
-                hopping_ham -= hop2 * (
+                hamiltonian -= hop2 * (
                     math.exp(-1j * phi_term) * FermiWord({(0, s2): "+", (1, s1): "-"})
                 )
-
-    hamiltonian = hopping_ham
 
     if mapping not in ["jordan_wigner", "parity", "bravyi_kitaev"]:
         raise ValueError(
