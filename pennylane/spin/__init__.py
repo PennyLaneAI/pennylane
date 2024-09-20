@@ -16,10 +16,4 @@ This module provides the functionality to create spin Hamiltonians.
 """
 
 from .lattice import Lattice
-from .spin_hamiltonian import (
-    fermi_hubbard,
-    heisenberg,
-    kitaev,
-    spin_hamiltonian,
-    transverse_ising,
-)
+from .spin_hamiltonian import emery, fermi_hubbard, haldane, heisenberg, kitaev, transverse_ising, spin_hamiltonian

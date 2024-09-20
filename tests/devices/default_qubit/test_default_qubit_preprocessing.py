@@ -139,7 +139,6 @@ class TestConfigSetup:
         with dev.tracker:
             qml.grad(circuit)(qml.numpy.array(0.1))
 
-        assert circuit.gradient_fn == "adjoint"
         assert dev.tracker.totals["execute_and_derivative_batches"] == 1
 
 
@@ -978,7 +977,7 @@ class TestAdjointDiffTapeValidation:
         assert qs.shots == qs_valid.shots
 
     def test_untrainable_operations(self):
-        """Tests that a parameterized QubitUnitary that is not trainable is not expanded"""
+        """Tests that a parametrized QubitUnitary that is not trainable is not expanded"""
 
         @qml.qnode(qml.device("default.qubit", wires=3), diff_method="adjoint")
         def circuit(x):

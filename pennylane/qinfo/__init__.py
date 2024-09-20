@@ -18,8 +18,6 @@ from .transforms import (
     vn_entropy,
     purity,
     mutual_info,
-    classical_fisher,
-    quantum_fisher,
     fidelity,
     relative_entropy,
     trace_distance,

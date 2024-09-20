@@ -480,8 +480,8 @@ class SpecialUnitary(Operation):
                [-0.0942679 +0.47133952j,  0.83004499+0.28280371j]])
         """
         interface = qml.math.get_interface(theta)
-        if interface == "tensorflow":
-            theta = qml.math.cast_like(theta, 1j)
+        theta = qml.math.cast_like(theta, 1j)
+
         if num_wires > 5:
             matrices = product(_pauli_matrices, repeat=num_wires)
             # Drop the identity from the generator of matrices

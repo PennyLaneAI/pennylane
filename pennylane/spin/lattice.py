@@ -34,17 +34,16 @@ class Lattice:
        vectors (list[list[float]]): Primitive vectors for the lattice.
        positions (list[list[float]]): Initial positions of spin sites. Default value is
            ``[[0.0]`` :math:`\times` ``number of dimensions]``.
-
        boundary_condition (bool or list[bool]): Defines boundary conditions for different lattice axes,
            default is ``False`` indicating open boundary condition.
        neighbour_order (int): Specifies the interaction level for neighbors within the lattice.
-           Default is 1 (nearest neighbour).
-       custom_edges (list(list(tuples))): Specifies the edges to be added in the lattice.
-           Default value is None, which adds the edges based on neighbour_order.
+           Default is 1, indicating nearest neighbour. This cannot be greater than 1 if custom_edges is defined.
+       custom_edges (Optional[list(list(tuples))]): Specifies the edges to be added in the lattice.
+           Default value is ``None``, which adds the edges based on ``neighbour_order``.
            Each element in the list is for a separate edge, and can contain 1 or 2 tuples.
-           First tuple contains the index of the starting and ending vertex of the edge.
+           First tuple contains the indices of the starting and ending vertices of the edge.
            Second tuple is optional and contains the operator on that edge and coefficient
-           of that operator.
+           of that operator. Default value is the index of edge in custom_edges list.
        custom_nodes (Optional(list(list(int, tuples)))): Specifies the on-site potentials for nodes in
            the lattice. Default value is None, which means no on-site potentials. Each element in
            the list is for a separate node. For each element, the first value is
@@ -135,9 +134,10 @@ class Lattice:
         else:
             if neighbour_order > 1:
                 raise ValueError(
-                    "custom_edges and neighbour_order cannot be specified at the same time"
+                    "custom_edges cannot be specified if neighbour_order argument is set to greater than 1."
                 )
-            self.edges = self.get_custom_edges(custom_edges, lattice_map)
+            lattice_map = dict(zip(lattice_map, self.lattice_points))
+            self.edges = self._get_custom_edges(custom_edges, lattice_map)
 
         self.edges_indices = [(v1, v2) for (v1, v2, color) in self.edges]
 
@@ -159,9 +159,6 @@ class Lattice:
 
         tree = KDTree(self.lattice_points)
         indices = tree.query_ball_tree(tree, cutoff)
-        # Number to scale the distance, needed to sort edges into appropriate bins, it is currently
-        # set as a multiple of expected denominators.
-        bin_density = 2 ^ 5 * 3 ^ 3 * 5 ^ 2 * 7 * 11 * 13
         unique_pairs = set()
         edges = {}
         for i, neighbours in enumerate(indices):
@@ -173,11 +170,11 @@ class Lattice:
                         dist = math.linalg.norm(
                             self.lattice_points[i] - self.lattice_points[neighbour]
                         )
-                        scaled_dist = math.rint(dist * bin_density)
+                        dist = math.round(dist, 4)
 
-                        if scaled_dist not in edges:
-                            edges[scaled_dist] = []
-                        edges[scaled_dist].append((i, neighbour))
+                        if dist not in edges:
+                            edges[dist] = []
+                        edges[dist].append((i, neighbour))
 
         edges = [value for _, value in sorted(edges.items())]
         return edges
@@ -226,8 +223,20 @@ class Lattice:
 
         return math.array(lattice_points), lattice_map
 
-    def get_custom_edges(self, custom_edges, lattice_map):
+    def _get_custom_edges(self, custom_edges, lattice_map):
         """Generates the edges described in `custom_edges` for all unit cells.
+
+        Args:
+          custom_edges (Optional[list(list(tuples))]): Specifies the edges to be added in the lattice.
+              Default value is None, which adds the edges based on neighbour_order.
+              Each element in the list is for a separate edge, and can contain 1 or 2 tuples.
+              First tuple contains the index of the starting and ending vertex of the edge.
+              Second tuple is optional and contains the operator on that edge and coefficient
+              of that operator.
+          lattice_map (list[int]): A list to represent the node number for each lattice_point.
+
+        Returns:
+          List of edges.
 
         **Example**
 
@@ -239,19 +248,46 @@ class Lattice:
                 [(0, 1), ("XX", 0.1)],
                 [(0, 3), ("YY", 0.2)],
                 [(0, 4), ("XY", 0.3)],
-                ]
-        >>> lattice = Lattice(n_cells=n_cells, vectors=vectors, custom_edges=custom_edges)
+            ]
+        >>> lattice = qml.spin.Lattice(n_cells=n_cells, vectors=vectors, custom_edges=custom_edges)
+        >>> lattice.edges
+        [(0, 1, ('XX', 0.1)),
+         (1, 2, ('XX', 0.1)),
+         (3, 4, ('XX', 0.1)),
+         (4, 5, ('XX', 0.1)),
+         (6, 7, ('XX', 0.1)),
+         (7, 8, ('XX', 0.1)),
+         (0, 3, ('YY', 0.2)),
+         (1, 4, ('YY', 0.2)),
+         (2, 5, ('YY', 0.2)),
+         (3, 6, ('YY', 0.2)),
+         (4, 7, ('YY', 0.2)),
+         (5, 8, ('YY', 0.2)),
+         (0, 4, ('XY', 0.3)),
+         (1, 5, ('XY', 0.3)),
+         (3, 7, ('XY', 0.3)),
+         (4, 8, ('XY', 0.3))
+        ]
 
         """
 
-        if not all([len(edge) in (1, 2) for edge in custom_edges]):
-            raise TypeError(
-                """
-                custom_edges must be a list of tuples of length 1 or 2.
-                Every tuple must contain two lattice indices to represent the edge
-                and can optionally include a list to represent the operation and coefficient for that edge.
-                """
-            )
+        for edge in custom_edges:
+            if len(edge) not in (1, 2):
+                raise TypeError(
+                    """
+                    The elements of custom_edges should be lists of length 1 or 2.
+                    Inside said lists should be a tuple that contains two lattice
+                    indices to represent the edge and, optionally, a tuple that represents
+                    the operation and coefficient for that edge.
+                    Every tuple must contain two lattice indices to represent the edge
+                    and can optionally include a list to represent the operation and coefficient for that edge.
+                    """
+                )
+
+            if edge[0][0] >= self.n_sites or edge[0][1] >= self.n_sites:
+                raise ValueError(
+                    f"The edge {edge[0]} has vertices greater than n_sites, {self.n_sites}"
+                )
 
         edges = []
         n_sl = len(self.positions)
@@ -260,32 +296,30 @@ class Lattice:
         for i, custom_edge in enumerate(custom_edges):
             edge = custom_edge[0]
 
-            if edge[0] >= self.n_sites or edge[1] >= self.n_sites:
-                raise ValueError(
-                    f"The edge {edge} has vertices greater than n_sites, {self.n_sites}"
-                )
-
             edge_operation = custom_edge[1] if len(custom_edge) == 2 else i
-            map_edge1 = lattice_map.index(edge[0])
-            map_edge2 = lattice_map.index(edge[1])
-            edge_distance = self.lattice_points[map_edge2] - self.lattice_points[map_edge1]
+
+            # Finds the coordinates of starting and ending vertices of the edge
+            # and the vector distance between the coordinates
+            vertex1 = lattice_map[edge[0]]
+            vertex2 = lattice_map[edge[1]]
+            edge_distance = vertex2 - vertex1
+
+            # Calculates the number of unit cells that a given edge spans in each direction
             v1, v2 = math.mod(edge, n_sl)
             translation_vector = (
                 edge_distance + self.positions[v1] - self.positions[v2]
             ) @ math.linalg.inv(self.vectors)
             translation_vector = math.asarray(math.rint(translation_vector), dtype=int)
+
+            # Finds the minimum and maximum range for a given edge based on boundary_conditions
             edge_ranges = []
             for idx, cell in enumerate(self.n_cells):
-                if self.boundary_condition[idx]:
-                    edge_ranges.append(range(0, cell))
-                else:
-                    edge_ranges.append(
-                        range(
-                            math.maximum(0, -translation_vector[idx]),
-                            cell - math.maximum(0, translation_vector[idx]),
-                        )
-                    )
+                t_point = 0 if self.boundary_condition[idx] else translation_vector[idx]
+                edge_ranges.append(
+                    range(math.maximum(0, -t_point), cell - math.maximum(0, t_point))
+                )
 
+            # Finds the indices for starting and ending vertices of the edge
             for cell in itertools.product(*edge_ranges):
                 node1_idx = math.dot(math.mod(cell, self.n_cells), nsites_axis) + v1
                 node2_idx = (
@@ -323,112 +357,18 @@ class Lattice:
             self.edges.append(new_edge)
 
 
-def _chain(n_cells, boundary_condition=False, neighbour_order=1):
-    r"""Generates a chain lattice"""
-    vectors = [[1]]
-    n_cells = n_cells[0:1]
-    lattice_chain = Lattice(
-        n_cells=n_cells,
-        vectors=vectors,
-        neighbour_order=neighbour_order,
-        boundary_condition=boundary_condition,
-    )
-    return lattice_chain
-
-
-def _square(n_cells, boundary_condition=False, neighbour_order=1):
-    r"""Generates a square lattice"""
-    vectors = [[1, 0], [0, 1]]
-    positions = [[0, 0]]
-    n_cells = n_cells[0:2]
-    lattice_square = Lattice(
-        n_cells=n_cells,
-        vectors=vectors,
-        positions=positions,
-        neighbour_order=neighbour_order,
-        boundary_condition=boundary_condition,
-    )
-
-    return lattice_square
-
-
-def _rectangle(n_cells, boundary_condition=False, neighbour_order=1):
-    r"""Generates a rectangle lattice"""
-    vectors = [[1, 0], [0, 1]]
-    positions = [[0, 0]]
-
-    n_cells = n_cells[0:2]
-    lattice_rec = Lattice(
-        n_cells=n_cells,
-        vectors=vectors,
-        positions=positions,
-        neighbour_order=neighbour_order,
-        boundary_condition=boundary_condition,
-    )
-
-    return lattice_rec
-
-
-def _honeycomb(n_cells, boundary_condition=False, neighbour_order=1):
-    r"""Generates a honeycomb lattice"""
-    vectors = [[1, 0], [0.5, math.sqrt(3) / 2]]
-    positions = [[0, 0], [0.5, 0.5 / 3**0.5]]
-
-    n_cells = n_cells[0:2]
-    lattice_honeycomb = Lattice(
-        n_cells=n_cells,
-        vectors=vectors,
-        positions=positions,
-        neighbour_order=neighbour_order,
-        boundary_condition=boundary_condition,
-    )
-
-    return lattice_honeycomb
-
-
-def _triangle(n_cells, boundary_condition=False, neighbour_order=1):
-    r"""Generates a triangular lattice"""
-    vectors = [[1, 0], [0.5, math.sqrt(3) / 2]]
-    positions = [[0, 0]]
-
-    n_cells = n_cells[0:2]
-    lattice_triangle = Lattice(
-        n_cells=n_cells,
-        vectors=vectors,
-        positions=positions,
-        neighbour_order=neighbour_order,
-        boundary_condition=boundary_condition,
-    )
-
-    return lattice_triangle
-
-
-def _kagome(n_cells, boundary_condition=False, neighbour_order=1):
-    r"""Generates a kagome lattice"""
-    vectors = [[1, 0], [0.5, math.sqrt(3) / 2]]
-    positions = [[0.0, 0], [-0.25, math.sqrt(3) / 4], [0.25, math.sqrt(3) / 4]]
-
-    n_cells = n_cells[0:2]
-    lattice_kagome = Lattice(
-        n_cells=n_cells,
-        vectors=vectors,
-        positions=positions,
-        neighbour_order=neighbour_order,
-        boundary_condition=boundary_condition,
-    )
-
-    return lattice_kagome
-
-
-# TODO Check the efficiency of this function with a dictionary instead.
 def _generate_lattice(lattice, n_cells, boundary_condition=False, neighbour_order=1):
     r"""Generates the lattice object for a given shape and n_cells.
 
     Args:
-        lattice (str): Shape of the lattice. Input Values can be ``'chain'``, ``'square'``, ``'rectangle'``, ``'honeycomb'``, ``'triangle'``, or ``'kagome'``.
+        lattice (str): Shape of the lattice. Input values can be ``'chain'``, ``'square'``, ``'rectangle'``,
+              ``'honeycomb'``, ``'triangle'``, ``'kagome'``, ``'lieb'``, ``'cubic'``, ``'bcc'``, ``'fcc'``,
+               or ``'diamond'``.
         n_cells (list[int]): Number of cells in each direction of the grid.
-        boundary_condition (bool or list[bool]): Defines boundary conditions, False for open boundary condition, each element represents the axis for lattice. It defaults to False.
-        neighbour_order (int): Specifies the interaction level for neighbors within the lattice. Default is 1 (nearest neighbour).
+        boundary_condition (bool or list[bool]): Defines boundary conditions in different lattice axes.
+                               Default is ``False`` indicating open boundary condition.
+        neighbour_order (int): Specifies the interaction level for neighbors within the lattice.
+                               Default is 1, indicating nearest neighbour.
 
     Returns:
         lattice object.
@@ -436,23 +376,67 @@ def _generate_lattice(lattice, n_cells, boundary_condition=False, neighbour_orde
 
     lattice_shape = lattice.strip().lower()
 
-    if lattice_shape not in ["chain", "square", "rectangle", "honeycomb", "triangle", "kagome"]:
+    if lattice_shape not in [
+        "chain",
+        "square",
+        "rectangle",
+        "honeycomb",
+        "triangle",
+        "kagome",
+        "lieb",
+        "cubic",
+        "bcc",
+        "fcc",
+        "diamond",
+    ]:
         raise ValueError(
             f"Lattice shape, '{lattice}' is not supported."
-            f"Please set lattice to: chain, square, rectangle, honeycomb, triangle, or kagome"
+            f"Please set lattice to: 'chain', 'square', 'rectangle', 'honeycomb', 'triangle', 'kagome', 'lieb',"
+            f"'cubic', 'bcc', 'fcc', or 'diamond'."
         )
 
-    if lattice_shape == "chain":
-        lattice = _chain(n_cells, boundary_condition, neighbour_order)
-    elif lattice_shape == "square":
-        lattice = _square(n_cells, boundary_condition, neighbour_order)
-    elif lattice_shape == "rectangle":
-        lattice = _rectangle(n_cells, boundary_condition, neighbour_order)
-    elif lattice_shape == "honeycomb":
-        lattice = _honeycomb(n_cells, boundary_condition, neighbour_order)
-    elif lattice_shape == "triangle":
-        lattice = _triangle(n_cells, boundary_condition, neighbour_order)
-    elif lattice_shape == "kagome":
-        lattice = _kagome(n_cells, boundary_condition, neighbour_order)
+    lattice_dict = {
+        "chain": {"dim": 1, "vectors": [[1]], "positions": None},
+        "square": {"dim": 2, "vectors": [[0, 1], [1, 0]], "positions": None},
+        "rectangle": {"dim": 2, "vectors": [[0, 1], [1, 0]], "positions": None},
+        "triangle": {"dim": 2, "vectors": [[1, 0], [0.5, math.sqrt(3) / 2]], "positions": None},
+        "honeycomb": {
+            "dim": 2,
+            "vectors": [[1, 0], [0.5, math.sqrt(3) / 2]],
+            "positions": [[0, 0], [0.5, 0.5 / 3**0.5]],
+        },
+        "kagome": {
+            "dim": 2,
+            "vectors": [[1, 0], [0.5, math.sqrt(3) / 2]],
+            "positions": [[0.0, 0], [-0.25, math.sqrt(3) / 4], [0.25, math.sqrt(3) / 4]],
+        },
+        "lieb": {"dim": 2, "vectors": [[0, 1], [1, 0]], "positions": [[0, 0], [0.5, 0], [0, 0.5]]},
+        "cubic": {"dim": 3, "vectors": math.eye(3), "positions": None},
+        "bcc": {"dim": 3, "vectors": math.eye(3), "positions": [[0, 0, 0], [0.5, 0.5, 0.5]]},
+        "fcc": {
+            "dim": 3,
+            "vectors": math.eye(3),
+            "positions": [[0, 0, 0], [0.5, 0.5, 0], [0.5, 0, 0.5], [0, 0.5, 0.5]],
+        },
+        "diamond": {
+            "dim": 3,
+            "vectors": [[0, 0.5, 0.5], [0.5, 0, 0.5], [0.5, 0.5, 0]],
+            "positions": [[0, 0, 0], [0.25, 0.25, 0.25]],
+        },
+    }
 
-    return lattice
+    lattice_dim = lattice_dict[lattice_shape]["dim"]
+    if len(n_cells) != lattice_dim:
+        raise ValueError(
+            f"Argument `n_cells` must be of the correct dimension for the given lattice shape."
+            f" {lattice_shape} lattice is of dimension {lattice_dim}, got {len(n_cells)}."
+        )
+
+    lattice_obj = Lattice(
+        n_cells=n_cells,
+        vectors=lattice_dict[lattice_shape]["vectors"],
+        positions=lattice_dict[lattice_shape]["positions"],
+        neighbour_order=neighbour_order,
+        boundary_condition=boundary_condition,
+    )
+    return lattice_obj

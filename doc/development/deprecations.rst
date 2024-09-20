@@ -9,68 +9,45 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
-* All of the legacy devices (any with the name ``default.qubit.{autograd,torch,tf,jax,legacy}``) are deprecated. Use ``default.qubit`` instead,
-  as it supports backpropagation for the many backends the legacy devices support.
+* The ``'ancilla'`` argument for :func:`~pennylane.iterative_qpe` has been deprecated. Instead, use the ``'aux_wire'``
+  argument.
 
-  - Deprecated in v0.38
-  - Will be removed in v0.39
+  - Deprecated in v0.39
+  - Will be removed in v0.40
 
-* The logic for internally switching a device for a different backpropagation
-  compatible device is now deprecated, as it was in place for the deprecated ``default.qubit.legacy``.
+* The ``qml.shadows.shadow_expval`` transform has been deprecated. Instead, please use the
+  ``qml.shadow_expval`` measurement process.
 
-  - Deprecated in v0.38
-  - Will be removed in v0.39  
+  - Deprecated in v0.39
+  - Will be removed in v0.40
+
+* ``qml.broadcast`` has been deprecated. Users should use ``for`` loops instead.
+
+  - Deprecated in v0.39
+  - Will be removed in v0.40
+
+* The ``qml.qinfo`` module has been deprecated. Please see the respective functions in the ``qml.math`` and ``qml.measurements``
+  modules instead.
+
+  - Deprecated in v0.39
+  - Will be removed in v0.40
+
+* ``Device``, ``QubitDevice``, and ``QutritDevice`` will no longer be imported top level in v0.40.  They instead
+  we be available as ``qml.devices.LegacyDevice``, ``qml.devices.QubitDevice``, and ``qml.devices.QutritDevice``
+  respectively.
+
+  - Deprecated top level access in v0.39
+  - Top level access will be removed in v0.40
+
+* ``QNode.gradient_fn`` is deprecated. Please use ``QNode.diff_method`` instead. ``QNode.get_gradient_fn`` can also be used to
+  process the diff method.
+
+  - Deprecated in v0.39
+  - Will be removed in v0.40
 
 * The ``decomp_depth`` argument in ``qml.device`` is deprecated. 
 
   - Deprecated in v0.38
-  - Will be removed in v0.39
-
-* The ``max_expansion`` argument in ``qml.QNode`` is deprecated. 
-
-  - Deprecated in v0.38
-  - Will be removed in v0.39
-
-* The ``expansion_strategy`` attribute of ``qml.QNode`` is deprecated. 
-  Users should make use of ``qml.workflow.construct_batch``, should they require fine control over the output tape(s).
-
-  - Deprecated in v0.38
-  - Will be removed in v0.39
-
-* The ``expansion_strategy`` argument in ``qml.specs``, ``qml.draw``, and ``qml.draw_mpl`` is deprecated. 
-  Instead, use the ``level`` argument which provides a superset of options.
-
-  - Deprecated in v0.38
-  - Will be removed in v0.39
-
-* The ``expand_fn`` argument in ``qml.execute`` is deprecated. 
-  Instead, please create a ``qml.transforms.core.TransformProgram`` with the desired preprocessing and pass it to the ``transform_program`` argument of ``qml.execute``.
-
-  - Deprecated in v0.38
-  - Will be removed in v0.39
-
-* The ``max_expansion`` argument in ``qml.execute`` is deprecated. 
-  Instead, please use ``qml.devices.preprocess.decompose`` with the desired expansion level, add it to a ``TransformProgram``, and pass it to the ``transform_program`` argument of ``qml.execute``.
-
-  - Deprecated in v0.38
-  - Will be removed in v0.39
-
-* The ``override_shots`` argument in ``qml.execute`` is deprecated.
-  Instead, please add the shots to the ``QuantumTape``\ s to be executed.
-
-  - Deprecated in v0.38
-  - Will be removed in v0.39
-
-* The ``device_batch_transform`` argument in ``qml.execute`` is deprecated. 
-  Instead, please create a ``qml.transforms.core.TransformProgram`` with the desired preprocessing and pass it to the ``transform_program`` argument of ``qml.execute``.
-
-  - Deprecated in v0.38
-  - Will be removed in v0.39
-
-* The functions ``qml.qinfo.classical_fisher`` and ``qml.qinfo.quantum_fisher`` are deprecated since they are being migrated
-  to the ``qml.gradients`` module. Therefore, ``qml.gradients.classical_fisher`` and ``qml.gradients.quantum_fisher`` should be used instead.
-
-  - Deprecated and Duplicated in v0.38
   - Will be removed in v0.39
 
 * The ``simplify`` argument in ``qml.Hamiltonian`` and ``qml.ops.LinearCombination`` is deprecated. 
@@ -78,6 +55,15 @@ Pending deprecations
 
   - Deprecated in v0.37
   - Will be removed in v0.39
+
+* The :class:`~pennylane.BasisStatePreparation` template is deprecated.
+  Instead, use :class:`~pennylane.BasisState`.
+
+* The ``QubitStateVector`` template is deprecated.
+  Instead, use ``StatePrep``.
+
+  - Deprecated in v0.39
+  - Will be removed in v0.40
 
 New operator arithmetic deprecations
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -123,7 +109,82 @@ Other deprecations
 Completed deprecation cycles
 ----------------------------
 
-* The functions ``qml.transforms.sum_expand`` and ``qml.transforms.hamiltonian_expand`` are deprecated.
+* The ``simplify`` argument in ``qml.Hamiltonian`` and ``qml.ops.LinearCombination`` has been removed.
+  Instead, ``qml.simplify()`` can be called on the constructed operator.
+
+  - Deprecated in v0.37
+  - Removed in v0.39
+
+* The ``decomp_depth`` argument in ``qml.device`` is removed.
+
+  - Deprecated in v0.38
+  - Removed in v0.39
+
+* The functions ``qml.qinfo.classical_fisher`` and ``qml.qinfo.quantum_fisher`` have been removed and migrated to the ``qml.gradients``
+  module. Therefore, ``qml.gradients.classical_fisher`` and ``qml.gradients.quantum_fisher`` should be used instead.
+
+  - Deprecated in v0.38
+  - Removed in v0.39
+
+* All of the legacy devices (any with the name ``default.qubit.{autograd,torch,tf,jax,legacy}``) are removed. Use ``default.qubit`` instead,
+  as it supports backpropagation for the many backends the legacy devices support.
+
+  - Deprecated in v0.38
+  - Removed in v0.39
+
+* The logic for internally switching a device for a different backpropagation
+  compatible device is removed, as it was in place for removed ``default.qubit.legacy``.
+
+  - Deprecated in v0.38
+  - Removed in v0.39
+
+* `Operator.expand` is now removed. Use `qml.tape.QuantumScript(op.deocomposition())` instead.
+
+  - Deprecated in v0.38
+  - Removed in v0.39
+
+* The ``expansion_strategy`` attribute of ``qml.QNode`` is removed.
+  Users should make use of ``qml.workflow.construct_batch``, should they require fine control over the output tape(s).
+
+  - Deprecated in v0.38
+  - Removed in v0.39
+
+* The ``expansion_strategy`` argument in ``qml.specs``, ``qml.draw``, and ``qml.draw_mpl`` is removed. 
+  Instead, use the ``level`` argument which provides a superset of options.
+
+  - Deprecated in v0.38
+  - Removed in v0.39
+
+* The ``max_expansion`` argument in ``qml.QNode`` is removed.
+
+  - Deprecated in v0.38
+  - Removed in v0.39
+
+* The ``expand_fn`` argument in ``qml.execute`` is removed.
+  Instead, please create a ``qml.transforms.core.TransformProgram`` with the desired preprocessing and pass it to the ``transform_program`` argument of ``qml.execute``.
+
+  - Deprecated in v0.38
+  - Removed in v0.39
+
+* The ``max_expansion`` argument in ``qml.execute`` is removed.
+  Instead, please use ``qml.devices.preprocess.decompose`` with the desired expansion level, add it to a ``TransformProgram``, and pass it to the ``transform_program`` argument of ``qml.execute``.
+
+  - Deprecated in v0.38
+  - Removed in v0.39
+
+* The ``override_shots`` argument in ``qml.execute`` is removed.
+  Instead, please add the shots to the ``QuantumTape``\ s to be executed.
+
+  - Deprecated in v0.38
+  - Removed in v0.39
+
+* The ``device_batch_transform`` argument in ``qml.execute`` is removed.
+  Instead, please create a ``qml.transforms.core.TransformProgram`` with the desired preprocessing and pass it to the ``transform_program`` argument of ``qml.execute``.
+
+  - Deprecated in v0.38
+  - Removed in v0.39
+
+* The functions ``qml.transforms.sum_expand`` and ``qml.transforms.hamiltonian_expand`` are removed.
   Instead, ``qml.transforms.split_non_commuting`` can be used for equivalent behaviour.
 
   - Deprecated in v0.38
