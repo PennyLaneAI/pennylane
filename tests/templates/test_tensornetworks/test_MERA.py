@@ -484,3 +484,60 @@ class TestTemplateOutputs:
 
         manual_result = circuit_manual()
         assert np.isclose(template_result, manual_result)
+
+    @pytest.mark.parametrize(
+        (
+            "block",
+            "n_params_block",
+            "wires",
+            "n_block_wires",
+            "template_weights",
+            "expected_circuit",
+        ),
+        [
+            (
+                circuit2_block,
+                2,
+                [0, 1, 2, 3],
+                2,
+                [[0.1, 0.2], [-0.2, 0.3], [0.3, 0.4], [0.1, 0.2], [-0.2, 0.3]],
+                circuit2_MERA,
+            ),
+            (
+                circuit3_block,
+                3,
+                [1, 2, 3, 4],
+                2,
+                [
+                    [0.1, 0.2, 0.3],
+                    [0.2, 0.3, -0.4],
+                    [0.5, 0.2, 0.3],
+                    [0.1, 0.2, 0.3],
+                    [0.2, 0.3, -0.4],
+                ],
+                circuit3_MERA,
+            ),
+        ],
+    )
+    def test_jax_jit(
+        self, block, n_params_block, wires, n_block_wires, template_weights, expected_circuit
+    ):
+        import jax
+        dev = qml.device("default.qubit", wires=wires)
+
+        @jax.jit
+        @qml.qnode(dev)
+        def circuit_template():
+            qml.MERA(wires, n_block_wires, block, n_params_block, template_weights)
+            return qml.expval(qml.PauliZ(wires=wires[1]))
+
+        template_result = circuit_template()
+
+        @jax.jit
+        @qml.qnode(dev)
+        def circuit_manual():
+            expected_circuit(template_weights, wires)
+            return qml.expval(qml.PauliZ(wires=wires[1]))
+
+        manual_result = circuit_manual()
+        assert np.isclose(template_result, manual_result)

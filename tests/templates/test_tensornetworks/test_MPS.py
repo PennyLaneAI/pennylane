@@ -454,3 +454,90 @@ class TestTemplateOutputs:
 
         manual_result = circuit_manual()
         assert np.isclose(template_result, manual_result)
+
+    @pytest.mark.parametrize(
+        (
+            "block",
+            "n_params_block",
+            "wires",
+            "n_block_wires",
+            "template_weights",
+            "offset",
+            "kwargs",
+            "expected_circuit",
+        ),
+        [
+            (
+                "circuit1_block",
+                2,
+                [1, 2, 3, 4],
+                2,
+                [[0.1, 0.2], [-0.2, 0.3], [0.3, 0.4]],
+                None,
+                {},
+                "circuit1_MPS",
+            ),
+            (
+                "circuit2_block",
+                3,
+                [1, 2, 3],
+                2,
+                [[0.1, 0.2, 0.3], [0.2, 0.3, -0.4]],
+                None,
+                {},
+                "circuit2_MPS",
+            ),
+            (
+                "circuit3_block",
+                0,
+                [1, 2, 3, 4, 5, 6, 7, 8],
+                4,
+                None,
+                1,
+                {"k": 2},
+                "circuit3_MPS",
+            ),
+            (
+                "circuit3_block",
+                0,
+                [1, 2, 3, 4, 5, 6, 7, 8, 9],
+                5,
+                None,
+                2,
+                {"k": 2},
+                "circuit4_MPS",
+            ),
+        ],
+    )
+    @pytest.mark.jax
+    def test_jax_jit(self, block, n_params_block, wires, n_block_wires, template_weights, offset, kwargs, expected_circuit):
+        import jax
+
+        dev = qml.device("default.qubit", wires=wires)
+        block = getattr(self, block)
+        expected_circuit = getattr(self, expected_circuit)
+
+        @jax.jit
+        @qml.qnode(dev)
+        def circuit_template():
+            qml.MPS(
+                wires,
+                n_block_wires,
+                block,
+                n_params_block,
+                template_weights,
+                offset=offset,
+                **kwargs,
+            )
+            return qml.expval(qml.PauliZ(wires=wires[-1]))
+
+        template_result = circuit_template()
+
+        @jax.jit
+        @qml.qnode(dev)
+        def circuit_manual():
+            expected_circuit(weights=template_weights, wires=wires)
+            return qml.expval(qml.PauliZ(wires=wires[-1]))
+
+        manual_result = circuit_manual()
+        assert np.isclose(template_result, manual_result)
