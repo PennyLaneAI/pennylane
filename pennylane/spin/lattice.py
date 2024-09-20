@@ -285,8 +285,15 @@ def _generate_lattice(lattice, n_cells, boundary_condition=False, neighbour_orde
         },
     }
 
+    lattice_dim = lattice_dict[lattice_shape]["dim"]
+    if len(n_cells) != lattice_dim:
+        raise ValueError(
+            f"Argument `n_cells` must be of the correct dimension for the given lattice shape."
+            f" {lattice_shape} lattice is of dimension {lattice_dim}, got {len(n_cells)}."
+        )
+
     lattice_obj = Lattice(
-        n_cells=n_cells[0 : lattice_dict[lattice_shape]["dim"]],
+        n_cells=n_cells,
         vectors=lattice_dict[lattice_shape]["vectors"],
         positions=lattice_dict[lattice_shape]["positions"],
         neighbour_order=neighbour_order,

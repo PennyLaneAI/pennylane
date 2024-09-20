@@ -428,7 +428,7 @@ def test_add_edge():
     [
         (
             "chAin ",
-            [10, 0, 0],
+            [10],
             [
                 (0, 1, 0),
                 (1, 2, 0),
@@ -788,6 +788,17 @@ def test_shape_error():
     n_cells = [5, 5, 5]
     lattice = "Octagon"
     with pytest.raises(ValueError, match="Lattice shape, 'Octagon' is not supported."):
+        _generate_lattice(lattice=lattice, n_cells=n_cells)
+
+
+def test_dimension_error():
+    r"""Test that an error is raised if wrong dimension is provided for a given lattice shape."""
+    n_cells = [5, 5, 5]
+    lattice = "square"
+    with pytest.raises(
+        ValueError,
+        match="Argument `n_cells` must be of the correct dimension for" " the given lattice shape.",
+    ):
         _generate_lattice(lattice=lattice, n_cells=n_cells)
 
 
