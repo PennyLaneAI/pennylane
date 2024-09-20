@@ -13,6 +13,7 @@
 # limitations under the License.
 """Gradient descent optimizer"""
 
+import pennylane as qml
 from pennylane._grad import grad as get_gradient
 
 
@@ -38,10 +39,12 @@ class GradientDescentOptimizer:
 
     """
 
-    def __init__(self, stepsize=0.01):
+    def __init__(self, objective_fn, grad_fn=None, stepsize=0.01):
+        self.objective_fn = objective_fn
+        self.grad_fn = grad_fn
         self.stepsize = stepsize
 
-    def step_and_cost(self, objective_fn, *args, grad_fn=None, **kwargs):
+    def step_and_cost(self, *args, **kwargs):
         """Update trainable arguments with one step of the optimizer and return the corresponding
         objective function value prior to the step.
 
@@ -61,18 +64,18 @@ class GradientDescentOptimizer:
             If single arg is provided, list [array] is replaced by array.
         """
 
-        g, forward = self.compute_grad(objective_fn, args, kwargs, grad_fn=grad_fn)
+        g, forward = self.compute_grad(self.objective_fn, args, kwargs, grad_fn=self.grad_fn)
         new_args = self.apply_grad(g, args)
 
         if forward is None:
-            forward = objective_fn(*args, **kwargs)
+            forward = self.objective_fn(*args, **kwargs)
 
         # unwrap from list if one argument, cleaner return
         if len(new_args) == 1:
             return new_args[0], forward
         return new_args, forward
 
-    def step(self, objective_fn, *args, grad_fn=None, **kwargs):
+    def step(self, *args, **kwargs):
         """Update trainable arguments with one step of the optimizer.
 
         Args:
@@ -90,7 +93,7 @@ class GradientDescentOptimizer:
             If single arg is provided, list [array] is replaced by array.
         """
 
-        g, _ = self.compute_grad(objective_fn, args, kwargs, grad_fn=grad_fn)
+        g, _ = self.compute_grad(self.objective_fn, args, kwargs, grad_fn=self.grad_fn)
         new_args = self.apply_grad(g, args)
 
         # unwrap from list if one argument, cleaner return
@@ -122,8 +125,8 @@ class GradientDescentOptimizer:
         grad = g(*args, **kwargs)
         forward = getattr(g, "forward", None)
 
-        num_trainable_args = sum(getattr(arg, "requires_grad", False) for arg in args)
-        grad = (grad,) if num_trainable_args == 1 else grad
+        if not isinstance(grad, tuple):
+            grad = (grad,)
 
         return grad, forward
 
@@ -143,7 +146,7 @@ class GradientDescentOptimizer:
 
         trained_index = 0
         for index, arg in enumerate(args):
-            if getattr(arg, "requires_grad", False):
+            if qml.math.requires_grad(arg):
                 args_new[index] = arg - self.stepsize * grad[trained_index]
 
                 trained_index += 1
