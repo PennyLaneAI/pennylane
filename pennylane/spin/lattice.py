@@ -141,6 +141,7 @@ class Lattice:
 
         self.edges_indices = [(v1, v2) for (v1, v2, color) in self.edges]
 
+        # pylint: disable=too-many-branches
         if custom_nodes is not None:
             for node in custom_nodes:
                 if node[0] > self.n_sites:
