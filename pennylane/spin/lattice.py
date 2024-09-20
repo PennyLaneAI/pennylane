@@ -221,7 +221,7 @@ def _generate_lattice(lattice, n_cells, boundary_condition=False, neighbour_orde
     r"""Generates the lattice object for a given shape and n_cells.
 
     Args:
-        lattice (str): Shape of the lattice. Input Values can be ``'chain'``, ``'square'``, ``'rectangle'``,
+        lattice (str): Shape of the lattice. Input values can be ``'chain'``, ``'square'``, ``'rectangle'``,
               ``'honeycomb'``, ``'triangle'``, ``'kagome'``, ``'lieb'``, ``'cubic'``, ``'bcc'``, ``'fcc'``,
                or ``'diamond'``.
         n_cells (list[int]): Number of cells in each direction of the grid.
