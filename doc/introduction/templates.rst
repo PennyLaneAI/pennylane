@@ -426,7 +426,7 @@ The shape can for example be used to construct random weights at the beginning o
         return qml.expval(qml.PauliZ(0))
 
     shape = BasicEntanglerLayers.shape(n_layers=2, n_wires=n_wires)
-    np.random.seed(42)  # to make the result reproducable
+    np.random.seed(42)  # to make the result reproducible
     weights = np.random.random(size=shape)
 
 >>> circuit(weights)

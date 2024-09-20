@@ -71,7 +71,7 @@ class QNGOptimizer(GradientDescentOptimizer):
 
     where :math:`|\psi_\ell\rangle =  V(\theta_1, \dots, \theta_{i-1})|0\rangle`
     (that is, :math:`|\psi_\ell\rangle` is the quantum state prior to the application
-    of parameterized layer :math:`\ell`).
+    of parametrized layer :math:`\ell`).
 
     Combining the quantum natural gradient optimizer with the analytic parameter-shift
     rule to optimize a variational circuit with :math:`d` parameters and :math:`L` layers,
