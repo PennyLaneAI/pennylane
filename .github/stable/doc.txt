@@ -111,7 +111,7 @@ tomli==2.0.1
 torch==1.9.0+cpu
 tqdm==4.66.5
 typing_extensions==4.12.2
-tzdata==2024.1
+tzdata==2024.2
 urllib3==1.26.20
 Werkzeug==3.0.4
 wrapt==1.16.0
