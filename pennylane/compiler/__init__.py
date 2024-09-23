@@ -106,7 +106,7 @@ Basic usage
     ``lightning.qubit``, ``lightning.kokkos``, ``lightning.gpu``, and ``braket.aws.qubit``,
     but **not** ``default.qubit``.
     
-    For a full of supported devices, please see :doc:`catalyst:dev/devices`.
+    For a full list of supported devices, please see :doc:`catalyst:dev/devices`.
 
 When using just-in-time (JIT) compilation, the compilation is triggered at the call site the
 first time the quantum function is executed. For example, ``circuit`` is

@@ -24,7 +24,7 @@ Currently, Catalyst must be installed separately, and only supports the JAX
 interface and select devices. Supported backend devices for Catalyst include
 ``lightning.qubit``, ``lightning.kokkos``, ``lightning.gpu``, and ``braket.aws.qubit``,
 but **not** ``default.qubit``.
-For a full of supported devices, please see :doc:`catalyst:dev/devices`.
+For a full list of supported devices, please see :doc:`catalyst:dev/devices`.
 
 On MacOS and Linux, Catalyst can be installed with ``pip``:
 
