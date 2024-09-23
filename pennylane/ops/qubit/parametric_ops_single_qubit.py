@@ -88,9 +88,9 @@ class RX(ResourcesOperation):
         gate_sizes = defaultdict(int)
 
         num_gates = (
-            3 * sympy.log(1 / epsilon)
+            1.149 * sympy.log(1 / epsilon, 2) + 9.2
             if isinstance(epsilon, sympy.Symbol)
-            else round(3 * np.log(1 / epsilon))
+            else round(1.149 * np.log2(1 / epsilon) + 9.2)
         )
         gate_sizes[1] = num_gates
         gate_types["T"] = num_gates
@@ -200,9 +200,9 @@ class RY(ResourcesOperation):
         gate_sizes = defaultdict(int)
 
         num_gates = (
-            3 * sympy.log(1 / epsilon)
+            1.149 * sympy.log(1 / epsilon, 2) + 9.2
             if isinstance(epsilon, sympy.Symbol)
-            else round(3 * np.log(1 / epsilon))
+            else round(1.149 * np.log2(1 / epsilon) + 9.2)
         )
         gate_sizes[1] = num_gates
         gate_types["T"] = num_gates
@@ -311,9 +311,9 @@ class RZ(ResourcesOperation):
         gate_sizes = defaultdict(int)
 
         num_gates = (
-            3 * sympy.log(1 / epsilon)
+            1.149 * sympy.log(1 / epsilon, 2) + 9.2
             if isinstance(epsilon, sympy.Symbol)
-            else round(3 * np.log(1 / epsilon))
+            else round(1.149 * np.log2(1 / epsilon) + 9.2)
         )
         gate_sizes[1] = num_gates
         gate_types["T"] = num_gates
@@ -418,7 +418,7 @@ class RZ(ResourcesOperation):
         return [self.data[0], 0.0, 0.0]
 
 
-class PhaseShift(Operation):
+class PhaseShift(ResourcesOperation):
     r"""
     Arbitrary single qubit local phase shift
 
@@ -457,6 +457,9 @@ class PhaseShift(Operation):
 
     def __init__(self, phi: TensorLike, wires: WiresLike, id: Optional[str] = None):
         super().__init__(phi, wires=wires, id=id)
+
+    def resources(self, gate_set=None):
+        return qml.resource.resource.resources_from_op(qml.RZ(self.parameters[0], wires=self.wires), gate_set=gate_set)
 
     def label(
         self,

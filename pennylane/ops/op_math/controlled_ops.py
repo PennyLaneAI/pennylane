@@ -16,6 +16,7 @@ This submodule contains controlled operators based on the ControlledOp class.
 """
 # pylint: disable=no-value-for-parameter, arguments-differ, arguments-renamed
 import warnings
+from collections import defaultdict
 from collections.abc import Iterable
 from functools import lru_cache
 
@@ -23,7 +24,7 @@ import numpy as np
 from scipy.linalg import block_diag
 
 import pennylane as qml
-from pennylane.operation import AnyWires, Wires
+from pennylane.operation import AnyWires, Wires, ResourcesOperation
 from pennylane.ops.qubit.matrix_ops import QubitUnitary
 from pennylane.ops.qubit.parametric_ops_single_qubit import stack_last
 
@@ -1909,7 +1910,7 @@ class CRot(ControlledOp):
         ]
 
 
-class ControlledPhaseShift(ControlledOp):
+class ControlledPhaseShift(ControlledOp, ResourcesOperation):
     r"""A qubit controlled phase shift.
 
     .. math:: CR_\phi(\phi) = \begin{bmatrix}
@@ -1951,6 +1952,17 @@ class ControlledPhaseShift(ControlledOp):
     def __init__(self, phi, wires, id=None):
         super().__init__(qml.PhaseShift(phi, wires=wires[1:]), control_wires=wires[:1], id=id)
 
+    def resources(self, gate_set=None):
+        gate_types = defaultdict(int)
+        gate_sizes = defaultdict(int)
+
+        gate_sizes[2] = 3
+        gate_types["CNOT"] = 3
+
+        r_cnot = qml.resource.resource.Resources(num_gates=3, gate_types=gate_types, gate_sizes=gate_sizes)
+        
+        return r_cnot + (3 * qml.resource.resource.resources_from_op(qml.RZ(self.parameters[0], wires=self.wires[0]), gate_set=gate_set))
+    
     def __repr__(self):
         return f"ControlledPhaseShift({self.data[0]}, wires={self.wires})"
 
