@@ -1,0 +1,84 @@
+name: Update Durations Files
+on:
+  # Scheduled trigger every Saturday at 2:47am UTC
+  schedule:
+  - cron: '47 2 * * 6'
+  workflow_dispatch:
+
+concurrency:
+  group: unit-tests-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DURATIONS_BRANCH: bot/durations-update
+
+jobs:
+  update-durations:
+    uses: ./.github/workflows/interface-unit-tests.yml
+    secrets:
+      codecov_token: ${{ secrets.CODECOV_TOKEN }}
+    with:
+      branch: ${{ github.ref }}
+      pipeline_mode: 'update-durations'
+      run_lightened_ci: true
+      skip_ci_test_jobs: 'torch-tests,autograd-tests,all-interfaces-tests,external-libraries-tests,qcut-tests,qchem-tests,gradients-tests,data-tests,device-tests'
+      pytest_store_durations: true
+
+  # Add job for downloading artifacts and opening PR
+  upload-durations-files:
+    needs: update-durations
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          ref: master
+
+      - name: Prepare local repo
+        run: |
+          git config user.name "GitHub Actions Bot"
+          git config user.email "<>"
+          if git ls-remote --exit-code origin "refs/heads/${{ env.DURATIONS_BRANCH }}"; then
+            git checkout "${{ env.DURATIONS_BRANCH }}"
+          else
+            git checkout -b "${{ env.DURATIONS_BRANCH }}"
+          fi
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: durations-*
+          path: .github/durations/
+          merge-multiple: true
+
+      - name: Determine if changes have been made
+        id: changed
+        run: echo "has_changes=$(git status --porcelain | wc -l | awk '{print $1}')" >> $GITHUB_OUTPUT
+
+      - name: Stage changes
+        if: steps.changed.outputs.has_changes != '0'
+        run: |
+          git add .github/durations/
+          git commit -m "Update test duration files"
+          git push -f --set-upstream origin "${{ env.DURATIONS_BRANCH }}"
+
+      # Create PR to master
+      - name: Create pull request
+        if: steps.changed.outputs.has_changes != '0'
+        env:
+          GH_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+          PR_TITLE: "Update test duration files"
+          PR_BODY: |
+            Automatic update of stable requirement files to snapshot valid python environments.
+            Because bots are not able to trigger CI on their own, please do so by pushing an empty commit to this branch using the following command:
+            ```
+            git commit --allow-empty -m 'trigger ci'
+            ```
+            Alternatively, wait for this branch to be out-of-date with master, then just use the 'Update branch' button.
+        run: |
+          # Open a PR and exit if successful
+          gh pr create --title "$PR_TITLE" --body "$PR_BODY" && exit 0
+
+          # If failed, PR already exists, so edit it
+          gh pr edit "$PR_TITLE" --body "$PR_BODY"

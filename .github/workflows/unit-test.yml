@@ -30,7 +30,7 @@ on:
         type: boolean
         default: false
       pipeline_mode:
-        description: The pipeline mode can be unit-tests, benchmarks, or reference-benchmark
+        description: The pipeline mode can be unit-tests, update-durations, benchmarks, or reference-benchmark
         required: false
         type: string
         default: 'unit-tests'
@@ -134,7 +134,7 @@ jobs:
           repository: PennyLaneAI/pennylane
 
       - name: Determine benchmark name
-        if: ${{ inputs.pipeline_mode != 'unit-tests' }}
+        if: ${{ contains(inputs.pipeline_mode, "benchmark") }}
         id: benchmark_name
         run: |
           job_name="${{ inputs.job_name }}"
@@ -143,7 +143,7 @@ jobs:
           echo "benchmark_name=$_benchmark_name" >> $GITHUB_OUTPUT
 
       - name: Cache reference benchmarks
-        if: ${{ inputs.pipeline_mode != 'unit-tests' }}
+        if: ${{ contains(inputs.pipeline_mode, "benchmark") }}
         id: benchmark-cache
         uses: actions/cache@v3
         with:
@@ -154,7 +154,7 @@ jobs:
         id: continue
         run: >-
           echo "confirm=${{
-            contains(fromJSON('["unit-tests", "benchmarks"]'), inputs.pipeline_mode)
+            contains(fromJSON('["unit-tests", "update-durations", "benchmarks"]'), inputs.pipeline_mode)
             || (inputs.pipeline_mode == 'reference-benchmarks'
             && steps.benchmark-cache.outputs.cache-hit != 'true' )}}" >> $GITHUB_OUTPUT
 
@@ -186,6 +186,8 @@ jobs:
         run: |
           if [[ "$PIPELINE_MODE" =~ .*"benchmarks".* ]]; then
             echo "args=$PYTEST_BENCHMARKS_ARGS $PYTEST_ADDITIONAL_ARGS" >> $GITHUB_OUTPUT
+          elif [[ "$PIPELINE_MODE" == "update-durations" ]]; then
+            echo "args=$PYTEST_PARALLELISE_ARGS $PYTEST_DURATIONS_ARGS $PYTEST_STORE_ARGS" >> $GITHUB_OUTPUT
           else
             echo "args=$PYTEST_COVERAGE_ARGS $PYTEST_PARALLELISE_ARGS $PYTEST_ADDITIONAL_ARGS $PYTEST_DURATIONS_ARGS $PYTEST_STORE_ARGS" >> $GITHUB_OUTPUT
           fi
@@ -205,7 +207,7 @@ jobs:
         if: ${{ inputs.pytest_store_durations == true }}
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ inputs.job_name }}-durations.json
+          name: durations-${{ inputs.job_name }}
           path: ${{ inputs.pytest_durations_file_path }}
           include-hidden-files: true
 

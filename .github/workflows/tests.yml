@@ -38,7 +38,7 @@ jobs:
           && !contains(github.event.pull_request.labels.*.name, 'ci:run-full-test-suite')
           || false
          }}
-      pytest_store_durations: true
+      pytest_store_durations: ${{ github.event_name == 'pull_request' }}
 
   upload-stable-deps:
     needs: tests
