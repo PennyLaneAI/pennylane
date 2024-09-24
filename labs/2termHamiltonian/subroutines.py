@@ -269,9 +269,39 @@ def InteractionPicture(H0, H1, time, h, s, m):
 
         qml.TrotterProduct(H0, -h, order=1)
 
+def ProductFormula(H0, H1, time, h, order):
+    r"""
+    Implements the interaction picture for the Hamiltonian H = hH0 + hH1
 
-def basic_simulation(hamiltonian, time, n_steps, s, m, device, n_wires,
-                    n_samples = 3):
+    Arguments:
+    ---------
+    H0: FermiSentence
+        The first Hamiltonian term
+    H1: FermiSentence
+        The second Hamiltonian term
+    h: float
+        The time step
+    order: int
+        The order of the approximation, for the CFQM method
+
+    Returns:
+    --------
+    None
+    """
+
+    time_steps = np.arange(time/h)
+
+    for _ in time_steps:
+        if order == 1: LieTrotter(H0, H1, h)
+        elif order == 2: Strang(H0, H1, h)
+        elif order == 4: Suzuki4(H0, H1, h)
+        else:
+            raise NotImplementedError('Only orders 1, 2, 4 are implemented')
+
+
+
+def basic_simulation(hamiltonian, time, n_steps, method, order, device, n_wires,
+                    n_samples = 3, **kwargs):
     r"""
     Implements Hamiltonian simulation.
 
@@ -283,20 +313,21 @@ def basic_simulation(hamiltonian, time, n_steps, s, m, device, n_wires,
         The total time of the simulation
     n_steps: int
         The number of steps
-    s: int
-        Half the order of the approximation
-    m: int
-        The number of exponentials in the approximation
+    method: str
+        One of 'InteractionPicture', 'ProductFormula', 'NearIntegrable'
+    order: int
+        Order of the approximation
     device: str
         The device to use for the simulation
     n_wires: int
         The number of wires
     n_samples: int
         The number of samples
+    **kwargs: dict
 
     Returns:
     --------
-    circuit
+    Average error
     """
     H0, H1= hamiltonian[0], hamiltonian[1]
 
@@ -308,12 +339,14 @@ def basic_simulation(hamiltonian, time, n_steps, s, m, device, n_wires,
         # Initial state preparation, using a 2-design
         qml.SimplifiedTwoDesign(initial_layer_weights=init_weights, weights=weights, wires=range(n_wires))
 
-        InteractionPicture(H0, H1, time, h, s, m)
-
-        #alternatively
-        #time_steps = np.arange(time/h)
-        #for _ in time_steps:
-        #    LieTrotter(H0, H1, h)
+        if method == 'InteractionPicture':
+            m = kwargs['m']
+            s = order // 2
+            InteractionPicture(H0, H1, time, h, s, m)
+        elif method == 'ProductFormula':
+            ProductFormula(H0, H1, time, h, order)
+        else:
+            raise NotImplementedError('Only InteractionPicture and ProductFormula are implemented')
 
 
         return qml.state()

@@ -22,22 +22,33 @@ device = qml.device(device_name, wires=n_wires)
 
 method_errors={}
 
-range_s = [1, 2, 2] #, 3, 3]
-range_m = [1, 2, 3] #, 5, 6]
+range_s = [1, 2]#, 2] #, 3, 3]
+range_m = [1, 2]#, 3] #, 5, 6]
+
+method_errors['InteractionPicture'] = {}
 for s, m in tqdm(zip(range_s, range_m), desc='CFQM'):
-    method_errors[(s, m)] = []
+    method_errors['InteractionPicture'][(s, m)] = []
     for time in time_steps:
-        error = basic_simulation(hamiltonian, time, n_steps, s, m, device, n_wires,
-                                n_samples = 4)
-        method_errors[(s, m)].append(error)
+        error = basic_simulation(hamiltonian, time, n_steps, 'InteractionPicture', 2*s, device, n_wires,
+                                n_samples = 4, **{'m': m})
+        method_errors['InteractionPicture'][(s, m)].append(error)
+
+method_errors['ProductFormula'] = {}
+for order in tqdm([1, 2, 4], desc='PF'):
+    method_errors['ProductFormula'][order] = []
+    for time in time_steps:
+        error = basic_simulation(hamiltonian, time, n_steps, 'ProductFormula', order, device, n_wires,
+                                n_samples = 4, **{'m': m})
+        method_errors['ProductFormula'][order].append(error)
 
 # Plot the results
 ax, fig = plt.subplots()
-for s, m in method_errors.keys():
-    plt.plot(time_steps, method_errors[(s, m)], label = f"$(s, m) = ({s}, {m})$")
-    # Compute slope b*x**a
-    a, b = np.polyfit(np.log(time_steps), np.log(method_errors[(s, m)]), 1)
-    print(f"({s}, {m}): {a}")
+
+for s, m in method_errors['InteractionPicture'].keys():
+    plt.plot(time_steps, method_errors['InteractionPicture'][(s, m)], label = f"IP, order = {2*s}")
+
+for order in [1, 2, 4]:
+    plt.plot(time_steps, method_errors['ProductFormula'][order], label = f"PF, order = {order}", linestyle='--')
 
 plt.yscale('log')
 plt.xscale('log')
