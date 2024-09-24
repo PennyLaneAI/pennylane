@@ -17,12 +17,13 @@ Contains the ControlledSequence template.
 from copy import copy
 
 import pennylane as qml
-from pennylane.operation import Operation
+from pennylane.operation import ResourcesOperation
 from pennylane.ops.op_math.symbolicop import SymbolicOp
+from pennylane.resource import Resources, resources_from_op
 from pennylane.wires import Wires
 
 
-class ControlledSequence(SymbolicOp, Operation):
+class ControlledSequence(SymbolicOp, ResourcesOperation):
     r"""Creates a sequence of controlled gates raised to decreasing powers of 2. Can be used as
     a sub-block in building a `quantum phase estimation <https://en.wikipedia.org/wiki/Quantum_phase_estimation_algorithm>`__
     circuit.
@@ -193,3 +194,12 @@ class ControlledSequence(SymbolicOp, Operation):
             ops.append(qml.pow(qml.ctrl(base, control=ctrl_wire), z=z, lazy=lazy))
 
         return ops
+
+    def resources(self, gate_set=None, **kwargs):
+        base = self.hyperparameters["base"]
+        control_wires = self.hyperparameters["control_wires"]
+
+        op_resource = resources_from_op(qml.ctrl(base, control=0), gate_set) * (2**len(control_wires) - 1)
+        num_wires = len(base.wires) + len(control_wires)
+
+        return Resources(num_wires=num_wires, num_gates=op_resource.num_gates, gate_types=op_resource.gate_types, gate_sizes=op_resource.gate_sizes)
