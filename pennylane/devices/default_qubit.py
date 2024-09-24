@@ -895,8 +895,6 @@ class DefaultQubit(Device):
 
 
 def _simulate_wrapper(circuit, kwargs):
-    if any(isinstance(op, qml.operation.Channel) for op in circuit.operations):
-        return tree_simulate(circuit)
     return simulate(circuit, **kwargs)
 
 
