@@ -50,7 +50,7 @@ def qjit(fn=None, *args, compiler="catalyst", **kwargs):  # pylint:disable=keywo
         Supported backend devices for Catalyst include
         ``lightning.qubit``, ``lightning.kokkos``, ``lightning.gpu``, and ``braket.aws.qubit``,
         but **not** ``default.qubit``.
-        
+
         For a full list of supported devices, please see :doc:`catalyst:dev/devices`.
 
         CUDA Quantum supports ``softwareq.qpp``, ``nvidia.custatevec``, and ``nvidia.cutensornet``.
