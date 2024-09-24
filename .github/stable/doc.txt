@@ -21,7 +21,7 @@ docutils==0.16
 duet==0.2.9
 exceptiongroup==1.2.2
 flatbuffers==24.3.25
-fonttools==4.54.0
+fonttools==4.54.1
 frozenlist==1.4.1
 fsspec==2024.9.0
 gast==0.4.0
