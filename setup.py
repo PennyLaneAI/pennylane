@@ -57,6 +57,7 @@ info = {
             "default.clifford = pennylane.devices.default_clifford:DefaultClifford",
             "default.qutrit.mixed = pennylane.devices.default_qutrit_mixed:DefaultQutritMixed",
             "default.tensor = pennylane.devices.default_tensor:DefaultTensor",
+            "sparse.qubit = pennylane.devices.sparse_qubit:SparseQubit",
         ],
         "console_scripts": ["pl-device-test=pennylane.devices.tests:cli"],
     },

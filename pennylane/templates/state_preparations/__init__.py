@@ -21,3 +21,4 @@ from .basis import BasisStatePreparation
 from .basis_qutrit import QutritBasisStatePreparation
 from .cosine_window import CosineWindow
 from .mottonen import MottonenStatePreparation
+from .state_prep_qrom import StatePrepQROM
