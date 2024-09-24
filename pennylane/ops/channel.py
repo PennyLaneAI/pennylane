@@ -86,6 +86,10 @@ class AmplitudeDamping(Channel):
         )
         return [K0, K1]
 
+    @property
+    def num_kraus(self):
+        return 2
+
 
 class GeneralizedAmplitudeDamping(Channel):
     r"""
@@ -179,6 +183,10 @@ class GeneralizedAmplitudeDamping(Channel):
         )
         return [K0, K1, K2, K3]
 
+    @property
+    def num_kraus(self):
+        return 4
+
 
 class PhaseDamping(Channel):
     r"""
@@ -241,6 +249,10 @@ class PhaseDamping(Channel):
         K0 = np.diag([1, np.sqrt(1 - gamma + np.eps)])
         K1 = np.diag([0, np.sqrt(gamma + np.eps)])
         return [K0, K1]
+
+    @property
+    def num_kraus(self):
+        return 2
 
 
 class DepolarizingChannel(Channel):
@@ -340,6 +352,10 @@ class DepolarizingChannel(Channel):
         )
         return [K0, K1, K2, K3]
 
+    @property
+    def num_kraus(self):
+        return 4
+
 
 class BitFlip(Channel):
     r"""
@@ -402,6 +418,10 @@ class BitFlip(Channel):
         K0 = np.sqrt(1 - p + np.eps) * np.convert_like(np.cast_like(np.eye(2), p), p)
         K1 = np.sqrt(p + np.eps) * np.convert_like(np.cast_like(np.array([[0, 1], [1, 0]]), p), p)
         return [K0, K1]
+
+    @property
+    def num_kraus(self):
+        return 2
 
 
 class ResetError(Channel):
@@ -508,6 +528,10 @@ class ResetError(Channel):
         )
 
         return [K0, K1, K2, K3, K4]
+
+    @property
+    def num_kraus(self):
+        return 5
 
 
 class PauliError(Channel):
@@ -627,6 +651,10 @@ class PauliError(Channel):
 
         return [K0, K1]
 
+    @property
+    def num_kraus(self):
+        return 2
+
 
 class PhaseFlip(Channel):
     r"""
@@ -689,6 +717,10 @@ class PhaseFlip(Channel):
         K0 = np.sqrt(1 - p + np.eps) * np.convert_like(np.cast_like(np.eye(2), p), p)
         K1 = np.sqrt(p + np.eps) * np.convert_like(np.cast_like(np.diag([1, -1]), p), p)
         return [K0, K1]
+
+    @property
+    def num_kraus(self):
+        return 2
 
 
 class QubitChannel(Channel):
@@ -765,6 +797,10 @@ class QubitChannel(Channel):
         True
         """
         return list(kraus_matrices)
+
+    @property
+    def num_kraus(self):
+        return len(self.data)
 
 
 # The primitive will be None if jax is not installed in the environment
