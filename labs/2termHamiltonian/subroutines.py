@@ -9,6 +9,8 @@ from scipy.special import roots_legendre
 from coefficients.expCommutators.generate_coefficients import NCP_3_6, NCP_4_10, NCP_5_18, PCP_5_16, PCP_6_26
 from coefficients.NI.coeffsNI import coeffsNI
 from coefficients.NI.coeffsNIproc import coeffsNIproc
+from coefficients.PF.coeffsSS import coeffsSS
+from coefficients.PF.coeffsSSproc import coeffsSSproc
 
 # You can choose from BoseHubbard, FermiHubbard, Heisenberg, Ising, check https://pennylane.ai/datasets/
 def load_hamiltonian(name = "Ising", periodicity="open", lattice="chain", layout="1x4"):
@@ -271,7 +273,7 @@ def InteractionPicture(H0, H1, time, h, s, m):
 
         qml.TrotterProduct(H0, -h, order=1)
 
-def ProductFormula(H0, H1, time, h, order):
+def ProductFormula(H0, H1, time, h, order, stages = None, identifier = None, processing = False):
     r"""
     Implements the interaction picture for the Hamiltonian H = hH0 + hH1
 
@@ -284,7 +286,13 @@ def ProductFormula(H0, H1, time, h, order):
     h: float
         The time step
     order: int
-        The order of the approximation, for the CFQM method
+        The order of the approximation
+    stages: int
+        The number of stages
+    identifier: str
+        The identifier of the method
+    processing: bool
+        Whether to use the processed coefficients
 
     Returns:
     --------
@@ -293,12 +301,32 @@ def ProductFormula(H0, H1, time, h, order):
 
     time_steps = np.arange(time/h)
 
-    for _ in time_steps:
-        if order == 1: LieTrotter(H0, H1, h)
-        elif order == 2: Strang(H0, H1, h)
-        elif order == 4: Suzuki4(H0, H1, h)
+    if order == 1:
+        for _ in time_steps:
+            LieTrotter(H0, H1, h)
+    elif order == 2:
+        for _ in time_steps: 
+            Strang(H0, H1, h)
+    elif order == 4: 
+        for _ in time_steps:
+            Suzuki4(H0, H1, h)
+    else:
+        if processing:
+            kSS, pSS, _ = coeffsSSproc(o = order, s = stages, identifier=identifier)
         else:
-            raise NotImplementedError('Only orders 1, 2, 4 are implemented')
+            kSS, pSS = coeffsSS(o = order, s = stages, identifier=identifier), []
+            
+
+            for ga in pSS:
+                Strang(H0, H1, ga*h)
+
+            for _ in time_steps:
+                for k in kSS:
+                    Strang(H0, H1, k*h)
+
+            for ga in pSS[::-1]:
+                Strang(H0, H1, -ga*h)
+
 
 def NearIntegrable(H0, H1, time, h, order, stages, processing):
     r"""
@@ -398,7 +426,10 @@ def basic_simulation(hamiltonian, time, n_steps, method, order, device, n_wires,
             s = order // 2
             InteractionPicture(H0, H1, time, h, s, m)
         elif method == 'ProductFormula':
-            ProductFormula(H0, H1, time, h, order)
+            processing = kwargs['processing']
+            stages = kwargs['stages']
+            identifier = kwargs['identifier']
+            ProductFormula(H0, H1, time, h, order, stages, identifier, processing)
         elif method == 'NearIntegrable':
             processing = kwargs['processing']
             stages = kwargs['stages']

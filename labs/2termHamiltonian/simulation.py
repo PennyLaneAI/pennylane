@@ -22,6 +22,17 @@ device = qml.device(device_name, wires=n_wires)
 
 method_errors={}
 
+method_errors['ProductFormula'] = {}
+orders = [2, 4, 6, 8, 10]
+stages = [1, 5, 13, 21, 35]
+identifiers = ['Strang', 'SUZ90', 'SS05', 'SS05', 'SS05']
+for order, stage, identifier in tqdm(zip(orders, stages, identifiers), desc='PF'):
+    method_errors['ProductFormula'][order] = []
+    for time in time_steps:
+        error = basic_simulation(hamiltonian, time, n_steps, 'ProductFormula', order, device, n_wires,
+                                n_samples = 4, **{'processing': False, 'stages': stage, 'identifier': identifier})
+        method_errors['ProductFormula'][order].append(error)
+
 orders = [[4, 2], [6, 2], [8, 2],
         [8, 4], [10, 4],
         [8, 6], [10, 6]]
@@ -45,13 +56,6 @@ for s, m in tqdm(zip(range_s, range_m), desc='CFQM'):
                                 n_samples = 4, **{'m': m})
         method_errors['InteractionPicture'][(s, m)].append(error)
 
-method_errors['ProductFormula'] = {}
-for order in tqdm([1, 2, 4], desc='PF'):
-    method_errors['ProductFormula'][order] = []
-    for time in time_steps:
-        error = basic_simulation(hamiltonian, time, n_steps, 'ProductFormula', order, device, n_wires,
-                                n_samples = 4, **{'m': m})
-        method_errors['ProductFormula'][order].append(error)
 
 # Plot the results
 ax, fig = plt.subplots()
@@ -62,7 +66,7 @@ for o in method_errors['NearIntegrable'].keys():
 for s, m in method_errors['InteractionPicture'].keys():
     plt.plot(time_steps, method_errors['InteractionPicture'][(s, m)], label = f"IP, order = {2*s}")
 
-for order in [1, 2, 4]:
+for order in method_errors['ProductFormula'].keys():
     plt.plot(time_steps, method_errors['ProductFormula'][order], label = f"PF, order = {order}", linestyle='--')
 
 plt.yscale('log')
