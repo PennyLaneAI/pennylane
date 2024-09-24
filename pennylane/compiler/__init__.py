@@ -105,7 +105,7 @@ Basic usage
     Supported backend devices for Catalyst include
     ``lightning.qubit``, ``lightning.kokkos``, ``lightning.gpu``, and ``braket.aws.qubit``,
     but **not** ``default.qubit``.
-    
+
     For a full list of supported devices, please see :doc:`catalyst:dev/devices`.
 
 When using just-in-time (JIT) compilation, the compilation is triggered at the call site the
