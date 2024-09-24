@@ -18,7 +18,7 @@ Contains the Multiplier template.
 import numpy as np
 
 import pennylane as qml
-from pennylane.operation import Operation
+from pennylane.operation import ResourcesOperation
 
 
 def _mul_out_k_mod(k, x_wires, mod, work_wire_aux, wires_aux):
@@ -33,7 +33,16 @@ def _mul_out_k_mod(k, x_wires, mod, work_wire_aux, wires_aux):
     return op_list
 
 
-class Multiplier(Operation):
+def _mul_out_k_mod_resources(k, x_wires, mod, work_wire_aux, wires_aux, gate_set=None):
+    qft_resources = 2 * qml.resource.resource.resources_from_op(qml.QFT(wires=wires_aux), gate_set=gate_set)
+    c_seq_p_add_resources = qml.resource.resource.resources_from_op(
+        qml.ControlledSequence(qml.PhaseAdder(k, wires_aux, mod, work_wire_aux), control=x_wires),
+        gate_set=gate_set,
+    )
+    return qft_resources + c_seq_p_add_resources
+
+
+class Multiplier(ResourcesOperation):
     r"""Performs the in-place modular multiplication operation.
 
     This operator performs the modular multiplication by an integer :math:`k` modulo :math:`mod` in
@@ -150,6 +159,31 @@ class Multiplier(Operation):
         self.hyperparameters["x_wires"] = qml.wires.Wires(x_wires)
         all_wires = qml.wires.Wires(x_wires) + qml.wires.Wires(work_wires)
         super().__init__(wires=all_wires, id=id)
+
+    def resources(self, gate_set=None):
+        k = self.hyperparameters["k"]
+        mod = self.hyperparameters["mod"]
+        x_wires = self.hyperparameters["x_wires"]
+        work_wires = self.hyperparameters["work_wires"]
+
+        inv_k = pow(k, -1, mod)
+
+        if mod != 2 ** len(x_wires):
+            work_wire_aux = work_wires[:1]
+            wires_aux = work_wires[1:]
+        else:
+            work_wire_aux = None
+            wires_aux = work_wires[: len(x_wires)]
+        
+        base_resoruces = _mul_out_k_mod_resources(k, x_wires, mod, work_wire_aux, wires_aux, gate_set=gate_set)
+        swap_resources = len(x_wires) * qml.resource.resource.resources_from_op(qml.SWAP(wires=[0,1]), gate_set=gate_set)
+
+        if inv_k == k: 
+            base_resoruces = 2 * base_resoruces
+        else: 
+            base_resoruces = base_resoruces + _mul_out_k_mod_resources(inv_k, x_wires, mod, work_wire_aux, wires_aux, gate_set=gate_set)
+        
+        return base_resoruces + swap_resources
 
     @property
     def num_params(self):
