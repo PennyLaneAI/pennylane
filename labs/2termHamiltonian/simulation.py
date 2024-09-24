@@ -21,17 +21,20 @@ hamiltonian = (H0, H1)
 device = qml.device(device_name, wires=n_wires)
 
 method_errors={}
+method_costs={}
 
 method_errors['ProductFormula'] = {}
+method_costs['ProductFormula'] = {}
 orders = [2, 4, 6, 8, 10]
 stages = [1, 5, 13, 21, 35]
 identifiers = ['Strang', 'SUZ90', 'SS05', 'SS05', 'SS05']
 for order, stage, identifier in tqdm(zip(orders, stages, identifiers), desc='PF'):
     method_errors['ProductFormula'][order] = []
     for time in time_steps:
-        error = basic_simulation(hamiltonian, time, n_steps, 'ProductFormula', order, device, n_wires,
+        error, resources = basic_simulation(hamiltonian, time, n_steps, 'ProductFormula', order, device, n_wires,
                                 n_samples = 4, **{'processing': False, 'stages': stage, 'identifier': identifier})
         method_errors['ProductFormula'][order].append(error)
+        method_costs['ProductFormula'][order] = resources.gate_types['RX'] + resources.gate_types['RZ'] + resources.gate_types['RY']
 
 orders = [[4, 2], [6, 2], [8, 2],
         [8, 4], [10, 4],
@@ -40,21 +43,27 @@ stages = [2, 3, 4,
         5, 7,
         7, 8]
 method_errors['NearIntegrable'] = {}
+method_costs['NearIntegrable'] = {}
 for order, stage in tqdm(zip(orders, stages), desc='NI'):
     method_errors['NearIntegrable'][tuple(order)] = []
     for time in time_steps:
-        error = basic_simulation(hamiltonian, time, n_steps, 'NearIntegrable', order, device, n_wires,
+        error, resources = basic_simulation(hamiltonian, time, n_steps, 'NearIntegrable', order, device, n_wires,
                                 n_samples = 4, **{'processing': False, 'stages': stage})
         method_errors['NearIntegrable'][tuple(order)].append(error)
+        method_costs['NearIntegrable'][tuple(order)] = resources.gate_types['RX'] + resources.gate_types['RZ'] + resources.gate_types['RY']
+
 
 range_s, range_m = [1, 2], [1, 2]#, 2] #, 3, 3]
 method_errors['InteractionPicture'] = {}
+method_costs['InteractionPicture'] = {}
 for s, m in tqdm(zip(range_s, range_m), desc='CFQM'):
     method_errors['InteractionPicture'][(s, m)] = []
     for time in time_steps:
-        error = basic_simulation(hamiltonian, time, n_steps, 'InteractionPicture', 2*s, device, n_wires,
+        error, resources = basic_simulation(hamiltonian, time, n_steps, 'InteractionPicture', 2*s, device, n_wires,
                                 n_samples = 4, **{'m': m})
         method_errors['InteractionPicture'][(s, m)].append(error)
+        method_costs['InteractionPicture'][(s, m)] = resources.gate_types['RX'] + resources.gate_types['RZ'] + resources.gate_types['RY']
+
 
 
 # Plot the results

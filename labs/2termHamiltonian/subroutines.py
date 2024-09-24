@@ -12,6 +12,10 @@ from coefficients.NI.coeffsNIproc import coeffsNIproc
 from coefficients.PF.coeffsSS import coeffsSS
 from coefficients.PF.coeffsSSproc import coeffsSSproc
 
+import copy
+gs = copy.copy(qml.resource.resource.StandardGateSet)
+gs.add('StatePrep')
+
 # You can choose from BoseHubbard, FermiHubbard, Heisenberg, Ising, check https://pennylane.ai/datasets/
 def load_hamiltonian(name = "Ising", periodicity="open", lattice="chain", layout="1x4"):
 
@@ -414,12 +418,17 @@ def basic_simulation(hamiltonian, time, n_steps, method, order, device, n_wires,
     H0, H1= hamiltonian[0], hamiltonian[1]
 
     @qml.qnode(device)
-    def call_approx(time, n_steps, init_weights, weights):
+    def initial_layer(init_weights, weights):
+        # Initial state preparation, using a 2-design
+        qml.SimplifiedTwoDesign(initial_layer_weights=init_weights, weights=weights, wires=range(n_wires))
+        return qml.state()
+
+    @qml.qnode(device)
+    def circuit(time, n_steps, init_state):
 
         h = time / n_steps
 
-        # Initial state preparation, using a 2-design
-        qml.SimplifiedTwoDesign(initial_layer_weights=init_weights, weights=weights, wires=range(n_wires))
+        qml.StatePrep(init_state, wires=range(n_wires))
 
         if method == 'InteractionPicture':
             m = kwargs['m']
@@ -437,22 +446,22 @@ def basic_simulation(hamiltonian, time, n_steps, method, order, device, n_wires,
         else:
             raise NotImplementedError('Method not implemented')
 
-
         return qml.state()
 
-    def call_approx_full(time, n_steps, init_weights, weights):
-        state = call_approx(time, n_steps, init_weights, weights)
-        return state
-
+    def call_approx_full(time, n_steps, init_state):
+        state = circuit(time, n_steps, init_state)
+        resources = qml.resource.get_resources(circuit, gate_set = gs)(time, n_steps, init_state)
+        return state, resources
 
     average_error = 0.
     for n in tqdm(range(n_samples), desc='Initial states attempted'):
         init_weights = np.random.uniform(0, 2*np.pi, (n_wires,))
         weights = np.random.uniform(0, 2*np.pi, (3, n_wires-1, 2))
-        average_error = n/(n+1)*average_error + 1/(n+1)*np.linalg.norm(call_approx_full(time, n_steps, init_weights, weights)
-                                                    - call_approx_full(time, 4*n_steps, init_weights, weights))
+        init_state = initial_layer(init_weights, weights)
+        state1, resources = call_approx_full(time, n_steps, init_state)
+        state2, _ = call_approx_full(time, 2*n_steps, init_state)
+        average_error = n/(n+1)*average_error + 1/(n+1)*np.linalg.norm(state1 - state2)
 
-
-    return average_error
+    return average_error, resources
 
 
