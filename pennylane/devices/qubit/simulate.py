@@ -495,8 +495,6 @@ def simulate_tree_mcm(
     branch_values = dict(zip(nodes[1:], branch_current[1:].tolist()))
     # Split circuit into segments
     circuits = split_circuit_at_nodes(circuit)
-    for c in circuits:
-        print(c.operations)
     circuits[0] = prepend_state_prep(circuits[0], None, interface, circuit.wires)
     terminal_measurements = circuits[-1].measurements if finite_shots else circuit.measurements
     # Initialize stacks
@@ -513,11 +511,8 @@ def simulate_tree_mcm(
         # Combine measurements & step up the tree #
         ###########################################
 
-        print(f"while loop iteration start")
-        print(f"{branch_current=}")
         # Combine two leaves once measurements are available
         if stack.is_full(depth):
-            print(f"Stack is full at {depth=}")
             # Call `combine_measurements` to count-average measurements
             measurement_dicts = get_measurement_dicts(terminal_measurements, stack, depth)
             measurements = combine_measurements(
@@ -568,8 +563,6 @@ def simulate_tree_mcm(
         # Obtain measurements for the active edge #
         ###########################################
 
-        print(f"{skip_subtree=}")
-        print(f"{invalid_postselect=}")
         # If num_shots is zero or postselecting on the wrong branch, update measurements with an empty tuple
         if skip_subtree or invalid_postselect:
             # Adjust counts if `invalid_postselect`
@@ -617,7 +610,6 @@ def simulate_tree_mcm(
 
         # If not at a leaf, project on the zero-branch and increase depth by one
         if depth < n_nodes and (not skip_subtree and not invalid_postselect):
-            print(f"Not at a leaf: Increase depth")
             depth += 1
             # Update the active branch samples with `update_mcm_samples`
             if finite_shots:
@@ -649,12 +641,10 @@ def simulate_tree_mcm(
 
         # If at a zero-branch leaf, update measurements and switch to the one-branch
         if branch_current[depth] == 0:
-            print("At a zero-valued leaf")
             stack.results_0[depth] = measurements
             branch_current[depth] = True
             branch_values[nodes[depth]] = True
             continue
-        print("At a one-valued leaf")
         # If at a one-branch leaf, update measurements
         stack.results_1[depth] = measurements
 
@@ -667,7 +657,6 @@ def simulate_tree_mcm(
         terminal_measurements = circuit.measurements
     mcm_samples = {nodes[i]: v for i, v in mcm_samples.items()}
     mcm_samples = prune_mcm_samples(mcm_samples)
-    print(measurement_dicts)
     results = combine_measurements(
         terminal_measurements, measurement_dicts, mcm_samples, node_is_mcm[1]
     )
