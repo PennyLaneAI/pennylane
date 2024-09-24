@@ -7,6 +7,8 @@ from scipy.linalg import logm
 from scipy.special import roots_legendre
 
 from coefficients.expCommutators.generate_coefficients import NCP_3_6, NCP_4_10, NCP_5_18, PCP_5_16, PCP_6_26
+from coefficients.NI.coeffsNI import coeffsNI
+from coefficients.NI.coeffsNIproc import coeffsNIproc
 
 # You can choose from BoseHubbard, FermiHubbard, Heisenberg, Ising, check https://pennylane.ai/datasets/
 def load_hamiltonian(name = "Ising", periodicity="open", lattice="chain", layout="1x4"):
@@ -298,6 +300,58 @@ def ProductFormula(H0, H1, time, h, order):
         else:
             raise NotImplementedError('Only orders 1, 2, 4 are implemented')
 
+def NearIntegrable(H0, H1, time, h, order, stages, processing):
+    r"""
+    Implements a near integrable method for the Hamiltonian H = H0 + H1
+
+    Arguments:
+    ---------
+    H0: FermiSentence
+        The first Hamiltonian term
+    H1: FermiSentence
+        The second Hamiltonian term
+    h: float
+        The time step
+    order: int
+        The order of the approximation, for the CFQM method
+    stages: int
+        The number of stages
+    processing: bool
+        Whether to use the processed coefficients
+
+    Returns:
+    --------
+    None
+    """
+
+
+    if processing:
+        kass, kbss, Pass, Pbss, _ = coeffsNIproc(o = order, s = stages)
+        pSS = [Pass, Pbss]
+        kSS = [kass, kbss]
+    else:
+        kass, kbss, stages = coeffsNI(o = order, s = stages)
+        pSS = [[], []]
+        kSS = [kass, kbss]
+
+    n_steps = np.arange(time/h)
+
+    kass, kbss = kSS
+
+    Pass, Pbss = pSS
+
+    for pa, pb in zip(Pass, Pbss):
+        qml.TrotterProduct(H0, time = pa*h, n = 1, order = 1)
+        qml.TrotterProduct(H1, time = pb*h, n = 1, order = 1)
+
+    for _ in n_steps:
+        for ka, kb in zip(kass, kbss):
+            qml.TrotterProduct(H0, time = ka*h, n = 1, order = 1)
+            qml.TrotterProduct(H1, time = kb*h, n = 1, order = 1)
+
+    for pa, pb in zip(Pass[::-1], Pbss[::-1]):
+        qml.TrotterProduct(H1, time = -pb*h, n = 1, order = 1)
+        qml.TrotterProduct(H1, time = -pa*h, n = 1, order = 1)
 
 
 def basic_simulation(hamiltonian, time, n_steps, method, order, device, n_wires,
@@ -345,8 +399,12 @@ def basic_simulation(hamiltonian, time, n_steps, method, order, device, n_wires,
             InteractionPicture(H0, H1, time, h, s, m)
         elif method == 'ProductFormula':
             ProductFormula(H0, H1, time, h, order)
+        elif method == 'NearIntegrable':
+            processing = kwargs['processing']
+            stages = kwargs['stages']
+            NearIntegrable(H0, H1, time, h, order, stages, processing)
         else:
-            raise NotImplementedError('Only InteractionPicture and ProductFormula are implemented')
+            raise NotImplementedError('Method not implemented')
 
 
         return qml.state()

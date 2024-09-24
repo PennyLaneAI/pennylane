@@ -22,9 +22,21 @@ device = qml.device(device_name, wires=n_wires)
 
 method_errors={}
 
-range_s = [1, 2]#, 2] #, 3, 3]
-range_m = [1, 2]#, 3] #, 5, 6]
+orders = [[4, 2], [6, 2], [8, 2],
+        [8, 4], [10, 4],
+        [8, 6], [10, 6]]
+stages = [2, 3, 4,
+        5, 7,
+        7, 8]
+method_errors['NearIntegrable'] = {}
+for order, stage in tqdm(zip(orders, stages), desc='NI'):
+    method_errors['NearIntegrable'][tuple(order)] = []
+    for time in time_steps:
+        error = basic_simulation(hamiltonian, time, n_steps, 'NearIntegrable', order, device, n_wires,
+                                n_samples = 4, **{'processing': False, 'stages': stage})
+        method_errors['NearIntegrable'][tuple(order)].append(error)
 
+range_s, range_m = [1, 2], [1, 2]#, 2] #, 3, 3]
 method_errors['InteractionPicture'] = {}
 for s, m in tqdm(zip(range_s, range_m), desc='CFQM'):
     method_errors['InteractionPicture'][(s, m)] = []
@@ -44,6 +56,9 @@ for order in tqdm([1, 2, 4], desc='PF'):
 # Plot the results
 ax, fig = plt.subplots()
 
+for o in method_errors['NearIntegrable'].keys():
+    plt.plot(time_steps, method_errors['NearIntegrable'][o], label = f"NI, order = {o}", linestyle=':')
+
 for s, m in method_errors['InteractionPicture'].keys():
     plt.plot(time_steps, method_errors['InteractionPicture'][(s, m)], label = f"IP, order = {2*s}")
 
@@ -56,7 +71,7 @@ plt.xscale('log')
 plt.xlabel('Time step')
 plt.ylabel('Error')
 
-plt.legend(fontsize='small')
+plt.legend(fontsize='small', bbox_to_anchor=(1.05, 1), loc='upper left')
 
 plt.savefig('labs/2termHamiltonian/results/method_errors.pdf', bbox_inches='tight', format='pdf')
 
