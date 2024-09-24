@@ -83,6 +83,7 @@ class SparseQubit(Device):
 
         state = SparseState(len(wires))
 
+        """
         shape = tuple([2 for _ in range(len(wires))])
         print(shape)
 
@@ -94,7 +95,7 @@ class SparseQubit(Device):
         state = sparse.COO(coords, data, shape=shape)
 
         print("hola", state[0,0])
-
+        """
         for gate in tape.operations:
 
             control_wires = gate.control_wires
