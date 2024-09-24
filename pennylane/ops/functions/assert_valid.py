@@ -314,10 +314,8 @@ def _check_differentiation(op):
         qml.apply(qml.pytrees.unflatten(args, struct))
         return qml.probs(wires=op.wires)
 
-    qnode_ref = qml.QNode(circuit, device=qml.device("default.qubit"), diff_method="backprop")
-    qnode_ps = qml.QNode(
-        circuit, device=qml.device("reference.qubit"), diff_method="parameter-shift"
-    )
+    qnode_ref = qml.QNode(circuit, qml.device("default.qubit"), diff_method="backprop")
+    qnode_ps = qml.QNode(circuit, qml.device("reference.qubit"), diff_method="parameter-shift")
 
     params = [x if isinstance(x, int) else qml.numpy.array(x) for x in data]
 
