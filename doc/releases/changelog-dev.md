@@ -167,6 +167,7 @@
 <h3>Bug fixes 🐛</h3>
 
 * `qml.map_wires` can now be applied to a batch of tapes.
+  [(#6295)](https://github.com/PennyLaneAI/pennylane/pull/6295)
 
 * Fix float-to-complex casting in various places across PennyLane.
  [(#6260)](https://github.com/PennyLaneAI/pennylane/pull/6260)
