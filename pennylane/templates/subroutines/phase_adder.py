@@ -235,10 +235,11 @@ class PhaseAdder(ResourcesOperation):
         k = self.hyperparameters["k"]
         mod = self.hyperparameters["mod"]
         x_wires = self.hyperparameters["x_wires"]
-        work_wire = self.hyperparameters["work_wire"]
+
+        rz_resources = qml.RZ.compute_resources()
 
         if mod == 2 ** len(x_wires):
-            rzs = k*qml.RZ.compute_resources()
+            rzs = k*rz_resources
             return Resources(num_gates = rzs.num_gates, num_wires=len(x_wires), gate_types=rzs.gate_types, gate_sizes=rzs.gate_sizes)
 
         gate_types = defaultdict(int)
@@ -246,7 +247,6 @@ class PhaseAdder(ResourcesOperation):
 
         # count the controlled PauliX
         cnots = 2
-        rz_resources = qml.RZ.compute_resources()
 
         # counts the resources from each call to _add_k_fourier
         resources = (mod + 3*k)*rz_resources
