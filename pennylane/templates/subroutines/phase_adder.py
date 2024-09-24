@@ -18,7 +18,8 @@ Contains the PhaseAdder template.
 import numpy as np
 
 import pennylane as qml
-from pennylane.operation import Operation
+from pennylane.operation import ResourcesOperation
+from pennylane.resource import Resources, resources_from_op
 
 
 def _add_k_fourier(k, wires):
@@ -29,7 +30,7 @@ def _add_k_fourier(k, wires):
     return op_list
 
 
-class PhaseAdder(Operation):
+class PhaseAdder(ResourcesOperation):
     r"""Performs the in-place modular phase addition operation.
 
     This operator performs the modular addition by an integer :math:`k` modulo :math:`mod` in the
@@ -228,3 +229,29 @@ class PhaseAdder(Operation):
             op_list.extend(_add_k_fourier(k, x_wires))
 
         return op_list
+
+    def resources(self, gate_set=None, **kwargs):
+        k = self.hyperparameters["k"]
+        mod = self.hyperparameters["mod"]
+        x_wires = self.hyperparameters["x_wires"]
+
+        if mod == 2 ** len(x_wires):
+            return k*qml.RZ.compute_resources()
+
+        # count the controlled PauliX
+        cnots = 2
+
+        # counts the resources from each call to _add_k_fourier
+        resources = (mod + 3*k)*qml.RZ.compute_resources()
+
+        resources += 2*resources_from_op(qml.adjoint(qml.QFT)(wires=x_wires), gate_set=gate_set)
+        resources += 2*resources_from_op(qml.QFT(wires=x_wires), gate_set=gate_set)
+
+        # counts the resources from controlled _add_k_fourier
+        resources += 2*mod*qml.RZ.compute_resources()
+        cnots += 2*mod
+
+        resources += Resources(gate_types={"CNOT": cnots})
+
+
+        return resources

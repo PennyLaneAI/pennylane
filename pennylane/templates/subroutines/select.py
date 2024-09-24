@@ -21,10 +21,11 @@ import itertools
 
 import pennylane as qml
 from pennylane import math
-from pennylane.operation import Operation
+from pennylane.operation import ResourcesOperation
+from pennylane.resource import resources_from_sequence_ops
 
 
-class Select(Operation):
+class Select(ResourcesOperation):
     r"""Applies specific input operations depending on the state of
     the designated control qubits.
 
@@ -202,6 +203,9 @@ class Select(Operation):
             qml.ctrl(op, control, control_values=states[index]) for index, op in enumerate(ops)
         ]
         return decomp_ops
+
+    def resources(self, gate_set=None, **kwargs):
+        return resources_from_sequence_ops(self.decomposition(), gate_set=gate_set, **kwargs)
 
     @property
     def ops(self):
