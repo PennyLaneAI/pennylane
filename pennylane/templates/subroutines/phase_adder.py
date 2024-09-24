@@ -16,6 +16,7 @@ Contains the PhaseAdder template.
 """
 
 import numpy as np
+from collections import defaultdict
 
 import pennylane as qml
 from pennylane.operation import ResourcesOperation
@@ -234,24 +235,51 @@ class PhaseAdder(ResourcesOperation):
         k = self.hyperparameters["k"]
         mod = self.hyperparameters["mod"]
         x_wires = self.hyperparameters["x_wires"]
+        work_wire = self.hyperparameters["work_wire"]
 
         if mod == 2 ** len(x_wires):
-            return k*qml.RZ.compute_resources()
+            rzs = k*qml.RZ.compute_resources()
+            return Resources(num_gates = rzs.num_gates, num_wires=len(x_wires), gate_types=rzs.gate_types, gate_sizes=rzs.gate_sizes)
+
+        gate_types = defaultdict(int)
+        gate_sizes = defaultdict(int)
 
         # count the controlled PauliX
         cnots = 2
 
         # counts the resources from each call to _add_k_fourier
         resources = (mod + 3*k)*qml.RZ.compute_resources()
+        num_gates = resources.num_gates
+        gate_types = _add_dicts(gate_types, resources.gate_types)
+        gate_sizes = _add_dicts(gate_sizes, resources.gate_sizes)
 
-        resources += 2*resources_from_op(qml.adjoint(qml.QFT)(wires=x_wires), gate_set=gate_set)
-        resources += 2*resources_from_op(qml.QFT(wires=x_wires), gate_set=gate_set)
+        resources = 2*resources_from_op(qml.adjoint(qml.QFT)(wires=x_wires), gate_set=gate_set)
+        num_gates += resources.num_gates
+        gate_types = _add_dicts(gate_types, resources.gate_types)
+        gate_sizes = _add_dicts(gate_sizes, resources.gate_sizes)
+
+        resources = 2*resources_from_op(qml.QFT(wires=x_wires), gate_set=gate_set)
+        num_gates += resources.num_gates
+        gate_types = _add_dicts(gate_types, resources.gate_types)
+        gate_sizes = _add_dicts(gate_sizes, resources.gate_sizes)
 
         # counts the resources from controlled _add_k_fourier
         resources += 2*mod*qml.RZ.compute_resources()
+        num_gates += resources.num_gates
         cnots += 2*mod
+        gate_types = _add_dicts(gate_types, resources.gate_types)
+        gate_sizes = _add_dicts(gate_sizes, resources.gate_sizes)
 
-        resources += Resources(gate_types={"CNOT": cnots})
+        gate_types["CNOT"] += cnots
+        gate_sizes["2"] += cnots
+        num_gates += cnots
 
+        num_wires = len(x_wires) + len(work_wire)
 
-        return resources
+        return Resources(num_gates=num_gates, num_wires=num_wires, gate_types=gate_types, gate_sizes=gate_sizes)
+
+def _add_dicts(d1, d2):
+    for key, value in d2.items():
+        d1[key] += value
+
+    return d1
