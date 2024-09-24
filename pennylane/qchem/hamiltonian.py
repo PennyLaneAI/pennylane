@@ -510,7 +510,9 @@ def _molecular_hamiltonian(
         )
 
     if len(coordinates) == len(symbols) * 3:
-        geometry_dhf = qml.math.array(coordinates.reshape(len(symbols), 3), like=qml.math.get_interface(coordinates))
+        geometry_dhf = qml.math.array(
+            coordinates.reshape(len(symbols), 3), like=qml.math.get_interface(coordinates)
+        )
         geometry_hf = coordinates
     elif len(coordinates) == len(symbols):
         geometry_dhf = qml.math.array(coordinates, like=qml.math.get_interface(coordinates))
