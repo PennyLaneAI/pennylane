@@ -49,6 +49,7 @@ from .preprocess import (
 from .qubit.adjoint_jacobian import adjoint_jacobian, adjoint_jvp, adjoint_vjp
 from .qubit.sampling import jax_random_split
 from .qubit.simulate import get_final_state, measure_final_state, simulate
+from .qubit.tree_simulate import tree_simulate
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -894,6 +895,8 @@ class DefaultQubit(Device):
 
 
 def _simulate_wrapper(circuit, kwargs):
+    if any(isinstance(op, qml.operation.Channel) for op in circuit.operations):
+        return tree_simulate(circuit)
     return simulate(circuit, **kwargs)
 
 

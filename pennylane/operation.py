@@ -1874,11 +1874,11 @@ class Channel(Operation, abc.ABC):
 
     # pylint: disable=abstract-method
 
-    # @property
-    # @abc.abstractmethod
-    # def num_kraus(self):
-    #     """Number of Kraus matrices for the channel."""
-    #     raise NotImplementedError
+    @property
+    @abc.abstractmethod
+    def num_kraus(self):
+        """Number of Kraus matrices for the channel."""
+        raise NotImplementedError
 
     @staticmethod
     @abc.abstractmethod

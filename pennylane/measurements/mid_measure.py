@@ -18,7 +18,10 @@ import uuid
 from functools import lru_cache
 from typing import Generic, Hashable, Optional, TypeVar, Union
 
+import numpy as np
 import pennylane as qml
+from pennylane import QueuingManager
+from pennylane.operation import Channel
 from pennylane.wires import Wires
 
 from .measurements import MeasurementProcess, MidMeasure
@@ -263,7 +266,7 @@ def _create_mid_measure_primitive():
 T = TypeVar("T")
 
 
-class MidMeasureMP(MeasurementProcess):
+class MidMeasureMP(MeasurementProcess, qml.operation.Channel):
     """Mid-circuit measurement.
 
     This class additionally stores information about unknown measurement outcomes in the qubit model.
@@ -292,10 +295,11 @@ class MidMeasureMP(MeasurementProcess):
         postselect: Optional[int] = None,
         id: Optional[str] = None,
     ):
-        self.batch_size = None
-        super().__init__(wires=Wires(wires), id=id)
+        Channel.__init__(self, wires=Wires(wires), id=id)
         self.reset = reset
         self.postselect = postselect
+        self.obs = self._eigvals = self.mv = None
+        self._hyperparameters = {"reset": self.reset, "postselect": self.postselect}
 
     # pylint: disable=arguments-renamed, arguments-differ
     @classmethod
@@ -358,15 +362,31 @@ class MidMeasureMP(MeasurementProcess):
 
         return hash(fingerprint)
 
-    @property
-    def data(self):
-        """The data of the measurement. Needed to match the Operator API."""
-        return []
+    def queue(self, context: QueuingManager = QueuingManager):
+        """Append the operator to the Operator queue."""
+        context.append(self)
+        return self  # so pre-constructed Observable instances can be queued and returned in a single statement
+
+    # @property
+    # def data(self):
+    #     """The data of the measurement. Needed to match the Operator API."""
+    #     return []
+
+    # @property
+    # def name(self):
+    #     """The name of the measurement. Needed to match the Operator API."""
+    #     return self.__class__.__name__
+
+    @staticmethod
+    def compute_kraus_matrices(reset=False, postselect=None):
+        """Kraus matrices representing a mid-circuit measurement."""
+        K0 = np.array([[1, 0], [0, 0]])
+        K1 = np.array([[0, int(reset)], [0, int(not reset)]])
+        return [K0, K1]
 
     @property
-    def name(self):
-        """The name of the measurement. Needed to match the Operator API."""
-        return self.__class__.__name__
+    def num_kraus(self):
+        return 2
 
 
 class MeasurementValue(Generic[T]):

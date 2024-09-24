@@ -15,7 +15,7 @@
 
 # pylint: disable=protected-access
 from collections import Counter
-from functools import partial, singledispatch
+from functools import partial, singledispatch, lru_cache
 from typing import Optional
 
 import numpy as np
@@ -52,39 +52,37 @@ class TreeTraversalStack:
     n_kraus: list
     states: list
 
-    def __init__(self, max_depth, n_kraus):
+    def __init__(self, max_depth, n_branches):
+        self.n_branches = n_branches
         self.probs = [None] * max_depth
-        self.results = [[None] * max_depth for _ in range(max(n_kraus[1:]))]
-        self.n_kraus = n_kraus
+        self.results = [[None]] + [[None] * self.n_branches[d] for d in range(1, max_depth)]
         self.states = [None] * max_depth
 
     def any_is_empty(self, depth):
         """Return True if any result at ``depth`` is ``None`` and False otherwise."""
-        return any(r[depth] is None for r in self.results)
+        return any(r is None for r in self.results[depth])
 
     def is_full(self, depth):
         """Return True if the results at ``depth`` are both not ``None`` and False otherwise."""
-        return all(r[depth] is not None for r in self.results)
+        return all(r is not None for r in self.results[depth])
 
     def prune(self, depth):
         """Reset all stack entries at ``depth`` to ``None``."""
-        self.counts[depth] = None
         self.probs[depth] = None
-        for r in self.results:
-            r[depth] = None
+        self.results[depth] = [None] * self.n_branches[depth]
         self.states[depth] = None
 
 
-def simulate_channels(
+def tree_simulate(
     circuit: qml.tape.QuantumScript,
     **execution_kwargs,
 ) -> Result:
-    """Simulate a single quantum script with channels using the tree-traversal algorithm.
+    """Simulate a single quantum script using the tree-traversal algorithm.
 
     The tree-traversal algorithm recursively explores all combinations of Kraus matrices
-    outcomes using a depth-first approach. The depth-first approach requires ``n_channels`` copies
-    of the state vector (``n_channels + 1`` state vectors in total) and records ``n_channels`` vectors
-    of samples after applying the Kraus matrix for a given branch.
+    outcomes using a depth-first approach. The depth-first approach requires ``n_nodes`` copies
+    of the state vector (``n_nodes + 1`` state vectors in total) and records ``n_nodes`` vectors
+    of measurements after applying the Kraus matrix for a given branch.
 
     Args:
         circuit (QuantumTape): The single circuit to simulate
@@ -100,36 +98,37 @@ def simulate_channels(
     Returns:
         tuple(TensorLike): The results of the simulation
     """
-    PROBS_TOL = 1e-8
-
     #######################
     # main implementation #
     #######################
 
     ##################
-    # Parse channel info #
+    # Parse node info #
     ##################
 
-    # channels is the list of all channel operations. channels[d] is the parent
-    # channel (node) of a circuit segment (edge) at depth `d`. The first element
-    # is None because there is no parent channel at depth 0
-    channels: tuple[Channel] = tuple(
-        [None] + [op for op in circuit.operations if isinstance(op, Channel)]
-    )
-    n_channels: int = len(channels) - 1
-    n_kraus: list[int] = [None] + [c.num_kraus for c in channels[1:]]
+    # nodes is the list of all channel operations. nodes[d] is the parent
+    # node of a circuit segment (edge) at depth `d`. The first element
+    # is None because there is no parent node at depth 0
+    nodes: list[Channel] = [None] + [op for op in circuit.operations if isinstance(op, Channel)]
+    n_nodes: int = len(nodes) - 1
+    n_kraus: list[int] = [None] + [c.num_kraus for c in nodes[1:]]
 
     #############################
     # Initialize tree-traversal #
     #############################
-    branch_current = qml.math.zeros(n_channels + 1, dtype=int)
+    # branch_current[:d+1] is the active branch at depth `d`
+    # The first entry is always 0 as the first edge does not stem from a channel.
+    # For example, if `d = 2` and `branch_current = [0, 1, 1, 0]` we are on the 11-branch,
+    # i.e. we're exploring the first two Channels at index 1 of their respective Kraus matrices.
+    # The last entry isn't meaningful until we are at depth `d=3`.
+    branch_current = qml.math.zeros(n_nodes + 1, dtype=int)
     # Split circuit into segments
-    circuits = split_circuit_at_channels(circuit)
+    circuits = split_circuit_at_nodes(circuit)
     circuits[0] = prepend_state_prep(circuits[0], None, circuit.wires)
     terminal_measurements = circuits[-1].measurements
     # Initialize stacks
-    cumcounts = [0] * (n_channels + 1)
-    stack = TreeTraversalStack(n_channels + 1, n_kraus=n_kraus)
+    cumcounts = [0] * (n_nodes + 1)
+    stack = TreeTraversalStack(n_nodes + 1, n_kraus)
     # The goal is to obtain the measurements of the branches
     # and to combine them into the final result. Exit the loop once the
     # measurements for all branches are available.
@@ -143,34 +142,30 @@ def simulate_channels(
 
         # Combine two leaves once measurements are available
         if stack.is_full(depth):
-            return 0
+            # Call `combine_measurements` to count-average measurements
+            measurements = combine_measurements(terminal_measurements, stack, depth)
+            branch_current[depth:] = 0  # Reset current branch
+            stack.prune(depth)  # Clear stacks
 
-        ################################################
-        # Determine whether to execute the active edge #
-        ################################################
+            # Go up one level to explore alternate subtree of the same depth
+            depth -= 1
+            stack.results[depth][branch_current[depth]] = measurements
+            branch_current[depth] = (branch_current[depth] + 1) % n_kraus[depth]
 
-        skip_subtree = (
-            stack.probs[depth] is not None
-            and float(stack.probs[depth][branch_current[depth]]) <= PROBS_TOL
-        )
-        # Update active branch dict
-        invalid_postselect = (
-            depth > 0
-            and channels[depth].postselect is not None
-            and branch_current[depth] != channels[depth].postselect
-        )
+            continue
 
         ###########################################
         # Obtain measurements for the active edge #
         ###########################################
 
-        # If num_shots is non-zero, simulate the current depth circuit segment
+        # Simulate the current depth circuit segment
         if depth == 0:
             initial_state = stack.states[0]
         else:
-            initial_state = branch_state(
-                stack.states[depth], branch_current[depth], channels[depth]
+            initial_state, stack.probs[depth][branch_current[depth]] = branch_state(
+                stack.states[depth], nodes[depth], branch_current[depth]
             )
+
         circtmp = qml.tape.QuantumScript(
             circuits[depth].operations,
             circuits[depth].measurements,
@@ -179,42 +174,45 @@ def simulate_channels(
         state, is_state_batched = get_final_state(
             circtmp, mid_measurements=branch_current, **execution_kwargs
         )
-        measurements = measure_final_state(circtmp, state, is_state_batched, **execution_kwargs)
+
+        ################################################
+        # Update terminal measurements & step sideways #
+        ################################################
+
+        if depth == n_nodes:
+            # Update measurements and switch to the next branch
+            measurements = measure_final_state(circtmp, state, is_state_batched, **execution_kwargs)
+            if len(terminal_measurements) == 1:
+                measurements = (measurements,)
+            stack.results[depth][branch_current[depth]] = measurements
+            branch_current[depth] = (branch_current[depth] + 1) % n_kraus[depth]
+            continue
 
         #####################################
         # Update stack & step down the tree #
         #####################################
 
         # If not at a leaf, project on the zero-branch and increase depth by one
-        if depth < n_channels and (not skip_subtree and not invalid_postselect):
-            depth += 1
-            stack.probs[depth] = dict(zip([False, True], measurements))
-            samples = None
-            # Store a copy of the state-vector to project on the one-branch
-            stack.states[depth] = state
-            continue
+        depth += 1
 
-        ################################################
-        # Update terminal measurements & step sideways #
-        ################################################
+        if stack.probs[depth] is None:
+            # If probs list has not been initialized at the current depth, initialize a list
+            # for storing the probabilities of each of the different possible branches at the
+            # current depth
+            stack.probs[depth] = [None] * n_kraus[depth]
 
-        # If at a zero-branch leaf, update measurements and switch to the one-branch
-        if branch_current[depth] == 0:
-            stack.results[0][depth] = measurements
-            branch_current[depth] = True
-            continue
-        # If at a one-branch leaf, update measurements
-        stack.results[1][depth] = measurements
+        # Store a copy of the state-vector to project on the next branch
+        stack.states[depth] = state
 
     ##################################################
     # Finalize terminal measurements post-processing #
     ##################################################
 
-    results = combine_measurements(terminal_measurements)
-    return results[0] if len(results) == 1 else results
+    results = combine_measurements(terminal_measurements, stack, 1)
+    return results
 
 
-def split_circuit_at_channels(circuit):
+def split_circuit_at_nodes(circuit):
     """Return a list of circuits segments (one for each channel in the
     original circuit) where the terminal measurements probe the state. Only
     the last segment retains the original terminal measurements.
@@ -267,26 +265,64 @@ def prepend_state_prep(circuit, state, wires):
     )
 
 
-def branch_state(state, branch, mcm):
+@lru_cache
+def _get_kraus_matrices(op):
+    return op.kraus_matrices()
+
+
+def branch_state(state, op, index):
     """Collapse the state on a given branch.
 
     Args:
         state (TensorLike): The initial state
-        branch (int): The branch on which the state is collapsed
-        mcm (MidMeasureMP): Mid-circuit measurement object used to obtain the wires and ``reset``
+        op (Channel): Channel being applied to the state
+        index (int): The index of the list of kraus matrices
 
     Returns:
-        TensorLike: The collapsed state
+        tuple[TensorLike, float]: The collapsed state and the probability
     """
-    state = state.copy()
-    slices = [slice(None)] * qml.math.ndim(state)
-    axis = mcm.wires.toarray()[0]
-    slices[axis] = int(not branch)
-    state[tuple(slices)] = 0.0
-    state /= qml.math.norm(state)
+    matrix = _get_kraus_matrices(op)[index]
+    state = apply_operation(qml.QubitUnitary(matrix, wires=op.wires), state)
 
-    return state
+    norm = qml.math.norm(state)
+    state /= norm
+    return state, norm**2
 
 
-def combine_measurements(*args, **kwargs):
-    return None
+def fake_measurements(circuit, state, is_state_batched, **execution_kwargs):
+    return np.ones(2) / 2
+
+
+def combine_measurements(terminal_measurments, stack, depth):
+    """Returns combined measurement values of various types."""
+    final_measurements = []
+    all_probs = stack.probs[depth]
+    all_results = stack.results[depth]
+
+    for i, mp in enumerate(terminal_measurments):
+        all_mp_results = [res[i] for res in all_results]
+        comb_meas = combine_measurements_core(mp, all_probs, all_mp_results)
+        final_measurements.append(comb_meas)
+
+    return tuple(final_measurements)
+
+
+@singledispatch
+def combine_measurements_core(
+    original_measurement, measures, node_is_mcm
+):  # pylint: disable=unused-argument
+    """Returns the combined measurement value of a given type."""
+    raise TypeError(f"tree_simulate does not support {type(original_measurement).__name__}")
+
+
+@combine_measurements_core.register
+def _(original_measurement: ExpectationMP, probs, results):
+    """The expectation value of two branches is a weighted sum of expectation values."""
+    return qml.math.dot(probs, results)
+
+
+@combine_measurements_core.register
+def _(original_measurement: ProbabilityMP, probs, results):
+    """The combined probability of two branches is a weighted sum of the probabilities.
+    Note the implementation is the same as for ``ExpectationMP``."""
+    return qml.math.dot(probs, results)
