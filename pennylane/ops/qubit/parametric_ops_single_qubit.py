@@ -56,9 +56,10 @@ def _resource_estimation(epsilon):
     )
     gate_sizes[1] = num_gates
     gate_types["T"] = num_gates
+    num_wires = 1
 
     return qml.resource.resource.Resources(
-        num_gates=num_gates, gate_types=gate_types, gate_sizes=gate_sizes
+        num_gates=num_gates, gate_types=gate_types, gate_sizes=gate_sizes, num_wires=num_wires
     )
 
 class RX(ResourcesOperation):
