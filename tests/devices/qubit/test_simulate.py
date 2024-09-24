@@ -33,7 +33,7 @@ from pennylane.devices.qubit.simulate import (
     samples_to_counts,
     simulate_one_shot_native_mcm,
     simulate_tree_mcm,
-    split_circuit_at_mcms,
+    split_circuit_at_nodes,
 )
 
 ml_frameworks_list = [
@@ -1528,7 +1528,7 @@ class TestMidMeasurements:
         mcms = find_post_processed_mcms(qscript)
         assert len(mcms) == n_circs
 
-        split_circs = split_circuit_at_mcms(qscript)
+        split_circs = split_circuit_at_nodes(qscript)
         assert len(split_circs) == n_circs + 1
         for circ in split_circs:
             assert not [o for o in circ.operations if isinstance(o, qml.measurements.MidMeasureMP)]

@@ -303,6 +303,69 @@ def apply_conditional(
 
 
 @apply_operation.register
+def apply_channel(
+    op: qml.operation.Channel,
+    state,
+    is_state_batched: bool = False,
+    debugger=None,
+    **execution_kwargs,
+):
+    """Applies a quantum channel by probabilistically applying its Kraus operators.
+
+    Args:
+        op (Operator): The operation to apply to ``state``
+        state (TensorLike): The starting state.
+        is_state_batched (bool): Boolean representing whether the state is batched or not
+        debugger (_Debugger): The debugger to use
+        mid_measurements (dict, None): Mid-circuit measurement dictionary mutated to record the sampled value
+        interface (str): The machine learning interface of the state
+        rng (Optional[numpy.random._generator.Generator]): A NumPy random number generator.
+        prng_key (Optional[jax.random.PRNGKey]): An optional ``jax.random.PRNGKey``. This is
+            the key to the JAX pseudo random number generator. Only for simulation using JAX.
+            If None, a ``numpy.random.default_rng`` will be used for sampling.
+
+    Returns:
+        ndarray: output state
+    """
+    branch_values = execution_kwargs.get("mid_measurements", None)
+    rng = execution_kwargs.get("rng", None)
+    prng_key = execution_kwargs.get("prng_key", None)
+    interface = qml.math.get_deep_interface(state)
+    if interface == "jax":
+        raise NotImplementedError
+        # pylint: disable=import-outside-toplevel
+        from jax.lax import cond
+
+        return cond(
+            op.meas_val.concretize(mid_measurements),
+            lambda x: apply_operation(
+                op.base,
+                x,
+                is_state_batched=is_state_batched,
+                debugger=debugger,
+                mid_measurements=mid_measurements,
+                rng=rng,
+                prng_key=prng_key,
+            ),
+            lambda x: x,
+            state,
+        )
+
+    kraus_op = qml.QubitUnitary(op.kraus_matrices()[branch_values[op]], wires=op.wires)
+    mat = kraus_op.matrix()
+    print(f"will apply {kraus_op} with matrix {mat}")
+    return apply_operation(
+        kraus_op,
+        state,
+        is_state_batched=is_state_batched,
+        debugger=debugger,
+        mid_measurements=branch_values,
+        rng=rng,
+        prng_key=prng_key,
+    )
+
+
+@apply_operation.register
 def apply_mid_measure(
     op: MidMeasureMP, state, is_state_batched: bool = False, debugger=None, **execution_kwargs
 ):

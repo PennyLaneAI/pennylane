@@ -68,6 +68,7 @@ def stopping_condition(op: qml.operation.Operator) -> bool:
     return (
         (isinstance(op, Conditional) and stopping_condition(op.base))
         or isinstance(op, MidMeasureMP)
+        or isinstance(op, qml.operation.Channel)
         or op.has_matrix
     )
 
