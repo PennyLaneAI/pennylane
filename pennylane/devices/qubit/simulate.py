@@ -458,11 +458,13 @@ def simulate_tree_mcm(
     # mcms is the list of all mid-circuit measurement operations
     # mcms[d] is the parent MCM (node) of a circuit segment (edge) at depth `d`
     # The first element is None because there is no parent MCM at depth 0
+    # NOTE: The identification of channels by their `id` might break if the same
+    # channel is queued repeatedly.
     nodes, node_is_mcm = zip(
         *(
             [(None, None)]
             + [
-                (op, isinstance(op, MidMeasureMP))
+                ((op if (is_mcm:=isinstance(op, MidMeasureMP)) else id(op)), is_mcm)
                 for op in circuit.operations
                 if isinstance(op, (MidMeasureMP, Channel))
             ]
@@ -495,8 +497,13 @@ def simulate_tree_mcm(
     branch_values = dict(zip(nodes[1:], branch_current[1:].tolist()))
     # Split circuit into segments
     circuits = split_circuit_at_nodes(circuit)
+    #for c in circuits:
+        #print(c.operations)
+        #print(c.measurements)
+        #print()
     circuits[0] = prepend_state_prep(circuits[0], None, interface, circuit.wires)
     terminal_measurements = circuits[-1].measurements if finite_shots else circuit.measurements
+    #print(f"{terminal_measurements=}")
     # Initialize stacks
     cumcounts = [0] * (n_nodes + 1)
     stack = TreeTraversalStack(n_nodes + 1)
@@ -513,6 +520,7 @@ def simulate_tree_mcm(
 
         # Combine two leaves once measurements are available
         if stack.is_full(depth):
+            #print(f"{depth=}, {stack.is_full(depth)=}")
             # Call `combine_measurements` to count-average measurements
             measurement_dicts = get_measurement_dicts(terminal_measurements, stack, depth)
             measurements = combine_measurements(
@@ -526,6 +534,9 @@ def simulate_tree_mcm(
                 stack.results_1[depth] = measurements
                 branch_current[depth] = 0
             else:
+                #if np.any(np.isnan(measurements)):
+                    #print(f"Found nan measurements at {depth=}.")
+                    #print(f"{measurement_dicts=}")
                 stack.results_0[depth] = measurements
                 branch_current[depth] = 1
             # Update MCM values
@@ -547,10 +558,22 @@ def simulate_tree_mcm(
             skip_subtree = not bool(shots)
         else:
             shots = None
-            skip_subtree = (
-                stack.probs[depth] is not None
-                and float(stack.probs[depth][branch_current[depth]]) <= PROBS_TOL
-            )
+            if node_is_mcm[depth]:
+                skip_subtree = (
+                    stack.probs[depth] is not None
+                    and (x:=float(stack.probs[depth][branch_current[depth]])) <= PROBS_TOL
+                )
+                #if stack.probs[depth] is not None:
+                    #print(x, skip_subtree)
+            else:
+                skip_subtree = False
+        #print(depth)
+        #print(f"{nodes[depth]=}")
+        #print(f"{node_is_mcm[depth]=}")
+        #print(f"{stack.probs=}")
+        #print(f"{stack.results_0=}")
+        #print(f"{stack.results_1=}")
+        #print(branch_current)
         # Update active branch dict
         invalid_postselect = (
             depth > 0
@@ -565,6 +588,7 @@ def simulate_tree_mcm(
 
         # If num_shots is zero or postselecting on the wrong branch, update measurements with an empty tuple
         if skip_subtree or invalid_postselect:
+            #print(f"skipping subtree {branch_current}")
             # Adjust counts if `invalid_postselect`
             if invalid_postselect:
                 if finite_shots:
@@ -597,16 +621,19 @@ def simulate_tree_mcm(
                 mid_measurements=branch_values,
                 **execution_kwargs,
             )
-            if node_is_mcm[depth] or depth == n_nodes:
+            if depth == n_nodes or node_is_mcm[depth+1]:
                 measurements = measure_final_state(
                     circtmp, state, is_state_batched, **execution_kwargs
                 )
+                #print('measurements created by `measure_final_state')
             else:
                 measurements = fake_measurements(circtmp, is_state_batched, **execution_kwargs)
+                #print('measurements created by `fake_measurements')
 
         #####################################
         # Update stack & step down the tree #
         #####################################
+        #print(f"{measurements=}")
 
         # If not at a leaf, project on the zero-branch and increase depth by one
         if depth < n_nodes and (not skip_subtree and not invalid_postselect):
@@ -637,7 +664,9 @@ def simulate_tree_mcm(
         ################################################
 
         if not skip_subtree and not invalid_postselect:
+            #print(f"before insertion: {measurements}")
             measurements = insert_mcms(circuit, measurements, branch_values)
+            #print(f"after insertion: {measurements}")
 
         # If at a zero-branch leaf, update measurements and switch to the one-branch
         if branch_current[depth] == 0:
@@ -740,7 +769,7 @@ def fake_measurements(circuit, is_state_batched, **execution_kwargs):
 
     shots = circuit.shots.total_shots
     if shots is None:
-        return np.ones(2)
+        return np.ones(2) / 2
 
     if circuit.measurements != []:
         raise ValueError
@@ -774,12 +803,18 @@ def insert_mcms(circuit, results, mid_measurements):
 def get_measurement_dicts(measurements, stack, depth):
     """Combine a probs dictionary and two tuples of measurements into a
     tuple of dictionaries storing the probs and measurements of both branches."""
+    #print(f"In get_measurement_dicts:")
     probs, results_0, results_1 = stack.probs[depth], stack.results_0[depth], stack.results_1[depth]
+    #print(f"    {probs=}")
+    #print(f"    {results_0=}")
+    #print(f"    {results_1=}")
     measurement_dicts = [{} for _ in measurements]
+    #print(f"    {measurement_dicts=}")
     # Special treatment for single measurements
     single_measurement = len(measurements) == 1
     # Store each measurement in a dictionary `{branch: (prob, measure)}`
     for branch, prob in probs.items():
+        #print(f"    {(branch, prob)=}")
         meas = results_0 if branch == 0 else results_1
         if single_measurement:
             meas = [meas]

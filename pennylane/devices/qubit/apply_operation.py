@@ -351,7 +351,7 @@ def apply_channel(
             state,
         )
 
-    kraus_op = qml.QubitUnitary(op.kraus_matrices()[branch_values[op]], wires=op.wires)
+    kraus_op = qml.QubitUnitary(op.kraus_matrices()[branch_values[id(op)]], wires=op.wires)
     mat = kraus_op.matrix()
     return apply_operation(
         kraus_op,
