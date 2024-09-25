@@ -23,6 +23,19 @@ device = qml.device(device_name, wires=n_wires)
 method_errors={}
 method_costs={}
 
+range_s, range_m = [1, 2, 3], [1, 2, 5]
+stages = [1, 5, 13]
+identifiers = ['Strang', 'SUZ90', 'SS05']
+method_errors['InteractionPicture'] = {}
+method_costs['InteractionPicture'] = {}
+for s, m, stage, identifier in tqdm(zip(range_s, range_m, stages, identifiers), desc='CFQM'):
+    method_errors['InteractionPicture'][(s, m)] = []
+    for time in time_steps:
+        error, resources = basic_simulation(hamiltonian, time, n_steps, 'InteractionPicture', 2*s, device, n_wires,
+                                n_samples = 4, **{'m': m, 'stages': stage, 'identifier': identifier})
+        method_errors['InteractionPicture'][(s, m)].append(error)
+        method_costs['InteractionPicture'][(s, m)] = resources.gate_types['RX'] + resources.gate_types['RZ'] + resources.gate_types['RY']
+
 method_errors['ProductFormula'] = {}
 method_costs['ProductFormula'] = {}
 orders = [2, 4, 6, 8, 10]
@@ -53,19 +66,6 @@ for order, stage in tqdm(zip(orders, stages), desc='NI'):
         method_costs['NearIntegrable'][tuple(order)] = resources.gate_types['RX'] + resources.gate_types['RZ'] + resources.gate_types['RY']
 
 
-range_s, range_m = [1, 2, 3], [1, 2, 5]#, 2] #, 3, 3]
-stages = [1, 5, 13]
-identifiers = ['Strang', 'SUZ90', 'SS05']
-method_errors['InteractionPicture'] = {}
-method_costs['InteractionPicture'] = {}
-for s, m, stage, identifier in tqdm(zip(range_s, range_m, stages, identifiers), desc='CFQM'):
-    method_errors['InteractionPicture'][(s, m)] = []
-    for time in time_steps:
-        error, resources = basic_simulation(hamiltonian, time, n_steps, 'InteractionPicture', 2*s, device, n_wires,
-                                n_samples = 4, **{'m': m, 'stages': stage, 'identifier': identifier})
-        method_errors['InteractionPicture'][(s, m)].append(error)
-        method_costs['InteractionPicture'][(s, m)] = resources.gate_types['RX'] + resources.gate_types['RZ'] + resources.gate_types['RY']
-
 
 
 # Plot the results
@@ -74,11 +74,13 @@ ax, fig = plt.subplots()
 for o in method_errors['NearIntegrable'].keys():
     plt.plot(time_steps, method_errors['NearIntegrable'][o], label = f"NI, order = {o}", linestyle=':')
 
-for s, m in method_errors['InteractionPicture'].keys():
-    plt.plot(time_steps, method_errors['InteractionPicture'][(s, m)], label = f"IP, order = {2*s}")
+colors = ['b', 'g', 'r', 'c']
+for (s, m), c in zip(method_errors['InteractionPicture'].keys(), colors):
+    plt.plot(time_steps, method_errors['InteractionPicture'][(s, m)], label = f"IP, order = {2*s}", color=c)
 
-for order in method_errors['ProductFormula'].keys():
-    plt.plot(time_steps, method_errors['ProductFormula'][order], label = f"PF, order = {order}", linestyle='--')
+colors = ['b', 'g', 'r', 'c', 'm']
+for order, c in zip(method_errors['ProductFormula'].keys(),colors):
+    plt.plot(time_steps, method_errors['ProductFormula'][order], label = f"PF, order = {order}", linestyle='--', color = c)
 
 plt.yscale('log')
 plt.xscale('log')
@@ -98,15 +100,17 @@ for o in method_errors['NearIntegrable'].keys():
             method_errors['NearIntegrable'][o]/time_steps,
             label = f"NI, order = {o}", linestyle=':')
 
-for s, m in method_errors['InteractionPicture'].keys():
+colors = ['b', 'g', 'r', 'c']
+for (s, m), c in zip(method_errors['InteractionPicture'].keys(), colors):
     plt.plot(method_costs['InteractionPicture'][(s, m)]/time_steps,
             method_errors['InteractionPicture'][(s, m)]/time_steps,
-            label = f"IP, order = {2*s}")
+            label = f"IP, order = {2*s}", color=c)
 
-for order in method_errors['ProductFormula'].keys():
+colors = ['b', 'g', 'r', 'c', 'm']
+for order, c in zip(method_errors['ProductFormula'].keys(), colors):
     plt.plot(method_costs['ProductFormula'][order]/time_steps,
             method_errors['ProductFormula'][order]/time_steps,
-            label = f"PF, order = {order}", linestyle='--')
+            label = f"PF, order = {order}", linestyle='--', color = c)
 
 plt.yscale('log')
 plt.xscale('log')

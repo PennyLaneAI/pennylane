@@ -280,11 +280,6 @@ def InteractionPicture(H0, H1, time, h, s, m, stages = None, identifier = None):
             for i in range(m-1, -1, -1): 
                 InteractionLieTrotter(H0, H1, h, h, s, roots, zs[s][m][i])
             qml.TrotterProduct(H0, -h, order=1)
-    elif s == 2:
-        for _ in time_steps:
-            for i in range(m-1, -1, -1): 
-                InteractionSuzuki4(H0, H1, h, h, s, roots, zs[s][m][i])
-            qml.TrotterProduct(H0, -h, order=1)
 
     else:
         kSS, _ = coeffsSS(o = 2*s, s = stages, identifier=identifier), []
