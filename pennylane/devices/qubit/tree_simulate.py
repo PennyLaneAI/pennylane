@@ -112,6 +112,7 @@ def tree_simulate(
     # node of a circuit segment (edge) at depth `d`. The first element
     # is None because there is no parent node at depth 0
     nodes: list[Channel] = [None] + [op for op in circuit.operations if isinstance(op, Channel)]
+    mcm_nodes: list[tuple[int, MidMeasureMP]] = [(i, node) for i, node in enumerate(nodes) if isinstance(node, MidMeasureMP)]
     n_nodes: int = len(nodes) - 1
     n_kraus: list[int] = [None] + [c.num_kraus for c in nodes[1:]]
 
@@ -135,6 +136,11 @@ def tree_simulate(
     # and to combine them into the final result. Exit the loop once the
     # measurements for all branches are available.
     depth = 0
+
+    def cast_to_mid_measurements(branch_current):
+        """Take the information about the current tree branch and encode
+        it in a mid_measurements dictionary to be used in Conditional ops."""
+        return {node: branch_current[i] for i, node in mcm_nodes}
 
     while stack.any_is_empty(1):
 
@@ -171,7 +177,7 @@ def tree_simulate(
         circtmp = qml.tape.QuantumScript(circuits[depth].operations, circuits[depth].measurements)
         circtmp = prepend_state_prep(circtmp, initial_state, circuit.wires)
         state, is_state_batched = get_final_state(
-            circtmp, mid_measurements=branch_current, **execution_kwargs
+            circtmp, mid_measurements=cast_to_mid_measurements(branch_current), **execution_kwargs
         )
 
         ################################################
