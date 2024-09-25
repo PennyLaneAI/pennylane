@@ -15,7 +15,7 @@
 
 # pylint: disable=protected-access
 from collections import Counter
-from functools import partial, singledispatch, lru_cache
+from functools import lru_cache, partial, singledispatch
 from typing import Optional
 
 import numpy as np
@@ -42,8 +42,8 @@ from .measure import measure
 from .sampling import jax_random_split, measure_with_samples
 from .simulate import get_final_state, measure_final_state
 
-
 NORM_TOL = 1e-10
+
 
 class TreeTraversalStack:
     """This class is used to record various data used during the
@@ -112,7 +112,9 @@ def tree_simulate(
     # node of a circuit segment (edge) at depth `d`. The first element
     # is None because there is no parent node at depth 0
     nodes: list[Channel] = [None] + [op for op in circuit.operations if isinstance(op, Channel)]
-    mcm_nodes: list[tuple[int, MidMeasureMP]] = [(i, node) for i, node in enumerate(nodes) if isinstance(node, MidMeasureMP)]
+    mcm_nodes: list[tuple[int, MidMeasureMP]] = [
+        (i, node) for i, node in enumerate(nodes) if isinstance(node, MidMeasureMP)
+    ]
     n_nodes: int = len(nodes) - 1
     n_kraus: list[int] = [None] + [c.num_kraus for c in nodes[1:]]
 

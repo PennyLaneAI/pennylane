@@ -19,6 +19,7 @@ from functools import lru_cache
 from typing import Generic, Hashable, Optional, TypeVar, Union
 
 import numpy as np
+
 import pennylane as qml
 from pennylane import QueuingManager
 from pennylane.operation import Channel
