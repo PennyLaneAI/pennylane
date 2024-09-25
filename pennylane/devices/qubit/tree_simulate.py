@@ -59,10 +59,12 @@ class TreeTraversalStack:
         self.probs = [None] * max_depth
         self.results = [[None]] + [[None] * self.n_branches[d] for d in range(1, max_depth)]
         self.states = [None] * max_depth
-
-    def any_is_empty(self, depth):
-        """Return True if any result at ``depth`` is ``None`` and False otherwise."""
-        return any(r is None for r in self.results[depth])
+        # current_branch[:d+1] is the active branch at depth `d`
+        # The first entry is always 0 as the first edge does not stem from a channel.
+        # For example, if `d = 2` and `current_branch = [0, 1, 1, 0]` we are on the 11-branch,
+        # i.e. we're exploring the first two Channels at index 1 of their respective Kraus matrices.
+        # The last entry isn't meaningful until we are at depth `d=3`.
+        self.current_branch = np.zeros(max_depth, dtype=int)
 
     def is_full(self, depth):
         """Return True if the results at ``depth`` are both not ``None`` and False otherwise."""
@@ -73,6 +75,22 @@ class TreeTraversalStack:
         self.probs[depth] = None
         self.results[depth] = [None] * self.n_branches[depth]
         self.states[depth] = None
+        self.current_branch[depth:] = 0  # Reset current branch
+
+
+    def set_prob(self, prob, depth):
+        self.probs[depth][self.current_branch[depth]] = prob
+
+    def save_and_move(self, result, depth):
+        self.results[depth][self.current_branch[depth]] = result
+        self.current_branch[depth] = (self.current_branch[depth] + 1) % self.n_branches[depth]
+
+    def init_probs(self, depth):
+        if self.probs[depth] is None:
+            # If probs list has not been initialized at the current depth, initialize a list
+            # for storing the probabilities of each of the different possible branches at the
+            # current depth
+            self.probs[depth] = [None] * self.n_branches[depth]
 
 
 def tree_simulate(
@@ -125,12 +143,6 @@ def tree_simulate(
     #############################
     # Initialize tree-traversal #
     #############################
-    # branch_current[:d+1] is the active branch at depth `d`
-    # The first entry is always 0 as the first edge does not stem from a channel.
-    # For example, if `d = 2` and `branch_current = [0, 1, 1, 0]` we are on the 11-branch,
-    # i.e. we're exploring the first two Channels at index 1 of their respective Kraus matrices.
-    # The last entry isn't meaningful until we are at depth `d=3`.
-    branch_current = qml.math.zeros(n_nodes + 1, dtype=int)
     # Split circuit into segments
     circuits = split_circuit_at_nodes(circuit)
     circuits[0] = prepend_state_prep(circuits[0], None, circuit.wires)
@@ -148,7 +160,7 @@ def tree_simulate(
         it in a mid_measurements dictionary to be used in Conditional ops."""
         return {node: branch_current[i] + mcm_value_modifiers[i] for i, node in mcm_nodes}
 
-    while stack.any_is_empty(1):
+    while not stack.is_full(1):
 
         ###########################################
         # Combine measurements & step up the tree #
@@ -159,13 +171,11 @@ def tree_simulate(
             # Call `combine_measurements` to count-average measurements
             measurements = combine_measurements(terminal_measurements, stack, depth)
 
-            branch_current[depth:] = 0  # Reset current branch
             stack.prune(depth)  # Clear stacks
 
             # Go up one level to explore alternate subtree of the same depth
             depth -= 1
-            stack.results[depth][branch_current[depth]] = measurements
-            branch_current[depth] = (branch_current[depth] + 1) % n_kraus[depth]
+            stack.save_and_move(measurements, depth)
             continue
 
         ###########################################
@@ -176,23 +186,22 @@ def tree_simulate(
         if depth == 0:
             initial_state = stack.states[0]
         else:
-            initial_state, prob = branch_state(
-                stack.states[depth], nodes[depth], branch_current[depth]
+            initial_state, p = branch_state(
+                stack.states[depth], nodes[depth], stack.current_branch[depth]
             )
-            if prob == 0.0:
+            if p == 0.0:
                 # Do not update probs. None-valued probs are filtered out in `combine_measurements`
                 # Set results to a tuple of `None`s with the correct length, they will be filtered
                 # out as well
-                stack.results[depth][branch_current[depth]] = (None,) * len(terminal_measurements)
                 # The entire subtree has vanishing probability, move to next subtree immediately
-                branch_current[depth] = (branch_current[depth] + 1) % n_kraus[depth]
+                stack.save_and_move((None,) * len(terminal_measurements), depth)
                 continue
-            stack.probs[depth][branch_current[depth]] = prob
+            stack.set_prob(p, depth)
 
         circtmp = qml.tape.QuantumScript(circuits[depth].operations, circuits[depth].measurements)
         circtmp = prepend_state_prep(circtmp, initial_state, circuit.wires)
         state, is_state_batched = get_final_state(
-            circtmp, mid_measurements=cast_to_mid_measurements(branch_current), **execution_kwargs
+            circtmp, mid_measurements=cast_to_mid_measurements(stack.current_branch), **execution_kwargs
         )
 
         ################################################
@@ -204,8 +213,7 @@ def tree_simulate(
             measurements = measure_final_state(circtmp, state, is_state_batched, **execution_kwargs)
             if len(terminal_measurements) == 1:
                 measurements = (measurements,)
-            stack.results[depth][branch_current[depth]] = measurements
-            branch_current[depth] = (branch_current[depth] + 1) % n_kraus[depth]
+            stack.save_and_move(measurements, depth)
             continue
 
         #####################################
@@ -215,12 +223,7 @@ def tree_simulate(
         # If not at a leaf, project on the zero-branch and increase depth by one
         depth += 1
 
-        if stack.probs[depth] is None:
-            # If probs list has not been initialized at the current depth, initialize a list
-            # for storing the probabilities of each of the different possible branches at the
-            # current depth
-            stack.probs[depth] = [None] * n_kraus[depth]
-
+        stack.init_probs(depth)
         # Store a copy of the state-vector to project on the next branch
         stack.states[depth] = state
 
