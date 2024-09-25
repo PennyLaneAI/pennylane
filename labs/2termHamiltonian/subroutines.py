@@ -227,7 +227,7 @@ def expcommutator_coefficients(commutator_method):
             positive = False
         return cs,positive
 
-def InteractionPicture(H0, H1, time, h, s, m):
+def InteractionPicture(H0, H1, time, h, s, m, stages = None, identifier = None):
     r"""
     Implements the interaction picture for the Hamiltonian H = hH0 + hH1
 
@@ -239,8 +239,16 @@ def InteractionPicture(H0, H1, time, h, s, m):
         The second Hamiltonian term
     h: float
         The time step
-    order: int
-        The order of the approximation, for the CFQM method
+    s: int
+        Half the order of the approximation
+    m: int
+        The number of exponentials in the CFQM
+    stages: int
+        The number of stages of the product formula
+        used for each exponential in the CFQM
+    identifier: str
+        The identifier of the product formula
+        used for each exponential in the CFQM
 
     Returns:
     --------
@@ -267,15 +275,26 @@ def InteractionPicture(H0, H1, time, h, s, m):
     roots = (roots + 1)/2
     time_steps = np.arange(time/h)
 
-    for _ in time_steps:
+    if s == 1:
+        for _ in time_steps:
+            for i in range(m-1, -1, -1): 
+                InteractionLieTrotter(H0, H1, h, h, s, roots, zs[s][m][i])
+            qml.TrotterProduct(H0, -h, order=1)
+    elif s == 2:
+        for _ in time_steps:
+            for i in range(m-1, -1, -1): 
+                InteractionSuzuki4(H0, H1, h, h, s, roots, zs[s][m][i])
+            qml.TrotterProduct(H0, -h, order=1)
 
-        for i in range(m-1, -1, -1):
-            if s == 1:  InteractionStrang(H0, H1, h, h, s, roots, zs[s][m][i])
-            elif s == 2: InteractionSuzuki4(H0, H1, h, h, s, roots, zs[s][m][i])
-            else:
-                raise NotImplementedError('Only s = 1, 2 are implemented')
+    else:
+        kSS, _ = coeffsSS(o = 2*s, s = stages, identifier=identifier), []
+        for _ in time_steps:
+            for i in range(m-1, -1, -1):
+                for k in kSS:
+                    InteractionStrang(H0, H1, h, k*h, s, roots, zs[s][m][i])
+            qml.TrotterProduct(H0, -h, order=1)
 
-        qml.TrotterProduct(H0, -h, order=1)
+
 
 def ProductFormula(H0, H1, time, h, order, stages = None, identifier = None, processing = False):
     r"""
@@ -432,7 +451,9 @@ def basic_simulation(hamiltonian, time, n_steps, method, order, device, n_wires,
         if method == 'InteractionPicture':
             m = kwargs['m']
             s = order // 2
-            InteractionPicture(H0, H1, time, h, s, m)
+            stages = kwargs['stages']
+            identifier = kwargs['identifier']
+            InteractionPicture(H0, H1, time, h, s, m, stages, identifier)
         elif method == 'ProductFormula':
             processing = kwargs['processing']
             stages = kwargs['stages']

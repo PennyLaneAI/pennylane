@@ -9,7 +9,7 @@ import scienceplots
 
 plt.style.use('science')
 
-time_steps = 1/(2**np.array(range(1, 8)))
+time_steps = 1/(2**np.array(range(0, 7)))
 n_steps = 1
 random_weights = True
 device_name = 'default.qubit'
@@ -53,14 +53,16 @@ for order, stage in tqdm(zip(orders, stages), desc='NI'):
         method_costs['NearIntegrable'][tuple(order)] = resources.gate_types['RX'] + resources.gate_types['RZ'] + resources.gate_types['RY']
 
 
-range_s, range_m = [1, 2], [1, 2]#, 2] #, 3, 3]
+range_s, range_m = [1, 2, 3], [1, 2, 5]#, 2] #, 3, 3]
+stages = [1, 5, 13]
+identifiers = ['Strang', 'SUZ90', 'SS05']
 method_errors['InteractionPicture'] = {}
 method_costs['InteractionPicture'] = {}
-for s, m in tqdm(zip(range_s, range_m), desc='CFQM'):
+for s, m, stage, identifier in tqdm(zip(range_s, range_m, stages, identifiers), desc='CFQM'):
     method_errors['InteractionPicture'][(s, m)] = []
     for time in time_steps:
         error, resources = basic_simulation(hamiltonian, time, n_steps, 'InteractionPicture', 2*s, device, n_wires,
-                                n_samples = 4, **{'m': m})
+                                n_samples = 4, **{'m': m, 'stages': stage, 'identifier': identifier})
         method_errors['InteractionPicture'][(s, m)].append(error)
         method_costs['InteractionPicture'][(s, m)] = resources.gate_types['RX'] + resources.gate_types['RZ'] + resources.gate_types['RY']
 
