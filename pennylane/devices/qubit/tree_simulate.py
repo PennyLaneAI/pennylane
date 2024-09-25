@@ -51,7 +51,7 @@ class TreeTraversalStack:
 
     probs: list
     results: list
-    n_kraus: list
+    n_branches: list
     states: list
 
     def __init__(self, max_depth, n_branches):
@@ -117,7 +117,7 @@ def tree_simulate(
         (i, node) for i, node in enumerate(nodes) if isinstance(node, MidMeasureMP)
     ]
     mcm_value_modifiers: dict = {
-        i: (ps if (ps := node.postselect) is not None else 0) for i, node in mcm_nodes
+        i: (int(ps) if (ps := node.postselect) is not None else 0) for i, node in mcm_nodes
     }
     n_nodes: int = len(nodes) - 1
     n_kraus: list[int] = [None] + [c.num_kraus for c in nodes[1:]]
@@ -158,6 +158,7 @@ def tree_simulate(
         if stack.is_full(depth):
             # Call `combine_measurements` to count-average measurements
             measurements = combine_measurements(terminal_measurements, stack, depth)
+
             branch_current[depth:] = 0  # Reset current branch
             stack.prune(depth)  # Clear stacks
 
@@ -165,7 +166,6 @@ def tree_simulate(
             depth -= 1
             stack.results[depth][branch_current[depth]] = measurements
             branch_current[depth] = (branch_current[depth] + 1) % n_kraus[depth]
-
             continue
 
         ###########################################
@@ -176,9 +176,18 @@ def tree_simulate(
         if depth == 0:
             initial_state = stack.states[0]
         else:
-            initial_state, stack.probs[depth][branch_current[depth]] = branch_state(
+            initial_state, prob = branch_state(
                 stack.states[depth], nodes[depth], branch_current[depth]
             )
+            if prob == 0.0:
+                # Do not update probs. None-valued probs are filtered out in `combine_measurements`
+                # Set results to a tuple of `None`s with the correct length, they will be filtered
+                # out as well
+                stack.results[depth][branch_current[depth]] = (None,) * len(terminal_measurements)
+                # The entire subtree has vanishing probability, move to next subtree immediately
+                branch_current[depth] = (branch_current[depth] + 1) % n_kraus[depth]
+                continue
+            stack.probs[depth][branch_current[depth]] = prob
 
         circtmp = qml.tape.QuantumScript(circuits[depth].operations, circuits[depth].measurements)
         circtmp = prepend_state_prep(circtmp, initial_state, circuit.wires)
@@ -297,16 +306,12 @@ def branch_state(state, op, index):
 
     norm = qml.math.norm(state)
     if norm < NORM_TOL:
-        return state, 0
+        return state, 0.0
 
     state /= norm
     if isinstance(op, MidMeasureMP) and op.postselect is not None:
         norm = 1.0
     return state, norm**2
-
-
-def fake_measurements(circuit, state, is_state_batched, **execution_kwargs):
-    return np.ones(2) / 2
 
 
 def combine_measurements(terminal_measurements, stack, depth):
@@ -316,8 +321,9 @@ def combine_measurements(terminal_measurements, stack, depth):
     all_results = stack.results[depth]
 
     for i, mp in enumerate(terminal_measurements):
-        all_mp_results = [res[i] for res in all_results]
-        comb_meas = combine_measurements_core(mp, all_probs, all_mp_results)
+        all_mp_results = [res[i] for res in all_results if res[i] is not None]
+        probs = [p for p in all_probs if p is not None]
+        comb_meas = combine_measurements_core(mp, probs, all_mp_results)
         final_measurements.append(comb_meas)
 
     return tuple(final_measurements)
@@ -341,4 +347,4 @@ def _(original_measurement: ExpectationMP, probs, results):
 def _(original_measurement: ProbabilityMP, probs, results):
     """The combined probability of two branches is a weighted sum of the probabilities.
     Note the implementation is the same as for ``ExpectationMP``."""
-    return qml.math.dot(probs, results)
+    return qml.math.dot(probs, qml.math.stack(results))
