@@ -274,12 +274,17 @@ def prepend_state_prep(circuit, state, wires):
     or measurements. This function makes sure that an initial state with the correct size is created
     on the first invocation of ``simulate_tree_mcm``. ``wires`` should be the wires attribute
     of the original circuit (which included all wires)."""
-    if len(circuit) > 0 and isinstance(circuit[0], qml.operation.StatePrepBase):
-        return circuit
+    has_prep = len(circuit) > 0 and isinstance(circuit[0], qml.operation.StatePrepBase)
+    if has_prep:
+        if len(circuit[0].wires) == len(wires):
+            return circuit
+        # If a state preparation op is present but does not act on all wires,
+        # the state needs to be extended to act on all wires, and a new prep op is placed.
+        state = circuit[0].state_vector(wire_order=wires)
     state = create_initial_state(wires, None) if state is None else state
     return qml.tape.QuantumScript(
         [qml.StatePrep(qml.math.ravel(state), wires=wires, validate_norm=False)]
-        + circuit.operations,
+        + circuit.operations[int(has_prep) :],
         circuit.measurements,
         shots=circuit.shots,
     )
