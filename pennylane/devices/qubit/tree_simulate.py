@@ -108,6 +108,7 @@ def tree_simulate(
     # Parse node info #
     ##################
 
+    circuit = circuit.map_to_standard_wires()
     # nodes is the list of all channel operations. nodes[d] is the parent
     # node of a circuit segment (edge) at depth `d`. The first element
     # is None because there is no parent node at depth 0
