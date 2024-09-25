@@ -88,3 +88,32 @@ plt.legend(fontsize='small', bbox_to_anchor=(1.05, 1), loc='upper left')
 
 plt.savefig('labs/2termHamiltonian/results/method_errors.pdf', bbox_inches='tight', format='pdf')
 
+plt.close()
+
+fig, ax = plt.subplots()
+for o in method_errors['NearIntegrable'].keys():
+    plt.plot(method_costs['NearIntegrable'][o]/time_steps,
+            method_errors['NearIntegrable'][o]/time_steps,
+            label = f"NI, order = {o}", linestyle=':')
+
+for s, m in method_errors['InteractionPicture'].keys():
+    plt.plot(method_costs['InteractionPicture'][(s, m)]/time_steps,
+            method_errors['InteractionPicture'][(s, m)]/time_steps,
+            label = f"IP, order = {2*s}")
+
+for order in method_errors['ProductFormula'].keys():
+    plt.plot(method_costs['ProductFormula'][order]/time_steps,
+            method_errors['ProductFormula'][order]/time_steps,
+            label = f"PF, order = {order}", linestyle='--')
+
+plt.yscale('log')
+plt.xscale('log')
+
+plt.xlabel('Cost ($T = 1$)')
+plt.ylabel('Error')
+
+plt.legend(fontsize='small', bbox_to_anchor=(1.05, 1), loc='upper left')
+
+plt.savefig('labs/2termHamiltonian/results/method_errors_cost.pdf', bbox_inches='tight', format='pdf')
+
+
