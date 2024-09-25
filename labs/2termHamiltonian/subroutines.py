@@ -423,7 +423,6 @@ def basic_simulation(hamiltonian, time, n_steps, method, order, device, n_wires,
         qml.SimplifiedTwoDesign(initial_layer_weights=init_weights, weights=weights, wires=range(n_wires))
         return qml.state()
 
-    @qml.qnode(device)
     def circuit(time, n_steps, init_state):
 
         h = time / n_steps
@@ -449,8 +448,8 @@ def basic_simulation(hamiltonian, time, n_steps, method, order, device, n_wires,
         return qml.state()
 
     def call_approx_full(time, n_steps, init_state):
-        state = circuit(time, n_steps, init_state)
         resources = qml.resource.get_resources(circuit, gate_set = gs)(time, n_steps, init_state)
+        state = qml.QNode(circuit, device)(time, n_steps, init_state)
         return state, resources
 
     average_error = 0.
