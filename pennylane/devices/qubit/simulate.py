@@ -582,7 +582,6 @@ def simulate_tree_mcm(
         #####################################
         # Update stack & step down the tree #
         #####################################
-
         if not stack.at_leaf(depth) and (not skip_subtree and not invalid_postselect):
             depth += 1
             samples = stack.update_at_edge(

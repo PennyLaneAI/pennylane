@@ -53,6 +53,10 @@ class CustomChannel(Channel):  # pylint: disable=too-few-public-methods
         K1 = math.sqrt(p + math.eps) * math.convert_like(kraus_matrix, p)
         return [K0, K1]
 
+    @property
+    def num_kraus(self):
+        return 2
+
 
 def test_custom_operator_with_matrix(one_qutrit_state):
     """Test that apply_operation works with any operation that defines a matrix."""
@@ -322,6 +326,10 @@ class TestChannels:  # pylint: disable=too-few-public-methods
                 np.sqrt(p) * math.cast_like(np.array([[0, 0, 1], [1, 0, 0], [0, 1, 0]]), p)
             ).astype(complex)
             return [K0, K1]
+
+        @property
+        def num_kraus(self):
+            return 2
 
     def test_non_broadcasted_state(self, ml_framework, wire, two_qutrit_state):
         """Tests that Channel operations are applied correctly to a state."""

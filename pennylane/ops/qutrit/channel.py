@@ -223,6 +223,10 @@ class QutritDepolarizingChannel(Channel):
 
         return [identity] + Ks
 
+    @property
+    def num_kraus(self):
+        return 9
+
 
 class QutritAmplitudeDamping(Channel):
     r"""
@@ -341,6 +345,10 @@ class QutritAmplitudeDamping(Channel):
         )
         return [K0, K1, K2, K3]
 
+    @property
+    def num_kraus(self):
+        return 4
+
 
 class TritFlip(Channel):
     r"""
@@ -458,6 +466,10 @@ class TritFlip(Channel):
         )
         return [K0, K1, K2, K3]
 
+    @property
+    def num_kraus(self):
+        return 4
+
 
 class QutritChannel(Channel):
     r"""
@@ -527,3 +539,7 @@ class QutritChannel(Channel):
         True
         """
         return list(kraus_matrices)
+
+    @property
+    def num_kraus(self):
+        return len(self.data)
