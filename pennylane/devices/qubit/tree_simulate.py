@@ -116,6 +116,9 @@ def tree_simulate(
     mcm_nodes: list[tuple[int, MidMeasureMP]] = [
         (i, node) for i, node in enumerate(nodes) if isinstance(node, MidMeasureMP)
     ]
+    mcm_value_modifiers: dict = {
+        i: (ps if (ps := node.postselect) is not None else 0) for i, node in mcm_nodes
+    }
     n_nodes: int = len(nodes) - 1
     n_kraus: list[int] = [None] + [c.num_kraus for c in nodes[1:]]
 
@@ -143,7 +146,7 @@ def tree_simulate(
     def cast_to_mid_measurements(branch_current):
         """Take the information about the current tree branch and encode
         it in a mid_measurements dictionary to be used in Conditional ops."""
-        return {node: branch_current[i] for i, node in mcm_nodes}
+        return {node: branch_current[i] + mcm_value_modifiers[i] for i, node in mcm_nodes}
 
     while stack.any_is_empty(1):
 
@@ -297,6 +300,8 @@ def branch_state(state, op, index):
         return state, 0
 
     state /= norm
+    if isinstance(op, MidMeasureMP) and op.postselect is not None:
+        norm = 1.0
     return state, norm**2
 
 

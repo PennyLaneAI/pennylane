@@ -381,13 +381,16 @@ class MidMeasureMP(MeasurementProcess, Channel):
     @staticmethod
     def compute_kraus_matrices(reset=False, postselect=None):
         """Kraus matrices representing a mid-circuit measurement."""
-        K0 = np.array([[1, 0], [0, 0]])
-        K1 = np.array([[0, int(reset)], [0, int(not reset)]])
-        return [K0, K1]
+        if postselect is None:
+            K0 = np.array([[1, 0], [0, 0]])
+            K1 = np.array([[0, int(reset)], [0, int(not reset)]])
+            return [K0, K1]
+        K = np.array([[1 - postselect, int(reset) * postselect], [0, int(not reset) * postselect]])
+        return [K]
 
     @property
     def num_kraus(self):
-        return 2
+        return 1 + int(self.postselect is None)
 
 
 class MeasurementValue(Generic[T]):
