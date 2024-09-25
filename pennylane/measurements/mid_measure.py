@@ -266,7 +266,7 @@ def _create_mid_measure_primitive():
 T = TypeVar("T")
 
 
-class MidMeasureMP(MeasurementProcess, qml.operation.Channel):
+class MidMeasureMP(MeasurementProcess, Channel):
     """Mid-circuit measurement.
 
     This class additionally stores information about unknown measurement outcomes in the qubit model.

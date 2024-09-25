@@ -43,6 +43,8 @@ from .sampling import jax_random_split, measure_with_samples
 from .simulate import get_final_state, measure_final_state
 
 
+NORM_TOL = 1e-10
+
 class TreeTraversalStack:
     """This class is used to record various data used during the
     depth-first tree-traversal procedure for simulating circuits with channels."""
@@ -166,10 +168,7 @@ def tree_simulate(
                 stack.states[depth], nodes[depth], branch_current[depth]
             )
 
-        circtmp = qml.tape.QuantumScript(
-            circuits[depth].operations,
-            circuits[depth].measurements,
-        )
+        circtmp = qml.tape.QuantumScript(circuits[depth].operations, circuits[depth].measurements)
         circtmp = prepend_state_prep(circtmp, initial_state, circuit.wires)
         state, is_state_batched = get_final_state(
             circtmp, mid_measurements=branch_current, **execution_kwargs
@@ -285,6 +284,9 @@ def branch_state(state, op, index):
     state = apply_operation(qml.QubitUnitary(matrix, wires=op.wires), state)
 
     norm = qml.math.norm(state)
+    if norm < NORM_TOL:
+        return state, 0
+
     state /= norm
     return state, norm**2
 
@@ -293,13 +295,13 @@ def fake_measurements(circuit, state, is_state_batched, **execution_kwargs):
     return np.ones(2) / 2
 
 
-def combine_measurements(terminal_measurments, stack, depth):
+def combine_measurements(terminal_measurements, stack, depth):
     """Returns combined measurement values of various types."""
     final_measurements = []
     all_probs = stack.probs[depth]
     all_results = stack.results[depth]
 
-    for i, mp in enumerate(terminal_measurments):
+    for i, mp in enumerate(terminal_measurements):
         all_mp_results = [res[i] for res in all_results]
         comb_meas = combine_measurements_core(mp, all_probs, all_mp_results)
         final_measurements.append(comb_meas)
