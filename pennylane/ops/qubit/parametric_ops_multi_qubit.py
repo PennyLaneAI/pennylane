@@ -291,7 +291,7 @@ class PauliRot(Operation):
 
         if not len(pauli_word) == num_wires:
             raise ValueError(
-                f"The number of wires must be equal to the length of the Pauli Word. "
+                f"The number of wires must be equal to the length of the Pauli word. "
                 f"The Pauli word {pauli_word} has length {len(pauli_word)}, and "
                 f"{num_wires} wires were given {wires}."
             )
