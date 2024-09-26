@@ -40,7 +40,7 @@ from .apply_operation import apply_operation
 from .initialize_state import create_initial_state
 from .measure import measure
 from .sampling import jax_random_split, measure_with_samples
-from .simulate import get_final_state, measure_final_state
+from .simulate import get_final_state, measure_final_state, simulate
 
 NORM_TOL = 1e-10
 
@@ -113,6 +113,8 @@ def tree_simulate(
     # node of a circuit segment (edge) at depth `d`. The first element
     # is None because there is no parent node at depth 0
     nodes: list[Channel] = [None] + [op for op in circuit.operations if isinstance(op, Channel)]
+    if len(nodes) == 1:
+        return simulate(circuit, **execution_kwargs)
     mcm_nodes: list[tuple[int, MidMeasureMP]] = [
         (i, node) for i, node in enumerate(nodes) if isinstance(node, MidMeasureMP)
     ]
