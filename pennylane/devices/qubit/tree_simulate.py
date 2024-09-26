@@ -95,6 +95,7 @@ class TreeTraversalStack:
 
 def tree_simulate(
     circuit: qml.tape.QuantumScript,
+    prob_threshold: float or None,
     **execution_kwargs,
 ) -> Result:
     """Simulate a single quantum script using the tree-traversal algorithm.
@@ -106,6 +107,7 @@ def tree_simulate(
 
     Args:
         circuit (QuantumTape): The single circuit to simulate
+        prob_threshold (Union[None, float]): A probability threshold below which subtrees are truncated.
         rng (Union[None, int, array_like[int], SeedSequence, BitGenerator, Generator]): A
             seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``.
             If no value is provided, a default RNG will be used.
@@ -126,7 +128,6 @@ def tree_simulate(
     # Parse node info #
     ##################
 
-    circuit = circuit.map_to_standard_wires()
     # nodes is the list of all channel operations. nodes[d] is the parent
     # node of a circuit segment (edge) at depth `d`. The first element
     # is None because there is no parent node at depth 0
@@ -189,7 +190,7 @@ def tree_simulate(
             initial_state, p = branch_state(
                 stack.states[depth], nodes[depth], stack.current_branch[depth]
             )
-            if p == 0.0:
+            if prob == 0.0 or (prob_threshold is not None and np.prod([stack.probs[d][stack.current_branch[d]] for d in range(1, depth)]) < prob_threshold):
                 # Do not update probs. None-valued probs are filtered out in `combine_measurements`
                 # Set results to a tuple of `None`s with the correct length, they will be filtered
                 # out as well
@@ -232,6 +233,8 @@ def tree_simulate(
     ##################################################
 
     results = combine_measurements(terminal_measurements, stack, 1)
+    if len(terminal_measurements) == 1:
+        return results[0]
     return results
 
 
@@ -277,12 +280,17 @@ def prepend_state_prep(circuit, state, wires):
     or measurements. This function makes sure that an initial state with the correct size is created
     on the first invocation of ``simulate_tree_mcm``. ``wires`` should be the wires attribute
     of the original circuit (which included all wires)."""
-    if len(circuit) > 0 and isinstance(circuit[0], qml.operation.StatePrepBase):
-        return circuit
+    has_prep = len(circuit) > 0 and isinstance(circuit[0], qml.operation.StatePrepBase)
+    if has_prep:
+        if len(circuit[0].wires) == len(wires):
+            return circuit
+        # If a state preparation op is present but does not act on all wires,
+        # the state needs to be extended to act on all wires, and a new prep op is placed.
+        state = circuit[0].state_vector(wire_order=wires)
     state = create_initial_state(wires, None) if state is None else state
     return qml.tape.QuantumScript(
         [qml.StatePrep(qml.math.ravel(state), wires=wires, validate_norm=False)]
-        + circuit.operations,
+        + circuit.operations[int(has_prep) :],
         circuit.measurements,
         shots=circuit.shots,
     )
@@ -320,13 +328,15 @@ def branch_state(state, op, index):
 def combine_measurements(terminal_measurements, stack, depth):
     """Returns combined measurement values of various types."""
     final_measurements = []
-    all_probs = stack.probs[depth]
     all_results = stack.results[depth]
+    all_probs = [p for p in stack.probs[depth] if p is not None]
+    if len(all_probs) == 0:
+        stack.set_prob(None, depth-1)
+        return (None,) * len(terminal_measurements)
 
     for i, mp in enumerate(terminal_measurements):
         all_mp_results = [res[i] for res in all_results if res[i] is not None]
-        probs = [p for p in all_probs if p is not None]
-        comb_meas = combine_measurements_core(mp, probs, all_mp_results)
+        comb_meas = combine_measurements_core(mp, all_probs, all_mp_results)
         final_measurements.append(comb_meas)
 
     return tuple(final_measurements)
