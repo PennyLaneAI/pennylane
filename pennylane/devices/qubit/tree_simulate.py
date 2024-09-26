@@ -77,7 +77,7 @@ class TreeTraversalStack:
 
 def tree_simulate(
     circuit: qml.tape.QuantumScript,
-    prob_threshold: float or None,
+    prob_threshold: Optional[float] = None,
     **execution_kwargs,
 ) -> Result:
     """Simulate a single quantum script using the tree-traversal algorithm.
@@ -180,7 +180,11 @@ def tree_simulate(
             initial_state, prob = branch_state(
                 stack.states[depth], nodes[depth], branch_current[depth]
             )
-            if prob == 0.0 or (prob_threshold is not None and np.prod([stack.probs[d][branch_current[d]] for d in range(1, depth)]) < prob_threshold):
+            if prob == 0.0 or (
+                prob_threshold is not None
+                and np.prod([stack.probs[d][branch_current[d]] for d in range(1, depth)])
+                < prob_threshold
+            ):
                 # Do not update probs. None-valued probs are filtered out in `combine_measurements`
                 # Set results to a tuple of `None`s with the correct length, they will be filtered
                 # out as well
@@ -328,7 +332,7 @@ def combine_measurements(terminal_measurements, stack, depth, branch_current):
     all_results = stack.results[depth]
     all_probs = [p for p in stack.probs[depth] if p is not None]
     if len(all_probs) == 0:
-        stack.probs[depth-1][branch_current[depth-1]] = None
+        stack.probs[depth - 1][branch_current[depth - 1]] = None
         return (None,) * len(terminal_measurements)
 
     for i, mp in enumerate(terminal_measurements):
