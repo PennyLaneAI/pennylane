@@ -77,6 +77,7 @@ class TreeTraversalStack:
 
 def tree_simulate(
     circuit: qml.tape.QuantumScript,
+    prob_threshold: float or None,
     **execution_kwargs,
 ) -> Result:
     """Simulate a single quantum script using the tree-traversal algorithm.
@@ -88,6 +89,7 @@ def tree_simulate(
 
     Args:
         circuit (QuantumTape): The single circuit to simulate
+        prob_threshold (Union[None, float]): A probability threshold below which subtrees are truncated.
         rng (Union[None, int, array_like[int], SeedSequence, BitGenerator, Generator]): A
             seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``.
             If no value is provided, a default RNG will be used.
@@ -156,7 +158,7 @@ def tree_simulate(
         # Combine two leaves once measurements are available
         if stack.is_full(depth):
             # Call `combine_measurements` to count-average measurements
-            measurements = combine_measurements(terminal_measurements, stack, depth)
+            measurements = combine_measurements(terminal_measurements, stack, depth, branch_current)
 
             branch_current[depth:] = 0  # Reset current branch
             stack.prune(depth)  # Clear stacks
@@ -178,7 +180,7 @@ def tree_simulate(
             initial_state, prob = branch_state(
                 stack.states[depth], nodes[depth], branch_current[depth]
             )
-            if prob == 0.0:
+            if prob == 0.0 or (prob_threshold is not None and np.prod([stack.probs[d][branch_current[d]] for d in range(1, depth)]) < prob_threshold):
                 # Do not update probs. None-valued probs are filtered out in `combine_measurements`
                 # Set results to a tuple of `None`s with the correct length, they will be filtered
                 # out as well
@@ -227,7 +229,9 @@ def tree_simulate(
     # Finalize terminal measurements post-processing #
     ##################################################
 
-    results = combine_measurements(terminal_measurements, stack, 1)
+    results = combine_measurements(terminal_measurements, stack, 1, branch_current)
+    if len(terminal_measurements) == 1:
+        return results[0]
     return results
 
 
@@ -318,16 +322,18 @@ def branch_state(state, op, index):
     return state, norm**2
 
 
-def combine_measurements(terminal_measurements, stack, depth):
+def combine_measurements(terminal_measurements, stack, depth, branch_current):
     """Returns combined measurement values of various types."""
     final_measurements = []
-    all_probs = stack.probs[depth]
     all_results = stack.results[depth]
+    all_probs = [p for p in stack.probs[depth] if p is not None]
+    if len(all_probs) == 0:
+        stack.probs[depth-1][branch_current[depth-1]] = None
+        return (None,) * len(terminal_measurements)
 
     for i, mp in enumerate(terminal_measurements):
         all_mp_results = [res[i] for res in all_results if res[i] is not None]
-        probs = [p for p in all_probs if p is not None]
-        comb_meas = combine_measurements_core(mp, probs, all_mp_results)
+        comb_meas = combine_measurements_core(mp, all_probs, all_mp_results)
         final_measurements.append(comb_meas)
 
     return tuple(final_measurements)
