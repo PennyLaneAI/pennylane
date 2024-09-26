@@ -303,7 +303,7 @@ def jacobian(func, argnum=None, method=None, h=None):
 
     For ``argnum=None``, the trainable arguments are inferred dynamically from the arguments
     passed to the function. The returned function takes the same arguments as the original
-    function and outputs a ``tuple``. The ``i`` th entry of the ``tuple`` has shape
+    function and outputs a ``tuple``. The ``i``-th entry of the ``tuple`` has shape
     ``(*output shape, *shape of args[argnum[i]])``.
 
     If a single trainable argument is inferred, or if a single integer
@@ -397,7 +397,7 @@ def jacobian(func, argnum=None, method=None, h=None):
     of the QNode output shape (``(8,)``) and the shape of ``x`` (``(2,)``).
     Similarly, the shape ``(2, 4)`` of ``y`` leads to a Jacobian shape ``(8, 2, 4)``.
 
-    Instead we may choose the output to contain only one of the two
+    Instead, we may choose the output to contain only one of the two
     entries by providing an iterable as ``argnum``:
 
     >>> jac = qml.jacobian(circuit, argnum=[1])(x, y)
@@ -440,7 +440,7 @@ def jacobian(func, argnum=None, method=None, h=None):
 
     >>> workflow(pnp.array([2.0, 1.0]))
     Array([[ 3.48786850e-16, -4.20735492e-01],
-       [-8.71967125e-17,  4.20735492e-01]], dtype=float64)
+           [-8.71967125e-17,  4.20735492e-01]], dtype=float64)
 
     You can further compute the Jacobian transformation using other supported differentiation
     methods by :func:`catalyst.jacobian`.
@@ -458,9 +458,9 @@ def jacobian(func, argnum=None, method=None, h=None):
             g = qml.jacobian(circuit, method="fd", h=0.3)
             return g(x)
 
-    >>> qml.qjit(workflow)(pnp.array([2.0, 1.0]))
-    Array([[-0.37120096, -0.45467246],
-       [ 0.37120096,  0.45467246]], dtype=float64)
+    >>> workflow(pnp.array([2.0, 1.0]))
+    Array([[-0.03996468, -0.42472435],
+           [ 0.03996468,  0.42472435]], dtype=float64)
 
     """
     # pylint: disable=no-value-for-parameter
