@@ -36,6 +36,8 @@ class MCMConfig:
     be returned. If ``"fill-shots"``, results corresponding to the original number of
     shots will be returned. If not specified, the device will decide which mode to use."""
 
+    prob_threshold: Optional[float] = None
+
     def __post_init__(self):
         """
         Validate the configured mid-circuit measurement options.
@@ -52,6 +54,8 @@ class MCMConfig:
             raise ValueError(f"Invalid mid-circuit measurements method '{self.mcm_method}'.")
         if self.postselect_mode not in ("hw-like", "fill-shots", "pad-invalid-samples", None):
             raise ValueError(f"Invalid postselection mode '{self.postselect_mode}'.")
+        if not (self.prob_threshold is None or (isinstance(self.prob_threshold, float) and 0<=self.prob_threshold<=1)):
+            raise ValueError(f"Invalid probability threshold for tree-traversal: {self.prob_threshold}")
 
 
 # pylint: disable=too-many-instance-attributes

@@ -536,7 +536,11 @@ class QNode:
         self.device = device
         self._interface = "numpy" if diff_method is None else INTERFACE_MAP[interface]
         self.diff_method = diff_method
-        mcm_config = qml.devices.MCMConfig(mcm_method=mcm_method, postselect_mode=postselect_mode)
+        if isinstance(mcm_method, tuple):
+            mcm_method, prob_threshold = mcm_method
+        else:
+            prob_threshold = None
+        mcm_config = qml.devices.MCMConfig(mcm_method=mcm_method, postselect_mode=postselect_mode, prob_threshold=prob_threshold)
         cache = (max_diff > 1) if cache == "auto" else cache
 
         # execution keyword arguments
