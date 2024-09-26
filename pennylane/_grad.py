@@ -341,8 +341,6 @@ def jacobian(func, argnum=None, method=None, h=None):
 
     .. code-block::
 
-        dev = qml.device("default.qubit", wires=2)
-
         @qml.qnode(dev)
         def circuit(x, y, z):
             qml.RX(x, wires=0)
@@ -433,16 +431,16 @@ def jacobian(func, argnum=None, method=None, h=None):
         def workflow(x):
             @qml.qnode(dev)
             def circuit(x):
-                qml.RX(np.pi * x[0], wires=0)
+                qml.RX(pnp.pi * x[0], wires=0)
                 qml.RY(x[1], wires=0)
                 return qml.probs()
 
             g = qml.jacobian(circuit)
             return g(x)
 
-    >>> workflow(np.array([2.0, 1.0]))
-    array([[-1.32116540e-07,  1.33781874e-07],
-           [-4.20735506e-01,  4.20735506e-01]])
+    >>> workflow(pnp.array([2.0, 1.0]))
+    Array([[ 3.48786850e-16, -4.20735492e-01],
+       [-8.71967125e-17,  4.20735492e-01]], dtype=float64)
 
     You can further compute the Jacobian transformation using other supported differentiation
     methods by :func:`catalyst.jacobian`.
@@ -453,16 +451,17 @@ def jacobian(func, argnum=None, method=None, h=None):
         def workflow(x):
             @qml.qnode(dev)
             def circuit(x):
-                qml.RX(np.pi * x[0], wires=0)
+                qml.RX(pnp.pi * x[0], wires=0)
                 qml.RY(x[1], wires=0)
                 return qml.probs()
 
             g = qml.jacobian(circuit, method="fd", h=0.3)
             return g(x)
 
-    >>> qml.qjit(workflow)(np.array([2.0, 1.0]))
-    array([[-0.37120096, -0.45467246],
-            [0.37120096,  0.45467246]])
+    >>> qml.qjit(workflow)(pnp.array([2.0, 1.0]))
+    Array([[-0.37120096, -0.45467246],
+       [ 0.37120096,  0.45467246]], dtype=float64)
+
     """
     # pylint: disable=no-value-for-parameter
 
