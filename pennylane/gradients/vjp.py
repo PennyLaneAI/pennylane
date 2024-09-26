@@ -1,4 +1,4 @@
-# Copyright 2018-2024 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,9 +15,9 @@
 This module contains functions for computing the vector-Jacobian product
 of tapes.
 """
-# pylint: disable=no-member, too-many-branches
-
 import autograd
+
+# pylint: disable=no-member, too-many-branches
 import numpy as np
 
 import pennylane as qml
