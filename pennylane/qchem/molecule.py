@@ -127,9 +127,13 @@ class Molecule:
         if l is None:
             l = [i[0] for i in self.basis_data]
 
-        if len(set(qml.math.get_interface(x) for x in [coordinates, alpha, coeff])) > 1 and (
-            alpha is not None or coeff is not None
-        ):
+        if len(
+            set(
+                qml.math.get_interface(x)
+                for x in [coordinates, alpha, coeff]
+                if qml.math.get_interface(x) != "numpy"
+            )
+        ) > 1 and (alpha is not None or coeff is not None):
             warnings.warn(
                 "The parameters coordinates, coeff, and alpha are not of the same interface. Please use the same interface for all 3 or there may be unintended behavior.",
                 UserWarning,
@@ -221,10 +225,11 @@ class Molecule:
                 array[float]: value of a basis function
             """
             c = ((x - r[0]) ** lx) * ((y - r[1]) ** ly) * ((z - r[2]) ** lz)
-            e = [
-                qml.math.exp(-a * ((x - r[0]) ** 2 + (y - r[1]) ** 2 + (z - r[2]) ** 2))
-                for a in alpha
-            ]
+            e = qml.math.exp(
+                qml.math.tensordot(
+                    -alpha, (x - r[0]) ** 2 + (y - r[1]) ** 2 + (z - r[2]) ** 2, axes=0
+                )
+            )
             return c * qml.math.dot(coeff, e)
 
         return orbital
