@@ -1253,7 +1253,7 @@ class QuantumScript:
         meas_wires = Wires.all_wires(mp.wires for mp in self.measurements)
         num_op_wires = len(op_wires)
         meas_only_wires = set(meas_wires) - set(op_wires)
-        if set(op_wires) == set(range(num_op_wires)) and meas_only_wires == set(
+        if op_wires.tolist() == list(range(num_op_wires)) and meas_only_wires == set(
             range(num_op_wires, num_op_wires + len(meas_only_wires))
         ):
             return self
