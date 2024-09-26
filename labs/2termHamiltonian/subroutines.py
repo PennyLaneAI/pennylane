@@ -20,7 +20,7 @@ gs.add('StatePrep')
 def load_hamiltonian(name = "Ising", periodicity="open", lattice="chain", layout="1x4"):
 
     hamiltonians = qml.data.load("qspin", sysname=name, periodicity=periodicity, 
-                                lattice=lattice, layout=layout, attributes=["hamiltonians"])
+                                lattice=lattice, layout=layout, attributes=["hamiltonians"], force = True)
 
     return hamiltonians[0].hamiltonians[1], eval(layout.replace('x', '*'))
 
@@ -127,7 +127,10 @@ def InteractionLieTrotter(H0, H1, h, ht, s, roots, zsm, reverse = False):
     t: float
         The current time
     h: float
-        The time step
+        The time step, that determines the time at which each Hamiltonian term is evaluated,
+        together with roots.
+    ht: float
+        The evolution time of each Hamiltonian term..
     s: int
         Half the order of the CFQM operator
     roots: np.array
@@ -147,7 +150,7 @@ def InteractionLieTrotter(H0, H1, h, ht, s, roots, zsm, reverse = False):
 
 def InteractionStrang(H0, H1, h, ht, s, roots, zsm):
     r"""
-    Implements the LieTrotter method for a CFQM operator.
+    Implements the Strang method for a CFQM exponential.
 
     Arguments:
     ---------
@@ -284,7 +287,7 @@ def InteractionPicture(H0, H1, time, h, s, m, stages = None, identifier = None):
     else:
         kSS, _ = coeffsSS(o = 2*s, s = stages, identifier=identifier), []
         for _ in time_steps:
-            for i in range(m-1, -1, -1):
+            for i in range(m-1, -1, -1): # For each exponential in the CFQM, implement product formula.
                 for k in kSS:
                     InteractionStrang(H0, H1, h, k*h, s, roots, zs[s][m][i])
             qml.TrotterProduct(H0, -h, order=1)
