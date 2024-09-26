@@ -134,18 +134,18 @@ def from_qiskit(quantum_circuit, measurements=None):
         operator.
 
     See below for more information regarding how to translate more complex circuits from Qiskit to
-    PennyLane, including handling parameterized Qiskit circuits, mid-circuit measurements, and
+    PennyLane, including handling parametrized Qiskit circuits, mid-circuit measurements, and
     classical control flows.
 
     .. details::
-        :title: Parameterized Quantum Circuits
+        :title: Parametrized Quantum Circuits
 
-        A Qiskit ``QuantumCircuit`` is parameterized if it contains
+        A Qiskit ``QuantumCircuit`` is parametrized if it contains
         `Parameter <https://docs.quantum.ibm.com/api/qiskit/qiskit.circuit.Parameter>`__ or
         `ParameterVector <https://docs.quantum.ibm.com/api/qiskit/qiskit.circuit.ParameterVector>`__
         references that need to be given defined values to evaluate the circuit. These can be passed
         to the generated quantum function as keyword or positional arguments. If we define a
-        parameterized circuit:
+        parametrized circuit:
 
         .. code-block:: python
 
@@ -182,7 +182,7 @@ def from_qiskit(quantum_circuit, measurements=None):
         >>> qml.grad(circuit, argnum=[0, 1])(np.pi/4, np.pi/6)
         (array(-0.61237244), array(-0.35355339))
 
-        The ``QuantumCircuit`` may also be parameterized with a ``ParameterVector``. These can be
+        The ``QuantumCircuit`` may also be parametrized with a ``ParameterVector``. These can be
         similarly converted:
 
         .. code-block:: python
@@ -363,7 +363,7 @@ def from_qiskit_op(qiskit_op, params=None, wires=None):
     .. details::
         :title: Usage Details
 
-        You can convert a parameterized ``SparsePauliOp`` into a PennyLane operator by assigning
+        You can convert a parametrized ``SparsePauliOp`` into a PennyLane operator by assigning
         literal values to each coefficient parameter. For example, the script
 
         .. code-block:: python

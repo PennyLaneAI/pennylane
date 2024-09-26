@@ -67,7 +67,7 @@ Here, the ``grad_fn`` was called once for each output quantity. Each time ``grad
 is called, we are forced to reproduce the calculation for ``exponent * x ** (exponent-1)``,
 only to multiply it by a different vector. When executing quantum circuits, that quantity
 can potentially be quite expensive. Autograd would naively
-request indepedent vjps for each entry in the output, even though the internal circuits will be
+request independent vjps for each entry in the output, even though the internal circuits will be
 exactly the same.
 
 When caching is enabled, the expensive part (re-executing identical circuits) is

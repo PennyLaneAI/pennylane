@@ -246,6 +246,11 @@ class Pow(ScalarSymbolicOp):
 
         return fractional_matrix_power(mat, scalar)
 
+    # pylint: disable=arguments-renamed, invalid-overridden-method
+    @property
+    def has_sparse_matrix(self) -> bool:
+        return self.base.has_sparse_matrix and isinstance(self.z, int)
+
     # pylint: disable=arguments-differ
     @staticmethod
     def compute_sparse_matrix(*params, base=None, z=0):

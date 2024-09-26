@@ -39,6 +39,7 @@ class TestCurrentlyUnsupportedCases:
             _ = measure(qml.sample(wires=0), state)
 
 
+@pytest.mark.unit
 class TestMeasurementDispatch:
     """Test that get_measurement_function dispatchs to the correct place."""
 
@@ -95,6 +96,49 @@ class TestMeasurementDispatch:
         )
         state = qml.numpy.zeros(2)
         assert get_measurement_function(qml.expval(S), state) is sum_of_terms_method
+
+    @pytest.mark.usefixtures("use_legacy_opmath")
+    def test_hamiltonian_with_multi_wire_obs(self):
+        """Check that a Hamiltonian with a multi-wire observable uses the sum of terms method."""
+
+        S = qml.Hamiltonian(
+            [0.5, 0.5],
+            [
+                qml.X(0),
+                qml.Hermitian(
+                    np.array(
+                        [
+                            [0.5, 1.0j, 0.0, -3j],
+                            [-1.0j, -1.1, 0.0, -0.1],
+                            [0.0, 0.0, -0.9, 12.0],
+                            [3j, -0.1, 12.0, 0.0],
+                        ]
+                    ),
+                    wires=[0, 1],
+                ),
+            ],
+        )
+        state = np.zeros(2)
+        assert get_measurement_function(qml.expval(S), state) is sum_of_terms_method
+
+    def test_no_sparse_matrix(self):
+        """Tests Hamiltonians/Sums containing observables that do not have a sparse matrix."""
+
+        class DummyOp(qml.operation.Operator):  # pylint: disable=too-few-public-methods
+            num_wires = 1
+
+        S1 = qml.Hamiltonian([0.5, 0.5], [qml.X(0), DummyOp(wires=1)])
+        state = np.zeros(2)
+        assert get_measurement_function(qml.expval(S1), state) is sum_of_terms_method
+
+        S2 = qml.X(0) + DummyOp(wires=1)
+        assert get_measurement_function(qml.expval(S2), state) is sum_of_terms_method
+
+        S3 = 0.5 * qml.X(0) + 0.5 * DummyOp(wires=1)
+        assert get_measurement_function(qml.expval(S3), state) is sum_of_terms_method
+
+        S4 = qml.Y(0) + qml.X(0) @ DummyOp(wires=1)
+        assert get_measurement_function(qml.expval(S4), state) is sum_of_terms_method
 
 
 class TestMeasurements:

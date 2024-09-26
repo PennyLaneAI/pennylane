@@ -301,7 +301,7 @@ class TestApplyParametrizedEvolution:
     """Test that apply_operation works with ParametrizedEvolution"""
 
     @pytest.mark.parametrize("method", methods)
-    def test_parameterized_evolution_time_independent(self, method):
+    def test_parametrized_evolution_time_independent(self, method):
         """Test that applying a ParametrizedEvolution gives the expected state
         for a time-independent hamiltonian"""
 
@@ -329,7 +329,7 @@ class TestApplyParametrizedEvolution:
         assert np.allclose(new_state, new_state_expected, atol=0.002)
 
     @pytest.mark.parametrize("method", methods)
-    def test_parameterized_evolution_time_dependent(self, method):
+    def test_parametrized_evolution_time_dependent(self, method):
         """Test that applying a ParametrizedEvolution gives the expected state
         for a time dependent Hamiltonian"""
 

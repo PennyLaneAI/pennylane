@@ -188,7 +188,7 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
 
         The ``stop_at`` callable allows the specification of terminal
         operations that should no longer be decomposed. In this example, the ``X``
-        operator is not decomposed becasue ``stop_at(qml.X(0)) == True``.
+        operator is not decomposed because ``stop_at(qml.X(0)) == True``.
 
         >>> def stop_at(obj):
         ...     return isinstance(obj, qml.X)

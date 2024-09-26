@@ -689,7 +689,7 @@ class TestProperties:
         op2 = qml.X(0) + 2 * qml.I(0)
         assert qml.math.allclose(sorted(op1.eigvals()), sorted(op2.eigvals()))
 
-    def test_eigendecompostion(self):
+    def test_eigendecomposition(self):
         """Test that the computed Eigenvalues and Eigenvectors are correct."""
         diag_sum_op = Sum(qml.PauliZ(wires=0), qml.Identity(wires=1))
         eig_decomp = diag_sum_op.eigendecomposition

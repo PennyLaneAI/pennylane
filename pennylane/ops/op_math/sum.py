@@ -171,7 +171,7 @@ class Sum(CompositeOp):
     .. details::
         :title: Usage Details
 
-        We can combine parameterized operators, and support sums between operators acting on
+        We can combine parametrized operators, and support sums between operators acting on
         different wires.
 
         >>> summed_op = Sum(qml.RZ(1.23, wires=0), qml.I(wires=1))
@@ -186,7 +186,7 @@ class Sum(CompositeOp):
                 0.        +0.j        , 1.81677345+0.57695852j]])
 
         The Sum operation can also be measured inside a qnode as an observable.
-        If the circuit is parameterized, then we can also differentiate through the
+        If the circuit is parametrized, then we can also differentiate through the
         sum observable.
 
         .. code-block:: python
@@ -341,6 +341,11 @@ class Sum(CompositeOp):
         wire_order = wire_order or self.wires
 
         return math.expand_matrix(reduced_mat, sum_wires, wire_order=wire_order)
+
+    # pylint: disable=arguments-renamed, invalid-overridden-method
+    @property
+    def has_sparse_matrix(self) -> bool:
+        return self.pauli_rep is not None or all(op.has_sparse_matrix for op in self)
 
     def sparse_matrix(self, wire_order=None):
         if self.pauli_rep:  # Get the sparse matrix from the PauliSentence representation

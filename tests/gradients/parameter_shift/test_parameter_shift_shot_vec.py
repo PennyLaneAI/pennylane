@@ -556,7 +556,7 @@ class TestParameterShiftRule:
     @pytest.mark.parametrize("theta", angles)
     @pytest.mark.parametrize("shift", [np.pi / 2, 0.3])
     def test_Rot_gradient(self, mocker, theta, shift, broadcast):
-        """Tests that the automatic gradient of an arbitrary Euler-angle-parameterized gate is correct."""
+        """Tests that the automatic gradient of an arbitrary Euler-angle-parametrized gate is correct."""
         spy = mocker.spy(qml.gradients.parameter_shift, "_get_operation_recipe")
 
         shot_vec = tuple([1000000] * 2)
@@ -646,7 +646,7 @@ class TestParameterShiftRule:
 
     @pytest.mark.parametrize("theta", angles)
     def test_CRot_gradient(self, theta, broadcast):
-        """Tests that the automatic gradient of an arbitrary controlled Euler-angle-parameterized
+        """Tests that the automatic gradient of an arbitrary controlled Euler-angle-parametrized
         gate is correct."""
         shot_vec = tuple([1000000] * 2)
         dev = qml.device("default.qubit", wires=2, shots=shot_vec)

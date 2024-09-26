@@ -21,6 +21,7 @@ import pickle
 from string import ascii_lowercase
 
 import numpy as np
+import scipy.sparse
 
 import pennylane as qml
 from pennylane.operation import EigvalsUndefinedError
@@ -109,6 +110,23 @@ def _check_matrix(op):
         )
         _assert_error_raised(
             op.matrix, qml.operation.MatrixUndefinedError, failure_comment=failure_comment
+        )()
+
+
+def _check_sparse_matrix(op):
+    """Check that if the operation says it has a sparse matrix, it does. Otherwise a ``SparseMatrixUndefinedError`` should be raised."""
+    if op.has_sparse_matrix:
+        mat = op.sparse_matrix()
+        assert isinstance(mat, scipy.sparse.csr_matrix), "matrix must be a TensorLike"
+        l = 2 ** len(op.wires)
+        failure_comment = f"matrix must be two dimensional with shape ({l}, {l})"
+        assert qml.math.shape(mat) == (l, l), failure_comment
+    else:
+        failure_comment = "If has_sparse_matrix is False, the matrix method must raise a ``SparseMatrixUndefinedError``."
+        _assert_error_raised(
+            op.sparse_matrix,
+            qml.operation.SparseMatrixUndefinedError,
+            failure_comment=failure_comment,
         )()
 
 
@@ -332,5 +350,6 @@ def assert_valid(op: qml.operation.Operator, skip_pickle=False, skip_wire_mappin
     _check_decomposition(op, skip_wire_mapping)
     _check_matrix(op)
     _check_matrix_matches_decomp(op)
+    _check_sparse_matrix(op)
     _check_eigendecomposition(op)
     _check_capture(op)

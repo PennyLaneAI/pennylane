@@ -561,7 +561,7 @@ def param_shift_cv(
             If ``None``, the default gradient recipe containing the two terms
             :math:`[c_0, a_0, s_0]=[1/2, 1, \pi/2]` and :math:`[c_1, a_1,
             s_1]=[-1/2, 1, -\pi/2]` is assumed for every parameter.
-        fallback_fn (None or Callable): a fallback grdient function to use for
+        fallback_fn (None or Callable): a fallback gradient function to use for
             any parameters that do not support the parameter-shift rule.
         f0 (tensor_like[float] or None): Output of the evaluated input tape. If provided,
             and the gradient recipe contains an unshifted term, this value is used,

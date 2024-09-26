@@ -85,7 +85,7 @@ with constant operators :math:`H_j` and scalar functions :math:`f_j(v_j, t)` tha
 parameters :math:`p` and time :math:`t`.
 
 Defining a :class:`~.ParametrizedHamiltonian` requires coefficients and operators, where some of the coefficients
-are callables. The callables defining the parameterized coefficients must have the call signature ``(p, t)``, where ``p`` can be a ``float``,
+are callables. The callables defining the parametrized coefficients must have the call signature ``(p, t)``, where ``p`` can be a ``float``,
 ``list`` or ``jnp.array``. These functions should be defined using ``jax.numpy`` rather than ``numpy`` where relevant.
 
 .. code-block:: python

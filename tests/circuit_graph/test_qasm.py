@@ -711,7 +711,7 @@ class TestQNodeQasmIntegrationTests:
     @pytest.mark.tf
     def test_tf_interface_information_removed(self):
         """Test that interface information from tensorflow is not included in the
-        parameter string for parameterized operators"""
+        parameter string for parametrized operators"""
         import tensorflow as tf
 
         dev = qml.device("default.qubit")

@@ -173,7 +173,7 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
         Edge ``(i,j)`` is present in the graph if ``observable[i]`` and ``observable[j]`` do **not** satisfy
         the ``grouping_type`` strategy.
 
-        The nodes are the observables (can only be accesssed through their integer index).
+        The nodes are the observables (can only be accessed through their integer index).
         """
         # Use upper triangle since adjacency matrix is symmetric and we have an undirected graph
         edges = list(zip(*np.where(np.triu(self.adj_matrix, k=1))))

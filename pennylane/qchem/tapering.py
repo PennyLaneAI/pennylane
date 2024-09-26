@@ -575,7 +575,7 @@ def _build_generator(operation, wire_order, op_gen=None):
     + (0.25) [X0 Y1]
     """
     if op_gen is None:
-        if operation.num_params < 1:  # Non-parameterized gates
+        if operation.num_params < 1:  # Non-parametrized gates
             gen_mat = 1j * scipy.linalg.logm(qml.matrix(operation, wire_order=wire_order))
             op_gen = qml.pauli_decompose(
                 gen_mat, wire_order=wire_order, hide_identity=True, pauli=True

@@ -415,7 +415,7 @@ class TestInitialization:
 
     @pytest.mark.parametrize("hamiltonian", test_hamiltonians)
     def test_init_correctly(self, hamiltonian):
-        """Test that all of the attributes are initalized correctly."""
+        """Test that all of the attributes are initialized correctly."""
         time, n, order = (4.2, 10, 4)
         op = qml.TrotterProduct(hamiltonian, time, n=n, order=order, check_hermitian=False)
 

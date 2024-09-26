@@ -120,7 +120,7 @@ As we can see here, the tangents are packed into the same pytree structure as th
 
 Currently, :class:`~.QuantumScript` is a valid pytree *most* of the time. Once it is a valid pytree *all* of the
 time and can store tangents in place of the variables, we can use a batch of tapes as our trainable argument. Until then, the tapes
-must be a non-pytree non-differenatible argument that accompanies the tree leaves.
+must be a non-pytree non-differentiable argument that accompanies the tree leaves.
 
 """
 import dataclasses
