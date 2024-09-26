@@ -2995,7 +2995,7 @@ class TestPauliRot:
 
         with pytest.raises(
             ValueError,
-            match="The number of wires must be equal to the length of the Pauli word\. The Pauli word .* has length .*, and .* wires were given .*\.",
+            match=r"The number of wires must be equal to the length of the Pauli word\. The Pauli word .* has length .*, and .* wires were given .*\.",
         ):
             qml.PauliRot(0.3, pauli_word, wires=wires)
 
