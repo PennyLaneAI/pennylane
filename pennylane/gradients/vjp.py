@@ -18,7 +18,6 @@ of tapes.
 # pylint: disable=no-member, too-many-branches
 
 import autograd
-
 import numpy as np
 
 import pennylane as qml
