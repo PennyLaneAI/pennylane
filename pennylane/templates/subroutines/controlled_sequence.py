@@ -195,12 +195,11 @@ class ControlledSequence(SymbolicOp, ResourcesOperation):
 
         return ops
 
-    def resources(self, gate_set=None, **kwargs):
+    def resources(self, gate_set=None):
         base = self.hyperparameters["base"]
         control_wires = self.hyperparameters["control_wires"]
 
         with qml.QueuingManager.stop_recording():
             op_resource = resources_from_op(qml.ctrl(base, control=0), gate_set) * (2**len(control_wires) - 1)
-            num_wires = len(base.wires) + len(control_wires)
 
-        return Resources(num_wires=num_wires, num_gates=op_resource.num_gates, gate_types=op_resource.gate_types, gate_sizes=op_resource.gate_sizes)
+        return Resources(num_gates=op_resource.num_gates, gate_types=op_resource.gate_types, gate_sizes=op_resource.gate_sizes)

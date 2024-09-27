@@ -21,7 +21,7 @@ import pennylane as qml
 from pennylane.capture.capture_diff import create_non_jvp_primitive
 from pennylane.compiler import compiler
 from pennylane.math import conj, moveaxis, transpose
-from pennylane.operation import Observable, Operation, Operator
+from pennylane.operation import Observable, Operation, Operator, ResourcesOperation
 from pennylane.queuing import QueuingManager
 from pennylane.tape import make_qscript
 
@@ -411,7 +411,7 @@ class Adjoint(SymbolicOp):
 
 
 # pylint: disable=no-member
-class AdjointOperation(Adjoint, Operation):
+class AdjointOperation(Adjoint, ResourcesOperation):
     """This mixin class is dynamically added to an ``Adjoint`` instance if the provided base class
     is an ``Operation``.
 
@@ -428,6 +428,9 @@ class AdjointOperation(Adjoint, Operation):
     def __new__(cls, *_, **__):
         return object.__new__(cls)
 
+    def resources(self, gate_set=None):
+        return qml.resource.resources_from_op(self.base)
+    
     @property
     def name(self):
         return self._name
