@@ -300,7 +300,7 @@ class _DecompositionSearchVisitor(DijkstraVisitor):
 
     def __init__(self, graph: rx.PyDiGraph, objective_nodes_remaining: set[int], lazy: bool = True):
         self._graph = graph
-        self._target_nodes_remaining = objective_nodes_remaining.copy()
+        self._objective_nodes_remaining = objective_nodes_remaining.copy()
         self._num_src_ops_unvisited_for_decomposition: dict[_DecompositionNode, int] = {}
         _checked_nodes: set[_DecompositionNode] = set()
         for edge in self._graph.edges():
@@ -316,18 +316,23 @@ class _DecompositionSearchVisitor(DijkstraVisitor):
         self._lazy = lazy
 
     def edge_weight(self, edge):
+        """Returns the weight of an edge."""
         if edge is None:
+            # This corresponds to the edge from the dummy node to an OpNode
+            # representing an operator in the target gate set.
             return 1
         return edge.weight(self)
 
     def discover_vertex(self, v, score):
+        """Triggered when a vertex is visited during the dijkstra search."""
         node = self._graph[v]
         self.d[node] = int(score)
-        self._target_nodes_remaining.discard(v)
-        if not self._target_nodes_remaining and self._lazy:
+        self._objective_nodes_remaining.discard(v)
+        if not self._objective_nodes_remaining and self._lazy:
             raise StopSearch
 
     def examine_edge(self, edge):
+        """Triggered when an edge is examined during the dijkstra search."""
         _, target, _ = edge
         target_node = self._graph[target]
         if isinstance(target_node, _OpNode):
@@ -337,6 +342,7 @@ class _DecompositionSearchVisitor(DijkstraVisitor):
             raise PruneSearch
 
     def edge_relaxed(self, edge):
+        """Triggered when an edge is relaxed during the dijkstra search."""
         src, target, edge_obj = edge
         target_node = self._graph[target]
         if isinstance(edge_obj, _EdgeToOp):
