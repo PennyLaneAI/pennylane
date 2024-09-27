@@ -1261,7 +1261,7 @@ class QuantumScript:
         else:
             meas_only_wires = set(meas_wires) - set(op_wires)
             op_wires_comparison = set(op_wires) == set(range(num_op_wires))
-            meas_wires_comparison = meas_only_wire == set(
+            meas_wires_comparison = meas_only_wires == set(
                 range(num_op_wires, num_op_wires + len(meas_only_wires))
             )
         if op_wires_comparison and meas_wires_comparison:

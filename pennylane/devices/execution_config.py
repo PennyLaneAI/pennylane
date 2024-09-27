@@ -36,6 +36,9 @@ class MCMConfig:
     be returned. If ``"fill-shots"``, results corresponding to the original number of
     shots will be returned. If not specified, the device will decide which mode to use."""
 
+    tt_prob_threshold: Optional[float] = None
+    """Probability threshold for tree traversal simulations via ``tree_simulate``."""
+
     def __post_init__(self):
         """
         Validate the configured mid-circuit measurement options.
@@ -52,6 +55,14 @@ class MCMConfig:
             raise ValueError(f"Invalid mid-circuit measurements method '{self.mcm_method}'.")
         if self.postselect_mode not in ("hw-like", "fill-shots", "pad-invalid-samples", None):
             raise ValueError(f"Invalid postselection mode '{self.postselect_mode}'.")
+
+        if not (
+            self.tt_prob_threshold is None
+            or (isinstance(self.tt_prob_threshold, float) and 0 <= self.tt_prob_threshold <= 1)
+        ):
+            raise ValueError(
+                f"Invalid probability threshold for tree-traversal: {self.tt_prob_threshold}"
+            )
 
 
 # pylint: disable=too-many-instance-attributes
@@ -104,9 +115,6 @@ class ExecutionConfig:
     mcm_config: Union[MCMConfig, dict] = field(default_factory=MCMConfig)
     """Configuration options for handling mid-circuit measurements"""
 
-    tt_prob_threshold: Optional[float] = None
-    """Probability threshold for tree traversal simulations via ``tree_simulate``."""
-
     def __post_init__(self):
         """
         Validate the configured execution options.
@@ -133,14 +141,6 @@ class ExecutionConfig:
             self.mcm_config = MCMConfig(**self.mcm_config)
         elif not isinstance(self.mcm_config, MCMConfig):
             raise ValueError(f"Got invalid type {type(self.mcm_config)} for 'mcm_config'")
-
-        if not (
-            self.tt_prob_threshold is None
-            or (isinstance(self.tt_prob_threshold, float) and 0 <= self.tt_prob_threshold <= 1)
-        ):
-            raise ValueError(
-                f"Invalid probability threshold for tree-traversal: {self.tt_prob_threshold}"
-            )
 
 
 DefaultExecutionConfig = ExecutionConfig()

@@ -640,7 +640,7 @@ class DefaultQubit(Device):
                         "prng_key": _key,
                         "mcm_method": execution_config.mcm_config.mcm_method,
                         "postselect_mode": execution_config.mcm_config.postselect_mode,
-                        "prob_threshold": execution_config.tt_prob_threshold,
+                        "prob_threshold": execution_config.mcm_config.tt_prob_threshold,
                     },
                 )
                 for c, _key in zip(circuits, prng_keys)
@@ -654,6 +654,7 @@ class DefaultQubit(Device):
                 "prng_key": _key,
                 "mcm_method": execution_config.mcm_config.mcm_method,
                 "postselect_mode": execution_config.mcm_config.postselect_mode,
+                "prob_threshold": execution_config.mcm_config.tt_prob_threshold,
             }
             for _rng, _key in zip(seeds, prng_keys)
         ]
