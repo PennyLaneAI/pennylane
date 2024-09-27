@@ -540,7 +540,9 @@ class QNode:
             mcm_method, prob_threshold = mcm_method
         else:
             prob_threshold = None
-        mcm_config = qml.devices.MCMConfig(mcm_method=mcm_method, postselect_mode=postselect_mode, prob_threshold=prob_threshold)
+        mcm_config = qml.devices.MCMConfig(
+            mcm_method=mcm_method, postselect_mode=postselect_mode, prob_threshold=prob_threshold
+        )
         cache = (max_diff > 1) if cache == "auto" else cache
 
         # execution keyword arguments

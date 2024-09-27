@@ -54,8 +54,13 @@ class MCMConfig:
             raise ValueError(f"Invalid mid-circuit measurements method '{self.mcm_method}'.")
         if self.postselect_mode not in ("hw-like", "fill-shots", "pad-invalid-samples", None):
             raise ValueError(f"Invalid postselection mode '{self.postselect_mode}'.")
-        if not (self.prob_threshold is None or (isinstance(self.prob_threshold, float) and 0<=self.prob_threshold<=1)):
-            raise ValueError(f"Invalid probability threshold for tree-traversal: {self.prob_threshold}")
+        if not (
+            self.prob_threshold is None
+            or (isinstance(self.prob_threshold, float) and 0 <= self.prob_threshold <= 1)
+        ):
+            raise ValueError(
+                f"Invalid probability threshold for tree-traversal: {self.prob_threshold}"
+            )
 
 
 # pylint: disable=too-many-instance-attributes
