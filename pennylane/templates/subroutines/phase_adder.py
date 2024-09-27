@@ -265,9 +265,8 @@ class PhaseAdder(ResourcesOperation):
 
         gate_types["CNOT"] += cnots
         gate_sizes["2"] += cnots
-        num_gates += cnots
 
-        return Resources(num_gates=num_gates, gate_types=gate_types, gate_sizes=gate_sizes)
+        return Resources(num_gates=sum(gate_types.values()), gate_types=gate_types, gate_sizes=gate_sizes)
 
 def _add_dicts(d1, d2):
     for key, value in d2.items():
