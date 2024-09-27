@@ -158,6 +158,9 @@
 
 <h3>Documentation 📝</h3>
 
+* Fixed examples in the documentation of a few optimizers.
+  [(#6303)](https://github.com/PennyLaneAI/pennylane/pull/6303)
+
 * Fixed spelling in a number of places across the documentation.
   [(#6280)](https://github.com/PennyLaneAI/pennylane/pull/6280)
 
