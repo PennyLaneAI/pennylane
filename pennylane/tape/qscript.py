@@ -1252,14 +1252,19 @@ class QuantumScript:
         op_wires = Wires.all_wires(op.wires for op in self.operations)
         meas_wires = Wires.all_wires(mp.wires for mp in self.measurements)
         num_op_wires = len(op_wires)
-        meas_only_wires = set(meas_wires) - set(op_wires)
         if order:
-            compare_wires = [op_wires.tolist(), list(range(num_op_wires))]
+            meas_only_wires = [w for w in meas_wires if w not in op_wires]
+            op_wires_comparison = op_wires.tolist() == list(range(num_op_wires))
+            meas_wires_comparison = meas_only_wires == list(
+                range(num_op_wires, num_op_wires + len(meas_only_wires))
+            )
         else:
-            compare_wires = [set(op_wires), set(range(num_op_wires))]
-        if compare_wires[0] == compare_wires[1] and meas_only_wires == set(
-            range(num_op_wires, num_op_wires + len(meas_only_wires))
-        ):
+            meas_only_wires = set(meas_wires) - set(op_wires)
+            op_wires_comparison = set(op_wires) == set(range(num_op_wires))
+            meas_wires_comparison = meas_only_wire == set(
+                range(num_op_wires, num_op_wires + len(meas_only_wires))
+            )
+        if op_wires_comparison and meas_wires_comparison:
             return self
 
         wire_map = {w: i for i, w in enumerate(op_wires + meas_only_wires)}

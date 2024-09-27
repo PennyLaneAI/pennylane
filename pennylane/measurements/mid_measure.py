@@ -368,16 +368,6 @@ class MidMeasureMP(MeasurementProcess, Channel):
         context.append(self)
         return self  # so pre-constructed Observable instances can be queued and returned in a single statement
 
-    # @property
-    # def data(self):
-    #     """The data of the measurement. Needed to match the Operator API."""
-    #     return []
-
-    # @property
-    # def name(self):
-    #     """The name of the measurement. Needed to match the Operator API."""
-    #     return self.__class__.__name__
-
     @staticmethod
     def compute_kraus_matrices(reset=False, postselect=None):
         """Kraus matrices representing a mid-circuit measurement."""

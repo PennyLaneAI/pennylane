@@ -33,7 +33,7 @@ from pennylane.devices.qubit.simulate import (
     samples_to_counts,
     simulate_one_shot_native_mcm,
     simulate_tree_mcm,
-    split_circuit_at_nodes,
+    split_circuit_at_mcms,
 )
 
 ml_frameworks_list = [
@@ -1213,8 +1213,7 @@ class TestTreeTraversalStack:
     )
     def test_init_with_depth(self, max_depth):
         """Test that TreeTraversalStack is initialized correctly with given ``max_depth``"""
-        nodes = [None] * max_depth
-        tree_stack = TreeTraversalStack(nodes, nodes)
+        tree_stack = TreeTraversalStack(max_depth)
 
         assert tree_stack.counts.count(None) == max_depth
         assert tree_stack.probs.count(None) == max_depth
@@ -1226,8 +1225,7 @@ class TestTreeTraversalStack:
         """Test that TreeTraversalStack object's class methods work correctly."""
 
         max_depth = 10
-        nodes = [None] * max_depth
-        tree_stack = TreeTraversalStack(nodes, nodes)
+        tree_stack = TreeTraversalStack(max_depth)
 
         np.random.shuffle(r_depths := list(range(max_depth)))
         for depth in r_depths:
@@ -1256,7 +1254,7 @@ class TestTreeTraversalStack:
             assert np.allclose(branch_state(state_vec, 1, meas_r.measurements[0]), [1.0, 0.0])
 
             tree_stack.prune(depth)
-            # assert tree_stack.any_is_empty(depth)
+            assert tree_stack.any_is_empty(depth)
 
 
 @pytest.mark.unit
@@ -1530,7 +1528,7 @@ class TestMidMeasurements:
         mcms = find_post_processed_mcms(qscript)
         assert len(mcms) == n_circs
 
-        split_circs = split_circuit_at_nodes(qscript)
+        split_circs = split_circuit_at_mcms(qscript)
         assert len(split_circs) == n_circs + 1
         for circ in split_circs:
             assert not [o for o in circ.operations if isinstance(o, qml.measurements.MidMeasureMP)]
@@ -1553,7 +1551,8 @@ class TestMidMeasurements:
     )
     def test_tree_traversal_combine_measurements(self, measurements, expected):
         """Test that the measurement value of a given type can be combined"""
-        combined_measurement = combine_measurements_core(*measurements, True)
+        print(combine_measurements_core(*measurements))
+        combined_measurement = combine_measurements_core(*measurements)
         if isinstance(combined_measurement, dict):
             assert combined_measurement == expected
         else:
