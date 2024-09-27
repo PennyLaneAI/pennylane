@@ -314,6 +314,27 @@ def tree_simulate(
     Returns:
         tuple(TensorLike): The results of the simulation
     """
+    postselect_mode = execution_kwargs.get("postselect_mode", None)
+    if postselect_mode is not None:
+        raise NotImplementedError(f"Postselect mode {postselect_mode} not implemented")
+
+    ##########################
+    # shot vector processing #
+    ##########################
+    if circuit.shots.has_partitioned_shots:
+        prng_key = execution_kwargs.pop("prng_key", None)
+        keys = jax_random_split(prng_key, num=circuit.shots.num_copies)
+        results = []
+        for k, s in zip(keys, circuit.shots):
+            aux_circuit = QuantumScript(circuit.operations, circuit.measurements, shots=s)
+            results.append(tree_simulate(
+                aux_circuit,
+                prob_threshold=prob_threshold,
+                prng_key=k,
+                **execution_kwargs
+            ))
+        return tuple(results)
+
     #######################
     # main implementation #
     #######################
