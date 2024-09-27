@@ -1003,12 +1003,12 @@ ControlledOp._primitive = Controlled._primitive  # pylint: disable=protected-acc
 def generate_controlled_resources():
     controlled_resources = {
         ("Hadamard", 1): 2 * qml.RY.compute_resources() + qml.CZ.compute_resources(),
-        ("PauliX", 1): qml.resource.Resources(num_gaes=1, gate_types=defaultdict(int, {"CNOT": 1}), gate_sizes=defaultdict(int, {2: 1})),
+        ("PauliX", 1): qml.resource.Resources(num_gates=1, gate_types=defaultdict(int, {"CNOT": 1}), gate_sizes=defaultdict(int, {2: 1})),
         ("PauliY", 1): qml.CY.compute_resources(),
         ("PauliZ", 1): qml.CZ.compute_resources(),
         ("S", 1): qml.ControlledPhaseShift.compute_resources(),
         ("T", 1): qml.ControlledPhaseShift.compute_resources(),
-        ("CNOT", 1): qml.resource.Resources(num_gaes=1, gate_types=defaultdict(int, {"Toffoli": 1}), gate_sizes=defaultdict(int, {3: 1})),
+        ("CNOT", 1): qml.resource.Resources(num_gates=1, gate_types=defaultdict(int, {"Toffoli": 1}), gate_sizes=defaultdict(int, {3: 1})),
         ("RX", 1): qml.CRX.compute_resources(),
         ("RY", 1): qml.CRY.compute_resources(),
         ("RZ", 1): qml.CRZ.compute_resources(),
