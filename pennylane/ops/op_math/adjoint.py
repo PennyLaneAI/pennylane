@@ -429,7 +429,7 @@ class AdjointOperation(Adjoint, ResourcesOperation):
         return object.__new__(cls)
 
     def resources(self, gate_set=None):
-        return qml.resource.resources_from_op(self.base)
+        return qml.resource.resources_from_op(self.base, gate_set=gate_set)
     
     @property
     def name(self):

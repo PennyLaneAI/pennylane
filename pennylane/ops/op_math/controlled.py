@@ -744,7 +744,7 @@ class Controlled(SymbolicOp, ResourcesOperation):
     def resources(self, gate_set=None):
         if len(self.control_wires) == 1:  # Not Tracking 2 X gates for the flip to 1 controlled
             base_res = qml.resource.resources_from_op(self.base, gate_set=gate_set)
-            controlled_resources = qml.resource.Resources()
+            controlled_resources = qml.resource.Resources(num_gates=0, gate_types=defaultdict(int), gate_sizes=defaultdict(int))
 
             for op_name, counts in base_res.gate_types.items():
                 if op_name in ("SWAP", "CNOT"):
@@ -1002,7 +1002,7 @@ ControlledOp._primitive = Controlled._primitive  # pylint: disable=protected-acc
 @functools.lru_cache
 def generate_controlled_resources():
     controlled_resources = {
-        ("Hadamard", 1): 2 * qml.RY.compute_resources() + qml.CZ.compute_resources(),
+        ("Hadamard", 1): qml.CH.compute_resources(),
         ("PauliX", 1): qml.resource.Resources(num_gates=1, gate_types=defaultdict(int, {"CNOT": 1}), gate_sizes=defaultdict(int, {2: 1})),
         ("PauliY", 1): qml.CY.compute_resources(),
         ("PauliZ", 1): qml.CZ.compute_resources(),
@@ -1013,6 +1013,11 @@ def generate_controlled_resources():
         ("RY", 1): qml.CRY.compute_resources(),
         ("RZ", 1): qml.CRZ.compute_resources(),
         ("SWAP", 1): qml.CSWAP.compute_resources(),
+        ("Toffoli", 1): (
+            7 * qml.ControlledPhaseShift.compute_resources() + \
+            2 * qml.CH.compute_resources() + \
+            qml.resource.Resources(num_gates=6, gate_types=defaultdict(int, {"Toffoli": 6}), gate_sizes=defaultdict(int, {3: 6}))
+        ),
     }
     return controlled_resources
 
