@@ -16,7 +16,7 @@
 # pylint: disable=protected-access
 from collections import Counter
 from functools import lru_cache, partial, singledispatch
-from typing import Optional
+from typing import Optional, Union
 
 import numpy as np
 
@@ -44,13 +44,83 @@ NORM_TOL = 1e-10
 
 
 class TreeTraversalStack:
-    """This class is used to record various data used during the
-    depth-first tree-traversal procedure for simulating circuits with channels."""
+    r"""This class is used to record various data used during the
+    depth-first tree-traversal procedure for simulating circuits with channels.
 
+
+    Args:
+        max_depth (int): The maximal depth of the tree, matching the length of
+            all branches, or the number of nodes (counting the root as node).
+        n_branches (list[int]): A list with the number of edges coming out of each
+            node. The :math:`k`\ th entry sets the number of edges coming out of all
+            :math:`k`\ -level nodes (counting the tree root as the unique :math:`0`\ -level node).
+        prob_threshold (Union[None, float]): Threshold for probabilities below which subtrees
+            are discarded in the simulation.
+        shots (Union[None, int]): The total number of shots for the full circuit.
+
+    Keyword Args:
+        rng (Union[None, int, array_like[int], SeedSequence, BitGenerator, Generator]): A
+            seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``.
+            If no value is provided, a default RNG will be used. Only used for shot-based
+            simulation.
+        prng_key (Optional[jax.random.PRNGKey]): An optional ``jax.random.PRNGKey``. This is
+            the key to the JAX pseudo random number generator. Only for simulation using JAX.
+            This functionality is currently not supported yet.
+
+
+    The main simulation algorithm in ``tree_simulate`` uses a while loop that traverses this tree
+    data structure, with the stack memorizing all non-trivial data, including
+
+    - The overall tree structure, consisting of a number of nodes (``max_depth-1``)
+      and the number of branches coming out of each node (``n_branches``),
+
+    - The currently active branch, encoded as an array of integers (``current_branch``),
+      with the :math:`k`\ th integer determining the active edge coming out of the
+      nodes at :math:`k`\ th level (where we count the root of the tree as the :math:`0`\ th level),
+
+    - The probablities for the current and all previously explored edges, at all nodes
+      that are part of the currently active branch,
+
+    - The results at all nodes that are the root of maximal subtrees that have fully been explored.
+      That is, the first stored result is one of the very first branch that is explored.
+      Once all alternatives at maximal depth are explored, the result at the depth reduced by 1
+      is set, and the maximal-depth result is deleted,
+
+    - The quantum states that the quantum circuit produces at each node,
+
+    - If run with finite shots, the allocated shots for the current and all previously explored
+      edges, at all nodes that are part of the currently active branch (c.f. probabilities).
+
+    In addition, the stack memorizes whether finite shots are being used at all, a random number
+    generator in case that yes, as well as a probability threshold below which subtrees are
+    discarded.
+
+    **Encoding of the current branch**
+
+    The variable ``current_branch`` caches the currently active branch/subtree of the tree.
+    ``current_branch[:depth+1]`` is the active branch at depth ``depth``.
+    The first entry is always 0 as the first edge stems from the root of the tree.
+    For example, if ``d = 2`` and ``current_branch = [0, 2, 1, 0]`` we are on the ``21``-branch,
+    i.e. we're exploring the first channel at index 2 (third Kraus matrix) and the second channel
+    at index 1 (second Kraus matrix). The last entry of ``current_branch`` isn't meaningful
+    until we are at ``depth=3``.
+
+    **Movements across the tree**
+
+    Whenever we need to move between branches at a fixed depth ("sideways"), this is done by the
+    ``save_and_move`` method of the stack, by updating the ``current_branch``. Whenever
+    we need to move between levels of nodes ("vertically"), this is done by updating the
+    pointer ``depth`` in the ``while`` loop in ``tree_simulate``, not by the stack!
+    """
+
+    n_branches: int
     probs: list
     results: list
-    n_branches: list
     states: list
+    finite_shots: bool
+    allocated_shots: list
+    current_total: np.ndarray
+    prob_threshold: Union[None, float]
 
     def __init__(self, max_depth, n_branches, prob_threshold, shots, **rand_kwargs):
         self.n_branches = n_branches
@@ -59,40 +129,64 @@ class TreeTraversalStack:
         self.states = [None] * max_depth
         self.finite_shots = shots.total_shots is not None
         if self.finite_shots:
-            self.allocated_shots = [[shots.total_shots]] + [None] * (max_depth - 1) 
+            self.allocated_shots = [[shots.total_shots]] + [None] * (max_depth - 1)
+            if rand_kwargs.get("prng_key", None) is not None:
+                raise NotImplementedError("JAX randomness is not implemented yet.")
+            self.rng = np.random.default_rng(rand_kwargs.get("rng", None))
 
-        # current_branch[:d+1] is the active branch at depth `d`
-        # The first entry is always 0 as the first edge does not stem from a channel.
-        # For example, if `d = 2` and `current_branch = [0, 1, 1, 0]` we are on the 11-branch,
-        # i.e. we're exploring the first two Channels at index 1 of their respective Kraus matrices.
-        # The last entry isn't meaningful until we are at depth `d=3`.
         self.current_branch = np.zeros(max_depth, dtype=int)
         self.prob_threshold = prob_threshold
-        if rand_kwargs.get("prng_key", None) is not None:
-            raise NotImplementedError("JAX randomness is not implemented yet.")
-        self.rng = np.random.default_rng(rand_kwargs.get("rng", None))
 
     def is_full(self, depth):
-        """Return True if the results at ``depth`` are both not ``None`` and False otherwise."""
+        """Return True if all results at ``depth`` are not ``None``, and False otherwise.
+
+        Args:
+            depth (int): The depth at which to query the stored results.
+        """
         return all(r is not None for r in self.results[depth])
 
     def prune(self, depth):
-        """Reset all stack entries at ``depth`` to ``None``."""
+        """Reset all stack entries at ``depth`` to ``None``-like values.
+
+        Args:
+            depth (int): The depth at which to reset.
+        """
         self.probs[depth] = None
         self.results[depth] = [None] * self.n_branches[depth]
         self.states[depth] = None
-        self.current_branch[depth:] = 0  # Reset current branch
         if self.finite_shots:
             self.allocated_shots[depth] = None
 
     def set_prob(self, prob, depth):
+        """Store a probability at the specified depth and for the current branch.
+
+        Args:
+            prob (float): The probability to be stored.
+            depth (int): The depth at which to store the probability.
+        """
         self.probs[depth][self.current_branch[depth]] = prob
 
     def save_and_move(self, result, depth):
+        """Store a result at the specified depth and for the current branch.
+        Afterwards update the current branch to move to the next Kraus matrix at the specified
+        depth.
+
+        Args:
+            result (Union[float, np.ndarray]): The result to be stored.
+            depth (int): The depth at which to store the result and update the current branch.
+
+        **Note:** If the current branch already was at the maximal index at the specified depth,
+        it is reset to 0. The move to the next node at the parent level of the tree is performed
+        within the while loop of ``tree_simulate``, not within this function.
+        """
         self.results[depth][self.current_branch[depth]] = result
         self.current_branch[depth] = (self.current_branch[depth] + 1) % self.n_branches[depth]
 
     def init_probs(self, depth):
+        """Initialize the list of probabilities at a specified depth if it has not been
+        initialized before (or was reset by ``prune``). In this case all entries are set
+        to ``None``.
+        """
         if self.probs[depth] is None:
             # If probs list has not been initialized at the current depth, initialize a list
             # for storing the probabilities of each of the different possible branches at the
@@ -100,12 +194,25 @@ class TreeTraversalStack:
             self.probs[depth] = [None] * self.n_branches[depth]
 
     def threshold_test(self, depth, new_prob):
+        """Test whether a given probability pushes the overall probability (product) for the
+        current branch/subtree below the probability threshold.
+
+        Args:
+            depth (int): The depth at which the new probability occurred.
+            new_prob (float): The new probability
+        Returns:
+            bool: Whether the product of all parent edge probabilities, up to the given depth,
+            and the new probability lie below the probability threshold. If the stack has
+            no threshold specified, returns ``False``.
+
+        If the threshold is not specified, the result is trivially ``False``.
+        Otherwise, the given probability is multiplied with all probabilities of the
+        current branch up to the specified depth, and compared to the threshold.
+        """
         if self.prob_threshold is None:
             return False
-        subtree_prob = new_prob * np.prod(
-            [self.probs[d][self.current_branch[d]] for d in range(1, depth)]
-        )
-        return subtree_prob < self.prob_threshold
+        prev_prob = np.prod([self.probs[d][self.current_branch[d]] for d in range(1, depth)])
+        return new_prob * prev_prob < self.prob_threshold
 
     def branch_state(self, op, depth):
         """Collapse the state on the current branch.
@@ -132,25 +239,51 @@ class TreeTraversalStack:
         return state, norm**2
 
     def discretize_prob(self, prob, depth):
-        #print(f'Entering discretization with {prob=} at {depth=}')
-        #print(f"Current allocated shots:\n{self.allocated_shots}")
+        """Sample from a binomial distribution to obtain a discretized probability,
+        and store the obtained sample as allocated shots for the current branch.
+
+        Args:
+            prob (float): Probability for the binomial distribution to sample from.
+            depth (int): The depth at which the sampling happens, required to know how
+                many shots to allocate from the parent node, and to store the sampling
+                result in the ``allocated_shots`` of the stack.
+
+        Returns:
+            float: The discretized probability given by the sampled shots divided by the
+            shot budget currently available at the parent node.
+        """
         if not self.finite_shots:
             return prob
+
+        # Initialize allocated shots if not happened before
         if self.allocated_shots[depth] is None:
             self.allocated_shots[depth] = [None] * self.n_branches[depth]
 
-        current_total = self.allocated_shots[depth-1][self.current_branch[depth-1]]
+        # Obtain the shots allocated to the parent node. This is the current budget.
+        current_total = self.allocated_shots[depth - 1][self.current_branch[depth - 1]]
+
         if self.current_branch[depth] == self.n_branches[depth] - 1:
             # If we're on the last branch we can only allocate exactly the remaining shots
             counts = current_total - sum(self.allocated_shots[depth][:-1])
         else:
             # If we're not on the last branch, sample a number of shots based on prob
             counts = self.sample(prob, current_total)
+
+        # Store the sampled counts in `allocated_shots`
         self.allocated_shots[depth][self.current_branch[depth]] = counts
         return counts / current_total
 
     def sample(self, prob, n):
-        prob = np.clip(prob, 0., 1.)
+        """Sample from a binomial distribution.
+
+        Args:
+            prob (float): Probability, parameter of binomial distribution.
+            n (int): Total number of trials, parameter of binomial distribution.
+
+        Returns:
+            int: Number of "yes" samples from binomial distribution.
+        """
+        prob = np.clip(prob, 0.0, 1.0)
         return self.rng.binomial(n=n, p=prob)
 
 
