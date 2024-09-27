@@ -1217,7 +1217,7 @@ class QuantumScript:
         """Construct a QuantumScript from an AnnotatedQueue."""
         return cls(*process_queue(queue), shots=shots)
 
-    def map_to_standard_wires(self) -> "QuantumScript":
+    def map_to_standard_wires(self, order: bool=False) -> "QuantumScript":
         """
         Map a circuit's wires such that they are in a standard order. If no
         mapping is required, the unmodified circuit is returned.
@@ -1253,7 +1253,11 @@ class QuantumScript:
         meas_wires = Wires.all_wires(mp.wires for mp in self.measurements)
         num_op_wires = len(op_wires)
         meas_only_wires = set(meas_wires) - set(op_wires)
-        if op_wires.tolist() == list(range(num_op_wires)) and meas_only_wires == set(
+        if order:
+            compare_wires = [op_wires.tolist(), list(range(num_op_wires))]
+        else:
+            compare_wires = [set(op_wires), set(range(num_op_wires))]
+        if compare_wires[0] == compare_wires[1] and meas_only_wires == set(
             range(num_op_wires, num_op_wires + len(meas_only_wires))
         ):
             return self
