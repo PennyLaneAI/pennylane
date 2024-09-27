@@ -52,11 +52,15 @@ class TreeTraversalStack:
     n_branches: list
     states: list
 
-    def __init__(self, max_depth, n_branches, prob_threshold):
+    def __init__(self, max_depth, n_branches, prob_threshold, shots, **rand_kwargs):
         self.n_branches = n_branches
         self.probs = [None] * max_depth
         self.results = [[None]] + [[None] * self.n_branches[d] for d in range(1, max_depth)]
         self.states = [None] * max_depth
+        self.finite_shots = shots.total_shots is not None
+        if self.finite_shots:
+            self.allocated_shots = [[shots.total_shots]] + [None] * (max_depth - 1) 
+
         # current_branch[:d+1] is the active branch at depth `d`
         # The first entry is always 0 as the first edge does not stem from a channel.
         # For example, if `d = 2` and `current_branch = [0, 1, 1, 0]` we are on the 11-branch,
@@ -64,6 +68,9 @@ class TreeTraversalStack:
         # The last entry isn't meaningful until we are at depth `d=3`.
         self.current_branch = np.zeros(max_depth, dtype=int)
         self.prob_threshold = prob_threshold
+        if rand_kwargs.get("prng_key", None) is not None:
+            raise NotImplementedError("JAX randomness is not implemented yet.")
+        self.rng = np.random.default_rng(rand_kwargs.get("rng", None))
 
     def is_full(self, depth):
         """Return True if the results at ``depth`` are both not ``None`` and False otherwise."""
@@ -75,7 +82,8 @@ class TreeTraversalStack:
         self.results[depth] = [None] * self.n_branches[depth]
         self.states[depth] = None
         self.current_branch[depth:] = 0  # Reset current branch
-
+        if self.finite_shots:
+            self.allocated_shots[depth] = None
 
     def set_prob(self, prob, depth):
         self.probs[depth][self.current_branch[depth]] = prob
@@ -94,7 +102,9 @@ class TreeTraversalStack:
     def threshold_test(self, depth, new_prob):
         if self.prob_threshold is None:
             return False
-        subtree_prob = new_prob * np.prod([self.probs[d][self.current_branch[d]] for d in range(1, depth)])
+        subtree_prob = new_prob * np.prod(
+            [self.probs[d][self.current_branch[d]] for d in range(1, depth)]
+        )
         return subtree_prob < self.prob_threshold
 
     def branch_state(self, op, depth):
@@ -121,6 +131,27 @@ class TreeTraversalStack:
             norm = 1.0
         return state, norm**2
 
+    def discretize_prob(self, prob, depth):
+        #print(f'Entering discretization with {prob=} at {depth=}')
+        #print(f"Current allocated shots:\n{self.allocated_shots}")
+        if not self.finite_shots:
+            return prob
+        if self.allocated_shots[depth] is None:
+            self.allocated_shots[depth] = [None] * self.n_branches[depth]
+
+        current_total = self.allocated_shots[depth-1][self.current_branch[depth-1]]
+        if self.current_branch[depth] == self.n_branches[depth] - 1:
+            # If we're on the last branch we can only allocate exactly the remaining shots
+            counts = current_total - sum(self.allocated_shots[depth][:-1])
+        else:
+            # If we're not on the last branch, sample a number of shots based on prob
+            counts = self.sample(prob, current_total)
+        self.allocated_shots[depth][self.current_branch[depth]] = counts
+        return counts / current_total
+
+    def sample(self, prob, n):
+        prob = np.clip(prob, 0., 1.)
+        return self.rng.binomial(n=n, p=prob)
 
 
 def tree_simulate(
@@ -154,8 +185,6 @@ def tree_simulate(
     # main implementation #
     #######################
 
-    [circuit], variance_post_processing = variance_transform(circuit)
-
     ##################
     # Parse node info #
     ##################
@@ -177,21 +206,21 @@ def tree_simulate(
     # Initialize tree-traversal #
     #############################
     # Split circuit into segments
-    circuits = split_circuit_at_nodes(circuit)
+    circuits, terminal_measurements = split_circuit_at_nodes(circuit)
     circuits[0] = prepend_state_prep(circuits[0], None, circuit.wires)
-    terminal_measurements = circuits[-1].measurements
     # Initialize stacks
     cumcounts = [0] * (n_nodes + 1)
-    stack = TreeTraversalStack(n_nodes + 1, n_kraus, prob_threshold)
+    stack = TreeTraversalStack(n_nodes + 1, n_kraus, prob_threshold, circuit.shots)
     # The goal is to obtain the measurements of the branches
     # and to combine them into the final result. Exit the loop once the
     # measurements for all branches are available.
-    depth = 0
 
-    def cast_to_mid_measurements(branch_current):
+    def cast_to_mid_measurements(current_branch):
         """Take the information about the current tree branch and encode
         it in a mid_measurements dictionary to be used in Conditional ops."""
-        return {node: branch_current[i] + mcm_value_modifiers[i] for i, node in mcm_nodes}
+        return {node: current_branch[i] + mcm_value_modifiers[i] for i, node in mcm_nodes}
+
+    depth = 0
 
     while not stack.is_full(1):
 
@@ -217,9 +246,10 @@ def tree_simulate(
 
         # Simulate the current depth circuit segment
         if depth == 0:
-            initial_state = stack.states[0]
+            initial_state = None
         else:
             initial_state, p = stack.branch_state(nodes[depth], depth)
+            p = stack.discretize_prob(p, depth)
             if p == 0.0 or stack.threshold_test(depth, p):
                 # Do not update probs. None-valued probs are filtered out in `combine_measurements`
                 # Set results to a tuple of `None`s with the correct length, they will be filtered
@@ -232,7 +262,9 @@ def tree_simulate(
         circtmp = QuantumScript(circuits[depth].operations, circuits[depth].measurements)
         circtmp = prepend_state_prep(circtmp, initial_state, circuit.wires)
         state, is_state_batched = get_final_state(
-            circtmp, mid_measurements=cast_to_mid_measurements(stack.current_branch), **execution_kwargs
+            circtmp,
+            mid_measurements=cast_to_mid_measurements(stack.current_branch),
+            **execution_kwargs,
         )
 
         ################################################
@@ -253,7 +285,6 @@ def tree_simulate(
 
         # If not at a leaf, project on the zero-branch and increase depth by one
         depth += 1
-
         stack.init_probs(depth)
         # Store a copy of the state-vector to project on the next branch
         stack.states[depth] = state
@@ -264,8 +295,8 @@ def tree_simulate(
 
     results = combine_measurements(terminal_measurements, stack, 1)
     if len(terminal_measurements) == 1:
-        results = results[0]
-    return variance_post_processing((results,))
+        return results[0]
+    return results
 
 
 def split_circuit_at_nodes(circuit):
@@ -287,20 +318,16 @@ def split_circuit_at_nodes(circuit):
     for last, _ in split_gen:
         new_operations = circuit.operations[first:last]
         new_measurements = []
-        circuits.append(
-            QuantumScript(new_operations, new_measurements, shots=circuit.shots)
-        )
+        circuits.append(QuantumScript(new_operations, new_measurements, shots=circuit.shots))
         first = last + 1
 
     last_circuit_operations = circuit.operations[first:]
     last_circuit_measurements = circuit.measurements
 
     circuits.append(
-        QuantumScript(
-            last_circuit_operations, last_circuit_measurements, shots=circuit.shots
-        )
+        QuantumScript(last_circuit_operations, last_circuit_measurements, shots=circuit.shots)
     )
-    return circuits
+    return circuits, last_circuit_measurements
 
 
 def prepend_state_prep(circuit, state, wires):
@@ -337,7 +364,7 @@ def combine_measurements(terminal_measurements, stack, depth):
     all_results = stack.results[depth]
     all_probs = [p for p in stack.probs[depth] if p is not None]
     if len(all_probs) == 0:
-        stack.set_prob(None, depth-1)
+        stack.set_prob(None, depth - 1)
         return (None,) * len(terminal_measurements)
 
     for i, mp in enumerate(terminal_measurements):
@@ -357,13 +384,13 @@ def combine_measurements_core(
 
 
 @combine_measurements_core.register
-def _(original_measurement: ExpectationMP, probs, results):
+def _(original_measurement: ExpectationMP, probs, results):  # pylint: disable=unused-argument
     """The expectation value of two branches is a weighted sum of expectation values."""
     return qml.math.dot(probs, results)
 
 
 @combine_measurements_core.register
-def _(original_measurement: ProbabilityMP, probs, results):
+def _(original_measurement: ProbabilityMP, probs, results):  # pylint: disable=unused-argument
     """The combined probability of two branches is a weighted sum of the probabilities.
     Note the implementation is the same as for ``ExpectationMP``."""
     return qml.math.dot(probs, qml.math.stack(results))
