@@ -289,7 +289,7 @@ class TreeTraversalStack:
 
 def tree_simulate(
     circuit: QuantumScript,
-    prob_threshold: float or None,
+    prob_threshold: Optional[float] = None,
     **execution_kwargs,
 ) -> Result:
     """Simulate a single quantum script using the tree-traversal algorithm.
