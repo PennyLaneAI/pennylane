@@ -89,7 +89,7 @@ class SPSAOptimizer:
     >>> dev = qml.device("default.qubit", wires=num_qubits)
     >>> @qml.qnode(dev)
     ... def cost(params, num_qubits=1):
-    ...     qml.BasisState(np.array([1, 1, 0, 0]), wires=range(num_qubits))
+    ...     qml.BasisState(pnp.array([1, 1, 0, 0]), wires=range(num_qubits))
     ...     for i in range(num_qubits):
     ...         qml.Rot(*params[i], wires=0)
     ...         qml.CNOT(wires=[2, 3])
@@ -97,7 +97,7 @@ class SPSAOptimizer:
     ...         qml.CNOT(wires=[3, 1])
     ...     return qml.expval(H)
     ...
-    >>> params = np.random.normal(0, np.pi, (num_qubits, 3), requires_grad=True)
+    >>> params = pnp.random.normal(0, pnp.pi, (num_qubits, 3), requires_grad=True)
 
     Once constructed, the cost function can be passed directly to the
     ``step`` or ``step_and_cost`` function of the optimizer:
@@ -112,6 +112,7 @@ class SPSAOptimizer:
     The algorithm provided by SPSA does not rely on built-in automatic differentiation capabilities of the interface being used
     and therefore the optimizer can be used in more complex hybrid classical-quantum workflow with any of the interfaces:
 
+    >>> import tensorflow as tf
     >>> n_qubits = 1
     >>> max_iterations = 20
     >>> dev = qml.device("default.qubit", wires=n_qubits)
@@ -127,8 +128,8 @@ class SPSAOptimizer:
     ...             for _ in range(max_iterations):
     ...                     # Some classical steps before the quantum computation
     ...                     params_a, layer_res = opt.step_and_cost(layer_fn_spsa,
-    ...                                     np.tensor(tensor_in, requires_grad=False),
-    ...                                     np.tensor(params))
+    ...                                     tf.constant(tensor_in),
+    ...                                     tf.Variable(params))
     ...                     params = params_a[1]
     ...                     tensor_out = layer_res
     ...                     # Some classical steps after the quantum computation
