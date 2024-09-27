@@ -19,7 +19,6 @@ from functools import lru_cache, partial, singledispatch
 from typing import Optional
 
 import numpy as np
-from numpy.random import default_rng
 
 import pennylane as qml
 from pennylane.logging import debug_logger
@@ -33,12 +32,11 @@ from pennylane.measurements import (
     find_post_processed_mcms,
 )
 from pennylane.operation import Channel
-from pennylane.transforms.dynamic_one_shot import gather_mcm
+from pennylane.tape import QuantumScript
 from pennylane.typing import Result
 
 from .apply_operation import apply_operation
 from .initialize_state import create_initial_state
-from .measure import measure
 from .sampling import jax_random_split, measure_with_samples
 from .simulate import get_final_state, measure_final_state
 
@@ -54,7 +52,7 @@ class TreeTraversalStack:
     n_branches: list
     states: list
 
-    def __init__(self, max_depth, n_branches):
+    def __init__(self, max_depth, n_branches, prob_threshold):
         self.n_branches = n_branches
         self.probs = [None] * max_depth
         self.results = [[None]] + [[None] * self.n_branches[d] for d in range(1, max_depth)]
@@ -65,6 +63,7 @@ class TreeTraversalStack:
         # i.e. we're exploring the first two Channels at index 1 of their respective Kraus matrices.
         # The last entry isn't meaningful until we are at depth `d=3`.
         self.current_branch = np.zeros(max_depth, dtype=int)
+        self.prob_threshold = prob_threshold
 
     def is_full(self, depth):
         """Return True if the results at ``depth`` are both not ``None`` and False otherwise."""
@@ -92,9 +91,14 @@ class TreeTraversalStack:
             # current depth
             self.probs[depth] = [None] * self.n_branches[depth]
 
+    def threshold_test(self, depth, new_prob):
+        if self.prob_threshold is None:
+            return False
+        subtree_prob = new_prob * np.prod([self.probs[d][self.current_branch[d]] for d in range(1, depth)])
+        return subtree_prob < self.prob_threshold
 
 def tree_simulate(
-    circuit: qml.tape.QuantumScript,
+    circuit: QuantumScript,
     prob_threshold: float or None,
     **execution_kwargs,
 ) -> Result:
@@ -124,6 +128,8 @@ def tree_simulate(
     # main implementation #
     #######################
 
+    [circuit], variance_post_processing = variance_transform(circuit)
+
     ##################
     # Parse node info #
     ##################
@@ -150,7 +156,7 @@ def tree_simulate(
     terminal_measurements = circuits[-1].measurements
     # Initialize stacks
     cumcounts = [0] * (n_nodes + 1)
-    stack = TreeTraversalStack(n_nodes + 1, n_kraus)
+    stack = TreeTraversalStack(n_nodes + 1, n_kraus, prob_threshold)
     # The goal is to obtain the measurements of the branches
     # and to combine them into the final result. Exit the loop once the
     # measurements for all branches are available.
@@ -190,7 +196,7 @@ def tree_simulate(
             initial_state, p = branch_state(
                 stack.states[depth], nodes[depth], stack.current_branch[depth]
             )
-            if prob == 0.0 or (prob_threshold is not None and np.prod([stack.probs[d][stack.current_branch[d]] for d in range(1, depth)]) < prob_threshold):
+            if p == 0.0 or stack.threshold_test(depth, p):
                 # Do not update probs. None-valued probs are filtered out in `combine_measurements`
                 # Set results to a tuple of `None`s with the correct length, they will be filtered
                 # out as well
@@ -199,7 +205,7 @@ def tree_simulate(
                 continue
             stack.set_prob(p, depth)
 
-        circtmp = qml.tape.QuantumScript(circuits[depth].operations, circuits[depth].measurements)
+        circtmp = QuantumScript(circuits[depth].operations, circuits[depth].measurements)
         circtmp = prepend_state_prep(circtmp, initial_state, circuit.wires)
         state, is_state_batched = get_final_state(
             circtmp, mid_measurements=cast_to_mid_measurements(stack.current_branch), **execution_kwargs
@@ -234,8 +240,8 @@ def tree_simulate(
 
     results = combine_measurements(terminal_measurements, stack, 1)
     if len(terminal_measurements) == 1:
-        return results[0]
-    return results
+        results = results[0]
+    return variance_post_processing((results,))
 
 
 def split_circuit_at_nodes(circuit):
@@ -258,7 +264,7 @@ def split_circuit_at_nodes(circuit):
         new_operations = circuit.operations[first:last]
         new_measurements = []
         circuits.append(
-            qml.tape.QuantumScript(new_operations, new_measurements, shots=circuit.shots)
+            QuantumScript(new_operations, new_measurements, shots=circuit.shots)
         )
         first = last + 1
 
@@ -266,7 +272,7 @@ def split_circuit_at_nodes(circuit):
     last_circuit_measurements = circuit.measurements
 
     circuits.append(
-        qml.tape.QuantumScript(
+        QuantumScript(
             last_circuit_operations, last_circuit_measurements, shots=circuit.shots
         )
     )
@@ -288,7 +294,7 @@ def prepend_state_prep(circuit, state, wires):
         # the state needs to be extended to act on all wires, and a new prep op is placed.
         state = circuit[0].state_vector(wire_order=wires)
     state = create_initial_state(wires, None) if state is None else state
-    return qml.tape.QuantumScript(
+    return QuantumScript(
         [qml.StatePrep(qml.math.ravel(state), wires=wires, validate_norm=False)]
         + circuit.operations[int(has_prep) :],
         circuit.measurements,
