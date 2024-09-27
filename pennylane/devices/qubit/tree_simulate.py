@@ -97,6 +97,32 @@ class TreeTraversalStack:
         subtree_prob = new_prob * np.prod([self.probs[d][self.current_branch[d]] for d in range(1, depth)])
         return subtree_prob < self.prob_threshold
 
+    def branch_state(self, op, depth):
+        """Collapse the state on the current branch.
+
+        Args:
+            state (TensorLike): The initial state
+            op (Channel): Channel being applied to the state
+            index (int): The index of the list of kraus matrices
+
+        Returns:
+            tuple[TensorLike, float]: The collapsed state and the probability
+        """
+        state = self.states[depth]
+        matrix = _get_kraus_matrices(op)[self.current_branch[depth]]
+        state = apply_operation(qml.QubitUnitary(matrix, wires=op.wires), state)
+
+        norm = qml.math.norm(state)
+        if norm < NORM_TOL:
+            return state, 0.0
+
+        state /= norm
+        if isinstance(op, MidMeasureMP) and op.postselect is not None:
+            norm = 1.0
+        return state, norm**2
+
+
+
 def tree_simulate(
     circuit: QuantumScript,
     prob_threshold: float or None,
@@ -193,9 +219,7 @@ def tree_simulate(
         if depth == 0:
             initial_state = stack.states[0]
         else:
-            initial_state, p = branch_state(
-                stack.states[depth], nodes[depth], stack.current_branch[depth]
-            )
+            initial_state, p = stack.branch_state(nodes[depth], depth)
             if p == 0.0 or stack.threshold_test(depth, p):
                 # Do not update probs. None-valued probs are filtered out in `combine_measurements`
                 # Set results to a tuple of `None`s with the correct length, they will be filtered
@@ -305,30 +329,6 @@ def prepend_state_prep(circuit, state, wires):
 @lru_cache
 def _get_kraus_matrices(op):
     return op.kraus_matrices()
-
-
-def branch_state(state, op, index):
-    """Collapse the state on a given branch.
-
-    Args:
-        state (TensorLike): The initial state
-        op (Channel): Channel being applied to the state
-        index (int): The index of the list of kraus matrices
-
-    Returns:
-        tuple[TensorLike, float]: The collapsed state and the probability
-    """
-    matrix = _get_kraus_matrices(op)[index]
-    state = apply_operation(qml.QubitUnitary(matrix, wires=op.wires), state)
-
-    norm = qml.math.norm(state)
-    if norm < NORM_TOL:
-        return state, 0.0
-
-    state /= norm
-    if isinstance(op, MidMeasureMP) and op.postselect is not None:
-        norm = 1.0
-    return state, norm**2
 
 
 def combine_measurements(terminal_measurements, stack, depth):
