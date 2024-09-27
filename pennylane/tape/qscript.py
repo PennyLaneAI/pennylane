@@ -1217,7 +1217,7 @@ class QuantumScript:
         """Construct a QuantumScript from an AnnotatedQueue."""
         return cls(*process_queue(queue), shots=shots)
 
-    def map_to_standard_wires(self, order: bool=False) -> "QuantumScript":
+    def map_to_standard_wires(self, order: bool = False) -> "QuantumScript":
         """
         Map a circuit's wires such that they are in a standard order. If no
         mapping is required, the unmodified circuit is returned.

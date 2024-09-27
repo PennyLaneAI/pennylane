@@ -53,6 +53,7 @@ class MCMConfig:
         if self.postselect_mode not in ("hw-like", "fill-shots", "pad-invalid-samples", None):
             raise ValueError(f"Invalid postselection mode '{self.postselect_mode}'.")
 
+
 # pylint: disable=too-many-instance-attributes
 @dataclass
 class ExecutionConfig:

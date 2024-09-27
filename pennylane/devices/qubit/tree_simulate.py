@@ -327,12 +327,11 @@ def tree_simulate(
         results = []
         for k, s in zip(keys, circuit.shots):
             aux_circuit = QuantumScript(circuit.operations, circuit.measurements, shots=s)
-            results.append(tree_simulate(
-                aux_circuit,
-                prob_threshold=prob_threshold,
-                prng_key=k,
-                **execution_kwargs
-            ))
+            results.append(
+                tree_simulate(
+                    aux_circuit, prob_threshold=prob_threshold, prng_key=k, **execution_kwargs
+                )
+            )
         return tuple(results)
 
     #######################
