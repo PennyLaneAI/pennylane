@@ -2204,7 +2204,9 @@ class TestIntegrationShotVectors:
             [
                 shot_tuple.copies
                 for shot_tuple in (
-                    dev.shot_vector if isinstance(dev, qml.Device) else dev.shots.shot_vector
+                    dev.shot_vector
+                    if isinstance(dev, qml.devices.LegacyDevice)
+                    else dev.shots.shot_vector
                 )
             ]
         )
@@ -2232,7 +2234,9 @@ class TestIntegrationShotVectors:
             [
                 shot_tuple.copies
                 for shot_tuple in (
-                    dev.shot_vector if isinstance(dev, qml.Device) else dev.shots.shot_vector
+                    dev.shot_vector
+                    if isinstance(dev, qml.devices.LegacyDevice)
+                    else dev.shots.shot_vector
                 )
             ]
         )
@@ -2268,7 +2272,9 @@ class TestIntegrationShotVectors:
             [
                 shot_tuple.copies
                 for shot_tuple in (
-                    dev.shot_vector if isinstance(dev, qml.Device) else dev.shots.shot_vector
+                    dev.shot_vector
+                    if isinstance(dev, qml.devices.LegacyDevice)
+                    else dev.shots.shot_vector
                 )
             ]
         )
@@ -2295,7 +2301,9 @@ class TestIntegrationShotVectors:
         all_shot_copies = [
             shot_tuple.shots
             for shot_tuple in (
-                dev.shot_vector if isinstance(dev, qml.Device) else dev.shots.shot_vector
+                dev.shot_vector
+                if isinstance(dev, qml.devices.LegacyDevice)
+                else dev.shots.shot_vector
             )
             for _ in range(shot_tuple.copies)
         ]
@@ -2326,7 +2334,9 @@ class TestIntegrationShotVectors:
             [
                 shot_tuple.copies
                 for shot_tuple in (
-                    dev.shot_vector if isinstance(dev, qml.Device) else dev.shots.shot_vector
+                    dev.shot_vector
+                    if isinstance(dev, qml.devices.LegacyDevice)
+                    else dev.shots.shot_vector
                 )
             ]
         )
@@ -2358,7 +2368,9 @@ class TestIntegrationSameMeasurementShotVector:
             [
                 shot_tuple.copies
                 for shot_tuple in (
-                    dev.shot_vector if isinstance(dev, qml.Device) else dev.shots.shot_vector
+                    dev.shot_vector
+                    if isinstance(dev, qml.devices.LegacyDevice)
+                    else dev.shots.shot_vector
                 )
             ]
         )
@@ -2395,7 +2407,9 @@ class TestIntegrationSameMeasurementShotVector:
             [
                 shot_tuple.copies
                 for shot_tuple in (
-                    dev.shot_vector if isinstance(dev, qml.Device) else dev.shots.shot_vector
+                    dev.shot_vector
+                    if isinstance(dev, qml.devices.LegacyDevice)
+                    else dev.shots.shot_vector
                 )
             ]
         )
@@ -2427,7 +2441,9 @@ class TestIntegrationSameMeasurementShotVector:
         all_shot_copies = [
             shot_tuple.shots
             for shot_tuple in (
-                dev.shot_vector if isinstance(dev, qml.Device) else dev.shots.shot_vector
+                dev.shot_vector
+                if isinstance(dev, qml.devices.LegacyDevice)
+                else dev.shots.shot_vector
             )
             for _ in range(shot_tuple.copies)
         ]
@@ -2455,7 +2471,9 @@ class TestIntegrationSameMeasurementShotVector:
             [
                 shot_tuple.copies
                 for shot_tuple in (
-                    dev.shot_vector if isinstance(dev, qml.Device) else dev.shots.shot_vector
+                    dev.shot_vector
+                    if isinstance(dev, qml.devices.LegacyDevice)
+                    else dev.shots.shot_vector
                 )
             ]
         )
@@ -2552,7 +2570,9 @@ class TestIntegrationMultipleMeasurementsShotVector:
             [
                 shot_tuple.copies
                 for shot_tuple in (
-                    dev.shot_vector if isinstance(dev, qml.Device) else dev.shots.shot_vector
+                    dev.shot_vector
+                    if isinstance(dev, qml.devices.LegacyDevice)
+                    else dev.shots.shot_vector
                 )
             ]
         )
@@ -2584,7 +2604,9 @@ class TestIntegrationMultipleMeasurementsShotVector:
         raw_shot_vector = [
             shot_tuple.shots
             for shot_tuple in (
-                dev.shot_vector if isinstance(dev, qml.Device) else dev.shots.shot_vector
+                dev.shot_vector
+                if isinstance(dev, qml.devices.LegacyDevice)
+                else dev.shots.shot_vector
             )
             for _ in range(shot_tuple.copies)
         ]
@@ -2601,7 +2623,9 @@ class TestIntegrationMultipleMeasurementsShotVector:
             [
                 shot_tuple.copies
                 for shot_tuple in (
-                    dev.shot_vector if isinstance(dev, qml.Device) else dev.shots.shot_vector
+                    dev.shot_vector
+                    if isinstance(dev, qml.devices.LegacyDevice)
+                    else dev.shots.shot_vector
                 )
             ]
         )
@@ -2642,7 +2666,9 @@ class TestIntegrationMultipleMeasurementsShotVector:
             [
                 shot_tuple.copies
                 for shot_tuple in (
-                    dev.shot_vector if isinstance(dev, qml.Device) else dev.shots.shot_vector
+                    dev.shot_vector
+                    if isinstance(dev, qml.devices.LegacyDevice)
+                    else dev.shots.shot_vector
                 )
             ]
         )
@@ -2656,7 +2682,9 @@ class TestIntegrationMultipleMeasurementsShotVector:
             for m in measurement_res
         )
 
-        for shot_tuple in dev.shot_vector if isinstance(dev, qml.Device) else dev.shots.shot_vector:
+        for shot_tuple in (
+            dev.shot_vector if isinstance(dev, qml.devices.LegacyDevice) else dev.shots.shot_vector
+        ):
             for idx in range(shot_tuple.copies):
                 for i, r in enumerate(res[idx]):
                     if i % 2 == 0 or shot_tuple.shots == 1:
@@ -2674,7 +2702,9 @@ class TestIntegrationMultipleMeasurementsShotVector:
         raw_shot_vector = [
             shot_tuple.shots
             for shot_tuple in (
-                dev.shot_vector if isinstance(dev, qml.Device) else dev.shots.shot_vector
+                dev.shot_vector
+                if isinstance(dev, qml.devices.LegacyDevice)
+                else dev.shots.shot_vector
             )
             for _ in range(shot_tuple.copies)
         ]
@@ -2691,7 +2721,9 @@ class TestIntegrationMultipleMeasurementsShotVector:
             [
                 shot_tuple.copies
                 for shot_tuple in (
-                    dev.shot_vector if isinstance(dev, qml.Device) else dev.shots.shot_vector
+                    dev.shot_vector
+                    if isinstance(dev, qml.devices.LegacyDevice)
+                    else dev.shots.shot_vector
                 )
             ]
         )
@@ -2726,7 +2758,9 @@ class TestIntegrationMultipleMeasurementsShotVector:
         raw_shot_vector = [
             shot_tuple.shots
             for shot_tuple in (
-                dev.shot_vector if isinstance(dev, qml.Device) else dev.shots.shot_vector
+                dev.shot_vector
+                if isinstance(dev, qml.devices.LegacyDevice)
+                else dev.shots.shot_vector
             )
             for _ in range(shot_tuple.copies)
         ]
@@ -2743,7 +2777,9 @@ class TestIntegrationMultipleMeasurementsShotVector:
             [
                 shot_tuple.copies
                 for shot_tuple in (
-                    dev.shot_vector if isinstance(dev, qml.Device) else dev.shots.shot_vector
+                    dev.shot_vector
+                    if isinstance(dev, qml.devices.LegacyDevice)
+                    else dev.shots.shot_vector
                 )
             ]
         )
@@ -2774,7 +2810,9 @@ class TestIntegrationMultipleMeasurementsShotVector:
         raw_shot_vector = [
             shot_tuple.shots
             for shot_tuple in (
-                dev.shot_vector if isinstance(dev, qml.Device) else dev.shots.shot_vector
+                dev.shot_vector
+                if isinstance(dev, qml.devices.LegacyDevice)
+                else dev.shots.shot_vector
             )
             for _ in range(shot_tuple.copies)
         ]
@@ -2799,7 +2837,9 @@ class TestIntegrationMultipleMeasurementsShotVector:
             [
                 shot_tuple.copies
                 for shot_tuple in (
-                    dev.shot_vector if isinstance(dev, qml.Device) else dev.shots.shot_vector
+                    dev.shot_vector
+                    if isinstance(dev, qml.devices.LegacyDevice)
+                    else dev.shots.shot_vector
                 )
             ]
         )
@@ -2835,7 +2875,9 @@ class TestIntegrationMultipleMeasurementsShotVector:
         raw_shot_vector = [
             shot_tuple.shots
             for shot_tuple in (
-                dev.shot_vector if isinstance(dev, qml.Device) else dev.shots.shot_vector
+                dev.shot_vector
+                if isinstance(dev, qml.devices.LegacyDevice)
+                else dev.shots.shot_vector
             )
             for _ in range(shot_tuple.copies)
         ]
@@ -2860,7 +2902,9 @@ class TestIntegrationMultipleMeasurementsShotVector:
             [
                 shot_tuple.copies
                 for shot_tuple in (
-                    dev.shot_vector if isinstance(dev, qml.Device) else dev.shots.shot_vector
+                    dev.shot_vector
+                    if isinstance(dev, qml.devices.LegacyDevice)
+                    else dev.shots.shot_vector
                 )
             ]
         )
@@ -2896,7 +2940,9 @@ class TestIntegrationMultipleMeasurementsShotVector:
         raw_shot_vector = [
             shot_tuple.shots
             for shot_tuple in (
-                dev.shot_vector if isinstance(dev, qml.Device) else dev.shots.shot_vector
+                dev.shot_vector
+                if isinstance(dev, qml.devices.LegacyDevice)
+                else dev.shots.shot_vector
             )
             for _ in range(shot_tuple.copies)
         ]
@@ -2927,7 +2973,9 @@ class TestIntegrationMultipleMeasurementsShotVector:
             [
                 shot_tuple.copies
                 for shot_tuple in (
-                    dev.shot_vector if isinstance(dev, qml.Device) else dev.shots.shot_vector
+                    dev.shot_vector
+                    if isinstance(dev, qml.devices.LegacyDevice)
+                    else dev.shots.shot_vector
                 )
             ]
         )
@@ -2960,7 +3008,9 @@ class TestIntegrationMultipleMeasurementsShotVector:
         raw_shot_vector = [
             shot_tuple.shots
             for shot_tuple in (
-                dev.shot_vector if isinstance(dev, qml.Device) else dev.shots.shot_vector
+                dev.shot_vector
+                if isinstance(dev, qml.devices.LegacyDevice)
+                else dev.shots.shot_vector
             )
             for _ in range(shot_tuple.copies)
         ]
@@ -2983,7 +3033,9 @@ class TestIntegrationMultipleMeasurementsShotVector:
             [
                 shot_tuple.copies
                 for shot_tuple in (
-                    dev.shot_vector if isinstance(dev, qml.Device) else dev.shots.shot_vector
+                    dev.shot_vector
+                    if isinstance(dev, qml.devices.LegacyDevice)
+                    else dev.shots.shot_vector
                 )
             ]
         )

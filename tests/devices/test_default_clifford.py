@@ -31,7 +31,7 @@ pytestmark = pytest.mark.external
 
 # pylint: disable=protected-access
 def test_applied_modifiers():
-    """Test that defualt qubit has the `single_tape_support` and `simulator_tracking`
+    """Test that default qubit has the `single_tape_support` and `simulator_tracking`
     modifiers applied.
     """
     dev = qml.device("default.clifford")
