@@ -148,11 +148,10 @@ def scf(mol, n_steps=50, tol=1e-8):
             ):
                 args_r = [[args[0][i]] * mol.n_basis[i] for i in range(len(mol.n_basis))]
                 args_ = [*args] + [qml.math.vstack(list(itertools.chain(*args_r)))]
-                rep_tensor = repulsion_tensor(basis_functions)(args_[3], args_[1], args_[2])
-                s = overlap_matrix(basis_functions)(args_[3], args_[1], args_[2])
-                h_core = core_matrix(basis_functions, charges, r)(
-                    args_[0], args_[3], args_[1], args_[2]
-                )
+                args_ = [args_[0], args_[3], args_[1], args_[2]]
+                rep_tensor = repulsion_tensor(basis_functions)(*args_[1:])
+                s = overlap_matrix(basis_functions)(*args_[1:])
+                h_core = core_matrix(basis_functions, charges, r)(*args_)
             else:
                 rep_tensor = repulsion_tensor(basis_functions)(*args)
                 s = overlap_matrix(basis_functions)(*args)
