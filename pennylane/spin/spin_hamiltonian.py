@@ -202,25 +202,25 @@ def fermi_hubbard(
 
         \hat{H} = -t\sum_{<i,j>, \sigma}(c_{i\sigma}^{\dagger}c_{j\sigma}) + U\sum_{i}n_{i \uparrow} n_{i\downarrow}
 
-    where ``t`` is the hopping term representing the kinetic energy of electrons, ``U`` is the
-    on-site Coulomb interaction, representing the repulsion between electrons, ``i,j`` represent the
-    indices for neighbouring spins, :math:`\sigma` is the spin degree of freedom, and
+    where :math:`t` is the hopping term representing the kinetic energy of electrons, :math:`U` is the
+    on-site Coulomb interaction representing the repulsion between electrons, :math:`<i,j>` represents the
+    indices of neighbouring spins, :math:`\sigma` is the spin degree of freedom, and
     :math:`n_{i \uparrow}, n_{i \downarrow}` are number operators for spin-up and spin-down fermions
-    at site ``i``. This function assumes there are two fermions with opposite spins on each lattice
+    at site :math:`i`. This function assumes there are two fermions with opposite spins on each lattice
     site.
 
     Args:
         lattice (str): Shape of the lattice. Input values can be ``'chain'``, ``'square'``,
-            ``'rectangle'``, ``'honeycomb'``, ``'triangle'``, or ``'kagome'``.
+            ``'rectangle'``, ``'honeycomb'``, ``'triangle'``, ``'kagome'``, or ``'diamond'``.
         n_cells (List[int]): Number of cells in each direction of the grid.
-        hopping (float or List[float] or List[math.array(float)]): Hopping strength between
-            neighbouring sites, it can be a number, a list of length equal to ``neighbour_order`` or
+        hopping (float or array[float]): Hopping strength between
+            neighbouring sites. It can be a number, an array of length equal to ``neighbour_order`` or
             a square matrix of size ``(num_spins, num_spins)``, where ``num_spins`` is the total
             number of spins. Default value is 1.0.
-        coulomb (float or List[float]): Coulomb interaction between spins. It can be a constant or a
-            list of length equal to number of spins.
+        coulomb (float or array[float]): Coulomb interaction between spins. It can be a constant or an
+            array of length equal to number of spins.
         boundary_condition (bool or list[bool]): Defines boundary conditions for different lattice
-            axes, default is ``False`` indicating open boundary condition.
+            axes. Default is ``False`` indicating open boundary condition.
         neighbour_order (int): Specifies the interaction level for neighbors within the lattice.
             Default is 1, indicating nearest neighbours.
         mapping (str): Specifies the fermion-to-qubit mapping. Input values can be
@@ -291,6 +291,11 @@ def fermi_hubbard(
     int_term = 0.0 * FermiWord({})
     if isinstance(coulomb, (int, float, complex)):
         coulomb = math.ones(lattice.n_sites) * coulomb
+
+    if len(coulomb) != lattice.n_sites:
+        raise ValueError(
+            f"The Coulomb parameter should be a number or an array of length {lattice.n_sites}"
+        )
 
     for i in range(lattice.n_sites):
         up_spin = i * spin
