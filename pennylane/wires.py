@@ -56,7 +56,7 @@ def _process(wires):
             import jax
 
             if isinstance(wires, jax.numpy.ndarray):
-                wires = tuple(wires.tolist())
+                wires = wires if isinstance(wires, jax.core.Tracer) else tuple(wires.tolist())
 
         except ImportError as exc:
             raise ImportError(
