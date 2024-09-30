@@ -630,7 +630,7 @@ def haldane(
 
 
 def kitaev(n_cells, coupling=None, boundary_condition=False):
-    r"""Generates the Hamiltonian for the Kitaev model on the Honeycomb lattice.
+    r"""Generates the Hamiltonian for the Kitaev model on the honeycomb lattice.
 
     The `Kitaev <https://arxiv.org/abs/cond-mat/0506438>`_ model Hamiltonian is represented as:
 
