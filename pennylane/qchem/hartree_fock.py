@@ -139,7 +139,7 @@ def scf(mol, n_steps=50, tol=1e-8):
                 s = overlap_matrix(basis_functions)(*args)
                 h_core = core_matrix(basis_functions, charges, r)(*args)
         else:
-            # NOTE: In JAX, we want to keep the ordering as r, coeff, alpha. 
+            # NOTE: In JAX, we want to keep the ordering as r, coeff, alpha.
             # But for core_matrix, we pass in r, r, coeff, alpha.
             if (
                 len(args) > 0
