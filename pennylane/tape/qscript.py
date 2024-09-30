@@ -542,7 +542,7 @@ class QuantumScript:
     @property
     def trainable_params(self) -> list[int]:
         r"""Store or return a list containing the indices of parameters that support
-        differentiability. The indices provided match the order of appearence in the
+        differentiability. The indices provided match the order of appearance in the
         quantum circuit.
 
         Setting this property can help reduce the number of quantum evaluations needed
@@ -555,7 +555,7 @@ class QuantumScript:
         .. note::
 
             For devices that support native backpropagation (such as
-            ``default.qubit.tf`` and ``default.qubit.autograd``), this
+            ``default.qubit`` and ``default.mixed``), this
             property contains no relevant information when using
             backpropagation to compute gradients.
 
@@ -942,7 +942,7 @@ class QuantumScript:
 
             The ``stop_at`` callable allows the specification of terminal
             operations that should no longer be decomposed. In this example, the ``X``
-            operator is not decomposed becasue ``stop_at(qml.X(0)) == True``.
+            operator is not decomposed because ``stop_at(qml.X(0)) == True``.
 
             >>> def stop_at(obj):
             ...     return isinstance(obj, qml.X)
@@ -1281,7 +1281,7 @@ def make_qscript(
     Returns:
         function: The returned function takes the same arguments as the quantum
         function. When called, it returns the generated quantum script
-        without any queueing occuring.
+        without any queueing occurring.
 
     **Example**
 

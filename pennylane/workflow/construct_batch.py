@@ -43,7 +43,7 @@ def expand_fn_transform(expand_fn: Callable) -> "qml.transforms.core.TransformDi
         .TransformDispatcher: Returns a transform dispatcher object that that can transform any
         circuit-like object in PennyLane.
 
-    >>> device = qml.device('default.qubit.legacy', wires=2)
+    >>> device = qml.device('default.mixed', wires=2)
     >>> my_transform = qml.transforms.core.expand_fn_transform(device.expand_fn)
     >>> my_transform
     <transform: expand_fn>
