@@ -105,7 +105,9 @@ from pennylane.operation import active_new_opmath
 def test_electron_integrals(symbols, geometry, core, active, e_core, one_ref, two_ref, use_jax):
     r"""Test that electron_integrals returns the correct values."""
 
-    geometry = create_jax_like_array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]) if use_jax else geometry
+    geometry = (
+        qml.math.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], like="jax") if use_jax else geometry
+    )
     mol = qchem.Molecule(symbols, geometry)
     args = [geometry, mol.coeff, mol.alpha] if use_jax else []
 
@@ -135,9 +137,9 @@ def test_fermionic_hamiltonian(use_jax):
     )
 
     if use_jax:
-        geometry = create_jax_like_array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])
-        alpha = create_jax_like_array(
-            [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]]
+        geometry = qml.math.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], like="jax")
+        alpha = qml.math.array(
+            [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]], like="jax"
         )
 
     # Hamiltonian coefficients and operators computed with OpenFermion using
@@ -252,7 +254,9 @@ def test_diff_hamiltonian(use_jax):
         ],
     )
 
-    geometry = create_jax_like_array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]) if use_jax else geometry
+    geometry = (
+        qml.math.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], like="jax") if use_jax else geometry
+    )
     mol = qchem.Molecule(symbols, geometry)
     args = [geometry, mol.coeff, mol.alpha] if use_jax else []
 
@@ -292,7 +296,7 @@ def test_diff_hamiltonian_active_space(use_jax):
     symbols = ["H", "H", "H"]
     geometry = np.array([[0.0, 0.0, 0.0], [2.0, 0.0, 1.0], [0.0, 2.0, 0.0]])
     if use_jax:
-        geometry = create_jax_like_array([[0.0, 0.0, 0.0], [2.0, 0.0, 1.0], [0.0, 2.0, 0.0]])
+        geometry = qml.math.array([[0.0, 0.0, 0.0], [2.0, 0.0, 1.0], [0.0, 2.0, 0.0]], like="jax")
 
     mol = qchem.Molecule(symbols, geometry, charge=1)
     args = [geometry, mol.coeff, mol.alpha] if use_jax else [geometry]
@@ -331,7 +335,7 @@ def test_diff_hamiltonian_active_space(use_jax):
 def test_diff_hamiltonian_wire_order(symbols, geometry, core, active, charge, use_jax):
     r"""Test that diff_hamiltonian has an ascending wire order."""
     if use_jax:
-        geometry = create_jax_like_array(geometry)
+        geometry = qml.math.array(geometry, like="jax")
 
     mol = qchem.Molecule(symbols, geometry, charge)
     args = [geometry, mol.coeff, mol.alpha] if use_jax else [geometry]
@@ -387,10 +391,6 @@ def test_gradient_expvalH():
     grad_finitediff = (e_2 - e_1) / 0.0002
 
     assert np.allclose(grad_qml[0][0], grad_finitediff)
-
-
-def create_jax_like_array(values):
-    return qml.math.array(values, like="jax")
 
 
 @pytest.mark.usefixtures("use_legacy_and_new_opmath")

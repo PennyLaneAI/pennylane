@@ -876,10 +876,6 @@ class TestRepulsion:
         assert np.allclose(g_coeff, g_ref_coeff)
 
 
-def create_jax_like_array(values):
-    return qml.math.array(values, like="jax")
-
-
 def generate_symbols_alpha_coeff():
     """Generates symbols, alpha and coeff arrays to be reused for the molecule"""
     symbols = ["H", "H"]
@@ -897,9 +893,9 @@ def generate_symbols_alpha_coeff():
 class TestJax:
     def test_generate_params_jax(self):
         """Test that test_generate_params_jax returns correct basis set parameters."""
-        alpha = create_jax_like_array([3.42525091, 0.62391373, 0.1688554])
-        coeff = create_jax_like_array([0.15432897, 0.53532814, 0.44463454])
-        r = create_jax_like_array([0.0, 0.0, 0.0])
+        alpha = qml.math.array([3.42525091, 0.62391373, 0.1688554], like="jax")
+        coeff = qml.math.array([0.15432897, 0.53532814, 0.44463454], like="jax")
+        r = qml.math.array([0.0, 0.0, 0.0], like="jax")
 
         params = [alpha, coeff, r]
         args = [r, coeff, alpha]
@@ -918,9 +914,9 @@ class TestJax:
         r"""Test that overlap_integral function returns a correct value for the overlap
         integral when using jax."""
         symbols, alpha, coeff = generate_symbols_alpha_coeff()
-        geometry = create_jax_like_array(geometry_values)
-        r = create_jax_like_array(r_values)
-        o_ref = create_jax_like_array(o_ref_values)
+        geometry = qml.math.array(geometry_values, like="jax")
+        r = qml.math.array(r_values)
+        o_ref = qml.math.array(o_ref_values)
 
         mol = qchem.Molecule(symbols, geometry)
         basis_a = mol.basis_set[0]
@@ -946,9 +942,9 @@ class TestJax:
         correct for jax."""
         import jax
 
-        geometry = create_jax_like_array(geometry)
-        alpha = create_jax_like_array(alpha)
-        coeff = create_jax_like_array(coeff)
+        geometry = qml.math.array(geometry, like="jax")
+        alpha = qml.math.array(alpha, like="jax")
+        coeff = qml.math.array(coeff, like="jax")
         mol = qchem.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
         basis_a = mol.basis_set[0]
         basis_b = mol.basis_set[1]
@@ -1005,7 +1001,7 @@ class TestJax:
     def test_moment_integral_jax(self, symbols, geometry_values, e, idx, ref):
         r"""Test that moment_integral function returns a correct value for the moment
         integral when using jax."""
-        geometry = create_jax_like_array(geometry_values)
+        geometry = qml.math.array(geometry_values, like="jax")
 
         mol = qchem.Molecule(symbols, geometry)
         basis_a = mol.basis_set[0]
@@ -1039,9 +1035,9 @@ class TestJax:
         correct for jax."""
         import jax
 
-        geometry = create_jax_like_array(geometry)
-        alpha = create_jax_like_array(alpha)
-        coeff = create_jax_like_array(coeff)
+        geometry = qml.math.array(geometry, like="jax")
+        alpha = qml.math.array(alpha, like="jax")
+        coeff = qml.math.array(coeff, like="jax")
         mol = qchem.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
         basis_a = mol.basis_set[0]
         basis_b = mol.basis_set[1]
@@ -1110,8 +1106,8 @@ class TestJax:
         r"""Test that kinetic_integral function returns a correct value for the kinetic
         integral when using jax."""
         symbols, alpha, coeff = generate_symbols_alpha_coeff()
-        geometry = create_jax_like_array(geometry_values)
-        t_ref = create_jax_like_array(t_ref_values)
+        geometry = qml.math.array(geometry_values, like="jax")
+        t_ref = qml.math.array(t_ref_values, like="jax")
 
         mol = qchem.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
         basis_a = mol.basis_set[0]
@@ -1137,9 +1133,9 @@ class TestJax:
         correct for jax."""
         import jax
 
-        geometry = create_jax_like_array(geometry)
-        alpha = create_jax_like_array(alpha)
-        coeff = create_jax_like_array(coeff)
+        geometry = qml.math.array(geometry, like="jax")
+        alpha = qml.math.array(alpha, like="jax")
+        coeff = qml.math.array(coeff, like="jax")
         mol = qchem.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
         basis_a = mol.basis_set[0]
         basis_b = mol.basis_set[1]
@@ -1196,8 +1192,8 @@ class TestJax:
         r"""Test that attraction_integral function returns a correct value for the kinetic
         integral when using jax."""
         symbols, alpha, coeff = generate_symbols_alpha_coeff()
-        geometry = create_jax_like_array(geometry_values)
-        a_ref = create_jax_like_array(a_ref_values)
+        geometry = qml.math.array(geometry_values, like="jax")
+        a_ref = qml.math.array(a_ref_values, like="jax")
 
         mol = qchem.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
         basis_a = mol.basis_set[0]
@@ -1223,9 +1219,9 @@ class TestJax:
         correct for jax."""
         import jax
 
-        geometry = create_jax_like_array(geometry)
-        alpha = create_jax_like_array(alpha)
-        coeff = create_jax_like_array(coeff)
+        geometry = qml.math.array(geometry, like="jax")
+        alpha = qml.math.array(alpha, like="jax")
+        coeff = qml.math.array(coeff, like="jax")
         mol = qchem.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
         basis_a = mol.basis_set[0]
         basis_b = mol.basis_set[1]
@@ -1295,24 +1291,26 @@ class TestJax:
         r"""Test that repulsion_integral function returns a correct value for the repulsion
         integral when using jax."""
         symbols = ["H", "H"]
-        geometry = create_jax_like_array(geometry)
-        alpha = create_jax_like_array(
+        geometry = qml.math.array(geometry, like="jax")
+        alpha = qml.math.array(
             [
                 [3.42525091, 0.62391373, 0.1688554],
                 [3.42525091, 0.62391373, 0.1688554],
                 [3.42525091, 0.62391373, 0.1688554],
                 [3.42525091, 0.62391373, 0.1688554],
-            ]
+            ],
+            like="jax",
         )
-        coeff = create_jax_like_array(
+        coeff = qml.math.array(
             [
                 [0.15432897, 0.53532814, 0.44463454],
                 [0.15432897, 0.53532814, 0.44463454],
                 [0.15432897, 0.53532814, 0.44463454],
                 [0.15432897, 0.53532814, 0.44463454],
-            ]
+            ],
+            like="jax",
         )
-        e_ref = create_jax_like_array(e_ref)
+        e_ref = qml.math.array(e_ref)
 
         mol = qchem.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
         basis_a = mol.basis_set[0]
@@ -1350,9 +1348,9 @@ class TestJax:
         import jax
 
         jax.config.update("jax_enable_x64", True)
-        geometry = create_jax_like_array(geometry)
-        alpha = create_jax_like_array(alpha)
-        coeff = create_jax_like_array(coeff)
+        geometry = qml.math.array(geometry, like="jax")
+        alpha = qml.math.array(alpha, like="jax")
+        coeff = qml.math.array(coeff, like="jax")
         mol = qchem.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
         basis_a = mol.basis_set[0]
         basis_b = mol.basis_set[1]
