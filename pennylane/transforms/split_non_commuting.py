@@ -109,7 +109,7 @@ def split_non_commuting(
     1: ──RX(0.79)─┤ ╰<X@Z>
 
     Note that the observable ``Y(1)`` occurs twice in the original QNode, but only once in the
-    transformed circuits. When there are multiple expecatation value measurements that rely on
+    transformed circuits. When there are multiple expectation value measurements that rely on
     the same observable, this observable is measured only once, and the result is copied to each
     original measurement.
 

@@ -13,6 +13,7 @@
 # limitations under the License.
 """Tests for exeuction with default qubit 2 independent of any interface."""
 
+import numpy as np
 import pytest
 
 import pennylane as qml
@@ -42,3 +43,15 @@ def test_caching(gradient_fn):
     assert tracker.totals["batches"] == 1
     assert tracker.totals["executions"] == 1
     assert cache[qs.hash] == -1.0
+
+
+def test_execute_legacy_device():
+    """Test that qml.execute works when passed a legacy device class."""
+
+    dev = qml.devices.DefaultMixed(wires=2)
+
+    tape = qml.tape.QuantumScript([qml.RX(0.1, 0)], [qml.expval(qml.Z(0))])
+
+    res = qml.execute((tape,), dev)
+
+    assert qml.math.allclose(res[0], np.cos(0.1))

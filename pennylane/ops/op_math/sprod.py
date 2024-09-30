@@ -112,7 +112,7 @@ class SProd(ScalarSymbolicOp):
         :title: Usage Details
 
         The SProd operation can also be measured inside a qnode as an observable.
-        If the circuit is parameterized, then we can also differentiate through the observable.
+        If the circuit is parametrized, then we can also differentiate through the observable.
 
         .. code-block:: python
 
@@ -262,6 +262,10 @@ class SProd(ScalarSymbolicOp):
         mat = self.base.sparse_matrix(wire_order=wire_order).multiply(self.scalar)
         mat.eliminate_zeros()
         return mat
+
+    @property
+    def has_sparse_matrix(self):
+        return self.pauli_rep is not None or self.base.has_sparse_matrix
 
     @property
     def has_matrix(self):
