@@ -644,7 +644,7 @@ class TestScriptCopying:
         ops = [qml.X("b"), qml.RX(1.2, "a")]
         tape = QuantumScript(ops, measurements=[qml.counts()], shots=2500, trainable_params=[1])
 
-        new_tape = tape.copy(update={"shots": shots})
+        new_tape = tape.copy(shots=shots)
         assert tape.shots == Shots(2500)
         assert new_tape.shots == Shots(shots)
 
@@ -659,7 +659,7 @@ class TestScriptCopying:
         tape = QuantumScript(ops, measurements=[qml.counts()], shots=2500, trainable_params=[1])
 
         new_measurements = [qml.expval(qml.X(0)), qml.sample()]
-        new_tape = tape.copy(update={"measurements": new_measurements})
+        new_tape = tape.copy(measurements=new_measurements)
 
         assert tape.measurements == [qml.counts()]
         assert new_tape.measurements == new_measurements
@@ -675,7 +675,7 @@ class TestScriptCopying:
         tape = QuantumScript(ops, measurements=[qml.counts()], shots=2500, trainable_params=[1])
 
         new_ops = [qml.X(0)]
-        new_tape = tape.copy(update={"operations": new_ops})
+        new_tape = tape.copy(operations=new_ops)
 
         assert tape.operations == ops
         assert new_tape.operations == new_ops
@@ -690,7 +690,7 @@ class TestScriptCopying:
         ops = [qml.RX(1.23, "b"), qml.RX(4.56, "a")]
         tape = QuantumScript(ops, measurements=[qml.counts()], shots=2500, trainable_params=[1])
 
-        new_tape = tape.copy(update={"trainable_params": [0]})
+        new_tape = tape.copy(trainable_params=[0])
 
         assert tape.trainable_params == [1]
         assert tape.get_parameters() == [4.56]
