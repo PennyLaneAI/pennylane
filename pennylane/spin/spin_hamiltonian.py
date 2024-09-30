@@ -501,7 +501,9 @@ def haldane(
 ):
     r"""Generates the Hamiltonian for the Haldane model on a lattice.
 
-    The `Hamiltonian <https://arxiv.org/pdf/2211.13615>`_ for the  `Haldane model <https://journals.aps.org/prl/pdf/10.1103/PhysRevLett.61.2015>`_  is represented as:
+    The `Hamiltonian <https://arxiv.org/pdf/2211.13615>`_ for the
+    `Haldane model <https://journals.aps.org/prl/pdf/10.1103/PhysRevLett.61.2015>`_
+    is represented as:
 
     .. math::
 
@@ -512,10 +514,12 @@ def haldane(
           \left( e^{i\phi_{ij}} c_{i\sigma}^\dagger c_{j\sigma} + e^{-i\phi_{ij}} c_{j\sigma}^\dagger c_{i\sigma} \right)
         \end{align*}
 
-    where :math:`t^{1}_{ij}` is the hopping term representing the hopping amplitude between neighbouring
-    sites :math:`\langle i,j \rangle`, :math:`t^{2}_{ij}` is the hopping amplitude between next-nearest neighbours :math:`\langle \langle i,j \rangle \rangle`, :math:`\phi_{ij}` is the phase
-    factor that breaks time-reversal symmetry in the system, and :math:`\sigma` is the spin degree of freedom.
-    This function assumes two fermions with opposite spins on each lattice site.
+    where :math:`t^{1}_{ij}` is the hopping amplitude between neighbouring
+    sites :math:`\langle i,j \rangle`, :math:`t^{2}_{ij}` is the hopping amplitude between
+    next-nearest neighbour sites :math:`\langle \langle i,j \rangle \rangle`, :math:`\phi_{ij}` is
+    the phase factor that breaks time-reversal symmetry in the system, and :math:`\sigma` is the
+    spin degree of freedom. This function assumes two fermions with opposite spins on each lattice
+    site.
 
     Args:
         lattice (str): Shape of the lattice. Input values can be ``'chain'``, ``'square'``,
