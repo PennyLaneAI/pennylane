@@ -676,13 +676,19 @@ class TestScriptCopying:
 
         new_ops = [qml.X(0)]
         new_tape = tape.copy(operations=new_ops)
+        new_tape2 = tape.copy(ops=new_ops)
 
         assert tape.operations == ops
         assert new_tape.operations == new_ops
+        assert new_tape2.operations == new_ops
 
-        assert new_tape.measurements == tape.measurements == [qml.counts()]
-        assert new_tape.shots == tape.shots == Shots(2500)
-        assert new_tape.trainable_params == tape.trainable_params == [1]
+        assert (
+            new_tape.measurements == new_tape2.measurements == tape.measurements == [qml.counts()]
+        )
+        assert new_tape.shots == new_tape2.shots == tape.shots == Shots(2500)
+        assert (
+            new_tape.trainable_params == new_tape2.trainable_params == tape.trainable_params == [1]
+        )
 
     def test_copy_update_trainable_params(self):
         """Test that copy with update dict behaves as expected for setting trainable parameters"""
