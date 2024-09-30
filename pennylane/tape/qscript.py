@@ -835,9 +835,10 @@ class QuantumScript:
     # ========================================================
 
     def copy(self, copy_operations: bool = False, **update) -> "QuantumScript":
-        """Returns a copy of the quantum script. If `update` was passed, the updated attributes are
-        modified, otherwise, all attributes match the original tape. The copy is a shallow copy if
-        `copy_operations` and `update` are both `False`.
+        """Returns a copy of the quantum script. If any attributes are defined via keyword argument,
+        those are used on the new tape - otherwise, all attributes match the original tape. The copy
+        is a shallow copy if `copy_operations` is False and no tape attributes are updated via keyword
+        argument.
 
         Args:
             copy_operations (bool): If True, the operations are also shallow copied.
@@ -857,7 +858,7 @@ class QuantumScript:
                 parameter indices will replace the copied parameter indicies on the new tape.
 
         Returns:
-            QuantumScript : a copy of the quantum script. If `update` was passed, the updated attributes are modified.
+            QuantumScript : a copy of the quantum script, with modified attributes if specified by keyword argument.
 
         **Example**
 
@@ -911,12 +912,18 @@ class QuantumScript:
             trainable_params=list(update.get("trainable_params", self.trainable_params)),
         )
 
-        new_qscript._graph = None if copy_operations else self._graph
-        new_qscript._specs = None
-        new_qscript._batch_size = self._batch_size
-        new_qscript._output_dim = self._output_dim
-        new_qscript._obs_sharing_wires = self._obs_sharing_wires
-        new_qscript._obs_sharing_wires_id = self._obs_sharing_wires_id
+        # copy cached properties when relevant
+        new_qscript._graph = None if copy_operations or update else self._graph
+        if not update.get("operations"):
+            # batch size may change if operations were updated
+            new_qscript._batch_size = self._batch_size
+        if not update.get("measurements"):
+            # obs may change if measurements were updated
+            new_qscript._obs_sharing_wires = self._obs_sharing_wires
+            new_qscript._obs_sharing_wires_id = self._obs_sharing_wires_id
+        if not (update.get("measurements") or update.get("operations")):
+            # output_dim may change if either measurements or operations were updated
+            new_qscript._output_dim = self._output_dim
         return new_qscript
 
     def __copy__(self) -> "QuantumScript":

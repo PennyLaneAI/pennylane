@@ -24,10 +24,9 @@
   when possible, based on the `pauli_rep` of the relevant observables.
   [(#6113)](https://github.com/PennyLaneAI/pennylane/pull/6113/)
 
-* An `update` argument is added to `QuantumScript.copy` to make it easier to create 
-  an updated version of a tape where some of `tape.operations`, `tape.measurements`, 
-  `tape.shots`, and `tape.trainable_params` are modified while ensuring other attributes 
-  are unchanged.
+* The `QuantumScript.copy` method now takes `operations`, `measurements`, `shots` and 
+  `trainable_params` as keyword arguments. If any of these are passed when copying a 
+  tape, the specified attributes will replace the copied attributes on the new tape.
   [(#6285)](https://github.com/PennyLaneAI/pennylane/pull/6285)
 
 * The `Hermitian` operator now has a `compute_sparse_matrix` implementation.
