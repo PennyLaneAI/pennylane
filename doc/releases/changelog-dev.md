@@ -27,6 +27,11 @@
 * The `Hermitian` operator now has a `compute_sparse_matrix` implementation.
   [(#6225)](https://github.com/PennyLaneAI/pennylane/pull/6225)
 
+* When an observable is repeated on a tape, `tape.diagonalizing_gates` no longer returns the 
+  diagonalizing gates for each instance of the observable. Instead, the diagonalizing gates of
+  each observable on the tape are included just once.
+  [(#6288)](https://github.com/PennyLaneAI/pennylane/pull/6288)
+
 <h4>Capturing and representing hybrid programs</h4>
 
 * Differentiation of hybrid programs via `qml.grad` and `qml.jacobian` can now be captured
@@ -108,6 +113,10 @@
 * `Operator.expand` is now removed. Use `qml.tape.QuantumScript(op.deocomposition())` instead.
   [(#6227)](https://github.com/PennyLaneAI/pennylane/pull/6227)
 
+* When an observable is repeated on a tape, `tape.diagonalizing_gates` no longer returns the 
+  diagonalizing gates for each instance of the observable. Instead, the diagonalizing gates of
+  each observable on the tape are included just once.
+  [(#6288)](https://github.com/PennyLaneAI/pennylane/pull/6288)
 
 <h3>Deprecations 👋</h3>
 
