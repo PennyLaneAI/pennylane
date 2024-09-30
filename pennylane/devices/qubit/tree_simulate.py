@@ -253,7 +253,7 @@ class TreeTraversalStack:
             shot budget currently available at the parent node.
         """
         if not self.finite_shots:
-            return prob
+            return prob, None
 
         # Initialize allocated shots if not happened before
         if self.allocated_shots[depth] is None:
@@ -271,7 +271,7 @@ class TreeTraversalStack:
 
         # Store the sampled counts in `allocated_shots`
         self.allocated_shots[depth][self.current_branch[depth]] = counts
-        return counts / current_total
+        return counts / current_total, counts
 
     def sample(self, prob, n):
         """Sample from a binomial distribution.
@@ -400,9 +400,10 @@ def tree_simulate(
         # Simulate the current depth circuit segment
         if depth == 0:
             initial_state = None
+            allocated_shots = circuit.shots
         else:
             initial_state, p = stack.branch_state(nodes[depth], depth)
-            p = stack.discretize_prob(p, depth)
+            p, allocated_shots = stack.discretize_prob(p, depth)
             if p == 0.0 or stack.threshold_test(depth, p):
                 # Do not update probs. None-valued probs are filtered out in `combine_measurements`
                 # Set results to a tuple of `None`s with the correct length, they will be filtered
@@ -412,7 +413,9 @@ def tree_simulate(
                 continue
             stack.set_prob(p, depth)
 
-        circtmp = QuantumScript(circuits[depth].operations, circuits[depth].measurements)
+        circtmp = QuantumScript(
+            circuits[depth].operations, circuits[depth].measurements, shots=allocated_shots
+        )
         circtmp = prepend_state_prep(circtmp, initial_state, circuit.wires)
         state, is_state_batched = get_final_state(
             circtmp,

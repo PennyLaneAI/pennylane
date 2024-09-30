@@ -287,6 +287,8 @@ def measure_final_state(circuit, state, is_state_batched, **execution_kwargs) ->
         mid_measurements=mid_measurements,
     )
 
+    print(circuit.measurements)
+    print(results)
     if len(circuit.measurements) == 1:
         if circuit.shots.has_partitioned_shots:
             return tuple(res[0] for res in results)
