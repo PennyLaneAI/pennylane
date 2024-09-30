@@ -349,6 +349,13 @@ def tree_simulate(
     mcm_nodes: list[tuple[int, MidMeasureMP]] = [
         (i, node) for i, node in enumerate(nodes) if isinstance(node, MidMeasureMP)
     ]
+    has_reset_mcm_nodes = any(node.reset for i, node in mcm_nodes)
+    has_mcm_stats = any(mp.mv is not None for mp in circuit.measurements)
+    if has_reset_mcm_nodes and has_mcm_stats:
+        raise NotImplementedError(
+            "Mid-circuit measurement statistics together with qubit reset are not"
+            "supported by tree traversal simulation."
+        )
     mcm_value_modifiers: dict = {
         i: (int(ps) if (ps := node.postselect) is not None else 0) for i, node in mcm_nodes
     }
@@ -512,6 +519,16 @@ def prepend_state_prep(circuit, state, wires):
 @lru_cache
 def _get_kraus_matrices(op):
     return op.kraus_matrices()
+
+
+# def _measure_final_state(circuit, state, is_state_batched, mid_measurements, **execution_kwargs)
+# non_mcm_ids, non_mcm_mps = zip(*[(i, mp) for i, mp in enumerate(circtmp.measurements) if mp.mv is None])
+# mcm_ids, mcm_mps = zip(*[(i, mp) for i, mp in enumerate(circtmp.measurements) if mp.mv is not None])
+# mcm_res = iter(mp.mv.concretize(mid_measurements) # TODO
+
+# circuit = QuantumScript(circuit.operations, non_mcm_mps, shots=circuit.shots)
+# non_mcm_res = iter(measure_final_state(circuit, state, is_state_batched, **execution_kwargs))
+# return tuple(next(mcm_res) if i in mcm_ids else next(non_mcm_res) for i in range(len(circuit.measurements)))
 
 
 def combine_measurements(terminal_measurements, stack, depth):
