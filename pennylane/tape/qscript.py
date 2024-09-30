@@ -834,11 +834,9 @@ class QuantumScript:
     # Transforms: QuantumScript to QuantumScript
     # ========================================================
 
-    def copy(
-        self, copy_operations: bool = False, **update: Optional[Union[dict, bool]] = False
-    ) -> "QuantumScript":
-        """Returns a copy of the quantum script. If `update` was passed, the updated attributes are 
-        modified, otherwise, all attributes match the original tape. The copy is a shallow copy if 
+    def copy(self, copy_operations: bool = False, **update) -> "QuantumScript":
+        """Returns a copy of the quantum script. If `update` was passed, the updated attributes are
+        modified, otherwise, all attributes match the original tape. The copy is a shallow copy if
         `copy_operations` and `update` are both `False`.
 
         Args:
