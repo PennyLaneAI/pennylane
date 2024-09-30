@@ -135,7 +135,9 @@ class PhaseAdder(Operation):
             if mod is None:
                 mod = 2 ** len(x_wires)
             elif mod != 2 ** len(x_wires) and num_work_wires != 1:
-                raise ValueError(f"If mod is not 2^{len(x_wires)}, one work wire should be provided.")
+                raise ValueError(
+                    f"If mod is not 2^{len(x_wires)}, one work wire should be provided."
+                )
             if not isinstance(k, int) or not isinstance(mod, int):
                 raise ValueError("Both k and mod must be integers")
             if mod > 2 ** len(x_wires):
@@ -145,7 +147,9 @@ class PhaseAdder(Operation):
                 )
             if work_wire is not None:
                 if any(wire in work_wire for wire in x_wires):
-                    raise ValueError("None of the wires in work_wire should be included in x_wires.")
+                    raise ValueError(
+                        "None of the wires in work_wire should be included in x_wires."
+                    )
 
         self.hyperparameters["k"] = k % mod
         self.hyperparameters["mod"] = mod
