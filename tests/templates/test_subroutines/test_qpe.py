@@ -397,6 +397,7 @@ class TestDecomposition:
 
         assert qml.math.isclose(qpe_circuit()[0], 1)  # pylint: disable=unsubscriptable-object
 
+    @pytest.mark.jax
     def test_jit(self):
         """Test if JIT works properly on the example in documentation"""
         import jax

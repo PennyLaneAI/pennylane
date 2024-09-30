@@ -316,6 +316,7 @@ class TestDecomposition:
         assert np.allclose(res1, res2, atol=tol, rtol=0)
         assert np.allclose(state1, state2, atol=tol, rtol=0)
 
+    @pytest.mark.jax
     def test_jax_jit(self):
         import jax
 

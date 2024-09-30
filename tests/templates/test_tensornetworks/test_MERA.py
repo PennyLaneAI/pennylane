@@ -485,6 +485,7 @@ class TestTemplateOutputs:
         manual_result = circuit_manual()
         assert np.isclose(template_result, manual_result)
 
+    @pytest.mark.jax
     @pytest.mark.parametrize(
         (
             "block",
