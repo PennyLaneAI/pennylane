@@ -31,8 +31,6 @@ from pennylane.workflow.jacobian_products import (
 )
 
 dev = qml.device("default.qubit")
-with pytest.warns(qml.PennyLaneDeprecationWarning):
-    dev_old = qml.device("default.qubit.legacy", wires=5)
 dev_lightning = qml.device("lightning.qubit", wires=5)
 adjoint_config = qml.devices.ExecutionConfig(gradient_method="adjoint")
 dev_ps = ParamShiftDerivativesDevice()
@@ -52,20 +50,18 @@ hadamard_grad_jpc = TransformJacobianProducts(
     inner_execute_numpy, qml.gradients.hadamard_grad, {"aux_wire": "aux"}
 )
 device_jacs = DeviceDerivatives(dev, adjoint_config)
-legacy_device_jacs = DeviceDerivatives(dev_old, execution_config=aj_config)
 device_ps_jacs = DeviceDerivatives(dev_ps, ps_config)
 device_native_jps = DeviceJacobianProducts(dev, adjoint_config)
 device_ps_native_jps = DeviceJacobianProducts(dev_ps, ps_config)
 lightning_vjps = DeviceJacobianProducts(dev_lightning, execution_config=adjoint_config)
 
 transform_jpc_matrix = [param_shift_jpc, param_shift_cached_jpc, hadamard_grad_jpc]
-dev_jpc_matrix = [device_jacs, legacy_device_jacs, device_ps_jacs]
+dev_jpc_matrix = [device_jacs, device_ps_jacs]
 jpc_matrix = [
     param_shift_jpc,
     param_shift_cached_jpc,
     hadamard_grad_jpc,
     device_jacs,
-    legacy_device_jacs,
     device_ps_jacs,
     device_native_jps,
     device_ps_native_jps,
@@ -124,21 +120,6 @@ class TestBasics:
 
         assert jpc._device is device
         assert jpc._execution_config is config
-        assert isinstance(jpc._results_cache, LRUCache)
-        assert len(jpc._results_cache) == 0
-        assert isinstance(jpc._jacs_cache, LRUCache)
-        assert len(jpc._jacs_cache) == 0
-
-    def test_device_jacobians_initialization_old_dev(self):
-        """Test the private attributes are set during initialization of a DeviceDerivatives class with the
-        old device interface."""
-
-        device = qml.devices.DefaultQubitLegacy(wires=5)
-
-        jpc = DeviceDerivatives(device, aj_config)
-
-        assert jpc._device is device
-        assert jpc._execution_config == aj_config
         assert isinstance(jpc._results_cache, LRUCache)
         assert len(jpc._results_cache) == 0
         assert isinstance(jpc._jacs_cache, LRUCache)

@@ -58,7 +58,7 @@ def eye(*args, like=None, **kwargs):
 
 
 def multi_dispatch(argnum=None, tensor_list=None):
-    r"""Decorater to dispatch arguments handled by the interface.
+    r"""Decorator to dispatch arguments handled by the interface.
 
     This helps simplify definitions of new functions inside PennyLane. We can
     decorate the function, indicating the arguments that are tensors handled

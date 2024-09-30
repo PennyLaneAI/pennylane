@@ -49,7 +49,7 @@ def test_operator_definition_qpe(hamiltonian):
 
         # apply QPE (used iterative qpe here)
         measurements = qml.iterative_qpe(
-            qml.Qubitization(hamiltonian, control=[3, 4]), ancilla=5, iters=8
+            qml.Qubitization(hamiltonian, control=[3, 4]), aux_wire=5, iters=8
         )
 
         return qml.probs(op=measurements)
@@ -169,8 +169,7 @@ class TestDifferentiability:
     @pytest.mark.jax
     @pytest.mark.parametrize("use_jit", (False, True))
     @pytest.mark.parametrize("shots", (None, 50000))
-    @pytest.mark.parametrize("device", ["default.qubit", "default.qubit.legacy"])
-    def test_qnode_jax(self, shots, use_jit, device):
+    def test_qnode_jax(self, shots, use_jit):
         """ "Test that the QNode executes and is differentiable with JAX. The shots
         argument controls whether autodiff or parameter-shift gradients are used."""
         import jax
@@ -185,10 +184,7 @@ class TestDifferentiability:
 
         jax.config.update("jax_enable_x64", True)
 
-        if device == "default.qubit":
-            dev = qml.device("default.qubit", shots=shots, seed=10)
-        else:
-            dev = qml.device("default.qubit.legacy", shots=shots, wires=5)
+        dev = qml.device("default.qubit", shots=shots, seed=10)
 
         diff_method = "backprop" if shots is None else "parameter-shift"
         qnode = qml.QNode(self.circuit, dev, interface="jax", diff_method=diff_method)

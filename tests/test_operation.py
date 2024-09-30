@@ -321,21 +321,6 @@ class TestOperatorConstruction:
         assert op._ndim_params == (ndim_params,)
         assert op.ndim_params == (0,)
 
-    def test_expand_deprecated(self):
-
-        class MyOp(qml.operation.Operation):
-            num_wires = 1
-            has_decomposition = True
-
-            @staticmethod
-            def compute_decomposition(*params, wires=None, **hyperparameters):
-                return [qml.Hadamard(wires=wires)]
-
-        op = MyOp(wires=0)
-
-        with pytest.warns(qml.PennyLaneDeprecationWarning, match="'Operator.expand' is deprecated"):
-            op.expand()
-
 
 class TestPytreeMethods:
     def test_pytree_defaults(self):
@@ -2963,7 +2948,7 @@ def test_use_legacy_opmath_fixture():
     assert not qml.operation.active_new_opmath()
 
 
-CONVERT_HAMILTONAIN = [
+CONVERT_HAMILTONIAN = [
     (
         [1.5, 0.5, 1, 1],
         [
@@ -3001,7 +2986,7 @@ CONVERT_HAMILTONAIN = [
 
 
 @pytest.mark.usefixtures("use_new_opmath")
-@pytest.mark.parametrize("coeffs, obs", CONVERT_HAMILTONAIN)
+@pytest.mark.parametrize("coeffs, obs", CONVERT_HAMILTONIAN)
 def test_convert_to_hamiltonian(coeffs, obs):
     """Test that arithmetic operators can be converted to Hamiltonian instances"""
 

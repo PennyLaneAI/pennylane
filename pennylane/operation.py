@@ -870,6 +870,18 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         """
         raise SparseMatrixUndefinedError
 
+    # pylint: disable=no-self-argument, comparison-with-callable
+    @classproperty
+    def has_sparse_matrix(cls) -> bool:
+        r"""Bool: Whether the Operator returns a defined sparse matrix.
+
+        Note: Child classes may have this as an instance property instead of as a class property.
+        """
+        return (
+            cls.compute_sparse_matrix != Operator.compute_sparse_matrix
+            or cls.sparse_matrix != Operator.sparse_matrix
+        )
+
     def sparse_matrix(self, wire_order: Optional[WiresLike] = None) -> csr_matrix:
         r"""Representation of the operator as a sparse matrix in the computational basis.
 
@@ -1516,33 +1528,6 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
             The adjointed operation.
         """
         raise AdjointUndefinedError
-
-    def expand(self) -> "qml.tape.QuantumScript":
-        """Returns a tape that contains the decomposition of the operator.
-
-        .. warning::
-            This function is deprecated and will be removed in version 0.39.
-            The same behaviour can be achieved simply through 'qml.tape.QuantumScript(self.decomposition())'.
-
-        Returns:
-            .QuantumTape: quantum tape
-        """
-        warnings.warn(
-            "'Operator.expand' is deprecated and will be removed in version 0.39. "
-            "The same behaviour can be achieved simply through 'qml.tape.QuantumScript(self.decomposition())'.",
-            qml.PennyLaneDeprecationWarning,
-        )
-
-        if not self.has_decomposition:
-            raise DecompositionUndefinedError
-
-        qscript = qml.tape.QuantumScript(self.decomposition())
-
-        if not self.data:
-            # original operation has no trainable parameters
-            qscript.trainable_params = {}
-
-        return qscript
 
     @property
     def arithmetic_depth(self) -> int:
