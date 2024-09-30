@@ -14,6 +14,8 @@
 """
 Unit tests for functions and classes needed for construct a lattice.
 """
+import re
+
 import numpy as np
 import pytest
 
@@ -789,6 +791,131 @@ def test_shape_error():
     lattice = "Octagon"
     with pytest.raises(ValueError, match="Lattice shape, 'Octagon' is not supported."):
         _generate_lattice(lattice=lattice, n_cells=n_cells)
+
+
+def test_neighbour_order_error():
+    r"""Test that an error is raised if neighbour order is greater than 1 when custom_edges are provided."""
+
+    vectors = [[0, 1], [1, 0]]
+    n_cells = [3, 3]
+    custom_edges = [[(0, 1)], [(0, 5)], [(0, 4)]]
+    with pytest.raises(
+        ValueError,
+        match="custom_edges cannot be specified if neighbour_order argument is set to greater than 1.",
+    ):
+        Lattice(n_cells=n_cells, vectors=vectors, neighbour_order=2, custom_edges=custom_edges)
+
+
+def test_custom_edge_type_error():
+    r"""Test that an error is raised if custom_edges are not provided as a list of length 1 or 2."""
+
+    vectors = [[0, 1], [1, 0]]
+    n_cells = [3, 3]
+    custom_edges = [[(0, 1), 1, 3], [(0, 5)], [(0, 4)]]
+    with pytest.raises(
+        TypeError, match="The elements of custom_edges should be lists of length 1 or 2."
+    ):
+        Lattice(n_cells=n_cells, vectors=vectors, custom_edges=custom_edges)
+
+
+def test_custom_edge_value_error():
+    r"""Test that an error is raised if the custom_edges contains an edge with site_index greater than number of sites"""
+
+    vectors = [[0, 1], [1, 0]]
+    n_cells = [3, 3]
+    custom_edges = [[(0, 1)], [(0, 5)], [(0, 12)]]
+    with pytest.raises(
+        ValueError, match=re.escape("The edge (0, 12) has vertices greater than n_sites, 9")
+    ):
+        Lattice(n_cells=n_cells, vectors=vectors, custom_edges=custom_edges)
+
+
+@pytest.mark.parametrize(
+    # expected_edges here were obtained manually
+    ("vectors", "positions", "n_cells", "custom_edges", "expected_edges"),
+    [
+        (
+            [[0, 1], [1, 0]],
+            [[0, 0]],
+            [3, 3],
+            [[(0, 1)], [(0, 5)], [(0, 4)]],
+            [(0, 1, 0), (0, 5, 1), (0, 4, 2), (1, 2, 0), (3, 4, 0), (0, 4, 2), (1, 5, 2)],
+        ),
+        (
+            [[0, 1], [1, 0]],
+            [[0, 0]],
+            [3, 4],
+            [[(0, 1)], [(1, 4)], [(1, 5)]],
+            [(0, 1, 0), (1, 2, 0), (2, 3, 0), (1, 4, 1), (2, 5, 1), (0, 4, 2), (2, 6, 2)],
+        ),
+        (
+            [[1, 0], [0.5, np.sqrt(3) / 2]],
+            [[0.5, 0.5 / 3**0.5], [1, 1 / 3**0.5]],
+            [2, 2],
+            [[(0, 1)], [(1, 2)], [(1, 5)]],
+            [(2, 3, 0), (4, 5, 0), (1, 2, 1), (5, 6, 1), (1, 5, 2), (3, 7, 2)],
+        ),
+    ],
+)
+def test_custom_edges(vectors, positions, n_cells, custom_edges, expected_edges):
+    r"""Test that the edges are added as per custom_edges provided"""
+    lattice = Lattice(
+        n_cells=n_cells, vectors=vectors, positions=positions, custom_edges=custom_edges
+    )
+    assert np.all(np.isin(expected_edges, lattice.edges))
+
+
+@pytest.mark.parametrize(
+    # expected_nodes here were obtained manually
+    ("vectors", "positions", "n_cells", "custom_nodes", "expected_nodes"),
+    [
+        (
+            [[0, 1], [1, 0]],
+            [[0, 0]],
+            [3, 3],
+            [[0, ("X", 0.3)], [2, ("Y", 0.3)]],
+            [[0, ("X", 0.3)], [2, ("Y", 0.3)]],
+        ),
+        (
+            [[1, 0], [0.5, np.sqrt(3) / 2]],
+            [[0.5, 0.5 / 3**0.5], [1, 1 / 3**0.5]],
+            [2, 2],
+            [[0, ("X", 0.3)], [2, ("Y", 0.3)], [1, ("Z", 0.9)]],
+            [[0, ("X", 0.3)], [2, ("Y", 0.3)], [1, ("Z", 0.9)]],
+        ),
+    ],
+)
+def test_custom_nodes(vectors, positions, n_cells, custom_nodes, expected_nodes):
+    r"""Test that the nodes are added as per custom_nodes provided"""
+    lattice = Lattice(
+        n_cells=n_cells, vectors=vectors, positions=positions, custom_nodes=custom_nodes
+    )
+
+    assert lattice.nodes == expected_nodes
+
+
+@pytest.mark.parametrize(
+    ("vectors", "positions", "n_cells", "custom_nodes"),
+    [
+        (
+            [[0, 1], [1, 0]],
+            [[0, 0]],
+            [3, 3],
+            [[0, ("X", 0.3)], [-202, ("Y", 0.3)]],
+        ),
+        (
+            [[1, 0], [0.5, np.sqrt(3) / 2]],
+            [[0.5, 0.5 / 3**0.5], [1, 1 / 3**0.5]],
+            [2, 2],
+            [[0, ("X", 0.3)], [204, ("Y", 0.3)], [1, ("Z", 0.9)]],
+        ),
+    ],
+)
+def test_custom_nodes_error(vectors, positions, n_cells, custom_nodes):
+    r"""Test that the incompatible `custom_nodes` raise correct error"""
+
+    with pytest.raises(ValueError, match="The custom node has"):
+        Lattice(n_cells=n_cells, vectors=vectors, positions=positions, custom_nodes=custom_nodes)
 
 
 def test_dimension_error():
