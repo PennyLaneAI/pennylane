@@ -20,9 +20,9 @@ jobs:
     with:
       branch: ${{ github.ref }}
       pipeline_mode: 'update-durations'
+      pytest_store_durations: true
       run_lightened_ci: true
       skip_ci_test_jobs: 'torch-tests,autograd-tests,all-interfaces-tests,external-libraries-tests,qcut-tests,qchem-tests,gradients-tests,data-tests,device-tests'
-      pytest_store_durations: true
 
   # Add job for downloading artifacts and opening PR
   upload-durations-files:
