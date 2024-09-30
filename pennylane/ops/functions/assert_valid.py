@@ -301,7 +301,7 @@ def _check_differentiation(op):
     if op.num_params == 0:
         return
 
-    if isinstance(op, qml.ops.qubit.BasisStateProjector):
+    if isinstance(op, (qml.ops.qubit.BasisStateProjector, qml.ops.qubit.StatePrep)):
         return
 
     data, struct = qml.pytrees.flatten(op)
