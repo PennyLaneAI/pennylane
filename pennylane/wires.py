@@ -50,6 +50,20 @@ def _process(wires):
         # of considering the elements of iterables as wire labels.
         wires = [wires]
 
+    if "jax" in str(type(wires)):
+        try:
+            # pylint: disable=import-outside-toplevel
+            import jax
+
+            if isinstance(wires, jax.numpy.ndarray):
+                wires = tuple(wires.tolist())
+
+        except ImportError as exc:
+            raise ImportError(
+                "JAX is required to process this input. "
+                "You can install jax via: pip install jax jaxlib"
+            ) from exc
+
     try:
         # Use tuple conversion as a check for whether `wires` can be iterated over.
         # Note, this is not the same as `isinstance(wires, Iterable)` which would
