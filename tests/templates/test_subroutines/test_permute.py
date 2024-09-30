@@ -316,6 +316,19 @@ class TestDecomposition:
         assert np.allclose(res1, res2, atol=tol, rtol=0)
         assert np.allclose(state1, state2, atol=tol, rtol=0)
 
+    def test_jax_jit(self):
+        import jax
+
+        dev = qml.device("default.qubit", wires=5)
+
+        @jax.jit
+        @qml.qnode(dev)
+        def apply_perm():
+            qml.Permute([4, 2, 0, 1, 3], wires=dev.wires)
+            return qml.expval(qml.Z(0))
+
+        apply_perm()
+
 
 class TestInputs:
     """Test inputs and pre-processing."""
@@ -366,18 +379,3 @@ class TestInputs:
         """Tests that the id attribute can be set."""
         template = qml.Permute([0, 1, 2], wires=[0, 1, 2], id="a")
         assert template.id == "a"
-
-
-class TestInterfaces:
-    def test_jax_jit(self):
-        import jax
-
-        dev = qml.device("default.qubit", wires=5)
-
-        @jax.jit
-        @qml.qnode(dev)
-        def apply_perm():
-            qml.Permute([4, 2, 0, 1, 3], wires=dev.wires)
-            return qml.expval(qml.Z(0))
-
-        apply_perm()

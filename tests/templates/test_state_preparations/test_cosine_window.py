@@ -146,7 +146,6 @@ class TestInterfaces:
     def test_jax_jit(self):
         """Test that the template can be correctly used with the JAX-JIT interface."""
         import jax
-        from jax import numpy as jnp
 
         expected = [1.87469973e-33, 2.50000000e-01, 5.00000000e-01, 2.50000000e-01]
 

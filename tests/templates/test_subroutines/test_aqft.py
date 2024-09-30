@@ -93,8 +93,7 @@ class TestAQFT:
         for gate in decomp:
             assert gate.name in ["Hadamard", "ControlledPhaseShift", "SWAP"]
 
-
-class TestInterfaces:
+    @pytest.mark.jax
     def test_jax_jit(self):
         import jax
 

@@ -397,26 +397,6 @@ class TestDecomposition:
 
         assert qml.math.isclose(qpe_circuit()[0], 1)  # pylint: disable=unsubscriptable-object
 
-
-class TestInputs:
-    """Test inputs and pre-processing."""
-
-    def test_same_wires(self):
-        """Tests if a QuantumFunctionError is raised if target_wires and estimation_wires contain a
-        common element"""
-
-        with pytest.raises(qml.QuantumFunctionError, match="The target wires and estimation wires"):
-            qml.QuantumPhaseEstimation(np.eye(4), target_wires=[0, 1], estimation_wires=[1, 2])
-
-    def test_id(self):
-        """Tests that the id attribute can be set."""
-        template = qml.QuantumPhaseEstimation(
-            np.eye(4), target_wires=[0, 1], estimation_wires=[2, 3], id="a"
-        )
-        assert template.id == "a"
-
-
-class TestInterfaces:
     def test_jit(self):
         """Test if JIT works properly on the example in documentation"""
         import jax
@@ -441,3 +421,21 @@ class TestInterfaces:
             return qml.probs(estimation_wires)
 
         circuit()
+
+
+class TestInputs:
+    """Test inputs and pre-processing."""
+
+    def test_same_wires(self):
+        """Tests if a QuantumFunctionError is raised if target_wires and estimation_wires contain a
+        common element"""
+
+        with pytest.raises(qml.QuantumFunctionError, match="The target wires and estimation wires"):
+            qml.QuantumPhaseEstimation(np.eye(4), target_wires=[0, 1], estimation_wires=[1, 2])
+
+    def test_id(self):
+        """Tests that the id attribute can be set."""
+        template = qml.QuantumPhaseEstimation(
+            np.eye(4), target_wires=[0, 1], estimation_wires=[2, 3], id="a"
+        )
+        assert template.id == "a"

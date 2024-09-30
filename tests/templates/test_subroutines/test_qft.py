@@ -101,9 +101,6 @@ class TestQFT:
         ]
         assert np.allclose(res_reordered, expected_permuted, atol=tol, rtol=0)
 
-
-class TestInterfaces:
-
     @pytest.mark.jax
     def test_jit(self):
         import jax
