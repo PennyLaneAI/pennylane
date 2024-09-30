@@ -39,6 +39,9 @@
 * The `Hermitian` operator now has a `compute_sparse_matrix` implementation.
   [(#6225)](https://github.com/PennyLaneAI/pennylane/pull/6225)
 
+* The `qml.Qubitization` template is now QJIT compatible.
+  [(#6305)](https://github.com/PennyLaneAI/pennylane/pull/6305)
+
 <h4>Capturing and representing hybrid programs</h4>
 
 * Differentiation of hybrid programs via `qml.grad` and `qml.jacobian` can now be captured
