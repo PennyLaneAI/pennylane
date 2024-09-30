@@ -367,11 +367,12 @@ class TestInputs:
         template = qml.Permute([0, 1, 2], wires=[0, 1, 2], id="a")
         assert template.id == "a"
 
+
 class TestInterfaces:
     def test_jax_jit(self):
         import jax
 
-        dev = qml.device('default.qubit', wires=5)
+        dev = qml.device("default.qubit", wires=5)
 
         @jax.jit
         @qml.qnode(dev)

@@ -523,6 +523,7 @@ class TestTemplateOutputs:
         self, block, n_params_block, wires, n_block_wires, template_weights, expected_circuit
     ):
         import jax
+
         dev = qml.device("default.qubit", wires=wires)
 
         @jax.jit

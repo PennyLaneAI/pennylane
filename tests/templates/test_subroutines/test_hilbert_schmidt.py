@@ -497,7 +497,7 @@ class TestLocalHilbertSchmidt:
         import numpy as np
 
         with qml.QueuingManager.stop_recording():
-            u_tape = qml.tape.QuantumTape([qml.CZ(wires=(0,1))])
+            u_tape = qml.tape.QuantumTape([qml.CZ(wires=(0, 1))])
 
         def v_function(params):
             qml.RZ(params[0], wires=2)
@@ -514,5 +514,5 @@ class TestLocalHilbertSchmidt:
             qml.LocalHilbertSchmidt(v_params, v_function=v_function, v_wires=[2, 3], u_tape=u_tape)
             return qml.probs(u_tape.wires + [2, 3])
 
-        params = np.array([3*np.pi/2, 3*np.pi/2, np.pi/2])
+        params = np.array([3 * np.pi / 2, 3 * np.pi / 2, np.pi / 2])
         local_hilbert_test(params)

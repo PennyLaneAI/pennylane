@@ -253,6 +253,7 @@ def test_decomposition_matrix(n_wires):
     mat2 = qml.matrix(qml.tape.QuantumScript(op.decomposition()), wire_order=wires)
     assert np.allclose(mat1, mat2)
 
+
 @pytest.mark.jax
 def test_jax_jit():
     import jax
@@ -265,7 +266,7 @@ def test_jax_jit():
         qml.Toffoli(wires=wires)
         qml.Hadamard(wires[-1])
 
-    dev = qml.device('default.qubit', wires=wires)
+    dev = qml.device("default.qubit", wires=wires)
 
     @jax.jit
     @qml.qnode(dev)

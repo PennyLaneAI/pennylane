@@ -101,6 +101,7 @@ class TestQFT:
         ]
         assert np.allclose(res_reordered, expected_permuted, atol=tol, rtol=0)
 
+
 class TestInterfaces:
 
     @pytest.mark.jax
@@ -110,7 +111,7 @@ class TestInterfaces:
 
         wires = 3
 
-        dev = qml.device('default.qubit', wires=wires)
+        dev = qml.device("default.qubit", wires=wires)
 
         @jax.jit
         @qml.qnode(dev)

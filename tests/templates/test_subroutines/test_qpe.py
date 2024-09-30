@@ -415,6 +415,7 @@ class TestInputs:
         )
         assert template.id == "a"
 
+
 class TestInterfaces:
     def test_jit(self):
         """Test if JIT works properly on the example in documentation"""
@@ -433,7 +434,9 @@ class TestInterfaces:
         def circuit():
             qml.Hadamard(wires=target_wires)
 
-            qml.QuantumPhaseEstimation(unitary, target_wires=target_wires, estimation_wires=estimation_wires)
+            qml.QuantumPhaseEstimation(
+                unitary, target_wires=target_wires, estimation_wires=estimation_wires
+            )
 
             return qml.probs(estimation_wires)
 

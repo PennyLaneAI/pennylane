@@ -510,7 +510,17 @@ class TestTemplateOutputs:
         ],
     )
     @pytest.mark.jax
-    def test_jax_jit(self, block, n_params_block, wires, n_block_wires, template_weights, offset, kwargs, expected_circuit):
+    def test_jax_jit(
+        self,
+        block,
+        n_params_block,
+        wires,
+        n_block_wires,
+        template_weights,
+        offset,
+        kwargs,
+        expected_circuit,
+    ):
         import jax
 
         dev = qml.device("default.qubit", wires=wires)

@@ -138,8 +138,9 @@ class TestStateVector:
         expected = np.stack([expected_10, np.zeros_like(expected_10)])
         assert np.allclose(res, expected)
 
+
 class TestInterfaces:
-    """Test that the template works with different interfaces""" 
+    """Test that the template works with different interfaces"""
 
     @pytest.mark.jax
     def test_jax_jit(self):

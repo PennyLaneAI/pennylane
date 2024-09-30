@@ -135,6 +135,7 @@ class TestFlipSign:
         with pytest.raises(ValueError, match="expected at least one wire representing the qubit "):
             qml.FlipSign(n_status, wires=n_wires)
 
+
 class TestInterfaces:
 
     @pytest.mark.jax

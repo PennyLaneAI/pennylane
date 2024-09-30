@@ -414,7 +414,7 @@ class TestInterfaces:
         """Tests jit within the jax interface."""
         import jax
 
-        dev = qml.device('default.qubit', wires=4)
+        dev = qml.device("default.qubit", wires=4)
         ops = [qml.X(2), qml.X(3), qml.Y(2), qml.SWAP([2, 3])]
 
         @jax.jit
