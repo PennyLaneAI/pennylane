@@ -114,7 +114,6 @@ class TestDecomposition:
             ([1, 0, 1], [2, 0, 1], [0, 1, 1]),
         ],
     )
-
     def test_state_preparation_jax_jit(
         self, tol, qutrit_device_3_wires, basis_state, wires, target_state
     ):

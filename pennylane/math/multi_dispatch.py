@@ -314,6 +314,7 @@ def matmul(tensor1, tensor2, like=None):
         tensor2 = cast_like(tensor2, tensor1)  # pylint: disable=arguments-out-of-order
     return ar.numpy.matmul(tensor1, tensor2, like=like)
 
+
 @multi_dispatch(argnum=[0, 1])
 def matrix_power(tensor1, tensor2, like=None):
     """Raise a tensor to the power of a tensor."""
@@ -331,15 +332,18 @@ def matrix_power(tensor1, tensor2, like=None):
 
             result = jax.lax.while_loop(cond_fun, body_fun, init_val)
             return result[1]
+
         return matrix_power_while(tensor1, tensor2)
 
     return np.linalg.matrix_power(tensor1, tensor2)
+
 
 @multi_dispatch(argnum=[0])
 def eigh(tensor, like=None):
     """Retruns the eigenvalues of a Hermitian matrix."""
     if like == "jax":
         import jax
+
         return jax.numpy.linalg.eigh(tensor)
 
     return np.linalg.eigh(tensor)

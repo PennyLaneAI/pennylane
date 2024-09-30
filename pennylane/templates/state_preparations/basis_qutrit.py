@@ -117,13 +117,15 @@ class QutritBasisStatePreparation(Operation):
         op_list = []
         if qml.math.is_abstract(basis_state):
             for wire, state in zip(wires, basis_state):
-                op_list.extend([
-                    qml.TRY(state*(2-state)*np.pi, wires = 0, subspace=(0, 1)),
-                    qml.TRY(state*(1-state)*np.pi/2, wires = 0, subspace=(0, 2)),
-                    qml.TRZ(-(state - 1.5)*state*2*np.pi, wires = 0, subspace=(0, 2)),
-                    qml.TRY(state*(2-state)*np.pi, wires = 0, subspace=(0, 2)),
-                    qml.TRY(state*(1-state)*np.pi/2, wires = 0, subspace=(0, 1))
-                ])
+                op_list.extend(
+                    [
+                        qml.TRY(state * (2 - state) * np.pi, wires=0, subspace=(0, 1)),
+                        qml.TRY(state * (1 - state) * np.pi / 2, wires=0, subspace=(0, 2)),
+                        qml.TRZ(-(state - 1.5) * state * 2 * np.pi, wires=0, subspace=(0, 2)),
+                        qml.TRY(state * (2 - state) * np.pi, wires=0, subspace=(0, 2)),
+                        qml.TRY(state * (1 - state) * np.pi / 2, wires=0, subspace=(0, 1)),
+                    ]
+                )
             return op_list
 
         for wire, state in zip(wires, basis_state):
@@ -131,10 +133,9 @@ class QutritBasisStatePreparation(Operation):
                 op_list.append(qml.TShift(wire))
             return op_list
 
-
-        #op_list = []
-        #tshift = qml.math.array([[0, 0, 1], [1, 0, 0], [0, 1, 0]])
-        #for wire, state in zip(wires, basis_state):
+        # op_list = []
+        # tshift = qml.math.array([[0, 0, 1], [1, 0, 0], [0, 1, 0]])
+        # for wire, state in zip(wires, basis_state):
         #    mat = qml.math.matrix_power(tshift, state)
         #    op = qml.ops.QutritUnitary(mat, wires=wire)
         #    op_list.append(op)
