@@ -54,7 +54,7 @@ def test_flatten_unflatten():
     assert hash(metadata)
 
     new_op = qml.MPS._unflatten(*op._flatten())
-    assert qml.equal(new_op, op)
+    qml.assert_equal(new_op, op)
     assert new_op._name == "MPS"  # make sure acutally initialized
     assert new_op is not op
 

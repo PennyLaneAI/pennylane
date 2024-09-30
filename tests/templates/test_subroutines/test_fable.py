@@ -41,13 +41,6 @@ class TestFable:
         op = qml.FABLE(input_matrix, wires=range(5), tol=0.01)
         qml.ops.functions.assert_valid(op)
 
-    # pylint: disable=protected-access
-    def test_flatten_unflatten(self, input_matrix):
-        """Test the flatten and unflatten methods."""
-        op = qml.FABLE(input_matrix, wires=range(5), tol=0.01)
-        new_op = type(op)._unflatten(*op._flatten())
-        assert qml.equal(op, new_op)
-
     @pytest.mark.parametrize(
         ("input", "wires"),
         [
@@ -130,6 +123,7 @@ class TestFable:
     @pytest.mark.filterwarnings("ignore:The input matrix should be of shape NxN")
     def test_padding_for_non_square(self):
         """Test that non-square NxM matrices get padded with zeroes to reach NxN size."""
+        # pylint: disable=protected-access
         non_square_matrix = np.array(
             [
                 [-0.51192128, -0.51192128, 0.6237114, 0.6237114],
@@ -157,6 +151,7 @@ class TestFable:
     @pytest.mark.filterwarnings("ignore:The input matrix should be of shape NxN")
     def test_padding_for_not_power(self):
         """Test that matrices with dimensions N that are not a power of 2 get padded."""
+        # pylint: disable=protected-access
         two_by_three_array = np.array(
             [
                 [-0.51192128, -0.51192128, 0.6237114],
@@ -240,7 +235,7 @@ class TestFable:
         assert np.allclose(gradient_numeric, gradient_jax[0, 0], rtol=0.001)
 
     @pytest.mark.jax
-    def test_fable_grad_jax_jit(self, input_matrix):
+    def test_fable_jax_jit(self, input_matrix):
         """Test that FABLE is differentiable when using jax."""
         import jax
         import jax.numpy as jnp
@@ -277,18 +272,21 @@ class TestFable:
         input_jax_negative_delta = jnp.array(input_negative_delta)
         input_matrix_jax = jnp.array(input_matrix)
 
-        @jax.jit
         @qml.qnode(dev, diff_method="backprop")
         def circuit_jax(input_matrix):
             qml.FABLE(input_matrix, wires=range(5), tol=0)
             return qml.expval(qml.PauliZ(wires=0))
 
-        grad_fn = jax.grad(circuit_jax)
+        jitted_fn = jax.jit(circuit_jax)
+
+        grad_fn = jax.grad(jitted_fn)
         gradient_numeric = (
             circuit_jax(input_jax_positive_delta) - circuit_jax(input_jax_negative_delta)
         ) / (2 * delta)
         gradient_jax = grad_fn(input_matrix_jax)
-        assert np.allclose(gradient_numeric, gradient_jax[0, 0], rtol=0.001)
+
+        assert qml.math.allclose(gradient_numeric, gradient_jax[0, 0], rtol=0.001)
+        assert qml.math.allclose(jitted_fn(input_matrix), circuit_jax(input_matrix))
 
     @pytest.mark.jax
     def test_fable_grad_jax_jit_error(self, input_matrix):

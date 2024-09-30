@@ -43,6 +43,7 @@ bit_generator_classes = [random.MT19937, random.PCG64, random.Philox, random.SFC
 general_gen = random.default_rng()
 
 
+@pytest.mark.unit
 class TestGeneratorDistributions:
     @pytest.mark.parametrize("distribution", distributions_no_extra_input)
     def test_generator_distributions(self, distribution):
@@ -61,6 +62,7 @@ class TestGeneratorDistributions:
         assert output.requires_grad is False
 
 
+@pytest.mark.unit
 class Test_default_rng:
     def test_no_input(self):
         """Tests that np.random.default_rng() returns a generator object when

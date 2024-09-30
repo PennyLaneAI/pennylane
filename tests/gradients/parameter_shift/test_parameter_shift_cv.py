@@ -14,7 +14,7 @@
 """Tests for the gradients.parameter_shift_cv module."""
 # pylint: disable=protected-access, no-self-use, not-callable, no-value-for-parameter
 
-import unittest.mock as mock
+from unittest import mock
 
 import pytest
 

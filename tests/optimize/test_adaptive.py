@@ -156,7 +156,7 @@ def test_append_gate(circuit):
     final_circuit = qml.optimize.adaptive.append_gate(circuit.func, param, [gate])
     qnode = qml.QNode(final_circuit, dev)
     _ = qnode()
-    assert qml.equal(qnode.tape.operations[-1], gate)
+    qml.assert_equal(qnode.tape.operations[-1], gate)
 
     final_circuit, fn = qml.optimize.adaptive.append_gate(qnode.tape, param, [gate])
 
@@ -183,7 +183,7 @@ def test_qubit_rotation(circuit):
 
     #  rotation around X with np.pi gives expval(Z) = -1
     assert np.allclose(expval, -1)
-    assert qml.equal(circuit.tape.operations[-1], qml.RX(np.array([np.pi]), wires=0))
+    qml.assert_equal(circuit.tape.operations[-1], qml.RX(np.array([np.pi]), wires=0))
 
 
 @pytest.mark.parametrize(

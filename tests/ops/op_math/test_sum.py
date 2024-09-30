@@ -15,7 +15,6 @@
 Unit tests for the Sum arithmetic class of qubit operations
 """
 # pylint: disable=eval-used, unused-argument
-from typing import Tuple
 
 import gate_data as gd  # a file containing matrix rep of each gate
 import numpy as np
@@ -349,7 +348,7 @@ class TestInitialization:
     @pytest.mark.parametrize("op", SUM_REPR_EVAL)
     def test_eval_sum(self, op):
         """Test that string representations of Sum can be evaluated and yield the same operator"""
-        assert qml.equal(eval(repr(op)), op)
+        qml.assert_equal(eval(repr(op)), op)
 
 
 class TestMatrix:
@@ -359,8 +358,8 @@ class TestMatrix:
     @pytest.mark.parametrize("op_and_mat2", non_param_ops)
     def test_non_parametric_ops_two_terms(
         self,
-        op_and_mat1: Tuple[Operator, np.ndarray],
-        op_and_mat2: Tuple[Operator, np.ndarray],
+        op_and_mat1: tuple[Operator, np.ndarray],
+        op_and_mat2: tuple[Operator, np.ndarray],
     ):
         """Test matrix method for a sum of non_parametric ops"""
         op1, mat1 = op_and_mat1
@@ -379,7 +378,7 @@ class TestMatrix:
     @pytest.mark.parametrize("op_mat1", param_ops)
     @pytest.mark.parametrize("op_mat2", param_ops)
     def test_parametric_ops_two_terms(
-        self, op_mat1: Tuple[Operator, np.ndarray], op_mat2: Tuple[Operator, np.ndarray]
+        self, op_mat1: tuple[Operator, np.ndarray], op_mat2: tuple[Operator, np.ndarray]
     ):
         """Test matrix method for a sum of parametric ops"""
         op1, mat1 = op_mat1
@@ -660,6 +659,9 @@ class TestProperties:
         op3 = Sum(qml.PauliX("a"), qml.PauliY("b"), qml.PauliZ(-1))
         assert op3.hash != op1.hash
 
+        op4 = Sum(qml.X("a"), qml.X("a"), qml.Y("b"))
+        assert op4.hash != op1.hash
+
     @pytest.mark.parametrize("sum_method", [sum_using_dunder_method, qml.sum])
     @pytest.mark.parametrize("ops_lst", ops)
     def test_is_hermitian(self, ops_lst, sum_method):
@@ -679,17 +681,15 @@ class TestProperties:
         sum_op = sum_method(*ops_lst)
         assert sum_op._queue_category is None  # pylint: disable=protected-access
 
+    @pytest.mark.usefixtures("new_opmath_only")
     def test_eigvals_Identity_no_wires(self):
         """Test that eigenvalues can be computed for a sum containing identity with no wires."""
-
-        if not qml.operation.active_new_opmath():
-            pytest.skip("Identity with no wires is not supported for legacy opmath")
 
         op1 = qml.X(0) + 2 * qml.I()
         op2 = qml.X(0) + 2 * qml.I(0)
         assert qml.math.allclose(sorted(op1.eigvals()), sorted(op2.eigvals()))
 
-    def test_eigendecompostion(self):
+    def test_eigendecomposition(self):
         """Test that the computed Eigenvalues and Eigenvectors are correct."""
         diag_sum_op = Sum(qml.PauliZ(wires=0), qml.Identity(wires=1))
         eig_decomp = diag_sum_op.eigendecomposition
@@ -709,6 +709,16 @@ class TestProperties:
 
         assert np.allclose(eig_vals, true_eigvals)
         assert np.allclose(eig_vecs, true_eigvecs)
+
+    @pytest.mark.usefixtures("new_opmath_only")
+    def test_eigendecomposition_repeat_operations(self):
+        """Test that the eigendecomposition works with a repeated operation."""
+        op1 = qml.X(0) + qml.X(0) + qml.X(0)
+        op2 = qml.X(0) + qml.X(0)
+
+        assert op1.diagonalizing_gates() == op2.diagonalizing_gates()
+        assert qml.math.allclose(op1.eigvals(), np.array([-3.0, 3.0]))
+        assert qml.math.allclose(op2.eigvals(), np.array([-2.0, 2.0]))
 
     op_pauli_reps = (
         (
@@ -886,6 +896,18 @@ class TestProperties:
         ):
             H.grouping_indices = [[0, 1, 3], [2]]
 
+    def test_label(self):
+        """Tests the label method of Sum when <=3 coefficients."""
+        H = qml.ops.Sum(-0.8 * Z(0))
+        assert H.label() == "𝓗"
+        assert H.label(decimals=2) == "𝓗\n(-0.80)"
+
+    def test_label_many_coefficients(self):
+        """Tests the label method of Sum when >3 coefficients."""
+        H = qml.ops.Sum(*(0.1 * qml.Z(0) for _ in range(5)))
+        assert H.label() == "𝓗"
+        assert H.label(decimals=2) == "𝓗"
+
 
 class TestSimplify:
     """Test Sum simplify method and depth property."""
@@ -991,7 +1013,7 @@ class TestSimplify:
         result = qml.s_prod(c3, qml.PauliZ(1))
         simplified_op = op.simplify()
 
-        assert qml.equal(simplified_op, result)
+        qml.assert_equal(simplified_op, result)
 
     @pytest.mark.tf
     def test_simplify_pauli_rep_tf(self):
@@ -1029,7 +1051,7 @@ class TestSimplify:
         result = qml.s_prod(c3, qml.PauliZ(1))
         simplified_op = op.simplify()
 
-        assert qml.equal(simplified_op, result)
+        qml.assert_equal(simplified_op, result)
 
 
 class TestSortWires:
@@ -1062,7 +1084,7 @@ class TestSortWires:
         ]
 
         for op1, op2 in zip(final_list, sorted_list):
-            assert qml.equal(op1, op2)
+            qml.assert_equal(op1, op2)
 
     def test_sorting_operators_with_multiple_wires(self):
         """Test that the sorting algorithm works for operators that act on multiple wires."""
@@ -1097,7 +1119,7 @@ class TestSortWires:
         ]
 
         for op1, op2 in zip(final_list, sorted_list):
-            assert qml.equal(op1, op2)
+            qml.assert_equal(op1, op2)
 
     def test_sorting_operators_with_wire_map(self):
         """Test that the sorting algorithm works using a wire map."""
@@ -1152,7 +1174,7 @@ class TestSortWires:
         ]
         sorted_list = Sum._sort(mixed_list)  # pylint: disable=protected-access
         for op1, op2 in zip(final_list, sorted_list):
-            assert qml.equal(op1, op2)
+            qml.assert_equal(op1, op2)
 
     def test_sorting_operators_with_no_wires(self):
         """Test that sorting can occur when an operator acts on no wires."""
@@ -1427,7 +1449,7 @@ class TestGrouping:
 
     def test_grouping_method_can_be_set(self):
         """Tests that the grouping method can be controlled by kwargs.
-        This is done by changing from default to 'rlf' and checking the result."""
+        This is done by changing from default to 'lf' and checking the result."""
         a = qml.PauliX(0)
         b = qml.PauliX(1)
         c = qml.PauliZ(0)
@@ -1436,25 +1458,25 @@ class TestGrouping:
 
         # compute grouping during construction with qml.dot
         op1 = qml.dot(coeffs, obs, grouping_type="qwc", method="lf")
-        assert op1.grouping_indices == ((2, 1), (0,))
+        assert set(op1.grouping_indices) == set(((0, 1), (2,)))
 
         # compute grouping during construction with qml.sum
         sprods = [qml.s_prod(c, o) for c, o in zip(coeffs, obs)]
         op2 = qml.sum(*sprods, grouping_type="qwc", method="lf")
-        assert op2.grouping_indices == ((2, 1), (0,))
+        assert set(op2.grouping_indices) == set(((0, 1), (2,)))
 
         # compute grouping during construction with Sum
         op3 = Sum(*sprods, grouping_type="qwc", method="lf")
-        assert op3.grouping_indices == ((2, 1), (0,))
+        assert set(op3.grouping_indices) == set(((0, 1), (2,)))
 
         # compute grouping separately
         op4 = qml.dot(coeffs, obs, grouping_type=None)
         op4.compute_grouping(method="lf")
-        assert op4.grouping_indices == ((2, 1), (0,))
+        assert set(op4.grouping_indices) == set(((0, 1), (2,)))
 
     @pytest.mark.parametrize(
         "grouping_type, grouping_indices",
-        [("commuting", ((0, 1), (2,))), ("anticommuting", ((1,), (0, 2)))],
+        [("commuting", {(0, 1), (2,)}), ("anticommuting", {(1,), (0, 2)})],
     )
     def test_grouping_type_can_be_set(self, grouping_type, grouping_indices):
         """Tests that the grouping type can be controlled by kwargs.
@@ -1468,21 +1490,21 @@ class TestGrouping:
 
         # compute grouping during construction with qml.dot
         op1 = qml.dot(coeffs, obs, grouping_type=grouping_type)
-        assert op1.grouping_indices == grouping_indices
+        assert set(op1.grouping_indices) == grouping_indices
 
         # compute grouping during construction with qml.sum
         sprods = [qml.s_prod(c, o) for c, o in zip(coeffs, obs)]
         op2 = qml.sum(*sprods, grouping_type=grouping_type)
-        assert op2.grouping_indices == grouping_indices
+        assert set(op2.grouping_indices) == grouping_indices
 
         # compute grouping during construction with Sum
         op3 = Sum(*sprods, grouping_type=grouping_type)
-        assert op3.grouping_indices == grouping_indices
+        assert set(op3.grouping_indices) == grouping_indices
 
         # compute grouping separately
         op4 = qml.dot(coeffs, obs, grouping_type=None)
         op4.compute_grouping(grouping_type=grouping_type)
-        assert op4.grouping_indices == grouping_indices
+        assert set(op4.grouping_indices) == grouping_indices
 
     @pytest.mark.parametrize("shots", [None, 1000])
     def test_grouping_integration(self, shots):

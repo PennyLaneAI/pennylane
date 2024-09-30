@@ -2507,7 +2507,7 @@ class TestMCPostprocessing:
             )
 
 
-@pytest.mark.parametrize("dev_fn", [qml.devices.DefaultQubitLegacy, qml.devices.DefaultQubit])
+@pytest.mark.parametrize("dev_fn", [qml.devices.DefaultQubit])
 class TestCutCircuitMCTransform:
     """
     Tests that the `cut_circuit_mc` transform gives the correct results.
@@ -4070,9 +4070,7 @@ class TestCutCircuitTransform:
 
         import torch
 
-        # TODO: this passes with default.qubit locally, but fails on CI
-        # possibly an architecture-specific issue
-        dev = qml.device("default.qubit.legacy", wires=2)
+        dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev, interface="torch")
         def circuit(x):
@@ -4683,7 +4681,7 @@ class TestCutStrategy:
         """Test if ill-initialized instances throw errors."""
 
         if (
-            isinstance(devices, (qml.Device, qml.devices.Device))
+            isinstance(devices, qml.devices.Device)
             and imbalance_tolerance is None
             and num_fragments_probed is None
         ):
@@ -5883,7 +5881,7 @@ class TestCutCircuitWithHamiltonians:
 
         tape0 = qml.tape.QuantumScript.from_queue(q0)
         tape = tape0.expand()
-        tapes, _ = qml.transforms.hamiltonian_expand(tape, group=False)
+        tapes, _ = qml.transforms.split_non_commuting(tape, grouping_strategy=None)
 
         frag_lens = [5, 7]
         frag_ords = [[1, 6], [3, 6]]

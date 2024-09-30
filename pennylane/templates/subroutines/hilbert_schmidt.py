@@ -106,6 +106,12 @@ class HilbertSchmidt(Operation):
         return self.data, metadata
 
     @classmethod
+    def _primitive_bind_call(cls, *params, v_function, v_wires, u_tape, id=None):
+        # pylint: disable=arguments-differ
+        kwargs = {"v_function": v_function, "v_wires": v_wires, "u_tape": u_tape, "id": id}
+        return cls._primitive.bind(*params, **kwargs)
+
+    @classmethod
     def _unflatten(cls, data, metadata):
         return cls(*data, **dict(metadata))
 
@@ -142,6 +148,9 @@ class HilbertSchmidt(Operation):
         wires = qml.wires.Wires(u_wires + v_wires)
 
         super().__init__(*params, wires=wires, id=id)
+
+    def map_wires(self, wire_map: dict):
+        raise NotImplementedError("Mapping the wires of HilbertSchmidt is not implemented.")
 
     @property
     def num_params(self):

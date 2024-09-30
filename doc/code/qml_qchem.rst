@@ -6,7 +6,9 @@ Overview
 
 The quantum chemistry module provides the functionality to perform Hartree-Fock calculations
 and construct observables such as molecular Hamiltonians as well as dipole moment, spin and particle
-number observables.
+number observables. It also includes functionalities to convert to and from Openfermion's 
+`QubitOperator <https://quantumai.google/reference/python/openfermion/ops/QubitOperator>`__ and 
+`FermionOperator <https://quantumai.google/reference/python/openfermion/ops/FermionOperator>`__.
 
 .. currentmodule:: pennylane.qchem
 
@@ -59,24 +61,11 @@ We then construct the Hamiltonian.
 
     args = [geometry, alpha, coeff] # initial values of the differentiable parameters
 
-    hamiltonian, qubits = qml.qchem.molecular_hamiltonian(symbols, geometry, alpha=alpha, coeff=coeff, args=args)
+    molecule = qml.qchem.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
+    hamiltonian, qubits = qml.qchem.molecular_hamiltonian(molecule, args=args)
 
 >>> print(hamiltonian)
-  (-0.35968235922631075) [I0]
-+ (-0.11496335836166222) [Z2]
-+ (-0.11496335836166222) [Z3]
-+ (0.13082414303722753) [Z1]
-+ (0.13082414303722759) [Z0]
-+ (0.1031689825163302) [Z0 Z2]
-+ (0.1031689825163302) [Z1 Z3]
-+ (0.15329959994281844) [Z0 Z3]
-+ (0.15329959994281844) [Z1 Z2]
-+ (0.15405495855815063) [Z0 Z1]
-+ (0.1609686663987323) [Z2 Z3]
-+ (-0.05013061742648825) [Y0 Y1 X2 X3]
-+ (-0.05013061742648825) [X0 X1 Y2 Y3]
-+ (0.05013061742648825) [Y0 X1 X2 Y3]
-+ (0.05013061742648825) [X0 Y1 Y2 X3]
+-0.3596823592263396 * I(0) + 0.1308241430372839 * Z(0) + -0.11496335836158356 * Z(2)+ 0.10316898251630022 * (Z(0) @ Z(2)) + 0.1308241430372839 * Z(1) + 0.15405495855812648 * (Z(0) @ Z(1)) + 0.050130617426473734 * (Y(0) @ X(1) @ X(2) @ Y(3)) + -0.050130617426473734 * (Y(0) @ Y(1) @ X(2) @ X(3)) + -0.050130617426473734 * (X(0) @ X(1) @ Y(2) @ Y(3)) + 0.050130617426473734 * (X(0) @ Y(1) @ Y(2) @ X(3)) + -0.11496335836158356 * Z(3) + 0.15329959994277395 * (Z(0) @ Z(3)) + 0.10316898251630022 * (Z(1) @ Z(3)) + 0.15329959994277395 * (Z(1) @ Z(2)) + 0.16096866639866414 * (Z(2) @ Z(3))
 
 The generated Hamiltonian can be used in a circuit where the molecular geometry, the basis set
 parameters, and the circuit parameters are optimized simultaneously. Further information about
@@ -95,7 +84,7 @@ molecular geometry optimization with PennyLane is provided in this
         def circuit(*args):
             qml.BasisState(hf_state, wires=[0, 1, 2, 3])
             qml.DoubleExcitation(*args[0][0], wires=[0, 1, 2, 3])
-            return qml.expval(qml.qchem.molecular_hamiltonian(mol.symbols, mol.coordinates, alpha=mol.alpha, coeff=mol.coeff, args=args[1:])[0])
+            return qml.expval(qml.qchem.molecular_hamiltonian(mol, args=args[1:])[0])
         return circuit
 
 Now that the circuit is defined, we can create a geometry and parameter optimization loop. For
@@ -170,11 +159,12 @@ integral can be differentiated with respect to the basis set parameters as follo
 OpenFermion-PySCF backend
 -------------------------
 
-The :func:`~.molecular_hamiltonian` function can be also used to construct the molecular Hamiltonian
-with a non-differentiable backend that uses the
-`OpenFermion-PySCF <https://github.com/quantumlib/OpenFermion-PySCF>`_ plugin interfaced with the
+The :func:`~.molecular_hamiltonian` function can also be used to construct the molecular Hamiltonian
+with non-differentiable backends that use the
+`OpenFermion-PySCF <https://github.com/quantumlib/OpenFermion-PySCF>`_ plugin or the
 electronic structure package `PySCF <https://github.com/sunqm/pyscf>`_. The non-differentiable
-backend can be selected by setting ``method='pyscf'`` in :func:`~.molecular_hamiltonian`:
+backends can be selected by setting ``method='openfermion'`` or ``method='pyscf'``
+in ``molecular_hamiltonian``:
 
 .. code-block:: python
 
@@ -183,18 +173,13 @@ backend can be selected by setting ``method='pyscf'`` in :func:`~.molecular_hami
 
     symbols = ["H", "H"]
     geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]])
-    hamiltonian, qubits = qml.qchem.molecular_hamiltonian(
-        symbols,
-        geometry,
-        charge=0,
-        mult=1,
-        basis='sto-3g',
-        method='pyscf'
-    )
+    molecule = qml.qchem.Molecule(symbols, geometry, charge=0, mult=1, basis_name='sto-3g')
+    hamiltonian, qubits = qml.qchem.molecular_hamiltonian(molecule, method='pyscf')
 
-The non-differentiable backend requires the ``OpenFermion-PySCF`` plugin to be installed by the user
-with
+The non-differentiable backends require either ``OpenFermion-PySCF`` or ``PySCF`` to be installed by
+the user with
 
 .. code-block:: bash
 
     pip install openfermionpyscf
+    pip install pyscf

@@ -41,6 +41,7 @@ from pennylane.measurements import (
     StateMP,
     Variance,
     VarianceMP,
+    VnEntanglementEntropyMP,
     VnEntropyMP,
     expval,
     sample,
@@ -184,6 +185,7 @@ valid_meausurements = [
     VarianceMP(eigvals=[0.6, 0.7], wires=Wires(0)),
     VarianceMP(obs=mv),
     VnEntropyMP(wires=Wires("a"), log_base=3),
+    VnEntanglementEntropyMP(wires=(Wires("a"), Wires("b")), log_base=3),
 ]
 
 
@@ -196,7 +198,7 @@ def test_flatten_unflatten(mp):
     assert hash(metadata)
 
     new_mp = type(mp)._unflatten(data, metadata)
-    assert qml.equal(new_mp, mp)
+    qml.assert_equal(new_mp, mp)
 
 
 @pytest.mark.jax
@@ -392,11 +394,11 @@ class TestProperties:
 
         mp1 = qml.sample(op=[m0, m1])
         mapped_mp1 = mp1.map_wires(wire_map)
-        assert qml.equal(mapped_mp1, qml.sample(op=[m2, m3]))
+        qml.assert_equal(mapped_mp1, qml.sample(op=[m2, m3]))
 
         mp2 = qml.sample(op=m0 * m1)
         mapped_mp2 = mp2.map_wires(wire_map)
-        assert qml.equal(mapped_mp2, qml.sample(op=m2 * m3))
+        qml.assert_equal(mapped_mp2, qml.sample(op=m2 * m3))
 
 
 class TestExpansion:
@@ -511,6 +513,7 @@ class TestExpansion:
             CountsMP(wires=["a", 1]),
             StateMP(),
             VnEntropyMP(wires=["a", 1]),
+            VnEntanglementEntropyMP(wires=[["a", 1], ["b", 2]]),
             MutualInfoMP(wires=[["a", 1], ["b", 2]]),
             ProbabilityMP(wires=["a", 1]),
         ],
@@ -648,6 +651,19 @@ class TestStateMeasurement:
         ):
             circuit()
 
+    def test_state_measurement_process_density_matrix_not_implemented(self):
+        """Test that the process_density_matrix method of StateMeasurement raises
+        NotImplementedError."""
+
+        class MyMeasurement(StateMeasurement):
+            def process_state(self, state, wire_order):
+                return qml.math.sum(state)
+
+        with pytest.raises(NotImplementedError):
+            MyMeasurement().process_density_matrix(
+                density_matrix=qml.math.array([[1, 0], [0, 0]]), wire_order=Wires([0, 1])
+            )
+
 
 class TestMeasurementTransform:
     """Tests for the MeasurementTransform class."""
@@ -674,3 +690,52 @@ class TestMeasurementTransform:
             return CountTapesMP(wires=[0])
 
         assert circuit() == 1
+
+
+class TestMeasurementProcess:
+    """Tests for the shape and numeric type of a measurement process"""
+
+    measurements_no_shots = [
+        (qml.expval(qml.PauliZ(0)), ()),
+        (qml.var(qml.PauliZ(0)), ()),
+        (qml.probs(wires=[0, 1]), (4,)),
+        (qml.state(), (8,)),
+        (qml.density_matrix(wires=[0, 1]), (4, 4)),
+        (qml.mutual_info(wires0=[0], wires1=[1]), ()),
+        (qml.vn_entanglement_entropy(wires0=[0], wires1=[1]), ()),
+        (qml.vn_entropy(wires=[0, 1]), ()),
+    ]
+
+    measurements_finite_shots = [
+        (qml.expval(qml.PauliZ(0)), ()),
+        (qml.var(qml.PauliZ(0)), ()),
+        (qml.probs(wires=[0, 1]), (4,)),
+        (qml.state(), (8,)),
+        (qml.density_matrix(wires=[0, 1]), (4, 4)),
+        (qml.sample(qml.PauliZ(0)), (10,)),
+        (qml.sample(), (10, 3)),
+        (qml.mutual_info(wires0=0, wires1=1), ()),
+        (qml.vn_entanglement_entropy(wires0=[0], wires1=[1]), ()),
+        (qml.vn_entropy(wires=[0, 1]), ()),
+    ]
+
+    @pytest.mark.parametrize("measurement, expected_shape", measurements_no_shots)
+    def test_output_shapes_no_shots(self, measurement, expected_shape):
+        """Test that the output shape of the measurement process is expected
+        when shots=None"""
+
+        assert measurement.shape(shots=None, num_device_wires=3) == expected_shape
+
+    @pytest.mark.parametrize("measurement, expected_shape", measurements_finite_shots)
+    def test_output_shapes_finite_shots(self, measurement, expected_shape):
+        """Test that the output shape of the measurement process is expected
+        when shots is finite"""
+        assert measurement.shape(shots=10, num_device_wires=3) == expected_shape
+
+    def test_undefined_shape_error(self):
+        """Test that an error is raised for a measurement with an undefined shape"""
+        measurement = qml.counts(wires=[0, 1])
+        msg = "The shape of the measurement CountsMP is not defined"
+
+        with pytest.raises(qml.QuantumFunctionError, match=msg):
+            measurement.shape(shots=None, num_device_wires=2)

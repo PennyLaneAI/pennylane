@@ -194,6 +194,7 @@ class SPSAOptimizer:
             objective function output prior to the step.
         """
         g = self.compute_grad(objective_fn, args, kwargs)
+
         new_args = self.apply_grad(g, args)
 
         self.k += 1
@@ -264,13 +265,10 @@ class SPSAOptimizer:
         try:
             # pylint: disable=protected-access
             dev_shots = objective_fn.device.shots
-            if isinstance(dev_shots, Shots):
-                shots = dev_shots if dev_shots.has_partitioned_shots else Shots(None)
-            elif objective_fn.device.shot_vector is not None:
-                shots = Shots(objective_fn.device._raw_shot_sequence)  # pragma: no cover
-            else:
-                shots = Shots(None)
-            if np.prod(objective_fn.func(*args).shape(objective_fn.device, shots)) > 1:
+
+            shots = dev_shots if dev_shots.has_partitioned_shots else Shots(None)
+
+            if np.prod(objective_fn.func(*args, **kwargs).shape(objective_fn.device, shots)) > 1:
                 raise ValueError(
                     "The objective function must be a scalar function for the gradient "
                     "to be computed."

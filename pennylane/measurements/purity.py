@@ -15,8 +15,8 @@
 """
 This module contains the qml.purity measurement.
 """
-
-from typing import Optional, Sequence
+from collections.abc import Sequence
+from typing import Optional
 
 import pennylane as qml
 from pennylane.wires import Wires
@@ -57,7 +57,7 @@ def purity(wires) -> "PurityMP":
     >>> circuit_purity(0.1)
     array(0.7048)
 
-    .. seealso:: :func:`pennylane.qinfo.transforms.purity` and :func:`pennylane.math.purity`
+    .. seealso:: :func:`pennylane.math.purity`
     """
     wires = Wires(wires)
     return PurityMP(wires=wires)
@@ -66,7 +66,7 @@ def purity(wires) -> "PurityMP":
 class PurityMP(StateMeasurement):
     """Measurement process that computes the purity of the system prior to measurement.
 
-    Please refer to :func:`purity` for detailed documentation.
+    Please refer to :func:`pennylane.purity` for detailed documentation.
 
     Args:
         wires (.Wires): The wires the measurement process applies to.
@@ -85,11 +85,8 @@ class PurityMP(StateMeasurement):
     def numeric_type(self):
         return float
 
-    def shape(self, device, shots):
-        if not shots.has_partitioned_shots:
-            return ()
-        num_shot_elements = sum(s.copies for s in shots.shot_vector)
-        return tuple(() for _ in range(num_shot_elements))
+    def shape(self, shots: Optional[int] = None, num_device_wires: int = 0) -> tuple:
+        return ()
 
     def process_state(self, state: Sequence[complex], wire_order: Wires):
         wire_map = dict(zip(wire_order, list(range(len(wire_order)))))

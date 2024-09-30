@@ -17,10 +17,13 @@ This submodule contains the template for Amplitude Amplification.
 """
 
 # pylint: disable-msg=too-many-arguments
+import copy
+
 import numpy as np
 
 import pennylane as qml
 from pennylane.operation import Operation
+from pennylane.wires import Wires
 
 
 def _get_fixed_point_angles(iters, p_min):
@@ -99,18 +102,20 @@ class AmplitudeAmplification(Operation):
         [0.013, 0.013, 0.91, 0.013, 0.013, 0.013, 0.013, 0.013]
     """
 
+    grad_method = None
+
     def _flatten(self):
         data = (self.hyperparameters["U"], self.hyperparameters["O"])
-        metadata = tuple(
-            (key, value) for key, value in self.hyperparameters.items() if key not in ["O", "U"]
-        )
+        metadata = tuple(item for item in self.hyperparameters.items() if item[0] not in ["O", "U"])
         return data, metadata
 
     @classmethod
+    def _primitive_bind_call(cls, *args, **kwargs):
+        return cls._primitive.bind(*args, **kwargs)
+
+    @classmethod
     def _unflatten(cls, data, metadata):
-        U, O = (data[0], data[1])
-        hyperparams_dict = dict(metadata)
-        return cls(U, O, **hyperparams_dict)
+        return cls(*data, **dict(metadata))
 
     def __init__(
         self, U, O, iters=1, fixed_point=False, work_wire=None, p_min=0.9, reflection_wires=None
@@ -138,11 +143,11 @@ class AmplitudeAmplification(Operation):
         self.hyperparameters["p_min"] = p_min
         self.hyperparameters["reflection_wires"] = qml.wires.Wires(reflection_wires)
 
-        super().__init__(wires=wires)
+        super().__init__(*U.data, *O.data, wires=wires)
 
     # pylint:disable=arguments-differ
     @staticmethod
-    def compute_decomposition(**kwargs):
+    def compute_decomposition(*_, **kwargs):
         U = kwargs["U"]
         O = kwargs["O"]
         iters = kwargs["iters"]
@@ -169,9 +174,25 @@ class AmplitudeAmplification(Operation):
         else:
             for _ in range(iters):
                 ops.append(O)
+                if qml.QueuingManager.recording():
+                    qml.apply(O)
                 ops.append(qml.Reflection(U, np.pi, reflection_wires=reflection_wires))
 
         return ops
+
+    def map_wires(self, wire_map: dict):
+        # pylint: disable=protected-access
+        new_op = copy.deepcopy(self)
+        new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
+        new_op._hyperparameters["U"] = new_op._hyperparameters["U"].map_wires(wire_map)
+        new_op._hyperparameters["O"] = new_op._hyperparameters["O"].map_wires(wire_map)
+        new_op._hyperparameters["reflection_wires"] = Wires(
+            [wire_map.get(wire, wire) for wire in new_op._hyperparameters["reflection_wires"]]
+        )
+        new_op._hyperparameters["work_wire"] = wire_map.get(
+            w := new_op._hyperparameters["work_wire"], w
+        )
+        return new_op
 
     def queue(self, context=qml.QueuingManager):
         for op in [self.hyperparameters["U"], self.hyperparameters["O"]]:

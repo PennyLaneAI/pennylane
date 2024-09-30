@@ -20,7 +20,7 @@ from typing import Union
 
 import pennylane as qml
 import pennylane.math as qnp
-from pennylane.operation import Operator, convert_to_opmath
+from pennylane.operation import Operator, TermsUndefinedError, convert_to_opmath
 from pennylane.ops.op_math.pow import Pow
 from pennylane.ops.op_math.sum import Sum
 from pennylane.queuing import QueuingManager
@@ -112,7 +112,7 @@ class SProd(ScalarSymbolicOp):
         :title: Usage Details
 
         The SProd operation can also be measured inside a qnode as an observable.
-        If the circuit is parameterized, then we can also differentiate through the observable.
+        If the circuit is parametrized, then we can also differentiate through the observable.
 
         .. code-block:: python
 
@@ -181,7 +181,7 @@ class SProd(ScalarSymbolicOp):
         """
         return 1 + self.base.num_params
 
-    def terms(self):  # is this method necessary for this class?
+    def terms(self):
         r"""Representation of the operator as a linear combination of other operators.
 
         .. math:: O = \sum_i c_i O_i
@@ -191,8 +191,13 @@ class SProd(ScalarSymbolicOp):
         Returns:
             tuple[list[tensor_like or float], list[.Operation]]: list of coefficients :math:`c_i`
             and list of operations :math:`O_i`
+
         """
-        return [self.scalar], [self.base]
+        try:
+            base_coeffs, base_ops = self.base.terms()
+            return [self.scalar * coeff for coeff in base_coeffs], base_ops
+        except TermsUndefinedError:
+            return [self.scalar], [self.base]
 
     @property
     def is_hermitian(self):
@@ -257,6 +262,10 @@ class SProd(ScalarSymbolicOp):
         mat = self.base.sparse_matrix(wire_order=wire_order).multiply(self.scalar)
         mat.eliminate_zeros()
         return mat
+
+    @property
+    def has_sparse_matrix(self):
+        return self.pauli_rep is not None or self.base.has_sparse_matrix
 
     @property
     def has_matrix(self):

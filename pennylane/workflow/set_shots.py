@@ -17,6 +17,7 @@ to be temporarily modified.
 """
 # pylint: disable=protected-access
 import contextlib
+import warnings
 
 import pennylane as qml
 from pennylane.measurements import Shots
@@ -24,15 +25,27 @@ from pennylane.measurements import Shots
 
 @contextlib.contextmanager
 def set_shots(device, shots):
-    """Context manager to temporarily change the shots
-    of a device.
+    r"""Context manager to temporarily change the shots of a device.
+
+
+    .. warning::
+
+        ``set_shots`` is deprecated and will be removed in PennyLane version v0.40.
+
+        To dynamically update the shots on the workflow, shots can be manually set on a ``QNode`` call:
+
+        >>> circuit(shots=my_new_shots)
+
+        When working with the internal tapes, shots should be set on each tape.
+
+        >>> tape = qml.tape.QuantumScript([], [qml.sample()], shots=50)
+
 
     This context manager can be used in two ways.
 
     As a standard context manager:
 
-    >>> dev = qml.device("default.qubit.legacy", wires=2, shots=None)
-    >>> with set_shots(dev, shots=100):
+    >>> with qml.workflow.set_shots(dev, shots=100):
     ...     print(dev.shots)
     100
     >>> print(dev.shots)
@@ -40,7 +53,7 @@ def set_shots(device, shots):
 
     Or as a decorator that acts on a function that uses the device:
 
-    >>> set_shots(dev, shots=100)(lambda: dev.shots)()
+    >>> qml.workflow.set_shots(dev, shots=100)(lambda: dev.shots)()
     100
     """
     if isinstance(device, qml.devices.Device):
@@ -48,6 +61,12 @@ def set_shots(device, shots):
             "The new device interface is not compatible with `set_shots`. "
             "Set shots when calling the qnode or put the shots on the QuantumTape."
         )
+    warnings.warn(
+        "set_shots is deprecated.\n"
+        "Please dyanmically update shots via keyword argument when calling a QNode "
+        " or set shots on the tape.",
+        qml.PennyLaneDeprecationWarning,
+    )
     if isinstance(shots, Shots):
         shots = shots.shot_vector if shots.has_partitioned_shots else shots.total_shots
     if shots == device.shots:

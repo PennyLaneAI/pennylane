@@ -16,8 +16,9 @@ Functions handling quantum tapes for circuit cutting, and their auxillary functi
 """
 
 import copy
+from collections.abc import Callable, Sequence
 from itertools import product
-from typing import Callable, List, Sequence, Tuple, Union
+from typing import Union
 
 from networkx import MultiDiGraph
 
@@ -28,13 +29,13 @@ from pennylane.operation import Operator, Tensor
 from pennylane.ops.meta import WireCut
 from pennylane.pauli import string_to_pauli_word
 from pennylane.queuing import WrappedObj
-from pennylane.tape import QuantumScript, QuantumTape
+from pennylane.tape import QuantumScript
 from pennylane.wires import Wires
 
 from .utils import MeasureNode, PrepareNode
 
 
-def tape_to_graph(tape: QuantumTape) -> MultiDiGraph:
+def tape_to_graph(tape: QuantumScript) -> MultiDiGraph:
     """
     Converts a quantum tape to a directed multigraph.
 
@@ -103,7 +104,7 @@ def tape_to_graph(tape: QuantumTape) -> MultiDiGraph:
 
 
 # pylint: disable=protected-access
-def graph_to_tape(graph: MultiDiGraph) -> QuantumTape:
+def graph_to_tape(graph: MultiDiGraph) -> QuantumScript:
     """
     Converts a directed multigraph to the corresponding :class:`~.QuantumTape`.
 
@@ -257,8 +258,8 @@ PREPARE_SETTINGS = _create_prep_list()
 
 
 def expand_fragment_tape(
-    tape: QuantumTape,
-) -> Tuple[List[QuantumTape], List[PrepareNode], List[MeasureNode]]:
+    tape: QuantumScript,
+) -> tuple[list[QuantumScript], list[PrepareNode], list[MeasureNode]]:
     """
     Expands a fragment tape into a sequence of tapes for each configuration of the contained
     :class:`MeasureNode` and :class:`PrepareNode` operations.
@@ -354,7 +355,7 @@ def expand_fragment_tape(
 
 def _get_measurements(
     group: Sequence[Operator], measurements: Sequence[MeasurementProcess]
-) -> List[MeasurementProcess]:
+) -> list[MeasurementProcess]:
     """Pairs each observable in ``group`` with the circuit ``measurements``.
 
     Only a single measurement of an expectation value is currently supported
@@ -397,7 +398,7 @@ def _get_measurements(
 
 
 def _qcut_expand_fn(
-    tape: QuantumTape,
+    tape: QuantumScript,
     max_depth: int = 1,
     auto_cutter: Union[bool, Callable] = False,
 ):

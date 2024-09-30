@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2024 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,19 +21,19 @@ with open("pennylane/_version.py") as f:
     version = f.readlines()[-1].split()[-1].strip("\"'")
 
 requirements = [
-    "numpy<2.0",
+    "numpy<=2.0",
     "scipy",
     "networkx",
-    "rustworkx",
+    "rustworkx>=0.14.0",
     "autograd",
     "toml",
     "appdirs",
-    "semantic-version>=2.7",
-    "autoray>=0.6.1",
+    "autoray>=0.6.11",
     "cachetools",
-    "pennylane-lightning>=0.36",
+    "pennylane-lightning>=0.38",
     "requests",
     "typing_extensions",
+    "packaging",
 ]
 
 info = {
@@ -49,17 +49,14 @@ info = {
         # This requires a rename in the setup file of all devices, and is best done during another refactor
         "pennylane.plugins": [
             "default.qubit = pennylane.devices:DefaultQubit",
-            "default.qubit.legacy = pennylane.devices:DefaultQubitLegacy",
             "default.gaussian = pennylane.devices:DefaultGaussian",
-            "default.qubit.tf = pennylane.devices.default_qubit_tf:DefaultQubitTF",
-            "default.qubit.torch = pennylane.devices.default_qubit_torch:DefaultQubitTorch",
-            "default.qubit.autograd = pennylane.devices.default_qubit_autograd:DefaultQubitAutograd",
-            "default.qubit.jax = pennylane.devices.default_qubit_jax:DefaultQubitJax",
             "default.mixed = pennylane.devices.default_mixed:DefaultMixed",
+            "reference.qubit = pennylane.devices.reference_qubit:ReferenceQubit",
             "null.qubit = pennylane.devices.null_qubit:NullQubit",
             "default.qutrit = pennylane.devices.default_qutrit:DefaultQutrit",
             "default.clifford = pennylane.devices.default_clifford:DefaultClifford",
             "default.qutrit.mixed = pennylane.devices.default_qutrit_mixed:DefaultQutritMixed",
+            "default.tensor = pennylane.devices.default_tensor:DefaultTensor",
         ],
         "console_scripts": ["pl-device-test=pennylane.devices.tests:cli"],
     },
@@ -85,7 +82,6 @@ classifiers = [
     "Operating System :: Microsoft :: Windows",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",

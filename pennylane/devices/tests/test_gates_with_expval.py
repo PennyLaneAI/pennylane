@@ -28,8 +28,6 @@ import pennylane as qml
 
 pytestmark = pytest.mark.skip_unsupported
 
-np.random.seed(42)
-
 
 # ===============================================================
 
@@ -258,7 +256,7 @@ class TestGatesQubitExpval:
         dev = device(n_wires)
 
         op = getattr(qml.ops, name)
-        if isinstance(dev, qml.Device) and not dev.supports_operation(op):
+        if isinstance(dev, qml.devices.LegacyDevice) and not dev.supports_operation(op):
             pytest.skip("operation not supported")
 
         @qml.qnode(dev)

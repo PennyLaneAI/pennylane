@@ -850,7 +850,7 @@ class TestPartialTrace:
         )
 
         # Expected result after tracing out the second qubit
-        expected = qml.math.asarray(np.array([[[1, 0], [0, 0]]]), like=ml_framework)
+        expected = qml.math.asarray(np.array([[[1, 0], [0, 0]]], dtype=c_dtype), like=ml_framework)
 
         # Perform the partial trace
         result = qml.math.quantum.partial_trace(rho, [0], c_dtype=c_dtype)
@@ -873,7 +873,7 @@ class TestPartialTrace:
         # rho = qml.math.asarrays(rho)
         # Expected result after tracing out the first qubit for each matrix
         expected = qml.math.asarray(
-            np.array([[[1, 0], [0, 0]], [[1, 0], [0, 0]]]), like=ml_framework
+            np.array([[[1, 0], [0, 0]], [[1, 0], [0, 0]]], dtype=c_dtype), like=ml_framework
         )
 
         # Perform the partial trace
@@ -885,7 +885,8 @@ class TestPartialTrace:
         """Test that tracing over no wires returns the original matrix."""
         # Define a 2-qubit density matrix
         rho = qml.math.asarray(
-            np.array([[[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]]), like=ml_framework
+            np.array([[[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]], dtype=c_dtype),
+            like=ml_framework,
         )
 
         # Perform the partial trace over no wires
@@ -900,7 +901,7 @@ class TestPartialTrace:
             np.array([[[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]]), like=ml_framework
         )
         # Expected result after tracing out all qubits
-        expected = qml.math.asarray(np.array([1]), like=ml_framework)
+        expected = qml.math.asarray(np.array([1], dtype=c_dtype), like=ml_framework)
 
         # Perform the partial trace over all wires
         result = qml.math.quantum.partial_trace(rho, [0, 1], c_dtype=c_dtype)
@@ -935,6 +936,6 @@ class TestPartialTrace:
         )
 
         result = qml.math.quantum.partial_trace(rho, [0], c_dtype=c_dtype)
-        expected = qml.math.asarray(np.array([[1, 0], [0, 0]]), like=ml_framework)
+        expected = qml.math.asarray(np.array([[1, 0], [0, 0]], dtype=c_dtype), like=ml_framework)
 
         assert qml.math.allclose(result, expected)

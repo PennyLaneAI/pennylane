@@ -20,7 +20,13 @@ from functools import lru_cache
 from scipy import sparse
 
 import pennylane as qml
-from pennylane.operation import AllWires, AnyWires, CVObservable, Operation
+from pennylane.operation import (
+    AllWires,
+    AnyWires,
+    CVObservable,
+    Operation,
+    SparseMatrixUndefinedError,
+)
 
 
 class Identity(CVObservable, Operation):
@@ -30,7 +36,7 @@ class Identity(CVObservable, Operation):
     The expectation of this observable
 
     .. math::
-        E[\I] = \text{Tr}(\I \rho)
+        E[I] = \text{Tr}(I \rho)
 
     .. seealso:: The equivalent short-form alias :class:`~I`
 
@@ -53,6 +59,11 @@ class Identity(CVObservable, Operation):
     _queue_category = "_ops"
 
     ev_order = 1
+
+    @classmethod
+    def _primitive_bind_call(cls, wires=None, **kwargs):  # pylint: disable=arguments-differ
+        wires = [] if wires is None else wires
+        return super()._primitive_bind_call(wires=wires, **kwargs)
 
     def _flatten(self):
         return tuple(), (self.wires, tuple())
@@ -195,7 +206,8 @@ class Identity(CVObservable, Operation):
     def adjoint(self):
         return I(wires=self.wires)
 
-    def pow(self, _):
+    # pylint: disable=unused-argument
+    def pow(self, z):
         return [I(wires=self.wires)]
 
 
@@ -205,7 +217,7 @@ r"""The Identity operator
 The expectation of this observable
 
 .. math::
-    E[\I] = \text{Tr}(\I \rho)
+    E[I] = \text{Tr}(I \rho)
 
 .. seealso:: The equivalent long-form alias :class:`~Identity`
 
@@ -226,6 +238,7 @@ class GlobalPhase(Operation):
 
     * Number of wires: All (the operation acts on all wires)
     * Number of parameters: 1
+    * Number of dimensions per parameter: (0,)
     * Gradient recipe: None
 
     Args:
@@ -281,10 +294,21 @@ class GlobalPhase(Operation):
 
     """
 
-    grad_method = "A"
-    num_params = 1
     num_wires = AllWires
     """int: Number of wires that the operator acts on."""
+
+    num_params = 1
+    """int: Number of trainable parameters that the operator depends on."""
+
+    ndim_params = (0,)
+    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
+
+    grad_method = None
+
+    @classmethod
+    def _primitive_bind_call(cls, phi, wires=None, **kwargs):  # pylint: disable=arguments-differ
+        wires = [] if wires is None else wires
+        return super()._primitive_bind_call(phi, wires=wires, **kwargs)
 
     def __init__(self, phi, wires=None, id=None):
         super().__init__(phi, wires=[] if wires is None else wires, id=id)
@@ -312,7 +336,15 @@ class GlobalPhase(Operation):
         >>> qml.GlobalPhase.compute_eigvals(np.pi/2)
         array([6.123234e-17+1.j, 6.123234e-17+1.j])
         """
-        return qml.math.exp(-1j * phi) * qml.math.ones(2**n_wires)
+        if qml.math.get_interface(phi) == "tensorflow":
+            phi = qml.math.cast_like(phi, 1j)
+        exp = qml.math.exp(-1j * phi)
+        ones = qml.math.ones(2**n_wires, like=phi)
+
+        if qml.math.ndim(phi) == 0:
+            return exp * ones
+
+        return qml.math.tensordot(exp, ones, axes=0)
 
     @staticmethod
     def compute_matrix(phi, n_wires=1):  # pylint: disable=arguments-differ
@@ -332,15 +364,22 @@ class GlobalPhase(Operation):
                [0.        +0.j        , 0.70710678-0.70710678j]])
         """
         interface = qml.math.get_interface(phi)
+        eye = qml.math.eye(2**n_wires, like=phi)
+        exp = qml.math.exp(-1j * qml.math.cast(phi, complex))
         if interface == "tensorflow":
-            return qml.math.exp(-1j * qml.math.cast(phi, complex)) * qml.math.eye(int(2**n_wires))
-        return qml.math.exp(-1j * qml.math.cast(phi, complex)) * qml.math.eye(
-            int(2**n_wires), like=interface
-        )
+            eye = qml.math.cast_like(eye, 1j)
+        elif interface == "torch":
+            eye = eye.to(exp.device)
+
+        if qml.math.ndim(phi) == 0:
+            return exp * eye
+        return qml.math.tensordot(exp, eye, axes=0)
 
     @staticmethod
     def compute_sparse_matrix(phi, n_wires=1):  # pylint: disable=arguments-differ
-        return qml.math.exp(-1j * phi) * sparse.eye(int(2**n_wires), format="csr")
+        if qml.math.ndim(phi) > 0:
+            raise SparseMatrixUndefinedError("Sparse matrices do not support broadcasting")
+        return qml.math.exp(-1j * phi) * sparse.eye(2**n_wires, format="csr")
 
     @staticmethod
     def compute_diagonalizing_gates(
@@ -401,6 +440,9 @@ class GlobalPhase(Operation):
 
         """
         return []
+
+    def eigvals(self):
+        return self.compute_eigvals(self.data[0], n_wires=len(self.wires))
 
     def matrix(self, wire_order=None):
         n_wires = len(wire_order) if wire_order else len(self.wires)

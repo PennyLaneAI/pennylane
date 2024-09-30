@@ -19,9 +19,9 @@ computing the sum of operations.
 
 import itertools
 import warnings
+from collections import Counter
 from collections.abc import Iterable
 from copy import copy
-from typing import List
 
 import pennylane as qml
 from pennylane import math
@@ -43,7 +43,7 @@ def sum(*summands, grouping_type=None, method="rlf", id=None, lazy=True):
             of the operators is already a sum operator, its operands (summands) will be used instead.
         grouping_type (str): The type of binary relation between Pauli words used to compute
             the grouping. Can be ``'qwc'``, ``'commuting'``, or ``'anticommuting'``.
-        method (str): The graph coloring heuristic to use in solving minimum clique cover for
+        method (str): The graph colouring heuristic to use in solving minimum clique cover for
             grouping, which can be ``'lf'`` (Largest First) or ``'rlf'`` (Recursive Largest
             First). This keyword argument is ignored if ``grouping_type`` is ``None``.
 
@@ -129,7 +129,7 @@ class Sum(CompositeOp):
     Keyword Args:
         grouping_type (str): The type of binary relation between Pauli words used to compute
             the grouping. Can be ``'qwc'``, ``'commuting'``, or ``'anticommuting'``.
-        method (str): The graph coloring heuristic to use in solving minimum clique cover for
+        method (str): The graph colouring heuristic to use in solving minimum clique cover for
             grouping, which can be ``'lf'`` (Largest First) or ``'rlf'`` (Recursive Largest
             First). This keyword argument is ignored if ``grouping_type`` is ``None``.
         id (str or None): id for the sum operator. Default is None.
@@ -171,7 +171,7 @@ class Sum(CompositeOp):
     .. details::
         :title: Usage Details
 
-        We can combine parameterized operators, and support sums between operators acting on
+        We can combine parametrized operators, and support sums between operators acting on
         different wires.
 
         >>> summed_op = Sum(qml.RZ(1.23, wires=0), qml.I(wires=1))
@@ -186,7 +186,7 @@ class Sum(CompositeOp):
                 0.        +0.j        , 1.81677345+0.57695852j]])
 
         The Sum operation can also be measured inside a qnode as an observable.
-        If the circuit is parameterized, then we can also differentiate through the
+        If the circuit is parametrized, then we can also differentiate through the
         sum observable.
 
         .. code-block:: python
@@ -240,7 +240,7 @@ class Sum(CompositeOp):
     @property
     def hash(self):
         # Since addition is always commutative, we do not need to sort
-        return hash(("Sum", frozenset(o.hash for o in self.operands)))
+        return hash(("Sum", hash(frozenset(Counter(self.operands).items()))))
 
     @property
     def grouping_indices(self):
@@ -304,6 +304,10 @@ class Sum(CompositeOp):
 
         return all(s.is_hermitian for s in self)
 
+    def label(self, decimals=None, base_label=None, cache=None):
+        decimals = None if (len(self.parameters) > 3) else decimals
+        return Operator.label(self, decimals=decimals, base_label=base_label or "𝓗", cache=cache)
+
     def matrix(self, wire_order=None):
         r"""Representation of the operator as a matrix in the computational basis.
 
@@ -337,6 +341,11 @@ class Sum(CompositeOp):
         wire_order = wire_order or self.wires
 
         return math.expand_matrix(reduced_mat, sum_wires, wire_order=wire_order)
+
+    # pylint: disable=arguments-renamed, invalid-overridden-method
+    @property
+    def has_sparse_matrix(self) -> bool:
+        return self.pauli_rep is not None or all(op.has_sparse_matrix for op in self)
 
     def sparse_matrix(self, wire_order=None):
         if self.pauli_rep:  # Get the sparse matrix from the PauliSentence representation
@@ -380,7 +389,7 @@ class Sum(CompositeOp):
         return None
 
     @classmethod
-    def _simplify_summands(cls, summands: List[Operator]):
+    def _simplify_summands(cls, summands: list[Operator]):
         """Reduces the depth of nested summands and groups equal terms together.
 
         Args:
@@ -466,7 +475,7 @@ class Sum(CompositeOp):
                 ops.append(factor)
         return coeffs, ops
 
-    def compute_grouping(self, grouping_type="qwc", method="rlf"):
+    def compute_grouping(self, grouping_type="qwc", method="lf"):
         """
         Compute groups of operators and coefficients corresponding to commuting
         observables of this Sum.
@@ -480,7 +489,7 @@ class Sum(CompositeOp):
         Args:
             grouping_type (str): The type of binary relation between Pauli words used to compute
                 the grouping. Can be ``'qwc'``, ``'commuting'``, or ``'anticommuting'``.
-            method (str): The graph coloring heuristic to use in solving minimum clique cover for
+            method (str): The graph colouring heuristic to use in solving minimum clique cover for
                 grouping, which can be ``'lf'`` (Largest First) or ``'rlf'`` (Recursive Largest
                 First).
 
@@ -546,7 +555,7 @@ class Sum(CompositeOp):
         return ops
 
     @classmethod
-    def _sort(cls, op_list, wire_map: dict = None) -> List[Operator]:
+    def _sort(cls, op_list, wire_map: dict = None) -> list[Operator]:
         """Sort algorithm that sorts a list of sum summands by their wire indices.
 
         Args:

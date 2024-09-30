@@ -18,6 +18,7 @@ from functools import reduce
 
 import numpy as np
 import pytest
+from dummy_debugger import Debugger
 from scipy.stats import unitary_group
 
 import pennylane as qml
@@ -39,6 +40,8 @@ ml_frameworks_list = [
 
 methods = [apply_operation_einsum, apply_operation_tensordot, apply_operation]
 
+# pylint: disable=import-outside-toplevel,unsubscriptable-object,arguments-differ
+
 
 def test_custom_operator_with_matrix():
     """Test that apply_operation works with any operation that defines a matrix."""
@@ -52,6 +55,8 @@ def test_custom_operator_with_matrix():
 
     # pylint: disable=too-few-public-methods
     class CustomOp(Operation):
+        """Custom Operation"""
+
         num_wires = 1
 
         def matrix(self):
@@ -293,8 +298,10 @@ def time_dependent_hamiltonian():
 
 @pytest.mark.jax
 class TestApplyParametrizedEvolution:
+    """Test that apply_operation works with ParametrizedEvolution"""
+
     @pytest.mark.parametrize("method", methods)
-    def test_parameterized_evolution_time_independent(self, method):
+    def test_parametrized_evolution_time_independent(self, method):
         """Test that applying a ParametrizedEvolution gives the expected state
         for a time-independent hamiltonian"""
 
@@ -322,7 +329,7 @@ class TestApplyParametrizedEvolution:
         assert np.allclose(new_state, new_state_expected, atol=0.002)
 
     @pytest.mark.parametrize("method", methods)
-    def test_parameterized_evolution_time_dependent(self, method):
+    def test_parametrized_evolution_time_dependent(self, method):
         """Test that applying a ParametrizedEvolution gives the expected state
         for a time dependent Hamiltonian"""
 
@@ -542,13 +549,6 @@ class TestApplyParametrizedEvolution:
 class TestSnapshot:
     """Test that apply_operation works for Snapshot ops"""
 
-    class Debugger:  # pylint: disable=too-few-public-methods
-        """A dummy debugger class"""
-
-        def __init__(self):
-            self.active = True
-            self.snapshots = {}
-
     def test_no_debugger(self, ml_framework):
         """Test nothing happens when there is no debugger"""
         initial_state = np.array(
@@ -573,7 +573,7 @@ class TestSnapshot:
         )
         initial_state = qml.math.asarray(initial_state, like=ml_framework)
 
-        debugger = self.Debugger()
+        debugger = Debugger()
         new_state = apply_operation(qml.Snapshot(), initial_state, debugger=debugger)
 
         assert new_state.shape == initial_state.shape
@@ -593,7 +593,7 @@ class TestSnapshot:
         )
         initial_state = qml.math.asarray(initial_state, like=ml_framework)
 
-        debugger = self.Debugger()
+        debugger = Debugger()
         tag = "abcd"
         new_state = apply_operation(qml.Snapshot(tag), initial_state, debugger=debugger)
 
@@ -615,7 +615,7 @@ class TestSnapshot:
         initial_state = qml.math.asarray(initial_state, like=ml_framework)
         measurement = qml.expval(qml.PauliZ(0))
 
-        debugger = self.Debugger()
+        debugger = Debugger()
         new_state = apply_operation(
             qml.Snapshot(measurement=measurement), initial_state, debugger=debugger
         )
@@ -630,7 +630,7 @@ class TestSnapshot:
     def test_batched_state(self, ml_framework):
         """Test that batched states create batched snapshots."""
         initial_state = qml.math.asarray([[1.0, 0.0], [0.0, 0.1]], like=ml_framework)
-        debugger = self.Debugger()
+        debugger = Debugger()
         new_state = apply_operation(
             qml.Snapshot(), initial_state, is_state_batched=True, debugger=debugger
         )
@@ -657,6 +657,7 @@ class TestRXCalcGrad:
     )
 
     def compare_expected_result(self, phi, state, new_state, g):
+        """Compares the new state against the expected state"""
         expected0 = np.cos(phi / 2) * state[0, :, :] + -1j * np.sin(phi / 2) * state[1, :, :]
         expected1 = -1j * np.sin(phi / 2) * state[0, :, :] + np.cos(phi / 2) * state[1, :, :]
 
@@ -784,7 +785,7 @@ class TestBroadcasting:  # pylint: disable=too-few-public-methods
     @pytest.mark.parametrize("op", broadcasted_ops)
     def test_broadcasted_op(self, op, method, ml_framework):
         """Tests that batched operations are applied correctly to an unbatched state."""
-        state = np.ones((2, 2, 2)) / np.sqrt(8)
+        state = np.ones((2, 2, 2), dtype=complex) / np.sqrt(8)
 
         res = method(op, qml.math.asarray(state, like=ml_framework))
         missing_wires = 3 - len(op.wires)
@@ -802,7 +803,7 @@ class TestBroadcasting:  # pylint: disable=too-few-public-methods
     @pytest.mark.parametrize("op", unbroadcasted_ops)
     def test_broadcasted_state(self, op, method, ml_framework):
         """Tests that unbatched operations are applied correctly to a batched state."""
-        state = np.ones((3, 2, 2, 2)) / np.sqrt(8)
+        state = np.ones((3, 2, 2, 2), dtype=complex) / np.sqrt(8)
 
         res = method(op, qml.math.asarray(state, like=ml_framework), is_state_batched=True)
         missing_wires = 3 - len(op.wires)
@@ -819,7 +820,7 @@ class TestBroadcasting:  # pylint: disable=too-few-public-methods
         if method is apply_operation_tensordot:
             pytest.skip("Tensordot doesn't support batched operator and batched state.")
 
-        state = np.ones((3, 2, 2, 2)) / np.sqrt(8)
+        state = np.ones((3, 2, 2, 2), dtype=complex) / np.sqrt(8)
 
         res = method(op, qml.math.asarray(state, like=ml_framework), is_state_batched=True)
         missing_wires = 3 - len(op.wires)
@@ -954,7 +955,6 @@ class TestApplyGroverOperator:
     def test_dispatching(self, op_wires, state_wires, einsum_called, tensordot_called, mocker):
         """Test that apply_operation dispatches to einsum, tensordot and the kernel correctly."""
         # pylint: disable=too-many-arguments
-        np.random.seed(752)
         state = np.random.random([2] * state_wires) + 1j * np.random.random([2] * state_wires)
 
         op = qml.GroverOperator(list(range(op_wires)))
@@ -969,7 +969,6 @@ class TestApplyGroverOperator:
     def test_correctness_full_wires(self, op_wires, state_wires, batch_dim):
         """Test that apply_operation is correct for GroverOperator for all dispatch branches
         when applying it to all wires of a state."""
-        np.random.seed(752)
         batched = batch_dim is not None
         shape = [batch_dim] + [2] * state_wires if batched else [2] * state_wires
         flat_shape = (batch_dim, 2**state_wires) if batched else (2**state_wires,)
@@ -989,7 +988,6 @@ class TestApplyGroverOperator:
         """Test that apply_operation is correct for GroverOperator for all dispatch branches
         but einsum (because Grover can't act on a single wire)
         when applying it only to some of the wires of a state."""
-        np.random.seed(752)
         batched = batch_dim is not None
         shape = [batch_dim] + [2] * state_wires if batched else [2] * state_wires
         state = np.random.random(shape) + 1j * np.random.random(shape)
@@ -1012,7 +1010,6 @@ class TestApplyGroverOperator:
         batched = batch_dim is not None
         shape = [batch_dim] + [2] * state_wires if batched else [2] * state_wires
         # Input state
-        np.random.seed(752)
         state = np.random.random(shape) + 1j * np.random.random(shape)
 
         wires = list(range(op_wires))
@@ -1041,7 +1038,6 @@ class TestApplyGroverOperator:
         batched = batch_dim is not None
         shape = [batch_dim] + [2] * state_wires if batched else [2] * state_wires
         # Input state
-        np.random.seed(752)
         state = np.random.random(shape) + 1j * np.random.random(shape)
 
         wires = list(range(op_wires))
@@ -1072,7 +1068,6 @@ class TestApplyGroverOperator:
         batched = batch_dim is not None
         shape = [batch_dim] + [2] * state_wires if batched else [2] * state_wires
         # Input state
-        np.random.seed(752)
         state = np.random.random(shape) + 1j * np.random.random(shape)
 
         wires = list(range(op_wires))
@@ -1101,7 +1096,6 @@ class TestApplyGroverOperator:
         batched = batch_dim is not None
         shape = [batch_dim] + [2] * state_wires if batched else [2] * state_wires
         # Input state
-        np.random.seed(752)
         state = np.random.random(shape) + 1j * np.random.random(shape)
 
         wires = list(range(op_wires))
@@ -1146,7 +1140,6 @@ class TestMultiControlledXKernel:
         self, num_op_wires, num_state_wires, einsum_called, tdot_called, mocker
     ):
         """Test that apply_multicontrolledx dispatches to the right method and is correct."""
-        np.random.seed(2751)
         op = qml.MultiControlledX(wires=list(range(num_op_wires)))
         state = np.random.random([2] * num_state_wires).astype(complex)
         spies = [mocker.spy(qml.math, "einsum"), mocker.spy(qml.math, "tensordot")]
@@ -1165,7 +1158,6 @@ class TestMultiControlledXKernel:
         """Test that the custom kernel works with JAX."""
         from jax import numpy as jnp
 
-        np.random.seed(2751)
         op = qml.MultiControlledX(wires=[0, 4, 3, 1])
         state_shape = ([batch_dim] if batch_dim is not None else []) + [2] * 5
         state = np.random.random(state_shape).astype(complex)
@@ -1182,7 +1174,6 @@ class TestMultiControlledXKernel:
         """Test that the custom kernel works with Tensorflow."""
         import tensorflow as tf
 
-        np.random.seed(2751)
         op = qml.MultiControlledX(wires=[0, 4, 3, 1])
         state_shape = ([batch_dim] if batch_dim is not None else []) + [2] * 5
         state = np.random.random(state_shape).astype(complex)
@@ -1197,7 +1188,6 @@ class TestMultiControlledXKernel:
     @pytest.mark.parametrize("batch_dim", [None, 1, 3])
     def test_with_autograd(self, batch_dim):
         """Test that the custom kernel works with Autograd."""
-        np.random.seed(2751)
         op = qml.MultiControlledX(wires=[0, 4, 3, 1])
         state_shape = ([batch_dim] if batch_dim is not None else []) + [2] * 5
         state = np.random.random(state_shape).astype(complex)
@@ -1214,7 +1204,6 @@ class TestMultiControlledXKernel:
         """Test that the custom kernel works with Torch."""
         import torch
 
-        np.random.seed(2751)
         op = qml.MultiControlledX(wires=[0, 4, 3, 1])
         state_shape = ([batch_dim] if batch_dim is not None else []) + [2] * 5
         state = np.random.random(state_shape).astype(complex)
@@ -1232,13 +1221,15 @@ class TestMultiControlledXKernel:
 class TestLargeTFCornerCases:
     """Test large corner cases for tensorflow."""
 
-    @pytest.mark.parametrize("op", (qml.PauliZ(8), qml.CNOT((5, 6))))
+    @pytest.mark.parametrize(
+        "op", (qml.PauliZ(8), qml.PhaseShift(1.0, 8), qml.S(8), qml.T(8), qml.CNOT((5, 6)))
+    )
     def test_tf_large_state(self, op):
         """Tests that custom kernels that use slicing fall back to a different method when
         the state has a large number of wires."""
         import tensorflow as tf
 
-        state = np.zeros([2] * 10)
+        state = np.zeros([2] * 10, dtype=complex)
         state = tf.Variable(state)
         new_state = apply_operation(op, state)
 
@@ -1283,3 +1274,121 @@ class TestLargeTFCornerCases:
         results = circuit(tf.Variable(states))
         assert qml.math.shape(results) == (3, 256)
         assert np.array_equal(results[:, 128], [-1.0 + 0.0j] * 3)
+
+
+# pylint: disable=too-few-public-methods
+class TestConditionalsAndMidMeasure:
+    """Test dispatching for mid-circuit measurements and conditionals."""
+
+    @pytest.mark.all_interfaces
+    @pytest.mark.parametrize("ml_framework", ml_frameworks_list)
+    @pytest.mark.parametrize("batched", (False, True))
+    @pytest.mark.parametrize("unitary", (qml.CRX, qml.CRZ))
+    @pytest.mark.parametrize("wires", ([0, 1], [1, 0]))
+    def test_conditional(self, wires, unitary, batched, ml_framework):
+        """Test the application of a Conditional on an arbitrary state."""
+
+        n_states = int(batched) + 1
+        initial_state = np.array(
+            [
+                [
+                    0.3541035 + 0.05231577j,
+                    0.6912382 + 0.49474503j,
+                    0.29276263 + 0.06231887j,
+                    0.10736635 + 0.21947607j,
+                ],
+                [
+                    0.09803567 + 0.47557068j,
+                    0.4427561 + 0.13810454j,
+                    0.26421703 + 0.5366283j,
+                    0.03825933 + 0.4357423j,
+                ],
+            ][:n_states]
+        )
+
+        rotated_state = qml.math.dot(
+            initial_state, qml.matrix(unitary(-0.238, wires), wire_order=[0, 1]).T
+        )
+        rotated_state = qml.math.asarray(rotated_state, like=ml_framework)
+        rotated_state = qml.math.squeeze(qml.math.reshape(rotated_state, (n_states, 2, 2)))
+
+        m0 = qml.measure(0)
+        op = qml.ops.op_math.Conditional(m0, unitary(0.238, wires))
+
+        mid_meas = {m0.measurements[0]: 0}
+        old_state = apply_operation(
+            op, rotated_state, batched, interface=ml_framework, mid_measurements=mid_meas
+        )
+        assert qml.math.allclose(rotated_state, old_state)
+
+        mid_meas[m0.measurements[0]] = 1
+        new_state = apply_operation(
+            op, rotated_state, batched, interface=ml_framework, mid_measurements=mid_meas
+        )
+        assert qml.math.allclose(
+            qml.math.squeeze(initial_state), qml.math.reshape(new_state, (n_states, 4))
+        )
+
+    @pytest.mark.parametrize("rng_seed, m_res", ((12, (0, 0)), (42, (1, 1))))
+    def test_mid_measure(self, rng_seed, m_res):
+        """Test the application of a MidMeasureMP on an arbitrary state to give a basis state."""
+
+        initial_state = np.array(
+            [
+                [0.09068964 + 0.36775595j, 0.37578343 + 0.4786927j],
+                [0.3537292 + 0.27214766j, 0.01928256 + 0.53536021j],
+            ]
+        )
+
+        mid_state, end_state = np.zeros((2, 2), dtype=complex), np.zeros((2, 2), dtype=complex)
+        mid_state[m_res[0]] = initial_state[m_res[0]] / np.linalg.norm(initial_state[m_res[0]])
+        end_state[m_res] = mid_state[m_res] / np.abs(mid_state[m_res])
+
+        rng = np.random.default_rng(rng_seed)
+        m0, m1 = qml.measure(0).measurements[0], qml.measure(1).measurements[0]
+        mid_meas = {}
+
+        res_state = apply_operation(m0, initial_state, mid_measurements=mid_meas, rng=rng)
+        assert qml.math.allclose(mid_state, res_state)
+
+        res_state = apply_operation(m1, res_state, mid_measurements=mid_meas, rng=rng)
+        assert qml.math.allclose(end_state, res_state)
+
+        assert mid_meas == {m0: m_res[0], m1: m_res[1]}
+
+    @pytest.mark.parametrize("reset", (False, True))
+    @pytest.mark.parametrize("m_res", ([0, 0], [1, 0], [1, 1]))
+    def test_mid_measure_with_postselect_and_reset(self, m_res, reset):
+        """Test the application of a MidMeasureMP with postselection and reset."""
+
+        initial_state = np.array([[0.5 + 0.0j, 0.5 + 0.0j], [0.5 + 0.0j, 0.5 + 0.0j]])
+        mid_state, end_state = np.zeros((4, 4)), np.zeros((4, 4))
+
+        if reset:
+            m_res[0] = 0
+
+        mid_state[2 * m_res[0] : 2 * (m_res[0] + 1), 2 * m_res[0] : 2 * (m_res[0] + 1)] = 0.5
+        end_state[2 * m_res[0] + m_res[1], 2 * m_res[0] + m_res[1]] = 1.0
+
+        m0 = qml.measure(0, postselect=m_res[0], reset=reset).measurements[0]
+        m1 = qml.measure(1, postselect=m_res[1]).measurements[0]
+        mid_meas = {m0: m_res[0], m1: m_res[1]}
+
+        new_state = apply_operation(
+            m0, initial_state, mid_measurements=mid_meas, postselect_mode="fill-shots"
+        )
+        res_state = qml.math.reshape(new_state, 4)
+        assert qml.math.allclose(mid_state, qml.math.outer(res_state, res_state))
+
+        new_state = apply_operation(
+            m1, new_state, mid_measurements=mid_meas, postselect_mode="fill-shots"
+        )
+        res_state = qml.math.reshape(new_state, 4)
+        assert qml.math.allclose(end_state, qml.math.outer(res_state, res_state))
+
+    def test_error_bactched_mid_measure(self):
+        """Test that an error is raised when mid_measure is applied to a batched input state."""
+
+        with pytest.raises(ValueError, match="MidMeasureMP cannot be applied to batched states."):
+            m0, input_state = qml.measure(0).measurements[0], qml.math.array([[1, 0], [1, 0]])
+            apply_operation(m0, state=input_state, is_state_batched=True)

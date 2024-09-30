@@ -41,7 +41,7 @@ def test_flatten_unflatten_methods():
     assert hash(metadata)
 
     new_op = type(op)._unflatten(*op._flatten())
-    assert qml.equal(new_op, op)
+    qml.assert_equal(new_op, op)
     assert new_op is not op
     assert new_op._name == "SqueezingEmbedding"  # make sure initialized
 
@@ -54,7 +54,7 @@ class TestDecomposition:
         """Checks the queue for the default settings."""
 
         op = qml.SqueezingEmbedding(features=features, wires=range(3))
-        tape = op.expand()
+        tape = qml.tape.QuantumScript(op.decomposition())
 
         assert len(tape.operations) == len(features)
         for idx, gate in enumerate(tape.operations):

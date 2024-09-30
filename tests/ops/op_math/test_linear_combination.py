@@ -53,11 +53,27 @@ class TestParityWithHamiltonian:
         assert isinstance(H, qml.Hamiltonian)
 
 
-@pytest.mark.filterwarnings(
-    "ignore:Using 'qml.ops.Hamiltonian' with new operator arithmetic is deprecated"
-)
+@pytest.mark.usefixtures("new_opmath_only")
 def test_mixed_legacy_warning_Hamiltonian():
     """Test that mixing legacy ops and LinearCombination.compare raises a warning"""
+    op1 = qml.ops.LinearCombination([0.5, 0.5], [X(0) @ X(1), qml.Hadamard(0)])
+
+    with pytest.warns(
+        qml.PennyLaneDeprecationWarning,
+        match="Using 'qml.ops.Hamiltonian' with new operator arithmetic is deprecated",
+    ):
+        op2 = qml.ops.Hamiltonian([0.5, 0.5], [qml.operation.Tensor(X(0), X(1)), qml.Hadamard(0)])
+
+    with pytest.warns(UserWarning, match="Attempting to compare a legacy operator class instance"):
+        res = op1.compare(op2)
+
+    assert res
+
+
+@pytest.mark.usefixtures("legacy_opmath_only")
+def test_mixed_legacy_warning_Hamiltonian_legacy():
+    """Test that mixing legacy ops and LinearCombination.compare raises a warning in legacy opmath"""
+
     op1 = qml.ops.LinearCombination([0.5, 0.5], [X(0) @ X(1), qml.Hadamard(0)])
     op2 = qml.ops.Hamiltonian([0.5, 0.5], [qml.operation.Tensor(X(0), X(1)), qml.Hadamard(0)])
 
@@ -588,7 +604,10 @@ class TestLinearCombination:
     @pytest.mark.parametrize("coeffs, ops, true_pauli", PAULI_REPS)
     def test_pauli_rep(self, coeffs, ops, true_pauli, simplify):
         """Test the pauli rep is correctly constructed"""
-        H = qml.ops.LinearCombination(coeffs, ops, simplify=simplify)
+        if simplify:
+            H = qml.ops.LinearCombination(coeffs, ops).simplify()
+        else:
+            H = qml.ops.LinearCombination(coeffs, ops)
         pr = H.pauli_rep
         if simplify:
             pr.simplify()
@@ -656,7 +675,7 @@ class TestLinearCombination:
         assert data[1] == H._ops
 
         new_H = LinearCombination._unflatten(*H._flatten())
-        assert qml.equal(H, new_H)
+        qml.assert_equal(H, new_H)
         assert new_H.grouping_indices == H.grouping_indices
 
     @pytest.mark.parametrize("coeffs, ops", valid_LinearCombinations)
@@ -939,7 +958,7 @@ class TestLinearCombination:
         assert h.wires == Wires([0, 1, 2])
         assert mapped_h.wires == Wires([10, 11, 12])
         for obs1, obs2 in zip(mapped_h.ops, final_obs):
-            assert qml.equal(obs1, obs2)
+            qml.assert_equal(obs1, obs2)
         for coeff1, coeff2 in zip(mapped_h.coeffs, h.coeffs):
             assert coeff1 == coeff2
 
@@ -956,7 +975,7 @@ class TestLinearCombination:
         assert h.wires == Wires([0, 1, 2])
         assert mapped_h.wires == Wires([10, 11, 12])
         for obs1, obs2 in zip(mapped_h.ops, final_obs):
-            assert qml.equal(obs1, obs2)
+            qml.assert_equal(obs1, obs2)
         for coeff1, coeff2 in zip(mapped_h.coeffs, h.coeffs):
             assert coeff1 == coeff2
         assert group_indices_before == mapped_h.grouping_indices
@@ -1552,21 +1571,22 @@ class TestGrouping:
 
     def test_grouping_method_can_be_set(self):
         r"""Tests that the grouping method can be controlled by kwargs.
-        This is done by changing from default to 'rlf' and checking the result."""
+        This is done by changing from default to 'lf' and checking the result."""
+        # Create a graph with unique solution so that test does not depend on solver/implementation
         a = X(0)
-        b = X(1)
+        b = X(0)
         c = Z(0)
         obs = [a, b, c]
         coeffs = [1.0, 2.0, 3.0]
 
         # compute grouping during construction
         H2 = qml.ops.LinearCombination(coeffs, obs, grouping_type="qwc", method="lf")
-        assert H2.grouping_indices == ((2, 1), (0,))
+        assert set(H2.grouping_indices) == set(((0, 1), (2,)))
 
         # compute grouping separately
         H3 = qml.ops.LinearCombination(coeffs, obs, grouping_type=None)
         H3.compute_grouping(method="lf")
-        assert H3.grouping_indices == ((2, 1), (0,))
+        assert set(H3.grouping_indices) == set(((0, 1), (2,)))
 
     def test_grouping_with_duplicate_terms(self):
         """Test that the grouping indices are correct when the LinearCombination has duplicate
@@ -1627,22 +1647,12 @@ class TestLinearCombinationEvaluation:
         @qml.qnode(device)
         def circuit():
             qml.RY(0.1, wires=0)
-            return qml.expval(qml.ops.LinearCombination([1.0, 2.0], [X(1), X(1)], simplify=True))
+            return qml.expval(qml.simplify(qml.ops.LinearCombination([1.0, 2.0], [X(1), X(1)])))
 
         circuit()
         pars = circuit.qtape.get_parameters(trainable_only=False)
         # simplify worked and added 1. and 2.
         assert pars == [0.1, 3.0]
-
-    @pytest.mark.usefixtures("use_legacy_and_new_opmath")
-    def test_queuing_behaviour(self):
-        """Tests that the base observables are correctly dequeued with simplify=True"""
-
-        with qml.queuing.AnnotatedQueue() as q:
-            obs = qml.Hamiltonian([1, 1, 1], [qml.X(0), qml.X(0), qml.Z(0)], simplify=True)
-
-        assert len(q) == 1
-        assert q.queue[0] == obs
 
 
 class TestLinearCombinationDifferentiation:
@@ -1662,12 +1672,9 @@ class TestLinearCombinationDifferentiation:
             qml.RX(param, wires=0)
             qml.RY(param, wires=0)
             return qml.expval(
-                qml.ops.LinearCombination(
-                    coeffs,
-                    [X(0), Z(0)],
-                    simplify=simplify,
-                    grouping_type=group,
-                )
+                qml.simplify(qml.ops.LinearCombination(coeffs, [X(0), Z(0)], grouping_type=group))
+                if simplify
+                else qml.ops.LinearCombination(coeffs, [X(0), Z(0)], grouping_type=group)
             )
 
         grad_fn = qml.grad(circuit)
@@ -1736,12 +1743,9 @@ class TestLinearCombinationDifferentiation:
             qml.RX(param, wires=0)
             qml.RY(param, wires=0)
             return qml.expval(
-                qml.ops.LinearCombination(
-                    coeffs,
-                    [X(0), Z(0)],
-                    simplify=simplify,
-                    grouping_type=group,
-                )
+                qml.simplify(qml.ops.LinearCombination(coeffs, [X(0), Z(0)], grouping_type=group))
+                if simplify
+                else qml.ops.LinearCombination(coeffs, [X(0), Z(0)], grouping_type=group)
             )
 
         grad_fn = qml.grad(circuit)
@@ -1806,12 +1810,9 @@ class TestLinearCombinationDifferentiation:
             qml.RX(param, wires=0)
             qml.RY(param, wires=0)
             return qml.expval(
-                qml.ops.LinearCombination(
-                    coeffs,
-                    [X(0), Z(0)],
-                    simplify=simplify,
-                    grouping_type=group,
-                )
+                qml.simplify(qml.ops.LinearCombination(coeffs, [X(0), Z(0)], grouping_type=group))
+                if simplify
+                else qml.ops.LinearCombination(coeffs, [X(0), Z(0)], grouping_type=group)
             )
 
         grad_fn = jax.grad(circuit)
@@ -1876,12 +1877,9 @@ class TestLinearCombinationDifferentiation:
             qml.RX(param, wires=0)
             qml.RY(param, wires=0)
             return qml.expval(
-                qml.ops.LinearCombination(
-                    coeffs,
-                    [X(0), Z(0)],
-                    simplify=simplify,
-                    grouping_type=group,
-                )
+                qml.simplify(qml.ops.LinearCombination(coeffs, [X(0), Z(0)], grouping_type=group))
+                if simplify
+                else qml.ops.LinearCombination(coeffs, [X(0), Z(0)], grouping_type=group)
             )
 
         res = circuit(coeffs, param)
@@ -1963,12 +1961,9 @@ class TestLinearCombinationDifferentiation:
             qml.RX(param, wires=0)
             qml.RY(param, wires=0)
             return qml.expval(
-                qml.ops.LinearCombination(
-                    coeffs,
-                    [X(0), Z(0)],
-                    simplify=simplify,
-                    grouping_type=group,
-                )
+                qml.simplify(qml.ops.LinearCombination(coeffs, [X(0), Z(0)], grouping_type=group))
+                if simplify
+                else qml.ops.LinearCombination(coeffs, [X(0), Z(0)], grouping_type=group)
             )
 
         with tf.GradientTape() as tape:

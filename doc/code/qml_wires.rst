@@ -10,4 +10,4 @@ qml.wires
 
 .. automodapi:: pennylane.wires
     :no-heading:
-    :skip: Sequence, Iterable
+    :skip: Sequence, Iterable, Hashable, WiresLike, register_pytree

@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests that a device gives the same output as the default device."""
+import numpy as np
+
 # pylint: disable=no-self-use,no-member
 import pytest
 from flaky import flaky
@@ -35,9 +37,6 @@ class TestComparison:
 
         if dev.shots:
             pytest.skip("Device is in non-analytical mode.")
-
-        if isinstance(dev, qml.Device) and "Hermitian" not in dev.observables:
-            pytest.skip("Device does not support the Hermitian observable.")
 
         if dev.name == "default.qubit":
             pytest.skip("Device is default.qubit.")
@@ -90,10 +89,10 @@ class TestComparison:
             [0, 1, 0, 0],
             [0, 0, 1, 0],
             [0, 0, 0, 1],
-            pnp.array([1, 1, 0, 0]) / pnp.sqrt(2),
-            pnp.array([0, 1, 0, 1]) / pnp.sqrt(2),
-            pnp.array([1, 1, 1, 0]) / pnp.sqrt(3),
-            pnp.array([1, 1, 1, 1]) / 2,
+            np.array([1, 1, 0, 0]) / np.sqrt(2),
+            np.array([0, 1, 0, 1]) / np.sqrt(2),
+            np.array([1, 1, 1, 0]) / np.sqrt(3),
+            np.array([1, 1, 1, 1]) / 2,
         ],
     )
     def test_projector_expectation(self, device, state, tol, benchmark):
@@ -105,7 +104,7 @@ class TestComparison:
         if dev.shots:
             pytest.skip("Device is in non-analytical mode.")
 
-        if isinstance(dev, qml.Device) and "Projector" not in dev.observables:
+        if isinstance(dev, qml.devices.LegacyDevice) and "Projector" not in dev.observables:
             pytest.skip("Device does not support the Projector observable.")
 
         if dev.name == "default.qubit":

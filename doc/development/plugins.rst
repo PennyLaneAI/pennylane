@@ -250,7 +250,7 @@ after execution, you need to overwrite the following method:
 
     generate_samples
 
-:meth:`~.generate_samples` should return samples with shape ``(dev.shots, dev.num_wires)``.
+:meth:`~.QubitDevice.generate_samples` should return samples with shape ``(dev.shots, dev.num_wires)``.
 Furthermore, PennyLane uses the convention :math:`|q_0,q_1,\dots,q_{N-1}\rangle` where
 :math:`q_0` is the most significant bit.
 
@@ -316,8 +316,9 @@ Wire handling
 
 PennyLane uses the :class:`~.wires.Wires` class for the internal representation of wires. :class:`~.wires.Wires`
 inherits from Python's ``Sequence``, and represents an ordered set of unique wire labels.
-Indexing a ``Wires`` instance will return another ``Wires`` instance of length one.
 The ``labels`` attribute stores a tuple of the wire labels.
+Indexing a ``Wires`` instance with an integer will return the corresponding label.
+Indexing with a ``slice`` will return a ``Wires`` instance.
 
 For example:
 
@@ -326,8 +327,9 @@ For example:
     from pennylane.wires import Wires
 
     wires = Wires(['auxiliary', 0, 1])
-    print(wires[0]) # <Wires = ['auxiliary']>
     print(wires.labels) # ('auxiliary', 0, 1)
+    print(wires[0]) # 'auxiliary'
+    print(wires[0:1]) # Wires(['auxiliary'])
 
 As shown in the section on :doc:`/introduction/circuits`, a device can be created with custom wire labels:
 
@@ -351,10 +353,10 @@ object and store it in their ``wires`` attribute.
 
 .. code-block:: python
 
-    print(dev.wires) #  <Wires = ['q11', 'q12', 'q21', 'q22']>
+    print(dev.wires) #  Wires(['q11', 'q12', 'q21', 'q22'])
 
     op = Gate2(wires=['q21','q11'])
-    print(op.wires) # <Wires = ['q21', 'q11']>
+    print(op.wires) # Wires(['q21', 'q11'])
 
 When the device applies operations, it needs to translate
 ``op.wires`` into wire labels that the backend "understands". This can be done with the
@@ -365,7 +367,7 @@ but changes the labels according to the ``wire_map`` attribute of the device whi
 
     # inside the class defining 'my.device', which inherits from the base Device class
     device_wires = self.map_wires(op.wires)
-    print(device_wires) # <Wires = [2, 0]>
+    print(device_wires) # Wires([2, 0])
 
 By default, the map translates the custom labels ``'q11'``, ``'q12'``, ``'q21'``, ``'q22'`` to
 consecutive integers ``0``, ``1``, ``2``, ``3``. If a device uses a different wire labeling,

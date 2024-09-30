@@ -55,6 +55,22 @@ class FermiWord(dict):
 
         super().__init__(operator)
 
+    def adjoint(self):
+        r"""Return the adjoint of FermiWord."""
+        n = len(self.items())
+        adjoint_dict = {}
+        for key, value in reversed(self.items()):
+            position = n - key[0] - 1
+            orbital = key[1]
+            fermi = "+" if value == "-" else "-"
+            adjoint_dict[(position, orbital)] = fermi
+
+        return FermiWord(adjoint_dict)
+
+    def items(self):
+        """Returns the dictionary items in sorted order."""
+        return self.sorted_dic.items()
+
     @property
     def wires(self):
         r"""Return wires in a FermiWord."""
@@ -123,7 +139,7 @@ class FermiWord(dict):
 
     def __repr__(self):
         r"""Terminal representation of a FermiWord"""
-        return str(self)
+        return f"FermiWord({self.sorted_dic})"
 
     def __add__(self, other):
         """Add a FermiSentence, FermiWord or constant to a FermiWord. Converts both
@@ -273,6 +289,145 @@ class FermiWord(dict):
 
         return operator
 
+    def to_mat(self, n_orbitals=None, format="dense", buffer_size=None):
+        r"""Return the matrix representation.
+
+        Args:
+            n_orbitals (int or None): Number of orbitals. If not provided, it will be inferred from
+                the largest orbital index in the Fermi operator.
+            format (str): The format of the matrix. It is "dense" by default. Use "csr" for sparse.
+            buffer_size (int or None)`: The maximum allowed memory in bytes to store intermediate results
+                in the calculation of sparse matrices. It defaults to ``2 ** 30`` bytes that make
+                1GB of memory. In general, larger buffers allow faster computations.
+
+        Returns:
+            NumpyArray: Matrix representation of the :class:`~.FermiWord`.
+
+        **Example**
+
+        >>> w = FermiWord({(0, 0): '+', (1, 1): '-'})
+        >>> w.to_mat()
+        array([0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j],
+              [0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j],
+              [0.+0.j, 1.+0.j, 0.+0.j, 0.+0.j],
+              [0.+0.j, 0.+0.j, 0.+0.j, 0.+0.j])
+        """
+        largest_orb_id = max(key[1] for key in self.keys()) + 1
+        if n_orbitals and n_orbitals < largest_orb_id:
+            raise ValueError(
+                f"n_orbitals cannot be smaller than {largest_orb_id}, got: {n_orbitals}."
+            )
+
+        largest_order = n_orbitals or largest_orb_id
+
+        return qml.jordan_wigner(self, ps=True).to_mat(
+            wire_order=list(range(largest_order)), format=format, buffer_size=buffer_size
+        )
+
+    def shift_operator(self, initial_position, final_position):
+        r"""Shifts an operator in the FermiWord from ``initial_position`` to ``final_position`` by applying the fermionic anti-commutation relations.
+
+        There are three `anti-commutator relations <https://en.wikipedia.org/wiki/Creation_and_annihilation_operators#Creation_and_annihilation_operators_in_quantum_field_theories>`_:
+
+        .. math::
+            \left\{ a_i, a_j \right\} = 0, \quad \left\{ a^{\dagger}_i, a^{\dagger}_j \right\} = 0, \quad \left\{ a_i, a^{\dagger}_j \right\} = \delta_{ij},
+
+
+        where
+
+        .. math::
+            \left\{a_i, a_j \right\} = a_i a_j + a_j a_i,
+
+        and
+
+        .. math::
+            \delta_{ij} = \begin{cases} 1 & i = j \\ 0 & i \neq j \end{cases}.
+
+        Args:
+            initial_position (int): The position of the operator to be shifted.
+            final_position (int): The desired position of the operator.
+
+        Returns:
+            FermiSentence: The ``FermiSentence`` obtained after applying the anti-commutator relations.
+
+        Raises:
+            TypeError: if ``initial_position`` or ``final_position`` is not an integer
+            ValueError: if ``initial_position`` or ``final_position`` are outside the range ``[0, len(fermiword) - 1]``
+                        where ``len(fermiword)`` is the number of operators in the FermiWord.
+
+
+        **Example**
+
+        >>> w = qml.fermi.FermiWord({(0, 0): '+', (1, 1): '-'})
+        >>> w.shift_operator(0, 1)
+        -1 * a(1) a⁺(0)
+        """
+
+        if not isinstance(initial_position, int) or not isinstance(final_position, int):
+            raise TypeError("Positions must be integers.")
+
+        if initial_position < 0 or final_position < 0:
+            raise ValueError("Positions must be positive integers.")
+
+        if initial_position > len(self.sorted_dic) - 1 or final_position > len(self.sorted_dic) - 1:
+            raise ValueError("Positions are out of range.")
+
+        if initial_position == final_position:
+            return FermiSentence({self: 1})
+
+        fw = self
+        fs = FermiSentence({fw: 1})
+        delta = 1 if initial_position < final_position else -1
+        current = initial_position
+
+        while current != final_position:
+            indices = list(fw.sorted_dic.keys())
+            next = current + delta
+            curr_idx, curr_val = indices[current], fw[indices[current]]
+            next_idx, next_val = indices[next], fw[indices[next]]
+
+            # commuting identical terms
+            if curr_idx[1] == next_idx[1] and curr_val == next_val:
+                current += delta
+                continue
+
+            coeff = fs.pop(fw)
+
+            fw = dict(fw)
+            fw[(current, next_idx[1])] = next_val
+            fw[(next, curr_idx[1])] = curr_val
+
+            if curr_idx[1] != next_idx[1]:
+                del fw[curr_idx], fw[next_idx]
+
+            fw = FermiWord(fw)
+
+            # anti-commutator is 0
+            if curr_val == next_val or curr_idx[1] != next_idx[1]:
+                current += delta
+                fs += -coeff * fw
+                continue
+
+            # anti-commutator is 1
+            _min = min(current, next)
+            _max = max(current, next)
+            items = list(fw.sorted_dic.items())
+
+            left = FermiWord({(i, key[1]): value for i, (key, value) in enumerate(items[:_min])})
+            middle = FermiWord(
+                {(i, key[1]): value for i, (key, value) in enumerate(items[_min : _max + 1])}
+            )
+            right = FermiWord(
+                {(i, key[1]): value for i, (key, value) in enumerate(items[_max + 1 :])}
+            )
+
+            terms = left * (1 - middle) * right
+            fs += coeff * terms
+
+            current += delta
+
+        return fs
+
 
 # pylint: disable=useless-super-delegation
 class FermiSentence(dict):
@@ -296,6 +451,16 @@ class FermiSentence(dict):
     def __init__(self, operator):
         super().__init__(operator)
 
+    def adjoint(self):
+        r"""Return the adjoint of FermiSentence."""
+        adjoint_dict = {}
+        for key, value in self.items():
+            word = key.adjoint()
+            scalar = qml.math.conj(value)
+            adjoint_dict[word] = scalar
+
+        return FermiSentence(adjoint_dict)
+
     @property
     def wires(self):
         r"""Return wires of the FermiSentence."""
@@ -309,7 +474,7 @@ class FermiSentence(dict):
 
     def __repr__(self):
         r"""Terminal representation for FermiSentence."""
-        return str(self)
+        return f"FermiSentence({dict(self)})"
 
     def __missing__(self, key):
         r"""If the FermiSentence does not contain a FermiWord then the associated value will be 0."""
@@ -463,6 +628,41 @@ class FermiSentence(dict):
             if abs(coeff) <= tol:
                 del self[fw]
 
+    def to_mat(self, n_orbitals=None, format="dense", buffer_size=None):
+        r"""Return the matrix representation.
+
+        Args:
+            n_orbitals (int or None): Number of orbitals. If not provided, it will be inferred from
+                the largest orbital index in the Fermi operator
+            format (str): The format of the matrix. It is "dense" by default. Use "csr" for sparse.
+            buffer_size (int or None)`: The maximum allowed memory in bytes to store intermediate results
+                in the calculation of sparse matrices. It defaults to ``2 ** 30`` bytes that make
+                1GB of memory. In general, larger buffers allow faster computations.
+
+        Returns:
+            NumpyArray: Matrix representation of the :class:`~.FermiSentence`.
+
+        **Example**
+
+        >>> fs = FermiSentence({FermiWord({(0, 0): "+", (1, 1): "-"}): 1.2, FermiWord({(0, 0): "+", (1, 0): "-"}): 3.1})
+        >>> fs.to_mat()
+        array([0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j],
+              [0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j],
+              [0.0 + 0.0j, 1.2 + 0.0j, 3.1 + 0.0j, 0.0 + 0.0j],
+              [0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j, 3.1 + 0.0j])
+        """
+        largest_orb_id = max(key[1] for fermi_word in self.keys() for key in fermi_word.keys()) + 1
+        if n_orbitals and n_orbitals < largest_orb_id:
+            raise ValueError(
+                f"n_orbitals cannot be smaller than {largest_orb_id}, got: {n_orbitals}."
+            )
+
+        largest_order = n_orbitals or largest_orb_id
+
+        return qml.jordan_wigner(self, ps=True).to_mat(
+            wire_order=list(range(largest_order)), format=format, buffer_size=buffer_size
+        )
+
 
 def from_string(fermi_string):
     r"""Return a fermionic operator object from its string representation.
@@ -511,6 +711,48 @@ def from_string(fermi_string):
     return FermiWord({(i, int(s[:-1])): s[-1] for i, s in enumerate(operators)})
 
 
+def _to_string(fermi_op, of=False):
+    r"""Return a string representation of the :class:`~.FermiWord` object.
+
+    Args:
+        fermi_op (FermiWord): the fermionic operator
+        of (bool): whether to return a string representation in the same style as OpenFermion using
+                    the shorthand: 'q^' = a^\dagger_q 'q' = a_q. Each operator in the word is
+                    represented by the number of the wire it operates on
+
+    Returns:
+        (str): a string representation of the :class:`~.FermiWord` object
+
+    **Example**
+
+    >>> w = FermiWord({(0, 0) : '+', (1, 1) : '-'})
+    >>> _to_string(w)
+    '0+ 1-'
+
+    >>> w = FermiWord({(0, 0) : '+', (1, 1) : '-'})
+    >>> _to_string(w, of=True)
+    '0^ 1'
+    """
+    if not isinstance(fermi_op, FermiWord):
+        raise ValueError(f"fermi_op must be a FermiWord, got: {type(fermi_op)}")
+
+    pl_to_of_map = {"+": "^", "-": ""}
+
+    if len(fermi_op) == 0:
+        return "I"
+
+    op_list = ["" for _ in range(len(fermi_op))]
+    for loc, wire in fermi_op:
+        if of:
+            op_str = str(wire) + pl_to_of_map[fermi_op[(loc, wire)]]
+        else:
+            op_str = str(wire) + fermi_op[(loc, wire)]
+
+        op_list[loc] += op_str
+
+    return " ".join(op_list).rstrip()
+
+
 # pylint: disable=too-few-public-methods
 class FermiC(FermiWord):
     r"""FermiC(orbital)
@@ -545,8 +787,13 @@ class FermiC(FermiWord):
             raise ValueError(
                 f"FermiC: expected a single, positive integer value for orbital, but received {orbital}"
             )
+        self.orbital = orbital
         operator = {(0, orbital): "+"}
         super().__init__(operator)
+
+    def adjoint(self):
+        """Return the adjoint of FermiC."""
+        return FermiA(self.orbital)
 
 
 class FermiA(FermiWord):
@@ -582,5 +829,10 @@ class FermiA(FermiWord):
             raise ValueError(
                 f"FermiA: expected a single, positive integer value for orbital, but received {orbital}"
             )
+        self.orbital = orbital
         operator = {(0, orbital): "-"}
         super().__init__(operator)
+
+    def adjoint(self):
+        """Return the adjoint of FermiA."""
+        return FermiC(self.orbital)

@@ -72,7 +72,7 @@ class TestDecomposition:
         op = qml.GateFabric(
             weights, wires=range(qubits), init_state=init_state, include_pi=include_pi
         )
-        queue = op.expand().operations
+        queue = op.decomposition()
 
         # number of gates
         assert len(queue) == n_gates
@@ -753,7 +753,7 @@ class TestAttributes:
         """Test that the shape function warns if there are not enough qubits."""
 
         with pytest.raises(
-            ValueError, match="This template requires the number of qubits to be greater than four"
+            ValueError, match="This template requires the number of qubits to be at least four"
         ):
             qml.GateFabric.shape(3, 1)
 

@@ -134,18 +134,18 @@ def from_qiskit(quantum_circuit, measurements=None):
         operator.
 
     See below for more information regarding how to translate more complex circuits from Qiskit to
-    PennyLane, including handling parameterized Qiskit circuits, mid-circuit measurements, and
+    PennyLane, including handling parametrized Qiskit circuits, mid-circuit measurements, and
     classical control flows.
 
     .. details::
-        :title: Parameterized Quantum Circuits
+        :title: Parametrized Quantum Circuits
 
-        A Qiskit ``QuantumCircuit`` is parameterized if it contains
+        A Qiskit ``QuantumCircuit`` is parametrized if it contains
         `Parameter <https://docs.quantum.ibm.com/api/qiskit/qiskit.circuit.Parameter>`__ or
         `ParameterVector <https://docs.quantum.ibm.com/api/qiskit/qiskit.circuit.ParameterVector>`__
         references that need to be given defined values to evaluate the circuit. These can be passed
         to the generated quantum function as keyword or positional arguments. If we define a
-        parameterized circuit:
+        parametrized circuit:
 
         .. code-block:: python
 
@@ -182,7 +182,7 @@ def from_qiskit(quantum_circuit, measurements=None):
         >>> qml.grad(circuit, argnum=[0, 1])(np.pi/4, np.pi/6)
         (array(-0.61237244), array(-0.35355339))
 
-        The ``QuantumCircuit`` may also be parameterized with a ``ParameterVector``. These can be
+        The ``QuantumCircuit`` may also be parametrized with a ``ParameterVector``. These can be
         similarly converted:
 
         .. code-block:: python
@@ -363,7 +363,7 @@ def from_qiskit_op(qiskit_op, params=None, wires=None):
     .. details::
         :title: Usage Details
 
-        You can convert a parameterized ``SparsePauliOp`` into a PennyLane operator by assigning
+        You can convert a parametrized ``SparsePauliOp`` into a PennyLane operator by assigning
         literal values to each coefficient parameter. For example, the script
 
         .. code-block:: python
@@ -407,44 +407,210 @@ def from_qiskit_op(qiskit_op, params=None, wires=None):
         raise RuntimeError(_MISSING_QISKIT_PLUGIN_MESSAGE) from e
 
 
-def from_qasm(quantum_circuit: str):
-    """Loads quantum circuits from a QASM string using the converter in the
+def from_qiskit_noise(noise_model, verbose=False, decimal_places=None):
+    """Converts a Qiskit `NoiseModel <https://qiskit.github.io/qiskit-aer/stubs/qiskit_aer.noise.NoiseModel.html>`__
+    into a PennyLane :class:`~.NoiseModel`.
+
+    Args:
+        noise_model (qiskit_aer.noise.NoiseModel): a Qiskit ``NoiseModel`` instance.
+        verbose (bool): when printing a ``NoiseModel``, a complete list of Kraus matrices for each ``qml.QubitChannel``
+            is displayed with ``verbose=True``. By default, ``verbose=False`` and only the number of Kraus matrices and
+            the number of qubits they act on is displayed for brevity.
+        decimal_places (int | None): number of decimal places to round the elements of Kraus matrices when they are being
+            displayed for each ``qml.QubitChannel`` when ``verbose=True``.
+
+    Returns:
+        qml.NoiseModel: The PennyLane noise model converted from the input Qiskit ``NoiseModel`` object.
+
+    Raises:
+        ValueError: When a quantum error present in the noise model cannot be converted.
+
+    .. note::
+
+        - This function depends upon the PennyLane-Qiskit plugin, which can be installed following these
+          `installation instructions <https://docs.pennylane.ai/projects/qiskit/en/latest/installation.html>`__.
+          You may need to restart your kernel if you are running it in a notebook environment.
+        - Each quantum error present in the qiskit noise model is converted into an equivalent
+          :class:`~.QubitChannel` operator with the same canonical Kraus representation.
+        - Currently, PennyLane noise models do not support readout errors, so those will be skipped during
+          conversion.
+
+    **Example**
+
+    Consider the following noise model constructed in Qiskit:
+
+    >>> import qiskit_aer.noise as noise
+    >>> error_1 = noise.depolarizing_error(0.001, 1) # 1-qubit noise
+    >>> error_2 = noise.depolarizing_error(0.01, 2) # 2-qubit noise
+    >>> noise_model = noise.NoiseModel()
+    >>> noise_model.add_all_qubit_quantum_error(error_1, ['rz', 'ry'])
+    >>> noise_model.add_all_qubit_quantum_error(error_2, ['cx'])
+
+    This noise model can be converted into PennyLane using:
+
+    >>> import pennylane as qml
+    >>> qml.from_qiskit_noise(noise_model)
+    NoiseModel({
+        OpIn(['RZ', 'RY']): QubitChannel(num_kraus=4, num_wires=1)
+        OpIn(['CNOT']): QubitChannel(num_kraus=16, num_wires=2)
+    })
+    """
+    try:
+        plugin_converter = plugin_converters["qiskit_noise"].load()
+        return plugin_converter(noise_model, verbose=verbose, decimal_places=decimal_places)
+    except KeyError as e:
+        raise RuntimeError(_MISSING_QISKIT_PLUGIN_MESSAGE) from e
+
+
+def from_qasm(quantum_circuit: str, measurements=None):
+    r"""
+    Loads quantum circuits from a QASM string using the converter in the
     PennyLane-Qiskit plugin.
+
+    Args:
+        quantum_circuit (str): a QASM string containing a valid quantum circuit
+        measurements (None | MeasurementProcess | list[MeasurementProcess]): an optional PennyLane
+            measurement or list of PennyLane measurements that overrides the terminal measurements
+            that may be present in the input circuit. Defaults to ``None``, such that all existing measurements
+            in the input circuit are returned. See *Removing terminal measurements* for details.
+
+    Returns:
+        function: the PennyLane quantum function created based on the QASM string. This function itself returns the mid-circuit measurements plus the terminal measurements by default (``measurements=None``), and returns **only** the measurements from the ``measurements`` argument otherwise.
 
     **Example:**
 
     .. code-block:: python
 
-        >>> hadamard_qasm = 'OPENQASM 2.0;' \\
-        ...                 'include "qelib1.inc";' \\
-        ...                 'qreg q[1];' \\
-        ...                 'h q[0];'
-        >>> my_circuit = qml.from_qasm(hadamard_qasm)
+        qasm_code = 'OPENQASM 2.0;' \
+                    'include "qelib1.inc";' \
+                    'qreg q[2];' \
+                    'creg c[2];' \
+                    'h q[0];' \
+                    'measure q[0] -> c[0];' \
+                    'rz(0.24) q[0];' \
+                    'cx q[0], q[1];' \
+                    'measure q -> c;'
 
-    You can also load the contents of a QASM file:
+        loaded_circuit = qml.from_qasm(qasm_code)
+
+    >>> print(qml.draw(loaded_circuit)())
+    0: ──H──┤↗├──RZ(0.24)─╭●──┤↗├─┤
+    1: ───────────────────╰X──┤↗├─┤
+
+    Calling the quantum function returns a tuple containing the mid-circuit measurements and the terminal measurements.
+
+    >>> loaded_circuit()
+    (MeasurementValue(wires=[0]),
+    MeasurementValue(wires=[0]),
+    MeasurementValue(wires=[1]))
+
+    A list of measurements can also be passed directly to ``from_qasm`` using the ``measurements`` argument, making it possible to create a PennyLane circuit with :class:`qml.QNode <pennylane.QNode>`.
 
     .. code-block:: python
 
-        >>> with open("hadamard_circuit.qasm", "r") as f:
-        ...     my_circuit = qml.from_qasm(f.read())
+        dev = qml.device("default.qubit")
+        measurements = [qml.var(qml.Y(0))]
+        circuit = qml.QNode(qml.from_qasm(qasm_code, measurements = measurements), dev)
 
-    The ``my_circuit`` template can now be used within QNodes, as a
-    two-wire quantum template.
+    >>> print(qml.draw(circuit)())
+    0: ──H──┤↗├──RZ(0.24)─╭●─┤  Var[Y]
+    1: ───────────────────╰X─┤
 
-    >>> @qml.qnode(dev)
-    >>> def circuit(x):
-    >>>     qml.RX(x, wires=1)
-    >>>     my_circuit(wires=(1, 0))
-    >>>     return qml.expval(qml.Z(0))
+    .. details::
+        :title: Removing terminal measurements
 
-    Args:
-        quantum_circuit (str): a QASM string containing a valid quantum circuit
+        To remove all terminal measurements, set ``measurements=[]``. This removes the existing terminal measurements and keeps the mid-circuit measurements.
 
-    Returns:
-        function: the PennyLane template created based on the QASM string
+        .. code-block:: python
+
+            loaded_circuit = qml.from_qasm(qasm_code, measurements=[])
+
+        >>> print(qml.draw(loaded_circuit)())
+        0: ──H──┤↗├──RZ(0.24)─╭●─┤
+        1: ───────────────────╰X─┤
+
+        Calling the quantum function returns the same empty list that we originally passed in.
+
+        >>> loaded_circuit()
+        []
+
+        Note that mid-circuit measurements are always applied, but are only returned when ``measurements=None``. This can be exemplified by using the ``loaded_circuit`` without the terminal measurements within a ``QNode``.
+
+        .. code-block:: python
+
+            dev = qml.device("default.qubit")
+
+            @qml.qnode(dev)
+            def circuit():
+                loaded_circuit()
+                return qml.expval(qml.Z(1))
+
+        >>> print(qml.draw(circuit)())
+        0: ──H──┤↗├──RZ(0.24)─╭●─┤
+        1: ───────────────────╰X─┤  <Z>
+
+
+    .. details::
+        :title: Using conditional operations
+
+        We can take advantage of the mid-circuit measurements inside the QASM code by calling the returned function within a :class:`qml.QNode <pennylane.QNode>`.
+
+        .. code-block:: python
+
+            loaded_circuit = qml.from_qasm(qasm_code)
+
+            @qml.qnode(dev)
+            def circuit():
+                mid_measure, *_ = loaded_circuit()
+                qml.cond(mid_measure == 0, qml.RX)(np.pi / 2, 0)
+                return [qml.expval(qml.Z(0))]
+
+        >>> print(qml.draw(circuit)())
+        0: ──H──┤↗├──RZ(0.24)─╭●──┤↗├──RX(1.57)─┤  <Z>
+        1: ──────║────────────╰X──┤↗├──║────────┤
+                 ╚═════════════════════╝
+
+    .. details::
+        :title: Importing from a QASM file
+
+        We can also load the contents of a QASM file.
+
+        .. code-block:: python
+
+            # save the qasm code in a file
+            import locale
+            from pathlib import Path
+
+            filename = "circuit.qasm"
+            with Path(filename).open("w", encoding=locale.getpreferredencoding(False)) as f:
+                f.write(qasm_code)
+
+            with open("circuit.qasm", "r") as f:
+                loaded_circuit = qml.from_qasm(f.read())
+
+        The ``loaded_circuit`` function can now be used within a :class:`qml.QNode <pennylane.QNode>` as a two-wire quantum template.
+
+        .. code-block:: python
+
+            @qml.qnode(dev)
+            def circuit(x):
+                qml.RX(x, wires=1)
+                loaded_circuit(wires=(0, 1))
+                return qml.expval(qml.Z(0))
+
+        >>> print(qml.draw(circuit)(1.23))
+        0: ──H─────────┤↗├──RZ(0.24)─╭●──┤↗├─┤  <Z>
+        1: ──RX(1.23)────────────────╰X──┤↗├─┤
     """
-    plugin_converter = plugin_converters["qasm"].load()
-    return plugin_converter(quantum_circuit)
+
+    try:
+        plugin_converter = plugin_converters["qasm"].load()
+    except Exception as e:  # pragma: no cover
+        raise RuntimeError(  # pragma: no cover
+            "Failed to load the qasm plugin. Please ensure that the pennylane-qiskit package is installed."
+        ) from e
+
+    return plugin_converter(quantum_circuit, measurements=measurements)
 
 
 def from_pyquil(pyquil_program):

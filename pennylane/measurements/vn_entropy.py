@@ -15,7 +15,8 @@
 """
 This module contains the qml.vn_entropy measurement.
 """
-from typing import Optional, Sequence
+from collections.abc import Sequence
+from typing import Optional
 
 import pennylane as qml
 from pennylane.wires import Wires
@@ -60,11 +61,11 @@ def vn_entropy(wires, log_base=None) -> "VnEntropyMP":
 
     .. note::
 
-        Calculating the derivative of :func:`~.vn_entropy` is currently supported when
+        Calculating the derivative of :func:`~pennylane.vn_entropy` is currently supported when
         using the classical backpropagation differentiation method (``diff_method="backprop"``)
         with a compatible device and finite differences (``diff_method="finite-diff"``).
 
-    .. seealso:: :func:`pennylane.qinfo.transforms.vn_entropy` and :func:`pennylane.math.vn_entropy`
+    .. seealso:: :func:`pennylane.math.vn_entropy`
     """
     wires = Wires(wires)
     return VnEntropyMP(wires=wires, log_base=log_base)
@@ -73,7 +74,7 @@ def vn_entropy(wires, log_base=None) -> "VnEntropyMP":
 class VnEntropyMP(StateMeasurement):
     """Measurement process that computes the Von Neumann entropy of the system prior to measurement.
 
-    Please refer to :func:`vn_entropy` for detailed documentation.
+    Please refer to :func:`~pennylane.vn_entropy` for detailed documentation.
 
     Args:
         wires (.Wires): The wires the measurement process applies to.
@@ -112,11 +113,8 @@ class VnEntropyMP(StateMeasurement):
     def numeric_type(self):
         return float
 
-    def shape(self, device, shots):
-        if not shots.has_partitioned_shots:
-            return ()
-        num_shot_elements = sum(s.copies for s in shots.shot_vector)
-        return tuple(() for _ in range(num_shot_elements))
+    def shape(self, shots: Optional[int] = None, num_device_wires: int = 0) -> tuple:
+        return ()
 
     def process_state(self, state: Sequence[complex], wire_order: Wires):
         state = qml.math.dm_from_state_vector(state)

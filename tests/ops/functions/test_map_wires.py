@@ -91,7 +91,7 @@ class TestMapWiresOperators:
 
     def test_map_wires_unsupported_object_raises_error(self):
         """Test that an error is raised when trying to map the wires of an unsupported object."""
-        with pytest.raises(ValueError, match="Cannot map wires of object"):
+        with pytest.raises(qml.transforms.core.TransformError, match="Decorating a QNode with"):
             qml.map_wires("unsupported type", wire_map=wire_map)
 
 
@@ -134,7 +134,7 @@ class TestMapWiresTapes:
         m_tape = m_tapes[0]
         m_op = m_tape.operations[0]
         m_obs = m_tape.observables[0]
-        assert qml.equal(m_op, mapped_op)
+        qml.assert_equal(m_op, mapped_op)
         assert tape.shots == m_tape.shots
         assert m_obs.wires == Wires(wire_map[1])
         assert qml.math.allclose(dev.execute(tape), dev.execute(m_tape), atol=0.05)
@@ -163,6 +163,19 @@ class TestMapWiresTapes:
         assert nested_m_tape.operations == [qml.PauliY(4), qml.Hadamard(3), qml.PauliY(1)]
         assert len(nested_m_tape.measurements) == 0
 
+    def test_map_wires_batch(self):
+        """Test that map_wires can be applied to a batch of tapes."""
+
+        t1 = qml.tape.QuantumScript([qml.X(0)], [qml.expval(qml.Z(0))])
+        t2 = qml.tape.QuantumScript([qml.Y(1)], [qml.probs(wires=1)])
+
+        batch, _ = qml.map_wires((t1, t2), {0: "a", 1: "b"})
+
+        expected1 = qml.tape.QuantumScript([qml.X("a")], [qml.expval(qml.Z("a"))])
+        expected2 = qml.tape.QuantumScript([qml.Y("b")], [qml.probs(wires="b")])
+        qml.assert_equal(batch[0], expected1)
+        qml.assert_equal(batch[1], expected2)
+
 
 class TestMapWiresQNodes:
     """Tests for the qml.map_wires method used with qnodes."""
@@ -186,8 +199,8 @@ class TestMapWiresQNodes:
 
         m_op = tapes[0].operations
         m_obs = tapes[0].observables
-        assert qml.equal(m_op[0], mapped_op)
-        assert qml.equal(m_obs[0], mapped_obs)
+        qml.assert_equal(m_op[0], mapped_op)
+        qml.assert_equal(m_obs[0], mapped_obs)
 
 
 class TestMapWiresCallables:

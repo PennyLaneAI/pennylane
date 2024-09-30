@@ -15,8 +15,10 @@
 Pytest configuration file for PennyLane test suite.
 """
 # pylint: disable=unused-import
+import contextlib
 import os
 import pathlib
+import sys
 
 import numpy as np
 import pytest
@@ -24,6 +26,8 @@ import pytest
 import pennylane as qml
 from pennylane.devices import DefaultGaussian
 from pennylane.operation import disable_new_opmath_cm, enable_new_opmath_cm
+
+sys.path.append(os.path.join(os.path.dirname(__file__), "helpers"))
 
 # defaults
 TOL = 1e-3
@@ -77,28 +81,7 @@ def n_subsystems_fixture(request):
 
 @pytest.fixture(scope="session")
 def qubit_device(n_subsystems):
-    return qml.device("default.qubit.legacy", wires=n_subsystems)
-
-
-@pytest.fixture(scope="function", params=[(np.float32, np.complex64), (np.float64, np.complex128)])
-def qubit_device_1_wire(request):
-    return qml.device(
-        "default.qubit.legacy", wires=1, r_dtype=request.param[0], c_dtype=request.param[1]
-    )
-
-
-@pytest.fixture(scope="function", params=[(np.float32, np.complex64), (np.float64, np.complex128)])
-def qubit_device_2_wires(request):
-    return qml.device(
-        "default.qubit.legacy", wires=2, r_dtype=request.param[0], c_dtype=request.param[1]
-    )
-
-
-@pytest.fixture(scope="function", params=[(np.float32, np.complex64), (np.float64, np.complex128)])
-def qubit_device_3_wires(request):
-    return qml.device(
-        "default.qubit.legacy", wires=3, r_dtype=request.param[0], c_dtype=request.param[1]
-    )
+    return qml.device("default.qubit", wires=n_subsystems)
 
 
 # The following 3 fixtures are for default.qutrit devices to be used
@@ -120,30 +103,6 @@ def qutrit_device_3_wires(request):
     return qml.device("default.qutrit", wires=3, r_dtype=request.param[0], c_dtype=request.param[1])
 
 
-@pytest.fixture(scope="session")
-def gaussian_device(n_subsystems):
-    """Number of qubits or modes."""
-    return DummyDevice(wires=n_subsystems)
-
-
-@pytest.fixture(scope="session")
-def gaussian_dummy():
-    """Gaussian device with dummy Kerr gate."""
-    return DummyDevice
-
-
-@pytest.fixture(scope="session")
-def gaussian_device_2_wires():
-    """A 2-mode Gaussian device."""
-    return DummyDevice(wires=2)
-
-
-@pytest.fixture(scope="session")
-def gaussian_device_4modes():
-    """A 4 mode Gaussian device."""
-    return DummyDevice(wires=4)
-
-
 #######################################################################
 
 
@@ -158,12 +117,12 @@ def mock_device(monkeypatch):
     """A mock instance of the abstract Device class"""
 
     with monkeypatch.context() as m:
-        dev = qml.Device
+        dev = qml.devices.LegacyDevice
         m.setattr(dev, "__abstractmethods__", frozenset())
         m.setattr(dev, "short_name", "mock_device")
         m.setattr(dev, "capabilities", lambda cls: {"model": "qubit"})
         m.setattr(dev, "operations", {"RX", "RY", "RZ", "CNOT", "SWAP"})
-        yield qml.Device(wires=2)  # pylint:disable=abstract-class-instantiated
+        yield qml.devices.LegacyDevice(wires=2)  # pylint:disable=abstract-class-instantiated
 
 
 # pylint: disable=protected-access
@@ -205,6 +164,7 @@ def use_legacy_opmath():
         yield cm
 
 
+# pylint: disable=contextmanager-generator-missing-cleanup
 @pytest.fixture(scope="function")
 def use_new_opmath():
     with enable_new_opmath_cm() as cm:
@@ -215,6 +175,18 @@ def use_new_opmath():
 def use_legacy_and_new_opmath(request):
     with request.param() as cm:
         yield cm
+
+
+@pytest.fixture
+def new_opmath_only():
+    if not qml.operation.active_new_opmath():
+        pytest.skip("This feature only works with new opmath enabled")
+
+
+@pytest.fixture
+def legacy_opmath_only():
+    if qml.operation.active_new_opmath():
+        pytest.skip("This test exclusively tests legacy opmath")
 
 
 #######################################################################

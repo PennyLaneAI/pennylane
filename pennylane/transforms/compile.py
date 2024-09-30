@@ -14,12 +14,11 @@
 """Code for the high-level quantum function transform that executes compilation."""
 # pylint: disable=too-many-branches
 from functools import partial
-from typing import Callable, Sequence
 
 import pennylane as qml
 from pennylane.ops import __all__ as all_ops
 from pennylane.queuing import QueuingManager
-from pennylane.tape import QuantumTape
+from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms.core import TransformDispatcher, transform
 from pennylane.transforms.optimization import (
     cancel_inverses,
@@ -27,14 +26,15 @@ from pennylane.transforms.optimization import (
     merge_rotations,
     remove_barrier,
 )
+from pennylane.typing import PostprocessingFn
 
 default_pipeline = [commute_controlled, cancel_inverses, merge_rotations, remove_barrier]
 
 
 @transform
 def compile(
-    tape: QuantumTape, pipeline=None, basis_set=None, num_passes=1, expand_depth=5
-) -> (Sequence[QuantumTape], Callable):
+    tape: QuantumScript, pipeline=None, basis_set=None, num_passes=1, expand_depth=5
+) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Compile a circuit by applying a series of transforms to a quantum function.
 
     The default set of transforms includes (in order):
@@ -195,6 +195,7 @@ def compile(
             max_expansion=expand_depth,
             name="compile",
             error=qml.operation.DecompositionUndefinedError,
+            skip_initial_state_prep=False,
         )
 
         # Apply the full set of compilation transforms num_passes times

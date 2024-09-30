@@ -15,9 +15,9 @@
 This module contains the qml.classical_shadow measurement.
 """
 import copy
-from collections.abc import Iterable
+from collections.abc import Iterable, Sequence
 from string import ascii_letters as ABC
-from typing import Optional, Sequence, Union
+from typing import Optional, Union
 
 import numpy as np
 
@@ -216,7 +216,7 @@ class ClassicalShadowMP(MeasurementTransform):
     """Represents a classical shadow measurement process occurring at the end of a
     quantum variational circuit.
 
-    Please refer to :func:`classical_shadow` for detailed documentation.
+    Please refer to :func:`pennylane.classical_shadow` for detailed documentation.
 
 
     Args:
@@ -284,7 +284,11 @@ class ClassicalShadowMP(MeasurementTransform):
         n_snapshots = device.shots
         seed = self.seed
 
-        with qml.workflow.set_shots(device, shots=1):
+        original_shots = device.shots
+        original_shot_vector = device._shot_vector  # pylint: disable=protected-access
+
+        try:
+            device.shots = 1
             # slow implementation but works for all devices
             n_qubits = len(wires)
             mapped_wires = np.array(device.map_wires(wires))
@@ -311,6 +315,9 @@ class ClassicalShadowMP(MeasurementTransform):
                 device.apply(tape.operations, rotations=tape.diagonalizing_gates + rotations)
 
                 outcomes[t] = device.generate_samples()[0][mapped_wires]
+        finally:
+            device.shots = original_shots
+            device._shot_vector = original_shot_vector  # pylint: disable=protected-access
 
         return qml.math.cast(qml.math.stack([outcomes, recipes]), dtype=np.int8)
 
@@ -440,9 +447,19 @@ class ClassicalShadowMP(MeasurementTransform):
     def return_type(self):
         return Shadow
 
-    def shape(self, device, shots):  # pylint: disable=unused-argument
+    @classmethod
+    def _abstract_eval(
+        cls,
+        n_wires: Optional[int] = None,
+        has_eigvals=False,
+        shots: Optional[int] = None,
+        num_device_wires: int = 0,
+    ) -> tuple:
+        return (2, shots, n_wires), np.int8
+
+    def shape(self, shots: Optional[int] = None, num_device_wires: int = 0) -> tuple[int, int, int]:
         # otherwise, the return type requires a device
-        if not shots:
+        if shots is None:
             raise MeasurementShapeError(
                 "Shots must be specified to obtain the shape of a classical "
                 "shadow measurement process."
@@ -450,7 +467,7 @@ class ClassicalShadowMP(MeasurementTransform):
 
         # the first entry of the tensor represents the measured bits,
         # and the second indicate the indices of the unitaries used
-        return (2, shots.total_shots, len(self.wires))
+        return (2, shots, len(self.wires))
 
     def __copy__(self):
         return self.__class__(
@@ -462,7 +479,7 @@ class ClassicalShadowMP(MeasurementTransform):
 class ShadowExpvalMP(MeasurementTransform):
     """Measures the expectation value of an operator using the classical shadow measurement process.
 
-    Please refer to :func:`shadow_expval` for detailed documentation.
+    Please refer to :func:`~pennylane.shadow_expval` for detailed documentation.
 
     Args:
         H (Operator, Sequence[Operator]): Operator or list of Operators to compute the expectation value over.
@@ -495,6 +512,19 @@ class ShadowExpvalMP(MeasurementTransform):
         self.H = H
         self.k = k
         super().__init__(id=id)
+
+    # pylint: disable=arguments-differ
+    @classmethod
+    def _primitive_bind_call(
+        cls,
+        H: Union[Operator, Sequence],
+        seed: Optional[int] = None,
+        k: int = 1,
+        **kwargs,
+    ):
+        if cls._obs_primitive is None:  # pragma: no cover
+            return type.__call__(cls, H=H, seed=seed, k=k, **kwargs)  # pragma: no cover
+        return cls._obs_primitive.bind(H, seed=seed, k=k, **kwargs)
 
     def process(self, tape, device):
         bits, recipes = qml.classical_shadow(wires=self.wires, seed=self.seed).process(tape, device)
@@ -536,12 +566,8 @@ class ShadowExpvalMP(MeasurementTransform):
     def return_type(self):
         return ShadowExpval
 
-    def shape(self, device, shots):
-        is_single_op = isinstance(self.H, Operator)
-        if not shots.has_partitioned_shots:
-            return () if is_single_op else (len(self.H),)
-        base = () if is_single_op else (len(self.H),)
-        return (base,) * sum(s.copies for s in shots.shot_vector)
+    def shape(self, shots: Optional[int] = None, num_device_wires: int = 0) -> tuple:
+        return () if isinstance(self.H, Operator) else (len(self.H),)
 
     @property
     def wires(self):
@@ -573,3 +599,10 @@ class ShadowExpvalMP(MeasurementTransform):
             k=self.k,
             seed=self.seed,
         )
+
+
+if ShadowExpvalMP._obs_primitive is not None:  # pylint: disable=protected-access
+
+    @ShadowExpvalMP._obs_primitive.def_impl  # pylint: disable=protected-access
+    def _(H, **kwargs):
+        return type.__call__(ShadowExpvalMP, H, **kwargs)

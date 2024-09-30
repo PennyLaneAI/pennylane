@@ -86,7 +86,7 @@ class TestDecomposition:
             gate_wires.append(list(indices))
 
         op = qml.BasisRotation(wires=range(num_wires), unitary_matrix=unitary_matrix)
-        queue = op.expand().operations
+        queue = op.decomposition()
 
         assert len(queue) == len(gate_ops)  # number of gates
 

@@ -16,13 +16,12 @@
 import math
 import warnings
 from itertools import product
-from typing import Callable, Sequence
 
 import pennylane as qml
 from pennylane.ops import Adjoint
 from pennylane.ops.op_math.decompositions.solovay_kitaev import sk_decomposition
 from pennylane.queuing import QueuingManager
-from pennylane.tape import QuantumTape
+from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms.core import transform
 from pennylane.transforms.optimization import (
     cancel_inverses,
@@ -31,6 +30,7 @@ from pennylane.transforms.optimization import (
     remove_barrier,
 )
 from pennylane.transforms.optimization.optimization_utils import _fuse_global_phases, find_next_gate
+from pennylane.typing import PostprocessingFn
 
 # Single qubits Clifford+T gates in PL
 _CLIFFORD_T_ONE_GATES = [
@@ -83,7 +83,7 @@ def _check_clifford_op(op, use_decomposition=False):
 
     # Check if matrix can be calculated for the operator
     if (not op.has_matrix and not use_decomposition) or (
-        use_decomposition and not op.expand().wires
+        use_decomposition and not qml.tape.QuantumScript(op.decomposition()).wires
     ):
         return False
 
@@ -263,7 +263,7 @@ def _two_qubit_decompose(op):
 
 
 def _merge_param_gates(operations, merge_ops=None):
-    """Merge the provided parameterized gates on the same wires that are adjacent to each other"""
+    """Merge the provided parametrized gates on the same wires that are adjacent to each other"""
 
     copied_ops = operations.copy()
     merged_ops, number_ops = [], 0
@@ -309,12 +309,12 @@ def _merge_param_gates(operations, merge_ops=None):
 # pylint: disable= too-many-nested-blocks, too-many-branches, too-many-statements, unnecessary-lambda-assignment
 @transform
 def clifford_t_decomposition(
-    tape: QuantumTape,
+    tape: QuantumScript,
     epsilon=1e-4,
     max_expansion=6,
     method="sk",
     **method_kwargs,
-) -> (Sequence[QuantumTape], Callable):
+) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     r"""Decomposes a circuit into the Clifford+T basis.
 
     This method first decomposes the gate operations to a basis comprised of Clifford, :class:`~.T`, :class:`~.RZ` and
@@ -472,7 +472,7 @@ def clifford_t_decomposition(
 
         else:
             raise NotImplementedError(
-                f"Currently we only support Solovay-Kitaev ('sk') decompostion, got {method}"
+                f"Currently we only support Solovay-Kitaev ('sk') decomposition, got {method}"
             )
 
         decomp_ops = []

@@ -54,7 +54,7 @@ class TestDecomposition:
         weights = np.random.random(size=weight_shape)
 
         op = qml.BasicEntanglerLayers(weights, wires=range(n_wires))
-        tape = op.expand()
+        tape = qml.tape.QuantumScript(op.decomposition())
 
         for i, gate in enumerate(tape.operations):
             assert gate.name == expected_names[i]
@@ -67,7 +67,7 @@ class TestDecomposition:
         weights = np.zeros(shape=(1, 2))
 
         op = qml.BasicEntanglerLayers(weights, wires=range(2), rotation=rotation)
-        queue = op.expand().operations
+        queue = op.decomposition()
 
         assert rotation in [type(gate) for gate in queue]
 

@@ -17,16 +17,16 @@ Differentiability tests are still in the ml-framework specific files.
 """
 import copy
 from functools import partial
-from typing import Callable, Tuple
 
 import numpy as np
 import pytest
 
 import pennylane as qml
+from pennylane.tape import QuantumScript, QuantumScriptBatch
+from pennylane.typing import PostprocessingFn
 
 device_suite = (
-    qml.device("default.qubit.legacy", wires=5),
-    qml.devices.DefaultQubit(),
+    qml.device("default.qubit"),
     qml.device("lightning.qubit", wires=5),
 )
 
@@ -65,8 +65,8 @@ class TestTransformProgram:
             return results[0]
 
         def just_pauli_x_out(
-            tape: qml.tape.QuantumTape,
-        ) -> (Tuple[qml.tape.QuantumTape], Callable):
+            tape: QuantumScript,
+        ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
             return (
                 qml.tape.QuantumScript([qml.PauliX(0)], tape.measurements),
             ), null_postprocessing
@@ -168,19 +168,21 @@ class TestTransformProgram:
     def test_chained_preprocessing(self):
         """Test a transform program with two transforms where their order affects the output."""
 
-        dev = qml.device("default.qubit.legacy", wires=2)
+        dev = qml.device("default.qubit", wires=2)
 
         def null_postprocessing(results):
             return results[0]
 
-        def just_pauli_x_out(tape: qml.tape.QuantumTape) -> (Tuple[qml.tape.QuantumTape], Callable):
+        def just_pauli_x_out(
+            tape: QuantumScript,
+        ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
             return (
                 qml.tape.QuantumScript([qml.PauliX(0)], tape.measurements),
             ), null_postprocessing
 
         def repeat_operations(
-            tape: qml.tape.QuantumTape,
-        ) -> (Tuple[qml.tape.QuantumTape], Callable):
+            tape: QuantumScript,
+        ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
             new_tape = qml.tape.QuantumScript(
                 tape.operations + copy.deepcopy(tape.operations), tape.measurements
             )
@@ -220,11 +222,11 @@ class TestTransformProgram:
         def scale_two(results):
             return results[0] * 2.0
 
-        def transform_add(tape: qml.tape.QuantumTape):
+        def transform_add(tape: QuantumScript):
             """A valid transform."""
             return (tape,), add_one
 
-        def transform_mul(tape: qml.tape.QuantumTape):
+        def transform_mul(tape: QuantumScript):
             return (tape,), scale_two
 
         add_container = qml.transforms.core.TransformContainer(transform_add)

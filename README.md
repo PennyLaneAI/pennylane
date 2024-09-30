@@ -26,9 +26,11 @@
 </p>
 
 <p align="center">
-  <a href="https://pennylane.ai">PennyLane</a> is a cross-platform Python library for <a
-  href="https://en.wikipedia.org/wiki/Differentiable_programming">differentiable
-  programming</a> of quantum computers.
+  <a href="https://pennylane.ai">PennyLane</a> is a cross-platform Python library for
+  <a href="https://pennylane.ai/qml/quantum-computing/">quantum computing</a>,
+  <a href="https://pennylane.ai/qml/quantum-machine-learning/">quantum machine learning</a>,
+  and
+  <a href="https://pennylane.ai/qml/quantum-chemistry/">quantum chemistry</a>.
 </p>
 
 <p align="center">
@@ -65,7 +67,7 @@
 
 ## Installation
 
-PennyLane requires Python version 3.9 and above. Installation of PennyLane, as well as all
+PennyLane requires Python version 3.10 and above. Installation of PennyLane, as well as all
 dependencies, can be done using pip:
 
 ```console

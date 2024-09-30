@@ -18,7 +18,6 @@ import copy
 import warnings
 from dataclasses import replace
 from functools import partial
-from typing import Callable, Tuple
 
 import numpy as np
 import pytest
@@ -28,7 +27,9 @@ import pennylane as qml
 from pennylane import QNode
 from pennylane import numpy as pnp
 from pennylane import qnode
-from pennylane.tape import QuantumScript
+from pennylane.tape import QuantumScript, QuantumScriptBatch
+from pennylane.typing import PostprocessingFn
+from pennylane.workflow.qnode import _prune_dynamic_transform
 
 
 def dummyfunc():
@@ -58,6 +59,20 @@ class CustomDeviceWithDiffMethod(qml.devices.Device):
         return 0
 
 
+def test_no_measure():
+    """Test that failing to specify a measurement
+    raises an exception"""
+    dev = qml.device("default.qubit")
+
+    @qml.qnode(dev)
+    def circuit(x):
+        qml.RX(x, wires=0)
+        return qml.PauliY(0)
+
+    with pytest.raises(qml.QuantumFunctionError, match="must return either a single measurement"):
+        _ = circuit(0.65)
+
+
 def test_copy():
     """Test that a shallow copy also copies the execute kwargs, gradient kwargs, and transform program."""
     dev = CustomDevice()
@@ -76,7 +91,6 @@ def test_copy():
     assert copied_qn.device is qn.device
     assert copied_qn.interface is qn.interface
     assert copied_qn.diff_method == qn.diff_method
-    assert copied_qn.expansion_strategy == qn.expansion_strategy
 
 
 class TestInitialization:
@@ -104,6 +118,24 @@ class TestInitialization:
 # pylint: disable=too-many-public-methods
 class TestValidation:
     """Tests for QNode creation and validation"""
+
+    def test_expansion_strategy_error(self):
+        """Test that an error is raised if expansion_strategy is passed to the qnode."""
+
+        with pytest.raises(ValueError, match=r"'expansion_strategy' is no longer"):
+
+            @qml.qnode(qml.device("default.qubit"), expansion_strategy="device")
+            def _():
+                return qml.state()
+
+    def test_max_expansion_error(self):
+        """Test that an error is raised if max_expansion is passed to the QNode."""
+
+        with pytest.raises(ValueError, match="'max_expansion' is no longer a valid"):
+
+            @qml.qnode(qml.device("default.qubit"), max_expansion=1)
+            def _():
+                qml.state()
 
     def test_invalid_interface(self):
         """Test that an exception is raised for an invalid interface"""
@@ -137,63 +169,8 @@ class TestValidation:
             QNode(dummyfunc, None)
 
     # pylint: disable=protected-access
-    def test_validate_backprop_method_invalid_device(self):
-        """Test that the method for validating the backprop diff method
-        tape raises an exception if the device does not support backprop."""
-        dev = qml.device("default.gaussian", wires=1)
-
-        with pytest.raises(qml.QuantumFunctionError, match="does not support native computations"):
-            QNode._validate_backprop_method(dev, None)
-
-    # pylint: disable=protected-access
-    def test_validate_device_method_new_device(self):
-        """Test that _validate_device_method raises a valueerror with the new device interface."""
-
-        dev = qml.device("default.qubit")
-
-        with pytest.raises(ValueError):
-            QNode._validate_device_method(dev)
-
-    # pylint: disable=protected-access
-    def test_validate_backprop_method(self):
-        """Test that the method for validating the backprop diff method
-        tape works as expected"""
-        dev = qml.device("default.qubit", wires=1)
-
-        with pytest.raises(ValueError):
-            QNode._validate_backprop_method(dev, "auto")
-
-    # pylint: disable=protected-access
     @pytest.mark.autograd
-    def test_parameter_shift_qubit_device(self):
-        """Test that the _validate_parameter_shift method
-        returns the correct gradient transform for qubit devices."""
-        dev = qml.device("default.qubit", wires=1)
-        gradient_fn = QNode._validate_parameter_shift(dev)
-        assert gradient_fn[0] is qml.gradients.param_shift
-
-    # pylint: disable=protected-access
-    @pytest.mark.autograd
-    def test_parameter_shift_cv_device(self):
-        """Test that the _validate_parameter_shift method
-        returns the correct gradient transform for cv devices."""
-        dev = qml.device("default.gaussian", wires=1)
-        gradient_fn = QNode._validate_parameter_shift(dev)
-        assert gradient_fn[0] is qml.gradients.param_shift_cv
-        assert gradient_fn[1] == {"dev": dev}
-
-    # pylint: disable=protected-access
-    @pytest.mark.autograd
-    def test_parameter_shift_qutrit_device(self):
-        """Test that the _validate_parameter_shift method
-        returns the correct gradient transform for qutrit devices."""
-        dev = qml.device("default.qutrit", wires=1)
-        gradient_fn = QNode._validate_parameter_shift(dev)
-        assert gradient_fn[0] is qml.gradients.param_shift
-
-    # pylint: disable=protected-access
-    @pytest.mark.autograd
-    def test_best_method_is_device(self, monkeypatch):
+    def test_best_method_is_device(self):
         """Test that the method for determining the best diff method
         for a device that is a child of qml.devices.Device and has a
         compute_derivatives method defined returns 'device'"""
@@ -219,7 +196,7 @@ class TestValidation:
         assert res == ("backprop", {}, dev)
 
     # pylint: disable=protected-access
-    def test_best_method_is_param_shift(self, monkeypatch):
+    def test_best_method_is_param_shift(self):
         """Test that the method for determining the best diff method
         for a given device and interface returns the parameter shift rule if
         'device' and 'backprop' don't work"""
@@ -252,11 +229,11 @@ class TestValidation:
             return capabilities
 
         # finite differences is the fallback when we know nothing about the device
-        monkeypatch.setattr(qml.devices.DefaultQubitLegacy, "capabilities", capabilities)
+        monkeypatch.setattr(qml.devices.DefaultMixed, "capabilities", capabilities)
         res = QNode.get_best_method(dev, "another_interface")
         assert res == (qml.gradients.finite_diff, {}, dev)
 
-    # pylint: disable=protected-access
+    # pylint: disable=protected-access, too-many-statements
     def test_diff_method(self):
         """Test that a user-supplied diff method correctly returns the right
         diff method."""
@@ -264,52 +241,95 @@ class TestValidation:
 
         qn = QNode(dummyfunc, dev, diff_method="best")
         assert qn.diff_method == "best"
-        assert qn.gradient_fn == "backprop"
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match=r"QNode.gradient_fn is deprecated"
+        ):
+            assert qn.gradient_fn == "backprop"
+
+        dev_shots = qml.device("default.qubit", shots=45)
+        qn_shots = QNode(dummyfunc, dev_shots, diff_method="best")
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match=r"QNode.gradient_fn is deprecated"
+        ):
+            assert qn_shots.gradient_fn == qml.gradients.param_shift
 
         qn = QNode(dummyfunc, dev, interface="autograd", diff_method="best")
         assert qn.diff_method == "best"
-        assert qn.gradient_fn == "backprop"
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match=r"QNode.gradient_fn is deprecated"
+        ):
+            assert qn.gradient_fn == "backprop"
 
         qn = QNode(dummyfunc, dev, diff_method="backprop")
         assert qn.diff_method == "backprop"
-        assert qn.gradient_fn == "backprop"
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match=r"QNode.gradient_fn is deprecated"
+        ):
+            assert qn.gradient_fn == "backprop"
 
         qn = QNode(dummyfunc, dev, interface="autograd", diff_method="backprop")
         assert qn.diff_method == "backprop"
-        assert qn.gradient_fn == "backprop"
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match=r"QNode.gradient_fn is deprecated"
+        ):
+            assert qn.gradient_fn == "backprop"
 
         dev2 = CustomDeviceWithDiffMethod()
         qn = QNode(dummyfunc, dev2, diff_method="device")
         assert qn.diff_method == "device"
-        assert qn.gradient_fn == "device"
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match=r"QNode.gradient_fn is deprecated"
+        ):
+            assert qn.gradient_fn == "device"
 
         qn = QNode(dummyfunc, dev2, interface="autograd", diff_method="device")
         assert qn.diff_method == "device"
-        assert qn.gradient_fn == "device"
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match=r"QNode.gradient_fn is deprecated"
+        ):
+            assert qn.gradient_fn == "device"
 
         qn = QNode(dummyfunc, dev, diff_method="finite-diff")
         assert qn.diff_method == "finite-diff"
-        assert qn.gradient_fn is qml.gradients.finite_diff
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match=r"QNode.gradient_fn is deprecated"
+        ):
+            assert qn.gradient_fn is qml.gradients.finite_diff
 
         qn = QNode(dummyfunc, dev, interface="autograd", diff_method="finite-diff")
         assert qn.diff_method == "finite-diff"
-        assert qn.gradient_fn is qml.gradients.finite_diff
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match=r"QNode.gradient_fn is deprecated"
+        ):
+            assert qn.gradient_fn is qml.gradients.finite_diff
 
         qn = QNode(dummyfunc, dev, diff_method="spsa")
         assert qn.diff_method == "spsa"
-        assert qn.gradient_fn is qml.gradients.spsa_grad
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match=r"QNode.gradient_fn is deprecated"
+        ):
+            assert qn.gradient_fn is qml.gradients.spsa_grad
 
         qn = QNode(dummyfunc, dev, interface="autograd", diff_method="hadamard")
         assert qn.diff_method == "hadamard"
-        assert qn.gradient_fn is qml.gradients.hadamard_grad
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match=r"QNode.gradient_fn is deprecated"
+        ):
+            assert qn.gradient_fn is qml.gradients.hadamard_grad
 
         qn = QNode(dummyfunc, dev, diff_method="parameter-shift")
         assert qn.diff_method == "parameter-shift"
-        assert qn.gradient_fn is qml.gradients.param_shift
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match=r"QNode.gradient_fn is deprecated"
+        ):
+            assert qn.gradient_fn is qml.gradients.param_shift
 
         qn = QNode(dummyfunc, dev, interface="autograd", diff_method="parameter-shift")
         assert qn.diff_method == "parameter-shift"
-        assert qn.gradient_fn is qml.gradients.param_shift
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match=r"QNode.gradient_fn is deprecated"
+        ):
+            assert qn.gradient_fn is qml.gradients.param_shift
         # check that get_best_method was only ever called once
 
     @pytest.mark.autograd
@@ -324,7 +344,10 @@ class TestValidation:
             return qml.expval(qml.PauliZ(0))
 
         qml.grad(circuit)(pnp.array(0.5, requires_grad=True))
-        assert circuit.gradient_fn is qml.gradients.finite_diff
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match=r"QNode.gradient_fn is deprecated"
+        ):
+            assert circuit.gradient_fn is qml.gradients.finite_diff
         spy.assert_called()
 
     def test_unknown_diff_method_string(self):
@@ -345,15 +368,6 @@ class TestValidation:
             match="Differentiation method 5 must be a gradient transform or a string",
         ):
             QNode(dummyfunc, dev, interface="autograd", diff_method=5)
-
-    def test_validate_adjoint_invalid_device(self):
-        """Test if a ValueError is raised when an invalid device is provided to
-        _validate_adjoint_method"""
-
-        dev = qml.device("default.gaussian", wires=1)
-
-        with pytest.raises(ValueError, match="The default.gaussian device does not"):
-            QNode._validate_adjoint_method(dev)
 
     def test_adjoint_finite_shots(self):
         """Tests that a DeviceError is raised with the adjoint differentiation method
@@ -420,8 +434,11 @@ class TestValidation:
             qml.RX(x, wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        assert circuit.interface is None
-        assert circuit.gradient_fn is None
+        assert circuit.interface == "numpy"
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match=r"QNode.gradient_fn is deprecated"
+        ):
+            assert circuit.gradient_fn is None
         assert circuit.device is dev
 
         # QNode can still be executed
@@ -529,9 +546,12 @@ class TestTapeConstruction:
         assert qn.gradient_kwargs["h"] == 1e-8
         assert qn.gradient_kwargs["approx_order"] == 2
 
-        jac = qn.gradient_fn(qn)(
-            pnp.array(0.45, requires_grad=True), pnp.array(0.1, requires_grad=True)
-        )
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match=r"QNode.gradient_fn is deprecated"
+        ):
+            jac = qn.gradient_fn(qn)(
+                pnp.array(0.45, requires_grad=True), pnp.array(0.1, requires_grad=True)
+            )
         assert isinstance(jac, tuple) and len(jac) == 2
         assert len(jac[0]) == 2
         assert len(jac[1]) == 2
@@ -698,7 +718,7 @@ class TestTapeConstruction:
         jitted_qnode1 = jax.jit(qn)
 
         with pytest.raises(
-            qml.QuantumFunctionError, match="Can't JIT a quantum function that returns counts."
+            NotImplementedError, match="The JAX-JIT interface doesn't support qml.counts."
         ):
             jitted_qnode1(0.123)
 
@@ -713,7 +733,7 @@ class TestTapeConstruction:
         jitted_qnode2 = jax.jit(circuit2)
 
         with pytest.raises(
-            qml.QuantumFunctionError, match="Can't JIT a quantum function that returns counts."
+            NotImplementedError, match="The JAX-JIT interface doesn't support qml.counts."
         ):
             jitted_qnode2(0.123)
 
@@ -877,13 +897,7 @@ class TestIntegration:
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    @pytest.mark.parametrize(
-        "dev, call_count",
-        [
-            (qml.device("default.qubit", wires=3), 2),
-            (qml.device("default.qubit.legacy", wires=3), 1),
-        ],
-    )
+    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.mixed"])
     @pytest.mark.parametrize("first_par", np.linspace(0.15, np.pi - 0.3, 3))
     @pytest.mark.parametrize("sec_par", np.linspace(0.15, np.pi - 0.3, 3))
     @pytest.mark.parametrize(
@@ -898,11 +912,12 @@ class TestIntegration:
         ],
     )
     def test_defer_meas_if_mcm_unsupported(
-        self, dev, call_count, first_par, sec_par, return_type, mv_return, mv_res, mocker
+        self, dev_name, first_par, sec_par, return_type, mv_return, mv_res, mocker
     ):  # pylint: disable=too-many-arguments
         """Tests that the transform using the deferred measurement principle is
         applied if the device doesn't support mid-circuit measurements
         natively."""
+        dev = qml.device(dev_name, wires=3)
 
         @qml.qnode(dev)
         def cry_qnode(x, y):
@@ -928,14 +943,13 @@ class TestIntegration:
 
         assert np.allclose(r1, r2[0])
         assert np.allclose(r2[1], mv_res(first_par))
-        assert spy.call_count == call_count  # once for each preprocessing
+        assert spy.call_count == 2
 
-    @pytest.mark.parametrize("dev_name", ["default.qubit.legacy", "default.mixed"])
-    def test_dynamic_one_shot_if_mcm_unsupported(self, dev_name):
+    def test_dynamic_one_shot_if_mcm_unsupported(self):
         """Test an error is raised if the dynamic one shot transform is a applied to a qnode with a device that
         does not support mid circuit measurements.
         """
-        dev = qml.device(dev_name, wires=2, shots=100)
+        dev = qml.device("default.mixed", wires=2, shots=100)
 
         with pytest.raises(
             TypeError,
@@ -960,7 +974,7 @@ class TestIntegration:
         @qml.qnode(dev)
         def cry_qnode(x):
             """QNode where we apply a controlled Y-rotation."""
-            qml.BasisStatePreparation(basis_state, wires=[0, 1])
+            qml.BasisState(basis_state, wires=[0, 1])
             qml.CRY(x, wires=[0, 1])
             return qml.sample(qml.PauliZ(1))
 
@@ -968,7 +982,7 @@ class TestIntegration:
         def conditional_ry_qnode(x):
             """QNode where the defer measurements transform is applied by
             default under the hood."""
-            qml.BasisStatePreparation(basis_state, wires=[0, 1])
+            qml.BasisState(basis_state, wires=[0, 1])
             m_0 = qml.measure(0)
             qml.cond(m_0, qml.RY)(x, wires=1)
             return qml.sample(qml.PauliZ(1))
@@ -977,23 +991,8 @@ class TestIntegration:
         r2 = conditional_ry_qnode(first_par)
         assert np.allclose(r1, r2)
 
-        @qml.defer_measurements
-        @qml.qnode(dev)
-        def cry_qnode_deferred(x):
-            """QNode where we apply a controlled Y-rotation."""
-            qml.BasisStatePreparation(basis_state, wires=[0, 1])
-            qml.CRY(x, wires=[0, 1])
-            return qml.sample(qml.PauliZ(1))
-
-        @qml.defer_measurements
-        @qml.qnode(dev)
-        def conditional_ry_qnode_deferred(x):
-            """QNode where the defer measurements transform is applied by
-            default under the hood."""
-            qml.BasisStatePreparation(basis_state, wires=[0, 1])
-            m_0 = qml.measure(0)
-            qml.cond(m_0, qml.RY)(x, wires=1)
-            return qml.sample(qml.PauliZ(1))
+        cry_qnode_deferred = qml.defer_measurements(cry_qnode)
+        conditional_ry_qnode_deferred = qml.defer_measurements(conditional_ry_qnode)
 
         r1 = cry_qnode_deferred(first_par)
         r2 = conditional_ry_qnode_deferred(first_par)
@@ -1016,7 +1015,6 @@ class TestIntegration:
             return qml.expval(qml.PauliZ(1))
 
         @qml.qnode(dev, interface=interface, diff_method="parameter-shift")
-        @qml.defer_measurements
         def conditional_ry_qnode(x):
             """QNode where the defer measurements transform is applied by
             default under the hood."""
@@ -1026,9 +1024,12 @@ class TestIntegration:
             qml.cond(m_0, qml.RY)(x, wires=1)
             return qml.expval(qml.PauliZ(1))
 
+        dm_conditional_ry_qnode = qml.defer_measurements(conditional_ry_qnode)
+
         x_ = -0.654
         x1 = tf.Variable(x_, dtype=tf.float64)
         x2 = tf.Variable(x_, dtype=tf.float64)
+        x3 = tf.Variable(x_, dtype=tf.float64)
 
         with tf.GradientTape() as tape1:
             r1 = cry_qnode(x1)
@@ -1036,11 +1037,17 @@ class TestIntegration:
         with tf.GradientTape() as tape2:
             r2 = conditional_ry_qnode(x2)
 
+        with tf.GradientTape() as tape3:
+            r3 = dm_conditional_ry_qnode(x3)
+
         assert np.allclose(r1, r2)
+        assert np.allclose(r1, r3)
 
         grad1 = tape1.gradient(r1, x1)
         grad2 = tape2.gradient(r2, x2)
+        grad3 = tape3.gradient(r3, x3)
         assert np.allclose(grad1, grad2)
+        assert np.allclose(grad1, grad3)
 
     @pytest.mark.torch
     @pytest.mark.parametrize("interface", ["torch", "auto"])
@@ -1130,6 +1137,20 @@ class TestIntegration:
 
         assert q.queue == []  # pylint: disable=use-implicit-booleaness-not-comparison
         assert len(circuit.tape.operations) == 1
+
+    def test_qnode_preserves_inferred_numpy_interface(self):
+        """Tests that the QNode respects the inferred numpy interface."""
+
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.RX(x, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        x = np.array(0.8)
+        res = circuit(x)
+        assert qml.math.get_interface(res) == "numpy"
 
 
 class TestShots:
@@ -1232,6 +1253,22 @@ class TestShots:
 
         assert len(ansatz1(0.8, shots=0)) == 10
         assert ansatz1.qtape.operations[0].wires.labels == (0,)
+
+    def test_shots_passed_as_unrecognized_kwarg(self):
+        """Test that an error is raised if shots are passed to QNode initialization."""
+        dev = qml.device("default.qubit", wires=[0, 1], shots=10)
+
+        def ansatz0():
+            return qml.expval(qml.X(0))
+
+        with pytest.raises(ValueError, match="'shots' is not a valid gradient_kwarg."):
+            qml.QNode(ansatz0, dev, shots=100)
+
+        with pytest.raises(ValueError, match="'shots' is not a valid gradient_kwarg."):
+
+            @qml.qnode(dev, shots=100)
+            def _():
+                return qml.expval(qml.X(0))
 
     # pylint: disable=unexpected-keyword-arg
     def test_shots_setting_does_not_mutate_device(self):
@@ -1378,10 +1415,10 @@ class TestTransformProgramIntegration:
         def null_postprocessing(results):
             return results[0]
 
-        @qml.transforms.core.transform
+        @qml.transform
         def just_pauli_x_out(
-            tape: qml.tape.QuantumTape,
-        ) -> (Tuple[qml.tape.QuantumTape], Callable):
+            tape: QuantumScript,
+        ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
             return (
                 qml.tape.QuantumScript([qml.PauliX(0)], tape.measurements),
             ), null_postprocessing
@@ -1408,10 +1445,10 @@ class TestTransformProgramIntegration:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.transforms.core.transform
+        @qml.transform
         def pin_result(
-            tape: qml.tape.QuantumTape, requested_result
-        ) -> (Tuple[qml.tape.QuantumTape], Callable):
+            tape: QuantumScript, requested_result
+        ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
             def postprocessing(_: qml.typing.ResultBatch) -> qml.typing.Result:
                 return requested_result
 
@@ -1436,16 +1473,18 @@ class TestTransformProgramIntegration:
         def null_postprocessing(results):
             return results[0]
 
-        @qml.transforms.core.transform
-        def just_pauli_x_out(tape: qml.tape.QuantumTape) -> (Tuple[qml.tape.QuantumTape], Callable):
+        @qml.transform
+        def just_pauli_x_out(
+            tape: QuantumScript,
+        ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
             return (
                 qml.tape.QuantumScript([qml.PauliX(0)], tape.measurements),
             ), null_postprocessing
 
-        @qml.transforms.core.transform
+        @qml.transform
         def repeat_operations(
-            tape: qml.tape.QuantumTape,
-        ) -> (Tuple[qml.tape.QuantumTape], Callable):
+            tape: QuantumScript,
+        ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
             new_tape = qml.tape.QuantumScript(
                 tape.operations + copy.deepcopy(tape.operations), tape.measurements
             )
@@ -1486,16 +1525,14 @@ class TestTransformProgramIntegration:
         def add_shift(results, shift):
             return results[0] + shift
 
-        @qml.transforms.core.transform
+        @qml.transform
         def scale_output(
-            tape: qml.tape.QuantumTape, factor
-        ) -> (Tuple[qml.tape.QuantumTape], Callable):
+            tape: QuantumScript, factor
+        ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
             return (tape,), partial(scale_by_factor, factor=factor)
 
-        @qml.transforms.core.transform
-        def shift_output(
-            tape: qml.tape.QuantumTape, shift
-        ) -> (Tuple[qml.tape.QuantumTape], Callable):
+        @qml.transform
+        def shift_output(tape: QuantumScript, shift) -> tuple[QuantumScriptBatch, PostprocessingFn]:
             return (tape,), partial(add_shift, shift=shift)
 
         @partial(shift_output, shift=1.0)
@@ -1525,8 +1562,8 @@ class TestTransformProgramIntegration:
         def num_of_shots_from_sample(results):
             return len(results[0])
 
-        @qml.transforms.core.transform
-        def use_n_shots(tape: qml.tape.QuantumTape, n) -> (Tuple[qml.tape.QuantumTape], Callable):
+        @qml.transform
+        def use_n_shots(tape: QuantumScript, n) -> tuple[QuantumScriptBatch, PostprocessingFn]:
             return (
                 qml.tape.QuantumScript(tape.operations, tape.measurements, shots=n),
             ), num_of_shots_from_sample
@@ -1576,17 +1613,6 @@ class TestNewDeviceIntegration:
         assert gradient_fn == "backprop"
         assert not kwargs
         assert new_dev is dev
-
-    def test_get_gradient_fn_default_qubit2_adjoint(self):
-        """Test that the get_gradient_fn and _validate_adjoint_methods work for default qubit 2."""
-        dev = qml.devices.DefaultQubit()
-        gradient_fn, kwargs, new_dev = QNode.get_gradient_fn(dev, "autograd", "adjoint")
-        assert gradient_fn == "adjoint"
-        assert len(kwargs) == 0
-        assert new_dev is dev
-
-        with pytest.raises(ValueError):
-            QNode._validate_adjoint_method(dev)
 
     def test_get_gradient_fn_custom_dev_adjoint(self):
         """Test that an error is raised if adjoint is requested for a device that does not support it."""
@@ -1674,7 +1700,10 @@ class TestNewDeviceIntegration:
             return qml.expval(qml.PauliZ(0))
 
         assert circuit.diff_method == "hello"
-        assert circuit.gradient_fn == "hello"
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match=r"QNode.gradient_fn is deprecated"
+        ):
+            assert circuit.gradient_fn == "hello"
 
         with dev.tracker:
             qml.grad(circuit)(qml.numpy.array(0.5))
@@ -1699,6 +1728,157 @@ class TestNewDeviceIntegration:
 
         results = circuit(shots=20)  # pylint: disable=unexpected-keyword-arg
         assert qml.math.allclose(results, np.zeros((20, 2)))
+
+
+class TestMCMConfiguration:
+    """Tests for MCM configuration arguments"""
+
+    def test_one_shot_error_without_shots(self):
+        """Test that an error is raised if mcm_method="one-shot" with no shots"""
+        dev = qml.device("default.qubit", wires=3)
+        param = np.pi / 4
+
+        @qml.qnode(dev, mcm_method="one-shot")
+        def f(x):
+            qml.RX(x, 0)
+            _ = qml.measure(0)
+            return qml.probs(wires=[0, 1])
+
+        with pytest.raises(
+            ValueError,
+            match="Cannot use the 'one-shot' method for mid-circuit measurements with",
+        ):
+            f(param)
+
+    def test_invalid_mcm_method_error(self):
+        """Test that an error is raised if the requested mcm_method is invalid"""
+        shots = 100
+        dev = qml.device("default.qubit", wires=3, shots=shots)
+
+        def f(x):
+            qml.RX(x, 0)
+            _ = qml.measure(0, postselect=1)
+            return qml.sample(wires=[0, 1])
+
+        with pytest.raises(ValueError, match="Invalid mid-circuit measurements method 'foo'"):
+            _ = qml.QNode(f, dev, mcm_method="foo")
+
+    def test_invalid_postselect_mode_error(self):
+        """Test that an error is raised if the requested postselect_mode is invalid"""
+        shots = 100
+        dev = qml.device("default.qubit", wires=3, shots=shots)
+
+        def f(x):
+            qml.RX(x, 0)
+            _ = qml.measure(0, postselect=1)
+            return qml.sample(wires=[0, 1])
+
+        with pytest.raises(ValueError, match="Invalid postselection mode 'foo'"):
+            _ = qml.QNode(f, dev, postselect_mode="foo")
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("diff_method", [None, "best"])
+    def test_defer_measurements_with_jit(self, diff_method, mocker):
+        """Test that using mcm_method="deferred" defaults to behaviour like
+        postselect_mode="fill-shots" when using jax jit."""
+        import jax  # pylint: disable=import-outside-toplevel
+
+        shots = 100
+        postselect = 1
+        param = jax.numpy.array(np.pi / 2)
+        spy = mocker.spy(qml.defer_measurements, "_transform")
+        spy_one_shot = mocker.spy(qml.dynamic_one_shot, "_transform")
+
+        dev = qml.device("default.qubit", wires=4, shots=shots, seed=jax.random.PRNGKey(123))
+
+        @qml.qnode(dev, diff_method=diff_method, mcm_method="deferred")
+        def f(x):
+            qml.RX(x, 0)
+            qml.measure(0, postselect=postselect)
+            return qml.sample(wires=0)
+
+        f_jit = jax.jit(f)
+        res = f(param)
+        res_jit = f_jit(param)
+
+        assert spy.call_count > 0
+        spy_one_shot.assert_not_called()
+
+        assert len(res) < shots
+        assert len(res_jit) == shots
+        assert qml.math.allclose(res, postselect)
+        assert qml.math.allclose(res_jit, postselect)
+
+    @pytest.mark.jax
+    # @pytest.mark.parametrize("diff_method", [None, "best"])
+    @pytest.mark.parametrize("diff_method", ["best"])
+    def test_deferred_hw_like_error_with_jit(self, diff_method):
+        """Test that an error is raised if attempting to use postselect_mode="hw-like"
+        with jax jit with mcm_method="deferred"."""
+        import jax  # pylint: disable=import-outside-toplevel
+
+        shots = 100
+        postselect = 1
+        param = jax.numpy.array(np.pi / 2)
+
+        dev = qml.device("default.qubit", wires=4, shots=shots, seed=jax.random.PRNGKey(123))
+
+        @qml.qnode(dev, diff_method=diff_method, mcm_method="deferred", postselect_mode="hw-like")
+        def f(x):
+            qml.RX(x, 0)
+            qml.measure(0, postselect=postselect)
+            return qml.sample(wires=0)
+
+        f_jit = jax.jit(f)
+
+        # Checking that an error is not raised without jit
+        _ = f(param)
+
+        with pytest.raises(
+            ValueError, match="Using postselect_mode='hw-like' is not supported with jax-jit."
+        ):
+            _ = f_jit(param)
+
+    def test_single_branch_statistics_error_without_qjit(self):
+        """Test that an error is raised if attempting to use mcm_method="single-branch-statistics
+        without qml.qjit"""
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev, mcm_method="single-branch-statistics")
+        def circuit(x):
+            qml.RX(x, 0)
+            qml.measure(0, postselect=1)
+            return qml.sample(wires=0)
+
+        param = np.pi / 4
+        with pytest.raises(ValueError, match="Cannot use mcm_method='single-branch-statistics'"):
+            _ = circuit(param)
+
+    @pytest.mark.parametrize("postselect_mode", [None, "fill-shots", "hw-like"])
+    @pytest.mark.parametrize("mcm_method", [None, "one-shot", "deferred"])
+    def test_execution_does_not_mutate_config(self, mcm_method, postselect_mode):
+        """Test that executing a QNode does not mutate its mid-circuit measurement config options"""
+        dev = qml.device("default.qubit", wires=2)
+
+        original_config = qml.devices.MCMConfig(
+            postselect_mode=postselect_mode, mcm_method=mcm_method
+        )
+
+        @qml.qnode(dev, postselect_mode=postselect_mode, mcm_method=mcm_method)
+        def circuit(x, mp):
+            qml.RX(x, 0)
+            qml.measure(0, postselect=1)
+            return mp(qml.PauliZ(0))
+
+        _ = circuit(1.8, qml.expval, shots=10)
+        assert circuit.execute_kwargs["mcm_config"] == original_config
+
+        if mcm_method != "one-shot":
+            _ = circuit(1.8, qml.expval)
+            assert circuit.execute_kwargs["mcm_config"] == original_config
+
+        _ = circuit(1.8, qml.expval, shots=10)
+        assert circuit.execute_kwargs["mcm_config"] == original_config
 
 
 class TestTapeExpansion:
@@ -1731,7 +1911,7 @@ class TestTapeExpansion:
         else:
             spy = mocker.spy(circuit.device, "execute")
 
-        x = np.array(0.5)
+        x = pnp.array(0.5)
         circuit(x)
 
         tape = spy.call_args[0][0][0]
@@ -1740,7 +1920,7 @@ class TestTapeExpansion:
         assert np.allclose(tape.operations[0].parameters, 3 * x)
 
     @pytest.mark.autograd
-    def test_no_gradient_expansion(self, mocker):
+    def test_no_gradient_expansion(self):
         """Test that an unsupported operation with defined gradient recipe is
         not expanded"""
         dev = qml.device("default.qubit", wires=1)
@@ -1818,59 +1998,6 @@ class TestTapeExpansion:
         res = circuit()
         assert np.allclose(res, c[2], atol=0.1)
 
-    def test_device_expansion_strategy(self, mocker):
-        """Test that the device expansion strategy performs the device
-        decomposition at construction time, and not at execution time"""
-        dev = qml.device("default.qubit", wires=2)
-        x = pnp.array(0.5, requires_grad=True)
-
-        @qnode(dev, diff_method="parameter-shift", expansion_strategy="device")
-        def circuit(x):
-            qml.SingleExcitation(x, wires=[0, 1])
-            return qml.expval(qml.PauliX(0))
-
-        assert circuit.expansion_strategy == "device"
-        assert circuit.execute_kwargs["expand_fn"] is None
-
-        spy_expand = mocker.spy(circuit.device, "preprocess")
-
-        circuit.construct([x], {})
-        assert len(circuit.tape.operations) > 0
-        assert spy_expand.call_count == 1
-
-        circuit(x)
-        assert spy_expand.call_count == 3
-
-        qml.grad(circuit)(x)
-        assert spy_expand.call_count == 5
-
-    def test_device_expansion_strategy_raises_error(self, monkeypatch):
-        """Test that an error is raised if the preprocessing function returns
-        a batch of tapes and the expansion strategy is 'device'"""
-
-        def preprocess_with_batchtransform(execution_config=None):
-            def transform_program(tapes):
-                new_tape = qml.transforms.broadcast_expand(tapes[0])
-                return new_tape, None
-
-            config = qml.devices.execution_config.DefaultExecutionConfig
-            return transform_program, config
-
-        dev = qml.device("default.qubit", wires=2)
-        monkeypatch.setattr(dev, "preprocess", preprocess_with_batchtransform)
-
-        @qnode(dev, diff_method="parameter-shift", expansion_strategy="device")
-        def circuit(x):
-            qml.SingleExcitation(x, wires=[0, 1])
-            return qml.expval(qml.PauliX(0))
-
-        with pytest.raises(
-            ValueError,
-            match="Using 'device' for the `expansion_strategy` is not supported for batches of tapes",
-        ):
-            x = pnp.array([0.5, 0.4, 0.3], requires_grad=True)
-            circuit.construct([x], {})
-
 
 def test_resets_after_execution_error():
     """Test that the interface is reset to ``"auto"`` if an error occurs during execution."""
@@ -1888,3 +2015,62 @@ def test_resets_after_execution_error():
         circuit(qml.numpy.array(0.1))
 
     assert circuit.interface == "auto"
+
+
+def test_prune_dynamic_transform():
+    """Tests that the helper function prune dynamic transform works."""
+
+    program1 = qml.transforms.core.TransformProgram(
+        [
+            qml.transforms.dynamic_one_shot,
+            qml.transforms.split_non_commuting,
+            qml.transforms.dynamic_one_shot,
+        ]
+    )
+    program2 = qml.transforms.core.TransformProgram(
+        [
+            qml.transforms.dynamic_one_shot,
+            qml.transforms.split_non_commuting,
+        ]
+    )
+
+    _prune_dynamic_transform(program1, program2)
+    assert len(program1) == 1
+    assert len(program2) == 2
+
+
+def test_prune_dynamic_transform_with_mcm():
+    """Tests that the helper function prune dynamic transform works with mcm"""
+
+    program1 = qml.transforms.core.TransformProgram(
+        [
+            qml.transforms.dynamic_one_shot,
+            qml.transforms.split_non_commuting,
+            qml.devices.preprocess.mid_circuit_measurements,
+        ]
+    )
+    program2 = qml.transforms.core.TransformProgram(
+        [
+            qml.transforms.dynamic_one_shot,
+            qml.transforms.split_non_commuting,
+        ]
+    )
+
+    _prune_dynamic_transform(program1, program2)
+    assert len(program1) == 2
+    assert qml.devices.preprocess.mid_circuit_measurements in program1
+    assert len(program2) == 1
+
+
+def test_gradient_fn_lightning_metric_tensor():
+    """Test that if lightning is used with the metric tensor, the graident_fn is parameter shift."""
+
+    dev = qml.device("lightning.qubit", wires=2)
+
+    @qml.metric_tensor
+    @qml.qnode(dev)
+    def circuit():
+        return qml.expval(qml.Z(0))
+
+    with pytest.warns(qml.PennyLaneDeprecationWarning):
+        assert circuit.gradient_fn == qml.gradients.param_shift

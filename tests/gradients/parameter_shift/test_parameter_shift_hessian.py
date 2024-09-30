@@ -170,8 +170,8 @@ class TestCollectRecipes:
     two_term_2nd_order = [(-0.5, 1.0, 0.0), (0.5, 1.0, -np.pi)]
     four_term_2nd_order = [
         (-0.375, 1.0, 0),
-        (0.25, 1.0, -np.pi),
         (0.25, 1.0, np.pi),
+        (0.25, 1.0, -np.pi),
         (-0.125, 1.0, -2 * np.pi),
     ]
 
@@ -1606,8 +1606,8 @@ class TestParamShiftHessianWithKwargs:
         # - 1 for second diagonal.
         assert len(tapes) == 1 + 2 + 4 + 1
         assert np.allclose(tapes[0].get_parameters(), x)
-        assert np.allclose(tapes[1].get_parameters(), x + np.array([-2 * np.pi / 3, 0.0]))
-        assert np.allclose(tapes[2].get_parameters(), x + np.array([2 * np.pi / 3, 0.0]))
+        assert np.allclose(tapes[1].get_parameters(), x + np.array([2 * np.pi / 3, 0.0]))
+        assert np.allclose(tapes[2].get_parameters(), x + np.array([-2 * np.pi / 3, 0.0]))
         assert np.allclose(tapes[-1].get_parameters(), x + np.array([0.0, -np.pi]))
         expected_shifts = np.array([[1, 1], [1, -1], [-1, 1], [-1, -1]]) * (np.pi / 2)
         for _tape, exp_shift in zip(tapes[3:-1], expected_shifts):
@@ -1662,7 +1662,7 @@ class TestParamShiftHessianWithKwargs:
             assert np.allclose(_tape.get_parameters(), x + exp_shift)
 
         # Check that the vanilla diagonal rule is used for the second diagonal entry
-        shift_order = [-1, 1, -2]
+        shift_order = [1, -1, -2]
         for mult, _tape in zip(shift_order, tapes[10:]):
             assert np.allclose(_tape.get_parameters(), x + np.array([0.0, np.pi * mult]))
 

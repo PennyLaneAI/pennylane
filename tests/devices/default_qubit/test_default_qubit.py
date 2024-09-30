@@ -18,13 +18,9 @@ from unittest import mock
 
 import numpy as np
 import pytest
-from flaky import flaky
 
 import pennylane as qml
 from pennylane.devices import DefaultQubit, ExecutionConfig
-
-np.random.seed(0)
-
 
 max_workers_list = [
     None,
@@ -87,7 +83,7 @@ def test_snapshot_multiprocessing_qnode():
 
 # pylint: disable=protected-access
 def test_applied_modifiers():
-    """Test that defualt qubit has the `single_tape_support` and `simulator_tracking`
+    """Test that default qubit has the `single_tape_support` and `simulator_tracking`
     modifiers applied.
     """
     dev = DefaultQubit()
@@ -127,15 +123,24 @@ class TestSupportsDerivatives:
         assert dev.supports_jvp(config) is True
         assert dev.supports_vjp(config) is True
 
-    def test_supports_adjoint(self):
+    @pytest.mark.parametrize(
+        "device_wires, measurement",
+        [
+            (None, qml.expval(qml.PauliZ(0))),
+            (2, qml.expval(qml.PauliZ(0))),
+            (2, qml.probs()),
+            (2, qml.probs([0])),
+        ],
+    )
+    def test_supports_adjoint(self, device_wires, measurement):
         """Test that DefaultQubit says that it supports adjoint differentiation."""
-        dev = DefaultQubit()
+        dev = DefaultQubit(wires=device_wires)
         config = ExecutionConfig(gradient_method="adjoint", use_device_gradient=True)
         assert dev.supports_derivatives(config) is True
         assert dev.supports_jvp(config) is True
         assert dev.supports_vjp(config) is True
 
-        qs = qml.tape.QuantumScript([], [qml.expval(qml.PauliZ(0))])
+        qs = qml.tape.QuantumScript([], [measurement])
         assert dev.supports_derivatives(config, qs) is True
         assert dev.supports_jvp(config, qs) is True
         assert dev.supports_vjp(config, qs) is True
@@ -299,7 +304,7 @@ class TestBasicCircuit:
         """Tests execution and gradients of a simple circuit with tensorflow."""
         import tensorflow as tf
 
-        phi = tf.Variable(4.873)
+        phi = tf.Variable(4.873, dtype="float64")
 
         dev = DefaultQubit(max_workers=max_workers)
 
@@ -783,7 +788,7 @@ class TestExecutingBatches:
 
         dev = DefaultQubit(max_workers=max_workers)
 
-        x = tf.Variable(5.2281)
+        x = tf.Variable(5.2281, dtype="float64")
         with tf.GradientTape(persistent=True) as tape:
             results = self.f(dev, x)
 
@@ -905,7 +910,7 @@ class TestSumOfTermsDifferentiability:
 
         dev = DefaultQubit()
 
-        x = tf.Variable(0.5)
+        x = tf.Variable(0.5, dtype="float64")
 
         with tf.GradientTape() as tape1:
             out = self.f(dev, x, style=style)
@@ -1610,7 +1615,7 @@ class TestHamiltonianSamples:
         qs_exp = qml.tape.QuantumScript(ops, [qml.expval(H)])
         expected = dev.execute(qs_exp)
 
-        assert np.allclose(res, expected, atol=0.002)
+        assert np.allclose(res, expected, atol=0.02)
 
 
 class TestClassicalShadows:
@@ -1817,7 +1822,6 @@ class TestPostselection:
         assert qml.math.allclose(res, expected)
         assert qml.math.get_interface(res) == qml.math.get_interface(expected)
 
-    @flaky(max_runs=5)
     @pytest.mark.parametrize(
         "mp",
         [
@@ -1839,9 +1843,7 @@ class TestPostselection:
         if use_jit and (interface != "jax" or isinstance(shots, tuple)):
             pytest.skip("Cannot JIT in non-JAX interfaces, or with shot vectors.")
 
-        np.random.seed(42)
-
-        dev = qml.device("default.qubit")
+        dev = qml.device("default.qubit", seed=1971)
         param = qml.math.asarray(param, like=interface)
 
         @qml.defer_measurements
@@ -1862,6 +1864,7 @@ class TestPostselection:
         if use_jit:
             import jax
 
+            pytest.xfail(reason="'shots' cannot be a static_argname for 'jit' in JAX 0.4.28")
             circ_postselect = jax.jit(circ_postselect, static_argnames=["shots"])
 
         res = circ_postselect(param, shots=shots)
@@ -1879,7 +1882,12 @@ class TestPostselection:
 
     @pytest.mark.parametrize(
         "mp, expected_shape",
-        [(qml.sample(wires=[0]), (5,)), (qml.classical_shadow(wires=[0]), (2, 5, 1))],
+        [
+            (qml.sample(wires=[0, 2]), (5, 2)),
+            (qml.classical_shadow(wires=[0, 2]), (2, 5, 2)),
+            (qml.sample(wires=[0]), (5,)),
+            (qml.classical_shadow(wires=[0]), (2, 5, 1)),
+        ],
     )
     @pytest.mark.parametrize("param", np.linspace(np.pi / 4, 3 * np.pi / 4, 3))
     @pytest.mark.parametrize("shots", [10, (10, 10)])
@@ -1908,11 +1916,6 @@ class TestPostselection:
                 qml.CNOT([0, 1])
                 qml.measure(0, postselect=1)
                 return qml.apply(mp)
-
-            if use_jit:
-                import jax
-
-                circ_postselect = jax.jit(circ_postselect, static_argnames=["shots"])
 
             res = circ_postselect(param, shots=shots)
 
@@ -1958,7 +1961,7 @@ class TestPostselection:
         dev = qml.device("default.qubit")
 
         @qml.defer_measurements
-        @qml.qnode(dev, interface=interface)
+        @qml.qnode(dev, interface=None if interface == "numpy" else interface)
         def circ():
             qml.RX(np.pi, 0)
             qml.CNOT([0, 1])
@@ -2049,6 +2052,7 @@ class TestPostselection:
         if use_jit:
             import jax
 
+            pytest.xfail(reason="'shots' cannot be a static_argname for 'jit' in JAX 0.4.28")
             circ = jax.jit(circ, static_argnames=["shots"])
 
         res = circ(shots=shots)
@@ -2195,3 +2199,49 @@ def test_broadcasted_parameter(max_workers):
     results = dev.execute(batch, config)
     processed_results = pre_processing_fn(results)
     assert qml.math.allclose(processed_results, np.cos(x))
+
+
+@pytest.mark.jax
+def test_renomalization_issue():
+    """Test that no normalization error occurs with the following workflow in float32 mode.
+    Just tests executes without error.  Not producing a more minimal example due to difficulty
+    finding an exact case that leads to renomalization issues.
+    """
+    import jax
+    from jax import numpy as jnp
+
+    initial_mode = jax.config.jax_enable_x64
+    jax.config.update("jax_enable_x64", False)
+
+    def gaussian_fn(p, t):
+        return p[0] * jnp.exp(-((t - p[1]) ** 2) / (2 * p[2] ** 2))
+
+    global_drive = qml.pulse.rydberg_drive(
+        amplitude=gaussian_fn, phase=0, detuning=0, wires=[0, 1, 2]
+    )
+
+    a = 5
+
+    coordinates = [(0, 0), (a, 0), (a / 2, np.sqrt(a**2 - (a / 2) ** 2))]
+
+    settings = {"interaction_coeff": 862619.7915580727}
+
+    H_interaction = qml.pulse.rydberg_interaction(coordinates, **settings)
+
+    max_amplitude = 2.0
+    displacement = 1.0
+    sigma = 0.3
+
+    amplitude_params = [max_amplitude, displacement, sigma]
+
+    params = [amplitude_params]
+    ts = [0.0, 1.75]
+
+    def circuit(params):
+        qml.evolve(H_interaction + global_drive)(params, ts)
+        return qml.counts()
+
+    circuit_qml = qml.QNode(circuit, qml.device("default.qubit", shots=1000), interface="jax")
+
+    circuit_qml(params)
+    jax.config.update("jax_enable_x64", initial_mode)

@@ -35,9 +35,9 @@ from pennylane.ops.op_math.pow import PowObs, PowOperation, PowOpObs
 
 _INSTANCES_TO_TEST = [
     qml.sum(qml.PauliX(0), qml.PauliZ(0)),
+    qml.sum(qml.X(0), qml.X(0), qml.Z(0), qml.Z(0)),
     qml.BasisState([1], wires=[0]),
     qml.ControlledQubitUnitary(np.eye(2), control_wires=1, wires=0),
-    qml.QubitStateVector([0, 1], wires=0),
     qml.QubitChannel([np.array([[1, 0], [0, 0.8]]), np.array([[0, 0.6], [0, 0]])], wires=0),
     qml.MultiControlledX(wires=[0, 1]),
     qml.Projector([1], 0),  # the state-vector version is already tested
@@ -61,6 +61,8 @@ _INSTANCES_TO_TEST = [
     qml.QutritBasisState([1, 2, 0], wires=[0, 1, 2]),
     qml.resource.FirstQuantization(1, 2, 1),
     qml.prod(qml.RX(1.1, 0), qml.RY(2.2, 0), qml.RZ(3.3, 1)),
+    qml.Snapshot(measurement=qml.expval(qml.Z(0)), tag="hi"),
+    qml.Snapshot(tag="tag"),
 ]
 """Valid operator instances that could not be auto-generated."""
 
@@ -76,7 +78,7 @@ _INSTANCES_TO_FAIL = [
     ),
     (
         qml.THermitian(np.eye(3), wires=0),
-        AssertionError,  # qutrit ops fail validation
+        (AssertionError, ValueError),  # qutrit ops fail validation
     ),
     (
         qml.ops.qubit.special_unitary.TmpPauliRot(1.1, "X", [0]),
@@ -134,6 +136,7 @@ _ABSTRACT_OR_META_TYPES = {
     PowOpObs,
     PowOperation,
     PowObs,
+    qml.QubitStateVector,
 }
 """Types that should not have actual instances created."""
 

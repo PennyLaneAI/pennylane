@@ -18,7 +18,7 @@ Contains the drawing function.
 """
 import warnings
 from functools import wraps
-from importlib.metadata import distribution
+from typing import Literal, Union
 
 import pennylane as qml
 
@@ -27,12 +27,8 @@ from .tape_text import tape_text
 
 
 def catalyst_qjit(qnode):
-    """The ``catalyst.while`` wrapper method"""
-    try:
-        distribution("pennylane_catalyst")
-        return qnode.__class__.__name__ == "QJIT"
-    except ImportError:
-        return False
+    """A method checking whether a qnode is compiled by catalyst.qjit"""
+    return qnode.__class__.__name__ == "QJIT" and hasattr(qnode, "user_function")
 
 
 def draw(
@@ -42,9 +38,9 @@ def draw(
     decimals=2,
     max_length=100,
     show_matrices=True,
-    expansion_strategy=None,
+    level: Union[None, Literal["top", "user", "device", "gradient"], int, slice] = "gradient",
 ):
-    """Create a function that draws the given qnode or quantum function.
+    r"""Create a function that draws the given qnode or quantum function.
 
     Args:
         qnode (.QNode or Callable): the input QNode or quantum function that is to be drawn.
@@ -56,16 +52,9 @@ def draw(
             ``None`` will omit parameters from operation labels.
         max_length (int): Maximum string width (columns) when printing the circuit
         show_matrices=False (bool): show matrix valued parameters below all circuit diagrams
-        expansion_strategy (str): The strategy to use when circuit expansions or decompositions
-            are required. Note that this is ignored if the input is not a QNode.
-
-            - ``gradient``: The QNode will attempt to decompose
-              the internal circuit such that all circuit operations are supported by the gradient
-              method.
-
-            - ``device``: The QNode will attempt to decompose the internal circuit
-              such that all circuit operations are natively supported by the device.
-
+        level (None, str, int, slice): An indication of what transforms to apply before drawing.
+            Check :func:`~.workflow.get_transform_program` for more information on the allowed values and usage details of
+            this argument.
 
     Returns:
         A function that has the same argument signature as ``qnode``. When called,
@@ -90,124 +79,168 @@ def draw(
     .. details::
         :title: Usage Details
 
+        By specifying the ``decimals`` keyword, parameters are displayed to the specified precision.
 
-    By specifying the ``decimals`` keyword, parameters are displayed to the specified precision.
+        >>> print(qml.draw(circuit, decimals=4)(a=2.3, w=[1.2, 3.2, 0.7]))
+        0: ──H─╭●─────────────────────────────────────────────────╭●───────────┤ ╭<Z@Z>
+        1: ────╰RX(2.3000)──Rot(1.2000,3.2000,0.7000,"arbitrary")─╰RX(-2.3000)─┤ ╰<Z@Z>
 
-    >>> print(qml.draw(circuit, decimals=4)(a=2.3, w=[1.2, 3.2, 0.7]))
-    0: ──H─╭●─────────────────────────────────────────────────╭●───────────┤ ╭<Z@Z>
-    1: ────╰RX(2.3000)──Rot(1.2000,3.2000,0.7000,"arbitrary")─╰RX(-2.3000)─┤ ╰<Z@Z>
+        Parameters can be omitted by requesting ``decimals=None``:
 
-    Parameters can be omitted by requesting ``decimals=None``:
+        >>> print(qml.draw(circuit, decimals=None)(a=2.3, w=[1.2, 3.2, 0.7]))
+        0: ──H─╭●────────────────────╭●──┤ ╭<Z@Z>
+        1: ────╰RX──Rot("arbitrary")─╰RX─┤ ╰<Z@Z>
 
-    >>> print(qml.draw(circuit, decimals=None)(a=2.3, w=[1.2, 3.2, 0.7]))
-    0: ──H─╭●────────────────────╭●──┤ ╭<Z@Z>
-    1: ────╰RX──Rot("arbitrary")─╰RX─┤ ╰<Z@Z>
+        If the parameters are not acted upon by classical processing like ``-a``, then
+        ``qml.draw`` can handle string-valued parameters as well:
 
-    If the parameters are not acted upon by classical processing like ``-a``, then
-    ``qml.draw`` can handle string-valued parameters as well:
+        >>> @qml.qnode(qml.device('lightning.qubit', wires=1))
+        ... def circuit2(x):
+        ...     qml.RX(x, wires=0)
+        ...     return qml.expval(qml.Z(0))
+        >>> print(qml.draw(circuit2)("x"))
+        0: ──RX(x)─┤  <Z>
 
-    >>> @qml.qnode(qml.device('lightning.qubit', wires=1))
-    ... def circuit2(x):
-    ...     qml.RX(x, wires=0)
-    ...     return qml.expval(qml.Z(0))
-    >>> print(qml.draw(circuit2)("x"))
-    0: ──RX(x)─┤  <Z>
+        When requested with ``show_matrices=True`` (the default), matrix valued parameters
+        are printed below the circuit. For ``show_matrices=False``, they are not printed:
 
-    When requested with ``show_matrices=True`` (the default), matrix valued parameters
-    are printed below the circuit. For ``show_matrices=False``, they are not printed:
+        >>> @qml.qnode(qml.device('default.qubit', wires=2))
+        ... def circuit3():
+        ...     qml.QubitUnitary(np.eye(2), wires=0)
+        ...     qml.QubitUnitary(-np.eye(4), wires=(0,1))
+        ...     return qml.expval(qml.Hermitian(np.eye(2), wires=1))
+        >>> print(qml.draw(circuit3)())
+        0: ──U(M0)─╭U(M1)─┤
+        1: ────────╰U(M1)─┤  <𝓗(M0)>
+        M0 =
+        [[1. 0.]
+        [0. 1.]]
+        M1 =
+        [[-1. -0. -0. -0.]
+        [-0. -1. -0. -0.]
+        [-0. -0. -1. -0.]
+        [-0. -0. -0. -1.]]
+        >>> print(qml.draw(circuit3, show_matrices=False)())
+        0: ──U(M0)─╭U(M1)─┤
+        1: ────────╰U(M1)─┤  <𝓗(M0)>
 
-    >>> @qml.qnode(qml.device('default.qubit', wires=2))
-    ... def circuit3():
-    ...     qml.QubitUnitary(np.eye(2), wires=0)
-    ...     qml.QubitUnitary(-np.eye(4), wires=(0,1))
-    ...     return qml.expval(qml.Hermitian(np.eye(2), wires=1))
-    >>> print(qml.draw(circuit3)())
-    0: ──U(M0)─╭U(M1)─┤
-    1: ────────╰U(M1)─┤  <𝓗(M0)>
-    M0 =
-    [[1. 0.]
-    [0. 1.]]
-    M1 =
-    [[-1. -0. -0. -0.]
-    [-0. -1. -0. -0.]
-    [-0. -0. -1. -0.]
-    [-0. -0. -0. -1.]]
-    >>> print(qml.draw(circuit3, show_matrices=False)())
-    0: ──U(M0)─╭U(M1)─┤
-    1: ────────╰U(M1)─┤  <𝓗(M0)>
+        The ``max_length`` keyword warps long circuits:
 
-    The ``max_length`` keyword warps long circuits:
+        .. code-block:: python
 
-    .. code-block:: python
+            rng = np.random.default_rng(seed=42)
+            shape = qml.StronglyEntanglingLayers.shape(n_wires=3, n_layers=3)
+            params = rng.random(shape)
 
-        rng = np.random.default_rng(seed=42)
-        shape = qml.StronglyEntanglingLayers.shape(n_wires=3, n_layers=3)
-        params = rng.random(shape)
+            @qml.qnode(qml.device('lightning.qubit', wires=3))
+            def longer_circuit(params):
+                qml.StronglyEntanglingLayers(params, wires=range(3))
+                return [qml.expval(qml.Z(i)) for i in range(3)]
 
-        @qml.qnode(qml.device('lightning.qubit', wires=3))
-        def longer_circuit(params):
-            qml.StronglyEntanglingLayers(params, wires=range(3))
-            return [qml.expval(qml.Z(i)) for i in range(3)]
-
-        print(qml.draw(longer_circuit, max_length=60)(params))
-
-    .. code-block:: none
-
+        >>> print(qml.draw(longer_circuit, max_length=60, level="device")(params))
         0: ──Rot(0.77,0.44,0.86)─╭●────╭X──Rot(0.45,0.37,0.93)─╭●─╭X
         1: ──Rot(0.70,0.09,0.98)─╰X─╭●─│───Rot(0.64,0.82,0.44)─│──╰●
         2: ──Rot(0.76,0.79,0.13)────╰X─╰●──Rot(0.23,0.55,0.06)─╰X───
-
         ───Rot(0.83,0.63,0.76)──────────────────────╭●────╭X─┤  <Z>
         ──╭X────────────────────Rot(0.35,0.97,0.89)─╰X─╭●─│──┤  <Z>
         ──╰●────────────────────Rot(0.78,0.19,0.47)────╰X─╰●─┤  <Z>
 
-    The ``wire_order`` keyword specifies the order of the wires from
-    top to bottom:
+        The ``wire_order`` keyword specifies the order of the wires from
+        top to bottom:
 
-    >>> print(qml.draw(circuit, wire_order=[1,0])(a=2.3, w=[1.2, 3.2, 0.7]))
-    1: ────╭RX(2.30)──Rot(1.20,3.20,0.70)─╭RX(-2.30)─┤ ╭<Z@Z>
-    0: ──H─╰●─────────────────────────────╰●─────────┤ ╰<Z@Z>
+        >>> print(qml.draw(circuit, wire_order=[1,0])(a=2.3, w=[1.2, 3.2, 0.7]))
+        1: ────╭RX(2.30)──Rot(1.20,3.20,0.70,"arbitrary")─╭RX(-2.30)─┤ ╭<Z@Z>
+        0: ──H─╰●─────────────────────────────────────────╰●─────────┤ ╰<Z@Z>
 
-    If the device or ``wire_order`` has wires not used by operations, those wires are omitted
-    unless requested with ``show_all_wires=True``
+        If the device or ``wire_order`` has wires not used by operations, those wires are omitted
+        unless requested with ``show_all_wires=True``
 
-    >>> empty_qfunc = lambda : qml.expval(qml.Z(0))
-    >>> empty_circuit = qml.QNode(empty_qfunc, qml.device('lightning.qubit', wires=3))
-    >>> print(qml.draw(empty_circuit, show_all_wires=True)())
-    0: ───┤  <Z>
-    1: ───┤
-    2: ───┤
+        >>> empty_qfunc = lambda : qml.expval(qml.Z(0))
+        >>> empty_circuit = qml.QNode(empty_qfunc, qml.device('lightning.qubit', wires=3))
+        >>> print(qml.draw(empty_circuit, show_all_wires=True)())
+        0: ───┤  <Z>
+        1: ───┤
+        2: ───┤
 
-    Drawing also works on batch transformed circuits:
+        Drawing also works on batch transformed circuits:
 
-    .. code-block:: python
+        .. code-block:: python
 
-        from functools import partial
+            from functools import partial
+            from pennylane import numpy as pnp
 
-        @partial(qml.gradients.param_shift, shifts=[(0.1,)])
-        @qml.qnode(qml.device('default.qubit', wires=1))
-        def transformed_circuit(x):
-            qml.RX(x, wires=0)
-            return qml.expval(qml.Z(0))
+            @partial(qml.gradients.param_shift, shifts=[(0.1,)])
+            @qml.qnode(qml.device('default.qubit', wires=1))
+            def transformed_circuit(x):
+                qml.RX(x, wires=0)
+                return qml.expval(qml.Z(0))
 
-        print(qml.draw(transformed_circuit)(np.array(1.0, requires_grad=True)))
-
-    .. code-block:: none
-
+        >>> print(qml.draw(transformed_circuit)(pnp.array(1.0, requires_grad=True)))
         0: ──RX(1.10)─┤  <Z>
-
         0: ──RX(0.90)─┤  <Z>
 
-    The function also accepts quantum functions rather than QNodes. This can be especially
-    helpful if you want to visualize only a part of a circuit that may not be convertible into
-    a QNode, such as a sub-function that does not return any measurements.
+        The function also accepts quantum functions rather than QNodes. This can be especially
+        helpful if you want to visualize only a part of a circuit that may not be convertible into
+        a QNode, such as a sub-function that does not return any measurements.
 
-    >>> def qfunc(x):
-    ...     qml.RX(x, wires=[0])
-    ...     qml.CNOT(wires=[0, 1])
-    >>> print(qml.draw(qfunc)(1.1))
-    0: ──RX(1.10)─╭●─┤
-    1: ───────────╰X─┤
+        >>> def qfunc(x):
+        ...     qml.RX(x, wires=[0])
+        ...     qml.CNOT(wires=[0, 1])
+        >>> print(qml.draw(qfunc)(1.1))
+        0: ──RX(1.10)─╭●─┤
+        1: ───────────╰X─┤
+
+        **Levels:**
+
+        The ``level`` keyword argument allows one to select a subset of the transforms to apply on the ``QNode``
+        before carrying out any drawing. Take, for example, this circuit:
+
+        .. code-block:: python
+
+            @qml.transforms.merge_rotations
+            @qml.transforms.cancel_inverses
+            @qml.qnode(qml.device("default.qubit"), diff_method="parameter-shift")
+            def circ(weights, order):
+                qml.RandomLayers(weights, wires=(0, 1))
+                qml.Permute(order, wires=(0, 1, 2))
+                qml.PauliX(0)
+                qml.PauliX(0)
+                qml.RX(0.1, wires=0)
+                qml.RX(-0.1, wires=0)
+                return qml.expval(qml.PauliX(0))
+
+            order = [2, 1, 0]
+            weights = qml.numpy.array([[1.0, 20]])
+
+        One can print the circuit without any transforms applied by passing ``level="top"`` or ``level=0``:
+
+        >>> print(qml.draw(circ, level="top")(weights, order))
+        0: ─╭RandomLayers(M0)─╭Permute──X──X──RX(0.10)──RX(-0.10)─┤  <X>
+        1: ─╰RandomLayers(M0)─├Permute────────────────────────────┤
+        2: ───────────────────╰Permute────────────────────────────┤
+        M0 =
+        [[ 1. 20.]]
+
+        Or print the circuit after applying the transforms manually applied on the QNode (``merge_rotations`` and ``cancel_inverses``):
+
+        >>> print(qml.draw(circ, level="user", show_matrices=False)(weights, order))
+        0: ─╭RandomLayers(M0)─╭Permute─┤  <X>
+        1: ─╰RandomLayers(M0)─├Permute─┤
+        2: ───────────────────╰Permute─┤
+
+        To apply all of the transforms, including those carried out by the differentiation method and the device, use ``level=None``:
+
+        >>> print(qml.draw(circ, level=None, show_matrices=False)(weights, order))
+        0: ──RY(1.00)──╭SWAP─┤  <X>
+        1: ──RX(20.00)─│─────┤
+        2: ────────────╰SWAP─┤
+
+        Slices can also be passed to the ``level`` argument. So one can, for example, request that only the ``merge_rotations`` transform is applied:
+
+        >>> print(qml.draw(circ, level=slice(1, 2), show_matrices=False)(weights, order))
+        0: ─╭RandomLayers(M0)─╭Permute──X──X─┤  <X>
+        1: ─╰RandomLayers(M0)─├Permute───────┤
+        2: ───────────────────╰Permute───────┤
 
     """
     if catalyst_qjit(qnode):
@@ -221,12 +254,12 @@ def draw(
             decimals=decimals,
             max_length=max_length,
             show_matrices=show_matrices,
-            expansion_strategy=expansion_strategy,
+            level=level,
         )
 
-    if expansion_strategy is not None:
+    if level not in {"gradient", 0, "top"}:  # default and no transform options
         warnings.warn(
-            "When the input to qml.draw is not a QNode, the expansion_strategy argument is ignored.",
+            "When the input to qml.draw is not a QNode, the level argument is ignored.",
             UserWarning,
         )
 
@@ -261,27 +294,11 @@ def _draw_qnode(
     decimals=2,
     max_length=100,
     show_matrices=True,
-    expansion_strategy=None,
+    level: Union[None, Literal["top", "user", "device", "gradient"], int, slice] = "gradient",
 ):
     @wraps(qnode)
     def wrapper(*args, **kwargs):
-        if isinstance(qnode.device, qml.devices.Device) and (
-            expansion_strategy == "device" or getattr(qnode, "expansion_strategy", None) == "device"
-        ):
-            qnode.construct(args, kwargs)
-            tapes = qnode.transform_program([qnode.tape])[0]
-            program, _ = qnode.device.preprocess()
-            tapes = program(tapes)[0]
-        else:
-            original_expansion_strategy = getattr(qnode, "expansion_strategy", None)
-            try:
-                qnode.expansion_strategy = expansion_strategy or original_expansion_strategy
-                tapes = qnode.construct(args, kwargs)
-                program = qnode.transform_program
-                tapes = program([qnode.tape])[0]
-
-            finally:
-                qnode.expansion_strategy = original_expansion_strategy
+        tapes, _ = qml.workflow.construct_batch(qnode, level=level)(*args, **kwargs)
 
         if wire_order:
             _wire_order = wire_order
@@ -310,6 +327,8 @@ def _draw_qnode(
             if show_matrices and cache["matrices"]:
                 mat_str = ""
                 for i, mat in enumerate(cache["matrices"]):
+                    if qml.math.requires_grad(mat) and hasattr(mat, "detach"):
+                        mat = mat.detach()
                     mat_str += f"\nM{i} = \n{mat}"
                 if mat_str:
                     mat_str = "\n" + mat_str
@@ -333,18 +352,16 @@ def draw_mpl(
     wire_order=None,
     show_all_wires=False,
     decimals=None,
-    expansion_strategy=None,
     style=None,
     *,
     fig=None,
+    level: Union[None, Literal["top", "user", "device", "gradient"], int, slice] = "gradient",
     **kwargs,
 ):
-    """Draw a qnode with matplotlib
+    r"""Draw a qnode with matplotlib
 
     Args:
         qnode (.QNode or Callable): the input QNode/quantum function that is to be drawn.
-
-    Keyword Args:
         wire_order (Sequence[Any]): the order (from top to bottom) to print the wires of the circuit.
            If not provided, the wire order defaults to the device wires. If device wires are not
            available, the circuit wires are sorted if possible.
@@ -356,6 +373,9 @@ def draw_mpl(
             If no style is specified, the global style set with :func:`~.use_style` will be used, and the
             initial default is 'black_white'. If you would like to use your environment's current rcParams,
             set ``style`` to "rcParams". Setting style does not modify matplotlib global plotting settings.
+
+    Keyword Args:
+        fig (None or matplotlib.Figure): Matplotlib figure to plot onto. If None, then create a new figure
         fontsize (float or str): fontsize for text. Valid strings are
             ``{'xx-small', 'x-small', 'small', 'medium', large', 'x-large', 'xx-large'}``.
             Default is ``14``.
@@ -363,21 +383,19 @@ def draw_mpl(
         label_options (dict): matplotlib formatting options for the wire labels
         active_wire_notches (bool): whether or not to add notches indicating active wires.
             Defaults to ``True``.
-        expansion_strategy (str): The strategy to use when circuit expansions or decompositions
-            are required.
-
-            - ``gradient``: The QNode will attempt to decompose
-              the internal circuit such that all circuit operations are supported by the gradient
-              method.
-
-            - ``device``: The QNode will attempt to decompose the internal circuit
-              such that all circuit operations are natively supported by the device.
-        fig (None or matplotlib.Figure): Matplotlib figure to plot onto. If None, then create a new figure
+        level (None, str, int, slice): An indication of what transforms to apply before drawing.
+            Check :func:`~.workflow.get_transform_program` for more information on the allowed values and usage details of
+            this argument.
 
     Returns:
         A function that has the same argument signature as ``qnode``. When called,
         the function will draw the QNode as a tuple of (``matplotlib.figure.Figure``,
         ``matplotlib.axes._axes.Axes``)
+
+    .. warning::
+
+        Unlike :func:`~.draw`, this function can not draw the full result of a tape-splitting transform. In such cases,
+        only the tape generated first will be plotted.
 
     **Example**:
 
@@ -543,24 +561,94 @@ def draw_mpl(
                 :width: 60%
                 :target: javascript:void(0);
 
+        **Levels:**
+
+        The ``level`` keyword argument allows one to select a subset of the transforms to apply on the ``QNode``
+        before carrying out any drawing. Take, for example, this circuit:
+
+        .. code-block:: python
+
+            @qml.transforms.merge_rotations
+            @qml.transforms.cancel_inverses
+            @qml.qnode(qml.device("default.qubit"), diff_method="parameter-shift")
+            def circ():
+                qml.RandomLayers([[1.0, 20]], wires=(0, 1))
+                qml.Permute([2, 1, 0], wires=(0, 1, 2))
+                qml.PauliX(0)
+                qml.PauliX(0)
+                qml.RX(0.1, wires=0)
+                qml.RX(-0.1, wires=0)
+                return qml.expval(qml.PauliX(0))
+
+        One can plot the circuit without any transforms applied by passing ``level="top"`` or ``level=0``:
+
+        .. code-block:: python
+
+            fig, ax = qml.draw_mpl(circ, level="top")()
+            fig.show()
+
+        .. figure:: ../../_static/draw_mpl/level_top.png
+            :align: center
+            :width: 60%
+            :target: javascript:void(0);
+
+        Or plot the circuit after applying the transforms manually applied on the QNode (``merge_rotations`` and ``cancel_inverses``):
+
+        .. code-block:: python
+
+            fig, ax = qml.draw_mpl(circ, level="user")()
+            fig.show()
+
+        .. figure:: ../../_static/draw_mpl/level_user.png
+            :align: center
+            :width: 60%
+            :target: javascript:void(0);
+
+        To apply all of the transforms, including those carried out by the differentiation method and the device, use ``level=None``:
+
+        .. code-block:: python
+
+            fig, ax = qml.draw_mpl(circ, level=None)()
+            fig.show()
+
+        .. figure:: ../../_static/draw_mpl/level_none.png
+            :align: center
+            :width: 60%
+            :target: javascript:void(0);
+
+        Slices can also be passed to the ``level`` argument. So one can, for example, request that only the ``merge_rotations`` transform is applied:
+
+        .. code-block:: python
+
+            fig, ax = qml.draw_mpl(circ, level=slice(1, 2))()
+            fig.show()
+
+        .. figure:: ../../_static/draw_mpl/level_slice.png
+            :align: center
+            :width: 60%
+            :target: javascript:void(0);
+
+
     """
     if catalyst_qjit(qnode):
         qnode = qnode.user_function
+
     if hasattr(qnode, "construct"):
+
         return _draw_mpl_qnode(
             qnode,
             wire_order=wire_order,
             show_all_wires=show_all_wires,
             decimals=decimals,
-            expansion_strategy=expansion_strategy,
+            level=level,
             style=style,
             fig=fig,
             **kwargs,
         )
 
-    if expansion_strategy is not None:
+    if level not in {"gradient", 0, "top"}:  # default and no transform options
         warnings.warn(
-            "When the input to qml.draw is not a QNode, the expansion_strategy argument is ignored.",
+            "When the input to qml.draw is not a QNode, the level argument is ignored.",
             UserWarning,
         )
 
@@ -582,6 +670,7 @@ def draw_mpl(
             decimals=decimals,
             style=style,
             fig=fig,
+            level=level,
             **kwargs,
         )
 
@@ -593,7 +682,7 @@ def _draw_mpl_qnode(
     wire_order=None,
     show_all_wires=False,
     decimals=None,
-    expansion_strategy=None,
+    level="gradient",
     style="black_white",
     *,
     fig=None,
@@ -601,22 +690,14 @@ def _draw_mpl_qnode(
 ):
     @wraps(qnode)
     def wrapper(*args, **kwargs_qnode):
-        if expansion_strategy == "device" and isinstance(qnode.device, qml.devices.Device):
-            qnode.construct(args, kwargs)
-            tapes, _ = qnode.transform_program([qnode.tape])
-            program, _ = qnode.device.preprocess()
-            tapes, _ = program(tapes)
-            tape = tapes[0]
-        else:
-            original_expansion_strategy = getattr(qnode, "expansion_strategy", None)
+        tapes, _ = qml.workflow.construct_batch(qnode, level=level)(*args, **kwargs_qnode)
 
-            try:
-                qnode.expansion_strategy = expansion_strategy or original_expansion_strategy
-                qnode.construct(args, kwargs_qnode)
-                program = qnode.transform_program
-                [tape], _ = program([qnode.tape])
-            finally:
-                qnode.expansion_strategy = original_expansion_strategy
+        if len(tapes) > 1:
+            warnings.warn(
+                "Multiple tapes constructed, but only displaying the first one.", UserWarning
+            )
+
+        tape = tapes[0]
 
         if wire_order:
             _wire_order = wire_order

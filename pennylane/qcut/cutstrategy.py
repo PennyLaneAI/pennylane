@@ -16,14 +16,16 @@ Class CutStrategy, for executing (large) circuits on available (comparably small
 """
 
 import warnings
-from collections.abc import Sequence as SequenceType
+from collections.abc import Sequence
 from dataclasses import InitVar, dataclass
-from typing import Any, ClassVar, Dict, List, Sequence, Union
+from typing import Any, ClassVar, Union
 
 from networkx import MultiDiGraph
 
 import pennylane as qml
 from pennylane.ops.meta import WireCut
+
+SupportedDeviceAPIs = Union["qml.devices.LegacyDevice", "qml.devices.Device"]
 
 
 @dataclass()
@@ -39,7 +41,7 @@ class CutStrategy:
         check out the :func:`qml.cut_circuit() <pennylane.cut_circuit>` transform for more details.
 
     Args:
-        devices (Union[qml.Device, Sequence[qml.Device]]): Single, or Sequence of, device(s).
+        devices (Union[qml.devices.Device, Sequence[qml.devices.Device]]): Single, or Sequence of, device(s).
             Optional only when ``max_free_wires`` is provided.
         max_free_wires (int): Number of wires for the largest available device. Optional only when
             ``devices`` is provided where it defaults to the maximum number of wires among
@@ -82,7 +84,7 @@ class CutStrategy:
     # pylint: disable=too-many-arguments, too-many-instance-attributes
 
     #: Initialization argument only, used to derive ``max_free_wires`` and ``min_free_wires``.
-    devices: InitVar[Union[qml.Device, Sequence[qml.Device]]] = None
+    devices: InitVar[Union[SupportedDeviceAPIs, Sequence[SupportedDeviceAPIs]]] = None
 
     #: Number of wires for the largest available device.
     max_free_wires: int = None
@@ -129,7 +131,7 @@ class CutStrategy:
             devices = (devices,)
 
         if devices is not None:
-            if not isinstance(devices, SequenceType) or any(
+            if not isinstance(devices, Sequence) or any(
                 (not isinstance(d, (qml.devices.LegacyDevice, qml.devices.Device)) for d in devices)
             ):
                 raise ValueError(
@@ -158,7 +160,7 @@ class CutStrategy:
         max_wires_by_fragment: Sequence[int] = None,
         max_gates_by_fragment: Sequence[int] = None,
         exhaustive: bool = True,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Derive the complete set of arguments, based on a given circuit, for passing to a graph
         partitioner.
 
@@ -284,7 +286,7 @@ class CutStrategy:
         max_wires_by_fragment=None,
         max_gates_by_fragment=None,
         exhaustive=True,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
         Helper function for deriving the minimal set of best default partitioning constraints
         for the graph partitioner.
@@ -364,7 +366,7 @@ class CutStrategy:
             ks = list(range(k_lower, k_upper + 1))
 
             if len(ks) > self.HIGH_PARTITION_ATTEMPTS:
-                warnings.warn(f"The numer of partition attempts seems high ({len(ks)}).")
+                warnings.warn(f"The number of partition attempts seems high ({len(ks)}).")
         else:
             # When the by-fragment wire and/or gate limits are supplied, derive k and imbalance and
             # return a single partition config.

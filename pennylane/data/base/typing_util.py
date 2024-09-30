@@ -18,12 +18,9 @@ from enum import Enum
 from functools import lru_cache
 from typing import (
     Any,
-    Dict,
     ForwardRef,
-    List,
     Literal,
     Optional,
-    Tuple,
     Type,
     TypeVar,
     Union,
@@ -32,7 +29,7 @@ from typing import (
     get_origin,
 )
 
-JSON = Union[str, int, bool, float, None, Dict[str, Any], List[Any]]
+JSON = Union[str, int, bool, float, None, dict[str, Any], list[Any]]
 
 # Generic type variable
 T = TypeVar("T")
@@ -123,7 +120,7 @@ def get_type_str(cls: Union[type, str, None]) -> str:  # pylint: disable=too-man
     return f"{cls.__module__}.{cls.__qualname__}"
 
 
-def resolve_special_type(type_: Any) -> Optional[Tuple[type, List[type]]]:
+def resolve_special_type(type_: Any) -> Optional[tuple[type, list[type]]]:
     """Converts special typing forms (Union[...], Optional[...]), and parametrized
     generics (List[...], Dict[...]) into a 2-tuple of its base type and arguments.
     If ``type_`` is a regular type, or an object, this function will return

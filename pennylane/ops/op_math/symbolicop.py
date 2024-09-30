@@ -28,7 +28,7 @@ class SymbolicOp(Operator):
     """Developer-facing base class for single-operator symbolic operators.
 
     Args:
-        base (~.operation.Operator): the base operation that is modified symbolicly
+        base (~.operation.Operator): the base operation that is modified symbolically
         id (str): custom label given to an operator instance,
             can be useful for some applications where the instance has to be identified
 
@@ -46,6 +46,11 @@ class SymbolicOp(Operator):
     """
 
     _name = "Symbolic"
+
+    @classmethod
+    def _primitive_bind_call(cls, *args, **kwargs):
+        # has no wires, so doesn't need any wires processing
+        return cls._primitive.bind(*args, **kwargs)
 
     # pylint: disable=attribute-defined-outside-init
     def __copy__(self):
@@ -67,7 +72,6 @@ class SymbolicOp(Operator):
     def __init__(self, base, id=None):
         self.hyperparameters["base"] = base
         self._id = id
-        self.queue_idx = None
         self._pauli_rep = None
         self.queue()
 
@@ -151,7 +155,7 @@ class ScalarSymbolicOp(SymbolicOp):
     scalar coefficient.
 
     Args:
-        base (~.operation.Operator): the base operation that is modified symbolicly
+        base (~.operation.Operator): the base operation that is modified symbolically
         scalar (float): the scalar coefficient
         id (str): custom label given to an operator instance, can be useful for some applications
             where the instance has to be identified

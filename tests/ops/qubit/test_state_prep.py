@@ -26,7 +26,7 @@ densitymat0 = np.array([[1.0, 0.0], [0.0, 0.0]])
 @pytest.mark.parametrize(
     "op",
     [
-        qml.BasisState(np.array([0, 1]), wires=0),
+        qml.BasisState(np.array([0, 1]), wires=[0, 1]),
         qml.StatePrep(np.array([1.0, 0.0]), wires=0),
         qml.QubitDensityMatrix(densitymat0, wires=0),
     ],
@@ -34,6 +34,12 @@ densitymat0 = np.array([[1.0, 0.0], [0.0, 0.0]])
 def test_adjoint_error_exception(op):
     with pytest.raises(qml.operation.AdjointUndefinedError):
         op.adjoint()
+
+
+def test_QubitStateVector_is_deprecated():
+    """Test that QubitStateVector is deprecated."""
+    with pytest.warns(qml.PennyLaneDeprecationWarning, match="QubitStateVector is deprecated"):
+        _ = qml.QubitStateVector([1, 0, 0, 0], wires=[0, 1])
 
 
 @pytest.mark.parametrize(
@@ -66,8 +72,8 @@ class TestDecomposition:
         ops2 = qml.BasisState(n, wires=wires).decomposition()
 
         assert len(ops1) == len(ops2) == 1
-        assert isinstance(ops1[0], qml.BasisStatePreparation)
-        assert isinstance(ops2[0], qml.BasisStatePreparation)
+        assert isinstance(ops1[0], qml.X)
+        assert isinstance(ops2[0], qml.X)
 
     def test_StatePrep_decomposition(self):
         """Test the decomposition for StatePrep."""
@@ -81,6 +87,46 @@ class TestDecomposition:
         assert len(ops1) == len(ops2) == 1
         assert isinstance(ops1[0], qml.MottonenStatePreparation)
         assert isinstance(ops2[0], qml.MottonenStatePreparation)
+
+    @pytest.mark.parametrize(
+        "state, pad_with, expected",
+        [
+            (np.array([1, 0]), 0, np.array([1, 0, 0, 0])),
+            (np.array([1j, 1]) / np.sqrt(2), 0, np.array([1j, 1, 0, 0]) / np.sqrt(2)),
+            (np.array([1, 1]) / 2, 0.5, np.array([1, 1, 1, 1]) / 2),
+            (np.array([1, 1]) / 2, 0.5j, np.array([1, 1, 1j, 1j]) / 2),
+        ],
+    )
+    def test_StatePrep_padding(self, state, pad_with, expected):
+        """Test that StatePrep pads the input state correctly."""
+
+        wires = (0, 1)
+
+        @qml.qnode(qml.device("default.qubit", wires=2))
+        def circuit():
+            qml.StatePrep(state, pad_with=pad_with, wires=wires)
+            return qml.state()
+
+        assert np.allclose(circuit(), expected)
+
+    @pytest.mark.parametrize(
+        "state",
+        [
+            (np.array([1, 1, 1, 1])),
+            (np.array([1, 1j, 1j, 1])),
+        ],
+    )
+    def test_StatePrep_normalize(self, state):
+        """Test that StatePrep normalizes the input state correctly."""
+
+        wires = (0, 1)
+
+        @qml.qnode(qml.device("default.qubit", wires=2))
+        def circuit():
+            qml.StatePrep(state, normalize=True, wires=wires)
+            return qml.state()
+
+        assert np.allclose(circuit(), state / 2)
 
     def test_StatePrep_broadcasting(self):
         """Test broadcasting for StatePrep."""
@@ -182,12 +228,13 @@ class TestStateVector:
     @pytest.mark.parametrize("vec", [[0] * 4, [1] * 4])
     def test_StatePrep_state_norm_not_one_fails(self, vec):
         """Tests that the state-vector provided must have norm equal to 1."""
-        with pytest.raises(ValueError, match="Sum of amplitudes-squared does not equal one."):
+
+        with pytest.raises(ValueError, match="The state must be a vector of norm 1"):
             _ = qml.StatePrep(vec, wires=[0, 1])
 
     def test_StatePrep_wrong_param_size_fails(self):
         """Tests that the parameter must be of shape (2**num_wires,)."""
-        with pytest.raises(ValueError, match="State vector must have shape"):
+        with pytest.raises(ValueError, match="State must be of length"):
             _ = qml.StatePrep([0, 1], wires=[0, 1])
 
     @pytest.mark.torch
@@ -351,18 +398,9 @@ class TestStateVector:
         with pytest.raises(WireError, match="wire_order must contain all BasisState wires"):
             basis_op.state_vector(wire_order=[1, 2])
 
-    def test_BasisState_explicitly_checks_0_1(self):
-        """Tests that BasisState gives a clear error if a value other than 0 or 1 is given."""
-        op = qml.BasisState([2, 1], wires=[0, 1])
-        with pytest.raises(
-            ValueError, match="BasisState parameter must consist of 0 or 1 integers."
-        ):
-            _ = op.state_vector()
-
     def test_BasisState_wrong_param_size(self):
         """Tests that the parameter must be of length num_wires."""
-        op = qml.BasisState([0], wires=[0, 1])
         with pytest.raises(
-            ValueError, match="BasisState parameter and wires must be of equal length."
+            ValueError, match=r"State must be of length 2; got length 1 \(state=\[0\]\)."
         ):
-            _ = op.state_vector()
+            _ = qml.BasisState([0], wires=[0, 1])

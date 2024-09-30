@@ -752,7 +752,7 @@ class TestHamiltonian:
         assert data[1] is H._ops
 
         new_H = qml.Hamiltonian._unflatten(*H._flatten())
-        assert qml.equal(H, new_H)
+        qml.assert_equal(H, new_H)
         assert new_H.grouping_indices == H.grouping_indices
 
     @pytest.mark.parametrize("coeffs, ops", valid_hamiltonians)
@@ -952,7 +952,7 @@ class TestHamiltonian:
                 qml.PauliY(0) @ qml.PauliZ(1) @ qml.PauliZ(2),
             ],
         )
-        assert qml.equal(out, expected)
+        qml.assert_equal(out, expected)
 
     @pytest.mark.parametrize(("H1", "H2", "H"), matmul_hamiltonians)
     def test_hamiltonian_matmul(self, H1, H2, H):
@@ -1081,7 +1081,7 @@ class TestHamiltonian:
         assert h.wires == Wires([0, 1, 2])
         assert mapped_h.wires == Wires([10, 11, 12])
         for obs1, obs2 in zip(mapped_h.ops, final_obs):
-            assert qml.equal(obs1, obs2)
+            qml.assert_equal(obs1, obs2)
         for coeff1, coeff2 in zip(mapped_h.coeffs, h.coeffs):
             assert coeff1 == coeff2
 
@@ -1094,7 +1094,7 @@ class TestHamiltonian:
         assert isinstance(ham, qml.Hamiltonian)
 
     def test_hamiltonian_pauli_rep(self):
-        """Test that the pauli rep is set for a hamiltonain that is a linear combination of paulis."""
+        """Test that the pauli rep is set for a hamiltonian that is a linear combination of paulis."""
         h = qml.Hamiltonian([1.0, 2.0], [qml.X(0) @ qml.Y(1), qml.Z(0) @ qml.Z(2)])
 
         pw1 = qml.pauli.PauliWord({0: "X", 1: "Y"})
@@ -1682,21 +1682,22 @@ class TestGrouping:
 
     def test_grouping_method_can_be_set(self):
         r"""Tests that the grouping method can be controlled by kwargs.
-        This is done by changing from default to 'rlf' and checking the result."""
+        This is done by changing from default to 'lf' and checking the result."""
+        # Create a graph with unique solution so that test does not depend on solver/implementation
         a = qml.PauliX(0)
-        b = qml.PauliX(1)
+        b = qml.PauliX(0)
         c = qml.PauliZ(0)
         obs = [a, b, c]
         coeffs = [1.0, 2.0, 3.0]
 
         # compute grouping during construction
         H2 = qml.Hamiltonian(coeffs, obs, grouping_type="qwc", method="lf")
-        assert H2.grouping_indices == ((2, 1), (0,))
+        assert set(H2.grouping_indices) == set(((0, 1), (2,)))
 
         # compute grouping separately
         H3 = qml.Hamiltonian(coeffs, obs, grouping_type=None)
         H3.compute_grouping(method="lf")
-        assert H3.grouping_indices == ((2, 1), (0,))
+        assert set(H3.grouping_indices) == set(((0, 1), (2,)))
 
 
 @pytest.mark.usefixtures("use_legacy_opmath")
@@ -1740,7 +1741,7 @@ class TestHamiltonianEvaluation:
         def circuit():
             qml.RY(0.1, wires=0)
             return qml.expval(
-                qml.Hamiltonian([1.0, 2.0], [qml.PauliX(1), qml.PauliX(1)], simplify=True)
+                qml.simplify(qml.Hamiltonian([1.0, 2.0], [qml.PauliX(1), qml.PauliX(1)]))
             )
 
         circuit()
@@ -1767,12 +1768,9 @@ class TestHamiltonianDifferentiation:
             qml.RX(param, wires=0)
             qml.RY(param, wires=0)
             return qml.expval(
-                qml.Hamiltonian(
-                    coeffs,
-                    [qml.PauliX(0), qml.PauliZ(0)],
-                    simplify=simplify,
-                    grouping_type=group,
-                )
+                qml.simplify(qml.Hamiltonian(coeffs, [qml.X(0), qml.Z(0)], grouping_type=group))
+                if simplify
+                else qml.Hamiltonian(coeffs, [qml.X(0), qml.Z(0)], grouping_type=group)
             )
 
         grad_fn = qml.grad(circuit)
@@ -1841,12 +1839,9 @@ class TestHamiltonianDifferentiation:
             qml.RX(param, wires=0)
             qml.RY(param, wires=0)
             return qml.expval(
-                qml.Hamiltonian(
-                    coeffs,
-                    [qml.PauliX(0), qml.PauliZ(0)],
-                    simplify=simplify,
-                    grouping_type=group,
-                )
+                qml.simplify(qml.Hamiltonian(coeffs, [qml.X(0), qml.Z(0)], grouping_type=group))
+                if simplify
+                else qml.ops.Hamiltonian(coeffs, [qml.X(0), qml.Z(0)], grouping_type=group)
             )
 
         grad_fn = qml.grad(circuit)
@@ -1911,12 +1906,9 @@ class TestHamiltonianDifferentiation:
             qml.RX(param, wires=0)
             qml.RY(param, wires=0)
             return qml.expval(
-                qml.Hamiltonian(
-                    coeffs,
-                    [qml.PauliX(0), qml.PauliZ(0)],
-                    simplify=simplify,
-                    grouping_type=group,
-                )
+                qml.simplify(qml.Hamiltonian(coeffs, [qml.X(0), qml.Z(0)], grouping_type=group))
+                if simplify
+                else qml.ops.Hamiltonian(coeffs, [qml.X(0), qml.Z(0)], grouping_type=group)
             )
 
         grad_fn = jax.grad(circuit)
@@ -1980,12 +1972,9 @@ class TestHamiltonianDifferentiation:
             qml.RX(param, wires=0)
             qml.RY(param, wires=0)
             return qml.expval(
-                qml.Hamiltonian(
-                    coeffs,
-                    [qml.PauliX(0), qml.PauliZ(0)],
-                    simplify=simplify,
-                    grouping_type=group,
-                )
+                qml.simplify(qml.Hamiltonian(coeffs, [qml.X(0), qml.Z(0)], grouping_type=group))
+                if simplify
+                else qml.ops.Hamiltonian(coeffs, [qml.X(0), qml.Z(0)], grouping_type=group)
             )
 
         res = circuit(coeffs, param)
@@ -2067,16 +2056,14 @@ class TestHamiltonianDifferentiation:
             qml.RX(param, wires=0)
             qml.RY(param, wires=0)
             return qml.expval(
-                qml.Hamiltonian(
-                    coeffs,
-                    [qml.PauliX(0), qml.PauliZ(0)],
-                    simplify=simplify,
-                    grouping_type=group,
-                )
+                qml.simplify(qml.Hamiltonian(coeffs, [qml.X(0), qml.Z(0)], grouping_type=group))
+                if simplify
+                else qml.ops.Hamiltonian(coeffs, [qml.X(0), qml.Z(0)], grouping_type=group)
             )
 
         with tf.GradientTape() as tape:
             res = circuit(coeffs, param)
+
         grad = tape.gradient(res, [coeffs, param])
 
         # differentiating a cost that combines circuits with

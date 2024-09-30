@@ -65,6 +65,15 @@ class TestPauliVSpace:
         assert len(vspace._pw_to_idx) == 2
         assert vspace.tol == np.finfo(vspace._M.dtype).eps * 100
 
+    def test_empty_init(self):
+        """Test that a PauliVSpace can be initialized as an empty vector space"""
+        vspace = PauliVSpace([])
+        assert vspace.basis == []
+        assert vspace._rank == 0
+        assert vspace._num_pw == 0
+        assert len(vspace._pw_to_idx) == 0
+        assert vspace.tol == np.finfo(vspace._M.dtype).eps * 100
+
     @pytest.mark.parametrize("dtype", [float, complex])
     def test_dtype(self, dtype):
         vspace = PauliVSpace(ops1, dtype=dtype)
@@ -335,7 +344,9 @@ class TestLieClosure:
             PauliSentence({PauliWord({i: "X", (i + 1) % n: "Z"}): 1.0}) for i in range(n - 1)
         ]
 
-        res = qml.pauli.lie_closure(generators, verbose=True, max_iterations=1)
+        with pytest.warns(UserWarning, match="reached the maximum number of iterations"):
+            res = qml.pauli.lie_closure(generators, verbose=True, max_iterations=1)
+
         captured = capsys.readouterr()
         assert (
             captured.out
@@ -491,6 +502,17 @@ class TestLieClosure:
 
         res = qml.pauli.lie_closure(generators)
         assert len(res) == 4 * ((2 ** (n - 2)) ** 2 - 1)
+
+    @pytest.mark.parametrize("n, res", [(3, 4), (4, 12)])
+    def test_lie_closure_heisenberg(self, n, res):
+        """Test the resulting DLA from Heisenberg model with summed generators"""
+        genXX = [X(i) @ X(i + 1) for i in range(n - 1)]
+        genYY = [Y(i) @ Y(i + 1) for i in range(n - 1)]
+        genZZ = [Z(i) @ Z(i + 1) for i in range(n - 1)]
+
+        generators = [qml.sum(XX + YY + ZZ) for XX, YY, ZZ in zip(genXX, genYY, genZZ)]
+        g = qml.lie_closure(generators)
+        assert len(g) == res
 
     def test_universal_gate_set(self):
         """Test universal gate set"""

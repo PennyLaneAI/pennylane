@@ -211,9 +211,9 @@ def parity_transform(
     >>> parity_transform(w, n=6)
     (
         -0.25j * Y(0)
-    + (-0.25+0j) * (X(0) @ Z(1))
-    + (0.25+0j) * X(0)
-    + 0.25j * (Y(0) @ Z(1))
+      + (-0.25+0j) * (X(0) @ Z(1))
+      + (0.25+0j) * X(0)
+      + 0.25j * (Y(0) @ Z(1))
     )
 
     >>> parity_transform(w, n=6, ps=True)
@@ -374,10 +374,10 @@ def bravyi_kitaev(
     >>> w = qml.fermi.from_string('0+ 1-')
     >>> bravyi_kitaev(w, n=6)
     (
-    -0.25j * Y(0)
-    + (-0.25+0j) * (X(0) @ Z(1))
-    + (0.25+0j) * X(0)
-    + 0.25j * (Y(0) @ Z(1))
+        -0.25j * Y(0)
+      + (-0.25+0j) * (X(0) @ Z(1))
+      + (0.25+0j) * X(0)
+      + 0.25j * (Y(0) @ Z(1))
     )
 
     >>> bravyi_kitaev(w, n=6, ps=True)

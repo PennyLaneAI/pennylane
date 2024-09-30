@@ -144,6 +144,11 @@ class FirstQuantization(Operation):
             ("vectors", self.vectors),
         )
 
+    # pylint: disable=arguments-differ
+    @classmethod
+    def _primitive_bind_call(cls, n, eta, **kwargs):
+        return cls._primitive.bind(n, eta, **kwargs)
+
     @classmethod
     def _unflatten(cls, data, metadata):
         return cls(*data, **dict(metadata))

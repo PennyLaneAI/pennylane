@@ -87,7 +87,6 @@ class TestConstruction:
         assert tape.observables == obs
         assert tape.output_dim == 5
         assert tape.batch_size is None
-        assert tape.interface is None
 
         assert tape.wires == qml.wires.Wires([0, "a", 4])
         assert tape._output_dim == len(obs[0].wires) + 2 ** len(obs[1].wires)
@@ -99,7 +98,7 @@ class TestConstruction:
         # test that the internal tape.measurements list is created properly
         assert isinstance(tape.measurements[0], MeasurementProcess)
         assert tape.measurements[0].return_type == qml.measurements.Expectation
-        assert qml.equal(tape.measurements[0].obs, obs[0])
+        qml.assert_equal(tape.measurements[0].obs, obs[0])
 
         assert isinstance(tape.measurements[1], MeasurementProcess)
         assert tape.measurements[1].return_type == qml.measurements.Probability
@@ -133,7 +132,7 @@ class TestConstruction:
     def test_tensor_observables_rmatmul(self):
         """Test that tensor observables are correctly processed from the annotated
         queue. Here, we test multiple tensor observables constructed via matmul
-        with the observable occuring on the left hand side."""
+        with the observable occurring on the left hand side."""
 
         with QuantumTape() as tape:
             op_ = qml.RX(1.0, wires=0)
@@ -252,8 +251,8 @@ class TestConstruction:
             qml.BasisState(np.array([0, 1]), wires=[0, 1])
 
         assert len(tape.operations) == 2
-        assert qml.equal(tape.operations[0], qml.PauliX(wires=0))
-        assert qml.equal(tape.operations[1], qml.BasisState(np.array([0, 1]), wires=[0, 1]))
+        qml.assert_equal(tape.operations[0], qml.PauliX(wires=0))
+        qml.assert_equal(tape.operations[1], qml.BasisState(np.array([0, 1]), wires=[0, 1]))
 
     def test_measurement_before_operation(self):
         """Test that an exception is raised if a measurement occurs before a operation"""
@@ -297,17 +296,17 @@ class TestConstruction:
         assert tape.circuit[0].return_type == qml.measurements.MidMeasure
 
         assert isinstance(tape.circuit[1], qml.ops.Conditional)
-        assert isinstance(tape.circuit[1].then_op, qml.PauliX)
-        assert tape.circuit[1].then_op.wires == target_wire
+        assert isinstance(tape.circuit[1].base, qml.PauliX)
+        assert tape.circuit[1].base.wires == target_wire
 
         assert isinstance(tape.circuit[2], qml.ops.Conditional)
-        assert isinstance(tape.circuit[2].then_op, qml.RY)
-        assert tape.circuit[2].then_op.wires == target_wire
-        assert tape.circuit[2].then_op.data == (r,)
+        assert isinstance(tape.circuit[2].base, qml.RY)
+        assert tape.circuit[2].base.wires == target_wire
+        assert tape.circuit[2].base.data == (r,)
 
         assert isinstance(tape.circuit[3], qml.ops.Conditional)
-        assert isinstance(tape.circuit[3].then_op, qml.PauliZ)
-        assert tape.circuit[3].then_op.wires == target_wire
+        assert isinstance(tape.circuit[3].base, qml.PauliZ)
+        assert tape.circuit[3].base.wires == target_wire
 
         assert tape.circuit[4] is terminal_measurement
 
@@ -720,7 +719,7 @@ class TestParameters:
 
         new_tape = tape.bind_new_parameters(new_params, [0, 1, 2, 3, 4])
 
-        for pinfo, pval in zip(new_tape._par_info, new_params):
+        for pinfo, pval in zip(new_tape.par_info, new_params):
             assert pinfo["op"].data[pinfo["p_idx"]] == pval
 
         assert new_tape.get_parameters() == new_params
@@ -735,7 +734,7 @@ class TestParameters:
         new_tape = tape.bind_new_parameters(new_params, tape.trainable_params)
 
         count = 0
-        for idx, pinfo in enumerate(new_tape._par_info):
+        for idx, pinfo in enumerate(new_tape.par_info):
             if idx in tape.trainable_params:
                 assert pinfo["op"].data[pinfo["p_idx"]] == new_params[count]
                 count += 1
@@ -778,7 +777,7 @@ class TestParameters:
         tape.trainable_params = [1, 3]
         new_tape = tape.bind_new_parameters(new_params, [0, 1, 2, 3, 4])
 
-        for pinfo, pval in zip(new_tape._par_info, new_params):
+        for pinfo, pval in zip(new_tape.par_info, new_params):
             assert pinfo["op"].data[pinfo["p_idx"]] == pval
 
         assert new_tape.get_parameters(trainable_only=False) == new_params
@@ -807,7 +806,7 @@ class TestParameters:
         assert tape.num_params == len(params)
         assert tape.get_parameters() == params
 
-        b = np.array([0, 1, 0, 0])
+        b = np.array([0.0, 1.0, 0.0, 0.0])
         new_params = [b, 0.543, 0.654, 0.123]
         new_tape = tape.bind_new_parameters(new_params, [0, 1, 2, 3])
         assert new_tape.get_parameters() == new_params
@@ -897,8 +896,7 @@ class TestExpand:
         with QuantumTape() as tape:
             qml.BasisState(np.array([1]), wires=0)
 
-        # since expansion calls `BasisStatePreparation` we have to expand twice
-        new_tape = tape.expand(depth=2)
+        new_tape = tape.expand(depth=1)
 
         assert len(new_tape.operations) == 1
         assert new_tape.operations[0].name == "PauliX"
@@ -959,7 +957,8 @@ class TestExpand:
             qml.probs(wires="a")
 
         new_tape = tape.expand()
-        assert len(new_tape.operations) == 4
+
+        assert len(new_tape.operations) == 5
         assert new_tape.shots is tape.shots
 
     def test_stopping_criterion(self):
@@ -992,7 +991,7 @@ class TestExpand:
             qml.probs(wires=0)
             qml.probs(wires="a")
 
-        new_tape = tape.expand(depth=3)
+        new_tape = tape.expand(depth=2)
         assert len(new_tape.operations) == 11
 
     @pytest.mark.parametrize("skip_first", (True, False))
@@ -1006,9 +1005,9 @@ class TestExpand:
                 qml.PauliZ(0),
             ],
             [
-                qml.BasisStatePreparation([1, 0], wires=[0, 1]),
+                qml.PauliX(0),
                 qml.MottonenStatePreparation([0, 1, 0, 0], wires=[0, 1]),
-                qml.StatePrep([0, 1, 0, 0], wires=[0, 1]),  # still a StatePrepBase :/
+                qml.MottonenStatePreparation([0, 1, 0, 0], wires=[0, 1]),
                 qml.PauliZ(0),
             ],
         ),
@@ -1035,13 +1034,12 @@ class TestExpand:
         true_decomposition += [
             qml.PauliZ(wires=0),
             qml.Rot(0.1, 0.2, 0.3, wires=0),
-            qml.BasisStatePreparation([0], wires=[1]),
             qml.MottonenStatePreparation([0, 1], wires=[0]),
         ]
 
         assert len(new_tape.operations) == len(true_decomposition)
         for tape_op, true_op in zip(new_tape.operations, true_decomposition):
-            assert qml.equal(tape_op, true_op)
+            qml.assert_equal(tape_op, true_op)
 
     @pytest.mark.filterwarnings("ignore:The ``name`` property and keyword argument of")
     def test_stopping_criterion_with_depth(self):
@@ -1080,7 +1078,7 @@ class TestExpand:
 
         new_tape = tape.expand(expand_measurements=True)
 
-        assert len(new_tape.operations) == 5
+        assert len(new_tape.operations) == 6
 
         expected = [
             qml.measurements.Probability,
@@ -1193,10 +1191,8 @@ class TestExpand:
         circuit_after_first_expand = expand_tape.operations
         twice_expand_tape = tape.expand()
         circuit_after_second_expand = twice_expand_tape.operations
-        assert all(
-            qml.equal(op1, op2)
-            for op1, op2 in zip(circuit_after_first_expand, circuit_after_second_expand)
-        )
+        for op1, op2 in zip(circuit_after_first_expand, circuit_after_second_expand):
+            qml.assert_equal(op1, op2)
 
     def test_expand_does_not_affect_original_tape(self):
         """Test that expand_tape does not modify the inputted tape while creating a new one."""
@@ -1206,20 +1202,22 @@ class TestExpand:
         expanded = tape.expand()
 
         assert len(tape.operations) == 1
-        assert qml.equal(tape.operations[0], ops[0])
-        assert len(tape._obs_sharing_wires) == 2
-        assert all(qml.equal(obs, qml.PauliX(0)) for obs in tape._obs_sharing_wires)
-        assert qml.equal(tape.measurements[0], qml.expval(qml.PauliX(0)))
-        assert qml.equal(tape.measurements[1], qml.expval(qml.PauliX(0)))
+        qml.assert_equal(tape.operations[0], ops[0])
+        assert len(tape.obs_sharing_wires) == 2
+        for obs in tape.obs_sharing_wires:
+            qml.assert_equal(obs, qml.X(0))
+        qml.assert_equal(tape.measurements[0], qml.expval(qml.PauliX(0)))
+        qml.assert_equal(tape.measurements[1], qml.expval(qml.PauliX(0)))
         assert tape.shots == qml.measurements.Shots(None)
 
         assert len(expanded.operations) == 2
-        assert qml.equal(expanded.operations[0], ops[0])
-        assert qml.equal(expanded.operations[1], qml.RY(-np.pi / 2, 0))  # new rotation
-        assert len(expanded._obs_sharing_wires) == 2
-        assert all(qml.equal(obs, qml.PauliZ(0)) for obs in expanded._obs_sharing_wires)
-        assert qml.equal(expanded.measurements[0], qml.expval(qml.PauliZ(0)))
-        assert qml.equal(expanded.measurements[1], qml.expval(qml.PauliZ(0)))
+        qml.assert_equal(expanded.operations[0], ops[0])
+        qml.assert_equal(expanded.operations[1], qml.RY(-np.pi / 2, 0))  # new rotation
+        assert len(expanded.obs_sharing_wires) == 2
+        for obs in expanded.obs_sharing_wires:
+            qml.assert_equal(obs, qml.Z(0))
+        qml.assert_equal(expanded.measurements[0], qml.expval(qml.PauliZ(0)))
+        qml.assert_equal(expanded.measurements[1], qml.expval(qml.PauliZ(0)))
         assert expanded.shots is tape.shots
 
     def test_expand_tape_does_not_check_mp_name_by_default(self, recwarn):
@@ -1894,54 +1892,6 @@ class TestOutputShape:
         res_shape = res_shape if res_shape != tuple() else ()
         assert tape.shape(dev) == res_shape
 
-    def test_output_shapes_single_qnode_check_cutoff(self):
-        """Test that the tape output shape is correct when computing
-        probabilities with a dummy device that defines a cutoff value."""
-
-        class CustomDevice(qml.QubitDevice):
-            """A dummy device that has a cutoff value specified and returns
-            analytic probabilities in a fashion similar to the
-            strawberryfields.fock device.
-
-            Note: this device definition is used as PennyLane-SF is not a
-            dependency of PennyLane core and there are no CV device in
-            PennyLane core using a cutoff value.
-            """
-
-            name = "Device with cutoff"
-            short_name = "dummy.device"
-            pennylane_requires = "0.1.0"
-            version = "0.0.1"
-            author = "CV quantum"
-
-            operations = {}
-            observables = {"Identity"}
-
-            def __init__(self, shots=None, wires=None, cutoff=None):
-                super().__init__(wires=wires, shots=shots)
-                self.cutoff = cutoff
-
-            def apply(self, operations, **kwargs):
-                pass
-
-            def analytic_probability(self, wires=None):
-                if wires is None:
-                    wires = self.wires
-                return np.zeros(self.cutoff ** len(wires))
-
-        dev = CustomDevice(wires=2, cutoff=13)
-
-        # If PennyLane-SF is installed, the following can be checked e.g., locally:
-        # dev = qml.device("strawberryfields.fock", wires=2, cutoff_dim=13)
-
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.probs(wires=[0])
-
-        tape = qml.tape.QuantumScript.from_queue(q)
-
-        res_shape = qml.execute([tape], dev, gradient_fn=qml.gradients.param_shift_cv)[0]
-        assert tape.shape(dev) == res_shape.shape
-
     @pytest.mark.autograd
     @pytest.mark.parametrize("measurements, expected", multi_measurements)
     @pytest.mark.parametrize("shots", [None, 1, 10])
@@ -2166,17 +2116,15 @@ class TestNumericType:
         assert np.issubdtype(result.dtype, complex)
         assert circuit.qtape.numeric_type is complex
 
-    @pytest.mark.parametrize("ret", [qml.sample(), qml.sample(qml.PauliZ(wires=0))])
-    def test_sample_int_eigvals(self, ret):
+    def test_sample_int(self):
         """Test that the tape can correctly determine the output domain for a
-        sampling measurement with a Hermitian observable with integer
-        eigenvalues."""
+        sampling measurement with no observable."""
         dev = qml.device("default.qubit", wires=3, shots=5)
 
         @qml.qnode(dev)
         def circuit():
             qml.RY(0.4, wires=[0])
-            return qml.apply(ret)
+            return qml.sample()
 
         result = circuit()
 
@@ -2215,7 +2163,7 @@ class TestNumericType:
     def test_sample_real_and_int_eigvals(self):
         """Test that the tape can correctly determine the output domain for
         multiple sampling measurements with a Hermitian observable with real
-        eigenvalues and another one with integer eigenvalues."""
+        eigenvalues and another sample with integer values."""
         dev = qml.device("default.qubit", wires=3, shots=5)
 
         arr = np.array(
@@ -2230,7 +2178,7 @@ class TestNumericType:
         def circuit(a, b):
             qml.RY(a, wires=0)
             qml.RX(b, wires=0)
-            return qml.sample(qml.Hermitian(herm, wires=0)), qml.sample(qml.PauliZ(1))
+            return qml.sample(qml.Hermitian(herm, wires=0)), qml.sample()
 
         result = circuit(0, 3)
         assert isinstance(result, tuple)
