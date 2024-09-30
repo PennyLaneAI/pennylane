@@ -588,7 +588,11 @@ def test_qnode_interface_not_mutated(interface):
         return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
 
     qlayer = KerasLayer(circuit, weight_shapes, output_dim=2)
-    assert qlayer.qnode.interface == circuit.interface == interface
+    assert (
+        qlayer.qnode.interface
+        == circuit.interface
+        == qml.workflow.execution.INTERFACE_MAP[interface]
+    )
 
 
 @pytest.mark.tf

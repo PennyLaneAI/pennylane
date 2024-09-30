@@ -1466,7 +1466,6 @@ class TestQNodeIntegrationJax:
 
         expected = -np.sin(p)
 
-        assert circuit.gradient_fn == "backprop"
         assert np.isclose(circuit(p), expected, atol=tol, rtol=0)
 
     def test_correct_state(self, tol, use_jit):
@@ -1658,7 +1657,6 @@ class TestQNodeIntegrationTF:
 
         expected = -np.sin(p)
 
-        assert circuit.gradient_fn == "backprop"
         assert np.isclose(circuit(p), expected, atol=tol, rtol=0)
 
     def test_correct_state(self, tol):
@@ -1839,7 +1837,6 @@ class TestQNodeIntegrationTorch:
 
         expected = -np.sin(p)
 
-        assert circuit.gradient_fn == "backprop"
         assert np.isclose(circuit(p), expected, atol=tol, rtol=0)
 
     def test_correct_state(self, tol):

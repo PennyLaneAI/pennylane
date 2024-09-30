@@ -15,6 +15,8 @@
 This submodule contains the discrete-variable quantum operations concerned
 with preparing a certain state on the device.
 """
+import warnings
+
 # pylint:disable=too-many-branches,abstract-method,arguments-differ,protected-access,no-member
 from typing import Optional
 
@@ -442,9 +444,19 @@ class StatePrep(StatePrepBase):
         return state
 
 
-# pylint: disable=missing-class-docstring
 class QubitStateVector(StatePrep):
-    pass  # QSV is still available
+    r"""
+    ``QubitStateVector`` is deprecated and will be removed in version 0.40. Instead, please use ``StatePrep``.
+    """
+
+    # pylint: disable=too-many-arguments
+    def __init__(self, state, wires, pad_with=None, normalize=False, validate_norm=True):
+        warnings.warn(
+            "QubitStateVector is deprecated and will be removed in version 0.40. "
+            "Instead, please use StatePrep.",
+            qml.PennyLaneDeprecationWarning,
+        )
+        super().__init__(state, wires, pad_with, normalize, validate_norm)
 
 
 class QubitDensityMatrix(Operation):
