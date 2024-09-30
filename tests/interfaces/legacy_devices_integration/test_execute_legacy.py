@@ -22,7 +22,7 @@ import pennylane as qml
 
 def test_old_interface_no_device_jacobian_products():
     """Test that an error is always raised for the old device interface if device jacobian products are requested."""
-    dev = qml.device("default.qubit.legacy", wires=2)
+    dev = qml.device("default.mixed", wires=2)
     tape = qml.tape.QuantumScript([qml.RX(1.0, wires=0)], [qml.expval(qml.PauliZ(0))])
     with pytest.raises(qml.QuantumFunctionError):
         qml.execute((tape,), dev, device_vjp=True)

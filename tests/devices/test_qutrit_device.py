@@ -22,8 +22,8 @@ import pytest
 from scipy.stats import unitary_group
 
 import pennylane as qml
-from pennylane import QubitDevice, QutritDevice
 from pennylane import numpy as pnp
+from pennylane.devices import QubitDevice, QutritDevice
 from pennylane.measurements import (
     Counts,
     CountsMP,
@@ -140,6 +140,12 @@ def mock_qutrit_device_with_original_statistics(monkeypatch):
 
 
 # TODO: Add tests for expval, var after observables are added
+
+
+def test_deprecated_access():
+    """Test that accessing via top-level is deprecated."""
+    with pytest.warns(qml.PennyLaneDeprecationWarning, match="Device will no longer be accessible"):
+        qml.QutritDevice  # pylint: disable=pointless-statement
 
 
 class TestOperations:
@@ -1210,6 +1216,13 @@ class TestUnimplemented:
         with pytest.raises(NotImplementedError):
             dev.state()
 
+    def test_density_matrix(self, mock_qutrit_device):
+        """Test that density_matrix is unimplemented"""
+        dev = mock_qutrit_device()
+
+        with pytest.raises(qml.QuantumFunctionError, match="Unsupported return type"):
+            dev.density_matrix(wires=0)
+
     def test_vn_entropy(self, mock_qutrit_device):
         """Test that vn_entropy is unimplemented"""
         dev = mock_qutrit_device()
@@ -1217,12 +1230,12 @@ class TestUnimplemented:
         with pytest.raises(qml.QuantumFunctionError, match="Unsupported return type"):
             dev.vn_entropy(wires=0, log_base=3)
 
-    def test_density_matrix(self, mock_qutrit_device):
-        """Test that vn_entropy is unimplemented"""
+    def test_vn_entanglement_entropy(self, mock_qutrit_device):
+        """Test that vn_entanglement_entropy is unimplemented"""
         dev = mock_qutrit_device()
 
         with pytest.raises(qml.QuantumFunctionError, match="Unsupported return type"):
-            dev.density_matrix(wires=0)
+            dev.vn_entanglement_entropy(0, 1, log_base=3)
 
     def test_mutual_info(self, mock_qutrit_device):
         """Test that mutual_info is unimplemented"""

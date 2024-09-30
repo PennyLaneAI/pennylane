@@ -2507,7 +2507,7 @@ class TestMCPostprocessing:
             )
 
 
-@pytest.mark.parametrize("dev_fn", [qml.devices.DefaultQubitLegacy, qml.devices.DefaultQubit])
+@pytest.mark.parametrize("dev_fn", [qml.devices.DefaultQubit])
 class TestCutCircuitMCTransform:
     """
     Tests that the `cut_circuit_mc` transform gives the correct results.
@@ -4681,7 +4681,7 @@ class TestCutStrategy:
         """Test if ill-initialized instances throw errors."""
 
         if (
-            isinstance(devices, (qml.Device, qml.devices.Device))
+            isinstance(devices, qml.devices.Device)
             and imbalance_tolerance is None
             and num_fragments_probed is None
         ):
