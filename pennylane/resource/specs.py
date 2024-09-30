@@ -196,7 +196,7 @@ def specs(
         for tape in batch:
 
             program = qml.workflow.get_transform_program(qnode, level=level)
-            (diag_tape,), _ = program((qml.tape.QuantumTape(tape.diagonalizing_gates, [])))
+            (diag_tape,), _ = program((qml.tape.QuantumTape(tape.diagonalizing_gates, []),))
 
             info = tape.specs.copy()
 
