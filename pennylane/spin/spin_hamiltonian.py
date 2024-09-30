@@ -36,7 +36,7 @@ def transverse_ising(
         \hat{H} =  -J \sum_{<i,j>} \sigma_i^{z} \sigma_j^{z} - h\sum_{i} \sigma_{i}^{x}
 
     where :math:`J` is the coupling parameter defined for the Hamiltonian, :math:`h` is the strength of the
-    transverse magnetic field, :math:`<i,j>` represents the indices for neighbouring spins and
+    transverse magnetic field, :math:`<i,j>` represents the indices for neighbouring sites and
     :math:`\sigma` is a Pauli operator.
 
     Args:
@@ -117,7 +117,7 @@ def heisenberg(lattice, n_cells, coupling=None, boundary_condition=False, neighb
          \hat{H} = J\sum_{<i,j>}(\sigma_i^x\sigma_j^x + \sigma_i^y\sigma_j^y + \sigma_i^z\sigma_j^z)
 
     where :math:`J` is the coupling constant defined for the Hamiltonian, :math:`<i,j>` represents the
-    indices for neighbouring spins and :math:`\sigma` is a Pauli operator.
+    indices for neighbouring sites and :math:`\sigma` is a Pauli operator.
 
     Args:
         lattice (str): Shape of the lattice. Input values can be ``'chain'``, ``'square'``,
@@ -211,7 +211,7 @@ def fermi_hubbard(
     on-site Coulomb interaction representing the repulsion between electrons, :math:`<i,j>` represents the
     indices of neighbouring spins, :math:`\sigma` is the spin degree of freedom, and
     :math:`n_{i \uparrow}, n_{i \downarrow}` are number operators for spin-up and spin-down fermions
-    at site :math:`i`. This function assumes there are two fermions with opposite spins on each lattice
+    at site :math:`i`. This function assumes two fermions with opposite spins on each lattice
     site.
 
     Args:
@@ -223,7 +223,7 @@ def fermi_hubbard(
             a square matrix of size ``(num_spins, num_spins)``, where ``num_spins`` is the total
             number of spins. Default value is 1.0.
         coulomb (float or array[float]): Coulomb interaction between spins. It can be a constant or an
-            array of length equal to number of spins.
+            array of length equal to the number of spins.
         boundary_condition (bool or list[bool]): Defines boundary conditions for different lattice
             axes. Default is ``False`` indicating open boundary condition.
         neighbour_order (int): Specifies the interaction level for neighbors within the lattice.
@@ -337,30 +337,30 @@ def emery(
 
     .. math::
         \begin{align*}
-          \hat{H} & = -\sum_{\langle i,j \rangle, \sigma} t_{ij}(c_{i\sigma}^{\dagger}c_{j\sigma})
+          \hat{H} & = -\sum_{\langle i,j \rangle, \sigma} t_{ij}c_{i\sigma}^{\dagger}c_{j\sigma}
           + \sum_{i}U_{i}n_{i \uparrow} n_{i\downarrow} + \sum_{<i,j>}V_{ij}(n_{i \uparrow} +
           n_{i \downarrow})(n_{j \uparrow} + n_{j \downarrow})\ ,
         \end{align*}
 
     where :math:`t_{ij}` is the hopping term representing the kinetic energy of electrons,
-    :math:`U_{i}` is the on-site Coulomb interaction, representing the repulsion between electrons,
-    :math:`V_{ij}` is the intersite coupling, :math:`i, j` are the indices for neighbouring spins,
+    :math:`U_{i}` is the on-site Coulomb interaction representing the repulsion between electrons,
+    :math:`V_{ij}` is the intersite coupling, :math:`<i,j>` represents the indices for neighbouring sites,
     :math:`\sigma` is the spin degree of freedom, and :math:`n_{k \uparrow}`, :math:`n_{k \downarrow}`
     are number operators for spin-up and spin-down fermions at site :math:`k`.
-    This function assumes there are two fermions with opposite spins on each lattice site.
+    This function assumes two fermions with opposite spins on each lattice site.
 
     Args:
         lattice (str): Shape of the lattice. Input values can be ``'chain'``, ``'square'``,
             ``'rectangle'``, ``'honeycomb'``, ``'triangle'``, ``'kagome'``, or ``'diamond'``.
         n_cells (list[int]): Number of cells in each direction of the grid.
-        hopping (float or list[float] or tensor_like[float]): Hopping strength between
-            neighbouring sites. It can be a number, a list of length equal to ``neighbour_order`` or
+        hopping (float or tensor_like[float]): Hopping strength between
+            neighbouring sites. It can be a number, an array of length equal to ``neighbour_order`` or
             a square matrix of shape ``(n_sites, n_sites)``, where ``n_sites`` is the total
             number of sites. Default value is 1.0.
-        coulomb (float or list[float]): Coulomb interaction between spins. It can be a constant or a
-            list of length equal to number of spins.
-        intersite_coupling (float or list[float] or tensor_like[float]): Interaction strength between spins on
-            neighbouring sites. It can be a number, a list with length equal to ``neighbour_order`` or
+        coulomb (float or array[float]): Coulomb interaction between spins. It can be a number or an
+            array of length equal to the number of spins.
+        intersite_coupling (float or tensor_like[float]): Interaction strength between spins on
+            neighbouring sites. It can be a number, an array with length equal to ``neighbour_order`` or
             a square matrix of size ``(n_sites, n_sites)``, where ``n_sites`` is the total
             number of sites. Default value is 1.0.
         boundary_condition (bool or list[bool]): Defines boundary conditions for different lattice
@@ -381,7 +381,7 @@ def emery(
     **Example**
 
     >>> n_cells = [2]
-    >>> h = [0.5]
+    >>> h = 0.5
     >>> u = 1.0
     >>> v = 0.2
     >>> spin_ham = qml.spin.emery("chain", n_cells, hopping=h, coulomb=u,
@@ -465,6 +465,11 @@ def emery(
     if isinstance(coulomb, (int, float, complex)):
         coulomb = math.ones(lattice.n_sites) * coulomb
 
+    if len(coulomb) != lattice.n_sites:
+        raise ValueError(
+            f"The Coulomb parameter should be a number or an array of length {lattice.n_sites}."
+        )
+
     coulomb_term = 0.0 * FermiWord({})
     for i in range(lattice.n_sites):
         up_spin = i * spin
@@ -510,7 +515,7 @@ def haldane(
     where :math:`t^{1}_{ij}` is the hopping term representing the hopping amplitude between neighbouring
     sites :math:`\langle i,j \rangle`, :math:`t^{2}_{ij}` is the hopping amplitude between next-nearest neighbours :math:`\langle \langle i,j \rangle \rangle`, :math:`\phi_{ij}` is the phase
     factor that breaks time-reversal symmetry in the system, and :math:`\sigma` is the spin degree of freedom.
-    This function assumes there are two fermions with opposite spins on each lattice site.
+    This function assumes two fermions with opposite spins on each lattice site.
 
     Args:
         lattice (str): Shape of the lattice. Input values can be ``'chain'``, ``'square'``,
@@ -676,7 +681,7 @@ def kitaev(n_cells, coupling=None, boundary_condition=False):
         coupling = qml.math.array([1.0, 1.0, 1.0])
 
     if len(n_cells) != 2:
-        raise ValueError("The n_cells parameter should be a list of length 2.")
+        raise ValueError("Argument `n_cells` must be a list of length 2.")
 
     if len(coupling) != 3:
         raise ValueError("The coupling parameter should be an array of length 3.")
