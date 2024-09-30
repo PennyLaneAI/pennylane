@@ -4,6 +4,18 @@
 
 <h3>New features since last release</h3>
 
+* Function is added for generating the spin Hamiltonian for the
+  [Kitaev](https://arxiv.org/abs/cond-mat/0506438) model on a lattice.
+  [(#6174)](https://github.com/PennyLaneAI/pennylane/pull/6174)
+
+* Function is added for generating the spin Hamiltonians for custom lattices.
+  [(#6226)](https://github.com/PennyLaneAI/pennylane/pull/6226)
+
+* Functions are added for generating spin Hamiltonians for [Emery]
+  (https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.58.2794) and
+  [Haldane](https://journals.aps.org/prl/pdf/10.1103/PhysRevLett.61.2015) models on a lattice.
+  [(#6201)](https://github.com/PennyLaneAI/pennylane/pull/6201/)
+
 * A new `qml.vn_entanglement_entropy` measurement process has been added which measures the
   Von Neumann entanglement entropy of a quantum state.
   [(#5911)](https://github.com/PennyLaneAI/pennylane/pull/5911)
@@ -60,6 +72,10 @@
 * The `__repr__` methods for `FermiWord` and `FermiSentence` now returns a
   unique representation of the object.
   [(#6167)](https://github.com/PennyLaneAI/pennylane/pull/6167)
+
+* Predefined lattice shapes such as `lieb`, `cubic`, `bcc`, `fcc`, and `diamond`
+  can now be generated.
+  [(6237)](https://github.com/PennyLaneAI/pennylane/pull/6237)
 
 * A `ReferenceQubit` is introduced for testing purposes and as a reference for future plugin development.
   [(#6181)](https://github.com/PennyLaneAI/pennylane/pull/6181)
@@ -150,6 +166,13 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* `qml.map_wires` can now be applied to a batch of tapes.
+  [(#6295)](https://github.com/PennyLaneAI/pennylane/pull/6295)
+
+* Fix float-to-complex casting in various places across PennyLane.
+ [(#6260)](https://github.com/PennyLaneAI/pennylane/pull/6260)
+ [(#6268)](https://github.com/PennyLaneAI/pennylane/pull/6268)
+
 * Fix a bug where zero-valued JVPs were calculated wrongly in the presence of shot vectors.
   [(#6219)](https://github.com/PennyLaneAI/pennylane/pull/6219)
 
@@ -182,9 +205,11 @@ Guillermo Alonso,
 Utkarsh Azad,
 Astral Cai,
 Isaac De Vlugt,
+Diksha Dhawan,
 Lillian M. A. Frederiksen,
 Pietropaolo Frisoni,
 Emiliano Godinez,
+Austin Huang,
 Christina Lee,
 William Maxwell,
 Lee J. O'Riordan,
