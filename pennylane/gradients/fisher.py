@@ -17,7 +17,7 @@ from functools import partial
 
 import pennylane as qml
 from pennylane import transform
-from pennylane.devices import DefaultQubit, DefaultQubitLegacy
+from pennylane.devices import DefaultQubit
 from pennylane.gradients import adjoint_metric_tensor
 from pennylane.typing import PostprocessingFn
 
@@ -245,14 +245,18 @@ def classical_fisher(qnode, argnums=0):
 
             jac = jax.jacobian(new_qnode, argnums=argnums)
 
-        if interface == "torch":
+        elif interface == "torch":
             jac = _torch_jac(new_qnode)
 
-        if interface == "autograd":
+        elif interface == "autograd":
             jac = qml.jacobian(new_qnode)
 
-        if interface == "tf":
+        elif interface == "tf":
             jac = _tf_jac(new_qnode)
+        else:
+            raise ValueError(
+                f"Interface {interface} not supported for jacobian calculations."
+            )  # pragma: no cover
 
         j = jac(*args, **kwargs)
         p = new_qnode(*args, **kwargs)
@@ -370,7 +374,7 @@ def quantum_fisher(
 
     """
 
-    if device.shots or not isinstance(device, (DefaultQubitLegacy, DefaultQubit)):
+    if device.shots or not isinstance(device, DefaultQubit):
         tapes, processing_fn = qml.gradients.metric_tensor(tape, *args, **kwargs)
 
         def processing_fn_multiply(res):

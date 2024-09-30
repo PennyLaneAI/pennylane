@@ -21,9 +21,10 @@ Installing compilers
 --------------------
 
 Currently, Catalyst must be installed separately, and only supports the JAX
-interface and select devices such as ``lightning.qubit``,
-``lightning.kokkos``, ``braket.local.qubit`` and ``braket.aws.qubit``. It
-does **not** support ``default.qubit``.
+interface and select devices. Supported backend devices for Catalyst include
+``lightning.qubit``, ``lightning.kokkos``, ``lightning.gpu``, and ``braket.aws.qubit``,
+but **not** ``default.qubit``.
+For a full list of supported devices, please see :doc:`catalyst:dev/devices`.
 
 On MacOS and Linux, Catalyst can be installed with ``pip``:
 
