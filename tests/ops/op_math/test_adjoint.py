@@ -438,7 +438,7 @@ class TestMiscMethods:
 
         base = qml.S(0) + qml.T(0)
         op = Adjoint(base)
-        assert op.label() == "(S+T)†"
+        assert op.label() == "𝓗†"
 
     def test_adjoint_of_adjoint(self):
         """Test that the adjoint of an adjoint is the original operation."""
@@ -844,7 +844,7 @@ def test_error_adjoint_on_noncallable(obj):
 
 
 class TestAdjointConstructorPreconstructedOp:
-    """Test providing an already initalized operator to the transform."""
+    """Test providing an already initialized operator to the transform."""
 
     @pytest.mark.parametrize(
         "base", (qml.IsingXX(1.23, wires=("c", "d")), qml.QFT(wires=(0, 1, 2)))

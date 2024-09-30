@@ -17,6 +17,7 @@ import functools
 from collections.abc import Callable
 
 import pennylane as qml
+from pennylane.capture.capture_diff import create_non_jvp_primitive
 from pennylane.capture.flatfn import FlatFn
 
 from .compiler import (
@@ -45,14 +46,14 @@ def qjit(fn=None, *args, compiler="catalyst", **kwargs):  # pylint:disable=keywo
 
     .. note::
 
-        Catalyst supports compiling QNodes that use ``lightning.qubit``,
-        ``lightning.kokkos``, ``braket.local.qubit``, and ``braket.aws.qubit``
-        devices. It does not support ``default.qubit``.
+        Catalyst only supports the JAX interface and selected devices.
+        Supported backend devices for Catalyst include
+        ``lightning.qubit``, ``lightning.kokkos``, ``lightning.gpu``, and ``braket.aws.qubit``,
+        but **not** ``default.qubit``.
 
-        Please see the :doc:`Catalyst documentation <catalyst:index>` for more details on
-        supported devices, operations, and measurements.
+        For a full list of supported devices, please see :doc:`catalyst:dev/devices`.
 
-        CUDA Quantum supports ``softwareq.qpp``, ``nvidida.custatevec``, and ``nvidia.cutensornet``.
+        CUDA Quantum supports ``softwareq.qpp``, ``nvidia.custatevec``, and ``nvidia.cutensornet``.
 
     Args:
         fn (Callable): Hybrid (quantum-classical) function to compile
@@ -76,7 +77,7 @@ def qjit(fn=None, *args, compiler="catalyst", **kwargs):  # pylint:disable=keywo
             elements of this list are named sequences of MLIR passes to be executed. A ``None``
             value (the default) results in the execution of the default pipeline. This option is
             considered to be used by advanced users for low-level debugging purposes.
-        static_argnums(int or Seqence[Int]): an index or a sequence of indices that specifies the
+        static_argnums(int or Sequence[Int]): an index or a sequence of indices that specifies the
             positions of static arguments.
         abstracted_axes (Sequence[Sequence[str]] or Dict[int, str] or Sequence[Dict[int, str]]):
             An experimental option to specify dynamic tensor shapes.
@@ -406,7 +407,7 @@ def _get_while_loop_qfunc_prim():
 
     import jax  # pylint: disable=import-outside-toplevel
 
-    while_loop_prim = jax.core.Primitive("while_loop")
+    while_loop_prim = create_non_jvp_primitive()("while_loop")
     while_loop_prim.multiple_results = True
 
     @while_loop_prim.def_impl
@@ -621,7 +622,7 @@ def _get_for_loop_qfunc_prim():
 
     import jax  # pylint: disable=import-outside-toplevel
 
-    for_loop_prim = jax.core.Primitive("for_loop")
+    for_loop_prim = create_non_jvp_primitive()("for_loop")
     for_loop_prim.multiple_results = True
 
     @for_loop_prim.def_impl

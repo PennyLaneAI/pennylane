@@ -541,6 +541,7 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
             prod(1)
 
 
+# pylint: disable=too-many-public-methods
 class TestMatrix:
     """Test matrix-related methods."""
 
@@ -845,6 +846,15 @@ class TestMatrix:
 
         assert np.allclose(true_mat, prod_mat)
 
+    def test_sparse_matrix_global_phase(self):
+        """Test that a prod with a global phase still defines a sparse matrix."""
+
+        op = qml.GlobalPhase(0.5) @ qml.X(0) @ qml.X(0)
+
+        sparse_mat = op.sparse_matrix(wire_order=(0, 1))
+        mat = sparse_mat.todense()
+        assert qml.math.allclose(mat, np.exp(-0.5j) * np.eye(4))
+
     @pytest.mark.parametrize("op1, mat1", non_param_ops[:5])
     @pytest.mark.parametrize("op2, mat2", non_param_ops[:5])
     def test_sparse_matrix_same_wires(self, op1, mat1, op2, mat2):
@@ -956,7 +966,7 @@ class TestProperties:
         prod_op = prod(qml.Identity(wires=0), DummyOp(wires=0))
         assert prod_op._queue_category is None
 
-    def test_eigendecompostion(self):
+    def test_eigendecomposition(self):
         """Test that the computed Eigenvalues and Eigenvectors are correct."""
         diag_prod_op = Prod(qml.PauliZ(wires=0), qml.PauliZ(wires=1))
         eig_decomp = diag_prod_op.eigendecomposition

@@ -39,7 +39,7 @@ OBS_MAP = {"PauliX": "X", "PauliY": "Y", "PauliZ": "Z", "Hadamard": "H", "Identi
 def _compute_grouping_indices(
     observables: list[Observable],
     grouping_type: Literal["qwc", "commuting", "anticommuting"] = "qwc",
-    method: Literal["lf", "rlf"] = "rlf",
+    method: Literal["lf", "rlf"] = "lf",
 ):
     # todo: directly compute the
     # indices, instead of extracting groups of observables first
@@ -81,8 +81,6 @@ class Hamiltonian(Observable):
     Args:
         coeffs (tensor_like): coefficients of the Hamiltonian expression
         observables (Iterable[Observable]): observables in the Hamiltonian expression, of same length as coeffs
-        simplify (bool): Specifies whether the Hamiltonian is simplified upon initialization
-                         (like-terms are combined). The default value is `False`. Use of this argument is deprecated.
         grouping_type (str): If not None, compute and store information on how to group commuting
             observables upon initialization. This information may be accessed when QNodes containing this
             Hamiltonian are executed on devices. The string refers to the type of binary relation between Pauli words.
@@ -90,10 +88,6 @@ class Hamiltonian(Observable):
         method (str): The graph colouring heuristic to use in solving minimum clique cover for grouping, which
             can be ``'lf'`` (Largest First) or ``'rlf'`` (Recursive Largest First). Ignored if ``grouping_type=None``.
         id (str): name to be assigned to this Hamiltonian instance
-
-    .. warning::
-        The ``simplify`` argument is deprecated and will be removed in a future release.
-        Instead, you can call ``qml.simplify`` on the constructed operator.
 
     **Example:**
 
@@ -254,7 +248,6 @@ class Hamiltonian(Observable):
         self,
         coeffs: TensorLike,
         observables: Iterable[Observable],
-        simplify: bool = False,
         grouping_type: Literal[None, "qwc", "commuting", "anticommuting"] = None,
         _grouping_indices: Optional[list[list[int]]] = None,
         method: Literal["lf", "rlf"] = "rlf",
@@ -292,23 +285,6 @@ class Hamiltonian(Observable):
         # attribute to store indices used to form groups of
         # commuting observables, since recomputation is costly
         self._grouping_indices = _grouping_indices
-
-        if simplify:
-
-            warn(
-                "The simplify argument in qml.Hamiltonian and qml.ops.LinearCombination is deprecated. "
-                "Instead, you can call qml.simplify on the constructed operator.",
-                qml.PennyLaneDeprecationWarning,
-            )
-
-            # simplify upon initialization changes ops such that they wouldnt be
-            # removed in self.queue() anymore, removing them here manually.
-            if qml.QueuingManager.recording():
-                for o in observables:
-                    qml.QueuingManager.remove(o)
-
-            with qml.QueuingManager.stop_recording():
-                self.simplify()
 
         if grouping_type is not None:
             with qml.QueuingManager.stop_recording():
@@ -467,7 +443,7 @@ class Hamiltonian(Observable):
     def compute_grouping(
         self,
         grouping_type: Literal["qwc", "commuting", "anticommuting"] = "qwc",
-        method: Literal["lf", "rlf"] = "rlf",
+        method: Literal["lf", "rlf"] = "lf",
     ):
         """
         Compute groups of indices corresponding to commuting observables of this

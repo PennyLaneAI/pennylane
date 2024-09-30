@@ -132,7 +132,7 @@ class TestConstruction:
     def test_tensor_observables_rmatmul(self):
         """Test that tensor observables are correctly processed from the annotated
         queue. Here, we test multiple tensor observables constructed via matmul
-        with the observable occuring on the left hand side."""
+        with the observable occurring on the left hand side."""
 
         with QuantumTape() as tape:
             op_ = qml.RX(1.0, wires=0)

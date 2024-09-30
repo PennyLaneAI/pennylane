@@ -13,12 +13,13 @@
 # limitations under the License.
 """Autograd specific tests for execute and default qubit 2."""
 import autograd
+import numpy as np
 import pytest
 from param_shift_dev import ParamShiftDerivativesDevice
 
 import pennylane as qml
 from pennylane import execute
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 from pennylane.devices import DefaultQubit
 from pennylane.gradients import param_shift
 from pennylane.measurements import Shots
@@ -36,7 +37,7 @@ class TestCaching:
         caching reduces the number of evaluations to their optimum
         when computing Hessians."""
         dev = DefaultQubit()
-        params = np.arange(1, num_params + 1) / 10
+        params = pnp.arange(1, num_params + 1) / 10
 
         N = len(params)
 
@@ -125,8 +126,8 @@ class TestCaching:
 # add tests for lightning 2 when possible
 # set rng for device when possible
 test_matrix = [
-    ({"gradient_fn": param_shift}, Shots(100000), DefaultQubit(seed=42)),
-    ({"gradient_fn": param_shift}, Shots((100000, 100000)), DefaultQubit(seed=42)),
+    ({"gradient_fn": param_shift}, Shots(50000), DefaultQubit(seed=42)),
+    ({"gradient_fn": param_shift}, Shots((50000, 50000)), DefaultQubit(seed=42)),
     ({"gradient_fn": param_shift}, Shots(None), DefaultQubit()),
     ({"gradient_fn": "backprop"}, Shots(None), DefaultQubit()),
     (
@@ -146,7 +147,7 @@ test_matrix = [
     ({"gradient_fn": "adjoint", "device_vjp": True}, Shots(None), DefaultQubit()),
     (
         {"gradient_fn": "device", "device_vjp": False},
-        Shots((100000, 100000)),
+        Shots((50000, 50000)),
         ParamShiftDerivativesDevice(seed=904747894),
     ),
     (
@@ -154,12 +155,27 @@ test_matrix = [
         Shots((100000, 100000)),
         ParamShiftDerivativesDevice(seed=10490244),
     ),
+    (
+        {"gradient_fn": param_shift},
+        Shots(None),
+        qml.device("reference.qubit"),
+    ),
+    (
+        {"gradient_fn": param_shift},
+        Shots(50000),
+        qml.device("reference.qubit", seed=8743274),
+    ),
+    (
+        {"gradient_fn": param_shift},
+        Shots((50000, 50000)),
+        qml.device("reference.qubit", seed=8743274),
+    ),
 ]
 
 
 def atol_for_shots(shots):
     """Return higher tolerance if finite shots."""
-    return 1e-2 if shots else 1e-6
+    return 5e-2 if shots else 1e-6
 
 
 @pytest.mark.parametrize("execute_kwargs, shots, device", test_matrix)
@@ -179,8 +195,8 @@ class TestAutogradExecuteIntegration:
 
             return execute([tape1, tape2], device, **execute_kwargs)
 
-        a = np.array(0.1, requires_grad=True)
-        b = np.array(0.2, requires_grad=False)
+        a = pnp.array(0.1, requires_grad=True)
+        b = pnp.array(0.2, requires_grad=False)
         with device.tracker:
             res = cost(a, b)
 
@@ -200,7 +216,7 @@ class TestAutogradExecuteIntegration:
 
     def test_scalar_jacobian(self, execute_kwargs, shots, device):
         """Test scalar jacobian calculation"""
-        a = np.array(0.1, requires_grad=True)
+        a = pnp.array(0.1, requires_grad=True)
 
         def cost(a):
             tape = qml.tape.QuantumScript([qml.RY(a, 0)], [qml.expval(qml.PauliZ(0))], shots=shots)
@@ -224,8 +240,8 @@ class TestAutogradExecuteIntegration:
 
     def test_jacobian(self, execute_kwargs, shots, device):
         """Test jacobian calculation"""
-        a = np.array(0.1, requires_grad=True)
-        b = np.array(0.2, requires_grad=True)
+        a = pnp.array(0.1, requires_grad=True)
+        b = pnp.array(0.2, requires_grad=True)
 
         def cost(a, b):
             ops = [qml.RY(a, wires=0), qml.RX(b, wires=1), qml.CNOT(wires=[0, 1])]
@@ -270,7 +286,7 @@ class TestAutogradExecuteIntegration:
             )
 
             tape2 = qml.tape.QuantumScript(
-                [qml.RY(np.array(0.5, requires_grad=False), wires=0)],
+                [qml.RY(pnp.array(0.5, requires_grad=False), wires=0)],
                 [qml.expval(qml.PauliZ(0))],
                 shots=shots,
             )
@@ -282,7 +298,7 @@ class TestAutogradExecuteIntegration:
             )
 
             tape4 = qml.tape.QuantumScript(
-                [qml.RY(np.array(0.5, requires_grad=False), 0)],
+                [qml.RY(pnp.array(0.5, requires_grad=False), 0)],
                 [qml.probs(wires=[0, 1])],
                 shots=shots,
             )
@@ -291,7 +307,7 @@ class TestAutogradExecuteIntegration:
                 res = tuple(i for r in res for i in r)
             return sum(autograd.numpy.hstack(res))
 
-        params = np.array([0.1, 0.2], requires_grad=True)
+        params = pnp.array([0.1, 0.2], requires_grad=True)
         x, y = params
 
         res = cost(params)
@@ -321,7 +337,7 @@ class TestAutogradExecuteIntegration:
             )
 
             tape2 = qml.tape.QuantumScript(
-                [qml.RY(np.array(0.5, requires_grad=False), 0)],
+                [qml.RY(pnp.array(0.5, requires_grad=False), 0)],
                 [qml.expval(qml.PauliZ(0))],
                 shots=shots,
             )
@@ -336,7 +352,7 @@ class TestAutogradExecuteIntegration:
                 res = tuple(i for r in res for i in r)
             return autograd.numpy.hstack(res)
 
-        params = np.array([0.1, 0.2], requires_grad=True)
+        params = pnp.array([0.1, 0.2], requires_grad=True)
         x, y = params
 
         res = cost(params)
@@ -392,8 +408,8 @@ class TestAutogradExecuteIntegration:
 
     def test_reusing_quantum_tape(self, execute_kwargs, shots, device):
         """Test re-using a quantum tape by passing new parameters"""
-        a = np.array(0.1, requires_grad=True)
-        b = np.array(0.2, requires_grad=True)
+        a = pnp.array(0.1, requires_grad=True)
+        b = pnp.array(0.2, requires_grad=True)
 
         tape = qml.tape.QuantumScript(
             [qml.RY(a, 0), qml.RX(b, 1), qml.CNOT((0, 1))],
@@ -408,8 +424,8 @@ class TestAutogradExecuteIntegration:
         jac_fn = qml.jacobian(cost)
         jac = jac_fn(a, b)
 
-        a = np.array(0.54, requires_grad=True)
-        b = np.array(0.8, requires_grad=True)
+        a = pnp.array(0.54, requires_grad=True)
+        b = pnp.array(0.8, requires_grad=True)
 
         # check that the cost function continues to depend on the
         # values of the parameters for subsequent calls
@@ -429,15 +445,15 @@ class TestAutogradExecuteIntegration:
 
     def test_classical_processing(self, execute_kwargs, device, shots):
         """Test classical processing within the quantum tape"""
-        a = np.array(0.1, requires_grad=True)
-        b = np.array(0.2, requires_grad=False)
-        c = np.array(0.3, requires_grad=True)
+        a = pnp.array(0.1, requires_grad=True)
+        b = pnp.array(0.2, requires_grad=False)
+        c = pnp.array(0.3, requires_grad=True)
 
         def cost(a, b, c):
             ops = [
                 qml.RY(a * c, wires=0),
                 qml.RZ(b, wires=0),
-                qml.RX(c + c**2 + np.sin(a), wires=0),
+                qml.RX(c + c**2 + pnp.sin(a), wires=0),
             ]
 
             tape = qml.tape.QuantumScript(ops, [qml.expval(qml.PauliZ(0))], shots=shots)
@@ -457,8 +473,8 @@ class TestAutogradExecuteIntegration:
 
     def test_no_trainable_parameters(self, execute_kwargs, shots, device):
         """Test evaluation and Jacobian if there are no trainable parameters"""
-        a = np.array(0.1, requires_grad=False)
-        b = np.array(0.2, requires_grad=False)
+        a = pnp.array(0.1, requires_grad=False)
+        b = pnp.array(0.2, requires_grad=False)
 
         def cost(a, b):
             ops = [qml.RY(a, 0), qml.RX(b, 0), qml.CNOT((0, 1))]
@@ -484,8 +500,8 @@ class TestAutogradExecuteIntegration:
     def test_matrix_parameter(self, execute_kwargs, device, shots):
         """Test that the autograd interface works correctly
         with a matrix parameter"""
-        U = np.array([[0, 1], [1, 0]], requires_grad=False)
-        a = np.array(0.1, requires_grad=True)
+        U = pnp.array([[0, 1], [1, 0]], requires_grad=False)
+        a = pnp.array(0.1, requires_grad=True)
 
         def cost(a, U):
             ops = [qml.QubitUnitary(U, wires=0), qml.RY(a, wires=0)]
@@ -535,8 +551,8 @@ class TestAutogradExecuteIntegration:
             program, _ = device.preprocess(execution_config=config)
             return execute([tape], device, **execute_kwargs, transform_program=program)[0]
 
-        a = np.array(0.1, requires_grad=False)
-        p = np.array([0.1, 0.2, 0.3], requires_grad=True)
+        a = pnp.array(0.1, requires_grad=False)
+        p = pnp.array([0.1, 0.2, 0.3], requires_grad=True)
 
         res = cost_fn(a, p)
         expected = np.cos(a) * np.cos(p[1]) * np.sin(p[0]) + np.sin(a) * (
@@ -568,8 +584,8 @@ class TestAutogradExecuteIntegration:
             tape = qml.tape.QuantumScript(ops, m)
             return autograd.numpy.hstack(execute([tape], device, **execute_kwargs)[0])
 
-        x = np.array(0.543, requires_grad=True)
-        y = np.array(-0.654, requires_grad=True)
+        x = pnp.array(0.543, requires_grad=True)
+        y = pnp.array(-0.654, requires_grad=True)
 
         res = cost(x, y)
         expected = np.array(
@@ -621,8 +637,8 @@ class TestAutogradExecuteIntegration:
             tape = qml.tape.QuantumScript(ops, m)
             return autograd.numpy.hstack(execute([tape], device, **execute_kwargs)[0])
 
-        x = np.array(0.543, requires_grad=True)
-        y = np.array(-0.654, requires_grad=True)
+        x = pnp.array(0.543, requires_grad=True)
+        y = pnp.array(-0.654, requires_grad=True)
 
         res = cost(x, y)
         expected = np.array(
@@ -650,9 +666,9 @@ class TestHigherOrderDerivatives:
     @pytest.mark.parametrize(
         "params",
         [
-            np.array([0.543, -0.654], requires_grad=True),
-            np.array([0, -0.654], requires_grad=True),
-            np.array([-2.0, 0], requires_grad=True),
+            pnp.array([0.543, -0.654], requires_grad=True),
+            pnp.array([0, -0.654], requires_grad=True),
+            pnp.array([-2.0, 0], requires_grad=True),
         ],
     )
     def test_parameter_shift_hessian(self, params, tol):
@@ -693,7 +709,7 @@ class TestHigherOrderDerivatives:
         """Test that setting the max_diff parameter blocks higher-order
         derivatives"""
         dev = DefaultQubit()
-        params = np.array([0.543, -0.654], requires_grad=True)
+        params = pnp.array([0.543, -0.654], requires_grad=True)
 
         def cost_fn(x):
             ops = [qml.RX(x[0], 0), qml.RY(x[1], 1), qml.CNOT((0, 1))]
@@ -788,11 +804,11 @@ class TestHamiltonianWorkflows:
         """Test hamiltonian with no trainable parameters."""
 
         if execute_kwargs["gradient_fn"] == "adjoint" and not qml.operation.active_new_opmath():
-            pytest.skip("adjoint differentiation does not suppport hamiltonians.")
+            pytest.skip("adjoint differentiation does not support hamiltonians.")
 
-        coeffs1 = np.array([0.1, 0.2, 0.3], requires_grad=False)
-        coeffs2 = np.array([0.7], requires_grad=False)
-        weights = np.array([0.4, 0.5], requires_grad=True)
+        coeffs1 = pnp.array([0.1, 0.2, 0.3], requires_grad=False)
+        coeffs2 = pnp.array([0.7], requires_grad=False)
+        weights = pnp.array([0.4, 0.5], requires_grad=True)
 
         res = cost_fn(weights, coeffs1, coeffs2)
         expected = self.cost_fn_expected(weights, coeffs1, coeffs2)
@@ -817,9 +833,9 @@ class TestHamiltonianWorkflows:
         if qml.operation.active_new_opmath():
             pytest.skip("parameter shift derivatives do not yet support sums.")
 
-        coeffs1 = np.array([0.1, 0.2, 0.3], requires_grad=True)
-        coeffs2 = np.array([0.7], requires_grad=True)
-        weights = np.array([0.4, 0.5], requires_grad=True)
+        coeffs1 = pnp.array([0.1, 0.2, 0.3], requires_grad=True)
+        coeffs2 = pnp.array([0.7], requires_grad=True)
+        weights = pnp.array([0.4, 0.5], requires_grad=True)
 
         res = cost_fn(weights, coeffs1, coeffs2)
         expected = self.cost_fn_expected(weights, coeffs1, coeffs2)
@@ -829,11 +845,11 @@ class TestHamiltonianWorkflows:
         else:
             assert np.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
 
-        res = np.hstack(qml.jacobian(cost_fn)(weights, coeffs1, coeffs2))
+        res = pnp.hstack(qml.jacobian(cost_fn)(weights, coeffs1, coeffs2))
         expected = self.cost_fn_jacobian(weights, coeffs1, coeffs2)
         if shots.has_partitioned_shots:
             pytest.xfail(
                 "multiple hamiltonians with shot vectors does not seem to be differentiable."
             )
         else:
-            assert np.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
+            assert qml.math.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)

@@ -689,7 +689,7 @@ class TestProperties:
         op2 = qml.X(0) + 2 * qml.I(0)
         assert qml.math.allclose(sorted(op1.eigvals()), sorted(op2.eigvals()))
 
-    def test_eigendecompostion(self):
+    def test_eigendecomposition(self):
         """Test that the computed Eigenvalues and Eigenvectors are correct."""
         diag_sum_op = Sum(qml.PauliZ(wires=0), qml.Identity(wires=1))
         eig_decomp = diag_sum_op.eigendecomposition
@@ -895,6 +895,18 @@ class TestProperties:
             match="The grouped index value needs to be a tuple of tuples of integers between 0",
         ):
             H.grouping_indices = [[0, 1, 3], [2]]
+
+    def test_label(self):
+        """Tests the label method of Sum when <=3 coefficients."""
+        H = qml.ops.Sum(-0.8 * Z(0))
+        assert H.label() == "𝓗"
+        assert H.label(decimals=2) == "𝓗\n(-0.80)"
+
+    def test_label_many_coefficients(self):
+        """Tests the label method of Sum when >3 coefficients."""
+        H = qml.ops.Sum(*(0.1 * qml.Z(0) for _ in range(5)))
+        assert H.label() == "𝓗"
+        assert H.label(decimals=2) == "𝓗"
 
 
 class TestSimplify:
@@ -1464,7 +1476,7 @@ class TestGrouping:
 
     @pytest.mark.parametrize(
         "grouping_type, grouping_indices",
-        [("commuting", ((0, 1), (2,))), ("anticommuting", ((1,), (0, 2)))],
+        [("commuting", {(0, 1), (2,)}), ("anticommuting", {(1,), (0, 2)})],
     )
     def test_grouping_type_can_be_set(self, grouping_type, grouping_indices):
         """Tests that the grouping type can be controlled by kwargs.
@@ -1478,21 +1490,21 @@ class TestGrouping:
 
         # compute grouping during construction with qml.dot
         op1 = qml.dot(coeffs, obs, grouping_type=grouping_type)
-        assert op1.grouping_indices == grouping_indices
+        assert set(op1.grouping_indices) == grouping_indices
 
         # compute grouping during construction with qml.sum
         sprods = [qml.s_prod(c, o) for c, o in zip(coeffs, obs)]
         op2 = qml.sum(*sprods, grouping_type=grouping_type)
-        assert op2.grouping_indices == grouping_indices
+        assert set(op2.grouping_indices) == grouping_indices
 
         # compute grouping during construction with Sum
         op3 = Sum(*sprods, grouping_type=grouping_type)
-        assert op3.grouping_indices == grouping_indices
+        assert set(op3.grouping_indices) == grouping_indices
 
         # compute grouping separately
         op4 = qml.dot(coeffs, obs, grouping_type=None)
         op4.compute_grouping(grouping_type=grouping_type)
-        assert op4.grouping_indices == grouping_indices
+        assert set(op4.grouping_indices) == grouping_indices
 
     @pytest.mark.parametrize("shots", [None, 1000])
     def test_grouping_integration(self, shots):
