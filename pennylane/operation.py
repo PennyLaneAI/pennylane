@@ -1728,7 +1728,7 @@ class Operation(Operator):
         """
         if self.num_params == 0:
             return None
-        if self.grad_recipe != [None] * self.num_params and self.grad_recipe is not None:
+        if self.grad_recipe != [None] * self.num_params:
             return "A"
         try:
             self.parameter_frequencies  # pylint:disable=pointless-statement
