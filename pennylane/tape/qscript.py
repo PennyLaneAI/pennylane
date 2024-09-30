@@ -843,9 +843,18 @@ class QuantumScript:
             copy_operations (bool): If True, the operations are also shallow copied.
                 Otherwise, if False, the copied operations will simply be references
                 to the original operations; changing the parameters of one script will likewise
-                change the parameters of all copies.
-            update (dict): An optional dictionary to pass new operations, measurements, shots or
-                trainable_params with. These will be modified on the copied tape.
+                change the parameters of all copies. If any keyword arguments are passed to update,
+                this argument will be treated as True.
+
+        Keyword Args:
+            operations (Iterable[Operator]): An iterable of the operations to be performed. If provided, these
+                operations will replace the copied operations on the new tape.
+            measurements (Iterable[MeasurementProcess]): All the measurements to be performed. If provided, these
+                measurements will replace the copied measurements on the new tape.
+            shots (None, int, Sequence[int], ~.Shots): Number and/or batches of shots for execution. If provided, these
+                shots will replace the copied shots on the new tape.
+            trainable_params (None, Sequence[int]): the indices for which parameters are trainable. If provided, these
+                parameter indices will replace the copied parameter indicies on the new tape.
 
         Returns:
             QuantumScript : a copy of the quantum script. If `update` was passed, the updated attributes are modified.
@@ -859,7 +868,7 @@ class QuantumScript:
                 measurements=[qml.expval(qml.Z(0))],
                 shots=2000)
 
-            new_tape = tape.copy(update={"measurements" :[qml.expval(qml.X(1))]})
+            new_tape = tape.copy(measurements=[qml.expval(qml.X(1))])
 
         >>> tape.measurements
         [qml.expval(qml.Z(0)]
@@ -872,13 +881,13 @@ class QuantumScript:
         """
 
         if update:
+            if "ops" in update:
+                update["operations"] = update["ops"]
             for k in update:
-                if k not in ["operations", "measurements", "shots", "trainable_params"]:
+                if k not in ["ops", "operations", "measurements", "shots", "trainable_params"]:
                     raise TypeError(
                         f"{self.__class__}.copy() got an unexpected key '{k}' in update dict"
                     )
-        else:
-            update = {}
 
         if copy_operations or update:
             # Perform a shallow copy of all operations in the operation and measurement
