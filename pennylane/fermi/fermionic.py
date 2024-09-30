@@ -55,6 +55,22 @@ class FermiWord(dict):
 
         super().__init__(operator)
 
+    def adjoint(self):
+        r"""Return the adjoint of FermiWord."""
+        n = len(self.items())
+        adjoint_dict = {}
+        for key, value in reversed(self.items()):
+            position = n - key[0] - 1
+            orbital = key[1]
+            fermi = "+" if value == "-" else "-"
+            adjoint_dict[(position, orbital)] = fermi
+
+        return FermiWord(adjoint_dict)
+
+    def items(self):
+        """Returns the dictionary items in sorted order."""
+        return self.sorted_dic.items()
+
     @property
     def wires(self):
         r"""Return wires in a FermiWord."""
@@ -273,12 +289,16 @@ class FermiWord(dict):
 
         return operator
 
-    def to_mat(self, n_orbitals=None):
+    def to_mat(self, n_orbitals=None, format="dense", buffer_size=None):
         r"""Return the matrix representation.
 
         Args:
             n_orbitals (int or None): Number of orbitals. If not provided, it will be inferred from
                 the largest orbital index in the Fermi operator.
+            format (str): The format of the matrix. It is "dense" by default. Use "csr" for sparse.
+            buffer_size (int or None)`: The maximum allowed memory in bytes to store intermediate results
+                in the calculation of sparse matrices. It defaults to ``2 ** 30`` bytes that make
+                1GB of memory. In general, larger buffers allow faster computations.
 
         Returns:
             NumpyArray: Matrix representation of the :class:`~.FermiWord`.
@@ -299,9 +319,114 @@ class FermiWord(dict):
             )
 
         largest_order = n_orbitals or largest_orb_id
-        mat = qml.jordan_wigner(self, ps=True).to_mat(wire_order=list(range(largest_order)))
 
-        return mat
+        return qml.jordan_wigner(self, ps=True).to_mat(
+            wire_order=list(range(largest_order)), format=format, buffer_size=buffer_size
+        )
+
+    def shift_operator(self, initial_position, final_position):
+        r"""Shifts an operator in the FermiWord from ``initial_position`` to ``final_position`` by applying the fermionic anti-commutation relations.
+
+        There are three `anti-commutator relations <https://en.wikipedia.org/wiki/Creation_and_annihilation_operators#Creation_and_annihilation_operators_in_quantum_field_theories>`_:
+
+        .. math::
+            \left\{ a_i, a_j \right\} = 0, \quad \left\{ a^{\dagger}_i, a^{\dagger}_j \right\} = 0, \quad \left\{ a_i, a^{\dagger}_j \right\} = \delta_{ij},
+
+
+        where
+
+        .. math::
+            \left\{a_i, a_j \right\} = a_i a_j + a_j a_i,
+
+        and
+
+        .. math::
+            \delta_{ij} = \begin{cases} 1 & i = j \\ 0 & i \neq j \end{cases}.
+
+        Args:
+            initial_position (int): The position of the operator to be shifted.
+            final_position (int): The desired position of the operator.
+
+        Returns:
+            FermiSentence: The ``FermiSentence`` obtained after applying the anti-commutator relations.
+
+        Raises:
+            TypeError: if ``initial_position`` or ``final_position`` is not an integer
+            ValueError: if ``initial_position`` or ``final_position`` are outside the range ``[0, len(fermiword) - 1]``
+                        where ``len(fermiword)`` is the number of operators in the FermiWord.
+
+
+        **Example**
+
+        >>> w = qml.fermi.FermiWord({(0, 0): '+', (1, 1): '-'})
+        >>> w.shift_operator(0, 1)
+        -1 * a(1) a⁺(0)
+        """
+
+        if not isinstance(initial_position, int) or not isinstance(final_position, int):
+            raise TypeError("Positions must be integers.")
+
+        if initial_position < 0 or final_position < 0:
+            raise ValueError("Positions must be positive integers.")
+
+        if initial_position > len(self.sorted_dic) - 1 or final_position > len(self.sorted_dic) - 1:
+            raise ValueError("Positions are out of range.")
+
+        if initial_position == final_position:
+            return FermiSentence({self: 1})
+
+        fw = self
+        fs = FermiSentence({fw: 1})
+        delta = 1 if initial_position < final_position else -1
+        current = initial_position
+
+        while current != final_position:
+            indices = list(fw.sorted_dic.keys())
+            next = current + delta
+            curr_idx, curr_val = indices[current], fw[indices[current]]
+            next_idx, next_val = indices[next], fw[indices[next]]
+
+            # commuting identical terms
+            if curr_idx[1] == next_idx[1] and curr_val == next_val:
+                current += delta
+                continue
+
+            coeff = fs.pop(fw)
+
+            fw = dict(fw)
+            fw[(current, next_idx[1])] = next_val
+            fw[(next, curr_idx[1])] = curr_val
+
+            if curr_idx[1] != next_idx[1]:
+                del fw[curr_idx], fw[next_idx]
+
+            fw = FermiWord(fw)
+
+            # anti-commutator is 0
+            if curr_val == next_val or curr_idx[1] != next_idx[1]:
+                current += delta
+                fs += -coeff * fw
+                continue
+
+            # anti-commutator is 1
+            _min = min(current, next)
+            _max = max(current, next)
+            items = list(fw.sorted_dic.items())
+
+            left = FermiWord({(i, key[1]): value for i, (key, value) in enumerate(items[:_min])})
+            middle = FermiWord(
+                {(i, key[1]): value for i, (key, value) in enumerate(items[_min : _max + 1])}
+            )
+            right = FermiWord(
+                {(i, key[1]): value for i, (key, value) in enumerate(items[_max + 1 :])}
+            )
+
+            terms = left * (1 - middle) * right
+            fs += coeff * terms
+
+            current += delta
+
+        return fs
 
 
 # pylint: disable=useless-super-delegation
@@ -325,6 +450,16 @@ class FermiSentence(dict):
 
     def __init__(self, operator):
         super().__init__(operator)
+
+    def adjoint(self):
+        r"""Return the adjoint of FermiSentence."""
+        adjoint_dict = {}
+        for key, value in self.items():
+            word = key.adjoint()
+            scalar = qml.math.conj(value)
+            adjoint_dict[word] = scalar
+
+        return FermiSentence(adjoint_dict)
 
     @property
     def wires(self):
@@ -493,12 +628,16 @@ class FermiSentence(dict):
             if abs(coeff) <= tol:
                 del self[fw]
 
-    def to_mat(self, n_orbitals=None):
+    def to_mat(self, n_orbitals=None, format="dense", buffer_size=None):
         r"""Return the matrix representation.
 
         Args:
             n_orbitals (int or None): Number of orbitals. If not provided, it will be inferred from
                 the largest orbital index in the Fermi operator
+            format (str): The format of the matrix. It is "dense" by default. Use "csr" for sparse.
+            buffer_size (int or None)`: The maximum allowed memory in bytes to store intermediate results
+                in the calculation of sparse matrices. It defaults to ``2 ** 30`` bytes that make
+                1GB of memory. In general, larger buffers allow faster computations.
 
         Returns:
             NumpyArray: Matrix representation of the :class:`~.FermiSentence`.
@@ -519,9 +658,10 @@ class FermiSentence(dict):
             )
 
         largest_order = n_orbitals or largest_orb_id
-        mat = qml.jordan_wigner(self, ps=True).to_mat(wire_order=list(range(largest_order)))
 
-        return mat
+        return qml.jordan_wigner(self, ps=True).to_mat(
+            wire_order=list(range(largest_order)), format=format, buffer_size=buffer_size
+        )
 
 
 def from_string(fermi_string):
@@ -647,8 +787,13 @@ class FermiC(FermiWord):
             raise ValueError(
                 f"FermiC: expected a single, positive integer value for orbital, but received {orbital}"
             )
+        self.orbital = orbital
         operator = {(0, orbital): "+"}
         super().__init__(operator)
+
+    def adjoint(self):
+        """Return the adjoint of FermiC."""
+        return FermiA(self.orbital)
 
 
 class FermiA(FermiWord):
@@ -684,5 +829,10 @@ class FermiA(FermiWord):
             raise ValueError(
                 f"FermiA: expected a single, positive integer value for orbital, but received {orbital}"
             )
+        self.orbital = orbital
         operator = {(0, orbital): "-"}
         super().__init__(operator)
+
+    def adjoint(self):
+        """Return the adjoint of FermiA."""
+        return FermiC(self.orbital)

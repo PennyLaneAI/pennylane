@@ -55,7 +55,7 @@ class Qubitization(Operation):
 
             # apply QPE
             measurements = qml.iterative_qpe(
-                         qml.Qubitization(H, control = [3,4]), ancilla = 5, iters = 3
+                         qml.Qubitization(H, control = [3,4]), aux_wire = 5, iters = 3
                          )
             return qml.probs(op = measurements)
 
@@ -77,7 +77,7 @@ class Qubitization(Operation):
         return cls._primitive.bind(*args, **kwargs)
 
     def __init__(self, hamiltonian, control, id=None):
-        wires = hamiltonian.wires + qml.wires.Wires(control)
+        wires = qml.wires.Wires(control) + hamiltonian.wires
 
         self._hyperparameters = {
             "hamiltonian": hamiltonian,

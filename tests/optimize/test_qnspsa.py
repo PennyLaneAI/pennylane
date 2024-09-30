@@ -103,7 +103,7 @@ def get_metric_from_single_input_qnode(params, finite_diff_step, tensor_dirs):
     perturb2 = dir2 * finite_diff_step
 
     def get_state_overlap(params1, params2):
-        # analytically computed state overlap between two parameterized ansatzes
+        # analytically computed state overlap between two parametrized ansatzes
         # with input params1 and params2
         return (
             np.cos(params1[0][0] / 2) * np.cos(params2[0][0] / 2)
@@ -348,11 +348,10 @@ class TestQNSPSAOptimizer:
             new_params_tensor_expected,
         )
 
-    @pytest.mark.parametrize("device_name", ["default.qubit", "default.qubit.legacy"])
-    def test_step_and_cost_with_non_trainable_input(self, device_name, finite_diff_step, seed):
+    def test_step_and_cost_with_non_trainable_input(self, finite_diff_step, seed):
         """
         Test step_and_cost() function with the qnode with non-trainable input,
-        both using the `default.qubit` and `default.qubit.legacy` device.
+        both using the `default.qubit` device.
         """
         regularization = 1e-3
         stepsize = 1e-2
@@ -367,7 +366,7 @@ class TestQNSPSAOptimizer:
         )
         # a deep copy of the same opt, to be applied to qnode_reduced
         target_opt = deepcopy(opt)
-        dev = qml.device(device_name, wires=2)
+        dev = qml.device("default.qubit", wires=2)
         non_trainable_param = np.random.rand(1)
         non_trainable_param.requires_grad = False
 

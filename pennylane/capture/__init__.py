@@ -35,6 +35,7 @@ quantum-classical programs.
     ~create_measurement_mcm_primitive
     ~qnode_call
     ~PlxprInterpreter
+    ~FlatFn
 
 
 The ``primitives`` submodule offers easy access to objects with jax dependencies such as
@@ -155,6 +156,7 @@ from .capture_measurements import (
     create_measurement_mcm_primitive,
 )
 from .capture_qnode import qnode_call
+from .flatfn import FlatFn
 
 # by defining this here, we avoid
 # E0611: No name 'AbstractOperator' in module 'pennylane.capture' (no-name-in-module)
@@ -207,4 +209,5 @@ __all__ = (
     "AbstractMeasurement",
     "qnode_prim",
     "PlxprInterpreter",
+    "FlatFn",
 )
