@@ -1317,7 +1317,7 @@ def test_coupling_error_kitaev():
     Kitaev Hamiltonian."""
     with pytest.raises(
         ValueError,
-        match=re.escape("The coupling parameter should be a list of length 3."),
+        match=re.escape("The coupling parameter should be an array of length 3."),
     ):
         kitaev(n_cells=[3, 4], coupling=[1.0, 2.0])
 
@@ -1327,7 +1327,7 @@ def test_coupling_error_kitaev():
     ("n_cells", "j", "boundary_condition", "expected_ham"),
     [
         (
-            [2, 2, 1],
+            [2, 2],
             None,
             False,
             1.0 * (Z(1) @ Z(4))

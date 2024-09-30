@@ -35,20 +35,21 @@ def transverse_ising(
 
         \hat{H} =  -J \sum_{<i,j>} \sigma_i^{z} \sigma_j^{z} - h\sum_{i} \sigma_{i}^{x}
 
-    where ``J`` is the coupling parameter defined for the Hamiltonian, ``h`` is the strength of the
-    transverse magnetic field and ``i,j`` represent the indices for neighbouring spins.
+    where :math:`J` is the coupling parameter defined for the Hamiltonian, :math:`h` is the strength of the
+    transverse magnetic field, :math:`<i,j>` represents the indices for neighbouring spins and
+    :math:`\sigma` is a Pauli operator.
 
     Args:
         lattice (str): Shape of the lattice. Input values can be ``'chain'``, ``'square'``,
-            ``'rectangle'``, ``'honeycomb'``, ``'triangle'``, or ``'kagome'``.
+            ``'rectangle'``, ``'honeycomb'``, ``'triangle'``, ``'kagome'``, or ``'diamond'``.
         n_cells (List[int]): Number of cells in each direction of the grid.
-        coupling (float or List[float] or List[math.array[float]]): Coupling between spins. It can
-            be a number, a list of length equal to ``neighbour_order`` or a square matrix of shape
+        coupling (float or array[float]): Coupling between spins. It can
+            be a number, an array of length equal to ``neighbour_order`` or a square matrix of shape
             ``(num_spins,  num_spins)``, where ``num_spins`` is the total number of spins. Default
             value is 1.0.
         h (float): Value of external magnetic field. Default is 1.0.
         boundary_condition (bool or list[bool]): Defines boundary conditions for different lattice
-            axes, default is ``False`` indicating open boundary condition.
+            axes. Default is ``False`` indicating open boundary condition.
         neighbour_order (int): Specifies the interaction level for neighbors within the lattice.
             Default is 1, indicating nearest neighbours.
 
@@ -72,8 +73,12 @@ def transverse_ising(
     + -0.1 * X(2)
     + -0.1 * X(3)
     )
-
     """
+    if not isinstance(h, (int, float, complex)):
+        raise ValueError(
+            f"The parameter h, value of the external magnetic field, should be a number."
+        )
+
     lattice = _generate_lattice(lattice, n_cells, boundary_condition, neighbour_order)
 
     if isinstance(coupling, (int, float, complex)):
@@ -111,18 +116,18 @@ def heisenberg(lattice, n_cells, coupling=None, boundary_condition=False, neighb
 
          \hat{H} = J\sum_{<i,j>}(\sigma_i^x\sigma_j^x + \sigma_i^y\sigma_j^y + \sigma_i^z\sigma_j^z)
 
-    where ``J`` is the coupling constant defined for the Hamiltonian, and ``i,j`` represent the
-    indices for neighbouring spins.
+    where :math:`J` is the coupling constant defined for the Hamiltonian, :math:`<i,j>` represents the
+    indices for neighbouring spins and :math:`\sigma` is a Pauli operator.
 
     Args:
         lattice (str): Shape of the lattice. Input values can be ``'chain'``, ``'square'``,
-            ``'rectangle'``, ``'honeycomb'``, ``'triangle'``, or ``'kagome'``.
+            ``'rectangle'``, ``'honeycomb'``, ``'triangle'``, ``'kagome'``, or ``'diamond'``.
         n_cells (List[int]): Number of cells in each direction of the grid.
-        coupling (List[List[float]] or List[math.array[float]]): Coupling between spins. It can be a
-            2D array of shape ``(neighbour_order, 3)`` or a 3D array of shape
+        coupling (array[float]): Coupling between spins. It should be an
+            array of shape ``(neighbour_order, 3)`` or
             ``(3, num_spins, num_spins)``, where ``num_spins`` is the total number of spins.
         boundary_condition (bool or list[bool]): Defines boundary conditions for different lattice
-            axes, default is ``False`` indicating open boundary condition.
+            axes. Default is ``False`` indicating open boundary condition.
         neighbour_order (int): Specifies the interaction level for neighbors within the lattice.
             Default is 1, indicating nearest neighbours.
 
@@ -132,7 +137,7 @@ def heisenberg(lattice, n_cells, coupling=None, boundary_condition=False, neighb
     **Example**
 
     >>> n_cells = [2,2]
-    >>> j = [[0.5, 0.5, 0.5]]
+    >>> j = np.array([0.5, 0.5, 0.5])
     >>> spin_ham = qml.spin.heisenberg("square", n_cells, coupling=j)
     >>> spin_ham
     (
@@ -200,7 +205,7 @@ def fermi_hubbard(
 
     .. math::
 
-        \hat{H} = -t\sum_{<i,j>, \sigma}(c_{i\sigma}^{\dagger}c_{j\sigma}) + U\sum_{i}n_{i \uparrow} n_{i\downarrow}
+        \hat{H} = -t\sum_{<i,j>, \sigma} c_{i\sigma}^{\dagger}c_{j\sigma} + U\sum_{i}n_{i \uparrow} n_{i\downarrow}
 
     where :math:`t` is the hopping term representing the kinetic energy of electrons, :math:`U` is the
     on-site Coulomb interaction representing the repulsion between electrons, :math:`<i,j>` represents the
@@ -232,9 +237,9 @@ def fermi_hubbard(
     **Example**
 
     >>> n_cells = [2]
-    >>> h = [0.5]
+    >>> t = [0.5]
     >>> u = 1.0
-    >>> spin_ham = qml.spin.fermi_hubbard("chain", n_cells, hopping=h, coulomb=u)
+    >>> spin_ham = qml.spin.fermi_hubbard("chain", n_cells, hopping=t, coulomb=u)
     >>> spin_ham
     (
     -0.25 * (Y(0) @ Z(1) @ Y(2))
@@ -260,7 +265,7 @@ def fermi_hubbard(
 
     if hopping.shape not in [(neighbour_order,), (lattice.n_sites, lattice.n_sites)]:
         raise ValueError(
-            f"The hopping parameter should be a number or an array of shape ({neighbour_order},) or ({lattice.n_sites},{lattice.n_sites})"
+            f"The hopping parameter should be a number or an array of shape ({neighbour_order},) or ({lattice.n_sites},{lattice.n_sites})."
         )
 
     spin = 2
@@ -294,7 +299,7 @@ def fermi_hubbard(
 
     if len(coulomb) != lattice.n_sites:
         raise ValueError(
-            f"The Coulomb parameter should be a number or an array of length {lattice.n_sites}"
+            f"The Coulomb parameter should be a number or an array of length {lattice.n_sites}."
         )
 
     for i in range(lattice.n_sites):
@@ -346,7 +351,7 @@ def emery(
 
     Args:
         lattice (str): Shape of the lattice. Input values can be ``'chain'``, ``'square'``,
-            ``'rectangle'``, ``'honeycomb'``, ``'triangle'``, or ``'kagome'``.
+            ``'rectangle'``, ``'honeycomb'``, ``'triangle'``, ``'kagome'``, or ``'diamond'``.
         n_cells (list[int]): Number of cells in each direction of the grid.
         hopping (float or list[float] or tensor_like[float]): Hopping strength between
             neighbouring sites. It can be a number, a list of length equal to ``neighbour_order`` or
@@ -509,7 +514,7 @@ def haldane(
 
     Args:
         lattice (str): Shape of the lattice. Input values can be ``'chain'``, ``'square'``,
-            ``'rectangle'``, ``'honeycomb'``, ``'triangle'``, or ``'kagome'``.
+            ``'rectangle'``, ``'honeycomb'``, ``'triangle'``, ``'kagome'``, or ``'diamond'``.
         n_cells (list[int]): Number of cells in each direction of the grid.
         hopping (float or tensor_like[float]): Hopping strength between
             nearest neighbouring sites. It can be a number, or
@@ -622,22 +627,25 @@ def kitaev(n_cells, coupling=None, boundary_condition=False):
 
     .. math::
         \begin{align*}
-          \hat{H} = K_x.\sum_{\langle i,j \rangle \in X}\sigma_i^x\sigma_j^x +
-          \:\: K_y.\sum_{\langle i,j \rangle \in Y}\sigma_i^y\sigma_j^y +
-          \:\: K_z.\sum_{\langle i,j \rangle \in Z}\sigma_i^z\sigma_j^z
+          \hat{H} = K_X \sum_{\langle i,j \rangle \in X}\sigma_i^x\sigma_j^x +
+          \:\: K_Y \sum_{\langle i,j \rangle \in Y}\sigma_i^y\sigma_j^y +
+          \:\: K_Z \sum_{\langle i,j \rangle \in Z}\sigma_i^z\sigma_j^z
         \end{align*}
 
-    where :math:`K_x`, :math:`K_y`, :math:`K_z` are the coupling constants defined for the Hamiltonian,
-    and :math:`X`, :math:`Y`, :math:`Z` represent the set of edges in the Honeycomb lattice between spins
-    :math:`i` and :math:`j` with real-space bond directions :math:`[0, 1], [\frac{\sqrt{3}}{2}, \frac{1}{2}],
-    \frac{\sqrt{3}}{2}, -\frac{1}{2}]`, respectively.
+    where :math:`\sigma` is a Pauli operator and :math:`<i,j>` represents the indices for
+    neighbouring spins. The parameters :math:`K_X`, :math:`K_Y`, :math:`K_Z` are the coupling
+    constants defined for the Hamiltonian, where :math:`X`, :math:`Y`, :math:`Z` represent the set
+    of edges in the Honeycomb lattice between spins :math:`i` and :math:`j` with real-space bond
+    directions :math:`[0, 1], [\frac{\sqrt{3}}{2}, \frac{1}{2}], \frac{\sqrt{3}}{2}, -\frac{1}{2}]`,
+    respectively.
 
     Args:
-       n_cells (list[int]): Number of cells in each direction of the grid.
-       coupling (Optional[list[float] or tensor_like(float)]): Coupling between spins, it is a list of length 3.
-                            Default value is [1.0, 1.0, 1.0].
-       boundary_condition (bool or list[bool]): Defines boundary conditions for different lattice axes.
-           The default is ``False``, indicating open boundary conditions for all.
+        n_cells (list[int]): Number of cells in each direction of the grid.
+        coupling (array[float]): Coupling between spins. It should be an array of length 3 defining
+            :math:`K_X`, :math:`K_Y`, :math:`K_Z` coupling constants. Default value is 1.0 for each
+            coupling constant.
+        boundary_condition (bool or list[bool]): Defines boundary conditions for different lattice
+            axes. Default is ``False`` indicating open boundary condition.
 
     Raises:
        ValueError: if ``coupling`` doesn't have correct dimensions.
@@ -647,8 +655,8 @@ def kitaev(n_cells, coupling=None, boundary_condition=False):
 
     **Example**
 
-    >>> n_cells = [2,2]
-    >>> k = [0.5, 0.6, 0.7]
+    >>> n_cells = [2, 2]
+    >>> k = np.array([0.5, 0.6, 0.7])
     >>> spin_ham = qml.spin.kitaev(n_cells, coupling=k)
     >>> spin_ham
     (
@@ -665,10 +673,13 @@ def kitaev(n_cells, coupling=None, boundary_condition=False):
     """
 
     if coupling is None:
-        coupling = [1.0, 1.0, 1.0]
+        coupling = qml.math.array([1.0, 1.0, 1.0])
+
+    if len(n_cells) != 2:
+        raise ValueError("The n_cells parameter should be a list of length 2.")
 
     if len(coupling) != 3:
-        raise ValueError("The coupling parameter should be a list of length 3.")
+        raise ValueError("The coupling parameter should be an array of length 3.")
 
     vectors = [[1, 0], [0.5, 0.75**0.5]]
     positions = [[0, 0], [0.5, 0.5 / 3**0.5]]
