@@ -162,6 +162,9 @@
 
 <h3>Documentation 📝</h3>
 
+* Corrected examples in the documentation of `qml.jacobian`.
+  [(#6283)](https://github.com/PennyLaneAI/pennylane/pull/6283)
+
 * Fixed spelling in a number of places across the documentation.
   [(#6280)](https://github.com/PennyLaneAI/pennylane/pull/6280)
 
