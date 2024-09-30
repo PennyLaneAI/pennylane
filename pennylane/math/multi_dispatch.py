@@ -326,9 +326,6 @@ def matrix_power(tensor1, tensor2, like=None):
             return k - 1, M @ cur_val
 
         def matrix_power_while(M, k):
-            # cond_fun = lambda val: val[0] >= 0
-            # body_fun = lambda val: matrix_power_while_inner(val, M)
-
             def cond_fun(val):
                 return val[0] >= 0
 
