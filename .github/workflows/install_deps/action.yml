@@ -16,7 +16,7 @@ inputs:
   install_jax:
     description: Indicate if JAX should be installed or not
     required: false
-    default: 'true'
+    default: 'false'
   jax_version:
     description: The version of JAX to install for any job that requires JAX
     required: false
@@ -24,7 +24,7 @@ inputs:
   install_tensorflow:
     description: Indicate if TensorFlow should be installed or not
     required: false
-    default: 'true'
+    default: 'false'
   tensorflow_version:
     description: The version of TensorFlow to install for any job that requires TensorFlow
     required: false
@@ -32,7 +32,7 @@ inputs:
   install_pytorch:
     description: Indicate if PyTorch should be installed or not
     required: false
-    default: 'true'
+    default: 'false'
   pytorch_version:
     description: The version of PyTorch to install for any job that requires PyTorch
     required: false
