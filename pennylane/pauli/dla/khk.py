@@ -292,7 +292,7 @@ def compute_csa_new(g, m, ad, which=0, tol=1e-14, verbose=0):
     # not at all optimized, some redundancies in re-computing adjoint representations
     m = m.copy()
 
-    all_pure_words = all(len(op)==1 for op in g) and all(len(op)==1 for op in m)
+    all_pure_words = all(len(op) == 1 for op in g) and all(len(op) == 1 for op in m)
     if all_pure_words:
         return _compute_csa_words(m, which)
 
@@ -394,6 +394,7 @@ def khk_decompose(
     theta0=None,
     validate=True,
     verbose=1,
+    ansatz=None,
     opt_kwargs=None,
 ):
     r"""The full KhK decomposition of a Hamiltonian H
@@ -429,24 +430,31 @@ def khk_decompose(
     # mututally irrational coefficients, expanded to whole algebra g;
     # see Example 10 on page 10 in https://arxiv.org/pdf/quant-ph/0505128
     dim_k = len(k)
-    if not np.allclose(ad[:dim_k, dim_k:, :dim_k], 0.):
+    # Check that the adjoint action of the subalgebra k really does not map m into k
+    if not np.allclose(ad[:dim_k, dim_k:, :dim_k], 0.0):
         raise ValueError(
             "The adjoint representation does not match the assumption of a symmetric space. "
             "Make sure that the representation matches the ordering in the algebra and that "
             "your quotient space is a symmetric space."
         )
+    # Restrict to the adjoint action of k on m
     ad = ad[:dim_k, dim_k:, dim_k:]
-    gammas = ([0] * len(mtilde)) + [np.pi**i for i in range(len(h))]
-    gammavec = jnp.array(gammas)
 
-    def loss(theta, vec_H):
+    # Initialize the dense-subgroup generating element for the Cartan subalgebra
+    gammavec = jnp.array(([0] * len(mtilde)) + [np.pi**i for i in range(len(h))])
+
+    if ansatz is None:
         # this is different to Appendix F 1 in https://arxiv.org/pdf/2104.00728
         # Making use of adjoint representation
         # should be faster, and most importantly allow for treatment of sums of paulis
+        @jax.jit
+        def ansatz(theta, vec_H):
+            for _theta, _ad in zip(theta, ad):
+                vec_H = jax.scipy.linalg.expm(_theta * _ad) @ vec_H
+            return vec_H
 
-        for _theta, _ad in zip(theta, ad):
-            vec_H = jax.scipy.linalg.expm(_theta * _ad) @ vec_H
-
+    def loss(theta, vec_H):
+        vec_H = ansatz(theta, vec_H)
         return gammavec @ vec_H
 
     if theta0 is None:
@@ -458,7 +466,7 @@ def khk_decompose(
         opt_kwargs = {"n_epochs": 500, "verbose": verbose}
 
     vec_H = project(H.pauli_rep, g).real
-    if not np.allclose(vec_H[:dim_k], 0.):
+    if not np.allclose(vec_H[:dim_k], 0.0):
         raise ValueError(
             "The Hamiltonian H is assumed to lie in the odd-parity (horizontal) subspace, "
             f"but it has contributions in the vertical space k:\n{vec_H[:dim_k]}"
@@ -473,26 +481,22 @@ def khk_decompose(
         plt.show()
 
     theta_opt = thetas[-1]
-
-    vec_h = vec_H.copy()
-    for _theta, _ad in zip(theta_opt, ad):
-        vec_h = jax.scipy.linalg.expm(_theta * _ad) @ vec_h
+    vec_h = ansatz(theta_opt, vec_H)
 
     if validate:
         _khk_validation(H, vec_h, theta_opt, g, k)
 
     return vec_h, theta_opt
 
+
 def _khk_validation(H, vec_h, theta_opt, g, k):
-    h_elem = make_op(vec_h, g[len(k):], tol=1e-10)
+    h_elem = make_op(vec_h, g[len(k) :], tol=1e-10)
 
     n = len(H.wires)
 
     Km = jnp.eye(2**n)
     for th, op in zip(theta_opt[::-1], k[::-1]):
-        Km @= jax.scipy.linalg.expm(
-            1j * th * qml.matrix(op.operation(), wire_order=range(n))
-        )
+        Km @= jax.scipy.linalg.expm(1j * th * qml.matrix(op.operation(), wire_order=range(n)))
 
     H_reconstructed = Km.conj().T @ qml.matrix(h_elem, wire_order=range(n)) @ Km
 
@@ -510,6 +514,7 @@ def _khk_validation(H, vec_h, theta_opt, g, k):
         )
 
     print(f"success: {success}")
+
 
 # gram schmidt with respect to R2 metric
 
