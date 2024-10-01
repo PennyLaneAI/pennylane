@@ -1401,6 +1401,12 @@ class TestDiagonalizingGates:
             (qml.X(0) + qml.Y(1), qml.Y(1) @ qml.X(2)),  # multiple CompositeOps (with prod)
             (qml.X(0), qml.Y(1), qml.Hamiltonian([1, 2], [qml.Y(1), qml.X(2)])),  # linearcomb
             (2 * qml.X(0), qml.Y(1), qml.Y(1) + qml.X(2)),  # with sprod
+            (qml.X(0), qml.Y(1), (qml.Y(1) + qml.X(2)) @ qml.X(0)),  # prod of sum (nested)
+            (
+                qml.X(0),
+                qml.Y(1),
+                qml.Hamiltonian([1, 2], [qml.Y(1) @ qml.X(0), 2 * qml.X(2) + qml.Z(3)]),
+            ),  # nested linearcombination
         ],
     )
     def test_duplicate_obs_composite(self, obs):
@@ -1422,11 +1428,18 @@ class TestDiagonalizingGates:
     )
     @pytest.mark.parametrize(
         "obs2",  # Sum, Prod, LinearCombination with overlapping obs
-        [qml.X(1) + qml.Y(1), qml.X(1) @ qml.Y(1), qml.Hamiltonian([1, 2], [qml.X(1), qml.Y(1)])],
+        [
+            qml.X(1) + qml.Y(1),
+            qml.X(1) @ qml.Y(1),
+            qml.Hamiltonian([1, 2], [qml.X(1), qml.Y(1)]),
+            qml.Hamiltonian([1, 2], [qml.Y(1) @ qml.X(0), qml.X(2) + qml.Y(1)]),
+        ],
     )
     def test_obs_with_overlapping_wires(self, obs1, obs2):
-        """Test that if there are observables with overlapping wires, these are treated separately,
-        even if operators within them are duplicates of other observables on the tape"""
+        """Test that if there are observables with overlapping wires (and therefore a
+        QubitUnitary as the diagonalizing gate that diagonalizes the entire observable as
+        a single thing), these are treated separately, even if operators within them are
+        duplicates of other observables on the tape"""
         qs = QuantumScript([], [qml.expval(obs1), qml.var(obs2)])
 
         expected_gates = (
@@ -1436,6 +1449,7 @@ class TestDiagonalizingGates:
         )
 
         assert qs.diagonalizing_gates == expected_gates
+        assert isinstance(qs.diagonalizing_gates[-1], qml.QubitUnitary)
 
 
 @pytest.mark.parametrize("qscript_type", (QuantumScript, qml.tape.QuantumTape))
