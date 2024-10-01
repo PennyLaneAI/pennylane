@@ -116,7 +116,7 @@ class QNGOptimizer(GradientDescentOptimizer):
     optimizer's :meth:`~.step` function:
 
     >>> eta = 0.01
-    >>> init_params = pnp.array([0.011, 0.012])
+    >>> init_params = np.array([0.011, 0.012])
     >>> opt = qml.QNGOptimizer(eta)
     >>> theta_new = opt.step(circuit, init_params)
     >>> theta_new
