@@ -428,7 +428,15 @@ def khk_decompose(
     """
     # mututally irrational coefficients, expanded to whole algebra g;
     # see Example 10 on page 10 in https://arxiv.org/pdf/quant-ph/0505128
-    gammas = ([0] * (len(g) - len(h))) + [np.pi**i for i in range(len(h))]
+    dim_k = len(k)
+    if not np.allclose(ad[:dim_k, dim_k:, :dim_k], 0.):
+        raise ValueError(
+            "The adjoint representation does not match the assumption of a symmetric space. "
+            "Make sure that the representation matches the ordering in the algebra and that "
+            "your quotient space is a symmetric space."
+        )
+    ad = ad[:dim_k, dim_k:, dim_k:]
+    gammas = ([0] * len(mtilde)) + [np.pi**i for i in range(len(h))]
     gammavec = jnp.array(gammas)
 
     def loss(theta, vec_H):
@@ -442,7 +450,7 @@ def khk_decompose(
         return gammavec @ vec_H
 
     if theta0 is None:
-        theta0 = jnp.ones(len(k), dtype=float)
+        theta0 = jnp.ones(dim_k, dtype=float)
 
     value_and_grad = jax.jit(jax.value_and_grad(loss))
 
@@ -450,11 +458,12 @@ def khk_decompose(
         opt_kwargs = {"n_epochs": 500, "verbose": verbose}
 
     vec_H = project(H.pauli_rep, g).real
-    if not np.allclose(vec_H[:len(k)], 0.):
+    if not np.allclose(vec_H[:dim_k], 0.):
         raise ValueError(
             "The Hamiltonian H is assumed to lie in the odd-parity (horizontal) subspace, "
-            f"but it has contributions in the vertical space k:\n{vec_H[:len(k)]}"
+            f"but it has contributions in the vertical space k:\n{vec_H[:dim_k]}"
         )
+    vec_H = vec_H[dim_k:]
 
     thetas, energy, _ = run_opt(partial(value_and_grad, vec_H=vec_H), theta0, **opt_kwargs)
     if verbose > 1:
@@ -464,8 +473,6 @@ def khk_decompose(
         plt.show()
 
     theta_opt = thetas[-1]
-
-    M = jnp.eye(len(g))
 
     vec_h = vec_H.copy()
     for _theta, _ad in zip(theta_opt, ad):
@@ -477,12 +484,12 @@ def khk_decompose(
     return vec_h, theta_opt
 
 def _khk_validation(H, vec_h, theta_opt, g, k):
-    h_elem = make_op(vec_h, g, tol=1e-10)
+    h_elem = make_op(vec_h, g[len(k):], tol=1e-10)
 
     n = len(H.wires)
 
     Km = jnp.eye(2**n)
-    for th, op in zip(theta_opt, k):
+    for th, op in zip(theta_opt[::-1], k[::-1]):
         Km @= jax.scipy.linalg.expm(
             1j * th * qml.matrix(op.operation(), wire_order=range(n))
         )
