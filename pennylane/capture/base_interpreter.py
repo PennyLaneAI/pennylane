@@ -19,39 +19,30 @@ import copy
 from functools import partial, wraps
 from typing import Callable
 
-# note: the module has a jax dependency and cannot exist in the standard import path for now.
 import jax
 
 import pennylane as qml
-from pennylane import cond
-from pennylane.compiler.qjit_api import (
-    _get_for_loop_qfunc_prim,
-    _get_while_loop_qfunc_prim,
-    for_loop,
-    while_loop,
-)
-from pennylane.ops.op_math.adjoint import _get_adjoint_qfunc_prim
-from pennylane.ops.op_math.condition import _get_cond_qfunc_prim
-from pennylane.ops.op_math.controlled import _get_ctrl_qfunc_prim
 
-from .capture_qnode import _get_qnode_prim
 from .flatfn import FlatFn
-from .primitives import _get_abstract_measurement, _get_abstract_operator
-
-for_prim = _get_for_loop_qfunc_prim()
-while_prim = _get_while_loop_qfunc_prim()
-cond_prim = _get_cond_qfunc_prim()
-qnode_prim = _get_qnode_prim()
-adjoint_transform_prim = _get_adjoint_qfunc_prim()
-ctrl_transform_prim = _get_ctrl_qfunc_prim()
-
-AbstractOperator = _get_abstract_operator()
-AbstractMeasurement = _get_abstract_measurement()
+from .primitives import (
+    AbstractMeasurement,
+    AbstractOperator,
+    adjoint_transform_prim,
+    cond_prim,
+    ctrl_transform_prim,
+    for_loop_prim,
+    grad_prim,
+    jacobian_prim,
+    qnode_prim,
+    while_loop_prim,
+)
 
 
 def jaxpr_to_jaxpr(
     interpreter: "PlxprInterpreter", jaxpr: "jax.core.Jaxpr", consts, *args
 ) -> "jax.core.Jaxpr":
+    """A convenience uility for converting jaxpr to a new jaxpr via an interpreter."""
+
     def f(*inner_args):
         return interpreter.eval(jaxpr, consts, *inner_args)
 
@@ -76,15 +67,57 @@ class PlxprInterpreter:
 
     .. code-block:: python
 
+        import jax
+        from pennylane.capture import PlxprInterpreter
+
         class SimplifyInterpreter(PlxprInterpreter):
 
-        def interpret_operation(self, op):
-            new_op = op.simplify()
-            if new_op is op:
-                # if new op isn't queued, need to requeue op.
-                data, struct = jax.tree_util.tree_flatten(new_op)
-                new_op = jax.tree_util.tree_unflatten(struct, data)
-            return new_op
+            def interpret_operation(self, op):
+                new_op = qml.simplify(op)
+                if new_op is op:
+                    # if new op isn't queued, need to requeue op.
+                    data, struct = jax.tree_util.tree_flatten(new_op)
+                    new_op = jax.tree_util.tree_unflatten(struct, data)
+                return new_op
+
+    Now the interpreter can be used to transform functions and jaxpr:
+
+    >>> interpreter = SimplifyInterpreter()
+    >>> def f(x):
+    ...     qml.RX(x, 0)**2
+    ...     qml.adjoint(qml.Z(0))
+    ...     return qml.expval(qml.X(0) + qml.X(0))
+    >>> simplified_f = interpreter(f)
+    >>> print(qml.draw(simplified_f)(0.5)
+    0: ──RX(1.00)──Z─┤  <2.00*X>
+    >>> jaxpr = jax.make_jaxpr(f)(0.5)
+    >>> interpreter.eval(jaxpr.jaxpr, [], 0.5)
+    [expval(2.0 * X(0))]
+
+    It will also preserve higher order primitives by default:
+
+    >>> def g(x):
+    ...     @qml.for_loop(3)
+    ...     def loop(i, x):
+    ...         qml.RX(x, 0) ** i
+    ...         return x
+    ...     loop(1.0)
+    ...     return qml.expval(qml.Z(0) + 3*qml.Z(0))
+    >>> jax.make_jaxpr(interpreter(g))(0.5)
+    { lambda ; a:f32[]. let
+        _:f32[] = for_loop[
+        jaxpr_body_fn={ lambda ; b:i32[] c:f32[]. let
+            d:f32[] = convert_element_type[new_dtype=float32 weak_type=True] b
+            e:f32[] = mul c d
+            _:AbstractOperator() = RX[n_wires=1] e 0
+            in (c,) }
+        n_consts=0
+        ] 0 3 1 1.0
+        f:AbstractOperator() = PauliZ[n_wires=1] 0
+        g:AbstractOperator() = SProd[_pauli_rep=4.0 * Z(0)] 4.0 f
+        h:AbstractMeasurement(n_wires=None) = expval_obs g
+    in (h,) }
+
 
     """
 
@@ -143,7 +176,8 @@ class PlxprInterpreter:
         """Initialize the instance before interpretting equations.
 
         Blank by default, this method can initialize any additional instance variables
-        needed by an interpreter
+        needed by an interpreter. For example, a device interpreter could initialize a statevector,
+        or a compilation interpreter could initialize a staging area for the latest operation on each wire.
 
         """
 
@@ -151,7 +185,9 @@ class PlxprInterpreter:
         """Perform any final steps after iterating through all equations.
 
         Blank by default, this method can clean up instance variables, or perform
-        equations that have been deffered till later.
+        equations that have been deffered till later.  For example, if a compilation
+        interpreter has a staging area for the latest operation on each wire, the cleanup method
+        could clear out the staging area.
 
         """
 
@@ -170,7 +206,8 @@ class PlxprInterpreter:
         See also: :meth:`~.interpret_operation_eqn`.
 
         """
-        return op
+        data, struct = jax.tree_util.tree_flatten(op)
+        return jax.tree_util.tree_unflatten(struct, data)
 
     def interpret_operation_eqn(self, eqn: "jax.core.JaxprEqn"):
         """Interpret an equation corresponding to an operator.
@@ -187,8 +224,9 @@ class PlxprInterpreter:
 
         """
 
-        invals = [self.read(invar) for invar in eqn.invars]
-        op = eqn.primitive.impl(*invals, **eqn.params)
+        invals = (self.read(invar) for invar in eqn.invars)
+        with qml.QueuingManager.stop_recording():
+            op = eqn.primitive.impl(*invals, **eqn.params)
         if isinstance(eqn.outvars[0], jax.core.DropVar):
             return self.interpret_operation(op)
 
@@ -206,9 +244,9 @@ class PlxprInterpreter:
             **params: The equations parameters dictionary
 
         """
-        invals = [
+        invals = (
             self.interpret_operation(op) for op in invals if isinstance(op, qml.operation.Operator)
-        ]
+        )
         return primitive.bind(*invals, **params)
 
     def eval(self, jaxpr: "jax.core.Jaxpr", consts: list, *args) -> list:
@@ -270,7 +308,8 @@ class PlxprInterpreter:
 
         @wraps(f)
         def wrapper(*args, **kwargs):
-            jaxpr = jax.make_jaxpr(partial(flat_f, **kwargs))(*args)
+            with qml.QueuingManager.stop_recording():
+                jaxpr = jax.make_jaxpr(partial(flat_f, **kwargs))(*args)
             results = self.eval(jaxpr.jaxpr, jaxpr.consts, *args)
             assert flat_f.out_tree
             return jax.tree_util.tree_unflatten(flat_f.out_tree, results)
@@ -306,7 +345,7 @@ def handle_ctrl_transform(self, *invals, n_control, jaxpr, control_values, work_
     )
 
 
-@PlxprInterpreter.register_primitive(for_prim)
+@PlxprInterpreter.register_primitive(for_loop_prim)
 def handle_for_loop(self, *invals, jaxpr_body_fn, n_consts):
     """Handle a for loop primitive."""
     start = invals[0]
@@ -318,7 +357,7 @@ def handle_for_loop(self, *invals, jaxpr_body_fn, n_consts):
     )
 
     new_jaxpr_body_fn = jax.core.ClosedJaxpr(new_jaxpr_body_fn, consts)
-    return for_prim.bind(*invals, jaxpr_body_fn=new_jaxpr_body_fn, n_consts=n_consts)
+    return for_loop_prim.bind(*invals, jaxpr_body_fn=new_jaxpr_body_fn, n_consts=n_consts)
 
 
 @PlxprInterpreter.register_primitive(cond_prim)
@@ -333,14 +372,18 @@ def handle_cond(self, *invals, jaxpr_branches, n_consts_per_branch, n_args):
     for n_consts, jaxpr in zip(n_consts_per_branch, jaxpr_branches):
         consts = consts_flat[start : start + n_consts]
         start += n_consts
-        new_jaxprs.append(jaxpr_to_jaxpr(type(self)(state=self.state), jaxpr.jaxpr, consts, *args))
+        if jaxpr is None:
+            new_jaxprs.append(None)
+        else:
+            open_jaxpr = jaxpr_to_jaxpr(type(self)(state=self.state), jaxpr.jaxpr, consts, *args)
+            new_jaxprs.append(jax.core.ClosedJaxpr(open_jaxpr, consts))
 
     return cond_prim.bind(
-        *invals, jaxpr_brances=new_jaxprs, n_consts_per_branch=n_consts_per_branch, n_args=n_args
+        *invals, jaxpr_branches=new_jaxprs, n_consts_per_branch=n_consts_per_branch, n_args=n_args
     )
 
 
-@PlxprInterpreter.register_primitive(while_prim)
+@PlxprInterpreter.register_primitive(while_loop_prim)
 def handle_while_loop(self, *invals, jaxpr_body_fn, jaxpr_cond_fn, n_consts_body, n_consts_cond):
     """Handle a while loop primitive."""
     consts_body = invals[:n_consts_body]
@@ -356,10 +399,10 @@ def handle_while_loop(self, *invals, jaxpr_body_fn, jaxpr_cond_fn, n_consts_body
     )
     new_jaxpr_cond_fn = jax.core.ClosedJaxpr(new_jaxpr_cond_fn, consts_cond)
 
-    return while_prim.bind(
+    return while_loop_prim.bind(
         *invals,
         jaxpr_body_fn=new_jaxpr_body_fn,
-        jaxpr_bond_fn=new_jaxpr_cond_fn,
+        jaxpr_cond_fn=new_jaxpr_cond_fn,
         n_consts_body=n_consts_body,
         n_consts_cond=n_consts_cond,
     )
@@ -384,3 +427,21 @@ def handle_qnode(self, *invals, shots, qnode, device, qnode_kwargs, qfunc_jaxpr,
         qfunc_jaxpr=new_qfunc_jaxpr,
         n_consts=n_consts,
     )
+
+
+@PlxprInterpreter.register_primitive(grad_prim)
+def handle_grad(self, *invals, jaxpr, n_consts, **params):
+    """Handle the grad primitive."""
+    consts = invals[:n_consts]
+    args = invals[n_consts:]
+    new_jaxpr = jaxpr_to_jaxpr(type(self)(state=self.state), jaxpr, consts, *args)
+    return grad_prim.bind(*invals, jaxpr=new_jaxpr, n_consts=n_consts, **params)
+
+
+@PlxprInterpreter.register_primitive(jacobian_prim)
+def handle_jacobian(self, *invals, jaxpr, n_consts, **params):
+    """Handle the jacobian primitive."""
+    consts = invals[:n_consts]
+    args = invals[n_consts:]
+    new_jaxpr = jaxpr_to_jaxpr(type(self)(state=self.state), jaxpr, consts, *args)
+    return jacobian_prim.bind(*invals, jaxpr=new_jaxpr, n_consts=n_consts, **params)
