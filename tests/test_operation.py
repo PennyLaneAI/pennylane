@@ -2855,13 +2855,15 @@ def test_op_arithmetic_toggle():
     """Tests toggling op arithmetic on and off, and that it is on by default."""
     assert qml.operation.active_new_opmath()
 
-    with qml.operation.enable_new_opmath_cm(warn=False):
-        assert qml.operation.active_new_opmath()
-        assert isinstance(qml.PauliX(0) @ qml.PauliZ(1), Prod)
+    with pytest.warns(qml.PennyLaneDeprecationWarning, match="Toggling the new approach"):
+        with qml.operation.enable_new_opmath_cm():
+            assert qml.operation.active_new_opmath()
+            assert isinstance(qml.PauliX(0) @ qml.PauliZ(1), Prod)
 
-    with qml.operation.disable_new_opmath_cm(warn=False):
-        assert not qml.operation.active_new_opmath()
-        assert isinstance(qml.PauliX(0) @ qml.PauliZ(1), Tensor)
+    with pytest.warns(qml.PennyLaneDeprecationWarning, match="Disabling the new approach"):
+        with qml.operation.disable_new_opmath_cm():
+            assert not qml.operation.active_new_opmath()
+            assert isinstance(qml.PauliX(0) @ qml.PauliZ(1), Tensor)
 
 
 @pytest.mark.usefixtures("use_new_opmath")
