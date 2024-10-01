@@ -308,7 +308,7 @@ def _check_differentiation(op):
         return qml.probs(wires=op.wires)
 
     qnode_ref = qml.QNode(circuit, qml.device("default.qubit"), diff_method="backprop")
-    qnode_ps = qml.QNode(circuit, qml.device("reference.qubit"), diff_method="parameter-shift")
+    qnode_ps = qml.QNode(circuit, qml.device("default.qubit"), diff_method="parameter-shift")
 
     params = [x if isinstance(x, int) else qml.numpy.array(x) for x in data]
 
