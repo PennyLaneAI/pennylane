@@ -493,8 +493,12 @@ class TestWires:
 class TestWiresJax:
     """Tests the support for JAX arrays in the ``Wires`` class."""
 
-    import jax
+    try:
+        import jax
+    except ImportError:
+        pytest.skip(reason="JAX not installed")
 
+    @pytest.mark.jax
     @pytest.mark.parametrize(
         "iterable, expected",
         [
@@ -509,6 +513,7 @@ class TestWiresJax:
         wires = Wires(iterable)
         assert wires.labels == expected
 
+    @pytest.mark.jax
     @pytest.mark.parametrize("input", [[jax.numpy.array([0, 1, 2]), jax.numpy.array([3, 4])]])
     def test_error_for_incorrect_wire_types(self, input):
         """Tests that a Wires object cannot be created from a list of JAX arrays."""
@@ -516,6 +521,7 @@ class TestWiresJax:
         with pytest.raises(WireError, match="Wires must be hashable"):
             Wires(input)
 
+    @pytest.mark.jax
     @pytest.mark.parametrize("iterable", [jax.numpy.array([4, 1, 1, 3]), jax.numpy.array([0, 0])])
     def test_error_for_repeated_wires_jax(self, iterable):
         """Tests that a Wires object cannot be created from a JAX array with repeated indices."""
@@ -523,6 +529,7 @@ class TestWiresJax:
         with pytest.raises(WireError, match="Wires must be unique"):
             Wires(iterable)
 
+    @pytest.mark.jax
     def test_array_representation_jax(self):
         """Tests that Wires object has an array representation with JAX."""
         import jax
