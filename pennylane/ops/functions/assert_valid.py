@@ -338,7 +338,12 @@ def _check_wires(op, skip_wire_mapping):
     assert mapped_op.wires == new_wires, "wires must be mappable with map_wires"
 
 
-def assert_valid(op: qml.operation.Operator, skip_pickle=False, skip_wire_mapping=False, skip_differentiation=False) -> None:
+def assert_valid(
+    op: qml.operation.Operator,
+    skip_pickle=False,
+    skip_wire_mapping=False,
+    skip_differentiation=False,
+) -> None:
     """Runs basic validation checks on an :class:`~.operation.Operator` to make
     sure it has been correctly defined.
 
