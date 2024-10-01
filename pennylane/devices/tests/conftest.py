@@ -85,6 +85,8 @@ def skip_if():
 @pytest.fixture
 def validate_diff_method(device, diff_method, device_kwargs):
     """Skip tests if a device does not support a diff_method"""
+    if diff_method in {"parameter-shift", "hadamard"}:
+        return
     if diff_method == "backprop" and device_kwargs.get("shots") is not None:
         pytest.skip(reason="test should only be run in analytic mode")
     dev = device(1)

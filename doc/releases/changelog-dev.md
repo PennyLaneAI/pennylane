@@ -4,10 +4,26 @@
 
 <h3>New features since last release</h3>
 
+* Function is added for generating the spin Hamiltonian for the
+  [Kitaev](https://arxiv.org/abs/cond-mat/0506438) model on a lattice.
+  [(#6174)](https://github.com/PennyLaneAI/pennylane/pull/6174)
+
+* Function is added for generating the spin Hamiltonians for custom lattices.
+  [(#6226)](https://github.com/PennyLaneAI/pennylane/pull/6226)
+
+* Functions are added for generating spin Hamiltonians for [Emery]
+  (https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.58.2794) and
+  [Haldane](https://journals.aps.org/prl/pdf/10.1103/PhysRevLett.61.2015) models on a lattice.
+  [(#6201)](https://github.com/PennyLaneAI/pennylane/pull/6201/)
+
 * A new `qml.vn_entanglement_entropy` measurement process has been added which measures the
   Von Neumann entanglement entropy of a quantum state.
   [(#5911)](https://github.com/PennyLaneAI/pennylane/pull/5911)
- 
+
+* A `has_sparse_matrix` property is added to `Operator` to indicate whether a sparse matrix is defined.
+  [(#6278)](https://github.com/PennyLaneAI/pennylane/pull/6278)
+  [(#6310)](https://github.com/PennyLaneAI/pennylane/pull/6310)
+
 <h3>Improvements 🛠</h3>
 
 * PennyLane is now compatible with NumPy 2.0.
@@ -20,7 +36,7 @@
 * `qml.qchem.excitations` now optionally returns fermionic operators.
   [(#6171)](https://github.com/PennyLaneAI/pennylane/pull/6171)
 
-* The `diagonalize_measurements` transform now uses a more efficient method of diagonalization 
+* The `diagonalize_measurements` transform now uses a more efficient method of diagonalization
   when possible, based on the `pauli_rep` of the relevant observables.
   [#6113](https://github.com/PennyLaneAI/pennylane/pull/6113/)
 
@@ -65,6 +81,10 @@
 * The `__repr__` methods for `FermiWord` and `FermiSentence` now returns a
   unique representation of the object.
   [(#6167)](https://github.com/PennyLaneAI/pennylane/pull/6167)
+
+* Predefined lattice shapes such as `lieb`, `cubic`, `bcc`, `fcc`, and `diamond`
+  can now be generated.
+  [(6237)](https://github.com/PennyLaneAI/pennylane/pull/6237)
 
 * A `ReferenceQubit` is introduced for testing purposes and as a reference for future plugin development.
   [(#6181)](https://github.com/PennyLaneAI/pennylane/pull/6181)
@@ -151,10 +171,26 @@
 
 <h3>Documentation 📝</h3>
 
+* Fixed examples in the documentation of a few optimizers.
+  [(#6303)](https://github.com/PennyLaneAI/pennylane/pull/6303)
+
+* Corrected examples in the documentation of `qml.jacobian`.
+  [(#6283)](https://github.com/PennyLaneAI/pennylane/pull/6283)
+
+* Fixed spelling in a number of places across the documentation.
+  [(#6280)](https://github.com/PennyLaneAI/pennylane/pull/6280)
+
 * Add `work_wires` parameter to `qml.MultiControlledX` docstring signature.
-  [(#6271)](https://github.com/PennyLaneAI/pennylane/pull/6271)  
+  [(#6271)](https://github.com/PennyLaneAI/pennylane/pull/6271)
 
 <h3>Bug fixes 🐛</h3>
+
+* `qml.map_wires` can now be applied to a batch of tapes.
+  [(#6295)](https://github.com/PennyLaneAI/pennylane/pull/6295)
+
+* Fix float-to-complex casting in various places across PennyLane.
+ [(#6260)](https://github.com/PennyLaneAI/pennylane/pull/6260)
+ [(#6268)](https://github.com/PennyLaneAI/pennylane/pull/6268)
 
 * Fix a bug where zero-valued JVPs were calculated wrongly in the presence of shot vectors.
   [(#6219)](https://github.com/PennyLaneAI/pennylane/pull/6219)
@@ -167,7 +203,7 @@
 
 * The `qml.QSVT` template now orders the `projector` wires first and the `UA` wires second, which is the expected order of the decomposition.
   [(#6212)](https://github.com/PennyLaneAI/pennylane/pull/6212)
-  
+
 * The `qml.Qubitization` template now orders the `control` wires first and the `hamiltonian` wires second, which is the expected according to other templates.
   [(#6229)](https://github.com/PennyLaneAI/pennylane/pull/6229)
 
@@ -180,6 +216,10 @@
 * Fixes a bug where a simple circuit with no parameters or only builtin/numpy arrays as parameters returns autograd tensors.
   [(#6225)](https://github.com/PennyLaneAI/pennylane/pull/6225)
 
+* Fixes a bug where `csc_dot_product` is used during measurement for `Sum`/`Hamiltonian` that contains observables that does not define a sparse matrix.
+  [(#6278)](https://github.com/PennyLaneAI/pennylane/pull/6278)
+  [(#6310)](https://github.com/PennyLaneAI/pennylane/pull/6310)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -188,9 +228,11 @@ Guillermo Alonso,
 Utkarsh Azad,
 Astral Cai,
 Isaac De Vlugt,
+Diksha Dhawan,
 Lillian M. A. Frederiksen,
 Pietropaolo Frisoni,
 Emiliano Godinez,
+Austin Huang,
 Christina Lee,
 William Maxwell,
 Lee J. O'Riordan,

@@ -71,7 +71,7 @@ class QNGOptimizer(GradientDescentOptimizer):
 
     where :math:`|\psi_\ell\rangle =  V(\theta_1, \dots, \theta_{i-1})|0\rangle`
     (that is, :math:`|\psi_\ell\rangle` is the quantum state prior to the application
-    of parameterized layer :math:`\ell`).
+    of parametrized layer :math:`\ell`).
 
     Combining the quantum natural gradient optimizer with the analytic parameter-shift
     rule to optimize a variational circuit with :math:`d` parameters and :math:`L` layers,
@@ -116,7 +116,7 @@ class QNGOptimizer(GradientDescentOptimizer):
     optimizer's :meth:`~.step` function:
 
     >>> eta = 0.01
-    >>> init_params = np.array([0.011, 0.012])
+    >>> init_params = pnp.array([0.011, 0.012])
     >>> opt = qml.QNGOptimizer(eta)
     >>> theta_new = opt.step(circuit, init_params)
     >>> theta_new
@@ -126,7 +126,7 @@ class QNGOptimizer(GradientDescentOptimizer):
     via the ``metric_tensor_fn`` keyword argument. For example, we can provide a function
     to calculate the metric tensor via the adjoint method.
 
-    >>> adj_metric_tensor = qml.adjoint_metric_tensor(circuit, circuit.device)
+    >>> adj_metric_tensor = qml.adjoint_metric_tensor(circuit)
     >>> opt.step(circuit, init_params, metric_tensor_fn=adj_metric_tensor)
     tensor([ 0.01100528, -0.02799954], requires_grad=True)
 
