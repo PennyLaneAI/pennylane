@@ -12,41 +12,19 @@ inputs:
     description: Indicate if numpy 1 should be installed or not
     required: false
     type: boolean
-    default: false  
-  install_jax:
-    description: Indicate if JAX should be installed or not
-    required: false
-    default: 'false'
-  jax_version:
-    description: The version of JAX to install for any job that requires JAX
-    required: false
-    default: '0.4.28'
-  install_tensorflow:
-    description: Indicate if TensorFlow should be installed or not
-    required: false
-    default: 'false'
-  tensorflow_version:
-    description: The version of TensorFlow to install for any job that requires TensorFlow
-    required: false
-    default: '2.16.0'
-  install_pytorch:
-    description: Indicate if PyTorch should be installed or not
-    required: false
-    default: 'false'
-  pytorch_version:
-    description: The version of PyTorch to install for any job that requires PyTorch
-    required: false
-    default: '2.3.0'
-  install_pennylane_lightning_master:
-    description: Indicate if PennyLane-Lightning should be installed from the master branch
-    required: false
-    default: 'true'
-  install_catalyst_nightly:
-    description: Indicate if PennyLane-Catalyst should be installed from TestPyPi
-    required: false
-    default: 'false'
+    default: false
   additional_pip_packages:
-    description: Additional packages to install. Values will be passed to pip install {value}
+    description: |
+      Additional packages to install. Values will be passed to pip install {value}. 
+      Packages passed to this input can be space separated or on a newline each.
+      All packages are installed PRIOR to installation of pennylane itself.
+    required: false
+    default: ''
+  additional_pip_packages_post:
+    description: |
+      Additional packages to install. Values will be passed to pip install {value}. 
+      Packages passed to this input can be space separated or on a newline each.
+      All packages are installed AFTER installation of pennylane itself.
     required: false
     default: ''
   requirements_file:
@@ -77,27 +55,6 @@ runs:
       if: inputs.install_numpy_1 == 'true'
       run: pip install "numpy==1.26.4"  
 
-    - name: Install PyTorch
-      shell: bash
-      if: inputs.install_pytorch == 'true'
-      env:
-        TORCH_VERSION: ${{ inputs.pytorch_version != '' && format('=={0}', inputs.pytorch_version) || '' }}
-      run: pip install "torch${{ env.TORCH_VERSION }}" -f https://download.pytorch.org/whl/torch_stable.html
-
-    - name: Install TensorFlow with Keras2
-      shell: bash
-      if: inputs.install_tensorflow == 'true'
-      env:
-        TF_VERSION: ${{ inputs.tensorflow_version != '' && format('~={0}', inputs.tensorflow_version) || '' }}
-      run: pip install "tensorflow${{ env.TF_VERSION }}" "tf-keras${{ env.TF_VERSION }}"
-
-    - name: Install JAX
-      shell: bash
-      if: inputs.install_jax == 'true'
-      env:
-        JAX_VERSION: ${{ inputs.jax_version != '' && format('=={0}', inputs.jax_version) || '' }}
-      run: pip install "jax${{ env.JAX_VERSION}}" "jaxlib${{ env.JAX_VERSION }}"
-
     - name: Install additional PIP packages
       shell: bash
       if: inputs.additional_pip_packages != ''
@@ -115,16 +72,18 @@ runs:
       run: |
         python setup.py bdist_wheel
         pip install dist/PennyLane*.whl
-
-    - name: Install Catalyst from nightly build
+    
+    - name: Install additional PIP packages (Post PennyLane Install)
       shell: bash
-      if: inputs.install_catalyst_nightly == 'true'
-      run: pip install --extra-index-url https://test.pypi.org/simple/ PennyLane-Catalyst --pre
-
-    - name: Install PennyLane-Lightning master
-      shell: bash
-      if: inputs.install_pennylane_lightning_master == 'true'
-      run: pip install -i https://test.pypi.org/simple/ PennyLane-Lightning --pre --upgrade
+      if: inputs.additional_pip_packages_post != ''
+      env:
+        ADDITIONAL_PIP_PACKAGES: ${{ inputs.additional_pip_packages_post }}
+      run: |
+        while IFS= read -r line; do
+          if [ ! -z "$line" ]; then
+              pip install $line
+          fi
+        done <<< "$ADDITIONAL_PIP_PACKAGES"
 
     - name: Freeze dependencies
       shell: bash

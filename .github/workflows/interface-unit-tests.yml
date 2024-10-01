@@ -174,11 +174,21 @@ jobs:
       - name: Default PyTorch Version
         id: pytorch
         run: echo "version=2.3.0" >> $GITHUB_OUTPUT
+      
+      - name: Nightly Catalyst Version
+        id: catalyst
+        run: echo "nightly=--extra-index-url https://test.pypi.org/simple/ PennyLane-Catalyst --pre" >> $GITHUB_OUTPUT
+      
+      - name: PennyLane-Lightning Latest Version
+        id: pennylane-lightning
+        run: echo "latest=-i https://test.pypi.org/simple/ PennyLane-Lightning --pre --upgrade" >> $GITHUB_OUTPUT
     
     outputs:
       jax-version: jax==${{ steps.jax.outputs.version }} jaxlib==${{ steps.jax.outputs.version }}
       tensorflow-version: tensorflow~=${{ steps.tensorflow.outputs.version }} tf-keras~=${{ steps.tensorflow.outputs.version }}
       pytorch-version: torch==${{ steps.pytorch.outputs.version }} -f https://download.pytorch.org/whl/torch_stable.html
+      catalyst-nightly: ${{ steps.catalyst.outputs.nightly }}
+      pennylane-lightning-latest: ${{ steps.pennylane-lightning.outputs.latest }}
 
 
   torch-tests:
@@ -206,7 +216,7 @@ jobs:
       python_version: ${{ matrix.python-version }}
       pipeline_mode: ${{ inputs.pipeline_mode }}
       additional_pip_packages: ${{ needs.default-dependency-versions.outputs.pytorch-version }}
-      install_pennylane_lightning_master: true
+      additional_pip_packages_post: ${{ needs.default-dependency-versions.outputs.pennylane-lightning-latest }}
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: torch and not qcut and not finite-diff and not param-shift
       requirements_file: ${{ github.event_name == 'schedule' && strategy.job-index == 0 && 'torch.txt' || '' }}
@@ -237,7 +247,7 @@ jobs:
       coverage_artifact_name: core-interfaces-coverage-autograd-${{ matrix.python-version }}
       python_version: ${{ matrix.python-version }}
       pipeline_mode: ${{ inputs.pipeline_mode }}
-      install_pennylane_lightning_master: true
+      additional_pip_packages_post: ${{ needs.default-dependency-versions.outputs.pennylane-lightning-latest }}
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: autograd and not qcut and not finite-diff and not param-shift
       disable_new_opmath: ${{ inputs.disable_new_opmath }}
@@ -268,8 +278,10 @@ jobs:
       coverage_artifact_name: core-interfaces-coverage-tf-${{ matrix.python-version }}-${{ matrix.group }}
       python_version: ${{ matrix.python-version }}
       pipeline_mode: ${{ inputs.pipeline_mode }}
-      additional_pip_packages: pytest-split ${{ needs.default-dependency-versions.outputs.tensorflow-version }}
-      install_pennylane_lightning_master: true
+      additional_pip_packages: |
+        pytest-split
+        ${{ needs.default-dependency-versions.outputs.tensorflow-version }}
+      additional_pip_packages_post: ${{ needs.default-dependency-versions.outputs.pennylane-lightning-latest }}
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: tf and not qcut and not finite-diff and not param-shift
       pytest_additional_args: --splits 3 --group ${{ matrix.group }}
@@ -304,13 +316,15 @@ jobs:
       coverage_artifact_name: core-interfaces-coverage-jax-${{ matrix.python-version }}-${{ matrix.group }}
       python_version: ${{ matrix.python-version }}
       pipeline_mode: ${{ inputs.pipeline_mode }}
-      install_pennylane_lightning_master: true
+      additional_pip_packages: |
+        pytest-split 
+        ${{ needs.default-dependency-versions.outputs.jax-version }}
+      additional_pip_packages_post: ${{ needs.default-dependency-versions.outputs.pennylane-lightning-latest }}
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: jax and not qcut and not finite-diff and not param-shift
       pytest_additional_args: --dist=loadscope --splits 5 --group ${{ matrix.group }}
       pytest_durations_file_path: '.github/workflows/jax_tests_durations.json'
       pytest_store_durations: ${{ inputs.pytest_store_durations }}
-      additional_pip_packages: pytest-split ${{ needs.default-dependency-versions.outputs.jax-version }}
       requirements_file: ${{ github.event_name == 'schedule' && strategy.job-index == 0 && 'jax.txt' || '' }}
       disable_new_opmath: ${{ inputs.disable_new_opmath }}
 
@@ -340,7 +354,7 @@ jobs:
       coverage_artifact_name: core-interfaces-coverage-core-${{ matrix.python-version }}-${{ matrix.group }}
       python_version: ${{ matrix.python-version }}
       pipeline_mode: ${{ inputs.pipeline_mode }}
-      install_pennylane_lightning_master: true
+      additional_pip_packages_post: ${{ needs.default-dependency-versions.outputs.pennylane-lightning-latest }}
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: core and not qcut and not finite-diff and not param-shift
       pytest_additional_args: --splits 5 --group ${{ matrix.group }}
@@ -378,7 +392,7 @@ jobs:
         ${{ needs.default-dependency-versions.outputs.jax-version }}
         ${{ needs.default-dependency-versions.outputs.tensorflow-version }}
         ${{ needs.default-dependency-versions.outputs.pytorch-version }}
-      install_pennylane_lightning_master: true
+      additional_pip_packages_post: ${{ needs.default-dependency-versions.outputs.pennylane-lightning-latest }}
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: all_interfaces
       requirements_file: ${{ github.event_name == 'schedule' && strategy.job-index == 0 && 'all_interfaces.txt' || '' }}
@@ -409,25 +423,20 @@ jobs:
       coverage_artifact_name: external-libraries-tests-coverage
       python_version: ${{ matrix.python-version }}
       pipeline_mode: ${{ inputs.pipeline_mode }}
+      pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
+      pytest_markers: external
+      additional_pip_packages: |
+        pyzx matplotlib stim quimb mitiq pennylane-qiskit ply
+        ${{ needs.default-dependency-versions.outputs.jax-version }}
+        ${{ needs.default-dependency-versions.outputs.tensorflow-version }}
       
       # This is required during the release process when the latest released version of
       # catalyst requires the latest version of pennylane that is about to be released.
       # Installing catalyst after pennylane to make sure that the latest catalyst is used.
-      install_catalyst_nightly: true
-      
-      install_pennylane_lightning_master: true
-      pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
-      pytest_markers: external
-      additional_pip_packages: |
-        pyzx 
-        matplotlib 
-        stim 
-        quimb 
-        mitiq 
-        pennylane-qiskit 
-        ply
-        ${{ needs.default-dependency-versions.outputs.jax-version }}
-        ${{ needs.default-dependency-versions.outputs.tensorflow-version }}
+      additional_pip_packages_post: |
+        ${{ needs.default-dependency-versions.outputs.pennylane-lightning-latest }}
+        ${{ needs.default-dependency-versions.outputs.catalyst-nightly }}
+
       requirements_file: ${{ github.event_name == 'schedule' && strategy.job-index == 0 && 'external.txt' || '' }}
       disable_new_opmath: ${{ inputs.disable_new_opmath }}
 
@@ -456,7 +465,6 @@ jobs:
       coverage_artifact_name: qcut-coverage
       python_version: ${{ matrix.python-version }}
       pipeline_mode: ${{ inputs.pipeline_mode }}
-      install_pennylane_lightning_master: true
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: qcut
       additional_pip_packages: |
@@ -465,6 +473,7 @@ jobs:
         ${{ needs.default-dependency-versions.outputs.jax-version }}
         ${{ needs.default-dependency-versions.outputs.tensorflow-version }}
         ${{ needs.default-dependency-versions.outputs.pytorch-version }}
+      additional_pip_packages_post: ${{ needs.default-dependency-versions.outputs.pennylane-lightning-latest }}
       disable_new_opmath: ${{ inputs.disable_new_opmath }}
 
 
@@ -492,7 +501,7 @@ jobs:
       coverage_artifact_name: qchem-coverage
       python_version: ${{ matrix.python-version }}
       pipeline_mode: ${{ inputs.pipeline_mode }}
-      install_pennylane_lightning_master: true
+      additional_pip_packages_post: ${{ needs.default-dependency-versions.outputs.pennylane-lightning-latest }}
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: qchem
       additional_pip_packages: openfermionpyscf basis-set-exchange
@@ -529,7 +538,7 @@ jobs:
         ${{ needs.default-dependency-versions.outputs.jax-version }}
         ${{ needs.default-dependency-versions.outputs.tensorflow-version }}
         ${{ needs.default-dependency-versions.outputs.pytorch-version }}
-      install_pennylane_lightning_master: true
+      additional_pip_packages_post: ${{ needs.default-dependency-versions.outputs.pennylane-lightning-latest }}
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: ${{ matrix.config.suite }}
       disable_new_opmath: ${{ inputs.disable_new_opmath }}
@@ -559,7 +568,7 @@ jobs:
       coverage_artifact_name: data-coverage-${{ matrix.python-version }}
       python_version: ${{ matrix.python-version }}
       pipeline_mode: ${{ inputs.pipeline_mode }}
-      install_pennylane_lightning_master: true
+      additional_pip_packages_post: ${{ needs.default-dependency-versions.outputs.pennylane-lightning-latest }}
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: data
       additional_pip_packages: h5py
@@ -601,7 +610,7 @@ jobs:
         ${{ contains(matrix.config.skip_interface, 'jax') && needs.default-dependency-versions.outputs.jax-version || '' }}
         ${{ contains(matrix.config.skip_interface, 'tf') && needs.default-dependency-versions.outputs.tensorflow-version || '' }}
         ${{ contains(matrix.config.skip_interface, 'torch') && needs.default-dependency-versions.outputs.pytorch-version || '' }}
-      install_pennylane_lightning_master: true
+      additional_pip_packages_post: ${{ needs.default-dependency-versions.outputs.pennylane-lightning-latest }}
       pytest_test_directory: pennylane/devices/tests
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_additional_args: --device=${{ matrix.config.device }} --shots=${{ matrix.config.shots }}

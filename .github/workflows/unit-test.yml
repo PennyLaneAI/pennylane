@@ -41,55 +41,6 @@ on:
         default: 'unit-tests'
       ####################
       
-      # TODO: Remove this
-      install_jax:
-        description: Indicate if JAX should be installed or not
-        required: false
-        type: boolean
-        default: false
-      jax_version:
-        description: The version of JAX to install. Leave empty to install latest version.
-        required: false
-        type: string
-        default: ''
-      ####################
-      
-      # TODO: Remove this
-      install_tensorflow:
-        description: Indicate if TensorFlow should be installed or not
-        required: false
-        type: boolean
-        default: false
-      tensorflow_version:
-        description: The version of TensorFlow to install. Leave empty to install latest version.
-        required: false
-        type: string
-        default: ''
-      ####################
-      
-      # TODO: Remove this
-      install_pytorch:
-        description: Indicate if PyTorch should be installed or not
-        required: false
-        type: boolean
-        default: false
-      pytorch_version:
-        description: The version of PyTorch to install. Leave empty to install latest version.
-        required: false
-        type: string
-        default: ''
-      ####################
-      
-      install_catalyst_nightly:
-        description: Indicate if PennyLane-Catalyst should be installed from TestPyPi
-        required: false
-        type: boolean
-        default: false
-      install_pennylane_lightning_master:
-        description: Indicate if PennyLane-Lightning should be installed from the master branch
-        required: false
-        type: boolean
-        default: true
       pytest_test_directory:
         description: The directory where the PennyLane tests are that should be run by PyTest
         required: false
@@ -122,6 +73,11 @@ on:
         default: false
       additional_pip_packages:
         description: Additional packages to install. Values will be passed to pip install {value}
+        required: false
+        type: string
+        default: ''
+      additional_pip_packages_post:
+        description: Additional packages to install after pennylane. Values will be passed to pip install {value}
         required: false
         type: string
         default: ''
@@ -180,10 +136,8 @@ jobs:
         with:
           python_version: ${{ inputs.python_version }}
           install_numpy_1: ${{ inputs.install_numpy_1 }}
-          install_pytorch: ${{ inputs.install_pytorch }}
-          install_tensorflow: ${{ inputs.install_tensorflow }}
-          install_jax: ${{ inputs.install_jax }}
           additional_pip_packages: ${{ inputs.additional_pip_packages }}
+          additional_pip_packages_post: ${{ inputs.additional_pip_packages_post }}
           install_catalyst_nightly: ${{ inputs.install_catalyst_nightly }}
           install_pennylane_lightning_master: ${{ inputs.install_pennylane_lightning_master }}
           requirements_file: ${{ inputs.requirements_file }}
