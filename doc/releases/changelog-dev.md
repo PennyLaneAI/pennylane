@@ -38,7 +38,12 @@
 
 * The `diagonalize_measurements` transform now uses a more efficient method of diagonalization
   when possible, based on the `pauli_rep` of the relevant observables.
-  [#6113](https://github.com/PennyLaneAI/pennylane/pull/6113/)
+  [(#6113)](https://github.com/PennyLaneAI/pennylane/pull/6113/)
+
+* The `QuantumScript.copy` method now takes `operations`, `measurements`, `shots` and 
+  `trainable_params` as keyword arguments. If any of these are passed when copying a 
+  tape, the specified attributes will replace the copied attributes on the new tape.
+  [(#6285)](https://github.com/PennyLaneAI/pennylane/pull/6285)
 
 * The `Hermitian` operator now has a `compute_sparse_matrix` implementation.
   [(#6225)](https://github.com/PennyLaneAI/pennylane/pull/6225)
@@ -161,6 +166,9 @@
   [(#6244)](https://github.com/PennyLaneAI/pennylane/pull/6244)
 
 <h3>Documentation 📝</h3>
+
+* Fixed examples in the documentation of a few optimizers.
+  [(#6303)](https://github.com/PennyLaneAI/pennylane/pull/6303)
 
 * Corrected examples in the documentation of `qml.jacobian`.
   [(#6283)](https://github.com/PennyLaneAI/pennylane/pull/6283)
