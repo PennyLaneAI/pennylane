@@ -94,8 +94,8 @@ class QNSPSAOptimizer:
     Once constructed, the qnode can be passed directly to the ``step`` or ``step_and_cost``
     function of the optimizer.
 
-    >>> from pennylane import numpy as pnp
-    >>> params = pnp.random.rand(2)
+    >>> from pennylane import numpy as np
+    >>> params = np.random.rand(2)
     >>> opt = QNSPSAOptimizer(stepsize=5e-2)
     >>> for i in range(51):
     >>>     params, loss = opt.step_and_cost(cost, params)

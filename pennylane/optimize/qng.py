@@ -115,6 +115,7 @@ class QNGOptimizer(GradientDescentOptimizer):
     Once constructed, the cost function can be passed directly to the
     optimizer's :meth:`~.step` function:
 
+    >>> from pennylane import numpy as np
     >>> eta = 0.01
     >>> init_params = np.array([0.011, 0.012])
     >>> opt = qml.QNGOptimizer(eta)

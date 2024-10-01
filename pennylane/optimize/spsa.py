@@ -81,6 +81,7 @@ class SPSAOptimizer:
 
     For VQE/VQE-like problems, the objective function can be the following:
 
+    >>> from pennylane import numpy as np
     >>> coeffs = [0.2, -0.543, 0.4514]
     >>> obs = [qml.X(0) @ qml.Z(1), qml.Z(0) @ qml.Hadamard(2),
     ...             qml.X(3) @ qml.Z(1)]
