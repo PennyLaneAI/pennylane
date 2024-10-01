@@ -58,7 +58,7 @@ def _process(wires):
             wires = tuple(wires.tolist() if wires.ndim > 0 else (wires.item(),))
     else:
         if "jax" in str(type(wires)):
-            raise ImportError(
+            raise ImportError(  # pragma: no cover
                 "JAX is required to process wires that are JAX arrays. "
                 "You can install it using: pip install jax jaxlib"
             )
