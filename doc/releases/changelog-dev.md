@@ -20,6 +20,10 @@
   Von Neumann entanglement entropy of a quantum state.
   [(#5911)](https://github.com/PennyLaneAI/pennylane/pull/5911)
 
+* A `has_sparse_matrix` property is added to `Operator` to indicate whether a sparse matrix is defined.
+  [(#6278)](https://github.com/PennyLaneAI/pennylane/pull/6278)
+  [(#6310)](https://github.com/PennyLaneAI/pennylane/pull/6310)
+
 <h3>Improvements 🛠</h3>
 
 * PennyLane is now compatible with NumPy 2.0.
@@ -161,6 +165,9 @@
 * Fixed examples in the documentation of a few optimizers.
   [(#6303)](https://github.com/PennyLaneAI/pennylane/pull/6303)
 
+* Corrected examples in the documentation of `qml.jacobian`.
+  [(#6283)](https://github.com/PennyLaneAI/pennylane/pull/6283)
+
 * Fixed spelling in a number of places across the documentation.
   [(#6280)](https://github.com/PennyLaneAI/pennylane/pull/6280)
 
@@ -199,6 +206,10 @@
 
 * Fixes a bug where a simple circuit with no parameters or only builtin/numpy arrays as parameters returns autograd tensors.
   [(#6225)](https://github.com/PennyLaneAI/pennylane/pull/6225)
+
+* Fixes a bug where `csc_dot_product` is used during measurement for `Sum`/`Hamiltonian` that contains observables that does not define a sparse matrix.
+  [(#6278)](https://github.com/PennyLaneAI/pennylane/pull/6278)
+  [(#6310)](https://github.com/PennyLaneAI/pennylane/pull/6310)
 
 <h3>Contributors ✍️</h3>
 
