@@ -301,9 +301,6 @@ def _check_differentiation(op):
     if op.num_params == 0:
         return
 
-    if isinstance(op, qml.ops.qubit.BasisStateProjector):
-        return
-
     data, struct = qml.pytrees.flatten(op)
 
     def circuit(*args):
@@ -341,7 +338,7 @@ def _check_wires(op, skip_wire_mapping):
     assert mapped_op.wires == new_wires, "wires must be mappable with map_wires"
 
 
-def assert_valid(op: qml.operation.Operator, skip_pickle=False, skip_wire_mapping=False) -> None:
+def assert_valid(op: qml.operation.Operator, skip_pickle=False, skip_wire_mapping=False, skip_differentiation=False) -> None:
     """Runs basic validation checks on an :class:`~.operation.Operator` to make
     sure it has been correctly defined.
 
@@ -351,6 +348,8 @@ def assert_valid(op: qml.operation.Operator, skip_pickle=False, skip_wire_mappin
     Keyword Args:
         skip_pickle=False : If ``True``, pickling tests are not run. Set to ``True`` when
             testing a locally defined operator, as pickle cannot handle local objects
+        skip_differentiation: If ``True``, differentiation tests are not run. Set to `True` when
+            the operator is parametrized but not differentiable.
 
     **Examples:**
 
@@ -406,5 +405,6 @@ def assert_valid(op: qml.operation.Operator, skip_pickle=False, skip_wire_mappin
     _check_sparse_matrix(op)
     _check_eigendecomposition(op)
     _check_generator(op)
-    _check_differentiation(op)
+    if not skip_differentiation:
+        _check_differentiation(op)
     _check_capture(op)
