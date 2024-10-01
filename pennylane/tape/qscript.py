@@ -1347,4 +1347,5 @@ def _get_base_obs(observables):
 
         observables = new_obs
 
-    return set(observables + overlapping_ops_observables)
+    # removes duplicates from list without disrupting order - basically an ordered set
+    return list(dict.fromkeys(observables + overlapping_ops_observables))
