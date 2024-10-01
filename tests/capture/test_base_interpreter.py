@@ -67,20 +67,30 @@ def test_primitive_registrations():
     """Test that child primitive registrations dict's are not copied and do
     not effect PlxprInterpreeter."""
 
+    class SimplifyInterpreterLocal(PlxprInterpreter):
+
+        def interpret_operation(self, op):
+            new_op = op.simplify()
+            if new_op is op:
+                # if new op isn't queued, need to requeue op.
+                data, struct = jax.tree_util.tree_flatten(new_op)
+                new_op = jax.tree_util.tree_unflatten(struct, data)
+            return new_op
+
     assert (
-        SimplifyInterpreter._primitive_registrations
+        SimplifyInterpreterLocal._primitive_registrations
         is not PlxprInterpreter._primitive_registrations
     )
 
-    @SimplifyInterpreter.register_primitive(qml.X._primitive)
+    @SimplifyInterpreterLocal.register_primitive(qml.X._primitive)
     def _(self, *invals, **params):  # pylint: disable=unused-argument
         print("in custom interpreter")
         return qml.Z(*invals)
 
-    assert qml.X._primitive in SimplifyInterpreter._primitive_registrations
+    assert qml.X._primitive in SimplifyInterpreterLocal._primitive_registrations
     assert qml.X._primitive not in PlxprInterpreter._primitive_registrations
 
-    @SimplifyInterpreter()
+    @SimplifyInterpreterLocal()
     def f():
         qml.X(0)
         qml.Y(5)
@@ -93,9 +103,6 @@ def test_primitive_registrations():
     qml.assert_equal(q.queue[0], qml.Z(0))  # turned into a Y
     qml.assert_equal(q.queue[1], qml.Y(5))  # mapped wire
 
-    # restore simplify interpreter to its previous state
-    SimplifyInterpreter._primitive_registrations.pop(qml.X._primitive)
-
 
 def test_overriding_measurements():
     """Test usage of an interpreter with a custom way of handling measurements."""
@@ -105,6 +112,13 @@ def test_overriding_measurements():
         def interpret_measurement_eqn(self, primitive, *invals, **params):
             temp_mp = primitive.impl(*invals, **params)
             return qml.sample(wires=temp_mp.wires)
+
+    @MeasurementsToSample()
+    @qml.qnode(qml.device("default.qubit", wires=2, shots=5))
+    def circuit():
+        return qml.expval(qml.Z(0)), qml.probs(wires=(0, 1))
+
+    circuit()
 
 
 class TestHigherOrderPrimitiveRegistrations:
@@ -170,12 +184,65 @@ class TestHigherOrderPrimitiveRegistrations:
                 _ = qml.RY(y, 0) ** 2
 
             def false_fn(y):
-                _ = qml.adjoint(qml.RY(y, 0))
+                _ = qml.adjoint(qml.RX(y, 0))
 
             qml.cond(control, true_fn, false_fn)(x)
 
         jaxpr = jax.make_jaxpr(f)(0.5, False)
         assert jaxpr.eqns[0].primitive == cond_prim
+
+        branch1 = jaxpr.eqns[0].params["jaxpr_branches"][0]
+        assert len(branch1.eqns) == 2
+        assert branch1.eqns[1].primitive == qml.RY._primitive
+        with qml.queuing.AnnotatedQueue() as q:
+            jax.core.eval_jaxpr(branch1, [], 0.5)
+        qml.assert_equal(q.queue[0], qml.RY(2 * 0.5, 0))
+
+        branch2 = jaxpr.eqns[0].params["jaxpr_branches"][1]
+        assert len(branch2.eqns) == 2
+        assert branch2.eqns[1].primitive == qml.RX._primitive
+        with qml.queuing.AnnotatedQueue() as q:
+            jax.core.eval_jaxpr(branch2, [], 0.5)
+        qml.assert_equal(q.queue[0], qml.RY(-0.5, 0))
+
+        assert jaxpr.eqns[0].params["n_args"] == 1
+        assert jaxpr.eqns[0].params["n_consts_per_branch"] == [0, 0]
+
+        with qml.queuing.AnnotatedQueue() as q:
+            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2.4, True)
+
+        qml.assert_equal(q.queue[0], qml.RY(4.8, 0))
+
+        with qml.queuing.AnnotatedQueue() as q:
+            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 1.23, False)
+
+        qml.assert_equal(q.queue[0], qml.RX(-1.23, 0))
+
+    def test_cond_no_false_branch(self):
+        """Test transforming a cond HOP when no false branch exists."""
+
+        @SimplifyInterpreter()
+        def f(control):
+
+            @qml.cond(control)
+            def f():
+                qml.X(0) @ qml.X(0)
+
+            f()
+
+        jaxpr = jax.make_jaxpr(f)(True)
+
+        assert jaxpr.eqns[0].params["jaxpr_branches"][-1] is None  # no false branch
+
+        with qml.queuing.AnnotatedQueue() as q_true:
+            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, True)
+
+        qml.assert_equal(q_true.queue[0], qml.I(0))
+
+        with qml.queuing.AnnotatedQueue() as q_false:
+            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, False)
+
+        assert len(q_false.queue) == 0
 
     def test_for_loop(self):
         """Test the higher order for loop registration."""
@@ -272,3 +339,26 @@ class TestHigherOrderPrimitiveRegistrations:
         assert qml.math.allclose(res1, expected)
         res2 = jax.core.eval_jaxpr(jaxpr.jaxpr, [])
         assert qml.math.allclose(res2, expected)
+
+    @pytest.mark.parametrize("grad_f", (qml.grad, qml.jacobian))
+    def test_grad_and_jac(self, grad_f):
+        """Test interpreters can handle grad and jacobian HOP's."""
+
+        class DoubleAngle(PlxprInterpreter):
+
+            def interpret_operation(self, op):
+                leaves, struct = jax.tree_util.tree_flatten(op)
+                return jax.tree_util.tree_unflatten(struct, [2 * l for l in leaves])
+
+        @DoubleAngle()
+        def f(x):
+            @qml.qnode(qml.device("default.qubit", wires=2))
+            def circuit(y):
+                qml.RX(y, 0)
+                return qml.expval(qml.Z(0))
+
+            return grad_f(circuit)(x)
+
+        out = f(0.5)
+        expected = -2 * jax.numpy.sin(2 * 0.5)  # includes the factors of 2 from doubling the angle.
+        assert qml.math.allclose(out, expected)

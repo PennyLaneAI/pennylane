@@ -147,13 +147,13 @@ class PlxprInterpreter:
             Calling the returned decorator with a function will place the function into the
             primitive registrations map.
 
-        ```
-        my_primitive = jax.core.Primitive("my_primitve")
+        ..code-block:: python
 
-        @Interpreter_Type.register(my_primitive)
-        def handle_my_primitive(self: Interpreter_Type, *invals, **params)
-            return invals[0] + invals[1] # some sort of custom handling
-        ```
+            my_primitive = jax.core.Primitive("my_primitve")
+
+            @Interpreter_Type.register(my_primitive)
+            def handle_my_primitive(self: Interpreter_Type, *invals, **params)
+                return invals[0] + invals[1] # some sort of custom handling
 
         """
 
