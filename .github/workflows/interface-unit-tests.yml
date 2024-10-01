@@ -346,7 +346,6 @@ jobs:
       pytest_additional_args: --splits 5 --group ${{ matrix.group }}
       pytest_durations_file_path: '.github/workflows/core_tests_durations.json'
       pytest_store_durations: ${{ inputs.pytest_store_durations }}
-      additional_pip_packages: pytest-split
       requirements_file: ${{ github.event_name == 'schedule' && strategy.job-index == 0 && 'core.txt' || '' }}
       disable_new_opmath: ${{ inputs.disable_new_opmath }}
 
