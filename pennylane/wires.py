@@ -18,6 +18,7 @@ import functools
 import itertools
 from collections.abc import Hashable, Iterable, Sequence
 from typing import Union
+from importlib import import_module, util
 
 import numpy as np
 
@@ -50,19 +51,18 @@ def _process(wires):
         # of considering the elements of iterables as wire labels.
         wires = [wires]
 
-    try:
-        # pylint: disable=import-outside-toplevel
-        import jax
+    jax_spec = util.find_spec("jax")
+    if jax_spec is not None:
+        jax = import_module("jax")
 
         if isinstance(wires, jax.numpy.ndarray) and not isinstance(wires, jax.core.Tracer):
             wires = tuple(wires.tolist() if wires.ndim > 0 else (wires.item(),))
-
-    except ImportError as exc:
-        raise ImportError(
-            "JAX is required to process this input. "
-            "Please install it via: pip install jax jaxlib"
-        ) from exc
-
+            # TODO: something like qml.wires.Wires(jax.numpy.array(2)) should not work since it is not hashable
+    else:
+        if isinstance(wires, jax.numpy.ndarray):
+            raise ImportError(
+                "JAX is required to process this input. Please install it via: pip install jax jaxlib"
+            )
     try:
         # Use tuple conversion as a check for whether `wires` can be iterated over.
         # Note, this is not the same as `isinstance(wires, Iterable)` which would
