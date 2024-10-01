@@ -69,7 +69,7 @@ _INSTANCES_TO_TEST = [
     (qml.exp(qml.PauliX(0), 1.1), {}),
     (qml.pow(qml.IsingXX(1.1, [0, 1]), 2.5), {}),
     (qml.ops.Evolution(qml.PauliX(0), 5.2), {}),
-    (qml.QutritBasisState([1, 2, 0], wires=[0, 1, 2]), {}),
+    (qml.QutritBasisState([1, 2, 0], wires=[0, 1, 2]), {"skip_differentiation": True}),
     (qml.resource.FirstQuantization(1, 2, 1), {}),
     (qml.prod(qml.RX(1.1, 0), qml.RY(2.2, 0), qml.RZ(3.3, 1)), {}),
     (qml.Snapshot(measurement=qml.expval(qml.Z(0)), tag="hi"), {}),
