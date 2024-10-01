@@ -2123,6 +2123,14 @@ class Tensor(Observable):
         self._pauli_rep = None
         self.queue(init=True)
 
+        warnings.warn(
+            "qml.operation.Tensor uses the old approach to operator arithmetic, which will become "
+            "unavailable in version 0.40 of PennyLane. If you are experiencing issues, visit "
+            "https://docs.pennylane.ai/en/stable/news/new_opmath.html or contact the PennyLane "
+            "team on the discussion forum: https://discuss.pennylane.ai/.",
+            qml.PennyLaneDeprecationWarning,
+        )
+
         wires = [op.wires for op in self.obs]
         if len(wires) != len(set(wires)):
             warnings.warn(

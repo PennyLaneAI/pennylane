@@ -1357,6 +1357,15 @@ class TestOperatorIntegration:
         assert '"test_with_id"' not in op.label(decimals=2)
 
 
+# This test is outside the TestTensor class because that class only runs when legacy op math
+# is enabled. We want this test to run in normal CI as well.
+def test_tensor_deprecation():
+    """Test that a deprecation warning is raised when initializing a Tensor"""
+    ops = [qml.Z(0), qml.Z(1)]
+    with pytest.warns(qml.PennyLaneDeprecationWarning, match="qml.operation.Tensor"):
+        _ = Tensor(*ops)
+
+
 @pytest.mark.usefixtures("legacy_opmath_only")
 class TestTensor:
     """Unit tests for the Tensor class"""
@@ -2081,6 +2090,9 @@ with qml.operation.disable_new_opmath_cm(warn=False):
     with warnings.catch_warnings():
         warnings.filterwarnings(
             "ignore", "qml.ops.Hamiltonian uses", qml.PennyLaneDeprecationWarning
+        )
+        warnings.filterwarnings(
+            "ignore", "qml.operation.Tensor uses", qml.PennyLaneDeprecationWarning
         )
 
         equal_obs = [
@@ -2956,41 +2968,44 @@ def test_legacy_opmath_only_fixture():
     assert not qml.operation.active_new_opmath()
 
 
-CONVERT_HAMILTONIAN = [
-    (
-        [1.5, 0.5, 1, 1],
-        [
-            qml.Identity(1),
-            Tensor(qml.Z(1), qml.Z(2)),
-            Tensor(qml.X(1), qml.Y(2)),
-            qml.Hadamard(1),
-        ],
-    ),
-    ([0.5], [qml.X(1)]),
-    ([1], [Tensor(qml.X(0), qml.Y(1))]),
-    (
-        [-0.5, 0.4, -0.3, 0.2],
-        [
-            qml.Identity(0, 1),
-            Tensor(qml.X(1), qml.Y(2)),
-            qml.Identity(1),
-            Tensor(qml.Z(1), qml.Z(2)),
-        ],
-    ),
-    (
-        [0.0625, 0.0625, -0.0625, 0.0625, -0.0625, 0.0625, -0.0625, -0.0625],
-        [
-            Tensor(qml.Hadamard(0), qml.X(1), qml.X(2), qml.Y(3)),
-            Tensor(qml.X(0), qml.X(1), qml.Y(2), qml.X(3)),
-            Tensor(qml.X(0), qml.Y(1), qml.X(2), qml.X(3)),
-            Tensor(qml.X(0), qml.Y(1), qml.Y(2), qml.Y(3)),
-            Tensor(qml.Y(0), qml.X(1), qml.X(2), qml.X(3)),
-            Tensor(qml.Y(0), qml.X(1), qml.Hadamard(2), qml.Y(3)),
-            Tensor(qml.Y(0), qml.Y(1), qml.X(2), qml.Y(3)),
-            Tensor(qml.Y(0), qml.Y(1), qml.Y(2), qml.Hadamard(3)),
-        ],
-    ),
-]
+with warnings.catch_warnings():
+    warnings.filterwarnings("ignore", "qml.operation.Tensor uses", qml.PennyLaneDeprecationWarning)
+
+    CONVERT_HAMILTONIAN = [
+        (
+            [1.5, 0.5, 1, 1],
+            [
+                qml.Identity(1),
+                Tensor(qml.Z(1), qml.Z(2)),
+                Tensor(qml.X(1), qml.Y(2)),
+                qml.Hadamard(1),
+            ],
+        ),
+        ([0.5], [qml.X(1)]),
+        ([1], [Tensor(qml.X(0), qml.Y(1))]),
+        (
+            [-0.5, 0.4, -0.3, 0.2],
+            [
+                qml.Identity(0, 1),
+                Tensor(qml.X(1), qml.Y(2)),
+                qml.Identity(1),
+                Tensor(qml.Z(1), qml.Z(2)),
+            ],
+        ),
+        (
+            [0.0625, 0.0625, -0.0625, 0.0625, -0.0625, 0.0625, -0.0625, -0.0625],
+            [
+                Tensor(qml.Hadamard(0), qml.X(1), qml.X(2), qml.Y(3)),
+                Tensor(qml.X(0), qml.X(1), qml.Y(2), qml.X(3)),
+                Tensor(qml.X(0), qml.Y(1), qml.X(2), qml.X(3)),
+                Tensor(qml.X(0), qml.Y(1), qml.Y(2), qml.Y(3)),
+                Tensor(qml.Y(0), qml.X(1), qml.X(2), qml.X(3)),
+                Tensor(qml.Y(0), qml.X(1), qml.Hadamard(2), qml.Y(3)),
+                Tensor(qml.Y(0), qml.Y(1), qml.X(2), qml.Y(3)),
+                Tensor(qml.Y(0), qml.Y(1), qml.Y(2), qml.Hadamard(3)),
+            ],
+        ),
+    ]
 
 
 @pytest.mark.usefixtures("use_new_opmath")
@@ -3041,6 +3056,7 @@ def test_convert_to_hamiltonian_error(coeffs, obs):
 
 
 @pytest.mark.usefixtures("use_new_opmath")
+@pytest.mark.filterwarnings("ignore::pennylane.PennyLaneDeprecationWarning")
 def test_convert_to_H():
     operator = (
         2 * qml.X(0)
@@ -3049,10 +3065,7 @@ def test_convert_to_H():
         + 2 * (qml.Hadamard(3) + 3 * qml.Z(2))
     )
     with qml.operation.disable_new_opmath_cm(warn=False):
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning, match="qml.ops.Hamiltonian uses the old approach"
-        ):
-            legacy_H = qml.operation.convert_to_H(operator)
+        legacy_H = qml.operation.convert_to_H(operator)
     linear_combination = qml.operation.convert_to_H(operator)
 
     assert isinstance(legacy_H, qml.ops.Hamiltonian)
