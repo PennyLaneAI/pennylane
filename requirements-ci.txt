@@ -4,7 +4,7 @@ cvxpy
 cvxopt
 networkx
 rustworkx
-autograd
+autograd>=0.6.11
 toml
 appdirs
 packaging
