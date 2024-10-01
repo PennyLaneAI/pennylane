@@ -138,7 +138,6 @@ jobs:
           install_numpy_1: ${{ inputs.install_numpy_1 }}
           additional_pip_packages: ${{ inputs.additional_pip_packages }}
           additional_pip_packages_post: ${{ inputs.additional_pip_packages_post }}
-          install_pennylane_lightning_master: ${{ inputs.install_pennylane_lightning_master }}
           requirements_file: ${{ inputs.requirements_file }}
 
       - name: Set PyTest Args
