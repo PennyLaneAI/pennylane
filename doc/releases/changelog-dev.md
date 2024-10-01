@@ -162,6 +162,9 @@
 
 <h3>Documentation 📝</h3>
 
+* Fixed examples in the documentation of a few optimizers.
+  [(#6303)](https://github.com/PennyLaneAI/pennylane/pull/6303)
+
 * Corrected examples in the documentation of `qml.jacobian`.
   [(#6283)](https://github.com/PennyLaneAI/pennylane/pull/6283)
 
