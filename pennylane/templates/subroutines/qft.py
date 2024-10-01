@@ -137,8 +137,8 @@ class QFT(ResourcesOperation):
         self.hyperparameters["n_wires"] = len(wires)
         super().__init__(wires=wires, id=id)
 
-    def resources(self, gate_set=None):
-        num_wires = len(self.wires)
+    @staticmethod
+    def compute_resources(num_wires, gate_set=None):
         half_wires = num_wires // 2
 
         gate_types = defaultdict(int)
@@ -156,13 +156,12 @@ class QFT(ResourcesOperation):
             gate_sizes=gate_sizes
         )
 
-        r_controlled_phase_shifts = qml.resource.resource.resources_from_op(
-            qml.ControlledPhaseShift(1.23, [0, 1]),
-            gate_set=gate_set,
-        )
-        r_controlled_phase_shifts = r_controlled_phase_shifts * (num_wires*(num_wires - 1) // 2)
+        r_controlled_phase_shifts = qml.ControlledPhaseShift.compute_resources(gate_set=gate_set) * (num_wires*(num_wires - 1) // 2)
         
         return r_hadamards_and_swaps + r_controlled_phase_shifts
+    
+    def resources(self, gate_set=None):
+        return self.compute_resources(len(self.wires), gate_set=gate_set)
 
     def _flatten(self):
         return tuple(), (self.wires, tuple())

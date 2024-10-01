@@ -236,11 +236,11 @@ class PhaseAdder(ResourcesOperation):
         mod = self.hyperparameters["mod"]
         x_wires = self.hyperparameters["x_wires"]
 
+        num_x_wires = len(x_wires)
         rz_resources = qml.RZ.compute_resources()
 
         if mod == 2 ** len(x_wires):
-            rzs = k*rz_resources
-            return Resources(num_gates = rzs.num_gates, num_wires=len(x_wires), gate_types=rzs.gate_types, gate_sizes=rzs.gate_sizes)
+            return num_x_wires*rz_resources
 
         gate_types = defaultdict(int)
         gate_sizes = defaultdict(int)
@@ -249,24 +249,16 @@ class PhaseAdder(ResourcesOperation):
         cnots = 2
 
         # counts the resources from each call to _add_k_fourier
-        resources = (mod + 3*k)*rz_resources
-        gate_types = _add_dicts(gate_types, resources.gate_types)
-        gate_sizes = _add_dicts(gate_sizes, resources.gate_sizes)
-
-        resources = 4*resources_from_op(qml.QFT(wires=x_wires), gate_set=gate_set)
-        gate_types = _add_dicts(gate_types, resources.gate_types)
-        gate_sizes = _add_dicts(gate_sizes, resources.gate_sizes)
-
-        # counts the resources from controlled _add_k_fourier
-        resources = 2*mod*rz_resources
-        cnots += 2*mod
-        gate_types = _add_dicts(gate_types, resources.gate_types)
-        gate_sizes = _add_dicts(gate_sizes, resources.gate_sizes)
+        resources_add_k_four = (4*num_x_wires)*rz_resources
+        resources_qft = 4*qml.QFT.compute_resources(num_x_wires, gate_set=gate_set)
+        resources_ctrl_add_k_four = num_x_wires * qml.ControlledPhaseShift.compute_resources()
 
         gate_types["CNOT"] += cnots
         gate_sizes["2"] += cnots
+        resources_cnot = Resources(num_gates=cnots, gate_types=gate_types, gate_sizes=gate_sizes)
+        
+        return resources_add_k_four + resources_qft + resources_ctrl_add_k_four + resources_cnot
 
-        return Resources(num_gates=sum(gate_types.values()), gate_types=gate_types, gate_sizes=gate_sizes)
 
 def _add_dicts(d1, d2):
     for key, value in d2.items():

@@ -748,10 +748,12 @@ class Controlled(SymbolicOp, ResourcesOperation):
 
             for op_name, counts in base_res.gate_types.items():
                 if op_name in ("SWAP", "CNOT"):
-                    controlled_resources = controlled_resources + (counts * controlled_resources_processer(op_name, 2, 1))
+                    op_res = counts * controlled_resources_processer(op_name, 2, 1)
                 else: 
-                    controlled_resources = controlled_resources + (counts * controlled_resources_processer(op_name, 1, 1))
-            
+                    op_res = counts * controlled_resources_processer(op_name, 1, 1)
+
+                controlled_resources = controlled_resources + op_res
+
             return controlled_resources
         
         with qml.QueuingManager.stop_recording():
@@ -1006,8 +1008,8 @@ def generate_controlled_resources():
         ("PauliX", 1): qml.resource.Resources(num_gates=1, gate_types=defaultdict(int, {"CNOT": 1}), gate_sizes=defaultdict(int, {2: 1})),
         ("PauliY", 1): qml.CY.compute_resources(),
         ("PauliZ", 1): qml.CZ.compute_resources(),
-        ("S", 1): qml.ControlledPhaseShift.compute_resources(),
-        ("T", 1): qml.ControlledPhaseShift.compute_resources(),
+        ("S", 1): qml.resource.Resources(num_gates=5, gate_types=defaultdict(int, {"T": 3, "CNOT":2}), gate_sizes=defaultdict(int, {1: 3, 2:2})),
+        ("T", 1): qml.resource.Resources(num_gates=5, gate_types=defaultdict(int, {"T": 5}), gate_sizes=defaultdict(int, {1: 5})),
         ("CNOT", 1): qml.resource.Resources(num_gates=1, gate_types=defaultdict(int, {"Toffoli": 1}), gate_sizes=defaultdict(int, {3: 1})),
         ("RX", 1): qml.CRX.compute_resources(),
         ("RY", 1): qml.CRY.compute_resources(),

@@ -35,8 +35,8 @@ def _mul_out_k_mod(k, x_wires, mod, work_wire_aux, wires_aux):
 
 def _mul_out_k_mod_resources(k, x_wires, mod, work_wire_aux, wires_aux, gate_set=None):
     qft_resources = 2 * qml.resource.resource.resources_from_op(qml.QFT(wires=wires_aux), gate_set=gate_set)
-    c_seq_p_add_resources = qml.resource.resource.resources_from_op(
-        qml.ControlledSequence(qml.PhaseAdder(k, wires_aux, mod, work_wire_aux), control=x_wires),
+    c_seq_p_add_resources = len(x_wires) * qml.resource.resource.resources_from_op(
+        qml.ctrl(qml.PhaseAdder(k, wires_aux, mod, work_wire_aux), control=x_wires[0]),
         gate_set=gate_set,
     )
     return qft_resources + c_seq_p_add_resources
