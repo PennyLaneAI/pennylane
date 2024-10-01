@@ -46,7 +46,7 @@ on:
         description: Indicate if JAX should be installed or not
         required: false
         type: boolean
-        default: true
+        default: false
       jax_version:
         description: The version of JAX to install. Leave empty to install latest version.
         required: false
@@ -59,7 +59,7 @@ on:
         description: Indicate if TensorFlow should be installed or not
         required: false
         type: boolean
-        default: true
+        default: false
       tensorflow_version:
         description: The version of TensorFlow to install. Leave empty to install latest version.
         required: false
@@ -72,7 +72,7 @@ on:
         description: Indicate if PyTorch should be installed or not
         required: false
         type: boolean
-        default: true
+        default: false
       pytorch_version:
         description: The version of PyTorch to install. Leave empty to install latest version.
         required: false
