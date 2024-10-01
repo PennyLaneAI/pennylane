@@ -105,7 +105,9 @@ runs:
         ADDITIONAL_PIP_PACKAGES: ${{ inputs.additional_pip_packages }}
       run: |
         while IFS= read -r line; do
-          pip install $line
+          if [ ! -z "$line" ]; then
+              pip install $line
+          fi
         done <<< "$ADDITIONAL_PIP_PACKAGES"
 
     - name: Install PennyLane
