@@ -4,11 +4,11 @@ cvxpy
 cvxopt
 networkx
 rustworkx
-autograd>=0.6.11
+autograd
 toml
 appdirs
 packaging
-autoray>=0.6.1
+autoray>=0.6.11
 matplotlib
 requests
 rich
