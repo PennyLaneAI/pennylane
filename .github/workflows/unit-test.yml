@@ -24,16 +24,24 @@ on:
         required: false
         type: string
         default: '3.10'
+      
+      # TODO: Remove this
       install_numpy_1:
         description: Indicate if numpy 1 should be installed or not
         required: false
         type: boolean
         default: false
+      ####################
+      
+      # TODO: Remove this
       pipeline_mode:
         description: The pipeline mode can be unit-tests, benchmarks, or reference-benchmark
         required: false
         type: string
         default: 'unit-tests'
+      ####################
+      
+      # TODO: Remove this
       install_jax:
         description: Indicate if JAX should be installed or not
         required: false
@@ -44,6 +52,9 @@ on:
         required: false
         type: string
         default: ''
+      ####################
+      
+      # TODO: Remove this
       install_tensorflow:
         description: Indicate if TensorFlow should be installed or not
         required: false
@@ -54,6 +65,9 @@ on:
         required: false
         type: string
         default: ''
+      ####################
+      
+      # TODO: Remove this
       install_pytorch:
         description: Indicate if PyTorch should be installed or not
         required: false
@@ -64,6 +78,8 @@ on:
         required: false
         type: string
         default: ''
+      ####################
+      
       install_catalyst_nightly:
         description: Indicate if PennyLane-Catalyst should be installed from TestPyPi
         required: false
@@ -127,7 +143,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           ref: ${{ inputs.branch }}
           fetch-depth: ${{ inputs.checkout_fetch_depth }}
@@ -145,7 +161,7 @@ jobs:
       - name: Cache reference benchmarks
         if: ${{ inputs.pipeline_mode != 'unit-tests' }}
         id: benchmark-cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: benchmark_reference
           key: ${{ steps.benchmark_name.outputs.benchmark_name }}-benchmarks_references
