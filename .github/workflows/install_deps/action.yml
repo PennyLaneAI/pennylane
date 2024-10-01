@@ -101,10 +101,12 @@ runs:
     - name: Install additional PIP packages
       shell: bash
       if: inputs.additional_pip_packages != ''
+      env:
+        ADDITIONAL_PIP_PACKAGES: ${{ inputs.additional_pip_packages }}
       run: |
         while IFS= read -r line; do
           pip install $line
-        done <<< ${{ inputs.additional_pip_packages }}
+        done <<< "$ADDITIONAL_PIP_PACKAGES"
 
     - name: Install PennyLane
       shell: bash
