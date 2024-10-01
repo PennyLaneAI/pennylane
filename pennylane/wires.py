@@ -29,6 +29,14 @@ class WireError(Exception):
     """Exception raised by a :class:`~.pennylane.wires.Wire` object when it is unable to process wires."""
 
 
+if util.find_spec("jax") is not None:
+    jax = import_module("jax")
+    jax_available = True
+else:
+    jax_available = False
+    jax = None
+
+
 def _process(wires):
     """Converts the input to a tuple of wire labels.
 
@@ -51,9 +59,7 @@ def _process(wires):
         # of considering the elements of iterables as wire labels.
         wires = [wires]
 
-    if util.find_spec("jax") is not None:
-        jax = import_module("jax")
-
+    if jax_available:
         if isinstance(wires, jax.numpy.ndarray) and not isinstance(wires, jax.core.Tracer):
             wires = tuple(wires.tolist() if wires.ndim > 0 else (wires.item(),))
     else:
