@@ -31,6 +31,7 @@ class TestWiresJax:
         [
             (jax.numpy.array([0, 1, 2]), (0, 1, 2)),
             (jax.numpy.array([0]), (0,)),
+            (jax.numpy.array(0), (0,)),
             (jax.numpy.array([]), ()),
         ],
     )
@@ -40,9 +41,16 @@ class TestWiresJax:
         wires = Wires(iterable)
         assert wires.labels == expected
 
-    @pytest.mark.parametrize("input", [[jax.numpy.array([0, 1, 2]), jax.numpy.array([3, 4])]])
-    def test_error_for_incorrect_wire_types(self, input):
-        """Tests that a Wires object cannot be created from a list of JAX arrays."""
+    @pytest.mark.parametrize(
+        "input",
+        [
+            [jax.numpy.array([0, 1, 2]), jax.numpy.array([3, 4])],
+            [jax.numpy.array([0, 1, 2]), 3],
+            jax.numpy.array([[0, 1, 2]]),
+        ],
+    )
+    def test_error_for_incorrect_jax_arrays(self, input):
+        """Tests that a Wires object cannot be created from incorrect JAX arrays."""
 
         with pytest.raises(WireError, match="Wires must be hashable"):
             Wires(input)
@@ -63,3 +71,15 @@ class TestWiresJax:
         assert array.shape == (3,)
         for w1, w2 in zip(array, jax.numpy.array([4, 0, 1])):
             assert w1 == w2
+
+    @pytest.mark.parametrize(
+        "source", [jax.numpy.array([0, 1, 2]), jax.numpy.array([0]), jax.numpy.array(0)]
+    )
+    def test_jax_wires_pytree(self, source):
+        """Test that Wires class supports the PyTree flattening interface with JAX arrays."""
+
+        wires = Wires(source)
+        wires_flat, tree = jax.tree_util.tree_flatten(wires)
+        wires2 = jax.tree_util.tree_unflatten(tree, wires_flat)
+        assert isinstance(wires2, Wires), f"{wires2} is not Wires"
+        assert wires == wires2, f"{wires} != {wires2}"

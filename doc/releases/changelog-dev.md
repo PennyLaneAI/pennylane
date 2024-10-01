@@ -45,6 +45,9 @@
 
 <h4>Capturing and representing hybrid programs</h4>
 
+* `qml.wires.Wires` now accepts JAX arrays as input.
+  [(#6312)](https://github.com/PennyLaneAI/pennylane/pull/6312)
+
 * Differentiation of hybrid programs via `qml.grad` and `qml.jacobian` can now be captured
   into plxpr. When evaluating a captured `qml.grad` (`qml.jacobian`) instruction, it will
   dispatch to `jax.grad` (`jax.jacobian`), which differs from the Autograd implementation
