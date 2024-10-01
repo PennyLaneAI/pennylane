@@ -19,11 +19,12 @@ import abc
 from collections.abc import Iterable
 from dataclasses import replace
 from numbers import Number
-from typing import Optional, Union
+from typing import Optional, Union, overload
 
 from pennylane import Tracker
 from pennylane.measurements import Shots
 from pennylane.tape import QuantumScript, QuantumScriptOrBatch
+from pennylane.tape.qscript import QuantumScriptBatch
 from pennylane.transforms.core import TransformProgram
 from pennylane.typing import Result, ResultBatch
 from pennylane.wires import Wires
@@ -315,6 +316,18 @@ class Device(abc.ABC):
             return TransformProgram(), replace(execution_config, gradient_method="device")
         return TransformProgram(), execution_config
 
+    @abc.abstractmethod
+    @overload
+    def execute(
+        self, circuits: QuantumScript, execution_config: ExecutionConfig = DefaultExecutionConfig
+    ) -> Result: ...
+    @abc.abstractmethod
+    @overload
+    def execute(
+        self,
+        circuits: QuantumScriptBatch,
+        execution_config: ExecutionConfig = DefaultExecutionConfig,
+    ) -> ResultBatch: ...
     @abc.abstractmethod
     def execute(
         self,
