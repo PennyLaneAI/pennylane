@@ -14,7 +14,7 @@ concurrency:
 
 jobs:
   numpy_1_tests:
-    uses: ./.github/workflows/interface-unit-test.yml
+    uses: ./.github/workflows/interface-unit-tests.yml
     secrets:
       codecov_token: ${{ secrets.CODECOV_TOKEN }}
     with:
