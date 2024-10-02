@@ -434,8 +434,8 @@ jobs:
       # catalyst requires the latest version of pennylane that is about to be released.
       # Installing catalyst after pennylane to make sure that the latest catalyst is used.
       additional_pip_packages_post: |
-        ${{ needs.default-dependency-versions.outputs.pennylane-lightning-latest }}
         ${{ needs.default-dependency-versions.outputs.catalyst-nightly }}
+        ${{ needs.default-dependency-versions.outputs.pennylane-lightning-latest }}
 
       requirements_file: ${{ github.event_name == 'schedule' && strategy.job-index == 0 && 'external.txt' || '' }}
       disable_new_opmath: ${{ inputs.disable_new_opmath }}
