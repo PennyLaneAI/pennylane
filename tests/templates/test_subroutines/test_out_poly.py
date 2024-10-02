@@ -22,24 +22,20 @@ from pennylane import numpy as np
 
 
 def f_test(x, y, z):
-    return x ** 2 + y * x * z ** 5 - z ** 3 + 3
+    return x**2 + y * x * z**5 - z**3 + 3
+
 
 def test_standard_validity_OutPoly():
     """Check the operation using the assert_valid function."""
     wires = qml.registers({"x": 3, "y": 3, "z": 3, "output": 3, "aux": 2})
 
-    op = qml.OutPoly(f_test,
-                    wires["x"],
-                    wires["y"],
-                    wires["z"],
-                    wires["output"],
-                    mod = 5,
-                    work_wires = wires["aux"]
-                    )
+    op = qml.OutPoly(
+        f_test, wires["x"], wires["y"], wires["z"], wires["output"], mod=5, work_wires=wires["aux"]
+    )
 
     print(op.wires)
 
-    op2 = op.map_wires({i:20 + i for i in range(14)})
+    op2 = op.map_wires({i: 20 + i for i in range(14)})
     print(op2.wires)
 
     qml.ops.functions.assert_valid(op)
@@ -51,11 +47,10 @@ class TestOutPoly:
     @pytest.mark.parametrize(
         ("f", "x_wires", "y_wires", "output_wires", "mod", "work_wires"),
         [
-            (lambda x, y: 3 * x ** 3 - 3 * y, [0, 1, 2], [3, 4, 5], [6, 7, 8, 9], 6, [10, 11]),
+            (lambda x, y: 3 * x**3 - 3 * y, [0, 1, 2], [3, 4, 5], [6, 7, 8, 9], 6, [10, 11]),
             (lambda x, y: 2 * x * y - 3 * x, [0, 1, 2], [3, 4, 5], [6, 7, 8, 9], 7, [10, 11]),
             (lambda x, y: -2 * x - 3 * y + 1, [0, 1, 2], [3, 4, 5], [6, 7, 8, 9], None, None),
             (lambda x, y: 2 * x * y - 3 * x + 5, [0, 1, 2], [3, 4, 5], [6, 7, 8, 9], None, None),
-
         ],
     )
     def test_operation_result(
@@ -69,11 +64,11 @@ class TestOutPoly:
 
             qml.BasisEmbedding(2, wires=x_wires)
             qml.BasisEmbedding(1, wires=y_wires)
-            qml.OutPoly(f, x_wires, y_wires, output_wires, mod = mod, work_wires = work_wires)
+            qml.OutPoly(f, x_wires, y_wires, output_wires, mod=mod, work_wires=work_wires)
             return qml.probs(wires=output_wires)
 
         if mod == None:
-            mod = int(2**len(output_wires))
+            mod = int(2 ** len(output_wires))
         assert np.isclose(np.argmax(circuit()), f(2, 1) % mod)
 
     @pytest.mark.parametrize(
@@ -82,7 +77,7 @@ class TestOutPoly:
             ([0, 1, 2], [3, 4, 5], [6, 7, 8, 9], 6.1, [10, 11], "mod must be integer."),
             ([0, 1, 2], [3, 4, 5], [6, 7, 8, 9], 6, [0, 11], "None of the wires in"),
             ([0, 1, 2], [3, 4, 5], [6, 7, 8, 9], 6, [10], "If mod is not"),
-            ([0, 1, 2], None,  [6, 7, 8, 9], 6, [10,11], "The function takes"),
+            ([0, 1, 2], None, [6, 7, 8, 9], 6, [10, 11], "The function takes"),
         ],
     )
     def test_operation_and_test_wires_error(
@@ -92,16 +87,28 @@ class TestOutPoly:
 
         with pytest.raises(ValueError, match=msg_match):
             if y_wires:
-                qml.OutPoly(lambda x, y: 3 * x ** 3 - 3 * y, x_wires, y_wires, output_wires, mod=mod, work_wires=work_wires)
+                qml.OutPoly(
+                    lambda x, y: 3 * x**3 - 3 * y,
+                    x_wires,
+                    y_wires,
+                    output_wires,
+                    mod=mod,
+                    work_wires=work_wires,
+                )
             else:
-                qml.OutPoly(lambda x, y: 3 * x ** 3 - 3 * y, x_wires, output_wires, mod=mod, work_wires=work_wires)
-
+                qml.OutPoly(
+                    lambda x, y: 3 * x**3 - 3 * y,
+                    x_wires,
+                    output_wires,
+                    mod=mod,
+                    work_wires=work_wires,
+                )
 
     def test_non_polynomial_function_error(self):
         """Test that proper errors are raised for non polynomial functions"""
 
         def f(x, y):
-            return x + y ** 0.5
+            return x + y**0.5
 
         x_wires = [0, 1, 2]
         y_wires = [3, 4, 5]
@@ -123,10 +130,8 @@ class TestOutPoly:
 
         x_wires = [0, 1, 2]
         y_wires = [3, 4, 5]
-        output_wires = [6,7,8]
-        poly_decomposition = qml.OutPoly(
-            f, x_wires, y_wires, output_wires
-        ).decomposition()
+        output_wires = [6, 7, 8]
+        poly_decomposition = qml.OutPoly(f, x_wires, y_wires, output_wires).decomposition()
 
         for op in poly_decomposition:
             if isinstance(op, qml.QFT):
@@ -164,5 +169,3 @@ class TestOutPoly:
         result = sum(bit * (2**i) for i, bit in enumerate(reversed(circuit())))
         assert jax.numpy.allclose(result, (x + k) % mod)
     '''
-
-
