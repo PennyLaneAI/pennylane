@@ -232,7 +232,7 @@ def fermi_hubbard(
     **Example**
 
     >>> n_cells = [2]
-    >>> t = [0.5]
+    >>> t = 0.5
     >>> u = 1.0
     >>> spin_ham = qml.spin.fermi_hubbard("chain", n_cells, hopping=t, coulomb=u)
     >>> spin_ham
@@ -374,8 +374,7 @@ def emery(
     >>> h = 0.5
     >>> u = 1.0
     >>> v = 0.2
-    >>> spin_ham = qml.spin.emery("chain", n_cells, hopping=h, coulomb=u,
-                   intersite_coupling=v)
+    >>> spin_ham = qml.spin.emery("chain", n_cells, hopping=h, coulomb=u, intersite_coupling=v)
     >>> spin_ham
     (
       -0.25 * (Y(0) @ Z(1) @ Y(2))
