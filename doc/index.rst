@@ -137,7 +137,7 @@ If you are having issues, please let us know by posting the issue on our GitHub 
 
 We encourage contributions — simply fork the PennyLane repository, and then make a
 `pull request <https://help.github.com/articles/about-pull-requests/>`_ containing
-your contribution. All contributers to PennyLane will be listed as authors on the releases.
+your contribution. All contributors to PennyLane will be listed as authors on the releases.
 
 To chat directly with the team designing and building PennyLane, as well as members of
 our community — ranging from quantum machine learning researchers, to students, to those
@@ -216,7 +216,8 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    code/qml_qaoa
    code/qml_qchem
    code/qml_qnn
-
+   code/qml_spin
+   
 .. toctree::
    :maxdepth: 1
    :caption: Internals

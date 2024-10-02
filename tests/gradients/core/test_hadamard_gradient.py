@@ -174,7 +174,7 @@ class TestHadamardGrad:
 
     @pytest.mark.parametrize("theta", np.linspace(-2 * np.pi, 2 * np.pi, 7))
     def test_rot_gradient(self, theta, tol):
-        """Tests that the automatic gradient of an arbitrary Euler-angle-parameterized gate is correct."""
+        """Tests that the automatic gradient of an arbitrary Euler-angle-parametrized gate is correct."""
         dev = qml.device("default.qubit", wires=2)
         params = np.array([theta, theta**3, np.sqrt(2) * theta])
 
@@ -283,7 +283,7 @@ class TestHadamardGrad:
 
     @pytest.mark.parametrize("theta", np.linspace(-2 * np.pi, np.pi, 7))
     def test_CRot_gradient_with_expansion(self, theta, tol):
-        """Tests that the automatic gradient of an arbitrary controlled Euler-angle-parameterized
+        """Tests that the automatic gradient of an arbitrary controlled Euler-angle-parametrized
         gate is correct."""
         dev = qml.device("default.qubit", wires=3)
         a, b, c = np.array([theta, theta**3, np.sqrt(2) * theta])
@@ -875,30 +875,6 @@ class TestHadamardGradEdgeCases:
         with pytest.raises(qml.QuantumFunctionError, match="No trainable parameters."):
             qml.gradients.hadamard_grad(circuit)(weights)
 
-    @pytest.mark.parametrize(
-        "interface",
-        [
-            pytest.param("jax", marks=pytest.mark.jax),
-            pytest.param("autograd", marks=pytest.mark.autograd),
-            pytest.param("torch", marks=pytest.mark.torch),
-            pytest.param("tf", marks=pytest.mark.tf),
-        ],
-    )
-    def test_no_trainable_params_qnode_legacy_opmath(self, interface):
-        """Test that the correct ouput and warning is generated in the absence of any trainable
-        parameters"""
-        dev = qml.device(f"default.qubit.{interface}", wires=2)
-
-        @qml.qnode(dev, interface=interface)
-        def circuit(weights):
-            qml.RX(weights[0], wires=0)
-            qml.RY(weights[1], wires=0)
-            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
-
-        weights = [0.1, 0.2]
-        with pytest.raises(qml.QuantumFunctionError, match="No trainable parameters."):
-            qml.gradients.hadamard_grad(circuit)(weights)
-
     def test_no_trainable_params_tape(self):
         """Test that the correct ouput and warning is generated in the absence of any trainable
         parameters"""
@@ -1056,12 +1032,10 @@ class TestHadamardTestGradDiff:
     """Test that the transform is differentiable"""
 
     @pytest.mark.autograd
-    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.autograd"])
-    def test_autograd(self, dev_name):
+    def test_autograd(self):
         """Tests that the output of the hadamard gradient transform
         can be differentiated using autograd, yielding second derivatives."""
-        dev = qml.device(dev_name, wires=3)
-        execute_fn = dev.execute if dev_name == "default.qubit" else dev.batch_execute
+        dev = qml.device("default.qubit", wires=3)
         params = np.array([0.543, -0.654], requires_grad=True)
 
         def cost_fn_hadamard(x):
@@ -1074,7 +1048,7 @@ class TestHadamardTestGradDiff:
             tape = qml.tape.QuantumScript.from_queue(q)
             tape.trainable_params = {0, 1}
             tapes, fn = qml.gradients.hadamard_grad(tape)
-            jac = fn(execute_fn(tapes))
+            jac = fn(dev.execute(tapes))
             return qml.math.stack(jac)
 
         def cost_fn_param_shift(x):
@@ -1087,7 +1061,7 @@ class TestHadamardTestGradDiff:
             tape = qml.tape.QuantumScript.from_queue(q)
             tape.trainable_params = {0, 1}
             tapes, fn = qml.gradients.param_shift(tape)
-            jac = fn(execute_fn(tapes))
+            jac = fn(dev.execute(tapes))
             return qml.math.stack(jac)
 
         res_hadamard = qml.jacobian(cost_fn_hadamard)(params)
@@ -1095,14 +1069,12 @@ class TestHadamardTestGradDiff:
         assert np.allclose(res_hadamard, res_param_shift)
 
     @pytest.mark.tf
-    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.tf"])
-    def test_tf(self, dev_name):
+    def test_tf(self):
         """Tests that the output of the hadamard gradient transform
         can be differentiated using TF, yielding second derivatives."""
         import tensorflow as tf
 
-        dev = qml.device(dev_name, wires=3)
-        execute_fn = dev.execute if dev_name == "default.qubit" else dev.batch_execute
+        dev = qml.device("default.qubit", wires=3)
         params = tf.Variable([0.543, -0.654], dtype=tf.float64)
 
         with tf.GradientTape() as t_h:
@@ -1115,7 +1087,7 @@ class TestHadamardTestGradDiff:
             tape = qml.tape.QuantumScript.from_queue(q)
             tape.trainable_params = {0, 1}
             tapes, fn = qml.gradients.hadamard_grad(tape)
-            jac_h = fn(execute_fn(tapes))
+            jac_h = fn(dev.execute(tapes))
             jac_h = qml.math.stack(jac_h)
 
         with tf.GradientTape() as t_p:
@@ -1128,7 +1100,7 @@ class TestHadamardTestGradDiff:
             tape = qml.tape.QuantumScript.from_queue(q)
             tape.trainable_params = {0, 1}
             tapes, fn = qml.gradients.param_shift(tape)
-            jac_p = fn(execute_fn(tapes))
+            jac_p = fn(dev.execute(tapes))
             jac_p = qml.math.stack(jac_p)
 
         res_hadamard = t_h.jacobian(jac_h, params)
@@ -1137,14 +1109,12 @@ class TestHadamardTestGradDiff:
         assert np.allclose(res_hadamard, res_param_shift)
 
     @pytest.mark.torch
-    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.torch"])
-    def test_torch(self, dev_name):
+    def test_torch(self):
         """Tests that the output of the hadamard gradient transform
         can be differentiated using Torch, yielding second derivatives."""
         import torch
 
-        dev = qml.device(dev_name, wires=3)
-        execute_fn = dev.execute if dev_name == "default.qubit" else dev.batch_execute
+        dev = qml.device("default.qubit", wires=3)
         params = torch.tensor([0.543, -0.654], dtype=torch.float64, requires_grad=True)
 
         def cost_h(x):
@@ -1157,8 +1127,7 @@ class TestHadamardTestGradDiff:
             tape = qml.tape.QuantumScript.from_queue(q)
             tapes, fn = qml.gradients.hadamard_grad(tape)
 
-            jac = fn(execute_fn(tapes))
-            return jac
+            return fn(dev.execute(tapes))
 
         def cost_p(x):
             with qml.queuing.AnnotatedQueue() as q:
@@ -1170,8 +1139,7 @@ class TestHadamardTestGradDiff:
             tape = qml.tape.QuantumScript.from_queue(q)
             tapes, fn = qml.gradients.param_shift(tape)
 
-            jac = fn(execute_fn(tapes))
-            return jac
+            return fn(dev.execute(tapes))
 
         res_hadamard = torch.autograd.functional.jacobian(cost_h, params)
         res_param_shift = torch.autograd.functional.jacobian(cost_p, params)
@@ -1180,15 +1148,13 @@ class TestHadamardTestGradDiff:
         assert np.allclose(res_hadamard[1].detach(), res_param_shift[1].detach())
 
     @pytest.mark.jax
-    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.jax"])
-    def test_jax(self, dev_name):
+    def test_jax(self):
         """Tests that the output of the hadamard gradient transform
         can be differentiated using JAX, yielding second derivatives."""
         import jax
         from jax import numpy as jnp
 
-        dev = qml.device(dev_name, wires=3)
-        execute_fn = dev.execute if dev_name == "default.qubit" else dev.batch_execute
+        dev = qml.device("default.qubit", wires=3)
         params = jnp.array([0.543, -0.654])
 
         def cost_h(x):
@@ -1202,8 +1168,7 @@ class TestHadamardTestGradDiff:
             tape.trainable_params = {0, 1}
             tapes, fn = qml.gradients.hadamard_grad(tape)
 
-            jac = fn(execute_fn(tapes))
-            return jac
+            return fn(dev.execute(tapes))
 
         def cost_p(x):
             with qml.queuing.AnnotatedQueue() as q:
@@ -1216,8 +1181,7 @@ class TestHadamardTestGradDiff:
             tape.trainable_params = {0, 1}
             tapes, fn = qml.gradients.hadamard_grad(tape)
 
-            jac = fn(execute_fn(tapes))
-            return jac
+            return fn(dev.execute(tapes))
 
         res_hadamard = jax.jacobian(cost_h)(params)
         res_param_shift = jax.jacobian(cost_p)(params)

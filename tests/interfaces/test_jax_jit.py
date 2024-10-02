@@ -107,7 +107,7 @@ class TestJaxExecuteUnitTests:
                 interface="None",
             )[0]
 
-        with pytest.raises(ValueError, match="Unknown interface"):
+        with pytest.raises(qml.QuantumFunctionError, match="Unknown interface"):
             cost(a, device=dev)
 
     def test_grad_on_execution(self, mocker):
@@ -884,20 +884,47 @@ class TestVectorValuedJIT:
             assert jax.numpy.allclose(r, e, atol=1e-7)
 
 
-def test_jit_allcounts():
-    """Test jitting with counts with all_outcomes == True."""
+class TestJitAllCounts:
 
-    tape = qml.tape.QuantumScript(
-        [qml.RX(0, 0)], [qml.counts(wires=(0, 1), all_outcomes=True)], shots=50
-    )
-    device = qml.device("default.qubit")
+    @pytest.mark.parametrize("counts_wires", (None, (0, 1)))
+    def test_jit_allcounts(self, counts_wires):
+        """Test jitting with counts with all_outcomes == True."""
 
-    res = jax.jit(qml.execute, static_argnums=(1, 2))((tape,), device, qml.gradients.param_shift)[0]
+        tape = qml.tape.QuantumScript(
+            [qml.RX(0, 0), qml.I(1)], [qml.counts(wires=counts_wires, all_outcomes=True)], shots=50
+        )
+        device = qml.device("default.qubit")
 
-    assert set(res.keys()) == {"00", "01", "10", "11"}
-    assert qml.math.allclose(res["00"], 50)
-    for val in ["01", "10", "11"]:
-        assert qml.math.allclose(res[val], 0)
+        res = jax.jit(qml.execute, static_argnums=(1, 2))(
+            (tape,), device, qml.gradients.param_shift
+        )[0]
+
+        assert set(res.keys()) == {"00", "01", "10", "11"}
+        assert qml.math.allclose(res["00"], 50)
+        for val in ["01", "10", "11"]:
+            assert qml.math.allclose(res[val], 0)
+
+    def test_jit_allcounts_broadcasting(self):
+        """Test jitting with counts with all_outcomes == True."""
+
+        tape = qml.tape.QuantumScript(
+            [qml.RX(np.array([0.0, 0.0]), 0)],
+            [qml.counts(wires=(0, 1), all_outcomes=True)],
+            shots=50,
+        )
+        device = qml.device("default.qubit")
+
+        res = jax.jit(qml.execute, static_argnums=(1, 2))(
+            (tape,), device, qml.gradients.param_shift
+        )[0]
+        assert isinstance(res, tuple)
+        assert len(res) == 2
+
+        for ri in res:
+            assert set(ri.keys()) == {"00", "01", "10", "11"}
+            assert qml.math.allclose(ri["00"], 50)
+            for val in ["01", "10", "11"]:
+                assert qml.math.allclose(ri[val], 0)
 
 
 @pytest.mark.xfail(reason="Need to figure out how to handle this case in a less ambiguous manner")

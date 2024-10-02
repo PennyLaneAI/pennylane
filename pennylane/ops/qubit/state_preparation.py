@@ -15,6 +15,8 @@
 This submodule contains the discrete-variable quantum operations concerned
 with preparing a certain state on the device.
 """
+import warnings
+
 # pylint:disable=too-many-branches,abstract-method,arguments-differ,protected-access,no-member
 from typing import Optional
 
@@ -214,15 +216,71 @@ class StatePrep(StatePrepBase):
         validate_norm (bool): whether to validate the norm of the input state
 
 
-    **Example**
+    Example:
 
-    >>> dev = qml.device('default.qubit', wires=2)
-    >>> @qml.qnode(dev)
-    ... def example_circuit():
-    ...     qml.StatePrep(np.array([1, 0, 0, 0]), wires=range(2))
-    ...     return qml.state()
-    >>> print(example_circuit())
-    [1.+0.j 0.+0.j 0.+0.j 0.+0.j]
+        StatePrep encodes a normalized :math:`2^n`-dimensional state vector into a state
+        of :math:`n` qubits:
+
+        .. code-block:: python
+
+            import pennylane as qml
+
+            dev = qml.device('default.qubit', wires=2)
+
+            @qml.qnode(dev)
+            def circuit(state=None):
+                qml.StatePrep(state, wires=range(2))
+                return qml.expval(qml.Z(0)), qml.state()
+
+            res, state = circuit([1/2, 1/2, 1/2, 1/2])
+
+        The final state of the device is - up to a global phase - equivalent to the input passed to the circuit:
+
+        >>> state
+        tensor([0.5+0.j, 0.5+0.j, 0.5+0.j, 0.5+0.j], requires_grad=True)
+
+        **Differentiating with respect to the state**
+
+        Due to non-trivial classical processing to construct the state preparation circuit,
+        the state argument is in general **not differentiable**.
+
+        **Normalization**
+
+        The template will raise an error if the state input is not normalized.
+        One can set ``normalize=True`` to automatically normalize it:
+
+        .. code-block:: python
+
+            @qml.qnode(dev)
+            def circuit(state=None):
+                qml.StatePrep(state, wires=range(2), normalize=True)
+                return qml.expval(qml.Z(0)), qml.state()
+
+            res, state = circuit([15, 15, 15, 15])
+
+        >>> state
+        tensor([0.5+0.j, 0.5+0.j, 0.5+0.j, 0.5+0.j], requires_grad=True)
+
+        **Padding**
+
+        If the dimension of the state vector is smaller than the number of amplitudes,
+        one can automatically pad it with a constant for the missing dimensions using the ``pad_with`` option:
+
+        .. code-block:: python
+
+            from math import sqrt
+
+            @qml.qnode(dev)
+            def circuit(state=None):
+                qml.StatePrep(state, wires=range(2), pad_with=0.)
+                return qml.expval(qml.Z(0)), qml.state()
+
+            res, state = circuit([1/sqrt(2), 1/sqrt(2)])
+
+        >>> state
+        tensor([0.70710678+0.j, 0.70710678+0.j, 0.        +0.j, 0.        +0.j], requires_grad=True)
+
+
     """
 
     num_wires = AnyWires
@@ -386,9 +444,19 @@ class StatePrep(StatePrepBase):
         return state
 
 
-# pylint: disable=missing-class-docstring
 class QubitStateVector(StatePrep):
-    pass  # QSV is still available
+    r"""
+    ``QubitStateVector`` is deprecated and will be removed in version 0.40. Instead, please use ``StatePrep``.
+    """
+
+    # pylint: disable=too-many-arguments
+    def __init__(self, state, wires, pad_with=None, normalize=False, validate_norm=True):
+        warnings.warn(
+            "QubitStateVector is deprecated and will be removed in version 0.40. "
+            "Instead, please use StatePrep.",
+            qml.PennyLaneDeprecationWarning,
+        )
+        super().__init__(state, wires, pad_with, normalize, validate_norm)
 
 
 class QubitDensityMatrix(Operation):

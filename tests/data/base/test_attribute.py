@@ -285,8 +285,8 @@ class TestAttribute:
     )
     def test_repr(self, val, attribute_type):
         """Test that __repr__ has the expected format."""
-
-        assert repr(attribute(val)) == f"{attribute_type.__name__}({repr(val)})"
+        with np.printoptions(legacy="1.21"):
+            assert repr(attribute(val)) == f"{attribute_type.__name__}({repr(val)})"
 
     @pytest.mark.parametrize(
         "val",

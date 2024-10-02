@@ -27,8 +27,12 @@ import pennylane as qml
 jax = pytest.importorskip("jax")
 jnp = jax.numpy
 
-pytestmark = pytest.mark.jax
-
+pytestmark = [
+    pytest.mark.jax,
+    pytest.mark.filterwarnings(
+        "ignore:BasisStatePreparation is deprecated:pennylane.PennyLaneDeprecationWarning"
+    ),
+]
 original_op_bind_code = qml.operation.Operator._primitive_bind_call.__code__
 
 
@@ -876,7 +880,7 @@ class TestModifiedTemplates:
         kwargs = {
             "x_wires": [0, 1],
             "output_wires": [4, 5],
-            "base": 2,
+            "base": 3,
             "mod": None,
             "work_wires": [2, 3],
         }

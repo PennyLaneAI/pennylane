@@ -77,8 +77,8 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
             the Pauli words, can be ``'qwc'`` (qubit-wise commuting), ``'commuting'``, or
             ``'anticommuting'``.
         graph_colourer (str): The heuristic algorithm to employ for graph
-                colouring, can be ``'lf'`` (Largest First), ``'rlf'`` (Recursive
-                Largest First), ``'dsatur'`` (Degree of Saturation), or ``'gis'`` (IndependentSet). Defaults to ``'lf'``.
+            colouring, can be ``'lf'`` (Largest First), ``'rlf'`` (Recursive
+            Largest First), ``'dsatur'`` (Degree of Saturation), or ``'gis'`` (IndependentSet). Defaults to ``'lf'``.
 
     Raises:
         ValueError: If arguments specified for ``grouping_type`` or ``graph_colourer``
@@ -158,7 +158,8 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
         """Adjacency matrix for the complement of the Pauli graph determined by the ``grouping_type``.
 
         The adjacency matrix for an undirected graph of N nodes is an N x N symmetric binary
-        matrix, where matrix elements of 1 denote an edge (grouping strategy is **not** satisfied), and matrix elements of 0 denote no edge (grouping strategy is satisfied).
+        matrix, where matrix elements of 1 denote an edge (grouping strategy is **not** satisfied), and
+        matrix elements of 0 denote no edge (grouping strategy is satisfied).
         """
         return _adj_matrix_from_symplectic(
             self.binary_observables, grouping_type=self.grouping_type
@@ -172,7 +173,7 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
         Edge ``(i,j)`` is present in the graph if ``observable[i]`` and ``observable[j]`` do **not** satisfy
         the ``grouping_type`` strategy.
 
-        The nodes are the observables (can only be accesssed through their integer index).
+        The nodes are the observables (can only be accessed through their integer index).
         """
         # Use upper triangle since adjacency matrix is symmetric and we have an undirected graph
         edges = list(zip(*np.where(np.triu(self.adj_matrix, k=1))))
@@ -193,10 +194,12 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
 
     def partition_observables(self) -> list[list]:
         """
-        Partition the observables into groups of observables mutually satisfying the binary relation determined by ``self.grouping_type``.
+        Partition the observables into groups of observables mutually satisfying the binary relation determined
+        by ``self.grouping_type``.
 
         Returns:
-            list[list[Operator]]: List of partitions of the Pauli observables made up of mutually (anti-)commuting observables.
+            list[list[Operator]]: List of partitions of the Pauli observables made up of mutually (anti-)commuting
+            observables.
         """
         if self.graph_colourer != "rlf":
             return self.pauli_partitions_from_graph()
@@ -244,13 +247,13 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
         tuples containing the indices of observables satisying the binary relation determined by ``self.grouping_type``.
 
         Args:
-            observables_indices (tensor_like, optional): A tensor or list of indices associated to each observable.
+            observables_indices (Optional[TensorLike]): A tensor or list of indices associated to each observable.
                 This argument is helpful when the observables used in the graph colouring are part of a bigger set of observables.
                 Defaults to None. If ``None``, the partitions are made up of the relative indices, i.e. assuming ``self.observables``
                 have indices in [0, len(observables)-1].
 
         Raises:
-            IndexError: When the tensor_like of observables_indices is not of the same length as the observables.
+            IndexError: When ``observables_indices`` is not of the same length as the observables.
 
         Returns:
             tuple[tuple[int]]: Tuple of tuples containing the indices of the partitioned observables.
@@ -272,7 +275,7 @@ class PauliGroupingStrategy:  # pylint: disable=too-many-instance-attributes
         TODO: Use this function to calculate custom indices instead of calculating observables first.
 
         Args:
-            observables_indices (tensor_like, optional): A tensor or list of indices associated to each observable.
+            observables_indices (Optional[TensorLike]): A tensor or list of indices associated to each observable.
                 This argument is helpful when the observables used in the graph colouring are part of a bigger set of observables.
                 Defaults to None.
 
@@ -476,7 +479,7 @@ def group_observables(
     Args:
         observables (list[Observable]): a list of Pauli word ``Observable`` instances (Pauli
             operation instances and :class:`~.Tensor` instances thereof)
-        coefficients (tensor_like): A tensor or list of coefficients. If not specified,
+        coefficients (TensorLike): A tensor or list of coefficients. If not specified,
             output ``partitioned_coeffs`` is not returned.
         grouping_type (str): The type of binary relation between Pauli words.
             Can be ``'qwc'``, ``'commuting'``, or ``'anticommuting'``.
@@ -489,7 +492,7 @@ def group_observables(
 
            * list[list[Observable]]: A list of the obtained groupings. Each grouping
              is itself a list of Pauli word ``Observable`` instances.
-           * list[tensor_like]: A list of coefficient groupings. Each coefficient
+           * list[TensorLike]: A list of coefficient groupings. Each coefficient
              grouping is itself a tensor or list of the grouping's corresponding coefficients. This is only
              returned if coefficients are specified.
 
@@ -506,10 +509,9 @@ def group_observables(
     >>> coeffs = [1.43, 4.21, 0.97]
     >>> obs_groupings, coeffs_groupings = group_observables(obs, coeffs, 'anticommuting', 'lf')
     >>> obs_groupings
-    [[Z(1), X(0) @ X(1)],
-     [Y(0)]]
+    [[Y(0), X(0) @ X(1)], [Z(1)]]
     >>> coeffs_groupings
-    [[0.97, 4.21], [1.43]]
+    [[1.43, 4.21], [0.97]]
     """
 
     if coefficients is not None and qml.math.shape(coefficients)[0] != len(observables):

@@ -94,8 +94,6 @@ class TestSampleState:
 
         # prng_key specified, should call _sample_state_jax
         _ = sample_state(state, 10, prng_key=jax.random.PRNGKey(15))
-        # prng_key defaults to None, should NOT call _sample_state_jax
-        _ = sample_state(state, 10, rng=15)
 
         spy.assert_called_once()
 
@@ -593,7 +591,7 @@ class TestInvalidStateSamples:
         mp = qml.expval(qml.PauliZ(0))
         _shots = Shots(shots)
 
-        with pytest.raises(ValueError, match="probabilities do not sum to 1"):
+        with pytest.raises(ValueError, match=r"(?i)probabilities do not sum to 1"):
             _ = measure_with_samples([mp], state, _shots)
 
     @pytest.mark.all_interfaces
@@ -621,7 +619,7 @@ class TestInvalidStateSamples:
     def test_nan_float_result(self, mp, interface, shots):
         """Test that the result of circuits with 0 probability postselections is NaN with the
         expected shape."""
-        state = qml.math.full((2, 2), np.NaN, like=interface)
+        state = qml.math.full((2, 2), np.nan, like=interface)
         res = measure_with_samples((mp,), state, _FlexShots(shots), is_state_batched=False)
 
         if not isinstance(shots, list):
@@ -648,7 +646,7 @@ class TestInvalidStateSamples:
     def test_nan_samples(self, mp, interface, shots):
         """Test that the result of circuits with 0 probability postselections is NaN with the
         expected shape."""
-        state = qml.math.full((2, 2), np.NaN, like=interface)
+        state = qml.math.full((2, 2), np.nan, like=interface)
         res = measure_with_samples((mp,), state, _FlexShots(shots), is_state_batched=False)
 
         if not isinstance(shots, list):
@@ -674,7 +672,7 @@ class TestInvalidStateSamples:
     def test_nan_classical_shadows(self, interface, shots):
         """Test that classical_shadows returns an empty array when the state has
         NaN values"""
-        state = qml.math.full((2, 2), np.NaN, like=interface)
+        state = qml.math.full((2, 2), np.nan, like=interface)
         res = measure_with_samples(
             (qml.classical_shadow([0]),), state, _FlexShots(shots), is_state_batched=False
         )
@@ -701,7 +699,7 @@ class TestInvalidStateSamples:
     def test_nan_shadow_expval(self, H, interface, shots):
         """Test that shadow_expval returns an empty array when the state has
         NaN values"""
-        state = qml.math.full((2, 2), np.NaN, like=interface)
+        state = qml.math.full((2, 2), np.nan, like=interface)
         res = measure_with_samples(
             (qml.shadow_expval(H),), state, _FlexShots(shots), is_state_batched=False
         )
@@ -723,7 +721,7 @@ class TestInvalidStateSamples:
 
 
 two_qubit_state_to_be_normalized = np.array([[0, 1.0000000005j], [-1, 0]]) / np.sqrt(2)
-two_qubit_state_not_normalized = np.array([[0, 1.0000005j], [-1.00000001, 0]]) / np.sqrt(2)
+two_qubit_state_not_normalized = np.array([[0, 1.00005j], [-1.00000001, 0]]) / np.sqrt(2)
 
 batched_state_to_be_normalized = np.stack(
     [
@@ -752,30 +750,32 @@ class TestRenormalization:
         state = qml.math.array(two_qubit_state_to_be_normalized, like=interface)
         _ = sample_state(state, 10)
 
+    # jax.random.choice accepts unnormalized probabilities
     @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "tensorflow"])
+    @pytest.mark.parametrize("interface", ["numpy", "torch", "tensorflow"])
     def test_sample_state_renorm_error(self, interface):
         """Test that renormalization does not occur if the error is too large."""
 
         state = qml.math.array(two_qubit_state_not_normalized, like=interface)
-        with pytest.raises(ValueError, match="probabilities do not sum to 1"):
+        with pytest.raises(ValueError, match=r"(?i)probabilities do not sum to 1"):
             _ = sample_state(state, 10)
 
     @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "tensorflow"])
+    @pytest.mark.parametrize("interface", ["numpy", "torch", "jax", "tensorflow"])
     def test_sample_batched_state_renorm(self, interface):
         """Test renormalization for a batched state."""
 
         state = qml.math.array(batched_state_to_be_normalized, like=interface)
         _ = sample_state(state, 10, is_state_batched=True)
 
+    # jax.random.choices accepts unnormalized probabilities
     @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "tensorflow"])
+    @pytest.mark.parametrize("interface", ["numpy", "torch", "tensorflow"])
     def test_sample_batched_state_renorm_error(self, interface):
         """Test that renormalization does not occur if the error is too large."""
 
         state = qml.math.array(batched_state_not_normalized, like=interface)
-        with pytest.raises(ValueError, match="probabilities do not sum to 1"):
+        with pytest.raises(ValueError, match=r"(?i)probabilities do not sum to 1"):
             _ = sample_state(state, 10, is_state_batched=True)
 
 

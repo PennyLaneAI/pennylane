@@ -118,6 +118,16 @@ test_matrix = [
     ({"gradient_fn": "backprop", "interface": "tf-autograph"}, None, DefaultQubit()),  # 6
     ({"gradient_fn": "adjoint", "interface": "tf-autograph"}, None, DefaultQubit()),  # 7
     ({"gradient_fn": "adjoint", "interface": "tf", "device_vjp": True}, None, DefaultQubit()),  # 8
+    (
+        {"gradient_fn": param_shift, "interface": "tensorflow"},
+        None,
+        qml.device("reference.qubit"),
+    ),  # 9
+    (
+        {"gradient_fn": param_shift, "interface": "tensorflow"},
+        100000,
+        qml.device("reference.qubit"),
+    ),  # 10
 ]
 
 
@@ -842,3 +852,16 @@ def test_device_returns_float32(diff_method):
     g = tape.gradient(y, x)
     expected_g = np.sin(np.cos(0.1)) * np.sin(0.1)
     assert qml.math.allclose(g, expected_g)
+
+
+def test_autograph_with_sample():
+    """Test tensorflow autograph with sampling."""
+
+    @tf.function
+    @qml.qnode(qml.device("default.qubit", shots=50))
+    def circuit(x):
+        qml.RX(x, 0)
+        return qml.sample(wires=0)
+
+    res = circuit(tf.Variable(0.0))
+    assert qml.math.allclose(res, np.zeros(50))

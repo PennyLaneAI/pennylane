@@ -71,7 +71,13 @@ def apply_operation_einsum(op: qml.operation.Operator, state, is_state_batched: 
     Returns:
         array[complex]: output_state
     """
-    mat = op.matrix()
+    # We use this implicit casting strategy as autograd raises ComplexWarnings
+    # when backpropagating if casting explicitly. Some type of casting is needed
+    # to prevent ComplexWarnings with backpropagation with other interfaces
+    if qml.math.get_interface(state) == "tensorflow":
+        mat = qml.math.cast_like(op.matrix(), state)
+    else:
+        mat = op.matrix() + 0j
 
     total_indices = len(state.shape) - is_state_batched
     num_indices = len(op.wires)
@@ -114,7 +120,14 @@ def apply_operation_tensordot(op: qml.operation.Operator, state, is_state_batche
     Returns:
         array[complex]: output_state
     """
-    mat = op.matrix()
+    # We use this implicit casting strategy as autograd raises ComplexWarnings
+    # when backpropagating if casting explicitly. Some type of casting is needed
+    # to prevent ComplexWarnings with backpropagation with other interfaces
+    if qml.math.get_interface(state) == "tensorflow":
+        mat = qml.math.cast_like(op.matrix(), state)
+    else:
+        mat = op.matrix() + 0j
+
     total_indices = len(state.shape) - is_state_batched
     num_indices = len(op.wires)
 

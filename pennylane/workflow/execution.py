@@ -31,7 +31,6 @@ from typing import Literal, Optional, Union, get_args
 from cachetools import Cache, LRUCache
 
 import pennylane as qml
-from pennylane.data.base.attribute import UNSET
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
 from pennylane.typing import Result, ResultBatch
@@ -52,12 +51,9 @@ jpc_interfaces = {
     "autograd",
     "numpy",
     "torch",
-    "pytorch",
     "jax",
-    "jax-python",
     "jax-jit",
     "tf",
-    "tensorflow",
 }
 
 SupportedInterfaceUserInput = Literal[
@@ -79,29 +75,28 @@ SupportedInterfaceUserInput = Literal[
 ]
 
 _mapping_output = (
-    "Numpy",
+    "numpy",
     "auto",
     "autograd",
     "autograd",
     "numpy",
     "jax",
-    "jax",
+    "jax-jit",
     "jax",
     "jax",
     "torch",
     "torch",
     "tf",
     "tf",
-    "tf",
-    "tf",
+    "tf-autograph",
+    "tf-autograph",
 )
+
 INTERFACE_MAP = dict(zip(get_args(SupportedInterfaceUserInput), _mapping_output))
 """dict[str, str]: maps an allowed interface specification to its canonical name."""
 
-#: list[str]: allowed interface strings
-SUPPORTED_INTERFACES = list(INTERFACE_MAP)
+SUPPORTED_INTERFACE_NAMES = list(INTERFACE_MAP)
 """list[str]: allowed interface strings"""
-
 
 _CACHED_EXECUTION_WITH_FINITE_SHOTS_WARNINGS = (
     "Cached execution with finite shots detected!\n"
@@ -136,23 +131,21 @@ def _get_ml_boundary_execute(
         pennylane.QuantumFunctionError if the required package is not installed.
 
     """
-    mapped_interface = INTERFACE_MAP[interface]
     try:
-        if mapped_interface == "autograd":
+        if interface == "autograd":
             from .interfaces.autograd import autograd_execute as ml_boundary
 
-        elif mapped_interface == "tf":
-            if "autograph" in interface:
-                from .interfaces.tensorflow_autograph import execute as ml_boundary
+        elif interface == "tf-autograph":
+            from .interfaces.tensorflow_autograph import execute as ml_boundary
 
-                ml_boundary = partial(ml_boundary, grad_on_execution=grad_on_execution)
+            ml_boundary = partial(ml_boundary, grad_on_execution=grad_on_execution)
 
-            else:
-                from .interfaces.tensorflow import tf_execute as full_ml_boundary
+        elif interface == "tf":
+            from .interfaces.tensorflow import tf_execute as full_ml_boundary
 
-                ml_boundary = partial(full_ml_boundary, differentiable=differentiable)
+            ml_boundary = partial(full_ml_boundary, differentiable=differentiable)
 
-        elif mapped_interface == "torch":
+        elif interface == "torch":
             from .interfaces.torch import execute as ml_boundary
 
         elif interface == "jax-jit":
@@ -160,17 +153,19 @@ def _get_ml_boundary_execute(
                 from .interfaces.jax_jit import jax_jit_vjp_execute as ml_boundary
             else:
                 from .interfaces.jax_jit import jax_jit_jvp_execute as ml_boundary
-        else:  # interface in {"jax", "jax-python", "JAX"}:
+
+        else:  # interface is jax
             if device_vjp:
                 from .interfaces.jax_jit import jax_jit_vjp_execute as ml_boundary
             else:
                 from .interfaces.jax import jax_jvp_execute as ml_boundary
 
-    except ImportError as e:  # pragma: no-cover
+    except ImportError as e:  # pragma: no cover
         raise qml.QuantumFunctionError(
-            f"{mapped_interface} not found. Please install the latest "
-            f"version of {mapped_interface} to enable the '{mapped_interface}' interface."
+            f"{interface} not found. Please install the latest "
+            f"version of {interface} to enable the '{interface}' interface."
         ) from e
+
     return ml_boundary
 
 
@@ -264,12 +259,22 @@ def _get_interface_name(tapes, interface):
 
     Returns:
         str: Interface name"""
+
+    if interface not in SUPPORTED_INTERFACE_NAMES:
+        raise qml.QuantumFunctionError(
+            f"Unknown interface {interface}. Interface must be one of {SUPPORTED_INTERFACE_NAMES}."
+        )
+
+    interface = INTERFACE_MAP[interface]
+
     if interface == "auto":
         params = []
         for tape in tapes:
             params.extend(tape.get_parameters(trainable_only=False))
         interface = qml.math.get_interface(*params)
-    if INTERFACE_MAP.get(interface, "") == "tf" and _use_tensorflow_autograph():
+        if interface != "numpy":
+            interface = INTERFACE_MAP[interface]
+    if interface == "tf" and _use_tensorflow_autograph():
         interface = "tf-autograph"
     if interface == "jax":
         try:  # pragma: no cover
@@ -283,63 +288,6 @@ def _get_interface_name(tapes, interface):
         interface = get_jax_interface_name(tapes)
 
     return interface
-
-
-def _deprecated_arguments_warnings(
-    tapes, override_shots, expand_fn, max_expansion, device_batch_transform
-):
-    """Helper function to raise exceptions and pass codefactor checks regarding the length of the function"""
-
-    if device_batch_transform is not None:
-        warnings.warn(
-            "The device_batch_transform argument is deprecated and will be removed in version 0.39. "
-            "Instead, please create a TransformProgram with the desired preprocessing and pass "
-            "it to the transform_program argument of qml.execute.",
-            qml.PennyLaneDeprecationWarning,
-        )
-    else:
-        device_batch_transform = True
-
-    if override_shots is not UNSET:
-        warnings.warn(
-            "The override_shots argument is deprecated and will be removed in version 0.39. "
-            "Instead, please add the shots to the QuantumTape's to be executed.",
-            qml.PennyLaneDeprecationWarning,
-        )
-        if override_shots is not False:
-            tapes = tuple(
-                qml.tape.QuantumScript(
-                    t.operations,
-                    t.measurements,
-                    trainable_params=t.trainable_params,
-                    shots=override_shots,
-                )
-                for t in tapes
-            )
-    else:
-        override_shots = False
-
-    if expand_fn is not UNSET:
-        warnings.warn(
-            "The expand_fn argument is deprecated and will be removed in version 0.39. "
-            "Instead, please create a TransformProgram with the desired preprocessing and pass "
-            "it to the transform_program argument of qml.execute.",
-            qml.PennyLaneDeprecationWarning,
-        )
-    else:
-        expand_fn = "device"
-
-    if max_expansion is not None:
-        warnings.warn(
-            "The max_expansion argument is deprecated and will be removed in version 0.39. "
-            "Instead, please use qml.devices.preprocess.decompose with the desired expansion level, "
-            "add it to a TransformProgram and pass it to the transform_program argument of qml.execute.",
-            qml.PennyLaneDeprecationWarning,
-        )
-    else:
-        max_expansion = 10
-
-    return tapes, override_shots, expand_fn, max_expansion, device_batch_transform
 
 
 def _update_mcm_config(mcm_config: "qml.devices.MCMConfig", interface: str, finite_shots: bool):
@@ -377,10 +325,6 @@ def execute(
     cache: Union[None, bool, dict, Cache] = True,
     cachesize=10000,
     max_diff=1,
-    override_shots: int = UNSET,
-    expand_fn=UNSET,  # type: ignore
-    max_expansion=None,
-    device_batch_transform=None,
     device_vjp=False,
     mcm_config=None,
 ) -> ResultBatch:
@@ -414,20 +358,6 @@ def execute(
             the maximum number of derivatives to support. Increasing this value allows
             for higher order derivatives to be extracted, at the cost of additional
             (classical) computational overhead during the backwards pass.
-        override_shots (int): The number of shots to use for the execution. If ``False``, then the
-            number of shots on the device is used.
-        expand_fn (str, function): Tape expansion function to be called prior to device execution.
-            Must have signature of the form ``expand_fn(tape, max_expansion)``, and return a
-            single :class:`~.QuantumTape`. If not provided, by default :meth:`Device.expand_fn`
-            is called.
-        max_expansion (int): The number of times the internal circuit should be expanded when
-            executed on a device. Expansion occurs when an operation or measurement is not
-            supported, and results in a gate decomposition. If any operations in the decomposition
-            remain unsupported by the device, another expansion occurs.
-        device_batch_transform (bool): Whether to apply any batch transforms defined by the device
-            (within :meth:`Device.batch_transform`) to each tape to be executed. The default behaviour
-            of the device batch transform is to expand out Hamiltonian measurements into
-            constituent terms if not supported on the device.
         device_vjp=False (Optional[bool]): whether or not to use the device provided jacobian
             product if it is available.
         mcm_config (dict): Dictionary containing configuration options for handling mid-circuit measurements.
@@ -435,53 +365,6 @@ def execute(
     Returns:
         list[tensor_like[float]]: A nested list of tape results. Each element in
         the returned list corresponds in order to the provided tapes.
-
-    .. warning::
-
-        The following arguments are deprecated and will be removed in version 0.39:
-        ``expand_fn``, ``max_expansion``, and ``device_batch_transform``.
-        Instead, please create a :class:`~.TransformProgram` with the desired preprocessing and
-        pass it to the ``transform_program`` argument. For instance, we can create a program that uses
-        the ``qml.devices.preprocess.decompose`` transform with the desired expansion level and pass it
-        to the ``qml.execute`` function:
-
-        .. code-block:: python
-
-            from pennylane.devices.preprocess import decompose
-            from pennylane.transforms.core import TransformProgram
-
-            def stopping_condition(obj):
-                return obj.name in {"CNOT", "RX", "RZ"}
-
-            tape = qml.tape.QuantumScript([qml.IsingXX(1.2, wires=(0,1))], [qml.expval(qml.Z(0))])
-
-            program = TransformProgram()
-            program.add_transform(
-                decompose,
-                stopping_condition=stopping_condition,
-                max_expansion=10,
-            )
-
-            dev = qml.device("default.qubit", wires=2)
-
-        >>> qml.execute([tape], dev, transform_program=program)
-        (0.36235775447667357,)
-
-    .. warning::
-
-        The ``override_shots`` argument is deprecated and will be removed in version 0.39.
-        Instead, please add the shots to the ``QuantumTape``'s to be executed. For instance:
-
-        .. code-block:: python
-
-            dev = qml.device("default.qubit", wires=1)
-            operations = [qml.PauliX(0)]
-            measurements = [qml.expval(qml.PauliZ(0))]
-            qs = qml.tape.QuantumTape(operations, measurements, shots=100)
-
-        >>> qml.execute([qs], dev)
-        (-1.0,)
-
 
     **Example**
 
@@ -543,7 +426,7 @@ def execute(
 
     if logger.isEnabledFor(logging.DEBUG):
         logger.debug(
-            """Entry with args=(tapes=%s, device=%s, gradient_fn=%s, interface=%s, grad_on_execution=%s, gradient_kwargs=%s, cache=%s, cachesize=%s, max_diff=%s, override_shots=%s, expand_fn=%s, max_expansion=%s, device_batch_transform=%s) called by=%s""",
+            """Entry with args=(tapes=%s, device=%s, gradient_fn=%s, interface=%s, grad_on_execution=%s, gradient_kwargs=%s, cache=%s, cachesize=%s, max_diff=%s) called by=%s""",
             tapes,
             repr(device),
             (
@@ -557,25 +440,12 @@ def execute(
             cache,
             cachesize,
             max_diff,
-            override_shots,
-            (
-                expand_fn
-                if not (logger.isEnabledFor(qml.logging.TRACE) and inspect.isfunction(expand_fn))
-                else "\n" + inspect.getsource(expand_fn) + "\n"
-            ),
-            max_expansion,
-            device_batch_transform,
             "::L".join(str(i) for i in inspect.getouterframes(inspect.currentframe(), 2)[1][1:3]),
         )
 
-    tapes, override_shots, expand_fn, max_expansion, device_batch_transform = (
-        _deprecated_arguments_warnings(
-            tapes, override_shots, expand_fn, max_expansion, device_batch_transform
-        )
-    )
-
     ### Specifying and preprocessing variables ####
 
+    _interface_user_input = interface
     interface = _get_interface_name(tapes, interface)
     # Only need to calculate derivatives with jax when we know it will be executed later.
     if interface in {"jax", "jax-jit"}:
@@ -597,7 +467,11 @@ def execute(
     )
 
     # Mid-circuit measurement configuration validation
-    mcm_interface = interface or _get_interface_name(tapes, "auto")
+    # If the user specifies `interface=None`, regular execution considers it numpy, but the mcm
+    # workflow still needs to know if jax-jit is used
+    mcm_interface = (
+        _get_interface_name(tapes, "auto") if _interface_user_input is None else interface
+    )
     finite_shots = any(tape.shots for tape in tapes)
     _update_mcm_config(config.mcm_config, mcm_interface, finite_shots)
 
@@ -616,12 +490,12 @@ def execute(
         cache = None
 
     # changing this set of conditions causes a bunch of tests to break.
-    no_interface_boundary_required = interface is None or config.gradient_method in {
+    no_interface_boundary_required = interface == "numpy" or config.gradient_method in {
         None,
         "backprop",
     }
     device_supports_interface_data = no_interface_boundary_required and (
-        interface is None
+        interface == "numpy"
         or config.gradient_method == "backprop"
         or getattr(device, "short_name", "") == "default.mixed"
     )
@@ -634,9 +508,9 @@ def execute(
         numpy_only=not device_supports_interface_data,
     )
 
-    # moved to its own explicit step so it will be easier to remove
+    # moved to its own explicit step so that it will be easier to remove
     def inner_execute_with_empty_jac(tapes, **_):
-        return (inner_execute(tapes), [])
+        return inner_execute(tapes), []
 
     if interface in jpc_interfaces:
         execute_fn = inner_execute
@@ -644,12 +518,6 @@ def execute(
         execute_fn = inner_execute_with_empty_jac
 
     #### Executing the configured setup #####
-    if not device_batch_transform:
-        warnings.warn(
-            "Device batch transforms cannot be turned off with the new device interface.",
-            UserWarning,
-        )
-
     tapes, post_processing = transform_program(tapes)
 
     if transform_program.is_informative:
@@ -665,7 +533,7 @@ def execute(
         and getattr(device, "short_name", "") in ("lightning.gpu", "lightning.kokkos")
         and interface in jpc_interfaces
     ):  # pragma: no cover
-        if INTERFACE_MAP[interface] == "jax" and "use_device_state" in gradient_kwargs:
+        if "jax" in interface and "use_device_state" in gradient_kwargs:
             gradient_kwargs["use_device_state"] = False
 
         jpc = LightningVJPs(device, gradient_kwargs=gradient_kwargs)
@@ -706,7 +574,7 @@ def execute(
                     config: the ExecutionConfig that specifies how to perform the simulations.
                 """
                 numpy_tapes, _ = qml.transforms.convert_to_numpy_parameters(internal_tapes)
-                return (device.execute(numpy_tapes, config), tuple())
+                return device.execute(numpy_tapes, config), tuple()
 
             def gradient_fn(internal_tapes):
                 """A partial function that wraps compute_derivatives method of the device.
@@ -755,7 +623,7 @@ def execute(
 
     # trainable parameters can only be set on the first pass for jax
     # not higher order passes for higher order derivatives
-    if interface in {"jax", "jax-python", "jax-jit"}:
+    if "jax" in interface:
         for tape in tapes:
             params = tape.get_parameters(trainable_only=False)
             tape.trainable_params = qml.math.get_trainable_indices(params)
