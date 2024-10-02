@@ -159,6 +159,21 @@ test_matrix = [
         Shots((100000, 100000)),
         ParamShiftDerivativesDevice(),
     ),
+    (
+        {"gradient_fn": param_shift},
+        Shots(None),
+        qml.device("reference.qubit"),
+    ),
+    (
+        {"gradient_fn": param_shift},
+        Shots(100000),
+        qml.device("reference.qubit"),
+    ),
+    (
+        {"gradient_fn": param_shift},
+        Shots((100000, 100000)),
+        qml.device("reference.qubit"),
+    ),
 ]
 
 

@@ -458,7 +458,7 @@ class TestJAXCompatibility:
     @pytest.mark.parametrize("samples", (1, 10))
     def test_jitting_with_sampling_on_subset_of_wires(self, samples):
         """Test case covering bug in Issue #3904.  Sampling should be jit-able
-        when sampling occurs on a subset of wires. The bug was occuring due an improperly
+        when sampling occurs on a subset of wires. The bug was occurring due an improperly
         set shape method."""
         import jax
 

@@ -14,7 +14,7 @@
 # pylint: disable=too-many-arguments
 """
 This submodule contains the discrete-variable quantum operations that are the
-core parameterized gates.
+core parametrized gates.
 """
 # pylint:disable=abstract-method,arguments-differ,protected-access,invalid-overridden-method
 import functools
@@ -291,8 +291,9 @@ class PauliRot(Operation):
 
         if not len(pauli_word) == num_wires:
             raise ValueError(
-                f"The given Pauli word has length {len(pauli_word)}, length "
-                f"{num_wires} was expected for wires {wires}"
+                f"The number of wires must be equal to the length of the Pauli word. "
+                f"The Pauli word {pauli_word} has length {len(pauli_word)}, and "
+                f"{num_wires} wires were given {wires}."
             )
 
     def __repr__(self) -> str:
