@@ -10,7 +10,7 @@ on:
         description: The PennyLane branch to checkout and run unit tests for
         required: true
         type: string
-      # pipeline_mode:
+      pipeline_mode:
           description: The pipeline mode can be unit-tests, benchmarks, or reference-benchmarks
           required: false
           type: string
