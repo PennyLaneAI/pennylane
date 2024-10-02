@@ -246,6 +246,7 @@ class CondCallable:  # pylint:disable=too-few-public-methods
 
         jaxpr_branches = [jaxpr_true, *jaxpr_elifs, jaxpr_false]
         jaxpr_consts = [jaxpr.consts if jaxpr is not None else () for jaxpr in jaxpr_branches]
+        jaxpr_branches = [j.jaxpr if j else None for j in jaxpr_branches]
 
         # We need to flatten the constants since JAX does not allow
         # to pass lists as positional arguments
@@ -717,7 +718,7 @@ def _get_cond_qfunc_prim():
             if pred and jaxpr is not None:
                 if isinstance(pred, qml.measurements.MeasurementValue):
                     with qml.queuing.AnnotatedQueue() as q:
-                        out = jax.core.eval_jaxpr(jaxpr.jaxpr, consts, *args)
+                        out = jax.core.eval_jaxpr(jaxpr, consts, *args)
 
                     if len(out) != 0:
                         raise ConditionalTransformError(
@@ -728,14 +729,14 @@ def _get_cond_qfunc_prim():
                         Conditional(pred, wrapped_op.obj)
 
                 else:
-                    return jax.core.eval_jaxpr(jaxpr.jaxpr, consts, *args)
+                    return jax.core.eval_jaxpr(jaxpr, consts, *args)
 
         return ()
 
     @cond_prim.def_abstract_eval
     def _(*_, jaxpr_branches, **__):
 
-        outvals_true = jaxpr_branches[0].out_avals
+        outvals_true = [out.aval for out in jaxpr_branches[0].outvars]
 
         for idx, jaxpr_branch in enumerate(jaxpr_branches):
             if idx == 0:
@@ -749,7 +750,7 @@ def _get_cond_qfunc_prim():
                 # this is tested, but coverage does not pick it up
                 continue  # pragma: no cover
 
-            outvals_branch = jaxpr_branch.out_avals
+            outvals_branch = [out.aval for out in jaxpr_branch.outvars]
             branch_type = "elif" if idx < len(jaxpr_branches) - 1 else "false"
             _validate_abstract_values(outvals_branch, outvals_true, branch_type, idx - 1)
 
