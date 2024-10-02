@@ -79,7 +79,7 @@ class TestEvolution:
         assert base_op.num_params == 2
         assert op.num_params == 1
 
-    @pytest.mark.usefixtures("use_new_opmath")
+    @pytest.mark.usefixtures("new_opmath_only")
     def test_num_params_for_parametric_base(self):
         base_op = 0.5 * qml.PauliY(0) + qml.PauliZ(0) @ qml.PauliX(1)
         op = Evolution(base_op, 1.23)

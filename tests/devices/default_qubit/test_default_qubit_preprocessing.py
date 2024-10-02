@@ -13,8 +13,6 @@
 # limitations under the License.
 """Tests for default qubit preprocessing."""
 
-import warnings
-
 import numpy as np
 import pytest
 

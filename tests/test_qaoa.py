@@ -15,7 +15,6 @@
 Unit tests for the :mod:`pennylane.qaoa` submodule.
 """
 import itertools
-import warnings
 
 import networkx as nx
 import numpy as np
@@ -1941,7 +1940,7 @@ class TestCycles:
     @pytest.mark.parametrize(
         "g", [nx.complete_graph(3).to_directed(), rx.generators.directed_mesh_graph(3, [0, 1, 2])]
     )
-    @pytest.mark.usefixtures("use_new_opmath")
+    @pytest.mark.usefixtures("new_opmath_only")
     def test_inner_out_flow_constraint_hamiltonian_non_complete(self, g):
         """Test if the _inner_out_flow_constraint_hamiltonian function returns the expected result
         on a manually-calculated example of a 3-node complete digraph relative to the 0 node, with

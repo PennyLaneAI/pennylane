@@ -15,7 +15,6 @@
 Pytest configuration file for PennyLane test suite.
 """
 # pylint: disable=unused-import
-import contextlib
 import os
 import pathlib
 import sys
@@ -168,19 +167,6 @@ def disable_opmath_if_requested(request):
         # don't raise deprecation warnings
         filterwarnings("ignore", "qml.ops.Hamiltonian", qml.PennyLaneDeprecationWarning)
         filterwarnings("ignore", "qml.operation.Tensor", qml.PennyLaneDeprecationWarning)
-
-
-@pytest.fixture(scope="function")
-def use_legacy_opmath():
-    with disable_new_opmath_cm(warn=False) as cm:
-        yield cm
-
-
-# pylint: disable=contextmanager-generator-missing-cleanup
-@pytest.fixture(scope="function")
-def use_new_opmath():
-    with enable_new_opmath_cm(warn=False) as cm:
-        yield cm
 
 
 @pytest.fixture(params=[disable_new_opmath_cm, enable_new_opmath_cm], scope="function")
