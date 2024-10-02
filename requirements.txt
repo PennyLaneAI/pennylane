@@ -11,7 +11,6 @@ appdirs~=1.4
 packaging
 autoray>=0.6.11
 matplotlib~=3.5
-sympy
 opt_einsum~=3.3
 requests~=2.31.0
 typing_extensions~=4.5.0
