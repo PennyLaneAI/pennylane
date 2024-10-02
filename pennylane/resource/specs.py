@@ -46,13 +46,13 @@ def specs(
 
     .. code-block:: python3
 
-        from pennylane import numpy as pnp
+        from pennylane import numpy as np
 
-        x = pnp.array([0.1, 0.2])
+        x = np.array([0.1, 0.2])
         hamiltonian = qml.dot([1.0, 0.5], [qml.X(0), qml.Y(0)])
 
         dev = qml.device('default.qubit', wires=2)
-        @qml.qnode(dev, diff_method="parameter-shift", shifts=pnp.pi / 4)
+        @qml.qnode(dev, diff_method="parameter-shift", shifts=np.pi / 4)
         def circuit(x, add_ry=True):
             qml.RX(x[0], wires=0)
             qml.CNOT(wires=(0,1))
