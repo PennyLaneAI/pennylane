@@ -24,15 +24,6 @@ on:
         required: false
         type: string
         default: '3.10'
-      
-      # TODO: Remove this
-      install_numpy_1:
-        description: Indicate if numpy 1 should be installed or not
-        required: false
-        type: boolean
-        default: false
-      ####################
-      
       pytest_test_directory:
         description: The directory where the PennyLane tests are that should be run by PyTest
         required: false
@@ -110,10 +101,6 @@ jobs:
           pip install -r requirements-ci.txt --upgrade
           pip install -r requirements-dev.txt --upgrade
       
-      - name: Install numpy 1 version
-        if: inputs.install_numpy_1 == 'true'
-        run: pip install "numpy==1.26.4" 
-      
       - name: Install additional PIP packages (Pre-PennyLane)
         shell: bash
         if: inputs.additional_pip_packages != ''
@@ -123,7 +110,7 @@ jobs:
           while IFS= read -r line; do
             if [ ! -z "$line" ]; then
                 echo ''
-                echo "Now installing $line"
+                echo "Now installing -> pip install $line"
                 echo ''
                 
                 pip install $line
@@ -145,7 +132,7 @@ jobs:
           while IFS= read -r line; do
             if [ ! -z "$line" ]; then
                 echo ''
-                echo "Now installing $line"
+                echo "Now installing -> pip install $line"
                 echo ''
                 
                 pip install $line
