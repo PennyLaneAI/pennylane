@@ -2484,6 +2484,10 @@ class Tensor(Observable):
                 return 1
         return 0
 
+    @property
+    def has_sparse_matrix(self):
+        return all(op.has_matrix for op in self.obs)
+
     def sparse_matrix(
         self, wire_order=None, wires=None, format="csr"
     ):  # pylint:disable=arguments-renamed, arguments-differ
