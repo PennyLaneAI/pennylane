@@ -183,6 +183,9 @@
 * Add `work_wires` parameter to `qml.MultiControlledX` docstring signature.
   [(#6271)](https://github.com/PennyLaneAI/pennylane/pull/6271)
 
+* Removed ambiguity in error raised by the `PauliRot` class.
+  [(#6298)](https://github.com/PennyLaneAI/pennylane/pull/6298)
+
 <h3>Bug fixes 🐛</h3>
 
 * `qml.map_wires` can now be applied to a batch of tapes.
@@ -216,6 +219,9 @@
 * Fixes a bug where a simple circuit with no parameters or only builtin/numpy arrays as parameters returns autograd tensors.
   [(#6225)](https://github.com/PennyLaneAI/pennylane/pull/6225)
 
+* `qml.pauli.PauliVSpace` now uses a more stable SVD-based linear independence check to avoid running into `LinAlgError: Singular matrix`. This stabilizes the usage of `qml.lie_closure`. It also introduces normalization of the basis vector's internal representation `_M` to avoid exploding coefficients.
+  [(#6232)](https://github.com/PennyLaneAI/pennylane/pull/6232)
+
 * Fixes a bug where `csc_dot_product` is used during measurement for `Sum`/`Hamiltonian` that contains observables that does not define a sparse matrix.
   [(#6278)](https://github.com/PennyLaneAI/pennylane/pull/6278)
   [(#6310)](https://github.com/PennyLaneAI/pennylane/pull/6310)
@@ -233,6 +239,7 @@ Lillian M. A. Frederiksen,
 Pietropaolo Frisoni,
 Emiliano Godinez,
 Austin Huang,
+Korbinian Kottmann,
 Christina Lee,
 William Maxwell,
 Lee J. O'Riordan,
