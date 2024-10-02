@@ -107,7 +107,7 @@ tensorflow-io-gcs-filesystem==0.37.1
 tensornetwork==0.3.0
 termcolor==2.4.0
 toml==0.10.2
-tomli==2.0.1
+tomli==2.0.2
 torch==1.9.0+cpu
 tqdm==4.66.5
 typing_extensions==4.12.2
