@@ -46,12 +46,12 @@ def qjit(fn=None, *args, compiler="catalyst", **kwargs):  # pylint:disable=keywo
 
     .. note::
 
-        Catalyst supports compiling QNodes that use ``lightning.qubit``,
-        ``lightning.kokkos``, ``braket.local.qubit``, and ``braket.aws.qubit``
-        devices. It does not support ``default.qubit``.
+        Catalyst only supports the JAX interface and selected devices.
+        Supported backend devices for Catalyst include
+        ``lightning.qubit``, ``lightning.kokkos``, ``lightning.gpu``, and ``braket.aws.qubit``,
+        but **not** ``default.qubit``.
 
-        Please see the :doc:`Catalyst documentation <catalyst:index>` for more details on
-        supported devices, operations, and measurements.
+        For a full list of supported devices, please see :doc:`catalyst:dev/devices`.
 
         CUDA Quantum supports ``softwareq.qpp``, ``nvidia.custatevec``, and ``nvidia.cutensornet``.
 
