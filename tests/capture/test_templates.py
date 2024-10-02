@@ -914,16 +914,17 @@ class TestModifiedTemplates:
         """Test the primitive bind call of OutPoly."""
 
         def func(x):
-            return x ** 2
+            return x**2
 
-        args = [[0, 1], [2, 3]]
         kwargs = {
+            "f": func,
+            "args": [[0, 1], [2, 3]],
             "mod": 3,
             "work_wires": [4, 5],
         }
 
         def qfunc():
-            qml.OutPoly(func, *args, **kwargs)
+            qml.OutPoly(**kwargs)
 
         # Validate inputs
         qfunc()
@@ -931,13 +932,14 @@ class TestModifiedTemplates:
         # Actually test primitive bind
         jaxpr = jax.make_jaxpr(qfunc)()
 
-        """
         assert len(jaxpr.eqns) == 1
 
         eqn = jaxpr.eqns[0]
         assert eqn.primitive == qml.OutPoly._primitive
         assert eqn.invars == jaxpr.jaxpr.invars
+
         assert eqn.params == kwargs
+
         assert len(eqn.outvars) == 1
         assert isinstance(eqn.outvars[0], jax.core.DropVar)
 
@@ -946,7 +948,6 @@ class TestModifiedTemplates:
 
         assert len(q) == 1
         qml.assert_equal(q.queue[0], qml.OutPoly(**kwargs))
-        """
 
     @pytest.mark.parametrize(
         "template, kwargs",

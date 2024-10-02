@@ -159,7 +159,7 @@ class OutPoly(Operation):
 
             import pennylane as qml
 
-            wires = {"x": 3, "y": 3, "z": 3, "output": 3, "aux": 2}
+            wires = qml.registers({"x": 3, "y": 3, "z": 3, "output": 3, "aux": 2})
 
             def f(x, y, z):
                 return x**2 + y*x*z**5 - z**3 + 3
@@ -197,7 +197,10 @@ class OutPoly(Operation):
 
     grad_method = None
 
-    def __init__(self, f, *args, mod=None, work_wires=None, id=None):
+    def __init__(self, f=None, args=None, mod=None, work_wires=None, id=None):
+
+        if args is None or f is None:
+            raise ValueError("The arguments and the function f must be provided.")
 
         if not mod:
             mod = 2 ** len(args[-1])
