@@ -424,6 +424,34 @@ def op_eq(ops):
     return OpEq(ops)
 
 
+class MeasEq(BooleanFn):
+    """A conditional for evaluating if a given measurement process is equal to the specified measurement process.
+
+    Args:
+        measurement(Union[Iterable[MeasurementProcess], MeasurementProcess]): Sequence of measurement process.
+
+    .. seealso:: Users are advised to use :func:`~.meas_eq` for a functional construction.
+    """
+
+    def __init__(self, mp):
+        self._cond = set(mp)
+        self.condition = self._cond
+        super().__init__(
+            lambda mp: meas_eq(mp) == self._cond, f"MeasEq({mp})"
+        )
+
+
+def meas_eq(mp):
+    """Builds a conditional as a :class:`~.BooleanFn` for evaluating
+    if a given operation is equal to the specified operation.
+
+    Args:
+        mp (MeasurementProcess): An instance of any class that inherits from :class:`~.MeasurementProcess`.
+    """
+    _ = mp
+    return True
+
+
 def _rename(newname):
     """Decorator function for renaming ``_partial_op`` function used in partial_wires"""
 
@@ -432,6 +460,23 @@ def _rename(newname):
         return f
 
     return decorator
+
+
+_MEAS_FUNC_MAP = {
+    qml.expval: qml.measurements.ExpectationMP,
+    qml.var: qml.measurements.VarianceMP,
+    qml.state: qml.measurements.StateMP,
+    qml.density_matrix: qml.measurements.DensityMatrixMP,
+    qml.counts: qml.measurements.CountsMP,
+    qml.sample: qml.measurements.SampleMP,
+    qml.probs: qml.measurements.ProbabilityMP,
+    qml.vn_entropy: qml.measurements.VnEntropyMP,
+    qml.mutual_info: qml.measurements.MutualInfoMP,
+    qml.purity: qml.measurements.PurityMP,
+    qml.classical_shadow: qml.measurements.ClassicalShadowMP,
+    qml.shadow_expval: qml.measurements.ShadowExpvalMP,
+    qml.measure: qml.measurements.MidMeasureMP,
+}
 
 
 def partial_wires(operation, *args, **kwargs):
@@ -480,6 +525,9 @@ def partial_wires(operation, *args, **kwargs):
     >>> rfunc(qml.RY(1.0, ["light"]))
     qml.RX(2.3, wires=["light"])
     """
+    is_meas_class = isinstance(operation, qml.measurements.MeasurementProcess)
+    is_meta_class = isinstance(operation, (qml.ops.Adjoint, qml.ops.Controlled))
+
     if not callable(operation):
         if args:
             raise ValueError(
@@ -488,29 +536,72 @@ def partial_wires(operation, *args, **kwargs):
             )
         args, metadata = getattr(operation, "_flatten")()
         if len(metadata) > 1:
-            kwargs = {**dict(metadata[1]), **kwargs}
+            kwargs = {**dict(metadata[1] if not is_meas_class else metadata), **kwargs}
         operation = type(operation)
+    elif operation in _MEAS_FUNC_MAP:
+        is_meas_class = True
+        operation = _MEAS_FUNC_MAP[operation]
+    elif operation in [qml.adjoint, qml.ctrl]:
+        is_meta_class = True
+        operation = {qml.adjoint: qml.ops.Adjoint, qml.ctrl: qml.ops.Controlled}[operation]
 
     fsignature = signature(getattr(operation, "__init__", operation)).parameters
     parameters = list(fsignature)[int("self" in fsignature) :]
     arg_params = {**dict(zip(parameters, args)), **kwargs}
 
-    if "wires" in arg_params:  # Ensure we don't include wires arg
-        arg_params.pop("wires")
+    arg_wires = arg_params.pop("wires", None)  # Ensure we don't include wires in name
+    if is_meas_class and "op" in arg_params:
+        arg_params["obs"] = arg_params.pop("op")
 
-    op = partial(operation, **{**arg_params, **kwargs})
+    if is_meta_class and "op" in arg_params:
+        arg_params["base"] = arg_params.pop("op")
 
     op_name = f"{operation.__name__}("
-    for key, val in op.keywords.items():
-        op_name += f"{key}={val}, "
-    op_name = op_name[: -2 if len(op.keywords) else -1] + ")"
+    for key, val in arg_params.copy().items():
+        if key in parameters:
+            op_name += f"{key}={val}, "
+        else:
+            del arg_params[key]
+    op_name = op_name[:-2] + ")" if len(arg_params) else op_name[:-1]
 
     @_rename(op_name)
-    def _partial_op(wires, **model_kwargs):  # pylint: disable = unused-argument
+    def _partial(wires=None, **partial_kwargs):
         """Wrapper function for partial_wires"""
-        wires = getattr(wires, "wires", None) or (
-            [wires] if isinstance(wires, (int, str)) else list(wires)
-        )
-        return op(wires=wires)
+        op_args = arg_params
+        op_args["wires"] = wires or arg_wires
+        if wires is not None:
+            op_args["wires"] = getattr(wires, "wires", None) or (
+                [wires] if isinstance(wires, (int, str)) else list(wires)
+            )
 
-    return _partial_op
+        if is_meas_class:
+            if "op" not in parameters:
+                _ = partial_kwargs.pop("op", None)
+
+            if not op_args.get("obs", None) and (obs := partial_kwargs.get("op", None)):
+                op_args["obs"] = obs
+                if op_args["wires"] is None:
+                    op_args["wires"] = obs.wires
+
+            if (obs := op_args.get("obs", None)) is not None:
+                op_args["obs"] = obs.map_wires(dict(zip(obs.wires, op_args.pop("wires"))))
+
+        if is_meta_class:
+            if not op_args.get("base", None) and (obs := partial_kwargs.get("op", None)):
+                op_args["base"] = obs
+                if op_args["wires"] is None:
+                    op_args["wires"] = obs.wires
+
+            if (base := op_args.get("base", None)) is not None:
+                op_args["base"] = base.map_wires(dict(zip(base.wires, op_args.pop("wires"))))
+
+        for key, val in partial_kwargs.items():
+            if key in parameters:
+                op_args[key] = val
+
+        if "wires" not in parameters:
+            _ = op_args.pop("wires", None)
+
+        return operation(**op_args)
+
+    return _partial
