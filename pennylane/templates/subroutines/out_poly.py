@@ -54,12 +54,13 @@ def _function_to_binary_poly(f, vars):
 def _adjust_exponents(expr):
     """
     Adjust the exponents of a polynomial expression by filtering out terms with zero exponents.
+    Any exponent other than 0 is reduced to 1.
 
     Args:
-        expr (sympy.Poly): A symbolic polynomial composed of multiple terms.
+        expr (sympy.Add): A symbolic polynomial composed of multiple terms.
 
     Returns:
-        sympy.Poly: The adjusted expression where terms with zero exponents are omitted.
+        sympy.Add: The adjusted expression where terms with zero exponents are omitted.
 
     """
 
@@ -89,7 +90,6 @@ def _extract_numbers(s):
 
     Returns:
         tuple: A tuple containing the two integers `m` and `n`.
-
     """
 
     pattern = r"(\d+)_(\d+)"
@@ -102,7 +102,7 @@ def _polynomial_to_list(poly):
     """Convert a polynomial into a list of terms and their coefficients.
 
     Args:
-        poly (sympy.Poly): A symbolic polynomial expression.
+        poly (sympy.Add): A symbolic polynomial expression.
 
     Returns:
         (list): A list of tuples, where each tuple contains the factors and the coefficients.
@@ -136,16 +136,10 @@ class OutPoly(Operation):
         be smaller than the modulus `mod`.
 
     Args:
-        f (callable): The polynomial function to be applied to the inputs. It must accept
-                      the same number of arguments as there are input registers.
-        *args (Sequence[int]): The wires corresponding to the input registers and the
-                               output register. The last argument should correspond to
-                               the output register.
-        mod (int, optional): The modulus to use for the result. If not provided, it defaults
-                             to :math:`2^{n}`, where `n` is the number of qubits in the output register.
-        work_wires (Sequence[int], optional): The auxiliary wires used for intermediate
-                                              computation, if necessary. If `mod` is not a power of 2,
-                                              two auxiliary work wires are required.
+        f (callable): The polynomial function to be applied to the inputs. It must accept the same number of arguments as there are input registers.
+        register_wires (Sequence[int]): The wires corresponding to the input registers and the output register. The last argument should correspond to the output register.
+        mod (int, optional): The modulus to use for the result. If not provided, it defaults to :math:`2^{n}`, where `n` is the number of qubits in the output register.
+        work_wires (Sequence[int], optional): The auxiliary wires used for intermediate computation, if necessary. If `mod` is not a power of 2, two auxiliary work wires are required.
         id (str or None, optional): The name of the operation.
 
     Raises:
@@ -161,10 +155,13 @@ class OutPoly(Operation):
 
             import pennylane as qml
 
-            wires = qml.registers({"x": 3, "y": 3, "z": 3, "output": 3, "aux": 2})
+            wires = qml.registers({"x": 3, "y": 3, "z": 3, "output": 3, "work": 2})
 
             def f(x, y, z):
                 return x**2 + y*x*z**5 - z**3 + 3
+
+            x, y, z = 1, 2, 3
+            mod = 7
 
             dev = qml.device("default.qubit", wires=14)
 
@@ -178,13 +175,10 @@ class OutPoly(Operation):
 
                 # applying the polynomial
                 qml.OutPoly(
-                    f,
-                    wires["x"],
-                    wires["y"],
-                    wires["z"],
-                    wires["output"],
-                    mod=6,
-                    work_wires=wires["aux"],
+                f,
+                [wires["x"], wires["y"], wires["z"], wires["output"]],
+                mod=6,
+                work_wires=wires["work"],
                 )
                 return qml.sample(wires = wires["output"])
 
@@ -199,19 +193,18 @@ class OutPoly(Operation):
 
     grad_method = None
 
-    def __init__(self, f=None, register_wires = None, mod=None, work_wires=None, id=None):
+    def __init__(self, f=None, register_wires=None, mod=None, work_wires=None, id=None):
 
         if register_wires is None or f is None:
-            raise ValueError("The arguments and the function f must be provided.")
-
-        if not mod:
-            mod = 2 ** len(register_wires[-1])
+            raise ValueError("The register wires and the function f must be provided.")
 
         num_work_wires = 0 if not work_wires else len(work_wires)
         if mod is None:
             mod = 2 ** len(register_wires[-1])
         elif mod != 2 ** len(register_wires[-1]) and num_work_wires != 2:
-            raise ValueError(f"If mod is not 2^{len(register_wires[-1])}, two work wires should be provided")
+            raise ValueError(
+                f"If mod is not 2^{len(register_wires[-1])}, two work wires should be provided"
+            )
 
         self.mod = mod
 
@@ -225,14 +218,14 @@ class OutPoly(Operation):
                 f"The function takes {len(inspect.signature(f).parameters)} input parameters but {len(register_wires) - 1} has provided."
             )
 
-        self.hyperparameters["register_wires"] = [qml.wires.Wires(register) for register in register_wires]
+        self.hyperparameters["register_wires"] = [
+            qml.wires.Wires(register) for register in register_wires
+        ]
 
         self.hyperparameters["mod"] = mod
         self.hyperparameters["work_wires"] = qml.wires.Wires(work_wires) if work_wires else None
 
-        all_wires = sum(
-            [*self.hyperparameters["register_wires"]], start=[]
-        )
+        all_wires = sum([*self.hyperparameters["register_wires"]], start=[])
 
         if work_wires:
             all_wires += work_wires
@@ -306,7 +299,9 @@ class OutPoly(Operation):
 
         list_ops = []
 
-        output_adder_mod = [work_wires[0]] + register_wires[-1] if work_wires else register_wires[-1]
+        output_adder_mod = (
+            [work_wires[0]] + register_wires[-1] if work_wires else register_wires[-1]
+        )
         list_ops.append(qml.QFT(wires=output_adder_mod))
 
         vars = []  # variable naming and size
