@@ -2850,10 +2850,9 @@ def test_symmetric_matrix_early_return(op, mocker):
     assert np.allclose(actual, manually_expanded)
 
 
-@pytest.mark.usefixtures("new_opmath_only")
+@pytest.mark.usefixtures("use_legacy_and_new_opmath")
 def test_op_arithmetic_toggle():
-    """Tests toggling op arithmetic on and off, and that it is on by default."""
-    assert qml.operation.active_new_opmath()
+    """Tests toggling op arithmetic on and off"""
 
     with pytest.warns(qml.PennyLaneDeprecationWarning, match="Toggling the new approach"):
         with qml.operation.enable_new_opmath_cm():
@@ -2864,6 +2863,12 @@ def test_op_arithmetic_toggle():
         with qml.operation.disable_new_opmath_cm():
             assert not qml.operation.active_new_opmath()
             assert isinstance(qml.PauliX(0) @ qml.PauliZ(1), Tensor)
+
+
+@pytest.mark.usefixtures("new_opmath_only")
+def test_op_arithmetic_default():
+    """Test that new op math is enabled by default"""
+    assert qml.operation.active_new_opmath()
 
 
 @pytest.mark.usefixtures("new_opmath_only")
@@ -2894,7 +2899,7 @@ def test_docstring_example_of_operator_class(tol):
         num_wires = qml.operation.AnyWires
         grad_method = "A"
 
-        # pylint: disable=too-many-arguments
+        # pylint: disable=too-many-arguments,too-many-positional-arguments
         def __init__(self, angle, wire_rot, wire_flip=None, do_flip=False, id=None):
             if do_flip and wire_flip is None:
                 raise ValueError("Expected a wire to flip; got None.")
