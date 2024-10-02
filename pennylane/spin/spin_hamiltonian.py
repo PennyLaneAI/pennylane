@@ -19,7 +19,7 @@ import pennylane as qml
 from pennylane import I, X, Y, Z, math
 from pennylane.fermi import FermiWord
 
-from .lattice import Lattice, _generate_lattice
+from .lattice import Lattice, generate_lattice
 
 # pylint: disable=too-many-arguments, too-many-branches
 
@@ -74,7 +74,7 @@ def transverse_ising(
     + -0.1 * X(3)
     )
     """
-    lattice = _generate_lattice(lattice, n_cells, boundary_condition, neighbour_order)
+    lattice = generate_lattice(lattice, n_cells, boundary_condition, neighbour_order)
 
     if isinstance(coupling, (int, float, complex)):
         coupling = [coupling]
@@ -151,7 +151,7 @@ def heisenberg(lattice, n_cells, coupling=None, boundary_condition=False, neighb
     )
     """
 
-    lattice = _generate_lattice(lattice, n_cells, boundary_condition, neighbour_order)
+    lattice = generate_lattice(lattice, n_cells, boundary_condition, neighbour_order)
 
     if coupling is None:
         coupling = [[1.0, 1.0, 1.0]]
@@ -251,7 +251,7 @@ def fermi_hubbard(
     )
     """
 
-    lattice = _generate_lattice(lattice, n_cells, boundary_condition, neighbour_order)
+    lattice = generate_lattice(lattice, n_cells, boundary_condition, neighbour_order)
 
     if isinstance(hopping, (int, float, complex)):
         hopping = [hopping]
@@ -396,7 +396,7 @@ def emery(
 
     """
 
-    lattice = _generate_lattice(lattice, n_cells, boundary_condition, neighbour_order)
+    lattice = generate_lattice(lattice, n_cells, boundary_condition, neighbour_order)
 
     hopping = (
         math.asarray([hopping])
@@ -550,7 +550,7 @@ def haldane(
 
     """
 
-    lattice = _generate_lattice(lattice, n_cells, boundary_condition, neighbour_order=2)
+    lattice = generate_lattice(lattice, n_cells, boundary_condition, neighbour_order=2)
 
     hopping = (
         math.asarray([hopping])
