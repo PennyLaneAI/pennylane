@@ -17,7 +17,6 @@ Developer note: Conditionals inherit from BooleanFn and store the condition they
 utilize in the ``condition`` attribute.
 """
 
-from functools import partial
 from inspect import isclass, signature
 
 import pennylane as qml
@@ -27,7 +26,7 @@ from pennylane.ops import Adjoint, Controlled
 from pennylane.templates import ControlledSequence
 from pennylane.wires import WireError, Wires
 
-# pylint: disable = unnecessary-lambda, too-few-public-methods
+# pylint: disable = unnecessary-lambda, too-few-public-methods, too-many-statements, too-many-branches
 
 
 class WiresIn(BooleanFn):
@@ -438,7 +437,7 @@ class MeasEq(qml.BooleanFn):
         self._cond = [mps] if not isinstance(mps, (list, tuple, set)) else mps
         self.condition, self._cmps = [], []
         for mp in self._cond:
-            if (callable(mp) and (mp := meas_func_process.get(mp, None)) is None) or (
+            if (callable(mp) and (mp := _MEAS_FUNC_MAP.get(mp, None)) is None) or (
                 isclass(mp) and not issubclass(mp, qml.measurements.MeasurementProcess)
             ):
                 raise ValueError(
