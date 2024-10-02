@@ -120,7 +120,7 @@ class TestOutPoly:
             qml.OutPoly(f, [x_wires, y_wires, output_wires], mod=mod, work_wires=work_wires)
             return qml.probs(wires=output_wires)
 
-        if mod == None:
+        if mod is None:
             mod = int(2 ** len(output_wires))
         assert np.isclose(np.argmax(circuit()), f(2, 1) % mod)
 

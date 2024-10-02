@@ -193,7 +193,9 @@ class OutPoly(Operation):
 
     grad_method = None
 
-    def __init__(self, f=None, register_wires=None, mod=None, work_wires=None, id=None):
+    def __init__(
+        self, f=None, register_wires=None, mod=None, work_wires=None, id=None
+    ):  # pylint: disable=too-many-arguments
 
         if register_wires is None or f is None:
             raise ValueError("The register wires and the function f must be provided.")
