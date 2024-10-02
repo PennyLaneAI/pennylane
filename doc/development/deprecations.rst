@@ -68,12 +68,27 @@ Pending deprecations
 New operator arithmetic deprecations
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+In PennyLane v0.39, the legacy operator arithmetic system has been deprecated. Check out the :ref:`Updated operators <new_opmath>` page
+for details of how to port your legacy code to the new system. The old system is still accessible via :func:`~.disable_new_opmath`, though
+it is not recommended, as the old system is deprecated and will be removed in the v0.40 release. The following functionality will explicitly
+raise a deprecation warning when used:
+
 * In PennyLane v0.39, legacy operator arithmetic has been deprecated. This includes :func:`~pennylane.operation.enable_new_opmath`,
   :func:`~pennylane.operation.disable_new_opmath`, :class:`~pennylane.ops.Hamiltonian`, and :class:`~pennylane.operation.Tensor`.
-  Check out the :ref:`Updated operators <new_opmath>` page for more details.
 
   - Deprecated in v0.39
   - Will be removed in v0.40
+
+* ``op.ops`` and ``op.coeffs`` will be deprecated in the future. Use 
+  :meth:`~.Operator.terms` instead.
+
+  - Added and deprecated for ``Sum`` and ``Prod`` instances in v0.35
+
+* Accessing terms of a tensor product (e.g., ``op = X(0) @ X(1)``) via ``op.obs`` is deprecated with new operator arithmetic.
+  A user should use :class:`op.operands <~.CompositeOp>` instead.
+
+  - Deprecated in v0.36
+
 
 Other deprecations
 ~~~~~~~~~~~~~~~~~~
