@@ -15,7 +15,7 @@
 This module provides the functionality to create spin Hamiltonians.
 """
 
-from .lattice import Lattice
+from .lattice import Lattice, generate_lattice
 from .spin_hamiltonian import (
     emery,
     fermi_hubbard,
