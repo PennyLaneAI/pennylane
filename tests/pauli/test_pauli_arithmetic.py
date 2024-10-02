@@ -472,6 +472,11 @@ class TestPauliWord:
         with pytest.raises(ValueError, match="Can't get the Hamiltonian for an empty PauliWord."):
             pw4.hamiltonian()
 
+    def test_hamiltonian_deprecation(self):
+        """Test that the correct deprecation warning is raised when calling hamiltonian()"""
+        with pytest.warns(qml.PennyLaneDeprecationWarning, match="PauliWord.hamiltonian"):
+            _ = pw1.hamiltonian()
+
     def test_pickling(self):
         """Check that pauliwords can be pickled and unpickled."""
         pw = PauliWord({2: "X", 3: "Y", 4: "Z"})
@@ -1071,6 +1076,11 @@ class TestPauliSentence:
 
         qml.assert_equal(op, id)
 
+    def test_hamiltonian_deprecation(self):
+        """Test that the correct deprecation warning is raised when calling hamiltonian()"""
+        with pytest.warns(qml.PennyLaneDeprecationWarning, match="PauliSentence.hamiltonian"):
+            _ = ps1.hamiltonian()
+
     def test_pickling(self):
         """Check that paulisentences can be pickled and unpickled."""
         word1 = PauliWord({2: "X", 3: "Y", 4: "Z"})
@@ -1416,7 +1426,9 @@ class TestPaulicomms:
     @pytest.mark.parametrize("convert1", [_id, _pw_to_ps])
     @pytest.mark.parametrize("convert2", [_id, _pw_to_ps])
     @pytest.mark.parametrize("op1, op2, true_res", data_pauli_relations_different_types)
-    def test_pauli_word_comm_different_types(self, op1, op2, true_res, convert1, convert2):
+    def test_pauli_word_comm_different_types(
+        self, op1, op2, true_res, convert1, convert2
+    ):  # pylint: disable=too-many-positional-arguments
         """Test native comm in between a PauliSentence and either of PauliWord, PauliSentence, Operator"""
         op1 = convert1(op1)
         op2 = convert2(op2)
@@ -1429,7 +1441,9 @@ class TestPaulicomms:
     @pytest.mark.parametrize("convert1", [_id, _pw_to_ps])
     @pytest.mark.parametrize("convert2", [_pauli_to_op])
     @pytest.mark.parametrize("op1, op2, true_res", data_pauli_relations_different_types)
-    def test_pauli_word_comm_different_types_with_ops(self, op1, op2, true_res, convert1, convert2):
+    def test_pauli_word_comm_different_types_with_ops(
+        self, op1, op2, true_res, convert1, convert2
+    ):  # pylint: disable=too-many-positional-arguments
         """Test native comm in between a PauliWord, PauliSentence and Operator"""
         op1 = convert1(op1)
         op2 = convert2(op2)

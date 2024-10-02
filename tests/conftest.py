@@ -167,6 +167,9 @@ def disable_opmath_if_requested(request):
         # don't raise deprecation warnings
         filterwarnings("ignore", "qml.ops.Hamiltonian", qml.PennyLaneDeprecationWarning)
         filterwarnings("ignore", "qml.operation.Tensor", qml.PennyLaneDeprecationWarning)
+        filterwarnings("ignore", "qml.pauli.simplify", qml.PennyLaneDeprecationWarning)
+        filterwarnings("ignore", "PauliSentence.hamiltonian", qml.PennyLaneDeprecationWarning)
+        filterwarnings("ignore", "PauliWord.hamiltonian", qml.PennyLaneDeprecationWarning)
 
 
 @pytest.fixture(params=[disable_new_opmath_cm, enable_new_opmath_cm], scope="function")

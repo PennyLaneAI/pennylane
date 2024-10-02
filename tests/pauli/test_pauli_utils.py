@@ -1002,7 +1002,6 @@ class TestMeasurementTransformations:
             _ = diagonalize_qwc_pauli_words(invalid_ops)
 
 
-@pytest.mark.usefixtures("legacy_opmath_only")
 class TestObservableHF:
 
     HAMILTONIAN_SIMPLIFY = [
@@ -1044,11 +1043,20 @@ class TestObservableHF:
         ),
     ]
 
+    @pytest.mark.usefixtures("legacy_opmath_only")
     @pytest.mark.parametrize(("hamiltonian", "result"), HAMILTONIAN_SIMPLIFY)
     def test_simplify(self, hamiltonian, result):
         r"""Test that simplify returns the correct hamiltonian."""
         h = simplify(hamiltonian)
         assert h.compare(result)
+
+    def test_simplify_deprecation(self):
+        """Test that a deprecation warning is raised when using simplify"""
+        with pytest.warns(qml.PennyLaneDeprecationWarning, match="qml.ops.Hamiltonian"):
+            h = qml.ops.Hamiltonian([1.5, 2.5], [qml.X(0), qml.Z(0)])
+
+        with pytest.warns(qml.PennyLaneDeprecationWarning, match="qml.pauli.simplify"):
+            _ = simplify(h)
 
 
 @pytest.mark.usefixtures("legacy_opmath_only")

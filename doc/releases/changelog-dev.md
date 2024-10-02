@@ -133,6 +133,13 @@
   `qml.ops.LinearCombination`; this behaviour is not deprecated.
   [(#6287)](https://github.com/PennyLaneAI/pennylane/pull/6287)
 
+* `qml.pauli.PauliSentence.hamiltonian` and `qml.pauli.PauliWord.hamiltonian` are deprecated. Instead, please use
+  `qml.pauli.PauliSentence.operation` and `qml.pauli.PauliWord.operation` respectively.
+  [(#6287)](https://github.com/PennyLaneAI/pennylane/pull/6287)
+
+* `qml.pauli.simplify()` is deprecated. Instead, please use `qml.simplify(op)` or `op.simplify()`.
+  [(#6287)](https://github.com/PennyLaneAI/pennylane/pull/6287)
+
 * The `qml.BasisStatePreparation` template is deprecated.
   Instead, use `qml.BasisState`.
   [(#6021)](https://github.com/PennyLaneAI/pennylane/pull/6021)

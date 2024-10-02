@@ -81,6 +81,17 @@ raise a deprecation warning when used:
   - Deprecated in v0.39
   - Will be removed in v0.40
 
+* :meth:`~pennylane.pauli.PauliSentence.hamiltonian` and :meth:`~pennylane.pauli.PauliWord.hamiltonian` are deprecated. Instead, please use
+  :meth:`~pennylane.pauli.PauliSentence.operation` and :meth:`~pennylane.pauli.PauliWord.operation` respectively.
+
+  - Deprecated in v0.39
+  - Will be removed in v0.40
+
+* :func:`pennylane.pauli.simplify` is deprecated. Instead, please use :func:`pennylane.simplify` or :meth:`~pennylane.operation.Operator.simplify`.
+
+  - Deprecated in v0.39
+  - Will be removed in v0.40
+
 * ``op.ops`` and ``op.coeffs`` will be deprecated in the future. Use 
   :meth:`~.Operator.terms` instead.
 
