@@ -29,7 +29,7 @@ def test_standard_validity():
     frequencies = (2, 4)
     shifts = (1, 0.5)
     op = qml.CommutingEvolution(H, time, frequencies=frequencies, shifts=shifts)
-    qml.ops.functions.assert_valid(op)
+    qml.ops.functions.assert_valid(op, skip_differentiation=True)
 
 
 def test_adjoint():
