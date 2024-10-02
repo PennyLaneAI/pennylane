@@ -81,6 +81,7 @@ class SPSAOptimizer:
 
     For VQE/VQE-like problems, the objective function can be the following:
 
+    >>> from pennylane import numpy as np
     >>> coeffs = [0.2, -0.543, 0.4514]
     >>> obs = [qml.X(0) @ qml.Z(1), qml.Z(0) @ qml.Hadamard(2),
     ...             qml.X(3) @ qml.Z(1)]
@@ -112,6 +113,7 @@ class SPSAOptimizer:
     The algorithm provided by SPSA does not rely on built-in automatic differentiation capabilities of the interface being used
     and therefore the optimizer can be used in more complex hybrid classical-quantum workflow with any of the interfaces:
 
+    >>> import tensorflow as tf
     >>> n_qubits = 1
     >>> max_iterations = 20
     >>> dev = qml.device("default.qubit", wires=n_qubits)
@@ -127,8 +129,8 @@ class SPSAOptimizer:
     ...             for _ in range(max_iterations):
     ...                     # Some classical steps before the quantum computation
     ...                     params_a, layer_res = opt.step_and_cost(layer_fn_spsa,
-    ...                                     np.tensor(tensor_in, requires_grad=False),
-    ...                                     np.tensor(params))
+    ...                                     tf.constant(tensor_in),
+    ...                                     tf.Variable(params))
     ...                     params = params_a[1]
     ...                     tensor_out = layer_res
     ...                     # Some classical steps after the quantum computation
