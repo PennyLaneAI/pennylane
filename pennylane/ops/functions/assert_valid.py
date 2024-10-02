@@ -315,6 +315,11 @@ def _check_differentiation(op):
     ps = qml.jacobian(qnode_ps)(*params)
     expected_bp = qml.jacobian(qnode_ref)(*params)
 
+    if isinstance(op, qml.ops.StatePrep):
+        # Fore StatePrep, we do not always expect parameter-shift to agree with backprop
+        # because backprop is unaware of the constraint that the matrix must remain unitary.
+        return
+
     if isinstance(ps, tuple):
         for actual, expected in zip(ps, expected_bp):
             assert qml.math.allclose(
