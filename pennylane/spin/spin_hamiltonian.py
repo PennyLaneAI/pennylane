@@ -43,7 +43,7 @@ def transverse_ising(
         lattice (str): Shape of the lattice. Input values can be ``'chain'``, ``'square'``,
             ``'rectangle'``, ``'honeycomb'``, ``'triangle'``, ``'kagome'``, or ``'diamond'``.
         n_cells (List[int]): Number of cells in each direction of the grid.
-        coupling (float or array[float]): Coupling between spins. It can
+        coupling (float or tensor_like[float]): Coupling between spins. It should
             be a number, an array of length equal to ``neighbour_order`` or a square matrix of shape
             ``(num_spins,  num_spins)``, where ``num_spins`` is the total number of spins. Default
             value is 1.0.
@@ -87,10 +87,15 @@ def transverse_ising(
 
     hamiltonian = 0.0 * qml.I(0)
 
-    if coupling.shape not in [(neighbour_order,), (lattice.n_sites, lattice.n_sites)]:
-        raise ValueError(
-            f"The coupling parameter should be a number or an array of shape ({neighbour_order},) or ({lattice.n_sites},{lattice.n_sites})"
-        )
+    if coupling.shape not in [(neighbour_order,)]:
+        if neighbour_order == 1:
+            raise ValueError(
+                f"The coupling parameter should be a number or an array of length {neighbour_order}."
+            )
+        else:
+            raise ValueError(
+                f"The coupling parameter should be an array of length {neighbour_order}."
+            )
 
     if coupling.shape == (neighbour_order,):
         for edge in lattice.edges:
@@ -123,7 +128,7 @@ def heisenberg(lattice, n_cells, coupling=None, boundary_condition=False, neighb
         lattice (str): Shape of the lattice. Input values can be ``'chain'``, ``'square'``,
             ``'rectangle'``, ``'honeycomb'``, ``'triangle'``, ``'kagome'``, or ``'diamond'``.
         n_cells (List[int]): Number of cells in each direction of the grid.
-        coupling (array[float]): Coupling between spins. It should be an
+        coupling (tensor_like[float]): Coupling between spins. It can be an
             array of shape ``(neighbour_order, 3)`` or
             ``(3, num_spins, num_spins)``, where ``num_spins`` is the total number of spins.
         boundary_condition (bool or list[bool]): Defines boundary conditions for different lattice
@@ -164,9 +169,9 @@ def heisenberg(lattice, n_cells, coupling=None, boundary_condition=False, neighb
     if coupling.ndim == 1:
         coupling = math.asarray([coupling])
 
-    if coupling.shape not in [(neighbour_order, 3), (3, lattice.n_sites, lattice.n_sites)]:
+    if coupling.shape not in [(neighbour_order, 3)]:
         raise ValueError(
-            f"The coupling parameter shape should be equal to ({neighbour_order},3) or (3,{lattice.n_sites},{lattice.n_sites})"
+            f"The coupling parameter should be an array of shape ({neighbour_order},3)"
         )
 
     hamiltonian = 0.0 * qml.I(0)
@@ -218,11 +223,11 @@ def fermi_hubbard(
         lattice (str): Shape of the lattice. Input values can be ``'chain'``, ``'square'``,
             ``'rectangle'``, ``'honeycomb'``, ``'triangle'``, ``'kagome'``, or ``'diamond'``.
         n_cells (List[int]): Number of cells in each direction of the grid.
-        hopping (float or array[float]): Hopping strength between
+        hopping (float or tensor_like[float]): Hopping strength between
             neighbouring sites. It can be a number, an array of length equal to ``neighbour_order`` or
-            a square matrix of size ``(num_spins, num_spins)``, where ``num_spins`` is the total
+            a square matrix of shape ``(num_spins, num_spins)``, where ``num_spins`` is the total
             number of spins. Default value is 1.0.
-        coulomb (float or array[float]): Coulomb interaction between spins. It can be a constant or an
+        coulomb (float or tensor_like[float]): Coulomb interaction between spins. It can be a constant or an
             array of length equal to the number of spins.
         boundary_condition (bool or list[bool]): Defines boundary conditions for different lattice
             axes. Default is ``False`` indicating open boundary condition.
@@ -263,10 +268,15 @@ def fermi_hubbard(
 
     hopping = math.asarray(hopping)
 
-    if hopping.shape not in [(neighbour_order,), (lattice.n_sites, lattice.n_sites)]:
-        raise ValueError(
-            f"The hopping parameter should be a number or an array of shape ({neighbour_order},) or ({lattice.n_sites},{lattice.n_sites})."
-        )
+    if hopping.shape not in [(neighbour_order,)]:
+        if neighbour_order == 1:
+            raise ValueError(
+                f"The hopping parameter should be a number or an array of length {neighbour_order}."
+            )
+        else:
+            raise ValueError(
+                f"The hopping parameter should be an array of length {neighbour_order}."
+            )
 
     spin = 2
     hopping_ham = 0.0 * FermiWord({})
@@ -337,14 +347,14 @@ def emery(
 
     .. math::
         \begin{align*}
-          \hat{H} & = -\sum_{\langle i,j \rangle, \sigma} t_{ij}c_{i\sigma}^{\dagger}c_{j\sigma}
-          + \sum_{i}U_{i}n_{i \uparrow} n_{i\downarrow} + \sum_{<i,j>}V_{ij}(n_{i \uparrow} +
+          \hat{H} & = -\sum_{\langle i,j \rangle, t \sigma} c_{i\sigma}^{\dagger}c_{j\sigma}
+          + U \sum_{i} n_{i \uparrow} n_{i\downarrow} + V \sum_{<i,j>} (n_{i \uparrow} +
           n_{i \downarrow})(n_{j \uparrow} + n_{j \downarrow})\ ,
         \end{align*}
 
-    where :math:`t_{ij}` is the hopping term representing the kinetic energy of electrons,
-    :math:`U_{i}` is the on-site Coulomb interaction representing the repulsion between electrons,
-    :math:`V_{ij}` is the intersite coupling, :math:`<i,j>` represents the indices for neighbouring sites,
+    where :math:`t` is the hopping term representing the kinetic energy of electrons,
+    :math:`U` is the on-site Coulomb interaction representing the repulsion between electrons,
+    :math:`V` is the intersite coupling, :math:`<i,j>` represents the indices for neighbouring sites,
     :math:`\sigma` is the spin degree of freedom, and :math:`n_{k \uparrow}`, :math:`n_{k \downarrow}`
     are number operators for spin-up and spin-down fermions at site :math:`k`.
     This function assumes two fermions with opposite spins on each lattice site.
@@ -357,7 +367,7 @@ def emery(
             neighbouring sites. It can be a number, an array of length equal to ``neighbour_order`` or
             a square matrix of shape ``(n_sites, n_sites)``, where ``n_sites`` is the total
             number of sites. Default value is 1.0.
-        coulomb (float or array[float]): Coulomb interaction between spins. It can be a number or an
+        coulomb (float or tensor_like[float]): Coulomb interaction between spins. It can be a number or an
             array of length equal to the number of spins.
         intersite_coupling (float or tensor_like[float]): Interaction strength between spins on
             neighbouring sites. It can be a number, an array with length equal to ``neighbour_order`` or
@@ -420,17 +430,26 @@ def emery(
         else math.asarray(intersite_coupling)
     )
 
-    if hopping.shape not in [(neighbour_order,), (lattice.n_sites, lattice.n_sites)]:
-        raise ValueError(
-            f"The hopping parameter should be a number or an "
-            f"array of shape ({neighbour_order},) or ({lattice.n_sites},{lattice.n_sites})."
-        )
+    if hopping.shape not in [(neighbour_order,)]:
+        if neighbour_order == 1:
+            raise ValueError(
+                f"The hopping parameter should be a number or an array of length {neighbour_order}."
+            )
+        else:
+            raise ValueError(
+                f"The hopping parameter should be an array of length {neighbour_order}."
+            )
 
-    if intersite_coupling.shape not in [(neighbour_order,), (lattice.n_sites, lattice.n_sites)]:
-        raise ValueError(
-            f"The intersite_coupling parameter should be a number or "
-            f"an array of shape ({neighbour_order},) or ({lattice.n_sites},{lattice.n_sites})."
-        )
+    if intersite_coupling.shape not in [(neighbour_order,)]:
+        if neighbour_order == 1:
+            raise ValueError(
+                f"The intersite_coupling parameter should be a number or "
+                f"an array of length {neighbour_order}."
+            )
+        else:
+            raise ValueError(
+                f"The intersite_coupling parameter should be an array of length {neighbour_order}."
+            )
 
     spin = 2
     hopping_term = 0.0 * FermiWord({})
@@ -462,12 +481,12 @@ def emery(
             )
         )
 
-    if isinstance(coulomb, (int, float, complex)):
+    if isinstance(coulomb, (int, float, complex)) or len(coulomb) == 1:
         coulomb = math.ones(lattice.n_sites) * coulomb
 
-    if len(coulomb) != lattice.n_sites:
+    if len(coulomb) not in [lattice.n_sites]:
         raise ValueError(
-            f"The Coulomb parameter should be a number or an array of length {lattice.n_sites}."
+            f"The Coulomb parameter should be a number or an array of length 1 or {lattice.n_sites}."
         )
 
     coulomb_term = 0.0 * FermiWord({})
@@ -508,15 +527,15 @@ def haldane(
     .. math::
 
         \begin{align*}
-          \hat{H} & = -\sum_{\langle i,j \rangle}t_{ij}^{1}
-          (c_{i\sigma}^\dagger c_{j\sigma} + c_{j\sigma}^\dagger c_{i\sigma})
-          - \sum_{\langle\langle i,j \rangle\rangle, \sigma} t_{ij}^{2}
-          \left( e^{i\phi_{ij}} c_{i\sigma}^\dagger c_{j\sigma} + e^{-i\phi_{ij}} c_{j\sigma}^\dagger c_{i\sigma} \right)
+          \hat{H} & = - t^{1} \sum_{\langle i,j \rangle, \sigma}
+          c_{i\sigma}^\dagger c_{j\sigma}
+          - t^{2} \sum_{\langle\langle i,j \rangle\rangle, \sigma}
+          \left( e^{i\phi} c_{i\sigma}^\dagger c_{j\sigma} + e^{-i\phi} c_{j\sigma}^\dagger c_{i\sigma} \right)
         \end{align*}
 
-    where :math:`t^{1}_{ij}` is the hopping amplitude between neighbouring
-    sites :math:`\langle i,j \rangle`, :math:`t^{2}_{ij}` is the hopping amplitude between
-    next-nearest neighbour sites :math:`\langle \langle i,j \rangle \rangle`, :math:`\phi_{ij}` is
+    where :math:`t^{1}` is the hopping amplitude between neighbouring
+    sites :math:`\langle i,j \rangle`, :math:`t^{2}` is the hopping amplitude between
+    next-nearest neighbour sites :math:`\langle \langle i,j \rangle \rangle`, :math:`\phi` is
     the phase factor that breaks time-reversal symmetry in the system, and :math:`\sigma` is the
     spin degree of freedom. This function assumes two fermions with opposite spins on each lattice
     site.
@@ -581,19 +600,13 @@ def haldane(
     phi = math.asarray([phi]) if isinstance(phi, (int, float, complex)) else math.asarray(phi)
 
     if hopping.shape not in [(1,), (lattice.n_sites, lattice.n_sites)]:
-        raise ValueError(
-            f"The hopping parameter should be a constant or an array of shape ({lattice.n_sites},{lattice.n_sites})."
-        )
+        raise ValueError(f"The hopping parameter should be a number or an array of length 1.")
 
     if hopping_next.shape not in [(1,), (lattice.n_sites, lattice.n_sites)]:
-        raise ValueError(
-            f"The hopping_next parameter should be a constant or an array of shape ({lattice.n_sites},{lattice.n_sites})."
-        )
+        raise ValueError(f"The hopping_next parameter should be a number or an array of length 1.")
 
     if phi.shape not in [(1,), (lattice.n_sites, lattice.n_sites)]:
-        raise ValueError(
-            f"The phi parameter should be a constant or an array of shape ({lattice.n_sites},{lattice.n_sites})."
-        )
+        raise ValueError(f"The phi parameter should be a number or an array of length 1.")
 
     spin = 2
     hamiltonian = 0.0 * FermiWord({})
@@ -650,7 +663,7 @@ def kitaev(n_cells, coupling=None, boundary_condition=False):
 
     Args:
         n_cells (list[int]): Number of cells in each direction of the grid.
-        coupling (array[float]): Coupling between spins. It should be an array of length 3 defining
+        coupling (tensor_like[float]): Coupling between spins. It can be an array of length 3 defining
             :math:`K_X`, :math:`K_Y`, :math:`K_Z` coupling constants. Default value is 1.0 for each
             coupling constant.
         boundary_condition (bool or list[bool]): Defines boundary conditions for different lattice
