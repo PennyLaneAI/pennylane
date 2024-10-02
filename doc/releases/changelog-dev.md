@@ -65,6 +65,10 @@
   `from pennylane.capture.primitives import *`.
   [(#6129)](https://github.com/PennyLaneAI/pennylane/pull/6129)
 
+* All higher order primitives now use `jax.core.Jaxpr` as metadata instead of sometimes
+  using `jax.core.ClosedJaxpr` and sometimes using `jax.core.Jaxpr`.
+  [(#6319)](https://github.com/PennyLaneAI/pennylane/pull/6319)
+
 * `FermiWord` class now has a method to apply anti-commutator relations.
    [(#6196)](https://github.com/PennyLaneAI/pennylane/pull/6196)
 
