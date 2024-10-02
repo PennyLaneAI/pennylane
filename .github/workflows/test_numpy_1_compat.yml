@@ -22,6 +22,7 @@ jobs:
       job_name_suffix: ' (numpy-1 compat)'
       run_lightened_ci: true
       additional_python_packages: 'numpy==1.26.4'
+      upload_to_codecov: false
       skip_ci_test_jobs: |
         tf-tests,
         all-interfaces-tests,

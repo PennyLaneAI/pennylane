@@ -62,6 +62,11 @@ on:
         required: false
         type: string
         default: ''
+      upload_to_codecov:
+        description: Indicate if the coverage report should be uploaded to codecov
+        required: false
+        type: boolean
+        default: true
 
 jobs:
   setup-ci-load:
@@ -637,6 +642,7 @@ jobs:
     if: >-
       ${{
         always() &&
+        inputs.upload_to_codecov == true &&
         !contains(needs.*.result, 'failure') &&
         !contains(needs.*.result, 'cancelled')
        }}
