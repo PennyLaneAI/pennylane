@@ -2507,7 +2507,7 @@ class TestMCPostprocessing:
             )
 
 
-@pytest.mark.parametrize("dev_fn", [qml.devices.DefaultQubitLegacy, qml.devices.DefaultQubit])
+@pytest.mark.parametrize("dev_fn", [qml.devices.DefaultQubit])
 class TestCutCircuitMCTransform:
     """
     Tests that the `cut_circuit_mc` transform gives the correct results.

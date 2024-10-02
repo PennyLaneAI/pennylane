@@ -870,6 +870,18 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         """
         raise SparseMatrixUndefinedError
 
+    # pylint: disable=no-self-argument, comparison-with-callable
+    @classproperty
+    def has_sparse_matrix(cls) -> bool:
+        r"""Bool: Whether the Operator returns a defined sparse matrix.
+
+        Note: Child classes may have this as an instance property instead of as a class property.
+        """
+        return (
+            cls.compute_sparse_matrix != Operator.compute_sparse_matrix
+            or cls.sparse_matrix != Operator.sparse_matrix
+        )
+
     def sparse_matrix(self, wire_order: Optional[WiresLike] = None) -> csr_matrix:
         r"""Representation of the operator as a sparse matrix in the computational basis.
 
@@ -2463,6 +2475,10 @@ class Tensor(Observable):
             if shared and (shared != o1.wires or shared != o2.wires):
                 return 1
         return 0
+
+    @property
+    def has_sparse_matrix(self):
+        return all(op.has_matrix for op in self.obs)
 
     def sparse_matrix(
         self, wire_order=None, wires=None, format="csr"

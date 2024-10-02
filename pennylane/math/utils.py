@@ -194,7 +194,7 @@ def get_interface(*values):
       cannot both be present.
 
     * Autograd tensors *may* be present alongside Torch, TensorFlow and Jax tensors,
-      but Torch, TensorFlow and Jax take precendence; the autograd arrays will
+      but Torch, TensorFlow and Jax take precedence; the autograd arrays will
       be treated as non-differentiable NumPy arrays. A warning will be raised
       suggesting that vanilla NumPy be used instead.
 

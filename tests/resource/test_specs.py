@@ -23,12 +23,10 @@ from pennylane import numpy as pnp
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.typing import PostprocessingFn
 
-with pytest.warns(qml.PennyLaneDeprecationWarning):
-    devices_list = [
-        (qml.device("default.qubit"), 1),
-        (qml.device("default.qubit", wires=2), 2),
-        (qml.device("default.qubit.legacy", wires=2), 2),
-    ]
+devices_list = [
+    (qml.device("default.qubit"), 1),
+    (qml.device("default.qubit", wires=2), 2),
+]
 
 
 class TestSpecsTransform:

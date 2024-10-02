@@ -12,12 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests for the gradients.parameter_shift module using the new return types."""
-# pylint: disable=use-implicit-booleaness-not-comparison
+# pylint: disable=use-implicit-booleaness-not-comparison,abstract-method
 import pytest
+from default_qubit_legacy import DefaultQubitLegacy
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.devices import DefaultQubitLegacy
 from pennylane.gradients import param_shift
 from pennylane.gradients.parameter_shift import (
     _evaluate_gradient,
@@ -1373,7 +1373,7 @@ class TestParameterShiftRule:
     @pytest.mark.parametrize("theta", np.linspace(-2 * np.pi, 2 * np.pi, 7))
     @pytest.mark.parametrize("shift", [np.pi / 2, 0.3, np.sqrt(2)])
     def test_Rot_gradient(self, mocker, theta, shift, tol):
-        """Tests that the automatic gradient of an arbitrary Euler-angle-parameterized gate is correct."""
+        """Tests that the automatic gradient of an arbitrary Euler-angle-parametrized gate is correct."""
         spy = mocker.spy(qml.gradients.parameter_shift, "_get_operation_recipe")
         dev = qml.device("default.qubit", wires=1)
         params = np.array([theta, theta**3, np.sqrt(2) * theta])
@@ -1447,7 +1447,7 @@ class TestParameterShiftRule:
 
     @pytest.mark.parametrize("theta", np.linspace(-2 * np.pi, np.pi, 7))
     def test_CRot_gradient(self, theta, tol):
-        """Tests that the automatic gradient of an arbitrary controlled Euler-angle-parameterized
+        """Tests that the automatic gradient of an arbitrary controlled Euler-angle-parametrized
         gate is correct."""
         dev = qml.device("default.qubit", wires=2)
         a, b, c = np.array([theta, theta**3, np.sqrt(2) * theta])
@@ -2714,7 +2714,7 @@ class TestParameterShiftRuleBroadcast:
     @pytest.mark.parametrize("theta", np.linspace(-2 * np.pi, 2 * np.pi, 7))
     @pytest.mark.parametrize("shift", [np.pi / 2, 0.3, np.sqrt(2)])
     def test_Rot_gradient(self, mocker, theta, shift, tol):
-        """Tests that the automatic gradient of an arbitrary Euler-angle-parameterized gate is correct."""
+        """Tests that the automatic gradient of an arbitrary Euler-angle-parametrized gate is correct."""
         spy = mocker.spy(qml.gradients.parameter_shift, "_get_operation_recipe")
         dev = qml.device("default.qubit", wires=1)
         params = np.array([theta, theta**3, np.sqrt(2) * theta])
@@ -2784,7 +2784,7 @@ class TestParameterShiftRuleBroadcast:
 
     @pytest.mark.parametrize("theta", np.linspace(-2 * np.pi, np.pi, 7))
     def test_CRot_gradient(self, theta, tol):
-        """Tests that the automatic gradient of an arbitrary controlled Euler-angle-parameterized
+        """Tests that the automatic gradient of an arbitrary controlled Euler-angle-parametrized
         gate is correct."""
         dev = qml.device("default.qubit", wires=2)
         a, b, c = np.array([theta, theta**3, np.sqrt(2) * theta])
