@@ -20,6 +20,7 @@ import pytest
 import pennylane as qml
 
 jax = pytest.importorskip("jax")
+jnp = pytest.importorskip("jax.numpy")
 
 from pennylane.capture.base_interpreter import (  # pylint: disable=wrong-import-position
     PlxprInterpreter,
@@ -117,7 +118,75 @@ def test_overriding_measurements():
     def circuit():
         return qml.expval(qml.Z(0)), qml.probs(wires=(0, 1))
 
-    circuit()
+    res = circuit()
+    assert qml.math.allclose(res[0], jax.numpy.zeros(5))
+    assert qml.math.allclose(res[1], jax.numpy.zeros((5, 2)))
+
+    jaxpr = jax.make_jaxpr(circuit)()
+    assert (
+        jaxpr.eqns[0].params["qfunc_jaxpr"].eqns[0].primitive
+        == qml.measurements.SampleMP._wires_primitive
+    )
+    assert (
+        jaxpr.eqns[0].params["qfunc_jaxpr"].eqns[1].primitive
+        == qml.measurements.SampleMP._wires_primitive
+    )
+
+
+def test_setup_method():
+    """Test that the setup method can be used to initialized variables each call."""
+
+    class CollectOps(PlxprInterpreter):
+
+        ops = None
+
+        def setup(self):
+            self.ops = []
+
+        def interpret_operation(self, op):
+            self.ops.append(op)
+            return op._unflatten(*op._flatten())
+
+    def f(x):
+        qml.RX(x, 0)
+        qml.RY(2 * x, 0)
+
+    jaxpr = jax.make_jaxpr(f)(0.5)
+    inst = CollectOps()
+    inst.eval(jaxpr.jaxpr, jaxpr.consts, 1.2)
+    assert inst.ops
+    assert len(inst.ops) == 2
+    qml.assert_equal(inst.ops[0], qml.RX(1.2, 0))
+    qml.assert_equal(inst.ops[1], qml.RY(jnp.array(2.4), 0))
+
+    # refreshed if instance is re-used
+    inst.eval(jaxpr.jaxpr, jaxpr.consts, -0.5)
+    assert len(inst.ops) == 2
+    qml.assert_equal(inst.ops[0], qml.RX(-0.5, 0))
+    qml.assert_equal(inst.ops[1], qml.RY(jnp.array(-1.0), 0))
+
+
+def test_cleanup_method():
+    """Test that the cleanup method."""
+
+    class CleanupTester(PlxprInterpreter):
+
+        state = "DEFAULT"
+
+        def setup(self):
+            self.state = "SOME LARGE MEMORY"
+
+        def cleanup(self):
+            self.state = None
+
+    inst = CleanupTester()
+
+    @inst
+    def f(x):
+        qml.RX(x, 0)
+
+    f(0.5)
+    assert inst.state is None
 
 
 class TestHigherOrderPrimitiveRegistrations:
@@ -195,14 +264,14 @@ class TestHigherOrderPrimitiveRegistrations:
         assert branch1.eqns[1].primitive == qml.RY._primitive
         with qml.queuing.AnnotatedQueue() as q:
             jax.core.eval_jaxpr(branch1, [], 0.5)
-        qml.assert_equal(q.queue[0], qml.RY(2 * 0.5, 0))
+        qml.assert_equal(q.queue[0], qml.RY(2 * jax.numpy.array(0.5), 0))
 
         branch2 = jaxpr.eqns[0].params["jaxpr_branches"][1]
         assert len(branch2.eqns) == 2
         assert branch2.eqns[1].primitive == qml.RX._primitive
         with qml.queuing.AnnotatedQueue() as q:
             jax.core.eval_jaxpr(branch2, [], 0.5)
-        qml.assert_equal(q.queue[0], qml.RY(-0.5, 0))
+        qml.assert_equal(q.queue[0], qml.RX(jax.numpy.array(-0.5), 0))
 
         assert jaxpr.eqns[0].params["n_args"] == 1
         assert jaxpr.eqns[0].params["n_consts_per_branch"] == [0, 0]
@@ -210,12 +279,12 @@ class TestHigherOrderPrimitiveRegistrations:
         with qml.queuing.AnnotatedQueue() as q:
             jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2.4, True)
 
-        qml.assert_equal(q.queue[0], qml.RY(4.8, 0))
+        qml.assert_equal(q.queue[0], qml.RY(jax.numpy.array(4.8), 0))
 
         with qml.queuing.AnnotatedQueue() as q:
             jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 1.23, False)
 
-        qml.assert_equal(q.queue[0], qml.RX(-1.23, 0))
+        qml.assert_equal(q.queue[0], qml.RX(jax.numpy.array(-1.23), 0))
 
     def test_cond_no_false_branch(self):
         """Test transforming a cond HOP when no false branch exists."""

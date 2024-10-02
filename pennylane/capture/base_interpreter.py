@@ -135,7 +135,7 @@ class PlxprInterpreter:
             Calling the returned decorator with a function will place the function into the
             primitive registrations map.
 
-        ..code-block:: python
+        .. code-block:: python
 
             my_primitive = jax.core.Primitive("my_primitve")
 
@@ -160,7 +160,7 @@ class PlxprInterpreter:
             return var.val
         return self._op_math_cache.get(var, self._env[var])
 
-    def setup(self):
+    def setup(self) -> None:
         """Initialize the instance before interpretting equations.
 
         Blank by default, this method can initialize any additional instance variables
@@ -169,14 +169,12 @@ class PlxprInterpreter:
 
         """
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         """Perform any final steps after iterating through all equations.
 
-        Blank by default, this method can clean up instance variables, or perform
-        equations that have been deffered till later.  For example, if a compilation
-        interpreter has a staging area for the latest operation on each wire, the cleanup method
-        could clear out the staging area.
-
+        Blank by default, this method can clean up instance variables. Particularily,
+        this method can be used to deallocate qubits and registers when converting to
+        catalyst variant jaxpr.
         """
 
     def interpret_operation(self, op: "pennylane.operation.Operator"):
@@ -200,12 +198,7 @@ class PlxprInterpreter:
         """Interpret an equation corresponding to an operator.
 
         Args:
-            primitive (jax.core.Primitive): a jax primitive corresponding to an operation
-            outvar
-            *invals (Any): the positional input variables for the equation
-
-        Keyword Args:
-            **params: The equations parameters dictionary
+            eqn (jax.core.JaxprEqn): a jax equation for an operator.
 
         See also: :meth:`~.interpret_operation`.
 
@@ -277,7 +270,6 @@ class PlxprInterpreter:
             for outvar, outval in zip(eqn.outvars, outvals):
                 self._env[outvar] = outval
 
-        self.cleanup()
         # Read the final result of the Jaxpr from the environment
         outvals = []
         for var in jaxpr.outvars:
@@ -285,6 +277,7 @@ class PlxprInterpreter:
                 outvals.append(self.interpret_operation(self._op_math_cache[var]))
             else:
                 outvals.append(self.read(var))
+        self.cleanup()
         self._op_math_cache = {}
         self._env = {}
         return outvals
@@ -339,11 +332,8 @@ def handle_for_loop(self, *invals, jaxpr_body_fn, n_consts):
     consts = invals[3 : 3 + n_consts]
     init_state = invals[3 + n_consts :]
 
-    new_jaxpr_body_fn = jaxpr_to_jaxpr(
-        type(self)(), jaxpr_body_fn.jaxpr, consts, start, *init_state
-    )
+    new_jaxpr_body_fn = jaxpr_to_jaxpr(type(self)(), jaxpr_body_fn, consts, start, *init_state)
 
-    new_jaxpr_body_fn = jax.core.ClosedJaxpr(new_jaxpr_body_fn, consts)
     return for_loop_prim.bind(*invals, jaxpr_body_fn=new_jaxpr_body_fn, n_consts=n_consts)
 
 
@@ -362,8 +352,7 @@ def handle_cond(self, *invals, jaxpr_branches, n_consts_per_branch, n_args):
         if jaxpr is None:
             new_jaxprs.append(None)
         else:
-            open_jaxpr = jaxpr_to_jaxpr(type(self)(), jaxpr.jaxpr, consts, *args)
-            new_jaxprs.append(jax.core.ClosedJaxpr(open_jaxpr, consts))
+            new_jaxprs.append(jaxpr_to_jaxpr(type(self)(), jaxpr, consts, *args))
 
     return cond_prim.bind(
         *invals, jaxpr_branches=new_jaxprs, n_consts_per_branch=n_consts_per_branch, n_args=n_args
@@ -377,10 +366,8 @@ def handle_while_loop(self, *invals, jaxpr_body_fn, jaxpr_cond_fn, n_consts_body
     consts_cond = invals[n_consts_body : n_consts_body + n_consts_cond]
     init_state = invals[n_consts_body + n_consts_cond :]
 
-    new_jaxpr_body_fn = jaxpr_to_jaxpr(type(self)(), jaxpr_body_fn.jaxpr, consts_body, *init_state)
-    new_jaxpr_body_fn = jax.core.ClosedJaxpr(new_jaxpr_body_fn, consts_body)
-    new_jaxpr_cond_fn = jaxpr_to_jaxpr(type(self)(), jaxpr_cond_fn.jaxpr, consts_cond, *init_state)
-    new_jaxpr_cond_fn = jax.core.ClosedJaxpr(new_jaxpr_cond_fn, consts_cond)
+    new_jaxpr_body_fn = jaxpr_to_jaxpr(type(self)(), jaxpr_body_fn, consts_body, *init_state)
+    new_jaxpr_cond_fn = jaxpr_to_jaxpr(type(self)(), jaxpr_cond_fn, consts_cond, *init_state)
 
     return while_loop_prim.bind(
         *invals,
