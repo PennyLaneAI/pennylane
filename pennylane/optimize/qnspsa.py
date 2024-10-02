@@ -159,7 +159,7 @@ class QNSPSAOptimizer:
             kwargs : variable length of keyword arguments for the qnode
 
         Returns:
-            pnp.array: the new variable values after step-wise update :math:`x^{(t+1)}`
+            pnp.ndarray: the new variable values after step-wise update :math:`x^{(t+1)}`
         """
         if self.blocking:
             warnings.warn(
@@ -204,7 +204,7 @@ class QNSPSAOptimizer:
             kwargs : variable length of keyword arguments for the qnode
 
         Returns:
-            pnp.array: the new variable values :math:`x^{(t+1)}` before the blocking condition
+            pnp.ndarray: the new variable values :math:`x^{(t+1)}` before the blocking condition
             is applied.
         """
         all_grad_tapes = []
