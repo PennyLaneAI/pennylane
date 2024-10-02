@@ -86,9 +86,8 @@ def Involution0(op: PauliSentence):
         result = sum([1 if el == "Y" else 0 for el in pw.values()])
         parity.append(result % 2)
 
-    assert all(
-        parity[0] == p for p in parity
-    )  # only makes sense if parity is the same for all terms, e.g. Heisenberg model
+    # only makes sense if parity is the same for all terms, e.g. Heisenberg model
+    assert all(parity[0] == p for p in parity)
     return parity[0]
 
 
@@ -100,8 +99,8 @@ def CartanDecomp(g, involution=None):
         involution (callable): Involution function :math:`\Theta(\cdot)` to act on PauliSentence ops, should return ``0/1`` or ``True/False``.
 
     Returns:
-        k (List[PauliSentence]): the even parity subspace :math:`\Theta(\mathfrak{k}) = \mathfrak{k}`
-        m (List[PauliSentence]): the odd parity subspace :math:`\Theta(\mathfrak{m}) = \mathfrak{m}`
+        k (List[PauliSentence]): the odd parity subspace :math:`\Theta(\mathfrak{k}) = \mathfrak{k}`
+        m (List[PauliSentence]): the even parity subspace :math:`\Theta(\mathfrak{m}) = \mathfrak{m}`
     """
     m = []
     k = []
@@ -431,7 +430,10 @@ def khk_decompose(
     # see Example 10 on page 10 in https://arxiv.org/pdf/quant-ph/0505128
     dim_k = len(k)
     # Check that the adjoint action of the subalgebra k really does not map m into k
-    if not np.allclose(ad[:dim_k, dim_k:, :dim_k], 0.0):
+    if not (
+        np.allclose(ad[:dim_k, dim_k:, :dim_k], 0.0)
+        and np.allclose(ad[:dim_k, :dim_k, dim_k:], 0.0)
+    ):
         raise ValueError(
             "The adjoint representation does not match the assumption of a symmetric space. "
             "Make sure that the representation matches the ordering in the algebra and that "
@@ -491,21 +493,21 @@ def khk_decompose(
 
 def _khk_validation(H, vec_h, theta_opt, g, k):
     h_elem = make_op(vec_h, g[len(k) :], tol=1e-10)
-
     n = len(H.wires)
+    h_mat = qml.matrix(h_elem, wire_order=range(n))
 
     Km = jnp.eye(2**n)
     for th, op in zip(theta_opt[::-1], k[::-1]):
-        Km @= jax.scipy.linalg.expm(1j * th * qml.matrix(op.operation(), wire_order=range(n)))
+        Km @= jax.scipy.linalg.expm(-1j * th * qml.matrix(op.operation(), wire_order=range(n)))
 
-    H_reconstructed = Km.conj().T @ qml.matrix(h_elem, wire_order=range(n)) @ Km
+    h_mat = Km @ h_mat @ Km.conj().T
 
     H_mat = qml.matrix(H, wire_order=range(n))
-    success = np.allclose(H_mat, H_reconstructed)
+    success = np.allclose(H_mat, h_mat)
 
     if not success:
         # more expensive check for unitary equivalence
-        eigvals_diff = np.linalg.eigvalsh(H_mat) - np.linalg.eigvalsh(H_reconstructed)
+        eigvals_diff = np.linalg.eigvalsh(H_mat) - np.linalg.eigvalsh(h_mat)
         success = 1 - np.linalg.norm(eigvals_diff)
         warnings.warn(
             "The reconstructed H is not numerical identical to the original H.\n"
