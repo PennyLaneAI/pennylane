@@ -424,21 +424,50 @@ def op_eq(ops):
     return OpEq(ops)
 
 
-class MeasEq(BooleanFn):
+class MeasEq(qml.BooleanFn):
     """A conditional for evaluating if a given measurement process is equal to the specified measurement process.
 
     Args:
-        measurement(Union[Iterable[MeasurementProcess], MeasurementProcess]): Sequence of measurement process.
+        mp(Union[Iterable[MeasurementProcess], MeasurementProcess]): Sequence of measurement process.
 
     .. seealso:: Users are advised to use :func:`~.meas_eq` for a functional construction.
     """
 
-    def __init__(self, mp):
-        self._cond = set(mp)
-        self.condition = self._cond
+    def __init__(self, mps):
+        """ """
+        self._cond = [mps] if not isinstance(mps, (list, tuple, set)) else mps
+        self.condition, self._cmps = [], []
+        for mp in self._cond:
+            if (callable(mp) and (mp := meas_func_process.get(mp, None)) is None) or (
+                isclass(mp) and not issubclass(mp, qml.measurements.MeasurementProcess)
+            ):
+                raise ValueError(
+                    f"MeasEq should be initialized with a MeasurementProcess, got {mp}"
+                )
+            self.condition.append(mp)
+            self._cmps.append(mp if isclass(mp) else mp.__class__)
+
+        mp_names = list(getattr(op, "return_type", op.__class__.__name__) for op in self.condition)
         super().__init__(
-            lambda mp: meas_eq(mp) == self._cond, f"MeasEq({mp})"
+            self._check_meas, f"MeasEq({mp_names if len(mp_names) > 1 else mp_names[0]})"
         )
+
+    def _check_meas(self, mp):
+
+        if isclass(mp) and not issubclass(mp, qml.measurements.MeasurementProcess):
+            return False
+
+        if callable(mp) and (mp := _MEAS_FUNC_MAP.get(mp, None)) is None:
+            return False
+
+        cmps = [
+            m_ if isclass(m_) else m_.__class__
+            for m_ in ([mp] if not isinstance(mp, (list, tuple, set)) else mp)
+        ]
+        if len(cmps) != len(self._cond):
+            return False
+
+        return all(mp1 == mp2 for mp1, mp2 in zip(cmps, self._cmps))
 
 
 def meas_eq(mp):
@@ -448,8 +477,7 @@ def meas_eq(mp):
     Args:
         mp (MeasurementProcess): An instance of any class that inherits from :class:`~.MeasurementProcess`.
     """
-    _ = mp
-    return True
+    return MeasEq(mp)
 
 
 def _rename(newname):
@@ -535,13 +563,17 @@ def partial_wires(operation, *args, **kwargs):
                 f"got operation = {operation} and args = {args}."
             )
         args, metadata = getattr(operation, "_flatten")()
+        is_metadata_flat = is_meas_class and isinstance(operation, (qml.ops.Controlled))
         if len(metadata) > 1:
-            kwargs = {**dict(metadata[1] if not is_meas_class else metadata), **kwargs}
+            kwargs = {**dict(metadata[1] if not is_metadata_flat else metadata), **kwargs}
         operation = type(operation)
     elif operation in _MEAS_FUNC_MAP:
         is_meas_class = True
         operation = _MEAS_FUNC_MAP[operation]
-    elif operation in [qml.adjoint, qml.ctrl]:
+    elif operation in (
+        qml.adjoint,
+        qml.ctrl,
+    ):
         is_meta_class = True
         operation = {qml.adjoint: qml.ops.Adjoint, qml.ctrl: qml.ops.Controlled}[operation]
 
@@ -555,6 +587,9 @@ def partial_wires(operation, *args, **kwargs):
 
     if is_meta_class and "op" in arg_params:
         arg_params["base"] = arg_params.pop("op")
+
+    if operation == qml.ops.Controlled and "control" in arg_params:
+        arg_params["control_wires"] = arg_params.pop("control")
 
     op_name = f"{operation.__name__}("
     for key, val in arg_params.copy().items():
@@ -583,7 +618,7 @@ def partial_wires(operation, *args, **kwargs):
                 if op_args["wires"] is None:
                     op_args["wires"] = obs.wires
 
-            if (obs := op_args.get("obs", None)) is not None:
+            if (obs := op_args.get("obs", None)) is not None and op_args["wires"] is not None:
                 op_args["obs"] = obs.map_wires(dict(zip(obs.wires, op_args.pop("wires"))))
 
         if is_meta_class:
@@ -592,7 +627,7 @@ def partial_wires(operation, *args, **kwargs):
                 if op_args["wires"] is None:
                     op_args["wires"] = obs.wires
 
-            if (base := op_args.get("base", None)) is not None:
+            if (base := op_args.get("base", None)) is not None and op_args["wires"] is not None:
                 op_args["base"] = base.map_wires(dict(zip(base.wires, op_args.pop("wires"))))
 
         for key, val in partial_kwargs.items():
