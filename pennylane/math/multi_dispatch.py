@@ -341,18 +341,6 @@ def matrix_power(tensor1, tensor2, like=None):
 
     return np.linalg.matrix_power(tensor1, tensor2)
 
-
-@multi_dispatch(argnum=[0])
-def eigh(tensor, like=None):
-    """Retruns the eigenvalues of a Hermitian matrix."""
-    if like == "jax":
-        import jax
-
-        return jax.numpy.linalg.eigh(tensor)
-
-    return np.linalg.eigh(tensor)
-
-
 @multi_dispatch(argnum=[0, 1])
 def dot(tensor1, tensor2, like=None):
     """Returns the matrix or dot product of two tensors.

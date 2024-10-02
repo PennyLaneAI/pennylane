@@ -115,12 +115,12 @@ class THermitian(Hermitian):
             Hmat = qml.math.to_numpy(Hmat)
             Hkey = tuple(Hmat.flatten().tolist())
             if Hkey not in THermitian._eigs:
-                w, U = qml.math.eigh(Hmat)
+                w, U = qml.math.linalg.eigh(Hmat)
                 THermitian._eigs[Hkey] = {"eigvec": U, "eigval": w}
 
             return THermitian._eigs[Hkey]
 
-        w, U = qml.math.eigh(Hmat)
+        w, U = qml.math.linalg.eigh(Hmat)
         return {"eigvec": U, "eigval": w}
 
     @staticmethod

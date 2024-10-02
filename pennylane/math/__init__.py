@@ -65,7 +65,6 @@ from .multi_dispatch import (
     unwrap,
     where,
     matrix_power,
-    eigh,
 )
 from .quantum import (
     cov_matrix,
