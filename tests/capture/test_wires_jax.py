@@ -47,6 +47,8 @@ class TestWiresJax:
             [jax.numpy.array([0, 1, 2]), jax.numpy.array([3, 4])],
             [jax.numpy.array([0, 1, 2]), 3],
             jax.numpy.array([[0, 1, 2]]),
+            jax.numpy.array([[[0, 1], [2, 3]]]),
+            jax.numpy.array([[[[0]]]]),
         ],
     )
     def test_error_for_incorrect_jax_arrays(self, input):
