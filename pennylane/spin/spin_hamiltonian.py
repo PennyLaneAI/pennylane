@@ -74,11 +74,6 @@ def transverse_ising(
     + -0.1 * X(3)
     )
     """
-    if not isinstance(h, (int, float, complex)):
-        raise ValueError(
-            f"The parameter h, value of the external magnetic field, should be a number."
-        )
-
     lattice = _generate_lattice(lattice, n_cells, boundary_condition, neighbour_order)
 
     if isinstance(coupling, (int, float, complex)):
@@ -87,15 +82,10 @@ def transverse_ising(
 
     hamiltonian = 0.0 * qml.I(0)
 
-    if coupling.shape not in [(neighbour_order,)]:
-        if neighbour_order == 1:
-            raise ValueError(
-                f"The coupling parameter should be a number or an array of length {neighbour_order}."
-            )
-        else:
-            raise ValueError(
-                f"The coupling parameter should be an array of length {neighbour_order}."
-            )
+    if coupling.shape not in [(neighbour_order,), (lattice.n_sites, lattice.n_sites)]:
+        raise ValueError(
+            f"The coupling parameter should be a number or an array of shape ({neighbour_order},) or ({lattice.n_sites},{lattice.n_sites})"
+        )
 
     if coupling.shape == (neighbour_order,):
         for edge in lattice.edges:
@@ -169,9 +159,9 @@ def heisenberg(lattice, n_cells, coupling=None, boundary_condition=False, neighb
     if coupling.ndim == 1:
         coupling = math.asarray([coupling])
 
-    if coupling.shape not in [(neighbour_order, 3)]:
+    if coupling.shape not in [(neighbour_order, 3), (3, lattice.n_sites, lattice.n_sites)]:
         raise ValueError(
-            f"The coupling parameter should be an array of shape ({neighbour_order},3)"
+            f"The coupling parameter shape should be equal to ({neighbour_order},3) or (3,{lattice.n_sites},{lattice.n_sites})"
         )
 
     hamiltonian = 0.0 * qml.I(0)
@@ -268,15 +258,10 @@ def fermi_hubbard(
 
     hopping = math.asarray(hopping)
 
-    if hopping.shape not in [(neighbour_order,)]:
-        if neighbour_order == 1:
-            raise ValueError(
-                f"The hopping parameter should be a number or an array of length {neighbour_order}."
-            )
-        else:
-            raise ValueError(
-                f"The hopping parameter should be an array of length {neighbour_order}."
-            )
+    if hopping.shape not in [(neighbour_order,), (lattice.n_sites, lattice.n_sites)]:
+        raise ValueError(
+            f"The hopping parameter should be a number or an array of shape ({neighbour_order},) or ({lattice.n_sites},{lattice.n_sites})"
+        )
 
     spin = 2
     hopping_ham = 0.0 * FermiWord({})
@@ -306,11 +291,6 @@ def fermi_hubbard(
     int_term = 0.0 * FermiWord({})
     if isinstance(coulomb, (int, float, complex)):
         coulomb = math.ones(lattice.n_sites) * coulomb
-
-    if len(coulomb) != lattice.n_sites:
-        raise ValueError(
-            f"The Coulomb parameter should be a number or an array of length {lattice.n_sites}."
-        )
 
     for i in range(lattice.n_sites):
         up_spin = i * spin
@@ -430,26 +410,17 @@ def emery(
         else math.asarray(intersite_coupling)
     )
 
-    if hopping.shape not in [(neighbour_order,)]:
-        if neighbour_order == 1:
-            raise ValueError(
-                f"The hopping parameter should be a number or an array of length {neighbour_order}."
-            )
-        else:
-            raise ValueError(
-                f"The hopping parameter should be an array of length {neighbour_order}."
-            )
+    if hopping.shape not in [(neighbour_order,), (lattice.n_sites, lattice.n_sites)]:
+        raise ValueError(
+            f"The hopping parameter should be a number or an "
+            f"array of shape ({neighbour_order},) or ({lattice.n_sites},{lattice.n_sites})."
+        )
 
-    if intersite_coupling.shape not in [(neighbour_order,)]:
-        if neighbour_order == 1:
-            raise ValueError(
-                f"The intersite_coupling parameter should be a number or "
-                f"an array of length {neighbour_order}."
-            )
-        else:
-            raise ValueError(
-                f"The intersite_coupling parameter should be an array of length {neighbour_order}."
-            )
+    if intersite_coupling.shape not in [(neighbour_order,), (lattice.n_sites, lattice.n_sites)]:
+        raise ValueError(
+            f"The intersite_coupling parameter should be a number or "
+            f"an array of shape ({neighbour_order},) or ({lattice.n_sites},{lattice.n_sites})."
+        )
 
     spin = 2
     hopping_term = 0.0 * FermiWord({})
@@ -481,13 +452,8 @@ def emery(
             )
         )
 
-    if isinstance(coulomb, (int, float, complex)) or len(coulomb) == 1:
+    if isinstance(coulomb, (int, float, complex)):
         coulomb = math.ones(lattice.n_sites) * coulomb
-
-    if len(coulomb) not in [lattice.n_sites]:
-        raise ValueError(
-            f"The Coulomb parameter should be a number or an array of length 1 or {lattice.n_sites}."
-        )
 
     coulomb_term = 0.0 * FermiWord({})
     for i in range(lattice.n_sites):
@@ -600,13 +566,19 @@ def haldane(
     phi = math.asarray([phi]) if isinstance(phi, (int, float, complex)) else math.asarray(phi)
 
     if hopping.shape not in [(1,), (lattice.n_sites, lattice.n_sites)]:
-        raise ValueError(f"The hopping parameter should be a number or an array of length 1.")
+        raise ValueError(
+            f"The hopping parameter should be a constant or an array of shape ({lattice.n_sites},{lattice.n_sites})."
+        )
 
     if hopping_next.shape not in [(1,), (lattice.n_sites, lattice.n_sites)]:
-        raise ValueError(f"The hopping_next parameter should be a number or an array of length 1.")
+        raise ValueError(
+            f"The hopping_next parameter should be a constant or an array of shape ({lattice.n_sites},{lattice.n_sites})."
+        )
 
     if phi.shape not in [(1,), (lattice.n_sites, lattice.n_sites)]:
-        raise ValueError(f"The phi parameter should be a number or an array of length 1.")
+        raise ValueError(
+            f"The phi parameter should be a constant or an array of shape ({lattice.n_sites},{lattice.n_sites})."
+        )
 
     spin = 2
     hamiltonian = 0.0 * FermiWord({})
@@ -695,13 +667,10 @@ def kitaev(n_cells, coupling=None, boundary_condition=False):
     """
 
     if coupling is None:
-        coupling = qml.math.array([1.0, 1.0, 1.0])
-
-    if len(n_cells) != 2:
-        raise ValueError("Argument `n_cells` must be a list of length 2.")
+        coupling = [1.0, 1.0, 1.0]
 
     if len(coupling) != 3:
-        raise ValueError("The coupling parameter should be an array of length 3.")
+        raise ValueError("The coupling parameter should be a list of length 3.")
 
     vectors = [[1, 0], [0.5, 0.75**0.5]]
     positions = [[0, 0], [0.5, 0.5 / 3**0.5]]
