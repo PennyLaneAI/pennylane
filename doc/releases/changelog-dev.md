@@ -179,6 +179,9 @@
 * Add `work_wires` parameter to `qml.MultiControlledX` docstring signature.
   [(#6271)](https://github.com/PennyLaneAI/pennylane/pull/6271)
 
+* Removed ambiguity in error raised by the `PauliRot` class.
+  [(#6298)](https://github.com/PennyLaneAI/pennylane/pull/6298)
+
 <h3>Bug fixes 🐛</h3>
 
 * `qml.map_wires` can now be applied to a batch of tapes.
