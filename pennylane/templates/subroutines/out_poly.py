@@ -15,11 +15,13 @@
 Contains the OutPoly template.
 """
 
+import inspect
+import re
+
+import sympy
+
 import pennylane as qml
 from pennylane.operation import Operation
-import sympy
-import re
-import inspect
 
 
 def _function_to_binary_poly(f, vars):
@@ -197,19 +199,19 @@ class OutPoly(Operation):
 
     grad_method = None
 
-    def __init__(self, f=None, args=None, mod=None, work_wires=None, id=None):
+    def __init__(self, f=None, register_wires = None, mod=None, work_wires=None, id=None):
 
-        if args is None or f is None:
+        if register_wires is None or f is None:
             raise ValueError("The arguments and the function f must be provided.")
 
         if not mod:
-            mod = 2 ** len(args[-1])
+            mod = 2 ** len(register_wires[-1])
 
         num_work_wires = 0 if not work_wires else len(work_wires)
         if mod is None:
-            mod = 2 ** len(args[-1])
-        elif mod != 2 ** len(args[-1]) and num_work_wires != 2:
-            raise ValueError(f"If mod is not 2^{len(args[-1])}, two work wires should be provided")
+            mod = 2 ** len(register_wires[-1])
+        elif mod != 2 ** len(register_wires[-1]) and num_work_wires != 2:
+            raise ValueError(f"If mod is not 2^{len(register_wires[-1])}, two work wires should be provided")
 
         self.mod = mod
 
@@ -218,25 +220,24 @@ class OutPoly(Operation):
 
         self.hyperparameters["f"] = f
 
-        if len(inspect.signature(f).parameters) != len(args) - 1:
+        if len(inspect.signature(f).parameters) != len(register_wires) - 1:
             raise ValueError(
-                f"The function takes {len(inspect.signature(f).parameters)} input parameters but {len(args) - 1} has provided."
+                f"The function takes {len(inspect.signature(f).parameters)} input parameters but {len(register_wires) - 1} has provided."
             )
 
-        self.hyperparameters["inputs_wires"] = [qml.wires.Wires(arg) for arg in args[:-1]]
-        self.hyperparameters["output_wires"] = qml.wires.Wires(args[-1])
+        self.hyperparameters["register_wires"] = [qml.wires.Wires(register) for register in register_wires]
 
         self.hyperparameters["mod"] = mod
         self.hyperparameters["work_wires"] = qml.wires.Wires(work_wires) if work_wires else None
 
         all_wires = sum(
-            [*self.hyperparameters["inputs_wires"], self.hyperparameters["output_wires"]], start=[]
+            [*self.hyperparameters["register_wires"]], start=[]
         )
 
         if work_wires:
             all_wires += work_wires
 
-        if len(all_wires) != sum([len(arg) for arg in args]) + num_work_wires:
+        if len(all_wires) != sum([len(register) for register in register_wires]) + num_work_wires:
             raise ValueError(
                 "None of the wires in a register must be contained in another register."
             )
@@ -254,14 +255,12 @@ class OutPoly(Operation):
             if key
             not in [
                 "f",
-                "inputs_wires",
-                "output_wires",
+                "register_wires",
             ]
         )
         return (
             self.hyperparameters["f"],
-            *self.hyperparameters["inputs_wires"],
-            self.hyperparameters["output_wires"],
+            self.hyperparameters["register_wires"],
         ), metadata
 
     @classmethod
@@ -271,11 +270,11 @@ class OutPoly(Operation):
 
     def map_wires(self, wire_map: dict):
 
-        new_inputs_wires = [
+        new_register_wires = [
             [wire_map[wire] for wire in input_wire]
-            for input_wire in self.hyperparameters["inputs_wires"]
+            for input_wire in self.hyperparameters["register_wires"]
         ]
-        new_output_wires = [wire_map[wire] for wire in self.hyperparameters["output_wires"]]
+
         new_work_wires = (
             [wire_map[wire] for wire in self.hyperparameters["work_wires"]]
             if self.hyperparameters.get("work_wires")
@@ -284,8 +283,7 @@ class OutPoly(Operation):
 
         return OutPoly(
             self.hyperparameters["f"],
-            *new_inputs_wires,
-            new_output_wires,
+            new_register_wires,
             mod=self.hyperparameters["mod"],
             work_wires=new_work_wires,
         )
@@ -303,17 +301,16 @@ class OutPoly(Operation):
         f = kwargs["f"]
         mod = kwargs["mod"]
 
-        inputs_wires = kwargs["inputs_wires"]
-        output_wires = kwargs["output_wires"]
+        register_wires = kwargs["register_wires"]
         work_wires = kwargs["work_wires"]
 
         list_ops = []
 
-        output_adder_mod = [work_wires[0]] + output_wires if work_wires else output_wires
+        output_adder_mod = [work_wires[0]] + register_wires[-1] if work_wires else register_wires[-1]
         list_ops.append(qml.QFT(wires=output_adder_mod))
 
         vars = []  # variable naming and size
-        for ind, wires in enumerate(inputs_wires):
+        for ind, wires in enumerate(register_wires[:-1]):
             vars.append((f"x{ind}", len(wires)))
 
         poly = _function_to_binary_poly(f, vars)
@@ -333,7 +330,7 @@ class OutPoly(Operation):
 
             controls = []
             for aux in controls_aux:
-                controls.append(inputs_wires[aux[0]][-1 - aux[1]])
+                controls.append(register_wires[:-1][aux[0]][-1 - aux[1]])
 
             if work_wires:
                 list_ops.append(

@@ -913,14 +913,16 @@ class TestModifiedTemplates:
     def test_out_poly(self):
         """Test the primitive bind call of OutPoly."""
 
-        def func(x):
-            return x**2
+        def func(x, y):
+            return x**2 + y
+
+        register_wires= [[0, 1], [2, 3], [4,5]]
 
         kwargs = {
             "f": func,
-            "args": [[0, 1], [2, 3]],
+            "register_wires":[[0, 1], [2, 3], [4,5]],
             "mod": 3,
-            "work_wires": [4, 5],
+            "work_wires": [6, 7],
         }
 
         def qfunc():

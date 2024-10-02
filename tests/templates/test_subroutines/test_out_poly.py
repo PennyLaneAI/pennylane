@@ -30,7 +30,7 @@ def test_standard_validity_OutPoly():
     wires = qml.registers({"x": 3, "y": 3, "z": 3, "output": 3, "aux": 2})
 
     op = qml.OutPoly(
-        f_test, wires["x"], wires["y"], wires["z"], wires["output"], mod=5, work_wires=wires["aux"]
+        f_test, [wires["x"], wires["y"], wires["z"], wires["output"]], mod=5, work_wires=wires["aux"]
     )
 
     print(op.wires)
@@ -64,7 +64,7 @@ class TestOutPoly:
 
             qml.BasisEmbedding(2, wires=x_wires)
             qml.BasisEmbedding(1, wires=y_wires)
-            qml.OutPoly(f, x_wires, y_wires, output_wires, mod=mod, work_wires=work_wires)
+            qml.OutPoly(f, [x_wires, y_wires, output_wires], mod=mod, work_wires=work_wires)
             return qml.probs(wires=output_wires)
 
         if mod == None:
@@ -89,17 +89,17 @@ class TestOutPoly:
             if y_wires:
                 qml.OutPoly(
                     lambda x, y: 3 * x**3 - 3 * y,
-                    x_wires,
+                    [x_wires,
                     y_wires,
-                    output_wires,
+                    output_wires],
                     mod=mod,
                     work_wires=work_wires,
                 )
             else:
                 qml.OutPoly(
                     lambda x, y: 3 * x**3 - 3 * y,
-                    x_wires,
-                    output_wires,
+                    [x_wires,
+                    output_wires],
                     mod=mod,
                     work_wires=work_wires,
                 )
@@ -116,7 +116,7 @@ class TestOutPoly:
 
         @qml.qnode(qml.device("default.qubit"))
         def circuit():
-            qml.OutPoly(f, x_wires, y_wires, output_wires)
+            qml.OutPoly(f, [x_wires, y_wires, output_wires])
             return qml.state()
 
         with pytest.raises(ValueError, match="The function must be polynomial"):
@@ -131,7 +131,7 @@ class TestOutPoly:
         x_wires = [0, 1, 2]
         y_wires = [3, 4, 5]
         output_wires = [6, 7, 8]
-        poly_decomposition = qml.OutPoly(f, x_wires, y_wires, output_wires).decomposition()
+        poly_decomposition = qml.OutPoly(f, [x_wires, y_wires, output_wires]).decomposition()
 
         for op in poly_decomposition:
             if isinstance(op, qml.QFT):
