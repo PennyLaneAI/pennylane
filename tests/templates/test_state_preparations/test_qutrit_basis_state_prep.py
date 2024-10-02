@@ -131,7 +131,6 @@ class TestDecomposition:
         obs = np.array([[1, 0, 0], [0, 2, 0], [0, 0, 3]])
         output_state = [x - 1 for x in circuit(basis_state, obs)]
 
-        print(output_state, target_state)
         assert np.allclose(output_state, target_state, atol=tol, rtol=0)
 
     @pytest.mark.tf
