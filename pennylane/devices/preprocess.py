@@ -27,9 +27,9 @@ import pennylane as qml
 from pennylane import Snapshot, transform
 from pennylane.measurements import SampleMeasurement, StateMeasurement
 from pennylane.operation import Tensor
+from pennylane.ops import BasisState, StatePrep
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.typing import PostprocessingFn
-from pennylane.ops import StatePrep, BasisState
 from pennylane.wires import WireError
 
 from .execution_config import MCMConfig
