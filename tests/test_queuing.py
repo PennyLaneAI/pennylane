@@ -197,6 +197,7 @@ class TestAnnotatedQueue:
             ]
         assert q.queue == ops
 
+    @pytest.mark.usefixtures("legacy_opmath_only")
     def test_append_tensor_ops(self):
         """Test that ops which are used as inputs to `Tensor`
         are successfully added to the queue, as well as the `Tensor` object."""

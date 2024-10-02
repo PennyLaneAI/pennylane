@@ -2801,7 +2801,7 @@ class TestHamiltonianLinearCombinationAlias:
         assert not isinstance(op, qml.ops.qubit.Hamiltonian)
         assert not isinstance(op, qml.ops.qubit.hamiltonian.Hamiltonian)
 
-    @pytest.mark.usefixtures("legacy_opmath_only")
+    @pytest.mark.usefixtures("use_legacy_opmath")
     def test_hamiltonian_linear_combination_alias_disabled(self):
         """Test that qml.Hamiltonian is not an alias for LinearCombination with new operator
         arithmetic disabled"""

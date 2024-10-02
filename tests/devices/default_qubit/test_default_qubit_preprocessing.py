@@ -577,28 +577,21 @@ class TestPreprocessingIntegration:
         with pytest.raises(qml.DeviceError, match="Operator NoMatNoDecompOp"):
             program(tapes)
 
-    with qml.operation.disable_new_opmath_cm(warn=False):
-        with warnings.catch_warnings():
-            warnings.filterwarnings(
-                "ignore", "qml.ops.Hamiltonian uses", qml.PennyLaneDeprecationWarning
-            )
-            invalid_tape_adjoint_test_cases = [
-                (
-                    [qml.RX(0.1, wires=0)],
-                    [qml.probs(op=qml.PauliX(0))],
-                    "adjoint diff supports either all expectation values or",
-                ),
-                (
-                    [qml.RX(0.1, wires=0)],
-                    [qml.expval(qml.Hamiltonian([1], [qml.PauliZ(0)]))],
-                    "not supported on adjoint",
-                ),
-            ]
-
     @pytest.mark.usefixtures("legacy_opmath_only")
     @pytest.mark.parametrize(
         "ops, measurement, message",
-        invalid_tape_adjoint_test_cases,
+        [
+            (
+                [qml.RX(0.1, wires=0)],
+                [qml.probs(op=qml.PauliX(0))],
+                "adjoint diff supports either all expectation values or",
+            ),
+            (
+                [qml.RX(0.1, wires=0)],
+                [qml.expval(qml.Hamiltonian([1], [qml.PauliZ(0)]))],
+                "not supported on adjoint",
+            ),
+        ],
     )
     @pytest.mark.filterwarnings("ignore:Differentiating with respect to")
     def test_preprocess_invalid_tape_adjoint_legacy_opmath(self, ops, measurement, message):

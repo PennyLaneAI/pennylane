@@ -44,16 +44,12 @@ def test_switching():
         assert isinstance(LC, qml.ops.LinearCombination)
 
 
-@pytest.mark.usefixtures("use_legacy_and_new_opmath")
-class TestParityWithHamiltonian:
+def test_isinstance_Hamiltonian():
     """Test that Hamiltonian and LinearCombination can be used interchangeably when new opmath is disabled or enabled"""
-
-    def test_isinstance_Hamiltonian(self):
-        H = qml.Hamiltonian([1.0, 2.0, 3.0], [X(0), X(0) @ X(1), X(2)])
-        assert isinstance(H, qml.Hamiltonian)
+    H = qml.Hamiltonian([1.0, 2.0, 3.0], [X(0), X(0) @ X(1), X(2)])
+    assert isinstance(H, qml.Hamiltonian)
 
 
-@pytest.mark.usefixtures("use_legacy_and_new_opmath")
 def test_mixed_legacy_warning_Hamiltonian_legacy():
     """Test that mixing legacy ops and LinearCombination.compare raises a warning in legacy opmath"""
 

@@ -19,7 +19,7 @@ import contextlib
 import os
 import pathlib
 import sys
-from warnings import warn
+from warnings import filterwarnings, warn
 
 import numpy as np
 import pytest
@@ -163,6 +163,11 @@ def disable_opmath_if_requested(request):
             UserWarning,
         )
         qml.operation.disable_new_opmath(warn=False)
+
+        # Suppressing warnings so that Hamiltonians and Tensors constructed outside tests
+        # don't raise deprecation warnings
+        filterwarnings("ignore", "qml.ops.Hamiltonian", qml.PennyLaneDeprecationWarning)
+        filterwarnings("ignore", "qml.operation.Tensor", qml.PennyLaneDeprecationWarning)
 
 
 @pytest.fixture(scope="function")
