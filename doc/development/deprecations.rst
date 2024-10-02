@@ -74,7 +74,9 @@ it is not recommended, as the old system is deprecated and will be removed in th
 raise a deprecation warning when used:
 
 * In PennyLane v0.39, legacy operator arithmetic has been deprecated. This includes :func:`~pennylane.operation.enable_new_opmath`,
-  :func:`~pennylane.operation.disable_new_opmath`, :class:`~pennylane.ops.Hamiltonian`, and :class:`~pennylane.operation.Tensor`.
+  :func:`~pennylane.operation.disable_new_opmath`, :class:`~pennylane.ops.Hamiltonian`, and :class:`~pennylane.operation.Tensor`. Note
+  that when new operator arithmetic is enabled, ``qml.Hamiltonian`` will continue to dispatch to :class:`~pennylane.ops.LinearCombination`;
+  this behaviour is not deprecated.
 
   - Deprecated in v0.39
   - Will be removed in v0.40
