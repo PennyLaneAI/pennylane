@@ -49,18 +49,18 @@ class SimplifyInterpreter(PlxprInterpreter):
     def interpret_operation(self, op):
         new_op = op.simplify()
         if new_op is op:
+            new_op = new_op._unflatten(*op._flatten())
             # if new op isn't queued, need to requeue op.
-            data, struct = jax.tree_util.tree_flatten(new_op)
-            new_op = jax.tree_util.tree_unflatten(struct, data)
         return new_op
 
 
-def test_env_and_state_initialized():
-    """Test that env and state are initialized at the start."""
+# pylint: disable=use-implicit-booleaness-not-comparison
+def test_env_and_initialized():
+    """Test that env is initialized at the start."""
 
     interpreter = SimplifyInterpreter()
-    assert interpreter._env == {}  # pylint: disable=use-implicit-booleaness-not-comparison
-    assert interpreter.state is None
+    assert interpreter._env == {}
+    assert interpreter._op_math_cache == {}
 
 
 def test_primitive_registrations():
@@ -73,8 +73,7 @@ def test_primitive_registrations():
             new_op = op.simplify()
             if new_op is op:
                 # if new op isn't queued, need to requeue op.
-                data, struct = jax.tree_util.tree_flatten(new_op)
-                new_op = jax.tree_util.tree_unflatten(struct, data)
+                new_op = new_op._unflatten(*op._flatten())
             return new_op
 
     assert (
@@ -226,7 +225,7 @@ class TestHigherOrderPrimitiveRegistrations:
 
             @qml.cond(control)
             def f():
-                qml.X(0) @ qml.X(0)
+                _ = qml.X(0) @ qml.X(0)
 
             f()
 
@@ -305,8 +304,7 @@ class TestHigherOrderPrimitiveRegistrations:
         class AddNoise(PlxprInterpreter):
 
             def interpret_operation(self, op):
-                data, struct = jax.tree_util.tree_flatten(op)
-                new_op = jax.tree_util.tree_unflatten(struct, data)
+                new_op = op._unflatten(*op._flatten())
                 _ = [qml.RX(0.1, w) for w in op.wires]
                 return new_op
 

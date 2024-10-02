@@ -52,17 +52,6 @@ def jaxpr_to_jaxpr(
 class PlxprInterpreter:
     """A template base class for defining plxpr interpreters
 
-    Args:
-        state (Any): any kind of information that may need to get carried around between different interpreters.
-
-    **State property:**
-
-    Higher order primitives can often be handled by a separate interpreter, but need to reference or modify the same values.
-    For example, a device interpreter may need to modify a statevector, or conversion to a tape may need to modify operations
-    and measurement lists. By maintaining this information in the optional ``state`` property, this information can automatically
-    by passed to new sub-interpreters.
-
-
     **Examples:**
 
     .. code-block:: python
@@ -128,10 +117,9 @@ class PlxprInterpreter:
     def __init_subclass__(cls) -> None:
         cls._primitive_registrations = copy.copy(cls._primitive_registrations)
 
-    def __init__(self, state=None):
+    def __init__(self):
         self._env = {}
         self._op_math_cache = {}
-        self.state = state
 
     @classmethod
     def register_primitive(cls, primitive: "jax.core.Primitive") -> Callable[[Callable], Callable]:
@@ -206,8 +194,7 @@ class PlxprInterpreter:
         See also: :meth:`~.interpret_operation_eqn`.
 
         """
-        data, struct = jax.tree_util.tree_flatten(op)
-        return jax.tree_util.tree_unflatten(struct, data)
+        return op._unflatten(*op._flatten())  # pylint: disable=protected-access
 
     def interpret_operation_eqn(self, eqn: "jax.core.JaxprEqn"):
         """Interpret an equation corresponding to an operator.
@@ -323,7 +310,7 @@ def handle_adjoint_transform(self, *invals, jaxpr, lazy, n_consts):
     consts = invals[:n_consts]
     args = invals[n_consts:]
 
-    jaxpr = jaxpr_to_jaxpr(type(self)(state=self.state), jaxpr, consts, *args)
+    jaxpr = jaxpr_to_jaxpr(type(self)(), jaxpr, consts, *args)
     return adjoint_transform_prim.bind(*invals, jaxpr=jaxpr, lazy=lazy, n_consts=n_consts)
 
 
@@ -333,7 +320,7 @@ def handle_ctrl_transform(self, *invals, n_control, jaxpr, control_values, work_
     """Interpret a ctrl transform primitive."""
     consts = invals[:n_consts]
     args = invals[n_consts:-n_control]
-    jaxpr = jaxpr_to_jaxpr(type(self)(state=self.state), jaxpr, consts, *args)
+    jaxpr = jaxpr_to_jaxpr(type(self)(), jaxpr, consts, *args)
 
     return ctrl_transform_prim.bind(
         *invals,
@@ -353,7 +340,7 @@ def handle_for_loop(self, *invals, jaxpr_body_fn, n_consts):
     init_state = invals[3 + n_consts :]
 
     new_jaxpr_body_fn = jaxpr_to_jaxpr(
-        type(self)(state=self.state), jaxpr_body_fn.jaxpr, consts, start, *init_state
+        type(self)(), jaxpr_body_fn.jaxpr, consts, start, *init_state
     )
 
     new_jaxpr_body_fn = jax.core.ClosedJaxpr(new_jaxpr_body_fn, consts)
@@ -375,7 +362,7 @@ def handle_cond(self, *invals, jaxpr_branches, n_consts_per_branch, n_args):
         if jaxpr is None:
             new_jaxprs.append(None)
         else:
-            open_jaxpr = jaxpr_to_jaxpr(type(self)(state=self.state), jaxpr.jaxpr, consts, *args)
+            open_jaxpr = jaxpr_to_jaxpr(type(self)(), jaxpr.jaxpr, consts, *args)
             new_jaxprs.append(jax.core.ClosedJaxpr(open_jaxpr, consts))
 
     return cond_prim.bind(
@@ -390,13 +377,9 @@ def handle_while_loop(self, *invals, jaxpr_body_fn, jaxpr_cond_fn, n_consts_body
     consts_cond = invals[n_consts_body : n_consts_body + n_consts_cond]
     init_state = invals[n_consts_body + n_consts_cond :]
 
-    new_jaxpr_body_fn = jaxpr_to_jaxpr(
-        type(self)(state=self.state), jaxpr_body_fn.jaxpr, consts_body, *init_state
-    )
+    new_jaxpr_body_fn = jaxpr_to_jaxpr(type(self)(), jaxpr_body_fn.jaxpr, consts_body, *init_state)
     new_jaxpr_body_fn = jax.core.ClosedJaxpr(new_jaxpr_body_fn, consts_body)
-    new_jaxpr_cond_fn = jaxpr_to_jaxpr(
-        type(self)(state=self.state), jaxpr_cond_fn.jaxpr, consts_cond, *init_state
-    )
+    new_jaxpr_cond_fn = jaxpr_to_jaxpr(type(self)(), jaxpr_cond_fn.jaxpr, consts_cond, *init_state)
     new_jaxpr_cond_fn = jax.core.ClosedJaxpr(new_jaxpr_cond_fn, consts_cond)
 
     return while_loop_prim.bind(
@@ -414,9 +397,7 @@ def handle_qnode(self, *invals, shots, qnode, device, qnode_kwargs, qfunc_jaxpr,
     """Handle a qnode primitive."""
     consts = invals[:n_consts]
 
-    new_qfunc_jaxpr = jaxpr_to_jaxpr(
-        type(self)(state=self.state), qfunc_jaxpr, consts, *invals[n_consts:]
-    )
+    new_qfunc_jaxpr = jaxpr_to_jaxpr(type(self)(), qfunc_jaxpr, consts, *invals[n_consts:])
 
     return qnode_prim.bind(
         *invals,
@@ -434,7 +415,7 @@ def handle_grad(self, *invals, jaxpr, n_consts, **params):
     """Handle the grad primitive."""
     consts = invals[:n_consts]
     args = invals[n_consts:]
-    new_jaxpr = jaxpr_to_jaxpr(type(self)(state=self.state), jaxpr, consts, *args)
+    new_jaxpr = jaxpr_to_jaxpr(type(self)(), jaxpr, consts, *args)
     return grad_prim.bind(*invals, jaxpr=new_jaxpr, n_consts=n_consts, **params)
 
 
@@ -443,5 +424,5 @@ def handle_jacobian(self, *invals, jaxpr, n_consts, **params):
     """Handle the jacobian primitive."""
     consts = invals[:n_consts]
     args = invals[n_consts:]
-    new_jaxpr = jaxpr_to_jaxpr(type(self)(state=self.state), jaxpr, consts, *args)
+    new_jaxpr = jaxpr_to_jaxpr(type(self)(), jaxpr, consts, *args)
     return jacobian_prim.bind(*invals, jaxpr=new_jaxpr, n_consts=n_consts, **params)
