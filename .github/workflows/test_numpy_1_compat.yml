@@ -24,10 +24,10 @@ jobs:
       additional_python_packages: 'numpy==1.26.4'
       upload_to_codecov: false
       skip_ci_test_jobs: |
-        tf-tests,
-        all-interfaces-tests,
-        external-libraries-tests,
-        qcut-tests,
-        qchem-tests,
-        gradients-tests,
+        tf-tests
+        all-interfaces-tests
+        external-libraries-tests
+        qcut-tests
+        qchem-tests
+        gradients-tests
         device-tests

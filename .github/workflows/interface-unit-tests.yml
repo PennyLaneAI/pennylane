@@ -145,7 +145,7 @@ jobs:
         run: |
           if [ "${{ inputs.run_lightened_ci }}" == "true" ];
           then
-            skipped_jobs=$(echo -n "$JOBS_TO_SKIP" | python -c 'import json, sys; print(json.dumps(list(map(lambda job: job.strip(), filter(None, sys.stdin.read().split(","))))))')
+            skipped_jobs=$(echo -n "$JOBS_TO_SKIP" | python -c 'import re, json, sys; print(json.dumps(list(map(lambda job: job.strip(), filter(None, re.split(",|\n|\s", sys.stdin.read()))))))')
             echo "The following jobs will be skipped: $skipped_jobs"
             echo "jobs_to_skip=$skipped_jobs" >> $GITHUB_OUTPUT
           else
