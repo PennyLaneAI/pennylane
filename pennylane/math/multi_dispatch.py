@@ -341,6 +341,7 @@ def matrix_power(tensor1, tensor2, like=None):
 
     return np.linalg.matrix_power(tensor1, tensor2)
 
+
 @multi_dispatch(argnum=[0, 1])
 def dot(tensor1, tensor2, like=None):
     """Returns the matrix or dot product of two tensors.
