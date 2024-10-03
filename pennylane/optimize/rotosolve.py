@@ -235,6 +235,8 @@ class RotosolveOptimizer:
 
     .. code-block :: python
 
+        from pennylane import numpy as np
+
         init_param = (
             np.array([0.3, 0.2, 0.67], requires_grad=True),
             np.array(1.1, requires_grad=True),
