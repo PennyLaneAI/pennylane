@@ -30,7 +30,7 @@ class MomentumQNGOptimizer(QNGOptimizer):
         "Application of Langevin Dynamics to Advance the Quantum Natural Gradient Optimization Algorithm"
         `arXiv:2409.01978 <https://arxiv.org/abs/2409.01978>`__
 
-    We are grateful to David Wierichs for his generous help with the multi-argument variant of the MomentumQNGOptimizer class.
+    We are grateful to David Wierichs for his generous help with the multi-argument variant of the ``MomentumQNGOptimizer`` class.
 
     ``MomentumQNGOptimizer`` is a subclass of the ``QNGOptimizer`` class and requires one additional
     hyperparameter (the momentum coefficient) :math:`0 \leq \rho < 1`, the default value being :math:`\rho=0.9`. For :math:`\rho=0` Momentum-QNG
