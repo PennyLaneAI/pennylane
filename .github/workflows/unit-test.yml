@@ -24,6 +24,11 @@ on:
         required: false
         type: string
         default: '3.10'
+      install_numpy_1:
+        description: Indicate if numpy 1 should be installed or not
+        required: false
+        type: boolean
+        default: false
       pipeline_mode:
         description: The pipeline mode can be unit-tests, benchmarks, or reference-benchmark
         required: false
@@ -158,6 +163,7 @@ jobs:
         uses: ./.github/workflows/install_deps
         with:
           python_version: ${{ inputs.python_version }}
+          install_numpy_1: ${{ inputs.install_numpy_1 }}
           install_pytorch: ${{ inputs.install_pytorch }}
           install_tensorflow: ${{ inputs.install_tensorflow }}
           install_jax: ${{ inputs.install_jax }}

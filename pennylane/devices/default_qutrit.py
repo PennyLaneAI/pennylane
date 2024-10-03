@@ -24,7 +24,6 @@ import logging
 import numpy as np
 
 import pennylane as qml  # pylint: disable=unused-import
-from pennylane.devices.default_qubit_legacy import _get_slice
 from pennylane.logging import debug_logger, debug_logger_init
 from pennylane.wires import WireError
 
@@ -38,6 +37,35 @@ logger.addHandler(logging.NullHandler())
 tolerance = 1e-10
 
 OMEGA = qml.math.exp(2 * np.pi * 1j / 3)
+
+
+def _get_slice(index, axis, num_axes):
+    """Allows slicing along an arbitrary axis of an array or tensor.
+
+    Args:
+        index (int): the index to access
+        axis (int): the axis to slice into
+        num_axes (int): total number of axes
+
+    Returns:
+        tuple[slice or int]: a tuple that can be used to slice into an array or tensor
+
+    **Example:**
+
+    Accessing the 2 index along axis 1 of a 3-axis array:
+
+    >>> sl = _get_slice(2, 1, 3)
+    >>> sl
+    (slice(None, None, None), 2, slice(None, None, None))
+    >>> a = np.arange(27).reshape((3, 3, 3))
+    >>> a[sl]
+    array([[ 6,  7,  8],
+           [15, 16, 17],
+           [24, 25, 26]])
+    """
+    idx = [slice(None)] * num_axes
+    idx[axis] = index
+    return tuple(idx)
 
 
 # pylint: disable=too-many-arguments
