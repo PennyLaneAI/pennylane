@@ -8,6 +8,9 @@ source_roots = [
     ".",
     "pennylane",
 ]
-modules = [
-    { path = "pennylane.labs", depends_on = [] },
+
+[[modules]]
+path = "pennylane.labs"
+depends_on = [
+    { path = "<root>" },
 ]
