@@ -42,6 +42,25 @@ def _can_replace(x, y):
     """
     return not qml.math.is_abstract(x) and not qml.math.requires_grad(x) and qml.math.allclose(x, y)
 
+def _resource_estimation(epsilon):
+    """
+    Returns a Resources object estimating the number of T gates for RX, RY, and RZ gates.
+    """
+    gate_types = defaultdict(int)
+    gate_sizes = defaultdict(int)
+
+    num_gates = (
+        1.149 * sympy.log(1 / epsilon, 2) + 9.2
+        if isinstance(epsilon, sympy.Symbol)
+        else round(1.149 * np.log2(1 / epsilon) + 9.2)
+    )
+    gate_sizes[1] = num_gates
+    gate_types["T"] = num_gates
+    num_wires = 1
+
+    return qml.resource.resource.Resources(
+        num_gates=num_gates, gate_types=gate_types, gate_sizes=gate_sizes, num_wires=num_wires
+    )
 
 class RX(ResourcesOperation):
     r"""
@@ -83,21 +102,12 @@ class RX(ResourcesOperation):
     def __init__(self, phi: TensorLike, wires: WiresLike, id: Optional[str] = None):
         super().__init__(phi, wires=wires, id=id)
 
+    @staticmethod
+    def compute_resources(epsilon=1e-3):
+        return _resource_estimation(epsilon)
+
     def resources(self, gate_set=None, epsilon=1e-3):
-        gate_types = defaultdict(int)
-        gate_sizes = defaultdict(int)
-
-        num_gates = (
-            3 * sympy.log(1 / epsilon)
-            if isinstance(epsilon, sympy.Symbol)
-            else round(3 * np.log(1 / epsilon))
-        )
-        gate_sizes[1] = num_gates
-        gate_types["T"] = num_gates
-
-        return qml.resource.resource.Resources(
-            num_gates=num_gates, gate_types=gate_types, gate_sizes=gate_sizes
-        )
+        return self.compute_resources(epsilon)
 
     @staticmethod
     def compute_matrix(theta: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
@@ -195,21 +205,12 @@ class RY(ResourcesOperation):
     def __init__(self, phi: TensorLike, wires: WiresLike, id: Optional[str] = None):
         super().__init__(phi, wires=wires, id=id)
 
+    @staticmethod
+    def compute_resources(epsilon=1e-3):
+        return _resource_estimation(epsilon)
+
     def resources(self, gate_set=None, epsilon=1e-3):
-        gate_types = defaultdict(int)
-        gate_sizes = defaultdict(int)
-
-        num_gates = (
-            3 * sympy.log(1 / epsilon)
-            if isinstance(epsilon, sympy.Symbol)
-            else round(3 * np.log(1 / epsilon))
-        )
-        gate_sizes[1] = num_gates
-        gate_types["T"] = num_gates
-
-        return qml.resource.resource.Resources(
-            num_gates=num_gates, gate_types=gate_types, gate_sizes=gate_sizes
-        )
+        return self.compute_resources(epsilon)
 
     @staticmethod
     def compute_matrix(theta: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
@@ -306,21 +307,12 @@ class RZ(ResourcesOperation):
     def __init__(self, phi: TensorLike, wires: WiresLike, id: Optional[str] = None):
         super().__init__(phi, wires=wires, id=id)
 
+    @staticmethod
+    def compute_resources(epsilon=1e-3):
+        return _resource_estimation(epsilon)
+
     def resources(self, gate_set=None, epsilon=1e-3):
-        gate_types = defaultdict(int)
-        gate_sizes = defaultdict(int)
-
-        num_gates = (
-            3 * sympy.log(1 / epsilon)
-            if isinstance(epsilon, sympy.Symbol)
-            else round(3 * np.log(1 / epsilon))
-        )
-        gate_sizes[1] = num_gates
-        gate_types["T"] = num_gates
-
-        return qml.resource.resource.Resources(
-            num_gates=num_gates, gate_types=gate_types, gate_sizes=gate_sizes
-        )
+        return self.compute_resources(epsilon=epsilon)
 
     @staticmethod
     def compute_matrix(theta: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
@@ -418,7 +410,7 @@ class RZ(ResourcesOperation):
         return [self.data[0], 0.0, 0.0]
 
 
-class PhaseShift(Operation):
+class PhaseShift(ResourcesOperation):
     r"""
     Arbitrary single qubit local phase shift
 
@@ -457,6 +449,9 @@ class PhaseShift(Operation):
 
     def __init__(self, phi: TensorLike, wires: WiresLike, id: Optional[str] = None):
         super().__init__(phi, wires=wires, id=id)
+
+    def resources(self, gate_set=None):
+        return qml.resource.resource.resources_from_op(qml.RZ(self.parameters[0], wires=self.wires), gate_set=gate_set)
 
     def label(
         self,

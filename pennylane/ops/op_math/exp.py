@@ -227,6 +227,9 @@ class Exp(ScalarSymbolicOp, ResourcesOperation):
             gate_types_dict = defaultdict(int)
             gate_sizes_dict = defaultdict(int)
 
+            if isinstance(base, qml.Identity):  # The operation becomes a global phase
+                pass
+            
             if base.num_wires == 1:
                 op_type = (
                     "RZ" if isinstance(base, qml.Z) else "RX" if isinstance(base, qml.X) else "RY"

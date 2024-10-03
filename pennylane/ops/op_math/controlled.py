@@ -16,6 +16,7 @@ This submodule defines the symbolic operation that indicates the control of an o
 """
 import functools
 import warnings
+from collections import defaultdict
 from collections.abc import Callable, Sequence
 from copy import copy
 from functools import wraps
@@ -30,7 +31,7 @@ from pennylane import math as qmlmath
 from pennylane import operation
 from pennylane.capture.capture_diff import create_non_jvp_primitive
 from pennylane.compiler import compiler
-from pennylane.operation import Operator
+from pennylane.operation import Operator, ResourcesOperation
 from pennylane.wires import Wires
 
 from .controlled_decompositions import ctrl_decomp_bisect, ctrl_decomp_zyz
@@ -361,7 +362,7 @@ def _handle_pauli_x_based_controlled_ops(op, control, control_values, work_wires
 
 
 # pylint: disable=too-many-arguments, too-many-public-methods
-class Controlled(SymbolicOp):
+class Controlled(SymbolicOp, ResourcesOperation):
     """Symbolic operator denoting a controlled operator.
 
     Args:
@@ -740,6 +741,29 @@ class Controlled(SymbolicOp):
         d += [qml.X(w) for w, val in zip(self.control_wires, self.control_values) if not val]
         return d
 
+    def resources(self, gate_set=None):
+        if len(self.control_wires) == 1:  # Not Tracking 2 X gates for the flip to 1 controlled
+            base_res = qml.resource.resources_from_op(self.base, gate_set=gate_set)
+            controlled_resources = qml.resource.Resources(num_gates=0, gate_types=defaultdict(int), gate_sizes=defaultdict(int))
+
+            for op_name, counts in base_res.gate_types.items():
+                if op_name in ("SWAP", "CNOT"):
+                    op_res = counts * controlled_resources_processer(op_name, 2, 1)
+                else: 
+                    op_res = counts * controlled_resources_processer(op_name, 1, 1)
+
+                controlled_resources = controlled_resources + op_res
+
+            return controlled_resources
+        
+        with qml.QueuingManager.stop_recording():
+            res = qml.resource.resources_from_sequence_ops(
+                self.decomposition(),
+                gate_set=gate_set
+            )
+
+        return res
+
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     def has_generator(self):
@@ -974,3 +998,39 @@ if Controlled._primitive is not None:  # pylint: disable=protected-access
 # easier to just keep the same primitive for both versions
 # dispatch between the two types happens inside instance creation anyway
 ControlledOp._primitive = Controlled._primitive  # pylint: disable=protected-access
+
+
+# Resources for controlled maps of known classes:
+@functools.lru_cache
+def generate_controlled_resources():
+    controlled_resources = {
+        ("Hadamard", 1): qml.CH.compute_resources(),
+        ("PauliX", 1): qml.resource.Resources(num_gates=1, gate_types=defaultdict(int, {"CNOT": 1}), gate_sizes=defaultdict(int, {2: 1})),
+        ("PauliY", 1): qml.CY.compute_resources(),
+        ("PauliZ", 1): qml.CZ.compute_resources(),
+        ("S", 1): qml.resource.Resources(num_gates=5, gate_types=defaultdict(int, {"T": 3, "CNOT":2}), gate_sizes=defaultdict(int, {1: 3, 2:2})),
+        ("T", 1): qml.resource.Resources(num_gates=5, gate_types=defaultdict(int, {"T": 5}), gate_sizes=defaultdict(int, {1: 5})),
+        ("CNOT", 1): qml.resource.Resources(num_gates=1, gate_types=defaultdict(int, {"Toffoli": 1}), gate_sizes=defaultdict(int, {3: 1})),
+        ("RX", 1): qml.CRX.compute_resources(),
+        ("RY", 1): qml.CRY.compute_resources(),
+        ("RZ", 1): qml.CRZ.compute_resources(),
+        ("SWAP", 1): qml.CSWAP.compute_resources(),
+        ("Toffoli", 1): (
+            7 * qml.ControlledPhaseShift.compute_resources() + \
+            2 * qml.CH.compute_resources() + \
+            qml.resource.Resources(num_gates=6, gate_types=defaultdict(int, {"Toffoli": 6}), gate_sizes=defaultdict(int, {3: 6}))
+        ),
+    }
+    return controlled_resources
+
+
+def controlled_resources_processer(op_name: str, num_op_wires, num_control_wires):
+    controlled_resources_map = generate_controlled_resources()
+    try:
+        return controlled_resources_map[(op_name, num_control_wires)]
+    except KeyError:
+        return qml.resource.Resources(
+            num_gates=1,
+            gate_types=defaultdict(int, {f"C({op_name})": 1}),
+            gate_sizes=defaultdict(int, {num_op_wires+num_control_wires: 1}),
+        )

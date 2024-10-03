@@ -16,9 +16,11 @@ Contains the PhaseAdder template.
 """
 
 import numpy as np
+from collections import defaultdict
 
 import pennylane as qml
-from pennylane.operation import Operation
+from pennylane.operation import ResourcesOperation
+from pennylane.resource import Resources, resources_from_op
 
 
 def _add_k_fourier(k, wires):
@@ -29,7 +31,7 @@ def _add_k_fourier(k, wires):
     return op_list
 
 
-class PhaseAdder(Operation):
+class PhaseAdder(ResourcesOperation):
     r"""Performs the in-place modular phase addition operation.
 
     This operator performs the modular addition by an integer :math:`k` modulo :math:`mod` in the
@@ -228,3 +230,38 @@ class PhaseAdder(Operation):
             op_list.extend(_add_k_fourier(k, x_wires))
 
         return op_list
+
+    def resources(self, gate_set=None, **kwargs):
+        k = self.hyperparameters["k"]
+        mod = self.hyperparameters["mod"]
+        x_wires = self.hyperparameters["x_wires"]
+
+        num_x_wires = len(x_wires)
+        rz_resources = qml.RZ.compute_resources()
+
+        if mod == 2 ** len(x_wires):
+            return num_x_wires*rz_resources
+
+        gate_types = defaultdict(int)
+        gate_sizes = defaultdict(int)
+
+        # count the controlled PauliX
+        cnots = 2
+
+        # counts the resources from each call to _add_k_fourier
+        resources_add_k_four = (4*num_x_wires)*rz_resources
+        resources_qft = 4*qml.QFT.compute_resources(num_x_wires, gate_set=gate_set)
+        resources_ctrl_add_k_four = num_x_wires * qml.ControlledPhaseShift.compute_resources()
+
+        gate_types["CNOT"] += cnots
+        gate_sizes["2"] += cnots
+        resources_cnot = Resources(num_gates=cnots, gate_types=gate_types, gate_sizes=gate_sizes)
+        
+        return resources_add_k_four + resources_qft + resources_ctrl_add_k_four + resources_cnot
+
+
+def _add_dicts(d1, d2):
+    for key, value in d2.items():
+        d1[key] += value
+
+    return d1

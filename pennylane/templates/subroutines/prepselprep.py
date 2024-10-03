@@ -18,7 +18,8 @@ Contains the PrepSelPrep template.
 import copy
 
 import pennylane as qml
-from pennylane.operation import Operation
+from pennylane.operation import ResourcesOperation
+from pennylane.resource import Resources, resources_from_op, resources_from_sequence_ops
 
 
 def _get_new_terms(lcu):
@@ -34,7 +35,7 @@ def _get_new_terms(lcu):
     return qml.math.abs(coeffs), new_ops
 
 
-class PrepSelPrep(Operation):
+class PrepSelPrep(ResourcesOperation):
     """Implements a block-encoding of a linear combination of unitaries.
 
     Args:
@@ -124,6 +125,9 @@ class PrepSelPrep(Operation):
         ]
 
         return decomp_ops
+
+    def resources(self, gate_set=None, **kwargs):
+        return resources_from_sequence_ops(self.decomposition(), gate_set=gate_set, **kwargs)
 
     def __copy__(self):
         """Copy this op"""

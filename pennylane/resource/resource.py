@@ -282,11 +282,6 @@ def resources_from_op(op, gate_set) -> Resources:
     Returns:
         Resources:
     """
-    if isinstance(op, ResourcesOperation):
-        op_kwargs = get_resource_kwargs(op.name)
-        op_resources = op.resources(gate_set, **op_kwargs)
-        return op_resources
-
     if op.name in gate_set:
         return Resources(
             num_gates=1,
@@ -294,13 +289,17 @@ def resources_from_op(op, gate_set) -> Resources:
             gate_sizes=defaultdict(int, {len(op.wires): 1}),
         )
 
-    else:
-        try:
-            return resources_from_sequence_ops(op.decomposition(), gate_set)
-        except DecompositionUndefinedError as e:
-            raise ValueError(
-                f"Cannot obtain the resources for type {type(op)} in terms of the gate-set:\n {gate_set}"
-            ) from e
+    if isinstance(op, ResourcesOperation):
+        op_kwargs = get_resource_kwargs(op.name)
+        op_resources = op.resources(gate_set, **op_kwargs)
+        return op_resources
+
+    try:
+        return resources_from_sequence_ops(op.decomposition(), gate_set)
+    except DecompositionUndefinedError as e:
+        raise ValueError(
+            f"Cannot obtain the resources for type {type(op)} in terms of the gate-set:\n {gate_set}"
+        ) from e
 
 
 def resources_from_sequence_ops(ops_lst, gate_set):

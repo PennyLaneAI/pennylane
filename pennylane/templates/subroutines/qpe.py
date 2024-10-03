@@ -20,7 +20,7 @@ import copy
 import pennylane as qml
 from pennylane.operation import AnyWires, Operator, ResourcesOperation
 from pennylane.queuing import QueuingManager
-from pennylane.resource import Resources, resources_from_op, resources_from_sequence_ops
+from pennylane.resource import Resources, resources_from_op
 from pennylane.resource.error import ErrorOperation, SpectralNormError
 from pennylane.wires import Wires
 
@@ -263,15 +263,13 @@ class QuantumPhaseEstimation(ErrorOperation, ResourcesOperation):
         estimation_wires = self.hyperparameters["estimation_wires"]
 
         with qml.QueuingManager.stop_recording():
-            op_list = [qml.Hadamard(w) for w in estimation_wires]
-            op_list.append(qml.adjoint(qml.QFT(wires=estimation_wires)))
-            hadamard_transform_and_qft_resources = resources_from_sequence_ops(op_list, gate_set=gate_set)
+            r_had = len(estimation_wires) * resources_from_op(qml.Hadamard(0), gate_set=gate_set)
+            r_qft = resources_from_op(qml.QFT(wires=estimation_wires), gate_set=gate_set)
 
             ctrl_pow_resources = (
                 resources_from_op(qml.ctrl(unitary, estimation_wires[0]), gate_set=gate_set) * (2**len(estimation_wires) - 1)
             )
-
-        return hadamard_transform_and_qft_resources + ctrl_pow_resources
+        return r_had + r_qft + ctrl_pow_resources
     
     @staticmethod
     def compute_decomposition(

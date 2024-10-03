@@ -25,7 +25,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.math import expand_matrix
-from pennylane.operation import AnyWires, FlatPytree, Operation
+from pennylane.operation import AnyWires, FlatPytree, Operation, ResourcesOperation
 from pennylane.typing import TensorLike
 from pennylane.utils import pauli_eigs
 from pennylane.wires import Wires, WiresLike
@@ -209,7 +209,7 @@ class MultiRZ(Operation):
         return MultiRZ(theta, wires=self.wires)
 
 
-class PauliRot(Operation):
+class PauliRot(ResourcesOperation):
     r"""
     Arbitrary Pauli word rotation.
 
@@ -280,6 +280,7 @@ class PauliRot(Operation):
     ):
         super().__init__(theta, wires=wires, id=id)
         self.hyperparameters["pauli_word"] = pauli_word
+        self.hyperparameters["theta"] = theta
 
         if not PauliRot._check_pauli_word(pauli_word):
             raise ValueError(
@@ -514,6 +515,24 @@ class PauliRot(Operation):
             elif gate == "Y":
                 ops.append(RX(-np.pi / 2, wires=[wire]))
         return ops
+
+    def resources(self, gate_set=None, **kwargs):
+        pauli_word = self.hyperparameters["pauli_word"]
+        theta = self.hyperparameters["theta"]
+        if set(pauli_word) == {"I"}:
+            return qml.resources.resources_from_op(qml.GlobalPhase(phi=theta / 2), gate_set)
+
+        x_count = pauli_word.count('X')
+        y_count = pauli_word.count('Y')
+
+        active_wires = [wire for (wire, gate) in zip(self.wires, pauli_word) if gate != "I"]
+
+        hadamard_resources = x_count * qml.resources.resources_from_op(Hadamard(wires=0), gate_set)
+        rx_resources = y_count * RX.compute_resources()
+        multirz_resources = qml.resources.resources_from_op(MultiRZ(theta, wires=list(active_wires)), gate_set)
+
+        return hadamard_resources + rx_resources + multirz_resources
+
 
     def adjoint(self):
         return PauliRot(-self.parameters[0], self.hyperparameters["pauli_word"], wires=self.wires)
