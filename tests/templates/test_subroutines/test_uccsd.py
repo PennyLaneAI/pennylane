@@ -568,14 +568,7 @@ class TestInterfaces:
         assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
 
         # Test with n_repeats=2
-        weights = jnp.array(
-            np.random.random(
-                size=(
-                    2,
-                    2,
-                )
-            )
-        )
+        weights = jnp.array(np.random.random(size=(2, 2)))
         res = circuit(weights, n_repeats=2)
         res2 = circuit2(weights, n_repeats=2)
         assert qml.math.allclose(res, res2, atol=tol, rtol=0)
