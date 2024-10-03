@@ -11,5 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""This folder contains experimental features which may not be fully compatible
-with the entire PennyLane codebase. Use at your own discretion."""
+""":code:`pennylane/labs/` module contains experimental features straight from
+the cutting-edge of quantum computing research and software design. As is the nature
+of new science, these features are experiments, meant to be handled with care!"""
