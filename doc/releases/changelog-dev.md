@@ -58,6 +58,9 @@
 
 <h4>Capturing and representing hybrid programs</h4>
 
+* PennyLane will not raise a `FutureWarning` in `JAX 0.4.30+` when providing JAX tracers as input to `qml.wires.Wires`.
+  [(#6335)](https://github.com/PennyLaneAI/pennylane/pull/6335)
+
 * `qml.wires.Wires` now accepts JAX arrays as input.
   [(#6312)](https://github.com/PennyLaneAI/pennylane/pull/6312)
 
