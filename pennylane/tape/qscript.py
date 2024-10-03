@@ -337,7 +337,7 @@ class QuantumScript:
         Returns:
             List[~.Operation]: the operations that diagonalize the observables
 
-        ** Examples **
+        **Examples**
 
         For a tape with a single observable, we get the diagonalizing gate of that observable:
 
@@ -352,8 +352,7 @@ class QuantumScript:
         [Hadamard(wires=[0]), Z(1), S(wires=[1]), Hadamard(wires=[1])]
 
         .. warning::
-            The diagonalizing gates of any given observable will only be included once;
-            however, if the tape contains multiple observables acting on the same wire,
+            If the tape contains multiple observables acting on the same wire,
             then ``tape.diagonalizing_gates`` will include multiple conflicting
             diagonalizations.
 
@@ -363,7 +362,7 @@ class QuantumScript:
             >>> tape.diagonalizing_gates
             [Hadamard(wires=[0]), Z(0), S(wires=[0]), Hadamard(wires=[0])]
 
-            If its relevant for your application, applying
+            If it is relevant for your application, applying
             :func:`~.pennylane.transforms.split_non_commuting` to a tape will split it into multiple
             tapes with only qubit-wise commuting observables.
 
