@@ -93,6 +93,10 @@
   a sparse matrix.
   [(#6173)](https://github.com/PennyLaneAI/pennylane/pull/6173)
 
+* The `make_plxpr` function is added, to take a `QNode` and create a `Callable` that,
+  when called, will return a PLxPR representation of the `QNode`.
+  [(#6326)](https://github.com/PennyLaneAI/pennylane/pull/6326)
+
 <h3>Breaking changes 💔</h3>
 
 * The `simplify` argument in `qml.Hamiltonian` and `qml.ops.LinearCombination` has been removed.
