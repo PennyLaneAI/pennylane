@@ -336,6 +336,50 @@ class QuantumScript:
 
         Returns:
             List[~.Operation]: the operations that diagonalize the observables
+
+        ** Examples **
+
+        For a tape with a single observable, we get the diagonalizing gate of that observable:
+
+        >>> tape = qml.tape.QuantumScript([], [qml.expval(X(0))])
+        >>> tape.diagonalizing_gates
+        [Hadamard(wires=[0])]
+
+        If the tape includes multiple observables, they are each diagonalized individually:
+
+        >>> tape = qml.tape.QuantumScript([], [qml.expval(X(0)), qml.var(Y(1))])
+        >>> tape.diagonalizing_gates
+        [Hadamard(wires=[0]), Z(1), S(wires=[1]), Hadamard(wires=[1])]
+
+        .. warning::
+            The diagonalizing gates of any given observable will only be included once;
+            however, if the tape contains multiple observables acting on the same wire,
+            then ``tape.diagonalizing_gates`` will include multiple conflicting
+            diagonalizations.
+
+            For example:
+
+            >>> tape = qml.tape.QuantumScript([], [qml.expval(X(0)), qml.var(Y(0))])
+            >>> tape.diagonalizing_gates
+            [Hadamard(wires=[0]), Z(0), S(wires=[0]), Hadamard(wires=[0])]
+
+            If its relevant for your application, applying
+            :func:`~.pennylane.transforms.split_non_commuting` to a tape will split it into multiple
+            tapes with only qubit-wise commuting observables.
+
+        Generally, composite operators are handled by diagonalizing their component parts, for example:
+
+        >>> tape = qml.tape.QuantumScript([], [qml.expval(X(0)+Y(1))])
+        >>> tape.diagonalizing_gates
+        [Hadamard(wires=[0]), Z(1), S(wires=[1]), Hadamard(wires=[1])]
+
+        However, for operators that contain multiple terms on the same wire, a single diagonalizing
+        operator will be returned that diagonalizes the full operator as a unit:
+
+        >>> tape = qml.tape.QuantumScript([], [qml.expval(X(0)+Y(0))])
+        >>> tape.diagonalizing_gates
+        [QubitUnitary(array([[-0.70710678-0.j ,  0.5       -0.5j],
+        [-0.70710678-0.j , -0.5       +0.5j]]), wires=[0])]
         """
         rotation_gates = []
 
