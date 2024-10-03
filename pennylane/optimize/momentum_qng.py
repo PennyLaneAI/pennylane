@@ -123,7 +123,9 @@ class MomentumQNGOptimizer(QNGOptimizer):
         if self.accumulation is None:
             self.accumulation = [pnp.zeros_like(g) for g in grad]
 
-        metric_tensor = self.metric_tensor if isinstance(self.metric_tensor, tuple) else (self.metric_tensor,)
+        metric_tensor = (
+            self.metric_tensor if isinstance(self.metric_tensor, tuple) else (self.metric_tensor,)
+        )
 
         trained_index = 0
 
