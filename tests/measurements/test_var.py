@@ -216,3 +216,35 @@ class TestVar:
         res = qml.var(qml.Z(wire)).process_counts(counts=counts, wire_order=wire_order)
 
         assert np.allclose(res, expected)
+
+    @pytest.mark.all_interfaces
+    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "tensorflow"])
+    def test_process_density_matrix_basic(self, interface):
+        """Test that process_density_matrix returns correct probabilities from a maximum mixed density matrix."""
+        dm = qml.math.array([[0.5, 0], [0, 0.5]], like=interface)
+        wires = qml.wires.Wires(range(1))
+        expected = qml.math.array([0.0], like=interface)
+        var = qml.var(qml.I()).process_density_matrix(dm, wires)
+        assert qml.math.allclose(var, expected)
+
+    # @pytest.mark.all_interfaces
+    # @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "tensorflow"])
+    # @pytest.mark.parametrize(
+    #     "subset_wires, expected",
+    #     [
+    #         ([0], [0.5, 0.5]),
+    #         ([1], [0.25, 0.75]),
+    #         ([1, 0], [0.15, 0.1, 0.35, 0.4]),
+    #         ([0, 1], [0.15, 0.35, 0.1, 0.4]),
+    #     ],
+    # )
+    # def test_process_density_matrix_subsets(self, interface, subset_wires, expected):
+    #     """Test processing of density matrix with subsets of wires."""
+    #     dm = qml.math.array(
+    #         [[0.15, 0, 0.1, 0], [0, 0.35, 0, 0.4], [0.1, 0, 0.1, 0], [0, 0.4, 0, 0.4]],
+    #         like=interface,
+    #     )
+    #     wires = qml.wires.Wires(range(2))
+    #     subset_probs = qml.probs(wires=subset_wires).process_density_matrix(dm, wires)
+    #     assert subset_probs.shape == qml.math.shape(expected)
+    #     assert qml.math.allclose(subset_probs, expected)

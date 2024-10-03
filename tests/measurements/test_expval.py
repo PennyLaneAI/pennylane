@@ -294,7 +294,7 @@ class TestExpval:
         ],
     )
     def test_tf_function_density_matrix(self, state, expected):
-        """Test that tf.function does not break process_state"""
+        """Test that tf.function does not break process_density_matrix"""
         import tensorflow as tf
 
         @tf.function
