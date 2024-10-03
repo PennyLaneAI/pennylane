@@ -21,7 +21,7 @@ from inspect import isclass, signature
 
 import pennylane as qml
 from pennylane.boolean_fn import BooleanFn
-from pennylane.measurements import MeasurementValue, MidMeasureMP
+from pennylane.measurements import MeasurementValue, MidMeasureMP, MeasurementProcess
 from pennylane.ops import Adjoint, Controlled
 from pennylane.templates import ControlledSequence
 from pennylane.wires import WireError, Wires
@@ -178,7 +178,15 @@ class OpIn(BooleanFn):
     """
 
     def __init__(self, ops):
-        self._cond = ops
+        ops_ = [ops] if not isinstance(ops, (list, tuple, set)) else ops
+        self._cond = [
+            (
+                op
+                if not isinstance(op, MeasurementProcess)
+                else (getattr(op, "obs", None) or getattr(op, "H", None))
+            )
+            for op in ops_
+        ]
         self._cops = _get_ops(ops)
         self.condition = self._cops
         super().__init__(
@@ -187,6 +195,14 @@ class OpIn(BooleanFn):
 
     def _check_in_ops(self, operation):
         xs = operation if isinstance(operation, (list, tuple, set)) else [operation]
+        xs = [
+            (
+                op
+                if not isinstance(op, MeasurementProcess)
+                else (getattr(op, "obs", None) or getattr(op, "H", None))
+            )
+            for op in xs
+        ]
         cs = _get_ops(xs)
 
         try:
@@ -223,7 +239,15 @@ class OpEq(BooleanFn):
     """
 
     def __init__(self, ops):
-        self._cond = [ops] if not isinstance(ops, (list, tuple, set)) else ops
+        ops_ = [ops] if not isinstance(ops, (list, tuple, set)) else ops
+        self._cond = [
+            (
+                op
+                if not isinstance(op, MeasurementProcess)
+                else (getattr(op, "obs", None) or getattr(op, "H", None))
+            )
+            for op in ops_
+        ]
         self._cops = _get_ops(ops)
         self.condition = self._cops
         cops_names = list(getattr(op, "__name__", op) for op in self._cops)
@@ -238,6 +262,15 @@ class OpEq(BooleanFn):
 
         try:
             xs = operation if isinstance(operation, (list, tuple, set)) else [operation]
+            xs = [
+                (
+                    op
+                    if not isinstance(op, MeasurementProcess)
+                    else (getattr(op, "obs", None) or getattr(op, "H", None))
+                )
+                for op in xs
+            ]
+
             return (
                 len(xs) == len(self._cond)
                 and _get_ops(xs) == self._cops
@@ -271,11 +304,16 @@ def _get_ops(val):
     for _val in vals:
         if isinstance(_val, str):
             op_names.append(getattr(qml.ops, _val, None) or getattr(qml, _val))
-        elif isclass(_val):
+        elif isclass(_val) and not issubclass(_val, MeasurementProcess):
             op_names.append(_val)
         elif isinstance(_val, (MeasurementValue, MidMeasureMP)):
             mid_measure = _val if isinstance(_val, MidMeasureMP) else _val.measurements[0]
             op_names.append(["MidMeasure", "Reset"][getattr(mid_measure, "reset", 0)])
+        elif isinstance(_val, MeasurementProcess):
+            obs_name = _get_ops(getattr(_val, "obs", None) or getattr(_val, "H", None))
+            if len(obs_name) == 1:
+                obs_name = obs_name[0]
+            op_names.append(obs_name)
         else:
             op_names.append(getattr(_val, "__class__"))
     return tuple(op_names)
@@ -438,7 +476,7 @@ class MeasEq(qml.BooleanFn):
         self.condition, self._cmps = [], []
         for mp in self._cond:
             if (callable(mp) and (mp := _MEAS_FUNC_MAP.get(mp, None)) is None) or (
-                isclass(mp) and not issubclass(mp, qml.measurements.MeasurementProcess)
+                isclass(mp) and not issubclass(mp, MeasurementProcess)
             ):
                 raise ValueError(
                     f"MeasEq should be initialized with a MeasurementProcess, got {mp}"
@@ -453,7 +491,7 @@ class MeasEq(qml.BooleanFn):
 
     def _check_meas(self, mp):
 
-        if isclass(mp) and not issubclass(mp, qml.measurements.MeasurementProcess):
+        if isclass(mp) and not issubclass(mp, MeasurementProcess):
             return False
 
         if callable(mp) and (mp := _MEAS_FUNC_MAP.get(mp, None)) is None:
@@ -562,7 +600,7 @@ def partial_wires(operation, *args, **kwargs):
                 f"got operation = {operation} and args = {args}."
             )
         args, metadata = getattr(operation, "_flatten")()
-        is_metadata_flat = is_meas_class and isinstance(operation, (qml.ops.Controlled))
+        is_metadata_flat = is_meas_class or isinstance(operation, (qml.ops.Controlled))
         if len(metadata) > 1:
             kwargs = {**dict(metadata[1] if not is_metadata_flat else metadata), **kwargs}
         operation = type(operation)
@@ -619,6 +657,10 @@ def partial_wires(operation, *args, **kwargs):
 
             if (obs := op_args.get("obs", None)) is not None and op_args["wires"] is not None:
                 op_args["obs"] = obs.map_wires(dict(zip(obs.wires, op_args.pop("wires"))))
+
+            if "H" in parameters and operation == qml.measurements.ShadowExpvalMP:
+                mp_ham = op_args["H"]
+                op_args["H"] = mp_ham.map_wires(dict(zip(mp_ham.wires, op_args.pop("wires"))))
 
         if is_meta_class:
             if not op_args.get("base", None) and (obs := partial_kwargs.get("op", None)):

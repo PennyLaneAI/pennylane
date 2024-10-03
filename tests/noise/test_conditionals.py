@@ -135,6 +135,9 @@ class TestNoiseFunctions:
             (qml.DoubleExcitation(1.2, ["alpha", "beta", "gamma", "delta"]), "alpha", True),
             (qml.TrotterProduct(qml.Z(0) + qml.Z(1), -3j), 2, False),
             (qml.TrotterProduct(qml.Z("a") + qml.Z("b"), -3j), "b", True),
+            (qml.expval(qml.CNOT([0, 1])), qml.Z(0), True),
+            ([qml.counts(qml.Z("a")), qml.sample(qml.Y("b"))], qml.Y(0), False),
+            (qml.mutual_info([0, 1], ["a", "b"]), qml.CNOT([0, "b"]), True),
         ],
     )
     def test_wires_in(self, obj, wires, result):
@@ -158,6 +161,9 @@ class TestNoiseFunctions:
             (qml.CNOT(["c", "d"]), ["c", "d"], True),
             (qml.TrotterProduct(qml.Z(0) + qml.Z(1), -3j), 2, False),
             (qml.TrotterProduct(qml.Z("b") + qml.Z("a"), -3j), ["b", "a"], True),
+            (qml.counts(qml.Z("a")), qml.Y("a"), True),
+            (qml.shadow_expval(qml.X(0) + qml.Y(1) @ qml.Z(2)), qml.CSWAP([0, 1, 2]), True),
+            (qml.measure(0), qml.RX(1.23, wires=1), False),
         ],
     )
     def test_wires_eq(self, obj, wires, result):
@@ -190,6 +196,22 @@ class TestNoiseFunctions:
             ([qml.RZ(1.9, 0), qml.Z(0) @ qml.Z(1)], qml.Z("b") @ qml.Z("a"), True),
             ([qml.Z(0) + qml.Z(1), qml.Z(2)], qml.Z("b") + qml.Z("a"), True),
             ([qml.Z(0), qml.Z(0) + 1.2 * qml.Z(1)], qml.Y("b") + qml.Y("a"), False),
+            ([qml.expval(qml.Z(0)), qml.var(qml.Y("a"))], qml.Z("b"), True),
+            (
+                [qml.counts(qml.Z(0) @ qml.X(1)), qml.sample(qml.Y("a") @ qml.Z("b"))],
+                qml.Z("b") @ qml.X(2),
+                True,
+            ),
+            (
+                [qml.counts(qml.Z(0) @ qml.X(1)), qml.sample(qml.Y("a") @ qml.Z("b"))],
+                qml.X("b") @ qml.Y(2),
+                False,
+            ),
+            (
+                [qml.shadow_expval(qml.X(0) + qml.Y(1)), qml.purity(0)],
+                qml.X("a") + qml.Y("b"),
+                True,
+            ),
         ],
     )
     def test_op_in(self, obj, op, result):
@@ -223,6 +245,9 @@ class TestNoiseFunctions:
             (qml.exp(qml.RX(1.2, 0), 1.2, 1), qml.exp(qml.RX(2.3, "a"), 1.2, 1), True),
             (qml.exp(qml.Z(0) + qml.Z(1), 1.2, 2), qml.exp(qml.Z("b") + qml.Z("a"), 1.2, 2), True),
             (qml.exp(qml.Z(0) @ qml.Z(1), 2j), qml.exp(qml.Z("b") @ qml.Z("a"), 1j), False),
+            (qml.expval(qml.Z(0) @ qml.Y(1)), qml.Z("b"), False),
+            (qml.sample(qml.Y("a") @ qml.Z("b")), qml.Y("b") @ qml.Z(2), True),
+            (qml.shadow_expval(qml.X(0) + qml.Y(1)), qml.X("a") + qml.Y("b"), True),
         ],
     )
     def test_op_eq(self, obj, op, result):
@@ -276,6 +301,28 @@ class TestNoiseFunctions:
 
         op = qml.noise.partial_wires(qml.RX(1.2, [12]), phi=2.3)(qml.RY(1.0, ["light"]))
         qml.assert_equal(op, qml.RX(2.3, wires=["light"]))
+
+        op = qml.noise.partial_wires(qml.adjoint(qml.X(2)))(3)
+        qml.assert_equal(op, qml.adjoint(qml.X(3)))
+
+        op = qml.noise.partial_wires(qml.ctrl, op=qml.Hadamard(0), control=[1, 2])("a")
+        qml.assert_equal(op, qml.ctrl(qml.Hadamard("a"), control=[1, 2]))
+
+        mp = qml.noise.partial_wires(qml.expval, qml.Z(9))("photon")
+        qml.assert_equal(mp, qml.expval(qml.Z("photon")))
+
+        mp = qml.noise.partial_wires(qml.density_matrix, wires=2)(1)
+        qml.assert_equal(mp, qml.density_matrix([1]))
+
+        mp = qml.noise.partial_wires(qml.mutual_info(1, 2))([[2], [3]])
+        qml.assert_equal(mp, qml.mutual_info(2, 3))
+
+        mp = qml.noise.partial_wires(qml.shadow_expval, H=qml.X(0) @ qml.Y(1))(["bra", "ket"])
+        print(mp)
+        qml.assert_equal(mp, qml.shadow_expval(H=qml.X("bra") @ qml.Y("ket")))
+
+        mp = qml.noise.partial_wires(qml.counts)(qml.X("light"))
+        qml.assert_equal(mp, qml.counts(wires=["light"]))
 
     def test_partial_wires_error(self):
         """Test for checking partial_wires raise correct error when args are given"""
