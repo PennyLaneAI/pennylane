@@ -179,6 +179,9 @@
 
 <h3>Documentation 📝</h3>
 
+* Update `qml.Qubitization` documentation based on new decomposition.
+  [(#6276)](https://github.com/PennyLaneAI/pennylane/pull/6276)
+
 * Fixed examples in the documentation of a few optimizers.
   [(#6303)](https://github.com/PennyLaneAI/pennylane/pull/6303)
   [(#6315)](https://github.com/PennyLaneAI/pennylane/pull/6315)
