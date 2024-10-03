@@ -69,7 +69,7 @@ New operator arithmetic deprecations
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 In PennyLane v0.39, the legacy operator arithmetic system has been deprecated. Check out the :ref:`Updated operators <new_opmath>` page
-for details of how to port your legacy code to the new system. The old system is still accessible via :func:`~.disable_new_opmath`, though
+for details on how to port your legacy code to the new system. The old system is still accessible via :func:`~.disable_new_opmath`, though
 it is not recommended, as the old system is deprecated and will be removed in the v0.40 release. The following functionality will explicitly
 raise a deprecation warning when used:
 
