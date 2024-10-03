@@ -266,6 +266,10 @@ class TestInterfaces:
         res = circuit(jnp.array(2))
         assert qml.math.allclose(res, res2, atol=tol, rtol=0)
 
+        circuit2 = jax.jit(circuit2)
+        res2 = circuit2(features)
+        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+
     @pytest.mark.tf
     def test_tf(self, tol):
         """Tests the tf interface."""

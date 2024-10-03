@@ -311,6 +311,9 @@ class TestInterfaces:
 
         assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
 
+        res2 = circuit(features)
+        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+
     @pytest.mark.tf
     @pytest.mark.parametrize("features", [[0.1, -1.3], [[0.5, 2.0], [1.2, 0.6], [-0.7, 0.3]]])
     def test_tf(self, tol, features):
