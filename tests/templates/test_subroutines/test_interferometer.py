@@ -323,17 +323,7 @@ class TestInterferometer:
             qml.Interferometer(*params, wires=range(4))
             return qml.state()
 
-        shapes = [
-            [
-                6,
-            ],
-            [
-                6,
-            ],
-            [
-                4,
-            ],
-        ]
+        shapes = [[6], [6], [4]]
         params = []
         for shape in shapes:
             params.append(np.random.random(shape))
