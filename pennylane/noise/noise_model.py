@@ -28,11 +28,17 @@ class NoiseModel:
             ``noise_fn`` must be ``noise_fn(op: Operation, **kwargs) -> None``, where
             ``op`` is the operation that the conditional evaluates and ``kwargs`` are
             the specified metadata arguments.
+        meas (dict[BooleanFn -> Callable]): Data for adding the readout noise similar
+            to ``model_map``. The signature of ``noise_fn`` must be
+            ``noise_fn(mp: MeasurementProcess, **kwargs) -> None``, where ``mp`` is
+            the measurement process that the conditional evaluates.
+        Data for specifying error in measurements
+            similar to the ``model_map``
         **kwargs: Keyword arguments for specifying metadata related to noise model.
 
     .. note::
 
-        For each key-value pair of ``model_map``:
+        For each key-value pair of ``model_map`` and ``meas``:
 
         - The ``conditional`` should be either a function decorated with :class:`~.BooleanFn`,
           a callable object built via :ref:`constructor functions <intro_boolean_fn>` in
@@ -40,6 +46,8 @@ class NoiseModel:
         - The definition of ``noise_fn(op, **kwargs)`` should have the operations in the same the order
           in which they are to be queued for an operation ``op``, whenever the corresponding
           ``conditional`` evaluates to ``True``.
+        - Each ``conditional`` in ``meas`` map is evaluated on each measurement process in the order
+          they are specified, and the corresponding noise channel is added if the condition is satisfied.
 
     **Example**
 
@@ -66,15 +74,23 @@ class NoiseModel:
     }, t1=0.04)
     """
 
-    def __init__(self, model_map, **kwargs):
+    def __init__(self, model_map, meas=None, **kwargs):
         self.check_model(model_map)
         self._model_map = model_map
+        if meas is not None:
+            self.check_model(meas)
+        self._meas_map = meas
         self._metadata = kwargs
 
     @property
     def model_map(self):
         """Gives the conditional model for the noise model."""
         return self._model_map
+
+    @property
+    def meas(self):
+        """Gives the measurement model for the noise model."""
+        return self._meas_map
 
     @property
     def metadata(self):
@@ -116,6 +132,10 @@ class NoiseModel:
         model_str = "NoiseModel({\n"
         for key, val in self.model_map.items():
             model_str += "    " + f"{key}: {val.__name__}" + "\n"
+        if self._meas_map:
+            model_str += "},\nmeas={\n"
+            for key, val in self.model_map.items():
+                model_str += "    " + f"{key}: {val.__name__}" + "\n"
         model_str += "}, "
         for key, val in self._metadata.items():
             model_str += f"{key} = {val}, "
