@@ -339,6 +339,9 @@ def matrix_power(tensor1, tensor2, like=None):
 
         return matrix_power_while(tensor1, tensor2)
 
+    if like == "tensorflow":
+        return onp.linalg.matrix_power(tensor1, tensor2)
+
     return np.linalg.matrix_power(tensor1, tensor2)
 
 
