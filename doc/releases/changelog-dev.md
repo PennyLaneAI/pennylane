@@ -4,6 +4,9 @@
 
 <h3>New features since last release</h3>
 
+* A new class `MomentumQNGOptimizer` is added. It inherits the basic `QNGOptimizer` class and requires one additional hyperparameter (the momentum coefficient) :math:`0 \leq \rho < 1`, the default value being :math:`\rho=0.9`. For :math:`\rho=0` Momentum-QNG reduces to the basic QNG.
+  [(#6240)](https://github.com/PennyLaneAI/pennylane/pull/6240)
+ 
 * Function is added for generating the spin Hamiltonian for the
   [Kitaev](https://arxiv.org/abs/cond-mat/0506438) model on a lattice.
   [(#6174)](https://github.com/PennyLaneAI/pennylane/pull/6174)
@@ -47,6 +50,11 @@
 
 * The `Hermitian` operator now has a `compute_sparse_matrix` implementation.
   [(#6225)](https://github.com/PennyLaneAI/pennylane/pull/6225)
+
+* The number of diagonalizing gates returned in `qml.specs` now follows the `level` keyword argument 
+  regarding whether the diagonalizing gates are modified by device, instead of always counting 
+  unprocessed diagonalizing gates.
+  [(#6290)](https://github.com/PennyLaneAI/pennylane/pull/6290)
 
 <h4>Capturing and representing hybrid programs</h4>
 
@@ -237,6 +245,7 @@ This release contains contributions from (in alphabetical order):
 
 Guillermo Alonso,
 Utkarsh Azad,
+Oleksandr Borysenko,
 Astral Cai,
 Isaac De Vlugt,
 Diksha Dhawan,
