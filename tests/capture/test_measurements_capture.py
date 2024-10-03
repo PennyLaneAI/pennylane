@@ -171,6 +171,7 @@ def test_capture_and_eval(func):
     qml.assert_equal(mp, out)
 
 
+@pytest.mark.filterwarnings("error::FutureWarning")
 @pytest.mark.parametrize("x64_mode", [True, False])
 def test_mid_measure(x64_mode):
     """Test that mid circuit measurements can be captured and executed."""
@@ -354,6 +355,7 @@ class TestExpvalVar:
 @pytest.mark.parametrize("x64_mode", (True, False))
 class TestProbs:
 
+    @pytest.mark.filterwarnings("error::FutureWarning")
     @pytest.mark.parametrize("wires, shape", [([0, 1, 2], 8), ([], 16)])
     def test_wires(self, wires, shape, x64_mode):
         """Tests capturing probabilities on wires."""
@@ -578,6 +580,7 @@ def test_shadow_expval(x64_mode):
     jax.config.update("jax_enable_x64", initial_mode)
 
 
+@pytest.mark.filterwarnings("error::FutureWarning")
 @pytest.mark.parametrize("x64_mode", (True, False))
 @pytest.mark.parametrize("mtype, kwargs", [(VnEntropyMP, {"log_base": 2}), (PurityMP, {})])
 def test_vn_entropy_purity(mtype, kwargs, x64_mode):
@@ -610,6 +613,7 @@ def test_vn_entropy_purity(mtype, kwargs, x64_mode):
     jax.config.update("jax_enable_x64", initial_mode)
 
 
+@pytest.mark.filterwarnings("error::FutureWarning")
 @pytest.mark.parametrize("x64_mode", (True, False))
 @pytest.mark.parametrize("mtype", [MutualInfoMP, VnEntanglementEntropyMP])
 def test_mutual_info_vn_entanglement_entropy(mtype, x64_mode):

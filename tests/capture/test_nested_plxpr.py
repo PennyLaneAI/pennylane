@@ -218,6 +218,7 @@ class TestCtrlQfunc:
         assert plxpr.eqns[0].params["work_wires"] is None
         assert plxpr.eqns[0].params["n_consts"] == 0
 
+    @pytest.mark.filterwarnings("error::FutureWarning")
     def test_dynamic_control_wires(self):
         """Test that control wires can be dynamic."""
 
