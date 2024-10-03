@@ -1,3 +1,11 @@
+# This workflow is designed to run unit tests for the PennyLane library on GitHub Actions. 
+# It allows for customization of various parameters such as the branch to checkout, 
+# the Python version to use, the directory where the tests are located, and additional packages to install. 
+# The workflow also includes steps to install dependencies, run the unit tests using PyTest, 
+# and upload the coverage file and test durations as artifacts. 
+# Additionally, it provides options to freeze the dependencies and upload the frozen requirements 
+# file as an artifact.
+
 name: Unit Test
 on:
   workflow_call:
@@ -49,11 +57,6 @@ on:
         required: false
         type: string
         default: ''
-      pytest_store_durations:
-        description: Whether to store artifacts for test durations
-        required: false
-        type: boolean
-        default: false
       additional_pip_packages:
         description: Additional packages to install. Values will be passed to pip install {value}
         required: false
