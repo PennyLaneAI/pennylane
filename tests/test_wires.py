@@ -497,51 +497,67 @@ class TestWires:
         assert result == expected
 
 
-@pytest.mark.skipif(not has_jax, reason="JAX is not installed")
 class TestWiresJax:
     """Tests the support for JAX arrays in the ``Wires`` class."""
 
-    @pytest.mark.jax
+    @pytest.mark.skipif(not has_jax, reason="JAX is not installed")
     @pytest.mark.parametrize(
         "iterable, expected",
         [
-            (jax.numpy.array([0, 1, 2]), (0, 1, 2)),
-            (jax.numpy.array([0]), (0,)),
-            (jax.numpy.array(0), (0,)),
-            (jax.numpy.array([]), ()),
+            (jax.numpy.array([0, 1, 2]) if has_jax else None, (0, 1, 2)),
+            (jax.numpy.array([0]) if has_jax else None, (0,)),
+            (jax.numpy.array(0) if has_jax else None, (0,)),
+            (jax.numpy.array([]) if has_jax else None, ()),
         ],
     )
     def test_creation_from_jax_array(self, iterable, expected):
         """Tests that a Wires object can be created from a JAX array."""
+
+        if not has_jax:
+            pytest.skip("Skipping test since JAX is not installed.")
+
         wires = Wires(iterable)
         assert wires.labels == expected
 
-    @pytest.mark.jax
+    @pytest.mark.skipif(not has_jax, reason="JAX is not installed")
     @pytest.mark.parametrize(
         "input",
         [
-            [jax.numpy.array([0, 1, 2]), jax.numpy.array([3, 4])],
-            [jax.numpy.array([0, 1, 2]), 3],
-            jax.numpy.array([[0, 1, 2]]),
-            jax.numpy.array([[[0, 1], [2, 3]]]),
-            jax.numpy.array([[[[0]]]]),
+            [jax.numpy.array([0, 1, 2]), jax.numpy.array([3, 4])] if has_jax else None,
+            [jax.numpy.array([0, 1, 2]), 3] if has_jax else None,
+            jax.numpy.array([[0, 1, 2]]) if has_jax else None,
+            jax.numpy.array([[[0, 1], [2, 3]]]) if has_jax else None,
+            jax.numpy.array([[[[0]]]]) if has_jax else None,
         ],
     )
     def test_error_for_incorrect_jax_arrays(self, input):
         """Tests that a Wires object cannot be created from incorrect JAX arrays."""
+
+        if not has_jax:
+            pytest.skip("Skipping test since JAX is not installed.")
+
         with pytest.raises(WireError, match="Wires must be hashable"):
             Wires(input)
 
-    @pytest.mark.jax
-    @pytest.mark.parametrize("iterable", [jax.numpy.array([4, 1, 1, 3]), jax.numpy.array([0, 0])])
+    @pytest.mark.skipif(not has_jax, reason="JAX is not installed")
+    @pytest.mark.parametrize(
+        "iterable", [jax.numpy.array([4, 1, 1, 3]), jax.numpy.array([0, 0])] if has_jax else None
+    )
     def test_error_for_repeated_wires_jax(self, iterable):
         """Tests that a Wires object cannot be created from a JAX array with repeated indices."""
+
+        if not has_jax:
+            pytest.skip("Skipping test since JAX is not installed.")
+
         with pytest.raises(WireError, match="Wires must be unique"):
             Wires(iterable)
 
-    @pytest.mark.jax
+    @pytest.mark.skipif(not has_jax, reason="JAX is not installed")
     def test_array_representation_jax(self):
         """Tests that Wires object has an array representation with JAX."""
+
+        if not has_jax:
+            pytest.skip("Skipping test since JAX is not installed.")
 
         wires = Wires([4, 0, 1])
         array = jax.numpy.array(wires.labels)
@@ -550,12 +566,16 @@ class TestWiresJax:
         for w1, w2 in zip(array, jax.numpy.array([4, 0, 1])):
             assert w1 == w2
 
-    @pytest.mark.jax
+    @pytest.mark.skipif(not has_jax, reason="JAX is not installed")
     @pytest.mark.parametrize(
-        "source", [jax.numpy.array([0, 1, 2]), jax.numpy.array([0]), jax.numpy.array(0)]
+        "source",
+        [jax.numpy.array([0, 1, 2]), jax.numpy.array([0]), jax.numpy.array(0)] if has_jax else None,
     )
     def test_jax_wires_pytree(self, source):
         """Test that Wires class supports the PyTree flattening interface with JAX arrays."""
+
+        if not has_jax:
+            pytest.skip("Skipping test since JAX is not installed.")
 
         wires = Wires(source)
         wires_flat, tree = jax.tree_util.tree_flatten(wires)
