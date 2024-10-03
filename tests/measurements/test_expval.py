@@ -286,6 +286,25 @@ class TestExpval:
         state = tf.Variable(state, dtype=tf.float64)
         assert qml.math.allequal(compute_expval(state), expected)
 
+    @pytest.mark.tf
+    @pytest.mark.parametrize(
+        "state,expected",
+        [
+            ([[1.0, 0.0], [0.0, 1.0]], [0.0]),
+        ],
+    )
+    def test_tf_function_density_matrix(self, state, expected):
+        """Test that tf.function does not break process_state"""
+        import tensorflow as tf
+
+        @tf.function
+        def compute_expval(s):
+            mp = ExpectationMP(obs=qml.PauliZ(0))
+            return mp.process_density_matrix(s, wire_order=qml.wires.Wires([0]))
+
+        state = tf.Variable(state, dtype=tf.float64)
+        assert qml.math.allequal(compute_expval(state), expected)
+
     def test_batched_hamiltonian(self):
         """Test that the expval interface works"""
         dev = qml.device("default.qubit")
