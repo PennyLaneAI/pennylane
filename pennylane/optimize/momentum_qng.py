@@ -23,7 +23,7 @@ from .qng import QNGOptimizer
 
 class MomentumQNGOptimizer(QNGOptimizer):
     r"""A generalization of the Quantum Natural Gradient (QNG) optimizer by considering a discrete-time Langevin equation
-    with QNG force. For details of the theory and derivation of Momentum-QNG, please, see:
+    with QNG force. For details of the theory and derivation of Momentum-QNG, please see:
 
         Oleksandr Borysenko, Mykhailo Bratchenko, Ilya Lukin, Mykola Luhanko, Ihor Omelchenko,
         Andrii Sotnikov and Alessandro Lomi.
