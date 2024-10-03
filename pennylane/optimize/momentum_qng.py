@@ -46,7 +46,7 @@ class MomentumQNGOptimizer(QNGOptimizer):
     quantum circuit :math:`U(x^{(t)})`.
 
     For details on quantum natural gradient, see :class:`~.pennylane.QNGOptimizer`.
-    Also see :class:`~.pennylane.MomentumOptimizer` for a first-order optimizer with momentum.
+    Also, see :class:`~.pennylane.MomentumOptimizer` for a first-order optimizer with momentum.
 
     **Examples:**
 
