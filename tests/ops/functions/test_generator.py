@@ -402,7 +402,6 @@ class TestHamiltonianReturn:
         assert isinstance(gen, qml.Hamiltonian)
         assert gen.compare(qml.Hamiltonian([1.0], [qml.PhaseShift(0.5, wires=0).generator()]))
 
-    @pytest.mark.usefixtures("legacy_opmath_only")
     def test_observable(self):
         """Test a generator that returns a single observable is correct"""
         gen = qml.generator(ObservableOp, format="hamiltonian")(0.5, wires=0)

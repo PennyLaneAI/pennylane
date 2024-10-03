@@ -185,32 +185,44 @@ def test_controlled_sequence():
     qml.assert_equal(new_op.base, qml.RX(0.5, wires=3))
 
 
-with qml.operation.disable_new_opmath_cm(warn=False):
-    with warnings.catch_warnings():
-        warnings.filterwarnings(
-            "ignore", "qml.ops.Hamiltonian uses", qml.PennyLaneDeprecationWarning
-        )
-        TEST_BIND_LEGACY_HAMILTONIAN = [
-            (
-                qml.ops.Hamiltonian(
-                    [1.1, 2.1, 3.1],
-                    [Tensor(qml.PauliZ(0), qml.PauliX(1)), qml.Hadamard(1), qml.PauliY(0)],
-                ),
+with warnings.catch_warnings():
+    warnings.filterwarnings("ignore", "qml.ops.Hamiltonian uses", qml.PennyLaneDeprecationWarning)
+    warnings.filterwarnings("ignore", "qml.operation.Tensor uses", qml.PennyLaneDeprecationWarning)
+
+    TEST_BIND_LEGACY_HAMILTONIAN = [
+        (
+            qml.ops.Hamiltonian(
+                [1.1, 2.1, 3.1],
+                [Tensor(qml.PauliZ(0), qml.PauliX(1)), qml.Hadamard(1), qml.PauliY(0)],
+            ),
+            [1.2, 2.2, 3.2],
+            qml.ops.Hamiltonian(
                 [1.2, 2.2, 3.2],
-                qml.ops.Hamiltonian(
-                    [1.2, 2.2, 3.2],
-                    [Tensor(qml.PauliZ(0), qml.PauliX(1)), qml.Hadamard(1), qml.PauliY(0)],
-                ),
+                [Tensor(qml.PauliZ(0), qml.PauliX(1)), qml.Hadamard(1), qml.PauliY(0)],
             ),
-            (
-                qml.ops.Hamiltonian([1.6, -1], [qml.Hermitian(X, wires=1), qml.PauliX(1)]),
-                [-1, 1.6],
-                qml.ops.Hamiltonian([-1, 1.6], [qml.Hermitian(X, wires=1), qml.PauliX(1)]),
-            ),
-        ]
+        ),
+        (
+            qml.ops.Hamiltonian([1.6, -1], [qml.Hermitian(X, wires=1), qml.PauliX(1)]),
+            [-1, 1.6],
+            qml.ops.Hamiltonian([-1, 1.6], [qml.Hermitian(X, wires=1), qml.PauliX(1)]),
+        ),
+    ]
+
+    TEST_BIND_LEGACY_TENSOR = [
+        (
+            Tensor(qml.Hermitian(Y, wires=0), qml.PauliZ(1)),
+            [X],
+            Tensor(qml.Hermitian(X, wires=0), qml.PauliZ(1)),
+        ),
+        (
+            Tensor(qml.Hermitian(qml.math.kron(X, Z), wires=[0, 1]), qml.Hermitian(I, wires=2)),
+            [qml.math.kron(I, I), Z],
+            Tensor(qml.Hermitian(qml.math.kron(I, I), wires=[0, 1]), qml.Hermitian(Z, wires=2)),
+        ),
+        (Tensor(qml.PauliZ(0), qml.PauliX(1)), [], Tensor(qml.PauliZ(0), qml.PauliX(1))),
+    ]
 
 
-@pytest.mark.usefixtures("legacy_opmath_only")
 @pytest.mark.parametrize(
     "H, new_coeffs, expected_H",
     TEST_BIND_LEGACY_HAMILTONIAN,
@@ -223,6 +235,18 @@ def test_hamiltonian_legacy_opmath(H, new_coeffs, expected_H):
 
     qml.assert_equal(new_H, expected_H)
     assert new_H is not H
+
+
+@pytest.mark.parametrize("op, new_params, expected_op", TEST_BIND_LEGACY_TENSOR)
+def test_tensor(op, new_params, expected_op):
+    """Test that `bind_new_parameters` with `Tensor` returns a new
+    operator with the new parameters without mutating the original
+    operator."""
+    new_op = bind_new_parameters(op, new_params)
+
+    qml.assert_equal(new_op, expected_op)
+    assert new_op is not op
+    assert all(n_obs is not obs for n_obs, obs in zip(new_op.obs, op.obs))
 
 
 TEST_BIND_LINEARCOMBINATION = [
@@ -324,33 +348,6 @@ def test_hamiltonian_grouping_indices():
     new_H = bind_new_parameters(H, [2.3, 3.4])
     assert H.grouping_indices == new_H.grouping_indices
     assert new_H.data == (2.3, 3.4)
-
-
-@pytest.mark.parametrize(
-    "op, new_params, expected_op",
-    [
-        (
-            Tensor(qml.Hermitian(Y, wires=0), qml.PauliZ(1)),
-            [X],
-            Tensor(qml.Hermitian(X, wires=0), qml.PauliZ(1)),
-        ),
-        (
-            Tensor(qml.Hermitian(qml.math.kron(X, Z), wires=[0, 1]), qml.Hermitian(I, wires=2)),
-            [qml.math.kron(I, I), Z],
-            Tensor(qml.Hermitian(qml.math.kron(I, I), wires=[0, 1]), qml.Hermitian(Z, wires=2)),
-        ),
-        (Tensor(qml.PauliZ(0), qml.PauliX(1)), [], Tensor(qml.PauliZ(0), qml.PauliX(1))),
-    ],
-)
-def test_tensor(op, new_params, expected_op):
-    """Test that `bind_new_parameters` with `Tensor` returns a new
-    operator with the new parameters without mutating the original
-    operator."""
-    new_op = bind_new_parameters(op, new_params)
-
-    qml.assert_equal(new_op, expected_op)
-    assert new_op is not op
-    assert all(n_obs is not obs for n_obs, obs in zip(new_op.obs, op.obs))
 
 
 old_hamiltonian = qml.Hamiltonian(
