@@ -528,7 +528,7 @@ class TestWiresJax:
                 [jax.numpy.array([0, 1, 2]), 3],
                 jax.numpy.array([[0, 1, 2]]),
                 jax.numpy.array([[[0, 1], [2, 3]]]),
-                jax.numpy.array([[[[0]]]]) if jax_available else [],
+                jax.numpy.array([[[[0]]]]),
             ]
             if jax_available
             else []
