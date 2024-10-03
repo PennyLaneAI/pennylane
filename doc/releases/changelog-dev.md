@@ -130,5 +130,5 @@ Oleksandr Borysenko,
 Lillian M. A. Frederiksen,
 Christina Lee,
 William Maxwell,
-Lee J. O'Riordan
+Lee J. O'Riordan,
 David Wierichs,
