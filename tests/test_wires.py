@@ -15,12 +15,12 @@
 Unit tests for :mod:`pennylane.wires`.
 """
 from importlib import import_module, util
+
 import numpy as np
 import pytest
 
 import pennylane as qml
 from pennylane.wires import WireError, Wires
-
 
 if util.find_spec("jax") is not None:
     jax = import_module("jax")
@@ -498,10 +498,10 @@ class TestWires:
         assert result == expected
 
 
+@pytest.mark.jax
 class TestWiresJax:
     """Tests the support for JAX arrays in the ``Wires`` class."""
 
-    @pytest.mark.jax
     @pytest.mark.parametrize(
         "iterable, expected",
         (
@@ -520,7 +520,6 @@ class TestWiresJax:
         wires = Wires(iterable)
         assert wires.labels == expected
 
-    @pytest.mark.jax
     @pytest.mark.parametrize(
         "input",
         (
@@ -540,7 +539,6 @@ class TestWiresJax:
         with pytest.raises(WireError, match="Wires must be hashable"):
             Wires(input)
 
-    @pytest.mark.jax
     @pytest.mark.parametrize(
         "iterable",
         [jax.numpy.array([4, 1, 1, 3]), jax.numpy.array([0, 0])] if jax_available else [],
@@ -550,7 +548,6 @@ class TestWiresJax:
         with pytest.raises(WireError, match="Wires must be unique"):
             Wires(iterable)
 
-    @pytest.mark.jax
     def test_array_representation_jax(self):
         """Tests that Wires object has an array representation with JAX."""
 
@@ -561,7 +558,6 @@ class TestWiresJax:
         for w1, w2 in zip(array, jax.numpy.array([4, 0, 1])):
             assert w1 == w2
 
-    @pytest.mark.jax
     @pytest.mark.parametrize(
         "source",
         (
