@@ -324,7 +324,7 @@ def _check_differentiation(op):
         for actual, expected in zip(ps, expected_bp):
             assert qml.math.allclose(
                 actual, expected
-            ), "Backpropagation does not produce the expected Jacobian with this operator."
+            ), "Parameter shift does not produce the expected Jacobian with this operator."
     else:
         assert qml.math.allclose(
             ps, expected_bp
