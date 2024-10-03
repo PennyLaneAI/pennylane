@@ -15,6 +15,7 @@ r"""
 Contains the BasisStatePreparation template.
 """
 
+from itertools import product
 import pennylane as qml
 from pennylane.operation import AnyWires, Operation
 
@@ -113,10 +114,18 @@ class QutritBasisStatePreparation(Operation):
         """
 
         op_list = []
-        tshift = qml.math.array([[0, 0, 1], [1, 0, 0], [0, 1, 0]])
+
+        if qml.math.is_abstract(basis_state):
+            tshift = qml.math.array([[0, 0, 1], [1, 0, 0], [0, 1, 0]])
+            for wire, state in zip(wires, basis_state):
+                mat = qml.math.linalg.matrix_power(tshift, state)
+                op = qml.ops.QutritUnitary(mat, wires=wire)
+                op_list.append(op)
+
+            return op_list
+
         for wire, state in zip(wires, basis_state):
-            mat = qml.math.matrix_power(tshift, state)
-            op = qml.ops.QutritUnitary(mat, wires=wire)
-            op_list.append(op)
+            for _ in range(state):
+                op_list.append(qml.TShift(wire))
 
         return op_list

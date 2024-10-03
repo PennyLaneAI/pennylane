@@ -39,34 +39,33 @@ class TestDecomposition:
     tshift0 = np.eye(3, dtype=int)
     tshift1 = np.array([[0, 0, 1], [1, 0, 0], [0, 1, 0]])
     tshift2 = np.array([[0, 1, 0], [0, 0, 1], [1, 0, 0]])
-    @pytest.mark.parametrize("basis_state,wires,target_unitary", [
-        ([0], [0], [tshift0]),
-        ([0], [1], [tshift0]),
-        ([1], [0], [tshift1]),
-        ([2], [1], [tshift2]),
-        ([0, 1], [0, 1], [tshift0, tshift1]),
-        ([2, 0], [1, 4], [tshift2, tshift0]),
-        ([1, 0], [4, 5], [tshift1, tshift0]),
-        ([0, 2], [4, 5], [tshift0, tshift2]),
-        ([1, 2], [0, 2], [tshift1, tshift2]),
-        ([0, 0, 1, 0], [1, 2, 3, 4], [tshift0, tshift0, tshift1, tshift0]),
-        ([2, 0, 0, 0], [1, 2, 3, 4], [tshift2, tshift0, tshift0, tshift0]),
-        ([1, 1, 1, 0], [1, 2, 6, 8], [tshift1, tshift1, tshift1, tshift0]),
-        ([0, 2, 1, 2], [1, 2, 6, 8], [tshift0, tshift2, tshift1, tshift2]),
-        ([1, 0, 1, 1], [1, 2, 6, 8], [tshift1, tshift0, tshift1, tshift1]),
-        ([2, 1, 0, 2], [1, 2, 6, 8], [tshift2, tshift1, tshift0, tshift2]),
+    @pytest.mark.parametrize("basis_state,wires,target_wires", [
+        ([0], [0], []),
+        ([0], [1], []),
+        ([1], [0], [0]),
+        ([2], [1], [1, 1]),
+        ([0, 1], [0, 1], [1]),
+        ([2, 0], [1, 4], [1, 1]),
+        ([1, 0], [4, 5], [4]),
+        ([0, 2], [4, 5], [5, 5]),
+        ([1, 2], [0, 2], [0, 2, 2]),
+        ([0, 0, 1, 0], [1, 2, 3, 4], [3]),
+        ([2, 0, 0, 0], [1, 2, 3, 4], [1, 1]),
+        ([1, 1, 1, 0], [1, 2, 6, 8], [1, 2, 6]),
+        ([0, 2, 1, 2], [1, 2, 6, 8], [2, 2, 6, 8, 8]),
+        ([1, 0, 1, 1], [1, 2, 6, 8], [1, 6, 8]),
+        ([2, 1, 0, 2], [1, 2, 6, 8], [1, 1, 2, 8, 8]),
     ])
     # fmt: on
-    def test_correct_pl_gates(self, basis_state, wires, target_unitary):
+    def test_correct_pl_gates(self, basis_state, wires, target_wires):
         """Tests queue for simple cases."""
 
         op = qml.QutritBasisStatePreparation(basis_state, wires)
         queue = op.decomposition()
 
         for id, gate in enumerate(queue):
-            assert gate.name == "QutritUnitary"
-            assert gate.wires.tolist() == [wires[id]]
-            assert np.array_equal(gate.matrix(), target_unitary[id])
+            assert gate.name == "TShift"
+            assert gate.wires.tolist() == [target_wires[id]]
 
     # fmt: off
     @pytest.mark.parametrize("basis_state,wires,target_state", [
@@ -120,7 +119,7 @@ class TestDecomposition:
         """Tests that the template produces the correct expectation values."""
         import jax
 
-        @qml.qnode(qutrit_device_3_wires, interface="jax")
+        @qml.qnode(qutrit_device_3_wires)
         def circuit(state, obs):
             qml.QutritBasisStatePreparation(state, wires)
 
@@ -128,10 +127,12 @@ class TestDecomposition:
 
         circuit = jax.jit(circuit)
 
-        obs = np.array([[1, 0, 0], [0, 2, 0], [0, 0, 3]])
+        obs = qml.math.array([[1, 0, 0], [0, 2, 0], [0, 0, 3]])
+        basis_state = qml.math.array(basis_state, like="jax")
+        print(qml.math.get_interface(basis_state))
         output_state = [x - 1 for x in circuit(basis_state, obs)]
 
-        assert np.allclose(output_state, target_state, atol=tol, rtol=0)
+        assert qml.math.allclose(output_state, target_state, atol=tol, rtol=0)
 
     @pytest.mark.tf
     @pytest.mark.parametrize(
