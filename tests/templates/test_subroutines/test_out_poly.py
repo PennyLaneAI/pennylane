@@ -16,7 +16,6 @@ Tests for the OutPoly template.
 """
 
 import pytest
-import sympy
 import pennylane as qml
 from pennylane import numpy as np
 

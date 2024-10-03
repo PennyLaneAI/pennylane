@@ -16,7 +16,6 @@ Contains the OutPoly template.
 """
 
 import inspect
-import re
 
 import numpy as np
 
