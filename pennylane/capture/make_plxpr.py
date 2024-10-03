@@ -23,9 +23,7 @@ except ImportError:
     has_jax = False
 
 
-def make_plxpr(
-    circuit: "qml.QNode", static_argnums: Union[int, Sequence[int], None] = None, **kwargs
-):
+def make_plxpr(circuit: "qml.QNode", static_argnums: Union[int, Sequence[int]] = (), **kwargs):
     """Takes a QNode and returns a function that, when called, produces a PLxPR representing
     the QNode with the given args.
 
@@ -35,10 +33,10 @@ def make_plxpr(
 
     Args:
         circuit (QNode):  the QNode to be captured
-        static_argnums (Union(int, Sequence[int], None)): optional, an int or collection of ints
-            that specify which positional arguments to treat as static (trace- and compile-time constant).
 
     Kwargs:
+        static_argnums (Union(int, Sequence[int])): optional, an int or collection of ints
+            that specify which positional arguments to treat as static (trace- and compile-time constant).
         **kwargs: any additional arguements specifically for jax.make_jaxpr
 
     Returns:

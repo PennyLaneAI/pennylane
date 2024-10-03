@@ -99,4 +99,4 @@ def test_kwargs(mocker):
 
     # assert new value for return_shape is passed to make_jaxpr
     _ = make_plxpr(circ, return_shape=True)()
-    spy.assert_has_calls([call(circ, static_argnums=None, return_shape=True)])
+    spy.assert_has_calls([call(circ, static_argnums=(), return_shape=True)])
