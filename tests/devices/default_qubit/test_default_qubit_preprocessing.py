@@ -586,7 +586,7 @@ class TestPreprocessingIntegration:
             ),
             (
                 [qml.RX(0.1, wires=0)],
-                [qml.expval(qml.Hamiltonian([1], [qml.PauliZ(0)]))],
+                [qml.expval(qml.ops.Hamiltonian([1], [qml.PauliZ(0)]))],
                 "not supported on adjoint",
             ),
         ],
