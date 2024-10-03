@@ -41,7 +41,7 @@ from .primitives import (
 def jaxpr_to_jaxpr(
     interpreter: "PlxprInterpreter", jaxpr: "jax.core.Jaxpr", consts, *args
 ) -> "jax.core.Jaxpr":
-    """A convenience uility for converting jaxpr to a new jaxpr via an interpreter."""
+    """A convenience utility for converting jaxpr to a new jaxpr via an interpreter."""
 
     def f(*inner_args):
         return interpreter.eval(jaxpr, consts, *inner_args)
@@ -50,7 +50,7 @@ def jaxpr_to_jaxpr(
 
 
 class PlxprInterpreter:
-    """A template base class for defining plxpr interpreters
+    """A base class for defining plxpr interpreters.
 
     **Examples:**
 
@@ -174,7 +174,7 @@ class PlxprInterpreter:
         """Registers a custom method for handling a primitive
 
         Args:
-            primitive (jax.core.Primitive): the primitive we want  custom behavior for
+            primitive (jax.core.Primitive): the primitive we want custom behavior for
 
         Returns:
             Callable: a decorator for adding a function to the custom registrations map
@@ -207,7 +207,7 @@ class PlxprInterpreter:
         return self._op_math_cache.get(var, self._env[var])
 
     def setup(self) -> None:
-        """Initialize the instance before interpretting equations.
+        """Initialize the instance before interpreting equations.
 
         Blank by default, this method can initialize any additional instance variables
         needed by an interpreter. For example, a device interpreter could initialize a statevector,
@@ -220,7 +220,7 @@ class PlxprInterpreter:
 
         Blank by default, this method can clean up instance variables. Particularily,
         this method can be used to deallocate qubits and registers when converting to
-        catalyst variant jaxpr.
+        a Catalyst variant jaxpr.
         """
 
     def interpret_operation(self, op: "pennylane.operation.Operator"):
@@ -233,7 +233,7 @@ class PlxprInterpreter:
             Any
 
         This method is only called when the operator's output is a dropped variable,
-        so the output will not effect later equations in the circuit.
+        so the output will not affect later equations in the circuit.
 
         See also: :meth:`~.interpret_operation_eqn`.
 
