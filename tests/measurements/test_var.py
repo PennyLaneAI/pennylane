@@ -224,7 +224,7 @@ class TestVar:
         dm = qml.math.array([[0.5, 0], [0, 0.5]], like=interface)
         wires = qml.wires.Wires(range(1))
         expected = qml.math.array([0.0], like=interface)
-        var = qml.var(qml.I()).process_density_matrix(dm, wires)
+        var = qml.var(qml.I(0)).process_density_matrix(dm, wires)
         assert qml.math.allclose(var, expected)
 
     # @pytest.mark.all_interfaces
