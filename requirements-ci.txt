@@ -11,6 +11,5 @@ packaging
 autoray>=0.6.1,<0.6.10
 matplotlib
 requests
-sympy
 rich
 tomli # Drop once minimum Python version is 3.11

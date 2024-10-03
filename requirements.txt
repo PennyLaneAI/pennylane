@@ -9,7 +9,6 @@ autograd~=1.4
 toml~=0.10
 appdirs~=1.4
 packaging
-sympy
 autoray>=0.6.11
 matplotlib~=3.5
 opt_einsum~=3.3

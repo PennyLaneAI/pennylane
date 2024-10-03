@@ -916,8 +916,6 @@ class TestModifiedTemplates:
         def func(x, y):
             return x**2 + y
 
-        register_wires = [[0, 1], [2, 3], [4, 5]]
-
         kwargs = {
             "f": func,
             "register_wires": [[0, 1], [2, 3], [4, 5]],

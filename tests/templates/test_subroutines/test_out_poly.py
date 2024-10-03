@@ -20,60 +20,6 @@ import sympy
 import pennylane as qml
 from pennylane import numpy as np
 
-from pennylane.templates.subroutines.out_poly import (
-    _extract_numbers,
-    _adjust_exponents,
-    _function_to_binary_poly,
-    _polynomial_to_list,
-)
-
-
-def test_function_to_binary_poly():
-    """Test _function_to_binary_poly function"""
-
-    def f(x, y):
-        return x + y
-
-    vars = [("x", 2), ("y", 2)]
-    poly = _function_to_binary_poly(f, vars)
-
-    simbolic_vars = sympy.symbols("x_0 x_1 y_0 y_1")
-    expected_poly = sympy.Poly("x_0 + 2*x_1 + y_0 + 2*y_1", simbolic_vars).as_expr()
-
-    expanded_poly = sympy.expand(poly)
-    expanded_expected_poly = sympy.expand(expected_poly)
-
-    assert expanded_poly == expanded_expected_poly
-
-
-def test_adjust_exponents():
-    """Test _adjust_exponents function"""
-
-    expr = sympy.Poly("x**2 + y**0 + 2*x*y**0", sympy.symbols("x y")).as_expr()
-
-    adjusted = _adjust_exponents(expr)
-    expected = sympy.Poly("3*x + 1", sympy.symbols("x y")).as_expr()
-
-    assert adjusted == expected
-
-
-def test_extract_numbers():
-    """Test _extract_numbers function"""
-
-    s = "123_456"
-    m, n = _extract_numbers(s)
-
-    assert m == 123
-    assert n == 456
-
-
-def test_polynomial_to_list():
-    """Test _polynomial_to_list function"""
-
-    poly = sympy.Poly("5 + 3*x + 2*x**2", sympy.symbols("x")).as_expr()
-    result = _polynomial_to_list(poly)
-    expected = [((1,), 5), ((sympy.Symbol("x") ** 2,), 2), ((sympy.Symbol("x"),), 3)]
-    assert expected == result
 
 
 def f_test(x, y, z):
@@ -167,24 +113,6 @@ class TestOutPoly:
             qml.OutPoly(
                 f=lambda x: x,
             )
-
-    def test_non_polynomial_function_error(self):
-        """Test that proper errors are raised for non polynomial functions"""
-
-        def f(x, y):
-            return x + y**0.5
-
-        x_wires = [0, 1, 2]
-        y_wires = [3, 4, 5]
-        output_wires = [6, 7, 8]
-
-        @qml.qnode(qml.device("default.qubit"))
-        def circuit():
-            qml.OutPoly(f, [x_wires, y_wires, output_wires])
-            return qml.state()
-
-        with pytest.raises(ValueError, match="The function must be polynomial"):
-            circuit()
 
     def test_decomposition(self):
         """Test that compute_decomposition and decomposition work as expected."""

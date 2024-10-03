@@ -18,98 +18,120 @@ Contains the OutPoly template.
 import inspect
 import re
 
-import sympy
+import numpy as np
 
 import pennylane as qml
 from pennylane.operation import Operation
 
+import itertools
 
-def _function_to_binary_poly(f, vars):
-    r"""Convert a function and a set of variables into a sympy binary polynomial representation.
+
+def subsets_with_fixed_zeros(bin_list):
+    """
+    Generate all subsets from a binary list where zeros remain fixed.
 
     Args:
-        f (callable): The function that defines the arithmetic operation to be applied. Must be a polynomial
-        vars (list of tuples): A list of variables, where each variable is a tuple containing:
-            - name (str): The name of the variable.
-            - num_wires (int): The number of binary wires (bits) corresponding to the variable.
+        bin_list (list): A list of binary values (0s and 1s).
 
     Returns:
-        (sympy.Poly): The binary polynomial that represents the function
+        list: A list of subsets where zeros remain in their original positions.
     """
+    # Find positions of ones (1s)
+    ones_positions = [i for i, bit in enumerate(bin_list) if bit == 1]
 
-    symbols, terms = [], []
-    for name, num_wires in vars:
-        simbolic_vars = sympy.symbols(" ".join([f"{name}_{i}" for i in range(num_wires)]))
-        symbols += simbolic_vars
-        terms.append(sum([simbolic_vars[i] * 2**i for i in range(num_wires)]))
+    # Generate all possible combinations of 0s and 1s for the positions of ones
+    ones_combinations = itertools.product([0, 1], repeat=len(ones_positions))
 
-    output = f(*terms)
-    if not output.is_polynomial():
-        raise ValueError("The function must be polynomial in terms of its parameters")
+    # Create subsets while keeping zeros fixed
+    subsets = []
+    for combination in ones_combinations:
+        new_list = bin_list[:]  # Create a copy of the original list
+        for i, value in zip(ones_positions, combination):
+            new_list[i] = value  # Set the values of the combination in the positions of ones
 
-    poly = sympy.expand(output)
-    return _adjust_exponents(poly)
+        # Exclude the original list itself
+        if new_list != bin_list:
+            subsets.append(new_list)
+
+    return subsets
 
 
-def _adjust_exponents(expr):
+def generate_combinations(n, m):
     """
-    Adjust the exponents of a polynomial expression by filtering out terms with zero exponents.
-    Any exponent other than 0 is reduced to 1.
+    Generate all unique permutations of binary lists with n elements and m ones.
 
     Args:
-        expr (sympy.Add): A symbolic polynomial composed of multiple terms.
+        n (int): Total number of elements.
+        m (int): Number of ones in the list.
 
     Returns:
-        sympy.Add: The adjusted expression where terms with zero exponents are omitted.
-
+        list: A list of unique binary combinations.
     """
+    # Create a list with n-m zeros and m ones
+    base = [0] * (n - m) + [1] * m
 
-    result = 0
-    for term in expr.as_ordered_terms():
+    # Get all unique permutations of the base list
+    combinations = set(itertools.permutations(base))
 
-        coeff, bases = term.as_coeff_Mul()
-        bases_dict = bases.as_powers_dict()
-
-        non_zero_exponent_bases = []
-        for base, exp in bases_dict.items():
-            if exp != 0:
-                non_zero_exponent_bases.append(base)
-
-        filtered_term = coeff * qml.math.prod(non_zero_exponent_bases)
-
-        result += filtered_term
-
-    return result
+    # Convert to a list of lists for easier handling
+    return [list(combination) for combination in combinations]
 
 
-def _extract_numbers(s):
-    """Extract two integers `m` and `n` from a string based on a the pattern `m_n`.
+def binary_to_decimal(binary_list):
+    """
+    Convert a binary list to its decimal value.
 
     Args:
-        s (str): The input string containing the pattern `number_number`.
+        binary_list (list): A list of binary digits (0s and 1s).
 
     Returns:
-        tuple: A tuple containing the two integers `m` and `n`.
+        int: The decimal value of the binary list.
     """
-
-    pattern = r"(\d+)_(\d+)"
-    match = re.search(pattern, s)
-    int1, int2 = map(int, match.groups())
-    return (int1, int2)
+    binary_list.reverse()
+    return sum(val * (2 ** idx) for idx, val in enumerate(binary_list))
 
 
-def _polynomial_to_list(poly):
-    """Convert a polynomial into a list of terms and their coefficients.
+def get_coefficients_and_controls(f, mod, *wire_lengths):
+    """
+    Calculate the coefficients and controls for a given function and wire configuration.
 
     Args:
-        poly (sympy.Add): A symbolic polynomial expression.
+        f (callable): A function that takes a variable number of arguments.
+        *wire_lengths (int): The number of binary wires (bits) assigned to each argument of the function.
 
     Returns:
-        (list): A list of tuples, where each tuple contains the factors and the coefficients.
-
+        dict: A dictionary with the binary combinations as keys and their corresponding function values as values.
     """
-    coeff_dict = poly.as_coefficients_dict()
-    return [(tuple(term.as_ordered_factors()), coeff_dict[term]) for term in coeff_dict]
+    coeffs_dict = {}
+    total_wires = sum(wire_lengths)
+
+    for i in range(total_wires):
+        combs = generate_combinations(total_wires, i)
+
+        for comb in combs:
+            comb_tuple = tuple(comb)
+
+            # Divide the combination into parts for each argument based on wire_lengths
+            args_values = []
+            start = 0
+            for wire_length in wire_lengths:
+                arg_value = binary_to_decimal(comb[start:start + wire_length])
+                args_values.append(arg_value)
+                start += wire_length
+
+            # Call the function f with the calculated argument values
+            coeffs_dict[comb_tuple] = f(*args_values)
+
+            # Subtract values from subsets where zeros remain fixed
+            subtract_value = 0
+            for subset in subsets_with_fixed_zeros(comb):
+                subset_tuple = tuple(subset)
+                if subset_tuple in coeffs_dict:
+                    subtract_value += coeffs_dict[subset_tuple]
+
+            coeffs_dict[comb_tuple] = (coeffs_dict[comb_tuple] - subtract_value) % mod
+
+    return coeffs_dict
 
 
 class OutPoly(Operation):
@@ -232,7 +254,7 @@ class OutPoly(Operation):
         if work_wires:
             all_wires += work_wires
 
-        if len(all_wires) != sum([len(register) for register in register_wires]) + num_work_wires:
+        if len(all_wires) != sum(len(register) for register in register_wires) + num_work_wires:
             raise ValueError(
                 "None of the wires in a register must be contained in another register."
             )
@@ -306,41 +328,36 @@ class OutPoly(Operation):
         )
         list_ops.append(qml.QFT(wires=output_adder_mod))
 
-        vars = []  # variable naming and size
-        for ind, wires in enumerate(register_wires[:-1]):
-            vars.append((f"x{ind}", len(wires)))
+        wires_vars = [len(w) for w in register_wires[:-1]]
 
-        poly = _function_to_binary_poly(f, vars)
-        coeffs_list = _polynomial_to_list(poly)
+        coeffs_list = get_coefficients_and_controls(f, mod, *wires_vars)
 
         for item in coeffs_list:
-
-            # Bias
-            if item[0] == (1,):
-                list_ops.append(qml.PhaseAdder(int(item[1]), output_adder_mod))
+            if np.isclose(coeffs_list[item], 0.):
                 continue
 
-            controls_aux = []
 
-            for variable in item[0]:
-                controls_aux.append(_extract_numbers(str(variable)))
+            # Bias
+            if not 1 in item:
+                list_ops.append(qml.PhaseAdder(int(coeffs_list[item]), output_adder_mod))
+                continue
 
-            controls = []
-            for aux in controls_aux:
-                controls.append(register_wires[:-1][aux[0]][-1 - aux[1]])
+            all_wires_input = sum([*register_wires[:-1]], start=[])
+
+            controls = [all_wires_input[i] for i, bit in enumerate(item) if bit == 1]
 
             if work_wires:
                 list_ops.append(
                     qml.ctrl(
                         qml.PhaseAdder(
-                            int(item[1]) % mod, output_adder_mod, work_wire=work_wires[1], mod=mod
+                            int(coeffs_list[item]) % mod, output_adder_mod, work_wire=work_wires[1], mod=mod
                         ),
                         control=controls,
                     )
                 )
             else:
                 list_ops.append(
-                    qml.ctrl(qml.PhaseAdder(int(item[1]), output_adder_mod), control=controls)
+                    qml.ctrl(qml.PhaseAdder(int(coeffs_list[item])% mod, output_adder_mod), control=controls)
                 )
 
         list_ops.append(qml.adjoint(qml.QFT)(wires=output_adder_mod))
