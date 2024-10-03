@@ -268,9 +268,8 @@ def test_jax_jit():
 
     dev = qml.device("default.qubit", wires=wires)
 
-    @jax.jit
     @qml.qnode(dev)
-    def GroverSearch():
+    def circuit():
         for wire in wires:
             qml.Hadamard(wire)
 
@@ -282,4 +281,6 @@ def test_jax_jit():
 
         return qml.probs(wires)
 
-    GroverSearch()
+    jit_circuit = jax.jit(circuit)
+
+    assert qml.math.allclose(circuit(), jit_circuit())

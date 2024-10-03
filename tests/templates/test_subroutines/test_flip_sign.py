@@ -143,7 +143,6 @@ class TestFlipSign:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @jax.jit
         @qml.qnode(dev)
         def circuit():
             for wire in list(range(2)):
@@ -151,4 +150,5 @@ class TestFlipSign:
             qml.FlipSign(basis_state, wires=list(range(2)))
             return qml.state()
 
-        circuit()
+        jit_circuit = jax.jit(circuit)
+        assert qml.math.allclose(circuit, jit_circuit)

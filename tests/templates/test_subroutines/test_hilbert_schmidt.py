@@ -263,13 +263,14 @@ class TestHilbertSchmidt:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @jax.jit
         @qml.qnode(dev)
-        def hilbert_test(v_params):
+        def circuit(v_params):
             qml.HilbertSchmidt(v_params, v_function=v_function, v_wires=[1], u_tape=u_tape)
             return qml.probs(u_tape.wires + [1])
 
-        hilbert_test(np.array([0]))
+        jit_circuit = jax.jit(circuit)
+
+        assert qml.math.allclose(circuit(np.array([0])), jit_circuit(np.array([0])))
 
 
 class TestLocalHilbertSchmidt:
@@ -508,11 +509,12 @@ class TestLocalHilbertSchmidt:
 
         dev = qml.device("default.qubit", wires=4)
 
-        @jax.jit
         @qml.qnode(dev)
-        def local_hilbert_test(v_params):
+        def circuit(v_params):
             qml.LocalHilbertSchmidt(v_params, v_function=v_function, v_wires=[2, 3], u_tape=u_tape)
             return qml.probs(u_tape.wires + [2, 3])
 
+        jit_circuit = jax.jit(circuit)
+
         params = np.array([3 * np.pi / 2, 3 * np.pi / 2, np.pi / 2])
-        local_hilbert_test(params)
+        assert qml.math.allclose(circuit(params), jit_circuit(params))

@@ -139,14 +139,15 @@ def test_jax_jit():
     hamiltonian = qml.Hamiltonian(coeffs, obs)
     frequencies = (2, 4)
 
-    @jax.jit
     @qml.qnode(dev)
     def circuit(time):
         qml.X(0)
         qml.CommutingEvolution(hamiltonian, time, frequencies)
         return qml.expval(qml.Z(0))
 
-    circuit(1)
+    jit_circuit = jax.jit(circuit)
+
+    assert qml.math.allclose(circuit(1), jit_circuit(1))
 
 
 class TestInputs:
