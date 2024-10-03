@@ -41,7 +41,7 @@ on:
         description: Whether to disable the new op_math or not when running the tests
         required: false
         type: string
-        default: "True"
+        default: "False"
       pytest_store_durations:
         description: Whether to store artifacts for test durations
         required: false

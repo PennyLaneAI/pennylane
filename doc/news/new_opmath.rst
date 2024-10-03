@@ -39,9 +39,7 @@ Summary of the update
 
 .. warning::
 
-    In PennyLane v0.39, legacy operator arithmetic is deprecated and will be removed in v0.40. Check out the functions
-    :func:`~pennylane.operation.convert_to_opmath` and :func:`~pennylane.operation.convert_to_H` to convert legacy operators
-    into those using the new operator arithmetic.
+    In PennyLane v0.39, legacy operator arithmetic is deprecated and will be removed in v0.40.
 
 
 * The underlying system for performing arithmetic with operators has been changed. Arithmetic can be carried out using
