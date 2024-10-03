@@ -2953,3 +2953,28 @@ class TestSetIndex:
 
         assert qml.math.allclose(array2, jnp.array([[7, 2, 3, 4]]))
         assert isinstance(array2, jnp.ndarray)
+
+
+class TestMatrixPower:
+    """Tests for the matrix_power function."""
+
+    def test_input(self):
+        """Tests that matrix_power works for each interface."""
+        np_mat = np.array([[1, 2], [3, 4]])
+        torch_mat = torch.tensor([[1, 2], [3, 4]])
+        tf_mat = tf.Variable([[1, 2], [3, 4]])
+        jnp_mat = jnp.array([[1, 2], [3, 4]])
+
+        assert qml.math.allclose(fn.matrix_power(np_mat, 2), onp.linalg.matrix_power(np_mat, 2))
+        assert qml.math.allclose(
+            fn.matrix_power(torch_mat, 2), torch.linalg.matrix_power(torch_mat, 2)
+        )
+        assert qml.math.allclose(fn.matrix_power(tf_mat, 2), onp.linalg.matrix_power(tf_mat, 2))
+        assert qml.math.allclose(fn.matrix_power(jnp_mat, 2), jnp.linalg.matrix_power(jnp_mat, 2))
+
+    def test_jax_jit(self):
+        """Tests that matrix_power can be compiled with JAX JIT."""
+        mat = fn.array([[1, 2], [3, 4]])
+        jitted_fn = jax.jit(fn.matrix_power)
+
+        assert qml.math.allclose(jitted_fn(mat, 2), fn.matrix_power(mat, 2))
