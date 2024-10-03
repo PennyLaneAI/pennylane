@@ -17,10 +17,6 @@ concurrency:
   group: unit-tests-${{ github.ref }}
   cancel-in-progress: true
 
-env:
-  DEPS_BRANCH: bot/stable-deps-update
-  DURATIONS_BRANCH: bot/durations-update
-
 jobs:
   tests:
     if: github.event.pull_request.draft == false
@@ -47,7 +43,7 @@ jobs:
     with:
       artifact_name_pattern: 'frozen-*'
       artifact_save_path: '.github/stable/'
-      pull_request_head_branch_name: ${{ env.DEPS_BRANCH }}
+      pull_request_head_branch_name: bot/stable-deps-update
       commit_message_description: Frozen Dependencies Update
       pull_request_title: Update stable dependency files
       pull_request_body: |
@@ -66,7 +62,7 @@ jobs:
     with:
       artifact_name_pattern: '*-durations.json'
       artifact_save_path: '.github/durations/'
-      pull_request_head_branch_name: ${{ env.DURATIONS_BRANCH }}
+      pull_request_head_branch_name: bot/durations-update
       commit_message_description: Durations Update
       pull_request_title: Update durations files
       pull_request_body: |
