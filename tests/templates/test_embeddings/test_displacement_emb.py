@@ -266,7 +266,6 @@ class TestInterfaces:
 
         dev = qml.device("default.gaussian", wires=3)
 
-
         circuit = qml.QNode(circuit_template, dev)
         circuit2 = qml.QNode(circuit_decomposed, dev)
 

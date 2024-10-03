@@ -313,7 +313,6 @@ class TestInterfaces:
 
         assert qml.allclose(jit_grads[0], grads[0], atol=tol, rtol=0)
 
-
     @pytest.mark.tf
     def test_tf(self, tol):
         """Tests the tf interface."""
