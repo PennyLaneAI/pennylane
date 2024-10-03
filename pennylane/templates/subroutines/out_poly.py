@@ -88,7 +88,7 @@ def binary_to_decimal(binary_list):
         int: The decimal value of the binary list.
     """
     binary_list.reverse()
-    return sum(val * (2 ** idx) for idx, val in enumerate(binary_list))
+    return sum(val * (2**idx) for idx, val in enumerate(binary_list))
 
 
 def get_coefficients_and_controls(f, mod, *wire_lengths):
@@ -115,7 +115,7 @@ def get_coefficients_and_controls(f, mod, *wire_lengths):
             args_values = []
             start = 0
             for wire_length in wire_lengths:
-                arg_value = binary_to_decimal(comb[start:start + wire_length])
+                arg_value = binary_to_decimal(comb[start : start + wire_length])
                 args_values.append(arg_value)
                 start += wire_length
 
@@ -333,9 +333,8 @@ class OutPoly(Operation):
         coeffs_list = get_coefficients_and_controls(f, mod, *wires_vars)
 
         for item in coeffs_list:
-            if np.isclose(coeffs_list[item], 0.):
+            if np.isclose(coeffs_list[item], 0.0):
                 continue
-
 
             # Bias
             if not 1 in item:
@@ -350,14 +349,20 @@ class OutPoly(Operation):
                 list_ops.append(
                     qml.ctrl(
                         qml.PhaseAdder(
-                            int(coeffs_list[item]) % mod, output_adder_mod, work_wire=work_wires[1], mod=mod
+                            int(coeffs_list[item]) % mod,
+                            output_adder_mod,
+                            work_wire=work_wires[1],
+                            mod=mod,
                         ),
                         control=controls,
                     )
                 )
             else:
                 list_ops.append(
-                    qml.ctrl(qml.PhaseAdder(int(coeffs_list[item])% mod, output_adder_mod), control=controls)
+                    qml.ctrl(
+                        qml.PhaseAdder(int(coeffs_list[item]) % mod, output_adder_mod),
+                        control=controls,
+                    )
                 )
 
         list_ops.append(qml.adjoint(qml.QFT)(wires=output_adder_mod))

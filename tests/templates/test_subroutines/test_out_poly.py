@@ -21,7 +21,6 @@ import pennylane as qml
 from pennylane import numpy as np
 
 
-
 def f_test(x, y, z):
     return x**2 + y * x * z**5 - z**3 + 3
 
