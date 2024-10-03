@@ -1004,44 +1004,45 @@ class TestMeasurementTransformations:
 
 class TestObservableHF:
 
-    HAMILTONIAN_SIMPLIFY = [
-        (
-            qml.Hamiltonian(
-                np.array([0.5, 0.5]),
-                [qml.PauliX(0) @ qml.PauliY(1), qml.PauliX(0) @ qml.PauliY(1)],
+    with qml.operation.disable_new_opmath_cm(warn=False):
+        HAMILTONIAN_SIMPLIFY = [
+            (
+                qml.Hamiltonian(
+                    np.array([0.5, 0.5]),
+                    [qml.PauliX(0) @ qml.PauliY(1), qml.PauliX(0) @ qml.PauliY(1)],
+                ),
+                qml.Hamiltonian(np.array([1.0]), [qml.PauliX(0) @ qml.PauliY(1)]),
             ),
-            qml.Hamiltonian(np.array([1.0]), [qml.PauliX(0) @ qml.PauliY(1)]),
-        ),
-        (
-            qml.Hamiltonian(
-                np.array([0.5, -0.5]),
-                [qml.PauliX(0) @ qml.PauliY(1), qml.PauliX(0) @ qml.PauliY(1)],
+            (
+                qml.Hamiltonian(
+                    np.array([0.5, -0.5]),
+                    [qml.PauliX(0) @ qml.PauliY(1), qml.PauliX(0) @ qml.PauliY(1)],
+                ),
+                qml.Hamiltonian([], []),
             ),
-            qml.Hamiltonian([], []),
-        ),
-        (
-            qml.Hamiltonian(
-                np.array([0.0, -0.5]),
-                [qml.PauliX(0) @ qml.PauliY(1), qml.PauliX(0) @ qml.PauliZ(1)],
+            (
+                qml.Hamiltonian(
+                    np.array([0.0, -0.5]),
+                    [qml.PauliX(0) @ qml.PauliY(1), qml.PauliX(0) @ qml.PauliZ(1)],
+                ),
+                qml.Hamiltonian(np.array([-0.5]), [qml.PauliX(0) @ qml.PauliZ(1)]),
             ),
-            qml.Hamiltonian(np.array([-0.5]), [qml.PauliX(0) @ qml.PauliZ(1)]),
-        ),
-        (
-            qml.Hamiltonian(
-                np.array([0.25, 0.25, 0.25, -0.25]),
-                [
-                    qml.PauliX(0) @ qml.PauliY(1),
-                    qml.PauliX(0) @ qml.PauliZ(1),
-                    qml.PauliX(0) @ qml.PauliY(1),
-                    qml.PauliX(0) @ qml.PauliY(1),
-                ],
+            (
+                qml.Hamiltonian(
+                    np.array([0.25, 0.25, 0.25, -0.25]),
+                    [
+                        qml.PauliX(0) @ qml.PauliY(1),
+                        qml.PauliX(0) @ qml.PauliZ(1),
+                        qml.PauliX(0) @ qml.PauliY(1),
+                        qml.PauliX(0) @ qml.PauliY(1),
+                    ],
+                ),
+                qml.Hamiltonian(
+                    np.array([0.25, 0.25]),
+                    [qml.PauliX(0) @ qml.PauliY(1), qml.PauliX(0) @ qml.PauliZ(1)],
+                ),
             ),
-            qml.Hamiltonian(
-                np.array([0.25, 0.25]),
-                [qml.PauliX(0) @ qml.PauliY(1), qml.PauliX(0) @ qml.PauliZ(1)],
-            ),
-        ),
-    ]
+        ]
 
     @pytest.mark.usefixtures("legacy_opmath_only")
     @pytest.mark.parametrize(("hamiltonian", "result"), HAMILTONIAN_SIMPLIFY)

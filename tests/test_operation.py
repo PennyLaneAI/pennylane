@@ -3039,10 +3039,7 @@ def test_convert_to_hamiltonian_trivial(coeffs, obs):
     """Test that non-arithmetic operator after simplification is returned as an Observable"""
 
     opmath_instance = qml.dot(coeffs, obs)
-    with pytest.warns(
-        qml.PennyLaneDeprecationWarning, match="qml.ops.Hamiltonian uses the old approach"
-    ):
-        converted_opmath = convert_to_legacy_H(opmath_instance)
+    converted_opmath = convert_to_legacy_H(opmath_instance)
     assert isinstance(converted_opmath, qml.operation.Observable)
 
 

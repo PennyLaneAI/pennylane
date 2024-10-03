@@ -201,7 +201,12 @@ class TestSplitEvolOps:
             [0.4, 0.2], [qml.operation.Tensor(*[qml.PauliY(i) for i in range(4)]), qml.PauliX(0)]
         )
         with warnings.catch_warnings():
-            warnings.simplefilter("error")
+            warnings.filterwarnings("error")
+            warnings.filterwarnings(
+                "ignore",
+                "qml.operation.Tensor uses the old approach",
+                qml.PennyLaneDeprecationWarning,
+            )
             _split_evol_ops(op, ob, tau=0.4)
 
 
