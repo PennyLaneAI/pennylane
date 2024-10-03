@@ -4,6 +4,9 @@
 
 <h3>New features since last release</h3>
 
+* A new class `MomentumQNGOptimizer` is added. It inherits the basic `QNGOptimizer` class and requires one additional hyperparameter (the momentum coefficient) :math:`0 \leq \rho < 1`, the default value being :math:`\rho=0.9`. For :math:`\rho=0` Momentum-QNG reduces to the basic QNG.
+  [(#6240)](https://github.com/PennyLaneAI/pennylane/pull/6240)
+ 
 * Function is added for generating the spin Hamiltonian for the
   [Kitaev](https://arxiv.org/abs/cond-mat/0506438) model on a lattice.
   [(#6174)](https://github.com/PennyLaneAI/pennylane/pull/6174)
@@ -20,6 +23,10 @@
   Von Neumann entanglement entropy of a quantum state.
   [(#5911)](https://github.com/PennyLaneAI/pennylane/pull/5911)
 
+* A `has_sparse_matrix` property is added to `Operator` to indicate whether a sparse matrix is defined.
+  [(#6278)](https://github.com/PennyLaneAI/pennylane/pull/6278)
+  [(#6310)](https://github.com/PennyLaneAI/pennylane/pull/6310)
+
 <h3>Improvements 🛠</h3>
 
 * PennyLane is now compatible with NumPy 2.0.
@@ -34,13 +41,24 @@
 
 * The `diagonalize_measurements` transform now uses a more efficient method of diagonalization
   when possible, based on the `pauli_rep` of the relevant observables.
-  [#6113](https://github.com/PennyLaneAI/pennylane/pull/6113/)
+  [(#6113)](https://github.com/PennyLaneAI/pennylane/pull/6113/)
+
+* The `QuantumScript.copy` method now takes `operations`, `measurements`, `shots` and 
+  `trainable_params` as keyword arguments. If any of these are passed when copying a 
+  tape, the specified attributes will replace the copied attributes on the new tape.
+  [(#6285)](https://github.com/PennyLaneAI/pennylane/pull/6285)
 
 * The `Hermitian` operator now has a `compute_sparse_matrix` implementation.
   [(#6225)](https://github.com/PennyLaneAI/pennylane/pull/6225)
 
 * The `qml.Qubitization` template is now QJIT compatible.
   [(#6305)](https://github.com/PennyLaneAI/pennylane/pull/6305)
+
+* The number of diagonalizing gates returned in `qml.specs` now follows the `level` keyword argument 
+  regarding whether the diagonalizing gates are modified by device, instead of always counting 
+  unprocessed diagonalizing gates.
+  [(#6290)](https://github.com/PennyLaneAI/pennylane/pull/6290)
+
 
 <h4>Capturing and representing hybrid programs</h4>
 
@@ -58,6 +76,10 @@
 * Some custom primitives for the capture project can now be imported via
   `from pennylane.capture.primitives import *`.
   [(#6129)](https://github.com/PennyLaneAI/pennylane/pull/6129)
+
+* All higher order primitives now use `jax.core.Jaxpr` as metadata instead of sometimes
+  using `jax.core.ClosedJaxpr` and sometimes using `jax.core.Jaxpr`.
+  [(#6319)](https://github.com/PennyLaneAI/pennylane/pull/6319)
 
 * `FermiWord` class now has a method to apply anti-commutator relations.
    [(#6196)](https://github.com/PennyLaneAI/pennylane/pull/6196)
@@ -161,14 +183,25 @@
 
 <h3>Documentation 📝</h3>
 
+* Update `qml.Qubitization` documentation based on new decomposition.
+  [(#6276)](https://github.com/PennyLaneAI/pennylane/pull/6276)
+
+* Fixed examples in the documentation of a few optimizers.
+  [(#6303)](https://github.com/PennyLaneAI/pennylane/pull/6303)
+  [(#6315)](https://github.com/PennyLaneAI/pennylane/pull/6315)
+
 * Corrected examples in the documentation of `qml.jacobian`.
   [(#6283)](https://github.com/PennyLaneAI/pennylane/pull/6283)
+  [(#6315)](https://github.com/PennyLaneAI/pennylane/pull/6315)
 
 * Fixed spelling in a number of places across the documentation.
   [(#6280)](https://github.com/PennyLaneAI/pennylane/pull/6280)
 
 * Add `work_wires` parameter to `qml.MultiControlledX` docstring signature.
   [(#6271)](https://github.com/PennyLaneAI/pennylane/pull/6271)
+
+* Removed ambiguity in error raised by the `PauliRot` class.
+  [(#6298)](https://github.com/PennyLaneAI/pennylane/pull/6298)
 
 <h3>Bug fixes 🐛</h3>
 
@@ -203,12 +236,20 @@
 * Fixes a bug where a simple circuit with no parameters or only builtin/numpy arrays as parameters returns autograd tensors.
   [(#6225)](https://github.com/PennyLaneAI/pennylane/pull/6225)
 
+* `qml.pauli.PauliVSpace` now uses a more stable SVD-based linear independence check to avoid running into `LinAlgError: Singular matrix`. This stabilizes the usage of `qml.lie_closure`. It also introduces normalization of the basis vector's internal representation `_M` to avoid exploding coefficients.
+  [(#6232)](https://github.com/PennyLaneAI/pennylane/pull/6232)
+
+* Fixes a bug where `csc_dot_product` is used during measurement for `Sum`/`Hamiltonian` that contains observables that does not define a sparse matrix.
+  [(#6278)](https://github.com/PennyLaneAI/pennylane/pull/6278)
+  [(#6310)](https://github.com/PennyLaneAI/pennylane/pull/6310)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
 
 Guillermo Alonso,
 Utkarsh Azad,
+Oleksandr Borysenko,
 Astral Cai,
 Isaac De Vlugt,
 Diksha Dhawan,
@@ -216,6 +257,7 @@ Lillian M. A. Frederiksen,
 Pietropaolo Frisoni,
 Emiliano Godinez,
 Austin Huang,
+Korbinian Kottmann,
 Christina Lee,
 William Maxwell,
 Lee J. O'Riordan,
