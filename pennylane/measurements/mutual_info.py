@@ -172,7 +172,7 @@ class MutualInfoMP(StateMeasurement):
             density_matrix,
             indices0=list(self._wires[0]),
             indices1=list(self._wires[1]),
-            c_dtype=state.dtype,
+            c_dtype=density_matrix.dtype,
             base=self.log_base,
         )
 
