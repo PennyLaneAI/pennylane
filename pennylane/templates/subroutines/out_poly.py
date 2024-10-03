@@ -17,8 +17,6 @@ Contains the OutPoly template.
 
 import inspect
 
-import numpy as np
-
 import pennylane as qml
 from pennylane.operation import Operation
 
@@ -116,7 +114,7 @@ class OutPoly(Operation):
             output_wires = [6, 7, 8]
             work_wires = [9,10]
 
-            register_wires = [wires_x, wires_y, output_wires]
+            registers_wires = [wires_x, wires_y, output_wires]
 
 
             def f(x, y):
@@ -130,7 +128,7 @@ class OutPoly(Operation):
                 qml.BasisEmbedding(2, wires=wires_y)
 
                 # applying the polynomial
-                qml.OutPoly(f, register_wires, mod = 7, work_wires = work_wires)
+                qml.OutPoly(f, registers_wires, mod = 7, work_wires = work_wires)
 
                 return qml.sample(wires=output_wires)
 
@@ -206,12 +204,12 @@ class OutPoly(Operation):
             if key
             not in [
                 "f",
-                "register_wires",
+                "registers_wires",
             ]
         )
         return (
             self.hyperparameters["f"],
-            self.hyperparameters["register_wires"],
+            self.hyperparameters["registers_wires"],
         ), metadata
         metadata = tuple((key, value) for key, value in self.hyperparameters.items())
         return metadata
