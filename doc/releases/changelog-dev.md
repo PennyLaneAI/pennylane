@@ -4,6 +4,9 @@
 
 <h3>New features since last release</h3>
 
+* Function is added for user-facing circuit decomposition. 
+  [(#6334)](https://github.com/PennyLaneAI/pennylane/pull/6334)
+
 * Function is added for generating the spin Hamiltonian for the
   [Kitaev](https://arxiv.org/abs/cond-mat/0506438) model on a lattice.
   [(#6174)](https://github.com/PennyLaneAI/pennylane/pull/6174)
@@ -241,3 +244,4 @@ William Maxwell,
 Lee J. O'Riordan,
 Mudit Pandey,
 David Wierichs,
+Andrija Paurevic,
