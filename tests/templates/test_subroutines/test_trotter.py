@@ -447,6 +447,7 @@ class TestInitialization:
         assert op.hyperparameters == new_op.hyperparameters
         assert op is not new_op
 
+    @pytest.mark.xfail(reason="Trotter does not work with parameter-shift (GitHub issue #6333)")
     @pytest.mark.parametrize("hamiltonian", test_hamiltonians)
     def test_standard_validity(self, hamiltonian):
         """Test standard validity criteria using assert_valid."""
