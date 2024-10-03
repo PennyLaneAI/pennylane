@@ -12,14 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-A transform for decomposing quantum circuits into user defined gate sets. Offers an alternative to the more device-focused decompose transform. 
+A transform for decomposing quantum circuits into user defined gate sets. Offers an alternative to the more device-focused decompose transform.
 """
 # pylint: disable=protected-access, too-many-arguments
+
 
 import pennylane as qml
 from pennylane.operation import StatePrepBase
 from pennylane.tape import QuantumScript
 from pennylane.transforms.core import transform
+
 
 def null_postprocessing(results):
     """A postprocessing function returned by a transform that only converts the batch of results
@@ -27,12 +29,13 @@ def null_postprocessing(results):
     """
     return results[0]
 
+
 @transform
-def decompose(tape, gate_set = None, max_expansion = None):
-    """Decomposes operations found in a quantum circuit into a desired gate set. 
+def decompose(tape, gate_set=None, max_expansion=None):
+    """Decomposes operations found in a quantum circuit into a desired gate set.
 
     Args:
-        tape (QuantumScript or QNode or Callable): a quantum circuit. 
+        tape (QuantumScript or QNode or Callable): a quantum circuit.
         gate_set (Callable or set, optional): A set of decomposition gates or a condition they satisfy. Defaults to None.
         max_expansion (int, optional): The maximum depth of the expansion. Defaults to None.
 
@@ -40,23 +43,23 @@ def decompose(tape, gate_set = None, max_expansion = None):
         qnode (QNode) or quantum function (Callable) or tuple[List[QuantumScript], function]:
 
         The decomposed circuit. The output type is explained in :func:`qml.transform <pennylane.transform>`.
-    
+
     Raises:
-        Exception: Type defaults to ``qml.DeviceError``. 
+        Exception: Type defaults to ``qml.DeviceError``.
             Raised if an operator is not accepted and does not define a decomposition, or if
             the decomposition enters an infinite loop and raises a ``RecursionError``.
 
-    .. seealso:: :func:`~.pennylane.devices.preprocess.decompose` for a transform that performs the same job but is designed particularly for specific device architectures. 
+    .. seealso:: :func:`~.pennylane.devices.preprocess.decompose` for a transform that performs the same job but is designed particularly for specific device architectures.
 
     **Examples:**
-    
+
     >>> tape = qml.tape.QuantumScript([qml.IsingXX(1.2, wires=(0,1))], [qml.expval(qml.Z(0))])
     >>> batch, fn = decompose(tape, gate_set = {"CNOT", "RX", "RZ"})
     >>> batch[0].circuit
     [CNOT(wires=[0, 1]),
     RX(1.2, wires=[0]),
     CNOT(wires=[0, 1]),
-    expval(Z(0))] 
+    expval(Z(0))]
 
     >>> @partial(decompose, gate_set = lambda obj: len(obj.wires) <= 2)
     >>> @qml.qnode(device)
@@ -64,17 +67,17 @@ def decompose(tape, gate_set = None, max_expansion = None):
     >>>     qml.Toffoli(wires = range(2))
     >>>
     >>> print(qml.draw(circuit)())
-    0: ───────────╭●───────────╭●────╭●──T──╭●─┤  
-    1: ────╭●─────│─────╭●─────│───T─╰X──T†─╰X─┤  
-    2: ──H─╰X──T†─╰X──T─╰X──T†─╰X──T──H────────┤  
-    
+    0: ───────────╭●───────────╭●────╭●──T──╭●─┤
+    1: ────╭●─────│─────╭●─────│───T─╰X──T†─╰X─┤
+    2: ──H─╰X──T†─╰X──T─╰X──T†─╰X──T──H────────┤
+
     """
     if gate_set is None:
-        gate_set = set(qml.ops.__all__) 
-        
+        gate_set = set(qml.ops.__all__)
+
     if isinstance(gate_set, (list, tuple)):
-        gate_set = set(gate_set) 
-        
+        gate_set = set(gate_set)
+
     def decomposer(op):
         return op.decomposition()
 
@@ -85,10 +88,9 @@ def decompose(tape, gate_set = None, max_expansion = None):
             return True
         if isinstance(gate_set, set):
             return op.name in gate_set
-        else:
-            return gate_set(op)
+        return gate_set(op)
 
-    if tape.operations and isinstance(tape[0], StatePrepBase): 
+    if tape.operations and isinstance(tape[0], StatePrepBase):
         prep_op = [tape[0]]
     else:
         prep_op = []
@@ -113,7 +115,7 @@ def decompose(tape, gate_set = None, max_expansion = None):
             "Reached recursion limit trying to decompose operations. "
             "Operator decomposition may have entered an infinite loop."
         ) from e
-    
+
     tape = QuantumScript(prep_op + new_ops, tape.measurements, shots=tape.shots)
 
     return (tape,), null_postprocessing
