@@ -176,9 +176,11 @@
 
 * Fixed examples in the documentation of a few optimizers.
   [(#6303)](https://github.com/PennyLaneAI/pennylane/pull/6303)
+  [(#6315)](https://github.com/PennyLaneAI/pennylane/pull/6315)
 
 * Corrected examples in the documentation of `qml.jacobian`.
   [(#6283)](https://github.com/PennyLaneAI/pennylane/pull/6283)
+  [(#6315)](https://github.com/PennyLaneAI/pennylane/pull/6315)
 
 * Fixed spelling in a number of places across the documentation.
   [(#6280)](https://github.com/PennyLaneAI/pennylane/pull/6280)
