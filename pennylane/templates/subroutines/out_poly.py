@@ -95,7 +95,7 @@ class OutPoly(Operation):
 
     Args:
         f (callable): The polynomial function to be applied to the inputs. It must accept the same number of arguments as there are input registers.
-        register_wires (Sequence[int]): The wires corresponding to the input registers and the output register. The last argument should correspond to the output register.
+        registers_wires (Sequence[int]): A list with the wires corresponding to the input registers and the output register. The last argument should correspond to the output register.
         mod (int, optional): The modulus to use for the result. If not provided, it defaults to :math:`2^{n}`, where `n` is the number of qubits in the output register.
         work_wires (Sequence[int], optional): The auxiliary wires used for intermediate computation, if necessary. If `mod` is not a power of 2, two auxiliary work wires are required.
         id (str or None, optional): The name of the operation.
@@ -150,18 +150,18 @@ class OutPoly(Operation):
     grad_method = None
 
     def __init__(
-        self, f=None, register_wires=None, mod=None, work_wires=None, id=None
+        self, f=None, registers_wires=None, mod=None, work_wires=None, id=None
     ):  # pylint: disable=too-many-arguments
 
-        if register_wires is None or f is None:
+        if registers_wires is None or f is None:
             raise ValueError("The register wires and the function f must be provided.")
 
         num_work_wires = 0 if not work_wires else len(work_wires)
         if mod is None:
-            mod = 2 ** len(register_wires[-1])
-        elif mod != 2 ** len(register_wires[-1]) and num_work_wires != 2:
+            mod = 2 ** len(registers_wires[-1])
+        elif mod != 2 ** len(registers_wires[-1]) and num_work_wires != 2:
             raise ValueError(
-                f"If mod is not 2^{len(register_wires[-1])}, two work wires should be provided"
+                f"If mod is not 2^{len(registers_wires[-1])}, two work wires should be provided"
             )
 
         self.mod = mod
@@ -171,24 +171,24 @@ class OutPoly(Operation):
 
         self.hyperparameters["f"] = f
 
-        if len(inspect.signature(f).parameters) != len(register_wires) - 1:
+        if len(inspect.signature(f).parameters) != len(registers_wires) - 1:
             raise ValueError(
-                f"The function takes {len(inspect.signature(f).parameters)} input parameters but {len(register_wires) - 1} has provided."
+                f"The function takes {len(inspect.signature(f).parameters)} input parameters but {len(registers_wires) - 1} has provided."
             )
 
-        self.hyperparameters["register_wires"] = [
-            qml.wires.Wires(register) for register in register_wires
+        self.hyperparameters["registers_wires"] = [
+            qml.wires.Wires(register) for register in registers_wires
         ]
 
         self.hyperparameters["mod"] = mod
         self.hyperparameters["work_wires"] = qml.wires.Wires(work_wires) if work_wires else None
 
-        all_wires = sum([*self.hyperparameters["register_wires"]], start=[])
+        all_wires = sum([*self.hyperparameters["registers_wires"]], start=[])
 
         if work_wires:
             all_wires += work_wires
 
-        if len(all_wires) != sum(len(register) for register in register_wires) + num_work_wires:
+        if len(all_wires) != sum(len(register) for register in registers_wires) + num_work_wires:
             raise ValueError(
                 "None of the wires in a register must be contained in another register."
             )
@@ -213,6 +213,8 @@ class OutPoly(Operation):
             self.hyperparameters["f"],
             self.hyperparameters["register_wires"],
         ), metadata
+        metadata = tuple((key, value) for key, value in self.hyperparameters.items())
+        return metadata
 
     @classmethod
     def _unflatten(cls, data, metadata):
@@ -221,9 +223,9 @@ class OutPoly(Operation):
 
     def map_wires(self, wire_map: dict):
 
-        new_register_wires = [
+        new_registers_wires = [
             [wire_map[wire] for wire in input_wire]
-            for input_wire in self.hyperparameters["register_wires"]
+            for input_wire in self.hyperparameters["registers_wires"]
         ]
 
         new_work_wires = (
@@ -234,7 +236,7 @@ class OutPoly(Operation):
 
         return OutPoly(
             self.hyperparameters["f"],
-            new_register_wires,
+            new_registers_wires,
             mod=self.hyperparameters["mod"],
             work_wires=new_work_wires,
         )
@@ -252,30 +254,28 @@ class OutPoly(Operation):
         f = kwargs["f"]
         mod = kwargs["mod"]
 
-        register_wires = kwargs["register_wires"]
+        registers_wires = kwargs["registers_wires"]
         work_wires = kwargs["work_wires"]
 
         list_ops = []
 
         output_adder_mod = (
-            [work_wires[0]] + register_wires[-1] if work_wires else register_wires[-1]
+            [work_wires[0]] + registers_wires[-1] if work_wires else registers_wires[-1]
         )
         list_ops.append(qml.QFT(wires=output_adder_mod))
 
-        wires_vars = [len(w) for w in register_wires[:-1]]
+        wires_vars = [len(w) for w in registers_wires[:-1]]
 
         coeffs_list = _get_coefficients_and_controls(f, mod, *wires_vars)
 
         for item in coeffs_list:
-            if np.isclose(coeffs_list[item], 0.0):
-                continue
 
-            # Bias
             if not 1 in item:
+                # Add the independent term
                 list_ops.append(qml.PhaseAdder(int(coeffs_list[item]), output_adder_mod))
                 continue
 
-            all_wires_input = sum([*register_wires[:-1]], start=[])
+            all_wires_input = sum([*registers_wires[:-1]], start=[])
 
             controls = [all_wires_input[i] for i, bit in enumerate(item) if bit == 1]
 

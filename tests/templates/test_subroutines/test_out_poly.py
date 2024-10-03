@@ -17,6 +17,7 @@ Tests for the OutPoly template.
 
 import pytest
 import pennylane as qml
+
 from pennylane import numpy as np
 from pennylane.templates.subroutines.out_poly import (
     _binary_to_decimal,
@@ -143,7 +144,7 @@ class TestOutPoly:
         with pytest.raises(ValueError, match="The register wires and the function f"):
 
             qml.OutPoly(
-                register_wires=[[0, 1], [2, 3]],
+                registers_wires=[[0, 1], [2, 3]],
             )
 
         with pytest.raises(ValueError, match="The register wires and the function f"):
