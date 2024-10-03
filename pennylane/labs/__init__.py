@@ -11,5 +11,5 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""This folder contains experimental features which may not be fully compatible 
+"""This folder contains experimental features which may not be fully compatible
 with the entire PennyLane codebase. Use at your own discretion."""
