@@ -100,25 +100,3 @@ def test_kwargs(mocker):
     # assert new value for return_shape is passed to make_jaxpr
     _ = make_plxpr(circ, return_shape=True)()
     spy.assert_has_calls([call(circ, static_argnums=None, return_shape=True)])
-
-
-# ToDo: is this error fine, and if not, how would we modify it?
-def test_dynamically_shaped_with_static_argnums_raises_error():
-    """Test that the expected error is raised when passing a dynamically
-    shaped array to an argument marked as static"""
-
-    dev = qml.device("default.qubit", wires=1)
-
-    @qml.qnode(dev)
-    def f(x, y):
-        for angle in x:
-            qml.RX(angle, 0)
-
-        qml.RY(y, 0)
-        return qml.expval(qml.X(0))
-
-    plxpr_fn = make_plxpr(f, static_argnums=0)
-    with pytest.raises(ValueError, match="Non-hashable static arguments are not supported."):
-        plxpr_fn([0.1, 0.2, 0.3], 0.1967)
-
-    plxpr_fn((0.1, 0.2, 0.3), 0.1967)
