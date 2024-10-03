@@ -92,7 +92,6 @@ jobs:
         env:
           HEAD_BRANCH_NAME: ${{ inputs.pull_request_head_branch_name }}
           COMMIT_MESSAGE_DESCRIPTION: ${{ inputs.commit_message_description != '' && format('-> {0}', inputs.commit_message_description) || '' }}
-          # COMMIT_MESSAGE_DESCRIPTION: ${{ inputs.commit_message_description != "" && format(": {0}", inputs.commit_message_description) || "" }}
         run: |
           git add ${{ inputs.artifact_save_path }}
           git commit -m "Check in artifacts$COMMIT_MESSAGE_DESCRIPTION"
