@@ -86,7 +86,7 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
     iteration, and across the life of the optimizer, respectively.
 
     >>> shape = qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=2)
-    >>> params = pnp.random.random(shape)
+    >>> params = np.random.random(shape)
     >>> opt = qml.ShotAdaptiveOptimizer(min_shots=10, term_sampling="weighted_random_sampling")
     >>> for i in range(60):
     ...    params = opt.step(cost, params)

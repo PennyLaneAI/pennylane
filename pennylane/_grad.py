@@ -316,7 +316,7 @@ def jacobian(func, argnum=None, method=None, h=None):
     .. code-block::
 
         import pennylane as qml
-        from pennylane import numpy as pnp
+        from pennylane import numpy as np
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -327,7 +327,7 @@ def jacobian(func, argnum=None, method=None, h=None):
             qml.RZ(weights[1, 0, 2], wires=0)
             return qml.probs()
 
-        weights = pnp.array([[[0.2, 0.9, -1.4]], [[0.5, 0.2, 0.1]]], requires_grad=True)
+        weights = np.array([[[0.2, 0.9, -1.4]], [[0.5, 0.2, 0.1]]], requires_grad=True)
 
     It has a single array-valued QNode argument with shape ``(2, 1, 3)`` and outputs
     the probability of each 2-wire basis state, of which there are ``2**num_wires`` = 4.
@@ -348,9 +348,9 @@ def jacobian(func, argnum=None, method=None, h=None):
             qml.RZ(z, wires=0)
             return qml.probs()
 
-        x = pnp.array(0.2, requires_grad=True)
-        y = pnp.array(0.9, requires_grad=True)
-        z = pnp.array(-1.4, requires_grad=True)
+        x = np.array(0.2, requires_grad=True)
+        y = np.array(0.9, requires_grad=True)
+        z = np.array(-1.4, requires_grad=True)
 
     It has three scalar QNode arguments and outputs the probability for each of
     the 4 basis states. Consequently, its Jacobian will be a three-tuple of
@@ -378,8 +378,8 @@ def jacobian(func, argnum=None, method=None, h=None):
             qml.RX(x[1], wires=2)
             return qml.probs()
 
-        x = pnp.array([0.1, 0.5], requires_grad=True)
-        y = pnp.array([[-0.3, 1.2, 0.1, 0.9], [-0.2, -3.1, 0.5, -0.7]], requires_grad=True)
+        x = np.array([0.1, 0.5], requires_grad=True)
+        y = np.array([[-0.3, 1.2, 0.1, 0.9], [-0.2, -3.1, 0.5, -0.7]], requires_grad=True)
 
     If we do not provide ``argnum``, ``qml.jacobian`` will correctly identify both,
     ``x`` and ``y``, as trainable function arguments:
@@ -431,14 +431,14 @@ def jacobian(func, argnum=None, method=None, h=None):
         def workflow(x):
             @qml.qnode(dev)
             def circuit(x):
-                qml.RX(pnp.pi * x[0], wires=0)
+                qml.RX(np.pi * x[0], wires=0)
                 qml.RY(x[1], wires=0)
                 return qml.probs()
 
             g = qml.jacobian(circuit)
             return g(x)
 
-    >>> workflow(pnp.array([2.0, 1.0]))
+    >>> workflow(np.array([2.0, 1.0]))
     Array([[ 3.48786850e-16, -4.20735492e-01],
            [-8.71967125e-17,  4.20735492e-01]], dtype=float64)
 
@@ -451,14 +451,14 @@ def jacobian(func, argnum=None, method=None, h=None):
         def workflow(x):
             @qml.qnode(dev)
             def circuit(x):
-                qml.RX(pnp.pi * x[0], wires=0)
+                qml.RX(np.pi * x[0], wires=0)
                 qml.RY(x[1], wires=0)
                 return qml.probs()
 
             g = qml.jacobian(circuit, method="fd", h=0.3)
             return g(x)
 
-    >>> workflow(pnp.array([2.0, 1.0]))
+    >>> workflow(np.array([2.0, 1.0]))
     Array([[-0.03996468, -0.42472435],
            [ 0.03996468,  0.42472435]], dtype=float64)
 
