@@ -11,6 +11,5 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-""":code:`pennylane/labs/` module contains experimental features straight from
-the cutting-edge of quantum computing research and software design. As is the nature
-of new science, these features are experiments, meant to be handled with care!"""
+""":code:`pennylane/labs/` module contains experimental features enabling 
+advanced quantum computing research."""
