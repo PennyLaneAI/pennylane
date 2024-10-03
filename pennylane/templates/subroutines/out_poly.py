@@ -22,113 +22,50 @@ import numpy as np
 import pennylane as qml
 from pennylane.operation import Operation
 
-import itertools
+
+def _binary_to_decimal(binary_list):
+    """Convert a binary list to its decimal value."""
+    return sum(val * (2**idx) for idx, val in enumerate(reversed(binary_list)))
 
 
-def subsets_with_fixed_zeros(bin_list):
-    """
-    Generate all subsets from a binary list where zeros remain fixed.
-
-    Args:
-        bin_list (list): A list of binary values (0s and 1s).
-
-    Returns:
-        list: A list of subsets where zeros remain in their original positions.
-    """
-    # Find positions of ones (1s)
-    ones_positions = [i for i, bit in enumerate(bin_list) if bit == 1]
-
-    # Generate all possible combinations of 0s and 1s for the positions of ones
-    ones_combinations = itertools.product([0, 1], repeat=len(ones_positions))
-
-    # Create subsets while keeping zeros fixed
-    subsets = []
-    for combination in ones_combinations:
-        new_list = bin_list[:]  # Create a copy of the original list
-        for i, value in zip(ones_positions, combination):
-            new_list[i] = value  # Set the values of the combination in the positions of ones
-
-        # Exclude the original list itself
-        if new_list != bin_list:
-            subsets.append(new_list)
-
-    return subsets
+def _decimal_to_binary_list(n, length):
+    """Convert a decimal number to a binary list of a given length."""
+    return [int(x) for x in bin(n)[2:].zfill(length)]
 
 
-def generate_combinations(n, m):
-    """
-    Generate all unique permutations of binary lists with n elements and m ones.
-
-    Args:
-        n (int): Total number of elements.
-        m (int): Number of ones in the list.
-
-    Returns:
-        list: A list of unique binary combinations.
-    """
-    # Create a list with n-m zeros and m ones
-    base = [0] * (n - m) + [1] * m
-
-    # Get all unique permutations of the base list
-    combinations = set(itertools.permutations(base))
-
-    # Convert to a list of lists for easier handling
-    return [list(combination) for combination in combinations]
-
-
-def binary_to_decimal(binary_list):
-    """
-    Convert a binary list to its decimal value.
-
-    Args:
-        binary_list (list): A list of binary digits (0s and 1s).
-
-    Returns:
-        int: The decimal value of the binary list.
-    """
-    binary_list.reverse()
-    return sum(val * (2**idx) for idx, val in enumerate(binary_list))
-
-
-def get_coefficients_and_controls(f, mod, *wire_lengths):
-    """
-    Calculate the coefficients and controls for a given function and wire configuration.
-
-    Args:
-        f (callable): A function that takes a variable number of arguments.
-        *wire_lengths (int): The number of binary wires (bits) assigned to each argument of the function.
-
-    Returns:
-        dict: A dictionary with the binary combinations as keys and their corresponding function values as values.
-    """
-    coeffs_dict = {}
+def _get_coefficients_and_controls(f, mod, *wire_lengths):
+    """Calculate the coefficients and controls for a given function and wire configuration using Fast Möbius Transform."""
     total_wires = sum(wire_lengths)
+    num_combinations = 2**total_wires  # Total number of combinations (2^total_wires)
 
-    for i in range(total_wires):
-        combs = generate_combinations(total_wires, i)
+    # Compute function values for all combinations
+    f_values = [0] * num_combinations
+    for s in range(num_combinations):
+        bin_list = _decimal_to_binary_list(s, total_wires)
 
-        for comb in combs:
-            comb_tuple = tuple(comb)
+        # Split bin_list into arguments based on wire_lengths
+        args_values = []
+        start = 0
+        for wire_length in wire_lengths:
+            arg_value = _binary_to_decimal(bin_list[start : start + wire_length])
+            args_values.append(arg_value)
+            start += wire_length
 
-            # Divide the combination into parts for each argument based on wire_lengths
-            args_values = []
-            start = 0
-            for wire_length in wire_lengths:
-                arg_value = binary_to_decimal(comb[start : start + wire_length])
-                args_values.append(arg_value)
-                start += wire_length
+        f_values[s] = f(*args_values) % mod
 
-            # Call the function f with the calculated argument values
-            coeffs_dict[comb_tuple] = f(*args_values)
+    # Compute the Möbius transform of f_values
+    n = total_wires
+    for i in range(n):
+        for mask in range(num_combinations):
+            if mask & (1 << i):
+                f_values[mask] = (f_values[mask] - f_values[mask ^ (1 << i)]) % mod
 
-            # Subtract values from subsets where zeros remain fixed
-            subtract_value = 0
-            for subset in subsets_with_fixed_zeros(comb):
-                subset_tuple = tuple(subset)
-                if subset_tuple in coeffs_dict:
-                    subtract_value += coeffs_dict[subset_tuple]
-
-            coeffs_dict[comb_tuple] = (coeffs_dict[comb_tuple] - subtract_value) % mod
+    coeffs_dict = {}
+    for s in range(num_combinations):
+        if f_values[s] != 0:
+            # Convert s to binary tuple
+            bin_tuple = tuple(_decimal_to_binary_list(s, total_wires))
+            coeffs_dict[bin_tuple] = f_values[s]
 
     return coeffs_dict
 
@@ -144,7 +81,7 @@ class OutPoly(Operation):
 
     .. math::
 
-        \text{OutPoly}(f, \text{mod}) |x_1 \rangle \dots |x_m \rangle |0 \rangle
+        \text{OutPoly}_{f, \text{mod}} |x_1 \rangle \dots |x_m \rangle |0 \rangle
         = |x_1 \rangle \dots |x_m \rangle |f(x_1, \dots, x_m) \mod \text{mod} \rangle.
 
     This operation leaves the input registers unchanged and stores the result of the
@@ -169,44 +106,42 @@ class OutPoly(Operation):
         ValueError: If the wires used in the input and output registers overlap.
 
     Example:
-        Given a polynomial function :math:`f(x, y, z) = x^2 + yxz^5 - z^3 + 3` with a modulus 7,
+        Given a polynomial function :math:`f(x, y) = x^2 + y` with a modulus 7,
         we can apply this operation as follows:
 
         .. code-block:: python
 
-            import pennylane as qml
+            wires_x = [0, 1, 2]
+            wires_y = [3, 4, 5]
+            output_wires = [6, 7, 8]
+            work_wires = [9,10]
 
-            wires = qml.registers({"x": 3, "y": 3, "z": 3, "output": 3, "work": 2})
+            register_wires = [wires_x, wires_y, output_wires]
 
-            def f(x, y, z):
-                return x**2 + y*x*z**5 - z**3 + 3
 
-            x, y, z = 1, 2, 3
-            mod = 7
+            def f(x, y):
+                return x ** 2 + y
 
-            dev = qml.device("default.qubit", wires=14)
 
-            @qml.qnode(dev)
+            @qml.qnode(qml.device("default.qubit", shots = 1))
             def circuit():
-
-                # loading values for x, y and z
-                qml.BasisEmbedding(x, wires=wires["x"])
-                qml.BasisEmbedding(y, wires=wires["y"])
-                qml.BasisEmbedding(z, wires=wires["z"])
+                # loading values for x and y
+                qml.BasisEmbedding(3, wires=wires_x)
+                qml.BasisEmbedding(2, wires=wires_y)
 
                 # applying the polynomial
-                qml.OutPoly(
-                f,
-                [wires["x"], wires["y"], wires["z"], wires["output"]],
-                mod=6,
-                work_wires=wires["work"],
-                )
-                return qml.sample(wires = wires["output"])
+                qml.OutPoly(f, register_wires, mod = 7, work_wires = work_wires)
+
+                return qml.sample(wires=output_wires)
+
+            print(circuit())
 
         .. code-block:: pycon
 
             >>> print(circuit())
-            [0 0 1]
+            [1 0 0]
+
+        The result, :math:`[1 0 0]`, is the binary representation of :math:`3^2 + 2  \; \text{modulo} \; 7 = 4`.
 
     .. seealso:: :class:`~.PhaseAdder`
 
@@ -329,7 +264,7 @@ class OutPoly(Operation):
 
         wires_vars = [len(w) for w in register_wires[:-1]]
 
-        coeffs_list = get_coefficients_and_controls(f, mod, *wires_vars)
+        coeffs_list = _get_coefficients_and_controls(f, mod, *wires_vars)
 
         for item in coeffs_list:
             if np.isclose(coeffs_list[item], 0.0):
