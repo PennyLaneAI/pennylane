@@ -264,11 +264,11 @@ class OutPoly(Operation):
 
         coeffs_list = _get_coefficients_and_controls(f, mod, *wires_vars)
 
-        for item in coeffs_list:
+        for item, coeff in coeffs_list.items():
 
             if not 1 in item:
                 # Add the independent term
-                list_ops.append(qml.PhaseAdder(int(coeffs_list[item]), output_adder_mod))
+                list_ops.append(qml.PhaseAdder(int(coeff), output_adder_mod))
                 continue
 
             all_wires_input = sum([*registers_wires[:-1]], start=[])
@@ -279,7 +279,7 @@ class OutPoly(Operation):
                 list_ops.append(
                     qml.ctrl(
                         qml.PhaseAdder(
-                            int(coeffs_list[item]) % mod,
+                            int(coeff) % mod,
                             output_adder_mod,
                             work_wire=work_wires[1],
                             mod=mod,
@@ -290,7 +290,7 @@ class OutPoly(Operation):
             else:
                 list_ops.append(
                     qml.ctrl(
-                        qml.PhaseAdder(int(coeffs_list[item]) % mod, output_adder_mod),
+                        qml.PhaseAdder(int(coeff) % mod, output_adder_mod),
                         control=controls,
                     )
                 )

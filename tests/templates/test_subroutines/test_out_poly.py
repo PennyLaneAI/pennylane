@@ -16,8 +16,8 @@ Tests for the OutPoly template.
 """
 
 import pytest
-import pennylane as qml
 
+import pennylane as qml
 from pennylane import numpy as np
 from pennylane.templates.subroutines.out_poly import (
     _binary_to_decimal,
