@@ -14,7 +14,7 @@
 """
 This submodule tests strategy structure for defining custom plxpr interpreters
 """
-# pylint: disable=protected-access
+# pylint: disable=protected-access, too-few-public-methods
 import pytest
 
 import pennylane as qml
@@ -22,9 +22,7 @@ import pennylane as qml
 jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
 
-from pennylane.capture.base_interpreter import (  # pylint: disable=wrong-import-position
-    PlxprInterpreter,
-)
+from pennylane.capture import PlxprInterpreter  # pylint: disable=wrong-import-position
 from pennylane.capture.primitives import (  # pylint: disable=wrong-import-position
     adjoint_transform_prim,
     cond_prim,
@@ -187,6 +185,16 @@ def test_cleanup_method():
 
     f(0.5)
     assert inst.state is None
+
+
+def test_returning_operators():
+    """Test that operators that are returned are still processed by the interpreter."""
+
+    @SimplifyInterpreter()
+    def f():
+        return qml.X(0) ** 2
+
+    qml.assert_equal(f(), qml.I(0))
 
 
 class TestHigherOrderPrimitiveRegistrations:

@@ -15,7 +15,7 @@
 This submodule defines a strategy structure for defining custom plxpr interpreters
 """
 
-import copy
+from copy import copy
 from functools import partial, wraps
 from typing import Callable
 
@@ -83,7 +83,16 @@ class PlxprInterpreter:
     >>> interpreter.eval(jaxpr.jaxpr, [], 0.5)
     [expval(2.0 * X(0))]
 
-    It will also preserve higher order primitives by default:
+    **Handling higher order primitives:**
+
+    Two main strategies exist for handling higher order primitives (primitives with jaxpr as metatdata).
+
+    1) Structure preserving. Tracing the execution preserves the higher order primitive.
+    2) Structure flattening. Tracing the execution eliminates the higher order primitive.
+
+    Compilation transforms, like the above ``SimplifyInterpreter``, may prefer to handle higher order primitives
+    via a structure preserving method. After transforming the jaxpr, the `for_loop` still exists. This maintains
+    the compact structure of the jaxpr and reduces the size of the program. This behavior is the default.
 
     >>> def g(x):
     ...     @qml.for_loop(3)
@@ -107,6 +116,45 @@ class PlxprInterpreter:
         h:AbstractMeasurement(n_wires=None) = expval_obs g
     in (h,) }
 
+    Accumulation transforms, like device execution or conversion to tapes, may need to flatten out
+    the higher order primitive to execute it.
+
+    .. code-block:: python
+
+        class AccumulateOps(PlxprInterpreter):
+
+            def __init__(self, ops=None):
+                self.ops = ops
+
+            def setup(self):
+                if self.ops is None:
+                    self.ops = []
+
+            def interpret_operation(self, op):
+                self.ops.append(op)
+
+        @AccumulateOps.register_primitive(qml.capture.primitives.for_loop_prim)
+        def _(self, *invals, jaxpr_body_fn, n_consts):
+            start, stop, step = invals[0], invals[1], invals[2]
+            consts = invals[3 : 3 + n_consts]
+            state = invals[3 + n_consts :]
+
+            for i in range(start, stop, step):
+                state = copy(self).eval(jaxpr_body_fn, consts, i, *state)
+            return state
+
+    >>> @qml.for_loop(3)
+    ... def loop(i, x):
+    ...     qml.RX(x, i)
+    ...     return x
+    >>> accumulator = AccumlateOps()
+    >>> accumulator(loop)(0.5)
+    >>> accumulator.ops
+    [RX(0.5, wires=[0]), RX(0.5, wires=[1]), RX(0.5, wires=[2])]
+
+    In this case, we need to actually evaluate the jaxpr 3 times using our interpreter. If jax's
+    evalutation interpreter ran it three times, we wouldn't actually manage to accumulate the operations.
+
 
     """
 
@@ -115,7 +163,7 @@ class PlxprInterpreter:
     _op_math_cache: dict
 
     def __init_subclass__(cls) -> None:
-        cls._primitive_registrations = copy.copy(cls._primitive_registrations)
+        cls._primitive_registrations = copy(cls._primitive_registrations)
 
     def __init__(self):
         self._env = {}
@@ -154,8 +202,6 @@ class PlxprInterpreter:
     # pylint: disable=unidiomatic-typecheck
     def read(self, var):
         """Extract the value corresponding to a variable."""
-        if self._env is None:
-            raise ValueError("_env not yet initialized.")
         if type(var) is jax.core.Literal:
             return var.val
         return self._op_math_cache.get(var, self._env[var])
@@ -332,7 +378,7 @@ def handle_for_loop(self, *invals, jaxpr_body_fn, n_consts):
     consts = invals[3 : 3 + n_consts]
     init_state = invals[3 + n_consts :]
 
-    new_jaxpr_body_fn = jaxpr_to_jaxpr(type(self)(), jaxpr_body_fn, consts, start, *init_state)
+    new_jaxpr_body_fn = jaxpr_to_jaxpr(copy(self), jaxpr_body_fn, consts, start, *init_state)
 
     return for_loop_prim.bind(*invals, jaxpr_body_fn=new_jaxpr_body_fn, n_consts=n_consts)
 
@@ -352,7 +398,7 @@ def handle_cond(self, *invals, jaxpr_branches, n_consts_per_branch, n_args):
         if jaxpr is None:
             new_jaxprs.append(None)
         else:
-            new_jaxprs.append(jaxpr_to_jaxpr(type(self)(), jaxpr, consts, *args))
+            new_jaxprs.append(jaxpr_to_jaxpr(copy(self), jaxpr, consts, *args))
 
     return cond_prim.bind(
         *invals, jaxpr_branches=new_jaxprs, n_consts_per_branch=n_consts_per_branch, n_args=n_args
@@ -366,8 +412,8 @@ def handle_while_loop(self, *invals, jaxpr_body_fn, jaxpr_cond_fn, n_consts_body
     consts_cond = invals[n_consts_body : n_consts_body + n_consts_cond]
     init_state = invals[n_consts_body + n_consts_cond :]
 
-    new_jaxpr_body_fn = jaxpr_to_jaxpr(type(self)(), jaxpr_body_fn, consts_body, *init_state)
-    new_jaxpr_cond_fn = jaxpr_to_jaxpr(type(self)(), jaxpr_cond_fn, consts_cond, *init_state)
+    new_jaxpr_body_fn = jaxpr_to_jaxpr(copy(self), jaxpr_body_fn, consts_body, *init_state)
+    new_jaxpr_cond_fn = jaxpr_to_jaxpr(copy(self), jaxpr_cond_fn, consts_cond, *init_state)
 
     return while_loop_prim.bind(
         *invals,
@@ -384,7 +430,7 @@ def handle_qnode(self, *invals, shots, qnode, device, qnode_kwargs, qfunc_jaxpr,
     """Handle a qnode primitive."""
     consts = invals[:n_consts]
 
-    new_qfunc_jaxpr = jaxpr_to_jaxpr(type(self)(), qfunc_jaxpr, consts, *invals[n_consts:])
+    new_qfunc_jaxpr = jaxpr_to_jaxpr(copy(self), qfunc_jaxpr, consts, *invals[n_consts:])
 
     return qnode_prim.bind(
         *invals,
@@ -402,7 +448,7 @@ def handle_grad(self, *invals, jaxpr, n_consts, **params):
     """Handle the grad primitive."""
     consts = invals[:n_consts]
     args = invals[n_consts:]
-    new_jaxpr = jaxpr_to_jaxpr(type(self)(), jaxpr, consts, *args)
+    new_jaxpr = jaxpr_to_jaxpr(copy(self), jaxpr, consts, *args)
     return grad_prim.bind(*invals, jaxpr=new_jaxpr, n_consts=n_consts, **params)
 
 
@@ -411,5 +457,5 @@ def handle_jacobian(self, *invals, jaxpr, n_consts, **params):
     """Handle the jacobian primitive."""
     consts = invals[:n_consts]
     args = invals[n_consts:]
-    new_jaxpr = jaxpr_to_jaxpr(type(self)(), jaxpr, consts, *args)
+    new_jaxpr = jaxpr_to_jaxpr(copy(self), jaxpr, consts, *args)
     return jacobian_prim.bind(*invals, jaxpr=new_jaxpr, n_consts=n_consts, **params)
