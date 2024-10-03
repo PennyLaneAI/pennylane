@@ -151,6 +151,8 @@ from pennylane.devices.device_constructor import device, refresh_devices
 
 import pennylane.spin
 
+import pennylane.labs
+
 # Look for an existing configuration file
 default_config = Configuration("config.toml")
 
