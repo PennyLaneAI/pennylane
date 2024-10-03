@@ -211,8 +211,6 @@ class OutPoly(Operation):
             self.hyperparameters["f"],
             self.hyperparameters["registers_wires"],
         ), metadata
-        metadata = tuple((key, value) for key, value in self.hyperparameters.items())
-        return metadata
 
     @classmethod
     def _unflatten(cls, data, metadata):
