@@ -487,3 +487,77 @@ class TestWires:
 
         expected = Wires([0, 1, 2, 3, 4, 5, 6, 7])
         assert result == expected
+
+
+class TestWiresJax:
+    """Tests the support for JAX arrays in the ``Wires`` class."""
+
+    jax = pytest.importorskip("jax")
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize(
+        "iterable, expected",
+        [
+            (jax.numpy.array([0, 1, 2]), (0, 1, 2)),
+            (jax.numpy.array([0]), (0,)),
+            (jax.numpy.array(0), (0,)),
+            (jax.numpy.array([]), ()),
+        ],
+    )
+    def test_creation_from_jax_array(self, iterable, expected):
+        """Tests that a Wires object can be created from a JAX array."""
+        wires = Wires(iterable)
+        assert wires.labels == expected
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize(
+        "input",
+        [
+            [jax.numpy.array([0, 1, 2]), jax.numpy.array([3, 4])],
+            [jax.numpy.array([0, 1, 2]), 3],
+            jax.numpy.array([[0, 1, 2]]),
+            jax.numpy.array([[[0, 1], [2, 3]]]),
+            jax.numpy.array([[[[0]]]]),
+        ],
+    )
+    def test_error_for_incorrect_jax_arrays(self, input):
+        """Tests that a Wires object cannot be created from incorrect JAX arrays."""
+        with pytest.raises(WireError, match="Wires must be hashable"):
+            Wires(input)
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("iterable", [jax.numpy.array([4, 1, 1, 3]), jax.numpy.array([0, 0])])
+    def test_error_for_repeated_wires_jax(self, iterable):
+        """Tests that a Wires object cannot be created from a JAX array with repeated indices."""
+        with pytest.raises(WireError, match="Wires must be unique"):
+            Wires(iterable)
+
+    @pytest.mark.jax
+    def test_array_representation_jax(self):
+        """Tests that Wires object has an array representation with JAX."""
+
+        # pylint: disable=import-outside-toplevel
+        import jax
+
+        wires = Wires([4, 0, 1])
+        array = jax.numpy.array(wires.labels)
+        assert isinstance(array, jax.numpy.ndarray)
+        assert array.shape == (3,)
+        for w1, w2 in zip(array, jax.numpy.array([4, 0, 1])):
+            assert w1 == w2
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize(
+        "source", [jax.numpy.array([0, 1, 2]), jax.numpy.array([0]), jax.numpy.array(0)]
+    )
+    def test_jax_wires_pytree(self, source):
+        """Test that Wires class supports the PyTree flattening interface with JAX arrays."""
+
+        # pylint: disable=import-outside-toplevel
+        import jax
+
+        wires = Wires(source)
+        wires_flat, tree = jax.tree_util.tree_flatten(wires)
+        wires2 = jax.tree_util.tree_unflatten(tree, wires_flat)
+        assert isinstance(wires2, Wires), f"{wires2} is not Wires"
+        assert wires == wires2, f"{wires} != {wires2}"
