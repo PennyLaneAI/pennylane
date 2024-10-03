@@ -144,6 +144,15 @@ class ExpectationMP(SampleMeasurement, StateMeasurement):
             probs = qml.probs(wires=self.wires).process_counts(counts=counts, wire_order=wire_order)
         return self._calculate_expectation(probs)
 
+    def process_density_matrix(self, density_matrix: Sequence[complex], wire_order: Wires):
+        if not self.wires:
+            return qml.math.squeeze(self.eigvals())
+        with qml.queuing.QueuingManager.stop_recording():
+            prob = qml.probs(wires=self.wires).process_density_matrix(
+                density_matrix=density_matrix, wire_order=wire_order
+            )
+        return self._calculate_expectation(prob)
+
     def _calculate_expectation(self, probabilities):
         """
         Calculate the of expectation set of probabilities.
