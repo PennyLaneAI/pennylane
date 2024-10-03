@@ -21,6 +21,14 @@ import pennylane as qml
 from pennylane.wires import WireError, Wires
 
 
+try:
+    import jax
+
+    has_jax = True
+except ImportError:
+    has_jax = False
+
+
 # pylint: disable=too-many-public-methods
 class TestWires:
     """Tests for the ``Wires`` class."""
@@ -489,10 +497,9 @@ class TestWires:
         assert result == expected
 
 
+@pytest.mark.skipif(not has_jax, reason="JAX is not installed")
 class TestWiresJax:
     """Tests the support for JAX arrays in the ``Wires`` class."""
-
-    jax = pytest.importorskip("jax")
 
     @pytest.mark.jax
     @pytest.mark.parametrize(
@@ -536,9 +543,6 @@ class TestWiresJax:
     def test_array_representation_jax(self):
         """Tests that Wires object has an array representation with JAX."""
 
-        # pylint: disable=import-outside-toplevel
-        import jax
-
         wires = Wires([4, 0, 1])
         array = jax.numpy.array(wires.labels)
         assert isinstance(array, jax.numpy.ndarray)
@@ -552,9 +556,6 @@ class TestWiresJax:
     )
     def test_jax_wires_pytree(self, source):
         """Test that Wires class supports the PyTree flattening interface with JAX arrays."""
-
-        # pylint: disable=import-outside-toplevel
-        import jax
 
         wires = Wires(source)
         wires_flat, tree = jax.tree_util.tree_flatten(wires)
