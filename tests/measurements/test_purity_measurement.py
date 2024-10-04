@@ -73,7 +73,7 @@ class TestPurityUnitTest:
         assert meas.shape(shots, 1) == shape
 
     @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "tensorflow"])
+    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "tensorflow", "autograd"])
     def test_process_density_matrix_pure_state(self, interface):
         """Test purity calculation for a pure single-qubit state."""
         dm = qml.math.array([[1, 0], [0, 0]], like=interface)
@@ -88,7 +88,7 @@ class TestPurityUnitTest:
         assert qml.math.allclose(purity, expected, atol=atol), f"Expected {expected}, got {purity}"
 
     @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "tensorflow"])
+    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "tensorflow", "autograd"])
     @pytest.mark.parametrize(
         "subset_wires, expected_purity",
         [

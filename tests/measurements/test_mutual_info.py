@@ -99,7 +99,7 @@ class TestMutualInfoUnitTests:
             qml.mutual_info(wires0=[0], wires1=[0, 1]).process_density_matrix(dm, wires)
 
     @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "tensorflow"])
+    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "tensorflow", "autograd"])
     @pytest.mark.parametrize(
         "wires0, wires1, log_base, expected_mutual_info",
         [

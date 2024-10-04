@@ -117,7 +117,7 @@ class TestInitialization:
         assert meas.shape(shots, 1) == shape
 
     @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "tensorflow"])
+    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "tensorflow", "autograd"])
     @pytest.mark.parametrize(
         "subset_wires, log_base, expected_entropy",
         [
