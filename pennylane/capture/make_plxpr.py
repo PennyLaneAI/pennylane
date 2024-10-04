@@ -14,7 +14,7 @@
 
 """The make_plxpr function and helper methods"""
 
-from typing import Sequence, Union
+from typing import Callable, Sequence, Union
 
 has_jax = True
 try:
@@ -23,7 +23,7 @@ except ImportError:
     has_jax = False
 
 
-def make_plxpr(circuit: "qml.QNode", static_argnums: Union[int, Sequence[int]] = (), **kwargs):
+def make_plxpr(func: Callable, static_argnums: Union[int, Sequence[int]] = (), **kwargs):
     r"""Takes a QNode and returns a function that, when called, produces a PLxPR representing
     the QNode with the given args.
 
@@ -32,7 +32,7 @@ def make_plxpr(circuit: "qml.QNode", static_argnums: Union[int, Sequence[int]] =
     be passed to make_jaxpr.
 
     Args:
-        circuit (QNode):  the QNode to be captured
+        func (Callable):  the Callable to be captured
 
     Kwargs:
         static_argnums (Union(int, Sequence[int])): optional, an ``int`` or collection of ``int``\ s
@@ -40,7 +40,7 @@ def make_plxpr(circuit: "qml.QNode", static_argnums: Union[int, Sequence[int]] =
         **kwargs: any additional arguments specifically for ``jax.make_jaxpr``
 
     Returns:
-        Callable: function that, when called, returns the PLxPR representation of ``circuit`` for the specified inputs.
+        Callable: function that, when called, returns the PLxPR representation of ``func`` for the specified inputs.
 
 
     **Example**
@@ -78,4 +78,4 @@ def make_plxpr(circuit: "qml.QNode", static_argnums: Union[int, Sequence[int]] =
       in (b,) }
 
     """
-    return jax.make_jaxpr(circuit, static_argnums=static_argnums, **kwargs)
+    return jax.make_jaxpr(func, static_argnums=static_argnums, **kwargs)
