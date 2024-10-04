@@ -78,9 +78,12 @@ _INSTANCES_TO_TEST = [
 with warnings.catch_warnings():
     warnings.filterwarnings("ignore", "qml.ops.Hamiltonian uses", qml.PennyLaneDeprecationWarning)
     _INSTANCES_TO_TEST.append(
-        qml.operation.convert_to_legacy_H(
-            qml.Hamiltonian([1.1, 2.2], [qml.PauliX(0), qml.PauliZ(0)])
-        ),
+        (
+            qml.operation.convert_to_legacy_H(
+                qml.Hamiltonian([1.1, 2.2], [qml.PauliX(0), qml.PauliZ(0)])
+            ),
+            {},
+        )
     )
 
 
