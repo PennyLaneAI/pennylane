@@ -37,7 +37,6 @@ def make_plxpr(func: Callable, static_argnums: Union[int, Sequence[int]] = (), *
     Kwargs:
         static_argnums (Union(int, Sequence[int])): optional, an ``int`` or collection of ``int``\ s
             that specify which positional arguments to treat as static (trace- and compile-time constant).
-        **kwargs: any additional arguments specifically for ``jax.make_jaxpr``
 
     Returns:
         Callable: function that, when called, returns the PLxPR representation of ``func`` for the specified inputs.
