@@ -32,9 +32,9 @@ else:
     jax_available = False
     jax = None
 
-if jax_available:
-    # pylint: disable=unnecessary-lambda
-    setattr(jax.interpreters.partial_eval.DynamicJaxprTracer, "__hash__", lambda x: id(x))
+# if jax_available:
+#    # pylint: disable=unnecessary-lambda
+#    setattr(jax.interpreters.partial_eval.DynamicJaxprTracer, "__hash__", lambda x: id(x))
 
 
 class WireError(Exception):
@@ -63,8 +63,13 @@ def _process(wires):
         # of considering the elements of iterables as wire labels.
         wires = [wires]
 
-    if qml.math.get_interface(wires) == "jax" and not qml.math.is_abstract(wires):
-        wires = tuple(wires.tolist() if wires.ndim > 0 else (wires.item(),))
+    if qml.math.get_interface(wires) == "jax":
+
+        if qml.math.is_abstract(wires) and qml.capture.enabled():
+            return (wires,)
+
+        else:
+            wires = tuple(wires.tolist() if wires.ndim > 0 else (wires.item(),))
 
     try:
         # Use tuple conversion as a check for whether `wires` can be iterated over.
@@ -80,6 +85,9 @@ def _process(wires):
             if str(e).startswith("unhashable"):
                 raise WireError(f"Wires must be hashable; got object of type {type(wires)}.") from e
         return (wires,)
+
+    if any(qml.math.is_abstract(w) for w in tuple_of_wires) and qml.capture.enabled():
+        return tuple_of_wires
 
     try:
         # We need the set for the uniqueness check,
@@ -173,6 +181,12 @@ class Wires(Sequence):
 
     def __hash__(self):
         """Implements the hash function."""
+
+        if any(qml.math.is_abstract(w) for w in self._labels) and qml.capture.enabled():
+            raise WireError(
+                "Cannot hash wires that contain abstract objects with qml.capture enabled."
+            )
+
         if self._hash is None:
             self._hash = hash(self._labels)
         return self._hash

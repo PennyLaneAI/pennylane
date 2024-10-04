@@ -499,6 +499,7 @@ class TestWires:
 
 
 @pytest.mark.jax
+@pytest.mark.filterwarnings("error::FutureWarning")
 class TestWiresJax:
     """Tests the support for JAX arrays in the ``Wires`` class."""
 
