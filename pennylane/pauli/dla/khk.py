@@ -498,9 +498,9 @@ def _khk_validation(H, vec_h, theta_opt, g, k):
 
     Km = jnp.eye(2**n)
     for th, op in zip(theta_opt[::-1], k[::-1]):
-        Km @= jax.scipy.linalg.expm(-1j * th * qml.matrix(op.operation(), wire_order=range(n)))
+        Km @= jax.scipy.linalg.expm(1j * th * qml.matrix(op.operation(), wire_order=range(n)))
 
-    h_mat = Km @ h_mat @ Km.conj().T
+    h_mat = Km.conj().T @ h_mat @ Km
 
     H_mat = qml.matrix(H, wire_order=range(n))
     success = np.allclose(H_mat, h_mat)
