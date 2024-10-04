@@ -32,6 +32,7 @@
 * PennyLane is now compatible with NumPy 2.0.
   [(#6061)](https://github.com/PennyLaneAI/pennylane/pull/6061)
   [(#6258)](https://github.com/PennyLaneAI/pennylane/pull/6258)
+  [(#6342)](https://github.com/PennyLaneAI/pennylane/pull/6342)
 
 * PennyLane is now compatible with Jax 0.4.28.
   [(#6255)](https://github.com/PennyLaneAI/pennylane/pull/6255)
@@ -53,6 +54,11 @@
 
 * All PL templates are now unit tested to ensure JIT compatibility.
   [(#6309)](https://github.com/PennyLaneAI/pennylane/pull/6309)
+
+* When an observable is repeated on a tape, `tape.diagonalizing_gates` no longer returns the 
+  diagonalizing gates for each instance of the observable. Instead, the diagonalizing gates of
+  each observable on the tape are included just once.
+  [(#6288)](https://github.com/PennyLaneAI/pennylane/pull/6288)
 
 * The number of diagonalizing gates returned in `qml.specs` now follows the `level` keyword argument 
   regarding whether the diagonalizing gates are modified by device, instead of always counting 
@@ -147,7 +153,6 @@
 
 * `Operator.expand` is now removed. Use `qml.tape.QuantumScript(op.deocomposition())` instead.
   [(#6227)](https://github.com/PennyLaneAI/pennylane/pull/6227)
-
 
 <h3>Deprecations 👋</h3>
 
