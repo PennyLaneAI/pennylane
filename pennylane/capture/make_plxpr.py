@@ -77,4 +77,7 @@ def make_plxpr(func: Callable, static_argnums: Union[int, Sequence[int]] = (), *
       in (b,) }
 
     """
+    if not has_jax:
+        return None
+
     return jax.make_jaxpr(func, static_argnums=static_argnums, **kwargs)
