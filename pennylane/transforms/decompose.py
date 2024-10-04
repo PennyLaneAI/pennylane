@@ -81,6 +81,9 @@ def apply_decomposition(tape, gate_set=None, gate_rules=None, max_expansion=None
     if isinstance(gate_set, (list, tuple)):
         gate_set = set(gate_set)
 
+    def decomposer(op):
+        return op.decomposition()
+
     def stopping_condition(op):
         if not op.has_decomposition:
             if op.name not in gate_set:
@@ -101,7 +104,7 @@ def apply_decomposition(tape, gate_set=None, gate_rules=None, max_expansion=None
             for final_op in qml.devices.preprocess._operator_decomposition_gen(
                 op,
                 stopping_condition,
-                decomposer=lambda op: op.decomposition(),
+                decomposer=decomposer,
                 max_expansion=max_expansion,
             )
         ]
