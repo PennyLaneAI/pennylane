@@ -597,9 +597,6 @@ class TestSampleMeasurement:
             def return_type(self):
                 return Sample
 
-            def shape(self):
-                return ()
-
         dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev)
@@ -625,7 +622,7 @@ class TestStateMeasurement:
                 return qml.math.sum(state)
 
             def process_density_matrix(self, density_matrix, wire_order):
-                return qml.math.sum(density_matrix)
+                return 1
 
             @property
             def return_type(self):
@@ -650,7 +647,7 @@ class TestStateMeasurement:
                 return qml.math.sum(state)
 
             def process_density_matrix(self, density_matrix, wire_order):
-                return qml.math.sum(density_matrix)
+                return 1
 
             @property
             def return_type(self):
@@ -678,6 +675,9 @@ class TestStateMeasurement:
         class MyMeasurement(StateMeasurement):
             def process_state(self, state, wire_order):
                 return qml.math.sum(state)
+
+            def process_density_matrix(self, density_matrix, wire_order):
+                raise NotImplementedError
 
         with pytest.raises(NotImplementedError):
             MyMeasurement().process_density_matrix(
