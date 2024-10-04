@@ -24,12 +24,12 @@ except ImportError:
 
 
 def make_plxpr(func: Callable, static_argnums: Union[int, Sequence[int]] = (), **kwargs):
-    r"""Takes a QNode and returns a function that, when called, produces a PLxPR representing
-    the QNode with the given args.
+    r"""Takes a function and returns a ``Callable`` that, when called, produces a PLxPR representing
+    the function with the given args.
 
-    This function relies on `jax.make_jaxpr` as part of creating the representation. Any
-    keyword arguments passed to `make_plxpr` that are not directly used in the function will
-    be passed to make_jaxpr.
+    This function relies on ``jax.make_jaxpr`` as part of creating the representation. Any
+    keyword arguments passed to ``make_plxpr`` that are not directly used in the function will
+    be passed to ``make_jaxpr``.
 
     Args:
         func (Callable):  the Callable to be captured
