@@ -52,10 +52,9 @@ def _process(wires):
         # of considering the elements of iterables as wire labels.
         wires = [wires]
 
-    if qml.math.get_interface(wires) == "jax":
-        if qml.math.is_abstract(wires):
-            if qml.capture.enabled():
-                return (wires,)
+    if qml.math.is_abstract(wires, like="jax"):
+        if qml.capture.enabled():
+            return (wires,)
         else:
             wires = tuple(wires.tolist() if wires.ndim > 0 else (wires.item(),))
 
@@ -73,6 +72,9 @@ def _process(wires):
             if str(e).startswith("unhashable"):
                 raise WireError(f"Wires must be hashable; got object of type {type(wires)}.") from e
         return (wires,)
+
+    if any(qml.math.is_abstract(w, like="jax") for w in tuple_of_wires) and qml.capture.enabled():
+        return tuple_of_wires
 
     try:
         # We need the set for the uniqueness check,
