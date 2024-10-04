@@ -24,7 +24,7 @@ except ImportError:
 
 
 def make_plxpr(circuit: "qml.QNode", static_argnums: Union[int, Sequence[int]] = (), **kwargs):
-    """Takes a QNode and returns a function that, when called, produces a PLxPR representing
+    r"""Takes a QNode and returns a function that, when called, produces a PLxPR representing
     the QNode with the given args.
 
     This function relies on `jax.make_jaxpr` as part of creating the representation. Any
