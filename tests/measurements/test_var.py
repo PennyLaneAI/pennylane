@@ -246,6 +246,9 @@ class TestVar:
             [[0.15, 0, 0.1, 0], [0, 0.35, 0, 0.4], [0.1, 0, 0.1, 0], [0, 0.4, 0, 0.4]],
             like=interface,
         )
+        dm = qml.math.cast(dm, "float64")  # Ensure dm is float64s
+        expected = qml.math.array(expected_var, like=interface)
+        expected = qml.math.cast(expected, "float64")
         wires = qml.wires.Wires(range(2))
 
         # Calculate variance for the subset of wires
@@ -255,8 +258,7 @@ class TestVar:
             var = qml.var(
                 qml.PauliZ(subset_wires[0]) @ qml.PauliZ(subset_wires[1])
             ).process_density_matrix(dm, wires)
-
-        expected = qml.math.array([expected_var], like=interface)
+        var = qml.math.cast(var, "float64")
 
         # Set tolerance based on interface
         atol = 1.0e-7 if interface in ["torch", "tensorflow"] else 1.0e-8
