@@ -32,6 +32,7 @@
 * PennyLane is now compatible with NumPy 2.0.
   [(#6061)](https://github.com/PennyLaneAI/pennylane/pull/6061)
   [(#6258)](https://github.com/PennyLaneAI/pennylane/pull/6258)
+  [(#6342)](https://github.com/PennyLaneAI/pennylane/pull/6342)
 
 * PennyLane is now compatible with Jax 0.4.28.
   [(#6255)](https://github.com/PennyLaneAI/pennylane/pull/6255)
