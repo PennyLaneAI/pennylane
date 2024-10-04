@@ -1,4 +1,4 @@
-# Copyright 2024 Xanadu Quantum Technologies Inc.
+# Copyright 2023 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,17 +13,20 @@
 # limitations under the License.
 
 """
-Public/internal API for the AutoGraph module.
+Utils for autograph implementation
 """
+import copy
+import inspect
+from contextlib import ContextDecorator
 
-from .transformer import (
-    autograph_source,
-    disable_autograph,
-    run_autograph,
-)
+import pennylane as qml
+from malt.core import ag_ctx, converter
+from malt.impl.api import PyToPy
 
-__all__ = (
-    "autograph_source",
-    "disable_autograph",
-    "run_autograph",
-)
+import catalyst
+from . import ag_primitives, operator_update
+from catalyst.utils.exceptions import AutoGraphError
+
+
+class AutoGraphError(Exception):
+    """Errors related to Catalyst's AutoGraph module."""

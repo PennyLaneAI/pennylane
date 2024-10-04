@@ -16,9 +16,9 @@
 AutoGraph is a source-to-source transformation system for converting imperative code into
 traceable code for compute graph generation. The system is implemented in the Diastatic-Malt
 package (originally from TensorFlow).
-Here, we integrate AutoGraph into Catalyst to improve the UX and allow programmers to use built-in
+Here, we integrate AutoGraph into PennyLane to improve the UX and allow programmers to use built-in
 Python control flow and other imperative expressions rather than the functional equivalents provided
-by Catalyst.
+by PennyLane.
 """
 import copy
 import inspect
@@ -28,12 +28,11 @@ import pennylane as qml
 from malt.core import ag_ctx, converter
 from malt.impl.api import PyToPy
 
-import catalyst
-from catalyst.autograph import ag_primitives, operator_update
-from catalyst.utils.exceptions import AutoGraphError
+from . import ag_primitives, operator_update
+from .utils import AutoGraphError
 
 
-class CatalystTransformer(PyToPy):
+class PennyLaneTransformer(PyToPy):
     """A source-to-source transformer to convert imperative style control flow into a function style
     suitable for tracing."""
 
@@ -205,8 +204,6 @@ def autograph_source(fn):
         return inspect.getsource(fn)
 
     # Unwrap known objects to get the function actually transformed by autograph.
-    if isinstance(fn, catalyst.QJIT):
-        fn = fn.original_function
     if isinstance(fn, qml.QNode):
         fn = fn.func
 
@@ -307,4 +304,4 @@ NESTED_OPTIONS = converter.ConversionOptions(
 STANDARD_OPTIONS = converter.STANDARD_OPTIONS
 
 # Keep a global instance of the transformer to benefit from caching.
-TRANSFORMER = CatalystTransformer()
+TRANSFORMER = PennyLaneTransformer()
