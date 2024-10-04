@@ -904,3 +904,48 @@ def test_jitting_matrix():
     normal_mat = qml.matrix(op)
 
     assert qml.math.allclose(normal_mat, jit_mat)
+
+
+class TestIgnoredMatrices:
+    """Tests for the matrix of circuits that contain components that are to be ignored."""
+
+    from pennylane.ops.functions.matrix import _op_types_to_ignore
+
+    def test_op_types_to_ignore_are_up_to_date(self):
+        """This test serves to check that this test class is revisited when
+        _op_types_to_ignore is updated."""
+        assert self._op_types_to_ignore == (qml.Barrier, qml.Snapshot)
+
+    @pytest.mark.parametrize("op", [qml.Barrier(0), qml.Snapshot("tag")])
+    def test_single_ignored_op(self, op):
+        """Test matrix of a single ignored op raises an error."""
+        with pytest.raises(qml.operation.MatrixUndefinedError, match="of an empty tape"):
+            qml.matrix(op)
+
+    @pytest.mark.parametrize(
+        "ops, wire_order",
+        (
+            ([qml.Snapshot(tag="tag"), qml.RZ(0.1, 1)], [1]),
+            ([qml.Snapshot(tag="tag"), qml.RZ(0.1, 1)], [1, 3]),
+            ([qml.RX(0.2, 0), qml.Barrier(0)], [0]),
+            ([qml.RX(0.2, 0), qml.Barrier(0)], None),  # can use wire_order=None for single wire
+            ([qml.RX(0.2, 0), qml.Barrier(0), qml.RZ(0.1, 1)], [0, 1]),
+            ([qml.RX(0.2, 0), qml.Barrier(0), qml.RZ(0.1, 1)], [0, 5, 1]),
+            ([qml.Barrier(1), qml.RX(0.2, 0), qml.Barrier(0), qml.RZ(0.1, 2)], [1, 2, 0]),
+        ),
+    )
+    def test_ignored_op_in_tape(self, ops, wire_order):
+        """Test with an ignored op in a tape."""
+        full_tape = qml.tape.QuantumScript(ops)
+        full_matrix = qml.matrix(full_tape, wire_order=wire_order)
+        reduced_ops = [op for op in ops if not isinstance(op, self._op_types_to_ignore)]
+        reduced_tape = qml.tape.QuantumTape(reduced_ops)
+        reduced_matrix = qml.matrix(reduced_tape, wire_order=wire_order)
+        assert qml.math.allclose(full_matrix, reduced_matrix)
+
+    @pytest.mark.parametrize("op", [qml.Barrier(1), qml.Snapshot("tag")])
+    def test_single_ignored_op_in_tape_still_fails(self, op):
+        """Test that a single op that is to be ignored in a tape causes an error."""
+        tape = qml.tape.QuantumScript([op])
+        with pytest.raises(qml.operation.MatrixUndefinedError, match="tape without wires"):
+            qml.matrix(tape)

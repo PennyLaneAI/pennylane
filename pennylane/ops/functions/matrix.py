@@ -21,11 +21,15 @@ from typing import Union
 
 import pennylane as qml
 from pennylane import transform
-from pennylane.operation import Operator
+from pennylane.operation import MatrixUndefinedError, Operator
 from pennylane.pauli import PauliSentence, PauliWord
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import TransformError
 from pennylane.typing import PostprocessingFn, TensorLike
+
+_op_types_to_ignore = (qml.Barrier, qml.Snapshot)
+"""The following operator types are programming tools and do not have a quantum computational 
+effect when used in a circuit. They are therefore ignored when computing a matrix."""
 
 
 def catalyst_qjit(qnode):
@@ -228,15 +232,31 @@ def matrix(op: Union[Operator, PauliWord, PauliSentence], wire_order=None) -> Te
     try:
         return op.matrix(wire_order=wire_order)
     except:  # pylint: disable=bare-except
-        return matrix(QuantumScript(op.decomposition()), wire_order=wire_order or op.wires)
+        decomp = op.decomposition()
+        if len(decomp) == 0:
+            raise MatrixUndefinedError("Can not compute the matrix of an empty tape.")
+        return matrix(QuantumScript(decomp), wire_order=wire_order or op.wires)
 
 
-@partial(transform, is_informative=True)
+def _expand_transform_matrix(
+    tape: QuantumScript, wire_order=None, **kwargs
+) -> tuple[QuantumScriptBatch, PostprocessingFn]:  # pylint: disable=unused-argument
+    new_ops = [op for op in tape.operations if not isinstance(op, _op_types_to_ignore)]
+    new_tape = qml.tape.QuantumScript(new_ops, tape.measurements)
+
+    def postprocessing(res):
+        """Postprocessing function that only unpacks the first result."""
+        return res[0]
+
+    return [new_tape], postprocessing
+
+
+@partial(transform, expand_transform=_expand_transform_matrix, is_informative=True)
 def _matrix_transform(
     tape: QuantumScript, wire_order=None, **kwargs
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     if not tape.wires:
-        raise qml.operation.MatrixUndefinedError
+        raise MatrixUndefinedError("Can not compute the matrix of a tape without wires")
 
     if wire_order and not set(tape.wires).issubset(wire_order):
         raise TransformError(
