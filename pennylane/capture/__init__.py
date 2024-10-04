@@ -29,6 +29,7 @@ quantum-classical programs.
     ~disable
     ~enable
     ~enabled
+    ~convert_to_tape
     ~create_operator_primitive
     ~create_measurement_obs_primitive
     ~create_measurement_wires_primitive
@@ -36,7 +37,6 @@ quantum-classical programs.
     ~qnode_call
     ~PlxprInterpreter
     ~FlatFn
-
 
 The ``primitives`` submodule offers easy access to objects with jax dependencies such as
 primitives and abstract types.
@@ -190,6 +190,11 @@ def __getattr__(key):
         )
 
         return PlxprInterpreter
+
+    if key == "convert_to_tape":
+        from .to_tape import convert_to_tape
+
+        return convert_to_tape
 
     raise AttributeError(f"module 'pennylane.capture' has no attribute '{key}'")
 
