@@ -486,7 +486,7 @@ class MeasEq(qml.BooleanFn):
 
         mp_ops = list(getattr(op, "return_type", op.__class__.__name__) for op in self.condition)
         mp_names = [
-            repr(op) if not isinstance(op, property) else self.condition[idx].__name__
+            repr(op) if not isinstance(op, property) else repr(self.condition[idx].__name__)
             for idx, op in enumerate(mp_ops)
         ]
         super().__init__(

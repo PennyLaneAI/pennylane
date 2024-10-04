@@ -18,6 +18,7 @@ import pennylane as qml
 from pennylane.transforms.core import TransformContainer, transform
 
 
+# pylint: disable=too-many-branches
 @transform
 def add_noise(tape, noise_model, level=None):
     """Insert operations according to a provided noise model.
@@ -198,21 +199,43 @@ def add_noise(tape, noise_model, level=None):
                     curr_ops.extend(noise_ops)
         new_operations.extend(curr_ops)
 
+    if not noise_model.meas:
+        new_tape = type(tape)(new_operations, tape.measurements, shots=tape.shots)
+        return [new_tape], qml.devices.preprocess.null_postprocessing
+
     meas_conds, meas_funcs = [], []
     for condition, noise in noise_model.meas.items():
         meas_conds.append(lru_cache(maxsize=512)(condition))
         meas_funcs.append(qml.tape.make_qscript(noise))
 
+    new_tapes = []
+
+    split_operations, split_measurements = [], [[]] * len(tape.measurements)
     for measurement in tape.measurements:
+        readout_operations = new_operations.copy()
         for condition, noise in zip(meas_conds, meas_funcs):
             if condition(measurement):
                 noise_ops = noise(measurement, **metadata).operations
-                new_operations.extend(noise_ops)
+                readout_operations.extend(noise_ops)
+        if readout_operations in split_operations:
+            split_measurements[split_operations.index(readout_operations)].append(measurement)
+        else:
+            readout_operations.append(split_operations)
 
-    new_tape = type(tape)(new_operations, tape.measurements, shots=tape.shots)
-    post_processing_fn = qml.devices.preprocess.null_postprocessing
+    new_tapes = [
+        type(tape)(operations, measurements, shots=tape.shots)
+        for operations, measurements in zip(split_operations, split_measurements)
+    ]
 
-    return [new_tape], post_processing_fn
+    def post_processing_fn(results):
+        """A postprocessing function returned by a transform that converts the batch of results into a squeezed result."""
+        final_res = []
+        for result in results:
+            getattr(final_res, "append" if not isinstance(result, tuple) else "extend")(result)
+
+        return tuple(final_res) if len(final_res) > 1 else final_res[0]
+
+    return new_tapes, post_processing_fn
 
 
 def _check_queue_op(operation, noise_func, metadata):

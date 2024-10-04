@@ -282,7 +282,11 @@ class TestNoiseFunctions:
 
         assert isinstance(func, qml.BooleanFn)
 
-        op_repr = [getattr(op, "return_type", op.__class__.__name__) for op in func.condition]
+        op_mps = list(getattr(op, "return_type", op.__class__.__name__) for op in func.condition)
+        op_repr = [
+            repr(op) if not isinstance(op, property) else repr(func.condition[idx].__name__)
+            for idx, op in enumerate(op_mps)
+        ]
         assert str(func) == f"MeasEq({op_repr if len(op_repr) > 1 else op_repr[0]})"
         assert func(op) == result
 
