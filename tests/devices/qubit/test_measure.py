@@ -97,7 +97,7 @@ class TestMeasurementDispatch:
         state = qml.numpy.zeros(2)
         assert get_measurement_function(qml.expval(S), state) is sum_of_terms_method
 
-    @pytest.mark.usefixtures("use_legacy_opmath")
+    @pytest.mark.usefixtures("legacy_opmath_only")
     def test_hamiltonian_with_multi_wire_obs(self):
         """Check that a Hamiltonian with a multi-wire observable uses the sum of terms method."""
 
@@ -124,7 +124,7 @@ class TestMeasurementDispatch:
     def test_no_sparse_matrix(self):
         """Tests Hamiltonians/Sums containing observables that do not have a sparse matrix."""
 
-        class DummyOp(qml.operation.Operator):  # pylint: disable=too-few-public-methods
+        class DummyOp(qml.operation.Observable):  # pylint: disable=too-few-public-methods
             num_wires = 1
 
         S1 = qml.Hamiltonian([0.5, 0.5], [qml.X(0), DummyOp(wires=1)])

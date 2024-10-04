@@ -29,7 +29,7 @@ class Qubitization(Operation):
     It is implemented with a quantum walk operator that takes a Hamiltonian as input and generates:
 
     .. math::
-        Q = (2|0\rangle\langle 0| - I) \text{Prep}_{\mathcal{H}}^{\dagger} \text{Sel}_{\mathcal{H}} \text{Prep}_{\mathcal{H}}.
+        Q =  \text{Prep}_{\mathcal{H}}^{\dagger} \text{Sel}_{\mathcal{H}} \text{Prep}_{\mathcal{H}}(2|0\rangle\langle 0| - I).
 
 
 
