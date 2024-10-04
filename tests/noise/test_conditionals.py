@@ -273,6 +273,9 @@ class TestNoiseFunctions:
             (qml.measure(1, reset=True), qml.measure(1, reset=False), True),
             (qml.counts(wires=[0, 1]), qml.state(), False),
             (qml.density_matrix(wires=[0, 1]), qml.measurements.StateMP(wires=[0, 1]), False),
+            (qml.expval(qml.X(0)), qml.Z(0), False),
+            (qml.var(qml.X(0)), qml.adjoint, False),
+            (qml.expval(qml.X(0)), [qml.sample(qml.X(0)), qml.expval(qml.Z(0))], False),
         ],
     )
     def test_meas_eq(self, obj, op, result):

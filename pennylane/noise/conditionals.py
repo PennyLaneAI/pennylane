@@ -22,6 +22,7 @@ from inspect import isclass, signature
 import pennylane as qml
 from pennylane.boolean_fn import BooleanFn
 from pennylane.measurements import MeasurementProcess, MeasurementValue, MidMeasureMP
+from pennylane.operation import AnyWires
 from pennylane.ops import Adjoint, Controlled
 from pennylane.templates import ControlledSequence
 from pennylane.wires import WireError, Wires
@@ -676,11 +677,18 @@ def partial_wires(operation, *args, **kwargs):
                 op_args["base"] = base.map_wires(dict(zip(base.wires, op_args.pop("wires"))))
 
         for key, val in partial_kwargs.items():
-            if key in parameters:
+            if key in parameters:  # pragma: no cover
                 op_args[key] = val
 
         if "wires" not in parameters:
             _ = op_args.pop("wires", None)
+
+        if isclass(operation) and issubclass(operation, qml.operation.Operation):
+            num_wires = getattr(operation, "num_wires", AnyWires)
+            if "wires" in op_args and isinstance(num_wires, int):
+                if num_wires < len(op_args["wires"]) and num_wires == 1:
+                    op_wires = op_args.pop("wires")
+                    return tuple(operation(**op_args, wires=wire) for wire in op_wires)
 
         return operation(**op_args)
 

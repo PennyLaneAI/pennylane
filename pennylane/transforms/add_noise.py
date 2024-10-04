@@ -210,29 +210,33 @@ def add_noise(tape, noise_model, level=None):
 
     new_tapes = []
 
-    split_operations, split_measurements = [], [[]] * len(tape.measurements)
-    for measurement in tape.measurements:
+    split_operations, split_measurements = [], [[] for idx in tape.measurements]
+    for midx, measurement in enumerate(tape.measurements):
         readout_operations = new_operations.copy()
         for condition, noise in zip(meas_conds, meas_funcs):
             if condition(measurement):
                 noise_ops = noise(measurement, **metadata).operations
                 readout_operations.extend(noise_ops)
-        if readout_operations in split_operations:
-            split_measurements[split_operations.index(readout_operations)].append(measurement)
-        else:
-            readout_operations.append(split_operations)
+        if readout_operations not in split_operations:
+            split_operations.append(readout_operations)
+        split_measurements[split_operations.index(readout_operations)].append((midx, measurement))
+
+    split_measurements = split_measurements[: len(split_operations)]
+    split_meas_indexes = qml.math.argsort(
+        [m_ for ms in ([m[0] for m in meas] for meas in split_measurements) for m_ in ms]
+    )
 
     new_tapes = [
-        type(tape)(operations, measurements, shots=tape.shots)
+        type(tape)(operations, [meas[1] for meas in measurements], shots=tape.shots)
         for operations, measurements in zip(split_operations, split_measurements)
     ]
 
     def post_processing_fn(results):
         """A postprocessing function returned by a transform that converts the batch of results into a squeezed result."""
-        final_res = []
+        split_results = []
         for result in results:
-            getattr(final_res, "append" if not isinstance(result, tuple) else "extend")(result)
-
+            getattr(split_results, "append" if not isinstance(result, tuple) else "extend")(result)
+        final_res = [split_results[idx] for idx in split_meas_indexes]
         return tuple(final_res) if len(final_res) > 1 else final_res[0]
 
     return new_tapes, post_processing_fn
