@@ -28,7 +28,7 @@ from pennylane.transforms import TransformError
 from pennylane.typing import PostprocessingFn, TensorLike
 
 _op_types_to_ignore = (qml.Barrier, qml.Snapshot)
-"""The following operator types are programming tools and do not have a quantum computational 
+"""The following operator types are programming tools and do not have a quantum computational
 effect when used in a circuit. They are therefore ignored when computing a matrix."""
 
 
@@ -231,16 +231,17 @@ def matrix(op: Union[Operator, PauliWord, PauliSentence], wire_order=None) -> Te
 
     try:
         return op.matrix(wire_order=wire_order)
-    except:  # pylint: disable=bare-except
+    except Exception as e:  # pylint: disable=broad-except
         decomp = op.decomposition()
         if len(decomp) == 0:
-            raise MatrixUndefinedError("Can not compute the matrix of an empty tape.")
+            raise MatrixUndefinedError("Can not compute the matrix of an empty tape.") from e
         return matrix(QuantumScript(decomp), wire_order=wire_order or op.wires)
 
 
 def _expand_transform_matrix(
     tape: QuantumScript, wire_order=None, **kwargs
-) -> tuple[QuantumScriptBatch, PostprocessingFn]:  # pylint: disable=unused-argument
+) -> tuple[QuantumScriptBatch, PostprocessingFn]:
+    # pylint: disable=unused-argument
     new_ops = [op for op in tape.operations if not isinstance(op, _op_types_to_ignore)]
     new_tape = qml.tape.QuantumScript(new_ops, tape.measurements)
 
