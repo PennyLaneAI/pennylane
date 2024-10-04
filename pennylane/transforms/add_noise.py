@@ -198,17 +198,16 @@ def add_noise(tape, noise_model, level=None):
                     curr_ops.extend(noise_ops)
         new_operations.extend(curr_ops)
 
-    if noise_model.meas:
-        meas_conds, meas_funcs = [], []
-        for condition, noise in noise_model.meas.items():
-            meas_conds.append(lru_cache(maxsize=512)(condition))
-            meas_funcs.append(qml.tape.make_qscript(noise))
+    meas_conds, meas_funcs = [], []
+    for condition, noise in noise_model.meas.items():
+        meas_conds.append(lru_cache(maxsize=512)(condition))
+        meas_funcs.append(qml.tape.make_qscript(noise))
 
-        for measurement in tape.measurements:
-            for condition, noise in zip(meas_conds, meas_funcs):
-                if condition(measurement):
-                    noise_ops = noise(measurement, **metadata).operations
-                    new_operations.extend(noise_ops)
+    for measurement in tape.measurements:
+        for condition, noise in zip(meas_conds, meas_funcs):
+            if condition(measurement):
+                noise_ops = noise(measurement, **metadata).operations
+                new_operations.extend(noise_ops)
 
     new_tape = type(tape)(new_operations, tape.measurements, shots=tape.shots)
     post_processing_fn = qml.devices.preprocess.null_postprocessing
