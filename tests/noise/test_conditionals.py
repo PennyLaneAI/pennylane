@@ -261,6 +261,31 @@ class TestNoiseFunctions:
         assert str(func) == f"OpEq({op_repr if len(op_repr) > 1 else op_repr[0]})"
         assert func(op) == result
 
+    @pytest.mark.parametrize(
+        ("obj", "op", "result"),
+        [
+            (qml.expval(qml.X(0)), qml.expval(qml.Z(0)), True),
+            (qml.expval(qml.X(0)), qml.sample(qml.X(0)), False),
+            (qml.purity(wires=[0, 1]), qml.purity(wires=["a"]), True),
+            (qml.mutual_info([0], [1]), qml.mutual_info(["a", "b"], ["c"]), True),
+            (qml.vn_entropy([0, 1], log_base=3), qml.vn_entropy(["a"], log_base=10), True),
+            (qml.shadow_expval(qml.X(0) + qml.Y(1)), qml.shadow_expval(qml.X(0) @ qml.Y(1)), True),
+            (qml.measure(1, reset=True), qml.measure(1, reset=False), True),
+            (qml.counts(wires=[0, 1]), qml.state(), False),
+            (qml.density_matrix(wires=[0, 1]), qml.measurements.StateMP(wires=[0, 1]), False),
+        ],
+    )
+    def test_meas_eq(self, obj, op, result):
+        """Test for checking MeasEq work as expected for checking if an measurement process is equal to specified measurement process"""
+
+        func = qml.noise.meas_eq(obj)
+
+        assert isinstance(func, qml.BooleanFn)
+
+        op_repr = [getattr(op, "return_type", op.__class__.__name__) for op in func.condition]
+        assert str(func) == f"MeasEq({op_repr if len(op_repr) > 1 else op_repr[0]})"
+        assert func(op) == result
+
     def test_conditional_bitwise(self):
         """Test that conditionals can be operated with bitwise operations"""
 
@@ -305,10 +330,13 @@ class TestNoiseFunctions:
         op = qml.noise.partial_wires(qml.adjoint(qml.X(2)))(3)
         qml.assert_equal(op, qml.adjoint(qml.X(3)))
 
+        op = qml.noise.partial_wires(qml.adjoint)(op=qml.X(7) @ qml.Y(8))
+        qml.assert_equal(op, qml.adjoint(qml.X(7) @ qml.Y(8)))
+
         op = qml.noise.partial_wires(qml.ctrl, op=qml.Hadamard(0), control=[1, 2])("a")
         qml.assert_equal(op, qml.ctrl(qml.Hadamard("a"), control=[1, 2]))
 
-        mp = qml.noise.partial_wires(qml.expval, qml.Z(9))("photon")
+        mp = qml.noise.partial_wires(qml.expval, op=qml.Z(9))("photon")
         qml.assert_equal(mp, qml.expval(qml.Z("photon")))
 
         mp = qml.noise.partial_wires(qml.density_matrix, wires=2)(1)
@@ -318,8 +346,10 @@ class TestNoiseFunctions:
         qml.assert_equal(mp, qml.mutual_info(2, 3))
 
         mp = qml.noise.partial_wires(qml.shadow_expval, H=qml.X(0) @ qml.Y(1))(["bra", "ket"])
-        print(mp)
         qml.assert_equal(mp, qml.shadow_expval(H=qml.X("bra") @ qml.Y("ket")))
+
+        mp = qml.noise.partial_wires(qml.probs)(op=qml.X(7))
+        qml.assert_equal(mp, qml.probs(op=qml.X(7)))
 
         mp = qml.noise.partial_wires(qml.counts)(qml.X("light"))
         qml.assert_equal(mp, qml.counts(wires=["light"]))

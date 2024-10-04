@@ -21,7 +21,7 @@ from inspect import isclass, signature
 
 import pennylane as qml
 from pennylane.boolean_fn import BooleanFn
-from pennylane.measurements import MeasurementValue, MidMeasureMP, MeasurementProcess
+from pennylane.measurements import MeasurementProcess, MeasurementValue, MidMeasureMP
 from pennylane.ops import Adjoint, Controlled
 from pennylane.templates import ControlledSequence
 from pennylane.wires import WireError, Wires
@@ -484,7 +484,11 @@ class MeasEq(qml.BooleanFn):
             self.condition.append(mp)
             self._cmps.append(mp if isclass(mp) else mp.__class__)
 
-        mp_names = list(getattr(op, "return_type", op.__class__.__name__) for op in self.condition)
+        mp_ops = list(getattr(op, "return_type", op.__class__.__name__) for op in self.condition)
+        mp_names = [
+            repr(op) if not isinstance(op, property) else self.condition[idx].__name__
+            for idx, op in enumerate(mp_ops)
+        ]
         super().__init__(
             self._check_meas, f"MeasEq({mp_names if len(mp_names) > 1 else mp_names[0]})"
         )
@@ -632,7 +636,7 @@ def partial_wires(operation, *args, **kwargs):
     for key, val in arg_params.copy().items():
         if key in parameters:
             op_name += f"{key}={val}, "
-        else:
+        else:  # pragma: no cover
             del arg_params[key]
     op_name = op_name[:-2] + ")" if len(arg_params) else op_name[:-1]
 
@@ -647,7 +651,7 @@ def partial_wires(operation, *args, **kwargs):
             )
 
         if is_meas_class:
-            if "op" not in parameters:
+            if "obs" not in parameters:
                 _ = partial_kwargs.pop("op", None)
 
             if not op_args.get("obs", None) and (obs := partial_kwargs.get("op", None)):

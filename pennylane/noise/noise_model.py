@@ -79,7 +79,7 @@ class NoiseModel:
         self._model_map = model_map
         if meas is not None:
             self.check_model(meas)
-        self._meas_map = meas
+        self._meas_map = meas or {}
         self._metadata = kwargs
 
     @property
@@ -99,10 +99,16 @@ class NoiseModel:
 
     def __add__(self, data):
         if not isinstance(data, NoiseModel):
-            return NoiseModel({**self.model_map, **data}, **self.metadata)
+            ms_ = data.pop("meas", {})
+            mt_ = {key: data.pop(key) for key in list(filter(lambda k: isinstance(k, str), data))}
+            return NoiseModel(
+                {**self.model_map, **data}, meas={**self.meas, **ms_}, **{**self.metadata, **mt_}
+            )
 
         return NoiseModel(
-            {**self.model_map, **data.model_map}, **{**self.metadata, **data.metadata}
+            {**self.model_map, **data.model_map},
+            meas={**self.meas, **data.meas},
+            **{**self.metadata, **data.metadata},
         )
 
     def __radd__(self, data):
@@ -110,8 +116,12 @@ class NoiseModel:
 
     def __sub__(self, data):
         if not isinstance(data, NoiseModel):
+            ms_ = data.pop("meas", {})
+            mt_ = {key: data.pop(key) for key in list(filter(lambda k: isinstance(k, str), data))}
             return NoiseModel(
-                {k: v for k, v in self.model_map.items() if k not in data}, **self.metadata
+                {k: v for k, v in self.model_map.items() if k not in data},
+                meas={k: v for k, v in self.meas.items() if k not in ms_},
+                **{k: v for k, v in self.metadata.items() if k not in mt_},
             )
 
         return NoiseModel(
@@ -120,12 +130,13 @@ class NoiseModel:
         )
 
     def __eq__(self, other):
-        for model1, model2 in zip(self.model_map.items(), other.model_map.items()):
-            (fcond1, noise1), (fcond2, noise2) = model1, model2
-            if getattr(fcond1, "condition", fcond1.fn) != getattr(fcond2, "condition", fcond2.fn):
-                return False
-            if noise1 != noise2:
-                return False
+        for key in ["model_map", "meas"]:
+            for model1, model2 in zip(getattr(self, key).items(), getattr(other, key).items()):
+                (func1, noise1), (func2, noise2) = model1, model2
+                if getattr(func1, "condition", func1.fn) != getattr(func2, "condition", func2.fn):
+                    return False
+                if noise1 != noise2:
+                    return False
         return self.metadata == other.metadata
 
     def __repr__(self):
@@ -133,8 +144,8 @@ class NoiseModel:
         for key, val in self.model_map.items():
             model_str += "    " + f"{key}: {val.__name__}" + "\n"
         if self._meas_map:
-            model_str += "},\nmeas={\n"
-            for key, val in self.model_map.items():
+            model_str += "},\nmeas = {\n"
+            for key, val in self.meas.items():
                 model_str += "    " + f"{key}: {val.__name__}" + "\n"
         model_str += "}, "
         for key, val in self._metadata.items():
