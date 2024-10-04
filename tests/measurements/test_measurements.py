@@ -621,6 +621,9 @@ class TestStateMeasurement:
             def process_state(self, state, wire_order):
                 return qml.math.sum(state)
 
+            def process_density_matrix(self, density_matrix, wire_order):
+                return qml.math.sum(density_matrix)
+
         dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev)
