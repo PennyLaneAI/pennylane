@@ -120,16 +120,6 @@ class TestPurityUnitTest:
         # Calculate the purity using the PurityMP class
         purity = qml.purity(wires=subset_wires).process_density_matrix(dm, wires)
 
-        # Calculate the reduced density matrix if we're looking at a single qubit
-        if len(subset_wires) == 1:
-            # Determine which qubit to trace out
-            indices_to_trace = list(set(range(2)) - set(subset_wires))
-            # Perform partial trace to get the reduced density matrix
-            reduced_dm = qml.math.partial_trace(dm, indices=indices_to_trace)
-        else:
-            # If we're looking at both qubits, use the full density matrix
-            reduced_dm = dm
-
         # Set the tolerance for floating-point comparisons
         # TensorFlow and PyTorch may require a slightly higher tolerance due to numerical precision issues
         atol = 1.0e-7 if interface in ["torch", "tensorflow"] else 1.0e-8

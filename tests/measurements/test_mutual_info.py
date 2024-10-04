@@ -109,7 +109,7 @@ class TestMutualInfoUnitTests:
     )
     def test_process_density_matrix_mutual_info(
         self, interface, wires0, wires1, log_base, expected_mutual_info
-    ):
+    ):  # pylint: disable=too-many-arguments
         """Test mutual information calculation for non-overlapping subsystems."""
         # Define a pure, entangled two-qubit state (|00> + |11>) / sqrt(2)
         dm = qml.math.array(
