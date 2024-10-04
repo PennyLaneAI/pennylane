@@ -274,6 +274,7 @@ class TestNoiseFunctions:
             (qml.counts(wires=[0, 1]), qml.state(), False),
             (qml.density_matrix(wires=[0, 1]), qml.measurements.StateMP(wires=[0, 1]), False),
             (qml.expval(qml.X(0)), qml.Z(0), False),
+            (qml.sample(qml.X(0)), qml.Y, False),
             (qml.var(qml.X(0)), qml.adjoint, False),
             (qml.expval(qml.X(0)), [qml.sample(qml.X(0)), qml.expval(qml.Z(0))], False),
         ],
@@ -292,6 +293,19 @@ class TestNoiseFunctions:
         ]
         assert str(func) == f"MeasEq({op_repr if len(op_repr) > 1 else op_repr[0]})"
         assert func(op) == result
+
+    def test_meas_eq_error(self):
+        """Test for checking MeasEq raise correct error when used with something that is not a measurement process"""
+
+        with pytest.raises(
+            ValueError, match="MeasEq should be initialized with a MeasurementProcess"
+        ):
+            qml.noise.meas_eq(qml.RX)
+
+        with pytest.raises(
+            ValueError, match="MeasEq should be initialized with a MeasurementProcess"
+        ):
+            qml.noise.meas_eq(qml.adjoint)
 
     def test_conditional_bitwise(self):
         """Test that conditionals can be operated with bitwise operations"""
