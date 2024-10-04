@@ -4,6 +4,12 @@
 
 <h3>New features since last release</h3>
 
+* Added `process_density_matrix` implementations to 5 `StateMeasurement` subclasses:
+  `ExpVal`, `Var`, `Purity`, `MutualInformation`, and `VnEntropy`.
+  This enables `process_density_matrix` to be an abstract method in `StateMeasurement`,
+  facilitating future support for mixed-state devices and expanded density matrix operations.
+  [(#6330)](https://github.com/PennyLaneAI/pennylane/pull/6330)
+
 * A new class `MomentumQNGOptimizer` is added. It inherits the basic `QNGOptimizer` class and requires one additional hyperparameter (the momentum coefficient) :math:`0 \leq \rho < 1`, the default value being :math:`\rho=0.9`. For :math:`\rho=0` Momentum-QNG reduces to the basic QNG.
   [(#6240)](https://github.com/PennyLaneAI/pennylane/pull/6240)
  
