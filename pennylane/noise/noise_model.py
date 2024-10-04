@@ -63,14 +63,21 @@ class NoiseModel:
 
         n1 = qml.noise.partial_wires(qml.AmplitudeDamping, 0.4)
 
+        # set up the readout noise
+        m0 = qml.noise.meas_eq(qml.expval) & qml.noise.wires_in([0, 1])
+        n2 = qml.noise.partial_wires(qml.PhaseFlip, 0.2)
+
         # Set up noise model
-        noise_model = qml.NoiseModel({c0: n0}, t1=0.04)
+        noise_model = qml.NoiseModel({c0: n0}, meas={m0:n2}, t1=0.04)
         noise_model += {c1: n1}
 
     >>> noise_model
     NoiseModel({
         OpEq(PauliX) | OpEq(PauliY): n0
         OpEq(Hadamard) & WiresIn([0, 1]): AmplitudeDamping(0.4, wires),
+    },
+    meas = {
+        MeasEq(expval) & WiresIn([0, 1]): PhaseFlip(p=0.2)
     }, t1=0.04)
     """
 

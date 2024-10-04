@@ -514,10 +514,44 @@ class MeasEq(qml.BooleanFn):
 
 def meas_eq(mp):
     """Builds a conditional as a :class:`~.BooleanFn` for evaluating
-    if a given operation is equal to the specified operation.
+    if a given measurement process is equal to the specified measurement process.
 
     Args:
-        mp (MeasurementProcess): An instance of any class that inherits from :class:`~.MeasurementProcess`.
+        mp (MeasurementProcess, function): An instance(s) of any class that inherits from
+            :class:`~.MeasurementProcess` or a :mod:`measurement <pennylane.measurements>` function(s).
+
+    Returns:
+        :class:`MeasEq <pennylane.noise.conditionals.MeasEq>`: A callable object that accepts
+        an instance of :class:`~.MeasurementProcess` and returns a boolean output. It accepts
+        any input from: ``Union[class, function, list(Union[class, function, MeasurementProcess])]``
+        and evaluates to ``True`` if the input measurement process(es) is equal to the set of
+        measurement process(es) sepcified by ``ops``. Comparison is based on the measurement's
+        return type, irrespective of wires, observables or any other relevant attribute.
+
+    **Example**
+
+    One may use ``meas_eq`` with an instance of
+    :class:`MeasurementProcess <pennylane.operation.MeasurementProcess>`:
+
+    >>> cond_func = qml.noise.meas_eq(qml.expval(qml.Y(0)))
+    >>> cond_func(qml.expval(qml.Z(9)))
+    True
+
+    >>> cond_func(qml.sample(op=qml.Y(0)))
+    False
+
+    Additionally, a :mod:`measurement <pennylane.measurements>` function
+    can also be provided:
+
+    >>> cond_func = qml.noise.meas_eq(qml.expval)
+    >>> cond_func(qml.expval(qml.X(0)))
+    True
+
+    >>> cond_func(qml.probs(wires=[0, 1]))
+    False
+
+    >>> cond_func(qml.counts(qml.Z(0)))
+    False
     """
     return MeasEq(mp)
 
@@ -550,11 +584,11 @@ _MEAS_FUNC_MAP = {
 
 
 def partial_wires(operation, *args, **kwargs):
-    """Builds a partial function based on the given operation with
+    """Builds a partial function based on the given operation or measurement process with
     all argument frozen except ``wires``.
 
     Args:
-        operation (Operation, class): Instance of an operation or the class
+        operation (Operation | MeasurementProcess | class): Instance of an operation or the class
             corresponding to the operation.
         *args: Positional arguments provided in the case where the keyword argument
             ``operation`` is a class for building the partially evaluated instance.
@@ -586,7 +620,7 @@ def partial_wires(operation, *args, **kwargs):
     >>> func(qml.RY(1.0, [0]))
     qml.RX(3.2, wires=[0])
 
-    Finally, one can also use ``kwargs`` instead of positional arguments:
+    Moreover, one can use ``kwargs`` instead of positional arguments:
 
     >>> func = qml.noise.partial_wires(qml.RX, phi=1.2)
     >>> func(qml.RY(1.0, [2]))
@@ -594,6 +628,13 @@ def partial_wires(operation, *args, **kwargs):
     >>> rfunc = qml.noise.partial_wires(qml.RX(1.2, [12]), phi=2.3)
     >>> rfunc(qml.RY(1.0, ["light"]))
     qml.RX(2.3, wires=["light"])
+
+    Finally, one may also use this with an instance of
+    :class:`MeasurementProcess <pennylane.measurement.MeasurementProcess>`
+
+    >>> func = qml.noise.partial_wires(qml.expval(qml.Z(0)))
+    >>> func(qml.RX(1.2, wires=[9]))
+    qml.expval(qml.Z(9))
     """
     is_meas_class = isinstance(operation, qml.measurements.MeasurementProcess)
     is_meta_class = isinstance(operation, (qml.ops.Adjoint, qml.ops.Controlled))

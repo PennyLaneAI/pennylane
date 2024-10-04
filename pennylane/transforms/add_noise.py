@@ -26,10 +26,13 @@ def add_noise(tape, noise_model, level=None):
     Circuits passed through this quantum transform will be updated to apply the
     insertion-based :class:`~.NoiseModel`, which contains a mapping
     ``{BooleanFn: Callable}`` from conditions to the corresponding noise
-    gates. Each condition in the noise model will be evaluated on the
-    operations contained within the given circuit. For conditions that
-    evaluate to ``True``, the noisy gates contained within the ``Callable``
-    will be inserted after the operation under consideration.
+    gates for circuit operations and measurements each. First, each condition
+    in the first mapping of a noise model will be evaluated on the operations
+    contained within the given circuit. For conditions that evaluate to ``True``,
+    the noisy gates contained within the ``Callable`` will be inserted after the
+    operation under consideration. Similar procedure will be followed for each
+    measurement in the circuit, in case a second mapping will be present in the
+    noise model to indicate readout errors.
 
     Args:
         tape (QNode or QuantumTape or Callable or pennylane.devices.Device): the input circuit or
@@ -53,10 +56,10 @@ def add_noise(tape, noise_model, level=None):
 
     .. note::
 
-        For a given ``model_map`` within a ``NoiseModel``, if multiple conditionals in the ``model_map``
-        evaluate to ``True`` for an operation, then the noise operations defined via their respective
-        noisy quantum functions will be added in the same order in which the conditionals appear in the
-        ``model_map``.
+        For a given ``model_map`` and ``meas`` within a ``NoiseModel``, if multiple conditionals in the
+        ``model_map`` evaluate to ``True`` for an operation, then the noise operations defined via their
+        respective noisy quantum functions will be added in the same order in which the conditionals
+        appear in the ``model_map``.
 
     **Example:**
 
@@ -75,7 +78,14 @@ def add_noise(tape, noise_model, level=None):
         def noise2(op, **kwargs):
             qml.ThermalRelaxationError(op.parameters[0] * 0.5, kwargs["t1"],  kwargs["t2"], 0.6, op.wires)
 
-        noise_model = qml.NoiseModel({fcond1: noise1, fcond2: noise2}, t1=2.0, t2=0.2)
+        fcond3 = qml.noise.meas_eq(qml.expval) & qml.noise.wires_in([0, 1]),
+        noise3 = qml.noise.partial_wires(qml.PhaseFlip, 0.2)
+
+        noise_model = qml.NoiseModel(
+            {fcond1: noise1, fcond2: noise2},
+            meas = {fcond3: noise3},
+            t1=2.0, t2=0.2
+        )
 
         @partial(qml.transforms.add_noise, noise_model=noise_model)
         @qml.qnode(dev)
@@ -97,8 +107,8 @@ def add_noise(tape, noise_model, level=None):
         0: ──RX(0.90)──PhaseDamping(0.40)──ThermalRelaxationError(0.45,2.00,0.20,0.60)─╭●──RY(0.50)
         1: ──RY(0.40)──────────────────────────────────────────────────────────────────╰X──RX(0.60)
 
-        ───────────────────────────────────────────────────────────────────┤ ╭<Z@Z>
-        ───PhaseDamping(0.40)──ThermalRelaxationError(0.30,2.00,0.20,0.60)─┤ ╰<Z@Z>
+        ────────────────────────────────────────────────────────────────────PhaseDamping(0.2)─┤ ╭<Z@Z>
+        ───PhaseDamping(0.40)──ThermalRelaxationError(0.30,2.00,0.20,0.60)──PhaseDamping(0.2)─┤ ╰<Z@Z>
 
     .. details::
         :title: Tranform Levels
