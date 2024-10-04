@@ -97,7 +97,7 @@ class TestMeasurementDispatch:
         state = qml.numpy.zeros(2)
         assert get_measurement_function(qml.expval(S), state) is sum_of_terms_method
 
-    @pytest.mark.usefixtures("use_legacy_opmath")
+    @pytest.mark.usefixtures("legacy_opmath_only")
     def test_hamiltonian_with_multi_wire_obs(self):
         """Check that a Hamiltonian with a multi-wire observable uses the sum of terms method."""
 
