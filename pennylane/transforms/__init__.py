@@ -361,4 +361,4 @@ from .tape_expand import (
 from .transpile import transpile
 from .zx import to_zx, from_zx
 from .broadcast_expand import broadcast_expand
-from .decompose import decompose
+from .decompose import apply_decomposition
