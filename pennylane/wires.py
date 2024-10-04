@@ -17,24 +17,13 @@ This module contains the :class:`Wires` class, which takes care of wire bookkeep
 import functools
 import itertools
 from collections.abc import Hashable, Iterable, Sequence
-from importlib import import_module, util
+
 from typing import Union
 
 import numpy as np
 
 import pennylane as qml
 from pennylane.pytrees import register_pytree
-
-if util.find_spec("jax") is not None:
-    jax = import_module("jax")
-    jax_available = True
-else:
-    jax_available = False
-    jax = None
-
-# if jax_available:
-#    # pylint: disable=unnecessary-lambda
-#    setattr(jax.interpreters.partial_eval.DynamicJaxprTracer, "__hash__", lambda x: id(x))
 
 
 class WireError(Exception):
@@ -64,14 +53,11 @@ def _process(wires):
         wires = [wires]
 
     if qml.math.get_interface(wires) == "jax":
-
-        if not qml.math.is_abstract(wires):
-            wires = tuple(wires.tolist() if wires.ndim > 0 else (wires.item(),))
-
-        else:
-
+        if qml.math.is_abstract(wires):
             if qml.capture.enabled():
                 return (wires,)
+        else:
+            wires = tuple(wires.tolist() if wires.ndim > 0 else (wires.item(),))
 
     try:
         # Use tuple conversion as a check for whether `wires` can be iterated over.
@@ -87,9 +73,6 @@ def _process(wires):
             if str(e).startswith("unhashable"):
                 raise WireError(f"Wires must be hashable; got object of type {type(wires)}.") from e
         return (wires,)
-
-    if any(qml.math.is_abstract(w) for w in tuple_of_wires) and qml.capture.enabled():
-        return tuple_of_wires
 
     try:
         # We need the set for the uniqueness check,
