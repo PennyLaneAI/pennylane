@@ -524,6 +524,8 @@ def khk_decompose(
         H_reconstructed = Km.conj().T @ qml.matrix(h_elem, wire_order=range(n)) @ Km
 
         H_m = qml.matrix(H, wire_order=range(len(H.wires)))
+        print(H_m)
+        print(H_reconstructed)
         success = np.allclose(H_m, H_reconstructed)
 
         if not success:
@@ -551,6 +553,9 @@ def orthonormalize(vspace):
 
     if not all(isinstance(op, PauliSentence) for op in vspace):
         vspace = [op.pauli_rep for op in vspace]
+
+    if len(vspace) == 0:
+        return vspace
 
     all_pws = sorted(reduce(set.__or__, [set(ps.keys()) for ps in vspace]))
     num_pw = len(all_pws)
@@ -598,10 +603,11 @@ def check_all_commuting(h):
             com.simplify()
             commutes.append(len(com) == 0)
 
-    print("all terms commute")
-    return all(commutes)
+    if res := all(commutes):
+        print("all terms commute")
+    return res
 
 def trace_distance(A, B):
     assert np.all(A.shape == B.shape)
-    res = 1 - np.trace(A.conj().T @ B)/len(A)
+    res = 1 - np.abs(np.trace(A.conj().T @ B)/len(A))
     return res.real
