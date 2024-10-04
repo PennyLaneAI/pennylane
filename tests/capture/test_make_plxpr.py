@@ -55,6 +55,7 @@ def test_make_plxpr(mocker):
 
     spy.assert_called()
     assert hasattr(plxpr, "jaxpr")
+    isinstance(plxpr, jax._src.core.ClosedJaxpr)
 
 
 @pytest.mark.parametrize("static_argnums", [[0], [1], [0, 1], []])

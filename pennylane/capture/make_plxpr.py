@@ -35,15 +35,15 @@ def make_plxpr(circuit: "qml.QNode", static_argnums: Union[int, Sequence[int]] =
         circuit (QNode):  the QNode to be captured
 
     Kwargs:
-        static_argnums (Union(int, Sequence[int])): optional, an int or collection of ints
+        static_argnums (Union(int, Sequence[int])): optional, an ``int`` or collection of ``int``\ s
             that specify which positional arguments to treat as static (trace- and compile-time constant).
-        **kwargs: any additional arguements specifically for jax.make_jaxpr
+        **kwargs: any additional arguments specifically for ``jax.make_jaxpr``
 
     Returns:
-        Callable: function that, when called, returns the PLxPR representation of `circuit` for the specified inputs.
+        Callable: function that, when called, returns the PLxPR representation of ``circuit`` for the specified inputs.
 
 
-    ** Example **
+    **Example**
 
     .. code-block:: python
 
@@ -78,4 +78,4 @@ def make_plxpr(circuit: "qml.QNode", static_argnums: Union[int, Sequence[int]] =
       in (b,) }
 
     """
-    return jax.make_jaxpr(circuit, static_argnums, **kwargs)
+    return jax.make_jaxpr(circuit, static_argnums=static_argnums, **kwargs)
