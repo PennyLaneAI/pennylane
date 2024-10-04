@@ -225,7 +225,9 @@ class TestVar:
         wires = qml.wires.Wires(range(1))
         expected = qml.math.array([0.0], like=interface)
         var = qml.var(qml.I(0)).process_density_matrix(dm, wires)
-        assert qml.math.allclose(var, expected)
+        # Please note that both torch and tf seem to have numerical issues with precision
+        atol = 1.0e-7 if interface == "torch" or "tensorflow" else 1.0e-8
+        assert qml.math.allclose(var, expected, atol=atol), f"Expected {expected}, got {var}"
 
     # @pytest.mark.all_interfaces
     # @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "tensorflow"])
