@@ -229,24 +229,36 @@ class TestVar:
         atol = 1.0e-7 if interface == "torch" or "tensorflow" else 1.0e-8
         assert qml.math.allclose(var, expected, atol=atol), f"Expected {expected}, got {var}"
 
-    # @pytest.mark.all_interfaces
-    # @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "tensorflow"])
-    # @pytest.mark.parametrize(
-    #     "subset_wires, expected",
-    #     [
-    #         ([0], [0.5, 0.5]),
-    #         ([1], [0.25, 0.75]),
-    #         ([1, 0], [0.15, 0.1, 0.35, 0.4]),
-    #         ([0, 1], [0.15, 0.35, 0.1, 0.4]),
-    #     ],
-    # )
-    # def test_process_density_matrix_subsets(self, interface, subset_wires, expected):
-    #     """Test processing of density matrix with subsets of wires."""
-    #     dm = qml.math.array(
-    #         [[0.15, 0, 0.1, 0], [0, 0.35, 0, 0.4], [0.1, 0, 0.1, 0], [0, 0.4, 0, 0.4]],
-    #         like=interface,
-    #     )
-    #     wires = qml.wires.Wires(range(2))
-    #     subset_probs = qml.probs(wires=subset_wires).process_density_matrix(dm, wires)
-    #     assert subset_probs.shape == qml.math.shape(expected)
-    #     assert qml.math.allclose(subset_probs, expected)
+    @pytest.mark.all_interfaces
+    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "tensorflow"])
+    @pytest.mark.parametrize(
+        "subset_wires, expected_var",
+        [
+            ([0], 1.0),  # Variance of Z on first qubit
+            ([1], 0.75),  # Variance of Z on second qubit
+            ([0, 1], 0.99),  # Variance of ZZ (should be zero for this state)
+        ],
+    )
+    def test_process_density_matrix_var_subsets(self, interface, subset_wires, expected_var):
+        """Test variance calculation of density matrix with subsets of wires."""
+        # Define a non-trivial two-qubit density matrix
+        dm = qml.math.array(
+            [[0.15, 0, 0.1, 0], [0, 0.35, 0, 0.4], [0.1, 0, 0.1, 0], [0, 0.4, 0, 0.4]],
+            like=interface,
+        )
+        wires = qml.wires.Wires(range(2))
+
+        # Calculate variance for the subset of wires
+        if len(subset_wires) == 1:
+            var = qml.var(qml.PauliZ(subset_wires[0])).process_density_matrix(dm, wires)
+        else:
+            var = qml.var(
+                qml.PauliZ(subset_wires[0]) @ qml.PauliZ(subset_wires[1])
+            ).process_density_matrix(dm, wires)
+
+        expected = qml.math.array([expected_var], like=interface)
+
+        # Set tolerance based on interface
+        atol = 1.0e-7 if interface in ["torch", "tensorflow"] else 1.0e-8
+
+        assert qml.math.allclose(var, expected, atol=atol), f"Expected {expected}, got {var}"
