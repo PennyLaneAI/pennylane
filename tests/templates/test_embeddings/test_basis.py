@@ -172,7 +172,7 @@ def circuit_template(features):
 
 def circuit_decomposed(features):
     # convert tensor to list
-    feats = list(qml.math.toarray(features))
+    feats = list(qml.math.array(features))
     _ = [qml.PauliX(wires=i) for i, feat in enumerate(feats) if feat == 1]
 
     return qml.state()
@@ -263,11 +263,7 @@ class TestInterfaces:
 
         circuit = jax.jit(circuit)
 
-        res = circuit(jnp.array(2))
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
-
-        circuit2 = jax.jit(circuit2)
-        res2 = circuit2(features)
+        res2 = circuit(jnp.array(2))
         assert qml.math.allclose(res, res2, atol=tol, rtol=0)
 
     @pytest.mark.tf

@@ -109,4 +109,6 @@ class TestAQFT:
 
         jit_circuit = jax.jit(circuit)
 
-        assert qml.math.allclose(circuit, jit_circuit)
+        res = circuit()
+        res2 = jit_circuit()
+        assert qml.math.allclose(res, res2)

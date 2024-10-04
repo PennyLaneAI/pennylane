@@ -401,8 +401,8 @@ class TestInterfaces:
 
         dev = qml.device("default.qubit")
 
-        circuit = jax.jit(qml.QNode(circuit_template, dev, interface="jax"))
-        circuit2 = jax.jit(qml.QNode(circuit_decomposed, dev))
+        circuit = jax.jit(qml.QNode(circuit_template, dev, interface="jax"), static_argnums=[1, 2])
+        circuit2 = jax.jit(qml.QNode(circuit_decomposed, dev), static_argnums=[1, 2])
 
         res = circuit(features, pad_with, normalize)
         res2 = circuit2(features, pad_with)

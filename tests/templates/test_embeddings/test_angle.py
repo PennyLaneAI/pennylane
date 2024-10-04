@@ -303,15 +303,15 @@ class TestInterfaces:
         grad_fn2 = jax.grad(jit_circuit2)
         jit_grads2 = grad_fn2(features)
 
-        assert np.allclose(jit_grads[0], jit_grads2[0], atol=tol, rtol=0)
+        assert qml.math.allclose(jit_grads[0], jit_grads2[0], atol=tol, rtol=0)
 
         res = circuit(features)
-        assert qml.allclose(res, jit_res, atol=tol, rtol=0)
+        assert qml.math.allclose(res, jit_res, atol=tol, rtol=0)
 
         grad_fn = jax.grad(circuit)
         grads = grad_fn(features)
 
-        assert qml.allclose(jit_grads[0], grads[0], atol=tol, rtol=0)
+        assert qml.math.allclose(jit_grads[0], grads[0], atol=tol, rtol=0)
 
     @pytest.mark.tf
     def test_tf(self, tol):
