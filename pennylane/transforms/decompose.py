@@ -17,6 +17,8 @@ A transform for decomposing quantum circuits into user defined gate sets. Offers
 # pylint: disable=protected-access, too-many-arguments
 
 import warnings
+from collections.abc import Callable, Generator, Sequence
+from typing import Optional
 
 import pennylane as qml
 from pennylane.tape import QuantumScript
@@ -28,6 +30,38 @@ def null_postprocessing(results):
     into a result for a single ``QuantumTape``.
     """
     return results[0]
+
+
+def _operator_decomposition_gen(
+    op: qml.operation.Operator,
+    acceptance_function: Callable[[qml.operation.Operator], bool],
+    decomposer: Callable[[qml.operation.Operator], Sequence[qml.operation.Operator]],
+    max_expansion: Optional[int] = None,
+    current_depth=0,
+) -> Generator[qml.operation.Operator, None, None]:
+    """A generator that yields the next operation that is accepted."""
+    max_depth_reached = False
+    if max_expansion is not None and max_expansion <= current_depth:
+        max_depth_reached = True
+    if acceptance_function(op) or max_depth_reached:
+        yield op
+    else:
+        try:
+            decomp = decomposer(op)
+            current_depth += 1
+        except qml.operation.DecompositionUndefinedError as e:
+            raise UserWarning(
+                f"Operator {op.name} has no supported decomposition and is not in the gate set."
+            ) from e
+
+        for sub_op in decomp:
+            yield from _operator_decomposition_gen(
+                sub_op,
+                acceptance_function,
+                decomposer=decomposer,
+                max_expansion=max_expansion,
+                current_depth=current_depth,
+            )
 
 
 @transform
@@ -68,12 +102,15 @@ def apply_decomposition(tape, gate_set=None, gate_rules=None, max_expansion=None
     2: ──H─╰X──T†─╰X──T─╰X──T†─╰X──T──H────────┤
 
     """
+    universal_ops = set(qml.ops.__all__)
 
     if gate_set is None:
-        gate_set = set(qml.ops.qubit.__all__) - set(op.name for op in tape.operations)
+        gate_set = universal_ops - set(op.name for op in tape.operations)
 
     if gate_rules is None:
-        gate_rules = lambda op: False
+
+        def gate_rules(op):
+            return not op.has_matrix
 
     if isinstance(gate_set, str):
         gate_set = set([gate_set])
@@ -88,7 +125,7 @@ def apply_decomposition(tape, gate_set=None, gate_rules=None, max_expansion=None
         if not op.has_decomposition:
             if op.name not in gate_set:
                 warnings.warn(
-                    f"{op.name} has no supported decomposition and is not in the gate set.",
+                    f"Operator {op.name} has no supported decomposition and was not found in the gate set.",
                     UserWarning,
                 )
             return True
@@ -101,10 +138,10 @@ def apply_decomposition(tape, gate_set=None, gate_rules=None, max_expansion=None
         new_ops = [
             final_op
             for op in tape.operations
-            for final_op in qml.devices.preprocess._operator_decomposition_gen(
+            for final_op in _operator_decomposition_gen(
                 op,
                 stopping_condition,
-                decomposer=decomposer,
+                decomposer,
                 max_expansion=max_expansion,
             )
         ]
