@@ -43,7 +43,7 @@ def test_binary_decimal_conversion(input_list):
 def test_get_coeffs_function():
 
     dic = _get_coefficients_and_controls(lambda x, y: x**2 * y, 16, 2, 2)
-    # `dic` should contain the coefficient of (x0 + 2x1)^2 * (y0 + 2y1)
+    # `dic` should contain the coefficient of (2x0 + x1)^2 * (2y0 + y1)
 
     # key format (x0, x1, y0, y1)
     expected_dic = {
@@ -52,8 +52,8 @@ def test_get_coeffs_function():
         (1, 0, 0, 1): 4,  # + 4 x0.y1
         (1, 0, 1, 0): 8,  # + 8 x0.y0
         (1, 1, 0, 1): 4,  # + 4 x0.x1.y1
-        (1, 1, 1, 0): 8,
-    }  # + 8 x0.x1.y0
+        (1, 1, 1, 0): 8,  # + 8 x0.x1.y0
+    }
 
     for key in dic:
         assert key in expected_dic

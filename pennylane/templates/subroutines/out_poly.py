@@ -32,7 +32,17 @@ def _decimal_to_binary_list(n, length):
 
 
 def _get_coefficients_and_controls(f, mod, *wire_lengths):
-    """Calculate the coefficients and controls for a given function and wire configuration using Fast Möbius Transform."""
+    """Calculate the coefficients and controls for a given function and wire configuration using the Fast Möbius Transform.
+
+    Args:
+        f (callable): the polynomial function to be applied to the inputs
+        mod (int): the modulus to use for the result
+        wire_lengths (Sequence[int]):  a list storing the number of bits used to represent each of the variables of the function
+
+    Return:
+        dict: A dictionary where each key is a tuple representing a combination of control bits (0 or 1), and each value
+              is the corresponding coefficient for that combination in the polynomial expansion modulo `mod`.
+    """
     total_wires = sum(wire_lengths)
     num_combinations = 2**total_wires  # Total number of combinations (2^total_wires)
 
@@ -104,8 +114,51 @@ class OutPoly(Operation):
         ValueError: If the wires used in the input and output registers overlap.
 
     Example:
-        Given a polynomial function :math:`f(x, y) = x^2 + y` with a modulus 7,
+        Given a polynomial function :math:`f(x, y) = x^2 + y`,
         we can apply this operation as follows:
+
+        .. code-block:: python
+
+            wires_x = [0, 1, 2]
+            wires_y = [3, 4, 5]
+            output_wires = [6, 7, 8, 9]
+
+            registers_wires = [wires_x, wires_y, output_wires]
+
+
+            def f(x, y):
+                return x ** 2 + y
+
+
+            @qml.qnode(qml.device("default.qubit", shots = 1))
+            def circuit():
+                # loading values for x and y
+                qml.BasisEmbedding(3, wires=wires_x)
+                qml.BasisEmbedding(2, wires=wires_y)
+
+                # applying the polynomial
+                qml.OutPoly(f, registers_wires)
+
+                return qml.sample(wires=output_wires)
+
+            print(circuit())
+
+        .. code-block:: pycon
+
+            >>> print(circuit())
+            [1 0 1 1]
+
+        The result, :math:`[1 0 1 1]`, is the binary representation of :math:`3^2 + 2 = 11`.
+        Note that by not specifying `mod`, it is used the value :math:`2 ^{\text{len(output_wires)}}`.
+        In the usage details it is shown an example where a specific modulus is used.
+
+
+    .. seealso:: :class:`~.PhaseAdder`
+
+    .. details::
+        :title: Usage Details
+
+        This template can take a modulus different from powers of two. In these cases it should be provided two auxiliary qubits.
 
         .. code-block:: python
 
@@ -140,8 +193,12 @@ class OutPoly(Operation):
             [1 0 0]
 
         The result, :math:`[1 0 0]`, is the binary representation of :math:`3^2 + 2  \; \text{modulo} \; 7 = 4`.
+        If the output wires are not initialized to zero, this value will be added to the solution. Generically, the expression is definded as:
 
-    .. seealso:: :class:`~.PhaseAdder`
+        .. math::
+
+            \text{OutPoly}_{f, \text{mod}} |x_1 \rangle \dots |x_m \rangle |b \rangle
+            = |x_1 \rangle \dots |x_m \rangle |b + f(x_1, \dots, x_m) \mod \text{mod} \rangle.
 
     """
 
