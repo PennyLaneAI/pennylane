@@ -65,11 +65,13 @@ def _process(wires):
 
     if qml.math.get_interface(wires) == "jax":
 
-        if qml.math.is_abstract(wires) and qml.capture.enabled():
-            return (wires,)
+        if not qml.math.is_abstract(wires):
+            wires = tuple(wires.tolist() if wires.ndim > 0 else (wires.item(),))
 
         else:
-            wires = tuple(wires.tolist() if wires.ndim > 0 else (wires.item(),))
+
+            if qml.capture.enabled():
+                return (wires,)
 
     try:
         # Use tuple conversion as a check for whether `wires` can be iterated over.
