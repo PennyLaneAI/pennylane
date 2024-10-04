@@ -597,6 +597,9 @@ class TestSampleMeasurement:
             def return_type(self):
                 return Sample
 
+            def shape(self):
+                return ()
+
         dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev)
@@ -624,6 +627,13 @@ class TestStateMeasurement:
             def process_density_matrix(self, density_matrix, wire_order):
                 return qml.math.sum(density_matrix)
 
+            @property
+            def return_type(self):
+                return State
+
+            def shape(self):
+                return ()
+
         dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev)
@@ -645,6 +655,9 @@ class TestStateMeasurement:
             @property
             def return_type(self):
                 return State
+
+            def shape(self):
+                return ()
 
         dev = qml.device("default.qubit", wires=2, shots=1000)
 
