@@ -51,6 +51,11 @@
 * The `Hermitian` operator now has a `compute_sparse_matrix` implementation.
   [(#6225)](https://github.com/PennyLaneAI/pennylane/pull/6225)
 
+* When an observable is repeated on a tape, `tape.diagonalizing_gates` no longer returns the 
+  diagonalizing gates for each instance of the observable. Instead, the diagonalizing gates of
+  each observable on the tape are included just once.
+  [(#6288)](https://github.com/PennyLaneAI/pennylane/pull/6288)
+
 * The number of diagonalizing gates returned in `qml.specs` now follows the `level` keyword argument 
   regarding whether the diagonalizing gates are modified by device, instead of always counting 
   unprocessed diagonalizing gates.
@@ -144,7 +149,6 @@
 
 * `Operator.expand` is now removed. Use `qml.tape.QuantumScript(op.deocomposition())` instead.
   [(#6227)](https://github.com/PennyLaneAI/pennylane/pull/6227)
-
 
 <h3>Deprecations 👋</h3>
 
