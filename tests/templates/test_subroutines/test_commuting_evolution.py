@@ -22,6 +22,7 @@ import pennylane as qml
 from pennylane import numpy as np
 
 
+@pytest.mark.xfail(reason="https://github.com/PennyLaneAI/pennylane/issues/6340")
 def test_standard_validity():
     """Run standard tests of operation validity."""
     H = 2.0 * qml.PauliX(0) @ qml.PauliY(1) + 3.0 * qml.PauliY(0) @ qml.PauliZ(1)
@@ -29,7 +30,7 @@ def test_standard_validity():
     frequencies = (2, 4)
     shifts = (1, 0.5)
     op = qml.CommutingEvolution(H, time, frequencies=frequencies, shifts=shifts)
-    qml.ops.functions.assert_valid(op, skip_differentiation=True)
+    qml.ops.functions.assert_valid(op)
 
 
 def test_adjoint():
