@@ -222,10 +222,12 @@ class TestVar:
     def test_process_density_matrix_basic(self, interface):
         """Test that process_density_matrix returns correct probabilities from a maximum mixed density matrix."""
         dm = qml.math.array([[0.5, 0], [0, 0.5]], like=interface)
+        dm = qml.math.cast(dm, "float64")  # Ensure dm is float64s
         wires = qml.wires.Wires(range(1))
         expected = qml.math.array([0.0], like=interface)
+        expected = qml.math.cast(expected, "float64")
         var = qml.var(qml.I(0)).process_density_matrix(dm, wires)
-        # Please note that both torch and tf seem to have numerical issues with precision
+        var = qml.math.cast(var, "float64")
         atol = 1.0e-7 if (interface in ("torch", "tensorflow")) else 1.0e-8
         assert qml.math.allclose(var, expected, atol=atol), f"Expected {expected}, got {var}"
 
