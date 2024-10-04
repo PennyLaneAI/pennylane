@@ -14,7 +14,7 @@
 """
 This submodule defines a strategy structure for defining custom plxpr interpreters
 """
-
+from collections.abc import Iterable
 from copy import copy
 from functools import partial, wraps
 from typing import Callable
@@ -47,6 +47,16 @@ def jaxpr_to_jaxpr(
         return interpreter.eval(jaxpr, consts, *inner_args)
 
     return jax.make_jaxpr(f)(*args).jaxpr
+
+
+FlattenedHigherOrderPrimitives: dict["jax.core.Primitive", Callable] = {}
+"""
+A dictionary containing flattened style cond, while, and for loop higher order primitives.
+
+.. code-block::
+
+    MyInterpreter._primitive_registrations.update(FlattenedHigherOrderPrimitives)
+"""
 
 
 class PlxprInterpreter:
@@ -275,7 +285,7 @@ class PlxprInterpreter:
         )
         return primitive.bind(*invals, **params)
 
-    def eval(self, jaxpr: "jax.core.Jaxpr", consts: list, *args) -> list:
+    def eval(self, jaxpr: "jax.core.Jaxpr", consts: Iterable, *args) -> list:
         """Evaluate a jaxpr.
 
         Args:
@@ -383,6 +393,20 @@ def handle_for_loop(self, *invals, jaxpr_body_fn, n_consts):
     return for_loop_prim.bind(*invals, jaxpr_body_fn=new_jaxpr_body_fn, n_consts=n_consts)
 
 
+def flatten_for_loop(self, *invals, jaxpr_body_fn, n_consts):
+    start, stop, step = invals[0], invals[1], invals[2]
+    consts = invals[3 : 3 + n_consts]
+    res = invals[3 + n_consts :]
+
+    for i in range(start, stop, step):
+        res = copy(self).eval(jaxpr_body_fn, consts, i, res)
+
+    return res
+
+
+FlattenedHigherOrderPrimitives[for_loop_prim] = flatten_for_loop
+
+
 @PlxprInterpreter.register_primitive(cond_prim)
 def handle_cond(self, *invals, jaxpr_branches, n_consts_per_branch, n_args):
     """Handle a cond primitive."""
@@ -405,6 +429,25 @@ def handle_cond(self, *invals, jaxpr_branches, n_consts_per_branch, n_args):
     )
 
 
+def flatten_cond(self, *invals, jaxpr_branches, n_consts_per_branch, n_args):
+    """Handle a cond primitive."""
+    n_branches = len(jaxpr_branches)
+    conditions = invals[:n_branches]
+    consts_flat = invals[n_branches + n_args :]
+    args = invals[n_branches : n_branches + n_args]
+
+    start = 0
+    for pred, jaxpr, n_consts in zip(conditions, jaxpr_branches, n_consts_per_branch):
+        consts = consts_flat[start : start + n_consts]
+        start += n_consts
+        if pred and jaxpr is not None:
+            return copy(self).eval(jaxpr, consts, *args)
+    return ()
+
+
+FlattenedHigherOrderPrimitives[cond_prim] = flatten_cond
+
+
 @PlxprInterpreter.register_primitive(while_loop_prim)
 def handle_while_loop(self, *invals, jaxpr_body_fn, jaxpr_cond_fn, n_consts_body, n_consts_cond):
     """Handle a while loop primitive."""
@@ -422,6 +465,21 @@ def handle_while_loop(self, *invals, jaxpr_body_fn, jaxpr_cond_fn, n_consts_body
         n_consts_body=n_consts_body,
         n_consts_cond=n_consts_cond,
     )
+
+
+def flatten_while_loop(self, *invals, jaxpr_body_fn, jaxpr_cond_fn, n_consts_body, n_consts_cond):
+    consts_body = invals[:n_consts_body]
+    consts_cond = invals[n_consts_body : n_consts_body + n_consts_cond]
+    init_state = invals[n_consts_body + n_consts_cond :]
+
+    fn_res = init_state
+    while copy(self).eval(jaxpr_cond_fn, consts_cond, *fn_res)[0]:
+        fn_res = copy(self).eval(jaxpr_body_fn, consts_body, *fn_res)
+
+    return fn_res
+
+
+FlattenedHigherOrderPrimitives[while_loop_prim] = flatten_while_loop
 
 
 # pylint: disable=unused-argument, too-many-arguments
