@@ -94,8 +94,8 @@ class QNSPSAOptimizer:
     Once constructed, the qnode can be passed directly to the ``step`` or ``step_and_cost``
     function of the optimizer.
 
-    >>> from pennylane import numpy as pnp
-    >>> params = pnp.random.rand(2)
+    >>> from pennylane import numpy as np
+    >>> params = np.random.rand(2)
     >>> opt = QNSPSAOptimizer(stepsize=5e-2)
     >>> for i in range(51):
     >>>     params, loss = opt.step_and_cost(cost, params)
@@ -159,7 +159,7 @@ class QNSPSAOptimizer:
             kwargs : variable length of keyword arguments for the qnode
 
         Returns:
-            pnp.array: the new variable values after step-wise update :math:`x^{(t+1)}`
+            pnp.ndarray: the new variable values after step-wise update :math:`x^{(t+1)}`
         """
         if self.blocking:
             warnings.warn(
@@ -204,7 +204,7 @@ class QNSPSAOptimizer:
             kwargs : variable length of keyword arguments for the qnode
 
         Returns:
-            pnp.array: the new variable values :math:`x^{(t+1)}` before the blocking condition
+            pnp.ndarray: the new variable values :math:`x^{(t+1)}` before the blocking condition
             is applied.
         """
         all_grad_tapes = []

@@ -370,7 +370,7 @@ class TestDiagonalizeTapeMeasurements:
 
         assert fn == null_postprocessing
 
-    @pytest.mark.usefixtures("use_legacy_opmath")
+    @pytest.mark.usefixtures("legacy_opmath_only")
     def test_diagonalize_all_measurements_hamiltonian(self):
         """Test that the diagonalize_measurements transform diagonalizes a Hamiltonian with a pauli_rep
         when diagonalizing all measurements"""
@@ -390,7 +390,7 @@ class TestDiagonalizeTapeMeasurements:
 
         assert fn == null_postprocessing
 
-    @pytest.mark.usefixtures("use_legacy_opmath")
+    @pytest.mark.usefixtures("legacy_opmath_only")
     def test_diagonalize_all_measurements_tensor(self):
         """Test that the diagonalize_measurements transform diagonalizes a Tensor with a pauli_rep
         when diagonalizing all measurements"""

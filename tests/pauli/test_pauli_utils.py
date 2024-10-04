@@ -14,6 +14,8 @@
 """
 Unit tests for the :mod:`pauli` utility functions in ``pauli/utils.py``.
 """
+import warnings
+
 # pylint: disable=too-few-public-methods,too-many-public-methods
 import numpy as np
 import pytest
@@ -224,7 +226,7 @@ class TestGroupingUtils:
             ValueError, observables_to_binary_matrix, observables, n_qubits_invalid
         )
 
-    @pytest.mark.usefixtures("use_legacy_opmath")
+    @pytest.mark.usefixtures("legacy_opmath_only")
     def test_is_qwc(self):
         """Determining if two Pauli words are qubit-wise commuting."""
 
@@ -370,7 +372,7 @@ class TestGroupingUtils:
         assert not are_identical_pauli_words(pauli_word_7, pauli_word_4)
         assert not are_identical_pauli_words(pauli_word_6, pauli_word_4)
 
-    @pytest.mark.usefixtures("use_legacy_opmath")
+    @pytest.mark.usefixtures("legacy_opmath_only")
     def test_are_identical_pauli_words_hamiltonian_unsupported(self):
         """Test that using Hamiltonians that are valid Pauli words with are_identical_pauli_words
         always returns False"""
@@ -455,10 +457,14 @@ class TestGroupingUtils:
         op = qml.operation.Tensor(qml.Z(0), qml.Y(1), qml.X(2))
         assert pauli_word_to_string(op) == "ZYX"
 
-    with qml.operation.disable_new_opmath_cm():
-        PAULI_WORD_STRINGS_LEGACY = _make_pauli_word_strings()
+    with qml.operation.disable_new_opmath_cm(warn=False):
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                "ignore", "qml.ops.Hamiltonian uses", qml.PennyLaneDeprecationWarning
+            )
+            PAULI_WORD_STRINGS_LEGACY = _make_pauli_word_strings()
 
-    @pytest.mark.usefixtures("use_legacy_opmath")
+    @pytest.mark.usefixtures("legacy_opmath_only")
     @pytest.mark.parametrize("pauli_word,wire_map,expected_string", PAULI_WORD_STRINGS_LEGACY)
     def test_pauli_word_to_string_legacy_opmath(self, pauli_word, wire_map, expected_string):
         """Test that Pauli words are correctly converted into strings."""
@@ -471,7 +477,7 @@ class TestGroupingUtils:
         with pytest.raises(TypeError):
             pauli_word_to_string(non_pauli_word)
 
-    @pytest.mark.usefixtures("use_new_opmath")
+    @pytest.mark.usefixtures("new_opmath_only")
     @pytest.mark.parametrize(
         "pauli_string,wire_map,expected_pauli",
         [
@@ -793,21 +799,7 @@ class TestPartitionPauliGroup:
         """Test if the number of groups is equal to 3**n"""
         assert len(partition_pauli_group(n)) == 3**n
 
-    @pytest.mark.usefixtures("use_legacy_opmath")
     @pytest.mark.parametrize("n", range(1, 6))
-    def test_is_qwc_legacy_opmath(self, n):
-        """Test if each group contains only qubit-wise commuting terms"""
-        for group in partition_pauli_group(n):
-            size = len(group)
-            for i in range(size):
-                for j in range(i, size):
-                    s1 = group[i]
-                    s2 = group[j]
-                    w1 = string_to_pauli_word(s1)
-                    w2 = string_to_pauli_word(s2)
-                    assert is_commuting(w1, w2)
-
-    @pytest.mark.parametrize("n", range(2, 6))
     def test_is_qwc(self, n):
         """Test if each group contains only qubit-wise commuting terms"""
         for group in partition_pauli_group(n):
@@ -999,7 +991,7 @@ class TestMeasurementTransformations:
         assert pytest.raises(ValueError, diagonalize_qwc_pauli_words, not_qwc_grouping)
 
     @pytest.mark.usefixtures(
-        "use_legacy_opmath"
+        "legacy_opmath_only"
     )  # Handling a LinearCombination is not a problem under new opmath anymore
     def test_diagonalize_qwc_pauli_words_catch_invalid_type(self):
         """Test for ValueError raise when diagonalize_qwc_pauli_words is given a list
@@ -1012,7 +1004,7 @@ class TestMeasurementTransformations:
 
 class TestObservableHF:
 
-    with qml.operation.disable_new_opmath_cm():
+    with qml.operation.disable_new_opmath_cm(warn=False):
         HAMILTONIAN_SIMPLIFY = [
             (
                 qml.Hamiltonian(
@@ -1052,82 +1044,90 @@ class TestObservableHF:
             ),
         ]
 
-    @pytest.mark.usefixtures("use_legacy_opmath")
+    @pytest.mark.usefixtures("legacy_opmath_only")
     @pytest.mark.parametrize(("hamiltonian", "result"), HAMILTONIAN_SIMPLIFY)
     def test_simplify(self, hamiltonian, result):
         r"""Test that simplify returns the correct hamiltonian."""
         h = simplify(hamiltonian)
         assert h.compare(result)
 
+    def test_simplify_deprecation(self):
+        """Test that a deprecation warning is raised when using simplify"""
+        with pytest.warns(qml.PennyLaneDeprecationWarning, match="qml.ops.Hamiltonian"):
+            h = qml.ops.Hamiltonian([1.5, 2.5], [qml.X(0), qml.Z(0)])
 
+        with pytest.warns(qml.PennyLaneDeprecationWarning, match="qml.pauli.simplify"):
+            _ = simplify(h)
+
+
+@pytest.mark.usefixtures("legacy_opmath_only")
 class TestTapering:
-    with qml.operation.disable_new_opmath_cm():
-        terms_bin_mat_data = [
-            (
-                [
-                    qml.Identity(wires=[0]),
-                    qml.PauliZ(wires=[0]),
-                    qml.PauliZ(wires=[1]),
-                    qml.PauliZ(wires=[2]),
-                    qml.PauliZ(wires=[3]),
-                    qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[1]),
-                    qml.PauliY(wires=[0])
-                    @ qml.PauliX(wires=[1])
-                    @ qml.PauliX(wires=[2])
-                    @ qml.PauliY(wires=[3]),
-                    qml.PauliY(wires=[0])
-                    @ qml.PauliY(wires=[1])
-                    @ qml.PauliX(wires=[2])
-                    @ qml.PauliX(wires=[3]),
-                    qml.PauliX(wires=[0])
-                    @ qml.PauliX(wires=[1])
-                    @ qml.PauliY(wires=[2])
-                    @ qml.PauliY(wires=[3]),
-                    qml.PauliX(wires=[0])
-                    @ qml.PauliY(wires=[1])
-                    @ qml.PauliY(wires=[2])
-                    @ qml.PauliX(wires=[3]),
-                    qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[2]),
-                    qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[3]),
-                    qml.PauliZ(wires=[1]) @ qml.PauliZ(wires=[2]),
-                    qml.PauliZ(wires=[1]) @ qml.PauliZ(wires=[3]),
-                    qml.PauliZ(wires=[2]) @ qml.PauliZ(wires=[3]),
-                ],
-                4,
-                np.array(
-                    [
-                        [0, 0, 0, 0, 0, 0, 0, 0],
-                        [1, 0, 0, 0, 0, 0, 0, 0],
-                        [0, 1, 0, 0, 0, 0, 0, 0],
-                        [0, 0, 1, 0, 0, 0, 0, 0],
-                        [0, 0, 0, 1, 0, 0, 0, 0],
-                        [1, 1, 0, 0, 0, 0, 0, 0],
-                        [1, 0, 0, 1, 1, 1, 1, 1],
-                        [1, 1, 0, 0, 1, 1, 1, 1],
-                        [0, 0, 1, 1, 1, 1, 1, 1],
-                        [0, 1, 1, 0, 1, 1, 1, 1],
-                        [1, 0, 1, 0, 0, 0, 0, 0],
-                        [1, 0, 0, 1, 0, 0, 0, 0],
-                        [0, 1, 1, 0, 0, 0, 0, 0],
-                        [0, 1, 0, 1, 0, 0, 0, 0],
-                        [0, 0, 1, 1, 0, 0, 0, 0],
-                    ]
-                ),
-            ),
-            (
-                [
-                    qml.PauliZ(wires=["a"]) @ qml.PauliX(wires=["b"]),
-                    qml.PauliZ(wires=["a"]) @ qml.PauliY(wires=["c"]),
-                    qml.PauliX(wires=["a"]) @ qml.PauliY(wires=["d"]),
-                ],
-                4,
-                np.array(
-                    [[1, 0, 0, 0, 0, 1, 0, 0], [1, 0, 1, 0, 0, 0, 1, 0], [0, 0, 0, 1, 1, 0, 0, 1]]
-                ),
-            ),
-        ]
 
-    @pytest.mark.usefixtures("use_legacy_opmath")
+    terms_bin_mat_data = [
+        (
+            [
+                qml.Identity(wires=[0]),
+                qml.PauliZ(wires=[0]),
+                qml.PauliZ(wires=[1]),
+                qml.PauliZ(wires=[2]),
+                qml.PauliZ(wires=[3]),
+                qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[1]),
+                qml.PauliY(wires=[0])
+                @ qml.PauliX(wires=[1])
+                @ qml.PauliX(wires=[2])
+                @ qml.PauliY(wires=[3]),
+                qml.PauliY(wires=[0])
+                @ qml.PauliY(wires=[1])
+                @ qml.PauliX(wires=[2])
+                @ qml.PauliX(wires=[3]),
+                qml.PauliX(wires=[0])
+                @ qml.PauliX(wires=[1])
+                @ qml.PauliY(wires=[2])
+                @ qml.PauliY(wires=[3]),
+                qml.PauliX(wires=[0])
+                @ qml.PauliY(wires=[1])
+                @ qml.PauliY(wires=[2])
+                @ qml.PauliX(wires=[3]),
+                qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[2]),
+                qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[3]),
+                qml.PauliZ(wires=[1]) @ qml.PauliZ(wires=[2]),
+                qml.PauliZ(wires=[1]) @ qml.PauliZ(wires=[3]),
+                qml.PauliZ(wires=[2]) @ qml.PauliZ(wires=[3]),
+            ],
+            4,
+            np.array(
+                [
+                    [0, 0, 0, 0, 0, 0, 0, 0],
+                    [1, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 1, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 1, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 1, 0, 0, 0, 0],
+                    [1, 1, 0, 0, 0, 0, 0, 0],
+                    [1, 0, 0, 1, 1, 1, 1, 1],
+                    [1, 1, 0, 0, 1, 1, 1, 1],
+                    [0, 0, 1, 1, 1, 1, 1, 1],
+                    [0, 1, 1, 0, 1, 1, 1, 1],
+                    [1, 0, 1, 0, 0, 0, 0, 0],
+                    [1, 0, 0, 1, 0, 0, 0, 0],
+                    [0, 1, 1, 0, 0, 0, 0, 0],
+                    [0, 1, 0, 1, 0, 0, 0, 0],
+                    [0, 0, 1, 1, 0, 0, 0, 0],
+                ]
+            ),
+        ),
+        (
+            [
+                qml.PauliZ(wires=["a"]) @ qml.PauliX(wires=["b"]),
+                qml.PauliZ(wires=["a"]) @ qml.PauliY(wires=["c"]),
+                qml.PauliX(wires=["a"]) @ qml.PauliY(wires=["d"]),
+            ],
+            4,
+            np.array(
+                [[1, 0, 0, 0, 0, 1, 0, 0], [1, 0, 1, 0, 0, 0, 1, 0], [0, 0, 0, 1, 1, 0, 0, 1]]
+            ),
+        ),
+    ]
+
     @pytest.mark.parametrize(("terms", "num_qubits", "result"), terms_bin_mat_data)
     def test_binary_matrix_from_pws(self, terms, num_qubits, result):
         r"""Test that _binary_matrix_from_pws returns the correct result."""
