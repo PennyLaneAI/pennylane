@@ -17,7 +17,6 @@ This module contains the :class:`Wires` class, which takes care of wire bookkeep
 import functools
 import itertools
 from collections.abc import Hashable, Iterable, Sequence
-
 from typing import Union
 
 import numpy as np
