@@ -111,6 +111,10 @@
   a sparse matrix.
   [(#6173)](https://github.com/PennyLaneAI/pennylane/pull/6173)
 
+* `mitigate_with_zne` now gives clearer error message when being used with circuits with channel noise.
+  [(#)](https://github.com/PennyLaneAI/pennylane/pull/)
+
+
 <h3>Breaking changes 💔</h3>
 
 * The `simplify` argument in `qml.Hamiltonian` and `qml.ops.LinearCombination` has been removed.
