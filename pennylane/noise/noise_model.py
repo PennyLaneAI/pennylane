@@ -32,8 +32,6 @@ class NoiseModel:
             to ``model_map``. The signature of ``noise_fn`` must be
             ``noise_fn(mp: MeasurementProcess, **kwargs) -> None``, where ``mp`` is
             the measurement process that the conditional evaluates.
-        Data for specifying error in measurements
-            similar to the ``model_map``
         **kwargs: Keyword arguments for specifying metadata related to noise model.
 
     .. note::
