@@ -45,6 +45,7 @@ quantum circuit. One can construct standard Boolean functions using the followin
 .. autosummary::
     :toctree: api
 
+    ~meas_eq
     ~op_eq
     ~op_in
     ~wires_eq
@@ -57,7 +58,6 @@ as follows:
 >>> op1, op2 = qml.PauliX(0), qml.PauliX(1)
 >>> fn(op1)
 True
-
 >>> fn(op2)
 False
 
@@ -174,6 +174,7 @@ above, such as :func:`~.op_eq`. These objects do not need to be instantiated dir
 .. autosummary::
     :toctree: api
 
+    ~MeasEq
     ~OpEq
     ~OpIn
     ~WiresEq
