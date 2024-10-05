@@ -169,11 +169,6 @@ class Wires(Sequence):
     def __hash__(self):
         """Implements the hash function."""
 
-        if any(qml.math.is_abstract(w) for w in self._labels) and qml.capture.enabled():
-            raise WireError(
-                "Cannot hash wires that contain abstract objects with qml.capture enabled."
-            )
-
         if self._hash is None:
             self._hash = hash(self._labels)
         return self._hash
