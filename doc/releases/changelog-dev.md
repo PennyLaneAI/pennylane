@@ -112,8 +112,7 @@
   [(#6173)](https://github.com/PennyLaneAI/pennylane/pull/6173)
 
 * `mitigate_with_zne` now gives clearer error message when being used with circuits with channel noise.
-  [(#)](https://github.com/PennyLaneAI/pennylane/pull/)
-
+  [(#6346)](https://github.com/PennyLaneAI/pennylane/pull/6346)
 
 <h3>Breaking changes 💔</h3>
 
