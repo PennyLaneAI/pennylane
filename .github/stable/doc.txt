@@ -105,7 +105,7 @@ tensorflow==2.11.1
 tensorflow-estimator==2.11.0
 tensorflow-io-gcs-filesystem==0.37.1
 tensornetwork==0.3.0
-termcolor==2.4.0
+termcolor==2.5.0
 toml==0.10.2
 tomli==2.0.2
 torch==1.9.0+cpu
