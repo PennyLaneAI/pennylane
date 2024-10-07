@@ -264,7 +264,7 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
             )
 
         # Since we only care about the probabilities, we can simplify the task here by creating a 'pseudo-state' to carry the diagonal elements and reuse the process_state method
-        p_state = np.sqrt(prob)
+        p_state = qml.math.sqrt(prob)
         return self.process_state(p_state, wire_order)
 
     @staticmethod

@@ -86,7 +86,7 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
     iteration, and across the life of the optimizer, respectively.
 
     >>> shape = qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=2)
-    >>> params = pnp.random.random(shape)
+    >>> params = np.random.random(shape)
     >>> opt = qml.ShotAdaptiveOptimizer(min_shots=10, term_sampling="weighted_random_sampling")
     >>> for i in range(60):
     ...    params = opt.step(cost, params)
@@ -343,7 +343,7 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
     def compute_grad(
         self, objective_fn, args, kwargs
     ):  # pylint: disable=signature-differs,arguments-differ,arguments-renamed
-        r"""Compute gradient of the objective function, as well as the variance of the gradient,
+        r"""Compute the gradient of the objective function, as well as the variance of the gradient,
         at the given point.
 
         Args:
