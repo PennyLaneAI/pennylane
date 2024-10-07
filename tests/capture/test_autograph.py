@@ -20,33 +20,20 @@ from collections import defaultdict
 import jax
 import jax.numpy as jnp
 import numpy as np
-import pennylane as qml
 import pytest
+from catalyst import debug, qjit
 from jax.errors import TracerBoolConversionError
 from numpy.testing import assert_allclose
 
-from catalyst import (
-    AutoGraphError,
-    adjoint,
+import pennylane as qml
+from pennylane import cond, for_loop, grad, jacobian, jvp, measure, vjp, vmap, while_loop
+from pennylane.capture.autograph.transformer import (
+    TRANSFORMER,
     autograph_source,
-    cond,
-    ctrl,
-    debug,
     disable_autograph,
-    for_loop,
-    grad,
-    jacobian,
-    jvp,
-    measure,
-    qjit,
     run_autograph,
-    vjp,
-    vmap,
-    while_loop,
 )
-from catalyst.autograph.transformer import TRANSFORMER
-from catalyst.utils.dummy import dummy_func
-from catalyst.utils.exceptions import CompileError
+from pennylane.capture.autograph.utils import AutoGraphError, CompileError, dummy_func
 
 check_cache = TRANSFORMER.has_cache
 
@@ -81,7 +68,10 @@ class TestSourceCodeInfo:
 
     def test_non_converted_function(self):
         """Test the robustness of traceback conversion on a non-converted function."""
-        from catalyst.autograph.ag_primitives import get_source_code_info
+        # from catalyst.autograph.ag_primitives import get_source_code_info
+        from pennylane.capture.autograph.ag_primitives import (  # why not top-level?
+            get_source_code_info,
+        )
 
         try:
             result = ""

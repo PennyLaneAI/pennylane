@@ -21,6 +21,22 @@ class AutoGraphError(Exception):
     """Errors related to Catalyst's AutoGraph module."""
 
 
+class CompileError(Exception):
+    """Error encountered in the compilation phase."""
+
+
+def dummy_func(x):
+    """Simple function with if statements for testing the 'auto_include' option of @qjit.
+    The parent 'catalyst' module is excluded for autograph conversion by default, hence
+    adding this module explicitly to the inclusion list will override that restriction"""
+
+    if x > 5:
+        y = x**2
+    else:
+        y = x**3
+    return y
+
+
 class Patcher:
     """Patcher, a class to replace object attributes.
 
