@@ -489,6 +489,29 @@ def sample_state(
     with qml.queuing.QueuingManager.stop_recording():
         probs = qml.probs(wires=wires_to_sample).process_state(flat_state, state_wires)
 
+    # Here we are supposed to get the probs, and then we do everything separately
+    return sample_probs(probs, basis_states, shots, num_wires, is_state_batched, rng)
+
+
+def sample_probs(probs, basis_states, shots, num_wires, is_state_batched, rng):
+    """
+    Sample from given probabilities using numpy's random number generator.
+
+    Args:
+    probs (array): Probability distribution to sample from.
+    basis_states (array): Possible basis states to sample.
+    shots (int): Number of samples to take.
+    num_wires (int): Number of qubits (wires) in the system.
+    is_state_batched (bool): Whether the state is batched.
+    rng (numpy.random.Generator): Random number generator.
+
+    Returns:
+    ndarray[int]: Sample values of shape (shots, num_wires) or (batch_size, shots, num_wires) if batched.
+
+    Note:
+    This function includes normalization for cases where probabilities might not sum exactly to 1
+    due to numerical precision issues, particularly with the PyTorch interface.
+    """
     # when using the torch interface with float32 as default dtype,
     # probabilities must be renormalized as they may not sum to one
     # see https://github.com/PennyLaneAI/pennylane/issues/5444
@@ -549,7 +572,6 @@ def _sample_state_jax(
     """
     # pylint: disable=import-outside-toplevel
     import jax
-    import jax.numpy as jnp
 
     if prng_key is None:
         prng_key = jax.random.PRNGKey(np.random.default_rng(seed).integers(100000))
@@ -565,8 +587,39 @@ def _sample_state_jax(
     with qml.queuing.QueuingManager.stop_recording():
         probs = qml.probs(wires=wires_to_sample).process_state(flat_state, state_wires)
 
+    state_len = len(state)
+    return sample_probs_jax(
+        probs, basis_states, shots, num_wires, is_state_batched, prng_key, state_len
+    )
+
+
+def sample_probs_jax(probs, basis_states, shots, num_wires, is_state_batched, prng_key, state_len):
+    """
+    Sample from given probabilities using JAX's random number generator.
+
+    Args:
+        probs (array): Probability distribution to sample from.
+        basis_states (array): Possible basis states to sample.
+        shots (int): Number of samples to take.
+        num_wires (int): Number of qubits (wires) in the system.
+        is_state_batched (bool): Whether the state is batched.
+        prng_key (jax.random.PRNGKey): Key for JAX's pseudo-random number generator.
+        state_len (int): Length of the state vector (used for batched states).
+
+    Returns:
+        ndarray[int]: Sample values of shape (shots, num_wires) or (batch_size, shots, num_wires) if batched.
+
+    Note:
+        This function uses JAX's random number generation for sampling, which differs from the numpy version.
+    """
+    # when using the torch interface with float32 as default dtype,
+    # probabilities must be renormalized as they may not sum to one
+    # see
+    import jax
+    import jax.numpy as jnp
+
     if is_state_batched:
-        keys = jax_random_split(prng_key, num=len(state))
+        keys = jax_random_split(prng_key, num=state_len)
         samples = jnp.array(
             [
                 jax.random.choice(_key, basis_states, shape=(shots,), p=prob)
