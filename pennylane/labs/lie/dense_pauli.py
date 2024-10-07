@@ -83,16 +83,27 @@ def product(tensor1, tensor2, broadcasted=False):
     """Product of two tensors representing Pauli sentences on the same number of wires.
 
     Args:
-        tensor1
-        tensor2
+        tensor1 (np.ndarray): First factor for the product.
+        tensor2 (np.ndarray): Second factor for the product, with same shape as first
+            factor up to broadcasting
+        broadcasted (Union[bool, list[bool]]): Whether, and which, inputs are broadcasted.
+            See below for details.
 
     Returns:
-        np.ndarray
+        np.ndarray: Pauli product of the two input tensors.
 
-    Supports broadcasting in leading axes for one or both inputs.
-    If both inputs are broadcasted, the broadcasting axes are not merged.
+    **Broadcasting**
+
+    This function supports broadcasting in up to one leading axis for one or both inputs.
+    For this, the ``broadcasted`` input has to be specified:
+
+    - ``False`` or ``[False, False]``: Neither input is broadcasted
+    - ``True`` or ``[True, True]``: Both inputs are broadcasted, the output has two
+      broadcasting axes.
+    - ``[True, False]`` or ``[False, True]``: Only the indicated input is broadcasted
+    - ``"merge"``: Both inputs are broadcasted, the output only has one broadcasting axis.
+
     """
-    # TODO: Replace einsum by optimized-order tensordots
     if broadcasted == "merge":
         broadcasted = [True, True]
         broadcasting_strs = ["m", "m", "m"]
@@ -107,23 +118,40 @@ def product(tensor1, tensor2, broadcasted=False):
     n = tensor1.ndim - int(broadcasted[0])
     if n > 6 or (tensor2.ndim - int(broadcasted[1])) != n:
         raise NotImplementedError
+
     idx_groups_inputs = [
         broadcasting_strs[0] + "abcdef"[:n],
         broadcasting_strs[1] + "ghijkl"[:n],
     ] + ["agz", "bhy", "cix", "djw", "ekv", "flu"][:n]
     idx_output = broadcasting_strs[2] + "zyxwvu"[:n]
+    # TODO: Replace einsum by optimized-order tensordots
     einsum_str = ",".join(idx_groups_inputs) + f"->{idx_output}"
     return np.einsum(einsum_str, tensor1, tensor2, *([contractor] * n))
 
 
-def commutator(tensor1, tensor2):
+def commutator(tensor1, tensor2, broadcasted=False):
     """Commutator between two tensors representing Pauli sentences on the same number of wires.
 
     Args:
-        tensor1
-        tensor2
+        tensor1 (np.ndarray): First term in the commutator.
+        tensor2 (np.ndarray): Second term in the commutator, with same shape as first
+            term up to broadcasting
+        broadcasted (Union[bool, list[bool]]): Whether, and which, inputs are broadcasted.
+            See below for details.
 
     Returns:
-        np.ndarray
+        np.ndarray: Pauli product of the two input tensors.
+
+    **Broadcasting**
+
+    This function supports broadcasting in up to one leading axis for one or both inputs.
+    For this, the ``broadcasted`` input has to be specified:
+
+    - ``False`` or ``[False, False]``: Neither input is broadcasted
+    - ``True`` or ``[True, True]``: Both inputs are broadcasted, the output has two
+      broadcasting axes.
+    - ``[True, False]`` or ``[False, True]``: Only the indicated input is broadcasted
+    - ``"merge"``: Both inputs are broadcasted, the output only has one broadcasting axis.
+
     """
-    return product(tensor1, tensor2) - product(tensor2, tensor1)
+    return product(tensor1, tensor2, broadcasted) - product(tensor2, tensor1, broadcasted)
