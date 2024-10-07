@@ -107,9 +107,6 @@ class TestStateMeasurement:
             def process_state(self, state, wire_order):
                 return qml.math.sum(state)
 
-            def process_density_matrix(self, density_matrix, wire_order):
-                return qml.math.sum(density_matrix)
-
         dev = qml.device("default.mixed", wires=2)
 
         @qml.qnode(dev)
@@ -124,9 +121,6 @@ class TestStateMeasurement:
         class MyMeasurement(StateMeasurement):
             def process_state(self, state, wire_order):
                 return qml.math.sum(state)
-
-            def process_density_matrix(self, density_matrix, wire_order):
-                return qml.math.sum(density_matrix)
 
         dev = qml.device("default.mixed", wires=2, shots=1000)
 
