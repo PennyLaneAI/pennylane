@@ -188,17 +188,21 @@ def matrix(op: Union[Operator, PauliWord, PauliSentence], wire_order=None) -> Te
 
     if not isinstance(op, Operator):
 
-        if (is_pauli := isinstance(op, (PauliWord, PauliSentence))) or isinstance(
-            op, QuantumScript
-        ):
+        if isinstance(op, (PauliWord, PauliSentence)):
+            if wire_order is None and len(op.wires) > 1:
+                raise ValueError(
+                    "wire_order is required by qml.matrix() for PauliWords "
+                    "or PauliSentences with more than one wire."
+                )
+            return op.to_mat(wire_order=wire_order)
+
+        if isinstance(op, QuantumScript):
             if wire_order is None:
-                error_base_str = f"wire_order is required by qml.matrix() for {type(op)}s"
+                error_base_str = f"wire_order is required by qml.matrix() for tapes"
                 if len(op.wires) > 1:
                     raise ValueError(error_base_str + " with more than one wire.")
                 if len(op.wires) == 0:
                     raise ValueError(error_base_str + " without wires.")
-            if is_pauli:
-                return op.to_mat(wire_order=wire_order)
 
         elif isinstance(op, qml.QNode):
             if wire_order is None and op.device.wires is None:
