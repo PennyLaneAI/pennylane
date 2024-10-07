@@ -19,7 +19,7 @@ from typing import Callable, Sequence, Union
 has_jax = True
 try:
     import jax
-except ImportError:
+except ImportError:  # pragma: no cover
     has_jax = False
 
 
@@ -77,7 +77,10 @@ def make_plxpr(func: Callable, static_argnums: Union[int, Sequence[int]] = (), *
       in (b,) }
 
     """
-    if not has_jax:
-        return None
+    if not has_jax:  # pragma: no cover
+        raise ImportError(
+            "Module jax is required for the ``make_plxpr`` function. "
+            "You can install jax via: pip install jax"
+        )
 
     return jax.make_jaxpr(func, static_argnums=static_argnums, **kwargs)
