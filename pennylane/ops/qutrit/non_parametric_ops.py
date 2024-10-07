@@ -111,7 +111,7 @@ class TShift(Operation):
         if z == 1:
             return [TShift(wires=self.wires)]
         if z == 2:
-            return [TShift(wires=self.wires),TShift(wires=self.wires)]
+            return [TShift(wires=self.wires), TShift(wires=self.wires)]
 
         raise PowUndefinedError
 

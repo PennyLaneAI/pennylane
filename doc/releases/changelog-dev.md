@@ -278,6 +278,9 @@
   [(#6278)](https://github.com/PennyLaneAI/pennylane/pull/6278)
   [(#6310)](https://github.com/PennyLaneAI/pennylane/pull/6310)
 
+* Fixes a bug preventing `qml.TShift` from being raised to the power of 2.
+  [(#6356)](https://github.com/PennyLaneAI/pennylane/pull/6356)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
