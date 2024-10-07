@@ -621,9 +621,6 @@ class TestStateMeasurement:
             def process_state(self, state, wire_order):
                 return qml.math.sum(state)
 
-            def process_density_matrix(self, density_matrix, wire_order):
-                return 1
-
             @property
             def return_type(self):
                 return State
@@ -646,9 +643,6 @@ class TestStateMeasurement:
             def process_state(self, state, wire_order):
                 return qml.math.sum(state)
 
-            def process_density_matrix(self, density_matrix, wire_order):
-                return 1
-
             @property
             def return_type(self):
                 return State
@@ -666,6 +660,19 @@ class TestStateMeasurement:
             qml.DeviceError, match="not accepted with finite shots on default.qubit"
         ):
             circuit()
+
+    def test_state_measurement_process_density_matrix_not_implemented(self):
+        """Test that the process_density_matrix method of StateMeasurement raises
+        NotImplementedError."""
+
+        class MyMeasurement(StateMeasurement):
+            def process_state(self, state, wire_order):
+                return qml.math.sum(state)
+
+        with pytest.raises(NotImplementedError):
+            MyMeasurement().process_density_matrix(
+                density_matrix=qml.math.array([[1, 0], [0, 0]]), wire_order=Wires([0, 1])
+            )
 
 
 class TestMeasurementTransform:

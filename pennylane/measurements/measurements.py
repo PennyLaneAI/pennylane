@@ -655,7 +655,6 @@ class StateMeasurement(MeasurementProcess):
                 dimension :math:`2^n` acts on a subspace of :math:`n` wires
         """
 
-    @abstractmethod
     def process_density_matrix(self, density_matrix: TensorLike, wire_order: Wires):
         """
         Process the given density matrix.
@@ -670,6 +669,7 @@ class StateMeasurement(MeasurementProcess):
                 the mapping of matrix dimensions to physical qubits, allowing the function to correctly
                 trace out the subsystems not involved in the measurement or operation.
         """
+        raise NotImplementedError
 
 
 class MeasurementTransform(MeasurementProcess):
