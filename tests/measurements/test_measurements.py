@@ -674,6 +674,7 @@ class TestStateMeasurement:
                 density_matrix=qml.math.array([[1, 0], [0, 0]]), wire_order=Wires([0, 1])
             )
 
+
 class TestMeasurementTransform:
     """Tests for the MeasurementTransform class."""
 
