@@ -12,4 +12,4 @@
 # limitations under the License.
 """qml.labs module for Lie algebraic tools."""
 
-from .dense_pauli import ps_to_tensor, product, commutator
+from .dense_pauli import ps_to_tensor, product, commutator, VSpace

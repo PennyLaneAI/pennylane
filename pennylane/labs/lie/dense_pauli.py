@@ -79,6 +79,24 @@ contractor = np.array(
 )
 
 
+def _broadcast_validation(tensor1, tensor2, broadcasted):
+    if broadcasted == "merge":
+        broadcasted = [True, True]
+        broadcasting_strs = ["m", "m", "m"]
+    else:
+        if broadcasted is False:
+            broadcasted = [False, False]
+        elif broadcasted is True:
+            broadcasted = [True, True]
+        broadcasting_strs = ["m" * int(broadcasted[0]), "n" * int(broadcasted[1])]
+        broadcasting_strs.append(broadcasting_strs[0] + broadcasting_strs[1])
+
+    n = tensor1.ndim - int(broadcasted[0])
+    if n > 6 or (tensor2.ndim - int(broadcasted[1])) != n:
+        raise NotImplementedError
+    return n, broadcasting_strs
+
+
 def product(tensor1, tensor2, broadcasted=False):
     """Product of two tensors representing Pauli sentences on the same number of wires.
 
@@ -104,21 +122,7 @@ def product(tensor1, tensor2, broadcasted=False):
     - ``"merge"``: Both inputs are broadcasted, the output only has one broadcasting axis.
 
     """
-    if broadcasted == "merge":
-        broadcasted = [True, True]
-        broadcasting_strs = ["m", "m", "m"]
-    else:
-        if broadcasted is False:
-            broadcasted = [False, False]
-        elif broadcasted is True:
-            broadcasted = [True, True]
-        broadcasting_strs = ["m" * int(broadcasted[0]), "n" * int(broadcasted[1])]
-        broadcasting_strs.append(broadcasting_strs[0] + broadcasting_strs[1])
-
-    n = tensor1.ndim - int(broadcasted[0])
-    if n > 6 or (tensor2.ndim - int(broadcasted[1])) != n:
-        raise NotImplementedError
-
+    n, broadcasting_strs = _broadcast_validation(tensor1, tensor2, broadcasted)
     idx_groups_inputs = [
         broadcasting_strs[0] + "abcdef"[:n],
         broadcasting_strs[1] + "ghijkl"[:n],
@@ -154,4 +158,78 @@ def commutator(tensor1, tensor2, broadcasted=False):
     - ``"merge"``: Both inputs are broadcasted, the output only has one broadcasting axis.
 
     """
-    return product(tensor1, tensor2, broadcasted) - product(tensor2, tensor1, broadcasted)
+    term1 = product(tensor1, tensor2, broadcasted)
+    term2 = np.moveaxis(product(tensor2, tensor1, broadcasted), 1, 0)
+    return term1 - term2
+
+
+def inner_product(tensor1, tensor2, broadcasted=False):
+    """ """
+    n, broadcasting_strs = _broadcast_validation(tensor1, tensor2, broadcasted)
+    idx_groups_inputs = [broadcasting_strs[0] + "abcdef"[:n], broadcasting_strs[1] + "abcdef"[:n]]
+    idx_output = broadcasting_strs[2]
+    # TODO: Replace einsum by optimized-order tensordots
+    einsum_str = ",".join(idx_groups_inputs) + f"->{idx_output}"
+    return np.einsum(einsum_str, tensor1.conj(), tensor2)
+
+
+class VSpace:
+    """A class representing a vector space of ``PauliSentence``\ s, encoded as tensors."""
+
+    _tensors: np.ndarray
+    num_wires: int
+    is_lie_closed: bool
+
+    def __init__(self, tensors, tol=1e-10):
+        tensors, tensor_shape, num_wires = self._validate_tensors(tensors)
+        self._tensors = tensors
+        self.tensor_shape = tensor_shape
+        self.num_wires = num_wires
+        self.is_lie_closed = False
+        self.tol = tol
+
+    @staticmethod
+    def _validate_tensors(tensors):
+        if isinstance(tensors, (list, tuple)):
+            tensors = np.stack(tensors)
+        exp_shape = (4,) * (tensors.ndim - 1)
+        assert tensors.shape[1:] == exp_shape
+        num_wires = tensors.ndim - 1
+        return tensors, exp_shape, num_wires
+
+    @property
+    def tensors(self):
+        return self._tensors
+
+    def __len__(self):
+        return len(self._tensors)
+
+    def lie_closure(self, max_iterations: int = 10000):
+        if self.is_lie_closed:
+            return self.tensors
+        old_length = 0
+        iteration = 0
+
+        while (len(self) > old_length) and (iteration < max_iterations):
+            coms = commutator(self.tensors, self.tensors[old_length:], broadcasted=True)
+            old_length = len(self)
+            coms = coms.reshape((-1, *self.tensor_shape))
+            self.add(coms)
+
+        self.is_lie_closed = True
+        return self.tensors
+
+    def project(self, other):
+        if isinstance(other, (tuple, list)):
+            other = np.stack(other)
+        overlaps = inner_product(self.tensors, other, broadcasted=True)
+        gram_mat = inner_product(self.tensors, self.tensors, broadcasted=True)
+        coeffs = np.linalg.pinv(gram_mat) @ overlaps
+        return np.moveaxis(np.tensordot(self.tensors, coeffs, axes=[[0], [0]]), -1, 0)
+
+    def add(self, new_tensors):
+        new_tensors -= self.project(new_tensors)
+        U, S, _ = np.linalg.svd(new_tensors.reshape((len(new_tensors), -1)).T)
+        rank = np.sum(S > self.tol)
+        new_tensors = U[:, :rank].T.reshape((rank, *self.tensor_shape))
+        self._tensors = np.concatenate([self._tensors, new_tensors], axis=0)
