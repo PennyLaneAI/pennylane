@@ -281,7 +281,7 @@ def classical_fisher(qnode, argnums=0):
     return wrapper
 
 
-@partial(transform, classical_cotransfom=_contract_metric_tensor_with_cjac, is_informative=True)
+@partial(transform, classical_cotransform=_contract_metric_tensor_with_cjac, is_informative=True)
 def quantum_fisher(
     tape: qml.tape.QuantumScript, device, *args, **kwargs
 ) -> tuple[qml.tape.QuantumScriptBatch, PostprocessingFn]:
