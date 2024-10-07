@@ -18,7 +18,7 @@ that do not depend on any parameters.
 # pylint:disable=arguments-differ
 import numpy as np
 
-from pennylane.operation import AdjointUndefinedError, Operation
+from pennylane.operation import AdjointUndefinedError, Operation, PowUndefinedError
 from pennylane.wires import Wires
 
 from .parametric_ops import validate_subspace
@@ -104,7 +104,16 @@ class TShift(Operation):
     # TODO: Add compute_decomposition once parametric ops are added.
 
     def pow(self, z):
-        return super().pow(z % 3)
+        z = z % 3
+
+        if z == 0:
+            return []
+        if z == 1:
+            return [TShift(wires=self.wires)]
+        if z == 2:
+            return [TShift(wires=self.wires),TShift(wires=self.wires)]
+
+        raise PowUndefinedError
 
 
 class TClock(Operation):
