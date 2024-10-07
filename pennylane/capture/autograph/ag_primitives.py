@@ -13,7 +13,7 @@
 # limitations under the License.
 
 """
-This module provides the implementation of AutoGraph primitives in terms of traceable Catalyst
+This module provides the implementation of AutoGraph primitives in terms of traceable PennyLane
 functions. The purpose is to convert imperative style code to functional or graph-style code.
 """
 import copy
@@ -22,22 +22,30 @@ import operator
 import warnings
 from typing import Any, Callable, Iterator, SupportsIndex, Tuple, Union
 
-import jax
-import jax.numpy as jnp
-import pennylane as qml
+import catalyst
+from catalyst.tracing.contexts import EvaluationContext
 from malt.core import config as ag_config
 from malt.impl import api as ag_api
 from malt.impl.api import converted_call as ag_converted_call
 from malt.operators import py_builtins as ag_py_builtins
 from malt.operators.variables import Undefined
 from malt.pyct.origin_info import LineLocation
+
+import pennylane as qml
 from pennylane.queuing import AnnotatedQueue
 
-import catalyst
-from catalyst.jax_extras import DynamicJaxprTracer, ShapedArray
-from catalyst.tracing.contexts import EvaluationContext
-from catalyst.utils.exceptions import AutoGraphError
-from catalyst.utils.patching import Patcher
+from .utils import AutoGraphError, Patcher
+
+has_jax = True
+try:
+    import jax
+    import jax.numpy as jnp
+    from jax.core import ShapedArray
+    from jax.interpreters.partial_eval import DynamicJaxprTracer
+
+except ImportError:
+    has_jax = False
+
 
 __all__ = [
     "if_stmt",
@@ -111,13 +119,13 @@ def if_stmt(
     _num_results: int,
 ):
     """An implementation of the AutoGraph 'if' statement. The interface is defined by AutoGraph,
-    here we merely provide an implementation of it in terms of Catalyst primitives."""
+    here we merely provide an implementation of it in terms of PennyLane primitives."""
 
     # Cache the initial state of all modified variables. Required because we trace all branches,
     # and want to restore the initial state before entering each branch.
     init_state = get_state()
 
-    @catalyst.cond(pred)
+    @qml.cond(pred)
     def functional_cond():
         set_state(init_state)
         true_fn()
@@ -187,7 +195,7 @@ def assert_iteration_results(inputs, outputs, symbol_names):
             )
 
 
-def _call_catalyst_for(
+def _call_pennylane_for(
     start,
     stop,
     step,
@@ -198,14 +206,14 @@ def _call_catalyst_for(
     enum_start=None,
     array_iterable=None,
 ):
-    """Dispatch to a Catalyst implementation of for loops."""
+    """Dispatch to a PennyLane implementation of for loops."""
 
     # Ensure iteration arguments are properly initialized. We cannot process uninitialized
     # loop carried values as we need their type information for tracing.
     init_iter_args = get_state()
     assert_iteration_inputs(init_iter_args, symbol_names)
 
-    @catalyst.for_loop(start, stop, step)
+    @qml.for_loop(start, stop, step)
     def functional_for(i, *iter_args):
         # Assign tracers to the iteration variables identified by AutoGraph (iter_args in mlir).
         set_state(iter_args)
@@ -251,14 +259,14 @@ def for_stmt(
     _opts: dict,
 ):
     """An implementation of the AutoGraph 'for .. in ..' statement. The interface is defined by
-    AutoGraph, here we merely provide an implementation of it in terms of Catalyst primitives."""
+    AutoGraph, here we merely provide an implementation of it in terms of PennyLane primitives."""
 
     assert _extra_test is None
 
     # The general approach is to convert as much code as possible into a graph-based form:
     # - For loops over iterables will attempt a conversion of the iterable to array, and fall back
     #   to Python otherwise.
-    # - For loops over a Python range will be converted to a native Catalyst for loop. However,
+    # - For loops over a Python range will be converted to a native PennyLane for loop. However,
     #   since the now dynamic iteration variable can cause issues in downstream user code, any
     #   errors raised during the tracing of the loop body will restart the tracing process using
     #   a Python loop instead.
@@ -273,7 +281,7 @@ def for_stmt(
     #   -> this will raise a warning to allow users to correct mistakes and allow the conversion
     #      to succeed, for example because they forgot to use a list instead of an array
 
-    # pylint: disable=missing-class-docstring
+    # pylint: disable=missing-class-docstring, too-few-public-methods, multiple-statements
     class EmptyResult: ...
 
     results = EmptyResult()
@@ -281,11 +289,11 @@ def for_stmt(
     init_state = get_state()
     assert len(init_state) == len(symbol_names)
 
-    if isinstance(iteration_target, CRange):
+    if isinstance(iteration_target, PRange):
         start, stop, step = iteration_target.get_raw_range()
         enum_start = None
         iteration_array = None
-    elif isinstance(iteration_target, CEnumerate):
+    elif isinstance(iteration_target, PEnumerate):
         start, stop, step = 0, len(iteration_target.iteration_target), 1
         enum_start = iteration_target.start_idx
         try:
@@ -313,14 +321,14 @@ def for_stmt(
             f"the following with AutoGraph:\n{for_loop_info}"
         )
 
-    # Attempt to trace the Catalyst for loop.
+    # Attempt to trace the PennyLane for loop.
     if not fallback:
         reference_tracers = (start, stop, step, *init_state)
         num_instructions = get_program_length(reference_tracers)
 
         try:
             set_state(init_state)
-            results = _call_catalyst_for(
+            results = _call_pennylane_for(
                 start,
                 stop,
                 step,
@@ -373,8 +381,8 @@ def for_stmt(
     set_state(results)
 
 
-def _call_catalyst_while(loop_test, loop_body, get_state, set_state, symbol_names):
-    """Dispatch to a Catalyst implementation of while loops."""
+def _call_pennylane_while(loop_test, loop_body, get_state, set_state, symbol_names):
+    """Dispatch to a PennyLane implementation of while loops."""
 
     init_iter_args = get_state()
     assert_iteration_inputs(init_iter_args, symbol_names)
@@ -386,7 +394,7 @@ def _call_catalyst_while(loop_test, loop_body, get_state, set_state, symbol_name
         set_state(old)
         return res
 
-    @catalyst.while_loop(test)
+    @qml.while_loop(test)
     def functional_while(iter_args):
         set_state(iter_args)
         loop_body()
@@ -408,7 +416,7 @@ def _call_python_while(loop_test, loop_body, get_state, _set_state):
 
 def while_stmt(loop_test, loop_body, get_state, set_state, symbol_names, _opts):
     """An implementation of the AutoGraph 'while ..' statement. The interface is defined by
-    AutoGraph, here we merely provide an implementation of it in terms of Catalyst primitives."""
+    AutoGraph, here we merely provide an implementation of it in terms of PennyLane primitives."""
 
     fallback = False
     init_state = get_state()
@@ -417,7 +425,7 @@ def while_stmt(loop_test, loop_body, get_state, set_state, symbol_names, _opts):
     num_instructions = get_program_length(reference_tracers)
 
     try:
-        results = _call_catalyst_while(loop_test, loop_body, get_state, set_state, symbol_names)
+        results = _call_pennylane_while(loop_test, loop_body, get_state, set_state, symbol_names)
 
     except Exception as e:  # pylint: disable=broad-exception-caught
         if catalyst.autograph_strict_conversion:
@@ -488,9 +496,6 @@ def get_source_code_info(tb_frame):
                 if isinstance(obj, qml.QNode):
                     ag_source_map = obj.ag_source_map
                     break
-                if isinstance(obj, catalyst.QJIT):
-                    ag_source_map = obj.user_function.ag_source_map
-                    break
     except:  # nosec B110 # pylint: disable=bare-except # pragma: nocover
         pass
 
@@ -529,19 +534,19 @@ def converted_call(fn, args, kwargs, caller_fn_scope=None, options=None):
 
     # TODO: eliminate the need for patching by improving the autograph interface
     with Patcher(
-        (ag_api, "_TRANSPILER", catalyst.autograph.transformer.TRANSFORMER),
+        (ag_api, "_TRANSPILER", qml.autograph.transformer.TRANSFORMER),
         (ag_config, "CONVERSION_RULES", module_allowlist),
         (ag_py_builtins, "BUILTIN_FUNCTIONS_MAP", py_builtins_map),
     ):
-        # HOTFIX: pass through calls of known Catalyst wrapper functions
+        # HOTFIX: pass through calls of known PennyLane wrapper functions
         if fn in (
-            catalyst.adjoint,
-            catalyst.ctrl,
-            catalyst.grad,
-            catalyst.jacobian,
-            catalyst.vjp,
-            catalyst.jvp,
-            catalyst.vmap,
+            qml.adjoint,
+            qml.ctrl,
+            qml.grad,
+            qml.jacobian,
+            qml.vjp,
+            qml.jvp,
+            qml.vmap,
         ):
             assert args and callable(args[0])
             wrapped_fn = args[0]
@@ -559,11 +564,6 @@ def converted_call(fn, args, kwargs, caller_fn_scope=None, options=None):
         # We need to unpack nested QNode and QJIT calls as autograph will have trouble handling
         # them. Ideally, we only want the wrapped function to be transformed by autograph, rather
         # than the QNode or QJIT call method.
-
-        # For nested QJIT calls, the class already forwards to the wrapped function, bypassing any
-        # class functionality. We just do the same here:
-        if isinstance(fn, catalyst.QJIT):
-            fn = fn.user_function
 
         # For QNode calls, we employ a wrapper to correctly forward the quantum function call to
         # autograph, while still invoking the QNode call method in the surrounding tracing context.
@@ -583,14 +583,14 @@ def converted_call(fn, args, kwargs, caller_fn_scope=None, options=None):
 
 def set_item(target, i, x):
     """An implementation of the AutoGraph 'set_item' function. The interface is defined by
-    AutoGraph, here we merely provide an implementation of it in terms of Catalyst primitives.
+    AutoGraph, here we merely provide an implementation of it in terms of PennyLane primitives.
     The idea is to accept a simple assigment syntax for Jax arrays, to subsequently transform
     it under the hood into the set of 'at' and 'set' calls that Autograph supports. E.g.:
         target[i] = x -> target = target.at[i].set(x)
 
     .. note::
         For this feature to work, 'converter.Feature.LISTS' had to be added to the
-        TOP_LEVEL_OPTIONS and NESTED_LEVEL_OPTIONS conversion options of our own Catalyst
+        TOP_LEVEL_OPTIONS and NESTED_LEVEL_OPTIONS conversion options of our own PennyLane
         Autograph transformer. If you create a new transformer and want to support this feature,
         make sure you enable such option there as well.
     """
@@ -611,14 +611,14 @@ def set_item(target, i, x):
 def update_item_with_op(target, index, x, op):
     """An implementation of the 'update_item_with_op' function from operator_update. The interface
     is defined in operator_update.SingleIndexArrayOperatorUpdateTransformer, here we provide an
-    implementation in terms of Catalyst primitives. The idea is to accept an operator assignment
+    implementation in terms of PennyLane primitives. The idea is to accept an operator assignment
     syntax for Jax arrays, to subsequently transform it under the hood into the set of 'at' and
     operator calls that Autograph supports. E.g.:
         target[i] **= x -> target = target.at[i].power(x)
 
     .. note::
         For this feature to work, 'converter.Feature.LISTS' had to be added to the
-        TOP_LEVEL_OPTIONS and NESTED_LEVEL_OPTIONS conversion options of our own Catalyst
+        TOP_LEVEL_OPTIONS and NESTED_LEVEL_OPTIONS conversion options of our own PennyLane
         Autograph transformer. If you create a new transformer and want to support this feature,
         make sure you enable such option there as well.
     """
@@ -649,8 +649,8 @@ def update_item_with_op(target, index, x, op):
     return target
 
 
-class CRange:
-    """Catalyst range object.
+class PRange:
+    """PennyLane range object.
 
     Can be passed to a Python for loop for native conversion to a for_loop call.
     Otherwise this class behaves exactly like the Python range class.
@@ -721,8 +721,9 @@ class CRange:
         return self.py_range.__reversed__()
 
 
-class CEnumerate(enumerate):
-    """Catalyst enumeration object.
+# pylint: disable=too-few-public-methods
+class PEnumerate(enumerate):
+    """PennyLane enumeration object.
 
     Can be passed to a Python for loop for conversion into a for_loop call. The loop index, as well
     as the iterable element will be provided to the loop body.
@@ -739,6 +740,6 @@ class CEnumerate(enumerate):
 
 py_builtins_map = {
     **ag_py_builtins.BUILTIN_FUNCTIONS_MAP,
-    "range": CRange,
-    "enumerate": CEnumerate,
+    "range": PRange,
+    "enumerate": PEnumerate,
 }

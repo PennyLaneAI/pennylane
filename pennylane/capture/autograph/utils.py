@@ -15,18 +15,32 @@
 """
 Utils for autograph implementation
 """
-import copy
-import inspect
-from contextlib import ContextDecorator
-
-import pennylane as qml
-from malt.core import ag_ctx, converter
-from malt.impl.api import PyToPy
-
-import catalyst
-from . import ag_primitives, operator_update
-from catalyst.utils.exceptions import AutoGraphError
 
 
 class AutoGraphError(Exception):
     """Errors related to Catalyst's AutoGraph module."""
+
+
+class Patcher:
+    """Patcher, a class to replace object attributes.
+
+    Args:
+        patch_data: List of triples. The first element in the triple corresponds to the object
+        whose attribute is to be replaced. The second element is the attribute name. The third
+        element is the new value assigned to the attribute.
+    """
+
+    def __init__(self, *patch_data):
+        self.backup = {}
+        self.patch_data = patch_data
+
+        assert all(len(data) == 3 for data in patch_data)
+
+    def __enter__(self):
+        for obj, attr_name, fn in self.patch_data:
+            self.backup[(obj, attr_name)] = getattr(obj, attr_name)
+            setattr(obj, attr_name, fn)
+
+    def __exit__(self, _type, _value, _traceback):
+        for obj, attr_name, _ in self.patch_data:
+            setattr(obj, attr_name, self.backup[(obj, attr_name)])
