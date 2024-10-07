@@ -12,10 +12,12 @@
 # limitations under the License.
 """Tests for arithmetic of Pauli words and sentences with a dense representation."""
 
-import pytest
 import numpy as np
-from pennylane.labs.lie import ps_to_tensor, product, commutator
-from pennylane.pauli import PauliWord, PauliSentence
+import pytest
+
+from pennylane.labs.lie import commutator, product, ps_to_tensor
+from pennylane.pauli import PauliSentence, PauliWord
+
 
 def unit_tensor(n, idx):
     """Create a unit vector for tensors on n qubits, with idx marking the non-zero entry."""
@@ -23,6 +25,7 @@ def unit_tensor(n, idx):
     idx = (4 ** np.arange(n)) @ np.array(idx)[::-1]
     vec = np.eye(4**n)[idx]
     return vec.reshape((4,) * n)
+
 
 ps_to_tensor_test_cases = [
     (
@@ -52,6 +55,7 @@ ps_to_tensor_test_cases = [
     ),
 ]
 
+
 class TestPsToTensor:
     """Tests for the conversion function ``ps_to_tensor``."""
 
@@ -68,7 +72,6 @@ class TestPsToTensor:
         ps = PauliSentence({PauliWord({0: "X"}): 2.4, PauliWord({1: "Y"}): 0.3})
         out = ps_to_tensor(ps, 4, dtype=dtype)
         assert out.dtype == dtype
-
 
 
 class TestPauliProduct:
@@ -121,18 +124,22 @@ class TestPauliProduct:
     def test_broadcasting_first_factor(self):
         """Test product with broadcasting the first factor."""
         # [0.5 * (I Y Z X) - 1.2 (I I X Y), -1.2 * (X Y Z X) - 1.2 (I Z Y Y)]
-        tensor1 = np.stack([
-            unit_tensor(4, (0, 2, 3, 1)) * 0.5 - unit_tensor(4, (0, 0, 1, 2)) * 1.2,
-            unit_tensor(4, (1, 2, 3, 1)) * 0.5 - unit_tensor(4, (0, 3, 2, 2)) * 1.2,
-        ])
+        tensor1 = np.stack(
+            [
+                unit_tensor(4, (0, 2, 3, 1)) * 0.5 - unit_tensor(4, (0, 0, 1, 2)) * 1.2,
+                unit_tensor(4, (1, 2, 3, 1)) * 0.5 - unit_tensor(4, (0, 3, 2, 2)) * 1.2,
+            ]
+        )
         # 0.8 * (Z Y Z I)
         tensor2 = unit_tensor(4, (3, 2, 3, 0)) * 0.8
 
         out = product(tensor1, tensor2, broadcasted=[True, False])
-        expected = np.stack([
-            unit_tensor(4, (3, 0, 0, 1)) * 0.4 + unit_tensor(4, (3, 2, 2, 2)) * 0.96j,
-            unit_tensor(4, (2, 0, 0, 1)) * -0.4j - unit_tensor(4, (3, 1, 1, 2)) * 0.96,
-        ])
+        expected = np.stack(
+            [
+                unit_tensor(4, (3, 0, 0, 1)) * 0.4 + unit_tensor(4, (3, 2, 2, 2)) * 0.96j,
+                unit_tensor(4, (2, 0, 0, 1)) * -0.4j - unit_tensor(4, (3, 1, 1, 2)) * 0.96,
+            ]
+        )
         assert out.shape == expected.shape == (2,) + (4,) * 4
         assert np.allclose(out, expected)
 
@@ -141,33 +148,97 @@ class TestPauliProduct:
         # 0.8 * (Z Y Z I)
         tensor1 = unit_tensor(4, (3, 2, 3, 0)) * 0.8
         # [0.5 * (I Y Z X) - 1.2 (I I X Y),  -1.2 * (X Y Z X) - 1.2 (I Z Y Y)]
-        tensor2 = np.stack([
-            unit_tensor(4, (0, 2, 3, 1)) * 0.5 - unit_tensor(4, (0, 0, 1, 2)) * 1.2,
-            unit_tensor(4, (1, 2, 3, 1)) * 0.5 - unit_tensor(4, (0, 3, 2, 2)) * 1.2,
-        ])
+        tensor2 = np.stack(
+            [
+                unit_tensor(4, (0, 2, 3, 1)) * 0.5 - unit_tensor(4, (0, 0, 1, 2)) * 1.2,
+                unit_tensor(4, (1, 2, 3, 1)) * 0.5 - unit_tensor(4, (0, 3, 2, 2)) * 1.2,
+            ]
+        )
 
         out = product(tensor1, tensor2, broadcasted=[False, True])
-        expected = np.stack([
-            unit_tensor(4, (3, 0, 0, 1)) * 0.4 - unit_tensor(4, (3, 2, 2, 2)) * 0.96j,
-            unit_tensor(4, (2, 0, 0, 1)) * 0.4j - unit_tensor(4, (3, 1, 1, 2)) * 0.96,
-        ])
+        expected = np.stack(
+            [
+                unit_tensor(4, (3, 0, 0, 1)) * 0.4 - unit_tensor(4, (3, 2, 2, 2)) * 0.96j,
+                unit_tensor(4, (2, 0, 0, 1)) * 0.4j - unit_tensor(4, (3, 1, 1, 2)) * 0.96,
+            ]
+        )
         assert out.shape == expected.shape == (2,) + (4,) * 4
         assert np.allclose(out, expected)
 
     def test_broadcasting_both_factors(self):
         """Test product with broadcasting both factors."""
-        tensor1 = np.stack([
-            unit_tensor(4, (0, 2, 3, 1)) * 0.5 - unit_tensor(4, (2, 2, 1, 2)) * 1.2,
-            unit_tensor(4, (1, 0, 0, 1)) * 0.5 + unit_tensor(4, (0, 1, 1, 2)) * 1.2j,
-        ])
-        tensor2 = np.stack([
-            unit_tensor(4, (0, 2, 3, 1)) * 0.5 - unit_tensor(4, (0, 0, 1, 2)) * 1.2,
-            unit_tensor(4, (1, 2, 3, 1)) * 0.5 - unit_tensor(4, (0, 3, 2, 2)) * 1.2,
-        ])
+        tensor1 = np.stack(
+            [
+                unit_tensor(4, (0, 2, 3, 1)) * 0.5 - unit_tensor(4, (2, 2, 1, 2)) * 1.2,
+                unit_tensor(4, (1, 0, 0, 1)) * 0.5 + unit_tensor(4, (0, 1, 1, 2)) * 1.2j,
+            ]
+        )
+        tensor2 = np.stack(
+            [
+                unit_tensor(4, (0, 2, 3, 1)) * 0.5 - unit_tensor(4, (0, 0, 1, 2)) * 1.2,
+                unit_tensor(4, (1, 2, 3, 1)) * 0.5 - unit_tensor(4, (0, 3, 2, 2)) * 1.2,
+            ]
+        )
 
         out = product(tensor1, tensor2, broadcasted=[True, True])
-        expected = np.stack([
-            np.stack([
+        expected = np.stack(
+            [
+                np.stack(
+                    [
+                        (
+                            unit_tensor(4, (0, 0, 0, 0)) * 0.25
+                            - unit_tensor(4, (0, 2, 2, 3)) * -0.6
+                            - unit_tensor(4, (2, 0, 2, 3)) * -0.6
+                            + unit_tensor(4, (2, 2, 0, 0)) * 1.44
+                        ),
+                        (
+                            unit_tensor(4, (1, 0, 0, 0)) * 0.25
+                            - unit_tensor(4, (0, 1, 1, 3)) * 0.6j
+                            - unit_tensor(4, (3, 0, 2, 3)) * 0.6j
+                            + unit_tensor(4, (2, 1, 3, 0)) * -1.44
+                        ),
+                    ]
+                ),
+                np.stack(
+                    [
+                        (
+                            unit_tensor(4, (1, 2, 3, 0)) * 0.25
+                            - unit_tensor(4, (1, 0, 1, 3)) * 0.6j
+                            + unit_tensor(4, (0, 3, 2, 3)) * 0.6
+                            - unit_tensor(4, (0, 1, 0, 0)) * 1.44j
+                        ),
+                        (
+                            unit_tensor(4, (0, 2, 3, 0)) * 0.25
+                            - unit_tensor(4, (1, 3, 2, 3)) * 0.6j
+                            + unit_tensor(4, (1, 3, 2, 3)) * 0.6
+                            - unit_tensor(4, (0, 2, 3, 0)) * 1.44j
+                        ),
+                    ]
+                ),
+            ]
+        )
+        assert out.shape == expected.shape == (2, 2) + (4,) * 4
+        assert np.allclose(out, expected)
+
+    def test_broadcasting_both_factors_merged(self):
+        """Test product with broadcasting both factors and merging the broadcasting
+        axes into one axis."""
+        tensor1 = np.stack(
+            [
+                unit_tensor(4, (0, 2, 3, 1)) * 0.5 - unit_tensor(4, (2, 2, 1, 2)) * 1.2,
+                unit_tensor(4, (1, 0, 0, 1)) * 0.5 + unit_tensor(4, (0, 1, 1, 2)) * 1.2j,
+            ]
+        )
+        tensor2 = np.stack(
+            [
+                unit_tensor(4, (0, 2, 3, 1)) * 0.5 - unit_tensor(4, (0, 0, 1, 2)) * 1.2,
+                unit_tensor(4, (1, 2, 3, 1)) * 0.5 - unit_tensor(4, (0, 3, 2, 2)) * 1.2,
+            ]
+        )
+
+        out = product(tensor1, tensor2, broadcasted="merge")
+        expected = np.stack(
+            [
                 (
                     unit_tensor(4, (0, 0, 0, 0)) * 0.25
                     - unit_tensor(4, (0, 2, 2, 3)) * -0.6
@@ -175,59 +246,16 @@ class TestPauliProduct:
                     + unit_tensor(4, (2, 2, 0, 0)) * 1.44
                 ),
                 (
-                    unit_tensor(4, (1, 0, 0, 0)) * 0.25
-                    - unit_tensor(4, (0, 1, 1, 3)) * 0.6j
-                    - unit_tensor(4, (3, 0, 2, 3)) * 0.6j
-                    + unit_tensor(4, (2, 1, 3, 0)) * -1.44
-                ),
-            ]),
-            np.stack([
-                (
-                    unit_tensor(4, (1, 2, 3, 0)) * 0.25
-                    - unit_tensor(4, (1, 0, 1, 3)) * 0.6j
-                    + unit_tensor(4, (0, 3, 2, 3)) * 0.6
-                    - unit_tensor(4, (0, 1, 0, 0)) * 1.44j
-                ),
-                (
                     unit_tensor(4, (0, 2, 3, 0)) * 0.25
                     - unit_tensor(4, (1, 3, 2, 3)) * 0.6j
                     + unit_tensor(4, (1, 3, 2, 3)) * 0.6
                     - unit_tensor(4, (0, 2, 3, 0)) * 1.44j
                 ),
-            ]),
-        ])
-        assert out.shape == expected.shape ==  (2, 2) + (4,) * 4
+            ]
+        )
+        assert out.shape == expected.shape == (2,) + (4,) * 4
         assert np.allclose(out, expected)
 
-    def test_broadcasting_both_factors_merged(self):
-        """Test product with broadcasting both factors and merging the broadcasting
-        axes into one axis."""
-        tensor1 = np.stack([
-            unit_tensor(4, (0, 2, 3, 1)) * 0.5 - unit_tensor(4, (2, 2, 1, 2)) * 1.2,
-            unit_tensor(4, (1, 0, 0, 1)) * 0.5 + unit_tensor(4, (0, 1, 1, 2)) * 1.2j,
-        ])
-        tensor2 = np.stack([
-            unit_tensor(4, (0, 2, 3, 1)) * 0.5 - unit_tensor(4, (0, 0, 1, 2)) * 1.2,
-            unit_tensor(4, (1, 2, 3, 1)) * 0.5 - unit_tensor(4, (0, 3, 2, 2)) * 1.2,
-        ])
-
-        out = product(tensor1, tensor2, broadcasted="merge")
-        expected = np.stack([
-            (
-                unit_tensor(4, (0, 0, 0, 0)) * 0.25
-                - unit_tensor(4, (0, 2, 2, 3)) * -0.6
-                - unit_tensor(4, (2, 0, 2, 3)) * -0.6
-                + unit_tensor(4, (2, 2, 0, 0)) * 1.44
-            ),
-            (
-                unit_tensor(4, (0, 2, 3, 0)) * 0.25
-                - unit_tensor(4, (1, 3, 2, 3)) * 0.6j
-                + unit_tensor(4, (1, 3, 2, 3)) * 0.6
-                - unit_tensor(4, (0, 2, 3, 0)) * 1.44j
-            )
-        ])
-        assert out.shape == expected.shape ==  (2,) + (4,) * 4
-        assert np.allclose(out, expected)
 
 class TestCommutator:
     # TODO

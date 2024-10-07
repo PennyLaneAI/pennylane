@@ -13,9 +13,11 @@
 """Arithmetic of Pauli words and sentences with a dense representation."""
 
 import numpy as np
-from pennylane.pauli import PauliWord, PauliSentence
+
+from pennylane.pauli import PauliSentence, PauliWord
 
 str_mapping = {"I": 0, "X": 1, "Y": 2, "Z": 3}
+
 
 def ps_to_tensor(pauli_sentence: PauliSentence, n: int, dtype=np.float64) -> np.ndarray:
     """Convert a ``PauliSentence`` on at most ``n`` qubits into an ``n``-tensor
@@ -46,32 +48,36 @@ def ps_to_tensor(pauli_sentence: PauliSentence, n: int, dtype=np.float64) -> np.
         tensor[idx] = coeff
     return tensor
 
-contractor = np.array([ # axes ordering: (in1, in2, out)
-    [
-        [1, 0, 0, 0], # I * I = I
-        [0, 1, 0, 0], # I * X = X
-        [0, 0, 1, 0], # I * Y = Y
-        [0, 0, 0, 1], # I * Z = Z
-    ],
-    [
-        [0, 1, 0, 0], #   X * I = X
-        [1, 0, 0, 0], #   X * X = I
-        [0, 0, 0, 1j], #  X * Y = iZ
-        [0, 0, -1j, 0], # X * Z = -iY
-    ],
-    [
-        [0, 0, 1, 0], #   Y * I = Y
-        [0, 0, 0, -1j], # Y * X = -iZ
-        [1, 0, 0, 0], #   Y * Y = I
-        [0, 1j, 0, 0], #  Y * Z = iX
-    ],
-    [
-        [0, 0, 0, 1], #   Z * I = Z
-        [0, 0, 1j, 0], #  Z * X = iY
-        [0, -1j, 0, 0], # Z * Y = -iX
-        [1, 0, 0, 0], #   Z * Z = I
+
+contractor = np.array(
+    [  # axes ordering: (in1, in2, out)
+        [
+            [1, 0, 0, 0],  # I * I = I
+            [0, 1, 0, 0],  # I * X = X
+            [0, 0, 1, 0],  # I * Y = Y
+            [0, 0, 0, 1],  # I * Z = Z
+        ],
+        [
+            [0, 1, 0, 0],  #   X * I = X
+            [1, 0, 0, 0],  #   X * X = I
+            [0, 0, 0, 1j],  #  X * Y = iZ
+            [0, 0, -1j, 0],  # X * Z = -iY
+        ],
+        [
+            [0, 0, 1, 0],  #   Y * I = Y
+            [0, 0, 0, -1j],  # Y * X = -iZ
+            [1, 0, 0, 0],  #   Y * Y = I
+            [0, 1j, 0, 0],  #  Y * Z = iX
+        ],
+        [
+            [0, 0, 0, 1],  #   Z * I = Z
+            [0, 0, 1j, 0],  #  Z * X = iY
+            [0, -1j, 0, 0],  # Z * Y = -iX
+            [1, 0, 0, 0],  #   Z * Z = I
+        ],
     ]
-])
+)
+
 
 def product(tensor1, tensor2, broadcasted=False):
     """Product of two tensors representing Pauli sentences on the same number of wires.
@@ -97,14 +103,18 @@ def product(tensor1, tensor2, broadcasted=False):
             broadcasted = [True, True]
         broadcasting_strs = ["m" * int(broadcasted[0]), "n" * int(broadcasted[1])]
         broadcasting_strs.append(broadcasting_strs[0] + broadcasting_strs[1])
-    
+
     n = tensor1.ndim - int(broadcasted[0])
     if n > 6 or (tensor2.ndim - int(broadcasted[1])) != n:
         raise NotImplementedError
-    idx_groups_inputs = [broadcasting_strs[0] + "abcdef"[:n], broadcasting_strs[1] + "ghijkl"[:n]] + ["agz", "bhy", "cix", "djw", "ekv", "flu"][:n]
+    idx_groups_inputs = [
+        broadcasting_strs[0] + "abcdef"[:n],
+        broadcasting_strs[1] + "ghijkl"[:n],
+    ] + ["agz", "bhy", "cix", "djw", "ekv", "flu"][:n]
     idx_output = broadcasting_strs[2] + "zyxwvu"[:n]
     einsum_str = ",".join(idx_groups_inputs) + f"->{idx_output}"
     return np.einsum(einsum_str, tensor1, tensor2, *([contractor] * n))
+
 
 def commutator(tensor1, tensor2):
     """Commutator between two tensors representing Pauli sentences on the same number of wires.
