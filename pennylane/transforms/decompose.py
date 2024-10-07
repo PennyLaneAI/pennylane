@@ -36,7 +36,7 @@ def decompose(tape, gate_set=None, max_expansion=None):
 
     Args:
         tape (QuantumScript or QNode or Callable): a quantum circuit.
-        gate_rules (set[Union[str, Operator]] or Callable[Operator, bool], optional): Decomposition gates defined either by a set of operators or a rule that they must follow.
+        gate_set (set[Union[str, Operator]] or Callable[Operator, bool], optional): Decomposition gates defined either by a set of operators or a rule that they must follow.
         Defaults to None. If ``None``, gate set defaults to all available operators given by ``~.pennylane.ops.__all__``.
         max_expansion (int, optional): The maximum depth of the expansion. Defaults to None. If ``None``, circuit will be decomposed until no further decompositions are possible.
 
