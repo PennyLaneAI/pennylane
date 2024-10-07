@@ -286,6 +286,55 @@ class TestExpval:
         state = tf.Variable(state, dtype=tf.float64)
         assert qml.math.allequal(compute_expval(state), expected)
 
+    @pytest.mark.tf
+    @pytest.mark.parametrize(
+        "state,expected",
+        [
+            ([[1.0, 0.0], [0.0, 1.0]], [0.0]),
+        ],
+    )
+    def test_tf_function_density_matrix(self, state, expected):
+        """Test that tf.function does not break process_density_matrix"""
+        import tensorflow as tf
+
+        @tf.function
+        def compute_expval(s):
+            mp = ExpectationMP(obs=qml.PauliZ(0))
+            return mp.process_density_matrix(s, wire_order=qml.wires.Wires([0]))
+
+        state = tf.Variable(state, dtype=tf.float64)
+        assert qml.math.allequal(compute_expval(state), expected)
+
+    @pytest.mark.parametrize(
+        "state,expected",
+        [
+            ([[1.0, 0.0], [0.0, 0.0]], 1.0),  # Pure |0⟩ state
+            ([[0.0, 0.0], [0.0, 1.0]], -1.0),  # Pure |1⟩ state
+            ([[0.5, 0.5], [0.5, 0.5]], 0.0),  # Mixed state
+            ([[0.75, 0.0], [0.0, 0.25]], 0.5),  # Another mixed state
+        ],
+    )
+    def test_process_density_matrix(self, state, expected):
+        mp = ExpectationMP(obs=qml.PauliZ(0))
+        result = mp.process_density_matrix(state, wire_order=qml.wires.Wires([0]))
+        assert qml.math.allclose(result, expected)
+
+    @pytest.mark.parametrize(
+        "state,expected",
+        [
+            ([[1.0, 0.0], [0.0, 0.0]], 1.0),  # Pure |0⟩ state
+            ([[0.0, 0.0], [0.0, 1.0]], 1.0),  # Pure |1⟩ state
+            ([[0.5, 0.0], [0.0, 0.5]], 1.0),  # Mixed state
+        ],
+    )
+    def test_expval_process_density_matrix_no_wires(self, state, expected):
+        """Test process_density_matrix method with an identity operator in the observable."""
+
+        mp = ExpectationMP(obs=qml.I())
+        # Run the circuit
+        result = mp.process_density_matrix(state, wire_order=qml.wires.Wires([0]))
+        assert np.allclose(result, expected)
+
     def test_batched_hamiltonian(self):
         """Test that the expval interface works"""
         dev = qml.device("default.qubit")
