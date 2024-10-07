@@ -17,8 +17,6 @@ A transform for decomposing quantum circuits into user defined gate sets. Offers
 # pylint: disable=protected-access, too-many-arguments
 
 import warnings
-from collections.abc import Callable, Generator, Sequence
-from typing import Optional
 
 import pennylane as qml
 from pennylane.tape import QuantumScript
@@ -32,104 +30,83 @@ def null_postprocessing(results):
     return results[0]
 
 
-def _operator_decomposition_gen(
-    op: qml.operation.Operator,
-    acceptance_function: Callable[[qml.operation.Operator], bool],
-    decomposer: Callable[[qml.operation.Operator], Sequence[qml.operation.Operator]],
-    max_expansion: Optional[int] = None,
-    current_depth=0,
-) -> Generator[qml.operation.Operator, None, None]:
-    """A generator that yields the next operation that is accepted."""
-    max_depth_reached = False
-    if max_expansion is not None and max_expansion <= current_depth:
-        max_depth_reached = True
-    if acceptance_function(op) or max_depth_reached:
-        yield op
-    else:
-        try:
-            decomp = decomposer(op)
-            current_depth += 1
-        except qml.operation.DecompositionUndefinedError as e:
-            raise UserWarning(
-                f"Operator {op.name} has no supported decomposition and is not in the gate set."
-            ) from e
-
-        for sub_op in decomp:
-            yield from _operator_decomposition_gen(
-                sub_op,
-                acceptance_function,
-                decomposer=decomposer,
-                max_expansion=max_expansion,
-                current_depth=current_depth,
-            )
-
-
 @transform
-def apply_decomposition(tape, gate_set=None, gate_rules=None, max_expansion=None):
-    """Decomposes quantum circuit into a desired gate set.
+def decompose(tape, gate_set=None, max_expansion=None):
+    """Decomposes a quantum circuit into the provided gate set.
 
     Args:
         tape (QuantumScript or QNode or Callable): a quantum circuit.
-        gate_set (set, optional): A set of decomposition gates. Defaults to None. If ``None``, gate set defaults to all operators not currently present.
-        gate_rules (Callable[qml.operation.Operator, bool], optional): A rule set for the gate set to follow. Defaults to None.
-        max_expansion (int, optional): The maximum depth of the expansion. Defaults to None.
+        gate_rules (set[Union[str, Operator]] or Callable[Operator, bool], optional): Decomposition gates defined either by a set of operators or a rule that they must follow.
+        Defaults to None. If ``None``, gate set defaults to all available operators given by ``~.pennylane.ops.__all__``.
+        max_expansion (int, optional): The maximum depth of the expansion. Defaults to None. If ``None``, circuit will be decomposed until no further decompositions are possible.
 
     Returns:
         qnode (QNode) or quantum function (Callable) or tuple[List[QuantumScript], function]:
 
         The decomposed circuit. The output type is explained in :func:`qml.transform <pennylane.transform>`.
 
-    .. seealso:: :func:`~.pennylane.devices.preprocess.decompose` for a transform that is designed particularly for restricted gate sets on specific device architectures.
+    .. seealso:: :func:`~.pennylane.devices.preprocess.decompose` for a transform that is designed particularly for gate sets designed for specific device architectures.
 
     **Examples:**
 
-    >>> tape = qml.tape.QuantumScript([qml.IsingXX(1.2, wires=(0,1))], [qml.expval(qml.Z(0))])
-    >>> batch, fn = apply_decomposition(tape, gate_set = {"CNOT", "RX", "RZ"})
-    >>> batch[0].circuit
-    [CNOT(wires=[0, 1]),
-    RX(1.2, wires=[0]),
-    CNOT(wires=[0, 1]),
-    expval(Z(0))]
-
-    >>> @partial(apply_decomposition, gate_rules = lambda obj: len(obj.wires) <= 2)
-    >>> @qml.qnode(device)
+    >>> @partial(decompose, gate_set={qml.Toffoli, "RX", "RZ"})
+    >>> @qml.qnode(dev)
     >>> def circuit():
-    >>>     qml.Toffoli(wires = range(3))
+    >>>     qml.Hadamard(wires=[0])
+    >>>     qml.Toffoli(wires=[0,1,2])
+    >>>     return qml.expval(qml.Z(0))
     >>>
     >>> print(qml.draw(circuit)())
-    0: ───────────╭●───────────╭●────╭●──T──╭●─┤
+    0: ──RZ(1.57)──RX(1.57)──RZ(1.57)─╭●─┤  <Z>
+    1: ───────────────────────────────├●─┤
+    2: ───────────────────────────────╰X─┤
+
+    >>> @partial(decompose, gate_set=lambda op: len(op.wires) <= 2)
+    >>> @qml.qnode(dev)
+    >>> def circuit():
+    >>>     qml.Hadamard(wires=[0])
+    >>>     qml.Toffoli(wires=[0,1,2])
+    >>>     return qml.expval(qml.Z(0))
+    >>>
+    >>> print(qml.draw(circuit)())
+    0: ──H────────╭●───────────╭●────╭●──T──╭●─┤  <Z>
     1: ────╭●─────│─────╭●─────│───T─╰X──T†─╰X─┤
     2: ──H─╰X──T†─╰X──T─╰X──T†─╰X──T──H────────┤
 
+    >>> tape = qml.tape.QuantumScript([qml.IsingXX(1.2, wires=(0,1))], [qml.expval(qml.Z(0))])
+    >>> batch, fn = qml.transforms.decompose(tape, gate_set={"CNOT", "RX", "RZ"})
+    >>> batch[0].circuit
+    [CNOT(wires=[0, 1]), RX(1.2, wires=[0]), CNOT(wires=[0, 1]), expval(Z(0))]
+
     """
-    universal_ops = set(qml.ops.__all__)
 
     if gate_set is None:
-        gate_set = universal_ops - set(op.name for op in tape.operations)
+        gate_set = set(qml.ops.__all__)
 
-    if gate_rules is None:
-
-        def gate_rules(op):
-            return not op.has_matrix
-
-    if isinstance(gate_set, str):
+    if isinstance(gate_set, (str, type)):
         gate_set = set([gate_set])
 
     if isinstance(gate_set, (list, tuple)):
         gate_set = set(gate_set)
+
+    if isinstance(gate_set, set):
+        gate_types = tuple(gate for gate in gate_set if isinstance(gate, type))
+        gate_names = set(gate for gate in gate_set if isinstance(gate, str))
+        gate_set = lambda op: (op.name in gate_names) or isinstance(op, gate_types)
 
     def decomposer(op):
         return op.decomposition()
 
     def stopping_condition(op):
         if not op.has_decomposition:
-            if op.name not in gate_set:
+            if not gate_set(op):
                 warnings.warn(
-                    f"Operator {op.name} has no supported decomposition and was not found in the gate set.",
+                    f"Operator {op.name} has no supported decomposition and was not found in the set of allowed decomposition gates."
+                    f"To remove this warning, add the operator name ({op.name}) or type ({type(op)}) to the allowed set of gates.",
                     UserWarning,
                 )
             return True
-        return (op.name in gate_set) or gate_rules(op)
+        return gate_set(op)
 
     if all(stopping_condition(op) for op in tape.operations):
         return (tape,), null_postprocessing
@@ -138,7 +115,7 @@ def apply_decomposition(tape, gate_set=None, gate_rules=None, max_expansion=None
         new_ops = [
             final_op
             for op in tape.operations
-            for final_op in _operator_decomposition_gen(
+            for final_op in qml.devices.preprocess._operator_decomposition_gen(
                 op,
                 stopping_condition,
                 decomposer,

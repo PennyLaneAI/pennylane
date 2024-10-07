@@ -262,6 +262,48 @@ according to our specifications:
     If the custom decomposition is only supposed to be used in a specific code context,
     a separate context manager :func:`~.pennylane.transforms.set_decomposition` can be used.
 
+When compiling a circuit it is often beneficial to decompose the circuit into a set of basis gates.  
+To do this, we can use the :func:`~.pennylane.transforms.decompose` function, which allows the user to decompose
+their circuit into a set of gates defined either by their name, type, or by a set of rules they must follow.
+
+The example below demonstrates how a three-wire circuit can be decomposed using a set of gate names and types:
+
+.. code-block:: python
+    
+    from pennylane.transforms import decompose
+    dev = qml.device("default.qubit")
+
+    @partial(decompose, gate_set={qml.Toffoli, "RX", "RZ"})
+    @qml.qnode(dev)
+
+    def circuit():
+        qml.Hadamard(wires=[0])
+        qml.Toffoli(wires=[0,1,2])
+        return qml.expval(qml.Z(0))
+    
+With the Hadamard gate not in our gate set, it will be decomposed into the available rotation gate operators.
+
+>>> print(qml.draw(circuit)())
+0: ──RZ(1.57)──RX(1.57)──RZ(1.57)─╭●─┤  <Z>
+1: ───────────────────────────────├●─┤     
+2: ───────────────────────────────╰X─┤ 
+
+The example below demonstrates how a three-wire circuit can be decomposed into a set of single or two-qubit gates: 
+
+.. code-block:: python
+
+    @partial(decompose, gate_set=lambda op: len(op.wires) <= 2) 
+    @qml.qnode(dev)
+
+    def circuit():
+        qml.Toffoli(wires=[0,1,2])
+        return qml.expval(qml.Z(0)) 
+
+>>> print(qml.draw(circuit)())
+0: ───────────╭●───────────╭●────╭●──T──╭●─┤  <Z>
+1: ────╭●─────│─────╭●─────│───T─╰X──T†─╰X─┤     
+2: ──H─╰X──T†─╰X──T─╰X──T†─╰X──T──H────────┤ 
+
 Circuit cutting
 ---------------
 
