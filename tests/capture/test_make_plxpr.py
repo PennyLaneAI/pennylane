@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Tests for the make_plxpr function for capturing qnodes as jaxpr.
+Tests for the make_plxpr function for capturing functions as jaxpr.
 """
 
 from unittest.mock import call

@@ -32,7 +32,7 @@ def make_plxpr(func: Callable, static_argnums: Union[int, Sequence[int]] = (), *
     be passed to ``make_jaxpr``.
 
     Args:
-        func (Callable):  the Callable to be captured
+        func (Callable): the ``Callable`` to be captured
 
     Kwargs:
         static_argnums (Union(int, Sequence[int])): optional, an ``int`` or collection of ``int``\ s
