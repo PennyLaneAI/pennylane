@@ -58,6 +58,9 @@
 * The `Hermitian` operator now has a `compute_sparse_matrix` implementation.
   [(#6225)](https://github.com/PennyLaneAI/pennylane/pull/6225)
 
+* The `qml.Qubitization` template is now QJIT compatible.
+  [(#6305)](https://github.com/PennyLaneAI/pennylane/pull/6305)
+
 * When an observable is repeated on a tape, `tape.diagonalizing_gates` no longer returns the 
   diagonalizing gates for each instance of the observable. Instead, the diagonalizing gates of
   each observable on the tape are included just once.
@@ -69,6 +72,10 @@
   [(#6290)](https://github.com/PennyLaneAI/pennylane/pull/6290)
 
 <h4>Capturing and representing hybrid programs</h4>
+
+* `qml.wires.Wires` now accepts JAX arrays as input. Furthermore, a `FutureWarning` is no longer raised in `JAX 0.4.30+`
+  when providing JAX tracers as input to `qml.wires.Wires`.
+  [(#6312)](https://github.com/PennyLaneAI/pennylane/pull/6312)
 
 * Differentiation of hybrid programs via `qml.grad` and `qml.jacobian` can now be captured
   into plxpr. When evaluating a captured `qml.grad` (`qml.jacobian`) instruction, it will
@@ -116,6 +123,10 @@
 * The `to_mat` methods for `FermiWord` and `FermiSentence` now optionally return
   a sparse matrix.
   [(#6173)](https://github.com/PennyLaneAI/pennylane/pull/6173)
+
+* The `make_plxpr` function is added, to take a function and create a `Callable` that,
+  when called, will return a PLxPR representation of the input function.
+  [(#6326)](https://github.com/PennyLaneAI/pennylane/pull/6326)
 
 <h3>Breaking changes 💔</h3>
 
@@ -225,6 +236,9 @@
   [(#6298)](https://github.com/PennyLaneAI/pennylane/pull/6298)
 
 <h3>Bug fixes 🐛</h3>
+
+* `quantum_fisher` now respects the classical Jacobian of QNodes.
+  [(#6350)](https://github.com/PennyLaneAI/pennylane/pull/6350)
 
 * `qml.map_wires` can now be applied to a batch of tapes.
   [(#6295)](https://github.com/PennyLaneAI/pennylane/pull/6295)
