@@ -16,6 +16,8 @@
 
 from typing import Callable, Sequence, Union
 
+import pennylane as qml
+
 has_jax = True
 try:
     import jax
@@ -81,6 +83,12 @@ def make_plxpr(func: Callable, static_argnums: Union[int, Sequence[int]] = (), *
         raise ImportError(
             "Module jax is required for the ``make_plxpr`` function. "
             "You can install jax via: pip install jax"
+        )
+
+    if not qml.capture.enabled():
+        raise RuntimeError(
+            "Capturing PLxPR with ``make_plxpr`` requires PennyLane capture to be enabled. "
+            "You can enable capture with ``qml.capture.enable()``"
         )
 
     return jax.make_jaxpr(func, static_argnums=static_argnums, **kwargs)
