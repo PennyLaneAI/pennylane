@@ -34,7 +34,12 @@ Summary of the update
 
     The opt-in feature ``qml.operation.enable_new_opmath()`` is now the default. Ideally, your code should not break.
     If it still does, it likely only requires some minor changes. For that, see the :ref:`Troubleshooting_opmath` section.
-    You can still opt-out and run legacy code via ``qml.operation.disable_new_opmath()``.
+    You can still opt-out and run legacy code via ``qml.operation.disable_new_opmath()``, though it is deprecated, and thus,
+    not recommended.
+
+.. warning::
+
+    In PennyLane v0.39, legacy operator arithmetic is deprecated and will be removed in v0.40.
 
 
 * The underlying system for performing arithmetic with operators has been changed. Arithmetic can be carried out using

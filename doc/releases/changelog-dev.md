@@ -32,6 +32,7 @@
 * PennyLane is now compatible with NumPy 2.0.
   [(#6061)](https://github.com/PennyLaneAI/pennylane/pull/6061)
   [(#6258)](https://github.com/PennyLaneAI/pennylane/pull/6258)
+  [(#6342)](https://github.com/PennyLaneAI/pennylane/pull/6342)
 
 * PennyLane is now compatible with Jax 0.4.28.
   [(#6255)](https://github.com/PennyLaneAI/pennylane/pull/6255)
@@ -53,6 +54,11 @@
 
 * `qml.AmplitudeAmplification` is now compatible with QJIT.
   [(#6306)](https://github.com/PennyLaneAI/pennylane/pull/6306)
+
+* When an observable is repeated on a tape, `tape.diagonalizing_gates` no longer returns the 
+  diagonalizing gates for each instance of the observable. Instead, the diagonalizing gates of
+  each observable on the tape are included just once.
+  [(#6288)](https://github.com/PennyLaneAI/pennylane/pull/6288)
 
 * The number of diagonalizing gates returned in `qml.specs` now follows the `level` keyword argument 
   regarding whether the diagonalizing gates are modified by device, instead of always counting 
@@ -148,8 +154,21 @@
 * `Operator.expand` is now removed. Use `qml.tape.QuantumScript(op.deocomposition())` instead.
   [(#6227)](https://github.com/PennyLaneAI/pennylane/pull/6227)
 
-
 <h3>Deprecations 👋</h3>
+
+* Legacy operator arithmetic has been deprecated. This includes `qml.ops.Hamiltonian`, `qml.operation.Tensor`,
+  `qml.operation.enable_new_opmath`, `qml.operation.disable_new_opmath`, and `qml.operation.convert_to_legacy_H`.
+  Note that when new operator arithmetic is enabled, ``qml.Hamiltonian`` will continue to dispatch to
+  `qml.ops.LinearCombination`; this behaviour is not deprecated. For more information, check out the
+  [updated operator troubleshooting page](https://docs.pennylane.ai/en/stable/news/new_opmath.html).
+  [(#6287)](https://github.com/PennyLaneAI/pennylane/pull/6287)
+
+* `qml.pauli.PauliSentence.hamiltonian` and `qml.pauli.PauliWord.hamiltonian` are deprecated. Instead, please use
+  `qml.pauli.PauliSentence.operation` and `qml.pauli.PauliWord.operation` respectively.
+  [(#6287)](https://github.com/PennyLaneAI/pennylane/pull/6287)
+
+* `qml.pauli.simplify()` is deprecated. Instead, please use `qml.simplify(op)` or `op.simplify()`.
+  [(#6287)](https://github.com/PennyLaneAI/pennylane/pull/6287)
 
 * The `qml.BasisStatePreparation` template is deprecated.
   Instead, use `qml.BasisState`.
