@@ -55,7 +55,7 @@ def test_get_coeffs_function():
         (1, 1, 1, 0): 8,  # + 8 x0.x1.y0
     }
 
-    for key in dic:
+    for key in dic.keys():
         assert key in expected_dic
         assert dic[key] == expected_dic[key]
 
@@ -158,28 +158,23 @@ class TestOutPoly:
         def f(x, y):
             return x + y
 
-        x_wires = [0, 1, 2]
-        y_wires = [3, 4, 5]
-        output_wires = [6, 7, 8]
-        poly_decomposition = qml.OutPoly(f, [x_wires, y_wires, output_wires]).decomposition()
+        expected_decomposition = [
+            qml.QFT(wires=[3]),
+            qml.ctrl(qml.PhaseAdder(1, x_wires=[3]), control=[2]),
+            qml.ctrl(qml.PhaseAdder(1, x_wires=[3]), control=[1]),
+            qml.adjoint(qml.QFT(wires=[3])),
+        ]
 
-        for op in poly_decomposition:
-            if isinstance(op, qml.QFT):
-                assert op.wires == qml.wires.Wires(output_wires)
-            elif isinstance(op, qml.ops.op_math.controlled.Controlled):
-                for wire in op.control_wires:
-                    assert wire in qml.wires.Wires(x_wires) + qml.wires.Wires(y_wires)
-                assert isinstance(op.base, qml.PhaseAdder)
-            else:
-                return False
+        ops = qml.OutPoly(f, [[0, 1], [2], [3]]).decomposition()
+
+        for op1, op2 in zip(expected_decomposition, ops):
+            assert qml.equal(op1, op2)
 
     @pytest.mark.jax
     def test_jit_compatible(self):
         """Test that the template is compatible with the JIT compiler."""
 
         import jax
-
-        jax.config.update("jax_enable_x64", True)
 
         wires = qml.registers({"x": 3, "y": 3, "z": 3, "output": 3, "aux": 2})
 

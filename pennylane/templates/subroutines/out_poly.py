@@ -32,7 +32,7 @@ def _decimal_to_binary_list(n, length):
 
 
 def _get_coefficients_and_controls(f, mod, *wire_lengths):
-    """Calculate the coefficients and controls for a given function and wire configuration using the Fast Möbius Transform.
+    """Calculate the coefficients and controls for a given function and wire configuration using the `Fast Möbius Transform <https://arxiv.org/pdf/2211.13706>`_ .
 
     Args:
         f (callable): the polynomial function to be applied to the inputs
@@ -85,12 +85,12 @@ class OutPoly(Operation):
     over a set of input registers and stores the result in an output register. The result
     is computed modulo a given value.
 
-    Given a function :math:`f(x_1, \dots, x_m)` and a modulus `mod`, the operator performs:
+    Given a function :math:`f(x_1, \dots, x_m)` and a modulus `k`, the operator performs:
 
     .. math::
 
         \text{OutPoly}_{f, \text{mod}} |x_1 \rangle \dots |x_m \rangle |0 \rangle
-        = |x_1 \rangle \dots |x_m \rangle |f(x_1, \dots, x_m) \mod \text{mod} \rangle.
+        = |x_1 \rangle \dots |x_m \rangle |f(x_1, \dots, x_m) \text{mod} k\rangle.
 
     This operation leaves the input registers unchanged and stores the result of the
     polynomial function in the output register. It is based on the implementation detailed
@@ -103,7 +103,7 @@ class OutPoly(Operation):
 
     Args:
         f (callable): The polynomial function to be applied to the inputs. It must accept the same number of arguments as there are input registers.
-        registers_wires (Sequence[int]): A list with the wires corresponding to the input registers and the output register. The last argument should correspond to the output register.
+        registers_wires (Sequence[int]): A list whose elements are the different set of wires corresponding to all the input registers and the output register. The last argument should correspond to the output register.
         mod (int, optional): The modulus to use for the result. If not provided, it defaults to :math:`2^{n}`, where `n` is the number of qubits in the output register.
         work_wires (Sequence[int], optional): The auxiliary wires used for intermediate computation, if necessary. If `mod` is not a power of 2, two auxiliary work wires are required.
         id (str or None, optional): The name of the operation.
@@ -219,8 +219,6 @@ class OutPoly(Operation):
                 f"If mod is not 2^{len(registers_wires[-1])}, two work wires should be provided"
             )
 
-        self.mod = mod
-
         if not isinstance(mod, int):
             raise ValueError("mod must be integer.")
 
@@ -320,6 +318,7 @@ class OutPoly(Operation):
         wires_vars = [len(w) for w in registers_wires[:-1]]
 
         coeffs_list = _get_coefficients_and_controls(f, mod, *wires_vars)
+        all_wires_input = sum([*registers_wires[:-1]], start=[])
 
         for item, coeff in coeffs_list.items():
 
@@ -327,8 +326,6 @@ class OutPoly(Operation):
                 # Add the independent term
                 list_ops.append(qml.PhaseAdder(int(coeff), output_adder_mod))
                 continue
-
-            all_wires_input = sum([*registers_wires[:-1]], start=[])
 
             controls = [all_wires_input[i] for i, bit in enumerate(item) if bit == 1]
 
