@@ -612,7 +612,7 @@ class TestSampleMeasurement:
 
 
 class TestStateMeasurement:
-    """Tests for the SampleMeasurement class."""
+    """Tests for the StateMeasurement class."""
 
     def test_custom_state_measurement(self):
         """Test the execution of a custom state measurement."""
