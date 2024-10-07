@@ -91,14 +91,14 @@ def wires_in(wires):
     if the wires of an input operation are within the specified set of wires.
 
     Args:
-        wires (Union(Iterable[int, str], Wires, Operation, int, str)): Object to be used
-            for building the wire set.
+        wires (Union(Iterable[int, str], Wires, Operation, MeasurementProcess, int, str)):
+            Object to be used for building the wire set.
 
     Returns:
         :class:`WiresIn <pennylane.noise.conditionals.WiresIn>`: A callable object with
-        signature ``Union(Iterable[int, str], Wires, Operation, int, str)``. It evaluates
-        to ``True`` if the wire set constructed from the input to the callable is a
-        subset of the one built from the specified ``wires`` set.
+        signature ``Union(Iterable[int, str], Wires, Operation, MeasurementProcess, int, str)``.
+        It evaluates to ``True`` if the wire set constructed from the input to the callable is
+        a subset of the one built from the specified ``wires`` set.
 
     Raises:
         ValueError: If the wire set cannot be computed from ``wires``.
@@ -132,14 +132,14 @@ def wires_eq(wires):
     if a given wire is equal to specified set of wires.
 
     Args:
-        wires (Union(Iterable[int, str], Wires, Operation, int, str)): Object to be used
-            for building the wire set.
+        wires (Union(Iterable[int, str], Wires, Operation, MeasurementProcess, int, str)):
+            Object to be used for building the wire set.
 
     Returns:
         :class:`WiresEq <pennylane.noise.conditionals.WiresEq>`: A callable object with
-        signature ``Union(Iterable[int, str], Wires, Operation, int, str)``. It evaluates
-        to ``True`` if the wire set constructed from the input to the callable is equal
-        to the one built from the specified ``wires`` set.
+        signature ``Union(Iterable[int, str], Wires, Operation, MeasurementProcess, int, str)``.
+        It evaluates to ``True`` if the wire set constructed from the input to the callable
+        is equal to the one built from the specified ``wires`` set.
 
     Raises:
         ValueError: If the wire set cannot be computed from ``wires``.
@@ -380,15 +380,17 @@ def op_in(ops):
     if a given operation exist in a specified set of operations.
 
     Args:
-        ops (str, class, Operation, list(Union[str, class, Operation])): Sequence of string
-            representations, instances, or classes of the operation(s).
+        ops (str, class, Operation, list(Union[str, class, Operation, MeasurementProcess])):
+            Sequence of string representations, instances, or classes of the operation(s).
 
     Returns:
         :class:`OpIn <pennylane.noise.conditionals.OpIn>`: A callable object that accepts
         an :class:`~.Operation` and returns a boolean output. It accepts any input from:
         ``Union[str, class, Operation, list(Union[str, class, Operation])]`` and evaluates
         to ``True`` if the input operation(s) exists in the set of operation(s) specified by
-        ``ops``. Comparison is based on the operation's type, irrespective of wires.
+        ``ops``. For a ``MeasurementProcess`` input, similar evaluation happens on its
+        observable. In both the cases, comparison is based on the operation's type,
+        irrespective of wires.
 
     **Example**
 
@@ -426,14 +428,16 @@ def op_eq(ops):
     if a given operation is equal to the specified operation.
 
     Args:
-        ops (str, class, Operation): String representation, an instance or class of the operation.
+        ops (str, class, Operation, MeasurementProcess): String representation, an instance
+        or class of the operation, or a measurement process.
 
     Returns:
         :class:`OpEq <pennylane.noise.conditionals.OpEq>`: A callable object that accepts
-        an :class:`~.Operation` and returns a boolean output. It accepts any input from:
-        ``Union[str, class, Operation]`` and evaluates to ``True`` if the input operation(s)
-        is equal to the set of operation(s) specified by ``ops``. Comparison is based on
-        the operation's type, irrespective of wires.
+        an :class:`~.Operation` or :class:`~.MeasurementProcess` and returns a boolean output.
+        For an input from: ``Union[str, class, Operation]`` it evaluates to ``True``
+        if the input operation(s) is equal to the set of operation(s) specified by ``ops``.
+        For a ``MeasurementProcess`` input, similar evaluation happens on its observable. In
+        both the cases, the comparison is based on the operation's type, irrespective of wires.
 
     **Example**
 
