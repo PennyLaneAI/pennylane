@@ -150,7 +150,9 @@ class Qubitization(Operation):
 
         decomp_ops = []
 
-        decomp_ops.append(qml.Reflection(qml.Identity(control)))
+        identity = qml.prod(*[qml.Identity(wire) for wire in control])
+
+        decomp_ops.append(qml.Reflection(identity))
         decomp_ops.append(qml.PrepSelPrep(hamiltonian, control=control))
 
         return decomp_ops

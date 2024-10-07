@@ -58,6 +58,9 @@
 * The `Hermitian` operator now has a `compute_sparse_matrix` implementation.
   [(#6225)](https://github.com/PennyLaneAI/pennylane/pull/6225)
 
+* The `qml.Qubitization` template is now QJIT compatible.
+  [(#6305)](https://github.com/PennyLaneAI/pennylane/pull/6305)
+
 * When an observable is repeated on a tape, `tape.diagonalizing_gates` no longer returns the 
   diagonalizing gates for each instance of the observable. Instead, the diagonalizing gates of
   each observable on the tape are included just once.
