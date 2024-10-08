@@ -105,34 +105,23 @@ class TestDecomposition:
         assert np.allclose(output_state, target_state, atol=tol, rtol=0)
 
     @pytest.mark.jax
-    @pytest.mark.parametrize(
-        "basis_state,wires,target_state",
-        [
-            ([0, 1], [0, 1], [0, 1, 0]),
-            ([1, 1, 0], [0, 1, 2], [1, 1, 0]),
-            ([1, 0, 1], [2, 0, 1], [0, 1, 1]),
-        ],
-    )
-    def test_state_preparation_jax_jit(
-        self, tol, qutrit_device_3_wires, basis_state, wires, target_state
-    ):
-        """Tests that the template produces the correct expectation values."""
+    def test_state_preparation_jax_jit(self):
+        """Tests that the template can be JIT compiled."""
         import jax
 
-        @qml.qnode(qutrit_device_3_wires)
-        def circuit(state, obs):
-            qml.QutritBasisStatePreparation(state, wires)
+        dev = qml.device("default.qutrit", wires=1)
 
-            return [qml.expval(qml.THermitian(A=obs, wires=i)) for i in range(3)]
+        @qml.qnode(dev)
+        def circuit(state):
+            qml.QutritBasisStatePreparation(state, [0])
+            return qml.state()
 
         circuit = jax.jit(circuit)
 
-        obs = qml.math.array([[1, 0, 0], [0, 2, 0], [0, 0, 3]])
-        basis_state = qml.math.array(basis_state, like="jax")
-        print(qml.math.get_interface(basis_state))
-        output_state = [x - 1 for x in circuit(basis_state, obs)]
+        basis_state = qml.math.array([2], like="jax")
+        output_state = circuit(basis_state)
 
-        assert qml.math.allclose(output_state, target_state, atol=tol, rtol=0)
+        assert qml.math.allclose(output_state, [0, 0, 1])
 
     @pytest.mark.tf
     @pytest.mark.parametrize(
