@@ -278,6 +278,9 @@
   [(#6278)](https://github.com/PennyLaneAI/pennylane/pull/6278)
   [(#6310)](https://github.com/PennyLaneAI/pennylane/pull/6310)
 
+* Fixes a test after updating to the nightly version of Catalyst.
+  [(#6362)](https://github.com/PennyLaneAI/pennylane/pull/6362)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -295,6 +298,7 @@ Austin Huang,
 Korbinian Kottmann,
 Christina Lee,
 William Maxwell,
+Erick Ochoa Lopez,
 Lee J. O'Riordan,
 Mudit Pandey,
 David Wierichs,
