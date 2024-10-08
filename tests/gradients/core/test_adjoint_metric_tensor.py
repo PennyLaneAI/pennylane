@@ -622,6 +622,7 @@ def test_works_with_state_prep():
     """Test that a state preparation operation is respected."""
     dev = qml.device("default.qubit")
 
+    # Some random normalized state, no particular relevance
     init_state = onp.array([0.16769259, 0.71277864, 0.54562903, 0.4075718])
 
     def ansatz(angles, wires):
