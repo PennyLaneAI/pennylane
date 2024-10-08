@@ -301,7 +301,7 @@ class TestJax:
         mol = qchem.Molecule(symbols, geometry)
         args = [mol.coordinates]
         e = qchem.nuclear_energy(mol.nuclear_charges, mol.coordinates)(*args)
-        assert np.allclose(e, e_ref)
+        assert qml.math.allclose(e, e_ref)
 
     @pytest.mark.parametrize(
         ("symbols", "geometry", "g_ref"),
@@ -329,7 +329,7 @@ class TestJax:
         g = jax.jacobian(qchem.nuclear_energy(mol.nuclear_charges, mol.coordinates), argnums=0)(
             *args
         )
-        assert np.allclose(g, g_ref)
+        assert qml.math.allclose(g, g_ref)
 
     @pytest.mark.parametrize(
         ("symbols", "geometry", "g_ref"),
@@ -358,4 +358,4 @@ class TestJax:
         mol = qchem.Molecule(symbols, geometry)
         args = [geometry, mol.coeff, mol.alpha]
         g = jax.grad(qchem.hf_energy(mol), argnums=[0])(*args)
-        assert np.allclose(g, g_ref)
+        assert qml.math.allclose(g, g_ref)

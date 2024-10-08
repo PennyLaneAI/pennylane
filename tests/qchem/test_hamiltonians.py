@@ -427,4 +427,4 @@ class TestJax:
 
         grad_jax = jax.grad(energy(mol), argnums=2)(*args)
 
-        assert np.allclose(grad_jax[0][0], 0.02461335393055819, rtol=1e-02)
+        assert qml.math.allclose(grad_jax[0][0], 0.02461335393055819, rtol=1e-02)

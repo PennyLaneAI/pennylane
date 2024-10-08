@@ -900,7 +900,7 @@ class TestJax:
         params = [alpha, coeff, r]
         args = [r, coeff, alpha]
         basis_params = qchem.integrals._generate_params(params, args)
-        assert np.allclose(basis_params, (alpha, coeff, r))
+        assert qml.math.allclose(basis_params, (alpha, coeff, r))
 
     @pytest.mark.parametrize(
         ("geometry_values", "r_values", "o_ref_values"),
@@ -924,7 +924,7 @@ class TestJax:
         args = [r, coeff, alpha]
 
         o = qchem.overlap_integral(basis_a, basis_b)(*args)
-        assert np.allclose(o, o_ref)
+        assert qml.math.allclose(o, o_ref)
 
     @pytest.mark.parametrize(
         ("symbols", "geometry", "alpha", "coeff"),
@@ -987,8 +987,8 @@ class TestJax:
                 a_plus = qchem.overlap_integral(basis_a, basis_b)(*[geometry, coeff_plus, alpha])
                 g_ref_coeff = g_ref_coeff.at[i, j].set((a_plus - a_minus) / (2 * delta))
 
-        assert np.allclose(g_alpha, g_ref_alpha)
-        assert np.allclose(g_coeff, g_ref_coeff)
+        assert qml.math.allclose(g_alpha, g_ref_alpha)
+        assert qml.math.allclose(g_coeff, g_ref_coeff)
 
     @pytest.mark.parametrize(
         ("symbols", "geometry_values", "e", "idx", "ref"),
@@ -1009,7 +1009,7 @@ class TestJax:
         args = [geometry, mol.coeff, mol.alpha]
         s = qchem.moment_integral(basis_a, basis_b, e, idx, normalize=False)(*args)
 
-        assert np.allclose(s, ref)
+        assert qml.math.allclose(s, ref)
 
     @pytest.mark.parametrize(
         ("symbols", "geometry", "alpha", "coeff", "e", "idx"),
@@ -1092,8 +1092,8 @@ class TestJax:
                 )
                 g_ref_coeff = g_ref_coeff.at[i, j].set((a_plus - a_minus) / (2 * delta))
 
-        assert np.allclose(g_alpha, g_ref_alpha)
-        assert np.allclose(g_coeff, g_ref_coeff)
+        assert qml.math.allclose(g_alpha, g_ref_alpha)
+        assert qml.math.allclose(g_coeff, g_ref_coeff)
 
     @pytest.mark.parametrize(
         ("geometry_values", "t_ref_values"),
@@ -1178,8 +1178,8 @@ class TestJax:
                 a_plus = qchem.kinetic_integral(basis_a, basis_b)(*[geometry, coeff_plus, alpha])
                 g_ref_coeff = g_ref_coeff.at[i, j].set((a_plus - a_minus) / (2 * delta))
 
-        assert np.allclose(g_alpha, g_ref_alpha)
-        assert np.allclose(g_coeff, g_ref_coeff)
+        assert qml.math.allclose(g_alpha, g_ref_alpha)
+        assert qml.math.allclose(g_coeff, g_ref_coeff)
 
     @pytest.mark.parametrize(
         ("geometry_values", "a_ref_values"),
@@ -1201,7 +1201,7 @@ class TestJax:
         args = [geometry, mol.coeff, mol.alpha]
 
         a = qchem.attraction_integral(geometry[0], basis_a, basis_b)(*args)
-        assert np.allclose(a, a_ref)
+        assert qml.math.allclose(a, a_ref)
 
     @pytest.mark.parametrize(
         ("symbols", "geometry", "alpha", "coeff"),
@@ -1277,8 +1277,8 @@ class TestJax:
                 )
                 g_ref_coeff = g_ref_coeff.at[i, j].set((a_plus - a_minus) / (2 * delta))
 
-        assert np.allclose(g_alpha, g_ref_alpha)
-        assert np.allclose(g_coeff, g_ref_coeff)
+        assert qml.math.allclose(g_alpha, g_ref_alpha)
+        assert qml.math.allclose(g_coeff, g_ref_coeff)
 
     @pytest.mark.parametrize(
         ("geometry", "e_ref"),
@@ -1319,7 +1319,7 @@ class TestJax:
 
         a = qchem.repulsion_integral(basis_a, basis_b, basis_a, basis_b)(*args)
 
-        assert np.allclose(a, e_ref)
+        assert qml.math.allclose(a, e_ref)
 
     @pytest.mark.parametrize(
         ("symbols", "geometry", "alpha", "coeff"),
@@ -1363,7 +1363,7 @@ class TestJax:
             qchem.repulsion_integral(basis_a, basis_b, basis_a, basis_b), argnums=[1]
         )(*args)
 
-        assert np.allclose(
+        assert qml.math.allclose(
             g_alpha,
             jax.numpy.array(
                 [
@@ -1374,7 +1374,7 @@ class TestJax:
                 ]
             ),
         )
-        assert np.allclose(
+        assert qml.math.allclose(
             g_coeff,
             jax.numpy.array(
                 [

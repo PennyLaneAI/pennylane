@@ -678,7 +678,7 @@ class TestJax:
         mol = qchem.Molecule(symbols, geometry, alpha=alpha)
         args = [geometry, mol.coeff, alpha]
         s = qchem.overlap_matrix(mol.basis_set)(*args)
-        assert np.allclose(s, s_ref)
+        assert qml.math.allclose(s, s_ref)
 
     @pytest.mark.parametrize(
         ("symbols", "geometry", "alpha", "coeff", "g_alpha_ref", "g_coeff_ref"),
@@ -749,8 +749,8 @@ class TestJax:
         args = [mol.coordinates, mol.coeff, mol.alpha]
         g_alpha, g_coeff = jax.jacobian(qchem.overlap_matrix(mol.basis_set), argnums=[2, 1])(*args)
 
-        assert np.allclose(g_alpha, g_alpha_ref)
-        assert np.allclose(g_coeff, g_coeff_ref)
+        assert qml.math.allclose(g_alpha, g_alpha_ref)
+        assert qml.math.allclose(g_coeff, g_coeff_ref)
 
     def test_moment_matrix_jax(self):
         r"""Test that moment_matrix returns the correct matrix when using jax."""
@@ -763,7 +763,7 @@ class TestJax:
         mol = qchem.Molecule(symbols, geometry, alpha=alpha)
         args = [geometry, mol.coeff, alpha]
         s = qchem.moment_matrix(mol.basis_set, e, idx)(*args)
-        assert np.allclose(s, s_ref)
+        assert qml.math.allclose(s, s_ref)
 
     @pytest.mark.parametrize(
         ("symbols", "geometry", "alpha", "coeff", "e", "idx", "g_alpha_ref", "g_coeff_ref"),
@@ -838,8 +838,8 @@ class TestJax:
         g_coeff, g_alpha = jax.jacobian(qchem.moment_matrix(mol.basis_set, e, idx), argnums=[1, 2])(
             *args
         )
-        assert np.allclose(g_alpha, g_alpha_ref)
-        assert np.allclose(g_coeff, g_coeff_ref)
+        assert qml.math.allclose(g_alpha, g_alpha_ref)
+        assert qml.math.allclose(g_coeff, g_coeff_ref)
 
     def test_kinetic_matrix_jax(self):
         r"""Test that kinetic_matrix returns the correct matrix when using jax."""
@@ -854,7 +854,7 @@ class TestJax:
         mol = qchem.Molecule(symbols, geometry, alpha=alpha)
         args = [geometry, mol.coeff, alpha]
         t = qchem.kinetic_matrix(mol.basis_set)(*args)
-        assert np.allclose(t, t_ref)
+        assert qml.math.allclose(t, t_ref)
 
     @pytest.mark.parametrize(
         ("symbols", "geometry", "alpha", "coeff", "g_alpha_ref", "g_coeff_ref"),
@@ -924,8 +924,8 @@ class TestJax:
         mol = qchem.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
         args = [geometry, mol.coeff, mol.alpha]
         g_alpha, g_coeff = jax.jacobian(qchem.kinetic_matrix(mol.basis_set), argnums=[2, 1])(*args)
-        assert np.allclose(g_alpha, g_alpha_ref)
-        assert np.allclose(g_coeff, g_coeff_ref)
+        assert qml.math.allclose(g_alpha, g_alpha_ref)
+        assert qml.math.allclose(g_coeff, g_coeff_ref)
 
     def test_core_matrix_diff_positions_jax(self):
         r"""Test that core_matrix returns the correct matrix when positions are differentiable
@@ -941,7 +941,7 @@ class TestJax:
         mol = qchem.Molecule(symbols, geometry, alpha=alpha)
         args = [geometry, mol.coeff, alpha]
         c = qchem.core_matrix(mol.basis_set, mol.nuclear_charges, mol.coordinates)(*args)
-        assert np.allclose(c, c_ref)
+        assert qml.math.allclose(c, c_ref)
 
     def test_repulsion_tensor_jax(self):
         r"""Test that repulsion_tensor returns the correct matrix when using jax."""
@@ -962,7 +962,7 @@ class TestJax:
         mol = qchem.Molecule(symbols, geometry, alpha=alpha)
         args = [geometry, mol.coeff, alpha]
         e = qchem.repulsion_tensor(mol.basis_set)(*args)
-        assert np.allclose(e, e_ref)
+        assert qml.math.allclose(e, e_ref)
 
     def test_attraction_matrix_diffR_jax(self):
         r"""Test that attraction_matrix returns the correct matrix when positions are
@@ -977,7 +977,7 @@ class TestJax:
         mol = qchem.Molecule(symbols, geometry, alpha=alpha)
         args = [geometry, mol.coeff, alpha]
         v = qchem.attraction_matrix(mol.basis_set, mol.nuclear_charges, mol.coordinates)(*args)
-        assert np.allclose(v, v_ref)
+        assert qml.math.allclose(v, v_ref)
 
     @pytest.mark.parametrize(
         ("symbols", "geometry", "alpha", "coeff", "g_r_ref"),
@@ -1031,4 +1031,4 @@ class TestJax:
             argnums=[0, 1, 2, 3],
         )(*args)
 
-        assert np.allclose(g_r, g_r_ref)
+        assert qml.math.allclose(g_r, g_r_ref)
