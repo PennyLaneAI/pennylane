@@ -483,17 +483,16 @@ def sample_state(
 
     wires_to_sample = wires or state_wires
     num_wires = len(wires_to_sample)
-    basis_states = np.arange(2**num_wires)
 
     flat_state = flatten_state(state, total_indices)
     with qml.queuing.QueuingManager.stop_recording():
         probs = qml.probs(wires=wires_to_sample).process_state(flat_state, state_wires)
 
     # Here we are supposed to get the probs, and then we do everything separately
-    return sample_probs(probs, basis_states, shots, num_wires, is_state_batched, rng)
+    return sample_probs(probs, shots, num_wires, is_state_batched, rng)
 
 
-def sample_probs(probs, basis_states, shots, num_wires, is_state_batched, rng):
+def sample_probs(probs, shots, num_wires, is_state_batched, rng):
     """
     Sample from given probabilities using numpy's random number generator.
 
@@ -518,6 +517,8 @@ def sample_probs(probs, basis_states, shots, num_wires, is_state_batched, rng):
     norm = qml.math.sum(probs, axis=-1)
     abs_diff = qml.math.abs(norm - 1.0)
     cutoff = 1e-07
+
+    basis_states = np.arange(2**num_wires)
 
     if is_state_batched:
         normalize_condition = False
