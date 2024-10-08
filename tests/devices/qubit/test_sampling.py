@@ -20,7 +20,7 @@ import pytest
 
 import pennylane as qml
 from pennylane.devices.qubit import measure_with_samples, sample_state, simulate
-from pennylane.devices.qubit.sampling import _sample_state_jax
+from pennylane.devices.qubit.sampling import _sample_state_jax, sample_probs, sample_probs_jax
 from pennylane.devices.qubit.simulate import _FlexShots
 from pennylane.measurements import Shots
 
@@ -1321,6 +1321,7 @@ class TestHamiltonianSamples:
         expected = simulate(qs_exp)
 
         assert np.allclose(res, expected, atol=0.001)
+
 
 class TestSampleProbs:
     @pytest.fixture(autouse=True)
