@@ -222,7 +222,6 @@ class PhaseAdder(Operation):
             aux_k = x_wires[0]
             op_list.extend(_add_k_fourier(k, x_wires))
 
-            # Adjoint is not iterable in QJIT
             for op in reversed(_add_k_fourier(mod, x_wires)):
                 op_list.append(qml.adjoint(op))
 
@@ -231,7 +230,6 @@ class PhaseAdder(Operation):
             op_list.append(qml.QFT(wires=x_wires))
             op_list.extend(qml.ctrl(op, control=work_wire) for op in _add_k_fourier(mod, x_wires))
 
-            # Adjoint is not iterable in QJIT
             for op in reversed(_add_k_fourier(k, x_wires)):
                 op_list.append(qml.adjoint(op))
 
