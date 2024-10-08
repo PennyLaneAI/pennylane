@@ -177,6 +177,7 @@
   `qml.ops.LinearCombination`; this behaviour is not deprecated. For more information, check out the
   [updated operator troubleshooting page](https://docs.pennylane.ai/en/stable/news/new_opmath.html).
   [(#6287)](https://github.com/PennyLaneAI/pennylane/pull/6287)
+  [(#6365)](https://github.com/PennyLaneAI/pennylane/pull/6365)
 
 * `qml.pauli.PauliSentence.hamiltonian` and `qml.pauli.PauliWord.hamiltonian` are deprecated. Instead, please use
   `qml.pauli.PauliSentence.operation` and `qml.pauli.PauliWord.operation` respectively.
