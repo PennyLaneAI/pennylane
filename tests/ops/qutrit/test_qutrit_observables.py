@@ -372,7 +372,7 @@ class TestGellMann:
         assert np.allclose(res_static, mat)
         assert np.allclose(res_dynamic, mat)
 
-    @pytest.mark.usefixtures("use_legacy_opmath")
+    @pytest.mark.usefixtures("legacy_opmath_only")
     def test_obs_data(self):
         """Test that the _obs_data() method of qml.GellMann returns the correct
         observable data."""
