@@ -125,10 +125,8 @@ class OutPoly(Operation):
 
             registers_wires = [wires_x, wires_y, output_wires]
 
-
             def f(x, y):
                 return x ** 2 + y
-
 
             @qml.qnode(qml.device("default.qubit", shots = 1))
             def circuit():
@@ -149,7 +147,7 @@ class OutPoly(Operation):
             [1 0 1 1]
 
         The result, :math:`[1 0 1 1]`, is the binary representation of :math:`3^2 + 2 = 11`.
-        Note that by not specifying `mod`, it is used the value :math:`2 ^{\text{len(output_wires)}}`.
+        Note that by not specifying `mod`, the default value :math:`2 ^{\text{len(output_wires)}}` is used.
         In the usage details it is shown an example where a specific modulus is used.
 
 
@@ -169,10 +167,8 @@ class OutPoly(Operation):
 
             registers_wires = [wires_x, wires_y, output_wires]
 
-
             def f(x, y):
                 return x ** 2 + y
-
 
             @qml.qnode(qml.device("default.qubit", shots = 1))
             def circuit():
@@ -257,10 +253,7 @@ class OutPoly(Operation):
             (key, value)
             for key, value in self.hyperparameters.items()
             if key
-            not in [
-                "f",
-                "registers_wires",
-            ]
+            not in ["f", "registers_wires"]
         )
         return (
             self.hyperparameters["f"],
