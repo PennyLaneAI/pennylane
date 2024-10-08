@@ -316,36 +316,6 @@ def matmul(tensor1, tensor2, like=None):
 
 
 @multi_dispatch(argnum=[0, 1])
-def matrix_power(tensor1, tensor2, like=None):
-    """Raise a tensor to the power of a tensor."""
-    if like == "jax":
-        import jax
-
-        def matrix_power_while_inner(val, M):
-            k, cur_val = val
-            return k - 1, M @ cur_val
-
-        def matrix_power_while(M, k):
-            def cond_fun(val):
-                return val[0] >= 0
-
-            def body_fun(val):
-                return matrix_power_while_inner(val, M)
-
-            init_val = (k - 1, jax.numpy.eye(M.shape[0]))
-
-            result = jax.lax.while_loop(cond_fun, body_fun, init_val)
-            return result[1]
-
-        return matrix_power_while(tensor1, tensor2)
-
-    if like == "tensorflow":
-        return onp.linalg.matrix_power(tensor1, tensor2)
-
-    return np.linalg.matrix_power(tensor1, tensor2)
-
-
-@multi_dispatch(argnum=[0, 1])
 def dot(tensor1, tensor2, like=None):
     """Returns the matrix or dot product of two tensors.
 

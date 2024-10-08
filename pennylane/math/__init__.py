@@ -64,7 +64,6 @@ from .multi_dispatch import (
     tensordot,
     unwrap,
     where,
-    matrix_power,
 )
 from .quantum import (
     cov_matrix,

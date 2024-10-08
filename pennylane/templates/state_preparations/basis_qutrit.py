@@ -15,7 +15,7 @@ r"""
 Contains the BasisStatePreparation template.
 """
 
-
+import numpy as np
 import pennylane as qml
 from pennylane.operation import AnyWires, Operation
 
@@ -116,12 +116,15 @@ class QutritBasisStatePreparation(Operation):
         op_list = []
 
         if qml.math.is_abstract(basis_state):
-            tshift = qml.math.array([[0, 0, 1], [1, 0, 0], [0, 1, 0]])
             for wire, state in zip(wires, basis_state):
-                mat = qml.math.matrix_power(tshift, state)
-                op = qml.ops.QutritUnitary(mat, wires=wire)
-                op_list.append(op)
-
+                op_list.extend([
+                    qml.TRY(state*(2-state)*np.pi, wires = wire, subspace=(0, 1)),
+                    qml.TRY(state*(1-state)*np.pi/2, wires = wire, subspace=(0, 2)),
+                    qml.TRZ((-2*state + 3)*state*np.pi, wires = wire, subspace=(0, 2)),
+                    qml.TRY(state*(2-state)*np.pi, wires = wire, subspace=(0, 2)),
+                    qml.TRY(state*(1-state)*np.pi/2, wires = wire, subspace=(0, 1)),
+                    qml.TRZ(-(7*state - 10)*state*np.pi, wires = wire, subspace=(0, 2))
+                ])
             return op_list
 
         for wire, state in zip(wires, basis_state):

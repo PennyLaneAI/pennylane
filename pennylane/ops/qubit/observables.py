@@ -91,9 +91,6 @@ class Hermitian(Observable):
     @staticmethod
     def _validate_input(A: TensorLike, expected_mx_shape: Optional[int] = None):
         """Validate the input matrix."""
-        if qml.math.is_abstract(A):
-            return
-
         if len(A.shape) != 2 or A.shape[0] != A.shape[1]:
             raise ValueError("Observable must be a square matrix.")
 
