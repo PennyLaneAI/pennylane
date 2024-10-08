@@ -4,6 +4,12 @@
 
 <h3>New features since last release</h3>
 
+* Added `process_density_matrix` implementations to 5 `StateMeasurement` subclasses:
+  `ExpVal`, `Var`, `Purity`, `MutualInformation`, and `VnEntropy`.
+  This enables `process_density_matrix` to be an abstract method in `StateMeasurement`,
+  facilitating future support for mixed-state devices and expanded density matrix operations. Also, there is a quick fix for the `np.sqrt` call in the `ProbabilityMP` class to be replaced by `qml.math.sqrt`.
+  [(#6330)](https://github.com/PennyLaneAI/pennylane/pull/6330)
+
 * A new class `MomentumQNGOptimizer` is added. It inherits the basic `QNGOptimizer` class and requires one additional hyperparameter (the momentum coefficient) :math:`0 \leq \rho < 1`, the default value being :math:`\rho=0.9`. For :math:`\rho=0` Momentum-QNG reduces to the basic QNG.
   [(#6240)](https://github.com/PennyLaneAI/pennylane/pull/6240)
  
@@ -48,9 +54,13 @@
   `trainable_params` as keyword arguments. If any of these are passed when copying a 
   tape, the specified attributes will replace the copied attributes on the new tape.
   [(#6285)](https://github.com/PennyLaneAI/pennylane/pull/6285)
+  [(#6363)](https://github.com/PennyLaneAI/pennylane/pull/6363)
 
 * The `Hermitian` operator now has a `compute_sparse_matrix` implementation.
   [(#6225)](https://github.com/PennyLaneAI/pennylane/pull/6225)
+
+* The `qml.Qubitization` template is now QJIT compatible.
+  [(#6305)](https://github.com/PennyLaneAI/pennylane/pull/6305)
 
 * When an observable is repeated on a tape, `tape.diagonalizing_gates` no longer returns the 
   diagonalizing gates for each instance of the observable. Instead, the diagonalizing gates of
@@ -63,6 +73,10 @@
   [(#6290)](https://github.com/PennyLaneAI/pennylane/pull/6290)
 
 <h4>Capturing and representing hybrid programs</h4>
+
+* `qml.wires.Wires` now accepts JAX arrays as input. Furthermore, a `FutureWarning` is no longer raised in `JAX 0.4.30+`
+  when providing JAX tracers as input to `qml.wires.Wires`.
+  [(#6312)](https://github.com/PennyLaneAI/pennylane/pull/6312)
 
 * Differentiation of hybrid programs via `qml.grad` and `qml.jacobian` can now be captured
   into plxpr. When evaluating a captured `qml.grad` (`qml.jacobian`) instruction, it will
@@ -110,6 +124,10 @@
 * The `to_mat` methods for `FermiWord` and `FermiSentence` now optionally return
   a sparse matrix.
   [(#6173)](https://github.com/PennyLaneAI/pennylane/pull/6173)
+
+* The `make_plxpr` function is added, to take a function and create a `Callable` that,
+  when called, will return a PLxPR representation of the input function.
+  [(#6326)](https://github.com/PennyLaneAI/pennylane/pull/6326)
 
 <h3>Breaking changes 💔</h3>
 
@@ -159,6 +177,7 @@
   `qml.ops.LinearCombination`; this behaviour is not deprecated. For more information, check out the
   [updated operator troubleshooting page](https://docs.pennylane.ai/en/stable/news/new_opmath.html).
   [(#6287)](https://github.com/PennyLaneAI/pennylane/pull/6287)
+  [(#6365)](https://github.com/PennyLaneAI/pennylane/pull/6365)
 
 * `qml.pauli.PauliSentence.hamiltonian` and `qml.pauli.PauliWord.hamiltonian` are deprecated. Instead, please use
   `qml.pauli.PauliSentence.operation` and `qml.pauli.PauliWord.operation` respectively.
@@ -220,6 +239,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* `quantum_fisher` now respects the classical Jacobian of QNodes.
+  [(#6350)](https://github.com/PennyLaneAI/pennylane/pull/6350)
+
 * `qml.map_wires` can now be applied to a batch of tapes.
   [(#6295)](https://github.com/PennyLaneAI/pennylane/pull/6295)
 
@@ -258,6 +280,9 @@
   [(#6278)](https://github.com/PennyLaneAI/pennylane/pull/6278)
   [(#6310)](https://github.com/PennyLaneAI/pennylane/pull/6310)
 
+* Fixes a test after updating to the nightly version of Catalyst.
+  [(#6362)](https://github.com/PennyLaneAI/pennylane/pull/6362)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -275,6 +300,7 @@ Austin Huang,
 Korbinian Kottmann,
 Christina Lee,
 William Maxwell,
+Erick Ochoa Lopez,
 Lee J. O'Riordan,
 Mudit Pandey,
 David Wierichs,
