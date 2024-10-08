@@ -19,30 +19,12 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.templates.subroutines.out_poly import (
-    _binary_to_decimal,
-    _decimal_to_binary_list,
-    _get_coefficients_and_controls,
-)
+from pennylane.templates.subroutines.out_poly import _get_polynomial
 
 
-@pytest.mark.parametrize(
-    ("input_list",),
-    [
-        ([1, 0, 0, 1],),
-        ([0, 1, 1, 1],),
-        ([1, 1, 0, 0, 0, 1],),
-        ([1, 1, 0],),
-    ],
-)
-def test_binary_decimal_conversion(input_list):
-    """Tests that the conversion between decimal and binary works correctly."""
-    assert _decimal_to_binary_list(_binary_to_decimal(input_list), len(input_list)) == input_list
+def test_get_polynomial():
 
-
-def test_get_coeffs_function():
-
-    dic = _get_coefficients_and_controls(lambda x, y: x**2 * y, 16, 2, 2)
+    dic = _get_polynomial(lambda x, y: x**2 * y, 16, 2, 2)
     # `dic` should contain the coefficient of (2x0 + x1)^2 * (2y0 + y1)
 
     # key format (x0, x1, y0, y1)

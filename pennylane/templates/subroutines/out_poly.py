@@ -21,58 +21,73 @@ import pennylane as qml
 from pennylane.operation import Operation
 
 
-def _binary_to_decimal(binary_list):
-    """Convert a binary list to its decimal value."""
-    return sum(val * (2**idx) for idx, val in enumerate(reversed(binary_list)))
-
-
-def _decimal_to_binary_list(n, length):
-    """Convert a decimal number to a binary list of a given length."""
-    return [int(x) for x in bin(n)[2:].zfill(length)]
-
-
-def _get_coefficients_and_controls(f, mod, *wire_lengths):
-    """Calculate the coefficients and controls for a given function and wire configuration using the `Fast Möbius Transform <https://arxiv.org/pdf/2211.13706>`_ .
+def _get_polynomial(f, mod, *variable_sizes):
+    """Calculate the polynomial binary representation of a given function using the `Möbius inversion formula <https://en.wikipedia.org/wiki/Möbius_inversion_formula#On_posets>`_ .
 
     Args:
-        f (callable): the polynomial function to be applied to the inputs
+        f (callable):  the function from which the polynomial is extracted
         mod (int): the modulus to use for the result
-        wire_lengths (Sequence[int]):  a list storing the number of bits used to represent each of the variables of the function
+        variable_sizes (Sequence[int]):  a list storing the number of bits used to represent each of the variables of the function
 
     Return:
-        dict: A dictionary where each key is a tuple representing a combination of control bits (0 or 1), and each value
-              is the corresponding coefficient for that combination in the polynomial expansion modulo `mod`.
-    """
-    total_wires = sum(wire_lengths)
-    num_combinations = 2**total_wires  # Total number of combinations (2^total_wires)
+        dict: A dictionary where each key is a tuple representing the variable terms of the polynomial (if the term includes the i-th variable, a 1 appears in the i-th position).
+              Each value is the corresponding coefficient for that term.
 
-    # Compute function values for all combinations
+    Example:
+        For the function f(x, y) = 4 * x * y` with `variable_sizes=(2, 1)` and `mod=5`, the target polynomial is `4 * (2x_0 + x_1) * y_0` that
+        is expanded as `4 * x1 * y0 + 8 * x0 * y0`. Therefore, the expected output is:
+
+        ```
+        {
+        #   (x0,x1,y0)
+            (0, 1, 1): 4,
+            (1, 0, 1): 3,  # 8 mod 5 = 3
+        }
+        ```
+    In this example, the first two bits correspond to the binary representation of the first variable and the last
+    bit corresponds to the binary representation of the second variable.
+
+    """
+
+    total_wires = sum(variable_sizes)
+    num_combinations = 2**total_wires
+
+    # Calculate the list with all possible keys
+    all_binary_list = [list(map(int, bin(i)[2:].zfill(total_wires))) for i in range(2**total_wires)]
+
+    # Compute the f values for all combinations (2 ** len(total_wires))
     f_values = [0] * num_combinations
     for s in range(num_combinations):
-        bin_list = _decimal_to_binary_list(s, total_wires)
+        bin_list = all_binary_list[s]
+        decimal_values = []
 
-        # Split bin_list into arguments based on wire_lengths
-        args_values = []
         start = 0
-        for wire_length in wire_lengths:
-            arg_value = _binary_to_decimal(bin_list[start : start + wire_length])
-            args_values.append(arg_value)
+        for wire_length in variable_sizes:
+            segment = bin_list[
+                start : start + wire_length
+            ]  # segment corresponding to the i-th variable
+            decimal = int(
+                "".join(map(str, segment)), 2
+            )  # decimal representation of the i-th variable
+            decimal_values.append(decimal)
             start += wire_length
 
-        f_values[s] = f(*args_values) % mod
+        f_values[s] = (
+            f(*decimal_values) % mod
+        )  # (f_values is the zeta transform of the target polynomial)
 
-    # Compute the Möbius transform of f_values
-    n = total_wires
-    for i in range(n):
+    # Compute the Möbius inversion of f_values
+    for i in range(total_wires):
+        ith_bit_on = 1 << i
         for mask in range(num_combinations):
-            if mask & (1 << i):
-                f_values[mask] = (f_values[mask] - f_values[mask ^ (1 << i)]) % mod
+            if mask & ith_bit_on:
+                f_values[mask] = (f_values[mask] - f_values[mask ^ ith_bit_on]) % mod
 
+    # Adjust the algorithm result to the dictionary output format
     coeffs_dict = {}
     for s in range(num_combinations):
         if f_values[s] != 0:
-            # Convert s to binary tuple
-            bin_tuple = tuple(_decimal_to_binary_list(s, total_wires))
+            bin_tuple = tuple(all_binary_list[s])
             coeffs_dict[bin_tuple] = f_values[s]
 
     return coeffs_dict
@@ -252,8 +267,7 @@ class OutPoly(Operation):
         metadata = tuple(
             (key, value)
             for key, value in self.hyperparameters.items()
-            if key
-            not in ["f", "registers_wires"]
+            if key not in ["f", "registers_wires"]
         )
         return (
             self.hyperparameters["f"],
@@ -310,7 +324,9 @@ class OutPoly(Operation):
 
         wires_vars = [len(w) for w in registers_wires[:-1]]
 
-        coeffs_list = _get_coefficients_and_controls(f, mod, *wires_vars)
+        # Extract the coefficients and control wires from the binary polynomial
+        coeffs_list = _get_polynomial(f, mod, *wires_vars)
+
         all_wires_input = sum([*registers_wires[:-1]], start=[])
 
         for item, coeff in coeffs_list.items():
