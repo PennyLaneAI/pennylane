@@ -1321,3 +1321,51 @@ class TestHamiltonianSamples:
         expected = simulate(qs_exp)
 
         assert np.allclose(res, expected, atol=0.001)
+
+class TestSampleProbs:
+    @pytest.fixture(autouse=True)
+    def setup(self):
+        self.rng = np.random.default_rng(42)  # Fixed seed for reproducibility
+
+    def test_basic_sampling(self):
+        """One Qubit, two outcomes"""
+        probs = np.array([0.3, 0.7])
+        samples = sample_probs(probs, shots=1000, num_wires=1, is_state_batched=False, rng=self.rng)
+        assert samples.shape == (1000, 1)
+        # Check if the distribution is roughly correct (allowing for some variance)
+        zeros = np.sum(samples == 0)
+        assert 250 <= zeros <= 350  # Approx 30% of 1000, with some leeway
+
+    def test_multi_qubit_sampling(self):
+        """Two Qubit, four outcomes"""
+        probs = np.array([0.1, 0.2, 0.3, 0.4])
+        samples = sample_probs(probs, shots=1000, num_wires=2, is_state_batched=False, rng=self.rng)
+        assert samples.shape == (1000, 2)
+        # Check if all possible states are present
+        unique_samples = set(map(tuple, samples))
+        assert len(unique_samples) == 4
+
+    def test_batched_sampling(self):
+        """A batch of two circuits, each with two outcomes"""
+        probs = np.array([[0.5, 0.5], [0.3, 0.7]])
+        samples = sample_probs(probs, shots=1000, num_wires=1, is_state_batched=True, rng=self.rng)
+        assert samples.shape == (2, 1000, 1)
+
+    def test_cutoff_edge_case_failure(self):
+        """Test sampling with probabilities just outside the cutoff."""
+        cutoff = 1e-7  # Assuming this is the cutoff used in sample_probs
+        probs = np.array([0.5, 0.5 - 2 * cutoff])
+        with pytest.raises(ValueError, match="probabilities do not sum to 1"):
+            sample_probs(probs, shots=1000, num_wires=1, is_state_batched=False, rng=self.rng)
+
+    def test_batched_cutoff_edge_case_failure(self):
+        """Test sampling with probabilities just outside the cutoff."""
+        cutoff = 1e-7  # Assuming this is the cutoff used in sample_probs
+        probs = np.array(
+            [
+                [0.5, 0.5 - 2 * cutoff],
+                [0.5, 0.5 - 2 * cutoff],
+            ]
+        )
+        with pytest.raises(ValueError, match="probabilities do not sum to 1"):
+            sample_probs(probs, shots=1000, num_wires=1, is_state_batched=True, rng=self.rng)
