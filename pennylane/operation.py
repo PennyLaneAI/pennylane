@@ -1478,10 +1478,6 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
             list[:class:`~.operation.Operator`]
 
         """
-        # Child methods may call super().pow(z%period) where op**period = I
-        # For example, PauliX**2 = I, SX**4 = I
-        # Hence we define 0 and 1 special cases here.
-
         if not isinstance(z, int):
             raise PowUndefinedError
 
