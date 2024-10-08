@@ -250,25 +250,32 @@ def _sample_state_jax(
         ndarray[int]: Sample values of the shape (shots, num_wires)
     """
     # pylint: disable=import-outside-toplevel
-    import jax
-    import jax.numpy as jnp
-
-    key = prng_key
 
     total_indices = get_num_wires(state, is_state_batched)
     state_wires = qml.wires.Wires(range(total_indices))
 
     wires_to_sample = wires or state_wires
     num_wires = len(wires_to_sample)
-    basis_states = np.arange(QUDIT_DIM**num_wires)
 
     with qml.queuing.QueuingManager.stop_recording():
         probs = measure(qml.probs(wires=wires_to_sample), state, is_state_batched, readout_errors)
 
+    state_len = len(state)
+
+    return _sample_probs_jax(probs, shots, num_wires, is_state_batched, prng_key, state_len)
+
+
+def _sample_probs_jax(probs, shots, num_wires, is_state_batched, prng_key, state_len):
+    import jax
+    import jax.numpy as jnp
+
+    key = prng_key
+
+    basis_states = np.arange(QUDIT_DIM**num_wires)
     if is_state_batched:
         # Produce separate keys for each of the probabilities along the broadcasted axis
         keys = []
-        for _ in state:
+        for _ in range(state_len):
             key, subkey = jax.random.split(key)
             keys.append(subkey)
         samples = jnp.array(
