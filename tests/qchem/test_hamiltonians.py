@@ -105,9 +105,9 @@ from pennylane.operation import active_new_opmath
 def test_electron_integrals(symbols, geometry, core, active, e_core, one_ref, two_ref, use_jax):
     r"""Test that electron_integrals returns the correct values."""
 
-    geometry = (
-        qml.math.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], like="jax") if use_jax else geometry
-    )
+    if use_jax:
+        geometry = qml.math.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], like="jax")
+
     mol = qchem.Molecule(symbols, geometry)
     args = [geometry, mol.coeff, mol.alpha] if use_jax else []
 
@@ -254,9 +254,9 @@ def test_diff_hamiltonian(use_jax):
         ],
     )
 
-    geometry = (
-        qml.math.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], like="jax") if use_jax else geometry
-    )
+    if use_jax:
+        geometry = qml.math.array(geometry, like="jax")
+
     mol = qchem.Molecule(symbols, geometry)
     args = [geometry, mol.coeff, mol.alpha] if use_jax else []
 
