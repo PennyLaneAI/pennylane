@@ -64,7 +64,7 @@ class OperatorProperties:
 
 
 @dataclass
-class DeviceCapabilities:
+class DeviceCapabilities:  # pylint: disable=too-many-instance-attributes
     """Capabilities of a quantum device.
 
     Attributes:
