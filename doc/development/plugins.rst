@@ -52,10 +52,23 @@ For example:
 
     circuit()
 
+This execute method works in tandem with the optional ``Device.preprocss``, described below in more detail.
+Preprocessing turns generic circuits into ones supported by the device or errors out. Execution then
+turns those supported circuits into numerical results. 
+
+In a more minimal example, for any initial batch and config, we expect to be able to do:
+
+.. code-block:: python
+
+    transform_program, execution_config = dev.preprocess(initial_config)
+    batch, fn = transform_program(initial_batch)
+    fn(dev.execute(batch, execution_config))
+
+
 Shots
 -----
 
-While the workflow default for shots is specified by :attr:`~.Device.shots`, the device itself should use
+While the workflow default for shots is specified by :attr:`pennylane.devices.Device.shots`, the device itself should use
 the number of shots specified in the :attr:`~.QuantumScript.shots` property for each quantum tape.
 By pulling shots dynamically for each circuit, users can efficiently distribute a shot budget across batch of
 circuits.
@@ -84,6 +97,109 @@ different numbers of shots to use when calculating the final expecation value.
 The first number ``0.2`` is calculated with 5 shots, the second ``-0.052`` is calculated with 500 shots, and
 ``-0.014`` is calculated with 1000 shots.  All 1,505 shots can be requested together in one batch, but the post
 processing into the expecation value is done with shots ``0:5``, ``5:505``, and ``505:1505`` respectively.
+
+
+Preprocessing
+-------------
+
+The preprocessing method has two main responsibilities:
+
+1) Create a :class:`~.TransformProgram` capable of turning an arbitrary :class:`~.QuantumScript` into one supported the ``execute`` method.
+2) Setup the :class:`~.ExecutionConfig` dataclass by filling in device options and making decisions about differentiation
+
+Once the transform program has been applied to a batch of circuits, that batch should be run via ``Device.execute`` without error.
+
+.. code-block:: python
+
+    transform_program, execution_config = dev.preprocess(initial_config)
+    batch, fn = transform_program(initial_batch)
+    fn(dev.execute(batch, execution_config))
+
+These two tasks can be extracted into private methods or helper functions if that improves source code organization.
+
+See the section on the **Execution Config** below for more information on step 2.
+
+Once a program is created, an individual transform can be added to the program with the
+:meth:`~.TransformProgram.add_transform` method.
+
+.. code-block:: python
+
+    from pennylane.devices.preprocess import validate_device_wires, validate_measurements, decompose
+
+    program = qml.transforms.core.TransformProgram()
+    program.add_transform(validate_device_wires, wires=qml.wires.Wires((0,1,2)), name="my_device")
+    program.add_transform(validate_measurements, name="my_device")
+    program.add_transform(qml.defer_measurements)
+    program.add_transform(qml.transforms.split_non_commuting)
+
+    def supports_operation(op): return getattr(op, "name", None) in operation_names
+    program.add_transform(decompose, stopping_condition=supports_operation, name="my_device")
+    program.add_transform(qml.transforms.broadcast_expand)
+
+Preprocessing and validation can also exist inside the :meth:`~devices.Device.execute` method, but placing them
+in the preprocessing program has several benefits. Validation can happen earlier, leading to fewer resources
+spent before the error is raised.  Users can inspect, draw, and spec out the tapes at different stages throughout
+preprocessing. This provides users a better awareness of what the device is actually executing. When device
+gradients are used, the preprocessing transforms are tracked by the machine learning interfaces.  With the
+ML framework tracking the classical component of preprocessing, the device does not need to manually track the
+classical component of any decompositions or compilation. For example,
+
+>>> @qml.qnode(qml.device('reference.qubit', wires=2))
+... def circuit(x):
+...     qml.IsingXX(x, wires=(0,1))
+...     qml.CH((0,1))
+...     return qml.expval(qml.X(0))
+>>> print(qml.draw(circuit, level="device")(0.5))
+0: ─╭●──RX(0.50)─╭●────────────╭●──RY(-1.57)─┤  <Z>
+1: ─╰X───────────╰X──RY(-0.79)─╰Z──RY(0.79)──┤     
+
+Allows the user to see that both ``IsingXX`` and ``CH`` are decomposed by the device, and that
+the diagonalizing gates for ``qml.expval(qml.X(0))`` are applied.
+
+Even with these benefits, devices can still opt to
+place some transforms inside the ``execute`` method.  For example, ``default.qubit`` maps wires to simulation indices
+inside ``execute`` instead of in ``preprocess``.
+
+The :meth:`~.devices.Device.execute` can assume that device preprocessing has been run on the input
+tapes, and has no obligation to re-validate the input or provide sensible error messages. In the below example,
+we see `default.qubit` erroring out when unsupported operations and unsupported measurements are 
+
+>>> op = qml.Permute([2,1,0], wires=(0,1,2))
+>>> tape = qml.tape.QuantumScript([op], [qml.probs(wires=(0,1))])
+>>> qml.device('default.qubit').execute(tape)
+MatrixUndefinedError:
+>>> tape = qml.tape.QuantumScript([], [qml.density_matrix(wires=0)], shots=50)
+>>> qml.device('default.qubit').execute(tape)
+AttributeError: 'DensityMatrixMP' object has no attribute 'process_samples'
+
+Devices may define their own transforms following the description in the ``transforms`` module,
+or can include in-built transforms such as:
+
+.. currentmodule:: pennylane.devices.preprocess
+.. autosummary::
+    :toctree: api
+
+    decompose
+    validate_observables
+    validate_measurements
+    validate_device_wires
+    validate_multiprocessing_workers
+    validate_adjoint_trainable_params
+    no_sampling
+
+
+.. currentmodule:: pennylane
+.. autosummary::
+    :toctree: api
+
+    defer_measurements
+    dynamic_one_shot
+    transforms.broadcast_expand
+    transforms.split_non_commuting
+    transforms.transpile
+    transforms.diagonlize_measurements
+    transforms.split_to_single_terms
+
 
 Wires
 -----
@@ -120,79 +236,22 @@ will be on the user to deliberately map wires if they wish such a thing to occur
 >>> qml.device('my_hardware', wires=(10, 11, 12, 13))
 DeviceError: Device my_hardware cannot internally map wires, as the labels 0, 1, 2, 3 indicate unique qubits
 
-
-Preprocessing
--------------
-
-The preprocessing method has two main responsibilities:
-
-1) Create a :class:`~.TransformProgram` capable of turning an arbitrary :class:`~.QuantumScript` into one supported by the device
-2) Setup the :class:`~.ExecutionConfig` dataclass by filling in device options and making decisions about differentiation
-
-These two tasks can be extracted into private methods or helper functions if that improves source code organization.
-
-See the section on the **Execution Config** below for more information on step 2.
-
-Devices may define their own transforms following the description in the ``transforms`` module,
-or can include in-built transforms such as:
-
-.. currentmodule:: pennylane.devices.preprocess
-.. autosummary::
-    :toctree: api
-
-    decompose
-    validate_observables
-    validate_measurements
-    validate_device_wires
-    validate_multiprocessing_workers
-    validate_adjoint_trainable_params
-    no_sampling
-
-
-.. currentmodule:: pennylane
-.. autosummary::
-    :toctree: api
-
-    defer_measurements
-    dynamic_one_shot
-    transforms.broadcast_expand
-    transforms.split_non_commuting
-    transforms.transpile
-    transforms.diagonlize_measurements
-    transforms.split_to_single_terms
-
-Once a program is created, an individual transform can be added to the program with the
-:meth:`~.TransformProgram.add_transform` method.
+To implement such validation, a device developer can include a custom transform in their preprocessing:
 
 .. code-block:: python
 
-    from pennylane.devices.preprocess import validate_device_wires
+    def null_processing(res): return res[0]
 
-    program = qml.transforms.core.TransformProgram()
-    program.add_transform(validate_device_wires, wires=qml.wires.Wires((0,1,2)), name="my_device")
+    @qml.transform
+    def validate_hardware_wires(tape):
+        if any(w not in {0, 1, 2, 3} for w in tape.wires:
+            raise qml.DeviceError(
+                "Device my_hardware cannot internally map wires, as the labels"
+                " 0, 1, 2, 3 indicate unique qubits."
+            )
+        return (tape, ), null_processing
 
-Preprocessing and validation can also exist inside the :meth:`~devices.Device.execute` method, but placing them
-in the preprocessing program has several benefits. Validation can happen earlier, leading to fewer resources
-spent before the error is raised.  Users can inspect, draw, and spec out the tapes at different stages throughout
-preprocessing. This provides users a better awareness of what the device is actually executing. When device
-gradients are used, the preprocessing transforms are tracked by the machine learning interfaces.  With the
-ML framework tracking the classical component of preprocessing, the device does not need to manually track the
-classical component of any decompositions or compilation. 
-
-Even with these benefits, devices can still opt to
-place some transforms inside the ``execute`` method.  For example, ``default.qubit`` maps wires to simulation indices
-inside ``execute`` instead of in ``preprocess``.
-
-The :meth:`~.devices.Device.execute` can assume that device preprocessing has been run on the input
-tapes, and has no obligation to re-validate the input or provide sensible error messages.
-
->>> op = qml.Permute([2,1,0], wires=(0,1,2))
->>> tape = qml.tape.QuantumScript([op], [qml.probs(wires=(0,1))])
->>> qml.device('default.qubit').execute(tape)
-MatrixUndefinedError:
->>> tape = qml.tape.QuantumScript([], [qml.density_matrix(wires=0)], shots=50)
->>> qml.device('default.qubit').execute(tape)
-AttributeError: 'DensityMatrixMP' object has no attribute 'process_samples'
+    transform_program.add_transform(validate_hardware_wires)
 
 
 Execution Config
@@ -272,6 +331,27 @@ circuits. Any ``StateMeasurement`` has ``process_state`` and ``process_density_m
 classical post-processsing of a state vector or density matrix, and ``SampleMeasurement``'s implement
 both ``process_samples`` and ``process_counts``.  The ``pennylane.devices.qubit`` module also contains
 functions that implement parts of a Python-based statevector simulation.
+
+Suppose you are accessing hardware that can only return raw samples. Here, we use the ``mp.process_samples``
+methods to process the subsamples into the requested final result object.  Note that we need
+to squeeze out singleton dimensions when we have no shot vector or a single measurement.
+
+.. code-block:: python
+
+    def single_tape_execution(tape) -> qml.typing.Result:
+        samples = get_samples(tape)
+        results = []
+        for lower, upper in tape.shots.bins():
+            sub_samples = samples[lower:upper]
+            results.append(
+                tuple(mp.process_samples(sub_samples, tape.wires) for mp in tape.measurements)
+            )
+        if len(tape.measurements) == 1:
+            results = tuple(res[0] for res in results)
+        if tape.shots.has_partitioned_shots:
+            results = results[0]
+        return results
+    
 
 Device Modifiers
 ----------------
