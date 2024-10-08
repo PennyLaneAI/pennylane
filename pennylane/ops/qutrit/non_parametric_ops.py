@@ -18,7 +18,7 @@ that do not depend on any parameters.
 # pylint:disable=arguments-differ
 import numpy as np
 
-from pennylane.operation import AdjointUndefinedError, Operation, PowUndefinedError
+from pennylane.operation import AdjointUndefinedError, Operation
 from pennylane.wires import Wires
 
 from .parametric_ops import validate_subspace
