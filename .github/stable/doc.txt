@@ -63,6 +63,7 @@ pennylane-sphinx-theme==0.5.8
 PennyLane_Lightning==0.38.0
 pillow==10.4.0
 pluggy==1.5.0
+propcache==0.2.0
 protobuf==3.19.6
 PubChemPy==1.0.4
 pyasn1==0.6.1
@@ -116,5 +117,5 @@ urllib3==1.26.20
 Werkzeug==3.0.4
 wrapt==1.16.0
 xanadu-sphinx-theme==0.5.0
-yarl==1.13.1
+yarl==1.14.0
 zipp==3.20.2
