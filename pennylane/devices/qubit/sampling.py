@@ -476,8 +476,6 @@ def sample_state(
             state, shots, prng_key, is_state_batched=is_state_batched, wires=wires, seed=rng
         )
 
-    rng = np.random.default_rng(rng)
-
     total_indices = len(state.shape) - is_state_batched
     state_wires = qml.wires.Wires(range(total_indices))
 
@@ -514,6 +512,8 @@ def sample_probs(probs, shots, num_wires, is_state_batched, rng):
     # when using the torch interface with float32 as default dtype,
     # probabilities must be renormalized as they may not sum to one
     # see https://github.com/PennyLaneAI/pennylane/issues/5444
+
+    rng = np.random.default_rng(rng)
     norm = qml.math.sum(probs, axis=-1)
     abs_diff = qml.math.abs(norm - 1.0)
     cutoff = 1e-07
