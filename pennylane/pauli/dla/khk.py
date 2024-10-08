@@ -484,6 +484,7 @@ def khk_decompose(
 
     theta_opt = thetas[-1]
     vec_h = ansatz(theta_opt, vec_H)
+    # assert np.allclose(vec_h[:len(h)], 0., atol=1e-7), f"{vec_h}"
 
     if validate:
         _khk_validation(H, vec_h, theta_opt, g, k)
@@ -492,15 +493,26 @@ def khk_decompose(
 
 
 def _khk_validation(H, vec_h, theta_opt, g, k):
+    """Validation of the KHK decomposition result.
+    This validation works under the assumption that the default ansatz in `khk_decompose` was used.
+
+    This means that we found theta and vec_h such that
+
+    exp(i theta_n k_n) ... exp(i theta_0 k_0) H exp(-i theta_0 k_0) ... exp(-i theta_n k_n) = vec_h @ h
+    or
+    H = exp(-i theta_0 k_0) ... exp(-i theta_n k_n) vec_h @ h exp(i theta_n k_n) ... exp(i theta_0 k_0)
+    """
+
     h_elem = make_op(vec_h, g[len(k) :], tol=1e-10)
     n = len(H.wires)
     h_mat = qml.matrix(h_elem, wire_order=range(n))
 
     Km = jnp.eye(2**n)
-    for th, op in zip(theta_opt[::-1], k[::-1]):
-        Km @= jax.scipy.linalg.expm(1j * th * qml.matrix(op.operation(), wire_order=range(n)))
+    # Construct the group operation exp(-i theta_0 k_0) ... exp(-i theta_n k_n)
+    for th, op in zip(theta_opt, k):
+        Km @= jax.scipy.linalg.expm(-1j * th * qml.matrix(op.operation(), wire_order=range(n)))
 
-    h_mat = Km.conj().T @ h_mat @ Km
+    h_mat = Km @ h_mat @ Km.conj().T
 
     H_mat = qml.matrix(H, wire_order=range(n))
     success = np.allclose(H_mat, h_mat)
