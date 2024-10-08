@@ -948,11 +948,15 @@ class QuantumScript:
 
             _measurements = self.measurements.copy()
 
+        update_trainable_params = "operations" in update or "measurements" in update
+        # passing trainable_params=None will re-calculate trainable_params
+        default_trainable_params = None if update_trainable_params else self.trainable_params
+
         new_qscript = self.__class__(
             ops=_ops,
             measurements=_measurements,
             shots=update.get("shots", self.shots),
-            trainable_params=list(update.get("trainable_params", self.trainable_params)),
+            trainable_params=update.get("trainable_params", default_trainable_params),
         )
 
         # copy cached properties when relevant
