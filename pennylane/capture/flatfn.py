@@ -16,6 +16,8 @@ Defines a utility for capturing higher order primitives that return pytrees.
 """
 from functools import update_wrapper
 
+import pennylane as qml
+
 has_jax = True
 try:
     import jax
@@ -69,9 +71,10 @@ class FlatFn:
         update_wrapper(self, f)
 
     def __call__(self, *args):
-        if self.in_tree is not None:
-            args = jax.tree_util.tree_unflatten(self.in_tree, args)
-        out = self.f(*args)
-        out_flat, out_tree = jax.tree_util.tree_flatten(out)
-        self.out_tree = out_tree
+        with qml.queuing.AnnotatedQueue():
+            if self.in_tree is not None:
+                args = jax.tree_util.tree_unflatten(self.in_tree, args)
+            out = self.f(*args)
+            out_flat, out_tree = jax.tree_util.tree_flatten(out)
+            self.out_tree = out_tree
         return out_flat
