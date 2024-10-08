@@ -152,7 +152,8 @@ class TestIntegration:
         ),
     )
     def test_quantum_fisher_info(self, dev):
-        """Integration test of quantum fisher information matrix CFIM. This is just calling ``qml.metric_tensor`` or ``qml.adjoint_metric_tensor`` and multiplying by a factor of 4"""
+        """Integration test of quantum fisher information matrix CFIM. This is just calling
+        ``qml.metric_tensor`` or ``qml.adjoint_metric_tensor`` and multiplying by a factor of 4"""
 
         n_wires = 2
 
@@ -160,8 +161,8 @@ class TestIntegration:
         dev_hard = qml.device("default.qubit", wires=n_wires + 1, shots=1000, seed=rng)
 
         def qfunc(params):
-            qml.RX(params[0], wires=0)
             qml.RX(params[1], wires=0)
+            qml.RX(params[0] / 3, wires=0)
             qml.CNOT(wires=(0, 1))
             return qml.probs(wires=[0, 1])
 

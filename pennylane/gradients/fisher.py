@@ -19,6 +19,7 @@ import pennylane as qml
 from pennylane import transform
 from pennylane.devices import DefaultQubit
 from pennylane.gradients import adjoint_metric_tensor
+from pennylane.gradients.metric_tensor import _contract_metric_tensor_with_cjac
 from pennylane.typing import PostprocessingFn
 
 
@@ -123,7 +124,7 @@ def classical_fisher(qnode, argnums=0):
 
     .. code-block:: python
 
-        import pennylane.numpy as pnp
+        import pennylane.numpy as np
 
         dev = qml.device("default.qubit")
 
@@ -137,8 +138,8 @@ def classical_fisher(qnode, argnums=0):
 
     Executing this circuit yields the ``2**2=4`` elements of :math:`p_\ell(\bm{\theta})`
 
-    >>> pnp.random.seed(25)
-    >>> params = pnp.random.random(2)
+    >>> np.random.seed(25)
+    >>> params = np.random.random(2)
     >>> circ(params)
     tensor([0.41850088, 0.41850088, 0.08149912, 0.08149912], requires_grad=True)
 
@@ -160,7 +161,7 @@ def classical_fisher(qnode, argnums=0):
             qml.RY(y, wires=0)
             return qml.probs(wires=range(1))
 
-    >>> x, y = pnp.array([0.5, 0.6], requires_grad=True)
+    >>> x, y = np.array([0.5, 0.6], requires_grad=True)
     >>> circ(x, y)
     tensor([0.86215007, 0.13784993], requires_grad=True)
     >>> qml.gradients.classical_fisher(circ)(x, y)
@@ -189,7 +190,7 @@ def classical_fisher(qnode, argnums=0):
             qml.CNOT(wires=(0,1))
             return qml.expval(H)
 
-        params = pnp.random.random(4)
+        params = np.random.random(4)
 
     We can compute both the gradient of :math:`\langle H \rangle` and the CFIM with the same :class:`.QNode` ``circ``
     in this example since ``classical_fisher()`` ignores the return types and assumes ``qml.probs()`` for all wires.
@@ -218,7 +219,7 @@ def classical_fisher(qnode, argnums=0):
             qml.RX(qml.math.cos(params[1]), wires=1)
             return qml.probs(wires=range(2))
 
-        params = pnp.random.random(2)
+        params = np.random.random(2)
 
     >>> qml.gradients.classical_fisher(circ)(params)
     tensor([[0.86929514, 0.76134441],
@@ -280,7 +281,7 @@ def classical_fisher(qnode, argnums=0):
     return wrapper
 
 
-@partial(transform, is_informative=True)
+@partial(transform, classical_cotransform=_contract_metric_tensor_with_cjac, is_informative=True)
 def quantum_fisher(
     tape: qml.tape.QuantumScript, device, *args, **kwargs
 ) -> tuple[qml.tape.QuantumScriptBatch, PostprocessingFn]:
@@ -326,6 +327,8 @@ def quantum_fisher(
 
     .. code-block:: python
 
+        from pennylane import numpy as np
+
         n_wires = 2
 
         dev = qml.device("default.qubit", wires=n_wires)
@@ -340,7 +343,7 @@ def quantum_fisher(
             qml.RZ(params[2], wires=1)
             return qml.expval(H)
 
-        params = pnp.array([0.5, 1., 0.2], requires_grad=True)
+        params = np.array([0.5, 1., 0.2], requires_grad=True)
 
     The natural gradient is then simply the QFIM multiplied by the gradient:
 
