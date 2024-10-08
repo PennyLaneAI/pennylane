@@ -323,18 +323,21 @@ def sample_state(
             readout_errors=readout_errors,
         )
 
-    rng = np.random.default_rng(rng)
-
     total_indices = get_num_wires(state, is_state_batched)
     state_wires = qml.wires.Wires(range(total_indices))
 
     wires_to_sample = wires or state_wires
     num_wires = len(wires_to_sample)
-    basis_states = np.arange(QUDIT_DIM**num_wires)
 
     with qml.queuing.QueuingManager.stop_recording():
         probs = measure(qml.probs(wires=wires_to_sample), state, is_state_batched, readout_errors)
 
+    return sample_probs(probs, shots, num_wires, is_state_batched, rng)
+
+
+def sample_probs(probs, shots, num_wires, is_state_batched, rng):
+    rng = np.random.default_rng(rng)
+    basis_states = np.arange(QUDIT_DIM**num_wires)
     if is_state_batched:
         # rng.choice doesn't support broadcasting
         samples = np.stack([rng.choice(basis_states, shots, p=p) for p in probs])
