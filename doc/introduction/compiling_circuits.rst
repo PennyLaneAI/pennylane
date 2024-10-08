@@ -320,7 +320,7 @@ the circuit until the desired gate set is reached.
 The example below shows how the user can visualize the decomposition. 
 We begin with creating a :class:`~.pennylane.QuantumPhaseEstimation` circuit. 
 
-.. code-block:: python3
+.. code-block:: python
 
     phase = 1 
     target_wires = [0]
@@ -342,7 +342,7 @@ From here, we can iterate through the stages of decomposition:
 
 >>> print(qml.draw(decompose(circuit, max_expansion=0))())
 
-.. code-block:: python3
+.. code-block:: python
 
     0: ──H─╭QuantumPhaseEstimation─┤  
     1: ────├QuantumPhaseEstimation─┤  
@@ -351,7 +351,7 @@ From here, we can iterate through the stages of decomposition:
 
 >>> print(qml.draw(decompose(circuit, max_expansion=1))())
 
-.. code-block:: python3
+.. code-block:: python
 
     0: ──H─╭U(M0)⁴─╭U(M0)²─╭U(M0)¹───────┤  
     1: ──H─╰●──────│───────│───────╭QFT†─┤  
@@ -360,7 +360,7 @@ From here, we can iterate through the stages of decomposition:
 
 >>> print(qml.draw(decompose(circuit, max_expansion=2))())
 
-.. code-block:: python3
+.. code-block:: python
 
     0: ──H──RZ(11.00)──RY(1.14)─╭X──RY(-1.14)──RZ(-9.42)─╭X──RZ(-1.57)──RZ(1.57)──RY(1.00)─╭X──RY(-1.00)
     1: ──H──────────────────────╰●───────────────────────╰●────────────────────────────────│────────────

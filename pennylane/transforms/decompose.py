@@ -63,7 +63,7 @@ def decompose(tape, gate_set=None, max_expansion=None):
 
     You can also apply the transform directly on a :class:`QNode`:
 
-    .. code-block:: python3
+    .. code-block:: python
 
         @partial(decompose, gate_set={qml.Toffoli, "RX", "RZ"})
         @qml.qnode(qml.device("default.qubit"))
@@ -81,7 +81,7 @@ def decompose(tape, gate_set=None, max_expansion=None):
 
     You can also use callable functions to build a decomposition gate set:
 
-    .. code-block:: python3
+    .. code-block:: python
 
         @partial(decompose, gate_set=lambda op: len(op.wires) <= 2)
         @qml.qnode(qml.device("default.qubit"))
@@ -103,7 +103,7 @@ def decompose(tape, gate_set=None, max_expansion=None):
 
     The example below demonstrates how the user can visualize the decomposition in stages:
 
-    .. code-block:: python3
+    .. code-block:: python
 
         phase = 1
         target_wires = [0]
@@ -123,7 +123,7 @@ def decompose(tape, gate_set=None, max_expansion=None):
 
     >>> print(qml.draw(decompose(circuit, max_expansion=0))())
 
-    .. code-block:: python3
+    .. code-block:: python
 
         0: ──H─╭QuantumPhaseEstimation─┤
         1: ────├QuantumPhaseEstimation─┤
@@ -132,7 +132,7 @@ def decompose(tape, gate_set=None, max_expansion=None):
 
     >>> print(qml.draw(decompose(circuit, max_expansion=1))())
 
-    .. code-block:: python3
+    .. code-block:: python
 
         0: ──H─╭U(M0)⁴─╭U(M0)²─╭U(M0)¹───────┤
         1: ──H─╰●──────│───────│───────╭QFT†─┤
@@ -141,7 +141,7 @@ def decompose(tape, gate_set=None, max_expansion=None):
 
     >>> print(qml.draw(decompose(circuit, max_expansion=2))())
 
-    .. code-block:: python3
+    .. code-block:: python
 
         0: ──H──RZ(11.00)──RY(1.14)─╭X──RY(-1.14)──RZ(-9.42)─╭X──RZ(-1.57)──RZ(1.57)──RY(1.00)─╭X──RY(-1.00)
         1: ──H──────────────────────╰●───────────────────────╰●────────────────────────────────│────────────
