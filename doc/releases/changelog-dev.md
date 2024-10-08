@@ -4,6 +4,12 @@
 
 <h3>New features since last release</h3>
 
+* Added `process_density_matrix` implementations to 5 `StateMeasurement` subclasses:
+  `ExpVal`, `Var`, `Purity`, `MutualInformation`, and `VnEntropy`.
+  This enables `process_density_matrix` to be an abstract method in `StateMeasurement`,
+  facilitating future support for mixed-state devices and expanded density matrix operations. Also, there is a quick fix for the `np.sqrt` call in the `ProbabilityMP` class to be replaced by `qml.math.sqrt`.
+  [(#6330)](https://github.com/PennyLaneAI/pennylane/pull/6330)
+
 * A new class `MomentumQNGOptimizer` is added. It inherits the basic `QNGOptimizer` class and requires one additional hyperparameter (the momentum coefficient) :math:`0 \leq \rho < 1`, the default value being :math:`\rho=0.9`. For :math:`\rho=0` Momentum-QNG reduces to the basic QNG.
   [(#6240)](https://github.com/PennyLaneAI/pennylane/pull/6240)
  
@@ -32,6 +38,7 @@
 * PennyLane is now compatible with NumPy 2.0.
   [(#6061)](https://github.com/PennyLaneAI/pennylane/pull/6061)
   [(#6258)](https://github.com/PennyLaneAI/pennylane/pull/6258)
+  [(#6342)](https://github.com/PennyLaneAI/pennylane/pull/6342)
 
 * PennyLane is now compatible with Jax 0.4.28.
   [(#6255)](https://github.com/PennyLaneAI/pennylane/pull/6255)
@@ -51,12 +58,24 @@
 * The `Hermitian` operator now has a `compute_sparse_matrix` implementation.
   [(#6225)](https://github.com/PennyLaneAI/pennylane/pull/6225)
 
+* The `qml.Qubitization` template is now QJIT compatible.
+  [(#6305)](https://github.com/PennyLaneAI/pennylane/pull/6305)
+
+* When an observable is repeated on a tape, `tape.diagonalizing_gates` no longer returns the 
+  diagonalizing gates for each instance of the observable. Instead, the diagonalizing gates of
+  each observable on the tape are included just once.
+  [(#6288)](https://github.com/PennyLaneAI/pennylane/pull/6288)
+
 * The number of diagonalizing gates returned in `qml.specs` now follows the `level` keyword argument 
   regarding whether the diagonalizing gates are modified by device, instead of always counting 
   unprocessed diagonalizing gates.
   [(#6290)](https://github.com/PennyLaneAI/pennylane/pull/6290)
 
 <h4>Capturing and representing hybrid programs</h4>
+
+* `qml.wires.Wires` now accepts JAX arrays as input. Furthermore, a `FutureWarning` is no longer raised in `JAX 0.4.30+`
+  when providing JAX tracers as input to `qml.wires.Wires`.
+  [(#6312)](https://github.com/PennyLaneAI/pennylane/pull/6312)
 
 * Differentiation of hybrid programs via `qml.grad` and `qml.jacobian` can now be captured
   into plxpr. When evaluating a captured `qml.grad` (`qml.jacobian`) instruction, it will
@@ -105,6 +124,10 @@
   a sparse matrix.
   [(#6173)](https://github.com/PennyLaneAI/pennylane/pull/6173)
 
+* The `make_plxpr` function is added, to take a function and create a `Callable` that,
+  when called, will return a PLxPR representation of the input function.
+  [(#6326)](https://github.com/PennyLaneAI/pennylane/pull/6326)
+
 <h3>Breaking changes 💔</h3>
 
 * The `simplify` argument in `qml.Hamiltonian` and `qml.ops.LinearCombination` has been removed.
@@ -144,7 +167,6 @@
 
 * `Operator.expand` is now removed. Use `qml.tape.QuantumScript(op.deocomposition())` instead.
   [(#6227)](https://github.com/PennyLaneAI/pennylane/pull/6227)
-
 
 <h3>Deprecations 👋</h3>
 
@@ -214,6 +236,9 @@
   [(#6298)](https://github.com/PennyLaneAI/pennylane/pull/6298)
 
 <h3>Bug fixes 🐛</h3>
+
+* `quantum_fisher` now respects the classical Jacobian of QNodes.
+  [(#6350)](https://github.com/PennyLaneAI/pennylane/pull/6350)
 
 * `qml.map_wires` can now be applied to a batch of tapes.
   [(#6295)](https://github.com/PennyLaneAI/pennylane/pull/6295)
