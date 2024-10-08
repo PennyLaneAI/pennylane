@@ -296,7 +296,7 @@ def test_diff_hamiltonian_active_space(use_jax):
     symbols = ["H", "H", "H"]
     geometry = np.array([[0.0, 0.0, 0.0], [2.0, 0.0, 1.0], [0.0, 2.0, 0.0]])
     if use_jax:
-        geometry = qml.math.array([[0.0, 0.0, 0.0], [2.0, 0.0, 1.0], [0.0, 2.0, 0.0]], like="jax")
+        geometry = qml.math.array(geometry, like="jax")
 
     mol = qchem.Molecule(symbols, geometry, charge=1)
     args = [geometry, mol.coeff, mol.alpha] if use_jax else [geometry]
