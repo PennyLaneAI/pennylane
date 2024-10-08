@@ -22,8 +22,6 @@ import operator
 import warnings
 from typing import Any, Callable, Iterator, SupportsIndex, Tuple, Union
 
-# import catalyst
-# from catalyst.tracing.contexts import EvaluationContext
 from malt.core import config as ag_config
 from malt.impl import api as ag_api
 from malt.impl.api import converted_call as ag_converted_call
@@ -65,16 +63,12 @@ def get_program_length(reference_tracers):
 
     num_jaxpr_eqns, num_tape_ops = 0, 0
 
-    if EvaluationContext.is_tracing():  # pragma: no branch
-        jaxpr_frame = EvaluationContext.find_jaxpr_frame(reference_tracers)
-        num_jaxpr_eqns = len(jaxpr_frame.eqns)
-
-    if EvaluationContext.is_quantum_tracing():
-        quantum_queue = EvaluationContext.find_quantum_queue()
-        # Using the the class methods directly allows this to work for both
-        # QuantumTape & AnnotatedQueue instances.
-        # pylint: disable=unnecessary-dunder-call
-        num_tape_ops = AnnotatedQueue.__len__(quantum_queue)
+    quantum_queue = qml.QueuingManager.active_context()
+    assert quantum_queue is not None
+    # Using the class methods directly allows this to work for both
+    # QuantumTape & AnnotatedQueue instances.
+    # pylint: disable=unnecessary-dunder-call
+    num_tape_ops = AnnotatedQueue.__len__(quantum_queue)
 
     return num_jaxpr_eqns, num_tape_ops
 
@@ -82,18 +76,14 @@ def get_program_length(reference_tracers):
 def reset_program_to_length(reference_tracers, num_jaxpr_eqns, num_tape_ops):
     """Reset the quantum and classical program back to a given length."""
 
-    if EvaluationContext.is_tracing():  # pragma: no branch
-        jaxpr_frame = EvaluationContext.find_jaxpr_frame(reference_tracers)
-        while len(jaxpr_frame.eqns) > num_jaxpr_eqns:
-            jaxpr_frame.eqns.pop()
-
-    if EvaluationContext.is_quantum_tracing():
-        quantum_queue = EvaluationContext.find_quantum_queue()
-        # Using the the class methods directly allows this to work for both
-        # QuantumTape & AnnotatedQueue instances.
-        # pylint: disable=unnecessary-dunder-call
-        while AnnotatedQueue.__len__(quantum_queue) > num_tape_ops:
-            AnnotatedQueue.popitem(quantum_queue)
+    quantum_queue = qml.QueuingManager.active_context()
+    breakpoint()
+    assert quantum_queue is not None
+    # Using the class methods directly allows this to work for both
+    # QuantumTape & AnnotatedQueue instances.
+    # pylint: disable=unnecessary-dunder-call
+    while qml.AnnotatedQueue.__len__(quantum_queue) > num_tape_ops:
+        AnnotatedQueue.popitem(quantum_queue)
 
 
 def assert_results(results, var_names):
@@ -310,7 +300,7 @@ def for_stmt(
             iteration_array = None
             fallback = True
 
-    if catalyst.autograph_strict_conversion and fallback:
+    if qml.capture.autograph.autograph_strict_conversion and fallback:
         # pylint: disable=import-outside-toplevel
         import inspect
 
@@ -341,7 +331,7 @@ def for_stmt(
             )
 
         except Exception as e:  # pylint: disable=broad-exception-caught
-            if catalyst.autograph_strict_conversion:
+            if qml.capture.autograph.autograph_strict_conversion:
                 raise e
 
             fallback = True
@@ -353,7 +343,7 @@ def for_stmt(
 
             for_loop_info = get_source_code_info(inspect.stack()[1])
 
-            if not catalyst.autograph_ignore_fallbacks:
+            if not qml.capture.autograph.autograph_ignore_fallbacks:
                 warnings.warn(
                     f"Tracing of an AutoGraph converted for loop failed with an exception:\n"
                     f"  {type(e).__name__}:{textwrap.indent(str(e), '    ')}\n"
@@ -428,7 +418,7 @@ def while_stmt(loop_test, loop_body, get_state, set_state, symbol_names, _opts):
         results = _call_pennylane_while(loop_test, loop_body, get_state, set_state, symbol_names)
 
     except Exception as e:  # pylint: disable=broad-exception-caught
-        if catalyst.autograph_strict_conversion:
+        if qml.capture.autograph.autograph_strict_conversion:
             raise e
 
         fallback = True
@@ -534,7 +524,7 @@ def converted_call(fn, args, kwargs, caller_fn_scope=None, options=None):
 
     # TODO: eliminate the need for patching by improving the autograph interface
     with Patcher(
-        (ag_api, "_TRANSPILER", qml.autograph.transformer.TRANSFORMER),
+        (ag_api, "_TRANSPILER", qml.capture.autograph.transformer.TRANSFORMER),
         (ag_config, "CONVERSION_RULES", module_allowlist),
         (ag_py_builtins, "BUILTIN_FUNCTIONS_MAP", py_builtins_map),
     ):
@@ -546,7 +536,7 @@ def converted_call(fn, args, kwargs, caller_fn_scope=None, options=None):
             qml.jacobian,
             qml.vjp,
             qml.jvp,
-            qml.vmap,
+            # qml.vmap,  # ToDo: does this need to be replaced with something or is it just not relevant for PL?
         ):
             assert args and callable(args[0])
             wrapped_fn = args[0]
