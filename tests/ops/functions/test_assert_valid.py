@@ -24,6 +24,7 @@ import pytest
 import pennylane as qml
 from pennylane.operation import Operator
 from pennylane.ops.functions import assert_valid
+from pennylane.ops.functions.assert_valid import _check_capture
 
 
 class TestDecompositionErrors:
@@ -301,6 +302,27 @@ class TestPytree:
 
         with pytest.raises(AssertionError, match=r"data must be the terminal leaves of the pytree"):
             assert_valid(op, skip_pickle=True)
+
+
+def test_bad_capture():
+    """Tests that the correct error is raised when something goes wrong with program capture."""
+
+    class MyBadOp(qml.operation.Operator):
+
+        def _flatten(self):
+            return (self.hyperparameters["target_op"], self.data[0]), ()
+
+        @classmethod
+        def _unflatten(cls, data, metadata):
+            return cls(*data)
+
+        def __init__(self, target_op, val):
+            super().__init__(val, wires=target_op.wires)
+            self.hyperparameters["target_op"] = target_op
+
+    op = MyBadOp(qml.X(0), 2)
+    with pytest.raises(ValueError, match=r"The capture of the operation into jaxpr failed"):
+        _check_capture(op)
 
 
 def test_data_is_tuple():
