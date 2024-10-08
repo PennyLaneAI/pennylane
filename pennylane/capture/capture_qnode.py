@@ -54,7 +54,40 @@ def _get_shapes_for(*measurements, shots=None, num_device_wires=0):
         for m in measurements:
             shape, dtype = m.aval.abstract_eval(shots=s, num_device_wires=num_device_wires)
             shapes.append(jax.core.ShapedArray(shape, dtype_map.get(dtype, dtype)))
+
+    print("measurements", measurements)
+
     return shapes
+
+
+def _qnode_batching_rule(
+    batched_args, batch_dims, qnode, shots, device, qnode_kwargs, qfunc_jaxpr, n_consts
+):
+
+    print("batched_args", batched_args)
+    print("batch_dims", batch_dims)
+    print("qnode", qnode)
+    print("shots", shots)
+    print("device", device)
+    print("qnode_kwargs", qnode_kwargs)
+    print("qfunc_jaxpr", qfunc_jaxpr)
+    print("n_consts\n", n_consts)
+
+    consts = batched_args[:n_consts]
+    args = batched_args[n_consts:]
+
+    print("consts", consts)
+    print("args", args)
+
+    def qfunc(*inner_args):
+        return jax.core.eval_jaxpr(qfunc_jaxpr, consts, *inner_args)
+
+    qnode = qml.QNode(qfunc, device, **qnode_kwargs)
+    result = qnode._impl_call(*args, shots=shots)  # pylint: disable=protected-access
+
+    print("result", result)
+
+    return result, [0]
 
 
 @lru_cache()
@@ -70,6 +103,8 @@ def _get_qnode_prim():
         consts = args[:n_consts]
         args = args[n_consts:]
 
+        print("definition implementation called")
+
         def qfunc(*inner_args):
             return jax.core.eval_jaxpr(qfunc_jaxpr, consts, *inner_args)
 
@@ -80,7 +115,20 @@ def _get_qnode_prim():
     @qnode_prim.def_abstract_eval
     def _(*args, qnode, shots, device, qnode_kwargs, qfunc_jaxpr, n_consts):
         mps = qfunc_jaxpr.outvars
-        return _get_shapes_for(*mps, shots=shots, num_device_wires=len(device.wires))
+
+        input = qfunc_jaxpr.outvars
+
+        print("abstract evaluation called")
+
+        print("qfunc_jaxpr", qfunc_jaxpr)
+        print("qfunc_jaxpr.invars", qfunc_jaxpr.invars)
+        print("qfunc_jaxpr.outvars", qfunc_jaxpr.outvars)
+
+        shape = _get_shapes_for(*mps, shots=shots, num_device_wires=len(device.wires))
+
+        print("shape", shape)
+
+        return shape
 
     def make_zero(tan, arg):
         return jax.lax.zeros_like_array(arg) if isinstance(tan, ad.Zero) else tan
@@ -90,6 +138,8 @@ def _get_qnode_prim():
         return jax.jvp(partial(qnode_prim.impl, **impl_kwargs), args, tangents)
 
     ad.primitive_jvps[qnode_prim] = _qnode_jvp
+
+    jax.interpreters.batching.primitive_batchers[qnode_prim] = _qnode_batching_rule
 
     return qnode_prim
 
@@ -171,12 +221,19 @@ def qnode_call(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
 
     qfunc = partial(qnode.func, **kwargs) if kwargs else qnode.func
 
+    print("qfunc is", qfunc)
+
     flat_fn = FlatFn(qfunc)
+
+    print("flat_fn is", flat_fn)
+
     qfunc_jaxpr = jax.make_jaxpr(flat_fn)(*args)
     execute_kwargs = copy(qnode.execute_kwargs)
     mcm_config = asdict(execute_kwargs.pop("mcm_config"))
     qnode_kwargs = {"diff_method": qnode.diff_method, **execute_kwargs, **mcm_config}
     qnode_prim = _get_qnode_prim()
+
+    print("qnode_prim is", qnode_prim)
 
     flat_args = jax.tree_util.tree_leaves(args)
     res = qnode_prim.bind(

@@ -121,7 +121,13 @@ def create_operator_primitive(
     abstract_type = _get_abstract_operator()
 
     @primitive.def_abstract_eval
-    def _(*_, **__):
+    def _(*args, **kwargs):
+
+        print("Abstract evaluation called for an operator")
+
+        print("args", args)
+        print("kwargs", kwargs)
+
         return abstract_type()
 
     return primitive
