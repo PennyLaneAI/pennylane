@@ -53,16 +53,16 @@ For example:
     circuit()
 
 This execute method works in tandem with the optional ``Device.preprocss``, described below in more detail.
-Preprocessing turns generic circuits into ones supported by the device or errors out. Execution then
+Preprocessing turns generic circuits into ones supported by the device, or raises an error if the circuit is invalid. Execution then
 turns those supported circuits into numerical results. 
 
-In a more minimal example, for any initial batch and config, we expect to be able to do:
+In a more minimal example, for any initial batch of quantum tapes and a config object, we expect to be able to do:
 
 .. code-block:: python
 
     transform_program, execution_config = dev.preprocess(initial_config)
-    batch, fn = transform_program(initial_batch)
-    fn(dev.execute(batch, execution_config))
+    circuit_batch, fn = transform_program(initial_circuit_batch)
+    fn(dev.execute(circuit_batch, execution_config))
 
 
 Shots
@@ -104,7 +104,7 @@ Preprocessing
 
 The preprocessing method has two main responsibilities:
 
-1) Create a :class:`~.TransformProgram` capable of turning an arbitrary :class:`~.QuantumScript` into one supported the ``execute`` method.
+1) Create a :class:`~.TransformProgram` capable of turning an arbitrary batch of :class:`~.QuantumScript` into a new batch of tapes supported the ``execute`` method.
 2) Setup the :class:`~.ExecutionConfig` dataclass by filling in device options and making decisions about differentiation
 
 Once the transform program has been applied to a batch of circuits, that batch should be run via ``Device.execute`` without error.
@@ -132,7 +132,9 @@ Once a program is created, an individual transform can be added to the program w
     program.add_transform(qml.defer_measurements)
     program.add_transform(qml.transforms.split_non_commuting)
 
-    def supports_operation(op): return getattr(op, "name", None) in operation_names
+    def supports_operation(op): 
+        return getattr(op, "name", None) in operation_names
+        
     program.add_transform(decompose, stopping_condition=supports_operation, name="my_device")
     program.add_transform(qml.transforms.broadcast_expand)
 
