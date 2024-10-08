@@ -198,7 +198,7 @@ def matrix(op: Union[Operator, PauliWord, PauliSentence], wire_order=None) -> Te
 
         if isinstance(op, QuantumScript):
             if wire_order is None:
-                error_base_str = f"wire_order is required by qml.matrix() for tapes"
+                error_base_str = "wire_order is required by qml.matrix() for tapes"
                 if len(op.wires) > 1:
                     raise ValueError(error_base_str + " with more than one wire.")
                 if len(op.wires) == 0:
