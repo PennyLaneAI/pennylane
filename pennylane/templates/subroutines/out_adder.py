@@ -172,9 +172,12 @@ class OutAdder(Operation):
         for key in ["x_wires", "y_wires", "output_wires", "work_wires"]:
             self.hyperparameters[key] = qml.wires.Wires(locals()[key])
         all_wires = sum(
-            self.hyperparameters[key]
-            for key in ["x_wires", "y_wires", "output_wires", "work_wires"]
+            [self.hyperparameters[key] for key in ["x_wires", "y_wires", "output_wires"]], start=[]
         )
+
+        if num_work_wires != 0:
+            all_wires += self.hyperparameters["work_wires"]
+
         self.hyperparameters["mod"] = mod
         super().__init__(wires=all_wires, id=id)
 
@@ -204,11 +207,6 @@ class OutAdder(Operation):
             self.hyperparameters["mod"],
             new_dict["work_wires"],
         )
-
-    @property
-    def wires(self):
-        """All wires involved in the operation."""
-        return self.hyperparameters["x_wires"] + self.hyperparameters["work_wires"]
 
     def decomposition(self):  # pylint: disable=arguments-differ
 
