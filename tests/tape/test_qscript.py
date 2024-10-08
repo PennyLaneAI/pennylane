@@ -775,6 +775,23 @@ class TestScriptCopying:
         assert new_tape.obs_sharing_wires == [qml.X(0), qml.Y(0)]
         assert new_tape.obs_sharing_wires_id == [0, 1]
 
+    def test_setting_trainable_params_to_none(self):
+        """Test that setting trainable params to None resets the tape and calculates
+        the trainable_params for the new operations"""
+
+        tape = qml.tape.QuantumScript(
+            [qml.Hadamard(0), qml.RX(1.2, 0), qml.RY(2.3, 1)], trainable_params=[1]
+        )
+
+        assert tape.num_params == 1
+        assert qml.equal(tape.get_operation(0)[0], qml.RY(2.3, 1))
+
+        new_tape = tape.copy(trainable_params=None)
+
+        assert new_tape.num_params == 2
+        assert qml.equal(new_tape.get_operation(0)[0], qml.RX(1.2, 0))
+        assert qml.equal(new_tape.get_operation(1)[0], qml.RY(2.3, 1))
+
 
 def test_adjoint():
     """Tests taking the adjoint of a quantum script."""

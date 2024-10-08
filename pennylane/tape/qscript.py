@@ -952,7 +952,7 @@ class QuantumScript:
             ops=_ops,
             measurements=_measurements,
             shots=update.get("shots", self.shots),
-            trainable_params=list(update.get("trainable_params", self.trainable_params)),
+            trainable_params=update.get("trainable_params", self.trainable_params),
         )
 
         # copy cached properties when relevant
