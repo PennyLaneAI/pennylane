@@ -188,7 +188,7 @@ def _check_eigendecomposition(op):
 
 
 def _check_generator(op):
-    """Checks that if an operator has a generator, it does."""
+    """Checks that if an operator's has_generator property is True, it has a generator."""
 
     if op.has_generator:
         gen = op.generator()
@@ -315,15 +315,17 @@ def _check_differentiation(op):
     ps = qml.jacobian(qnode_ps)(*params)
     expected_bp = qml.jacobian(qnode_ref)(*params)
 
+    error_msg = (
+        "Parameter-shift does not produce the same Jacobian as with backpropagation. "
+        "This might be a bug, or it might be expected due to the mathematical nature "
+        "of backpropagation, in which case, this test can be skipped for this operator."
+    )
+
     if isinstance(ps, tuple):
         for actual, expected in zip(ps, expected_bp):
-            assert qml.math.allclose(
-                actual, expected
-            ), "Parameter shift does not produce the expected Jacobian with this operator."
+            assert qml.math.allclose(actual, expected), error_msg
     else:
-        assert qml.math.allclose(
-            ps, expected_bp
-        ), "Parameter shift does not produce the expected Jacobian with this operator."
+        assert qml.math.allclose(ps, expected_bp), error_msg
 
 
 def _check_wires(op, skip_wire_mapping):
