@@ -16,6 +16,7 @@ Pytest configuration file for ops.functions submodule.
 
 Generates parametrizations of operators to test in test_assert_valid.py.
 """
+import warnings
 from inspect import getmembers, isclass
 
 import numpy as np
@@ -50,7 +51,6 @@ _INSTANCES_TO_TEST = [
     qml.adjoint(qml.PauliX(0)),
     qml.adjoint(qml.RX(1.1, 0)),
     Tensor(qml.PauliX(0), qml.PauliX(1)),
-    qml.operation.convert_to_legacy_H(qml.Hamiltonian([1.1, 2.2], [qml.PauliX(0), qml.PauliZ(0)])),
     qml.ops.LinearCombination([1.1, 2.2], [qml.PauliX(0), qml.PauliZ(0)]),
     qml.s_prod(1.1, qml.RX(1.1, 0)),
     qml.prod(qml.PauliX(0), qml.PauliY(1), qml.PauliZ(0)),
@@ -65,6 +65,14 @@ _INSTANCES_TO_TEST = [
     qml.Snapshot(tag="tag"),
 ]
 """Valid operator instances that could not be auto-generated."""
+
+with warnings.catch_warnings():
+    warnings.filterwarnings("ignore", "qml.ops.Hamiltonian uses", qml.PennyLaneDeprecationWarning)
+    _INSTANCES_TO_TEST.append(
+        qml.operation.convert_to_legacy_H(
+            qml.Hamiltonian([1.1, 2.2], [qml.PauliX(0), qml.PauliZ(0)])
+        ),
+    )
 
 
 _INSTANCES_TO_FAIL = [
