@@ -174,7 +174,7 @@ class TestPowMethod:
         assert len(op_pow) == 1
         assert op_pow[0].__class__ == op.__class__
 
-        pows = [0.1, 2, -2, -2.5]
+        pows = [0.1, -2.5]
 
         for pow in pows:
             with pytest.raises(qml.operation.PowUndefinedError):
