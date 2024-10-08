@@ -515,29 +515,24 @@ def sample_probs(probs, shots, num_wires, is_state_batched, rng):
 
     rng = np.random.default_rng(rng)
     norm = qml.math.sum(probs, axis=-1)
-    abs_diff = qml.math.abs(norm - 1.0)
+    norm_err = qml.math.abs(norm - 1.0)
     cutoff = 1e-07
 
     basis_states = np.arange(2**num_wires)
 
+    # Reject sampling if the norm_error is too large
+    # Make norm_err to always keep the shape of a batched state
+    norm_err = norm_err[..., np.newaxis] if not is_state_batched else norm_err
+    for err in norm_err:
+        if err > cutoff:
+            raise ValueError("probabilities do not sum to 1")
+
     if is_state_batched:
-        normalize_condition = False
-
-        for s in abs_diff:
-            if s != 0:
-                normalize_condition = True
-            if s > cutoff:
-                normalize_condition = False
-                break
-
-        if normalize_condition:
-            probs = probs / norm[:, np.newaxis] if norm.shape else probs / norm
+        probs = probs / norm[:, np.newaxis] if norm.shape else probs / norm
 
         # rng.choice doesn't support broadcasting
         samples = np.stack([rng.choice(basis_states, shots, p=p) for p in probs])
     else:
-        if not 0 < abs_diff < cutoff:
-            norm = 1.0
         probs = probs / norm
 
         samples = rng.choice(basis_states, shots, p=probs)

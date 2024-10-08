@@ -1356,7 +1356,7 @@ class TestSampleProbs:
         """Test sampling with probabilities just outside the cutoff."""
         cutoff = 1e-7  # Assuming this is the cutoff used in sample_probs
         probs = np.array([0.5, 0.5 - 2 * cutoff])
-        with pytest.raises(ValueError, match="probabilities do not sum to 1"):
+        with pytest.raises(ValueError, match=r"(?i)probabilities do not sum to 1"):
             sample_probs(probs, shots=1000, num_wires=1, is_state_batched=False, rng=self.rng)
 
     def test_batched_cutoff_edge_case_failure(self):
@@ -1368,5 +1368,5 @@ class TestSampleProbs:
                 [0.5, 0.5 - 2 * cutoff],
             ]
         )
-        with pytest.raises(ValueError, match="probabilities do not sum to 1"):
+        with pytest.raises(ValueError, match=r"(?i)probabilities do not sum to 1"):
             sample_probs(probs, shots=1000, num_wires=1, is_state_batched=True, rng=self.rng)
