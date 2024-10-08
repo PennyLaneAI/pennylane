@@ -274,7 +274,7 @@ The example below demonstrates how a three-wire circuit can be decomposed using 
 .. code-block:: python
     
     from pennylane.transforms import decompose
-    dev = qml.device("default.qubit")
+    dev = qml.device('default.qubit')
     allowed_gates = {qml.Toffoli, qml.RX, qml.RZ}
 
     @partial(decompose, gate_set=allowed_gates)
@@ -313,7 +313,7 @@ The example below demonstrates how a three-wire circuit can be decomposed using 
 Decomposition in Stages
 ***********************
 
-You can use the 'max_expansion' kwarg to have control over the number 
+You can use the ``max_expansion`` kwarg to have control over the number 
 of decomposition stages applied to the circuit. By default, the function will decompose
 the circuit until the desired gate set is reached. 
 
@@ -328,7 +328,7 @@ We begin with creating a :class:`~.pennylane.QuantumPhaseEstimation` circuit.
     n_estimation_wires = 3
     estimation_wires = range(1, n_estimation_wires + 1)
 
-    @qml.qnode(qml.device("default.qubit"))
+    @qml.qnode(qml.device('default.qubit'))
     def circuit():
         # Start in the |+> eigenstate of the unitary
         qml.Hadamard(wires=target_wires)
@@ -342,7 +342,7 @@ From here, we can iterate through the stages of decomposition:
 
 >>> print(qml.draw(decompose(circuit, max_expansion=0))())
 
-.. code-block:: python
+.. code-block:: 
 
     0: ──H─╭QuantumPhaseEstimation─┤  
     1: ────├QuantumPhaseEstimation─┤  
@@ -351,7 +351,7 @@ From here, we can iterate through the stages of decomposition:
 
 >>> print(qml.draw(decompose(circuit, max_expansion=1))())
 
-.. code-block:: python
+.. code-block:: 
 
     0: ──H─╭U(M0)⁴─╭U(M0)²─╭U(M0)¹───────┤  
     1: ──H─╰●──────│───────│───────╭QFT†─┤  
@@ -360,7 +360,7 @@ From here, we can iterate through the stages of decomposition:
 
 >>> print(qml.draw(decompose(circuit, max_expansion=2))())
 
-.. code-block:: python
+.. code-block:: 
 
     0: ──H──RZ(11.00)──RY(1.14)─╭X──RY(-1.14)──RZ(-9.42)─╭X──RZ(-1.57)──RZ(1.57)──RY(1.00)─╭X──RY(-1.00)
     1: ──H──────────────────────╰●───────────────────────╰●────────────────────────────────│────────────

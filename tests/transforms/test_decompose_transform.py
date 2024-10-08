@@ -34,7 +34,7 @@ class InfiniteOp(qml.operation.Operation):
 class TestDecompose:
     """Unit tests for decompose function"""
 
-    gate_set_inputs = [None, "RX", ["RX"], ("RX"), {"RX"}, qml.RX, [qml.RX], (qml.RX), {qml.RX}]
+    gate_set_inputs = [None, "RX", ["RX"], ("RX",), {"RX"}, qml.RX, [qml.RX], (qml.RX,), {qml.RX}]
 
     iterables_test = [
         (

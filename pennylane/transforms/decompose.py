@@ -38,7 +38,7 @@ def decompose(tape, gate_set=None, max_expansion=None):
     Args:
         tape (QuantumScript or QNode or Callable): a quantum circuit.
         gate_set (Iterable[Union[str, type]] or Callable[Operator, bool], optional): Decomposition gates defined by either (1) a gate set of operators or (2) a rule that they must follow.
-        Defaults to None. If ``None``, gate set defaults to all available operators given by ``~.pennylane.ops.__all__``.
+            Defaults to None. If ``None``, gate set defaults to all available operators given by ``~.pennylane.ops.__all__``.
         max_expansion (int, optional): The maximum depth of the decomposition. Defaults to None. If ``None``, circuit will be decomposed until the target gate set is reached.
 
     Returns:
@@ -46,8 +46,7 @@ def decompose(tape, gate_set=None, max_expansion=None):
 
         The decomposed circuit. The output type is explained in :func:`qml.transform <pennylane.transform>`.
 
-    .. seealso:: :func:`~.pennylane.devices.preprocess.decompose` for a transform that is intended for device developers. This function
-    decomposes a quantum circuit into a set of basis gates available on a given device architecture.
+    .. seealso:: :func:`~.pennylane.devices.preprocess.decompose` for a transform that is intended for device developers. This function decomposes a quantum circuit into a set of basis gates available on a given device architecture.
 
     **Example**
 
@@ -97,7 +96,7 @@ def decompose(tape, gate_set=None, max_expansion=None):
     1: ────╭●─────│─────╭●─────│───T─╰X──T†─╰X─┤
     2: ──H─╰X──T†─╰X──T─╰X──T†─╰X──T──H────────┤
 
-    You can use the 'max_expansion' kwarg to have control over the number
+    You can use the ``max_expansion`` kwarg to have control over the number
     of decomposition stages applied to the circuit. By default the function will decompose
     the circuit until the desired gate set is reached.
 
