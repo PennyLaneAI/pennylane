@@ -1481,17 +1481,32 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         # Child methods may call super().pow(z%period) where op**period = I
         # For example, PauliX**2 = I, SX**4 = I
         # Hence we define 0 and 1 special cases here.
-        if z == 0:
-            return []
-        if z == 1:
+        #if z == 0:
+        #    return []
+        #if z == 1:
+        #    if QueuingManager.recording():
+        #        return [qml.apply(self)]
+        #    return [copy.copy(self)]
+        #if z == 2:
+        #    if QueuingManager.recording():
+        #        return [qml.apply(self), qml.apply(self)]
+        #    return [copy.copy(self), copy.copy(self)]
+
+        if not isinstance(z, int):
+            raise PowUndefinedError
+
+        if z < 0:
+            raise PowUndefinedError
+
+        def inner_pow(z):
+            if z == 0:
+                return []
+
             if QueuingManager.recording():
-                return [qml.apply(self)]
-            return [copy.copy(self)]
-        if z == 2:
-            if QueuingManager.recording():
-                return [qml.apply(self), qml.apply(self)]
-            return [copy.copy(self), copy.copy(self)]
-        raise PowUndefinedError
+                return inner_pow(z-1) + [qml.apply(self)]
+            return inner_pow(z-1) + [copy.copy(self)]
+
+        return inner_pow(z)
 
     def queue(self, context: QueuingManager = QueuingManager):
         """Append the operator to the Operator queue."""
