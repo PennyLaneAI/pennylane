@@ -4,7 +4,7 @@
 
 <h3>New features since last release</h3>
 
-* Function is added for user-facing circuit decomposition. 
+* `qml.transforms.decompose` is added for stepping through decompositions to a target gate set. 
   [(#6334)](https://github.com/PennyLaneAI/pennylane/pull/6334)
 
 * Function is added for generating the spin Hamiltonian for the
@@ -243,5 +243,5 @@ Christina Lee,
 William Maxwell,
 Lee J. O'Riordan,
 Mudit Pandey,
-David Wierichs,
 Andrija Paurevic,
+David Wierichs,
