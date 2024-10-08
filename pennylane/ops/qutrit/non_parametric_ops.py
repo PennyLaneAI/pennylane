@@ -106,6 +106,7 @@ class TShift(Operation):
     def pow(self, z):
         return super().pow(z % 3)
 
+
 class TClock(Operation):
     r"""TClock(wires)
     Ternary Clock gate

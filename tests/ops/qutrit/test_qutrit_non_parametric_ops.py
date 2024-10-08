@@ -138,13 +138,12 @@ class TestPowMethod:
     @pytest.mark.parametrize("op", period_three_ops)
     @pytest.mark.parametrize("offset", (0, 3))
     def test_period_three_ops_pow_offset_2(self, op, offset):
-        """Tests that ops with a period ==3 two queued copies of themselves when 
+        """Tests that ops with a period ==3 two queued copies of themselves when
         to a power that is 2+multiple of three."""
 
         # When raising to power == 2 mod 3
         with qml.queuing.AnnotatedQueue() as q:
             op_list = op.pow(2 + offset)
-
 
         assert q.queue[0] is op_list[0]
         assert q.queue[1] is op_list[1]
