@@ -304,6 +304,7 @@ class TestPytree:
             assert_valid(op, skip_pickle=True)
 
 
+@pytest.mark.jax
 def test_bad_capture():
     """Tests that the correct error is raised when something goes wrong with program capture."""
 
