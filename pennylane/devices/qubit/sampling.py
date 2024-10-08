@@ -582,19 +582,16 @@ def _sample_state_jax(
 
     wires_to_sample = wires or state_wires
     num_wires = len(wires_to_sample)
-    basis_states = np.arange(2**num_wires)
 
     flat_state = flatten_state(state, total_indices)
     with qml.queuing.QueuingManager.stop_recording():
         probs = qml.probs(wires=wires_to_sample).process_state(flat_state, state_wires)
 
     state_len = len(state)
-    return sample_probs_jax(
-        probs, basis_states, shots, num_wires, is_state_batched, prng_key, state_len
-    )
+    return sample_probs_jax(probs, shots, num_wires, is_state_batched, prng_key, state_len)
 
 
-def sample_probs_jax(probs, basis_states, shots, num_wires, is_state_batched, prng_key, state_len):
+def sample_probs_jax(probs, shots, num_wires, is_state_batched, prng_key, state_len):
     """
     Sample from given probabilities using JAX's random number generator.
 
@@ -618,6 +615,8 @@ def sample_probs_jax(probs, basis_states, shots, num_wires, is_state_batched, pr
     # see
     import jax
     import jax.numpy as jnp
+
+    basis_states = np.arange(2**num_wires)
 
     if is_state_batched:
         keys = jax_random_split(prng_key, num=state_len)
