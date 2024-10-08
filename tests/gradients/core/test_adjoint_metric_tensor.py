@@ -217,10 +217,10 @@ def autodiff_metric_tensor(ansatz, num_wires):
         state = qnode(*params)
 
         def rqnode(*params):
-            return qml.math.real(qnode(*params))
+            return np.real(qnode(*params))
 
         def iqnode(*params):
-            return qml.math.imag(qnode(*params))
+            return np.imag(qnode(*params))
 
         rjac = qml.jacobian(rqnode)(*params)
         ijac = qml.jacobian(iqnode)(*params)
@@ -229,20 +229,20 @@ def autodiff_metric_tensor(ansatz, num_wires):
             out = []
             for rc, ic in zip(rjac, ijac):
                 c = rc + 1j * ic
-                psidpsi = qml.math.tensordot(qml.math.conj(state), c, axes=([0], [0]))
+                psidpsi = np.tensordot(np.conj(state), c, axes=([0], [0]))
                 out.append(
-                    qml.math.real(
-                        qml.math.tensordot(qml.math.conj(c), c, axes=([0], [0]))
-                        - qml.math.tensordot(qml.math.conj(psidpsi), psidpsi, axes=0)
+                    np.real(
+                        np.tensordot(np.conj(c), c, axes=([0], [0]))
+                        - np.tensordot(np.conj(psidpsi), psidpsi, axes=0)
                     )
                 )
             return tuple(out)
 
         jac = rjac + 1j * ijac
-        psidpsi = qml.math.tensordot(qml.math.conj(state), jac, axes=([0], [0]))
-        return qml.math.real(
-            qml.math.tensordot(qml.math.conj(jac), jac, axes=([0], [0]))
-            - qml.math.tensordot(qml.math.conj(psidpsi), psidpsi, axes=0)
+        psidpsi = np.tensordot(np.conj(state), jac, axes=([0], [0]))
+        return np.real(
+            np.tensordot(np.conj(jac), jac, axes=([0], [0]))
+            - np.tensordot(np.conj(psidpsi), psidpsi, axes=0)
         )
 
     return mt
