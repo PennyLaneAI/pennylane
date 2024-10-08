@@ -1498,15 +1498,9 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         if z < 0:
             raise PowUndefinedError
 
-        def inner_pow(z):
-            if z == 0:
-                return []
-
-            if QueuingManager.recording():
-                return inner_pow(z-1) + [qml.apply(self)]
-            return inner_pow(z-1) + [copy.copy(self)]
-
-        return inner_pow(z)
+        if QueuingManager.recording():
+            return [qml.apply(self) for _ in range(z)]
+        return [copy.copy(self) for _ in range(z)]
 
     def queue(self, context: QueuingManager = QueuingManager):
         """Append the operator to the Operator queue."""
