@@ -138,12 +138,18 @@ class TestPowMethod:
     @pytest.mark.parametrize("op", period_three_ops)
     @pytest.mark.parametrize("offset", (0, 3))
     def test_period_three_ops_pow_offset_2(self, op, offset):
-        """Tests that ops with a period ==3 raise a PowUndefinedError when raised
+        """Tests that ops with a period ==3 two queued copies of themselves when 
         to a power that is 2+multiple of three."""
 
         # When raising to power == 2 mod 3
-        with pytest.raises(qml.operation.PowUndefinedError):
-            op.pow(2 + offset)
+        with qml.queuing.AnnotatedQueue() as q:
+            op_list = op.pow(2 + offset)
+
+
+        assert q.queue[0] is op_list[0]
+        assert q.queue[1] is op_list[1]
+        qml.assert_equal(op_list[0], op)
+        qml.assert_equal(op_list[1], op)
 
     @pytest.mark.parametrize("op", period_three_ops + period_two_ops)
     def test_period_two_three_noninteger_power(self, op):

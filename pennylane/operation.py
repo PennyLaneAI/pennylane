@@ -1487,6 +1487,10 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
             if QueuingManager.recording():
                 return [qml.apply(self)]
             return [copy.copy(self)]
+        if z == 2:
+            if QueuingManager.recording():
+                return [qml.apply(self), qml.apply(self)]
+            return [copy.copy(self), copy.copy(self)]
         raise PowUndefinedError
 
     def queue(self, context: QueuingManager = QueuingManager):
