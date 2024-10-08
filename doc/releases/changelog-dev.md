@@ -61,6 +61,9 @@
 * `qml.AmplitudeAmplification` is now compatible with QJIT.
   [(#6306)](https://github.com/PennyLaneAI/pennylane/pull/6306)
 
+* The `qml.Qubitization` template is now QJIT compatible.
+  [(#6305)](https://github.com/PennyLaneAI/pennylane/pull/6305)
+
 * When an observable is repeated on a tape, `tape.diagonalizing_gates` no longer returns the 
   diagonalizing gates for each instance of the observable. Instead, the diagonalizing gates of
   each observable on the tape are included just once.
@@ -72,6 +75,10 @@
   [(#6290)](https://github.com/PennyLaneAI/pennylane/pull/6290)
 
 <h4>Capturing and representing hybrid programs</h4>
+
+* `qml.wires.Wires` now accepts JAX arrays as input. Furthermore, a `FutureWarning` is no longer raised in `JAX 0.4.30+`
+  when providing JAX tracers as input to `qml.wires.Wires`.
+  [(#6312)](https://github.com/PennyLaneAI/pennylane/pull/6312)
 
 * Differentiation of hybrid programs via `qml.grad` and `qml.jacobian` can now be captured
   into plxpr. When evaluating a captured `qml.grad` (`qml.jacobian`) instruction, it will
@@ -119,6 +126,10 @@
 * The `to_mat` methods for `FermiWord` and `FermiSentence` now optionally return
   a sparse matrix.
   [(#6173)](https://github.com/PennyLaneAI/pennylane/pull/6173)
+
+* The `make_plxpr` function is added, to take a function and create a `Callable` that,
+  when called, will return a PLxPR representation of the input function.
+  [(#6326)](https://github.com/PennyLaneAI/pennylane/pull/6326)
 
 <h3>Breaking changes 💔</h3>
 
@@ -270,6 +281,9 @@
   [(#6278)](https://github.com/PennyLaneAI/pennylane/pull/6278)
   [(#6310)](https://github.com/PennyLaneAI/pennylane/pull/6310)
 
+* Fixes a test after updating to the nightly version of Catalyst.
+  [(#6362)](https://github.com/PennyLaneAI/pennylane/pull/6362)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -287,6 +301,7 @@ Austin Huang,
 Korbinian Kottmann,
 Christina Lee,
 William Maxwell,
+Erick Ochoa Lopez,
 Lee J. O'Riordan,
 Mudit Pandey,
 David Wierichs,
