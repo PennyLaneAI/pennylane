@@ -22,8 +22,8 @@ import operator
 import warnings
 from typing import Any, Callable, Iterator, SupportsIndex, Tuple, Union
 
-import catalyst
-from catalyst.tracing.contexts import EvaluationContext
+# import catalyst
+# from catalyst.tracing.contexts import EvaluationContext
 from malt.core import config as ag_config
 from malt.impl import api as ag_api
 from malt.impl.api import converted_call as ag_converted_call

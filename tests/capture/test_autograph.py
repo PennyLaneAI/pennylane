@@ -21,12 +21,13 @@ import jax
 import jax.numpy as jnp
 import numpy as np
 import pytest
-from catalyst import debug, qjit
+
+# from catalyst import debug, qjit, vmap
 from jax.errors import TracerBoolConversionError
 from numpy.testing import assert_allclose
 
 import pennylane as qml
-from pennylane import cond, for_loop, grad, jacobian, jvp, measure, vjp, vmap, while_loop
+from pennylane import cond, for_loop, grad, jacobian, jvp, measure, vjp, while_loop
 from pennylane.capture.autograph.transformer import (
     TRANSFORMER,
     autograph_source,
@@ -41,6 +42,11 @@ check_cache = TRANSFORMER.has_cache
 # pylint: disable=unnecessary-lambda-assignment
 # pylint: disable=too-many-public-methods
 # pylint: disable=too-many-lines
+
+
+qjit = lambda x, autograph: None
+debug = lambda x: None
+vmap = lambda x: None
 
 
 class Failing:
@@ -104,7 +110,7 @@ class TestSourceCodeInfo:
     def test_qnode(self):
         """Test source info retrieval for a qnode function."""
 
-        @qml.qnode(qml.device("lightning.qubit", wires=2))
+        @qml.qnode(qml.device("default.qubit", wires=2))
         def main():
             for _ in range(5):
                 raise RuntimeError("Test failure")
@@ -218,7 +224,7 @@ class TestIntegration:
         """Test autograph on a QNode."""
 
         @qjit(autograph=True)
-        @qml.qnode(qml.device("lightning.qubit", wires=1))
+        @qml.qnode(qml.device("default.qubit", wires=1))
         def fn(x: float):
             qml.RY(x, wires=0)
             return qml.expval(qml.PauliZ(0))
@@ -230,7 +236,7 @@ class TestIntegration:
     def test_indirect_qnode(self):
         """Test autograph on a QNode called from within a classical function."""
 
-        @qml.qnode(qml.device("lightning.qubit", wires=1))
+        @qml.qnode(qml.device("default.qubit", wires=1))
         def inner(x):
             qml.RY(x, wires=0)
             return qml.expval(qml.PauliZ(0))
@@ -247,12 +253,12 @@ class TestIntegration:
     def test_multiple_qnode(self):
         """Test autograph on multiple QNodes called from different classical functions."""
 
-        @qml.qnode(qml.device("lightning.qubit", wires=1))
+        @qml.qnode(qml.device("default.qubit", wires=1))
         def inner1(x):
             qml.RY(x, wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        @qml.qnode(qml.device("lightning.qubit", wires=1))
+        @qml.qnode(qml.device("default.qubit", wires=1))
         def inner2(x):
             qml.RX(x, wires=0)
             return qml.expval(qml.PauliZ(0))
@@ -271,7 +277,7 @@ class TestIntegration:
         """Test autograph on a QJIT function called from within the compilation entry point."""
 
         @qjit
-        @qml.qnode(qml.device("lightning.qubit", wires=1))
+        @qml.qnode(qml.device("default.qubit", wires=1))
         def inner(x):
             qml.RY(x, wires=0)
             return qml.expval(qml.PauliZ(0))
@@ -292,9 +298,9 @@ class TestIntegration:
             qml.RY(x, wires=0)
 
         @qjit(autograph=True)
-        @qml.qnode(qml.device("lightning.qubit", wires=1))
+        @qml.qnode(qml.device("default.qubit", wires=1))
         def fn(x: float):
-            adjoint(inner)(x)
+            qml.adjoint(inner)(x)
             return qml.probs()
 
         assert hasattr(fn.user_function, "ag_unconverted")
@@ -308,9 +314,9 @@ class TestIntegration:
             qml.RY(x, wires=0)
 
         @qjit(autograph=True)
-        @qml.qnode(qml.device("lightning.qubit", wires=2))
+        @qml.qnode(qml.device("default.qubit", wires=2))
         def fn(x: float):
-            ctrl(inner, control=1)(x)
+            qml.ctrl(inner, control=1)(x)
             return qml.probs()
 
         assert hasattr(fn.user_function, "ag_unconverted")
@@ -379,7 +385,7 @@ class TestIntegration:
     def test_tape_transform(self):
         """Test if tape transform is applied when autograph is on."""
 
-        dev = dev = qml.device("lightning.qubit", wires=1)
+        dev = dev = qml.device("default.qubit", wires=1)
 
         @qml.transform
         def my_quantum_transform(tape):
@@ -401,7 +407,7 @@ class TestIntegration:
 
     def test_mcm_one_shot(self):
         """Test if mcm one-shot miss transforms."""
-        dev = qml.device("lightning.qubit", wires=5, shots=20)
+        dev = qml.device("default.qubit", wires=5, shots=20)
 
         @qml.qjit(autograph=True)
         @qml.qnode(dev, mcm_method="one-shot", postselect_mode="hw-like")
@@ -461,7 +467,7 @@ class TestCodePrinting:
         """Test printing on a QNode."""
 
         @qjit(autograph=True)
-        @qml.qnode(qml.device("lightning.qubit", wires=1))
+        @qml.qnode(qml.device("default.qubit", wires=1))
         def fn(x: float):
             qml.RY(x, wires=0)
             return qml.expval(qml.PauliZ(0))
@@ -471,7 +477,7 @@ class TestCodePrinting:
     def test_indirect_qnode(self):
         """Test printing on a QNode called from within a classical function."""
 
-        @qml.qnode(qml.device("lightning.qubit", wires=1))
+        @qml.qnode(qml.device("default.qubit", wires=1))
         def inner(x):
             qml.RY(x, wires=0)
             return qml.expval(qml.PauliZ(0))
@@ -486,12 +492,12 @@ class TestCodePrinting:
     def test_multiple_qnode(self):
         """Test printing on multiple QNodes called from different classical functions."""
 
-        @qml.qnode(qml.device("lightning.qubit", wires=1))
+        @qml.qnode(qml.device("default.qubit", wires=1))
         def inner1(x):
             qml.RY(x, wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        @qml.qnode(qml.device("lightning.qubit", wires=1))
+        @qml.qnode(qml.device("default.qubit", wires=1))
         def inner2(x):
             qml.RX(x, wires=0)
             return qml.expval(qml.PauliZ(0))
@@ -508,7 +514,7 @@ class TestCodePrinting:
         """Test printing on a QJIT function called from within the compilation entry point."""
 
         @qjit
-        @qml.qnode(qml.device("lightning.qubit", wires=1))
+        @qml.qnode(qml.device("default.qubit", wires=1))
         def inner(x):
             qml.RY(x, wires=0)
             return qml.expval(qml.PauliZ(0))
@@ -675,7 +681,7 @@ class TestConditionals:
     def test_multiple_return_mismatched_type(self):
         """Test that different obervables cannot be used in different branches."""
 
-        @qml.qnode(qml.device("lightning.qubit", wires=1))
+        @qml.qnode(qml.device("default.qubit", wires=1))
         def f(switch: bool):
             if switch:
                 return qml.expval(qml.PauliY(0))
@@ -706,7 +712,7 @@ class TestForLoops:
         """Test for loop over JAX array."""
 
         @qjit(autograph=True)
-        @qml.qnode(qml.device("lightning.qubit", wires=1))
+        @qml.qnode(qml.device("default.qubit", wires=1))
         def f(params):
             for x in params:
                 qml.RY(x, wires=0)
@@ -719,7 +725,7 @@ class TestForLoops:
         """Test for loop over a 2D JAX array unpacking the inner dimension."""
 
         @qjit(autograph=True)
-        @qml.qnode(qml.device("lightning.qubit", wires=1))
+        @qml.qnode(qml.device("default.qubit", wires=1))
         def f(params):
             for x1, x2 in params:
                 qml.RY(x1, wires=0)
@@ -733,7 +739,7 @@ class TestForLoops:
         """Test for loop over a Python list that is convertible to an array."""
 
         @qjit(autograph=True)
-        @qml.qnode(qml.device("lightning.qubit", wires=1))
+        @qml.qnode(qml.device("default.qubit", wires=1))
         def f():
             params = [0.0, 1 / 4 * jnp.pi, 2 / 4 * jnp.pi]
             for x in params:
@@ -747,7 +753,7 @@ class TestForLoops:
         """Test for loop over a nested Python list that is convertible to an array."""
 
         @qjit(autograph=True)
-        @qml.qnode(qml.device("lightning.qubit", wires=1))
+        @qml.qnode(qml.device("default.qubit", wires=1))
         def f():
             params = [[0.0, 1 / 4 * jnp.pi], [2 / 4 * jnp.pi, jnp.pi]]
             for xx in params:
@@ -763,7 +769,7 @@ class TestForLoops:
         The behaviour should fall back to standard Python."""
 
         @qjit(autograph=True)
-        @qml.qnode(qml.device("lightning.qubit", wires=1))
+        @qml.qnode(qml.device("default.qubit", wires=1))
         def f():
             params = ["0", "1", "2"]
             for x in params:
@@ -778,7 +784,7 @@ class TestForLoops:
         is *not* convertible to an array."""
         monkeypatch.setattr("catalyst.autograph_strict_conversion", True)
 
-        @qml.qnode(qml.device("lightning.qubit", wires=1))
+        @qml.qnode(qml.device("default.qubit", wires=1))
         def f():
             params = ["0", "1", "2"]
             for x in params:
@@ -792,7 +798,7 @@ class TestForLoops:
         """Test for loop over a Python range with static bounds."""
 
         @qjit(autograph=True)
-        @qml.qnode(qml.device("lightning.qubit", wires=3))
+        @qml.qnode(qml.device("default.qubit", wires=3))
         def f():
             for i in range(3):
                 qml.Hadamard(i)
@@ -804,7 +810,7 @@ class TestForLoops:
     def test_for_in_static_range_indexing_array(self):
         """Test for loop over a Python range with static bounds that is used to index an array."""
 
-        @qml.qnode(qml.device("lightning.qubit", wires=1))
+        @qml.qnode(qml.device("default.qubit", wires=1))
         def f():
             params = jnp.array([0.0, 1 / 4 * jnp.pi, 2 / 4 * jnp.pi])
             for i in range(3):
@@ -821,7 +827,7 @@ class TestForLoops:
         """Test for loop over a Python range with static bounds that is used to index an
         array-compatible Python list. This should fall back to Python with a warning."""
 
-        @qml.qnode(qml.device("lightning.qubit", wires=1))
+        @qml.qnode(qml.device("default.qubit", wires=1))
         def f():
             params = [0.0, 1 / 4 * jnp.pi, 2 / 4 * jnp.pi]
             for i in range(3):
@@ -840,7 +846,7 @@ class TestForLoops:
         """Test for loop over a Python range with static bounds that is used to index an
         array-incompatible Python list. This should fall back to Python with a warning."""
 
-        @qml.qnode(qml.device("lightning.qubit", wires=1))
+        @qml.qnode(qml.device("default.qubit", wires=1))
         def f():
             params = ["0", "1", "2"]
             for i in range(3):
@@ -856,7 +862,7 @@ class TestForLoops:
         """Test for loop over a Python range with dynamic bounds."""
 
         @qjit(autograph=True)
-        @qml.qnode(qml.device("lightning.qubit", wires=3))
+        @qml.qnode(qml.device("default.qubit", wires=3))
         def f(n: int):
             for i in range(n):
                 qml.Hadamard(i)
@@ -868,7 +874,7 @@ class TestForLoops:
     def test_for_in_dynamic_range_indexing_array(self):
         """Test for loop over a Python range with dynamic bounds that is used to index an array."""
 
-        @qml.qnode(qml.device("lightning.qubit", wires=1))
+        @qml.qnode(qml.device("default.qubit", wires=1))
         def f(n: int):
             params = jnp.array([0.0, 1 / 4 * jnp.pi, 2 / 4 * jnp.pi])
             for i in range(n):
@@ -888,7 +894,7 @@ class TestForLoops:
         array-compatible Python list. The fallback to Python will first raise a warning,
         then an error."""
 
-        @qml.qnode(qml.device("lightning.qubit", wires=1))
+        @qml.qnode(qml.device("default.qubit", wires=1))
         def f(n: int):
             params = [0.0, 1 / 4 * jnp.pi, 2 / 4 * jnp.pi]
             for i in range(n):
@@ -907,7 +913,7 @@ class TestForLoops:
         array-incompatible Python list. The fallback to Python will first raise a warning,
         then an error."""
 
-        @qml.qnode(qml.device("lightning.qubit", wires=1))
+        @qml.qnode(qml.device("default.qubit", wires=1))
         def f(n: int):
             params = ["0", "1", "2"]
             for i in range(n):
@@ -924,7 +930,7 @@ class TestForLoops:
         """Test for loop over a Python enumeration on an array."""
 
         @qjit(autograph=True)
-        @qml.qnode(qml.device("lightning.qubit", wires=3))
+        @qml.qnode(qml.device("default.qubit", wires=3))
         def f(params):
             for i, x in enumerate(params):
                 qml.RY(x, wires=i)
@@ -937,7 +943,7 @@ class TestForLoops:
         """Test for loop over a Python enumeration with delayed unpacking."""
 
         @qjit(autograph=True)
-        @qml.qnode(qml.device("lightning.qubit", wires=3))
+        @qml.qnode(qml.device("default.qubit", wires=3))
         def f(params):
             for v in enumerate(params):
                 qml.RY(v[1], wires=v[0])
@@ -950,7 +956,7 @@ class TestForLoops:
         """Test for loop over a Python enumeration with nested unpacking."""
 
         @qjit(autograph=True)
-        @qml.qnode(qml.device("lightning.qubit", wires=3))
+        @qml.qnode(qml.device("default.qubit", wires=3))
         def f(params):
             for i, (x1, x2) in enumerate(params):
                 qml.RY(x1, wires=i)
@@ -968,7 +974,7 @@ class TestForLoops:
         """Test for loop over a Python enumeration with offset indices."""
 
         @qjit(autograph=True)
-        @qml.qnode(qml.device("lightning.qubit", wires=5))
+        @qml.qnode(qml.device("default.qubit", wires=5))
         def f(params):
             for i, x in enumerate(params, start=2):
                 qml.RY(x, wires=i)
@@ -981,7 +987,7 @@ class TestForLoops:
         """Test for loop over a Python enumeration on a list that is convertible to an array."""
 
         @qjit(autograph=True)
-        @qml.qnode(qml.device("lightning.qubit", wires=3))
+        @qml.qnode(qml.device("default.qubit", wires=3))
         def f():
             params = [0.0, 1 / 4 * jnp.pi, 2 / 4 * jnp.pi]
             for i, x in enumerate(params):
@@ -996,7 +1002,7 @@ class TestForLoops:
         The behaviour should fall back to standard Python."""
 
         @qjit(autograph=True)
-        @qml.qnode(qml.device("lightning.qubit", wires=3))
+        @qml.qnode(qml.device("default.qubit", wires=3))
         def f():
             params = ["0", "1", "2"]
             for i, x in enumerate(params):
@@ -1011,7 +1017,7 @@ class TestForLoops:
         The behaviour should fall back to standard Python."""
 
         @qjit(autograph=True)
-        @qml.qnode(qml.device("lightning.qubit", wires=1))
+        @qml.qnode(qml.device("default.qubit", wires=1))
         def f():
             params = {"a": 0.0, "b": 1 / 4 * jnp.pi, "c": 2 / 4 * jnp.pi}
             for k, v in params.items():
@@ -1280,7 +1286,7 @@ class TestWhileLoops:
         monkeypatch.setattr("catalyst.autograph_strict_conversion", True)
 
         @qjit(autograph=True)
-        @qml.qnode(qml.device("lightning.qubit", wires=4))
+        @qml.qnode(qml.device("default.qubit", wires=4))
         def f(p):
             w = int(0)
             while w < 4:
@@ -1422,7 +1428,7 @@ class TestWhileLoops:
 
 
 @pytest.mark.parametrize(
-    "execution_context", (lambda fn: fn, qml.qnode(qml.device("lightning.qubit", wires=1)))
+    "execution_context", (lambda fn: fn, qml.qnode(qml.device("default.qubit", wires=1)))
 )
 class TestFallback:
     """Test that Python fallbacks still produce correct results."""
