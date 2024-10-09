@@ -19,7 +19,6 @@ import pennylane as qml
 import numpy as np
 
 
-
 def hermitian_basis(matrices, tol=1e-10):
     basis = []
     for A in matrices:
@@ -36,13 +35,14 @@ def hermitian_basis(matrices, tol=1e-10):
             basis.append(B)
     return np.array(basis)
 
+
 def lie_closure_dense(
-        generators, #: Iterable[Union[PauliWord, PauliSentence, Operator]],
-        n = None,
-        max_iterations: int = 10000,
-        verbose: bool = False,
-        tol: float = None,
-    ):
+    generators,  #: Iterable[Union[PauliWord, PauliSentence, Operator]],
+    n=None,
+    max_iterations: int = 10000,
+    verbose: bool = False,
+    tol: float = None,
+):
     r"""Compute the dynamical Lie algebra :math:`frak{g}` from a set of generators using their dense matrix representation.
 
     This function computes the Lie closure of a set of generators using their dense matrix representation.
@@ -61,7 +61,7 @@ def lie_closure_dense(
         tol (float): Numerical tolerance for the linear independence check used in :class:`~.PauliVSpace`.
 
     Returns:
-        numpy.ndarray: The ``(dim(g), 2**n, 2**n)`` array containing the linear independent basis of the DLA g as dense matrices. 
+        numpy.ndarray: The ``(dim(g), 2**n, 2**n)`` array containing the linear independent basis of the DLA g as dense matrices.
 
     **Example**
 
