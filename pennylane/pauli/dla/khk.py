@@ -24,7 +24,7 @@ def run_opt(
     theta,
     n_epochs=100,
     lr=0.1,
-    b1=0.99,
+    b1=0.98,
     b2=0.999,
     E_exact=0.0,
     verbose=True,
@@ -87,6 +87,22 @@ def Involution0(op: PauliSentence):
         parity.append(result % 2)
 
     # only makes sense if parity is the same for all terms, e.g. Heisenberg model
+    assert all(parity[0] == p for p in parity)
+    return parity[0]
+
+def InvolutionJ(op: PauliSentence, qubit: int=0):
+    """Involution A -> -J A J with J = iY_qubit."""
+    parity = [pw.get(qubit, "I") in "IY" for pw in op.keys()]
+    assert all(parity[0] == p for p in parity)
+    return parity[0]
+
+def InvolutionSp(op: PauliSentence, qubit: int=0):
+    """Involution A -> -J A* J with J = iY_qubit."""
+    parity = [for pw in op.keys()]
+    parity = []
+    for pw in op.keys():
+        result = sum([1 if el == "Y" else 0 for el in pw.values()])
+        parity.append((result + int(pw.get(qubit, "I") in "IY")) % 2)
     assert all(parity[0] == p for p in parity)
     return parity[0]
 
@@ -465,7 +481,9 @@ def khk_decompose(
     value_and_grad = jax.jit(jax.value_and_grad(loss))
 
     if opt_kwargs is None:
-        opt_kwargs = {"n_epochs": 500, "verbose": verbose}
+        opt_kwargs = {}
+    opt_kwargs.setdefault("n_epochs", 500)
+    opt_kwargs.setdefault("verbose", verbose)
 
     vec_H = project(H.pauli_rep, g).real
     if not np.allclose(vec_H[:dim_k], 0.0):
@@ -480,7 +498,9 @@ def khk_decompose(
     grad_norms = np.linalg.norm(gradients, axis=1, ord=2)
 
     if verbose > 1:
-        plt.plot(energy - np.min(energy) + 1e-10)
+        plt.plot(energy - np.min(energy) + 1e-10, label="Cost function")
+        plt.plot(grad_norms + 1e-10, label="Gradient norm")
+        plt.legend()
         plt.xlabel("epochs")
         plt.ylabel("loss")
         plt.yscale("log")
@@ -494,11 +514,11 @@ def khk_decompose(
 
     vec_h = ansatz(theta_opt, vec_H)
     if verbose:
-        vec_h_in_h = np.allclose(vec_h[: len(h)], 0.0, atol=1e-7)
+        vec_h_in_h = np.allclose(vec_h[: len(h)], 0.0)
         print(f"The transformed Hamiltonian lies in the CSA: {vec_h_in_h}")
         if not vec_h_in_h:
-            print(f"The non-CSA components are {vec_h[:len(h)]}")
-            print(f"The gradient at chosen point had norm {np.linalg.norm(gradients[min_idx])}")
+            print(f"The non-CSA components are: {vec_h[:-len(h)]}")
+            print(f"The gradient at chosen point had norm {np.linalg.norm(gradients[min_gradnorm_idx])}")
 
     if validate:
         _khk_validation(H, vec_h, theta_opt, g, k)
