@@ -13,9 +13,6 @@
 # limitations under the License.
 """Tests for pennylane/dla/lie_closure_dense.py functionality"""
 # pylint: disable=too-few-public-methods, protected-access
-from copy import copy
-
-import numpy as np
 import pytest
 
 import pennylane as qml
@@ -99,8 +96,6 @@ class TestLieClosure:
     def test_simple_lie_closure_dense(self):
         """Test simple lie_closure_dense example"""
         gen11 = dla11[:-1]
-        res11 = lie_closure_dense(gen11)
-        # assert qml.math.allclose(res11, dla11)
 
         dla12 = [
             PauliSentence({PauliWord({0: "X", 1: "X"}): 1.0, PauliWord({0: "Y", 1: "Y"}): 1.0}),
