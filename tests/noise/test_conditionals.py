@@ -357,6 +357,9 @@ class TestNoiseFunctions:
         op = qml.noise.partial_wires(qml.ctrl, op=qml.Hadamard(0), control=[1, 2])("a")
         qml.assert_equal(op, qml.ctrl(qml.Hadamard("a"), control=[1, 2]))
 
+        op = qml.noise.partial_wires(qml.PrepSelPrep(qml.X(1) + qml.Z(2), control=3))([2, 3, 4])
+        qml.assert_equal(op, qml.PrepSelPrep(qml.X(3) + qml.Z(4), control=2))
+
         mp = qml.noise.partial_wires(qml.expval, op=qml.Z(9))("photon")
         qml.assert_equal(mp, qml.expval(qml.Z("photon")))
 
