@@ -239,6 +239,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* `adjoint_metric_tensor` now works with circuits containing state preparation operations.
+  [(#6358)](https://github.com/PennyLaneAI/pennylane/pull/6358)
+
 * `quantum_fisher` now respects the classical Jacobian of QNodes.
   [(#6350)](https://github.com/PennyLaneAI/pennylane/pull/6350)
 
