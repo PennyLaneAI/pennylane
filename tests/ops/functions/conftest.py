@@ -23,14 +23,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.operation import (
-    Channel,
-    MatrixUndefinedError,
-    Observable,
-    Operation,
-    Operator,
-    Tensor,
-)
+from pennylane.operation import Channel, Observable, Operation, Operator, Tensor
 from pennylane.ops.op_math.adjoint import Adjoint, AdjointObs, AdjointOperation, AdjointOpObs
 from pennylane.ops.op_math.pow import PowObs, PowOperation, PowOpObs
 
