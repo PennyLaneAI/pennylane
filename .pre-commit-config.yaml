@@ -31,7 +31,6 @@ repos:
           "--filter-files",
         ]
       files: ^(pennylane/|tests/)
-repos:
 -   repo: https://github.com/gauge-sh/tach-pre-commit
     rev: v0.13.1
     hooks:
