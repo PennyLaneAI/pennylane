@@ -289,6 +289,9 @@
   [(#6278)](https://github.com/PennyLaneAI/pennylane/pull/6278)
   [(#6310)](https://github.com/PennyLaneAI/pennylane/pull/6310)
 
+* Fixes a bug preventing `qml.TAdd`, `qml.TClock`, and `qml.TShift` from being raised to the power of 2.
+  [(#6356)](https://github.com/PennyLaneAI/pennylane/pull/6356)
+
 * Fixes a test after updating to the nightly version of Catalyst.
   [(#6362)](https://github.com/PennyLaneAI/pennylane/pull/6362)
 
