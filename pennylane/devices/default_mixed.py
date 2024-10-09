@@ -32,7 +32,6 @@ import pennylane.math as qnp
 from pennylane import BasisState, QubitDensityMatrix, Snapshot, StatePrep
 from pennylane.logging import debug_logger, debug_logger_init
 from pennylane.measurements import (
-    StateMeasurement,
     CountsMP,
     DensityMatrixMP,
     ExpectationMP,
@@ -254,42 +253,14 @@ class DefaultMixed(QubitDevice):
         )
         return capabilities
 
-    def _measure(self, measurement, shot_range=None, bin_size=None):
-        print(f"_measure called with measurement: {measurement}")
-        if self.shots is None:
-            if isinstance(measurement, qml.measurements.StateMeasurement):
-                dm = self.density_matrix(self.wires)
-                print(f"Density matrix shape in _measure: {dm.shape}")
-                result = measurement.process_density_matrix(dm, self.wires)
-                print(f"Result from process_density_matrix: {result}")
-                return result
-            raise ValueError(
-                "Shots must be specified in the device to compute the measurement "
-                f"{measurement.__class__.__name__}"
-            )
-        if isinstance(measurement, qml.measurements.StateMeasurement):
-            warnings.warn(
-                f"Requested measurement {measurement.__class__.__name__} with finite shots; the "
-                "returned state information is analytic and is unaffected by sampling. "
-                "To silence this warning, set shots=None on the device.",
-                UserWarning,
-            )
-            dm = self.density_matrix(self.wires)
-            result = measurement.process_density_matrix(dm, self.wires)
-            print(f"Result from process_density_matrix (finite shots): {result}")
-            return result
-        return measurement.process_samples(
-            samples=self._samples, wire_order=self.wires, shot_range=shot_range, bin_size=bin_size
-        )
-
     @property
     def state(self):
-        warnings.warn(
-            "The 'state' property is not defined for mixed state devices. Use 'density_matrix' instead.",
-            DeprecationWarning,
-        )
-        raise NotImplementedError("Mixed state devices do not have a state vector representation.")
+        """Returns the state density matrix of the circuit prior to measurement"""
+        dim = 2**self.num_wires
+        # User obtains state as a matrix
+        return qnp.reshape(self._pre_rotated_state, (dim, dim))
 
+    @debug_logger
     def density_matrix(self, wires):
         """Returns the reduced density matrix over the given wires.
 
