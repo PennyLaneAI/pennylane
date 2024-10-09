@@ -63,6 +63,12 @@
 * The `Hermitian` operator now has a `compute_sparse_matrix` implementation.
   [(#6225)](https://github.com/PennyLaneAI/pennylane/pull/6225)
 
+* `qml.AmplitudeAmplification` is now compatible with QJIT.
+  [(#6306)](https://github.com/PennyLaneAI/pennylane/pull/6306)
+
+* The quantum arithmetic templates are now QJIT compatible.
+  [(#6307)](https://github.com/PennyLaneAI/pennylane/pull/6307)
+  
 * The `qml.Qubitization` template is now QJIT compatible.
   [(#6305)](https://github.com/PennyLaneAI/pennylane/pull/6305)
 
@@ -242,6 +248,9 @@
   [(#6298)](https://github.com/PennyLaneAI/pennylane/pull/6298)
 
 <h3>Bug fixes 🐛</h3>
+
+* `adjoint_metric_tensor` now works with circuits containing state preparation operations.
+  [(#6358)](https://github.com/PennyLaneAI/pennylane/pull/6358)
 
 * `quantum_fisher` now respects the classical Jacobian of QNodes.
   [(#6350)](https://github.com/PennyLaneAI/pennylane/pull/6350)
