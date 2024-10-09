@@ -266,7 +266,7 @@ When compiling a circuit it is often beneficial to decompose the circuit into a 
 To do this, we can use the :func:`~.pennylane.transforms.decompose` function, which allows the decomposition of 
 circuits into a set of gates defined either by their name, type, or by a set of rules they must follow.
 
-Using a Gate Set 
+Using a gate set 
 ****************
 
 The example below demonstrates how a three-wire circuit can be decomposed using a pre-defined set of gates: 
@@ -291,7 +291,7 @@ With the Hadamard gate not in our gate set, it will be decomposed into the respe
 1: ───────────────────────────────├●─┤     
 2: ───────────────────────────────╰X─┤ 
 
-Using Gate Rules
+Using gate rules
 ****************
 
 The example below demonstrates how a three-wire circuit can be decomposed using a rule that decomposes down to single or two-qubit gates: 
@@ -310,7 +310,7 @@ The example below demonstrates how a three-wire circuit can be decomposed using 
 1: ────╭●─────│─────╭●─────│───T─╰X──T†─╰X─┤     
 2: ──H─╰X──T†─╰X──T─╰X──T†─╰X──T──H────────┤ 
 
-Decomposition in Stages
+Decomposition in stages 
 ***********************
 
 You can use the ``max_expansion`` kwarg to have control over the number 
