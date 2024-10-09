@@ -279,6 +279,7 @@
   [(#6310)](https://github.com/PennyLaneAI/pennylane/pull/6310)
 
 * Fixes a bug where `None` was added to the wires in `qml.PhaseAdder`, `qml.Adder` and `qml.OutAdder`.
+  [(#6360)](https://github.com/PennyLaneAI/pennylane/pull/6360)
 
 <h3>Contributors ✍️</h3>
 
