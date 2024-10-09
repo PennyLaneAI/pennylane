@@ -72,6 +72,7 @@ _INSTANCES_TO_TEST = [
     (qml.prod(qml.RX(1.1, 0), qml.RY(2.2, 0), qml.RZ(3.3, 1)), {}),
     (qml.Snapshot(measurement=qml.expval(qml.Z(0)), tag="hi"), {}),
     (qml.Snapshot(tag="tag"), {}),
+    (qml.Identity(0), {}),
 ]
 """Valid operator instances that could not be auto-generated."""
 
@@ -109,12 +110,8 @@ _INSTANCES_TO_FAIL = [
         AssertionError,  # needs flattening helpers to be updated, also cannot be pickled
     ),
     (
-        qml.Identity(0),
-        MatrixUndefinedError,  # empty decomposition, matrix differs from decomp's matrix
-    ),
-    (
         qml.GlobalPhase(1.1),
-        MatrixUndefinedError,  # empty decomposition, matrix differs from decomp's matrix
+        AssertionError,  # empty decomposition, matrix differs from decomp's matrix
     ),
     (
         qml.pulse.ParametrizedEvolution(qml.PauliX(0) + sum * qml.PauliZ(0)),
