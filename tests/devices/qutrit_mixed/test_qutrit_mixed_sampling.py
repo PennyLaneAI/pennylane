@@ -826,6 +826,7 @@ class TestSampleProbsJax:
         assert result.shape == (2, self.shots, num_wires)
         assert qml.math.all(result >= 0) and qml.math.all(result < QUDIT_DIM)
 
+    # pylint: disable=too-many-arguments
     @pytest.mark.parametrize(
         "probs,num_wires,is_state_batched,expected_shape,state_len",
         [
@@ -840,7 +841,6 @@ class TestSampleProbsJax:
             (qml.math.array([[0.2, 0.3, 0.5], [0.4, 0.1, 0.5]]), 1, True, (2, 1000, 1), 2),
         ],
     )
-    # pylint: disable=too-many-arguments
     @pytest.mark.jax
     def test_sample_probs_jax_shapes(
         self, probs, num_wires, is_state_batched, expected_shape, state_len
