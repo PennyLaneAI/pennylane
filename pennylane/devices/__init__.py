@@ -166,6 +166,7 @@ from .default_qutrit_mixed import DefaultQutritMixed
 from ._legacy_device import Device as LegacyDevice
 from ._qubit_device import QubitDevice
 from ._qutrit_device import QutritDevice
+from .sparse_qubit import SparseQubit
 
 
 # pylint: disable=undefined-variable
