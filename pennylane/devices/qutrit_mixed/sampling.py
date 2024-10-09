@@ -266,6 +266,47 @@ def _sample_state_jax(
 
 
 def _sample_probs_jax(probs, shots, num_wires, is_state_batched, prng_key, state_len):
+    """
+    Sample from a probability distribution for a qutrit system using JAX.
+
+    This function generates samples based on the given probability distribution
+    for a qutrit system with a specified number of wires. It can handle both
+    batched and non-batched probability distributions. This function uses JAX
+    for potential GPU acceleration and improved performance.
+
+    Args:
+        probs (jnp.ndarray): Probability distribution to sample from. For non-batched
+            input, this should be a 1D array of length QUDIT_DIM**num_wires. For
+            batched input, this should be a 2D array where each row is a separate
+            probability distribution.
+        shots (int): Number of samples to generate.
+        num_wires (int): Number of wires in the qutrit system.
+        is_state_batched (bool): Whether the input probabilities are batched.
+        prng_key (jax.random.PRNGKey): JAX PRNG key for random number generation.
+        state_len (int): Length of the state (relevant for batched inputs).
+
+    Returns:
+        jnp.ndarray: An array of samples. For non-batched input, the shape is
+        (shots, num_wires). For batched input, the shape is
+        (batch_size, shots, num_wires).
+
+    Example:
+        >>> import jax
+        >>> import jax.numpy as jnp
+        >>> probs = jnp.array([0.2, 0.3, 0.5])  # For a single-wire qutrit system
+        >>> shots = 1000
+        >>> num_wires = 1
+        >>> is_state_batched = False
+        >>> prng_key = jax.random.PRNGKey(42)
+        >>> state_len = 1
+        >>> samples = _sample_probs_jax(probs, shots, num_wires, is_state_batched, prng_key, state_len)
+        >>> samples.shape
+        (1000, 1)
+
+    Note:
+        This function requires JAX to be installed. It internally imports JAX
+        and its numpy module (jnp).
+    """
     import jax
     import jax.numpy as jnp
 
@@ -343,6 +384,39 @@ def sample_state(
 
 
 def sample_probs(probs, shots, num_wires, is_state_batched, rng):
+    """
+    Sample from a probability distribution for a qutrit system.
+
+    This function generates samples based on the given probability distribution
+    for a qutrit system with a specified number of wires. It can handle both
+    batched and non-batched probability distributions.
+
+    Args:
+        probs (ndarray): Probability distribution to sample from. For non-batched
+            input, this should be a 1D array of length QUDIT_DIM**num_wires. For
+            batched input, this should be a 2D array where each row is a separate
+            probability distribution.
+        shots (int): Number of samples to generate.
+        num_wires (int): Number of wires in the qutrit system.
+        is_state_batched (bool): Whether the input probabilities are batched.
+        rng (Optional[Generator]): Random number generator to use. If None, a new
+            generator will be created.
+
+    Returns:
+        ndarray: An array of samples. For non-batched input, the shape is
+        (shots, num_wires). For batched input, the shape is
+        (batch_size, shots, num_wires).
+
+    Example:
+        >>> probs = np.array([0.2, 0.3, 0.5])  # For a single-wire qutrit system
+        >>> shots = 1000
+        >>> num_wires = 1
+        >>> is_state_batched = False
+        >>> rng = np.random.default_rng(42)
+        >>> samples = sample_probs(probs, shots, num_wires, is_state_batched, rng)
+        >>> samples.shape
+        (1000, 1)
+    """
     rng = np.random.default_rng(rng)
     basis_states = np.arange(QUDIT_DIM**num_wires)
     if is_state_batched:
