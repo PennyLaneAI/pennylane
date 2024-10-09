@@ -59,6 +59,9 @@
 * The `Hermitian` operator now has a `compute_sparse_matrix` implementation.
   [(#6225)](https://github.com/PennyLaneAI/pennylane/pull/6225)
 
+* `qml.AmplitudeAmplification` is now compatible with QJIT.
+  [(#6306)](https://github.com/PennyLaneAI/pennylane/pull/6306)
+
 * The quantum arithmetic templates are now QJIT compatible.
   [(#6307)](https://github.com/PennyLaneAI/pennylane/pull/6307)
   
