@@ -155,15 +155,20 @@ class TestGradients:
         assert op.grad_recipe[1:] == (None, None)
 
     @pytest.mark.unit
-    def test_grad_method_is_none_trainable_hamiltonian(self):
+    @pytest.mark.parametrize(
+        "H",
+        [
+            qml.Hamiltonian(qml.numpy.array([0.5, 0.5]), [qml.X(0), qml.Y(0)]),
+            qml.X(0) + qml.numpy.array(0.5) * qml.Y(0),
+        ],
+    )
+    def test_grad_method_is_none_when_trainable_hamiltonian(self, H):
         """Tests that the grad method is None for a trainable Hamiltonian."""
 
         time = qml.numpy.array(0.1)
-        coeffs = qml.numpy.array([0.5, 0.5])
-        H = qml.Hamiltonian(coeffs, [qml.X(0), qml.Y(0)])
         op = qml.CommutingEvolution(H, time, frequencies=(2,))
         assert op.grad_method is None
-        assert op.grad_recipe == [None, None, None]
+        assert op.grad_recipe == [None] * (len(H.data) + 1)
 
     def test_two_term_case(self):
         """Tests the parameter shift rules for `CommutingEvolution` equal the
