@@ -1,3 +1,5 @@
+:orphan:
+
 .. role:: html(raw)
    :format: html
 

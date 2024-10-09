@@ -1,6 +1,9 @@
 .. role:: html(raw)
    :format: html
 
+Building a plugin
+=================
+
 For adding a plugin that inherits from the legacy interface, see :doc:`/development/legacy_plugins`.
 
 .. _plugin_overview:
@@ -9,9 +12,6 @@ For adding a plugin that inherits from the legacy interface, see :doc:`/developm
 
     In your plugin module, **standard NumPy** (*not* the wrapped Autograd version of NumPy)
     should be imported in all places (i.e., ``import numpy as np``).
-
-Building a plugin
-=================
 
 Writing your own PennyLane plugin, to allow an external quantum library to take advantage of the
 automatic differentiation ability of PennyLane, is a simple and easy process. In this section, we discuss
@@ -61,8 +61,9 @@ In a more minimal example, for any initial batch of quantum tapes and a config o
 .. code-block:: python
 
     transform_program, execution_config = dev.preprocess(initial_config)
-    circuit_batch, fn = transform_program(initial_circuit_batch)
-    fn(dev.execute(circuit_batch, execution_config))
+    circuit_batch, postprocessing = transform_program(initial_circuit_batch)
+    results = dev.execute(circuit_batch, execution_config)
+    final_results = postprocessing(results)
 
 
 Shots
@@ -199,7 +200,7 @@ or can include in-built transforms such as:
     transforms.broadcast_expand
     transforms.split_non_commuting
     transforms.transpile
-    transforms.diagonlize_measurements
+    transforms.diagonalize_measurements
     transforms.split_to_single_terms
 
 
@@ -236,25 +237,22 @@ will be on the user to deliberately map wires if they wish such a thing to occur
 >>> qml.device('my_hardware').wires
 <Wires = [0, 1, 2, 3]>
 >>> qml.device('my_hardware', wires=(10, 11, 12, 13))
-DeviceError: Device my_hardware cannot internally map wires, as the labels 0, 1, 2, 3 indicate unique qubits
+TypeError: MyHardware.__init__() got an unexpected keyword argument 'wires'
 
-To implement such validation, a device developer can include a custom transform in their preprocessing:
+To implement such validation, a device developer can simply leave ``wires`` from the initialization
+call signature and hard code the ``wires`` property. They should additionally make sure to include
+``validate_device_wires`` in the transform program.
 
 .. code-block:: python
 
-    def null_processing(res): return res[0]
+    class MyDevice(qml.devices.Device):
 
-    @qml.transform
-    def validate_hardware_wires(tape):
-        if any(w not in {0, 1, 2, 3} for w in tape.wires:
-            raise qml.DeviceError(
-                "Device my_hardware cannot internally map wires, as the labels"
-                " 0, 1, 2, 3 indicate unique qubits."
-            )
-        return (tape, ), null_processing
+        def __init__(self, shots=None):
+            super().__init__(shots=shots)
 
-    transform_program.add_transform(validate_hardware_wires)
-
+        @property
+        def wires(self):
+            return qml.wires.Wires((0,1,2,3))
 
 Execution Config
 ----------------
