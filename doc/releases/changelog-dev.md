@@ -62,6 +62,9 @@
 * `qml.AmplitudeAmplification` is now compatible with QJIT.
   [(#6306)](https://github.com/PennyLaneAI/pennylane/pull/6306)
 
+* The quantum arithmetic templates are now QJIT compatible.
+  [(#6307)](https://github.com/PennyLaneAI/pennylane/pull/6307)
+  
 * The `qml.Qubitization` template is now QJIT compatible.
   [(#6305)](https://github.com/PennyLaneAI/pennylane/pull/6305)
 
