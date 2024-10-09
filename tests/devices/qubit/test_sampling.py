@@ -20,7 +20,7 @@ import pytest
 
 import pennylane as qml
 from pennylane.devices.qubit import measure_with_samples, sample_state, simulate
-from pennylane.devices.qubit.sampling import _sample_state_jax, sample_probs, sample_probs_jax
+from pennylane.devices.qubit.sampling import _sample_state_jax, sample_probs
 from pennylane.devices.qubit.simulate import _FlexShots
 from pennylane.measurements import Shots
 
@@ -1324,6 +1324,7 @@ class TestHamiltonianSamples:
 
 
 class TestSampleProbs:
+    # pylint: disable=attribute-defined-outside-init
     @pytest.fixture(autouse=True)
     def setup(self):
         self.rng = np.random.default_rng(42)  # Fixed seed for reproducibility

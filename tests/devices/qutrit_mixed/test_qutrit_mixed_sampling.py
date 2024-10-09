@@ -32,15 +32,6 @@ from pennylane.devices.qutrit_mixed.sampling import (
 )
 from pennylane.measurements import Shots
 
-# Check if JAX is available
-try:
-    import jax
-    import jax.numpy as jnp
-
-    JAX_AVAILABLE = True
-except ImportError:
-    JAX_AVAILABLE = False
-
 
 APPROX_ATOL = 0.05
 QUDIT_DIM = 3
@@ -713,6 +704,7 @@ class TestHamiltonianSamples:
 
 
 class TestSampleProbs:
+    # pylint: disable=attribute-defined-outside-init
     @pytest.fixture(autouse=True)
     def setup(self):
         self.rng = np.random.default_rng(42)
@@ -728,7 +720,7 @@ class TestSampleProbs:
         assert result.shape == (self.shots, num_wires)
         assert np.all(result >= 0) and np.all(result < QUDIT_DIM)
 
-        unique, counts = np.unique(result, return_counts=True)
+        _, counts = np.unique(result, return_counts=True)
         observed_probs = counts / self.shots
         np.testing.assert_allclose(observed_probs, probs, atol=0.05)
 
@@ -777,11 +769,12 @@ class TestSampleProbs:
             sample_probs(probs, self.shots, num_wires, is_state_batched, self.rng)
 
 
-# Skip all tests in this class if JAX is not available
-@pytest.mark.skipif(not JAX_AVAILABLE, reason="JAX is not installed")
 class TestSampleProbsJax:
+    # pylint: disable=attribute-defined-outside-init
     @pytest.fixture(autouse=True)
     def setup(self):
+        import jax
+
         self.jax_key = jax.random.PRNGKey(42)
         self.shots = 1000
 
@@ -799,7 +792,7 @@ class TestSampleProbsJax:
         assert result.shape == (self.shots, num_wires)
         assert np.all(result >= 0) and qml.math.all(result < QUDIT_DIM)
 
-        unique, counts = qml.math.unique(result, return_counts=True)
+        _, counts = qml.math.unique(result, return_counts=True)
         observed_probs = counts / self.shots
         np.testing.assert_allclose(observed_probs, probs, atol=0.05)
 
@@ -847,6 +840,7 @@ class TestSampleProbsJax:
             (qml.math.array([[0.2, 0.3, 0.5], [0.4, 0.1, 0.5]]), 1, True, (2, 1000, 1), 2),
         ],
     )
+    # pylint: disable=too-many-arguments
     @pytest.mark.jax
     def test_sample_probs_jax_shapes(
         self, probs, num_wires, is_state_batched, expected_shape, state_len
