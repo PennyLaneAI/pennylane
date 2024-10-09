@@ -23,7 +23,7 @@ from pennylane import numpy as pnp
 
 def test_standard_validity():
     """Check the operation using the assert_valid function."""
-    features = (0, 1, 2)
+    features = (0.0, 1.0, 2.0)
 
     op = qml.IQPEmbedding(features, wires=(0, 1, 2))
     qml.ops.functions.assert_valid(op)

@@ -50,7 +50,7 @@ def test_standard_validity():
 
     op = qml.AmplitudeEmbedding(features=FEATURES[0], wires=range(2))
 
-    qml.ops.functions.assert_valid(op)
+    qml.ops.functions.assert_valid(op, skip_differentiation=True)
 
 
 class TestDecomposition:

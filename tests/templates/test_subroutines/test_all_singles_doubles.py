@@ -26,7 +26,7 @@ from pennylane import numpy as pnp
 def test_standard_validity():
     """Run standard tests of operation validity."""
     op = qml.AllSinglesDoubles(
-        [1, 2],
+        [1.0, 2.0],
         wires=range(4),
         hf_state=np.array([1, 1, 0, 0]),
         singles=[[0, 1]],
