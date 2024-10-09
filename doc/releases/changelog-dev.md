@@ -61,10 +61,17 @@
   `trainable_params` as keyword arguments. If any of these are passed when copying a 
   tape, the specified attributes will replace the copied attributes on the new tape.
   [(#6285)](https://github.com/PennyLaneAI/pennylane/pull/6285)
+  [(#6363)](https://github.com/PennyLaneAI/pennylane/pull/6363)
 
 * The `Hermitian` operator now has a `compute_sparse_matrix` implementation.
   [(#6225)](https://github.com/PennyLaneAI/pennylane/pull/6225)
 
+* `qml.AmplitudeAmplification` is now compatible with QJIT.
+  [(#6306)](https://github.com/PennyLaneAI/pennylane/pull/6306)
+
+* The quantum arithmetic templates are now QJIT compatible.
+  [(#6307)](https://github.com/PennyLaneAI/pennylane/pull/6307)
+  
 * The `qml.Qubitization` template is now QJIT compatible.
   [(#6305)](https://github.com/PennyLaneAI/pennylane/pull/6305)
 
@@ -183,6 +190,7 @@
   `qml.ops.LinearCombination`; this behaviour is not deprecated. For more information, check out the
   [updated operator troubleshooting page](https://docs.pennylane.ai/en/stable/news/new_opmath.html).
   [(#6287)](https://github.com/PennyLaneAI/pennylane/pull/6287)
+  [(#6365)](https://github.com/PennyLaneAI/pennylane/pull/6365)
 
 * `qml.pauli.PauliSentence.hamiltonian` and `qml.pauli.PauliWord.hamiltonian` are deprecated. Instead, please use
   `qml.pauli.PauliSentence.operation` and `qml.pauli.PauliWord.operation` respectively.
@@ -243,6 +251,9 @@
   [(#6298)](https://github.com/PennyLaneAI/pennylane/pull/6298)
 
 <h3>Bug fixes 🐛</h3>
+
+* `adjoint_metric_tensor` now works with circuits containing state preparation operations.
+  [(#6358)](https://github.com/PennyLaneAI/pennylane/pull/6358)
 
 * `quantum_fisher` now respects the classical Jacobian of QNodes.
   [(#6350)](https://github.com/PennyLaneAI/pennylane/pull/6350)
