@@ -24,7 +24,7 @@ def run_opt(
     theta,
     n_epochs=100,
     lr=0.1,
-    b1=0.9,
+    b1=0.95,
     b2=0.999,
     E_exact=0.0,
     verbose=True,
@@ -475,16 +475,25 @@ def khk_decompose(
         )
     vec_H = vec_H[dim_k:]
 
-    thetas, energy, _ = run_opt(partial(value_and_grad, vec_H=vec_H), theta0, **opt_kwargs)
+    thetas, energy, gradients = run_opt(partial(value_and_grad, vec_H=vec_H), theta0, **opt_kwargs)
     if verbose > 1:
         plt.plot(energy)
         plt.xlabel("epochs")
         plt.ylabel("loss")
         plt.show()
 
-    theta_opt = thetas[-1]
+    min_idx = np.argmin(energy)
+    if verbose:
+        print(f"Picking the entry with index {min_idx} with cost {energy[min_idx]}")
+    theta_opt = thetas[min_idx]
+    #theta_opt = thetas[-1]
     vec_h = ansatz(theta_opt, vec_H)
-    # assert np.allclose(vec_h[:len(h)], 0., atol=1e-7), f"{vec_h}"
+    if verbose:
+        vec_h_in_h = np.allclose(vec_h[:len(h)], 0., atol=1e-7)
+        print(f"The transformed Hamiltonian lies in the CSA: {vec_h_in_h}")
+        if not vec_h_in_h:
+            print(f"The non-CSA components are {vec_h[:len(h)]}")
+            print(f"The gradient at chosen point had norm {np.linalg.norm(gradients[min_idx])}")
 
     if validate:
         _khk_validation(H, vec_h, theta_opt, g, k)
