@@ -171,8 +171,9 @@ class OutAdder(Operation):
             raise ValueError("None of the wires in y_wires should be included in output_wires.")
         for key in ["x_wires", "y_wires", "output_wires", "work_wires"]:
             self.hyperparameters[key] = qml.wires.Wires(locals()[key])
-        all_wires = sum(self.hyperparameters[key] for key in ["x_wires", "y_wires", "output_wires"])
-
+        all_wires = sum(
+            [self.hyperparameters[key] for key in ["x_wires", "y_wires", "output_wires"]], start=[]
+        )
         if num_work_wires != 0:
             all_wires += self.hyperparameters["work_wires"]
 

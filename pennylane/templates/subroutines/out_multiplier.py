@@ -184,7 +184,7 @@ class OutMultiplier(Operation):
         for name, wires in zip(wires_name, wires_list):
             self.hyperparameters[name] = qml.wires.Wires(wires)
         self.hyperparameters["mod"] = mod
-        all_wires = sum(self.hyperparameters[name] for name in wires_name)
+        all_wires = sum([self.hyperparameters[name] for name in wires_name], start=[])
         super().__init__(wires=all_wires, id=id)
 
     @property
