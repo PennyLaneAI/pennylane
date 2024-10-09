@@ -13,6 +13,8 @@
 # limitations under the License.
 """Unit tests for the ``decompose`` transform"""
 
+import warnings
+
 import pytest
 
 import pennylane as qml
@@ -22,6 +24,13 @@ from pennylane.transforms.decompose import _operator_decomposition_gen, decompos
 
 # pylint: disable=unnecessary-lambda-assignment
 # pylint: disable=too-few-public-methods
+
+
+@pytest.fixture(autouse=True)
+def warnings_as_errors():
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        yield
 
 
 class NoMatOp(Operation):
@@ -106,8 +115,8 @@ class TestDecompose:
                 qml.CNOT(wires=[1, 2]),
                 qml.ops.op_math.Adjoint(qml.T(wires=[2])),
                 qml.CNOT(wires=[0, 2]),
-                qml.T(wires=[1]),
                 qml.T(wires=[2]),
+                qml.T(wires=[1]),
                 qml.CNOT(wires=[0, 1]),
                 qml.Hadamard(wires=[2]),
                 qml.T(wires=[0]),
@@ -151,7 +160,7 @@ class TestDecompose:
 
         qml.assert_equal(decomposed_tape, expected_tape)
 
-    @pytest.mark.parametrize("initial_ops, gate_set, expected_ops, warning_pattern", iterables_test)
+    @pytest.mark.parametrize("initial_ops, gate_set, expected_ops, warning_pattern", callables_test)
     def test_callable_gate_set(self, initial_ops, gate_set, expected_ops, warning_pattern):
         """Tests that gate sets defined by callables decompose correctly"""
         tape = qml.tape.QuantumScript(initial_ops)
@@ -170,8 +179,8 @@ class TestDecompose:
 def test_null_postprocessing():
     """Tests the null postprocessing function in the decompose transform"""
     tape = qml.tape.QuantumScript([qml.Hadamard(0), qml.RX(0, 0)])
-    (new_tape,), fn = qml.transforms.decompose(tape, gate_set={qml.RX, qml.RZ})
-    qml.assert_equal(fn(new_tape), new_tape.circuit[0])
+    (_,), fn = qml.transforms.decompose(tape, gate_set={qml.RX, qml.RZ})
+    assert fn((1,)) == 1
 
 
 class TestPrivateHelpers:
