@@ -271,8 +271,9 @@ class DefaultMixed(QubitDevice):
             array[complex]: complex array of shape ``(2 ** len(wires), 2 ** len(wires))``
             representing the reduced density matrix of the state prior to measurement.
         """
-        dim = 2**self.num_wires
-        return qnp.reshape(self._pre_rotated_state, (dim, dim))
+        state = getattr(self, "state", None)
+        wires = self.map_wires(wires)
+        return qml.math.reduce_dm(state, indices=wires, c_dtype=self.C_DTYPE)
 
     @debug_logger
     def purity(self, mp, **kwargs):  # pylint: disable=unused-argument
