@@ -57,6 +57,7 @@
   `trainable_params` as keyword arguments. If any of these are passed when copying a 
   tape, the specified attributes will replace the copied attributes on the new tape.
   [(#6285)](https://github.com/PennyLaneAI/pennylane/pull/6285)
+  [(#6363)](https://github.com/PennyLaneAI/pennylane/pull/6363)
 
 * The `Hermitian` operator now has a `compute_sparse_matrix` implementation.
   [(#6225)](https://github.com/PennyLaneAI/pennylane/pull/6225)
@@ -179,6 +180,7 @@
   `qml.ops.LinearCombination`; this behaviour is not deprecated. For more information, check out the
   [updated operator troubleshooting page](https://docs.pennylane.ai/en/stable/news/new_opmath.html).
   [(#6287)](https://github.com/PennyLaneAI/pennylane/pull/6287)
+  [(#6365)](https://github.com/PennyLaneAI/pennylane/pull/6365)
 
 * `qml.pauli.PauliSentence.hamiltonian` and `qml.pauli.PauliWord.hamiltonian` are deprecated. Instead, please use
   `qml.pauli.PauliSentence.operation` and `qml.pauli.PauliWord.operation` respectively.
@@ -281,6 +283,9 @@
   [(#6278)](https://github.com/PennyLaneAI/pennylane/pull/6278)
   [(#6310)](https://github.com/PennyLaneAI/pennylane/pull/6310)
 
+* Fixes a test after updating to the nightly version of Catalyst.
+  [(#6362)](https://github.com/PennyLaneAI/pennylane/pull/6362)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -298,6 +303,7 @@ Austin Huang,
 Korbinian Kottmann,
 Christina Lee,
 William Maxwell,
+Erick Ochoa Lopez,
 Lee J. O'Riordan,
 Mudit Pandey,
 David Wierichs,
