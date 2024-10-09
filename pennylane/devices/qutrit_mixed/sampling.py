@@ -307,6 +307,7 @@ def _sample_probs_jax(probs, shots, num_wires, is_state_batched, prng_key, state
         This function requires JAX to be installed. It internally imports JAX
         and its numpy module (jnp).
     """
+    # pylint: disable=import-outside-toplevel
     import jax
     import jax.numpy as jnp
 

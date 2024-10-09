@@ -607,6 +607,7 @@ def sample_probs_jax(probs, shots, num_wires, is_state_batched, prng_key, state_
     # when using the torch interface with float32 as default dtype,
     # probabilities must be renormalized as they may not sum to one
     # see
+    # pylint: disable=import-outside-toplevel
     import jax
     import jax.numpy as jnp
 
