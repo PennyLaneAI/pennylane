@@ -785,8 +785,9 @@ class TestSampleProbsJax:
         self.jax_key = jax.random.PRNGKey(42)
         self.shots = 1000
 
+    @pytest.mark.jax
     def test_sample_probs_jax_basic(self):
-        probs = jnp.array([0.2, 0.3, 0.5])
+        probs = np.array([0.2, 0.3, 0.5])
         num_wires = 1
         is_state_batched = False
         state_len = 1
@@ -796,14 +797,15 @@ class TestSampleProbsJax:
         )
 
         assert result.shape == (self.shots, num_wires)
-        assert jnp.all(result >= 0) and jnp.all(result < QUDIT_DIM)
+        assert np.all(result >= 0) and qml.math.all(result < QUDIT_DIM)
 
-        unique, counts = jnp.unique(result, return_counts=True)
+        unique, counts = qml.math.unique(result, return_counts=True)
         observed_probs = counts / self.shots
         np.testing.assert_allclose(observed_probs, probs, atol=0.05)
 
+    @pytest.mark.jax
     def test_sample_probs_jax_multi_wire(self):
-        probs = jnp.array(
+        probs = qml.math.array(
             [0.1, 0.2, 0.3, 0.15, 0.1, 0.05, 0.05, 0.03, 0.02]
         )  # 3^2 = 9 probabilities for 2 wires
         num_wires = 2
@@ -815,10 +817,11 @@ class TestSampleProbsJax:
         )
 
         assert result.shape == (self.shots, num_wires)
-        assert jnp.all(result >= 0) and jnp.all(result < QUDIT_DIM)
+        assert qml.math.all(result >= 0) and qml.math.all(result < QUDIT_DIM)
 
+    @pytest.mark.jax
     def test_sample_probs_jax_batched(self):
-        probs = jnp.array([[0.2, 0.3, 0.5], [0.4, 0.1, 0.5]])
+        probs = qml.math.array([[0.2, 0.3, 0.5], [0.4, 0.1, 0.5]])
         num_wires = 1
         is_state_batched = True
         state_len = 2
@@ -828,16 +831,23 @@ class TestSampleProbsJax:
         )
 
         assert result.shape == (2, self.shots, num_wires)
-        assert jnp.all(result >= 0) and jnp.all(result < QUDIT_DIM)
+        assert qml.math.all(result >= 0) and qml.math.all(result < QUDIT_DIM)
 
     @pytest.mark.parametrize(
         "probs,num_wires,is_state_batched,expected_shape,state_len",
         [
-            (jnp.array([0.2, 0.3, 0.5]), 1, False, (1000, 1), 1),
-            (jnp.array([0.1, 0.2, 0.3, 0.15, 0.1, 0.05, 0.05, 0.03, 0.02]), 2, False, (1000, 2), 1),
-            (jnp.array([[0.2, 0.3, 0.5], [0.4, 0.1, 0.5]]), 1, True, (2, 1000, 1), 2),
+            (qml.math.array([0.2, 0.3, 0.5]), 1, False, (1000, 1), 1),
+            (
+                qml.math.array([0.1, 0.2, 0.3, 0.15, 0.1, 0.05, 0.05, 0.03, 0.02]),
+                2,
+                False,
+                (1000, 2),
+                1,
+            ),
+            (qml.math.array([[0.2, 0.3, 0.5], [0.4, 0.1, 0.5]]), 1, True, (2, 1000, 1), 2),
         ],
     )
+    @pytest.mark.jax
     def test_sample_probs_jax_shapes(
         self, probs, num_wires, is_state_batched, expected_shape, state_len
     ):
@@ -846,8 +856,9 @@ class TestSampleProbsJax:
         )
         assert result.shape == expected_shape
 
+    @pytest.mark.jax
     def test_invalid_probs_jax(self):
-        probs = jnp.array(
+        probs = qml.math.array(
             [0.1, 0.2, 0.3, 0.4]
         )  # 4 probabilities, which is invalid for qutrit system
         num_wires = 2
