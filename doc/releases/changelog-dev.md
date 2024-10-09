@@ -35,6 +35,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* Isolate `qfunc_output` and `tape.measurement` to a private helper function.
+  [(#6370)](https://github.com/PennyLaneAI/pennylane/pull/6370)
+
 * PennyLane is now compatible with NumPy 2.0.
   [(#6061)](https://github.com/PennyLaneAI/pennylane/pull/6061)
   [(#6258)](https://github.com/PennyLaneAI/pennylane/pull/6258)
@@ -312,4 +315,5 @@ William Maxwell,
 Erick Ochoa Lopez,
 Lee J. O'Riordan,
 Mudit Pandey,
+Andrija Paurevic,
 David Wierichs,
