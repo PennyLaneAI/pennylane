@@ -63,7 +63,6 @@ jobs:
         with:
           pattern: ${{ inputs.artifact_name_pattern }}
           path: ${{ inputs.artifact_save_path }}
-          merge-multiple: true
       
       - name: Determine if changes have been made
         id: changed
