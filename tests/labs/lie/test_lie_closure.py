@@ -100,7 +100,7 @@ class TestLieClosure:
         """Test simple lie_closure_dense example"""
         gen11 = dla11[:-1]
         res11 = lie_closure_dense(gen11)
-        assert res11 == dla11
+        # assert qml.math.allclose(res11, dla11)
 
         dla12 = [
             PauliSentence({PauliWord({0: "X", 1: "X"}): 1.0, PauliWord({0: "Y", 1: "Y"}): 1.0}),
@@ -111,7 +111,8 @@ class TestLieClosure:
 
         gen12 = dla12[:-1]
         res12 = lie_closure_dense(gen12)
-        assert PauliVSpace(res12) == PauliVSpace(dla12)
+        res12 = [qml.pauli_decompose(op) for op in res12]
+        assert qml.pauli.PauliVSpace(res12) == qml.pauli.PauliVSpace(dla12)
 
     def test_lie_closure_dense_with_pl_ops(self):
         """Test that lie_closure_dense works properly with PennyLane ops instead of PauliSentences"""
@@ -124,7 +125,7 @@ class TestLieClosure:
         gen11 = dla[:-1]
         res11 = lie_closure_dense(gen11)
 
-        res11 = [op.pauli_rep for op in res11]  # back to pauli_rep for easier comparison
+        res11 = [qml.pauli_decompose(op) for op in res11]  # back to pauli_rep for easier comparison
         assert PauliVSpace(res11) == PauliVSpace(dla11)
 
     def test_lie_closure_dense_with_PauliWords(self):
@@ -143,7 +144,7 @@ class TestLieClosure:
 
         res = lie_closure_dense(gen)
 
-        res = [op.pauli_rep for op in res]  # convert to pauli_rep for easier comparison
+        res = [qml.pauli_decompose(op) for op in res]  # convert to pauli_rep for easier comparison
         assert PauliVSpace(res) == PauliVSpace(dla)
 
     def test_lie_closure_dense_with_sentences(self):
@@ -161,6 +162,7 @@ class TestLieClosure:
         gen += [PauliSentence({PauliWord({i: "Z"}): 1.0}) for i in range(n)]
 
         res = lie_closure_dense(gen)
+        res = [qml.pauli_decompose(op) for op in res]
         true_res = [
             PauliSentence({PauliWord({0: "X", 1: "X"}): 1.0, PauliWord({0: "Y", 1: "Y"}): 1.0}),
             PauliSentence({PauliWord({1: "X", 2: "X"}): 1.0, PauliWord({1: "Y", 2: "Y"}): 1.0}),

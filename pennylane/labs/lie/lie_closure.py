@@ -15,8 +15,14 @@
 # pylint: disable=too-many-arguments
 
 import warnings
+from collections.abc import Iterable
+from typing import Union
+
 import pennylane as qml
 import numpy as np
+
+from pennylane.pauli import PauliWord, PauliSentence
+from pennylane.operation import Operator
 
 
 def hermitian_basis(matrices, tol=None):
@@ -40,7 +46,7 @@ def hermitian_basis(matrices, tol=None):
 
 
 def lie_closure_dense(
-    generators,  #: Iterable[Union[PauliWord, PauliSentence, Operator]],
+    generators: Iterable[Union[PauliWord, PauliSentence, Operator]],
     n=None,
     max_iterations: int = 10000,
     verbose: bool = False,
@@ -83,7 +89,7 @@ def lie_closure_dense(
     if n is None:
         n = len(qml.wires.Wires.all_wires([_.wires for _ in generators]))
 
-    gens = np.array([qml.matrix(op, wire_order=range(n)) for op in generators])
+    gens = np.array([qml.matrix(op, wire_order=range(n)) for op in generators], dtype=complex)
     _, chi, _ = gens.shape
     vspace = hermitian_basis(gens, tol)
 
@@ -93,7 +99,7 @@ def lie_closure_dense(
 
     while (new_length > old_length) and (epoch < max_iterations):
         if verbose:
-            print(f"epoch {epoch+1} of lie_closure, DLA size is {new_length}")
+            print(f"epoch {epoch+1} of lie_closure_dense, DLA size is {new_length}")
 
         # compute all commutators
         m0m1 = np.einsum("aij,bjk->abik", vspace, gens)
