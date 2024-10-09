@@ -90,15 +90,16 @@ def Involution0(op: PauliSentence):
     assert all(parity[0] == p for p in parity)
     return parity[0]
 
-def InvolutionJ(op: PauliSentence, qubit: int=0):
+
+def InvolutionJ(op: PauliSentence, qubit: int = 0):
     """Involution A -> -J A J with J = iY_qubit."""
     parity = [pw.get(qubit, "I") in "IY" for pw in op.keys()]
     assert all(parity[0] == p for p in parity)
     return parity[0]
 
-def InvolutionSp(op: PauliSentence, qubit: int=0):
+
+def InvolutionSp(op: PauliSentence, qubit: int = 0):
     """Involution A -> -J A* J with J = iY_qubit."""
-    parity = [for pw in op.keys()]
     parity = []
     for pw in op.keys():
         result = sum([1 if el == "Y" else 0 for el in pw.values()])
@@ -518,7 +519,9 @@ def khk_decompose(
         print(f"The transformed Hamiltonian lies in the CSA: {vec_h_in_h}")
         if not vec_h_in_h:
             print(f"The non-CSA components are: {vec_h[:-len(h)]}")
-            print(f"The gradient at chosen point had norm {np.linalg.norm(gradients[min_gradnorm_idx])}")
+            print(
+                f"The gradient at chosen point had norm {np.linalg.norm(gradients[min_gradnorm_idx])}"
+            )
 
     if validate:
         _khk_validation(H, vec_h, theta_opt, g, k)
