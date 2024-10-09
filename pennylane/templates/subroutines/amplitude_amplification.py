@@ -36,7 +36,7 @@ def _get_fixed_point_angles(iters, p_min):
     gamma = np.cos(np.arccos(1 / delta, dtype=np.complex128) / iters, dtype=np.complex128) ** -1
 
     alphas = [
-        2 * np.arctan(1 / (np.tan(2 * np.pi * j / iters) * np.sqrt(1 - gamma**2)))
+        float(2 * np.arctan(1 / (np.tan(2 * np.pi * j / iters) * np.sqrt(1 - gamma**2))))
         for j in range(1, iters // 2 + 1)
     ]
     betas = [-alphas[-j] for j in range(1, iters // 2 + 1)]
