@@ -363,7 +363,7 @@ class TestNoiseFunctions:
         mp = qml.noise.partial_wires(qml.density_matrix, wires=2)(1)
         qml.assert_equal(mp, qml.density_matrix([1]))
 
-        mp = qml.noise.partial_wires(qml.mutual_info(1, 2))([[2], [3]])
+        mp = qml.noise.partial_wires(qml.mutual_info(1, 2))([2, 3])
         qml.assert_equal(mp, qml.mutual_info(2, 3))
 
         mp = qml.noise.partial_wires(qml.shadow_expval, H=qml.X(0) @ qml.Y(1))(["bra", "ket"])

@@ -642,6 +642,7 @@ def partial_wires(operation, *args, **kwargs):
     """
     is_meas_class = isinstance(operation, qml.measurements.MeasurementProcess)
     is_meta_class = isinstance(operation, (qml.ops.Adjoint, qml.ops.Controlled))
+    is_mappable, map_op = False, None
 
     if not callable(operation):
         if args:
@@ -649,6 +650,8 @@ def partial_wires(operation, *args, **kwargs):
                 "Args cannot be provided when operation is an instance, "
                 f"got operation = {operation} and args = {args}."
             )
+        if not kwargs:
+            is_mappable, map_op = True, operation
         args, metadata = getattr(operation, "_flatten")()
         is_metadata_flat = is_meas_class or isinstance(operation, (qml.ops.Controlled))
         if len(metadata) > 1:
@@ -706,11 +709,11 @@ def partial_wires(operation, *args, **kwargs):
                     op_args["wires"] = obs.wires
 
             if (obs := op_args.get("obs", None)) is not None and op_args["wires"] is not None:
-                op_args["obs"] = obs.map_wires(dict(zip(obs.wires, op_args.pop("wires"))))
+                op_args["obs"] = obs.map_wires(dict(zip(obs.wires, op_args["wires"])))
 
             if "H" in parameters and operation == qml.measurements.ShadowExpvalMP:
                 mp_ham = op_args["H"]
-                op_args["H"] = mp_ham.map_wires(dict(zip(mp_ham.wires, op_args.pop("wires"))))
+                op_args["H"] = mp_ham.map_wires(dict(zip(mp_ham.wires, op_args["wires"])))
 
         if is_meta_class:
             if not op_args.get("base", None) and (obs := partial_kwargs.get("op", None)):
@@ -719,14 +722,11 @@ def partial_wires(operation, *args, **kwargs):
                     op_args["wires"] = obs.wires
 
             if (base := op_args.get("base", None)) is not None and op_args["wires"] is not None:
-                op_args["base"] = base.map_wires(dict(zip(base.wires, op_args.pop("wires"))))
+                op_args["base"] = base.map_wires(dict(zip(base.wires, op_args["wires"])))
 
         for key, val in partial_kwargs.items():
             if key in parameters:  # pragma: no cover
                 op_args[key] = val
-
-        if "wires" not in parameters:
-            _ = op_args.pop("wires", None)
 
         if isclass(operation) and issubclass(operation, qml.operation.Operation):
             num_wires = getattr(operation, "num_wires", AnyWires)
@@ -734,6 +734,14 @@ def partial_wires(operation, *args, **kwargs):
                 if num_wires < len(op_args["wires"]) and num_wires == 1:
                     op_wires = op_args.pop("wires")
                     return tuple(operation(**op_args, wires=wire) for wire in op_wires)
+
+        if is_mappable and map_op.wires is not None:
+            return map_op.map_wires(dict(zip(map_op.wires, op_args.pop("wires"))))
+
+        if "wires" not in parameters or (
+            is_meas_class and (op_args.get("obs", None) or op_args.get("H", None))
+        ):
+            _ = op_args.pop("wires", None)
 
         return operation(**op_args)
 
