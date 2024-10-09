@@ -5,10 +5,124 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.pauli import PauliSentence, PauliWord
-from bosonic import BoseWord, BoseSentence
+from bosonic import BoseSentence, BoseWord
 
 
-def vib_obs(one, modes=None, modals=None, two=None, three=None, cutoff=1e-5):
+def jordan_wigner(
+    bose_operator: Union[BoseWord, BoseSentence],
+    ps: bool = False,
+    wire_map: dict = None,
+    tol: float = None,
+):
+    r"""Convert a bosonic operator to a qubit operator using the Jordan-Wigner mapping.
+
+    The bosonic creation and annihilation operators are mapped to the Pauli operators as
+
+    .. math::
+
+        a^{\dagger}_0 =  \left (\frac{X_0 - iY_0}{2}  \right ), \:\: \text{...,} \:\:
+        a^{\dagger}_n = Z_0 \otimes Z_1 \otimes ... \otimes Z_{n-1} \otimes \left (\frac{X_n - iY_n}{2} \right ),
+
+    and
+
+    .. math::
+
+        a_0 =  \left (\frac{X_0 + iY_0}{2}  \right ), \:\: \text{...,} \:\:
+        a_n = Z_0 \otimes Z_1 \otimes ... \otimes Z_{n-1} \otimes \left (\frac{X_n + iY_n}{2}  \right ),
+
+    where :math:`X`, :math:`Y`, and :math:`Z` are the Pauli operators.
+
+    Args:
+        bose_operator(BoseWord, BoseSentence): the bosonic operator
+        ps (bool): whether to return the result as a PauliSentence instead of an
+            Operator. Defaults to False.
+        wire_map (dict): a dictionary defining how to map the orbitals of
+            the bose operator to qubit wires. If None, the integers used to
+            order the orbitals will be used as wire labels. Defaults to None.
+        tol (float): tolerance for discarding the imaginary part of the coefficients
+
+    Returns:
+        Union[PauliSentence, Operator]: a linear combination of qubit operators
+    """
+    return _jordan_wigner_dispatch(bose_operator, ps, wire_map, tol)
+
+
+@singledispatch
+def _jordan_wigner_dispatch(bose_operator, ps, wire_map, tol):
+    """Dispatches to appropriate function if bose_operator is a BoseWord or BoseSentence."""
+    raise ValueError(
+        f"bose_operator must be a BoseWord or BoseSentence, got: {bose_operator}"
+    )
+
+
+@_jordan_wigner_dispatch.register
+def _(bose_operator: BoseWord, ps=False, wire_map=None, tol=None):
+    wires = list(bose_operator.wires) or [0]
+    identity_wire = wires[0]
+
+    if len(bose_operator) == 0:
+        qubit_operator = PauliSentence({PauliWord({}): 1.0})
+
+    else:
+        coeffs = {"+": -0.5j, "-": 0.5j}
+        qubit_operator = PauliSentence(
+            {PauliWord({}): 1.0}
+        )  # Identity PS to multiply PSs with
+
+        for item in bose_operator.items():
+            (_, wire), sign = item
+
+            # z_string = dict(zip(range(wire), ["Z"] * wire))
+            z_string = {}
+            qubit_operator @= PauliSentence(
+                {
+                    PauliWord({**z_string, **{wire: "X"}}): 0.5,
+                    PauliWord({**z_string, **{wire: "Y"}}): coeffs[sign],
+                }
+            )
+
+    for pw in qubit_operator:
+        if tol is not None and abs(qml.math.imag(qubit_operator[pw])) <= tol:
+            qubit_operator[pw] = qml.math.real(qubit_operator[pw])
+
+    if not ps:
+        # wire_order specifies wires to use for Identity (PauliWord({}))
+        qubit_operator = qubit_operator.operation(wire_order=[identity_wire])
+
+    if wire_map:
+        return qubit_operator.map_wires(wire_map)
+
+    return qubit_operator
+
+
+@_jordan_wigner_dispatch.register
+def _(bose_operator: BoseSentence, ps=False, wire_map=None, tol=None):
+    wires = list(bose_operator.wires) or [0]
+    identity_wire = wires[0]
+
+    qubit_operator = PauliSentence()  # Empty PS as 0 operator to add Pws to
+
+    for fw, coeff in bose_operator.items():
+        bose_word_as_ps = jordan_wigner(fw, ps=True)
+
+        for pw in bose_word_as_ps:
+            qubit_operator[pw] = qubit_operator[pw] + bose_word_as_ps[pw] * coeff
+
+            if tol is not None and abs(qml.math.imag(qubit_operator[pw])) <= tol:
+                qubit_operator[pw] = qml.math.real(qubit_operator[pw])
+
+    qubit_operator.simplify(tol=1e-16)
+
+    if not ps:
+        qubit_operator = qubit_operator.operation(wire_order=[identity_wire])
+
+    if wire_map:
+        return qubit_operator.map_wires(wire_map)
+
+    return qubit_operator
+
+
+def vib_obs(one, modes=None, modals=None, two=None, three=None, cutoff=1e-5, ordered=True):
     r"""Build a vibrational observable in the Christiansen form (C-form) and map it
     to the Pauli basis
 
@@ -18,6 +132,8 @@ def vib_obs(one, modes=None, modals=None, two=None, three=None, cutoff=1e-5):
         modals (array): 1D array with the number of allowed vibrational modals for each mode, detects from 'one' if none is provided
         two (array): 6D array with two-body matrix elements
         three (array): 9D array with three-body matrix elements
+        cutoff (float): magnitude beneath which terms are not incorporated in final expression
+        ordered (bool): set True if matrix elements are ordered, i.e. two[m,n,::] = 0 for all n >= m and three[m,n,l,::] = 0 for all n >= m and l >= n
 
     Returns:
         tuple[int, Union[PauliSentence, Operator]]: the number of qubits and a linear combination of qubit operators
@@ -50,7 +166,11 @@ def vib_obs(one, modes=None, modals=None, two=None, three=None, cutoff=1e-5):
     # two-body terms
     if not two is None:
         for l in range(modes):
-            for m in [p for p in range(modes) if p != l]:
+            if ordered is False:
+                m_range = [p for p in range(modes) if p != l]
+            else:
+                m_range = range(l)
+            for m in m_range:
                 for k_l in range(modals[l]):
                     for h_l in range(modals[l]):
                         for k_m in range(modals[m]):
@@ -74,8 +194,16 @@ def vib_obs(one, modes=None, modals=None, two=None, three=None, cutoff=1e-5):
     # three-body terms
     if not three is None:
         for l in range(modes):
-            for m in [p for p in range(modes) if p != l]:
-                for n in [p for p in range(modes) if p != l and p != m]:
+            if ordered is False:
+                m_range = [p for p in range(modes) if p != l]
+            else:
+                m_range = range(l)
+            for m in m_range:
+                if ordered is False:
+                    n_range = [p for p in range(modes) if p != l and p != m]
+                else:
+                    n_range = range(m)
+                for n in n_range:
                     for k_l in range(modals[l]):
                         for h_l in range(modals[l]):
                             for k_m in range(modals[m]):
@@ -100,38 +228,11 @@ def vib_obs(one, modes=None, modals=None, two=None, three=None, cutoff=1e-5):
                                                     (5, idx[i5]): "-",
                                                 }
                                             )
-                                            obs[w] = three[l, m, n, k_l, k_m, k_n, h_l, h_m, h_n]
+                                            obs[w] = three[
+                                                l, m, n, k_l, k_m, k_n, h_l, h_m, h_n
+                                            ]
 
     obs_sq = BoseSentence(obs)
-    #    obs_pl = jordan_wigner(obs_sq, ps=True)
-    #    obs_pl.simplify(tol=cutoff)
 
-    return (np.sum(modals), obs_pl)
+    return (np.sum(modals), obs_sq)
 
-
-def vib_from_modes(H_arr, modals=None, cutoff=1e-5):
-    """
-    Returns vibrational observable as PennyLane qubit operator object
-
-    Arguments:
-        - H_arr: array containing n-mode expansion of Hamiltonian as:
-            H_arr = [H1, H2, ...] for M the number of modes and imax the maximum basis size over all modes:
-                H1 -> [M,imax,imax]
-                H2 -> [M,M,imax,imax,imax,imax]
-                    .
-                    .
-                    .
-        - modals = [N1,N2,...,Nm] containing number of modals Nk for each mode k. Defaults to [imax,imax,...,imax] if none is provided
-    """
-    n = len(H_arr)
-    if n > 3:
-        raise ValueError(
-            "Trying to build Hamiltonian operator for n={}>3 modes, not implemented!".format(n)
-        )
-
-    if n == 1:
-        return vib_obs(H_arr[0], modals=modals, cutoff=cutoff)
-    elif n == 2:
-        return vib_obs(H_arr[0], modals=modals, two=H_arr[1], cutoff=cutoff)
-    elif n == 3:
-        return vib_obs(H_arr[0], modals=modals, two=H_arr[1], three=H_arr[2], cutoff=cutoff)

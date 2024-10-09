@@ -20,7 +20,6 @@ from pennylane.typing import TensorLike
 import pennylane as qml
 import autoray as ar
 
-
 class BoseWord(dict):
     r"""Immutable dictionary used to represent a Bose word, a product of bosonic creation and
     annihilation operators, that can be constructed from a standard dictionary.
@@ -289,7 +288,6 @@ class BoseWord(dict):
 
         return operator
 
-
 # pylint: disable=useless-super-delegation
 class BoseSentence(dict):
     r"""Immutable dictionary used to represent a Bose sentence, a linear combination of Bose words, with the keys
@@ -488,3 +486,5 @@ class BoseSentence(dict):
         for fw, coeff in items:
             if abs(coeff) <= tol:
                 del self[fw]
+
+
