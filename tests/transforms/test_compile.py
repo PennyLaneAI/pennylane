@@ -72,6 +72,45 @@ class TestCompile:
         with pytest.raises(ValueError, match="Number of passes must be an integer"):
             transformed_qnode(0.1, 0.2, 0.3)
 
+    def test_stop_at_with_simple_basis(self):
+        """
+        Test the stop_at function with a valid basis set and a simple quantum function.
+        """
+
+        # Define a simple quantum function
+        def qfunc(x):
+            qml.RX(x, wires=0)
+            return qml.expval(qml.PauliZ(0))  # Return a measurement
+
+        # Define a valid basis set
+        basis_set = ["RX"]
+
+        # Apply the compile function with stop_at and a basis set
+        transformed_qfunc = compile(qfunc, basis_set=basis_set)
+
+        # Ensure the transformation occurred
+        assert transformed_qfunc is not None
+
+        # Create a QNode using the transformed function
+        dev = qml.device("default.qubit", wires=1)
+        qnode = qml.QNode(transformed_qfunc, dev)
+
+        # Evaluate the QNode with an input
+        result = qnode(0.5)
+
+        # Merged isinstance checks to resolve pylint error
+        if isinstance(result, (float, qml.numpy.ndarray)):
+            if isinstance(result, qml.numpy.ndarray):
+                # If result is a tensor (qml.numpy.ndarray), convert it to a float
+                result = result.item()
+        else:
+            raise ValueError("Result is not a valid numerical value")
+
+        # Verify the QNode's operations are within the allowed basis set
+        allowed_ops = ["RX"]
+        for op in qnode.qtape.operations:
+            assert op.name in allowed_ops, f"Operation {op.name} is not in the allowed basis set"
+
     def test_compile_mixed_tape_qfunc_transform(self):
         """Test that we can interchange tape and qfunc transforms."""
 
