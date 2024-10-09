@@ -852,17 +852,15 @@ class TestMeasurements:
 class TestWireOrderErrors:
     """Test that wire_order=None raises an error in qml.matrix transform."""
 
-    @pytest.mark.parametrize("pw", [PauliWord({0: "X", 1: "X"})])  # , PauliWord({})])
-    def test_error_pauli_word(self, pw):
+    def test_error_pauli_word(self):
         """Test that an error is raised when calling qml.matrix without wire_order on a PauliWord"""
+        pw = PauliWord({0: "X", 1: "X"})
         with pytest.raises(ValueError, match=r"wire_order is required"):
             _ = qml.matrix(pw)
 
-    @pytest.mark.parametrize(
-        "ps", [PauliSentence({PauliWord({0: "X", 1: "X"}): 1.0})]  # , PauliSentence({})]
-    )
-    def test_error_pauli_sentence(self, ps):
+    def test_error_pauli_sentence(self):
         """Test that an error is raised when calling qml.matrix without wire_order on a PauliSentence"""
+        ps = PauliSentence({PauliWord({0: "X", 1: "X"}): 1.0})
         with pytest.raises(ValueError, match=r"wire_order is required"):
             _ = qml.matrix(ps)
 
