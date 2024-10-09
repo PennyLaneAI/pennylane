@@ -100,10 +100,10 @@ def _check_clifford_op(op, use_decomposition=False):
         qml.pauli.pauli_sentence(qml.prod(*pauli))
         for pauli in product(*(pauli_group(idx) for idx in op.wires))
     ]
-    pauli_hams = (pauli_sen.hamiltonian(wire_order=op.wires) for pauli_sen in pauli_sens)
+    pauli_ops = (pauli_sen.operation(wire_order=op.wires) for pauli_sen in pauli_sens)
 
     # Perform U@P@U^\dagger and check if the result exists in set P
-    for pauli_prod in product([pauli_terms], pauli_hams, [pauli_terms_adj]):
+    for pauli_prod in product([pauli_terms], pauli_ops, [pauli_terms_adj]):
         # hopefully op_math.prod scales better than matrix multiplication, i.e., O((2^N)^3)
         upu = qml.pauli.pauli_sentence(qml.prod(*pauli_prod))
         upu.simplify()
@@ -263,7 +263,7 @@ def _two_qubit_decompose(op):
 
 
 def _merge_param_gates(operations, merge_ops=None):
-    """Merge the provided parameterized gates on the same wires that are adjacent to each other"""
+    """Merge the provided parametrized gates on the same wires that are adjacent to each other"""
 
     copied_ops = operations.copy()
     merged_ops, number_ops = [], 0
@@ -472,7 +472,7 @@ def clifford_t_decomposition(
 
         else:
             raise NotImplementedError(
-                f"Currently we only support Solovay-Kitaev ('sk') decompostion, got {method}"
+                f"Currently we only support Solovay-Kitaev ('sk') decomposition, got {method}"
             )
 
         decomp_ops = []

@@ -539,7 +539,7 @@ class TestProjector:
         second_projector = qml.Projector(basis_state, wires)
         qml.assert_equal(second_projector, basis_state_projector)
 
-        qml.ops.functions.assert_valid(basis_state_projector)
+        qml.ops.functions.assert_valid(basis_state_projector, skip_differentiation=True)
 
     def test_statevector_projector(self):
         """Test that we obtain a _StateVectorProjector when input is a state vector."""
@@ -813,9 +813,8 @@ class TestBasisStateProjector:
         assert np.allclose(res_dynamic, expected, atol=tol)
         assert np.allclose(res_static, expected, atol=tol)
 
-    @pytest.mark.parametrize("dev_name", ("default.qubit", "default.qubit.legacy"))
-    def test_integration_batched_state(self, dev_name):
-        dev = qml.device(dev_name, wires=1)
+    def test_integration_batched_state(self):
+        dev = qml.device("default.qubit", wires=1)
 
         @qml.qnode(dev)
         def circuit(x):

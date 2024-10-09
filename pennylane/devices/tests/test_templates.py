@@ -33,7 +33,7 @@ pytestmark = pytest.mark.skip_unsupported
 
 def check_op_supported(op, dev):
     """Skip test if device does not support an operation. Works with both device APIs"""
-    if isinstance(dev, qml.Device):
+    if isinstance(dev, qml.devices.LegacyDevice):
         if op.name not in dev.operations:
             pytest.skip("operation not supported.")
     else:
@@ -225,6 +225,9 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
             [math.fidelity_statevector(circuit(), exp_state)], [1.0], atol=tol(dev.shots)
         )
 
+    @pytest.mark.filterwarnings(
+        "ignore:BasisStatePreparation is deprecated:pennylane.PennyLaneDeprecationWarning"
+    )
     def test_BasisStatePreparation(self, device, tol):
         """Test the BasisStatePreparation template."""
         dev = device(4)

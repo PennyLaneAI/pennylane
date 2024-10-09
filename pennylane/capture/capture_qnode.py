@@ -15,7 +15,6 @@
 This submodule defines a capture compatible call to QNodes.
 """
 
-import warnings
 from copy import copy
 from dataclasses import asdict
 from functools import lru_cache, partial
@@ -27,6 +26,8 @@ from .flatfn import FlatFn
 has_jax = True
 try:
     import jax
+    from jax.interpreters import ad
+
 except ImportError:
     has_jax = False
 
@@ -72,13 +73,7 @@ def _get_qnode_prim():
         def qfunc(*inner_args):
             return jax.core.eval_jaxpr(qfunc_jaxpr, consts, *inner_args)
 
-        with warnings.catch_warnings():
-            warnings.filterwarnings(
-                action="ignore",
-                message=r"The max_expansion argument is deprecated and will be removed in version 0.39.",
-                category=qml.PennyLaneDeprecationWarning,
-            )
-            qnode = qml.QNode(qfunc, device, **qnode_kwargs)
+        qnode = qml.QNode(qfunc, device, **qnode_kwargs)
         return qnode._impl_call(*args, shots=shots)  # pylint: disable=protected-access
 
     # pylint: disable=unused-argument
@@ -86,6 +81,15 @@ def _get_qnode_prim():
     def _(*args, qnode, shots, device, qnode_kwargs, qfunc_jaxpr, n_consts):
         mps = qfunc_jaxpr.outvars
         return _get_shapes_for(*mps, shots=shots, num_device_wires=len(device.wires))
+
+    def make_zero(tan, arg):
+        return jax.lax.zeros_like_array(arg) if isinstance(tan, ad.Zero) else tan
+
+    def _qnode_jvp(args, tangents, **impl_kwargs):
+        tangents = tuple(map(make_zero, tangents, args))
+        return jax.jvp(partial(qnode_prim.impl, **impl_kwargs), args, tangents)
+
+    ad.primitive_jvps[qnode_prim] = _qnode_jvp
 
     return qnode_prim
 
@@ -142,7 +146,7 @@ def qnode_call(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
                   h:AbstractMeasurement(n_wires=0) = probs_wires
                 in (g, h) }
               qnode=<QNode: device='<lightning.qubit device (wires=1) at 0x10557a070>', interface='auto', diff_method='best'>
-              qnode_kwargs={'diff_method': 'best', 'grad_on_execution': 'best', 'cache': False, 'cachesize': 10000, 'max_diff': 1, 'max_expansion': 10, 'device_vjp': False, 'mcm_method': None, 'postselect_mode': None}
+              qnode_kwargs={'diff_method': 'best', 'grad_on_execution': 'best', 'cache': False, 'cachesize': 10000, 'max_diff': 1, 'device_vjp': False, 'mcm_method': None, 'postselect_mode': None}
               shots=Shots(total=50000)
             ] b
             i:f32[] = mul 2.0 c
@@ -174,7 +178,7 @@ def qnode_call(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
     qnode_kwargs = {"diff_method": qnode.diff_method, **execute_kwargs, **mcm_config}
     qnode_prim = _get_qnode_prim()
 
-    flat_args, _ = jax.tree_util.tree_flatten(args)
+    flat_args = jax.tree_util.tree_leaves(args)
     res = qnode_prim.bind(
         *qfunc_jaxpr.consts,
         *flat_args,

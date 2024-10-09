@@ -135,9 +135,9 @@ class TestProcessSamples:
         rng = np.random.default_rng(123)
         samples = rng.choice([0, 1], size=(shots, 2)).astype(np.float64)
 
-        samples[0][0] = np.NaN
-        samples[17][1] = np.NaN
-        samples[850][0] = np.NaN
+        samples[0][0] = np.nan
+        samples[17][1] = np.nan
+        samples[850][0] = np.nan
 
         result = qml.counts(wires=[0, 1]).process_samples(samples, wire_order=[0, 1])
 
@@ -380,6 +380,17 @@ class TestProcessSamples:
         assert result2["01"] == 0
         assert result2["10"] == 0
         assert result2["11"] == 0
+
+    def test_counts_binsize(self):
+        counts = qml.counts(wires=0)
+        samples = np.zeros((10, 2))
+        output = counts.process_samples(
+            samples, wire_order=qml.wires.Wires((0, 1)), shot_range=(0, 10), bin_size=2
+        )
+        assert len(output) == 5
+
+        for r in output:
+            assert r == {"0": 2}
 
 
 class TestCountsIntegration:

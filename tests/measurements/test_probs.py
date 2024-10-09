@@ -195,7 +195,7 @@ class TestProbs:
         assert qml.math.allclose(subset_probs, expected)
 
     @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "tensorflow"])
+    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "tensorflow", "autograd"])
     def test_process_density_matrix_basic(self, interface):
         """Test that process_density_matrix returns correct probabilities from a density matrix."""
         dm = qml.math.array([[0.5, 0], [0, 0.5]], like=interface)
@@ -205,7 +205,7 @@ class TestProbs:
         assert qml.math.allclose(calculated_probs, expected)
 
     @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "tensorflow"])
+    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "tensorflow", "autograd"])
     @pytest.mark.parametrize(
         "subset_wires, expected",
         [
@@ -227,7 +227,7 @@ class TestProbs:
         assert qml.math.allclose(subset_probs, expected)
 
     @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "tensorflow"])
+    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "tensorflow", "autograd"])
     @pytest.mark.parametrize(
         "subset_wires, expected",
         [
@@ -266,7 +266,7 @@ class TestProbs:
         ), f"Value mismatch: expected {expected.tolist()}, got {subset_probs.tolist()}"
 
     @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "tensorflow"])
+    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "tensorflow", "autograd"])
     @pytest.mark.parametrize(
         "subset_wires",
         [([3, 1, 0])],
@@ -849,6 +849,15 @@ class TestProbs:
         )
 
         assert np.allclose(res, expected)
+
+    @pytest.mark.xfail  # TODO: fix this case
+    def test_process_samples_shot_range(self):
+        """Test the output of process samples with a specified shot range."""
+        samples = np.zeros((10, 2))
+        _ = qml.probs(wires=0).process_samples(
+            samples, wire_order=qml.wires.Wires((0, 1)), shot_range=(0, 10)
+        )
+        # check actual results once we can get actual results
 
     @pytest.mark.parametrize(
         "wires, expected",

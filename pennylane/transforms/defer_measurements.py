@@ -199,7 +199,7 @@ def defer_measurements(
     >>> qml.grad(qnode)(par)
     tensor(-0.49622252, requires_grad=True)
 
-    Reusing and reseting measured wires will work as expected with the
+    Reusing and resetting measured wires will work as expected with the
     ``defer_measurements`` transform:
 
     .. code-block:: python3
@@ -268,7 +268,6 @@ def defer_measurements(
 
         There is only one controlled gate with only one control wire.
     """
-
     if not any(isinstance(o, MidMeasureMP) for o in tape.operations):
         return (tape,), null_postprocessing
 
