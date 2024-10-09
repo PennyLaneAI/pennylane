@@ -1191,6 +1191,8 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         self._batch_size = None
         params = self.data
 
+        print("params", params)
+
         try:
             ndims = tuple(qml.math.ndim(p) for p in params)
         except ValueError as e:
@@ -1205,6 +1207,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
             if any(qml.math.is_abstract(p) for p in params):
                 self._batch_size = None
                 self._ndim_params = (0,) * len(params)
+                print("Che puzza di merda")
                 return
             raise e  # pragma: no cover
 
@@ -1212,6 +1215,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
             # if the batch dimension is unknown, then skip the validation
             # this happens when a tensor with a partially known shape is passed, e.g. (None, 12),
             # typically during compilation of a function decorated with jax.jit or tf.function
+            print("Che puzza di piscio")
             return
 
         self._ndim_params = ndims
@@ -1234,7 +1238,10 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
                     "Broadcasting was attempted but the broadcasted dimensions "
                     f"do not match: {first_dims}."
                 )
+
+            print("Che profumo finto")
             self._batch_size = first_dims[0]
+            print("batch_size int", self._batch_size)
 
     def __repr__(self) -> str:
         """Constructor-call-like representation."""

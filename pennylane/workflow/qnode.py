@@ -844,6 +844,8 @@ class QNode:
         else:
             measurement_processes = self._qfunc_output
 
+        print("measurement_processes", measurement_processes)    
+
         if not measurement_processes or not all(
             isinstance(m, qml.measurements.MeasurementProcess) for m in measurement_processes
         ):

@@ -124,9 +124,30 @@ def create_operator_primitive(
     def _(*args, **kwargs):
 
         print("Abstract evaluation called for an operator")
-
         print("args", args)
         print("kwargs", kwargs)
+        print("operator_type.__name__", operator_type.__name__)
+
+        if "n_wires" not in kwargs:
+            instance = type.__call__(operator_type, *args, **kwargs)
+
+        else:
+            n_wires = kwargs.pop("n_wires")
+
+            split = None if n_wires == 0 else -n_wires
+            # Instead of trying to convert to integers, extract shapes or assume valid wires
+            wires = tuple(
+                w.shape if isinstance(w, jax.core.ShapedArray) else w for w in args[split:]
+            )
+            instance = type.__call__(operator_type, args[0], wires=(0), **kwargs)
+
+        print("instance", instance)
+
+        instance._check_batching()
+
+        roba = instance.batch_size
+
+        print("roba", roba)
 
         return abstract_type()
 
