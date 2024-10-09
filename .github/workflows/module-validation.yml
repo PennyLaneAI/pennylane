@@ -1,4 +1,5 @@
-name: Ensures module-level imports are valid
+name: Validate module imports
+
 on:
   pull_request:
     types:
