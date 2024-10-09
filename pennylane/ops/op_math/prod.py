@@ -231,6 +231,7 @@ class Prod(CompositeOp):
 
     _op_symbol = "@"
     _math_op = math.prod
+    grad_method = None
 
     @property
     def is_hermitian(self):
@@ -359,7 +360,7 @@ class Prod(CompositeOp):
     def _build_pauli_rep(self):
         """PauliSentence representation of the Product of operations."""
         if all(operand_pauli_reps := [op.pauli_rep for op in self.operands]):
-            return reduce(lambda a, b: a @ b, operand_pauli_reps)
+            return reduce(lambda a, b: a @ b, operand_pauli_reps) if operand_pauli_reps else None
         return None
 
     def _simplify_factors(self, factors: tuple[Operator]) -> tuple[complex, Operator]:
