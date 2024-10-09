@@ -66,12 +66,16 @@ jobs:
       - name: Install required packages
         run: |
           python -m pip install -r requirements-dev.txt
-          python -m pip install pyscf aiohttp h5py fsspec openfermionpyscf
+          python -m pip install pyscf aiohttp h5py fsspec openfermionpyscf tach
 
       - name: Install PennyLane and latest Lightning
         run: |
           python -m pip install . -vv
           python -m pip install --extra-index-url https://test.pypi.org/simple/ pennylane-lightning --upgrade --pre
+
+      - name: Validate `qml.labs` module import restrictions
+        run: |
+          tach check
 
       - name: Run PennyLane Labs unit tests
         run: |
