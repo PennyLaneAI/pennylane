@@ -17,12 +17,36 @@ import pytest
 
 import pennylane as qml
 import pennylane.numpy as qnp
-from pennylane.transforms.decompose import decompose
+from pennylane.operation import Operation
+from pennylane.transforms.decompose import _operator_decomposition_gen, decompose
 
+# pylint: disable=unnecessary-lambda-assignment
 # pylint: disable=too-few-public-methods
 
 
-class InfiniteOp(qml.operation.Operation):
+class NoMatOp(Operation):
+    """Dummy operation for expanding circuit."""
+
+    # pylint: disable=arguments-renamed, invalid-overridden-method
+    @property
+    def has_matrix(self):
+        return False
+
+    def decomposition(self):
+        return [qml.PauliX(self.wires), qml.PauliY(self.wires)]
+
+
+class NoMatNoDecompOp(Operation):
+    """Dummy operation for checking check_validity throws error when
+    expected."""
+
+    # pylint: disable=arguments-renamed, invalid-overridden-method
+    @property
+    def has_matrix(self):
+        return False
+
+
+class InfiniteOp(Operation):
     """An op with an infinite decomposition."""
 
     num_wires = 1
@@ -141,3 +165,76 @@ class TestDecompose:
         expected_tape = qml.tape.QuantumScript(expected_ops)
 
         qml.assert_equal(decomposed_tape, expected_tape)
+
+
+def test_null_postprocessing():
+    """Tests the null postprocessing function in the decompose transform"""
+    tape = qml.tape.QuantumScript([qml.Hadamard(0), qml.RX(0, 0)])
+    (new_tape,), fn = qml.transforms.decompose(tape, gate_set={qml.RX, qml.RZ})
+    qml.assert_equal(fn(new_tape), new_tape.circuit[0])
+
+
+class TestPrivateHelpers:
+    """Test the private helpers for preprocessing."""
+
+    @staticmethod
+    def decomposer(op):
+        return op.decomposition()
+
+    @pytest.mark.parametrize("op", (qml.PauliX(0), qml.RX(1.2, wires=0), qml.QFT(wires=range(3))))
+    def test_operator_decomposition_gen_accepted_operator(self, op):
+        """Test the _operator_decomposition_gen function on an operator that is accepted."""
+
+        def stopping_condition(op):
+            return op.has_matrix
+
+        casted_to_list = list(_operator_decomposition_gen(op, stopping_condition, self.decomposer))
+        assert len(casted_to_list) == 1
+        assert casted_to_list[0] is op
+
+    def test_operator_decomposition_gen_decomposed_operators_single_nesting(self):
+        """Assert _operator_decomposition_gen turns into a list with the operators decomposition
+        when only a single layer of expansion is necessary."""
+
+        def stopping_condition(op):
+            return op.has_matrix
+
+        op = NoMatOp("a")
+        casted_to_list = list(_operator_decomposition_gen(op, stopping_condition, self.decomposer))
+        assert len(casted_to_list) == 2
+        qml.assert_equal(casted_to_list[0], qml.PauliX("a"))
+        qml.assert_equal(casted_to_list[1], qml.PauliY("a"))
+
+    def test_operator_decomposition_gen_decomposed_operator_ragged_nesting(self):
+        """Test that _operator_decomposition_gen handles a decomposition that requires different depths of decomposition."""
+
+        def stopping_condition(op):
+            return op.has_matrix
+
+        class RaggedDecompositionOp(Operation):
+            """class with a ragged decomposition."""
+
+            num_wires = 1
+
+            def decomposition(self):
+                return [NoMatOp(self.wires), qml.S(self.wires), qml.adjoint(NoMatOp(self.wires))]
+
+        op = RaggedDecompositionOp("a")
+        final_decomp = list(_operator_decomposition_gen(op, stopping_condition, self.decomposer))
+        assert len(final_decomp) == 5
+        qml.assert_equal(final_decomp[0], qml.PauliX("a"))
+        qml.assert_equal(final_decomp[1], qml.PauliY("a"))
+        qml.assert_equal(final_decomp[2], qml.S("a"))
+        qml.assert_equal(final_decomp[3], qml.adjoint(qml.PauliY("a")))
+        qml.assert_equal(final_decomp[4], qml.adjoint(qml.PauliX("a")))
+
+    def test_operator_decomposition_gen_max_depth_reached(self):
+        """Tests whether max depth reached flag gets activated"""
+
+        stopping_condition = lambda op: False
+        op = InfiniteOp(1.23, 0)
+        final_decomp = list(
+            _operator_decomposition_gen(op, stopping_condition, self.decomposer, max_expansion=5)
+        )
+
+        qml.assert_equal(op, final_decomp[0])

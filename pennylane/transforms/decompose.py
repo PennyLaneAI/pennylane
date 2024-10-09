@@ -18,7 +18,8 @@ A transform for decomposing quantum circuits into user defined gate sets. Offers
 # pylint: disable=unnecessary-lambda-assignment
 
 import warnings
-from typing import Iterable
+from collections.abc import Callable, Generator, Sequence
+from typing import Iterable, Optional
 
 import pennylane as qml
 from pennylane.transforms.core import transform
@@ -29,6 +30,36 @@ def null_postprocessing(results):
     into a result for a single ``QuantumTape``.
     """
     return results[0]
+
+
+def _operator_decomposition_gen(
+    op: qml.operation.Operator,
+    acceptance_function: Callable[[qml.operation.Operator], bool],
+    decomposer: Callable[[qml.operation.Operator], Sequence[qml.operation.Operator]],
+    max_expansion: Optional[int] = None,
+    current_depth=0,
+) -> Generator[qml.operation.Operator, None, None]:
+    """A generator that yields the next operation that is accepted."""
+
+    max_depth_reached = False
+
+    if max_expansion is not None and max_expansion <= current_depth:
+        max_depth_reached = True
+
+    if acceptance_function(op) or max_depth_reached:
+        yield op
+    else:
+        decomp = decomposer(op)
+        current_depth += 1
+
+        for sub_op in decomp:
+            yield from _operator_decomposition_gen(
+                sub_op,
+                acceptance_function,
+                decomposer=decomposer,
+                max_expansion=max_expansion,
+                current_depth=current_depth,
+            )
 
 
 @transform
@@ -121,41 +152,32 @@ def decompose(tape, gate_set=None, max_expansion=None):
             )
 
     >>> print(qml.draw(decompose(circuit, max_expansion=0))())
-
-    .. code-block:: python
-
-        0: ──H─╭QuantumPhaseEstimation─┤
-        1: ────├QuantumPhaseEstimation─┤
-        2: ────├QuantumPhaseEstimation─┤
-        3: ────╰QuantumPhaseEstimation─┤
+    0: ──H─╭QuantumPhaseEstimation─┤
+    1: ────├QuantumPhaseEstimation─┤
+    2: ────├QuantumPhaseEstimation─┤
+    3: ────╰QuantumPhaseEstimation─┤
 
     >>> print(qml.draw(decompose(circuit, max_expansion=1))())
-
-    .. code-block:: python
-
-        0: ──H─╭U(M0)⁴─╭U(M0)²─╭U(M0)¹───────┤
-        1: ──H─╰●──────│───────│───────╭QFT†─┤
-        2: ──H─────────╰●──────│───────├QFT†─┤
-        3: ──H─────────────────╰●──────╰QFT†─┤
+    0: ──H─╭U(M0)⁴─╭U(M0)²─╭U(M0)¹───────┤
+    1: ──H─╰●──────│───────│───────╭QFT†─┤
+    2: ──H─────────╰●──────│───────├QFT†─┤
+    3: ──H─────────────────╰●──────╰QFT†─┤
 
     >>> print(qml.draw(decompose(circuit, max_expansion=2))())
+    0: ──H──RZ(11.00)──RY(1.14)─╭X──RY(-1.14)──RZ(-9.42)─╭X──RZ(-1.57)──RZ(1.57)──RY(1.00)─╭X──RY(-1.00)
+    1: ──H──────────────────────╰●───────────────────────╰●────────────────────────────────│────────────
+    2: ──H─────────────────────────────────────────────────────────────────────────────────╰●───────────
+    3: ──H──────────────────────────────────────────────────────────────────────────────────────────────
 
-    .. code-block:: python
+    ───RZ(-6.28)─╭X──RZ(4.71)──RZ(1.57)──RY(0.50)─╭X──RY(-0.50)──RZ(-6.28)─╭X──RZ(4.71)─────────────────
+    ─────────────│────────────────────────────────│────────────────────────│──╭SWAP†────────────────────
+    ─────────────╰●───────────────────────────────│────────────────────────│──│─────────────╭(Rϕ(1.57))†
+    ──────────────────────────────────────────────╰●───────────────────────╰●─╰SWAP†─────H†─╰●──────────
 
-        0: ──H──RZ(11.00)──RY(1.14)─╭X──RY(-1.14)──RZ(-9.42)─╭X──RZ(-1.57)──RZ(1.57)──RY(1.00)─╭X──RY(-1.00)
-        1: ──H──────────────────────╰●───────────────────────╰●────────────────────────────────│────────────
-        2: ──H─────────────────────────────────────────────────────────────────────────────────╰●───────────
-        3: ──H──────────────────────────────────────────────────────────────────────────────────────────────
-
-        ───RZ(-6.28)─╭X──RZ(4.71)──RZ(1.57)──RY(0.50)─╭X──RY(-0.50)──RZ(-6.28)─╭X──RZ(4.71)─────────────────
-        ─────────────│────────────────────────────────│────────────────────────│──╭SWAP†────────────────────
-        ─────────────╰●───────────────────────────────│────────────────────────│──│─────────────╭(Rϕ(1.57))†
-        ──────────────────────────────────────────────╰●───────────────────────╰●─╰SWAP†─────H†─╰●──────────
-
-        ────────────────────────────────────┤
-        ──────╭(Rϕ(0.79))†─╭(Rϕ(1.57))†──H†─┤
-        ───H†─│────────────╰●───────────────┤
-        ──────╰●────────────────────────────┤
+    ────────────────────────────────────┤
+    ──────╭(Rϕ(0.79))†─╭(Rϕ(1.57))†──H†─┤
+    ───H†─│────────────╰●───────────────┤
+    ──────╰●────────────────────────────┤
     """
 
     if gate_set is None:
@@ -190,7 +212,7 @@ def decompose(tape, gate_set=None, max_expansion=None):
         new_ops = [
             final_op
             for op in tape.operations
-            for final_op in qml.devices.preprocess._operator_decomposition_gen(
+            for final_op in _operator_decomposition_gen(
                 op,
                 stopping_condition,
                 decomposer,
