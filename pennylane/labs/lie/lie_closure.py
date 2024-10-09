@@ -19,7 +19,10 @@ import pennylane as qml
 import numpy as np
 
 
-def hermitian_basis(matrices, tol=1e-10):
+def hermitian_basis(matrices, tol=None):
+    if tol is None:
+        tol = 1e-10
+
     basis = []
     for A in matrices:
         if not np.allclose(A.conj().T, A):
@@ -38,7 +41,7 @@ def hermitian_basis(matrices, tol=1e-10):
 
 def lie_closure_dense(
     generators,  #: Iterable[Union[PauliWord, PauliSentence, Operator]],
-    n=None,
+    n = None,
     max_iterations: int = 10000,
     verbose: bool = False,
     tol: float = None,
