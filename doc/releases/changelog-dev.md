@@ -4,6 +4,13 @@
 
 <h3>New features since last release</h3>
 
+* Introduced `sample_probs` function for `devices.qubit` and `devices.qutrit_mixed`:
+  - This function takes probability distributions as input and returns sampled outcomes.
+  - Simplifies the sampling process by separating it from other operations in the measurement chain.
+  - Improves modularity: The same code can be easily adapted for other devices (e.g., a potential `default_mixed` device).
+  - Enhances maintainability by isolating the sampling logic.
+  [(#6354)](https://github.com/PennyLaneAI/pennylane/pull/6354)
+
 * Added `process_density_matrix` implementations to 5 `StateMeasurement` subclasses:
   `ExpVal`, `Var`, `Purity`, `MutualInformation`, and `VnEntropy`.
   This enables `process_density_matrix` to be an abstract method in `StateMeasurement`,
