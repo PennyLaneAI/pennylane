@@ -23,7 +23,7 @@ from pennylane import numpy as pnp
 
 def test_standard_validity():
     """Check the operation using the assert_valid function."""
-    op = qml.AngleEmbedding(features=[1, 2, 3], wires=range(3), rotation="Z")
+    op = qml.AngleEmbedding(features=[1.0, 2.0, 3.0], wires=range(3), rotation="Z")
     qml.ops.functions.assert_valid(op)
 
 
