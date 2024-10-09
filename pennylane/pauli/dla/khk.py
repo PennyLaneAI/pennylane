@@ -24,7 +24,7 @@ def run_opt(
     theta,
     n_epochs=100,
     lr=0.1,
-    b1=0.9,
+    b1=0.99,
     b2=0.999,
     E_exact=0.0,
     verbose=True,
@@ -545,14 +545,23 @@ def khk_decompose(
         vec_H = project(_H.pauli_rep, g).real
 
         print(f"Running optimization for Hamiltonian {i+1} out of {len(H)}")
-        thetas, energy, _ = run_opt(partial(value_and_grad, vec_H=vec_H), theta0, **opt_kwargs)
+        thetas, energy, gradients = run_opt(
+            partial(value_and_grad, vec_H=vec_H), theta0, **opt_kwargs
+        )
+        grad_norms = np.linalg.norm(gradients, axis=1, ord=2)
+
         if verbose > 1:
-            plt.plot(energy)
+            plt.plot(energy - np.min(energy) + 1e-10)
             plt.xlabel("epochs")
             plt.ylabel("loss")
+            plt.yscale("log")
             plt.show()
 
-        theta_opt = thetas[-1]
+        min_gradnorm_idx = np.argmin(grad_norms)
+        theta_opt = thetas[min_gradnorm_idx]
+        if verbose:
+            print(f"Picking thetas with index {min_gradnorm_idx} / {opt_kwargs['n_epochs']}")
+            print(f"Gradient norm at this point was {grad_norms[min_gradnorm_idx]}")
 
         M = jnp.eye(len(g))
 
@@ -591,7 +600,7 @@ def khk_decompose(
                     UserWarning,
                 )
 
-            print(f"success: {success}")
+            print(f"Reconstructed H and original H match (numerically): {success}")
 
     if single_H:
         return vecs_h[0], thetas_opt[0], k, mtilde, h, ad
