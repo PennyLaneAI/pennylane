@@ -72,6 +72,9 @@
   unprocessed diagonalizing gates.
   [(#6290)](https://github.com/PennyLaneAI/pennylane/pull/6290)
 
+* `qml.devices.ExecutionConfig` and `qml.devices.MCMConfig` objects can now be made frozen, and
+  `qml.devices.DefaultExecutionConfig` is immutable.
+
 <h4>Capturing and representing hybrid programs</h4>
 
 * `qml.wires.Wires` now accepts JAX arrays as input. Furthermore, a `FutureWarning` is no longer raised in `JAX 0.4.30+`
