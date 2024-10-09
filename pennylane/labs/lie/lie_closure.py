@@ -41,7 +41,7 @@ def hermitian_basis(matrices, tol=None):
 
 def lie_closure_dense(
     generators,  #: Iterable[Union[PauliWord, PauliSentence, Operator]],
-    n = None,
+    n=None,
     max_iterations: int = 10000,
     verbose: bool = False,
     tol: float = None,
