@@ -194,33 +194,6 @@ CIRCUITS = [
 ]
 
 #####################################################
-# Device
-
-
-@pytest.fixture(scope="function", name="mock_device")
-def mock_device_fixture(monkeypatch):
-    with monkeypatch.context() as m:
-        m.setattr(qml.Device, "__abstractmethods__", frozenset())
-        m.setattr(
-            qml.Device, "_capabilities", {"supports_tensor_observables": True, "model": "qubit"}
-        )
-        m.setattr(qml.Device, "operations", ["RX", "RY", "Rot", "CNOT", "Hadamard", "StatePrep"])
-        m.setattr(
-            qml.Device, "observables", ["PauliX", "PauliY", "PauliZ", "Hadamard", "Hermitian"]
-        )
-        m.setattr(qml.Device, "short_name", "MockDevice")
-        m.setattr(qml.Device, "expval", lambda self, x, y, z: 1)
-        m.setattr(qml.Device, "var", lambda self, x, y, z: 2)
-        m.setattr(qml.Device, "sample", lambda self, x, y, z: 3)
-        m.setattr(qml.Device, "apply", lambda self, x, y, z: None)
-
-        def get_device(wires=1):
-            return qml.Device(wires=wires)  # pylint:disable=abstract-class-instantiated
-
-        yield get_device
-
-
-#####################################################
 # Queues
 
 QUEUE_HAMILTONIANS_1 = [
@@ -306,16 +279,12 @@ class TestVQE:
     # pylint: disable=protected-access
     @pytest.mark.torch
     @pytest.mark.slow
-    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.legacy"])
     @pytest.mark.parametrize("shots", [None, [(8000, 5)], [(8000, 5), (9000, 4)]])
-    def test_optimize_torch(self, dev_name, shots):
+    def test_optimize_torch(self, shots):
         """Test that a Hamiltonian cost function is the same with and without
         grouping optimization when using the Torch interface."""
 
-        if dev_name == "default.qubit.legacy" and shots is None:
-            pytest.xfail(reason="DQ legacy does not count hardware executions in analytic mode")
-
-        dev = qml.device(dev_name, wires=4, shots=shots)
+        dev = qml.device("default.qubit", wires=4, shots=shots)
 
         hamiltonian1 = copy.copy(big_hamiltonian)
         hamiltonian2 = copy.copy(big_hamiltonian)
@@ -358,16 +327,12 @@ class TestVQE:
     # pylint: disable=protected-access
     @pytest.mark.tf
     @pytest.mark.slow
-    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.legacy"])
     @pytest.mark.parametrize("shots", [None, [(8000, 5)], [(8000, 5), (9000, 4)]])
-    def test_optimize_tf(self, shots, dev_name):
+    def test_optimize_tf(self, shots):
         """Test that a Hamiltonian cost function is the same with and without
         grouping optimization when using the TensorFlow interface."""
 
-        if dev_name == "default.qubit.legacy" and shots is None:
-            pytest.xfail(reason="DQ legacy does not count hardware executions in analytic mode")
-
-        dev = qml.device(dev_name, wires=4, shots=shots)
+        dev = qml.device("default.qubit", wires=4, shots=shots)
 
         hamiltonian1 = copy.copy(big_hamiltonian)
         hamiltonian2 = copy.copy(big_hamiltonian)
@@ -408,16 +373,12 @@ class TestVQE:
     # pylint: disable=protected-access
     @pytest.mark.autograd
     @pytest.mark.slow
-    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.legacy"])
     @pytest.mark.parametrize("shots", [None, [(8000, 5)], [(8000, 5), (9000, 4)]])
-    def test_optimize_autograd(self, shots, dev_name):
+    def test_optimize_autograd(self, shots):
         """Test that a Hamiltonian cost function is the same with and without
         grouping optimization when using the autograd interface."""
 
-        if dev_name == "default.qubit.legacy" and shots is None:
-            pytest.xfail(reason="DQ legacy does not count hardware executions in analytic mode")
-
-        dev = qml.device(dev_name, wires=4, shots=shots)
+        dev = qml.device("default.qubit", wires=4, shots=shots)
 
         hamiltonian1 = copy.copy(big_hamiltonian)
         hamiltonian2 = copy.copy(big_hamiltonian)
@@ -1041,27 +1002,6 @@ class TestNewVQE:
 
         dc = jax.grad(circuit)(w)
         assert np.allclose(dc, big_hamiltonian_grad, atol=tol)
-
-    @pytest.mark.usefixtures("legacy_opmath_only")
-    def test_specs_legacy(self):
-        """Test that the specs of a VQE circuit can be computed"""
-        dev = qml.device("default.qubit", wires=2)
-        H = qml.Hamiltonian([0.1, 0.2], [qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliX(1)])
-
-        @qml.qnode(dev)
-        def circuit():
-            qml.Hadamard(wires=0)
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(H)
-
-        res = qml.specs(circuit)()
-
-        assert res["num_observables"] == 1
-
-        # currently this returns 1 instead, because diagonalizing gates exist for H,
-        # but they aren't used in executing this qnode
-        # to be revisited in [sc-59117]
-        assert res["num_diagonalizing_gates"] == 0
 
     @pytest.mark.xfail(
         reason="diagonalizing gates defined but not used, should not be included in specs"

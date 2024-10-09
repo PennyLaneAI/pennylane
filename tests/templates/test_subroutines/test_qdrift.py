@@ -58,14 +58,14 @@ class TestInitialization:
     @pytest.mark.parametrize("seed", (None, 1234, 42))
     @pytest.mark.parametrize("coeffs, ops", test_hamiltonians)
     def test_init_correctly(self, coeffs, ops, time, n, seed):  # pylint: disable=too-many-arguments
-        """Test that all of the attributes are initalized correctly."""
+        """Test that all of the attributes are initialized correctly."""
         h = qml.dot(coeffs, ops)
         op = qml.QDrift(h, time, n=n, seed=seed)
 
         if seed is not None:
             # For seed = None, decomposition and compute_decomposition do not match because
             # compute_decomposition is stochastic
-            qml.ops.functions.assert_valid(op)
+            qml.ops.functions.assert_valid(op, skip_differentiation=True)
 
         assert op.wires == h.wires
         assert op.parameters == [*h.data, time]

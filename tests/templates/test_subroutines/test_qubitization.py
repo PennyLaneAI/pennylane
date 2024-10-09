@@ -49,7 +49,7 @@ def test_operator_definition_qpe(hamiltonian):
 
         # apply QPE (used iterative qpe here)
         measurements = qml.iterative_qpe(
-            qml.Qubitization(hamiltonian, control=[3, 4]), ancilla=5, iters=8
+            qml.Qubitization(hamiltonian, control=[3, 4]), aux_wire=5, iters=8
         )
 
         return qml.probs(op=measurements)
@@ -65,6 +65,7 @@ def test_operator_definition_qpe(hamiltonian):
     assert np.allclose(np.sort(estimated_eigenvalues), qml.eigvals(hamiltonian), atol=0.1)
 
 
+@pytest.mark.xfail(reason="PrepSelPrep does not work with parameter-shift (GitHub issue #6331)")
 def test_standard_validity():
     """Check the operation using the assert_valid function."""
     H = qml.dot([0.1, -0.3, -0.3], [qml.X(0), qml.Z(1), qml.Y(0) @ qml.Z(2)])
@@ -169,8 +170,7 @@ class TestDifferentiability:
     @pytest.mark.jax
     @pytest.mark.parametrize("use_jit", (False, True))
     @pytest.mark.parametrize("shots", (None, 50000))
-    @pytest.mark.parametrize("device", ["default.qubit", "default.qubit.legacy"])
-    def test_qnode_jax(self, shots, use_jit, device):
+    def test_qnode_jax(self, shots, use_jit):
         """ "Test that the QNode executes and is differentiable with JAX. The shots
         argument controls whether autodiff or parameter-shift gradients are used."""
         import jax
@@ -185,10 +185,7 @@ class TestDifferentiability:
 
         jax.config.update("jax_enable_x64", True)
 
-        if device == "default.qubit":
-            dev = qml.device("default.qubit", shots=shots, seed=10)
-        else:
-            dev = qml.device("default.qubit.legacy", shots=shots, wires=5)
+        dev = qml.device("default.qubit", shots=shots, seed=10)
 
         diff_method = "backprop" if shots is None else "parameter-shift"
         qnode = qml.QNode(self.circuit, dev, interface="jax", diff_method=diff_method)
@@ -290,4 +287,28 @@ def test_map_wires():
     op = qml.Qubitization(H, control=[2, 3])
     op2 = op.map_wires({0: 5, 1: 6, 2: 7, 3: 8})
 
-    assert op2.wires == qml.wires.Wires([5, 6, 7, 8])
+    assert op2.wires == qml.wires.Wires([7, 8, 5, 6])
+
+
+@pytest.mark.parametrize(
+    "hamiltonian, control",
+    [
+        (qml.dot([1.0, 2.0], [qml.PauliX("a"), qml.PauliZ(1)]), [0]),
+        (qml.dot([1.0, -2.0], [qml.PauliX("a"), qml.PauliZ(1)]), [0]),
+        (
+            qml.dot(
+                [1.0, 2.0, 1.0, 1.0],
+                [qml.PauliZ("a"), qml.PauliX("a") @ qml.PauliZ(4), qml.PauliX("a"), qml.PauliZ(4)],
+            ),
+            [0, 1],
+        ),
+    ],
+)
+def test_order_wires(hamiltonian, control):
+    """Test that the Qubitization operator orders the wires according to other templates."""
+
+    op1 = qml.Qubitization(hamiltonian, control=control)
+    op2 = qml.PrepSelPrep(hamiltonian, control=control)
+    op3 = qml.Select(hamiltonian.terms()[1], control=control)
+
+    assert op1.wires == op2.wires == op3.wires

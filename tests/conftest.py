@@ -15,11 +15,10 @@
 Pytest configuration file for PennyLane test suite.
 """
 # pylint: disable=unused-import
-import contextlib
 import os
 import pathlib
 import sys
-import warnings
+from warnings import filterwarnings, warn
 
 import numpy as np
 import pytest
@@ -48,23 +47,6 @@ class DummyDevice(DefaultGaussian):
 def set_numpy_seed():
     np.random.seed(9872653)
     yield
-
-
-@pytest.fixture(scope="function", autouse=True)
-def capture_legacy_device_deprecation_warnings():
-    with warnings.catch_warnings(record=True) as recwarn:
-        warnings.simplefilter("always")
-        yield
-
-        for w in recwarn:
-            if isinstance(w, qml.PennyLaneDeprecationWarning):
-                assert "Use of 'default.qubit." in str(w.message)
-                assert "is deprecated" in str(w.message)
-                assert "use 'default.qubit'" in str(w.message)
-
-    for w in recwarn:
-        if "Use of 'default.qubit." not in str(w.message):
-            warnings.warn(message=w.message, category=w.category)
 
 
 @pytest.fixture(scope="session")
@@ -99,29 +81,7 @@ def n_subsystems_fixture(request):
 
 @pytest.fixture(scope="session")
 def qubit_device(n_subsystems):
-    with pytest.warns(qml.PennyLaneDeprecationWarning, match="Use of 'default.qubit.legacy'"):
-        return qml.device("default.qubit.legacy", wires=n_subsystems)
-
-
-@pytest.fixture(scope="function", params=[(np.float32, np.complex64), (np.float64, np.complex128)])
-def qubit_device_1_wire(request):
-    return qml.device(
-        "default.qubit.legacy", wires=1, r_dtype=request.param[0], c_dtype=request.param[1]
-    )
-
-
-@pytest.fixture(scope="function", params=[(np.float32, np.complex64), (np.float64, np.complex128)])
-def qubit_device_2_wires(request):
-    return qml.device(
-        "default.qubit.legacy", wires=2, r_dtype=request.param[0], c_dtype=request.param[1]
-    )
-
-
-@pytest.fixture(scope="function", params=[(np.float32, np.complex64), (np.float64, np.complex128)])
-def qubit_device_3_wires(request):
-    return qml.device(
-        "default.qubit.legacy", wires=3, r_dtype=request.param[0], c_dtype=request.param[1]
-    )
+    return qml.device("default.qubit", wires=n_subsystems)
 
 
 # The following 3 fixtures are for default.qutrit devices to be used
@@ -143,30 +103,6 @@ def qutrit_device_3_wires(request):
     return qml.device("default.qutrit", wires=3, r_dtype=request.param[0], c_dtype=request.param[1])
 
 
-@pytest.fixture(scope="session")
-def gaussian_device(n_subsystems):
-    """Number of qubits or modes."""
-    return DummyDevice(wires=n_subsystems)
-
-
-@pytest.fixture(scope="session")
-def gaussian_dummy():
-    """Gaussian device with dummy Kerr gate."""
-    return DummyDevice
-
-
-@pytest.fixture(scope="session")
-def gaussian_device_2_wires():
-    """A 2-mode Gaussian device."""
-    return DummyDevice(wires=2)
-
-
-@pytest.fixture(scope="session")
-def gaussian_device_4modes():
-    """A 4 mode Gaussian device."""
-    return DummyDevice(wires=4)
-
-
 #######################################################################
 
 
@@ -181,12 +117,12 @@ def mock_device(monkeypatch):
     """A mock instance of the abstract Device class"""
 
     with monkeypatch.context() as m:
-        dev = qml.Device
+        dev = qml.devices.LegacyDevice
         m.setattr(dev, "__abstractmethods__", frozenset())
         m.setattr(dev, "short_name", "mock_device")
         m.setattr(dev, "capabilities", lambda cls: {"model": "qubit"})
         m.setattr(dev, "operations", {"RX", "RY", "RZ", "CNOT", "SWAP"})
-        yield qml.Device(wires=2)  # pylint:disable=abstract-class-instantiated
+        yield qml.devices.LegacyDevice(wires=2)  # pylint:disable=abstract-class-instantiated
 
 
 # pylint: disable=protected-access
@@ -219,25 +155,26 @@ def disable_opmath_if_requested(request):
     disable_opmath = request.config.getoption("--disable-opmath")
     # value from yaml file is a string, convert to boolean
     if eval(disable_opmath):
-        qml.operation.disable_new_opmath(warn=True)
+        warn(
+            "Disabling the new Operator arithmetic system for legacy support. "
+            "If you need help troubleshooting your code, please visit "
+            "https://docs.pennylane.ai/en/stable/news/new_opmath.html",
+            UserWarning,
+        )
+        qml.operation.disable_new_opmath(warn=False)
 
-
-@pytest.fixture(scope="function")
-def use_legacy_opmath():
-    with disable_new_opmath_cm() as cm:
-        yield cm
-
-
-# pylint: disable=contextmanager-generator-missing-cleanup
-@pytest.fixture(scope="function")
-def use_new_opmath():
-    with enable_new_opmath_cm() as cm:
-        yield cm
+        # Suppressing warnings so that Hamiltonians and Tensors constructed outside tests
+        # don't raise deprecation warnings
+        filterwarnings("ignore", "qml.ops.Hamiltonian", qml.PennyLaneDeprecationWarning)
+        filterwarnings("ignore", "qml.operation.Tensor", qml.PennyLaneDeprecationWarning)
+        filterwarnings("ignore", "qml.pauli.simplify", qml.PennyLaneDeprecationWarning)
+        filterwarnings("ignore", "PauliSentence.hamiltonian", qml.PennyLaneDeprecationWarning)
+        filterwarnings("ignore", "PauliWord.hamiltonian", qml.PennyLaneDeprecationWarning)
 
 
 @pytest.fixture(params=[disable_new_opmath_cm, enable_new_opmath_cm], scope="function")
 def use_legacy_and_new_opmath(request):
-    with request.param() as cm:
+    with request.param(warn=False) as cm:
         yield cm
 
 
