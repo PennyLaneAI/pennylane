@@ -498,9 +498,10 @@ def sample_probs(probs, shots, num_wires, is_state_batched, rng, prng_key=None):
     """
     Sample from given probabilities, dispatching between JAX and NumPy implementations.
     """
-    is_probs_jax = isinstance(probs, jnp.ndarray)
-    if JAX_AVAILABLE and (is_probs_jax or prng_key is not None):
-        return _sample_probs_jax(probs, shots, num_wires, is_state_batched, prng_key, seed=rng)
+    if JAX_AVAILABLE:
+        is_probs_jax = isinstance(probs, jax.Array)
+        if is_probs_jax or prng_key is not None:
+            return _sample_probs_jax(probs, shots, num_wires, is_state_batched, prng_key, seed=rng)
 
     return _sample_probs_numpy(probs, shots, num_wires, is_state_batched, rng)
 
