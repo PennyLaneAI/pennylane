@@ -29,6 +29,7 @@ from numpy.testing import assert_allclose
 
 import pennylane as qml
 from pennylane import cond, for_loop, grad, jacobian, jvp, measure, vjp, while_loop
+from pennylane.capture.autograph.ag_primitives import PRange
 from pennylane.capture.autograph.transformer import (
     TRANSFORMER,
     autograph_source,
@@ -36,6 +37,7 @@ from pennylane.capture.autograph.transformer import (
     run_autograph,
 )
 from pennylane.capture.autograph.utils import AutoGraphError, CompileError, dummy_func
+
 
 check_cache = TRANSFORMER.has_cache
 
@@ -54,6 +56,21 @@ def enable_disable_plxpr():
     yield
     qml.capture.disable()
 
+
+@pytest.fixture
+def autograph_strict_conversion():
+    qml.capture.autograph.autograph_strict_conversion = True
+    yield
+    qml.capture.autograph.autograph_strict_conversion = False
+
+
+@pytest.fixture
+def ignore_fallbacks():
+    qml.capture.autograph.autograph_ignore_fallbacks = True
+    yield
+    qml.capture.autograph.autograph_strict_conversion = False
+
+
 # class Failing:
 #     """Test class that emulates failures in user-code"""
 #
@@ -71,8 +88,8 @@ def enable_disable_plxpr():
 #             Failing.triggered[self.label] = True
 #             raise Exception(f"Emulated failure with label {self.label}")
 #         return self.ref
-#
-#
+
+
 # class TestSourceCodeInfo:
 #     """Unit tests for exception utilities that retrieves traceback information for the original
 #     source code."""
@@ -157,275 +174,275 @@ def enable_disable_plxpr():
 #                 assert e.args == ("Test failure",)
 #
 #
-# @pytest.mark.usefixtures("enable_disable_plxpr")
-# class TestIntegration:
-#     """Test that the autograph transformations trigger correctly in different settings."""
-#
-#     def test_unsupported_object(self):
-#         """Check the error produced when attempting to convert an unsupported object (neither of
-#         QNode, function, method or callable)."""
-#
-#         class FN:
-#             """Test object."""
-#
-#             __name__ = "unknown"
-#
-#         fn = FN()
-#
-#         with pytest.raises(AutoGraphError, match="Unsupported object for transformation"):
-#             run_autograph(fn)
-#
-#     def test_callable_object(self):
-#         """Test qjit applied to a callable object."""
-#
-#         class FN:
-#             """Test object."""
-#
-#             __name__ = "unknown"
-#
-#             def __call__(self, x):
-#                 return x**2
-#
-#         fn = FN()
-#
-#         assert qjit(autograph=True)(fn)(3) == 9
-#
-#     def test_lambda(self):
-#         """Test autograph on a lambda function."""
-#
-#         fn = lambda x: x**2
-#         fn = qjit(autograph=True)(fn)
-#
-#         assert hasattr(fn.user_function, "ag_unconverted")
-#         assert check_cache(fn.original_function)
-#         assert fn(4) == 16
-#
-#     def test_classical_function(self):
-#         """Test autograph on a purely classical function."""
-#
-#         @qjit(autograph=True)
-#         def fn(x):
-#             return x**2
-#
-#         assert hasattr(fn.user_function, "ag_unconverted")
-#         assert check_cache(fn.original_function)
-#         assert fn(4) == 16
-#
-#     def test_nested_function(self):
-#         """Test autograph on nested classical functions."""
-#
-#         def inner(x):
-#             return x**2
-#
-#         @qjit(autograph=True)
-#         def fn(x: int):
-#             return inner(x)
-#
-#         assert hasattr(fn.user_function, "ag_unconverted")
-#         assert check_cache(fn.original_function)
-#         assert check_cache(inner)
-#         assert fn(4) == 16
-#
-#     def test_qnode(self):
-#         """Test autograph on a QNode."""
-#
-#         @qjit(autograph=True)
-#         @qml.qnode(qml.device("default.qubit", wires=1))
-#         def fn(x: float):
-#             qml.RY(x, wires=0)
-#             return qml.expval(qml.PauliZ(0))
-#
-#         assert hasattr(fn.user_function, "ag_unconverted")
-#         assert check_cache(fn.original_function.func)
-#         assert fn(np.pi) == -1
-#
-#     def test_indirect_qnode(self):
-#         """Test autograph on a QNode called from within a classical function."""
-#
-#         @qml.qnode(qml.device("default.qubit", wires=1))
-#         def inner(x):
-#             qml.RY(x, wires=0)
-#             return qml.expval(qml.PauliZ(0))
-#
-#         @qjit(autograph=True)
-#         def fn(x: float):
-#             return inner(x)
-#
-#         assert hasattr(fn.user_function, "ag_unconverted")
-#         assert check_cache(fn.original_function)
-#         assert check_cache(inner.func)
-#         assert fn(np.pi) == -1
-#
-#     def test_multiple_qnode(self):
-#         """Test autograph on multiple QNodes called from different classical functions."""
-#
-#         @qml.qnode(qml.device("default.qubit", wires=1))
-#         def inner1(x):
-#             qml.RY(x, wires=0)
-#             return qml.expval(qml.PauliZ(0))
-#
-#         @qml.qnode(qml.device("default.qubit", wires=1))
-#         def inner2(x):
-#             qml.RX(x, wires=0)
-#             return qml.expval(qml.PauliZ(0))
-#
-#         @qjit(autograph=True)
-#         def fn(x: float):
-#             return inner1(x) + inner2(x)
-#
-#         assert hasattr(fn.user_function, "ag_unconverted")
-#         assert check_cache(fn.original_function)
-#         assert check_cache(inner1.func)
-#         assert check_cache(inner2.func)
-#         assert fn(np.pi) == -2
-#
-#     def test_nested_qjit(self):
-#         """Test autograph on a QJIT function called from within the compilation entry point."""
-#
-#         @qjit
-#         @qml.qnode(qml.device("default.qubit", wires=1))
-#         def inner(x):
-#             qml.RY(x, wires=0)
-#             return qml.expval(qml.PauliZ(0))
-#
-#         @qjit(autograph=True)
-#         def fn(x: float):
-#             return inner(x)
-#
-#         assert hasattr(fn.user_function, "ag_unconverted")
-#         assert check_cache(fn.original_function)
-#         assert check_cache(inner.user_function.func)
-#         assert fn(np.pi) == -1
-#
-#     def test_adjoint_wrapper(self):
-#         """Test conversion is happening succesfully on functions wrapped with 'adjoint'."""
-#
-#         def inner(x):
-#             qml.RY(x, wires=0)
-#
-#         @qjit(autograph=True)
-#         @qml.qnode(qml.device("default.qubit", wires=1))
-#         def fn(x: float):
-#             qml.adjoint(inner)(x)
-#             return qml.probs()
-#
-#         assert hasattr(fn.user_function, "ag_unconverted")
-#         assert check_cache(inner)
-#         assert np.allclose(fn(np.pi), [0.0, 1.0])
-#
-#     def test_ctrl_wrapper(self):
-#         """Test conversion is happening succesfully on functions wrapped with 'ctrl'."""
-#
-#         def inner(x):
-#             qml.RY(x, wires=0)
-#
-#         @qjit(autograph=True)
-#         @qml.qnode(qml.device("default.qubit", wires=2))
-#         def fn(x: float):
-#             qml.ctrl(inner, control=1)(x)
-#             return qml.probs()
-#
-#         assert hasattr(fn.user_function, "ag_unconverted")
-#         assert check_cache(inner)
-#         assert np.allclose(fn(np.pi), [1.0, 0.0, 0.0, 0.0])
-#
-#     def test_grad_wrapper(self):
-#         """Test conversion is happening succesfully on functions wrapped with 'grad'."""
-#
-#         def inner(x):
-#             return 2 * x
-#
-#         @qjit(autograph=True)
-#         def fn(x: float):
-#             return grad(inner)(x)
-#
-#         assert hasattr(fn.user_function, "ag_unconverted")
-#         assert check_cache(inner)
-#         assert fn(3) == 2.0
-#
-#     def test_jacobian_wrapper(self):
-#         """Test conversion is happening succesfully on functions wrapped with 'jacobian'."""
-#
-#         def inner(x):
-#             return 2 * x, x**2
-#
-#         @qjit(autograph=True)
-#         def fn(x: float):
-#             return jacobian(inner)(x)
-#
-#         assert hasattr(fn.user_function, "ag_unconverted")
-#         assert check_cache(inner)
-#         assert fn(3) == tuple([jax.numpy.array(2.0), jax.numpy.array(6.0)])
-#
-#     def test_vjp_wrapper(self):
-#         """Test conversion is happening succesfully on functions wrapped with 'vjp'."""
-#
-#         def inner(x):
-#             return 2 * x, x**2
-#
-#         @qjit(autograph=True)
-#         def fn(x: float):
-#             return vjp(inner, (x,), (1.0, 1.0))
-#
-#         assert hasattr(fn.user_function, "ag_unconverted")
-#         assert check_cache(inner)
-#         assert np.allclose(fn(3)[0], tuple([jnp.array(6.0), jnp.array(9.0)]))
-#         assert np.allclose(fn(3)[1], jnp.array(8.0))
-#
-#     def test_jvp_wrapper(self):
-#         """Test conversion is happening succesfully on functions wrapped with 'jvp'."""
-#
-#         def inner(x):
-#             return 2 * x, x**2
-#
-#         @qjit(autograph=True)
-#         def fn(x: float):
-#             return jvp(inner, (x,), (1.0,))
-#
-#         assert hasattr(fn.user_function, "ag_unconverted")
-#         assert check_cache(inner)
-#
-#         assert np.allclose(fn(3)[0], tuple([jnp.array(6.0), jnp.array(9.0)]))
-#         assert np.allclose(fn(3)[1], tuple([jnp.array(2.0), jnp.array(6.0)]))
-#
-#     def test_tape_transform(self):
-#         """Test if tape transform is applied when autograph is on."""
-#
-#         dev = dev = qml.device("default.qubit", wires=1)
-#
-#         @qml.transform
-#         def my_quantum_transform(tape):
-#             raise NotImplementedError
-#
-#         @qml.qjit(autograph=True)
-#         def f(x):
-#             @my_quantum_transform
-#             @qml.qnode(dev)
-#             def circuit(x):
-#                 qml.RY(x, wires=0)
-#                 qml.RX(x, wires=0)
-#                 return qml.expval(qml.PauliZ(0))
-#
-#             return circuit(x)
-#
-#         with pytest.raises(NotImplementedError):
-#             f(0.5)
-#
-#     def test_mcm_one_shot(self):
-#         """Test if mcm one-shot miss transforms."""
-#         dev = qml.device("default.qubit", wires=5, shots=20)
-#
-#         @qml.qjit(autograph=True)
-#         @qml.qnode(dev, mcm_method="one-shot", postselect_mode="hw-like")
-#         def func(x):
-#             qml.RX(x, wires=0)
-#             measure(0, postselect=1)
-#             return qml.sample(wires=0)
-#
-#         # If transforms are missed, the output will be all ones.
-#         assert not np.all(func(0.9) == 1)
-#
-#
+@pytest.mark.usefixtures("enable_disable_plxpr")
+class TestIntegration:
+    """Test that the autograph transformations trigger correctly in different settings."""
+
+    def test_unsupported_object(self):
+        """Check the error produced when attempting to convert an unsupported object (neither of
+        QNode, function, method or callable)."""
+
+        class FN:
+            """Test object."""
+
+            __name__ = "unknown"
+
+        fn = FN()
+
+        with pytest.raises(AutoGraphError, match="Unsupported object for transformation"):
+            run_autograph(fn)
+
+    def test_callable_object(self):
+        """Test qjit applied to a callable object."""
+
+        class FN:
+            """Test object."""
+
+            __name__ = "unknown"
+
+            def __call__(self, x):
+                return x**2
+
+        fn = FN()
+
+        assert run_autograph(fn)(3) == 9
+
+    def test_lambda(self):
+        """Test autograph on a lambda function."""
+
+        fn = lambda x: x**2
+        ag_fn = run_autograph(fn)
+
+        assert hasattr(ag_fn, "ag_unconverted")
+        assert check_cache(fn)
+        assert fn(4) == 16
+
+    def test_classical_function(self):
+        """Test autograph on a purely classical function."""
+
+        def fn(x):
+            return x**2
+
+        ag_fn = run_autograph(fn)
+        assert hasattr(ag_fn, "ag_unconverted")
+        assert check_cache(fn)
+        assert fn(4) == 16
+
+    def test_nested_function(self):
+        """Test autograph on nested classical functions."""
+
+        def inner(x):
+            return x**2
+
+        def fn(x: int):
+            return inner(x)
+
+        ag_fn = run_autograph(fn)
+        assert hasattr(ag_fn, "ag_unconverted")
+        assert check_cache(fn)
+        assert check_cache(inner)
+        assert fn(4) == 16
+
+    def test_qnode(self):
+        """Test autograph on a QNode."""
+
+        @qml.qnode(qml.device("default.qubit", wires=1))
+        def fn(x: float):
+            qml.RY(x, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        ag_fn = run_autograph(fn)
+        assert hasattr(ag_fn, "ag_unconverted")
+        assert check_cache(fn)
+        assert fn(np.pi) == -1
+
+    def test_indirect_qnode(self):
+        """Test autograph on a QNode called from within a classical function."""
+
+        @qml.qnode(qml.device("default.qubit", wires=1))
+        def inner(x):
+            qml.RY(x, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        def fn(x: float):
+            return inner(x)
+
+        ag_fn = run_autograph(fn)
+        assert hasattr(ag_fn, "ag_unconverted")
+        assert check_cache(fn)
+        assert check_cache(inner.func)
+        assert fn(np.pi) == -1
+
+    def test_multiple_qnode(self):
+        """Test autograph on multiple QNodes called from different classical functions."""
+
+        @qml.qnode(qml.device("default.qubit", wires=1))
+        def inner1(x):
+            qml.RY(x, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        @qml.qnode(qml.device("default.qubit", wires=1))
+        def inner2(x):
+            qml.RX(x, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        @qjit(autograph=True)
+        def fn(x: float):
+            return inner1(x) + inner2(x)
+
+        assert hasattr(fn.user_function, "ag_unconverted")
+        assert check_cache(fn.original_function)
+        assert check_cache(inner1.func)
+        assert check_cache(inner2.func)
+        assert fn(np.pi) == -2
+
+    def test_nested_qjit(self):
+        """Test autograph on a QJIT function called from within the compilation entry point."""
+
+        @qjit
+        @qml.qnode(qml.device("default.qubit", wires=1))
+        def inner(x):
+            qml.RY(x, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        @qjit(autograph=True)
+        def fn(x: float):
+            return inner(x)
+
+        assert hasattr(fn.user_function, "ag_unconverted")
+        assert check_cache(fn.original_function)
+        assert check_cache(inner.user_function.func)
+        assert fn(np.pi) == -1
+
+    def test_adjoint_wrapper(self):
+        """Test conversion is happening succesfully on functions wrapped with 'adjoint'."""
+
+        def inner(x):
+            qml.RY(x, wires=0)
+
+        @qjit(autograph=True)
+        @qml.qnode(qml.device("default.qubit", wires=1))
+        def fn(x: float):
+            qml.adjoint(inner)(x)
+            return qml.probs()
+
+        assert hasattr(fn.user_function, "ag_unconverted")
+        assert check_cache(inner)
+        assert np.allclose(fn(np.pi), [0.0, 1.0])
+
+    def test_ctrl_wrapper(self):
+        """Test conversion is happening succesfully on functions wrapped with 'ctrl'."""
+
+        def inner(x):
+            qml.RY(x, wires=0)
+
+        @qjit(autograph=True)
+        @qml.qnode(qml.device("default.qubit", wires=2))
+        def fn(x: float):
+            qml.ctrl(inner, control=1)(x)
+            return qml.probs()
+
+        assert hasattr(fn.user_function, "ag_unconverted")
+        assert check_cache(inner)
+        assert np.allclose(fn(np.pi), [1.0, 0.0, 0.0, 0.0])
+
+    def test_grad_wrapper(self):
+        """Test conversion is happening succesfully on functions wrapped with 'grad'."""
+
+        def inner(x):
+            return 2 * x
+
+        @qjit(autograph=True)
+        def fn(x: float):
+            return grad(inner)(x)
+
+        assert hasattr(fn.user_function, "ag_unconverted")
+        assert check_cache(inner)
+        assert fn(3) == 2.0
+
+    def test_jacobian_wrapper(self):
+        """Test conversion is happening succesfully on functions wrapped with 'jacobian'."""
+
+        def inner(x):
+            return 2 * x, x**2
+
+        @qjit(autograph=True)
+        def fn(x: float):
+            return jacobian(inner)(x)
+
+        assert hasattr(fn.user_function, "ag_unconverted")
+        assert check_cache(inner)
+        assert fn(3) == tuple([jax.numpy.array(2.0), jax.numpy.array(6.0)])
+
+    def test_vjp_wrapper(self):
+        """Test conversion is happening succesfully on functions wrapped with 'vjp'."""
+
+        def inner(x):
+            return 2 * x, x**2
+
+        @qjit(autograph=True)
+        def fn(x: float):
+            return vjp(inner, (x,), (1.0, 1.0))
+
+        assert hasattr(fn.user_function, "ag_unconverted")
+        assert check_cache(inner)
+        assert np.allclose(fn(3)[0], tuple([jnp.array(6.0), jnp.array(9.0)]))
+        assert np.allclose(fn(3)[1], jnp.array(8.0))
+
+    def test_jvp_wrapper(self):
+        """Test conversion is happening succesfully on functions wrapped with 'jvp'."""
+
+        def inner(x):
+            return 2 * x, x**2
+
+        @qjit(autograph=True)
+        def fn(x: float):
+            return jvp(inner, (x,), (1.0,))
+
+        assert hasattr(fn.user_function, "ag_unconverted")
+        assert check_cache(inner)
+
+        assert np.allclose(fn(3)[0], tuple([jnp.array(6.0), jnp.array(9.0)]))
+        assert np.allclose(fn(3)[1], tuple([jnp.array(2.0), jnp.array(6.0)]))
+
+    def test_tape_transform(self):
+        """Test if tape transform is applied when autograph is on."""
+
+        dev = dev = qml.device("default.qubit", wires=1)
+
+        @qml.transform
+        def my_quantum_transform(tape):
+            raise NotImplementedError
+
+        @qml.qjit(autograph=True)
+        def f(x):
+            @my_quantum_transform
+            @qml.qnode(dev)
+            def circuit(x):
+                qml.RY(x, wires=0)
+                qml.RX(x, wires=0)
+                return qml.expval(qml.PauliZ(0))
+
+            return circuit(x)
+
+        with pytest.raises(NotImplementedError):
+            f(0.5)
+
+    def test_mcm_one_shot(self):
+        """Test if mcm one-shot miss transforms."""
+        dev = qml.device("default.qubit", wires=5, shots=20)
+
+        @qml.qjit(autograph=True)
+        @qml.qnode(dev, mcm_method="one-shot", postselect_mode="hw-like")
+        def func(x):
+            qml.RX(x, wires=0)
+            measure(0, postselect=1)
+            return qml.sample(wires=0)
+
+        # If transforms are missed, the output will be all ones.
+        assert not np.all(func(0.9) == 1)
+
+
 # class TestCodePrinting:
 #     """Test that the transformed source code can be printed in different settings."""
 #
@@ -556,6 +573,8 @@ class TestConditionals:
         # with autograph we can convert to jaxpr
         circuit = run_autograph(circuit)
         jaxpr = jax.make_jaxpr(circuit)(0)
+        assert "cond" in str(jaxpr)
+
         def res(x): return eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)
 
         # evaluating the jaxpr gives expected results
@@ -582,6 +601,8 @@ class TestConditionals:
 
         ag_circuit = run_autograph(circuit)
         jaxpr = jax.make_jaxpr(ag_circuit)(0)
+        assert "cond" in str(jaxpr)
+
         def res(x): return eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)[0]
 
         assert res(4) == 16
@@ -605,6 +626,8 @@ class TestConditionals:
 
         ag_circuit = run_autograph(circuit)
         jaxpr = jax.make_jaxpr(ag_circuit)(0)
+        assert "cond" in str(jaxpr)
+
         def res(x): return eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)[0]
 
         assert res(5) == 40
@@ -626,6 +649,8 @@ class TestConditionals:
 
         ag_circuit = run_autograph(circuit)
         jaxpr = jax.make_jaxpr(ag_circuit)(0)
+        assert "cond" in str(jaxpr)
+
         def res(x): return eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)[0]
 
         # pylint: disable=singleton-comparison
@@ -680,6 +705,8 @@ class TestConditionals:
 
         ag_circuit = run_autograph(f)
         jaxpr = jax.make_jaxpr(ag_circuit)(0)
+        assert "cond" in str(jaxpr)
+
         def res(x): return eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)[0]
 
         assert res(1) == 25
@@ -717,7 +744,7 @@ class TestConditionals:
         # assert capfd.readouterr() == ("illegal fruit\n", "")
 
     def test_multiple_return_mismatched_type(self):
-        """Test that different obervables cannot be used in the return in different branches."""
+        """Test that different observables cannot be used in the return in different branches."""
 
         # ToDo: I don't see this contraint - should I?
 
@@ -742,34 +769,36 @@ class TestForLoops:
 
     def test_python_range_fallback(self):
         """Test that the custom CRange wrapper correctly falls back to Python."""
-        from catalyst.autograph.ag_primitives import CRange
 
         # pylint: disable=protected-access
 
-        c_range = CRange(0, 5, 1)
-        assert c_range._py_range is None
+        pl_range = PRange(0, 5, 1)
+        assert pl_range._py_range is None
 
-        assert isinstance(c_range.py_range, range)  # automatically instantiates the Python range
-        assert isinstance(c_range._py_range, range)
-        assert c_range[2] == 2
+        assert isinstance(pl_range.py_range, range)  # automatically instantiates the Python range
+        assert isinstance(pl_range._py_range, range)
+        assert pl_range[2] == 2
 
     def test_for_in_array(self):
         """Test for loop over JAX array."""
 
-        @qjit(autograph=True)
         @qml.qnode(qml.device("default.qubit", wires=1))
         def f(params):
             for x in params:
                 qml.RY(x, wires=0)
             return qml.expval(qml.PauliZ(0))
 
+        ag_circuit = run_autograph(f)
+        jaxpr = jax.make_jaxpr(ag_circuit)([1., 2., 3.])
+        def res(params): return eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, params)
+
         result = f(jnp.array([0.0, 1 / 4 * jnp.pi, 2 / 4 * jnp.pi]))
+        print(result)
         assert np.allclose(result, -jnp.sqrt(2) / 2)
 
     def test_for_in_array_unpack(self):
         """Test for loop over a 2D JAX array unpacking the inner dimension."""
 
-        @qjit(autograph=True)
         @qml.qnode(qml.device("default.qubit", wires=1))
         def f(params):
             for x1, x2 in params:
@@ -777,13 +806,17 @@ class TestForLoops:
                 qml.RY(x2, wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        result = f(jnp.array([[0.0, 1 / 4 * jnp.pi], [2 / 4 * jnp.pi, jnp.pi]]))
+        ag_circuit = run_autograph(f)
+        jaxpr = jax.make_jaxpr(ag_circuit)(jnp.array([[0.0, 0.0], [0.0, 0.0]]))
+
+        params = jnp.array([[0.0, 1 / 4 * jnp.pi], [2 / 4 * jnp.pi, jnp.pi]])
+        result = eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, params)
+
         assert np.allclose(result, jnp.sqrt(2) / 2)
 
     def test_for_in_numeric_list(self):
         """Test for loop over a Python list that is convertible to an array."""
 
-        @qjit(autograph=True)
         @qml.qnode(qml.device("default.qubit", wires=1))
         def f():
             params = [0.0, 1 / 4 * jnp.pi, 2 / 4 * jnp.pi]
@@ -791,13 +824,16 @@ class TestForLoops:
                 qml.RY(x, wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        result = f()
+        ag_circuit = run_autograph(f)
+        jaxpr = jax.make_jaxpr(ag_circuit)()
+
+        result = eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+
         assert np.allclose(result, -jnp.sqrt(2) / 2)
 
     def test_for_in_numeric_list_of_list(self):
         """Test for loop over a nested Python list that is convertible to an array."""
 
-        @qjit(autograph=True)
         @qml.qnode(qml.device("default.qubit", wires=1))
         def f():
             params = [[0.0, 1 / 4 * jnp.pi], [2 / 4 * jnp.pi, jnp.pi]]
@@ -806,14 +842,16 @@ class TestForLoops:
                     qml.RY(x, wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        result = f()
+        ag_circuit = run_autograph(f)
+        jaxpr = jax.make_jaxpr(ag_circuit)()
+        result = eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+
         assert np.allclose(result, jnp.sqrt(2) / 2)
 
     def test_for_in_object_list(self):
         """Test for loop over a Python list that is *not* convertible to an array.
         The behaviour should fall back to standard Python."""
 
-        @qjit(autograph=True)
         @qml.qnode(qml.device("default.qubit", wires=1))
         def f():
             params = ["0", "1", "2"]
@@ -821,13 +859,16 @@ class TestForLoops:
                 qml.RY(int(x) / 4 * jnp.pi, wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        result = f()
+        ag_circuit = run_autograph(f)
+        jaxpr = jax.make_jaxpr(ag_circuit)()
+        result = eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+
         assert np.allclose(result, -jnp.sqrt(2) / 2)
 
+    @pytest.mark.usefixtures("autograph_strict_conversion")
     def test_for_in_object_list_strict(self, monkeypatch):
         """Check the error raised in strict mode when a for loop iterates over a Python list that
         is *not* convertible to an array."""
-        monkeypatch.setattr("catalyst.autograph_strict_conversion", True)
 
         @qml.qnode(qml.device("default.qubit", wires=1))
         def f():
@@ -837,19 +878,21 @@ class TestForLoops:
             return qml.expval(qml.PauliZ(0))
 
         with pytest.raises(AutoGraphError, match="Could not convert the iteration target"):
-            qjit(autograph=True)(f)
+            run_autograph(f)()
 
     def test_for_in_static_range(self):
         """Test for loop over a Python range with static bounds."""
 
-        @qjit(autograph=True)
         @qml.qnode(qml.device("default.qubit", wires=3))
         def f():
             for i in range(3):
                 qml.Hadamard(i)
             return qml.probs()
 
-        result = f()
+        ag_circuit = run_autograph(f)
+        jaxpr = jax.make_jaxpr(ag_circuit)()
+        result = eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+
         assert np.allclose(result, [1 / 8] * 8)
 
     def test_for_in_static_range_indexing_array(self):
@@ -862,7 +905,10 @@ class TestForLoops:
                 qml.RY(params[i], wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        result = f()
+        ag_circuit = run_autograph(f)
+        jaxpr = jax.make_jaxpr(ag_circuit)()
+        result = eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+
         assert np.allclose(result, -jnp.sqrt(2) / 2)
 
     # With conversion always taking place, the user needs to be careful to manually wrap
@@ -882,7 +928,7 @@ class TestForLoops:
         with pytest.warns(
             match=r"TracerIntegerConversionError:    The __index__\(\) method was called"
         ):
-            qjit(autograph=True)(f)
+            run_autograph(f)()
 
     # This case is slightly problematic because there is no way for the user to compile this for
     # loop correctly. Fallback to a Python loop is always necessary, and will result in a warning.
@@ -901,19 +947,21 @@ class TestForLoops:
         with pytest.warns(
             match=r"TracerIntegerConversionError:    The __index__\(\) method was called"
         ):
-            qjit(autograph=True)(f)
+            run_autograph(f)()
 
     def test_for_in_dynamic_range(self):
         """Test for loop over a Python range with dynamic bounds."""
 
-        @qjit(autograph=True)
         @qml.qnode(qml.device("default.qubit", wires=3))
         def f(n: int):
             for i in range(n):
                 qml.Hadamard(i)
             return qml.probs()
 
-        result = f(3)
+        ag_circuit = run_autograph(f)
+        jaxpr = jax.make_jaxpr(ag_circuit)(0)
+        result = eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 3)
+
         assert np.allclose(result, [1 / 8] * 8)
 
     def test_for_in_dynamic_range_indexing_array(self):
@@ -926,7 +974,10 @@ class TestForLoops:
                 qml.RY(params[i], wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        result = f(3)
+        ag_circuit = run_autograph(f)
+        jaxpr = jax.make_jaxpr(ag_circuit)(0)
+        result = eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 3)
+
         assert np.allclose(result, -jnp.sqrt(2) / 2)
 
     # This case will fail even without autograph conversion, since dynamic iteration bounds are not
@@ -950,7 +1001,7 @@ class TestForLoops:
             match=r"TracerIntegerConversionError:    The __index__\(\) method was called"
         ):
             with pytest.raises(jax.errors.TracerIntegerConversionError, match="__index__"):
-                qjit(autograph=True)(f)
+                run_autograph(f)()
 
     # This use case is never possible, regardless of whether AutoGraph is used or not.
     def test_for_in_dynamic_range_indexing_object_list(self):
@@ -969,38 +1020,45 @@ class TestForLoops:
             match=r"TracerIntegerConversionError:    The __index__\(\) method was called"
         ):
             with pytest.raises(jax.errors.TracerIntegerConversionError, match="__index__"):
-                qjit(autograph=True)(f)
+                run_autograph(f)()
 
     def test_for_in_enumerate_array(self):
         """Test for loop over a Python enumeration on an array."""
 
-        @qjit(autograph=True)
         @qml.qnode(qml.device("default.qubit", wires=3))
         def f(params):
             for i, x in enumerate(params):
                 qml.RY(x, wires=i)
             return [qml.expval(qml.PauliZ(i)) for i in range(3)]
 
-        result = f(jnp.array([0.0, 1 / 4 * jnp.pi, 2 / 4 * jnp.pi]))
+        ag_circuit = run_autograph(f)
+        jaxpr = jax.make_jaxpr(ag_circuit)(jnp.array([0.0, 0.0, 0.0]))
+
+        params = jnp.array([0.0, 1 / 4 * jnp.pi, 2 / 4 * jnp.pi])
+        result = eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, params)
+
         assert np.allclose(result, [1.0, jnp.sqrt(2) / 2, 0.0])
 
     def test_for_in_enumerate_array_no_unpack(self):
         """Test for loop over a Python enumeration with delayed unpacking."""
 
-        @qjit(autograph=True)
         @qml.qnode(qml.device("default.qubit", wires=3))
         def f(params):
             for v in enumerate(params):
                 qml.RY(v[1], wires=v[0])
             return [qml.expval(qml.PauliZ(i)) for i in range(3)]
 
-        result = f(jnp.array([0.0, 1 / 4 * jnp.pi, 2 / 4 * jnp.pi]))
+        ag_circuit = run_autograph(f)
+        jaxpr = jax.make_jaxpr(ag_circuit)(jnp.array([0.0, 0.0, 0.0]))
+
+        params = jnp.array([0.0, 1 / 4 * jnp.pi, 2 / 4 * jnp.pi])
+        result = eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, params)
+
         assert np.allclose(result, [1.0, jnp.sqrt(2) / 2, 0.0])
 
     def test_for_in_enumerate_nested_unpack(self):
         """Test for loop over a Python enumeration with nested unpacking."""
 
-        @qjit(autograph=True)
         @qml.qnode(qml.device("default.qubit", wires=3))
         def f(params):
             for i, (x1, x2) in enumerate(params):
@@ -1008,30 +1066,34 @@ class TestForLoops:
                 qml.RY(x2, wires=i)
             return [qml.expval(qml.PauliZ(i)) for i in range(3)]
 
-        result = f(
-            jnp.array(
-                [[0.0, 1 / 4 * jnp.pi], [2 / 4 * jnp.pi, 3 / 4 * jnp.pi], [jnp.pi, 2 * jnp.pi]]
-            )
-        )
+        ag_circuit = run_autograph(f)
+        jaxpr = jax.make_jaxpr(ag_circuit)(jnp.array([[0.0, 0.0], [0.0, 0.0], [0.0, 0.0]]))
+
+        params = jnp.array([[0.0, 1 / 4 * jnp.pi], [2 / 4 * jnp.pi, 3 / 4 * jnp.pi], [jnp.pi, 2 * jnp.pi]])
+        result =eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, params)
+
         assert np.allclose(result, [jnp.sqrt(2) / 2, -jnp.sqrt(2) / 2, -1.0])
 
     def test_for_in_enumerate_start(self):
         """Test for loop over a Python enumeration with offset indices."""
 
-        @qjit(autograph=True)
         @qml.qnode(qml.device("default.qubit", wires=5))
         def f(params):
             for i, x in enumerate(params, start=2):
                 qml.RY(x, wires=i)
             return [qml.expval(qml.PauliZ(i)) for i in range(5)]
 
-        result = f(jnp.array([0.0, 1 / 4 * jnp.pi, 2 / 4 * jnp.pi]))
+        ag_circuit = run_autograph(f)
+        jaxpr = jax.make_jaxpr(ag_circuit)(jnp.array([0.0, 0.0, 0.0]))
+
+        params = jnp.array([0.0, 1 / 4 * jnp.pi, 2 / 4 * jnp.pi])
+        result = eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, params)
+
         assert np.allclose(result, [1.0, 1.0, 1.0, jnp.sqrt(2) / 2, 0.0])
 
     def test_for_in_enumerate_numeric_list(self):
         """Test for loop over a Python enumeration on a list that is convertible to an array."""
 
-        @qjit(autograph=True)
         @qml.qnode(qml.device("default.qubit", wires=3))
         def f():
             params = [0.0, 1 / 4 * jnp.pi, 2 / 4 * jnp.pi]
@@ -1039,14 +1101,16 @@ class TestForLoops:
                 qml.RY(x, wires=i)
             return [qml.expval(qml.PauliZ(i)) for i in range(3)]
 
-        result = f()
+        ag_circuit = run_autograph(f)
+        jaxpr = jax.make_jaxpr(ag_circuit)()
+        result = eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+
         assert np.allclose(result, [1.0, jnp.sqrt(2) / 2, 0.0])
 
     def test_for_in_enumerate_object_list(self):
         """Test for loop over a Python enumeration on a list that is *not* convertible to an array.
         The behaviour should fall back to standard Python."""
 
-        @qjit(autograph=True)
         @qml.qnode(qml.device("default.qubit", wires=3))
         def f():
             params = ["0", "1", "2"]
@@ -1054,14 +1118,16 @@ class TestForLoops:
                 qml.RY(int(x) / 4 * jnp.pi, wires=i)
             return [qml.expval(qml.PauliZ(i)) for i in range(3)]
 
-        result = f()
+        ag_circuit = run_autograph(f)
+        jaxpr = jax.make_jaxpr(ag_circuit)()
+        result = eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+
         assert np.allclose(result, [1.0, jnp.sqrt(2) / 2, 0.0])
 
     def test_for_in_other_iterable_object(self):
         """Test for loop over arbitrary iterable Python objects.
         The behaviour should fall back to standard Python."""
 
-        @qjit(autograph=True)
         @qml.qnode(qml.device("default.qubit", wires=1))
         def f():
             params = {"a": 0.0, "b": 1 / 4 * jnp.pi, "c": 2 / 4 * jnp.pi}
@@ -1070,14 +1136,16 @@ class TestForLoops:
                 qml.RY(v, wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        result = f()
+        ag_circuit = run_autograph(f)
+        jaxpr = jax.make_jaxpr(ag_circuit)()
+        result = eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+
         assert np.allclose(result, -jnp.sqrt(2) / 2)
 
-    def test_loop_carried_value(self, monkeypatch):
+    @pytest.mark.usefixtures("autograph_strict_conversion")
+    def test_loop_carried_value(self):
         """Test a loop which updates a value each iteration."""
-        monkeypatch.setattr("catalyst.autograph_strict_conversion", True)
 
-        @qjit(autograph=True)
         def f1():
             acc = 0
             for x in [0, 4, 5]:
@@ -1085,18 +1153,20 @@ class TestForLoops:
 
             return acc
 
-        assert f1() == 9
+        ag_circuit = run_autograph(f1)
+        jaxpr1 = jax.make_jaxpr(ag_circuit)()
+        assert eval_jaxpr(jaxpr1.jaxpr, jaxpr1.consts)[0] == 9
 
-        @qjit(autograph=True)
         def f2(acc):
             for x in [0, 4, 5]:
                 acc = acc + x
 
             return acc
 
-        assert f2(2) == 11
+        ag_circuit = run_autograph(f2)
+        jaxpr2 = jax.make_jaxpr(ag_circuit)(0)
+        assert eval_jaxpr(jaxpr2.jaxpr, jaxpr2.consts, 2)[0] == 11
 
-        @qjit(autograph=True)
         def f3():
             acc = 0
             for x in [0, 4, 5]:
@@ -1104,14 +1174,15 @@ class TestForLoops:
 
             return acc
 
-        assert f3() == 9
+        ag_circuit = run_autograph(f3)
+        jaxpr3 = jax.make_jaxpr(ag_circuit)()
+        assert eval_jaxpr(jaxpr3.jaxpr, jaxpr3.consts)[0] == 9
 
-    def test_iteration_element_access(self, monkeypatch):
+    @pytest.mark.usefixtures("autograph_strict_conversion")
+    def test_iteration_element_access(self):
         """Test that access to the iteration index/elements is possible after the loop executed
         (assuming initialization)."""
-        monkeypatch.setattr("catalyst.autograph_strict_conversion", True)
 
-        @qjit(autograph=True)
         def f1(acc):
             x = 0
             for x in [0, 4, 5]:
@@ -1120,9 +1191,11 @@ class TestForLoops:
 
             return x
 
-        assert f1(0) == 5
+        ag_circuit = run_autograph(f1)
+        jaxpr = jax.make_jaxpr(ag_circuit)(0)
 
-        @qjit(autograph=True)
+        assert eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0)[0] == 5
+
         def f2(acc):
             i = 0
             l = jnp.array([0, 4, 5])
@@ -1132,9 +1205,11 @@ class TestForLoops:
 
             return i
 
-        assert f2(0) == 2
+        ag_circuit = run_autograph(f2)
+        jaxpr = jax.make_jaxpr(ag_circuit)(0)
 
-        @qjit(autograph=True)
+        assert eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0)[0] == 2
+
         def f3(acc):
             i, x = 0, 0
             for i, x in enumerate([0, 4, 5]):
@@ -1143,15 +1218,18 @@ class TestForLoops:
 
             return i, x
 
-        assert f3(0) == (2, 5)
+        ag_circuit = run_autograph(f3)
+        jaxpr = jax.make_jaxpr(ag_circuit)(0)
+        result = eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0)
 
+        assert np.allclose(result, [2, 5])
+
+    @pytest.mark.usefixtures("autograph_strict_conversion")
     @pytest.mark.xfail(reason="currently unsupported, but we may find a way to do so in the future")
-    def test_iteration_element_access_no_init(self, monkeypatch):
+    def test_iteration_element_access_no_init(self):
         """Test that access to the iteration index/elements is possible after the loop executed
         even without prior initialization."""
-        monkeypatch.setattr("catalyst.autograph_strict_conversion", True)
 
-        @qjit(autograph=True)
         def f1(acc):
             for x in [0, 4, 5]:
                 acc = acc + x
@@ -1159,9 +1237,10 @@ class TestForLoops:
 
             return x
 
-        assert f1(0) == 5
+        ag_circuit = run_autograph(f1)
+        jaxpr = jax.make_jaxpr(ag_circuit)(0)
+        assert eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0)[0] == 5
 
-        @qjit(autograph=True)
         def f2(acc):
             l = jnp.array([0, 4, 5])
             for i in range(3):
@@ -1170,9 +1249,10 @@ class TestForLoops:
 
             return i
 
-        assert f2(0) == 2
+        ag_circuit = run_autograph(f1)
+        jaxpr = jax.make_jaxpr(ag_circuit)(0)
+        assert eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0)[0] == 2
 
-        @qjit(autograph=True)
         def f3(acc):
             for i, x in enumerate([0, 4, 5]):
                 acc = acc + x
@@ -1180,13 +1260,14 @@ class TestForLoops:
 
             return i, x
 
-        assert f3(0) == (2, 5)
+        ag_circuit = run_autograph(f1)
+        jaxpr = jax.make_jaxpr(ag_circuit)(0)
+        assert eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0)[0] == (2, 5)
 
-    def test_temporary_loop_variable(self, monkeypatch):
+    @pytest.mark.usefixtures("autograph_strict_conversion")
+    def test_temporary_loop_variable(self):
         """Test that temporary (local) variables can be initialized inside a loop."""
-        monkeypatch.setattr("catalyst.autograph_strict_conversion", True)
 
-        @qjit(autograph=True)
         def f1():
             acc = 0
             for x in [0, 4, 5]:
@@ -1195,22 +1276,25 @@ class TestForLoops:
 
             return acc
 
-        assert f1() == 18
+        ag_circuit = run_autograph(f1)
+        jaxpr = jax.make_jaxpr(ag_circuit)()
+        assert eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)[0] == 18
 
-        @qjit(autograph=True)
         def f2():
-            acc = 0
+            acc = 2
             for x in [0, 4, 5]:
                 c = x * 2
                 acc = acc + c
 
             return acc
 
-        assert f2() == 18
+        ag_circuit = run_autograph(f2)
+        jaxpr = jax.make_jaxpr(ag_circuit)()
+        assert eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)[0] == 20
 
-    def test_uninitialized_variables(self, monkeypatch):
+    @pytest.mark.usefixtures("autograph_strict_conversion")
+    def test_uninitialized_variables(self):
         """Verify errors for (potentially) uninitialized loop variables."""
-        monkeypatch.setattr("catalyst.autograph_strict_conversion", True)
 
         def f1():
             for x in [0, 4, 5]:
@@ -1219,7 +1303,7 @@ class TestForLoops:
             return acc
 
         with pytest.raises(AutoGraphError, match="'acc' is potentially uninitialized"):
-            qjit(autograph=True)(f1)
+            run_autograph(f1)()
 
         def f2():
             acc = 0
@@ -1229,7 +1313,7 @@ class TestForLoops:
             return x
 
         with pytest.raises(AutoGraphError, match="'x' is potentially uninitialized"):
-            qjit(autograph=True)(f2)
+            run_autograph(f2)()
 
         def f3():
             acc = 0
@@ -1240,11 +1324,11 @@ class TestForLoops:
             return c
 
         with pytest.raises(AutoGraphError, match="'c' is potentially uninitialized"):
-            qjit(autograph=True)(f3)
+            run_autograph(f3)()
 
-    def test_init_with_invalid_jax_type(self, monkeypatch):
+    @pytest.mark.usefixtures("autograph_strict_conversion")
+    def test_init_with_invalid_jax_type(self):
         """Test loop carried values initialized with an invalid JAX type."""
-        monkeypatch.setattr("catalyst.autograph_strict_conversion", True)
 
         def f():
             acc = 0
@@ -1255,12 +1339,12 @@ class TestForLoops:
             return x
 
         with pytest.raises(AutoGraphError, match="'x' was initialized with type <class 'str'>"):
-            qjit(autograph=True)(f)
+            run_autograph(f)()
 
-    def test_init_with_mismatched_type(self, monkeypatch):
+    @pytest.mark.usefixtures("autograph_strict_conversion")
+    def test_init_with_mismatched_type(self):
         """Test loop carried values initialized with a mismatched type compared to the values used
         inside the loop."""
-        monkeypatch.setattr("catalyst.autograph_strict_conversion", True)
 
         def f():
             acc = 0
@@ -1271,51 +1355,52 @@ class TestForLoops:
             return x
 
         with pytest.raises(AutoGraphError, match="'x' was initialized with the wrong type"):
-            qjit(autograph=True)(f)
+            run_autograph(f)()
 
-    @pytest.mark.filterwarnings("error::UserWarning")
-    def test_ignore_warnings(self, monkeypatch):
-        """Test the AutoGraph config flag properly silences warnings."""
-        monkeypatch.setattr("catalyst.autograph_ignore_fallbacks", True)
-
-        @qjit(autograph=True)
-        def f():
-            acc = 0
-            data = [0, 4, 5]
-            for i in range(3):
-                acc = acc + data[i]
-
-            return acc
-
-        assert f() == 9
+    # @pytest.mark.filterwarnings("error::UserWarning")
+    # @pytest.mark.usefixtures("ignore_fallbacks")
+    # def test_ignore_warnings(self):
+    #     """Test the AutoGraph config flag properly silences warnings."""
+    #
+    #     def f():
+    #         acc = 0
+    #         data = [0, 4, 5]
+    #         for i in range(3):
+    #             acc = acc + data[i]
+    #
+    #         return acc
+    #
+    #     assert f() == 9
 
 
 @pytest.mark.usefixtures("enable_disable_plxpr")
 class TestWhileLoops:
     """Test that the autograph transformations produce correct results on while loops."""
 
+    @pytest.mark.usefixtures("autograph_strict_conversion")
     @pytest.mark.parametrize(
         "init,inc,expected", [(0, 1, 3), (0.0, 1.0, 3.0), (0.0 + 0j, 1.0 + 0j, 3.0 + 0j)]
     )
-    def test_whileloop_basic(self, monkeypatch, init, inc, expected):
+    def test_whileloop_basic(self, init, inc, expected):
         """Test basic while-loop functionality"""
-        monkeypatch.setattr("catalyst.autograph_strict_conversion", True)
 
-        @qjit(autograph=True)
         def f(limit):
             i = init
             while i < limit:
                 i += inc
             return i
 
-        result = f(expected)
+        ag_circuit = run_autograph(f)
+        jaxpr = jax.make_jaxpr(ag_circuit)(0)
+        assert "while_loop" in str(jaxpr)
+
+        result = eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, expected)[0]
         assert result == expected
 
-    def test_whileloop_multiple_variables(self, monkeypatch):
+    @pytest.mark.usefixtures("autograph_strict_conversion")
+    def test_whileloop_multiple_variables(self):
         """Test while-loop with a multiple state variables"""
-        monkeypatch.setattr("catalyst.autograph_strict_conversion", True)
 
-        @qjit(autograph=True)
         def f(param):
             a = 0
             b = 0
@@ -1324,14 +1409,17 @@ class TestWhileLoops:
                 b += 1
             return b
 
-        result = f(3)
+        ag_circuit = run_autograph(f)
+        jaxpr = jax.make_jaxpr(ag_circuit)(0)
+        assert "while_loop" in str(jaxpr)
+
+        result = eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 3)[0]
         assert result == 3
 
-    def test_whileloop_qjit(self, monkeypatch):
-        """Test while-loop used with qml calls"""
-        monkeypatch.setattr("catalyst.autograph_strict_conversion", True)
+    @pytest.mark.usefixtures("autograph_strict_conversion")
+    def test_whileloop_qnode(self):
+        """Test while-loop used with a qnode"""
 
-        @qjit(autograph=True)
         @qml.qnode(qml.device("default.qubit", wires=4))
         def f(p):
             w = int(0)
@@ -1341,7 +1429,11 @@ class TestWhileLoops:
                 w += 1
             return qml.probs()
 
-        result = f(2.0**4)
+        ag_circuit = run_autograph(f)
+        jaxpr = jax.make_jaxpr(ag_circuit)(0.)
+        assert "while_loop" in str(jaxpr)
+
+        result = eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2.0**4)[0]
         expected = jnp.array(
             # fmt:off
             [
@@ -1354,11 +1446,10 @@ class TestWhileLoops:
         )
         assert_allclose(result, expected, rtol=1e-6, atol=1e-6)
 
+    @pytest.mark.usefixtures("autograph_strict_conversion")
     def test_whileloop_temporary_variable(self, monkeypatch):
         """Test that temporary (local) variables can be initialized inside a while loop."""
-        monkeypatch.setattr("catalyst.autograph_strict_conversion", True)
 
-        @qjit(autograph=True)
         def f1():
             acc = 0
             while acc < 3:
@@ -1367,13 +1458,16 @@ class TestWhileLoops:
 
             return acc
 
-        assert f1() == 4
+        ag_circuit = run_autograph(f1)
+        jaxpr = jax.make_jaxpr(ag_circuit)()
+        assert "while" in str(jaxpr)
 
-    def test_whileloop_forloop_interop(self, monkeypatch):
+        assert eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)[0] == 4
+
+    @pytest.mark.usefixtures("autograph_strict_conversion")
+    def test_whileloop_forloop_interop(self):
         """Test for-loop co-existing with while loop."""
-        monkeypatch.setattr("catalyst.autograph_strict_conversion", True)
 
-        @qjit(autograph=True)
         def f1():
             acc = 0
             while acc < 5:
@@ -1382,13 +1476,16 @@ class TestWhileLoops:
                     acc += x
             return acc
 
-        assert f1() == 0 + 1 + sum([1, 2, 3])
+        ag_circuit = run_autograph(f1)
+        jaxpr = jax.make_jaxpr(ag_circuit)()
+        assert "while" in str(jaxpr)
 
-    def test_whileloop_cond_interop(self, monkeypatch):
-        """Test for-loop co-existing with while loop."""
-        monkeypatch.setattr("catalyst.autograph_strict_conversion", True)
+        assert eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)[0] == 0 + 1 + sum([1, 2, 3])
 
-        @qjit(autograph=True)
+    @pytest.mark.usefixtures("autograph_strict_conversion")
+    def test_whileloop_cond_interop(self):
+        """Test for-loop co-existing with cond."""
+
         def f1():
             acc = 0
             while acc < 5:
@@ -1398,26 +1495,30 @@ class TestWhileLoops:
                     acc += 2
             return acc
 
-        assert f1() == sum([1, 1, 2, 2])
+        ag_circuit = run_autograph(f1)
+        jaxpr = jax.make_jaxpr(ag_circuit)()
+        assert "while" in str(jaxpr)
 
-    @pytest.mark.xfail(reason="this won't run warning-free until we fix the resource warning issue")
-    @pytest.mark.filterwarnings("error")
-    def test_whileloop_no_warning(self, monkeypatch):
-        """Test the absence of warnings if fallbacks are ignored."""
-        monkeypatch.setattr("catalyst.autograph_ignore_fallbacks", True)
+        assert eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)[0] == sum([1, 1, 2, 2])
 
-        @qjit(autograph=True)
-        def f():
-            acc = 0
-            while Failing(acc).val < 5:
-                acc = acc + 1
-            return acc
+    # @pytest.mark.xfail(reason="this won't run warning-free until we fix the resource warning issue")
+    # @pytest.mark.filterwarnings("error")
+    # def test_whileloop_no_warning(self, monkeypatch):
+    #     """Test the absence of warnings if fallbacks are ignored."""
+    #     monkeypatch.setattr("catalyst.autograph_ignore_fallbacks", True)
+    #
+    #     @qjit(autograph=True)
+    #     def f():
+    #         acc = 0
+    #         while Failing(acc).val < 5:
+    #             acc = acc + 1
+    #         return acc
+    #
+    #     assert f() == 5
 
-        assert f() == 5
-
-    def test_whileloop_exception(self, monkeypatch):
+    @pytest.mark.usefixtures("autograph_strict_conversion")
+    def test_whileloop_exception(self):
         """Test for-loop error if strict-conversion is enabled."""
-        monkeypatch.setattr("catalyst.autograph_strict_conversion", True)
 
         def f1():
             acc = 0
@@ -1426,11 +1527,11 @@ class TestWhileLoops:
             return acc
 
         with pytest.raises(RuntimeError):
-            qjit(autograph=True)(f1)()
+            run_autograph(f1)()
 
-    def test_uninitialized_variables(self, monkeypatch):
+    @pytest.mark.usefixtures("autograph_strict_conversion")
+    def test_uninitialized_variables(self):
         """Verify errors for (potentially) uninitialized loop variables."""
-        monkeypatch.setattr("catalyst.autograph_strict_conversion", True)
 
         def f(pred: bool):
             while pred:
@@ -1439,11 +1540,11 @@ class TestWhileLoops:
             return x
 
         with pytest.raises(AutoGraphError, match="'x' is potentially uninitialized"):
-            qjit(autograph=True)(f)
+            run_autograph(f)(True)
 
-    def test_init_with_invalid_jax_type(self, monkeypatch):
+    @pytest.mark.usefixtures("autograph_strict_conversion")
+    def test_init_with_invalid_jax_type(self):
         """Test loop carried values initialized with an invalid JAX type."""
-        monkeypatch.setattr("catalyst.autograph_strict_conversion", True)
 
         def f(pred: bool):
             x = ""
@@ -1454,12 +1555,12 @@ class TestWhileLoops:
             return x
 
         with pytest.raises(AutoGraphError, match="'x' was initialized with type <class 'str'>"):
-            qjit(autograph=True)(f)
+            run_autograph(f)(True)
 
-    def test_init_with_mismatched_type(self, monkeypatch):
+    @pytest.mark.usefixtures("autograph_strict_conversion")
+    def test_init_with_mismatched_type(self):
         """Test loop carried values initialized with a mismatched type compared to the values used
         inside the loop."""
-        monkeypatch.setattr("catalyst.autograph_strict_conversion", True)
 
         def f(pred: bool):
             x = 0.0
@@ -1470,7 +1571,7 @@ class TestWhileLoops:
             return x
 
         with pytest.raises(AutoGraphError, match="'x' was initialized with the wrong type"):
-            qjit(autograph=True)(f)
+            run_autograph(f)(False)
 
 
 # @pytest.mark.parametrize(
@@ -1688,9 +1789,9 @@ class TestWhileLoops:
 #
 #         assert f() == 3
 #
+#    # @pytest.mark.usefixtures("autograph_strict_conversion")
 #     def test_cond_if_for_loop_for(self, monkeypatch):
 #         """Test Python conditionals and loops together with their Catalyst counterparts."""
-#         monkeypatch.setattr("catalyst.autograph_strict_conversion", True)
 #
 #         # pylint: disable=cell-var-from-loop
 #
@@ -1727,10 +1828,10 @@ class TestWhileLoops:
 #         assert f(2) == 18
 #         assert f(3) == 0
 #
+#     # @pytest.mark.usefixtures("autograph_strict_conversion")
 #     def test_cond_or(self, monkeypatch):
 #         """Test Python conditionals in conjunction with and-or statements"""
 #
-#         monkeypatch.setattr("catalyst.autograph_strict_conversion", True)
 #
 #         @qjit(autograph=True)
 #         def f(x):
@@ -1744,10 +1845,10 @@ class TestWhileLoops:
 #         assert f(1) == 1
 #         assert f(0.5) == 0
 #
+#     # @pytest.mark.usefixtures("autograph_strict_conversion")
 #     def test_while_and(self, monkeypatch):
 #         """Test Python while-loops in conjunction with and-or statements"""
 #
-#         monkeypatch.setattr("catalyst.autograph_strict_conversion", True)
 #
 #         @qjit(autograph=True)
 #         def f(param):
@@ -1849,158 +1950,175 @@ class TestWhileLoops:
 #             qjit(autograph_include=["catalyst.utils.dummy"])(fn)
 #
 #
-# class TestJaxIndexAssignment:
-#     """Test Jax index assignment"""
-#
-#     def test_single_index_assignment_one_item(self):
-#         """Test single index assignment for Jax arrays for one array item."""
-#
-#         @qjit(autograph=True)
-#         def zero_last_element_single_assignment_syntax(x):
-#             """Set the last element of x to 0 using single index assignment"""
-#
-#             last_element = x.shape[0] - 1
-#             x[last_element] = 0
-#             return x
-#
-#         @qjit(autograph=True)
-#         def zero_last_element_at_set_syntax(x):
-#             """Set the last element of x to 0 using at and set"""
-#
-#             last_element = x.shape[0] - 1
-#             x = x.at[last_element].set(0)
-#             return x
-#
-#         result_assignment_syntax = zero_last_element_single_assignment_syntax(jnp.array([5, 3, 4]))
-#
-#         assert jnp.allclose(result_assignment_syntax, jnp.array([5, 3, 0]))
-#         assert jnp.allclose(
-#             result_assignment_syntax,
-#             zero_last_element_at_set_syntax(jnp.array([5, 3, 4])),
-#         )
-#
-#     def test_single_index_assignment_all_items(self):
-#         """Test single index assignment for Jax arrays for all array items."""
-#
-#         @qjit(autograph=True)
-#         def double_all_single_assignment_syntax(x):
-#             """Create a new array that is equal to 2 * x using single index assignment"""
-#
-#             first_dim = x.shape[0]
-#             result = jnp.empty((first_dim,), dtype=x.dtype)
-#
-#             for i in range(first_dim):
-#                 result[i] = x[i] * 2
-#
-#             return result
-#
-#         @qjit(autograph=True)
-#         def double_all_at_set_syntax(x):
-#             """Create a new array that is equal to 2 * x using at and set"""
-#
-#             first_dim = x.shape[0]
-#             result = jnp.empty((first_dim,), dtype=x.dtype)
-#
-#             for i in range(first_dim):
-#                 result = result.at[i].set(x[i] * 2)
-#
-#             return result
-#
-#         result_assignment_syntax = double_all_single_assignment_syntax(jnp.array([5, 3, 4]))
-#
-#         assert jnp.allclose(result_assignment_syntax, jnp.array([10, 6, 8]))
-#         assert jnp.allclose(
-#             result_assignment_syntax,
-#             double_all_at_set_syntax(jnp.array([5, 3, 4])),
-#         )
-#
-#     def test_single_index_assignment_python_array(self):
-#         """Test single index assignment for Non-Jax arrays for one array item."""
-#
-#         @qjit(autograph=True)
-#         def zero_last_element_python_array(x):
-#             """Set the last element of a python array to 0"""
-#
-#             last_element = len(x) - 1
-#             x[last_element] = 0
-#             return x
-#
-#         assert jnp.allclose(
-#             jnp.array(zero_last_element_python_array([5, 3, 4])), jnp.array([5, 3, 0])
-#         )
-#
-#     def test_slice_assignment_start_stop(self):
-#         """Test slice (start, stop, None) assignment for Jax arrays."""
-#
-#         @qjit(autograph=True)
-#         def expand_by_two(x):
-#             first_dim = x.shape[0]
-#             result = jnp.empty((first_dim * 2, *x.shape[1:]), dtype=x.dtype)
-#
-#             result[1:4] = x
-#             return result
-#
-#         assert jnp.allclose(expand_by_two(jnp.array([5, 3, 4])), jnp.array([0, 5, 3, 4, 0, 0]))
-#
-#     def test_slice_assignment_start_stop_step(self):
-#         """Test slice (start, stop, step) assignment for Jax arrays."""
-#
-#         @qjit(autograph=True)
-#         def expand_by_two(x):
-#             first_dim = x.shape[0]
-#             result = jnp.empty((first_dim * 2, *x.shape[1:]), dtype=x.dtype)
-#
-#             result[1:5:2] = x[0:2]
-#             return result
-#
-#         assert jnp.allclose(expand_by_two(jnp.array([5, 3, 4])), jnp.array([0, 5, 0, 3, 0, 0]))
-#
-#     def test_slice_assignment_start_only(self):
-#         """Test slice (start, None, None) assignment for Jax arrays."""
-#
-#         @qjit(autograph=True)
-#         def expand_by_two(x):
-#             first_dim = x.shape[0]
-#             result = jnp.empty((first_dim * 2, *x.shape[1:]), dtype=x.dtype)
-#
-#             # Size (starting from 3) must match with x.
-#             result[3::] = x
-#             return result
-#
-#         assert jnp.allclose(expand_by_two(jnp.array([5, 3, 4])), jnp.array([0, 0, 0, 5, 3, 4]))
-#
-#     def test_slice_assignment_stop_only(self):
-#         """Test slice (None, stop, None) assignment for Jax arrays."""
-#
-#         @qjit(autograph=True)
-#         def expand_by_two(x):
-#             first_dim = x.shape[0]
-#             result = jnp.empty((first_dim * 2, *x.shape[1:]), dtype=x.dtype)
-#
-#             # Size (ending before 3) must match with x.
-#             result[:3] = x
-#             return result
-#
-#         assert jnp.allclose(expand_by_two(jnp.array([5, 3, 4])), jnp.array([5, 3, 4, 0, 0, 0]))
-#
-#     def test_slice_assignment_step_only(self):
-#         """Test slice (None, None, step) assignment for Jax arrays."""
-#
-#         @qjit(autograph=True)
-#         def expand_by_two(x):
-#             first_dim = x.shape[0]
-#             result = jnp.empty((first_dim * 2, *x.shape[1:]), dtype=x.dtype)
-#
-#             # Size (len(result) / 2) must match with x.
-#             result[::2] = x
-#             return result
-#
-#         assert jnp.allclose(expand_by_two(jnp.array([5, 3, 4])), jnp.array([5, 0, 3, 0, 4, 0]))
-#
-#
-# class TestDecorators:
-#     """Test if Autograph works when applied to a decorated function"""
-#
+class TestJaxIndexAssignment:
+    """Test Jax index assignment"""
+
+    def test_single_index_assignment_one_item(self):
+        """Test single index assignment for Jax arrays for one array item."""
+
+        def zero_last_element_single_assignment_syntax(x):
+            """Set the last element of x to 0 using single index assignment"""
+
+            last_element = x.shape[0] - 1
+            x[last_element] = 0
+            return x
+
+        ag_fn = run_autograph(zero_last_element_single_assignment_syntax)
+        jaxpr = jax.make_jaxpr(ag_fn)(jnp.array([5, 3, 4]))
+        result_assignment_syntax = eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, jnp.array([5, 3, 4]))[0]
+
+        def zero_last_element_at_set_syntax(x):
+            """Set the last element of x to 0 using at and set"""
+
+            last_element = x.shape[0] - 1
+            x = x.at[last_element].set(0)
+            return x
+
+        ag_fn = run_autograph(zero_last_element_at_set_syntax)
+        jaxpr = jax.make_jaxpr(ag_fn)(jnp.array([5, 3, 4]))
+        result_at_set_syntax = eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, jnp.array([5, 3, 4]))[0]
+
+        assert jnp.allclose(result_assignment_syntax, jnp.array([5, 3, 0]))
+        assert jnp.allclose(result_assignment_syntax, result_at_set_syntax)
+
+    def test_single_index_assignment_all_items(self):
+        """Test single index assignment for Jax arrays for all array items."""
+
+        def double_all_single_assignment_syntax(x):
+            """Create a new array that is equal to 2 * x using single index assignment"""
+
+            first_dim = x.shape[0]
+            result = jnp.empty((first_dim,), dtype=x.dtype)
+
+            for i in range(first_dim):
+                result[i] = x[i] * 2
+
+            return result
+
+        ag_fn = run_autograph(double_all_single_assignment_syntax)
+        jaxpr = jax.make_jaxpr(ag_fn)(jnp.array([5, 3, 4]))
+        result_assignment_syntax = eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, jnp.array([5, 3, 4]))[0]
+
+        def double_all_at_set_syntax(x):
+            """Create a new array that is equal to 2 * x using at and set"""
+
+            first_dim = x.shape[0]
+            result = jnp.empty((first_dim,), dtype=x.dtype)
+
+            for i in range(first_dim):
+                result = result.at[i].set(x[i] * 2)
+
+            return result
+
+        ag_fn = run_autograph(double_all_at_set_syntax)
+        jaxpr = jax.make_jaxpr(ag_fn)(jnp.array([5, 3, 4]))
+        result_at_set_syntax = eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, jnp.array([5, 3, 4]))[0]
+
+        assert jnp.allclose(result_assignment_syntax, jnp.array([5, 3, 0]))
+        assert jnp.allclose(result_assignment_syntax, result_at_set_syntax)
+
+    def test_single_index_assignment_python_array(self):
+        """Test single index assignment for Non-Jax arrays for one array item."""
+
+        def zero_last_element_python_array(x):
+            """Set the last element of a python array to 0"""
+
+            last_element = len(x) - 1
+            x[last_element] = 0
+            return x
+
+        ag_fn = run_autograph(zero_last_element_python_array)
+        jaxpr = jax.make_jaxpr(ag_fn)(jnp.array([5, 3, 4]))
+        result_assignment_syntax = eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, jnp.array([5, 3, 4]))[0]
+
+        assert jnp.allclose(result_assignment_syntax, jnp.array([5, 3, 0]))
+
+    def test_slice_assignment_start_stop(self):
+        """Test slice (start, stop, None) assignment for Jax arrays."""
+        def expand_by_two(x):
+            first_dim = x.shape[0]
+            result = jnp.empty((first_dim * 2, *x.shape[1:]), dtype=x.dtype)
+
+            result[1:4] = x
+            return result
+
+        ag_fn = run_autograph(expand_by_two)
+        jaxpr = jax.make_jaxpr(ag_fn)(jnp.array([5, 3, 4]))
+        res = eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, jnp.array([5, 3, 4]))[0]
+
+        assert jnp.allclose(res, jnp.array([0, 5, 3, 4, 0, 0]))
+
+    def test_slice_assignment_start_stop_step(self):
+        """Test slice (start, stop, step) assignment for Jax arrays."""
+
+        def expand_by_two(x):
+            first_dim = x.shape[0]
+            result = jnp.empty((first_dim * 2, *x.shape[1:]), dtype=x.dtype)
+
+            result[1:5:2] = x[0:2]
+            return result
+
+        ag_fn = run_autograph(expand_by_two)
+        jaxpr = jax.make_jaxpr(ag_fn)(jnp.array([5, 3, 4]))
+        res = eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, jnp.array([5, 3, 4]))[0]
+
+        assert jnp.allclose(res, jnp.array([0, 5, 0, 3, 0, 0]))
+
+    def test_slice_assignment_start_only(self):
+        """Test slice (start, None, None) assignment for Jax arrays."""
+
+        def expand_by_two(x):
+            first_dim = x.shape[0]
+            result = jnp.empty((first_dim * 2, *x.shape[1:]), dtype=x.dtype)
+
+            # Size (starting from 3) must match with x.
+            result[3::] = x
+            return result
+
+        ag_fn = run_autograph(expand_by_two)
+        jaxpr = jax.make_jaxpr(ag_fn)(jnp.array([5, 3, 4]))
+        res = eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, jnp.array([5, 3, 4]))[0]
+
+        assert jnp.allclose(res, jnp.array([0, 0, 0, 5, 3, 4]))
+
+    def test_slice_assignment_stop_only(self):
+        """Test slice (None, stop, None) assignment for Jax arrays."""
+
+        def expand_by_two(x):
+            first_dim = x.shape[0]
+            result = jnp.empty((first_dim * 2, *x.shape[1:]), dtype=x.dtype)
+
+            # Size (ending before 3) must match with x.
+            result[:3] = x
+            return result
+
+        ag_fn = run_autograph(expand_by_two)
+        jaxpr = jax.make_jaxpr(ag_fn)(jnp.array([5, 3, 4]))
+        res = eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, jnp.array([5, 3, 4]))[0]
+
+        assert jnp.allclose(res, jnp.array([5, 3, 4, 0, 0, 0]))
+
+    def test_slice_assignment_step_only(self):
+        """Test slice (None, None, step) assignment for Jax arrays."""
+
+        def expand_by_two(x):
+            first_dim = x.shape[0]
+            result = jnp.empty((first_dim * 2, *x.shape[1:]), dtype=x.dtype)
+
+            # Size (len(result) / 2) must match with x.
+            result[::2] = x
+            return result
+
+        ag_fn = run_autograph(expand_by_two)
+        jaxpr = jax.make_jaxpr(ag_fn)(jnp.array([5, 3, 4]))
+        res = eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, jnp.array([5, 3, 4]))[0]
+
+        assert jnp.allclose(res, jnp.array([5, 0, 3, 0, 4, 0]))
+
+
+class TestDecorators:
+    """Test if Autograph works when applied to a decorated function"""
+
 #     def test_vmap(self):
 #         """Test if Autograph works when applied to a decorated function with vmap"""
 #
@@ -2014,347 +2132,379 @@ class TestWhileLoops:
 #         )
 #         assert jnp.allclose(result, expected)
 #
-#     def test_cond(self):
-#         """Test if Autograph works when applied to a decorated function with cond"""
-#
-#         n = 6
-#
-#         @cond(n > 4)
-#         def cond_fn():
-#             return n**2
-#
-#         @cond_fn.otherwise
-#         def else_fn():
-#             return n
-#
-#         assert qjit(cond_fn, autograph=True)() == 36
-#
-#     def test_for_loop(self):
-#         """Test if Autograph works when applied to a decorated function with for_loop"""
-#
-#         x = 5
-#         n = 6
-#
-#         @for_loop(0, n, 1)
-#         def loop(_, agg):
-#             return agg + x
-#
-#         assert qjit(loop, autograph=True)(0) == 30
-#
-#     def test_while_loop(self):
-#         """Test if Autograph works when applied to a decorated function with while_loop"""
-#
-#         n = 6
-#
-#         @while_loop(lambda i: i < n)
-#         def loop(i):
-#             return i + 1
-#
-#         assert qjit(loop, autograph=True)(0) == n
-#
-#
-# class TestJaxIndexOperatorUpdate:
-#     """Test Jax index operator update"""
-#
-#     def test_single_static_index_operator_update_one_item(self):
-#         """Test single index operator update for Jax arrays for one array item."""
-#
-#         @qjit(autograph=True)
-#         def workflow(x):
-#             def f(x):
-#                 """Double the first element of x using single index assignment"""
-#
-#                 x[0] *= 2
-#                 return x
-#
-#             def g(x):
-#                 """Double the first element of x using at and multiply"""
-#
-#                 x = x.at[0].multiply(2)
-#                 return x
-#
-#             result = f(x)
-#             expected = g(x)
-#             return result, expected
-#
-#         result, expected = workflow(np.array([5, 3, 4]))
-#         assert jnp.allclose(result, jnp.array([10, 3, 4]))
-#         assert jnp.allclose(result, expected)
-#
-#     def test_single_index_operator_update_one_item(self):
-#         """Test single index operator update for Jax arrays for one array item."""
-#
-#         @qjit(autograph=True)
-#         def workflow(x):
-#             def f(x):
-#                 """Double the last element of x using single index assignment"""
-#
-#                 last_element = x.shape[0] - 1
-#                 x[last_element] *= 2
-#                 return x
-#
-#             def g(x):
-#                 """Double the last element of x using at and multiply"""
-#
-#                 last_element = x.shape[0] - 1
-#                 x = x.at[last_element].multiply(2)
-#                 return x
-#
-#             result = f(x)
-#             expected = g(x)
-#             return result, expected
-#
-#         result, expected = workflow(np.array([5, 3, 4]))
-#         assert jnp.allclose(result, jnp.array([5, 3, 8]))
-#         assert jnp.allclose(result, expected)
-#
-#     def test_single_index_mult_update_all_items(self):
-#         """Test single index mult update for Jax arrays for all array items."""
-#
-#         @qjit(autograph=True)
-#         def workflow(x):
-#             def f(x):
-#                 """Create a new array that is equal to 2 * x using single index mult update"""
-#
-#                 first_dim = x.shape[0]
-#
-#                 for i in range(first_dim):
-#                     x[i] *= 2
-#
-#                 return x
-#
-#             def g(x):
-#                 """Create a new array that is equal to 2 * x using at and multiply"""
-#
-#                 first_dim = x.shape[0]
-#                 result = jnp.copy(x)
-#
-#                 for i in range(first_dim):
-#                     result = result.at[i].multiply(2)
-#
-#                 return result
-#
-#             result = f(x)
-#             expected = g(x)
-#             return result, expected
-#
-#         result, expected = workflow(np.array([5, 3, 4]))
-#         assert jnp.allclose(result, jnp.array([10, 6, 8]))
-#         assert jnp.allclose(result, expected)
-#
-#     def test_single_index_add_update_all_items(self):
-#         """Test single index add update for Jax arrays for all array items."""
-#
-#         @qjit(autograph=True)
-#         def workflow(x):
-#             def f(x):
-#                 """Create a new array that is equal to x + 1 using single index add update"""
-#
-#                 first_dim = x.shape[0]
-#
-#                 for i in range(first_dim):
-#                     x[i] += 1
-#
-#                 return x
-#
-#             def g(x):
-#                 """Create a new array that is equal to x + 1 using at and multiply"""
-#
-#                 first_dim = x.shape[0]
-#                 result = jnp.copy(x)
-#
-#                 for i in range(first_dim):
-#                     result = result.at[i].add(1)
-#
-#                 return result
-#
-#             result = f(x)
-#             expected = g(x)
-#             return result, expected
-#
-#         result, expected = workflow(np.array([5, 3, 4]))
-#         assert jnp.allclose(result, jnp.array([6, 4, 5]))
-#         assert jnp.allclose(result, expected)
-#
-#     def test_single_index_sub_update_all_items(self):
-#         """Test single index sub update for Jax arrays for all array items."""
-#
-#         @qjit(autograph=True)
-#         def workflow(x):
-#             def f(x):
-#                 """Create a new array that is equal to x - 1 using single index sub update"""
-#
-#                 first_dim = x.shape[0]
-#
-#                 for i in range(first_dim):
-#                     x[i] -= 1
-#
-#                 return x
-#
-#             def g(x):
-#                 """Create a new array that is equal to x - 1 using at and add"""
-#
-#                 first_dim = x.shape[0]
-#                 result = jnp.copy(x)
-#
-#                 for i in range(first_dim):
-#                     result = result.at[i].add(-1)
-#
-#                 return result
-#
-#             result = f(x)
-#             expected = g(x)
-#             return result, expected
-#
-#         result, expected = workflow(np.array([5, 3, 4]))
-#         assert jnp.allclose(result, jnp.array([4, 2, 3]))
-#         assert jnp.allclose(result, expected)
-#
-#     def test_single_index_div_update_all_items(self):
-#         """Test single index div update for Jax arrays for all array items."""
-#
-#         @qjit(autograph=True)
-#         def workflow(x):
-#             def f(x):
-#                 """Create a new array that is equal to x / 2 using single index div update"""
-#
-#                 first_dim = x.shape[0]
-#
-#                 for i in range(first_dim):
-#                     x[i] /= 2
-#
-#                 return x
-#
-#             def g(x):
-#                 """Create a new array that is equal to x / 2 using at and divide"""
-#
-#                 first_dim = x.shape[0]
-#                 result = jnp.copy(x)
-#
-#                 for i in range(first_dim):
-#                     result = result.at[i].divide(2)
-#
-#                 return result
-#
-#             result = f(x)
-#             expected = g(x)
-#             return result, expected
-#
-#         result, expected = workflow(np.array([5, 3, 4]))
-#         assert jnp.allclose(result, jnp.array([2.5, 1.5, 2]))
-#         assert jnp.allclose(result, expected)
-#
-#     def test_single_index_pow_update_all_items(self):
-#         """Test single index pow update for Jax arrays for all array items."""
-#
-#         @qjit(autograph=True)
-#         def workflow(x):
-#             def f(x):
-#                 """Create a new array that is equal to x ** 2 using single index sub update"""
-#
-#                 first_dim = x.shape[0]
-#
-#                 for i in range(first_dim):
-#                     x[i] **= 2
-#
-#                 return x
-#
-#             def g(x):
-#                 """Create a new array that is equal to x ** 2 using at and pow"""
-#
-#                 first_dim = x.shape[0]
-#                 result = jnp.copy(x)
-#
-#                 for i in range(first_dim):
-#                     result = result.at[i].power(2)
-#
-#                 return result
-#
-#             result = f(x)
-#             expected = g(x)
-#             return result, expected
-#
-#         result, expected = workflow(np.array([5, 3, 4]))
-#         assert jnp.allclose(result, jnp.array([25, 9, 16]))
-#         assert jnp.allclose(result, expected)
-#
-#     def test_single_index_operator_update_python_array(self):
-#         """Test single index operator update for Non-Jax arrays for one array item."""
-#
-#         @qjit(autograph=True)
-#         def double_last_element_python_array(x):
-#             """Double the last element of a python array"""
-#
-#             last_element = len(x) - 1
-#             x[last_element] *= 2
-#             return x
-#
-#         assert jnp.allclose(
-#             jnp.array(double_last_element_python_array([5, 3, 4])), jnp.array([5, 3, 8])
-#         )
-#
-#     def test_single_index_mult_update_slice(self):
-#         """Test slice (start, None, None)x mult update for Jax arrays."""
-#
-#         @qjit(autograph=True)
-#         def workflow(x):
-#
-#             def f(x):
-#                 """Create a new array that is equal to 2 * x for even indecies"""
-#
-#                 first_dim = x.shape[0]
-#                 x[0:first_dim:2] *= 2
-#
-#                 return x
-#
-#             def g(x):
-#                 """Create a new array that is equal to 2 * x using at and multiply"""
-#
-#                 first_dim = x.shape[0]
-#                 x = x.at[0:first_dim:2].multiply(2)
-#
-#                 return x
-#
-#             result = f(x)
-#             expected = g(x)
-#             return result, expected
-#
-#         result, expected = workflow(jnp.array([5, 4, 3, 2, 1]))
-#         assert jnp.allclose(result, jnp.array([10, 4, 6, 2, 2]))
-#         assert jnp.allclose(result, expected)
-#
-#     def test_unsopported_cases(self):
-#         """Test that TypeError is raised in unsopported cases."""
-#
-#         @qjit(autograph=True)
-#         def workflow(x):
-#
-#             def test_multi_dimensional_index(x):
-#                 """Test that TypeError is raised when using multi-dim indexing."""
-#                 x[0, 1] += 5
-#                 return x
-#
-#             x = jnp.array([[1, 2], [3, 4]])
-#             with pytest.raises(TypeError, match="JAX arrays are immutable"):
-#                 test_multi_dimensional_index(x)
-#
-#             def test_unsupported_operator(x):
-#                 """Test that TypeError is raised when using an unsupported operator."""
-#                 x[1] %= 2
-#                 return x
-#
-#             x = jnp.array([4, 2, 3])
-#             with pytest.raises(TypeError, match="JAX arrays are immutable"):
-#                 test_unsupported_operator(x)
-#
-#             def test_array_index(x):
-#                 """Test that TypeError is raised when using an array as index."""
-#                 x[np.array([1, 2])] += 3
-#                 return x
-#
-#             with pytest.raises(TypeError, match="JAX arrays are immutable"):
-#                 test_array_index(x)
-#
+    def test_cond(self):
+        """Test if Autograph works when applied to a decorated function with cond"""
+
+        n = 6
+
+        @cond(n > 4)
+        def cond_fn():
+            return n**2
+
+        @cond_fn.otherwise
+        def else_fn():
+            return n
+
+        ag_fn = run_autograph(cond_fn)
+        jaxpr = jax.make_jaxpr(ag_fn)()
+
+        assert eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)[0] == 36
+
+    def test_for_loop(self):
+        """Test if Autograph works when applied to a decorated function with for_loop"""
+
+        x = 5
+        n = 6
+
+        @for_loop(0, n, 1)
+        def loop(_, agg):
+            return agg + x
+
+        ag_fn = run_autograph(loop)
+        jaxpr = jax.make_jaxpr(ag_fn)(0)
+
+        assert eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0)[0] == 30
+
+    def test_while_loop(self):
+        """Test if Autograph works when applied to a decorated function with while_loop"""
+
+        n = 6
+
+        @while_loop(lambda i: i < n)
+        def loop(i):
+            return i + 1
+
+        ag_fn = run_autograph(loop)
+        jaxpr = jax.make_jaxpr(ag_fn)(0)
+
+        assert eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0)[0] == n
+
+
+class TestJaxIndexOperatorUpdate:
+    """Test Jax index operator update"""
+
+    def test_single_static_index_operator_update_one_item(self):
+        """Test single index operator update for Jax arrays for one array item."""
+
+        def workflow(x):
+            def f(x):
+                """Double the first element of x using single index assignment"""
+
+                x[0] *= 2
+                return x
+
+            def g(x):
+                """Double the first element of x using at and multiply"""
+
+                x = x.at[0].multiply(2)
+                return x
+
+            result = f(x)
+            expected = g(x)
+            return result, expected
+
+        ag_fn = run_autograph(workflow)
+        jaxpr = jax.make_jaxpr(ag_fn)(jnp.array([0, 0, 0]))
+        result, expected = eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, jnp.array([5, 3, 4]))
+
+        assert jnp.allclose(result, jnp.array([10, 3, 4]))
+        assert jnp.allclose(result, expected)
+
+    def test_single_index_operator_update_one_item(self):
+        """Test single index operator update for Jax arrays for one array item."""
+
+        def workflow(x):
+            def f(x):
+                """Double the last element of x using single index assignment"""
+
+                last_element = x.shape[0] - 1
+                x[last_element] *= 2
+                return x
+
+            def g(x):
+                """Double the last element of x using at and multiply"""
+
+                last_element = x.shape[0] - 1
+                x = x.at[last_element].multiply(2)
+                return x
+
+            result = f(x)
+            expected = g(x)
+            return result, expected
+
+        ag_fn = run_autograph(workflow)
+        jaxpr = jax.make_jaxpr(ag_fn)(jnp.array([0, 0, 0]))
+        result, expected = eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, jnp.array([5, 3, 4]))
+
+        assert jnp.allclose(result, jnp.array([5, 3, 8]))
+        assert jnp.allclose(result, expected)
+
+    def test_single_index_mult_update_all_items(self):
+        """Test single index mult update for Jax arrays for all array items."""
+
+        def workflow(x):
+            def f(x):
+                """Create a new array that is equal to 2 * x using single index mult update"""
+
+                first_dim = x.shape[0]
+
+                for i in range(first_dim):
+                    x[i] *= 2
+
+                return x
+
+            def g(x):
+                """Create a new array that is equal to 2 * x using at and multiply"""
+
+                first_dim = x.shape[0]
+                result = jnp.copy(x)
+
+                for i in range(first_dim):
+                    result = result.at[i].multiply(2)
+
+                return result
+
+            result = f(x)
+            expected = g(x)
+            return result, expected
+
+        ag_fn = run_autograph(workflow)
+        jaxpr = jax.make_jaxpr(ag_fn)(jnp.array([0, 0, 0]))
+        result, expected = eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, jnp.array([5, 3, 4]))
+
+        assert jnp.allclose(result, jnp.array([10, 6, 8]))
+        assert jnp.allclose(result, expected)
+
+    def test_single_index_add_update_all_items(self):
+        """Test single index add update for Jax arrays for all array items."""
+
+        def workflow(x):
+            def f(x):
+                """Create a new array that is equal to x + 1 using single index add update"""
+
+                first_dim = x.shape[0]
+
+                for i in range(first_dim):
+                    x[i] += 1
+
+                return x
+
+            def g(x):
+                """Create a new array that is equal to x + 1 using at and multiply"""
+
+                first_dim = x.shape[0]
+                result = jnp.copy(x)
+
+                for i in range(first_dim):
+                    result = result.at[i].add(1)
+
+                return result
+
+            result = f(x)
+            expected = g(x)
+            return result, expected
+
+        ag_fn = run_autograph(workflow)
+        jaxpr = jax.make_jaxpr(ag_fn)(jnp.array([0, 0, 0]))
+        result, expected = eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, jnp.array([5, 3, 4]))
+
+        assert jnp.allclose(result, jnp.array([6, 4, 5]))
+        assert jnp.allclose(result, expected)
+
+    def test_single_index_sub_update_all_items(self):
+        """Test single index sub update for Jax arrays for all array items."""
+
+        def workflow(x):
+            def f(x):
+                """Create a new array that is equal to x - 1 using single index sub update"""
+
+                first_dim = x.shape[0]
+
+                for i in range(first_dim):
+                    x[i] -= 1
+
+                return x
+
+            def g(x):
+                """Create a new array that is equal to x - 1 using at and add"""
+
+                first_dim = x.shape[0]
+                result = jnp.copy(x)
+
+                for i in range(first_dim):
+                    result = result.at[i].add(-1)
+
+                return result
+
+            result = f(x)
+            expected = g(x)
+            return result, expected
+
+        ag_fn = run_autograph(workflow)
+        jaxpr = jax.make_jaxpr(ag_fn)(jnp.array([0, 0, 0]))
+        result, expected = eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, jnp.array([5, 3, 4]))
+
+        assert jnp.allclose(result, jnp.array([4, 2, 3]))
+        assert jnp.allclose(result, expected)
+
+    def test_single_index_div_update_all_items(self):
+        """Test single index div update for Jax arrays for all array items."""
+
+        def workflow(x):
+            def f(x):
+                """Create a new array that is equal to x / 2 using single index div update"""
+
+                first_dim = x.shape[0]
+
+                for i in range(first_dim):
+                    x[i] /= 2
+
+                return x
+
+            def g(x):
+                """Create a new array that is equal to x / 2 using at and divide"""
+
+                first_dim = x.shape[0]
+                result = jnp.copy(x)
+
+                for i in range(first_dim):
+                    result = result.at[i].divide(2)
+
+                return result
+
+            result = f(x)
+            expected = g(x)
+            return result, expected
+
+        ag_fn = run_autograph(workflow)
+        jaxpr = jax.make_jaxpr(ag_fn)(jnp.array([0, 0, 0]))
+        result, expected = eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, jnp.array([5, 3, 4]))
+
+        assert jnp.allclose(result, jnp.array([2.5, 1.5, 2]))
+        assert jnp.allclose(result, expected)
+
+    def test_single_index_pow_update_all_items(self):
+        """Test single index pow update for Jax arrays for all array items."""
+
+        def workflow(x):
+            def f(x):
+                """Create a new array that is equal to x ** 2 using single index sub update"""
+
+                first_dim = x.shape[0]
+
+                for i in range(first_dim):
+                    x[i] **= 2
+
+                return x
+
+            def g(x):
+                """Create a new array that is equal to x ** 2 using at and pow"""
+
+                first_dim = x.shape[0]
+                result = jnp.copy(x)
+
+                for i in range(first_dim):
+                    result = result.at[i].power(2)
+
+                return result
+
+            result = f(x)
+            expected = g(x)
+            return result, expected
+
+        ag_fn = run_autograph(workflow)
+        jaxpr = jax.make_jaxpr(ag_fn)(jnp.array([0, 0, 0]))
+        result, expected = eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, jnp.array([5, 3, 4]))
+
+        assert jnp.allclose(result, jnp.array([25, 9, 16]))
+        assert jnp.allclose(result, expected)
+
+    def test_single_index_operator_update_python_array(self):
+        """Test single index operator update for Non-Jax arrays for one array item."""
+
+        def double_last_element_python_array(x):
+            """Double the last element of a python array"""
+
+            last_element = len(x) - 1
+            x[last_element] *= 2
+            return x
+
+        ag_fn = run_autograph(double_last_element_python_array)
+        jaxpr = jax.make_jaxpr(ag_fn)([0, 0, 0])
+        result = eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, [5, 3, 4])
+
+        assert jnp.allclose(jnp.array(result), jnp.array([5, 3, 8]))
+
+    def test_single_index_mult_update_slice(self):
+        """Test slice (start, None, None)x mult update for Jax arrays."""
+
+        def workflow(x):
+
+            def f(x):
+                """Create a new array that is equal to 2 * x for even indecies"""
+
+                first_dim = x.shape[0]
+                x[0:first_dim:2] *= 2
+
+                return x
+
+            def g(x):
+                """Create a new array that is equal to 2 * x using at and multiply"""
+
+                first_dim = x.shape[0]
+                x = x.at[0:first_dim:2].multiply(2)
+
+                return x
+
+            result = f(x)
+            expected = g(x)
+            return result, expected
+
+        ag_fn = run_autograph(workflow)
+        jaxpr = jax.make_jaxpr(ag_fn)(jnp.array([0, 0, 0, 0, 0]))
+        result, expected = eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, jnp.array([5, 4, 3, 2, 1]))
+
+        assert jnp.allclose(result, jnp.array([10, 4, 6, 2, 2]))
+        assert jnp.allclose(result, expected)
+
+    def test_multi_dimensional_index(self):
+        """Test that TypeError is raised when using multi-dim indexing."""
+
+        def multi_dimensional_index(x):
+            x[0, 1] += 5
+            return x
+
+        x = jnp.array([[1, 2], [3, 4]])
+        with pytest.raises(TypeError, match="JAX arrays are immutable"):
+            ag_fn = run_autograph(multi_dimensional_index)
+            jaxpr = jax.make_jaxpr(ag_fn)(x)
+
+    def test_unsupported_operator(self):
+        """Test that TypeError is raised when using an unsupported mathematical operator."""
+
+        def unsupported_operator(x):
+            x[1] %= 2
+            return x
+
+        x = jnp.array([4, 2, 3])
+        with pytest.raises(TypeError, match="JAX arrays are immutable"):
+            ag_fn = run_autograph(unsupported_operator)
+            jaxpr = jax.make_jaxpr(ag_fn)(x)
+
+    def test_array_index(self):
+        """Test that TypeError is raised when using an array as index."""
+        def array_index(x):
+            x[np.array([1, 2])] += 3
+            return x
+
+        x = jnp.array([4, 2, 3])
+        with pytest.raises(TypeError, match="JAX arrays are immutable"):
+            ag_fn = run_autograph(array_index)
+            jaxpr = jax.make_jaxpr(ag_fn)(x)
+
+
+
+
 
 if __name__ == "__main__":
     pytest.main(["-x", __file__])
