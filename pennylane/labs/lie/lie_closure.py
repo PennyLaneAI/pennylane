@@ -18,14 +18,20 @@ import warnings
 from collections.abc import Iterable
 from typing import Union
 
-import pennylane as qml
 import numpy as np
+import pennylane as qml
 
 from pennylane.pauli import PauliWord, PauliSentence
 from pennylane.operation import Operator
 
 
-def hermitian_basis(matrices, tol=None):
+def _hermitian_basis(matrices, tol=None):
+    """Find a linear independent basis of a list of Hermitian matrices
+    
+    Args:
+        matrices (Iterable[numpy.ndarray]): A list of Hermitian matrices.
+        tol (float): Tolerance for linear dependence check. Defaults to ``1e-10``.
+    """
     if tol is None:
         tol = 1e-10
 
@@ -34,7 +40,7 @@ def hermitian_basis(matrices, tol=None):
         if not np.allclose(A.conj().T, A):
             A = 1j * A
             if not np.allclose(A.conj().T, A):
-                print("warning: some basis matrix not Hermitian")
+                warnings.warn("Some basis matrices are not Hermitian", UserWarning)
 
         B = A.copy()
         for C in basis:
@@ -91,7 +97,7 @@ def lie_closure_dense(
 
     gens = np.array([qml.matrix(op, wire_order=range(n)) for op in generators], dtype=complex)
     _, chi, _ = gens.shape
-    vspace = hermitian_basis(gens, tol)
+    vspace = _hermitian_basis(gens, tol)
 
     epoch = 0
     old_length = 0  # dummy value
@@ -111,7 +117,7 @@ def lie_closure_dense(
 
         # sub-select linear independent subset
         vspace = np.concatenate([vspace, all_coms])
-        vspace = hermitian_basis(vspace, tol)
+        vspace = _hermitian_basis(vspace, tol)
 
         # Updated number of linearly independent PauliSentences from previous and current step
         old_length = new_length
