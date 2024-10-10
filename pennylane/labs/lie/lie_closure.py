@@ -27,7 +27,7 @@ from pennylane.operation import Operator
 
 def _hermitian_basis(matrices, tol=None):
     """Find a linear independent basis of a list of Hermitian matrices
-    
+
     Args:
         matrices (Iterable[numpy.ndarray]): A list of Hermitian matrices.
         tol (float): Tolerance for linear dependence check. Defaults to ``1e-10``.
