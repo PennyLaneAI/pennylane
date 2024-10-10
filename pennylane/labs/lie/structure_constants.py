@@ -59,7 +59,7 @@ def structure_constants_dense(g: TensorLike) -> TensorLike:
     m0m1 = np.einsum("aij,bjk->abik", g, g)
     m0m1 = np.reshape(m0m1, (-1, chi, chi))
 
-    m1m0 = np.einsum("aij,bki->abkj", g, g)
+    m1m0 = np.einsum("aij,bjk->baik", g, g)
     m1m0 = np.reshape(m1m0, (-1, chi, chi))
     all_coms = m0m1 - m1m0
 
