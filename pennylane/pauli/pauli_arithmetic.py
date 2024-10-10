@@ -511,7 +511,11 @@ class PauliWord(dict):
         if len(self) == 0:
             return Identity(wires=wire_order)
 
-        factors = [_make_operation(op, wire) for wire, op in self.items()]
+        if qml.capture.enabled():
+            # cant use lru_cache with program capture
+            factors = [op_map[op](wire) for wire, op in self.items()]
+        else:
+            factors = [_make_operation(op, wire) for wire, op in self.items()]
 
         if get_as_tensor:
             return factors[0] if len(factors) == 1 else Tensor(*factors)
@@ -537,7 +541,11 @@ class PauliWord(dict):
                 raise ValueError("Can't get the Hamiltonian for an empty PauliWord.")
             return qml.Hamiltonian([1], [Identity(wires=wire_order)])
 
-        obs = [_make_operation(op, wire) for wire, op in self.items()]
+        if qml.capture.enabled():
+            # cant use lru_cache with program capture
+            obs = [op_map[op](wire) for wire, op in self.items()]
+        else:
+            obs = [_make_operation(op, wire) for wire, op in self.items()]
         return qml.Hamiltonian([1], [obs[0] if len(obs) == 1 else Tensor(*obs)])
 
     def map_wires(self, wire_map: dict) -> "PauliWord":
