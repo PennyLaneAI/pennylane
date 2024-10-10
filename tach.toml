@@ -1,0 +1,16 @@
+exclude = [
+    ".*__pycache__",
+    ".*egg-info",
+    "docs",
+    "tests",
+]
+source_roots = [
+    ".",
+    "pennylane",
+]
+
+[[modules]]
+path = "pennylane.labs"
+depends_on = [
+    { path = "<root>" },
+]
