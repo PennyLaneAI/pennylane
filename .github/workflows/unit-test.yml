@@ -175,10 +175,10 @@ jobs:
           path: ${{ inputs.requirements_file }}
 
       - name: Upload Durations file as artifact
-        if: ${{ inputs.pytest_durations_file_path != '' }}
+        if: inputs.pytest_durations_file_path != ''
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ inputs.job_name }}-durations.json
+          name: durations-${{ inputs.job_name }}
           path: ${{ inputs.pytest_durations_file_path }}
           include-hidden-files: true
 
