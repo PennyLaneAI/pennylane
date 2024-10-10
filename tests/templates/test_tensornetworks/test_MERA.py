@@ -527,19 +527,11 @@ class TestTemplateOutputs:
 
         dev = qml.device("default.qubit", wires=wires)
 
-        @jax.jit
         @qml.qnode(dev)
-        def circuit_template():
+        def circuit():
             qml.MERA(wires, n_block_wires, block, n_params_block, template_weights)
             return qml.expval(qml.PauliZ(wires=wires[1]))
 
-        template_result = circuit_template()
+        jit_circuit = jax.jit(circuit)
 
-        @jax.jit
-        @qml.qnode(dev)
-        def circuit_manual():
-            expected_circuit(template_weights, wires)
-            return qml.expval(qml.PauliZ(wires=wires[1]))
-
-        manual_result = circuit_manual()
-        assert np.isclose(template_result, manual_result)
+        assert qml.math.allclose(circuit(), jit_circuit())

@@ -428,7 +428,6 @@ class TestTemplateOutputs:
             "wires",
             "n_block_wires",
             "template_weights",
-            "expected_circuit",
         ),
         [
             (
@@ -437,7 +436,6 @@ class TestTemplateOutputs:
                 [0, 1, 2, 3],
                 2,
                 [[0.1, 0.2], [-0.2, 0.3], [0.3, 0.4]],
-                circuit2_TTN,
             ),
             (
                 circuit3_block,
@@ -445,31 +443,22 @@ class TestTemplateOutputs:
                 [1, 2, 3, 4],
                 2,
                 [[0.1, 0.2, 0.3], [0.2, 0.3, -0.4], [0.5, 0.2, 0.3]],
-                circuit3_TTN,
             ),
         ],
     )
     @pytest.mark.jax
     def test_jax_jit(
-        self, block, n_params_block, wires, n_block_wires, template_weights, expected_circuit
+        self, block, n_params_block, wires, n_block_wires, template_weights
     ):
         import jax
 
         dev = qml.device("default.qubit", wires=wires)
 
-        @jax.jit
         @qml.qnode(dev)
-        def circuit_template():
+        def circuit():
             qml.TTN(wires, n_block_wires, block, n_params_block, template_weights)
             return qml.expval(qml.PauliX(wires=wires[-1]))
 
-        template_result = circuit_template()
+        jit_circuit = jax.jit(circuit)
 
-        @jax.jit
-        @qml.qnode(dev)
-        def circuit_manual():
-            expected_circuit(template_weights, wires)
-            return qml.expval(qml.PauliX(wires=wires[-1]))
-
-        manual_result = circuit_manual()
-        assert np.isclose(template_result, manual_result)
+        assert qml.math.allclose(circuit(), jit_circuit())

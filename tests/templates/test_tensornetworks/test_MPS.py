@@ -527,9 +527,8 @@ class TestTemplateOutputs:
         block = getattr(self, block)
         expected_circuit = getattr(self, expected_circuit)
 
-        @jax.jit
         @qml.qnode(dev)
-        def circuit_template():
+        def circuit():
             qml.MPS(
                 wires,
                 n_block_wires,
@@ -541,13 +540,6 @@ class TestTemplateOutputs:
             )
             return qml.expval(qml.PauliZ(wires=wires[-1]))
 
-        template_result = circuit_template()
+        jit_circuit = jax.jit(circuit)
 
-        @jax.jit
-        @qml.qnode(dev)
-        def circuit_manual():
-            expected_circuit(weights=template_weights, wires=wires)
-            return qml.expval(qml.PauliZ(wires=wires[-1]))
-
-        manual_result = circuit_manual()
-        assert np.isclose(template_result, manual_result)
+        assert np.isclose(circuit(), jit_circuit())
