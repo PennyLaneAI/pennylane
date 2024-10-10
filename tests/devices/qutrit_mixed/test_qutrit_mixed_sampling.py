@@ -26,12 +26,11 @@ from pennylane.devices.qutrit_mixed import (
     sample_state,
 )
 from pennylane.devices.qutrit_mixed.sampling import (
+    _sample_probs_jax,
     _sample_state_jax,
     sample_probs,
-    _sample_probs_jax,
 )
 from pennylane.measurements import Shots
-
 
 APPROX_ATOL = 0.05
 QUDIT_DIM = 3
@@ -614,7 +613,6 @@ class TestBroadcastingPRNG:
     )
     def test_nonsample_measure_shot_vector(self, mocker, shots, measurement, expected):
         """Test that broadcasting works for the other sample measurements and shot vectors"""
-
         import jax
 
         spy = mocker.spy(qml.devices.qutrit_mixed.sampling, "_sample_state_jax")
