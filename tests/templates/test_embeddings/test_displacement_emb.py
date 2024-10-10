@@ -269,7 +269,6 @@ class TestInterfaces:
         circuit = qml.QNode(circuit_template, dev)
         circuit2 = jax.jit(circuit)
 
-
         res = circuit(features)
         res2 = circuit2(features)
         assert qml.math.allclose(res, res2, atol=tol, rtol=0)
