@@ -493,7 +493,6 @@ class TestTemplateOutputs:
             "wires",
             "n_block_wires",
             "template_weights",
-            "expected_circuit",
         ),
         [
             (
@@ -502,7 +501,6 @@ class TestTemplateOutputs:
                 [0, 1, 2, 3],
                 2,
                 [[0.1, 0.2], [-0.2, 0.3], [0.3, 0.4], [0.1, 0.2], [-0.2, 0.3]],
-                circuit2_MERA,
             ),
             (
                 circuit3_block,
@@ -516,12 +514,11 @@ class TestTemplateOutputs:
                     [0.1, 0.2, 0.3],
                     [0.2, 0.3, -0.4],
                 ],
-                circuit3_MERA,
             ),
         ],
     )
     def test_jax_jit(
-        self, block, n_params_block, wires, n_block_wires, template_weights, expected_circuit
+        self, block, n_params_block, wires, n_block_wires, template_weights
     ):
         import jax
 
