@@ -41,7 +41,7 @@ jobs:
       pytest_store_durations: true
 
   upload-stable-deps:
-    needs: tests
+    needs: [tests]
     runs-on: ubuntu-latest
     if: ${{ github.event_name == 'schedule' }}
     steps:
