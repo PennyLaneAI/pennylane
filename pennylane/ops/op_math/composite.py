@@ -39,7 +39,8 @@ def handle_recursion_error(func):
             raise RuntimeError(
                 "Maximum recursion depth reached! This is likely due to nesting too many "
                 "levels of composite operators. Try setting lazy=False when calling qml.sum "
-                "and qml.prod, or use the + and @ operators instead."
+                "and qml.prod, or use the + and @ operators instead. Alternatively, you "
+                "can periodically call qml.simplify on your operators."
             ) from e
 
     return wrapper
