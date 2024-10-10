@@ -127,6 +127,30 @@ def test_forward_execution():
     assert np.allclose(res, expected)
 
 
+@pytest.mark.jax
+def test_jax_jit():
+    """Test that the template correctly compiles with JAX JIT."""
+    import jax
+
+    n_wires = 2
+    dev = qml.device("default.qubit", wires=n_wires)
+
+    coeffs = [1, -1]
+    obs = [qml.X(0) @ qml.Y(1), qml.Y(0) @ qml.X(1)]
+    hamiltonian = qml.ops.LinearCombination(coeffs, obs)
+    frequencies = (2, 4)
+
+    @qml.qnode(dev)
+    def circuit(time):
+        qml.X(0)
+        qml.CommutingEvolution(hamiltonian, time, frequencies)
+        return qml.expval(qml.Z(0))
+
+    jit_circuit = jax.jit(circuit)
+
+    assert qml.math.allclose(circuit(1), jit_circuit(1))
+
+
 class TestInputs:
     """Tests for input validation of `CommutingEvolution`."""
 
