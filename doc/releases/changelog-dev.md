@@ -141,6 +141,9 @@
 
 <h3>Breaking changes 💔</h3>
 
+* `AllWires` validation in `QNode.construct` has been removed. 
+  [(#6373)](https://github.com/PennyLaneAI/pennylane/pull/6373)
+
 * The `simplify` argument in `qml.Hamiltonian` and `qml.ops.LinearCombination` has been removed.
   Instead, `qml.simplify()` can be called on the constructed operator.
   [(#6279)](https://github.com/PennyLaneAI/pennylane/pull/6279)
