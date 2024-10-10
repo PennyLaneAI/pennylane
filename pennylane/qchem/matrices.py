@@ -27,6 +27,7 @@ from .integrals import (
     moment_integral,
     overlap_integral,
     repulsion_integral,
+    _check_requires_grad,
 )
 
 
@@ -264,9 +265,7 @@ def attraction_matrix(basis_functions, charges, r):
         n = len(basis_functions)
         matrix = qml.math.zeros((n, n))
 
-        requires_grad = getattr(r, "requires_grad", False) or (
-            len(args) > 0 and qml.math.get_interface(r) == "jax" and qml.math.requires_grad(args[0])
-        )
+        requires_grad = _check_requires_grad(r, False, args, 0)
         for (i, a), (j, b) in it.combinations_with_replacement(enumerate(basis_functions), r=2):
             integral = 0
             if args:
@@ -290,16 +289,12 @@ def attraction_matrix(basis_functions, charges, r):
                         for arg in args
                     )
                 for k, c in enumerate(r):
-                    if getattr(c, "requires_grad", False) or (
-                        qml.math.get_interface(r) == "jax" and qml.math.requires_grad(args[0])
-                    ):
+                    if _check_requires_grad(c, False, args, 0):
                         args_ab = [args[0][k]] + args_ab
                     integral = integral - charges[k] * attraction_integral(
                         c, a, b, normalize=False
                     )(*args_ab)
-                    if getattr(c, "requires_grad", False) or (
-                        qml.math.get_interface(r) == "jax" and qml.math.requires_grad(args[0])
-                    ):
+                    if _check_requires_grad(c, False, args, 0):
                         args_ab = args_ab[1:]
             else:
                 for k, c in enumerate(r):
@@ -426,9 +421,7 @@ def core_matrix(basis_functions, charges, r):
         Returns:
             array[array[float]]: the core matrix
         """
-        if getattr(r, "requires_grad", False) or (
-            len(args) > 0 and qml.math.get_interface(r) == "jax" and qml.math.requires_grad(args[0])
-        ):
+        if _check_requires_grad(r, False, args, 0):
             t = kinetic_matrix(basis_functions)(*args[1:])
         else:
             t = kinetic_matrix(basis_functions)(*args)
