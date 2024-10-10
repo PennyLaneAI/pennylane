@@ -35,6 +35,10 @@
 
 <h3>Improvements 🛠</h3>
 
+* `qml.matrix` now works with empty objects (such as empty tapes, `QNode`s and quantum functions that do
+  not call operations, single operators with empty decompositions).
+  [(#6347)](https://github.com/PennyLaneAI/pennylane/pull/6347)
+  
 * PennyLane is now compatible with NumPy 2.0.
   [(#6061)](https://github.com/PennyLaneAI/pennylane/pull/6061)
   [(#6258)](https://github.com/PennyLaneAI/pennylane/pull/6258)
@@ -62,6 +66,12 @@
 * All PL templates are now unit tested to ensure JIT compatibility.
   [(#6309)](https://github.com/PennyLaneAI/pennylane/pull/6309)
 
+* `qml.AmplitudeAmplification` is now compatible with QJIT.
+  [(#6306)](https://github.com/PennyLaneAI/pennylane/pull/6306)
+
+* The quantum arithmetic templates are now QJIT compatible.
+  [(#6307)](https://github.com/PennyLaneAI/pennylane/pull/6307)
+  
 * The `qml.Qubitization` template is now QJIT compatible.
   [(#6305)](https://github.com/PennyLaneAI/pennylane/pull/6305)
 
