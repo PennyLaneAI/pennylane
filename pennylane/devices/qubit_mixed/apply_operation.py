@@ -19,6 +19,7 @@ from string import ascii_letters as alphabet
 
 import pennylane as qml
 from pennylane import math
+from pennylane.measurements import Shots
 from pennylane.operation import Channel
 from pennylane.ops.qubit.attributes import diagonal_in_z_basis
 
@@ -80,10 +81,19 @@ def apply_operation(
     state,
     is_state_batched: bool = False,
     debugger=None,
-    **_,
+    postselect_mode=None,
+    rng=None,
+    prng_key=None,
+    tape_shots=Shots(None),
 ):
     """Apply an operation to a given state."""
-    return _apply_operation_default(op, state, is_state_batched, debugger)
+
+    num_op_wires = len(op.wires)
+    matrices = _get_kraus(op)
+    interface = qml.math.get_interface(state, *matrices)
+    if (num_op_wires > 2 and interface in {"autograd", "numpy"}) or num_op_wires > 7:
+        return _apply_channel_tensordot(matrices, state, wires)
+    return _apply_channel_einsum(matrices, state, wires)
 
 
 def _apply_operation_default(op, state, is_state_batched, debugger):
