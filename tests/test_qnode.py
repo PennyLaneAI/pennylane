@@ -2008,7 +2008,7 @@ def test_prune_dynamic_transform_with_mcm():
 
 
 def test_gradient_fn_lightning_metric_tensor():
-    """Test that if lightning is used with the metric tensor, the graident_fn is parameter shift."""
+    """Test that if lightning is used with the metric tensor, the gradient_fn is parameter shift."""
 
     dev = qml.device("lightning.qubit", wires=2)
 
