@@ -226,13 +226,13 @@ class TestInterfaces:
         weight = jnp.array(0.5)
         dev = qml.device("default.qubit", wires=4)
 
-        circuit = jax.jit(qml.QNode(circuit_template, dev))
+        circuit = qml.QNode(circuit_template, dev)
+        jit_circuit = jax.jit(circuit)
+        assert qml.math.allclose(circuit(weight), jit_circuit(weight))
 
-        circuit(weight)
         grad_fn = jax.grad(circuit)
-
-        # check that the gradient is computed without error
-        grad_fn(weight)
+        grad_jit = jax.grad(jit_circuit)
+        assert qml.math.allclose(grad_fn(weight), grad_jit(weight))
 
     @pytest.mark.tf
     def test_tf(self):

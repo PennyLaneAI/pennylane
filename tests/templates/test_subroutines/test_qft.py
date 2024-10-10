@@ -110,11 +110,16 @@ class TestQFT:
 
         dev = qml.device("default.qubit", wires=wires)
 
-        @jax.jit
         @qml.qnode(dev)
         def circuit_qft(basis_state):
             qml.BasisState(basis_state, wires=range(wires))
             qml.QFT(wires=range(wires))
             return qml.state()
 
-        circuit_qft(jnp.array([1.0, 0.0, 0.0]))
+        jit_qft = jax.jit(circuit_qft)
+
+        res = circuit_qft(jnp.array([1.0, 0.0, 0.0]))
+        res2 = jit_qft(jnp.array([1.0, 0.0, 0.0]))
+
+        assert qml.math.allclose(res, res2)
+

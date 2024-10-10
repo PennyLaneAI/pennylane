@@ -144,18 +144,18 @@ class TestInterfaces:
 
     @pytest.mark.jax
     def test_jax_jit(self):
-        """Test that the template can be correctly used with the JAX-JIT interface."""
+        """Test that the template correctly compiles with JAX JIT   ."""
         import jax
-
-        expected = [1.87469973e-33, 2.50000000e-01, 5.00000000e-01, 2.50000000e-01]
 
         dev = qml.device("default.qubit", wires=2)
 
-        @jax.jit
         @qml.qnode(dev)
         def circuit():
             qml.CosineWindow(wires=[0, 1])
             return qml.probs(wires=[0, 1])
 
+        circuit2 = jax.jit(circuit)
+
         res = circuit()
-        assert np.allclose(res, expected, atol=1e-6, rtol=0)
+        res2 = circuit2()
+        assert np.allclose(res, res2, atol=1e-6, rtol=0)

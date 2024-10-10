@@ -325,7 +325,7 @@ class TestInterfaces:
 
     @pytest.mark.jax
     def test_jax_jit(self):
-        """Tests jit within the jax interface."""
+        """Test the template compiles with JAX JIT."""
 
         import jax
         import jax.numpy as jnp
@@ -333,13 +333,15 @@ class TestInterfaces:
         weight = jnp.array(0.5)
         dev = qml.device("default.qubit", wires=4)
 
-        circuit = jax.jit(qml.QNode(circuit_template, dev))
+        circuit = qml.QNode(circuit_template, dev)
+        circuit2 = jax.jit(circuit)
 
-        circuit(weight)
+        assert qml.math.allclose(circuit(weight), circuit2(weight))
+
         grad_fn = jax.grad(circuit)
+        grad_fn2 = jax.grad(circuit2)
 
-        # check that the gradient is computed without error
-        grad_fn(weight)
+        assert qml.math.allclose(grad_fn(weight), grad_fn2(weight))
 
     @pytest.mark.tf
     def test_tf(self):

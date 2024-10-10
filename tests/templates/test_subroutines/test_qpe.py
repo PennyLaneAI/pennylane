@@ -399,7 +399,7 @@ class TestDecomposition:
 
     @pytest.mark.jax
     def test_jit(self):
-        """Test if JIT works properly on the example in documentation"""
+        """Tests the template correctly compiles with JAX JIT."""
         import jax
 
         phase = 5
@@ -410,7 +410,6 @@ class TestDecomposition:
 
         dev = qml.device("default.qubit", wires=n_estimation_wires + 1)
 
-        @jax.jit
         @qml.qnode(dev)
         def circuit():
             qml.Hadamard(wires=target_wires)
@@ -421,7 +420,9 @@ class TestDecomposition:
 
             return qml.probs(estimation_wires)
 
-        circuit()
+        jit_circuit = jax.jit(circuit)
+
+        assert qml.math.allclose(circuit(), jit_circuit())
 
 
 class TestInputs:

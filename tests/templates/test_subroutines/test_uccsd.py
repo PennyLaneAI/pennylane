@@ -552,8 +552,8 @@ class TestInterfaces:
         weights = jnp.array(np.random.random(size=(2,)))
         dev = qml.device("default.qubit", wires=4)
 
-        circuit = jax.jit(qml.QNode(circuit_template, dev), static_argnames="n_repeats")
-        circuit2 = jax.jit(qml.QNode(circuit_decomposed, dev), static_argnames="n_repeats")
+        circuit = qml.QNode(circuit_template, dev)
+        circuit2 = jax.jit(circuit, static_argnames="n_repeats")
 
         res = circuit(weights)
         res2 = circuit2(weights)

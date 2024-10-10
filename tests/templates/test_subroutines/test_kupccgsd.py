@@ -576,7 +576,7 @@ class TestInterfaces:
 
     @pytest.mark.jax
     def test_jax_jit(self, tol):
-        """Test jit within the jax interface."""
+        """Test the template compiles with JAX JIT."""
 
         import jax
         import jax.numpy as jnp
@@ -585,8 +585,8 @@ class TestInterfaces:
 
         dev = qml.device("default.qubit", wires=4)
 
-        circuit = jax.jit(qml.QNode(circuit_template, dev))
-        circuit2 = jax.jit(qml.QNode(circuit_decomposed, dev))
+        circuit = qml.QNode(circuit_template, dev)
+        circuit2 = jax.jit(circuit)
 
         res = circuit(weights)
         res2 = circuit2(weights)

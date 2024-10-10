@@ -130,6 +130,7 @@ def test_forward_execution():
 
 @pytest.mark.jax
 def test_jax_jit():
+    """Test that the template correctly compiles with JAX JIT."""
     import jax
 
     n_wires = 2
@@ -137,7 +138,7 @@ def test_jax_jit():
 
     coeffs = [1, -1]
     obs = [qml.X(0) @ qml.Y(1), qml.Y(0) @ qml.X(1)]
-    hamiltonian = qml.Hamiltonian(coeffs, obs)
+    hamiltonian = qml.ops.LinearCombination(coeffs, obs)
     frequencies = (2, 4)
 
     @qml.qnode(dev)

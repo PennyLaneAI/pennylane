@@ -417,10 +417,11 @@ class TestInterfaces:
         dev = qml.device("default.qubit", wires=4)
         ops = [qml.X(2), qml.X(3), qml.Y(2), qml.SWAP([2, 3])]
 
-        @jax.jit
         @qml.qnode(dev)
         def circuit():
             qml.Select(ops, control=[0, 1])
             return qml.state()
 
-        circuit()
+        jit_circuit = jax.jit(circuit)
+
+        assert qml.math.allclose(circuit(), jit_circuit())
