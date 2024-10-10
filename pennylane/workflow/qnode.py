@@ -118,7 +118,18 @@ def _to_qfunc_output_type(
     if isinstance(qfunc_output, (tuple, qml.measurements.MeasurementProcess)):
         return results
 
-    return type(qfunc_output)(results)
+    # Work around for tensor objects coming from qml.math.hstack
+    if isinstance(qfunc_output[0], qml.numpy.tensor):
+        qfunc_output = [
+            m.base.item()
+            for m in qfunc_output
+            if isinstance(m.base.item(), qml.measurements.MeasurementProcess)
+        ]
+
+    _, structure = qml.pytrees.flatten(
+        qfunc_output, is_leaf=lambda obj: isinstance(obj, qml.measurements.MeasurementProcess)
+    )
+    return qml.pytrees.unflatten(results, structure)
 
 
 def _validate_gradient_kwargs(gradient_kwargs: dict) -> None:
@@ -837,8 +848,20 @@ class QNode:
         params = self.tape.get_parameters(trainable_only=False)
         self.tape.trainable_params = qml.math.get_trainable_indices(params)
 
-        if isinstance(self._qfunc_output, qml.numpy.ndarray):
-            measurement_processes = tuple(self.tape.measurements)
+        measurement_processes = qml.pytrees.flatten(
+            self._qfunc_output,
+            is_leaf=lambda obj: isinstance(obj, qml.measurements.MeasurementProcess),
+        )[0]
+
+        # Work around for tensor objects coming from qml.math.hstack
+        if len(measurement_processes) != 0 and isinstance(
+            measurement_processes[0], qml.numpy.tensor
+        ):
+            measurement_processes = [
+                m.base.item()
+                for m in measurement_processes[0]
+                if isinstance(m.base.item(), qml.measurements.MeasurementProcess)
+            ]
         elif not isinstance(self._qfunc_output, Sequence):
             measurement_processes = (self._qfunc_output,)
         else:
