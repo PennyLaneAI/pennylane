@@ -173,12 +173,20 @@ class OutMultiplier(Operation):
         if any(wire in y_wires for wire in output_wires):
             raise ValueError("None of the wires in y_wires should be included in output_wires.")
 
-        wires_list = ["x_wires", "y_wires", "output_wires", "work_wires"]
+        wires_list = [x_wires, y_wires, output_wires]
+        wires_name = ["x_wires", "y_wires", "output_wires"]
+        self.hyperparameters["work_wires"] = work_wires
 
-        for key in wires_list:
-            self.hyperparameters[key] = qml.wires.Wires(locals()[key])
+        if work_wires is not None:
+            wires_list.append(work_wires)
+            wires_name.append("work_wires")
+
+        for name, wires in zip(wires_name, wires_list):
+            self.hyperparameters[name] = qml.wires.Wires(wires)
         self.hyperparameters["mod"] = mod
-        all_wires = sum(self.hyperparameters[key] for key in wires_list)
+
+        # pylint: disable=consider-using-generator
+        all_wires = sum([self.hyperparameters[name] for name in wires_name], start=[])
         super().__init__(wires=all_wires, id=id)
 
     @property
@@ -206,16 +214,6 @@ class OutMultiplier(Operation):
             new_dict["output_wires"],
             self.hyperparameters["mod"],
             new_dict["work_wires"],
-        )
-
-    @property
-    def wires(self):
-        """All wires involved in the operation."""
-        return (
-            self.hyperparameters["x_wires"]
-            + self.hyperparameters["y_wires"]
-            + self.hyperparameters["output_wires"]
-            + self.hyperparameters["work_wires"]
         )
 
     def decomposition(self):  # pylint: disable=arguments-differ
