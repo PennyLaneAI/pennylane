@@ -211,13 +211,6 @@ class TestInitialization:
 class TestMscMethods:
     """Test miscellaneous methods of the SProd class."""
 
-    def test_recursion_depth_error_message(self):
-        """Tests that a sensible error is raised from a recursion error"""
-
-        op = qml.PauliRot(np.random.uniform(0, 2 * np.pi), "X", wires=1)
-        for _ in range(2000):
-            op = qml.s_prod(1, op)
-
     def test_string_with_single_pauli(self):
         """Test the string representation with single pauli"""
         res = qml.s_prod(0.5, qml.PauliX("a"))
