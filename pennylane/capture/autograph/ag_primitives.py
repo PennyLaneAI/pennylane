@@ -58,34 +58,6 @@ __all__ = [
 ]
 
 
-def get_program_length(reference_tracers):
-    """Get the current number of instructions of the quantum and classical program."""
-
-    num_jaxpr_eqns, num_tape_ops = 0, 0
-
-    quantum_queue = qml.QueuingManager.active_context()
-    assert quantum_queue is not None
-    # Using the class methods directly allows this to work for both
-    # QuantumTape & AnnotatedQueue instances.
-    # pylint: disable=unnecessary-dunder-call
-    num_tape_ops = AnnotatedQueue.__len__(quantum_queue)
-
-    return num_jaxpr_eqns, num_tape_ops
-
-
-def reset_program_to_length(reference_tracers, num_jaxpr_eqns, num_tape_ops):
-    """Reset the quantum and classical program back to a given length."""
-
-    quantum_queue = qml.QueuingManager.active_context()
-    breakpoint()
-    assert quantum_queue is not None
-    # Using the class methods directly allows this to work for both
-    # QuantumTape & AnnotatedQueue instances.
-    # pylint: disable=unnecessary-dunder-call
-    while qml.AnnotatedQueue.__len__(quantum_queue) > num_tape_ops:
-        AnnotatedQueue.popitem(quantum_queue)
-
-
 def assert_results(results, var_names):
     """Assert that none of the results are undefined, i.e. have no value."""
 
@@ -314,7 +286,7 @@ def for_stmt(
     # Attempt to trace the PennyLane for loop.
     if not fallback:
         reference_tracers = (start, stop, step, *init_state)
-        num_instructions = get_program_length(reference_tracers)
+        # num_instructions = get_program_length(reference_tracers)
 
         try:
             set_state(init_state)
@@ -335,7 +307,7 @@ def for_stmt(
                 raise e
 
             fallback = True
-            reset_program_to_length(reference_tracers, *num_instructions)
+            # reset_program_to_length(reference_tracers, *num_instructions)
 
             # pylint: disable=import-outside-toplevel
             import inspect
@@ -412,7 +384,7 @@ def while_stmt(loop_test, loop_body, get_state, set_state, symbol_names, _opts):
     init_state = get_state()
 
     reference_tracers = init_state
-    num_instructions = get_program_length(reference_tracers)
+    # num_instructions = get_program_length(reference_tracers)
 
     try:
         results = _call_pennylane_while(loop_test, loop_body, get_state, set_state, symbol_names)
@@ -422,7 +394,7 @@ def while_stmt(loop_test, loop_body, get_state, set_state, symbol_names, _opts):
             raise e
 
         fallback = True
-        reset_program_to_length(reference_tracers, *num_instructions)
+        # reset_program_to_length(reference_tracers, *num_instructions)
 
     if fallback:
         set_state(init_state)
