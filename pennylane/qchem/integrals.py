@@ -138,9 +138,9 @@ def _generate_params(params, args):
     Returns:
         list(array[float]): basis set parameters
     """
-    # Friendly reference for JAX.
-    # params order is ALPHA COEFF COORD
-    # args order is COORD COEFF ALPHA
+    # Developer note for ordering with JAX:
+    # 1. params order is [ALPHA COEFF COORD]
+    # 2. args order is [COORD COEFF ALPHA]
     basis_params = []
     c = 0
     for i, p in enumerate(params):
