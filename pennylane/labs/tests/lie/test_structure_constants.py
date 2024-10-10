@@ -18,8 +18,8 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.pauli import PauliSentence, PauliWord
 from pennylane.labs.lie import structure_constants_dense
+from pennylane.pauli import PauliSentence, PauliWord
 
 ## Construct some example DLAs
 # TFIM
@@ -62,12 +62,7 @@ class TestAdjointRepr:
         for i in range(d):
             for j in range(d):
 
-                print(dla[i])
-                print(dla[j])
-                print(ad_rep[:, i, j])
-                print(ad_rep[i, j])
                 comm_res = 1j * dla[i].commutator(dla[j])
-
                 res = sum(
                     np.array(c, dtype=complex) * dla[gamma]
                     for gamma, c in enumerate(ad_rep[:, i, j])
@@ -78,16 +73,8 @@ class TestAdjointRepr:
     @pytest.mark.parametrize("dla", [Ising3, XXZ3])
     def test_use_operators(self, dla):
         """Test that operators can be passed and lead to the same result"""
-        ad_rep_true = structure_constants_dense(dla)
+        ad_rep_true = qml.pauli.dla.structure_constants(dla)
 
-        ops = [op.operation() for op in dla]
+        ops = np.array([qml.matrix(op.operation(), wire_order=range(3)) for op in dla])
         ad_rep = structure_constants_dense(ops)
         assert qml.math.allclose(ad_rep, ad_rep_true)
-
-    def test_raise_error_for_non_paulis(self):
-        """Test that an error is raised when passing operators that do not have a pauli_rep"""
-        generators = [qml.Hadamard(0), qml.X(0)]
-        with pytest.raises(
-            ValueError, match="Cannot compute adjoint representation of non-pauli operators"
-        ):
-            qml.pauli.structure_constants_dense(generators)

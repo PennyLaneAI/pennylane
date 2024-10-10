@@ -56,17 +56,15 @@ def structure_constants_dense(g: TensorLike) -> TensorLike:
     dimg, chi, _ = g.shape
 
     # compute all commutators
-    m0m1 = np.einsum("aij,bjk->abik", g, g)
-    m0m1 = np.reshape(m0m1, (-1, chi, chi))
-
-    m1m0 = np.einsum("aij,bjk->baik", g, g)
-    m1m0 = np.reshape(m1m0, (-1, chi, chi))
+    prod = np.einsum("aij,bjk->abik", g, g)
+    m0m1 = np.reshape(prod, (-1, chi, chi))
+    m1m0 = np.reshape(prod.transpose((1, 0, 2, 3)), (-1, chi, chi))
     all_coms = m0m1 - m1m0
 
     # project commutators on basis of g
     # vectorized computation to obtain coefficients in decomposition:
     # v = ∑ (tr(v @ e_j) / ||e_j||^2) * e_j
-    adj = np.tensordot(g, all_coms, axes=[[1, 2], [-1, -2]])
-    adj = -np.reshape(adj, (dimg, dimg, dimg)).imag
-
+    gram_inv = np.linalg.pinv(np.tensordot(g, g, axes=[[1, 2], [2, 1]])).real
+    adj = gram_inv @ np.tensordot(g, all_coms, axes=[[1, 2], [-1, -2]]).imag
+    adj = -np.reshape(adj, (dimg, dimg, dimg))
     return adj
