@@ -4,7 +4,7 @@
 
 <h3>New features since last release</h3>
 
-* Introduced `sample_probs` function for `devices.qubit` and `devices.qutrit_mixed`:
+* Introduced `sample_probs` function for the `qml.devices.qubit` and `qml.devices.qutrit_mixed` modules:
   - This function takes probability distributions as input and returns sampled outcomes.
   - Simplifies the sampling process by separating it from other operations in the measurement chain.
   - Improves modularity: The same code can be easily adapted for other devices (e.g., a potential `default_mixed` device).
