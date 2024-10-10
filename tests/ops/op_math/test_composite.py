@@ -236,6 +236,18 @@ class TestConstruction:
 class TestMscMethods:
     """Test dunder and other visualizing methods."""
 
+    @pytest.mark.parametrize("math_op", [qml.prod, qml.sum])
+    @pytest.mark.parametrize("method", ["terms", "eigvals", "__copy__", "label"])
+    def test_recursion_depth_error_message(self, math_op, method):
+        """Tests that a sensible error is raised from a recursion error"""
+
+        op = qml.PauliRot(np.random.uniform(0, 2 * np.pi), "X", wires=1)
+        for _ in range(2000):
+            op = math_op(op, qml.PauliRot(np.random.uniform(0, 2 * np.pi), "Y", wires=1))
+
+        with pytest.raises(RuntimeError, match="This is likely due to nesting too many levels"):
+            getattr(op, method)()
+
     @pytest.mark.parametrize("ops_lst, op_rep", tuple((i, j) for i, j in zip(ops, ops_rep)))
     def test_repr(self, ops_lst, op_rep):
         """Test __repr__ method."""
@@ -315,6 +327,21 @@ class TestMscMethods:
 
 class TestProperties:
     """Test class properties."""
+
+    @pytest.mark.parametrize("math_op", [qml.prod, qml.sum])
+    @pytest.mark.parametrize(
+        "attr",
+        ["arithmetic_depth", "has_matrix", "has_sparse_matrix", "num_params", "hash", "data"],
+    )
+    def test_recursion_depth_error_message(self, math_op, attr):
+        """Tests that a sensible error is raised from a recursion error"""
+
+        op = qml.PauliRot(np.random.uniform(0, 2 * np.pi), "X", wires=1)
+        for _ in range(2000):
+            op = math_op(op, qml.PauliRot(np.random.uniform(0, 2 * np.pi), "Y", wires=1))
+
+        with pytest.raises(RuntimeError, match="This is likely due to nesting too many levels"):
+            getattr(op, attr)
 
     @pytest.mark.parametrize("ops_lst", ops)
     def test_num_params(self, ops_lst):
