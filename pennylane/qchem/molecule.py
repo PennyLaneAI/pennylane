@@ -139,6 +139,7 @@ class Molecule:
         if alpha is None:
             alpha = [qml.math.array(i[1], **interface_args) for i in self.basis_data]
             if use_jax:
+
                 alpha = qml.math.array(alpha, like="jax")
 
         if coeff is None:

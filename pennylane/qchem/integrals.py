@@ -920,7 +920,9 @@ def attraction_integral(r, basis_a, basis_b, normalize=True):
 
         alpha, ca, ra = _generate_params(basis_a.params, args_a)
         beta, cb, rb = _generate_params(basis_b.params, args_b)
-        if _check_requires_grad(basis_a.params[1], normalize, args, 1):
+        if _check_requires_grad(basis_a.params[1], normalize, args, 1) and qml.math.requires_grad(
+            basis_a.params[1]
+        ):
             ca = ca * primitive_norm(basis_a.l, alpha)
             cb = cb * primitive_norm(basis_b.l, beta)
             na = contracted_norm(basis_a.l, alpha, ca)

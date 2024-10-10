@@ -280,7 +280,6 @@ def attraction_matrix(basis_functions, charges, r):
                         )
                         for arg in args[1:]
                     )
-
                 else:
                     args_ab.extend(
                         (

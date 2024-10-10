@@ -357,5 +357,5 @@ class TestJax:
 
         mol = qchem.Molecule(symbols, geometry)
         args = [geometry, mol.coeff, mol.alpha]
-        g = jax.grad(qchem.hf_energy(mol), argnums=[0])(*args)
+        g = jax.grad(qchem.hf_energy(mol), argnums=[0])(*args)[0]
         assert qml.math.allclose(g, g_ref)
