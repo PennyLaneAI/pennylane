@@ -471,10 +471,10 @@ def sample_state(
     Returns:
         ndarray[int]: Sample values of the shape (shots, num_wires)
     """
-    if prng_key is not None or qml.math.get_interface(state) == "jax":
-        return _sample_state_jax(
-            state, shots, prng_key, is_state_batched=is_state_batched, wires=wires, seed=rng
-        )
+    # if prng_key is not None or qml.math.get_interface(state) == "jax":
+    #     return _sample_state_jax(
+    #         state, shots, prng_key, is_state_batched=is_state_batched, wires=wires, seed=rng
+    #     )
 
     total_indices = len(state.shape) - is_state_batched
     state_wires = qml.wires.Wires(range(total_indices))
@@ -487,10 +487,10 @@ def sample_state(
         probs = qml.probs(wires=wires_to_sample).process_state(flat_state, state_wires)
 
     # Here we are supposed to get the probs, and then we do everything separately
-    return sample_probs(probs, shots, num_wires, is_state_batched, rng)
+    return sample_probs(probs, shots, num_wires, is_state_batched, rng, prng_key, len(state))
 
 
-def sample_probs(probs, shots, num_wires, is_state_batched, rng):
+def sample_probs(probs, shots, num_wires, is_state_batched, rng, prng_key=None, state_len=None):
     """
     Sample from given probabilities using numpy's random number generator.
 
@@ -525,6 +525,10 @@ def sample_probs(probs, shots, num_wires, is_state_batched, rng):
         if err > cutoff:
             raise ValueError("probabilities do not sum to 1")
 
+    # Based on the interface of probs, if jax we just call the jax version
+    prob_interface = qml.math.get_interface(probs)
+    if prob_interface == "jax":
+        return _sample_probs_jax(probs, shots, num_wires, is_state_batched, prng_key, state_len)
     basis_states = np.arange(2**num_wires)
     if is_state_batched:
         probs = probs / norm[:, np.newaxis] if norm.shape else probs / norm
@@ -542,50 +546,50 @@ def sample_probs(probs, shots, num_wires, is_state_batched, rng):
 
 
 # pylint:disable = unused-argument
-def _sample_state_jax(
-    state,
-    shots: int,
-    prng_key,
-    is_state_batched: bool = False,
-    wires=None,
-    seed=None,
-) -> np.ndarray:
-    """
-    Returns a series of samples of a state for the JAX interface based on the PRNG.
+# def _sample_state_jax(
+#     state,
+#     shots: int,
+#     prng_key,
+#     is_state_batched: bool = False,
+#     wires=None,
+#     seed=None,
+# ) -> np.ndarray:
+#     """
+#     Returns a series of samples of a state for the JAX interface based on the PRNG.
 
-    Args:
-        state (array[complex]): A state vector to be sampled
-        shots (int): The number of samples to take
-        prng_key (jax.random.PRNGKey): A``jax.random.PRNGKey``. This is
-            the key to the JAX pseudo random number generator.
-        is_state_batched (bool): whether the state is batched or not
-        wires (Sequence[int]): The wires to sample
-        seed (numpy.random.Generator): seed to use to generate a key if a ``prng_key`` is not present. ``None`` by default.
+#     Args:
+#         state (array[complex]): A state vector to be sampled
+#         shots (int): The number of samples to take
+#         prng_key (jax.random.PRNGKey): A``jax.random.PRNGKey``. This is
+#             the key to the JAX pseudo random number generator.
+#         is_state_batched (bool): whether the state is batched or not
+#         wires (Sequence[int]): The wires to sample
+#         seed (numpy.random.Generator): seed to use to generate a key if a ``prng_key`` is not present. ``None`` by default.
 
-    Returns:
-        ndarray[int]: Sample values of the shape (shots, num_wires)
-    """
-    # pylint: disable=import-outside-toplevel
-    import jax
+#     Returns:
+#         ndarray[int]: Sample values of the shape (shots, num_wires)
+#     """
+#     # pylint: disable=import-outside-toplevel
+#     import jax
 
-    if prng_key is None:
-        prng_key = jax.random.PRNGKey(np.random.default_rng(seed).integers(100000))
+#     if prng_key is None:
+#         prng_key = jax.random.PRNGKey(np.random.default_rng(seed).integers(100000))
 
-    total_indices = len(state.shape) - is_state_batched
-    state_wires = qml.wires.Wires(range(total_indices))
+#     total_indices = len(state.shape) - is_state_batched
+#     state_wires = qml.wires.Wires(range(total_indices))
 
-    wires_to_sample = wires or state_wires
-    num_wires = len(wires_to_sample)
+#     wires_to_sample = wires or state_wires
+#     num_wires = len(wires_to_sample)
 
-    flat_state = flatten_state(state, total_indices)
-    with qml.queuing.QueuingManager.stop_recording():
-        probs = qml.probs(wires=wires_to_sample).process_state(flat_state, state_wires)
+#     flat_state = flatten_state(state, total_indices)
+#     with qml.queuing.QueuingManager.stop_recording():
+#         probs = qml.probs(wires=wires_to_sample).process_state(flat_state, state_wires)
 
-    state_len = len(state)
-    return sample_probs_jax(probs, shots, num_wires, is_state_batched, prng_key, state_len)
+#     state_len = len(state)
+#     return _sample_probs_jax(probs, shots, num_wires, is_state_batched, prng_key, state_len)
 
 
-def sample_probs_jax(probs, shots, num_wires, is_state_batched, prng_key, state_len):
+def _sample_probs_jax(probs, shots, num_wires, is_state_batched, prng_key, state_len):
     """
     Sample from given probabilities using JAX's random number generator.
 
