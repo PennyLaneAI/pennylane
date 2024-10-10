@@ -45,6 +45,12 @@ def fold_global(tape: QuantumScript, scale_factor) -> tuple[QuantumScriptBatch, 
 
     .. seealso:: :func:`~.pennylane.transforms.mitigate_with_zne`; This function is analogous to the implementation in ``mitiq``  `mitiq.zne.scaling.fold_global <https://mitiq.readthedocs.io/en/v.0.1a2/apidoc.html?highlight=global_folding#mitiq.zne.scaling.fold_global>`_.
 
+    .. note::
+
+        This method no longer decomposes the circuit as part of the folding procedure. Users are encouraged to use
+        :func:`~.pennylane.transforms.decompose` to decompose the circuit into a target gateset before using this.
+
+
     **Example**
 
     Let us look at the following circuit.
@@ -208,8 +214,7 @@ def fold_global_tape(circuit, scale_factor):
 
     # Generate base_circuit without measurements
     # Treat all circuits as lists of operations, build new tape in the end
-
-    base_ops = circuit.expand().copy(copy_operations=True).operations
+    base_ops = circuit.copy(copy_operations=True).operations
 
     num_global_folds, fraction_scale = _divmod(scale_factor - 1, 2)
 
@@ -420,7 +425,8 @@ def mitigate_with_zne(
         dev = qml.device("default.mixed", wires=2)
         dev = qml.transforms.insert(dev, qml.AmplitudeDamping, noise_strength)
 
-    We can now set up a mitigated QNode by passing a ``folding`` and ``extrapolate`` function. PennyLane provides native
+    We can now set up a mitigated QNode by first decomposing it into a target gate set via :func:`~.pennylane.transforms.decompose` and then applying this transform
+    by passing a ``folding`` and ``extrapolate`` function. PennyLane provides native
     functions :func:`~.pennylane.transforms.fold_global` and :func:`~.pennylane.transforms.poly_extrapolate` or :func:`~.pennylane.transforms.richardson_extrapolate` that
     allow for differentiating through them. Custom functions, as well as functionalities from the `Mitiq <https://mitiq.readthedocs.io/en/stable/>`__ package
     are supported as well (see usage details below).
@@ -430,7 +436,7 @@ def mitigate_with_zne(
         import numpy as np
         from functools import partial
         from pennylane import qnode
-
+        from pennylane.devices.preprocess import decompose
         from pennylane.transforms import fold_global, poly_extrapolate
 
         n_wires = 2
@@ -446,6 +452,9 @@ def mitigate_with_zne(
             folding=fold_global,
             extrapolate=poly_extrapolate,
             extrapolate_kwargs={'order': 2})
+        @partial(
+            decompose,
+            stopping_condition = lambda op: op.name in ["RY", "CZ"])
         @qnode(dev)
         def circuit(w1, w2):
             qml.SimplifiedTwoDesign(w1, w2, wires=range(2))
@@ -465,6 +474,12 @@ def mitigate_with_zne(
     (array([-0.89319941,  0.37949841]),
      array([[[-7.04121596e-01,  3.00073104e-01]],
             [[-6.41155176e-01,  8.32667268e-17]]]))
+
+    .. note::
+
+        Native function :func:`~.pennylane.transforms.fold_global` provided by PennyLane no longer decomposes the circuit
+        as part of the folding procedure. Users are encouraged to use :func:`~.pennylane.transforms.decompose` before
+        folding when using this transform.
 
     .. details::
         :title: Usage Details
