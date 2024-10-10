@@ -13,5 +13,5 @@
 # limitations under the License.
 """This module contains the functionality to work with noise models in PennyLane."""
 
-from .conditionals import wires_in, wires_eq, op_in, op_eq, partial_wires
+from .conditionals import wires_in, wires_eq, op_in, op_eq, meas_eq, partial_wires
 from .noise_model import NoiseModel
