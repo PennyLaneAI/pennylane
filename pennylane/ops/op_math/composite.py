@@ -37,9 +37,9 @@ def handle_recursion_error(func):
             return func(*args, **kwargs)
         except RecursionError as e:
             raise RuntimeError(
-                "Maximum recursion depth reached! This is likely due to nesting too many "
-                "levels of composite operators. Try setting lazy=False when calling qml.sum "
-                "and qml.prod, or use the + and @ operators instead. Alternatively, you "
+                "Maximum recursion depth reached! This is likely due to nesting too many levels "
+                "of composite operators. Try setting lazy=False when calling qml.sum, qml.prod, "
+                "and qml.s_prod, or use the +, @, and * operators instead. Alternatively, you "
                 "can periodically call qml.simplify on your operators."
             ) from e
 
@@ -89,6 +89,7 @@ class CompositeOp(Operator):
         self.queue()
         self._batch_size = _UNSET_BATCH_SIZE
 
+    @handle_recursion_error
     def _check_batching(self):
         batch_sizes = {op.batch_size for op in self if op.batch_size is not None}
         if len(batch_sizes) > 1:
