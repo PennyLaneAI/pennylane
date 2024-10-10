@@ -500,9 +500,9 @@ def sample_probs(probs, shots, num_wires, is_state_batched, rng, prng_key=None):
     """
     is_probs_jax = isinstance(probs, jnp.ndarray)
     if JAX_AVAILABLE and (is_probs_jax or prng_key is not None):
-        return _sample_probs_jax(probs, shots, num_wires, is_state_batched, prng_key, rng)
-    else:
-        return _sample_probs_numpy(probs, shots, num_wires, is_state_batched, rng)
+        return _sample_probs_jax(probs, shots, num_wires, is_state_batched, prng_key, seed=rng)
+
+    return _sample_probs_numpy(probs, shots, num_wires, is_state_batched, rng)
 
 
 def _sample_probs_numpy(probs, shots, num_wires, is_state_batched, rng):
@@ -518,10 +518,6 @@ def _sample_probs_numpy(probs, shots, num_wires, is_state_batched, rng):
     if qml.math.any(norm_err > cutoff):
         raise ValueError("probabilities do not sum to 1")
 
-    # Based on the interface of probs, if jax we just call the jax version
-    prob_interface = qml.math.get_interface(probs)
-    if prob_interface == "jax":
-        return _sample_probs_jax(probs, shots, num_wires, is_state_batched, prng_key, state_len)
     basis_states = np.arange(2**num_wires)
     if is_state_batched:
         probs = probs / norm[:, np.newaxis] if norm.shape else probs / norm
