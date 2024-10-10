@@ -118,7 +118,10 @@ def _to_qfunc_output_type(
     if isinstance(qfunc_output, (tuple, qml.measurements.MeasurementProcess)):
         return results
 
-    return type(qfunc_output)(results)
+    _, structure = qml.pytrees.flatten(
+        qfunc_output, is_leaf=lambda obj: isinstance(obj, qml.measurements.MeasurementProcess)
+    )
+    return qml.pytrees.unflatten(results, structure)
 
 
 def _validate_gradient_kwargs(gradient_kwargs: dict) -> None:
@@ -839,6 +842,8 @@ class QNode:
 
         if isinstance(self._qfunc_output, qml.numpy.ndarray):
             measurement_processes = tuple(self.tape.measurements)
+        if isinstance(self._qfunc_output, dict):
+            measurement_processes = tuple(self._qfunc_output.values())
         elif not isinstance(self._qfunc_output, Sequence):
             measurement_processes = (self._qfunc_output,)
         else:
