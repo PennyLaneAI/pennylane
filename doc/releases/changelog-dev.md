@@ -182,6 +182,10 @@
 * `Operator.expand` is now removed. Use `qml.tape.QuantumScript(op.deocomposition())` instead.
   [(#6227)](https://github.com/PennyLaneAI/pennylane/pull/6227)
 
+* Native folding method `qml.transforms.fold_global` for `qml.transforms.mitiagte_with_zne`
+  transform no longer expands the circuit on their own.
+  [(#6382)](https://github.com/PennyLaneAI/pennylane/pull/6382)
+
 <h3>Deprecations 👋</h3>
 
 * Legacy operator arithmetic has been deprecated. This includes `qml.ops.Hamiltonian`, `qml.operation.Tensor`,
