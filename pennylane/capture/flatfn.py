@@ -16,6 +16,8 @@ Defines a utility for capturing higher order primitives that return pytrees.
 """
 from functools import update_wrapper
 
+import pennylane as qml
+
 has_jax = True
 try:
     import jax
