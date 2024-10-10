@@ -64,28 +64,22 @@ def _qnode_batching_rule(
     batched_args, batch_dims, qnode, shots, device, qnode_kwargs, qfunc_jaxpr, n_consts
 ):
 
-    # TODO: implement batching rule (currently just a dummy)
-
-    print("batched_args", batched_args)
-    print("batch_dims", batch_dims)
-    print("qnode", qnode)
-    print("shots", shots)
-    print("device", device)
-    print("qnode_kwargs", qnode_kwargs)
-    print("qfunc_jaxpr", qfunc_jaxpr)
-    print("n_consts\n", n_consts)
-
     consts = batched_args[:n_consts]
     args = batched_args[n_consts:]
 
-    print("consts", consts)
-    print("args", args)
+    aligned_args = []
+    for arg, batch_dim in zip(args, batch_dims[n_consts:]):
+        if batch_dim is not None:
+            aligned_arg = jax.numpy.moveaxis(arg, batch_dim, 0)
+        else:
+            aligned_arg = arg
+        aligned_args.append(aligned_arg)
 
     def qfunc(*inner_args):
         return jax.core.eval_jaxpr(qfunc_jaxpr, consts, *inner_args)
 
     qnode = qml.QNode(qfunc, device, **qnode_kwargs)
-    result = qnode_call(qnode, *args, shots=shots)
+    result = qnode_call(qnode, *aligned_args, shots=shots)
 
     return result, [0]
 
