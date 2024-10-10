@@ -31,6 +31,14 @@ from pennylane.typing import TensorLike
 from .apply_operation import apply_operation
 from .measure import flatten_state
 
+try:
+    import jax
+    import jax.numpy as jnp
+
+    JAX_AVAILABLE = True
+except ImportError:
+    JAX_AVAILABLE = False
+
 
 def jax_random_split(prng_key, num: int = 2):
     """Get a new key with ``jax.random.split``."""
@@ -456,26 +464,7 @@ def sample_state(
 ) -> np.ndarray:
     """
     Returns a series of samples of a state.
-
-    Args:
-        state (array[complex]): A state vector to be sampled
-        shots (int): The number of samples to take
-        is_state_batched (bool): whether the state is batched or not
-        wires (Sequence[int]): The wires to sample
-        rng (Union[None, int, array_like[int], SeedSequence, BitGenerator, Generator]):
-            A seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``.
-            If no value is provided, a default RNG will be used
-        prng_key (Optional[jax.random.PRNGKey]): An optional ``jax.random.PRNGKey``. This is
-            the key to the JAX pseudo random number generator. Only for simulation using JAX.
-
-    Returns:
-        ndarray[int]: Sample values of the shape (shots, num_wires)
     """
-    if prng_key is not None or qml.math.get_interface(state) == "jax":
-        return _sample_state_jax(
-            state, shots, prng_key, is_state_batched=is_state_batched, wires=wires, seed=rng
-        )
-
     total_indices = len(state.shape) - is_state_batched
     state_wires = qml.wires.Wires(range(total_indices))
 
@@ -485,60 +474,73 @@ def sample_state(
     flat_state = flatten_state(state, total_indices)
     with qml.queuing.QueuingManager.stop_recording():
         probs = qml.probs(wires=wires_to_sample).process_state(flat_state, state_wires)
+        # Keep same interface (e.g. jax) as in the device
 
-    # Here we are supposed to get the probs, and then we do everything separately
-    return sample_probs(probs, shots, num_wires, is_state_batched, rng)
+    return sample_probs(probs, shots, num_wires, is_state_batched, rng, prng_key)
 
 
-def sample_probs(probs, shots, num_wires, is_state_batched, rng):
+def sample_probs(probs, shots, num_wires, is_state_batched, rng, prng_key=None):
     """
-    Sample from given probabilities using numpy's random number generator.
-
-    Args:
-    probs (array): Probability distribution to sample from.
-    basis_states (array): Possible basis states to sample.
-    shots (int): Number of samples to take.
-    num_wires (int): Number of qubits (wires) in the system.
-    is_state_batched (bool): Whether the state is batched.
-    rng (numpy.random.Generator): Random number generator.
-
-    Returns:
-    ndarray[int]: Sample values of shape (shots, num_wires) or (batch_size, shots, num_wires) if batched.
-
-    Note:
-    This function includes normalization for cases where probabilities might not sum exactly to 1
-    due to numerical precision issues, particularly with the PyTorch interface.
+    Sample from given probabilities, dispatching between JAX and NumPy implementations.
     """
-    # when using the torch interface with float32 as default dtype,
-    # probabilities must be renormalized as they may not sum to one
-    # see https://github.com/PennyLaneAI/pennylane/issues/5444
+    is_probs_jax = isinstance(probs, jnp.ndarray)
+    if JAX_AVAILABLE and (is_probs_jax or prng_key is not None):
+        return _sample_probs_jax(probs, shots, num_wires, is_state_batched, prng_key, rng)
+    else:
+        return _sample_probs_numpy(probs, shots, num_wires, is_state_batched, rng)
 
+
+def _sample_probs_numpy(probs, shots, num_wires, is_state_batched, rng):
+    """
+    Sample from given probabilities using NumPy's random number generator.
+    """
     rng = np.random.default_rng(rng)
     norm = qml.math.sum(probs, axis=-1)
     norm_err = qml.math.abs(norm - 1.0)
     cutoff = 1e-07
 
-    # Reject sampling if the norm_error is too large
-    # Make norm_err to always keep the shape of a batched state
     norm_err = norm_err[..., np.newaxis] if not is_state_batched else norm_err
-    for err in norm_err:
-        if err > cutoff:
-            raise ValueError("probabilities do not sum to 1")
+    if qml.math.any(norm_err > cutoff):
+        raise ValueError("probabilities do not sum to 1")
 
     basis_states = np.arange(2**num_wires)
     if is_state_batched:
         probs = probs / norm[:, np.newaxis] if norm.shape else probs / norm
-
-        # rng.choice doesn't support broadcasting
         samples = np.stack([rng.choice(basis_states, shots, p=p) for p in probs])
     else:
         probs = probs / norm
-
         samples = rng.choice(basis_states, shots, p=probs)
 
     powers_of_two = 1 << np.arange(num_wires, dtype=np.int64)[::-1]
     states_sampled_base_ten = samples[..., None] & powers_of_two
     return (states_sampled_base_ten > 0).astype(np.int64)
+
+
+def _sample_probs_jax(probs, shots, num_wires, is_state_batched, prng_key=None, seed=None):
+    """
+    Sample from given probabilities using JAX's random number generator.
+    """
+    import jax.numpy as jnp
+
+    if prng_key is None:
+        prng_key = jax.random.PRNGKey(np.random.default_rng(seed).integers(100000))
+
+    basis_states = jnp.arange(2**num_wires)
+
+    if is_state_batched:
+        keys = jax.random.split(prng_key, num=probs.shape[0])
+        samples = jnp.array(
+            [
+                jax.random.choice(_key, basis_states, shape=(shots,), p=prob)
+                for _key, prob in zip(keys, probs)
+            ]
+        )
+    else:
+        samples = jax.random.choice(prng_key, basis_states, shape=(shots,), p=probs)
+
+    powers_of_two = 1 << jnp.arange(num_wires, dtype=jnp.int64)[::-1]
+    states_sampled_base_ten = samples[..., None] & powers_of_two
+    return (states_sampled_base_ten > 0).astype(jnp.int64)
 
 
 # pylint:disable = unused-argument
@@ -567,6 +569,7 @@ def _sample_state_jax(
     """
     # pylint: disable=import-outside-toplevel
     import jax
+    import jax.numpy as jnp
 
     if prng_key is None:
         prng_key = jax.random.PRNGKey(np.random.default_rng(seed).integers(100000))
@@ -576,45 +579,14 @@ def _sample_state_jax(
 
     wires_to_sample = wires or state_wires
     num_wires = len(wires_to_sample)
+    basis_states = np.arange(2**num_wires)
 
     flat_state = flatten_state(state, total_indices)
     with qml.queuing.QueuingManager.stop_recording():
         probs = qml.probs(wires=wires_to_sample).process_state(flat_state, state_wires)
 
-    state_len = len(state)
-    return sample_probs_jax(probs, shots, num_wires, is_state_batched, prng_key, state_len)
-
-
-def sample_probs_jax(probs, shots, num_wires, is_state_batched, prng_key, state_len):
-    """
-    Sample from given probabilities using JAX's random number generator.
-
-    Args:
-        probs (array): Probability distribution to sample from.
-        basis_states (array): Possible basis states to sample.
-        shots (int): Number of samples to take.
-        num_wires (int): Number of qubits (wires) in the system.
-        is_state_batched (bool): Whether the state is batched.
-        prng_key (jax.random.PRNGKey): Key for JAX's pseudo-random number generator.
-        state_len (int): Length of the state vector (used for batched states).
-
-    Returns:
-        ndarray[int]: Sample values of shape (shots, num_wires) or (batch_size, shots, num_wires) if batched.
-
-    Note:
-        This function uses JAX's random number generation for sampling, which differs from the numpy version.
-    """
-    # when using the torch interface with float32 as default dtype,
-    # probabilities must be renormalized as they may not sum to one
-    # see
-    # pylint: disable=import-outside-toplevel
-    import jax
-    import jax.numpy as jnp
-
-    basis_states = np.arange(2**num_wires)
-
     if is_state_batched:
-        keys = jax_random_split(prng_key, num=state_len)
+        keys = jax_random_split(prng_key, num=len(state))
         samples = jnp.array(
             [
                 jax.random.choice(_key, basis_states, shape=(shots,), p=prob)

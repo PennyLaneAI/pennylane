@@ -89,7 +89,7 @@ class TestSampleState:
 
         jax.config.update("jax_enable_x64", True)
 
-        spy = mocker.spy(qml.devices.qubit.sampling, "_sample_state_jax")
+        spy = mocker.spy(qml.devices.qubit.sampling, "_sample_probs_jax")
         state = qml.math.array(two_qubit_state, like="jax")
 
         # prng_key specified, should call _sample_state_jax
@@ -943,7 +943,7 @@ class TestBroadcastingPRNG:
 
         jax.config.update("jax_enable_x64", True)
 
-        spy = mocker.spy(qml.devices.qubit.sampling, "_sample_state_jax")
+        spy = mocker.spy(qml.devices.qubit.sampling, "_sample_probs_jax")
 
         rng = np.random.default_rng(123)
         shots = qml.measurements.Shots(100)
@@ -997,7 +997,7 @@ class TestBroadcastingPRNG:
         """Test that broadcasting works for the other sample measurements and single shots"""
         import jax
 
-        spy = mocker.spy(qml.devices.qubit.sampling, "_sample_state_jax")
+        spy = mocker.spy(qml.devices.qubit.sampling, "_sample_probs_jax")
 
         rng = np.random.default_rng(123)
         shots = qml.measurements.Shots(10000)
@@ -1036,7 +1036,7 @@ class TestBroadcastingPRNG:
 
         import jax
 
-        spy = mocker.spy(qml.devices.qubit.sampling, "_sample_state_jax")
+        spy = mocker.spy(qml.devices.qubit.sampling, "_sample_probs_jax")
 
         rng = np.random.default_rng(123)
         shots = qml.measurements.Shots(shots)
@@ -1112,7 +1112,7 @@ class TestBroadcastingPRNG:
 
         import jax
 
-        spy = mocker.spy(qml.devices.qubit.sampling, "_sample_state_jax")
+        spy = mocker.spy(qml.devices.qubit.sampling, "_sample_probs_jax")
 
         rng = np.random.default_rng(123)
         shots = qml.measurements.Shots(shots)
