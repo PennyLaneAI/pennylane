@@ -12,13 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests for pennylane/dla/lie_closure_dense.py functionality"""
-# pylint: disable=too-few-public-methods, protected-access
+# pylint: disable=too-few-public-methods, protected-access, no-self-use
 import pytest
 
 import pennylane as qml
 from pennylane import I, X, Y, Z
-from pennylane.pauli import PauliSentence, PauliVSpace, PauliWord
 from pennylane.labs.lie import lie_closure_dense
+from pennylane.pauli import PauliSentence, PauliVSpace, PauliWord
 
 ops1 = [
     PauliSentence({PauliWord({0: "X", 1: "X"}): 1.0, PauliWord({0: "Y", 1: "Y"}): 1.0}),
