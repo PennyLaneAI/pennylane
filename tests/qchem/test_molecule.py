@@ -17,6 +17,7 @@ Unit tests for the molecule object.
 # pylint: disable=too-many-arguments
 import pytest
 
+import pennylane as qml
 from pennylane import numpy as np
 from pennylane import qchem
 
@@ -363,3 +364,16 @@ class TestMolecule:
 
         with pytest.raises(ValueError, match="The provided unit 'degrees' is not supported."):
             qchem.Molecule(symbols, geometry, unit="degrees")
+
+    @pytest.mark.jax
+    def test_molecule_jittable(self):
+        r"""Test that a function contained molecule can be compiled with qjit."""
+
+        @qml.qjit
+        def jit_test():
+            symbols = ["H", "H"]
+            geometry = qml.math.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], like="jax")
+            mol = qml.qchem.Molecule(symbols, geometry)
+            return mol
+
+        assert qml.math.allclose(jit_test().coordinates, [[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])
