@@ -160,14 +160,12 @@ class PlxprInterpreter:
 
     _env: dict
     _primitive_registrations: dict["jax.core.Primitive", Callable] = {}
-    _op_math_cache: dict
 
     def __init_subclass__(cls) -> None:
         cls._primitive_registrations = copy(cls._primitive_registrations)
 
     def __init__(self):
         self._env = {}
-        self._op_math_cache = {}
 
     @classmethod
     def register_primitive(cls, primitive: "jax.core.Primitive") -> Callable[[Callable], Callable]:
@@ -202,9 +200,7 @@ class PlxprInterpreter:
     # pylint: disable=unidiomatic-typecheck
     def read(self, var):
         """Extract the value corresponding to a variable."""
-        if type(var) is jax.core.Literal:
-            return var.val
-        return self._op_math_cache.get(var, self._env[var])
+        return var.val if type(var) is jax.core.Literal else self._env[var]
 
     def setup(self) -> None:
         """Initialize the instance before interpreting equations.
@@ -238,7 +234,8 @@ class PlxprInterpreter:
         See also: :meth:`~.interpret_operation_eqn`.
 
         """
-        return op._unflatten(*op._flatten())  # pylint: disable=protected-access
+        data, struct = jax.tree_util.tree_flatten(op)
+        return jax.tree_util.tree_unflatten(struct, data)
 
     def interpret_operation_eqn(self, eqn: "jax.core.JaxprEqn"):
         """Interpret an equation corresponding to an operator.
@@ -255,8 +252,6 @@ class PlxprInterpreter:
             op = eqn.primitive.impl(*invals, **eqn.params)
         if isinstance(eqn.outvars[0], jax.core.DropVar):
             return self.interpret_operation(op)
-
-        self._op_math_cache[eqn.outvars[0]] = op
         return op
 
     def interpret_measurement_eqn(self, primitive, *invals, **params):
@@ -271,7 +266,8 @@ class PlxprInterpreter:
 
         """
         invals = (
-            self.interpret_operation(op) for op in invals if isinstance(op, qml.operation.Operator)
+            self.interpret_operation(inval) if isinstance(inval, qml.operation.Operator) else inval
+            for inval in invals
         )
         return primitive.bind(*invals, **params)
 
@@ -288,7 +284,6 @@ class PlxprInterpreter:
 
         """
         self._env = {}
-        self._op_math_cache = {}
         self.setup()
 
         for arg, invar in zip(args, jaxpr.invars):
@@ -319,12 +314,12 @@ class PlxprInterpreter:
         # Read the final result of the Jaxpr from the environment
         outvals = []
         for var in jaxpr.outvars:
-            if var in self._op_math_cache:
-                outvals.append(self.interpret_operation(self._op_math_cache[var]))
+            outval = self.read(var)
+            if isinstance(outval, qml.operation.Operator):
+                outvals.append(self.interpret_operation(outval))
             else:
-                outvals.append(self.read(var))
+                outvals.append(outval)
         self.cleanup()
-        self._op_math_cache = {}
         self._env = {}
         return outvals
 

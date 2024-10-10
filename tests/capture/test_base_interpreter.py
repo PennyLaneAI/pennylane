@@ -59,7 +59,6 @@ def test_env_and_initialized():
 
     interpreter = SimplifyInterpreter()
     assert interpreter._env == {}
-    assert interpreter._op_math_cache == {}
 
 
 def test_primitive_registrations():
@@ -100,6 +99,56 @@ def test_primitive_registrations():
 
     qml.assert_equal(q.queue[0], qml.Z(0))  # turned into a Y
     qml.assert_equal(q.queue[1], qml.Y(5))  # mapped wire
+
+
+def test_default_operator_handling():
+    """Test that the PlxprInterpreter itself can handle operators and leaves them unchanged."""
+
+    @PlxprInterpreter()
+    def f(x):
+        qml.adjoint(qml.RX(x, 0))
+        qml.T(1)
+        return qml.X(0) + qml.X(1)
+
+    with qml.queuing.AnnotatedQueue() as q:
+        out = f(0.5)
+
+    qml.assert_equal(out, qml.X(0) + qml.X(1))
+    qml.assert_equal(q.queue[0], qml.adjoint(qml.RX(0.5, 0)))
+    qml.assert_equal(q.queue[1], qml.T(1))
+    qml.assert_equal(q.queue[2], qml.X(0) + qml.X(1))
+
+    jaxpr = jax.make_jaxpr(f)(1.2)
+
+    assert jaxpr.eqns[0].primitive == qml.RX._primitive
+    assert jaxpr.eqns[1].primitive == qml.ops.Adjoint._primitive
+    assert jaxpr.eqns[2].primitive == qml.T._primitive
+    assert jaxpr.eqns[3].primitive == qml.X._primitive
+    assert jaxpr.eqns[4].primitive == qml.X._primitive
+    assert jaxpr.eqns[5].primitive == qml.ops.Sum._primitive
+
+
+def test_default_measurement_handling():
+    """Test that the default measurment handling works."""
+
+    @SimplifyInterpreter()
+    def f(w):
+        return qml.expval(qml.X(w) + qml.X(w)), qml.probs(wires=w)
+
+    m1, m2 = f(0)
+    qml.assert_equal(m1, qml.expval(2 * qml.X(0)))
+    qml.assert_equal(m2, qml.probs(wires=0))
+
+    jaxpr = jax.make_jaxpr(f)(0)
+
+    assert jaxpr.eqns[0].primitive == qml.X._primitive
+    assert jaxpr.eqns[1].primitive == qml.ops.SProd._primitive
+    assert jaxpr.eqns[2].primitive == qml.measurements.ExpectationMP._obs_primitive
+    assert jaxpr.eqns[3].primitive == qml.measurements.ProbabilityMP._wires_primitive
+
+    m1, m2 = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0)
+    qml.assert_equal(m1, qml.expval(2 * qml.X(0)))
+    qml.assert_equal(m2, qml.probs(wires=0))
 
 
 def test_overriding_measurements():

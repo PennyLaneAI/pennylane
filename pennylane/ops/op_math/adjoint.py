@@ -485,3 +485,8 @@ class AdjointOpObs(AdjointOperation, Observable):
 
     def __new__(cls, *_, **__):
         return object.__new__(cls)
+
+
+AdjointOperation._primitive = Adjoint._primitive  # pylint: disable=protected-access
+AdjointObs._primitive = Adjoint._primitive  # pylint: disable=protected-access
+AdjointOpObs._primitive = Adjoint._primitive  # pylint: disable=protected-access
