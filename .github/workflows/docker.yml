@@ -1,17 +1,17 @@
 name: Docker builds
 on: workflow_dispatch
 
+concurrency:
+  # No usage of `ref` in the group name as it's only used on workflow_dispatch
+  group: ${{ github.workflow }}
+  cancel-in-progress: true
+
 jobs:
   base-tests:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Cancel Previous Runs
-        uses: styfle/cancel-workflow-action@0.11.0
-        with:
-          access_token: ${{ github.token }}
-
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 2
 
