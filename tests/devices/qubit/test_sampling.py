@@ -20,7 +20,7 @@ import pytest
 
 import pennylane as qml
 from pennylane.devices.qubit import measure_with_samples, sample_state, simulate
-from pennylane.devices.qubit.sampling import _sample_state_jax, sample_probs
+from pennylane.devices.qubit.sampling import sample_probs
 from pennylane.devices.qubit.simulate import _FlexShots
 from pennylane.measurements import Shots
 
@@ -84,7 +84,7 @@ class TestSampleState:
 
     @pytest.mark.jax
     def test_prng_key_as_seed_uses_sample_state_jax(self, mocker):
-        """Tests that sample_state calls _sample_state_jax if the seed is a JAX PRNG key"""
+        """Tests that sample_state calls sample_state if the seed is a JAX PRNG key"""
         import jax
 
         jax.config.update("jax_enable_x64", True)
@@ -92,19 +92,19 @@ class TestSampleState:
         spy = mocker.spy(qml.devices.qubit.sampling, "_sample_probs_jax")
         state = qml.math.array(two_qubit_state, like="jax")
 
-        # prng_key specified, should call _sample_state_jax
+        # prng_key specified, should call sample_state
         _ = sample_state(state, 10, prng_key=jax.random.PRNGKey(15))
 
         spy.assert_called_once()
 
     @pytest.mark.jax
     def test_sample_state_jax(self):
-        """Tests that the returned samples are as expected when explicitly calling _sample_state_jax."""
+        """Tests that the returned samples are as expected when explicitly calling sample_state."""
         import jax
 
         state = qml.math.array(two_qubit_state, like="jax")
 
-        samples = _sample_state_jax(state, 10, prng_key=jax.random.PRNGKey(84))
+        samples = sample_state(state, 10, prng_key=jax.random.PRNGKey(84))
 
         assert samples.shape == (10, 2)
         assert samples.dtype == np.int64
@@ -112,14 +112,14 @@ class TestSampleState:
 
     @pytest.mark.jax
     def test_prng_key_determines_sample_state_jax_results(self):
-        """Test that setting the seed as a JAX PRNG key determines the results for _sample_state_jax"""
+        """Test that setting the seed as a JAX PRNG key determines the results for sample_state"""
         import jax
 
         state = qml.math.array(two_qubit_state, like="jax")
 
-        samples = _sample_state_jax(state, shots=10, prng_key=jax.random.PRNGKey(12))
-        samples2 = _sample_state_jax(state, shots=10, prng_key=jax.random.PRNGKey(12))
-        samples3 = _sample_state_jax(state, shots=10, prng_key=jax.random.PRNGKey(13))
+        samples = sample_state(state, shots=10, prng_key=jax.random.PRNGKey(12))
+        samples2 = sample_state(state, shots=10, prng_key=jax.random.PRNGKey(12))
+        samples3 = sample_state(state, shots=10, prng_key=jax.random.PRNGKey(13))
 
         assert np.all(samples == samples2)
         assert not np.allclose(samples, samples3)
@@ -934,7 +934,7 @@ class TestBroadcasting:
 
 @pytest.mark.jax
 class TestBroadcastingPRNG:
-    """Test that measurements work and use _sample_state_jax when the state has a batch dim
+    """Test that measurements work and use sample_state when the state has a batch dim
     and a PRNG key is provided"""
 
     def test_sample_measure(self, mocker):
