@@ -131,7 +131,7 @@ class CommutingEvolution(Operation):
                 f"hamiltonian must be a linear combination of pauli words. Got {hamiltonian}"
             )
 
-        trainable_hamiltonian = qml.math.requires_grad(hamiltonian.data)
+        trainable_hamiltonian = qml.operation.is_trainable(hamiltonian)
         if frequencies is not None and not trainable_hamiltonian:
             c, s = generate_shift_rule(frequencies, shifts).T
             recipe = qml.math.stack([c, qml.math.ones_like(c), s]).T
