@@ -38,6 +38,10 @@
 * Module-level sandboxing added to `qml.labs` via pre-commit hooks.
   [(#6369)](https://github.com/PennyLaneAI/pennylane/pull/6369)
 
+* `qml.matrix` now works with empty objects (such as empty tapes, `QNode`s and quantum functions that do
+  not call operations, single operators with empty decompositions).
+  [(#6347)](https://github.com/PennyLaneAI/pennylane/pull/6347)
+  
 * PennyLane is now compatible with NumPy 2.0.
   [(#6061)](https://github.com/PennyLaneAI/pennylane/pull/6061)
   [(#6258)](https://github.com/PennyLaneAI/pennylane/pull/6258)
