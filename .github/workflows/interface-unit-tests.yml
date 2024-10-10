@@ -282,8 +282,8 @@ jobs:
         group:
           - range: >-
               ${{
-                fromJSON(needs.setup-ci-load.outputs.pytest-split-groups).tf-tests.groups
-                || fromJSON(needs.setup-ci-load.outputs.pytest-split-groups).default.groups
+                fromJSON(fromJSON(needs.setup-ci-load.outputs.pytest-split-groups).tf-tests.groups)
+                || fromJSON(fromJSON(needs.setup-ci-load.outputs.pytest-split-groups).default.groups)
               }}
             num_splits: >-
               ${{
