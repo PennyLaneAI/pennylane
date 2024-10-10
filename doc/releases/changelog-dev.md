@@ -141,6 +141,9 @@
 
 <h3>Breaking changes 💔</h3>
 
+* `AllWires` validation in `QNode.construct` has been removed. 
+  [(#6373)](https://github.com/PennyLaneAI/pennylane/pull/6373)
+
 * The `simplify` argument in `qml.Hamiltonian` and `qml.ops.LinearCombination` has been removed.
   Instead, `qml.simplify()` can be called on the constructed operator.
   [(#6279)](https://github.com/PennyLaneAI/pennylane/pull/6279)
@@ -296,6 +299,9 @@
 * Fixes a test after updating to the nightly version of Catalyst.
   [(#6362)](https://github.com/PennyLaneAI/pennylane/pull/6362)
 
+* Fixes a bug where `CommutingEvolution` with a trainable `Hamiltonian` cannot be differentiated using parameter shift.
+  [(#6372)](https://github.com/PennyLaneAI/pennylane/pull/6372)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -316,4 +322,5 @@ William Maxwell,
 Erick Ochoa Lopez,
 Lee J. O'Riordan,
 Mudit Pandey,
+Andrija Paurevic,
 David Wierichs,
