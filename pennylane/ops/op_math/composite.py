@@ -17,8 +17,8 @@ This submodule defines a base class for composite operations.
 # pylint: disable=too-many-instance-attributes,invalid-sequence-index
 import abc
 import copy
-from functools import wraps
 from collections.abc import Callable
+from functools import wraps
 
 import pennylane as qml
 from pennylane import math
