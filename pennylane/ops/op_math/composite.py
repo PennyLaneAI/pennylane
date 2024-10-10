@@ -29,7 +29,7 @@ from pennylane.wires import Wires
 
 
 def handle_recursion_error(func):
-    """Handles any recursion errors raised from too many nested products."""
+    """Handles any recursion errors raised from too many levels of nesting."""
 
     @wraps(func)
     def wrapper(*args, **kwargs):
