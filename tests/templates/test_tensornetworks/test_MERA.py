@@ -517,9 +517,7 @@ class TestTemplateOutputs:
             ),
         ],
     )
-    def test_jax_jit(
-        self, block, n_params_block, wires, n_block_wires, template_weights
-    ):
+    def test_jax_jit(self, block, n_params_block, wires, n_block_wires, template_weights):
         import jax
 
         dev = qml.device("default.qubit", wires=wires)
