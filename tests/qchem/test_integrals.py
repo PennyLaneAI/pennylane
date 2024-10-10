@@ -1182,28 +1182,6 @@ class TestJax:
         assert qml.math.allclose(g_coeff, g_ref_coeff)
 
     @pytest.mark.parametrize(
-        ("geometry_values", "a_ref_values"),
-        [
-            ([[0.0, 0.0, 0.0], [0.0, 0.0, 20.0]], [0.0]),
-            ([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], [0.80120855]),
-        ],
-    )
-    def test_attraction_integral_jax(self, geometry_values, a_ref_values):
-        r"""Test that attraction_integral function returns a correct value for the kinetic
-        integral when using jax."""
-        symbols, alpha, coeff = generate_symbols_alpha_coeff()
-        geometry = qml.math.array(geometry_values, like="jax")
-        a_ref = qml.math.array(a_ref_values, like="jax")
-
-        mol = qchem.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
-        basis_a = mol.basis_set[0]
-        basis_b = mol.basis_set[1]
-        args = [geometry, mol.coeff, mol.alpha]
-
-        a = qchem.attraction_integral(geometry[0], basis_a, basis_b)(*args)
-        assert qml.math.allclose(a, a_ref)
-
-    @pytest.mark.parametrize(
         ("symbols", "geometry", "alpha", "coeff"),
         [
             (

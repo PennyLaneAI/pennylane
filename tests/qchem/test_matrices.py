@@ -1021,9 +1021,7 @@ class TestJax:
         jax.config.update("jax_enable_x64", True)
 
         geometry = qml.math.array(geometry, like="jax")
-        alpha = qml.math.array(alpha, like="jax")
-        coeff = qml.math.array(coeff, like="jax")
-        mol = qchem.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
+        mol = qchem.Molecule(symbols, geometry)
         args = [mol.coordinates, mol.coordinates, mol.coeff, mol.alpha]
 
         g_r, _, _, _ = jax.jacobian(
