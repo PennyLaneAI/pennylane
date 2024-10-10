@@ -12,165 +12,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This subpackage provides default devices for PennyLane, which do not need external plugins to be installed.
-The default devices provide basic built-in qubit
-and CV circuit simulators that can be used with PennyLane without the need for additional
-dependencies. They may also be used in the PennyLane test suite in order
-to verify and test quantum gradient computations.
+Submodule for performing mixed state simulations of qubit-based quantum circuits.
+
+This submodule is internal and subject to change without a deprecation cycle. Use
+at your own discretion.
 
 
-
-.. currentmodule:: pennylane.devices
+.. currentmodule:: pennylane.devices.qubit_mixed
 .. autosummary::
     :toctree: api
 
-
-    default_qubit
-    default_gaussian
-    default_mixed
-    default_qutrit
-    default_qutrit_mixed
-    default_clifford
-    default_tensor
-    _legacy_device
-    _qubit_device
-    _qutrit_device
-    null_qubit
-    reference_qubit
-    tests
-
-Next generation devices
------------------------
-
-:class:`pennylane.devices.Device` is the latest interface for the next generation of devices that
-replaces :class:`pennylane.Device` and :class:`pennylane.QubitDevice`.
-
-While the previous interface :class:`pennylane.Device` is imported top level, the new :class:`pennylane.devices.Device` is
-accessible from the ``pennylane.devices`` submodule.
-
-.. currentmodule:: pennylane.devices
-.. autosummary::
-    :toctree: api
-
-    ExecutionConfig
-    MCMConfig
-    Device
-    DefaultQubit
-    DefaultTensor
-    NullQubit
-    ReferenceQubit
-    DefaultQutritMixed
-    LegacyDeviceFacade
-
-Preprocessing Transforms
-------------------------
-
-The ``preprocess`` module offers several transforms that can be used in constructing the :meth:`~.devices.Device.preprocess`
-method for devices.
-
-.. currentmodule:: pennylane.devices.preprocess
-.. autosummary::
-    :toctree: api
-
-    decompose
-    validate_observables
-    validate_measurements
-    validate_device_wires
-    validate_multiprocessing_workers
-    validate_adjoint_trainable_params
-    no_sampling
-
-Other transforms that may be relevant to device preprocessing include:
-
-.. currentmodule:: pennylane
-.. autosummary::
-    :toctree: api
-
-    defer_measurements
-    transforms.broadcast_expand
-    transforms.split_non_commuting
-
-Modifiers
----------
-
-The ``modifiers`` allow for the easy addition of default behaviour to a device.
-
-.. currentmodule:: pennylane.devices.modifiers
-.. autosummary::
-    :toctree: api
-
-    single_tape_support
-    simulator_tracking
-
-For example with a custom device we can add simulator-style tracking and the ability
-to handle a single circuit. See the documentation for each modifier for more details.
-
-.. code-block:: python
-
-    @simulator_tracking
-    @single_tape_support
-    class MyDevice(qml.devices.Device):
-
-        def execute(self, circuits, execution_config = qml.devices.DefaultExecutionConfig):
-            return tuple(0.0 for _ in circuits)
-
->>> dev = MyDevice()
->>> tape = qml.tape.QuantumTape([qml.S(0)], [qml.expval(qml.X(0))])
->>> with dev.tracker:
-...     out = dev.execute(tape)
->>> out
-0.0
->>> dev.tracker.history
-{'batches': [1],
- 'simulations': [1],
- 'executions': [1],
- 'results': [0.0],
- 'resources': [Resources(num_wires=1, num_gates=1,
- gate_types=defaultdict(<class 'int'>, {'S': 1}),
- gate_sizes=defaultdict(<class 'int'>, {1: 1}), depth=1,
- shots=Shots(total_shots=None, shot_vector=()))]}
-
-
-Qubit Simulation Tools
-----------------------
-
-.. currentmodule:: pennylane.devices.qubit
-.. automodule:: pennylane.devices.qubit
-
-
-Qutrit Mixed-State Simulation Tools
------------------------------------
-
-.. currentmodule:: pennylane.devices.qutrit_mixed
-.. automodule:: pennylane.devices.qutrit_mixed
-
+    create_initial_state
+    apply_operation
+    measure
+    measure_with_samples
+    sample_state
+    simulate
 """
 
-
-from .execution_config import ExecutionConfig, DefaultExecutionConfig, MCMConfig
-from .device_constructor import device, refresh_devices
-from .device_api import Device
-from .default_qubit import DefaultQubit
-from .legacy_facade import LegacyDeviceFacade
-
-# DefaultTensor is not imported here to avoid warnings
-# from quimb in case it is installed on the system.
-from .default_gaussian import DefaultGaussian
-from .default_mixed import DefaultMixed
-from .default_clifford import DefaultClifford
-from .default_tensor import DefaultTensor
-from .null_qubit import NullQubit
-from .reference_qubit import ReferenceQubit
-from .default_qutrit import DefaultQutrit
-from .default_qutrit_mixed import DefaultQutritMixed
-from ._legacy_device import Device as LegacyDevice
-from ._qubit_device import QubitDevice
-from ._qutrit_device import QutritDevice
-
-
-# pylint: disable=undefined-variable
-def __getattr__(name):
-    if name == "plugin_devices":
-        return device_constructor.plugin_devices
-
-    raise AttributeError(f"module 'pennylane.devices' has no attribute '{name}'")
+from .apply_operation import apply_operation
+from .initialize_state import create_initial_state
+from .measure import measure
+from .sampling import sample_state, measure_with_samples
+from .simulate import simulate, get_final_state, measure_final_state
