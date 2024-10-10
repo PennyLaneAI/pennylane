@@ -64,6 +64,8 @@ def _qnode_batching_rule(
     batched_args, batch_dims, qnode, shots, device, qnode_kwargs, qfunc_jaxpr, n_consts
 ):
 
+    # TODO: implement batching rule (currently just a dummy)
+
     print("batched_args", batched_args)
     print("batch_dims", batch_dims)
     print("qnode", qnode)
@@ -83,9 +85,7 @@ def _qnode_batching_rule(
         return jax.core.eval_jaxpr(qfunc_jaxpr, consts, *inner_args)
 
     qnode = qml.QNode(qfunc, device, **qnode_kwargs)
-    result = qnode._impl_call(*args, shots=shots)  # pylint: disable=protected-access
-
-    print("result", result)
+    result = qnode_call(qnode, *args, shots=shots)
 
     return result, [0]
 
@@ -228,6 +228,9 @@ def qnode_call(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
     print("flat_fn is", flat_fn)
 
     qfunc_jaxpr = jax.make_jaxpr(flat_fn)(*args)
+
+    print("qfunc_jaxpr is", qfunc_jaxpr)
+
     execute_kwargs = copy(qnode.execute_kwargs)
     mcm_config = asdict(execute_kwargs.pop("mcm_config"))
     qnode_kwargs = {"diff_method": qnode.diff_method, **execute_kwargs, **mcm_config}
