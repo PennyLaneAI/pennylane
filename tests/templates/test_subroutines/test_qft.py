@@ -122,4 +122,3 @@ class TestQFT:
         res2 = jit_qft(jnp.array([1.0, 0.0, 0.0]))
 
         assert qml.math.allclose(res, res2)
-
