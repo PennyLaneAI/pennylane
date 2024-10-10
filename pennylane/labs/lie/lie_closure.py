@@ -35,7 +35,7 @@ def _hermitian_basis(matrices: Iterable[np.ndarray], tol: float = None, subbasis
     if tol is None:
         tol = 1e-10
 
-    basis = matrices[:subbasis_length]
+    basis = list(matrices[:subbasis_length])
     for A in matrices[subbasis_length:]:
         if not np.allclose(A.conj().T, A):
             A = 1j * A
