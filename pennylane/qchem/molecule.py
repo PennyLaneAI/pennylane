@@ -127,13 +127,9 @@ class Molecule:
         if l is None:
             l = [i[0] for i in self.basis_data]
 
-        if len(
-            set(
-                qml.math.get_interface(x)
-                for x in [coordinates, alpha, coeff]
-                if qml.math.get_interface(x) != "numpy"
-            )
-        ) > 1 and (alpha is not None or coeff is not None):
+        if len(set(qml.math.get_interface(x) for x in [coordinates, alpha, coeff])) > 1 and (
+            alpha is not None or coeff is not None
+        ):
             warnings.warn(
                 "The parameters coordinates, coeff, and alpha are not of the same interface. Please use the same interface for all 3 or there may be unintended behavior.",
                 UserWarning,
@@ -143,7 +139,7 @@ class Molecule:
         if alpha is None:
             alpha = [qml.math.array(i[1], **interface_args) for i in self.basis_data]
             if use_jax:
-                alpha = qml.math.array(alpha)
+                alpha = qml.math.array(alpha, like="jax")
 
         if coeff is None:
             coeff = [qml.math.array(i[2], **interface_args) for i in self.basis_data]
@@ -154,7 +150,7 @@ class Molecule:
                     for i, c in enumerate(coeff)
                 ]
             if use_jax:
-                coeff = qml.math.array(coeff)
+                coeff = qml.math.array(coeff, like="jax")
 
         r = list(
             itertools.chain(
