@@ -548,7 +548,7 @@ def _sample_probs_jax(probs, shots, num_wires, is_state_batched, prng_key=None, 
     basis_states = jnp.arange(2**num_wires)
 
     if is_state_batched:
-        keys = jax.random.split(prng_key, num=probs.shape[0])
+        keys = jax_random_split(prng_key, num=probs.shape[0])
         samples = jnp.array(
             [
                 jax.random.choice(_key, basis_states, shape=(shots,), p=prob)
@@ -556,7 +556,8 @@ def _sample_probs_jax(probs, shots, num_wires, is_state_batched, prng_key=None, 
             ]
         )
     else:
-        samples = jax.random.choice(prng_key, basis_states, shape=(shots,), p=probs)
+        _, key = jax_random_split(prng_key)
+        samples = jax.random.choice(key, basis_states, shape=(shots,), p=probs)
 
     powers_of_two = 1 << jnp.arange(num_wires, dtype=jnp.int64)[::-1]
     states_sampled_base_ten = samples[..., None] & powers_of_two
