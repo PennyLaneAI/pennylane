@@ -172,6 +172,7 @@ class Molecule:
         self.mo_coefficients = None
         self.normalize = normalize
 
+    #pylint: disable=protected-access
     def _flatten(self):
         return (self.coordinates, self.alpha, self.coeff), (
             self.symbols,
@@ -185,6 +186,7 @@ class Molecule:
             self.unit,
         )  # (differentiable), (non-differntiable)
 
+    #pylint: disable=protected-access
     @classmethod
     def _unflatten(
         cls, data, metadata
