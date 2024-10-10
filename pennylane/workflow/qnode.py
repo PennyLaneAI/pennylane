@@ -115,7 +115,7 @@ def _to_qfunc_output_type(
         results = [results]
 
     # If the return type is not tuple (list or ndarray) (Autograd and TF backprop removed)
-    if isinstance(qfunc_output, (tuple, qml.measurements.MeasurementProcess)):
+    if isinstance(qfunc_output, (qml.numpy.tensor, tuple, qml.measurements.MeasurementProcess)):
         return results
 
     _, structure = qml.pytrees.flatten(
@@ -840,9 +840,11 @@ class QNode:
         params = self.tape.get_parameters(trainable_only=False)
         self.tape.trainable_params = qml.math.get_trainable_indices(params)
 
-        if isinstance(self._qfunc_output, qml.numpy.ndarray):
-            measurement_processes = tuple(self.tape.measurements)
-        if isinstance(self._qfunc_output, dict):
+        if isinstance(self._qfunc_output, qml.numpy.tensor):
+            measurement_processes = tuple(
+                self.tape.measurements,
+            )
+        elif isinstance(self._qfunc_output, dict):
             measurement_processes = tuple(self._qfunc_output.values())
         elif not isinstance(self._qfunc_output, Sequence):
             measurement_processes = (self._qfunc_output,)
