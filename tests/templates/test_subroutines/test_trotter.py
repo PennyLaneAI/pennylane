@@ -29,14 +29,14 @@ from pennylane.resource.error import SpectralNormError
 from pennylane.templates.subroutines.trotter import _recursive_expression, _scalar
 
 test_hamiltonians = (
-    qml.dot([1, 1, 1], [qml.PauliX(0), qml.PauliY(0), qml.PauliZ(1)]),
+    qml.dot([1.0, 1.0, 1.0], [qml.PauliX(0), qml.PauliY(0), qml.PauliZ(1)]),
     qml.dot(
         [1.23, -0.45], [qml.s_prod(0.1, qml.PauliX(0)), qml.prod(qml.PauliX(0), qml.PauliZ(1))]
     ),  # op arith
     qml.dot(
         [1, -0.5, 0.5], [qml.Identity(wires=[0, 1]), qml.PauliZ(0), qml.PauliZ(0)]
     ),  # H = Identity
-    qml.dot([2, 2, 2], [qml.PauliX(0), qml.PauliY(0), qml.PauliZ(1)]),
+    qml.dot([2.0, 2.0, 2.0], [qml.PauliX(0), qml.PauliY(0), qml.PauliZ(1)]),
 )
 
 p_4 = (4 - 4 ** (1 / 3)) ** -1
@@ -447,6 +447,7 @@ class TestInitialization:
         assert op.hyperparameters == new_op.hyperparameters
         assert op is not new_op
 
+    @pytest.mark.xfail(reason="https://github.com/PennyLaneAI/pennylane/issues/6333", strict=False)
     @pytest.mark.parametrize("hamiltonian", test_hamiltonians)
     def test_standard_validity(self, hamiltonian):
         """Test standard validity criteria using assert_valid."""

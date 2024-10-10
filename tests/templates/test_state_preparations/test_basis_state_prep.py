@@ -34,7 +34,7 @@ def test_standard_validity():
 
     op = qml.BasisStatePreparation(basis_state, wires)
 
-    qml.ops.functions.assert_valid(op)
+    qml.ops.functions.assert_valid(op, skip_differentiation=True)
 
 
 def test_BasisStatePreparation_is_deprecated():

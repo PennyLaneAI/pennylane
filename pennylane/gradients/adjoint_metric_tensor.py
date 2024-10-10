@@ -184,7 +184,7 @@ def adjoint_metric_tensor(
         L = qml.math.convert_like(qml.math.zeros((tape.num_params, tape.num_params)), like_real)
         T = qml.math.convert_like(qml.math.zeros((tape.num_params,)), like_real)
 
-        for op in group_after_trainable_op[-1]:
+        for op in group_after_trainable_op[-1][int(prep is not None) :]:
             psi = qml.devices.qubit.apply_operation(op, psi)
 
         for j, outer_op in enumerate(trainable_operations):

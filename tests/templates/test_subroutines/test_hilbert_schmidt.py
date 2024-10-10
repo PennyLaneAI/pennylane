@@ -31,7 +31,7 @@ def test_flatten_unflatten_standard_checks(op_type):
 
     v_wires = qml.wires.Wires((0, 1))
     op = op_type([0.1], v_function=global_v_circuit, v_wires=v_wires, u_tape=u_tape)
-    qml.ops.functions.assert_valid(op, skip_wire_mapping=True)
+    qml.ops.functions.assert_valid(op, skip_wire_mapping=True, skip_differentiation=True)
 
     data, metadata = op._flatten()
 

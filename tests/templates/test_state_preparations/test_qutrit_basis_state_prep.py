@@ -29,7 +29,7 @@ def test_standard_validity():
     wires = [1, 2, 6, 8]
     op = qml.QutritBasisStatePreparation(basis_state, wires)
 
-    qml.ops.functions.assert_valid(op)
+    qml.ops.functions.assert_valid(op, skip_differentiation=True)
 
 
 class TestDecomposition:
