@@ -36,6 +36,9 @@ class TestDecomposition:
     """Tests that the template defines the correct decomposition."""
 
     # fmt: off
+    tshift0 = np.eye(3, dtype=int)
+    tshift1 = np.array([[0, 0, 1], [1, 0, 0], [0, 1, 0]])
+    tshift2 = np.array([[0, 1, 0], [0, 0, 1], [1, 0, 0]])
     @pytest.mark.parametrize("basis_state,wires,target_wires", [
         ([0], [0], []),
         ([0], [1], []),
@@ -102,33 +105,57 @@ class TestDecomposition:
         assert np.allclose(output_state, target_state, atol=tol, rtol=0)
 
     @pytest.mark.jax
-    @pytest.mark.parametrize(
-        "basis_state,wires,target_state",
-        [
-            ([0, 1], [0, 1], [0, 1, 0]),
-            ([1, 1, 0], [0, 1, 2], [1, 1, 0]),
-            ([1, 0, 1], [2, 0, 1], [0, 1, 1]),
-        ],
-    )
-    @pytest.mark.xfail(reason="JIT comptability not yet implemented")
-    def test_state_preparation_jax_jit(
-        self, tol, qutrit_device_3_wires, basis_state, wires, target_state
-    ):
-        """Tests that the template produces the correct expectation values."""
+    def test_state_preparation_jax_jit(self):
+        """Tests that the template can be JIT compiled."""
         import jax
 
-        @qml.qnode(qutrit_device_3_wires, interface="jax")
-        def circuit(state, obs):
-            qml.QutritBasisStatePreparation(state, wires)
+        dev = qml.device("default.qutrit", wires=1)
 
-            return [qml.expval(qml.THermitian(A=obs, wires=i)) for i in range(3)]
+        @qml.qnode(dev)
+        def circuit(state):
+            qml.QutritBasisStatePreparation(state, [0])
+            return qml.state()
 
         circuit = jax.jit(circuit)
 
-        obs = np.array([[1, 0, 0], [0, 2, 0], [0, 0, 3]])
-        output_state = [x - 1 for x in circuit(basis_state, obs)]
+        basis_state = qml.math.array([2], like="jax")
+        output_state = circuit(basis_state)
 
-        assert np.allclose(output_state, target_state, atol=tol, rtol=0)
+        assert qml.math.allclose(output_state, [0, 0, 1])
+
+    @pytest.mark.jax
+    @pytest.mark.xfail
+    def test_state_preparation_with_simpling_jax_jit(self):
+        """Tests that the template can be compiled with JIT when returning
+        a sampled measurement."""
+        import jax
+
+        n = 2
+
+        @jax.jit
+        @qml.qnode(qml.device("default.qutrit", wires=n, shots=1))
+        def circuit(state):
+            qml.QutritBasisStatePreparation(state, wires=range(n))
+            return qml.sample(wires=range(n))
+
+        state = jax.numpy.array([1, 1])
+        circuit(state)
+
+    @pytest.mark.jax
+    def test_decomposition_jax_jit(self):
+        """Tests that the decomposition is correct when JIT compiled."""
+        import jax
+        import jax.numpy as jnp
+
+        tshift = jnp.array([[0, 0, 1], [1, 0, 0], [0, 1, 0]])
+
+        jit_decomp = jax.jit(qml.QutritBasisStatePreparation.compute_decomposition)
+        jit_decomp(jnp.array([1]), wires=[0])
+
+        for i in range(3):
+            decomp = jit_decomp(jnp.array([i]), wires=[0])
+            matrix = qml.matrix(qml.prod(*decomp[::-1]))
+            assert qml.math.allclose(matrix, jnp.linalg.matrix_power(tshift, i))
 
     @pytest.mark.tf
     @pytest.mark.parametrize(
