@@ -25,7 +25,7 @@ from pennylane.operation import Operator
 from pennylane.pauli import PauliSentence, PauliWord
 
 
-def _hermitian_basis(matrices, tol=None):
+def _hermitian_basis(matrices: Iterable[np.ndarray], tol: float = None, subbasis_length: int = 0):
     """Find a linear independent basis of a list of Hermitian matrices
 
     Args:
@@ -35,8 +35,8 @@ def _hermitian_basis(matrices, tol=None):
     if tol is None:
         tol = 1e-10
 
-    basis = []
-    for A in matrices:
+    basis = matrices[:subbasis_length]
+    for A in matrices[subbasis_length:]:
         if not np.allclose(A.conj().T, A):
             A = 1j * A
             if not np.allclose(A.conj().T, A):
@@ -97,10 +97,10 @@ def lie_closure_dense(
 
     gens = np.array([qml.matrix(op, wire_order=range(n)) for op in generators], dtype=complex)
     _, chi, _ = gens.shape
-    vspace = _hermitian_basis(gens, tol)
 
     epoch = 0
-    old_length = 0  # dummy value
+    old_length = 0
+    vspace = _hermitian_basis(gens, tol, old_length)
     new_length = len(vspace)
 
     while (new_length > old_length) and (epoch < max_iterations):
@@ -117,7 +117,7 @@ def lie_closure_dense(
 
         # sub-select linear independent subset
         vspace = np.concatenate([vspace, all_coms])
-        vspace = _hermitian_basis(vspace, tol)
+        vspace = _hermitian_basis(vspace, tol, old_length)
 
         # Updated number of linearly independent PauliSentences from previous and current step
         old_length = new_length
