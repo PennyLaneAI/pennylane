@@ -19,10 +19,10 @@ from collections.abc import Iterable
 from typing import Union
 
 import numpy as np
-import pennylane as qml
 
-from pennylane.pauli import PauliWord, PauliSentence
+import pennylane as qml
 from pennylane.operation import Operator
+from pennylane.pauli import PauliSentence, PauliWord
 
 
 def _hermitian_basis(matrices, tol=None):
