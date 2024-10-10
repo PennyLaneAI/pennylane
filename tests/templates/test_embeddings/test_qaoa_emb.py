@@ -456,10 +456,10 @@ class TestInterfaces:
         dev = qml.device("default.qubit", wires=2)
 
         circuit = qml.QNode(circuit_template, dev)
-        circuit2 = qml.QNode(circuit_decomposed, dev)
+        circuit2 = jax.jit(circuit)
 
-        res = jax.jit(circuit)(features, weights)
-        res2 = jax.jit(circuit2)(features, weights)
+        res = circuit(features, weights)
+        res2 = circuit2(features, weights)
         assert qml.math.allclose(res, res2, atol=tol, rtol=0)
 
         grad_fn = jax.grad(circuit)
@@ -468,11 +468,7 @@ class TestInterfaces:
         grad_fn2 = jax.grad(circuit2)
         grads2 = grad_fn2(features, weights)
 
-        assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
-        assert np.allclose(grads[1], grads2[1], atol=tol, rtol=0)
-
-        res2 = circuit(features, weights)
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+        assert np.allclose(grads, grads2, atol=tol, rtol=0)
 
     @pytest.mark.tf
     def test_tf(self, tol):

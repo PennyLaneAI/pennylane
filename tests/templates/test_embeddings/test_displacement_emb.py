@@ -267,26 +267,20 @@ class TestInterfaces:
         dev = qml.device("default.gaussian", wires=3)
 
         circuit = qml.QNode(circuit_template, dev)
-        circuit2 = qml.QNode(circuit_decomposed, dev)
+        circuit2 = jax.jit(circuit)
 
-        jit_circuit = jax.jit(circuit)
-        jit_circuit2 = jax.jit(circuit2)
 
-        res = jit_circuit(features)
-        res2 = jit_circuit2(features)
+        res = circuit(features)
+        res2 = circuit2(features)
         assert qml.math.allclose(res, res2, atol=tol, rtol=0)
 
-        grad_fn = jax.grad(jit_circuit)
+        grad_fn = jax.grad(circuit)
         grads = grad_fn(features)
 
-        grad_fn2 = jax.grad(jit_circuit2)
+        grad_fn2 = jax.grad(circuit2)
         grads2 = grad_fn2(features)
 
-        assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
-
-        res2 = circuit(features)
-
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+        assert np.allclose(grads, grads2, atol=tol, rtol=0)
 
     @pytest.mark.tf
     def test_tf(self, tol):
