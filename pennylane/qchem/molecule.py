@@ -24,6 +24,7 @@ import warnings
 
 import pennylane as qml
 
+from pennylane.pytrees import register_pytree
 from .basis_data import atomic_numbers
 from .basis_set import BasisFunction, mol_basis_data
 from .integrals import contracted_norm, primitive_norm
@@ -288,10 +289,5 @@ class Molecule:
             return m
 
         return orbital
-
-
-from pennylane.pytrees import (
-    register_pytree,
-)  # <- this will help register as a jax pytree if you have jax installed
 
 register_pytree(Molecule, Molecule._flatten, Molecule._unflatten)
