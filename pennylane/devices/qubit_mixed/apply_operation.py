@@ -143,7 +143,23 @@ def apply_identity(op: qml.Identity, state, is_state_batched: bool = False, debu
 # TODO add special case speedups
 
 
-def _map_indices_apply_channel(op_wires, state_wires):
-    """Helper function for get_einsum_mapping."""
-    # Implementation needed
-    pass
+def _map_indices_apply_channel(**kwargs):
+    """Map indices to einsum string
+    Args:
+        **kwargs (dict): Stores indices calculated in `get_einsum_mapping`
+
+    Returns:
+        String of einsum indices to complete einsum calculations
+    """
+    op_1_indices = f"{kwargs['kraus_index']}{kwargs['new_row_indices']}{kwargs['row_indices']}"
+    op_2_indices = f"{kwargs['kraus_index']}{kwargs['col_indices']}{kwargs['new_col_indices']}"
+
+    new_state_indices = get_new_state_einsum_indices(
+        old_indices=kwargs["col_indices"] + kwargs["row_indices"],
+        new_indices=kwargs["new_col_indices"] + kwargs["new_row_indices"],
+        state_indices=kwargs["state_indices"],
+    )
+    # index mapping for einsum, e.g., '...iga,...abcdef,...idh->...gbchef'
+    return (
+        f"...{op_1_indices},...{kwargs['state_indices']},...{op_2_indices}->...{new_state_indices}"
+    )
