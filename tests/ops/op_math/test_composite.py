@@ -258,10 +258,11 @@ def _assert_method_and_property_no_recursion_error(instance):
     """Checks that all methods and properties do not raise a RecursionError when accessed."""
 
     for name, attr in inspect.getmembers(instance.__class__):
+
         if inspect.isfunction(attr) and _is_method_with_no_argument(attr):
             _assert_method_no_recursion_error(instance, name)
 
-        if isinstance(attr, property) and not name.startswith("__"):
+        if isinstance(attr, property):
             _assert_property_no_recursion_error(instance, name)
 
 
