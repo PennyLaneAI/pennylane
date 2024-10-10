@@ -13,3 +13,6 @@
 # limitations under the License.
 """:code:`pennylane/labs/` module contains experimental features enabling
 advanced quantum computing research."""
+
+
+__all__ = []
