@@ -129,13 +129,14 @@ class TestDecomposition:
         """Tests that the template can be compiled with JIT when returning
         a sampled measurement."""
         import jax
+
         n = 2
 
         @jax.jit
-        @qml.qnode(qml.device("default.qutrit", wires = n, shots = 1))
+        @qml.qnode(qml.device("default.qutrit", wires=n, shots=1))
         def circuit(state):
-            qml.QutritBasisStatePreparation(state, wires = range(n))
-            return qml.sample(wires = range(n))
+            qml.QutritBasisStatePreparation(state, wires=range(n))
+            return qml.sample(wires=range(n))
 
         state = jax.numpy.array([1, 1])
         circuit(state)
