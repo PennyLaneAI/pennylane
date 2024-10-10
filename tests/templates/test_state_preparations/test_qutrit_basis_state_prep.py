@@ -140,6 +140,22 @@ class TestDecomposition:
         state = jax.numpy.array([1, 1])
         circuit(state)
 
+    @pytest.mark.jax
+    def test_decomposition_jax_jit(self):
+        """Tests that the decomposition is correct when JIT compiled."""
+        import jax
+        import jax.numpy as jnp
+
+        tshift = jnp.array([[0, 0, 1], [1, 0, 0], [0, 1, 0]])
+
+        jit_decomp = jax.jit(qml.QutritBasisStatePreparation.compute_decomposition)
+        jit_decomp(jnp.array([1]), wires=[0])
+
+        for i in range(3):
+            decomp = jit_decomp(jnp.array([i]), wires=[0])
+            matrix = qml.matrix(qml.prod(*decomp[::-1]))
+            assert qml.math.allclose(matrix, jnp.linalg.matrix_power(tshift, i))
+
     @pytest.mark.tf
     @pytest.mark.parametrize(
         "basis_state,wires,target_state",
