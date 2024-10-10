@@ -33,6 +33,7 @@ quantum-classical programs.
     ~create_measurement_obs_primitive
     ~create_measurement_wires_primitive
     ~create_measurement_mcm_primitive
+    ~make_plxpr
     ~qnode_call
     ~PlxprInterpreter
     ~FlatFn
@@ -157,6 +158,7 @@ from .capture_measurements import (
 )
 from .capture_qnode import qnode_call
 from .flatfn import FlatFn
+from .make_plxpr import make_plxpr
 
 # by defining this here, we avoid
 # E0611: No name 'AbstractOperator' in module 'pennylane.capture' (no-name-in-module)
@@ -210,4 +212,5 @@ __all__ = (
     "qnode_prim",
     "PlxprInterpreter",
     "FlatFn",
+    "make_plxpr",
 )

@@ -68,29 +68,40 @@ Pending deprecations
 New operator arithmetic deprecations
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The v0.36 release completes the main phase of PennyLane's switchover to an updated approach for handling
-arithmetic operations between operators, check out the :ref:`Updated operators <new_opmath>` page
-for more details. The old system is still accessible via :func:`~.disable_new_opmath`. However, the
-old system will be removed in an upcoming release and should be treated as deprecated. The following
-functionality will explicitly raise a deprecation warning when used:
+In PennyLane v0.39, the legacy operator arithmetic system has been deprecated. Check out the :ref:`Updated operators <new_opmath>` page
+for details on how to port your legacy code to the new system. The old system is still accessible via :func:`~.disable_new_opmath`, though
+it is not recommended, as the old system is deprecated and will be removed in the v0.40 release. The following functionality will explicitly
+raise a deprecation warning when used:
+
+* In PennyLane v0.39, legacy operator arithmetic has been deprecated. This includes :func:`~pennylane.operation.enable_new_opmath`,
+  :func:`~pennylane.operation.disable_new_opmath`, :class:`~pennylane.ops.Hamiltonian`, and :class:`~pennylane.operation.Tensor`. Note
+  that when new operator arithmetic is enabled, ``qml.Hamiltonian`` will continue to dispatch to :class:`~pennylane.ops.LinearCombination`;
+  this behaviour is not deprecated.
+
+  - Deprecated in v0.39
+  - Will be removed in v0.40
+
+* :meth:`~pennylane.pauli.PauliSentence.hamiltonian` and :meth:`~pennylane.pauli.PauliWord.hamiltonian` are deprecated. Instead, please use
+  :meth:`~pennylane.pauli.PauliSentence.operation` and :meth:`~pennylane.pauli.PauliWord.operation` respectively.
+
+  - Deprecated in v0.39
+  - Will be removed in v0.40
+
+* :func:`pennylane.pauli.simplify` is deprecated. Instead, please use :func:`pennylane.simplify` or :meth:`~pennylane.operation.Operator.simplify`.
+
+  - Deprecated in v0.39
+  - Will be removed in v0.40
 
 * ``op.ops`` and ``op.coeffs`` will be deprecated in the future. Use 
   :meth:`~.Operator.terms` instead.
 
   - Added and deprecated for ``Sum`` and ``Prod`` instances in v0.35
 
-* Accessing ``qml.ops.Hamiltonian`` is deprecated because it points to the old version of the class
-  that may not be compatible with the new approach to operator arithmetic. Instead, using
-  ``qml.Hamiltonian`` is recommended because it dispatches to the :class:`~.LinearCombination` class
-  when the new approach to operator arithmetic is enabled. This will allow you to continue to use
-  ``qml.Hamiltonian`` with existing code without needing to make any changes.
-
-  - Use of ``qml.ops.Hamiltonian`` is deprecated in v0.36
-
 * Accessing terms of a tensor product (e.g., ``op = X(0) @ X(1)``) via ``op.obs`` is deprecated with new operator arithmetic.
   A user should use :class:`op.operands <~.CompositeOp>` instead.
 
   - Deprecated in v0.36
+
 
 Other deprecations
 ~~~~~~~~~~~~~~~~~~
