@@ -980,19 +980,11 @@ class TestJax:
         assert qml.math.allclose(v, v_ref)
 
     @pytest.mark.parametrize(
-        ("symbols", "geometry", "alpha", "coeff", "g_r_ref"),
+        ("symbols", "geometry", "g_r_ref"),
         [
             (
                 ["H", "H"],
                 np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=True),
-                np.array(
-                    [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
-                    requires_grad=True,
-                ),
-                np.array(
-                    [[0.15432897, 0.53532814, 0.44463454], [0.15432897, 0.53532814, 0.44463454]],
-                    requires_grad=True,
-                ),
                 np.array(
                     [
                         [
@@ -1014,7 +1006,7 @@ class TestJax:
             )
         ],
     )
-    def test_gradient_attraction_matrix_jax(self, symbols, geometry, alpha, coeff, g_r_ref):
+    def test_gradient_attraction_matrix_jax(self, symbols, geometry, g_r_ref):
         r"""Test that the attraction gradients are correct for jax."""
         import jax
 
