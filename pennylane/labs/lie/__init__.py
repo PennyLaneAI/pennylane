@@ -14,3 +14,4 @@
 """Experimental Lie theory features"""
 
 from .lie_closure import lie_closure_dense
+from .structure_constants import structure_constants_dense
