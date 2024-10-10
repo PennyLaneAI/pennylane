@@ -35,9 +35,10 @@
 
 <h3>Improvements 🛠</h3>
 
-* Isolate `qfunc_output` and `tape.measurement` to a private helper function.
-  [(#6370)](https://github.com/PennyLaneAI/pennylane/pull/6370)
-
+* `qml.matrix` now works with empty objects (such as empty tapes, `QNode`s and quantum functions that do
+  not call operations, single operators with empty decompositions).
+  [(#6347)](https://github.com/PennyLaneAI/pennylane/pull/6347)
+  
 * PennyLane is now compatible with NumPy 2.0.
   [(#6061)](https://github.com/PennyLaneAI/pennylane/pull/6061)
   [(#6258)](https://github.com/PennyLaneAI/pennylane/pull/6258)
@@ -294,6 +295,9 @@
 
 * Fixes a test after updating to the nightly version of Catalyst.
   [(#6362)](https://github.com/PennyLaneAI/pennylane/pull/6362)
+
+* Fixes a bug where `CommutingEvolution` with a trainable `Hamiltonian` cannot be differentiated using parameter shift.
+  [(#6372)](https://github.com/PennyLaneAI/pennylane/pull/6372)
 
 <h3>Contributors ✍️</h3>
 
