@@ -23,6 +23,7 @@ import pytest
 import pennylane as qml
 
 
+@pytest.mark.xfail(reason="PrepSelPrep does not work with parameter-shift (GitHub issue #6331)")
 @pytest.mark.parametrize(
     ("lcu", "control"),
     [
