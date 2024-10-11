@@ -121,6 +121,7 @@ quantum functions of optimized circuits:
     ~pennylane.transforms.remove_barrier
     ~pennylane.transforms.single_qubit_fusion
     ~pennylane.transforms.undo_swaps
+    ~pennylane.transforms.decompose
 
 :html:`</div>`
 

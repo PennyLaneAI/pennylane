@@ -78,7 +78,7 @@ def decompose(tape, gate_set=None, max_expansion=None):
     .. note::
 
         This function does not guarantee a decomposition to the target gate set. During the decomposition, if an unsupported operation is encountered
-        the function will leave it in the circuit and raise a `UserWarning` indicating no defined decomposition. To waive this warning, simply add the operator
+        the function will leave it in the circuit and raise a ``UserWarning`` indicating no defined decomposition. To waive this warning, simply add the operator
         to the defined gate set.
 
     .. seealso:: :func:`~.pennylane.devices.preprocess.decompose` for a transform that is intended for device developers. This function will decompose a quantum circuit into a set of basis gates available on a specific device architecture.
