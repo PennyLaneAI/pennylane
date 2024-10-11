@@ -598,7 +598,7 @@ class TestInterfaces:
         grad_fn2 = jax.grad(circuit2)
         grads2 = grad_fn2(weights)
 
-        assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
+        assert qml.math.allclose(grads[0], grads2[0], atol=tol, rtol=0)
 
     @pytest.mark.tf
     def test_tf(self, tol):
