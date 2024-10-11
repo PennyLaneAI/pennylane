@@ -19,11 +19,10 @@ from string import ascii_letters as alphabet
 
 import pennylane as qml
 from pennylane import math
+from pennylane.devices.qubit_mixed import QUDIT_DIM
 from pennylane.measurements import Shots
 from pennylane.operation import Channel
 from pennylane.ops.qubit.attributes import diagonal_in_z_basis
-
-from .utils import QUDIT_DIM, get_einsum_mapping, get_new_state_einsum_indices
 
 alphabet_array = math.array(list(alphabet))
 
@@ -43,14 +42,30 @@ def apply_operation(
     """Apply an operation to a given state."""
 
     num_op_wires = len(op.wires)
-    matrices = op.kraus_matrices()
-    interface = math.get_interface(state, *matrices)
+    if isinstance(op, Channel):
+        kraus = op.kraus_matrices()
+    else:
+        mat = op.matrix
+        kraus = [mat]
+        # Shape kraus operators
+        kraus_shape = [len(kraus)] + [QUDIT_DIM] * num_op_wires * 2
+
+        mat = op.matrix()
+        dim = QUDIT_DIM**num_op_wires
+        batch_size = math.get_batch_size(mat, (dim, dim), dim**2)
+        if batch_size is not None:
+            # Add broadcasting dimension to shape
+            kraus_shape = [batch_size] + kraus_shape
+            if op.batch_size is None:
+                op._batch_size = batch_size
+
+    interface = math.get_interface(state, *kraus)
     if (num_op_wires > 2 and interface in {"autograd", "numpy"}) or num_op_wires > 7:
         return _apply_channel_tensordot(
-            matrices, state, is_state_batched, debugger, postselect_mode, rng, prng_key, tape_shots
+            kraus, state, is_state_batched, debugger, postselect_mode, rng, prng_key, tape_shots
         )
     return _apply_channel_einsum(
-        matrices, state, is_state_batched, debugger, postselect_mode, rng, prng_key, tape_shots
+        kraus, state, is_state_batched, debugger, postselect_mode, rng, prng_key, tape_shots
     )
 
 
@@ -64,13 +79,24 @@ def _apply_channel_einsum(
     prng_key=None,
     tape_shots=Shots(None),
 ):
+    print()
+    print(f"Type of matrices: {type(matrices)}")
+    print(f"Length of matrices: {len(matrices)}")
+    print(f"Type of first element in matrices: {type(matrices[0])}")
+
     num_wires = int(math.log2(state.shape[0]) // 2)
-    num_ch_wires = int(math.log2(matrices[0].shape[0]))
+
+    # Convert methods to actual matrices
+    matrix_data = [m() if callable(m) else m for m in matrices]
+
+    print(f"Shape of first matrix after conversion: {matrix_data[0].shape}")
+
+    num_ch_wires = int(math.log2(matrix_data[0].shape[0]))
 
     # Compute K^\dagger, needed for the transformation K \rho K^\dagger
-    matrices_dagger = [math.conj(math.transpose(k)) for k in matrices]
+    matrices_dagger = [math.conj(math.transpose(k)) for k in matrix_data]
 
-    matrices = math.stack(matrices)
+    matrices = math.stack(matrix_data)
     matrices_dagger = math.stack(matrices_dagger)
 
     # Shape kraus operators

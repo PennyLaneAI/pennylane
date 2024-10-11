@@ -23,6 +23,7 @@ at your own discretion.
 
     apply_operation
 """
+QUDIT_DIM = 2  # specifies qubit dimension
 
 from .apply_operation import apply_operation
 
