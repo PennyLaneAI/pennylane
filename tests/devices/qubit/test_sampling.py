@@ -84,7 +84,7 @@ class TestSampleState:
 
     @pytest.mark.jax
     def test_prng_key_as_seed_uses_sample_state_jax(self, mocker):
-        """Tests that sample_state calls sample_state if the seed is a JAX PRNG key"""
+        """Tests that sample_state calls _sample_probs_jax if the seed is a JAX PRNG key"""
         import jax
 
         jax.config.update("jax_enable_x64", True)
