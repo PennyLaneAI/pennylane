@@ -158,11 +158,14 @@ class TestDecomposition:
         import jax
         import jax.numpy as jnp
 
-        jit_decomp = jax.jit(qml.QutritBasisStatePreparation.compute_decomposition)
-        jit_decomp(jnp.array([1]), wires=jnp.array([0]))
+        jit_decomp = jax.jit(qml.QutritBasisStatePreparation.compute_decomposition, static_argnames="wires")
 
-        def op_list(state, wire):
-            return [
+        wire = (0,)
+        for state in range(3):
+            state = jnp.array([state])
+            decomp = jit_decomp(jnp.array([state]), wires=wire)
+
+            op_list = [
                 qml.TRY(state * (2 - state) * np.pi, wires=wire, subspace=(0, 1)),
                 qml.TRY(state * (1 - state) * np.pi / 2, wires=wire, subspace=(0, 2)),
                 qml.TRZ((-2 * state + 3) * state * np.pi, wires=wire, subspace=(0, 2)),
@@ -171,10 +174,8 @@ class TestDecomposition:
                 qml.TRZ(-(7 * state - 10) * state * np.pi, wires=wire, subspace=(0, 2)),
             ]
 
-        for i in range(3):
-            decomp = jit_decomp(jnp.array([i]), wires=jnp.array([0]))
-            for op1, op2 in zip(decomp, op_list(i, [0])):
-                assert op1 == op2
+            for op1, op2 in zip(decomp, op_list):
+                qml.assert_equal(op1, op2)
 
     @pytest.mark.tf
     @pytest.mark.parametrize(
