@@ -489,7 +489,7 @@ def sample_state(
 def sample_probs(probs, shots, num_wires, is_state_batched, rng, prng_key=None):
     """
     Sample from given probabilities, dispatching between JAX and NumPy implementations.
-    
+
     Args:
         probs (array): The probabilities to sample from
         shots (int): The number of samples to take
@@ -510,7 +510,7 @@ def sample_probs(probs, shots, num_wires, is_state_batched, rng, prng_key=None):
 def _sample_probs_numpy(probs, shots, num_wires, is_state_batched, rng):
     """
     Sample from given probabilities using NumPy's random number generator.
-    
+
     Args:
         probs (array): The probabilities to sample from
         shots (int): The number of samples to take
