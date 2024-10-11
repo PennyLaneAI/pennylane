@@ -663,7 +663,8 @@ class QubitDevice(Device):
 
             elif isinstance(m, SampleMP):
                 samples = self.sample(obs, shot_range=shot_range, bin_size=bin_size, counts=False)
-                result = self._asarray(qml.math.squeeze(samples))
+                dtype = int if isinstance(obs, SampleMP) else None
+                result = self._asarray(qml.math.squeeze(samples), dtype=dtype)
 
             elif isinstance(m, CountsMP):
                 result = self.sample(m, shot_range=shot_range, bin_size=bin_size, counts=True)
@@ -1508,10 +1509,11 @@ class QubitDevice(Device):
 
         **Example**
 
+            >>> from pennylane import numpy as np
             >>> num_wires = 2
             >>> dev = qml.device("default.mixed", wires=num_wires)
             >>> mp = qml.counts()
-            >>> samples = pnp.array([[0, 0], [0, 0], [1, 0]])
+            >>> samples = np.array([[0, 0], [0, 0], [1, 0]])
             >>> dev._samples_to_counts(samples, mp, num_wires)
             {'00': 2, '10': 1}
             >>> mp = qml.counts(all_outcomes=True)
