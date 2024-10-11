@@ -92,6 +92,7 @@ def broadcast_expand(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postproce
     broadcasting, and set up a simple ``QNode`` with a single operation and
     returned expectation value:
 
+    >>> from pennylane import numpy as np
     >>> qml.RX.ndim_params = (0,)
     >>> dev = qml.device("default.qubit", wires=1)
     >>> @qml.qnode(dev)
@@ -107,7 +108,7 @@ def broadcast_expand(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postproce
     Let's use the expanded QNode and draw it for broadcasted parameters
     with broadcasting axis of length ``3`` passed to ``qml.RX``:
 
-    >>> x = pnp.array([0.2, 0.6, 1.0], requires_grad=True)
+    >>> x = np.array([0.2, 0.6, 1.0], requires_grad=True)
     >>> print(qml.draw(expanded_circuit)(x))
     0: ──RX(0.20)─┤  <Z>
     0: ──RX(0.60)─┤  <Z>
@@ -121,7 +122,7 @@ def broadcast_expand(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postproce
 
     We also can call the transform manually on a tape:
 
-    >>> ops = [qml.RX(pnp.array([0.2, 0.6, 1.0], requires_grad=True), wires=0)]
+    >>> ops = [qml.RX(np.array([0.2, 0.6, 1.0], requires_grad=True), wires=0)]
     >>> measurements = [qml.expval(qml.Z(0))]
     >>> tape = qml.tape.QuantumTape(ops, measurements)
     >>> tapes, fn = qml.transforms.broadcast_expand(tape)
