@@ -55,8 +55,6 @@ def _get_shapes_for(*measurements, shots=None, num_device_wires=0):
             shape, dtype = m.aval.abstract_eval(shots=s, num_device_wires=num_device_wires)
             shapes.append(jax.core.ShapedArray(shape, dtype_map.get(dtype, dtype)))
 
-    print("measurements", measurements)
-
     return shapes
 
 
@@ -114,8 +112,6 @@ def _get_qnode_prim():
     def _(*args, qnode, shots, device, qnode_kwargs, qfunc_jaxpr, n_consts):
         consts = args[:n_consts]
         args = args[n_consts:]
-
-        print("definition implementation called")
 
         def qfunc(*inner_args):
             return jax.core.eval_jaxpr(qfunc_jaxpr, consts, *inner_args)
@@ -238,22 +234,14 @@ def qnode_call(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
 
     qfunc = partial(qnode.func, **kwargs) if kwargs else qnode.func
 
-    print("qfunc is", qfunc)
-
     flat_fn = FlatFn(qfunc)
 
-    print("flat_fn is", flat_fn)
-
     qfunc_jaxpr = jax.make_jaxpr(flat_fn)(*args)
-
-    print("qfunc_jaxpr is", qfunc_jaxpr)
 
     execute_kwargs = copy(qnode.execute_kwargs)
     mcm_config = asdict(execute_kwargs.pop("mcm_config"))
     qnode_kwargs = {"diff_method": qnode.diff_method, **execute_kwargs, **mcm_config}
     qnode_prim = _get_qnode_prim()
-
-    print("qnode_prim is", qnode_prim)
 
     flat_args = jax.tree_util.tree_leaves(args)
     res = qnode_prim.bind(
