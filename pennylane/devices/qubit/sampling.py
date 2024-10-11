@@ -547,7 +547,7 @@ def _sample_probs_jax(probs, shots, num_wires, is_state_batched, prng_key=None, 
     Returns a series of samples of a state for the JAX interface based on the PRNG.
 
     Args:
-        state (array[complex]): A state vector to be sampled
+        probs (array): The probabilities to sample from
         shots (int): The number of samples to take
         num_wires (int): The number of wires to sample
         is_state_batched (bool): whether the state is batched or not
