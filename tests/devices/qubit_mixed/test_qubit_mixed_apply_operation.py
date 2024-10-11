@@ -32,6 +32,15 @@ ml_frameworks_list = [
 
 
 def get_random_mixed_state(num_qubits):
+    """
+    Generates a random mixed state for testing purposes.
+
+    Args:
+        num_qubits (int): The number of qubits in the mixed state.
+
+    Returns:
+        np.ndarray: A tensor representing the random mixed state.
+    """
     dim = QUDIT_DIM**num_qubits
 
     rng = np.random.default_rng(seed=4774)
@@ -44,11 +53,15 @@ def get_random_mixed_state(num_qubits):
     return mixed_state.reshape([QUDIT_DIM] * (2 * num_qubits))
 
 
+@pytest.fixture
+def three_qubit_state_fixture():
+    """Fixture for a random three-qubit mixed state."""
+    return get_random_mixed_state(3)
+
+
 @pytest.mark.parametrize("ml_framework", ml_frameworks_list)
 class TestOperation:  # pylint: disable=too-few-public-methods
     """Tests that broadcasted operations (not channels) are applied correctly."""
-
-    three_qubit_state = get_random_mixed_state(3)
 
     unbroadcasted_ops = [
         qml.Hadamard(wires=0),
@@ -82,8 +95,16 @@ class TestOperation:  # pylint: disable=too-few-public-methods
         return expand_matrix(mat)
 
     @pytest.mark.parametrize("op", unbroadcasted_ops)
-    def test_no_broadcasting(self, op, ml_framework, three_qubit_state):
-        """Tests that unbatched operations are applied correctly to an unbatched state."""
+    def test_no_broadcasting(self, op, ml_framework, request):
+        """
+        Tests that unbatched operations are applied correctly to an unbatched state.
+
+        Args:
+            op (Operation): Quantum operation to apply.
+            ml_framework (str): The machine learning framework in use (numpy, autograd, etc.).
+            request (FixtureRequest): Pytest fixture request object.
+        """
+        three_qubit_state = request.getfixturevalue("three_qubit_state_fixture")
         res = apply_operation(op, qml.math.asarray(three_qubit_state, like=ml_framework))
 
         expanded_operator = self.expand_matrices(op)
