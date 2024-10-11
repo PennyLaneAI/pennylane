@@ -85,6 +85,9 @@
   unprocessed diagonalizing gates.
   [(#6290)](https://github.com/PennyLaneAI/pennylane/pull/6290)
 
+* `qml.BasisRotation` template is now JIT compatible.
+  [(#6019)](https://github.com/PennyLaneAI/pennylane/pull/6019)
+
 <h4>Capturing and representing hybrid programs</h4>
 
 * `qml.wires.Wires` now accepts JAX arrays as input. Furthermore, a `FutureWarning` is no longer raised in `JAX 0.4.30+`
