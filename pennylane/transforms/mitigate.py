@@ -429,10 +429,11 @@ def mitigate_with_zne(
 
         noisy_dev = qml.add_noise(dev, noise_model)
 
-    We can now set up a mitigated QNode by passing a ``folding`` and ``extrapolate`` function. PennyLane provides native
-    functions :func:`~.pennylane.transforms.fold_global` and :func:`~.pennylane.transforms.poly_extrapolate` or :func:`~.pennylane.transforms.richardson_extrapolate` that
-    allow for differentiating through them. Custom functions, as well as functionalities from the `Mitiq <https://mitiq.readthedocs.io/en/stable/>`__ package
-    are supported as well (see usage details below).
+    We can now set up a mitigated ``QNode`` by first decomposing it into a target gate set via :func:`~.pennylane.transforms.compile`
+    and then applying this transform by passing a ``folding`` and ``extrapolate`` function. PennyLane provides native
+    functions :func:`~.pennylane.transforms.fold_global` and :func:`~.pennylane.transforms.poly_extrapolate` or
+    :func:`~.pennylane.transforms.richardson_extrapolate` that allow for differentiating through them. Custom functions, as well as
+    functionalities from the `Mitiq <https://mitiq.readthedocs.io/en/stable/>`__ package are supported as well (see usage details below).
 
     .. code-block:: python3
 
@@ -455,6 +456,7 @@ def mitigate_with_zne(
             folding=fold_global,
             extrapolate=poly_extrapolate,
             extrapolate_kwargs={'order': 2})
+        @partial(qml.compile, basis_set = ["RY", "CZ"])
         @qnode(noisy_dev)
         def circuit(w1, w2):
             qml.SimplifiedTwoDesign(w1, w2, wires=range(2))
