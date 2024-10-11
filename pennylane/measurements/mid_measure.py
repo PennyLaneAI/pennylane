@@ -574,6 +574,6 @@ def find_post_processed_mcms(circuit):
         if isinstance(m.mv, list):
             for mv in m.mv:
                 post_processed_mcms = post_processed_mcms | set(mv.measurements)
-        elif m.mv:
+        elif m.mv is not None:
             post_processed_mcms = post_processed_mcms | set(m.mv.measurements)
     return post_processed_mcms
