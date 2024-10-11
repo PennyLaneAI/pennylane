@@ -81,7 +81,7 @@ class QDrift(Operation):
     The QDrift subroutine provides a method to approximate the matrix exponential of a Hamiltonian
     expressed as a linear combination of terms which in general do not commute. For the Hamiltonian
     :math:`H = \Sigma_j h_j H_{j}`, the product formula is constructed by random sampling from the
-    terms of the Hamiltonian with the probability :math:`p_j = h_j / \sum_{j} h_{j}` as:
+    terms of the Hamiltonian with the probability :math:`p_j = h_j / \sum_{j} hj` as:
 
     .. math::
 
