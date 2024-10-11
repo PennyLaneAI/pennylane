@@ -121,6 +121,23 @@ class TestDecomposition:
         assert qml.math.allclose(output_state, [0, 0, 1])
 
     @pytest.mark.jax
+    def test_state_preparation_with_simpling_jax_jit(self):
+        """Tests that the template can be compiled with JIT when returning
+        a sampled measurement."""
+        import jax
+
+        n = 2
+
+        @jax.jit
+        @qml.qnode(qml.device("default.qutrit", wires=n, shots=1))
+        def circuit(state):
+            qml.QutritBasisStatePreparation(state, wires=range(n))
+            return qml.sample(wires=range(n))
+
+        state = jax.numpy.array([1, 1])
+        circuit(state)
+
+    @pytest.mark.jax
     @pytest.mark.parametrize("state", [0, 1, 2])
     def test_decomposition_matrix_jax_jit(self, state):
         """Tests that the decomposition matrix is correct when JIT compiled."""
