@@ -25,8 +25,8 @@ from pennylane.ops.op_math.pow import Pow
 from pennylane.ops.op_math.sum import Sum
 from pennylane.queuing import QueuingManager
 
-from .symbolicop import ScalarSymbolicOp
 from .composite import handle_recursion_error
+from .symbolicop import ScalarSymbolicOp
 
 
 def s_prod(scalar, operator, lazy=True, id=None):
