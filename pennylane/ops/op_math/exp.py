@@ -213,7 +213,7 @@ class Exp(ScalarSymbolicOp, ResourcesOperation):
     def _queue_category(self):
         return "_ops"
 
-    def resources(self, gate_set=None):
+    def resources(self, gate_set=None, estimate=False):
         """Temporary hack resources"""
         base = self.base
         coeff = self.coeff
@@ -223,46 +223,17 @@ class Exp(ScalarSymbolicOp, ResourcesOperation):
             base = base.base
 
         if qml.pauli.is_pauli_word(base) and math.real(coeff) == 0:
-            num_gates = 0
-            gate_types_dict = defaultdict(int)
-            gate_sizes_dict = defaultdict(int)
+            modified_resources = _resources_from_pauli_word(tuple(base.pauli_rep.keys())[0], estimate=estimate)
 
-            if isinstance(base, qml.Identity):  # The operation becomes a global phase
-                pass
-            
-            if base.num_wires == 1:
-                op_type = (
-                    "RZ" if isinstance(base, qml.Z) else "RX" if isinstance(base, qml.X) else "RY"
-                )
-                num_gates += 1
-                gate_sizes_dict[1] += 1
-                gate_types_dict[op_type] += 1
+        # elif (pauli_sentence := base.pauli_rep) and math.real(coeff) == 0: 
+        #     modified_resources = _resources_from_pauli_sentence(pauli_sentence, estimate=estimate)
 
-            else:
-                num_gates += 2 * (base.num_wires - 1)
-                gate_sizes_dict[2] += 2 * (base.num_wires - 1)
-                gate_types_dict["CNOT"] += 2 * (base.num_wires - 1)
-
-                num_gates += 2 * int(math.ceil(base.num_wires / 3))
-                gate_sizes_dict[1] += int(math.ceil(base.num_wires / 3))
-                gate_types_dict["RX"] += int(math.ceil(base.num_wires / 3))
-
-                num_gates += 1
-                gate_sizes_dict[1] += 1
-                gate_types_dict["RZ"] += 1
-
-                num_gates += 2 * int(math.ceil(base.num_wires / 3))
-                gate_sizes_dict[1] += 2 * int(math.ceil(base.num_wires / 3))
-                gate_types_dict["Hadamard"] += 2 * int(math.ceil(base.num_wires / 3))
-
-            modified_resources = qml.resource.Resources(
-                num_gates=num_gates, gate_sizes=gate_sizes_dict, gate_types=gate_types_dict
+        else:
+            modified_resources = qml.resource.resource.resources_from_sequence_ops(
+                self.decomposition(), gate_set=gate_set,
             )
-            return modified_resources
-
-        return qml.resource.resource.resources_from_sequence_ops(
-            self.decomposition(), gate_set=gate_set
-        )
+    
+        return modified_resources * self.num_steps if self.num_steps else modified_resources
 
     # pylint: disable=invalid-overridden-method, arguments-renamed
     @property
@@ -563,3 +534,150 @@ class Exp(ScalarSymbolicOp, ResourcesOperation):
             f"generator. Consider using op.simplify() to simplify before finding the generator, or define the operator "
             f"in the form exp(-ixG) through the Evolution class."
         )
+
+
+def _resources_from_pauli_word(pauli_word, estimate=False):
+    num_gates = 0
+    gate_types_dict = defaultdict(int)
+    gate_sizes_dict = defaultdict(int)
+
+    if len(pauli_word) == 0:  # Identity operation becomes a global phase
+        return qml.resource.Resources(gate_sizes=defaultdict(int), gate_types=defaultdict(int))
+    
+    num_wires = len(pauli_word.wires)
+    
+    if num_wires == 1:
+        pauli_string = "".join((str(v) for v in pauli_word.values()))
+        op_type = (
+            "RZ" if pauli_string=="Z" else "RX" if pauli_string=="X" else "RY"
+        )
+        num_gates += 1
+        gate_sizes_dict[1] += 1
+        gate_types_dict[op_type] += 1
+        return qml.resource.Resources(num_gates=num_gates, gate_sizes=gate_sizes_dict, gate_types=gate_types_dict)
+
+    if estimate:  # assume an even distribution of X,Y,Z in the PauliWord
+        num_x = int(math.ceil(num_wires / 3))
+        num_y = num_x
+    
+    else:
+        pauli_string = "".join((str(v) for v in pauli_word.values()))
+        
+        counter = {"X":0, "Y":0, "Z":0} 
+        for c in pauli_string:
+            counter[c] += 1
+        
+        num_x = counter["X"]
+        num_y = counter["Y"]
+
+    num_cnots = 2 * (num_wires - 1)
+    num_gates += num_cnots
+    gate_sizes_dict[2] += num_cnots
+    gate_types_dict["CNOT"] += num_cnots
+
+    num_gates += 1
+    gate_sizes_dict[1] += 1
+    gate_types_dict["RZ"] += 1
+
+    num_s = 2 * num_y
+    num_gates += num_s
+    gate_sizes_dict[1] += num_s
+    gate_types_dict["S"] += num_s
+
+    num_h = 2 * (num_x + num_y)
+    num_gates += num_h
+    gate_sizes_dict[1] += num_h
+    gate_types_dict["Hadamard"] += num_h
+
+    return qml.resource.Resources(num_gates=num_gates, gate_sizes=gate_sizes_dict, gate_types=gate_types_dict)
+
+
+def _resources_from_pauli_sentence(pauli_sentence, estimate=False):
+    num_gates = 0
+    gate_types_dict = defaultdict(int)
+    gate_sizes_dict = defaultdict(int)
+
+    if len(pauli_sentence) == 0:  # Identity operation becomes a global phase
+        return qml.resource.Resources(gate_sizes=defaultdict(int), gate_types=defaultdict(int))
+    
+    if estimate: 
+        p_counts = defaultdict(int)
+        for pw in iter(pauli_sentence.keys()):
+            p_counts[len(pw.wires)] += 1
+
+        for num_wires, counts in p_counts.items():
+            if num_wires == 1: 
+                num_gates += counts
+                gate_sizes_dict[1] += counts
+                gate_types_dict["RX"] += round(counts/3)
+                gate_types_dict["RY"] += round(counts/3)
+                gate_types_dict["RZ"] += counts - 2*round(counts/3)
+                continue
+
+            num_x = int(math.ceil(num_wires / 3))
+            num_y = num_x
+            
+            num_cnots = 2 * (num_wires - 1) * counts
+            num_gates += num_cnots
+            gate_sizes_dict[2] += num_cnots
+            gate_types_dict["CNOT"] += num_cnots
+
+            num_gates += counts
+            gate_sizes_dict[1] += counts
+            gate_types_dict["RZ"] += counts
+
+            num_s = 2 * num_y * counts
+            num_gates += num_s
+            gate_sizes_dict[1] += num_s
+            gate_types_dict["S"] += num_s
+
+            num_h = 2 * (num_x + num_y) * counts
+            num_gates += num_h
+            gate_sizes_dict[1] += num_h
+            gate_types_dict["Hadamard"] += num_h
+
+        return qml.resource.Resources(num_gates=num_gates, gate_sizes=gate_sizes_dict, gate_types=gate_types_dict)
+
+    for pauli_word in iter(pauli_sentence.keys()):
+        num_wires = len(pauli_word.wires)
+    
+        if num_wires == 1:
+            pauli_string = "".join((str(v) for v in pauli_word.values()))
+            op_type = (
+                "RZ" if pauli_string=="Z" else "RX" if pauli_string=="X" else "RY"
+            )
+            num_gates += 1
+            gate_sizes_dict[1] += 1
+            gate_types_dict[op_type] += 1
+            continue
+
+
+        pauli_string = "".join((str(v) for v in pauli_word.values()))
+        
+        counter = {"X":0, "Y":0, "Z":0}
+        for c in pauli_string:
+            counter[c] += 1
+        
+        num_x = counter["X"]
+        num_y = counter["Y"]
+
+        num_cnots = 2 * (num_wires - 1)
+        num_gates += num_cnots
+        gate_sizes_dict[2] += num_cnots
+        gate_types_dict["CNOT"] += num_cnots
+
+        num_gates += 1
+        gate_sizes_dict[1] += 1
+        gate_types_dict["RZ"] += 1
+
+        num_s = 2 * num_y
+        num_gates += num_s
+        gate_sizes_dict[1] += num_s
+        gate_types_dict["S"] += num_s
+
+        num_h = 2 * (num_x + num_y)
+        num_gates += num_h
+        gate_sizes_dict[1] += num_h
+        gate_types_dict["Hadamard"] += num_h
+
+    return qml.resource.Resources(num_gates=num_gates, gate_sizes=gate_sizes_dict, gate_types=gate_types_dict)
