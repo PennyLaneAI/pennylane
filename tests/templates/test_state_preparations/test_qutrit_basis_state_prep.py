@@ -159,7 +159,9 @@ class TestDecomposition:
         import jax
         import jax.numpy as jnp
 
-        jit_decomp = jax.jit(qml.QutritBasisStatePreparation.compute_decomposition, static_argnames="wires")
+        jit_decomp = jax.jit(
+            qml.QutritBasisStatePreparation.compute_decomposition, static_argnames="wires"
+        )
 
         wire = (0,)
         state = jnp.array([state])
