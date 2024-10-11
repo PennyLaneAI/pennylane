@@ -72,6 +72,9 @@
 * All PL templates are now unit tested to ensure JIT compatibility.
   [(#6309)](https://github.com/PennyLaneAI/pennylane/pull/6309)
 
+* `qml.QutritBasisStatePreparation` is now JIT compatible.
+  [(#6308)](https://github.com/PennyLaneAI/pennylane/pull/6308)
+
 * `qml.AmplitudeAmplification` is now compatible with QJIT.
   [(#6306)](https://github.com/PennyLaneAI/pennylane/pull/6306)
 
