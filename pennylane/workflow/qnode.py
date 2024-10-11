@@ -20,7 +20,7 @@ import functools
 import inspect
 import logging
 import warnings
-from collections.abc import Callable, Sequence
+from collections.abc import Callable
 from typing import Any, Literal, Optional, Union, get_args
 
 from cachetools import Cache
@@ -110,25 +110,21 @@ def _to_qfunc_output_type(
     if has_partitioned_shots:
         return tuple(_to_qfunc_output_type(r, qfunc_output, False) for r in results)
 
-    # Special case of single Measurement in a list
-    if isinstance(qfunc_output, list) and len(qfunc_output) == 1:
-        results = [results]
-
-    # If the return type is not tuple (list or ndarray) (Autograd and TF backprop removed)
-    if isinstance(qfunc_output, (tuple, qml.measurements.MeasurementProcess)):
-        return results
-
-    # Work around for tensor objects coming from qml.math.hstack
-    if isinstance(qfunc_output[0], qml.numpy.tensor):
-        qfunc_output = [
-            m.base.item()
-            for m in qfunc_output
-            if isinstance(m.base.item(), qml.measurements.MeasurementProcess)
-        ]
-
     _, structure = qml.pytrees.flatten(
         qfunc_output, is_leaf=lambda obj: isinstance(obj, qml.measurements.MeasurementProcess)
     )
+
+    # Work around for tensor objects coming from qml.math.hstack
+    if not structure.is_leaf:
+        if any(isinstance(element, qml.numpy.tensor) for element in qfunc_output):
+            qfunc_output = [
+                m.base.item()
+                for m in qfunc_output
+                if isinstance(m.base.item(), qml.measurements.MeasurementProcess)
+            ]
+    else:
+        return results
+
     return qml.pytrees.unflatten(results, structure)
 
 
@@ -175,9 +171,7 @@ def _validate_qfunc_output(qfunc_output, measurements) -> None:
             for m in measurement_processes[0]
             if isinstance(m.base.item(), qml.measurements.MeasurementProcess)
         ]
-    elif not isinstance(qfunc_output, Sequence):
-        measurement_processes = (qfunc_output,)
-    else:
+    if len(measurement_processes) == 0:
         measurement_processes = qfunc_output
 
     if not measurement_processes or not all(

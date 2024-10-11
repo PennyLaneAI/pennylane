@@ -494,6 +494,45 @@ class TestValidation:
         assert len(record) == 0
 
 
+# pylint: disable=too-few-public-methods
+# pylint: disable=unnecessary-lambda
+class TestPyTreeStructure:
+    """Tests for preservation of pytree structure through execution"""
+
+    @pytest.mark.parametrize(
+        "measurement",
+        [
+            lambda: qml.probs(),
+            lambda: (
+                [qml.probs(wires=1), {"a": qml.probs(wires=0)}, qml.expval(qml.Z(0))],
+                {"probs": qml.probs(wires=0), "exp": qml.expval(qml.X(1))},
+            ),
+            lambda: qml.math.hstack([qml.expval(qml.Z(i)) for i in range(2)]),
+        ],
+    )
+    def test_pytree_structure_preservation(self, measurement):
+
+        dev = qml.device("default.qubit", wires=2, shots=100)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.RX(1, wires=0)
+            qml.RY(2, wires=1)
+            qml.CNOT(wires=[0, 1])
+            return measurement()
+
+        result = circuit()
+
+        _, result_structure = qml.pytrees.flatten(
+            result, is_leaf=lambda obj: isinstance(obj, qml.numpy.ndarray)
+        )
+        _, qfunc_structure = qml.pytrees.flatten(
+            circuit(), is_leaf=lambda obj: isinstance(obj, qml.measurements.MeasurementProcess)
+        )
+
+        assert result_structure.__str__() == qfunc_structure.__str__()
+
+
 class TestTapeConstruction:
     """Tests for the tape construction"""
 
