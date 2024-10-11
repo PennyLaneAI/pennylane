@@ -20,7 +20,7 @@ continuous-variable simulations.
 What a plugin provides
 ----------------------
 
-A quick primer on terminology of PennyLane plugins in this section:
+Here's a quick primer on PennyLane plugins:
 
 * A plugin is an external Python package that provides additional quantum *devices* to PennyLane.
 
