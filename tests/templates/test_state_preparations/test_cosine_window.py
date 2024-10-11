@@ -158,4 +158,4 @@ class TestInterfaces:
 
         res = circuit()
         res2 = circuit2()
-        assert np.allclose(res, res2, atol=1e-6, rtol=0)
+        assert qml.math.allclose(res, res2, atol=1e-6, rtol=0)
