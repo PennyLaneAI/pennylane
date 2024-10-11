@@ -552,7 +552,9 @@ def _sample_probs_jax(probs, shots, num_wires, is_state_batched, prng_key=None, 
         num_wires (int): The number of wires to sample
         is_state_batched (bool): whether the state is batched or not
         prng_key (Optional[jax.random.PRNGKey]): An optional ``jax.random.PRNGKey``. This is
-        seed (Optional[int]): A seed for the random number generator.
+            the key to the JAX pseudo random number generator. Only for simulation using JAX.
+        seed (Optional[int]): A seed for the random number generator. This is only used if ``prng_key``
+            is not provided.
 
     Returns:
         ndarray[int]: Sample values of the shape (shots, num_wires)
