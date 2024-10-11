@@ -149,16 +149,13 @@ def measure_with_samples(
     tape = qml.tape.QuantumScript([], mps, shots=shots)
     batch, postprocessing = qml.transforms.split_non_commuting(tape)
 
+    kwargs = {"state": state, "is_state_batched": is_state_batched, "rng": rng}
     if prng_key is not None:
         keys = jax_random_split(prng_key, len(batch))
-        kwargs = {"state": state, "is_state_batched": is_state_batched, "rng": rng}
         results = tuple(_sample_qwc_tape(t, **kwargs, prng_key=key) for t, key in zip(batch, keys))
     else:
-        kwargs = {"is_state_batched": is_state_batched, "rng": rng}
-        results = tuple(_sample_qwc_tape(t, state, **kwargs) for t in batch)
-    print(results)
+        results = tuple(_sample_qwc_tape(t, **kwargs) for t in batch)
     results = postprocessing(results)
-    print(results)
 
     # append MCM samples
     if mid_measurements:
