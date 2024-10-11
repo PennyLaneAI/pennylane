@@ -173,6 +173,8 @@ controlled gates and cancel adjacent inverses, we could do:
 .. code-block:: python
 
     from pennylane.transforms import commute_controlled, cancel_inverses
+    from functools import partial
+
     pipeline = [commute_controlled, cancel_inverses]
 
     @partial(qml.compile, pipeline=pipeline)
@@ -208,8 +210,8 @@ For more details on :func:`~.pennylane.compile` and the available compilation tr
 `the compilation documentation
 <../code/qml_transforms.html#transforms-for-circuit-compilation>`_.
 
-Custom decompositions
----------------------
+Custom Operator Decomposition
+-----------------------------
 
 PennyLane decomposes gates unknown to the device into other, "lower-level" gates. As a user, you may want to fine-tune this mechanism. For example, you may wish your circuit to use different fundamental gates.
 
@@ -262,11 +264,14 @@ according to our specifications:
     If the custom decomposition is only supposed to be used in a specific code context,
     a separate context manager :func:`~.pennylane.transforms.set_decomposition` can be used.
 
+Circuit Decomposition
+---------------------
+
 When compiling a circuit it is often beneficial to decompose the circuit into a set of basis gates.  
 To do this, we can use the :func:`~.pennylane.transforms.decompose` function, which allows the decomposition of 
 circuits into a set of gates defined either by their name, type, or by a set of rules they must follow.
 
-Using a gate set 
+Using a gate set
 ****************
 
 The example below demonstrates how a three-wire circuit can be decomposed using a pre-defined set of gates: 
@@ -274,6 +279,8 @@ The example below demonstrates how a three-wire circuit can be decomposed using 
 .. code-block:: python
     
     from pennylane.transforms import decompose
+    from functools import partial
+
     dev = qml.device('default.qubit')
     allowed_gates = {qml.Toffoli, qml.RX, qml.RZ}
 
@@ -291,10 +298,10 @@ With the Hadamard gate not in our gate set, it will be decomposed into the respe
 1: ───────────────────────────────├●─┤     
 2: ───────────────────────────────╰X─┤ 
 
-Using gate rules
-****************
+Using a gate rule
+*****************
 
-The example below demonstrates how a three-wire circuit can be decomposed using a rule that decomposes down to single or two-qubit gates: 
+The example below demonstrates how a three-wire circuit can be decomposed using a rule that decomposes the circuit down into single or two-qubit gates: 
 
 .. code-block:: python
 
@@ -310,7 +317,7 @@ The example below demonstrates how a three-wire circuit can be decomposed using 
 1: ────╭●─────│─────╭●─────│───T─╰X──T†─╰X─┤     
 2: ──H─╰X──T†─╰X──T─╰X──T†─╰X──T──H────────┤ 
 
-Decomposition in stages 
+Decomposition in stages
 ***********************
 
 You can use the ``max_expansion`` kwarg to have control over the number 
@@ -318,7 +325,7 @@ of decomposition stages applied to the circuit. By default, the function will de
 the circuit until the desired gate set is reached. 
 
 The example below shows how the user can visualize the decomposition. 
-We begin with creating a :class:`~.pennylane.QuantumPhaseEstimation` circuit. 
+We begin with creating a :class:`~.pennylane.QuantumPhaseEstimation` circuit: 
 
 .. code-block:: python
 

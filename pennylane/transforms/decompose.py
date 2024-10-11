@@ -18,7 +18,7 @@ A transform for decomposing quantum circuits into user defined gate sets. Offers
 # pylint: disable=unnecessary-lambda-assignment
 
 import warnings
-from collections.abc import Callable, Generator, Sequence
+from collections.abc import Callable, Generator
 from typing import Iterable, Optional
 
 import pennylane as qml
@@ -35,7 +35,6 @@ def null_postprocessing(results):
 def _operator_decomposition_gen(
     op: qml.operation.Operator,
     acceptance_function: Callable[[qml.operation.Operator], bool],
-    decomposer: Callable[[qml.operation.Operator], Sequence[qml.operation.Operator]],
     max_expansion: Optional[int] = None,
     current_depth=0,
 ) -> Generator[qml.operation.Operator, None, None]:
@@ -49,14 +48,13 @@ def _operator_decomposition_gen(
     if acceptance_function(op) or max_depth_reached:
         yield op
     else:
-        decomp = decomposer(op)
+        decomp = op.decomposition()
         current_depth += 1
 
         for sub_op in decomp:
             yield from _operator_decomposition_gen(
                 sub_op,
                 acceptance_function,
-                decomposer=decomposer,
                 max_expansion=max_expansion,
                 current_depth=current_depth,
             )
@@ -69,33 +67,42 @@ def decompose(tape, gate_set=None, max_expansion=None):
     Args:
         tape (QuantumScript or QNode or Callable): a quantum circuit.
         gate_set (Iterable[Union[str, type]] or Callable[Operator, bool], optional): Decomposition gates defined by either (1) a gate set of operators or (2) a rule that they must follow.
-            Defaults to None. If ``None``, gate set defaults to all available operators given by ``~.pennylane.ops.__all__``.
-        max_expansion (int, optional): The maximum depth of the decomposition. Defaults to None. If ``None``, circuit will be decomposed until the target gate set is reached.
+            Defaults to None. If ``None``, gate set defaults to all available :doc:`quantum operators </introduction/operations>`.
+        max_expansion (int, optional): The maximum depth of the decomposition. Defaults to None. If ``None``, the circuit will be decomposed until the target gate set is reached.
 
     Returns:
         qnode (QNode) or quantum function (Callable) or tuple[List[QuantumScript], function]:
 
         The decomposed circuit. The output type is explained in :func:`qml.transform <pennylane.transform>`.
 
-    .. seealso:: :func:`~.pennylane.devices.preprocess.decompose` for a transform that is intended for device developers. This function decomposes a quantum circuit into a set of basis gates available on a given device architecture.
+    .. note::
+
+        This function does not guarantee a decomposition to the target gate set. During the decomposition, if an unsupported operation is encountered
+        the function will leave it in the circuit and raise a `UserWarning` indicating no defined decomposition. To waive this warning, simply add the operator
+        to the defined gate set.
+
+    .. seealso:: :func:`~.pennylane.devices.preprocess.decompose` for a transform that is intended for device developers. This function will decompose a quantum circuit into a set of basis gates available on a specific device architecture.
 
     **Example**
 
     Consider the following tape:
 
-    >>> tape = qml.tape.QuantumScript([qml.IsingXX(1.2, wires=(0,1))], [qml.expval(qml.Z(0))])
+    >>> ops = [qml.IsingXX(1.2, wires=(0,1))]
+    >>> tape = qml.tape.QuantumScript(ops, measurements=[qml.expval(qml.Z(0))])
 
     You can then decompose the circuit into a set of gates:
 
-    >>> batch, fn = decompose(tape, gate_set={qml.CNOT, qml.RX})
+    >>> batch, fn = qml.transforms.decompose(tape, gate_set={qml.CNOT, qml.RX})
     >>> batch[0].circuit
     [CNOT(wires=[0, 1]), RX(1.2, wires=[0]), CNOT(wires=[0, 1]), expval(Z(0))]
 
-    You can also apply the transform directly on a :class:`QNode`:
+    You can also apply the transform directly on a :class:`~.pennylane.QNode`:
 
     .. code-block:: python
 
-        @partial(decompose, gate_set={qml.Toffoli, "RX", "RZ"})
+        from functools import partial
+
+        @partial(qml.transforms.decompose, gate_set={qml.Toffoli, "RX", "RZ"})
         @qml.qnode(qml.device("default.qubit"))
         def circuit():
             qml.Hadamard(wires=[0])
@@ -113,14 +120,14 @@ def decompose(tape, gate_set=None, max_expansion=None):
 
     .. code-block:: python
 
-        @partial(decompose, gate_set=lambda op: len(op.wires) <= 2)
+        @partial(qml.transforms.decompose, gate_set=lambda op: len(op.wires)<=2)
         @qml.qnode(qml.device("default.qubit"))
         def circuit():
             qml.Hadamard(wires=[0])
             qml.Toffoli(wires=[0,1,2])
             return qml.expval(qml.Z(0))
 
-    In this case, the circuit will be decomposed into operators acting on no more than two wires:
+    The circuit will be decomposed into single or two-qubit operators,
 
     >>> print(qml.draw(circuit)())
     0: ──H────────╭●───────────╭●────╭●──T──╭●─┤  <Z>
@@ -128,7 +135,7 @@ def decompose(tape, gate_set=None, max_expansion=None):
     2: ──H─╰X──T†─╰X──T─╰X──T†─╰X──T──H────────┤
 
     You can use the ``max_expansion`` kwarg to have control over the number
-    of decomposition stages applied to the circuit. By default the function will decompose
+    of decomposition stages applied to the circuit. By default, the function will decompose
     the circuit until the desired gate set is reached.
 
     The example below demonstrates how the user can visualize the decomposition in stages:
@@ -151,19 +158,19 @@ def decompose(tape, gate_set=None, max_expansion=None):
                 estimation_wires=estimation_wires,
             )
 
-    >>> print(qml.draw(decompose(circuit, max_expansion=0))())
+    >>> print(qml.draw(qml.transforms.decompose(circuit, max_expansion=0))())
     0: ──H─╭QuantumPhaseEstimation─┤
     1: ────├QuantumPhaseEstimation─┤
     2: ────├QuantumPhaseEstimation─┤
     3: ────╰QuantumPhaseEstimation─┤
 
-    >>> print(qml.draw(decompose(circuit, max_expansion=1))())
+    >>> print(qml.draw(qml.transforms.decompose(circuit, max_expansion=1))())
     0: ──H─╭U(M0)⁴─╭U(M0)²─╭U(M0)¹───────┤
     1: ──H─╰●──────│───────│───────╭QFT†─┤
     2: ──H─────────╰●──────│───────├QFT†─┤
     3: ──H─────────────────╰●──────╰QFT†─┤
 
-    >>> print(qml.draw(decompose(circuit, max_expansion=2))())
+    >>> print(qml.draw(qml.transforms.decompose(circuit, max_expansion=2))())
     0: ──H──RZ(11.00)──RY(1.14)─╭X──RY(-1.14)──RZ(-9.42)─╭X──RZ(-1.57)──RZ(1.57)──RY(1.00)─╭X──RY(-1.00)
     1: ──H──────────────────────╰●───────────────────────╰●────────────────────────────────│────────────
     2: ──H─────────────────────────────────────────────────────────────────────────────────╰●───────────
@@ -189,9 +196,6 @@ def decompose(tape, gate_set=None, max_expansion=None):
         gate_names = set(gate for gate in gate_set if isinstance(gate, str))
         gate_set = lambda op: (op.name in gate_names) or isinstance(op, gate_types)
 
-    def decomposer(op):
-        return op.decomposition()
-
     def stopping_condition(op):
         if not op.has_decomposition:
             if not gate_set(op):
@@ -213,7 +217,6 @@ def decompose(tape, gate_set=None, max_expansion=None):
             for final_op in _operator_decomposition_gen(
                 op,
                 stopping_condition,
-                decomposer,
                 max_expansion=max_expansion,
             )
         ]

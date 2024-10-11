@@ -131,7 +131,8 @@ class TestDecompose:
     def test_different_input_formats(self, gate_set):
         """Tests that gate sets of different types are handled correctly"""
         tape = qml.tape.QuantumScript([qml.RX(0, wires=[0])])
-        decompose(tape, gate_set=gate_set)
+        (decomposed_tape,), _ = decompose(tape, gate_set=gate_set)
+        qml.assert_equal(tape, decomposed_tape)
 
     def test_user_warning(self):
         """Tests that user warning is raised if operator does not have a valid decomposition"""
@@ -186,10 +187,6 @@ def test_null_postprocessing():
 class TestPrivateHelpers:
     """Test the private helpers for preprocessing."""
 
-    @staticmethod
-    def decomposer(op):
-        return op.decomposition()
-
     @pytest.mark.parametrize("op", (qml.PauliX(0), qml.RX(1.2, wires=0), qml.QFT(wires=range(3))))
     def test_operator_decomposition_gen_accepted_operator(self, op):
         """Test the _operator_decomposition_gen function on an operator that is accepted."""
@@ -197,7 +194,7 @@ class TestPrivateHelpers:
         def stopping_condition(op):
             return op.has_matrix
 
-        casted_to_list = list(_operator_decomposition_gen(op, stopping_condition, self.decomposer))
+        casted_to_list = list(_operator_decomposition_gen(op, stopping_condition))
         assert len(casted_to_list) == 1
         assert casted_to_list[0] is op
 
@@ -209,7 +206,7 @@ class TestPrivateHelpers:
             return op.has_matrix
 
         op = NoMatOp("a")
-        casted_to_list = list(_operator_decomposition_gen(op, stopping_condition, self.decomposer))
+        casted_to_list = list(_operator_decomposition_gen(op, stopping_condition))
         assert len(casted_to_list) == 2
         qml.assert_equal(casted_to_list[0], qml.PauliX("a"))
         qml.assert_equal(casted_to_list[1], qml.PauliY("a"))
@@ -229,7 +226,7 @@ class TestPrivateHelpers:
                 return [NoMatOp(self.wires), qml.S(self.wires), qml.adjoint(NoMatOp(self.wires))]
 
         op = RaggedDecompositionOp("a")
-        final_decomp = list(_operator_decomposition_gen(op, stopping_condition, self.decomposer))
+        final_decomp = list(_operator_decomposition_gen(op, stopping_condition))
         assert len(final_decomp) == 5
         qml.assert_equal(final_decomp[0], qml.PauliX("a"))
         qml.assert_equal(final_decomp[1], qml.PauliY("a"))
@@ -242,8 +239,6 @@ class TestPrivateHelpers:
 
         stopping_condition = lambda op: False
         op = InfiniteOp(1.23, 0)
-        final_decomp = list(
-            _operator_decomposition_gen(op, stopping_condition, self.decomposer, max_expansion=5)
-        )
+        final_decomp = list(_operator_decomposition_gen(op, stopping_condition, max_expansion=5))
 
         qml.assert_equal(op, final_decomp[0])
