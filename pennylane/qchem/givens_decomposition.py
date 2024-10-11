@@ -43,13 +43,14 @@ def _givens_matrix(a, b, left=True, tol=1e-8):
     aprod = qml.math.nan_to_num(abs_b * abs_a)
     hypot = qml.math.hypot(abs_a, abs_b)
 
-    cosine = qml.math.where(abs_a < tol, 1.0, qml.math.where(abs_b < tol, 0.0, abs_b / hypot))
-    sine = qml.math.where(abs_a < tol, 0.0, qml.math.where(abs_b < tol, 1.0, abs_a / hypot))
-    phase = qml.math.where(
-        abs_a < tol,
-        1.0,
-        qml.math.where(abs_b < tol, 1.0, (1.0 * b * qml.math.conj(a)) / (aprod + 1e-15)),
-    )
+    cosine = qml.math.where(abs_b < tol, 0.0, abs_b / hypot)
+    cosine = qml.math.where(abs_a < tol, 1.0, cosine)
+
+    sine = qml.math.where(abs_b < tol, 1.0, abs_a / hypot)
+    sine = qml.math.where(abs_a < tol, 0.0, sine)
+
+    phase = qml.math.where(abs_b < tol, 1.0, (1.0 * b * qml.math.conj(a)) / (aprod+1e-15))
+    phase = qml.math.where(abs_a < tol, 0.0, phase)
 
     if left:
         return qml.math.array([[phase * cosine, -sine], [phase * sine, cosine]], like=interface)
