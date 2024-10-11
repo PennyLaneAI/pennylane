@@ -19,161 +19,159 @@ from string import ascii_letters as alphabet
 
 import pennylane as qml
 from pennylane import math
-from pennylane.devices.qubit_mixed import QUDIT_DIM
-from pennylane.measurements import Shots
+from pennylane import numpy as np
 from pennylane.operation import Channel
-from pennylane.ops.qubit.attributes import diagonal_in_z_basis
 
-alphabet_array = math.array(list(alphabet))
+from .utils import QUDIT_DIM, get_einsum_mapping, get_new_state_einsum_indices
 
-SQRT2INV = 1 / math.sqrt(2)
+alphabet_array = np.array(list(alphabet))
 
 
-def apply_operation(
-    op: qml.operation.Operator,
-    state,  # density matrix
-    is_state_batched: bool = False,
-    debugger=None,
-    postselect_mode=None,
-    rng=None,
-    prng_key=None,
-    tape_shots=Shots(None),
-):
-    """Apply an operation to a given state."""
+def _map_indices_apply_channel(**kwargs):
+    """Map indices to einsum string
+    Args:
+        **kwargs (dict): Stores indices calculated in `get_einsum_mapping`
 
-    num_op_wires = len(op.wires)
+    Returns:
+        String of einsum indices to complete einsum calculations
+    """
+    op_1_indices = f"{kwargs['kraus_index']}{kwargs['new_row_indices']}{kwargs['row_indices']}"
+    op_2_indices = f"{kwargs['kraus_index']}{kwargs['col_indices']}{kwargs['new_col_indices']}"
+
+    new_state_indices = get_new_state_einsum_indices(
+        old_indices=kwargs["col_indices"] + kwargs["row_indices"],
+        new_indices=kwargs["new_col_indices"] + kwargs["new_row_indices"],
+        state_indices=kwargs["state_indices"],
+    )
+    # index mapping for einsum, e.g., '...iga,...abcdef,...idh->...gbchef'
+    return (
+        f"...{op_1_indices},...{kwargs['state_indices']},...{op_2_indices}->...{new_state_indices}"
+    )
+
+
+def apply_operation_einsum(op: qml.operation.Operator, state, is_state_batched: bool = False):
+    r"""Apply a quantum channel specified by a list of Kraus operators to subsystems of the
+    quantum state. For a unitary gate, there is a single Kraus operator.
+
+    Args:
+        op (Operator): Operator to apply to the quantum state
+        state (array[complex]): Input quantum state
+        is_state_batched (bool): Boolean representing whether the state is batched or not
+
+    Returns:
+        array[complex]: output_state
+    """
+    einsum_indices = get_einsum_mapping(op, state, _map_indices_apply_channel, is_state_batched)
+
+    num_ch_wires = len(op.wires)
+
+    # This could be pulled into separate function if tensordot is added
     if isinstance(op, Channel):
         kraus = op.kraus_matrices()
     else:
-        mat = op.matrix
-        kraus = [mat]
-        # Shape kraus operators
-        kraus_shape = [len(kraus)] + [QUDIT_DIM] * num_op_wires * 2
+        kraus = [op.matrix()]
 
+    # Shape kraus operators
+    kraus_shape = [len(kraus)] + [QUDIT_DIM] * num_ch_wires * 2
+    if not isinstance(op, Channel):
         mat = op.matrix()
-        dim = QUDIT_DIM**num_op_wires
+        dim = QUDIT_DIM**num_ch_wires
         batch_size = math.get_batch_size(mat, (dim, dim), dim**2)
         if batch_size is not None:
             # Add broadcasting dimension to shape
             kraus_shape = [batch_size] + kraus_shape
             if op.batch_size is None:
-                op._batch_size = batch_size
+                op._batch_size = batch_size  # pylint:disable=protected-access
 
-    interface = math.get_interface(state, *kraus)
-    if (num_op_wires > 2 and interface in {"autograd", "numpy"}) or num_op_wires > 7:
-        return _apply_channel_tensordot(
-            kraus, state, is_state_batched, debugger, postselect_mode, rng, prng_key, tape_shots
-        )
-    return _apply_channel_einsum(
-        kraus, state, is_state_batched, debugger, postselect_mode, rng, prng_key, tape_shots
-    )
+    kraus = math.stack(kraus)
+    kraus_transpose = math.stack(math.moveaxis(kraus, source=-1, destination=-2))
+    # Torch throws error if math.conj is used before stack
+    kraus_dagger = math.conj(kraus_transpose)
+
+    kraus = math.cast(math.reshape(kraus, kraus_shape), complex)
+    kraus_dagger = math.cast(math.reshape(kraus_dagger, kraus_shape), complex)
+
+    return math.einsum(einsum_indices, kraus, state, kraus_dagger)
 
 
-def _apply_channel_einsum(
-    matrices,
+@singledispatch
+def apply_operation(
+    op: qml.operation.Operator,
     state,
     is_state_batched: bool = False,
     debugger=None,
-    postselect_mode=None,
-    rng=None,
-    prng_key=None,
-    tape_shots=Shots(None),
+    **_,
 ):
-    print()
-    print(f"Type of matrices: {type(matrices)}")
-    print(f"Length of matrices: {len(matrices)}")
-    print(f"Type of first element in matrices: {type(matrices[0])}")
+    """Apply an operation to a given state.
 
-    num_wires = int(math.log2(state.shape[0]) // 2)
+    Args:
+        op (Operator): The operation to apply to ``state``
+        state (TensorLike): The starting state.
+        is_state_batched (bool): Boolean representing whether the state is batched or not
+        debugger (_Debugger): The debugger to use
 
-    # Convert methods to actual matrices
-    matrix_data = [m() if callable(m) else m for m in matrices]
+    Keyword Arguments:
+        rng (Optional[numpy.random._generator.Generator]): A NumPy random number generator.
+        prng_key (Optional[jax.random.PRNGKey]): An optional ``jax.random.PRNGKey``. This is
+            the key to the JAX pseudo random number generator. Only for simulation using JAX.
+            If None, a ``numpy.random.default_rng`` will be used for sampling.
+        tape_shots (Shots): the shots object of the tape
 
-    print(f"Shape of first matrix after conversion: {matrix_data[0].shape}")
+    Returns:
+        ndarray: output state
 
-    num_ch_wires = int(math.log2(matrix_data[0].shape[0]))
+    .. warning::
 
-    # Compute K^\dagger, needed for the transformation K \rho K^\dagger
-    matrices_dagger = [math.conj(math.transpose(k)) for k in matrix_data]
+        ``apply_operation`` is an internal function, and thus subject to change without a deprecation cycle.
 
-    matrices = math.stack(matrix_data)
-    matrices_dagger = math.stack(matrices_dagger)
+    .. warning::
+        ``apply_operation`` applies no validation to its inputs.
 
-    # Shape kraus operators
-    kraus_shape = [len(matrices)] + [QUDIT_DIM] * num_ch_wires * 2
-    matrices = math.reshape(matrices, kraus_shape)
-    matrices_dagger = math.reshape(matrices_dagger, kraus_shape)
+        This function assumes that the wires of the operator correspond to indices
+        of the state. See :func:`~.map_wires` to convert operations to integer wire labels.
 
-    # Tensor indices of the state. For each qubit, need an index for rows *and* columns
-    state_indices = alphabet[: 2 * num_wires]
+        The shape of state should be ``[QUDIT_DIM]*(num_wires * 2)``, where ``QUDIT_DIM`` is
+        the dimension of the system.
 
-    # row indices of the quantum state affected by this operation
-    row_indices = alphabet[:num_ch_wires]
+    This is a ``functools.singledispatch`` function, so additional specialized kernels
+    for specific operations can be registered like:
 
-    # column indices are shifted by the number of wires
-    col_indices = alphabet[num_wires : num_wires + num_ch_wires]
+    .. code-block:: python
 
-    # indices in einsum must be replaced with new ones
-    new_row_indices = alphabet[2 * num_wires : 2 * num_wires + num_ch_wires]
-    new_col_indices = alphabet[2 * num_wires + num_ch_wires : 2 * num_wires + 2 * num_ch_wires]
+        @apply_operation.register
+        def _(op: type_op, state):
+            # custom op application method here
 
-    # index for summation over Kraus operators
-    kraus_index = alphabet[2 * num_wires + 2 * num_ch_wires]
+    **Example:**
 
-    # new state indices replace row and column indices with new ones
-    new_state_indices = get_new_state_einsum_indices(
-        state_indices, col_indices + row_indices, new_col_indices + new_row_indices
-    )
+    >>> state = np.zeros((3,3))
+    >>> state[0][0] = 1
+    >>> state
+    tensor([[1., 0., 0.],
+        [0., 0., 0.],
+        [0., 0., 0.]], requires_grad=True)
+    >>> apply_operation(qml.TShift(0), state)
+    tensor([[0., 0., 0.],
+        [0., 1., 0],
+        [0., 0., 0.],], requires_grad=True)
 
-    # index mapping for einsum, e.g., 'iga,abcdef,idh->gbchef'
-    einsum_indices = (
-        f"{kraus_index}{new_row_indices}{row_indices}, {state_indices},"
-        f"{kraus_index}{col_indices}{new_col_indices}->{new_state_indices}"
-    )
-
-    return math.einsum(einsum_indices, matrices, state, matrices_dagger)
-
-
-def _apply_channel_tensordot(
-    matrices,
-    state,
-    is_state_batched: bool = False,
-    debugger=None,
-    postselect_mode=None,
-    rng=None,
-    prng_key=None,
-    tape_shots=Shots(None),
-):
-    num_wires = int(math.log2(state.shape[0]) // 2)
-    num_ch_wires = int(math.log2(matrices[0].shape[0]))
-
-    # Shape kraus operators
-    kraus_shape = [QUDIT_DIM] * (num_ch_wires * 2)
-    matrices = [math.reshape(k, kraus_shape) for k in matrices]
-
-    channel_col_ids = list(range(num_ch_wires, 2 * num_ch_wires))
-    axes_left = [channel_col_ids, list(range(num_ch_wires))]
-    # Use column indices instead of rows to incorporate transposition of K^\dagger
-    axes_right = [list(range(num_wires, num_wires + num_ch_wires)), channel_col_ids]
-
-    # Apply the Kraus operators, and sum over all Kraus operators afterwards
-    def _conjugate_state_with(k):
-        """Perform the double tensor product k @ state @ k.conj()."""
-        return math.tensordot(math.tensordot(k, state, axes_left), math.conj(k), axes_right)
-
-    if len(matrices) == 1:
-        _state = _conjugate_state_with(matrices[0])
-    else:
-        _state = math.sum(math.stack([_conjugate_state_with(k) for k in matrices]), axis=0)
-
-    # Permute the affected axes to their destination places.
-    source_left = list(range(num_ch_wires))
-    dest_left = list(range(num_ch_wires))
-    source_right = list(range(-num_ch_wires, 0))
-    dest_right = list(range(num_wires, num_wires + num_ch_wires))
-    return math.moveaxis(_state, source_left + source_right, dest_left + dest_right)
+    """
+    return _apply_operation_default(op, state, is_state_batched, debugger)
 
 
+def _apply_operation_default(op, state, is_state_batched, debugger):
+    """The default behaviour of apply_operation, accessed through the standard dispatch
+    of apply_operation, as well as conditionally in other dispatches.
+    """
+
+    return apply_operation_einsum(op, state, is_state_batched=is_state_batched)
+    # TODO add tensordot and benchmark for performance
+
+
+# TODO add diagonal for speed up.
+
+
+@apply_operation.register
 def apply_snapshot(
     op: qml.Snapshot, state, is_state_batched: bool = False, debugger=None, **execution_kwargs
 ):
@@ -203,28 +201,10 @@ def apply_snapshot(
     return state
 
 
+@apply_operation.register
 def apply_identity(op: qml.Identity, state, is_state_batched: bool = False, debugger=None, **_):
     """Applies a :class:`~.Identity` operation by just returning the input state."""
     return state
 
 
-def _map_indices_apply_channel(**kwargs):
-    """Map indices to einsum string
-    Args:
-        **kwargs (dict): Stores indices calculated in `get_einsum_mapping`
-
-    Returns:
-        String of einsum indices to complete einsum calculations
-    """
-    op_1_indices = f"{kwargs['kraus_index']}{kwargs['new_row_indices']}{kwargs['row_indices']}"
-    op_2_indices = f"{kwargs['kraus_index']}{kwargs['col_indices']}{kwargs['new_col_indices']}"
-
-    new_state_indices = get_new_state_einsum_indices(
-        old_indices=kwargs["col_indices"] + kwargs["row_indices"],
-        new_indices=kwargs["new_col_indices"] + kwargs["new_row_indices"],
-        state_indices=kwargs["state_indices"],
-    )
-    # index mapping for einsum, e.g., '...iga,...abcdef,...idh->...gbchef'
-    return (
-        f"...{op_1_indices},...{kwargs['state_indices']},...{op_2_indices}->...{new_state_indices}"
-    )
+# TODO add special case speedups
