@@ -258,6 +258,8 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* `MeasurementValue` now raises an error when it is used as a boolean.
+
 * `adjoint_metric_tensor` now works with circuits containing state preparation operations.
   [(#6358)](https://github.com/PennyLaneAI/pennylane/pull/6358)
 
