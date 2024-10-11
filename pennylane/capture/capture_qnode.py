@@ -58,6 +58,33 @@ def _get_shapes_for(*measurements, shots=None, num_device_wires=0):
     return shapes
 
 
+def _get_shapes_for_batched_output(mps, batch_shape, shots=None, num_device_wires=0):
+    if jax.config.jax_enable_x64:  # pylint: disable=no-member
+        dtype_map = {
+            float: jax.numpy.float64,
+            int: jax.numpy.int64,
+            complex: jax.numpy.complex128,
+        }
+    else:
+        dtype_map = {
+            float: jax.numpy.float32,
+            int: jax.numpy.int32,
+            complex: jax.numpy.complex64,
+        }
+
+    shapes = []
+    if not shots:
+        shots = [None]
+
+    for s in shots:
+        for m in mps:
+            shape, dtype = m.aval.abstract_eval(shots=s, num_device_wires=num_device_wires)
+            batched_shape = batch_shape + shape
+            shapes.append(jax.core.ShapedArray(batched_shape, dtype_map.get(dtype, dtype)))
+
+    return shapes
+
+
 _UNSET_BATCH_SIZE = -1  # indicates that batching hasn't been set
 
 
@@ -76,6 +103,7 @@ def _qnode_batching_rule(
     batched_args, batch_dims, qnode, shots, device, qnode_kwargs, qfunc_jaxpr, n_consts
 ):
 
+    print("batching rule called")
     enable_batching(batch_dims[0])
 
     consts = batched_args[:n_consts]
@@ -97,7 +125,12 @@ def _qnode_batching_rule(
 
     disable_batching()
 
-    return result, [0]
+    if isinstance(result, (tuple, list)):
+        batch_result = [jax.numpy.moveaxis(r, 0, -1) for r in result]
+    else:
+        batch_result = jax.numpy.moveaxis(result, 0, -1)
+
+    return batch_result, [0] * len(batch_result)
 
 
 @lru_cache()
@@ -127,11 +160,6 @@ def _get_qnode_prim():
 
         mps = qfunc_jaxpr.outvars
 
-        print("abstract evaluation called")
-        print("qfunc_jaxpr", qfunc_jaxpr)
-        print("qfunc_jaxpr.invars", qfunc_jaxpr.invars)
-        print("qfunc_jaxpr.outvars", qfunc_jaxpr.outvars)
-
         if _UNSET_BATCH_SIZE != -1:
 
             print(f"Batch size detected: {_UNSET_BATCH_SIZE}")
@@ -144,21 +172,16 @@ def _get_qnode_prim():
             batch_shape = jax.lax.broadcast_shapes(*input_shapes)
             print("Broadcasted batch shape:", batch_shape)
 
-            # Get the expected measurement shapes (useful when we have multiple outputs)
-            mps = qfunc_jaxpr.outvars
-            output_shape = _get_shapes_for(*mps, shots=shots, num_device_wires=len(device.wires))
-
-            # Combine the broadcasted batch shape with the output shape
-            final_shapes = [
-                jax.core.ShapedArray(batch_shape + shape.shape, shape.dtype)
-                for shape in output_shape
-            ]
+            # Handle the batched case, use the new function to get the batched output shapes
+            final_shapes = _get_shapes_for_batched_output(
+                mps, batch_shape, shots=shots, num_device_wires=len(device.wires)
+            )
 
             print("Final output shape with broadcasting:", final_shapes)
             return final_shapes
 
         else:
-            # Handle the regular case
+
             shape = _get_shapes_for(*mps, shots=shots, num_device_wires=len(device.wires))
             print("shape", shape)
             return shape
