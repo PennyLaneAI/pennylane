@@ -489,6 +489,17 @@ def sample_state(
 def sample_probs(probs, shots, num_wires, is_state_batched, rng, prng_key=None):
     """
     Sample from given probabilities, dispatching between JAX and NumPy implementations.
+    
+    Args:
+        probs (array): The probabilities to sample from
+        shots (int): The number of samples to take
+        num_wires (int): The number of wires to sample
+        is_state_batched (bool): whether the state is batched or not
+        rng (Union[None, int, array_like[int], SeedSequence, BitGenerator, Generator]):
+            A seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``.
+            If no value is provided, a default RNG will be used
+        prng_key (Optional[jax.random.PRNGKey]): An optional ``jax.random.PRNGKey``. This is
+            the key to the JAX pseudo random number generator. Only for simulation using JAX.
     """
     if qml.math.get_interface(probs) == "jax" or prng_key is not None:
         return _sample_probs_jax(probs, shots, num_wires, is_state_batched, prng_key, seed=rng)
@@ -499,6 +510,15 @@ def sample_probs(probs, shots, num_wires, is_state_batched, rng, prng_key=None):
 def _sample_probs_numpy(probs, shots, num_wires, is_state_batched, rng):
     """
     Sample from given probabilities using NumPy's random number generator.
+    
+    Args:
+        probs (array): The probabilities to sample from
+        shots (int): The number of samples to take
+        num_wires (int): The number of wires to sample
+        is_state_batched (bool): whether the state is batched or not
+        rng (Union[None, int, array_like[int], SeedSequence, BitGenerator, Generator]):
+            A seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``.
+            If no value is provided, a default RNG will be used
     """
     rng = np.random.default_rng(rng)
     norm = qml.math.sum(probs, axis=-1)
@@ -529,11 +549,10 @@ def _sample_probs_jax(probs, shots, num_wires, is_state_batched, prng_key=None, 
     Args:
         state (array[complex]): A state vector to be sampled
         shots (int): The number of samples to take
-        prng_key (jax.random.PRNGKey): A``jax.random.PRNGKey``. This is
-            the key to the JAX pseudo random number generator.
+        num_wires (int): The number of wires to sample
         is_state_batched (bool): whether the state is batched or not
-        wires (Sequence[int]): The wires to sample
-        seed (numpy.random.Generator): seed to use to generate a key if a ``prng_key`` is not present. ``None`` by default.
+        prng_key (Optional[jax.random.PRNGKey]): An optional ``jax.random.PRNGKey``. This is
+        seed (Optional[int]): A seed for the random number generator.
 
     Returns:
         ndarray[int]: Sample values of the shape (shots, num_wires)
