@@ -18,7 +18,7 @@ import numpy as np
 from pennylane.typing import TensorLike
 
 
-def structure_constants_dense(g: TensorLike) -> TensorLike:
+def structure_constants_dense(g: TensorLike, is_orthogonal: bool = False) -> TensorLike:
     r"""
     Compute the structure constants that make up the adjoint representation of a Lie algebra.
 
@@ -33,6 +33,9 @@ def structure_constants_dense(g: TensorLike) -> TensorLike:
     Args:
         g (np.array): The (dynamical) Lie algebra provided as dense matrices, as generated from :func:`pennylane.labs.lie.lie_closure_dense`.
             ``g`` should have shape ``(d, 2**n, 2**n)`` where ``d`` is the dimension of the algebra and ``n`` is the number of qubits.
+        is_orthogonal (bool): Whether or not the matrices in ``g`` are orthogonal with respect to the Hilbert-Schmidt inner product on
+            (skew-)Hermitian matrices. If the inputs are orthogonal, it is recommended to set ``is_orthogonal`` to ``True`` to reduce
+            computational cost. Defaults to ``False``.
 
     Returns:
         TensorLike: The adjoint representation of shape ``(d, d, d)``, corresponding to indices ``(gamma, alpha, beta)``.
@@ -65,7 +68,13 @@ def structure_constants_dense(g: TensorLike) -> TensorLike:
     # project commutators on basis of g
     # vectorized computation to obtain coefficients in decomposition:
     # v = ∑ (tr(v @ e_j) / ||e_j||^2) * e_j
-    gram_inv = np.linalg.pinv(np.tensordot(g, g, axes=[[1, 2], [2, 1]])).real
+    if is_orthogonal:
+        # Compute norms of orthogonal entries
+        norms = np.einsum("aij,aji->a", g, g).real
+        gram_inv = np.diag(1 / norms)
+    else:
+        # Compute the full inverse Gram matrix of the entries.
+        gram_inv = np.linalg.pinv(np.tensordot(g, g, axes=[[1, 2], [2, 1]])).real
     adj = gram_inv @ np.tensordot(g, all_coms, axes=[[1, 2], [2, 1]]).imag
     adj = -np.reshape(adj, (dimg, dimg, dimg))
     return adj

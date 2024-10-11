@@ -52,6 +52,15 @@ class TestAdjointRepr:
         assert adjoint.shape == (d, d, d)
         assert adjoint.dtype == float
 
+    def test_structure_constants_with_is_orthogonal(self):
+        """Test that the structure constants with is_orthogonal=True/False match for
+        orthogonal inputs."""
+        d = len(Ising3)
+        Ising3_dense = np.array([qml.matrix(op, wire_order=range(3)) for op in Ising3])
+        adjoint_true = structure_constants_dense(Ising3_dense, is_orthogonal=True)
+        adjoint_false = structure_constants_dense(Ising3_dense, is_orthogonal=False)
+        assert np.allclose(adjoint_true, adjoint_false)
+
     @pytest.mark.parametrize("dla", [Ising3, XXZ3])
     def test_structure_constants_elements(self, dla):
         r"""Test relation :math:`[i G_\alpha, i G_\beta] = \sum_{\gamma = 0}^{\mathfrak{d}-1} f^\gamma_{\alpha, \beta} iG_\gamma`."""
