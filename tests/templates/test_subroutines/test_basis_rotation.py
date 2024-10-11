@@ -425,7 +425,8 @@ class TestInterfaces:
         res = circuit(unitary_matrix)
         res2 = circuit2(unitary_matrix)
         res3 = circuit2(qml.math.toarray(unitary_matrix))
-        assert jnp.allclose(res, res2, atol=tol, rtol=0)
+
+        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
         assert qml.math.allclose(res, res3, atol=tol, rtol=0)
 
         grad_fn = jax.grad(circuit)
@@ -434,7 +435,7 @@ class TestInterfaces:
         grad_fn2 = jax.grad(circuit2)
         grads2 = grad_fn2(unitary_matrix)
 
-        assert qml.math.allclose(grads[0], grads2[0], atol=tol, rtol=0)
+        assert qml.math.allclose(grads, grads2, atol=tol, rtol=0)
 
     @pytest.mark.tf
     def test_tf(self, tol):
