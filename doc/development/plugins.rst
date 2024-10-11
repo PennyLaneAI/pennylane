@@ -13,8 +13,7 @@ For adding a plugin that inherits from the legacy interface, see :doc:`/developm
     In your plugin module, **standard NumPy** (*not* the wrapped Autograd version of NumPy)
     should be imported in all places (i.e., ``import numpy as np``).
 
-Writing your own PennyLane plugin, to allow an external quantum library to take advantage of the
-automatic differentiation ability of PennyLane, is a simple and easy process. In this section, we discuss
+PennyLane plugins allow an external quantum library to take advantage of the automatic differentiation ability of PennyLane. Writing your own plugin is a simple and easy process. In this section, we discuss
 the methods and concepts involved in the device interface.  To see the implementation of a
 minimal device, we recommend looking at the implementation in ``pennylane/devices/reference_qubit.py``.
 
@@ -141,9 +140,9 @@ Once a program is created, an individual transform can be added to the program w
 
 Preprocessing and validation can also exist inside the :meth:`~devices.Device.execute` method, but placing them
 in the preprocessing program has several benefits. Validation can happen earlier, leading to fewer resources
-spent before the error is raised.  Users can inspect, draw, and spec out the tapes at different stages throughout
+spent before the error is raised. Users can inspect, draw, and spec out the tapes at different stages throughout
 preprocessing. This provides users a better awareness of what the device is actually executing. When device
-gradients are used, the preprocessing transforms are tracked by the machine learning interfaces.  With the
+gradients are used, the preprocessing transforms are tracked by the machine learning interfaces. With the
 ML framework tracking the classical component of preprocessing, the device does not need to manually track the
 classical component of any decompositions or compilation. For example,
 
@@ -160,7 +159,7 @@ Allows the user to see that both ``IsingXX`` and ``CH`` are decomposed by the de
 the diagonalizing gates for ``qml.expval(qml.X(0))`` are applied.
 
 Even with these benefits, devices can still opt to
-place some transforms inside the ``execute`` method.  For example, ``default.qubit`` maps wires to simulation indices
+place some transforms inside the ``execute`` method. For example, ``default.qubit`` maps wires to simulation indices
 inside ``execute`` instead of in ``preprocess``.
 
 The :meth:`~.devices.Device.execute` can assume that device preprocessing has been run on the input
@@ -225,13 +224,13 @@ WireError: Cannot run circuit(s) of default.qubit as they contain wires not foun
 PennyLane wires can be any hashable object, where wire labels are distinguished by their equality and hash.
 If working with successive integers (``0``, ``1``, ``2``, ...) is preferred internally,
 the :meth:`~.QuantumScript.map_to_standard_wires` method can be used inside of 
-the :meth:`~.devices.Device.execute` method.  The :class:`~.map_wires` transform can also 
+the :meth:`~.devices.Device.execute` method. The :class:`~.map_wires` transform can also 
 map the wires of the submitted circuit to internal labels.
 
 Sometimes hardware qubit labels cannot be arbitrarily mapped without a changing in behaviour.
 Connectivity, noise, performance, and
 other constraints can make it so that operations on qubit one cannot be arbitrarily exchanged with the same operation
-of qubit two.  In such a situation, the device can hard code a list of the only acceptable wire labels. In such a case, it
+of qubit two. In such a situation, the device can hard code a list of the only acceptable wire labels. In such a case, it
 will be on the user to deliberately map wires if they wish such a thing to occur.
 
 >>> qml.device('my_hardware').wires
@@ -304,8 +303,8 @@ does not provide derivatives, you can safely ignore these properties.
 The workflow options are ``use_device_gradient``, ``use_device_jacobian_product``, and ``grad_on_execution``. 
 ``use_device_gradient=True`` indicates that workflow should request derivatives from the device. 
 ``grad_on_execution=True`` indicates a preference
-to use ``execute_and_compute_derivatives`` instead of ``execute`` followed by ``compute_derivatives``.  And finally
-``use_device_jacobian_product`` indicates a request to call ``compute_vjp`` instead of ``compute_derivatives``.  Note that 
+to use ``execute_and_compute_derivatives`` instead of ``execute`` followed by ``compute_derivatives``. Finally,
+``use_device_jacobian_product`` indicates a request to call ``compute_vjp`` instead of ``compute_derivatives``. Note that 
 if ``use_device_jacobian_product`` is ``True``, this takes precedence over calculating the full jacobian.
 
 >>> config = qml.devices.ExecutionConfig(gradient_method="adjoint")
@@ -329,11 +328,11 @@ to handle each stage in the process.
 PennyLane does provide some helper functions to assist in executing
 circuits. Any ``StateMeasurement`` has ``process_state`` and ``process_density_matrix`` methods for
 classical post-processsing of a state vector or density matrix, and ``SampleMeasurement``'s implement
-both ``process_samples`` and ``process_counts``.  The ``pennylane.devices.qubit`` module also contains
+both ``process_samples`` and ``process_counts``. The ``pennylane.devices.qubit`` module also contains
 functions that implement parts of a Python-based statevector simulation.
 
 Suppose you are accessing hardware that can only return raw samples. Here, we use the ``mp.process_samples``
-methods to process the subsamples into the requested final result object.  Note that we need
+methods to process the subsamples into the requested final result object. Note that we need
 to squeeze out singleton dimensions when we have no shot vector or a single measurement.
 
 .. code-block:: python

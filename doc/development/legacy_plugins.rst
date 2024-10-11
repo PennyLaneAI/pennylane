@@ -5,12 +5,13 @@
 
 .. _plugin_overview:
 
-Building a plugin
+Building a legacy plugin
 =================
 
-Writing your own PennyLane plugin, to allow an external quantum library to take advantage of the
-automatic differentiation ability of PennyLane, is a simple and easy process. In this section,
-we will walk through the steps for creating your own PennyLane plugin. In addition, we also
+For adding a plugin that inherits from the new device interface, see :doc:`/development/plugins`.
+
+PennyLane plugins allow an external quantum library to take advantage of the automatic differentiation ability of PennyLane. Writing your own plugin is a simple and easy process. In this section,
+we will walk through the steps for creating your own PennyLane plugin within the legacy device API. In addition, we also
 provide two default reference plugins — :mod:`'default.qubit' <.default_qubit>` for basic pure
 state qubit simulations, and :mod:`'default.gaussian' <.default_gaussian>` for basic
 continuous-variable simulations.
@@ -23,7 +24,7 @@ A quick primer on terminology of PennyLane plugins in this section:
 
 * A plugin is an external Python package that provides additional quantum *devices* to PennyLane.
 
-* Each plugin may provide one (or more) devices, that are accessible directly through
+* Each plugin may provide one or more devices that are accessible directly through
   PennyLane, as well as any additional private functions or classes.
 
 * Depending on the scope of the plugin, you may wish to provide additional (custom)
@@ -31,7 +32,7 @@ A quick primer on terminology of PennyLane plugins in this section:
 
 .. important::
 
-    In your plugin module, **standard NumPy** (*not* the wrapped Autograd version of NumPy)
+    In your plugin module, **standard NumPy** (*not* the wrapped Autograd version of NumPy, ``pennylane.numpy``)
     should be imported in all places (i.e., ``import numpy as np``).
 
 
@@ -88,19 +89,19 @@ and use the device. These include:
 
 * :attr:`pennylane.Device.author`: the author of the device
 
-Defining all these attributes is mandatory.
+**Defining all of the attributes above is mandatory.**
 
 
 Device capabilities
 -------------------
 
-You must further tell PennyLane about the operations that your device supports, 
+Furthermore, you must tell PennyLane about the operations that your device supports, 
 as well as potential further capabilities, by providing the following class attributes/properties:
 
 * :attr:`pennylane.Device.stopping_condition`: This :class:`~.BooleanFn` should return ``True`` for supported
-  operations and measurement processes, and ``False`` otherwise.  Note that this function is called on
+  operations and measurement processes, and ``False`` otherwise. Note that this function is called on
   **both** ``Operator`` and ``MeasurementProcess`` classes. Though this function must accept both ``Operator``
-  and ``MeasurementProcess`` classes, it does not affect whether or not a ``MeasurementProcess`` is supported.
+  and ``MeasurementProcess`` classes, it does not affect whether a ``MeasurementProcess`` is supported or not.
 
   .. code-block:: python
 
@@ -111,7 +112,7 @@ as well as potential further capabilities, by providing the following class attr
           return qml.BooleanFn(accepts_obj)
 
   If the device does *not* inherit from :class:`~.DefaultQubitLegacy`, then supported operations can be determined
-  by the :attr:`pennylane.Device.operations` property.  This property is a list of string names for supported operations.
+  by the :attr:`pennylane.Device.operations` property. This property is a list of string names for supported operations.
   :class:`~.DefaultQubitLegacy` supports any operation with a matrix, even if it's name isn't specifically enumerated
   in :attr:`pennylane.Device.operations`.
 
@@ -136,7 +137,7 @@ as well as potential further capabilities, by providing the following class attr
       by the plugin device.
 
 * :func:`pennylane.Device.capabilities`: A class method which returns the dictionary of capabilities of a device. A
-  new device should override this method to retrieve the parent classes' capabilities dictionary, make a copy
+  new device should override this method to retrieve the parent classes' capabilities dictionary, make a copy,
   and update and/or add capabilities before returning the copy.
 
   Examples of capabilities are:
@@ -155,10 +156,10 @@ as well as potential further capabilities, by providing the following class attr
   *  ``'supports_tracker'`` (*bool*): ``True`` if it has a device tracker attribute and updates information with
      it.
 
-  Some capabilities are queried by PennyLane core to make decisions on how to best run computations, others are used
+  Some capabilities are queried by PennyLane core to make decisions on how to best run computations, while others are used
   by external apps built on top of the device ecosystem.
 
-  To find out which capabilities are (possibly automatically) defined for your device ``dev = device('my.device')``,
+  To find out which capabilities are (possibly automatically) defined for your device, ``dev = qml.device('my.device', *args, **kwargs)``,
   check the output of ``dev.capabilities()``.
 
 Adding arguments to your device
@@ -170,24 +171,24 @@ Adding arguments to your device
     here onwards, we will demonstrate plugin development focusing on qubit-based devices
     inheriting from the :class:`~.QubitDevice` class.
 
-Defining the ``__init__.py`` method of a custom device is not necessary; by default,
+Defining the ``__init__`` method of a custom device is not necessary; by default,
 the :class:`~.QubitDevice` initialization will be called, where the user can pass the
 following arguments:
 
 * ``wires`` (*int* or *Iterable[Number, str]*): The number of subsystems represented by the device,
-  or iterable that contains unique labels for the subsystems as numbers (i.e., ``[-1, 0, 2]``)
+  or an iterable that contains unique labels for the subsystems as numbers (e.g., ``[-1, 0, 2]``)
   and/or strings (``['auxiliary', 'q1', 'q2']``).
 
 * ``shots=1000`` (*None*, *int* or *List[int]*): number of circuit
   evaluations/random samples used to estimate probabilities, expectation
-  values, variances  of observables in non-analytic mode. If ``None``, the device
-  calculates probability, expectation values, and variances analytically.  If an
-  integer, it specifies the number of samples to estimate these quantities.  If a
+  values, variances  of observables in non-analytic mode. If ``shots=None``, the device
+  calculates probability, expectation values, and variances analytically. If `shots` is an
+  integer, it specifies the number of samples to estimate these quantities. If a
   list of integers is passed, the circuit evaluations are batched over the list
   of shots.
 
 To add your own device arguments, or to override any of the above defaults, simply
-overwrite the ``__init__.py`` method. For example, here is a device where the number
+overwrite the ``__init__`` method. For example, here is a device where the number
 of wires is fixed to ``24``, that cannot be used in analytic mode, and that can accept a dictionary
 of low-level hardware control options:
 
@@ -219,7 +220,7 @@ The user can now pass any of these arguments to the PennyLane device loader:
 Device execution
 ----------------
 
-Once all the class attributes are defined, it is necessary to define some required class
+Once all of the class attributes are defined, it is necessary to define some required class
 methods to allow PennyLane to apply operations and measure observables on your device.
 
 To execute operations on the device, the following methods **must** be defined:
@@ -257,7 +258,7 @@ Furthermore, PennyLane uses the convention :math:`|q_0,q_1,\dots,q_{N-1}\rangle`
 :math:`q_0` is the most significant bit.
 
 And thats it! The device has inherited :meth:`~.QubitDevice.expval`, :meth:`~.QubitDevice.var`,
-and :meth:`~.QubitDevice.sample` methods, that accepts an observable (or tensor product of
+and :meth:`~.QubitDevice.sample` methods, each of which accepts an observable (or tensor product of
 observables) and returns the corresponding measurement statistic.
 
 
@@ -286,7 +287,7 @@ your plugin which, by default, performs the following process:
 
     return self._asarray(results)
 
-where
+Here,
 
 * ``circuit`` is a :class:`~.CircuitGraph` object
 
@@ -362,8 +363,7 @@ object and store it in their ``wires`` attribute.
 
 When the device applies operations, it needs to translate
 ``op.wires`` into wire labels that the backend "understands". This can be done with the
-:meth:`pennylane.Device.map_wires` method which maps ``Wires`` objects to other ``Wires`` objects,
-but changes the labels according to the ``wire_map`` attribute of the device which defines the translation.
+:meth:`pennylane.Device.map_wires` method, which maps ``Wires`` objects to other ``Wires`` objects and changes the labels according to the ``wire_map`` attribute of the device which defines the translation.
 
 .. code-block:: python
 
@@ -376,7 +376,7 @@ consecutive integers ``0``, ``1``, ``2``, ``3``. If a device uses a different wi
 such as non-consecutive wires ``0``, ``4``, ``7``, ``12``, the :meth:`pennylane.Device.define_wire_map` method
 has to be overwritten accordingly.
 
-The ``device_wires`` can then be further processed, for example by extracting the actual labels as a tuple,
+The ``device_wires`` can then be further processed, for example, by extracting the actual labels as a tuple,
 list or array, or by getting the number of wires:
 
 .. code-block:: python
@@ -412,7 +412,7 @@ To gain any of the device tracker functionality, a device should initialize with
 :class:`~.Tracker` instance. Users can overwrite this attribute by initializing a new instance with
 the device as an argument.
 
-We recommend placing the following code near the end of the ``execute`` method:
+We recommend placing the following code near the end of the ``execute`` method,
 
 .. code-block:: python
 
@@ -420,7 +420,7 @@ We recommend placing the following code near the end of the ``execute`` method:
     self.tracker.update(executions=1, shots=self._shots)
     self.tracker.record()
 
-And similar code in the ``batch_execute`` method:
+and similar code in the ``batch_execute`` method:
 
 .. code-block:: python
 
