@@ -133,10 +133,30 @@ def _get_qnode_prim():
         print("qfunc_jaxpr.outvars", qfunc_jaxpr.outvars)
 
         if _UNSET_BATCH_SIZE != -1:
-            # Handle the batched case
+
             print(f"Batch size detected: {_UNSET_BATCH_SIZE}")
-            batched_shape = _get_shapes_for(*mps, shots=shots, num_device_wires=len(device.wires))
-            # TODO: This is a hack to get the batched shape. We should (must) be able to get this from the QNode
+
+            batched_args = args[n_consts:]
+            input_shapes = [arg.shape for arg in batched_args]
+            print("Input shapes:", input_shapes)
+
+            # Use lax.broadcast_shapes to determine the final shape after broadcasting
+            batch_shape = jax.lax.broadcast_shapes(*input_shapes)
+            print("Broadcasted batch shape:", batch_shape)
+
+            # Get the expected measurement shapes (useful when we have multiple outputs)
+            mps = qfunc_jaxpr.outvars
+            output_shape = _get_shapes_for(*mps, shots=shots, num_device_wires=len(device.wires))
+
+            # Combine the broadcasted batch shape with the output shape
+            final_shapes = [
+                jax.core.ShapedArray(batch_shape + shape.shape, shape.dtype)
+                for shape in output_shape
+            ]
+
+            print("Final output shape with broadcasting:", final_shapes)
+            return final_shapes
+
         else:
             # Handle the regular case
             shape = _get_shapes_for(*mps, shots=shots, num_device_wires=len(device.wires))
