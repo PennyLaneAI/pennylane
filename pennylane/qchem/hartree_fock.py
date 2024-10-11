@@ -182,7 +182,7 @@ def scf(mol, n_steps=50, tol=1e-8):
 
             p_update = mol_density_matrix(n_electron, coeffs)
 
-            if qml.math.linalg.norm(p_update - p) <= tol:
+            if not qml.math.is_abstract(p) and qml.math.linalg.norm(p_update - p) <= tol:
                 break
 
             p = p_update
