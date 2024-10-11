@@ -4,6 +4,9 @@
 
 <h3>New features since last release</h3>
 
+* `qml.transforms.decompose` is added for stepping through decompositions to a target gate set. 
+  [(#6334)](https://github.com/PennyLaneAI/pennylane/pull/6334)
+
 * Added `process_density_matrix` implementations to 5 `StateMeasurement` subclasses:
   `ExpVal`, `Var`, `Purity`, `MutualInformation`, and `VnEntropy`.
   This enables `process_density_matrix` to be an abstract method in `StateMeasurement`,
