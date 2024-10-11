@@ -28,7 +28,7 @@ import pennylane as qml
 from malt.core import ag_ctx, converter
 from malt.impl.api import PyToPy
 
-from . import ag_primitives, operator_update
+from . import ag_primitives
 from .utils import AutoGraphError
 
 
@@ -114,21 +114,6 @@ class PennyLaneTransformer(PyToPy):
         )
 
         return new_fn
-
-    def transform_ast(self, node, ctx):
-        """Overload of PyToPy.transform_ast from DiastaticMalt
-
-        .. note::
-            Once the operator_update interface has been migrated to the
-            DiastaticMalt project, this overload can be deleted."""
-        # The operator_update transform would be more correct if placed with
-        # slices.transform in PyToPy.transform_ast in DiastaticMalt rather than
-        # at the beginning of the transformation. operator_update.transform
-        # should come after the unsupported features check and intial analysis,
-        # but it fails if it does not come before variables.transform.
-        node = operator_update.transform(node, ctx)
-        node = super().transform_ast(node, ctx)
-        return node
 
 
 def run_autograph(fn):
@@ -284,21 +269,18 @@ class DisableAutograph(ag_ctx.ControlStatusCtx, ContextDecorator):
 # Singleton instance of DisableAutograph
 disable_autograph = DisableAutograph()
 
-# converter.Feature.LISTS permits overloading the 'set_item' function in 'ag_primitives.py'
-OPTIONAL_FEATURES = [converter.Feature.BUILTIN_FUNCTIONS, converter.Feature.LISTS]
-
 TOPLEVEL_OPTIONS = converter.ConversionOptions(
     recursive=True,
     user_requested=True,
     internal_convert_user_code=True,
-    optional_features=OPTIONAL_FEATURES,
+    optional_features=[converter.Feature.BUILTIN_FUNCTIONS],
 )
 
 NESTED_OPTIONS = converter.ConversionOptions(
     recursive=True,
     user_requested=False,
     internal_convert_user_code=True,
-    optional_features=OPTIONAL_FEATURES,
+    optional_features=[converter.Feature.BUILTIN_FUNCTIONS],
 )
 
 STANDARD_OPTIONS = converter.STANDARD_OPTIONS
