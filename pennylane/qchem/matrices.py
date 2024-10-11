@@ -22,12 +22,12 @@ import numpy as np
 import pennylane as qml
 
 from .integrals import (
+    _check_requires_grad,
     attraction_integral,
     kinetic_integral,
     moment_integral,
     overlap_integral,
     repulsion_integral,
-    _check_requires_grad,
 )
 
 
