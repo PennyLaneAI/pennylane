@@ -436,7 +436,6 @@ def mitigate_with_zne(
         import numpy as np
         from functools import partial
         from pennylane import qnode
-        from pennylane.devices.preprocess import decompose
         from pennylane.transforms import fold_global, poly_extrapolate
 
         n_wires = 2
