@@ -10,6 +10,9 @@
   - Improves modularity: The same code can be easily adapted for other devices (e.g., a potential `default_mixed` device).
   - Enhances maintainability by isolating the sampling logic.
   [(#6354)](https://github.com/PennyLaneAI/pennylane/pull/6354)
+  
+* `qml.transforms.decompose` is added for stepping through decompositions to a target gate set. 
+  [(#6334)](https://github.com/PennyLaneAI/pennylane/pull/6334)
 
 * Added `process_density_matrix` implementations to 5 `StateMeasurement` subclasses:
   `ExpVal`, `Var`, `Purity`, `MutualInformation`, and `VnEntropy`.
@@ -91,6 +94,9 @@
   regarding whether the diagonalizing gates are modified by device, instead of always counting 
   unprocessed diagonalizing gates.
   [(#6290)](https://github.com/PennyLaneAI/pennylane/pull/6290)
+
+* A more sensible error message is raised from a `RecursionError` encountered when accessing properties and methods of a nested `CompositeOp` or `SProd`.
+  [(#6375)](https://github.com/PennyLaneAI/pennylane/pull/6375)
 
 <h4>Capturing and representing hybrid programs</h4>
 
