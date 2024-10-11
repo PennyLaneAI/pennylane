@@ -565,7 +565,7 @@ class TestInterfaces:
         grad_fn2 = jax.grad(circuit2)
         grads2 = grad_fn2(weights)
 
-        assert np.allclose(grads, grads2, atol=tol, rtol=0)
+        assert qml.math.allclose(grads, grads2, atol=tol, rtol=0)
 
         # Test with n_repeats=2
         weights = jnp.array(np.random.random(size=(2, 2)))
