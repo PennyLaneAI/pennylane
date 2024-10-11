@@ -663,7 +663,8 @@ class QubitDevice(Device):
 
             elif isinstance(m, SampleMP):
                 samples = self.sample(obs, shot_range=shot_range, bin_size=bin_size, counts=False)
-                result = self._asarray(qml.math.squeeze(samples))
+                dtype = int if isinstance(obs, SampleMP) else None
+                result = self._asarray(qml.math.squeeze(samples), dtype=dtype)
 
             elif isinstance(m, CountsMP):
                 result = self.sample(m, shot_range=shot_range, bin_size=bin_size, counts=True)
