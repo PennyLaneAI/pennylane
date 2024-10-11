@@ -542,4 +542,4 @@ class TestTemplateOutputs:
 
         jit_circuit = jax.jit(circuit)
 
-        assert np.isclose(circuit(), jit_circuit())
+        assert qml.math.isclose(circuit(), jit_circuit())
