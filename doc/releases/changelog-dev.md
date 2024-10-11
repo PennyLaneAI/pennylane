@@ -258,6 +258,8 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* `default.qutrit` now returns integer samples.
+
 * `adjoint_metric_tensor` now works with circuits containing state preparation operations.
   [(#6358)](https://github.com/PennyLaneAI/pennylane/pull/6358)
 
