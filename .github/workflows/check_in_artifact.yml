@@ -46,7 +46,16 @@ on:
         required: false
         type: string
         default: ''
-
+      commit_author_name:
+        description: The name of the commit author
+        required: false
+        type: string
+        default: 'github-actions[bot]'
+      commit_author_email:
+        description: The email of the commit author
+        required: false
+        type: string
+        default: '41898282+github-actions[bot]@users.noreply.github.com'
 
 jobs:
   check_in_artifact:
@@ -74,9 +83,11 @@ jobs:
         if: steps.changed.outputs.has_changes != '0'
         env:
           HEAD_BRANCH_NAME: ${{ inputs.pull_request_head_branch_name }}
+          COMMIT_AUTHOR_NAME: ${{ inputs.commit_author_name }}
+          COMMIT_AUTHOR_EMAIL: ${{ inputs.commit_author_email }}
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config user.name "$COMMIT_AUTHOR_NAME"
+          git config user.email "$COMMIT_AUTHOR_EMAIL"
           
           echo "Checking if $HEAD_BRANCH_NAME exists..."
           if git ls-remote --exit-code origin "refs/heads/$HEAD_BRANCH_NAME"; then
@@ -106,6 +117,14 @@ jobs:
           PR_TITLE: ${{ inputs.pull_request_title }}
           PR_BODY: ${{ inputs.pull_request_body }}
         run: |
+          EXISTING_CLOSED_PR="$(gh pr list --state closed --base master --head $HEAD_BRANCH_NAME --json url --jq '.[].url')"
+          
+          if [ -n "${EXISTING_CLOSED_PR}" ]; then
+            echo "Reopening PR... ${EXISTING_CLOSED_PR}"
+            gh pr reopen "${EXISTING_CLOSED_PR}"
+            exit 0
+          fi
+          
           EXISTING_PR="$(gh pr list --state open --base master --head $HEAD_BRANCH_NAME --json url --jq '.[].url')"
           
           if [ -n "${EXISTING_PR}" ]; then
