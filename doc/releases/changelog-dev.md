@@ -85,6 +85,9 @@
   unprocessed diagonalizing gates.
   [(#6290)](https://github.com/PennyLaneAI/pennylane/pull/6290)
 
+* A more sensible error message is raised from a `RecursionError` encountered when accessing properties and methods of a nested `CompositeOp` or `SProd`.
+  [(#6375)](https://github.com/PennyLaneAI/pennylane/pull/6375)
+
 <h4>Capturing and representing hybrid programs</h4>
 
 * `qml.wires.Wires` now accepts JAX arrays as input. Furthermore, a `FutureWarning` is no longer raised in `JAX 0.4.30+`
