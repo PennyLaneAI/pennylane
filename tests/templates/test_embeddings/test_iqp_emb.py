@@ -309,7 +309,7 @@ class TestInterfaces:
         grad_fn2 = jax.jacobian(circuit2)
         grads2 = grad_fn2(features)
 
-        assert np.allclose(grads, grads2, atol=tol, rtol=0)
+        assert qml.math.allclose(grads, grads2, atol=tol, rtol=0)
 
     @pytest.mark.tf
     @pytest.mark.parametrize("features", [[0.1, -1.3], [[0.5, 2.0], [1.2, 0.6], [-0.7, 0.3]]])
