@@ -24,9 +24,10 @@ import copy
 import inspect
 from contextlib import ContextDecorator
 
-import pennylane as qml
 from malt.core import ag_ctx, converter
 from malt.impl.api import PyToPy
+
+import pennylane as qml
 
 from . import ag_primitives
 from .utils import AutoGraphError

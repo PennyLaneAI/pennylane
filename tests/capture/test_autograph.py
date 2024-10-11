@@ -21,10 +21,10 @@ import jax
 import jax.numpy as jnp
 import numpy as np
 import pytest
+from jax.core import eval_jaxpr
 
 # from catalyst import debug, qjit, vmap
 from jax.errors import TracerBoolConversionError
-from jax.core import eval_jaxpr
 from numpy.testing import assert_allclose
 
 import pennylane as qml
@@ -37,7 +37,6 @@ from pennylane.capture.autograph.transformer import (
     run_autograph,
 )
 from pennylane.capture.autograph.utils import AutoGraphError, CompileError, dummy_func
-
 
 check_cache = TRANSFORMER.has_cache
 
@@ -567,7 +566,10 @@ class TestConditionals:
             return res
 
         # can't convert to jaxpr without autorgraph
-        with pytest.raises(jax.errors.TracerBoolConversionError, match="Attempted boolean conversion of traced array"):
+        with pytest.raises(
+            jax.errors.TracerBoolConversionError,
+            match="Attempted boolean conversion of traced array",
+        ):
             jax.make_jaxpr(circuit)(1)
 
         # with autograph we can convert to jaxpr
@@ -575,7 +577,8 @@ class TestConditionals:
         jaxpr = jax.make_jaxpr(circuit)(0)
         assert "cond" in str(jaxpr)
 
-        def res(x): return eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)
+        def res(x):
+            return eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)
 
         # evaluating the jaxpr gives expected results
         assert res(0) == [0]
@@ -603,7 +606,8 @@ class TestConditionals:
         jaxpr = jax.make_jaxpr(ag_circuit)(0)
         assert "cond" in str(jaxpr)
 
-        def res(x): return eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)[0]
+        def res(x):
+            return eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)[0]
 
         assert res(4) == 16
         assert res(2) == 4
@@ -628,7 +632,8 @@ class TestConditionals:
         jaxpr = jax.make_jaxpr(ag_circuit)(0)
         assert "cond" in str(jaxpr)
 
-        def res(x): return eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)[0]
+        def res(x):
+            return eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)[0]
 
         assert res(5) == 40
         assert res(3) == 12
@@ -651,7 +656,8 @@ class TestConditionals:
         jaxpr = jax.make_jaxpr(ag_circuit)(0)
         assert "cond" in str(jaxpr)
 
-        def res(x): return eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)[0]
+        def res(x):
+            return eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)[0]
 
         # pylint: disable=singleton-comparison
         assert res(3) == 0
@@ -707,7 +713,8 @@ class TestConditionals:
         jaxpr = jax.make_jaxpr(ag_circuit)(0)
         assert "cond" in str(jaxpr)
 
-        def res(x): return eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)[0]
+        def res(x):
+            return eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)[0]
 
         assert res(1) == 25
         assert res(0) == 60
@@ -731,7 +738,8 @@ class TestConditionals:
         ag_circuit = run_autograph(f)
         jaxpr = jax.make_jaxpr(ag_circuit)(0)
 
-        def res(x): return eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)[0]
+        def res(x):
+            return eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)[0]
 
         # assert capfd.readouterr() == ("", "")
 
@@ -759,7 +767,9 @@ class TestConditionals:
             ag_circuit = run_autograph(f)
             jaxpr = jax.make_jaxpr(ag_circuit)(0)
 
-            def res(x): return eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)[0]
+            def res(x):
+                return eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)[0]
+
             res(1)
 
 
@@ -789,8 +799,10 @@ class TestForLoops:
             return qml.expval(qml.PauliZ(0))
 
         ag_circuit = run_autograph(f)
-        jaxpr = jax.make_jaxpr(ag_circuit)([1., 2., 3.])
-        def res(params): return eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, params)
+        jaxpr = jax.make_jaxpr(ag_circuit)([1.0, 2.0, 3.0])
+
+        def res(params):
+            return eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, params)
 
         result = f(jnp.array([0.0, 1 / 4 * jnp.pi, 2 / 4 * jnp.pi]))
         print(result)
@@ -1069,8 +1081,10 @@ class TestForLoops:
         ag_circuit = run_autograph(f)
         jaxpr = jax.make_jaxpr(ag_circuit)(jnp.array([[0.0, 0.0], [0.0, 0.0], [0.0, 0.0]]))
 
-        params = jnp.array([[0.0, 1 / 4 * jnp.pi], [2 / 4 * jnp.pi, 3 / 4 * jnp.pi], [jnp.pi, 2 * jnp.pi]])
-        result =eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, params)
+        params = jnp.array(
+            [[0.0, 1 / 4 * jnp.pi], [2 / 4 * jnp.pi, 3 / 4 * jnp.pi], [jnp.pi, 2 * jnp.pi]]
+        )
+        result = eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, params)
 
         assert np.allclose(result, [jnp.sqrt(2) / 2, -jnp.sqrt(2) / 2, -1.0])
 
@@ -1430,7 +1444,7 @@ class TestWhileLoops:
             return qml.probs()
 
         ag_circuit = run_autograph(f)
-        jaxpr = jax.make_jaxpr(ag_circuit)(0.)
+        jaxpr = jax.make_jaxpr(ag_circuit)(0.0)
         assert "while_loop" in str(jaxpr)
 
         result = eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2.0**4)[0]
@@ -1716,7 +1730,7 @@ class TestMixed:
 
         assert f() == 3
 
-   # @pytest.mark.usefixtures("autograph_strict_conversion")
+    # @pytest.mark.usefixtures("autograph_strict_conversion")
     def test_cond_if_for_loop_for(self, monkeypatch):
         """Test Python conditionals and loops together with their Catalyst counterparts."""
 
@@ -1754,6 +1768,8 @@ class TestMixed:
 
         assert f(2) == 18
         assert f(3) == 0
+
+
 #
 #
 #
@@ -1800,6 +1816,7 @@ class TestMixed:
 #
 #         assert g() == 36.4
 #
+
 
 class TestAutographInclude:
     """Test include modules to autograph conversion"""
@@ -1848,19 +1865,19 @@ class TestAutographInclude:
 class TestDecorators:
     """Test if Autograph works when applied to a decorated function"""
 
-#     def test_vmap(self):
-#         """Test if Autograph works when applied to a decorated function with vmap"""
-#
-#         def workflow(axes_dct):
-#             return axes_dct["x"] + axes_dct["y"]
-#
-#         expected = jnp.array([1, 2, 3, 4, 5])
-#
-#         result = qjit(vmap(workflow, in_axes=({"x": None, "y": 0},)), autograph=True)(
-#             {"x": 1, "y": jnp.arange(5)}
-#         )
-#         assert jnp.allclose(result, expected)
-#
+    #     def test_vmap(self):
+    #         """Test if Autograph works when applied to a decorated function with vmap"""
+    #
+    #         def workflow(axes_dct):
+    #             return axes_dct["x"] + axes_dct["y"]
+    #
+    #         expected = jnp.array([1, 2, 3, 4, 5])
+    #
+    #         result = qjit(vmap(workflow, in_axes=({"x": None, "y": 0},)), autograph=True)(
+    #             {"x": 1, "y": jnp.arange(5)}
+    #         )
+    #         assert jnp.allclose(result, expected)
+    #
     def test_cond(self):
         """Test if Autograph works when applied to a decorated function with cond"""
 

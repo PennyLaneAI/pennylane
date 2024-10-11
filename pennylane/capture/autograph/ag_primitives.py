@@ -395,6 +395,7 @@ def while_stmt(loop_test, loop_body, get_state, set_state, symbol_names, _opts):
 
     set_state(results)
 
+
 def get_source_code_info(tb_frame):
     """Attempt to obtain original source code information for an exception raised within AutoGraph
     transformed code.
@@ -504,6 +505,7 @@ def converted_call(fn, args, kwargs, caller_fn_scope=None, options=None):
             return new_qnode()
 
         return ag_converted_call(fn, args, kwargs, caller_fn_scope, options)
+
 
 class PRange:
     """PennyLane range object.
