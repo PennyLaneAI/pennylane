@@ -60,9 +60,25 @@ def _get_shapes_for(*measurements, shots=None, num_device_wires=0):
     return shapes
 
 
+_UNSET_BATCH_SIZE = -1  # indicates that batching hasn't been set
+
+
+def enable_batching(batch_size):
+    """Enable batching for the QNode."""
+    global _UNSET_BATCH_SIZE
+    _UNSET_BATCH_SIZE = batch_size
+
+
+def disable_batching():
+    global _UNSET_BATCH_SIZE
+    _UNSET_BATCH_SIZE = -1
+
+
 def _qnode_batching_rule(
     batched_args, batch_dims, qnode, shots, device, qnode_kwargs, qfunc_jaxpr, n_consts
 ):
+
+    enable_batching(batch_dims[0])
 
     consts = batched_args[:n_consts]
     args = batched_args[n_consts:]
@@ -80,6 +96,8 @@ def _qnode_batching_rule(
 
     qnode = qml.QNode(qfunc, device, **qnode_kwargs)
     result = qnode_call(qnode, *aligned_args, shots=shots)
+
+    disable_batching()
 
     return result, [0]
 
@@ -108,21 +126,26 @@ def _get_qnode_prim():
     # pylint: disable=unused-argument
     @qnode_prim.def_abstract_eval
     def _(*args, qnode, shots, device, qnode_kwargs, qfunc_jaxpr, n_consts):
+
+        global _UNSET_BATCH_SIZE
+
         mps = qfunc_jaxpr.outvars
 
-        input = qfunc_jaxpr.outvars
-
         print("abstract evaluation called")
-
         print("qfunc_jaxpr", qfunc_jaxpr)
         print("qfunc_jaxpr.invars", qfunc_jaxpr.invars)
         print("qfunc_jaxpr.outvars", qfunc_jaxpr.outvars)
 
-        shape = _get_shapes_for(*mps, shots=shots, num_device_wires=len(device.wires))
-
-        print("shape", shape)
-
-        return shape
+        if _UNSET_BATCH_SIZE != -1:
+            # Handle the batched case
+            print(f"Batch size detected: {_UNSET_BATCH_SIZE}")
+            batched_shape = _get_shapes_for(*mps, shots=shots, num_device_wires=len(device.wires))
+            # TODO: This is a hack to get the batched shape. We should (must) be able to get this from the QNode
+        else:
+            # Handle the regular case
+            shape = _get_shapes_for(*mps, shots=shots, num_device_wires=len(device.wires))
+            print("shape", shape)
+            return shape
 
     def make_zero(tan, arg):
         return jax.lax.zeros_like_array(arg) if isinstance(tan, ad.Zero) else tan
