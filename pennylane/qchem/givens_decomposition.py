@@ -50,7 +50,7 @@ def _givens_matrix(a, b, left=True, tol=1e-8):
     sine = qml.math.where(abs_a < tol, 0.0, sine)
 
     phase = qml.math.where(abs_b < tol, 1.0, (1.0 * b * qml.math.conj(a)) / (aprod + 1e-15))
-    phase = qml.math.where(abs_a < tol, 0.0, phase)
+    phase = qml.math.where(abs_a < tol, 1.0, phase)
 
     if left:
         return qml.math.array([[phase * cosine, -sine], [phase * sine, cosine]], like=interface)
