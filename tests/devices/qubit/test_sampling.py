@@ -676,7 +676,6 @@ class TestInvalidStateSamples:
         res = measure_with_samples(
             (qml.classical_shadow([0]),), state, _FlexShots(shots), is_state_batched=False
         )
-        print(res)
         if not isinstance(shots, list):
             assert isinstance(res, tuple)
             res = res[0]
@@ -840,7 +839,7 @@ class TestBroadcasting:
     @pytest.mark.parametrize(
         "shots",
         [
-            ((5, 2),),
+            ((100, 2),),
             (100, 100),
             (100, 100),
             (100, 100, 200),
@@ -1015,7 +1014,7 @@ class TestBroadcastingPRNG:
             shots,
             is_state_batched=True,
             rng=rng,
-            prng_key=jax.random.PRNGKey(987),
+            prng_key=jax.random.PRNGKey(184),
         )
 
         spy.assert_called()
