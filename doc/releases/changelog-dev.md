@@ -38,6 +38,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* Module-level sandboxing added to `qml.labs` via pre-commit hooks.
+  [(#6369)](https://github.com/PennyLaneAI/pennylane/pull/6369)
+
 * `qml.matrix` now works with empty objects (such as empty tapes, `QNode`s and quantum functions that do
   not call operations, single operators with empty decompositions).
   [(#6347)](https://github.com/PennyLaneAI/pennylane/pull/6347)
@@ -143,6 +146,9 @@
   [(#6326)](https://github.com/PennyLaneAI/pennylane/pull/6326)
 
 <h3>Breaking changes 💔</h3>
+
+* `AllWires` validation in `QNode.construct` has been removed. 
+  [(#6373)](https://github.com/PennyLaneAI/pennylane/pull/6373)
 
 * The `simplify` argument in `qml.Hamiltonian` and `qml.ops.LinearCombination` has been removed.
   Instead, `qml.simplify()` can be called on the constructed operator.
