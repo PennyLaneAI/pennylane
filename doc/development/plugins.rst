@@ -98,6 +98,9 @@ The first number ``0.2`` is calculated with 5 shots, the second ``-0.052`` is ca
 ``-0.014`` is calculated with 1000 shots.  All 1,505 shots can be requested together in one batch, but the post
 processing into the expecation value is done with shots ``0:5``, ``5:505``, and ``505:1505`` respectively.
 
+``shots.total_shots is None`` indicates an analytic execution (infinite shots). ``bool(shots)`` also
+can be used to detect the difference between finite shots and analytic executions. If ``shots`` is truthy,
+then finite shots exist. If ``shots`` is falsy, then an analytic execution should be performed.
 
 Preprocessing
 -------------

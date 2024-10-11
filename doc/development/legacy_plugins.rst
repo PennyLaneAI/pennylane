@@ -3,8 +3,6 @@
 .. role:: html(raw)
    :format: html
 
-.. _plugin_overview:
-
 Building a legacy plugin
 =================
 
