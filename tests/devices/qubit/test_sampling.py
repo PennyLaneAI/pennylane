@@ -92,7 +92,7 @@ class TestSampleState:
         spy = mocker.spy(qml.devices.qubit.sampling, "_sample_probs_jax")
         state = qml.math.array(two_qubit_state, like="jax")
 
-        # prng_key specified, should call sample_state
+        # prng_key specified, should call _sample_probs_jax
         _ = sample_state(state, 10, prng_key=jax.random.PRNGKey(15))
 
         spy.assert_called_once()
