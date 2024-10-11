@@ -172,7 +172,9 @@ def _validate_qfunc_output(qfunc_output, measurements) -> None:
             if isinstance(m.base.item(), qml.measurements.MeasurementProcess)
         ]
     if len(measurement_processes) == 0:
-        measurement_processes = qfunc_output
+        measurement_processes = [qfunc_output]
+
+    print(measurement_processes)
 
     if not measurement_processes or not all(
         isinstance(m, qml.measurements.MeasurementProcess) for m in measurement_processes
