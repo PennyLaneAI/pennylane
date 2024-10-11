@@ -36,9 +36,6 @@ class TestDecomposition:
     """Tests that the template defines the correct decomposition."""
 
     # fmt: off
-    tshift0 = np.eye(3, dtype=int)
-    tshift1 = np.array([[0, 0, 1], [1, 0, 0], [0, 1, 0]])
-    tshift2 = np.array([[0, 1, 0], [0, 0, 1], [1, 0, 0]])
     @pytest.mark.parametrize("basis_state,wires,target_wires", [
         ([0], [0], []),
         ([0], [1], []),
@@ -142,20 +139,42 @@ class TestDecomposition:
         circuit(state)
 
     @pytest.mark.jax
-    def test_decomposition_jax_jit(self):
-        """Tests that the decomposition is correct when JIT compiled."""
+    def test_decomposition_matrix_jax_jit(self):
+        """Tests that the decomposition matrix is correct when JIT compiled."""
         import jax
         import jax.numpy as jnp
 
         tshift = jnp.array([[0, 0, 1], [1, 0, 0], [0, 1, 0]])
-
         jit_decomp = jax.jit(qml.QutritBasisStatePreparation.compute_decomposition)
-        jit_decomp(jnp.array([1]), wires=[0])
 
         for i in range(3):
             decomp = jit_decomp(jnp.array([i]), wires=[0])
             matrix = qml.matrix(qml.prod(*decomp[::-1]))
             assert qml.math.allclose(matrix, jnp.linalg.matrix_power(tshift, i))
+
+    @pytest.mark.jax
+    def test_decomposition_pl_gates_jax_jit(self):
+        """Tests that the decomposition gates are correct when JIT compiled."""
+        import jax
+        import jax.numpy as jnp
+
+        jit_decomp = jax.jit(qml.QutritBasisStatePreparation.compute_decomposition)
+        jit_decomp(jnp.array([1]), wires=jnp.array([0]))
+
+        def op_list(state, wire):
+            return [
+                qml.TRY(state * (2 - state) * np.pi, wires=wire, subspace=(0, 1)),
+                qml.TRY(state * (1 - state) * np.pi / 2, wires=wire, subspace=(0, 2)),
+                qml.TRZ((-2 * state + 3) * state * np.pi, wires=wire, subspace=(0, 2)),
+                qml.TRY(state * (2 - state) * np.pi, wires=wire, subspace=(0, 2)),
+                qml.TRY(state * (1 - state) * np.pi / 2, wires=wire, subspace=(0, 1)),
+                qml.TRZ(-(7 * state - 10) * state * np.pi, wires=wire, subspace=(0, 2)),
+            ]
+
+        for i in range(3):
+            decomp = jit_decomp(jnp.array([i]), wires=jnp.array([0]))
+            for op1, op2 in zip(decomp, op_list(i, [0])):
+                assert op1 == op2
 
     @pytest.mark.tf
     @pytest.mark.parametrize(
