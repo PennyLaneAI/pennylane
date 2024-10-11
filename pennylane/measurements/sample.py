@@ -264,7 +264,11 @@ class SampleMP(SampleMeasurement):
         # If we're sampling wires or a list of mid-circuit measurements
         if self.obs is None and not isinstance(self.mv, MeasurementValue) and self._eigvals is None:
             # if no observable was provided then return the raw samples
-            return samples if bin_size is None else samples.T.reshape(num_wires, bin_size, -1)
+            return (
+                qml.math.squeeze(samples)
+                if bin_size is None
+                else samples.T.reshape(num_wires, bin_size, -1)
+            )
 
         # If we're sampling observables
         try:
