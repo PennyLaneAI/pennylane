@@ -61,11 +61,11 @@ def vn_entropy(wires, log_base=None) -> "VnEntropyMP":
 
     .. note::
 
-        Calculating the derivative of :func:`~.vn_entropy` is currently supported when
+        Calculating the derivative of :func:`~pennylane.vn_entropy` is currently supported when
         using the classical backpropagation differentiation method (``diff_method="backprop"``)
         with a compatible device and finite differences (``diff_method="finite-diff"``).
 
-    .. seealso:: :func:`pennylane.qinfo.transforms.vn_entropy` and :func:`pennylane.math.vn_entropy`
+    .. seealso:: :func:`pennylane.math.vn_entropy`
     """
     wires = Wires(wires)
     return VnEntropyMP(wires=wires, log_base=log_base)
@@ -74,7 +74,7 @@ def vn_entropy(wires, log_base=None) -> "VnEntropyMP":
 class VnEntropyMP(StateMeasurement):
     """Measurement process that computes the Von Neumann entropy of the system prior to measurement.
 
-    Please refer to :func:`vn_entropy` for detailed documentation.
+    Please refer to :func:`~pennylane.vn_entropy` for detailed documentation.
 
     Args:
         wires (.Wires): The wires the measurement process applies to.
@@ -120,4 +120,9 @@ class VnEntropyMP(StateMeasurement):
         state = qml.math.dm_from_state_vector(state)
         return qml.math.vn_entropy(
             state, indices=self.wires, c_dtype=state.dtype, base=self.log_base
+        )
+
+    def process_density_matrix(self, density_matrix: Sequence[complex], wire_order: Wires):
+        return qml.math.vn_entropy(
+            density_matrix, indices=self.wires, c_dtype=density_matrix.dtype, base=self.log_base
         )

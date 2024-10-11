@@ -23,12 +23,10 @@ from pennylane import numpy as pnp
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.typing import PostprocessingFn
 
-with pytest.warns(qml.PennyLaneDeprecationWarning):
-    devices_list = [
-        (qml.device("default.qubit"), 1),
-        (qml.device("default.qubit", wires=2), 2),
-        (qml.device("default.qubit.legacy", wires=2), 2),
-    ]
+devices_list = [
+    (qml.device("default.qubit"), 1),
+    (qml.device("default.qubit", wires=2), 2),
+]
 
 
 class TestSpecsTransform:
@@ -181,6 +179,41 @@ class TestSpecsTransform:
         assert info["num_observables"] == 1
         assert info["num_diagonalizing_gates"] == 0
         assert info["level"] == "gradient"
+
+    def test_level_with_diagonalizing_gates(self):
+        """Test that when diagonalizing gates includes gates that are decomposed in
+        device preprocess, for level=device, any unsupported diagonalizing gates are
+        decomposed like the tape.operations."""
+
+        class TestDevice(qml.devices.DefaultQubit):
+
+            def stopping_condition(self, op):
+                if isinstance(op, qml.QubitUnitary):
+                    return False
+                return True
+
+            def preprocess(self, execution_config=qml.devices.DefaultExecutionConfig):
+                program, config = super().preprocess(execution_config)
+                program.add_transform(
+                    qml.devices.preprocess.decompose, stopping_condition=self.stopping_condition
+                )
+                return program, config
+
+        dev = TestDevice(wires=2)
+        matrix = qml.matrix(qml.RX(1.2, 0))
+
+        @qml.qnode(dev)
+        def circ():
+            qml.QubitUnitary(matrix, wires=0)
+            return qml.expval(qml.X(0) + qml.Y(0))
+
+        specs = qml.specs(circ)()
+        assert specs["resources"].num_gates == 1
+        assert specs["num_diagonalizing_gates"] == (1 if qml.operation.active_new_opmath() else 0)
+
+        specs = qml.specs(circ, level="device")()
+        assert specs["resources"].num_gates == 3
+        assert specs["num_diagonalizing_gates"] == (3 if qml.operation.active_new_opmath() else 0)
 
     def test_splitting_transforms(self):
         coeffs = [0.2, -0.543, 0.1]
