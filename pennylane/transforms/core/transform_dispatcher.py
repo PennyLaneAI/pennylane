@@ -79,6 +79,7 @@ class TransformDispatcher:
         # is_informative supersedes final_transform
         self._final_transform = is_informative or final_transform
         self._qnode_transform = self.default_qnode_transform
+        self._plxpr_transform = self.default_plxpr_transform
         self._use_argnum_in_expand = use_argnum_in_expand
         functools.update_wrapper(self, transform)
 
@@ -223,11 +224,25 @@ class TransformDispatcher:
                 targs,
                 tkwargs,
                 self._classical_cotransform,
+                self._plxpr_transform,
                 self._is_informative,
                 self._final_transform,
             )
         )
         return qnode
+
+    def custom_plxpr_transform(self, fn):
+        """Register a custom function for processing primitives to transform PLxPR"""
+        self._plxpr_transform = types.MethodType(fn, self)
+
+    def default_plxpr_transform(self, *_, **__):
+        """Default implementation for a function for processing primitives to transform PLxPR."""
+        raise ValueError(f"{self._transform.__name__} cannot be used to transform PLxPR.")
+
+    @property
+    def plxpr_transform(self):
+        """Function for processing primitives to transform PLxPR"""
+        return self._plxpr_transform
 
     def _qfunc_transform(self, qfunc, targs, tkwargs):
         """Apply the transform on a quantum function."""
@@ -370,6 +385,7 @@ class TransformContainer:
         args=None,
         kwargs=None,
         classical_cotransform=None,
+        plxpr_transform=None,
         is_informative=False,
         final_transform=False,
         use_argnum=False,
@@ -378,6 +394,7 @@ class TransformContainer:
         self._args = args or []
         self._kwargs = kwargs or {}
         self._classical_cotransform = classical_cotransform
+        self._plxpr_transform = plxpr_transform
         self._is_informative = is_informative
         self._final_transform = is_informative or final_transform
         self._use_argnum = use_argnum
@@ -405,6 +422,7 @@ class TransformContainer:
             and self.transform == other.transform
             and self.kwargs == other.kwargs
             and self.classical_cotransform == other.classical_cotransform
+            and self.plxpr_transform == other.plxpr_transform
             and self.is_informative == other.is_informative
             and self.final_transform == other.final_transform
         )
@@ -428,6 +446,11 @@ class TransformContainer:
     def classical_cotransform(self):
         """The stored quantum transform's classical co-transform."""
         return self._classical_cotransform
+
+    @property
+    def plxpr_transform(self):
+        """The stored quantum transform's PLxPR transform."""
+        return self._plxpr_transform
 
     @property
     def is_informative(self):

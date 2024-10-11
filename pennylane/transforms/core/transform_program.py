@@ -251,6 +251,7 @@ class TransformProgram:
                 targs,
                 tkwargs,
                 transform.classical_cotransform,
+                transform.plxpr_transform,
                 transform.is_informative,
                 transform.final_transform,
             )
@@ -278,6 +279,7 @@ class TransformProgram:
                 targs,
                 tkwargs,
                 transform.classical_cotransform,
+                transform.plxpr_transform,
                 transform.is_informative,
                 transform.final_transform,
             )
