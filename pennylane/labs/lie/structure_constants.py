@@ -18,7 +18,7 @@ import numpy as np
 from pennylane.typing import TensorLike
 
 
-def structure_constants_dense(g: TensorLike, is_orthogonal: bool = False) -> TensorLike:
+def structure_constants_dense(g: TensorLike, is_orthonormal: bool = True) -> TensorLike:
     r"""
     Compute the structure constants that make up the adjoint representation of a Lie algebra.
 
@@ -32,13 +32,14 @@ def structure_constants_dense(g: TensorLike, is_orthogonal: bool = False) -> Ten
 
     Args:
         g (np.array): The (dynamical) Lie algebra provided as dense matrices, as generated from :func:`pennylane.labs.lie.lie_closure_dense`.
-            ``g`` should have shape ``(d, 2**n, 2**n)`` where ``d`` is the dimension of the algebra and ``n`` is the number of qubits.
-        is_orthogonal (bool): Whether or not the matrices in ``g`` are orthogonal with respect to the Hilbert-Schmidt inner product on
-            (skew-)Hermitian matrices. If the inputs are orthogonal, it is recommended to set ``is_orthogonal`` to ``True`` to reduce
-            computational cost. Defaults to ``False``.
+            ``g`` should have shape ``(d, 2**n, 2**n)`` where ``d`` is the dimension of the algebra and ``n`` is the number of qubits. Each matrix ``g[i]`` should be Hermitian.
+        is_orthonormal (bool): Whether or not the matrices in ``g`` are orthonormal with respect to the Hilbert-Schmidt inner product on
+            (skew-)Hermitian matrices. If the inputs are orthonormal, it is recommended to set ``is_orthonormal`` to ``True`` to reduce
+            computational cost. Defaults to ``True``.
 
     Returns:
-        TensorLike: The adjoint representation of shape ``(d, d, d)``, corresponding to indices ``(gamma, alpha, beta)``.
+        TensorLike: The adjoint representation of shape ``(d, d, d)``, corresponding to
+        the indices ``(gamma, alpha, beta)``.
 
     **Example**
 
@@ -57,24 +58,57 @@ def structure_constants_dense(g: TensorLike, is_orthogonal: bool = False) -> Ten
     >>> adj.shape
     (12, 12, 12)
 
+    **Internal representation**
+
+    As mentioned above, the input is assumed to be a batch of Hermitian matrices, even though
+    algebra elements are usual skew-Hermitian. That is, the input should represent the operators
+    :math:`G_\alpha` for an algebra basis :math:`\{iG_\alpha\}_\alpha`.
+    In an orthonormal basis of this form, the structure constants can then be computed simply via
+
+    .. math::
+
+        f^\gamma_{\alpha, \beta} = \text{tr}[-i G_\gamma[iG_\alpha, iG_\beta]] = i\text{tr}[G_\gamma [G_\alpha, G_\beta]] \in \mathbb{R}.
+
+    **Structure constants in non-orthonormal bases**
+
+    Structure constants are often discussed using an orthonormal basis of the algebra.
+    This function can deal with non-orthonormal bases as well. For this, the Gram
+    matrix :math:`g` between the basis elements is taken into account when computing the overlap
+    of a commutator `:math:`[iG_\alpha, iG_\beta]` with all algebra elements :math:`iG_\gamma`.
+    The resulting formula reads
+
+    .. math::
+
+        f^\gamma_{\alpha, \beta} &= \sum_\eta g^{-1}_{\gamma\eta} i \text{tr}[G_\eta [G_\alpha, G_\beta]]\\
+        g_{\gamma \eta} &= \text{tr}[G_\gamma G_\eta] \quad(\in\mathbb{R})
+
+    Internally, the commutators are computed by evaluating all operator products and subtracting
+    suitable pairs of products from each other. These products can be reused to evaluate the
+    Gram matrix as well.
     """
     dimg, chi, _ = g.shape
     assert g.shape[2] == g.shape[1]
+    # Assert Hermiticity of the input. Otherwise we'll get the sign wrong
+    assert np.allclose(g.conj().transpose((0, 2, 1)), g)
 
-    # compute all commutators by computing all products first according to "aij,bjk->abik"
-    prod = np.moveaxis(np.tensordot(g, g, axes=[[2], [1]]), 1, 2)
-    all_coms = np.reshape(prod - prod.transpose((1, 0, 2, 3)), (-1, chi, chi))
+    # compute all commutators by computing all products first.
+    # Axis ordering is (dimg, chi, _chi_) x (dimg, _chi_, chi) -> (dimg, chi, dimg, chi)
+    prod = np.tensordot(g, g, axes=[[2], [1]])
+    # The commutators now are the difference of prod with itself, with dimg axes swapped
+    all_coms = prod - np.transpose(prod, (2, 1, 0, 3))
 
-    # project commutators on basis of g
-    # vectorized computation to obtain coefficients in decomposition:
-    # v = ∑ (tr(v @ e_j) / ||e_j||^2) * e_j
-    if is_orthogonal:
-        # Compute norms of orthogonal entries
-        norms = np.einsum("aij,aji->a", g, g).real
-        gram_inv = np.diag(1 / norms)
-    else:
-        # Compute the full inverse Gram matrix of the entries.
-        gram_inv = np.linalg.pinv(np.tensordot(g, g, axes=[[1, 2], [2, 1]])).real
-    adj = gram_inv @ np.tensordot(g, all_coms, axes=[[1, 2], [2, 1]]).imag
-    adj = -np.reshape(adj, (dimg, dimg, dimg))
+    # project commutators on the basis of g, see docstring for details.
+    # Axis ordering is (dimg, _chi_, *chi*) x (dimg, *chi*, dimg, _chi_) -> (dimg, dimg, dimg)
+    adj = (1j * np.tensordot(g, all_coms, axes=[[1, 2], [3, 1]])).real
+
+    if not is_orthonormal:
+        # If the basis is not orthonormal, compute is Gram matrix and apply its
+        # (pseudo-)inverse to the obtained projections. See the docstring for details.
+        # The Gram matrix is just one additional diagonal contraction of the ``prod`` tensor,
+        # across the Hilbert space dimensions. (dimg, _chi_, dimg, _chi_) -> (dimg, dimg)
+        gram_inv = np.linalg.pinv(np.sum(np.diagonal(prod, axis1=1, axis2=3), axis=-1).real)
+        # Axis ordering for contraction with gamma axis of raw structure constants:
+        # (dimg, _dimg_), (_dimg_, dimg, dimg) -> (dimg, dimg, dim)
+        adj = np.tensordot(gram_inv, adj, axes=1)
+
     return adj
