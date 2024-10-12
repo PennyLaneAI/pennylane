@@ -22,14 +22,13 @@ import jax.numpy as jnp
 import numpy as np
 import pytest
 from jax.core import eval_jaxpr
-
 from numpy.testing import assert_allclose
 
 import pennylane as qml
 from pennylane import cond, for_loop, grad, jacobian, jvp, measure, vjp, while_loop
 from pennylane.capture.autograph.ag_primitives import PRange
 from pennylane.capture.autograph.transformer import TRANSFORMER, autograph_source, run_autograph
-from pennylane.capture.autograph.utils import AutoGraphError, CompileError, dummy_func
+from pennylane.capture.autograph.utils import AutoGraphError, CompileError
 
 check_cache = TRANSFORMER.has_cache
 
@@ -713,7 +712,7 @@ class TestConditionals:
         assert res(1) == 25
         assert res(0) == 60
 
-    def test_multiple_return_early(self, capfd):
+    def test_multiple_return_early(self):
         """Test that returning early is possible, and that the final return outside
         if the conditional works as expected."""
 
@@ -722,12 +721,14 @@ class TestConditionals:
             if x:
                 return x
 
-            x = x+2
+            x = x + 2
             return x
 
         ag_circuit = run_autograph(f)
         jaxpr = jax.make_jaxpr(ag_circuit)(0)
-        def res(x): return eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)[0]
+
+        def res(x):
+            return eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)[0]
 
         # returning early is an option, and code after the return is not executed
         assert res(1) == 1
@@ -789,7 +790,7 @@ class TestForLoops:
         def res(params):
             return eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, params)
 
-        result = f(jnp.array([0.0, 1 / 4 * jnp.pi, 2 / 4 * jnp.pi]))
+        result = res(jnp.array([0.0, 1 / 4 * jnp.pi, 2 / 4 * jnp.pi]))
         print(result)
         assert np.allclose(result, -jnp.sqrt(2) / 2)
 
@@ -1449,7 +1450,7 @@ class TestWhileLoops:
         assert_allclose(result, expected, rtol=1e-6, atol=1e-6)
 
     @pytest.mark.usefixtures("autograph_strict_conversion")
-    def test_whileloop_temporary_variable(self, monkeypatch):
+    def test_whileloop_temporary_variable(self):
         """Test that temporary (local) variables can be initialized inside a while loop."""
 
         def f1():
@@ -1634,50 +1635,6 @@ class TestMixed:
 
         assert eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2) == 18
         assert eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 3) == 0
-
-
-class TestAutographInclude:
-    """Test include modules to autograph conversion"""
-
-    def test_dummy_func(self):
-        """Test dummy function branches."""
-
-        assert dummy_func(6) == 36
-        assert dummy_func(4) == 64
-
-    def test_autograph_included_module(self):
-        """Test autograph included module."""
-
-        @qjit(autograph=True)
-        def excluded_by_default(x: float, n: int):
-            for _ in range(n):
-                x = x + dummy_func(6)
-            return x
-
-        @qjit(autograph=True, autograph_include=["catalyst.utils.dummy"])
-        def included(x: float, n: int):
-            for _ in range(n):
-                x = x + dummy_func(6)
-            return x
-
-        result_excluded_by_default = excluded_by_default(0.4, 6)
-        assert result_excluded_by_default == 216.4 and result_excluded_by_default == included(
-            0.4, 6
-        )
-
-    def test_invalid_autograph_include_with_no_autograph(self):
-        """Test including modules when autograph is disabled as invalid input."""
-
-        def fn(x: float, n: int):
-            for _ in range(n):
-                x = x + dummy_func(6)
-            return x
-
-        with pytest.raises(
-            CompileError,
-            match="In order for 'autograph_include' to work, 'autograph' must be set to True",
-        ):
-            qjit(autograph_include=["catalyst.utils.dummy"])(fn)
 
 
 class TestDecorators:
