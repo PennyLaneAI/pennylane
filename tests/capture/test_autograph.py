@@ -48,20 +48,6 @@ def enable_disable_plxpr():
     qml.capture.disable()
 
 
-@pytest.fixture
-def autograph_strict_conversion():
-    qml.capture.autograph.autograph_strict_conversion = True
-    yield
-    qml.capture.autograph.autograph_strict_conversion = False
-
-
-@pytest.fixture
-def ignore_fallbacks():
-    qml.capture.autograph.autograph_ignore_fallbacks = True
-    yield
-    qml.capture.autograph.autograph_strict_conversion = False
-
-
 class Failing:
     """Test class that emulates failures in user-code"""
 
@@ -864,7 +850,6 @@ class TestForLoops:
 
         assert np.allclose(result, -jnp.sqrt(2) / 2)
 
-    @pytest.mark.usefixtures("autograph_strict_conversion")
     def test_for_in_object_list_strict(self):
         """Check the error raised in strict mode when a for loop iterates over a Python list that
         is *not* convertible to an array."""
@@ -1145,7 +1130,6 @@ class TestForLoops:
 
         assert np.allclose(result, -jnp.sqrt(2) / 2)
 
-    @pytest.mark.usefixtures("autograph_strict_conversion")
     def test_loop_carried_value(self):
         """Test a loop which updates a value each iteration."""
 
@@ -1181,7 +1165,6 @@ class TestForLoops:
         jaxpr3 = jax.make_jaxpr(ag_circuit)()
         assert eval_jaxpr(jaxpr3.jaxpr, jaxpr3.consts)[0] == 9
 
-    @pytest.mark.usefixtures("autograph_strict_conversion")
     def test_iteration_element_access(self):
         """Test that access to the iteration index/elements is possible after the loop executed
         (assuming initialization)."""
@@ -1227,7 +1210,6 @@ class TestForLoops:
 
         assert np.allclose(result, [2, 5])
 
-    @pytest.mark.usefixtures("autograph_strict_conversion")
     @pytest.mark.xfail(reason="currently unsupported, but we may find a way to do so in the future")
     def test_iteration_element_access_no_init(self):
         """Test that access to the iteration index/elements is possible after the loop executed
@@ -1267,7 +1249,6 @@ class TestForLoops:
         jaxpr = jax.make_jaxpr(ag_circuit)(0)
         assert eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0)[0] == (2, 5)
 
-    @pytest.mark.usefixtures("autograph_strict_conversion")
     def test_temporary_loop_variable(self):
         """Test that temporary (local) variables can be initialized inside a loop."""
 
@@ -1295,7 +1276,6 @@ class TestForLoops:
         jaxpr = jax.make_jaxpr(ag_circuit)()
         assert eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)[0] == 20
 
-    @pytest.mark.usefixtures("autograph_strict_conversion")
     def test_uninitialized_variables(self):
         """Verify errors for (potentially) uninitialized loop variables."""
 
@@ -1329,7 +1309,6 @@ class TestForLoops:
         with pytest.raises(AutoGraphError, match="'c' is potentially uninitialized"):
             run_autograph(f3)()
 
-    @pytest.mark.usefixtures("autograph_strict_conversion")
     def test_init_with_invalid_jax_type(self):
         """Test loop carried values initialized with an invalid JAX type."""
 
@@ -1344,7 +1323,6 @@ class TestForLoops:
         with pytest.raises(AutoGraphError, match="'x' was initialized with type <class 'str'>"):
             run_autograph(f)()
 
-    @pytest.mark.usefixtures("autograph_strict_conversion")
     def test_init_with_mismatched_type(self):
         """Test loop carried values initialized with a mismatched type compared to the values used
         inside the loop."""
@@ -1360,27 +1338,11 @@ class TestForLoops:
         with pytest.raises(AutoGraphError, match="'x' was initialized with the wrong type"):
             run_autograph(f)()
 
-    # @pytest.mark.filterwarnings("error::UserWarning")
-    # @pytest.mark.usefixtures("ignore_fallbacks")
-    # def test_ignore_warnings(self):
-    #     """Test the AutoGraph config flag properly silences warnings."""
-    #
-    #     def f():
-    #         acc = 0
-    #         data = [0, 4, 5]
-    #         for i in range(3):
-    #             acc = acc + data[i]
-    #
-    #         return acc
-    #
-    #     assert f() == 9
-
 
 @pytest.mark.usefixtures("enable_disable_plxpr")
 class TestWhileLoops:
     """Test that the autograph transformations produce correct results on while loops."""
 
-    @pytest.mark.usefixtures("autograph_strict_conversion")
     @pytest.mark.parametrize(
         "init,inc,expected", [(0, 1, 3), (0.0, 1.0, 3.0), (0.0 + 0j, 1.0 + 0j, 3.0 + 0j)]
     )
@@ -1400,7 +1362,6 @@ class TestWhileLoops:
         result = eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, expected)[0]
         assert result == expected
 
-    @pytest.mark.usefixtures("autograph_strict_conversion")
     def test_whileloop_multiple_variables(self):
         """Test while-loop with a multiple state variables"""
 
@@ -1419,7 +1380,6 @@ class TestWhileLoops:
         result = eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 3)[0]
         assert result == 3
 
-    @pytest.mark.usefixtures("autograph_strict_conversion")
     def test_whileloop_qnode(self):
         """Test while-loop used with a qnode"""
 
@@ -1449,7 +1409,6 @@ class TestWhileLoops:
         )
         assert_allclose(result, expected, rtol=1e-6, atol=1e-6)
 
-    @pytest.mark.usefixtures("autograph_strict_conversion")
     def test_whileloop_temporary_variable(self):
         """Test that temporary (local) variables can be initialized inside a while loop."""
 
@@ -1467,7 +1426,6 @@ class TestWhileLoops:
 
         assert eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)[0] == 4
 
-    @pytest.mark.usefixtures("autograph_strict_conversion")
     def test_whileloop_forloop_interop(self):
         """Test for-loop co-existing with while loop."""
 
@@ -1485,7 +1443,6 @@ class TestWhileLoops:
 
         assert eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)[0] == 0 + 1 + sum([1, 2, 3])
 
-    @pytest.mark.usefixtures("autograph_strict_conversion")
     def test_whileloop_cond_interop(self):
         """Test for-loop co-existing with cond."""
 
@@ -1504,22 +1461,6 @@ class TestWhileLoops:
 
         assert eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)[0] == sum([1, 1, 2, 2])
 
-    # @pytest.mark.xfail(reason="this won't run warning-free until we fix the resource warning issue")
-    # @pytest.mark.filterwarnings("error")
-    # def test_whileloop_no_warning(self, monkeypatch):
-    #     """Test the absence of warnings if fallbacks are ignored."""
-    #     monkeypatch.setattr("catalyst.autograph_ignore_fallbacks", True)
-    #
-    #     @qjit(autograph=True)
-    #     def f():
-    #         acc = 0
-    #         while Failing(acc).val < 5:
-    #             acc = acc + 1
-    #         return acc
-    #
-    #     assert f() == 5
-
-    @pytest.mark.usefixtures("autograph_strict_conversion")
     def test_whileloop_exception(self):
         """Test for-loop error if strict-conversion is enabled."""
 
@@ -1532,7 +1473,6 @@ class TestWhileLoops:
         with pytest.raises(RuntimeError):
             run_autograph(f1)()
 
-    @pytest.mark.usefixtures("autograph_strict_conversion")
     def test_uninitialized_variables(self):
         """Verify errors for (potentially) uninitialized loop variables."""
 
@@ -1545,7 +1485,6 @@ class TestWhileLoops:
         with pytest.raises(AutoGraphError, match="'x' is potentially uninitialized"):
             run_autograph(f)(True)
 
-    @pytest.mark.usefixtures("autograph_strict_conversion")
     def test_init_with_invalid_jax_type(self):
         """Test loop carried values initialized with an invalid JAX type."""
 
@@ -1560,7 +1499,6 @@ class TestWhileLoops:
         with pytest.raises(AutoGraphError, match="'x' was initialized with type <class 'str'>"):
             run_autograph(f)(True)
 
-    @pytest.mark.usefixtures("autograph_strict_conversion")
     def test_init_with_mismatched_type(self):
         """Test loop carried values initialized with a mismatched type compared to the values used
         inside the loop."""
@@ -1595,7 +1533,6 @@ class TestMixed:
 
         assert eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)[0] == 3
 
-    # @pytest.mark.usefixtures("autograph_strict_conversion")
     def test_cond_if_for_loop_for(self):
         """Test Python conditionals and loops together with their Catalyst counterparts."""
 
