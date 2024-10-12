@@ -22,9 +22,8 @@ by PennyLane.
 """
 import copy
 import inspect
-from contextlib import ContextDecorator
 
-from malt.core import ag_ctx, converter
+from malt.core import converter
 from malt.impl.api import PyToPy
 
 import pennylane as qml
@@ -202,73 +201,6 @@ def autograph_source(fn):
         "given function to be converted, please submit a bug report."
     )
 
-
-class DisableAutograph(ag_ctx.ControlStatusCtx, ContextDecorator):
-    """Context decorator that disables AutoGraph for the given function/context.
-
-    .. note::
-
-        A singleton instance is used for discarding parentheses usage:
-
-        @disable_autograph
-        instead of
-        @DisableAutograph()
-
-        with disable_autograph:
-        instead of
-        with DisableAutograph()
-
-    **Example 1: as a function decorator**
-
-    .. code-block:: python
-
-        @disable_autograph
-        def f():
-            x = 6
-            if x > 5:
-                y = x ** 2
-            else:
-                y = x ** 3
-            return y
-
-        @qjit(autograph=True)
-        def g(x: float, n: int):
-            for _ in range(n):
-                x = x + f()
-            return x
-
-    >>> print(g(0.4, 6))
-    216.4
-
-    **Example 2: as a context manager**
-
-    .. code-block:: python
-
-        def f():
-            x = 6
-            if x > 5:
-                y = x ** 2
-            else:
-                y = x ** 3
-            return y
-
-        @qjit(autograph=True)
-        def g():
-            x = 0.4
-            with disable_autograph:
-                x += f()
-            return x
-
-    >>> print(g())
-    36.4
-    """
-
-    def __init__(self):
-        super().__init__(status=ag_ctx.Status.DISABLED)
-
-
-# Singleton instance of DisableAutograph
-disable_autograph = DisableAutograph()
 
 TOPLEVEL_OPTIONS = converter.ConversionOptions(
     recursive=True,

@@ -23,19 +23,12 @@ import numpy as np
 import pytest
 from jax.core import eval_jaxpr
 
-# from catalyst import debug, qjit, vmap
-from jax.errors import TracerBoolConversionError
 from numpy.testing import assert_allclose
 
 import pennylane as qml
 from pennylane import cond, for_loop, grad, jacobian, jvp, measure, vjp, while_loop
 from pennylane.capture.autograph.ag_primitives import PRange
-from pennylane.capture.autograph.transformer import (
-    TRANSFORMER,
-    autograph_source,
-    disable_autograph,
-    run_autograph,
-)
+from pennylane.capture.autograph.transformer import TRANSFORMER, autograph_source, run_autograph
 from pennylane.capture.autograph.utils import AutoGraphError, CompileError, dummy_func
 
 check_cache = TRANSFORMER.has_cache
@@ -1641,54 +1634,6 @@ class TestMixed:
 
         assert eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2) == 18
         assert eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 3) == 0
-
-
-#
-#
-#
-# class TestDisableAutograph:
-#     """Test ways of disabling autograph conversion"""
-#
-#     def test_disable_autograph_decorator(self):
-#         """Test disabling autograph with decorator."""
-#
-#         @disable_autograph
-#         def f():
-#             x = 6
-#             if x > 5:
-#                 y = x**2
-#             else:
-#                 y = x**3
-#             return y
-#
-#         @qjit(autograph=True)
-#         def g(x: float, n: int):
-#             for _ in range(n):
-#                 x = x + f()
-#             return x
-#
-#         assert g(0.4, 6) == 216.4
-#
-#     def test_disable_autograph_context_manager(self):
-#         """Test disabling autograph with context manager."""
-#
-#         def f():
-#             x = 6
-#             if x > 5:
-#                 y = x**2
-#             else:
-#                 y = x**3
-#             return y
-#
-#         @qjit(autograph=True)
-#         def g():
-#             x = 0.4
-#             with disable_autograph:
-#                 x += f()
-#             return x
-#
-#         assert g() == 36.4
-#
 
 
 class TestAutographInclude:
