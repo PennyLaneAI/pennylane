@@ -680,13 +680,10 @@ class TestConditionals:
         ):
             qml.capture.autograph.run_autograph(circuit)()
 
-    def test_branch_no_multi_return_mismatch(self):
-        """Test that case when the return types of all branches do not match."""
+    def test_branch_multi_return_mismatch(self):
+        """Test that an exception is raised when the return types of all branches do not match."""
         # pylint: disable=using-constant-test
 
-        # ToDo: what _is_ the expected behaviour we are testing here?
-
-        @qjit(autograph=True)
         @qml.qnode(qml.device("default.qubit", wires=1))
         def circuit():
             if True:
@@ -698,10 +695,14 @@ class TestConditionals:
 
             return res
 
-        assert 0.0 == circuit()
+        with pytest.raises(
+            TypeError, match="Conditional requires consistent return types across all branches"
+        ):
+            run_autograph(circuit)
 
     def test_multiple_return(self):
-        """Test return statements from different branches with autograph."""
+        """Test return statements from different branches of an if/else statement
+        with autograph."""
 
         def f(x: int):
             if x > 0:
@@ -720,36 +721,27 @@ class TestConditionals:
         assert res(0) == 60
 
     def test_multiple_return_early(self, capfd):
-        """Test that returning early is possible."""
+        """Test that returning early is possible, and that the final return outside
+        if the conditional works as expected."""
 
-        # ToDo: isn't this already checked by the previous tests? If so, delete instead of figuring out what debug does
-
-        @qml.qnode(qml.device("default.qubit", wires=1))
         def f(x: float):
-            qml.RY(x, wires=0)
 
-            m = measure(0)
-            if not m:
-                return 0
+            if x:
+                return x
 
-            debug.print("illegal fruit")
-            return 1
+            x = x+2
+            return x
 
         ag_circuit = run_autograph(f)
         jaxpr = jax.make_jaxpr(ag_circuit)(0)
+        def res(x): return eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)[0]
 
-        def res(x):
-            return eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)[0]
+        # returning early is an option, and code after the return is not executed
+        assert res(1) == 1
 
-        # assert capfd.readouterr() == ("", "")
-
-        assert res(0) == 0
-
-        # assert capfd.readouterr() == ("", "")
-
-        assert res(np.pi) == 1
-
-        # assert capfd.readouterr() == ("illegal fruit\n", "")
+        # if an early return isn't hit, the code between the early return and the
+        # final return is executed
+        assert res(0) == 2
 
     def test_multiple_return_mismatched_type(self):
         """Test that different observables cannot be used in the return in different branches."""
@@ -860,6 +852,7 @@ class TestForLoops:
 
         assert np.allclose(result, jnp.sqrt(2) / 2)
 
+    @pytest.mark.xfail(reason="relies on unimplemented fallback behaviour")
     def test_for_in_object_list(self):
         """Test for loop over a Python list that is *not* convertible to an array.
         The behaviour should fall back to standard Python."""
@@ -878,7 +871,7 @@ class TestForLoops:
         assert np.allclose(result, -jnp.sqrt(2) / 2)
 
     @pytest.mark.usefixtures("autograph_strict_conversion")
-    def test_for_in_object_list_strict(self, monkeypatch):
+    def test_for_in_object_list_strict(self):
         """Check the error raised in strict mode when a for loop iterates over a Python list that
         is *not* convertible to an array."""
 
@@ -1121,6 +1114,7 @@ class TestForLoops:
 
         assert np.allclose(result, [1.0, jnp.sqrt(2) / 2, 0.0])
 
+    @pytest.mark.xfail(reason="relies on unimplemented fallback behaviour")
     def test_for_in_enumerate_object_list(self):
         """Test for loop over a Python enumeration on a list that is *not* convertible to an array.
         The behaviour should fall back to standard Python."""
@@ -1138,6 +1132,7 @@ class TestForLoops:
 
         assert np.allclose(result, [1.0, jnp.sqrt(2) / 2, 0.0])
 
+    @pytest.mark.xfail(reason="relies on unimplemented fallback behaviour")
     def test_for_in_other_iterable_object(self):
         """Test for loop over arbitrary iterable Python objects.
         The behaviour should fall back to standard Python."""
@@ -1588,139 +1583,12 @@ class TestWhileLoops:
             run_autograph(f)(False)
 
 
-# @pytest.mark.parametrize(
-#     "execution_context", (lambda fn: fn, qml.qnode(qml.device("default.qubit", wires=1)))
-# )
-# class TestFallback:
-#     """Test that Python fallbacks still produce correct results."""
-#
-#     def test_postbinding_errors_for(self, execution_context):
-#         """Test that errors are handled correctly if they trigger after the JAX primitive binding
-#         step (e.g. during result verification), and that no errors occur after the AG tracing step
-#         (e.g. during lowering) because of malformed primitives in the JAXPR.
-#         This test ensures the primitive identification and removal works correctly on fallback. In
-#         this case, the loop primitive should be removed since the exception happens after binding.
-#         """
-#
-#         @execution_context
-#         def f():
-#             arr = jnp.array([1, 2])
-#             for _ in range(2):
-#                 # fails result verification, will trigger fallback
-#                 # would raise an error during lowering if left in the JAXPR
-#                 arr = jnp.kron(arr, arr)
-#             return arr
-#
-#         with pytest.warns(
-#             UserWarning, match="Tracing of an AutoGraph converted for loop failed with an exception"
-#         ):
-#             f_jit = qjit(autograph=True)(f)
-#
-#         arr = jnp.array([1, 2])
-#         expected = jnp.kron(*([jnp.kron(arr, arr)] * 2))
-#         assert np.allclose(f_jit(), expected)
-#
-#     def test_prebinding_errors_for(self, execution_context):
-#         """Test that errors are handled correctly if they trigger before the JAX primitive binding
-#         step (e.g. during argument verification).
-#         This test ensures the primitive identification and removal works correctly on fallback. In
-#         this case no primitive should be removed since the exception happens before binding.
-#         """
-#
-#         @execution_context
-#         def f():
-#             string = "hi"
-#             arr = jnp.array([1, 2])
-#             for _ in range(2):
-#                 arr = arr + 3
-#             for i in range(1, 4):
-#                 string = string * i  # fails return type verification, triggers fallback
-#             return arr, len(string)
-#
-#         with pytest.warns(
-#             UserWarning, match="Tracing of an AutoGraph converted for loop failed with an exception"
-#         ):
-#             f_jit = qjit(autograph=True)(f)
-#
-#         results = f_jit()
-#         assert np.allclose(results[0], [7, 8])
-#         assert results[1] == (2) * 1 * 2 * 3  # i = range(1, 4)
-#
-#     def test_postbinding_errors_while(self, execution_context):
-#         """Test that errors are handled correctly if they trigger after the JAX primitive binding
-#         step (e.g. during result verification), and that no errors occur after the AG tracing step
-#         (e.g. during lowering) because of malformed primitives in the JAXPR.
-#         This test ensures the primitive identification and removal works correctly on fallback. In
-#         this case, the loop primitive should be removed since the exception happens after binding.
-#         """
-#
-#         @qjit(autograph=True)
-#         @execution_context
-#         def f():
-#             arr = jnp.array([1, 2])
-#             while len(arr) < 16:
-#                 # fails result verification, will trigger fallback
-#                 # would raise an error during lowering if left in the JAXPR
-#                 arr = jnp.kron(arr, arr)
-#             return arr
-#
-#         arr = jnp.array([1, 2])
-#         result = f()
-#         expected = jnp.kron(*([jnp.kron(arr, arr)] * 2))
-#         assert np.allclose(result, expected)
-#
-#     def test_prebinding_errors_while(self, execution_context):
-#         """Test that errors are handled correctly if they trigger before the JAX primitive binding
-#         step (e.g. during argument verification).
-#         This test ensures the primitive identification and removal works correctly on fallback. In
-#         this case no primitive should be removed since the exception happens before binding.
-#         """
-#
-#         @qjit(autograph=True)
-#         @execution_context
-#         def f():
-#             string = "hi"
-#             arr = jnp.array([1, 2])
-#             i = 1
-#
-#             while arr[0] < 7:
-#                 arr = arr + 3
-#
-#             while len(string) < 12:
-#                 string = string * i  # fails return type verification, triggers fallback
-#                 i += 1
-#
-#             return arr, len(string)
-#
-#         results = f()
-#         assert np.allclose(results[0], [7, 8])
-#         assert results[1] == (2) * 1 * 2 * 3  # i = range(1, 4)
-#
-#
-#
 class TestMixed:
     """Test a mix of supported autograph conversions and Catalyst control flow."""
 
-    def test_force_python_fallbacks(self):
-        """Test fallback modes of control-flow primitives."""
-
-        with pytest.warns(UserWarning):
-
-            @qjit(autograph=True)
-            def f1():
-                acc = 0
-                while acc < 5:
-                    acc = Failing(acc, "while").val + 1
-                    for x in [1, 2, 3]:
-                        acc += Failing(x, "for").val
-                return acc
-
-            assert f1() == 0 + 1 + sum([1, 2, 3])
-
     def test_no_python_loops(self):
-        """Test AutoGraph behaviour on function with Catalyst loops."""
+        """Test AutoGraph behaviour on function with PennyLane loops."""
 
-        @qjit(autograph=True)
         def f():
             @for_loop(0, 3, 1)
             def loop(i, acc):
@@ -1728,15 +1596,17 @@ class TestMixed:
 
             return loop(0)
 
-        assert f() == 3
+        ag_fn = run_autograph(f)
+        jaxpr = jax.make_jaxpr(ag_fn)()
+
+        assert eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)[0] == 3
 
     # @pytest.mark.usefixtures("autograph_strict_conversion")
-    def test_cond_if_for_loop_for(self, monkeypatch):
+    def test_cond_if_for_loop_for(self):
         """Test Python conditionals and loops together with their Catalyst counterparts."""
 
         # pylint: disable=cell-var-from-loop
 
-        @qjit(autograph=True)
         def f(x):
             acc = 0
             if x < 3:
@@ -1766,8 +1636,11 @@ class TestMixed:
 
             return acc
 
-        assert f(2) == 18
-        assert f(3) == 0
+        ag_fn = run_autograph(f)
+        jaxpr = jax.make_jaxpr(ag_fn)(0)
+
+        assert eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2) == 18
+        assert eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 3) == 0
 
 
 #

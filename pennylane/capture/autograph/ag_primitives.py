@@ -18,7 +18,6 @@ functions. The purpose is to convert imperative style code to functional or grap
 """
 import copy
 import functools
-import operator
 import warnings
 from typing import Any, Callable, Iterator, SupportsIndex, Tuple, Union
 
@@ -30,7 +29,6 @@ from malt.operators.variables import Undefined
 from malt.pyct.origin_info import LineLocation
 
 import pennylane as qml
-from pennylane.queuing import AnnotatedQueue
 
 from .utils import AutoGraphError, Patcher
 
@@ -194,15 +192,6 @@ def _call_pennylane_for(
     return final_iter_args
 
 
-def _call_python_for(body_fn, get_state, non_array_iterable):
-    """Fallback to a Python implementation of for loops."""
-
-    for elem in non_array_iterable:
-        body_fn(elem)
-
-    return get_state()
-
-
 # pylint: disable=too-many-statements
 def for_stmt(
     iteration_target: Any,
@@ -219,28 +208,20 @@ def for_stmt(
     assert _extra_test is None
 
     # The general approach is to convert as much code as possible into a graph-based form:
-    # - For loops over iterables will attempt a conversion of the iterable to array, and fall back
-    #   to Python otherwise.
-    # - For loops over a Python range will be converted to a native PennyLane for loop. However,
-    #   since the now dynamic iteration variable can cause issues in downstream user code, any
-    #   errors raised during the tracing of the loop body will restart the tracing process using
-    #   a Python loop instead.
+    # - For loops over iterables will attempt a conversion of the iterable to array
+    # - For loops over a Python range will be converted to a native PennyLane for_loop. The now
+    #   dynamic iteration variable can cause issues in downstream user code that raise an error.
     # - For loops over a Python enumeration use a combination of the above, providing a dynamic
-    #   iteration variable and conversion of the iterable to array. If either fails, a fallback to
-    #   Python is used.
-    # Note that there are two reasons a fallback to Python could have been triggered:
-    # - the iterable provided by the user is not convertible to an array
-    #   -> this will fallback to a Python loop silently (without a warning), since there isn't a
-    #      simple fix to make this loop traceable
-    # - an exception is raised during the tracing of the loop body after conversion
-    #   -> this will raise a warning to allow users to correct mistakes and allow the conversion
-    #      to succeed, for example because they forgot to use a list instead of an array
+    #   iteration variable and conversion of the iterable to array.
 
-    # pylint: disable=missing-class-docstring, too-few-public-methods, multiple-statements
-    class EmptyResult: ...
+    # Any of these could fail depending on the compatibility of the user code. A failure could
+    # also occur because an exception is raised during the tracing of the loop body after conversion
+    # (for example because the user forgot to use a list instead of an array)
+    # The PennyLane autograph implementation does not currently fall back to a Python loop in this case,
+    # but this has been implemented in Catalyst and could be extended to this. It does, however, require an
+    # active qeueing context.
 
-    results = EmptyResult()
-    fallback = False
+    exception_raised = None
     init_state = get_state()
     assert len(init_state) == len(symbol_names)
 
@@ -253,19 +234,17 @@ def for_stmt(
         enum_start = iteration_target.start_idx
         try:
             iteration_array = jnp.asarray(iteration_target.iteration_target)
-        except:  # pylint: disable=bare-except
-            iteration_array = None
-            fallback = True
+        except Exception as e:  # pylint: disable=bare-except
+            exception_raised = e
     else:
         start, stop, step = 0, len(iteration_target), 1
         enum_start = None
         try:
             iteration_array = jnp.asarray(iteration_target)
-        except:  # pylint: disable=bare-except
-            iteration_array = None
-            fallback = True
+        except Exception as e:  # pylint: disable=bare-except
+            exception_raised = e
 
-    if qml.capture.autograph.autograph_strict_conversion and fallback:
+    if exception_raised:
         # pylint: disable=import-outside-toplevel
         import inspect
 
@@ -274,65 +253,21 @@ def for_stmt(
         raise AutoGraphError(
             f"Could not convert the iteration target {iteration_target} to array while processing "
             f"the following with AutoGraph:\n{for_loop_info}"
-        )
+        ) from exception_raised
 
-    # Attempt to trace the PennyLane for loop.
-    if not fallback:
-        reference_tracers = (start, stop, step, *init_state)
-        # num_instructions = get_program_length(reference_tracers)
+    set_state(init_state)
+    results = _call_pennylane_for(
+        start,
+        stop,
+        step,
+        body_fn,
+        get_state,
+        set_state,
+        symbol_names,
+        enum_start,
+        iteration_array,
+    )
 
-        try:
-            set_state(init_state)
-            results = _call_pennylane_for(
-                start,
-                stop,
-                step,
-                body_fn,
-                get_state,
-                set_state,
-                symbol_names,
-                enum_start,
-                iteration_array,
-            )
-
-        except Exception as e:  # pylint: disable=broad-exception-caught
-            if qml.capture.autograph.autograph_strict_conversion:
-                raise e
-
-            fallback = True
-            # reset_program_to_length(reference_tracers, *num_instructions)
-
-            # pylint: disable=import-outside-toplevel
-            import inspect
-            import textwrap
-
-            for_loop_info = get_source_code_info(inspect.stack()[1])
-
-            if not qml.capture.autograph.autograph_ignore_fallbacks:
-                warnings.warn(
-                    f"Tracing of an AutoGraph converted for loop failed with an exception:\n"
-                    f"  {type(e).__name__}:{textwrap.indent(str(e), '    ')}\n"
-                    f"\n"
-                    f"The error ocurred within the body of the following for loop statement:\n"
-                    f"{for_loop_info}"
-                    f"\n"
-                    f"If you intended for the conversion to happen, make sure that the (now "
-                    f"dynamic) loop variable is not used in tracing-incompatible ways, for "
-                    f"instance by indexing a Python list with it. In that case, the list should be "
-                    f"wrapped into an array.\n"
-                    f"To understand different types of JAX tracing errors, please refer to the "
-                    f"guide at: https://jax.readthedocs.io/en/latest/errors.html\n"
-                    f"\n"
-                    f"If you did not intend for the conversion to happen, you may safely ignore "
-                    f"this warning."
-                )
-
-    # If anything goes wrong, we fall back to Python.
-    if fallback:
-        set_state(init_state)
-        results = _call_python_for(body_fn, get_state, iteration_target)
-
-    assert not isinstance(results, EmptyResult), "results variable must be assigned to"
     set_state(results)
 
 
@@ -360,39 +295,11 @@ def _call_pennylane_while(loop_test, loop_body, get_state, set_state, symbol_nam
     return final_iter_args
 
 
-def _call_python_while(loop_test, loop_body, get_state, _set_state):
-    """Fallback to a Python implementation of while loops."""
-
-    while loop_test():
-        loop_body()
-
-    return get_state()
-
-
 def while_stmt(loop_test, loop_body, get_state, set_state, symbol_names, _opts):
     """An implementation of the AutoGraph 'while ..' statement. The interface is defined by
     AutoGraph, here we merely provide an implementation of it in terms of PennyLane primitives."""
 
-    fallback = False
-    init_state = get_state()
-
-    reference_tracers = init_state
-    # num_instructions = get_program_length(reference_tracers)
-
-    try:
-        results = _call_pennylane_while(loop_test, loop_body, get_state, set_state, symbol_names)
-
-    except Exception as e:  # pylint: disable=broad-exception-caught
-        if qml.capture.autograph.autograph_strict_conversion:
-            raise e
-
-        fallback = True
-        # reset_program_to_length(reference_tracers, *num_instructions)
-
-    if fallback:
-        set_state(init_state)
-        results = _call_python_while(loop_test, loop_body, get_state, set_state)
-
+    results = _call_pennylane_while(loop_test, loop_body, get_state, set_state, symbol_names)
     set_state(results)
 
 
