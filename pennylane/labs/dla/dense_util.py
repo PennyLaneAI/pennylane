@@ -131,6 +131,7 @@ def _idx_to_pw(idx, n):
         if p:
             pw[wire] = p
         idx //= 4
+        wire -= 1
     return PauliWord(pw)
 
 
@@ -194,7 +195,7 @@ def pauli_decompose(H, tol=None, pauli: bool = False):
 
     H_ops = []
     for _coeffs in coeffs:
-        ids = qml.math.where(qml.math.abs(_coeffs > tol))[0]
+        ids = qml.math.where(qml.math.abs(_coeffs) > tol)[0]
         sentence = PauliSentence({_idx_to_pw(idx, n): c for c, idx in zip(_coeffs[ids], ids)})
         if pauli:
             H_ops.append(sentence)
