@@ -1,0 +1,58 @@
+# Copyright 2024 Xanadu Quantum Technologies Inc.
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""Tests for pennylane/dla/lie_closure_dense.py functionality"""
+# pylint: disable=no-self-use,too-few-public-methods,missing-class-docstring
+import pytest
+
+import pennylane as qml
+from pennylane import X, Y, Z
+from pennylane.labs.dla import cartan_decomposition, concurrence_involution, even_odd_involution
+
+
+def check_commutation(ops1, ops2, vspace):
+    """Helper function to check things like [k, m] subspace m; expensive"""
+    for o1 in ops1:
+        for o2 in ops2:
+            com = o1.commutator(o2)
+            assert not vspace.is_independent(com)
+
+    return True
+
+
+Ising2 = qml.lie_closure([X(0), X(1), Z(0) @ Z(1)])
+Ising3 = qml.lie_closure([X(0), X(1), X(2), Z(0) @ Z(1), Z(1) @ Z(2)])
+Heisenberg3 = qml.lie_closure(
+    [X(0) @ X(1), X(1) @ X(2), Y(0) @ Y(1), Y(1) @ Y(2), Z(0) @ Z(1), Z(1) @ Z(2)]
+)
+
+
+class TestCartanDecomposition:
+    @pytest.mark.parametrize("involution", [even_odd_involution, concurrence_involution])
+    @pytest.mark.parametrize("g", [Ising2, Ising3, Heisenberg3])
+    def test_cartan_decomposition(self, g, involution):
+        """Test basic properties and Cartan decomposition definitions"""
+
+        g = [op.pauli_rep for op in g]
+        k, m = cartan_decomposition(g, involution)
+
+        assert all(involution(op) == 1 for op in k)
+        assert all(involution(op) == 0 for op in m)
+
+        k_space = qml.pauli.PauliVSpace(k)
+        m_space = qml.pauli.PauliVSpace(m)
+
+        # Commutation relations for Cartan pair
+        assert check_commutation(k, k, k_space)
+        assert check_commutation(k, m, m_space)
+        assert check_commutation(m, m, k_space)

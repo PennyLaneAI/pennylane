@@ -13,8 +13,10 @@
 # limitations under the License.
 """Functionality for Cartan decomposition"""
 
+from pennylane.pauli import PauliSentence
 
-def CartanDecomp(g, involution):
+
+def cartan_decomposition(g, involution):
     r"""Cartan Decomposition g = k + m
 
     Args:
@@ -36,3 +38,40 @@ def CartanDecomp(g, involution):
         else:  # even parity
             m.append(op)
     return k, m
+
+
+def even_odd_involution(op: PauliSentence):
+    """Generalization of EvenOdd involution to sums of Paulis"""
+    parity = []
+    for pw in op.keys():
+        parity.append(len(pw) % 2)
+
+    assert all(
+        parity[0] == p for p in parity
+    )  # only makes sense if parity is the same for all terms, e.g. Heisenberg model
+    return parity[0]
+
+
+def concurrence_involution(op: PauliSentence):
+    r"""The Concurrence Canonical Decomposition :math:`\Theta(g) = -g^T` as a Cartan involution function
+
+    This is defined in `quant-ph/0701193 <https://arxiv.org/pdf/quant-ph/0701193>`__, and for Pauli words and sentences comes down to counting Pauli-Y operators.
+
+    This implementation is specific to ``PauliSentence`` instances
+
+    Args:
+        op (PauliSentence): Input operator
+
+    Returns:
+        int: binary ``0`` or ``1`` for the even and odd parity subspace, respectively
+
+    """
+    parity = []
+    for pw in op.keys():
+        result = sum(1 if el == "Y" else 0 for el in pw.values())
+        parity.append(result % 2)
+
+    assert all(
+        parity[0] == p for p in parity
+    )  # only makes sense if parity is the same for all terms, e.g. Heisenberg model
+    return parity[0]
