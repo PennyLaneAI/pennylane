@@ -327,3 +327,6 @@ def test_fixed_point_angles_function(iters, p_min):
     assert np.all(betas[:-1] > betas[1:])
 
     assert np.allclose(betas, np.array([-alpha for alpha in reversed(alphas)]))
+
+    assert all(isinstance(x, float) for x in alphas)
+    assert all(isinstance(x, float) for x in betas)

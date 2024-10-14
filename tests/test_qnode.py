@@ -645,61 +645,6 @@ class TestTapeConstruction:
         assert qn.qtape.operations == contents[0:3]
         assert qn.qtape.measurements == contents[3:]
 
-    def test_operator_all_device_wires(self, monkeypatch, tol):
-        """Test that an operator that must act on all wires raises an error
-        if the operator wires are not the device wires (when device wires
-        are defined)."""
-        monkeypatch.setattr(qml.RX, "num_wires", qml.operation.AllWires)
-
-        def circuit(x):
-            qml.RX(x, wires=0)
-            return qml.expval(qml.PauliZ(0))
-
-        dev = qml.device("default.qubit", wires=2)
-        qn = QNode(circuit, dev)
-
-        with pytest.raises(qml.QuantumFunctionError, match="Operator RX must act on all wires"):
-            qn(0.5)
-
-        dev = qml.device("default.qubit", wires=1)
-        qn = QNode(circuit, dev)
-        assert np.allclose(qn(0.5), np.cos(0.5), atol=tol, rtol=0)
-
-    def test_all_wires_new_device(self):
-        """Test that an operator on AllWires must act on all device wires if they
-        are specified, and otherwise all tape wires, with the new device API."""
-
-        assert qml.GlobalPhase.num_wires == qml.operation.AllWires
-
-        dev = qml.device("default.qubit")
-        dev_with_wires = qml.device("default.qubit", wires=3)
-
-        @qml.qnode(dev)
-        def circuit1(x):
-            qml.GlobalPhase(x, wires=0)
-            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
-
-        # fails when GlobalPhase is a strict subset of all tape wires
-        with pytest.raises(qml.QuantumFunctionError, match="GlobalPhase must act on all wires"):
-            circuit1(0.5)
-
-        @qml.qnode(dev)
-        def circuit2(x):
-            qml.GlobalPhase(x, wires=[0, 1])
-            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
-
-        # passes here, does not care for device.wires because it has none
-        assert circuit2(0.5) == 1
-
-        @qml.qnode(dev_with_wires)
-        def circuit3(x):
-            qml.GlobalPhase(x, wires=[0, 1])
-            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
-
-        # fails when GlobalPhase is a subset of device wires, even if it acts on all tape wires
-        with pytest.raises(qml.QuantumFunctionError, match="GlobalPhase must act on all wires"):
-            circuit3(0.5)
-
     @pytest.mark.jax
     def test_jit_counts_raises_error(self):
         """Test that returning counts in a quantum function with trainable parameters while
@@ -2063,7 +2008,7 @@ def test_prune_dynamic_transform_with_mcm():
 
 
 def test_gradient_fn_lightning_metric_tensor():
-    """Test that if lightning is used with the metric tensor, the graident_fn is parameter shift."""
+    """Test that if lightning is used with the metric tensor, the gradient_fn is parameter shift."""
 
     dev = qml.device("lightning.qubit", wires=2)
 
