@@ -25,28 +25,38 @@ from pennylane.operation import Operator
 from pennylane.pauli import PauliSentence, PauliWord
 
 
-def _hermitian_basis(matrices, tol=None):
-    """Find a linear independent basis of a list of Hermitian matrices
+def _hermitian_basis(matrices: Iterable[np.ndarray], tol: float = None, subbasis_length: int = 0):
+    """Find a linearly independent basis of a list of (skew-) Hermitian matrices
 
     Args:
         matrices (Iterable[numpy.ndarray]): A list of Hermitian matrices.
         tol (float): Tolerance for linear dependence check. Defaults to ``1e-10``.
+
+    Returns:
+        np.ndarray: Stacked array of linearly independent basis matrices.
+
+    Raises:
+        ValueError: If not all input matrices are (skew-) Hermitian.
     """
     if tol is None:
         tol = 1e-10
 
-    basis = []
-    for A in matrices:
+    basis = list(matrices[:subbasis_length])
+    for A in matrices[subbasis_length:]:
         if not np.allclose(A.conj().T, A):
             A = 1j * A
             if not np.allclose(A.conj().T, A):
-                warnings.warn("Some basis matrices are not Hermitian", UserWarning)
+                raise ValueError(f"At least one basis matrix is not (skew-)Hermitian:\n{A}")
 
         B = A.copy()
-        for C in basis:
-            B -= np.trace(np.dot(C.conj().T, A)) * C
-        if np.linalg.norm(B) > tol:  # Tolerance for numerical stability
-            B /= np.linalg.norm(B)
+        if len(basis) > 0:
+            B -= np.tensordot(
+                np.tensordot(np.array(basis).conj(), A, axes=[[1, 2], [0, 1]]),
+                basis,
+                axes=[[0], [0]],
+            )
+        if (norm := np.linalg.norm(B)) > tol:  # Tolerance for numerical stability
+            B /= norm
             basis.append(B)
     return np.array(basis)
 
@@ -62,7 +72,8 @@ def lie_closure_dense(
 
     This function computes the Lie closure of a set of generators using their dense matrix representation.
     This is sometimes more efficient than using the sparse Pauli representations of :class:`~PauliWord` and
-    `~PauliSentence` that are employed in :func:`~lie_closure`, e.g., when ther are few but dense sums of Paulis.
+    `~PauliSentence` that are employed in :func:`~lie_closure`, e.g., when there are few generators
+    that are sums of many Paulis.
 
     .. seealso:: For details on the mathematical definitions, see :func:`~lie_closure` and our `Introduction to Dynamical Lie Algebras for quantum practitioners <https://pennylane.ai/qml/demos/tutorial_liealgebra/>`__.
 
@@ -93,31 +104,43 @@ def lie_closure_dense(
     """
 
     if n is None:
-        n = len(qml.wires.Wires.all_wires([_.wires for _ in generators]))
+        all_wires = qml.wires.Wires.all_wires([_.wires for _ in generators])
+        n = len(all_wires)
+        assert all_wires.toset() == set(range(n))
 
     gens = np.array([qml.matrix(op, wire_order=range(n)) for op in generators], dtype=complex)
-    _, chi, _ = gens.shape
-    vspace = _hermitian_basis(gens, tol)
+    chi = 2**n
+    assert gens.shape == (len(generators), chi, chi)
 
     epoch = 0
-    old_length = 0  # dummy value
-    new_length = len(vspace)
+    old_length = 0
+    vspace = _hermitian_basis(gens, tol, old_length)
+    new_length = initial_length = len(vspace)
 
     while (new_length > old_length) and (epoch < max_iterations):
         if verbose:
             print(f"epoch {epoch+1} of lie_closure_dense, DLA size is {new_length}")
 
-        # compute all commutators
-        m0m1 = np.einsum("aij,bjk->abik", vspace, gens)
+        # compute all commutators. We compute the commutators between all newly added operators
+        # and all original generators. This limits the amount of vectorization we are doing but
+        # gives us a correspondence between the while loop iteration and the nesting level of
+        # the commutators.
+        # Implement einsum "aij,bjk->abik" by tensordot and moveaxis
+        m0m1 = np.moveaxis(
+            np.tensordot(vspace[old_length:], vspace[:initial_length], axes=[[2], [1]]), 1, 2
+        )
         m0m1 = np.reshape(m0m1, (-1, chi, chi))
 
-        m1m0 = np.einsum("aij,bki->abkj", vspace, gens)
+        # Implement einsum "aij,bki->abkj" by tensordot and moveaxis
+        m1m0 = np.moveaxis(
+            np.tensordot(vspace[old_length:], vspace[:initial_length], axes=[[1], [2]]), 1, 3
+        )
         m1m0 = np.reshape(m1m0, (-1, chi, chi))
         all_coms = m0m1 - m1m0
 
         # sub-select linear independent subset
         vspace = np.concatenate([vspace, all_coms])
-        vspace = _hermitian_basis(vspace, tol)
+        vspace = _hermitian_basis(vspace, tol, old_length)
 
         # Updated number of linearly independent PauliSentences from previous and current step
         old_length = new_length
