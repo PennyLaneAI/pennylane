@@ -59,7 +59,7 @@ class WiresEq(BooleanFn):
     def __init__(self, wires):
         self._cond = frozenset(wires)
         self.condition = self._cond
-        wire_repr = f"[{', '.join(map(str, wires))}]" if len(wires) > 1 else str(list(wires)[0])
+        wire_repr = f"[{', '.join(f'\'{str(wire)}\'' for wire in wires)}]" if len(wires) > 1 else str(list(wires)[0])
         super().__init__(
             lambda wire: _get_wires(wire) == self._cond,
             f"WiresEq({wire_repr})",
@@ -229,7 +229,7 @@ class OpEq(BooleanFn):
         self._cops = _get_ops(ops)
         self.condition = self._cops
         cops_names = [getattr(op, "__name__", str(op)) for op in self._cops]
-        name_repr = f"[{', '.join(cops_names)}]" if len(cops_names) > 1 else cops_names[0]
+        name_repr = f"[{', '.join(f'\'{name}\'' for name in cops_names)}]" if len(cops_names) > 1 else cops_names[0]
         super().__init__(self._check_eq_ops, f"OpEq({name_repr})")
 
     def _check_eq_ops(self, operation):
