@@ -17,6 +17,8 @@ from typing import Union
 
 import numpy as np
 
+import pennylane as qml
+from pennylane import Y
 from pennylane.operation import Operator
 from pennylane.pauli import PauliSentence
 
@@ -45,7 +47,32 @@ def cartan_decomposition(g, involution):
     return k, m
 
 
-def even_odd_involution(op: PauliSentence):
+def even_odd_involution(op: Union[PauliSentence, np.ndarray, Operator]):
+    r"""The Even-Odd involution
+
+    This is defined in `quant-ph/0701193 <https://arxiv.org/pdf/quant-ph/0701193>`__, and for Pauli words and sentences comes down to counting Pauli-Y operators.
+
+    Args:
+        op ( Union[PauliSentence, np.ndarray, Operator]): Input operator
+
+    Returns:
+        bool: Boolean output ``True`` or ``False`` for even and odd parity subspace, respectively
+
+    """
+    return _even_odd_involution(op)
+
+
+@singledispatch
+def _even_odd_involution(op):  # pylint:disable=unused-argument
+    """
+    Private implementation of _concurrence_involution, to prevent all of the
+    registered functions from appearing in the Sphinx docs.
+    """
+    return False
+
+
+@_even_odd_involution.register(PauliSentence)
+def _even_odd_involution_ps(op: PauliSentence):
     """Generalization of EvenOdd involution to sums of Paulis"""
     parity = []
     for pw in op.keys():
@@ -57,12 +84,27 @@ def even_odd_involution(op: PauliSentence):
     return parity[0]
 
 
+@_even_odd_involution.register(np.ndarray)
+def _even_odd_involution_matrix(op: np.ndarray):
+    """see Table CI in https://arxiv.org/abs/2406.04418"""
+    n = int(np.round(np.log2(op.shape[-1])))
+    YYY = qml.prod(*[Y(i) for i in range(n)])
+    YYY = qml.matrix(YYY, range(n))
+
+    transformed = YYY @ op.conj() @ YYY
+    return not np.allclose(transformed, op)
+
+
+@_even_odd_involution.register(Operator)
+def _even_odd_involution_op(op: Operator):
+    """use pauli representation"""
+    return _even_odd_involution_ps(op.pauli_rep)
+
+
 def concurrence_involution(op: Union[PauliSentence, np.ndarray, Operator]):
     r"""The Concurrence Canonical Decomposition :math:`\Theta(g) = -g^T` as a Cartan involution function
 
     This is defined in `quant-ph/0701193 <https://arxiv.org/pdf/quant-ph/0701193>`__, and for Pauli words and sentences comes down to counting Pauli-Y operators.
-
-    This implementation is specific to ``PauliSentence`` instances
 
     Args:
         op ( Union[PauliSentence, np.ndarray, Operator]): Input operator

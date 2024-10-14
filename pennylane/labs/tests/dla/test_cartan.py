@@ -77,15 +77,28 @@ class TestCartanDecomposition:
         assert check_commutation(m, m, k_space)
 
 
+involution_ops = [X(0) @ X(1), X(0) @ X(1) + Y(0) @ Y(1)]
+
+
 class TestInvolutions:
     """Test involutions"""
 
-    @pytest.mark.parametrize("op", [X(0) @ X(1), X(0) @ X(1) + Y(0) @ Y(1)])
+    @pytest.mark.parametrize("op", involution_ops)
     def test_concurrence_involution_inputs(self, op):
         """Test different input types yield consistent results"""
         res_op = concurrence_involution(op)
         res_ps = concurrence_involution(op.pauli_rep)
         res_m = concurrence_involution(op.matrix())
+
+        assert res_op == res_ps
+        assert res_op == res_m
+
+    @pytest.mark.parametrize("op", involution_ops)
+    def test_even_odd_involution_inputs(self, op):
+        """Test different input types yield consistent results"""
+        res_op = even_odd_involution(op)
+        res_ps = even_odd_involution(op.pauli_rep)
+        res_m = even_odd_involution(op.matrix())
 
         assert res_op == res_ps
         assert res_op == res_m
