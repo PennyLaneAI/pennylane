@@ -13,6 +13,7 @@
 # limitations under the License.
 """Functionality for Cartan decomposition"""
 from functools import singledispatch
+from typing import Union
 
 import numpy as np
 
@@ -56,7 +57,7 @@ def even_odd_involution(op: PauliSentence):
     return parity[0]
 
 
-def concurrence_involution(op: PauliSentence):
+def concurrence_involution(op: Union[PauliSentence, np.ndarray, Operator]):
     r"""The Concurrence Canonical Decomposition :math:`\Theta(g) = -g^T` as a Cartan involution function
 
     This is defined in `quant-ph/0701193 <https://arxiv.org/pdf/quant-ph/0701193>`__, and for Pauli words and sentences comes down to counting Pauli-Y operators.
@@ -64,10 +65,10 @@ def concurrence_involution(op: PauliSentence):
     This implementation is specific to ``PauliSentence`` instances
 
     Args:
-        op (PauliSentence): Input operator
+        op ( Union[PauliSentence, np.ndarray, Operator]): Input operator
 
     Returns:
-        int: binary ``0`` or ``1`` for the even and odd parity subspace, respectively
+        bool: Boolean output ``True`` or ``False`` for even and odd parity subspace, respectively
 
     """
     return _concurrence_involution(op)
@@ -92,7 +93,7 @@ def _concurrence_involution_pauli(op: PauliSentence):
     assert all(
         parity[0] == p for p in parity
     )  # only makes sense if parity is the same for all terms, e.g. Heisenberg model
-    return parity[0]
+    return bool(parity[0])
 
 
 @_concurrence_involution.register(Operator)
