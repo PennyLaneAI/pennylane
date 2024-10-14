@@ -238,7 +238,7 @@ class OpEq(BooleanFn):
             if len(cops_names) > 1
             else cops_names[0]
         )
-        super().__init__(self._check_eq_ops, f"OpEq({name_repr})"
+        super().__init__(self._check_eq_ops, f"OpEq({name_repr})")
 
     def _check_eq_ops(self, operation):
         if all(isclass(op) or not getattr(op, "arithmetic_depth", 0) for op in self._cond):
