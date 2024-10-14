@@ -65,8 +65,6 @@ class WiresEq(BooleanFn):
             f"WiresEq({wire_repr})",
         )
 
-
-
 def _get_wires(val):
     """Extract wires as a set from an integer, string, Iterable, Wires or Operation instance.
 
@@ -227,12 +225,12 @@ class OpEq(BooleanFn):
 
     def __init__(self, ops):
         self._cond = [ops] if not isinstance(ops, (list, tuple, set)) else ops
-        self._cops = _get_ops(self._cond)
+        self._cops = _get_ops(ops)
         self.condition = self._cops
-        cops_names = [getattr(op, "__name__", op) for op in self._cops]
-        name_repr = cops_names if len(cops_names) > 1 else cops_names[0]
+        cops_names = [getattr(op, "__name__", str(op)) for op in self._cops]
+        name_repr = ", ".join(cops_names) if len(cops_names) > 1 else cops_names[0]
         super().__init__(self._check_eq_ops, f"OpEq({name_repr})")
-        
+
     def _check_eq_ops(self, operation):
         if all(isclass(op) or not getattr(op, "arithmetic_depth", 0) for op in self._cond):
             return _get_ops(operation) == self._cops
