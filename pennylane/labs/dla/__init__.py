@@ -14,3 +14,4 @@
 """Experimental Lie theory features"""
 
 from .lie_closure_dense import lie_closure_dense
+from .dense_util import pauli_decompose
