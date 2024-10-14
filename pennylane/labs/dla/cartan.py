@@ -60,8 +60,9 @@ def even_odd_involution(op: Union[PauliSentence, np.ndarray, Operator]):
         op ( Union[PauliSentence, np.ndarray, Operator]): Input operator
 
     Returns:
-        bool: Boolean output ``True`` or ``False`` for even and odd parity subspace, respectively
+        bool: Boolean output ``True`` or ``False`` for odd (:math:`\mathfrak{k}`) and even parity subspace (:math:`\mathfrak{m}`), respectively
 
+    .. seealso:: :func:`~cartan_decomposition`
     """
     return _even_odd_involution(op)
 
@@ -112,7 +113,9 @@ def concurrence_involution(op: Union[PauliSentence, np.ndarray, Operator]):
         op ( Union[PauliSentence, np.ndarray, Operator]): Input operator
 
     Returns:
-        bool: Boolean output ``True`` or ``False`` for even and odd parity subspace, respectively
+        bool: Boolean output ``True`` or ``False`` for odd (:math:`\mathfrak{k}`) and even parity subspace (:math:`\mathfrak{m}`), respectively
+
+    .. seealso:: :func:`~cartan_decomposition`
 
     """
     return _concurrence_involution(op)
