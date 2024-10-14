@@ -24,7 +24,19 @@ from pennylane.pauli import PauliSentence
 
 
 def cartan_decomposition(g, involution):
-    r"""Cartan Decomposition g = k + m
+    r"""Cartan Decomposition :math:`\mathfrak{g} = \mathfrak{k} \osum \mathfrak{m}`.
+
+    Given a Lie algebra :math:`\mathfrak{g}`, the Cartan decomposition is a decomposition
+    :math:`\mathfrak{g} = \mathfrak{k} \osum \mathfrak{m}` into orthogonal complements.
+    This is realized by an involution :math:`\Theta(g)` that maps each operator :math:`g \in \mathfrak{g}`
+    back to itself after two consecutive applications, i.e., :math:`\Theta(\Theta(g)) = g \forall g \in \mathfrak{g}`.
+
+    The ``involution`` argument can be any function that maps the operators in the provided ``g`` to a boolean output.
+    ``True`` for operators that go into :math:`\mathfrak{k}` and ``False`` for operators in :math:`\mathfrak{m}`.
+
+    The resulting subspaces fulfill the Cartan commutation relations
+
+    .. math:: [\mathfrak{k}, \mathfrak{k}] \subseteq \mathfrak{k} \text{ ; } [\mathfrak{k}, \mathfrak{m}] \subseteq \mathfrak{m} \text{ ; } [\mathfrak{m}, \mathfrak{m}] \subseteq \mathfrak{k}
 
     Args:
         g (List[Union[PauliSentence, Operator]]): the (dynamical) Lie algebra to decompose
