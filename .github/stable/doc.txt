@@ -72,7 +72,7 @@ pybtex==0.24.0
 pybtex-docutils==1.0.3
 Pygments==2.18.0
 pygments-github-lexers==0.0.5
-pyparsing==3.1.4
+pyparsing==3.2.0
 pyscf==2.7.0
 pytest==8.3.3
 python-dateutil==2.9.0.post0
@@ -117,5 +117,5 @@ urllib3==1.26.20
 Werkzeug==3.0.4
 wrapt==1.16.0
 xanadu-sphinx-theme==0.5.0
-yarl==1.15.0
+yarl==1.15.2
 zipp==3.20.2
