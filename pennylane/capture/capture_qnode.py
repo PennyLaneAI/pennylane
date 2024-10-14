@@ -89,27 +89,41 @@ class BatchingManager:
     """A class to manage the batching state of the QNode."""
 
     # indicates that the (lazy) batch size has not yet been accessed/computed
-    _UNSET_BATCH_SIZE = -1
+    _UNSET_BATCH_SIZE = False
 
     @classmethod
-    def enable_batching(cls, batch_size):
+    def enable_batching(cls):
         """Enable batching for the QNode."""
-        cls._UNSET_BATCH_SIZE = batch_size
+        cls._UNSET_BATCH_SIZE = True
 
     @classmethod
     def disable_batching(cls):
         """Disable batching for the QNode."""
-        cls._UNSET_BATCH_SIZE = -1
+        cls._UNSET_BATCH_SIZE = False
 
     @classmethod
-    def get_batch_size(cls):
-        """Retrieve the current batch size."""
+    def batching_enabled(cls):
+        """Return ``True`` if batching is enabled, ``False`` otherwise."""
         return cls._UNSET_BATCH_SIZE
 
 
 def _qnode_batching_rule(
     batched_args, batch_dims, qnode, shots, device, qnode_kwargs, qfunc_jaxpr, n_consts
 ):
+    """
+    Batching rule for the ``qnode`` primitive.
+
+    The batching rule moves the batch dimension of the arguments to the front, and then calls the
+    QNode with the batched arguments.
+
+    The execution is vectorized over the batch dimension(s) of the arguments,
+    exploiting the parameter broadcasting feature of the QNode.
+
+    The results are returned with the batch dimension moved to the end.
+    """
+
+    print("batched_args: ", batched_args)
+    print("batch_dims: ", batch_dims)
 
     # Ensure that the number of batched_args matches the number of batch_dims
     assert len(batched_args) == len(
@@ -121,11 +135,13 @@ def _qnode_batching_rule(
         batch_dim is None or isinstance(batch_dim, int) for batch_dim in batch_dims[n_consts:]
     ), "Invalid batch dimension found."
 
-    # TODO: this is not the correct way to handle batching
-    BatchingManager.enable_batching(batch_dims[0])
+    BatchingManager.enable_batching()
 
     consts = batched_args[:n_consts]
     args = batched_args[n_consts:]
+
+    print("consts: ", consts)
+    print("args: ", args)
 
     aligned_args = []
     for arg, batch_dim in zip(args, batch_dims[n_consts:]):
@@ -134,6 +150,8 @@ def _qnode_batching_rule(
         else:
             aligned_arg = arg
         aligned_args.append(aligned_arg)
+
+    print("aligned_args: ", aligned_args)
 
     def qfunc(*inner_args):
         return jax.core.eval_jaxpr(qfunc_jaxpr, consts, *inner_args)
@@ -148,6 +166,8 @@ def _qnode_batching_rule(
         batch_result = [jax.numpy.moveaxis(r, 0, -1) for r in result]
     else:
         batch_result = jax.numpy.moveaxis(result, 0, -1)
+
+    print("batch_result: ", batch_result)
 
     return batch_result, [0] * len(batch_result)
 
@@ -165,6 +185,8 @@ def _get_qnode_prim():
         consts = args[:n_consts]
         args = args[n_consts:]
 
+        print("consts qnode: ", consts)
+
         def qfunc(*inner_args):
             return jax.core.eval_jaxpr(qfunc_jaxpr, consts, *inner_args)
 
@@ -175,14 +197,19 @@ def _get_qnode_prim():
     @qnode_prim.def_abstract_eval
     def _(*args, qnode, shots, device, qnode_kwargs, qfunc_jaxpr, n_consts):
 
-        batch_size = BatchingManager.get_batch_size()
+        batching_enabled = BatchingManager.batching_enabled()
 
         mps = qfunc_jaxpr.outvars
 
-        if batch_size != -1:
+        print("mps: ", mps)
+
+        if batching_enabled:
 
             batched_args = args[n_consts:]
             input_shapes = [arg.shape for arg in batched_args]
+
+            print("batched_args: ", batched_args)
+            print("input_shapes: ", input_shapes)
 
             batch_shape = jax.lax.broadcast_shapes(*input_shapes)
 
