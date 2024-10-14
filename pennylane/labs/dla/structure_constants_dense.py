@@ -102,7 +102,7 @@ def structure_constants_dense(g: TensorLike, is_orthonormal: bool = True) -> Ten
     adj = (1j * np.tensordot(g, all_coms, axes=[[1, 2], [3, 1]])).real
 
     if not is_orthonormal:
-        # If the basis is not orthonormal, compute is Gram matrix and apply its
+        # If the basis is not orthonormal, compute the Gram matrix and apply its
         # (pseudo-)inverse to the obtained projections. See the docstring for details.
         # The Gram matrix is just one additional diagonal contraction of the ``prod`` tensor,
         # across the Hilbert space dimensions. (dimg, _chi_, dimg, _chi_) -> (dimg, dimg)
