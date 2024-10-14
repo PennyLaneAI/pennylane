@@ -224,14 +224,10 @@ class OpEq(BooleanFn):
     """
 
     def __init__(self, ops):
-        self._cond = [ops] if not isinstance(ops, (list, tuple, set)) else ops
-        self._cops = _get_ops(ops)
-        self.condition = self._cops
-        cops_names = list(getattr(op, "__name__", op) for op in self._cops)
-        super().__init__(
-            self._check_eq_ops,
-            f"OpEq({cops_names if len(cops_names) > 1 else cops_names[0]})",
-        )
+        self._cops = _get_ops(self._cond)
+        cops_names = [getattr(op, "__name__", op) for op in self._cops]
+        name_repr = cops_names if len(cops_names) > 1 else cops_names[0]
+        super().__init__(self._check_eq_ops, f"OpEq({name_repr})")
 
     def _check_eq_ops(self, operation):
         if all(isclass(op) or not getattr(op, "arithmetic_depth", 0) for op in self._cond):
