@@ -50,6 +50,7 @@ from pennylane.measurements import (
     StateMeasurement,
     StateMP,
     VarianceMP,
+    VnEntanglementEntropyMP,
     VnEntropyMP,
 )
 from pennylane.operation import Operation, operation_derivative
@@ -176,28 +177,6 @@ class QubitDevice(Device):
 
         * tape: quantum tape to transform
 
-    **Example:**
-
-    Let's create a device that inherits from :class:`~pennylane.devices.DefaultQubitLegacy` and overrides the
-    logic of the `qml.sample` measurement. To do so we will need to update the ``measurement_map``
-    dictionary:
-
-    .. code-block:: python
-
-        class NewDevice(DefaultQubitLegacy):
-            def __init__(self, wires, shots):
-                super().__init__(wires=wires, shots=shots)
-                self.measurement_map[SampleMP] = "sample_measurement"
-
-            def sample_measurement(self, measurement, shot_range=None, bin_size=None):
-                return 2
-
-    >>> dev = NewDevice(wires=2, shots=1000)
-    >>> @qml.qnode(dev)
-    ... def circuit():
-    ...     return qml.sample()
-    >>> circuit()
-    tensor(2, requires_grad=True)
     """
 
     def __init__(
@@ -593,7 +572,6 @@ class QubitDevice(Device):
         if self.shots is None:
             if isinstance(measurement, StateMeasurement):
                 return measurement.process_state(state=self.state, wire_order=self.wires)
-
             raise ValueError(
                 "Shots must be specified in the device to compute the measurement "
                 f"{measurement.__class__.__name__}"
@@ -666,7 +644,7 @@ class QubitDevice(Device):
             if isinstance(m.mv, list):
                 # MeasurementProcess stores information needed for processing if terminal measurement
                 # uses a list of mid-circuit measurement values
-                obs = m
+                obs = m  # pragma: no cover
             else:
                 obs = m.obs or m.mv or m
             # Check if there is an overriden version of the measurement process
@@ -741,6 +719,29 @@ class QubitDevice(Device):
                     )
                 result = self.vn_entropy(wires=obs.wires, log_base=obs.log_base)
 
+            elif isinstance(m, VnEntanglementEntropyMP):
+                if self.wires.labels != tuple(range(self.num_wires)):
+                    raise qml.QuantumFunctionError(
+                        "Returning the Von Neumann entanglement entropy is not supported when using custom wire labels"
+                    )
+
+                if self._shot_vector is not None:
+                    raise NotImplementedError(
+                        "Returning the Von Neumann entanglement entropy is not supported with shot vectors."
+                    )
+
+                if self.shots is not None:
+                    warnings.warn(
+                        "Requested Von Neumann entanglement entropy with finite shots; the returned "
+                        "state information is analytic and is unaffected by sampling. To silence "
+                        "this warning, set shots=None on the device.",
+                        UserWarning,
+                    )
+                wires0, wires1 = obs.raw_wires
+                result = self.vn_entanglement_entropy(
+                    wires0=wires0, wires1=wires1, log_base=obs.log_base
+                )
+
             elif isinstance(m, MutualInfoMP):
                 if self.wires.labels != tuple(range(self.num_wires)):
                     raise qml.QuantumFunctionError(
@@ -800,6 +801,7 @@ class QubitDevice(Device):
                     VarianceMP,
                     ProbabilityMP,
                     VnEntropyMP,
+                    VnEntanglementEntropyMP,
                     MutualInfoMP,
                     ShadowExpvalMP,
                 ),
@@ -955,7 +957,7 @@ class QubitDevice(Device):
             return QubitDevice.states_to_binary(states_base_ten, num_wires, dtype=dtype)
 
         # A slower, but less memory intensive method
-        basis_states_generator = itertools.product((0, 1), repeat=num_wires)
+        basis_states_generator = itertools.product((0, 1), repeat=num_wires)  # pragma: no cover
         return np.fromiter(itertools.chain(*basis_states_generator), dtype=int).reshape(
             -1, num_wires
         )
@@ -1031,13 +1033,43 @@ class QubitDevice(Device):
         """
         try:
             state = self.density_matrix(wires=self.wires)
-        except qml.QuantumFunctionError as e:  # pragma: no cover
+        except (qml.QuantumFunctionError, NotImplementedError) as e:  # pragma: no cover
             raise NotImplementedError(
                 f"Cannot compute the Von Neumman entropy with device {self.name} that is not capable of returning the "
                 f"state. "
             ) from e
         wires = wires.tolist()
         return qml.math.vn_entropy(state, indices=wires, c_dtype=self.C_DTYPE, base=log_base)
+
+    def vn_entanglement_entropy(self, wires0, wires1, log_base):
+        r"""Returns the Von Neumann entanglement entropy prior to measurement.
+
+        .. math::
+
+            S(\rho_A) = -\text{Tr}[\rho_A \log \rho_A] = -\text{Tr}[\rho_B \log \rho_B] = S(\rho_B)
+
+        Args:
+            wires0 (Sequence[int] or int): the wires of the first subsystem
+            wires1 (Sequence[int] or int): the wires of the second subsystem
+            log_base (float): Base for the logarithm.
+
+        Returns:
+            float: returns the Von Neumann entropy
+        """
+        try:
+            state = self.density_matrix(wires=self.wires)
+        except (qml.QuantumFunctionError, NotImplementedError) as e:  # pragma: no cover
+            raise NotImplementedError(
+                f"Cannot compute the Von Neumman entropy with device {self.name} that is not capable of returning the "
+                f"state. "
+            ) from e
+
+        wires0 = wires0.tolist()
+        wires1 = wires1.tolist()
+
+        return qml.math.vn_entanglement_entropy(
+            state, indices0=wires0, indices1=wires1, c_dtype=self.C_DTYPE, base=log_base
+        )
 
     def mutual_info(self, wires0, wires1, log_base):
         r"""Returns the mutual information prior to measurement:
@@ -1058,7 +1090,7 @@ class QubitDevice(Device):
         """
         try:
             state = self.density_matrix(wires=self.wires)
-        except qml.QuantumFunctionError as e:  # pragma: no cover
+        except (qml.QuantumFunctionError, NotImplementedError) as e:  # pragma: no cover
             raise NotImplementedError(
                 f"Cannot compute the mutual information with device {self.name} that is not capable of returning the "
                 f"state. "
@@ -1111,7 +1143,11 @@ class QubitDevice(Device):
         n_snapshots = self.shots
         seed = obs.seed
 
-        with qml.workflow.set_shots(self, shots=1):
+        original_shots = self.shots
+        original_shot_vector = self._shot_vector
+
+        try:
+            self.shots = 1
             # slow implementation but works for all devices
             n_qubits = len(wires)
             mapped_wires = np.array(self.map_wires(wires))
@@ -1140,13 +1176,17 @@ class QubitDevice(Device):
                 )
 
                 outcomes[t] = self.generate_samples()[0][mapped_wires]
+        finally:
+            self.shots = original_shots
+            # pylint: disable=attribute-defined-outside-init
+            self._shot_vector = original_shot_vector
 
         return self._cast(self._stack([outcomes, recipes]), dtype=np.int8)
 
     def shadow_expval(self, obs, circuit):
         r"""Compute expectation values using classical shadows in a differentiable manner.
 
-        Please refer to :func:`~.pennylane.shadow_expval` for detailed documentation.
+        Please refer to :func:`~pennylane.shadow_expval` for detailed documentation.
 
         Args:
             obs (~.pennylane.measurements.ClassicalShadowMP): The classical shadow expectation
@@ -1468,10 +1508,11 @@ class QubitDevice(Device):
 
         **Example**
 
+            >>> from pennylane import numpy as np
             >>> num_wires = 2
-            >>> dev = qml.device("default.qubit.legacy", wires=num_wires)
+            >>> dev = qml.device("default.mixed", wires=num_wires)
             >>> mp = qml.counts()
-            >>> samples = pnp.array([[0, 0], [0, 0], [1, 0]])
+            >>> samples = np.array([[0, 0], [0, 0], [1, 0]])
             >>> dev._samples_to_counts(samples, mp, num_wires)
             {'00': 2, '10': 1}
             >>> mp = qml.counts(all_outcomes=True)
@@ -1550,7 +1591,7 @@ class QubitDevice(Device):
             if mp.obs is not None:
                 observable = mp.obs
             elif mp.mv is not None and isinstance(mp.mv, MeasurementValue):
-                observable = mp.mv
+                observable = mp.mv  # pragma: no cover
             else:
                 no_observable_provided = True
 
@@ -1577,7 +1618,7 @@ class QubitDevice(Device):
         else:
             # get eigvals
             if isinstance(observable, MeasurementValue):
-                eigvals = self._asarray(
+                eigvals = self._asarray(  # pragma: no cover
                     [observable[i] for i in range(2 ** len(observable.measurements))],
                     dtype=self.R_DTYPE,
                 )

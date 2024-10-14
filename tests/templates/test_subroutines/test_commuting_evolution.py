@@ -22,6 +22,7 @@ import pennylane as qml
 from pennylane import numpy as np
 
 
+@pytest.mark.xfail(reason="https://github.com/PennyLaneAI/pennylane/issues/6340")
 def test_standard_validity():
     """Run standard tests of operation validity."""
     H = 2.0 * qml.PauliX(0) @ qml.PauliY(1) + 3.0 * qml.PauliY(0) @ qml.PauliZ(1)
@@ -202,13 +203,13 @@ class TestGradients:
         diff_coeffs = np.array([1.0, -1.0], requires_grad=True)
         frequencies = (2, 4)
 
-        def parameterized_hamiltonian(coeffs):
+        def parametrized_hamiltonian(coeffs):
             return qml.Hamiltonian(coeffs, obs)
 
         @qml.qnode(dev)
         def circuit(time, coeffs):
             qml.PauliX(0)
-            qml.CommutingEvolution(parameterized_hamiltonian(coeffs), time, frequencies)
+            qml.CommutingEvolution(parametrized_hamiltonian(coeffs), time, frequencies)
             return qml.expval(qml.PauliZ(0))
 
         x_vals = [np.array(x, requires_grad=True) for x in np.linspace(-np.pi, np.pi, num=10)]

@@ -72,6 +72,63 @@ class TestPurityUnitTest:
         meas = qml.purity(wires=0)
         assert meas.shape(shots, 1) == shape
 
+    @pytest.mark.all_interfaces
+    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "tensorflow", "autograd"])
+    def test_process_density_matrix_pure_state(self, interface):
+        """Test purity calculation for a pure single-qubit state."""
+        dm = qml.math.array([[1, 0], [0, 0]], like=interface)
+        if interface == "tensorflow":
+            dm = qml.math.cast(dm, "float64")
+        wires = qml.wires.Wires(range(1))
+        expected = qml.math.array(1.0, like=interface)
+        if interface == "tensorflow":
+            expected = qml.math.cast(expected, "float64")
+        purity = qml.purity(wires=wires).process_density_matrix(dm, wires)
+        atol = 1.0e-7 if interface in ["torch", "tensorflow"] else 1.0e-8
+        assert qml.math.allclose(purity, expected, atol=atol), f"Expected {expected}, got {purity}"
+
+    @pytest.mark.all_interfaces
+    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "tensorflow", "autograd"])
+    @pytest.mark.parametrize(
+        "subset_wires, expected_purity",
+        [
+            ([0], 1.0),  # Purity of first qubit (pure state after tracing out second qubit)
+            ([1], 0.625),  # Purity of second qubit (mixed state after tracing out first qubit)
+            ([0, 1], 0.655),  # Purity of both qubits (mixed state for the full system)
+        ],
+    )
+    def test_process_density_matrix_purity_subsets(self, interface, subset_wires, expected_purity):
+        """
+        Test purity calculation of density matrix with subsets of wires.
+        This test checks the purity calculation for different subsets of a two-qubit system,
+        including single-qubit reduced states and the full two-qubit state.
+        """
+        # Define a non-trivial two-qubit density matrix
+        # This represents a mixed state of two qubits
+        dm = qml.math.array(
+            [[0.15, 0, 0.1, 0], [0, 0.35, 0, 0.4], [0.1, 0, 0.1, 0], [0, 0.4, 0, 0.4]],
+            like=interface,
+        )
+
+        # TensorFlow requires explicit casting to float64 for consistency
+        if interface == "tensorflow":
+            dm = qml.math.cast(dm, "float64")
+
+        # Define the wires (qubits) of our system
+        wires = qml.wires.Wires(range(2))
+
+        # Calculate the purity using the PurityMP class
+        purity = qml.purity(wires=subset_wires).process_density_matrix(dm, wires)
+
+        # Set the tolerance for floating-point comparisons
+        # TensorFlow and PyTorch may require a slightly higher tolerance due to numerical precision issues
+        atol = 1.0e-7 if interface in ["torch", "tensorflow"] else 1.0e-8
+
+        # Assert that the calculated purity matches the expected value within the tolerance
+        assert qml.math.allclose(
+            purity, expected_purity, atol=atol
+        ), f"Subsetwire: {subset_wires} Purity doesn't match expected value. Got {purity}, expected {expected_purity}"
+
 
 class TestPurityIntegration:
     """Test the purity meausrement with qnodes and devices."""

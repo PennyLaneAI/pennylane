@@ -94,7 +94,7 @@ class QutritBasisStatePreparation(Operation):
         .. math:: O = O_1 O_2 \dots O_n.
 
 
-         .. seealso:: :meth:`~.BasisState.decomposition`.
+        .. seealso:: :meth:`~.BasisState.decomposition`.
 
         Args:
             basis_state (array): Input array of shape ``(len(wires),)``

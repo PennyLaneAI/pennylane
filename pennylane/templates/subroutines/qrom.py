@@ -96,7 +96,7 @@ class QROM(Operation):
         Then, :math:`k = l \cdot (\lambda-1)` work wires are needed,
         where :math:`l` is the length of the bitstrings.
 
-        The QROM template has two variants. The first one (``clean = False``) is based on [`arXiv:1812.00954 <https://arxiv.org/abs/1812.00954>`__] that alterates the state in the ``work_wires``.
+        The QROM template has two variants. The first one (``clean = False``) is based on [`arXiv:1812.00954 <https://arxiv.org/abs/1812.00954>`__] that alternates the state in the ``work_wires``.
         The second one (``clean = True``), based on [`arXiv:1902.02134 <https://arxiv.org/abs/1902.02134>`__], solves that issue by
         returning ``work_wires`` to their initial state. This technique can be applied when the ``work_wires`` are not
         initialized to zero.

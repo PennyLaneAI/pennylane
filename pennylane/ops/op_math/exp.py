@@ -181,7 +181,6 @@ class Exp(ScalarSymbolicOp, Operation):
         super().__init__(base, scalar=coeff, id=id)
         self.grad_recipe = [None]
         self.num_steps = num_steps
-
         self.hyperparameters["num_steps"] = num_steps
 
     def __repr__(self):

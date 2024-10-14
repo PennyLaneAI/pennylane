@@ -20,8 +20,8 @@ from copy import copy
 from functools import reduce
 from typing import Union
 
-import scipy
 import numpy as np
+import scipy
 
 import pennylane as qml
 from pennylane.operation import Operator
@@ -140,7 +140,7 @@ def lie_closure(
 
         for ps1, ps2 in itertools.combinations(vspace.basis, 2):
             com = ps1.commutator(ps2)
-            com.simplify()
+            com.simplify(tol=vspace.tol)
 
             if len(com) == 0:  # skip because operators commute
                 continue
@@ -415,7 +415,7 @@ class PauliVSpace:
             # Add new PauliSentence entries to matrix
             for pw, value in pauli_sentence.items():
                 M[new_pw_to_idx[pw], rank] = value
-            
+
             M[:, rank] /= np.linalg.norm(M[:, rank])
 
             return M, new_pw_to_idx, rank + 1, new_num_pw, True
@@ -423,12 +423,12 @@ class PauliVSpace:
         # Add new PauliSentence entries to matrix
         for pw, value in pauli_sentence.items():
             M[pw_to_idx[pw], rank] = value
-        
+
         M[:, rank] /= np.linalg.norm(M[:, rank])
 
         # Check if new vector is linearly dependent on the current basis
-        s = scipy.linalg.svdvals(M)  # , full_matrices=False)
-        new_rank = np.sum(s > tol)
+        s = scipy.linalg.svdvals(M)
+        new_rank = np.count_nonzero(s > tol)
 
         if rank + 1 == new_rank:
             return M, pw_to_idx, new_rank, new_num_pw, True

@@ -38,6 +38,7 @@ qubit_device_and_diff_method = [
     [qml.device("lightning.qubit", wires=4), "adjoint", False, False],
     [qml.device("lightning.qubit", wires=4), "adjoint", True, True],
     [qml.device("lightning.qubit", wires=4), "adjoint", True, False],
+    [qml.device("reference.qubit"), "parameter-shift", False, False],
 ]
 
 TOL_FOR_SPSA = 1.0
@@ -540,12 +541,18 @@ class TestShotsIntegration:
         circuit(weights, shots=100)  # pylint:disable=unexpected-keyword-arg
         # since we are using finite shots, parameter-shift will
         # be chosen
-        assert circuit.gradient_fn == qml.gradients.param_shift
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match=r"QNode.gradient_fn is deprecated"
+        ):
+            assert circuit.gradient_fn == qml.gradients.param_shift
         assert spy.call_args[1]["gradient_fn"] is qml.gradients.param_shift
 
         # if we use the default shots value of None, backprop can now be used
         circuit(weights)
-        assert circuit.gradient_fn == "backprop"
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match=r"QNode.gradient_fn is deprecated"
+        ):
+            assert circuit.gradient_fn == "backprop"
         assert spy.call_args[1]["gradient_fn"] == "backprop"
 
 
@@ -974,6 +981,8 @@ class TestQubitIntegration:
             kwargs["sampler_rng"] = np.random.default_rng(SEED_FOR_SPSA)
             kwargs["num_directions"] = 20
             tol = TOL_FOR_SPSA
+        if dev.name == "reference.qubit":
+            pytest.xfail("diagonalize_measurements do not support projectors (sc-72911)")
 
         P = tf.constant(state, dtype=dtype)
 
@@ -1007,6 +1016,9 @@ class TestQubitIntegration:
 
         if diff_method in ["adjoint", "spsa", "hadamard"]:
             pytest.skip("Diff method does not support postselection.")
+
+        if dev.name == "reference.qubit":
+            pytest.skip("reference.qubit does not support postselection.")
 
         @qml.qnode(
             dev,
