@@ -57,12 +57,14 @@ class WiresEq(BooleanFn):
     """
 
     def __init__(self, wires):
-        self._cond = set(wires)
+        self._cond = frozenset(wires)
         self.condition = self._cond
+        wire_repr = ", ".join(map(str, wires)) if len(wires) > 1 else str(list(wires)[0])
         super().__init__(
             lambda wire: _get_wires(wire) == self._cond,
-            f"WiresEq({list(wires) if len(wires) > 1 else list(wires)[0]})",
+            f"WiresEq({wire_repr})",
         )
+
 
 
 def _get_wires(val):
@@ -224,11 +226,13 @@ class OpEq(BooleanFn):
     """
 
     def __init__(self, ops):
+        self._cond = [ops] if not isinstance(ops, (list, tuple, set)) else ops
         self._cops = _get_ops(self._cond)
+        self.condition = self._cops
         cops_names = [getattr(op, "__name__", op) for op in self._cops]
         name_repr = cops_names if len(cops_names) > 1 else cops_names[0]
         super().__init__(self._check_eq_ops, f"OpEq({name_repr})")
-
+        
     def _check_eq_ops(self, operation):
         if all(isclass(op) or not getattr(op, "arithmetic_depth", 0) for op in self._cond):
             return _get_ops(operation) == self._cops
