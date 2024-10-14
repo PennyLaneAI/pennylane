@@ -29,10 +29,13 @@ def cartan_decomposition(g, involution):
     Args:
         g (List[Union[PauliSentence, Operator]]): the (dynamical) Lie algebra to decompose
         involution (callable): Involution function :math:`\Theta(\cdot)` to act on the input operator, should return ``0/1`` or ``True/False``.
+            E.g., :func:`~even_odd_involution` or :func:`~concurrence_involution`.
 
     Returns:
         k (List[Union[PauliSentence, Operator]]): the even parity subspace :math:`\Theta(\mathfrak{k}) = \mathfrak{k}`
         m (List[Union[PauliSentence, Operator]]): the odd parity subspace :math:`\Theta(\mathfrak{m}) = \mathfrak{m}`
+
+    .. seealso:: :func:`~even_odd_involution`, :func:`~concurrence_involution`
     """
     # simple implementation assuming all elements in g are already either in k and m
     # TODO: Figure out more general way to do this when the above is not the case
@@ -47,6 +50,7 @@ def cartan_decomposition(g, involution):
     return k, m
 
 
+# dispatch to different input types
 def even_odd_involution(op: Union[PauliSentence, np.ndarray, Operator]):
     r"""The Even-Odd involution
 
@@ -64,23 +68,20 @@ def even_odd_involution(op: Union[PauliSentence, np.ndarray, Operator]):
 
 @singledispatch
 def _even_odd_involution(op):  # pylint:disable=unused-argument
-    """
-    Private implementation of _concurrence_involution, to prevent all of the
-    registered functions from appearing in the Sphinx docs.
-    """
-    return False
+    return NotImplementedError(f"Involution not defined for operator {op} of type {type(op)}")
 
 
 @_even_odd_involution.register(PauliSentence)
 def _even_odd_involution_ps(op: PauliSentence):
-    """Generalization of EvenOdd involution to sums of Paulis"""
+    # Generalization to sums of Paulis: check each term and assert they all have the same parity
     parity = []
     for pw in op.keys():
         parity.append(len(pw) % 2)
 
+    # only makes sense if parity is the same for all terms, e.g. Heisenberg model
     assert all(
         parity[0] == p for p in parity
-    )  # only makes sense if parity is the same for all terms, e.g. Heisenberg model
+    ), f"The Even-Odd involution is not well-defined for operator {op} as individual terms have different parity"
     return parity[0]
 
 
@@ -101,6 +102,7 @@ def _even_odd_involution_op(op: Operator):
     return _even_odd_involution_ps(op.pauli_rep)
 
 
+# dispatch to different input types
 def concurrence_involution(op: Union[PauliSentence, np.ndarray, Operator]):
     r"""The Concurrence Canonical Decomposition :math:`\Theta(g) = -g^T` as a Cartan involution function
 
@@ -117,24 +119,22 @@ def concurrence_involution(op: Union[PauliSentence, np.ndarray, Operator]):
 
 
 @singledispatch
-def _concurrence_involution(op):  # pylint:disable=unused-argument
-    """
-    Private implementation of _concurrence_involution, to prevent all of the
-    registered functions from appearing in the Sphinx docs.
-    """
-    return False
+def _concurrence_involution(op):
+    return NotImplementedError(f"Involution not defined for operator {op} of type {type(op)}")
 
 
 @_concurrence_involution.register(PauliSentence)
 def _concurrence_involution_pauli(op: PauliSentence):
+    # Generalization to sums of Paulis: check each term and assert they all have the same parity
     parity = []
     for pw in op.keys():
         result = sum(1 if el == "Y" else 0 for el in pw.values())
         parity.append(result % 2)
 
+    # only makes sense if parity is the same for all terms, e.g. Heisenberg model
     assert all(
         parity[0] == p for p in parity
-    )  # only makes sense if parity is the same for all terms, e.g. Heisenberg model
+    ), f"The concurrence canonical decomposition is not well-defined for operator {op} as individual terms have different parity"
     return bool(parity[0])
 
 
