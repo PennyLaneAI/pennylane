@@ -122,9 +122,6 @@ def _qnode_batching_rule(
     The results are returned with the batch dimension moved to the end.
     """
 
-    print("batched_args: ", batched_args)
-    print("batch_dims: ", batch_dims)
-
     # Ensure that the number of batched_args matches the number of batch_dims
     assert len(batched_args) == len(
         batch_dims
@@ -140,36 +137,13 @@ def _qnode_batching_rule(
     consts = batched_args[:n_consts]
     args = batched_args[n_consts:]
 
-    print("consts: ", consts)
-    print("args: ", args)
-
-    aligned_args = []
-    for arg, batch_dim in zip(args, batch_dims[n_consts:]):
-        if batch_dim is not None:
-            aligned_arg = jax.numpy.moveaxis(arg, batch_dim, 0)
-        else:
-            aligned_arg = arg
-        aligned_args.append(aligned_arg)
-
-    print("aligned_args: ", aligned_args)
-
     def qfunc(*inner_args):
         return jax.core.eval_jaxpr(qfunc_jaxpr, consts, *inner_args)
 
     qnode = qml.QNode(qfunc, device, **qnode_kwargs)
-
-    result = qnode_call(qnode, *aligned_args, shots=shots)
-
+    result = qnode_call(qnode, *args, shots=shots)
     BatchingManager.disable_batching()
-
-    if isinstance(result, (tuple, list)):
-        batch_result = [jax.numpy.moveaxis(r, 0, -1) for r in result]
-    else:
-        batch_result = jax.numpy.moveaxis(result, 0, -1)
-
-    print("batch_result: ", batch_result)
-
-    return batch_result, [0] * len(batch_result)
+    return result, [0] * len(result)
 
 
 @lru_cache()
@@ -211,6 +185,7 @@ def _get_qnode_prim():
             print("batched_args: ", batched_args)
             print("input_shapes: ", input_shapes)
 
+            # TODO: is this the correct way to get the batch shape?
             batch_shape = jax.lax.broadcast_shapes(*input_shapes)
 
             final_shapes = _get_shapes_for_batched_output(
