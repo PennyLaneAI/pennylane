@@ -12,7 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Functionality for Cartan decomposition"""
+from functools import singledispatch
 
+import numpy as np
+
+from pennylane.operation import Operator
 from pennylane.pauli import PauliSentence
 
 
@@ -66,6 +70,20 @@ def concurrence_involution(op: PauliSentence):
         int: binary ``0`` or ``1`` for the even and odd parity subspace, respectively
 
     """
+    return _concurrence_involution(op)
+
+
+@singledispatch
+def _concurrence_involution(op):  # pylint:disable=unused-argument
+    """
+    Private implementation of _concurrence_involution, to prevent all of the
+    registered functions from appearing in the Sphinx docs.
+    """
+    return False
+
+
+@_concurrence_involution.register(PauliSentence)
+def _concurrence_involution_pauli(op: PauliSentence):
     parity = []
     for pw in op.keys():
         result = sum(1 if el == "Y" else 0 for el in pw.values())
@@ -75,3 +93,14 @@ def concurrence_involution(op: PauliSentence):
         parity[0] == p for p in parity
     )  # only makes sense if parity is the same for all terms, e.g. Heisenberg model
     return parity[0]
+
+
+@_concurrence_involution.register(Operator)
+def _concurrence_involution_operation(op: Operator):
+    op = op.matrix()
+    return np.allclose(op, -op.T)
+
+
+@_concurrence_involution.register(np.ndarray)
+def _concurrence_involution_matrix(op: np.ndarray):
+    return np.allclose(op, -op.T)

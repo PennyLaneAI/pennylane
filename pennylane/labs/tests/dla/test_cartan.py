@@ -56,3 +56,36 @@ class TestCartanDecomposition:
         assert check_commutation(k, k, k_space)
         assert check_commutation(k, m, m_space)
         assert check_commutation(m, m, k_space)
+
+    @pytest.mark.parametrize("involution", [even_odd_involution, concurrence_involution])
+    @pytest.mark.parametrize("g", [Ising2, Ising3, Heisenberg3])
+    def test_cartan_decomposition_dense(self, g, involution):
+        """Test basic properties and Cartan decomposition definitions using dense representations"""
+
+        g = [op.pauli_rep for op in g]
+        k, m = cartan_decomposition(g, involution)
+
+        assert all(involution(op) == 1 for op in k)
+        assert all(involution(op) == 0 for op in m)
+
+        k_space = qml.pauli.PauliVSpace(k)
+        m_space = qml.pauli.PauliVSpace(m)
+
+        # Commutation relations for Cartan pair
+        assert check_commutation(k, k, k_space)
+        assert check_commutation(k, m, m_space)
+        assert check_commutation(m, m, k_space)
+
+
+class TestInvolutions:
+    """Test involutions"""
+
+    @pytest.mark.parametrize("op", [X(0) @ X(1), X(0) @ X(1) + Y(0) @ Y(1)])
+    def test_concurrence_involution_inputs(self, op):
+        """Test different input types yield consistent results"""
+        res_op = concurrence_involution(op)
+        res_ps = concurrence_involution(op.pauli_rep)
+        res_m = concurrence_involution(op.matrix())
+
+        assert res_op == res_ps
+        assert res_op == res_m
