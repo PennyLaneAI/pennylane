@@ -100,6 +100,11 @@
 
 * A more sensible error message is raised from a `RecursionError` encountered when accessing properties and methods of a nested `CompositeOp` or `SProd`.
   [(#6375)](https://github.com/PennyLaneAI/pennylane/pull/6375)
+  
+* Refactored the `OpEq` and `WiresEq` classes to ensure consistent string representations and improved immutability.  
+  These changes address discrepancies in test outputs and ensure `OpEq` and `WiresEq` handle multiple operations and wires consistently by formatting them with square brackets.  
+  [(#6394)](https://github.com/PennyLaneAI/pennylane/pull/6394)
+
 
 <h4>Capturing and representing hybrid programs</h4>
 
@@ -349,3 +354,4 @@ Lee J. O'Riordan,
 Mudit Pandey,
 Andrija Paurevic,
 David Wierichs,
+Jacob Kitchen
