@@ -25,6 +25,8 @@ def CartanDecomp(g, involution):
         k (List[Union[PauliSentence, Operator]]): the even parity subspace :math:`\Theta(\mathfrak{k}) = \mathfrak{k}`
         m (List[Union[PauliSentence, Operator]]): the odd parity subspace :math:`\Theta(\mathfrak{m}) = \mathfrak{m}`
     """
+    # simple implementation assuming all elements in g are already either in k and m
+    # TODO: Figure out more general way to do this when the above is not the case
     m = []
     k = []
 
