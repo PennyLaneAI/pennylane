@@ -17,7 +17,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import I, X, Y, Z
-from pennylane.labs.lie import lie_closure_dense
+from pennylane.labs.dla import lie_closure_dense
 from pennylane.pauli import PauliSentence, PauliVSpace, PauliWord
 
 ops1 = [

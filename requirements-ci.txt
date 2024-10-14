@@ -13,4 +13,3 @@ matplotlib
 requests
 rich
 tomli # Drop once minimum Python version is 3.11
-tach
