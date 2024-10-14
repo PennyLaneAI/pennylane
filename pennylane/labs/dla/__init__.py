@@ -15,4 +15,3 @@
 
 from .lie_closure_dense import lie_closure_dense
 from .structure_constants_dense import structure_constants_dense
-from .cartan import cartan_decomposition, even_odd_involution, concurrence_involution
