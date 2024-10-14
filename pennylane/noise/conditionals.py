@@ -65,6 +65,7 @@ class WiresEq(BooleanFn):
             f"WiresEq({wire_repr})",
         )
 
+
 def _get_wires(val):
     """Extract wires as a set from an integer, string, Iterable, Wires or Operation instance.
 
