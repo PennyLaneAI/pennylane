@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Tests for pennylane/dla/lie_closure_dense.py functionality"""
+"""Tests for pennylane/labs/dla/lie_closure_dense.py functionality"""
 # pylint: disable=too-few-public-methods, protected-access, no-self-use
 import pytest
 
