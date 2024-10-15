@@ -20,6 +20,8 @@ from dataclasses import dataclass, field
 from enum import Enum
 from itertools import repeat
 
+import pennylane as qml
+
 if sys.version_info >= (3, 11):
     import tomllib as toml
 
@@ -27,8 +29,6 @@ if sys.version_info >= (3, 11):
 else:
     import tomlkit as toml
     from tomlkit import TOMLDocument
-
-import pennylane as qml
 
 
 class InvalidCapabilitiesError(Exception):
