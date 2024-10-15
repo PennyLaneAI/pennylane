@@ -22,7 +22,6 @@ import pennylane as qml
 from pennylane import numpy as np
 
 
-@pytest.mark.xfail(reason="https://github.com/PennyLaneAI/pennylane/issues/6340")
 def test_standard_validity():
     """Run standard tests of operation validity."""
     H = 2.0 * qml.PauliX(0) @ qml.PauliY(1) + 3.0 * qml.PauliY(0) @ qml.PauliZ(1)
@@ -135,13 +134,41 @@ class TestInputs:
         """Tests TypeError is raised if `hamiltonian` does not have a pauli rep."""
 
         invalid_operator = qml.Hermitian(np.eye(2), 0)
-
         assert pytest.raises(TypeError, qml.CommutingEvolution, invalid_operator, 1)
 
 
 class TestGradients:
     """Tests that correct gradients are obtained for `CommutingEvolution` when frequencies
     are specified."""
+
+    @pytest.mark.unit
+    def test_grad_method_and_recipe(self):
+        """Tests that CommutingEvolution returns the correct grad method and recipe."""
+
+        time = qml.numpy.array(0.1)
+        H = qml.Hamiltonian([0.5, 0.5], [qml.X(0), qml.Y(0)])
+        op = qml.CommutingEvolution(H, time, frequencies=(2,))
+        assert op.grad_method == "A"
+        assert qml.math.allclose(
+            op.grad_recipe[0], [[1.0, 1.0, 0.78539816], [-1.0, 1.0, -0.78539816]]
+        )
+        assert op.grad_recipe[1:] == (None, None)
+
+    @pytest.mark.unit
+    @pytest.mark.parametrize(
+        "H",
+        [
+            qml.Hamiltonian(qml.numpy.array([0.5, 0.5]), [qml.X(0), qml.Y(0)]),
+            qml.X(0) + qml.numpy.array(0.5) * qml.Y(0),
+        ],
+    )
+    def test_grad_method_is_none_when_trainable_hamiltonian(self, H):
+        """Tests that the grad method is None for a trainable Hamiltonian."""
+
+        time = qml.numpy.array(0.1)
+        op = qml.CommutingEvolution(H, time, frequencies=(2,))
+        assert op.grad_method is None
+        assert op.grad_recipe == [None] * (len(H.data) + 1)
 
     def test_two_term_case(self):
         """Tests the parameter shift rules for `CommutingEvolution` equal the
