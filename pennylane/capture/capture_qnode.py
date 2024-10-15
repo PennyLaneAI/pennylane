@@ -89,22 +89,22 @@ class BatchingManager:
     """A class to manage the batching state of the QNode."""
 
     # indicates that the (lazy) batch size has not yet been accessed/computed
-    _SET_BATCHING = False
+    _BATCHING_SET = False
 
     @classmethod
     def enable_batching(cls):
         """Enable batching for the QNode."""
-        cls._SET_BATCHING = True
+        cls._BATCHING_SET = True
 
     @classmethod
     def disable_batching(cls):
         """Disable batching for the QNode."""
-        cls._SET_BATCHING = False
+        cls._BATCHING_SET = False
 
     @classmethod
     def batching_enabled(cls):
         """Return ``True`` if batching is enabled, ``False`` otherwise."""
-        return cls._SET_BATCHING
+        return cls._BATCHING_SET
 
 
 def _qnode_batching_rule(
@@ -116,30 +116,25 @@ def _qnode_batching_rule(
     This rule exploits the parameter broadcasting feature of the QNode to vectorize the circuit execution.
     """
 
-    assert len(batched_args) == len(
-        batch_dims
-    ), "Mismatch in number of batched args and batch dimensions."
-
-    assert all(
+    assert len(batched_args) == len(batch_dims) and all(
         batch_dim is None or isinstance(batch_dim, int) for batch_dim in batch_dims
-    ), "Invalid batch dimension found."
+    ), "Mismatch in batched arguments or invalid batch dimensions found."
 
     consts = batched_args[:n_consts]
-    consts_dims = batch_dims[:n_consts]
     args = batched_args[n_consts:]
 
-    for _, (arg, batch_dim) in enumerate(zip(consts, consts_dims)):
-        if isinstance(arg, jax.numpy.ndarray) and arg.size > 1:
-            raise ValueError("Batched constant cannot currently be captured with jax.vmap.")
-
-    for i, (arg, batch_dim) in enumerate(zip(args, batch_dims[n_consts:])):
-        if isinstance(arg, jax.numpy.ndarray) and arg.size > 1 and batch_dim is None:
-            warnings.warn(
-                f"Argument at index {i} has more than 1 element but is not batched. "
-                "This may lead to unintended behavior or wrong results if the argument is provided "
-                "to a quantum operation that supports batching using parameter broadcasting.",
-                UserWarning,
-            )
+    for i, (arg, batch_dim) in enumerate(zip(batched_args, batch_dims)):
+        if i < n_consts:
+            if isinstance(arg, jax.numpy.ndarray) and arg.size > 1:
+                raise ValueError("Batched constant cannot currently be captured with jax.vmap.")
+        else:
+            if isinstance(arg, jax.numpy.ndarray) and arg.size > 1 and batch_dim is None:
+                warnings.warn(
+                    f"Argument at index {i} has more than 1 element but is not batched. "
+                    "This may lead to unintended behavior or wrong results if the argument is provided "
+                    "using parameter broadcasting to a quantum operation that supports batching.",
+                    UserWarning,
+                )
 
     BatchingManager.enable_batching()
 
@@ -151,6 +146,7 @@ def _qnode_batching_rule(
 
     BatchingManager.disable_batching()
 
+    # The batch dimension is at the front (axis 0) for all elements in the result.
     return result, [0] * len(result)
 
 
