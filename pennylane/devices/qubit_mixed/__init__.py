@@ -23,9 +23,10 @@ at your own discretion.
 
     apply_operation
 """
+from .apply_operation import apply_operation
+
 QUDIT_DIM = 2  # specifies qubit dimension
 
-from .apply_operation import apply_operation
 
 # from .adjoint_jacobian import adjoint_jacobian, adjoint_jvp, adjoint_vjp
 # from .initialize_state import create_initial_state
