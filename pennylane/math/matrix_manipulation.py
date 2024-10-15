@@ -101,9 +101,10 @@ def expand_matrix(mat, wires, wire_order=None, sparse_format="csr"):
            [0., 0., 1., 0.]])
 
     """
+    wires = Wires(wires)
 
     qudit_dim = int(qml.math.shape(mat)[-1] ** (1 / (len(wires))))
-
+    print(qudit_dim)
     if (wire_order is None) or (wire_order == wires):
         return mat
 
@@ -117,6 +118,7 @@ def expand_matrix(mat, wires, wire_order=None, sparse_format="csr"):
     interface = qml.math.get_interface(mat)
     shape = qml.math.shape(mat)
     batch_dim = shape[0] if len(shape) == 3 else None
+    print(batch_dim)
 
     def eye_interface(dim):
         if interface == "scipy":
@@ -239,7 +241,7 @@ def _permute_dense_matrix(matrix, wires, wire_order, batch_dim, qudit_dim: int =
     # transpose matrix
     matrix = qml.math.transpose(matrix, axes=perm)
     # reshape back
-    shape = [batch_dim] + [qudit_dim * num_wires] * 2 if batch_dim else [qudit_dim**num_wires] * 2
+    shape = [batch_dim] + [qudit_dim**num_wires] * 2 if batch_dim else [qudit_dim**num_wires] * 2
     return qml.math.reshape(matrix, shape)
 
 
