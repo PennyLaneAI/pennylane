@@ -1,7 +1,7 @@
 import os
 from typing import Any, Optional
 
-from requests import post
+from requests import exceptions, post
 
 GRAPHQL_URL = os.getenv("DATASETS_ENDPOINT_URL", "https://cloud.pennylane.ai/graphql")
 
@@ -27,9 +27,11 @@ def _get_graphql(url: str, query: str, variables: Optional[dict[str, Any]] = Non
     if variables:
         json["variables"] = variables
 
-    response = post(url=url, json=json, timeout=10)
+    response = post(url=url, json=json, timeout=10, headers={"content-type": "application/json"})
+    # try:
     response.raise_for_status()
-
+    # except exceptions.RequestException as exc:
+    #     raise ValueError(exc.response.json())
     if "errors" in response.json():
         all_errors = ",".join(error["message"] for error in response.json()["errors"])
         raise GraphQLError(f"Errors in request: {all_errors}")

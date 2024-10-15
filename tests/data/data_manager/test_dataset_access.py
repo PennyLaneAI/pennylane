@@ -56,7 +56,7 @@ def httpserver_listen_address():
 
 
 # pylint:disable=unused-argument
-def post_mock(url, json, timeout=1.0):
+def post_mock(url, json, timeout=1.0, headers={"content-type": "application/json"}):
     """Return mocked get response depending on json content."""
     resp = MagicMock(ok=True)
     if "ErrorQuery" in json["query"]:
