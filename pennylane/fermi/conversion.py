@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 """Functions to convert a fermionic operator to the qubit basis."""
 
 from functools import singledispatch
@@ -25,7 +26,6 @@ from pennylane.pauli import PauliSentence, PauliWord
 from .fermionic import FermiSentence, FermiWord
 
 
-# pylint: disable=unexpected-keyword-arg
 def jordan_wigner(
     fermi_operator: Union[FermiWord, FermiSentence],
     ps: bool = False,
@@ -101,28 +101,24 @@ def _(fermi_operator: FermiWord, ps=False, wire_map=None, tol=None):
 
     if len(fermi_operator) == 0:
         qubit_operator = PauliSentence({PauliWord({}): 1.0})
-
     else:
         coeffs = {"+": -0.5j, "-": 0.5j}
-        qubit_operator = PauliSentence({PauliWord({}): 1.0})  # Identity PS to multiply PSs with
+        qubit_operator = PauliSentence({PauliWord({}): 1.0})
 
-        for item in fermi_operator.items():
-            (_, wire), sign = item
+        for (_, wire), sign in fermi_operator.items():
+            z_string = {i: "Z" for i in range(wire)}
+            x_term = PauliWord({**z_string, wire: "X"})
+            y_term = PauliWord({**z_string, wire: "Y"})
 
-            z_string = dict(zip(range(wire), ["Z"] * wire))
-            qubit_operator @= PauliSentence(
-                {
-                    PauliWord({**z_string, **{wire: "X"}}): 0.5,
-                    PauliWord({**z_string, **{wire: "Y"}}): coeffs[sign],
-                }
-            )
+            qubit_operator @= PauliSentence({x_term: 0.5, y_term: coeffs[sign]})
 
-    for pw in qubit_operator:
-        if tol is not None and abs(qml.math.imag(qubit_operator[pw])) <= tol:
-            qubit_operator[pw] = qml.math.real(qubit_operator[pw])
+    if tol is not None:
+        qubit_operator = PauliSentence({
+            pw: qml.math.real(coeff) if abs(qml.math.imag(coeff)) <= tol else coeff
+            for pw, coeff in qubit_operator.items()
+        })
 
     if not ps:
-        # wire_order specifies wires to use for Identity (PauliWord({}))
         qubit_operator = qubit_operator.operation(wire_order=[identity_wire])
 
     if wire_map:
@@ -136,16 +132,16 @@ def _(fermi_operator: FermiSentence, ps=False, wire_map=None, tol=None):
     wires = list(fermi_operator.wires) or [0]
     identity_wire = wires[0]
 
-    qubit_operator = PauliSentence()  # Empty PS as 0 operator to add Pws to
+    qubit_operator = PauliSentence()
 
     for fw, coeff in fermi_operator.items():
         fermi_word_as_ps = jordan_wigner(fw, ps=True)
 
-        for pw in fermi_word_as_ps:
-            qubit_operator[pw] = qubit_operator[pw] + fermi_word_as_ps[pw] * coeff
-
-            if tol is not None and abs(qml.math.imag(qubit_operator[pw])) <= tol:
-                qubit_operator[pw] = qml.math.real(qubit_operator[pw])
+        for pw, pw_coeff in fermi_word_as_ps.items():
+            total_coeff = qubit_operator.get(pw, 0) + pw_coeff * coeff
+            if tol is not None and abs(qml.math.imag(total_coeff)) <= tol:
+                total_coeff = qml.math.real(total_coeff)
+            qubit_operator[pw] = total_coeff
 
     qubit_operator.simplify(tol=1e-16)
 
@@ -178,7 +174,7 @@ def parity_transform(
 
     .. math::
         \begin{align*}
-           a^{\dagger}_0 &= \left (\frac{X_0 - iY_0}{2}  \right )\otimes X_1 \otimes X_2 \otimes ... X_n, \\\\
+           a^{\dagger}_0 &= \left (\frac{X_0 - iY_0}{2}  \right )\otimes X_1 \otimes X_2 \otimes ... X_n, \\\\
            a^{\dagger}_n &= \left (\frac{Z_{n-1} \otimes X_n - iY_n}{2} \right ) \otimes X_{n+1} \otimes X_{n+2} \otimes ... \otimes X_n
         \end{align*}
 
@@ -186,7 +182,7 @@ def parity_transform(
 
     .. math::
         \begin{align*}
-           a_0 &= \left (\frac{X_0 + iY_0}{2}  \right )\otimes X_1 \otimes X_2 \otimes ... X_n,\\\\
+           a_0 &= \left (\frac{X_0 + iY_0}{2}  \right )\otimes X_1 \otimes X_2 \otimes ... X_n,\\\\
            a_n &= \left (\frac{Z_{n-1} \otimes X_n + iY_n}{2} \right ) \otimes X_{n+1} \otimes X_{n+2} \otimes ... \otimes X_n
         \end{align*}
 
@@ -244,32 +240,30 @@ def _(fermi_operator: FermiWord, n, ps=False, wire_map=None, tol=None):
     identity_wire = wires[0]
 
     coeffs = {"+": -0.5j, "-": 0.5j}
-    qubit_operator = PauliSentence({PauliWord({}): 1.0})  # Identity PS to multiply PSs with
+    qubit_operator = PauliSentence({PauliWord({}): 1.0})
 
-    for item in fermi_operator.items():
-        (_, wire), sign = item
+    for (_, wire), sign in fermi_operator.items():
         if wire >= n:
             raise ValueError(
                 f"Can't create or annihilate a particle on qubit number {wire} for a system with only {n} qubits"
             )
 
-        x_string = dict(zip(range(wire + 1, n), ["X"] * (n - wire)))
-
-        pw1 = (
-            PauliWord({**{wire: "X"}, **x_string})
-            if wire == 0
-            else PauliWord({**{wire - 1: "Z"}, **{wire: "X"}, **x_string})
-        )
+        x_string = {i: "X" for i in range(wire + 1, n)}
+        if wire == 0:
+            pw1 = PauliWord({**{wire: "X"}, **x_string})
+        else:
+            pw1 = PauliWord({**{wire - 1: "Z", wire: "X"}, **x_string})
         pw2 = PauliWord({**{wire: "Y"}, **x_string})
 
         qubit_operator @= PauliSentence({pw1: 0.5, pw2: coeffs[sign]})
 
-    for pw in qubit_operator:
-        if tol is not None and abs(qml.math.imag(qubit_operator[pw])) <= tol:
-            qubit_operator[pw] = qml.math.real(qubit_operator[pw])
+    if tol is not None:
+        qubit_operator = PauliSentence({
+            pw: qml.math.real(coeff) if abs(qml.math.imag(coeff)) <= tol else coeff
+            for pw, coeff in qubit_operator.items()
+        })
 
     if not ps:
-        # wire_order specifies wires to use for Identity (PauliWord({}))
         qubit_operator = qubit_operator.operation(wire_order=[identity_wire])
 
     if wire_map:
@@ -283,16 +277,16 @@ def _(fermi_operator: FermiSentence, n, ps=False, wire_map=None, tol=None):
     wires = list(fermi_operator.wires) or [0]
     identity_wire = wires[0]
 
-    qubit_operator = PauliSentence()  # Empty PS as 0 operator to add Pws to
+    qubit_operator = PauliSentence()
 
     for fw, coeff in fermi_operator.items():
         fermi_word_as_ps = parity_transform(fw, n, ps=True)
 
-        for pw in fermi_word_as_ps:
-            qubit_operator[pw] = qubit_operator[pw] + fermi_word_as_ps[pw] * coeff
-
-            if tol is not None and abs(qml.math.imag(qubit_operator[pw])) <= tol:
-                qubit_operator[pw] = qml.math.real(qubit_operator[pw])
+        for pw, pw_coeff in fermi_word_as_ps.items():
+            total_coeff = qubit_operator.get(pw, 0) + pw_coeff * coeff
+            if tol is not None and abs(qml.math.imag(total_coeff)) <= tol:
+                total_coeff = qml.math.real(total_coeff)
+            qubit_operator[pw] = total_coeff
 
     qubit_operator.simplify(tol=1e-16)
 
@@ -334,8 +328,8 @@ def bravyi_kitaev(
     and
 
     .. math::
+
         \begin{align*}
-           a_0 &= \frac{1}{2} \left ( X_0  + iY_{0} \right ), \\\\
            a_n &= \frac{1}{2} \left ( X_{U(n)} \otimes X_n \otimes Z_{P(n)} +iX_{U(n)} \otimes Y_{n} \otimes Z_{P(n)}\right ). \\\\
         \end{align*}
 
@@ -401,88 +395,76 @@ def _update_set(j, bin_range, n):
     Computes the update set of the j-th orbital in n qubits.
 
     Args:
-        j (int) : the orbital index
-        bin_range (int) : smallest power of 2 equal to or greater than
-                          given number of qubits, e.g., 8 for 5 qubits
-        n (int) : number of qubits
+        j (int): the orbital index
+        bin_range (int): smallest power of 2 equal to or greater than n
+        n (int): number of qubits
 
     Returns:
-        numpy.ndarray: Array containing the update set
+        list: List containing the update set
     """
-
-    indices = np.array([], dtype=int)
-    midpoint = int(bin_range / 2)
+    indices = []
+    midpoint = bin_range // 2
     if bin_range % 2 != 0:
         return indices
 
     if j < midpoint:
-        indices = np.append(indices, np.append(bin_range - 1, _update_set(j, midpoint, n)))
+        indices.append(bin_range - 1)
+        indices.extend(_update_set(j, midpoint, n))
     else:
-        indices = np.append(indices, _update_set(j - midpoint, midpoint, n) + midpoint)
+        indices.extend(u + midpoint for u in _update_set(j - midpoint, midpoint, n))
 
-    indices = np.array([u for u in indices if u < n])
-    return indices
+    return [u for u in indices if u < n]
 
 
 def _parity_set(j, bin_range):
     """
-    Computes the parity set of the j-th orbital in n qubits.
+    Computes the parity set of the j-th orbital.
 
     Args:
-        j (int) : the orbital index
-        bin_range (int) : smallest power of 2 equal to or greater than
-                          given number of qubits, e.g., 8 for 5 qubits
+        j (int): the orbital index
+        bin_range (int): smallest power of 2 equal to or greater than n
 
     Returns:
-        numpy.ndarray: Array of qubits which determine the parity of qubit j
+        list: List of qubits which determine the parity of qubit j
     """
-
-    indices = np.array([], dtype=int)
-    midpoint = int(bin_range / 2)
+    indices = []
+    midpoint = bin_range // 2
     if bin_range % 2 != 0:
         return indices
 
     if j < midpoint:
-        indices = np.append(indices, _parity_set(j, midpoint))
+        indices.extend(_parity_set(j, midpoint))
     else:
-        indices = np.append(
-            indices,
-            np.append(
-                _parity_set(j - midpoint, midpoint) + midpoint,
-                midpoint - 1,
-            ),
-        )
+        indices.extend(_parity_set(j - midpoint, midpoint))
+        indices.append(midpoint - 1)
 
     return indices
 
 
 def _flip_set(j, bin_range):
     """
-    Computes the flip set of the j-th orbital in n qubits.
+    Computes the flip set of the j-th orbital.
 
     Args:
-        j (int) : the orbital index
-        bin_range (int) : smallest power of 2 equal to or greater than
-                          given number of qubits, e.g., 8 for 5 qubits
+        j (int): the orbital index
+        bin_range (int): smallest power of 2 equal to or greater than n
 
     Returns:
-        numpy.ndarray: Array containing information if the phase of orbital j is same as qubit j.
+        list: List containing information if the phase of orbital j is same as qubit j.
     """
-
-    indices = np.array([])
-    midpoint = int(bin_range / 2)
+    indices = []
+    midpoint = bin_range // 2
     if bin_range % 2 != 0:
         return indices
 
     if j < midpoint:
-        indices = np.append(indices, _flip_set(j, midpoint))
+        indices.extend(_flip_set(j, midpoint))
     elif midpoint <= j < bin_range - 1:
-        indices = np.append(indices, _flip_set(j - midpoint, midpoint) + midpoint)
+        indices.extend(u + midpoint for u in _flip_set(j - midpoint, midpoint))
     else:
-        indices = np.append(
-            np.append(indices, _flip_set(j - midpoint, midpoint) + midpoint),
-            midpoint - 1,
-        )
+        indices.extend(u + midpoint for u in _flip_set(j - midpoint, midpoint))
+        indices.append(midpoint - 1)
+
     return indices
 
 
@@ -498,9 +480,9 @@ def _(fermi_operator: FermiWord, n, ps=False, wire_map=None, tol=None):
     identity_wire = wires[0]
 
     coeffs = {"+": -0.5j, "-": 0.5j}
-    qubit_operator = PauliSentence({PauliWord({}): 1.0})  # Identity PS to multiply PSs with
+    qubit_operator = PauliSentence({PauliWord({}): 1.0})
 
-    bin_range = int(2 ** np.ceil(np.log2(n)))
+    bin_range = 2 ** int(np.ceil(np.log2(n)))
 
     for (_, wire), sign in fermi_operator.items():
         if wire >= n:
@@ -509,37 +491,31 @@ def _(fermi_operator: FermiWord, n, ps=False, wire_map=None, tol=None):
             )
 
         u_set = _update_set(wire, bin_range, n)
-        update_string = dict(zip(u_set, ["X"] * len(u_set)))
+        update_string = {u: "X" for u in u_set}
 
         p_set = _parity_set(wire, bin_range)
-        parity_string = dict(zip(p_set, ["Z"] * len(p_set)))
+        parity_string = {p: "Z" for p in p_set}
 
         if wire % 2 == 0:
-            qubit_operator @= PauliSentence(
-                {
-                    PauliWord({**parity_string, **{wire: "X"}, **update_string}): 0.5,
-                    PauliWord({**parity_string, **{wire: "Y"}, **update_string}): coeffs[sign],
-                }
-            )
+            x_term = PauliWord({**parity_string, wire: "X", **update_string})
+            y_term = PauliWord({**parity_string, wire: "Y", **update_string})
         else:
             f_set = _flip_set(wire, bin_range)
+            r_set = [p for p in p_set if p not in f_set]
+            remainder_string = {r: "Z" for r in r_set}
 
-            r_set = np.setdiff1d(p_set, f_set)
-            remainder_string = dict(zip(r_set, ["Z"] * len(r_set)))
+            x_term = PauliWord({**parity_string, wire: "X", **update_string})
+            y_term = PauliWord({**remainder_string, wire: "Y", **update_string})
 
-            qubit_operator @= PauliSentence(
-                {
-                    PauliWord({**parity_string, **{wire: "X"}, **update_string}): 0.5,
-                    PauliWord({**remainder_string, **{wire: "Y"}, **update_string}): coeffs[sign],
-                }
-            )
+        qubit_operator @= PauliSentence({x_term: 0.5, y_term: coeffs[sign]})
 
-    for pw in qubit_operator:
-        if tol is not None and abs(qml.math.imag(qubit_operator[pw])) <= tol:
-            qubit_operator[pw] = qml.math.real(qubit_operator[pw])
+    if tol is not None:
+        qubit_operator = PauliSentence({
+            pw: qml.math.real(coeff) if abs(qml.math.imag(coeff)) <= tol else coeff
+            for pw, coeff in qubit_operator.items()
+        })
 
     if not ps:
-        # wire_order specifies wires to use for Identity (PauliWord({}))
         qubit_operator = qubit_operator.operation(wire_order=[identity_wire])
 
     if wire_map:
@@ -553,16 +529,16 @@ def _(fermi_operator: FermiSentence, n, ps=False, wire_map=None, tol=None):
     wires = list(fermi_operator.wires) or [0]
     identity_wire = wires[0]
 
-    qubit_operator = PauliSentence()  # Empty PS as 0 operator to add Pws to
+    qubit_operator = PauliSentence()
 
     for fw, coeff in fermi_operator.items():
         fermi_word_as_ps = bravyi_kitaev(fw, n, ps=True)
 
-        for pw in fermi_word_as_ps:
-            qubit_operator[pw] = qubit_operator[pw] + fermi_word_as_ps[pw] * coeff
-
-            if tol is not None and abs(qml.math.imag(qubit_operator[pw])) <= tol:
-                qubit_operator[pw] = qml.math.real(qubit_operator[pw])
+        for pw, pw_coeff in fermi_word_as_ps.items():
+            total_coeff = qubit_operator.get(pw, 0) + pw_coeff * coeff
+            if tol is not None and abs(qml.math.imag(total_coeff)) <= tol:
+                total_coeff = qml.math.real(total_coeff)
+            qubit_operator[pw] = total_coeff
 
     qubit_operator.simplify(tol=1e-16)
 
