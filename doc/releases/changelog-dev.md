@@ -192,7 +192,7 @@
 
 * The ``QNode.get_best_method``, ``QNode.best_method_str`` and ``QNode.get_gradient_fn`` methods have been deprecated. 
   Instead, use the ``qml.workflow.get_best_diff_method`` and ``qml.workflow.get_gradient_fn`` functions.
-  [(#)]()
+  [(#6399)](https://github.com/PennyLaneAI/pennylane/pull/6399)
 
 * Legacy operator arithmetic has been deprecated. This includes `qml.ops.Hamiltonian`, `qml.operation.Tensor`,
   `qml.operation.enable_new_opmath`, `qml.operation.disable_new_opmath`, and `qml.operation.convert_to_legacy_H`.
