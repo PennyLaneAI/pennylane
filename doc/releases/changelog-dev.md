@@ -275,6 +275,7 @@
 <h3>Bug fixes 🐛</h3>
 
 * Fixes the matrices for qutrit operators when expanded to more wires.
+  [(#6398)](https://github.com/PennyLaneAI/pennylane/pull/6398/)
 
 * `MeasurementValue` now raises an error when it is used as a boolean.
   [(#6386)](https://github.com/PennyLaneAI/pennylane/pull/6386)
