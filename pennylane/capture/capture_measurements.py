@@ -137,8 +137,7 @@ def create_measurement_obs_primitive(
     abstract_type = _get_abstract_measurement()
 
     @primitive.def_abstract_eval
-    def _(*args, **kwargs):
-
+    def _(*_, **__):
         abstract_eval = measurement_type._abstract_eval  # pylint: disable=protected-access
         return abstract_type(abstract_eval, n_wires=None)
 

@@ -421,3 +421,30 @@ def test_qnode_vmap_dtype(x64_mode):
     assert qml.math.allclose(res, jax.numpy.cos(x))
 
     jax.config.update("jax_enable_x64", initial_mode)
+
+
+def test_qnode_vmap_closure():
+    """Test that JAX can vmap over the QNode primitive with closure variables."""
+
+    const = jax.numpy.array(2.0)
+
+    @qml.qnode(qml.device("default.qubit", wires=2))
+    def circuit(x):
+        qml.RX(x, 0)
+        qml.RY(const, 1)
+        return qml.probs(wires=[0, 1])
+
+    x = jax.numpy.array([1.0, 2.0, 3.0])
+    vmap_circuit = jax.vmap(circuit)
+    jaxpr = jax.make_jaxpr(vmap_circuit)(x)
+    eqn0 = jaxpr.eqns[0]
+
+    assert len(eqn0.invars) == 2  # one closure variable, one (batched) arg
+    assert eqn0.invars[0].aval == jax.core.ShapedArray((), jax.numpy.float64, weak_type=True)
+    assert eqn0.invars[1].aval == jax.core.ShapedArray((3,), jax.numpy.float64)
+
+    assert len(eqn0.outvars) == 1
+    assert eqn0.outvars[0].aval == jax.core.ShapedArray((3, 4), jax.numpy.float64)
+
+    res = vmap_circuit(x)
+    assert jax.numpy.allclose(res, circuit(x))
