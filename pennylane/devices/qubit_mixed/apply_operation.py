@@ -139,13 +139,12 @@ def apply_operation_tensordot(
     else:
         kraus = [qml.math.cast_like(op.matrix(), state)]
 
+    # Small trick: following the same logic as in the legacy DefaultMixed._apply_channel_tensordot, here for the contraction on the right side we also directly contract the col ids of channel instead of rows for simplicity. This can also save a step of transposing the kraus operators.
     row_wires_list = channel_wires.tolist()  # Example: H0 => [0]
     col_wires_list = [w + num_wires for w in row_wires_list]  # Example: H0 => [3]
-
-    channel_row_ids = list(range(num_ch_wires))
     channel_col_ids = list(range(num_ch_wires, 2 * num_ch_wires))
     axes_left = [channel_col_ids, row_wires_list]
-    axes_right = [col_wires_list, channel_row_ids]
+    axes_right = [col_wires_list, channel_col_ids]
 
     # Apply the Kraus operators, and sum over all Kraus operators afterwards
     def _conjugate_state_with(k):
@@ -155,7 +154,7 @@ def apply_operation_tensordot(
         of k.conj() simultaneously."""
         return qml.math.tensordot(
             qml.math.tensordot(k, state, axes_left),
-            qml.math.conj(math.stack(math.moveaxis(k, source=-1, destination=-2))),
+            qml.math.conj(k),
             axes_right,
         )
 
