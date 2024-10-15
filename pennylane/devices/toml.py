@@ -28,8 +28,10 @@ else:
     import tomlkit as toml
     from tomlkit import TOMLDocument
 
+import pennylane as qml
 
-class InvalidTOMLError(Exception):
+
+class InvalidCapabilitiesError(Exception):
     """Exception raised from invalid TOML files."""
 
 
@@ -43,7 +45,16 @@ class ExecutionCondition(Enum):
     """The constraint on the support of something."""
 
     FINITE_SHOTS_ONLY = "finiteshots"
+    """If the operator or measurement process is only supported with finite shots."""
+
     ANALYTIC_MODE_ONLY = "analytic"
+    """If the operator or measurement process is only supported in analytic execution."""
+
+    TERMS_MUST_COMMUTE = "terms-commute"
+    """If the composite operator is supported only when its terms commute."""
+
+
+VALID_CONDITION_STRINGS = {condition.value for condition in ExecutionCondition}
 
 
 @dataclass
@@ -75,6 +86,7 @@ class DeviceCapabilities:  # pylint: disable=too-many-instance-attributes
         mid_circuit_measurements (bool): Whether the device supports mid-circuit measurements natively.
         runtime_code_generation (bool): Whether the device requires run time generation of the quantum circuit.
         dynamic_qubit_management (bool): Whether the device supports dynamic qubit allocation/deallocation.
+        overlapping_observables (bool): Whether the device supports measuring overlapping observables on the same tape.
         non_commuting_observables (bool): Whether the device supports measuring non-commuting observables on the same tape.
         initial_state_prep (bool): Whether the device supports initial state preparation.
 
@@ -87,6 +99,7 @@ class DeviceCapabilities:  # pylint: disable=too-many-instance-attributes
     mid_circuit_measurements: bool = False
     runtime_code_generation: bool = False
     dynamic_qubit_management: bool = False
+    overlapping_observables: bool = True
     non_commuting_observables: bool = False
     initial_state_prep: bool = False
     options: dict[str, any] = field(default_factory=dict)
@@ -97,6 +110,7 @@ VALID_COMPILATION_FLAGS = {
     "mid_circuit_measurements",
     "runtime_code_generation",
     "dynamic_qubit_management",
+    "overlapping_observables",
     "non_commuting_observable",
     "initial_state_prep",
 }
@@ -115,14 +129,23 @@ def _get_toml_section(document: TOMLDocument, path: str, prefix: str = "") -> TO
     return document
 
 
-def _validate_conditions(conditions: list[ExecutionCondition]) -> None:
+def _validate_conditions(conditions: list[ExecutionCondition], target=None) -> None:
     """Validates the execution conditions."""
 
     if (
         ExecutionCondition.ANALYTIC_MODE_ONLY in conditions
         and ExecutionCondition.FINITE_SHOTS_ONLY in conditions
     ):
-        raise InvalidTOMLError("Conditions cannot contain both 'analytic' and 'finiteshots'")
+        raise InvalidCapabilitiesError(
+            "Conditions cannot contain both 'analytic' and 'finiteshots'"
+        )
+
+    if conditions == ExecutionCondition.TERMS_MUST_COMMUTE and not isinstance(
+        target, (qml.ops.Prod, qml.ops.Sum, qml.ops.SProd)
+    ):
+        raise InvalidCapabilitiesError(
+            "'terms-commute' is only applicable to Prod, SProd, Sum, and LinearCombination."
+        )
 
 
 def _get_operators(section: TOMLDocument) -> dict[str, OperatorProperties]:
@@ -132,15 +155,21 @@ def _get_operators(section: TOMLDocument) -> dict[str, OperatorProperties]:
     iterator = section.items() if hasattr(section, "items") else zip(section, repeat({}))
     for o, attributes in iterator:
         if unknowns := set(attributes) - {"properties", "conditions"}:
-            raise InvalidTOMLError(f"Operator '{o}' has unknown attributes: {list(unknowns)}")
+            raise InvalidCapabilitiesError(
+                f"Operator '{o}' has unknown attributes: {list(unknowns)}"
+            )
         properties = attributes.get("properties", {})
         if unknowns := set(properties) - {"invertible", "controllable", "differentiable"}:
-            raise InvalidTOMLError(f"Operator '{o}' has unknown properties: {list(unknowns)}")
+            raise InvalidCapabilitiesError(
+                f"Operator '{o}' has unknown properties: {list(unknowns)}"
+            )
         condition_strs = attributes.get("conditions", [])
-        if unknowns := set(condition_strs) - {"finiteshots", "analytic"}:
-            raise InvalidTOMLError(f"Operator '{o}' has unknown conditions: {list(unknowns)}")
+        if unknowns := set(condition_strs) - VALID_CONDITION_STRINGS:
+            raise InvalidCapabilitiesError(
+                f"Operator '{o}' has unknown conditions: {list(unknowns)}"
+            )
         conditions = [ExecutionCondition(c) for c in condition_strs]
-        _validate_conditions(conditions)
+        _validate_conditions(conditions, o)
         operators[o] = OperatorProperties(
             invertible="invertible" in properties,
             controllable="controllable" in properties,
@@ -172,7 +201,9 @@ def _get_measurement_processes(
     iterator = section.items() if hasattr(section, "items") else zip(section, repeat({}))
     for mp, attributes in iterator:
         if unknowns := set(attributes) - {"conditions"}:
-            raise InvalidTOMLError(f"Measurement '{mp}' has unknown attributes: {list(unknowns)}")
+            raise InvalidCapabilitiesError(
+                f"Measurement '{mp}' has unknown attributes: {list(unknowns)}"
+            )
         conditions = [ExecutionCondition(c) for c in attributes.get("conditions", [])]
         _validate_conditions(conditions)
         measurement_processes[mp] = conditions
@@ -183,8 +214,15 @@ def _get_compilation_flags(document: TOMLDocument, prefix: str = "") -> dict[str
     """Gets the boolean capabilities in the compilation section."""
     section = _get_toml_section(document, "compilation", prefix)
     if unknowns := set(section) - VALID_COMPILATION_FLAGS:
-        raise InvalidTOMLError(f"The compilation section has unknown options: {list(unknowns)}")
-    return {flag: section.get(flag, False) for flag in VALID_COMPILATION_FLAGS}
+        raise InvalidCapabilitiesError(
+            f"The compilation section has unknown options: {list(unknowns)}"
+        )
+    flags = {flag: section.get(flag, False) for flag in VALID_COMPILATION_FLAGS}
+    if not flags["overlapping_observables"] and flags["non_commuting_observables"]:
+        raise InvalidCapabilitiesError(
+            "When overlapping_observables is False, non_commuting_observables cannot be True."
+        )
+    return flags
 
 
 def _get_options(document: TOMLDocument) -> dict[str, str]:
