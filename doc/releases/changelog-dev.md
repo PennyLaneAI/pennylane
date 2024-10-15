@@ -103,6 +103,9 @@
 
 <h4>Capturing and representing hybrid programs</h4>
 
+* `jax.vmap` is now compatible with quantum circuits and it can be captured with `qml.capture.make_plxpr`.
+  [(#6349)](https://github.com/PennyLaneAI/pennylane/pull/6349)
+
 * `qml.wires.Wires` now accepts JAX arrays as input. Furthermore, a `FutureWarning` is no longer raised in `JAX 0.4.30+`
   when providing JAX tracers as input to `qml.wires.Wires`.
   [(#6312)](https://github.com/PennyLaneAI/pennylane/pull/6312)

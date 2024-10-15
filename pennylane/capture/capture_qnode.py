@@ -112,6 +112,8 @@ def _qnode_batching_rule(
 ):
     """
     Batching rule for the ``qnode`` primitive.
+
+    This rule exploits the parameter broadcasting feature of the QNode to vectorize the circuit execution.
     """
 
     assert len(batched_args) == len(
@@ -132,7 +134,9 @@ def _qnode_batching_rule(
 
     qnode = qml.QNode(qfunc, device, **qnode_kwargs)
     result = qnode_call(qnode, *args, shots=shots)
+
     BatchingManager.disable_batching()
+
     return result, [0] * len(result)
 
 

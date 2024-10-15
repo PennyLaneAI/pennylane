@@ -448,3 +448,16 @@ def test_qnode_vmap_closure():
 
     res = vmap_circuit(x)
     assert jax.numpy.allclose(res, circuit(x))
+
+
+def test_vmap_error_indexing():
+    """Test that an IndexError is raised when indexing a batched parameter."""
+
+    @qml.qnode(qml.device("default.qubit", wires=2))
+    def circuit(vec, scalar):
+        qml.RX(vec[0], 0)
+        qml.RY(scalar, 1)
+        return qml.expval(qml.Z(0))
+
+    with pytest.raises(IndexError):
+        jax.vmap(circuit, in_axes=(0, None))(jax.numpy.array([1.0, 2.0, 3.0]), 5.0)
