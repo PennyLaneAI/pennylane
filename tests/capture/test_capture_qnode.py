@@ -359,3 +359,65 @@ def test_qnode_jvp():
     xt = -0.6
     jvp = jax.jvp(circuit, (x,), (xt,))
     assert qml.math.allclose(jvp, (qml.math.cos(x), -qml.math.sin(x) * xt))
+
+
+@pytest.mark.parametrize(
+    "input, expected_output",
+    [
+        (
+            jax.numpy.array([0.1]),
+            jax.core.ShapedArray((1,), jax.numpy.float64),
+        ),
+        (
+            jax.numpy.array([0.1, 0.2]),
+            jax.core.ShapedArray((2,), jax.numpy.float64),
+        ),
+    ],
+)
+def test_qnode_vmap(input, expected_output):
+    """Test that JAX can vmap over the QNode primitive via a registered batching rule."""
+    dev = qml.device("default.qubit", wires=1)
+
+    @qml.qnode(dev)
+    def circuit(x):
+        qml.RX(x, 0)
+        return qml.expval(qml.Z(0))
+
+    vmap_circuit = jax.vmap(circuit)
+
+    jaxpr = jax.make_jaxpr(vmap_circuit)(input)
+    eqn0 = jaxpr.eqns[0]
+
+    assert len(eqn0.outvars) == 1
+    assert eqn0.outvars[0].aval == expected_output
+
+    res = vmap_circuit(input)
+    assert qml.math.allclose(res, jax.numpy.cos(input))
+
+
+@pytest.mark.parametrize("x64_mode", (True, False))
+def test_qnode_vmap_dtype(x64_mode):
+    """Test that JAX can vmap over the QNode primitive with different dtypes."""
+
+    initial_mode = jax.config.jax_enable_x64
+    jax.config.update("jax_enable_x64", x64_mode)
+    fdtype = jax.numpy.float64 if x64_mode else jax.numpy.float32
+
+    @qml.qnode(qml.device("default.qubit", wires=1))
+    def circuit(x):
+        qml.RX(x, 0)
+        return qml.expval(qml.Z(0))
+
+    x = jax.numpy.array([0.1, 0.2, 0.3])
+    vmap_circuit = jax.vmap(circuit)
+
+    jaxpr = jax.make_jaxpr(vmap_circuit)(x)
+    eqn0 = jaxpr.eqns[0]
+
+    assert len(eqn0.outvars) == 1
+    assert eqn0.outvars[0].aval == jax.core.ShapedArray((3,), fdtype)
+
+    res = vmap_circuit(x)
+    assert qml.math.allclose(res, jax.numpy.cos(x))
+
+    jax.config.update("jax_enable_x64", initial_mode)

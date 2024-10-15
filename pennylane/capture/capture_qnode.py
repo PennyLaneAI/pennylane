@@ -112,14 +112,6 @@ def _qnode_batching_rule(
 ):
     """
     Batching rule for the ``qnode`` primitive.
-
-    The batching rule moves the batch dimension of the arguments to the front, and then calls the
-    QNode with the batched arguments.
-
-    The execution is vectorized over the batch dimension(s) of the arguments,
-    exploiting the parameter broadcasting feature of the QNode.
-
-    The results are returned with the batch dimension moved to the end.
     """
 
     # Ensure that the number of batched_args matches the number of batch_dims
@@ -158,8 +150,6 @@ def _get_qnode_prim():
     def _(*args, qnode, shots, device, qnode_kwargs, qfunc_jaxpr, n_consts):
         consts = args[:n_consts]
         args = args[n_consts:]
-
-        print("consts qnode: ", consts)
 
         def qfunc(*inner_args):
             return jax.core.eval_jaxpr(qfunc_jaxpr, consts, *inner_args)
