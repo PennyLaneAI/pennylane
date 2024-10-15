@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Tests for pennylane/labs/lie/structure_constants.py functionality"""
+"""Tests for pennylane/labs/dla/structure_constants.py functionality"""
 # pylint: disable=no-self-use
 
 import numpy as np
