@@ -425,7 +425,7 @@ def mitigate_with_zne(
         dev = qml.device("default.mixed", wires=2)
         dev = qml.transforms.insert(dev, qml.AmplitudeDamping, noise_strength)
 
-    We can now set up a mitigated ``QNode`` by first decomposing it into a target gate set via :func:`~.pennylane.transforms.compile`
+    We can now set up a mitigated ``QNode`` by first decomposing it into a target gate set via :func:`~.pennylane.transforms.decompose`
     and then applying this transform by passing a ``folding`` and ``extrapolate`` function. PennyLane provides native
     functions :func:`~.pennylane.transforms.fold_global` and :func:`~.pennylane.transforms.poly_extrapolate` or
     :func:`~.pennylane.transforms.richardson_extrapolate` that allow for differentiating through them. Custom functions, as well as
@@ -451,7 +451,7 @@ def mitigate_with_zne(
             folding=fold_global,
             extrapolate=poly_extrapolate,
             extrapolate_kwargs={'order': 2})
-        @partial(qml.compile, basis_set = ["RY", "CZ"])
+        @partial(qml.decompose, gate_set = ["RY", "CZ"])
         @qnode(dev)
         def circuit(w1, w2):
             qml.SimplifiedTwoDesign(w1, w2, wires=range(2))
@@ -474,9 +474,10 @@ def mitigate_with_zne(
 
     .. note::
 
-        Native function :func:`~.pennylane.transforms.fold_global` provided by PennyLane no longer decomposes the circuit
-        as part of the folding procedure. Users are encouraged to use :func:`~.pennylane.transforms.compile` to unroll
-        the circuit into a target gateset before folding when using this transform.
+        As of PennyLane v0.39, native function :func:`~.pennylane.transforms.fold_global` provided
+        by PennyLane no longer decomposes the circuit as part of the folding procedure. Users are
+        encouraged to use :func:`~.pennylane.transforms.decompose` to unroll the circuit into a target
+        gateset before folding when using this transform.
 
     .. details::
         :title: Usage Details
