@@ -204,7 +204,7 @@ def init_auxiliary_tape(circuit: qml.tape.QuantumScript):
     """
     new_measurements = []
     for m in circuit.measurements:
-        if not m.mv:
+        if m.mv is None:
             if isinstance(m, VarianceMP):
                 new_measurements.append(SampleMP(obs=m.obs))
             else:
@@ -281,13 +281,13 @@ def parse_native_mid_circuit_measurements(
             raise TypeError(
                 f"Native mid-circuit measurement mode does not support {type(m).__name__} measurements."
             )
-        if interface != "jax" and m.mv and not has_valid:
+        if interface != "jax" and m.mv is not None and not has_valid:
             meas = measurement_with_no_shots(m)
-        elif m.mv and active_qjit:
+        elif m.mv is not None and active_qjit:
             meas = gather_mcm_qjit(
                 m, mcm_samples, is_valid, postselect_mode=postselect_mode
             )  # pragma: no cover
-        elif m.mv:
+        elif m.mv is not None:
             meas = gather_mcm(m, mcm_samples, is_valid, postselect_mode=postselect_mode)
         elif interface != "jax" and not has_valid:
             meas = measurement_with_no_shots(m)
