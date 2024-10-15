@@ -14,7 +14,7 @@
 """
 This submodule defines a capture compatible call to QNodes.
 """
-
+import warnings
 from copy import copy
 from dataclasses import asdict
 from functools import lru_cache, partial
@@ -121,13 +121,27 @@ def _qnode_batching_rule(
     ), "Mismatch in number of batched args and batch dimensions."
 
     assert all(
-        batch_dim is None or isinstance(batch_dim, int) for batch_dim in batch_dims[n_consts:]
+        batch_dim is None or isinstance(batch_dim, int) for batch_dim in batch_dims
     ), "Invalid batch dimension found."
 
-    BatchingManager.enable_batching()
-
     consts = batched_args[:n_consts]
+    consts_dims = batch_dims[:n_consts]
     args = batched_args[n_consts:]
+
+    for _, (arg, batch_dim) in enumerate(zip(consts, consts_dims)):
+        if isinstance(arg, jax.numpy.ndarray) and arg.size > 1:
+            raise ValueError("Batched constant cannot currently be captured with jax.vmap.")
+
+    for i, (arg, batch_dim) in enumerate(zip(args, batch_dims[n_consts:])):
+        if isinstance(arg, jax.numpy.ndarray) and arg.size > 1 and batch_dim is None:
+            warnings.warn(
+                f"Argument at index {i} has more than 1 element but is not batched. "
+                "This may lead to unintended behavior or wrong results if the argument is provided "
+                "to a quantum operation that supports batching using parameter broadcasting.",
+                UserWarning,
+            )
+
+    BatchingManager.enable_batching()
 
     def qfunc(*inner_args):
         return jax.core.eval_jaxpr(qfunc_jaxpr, consts, *inner_args)

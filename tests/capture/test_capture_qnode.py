@@ -450,6 +450,25 @@ def test_qnode_vmap_closure():
     assert jax.numpy.allclose(res, circuit(x))
 
 
+def test_qnode_vmap_closure_error():
+    """Test that an error is raised when trying to vmap over a batched closure variable."""
+
+    dev = qml.device("default.qubit", wires=2)
+
+    const = jax.numpy.array([2.0, 6.6])
+
+    @qml.qnode(dev)
+    def circuit(x):
+        qml.RY(x, 0)
+        qml.RX(const, wires=0)
+        return qml.expval(qml.PauliZ(0))
+
+    with pytest.raises(
+        ValueError, match="Batched constant cannot currently be captured with jax.vmap."
+    ):
+        jax.make_jaxpr(jax.vmap(circuit))(jax.numpy.array([0.1, 0.2]))
+
+
 def test_vmap_error_indexing():
     """Test that an IndexError is raised when indexing a batched parameter."""
 
@@ -460,4 +479,23 @@ def test_vmap_error_indexing():
         return qml.expval(qml.Z(0))
 
     with pytest.raises(IndexError):
-        jax.vmap(circuit, in_axes=(0, None))(jax.numpy.array([1.0, 2.0, 3.0]), 5.0)
+        jax.make_jaxpr(jax.vmap(circuit, in_axes=(0, None)))(jax.numpy.array([1.0, 2.0, 3.0]), 5.0)
+
+
+def test_warning_bypass_vmap():
+    """Test that a warning is raised when bypassing vmap."""
+
+    dev = qml.device("default.qubit", wires=4)
+
+    @qml.qnode(dev)
+    def circuit(param_array, param_array_2):
+        qml.RX(param_array, wires=2)
+        qml.DoubleExcitation(param_array_2[0], wires=[0, 1, 2, 3])
+        return qml.expval(qml.PauliZ(0))
+
+    param_array = jax.numpy.array([1.0, 1.2, 1.3])
+    param_array_2 = jax.numpy.array([2.0, 2.1, 2.2])
+    vmap_circuit = jax.vmap(circuit, in_axes=(0, None))
+
+    with pytest.warns(UserWarning, match="Argument at index 1 has more"):
+        jax.make_jaxpr(vmap_circuit)(param_array, param_array_2)
