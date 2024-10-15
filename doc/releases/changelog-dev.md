@@ -269,6 +269,9 @@
 * Removed ambiguity in error raised by the `PauliRot` class.
   [(#6298)](https://github.com/PennyLaneAI/pennylane/pull/6298)
 
+* Renamed an incorrectly named test in `test_pow_ops.py`.
+  [(#6388)](https://github.com/PennyLaneAI/pennylane/pull/6388)
+
 <h3>Bug fixes 🐛</h3>
 
 * `default.qutrit` now returns integer samples.
