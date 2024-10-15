@@ -27,6 +27,8 @@ advanced quantum computing research.
 .. autosummary::
     :toctree: api
 
+    dla
+
 
 """
 
