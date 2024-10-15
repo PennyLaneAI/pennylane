@@ -55,9 +55,9 @@ def cartan_decomposition(g, involution):
     k = []
 
     for op in g:
-        if involution(op):  # odd parity
+        if involution(op):  # odd parity theta(k) = k
             k.append(op)
-        else:  # even parity
+        else:  # even parity theta(m) = -m
             m.append(op)
     return k, m
 
