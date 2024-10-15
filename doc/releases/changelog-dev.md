@@ -274,6 +274,8 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixes the matrices for qutrit operators when expanded to more wires.
+
 * `default.qutrit` now returns integer samples.
   [(#6385)](https://github.com/PennyLaneAI/pennylane/pull/6385)
 

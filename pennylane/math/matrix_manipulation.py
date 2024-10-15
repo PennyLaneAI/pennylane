@@ -102,10 +102,12 @@ def expand_matrix(mat, wires, wire_order=None, sparse_format="csr"):
 
     """
 
+    qudit_dim = int(qml.math.shape(mat)[-1] ** 1 / (len(wires)))
+
     if (wire_order is None) or (wire_order == wires):
         return mat
 
-    if not wires and qml.math.shape(mat) == (2, 2):
+    if not wires and qml.math.shape(mat) == (qudit_dim, qudit_dim):
         # global phase
         wires = wire_order[0:1]
 
@@ -118,8 +120,8 @@ def expand_matrix(mat, wires, wire_order=None, sparse_format="csr"):
 
     def eye_interface(dim):
         if interface == "scipy":
-            return eye(2**dim, format="coo")
-        return qml.math.cast_like(qml.math.eye(2**dim, like=interface), mat)
+            return eye(qudit_dim**dim, format="coo")
+        return qml.math.cast_like(qml.math.eye(qudit_dim**dim, like=interface), mat)
 
     def kron_interface(mat1, mat2):
         if interface == "scipy":
@@ -154,7 +156,9 @@ def expand_matrix(mat, wires, wire_order=None, sparse_format="csr"):
     if interface == "scipy":
         mat = _permute_sparse_matrix(mat, expanded_wires, subset_wire_order)
     else:
-        mat = _permute_dense_matrix(mat, expanded_wires, subset_wire_order, batch_dim)
+        mat = _permute_dense_matrix(
+            mat, expanded_wires, subset_wire_order, batch_dim, qudit_dim=qudit_dim
+        )
 
     # expand the matrix even further if needed
     if len(expanded_wires) < len(wire_order):
@@ -201,7 +205,7 @@ def _permute_sparse_matrix(matrix, wires, wire_order):
     return matrix
 
 
-def _permute_dense_matrix(matrix, wires, wire_order, batch_dim):
+def _permute_dense_matrix(matrix, wires, wire_order, batch_dim, qudit_dim: int = 2):
     """Permute the matrix to match the wires given in `wire_order`.
 
     Args:
@@ -228,12 +232,14 @@ def _permute_dense_matrix(matrix, wires, wire_order, batch_dim):
 
     # reshape matrix to match wire values e.g. mat[0, 0, 0, 0] = <00|mat|00>
     # with this reshape we can easily swap wires
-    shape = [batch_dim] + [2] * (num_wires * 2) if batch_dim else [2] * (num_wires * 2)
+    shape = (
+        [batch_dim] + [qudit_dim] * (num_wires * 2) if batch_dim else [qudit_dim] * (num_wires * 2)
+    )
     matrix = qml.math.reshape(matrix, shape)
     # transpose matrix
     matrix = qml.math.transpose(matrix, axes=perm)
     # reshape back
-    shape = [batch_dim] + [2**num_wires] * 2 if batch_dim else [2**num_wires] * 2
+    shape = [batch_dim] + [qudit_dim * num_wires] * 2 if batch_dim else [qudit_dim**num_wires] * 2
     return qml.math.reshape(matrix, shape)
 
 
