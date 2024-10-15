@@ -393,9 +393,11 @@ class TestAddNoiseInterface:
 
             results.append(g(*args))
 
-        # assert not np.isclose(f_noisy(*args), f(*args))
-        for res1, res2 in zip(f_noisy(*args), (results[0], results[2], results[3], results[1])):
-            assert qml.math.allclose(res1, res2)
+        noise_res = f_noisy(*args)
+        assert qml.math.allclose(results[0], noise_res[0])
+        assert qml.math.allclose(results[2], noise_res[1])
+        assert qml.math.allclose(results[3], noise_res[2])
+        assert qml.math.allclose(results[1], noise_res[3])
 
 
 class TestAddNoiseLevels:

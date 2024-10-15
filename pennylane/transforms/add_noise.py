@@ -56,7 +56,7 @@ def add_noise(tape, noise_model, level=None):
 
     .. note::
 
-        For a given ``model_map`` and ``meas`` within a ``NoiseModel``, if multiple conditionals in the
+        For a given ``model_map`` and ``meas_map`` within a ``NoiseModel``, if multiple conditionals in the
         ``model_map`` evaluate to ``True`` for an operation, then the noise operations defined via their
         respective noisy quantum functions will be added in the same order in which the conditionals
         appear in the ``model_map``.
@@ -83,7 +83,7 @@ def add_noise(tape, noise_model, level=None):
 
         noise_model = qml.NoiseModel(
             {fcond1: noise1, fcond2: noise2},
-            meas = {fcond3: noise3},
+            meas_map = {fcond3: noise3},
             t1=2.0, t2=0.2
         )
 
@@ -209,12 +209,12 @@ def add_noise(tape, noise_model, level=None):
                     curr_ops.extend(noise_ops)
         new_operations.extend(curr_ops)
 
-    if not noise_model.meas:
+    if not noise_model.meas_map:
         new_tape = type(tape)(new_operations, tape.measurements, shots=tape.shots)
         return [new_tape], qml.devices.preprocess.null_postprocessing
 
     meas_conds, meas_funcs = [], []
-    for condition, noise in noise_model.meas.items():
+    for condition, noise in noise_model.meas_map.items():
         meas_conds.append(lru_cache(maxsize=512)(condition))
         meas_funcs.append(qml.tape.make_qscript(noise))
 

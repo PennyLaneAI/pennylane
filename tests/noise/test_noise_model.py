@@ -83,10 +83,10 @@ class TestNoiseModels:
     def test_building_noise_model_with_meas(self, model, meas, metadata):
         """Test that noise models are built correctly using NoiseModels with readout noise"""
 
-        noise_model = qml.NoiseModel(model, meas=meas, **metadata)
+        noise_model = qml.NoiseModel(model, meas_map=meas, **metadata)
 
         assert model == noise_model.model_map
-        assert meas == noise_model.meas
+        assert meas == noise_model.meas_map
         assert metadata == noise_model.metadata
 
         model_str = "\n".join(["    " + f"{key}: {val.__name__}" for key, val in model.items()])
@@ -97,7 +97,7 @@ class TestNoiseModels:
             repr(noise_model)
             == "NoiseModel({\n"
             + model_str
-            + "\n},\nmeas = {\n"
+            + "\n},\nmeas_map = {\n"
             + meas_str
             + "\n}"
             + (", " + meta_str if meta_str else "")
@@ -126,10 +126,10 @@ class TestNoiseModels:
         meas_fcond = meas_eq(qml.expval) & wires_in([0, 1])
         meas_noise = partial_wires(qml.PhaseFlip, 0.2)
 
-        noise_model1 = qml.NoiseModel({fcond1: noise1}, meas={meas_fcond: meas_noise}, t2=0.02)
+        noise_model1 = qml.NoiseModel({fcond1: noise1}, {meas_fcond: meas_noise}, t2=0.02)
         nadd_model = noise_model + noise_model1
         assert nadd_model.model_map[fcond1] == noise1
-        assert nadd_model.meas[meas_fcond] == meas_noise
+        assert nadd_model.meas_map[meas_fcond] == meas_noise
         assert nadd_model.metadata["t2"] == noise_model1.metadata["t2"]
 
     # pylint: disable=comparison-with-callable
@@ -149,13 +149,11 @@ class TestNoiseModels:
         m_noise = partial_wires(qml.PhaseFlip, 0.2)
 
         noise_model = qml.NoiseModel(
-            {fcond: noise, fcond1: noise1}, meas={m_fcond: m_noise}, t1=0.04, t2=0.02
+            {fcond: noise, fcond1: noise1}, {m_fcond: m_noise}, t1=0.04, t2=0.02
         )
 
         sub_model = noise_model - {fcond1: noise1}
-        assert (
-            qml.NoiseModel({fcond: noise}, meas={m_fcond: m_noise}, t1=0.04, t2=0.02) == sub_model
-        )
+        assert qml.NoiseModel({fcond: noise}, {m_fcond: m_noise}, t1=0.04, t2=0.02) == sub_model
 
         sub_model1 = noise_model - qml.NoiseModel(
             {fcond1: noise1}, meas={m_fcond: m_noise}, t2=0.02

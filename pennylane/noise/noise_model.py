@@ -28,7 +28,7 @@ class NoiseModel:
             ``noise_fn`` must be ``noise_fn(op: Operation, **kwargs) -> None``, where
             ``op`` is the operation that the conditional evaluates and ``kwargs`` are
             the specified metadata arguments.
-        meas (dict[BooleanFn -> Callable]): Data for adding the readout noise similar
+        meas_map (dict[BooleanFn -> Callable]): Data for adding the readout noise similar
             to ``model_map``. The signature of ``noise_fn`` must be
             ``noise_fn(mp: MeasurementProcess, **kwargs) -> None``, where ``mp`` is
             the measurement process that the conditional evaluates.
@@ -36,7 +36,7 @@ class NoiseModel:
 
     .. note::
 
-        For each key-value pair of ``model_map`` and ``meas``:
+        For each key-value pair of ``model_map`` and ``meas_map``:
 
         - The ``conditional`` should be either a function decorated with :class:`~.BooleanFn`,
           a callable object built via :ref:`constructor functions <intro_boolean_fn>` in
@@ -44,7 +44,7 @@ class NoiseModel:
         - The definition of ``noise_fn(op, **kwargs)`` should have the operations in the same the order
           in which they are to be queued for an operation ``op``, whenever the corresponding
           ``conditional`` evaluates to ``True``.
-        - Each ``conditional`` in ``meas`` map is evaluated on each measurement process in the order
+        - Each ``conditional`` in ``meas_map`` is evaluated on each measurement process in the order
           they are specified, and the corresponding noise channel is added if the condition is satisfied.
 
     **Example**
@@ -66,7 +66,7 @@ class NoiseModel:
         n2 = qml.noise.partial_wires(qml.PhaseFlip, 0.2)
 
         # Set up noise model
-        noise_model = qml.NoiseModel({c0: n0}, meas={m0:n2}, t1=0.04)
+        noise_model = qml.NoiseModel({c0: n0}, meas_map={m0:n2}, t1=0.04)
         noise_model += {c1: n1}
 
     >>> noise_model
@@ -74,17 +74,17 @@ class NoiseModel:
         OpEq(PauliX) | OpEq(PauliY): n0
         OpEq(Hadamard) & WiresIn([0, 1]): AmplitudeDamping(0.4, wires),
     },
-    meas = {
+    meas_map = {
         MeasEq(expval) & WiresIn([0, 1]): PhaseFlip(p=0.2)
     }, t1=0.04)
     """
 
-    def __init__(self, model_map, meas=None, **kwargs):
+    def __init__(self, model_map, meas_map=None, **kwargs):
         self.check_model(model_map)
         self._model_map = model_map
-        if meas is not None:
-            self.check_model(meas)
-        self._meas_map = meas or {}
+        if meas_map is not None:
+            self.check_model(meas_map)
+        self._meas_map = meas_map or {}
         self._metadata = kwargs
 
     @property
@@ -93,7 +93,7 @@ class NoiseModel:
         return self._model_map
 
     @property
-    def meas(self):
+    def meas_map(self):
         """Gives the measurement model for the noise model."""
         return self._meas_map
 
@@ -104,15 +104,17 @@ class NoiseModel:
 
     def __add__(self, data):
         if not isinstance(data, NoiseModel):
-            ms_ = data.pop("meas", {})
+            ms_ = data.pop("meas_map", {})
             mt_ = {key: data.pop(key) for key in list(filter(lambda k: isinstance(k, str), data))}
             return NoiseModel(
-                {**self.model_map, **data}, meas={**self.meas, **ms_}, **{**self.metadata, **mt_}
+                {**self.model_map, **data},
+                {**self.meas_map, **ms_},
+                **{**self.metadata, **mt_},
             )
 
         return NoiseModel(
             {**self.model_map, **data.model_map},
-            meas={**self.meas, **data.meas},
+            {**self.meas_map, **data.meas_map},
             **{**self.metadata, **data.metadata},
         )
 
@@ -121,11 +123,11 @@ class NoiseModel:
 
     def __sub__(self, data):
         if not isinstance(data, NoiseModel):
-            ms_ = data.pop("meas", {})
+            ms_ = data.pop("meas_map", {})
             mt_ = {key: data.pop(key) for key in list(filter(lambda k: isinstance(k, str), data))}
             return NoiseModel(
                 {k: v for k, v in self.model_map.items() if k not in data},
-                meas={k: v for k, v in self.meas.items() if k not in ms_},
+                meas_map={k: v for k, v in self.meas_map.items() if k not in ms_},
                 **{k: v for k, v in self.metadata.items() if k not in mt_},
             )
 
@@ -135,7 +137,7 @@ class NoiseModel:
         )
 
     def __eq__(self, other):
-        for key in ["model_map", "meas"]:
+        for key in ["model_map", "meas_map"]:
             for model1, model2 in zip(getattr(self, key).items(), getattr(other, key).items()):
                 (func1, noise1), (func2, noise2) = model1, model2
                 if getattr(func1, "condition", func1.fn) != getattr(func2, "condition", func2.fn):
@@ -149,8 +151,8 @@ class NoiseModel:
         for key, val in self.model_map.items():
             model_str += "    " + f"{key}: {val.__name__}" + "\n"
         if self._meas_map:
-            model_str += "},\nmeas = {\n"
-            for key, val in self.meas.items():
+            model_str += "},\nmeas_map = {\n"
+            for key, val in self.meas_map.items():
                 model_str += "    " + f"{key}: {val.__name__}" + "\n"
         model_str += "}, "
         for key, val in self._metadata.items():

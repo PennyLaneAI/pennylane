@@ -385,11 +385,11 @@ def op_in(ops):
 
     Returns:
         :class:`OpIn <pennylane.noise.conditionals.OpIn>`: A callable object that accepts
-        an :class:`~.Operation` and returns a boolean output. It accepts any input from:
-        ``Union[str, class, Operation, list(Union[str, class, Operation])]`` and evaluates
-        to ``True`` if the input operation(s) exists in the set of operation(s) specified by
-        ``ops``. For a ``MeasurementProcess`` input, similar evaluation happens on its
-        observable. In both the cases, comparison is based on the operation's type,
+        an :class:`~.Operation` or :class:`~.MeasurementProcess` and returns a boolean output.
+        For an input from: ``Union[str, class, Operation, list(Union[str, class, Operation])]``
+        and evaluates to ``True`` if the input operation(s) exists in the set of operation(s)
+        specified by ``ops``. For a ``MeasurementProcess`` input, similar evaluation happens
+        on its observable. In both cases, comparison is based on the operation's type,
         irrespective of wires.
 
     **Example**
@@ -435,9 +435,9 @@ def op_eq(ops):
         :class:`OpEq <pennylane.noise.conditionals.OpEq>`: A callable object that accepts
         an :class:`~.Operation` or :class:`~.MeasurementProcess` and returns a boolean output.
         For an input from: ``Union[str, class, Operation]`` it evaluates to ``True``
-        if the input operation(s) is equal to the set of operation(s) specified by ``ops``.
+        if the input operations are equal to the operations specified by ``ops``.
         For a ``MeasurementProcess`` input, similar evaluation happens on its observable. In
-        both the cases, the comparison is based on the operation's type, irrespective of wires.
+        both cases, the comparison is based on the operation's type, irrespective of wires.
 
     **Example**
 
@@ -476,7 +476,6 @@ class MeasEq(qml.BooleanFn):
     """
 
     def __init__(self, mps):
-        """ """
         self._cond = [mps] if not isinstance(mps, (list, tuple, set)) else mps
         self.condition, self._cmps = [], []
         for mp in self._cond:
@@ -528,8 +527,8 @@ def meas_eq(mp):
         :class:`MeasEq <pennylane.noise.conditionals.MeasEq>`: A callable object that accepts
         an instance of :class:`~.MeasurementProcess` and returns a boolean output. It accepts
         any input from: ``Union[class, function, list(Union[class, function, MeasurementProcess])]``
-        and evaluates to ``True`` if the input measurement process(es) is equal to the set of
-        measurement process(es) sepcified by ``ops``. Comparison is based on the measurement's
+        and evaluates to ``True`` if the input measurement process(es) is equal to the
+        measurement process(es) specified by ``ops``. Comparison is based on the measurement's
         return type, irrespective of wires, observables or any other relevant attribute.
 
     **Example**
@@ -560,16 +559,6 @@ def meas_eq(mp):
     return MeasEq(mp)
 
 
-def _rename(newname):
-    """Decorator function for renaming ``_partial_op`` function used in partial_wires"""
-
-    def decorator(f):
-        f.__name__ = newname
-        return f
-
-    return decorator
-
-
 _MEAS_FUNC_MAP = {
     qml.expval: qml.measurements.ExpectationMP,
     qml.var: qml.measurements.VarianceMP,
@@ -585,6 +574,60 @@ _MEAS_FUNC_MAP = {
     qml.shadow_expval: qml.measurements.ShadowExpvalMP,
     qml.measure: qml.measurements.MidMeasureMP,
 }
+
+
+def _rename(newname):
+    """Decorator function for renaming ``_partial`` function used in ``partial_wires``."""
+
+    def decorator(f):
+        f.__name__ = newname
+        return f
+
+    return decorator
+
+
+def _process_instance(operation, *args, **kwargs):
+    """Process an instance of a PennyLane operation to be used in ``partial_wires``."""
+    if args:
+        raise ValueError(
+            "Args cannot be provided when operation is an instance, "
+            f"got operation = {operation} and args = {args}."
+        )
+
+    op_class, op_type = type(operation), [] if kwargs else ["Mappable"]
+    if isinstance(operation, qml.measurements.MeasurementProcess):
+        op_type.append("MeasFunc")
+    elif isinstance(operation, (qml.ops.Adjoint, qml.ops.Controlled)):
+        op_type.append("MetaFunc")
+
+    args, metadata = getattr(operation, "_flatten")()
+    is_flat = "MeasFunc" in op_type or isinstance(operation, qml.ops.Controlled)
+    if len(metadata) > 1:
+        kwargs = {**dict(metadata[1] if not is_flat else metadata), **kwargs}
+
+    return op_class, op_type, args, kwargs
+
+
+def _process_callable(operation):
+    """Process a callable of PennyLane operation to be used in ``partial_wires``."""
+    _cmap = {qml.adjoint: qml.ops.Adjoint, qml.ctrl: qml.ops.Controlled}
+    if operation in _MEAS_FUNC_MAP:
+        return _MEAS_FUNC_MAP[operation], ["MeasFunc"]
+    if operation in [qml.adjoint, qml.ctrl]:
+        return _cmap[operation], ["MetaFunc"]
+
+    return operation, []
+
+
+def _process_name(op_class, op_params, arg_params):
+    """Obtain the name of the operation without its wires for `partial_wires` function."""
+    op_name = f"{op_class.__name__}("
+    for key, val in arg_params.copy().items():
+        if key in op_params:
+            op_name += f"{key}={val}, "
+        else:  # pragma: no cover
+            del arg_params[key]
+    return op_name[:-2] + ")" if len(arg_params) else op_name[:-1]
 
 
 def partial_wires(operation, *args, **kwargs):
@@ -640,54 +683,36 @@ def partial_wires(operation, *args, **kwargs):
     >>> func(qml.RX(1.2, wires=[9]))
     qml.expval(qml.Z(9))
     """
-    is_meas_class = isinstance(operation, qml.measurements.MeasurementProcess)
-    is_meta_class = isinstance(operation, (qml.ops.Adjoint, qml.ops.Controlled))
-    is_mappable, map_op = False, None
+    if callable(operation):
+        op_class, op_type = _process_callable(operation)
+    else:
+        op_class, op_type, args, kwargs = _process_instance(operation, *args, **kwargs)
 
-    if not callable(operation):
-        if args:
-            raise ValueError(
-                "Args cannot be provided when operation is an instance, "
-                f"got operation = {operation} and args = {args}."
-            )
-        if not kwargs:
-            is_mappable, map_op = True, operation
-        args, metadata = getattr(operation, "_flatten")()
-        is_metadata_flat = is_meas_class or isinstance(operation, (qml.ops.Controlled))
-        if len(metadata) > 1:
-            kwargs = {**dict(metadata[1] if not is_metadata_flat else metadata), **kwargs}
-        operation = type(operation)
-    elif operation in _MEAS_FUNC_MAP:
-        is_meas_class = True
-        operation = _MEAS_FUNC_MAP[operation]
-    elif operation in (
-        qml.adjoint,
-        qml.ctrl,
-    ):
-        is_meta_class = True
-        operation = {qml.adjoint: qml.ops.Adjoint, qml.ctrl: qml.ops.Controlled}[operation]
+    # Developer Note: We use three TYPES to keep a track of PennyLane `operation`` we have
+    # 1. "Mappable" -> We can use `map_wires` method of the `operation` with new wires.
+    # 2. "MeasFunc" -> We need to handle observable and/or wires for the measurement process.
+    # 3: "MetaFunc" -> We need to handle base operation for Adjoint or Controlled operation.
+    is_mappable = "Mappable" in op_type
+    if is_mappable:
+        op_type.remove("Mappable")
 
-    fsignature = signature(getattr(operation, "__init__", operation)).parameters
+    fsignature = signature(getattr(op_class, "__init__", op_class)).parameters
     parameters = list(fsignature)[int("self" in fsignature) :]
     arg_params = {**dict(zip(parameters, args)), **kwargs}
 
-    arg_wires = arg_params.pop("wires", None)  # Ensure we don't include wires in name
-    if is_meas_class and "op" in arg_params:
-        arg_params["obs"] = arg_params.pop("op")
+    _fargs = {"MeasFunc": "obs", "MetaFunc": "base"}
+    if "op" in arg_params:
+        for key, val in _fargs.items():
+            if key in op_type:
+                arg_params[val] = arg_params.pop("op")
+                break
 
-    if is_meta_class and "op" in arg_params:
-        arg_params["base"] = arg_params.pop("op")
-
-    if operation == qml.ops.Controlled and "control" in arg_params:
+    if op_class == qml.ops.Controlled and "control" in arg_params:
         arg_params["control_wires"] = arg_params.pop("control")
 
-    op_name = f"{operation.__name__}("
-    for key, val in arg_params.copy().items():
-        if key in parameters:
-            op_name += f"{key}={val}, "
-        else:  # pragma: no cover
-            del arg_params[key]
-    op_name = op_name[:-2] + ")" if len(arg_params) else op_name[:-1]
+    arg_wires = arg_params.pop("wires", None)
+
+    op_name = _process_name(op_class, parameters, arg_params)
 
     @_rename(op_name)
     def _partial(wires=None, **partial_kwargs):
@@ -699,50 +724,40 @@ def partial_wires(operation, *args, **kwargs):
                 [wires] if isinstance(wires, (int, str)) else list(wires)
             )
 
-        if is_meas_class:
-            if "obs" not in parameters:
-                _ = partial_kwargs.pop("op", None)
+        if op_type:
+            _name, _op = _fargs[op_type[0]], "op"
+            if op_class == qml.measurements.ShadowExpvalMP:
+                _name = _op = "H"
 
-            if not op_args.get("obs", None) and (obs := partial_kwargs.get("op", None)):
-                op_args["obs"] = obs
+            if not op_args.get(_name, None) and partial_kwargs.get(_op, None):
+                obs = partial_kwargs.pop(_op, None)
+                if _name in parameters:
+                    op_args[_name] = obs
                 if op_args["wires"] is None:
                     op_args["wires"] = obs.wires
 
-            if (obs := op_args.get("obs", None)) is not None and op_args["wires"] is not None:
-                op_args["obs"] = obs.map_wires(dict(zip(obs.wires, op_args["wires"])))
+            if not is_mappable and (obs := op_args.get(_name, None)) and op_args["wires"]:
+                op_args[_name] = obs.map_wires(dict(zip(obs.wires, op_args["wires"])))
 
-            if "H" in parameters and operation == qml.measurements.ShadowExpvalMP:
-                mp_ham = op_args["H"]
-                op_args["H"] = mp_ham.map_wires(dict(zip(mp_ham.wires, op_args["wires"])))
-
-        if is_meta_class:
-            if not op_args.get("base", None) and (obs := partial_kwargs.get("op", None)):
-                op_args["base"] = obs
-                if op_args["wires"] is None:
-                    op_args["wires"] = obs.wires
-
-            if (base := op_args.get("base", None)) is not None and op_args["wires"] is not None:
-                op_args["base"] = base.map_wires(dict(zip(base.wires, op_args["wires"])))
-
-        for key, val in partial_kwargs.items():
+        for key, val in op_args.items():
             if key in parameters:  # pragma: no cover
                 op_args[key] = val
 
-        if isclass(operation) and issubclass(operation, qml.operation.Operation):
-            num_wires = getattr(operation, "num_wires", AnyWires)
+        if issubclass(op_class, qml.operation.Operation):
+            num_wires = getattr(op_class, "num_wires", AnyWires)
             if "wires" in op_args and isinstance(num_wires, int):
                 if num_wires < len(op_args["wires"]) and num_wires == 1:
                     op_wires = op_args.pop("wires")
                     return tuple(operation(**op_args, wires=wire) for wire in op_wires)
 
-        if is_mappable and map_op.wires is not None:
-            return map_op.map_wires(dict(zip(map_op.wires, op_args.pop("wires"))))
+        if is_mappable and operation.wires is not None:
+            return operation.map_wires(dict(zip(operation.wires, op_args.pop("wires"))))
 
         if "wires" not in parameters or (
-            is_meas_class and (op_args.get("obs", None) or op_args.get("H", None))
+            "MeasFunc" in op_type and any(x in op_args for x in ["obs", "H"])
         ):
             _ = op_args.pop("wires", None)
 
-        return operation(**op_args)
+        return op_class(**op_args)
 
     return _partial
