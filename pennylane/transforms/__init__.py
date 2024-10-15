@@ -51,6 +51,7 @@ A set of transforms to perform basic circuit compilation tasks.
     ~transforms.undo_swaps
     ~transforms.pattern_matching_optimization
     ~transforms.transpile
+    ~transforms.decompose
 
 There are also utility functions and decompositions available that assist with
 both transforms, and decompositions within the larger PennyLane codebase.
@@ -361,3 +362,4 @@ from .tape_expand import (
 from .transpile import transpile
 from .zx import to_zx, from_zx
 from .broadcast_expand import broadcast_expand
+from .decompose import decompose
