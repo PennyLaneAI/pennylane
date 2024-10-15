@@ -284,6 +284,10 @@ def decompose(
             accepted by ``stopping_condition``, an ``Exception`` will be raised (of a type
             specified by the ``error`` keyward argument).
 
+    .. warning::
+
+        The `max_expansion` argument is deprecated and will be removed in v0.40.
+
     Keyword Args:
         stopping_condition_shots (Callable): a function from an operator to a boolean. If
             ``False``, the operator should be decomposed. This replaces ``stopping_condition``
@@ -346,6 +350,11 @@ def decompose(
     RZ(1.5707963267948966, wires=[1])]
 
     """
+    warnings.warn(
+        "The max_expansion argument is deprecated and will be removed in v0.40. ",
+        qml.PennyLaneDeprecationWarning,
+    )
+
     if error is None:
         error = qml.DeviceError
 
