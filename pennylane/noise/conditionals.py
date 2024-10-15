@@ -57,11 +57,11 @@ class WiresEq(BooleanFn):
     """
 
     def __init__(self, wires):
-        self._cond = frozenset(wires)
+        self._cond = set(wires)
         self.condition = self._cond
         super().__init__(
             lambda wire: _get_wires(wire) == self._cond,
-            f"WiresEq({wires if len(wires) > 1 else list(wires)[0]!r})"
+            f"WiresEq({list(wires) if len(wires) > 1 else list(wires)[0]})",
         )
 
 
@@ -217,8 +217,8 @@ class OpEq(BooleanFn):
     """A conditional for evaluating if a given operation is equal to the specified operation.
 
     Args:
-        ops (Union[str, class, Operation]): An operation instance, string representation, 
-        or class to build the operation set.
+        ops (Union[str, class, Operation]): An operation instance, string representation or
+            class to build the operation set.
 
     .. seealso:: Users are advised to use :func:`~.op_eq` for a functional construction.
     """
@@ -227,13 +227,11 @@ class OpEq(BooleanFn):
         self._cond = [ops] if not isinstance(ops, (list, tuple, set)) else ops
         self._cops = _get_ops(ops)
         self.condition = self._cops
-        cops_names = [getattr(op, "__name__", str(op)) for op in self._cops]
-        name_repr = (
-            f"[{', '.join(cops_names)}]"
-            if len(cops_names) > 1
-            else cops_names[0]
+        cops_names = list(getattr(op, "__name__", op) for op in self._cops)
+        super().__init__(
+            self._check_eq_ops,
+            f"OpEq({cops_names if len(cops_names) > 1 else cops_names[0]})",
         )
-        super().__init__(self._check_eq_ops, f"OpEq({name_repr})")
 
     def _check_eq_ops(self, operation):
         if all(isclass(op) or not getattr(op, "arithmetic_depth", 0) for op in self._cond):
@@ -246,7 +244,7 @@ class OpEq(BooleanFn):
                 and _get_ops(xs) == self._cops
                 and all(
                     _check_arithmetic_ops(op, x)
-                    for op, x in zip(self._cond, xs)
+                    for (op, x) in zip(self._cond, xs)
                     if not isclass(x) and getattr(x, "arithmetic_depth", 0)
                 )
             )
