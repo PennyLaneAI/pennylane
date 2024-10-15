@@ -118,7 +118,6 @@ def expand_matrix(mat, wires, wire_order=None, sparse_format="csr"):
     interface = qml.math.get_interface(mat)
     shape = qml.math.shape(mat)
     batch_dim = shape[0] if len(shape) == 3 else None
-    print(batch_dim)
 
     def eye_interface(dim):
         if interface == "scipy":
