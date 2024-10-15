@@ -16,7 +16,7 @@ Defines the DeviceCapabilities class, and tools to load it from a TOML file.
 """
 
 import sys
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from enum import Enum
 from itertools import repeat
 
@@ -75,6 +75,18 @@ class OperatorProperties:
 
 
 @dataclass
+class ProgramFeatures:
+    """Program features, obtained from the user.
+
+    This is used to filter the device capabilities based on their conditions. Currently, the
+    only supported filter is whether the execution mode is finite shots.
+
+    """
+
+    finite_shots: bool
+
+
+@dataclass
 class DeviceCapabilities:  # pylint: disable=too-many-instance-attributes
     """Capabilities of a quantum device.
 
@@ -103,6 +115,32 @@ class DeviceCapabilities:  # pylint: disable=too-many-instance-attributes
     non_commuting_observables: bool = False
     initial_state_prep: bool = False
     options: dict[str, any] = field(default_factory=dict)
+
+    def filter(self, program_features: ProgramFeatures) -> "DeviceCapabilities":
+        """Returns the device capabilities conditioned on the given program features."""
+
+        return (
+            self._exclude_entries_with_condition(ExecutionCondition.ANALYTIC_MODE_ONLY)
+            if program_features.finite_shots
+            else self._exclude_entries_with_condition(ExecutionCondition.FINITE_SHOTS_ONLY)
+        )
+
+    def _exclude_entries_with_condition(
+        self, condition: ExecutionCondition
+    ) -> "DeviceCapabilities":
+        """Removes entries from the capabilities that has the given condition."""
+
+        operations = {k: v for k, v in self.operations.items() if condition not in v.conditions}
+        observables = {k: v for k, v in self.observables.items() if condition not in v.conditions}
+        measurement_processes = {
+            k: v for k, v in self.measurement_processes.items() if condition not in v
+        }
+        return replace(
+            self,
+            operations=operations,
+            observables=observables,
+            measurement_processes=measurement_processes,
+        )
 
 
 VALID_COMPILATION_FLAGS = {
