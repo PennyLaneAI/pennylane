@@ -361,22 +361,23 @@ def test_qnode_jvp():
     assert qml.math.allclose(jvp, (qml.math.cos(x), -qml.math.sin(x) * xt))
 
 
+@pytest.mark.parametrize("x64_mode", (True, False))
 @pytest.mark.parametrize(
-    "input, expected_output",
+    "input, expected_shape",
     [
-        (
-            jax.numpy.array([0.1]),
-            jax.core.ShapedArray((1,), jax.numpy.float64),
-        ),
-        (
-            jax.numpy.array([0.1, 0.2]),
-            jax.core.ShapedArray((2,), jax.numpy.float64),
-        ),
+        (jax.numpy.array([0.1]), 1),
+        (jax.numpy.array([0.1, 0.2]), 2),
+        (jax.numpy.array([0.1, 0.2, 0.3]), 3),
     ],
 )
-def test_qnode_vmap(input, expected_output):
+def test_qnode_vmap(input, expected_shape, x64_mode):
     """Test that JAX can vmap over the QNode primitive via a registered batching rule."""
     dev = qml.device("default.qubit", wires=1)
+
+    initial_mode = jax.config.jax_enable_x64
+    jax.config.update("jax_enable_x64", x64_mode)
+
+    fdtype = jax.numpy.float64 if x64_mode else jax.numpy.float32
 
     @qml.qnode(dev)
     def circuit(x):
@@ -389,42 +390,55 @@ def test_qnode_vmap(input, expected_output):
     eqn0 = jaxpr.eqns[0]
 
     assert len(eqn0.outvars) == 1
-    assert eqn0.outvars[0].aval == expected_output
+    assert eqn0.outvars[0].aval == jax.core.ShapedArray((expected_shape,), fdtype)
 
     res = vmap_circuit(input)
     assert qml.math.allclose(res, jax.numpy.cos(input))
 
+    jax.config.update("jax_enable_x64", initial_mode)
+
 
 @pytest.mark.parametrize("x64_mode", (True, False))
-def test_qnode_vmap_dtype(x64_mode):
-    """Test that JAX can vmap over the QNode primitive with different dtypes."""
+def test_vmap_multiple_measurements(x64_mode):
+    """Test that JAX can vmap over the QNode primitive with multiple measurements."""
 
     initial_mode = jax.config.jax_enable_x64
     jax.config.update("jax_enable_x64", x64_mode)
-    fdtype = jax.numpy.float64 if x64_mode else jax.numpy.float32
 
-    @qml.qnode(qml.device("default.qubit", wires=1))
+    @qml.qnode(qml.device("default.qubit", wires=4, shots=5))
     def circuit(x):
-        qml.RX(x, 0)
-        return qml.expval(qml.Z(0))
+        qml.DoubleExcitation(x, wires=[0, 1, 2, 3])
+        return qml.sample(), qml.probs(wires=(0, 1, 2)), qml.expval(qml.Z(0))
 
-    x = jax.numpy.array([0.1, 0.2, 0.3])
-    vmap_circuit = jax.vmap(circuit)
+    x = jax.numpy.array([1.0, 2.0])
+    jaxpr = jax.make_jaxpr(jax.vmap(circuit))(x)
 
-    jaxpr = jax.make_jaxpr(vmap_circuit)(x)
-    eqn0 = jaxpr.eqns[0]
+    assert jaxpr.out_avals[0] == jax.core.ShapedArray(
+        (2, 5, 4), jax.numpy.int64 if x64_mode else jax.numpy.int32
+    )
+    assert jaxpr.out_avals[1] == jax.core.ShapedArray(
+        (2, 8), jax.numpy.float64 if x64_mode else jax.numpy.float32
+    )
+    assert jaxpr.out_avals[2] == jax.core.ShapedArray(
+        (2,), jax.numpy.float64 if x64_mode else jax.numpy.float32
+    )
 
-    assert len(eqn0.outvars) == 1
-    assert eqn0.outvars[0].aval == jax.core.ShapedArray((3,), fdtype)
+    res1_vmap, res2_vmap, res3_vmap = jax.vmap(circuit)(x)
+    res1, res2, res3 = circuit(x)
 
-    res = vmap_circuit(x)
-    assert qml.math.allclose(res, jax.numpy.cos(x))
+    assert qml.math.allclose(res1_vmap, res1)
+    assert qml.math.allclose(res2_vmap, res2)
+    assert qml.math.allclose(res3_vmap, res3)
 
     jax.config.update("jax_enable_x64", initial_mode)
 
 
-def test_qnode_vmap_closure():
+@pytest.mark.parametrize("x64_mode", (True, False))
+def test_qnode_vmap_closure(x64_mode):
     """Test that JAX can vmap over the QNode primitive with closure variables."""
+
+    initial_mode = jax.config.jax_enable_x64
+    jax.config.update("jax_enable_x64", x64_mode)
 
     const = jax.numpy.array(2.0)
 
@@ -440,14 +454,21 @@ def test_qnode_vmap_closure():
     eqn0 = jaxpr.eqns[0]
 
     assert len(eqn0.invars) == 2  # one closure variable, one (batched) arg
-    assert eqn0.invars[0].aval == jax.core.ShapedArray((), jax.numpy.float64, weak_type=True)
-    assert eqn0.invars[1].aval == jax.core.ShapedArray((3,), jax.numpy.float64)
+    assert eqn0.invars[0].aval == jax.core.ShapedArray(
+        (), jax.numpy.float64 if x64_mode else jax.numpy.float32, weak_type=True
+    )
+    assert eqn0.invars[1].aval == jax.core.ShapedArray(
+        (3,), jax.numpy.float64 if x64_mode else jax.numpy.float32
+    )
 
     assert len(eqn0.outvars) == 1
-    assert eqn0.outvars[0].aval == jax.core.ShapedArray((3, 4), jax.numpy.float64)
+    assert eqn0.outvars[0].aval == jax.core.ShapedArray(
+        (3, 4), jax.numpy.float64 if x64_mode else jax.numpy.float32
+    )
 
     res = vmap_circuit(x)
     assert jax.numpy.allclose(res, circuit(x))
+    jax.config.update("jax_enable_x64", initial_mode)
 
 
 def test_qnode_vmap_closure_error():
