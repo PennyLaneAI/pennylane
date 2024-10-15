@@ -157,13 +157,26 @@ class TestLoadInteractive:
     @pytest.mark.parametrize(
         ("side_effect"),
         [
-            (["qspin", "Heisenberg", "1x4", "open", "full", True, PosixPath("/my/path"), "Y"]),
             (
                 [
                     "qspin",
                     "Heisenberg",
-                    "1x4",
                     "open",
+                    "chain",
+                    "1x4",
+                    "full",
+                    True,
+                    PosixPath("/my/path"),
+                    "Y",
+                ]
+            ),
+            (
+                [
+                    "qspin",
+                    "Heisenberg",
+                    "open",
+                    "chain",
+                    "1x4",
                     ["parameters", "shadow_basis", "shadow_meas"],
                     True,
                     PosixPath("/my/path"),
@@ -190,8 +203,9 @@ class TestLoadInteractive:
         mock_input.side_effect = [
             "qspin",
             "Heisenberg",
-            "1x4",
             "open",
+            "chain",
+            "1x4",
             "full",
             True,
             PosixPath("/my/path"),
@@ -205,10 +219,11 @@ class TestLoadInteractive:
         [
             (["foo"], re.escape("Must select a single data name from ['other', 'qchem', 'qspin']")),
             (["qspin", "foo"], "Must enter a valid sysname:"),
-            (["qspin", "Ising", "foo"], "Must enter a valid layout:"),
-            (["qspin", "Ising", "1x4", "foo"], "Must enter a valid periodicity:"),
+            (["qspin", "Ising", "foo"], "Must enter a valid periodicity:"),
+            (["qspin", "Ising", "open", "foo"], "Must enter a valid lattice:"),
+            (["qspin", "Ising", "open", "chain", "foo"], "Must enter a valid layout:"),
             (
-                ["qspin", "Ising", "1x4", "open", "foo"],
+                ["qspin", "Ising", "open", "chain", "1x4", "foo"],
                 re.escape(
                     "Must select a list of attributes from ['ground_energies', 'ground_states', 'hamiltonians', 'num_phases', 'order_params', 'parameters', 'shadow_basis', 'shadow_meas', 'spin_system']"
                 ),

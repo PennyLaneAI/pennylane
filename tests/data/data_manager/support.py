@@ -76,137 +76,55 @@ _parameter_tree = {
             ],
             "parameters": [
                 {"name": "sysname"},
-                {"name": "layout"},
                 {"name": "periodicity"},
                 {"name": "lattice"},
+                {"name": "layout"},
             ],
             "parameterTree": {
                 "next": {
                     "Ising": {
                         "next": {
-                            "1x4": {
-                                "next": {
-                                    "chain": {
-                                        "next": {
-                                            "open": {
-                                                "value": "transverse-field-ising-model-ising-1x4-chain-open"
-                                            },
-                                            "closed": {
-                                                "value": "transverse-field-ising-model-ising-1x4-chain-closed"
-                                            },
-                                        },
-                                        "default": None,
-                                    }
-                                },
-                                "default": None,
-                            },
-                            "1x8": {
-                                "next": {
-                                    "chain": {
-                                        "next": {
-                                            "open": {
-                                                "value": "transverse-field-ising-model-ising-1x8-chain-open"
-                                            },
-                                            "closed": {
-                                                "value": "transverse-field-ising-model-ising-1x8-chain-closed"
-                                            },
-                                        },
-                                        "default": None,
-                                    }
-                                },
-                                "default": None,
-                            },
-                            "2x2": {
-                                "next": {
-                                    "rectangular": {
-                                        "next": {
-                                            "open": {
-                                                "value": "transverse-field-ising-model-ising-2x2-rectangular-open"
-                                            },
-                                            "closed": {
-                                                "value": "transverse-field-ising-model-ising-2x2-rectangular-closed"
-                                            },
-                                        },
-                                        "default": None,
-                                    }
-                                },
-                                "default": None,
-                            },
-                            "2x4": {
-                                "next": {
-                                    "rectangular": {
-                                        "next": {
-                                            "open": {
-                                                "value": "transverse-field-ising-model-ising-2x4-rectangular-open"
-                                            },
-                                            "closed": {
-                                                "value": "transverse-field-ising-model-ising-2x4-rectangular-closed"
-                                            },
-                                        },
-                                        "default": None,
-                                    }
-                                },
-                                "default": None,
-                            },
-                            "2x8": {
-                                "next": {
-                                    "rectangular": {
-                                        "next": {
-                                            "open": {
-                                                "value": "transverse-field-ising-model-ising-2x8-rectangular-open"
-                                            },
-                                            "closed": {
-                                                "value": "transverse-field-ising-model-ising-2x8-rectangular-closed"
-                                            },
-                                        },
-                                        "default": None,
-                                    }
-                                },
-                                "default": None,
-                            },
-                            "4x4": {
-                                "next": {
-                                    "rectangular": {
-                                        "next": {
-                                            "open": {
-                                                "value": "transverse-field-ising-model-ising-4x4-rectangular-open"
-                                            },
-                                            "closed": {
-                                                "value": "transverse-field-ising-model-ising-4x4-rectangular-closed"
-                                            },
-                                        },
-                                        "default": None,
-                                    }
-                                },
-                                "default": None,
-                            },
-                            "1x16": {
-                                "next": {
-                                    "chain": {
-                                        "next": {
-                                            "open": {
-                                                "value": "transverse-field-ising-model-ising-1x16-chain-open"
-                                            },
-                                            "closed": {
-                                                "value": "transverse-field-ising-model-ising-1x16-chain-closed"
-                                            },
-                                        },
-                                        "default": None,
-                                    }
-                                },
-                                "default": None,
-                            },
                             "open": {
                                 "next": {
-                                    "chain": {"next": {}, "default": "1x4"},
-                                    "rectangular": {"next": {}, "default": "2x2"},
+                                    "chain": {
+                                        "next": {
+                                            "1x4": "transverse-field-ising-model-ising-open-chain-1x4",
+                                            "1x8": "transverse-field-ising-model-ising-open-chain-1x8",
+                                            "1x16": "transverse-field-ising-model-ising-open-chain-1x16",
+                                        },
+                                        "default": "1x4",
+                                    },
+                                    "rectangular": {
+                                        "next": {
+                                            "2x2": "transverse-field-ising-model-ising-open-rectangular-2x2",
+                                            "2x4": "transverse-field-ising-model-ising-open-rectangular-2x4",
+                                            "2x8": "transverse-field-ising-model-ising-open-rectangular-2x8",
+                                            "4x4": "transverse-field-ising-model-ising-open-rectangular-4x4",
+                                        },
+                                        "default": "2x2",
+                                    },
                                 },
                                 "default": "chain",
                             },
                             "closed": {
                                 "next": {
-                                    "chain": {"next": {}, "default": "1x4"},
-                                    "rectangular": {"next": {}, "default": "2x2"},
+                                    "chain": {
+                                        "next": {
+                                            "1x4": "transverse-field-ising-model-ising-closed-chain-1x4",
+                                            "1x8": "transverse-field-ising-model-ising-closed-chain-1x8",
+                                            "1x16": "transverse-field-ising-model-ising-closed-chain-1x16",
+                                        },
+                                        "default": "1x4",
+                                    },
+                                    "rectangular": {
+                                        "next": {
+                                            "2x2": "transverse-field-ising-model-ising-closed-rectangular-2x2",
+                                            "2x4": "transverse-field-ising-model-ising-closed-rectangular-2x4",
+                                            "2x8": "transverse-field-ising-model-ising-closed-rectangular-2x8",
+                                            "4x4": "transverse-field-ising-model-ising-closed-rectangular-4x4",
+                                        },
+                                        "default": "2x2",
+                                    },
                                 },
                                 "default": "chain",
                             },
@@ -215,129 +133,47 @@ _parameter_tree = {
                     },
                     "Heisenberg": {
                         "next": {
-                            "1x4": {
-                                "next": {
-                                    "chain": {
-                                        "next": {
-                                            "open": {
-                                                "value": "xxz-heisenberg-model-heisenberg-1x4-chain-open"
-                                            },
-                                            "closed": {
-                                                "value": "xxz-heisenberg-model-heisenberg-1x4-chain-closed"
-                                            },
-                                        },
-                                        "default": None,
-                                    }
-                                },
-                                "default": None,
-                            },
-                            "1x8": {
-                                "next": {
-                                    "chain": {
-                                        "next": {
-                                            "open": {
-                                                "value": "xxz-heisenberg-model-heisenberg-1x8-chain-open"
-                                            },
-                                            "closed": {
-                                                "value": "xxz-heisenberg-model-heisenberg-1x8-chain-closed"
-                                            },
-                                        },
-                                        "default": None,
-                                    }
-                                },
-                                "default": None,
-                            },
-                            "2x2": {
-                                "next": {
-                                    "rectangular": {
-                                        "next": {
-                                            "open": {
-                                                "value": "xxz-heisenberg-model-heisenberg-2x2-rectangular-open"
-                                            },
-                                            "closed": {
-                                                "value": "xxz-heisenberg-model-heisenberg-2x2-rectangular-closed"
-                                            },
-                                        },
-                                        "default": None,
-                                    }
-                                },
-                                "default": None,
-                            },
-                            "2x4": {
-                                "next": {
-                                    "rectangular": {
-                                        "next": {
-                                            "open": {
-                                                "value": "xxz-heisenberg-model-heisenberg-2x4-rectangular-open"
-                                            },
-                                            "closed": {
-                                                "value": "xxz-heisenberg-model-heisenberg-2x4-rectangular-closed"
-                                            },
-                                        },
-                                        "default": None,
-                                    }
-                                },
-                                "default": None,
-                            },
-                            "2x8": {
-                                "next": {
-                                    "rectangular": {
-                                        "next": {
-                                            "open": {
-                                                "value": "xxz-heisenberg-model-heisenberg-2x8-rectangular-open"
-                                            },
-                                            "closed": {
-                                                "value": "xxz-heisenberg-model-heisenberg-2x8-rectangular-closed"
-                                            },
-                                        },
-                                        "default": None,
-                                    }
-                                },
-                                "default": None,
-                            },
-                            "4x4": {
-                                "next": {
-                                    "rectangular": {
-                                        "next": {
-                                            "open": {
-                                                "value": "xxz-heisenberg-model-heisenberg-4x4-rectangular-open"
-                                            },
-                                            "closed": {
-                                                "value": "xxz-heisenberg-model-heisenberg-4x4-rectangular-closed"
-                                            },
-                                        },
-                                        "default": None,
-                                    }
-                                },
-                                "default": None,
-                            },
-                            "1x16": {
-                                "next": {
-                                    "chain": {
-                                        "next": {
-                                            "open": {
-                                                "value": "xxz-heisenberg-model-heisenberg-1x16-chain-open"
-                                            },
-                                            "closed": {
-                                                "value": "xxz-heisenberg-model-heisenberg-1x16-chain-closed"
-                                            },
-                                        },
-                                        "default": None,
-                                    }
-                                },
-                                "default": None,
-                            },
                             "open": {
                                 "next": {
-                                    "chain": {"next": {}, "default": "1x4"},
-                                    "rectangular": {"next": {}, "default": "2x2"},
+                                    "chain": {
+                                        "next": {
+                                            "1x4": "xxz-heisenberg-model-heisenberg-open-chain-1x4",
+                                            "1x8": "xxz-heisenberg-model-heisenberg-open-chain-1x8",
+                                            "1x16": "xxz-heisenberg-model-heisenberg-open-chain-1x16",
+                                        },
+                                        "default": "1x4",
+                                    },
+                                    "rectangular": {
+                                        "next": {
+                                            "2x2": "xxz-heisenberg-model-heisenberg-open-rectangular-2x2",
+                                            "2x4": "xxz-heisenberg-model-heisenberg-open-rectangular-2x4",
+                                            "2x8": "xxz-heisenberg-model-heisenberg-open-rectangular-2x8",
+                                            "4x4": "xxz-heisenberg-model-heisenberg-open-rectangular-4x4",
+                                        },
+                                        "default": "2x2",
+                                    },
                                 },
                                 "default": "chain",
                             },
                             "closed": {
                                 "next": {
-                                    "chain": {"next": {}, "default": "1x4"},
-                                    "rectangular": {"next": {}, "default": "2x2"},
+                                    "chain": {
+                                        "next": {
+                                            "1x4": "xxz-heisenberg-model-heisenberg-closed-chain-1x4",
+                                            "1x8": "xxz-heisenberg-model-heisenberg-closed-chain-1x8",
+                                            "1x16": "xxz-heisenberg-model-heisenberg-closed-chain-1x16",
+                                        },
+                                        "default": "1x4",
+                                    },
+                                    "rectangular": {
+                                        "next": {
+                                            "2x2": "xxz-heisenberg-model-heisenberg-closed-rectangular-2x2",
+                                            "2x4": "xxz-heisenberg-model-heisenberg-closed-rectangular-2x4",
+                                            "2x8": "xxz-heisenberg-model-heisenberg-closed-rectangular-2x8",
+                                            "4x4": "xxz-heisenberg-model-heisenberg-closed-rectangular-4x4",
+                                        },
+                                        "default": "2x2",
+                                    },
                                 },
                                 "default": "chain",
                             },
@@ -346,81 +182,41 @@ _parameter_tree = {
                     },
                     "BoseHubbard": {
                         "next": {
-                            "1x4": {
-                                "next": {
-                                    "chain": {
-                                        "next": {
-                                            "open": {
-                                                "value": "bose-hubbard-model-bosehubbard-1x4-chain-open"
-                                            },
-                                            "closed": {
-                                                "value": "bose-hubbard-model-bosehubbard-1x4-chain-closed"
-                                            },
-                                        },
-                                        "default": None,
-                                    }
-                                },
-                                "default": None,
-                            },
-                            "1x8": {
-                                "next": {
-                                    "chain": {
-                                        "next": {
-                                            "open": {
-                                                "value": "bose-hubbard-model-bosehubbard-1x8-chain-open"
-                                            },
-                                            "closed": {
-                                                "value": "bose-hubbard-model-bosehubbard-1x8-chain-closed"
-                                            },
-                                        },
-                                        "default": None,
-                                    }
-                                },
-                                "default": None,
-                            },
-                            "2x2": {
-                                "next": {
-                                    "rectangular": {
-                                        "next": {
-                                            "open": {
-                                                "value": "bose-hubbard-model-bosehubbard-2x2-rectangular-open"
-                                            },
-                                            "closed": {
-                                                "value": "bose-hubbard-model-bosehubbard-2x2-rectangular-closed"
-                                            },
-                                        },
-                                        "default": None,
-                                    }
-                                },
-                                "default": None,
-                            },
-                            "2x4": {
-                                "next": {
-                                    "rectangular": {
-                                        "next": {
-                                            "open": {
-                                                "value": "bose-hubbard-model-bosehubbard-2x4-rectangular-open"
-                                            },
-                                            "closed": {
-                                                "value": "bose-hubbard-model-bosehubbard-2x4-rectangular-closed"
-                                            },
-                                        },
-                                        "default": None,
-                                    }
-                                },
-                                "default": None,
-                            },
                             "open": {
                                 "next": {
-                                    "chain": {"next": {}, "default": "1x4"},
-                                    "rectangular": {"next": {}, "default": "2x2"},
+                                    "chain": {
+                                        "next": {
+                                            "1x4": "bose-hubbard-model-bosehubbard-open-chain-1x4",
+                                            "1x8": "bose-hubbard-model-bosehubbard-open-chain-1x8",
+                                        },
+                                        "default": "1x4",
+                                    },
+                                    "rectangular": {
+                                        "next": {
+                                            "2x2": "bose-hubbard-model-bosehubbard-open-rectangular-2x2",
+                                            "2x4": "bose-hubbard-model-bosehubbard-open-rectangular-2x4",
+                                        },
+                                        "default": "2x2",
+                                    },
                                 },
                                 "default": "chain",
                             },
                             "closed": {
                                 "next": {
-                                    "chain": {"next": {}, "default": "1x4"},
-                                    "rectangular": {"next": {}, "default": "2x2"},
+                                    "chain": {
+                                        "next": {
+                                            "1x4": "bose-hubbard-model-bosehubbard-closed-chain-1x4",
+                                            "1x8": "bose-hubbard-model-bosehubbard-closed-chain-1x8",
+                                        },
+                                        "default": "1x4",
+                                    },
+                                    "rectangular": {
+                                        "next": {
+                                            "2x2": "bose-hubbard-model-bosehubbard-closed-rectangular-2x2",
+                                            "2x4": "bose-hubbard-model-bosehubbard-closed-rectangular-2x4",
+                                        },
+                                        "default": "2x2",
+                                    },
                                 },
                                 "default": "chain",
                             },
@@ -429,81 +225,41 @@ _parameter_tree = {
                     },
                     "FermiHubbard": {
                         "next": {
-                            "1x4": {
-                                "next": {
-                                    "chain": {
-                                        "next": {
-                                            "open": {
-                                                "value": "fermi-hubbard-model-fermihubbard-1x4-chain-open"
-                                            },
-                                            "closed": {
-                                                "value": "fermi-hubbard-model-fermihubbard-1x4-chain-closed"
-                                            },
-                                        },
-                                        "default": None,
-                                    }
-                                },
-                                "default": None,
-                            },
-                            "1x8": {
-                                "next": {
-                                    "chain": {
-                                        "next": {
-                                            "open": {
-                                                "value": "fermi-hubbard-model-fermihubbard-1x8-chain-open"
-                                            },
-                                            "closed": {
-                                                "value": "fermi-hubbard-model-fermihubbard-1x8-chain-closed"
-                                            },
-                                        },
-                                        "default": None,
-                                    }
-                                },
-                                "default": None,
-                            },
-                            "2x2": {
-                                "next": {
-                                    "rectangular": {
-                                        "next": {
-                                            "open": {
-                                                "value": "fermi-hubbard-model-fermihubbard-2x2-rectangular-open"
-                                            },
-                                            "closed": {
-                                                "value": "fermi-hubbard-model-fermihubbard-2x2-rectangular-closed"
-                                            },
-                                        },
-                                        "default": None,
-                                    }
-                                },
-                                "default": None,
-                            },
-                            "2x4": {
-                                "next": {
-                                    "rectangular": {
-                                        "next": {
-                                            "open": {
-                                                "value": "fermi-hubbard-model-fermihubbard-2x4-rectangular-open"
-                                            },
-                                            "closed": {
-                                                "value": "fermi-hubbard-model-fermihubbard-2x4-rectangular-closed"
-                                            },
-                                        },
-                                        "default": None,
-                                    }
-                                },
-                                "default": None,
-                            },
                             "open": {
                                 "next": {
-                                    "chain": {"next": {}, "default": "1x4"},
-                                    "rectangular": {"next": {}, "default": "2x2"},
+                                    "chain": {
+                                        "next": {
+                                            "1x4": "fermi-hubbard-model-fermihubbard-open-chain-1x4",
+                                            "1x8": "fermi-hubbard-model-fermihubbard-open-chain-1x8",
+                                        },
+                                        "default": "1x4",
+                                    },
+                                    "rectangular": {
+                                        "next": {
+                                            "2x2": "fermi-hubbard-model-fermihubbard-open-rectangular-2x2",
+                                            "2x4": "fermi-hubbard-model-fermihubbard-open-rectangular-2x4",
+                                        },
+                                        "default": "2x2",
+                                    },
                                 },
                                 "default": "chain",
                             },
                             "closed": {
                                 "next": {
-                                    "chain": {"next": {}, "default": "1x4"},
-                                    "rectangular": {"next": {}, "default": "2x2"},
+                                    "chain": {
+                                        "next": {
+                                            "1x4": "fermi-hubbard-model-fermihubbard-closed-chain-1x4",
+                                            "1x8": "fermi-hubbard-model-fermihubbard-closed-chain-1x8",
+                                        },
+                                        "default": "1x4",
+                                    },
+                                    "rectangular": {
+                                        "next": {
+                                            "2x2": "fermi-hubbard-model-fermihubbard-closed-rectangular-2x2",
+                                            "2x4": "fermi-hubbard-model-fermihubbard-closed-rectangular-2x4",
+                                        },
+                                        "default": "2x2",
+                                    },
                                 },
                                 "default": "chain",
                             },

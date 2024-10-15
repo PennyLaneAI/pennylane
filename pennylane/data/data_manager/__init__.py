@@ -16,6 +16,7 @@ Contains functions for querying available datasets and downloading
 them.
 """
 
+import os
 import sys
 import urllib.parse
 from concurrent import futures
@@ -33,7 +34,8 @@ from pennylane.data.data_manager import progress
 from .foldermap import DataPath, FolderMapView, ParamArg
 from .params import DEFAULT, FULL, format_params
 
-GRAPHQL_URL = "https://cloud.pennylane.ai/graphql"
+
+GRAPHQL_URL = os.getenv("DATASETS_ENDPOINT_URL", "https://cloud.pennylane.ai/graphql")
 S3_URL = "https://datasets.cloud.pennylane.ai/datasets/h5"
 
 
@@ -105,7 +107,7 @@ def _download_full(s3_url: str, dest: Path, block_size: int, pbar_task: Optional
                 f.write(block)
 
 
-def _get_graphql(url: str, query: str, variables: dict[str, Any] = None):
+def _get_graphql(url: str, query: str, variables: Optional[dict[str, Any]] = None):
     """
     Args:
         url: The URL to send a query to.
@@ -158,7 +160,7 @@ def _get_dataset_urls(class_id: str, parameters: dict[str, list[str]]) -> list[t
           }
         }
         """,
-        {"input": {"datasetClassId": class_id, "parameters": parameters}},
+        {"datasetClassId": class_id, "parameters": parameters},
     )
 
     return [
@@ -463,7 +465,7 @@ def list_attributes(data_name) -> list[str]:
           }
         }
         """,
-        {"input": {"datasetClassId": data_name}},
+        {"datasetClassId": data_name},
     )
 
     return [attribute["name"] for attribute in response["data"]["datasetClass"]["attributes"]]
@@ -499,8 +501,14 @@ def _interactive_requests(parameters, parameter_tree):
     """Prompts the user to select parameters for datasets one at a time."""
 
     branch = parameter_tree
-    choices = []
     for param in parameters:
+        if isinstance(branch, str):
+            return branch
+
+        if len(branch["next"]) == 1:
+            branch = next(iter(branch["next"].values()))
+            continue
+
         print(f"Available options for {param}:")
         for i, option in enumerate(branch["next"].keys()):
             print(f"{i + 1}: {option}")
@@ -509,13 +517,8 @@ def _interactive_requests(parameters, parameter_tree):
             branch = branch["next"][user_value]
         except KeyError as e:
             raise ValueError(f"Must enter a valid {param}:") from e
-        choices.append(user_value)
-        if "next" in branch:
-            if len(branch["next"]) == 1:
-                branch = next(iter(branch["next"].values()))
-            continue
-        branch = branch["value"]
-        return branch
+
+    return branch
 
 
 def _get_parameter_tree(class_id) -> tuple[list[str], list[str], dict]:
@@ -536,7 +539,7 @@ def _get_parameter_tree(class_id) -> tuple[list[str], list[str], dict]:
           }
         }
         """,
-        {"input": {"datasetClassId": class_id}},
+        {"datasetClassId": class_id},
     )
 
     parameters = [param["name"] for param in response["data"]["datasetClass"]["parameters"]]
