@@ -96,15 +96,16 @@ def pauli_decompose(H):
 
 def check_commutation(ops1, ops2, vspace):
     """Helper function to check things like [k, m] subspace m; expensive"""
+    assert_vals = []
     for o1 in ops1:
         for o2 in ops2:
             com = o1.commutator(o2)
-            assert not vspace.is_independent(com)
+            assert_vals.append(not vspace.is_independent(com))
 
-    return True
+    return all(assert_vals)
 
 
-def check_cartan_decomp(k: List[PauliSentence], m: List[PauliSentence]):
+def check_cartan_decomp(k: List[PauliSentence], m: List[PauliSentence], verbose=True):
     """Helper function to check the validity of a Cartan decomposition by checking its commutation relations"""
     if any(isinstance(op, np.ndarray) for op in k):
         k = [qml.pauli_decompose(op).pauli_rep for op in k]
@@ -115,6 +116,11 @@ def check_cartan_decomp(k: List[PauliSentence], m: List[PauliSentence]):
     m_space = qml.pauli.PauliVSpace(m, dtype=complex)
 
     # Commutation relations for Cartan pair
-    assert check_commutation(k, k, k_space), "[k, k] sub k not fulfilled"
-    assert check_commutation(k, m, m_space), "[k, m] sub m not fulfilled"
-    assert check_commutation(m, m, k_space), "[m, m] sub k not fulfilled"
+    if not (check_kk := check_commutation(k, k, k_space)):
+        _ = print("[k, k] sub k not fulfilled") if verbose else None
+    if not (check_km := check_commutation(k, m, m_space)):
+        _ = print("[k, m] sub m not fulfilled") if verbose else None
+    if not (check_mm := check_commutation(m, m, k_space)):
+        _ = print("[m, m] sub k not fulfilled") if verbose else None
+
+    return all([check_kk, check_km, check_mm])
