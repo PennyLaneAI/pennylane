@@ -4,6 +4,16 @@
 
 <h3>New features since last release</h3>
 
+* Introduced `sample_probs` function for the `qml.devices.qubit` and `qml.devices.qutrit_mixed` modules:
+  - This function takes probability distributions as input and returns sampled outcomes.
+  - Simplifies the sampling process by separating it from other operations in the measurement chain.
+  - Improves modularity: The same code can be easily adapted for other devices (e.g., a potential `default_mixed` device).
+  - Enhances maintainability by isolating the sampling logic.
+  [(#6354)](https://github.com/PennyLaneAI/pennylane/pull/6354)
+  
+* `qml.transforms.decompose` is added for stepping through decompositions to a target gate set. 
+  [(#6334)](https://github.com/PennyLaneAI/pennylane/pull/6334)
+
 * Added `process_density_matrix` implementations to 5 `StateMeasurement` subclasses:
   `ExpVal`, `Var`, `Purity`, `MutualInformation`, and `VnEntropy`.
   This enables `process_density_matrix` to be an abstract method in `StateMeasurement`,
@@ -65,6 +75,9 @@
 
 * The `Hermitian` operator now has a `compute_sparse_matrix` implementation.
   [(#6225)](https://github.com/PennyLaneAI/pennylane/pull/6225)
+
+* `qml.QutritBasisStatePreparation` is now JIT compatible.
+  [(#6308)](https://github.com/PennyLaneAI/pennylane/pull/6308)
 
 * `qml.AmplitudeAmplification` is now compatible with QJIT.
   [(#6306)](https://github.com/PennyLaneAI/pennylane/pull/6306)
@@ -260,7 +273,16 @@
 * Removed ambiguity in error raised by the `PauliRot` class.
   [(#6298)](https://github.com/PennyLaneAI/pennylane/pull/6298)
 
+* Renamed an incorrectly named test in `test_pow_ops.py`.
+  [(#6388)](https://github.com/PennyLaneAI/pennylane/pull/6388)
+
 <h3>Bug fixes 🐛</h3>
+
+* `MeasurementValue` now raises an error when it is used as a boolean.
+  [(#6386)](https://github.com/PennyLaneAI/pennylane/pull/6386)
+
+* `default.qutrit` now returns integer samples.
+  [(#6385)](https://github.com/PennyLaneAI/pennylane/pull/6385)
 
 * `adjoint_metric_tensor` now works with circuits containing state preparation operations.
   [(#6358)](https://github.com/PennyLaneAI/pennylane/pull/6358)
