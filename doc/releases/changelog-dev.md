@@ -324,6 +324,9 @@
   [(#6278)](https://github.com/PennyLaneAI/pennylane/pull/6278)
   [(#6310)](https://github.com/PennyLaneAI/pennylane/pull/6310)
 
+* Fixes a bug where `None` was added to the wires in `qml.PhaseAdder`, `qml.Adder` and `qml.OutAdder`.
+  [(#6360)](https://github.com/PennyLaneAI/pennylane/pull/6360)
+
 * Fixes a test after updating to the nightly version of Catalyst.
   [(#6362)](https://github.com/PennyLaneAI/pennylane/pull/6362)
 
