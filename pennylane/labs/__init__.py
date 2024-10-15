@@ -30,6 +30,6 @@ advanced quantum computing research.
 
 """
 
-import dla
+from pennylane.labs.dla import dla
 
 __all__ = [dla]
