@@ -32,4 +32,4 @@ advanced quantum computing research.
 
 from pennylane.labs import dla
 
-__all__ = [dla]
+__all__ = []
