@@ -73,7 +73,7 @@ def test_my_feature_is_deprecated():
         tape = QuantumScript(
             ops=[qml.PauliX(0), qml.RZ(0.123, wires=0)], measurements=[qml.state()]
         )
-        decompose(tape, lambda obj: obj.has_matrix)
+        decompose(tape, lambda obj: obj.has_matrix, max_expansion=1)
 
 
 class TestPrivateHelpers:
@@ -210,33 +210,21 @@ class TestDecomposeValidation:
 
         tape = QuantumScript(ops=[NoMatNoDecompOp(0)], measurements=[qml.expval(qml.Hadamard(0))])
         with pytest.raises(qml.DeviceError, match="not supported with abc"):
-            with pytest.warns(
-                qml.PennyLaneDeprecationWarning,
-                match="The max_expansion argument is deprecated",
-            ):
-                decompose(tape, lambda op: op.has_matrix, name="abc")
+            decompose(tape, lambda op: op.has_matrix, name="abc")
 
     def test_decompose(self):
         """Test that expand_fn doesn't throw any errors for a valid circuit"""
         tape = QuantumScript(
             ops=[qml.PauliX(0), qml.RZ(0.123, wires=0)], measurements=[qml.state()]
         )
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning,
-            match="The max_expansion argument is deprecated",
-        ):
-            decompose(tape, lambda obj: obj.has_matrix)
+        decompose(tape, lambda obj: obj.has_matrix)
 
     def test_infinite_decomposition_loop(self):
         """Test that a device error is raised if decomposition enters an infinite loop."""
 
         qs = qml.tape.QuantumScript([InfiniteOp(1.23, 0)])
         with pytest.raises(qml.DeviceError, match=r"Reached recursion limit trying to decompose"):
-            with pytest.warns(
-                qml.PennyLaneDeprecationWarning,
-                match="The max_expansion argument is deprecated",
-            ):
-                decompose(qs, lambda obj: obj.has_matrix)
+            decompose(qs, lambda obj: obj.has_matrix)
 
     @pytest.mark.parametrize(
         "error_type", [RuntimeError, qml.operation.DecompositionUndefinedError]
@@ -251,18 +239,10 @@ class TestDecomposeValidation:
         recursion_error_tape = qml.tape.QuantumScript([InfiniteOp(1.23, 0)])
 
         with pytest.raises(error_type, match="not supported with abc"):
-            with pytest.warns(
-                qml.PennyLaneDeprecationWarning,
-                match="The max_expansion argument is deprecated",
-            ):
-                decompose(decomp_error_tape, lambda op: op.has_matrix, name="abc", error=error_type)
+            decompose(decomp_error_tape, lambda op: op.has_matrix, name="abc", error=error_type)
 
         with pytest.raises(error_type, match=r"Reached recursion limit trying to decompose"):
-            with pytest.warns(
-                qml.PennyLaneDeprecationWarning,
-                match="The max_expansion argument is deprecated",
-            ):
-                decompose(recursion_error_tape, lambda obj: obj.has_matrix, error=error_type)
+            decompose(recursion_error_tape, lambda obj: obj.has_matrix, error=error_type)
 
 
 class TestValidateObservables:
@@ -370,11 +350,7 @@ class TestDecomposeTransformations:
         ops = [qml.Hadamard(0), NoMatOp(1), qml.RZ(0.123, wires=1)]
         measurements = [qml.expval(qml.PauliZ(0)), qml.probs()]
         tape = QuantumScript(ops=ops, measurements=measurements, shots=shots)
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning,
-            match="The max_expansion argument is deprecated",
-        ):
-            expanded_tapes, _ = decompose(tape, lambda obj: obj.has_matrix)
+        expanded_tapes, _ = decompose(tape, lambda obj: obj.has_matrix)
         expanded_tape = expanded_tapes[0]
         expected = [qml.Hadamard(0), qml.PauliX(1), qml.PauliY(1), qml.RZ(0.123, wires=1)]
 
@@ -388,11 +364,7 @@ class TestDecomposeTransformations:
         ops = [qml.Hadamard(0), qml.CNOT([0, 1]), qml.RZ(0.123, wires=1)]
         measurements = [qml.expval(qml.PauliZ(0)), qml.probs()]
         tape = QuantumScript(ops=ops, measurements=measurements)
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning,
-            match="The max_expansion argument is deprecated",
-        ):
-            expanded_tapes, _ = decompose(tape, lambda obj: obj.has_matrix)
+        expanded_tapes, _ = decompose(tape, lambda obj: obj.has_matrix)
         expanded_tape = expanded_tapes[0]
 
         for op, exp in zip(expanded_tape.circuit, ops + measurements):
@@ -428,14 +400,9 @@ class TestDecomposeTransformations:
         ]
         measurements = [qml.expval(qml.PauliZ(0)), qml.probs()]
         tape = QuantumScript(ops=ops, measurements=measurements)
-
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning,
-            match="The max_expansion argument is deprecated",
-        ):
-            expanded_tapes, _ = decompose(
-                tape, lambda obj: obj.has_matrix, skip_initial_state_prep=True
-            )
+        expanded_tapes, _ = decompose(
+            tape, lambda obj: obj.has_matrix, skip_initial_state_prep=True
+        )
         expanded_tape = expanded_tapes[0]
         expected = [
             prep_op,
@@ -463,11 +430,7 @@ class TestDecomposeTransformations:
         """Test that initial state prep operations are decomposed if skip_initial_state_prep is False."""
 
         tape = qml.tape.QuantumScript([prep_op])
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning,
-            match="The max_expansion argument is deprecated",
-        ):
-            batch, _ = decompose(tape, lambda obj: obj.has_matrix, skip_initial_state_prep=False)
+        batch, _ = decompose(tape, lambda obj: obj.has_matrix, skip_initial_state_prep=False)
         new_tape = batch[0]
 
         assert new_tape[0] != prep_op

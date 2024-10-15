@@ -350,10 +350,11 @@ def decompose(
     RZ(1.5707963267948966, wires=[1])]
 
     """
-    warnings.warn(
-        "The max_expansion argument is deprecated and will be removed in v0.40. ",
-        qml.PennyLaneDeprecationWarning,
-    )
+    if max_expansion is not None:
+        warnings.warn(
+            "The max_expansion argument is deprecated and will be removed in v0.40. ",
+            qml.PennyLaneDeprecationWarning,
+        )
 
     if error is None:
         error = qml.DeviceError
