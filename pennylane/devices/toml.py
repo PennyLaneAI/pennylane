@@ -30,6 +30,8 @@ else:
     import tomlkit as toml
     from tomlkit import TOMLDocument
 
+ALL_SUPPORTED_SCHEMAS = [3]
+
 
 class InvalidCapabilitiesError(Exception):
     """Exception raised from invalid TOML files."""
@@ -271,6 +273,8 @@ def _get_options(document: TOMLDocument) -> dict[str, str]:
 def parse_toml_document(document: TOMLDocument) -> DeviceCapabilities:
     """Parses a TOML document into a DeviceCapabilities object."""
 
+    schema = int(document["schema"])
+    assert schema in ALL_SUPPORTED_SCHEMAS, f"Unsupported capabilities TOML schema {schema}"
     operations = _get_operations(document)
     observables = _get_observables(document)
     measurement_processes = _get_measurement_processes(document)
