@@ -162,9 +162,13 @@ def _sample_qwc_tape(tape, state, is_state_batched, rng=None, prng_key=None):
     results = []
     for lower, upper in tape.shots.bins():
         sub_samples = samples[:, lower:upper] if is_state_batched else samples[lower:upper]
-        results.append(
-            tuple(mp.process_samples(sub_samples, wire_order) for mp in tape.measurements)
-        )
+
+        def next_res(s):
+            for mp in tape.measurements:
+                r = mp.process_samples(s, wire_order)
+                yield r if isinstance(r, dict) else qml.math.squeeze(r)
+
+        results.append(tuple(next_res(sub_samples)))
     if len(tape.measurements) == 1:
         results = tuple(res[0] for res in results)
     if tape.shots.has_partitioned_shots:

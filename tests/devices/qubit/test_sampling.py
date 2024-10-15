@@ -196,7 +196,7 @@ class TestMeasureSamples:
         """Test that if the measurements are an empty list, and empty tuple is also still returned."""
 
         state = np.array([1, 0])
-        shots = qml.meausrements.Shots(10)
+        shots = qml.measurements.Shots(10)
         assert measure_with_samples([], state, shots) == ()
 
     def test_sample_measure(self):
