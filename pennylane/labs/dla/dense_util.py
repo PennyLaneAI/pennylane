@@ -12,13 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Utility tools for dense Lie algebra representations"""
-
 from itertools import product
+from typing import List
 
 import numpy as np
 
 import pennylane as qml
 from pennylane.ops.qubit.matrix_ops import _walsh_hadamard_transform
+from pennylane.pauli import PauliSentence
 
 
 def _make_phase_mat(n):
@@ -88,3 +89,32 @@ def pauli_decompose(H):
     indices = _make_extraction_indices(n)
     coefficients = coefficients[..., indices[0], indices[1]].reshape((-1, dim**2))[..., 1:]
     return coefficients
+
+
+# consistency check tools
+
+
+def check_commutation(ops1, ops2, vspace):
+    """Helper function to check things like [k, m] subspace m; expensive"""
+    for o1 in ops1:
+        for o2 in ops2:
+            com = o1.commutator(o2)
+            assert not vspace.is_independent(com)
+
+    return True
+
+
+def check_cartan_decomp(k: List[PauliSentence], m: List[PauliSentence]):
+    """Helper function to check the validity of a Cartan decomposition by checking its commutation relations"""
+    if any(isinstance(op, np.ndarray) for op in k):
+        k = [qml.pauli_decompose(op).pauli_rep for op in k]
+    if any(isinstance(op, np.ndarray) for op in m):
+        m = [qml.pauli_decompose(op).pauli_rep for op in m]
+
+    k_space = qml.pauli.PauliVSpace(k, dtype=complex)
+    m_space = qml.pauli.PauliVSpace(m, dtype=complex)
+
+    # Commutation relations for Cartan pair
+    assert check_commutation(k, k, k_space), "[k, k] sub k not fulfilled"
+    assert check_commutation(k, m, m_space), "[k, m] sub m not fulfilled"
+    assert check_commutation(m, m, k_space), "[m, m] sub k not fulfilled"
