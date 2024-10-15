@@ -24,6 +24,7 @@ import warnings
 
 import pennylane as qml
 
+from pennylane.pytrees import register_pytree
 from .basis_data import atomic_numbers
 from .basis_set import BasisFunction, mol_basis_data
 from .integrals import contracted_norm, primitive_norm
@@ -139,7 +140,6 @@ class Molecule:
         if alpha is None:
             alpha = [qml.math.array(i[1], **interface_args) for i in self.basis_data]
             if use_jax:
-
                 alpha = qml.math.array(alpha, like="jax")
 
         if coeff is None:
@@ -171,6 +171,27 @@ class Molecule:
 
         self.mo_coefficients = None
         self.normalize = normalize
+
+    #pylint: disable=protected-access
+    def _flatten(self):
+        return (self.coordinates, self.alpha, self.coeff), (
+            self.symbols,
+            self.charge,
+            self.mult,
+            self.basis_name,
+            self.name,
+            self.load_data,
+            self.l,
+            self.normalize,
+            self.unit,
+        )  # (differentiable), (non-differntiable)
+
+    #pylint: disable=protected-access
+    @classmethod
+    def _unflatten(
+        cls, data, metadata
+    ):  # construct back the class from the flattened list of parameters
+        return cls(metadata[0], data[0], *metadata[1:7], *data[1:3], *metadata[7:9])
 
     def __repr__(self):
         """Returns the molecule representation in string format"""
@@ -270,3 +291,5 @@ class Molecule:
             return m
 
         return orbital
+
+register_pytree(Molecule, Molecule._flatten, Molecule._unflatten)
