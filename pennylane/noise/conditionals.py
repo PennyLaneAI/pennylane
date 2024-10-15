@@ -59,15 +59,11 @@ class WiresEq(BooleanFn):
     def __init__(self, wires):
         self._cond = frozenset(wires)
         self.condition = self._cond
-        wire_repr = (
-            f"[{', '.join(str(wire) for wire in wires)}]"
-            if len(wires) > 1
-            else str(list(wires)[0])
-        )
         super().__init__(
             lambda wire: _get_wires(wire) == self._cond,
-            f"WiresEq({wire_repr})",
+            f"WiresEq({wires if len(wires) > 1 else list(wires)[0]!r})"
         )
+
 
 def _get_wires(val):
     """Extract wires as a set from an integer, string, Iterable, Wires or Operation instance.
@@ -221,8 +217,8 @@ class OpEq(BooleanFn):
     """A conditional for evaluating if a given operation is equal to the specified operation.
 
     Args:
-        ops (Union[str, class, Operation]): An operation instance, string representation or
-            class to build the operation set.
+        ops (Union[str, class, Operation]): An operation instance, string representation, 
+        or class to build the operation set.
 
     .. seealso:: Users are advised to use :func:`~.op_eq` for a functional construction.
     """
@@ -250,7 +246,7 @@ class OpEq(BooleanFn):
                 and _get_ops(xs) == self._cops
                 and all(
                     _check_arithmetic_ops(op, x)
-                    for (op, x) in zip(self._cond, xs)
+                    for op, x in zip(self._cond, xs)
                     if not isclass(x) and getattr(x, "arithmetic_depth", 0)
                 )
             )
