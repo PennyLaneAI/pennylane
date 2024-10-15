@@ -585,7 +585,7 @@ class TestExpandMatrixQutrit:
         m1p = np.floor(m1 / 9)
         m2p = np.floor(m2 / 9)
 
-        # states across row are 00, 01, 02, 10, 11, 12, 20, 21, 22
+        # states across column are 00, 01, 02, 10, 11, 12, 20, 21, 22
         # extract out right qubit state with mod
         m1_wire_zerop = m1p % 3
         m2_wire_zerop = m2p % 3
