@@ -46,12 +46,12 @@ def Kpq(p, q):
 
 
 def AI(op):
-    return np.allclose(op, op.conj())
+    return not np.allclose(op, op.conj())
 
 
 def AII(op):
     JJ = J(op.shape[-1] // 2)
-    return np.allclose(op, JJ @ op.conj() @ JJ.T)
+    return not np.allclose(op, JJ @ op.conj() @ JJ.T)
 
 
 def AIII(op, p=None, q=None):
@@ -60,7 +60,7 @@ def AIII(op, p=None, q=None):
             "please specify p and q for the involution via functools.partial(AIII, p=p, q=q)"
         )
     IIm = Ipq(p, q)
-    return np.allclose(op, IIm @ op @ IIm)
+    return not np.allclose(op, IIm @ op @ IIm)
 
 
 def BDI(op, p=None, q=None):
@@ -69,11 +69,11 @@ def BDI(op, p=None, q=None):
             "please specify p and q for the involution via functools.partial(BDI, p=p, q=q)"
         )
     IIm = Ipq(p, q)
-    return np.allclose(op, IIm @ op @ IIm)
+    return not np.allclose(op, IIm @ op @ IIm)
 
 
 def CI(op):
-    return np.allclose(op, op.conj())
+    return not np.allclose(op, op.conj())
 
 
 def CII(op, p=None, q=None):
@@ -82,9 +82,9 @@ def CII(op, p=None, q=None):
             "please specify p and q for the involution via functools.partial(CII, p=p, q=q)"
         )
     KKm = Kpq(p, q)
-    return np.allclose(op, KKm @ op @ KKm)
+    return not np.allclose(op, KKm @ op @ KKm)
 
 
 def DIII(op):
     JJ = J(op.shape[-1] // 2)
-    return np.allclose(op, JJ @ op @ JJ.T)
+    return not np.allclose(op, JJ @ op @ JJ.T)
