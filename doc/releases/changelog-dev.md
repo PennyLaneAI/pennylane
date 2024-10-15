@@ -276,6 +276,9 @@
 
 * Fixes the matrices for qutrit operators when expanded to more wires.
 
+* `MeasurementValue` now raises an error when it is used as a boolean.
+  [(#6386)](https://github.com/PennyLaneAI/pennylane/pull/6386)
+
 * `default.qutrit` now returns integer samples.
   [(#6385)](https://github.com/PennyLaneAI/pennylane/pull/6385)
 
