@@ -37,6 +37,27 @@ def dummyfunc():
     return None
 
 
+def test_get_gradient_fn_is_deprecated():
+    """Test that is deprecated."""
+    with pytest.warns(qml.PennyLaneDeprecationWarning, match="QNode.get_gradient_fn is deprecated"):
+        dev = qml.devices.DefaultQubit()
+        _ = QNode.get_gradient_fn(dev, "autograd", "best")
+
+
+def test_get_best_method_is_deprecated():
+    """Test that is deprecated."""
+    with pytest.warns(qml.PennyLaneDeprecationWarning, match="QNode.get_best_method is deprecated"):
+        dev = qml.device("default.qubit", wires=2)
+        _ = QNode.get_best_method(dev, "jax")
+
+
+def test_best_method_str_is_deprecated():
+    """Test that is deprecated."""
+    with pytest.warns(qml.PennyLaneDeprecationWarning, match="QNode.best_method_str is deprecated"):
+        dev = qml.device("default.qubit", wires=2)
+        _ = QNode.best_method_str(dev, "jax")
+
+
 # pylint: disable=unused-argument
 class CustomDevice(qml.devices.Device):
     """A null device that just returns 0."""
@@ -177,11 +198,17 @@ class TestValidation:
 
         dev = CustomDeviceWithDiffMethod()
 
-        res = QNode.get_best_method(dev, "jax")
-        assert res == ("device", {}, dev)
+        with pytest.raises(
+            qml.PennyLaneDeprecationWarning, match="QNode.get_best_method is deprecated"
+        ):
+            res = QNode.get_best_method(dev, "jax")
+            assert res == ("device", {}, dev)
 
-        res = QNode.get_best_method(dev, None)
-        assert res == ("device", {}, dev)
+        with pytest.raises(
+            qml.PennyLaneDeprecationWarning, match="QNode.get_best_method is deprecated"
+        ):
+            res = QNode.get_best_method(dev, None)
+            assert res == ("device", {}, dev)
 
     # pylint: disable=protected-access
     @pytest.mark.parametrize("interface", ["jax", "tensorflow", "torch", "autograd"])
@@ -192,8 +219,11 @@ class TestValidation:
         dev = qml.device("default.qubit", wires=1)
 
         # backprop is returned when the interface is an allowed interface for the device and Jacobian is not provided
-        res = QNode.get_best_method(dev, interface)
-        assert res == ("backprop", {}, dev)
+        with pytest.raises(
+            qml.PennyLaneDeprecationWarning, match="QNode.get_best_method is deprecated"
+        ):
+            res = QNode.get_best_method(dev, interface)
+            assert res == ("backprop", {}, dev)
 
     # pylint: disable=protected-access
     def test_best_method_is_param_shift(self):
@@ -203,14 +233,20 @@ class TestValidation:
 
         # null device has no info - fall back on parameter-shift
         dev = CustomDevice()
-        res = QNode.get_best_method(dev, None)
-        assert res == (qml.gradients.param_shift, {}, dev)
+        with pytest.raises(
+            qml.PennyLaneDeprecationWarning, match="QNode.get_best_method is deprecated"
+        ):
+            res = QNode.get_best_method(dev, None)
+            assert res == (qml.gradients.param_shift, {}, dev)
 
         # no interface - fall back on parameter-shift
         dev2 = qml.device("default.qubit", wires=1)
         tape = qml.tape.QuantumScript([], [], shots=50)
-        res2 = QNode.get_best_method(dev2, None, tape=tape)
-        assert res2 == (qml.gradients.param_shift, {}, dev2)
+        with pytest.raises(
+            qml.PennyLaneDeprecationWarning, match="QNode.get_best_method is deprecated"
+        ):
+            res2 = QNode.get_best_method(dev2, None, tape=tape)
+            assert res2 == (qml.gradients.param_shift, {}, dev2)
 
     # pylint: disable=protected-access
     @pytest.mark.xfail(
@@ -230,8 +266,11 @@ class TestValidation:
 
         # finite differences is the fallback when we know nothing about the device
         monkeypatch.setattr(qml.devices.DefaultMixed, "capabilities", capabilities)
-        res = QNode.get_best_method(dev, "another_interface")
-        assert res == (qml.gradients.finite_diff, {}, dev)
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match=r"QNode.get_best_method is deprecated"
+        ):
+            res = QNode.get_best_method(dev, "another_interface")
+            assert res == (qml.gradients.finite_diff, {}, dev)
 
     # pylint: disable=protected-access, too-many-statements
     def test_diff_method(self):
@@ -1546,7 +1585,10 @@ class TestNewDeviceIntegration:
 
     def test_get_gradient_fn_custom_device(self):
         """Test get_gradient_fn is parameter for best for null device."""
-        gradient_fn, kwargs, new_dev = QNode.get_gradient_fn(self.dev, "autograd", "best")
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match="QNode.get_gradient_fn is deprecated"
+        ):
+            gradient_fn, kwargs, new_dev = QNode.get_gradient_fn(self.dev, "autograd", "best")
         assert gradient_fn is qml.gradients.param_shift
         assert not kwargs
         assert new_dev is self.dev
@@ -1554,7 +1596,10 @@ class TestNewDeviceIntegration:
     def test_get_gradient_fn_default_qubit(self):
         """Tests the get_gradient_fn is backprop for best for default qubit2."""
         dev = qml.devices.DefaultQubit()
-        gradient_fn, kwargs, new_dev = QNode.get_gradient_fn(dev, "autograd", "best")
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match="QNode.get_gradient_fn is deprecated"
+        ):
+            gradient_fn, kwargs, new_dev = QNode.get_gradient_fn(dev, "autograd", "best")
         assert gradient_fn == "backprop"
         assert not kwargs
         assert new_dev is dev
@@ -1564,14 +1609,20 @@ class TestNewDeviceIntegration:
         with pytest.raises(
             qml.QuantumFunctionError, match=r"Device CustomDevice does not support adjoint"
         ):
-            QNode.get_gradient_fn(self.dev, "autograd", "adjoint")
+            with pytest.warns(
+                qml.PennyLaneDeprecationWarning, match="QNode.get_gradient_fn is deprecated"
+            ):
+                QNode.get_gradient_fn(self.dev, "autograd", "adjoint")
 
     def test_error_for_backprop_with_custom_device(self):
         """Test that an error is raised when backprop is requested for a device that does not support it."""
         with pytest.raises(
             qml.QuantumFunctionError, match=r"Device CustomDevice does not support backprop"
         ):
-            QNode.get_gradient_fn(self.dev, "autograd", "backprop")
+            with pytest.warns(
+                qml.PennyLaneDeprecationWarning, match="QNode.get_gradient_fn is deprecated"
+            ):
+                QNode.get_gradient_fn(self.dev, "autograd", "backprop")
 
     def test_custom_device_that_supports_backprop(self):
         """Test that a custom device and designate that it supports backprop derivatives."""
@@ -1587,9 +1638,12 @@ class TestNewDeviceIntegration:
                 return execution_config.gradient_method == "backprop"
 
         dev = BackpropDevice()
-        gradient_fn, kwargs, new_dev = QNode.get_gradient_fn(
-            dev, interface="autograd", diff_method="backprop"
-        )
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match="QNode.get_gradient_fn is deprecated"
+        ):
+            gradient_fn, kwargs, new_dev = QNode.get_gradient_fn(
+                dev, interface="autograd", diff_method="backprop"
+            )
         assert gradient_fn == "backprop"
         assert not kwargs
         assert new_dev is dev
@@ -1608,7 +1662,10 @@ class TestNewDeviceIntegration:
                 return execution_config.gradient_method == "device"
 
         dev = DerivativeDevice()
-        gradient_fn, kwargs, new_dev = QNode.get_gradient_fn(dev, "tf", "device")
+        with pytest.warns(
+            qml.PennyLaneDeprecationWarning, match="QNode.get_gradient_fn is deprecated"
+        ):
+            gradient_fn, kwargs, new_dev = QNode.get_gradient_fn(dev, "tf", "device")
         assert gradient_fn == "device"
         assert not kwargs
         assert new_dev is dev
