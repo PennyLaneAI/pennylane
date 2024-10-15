@@ -89,22 +89,22 @@ class BatchingManager:
     """A class to manage the batching state of the QNode."""
 
     # indicates that the (lazy) batch size has not yet been accessed/computed
-    _UNSET_BATCH_SIZE = False
+    _SET_BATCHING = False
 
     @classmethod
     def enable_batching(cls):
         """Enable batching for the QNode."""
-        cls._UNSET_BATCH_SIZE = True
+        cls._SET_BATCHING = True
 
     @classmethod
     def disable_batching(cls):
         """Disable batching for the QNode."""
-        cls._UNSET_BATCH_SIZE = False
+        cls._SET_BATCHING = False
 
     @classmethod
     def batching_enabled(cls):
         """Return ``True`` if batching is enabled, ``False`` otherwise."""
-        return cls._UNSET_BATCH_SIZE
+        return cls._SET_BATCHING
 
 
 def _qnode_batching_rule(
@@ -114,12 +114,10 @@ def _qnode_batching_rule(
     Batching rule for the ``qnode`` primitive.
     """
 
-    # Ensure that the number of batched_args matches the number of batch_dims
     assert len(batched_args) == len(
         batch_dims
     ), "Mismatch in number of batched args and batch dimensions."
 
-    # Ensure that all batch_dims (for arguments after the constants) are either None or valid integers
     assert all(
         batch_dim is None or isinstance(batch_dim, int) for batch_dim in batch_dims[n_consts:]
     ), "Invalid batch dimension found."
@@ -165,15 +163,10 @@ def _get_qnode_prim():
 
         mps = qfunc_jaxpr.outvars
 
-        print("mps: ", mps)
-
         if batching_enabled:
 
             batched_args = args[n_consts:]
             input_shapes = [arg.shape for arg in batched_args]
-
-            print("batched_args: ", batched_args)
-            print("input_shapes: ", input_shapes)
 
             # TODO: is this the correct way to get the batch shape?
             batch_shape = jax.lax.broadcast_shapes(*input_shapes)
