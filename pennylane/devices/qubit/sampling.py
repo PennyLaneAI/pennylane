@@ -18,6 +18,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.measurements import ClassicalShadowMP, SampleMeasurement, ShadowExpvalMP, Shots
+from pennylane.ops import Prod, SProd, Sum
 from pennylane.typing import TensorLike
 
 from .apply_operation import apply_operation
@@ -32,6 +33,65 @@ def jax_random_split(prng_key, num: int = 2):
     from jax.random import split
 
     return split(prng_key, num=num)
+
+
+def _group_measurements(mps: list[Union[SampleMeasurement, ClassicalShadowMP, ShadowExpvalMP]]):
+    """
+    Group the measurements such that:
+      - measurements with pauli observables pairwise-commute in each group
+      - measurements with observables that are not pauli words are all in different groups
+      - measurements without observables are all in the same group
+      - classical shadow measurements are all in different groups
+
+    """
+    # Note: this function is used by lightning qubit and so cannot yet be deleted.
+    # TODO: delete this function when possible.
+
+    if len(mps) == 1:
+        return [mps], [[0]]
+
+    # measurements with pauli-word observables
+    mp_pauli_obs = []
+
+    # measurements with non pauli-word observables
+    mp_other_obs = []
+    mp_other_obs_indices = []
+
+    # measurements with no observables
+    mp_no_obs = []
+    mp_no_obs_indices = []
+    for i, mp in enumerate(mps):
+        if isinstance(mp.obs, (Sum, SProd, Prod)):
+            mps[i].obs = qml.simplify(mp.obs)
+        if isinstance(mp, (ClassicalShadowMP, ShadowExpvalMP)):
+            mp_other_obs.append([mp])
+            mp_other_obs_indices.append([i])
+        elif mp.obs is None:
+            mp_no_obs.append(mp)
+            mp_no_obs_indices.append(i)
+        elif qml.pauli.is_pauli_word(mp.obs):
+            mp_pauli_obs.append((i, mp))
+        else:
+            mp_other_obs.append([mp])
+            mp_other_obs_indices.append([i])
+    if mp_pauli_obs:
+        i_to_pauli_mp = dict(mp_pauli_obs)
+        _, group_indices = qml.pauli.group_observables(
+            [mp.obs for mp in i_to_pauli_mp.values()], list(i_to_pauli_mp.keys())
+        )
+        mp_pauli_groups = []
+        for indices in group_indices:
+            mp_group = [i_to_pauli_mp[i] for i in indices]
+            mp_pauli_groups.append(mp_group)
+    else:
+        mp_pauli_groups, group_indices = [], []
+
+    mp_no_obs_indices = [mp_no_obs_indices] if mp_no_obs else []
+    mp_no_obs = [mp_no_obs] if mp_no_obs else []
+    all_mp_groups = mp_pauli_groups + mp_no_obs + mp_other_obs
+    all_indices = group_indices + mp_no_obs_indices + mp_other_obs_indices
+
+    return all_mp_groups, all_indices
 
 
 # pylint: disable=no-member
@@ -121,7 +181,7 @@ def measure_with_samples(
     rng=None,
     prng_key=None,
     mid_measurements: dict = None,
-) -> list[TensorLike]:
+) -> tuple[TensorLike]:
     """
     Returns the samples of the measurement process performed on the given state.
     This function assumes that the user-defined wire labels in the measurement process
@@ -145,6 +205,8 @@ def measure_with_samples(
     """
     # last N measurements are sampling MCMs in ``dynamic_one_shot`` execution mode
     mps = measurements[: -len(mid_measurements)] if mid_measurements else measurements
+    if not mps:
+        return tuple(mid_measurements.values()) if mid_measurements else tuple()
 
     tape = qml.tape.QuantumScript([], mps, shots=shots)
     batch, postprocessing = qml.transforms.split_non_commuting(tape)
@@ -157,13 +219,20 @@ def measure_with_samples(
         results = tuple(_sample_qwc_tape(t, **kwargs) for t in batch)
     results = postprocessing(results)
 
+    if tape.shots.has_partitioned_shots and len(mps) == 1:
+        results = tuple((val,) for val in results)
+    else:
+        results = (results,) if len(mps) == 1 else results
+
     # append MCM samples
     if mid_measurements:
-        results += tuple(mid_measurements.values())
+        if shots.has_partitioned_shots:
+            mcm_results = tuple(mid_measurements.values())
+            results = tuple(r + mcm_r for r, mcm_r in zip(results, mcm_results))
+        else:
+            results += tuple(mid_measurements.values())
 
-    if tape.shots.has_partitioned_shots and len(mps) == 1:
-        return tuple((val,) for val in results)
-    return (results,) if len(mps) == 1 else results
+    return results
 
 
 def sample_state(

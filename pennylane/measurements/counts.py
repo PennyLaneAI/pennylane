@@ -246,6 +246,9 @@ class CountsMP(SampleMeasurement):
             samples = qml.sample(op=self.obs or self.mv, wires=self._wires).process_samples(
                 samples, wire_order, shot_range, bin_size
             )
+        if self._wires and len(self._wires) == 1:
+            # add back in squeezed dimension
+            samples = qml.math.expand_dims(samples, -1)
 
         if bin_size is None:
             return self._samples_to_counts(samples)
