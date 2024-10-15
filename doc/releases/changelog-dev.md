@@ -4,6 +4,16 @@
 
 <h3>New features since last release</h3>
 
+* Introduced `sample_probs` function for the `qml.devices.qubit` and `qml.devices.qutrit_mixed` modules:
+  - This function takes probability distributions as input and returns sampled outcomes.
+  - Simplifies the sampling process by separating it from other operations in the measurement chain.
+  - Improves modularity: The same code can be easily adapted for other devices (e.g., a potential `default_mixed` device).
+  - Enhances maintainability by isolating the sampling logic.
+  [(#6354)](https://github.com/PennyLaneAI/pennylane/pull/6354)
+  
+* `qml.transforms.decompose` is added for stepping through decompositions to a target gate set. 
+  [(#6334)](https://github.com/PennyLaneAI/pennylane/pull/6334)
+
 * Added `process_density_matrix` implementations to 5 `StateMeasurement` subclasses:
   `ExpVal`, `Var`, `Purity`, `MutualInformation`, and `VnEntropy`.
   This enables `process_density_matrix` to be an abstract method in `StateMeasurement`,
@@ -35,6 +45,13 @@
 
 <h3>Improvements 🛠</h3>
 
+* Module-level sandboxing added to `qml.labs` via pre-commit hooks.
+  [(#6369)](https://github.com/PennyLaneAI/pennylane/pull/6369)
+
+* `qml.matrix` now works with empty objects (such as empty tapes, `QNode`s and quantum functions that do
+  not call operations, single operators with empty decompositions).
+  [(#6347)](https://github.com/PennyLaneAI/pennylane/pull/6347)
+  
 * PennyLane is now compatible with NumPy 2.0.
   [(#6061)](https://github.com/PennyLaneAI/pennylane/pull/6061)
   [(#6258)](https://github.com/PennyLaneAI/pennylane/pull/6258)
@@ -59,6 +76,9 @@
 * The `Hermitian` operator now has a `compute_sparse_matrix` implementation.
   [(#6225)](https://github.com/PennyLaneAI/pennylane/pull/6225)
 
+* `qml.QutritBasisStatePreparation` is now JIT compatible.
+  [(#6308)](https://github.com/PennyLaneAI/pennylane/pull/6308)
+
 * `qml.AmplitudeAmplification` is now compatible with QJIT.
   [(#6306)](https://github.com/PennyLaneAI/pennylane/pull/6306)
 
@@ -77,6 +97,9 @@
   regarding whether the diagonalizing gates are modified by device, instead of always counting 
   unprocessed diagonalizing gates.
   [(#6290)](https://github.com/PennyLaneAI/pennylane/pull/6290)
+
+* A more sensible error message is raised from a `RecursionError` encountered when accessing properties and methods of a nested `CompositeOp` or `SProd`.
+  [(#6375)](https://github.com/PennyLaneAI/pennylane/pull/6375)
 
 <h4>Capturing and representing hybrid programs</h4>
 
@@ -136,6 +159,9 @@
   [(#6326)](https://github.com/PennyLaneAI/pennylane/pull/6326)
 
 <h3>Breaking changes 💔</h3>
+
+* `AllWires` validation in `QNode.construct` has been removed. 
+  [(#6373)](https://github.com/PennyLaneAI/pennylane/pull/6373)
 
 * The `simplify` argument in `qml.Hamiltonian` and `qml.ops.LinearCombination` has been removed.
   Instead, `qml.simplify()` can be called on the constructed operator.
@@ -243,7 +269,13 @@
 * Removed ambiguity in error raised by the `PauliRot` class.
   [(#6298)](https://github.com/PennyLaneAI/pennylane/pull/6298)
 
+* Renamed an incorrectly named test in `test_pow_ops.py`.
+  [(#6388)](https://github.com/PennyLaneAI/pennylane/pull/6388)
+
 <h3>Bug fixes 🐛</h3>
+
+* `default.qutrit` now returns integer samples.
+  [(#6385)](https://github.com/PennyLaneAI/pennylane/pull/6385)
 
 * `adjoint_metric_tensor` now works with circuits containing state preparation operations.
   [(#6358)](https://github.com/PennyLaneAI/pennylane/pull/6358)
@@ -295,6 +327,9 @@
 * Fixes a test after updating to the nightly version of Catalyst.
   [(#6362)](https://github.com/PennyLaneAI/pennylane/pull/6362)
 
+* Fixes a bug where `CommutingEvolution` with a trainable `Hamiltonian` cannot be differentiated using parameter shift.
+  [(#6372)](https://github.com/PennyLaneAI/pennylane/pull/6372)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -315,4 +350,5 @@ William Maxwell,
 Erick Ochoa Lopez,
 Lee J. O'Riordan,
 Mudit Pandey,
+Andrija Paurevic,
 David Wierichs,
