@@ -19,7 +19,7 @@ import pennylane as qml
 from pennylane import math
 from pennylane import numpy as np
 
-from . import QUDIT_DIM
+from .constants import QUDIT_DIM
 
 alphabet_array = np.array(list(alphabet))
 
@@ -42,8 +42,10 @@ def get_einsum_mapping(
     num_wires = int((len(qml.math.shape(state)) - is_state_batched) / 2)
     rho_dim = 2 * num_wires
 
-    # Tensor indices of the state. For each qutrit, need an index for rows *and* columns
+    # Step 1: The first rho_dim indices are the original state indices
     state_indices = alphabet[:rho_dim]
+
+    # Step 2: construct the for the Kraus operators. Note that the indices here are not necessarily consecutive any more therefore we first map them into list then pick the corresponding letters
 
     # row indices of the quantum state affected by this operation
     row_wires_list = op.wires.tolist()
@@ -53,6 +55,7 @@ def get_einsum_mapping(
     col_wires_list = [w + num_wires for w in row_wires_list]
     col_indices = "".join(alphabet_array[col_wires_list].tolist())
 
+    # Step 3: contruct the new indices for the quantum state after the operation
     # indices in einsum must be replaced with new ones
     new_row_indices = alphabet[rho_dim : rho_dim + num_ch_wires]
     new_col_indices = alphabet[rho_dim + num_ch_wires : rho_dim + 2 * num_ch_wires]

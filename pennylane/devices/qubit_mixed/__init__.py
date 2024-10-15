@@ -25,9 +25,6 @@ at your own discretion.
 """
 from .apply_operation import apply_operation
 
-QUDIT_DIM = 2  # specifies qubit dimension
-
-
 # from .adjoint_jacobian import adjoint_jacobian, adjoint_jvp, adjoint_vjp
 # from .initialize_state import create_initial_state
 # from .measure import measure

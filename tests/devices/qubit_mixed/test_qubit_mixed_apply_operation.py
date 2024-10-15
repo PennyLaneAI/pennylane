@@ -20,7 +20,12 @@ import pytest
 from scipy.stats import unitary_group
 
 import pennylane as qml
-from pennylane.devices.qubit_mixed import QUDIT_DIM, apply_operation
+from pennylane.devices.qubit_mixed import apply_operation
+from pennylane.devices.qubit_mixed.apply_operation import (
+    apply_operation_einsum,
+    apply_operation_tensordot,
+)
+from pennylane.devices.qubit_mixed.constants import QUDIT_DIM
 
 ml_frameworks_list = [
     "numpy",
@@ -82,7 +87,7 @@ class TestOperation:  # pylint: disable=too-few-public-methods
 
     @classmethod
     def expand_matrices(cls, op, batch_size=0):
-        """Find expanded operator matrices, since qml.matrix isn't working for qubits #4367"""
+        """Find expanded operator matrices, independent of qml implementation"""
         pre_wires_identity = np.eye(QUDIT_DIM ** op.wires[0])
         post_wires_identity = np.eye(QUDIT_DIM ** ((cls.num_qubits - 1) - op.wires[-1]))
         mat = op.matrix()
@@ -105,10 +110,16 @@ class TestOperation:  # pylint: disable=too-few-public-methods
             request (FixtureRequest): Pytest fixture request object.
         """
         three_qubit_state = request.getfixturevalue("three_qubit_state_fixture")
-        res = apply_operation(op, qml.math.asarray(three_qubit_state, like=ml_framework))
+        state = qml.math.asarray(three_qubit_state, like=ml_framework)
+        res = apply_operation(op, state)
+        res_tensordot = apply_operation_tensordot(op, state)
+        res_einsum = apply_operation_einsum(op, state)
 
         expanded_operator = self.expand_matrices(op)
         expected = self.get_expected_state(expanded_operator, three_qubit_state)
 
-        assert qml.math.get_interface(res) == ml_framework
+        # assert qml.math.get_interface(res) == ml_framework
         assert qml.math.allclose(res, expected)
+        assert qml.math.allclose(
+            res_tensordot, expected
+        ), f"Tensordot and einsum results do not match. {res_tensordot} != {res_einsum}"

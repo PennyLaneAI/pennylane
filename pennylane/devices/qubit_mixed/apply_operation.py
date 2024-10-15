@@ -22,7 +22,8 @@ from pennylane import math
 from pennylane import numpy as np
 from pennylane.operation import Channel
 
-from .utils import QUDIT_DIM, get_einsum_mapping, get_new_state_einsum_indices
+from .constants import QUDIT_DIM
+from .utils import get_einsum_mapping, get_new_state_einsum_indices
 
 alphabet_array = np.array(list(alphabet))
 
@@ -49,7 +50,13 @@ def _map_indices_apply_channel(**kwargs):
     )
 
 
-def apply_operation_einsum(op: qml.operation.Operator, state, is_state_batched: bool = False):
+def apply_operation_einsum(
+    op: qml.operation.Operator,
+    state,
+    is_state_batched: bool = False,
+    debugger=None,
+    **_,
+):
     r"""Apply a quantum channel specified by a list of Kraus operators to subsystems of the
     quantum state. For a unitary gate, there is a single Kraus operator.
 
@@ -61,6 +68,8 @@ def apply_operation_einsum(op: qml.operation.Operator, state, is_state_batched: 
     Returns:
         array[complex]: output_state
     """
+
+    #! Note that there the state should be a density matrix
     einsum_indices = get_einsum_mapping(op, state, _map_indices_apply_channel, is_state_batched)
 
     num_ch_wires = len(op.wires)
@@ -69,12 +78,12 @@ def apply_operation_einsum(op: qml.operation.Operator, state, is_state_batched: 
     if isinstance(op, Channel):
         kraus = op.kraus_matrices()
     else:
-        kraus = [op.matrix()]
+        kraus = [qml.math.cast_like(op.matrix(), state)]
 
     # Shape kraus operators
     kraus_shape = [len(kraus)] + [QUDIT_DIM] * num_ch_wires * 2
     if not isinstance(op, Channel):
-        mat = op.matrix()
+        mat = op.matrix() + 0j
         dim = QUDIT_DIM**num_ch_wires
         batch_size = math.get_batch_size(mat, (dim, dim), dim**2)
         if batch_size is not None:
@@ -91,7 +100,78 @@ def apply_operation_einsum(op: qml.operation.Operator, state, is_state_batched: 
     kraus = math.cast(math.reshape(kraus, kraus_shape), complex)
     kraus_dagger = math.cast(math.reshape(kraus_dagger, kraus_shape), complex)
 
-    return math.einsum(einsum_indices, kraus, state, kraus_dagger)
+    res = math.einsum(einsum_indices, kraus, state, kraus_dagger)
+    # Cast back to the same as state
+    return qml.math.cast_like(res, state)
+
+
+def apply_operation_tensordot(
+    op: qml.operation.Operator, state, is_state_batched: bool = False, debugger=None, **_
+):
+    """Apply ``Operator`` to ``state`` using ``math.tensordot``. This is more efficent at higher qubit
+    numbers.
+
+    Args:
+        op (Operator): Operator to apply to the quantum state
+        state (array[complex]): Input quantum state
+        is_state_batched (bool): Boolean representing whether the state is batched or not
+
+    Returns:
+        array[complex]: output_state
+    """
+    # We use this implicit casting strategy as autograd raises ComplexWarnings
+    # when backpropagating if casting explicitly. Some type of casting is needed
+    # to prevent ComplexWarnings with backpropagation with other interfaces
+
+    channel_wires = op.wires
+    num_ch_wires = len(channel_wires)
+
+    num_wires = int((len(qml.math.shape(state)) - is_state_batched) / 2)
+
+    #! Note that here we do not take into consideration the len of kraus list
+    kraus_shape = [QUDIT_DIM] * num_ch_wires * 2
+    # This could be pulled into separate function if tensordot is added
+    if isinstance(op, Channel):
+
+        kraus = [
+            qml.math.cast_like(qml.math.reshape(k, kraus_shape), state) for k in op.kraus_matrices()
+        ]
+    else:
+        kraus = [qml.math.cast_like(op.matrix(), state)]
+
+    row_wires_list = channel_wires.tolist()  # Example: H0 => [0]
+    col_wires_list = [w + num_wires for w in row_wires_list]  # Example: H0 => [3]
+
+    channel_row_ids = list(range(num_ch_wires))
+    channel_col_ids = list(range(num_ch_wires, 2 * num_ch_wires))
+    axes_left = [channel_col_ids, row_wires_list]
+    axes_right = [col_wires_list, channel_row_ids]
+
+    # Apply the Kraus operators, and sum over all Kraus operators afterwards
+    def _conjugate_state_with(k):
+        """Perform the double tensor product k @ self._state @ k.conj().
+        The `axes_left` and `axes_right` arguments are taken from the ambient variable space
+        and `axes_right` is assumed to incorporate the tensor product and the transposition
+        of k.conj() simultaneously."""
+        return qml.math.tensordot(
+            qml.math.tensordot(k, state, axes_left),
+            qml.math.conj(math.stack(math.moveaxis(k, source=-1, destination=-2))),
+            axes_right,
+        )
+
+    if len(kraus) == 1:
+        _state = _conjugate_state_with(kraus[0])
+
+    else:
+        _state = qml.math.sum(qml.math.stack([_conjugate_state_with(k) for k in kraus]), axis=0)
+
+    source_left = list(range(num_ch_wires))
+    dest_left = row_wires_list
+    source_right = list(range(-num_ch_wires, 0))
+    dest_right = col_wires_list
+    result = qml.math.moveaxis(_state, source_left + source_right, dest_left + dest_right)
+
+    return qml.math.cast_like(result, state)
 
 
 @singledispatch
@@ -156,49 +236,18 @@ def apply_operation(
         [0., 0., 0.],], requires_grad=True)
 
     """
-    return _apply_operation_default(op, state, is_state_batched, debugger)
+    return _apply_operation_default(op, state, is_state_batched, debugger, **_)
 
 
-def _apply_operation_default(op, state, is_state_batched, debugger):
+def _apply_operation_default(op, state, is_state_batched, debugger, **_):
     """The default behaviour of apply_operation, accessed through the standard dispatch
     of apply_operation, as well as conditionally in other dispatches.
     """
-
-    return apply_operation_einsum(op, state, is_state_batched=is_state_batched)
-    # TODO add tensordot and benchmark for performance
-
-
-# TODO add diagonal for speed up.
-
-
-@apply_operation.register
-def apply_snapshot(
-    op: qml.Snapshot, state, is_state_batched: bool = False, debugger=None, **execution_kwargs
-):
-    """Take a snapshot of the mixed state"""
-    if debugger and debugger.active:
-        measurement = op.hyperparameters["measurement"]
-
-        shots = execution_kwargs.get("tape_shots")
-
-        if isinstance(measurement, qml.measurements.StateMP) or not shots:
-            snapshot = qml.devices.qubit_mixed.measure(measurement, state, is_state_batched)
-        else:
-            snapshot = qml.devices.qubit_mixed.measure_with_samples(
-                measurement,
-                state,
-                shots,
-                is_state_batched,
-                execution_kwargs.get("rng"),
-                execution_kwargs.get("prng_key"),
-            )
-
-        if op.tag:
-            debugger.snapshots[op.tag] = snapshot
-        else:
-            debugger.snapshots[len(debugger.snapshots)] = snapshot
-
-    return state
+    num_op_wires = len(op.wires)
+    interface = qml.math.get_interface(state)
+    if (num_op_wires > 2 and interface in {"autograd", "numpy"}) or num_op_wires > 7:
+        return apply_operation_tensordot(op, state, is_state_batched, debugger, **_)
+    return apply_operation_einsum(op, state, is_state_batched, debugger, **_)
 
 
 @apply_operation.register
