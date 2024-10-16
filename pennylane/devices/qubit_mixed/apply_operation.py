@@ -107,6 +107,11 @@ def _phase_shift(state, axis, phase_factor=-1):
     return math.stack([state[sl_0], state_1], axis=axis)
 
 
+def _get_dagger_op(op, num_wires):
+    """Get the conjugate transpose of an operation by shifting num_wires. Should only be used for real, symmetric operations."""
+    return qml.map_wires(op, {w: w + num_wires for w in op.wires})
+
+
 def _map_indices_apply_channel(**kwargs):
     """Map indices to einsum string
     Args:
@@ -456,25 +461,32 @@ def apply_cnot(op: qml.CNOT, state, is_state_batched: bool = False, debugger=Non
 
     num_wires = int((len(math.shape(state)) - is_state_batched) / 2)
 
-    # First, do the left part
-    target_axes = op.wires[1] - (op.wires[1] > op.wires[0]) + is_state_batched
-    control_axes = op.wires[0] + is_state_batched
+    op_dagger = _get_dagger_op(op, num_wires)
+    state = qml.devices.qubit.apply_operation(op, state, is_state_batched, debugger)
+    state = qml.devices.qubit.apply_operation(op_dagger, state, is_state_batched, debugger)
+    return state
 
-    sl_0 = _get_slice(0, control_axes, n_dim)
-    sl_1 = _get_slice(1, control_axes, n_dim)
 
-    state_x = math.roll(state[sl_1], 1, target_axes)
-    state_x_left = math.stack([state[sl_0], state_x], axis=control_axes)
+@apply_operation.register
+def apply_multicontrolledx(
+    op: qml.MultiControlledX,
+    state,
+    is_state_batched: bool = False,
+    debugger=None,
+    **_,
+):
+    r"""Apply MultiControlledX to a state with the default einsum/tensordot choice
+    for 8 operation wires or less. Otherwise, apply a custom kernel based on
+    composing transpositions, rolling of control axes and the CNOT logic above."""
+    num_wires = int((len(math.shape(state)) - is_state_batched) / 2)
+    if len(op.wires) < 9:
+        return _apply_operation_default(op, state, is_state_batched, debugger)
 
-    # Second, do the right part
-    target_axes += num_wires
-    control_axes += num_wires
+    state = qml.devices.qubit.apply_operation(op, state, is_state_batched, debugger)
 
-    sl_0 = _get_slice(0, control_axes, n_dim)
-    sl_1 = _get_slice(1, control_axes, n_dim)
-
-    state_x_x = math.roll(state_x_left[sl_1], 1, target_axes)
-    return math.stack([state_x_left[sl_0], state_x_x], axis=control_axes)
+    op_dagger = _get_dagger_op(op, num_wires)
+    state = qml.devices.qubit.apply_operation(op_dagger, state, is_state_batched, debugger)
+    return state
 
 
 # pylint: disable=no-cover
