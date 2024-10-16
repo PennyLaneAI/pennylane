@@ -73,6 +73,7 @@ class TestOperation:  # pylint: disable=too-few-public-methods
         qml.RX(np.pi / 3, wires=0),
         qml.RY(2 * np.pi / 3, wires=1),
         qml.RZ(np.pi / 6, wires=2),
+        qml.X(wires=0),
     ]
     diagonal_ops = [
         qml.PauliZ(wires=0),  # Most naive one
@@ -137,7 +138,7 @@ class TestOperation:  # pylint: disable=too-few-public-methods
         expected = self.get_expected_state(expanded_operator, three_qubit_state)
 
         # assert qml.math.get_interface(res) == ml_framework
-        assert qml.math.allclose(res, expected)
+        assert qml.math.allclose(res, expected), f"Operation {op} failed. {res} \n != {expected}"
         assert qml.math.allclose(
             res_tensordot, expected
         ), f"Tensordot and einsum results do not match. {res_tensordot} != {res_einsum}"

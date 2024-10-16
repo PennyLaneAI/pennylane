@@ -273,6 +273,59 @@ def apply_global_phase(
     return state
 
 
+@apply_operation.register
+def apply_paulix(op: qml.X, state, is_state_batched: bool = False, debugger=None, **_):
+    """Applies a :class:`~.PauliX` operation by multiplying the state by the Pauli-X matrix."""
+    # PauliX is basically a bit flip, so we can just apply the X gate to the state
+    num_wires = int((len(qml.math.shape(state)) - is_state_batched) / 2)
+    axis_left = op.wires[0] + is_state_batched
+    axis_right = axis_left + num_wires
+
+    return math.roll(math.roll(state, 1, axis_left), 1, axis_right)
+
+
+@apply_operation.register
+def apply_pauliz(op: qml.Z, state, is_state_batched: bool = False, debugger=None, **_):
+    """Applies a :class:`~.PauliZ` operation by multiplying the state by the Pauli-Z matrix."""
+    # PauliZ is a phase flip, so we can just apply the Z gate to the state
+    # num_wires = int((len(qml.math.shape(state)) - is_state_batched) / 2)
+    # axis_left = op.wires[0] + is_state_batched
+    # axis_right = axis_left + num_wires
+
+    # return math.roll(state, 1, axis_left)
+
+
+# pylint: disable=no-cover
+@apply_operation.register
+def apply_snapshot(
+    op: qml.Snapshot, state, is_state_batched: bool = False, debugger=None, **execution_kwargs
+):
+    """Take a snapshot of the state"""
+    if debugger is not None and debugger.active:
+        raise NotImplementedError("Snapshot is not implemented yet for mixed states.")
+        # measurement = op.hyperparameters["measurement"]
+
+        # shots = execution_kwargs.get("tape_shots")
+
+        # if isinstance(measurement, qml.measurements.StateMP) or not shots:
+        #     snapshot = qml.devices.qubit_mixed.measure(measurement, state, is_state_batched)
+        # else:
+        #     snapshot = qml.devices.qubit_mixed.measure_with_samples(
+        #         [measurement],
+        #         state,
+        #         shots,
+        #         is_state_batched,
+        #         execution_kwargs.get("rng"),
+        #         execution_kwargs.get("prng_key"),
+        #     )[0]
+
+        # if op.tag:
+        #     debugger.snapshots[op.tag] = snapshot
+        # else:
+        #     debugger.snapshots[len(debugger.snapshots)] = snapshot
+    return state
+
+
 def apply_diagonal_unitary(op, state, is_state_batched: bool = False, debugger=None, **_):
     """_summary_
 
