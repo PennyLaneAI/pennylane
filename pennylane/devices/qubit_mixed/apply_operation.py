@@ -316,12 +316,27 @@ def apply_paulix(op: qml.X, state, is_state_batched: bool = False, debugger=None
 @apply_operation.register
 def apply_pauliz(op: qml.Z, state, is_state_batched: bool = False, debugger=None, **_):
     """Applies a :class:`~.PauliZ` operation by multiplying the state by the Pauli-Z matrix."""
-    # PauliZ is a phase flip, so we can just apply the Z gate to the state
-    # num_wires = int((len(qml.math.shape(state)) - is_state_batched) / 2)
-    # axis_left = op.wires[0] + is_state_batched
-    # axis_right = axis_left + num_wires
+    num_wires = int((len(qml.math.shape(state)) - is_state_batched) / 2)
+    n_dim = math.ndim(state)
 
-    # return math.roll(state, 1, axis_left)
+    if n_dim >= 9 and math.get_interface(state) == "tensorflow":
+        return apply_operation_tensordot(op, state, is_state_batched=is_state_batched)
+
+    def flip_state(state, axis):
+        sl_0 = _get_slice(0, axis, n_dim)
+        sl_1 = _get_slice(1, axis, n_dim)
+        state_1 = math.multiply(state[sl_1], -1)
+        return math.stack([state[sl_0], state_1], axis=axis)
+
+    # First, flip the left side
+    axis = op.wires[0] + is_state_batched
+    state = flip_state(state, axis)
+
+    # Second, flip the right side
+    axis = op.wires[0] + is_state_batched + num_wires
+    state = flip_state(state, axis)
+
+    return state
 
 
 # pylint: disable=no-cover
