@@ -63,11 +63,7 @@ def _process(wires):
         # of considering the elements of iterables as wire labels.
         wires = [wires]
 
-    if qml.math.get_interface(wires) == "jax":
-
-        if qml.math.is_abstract(wires):
-            raise WireError(f"Abstract wires are not supported; got {wires}.")
-
+    if qml.math.get_interface(wires) == "jax" and not qml.math.is_abstract(wires):
         wires = tuple(wires.tolist() if wires.ndim > 0 else (wires.item(),))
 
     try:
@@ -75,9 +71,6 @@ def _process(wires):
         # Note, this is not the same as `isinstance(wires, Iterable)` which would
         # pass for 0-dim numpy arrays that cannot be iterated over.
         tuple_of_wires = tuple(wires)
-
-        if any(qml.math.is_abstract(w) for w in tuple_of_wires):
-            raise WireError(f"Abstract wires are not supported; got {tuple_of_wires}.")
 
     except TypeError:
         # if not iterable, interpret as single wire label

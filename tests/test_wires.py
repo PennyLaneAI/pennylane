@@ -574,5 +574,3 @@ class TestWiresJax:
         wires2 = jax.tree_util.tree_unflatten(tree, wires_flat)
         assert isinstance(wires2, Wires), f"{wires2} is not Wires"
         assert wires == wires2, f"{wires} != {wires2}"
-
-        

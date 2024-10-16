@@ -129,6 +129,13 @@ def validate_device_wires(
     Raises:
         WireError: if the tape has a wire not present in the provided wires.
     """
+
+    if any(qml.math.is_abstract(w) for w in tape.wires):
+        raise WireError(
+            f"Cannot run circuit(s) on {name} as abstract wires are present in the tape: {tape.wires}. "
+            f"Abstract wires are not supported by the device."
+        )
+
     if wires:
         if extra_wires := set(tape.wires) - set(wires):
             raise WireError(
