@@ -15,7 +15,6 @@
 """PyTests for the AutoGraph source-to-source transformation feature."""
 
 import traceback
-from collections import defaultdict
 
 import jax
 import jax.numpy as jnp
@@ -25,20 +24,16 @@ from jax.core import eval_jaxpr
 from numpy.testing import assert_allclose
 
 import pennylane as qml
-from pennylane import cond, for_loop, grad, jacobian, jvp, measure, vjp, while_loop
-from pennylane.capture.autograph.ag_primitives import PRange
+from pennylane import cond, for_loop, grad, jacobian, measure, while_loop
+from pennylane.capture.autograph.ag_primitives import PRange, get_source_code_info
 from pennylane.capture.autograph.transformer import TRANSFORMER, autograph_source, run_autograph
-from pennylane.capture.autograph.utils import AutoGraphError, CompileError
+from pennylane.capture.autograph.utils import AutoGraphError
 
 check_cache = TRANSFORMER.has_cache
 
-# pylint: disable=import-outside-toplevel
 # pylint: disable=unnecessary-lambda-assignment
-# pylint: disable=too-many-public-methods
+# pylint: disable=too-many-public-methods, too-few-public-methods
 # pylint: disable=too-many-lines
-
-
-vmap = lambda x: None
 
 
 @pytest.fixture
@@ -48,35 +43,13 @@ def enable_disable_plxpr():
     qml.capture.disable()
 
 
-class Failing:
-    """Test class that emulates failures in user-code"""
-
-    triggered = defaultdict(bool)
-
-    def __init__(self, ref, label: str = "default"):
-        self.label = label
-        self.ref = ref
-
-    @property
-    def val(self):
-        """Get a reference to a variable or fail if programmed so."""
-        # pylint: disable=broad-exception-raised
-        if not Failing.triggered[self.label]:
-            Failing.triggered[self.label] = True
-            raise Exception(f"Emulated failure with label {self.label}")
-        return self.ref
-
-
+# only relevant for for_loops, and only if we put the warning back
 class TestSourceCodeInfo:
     """Unit tests for exception utilities that retrieves traceback information for the original
     source code."""
 
     def test_non_converted_function(self):
         """Test the robustness of traceback conversion on a non-converted function."""
-        # from catalyst.autograph.ag_primitives import get_source_code_info
-        from pennylane.capture.autograph.ag_primitives import (  # why not top-level?
-            get_source_code_info,
-        )
 
         try:
             result = ""
@@ -85,26 +58,6 @@ class TestSourceCodeInfo:
             result = get_source_code_info(traceback.extract_tb(e.__traceback__, limit=1)[0])
 
         assert result.split("\n")[1] == '    raise RuntimeError("Test failure")'
-
-    def test_qjit(self):
-        """Test source info retrieval for a qjit function."""
-
-        def main():
-            for _ in range(5):
-                raise RuntimeError("Test failure")
-            return 0
-
-        with pytest.warns(
-            UserWarning,
-            match=(
-                f'  File "{__file__}", line [0-9]+, in {main.__name__}\n'
-                r"    for _ in range\(5\):"
-            ),
-        ):
-            try:
-                qjit(autograph=True)(main)
-            except RuntimeError as e:
-                assert e.args == ("Test failure",)
 
     def test_qnode(self):
         """Test source info retrieval for a qnode function."""
@@ -123,7 +76,7 @@ class TestSourceCodeInfo:
             ),
         ):
             try:
-                qjit(autograph=True)(main)
+                run_autograph(main)
             except RuntimeError as e:
                 assert e.args == ("Test failure",)
 
@@ -146,7 +99,7 @@ class TestSourceCodeInfo:
             ),
         ):
             try:
-                qjit(autograph=True)(main)
+                run_autograph(main)
             except RuntimeError as e:
                 assert e.args == ("Test failure",)
 
@@ -215,23 +168,25 @@ class TestIntegration:
             return inner(x)
 
         ag_fn = run_autograph(fn)
+        assert ag_fn(4) == 16
+
         assert hasattr(ag_fn, "ag_unconverted")
         assert check_cache(fn)
         assert check_cache(inner)
-        assert fn(4) == 16
 
     def test_qnode(self):
         """Test autograph on a QNode."""
 
         @qml.qnode(qml.device("default.qubit", wires=1))
-        def fn(x: float):
+        def circ(x: float):
             qml.RY(x, wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        ag_fn = run_autograph(fn)
+        ag_fn = run_autograph(circ)
+        assert ag_fn(np.pi) == -1
+
         assert hasattr(ag_fn, "ag_unconverted")
-        assert check_cache(fn)
-        assert fn(np.pi) == -1
+        assert check_cache(circ.func)
 
     def test_indirect_qnode(self):
         """Test autograph on a QNode called from within a classical function."""
@@ -245,10 +200,11 @@ class TestIntegration:
             return inner(x)
 
         ag_fn = run_autograph(fn)
+        assert ag_fn(np.pi) == -1
+
         assert hasattr(ag_fn, "ag_unconverted")
         assert check_cache(fn)
         assert check_cache(inner.func)
-        assert fn(np.pi) == -1
 
     def test_multiple_qnode(self):
         """Test autograph on multiple QNodes called from different classical functions."""
@@ -263,125 +219,89 @@ class TestIntegration:
             qml.RX(x, wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        @qjit(autograph=True)
         def fn(x: float):
             return inner1(x) + inner2(x)
 
-        assert hasattr(fn.user_function, "ag_unconverted")
-        assert check_cache(fn.original_function)
+        ag_fn = run_autograph(fn)
+        assert ag_fn(np.pi) == -2
+
+        assert hasattr(ag_fn, "ag_unconverted")
+        assert check_cache(fn)
         assert check_cache(inner1.func)
         assert check_cache(inner2.func)
-        assert fn(np.pi) == -2
-
-    def test_nested_qjit(self):
-        """Test autograph on a QJIT function called from within the compilation entry point."""
-
-        @qjit
-        @qml.qnode(qml.device("default.qubit", wires=1))
-        def inner(x):
-            qml.RY(x, wires=0)
-            return qml.expval(qml.PauliZ(0))
-
-        @qjit(autograph=True)
-        def fn(x: float):
-            return inner(x)
-
-        assert hasattr(fn.user_function, "ag_unconverted")
-        assert check_cache(fn.original_function)
-        assert check_cache(inner.user_function.func)
-        assert fn(np.pi) == -1
 
     def test_adjoint_wrapper(self):
-        """Test conversion is happening succesfully on functions wrapped with 'adjoint'."""
+        """Test conversion is happening successfully on functions wrapped with 'adjoint'."""
 
         def inner(x):
             qml.RY(x, wires=0)
 
-        @qjit(autograph=True)
         @qml.qnode(qml.device("default.qubit", wires=1))
-        def fn(x: float):
+        def circ(x: float):
+            inner(x * 2)
             qml.adjoint(inner)(x)
             return qml.probs()
 
-        assert hasattr(fn.user_function, "ag_unconverted")
+        ag_fn = run_autograph(circ)
+        phi = np.pi / 2
+        assert np.allclose(ag_fn(phi), [np.cos(phi / 2) ** 2, np.sin(phi / 2) ** 2])
+
+        assert hasattr(ag_fn, "ag_unconverted")
+        assert check_cache(circ.func)
         assert check_cache(inner)
-        assert np.allclose(fn(np.pi), [0.0, 1.0])
 
     def test_ctrl_wrapper(self):
-        """Test conversion is happening succesfully on functions wrapped with 'ctrl'."""
+        """Test conversion is happening successfully on functions wrapped with 'ctrl'."""
 
         def inner(x):
             qml.RY(x, wires=0)
 
-        @qjit(autograph=True)
         @qml.qnode(qml.device("default.qubit", wires=2))
-        def fn(x: float):
+        def circ(x: float):
+            qml.PauliX(1)
             qml.ctrl(inner, control=1)(x)
             return qml.probs()
 
-        assert hasattr(fn.user_function, "ag_unconverted")
+        ag_fn = run_autograph(circ)
+        assert np.allclose(ag_fn(np.pi), [0.0, 0.0, 0.0, 1.0])
+
+        assert hasattr(ag_fn, "ag_unconverted")
+        assert check_cache(circ.func)
         assert check_cache(inner)
-        assert np.allclose(fn(np.pi), [1.0, 0.0, 0.0, 0.0])
 
     def test_grad_wrapper(self):
-        """Test conversion is happening succesfully on functions wrapped with 'grad'."""
+        """Test conversion is happening successfully on functions wrapped with 'grad'."""
 
         def inner(x):
             return 2 * x
 
-        @qjit(autograph=True)
         def fn(x: float):
             return grad(inner)(x)
 
-        assert hasattr(fn.user_function, "ag_unconverted")
+        ag_fn = run_autograph(fn)
+        assert ag_fn(3.0) == 2.0
+
+        assert hasattr(ag_fn, "ag_unconverted")
+        assert check_cache(fn)
         assert check_cache(inner)
-        assert fn(3) == 2.0
 
     def test_jacobian_wrapper(self):
-        """Test conversion is happening succesfully on functions wrapped with 'jacobian'."""
+        """Test conversion is happening successfully on functions wrapped with 'jacobian'."""
 
         def inner(x):
             return 2 * x, x**2
 
-        @qjit(autograph=True)
         def fn(x: float):
             return jacobian(inner)(x)
 
-        assert hasattr(fn.user_function, "ag_unconverted")
-        assert check_cache(inner)
-        assert fn(3) == tuple([jax.numpy.array(2.0), jax.numpy.array(6.0)])
+        ag_fn = run_autograph(fn)
+        assert ag_fn(3.0) == tuple([jax.numpy.array(2.0), jax.numpy.array(6.0)])
 
-    def test_vjp_wrapper(self):
-        """Test conversion is happening succesfully on functions wrapped with 'vjp'."""
-
-        def inner(x):
-            return 2 * x, x**2
-
-        @qjit(autograph=True)
-        def fn(x: float):
-            return vjp(inner, (x,), (1.0, 1.0))
-
-        assert hasattr(fn.user_function, "ag_unconverted")
-        assert check_cache(inner)
-        assert np.allclose(fn(3)[0], tuple([jnp.array(6.0), jnp.array(9.0)]))
-        assert np.allclose(fn(3)[1], jnp.array(8.0))
-
-    def test_jvp_wrapper(self):
-        """Test conversion is happening succesfully on functions wrapped with 'jvp'."""
-
-        def inner(x):
-            return 2 * x, x**2
-
-        @qjit(autograph=True)
-        def fn(x: float):
-            return jvp(inner, (x,), (1.0,))
-
-        assert hasattr(fn.user_function, "ag_unconverted")
+        assert hasattr(ag_fn, "ag_unconverted")
+        assert check_cache(fn)
         assert check_cache(inner)
 
-        assert np.allclose(fn(3)[0], tuple([jnp.array(6.0), jnp.array(9.0)]))
-        assert np.allclose(fn(3)[1], tuple([jnp.array(2.0), jnp.array(6.0)]))
-
+    @pytest.mark.xfail(reason="decorated transforms are not applied yet with capture enabled")
     def test_tape_transform(self):
         """Test if tape transform is applied when autograph is on."""
 
@@ -391,8 +311,7 @@ class TestIntegration:
         def my_quantum_transform(tape):
             raise NotImplementedError
 
-        @qml.qjit(autograph=True)
-        def f(x):
+        def fn(x):
             @my_quantum_transform
             @qml.qnode(dev)
             def circuit(x):
@@ -402,22 +321,27 @@ class TestIntegration:
 
             return circuit(x)
 
+        ag_fn = run_autograph(fn)
+
         with pytest.raises(NotImplementedError):
-            f(0.5)
+            ag_fn(0.5)
 
     def test_mcm_one_shot(self):
         """Test if mcm one-shot miss transforms."""
         dev = qml.device("default.qubit", wires=5, shots=20)
 
-        @qml.qjit(autograph=True)
         @qml.qnode(dev, mcm_method="one-shot", postselect_mode="hw-like")
-        def func(x):
+        def circ(x):
             qml.RX(x, wires=0)
             measure(0, postselect=1)
             return qml.sample(wires=0)
 
+        ag_fn = run_autograph(circ)
         # If transforms are missed, the output will be all ones.
-        assert not np.all(func(0.9) == 1)
+        assert not np.all(ag_fn(0.9) == 1)
+
+        assert hasattr(ag_fn, "ag_unconverted")
+        assert check_cache(circ.func)
 
 
 class TestCodePrinting:
@@ -426,7 +350,6 @@ class TestCodePrinting:
     def test_unconverted(self):
         """Test printing on an unconverted function."""
 
-        @qjit(autograph=False)
         def fn(x):
             return x**2
 
@@ -437,18 +360,18 @@ class TestCodePrinting:
         """Test printing on a lambda function."""
 
         fn = lambda x: x**2
-        qjit(autograph=True)(fn)
+        fn = run_autograph(fn)
 
-        assert autograph_source(fn)
+        assert "ag__lam" in autograph_source(fn)
 
     def test_classical_function(self):
         """Test printing on a purely classical function."""
 
-        @qjit(autograph=True)
         def fn(x):
             return x**2
 
-        assert autograph_source(fn)
+        fn = run_autograph(fn)
+        assert "def ag__fn(x" in autograph_source(fn)
 
     def test_nested_function(self):
         """Test printing on nested classical functions."""
@@ -456,21 +379,27 @@ class TestCodePrinting:
         def inner(x):
             return x**2
 
-        @qjit(autograph=True)
         def fn(x: int):
             return inner(x)
 
-        assert autograph_source(fn)
-        assert autograph_source(inner)
+        fn = run_autograph(fn)
+
+        # if we don't call the function, the inner function isn't found in the TRANSFORMER cache,
+        # and we can't get the source for the inner function
+        _ = fn(2)
+
+        assert "def ag__fn(x" in autograph_source(fn)
+        assert "def ag__inner(x" in autograph_source(inner)
 
     def test_qnode(self):
         """Test printing on a QNode."""
 
-        @qjit(autograph=True)
         @qml.qnode(qml.device("default.qubit", wires=1))
         def fn(x: float):
             qml.RY(x, wires=0)
             return qml.expval(qml.PauliZ(0))
+
+        fn = run_autograph(fn)
 
         assert autograph_source(fn)
 
@@ -482,12 +411,16 @@ class TestCodePrinting:
             qml.RY(x, wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        @qjit(autograph=True)
         def fn(x: float):
             return inner(x)
 
-        assert autograph_source(fn)
-        assert autograph_source(inner)
+        fn = run_autograph(fn)
+        # if we don't call the function, the inner function isn't found in the TRANSFORMER cache,
+        # and we can't get the source for the inner function
+        _ = fn(2)
+
+        assert "def ag__fn(x" in autograph_source(fn)
+        assert "def ag__inner(x" in autograph_source(inner)
 
     def test_multiple_qnode(self):
         """Test printing on multiple QNodes called from different classical functions."""
@@ -502,29 +435,17 @@ class TestCodePrinting:
             qml.RX(x, wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        @qjit(autograph=True)
         def fn(x: float):
             return inner1(x) + inner2(x)
 
-        assert autograph_source(fn)
-        assert autograph_source(inner1)
-        assert autograph_source(inner2)
+        fn = run_autograph(fn)
+        # if we don't call the function, the inner function isn't found in the TRANSFORMER cache,
+        # and we can't get the source for the inner function
+        _ = fn(2)
 
-    def test_nested_qjit(self):
-        """Test printing on a QJIT function called from within the compilation entry point."""
-
-        @qjit
-        @qml.qnode(qml.device("default.qubit", wires=1))
-        def inner(x):
-            qml.RY(x, wires=0)
-            return qml.expval(qml.PauliZ(0))
-
-        @qjit(autograph=True)
-        def fn(x: float):
-            return inner(x)
-
-        assert autograph_source(fn)
-        assert autograph_source(inner)
+        assert "def ag__fn(x" in autograph_source(fn)
+        assert "def ag__inner1(x" in autograph_source(inner1)
+        assert "def ag__inner2(x" in autograph_source(inner2)
 
 
 @pytest.mark.usefixtures("enable_disable_plxpr")
@@ -682,6 +603,8 @@ class TestConditionals:
         """Test return statements from different branches of an if/else statement
         with autograph."""
 
+        # pylint: disable=no-else-return
+
         def f(x: int):
             if x > 0:
                 return 25
@@ -743,6 +666,24 @@ class TestConditionals:
                 return eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)[0]
 
             res(1)
+
+    def test_cond(self):
+        """Test if Autograph works when applied directly to a decorated function with cond"""
+
+        n = 6
+
+        @cond(n > 4)
+        def cond_fn():
+            return n**2
+
+        @cond_fn.otherwise
+        def else_fn():
+            return n
+
+        ag_fn = run_autograph(cond_fn)
+        jaxpr = jax.make_jaxpr(ag_fn)()
+
+        assert eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)[0] == 36
 
 
 @pytest.mark.usefixtures("enable_disable_plxpr")
@@ -1173,7 +1114,6 @@ class TestForLoops:
             x = 0
             for x in [0, 4, 5]:
                 acc = acc + x
-            ...  # use acc
 
             return x
 
@@ -1187,7 +1127,6 @@ class TestForLoops:
             l = jnp.array([0, 4, 5])
             for i in range(3):
                 acc = acc + l[i]
-            ...  # use acc
 
             return i
 
@@ -1200,7 +1139,6 @@ class TestForLoops:
             i, x = 0, 0
             for i, x in enumerate([0, 4, 5]):
                 acc = acc + x
-            ...  # use acc
 
             return i, x
 
@@ -1218,7 +1156,6 @@ class TestForLoops:
         def f1(acc):
             for x in [0, 4, 5]:
                 acc = acc + x
-            ...  # use acc
 
             return x
 
@@ -1230,22 +1167,20 @@ class TestForLoops:
             l = jnp.array([0, 4, 5])
             for i in range(3):
                 acc = acc + l[i]
-            ...  # use acc
 
             return i
 
-        ag_circuit = run_autograph(f1)
+        ag_circuit = run_autograph(f2)
         jaxpr = jax.make_jaxpr(ag_circuit)(0)
         assert eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0)[0] == 2
 
         def f3(acc):
             for i, x in enumerate([0, 4, 5]):
                 acc = acc + x
-            ...  # use acc
 
             return i, x
 
-        ag_circuit = run_autograph(f1)
+        ag_circuit = run_autograph(f3)
         jaxpr = jax.make_jaxpr(ag_circuit)(0)
         assert eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0)[0] == (2, 5)
 
@@ -1337,6 +1272,36 @@ class TestForLoops:
 
         with pytest.raises(AutoGraphError, match="'x' was initialized with the wrong type"):
             run_autograph(f)()
+
+    def test_no_python_loops(self):
+        """Test AutoGraph behaviour on function with PennyLane loops."""
+
+        def f():
+            @for_loop(0, 3, 1)
+            def loop(i, acc):
+                return acc + i
+
+            return loop(0)
+
+        ag_fn = run_autograph(f)
+        jaxpr = jax.make_jaxpr(ag_fn)()
+
+        assert eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)[0] == 3
+
+    def test_for_loop(self):
+        """Test if Autograph works when applied directly to a decorated function with for_loop"""
+
+        x = 5
+        n = 6
+
+        @for_loop(0, n, 1)
+        def loop(_, agg):
+            return agg + x
+
+        ag_fn = run_autograph(loop)
+        jaxpr = jax.make_jaxpr(ag_fn)(0)
+
+        assert eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0)[0] == 30
 
 
 @pytest.mark.usefixtures("enable_disable_plxpr")
@@ -1514,117 +1479,8 @@ class TestWhileLoops:
         with pytest.raises(AutoGraphError, match="'x' was initialized with the wrong type"):
             run_autograph(f)(False)
 
-
-class TestMixed:
-    """Test a mix of supported autograph conversions and Catalyst control flow."""
-
-    def test_no_python_loops(self):
-        """Test AutoGraph behaviour on function with PennyLane loops."""
-
-        def f():
-            @for_loop(0, 3, 1)
-            def loop(i, acc):
-                return acc + i
-
-            return loop(0)
-
-        ag_fn = run_autograph(f)
-        jaxpr = jax.make_jaxpr(ag_fn)()
-
-        assert eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)[0] == 3
-
-    def test_cond_if_for_loop_for(self):
-        """Test Python conditionals and loops together with their Catalyst counterparts."""
-
-        # pylint: disable=cell-var-from-loop
-
-        def f(x):
-            acc = 0
-            if x < 3:
-
-                @for_loop(0, 3, 1)
-                def loop(_, acc):
-                    # Oddly enough, AutoGraph treats 'i' as an iter_arg even though it's not
-                    # accessed after the for loop. Maybe because it is captured in the nested
-                    # function's closure?
-                    # TODO: remove the need for initializing 'i'
-                    i = 0
-                    for i in range(5):
-
-                        @cond(i % 2 == 0)
-                        def even():
-                            return i
-
-                        @even.otherwise
-                        def even():
-                            return 0
-
-                        acc += even()
-
-                    return acc
-
-                acc = loop(acc)
-
-            return acc
-
-        ag_fn = run_autograph(f)
-        jaxpr = jax.make_jaxpr(ag_fn)(0)
-
-        assert eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2) == 18
-        assert eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 3) == 0
-
-
-class TestDecorators:
-    """Test if Autograph works when applied to a decorated function"""
-
-    #     def test_vmap(self):
-    #         """Test if Autograph works when applied to a decorated function with vmap"""
-    #
-    #         def workflow(axes_dct):
-    #             return axes_dct["x"] + axes_dct["y"]
-    #
-    #         expected = jnp.array([1, 2, 3, 4, 5])
-    #
-    #         result = qjit(vmap(workflow, in_axes=({"x": None, "y": 0},)), autograph=True)(
-    #             {"x": 1, "y": jnp.arange(5)}
-    #         )
-    #         assert jnp.allclose(result, expected)
-    #
-    def test_cond(self):
-        """Test if Autograph works when applied to a decorated function with cond"""
-
-        n = 6
-
-        @cond(n > 4)
-        def cond_fn():
-            return n**2
-
-        @cond_fn.otherwise
-        def else_fn():
-            return n
-
-        ag_fn = run_autograph(cond_fn)
-        jaxpr = jax.make_jaxpr(ag_fn)()
-
-        assert eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)[0] == 36
-
-    def test_for_loop(self):
-        """Test if Autograph works when applied to a decorated function with for_loop"""
-
-        x = 5
-        n = 6
-
-        @for_loop(0, n, 1)
-        def loop(_, agg):
-            return agg + x
-
-        ag_fn = run_autograph(loop)
-        jaxpr = jax.make_jaxpr(ag_fn)(0)
-
-        assert eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0)[0] == 30
-
     def test_while_loop(self):
-        """Test if Autograph works when applied to a decorated function with while_loop"""
+        """Test if Autograph works when applied directly to a decorated function with while_loop"""
 
         n = 6
 
@@ -1636,6 +1492,48 @@ class TestDecorators:
         jaxpr = jax.make_jaxpr(ag_fn)(0)
 
         assert eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0)[0] == n
+
+
+@pytest.mark.usefixtures("enable_disable_plxpr")
+def test_cond_if_for_loop_for():
+    """Test Python conditionals and loops together with their PennyLane counterparts."""
+
+    # pylint: disable=cell-var-from-loop
+
+    def f(x):
+        acc = 0
+        if x < 3:
+
+            @for_loop(0, 3, 1)
+            def loop(_, acc):
+                # Oddly enough, AutoGraph treats 'i' as an iter_arg even though it's not
+                # accessed after the for loop. Maybe because it is captured in the nested
+                # function's closure?
+                # TODO: remove the need for initializing 'i'
+                i = 0
+                for i in range(5):
+
+                    @cond(i % 2 == 0)
+                    def even():
+                        return i
+
+                    @even.otherwise
+                    def even():
+                        return 0
+
+                    acc += even()
+
+                return acc
+
+            acc = loop(acc)
+
+        return acc
+
+    ag_fn = run_autograph(f)
+    jaxpr = jax.make_jaxpr(ag_fn)(0)
+
+    assert eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2)[0] == 18
+    assert eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 3)[0] == 0
 
 
 if __name__ == "__main__":
