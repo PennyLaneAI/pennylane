@@ -597,6 +597,18 @@ class TestExpandMatrixQutrit:
         assert qml.math.allclose(m1_wire_zerop, m2_wire_onep)
         assert qml.math.allclose(m1_wire_onep, m2_wire_zerop)
 
+    def test_adding_wire_in_middle(self):
+        """Test that expand_matrix can add an identity wire in the middle of a two qutrit matrix."""
+
+        m1 = np.reshape(np.arange(9), (3, 3))
+        m2 = np.reshape(np.arange(9, 18), (3, 3))
+        m3 = np.kron(m1, m2)
+
+        m3_added_wire = expand_matrix(m3, (0, 1), (1, 2, 0))
+        m3_kron = np.kron(np.kron(m2, np.eye(3)), m1)
+
+        assert qml.math.allclose(m3_added_wire, m3_kron)
+
 
 class TestExpandMatrixSparse:
     """Tests for the _sparse_expand_matrix function."""
