@@ -24,11 +24,8 @@ import pennylane as qml
 
 if sys.version_info >= (3, 11):
     import tomllib as toml
-
-    TOMLDocument = dict  # used for type hinting purposes
 else:
     import tomlkit as toml
-    from tomlkit import TOMLDocument
 
 ALL_SUPPORTED_SCHEMAS = [3]
 
@@ -37,8 +34,8 @@ class InvalidCapabilitiesError(Exception):
     """Exception raised from invalid TOML files."""
 
 
-def load_toml_file(file_path: str) -> TOMLDocument:
-    """Loads a TOML file and returns the parsed dictionary/TOMLDocument."""
+def load_toml_file(file_path: str) -> dict:
+    """Loads a TOML file and returns the parsed dict."""
     with open(file_path, "rb") as f:
         return toml.load(f)
 
@@ -140,24 +137,24 @@ class DeviceCapabilities:  # pylint: disable=too-many-instance-attributes
 
 
 VALID_COMPILATION_FLAGS = {
-    "qjit_compatible",
-    "mid_circuit_measurements",
-    "runtime_code_generation",
-    "dynamic_qubit_management",
-    "overlapping_observables",
-    "non_commuting_observable",
-    "initial_state_prep",
+    "qjit_compatible": False,
+    "mid_circuit_measurements": False,
+    "runtime_code_generation": False,
+    "dynamic_qubit_management": False,
+    "overlapping_observables": True,
+    "non_commuting_observables": False,
+    "initial_state_prep": False,
 }
 
 
-def _get_toml_section(document: TOMLDocument, path: str, prefix: str = "") -> TOMLDocument:
+def _get_toml_section(document: dict, path: str, prefix: str = "") -> dict:
     """Retrieves a section from a TOML document using a given path."""
 
     if prefix:
         path = f"{prefix}.{path}"
 
     for k in path.split("."):
-        if not isinstance(document, TOMLDocument) or k not in document:
+        if not isinstance(document, dict) or k not in document:
             return {}
         document = document[k]
     return document
@@ -182,7 +179,7 @@ def _validate_conditions(conditions: list[ExecutionCondition], target=None) -> N
         )
 
 
-def _get_operators(section: TOMLDocument) -> dict[str, OperatorProperties]:
+def _get_operators(section: dict) -> dict[str, OperatorProperties]:
     """Parses an operator section into a dictionary of OperatorProperties."""
 
     operators = {}
@@ -213,20 +210,20 @@ def _get_operators(section: TOMLDocument) -> dict[str, OperatorProperties]:
     return operators
 
 
-def _get_operations(document: TOMLDocument, prefix: str = "") -> dict[str, OperatorProperties]:
+def _get_operations(document: dict, prefix: str = "") -> dict[str, OperatorProperties]:
     """Gets the supported operations from a TOML document."""
     section = _get_toml_section(document, "operators.gates", prefix)
     return _get_operators(section)
 
 
-def _get_observables(document: TOMLDocument, prefix: str = "") -> dict[str, OperatorProperties]:
+def _get_observables(document: dict, prefix: str = "") -> dict[str, OperatorProperties]:
     """Gets the supported observables from a TOML document."""
     section = _get_toml_section(document, "operators.observables", prefix)
     return _get_operators(section)
 
 
 def _get_measurement_processes(
-    document: TOMLDocument, prefix: str = ""
+    document: dict, prefix: str = ""
 ) -> dict[str, list[ExecutionCondition]]:
     """Gets the supported measurement processes from a TOML document."""
 
@@ -244,14 +241,14 @@ def _get_measurement_processes(
     return measurement_processes
 
 
-def _get_compilation_flags(document: TOMLDocument, prefix: str = "") -> dict[str, bool]:
+def _get_compilation_flags(document: dict, prefix: str = "") -> dict[str, bool]:
     """Gets the boolean capabilities in the compilation section."""
     section = _get_toml_section(document, "compilation", prefix)
-    if unknowns := set(section) - VALID_COMPILATION_FLAGS:
+    if unknowns := set(section) - VALID_COMPILATION_FLAGS.keys():
         raise InvalidCapabilitiesError(
             f"The compilation section has unknown options: {list(unknowns)}"
         )
-    flags = {flag: section.get(flag, False) for flag in VALID_COMPILATION_FLAGS}
+    flags = {flag: section.get(flag, default) for flag, default in VALID_COMPILATION_FLAGS.items()}
     if not flags["overlapping_observables"] and flags["non_commuting_observables"]:
         raise InvalidCapabilitiesError(
             "When overlapping_observables is False, non_commuting_observables cannot be True."
@@ -259,12 +256,12 @@ def _get_compilation_flags(document: TOMLDocument, prefix: str = "") -> dict[str
     return flags
 
 
-def _get_options(document: TOMLDocument) -> dict[str, str]:
+def _get_options(document: dict) -> dict[str, str]:
     """Get custom options"""
-    return {str(k): v for k, v in document.get("options", {}).items()}
+    return document.get("options", {})
 
 
-def parse_toml_document(document: TOMLDocument) -> DeviceCapabilities:
+def parse_toml_document(document: dict) -> DeviceCapabilities:
     """Parses a TOML document into a DeviceCapabilities object."""
 
     schema = int(document["schema"])
@@ -283,7 +280,7 @@ def parse_toml_document(document: TOMLDocument) -> DeviceCapabilities:
 
 
 def update_device_capabilities(
-    capabilities: DeviceCapabilities, document: TOMLDocument, runtime_interface: str
+    capabilities: DeviceCapabilities, document: dict, runtime_interface: str
 ):
     """Updates the device capabilities objects with additions specific to the runtime interface."""
 
