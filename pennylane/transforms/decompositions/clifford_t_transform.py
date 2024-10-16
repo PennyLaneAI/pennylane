@@ -373,10 +373,6 @@ def clifford_t_decomposition(
     >>> qml.math.allclose(result, approx, atol=1e-4)
     True
     """
-    warnings.warn(
-        "The max_expansion argument is deprecated and will be removed in version v0.40. ",
-        qml.PennyLaneDeprecationWarning,
-    )
     if max_expansion is not None:
         warnings.warn(
             "The max_expansion argument is deprecated and will be removed in version v0.40. ",
