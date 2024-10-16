@@ -12,28 +12,29 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-.. currentmodule:: pennylane
+Experimental Lie theory features
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-This module module contains experimental features enabling
-advanced quantum computing research.
-
-.. warning::
-
-    This module is experimental. Frequent changes will occcur, and no API stability is guaranteed.
-    Use at your own risk.
-
-.. currentmodule:: pennylane.labs
-
-Modules
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. currentmodule:: pennylane.labs.dla
 
 .. autosummary::
     :toctree: api
 
-    dla
+    ~lie_closure_dense
+
+
+Utility functions
+~~~~~~~~~~~~~~~~~
+
+.. currentmodule:: pennylane.labs.dla
+
+.. autosummary::
+    :toctree: api
+
+    ~pauli_decompose
+
 
 """
 
-from pennylane.labs import dla
-
-__all__ = []
+from .lie_closure_dense import lie_closure_dense
+from .dense_util import pauli_decompose
