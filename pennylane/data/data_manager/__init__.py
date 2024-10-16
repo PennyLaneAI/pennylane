@@ -156,7 +156,6 @@ def _download_datasets(  # pylint: disable=too-many-arguments
     Returns:
         list[Path]: List of downloaded dataset paths
     """
-    # URL-escape special characters like '+', '$', and '%' in the data path
     safe_urls = []
     for dataset_url in dataset_urls:
         split_url = list(urllib.parse.urlsplit(str(dataset_url), "2"))
@@ -171,7 +170,7 @@ def _download_datasets(  # pylint: disable=too-many-arguments
 
     if pbar is not None:
         if attributes is None:
-            file_sizes = [int(head(s3_url).headers["Content-Length"]) for s3_url in safe_urls]
+            file_sizes = [int(head(url).headers["Content-Length"]) for url in safe_urls]
         else:
             # Can't get file sizes for partial downloads
             file_sizes = (None for _ in safe_urls)
@@ -361,7 +360,7 @@ def _interactive_request_data_name(data_names):
     print("Please select the data name from the following:")
     for i, option in enumerate(data_names):
         print(f"{i + 1}: {option}")
-    choice = input("Choice of data name: ")
+    choice = input("Choice of data name: ").strip()
     if choice not in data_names:
         raise ValueError(f"Must select a single data name from {data_names}")
     return choice
@@ -397,7 +396,7 @@ def _interactive_requests(parameters, parameter_tree):
         print(f"Available options for {param}:")
         for i, option in enumerate(branch["next"].keys()):
             print(f"{i + 1}: {option}")
-        user_value = input(f"Please select a {param}:")
+        user_value = input(f"Please select a {param}:").strip()
         try:
             branch = branch["next"][user_value]
         except KeyError as e:
