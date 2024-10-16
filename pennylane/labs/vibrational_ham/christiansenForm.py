@@ -11,7 +11,7 @@ size = comm.Get_size()
 
 au_to_cm = 219475
 
-def get_cform_kin(freqs, nbos):
+def _get_cform_kin(freqs, nbos):
     #action of kinetic energy operator for m=1,...,M modes with frequencies freqs[m]
     nmodes = len(freqs)
     all_mode_combos = []
@@ -47,7 +47,7 @@ def get_cform_kin(freqs, nbos):
     return local_K_mat
             
 
-def get_cform_localized_kin_twobody(pes_gen, nbos):
+def _get_cform_localized_kin_twobody(pes_gen, nbos):
     #action of kinetic energy operator for m=1,...,M localized modes with frequencies freqs[m]
     #note that normal modes make this term zero, only appears for non-normal displacements
     nmodes = len(pes_gen.freqs)
@@ -99,7 +99,7 @@ def get_cform_localized_kin_twobody(pes_gen, nbos):
     return local_kin_cform_twobody
 
 
-def get_cform_onebody(pes_gen, nbos):
+def _get_cform_onebody(pes_gen, nbos):
     """
     Use the one-body potential energy surface and evaluate the modal integrals
     to find the Christiansen form Hamiltonian.
@@ -143,16 +143,16 @@ def get_cform_onebody(pes_gen, nbos):
             local_ham_cform_onebody[ind] += full_coeff
             mm += 1
         nn += 1
-    return local_ham_cform_onebody + get_cform_kin(pes_gen.freqs, nbos)
+    return local_ham_cform_onebody + _get_cform_kin(pes_gen.freqs, nbos)
 
 
-def get_dipole_cform_onebody(dipole_onebody, nbos, gauss_grid, gauss_weights):
+def _get_dipole_cform_onebody(pes, nbos):
     """
     Use the one-body dipole functions and evaluate the modal integrals
     to find the Christiansen form of the dipole term.
     """
 
-    nmodes = dipole_onebody.shape[0]
+    nmodes = pes.dipole_onebody.shape[0]
     all_mode_combos = []
     for aa in range(nmodes):
         all_mode_combos.append([aa])
@@ -181,12 +181,12 @@ def get_dipole_cform_onebody(dipole_onebody, nbos, gauss_grid, gauss_weights):
             order_h = np.zeros(nbos)
             order_h[hi] = 1.
             hermite_ki = np.polynomial.hermite.Hermite(order_k, [-1,1])\
-                                                                (gauss_grid)
+                                                                (pes.gauss_grid)
             hermite_hi = np.polynomial.hermite.Hermite(order_h, [-1,1])\
-                                                                (gauss_grid)
+                                                                (pes.gauss_grid)
             ind = nn*len(boscombos_on_rank) + mm
             for alpha in range(3):
-                quadrature = np.sum(gauss_weights * dipole_onebody[ii,:,alpha] * \
+                quadrature = np.sum(pes.gauss_weights * pes.dipole_onebody[ii,:,alpha] * \
                                     hermite_ki * hermite_hi)
                 full_coeff = sqrt * quadrature # * 219475 for converting into cm^-1
                 local_dipole_cform_onebody[ind,alpha] += full_coeff
@@ -196,7 +196,7 @@ def get_dipole_cform_onebody(dipole_onebody, nbos, gauss_grid, gauss_weights):
     return local_dipole_cform_onebody
 
 
-def get_cform_twobody(pes_gen, nbos):
+def _get_cform_twobody(pes_gen, nbos):
     """
     Use the two-body potential energy surface and evaluate the modal integrals
     to find the Christiansen form Hamiltonian.    
@@ -264,13 +264,13 @@ def get_cform_twobody(pes_gen, nbos):
     return local_ham_cform_twobody
 
 
-def get_dipole_cform_twobody(dipole_twobody, nbos, gauss_grid, gauss_weights):
+def _get_dipole_cform_twobody(pes, nbos):
     """
     Use the two-body potential energy surface and evaluate the modal integrals
     to find the Christiansen form of two-mode dipole.    
     """
 
-    nmodes = dipole_twobody.shape[0]
+    nmodes = pes.dipole_twobody.shape[0]
 
     all_mode_combos = []
     for aa in range(nmodes):
@@ -312,19 +312,19 @@ def get_dipole_cform_twobody(dipole_twobody, nbos, gauss_grid, gauss_weights):
             order_hj = np.zeros(nbos)
             order_hj[hj] = 1.
             hermite_ki = np.polynomial.hermite.Hermite(\
-                                    order_ki, [-1,1])(pes_gen.gauss_grid)
+                                    order_ki, [-1,1])(pes.gauss_grid)
             hermite_kj = np.polynomial.hermite.Hermite(\
-                                    order_kj, [-1,1])(pes_gen.gauss_grid)
+                                    order_kj, [-1,1])(pes.gauss_grid)
             hermite_hi = np.polynomial.hermite.Hermite(\
-                                    order_hi, [-1,1])(pes_gen.gauss_grid)
+                                    order_hi, [-1,1])(pes.gauss_grid)
             hermite_hj = np.polynomial.hermite.Hermite(\
-                                    order_hj, [-1,1])(pes_gen.gauss_grid)
+                                    order_hj, [-1,1])(pes.gauss_grid)
             ind = nn*len(boscombos_on_rank) + mm
             for alpha in range(3):
                 quadrature = np.einsum("a,b,a,b,ab,a,b->", \
-                                        pes_gen.gauss_weights, pes_gen.gauss_weights, \
+                                        pes.gauss_weights, pes.gauss_weights, \
                                         hermite_ki, hermite_kj, \
-                                        dipole_twobody[ii,jj,:,:,alpha], \
+                                        pes.dipole_twobody[ii,jj,:,:,alpha], \
                                         hermite_hi, hermite_hj)
                 full_coeff = sqrt * quadrature # * 219475 to get cm^-1
                 local_dipole_cform_twobody[ind,alpha] += full_coeff
@@ -334,7 +334,7 @@ def get_dipole_cform_twobody(dipole_twobody, nbos, gauss_grid, gauss_weights):
     return local_dipole_cform_twobody
 
 
-def get_cform_threebody(pes_gen, nbos):
+def _get_cform_threebody(pes_gen, nbos):
     """
     Use the three-body potential energy surface and evaluate the modal integrals
     to find the Christiansen form Hamiltonian.    
@@ -411,12 +411,12 @@ def get_cform_threebody(pes_gen, nbos):
     return local_ham_cform_threebody
 
 
-def get_dipole_cform_threebody(dipole_threebody, nbos, gauss_grid, gauss_weights):
+def _get_dipole_cform_threebody(pes, nbos):
     """
     Use the three-body dipole surface and evaluate the modal integrals
     to find the Christiansen form dipole.    
     """
-    nmodes = dipole_threebody.shape[0]
+    nmodes = pes.dipole_threebody.shape[0]
 
     all_mode_combos = []
     for aa in range(nmodes):
@@ -462,23 +462,23 @@ def get_dipole_cform_threebody(dipole_threebody, nbos, gauss_grid, gauss_weights
             order_h3 = np.zeros(nbos)
             order_h3[h3] = 1.
             hermite_k1 = np.polynomial.hermite.Hermite(\
-                                    order_k1, [-1,1])(gauss_grid)
+                                    order_k1, [-1,1])(pes.gauss_grid)
             hermite_k2 = np.polynomial.hermite.Hermite(\
-                                    order_k2, [-1,1])(gauss_grid)
+                                    order_k2, [-1,1])(pes.gauss_grid)
             hermite_k3 = np.polynomial.hermite.Hermite(\
-                                    order_k3, [-1,1])(gauss_grid)
+                                    order_k3, [-1,1])(pes.gauss_grid)
             hermite_h1 = np.polynomial.hermite.Hermite(\
-                                    order_h1, [-1,1])(gauss_grid)
+                                    order_h1, [-1,1])(pes.gauss_grid)
             hermite_h2 = np.polynomial.hermite.Hermite(\
-                                    order_h2, [-1,1])(gauss_grid)
+                                    order_h2, [-1,1])(pes.gauss_grid)
             hermite_h3 = np.polynomial.hermite.Hermite(\
-                                    order_h3, [-1,1])(gauss_grid)
+                                    order_h3, [-1,1])(pes.gauss_grid)
             ind = nn*len(boscombos_on_rank) + mm
             for alpha in range(3):
                 quadrature = np.einsum("a,b,c,a,b,c,abc,a,b,c->", \
-                                        gauss_weights, gauss_weights, gauss_weights, \
+                                        pes.gauss_weights, pes.gauss_weights, pes.gauss_weights, \
                                         hermite_k1, hermite_k2, hermite_k3, \
-                                        dipole_threebody[ii1,ii2,ii3,:,:,:,alpha], \
+                                        pes.dipole_threebody[ii1,ii2,ii3,:,:,:,alpha], \
                                         hermite_h1, hermite_h2, hermite_h3)
                 full_coeff = sqrt * quadrature # * 219475 to get cm^-1
                 local_dipole_cform_threebody[ind, alpha] = full_coeff
@@ -487,7 +487,7 @@ def get_dipole_cform_threebody(dipole_threebody, nbos, gauss_grid, gauss_weights
 
     return local_dipole_cform_threebody
 
-def load_ham_cform_onebody(num_pieces, nmodes, ngridpoints):
+def _load_ham_cform_onebody(num_pieces, nmodes, ngridpoints):
     """
     Loader to combine results from multiple ranks.
     """
@@ -519,7 +519,7 @@ def load_ham_cform_onebody(num_pieces, nmodes, ngridpoints):
 
     return ham_cform_onebody
 
-def load_ham_cform_twobody(num_pieces, nmodes, ngridpoints):
+def _load_ham_cform_twobody(num_pieces, nmodes, ngridpoints):
     """
     Loader to combine results from multiple ranks.
     """
@@ -553,7 +553,7 @@ def load_ham_cform_twobody(num_pieces, nmodes, ngridpoints):
 
     return ham_cform_twobody
 
-def load_ham_cform_threebody(num_pieces, nmodes, ngridpoints):
+def _load_ham_cform_threebody(num_pieces, nmodes, ngridpoints):
     """
     Loader to combine results from multiple ranks.
     """
@@ -587,7 +587,106 @@ def load_ham_cform_threebody(num_pieces, nmodes, ngridpoints):
 
     return ham_cform_threebody
 
-def get_christiansen_form(pes, nbos=16, do_cubic=False):
+def _load_dipole_cform_onebody(num_pieces, nmodes, ngridpoints):
+    """
+    Loader to combine results from multiple ranks.
+    """
+    final_shape = (nmodes, ngridpoints, ngridpoints)
+    nmode_combos = int(nmodes)
+
+    dipole_cform_onebody = np.zeros((np.prod(final_shape),3))
+    r0 = 0
+    r1 = 0
+    for mode_combo in range(nmode_combos):
+        local_chunk = np.zeros((ngridpoints**2,3))
+
+        l0 = 0
+        l1 = 0
+        for rank in range(num_pieces):
+            f = h5py.File("cform_D1data" + f"_{rank}" + '.hdf5', 'r+')
+            local_dipole_cform_onebody = f['D1'][()]
+            chunk = np.array_split(local_dipole_cform_onebody, \
+                                   nmode_combos, axis=0)[mode_combo] # 
+            l1 += chunk.shape[0]
+            local_chunk[l0:l1,:] = chunk
+            l0 += chunk.shape[0]
+
+        r1 += local_chunk.shape[0]
+        dipole_cform_onebody[r0:r1,:] = local_chunk
+        r0 += local_chunk.shape[0]
+
+    dipole_cform_onebody = dipole_cform_onebody.reshape(final_shape + (3,))
+
+    return dipole_cform_onebody.transpose(3,0,1,2)
+
+def _load_dipole_cform_twobody(num_pieces, nmodes, ngridpoints):
+    """
+    Loader to combine results from multiple ranks.
+    """
+    final_shape = (nmodes, nmodes, ngridpoints, ngridpoints,\
+                   ngridpoints, ngridpoints)
+    nmode_combos = int(nmodes**2)
+
+    dipole_cform_twobody = np.zeros((np.prod(final_shape),3))
+    r0 = 0
+    r1 = 0
+    for mode_combo in range(nmode_combos):
+        local_chunk = np.zeros((ngridpoints**4,3))
+
+        l0 = 0
+        l1 = 0
+        for rank in range(num_pieces):
+            f = h5py.File("cform_D2data" + f"_{rank}" + '.hdf5', 'r+')
+            local_dipole_cform_twobody = f['D2'][()]
+            chunk = np.array_split(local_dipole_cform_twobody, \
+                                   nmode_combos, axis=0)[mode_combo] # 
+            l1 += chunk.shape[0]
+            local_chunk[l0:l1,:] = chunk
+            l0 += chunk.shape[0]
+
+        r1 += local_chunk.shape[0]
+        dipole_cform_twobody[r0:r1,:] = local_chunk
+        r0 += local_chunk.shape[0]
+
+    dipole_cform_twobody = dipole_cform_twobody.reshape(final_shape + (3,))
+
+    return dipole_cform_twobody.transpose(6,0,1,2,3,4,5)
+
+def _load_dipole_cform_threebody(num_pieces, nmodes, ngridpoints):
+    """
+    Loader to combine results from multiple ranks.
+    """
+    final_shape = (nmodes, nmodes, nmodes, ngridpoints, ngridpoints,\
+                   ngridpoints, ngridpoints, ngridpoints, ngridpoints)
+    nmode_combos = int(nmodes**3)
+
+    dipole_cform_threebody = np.zeros((np.prod(final_shape),3))
+    r0 = 0
+    r1 = 0
+    for mode_combo in range(nmode_combos):
+        local_chunk = np.zeros((ngridpoints**6,3))
+
+        l0 = 0
+        l1 = 0
+        for rank in range(num_pieces):
+            f = h5py.File("cform_D3data" + f"_{rank}" + '.hdf5', 'r+')
+            local_dipole_cform_threebody = f['D3'][()]
+            chunk = np.array_split(local_dipole_cform_threebody, \
+                                   nmode_combos, axis=0)[mode_combo] # 
+            l1 += chunk.shape[0]
+            local_chunk[l0:l1,:] = chunk
+            l0 += chunk.shape[0]
+
+        r1 += local_chunk.shape[0]
+        dipole_cform_threebody[r0:r1,:] = local_chunk
+        r0 += local_chunk.shape[0]
+
+    dipole_cform_threebody = dipole_cform_threebody.reshape(final_shape + (3,))
+
+    return dipole_cform_threebody.transpose(9,0,1,2,3,4,5,6,7,8)
+
+
+def christiansen_ham(pes, nbos=16, do_cubic=False):
     r"""Generates the vibrational Hamiltonian in Christiansen form
 
     Args:
@@ -595,9 +694,9 @@ def get_christiansen_form(pes, nbos=16, do_cubic=False):
       nbos: number of modal basis functions per-mode
     """
     
-    local_ham_cform_onebody = get_cform_onebody(pes, nbos)
+    local_ham_cform_onebody = _get_cform_onebody(pes, nbos)
     comm.Barrier()
-
+    
     f = h5py.File("cform_H1data" + f"_{rank}" + '.hdf5', 'w')
     f.create_dataset('H1',data=local_ham_cform_onebody)
     f.close()
@@ -605,15 +704,16 @@ def get_christiansen_form(pes, nbos=16, do_cubic=False):
 
     ham_cform_onebody = None
     if rank == 0:
-        ham_cform_onebody = load_ham_cform_onebody(size, len(pes.freqs), nbos)
+        ham_cform_onebody = _load_ham_cform_onebody(size, len(pes.freqs), nbos)
         process = subprocess.Popen('rm ' + 'cform_H1data*', stdout=subprocess.PIPE, shell=True)
         output, error = process.communicate()
 
+    comm.Barrier()
     ham_cform_onebody = comm.bcast(ham_cform_onebody, root=0)
 
-    local_ham_cform_twobody = get_cform_twobody(pes, nbos)
-    if pes.localize:
-        local_ham_cform_twobody += get_cform_localized_kin_twobody(pes, nbos)
+    local_ham_cform_twobody = _get_cform_twobody(pes, nbos)
+    if pes.localized:
+        local_ham_cform_twobody += _get_cform_localized_kin_twobody(pes, nbos)
     comm.Barrier()
 
     f = h5py.File("cform_H2data" + f"_{rank}" + '.hdf5', 'w')
@@ -623,33 +723,98 @@ def get_christiansen_form(pes, nbos=16, do_cubic=False):
 
     ham_cform_twobody = None
     if rank == 0:
-        ham_cform_twobody = load_ham_cform_twobody(size, len(pes.freqs), nbos)
+        ham_cform_twobody = _load_ham_cform_twobody(size, len(pes.freqs), nbos)
         process = subprocess.Popen('rm ' + 'cform_H2data*', stdout=subprocess.PIPE, shell=True)
         output, error = process.communicate()
 
+    comm.Barrier()
     ham_cform_twobody = comm.bcast(ham_cform_twobody, root=0)
 
     if do_cubic:
-        local_ham_cform_threebody = get_cform_threebody(pes, nbos)
-        comm.Barrier()
+        local_ham_cform_threebody = _get_cform_threebody(pes, nbos)
 
         f = h5py.File("cform_H3data" + f"_{rank}" + ".hdf5", 'w')
         f.create_dataset('H3',data=local_ham_cform_threebody)
         f.close()
+        comm.Barrier()
 
         ham_cform_threebody = None
         if rank == 0:
-            ham_cform_threebody = load_ham_cform_threebody(size, len(pes.freqs), nbos)
+            ham_cform_threebody = _load_ham_cform_threebody(size, len(pes.freqs), nbos)
             process = subprocess.Popen('rm ' + 'cform_H3data*', stdout=subprocess.PIPE, shell=True)
             output, error = process.communicate()
 
-            ham_cform_threebody = comm.bcast(ham_cform_threebody, root=0)
+        comm.Barrier()
+        ham_cform_threebody = comm.bcast(ham_cform_threebody, root=0)
 
         H_arr = [ham_cform_onebody, ham_cform_twobody, ham_cform_threebody]
     else:
         H_arr = [ham_cform_onebody, ham_cform_twobody]
 
     return H_arr
+
+
+def christiansen_dipole(pes, nbos=16):
+    r"""Generates the vibrational Hamiltonian in Christiansen form
+
+    Args:
+      pes: Build_pes object.
+      nbos: number of modal basis functions per-mode
+    """
+
+    local_dipole_cform_onebody = _get_dipole_cform_onebody(pes, nbos)
+    comm.Barrier()    
+
+    f = h5py.File("cform_D1data" + f"_{rank}" + '.hdf5', 'w')
+    f.create_dataset('D1',data=local_dipole_cform_onebody)
+    f.close()
+    comm.Barrier()
+
+    dipole_cform_onebody = None
+    if rank == 0:
+        dipole_cform_onebody = _load_dipole_cform_onebody(size, len(pes.freqs), nbos)
+        process = subprocess.Popen('rm ' + 'cform_D1data*', stdout=subprocess.PIPE, shell=True)
+        output, error = process.communicate()
+
+    comm.Barrier()
+    dipole_cform_onebody = comm.bcast(dipole_cform_onebody, root=0)
+
+    if pes.get_anh_dipole is True or pes.get_anh_dipole > 1:
+        local_dipole_cform_twobody = _get_dipole_cform_twobody(pes, nbos)
+        comm.Barrier()
+
+        f = h5py.File("cform_D2data" + f"_{rank}" + '.hdf5', 'w')
+        f.create_dataset('D2',data=local_dipole_cform_twobody)
+        f.close()
+        comm.Barrier()
+
+        dipole_cform_twobody = None
+        if rank == 0:
+            dipole_cform_twobody = _load_dipole_cform_twobody(size, len(pes.freqs), nbos)
+            process = subprocess.Popen('rm ' + 'cform_D2data*', stdout=subprocess.PIPE, shell=True)
+            output, error = process.communicate()
+        comm.Barrier()
+        dipole_cform_twobody = comm.bcast(dipole_cform_twobody, root=0)
+
+    if pes.get_anh_dipole is True or pes.get_anh_dipole > 2:
+        local_dipole_cform_threebody = _get_dipole_cform_threebody(pes, nbos)
+        comm.Barrier()
+
+        f = h5py.File("cform_D3data" + f"_{rank}" + ".hdf5", 'w')
+        f.create_dataset('D3',data=local_ham_cform_threebody)
+        f.close()
+
+        dipole_cform_threebody = None
+        if rank == 0:
+            dipole_cform_threebody = _load_dipole_cform_threebody(size, len(pes.freqs), nbos)
+            process = subprocess.Popen('rm ' + 'cform_D3data*', stdout=subprocess.PIPE, shell=True)
+            output, error = process.communicate()
+        comm.Barrier()
         
+        dipole_cform_threebody = comm.bcast(dipole_cform_threebody, root=0)
 
+        D_arr = [dipole_cform_onebody, dipole_cform_twobody, dipole_cform_threebody]
+    else:
+        D_arr = [dipole_cform_onebody, dipole_cform_twobody]
 
+    return D_arr

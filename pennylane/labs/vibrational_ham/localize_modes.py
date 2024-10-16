@@ -5,6 +5,7 @@ au_to_cm = 219475
 hbar = 6.022*1.055e12 # (amu)*(angstrom^2/s)
 c_light = 3*10**8 # m/s
 
+
 def pm_cost(q):
 	nnuc, _, nmodes = q.shape
 
