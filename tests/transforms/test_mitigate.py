@@ -223,7 +223,7 @@ class TestMitigateWithZNE:
 
         with pytest.raises(
             ValueError,
-            match="Circuits with channels cannot be folded with mitigate_with_zne.",
+            match="Circuits containing quantum channels cannot be folded with mitigate_with_zne.",
         ):
             noise_qnode = qml.add_noise(qml.QNode(circuit, device=dev_ideal), noise_model)
             zne_qnode = qml.transforms.mitigate_with_zne(
