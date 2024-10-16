@@ -455,6 +455,8 @@ def apply_cnot(op: qml.CNOT, state, is_state_batched: bool = False, debugger=Non
         return apply_operation_tensordot(op, state, is_state_batched=is_state_batched)
 
     num_wires = int((len(math.shape(state)) - is_state_batched) / 2)
+
+    # First, do the left part
     target_axes = op.wires[1] - (op.wires[1] > op.wires[0]) + is_state_batched
     control_axes = op.wires[0] + is_state_batched
 
@@ -464,6 +466,7 @@ def apply_cnot(op: qml.CNOT, state, is_state_batched: bool = False, debugger=Non
     state_x = math.roll(state[sl_1], 1, target_axes)
     state_x_left = math.stack([state[sl_0], state_x], axis=control_axes)
 
+    # Second, do the right part
     target_axes += num_wires
     control_axes += num_wires
 
