@@ -701,6 +701,16 @@ class TestVar:
 class TestSample:
     """Tests that samples are properly calculated."""
 
+    def test_sample_dtype(self):
+        """Test that if the raw samples are requested, they are of dtype int."""
+
+        dev = qml.device("default.qutrit", wires=1, shots=10)
+
+        tape = qml.tape.QuantumScript([], [qml.sample(wires=0)], shots=10)
+        res = dev.execute(tape)
+        assert qml.math.get_dtype_name(res)[0:3] == "int"
+        assert res.shape == (10,)
+
     def test_sample_dimensions(self):
         """Tests if the samples returned by the sample function have
         the correct dimensions

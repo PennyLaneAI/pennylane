@@ -131,26 +131,36 @@ class PhaseAdder(Operation):
 
         num_work_wires = 0 if work_wire is None else len(work_wire)
 
-        if mod is None:
-            mod = 2 ** len(x_wires)
-        elif mod != 2 ** len(x_wires) and num_work_wires != 1:
-            raise ValueError(f"If mod is not 2^{len(x_wires)}, one work wire should be provided.")
-        if not isinstance(k, int) or not isinstance(mod, int):
-            raise ValueError("Both k and mod must be integers")
-        if mod > 2 ** len(x_wires):
-            raise ValueError(
-                "PhaseAdder must have enough x_wires to represent mod. The maximum mod "
-                f"with len(x_wires)={len(x_wires)} is {2 ** len(x_wires)}, but received {mod}."
-            )
-        if work_wire is not None:
-            if any(wire in work_wire for wire in x_wires):
-                raise ValueError("None of the wires in work_wire should be included in x_wires.")
+        if not qml.math.is_abstract(mod):
+            if mod is None:
+                mod = 2 ** len(x_wires)
+            elif mod != 2 ** len(x_wires) and num_work_wires != 1:
+                raise ValueError(
+                    f"If mod is not 2^{len(x_wires)}, one work wire should be provided."
+                )
+            if not isinstance(k, int) or not isinstance(mod, int):
+                raise ValueError("Both k and mod must be integers")
+            if mod > 2 ** len(x_wires):
+                raise ValueError(
+                    "PhaseAdder must have enough x_wires to represent mod. The maximum mod "
+                    f"with len(x_wires)={len(x_wires)} is {2 ** len(x_wires)}, but received {mod}."
+                )
+            if work_wire is not None:
+                if any(wire in work_wire for wire in x_wires):
+                    raise ValueError(
+                        "None of the wires in work_wire should be included in x_wires."
+                    )
+
+        all_wires = (
+            qml.wires.Wires(x_wires) + qml.wires.Wires(work_wire)
+            if work_wire
+            else qml.wires.Wires(x_wires)
+        )
 
         self.hyperparameters["k"] = k % mod
         self.hyperparameters["mod"] = mod
         self.hyperparameters["work_wire"] = qml.wires.Wires(work_wire)
         self.hyperparameters["x_wires"] = x_wires
-        all_wires = qml.wires.Wires(x_wires) + qml.wires.Wires(work_wire)
         super().__init__(wires=all_wires, id=id)
 
     @property
@@ -216,12 +226,18 @@ class PhaseAdder(Operation):
         else:
             aux_k = x_wires[0]
             op_list.extend(_add_k_fourier(k, x_wires))
-            op_list.extend(qml.adjoint(_add_k_fourier)(mod, x_wires))
+
+            for op in reversed(_add_k_fourier(mod, x_wires)):
+                op_list.append(qml.adjoint(op))
+
             op_list.append(qml.adjoint(qml.QFT)(wires=x_wires))
             op_list.append(qml.ctrl(qml.PauliX(work_wire), control=aux_k, control_values=1))
             op_list.append(qml.QFT(wires=x_wires))
             op_list.extend(qml.ctrl(op, control=work_wire) for op in _add_k_fourier(mod, x_wires))
-            op_list.extend(qml.adjoint(_add_k_fourier)(k, x_wires))
+
+            for op in reversed(_add_k_fourier(k, x_wires)):
+                op_list.append(qml.adjoint(op))
+
             op_list.append(qml.adjoint(qml.QFT)(wires=x_wires))
             op_list.append(qml.ctrl(qml.PauliX(work_wire), control=aux_k, control_values=0))
             op_list.append(qml.QFT(wires=x_wires))

@@ -4,6 +4,22 @@
 
 <h3>New features since last release</h3>
 
+* Introduced `sample_probs` function for the `qml.devices.qubit` and `qml.devices.qutrit_mixed` modules:
+  - This function takes probability distributions as input and returns sampled outcomes.
+  - Simplifies the sampling process by separating it from other operations in the measurement chain.
+  - Improves modularity: The same code can be easily adapted for other devices (e.g., a potential `default_mixed` device).
+  - Enhances maintainability by isolating the sampling logic.
+  [(#6354)](https://github.com/PennyLaneAI/pennylane/pull/6354)
+  
+* `qml.transforms.decompose` is added for stepping through decompositions to a target gate set. 
+  [(#6334)](https://github.com/PennyLaneAI/pennylane/pull/6334)
+
+* Added `process_density_matrix` implementations to 5 `StateMeasurement` subclasses:
+  `ExpVal`, `Var`, `Purity`, `MutualInformation`, and `VnEntropy`.
+  This enables `process_density_matrix` to be an abstract method in `StateMeasurement`,
+  facilitating future support for mixed-state devices and expanded density matrix operations. Also, there is a quick fix for the `np.sqrt` call in the `ProbabilityMP` class to be replaced by `qml.math.sqrt`.
+  [(#6330)](https://github.com/PennyLaneAI/pennylane/pull/6330)
+
 * A new class `MomentumQNGOptimizer` is added. It inherits the basic `QNGOptimizer` class and requires one additional hyperparameter (the momentum coefficient) :math:`0 \leq \rho < 1`, the default value being :math:`\rho=0.9`. For :math:`\rho=0` Momentum-QNG reduces to the basic QNG.
   [(#6240)](https://github.com/PennyLaneAI/pennylane/pull/6240)
  
@@ -29,6 +45,13 @@
 
 <h3>Improvements 🛠</h3>
 
+* Module-level sandboxing added to `qml.labs` via pre-commit hooks.
+  [(#6369)](https://github.com/PennyLaneAI/pennylane/pull/6369)
+
+* `qml.matrix` now works with empty objects (such as empty tapes, `QNode`s and quantum functions that do
+  not call operations, single operators with empty decompositions).
+  [(#6347)](https://github.com/PennyLaneAI/pennylane/pull/6347)
+  
 * PennyLane is now compatible with NumPy 2.0.
   [(#6061)](https://github.com/PennyLaneAI/pennylane/pull/6061)
   [(#6258)](https://github.com/PennyLaneAI/pennylane/pull/6258)
@@ -48,9 +71,22 @@
   `trainable_params` as keyword arguments. If any of these are passed when copying a 
   tape, the specified attributes will replace the copied attributes on the new tape.
   [(#6285)](https://github.com/PennyLaneAI/pennylane/pull/6285)
+  [(#6363)](https://github.com/PennyLaneAI/pennylane/pull/6363)
 
 * The `Hermitian` operator now has a `compute_sparse_matrix` implementation.
   [(#6225)](https://github.com/PennyLaneAI/pennylane/pull/6225)
+
+* `qml.QutritBasisStatePreparation` is now JIT compatible.
+  [(#6308)](https://github.com/PennyLaneAI/pennylane/pull/6308)
+
+* `qml.AmplitudeAmplification` is now compatible with QJIT.
+  [(#6306)](https://github.com/PennyLaneAI/pennylane/pull/6306)
+
+* The quantum arithmetic templates are now QJIT compatible.
+  [(#6307)](https://github.com/PennyLaneAI/pennylane/pull/6307)
+  
+* The `qml.Qubitization` template is now QJIT compatible.
+  [(#6305)](https://github.com/PennyLaneAI/pennylane/pull/6305)
 
 * When an observable is repeated on a tape, `tape.diagonalizing_gates` no longer returns the 
   diagonalizing gates for each instance of the observable. Instead, the diagonalizing gates of
@@ -62,7 +98,14 @@
   unprocessed diagonalizing gates.
   [(#6290)](https://github.com/PennyLaneAI/pennylane/pull/6290)
 
+* A more sensible error message is raised from a `RecursionError` encountered when accessing properties and methods of a nested `CompositeOp` or `SProd`.
+  [(#6375)](https://github.com/PennyLaneAI/pennylane/pull/6375)
+
 <h4>Capturing and representing hybrid programs</h4>
+
+* `qml.wires.Wires` now accepts JAX arrays as input. Furthermore, a `FutureWarning` is no longer raised in `JAX 0.4.30+`
+  when providing JAX tracers as input to `qml.wires.Wires`.
+  [(#6312)](https://github.com/PennyLaneAI/pennylane/pull/6312)
 
 * Differentiation of hybrid programs via `qml.grad` and `qml.jacobian` can now be captured
   into plxpr. When evaluating a captured `qml.grad` (`qml.jacobian`) instruction, it will
@@ -114,7 +157,14 @@
 * `mitigate_with_zne` now gives clearer error message when being used with circuits with channel noise.
   [(#6346)](https://github.com/PennyLaneAI/pennylane/pull/6346)
 
+* The `make_plxpr` function is added, to take a function and create a `Callable` that,
+  when called, will return a PLxPR representation of the input function.
+  [(#6326)](https://github.com/PennyLaneAI/pennylane/pull/6326)
+
 <h3>Breaking changes 💔</h3>
+
+* `AllWires` validation in `QNode.construct` has been removed. 
+  [(#6373)](https://github.com/PennyLaneAI/pennylane/pull/6373)
 
 * The `simplify` argument in `qml.Hamiltonian` and `qml.ops.LinearCombination` has been removed.
   Instead, `qml.simplify()` can be called on the constructed operator.
@@ -162,6 +212,7 @@
   `qml.ops.LinearCombination`; this behaviour is not deprecated. For more information, check out the
   [updated operator troubleshooting page](https://docs.pennylane.ai/en/stable/news/new_opmath.html).
   [(#6287)](https://github.com/PennyLaneAI/pennylane/pull/6287)
+  [(#6365)](https://github.com/PennyLaneAI/pennylane/pull/6365)
 
 * `qml.pauli.PauliSentence.hamiltonian` and `qml.pauli.PauliWord.hamiltonian` are deprecated. Instead, please use
   `qml.pauli.PauliSentence.operation` and `qml.pauli.PauliWord.operation` respectively.
@@ -221,7 +272,22 @@
 * Removed ambiguity in error raised by the `PauliRot` class.
   [(#6298)](https://github.com/PennyLaneAI/pennylane/pull/6298)
 
+* Renamed an incorrectly named test in `test_pow_ops.py`.
+  [(#6388)](https://github.com/PennyLaneAI/pennylane/pull/6388)
+
 <h3>Bug fixes 🐛</h3>
+
+* `MeasurementValue` now raises an error when it is used as a boolean.
+  [(#6386)](https://github.com/PennyLaneAI/pennylane/pull/6386)
+
+* `default.qutrit` now returns integer samples.
+  [(#6385)](https://github.com/PennyLaneAI/pennylane/pull/6385)
+
+* `adjoint_metric_tensor` now works with circuits containing state preparation operations.
+  [(#6358)](https://github.com/PennyLaneAI/pennylane/pull/6358)
+
+* `quantum_fisher` now respects the classical Jacobian of QNodes.
+  [(#6350)](https://github.com/PennyLaneAI/pennylane/pull/6350)
 
 * `qml.map_wires` can now be applied to a batch of tapes.
   [(#6295)](https://github.com/PennyLaneAI/pennylane/pull/6295)
@@ -261,6 +327,15 @@
   [(#6278)](https://github.com/PennyLaneAI/pennylane/pull/6278)
   [(#6310)](https://github.com/PennyLaneAI/pennylane/pull/6310)
 
+* Fixes a bug where `None` was added to the wires in `qml.PhaseAdder`, `qml.Adder` and `qml.OutAdder`.
+  [(#6360)](https://github.com/PennyLaneAI/pennylane/pull/6360)
+
+* Fixes a test after updating to the nightly version of Catalyst.
+  [(#6362)](https://github.com/PennyLaneAI/pennylane/pull/6362)
+
+* Fixes a bug where `CommutingEvolution` with a trainable `Hamiltonian` cannot be differentiated using parameter shift.
+  [(#6372)](https://github.com/PennyLaneAI/pennylane/pull/6372)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -278,6 +353,8 @@ Austin Huang,
 Korbinian Kottmann,
 Christina Lee,
 William Maxwell,
+Erick Ochoa Lopez,
 Lee J. O'Riordan,
 Mudit Pandey,
+Andrija Paurevic,
 David Wierichs,

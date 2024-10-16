@@ -656,17 +656,21 @@ class TestScriptCopying:
         """Test that copy with update dict behaves as expected for setting measurements"""
 
         ops = [qml.X("b"), qml.RX(1.2, "a")]
-        tape = QuantumScript(ops, measurements=[qml.counts()], shots=2500, trainable_params=[1])
+        tape = QuantumScript(
+            ops, measurements=[qml.expval(2 * qml.X(0))], shots=2500, trainable_params=[1]
+        )
 
-        new_measurements = [qml.expval(qml.X(0)), qml.sample()]
+        new_measurements = [qml.expval(2 * qml.X(0)), qml.sample(), qml.var(3 * qml.Y(1))]
         new_tape = tape.copy(measurements=new_measurements)
 
-        assert tape.measurements == [qml.counts()]
+        assert tape.measurements == [qml.expval(2 * qml.X(0))]
         assert new_tape.measurements == new_measurements
 
         assert new_tape.operations == tape.operations == ops
         assert new_tape.shots == tape.shots == Shots(2500)
-        assert new_tape.trainable_params == tape.trainable_params == [1]
+
+        assert tape.trainable_params == [1]
+        assert new_tape.trainable_params == [0, 1, 2]
 
     def test_copy_update_operations(self):
         """Test that copy with update dict behaves as expected for setting operations"""
@@ -686,9 +690,7 @@ class TestScriptCopying:
             new_tape.measurements == new_tape2.measurements == tape.measurements == [qml.counts()]
         )
         assert new_tape.shots == new_tape2.shots == tape.shots == Shots(2500)
-        assert (
-            new_tape.trainable_params == new_tape2.trainable_params == tape.trainable_params == [1]
-        )
+        assert new_tape.trainable_params == new_tape2.trainable_params == []
 
     def test_copy_update_trainable_params(self):
         """Test that copy with update dict behaves as expected for setting trainable parameters"""
@@ -734,13 +736,15 @@ class TestScriptCopying:
 
     def test_cached_properties_when_updating_operations(self):
         """Test that if the operations are updated, the cached attributes relevant
-        to operations (batch_size, output_dim) are not copied over from the original tape"""
+        to operations (batch_size, output_dim) are not copied over from the original tape,
+        and trainable_params are re-calculated"""
 
         ops = [qml.X("b"), qml.RX([1.2, 2.3], "a")]
         tape = QuantumScript(ops, measurements=[qml.counts()], shots=2500, trainable_params=[1])
 
         assert tape.batch_size == 2
         assert tape.output_dim == 2
+        assert tape.trainable_params == [1]
 
         new_ops = [qml.RX([1.2, 2.3, 3.4], 0)]
         new_tape = tape.copy(operations=new_ops)
@@ -750,20 +754,25 @@ class TestScriptCopying:
 
         assert new_tape.batch_size == 3
         assert new_tape.output_dim == 3
+        assert new_tape.trainable_params == [0]
 
     def test_cached_properties_when_updating_measurements(self):
         """Test that if the measurements are updated, the cached attributes relevant
         to measurements (obs_sharing_wires, obs_sharing_wires_id, output_dim) are not
-        copied over from the original tape"""
+        copied over from the original tape, and trainable_params are re-calculated"""
 
         measurements = [qml.counts()]
         tape = QuantumScript(
-            [qml.RX([1.2, 2.3], 0)], measurements=measurements, shots=2500, trainable_params=[1]
+            [qml.RY(1.2, 1), qml.RX([1.2, 2.3], 0)],
+            measurements=measurements,
+            shots=2500,
+            trainable_params=[1],
         )
 
         assert tape.obs_sharing_wires == []
         assert tape.obs_sharing_wires_id == []
         assert tape.output_dim == 2
+        assert tape.trainable_params == [1]
 
         new_measurements = [qml.expval(qml.X(0)), qml.var(qml.Y(0))]
         new_tape = tape.copy(measurements=new_measurements)
@@ -774,6 +783,62 @@ class TestScriptCopying:
         assert new_tape.output_dim == 4
         assert new_tape.obs_sharing_wires == [qml.X(0), qml.Y(0)]
         assert new_tape.obs_sharing_wires_id == [0, 1]
+        assert new_tape.trainable_params == [0, 1]
+
+    def test_setting_trainable_params_to_none(self):
+        """Test that setting trainable params to None resets the tape and calculates
+        the trainable_params for the new operations"""
+
+        tape = qml.tape.QuantumScript(
+            [qml.Hadamard(0), qml.RX(1.2, 0), qml.RY(2.3, 1)], trainable_params=[1]
+        )
+
+        assert tape.num_params == 1
+        assert qml.equal(tape.get_operation(0)[0], qml.RY(2.3, 1))
+
+        new_tape = tape.copy(trainable_params=None)
+
+        assert new_tape.num_params == 2
+        assert qml.equal(new_tape.get_operation(0)[0], qml.RX(1.2, 0))
+        assert qml.equal(new_tape.get_operation(1)[0], qml.RY(2.3, 1))
+
+    def test_setting_measurements_and_trainable_params(self):
+        """Test that when explicitly setting both measurements and trainable params, the
+        specified trainable params are used instead of defaulting to resetting"""
+        measurements = [qml.expval(2 * qml.X(0))]
+        tape = QuantumScript(
+            [qml.RX(1.2, 0)], measurements=measurements, shots=2500, trainable_params=[1]
+        )
+
+        new_measurements = [qml.expval(2 * qml.X(0)), qml.var(3 * qml.Y(1))]
+        new_tape = tape.copy(
+            measurements=new_measurements, trainable_params=[1, 2]
+        )  # continue ignoring param in RX
+
+        assert tape.measurements == measurements
+        assert new_tape.measurements == new_measurements
+
+        assert tape.trainable_params == [1]
+        assert new_tape.trainable_params == [1, 2]
+
+    def test_setting_operations_and_trainable_params(self):
+        """Test that when explicitly setting both operations and trainable params, the
+        specified trainable params are used instead of defaulting to resetting"""
+        ops = [qml.RX(1.2, 0)]
+        tape = QuantumScript(
+            ops, measurements=[qml.expval(2 * qml.X(0))], shots=2500, trainable_params=[0]
+        )
+
+        new_ops = [qml.RX(1.2, 0), qml.RY(2.3, 1)]
+        new_tape = tape.copy(
+            operations=new_ops, trainable_params=[0, 1]
+        )  # continue ignoring param in 2*X(0)
+
+        assert tape.operations == ops
+        assert new_tape.operations == new_ops
+
+        assert tape.trainable_params == [0]
+        assert new_tape.trainable_params == [0, 1]
 
 
 def test_adjoint():
