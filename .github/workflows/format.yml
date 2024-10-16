@@ -26,14 +26,14 @@ jobs:
 
     steps:
       - name: Set up Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v5
         with:
           python-version: "3.10"
 
       - name: Install dependencies
         run: pip install black pylint==2.7.4 isort==5.13.2
 
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
 
       - name: Run Black
         run: |

@@ -14,6 +14,8 @@
 """
 Unit tests for the adjoint_metric_tensor function.
 """
+import numpy as onp
+
 # pylint: disable=protected-access
 import pytest
 
@@ -614,3 +616,28 @@ def test_error_finite_shots():
 
     with pytest.raises(ValueError, match="The adjoint method for the metric tensor"):
         qml.adjoint_metric_tensor(tape)
+
+
+def test_works_with_state_prep():
+    """Test that a state preparation operation is respected."""
+    dev = qml.device("default.qubit")
+
+    # Some random normalized state, no particular relevance
+    init_state = onp.array([0.16769259, 0.71277864, 0.54562903, 0.4075718])
+
+    def ansatz(angles, wires):
+        qml.StatePrep(init_state, wires=wires)
+        qml.Hadamard(wires[0])
+        qml.RX(angles[0], wires=wires[0])
+        qml.S(wires[1])
+        qml.RY(angles[1], wires=wires[1])
+
+    @qml.qnode(dev)
+    def circuit(angles):
+        ansatz(angles, wires=[0, 1])
+        return qml.expval(qml.Z(0) @ qml.X(1))
+
+    angles = np.random.uniform(size=(2,), requires_grad=True)
+    qfim = qml.adjoint_metric_tensor(circuit)(angles)
+    autodiff_qfim = autodiff_metric_tensor(ansatz, 2)(angles)
+    assert onp.allclose(qfim, autodiff_qfim)

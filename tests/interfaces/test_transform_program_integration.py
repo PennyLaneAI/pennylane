@@ -25,12 +25,10 @@ import pennylane as qml
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.typing import PostprocessingFn
 
-with pytest.warns(qml.PennyLaneDeprecationWarning):
-    device_suite = (
-        qml.device("default.qubit.legacy", wires=5),
-        qml.devices.DefaultQubit(),
-        qml.device("lightning.qubit", wires=5),
-    )
+device_suite = (
+    qml.device("default.qubit"),
+    qml.device("lightning.qubit", wires=5),
+)
 
 
 @pytest.mark.all_interfaces

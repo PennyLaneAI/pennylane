@@ -763,8 +763,9 @@ class DefaultMixed(QubitDevice):
                     self.measured_wires = self.wires
                     return super().execute(circuit, **kwargs)
                 if isinstance(m, (VnEntropyMP, MutualInfoMP)):
-                    # VnEntropy, MutualInfo: Computed for the state prior to measurement. So, readout
-                    # error need not be applied on the corresponding device wires.
+                    # VnEntropy, MutualInfo: Computed for the state
+                    # prior to measurement. So, readout error need not be applied on the
+                    # corresponding device wires.
                     continue
                 wires_list.append(m.wires)
             self.measured_wires = qml.wires.Wires.all_wires(wires_list)

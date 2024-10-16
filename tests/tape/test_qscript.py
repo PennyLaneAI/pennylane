@@ -23,7 +23,7 @@ from pennylane.measurements import MutualInfo, Shots, State, VnEntropy
 from pennylane.operation import _UNSET_BATCH_SIZE
 from pennylane.tape import QuantumScript
 
-# pylint: disable=protected-access, unused-argument, too-few-public-methods
+# pylint: disable=protected-access, unused-argument, too-few-public-methods, use-implicit-booleaness-not-comparison
 
 
 class TestInitialization:
@@ -636,6 +636,209 @@ class TestScriptCopying:
         # however, the underlying operation *parameters* are still shared
         # to support PyTorch, which does not support deep copying of tensors
         assert copied_qs.operations[0].data[0] is qs.operations[0].data[0]
+
+    @pytest.mark.parametrize("shots", [50, (1000, 2000), None])
+    def test_copy_update_shots(self, shots):
+        """Test that copy with update dict behaves as expected for setting shots"""
+
+        ops = [qml.X("b"), qml.RX(1.2, "a")]
+        tape = QuantumScript(ops, measurements=[qml.counts()], shots=2500, trainable_params=[1])
+
+        new_tape = tape.copy(shots=shots)
+        assert tape.shots == Shots(2500)
+        assert new_tape.shots == Shots(shots)
+
+        assert new_tape.operations == tape.operations == ops
+        assert new_tape.measurements == tape.measurements == [qml.counts()]
+        assert new_tape.trainable_params == tape.trainable_params == [1]
+
+    def test_copy_update_measurements(self):
+        """Test that copy with update dict behaves as expected for setting measurements"""
+
+        ops = [qml.X("b"), qml.RX(1.2, "a")]
+        tape = QuantumScript(
+            ops, measurements=[qml.expval(2 * qml.X(0))], shots=2500, trainable_params=[1]
+        )
+
+        new_measurements = [qml.expval(2 * qml.X(0)), qml.sample(), qml.var(3 * qml.Y(1))]
+        new_tape = tape.copy(measurements=new_measurements)
+
+        assert tape.measurements == [qml.expval(2 * qml.X(0))]
+        assert new_tape.measurements == new_measurements
+
+        assert new_tape.operations == tape.operations == ops
+        assert new_tape.shots == tape.shots == Shots(2500)
+
+        assert tape.trainable_params == [1]
+        assert new_tape.trainable_params == [0, 1, 2]
+
+    def test_copy_update_operations(self):
+        """Test that copy with update dict behaves as expected for setting operations"""
+
+        ops = [qml.X("b"), qml.RX(1.2, "a")]
+        tape = QuantumScript(ops, measurements=[qml.counts()], shots=2500, trainable_params=[1])
+
+        new_ops = [qml.X(0)]
+        new_tape = tape.copy(operations=new_ops)
+        new_tape2 = tape.copy(ops=new_ops)
+
+        assert tape.operations == ops
+        assert new_tape.operations == new_ops
+        assert new_tape2.operations == new_ops
+
+        assert (
+            new_tape.measurements == new_tape2.measurements == tape.measurements == [qml.counts()]
+        )
+        assert new_tape.shots == new_tape2.shots == tape.shots == Shots(2500)
+        assert new_tape.trainable_params == new_tape2.trainable_params == []
+
+    def test_copy_update_trainable_params(self):
+        """Test that copy with update dict behaves as expected for setting trainable parameters"""
+
+        ops = [qml.RX(1.23, "b"), qml.RX(4.56, "a")]
+        tape = QuantumScript(ops, measurements=[qml.counts()], shots=2500, trainable_params=[1])
+
+        new_tape = tape.copy(trainable_params=[0])
+
+        assert tape.trainable_params == [1]
+        assert tape.get_parameters() == [4.56]
+        assert new_tape.trainable_params == [0]
+        assert new_tape.get_parameters() == [1.23]
+
+        assert new_tape.operations == tape.operations == ops
+        assert new_tape.measurements == tape.measurements == [qml.counts()]
+        assert new_tape.shots == tape.shots == Shots(2500)
+
+    def test_copy_update_bad_key(self):
+        """Test that an unrecognized key in update dict raises an error"""
+
+        tape = QuantumScript([qml.X(0)], [qml.counts()], shots=2500)
+
+        with pytest.raises(TypeError, match="got an unexpected key"):
+            _ = tape.copy(update={"bad_kwarg": 3})
+
+    def test_batch_size_when_updating(self):
+        """Test that if the operations are updated with operations of a different batch size,
+        the original tape's batch size is not copied over"""
+
+        ops = [qml.X("b"), qml.RX([1.2, 2.3], "a")]
+        tape = QuantumScript(ops, measurements=[qml.counts()], shots=2500, trainable_params=[1])
+
+        assert tape.batch_size == 2
+
+        new_ops = [qml.RX([1.2, 2.3, 3.4], 0)]
+        new_tape = tape.copy(operations=new_ops)
+
+        assert tape.operations == ops
+        assert new_tape.operations == new_ops
+
+        assert tape.batch_size != new_tape.batch_size
+
+    def test_cached_properties_when_updating_operations(self):
+        """Test that if the operations are updated, the cached attributes relevant
+        to operations (batch_size, output_dim) are not copied over from the original tape,
+        and trainable_params are re-calculated"""
+
+        ops = [qml.X("b"), qml.RX([1.2, 2.3], "a")]
+        tape = QuantumScript(ops, measurements=[qml.counts()], shots=2500, trainable_params=[1])
+
+        assert tape.batch_size == 2
+        assert tape.output_dim == 2
+        assert tape.trainable_params == [1]
+
+        new_ops = [qml.RX([1.2, 2.3, 3.4], 0)]
+        new_tape = tape.copy(operations=new_ops)
+
+        assert tape.operations == ops
+        assert new_tape.operations == new_ops
+
+        assert new_tape.batch_size == 3
+        assert new_tape.output_dim == 3
+        assert new_tape.trainable_params == [0]
+
+    def test_cached_properties_when_updating_measurements(self):
+        """Test that if the measurements are updated, the cached attributes relevant
+        to measurements (obs_sharing_wires, obs_sharing_wires_id, output_dim) are not
+        copied over from the original tape, and trainable_params are re-calculated"""
+
+        measurements = [qml.counts()]
+        tape = QuantumScript(
+            [qml.RY(1.2, 1), qml.RX([1.2, 2.3], 0)],
+            measurements=measurements,
+            shots=2500,
+            trainable_params=[1],
+        )
+
+        assert tape.obs_sharing_wires == []
+        assert tape.obs_sharing_wires_id == []
+        assert tape.output_dim == 2
+        assert tape.trainable_params == [1]
+
+        new_measurements = [qml.expval(qml.X(0)), qml.var(qml.Y(0))]
+        new_tape = tape.copy(measurements=new_measurements)
+
+        assert tape.measurements == measurements
+        assert new_tape.measurements == new_measurements
+
+        assert new_tape.output_dim == 4
+        assert new_tape.obs_sharing_wires == [qml.X(0), qml.Y(0)]
+        assert new_tape.obs_sharing_wires_id == [0, 1]
+        assert new_tape.trainable_params == [0, 1]
+
+    def test_setting_trainable_params_to_none(self):
+        """Test that setting trainable params to None resets the tape and calculates
+        the trainable_params for the new operations"""
+
+        tape = qml.tape.QuantumScript(
+            [qml.Hadamard(0), qml.RX(1.2, 0), qml.RY(2.3, 1)], trainable_params=[1]
+        )
+
+        assert tape.num_params == 1
+        assert qml.equal(tape.get_operation(0)[0], qml.RY(2.3, 1))
+
+        new_tape = tape.copy(trainable_params=None)
+
+        assert new_tape.num_params == 2
+        assert qml.equal(new_tape.get_operation(0)[0], qml.RX(1.2, 0))
+        assert qml.equal(new_tape.get_operation(1)[0], qml.RY(2.3, 1))
+
+    def test_setting_measurements_and_trainable_params(self):
+        """Test that when explicitly setting both measurements and trainable params, the
+        specified trainable params are used instead of defaulting to resetting"""
+        measurements = [qml.expval(2 * qml.X(0))]
+        tape = QuantumScript(
+            [qml.RX(1.2, 0)], measurements=measurements, shots=2500, trainable_params=[1]
+        )
+
+        new_measurements = [qml.expval(2 * qml.X(0)), qml.var(3 * qml.Y(1))]
+        new_tape = tape.copy(
+            measurements=new_measurements, trainable_params=[1, 2]
+        )  # continue ignoring param in RX
+
+        assert tape.measurements == measurements
+        assert new_tape.measurements == new_measurements
+
+        assert tape.trainable_params == [1]
+        assert new_tape.trainable_params == [1, 2]
+
+    def test_setting_operations_and_trainable_params(self):
+        """Test that when explicitly setting both operations and trainable params, the
+        specified trainable params are used instead of defaulting to resetting"""
+        ops = [qml.RX(1.2, 0)]
+        tape = QuantumScript(
+            ops, measurements=[qml.expval(2 * qml.X(0))], shots=2500, trainable_params=[0]
+        )
+
+        new_ops = [qml.RX(1.2, 0), qml.RY(2.3, 1)]
+        new_tape = tape.copy(
+            operations=new_ops, trainable_params=[0, 1]
+        )  # continue ignoring param in 2*X(0)
+
+        assert tape.operations == ops
+        assert new_tape.operations == new_ops
+
+        assert tape.trainable_params == [0]
+        assert new_tape.trainable_params == [0, 1]
 
 
 def test_adjoint():
@@ -1365,6 +1568,91 @@ class TestNumericType:
         assert np.issubdtype(result[0].dtype, float)
         assert np.issubdtype(result[1].dtype, np.int64)
         assert qs.numeric_type == (float, int)
+
+
+class TestDiagonalizingGates:
+
+    def test_diagonalizing_gates(self):
+        """Test that diagonalizing gates works as expected"""
+        qs = QuantumScript([], [qml.expval(qml.X(0)), qml.var(qml.Y(1))])
+        assert (
+            qs.diagonalizing_gates
+            == qml.X(0).diagonalizing_gates() + qml.Y(1).diagonalizing_gates()
+        )
+
+    def test_non_commuting_obs(self):
+        """Test that diagonalizing gates returns gates for all observables, including
+        observables that are not qubit-wise commuting"""
+        qs = QuantumScript([], [qml.expval(qml.X(0)), qml.var(qml.Y(0))])
+        assert (
+            qs.diagonalizing_gates
+            == qml.X(0).diagonalizing_gates() + qml.Y(0).diagonalizing_gates()
+        )
+
+    def test_duplicate_obs(self):
+        """Test that duplicate observables are only checked once when getting all
+        diagonalizing gates"""
+        qs = QuantumScript([], [qml.expval(qml.X(0)), qml.var(qml.X(0))])
+        assert qs.diagonalizing_gates == qml.X(0).diagonalizing_gates()
+
+    @pytest.mark.parametrize(
+        "obs",
+        [
+            (qml.X(0), qml.Y(1), qml.Y(1) + qml.X(2)),  # single obs and sum
+            (qml.X(0), qml.Y(1), qml.Y(1) @ qml.X(2)),  # single obs and prod
+            (qml.X(0) + qml.Y(1), qml.Y(1) + qml.X(2)),  # multiple CompositeOps (sum)
+            (qml.X(0) + qml.Y(1), qml.Y(1) @ qml.X(2)),  # multiple CompositeOps (with prod)
+            (qml.X(0), qml.Y(1), qml.Hamiltonian([1, 2], [qml.Y(1), qml.X(2)])),  # linearcomb
+            (2 * qml.X(0), qml.Y(1), qml.Y(1) + qml.X(2)),  # with sprod
+            (qml.X(0), qml.Y(1), (qml.Y(1) + qml.X(2)) @ qml.X(0)),  # prod of sum (nested)
+            (
+                qml.X(0),
+                qml.Y(1),
+                qml.Hamiltonian([1, 2], [qml.Y(1) @ qml.X(0), 2 * qml.X(2) + qml.Z(3)]),
+            ),  # nested linearcombination
+        ],
+    )
+    def test_duplicate_obs_composite(self, obs):
+        """Test that duplicate observables within CompositeOps and SymbolicOps are also correctly
+        identified and their diagonalizing gates are not included multiple times"""
+        qs = QuantumScript([], [qml.expval(o) for o in obs])
+
+        expected_gates = (
+            qml.X(0).diagonalizing_gates()
+            + qml.Y(1).diagonalizing_gates()
+            + qml.X(2).diagonalizing_gates()
+        )
+
+        assert qs.diagonalizing_gates == expected_gates
+
+    @pytest.mark.parametrize(
+        "obs1",  # Sum, Prod, LinearCombination
+        [qml.X(0) + qml.Y(1), qml.X(0) @ qml.Y(1), qml.Hamiltonian([1, 2], [qml.X(0), qml.Y(1)])],
+    )
+    @pytest.mark.parametrize(
+        "obs2",  # Sum, Prod, LinearCombination with overlapping obs
+        [
+            qml.X(1) + qml.Y(1),
+            qml.X(1) @ qml.Y(1),
+            qml.Hamiltonian([1, 2], [qml.X(1), qml.Y(1)]),
+            qml.Hamiltonian([1, 2], [qml.Y(1) @ qml.X(0), qml.X(2) + qml.Y(1)]),
+        ],
+    )
+    def test_obs_with_overlapping_wires(self, obs1, obs2):
+        """Test that if there are observables with overlapping wires (and therefore a
+        QubitUnitary as the diagonalizing gate that diagonalizes the entire observable as
+        a single thing), these are treated separately, even if operators within them are
+        duplicates of other observables on the tape"""
+        qs = QuantumScript([], [qml.expval(obs1), qml.var(obs2)])
+
+        expected_gates = (
+            qml.X(0).diagonalizing_gates()
+            + qml.Y(1).diagonalizing_gates()
+            + obs2.diagonalizing_gates()
+        )
+
+        assert qs.diagonalizing_gates == expected_gates
+        assert isinstance(qs.diagonalizing_gates[-1], qml.QubitUnitary)
 
 
 @pytest.mark.parametrize("qscript_type", (QuantumScript, qml.tape.QuantumTape))
