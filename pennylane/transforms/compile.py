@@ -169,7 +169,7 @@ def compile(
     """
     if expand_depth is not None:
         warnings.warn(
-            "The expand_depth argument is deprecated and will be removed in version v0.40. ",
+            "The expand_depth argument is deprecated and will be removed in version v0.40.",
             qml.PennyLaneDeprecationWarning,
         )
     else:
