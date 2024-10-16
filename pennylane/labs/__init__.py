@@ -24,6 +24,9 @@ advanced quantum computing research.
 
 .. currentmodule:: pennylane.labs
 
+Modules
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 .. autosummary::
     :toctree: api
 
