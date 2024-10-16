@@ -319,6 +319,10 @@ def load(  # pylint: disable=too-many-arguments
 
     folder_path = Path(folder_path)
 
+    if data_name == "other":
+        data_name = params[0]["values"][0]
+        params = []
+
     dataset_ids_and_urls = _get_dataset_urls(data_name, params)
     dataset_urls = [dataset_url for _, dataset_url in dataset_ids_and_urls]
     dataset_ids = [dataset_id for dataset_id, _ in dataset_ids_and_urls]
