@@ -373,7 +373,13 @@ def _interactive_request_attributes(attribute_options):
     )
     for i, option in enumerate(attribute_options):
         print(f"{i + 1}: {option}")
-    choice = input("Choice of attributes: ")
+
+    choice_input = input("Choice of attributes: ")
+    if isinstance(choice_input, str):
+        choice = choice_input.strip()
+    elif isinstance(choice_input, list):
+        choice = [ci.strip() for ci in choice_input]
+
     if choice == "full":
         return attribute_options
     if not set(choice).issubset(set(attribute_options)):
