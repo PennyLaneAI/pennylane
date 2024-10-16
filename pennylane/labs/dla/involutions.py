@@ -176,12 +176,12 @@ def BDI(op, p=None, q=None, wire=None):
     return AIII(op, p, q, wire)
 
 
-def CI(op, wire=None):
+def CI(op):
     """Involution for CI Cartan decomposition.
     Note that we work with Hermitian matrices internally, so that we need to multiply by
     ``1j`` to obtain a skew-Hermitian matrix, before applying the involution itself.
     """
-    return AI(op, wire)
+    return AI(op)
 
 
 def CII(op, p=None, q=None, wire=None):
