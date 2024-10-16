@@ -434,7 +434,7 @@ def mitigate_with_zne(
         The :func:`~.transforms.add_noise` transform should be used on the device instead of
         the circuit if the defined ``noise_model`` contains a :class:`~.operation.Channel`
         instance. This is to prevent ``mitigate_with_zne`` from computing the adjoint of
-        the channel operation during folding, which is not currently supported.
+        the channel operation during `folding`, which is currently not supported.
 
     We can now set up a mitigated ``QNode`` by first decomposing it into a target gate set via :func:`~.pennylane.transforms.compile`
     and then applying this transform by passing a ``folding`` and ``extrapolate`` function. PennyLane provides native
@@ -464,7 +464,7 @@ def mitigate_with_zne(
             extrapolate=poly_extrapolate,
             extrapolate_kwargs={'order': 2}
         )
-        @partial(qml.decompose, gate_set = ["RY", "CZ"])
+        @partial(qml.transforms.decompose, gate_set = ["RY", "CZ"])
         @qnode(noisy_dev)
         def circuit(w1, w2):
             qml.SimplifiedTwoDesign(w1, w2, wires=range(2))
