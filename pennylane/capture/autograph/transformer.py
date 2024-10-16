@@ -94,8 +94,8 @@ class PennyLaneTransformer(PyToPy):
     def get_cached_function(self, fn):
         """Retrieve a Python function object for a previously converted function.
         Note that repeatedly calling this function with the same arguments will result in new
-        function objects every time, however their source code should be identical with the
-        exception of auto-generated names."""
+        function objects every time, however their source code should be identical except for
+        the auto-generated names."""
 
         # Converted functions are cached as a _PythonFnFactory object.
         if self._cache.has(fn, TOPLEVEL_OPTIONS):
