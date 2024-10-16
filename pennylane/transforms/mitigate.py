@@ -212,7 +212,7 @@ def fold_global_tape(circuit, scale_factor):
     base_ops = circuit.expand().copy(copy_operations=True).operations
     if any((isinstance(op, qml.operation.Channel) for op in base_ops)):
         raise ValueError(
-            "Circuits with channels cannot be folded with mitigate_with_zne. "
+            "Circuits containing quantum channels cannot be folded with mitigate_with_zne. "
             "To use zero-noise extrapolation on the circuit with channel noise, "
             "consider adding the noise on the device rather than the circuit."
         )
@@ -429,6 +429,13 @@ def mitigate_with_zne(
 
         noisy_dev = qml.add_noise(dev, noise_model)
 
+    .. note ::
+
+        The :func:`~.transforms.add_noise` transform should be used on the device instead of
+        the circuit if the defined ``noise_model`` contains a :class:`~.operation.Channel`
+        instance. This is to prevent ``mitigate_with_zne`` from computing the adjoint of
+        the channel operation during folding, which is not currently supported.
+
     We can now set up a mitigated ``QNode`` by first decomposing it into a target gate set via :func:`~.pennylane.transforms.compile`
     and then applying this transform by passing a ``folding`` and ``extrapolate`` function. PennyLane provides native
     functions :func:`~.pennylane.transforms.fold_global` and :func:`~.pennylane.transforms.poly_extrapolate` or
@@ -455,8 +462,9 @@ def mitigate_with_zne(
             scale_factors=[1., 2., 3.],
             folding=fold_global,
             extrapolate=poly_extrapolate,
-            extrapolate_kwargs={'order': 2})
-        @partial(qml.compile, basis_set = ["RY", "CZ"])
+            extrapolate_kwargs={'order': 2}
+        )
+        @partial(qml.decompose, gate_set = ["RY", "CZ"])
         @qnode(noisy_dev)
         def circuit(w1, w2):
             qml.SimplifiedTwoDesign(w1, w2, wires=range(2))
