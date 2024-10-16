@@ -63,9 +63,9 @@ def _set_unitary_matrix(unitary_matrix, index, value, like=None):
 
     Args:
         unitary_matrix (tensor_like): unitary being modified
-        index (Tuple[int | Ellipsis | List[Int]]): index for the slicing the unitary
+        index (Tuple[Int | Ellipsis | List[Int]]): index for slicing the unitary
         value (tensor_like): new values for the specified index
-        like (str): interface for the unitary matrix.
+        like (str): interface for the unitary matrix
 
     Returns:
         tensor_like: modified unitary
@@ -132,7 +132,7 @@ def givens_decomposition(unitary):
         unitary (tensor): unitary matrix on which decomposition will be performed
 
     Returns:
-        (tensor_like, list[(tensor_like, tuple)]): diagonal elements of the phase matrix :math:`D` and Givens rotation matrix :math:`T` with their indices.
+        (tensor_like, list[(tensor_like, tuple)]): diagonal elements of the phase matrix :math:`D` and Givens rotation matrix :math:`T` with their indices
 
     Raises:
         ValueError: if the provided matrix is not square.
