@@ -18,8 +18,15 @@ Unit tests for functions needed for performing givens decomposition of a unitary
 import pytest
 from scipy.stats import unitary_group
 
+import pennylane as qml
 from pennylane import numpy as np
-from pennylane.qchem.givens_decomposition import _givens_matrix, givens_decomposition
+from pennylane.qchem.givens_decomposition import (
+    _givens_matrix,
+    _set_unitary_matrix,
+    givens_decomposition,
+)
+
+jnp = pytest.importorskip("jax.numpy")
 
 
 @pytest.mark.parametrize("left", [True, False])
@@ -138,3 +145,28 @@ def test_givens_matrix_exceptions():
 
     with pytest.raises(TypeError, match="The interfaces of 'a' and 'b' do not match."):
         _givens_matrix(a, b)
+
+
+@pytest.mark.parametrize(
+    ("unitary_matrix", "index", "value", "like", "expected_matrix"),
+    [
+        (np.array([[1, 0], [0, 1]]), (0, 0), 5, None, np.array([[5, 0], [0, 1]])),
+        (np.array([[1, 0], [0, 1]]), (0, 0), 5, "numpy", np.array([[5, 0], [0, 1]])),
+        (np.array([[1, 0], [0, 1]]), (0, Ellipsis), [1, 2], None, np.array([[1, 2], [0, 1]])),
+        (np.array([[1, 0], [0, 1]]), (0, Ellipsis), [1, 2], "numpy", np.array([[1, 2], [0, 1]])),
+        (np.array([[1, 0], [0, 1]]), (1, [0, 1]), [1, 2], None, np.array([[1, 0], [1, 2]])),
+        (np.array([[1, 0], [0, 1]]), (1, [0, 1]), [1, 2], "numpy", np.array([[1, 0], [1, 2]])),
+        (jnp.array([[1, 0], [0, 1]]), (0, 0), 5, None, jnp.array([[5, 0], [0, 1]])),
+        (jnp.array([[1, 0], [0, 1]]), (0, 0), 5, "jax", jnp.array([[5, 0], [0, 1]])),
+        (jnp.array([[1, 0], [0, 1]]), (0, Ellipsis), [1, 2], None, jnp.array([[1, 2], [0, 1]])),
+        (jnp.array([[1, 0], [0, 1]]), (0, Ellipsis), [1, 2], "jax", jnp.array([[1, 2], [0, 1]])),
+        (jnp.array([[1, 0], [0, 1]]), (1, [0, 1]), [1, 2], None, jnp.array([[1, 0], [1, 2]])),
+        (jnp.array([[1, 0], [0, 1]]), (1, [0, 1]), [1, 2], "jax", jnp.array([[1, 0], [1, 2]])),
+    ],
+)
+@pytest.mark.jax
+def test_set_unitary_matrix(unitary_matrix, index, value, like, expected_matrix):
+    """Test the _set_unitary function on different interfaces."""
+
+    new_unitary_matrix = _set_unitary_matrix(unitary_matrix, index, value, like)
+    assert qml.math.allclose(new_unitary_matrix, expected_matrix)
