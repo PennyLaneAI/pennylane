@@ -35,10 +35,6 @@
   [Haldane](https://journals.aps.org/prl/pdf/10.1103/PhysRevLett.61.2015) models on a lattice.
   [(#6201)](https://github.com/PennyLaneAI/pennylane/pull/6201/)
 
-* A new `qml.vn_entanglement_entropy` measurement process has been added which measures the
-  Von Neumann entanglement entropy of a quantum state.
-  [(#5911)](https://github.com/PennyLaneAI/pennylane/pull/5911)
-
 * A `has_sparse_matrix` property is added to `Operator` to indicate whether a sparse matrix is defined.
   [(#6278)](https://github.com/PennyLaneAI/pennylane/pull/6278)
   [(#6310)](https://github.com/PennyLaneAI/pennylane/pull/6310)
