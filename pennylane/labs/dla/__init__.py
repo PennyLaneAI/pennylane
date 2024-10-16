@@ -22,6 +22,7 @@ Experimental Lie theory features
 
     ~lie_closure_dense
     ~structure_constants_dense
+    ~cartan_decomposition
 
 
 Utility functions
@@ -35,9 +36,21 @@ Utility functions
     ~pauli_decompose
     ~pauli_coefficients
 
+Involutions
+~~~~~~~~~~~
+
+.. currentmodule:: pennylane.labs.dla
+
+.. autosummary::
+    :toctree: api
+
+    ~even_odd_involution
+    ~concurrence_involution
+
 
 """
 
 from .lie_closure_dense import lie_closure_dense
 from .structure_constants_dense import structure_constants_dense
-from .dense_util import pauli_coefficients, pauli_decompose
+from .cartan import cartan_decomposition, even_odd_involution, concurrence_involution
+from .dense_util import pauli_decompose, pauli_coefficients
