@@ -270,7 +270,7 @@ class TestHilbertSchmidt:
 
         jit_circuit = jax.jit(circuit)
 
-        assert qml.math.allclose(circuit(np.array([0])), jit_circuit(np.array([0])))
+        assert qml.math.allclose(circuit(np.array([np.pi / 2])), jit_circuit(np.array([np.pi / 2])))
 
 
 class TestLocalHilbertSchmidt:
