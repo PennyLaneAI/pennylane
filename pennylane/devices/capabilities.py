@@ -25,7 +25,7 @@ import pennylane as qml
 if sys.version_info >= (3, 11):
     import tomllib as toml
 else:
-    import tomlkit as toml
+    import tomli as toml
 
 ALL_SUPPORTED_SCHEMAS = [3]
 
