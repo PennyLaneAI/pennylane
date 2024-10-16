@@ -119,7 +119,9 @@ def _to_qfunc_output_type(
         results = [results]
 
     # If the return type is not tuple (list or ndarray) (Autograd and TF backprop removed)
-    if isinstance(qfunc_output, (tuple, qml.measurements.MeasurementProcess)):
+    if isinstance(qfunc_output, (tuple, qml.measurements.MeasurementProcess)) and not any(
+        isinstance(res, qml.numpy.ndarray) for res in results
+    ):
         return results
 
     # Work around for tensor objects coming from qml.math.hstack
