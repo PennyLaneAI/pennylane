@@ -43,6 +43,9 @@ def Kpq(p, q):
 
 
 # involution
+# comment on when to use _not_:
+# when complex conjugation is involved -> use ``not``
+# when no complex conjugation is involved -> dont use ``not``
 
 
 def AI(op):
