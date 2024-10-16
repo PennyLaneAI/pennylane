@@ -43,6 +43,9 @@
   [(#6278)](https://github.com/PennyLaneAI/pennylane/pull/6278)
   [(#6310)](https://github.com/PennyLaneAI/pennylane/pull/6310)
 
+* Support is added for if/else statements in circuits executed with `qml.capture.enabled`, via `autograph`
+  [(#6406)](https://github.com/PennyLaneAI/pennylane/pull/6406)
+
 <h3>Improvements 🛠</h3>
 
 * Module-level sandboxing added to `qml.labs` via pre-commit hooks.
