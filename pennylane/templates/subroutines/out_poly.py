@@ -15,7 +15,7 @@
 Contains the OutPoly template.
 """
 
-import inspect
+# import inspect
 
 import pennylane as qml
 from pennylane.operation import Operation
@@ -227,7 +227,7 @@ class OutPoly(Operation):
 
         registers_wires = [*kwargs.values(), output_wires]
 
-        if registers_wires == [] or f is None:
+        if not registers_wires or f is None:
             raise ValueError("The register wires and the function f must be provided.")
 
         num_work_wires = 0 if not work_wires else len(work_wires)
