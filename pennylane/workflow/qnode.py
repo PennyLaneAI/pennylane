@@ -126,7 +126,6 @@ def _to_qfunc_output_type(
             return results
 
     # Work around for tensor objects coming from qml.math.hstack
-    print(qfunc_output, type(qfunc_output), results, structure, structure.is_leaf)
     if not structure.is_leaf:
         if any(isinstance(element, qml.numpy.tensor) for element in qfunc_output):
             qfunc_output = [
@@ -135,6 +134,9 @@ def _to_qfunc_output_type(
                 if isinstance(m.base.item(), qml.measurements.MeasurementProcess)
             ]
     else:
+        if isinstance(qfunc_output, qml.measurements.MeasurementProcess):
+            return results
+
         return type(qfunc_output)(results)
 
     return qml.pytrees.unflatten(results, structure)
