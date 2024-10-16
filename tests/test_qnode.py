@@ -530,7 +530,7 @@ class TestPyTreeStructure:
             circuit(), is_leaf=lambda obj: isinstance(obj, qml.measurements.MeasurementProcess)
         )
 
-        assert result_structure.__str__() == qfunc_structure.__str__()
+        assert result_structure == qfunc_structure
 
 
 class TestTapeConstruction:
