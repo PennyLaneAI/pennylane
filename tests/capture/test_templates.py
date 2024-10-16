@@ -918,7 +918,9 @@ class TestModifiedTemplates:
 
         kwargs = {
             "f": func,
-            "registers_wires": [[0, 1], [2, 3], [4, 5]],
+            "x_wires": [0, 1],
+            "y_wires": [2, 3],
+            "output_wires": [4, 5],
             "mod": 3,
             "work_wires": [6, 7],
         }

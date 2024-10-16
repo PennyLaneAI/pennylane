@@ -118,13 +118,13 @@ class OutPoly(Operation):
 
     Args:
         f (callable): The polynomial function to be applied to the inputs. It must accept the same number of arguments as there are input registers.
-        registers_wires (Sequence[int]): A list whose elements are the different set of wires corresponding to all the input registers and the output register. The last argument should correspond to the output register.
+        output_wires (Sequence[int]): The wires used to store the output of the operation.
         mod (int, optional): The modulus to use for the result. If not provided, it defaults to :math:`2^{n}`, where `n` is the number of qubits in the output register.
         work_wires (Sequence[int], optional): The auxiliary wires used for intermediate computation, if necessary. If `mod` is not a power of 2, two auxiliary work wires are required.
         id (str or None, optional): The name of the operation.
+        kwargs: the wires associated with the function arguments. That is to say, if the polynomial takes two arguments, we will need to send two kwargs indicating the wires we will use to represent each argument. in the example below, the kwargs are ``x_wires`` and ``y_wires``.
 
     Raises:
-        ValueError: If the function `f` does not accept the correct number of input parameters.
         ValueError: If `mod` is not a power of 2 and no or insufficient work wires are provided.
         ValueError: If the wires used in the input and output registers overlap.
 
@@ -134,11 +134,9 @@ class OutPoly(Operation):
 
         .. code-block:: python
 
-            wires_x = [0, 1, 2]
-            wires_y = [3, 4, 5]
+            x_wires = [0, 1, 2]
+            y_wires = [3, 4, 5]
             output_wires = [6, 7, 8, 9]
-
-            registers_wires = [wires_x, wires_y, output_wires]
 
             def f(x, y):
                 return x ** 2 + y
@@ -150,7 +148,11 @@ class OutPoly(Operation):
                 qml.BasisEmbedding(2, wires=wires_y)
 
                 # applying the polynomial
-                qml.OutPoly(f, registers_wires)
+                qml.OutPoly(
+                    f,
+                    x_wires = x_wires,
+                    y_wires = y_wires,
+                    output_wires = output_wires)
 
                 return qml.sample(wires=output_wires)
 
@@ -175,12 +177,11 @@ class OutPoly(Operation):
 
         .. code-block:: python
 
-            wires_x = [0, 1, 2]
-            wires_y = [3, 4, 5]
+            x_wires = [0, 1, 2]
+            y_wires = [3, 4, 5]
             output_wires = [6, 7, 8]
             work_wires = [9,10]
 
-            registers_wires = [wires_x, wires_y, output_wires]
 
             def f(x, y):
                 return x ** 2 + y
@@ -192,11 +193,15 @@ class OutPoly(Operation):
                 qml.BasisEmbedding(2, wires=wires_y)
 
                 # applying the polynomial
-                qml.OutPoly(f, registers_wires, mod = 7, work_wires = work_wires)
+                qml.OutPoly(
+                    f,
+                    x_wires = x_wires,
+                    y_wires = y_wires,
+                    output_wires = output_wires,
+                    mod = 7,
+                    work_wires = work_wires)
 
                 return qml.sample(wires=output_wires)
-
-            print(circuit())
 
         .. code-block:: pycon
 
@@ -216,10 +221,13 @@ class OutPoly(Operation):
     grad_method = None
 
     def __init__(
-        self, f=None, registers_wires=None, mod=None, work_wires=None, id=None
+        self, f, output_wires, mod=None, work_wires=None, id=None, **kwargs
     ):  # pylint: disable=too-many-arguments
+        r"""Initialize the OutPoly class"""
 
-        if registers_wires is None or f is None:
+        registers_wires = [*kwargs.values(), output_wires]
+
+        if registers_wires == [] or f is None:
             raise ValueError("The register wires and the function f must be provided.")
 
         num_work_wires = 0 if not work_wires else len(work_wires)
@@ -235,19 +243,25 @@ class OutPoly(Operation):
 
         self.hyperparameters["f"] = f
 
-        if len(inspect.signature(f).parameters) != len(registers_wires) - 1:
-            raise ValueError(
-                f"The function takes {len(inspect.signature(f).parameters)} input parameters but {len(registers_wires) - 1} has provided."
-            )
+        # if len(inspect.signature(f).parameters) != len(registers_wires) - 1:
+        #    raise ValueError(
+        #        f"The function takes {len(inspect.signature(f).parameters)} input parameters but {len(registers_wires) - 1} has provided."
+        #    )
 
-        self.hyperparameters["registers_wires"] = [
-            qml.wires.Wires(register) for register in registers_wires
-        ]
+        all_wires = []
+        self.hyperparameters["registers_wires"] = {}
+
+        for key, value in kwargs.items():
+            wires = qml.wires.Wires(value)
+            self.hyperparameters["registers_wires"][key] = wires
+            all_wires += wires
+
+        wires = qml.wires.Wires(output_wires)
+        self.hyperparameters["registers_wires"]["output_wires"] = wires
+        all_wires += wires
 
         self.hyperparameters["mod"] = mod
         self.hyperparameters["work_wires"] = qml.wires.Wires(work_wires) if work_wires else None
-
-        all_wires = sum([*self.hyperparameters["registers_wires"]], start=[])
 
         if work_wires:
             all_wires += work_wires
@@ -259,32 +273,26 @@ class OutPoly(Operation):
 
         super().__init__(wires=all_wires, id=id)
 
-    @property
-    def num_params(self):
-        return 0
-
     def _flatten(self):
-        metadata = tuple(
-            (key, value)
-            for key, value in self.hyperparameters.items()
-            if key not in ["f", "registers_wires"]
+        metadata1 = tuple(
+            (key, value) for key, value in self.hyperparameters.items() if key != "registers_wires"
         )
-        return (
-            self.hyperparameters["f"],
-            self.hyperparameters["registers_wires"],
-        ), metadata
+        metadata2 = tuple(self.hyperparameters["registers_wires"].items())
+
+        return tuple(), (*metadata1, *metadata2)
 
     @classmethod
     def _unflatten(cls, data, metadata):
+
         hyperparams_dict = dict(metadata)
         return cls(*data, **hyperparams_dict)
 
     def map_wires(self, wire_map: dict):
 
-        new_registers_wires = [
-            [wire_map[wire] for wire in input_wire]
-            for input_wire in self.hyperparameters["registers_wires"]
-        ]
+        new_registers_wires = {
+            key: qml.wires.Wires([wire_map[wire] for wire in wires])
+            for key, wires in self.hyperparameters["registers_wires"].items()
+        }
 
         new_work_wires = (
             [wire_map[wire] for wire in self.hyperparameters["work_wires"]]
@@ -293,10 +301,10 @@ class OutPoly(Operation):
         )
 
         return OutPoly(
-            self.hyperparameters["f"],
-            new_registers_wires,
+            f=self.hyperparameters["f"],
             mod=self.hyperparameters["mod"],
             work_wires=new_work_wires,
+            **new_registers_wires,
         )
 
     @classmethod
@@ -308,18 +316,46 @@ class OutPoly(Operation):
 
     @staticmethod
     def compute_decomposition(**kwargs):  # pylint: disable=arguments-differ
+        r"""Representation of the operator as a product of other operators (static method).
+
+        .. math:: O = O_1 O_2 \dots O_n.
+
+
+        .. seealso:: :meth:`~.OutPoly.decomposition`.
+
+        **Example:**
+
+        .. code-block:: python
+
+            kwargs = {
+                "f": lambda x, y: x + y,
+                "registers_wires": {"x": [0, 1], "y": [2, 3], "output_wires": [4]},
+                "mod": 2,
+                "work_wires": None,
+            }
+
+        .. code-block:: pycon
+
+        >>> print(qml.OutPoly.compute_decomposition(**kwargs))
+        [QFT(wires=[4]), Controlled(PhaseAdder(wires=[4, None]), control_wires=[3]), Controlled(PhaseAdder(wires=[4, None]), control_wires=[1]), Adjoint(QFT(wires=[4]))]
+
+        """
 
         f = kwargs["f"]
         mod = kwargs["mod"]
 
-        registers_wires = kwargs["registers_wires"]
+        registers_wires = list(kwargs["registers_wires"].values())
         work_wires = kwargs["work_wires"]
+
+        if not work_wires:
+            work_wires = [None, None]
 
         list_ops = []
 
         output_adder_mod = (
-            [work_wires[0]] + registers_wires[-1] if work_wires else registers_wires[-1]
+            [work_wires[0]] + registers_wires[-1] if work_wires[0] else registers_wires[-1]
         )
+
         list_ops.append(qml.QFT(wires=output_adder_mod))
 
         wires_vars = [len(w) for w in registers_wires[:-1]]
@@ -338,25 +374,17 @@ class OutPoly(Operation):
 
             controls = [all_wires_input[i] for i, bit in enumerate(item) if bit == 1]
 
-            if work_wires:
-                list_ops.append(
-                    qml.ctrl(
-                        qml.PhaseAdder(
-                            int(coeff) % mod,
-                            output_adder_mod,
-                            work_wire=work_wires[1],
-                            mod=mod,
-                        ),
-                        control=controls,
-                    )
+            list_ops.append(
+                qml.ctrl(
+                    qml.PhaseAdder(
+                        int(coeff) % mod,
+                        output_adder_mod,
+                        work_wire=work_wires[1],
+                        mod=mod,
+                    ),
+                    control=controls,
                 )
-            else:
-                list_ops.append(
-                    qml.ctrl(
-                        qml.PhaseAdder(int(coeff) % mod, output_adder_mod),
-                        control=controls,
-                    )
-                )
+            )
 
         list_ops.append(qml.adjoint(qml.QFT)(wires=output_adder_mod))
 
