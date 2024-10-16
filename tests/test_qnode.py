@@ -503,11 +503,13 @@ class TestPyTreeStructure:
         "measurement",
         [
             lambda: qml.probs(),
-            lambda: (
+            lambda: [
                 [qml.probs(wires=1), {"a": qml.probs(wires=0)}, qml.expval(qml.Z(0))],
                 {"probs": qml.probs(wires=0), "exp": qml.expval(qml.X(1))},
-            ),
+            ],
             lambda: qml.math.hstack([qml.expval(qml.Z(i)) for i in range(2)]),
+            lambda: [qml.probs(), {"expval": qml.expval(qml.X(0))}],
+            lambda: ({"probs": qml.probs(wires=0), "exp": qml.expval(qml.X(1))}),
         ],
     )
     def test_pytree_structure_preservation(self, measurement):
@@ -526,11 +528,11 @@ class TestPyTreeStructure:
         _, result_structure = qml.pytrees.flatten(
             result, is_leaf=lambda obj: isinstance(obj, qml.numpy.ndarray)
         )
-        _, qfunc_structure = qml.pytrees.flatten(
-            circuit(), is_leaf=lambda obj: isinstance(obj, qml.measurements.MeasurementProcess)
+        _, measurement_structure = qml.pytrees.flatten(
+            measurement(), is_leaf=lambda obj: isinstance(obj, qml.measurements.MeasurementProcess)
         )
 
-        assert result_structure == qfunc_structure
+        assert result_structure == measurement_structure
 
 
 class TestTapeConstruction:
