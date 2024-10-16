@@ -26,8 +26,6 @@ from pennylane.qchem.givens_decomposition import (
     givens_decomposition,
 )
 
-jnp = pytest.importorskip("jax.numpy")
-
 
 @pytest.mark.parametrize("left", [True, False])
 @pytest.mark.parametrize(
@@ -138,6 +136,7 @@ def test_givens_decomposition_exceptions(unitary_matrix, msg_match):
 @pytest.mark.jax
 def test_givens_matrix_exceptions():
     """Test that _givens_matrix throws an exception if the parameters have different interface."""
+    import jax.numpy as jnp
 
     a = np.array(1.2)
     b = jnp.array(2.3)
@@ -147,25 +146,51 @@ def test_givens_matrix_exceptions():
 
 
 @pytest.mark.parametrize(
-    ("unitary_matrix", "index", "value", "like", "expected_matrix"),
+    ("jax", "unitary_matrix", "index", "value", "like", "expected_matrix"),
     [
-        (np.array([[1, 0], [0, 1]]), (0, 0), 5, None, np.array([[5, 0], [0, 1]])),
-        (np.array([[1, 0], [0, 1]]), (0, 0), 5, "numpy", np.array([[5, 0], [0, 1]])),
-        (np.array([[1, 0], [0, 1]]), (0, Ellipsis), [1, 2], None, np.array([[1, 2], [0, 1]])),
-        (np.array([[1, 0], [0, 1]]), (0, Ellipsis), [1, 2], "numpy", np.array([[1, 2], [0, 1]])),
-        (np.array([[1, 0], [0, 1]]), (1, [0, 1]), [1, 2], None, np.array([[1, 0], [1, 2]])),
-        (np.array([[1, 0], [0, 1]]), (1, [0, 1]), [1, 2], "numpy", np.array([[1, 0], [1, 2]])),
-        (jnp.array([[1, 0], [0, 1]]), (0, 0), 5, None, jnp.array([[5, 0], [0, 1]])),
-        (jnp.array([[1, 0], [0, 1]]), (0, 0), 5, "jax", jnp.array([[5, 0], [0, 1]])),
-        (jnp.array([[1, 0], [0, 1]]), (0, Ellipsis), [1, 2], None, jnp.array([[1, 2], [0, 1]])),
-        (jnp.array([[1, 0], [0, 1]]), (0, Ellipsis), [1, 2], "jax", jnp.array([[1, 2], [0, 1]])),
-        (jnp.array([[1, 0], [0, 1]]), (1, [0, 1]), [1, 2], None, jnp.array([[1, 0], [1, 2]])),
-        (jnp.array([[1, 0], [0, 1]]), (1, [0, 1]), [1, 2], "jax", jnp.array([[1, 0], [1, 2]])),
+        (False, np.array([[1, 0], [0, 1]]), (0, 0), 5, None, np.array([[5, 0], [0, 1]])),
+        (False, np.array([[1, 0], [0, 1]]), (0, 0), 5, "numpy", np.array([[5, 0], [0, 1]])),
+        (
+            False,
+            np.array([[1, 0], [0, 1]]),
+            (0, Ellipsis),
+            [1, 2],
+            None,
+            np.array([[1, 2], [0, 1]]),
+        ),
+        (
+            False,
+            np.array([[1, 0], [0, 1]]),
+            (0, Ellipsis),
+            [1, 2],
+            "numpy",
+            np.array([[1, 2], [0, 1]]),
+        ),
+        (False, np.array([[1, 0], [0, 1]]), (1, [0, 1]), [1, 2], None, np.array([[1, 0], [1, 2]])),
+        (
+            False,
+            np.array([[1, 0], [0, 1]]),
+            (1, [0, 1]),
+            [1, 2],
+            "numpy",
+            np.array([[1, 0], [1, 2]]),
+        ),
+        (True, [[1, 0], [0, 1]], (0, 0), 5, None, [[5, 0], [0, 1]]),
+        (True, [[1, 0], [0, 1]], (0, 0), 5, "jax", [[5, 0], [0, 1]]),
+        (True, [[1, 0], [0, 1]], (0, Ellipsis), [1, 2], None, [[1, 2], [0, 1]]),
+        (True, [[1, 0], [0, 1]], (0, Ellipsis), [1, 2], "jax", [[1, 2], [0, 1]]),
+        (True, [[1, 0], [0, 1]], (1, [0, 1]), [1, 2], None, [[1, 0], [1, 2]]),
+        (True, [[1, 0], [0, 1]], (1, [0, 1]), [1, 2], "jax", [[1, 0], [1, 2]]),
     ],
 )
 @pytest.mark.jax
-def test_set_unitary_matrix(unitary_matrix, index, value, like, expected_matrix):
+def test_set_unitary_matrix(jax, unitary_matrix, index, value, like, expected_matrix):
     """Test the _set_unitary function on different interfaces."""
+    import jax.numpy as jnp
+
+    if jax:
+        unitary_matrix = jnp.array(unitary_matrix)
+        expected_matrix = jnp.array(expected_matrix)
 
     new_unitary_matrix = _set_unitary_matrix(unitary_matrix, index, value, like)
     assert qml.math.allclose(new_unitary_matrix, expected_matrix)
