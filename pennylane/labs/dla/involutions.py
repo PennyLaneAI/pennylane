@@ -13,9 +13,69 @@
 # limitations under the License.
 """Cartan involutions"""
 # pylint: disable=missing-function-docstring
+from typing import Union
 
 import numpy as np
 
+from pennylane.operation import Operator
+from pennylane.pauli import PauliSentence
+
+
+def KG_involution(op: Union[PauliSentence, Operator], wire=None):
+    r"""Khaneja-Glaser involution
+
+    .. warning:: This involution currently only works with Pauli words, either presented as PennyLane operators or :class:`~PauliSentence` instances.
+
+    Args:
+        op (PauliSentence): Input operator
+        wire (int): Qubit wire on which to perform KG decomposition
+
+    Returns:
+        bool: Accordingly to whether ``op`` should go to the even or odd subspace of the decomposition
+
+    .. seealso:: :func:`~cartan_decomposition`
+
+    **Example**
+
+    Let us perform a full recursive Khaneja-Glaser decomposition of :math:`\mathfrak{g} = \mathfrak{su}(8)`, i.e. the Lie algebra of all Pauli words on 3 qubits.
+
+    >>> g = list(qml.pauli.pauli_group(3)) # su(8)
+    >>> g = [_.pauli_rep for _ in g]
+    >>> g = g[1:] # remove identity
+
+    We perform the first iteration on the first qubit. We use :func:`~cartan_decomposition`.
+
+    >>> from functools import partial
+    >>> k0, m0 = cartan_decomposition(g, partial(KG_involution, wire=0))
+    >>> print(f"First iteration: {len(k0)}, {len(m0)}")
+    First iteration: 31, 32
+    >>> assert qml.labs.dla.check_cartan_decomp(k0, m0) # check Cartan commutation relations of subspaces
+
+    We continue this recursive process on the :math:`\mathfrak{k}` subalgebra with the other two wires.
+
+    >>> k1, m1 = cartan_decomposition(k0, partial(KG_involution, wire=1))
+    >>> assert check_cartan_decomp(k1, m1)
+    >>> print(f"Second iteration: {len(k1)}, {len(m1)}")
+    Second iteration: 15, 16
+
+    >>> k2, m2 = cartan_decomposition(k1, partial(KG_involution, wire=2))
+    >>> assert check_cartan_decomp(k2, m2)
+    >>> print(f"Third iteration: {len(k2)}, {len(m2)}")
+    Third iteration: 7, 8
+    """
+    if wire is None:
+        raise ValueError(
+            "please specify the ``wire`` for the Khaneja-Glaser involution via functools.partial(KG_involution, wire=wire)"
+        )
+    if isinstance(op, Operator):
+        op = op.pauli_rep
+
+    assert len(op) == 1  # no PauliSentences allowed atm
+    [pw] = op  # get PauliWord
+    return pw[wire] in ["I", "Z"]
+
+
+# Canonical involutions
 # see https://arxiv.org/pdf/2406.04418 appendix C
 
 # matrices
