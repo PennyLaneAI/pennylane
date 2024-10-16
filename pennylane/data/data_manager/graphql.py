@@ -5,6 +5,7 @@ Module for containing graphql functionality for interacting with the Datasets Se
 import os
 from typing import Any, Optional
 
+import requests
 from requests import post
 
 GRAPHQL_URL = os.getenv("DATASETS_ENDPOINT_URL", "https://cloud.pennylane.ai/graphql")
