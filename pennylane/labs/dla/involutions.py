@@ -21,7 +21,7 @@ from pennylane.operation import Operator
 from pennylane.pauli import PauliSentence
 
 
-def KG_involution(op: Union[PauliSentence, Operator], wire=None):
+def khaneja_glaser_involution(op: Union[PauliSentence, Operator], wire=None):
     r"""Khaneja-Glaser involution
 
     .. warning:: This involution currently only works with Pauli words, either presented as PennyLane operators or :class:`~PauliSentence` instances.
@@ -46,26 +46,26 @@ def KG_involution(op: Union[PauliSentence, Operator], wire=None):
     We perform the first iteration on the first qubit. We use :func:`~cartan_decomposition`.
 
     >>> from functools import partial
-    >>> k0, m0 = cartan_decomposition(g, partial(KG_involution, wire=0))
+    >>> k0, m0 = cartan_decomposition(g, partial(khaneja_glaser_involution, wire=0))
     >>> print(f"First iteration: {len(k0)}, {len(m0)}")
     First iteration: 31, 32
     >>> assert qml.labs.dla.check_cartan_decomp(k0, m0) # check Cartan commutation relations of subspaces
 
     We continue this recursive process on the :math:`\mathfrak{k}` subalgebra with the other two wires.
 
-    >>> k1, m1 = cartan_decomposition(k0, partial(KG_involution, wire=1))
+    >>> k1, m1 = cartan_decomposition(k0, partial(khaneja_glaser_involution, wire=1))
     >>> assert check_cartan_decomp(k1, m1)
     >>> print(f"Second iteration: {len(k1)}, {len(m1)}")
     Second iteration: 15, 16
 
-    >>> k2, m2 = cartan_decomposition(k1, partial(KG_involution, wire=2))
+    >>> k2, m2 = cartan_decomposition(k1, partial(khaneja_glaser_involution, wire=2))
     >>> assert check_cartan_decomp(k2, m2)
     >>> print(f"Third iteration: {len(k2)}, {len(m2)}")
     Third iteration: 7, 8
     """
     if wire is None:
         raise ValueError(
-            "please specify the ``wire`` for the Khaneja-Glaser involution via functools.partial(KG_involution, wire=wire)"
+            "please specify the ``wire`` for the Khaneja-Glaser involution via functools.partial(khaneja_glaser_involution, wire=wire)"
         )
     if isinstance(op, Operator):
         op = op.pauli_rep
