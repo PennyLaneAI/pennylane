@@ -103,7 +103,11 @@ def expand_matrix(mat, wires, wire_order=None, sparse_format="csr"):
     """
     wires = Wires(wires)
 
-    qudit_dim = int(qml.math.shape(mat)[-1] ** (1 / (len(wires))))
+    if wires:
+        qudit_dim = int(qml.math.shape(mat)[-1] ** (1 / (len(wires))))
+    else:
+        qudit_dim = 2  # if no wires, just assume qubit
+
     if (wire_order is None) or (wire_order == wires):
         return mat
 
