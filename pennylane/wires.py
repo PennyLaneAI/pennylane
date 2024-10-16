@@ -63,7 +63,11 @@ def _process(wires):
         # of considering the elements of iterables as wire labels.
         wires = [wires]
 
-    if qml.math.get_interface(wires) == "jax" and not qml.math.is_abstract(wires):
+    if qml.math.get_interface(wires) == "jax":
+
+        if qml.math.is_abstract(wires):
+            raise WireError(f"Abstract wires are not supported; got {wires}.")
+
         wires = tuple(wires.tolist() if wires.ndim > 0 else (wires.item(),))
 
     try:
