@@ -489,6 +489,25 @@ def apply_multicontrolledx(
     return state
 
 
+@apply_operation.register
+def apply_grover(
+    op: qml.GroverOperator,
+    state,
+    is_state_batched: bool = False,
+    debugger=None,
+    **_,
+):
+    """Apply GroverOperator either via a custom matrix-free method (more than 8 operation
+    wires) or via standard matrix based methods (else)."""
+    if len(op.wires) < 9:
+        return _apply_operation_default(op, state, is_state_batched, debugger)
+    num_wires = int((len(math.shape(state)) - is_state_batched) / 2)
+    op_dagger = _get_dagger_op(op, num_wires)
+    state = qml.devices.qubit.apply_operation(op, state, is_state_batched, debugger)
+    state = qml.devices.qubit.apply_operation(op_dagger, state, is_state_batched, debugger)
+    return state
+
+
 # pylint: disable=no-cover
 @apply_operation.register
 def apply_snapshot(
