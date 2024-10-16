@@ -4,7 +4,7 @@
    :format: html
 
 Building a legacy plugin
-=================
+========================
 
 For adding a plugin that inherits from the new device interface, see :doc:`/development/plugins`.
 
