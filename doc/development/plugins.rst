@@ -182,7 +182,6 @@ or can include in-built transforms such as:
 
 .. currentmodule:: pennylane.devices.preprocess
 .. toctree::
-    :toctree: api
 
     decompose
     validate_observables
@@ -195,7 +194,6 @@ or can include in-built transforms such as:
 
 .. currentmodule:: pennylane
 .. toctree::
-    :toctree: api
 
     ~pennylane.defer_measurements
     ~pennylane.dynamic_one_shot
