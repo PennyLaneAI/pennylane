@@ -193,6 +193,7 @@ or can include in-built transforms such as:
 
 
 .. currentmodule:: pennylane
+.. toctree::
     :toctree: api
 
     ~pennylane.defer_measurements
