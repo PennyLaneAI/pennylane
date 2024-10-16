@@ -274,6 +274,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* `MeasurementValue` now raises an error when it is used as a boolean.
+  [(#6386)](https://github.com/PennyLaneAI/pennylane/pull/6386)
+
 * `default.qutrit` now returns integer samples.
   [(#6385)](https://github.com/PennyLaneAI/pennylane/pull/6385)
 
@@ -320,6 +323,9 @@
 * Fixes a bug where `csc_dot_product` is used during measurement for `Sum`/`Hamiltonian` that contains observables that does not define a sparse matrix.
   [(#6278)](https://github.com/PennyLaneAI/pennylane/pull/6278)
   [(#6310)](https://github.com/PennyLaneAI/pennylane/pull/6310)
+
+* Fixes a bug where `None` was added to the wires in `qml.PhaseAdder`, `qml.Adder` and `qml.OutAdder`.
+  [(#6360)](https://github.com/PennyLaneAI/pennylane/pull/6360)
 
 * Fixes a test after updating to the nightly version of Catalyst.
   [(#6362)](https://github.com/PennyLaneAI/pennylane/pull/6362)
