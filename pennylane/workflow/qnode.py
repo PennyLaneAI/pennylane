@@ -118,13 +118,15 @@ def _to_qfunc_output_type(
     if isinstance(qfunc_output, list) and len(qfunc_output) == 1:
         results = [results]
 
-    # If the return type is not tuple (list or ndarray) (Autograd and TF backprop removed)
-    if isinstance(qfunc_output, (tuple, qml.measurements.MeasurementProcess)) and not any(
-        isinstance(res, qml.numpy.ndarray) for res in results
-    ):
-        return results
+    if isinstance(qfunc_output, (tuple)):
+        # If the return type is not tuple (list or ndarray) (Autograd and TF backprop removed)
+        if not any(isinstance(res, qml.numpy.ndarray) for res in results) or isinstance(
+            qfunc_output, qml.measurements.MeasurementProcess
+        ):
+            return results
 
     # Work around for tensor objects coming from qml.math.hstack
+    print(qfunc_output, type(qfunc_output), results, structure, structure.is_leaf)
     if not structure.is_leaf:
         if any(isinstance(element, qml.numpy.tensor) for element in qfunc_output):
             qfunc_output = [
