@@ -7,6 +7,11 @@ on:
         description: The runner type that is used by the calling workflow by default
         required: true
         type: string
+      large_runner_group_name:
+        description: The name of the runner group that should be used for large jobs
+        required: false
+        type: string
+        default: 'pl-4-core-large-runner'
       force_large_runner:
         description: Whether to force the use of a large runner
         required: false
@@ -25,9 +30,6 @@ on:
             )
           }}
 
-env:
-  LARGE_RUNNER_GROUP_NAME: pl-4-core-large-runner
-
 jobs:
   determine_workflow_runner:
     runs-on: >-
@@ -35,7 +37,7 @@ jobs:
         (
           github.event_name == 'pull_request'
           && contains(github.event.pull_request.labels.*.name, 'urgent')
-        ) && env.LARGE_RUNNER_GROUP_NAME || 'ubuntu-latest'
+        ) && inputs.large_runner_group_name || 'ubuntu-latest'
       }}
 
     outputs:
@@ -53,6 +55,7 @@ jobs:
           # We are not able to use \d to check numeric values as bash does not allow them (not POSIX compliant)
           RC_BRANCH_FORMAT_REGEX: v[0-9]+\.[0-9]+\.[0-9]+-rc[0-9]?
           REPO_FULL_NAME: PennyLaneAI/pennylane
+          LARGE_RUNNER_GROUP_NAME: ${{ inputs.large_runner_group_name }}
         run: |
           if [[ '${{ contains(github.event.pull_request.labels.*.name, 'urgent') }}' == 'true' || ('${{ github.event.pull_request.head.repo.full_name }}' == "$REPO_FULL_NAME" && '${{ github.event.pull_request.head.ref }}' =~ $RC_BRANCH_FORMAT_REGEX) ]]; then
             echo "This job requires usage of the large runner group '$LARGE_RUNNER_GROUP_NAME'";
