@@ -48,7 +48,7 @@ def fold_global(tape: QuantumScript, scale_factor) -> tuple[QuantumScriptBatch, 
     .. note::
 
         This method no longer decomposes the circuit as part of the folding procedure. Users are encouraged to use
-        :func:`~.pennylane.transforms.compile` to decompose the circuit into a target gateset before using this.
+        :func:`~.pennylane.transforms.decompose` to expand the circuit into a target gateset before using this.
 
 
     **Example**
@@ -451,7 +451,7 @@ def mitigate_with_zne(
             folding=fold_global,
             extrapolate=poly_extrapolate,
             extrapolate_kwargs={'order': 2})
-        @partial(qml.decompose, gate_set = ["RY", "CZ"])
+        @partial(qml.transforms.decompose, gate_set = ["RY", "CZ"])
         @qnode(dev)
         def circuit(w1, w2):
             qml.SimplifiedTwoDesign(w1, w2, wires=range(2))
