@@ -30,7 +30,7 @@ jobs:
       DEPS_BRANCH: bot/stable-deps-update
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - uses: PennyLaneAI/sphinx-action@master
       with:
         docs-folder: "doc/"
