@@ -37,6 +37,7 @@ Utility functions
     ~pauli_coefficients
     ~check_cartan_decomp
     ~check_commutation
+    ~project
 
 Involutions
 ~~~~~~~~~~~
