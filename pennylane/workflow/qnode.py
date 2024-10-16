@@ -114,6 +114,13 @@ def _to_qfunc_output_type(
         qfunc_output, is_leaf=lambda obj: isinstance(obj, qml.measurements.MeasurementProcess)
     )
 
+    # Special case of single Measurement in a list
+    if isinstance(qfunc_output, list) and len(qfunc_output) == 1:
+        results = [results]
+
+    if isinstance(qfunc_output, (tuple, qml.measurements.MeasurementProcess)):
+        return results
+
     # Work around for tensor objects coming from qml.math.hstack
     if not structure.is_leaf:
         if any(isinstance(element, qml.numpy.tensor) for element in qfunc_output):
