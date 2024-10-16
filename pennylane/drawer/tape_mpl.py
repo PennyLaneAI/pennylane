@@ -180,7 +180,7 @@ def _(op: qml.ops.op_math.Conditional, drawer, layer, config) -> None:
 def _get_measured_wires(measurements, wires) -> set:
     measured_wires = set()
     for m in measurements:
-        if not m.mv:
+        if m.mv is None:
             # state and probs
             if len(m.wires) == 0:
                 return wires
@@ -210,7 +210,7 @@ def _get_measured_bits(measurements, bit_map, offset):
         if isinstance(m.mv, list):
             for mv in m.mv:
                 measured_bits += [bit_map[mcm] + offset for mcm in mv.measurements]
-        elif m.mv:
+        elif m.mv is not None:
             measured_bits += [bit_map[mcm] + offset for mcm in m.mv.measurements]
     return measured_bits
 

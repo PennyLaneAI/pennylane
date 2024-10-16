@@ -11,7 +11,54 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Experimental Lie theory features"""
+r"""
+Experimental Lie theory features
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. currentmodule:: pennylane.labs.dla
+
+.. autosummary::
+    :toctree: api
+
+    ~lie_closure_dense
+    ~structure_constants_dense
+    ~cartan_decomposition
+
+
+Utility functions
+~~~~~~~~~~~~~~~~~
+
+.. currentmodule:: pennylane.labs.dla
+
+.. autosummary::
+    :toctree: api
+
+    ~pauli_decompose
+    ~pauli_coefficients
+    ~check_cartan_decomp
+    ~check_commutation
+
+Involutions
+~~~~~~~~~~~
+
+.. currentmodule:: pennylane.labs.dla
+
+.. autosummary::
+    :toctree: api
+
+    ~even_odd_involution
+    ~concurrence_involution
+    ~khaneja_glaser_involutio
+    ~AI
+    ~AII
+    ~AIII
+    ~BDI
+    ~CI
+    ~CII
+    ~DIII
+
+
+"""
 
 from .lie_closure_dense import lie_closure_dense
 from .structure_constants_dense import structure_constants_dense
