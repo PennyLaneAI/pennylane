@@ -27,8 +27,18 @@ from malt.operators.variables import Undefined
 
 import pennylane as qml
 
+# ToDo: do we need has_jax for anything in this one?
+has_jax = True
+try:
+    import jax
+
+except ImportError:
+    has_jax = False
+
+
 __all__ = [
     "if_stmt",
+    "while_stmt",
     "converted_call",
 ]
 
@@ -81,6 +91,90 @@ def if_stmt(
         return assert_results(results, symbol_names)
 
     results = functional_cond()
+    set_state(results)
+
+
+def assert_iteration_inputs(inputs, symbol_names):
+    """All loop carried values, variables that are updated each iteration or accessed after the
+    loop terminates, need to be initialized prior to entering the loop.
+
+    The reason is two-fold:
+      - the type information from those variables is required for tracing
+      - we want to avoid access of a variable that is uninitialized, or uninitialized in a subset
+        of execution paths
+
+    Additionally, these types need to be valid JAX types.
+    """
+
+    for i, inp in enumerate(inputs):
+        if isinstance(inp, Undefined):
+            raise AutoGraphError(
+                f"The variable '{inp}' is potentially uninitialized:\n"
+                " - you may have forgotten to initialize it prior to accessing it inside a loop, or"
+                "\n"
+                " - you may be attempting to access a variable local to the body of a loop in an "
+                "outer scope.\n"
+                f"Please ensure '{inp}' is initialized with a value before entering the loop."
+            )
+
+        try:
+            jax.api_util.shaped_abstractify(inp)
+        except TypeError as e:
+            raise AutoGraphError(
+                f"The variable '{symbol_names[i]}' was initialized with type {type(inp)}, "
+                "which is not compatible with JAX. Typically, this is the case for non-numeric "
+                "values.\n"
+                "You may still use such a variable as a constant inside a loop, but it cannot "
+                "be updated from one iteration to the next, or accessed outside the loop scope "
+                "if it was defined inside of it."
+            ) from e
+
+
+def assert_iteration_results(inputs, outputs, symbol_names):
+    """The results of a for loop should have the identical type as the inputs, since they are
+    "passed" as inputs to the next iteration. A mismatch here may indicate that a loop carried
+    variable was initialized with wrong type.
+    """
+
+    for i, (inp, out) in enumerate(zip(inputs, outputs)):
+        inp_t, out_t = jax.api_util.shaped_abstractify(inp), jax.api_util.shaped_abstractify(out)
+        if inp_t.dtype != out_t.dtype or inp_t.shape != out_t.shape:
+            raise AutoGraphError(
+                f"The variable '{symbol_names[i]}' was initialized with the wrong type, or you may "
+                f"be trying to change its type from one iteration to the next. "
+                f"Expected: {out_t}, Got: {inp_t}"
+            )
+
+
+def _call_pennylane_while(loop_test, loop_body, get_state, set_state, symbol_names):
+    """Dispatch to a PennyLane implementation of while loops."""
+
+    init_iter_args = get_state()
+    assert_iteration_inputs(init_iter_args, symbol_names)
+
+    def test(state):
+        old = get_state()
+        set_state(state)
+        res = loop_test()
+        set_state(old)
+        return res
+
+    @qml.while_loop(test)
+    def functional_while(iter_args):
+        set_state(iter_args)
+        loop_body()
+        return get_state()
+
+    final_iter_args = functional_while(init_iter_args)
+    assert_iteration_results(init_iter_args, final_iter_args, symbol_names)
+    return final_iter_args
+
+
+def while_stmt(loop_test, loop_body, get_state, set_state, symbol_names, _opts):
+    """An implementation of the AutoGraph 'while ..' statement. The interface is defined by
+    AutoGraph, here we merely provide an implementation of it in terms of PennyLane primitives."""
+
+    results = _call_pennylane_while(loop_test, loop_body, get_state, set_state, symbol_names)
     set_state(results)
 
 
@@ -144,6 +238,8 @@ def converted_call(fn, args, kwargs, caller_fn_scope=None, options=None):
             qml.adjoint,
             qml.ctrl,
             qml.grad,
+            qml.grad,
+            qml.jacobian,
             qml.jacobian,
             qml.vjp,
             qml.jvp,
