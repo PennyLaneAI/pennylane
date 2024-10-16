@@ -19,6 +19,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.ops.qubit.matrix_ops import _walsh_hadamard_transform
+from pennylane.pauli import PauliSentence, PauliWord
 
 
 def _make_phase_mat(n):
@@ -48,20 +49,47 @@ def _make_extraction_indices(n):
     return tuple(zip(*indices))
 
 
-def pauli_decompose(H):
-    r"""Decomposes a Hermitian matrix into a linear combination of Pauli operators.
+def pauli_coefficients(H):
+    r"""Computes the coefficients of a Hermitian matrix in the Pauli basis.
 
     Args:
-        H (tensor_like[complex]): a Hermitian matrix of dimension ``(2**n, 2**n)`` or a collection of Hermitian matrices of dimension ``(batch, 2**n, 2**n)``.
+        H (tensor_like[complex]): a Hermitian matrix of dimension ``(2**n, 2**n)`` or a collection
+            of Hermitian matrices of dimension ``(batch, 2**n, 2**n)``.
 
     Returns:
-        Union[~.Hamiltonian, ~.PauliSentence]: the matrix decomposed as a linear combination
-        of Pauli operators, returned either as a :class:`~.Hamiltonian` or :class:`~.PauliSentence`
-        instance.
+        np.ndarray: The coefficients of ``H`` in the Pauli basis with shape ``(4**n,)`` for a single
+        matrix input and ``(batch, 4**n)`` for a collection of matrices. The output is real-valued.
 
+
+    **Examples**
+    Consider the Hamiltonian :math:`H=\frac{1}{4} X_0 + \frac{2}{5} Z_0 X_1` with matrix
+
+    >>> H = 1 / 4 * qml.X(0) + 2 / 5 * qml.Z(0) @ qml.X(1)
+    >>> mat = H.matrix()
+    array([[ 0.  +0.j,  0.4 +0.j,  0.25+0.j,  0.  +0.j],
+           [ 0.4 +0.j,  0.  +0.j,  0.  +0.j,  0.25+0.j],
+           [ 0.25+0.j,  0.  +0.j,  0.  +0.j, -0.4 +0.j],
+           [ 0.  +0.j,  0.25+0.j, -0.4 +0.j,  0.  +0.j]])
+
+    Then we can obtain the coefficients of :math:`H` in the Pauli basis via
+
+    >>> from pennylane.labs.dla import pauli_coefficients
+    >>> pauli_coefficients(mat)
+    array([ 0.  ,  0.  ,  0.  ,  0.  ,  0.25,  0.  ,  0.  ,  0.  ,  0.  ,
+            0.  , -0.  ,  0.  ,  0.  ,  0.4 ,  0.  ,  0.  ])
+
+    The function can be used on a batch of matrices:
+
+    >>> ops = [1 / 4 * qml.X(0), 1 / 2 * qml.Z(0), 3 / 5 * qml.Y(0)]
+    >>> batch = np.stack([op.matrix() for op in ops])
+    >>> pauli_coefficients(batch)
+    array([[0.  , 0.25, 0.  , 0.  ],
+           [0.  , 0.  , 0.  , 0.5 ],
+           [0.  , 0.  , 0.6 , 0.  ]])
     """
     # Preparations
     shape = H.shape
+    batch = shape[0] if H.ndim == 3 else None
     dim = shape[-1]
     n = int(np.round(np.log2(dim)))
     assert dim == 2**n
@@ -83,8 +111,97 @@ def pauli_decompose(H):
     # _make phase matrix that allows us to figure out phase contributions from Pauli Y terms.
     phase_mat = qml.math.convert_like(_make_phase_mat(n), H)
     # Multiply phase matrix to Hadamard transformed matrix and transpose the two Hilbert-space-dim axes
-    coefficients = qml.math.moveaxis(qml.math.multiply(hadamard_transform_mat, phase_mat), -2, -1)
+    coefficients = qml.math.moveaxis(
+        qml.math.real(qml.math.multiply(hadamard_transform_mat, phase_mat)), -2, -1
+    )
     # Extract the coefficients by reordering them according to the encoding in `qml.pauli.pauli_decompose`
     indices = _make_extraction_indices(n)
-    coefficients = coefficients[..., indices[0], indices[1]].reshape((-1, dim**2))[..., 1:]
-    return coefficients
+    new_shape = (dim**2,) if batch is None else (batch, dim**2)
+    return qml.math.reshape(coefficients[..., indices[0], indices[1]], new_shape)
+
+
+_pauli_strings = (None, "X", "Y", "Z")
+
+
+def _idx_to_pw(idx, n):
+    pw = {}
+    wire = n - 1
+    while idx > 0:
+        p = _pauli_strings[idx % 4]
+        if p:
+            pw[wire] = p
+        idx //= 4
+        wire -= 1
+    return PauliWord(pw)
+
+
+def pauli_decompose(H, tol=None, pauli: bool = False):
+    r"""Decomposes a Hermitian matrix into a linear combination of Pauli operators.
+
+    Args:
+        H (tensor_like[complex]): a Hermitian matrix of dimension ``(2**n, 2**n)`` or a collection
+            of Hermitian matrices of dimension ``(batch, 2**n, 2**n)``.
+        tol (float): Tolerance below which Pauli coefficients are discarded.
+        pauli (bool): Whether to format the output as :class:`~.PauliSentence`.
+
+    Returns:
+        Union[~.Hamiltonian, ~.PauliSentence]: the matrix (matrices) decomposed as a
+        linear combination of Pauli operators, returned either as a :class:`~.Hamiltonian`
+        or :class:`~.PauliSentence` instance.
+
+    .. seealso:: :func:`~.pauli_coefficients`
+
+    **Examples**
+
+    Consider the Hamiltonian :math:`H=\frac{1}{4} X_0 + \frac{2}{5} Z_0 X_1`. We can compute its
+    matrix and get back the Pauli representation via ``pauli_decompose``.
+
+    >>> from pennylane.labs.dla import pauli_decompose
+    >>> H = 1 / 4 * qml.X(0) + 2 / 5 * qml.Z(0) @ qml.X(1)
+    >>> mat = H.matrix()
+    >>> op = pauli_decompose(mat)
+    >>> op
+    0.25 * X(1) + 0.4 * Z(1)
+    >>> type(op)
+    pennylane.ops.op_math.sum.Sum
+
+    We can choose to receive a :class:`~.PauliSentence` instead as output instead, by setting
+    ``pauli=True``:
+
+    >>> op = pauli_decompose(mat, pauli=True)
+    >>> type(op)
+    pennylane.pauli.pauli_arithmetic.PauliSentence
+
+    This function supports batching and will return a list of operations for a batched input:
+
+    >>> ops = [1 / 4 * qml.X(0), 1 / 2 * qml.Z(0) + 1e-7 * qml.Y(0)]
+    >>> batch = np.stack([op.matrix() for op in ops])
+    >>> pauli_decompose(batch)
+    [0.25 * X(0), 1e-07 * Y(0) + 0.5 * Z(0)]
+
+    Small contributions can be removed by specifying the ``tol`` parameter, which defaults
+    to ``1e-10``, accordingly:
+
+    >>> pauli_decompose(batch, tol=1e-6)
+    [0.25 * X(0), 0.5 * Z(0)]
+    """
+    if tol is None:
+        tol = 1e-10
+    coeffs = pauli_coefficients(H)
+    if single_H := (qml.math.ndim(coeffs) == 1):
+        coeffs = [coeffs]
+
+    n = int(np.round(np.log2(qml.math.shape(coeffs)[1]))) // 2
+
+    H_ops = []
+    for _coeffs in coeffs:
+        ids = qml.math.where(qml.math.abs(_coeffs) > tol)[0]
+        sentence = PauliSentence({_idx_to_pw(idx, n): c for c, idx in zip(_coeffs[ids], ids)})
+        if pauli:
+            H_ops.append(sentence)
+        else:
+            H_ops.append(sentence.operation())
+
+    if single_H:
+        return H_ops[0]
+    return H_ops
