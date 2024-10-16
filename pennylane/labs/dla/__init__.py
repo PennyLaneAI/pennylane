@@ -35,6 +35,8 @@ Utility functions
 
     ~pauli_decompose
     ~pauli_coefficients
+    ~check_cartan_decomp
+    ~check_commutation
 
 Involutions
 ~~~~~~~~~~~
@@ -46,6 +48,14 @@ Involutions
 
     ~even_odd_involution
     ~concurrence_involution
+    ~khaneja_glaser_involutio
+    ~AI
+    ~AII
+    ~AIII
+    ~BDI
+    ~CI
+    ~CII
+    ~DIII
 
 
 """
