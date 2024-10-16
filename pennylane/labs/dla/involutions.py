@@ -17,6 +17,7 @@ from typing import Union
 
 import numpy as np
 
+from pennylane import Y, Z
 from pennylane.operation import Operator
 from pennylane.pauli import PauliSentence
 
@@ -81,24 +82,48 @@ def khaneja_glaser_involution(op: Union[PauliSentence, Operator], wire=None):
 # matrices
 
 
-def J(n):
+def int_log2(x):
+    return int(np.round(np.log2(x)))
+
+
+def J(n, wire=None):
     """This is the standard choice for the symplectic transformation operator.
     For an :math:`N`-qubit system (:math:`n=2^N`), it equals :math:`iY_0`."""
+    N = int_log2(n)
+    if 2**N == n:
+        if wire is None:
+            wire = 0
+        return 1j * Y(wire).matrix(wire_order=range(N + 1))
+    if wire is not None:
+        raise ValueError("The wire argument is only supported for n=2**N for some N." "")
     return np.block([[np.zeros((n, n)), np.eye(n)], [-np.eye(n), np.zeros((n, n))]])
 
 
-def Ipq(p, q):
+def Ipq(p, q, wire=None):
     """This is the canonical transformation operator for AIII and BDI Cartan
     decompositions. For an :math:`N`-qubit system (:math:`n=2^N`) and
     :math:`p=q=n/2`, it equals :math:`-Z_0`."""
-    IIm = np.block([[-np.eye(p), np.zeros((p, p))], [np.zeros((q, q)), np.eye(q)]])
-    return IIm
+    # If p = q and they are a power of two, use Pauli representation
+    if p == q and 2 ** int_log2(p) == p:
+        if wire is None:
+            wire = 0
+        return -1 * Z(wire).matrix(wire_order=range(int_log2(p) + 1))
+    if wire is not None:
+        raise ValueError("The wire argument is only supported for p=q=2**N for some N." "")
+    return np.block([[-np.eye(p), np.zeros((p, p))], [np.zeros((q, q)), np.eye(q)]])
 
 
-def Kpq(p, q):
+def Kpq(p, q, wire=None):
     """This is the canonical transformation operator for CII Cartan
     decompositions. For an :math:`N`-qubit system (:math:`n=2^N`) and
     :math:`p=q=n/2`, it equals :math:`-Z_1`."""
+    # If p = q and they are a power of two, use Pauli representation
+    if p == q and 2 ** int_log2(p) == p:
+        if wire is None:
+            wire = 1
+        return -1 * Z(wire).matrix(wire_order=range(int_log2(p) + 1))
+    if wire is not None:
+        raise ValueError("The wire argument is only supported for p=q=2**N for some N." "")
     KKm = np.block(
         [
             [-np.eye(p), np.zeros((p, p)), np.zeros((p, p)), np.zeros((p, p))],
@@ -115,69 +140,69 @@ def AI(op):
     Note that we work with Hermitian matrices internally, so that we need to multiply by
     ``1j`` to obtain a skew-Hermitian matrix, before applying the involution itself.
     """
-    op *= 1j
+    op = 1j * op
     return np.allclose(op, op.conj())
 
 
-def AII(op):
+def AII(op, wire=None):
     """Involution for AII Cartan decomposition.
     Note that we work with Hermitian matrices internally, so that we need to multiply by
     ``1j`` to obtain a skew-Hermitian matrix, before applying the involution itself.
     """
-    op *= 1j
-    JJ = J(op.shape[-1] // 2)
+    op = 1j * op
+    JJ = J(op.shape[-1] // 2, wire=wire)
     return np.allclose(op, JJ @ op.conj() @ JJ.T)
 
 
-def AIII(op, p=None, q=None):
+def AIII(op, p=None, q=None, wire=None):
     """Involution for AIII Cartan decomposition.
     Note that we work with Hermitian matrices internally, so that we need to multiply by
     ``1j`` to obtain a skew-Hermitian matrix, before applying the involution itself.
     """
-    op *= 1j
+    op = 1j * op
     if p is None or q is None:
         raise ValueError(
             "please specify p and q for the involution via functools.partial(AIII, p=p, q=q)"
         )
-    IIm = Ipq(p, q)
+    IIm = Ipq(p, q, wire=wire)
     return np.allclose(op, IIm @ op @ IIm)
 
 
-def BDI(op, p=None, q=None):
+def BDI(op, p=None, q=None, wire=None):
     """Involution for BDI Cartan decomposition.
     Note that we work with Hermitian matrices internally, so that we need to multiply by
     ``1j`` to obtain a skew-Hermitian matrix, before applying the involution itself.
     """
-    return AIII(op, p, q)
+    return AIII(op, p, q, wire)
 
 
-def CI(op):
+def CI(op, wire=None):
     """Involution for CI Cartan decomposition.
     Note that we work with Hermitian matrices internally, so that we need to multiply by
     ``1j`` to obtain a skew-Hermitian matrix, before applying the involution itself.
     """
-    return AI(op)
+    return AI(op, wire)
 
 
-def CII(op, p=None, q=None):
+def CII(op, p=None, q=None, wire=None):
     """Involution for CII Cartan decomposition.
     Note that we work with Hermitian matrices internally, so that we need to multiply by
     ``1j`` to obtain a skew-Hermitian matrix, before applying the involution itself.
     """
-    op *= 1j
+    op = 1j * op
     if p is None or q is None:
         raise ValueError(
             "please specify p and q for the involution via functools.partial(CII, p=p, q=q)"
         )
-    KKm = Kpq(p, q)
+    KKm = Kpq(p, q, wire)
     return np.allclose(op, KKm @ op @ KKm)
 
 
-def DIII(op):
+def DIII(op, wire=None):
     """Involution for DIII Cartan decomposition.
     Note that we work with Hermitian matrices internally, so that we need to multiply by
     ``1j`` to obtain a skew-Hermitian matrix, before applying the involution itself.
     """
-    op *= 1j
-    JJ = J(op.shape[-1] // 2)
+    op = 1j * op
+    JJ = J(op.shape[-1] // 2, wire=wire)
     return np.allclose(op, JJ @ op @ JJ.T)
