@@ -246,6 +246,11 @@ class TestPhaseAdder:
         for op1, op2 in zip(phase_adder_decomposition, op_list):
             qml.assert_equal(op1, op2)
 
+    def test_work_wires_added_correctly(self):
+        """Test that no work wires are added if work_wire = None"""
+        wires = qml.PhaseAdder(1, x_wires=[1, 2]).wires
+        assert wires == qml.wires.Wires([1, 2])
+
     @pytest.mark.jax
     def test_jit_compatible(self):
         """Test that the template is compatible with the JIT compiler."""
