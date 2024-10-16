@@ -646,7 +646,8 @@ class QubitDevice(Device):
                 # uses a list of mid-circuit measurement values
                 obs = m  # pragma: no cover
             else:
-                obs = m.obs or m.mv or m
+                obs = m.obs or m.mv
+                obs = m if obs is None else obs
             # Check if there is an overriden version of the measurement process
             if method := getattr(self, self.measurement_map[type(m)], False):
                 if isinstance(m, MeasurementTransform):
@@ -663,7 +664,8 @@ class QubitDevice(Device):
 
             elif isinstance(m, SampleMP):
                 samples = self.sample(obs, shot_range=shot_range, bin_size=bin_size, counts=False)
-                result = self._asarray(qml.math.squeeze(samples))
+                dtype = int if isinstance(obs, SampleMP) else None
+                result = self._asarray(qml.math.squeeze(samples), dtype=dtype)
 
             elif isinstance(m, CountsMP):
                 result = self.sample(m, shot_range=shot_range, bin_size=bin_size, counts=True)

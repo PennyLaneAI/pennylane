@@ -69,7 +69,7 @@ class TestEvolution:
 
     def test_generator(self):
         U = Evolution(qml.PauliX(0), 3)
-        assert U.base == U.generator()
+        assert U.generator() == -1 * U.base
 
     @pytest.mark.usefixtures("legacy_opmath_only")
     def test_num_params_for_parametric_base_legacy_opmath(self):
@@ -206,7 +206,7 @@ class TestEvolution:
         """Test that qml.generator will return generator if it is_hermitian, but is not a subclass of Observable"""
         op = Evolution(base, 1)
         gen, c = qml.generator(op)
-        qml.assert_equal(gen if c == 1 else qml.s_prod(c, gen), base)
+        qml.assert_equal(gen if c == 1 else qml.s_prod(c, gen), qml.s_prod(-1, base))
 
     def test_generator_error_if_not_hermitian(self):
         """Tests that an error is raised if the generator is not hermitian."""
