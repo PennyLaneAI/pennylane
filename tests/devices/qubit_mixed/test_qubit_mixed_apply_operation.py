@@ -78,6 +78,7 @@ class TestOperation:  # pylint: disable=too-few-public-methods
         qml.S(wires=2),
         qml.T(wires=0),
         qml.PhaseShift(np.pi / 7, wires=1),
+        qml.CNOT(wires=[0, 1]),
     ]
     diagonal_ops = [
         qml.PauliZ(wires=0),  # Most naive one

@@ -214,7 +214,7 @@ def apply_operation_tensordot(
 
         kraus = [math.cast_like(math.reshape(k, kraus_shape), state) for k in op.kraus_matrices()]
     else:
-        kraus = [math.cast_like(op.matrix(), state)]
+        kraus = [math.cast_like(math.reshape(op.matrix(), kraus_shape), state)]
 
     # Small trick: following the same logic as in the legacy DefaultMixed._apply_channel_tensordot, here for the contraction on the right side we also directly contract the col ids of channel instead of rows for simplicity. This can also save a step of transposing the kraus operators.
     row_wires_list = channel_wires.tolist()  # Example: H0 => [0]
@@ -445,6 +445,33 @@ def apply_phaseshift(op: qml.PhaseShift, state, is_state_batched: bool = False, 
     state = _phase_shift(state, axis, phase_factor=math.exp(-1j * params))
 
     return state
+
+
+@apply_operation.register
+def apply_cnot(op: qml.CNOT, state, is_state_batched: bool = False, debugger=None, **_):
+    """Apply cnot gate to state."""
+    n_dim = math.ndim(state)
+    if n_dim >= 9 and math.get_interface(state) == "tensorflow":
+        return apply_operation_tensordot(op, state, is_state_batched=is_state_batched)
+
+    num_wires = int((len(math.shape(state)) - is_state_batched) / 2)
+    target_axes = op.wires[1] - (op.wires[1] > op.wires[0]) + is_state_batched
+    control_axes = op.wires[0] + is_state_batched
+
+    sl_0 = _get_slice(0, control_axes, n_dim)
+    sl_1 = _get_slice(1, control_axes, n_dim)
+
+    state_x = math.roll(state[sl_1], 1, target_axes)
+    state_x_left = math.stack([state[sl_0], state_x], axis=control_axes)
+
+    target_axes += num_wires
+    control_axes += num_wires
+
+    sl_0 = _get_slice(0, control_axes, n_dim)
+    sl_1 = _get_slice(1, control_axes, n_dim)
+
+    state_x_x = math.roll(state_x_left[sl_1], 1, target_axes)
+    return math.stack([state_x_left[sl_0], state_x_x], axis=control_axes)
 
 
 # pylint: disable=no-cover
