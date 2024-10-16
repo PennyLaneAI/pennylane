@@ -176,28 +176,6 @@ class QubitDevice(Device):
 
         * tape: quantum tape to transform
 
-    **Example:**
-
-    Let's create a device that inherits from :class:`~pennylane.devices.DefaultQubitLegacy` and overrides the
-    logic of the `qml.sample` measurement. To do so we will need to update the ``measurement_map``
-    dictionary:
-
-    .. code-block:: python
-
-        class NewDevice(DefaultQubitLegacy):
-            def __init__(self, wires, shots):
-                super().__init__(wires=wires, shots=shots)
-                self.measurement_map[SampleMP] = "sample_measurement"
-
-            def sample_measurement(self, measurement, shot_range=None, bin_size=None):
-                return 2
-
-    >>> dev = NewDevice(wires=2, shots=1000)
-    >>> @qml.qnode(dev)
-    ... def circuit():
-    ...     return qml.sample()
-    >>> circuit()
-    tensor(2, requires_grad=True)
     """
 
     def __init__(
@@ -667,7 +645,8 @@ class QubitDevice(Device):
                 # uses a list of mid-circuit measurement values
                 obs = m  # pragma: no cover
             else:
-                obs = m.obs or m.mv or m
+                obs = m.obs or m.mv
+                obs = m if obs is None else obs
             # Check if there is an overriden version of the measurement process
             if method := getattr(self, self.measurement_map[type(m)], False):
                 if isinstance(m, MeasurementTransform):
@@ -684,7 +663,8 @@ class QubitDevice(Device):
 
             elif isinstance(m, SampleMP):
                 samples = self.sample(obs, shot_range=shot_range, bin_size=bin_size, counts=False)
-                result = self._asarray(qml.math.squeeze(samples))
+                dtype = int if isinstance(obs, SampleMP) else None
+                result = self._asarray(qml.math.squeeze(samples), dtype=dtype)
 
             elif isinstance(m, CountsMP):
                 result = self.sample(m, shot_range=shot_range, bin_size=bin_size, counts=True)
@@ -1030,7 +1010,7 @@ class QubitDevice(Device):
         """
         try:
             state = self.density_matrix(wires=self.wires)
-        except qml.QuantumFunctionError as e:  # pragma: no cover
+        except (qml.QuantumFunctionError, NotImplementedError) as e:  # pragma: no cover
             raise NotImplementedError(
                 f"Cannot compute the Von Neumman entropy with device {self.name} that is not capable of returning the "
                 f"state. "
@@ -1057,7 +1037,7 @@ class QubitDevice(Device):
         """
         try:
             state = self.density_matrix(wires=self.wires)
-        except qml.QuantumFunctionError as e:  # pragma: no cover
+        except (qml.QuantumFunctionError, NotImplementedError) as e:  # pragma: no cover
             raise NotImplementedError(
                 f"Cannot compute the mutual information with device {self.name} that is not capable of returning the "
                 f"state. "
@@ -1153,7 +1133,7 @@ class QubitDevice(Device):
     def shadow_expval(self, obs, circuit):
         r"""Compute expectation values using classical shadows in a differentiable manner.
 
-        Please refer to :func:`~.pennylane.shadow_expval` for detailed documentation.
+        Please refer to :func:`~pennylane.shadow_expval` for detailed documentation.
 
         Args:
             obs (~.pennylane.measurements.ClassicalShadowMP): The classical shadow expectation
@@ -1475,10 +1455,11 @@ class QubitDevice(Device):
 
         **Example**
 
+            >>> from pennylane import numpy as np
             >>> num_wires = 2
-            >>> dev = qml.device("default.qubit.legacy", wires=num_wires)
+            >>> dev = qml.device("default.mixed", wires=num_wires)
             >>> mp = qml.counts()
-            >>> samples = pnp.array([[0, 0], [0, 0], [1, 0]])
+            >>> samples = np.array([[0, 0], [0, 0], [1, 0]])
             >>> dev._samples_to_counts(samples, mp, num_wires)
             {'00': 2, '10': 1}
             >>> mp = qml.counts(all_outcomes=True)

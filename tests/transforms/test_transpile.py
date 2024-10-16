@@ -63,7 +63,7 @@ class TestTranspile:
         with pytest.raises(ValueError, match=err_msg):
             transpiled_qnode(0.1, 0.2, 0.3)
 
-    def test_transpile_raise_not_implemented_hamiltonain_mmt(self):
+    def test_transpile_raise_not_implemented_hamiltonian_mmt(self):
         """test that error is raised when measurement is expectation of a Hamiltonian"""
         dev = qml.device("default.qubit", wires=[0, 1, 2, 3])
         coeffs = [1]
@@ -82,7 +82,7 @@ class TestTranspile:
         with pytest.raises(NotImplementedError, match=err_msg):
             transpiled_qnode()
 
-    @pytest.mark.usefixtures("use_legacy_opmath")
+    @pytest.mark.usefixtures("legacy_opmath_only")
     def test_transpile_raise_not_implemented_tensorproduct_mmt(self):
         """test that error is raised when measurement is expectation of a Tensor product"""
         dev = qml.device("default.qubit", wires=[0, 1, 2, 3])
