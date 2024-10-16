@@ -59,6 +59,54 @@ def _get_slice(index, axis, num_axes):
     return tuple(idx)
 
 
+def _phase_shift(state, axis, phase_factor=-1):
+    """
+    Applies a phase shift to a quantum state along a specified axis.
+
+    This function takes a quantum state and applies a phase shift along a given axis.
+    The phase shift operation multiplies one part of the state by a complex phase factor.
+    This can represent various quantum gates including Pauli-Z, S, T, and other phase gates.
+
+    Args:
+        state (array-like): The quantum state to which the phase shift will be applied. Can be a vector or a multi-dimensional array representing a quantum state.
+        axis (int): The axis along which to perform the phase shift operation.
+        phase_factor (complex, optional): The complex factor to multiply the affected part of the state by. Defaults to -1 (which represents a Pauli-Z operation).
+
+    Returns:
+        array-like: The phase-shifted quantum state, with the same shape as the input state.
+
+    Raises:
+        ValueError: If the axis is out of bounds for the given state.
+
+    Note:
+        This function assumes the use of a math library (like numpy or jax.numpy)
+        for array operations. The specific library should be imported as 'math'
+        before using this function.
+
+    Example:
+        >>> import numpy as np
+        >>> state = np.array([1, 1]) / np.sqrt(2)  # |+⟩ state
+        >>> z_applied_state = _phase_shift(state, axis=0)  # Applying Pauli-Z
+        >>> print(z_applied_state)
+        [0.70710678, -0.70710678]  # Approximately [1/√2, -1/√2]
+
+        # For S gate (π/2 phase shift)
+        >>> s_applied_state = _phase_shift(state, axis=0, phase_factor=1j)
+        >>> print(s_applied_state)
+        [0.70710678+0.j, 0.+0.70710678j]  # Approximately [1/√2, i/√2]
+
+        # For T gate (π/4 phase shift)
+        >>> t_applied_state = _phase_shift(state, axis=0, phase_factor=np.exp(1j * np.pi/4))
+        >>> print(t_applied_state)
+        [0.70710678+0.j, 0.5+0.5j]  # Approximately [1/√2, (1+i)/2]
+    """
+    n_dim = math.ndim(state)
+    sl_0 = _get_slice(0, axis, n_dim)
+    sl_1 = _get_slice(1, axis, n_dim)
+    state_1 = math.multiply(state[sl_1], phase_factor)
+    return math.stack([state[sl_0], state_1], axis=axis)
+
+
 def _map_indices_apply_channel(**kwargs):
     """Map indices to einsum string
     Args:
@@ -109,7 +157,7 @@ def apply_operation_einsum(
     if isinstance(op, Channel):
         kraus = op.kraus_matrices()
     else:
-        kraus = [qml.math.cast_like(op.matrix(), state)]
+        kraus = [math.cast_like(op.matrix(), state)]
 
     # Shape kraus operators
     kraus_shape = [len(kraus)] + [QUDIT_DIM] * num_ch_wires * 2
@@ -133,7 +181,7 @@ def apply_operation_einsum(
 
     res = math.einsum(einsum_indices, kraus, state, kraus_dagger)
     # Cast back to the same as state
-    return qml.math.cast_like(res, state)
+    return math.cast_like(res, state)
 
 
 def apply_operation_tensordot(
@@ -157,18 +205,16 @@ def apply_operation_tensordot(
     channel_wires = op.wires
     num_ch_wires = len(channel_wires)
 
-    num_wires = int((len(qml.math.shape(state)) - is_state_batched) / 2)
+    num_wires = int((len(math.shape(state)) - is_state_batched) / 2)
 
     #! Note that here we do not take into consideration the len of kraus list
     kraus_shape = [QUDIT_DIM] * num_ch_wires * 2
     # This could be pulled into separate function if tensordot is added
     if isinstance(op, Channel):
 
-        kraus = [
-            qml.math.cast_like(qml.math.reshape(k, kraus_shape), state) for k in op.kraus_matrices()
-        ]
+        kraus = [math.cast_like(math.reshape(k, kraus_shape), state) for k in op.kraus_matrices()]
     else:
-        kraus = [qml.math.cast_like(op.matrix(), state)]
+        kraus = [math.cast_like(op.matrix(), state)]
 
     # Small trick: following the same logic as in the legacy DefaultMixed._apply_channel_tensordot, here for the contraction on the right side we also directly contract the col ids of channel instead of rows for simplicity. This can also save a step of transposing the kraus operators.
     row_wires_list = channel_wires.tolist()  # Example: H0 => [0]
@@ -183,9 +229,9 @@ def apply_operation_tensordot(
         The `axes_left` and `axes_right` arguments are taken from the ambient variable space
         and `axes_right` is assumed to incorporate the tensor product and the transposition
         of k.conj() simultaneously."""
-        return qml.math.tensordot(
-            qml.math.tensordot(k, state, axes_left),
-            qml.math.conj(k),
+        return math.tensordot(
+            math.tensordot(k, state, axes_left),
+            math.conj(k),
             axes_right,
         )
 
@@ -193,15 +239,15 @@ def apply_operation_tensordot(
         _state = _conjugate_state_with(kraus[0])
 
     else:
-        _state = qml.math.sum(qml.math.stack([_conjugate_state_with(k) for k in kraus]), axis=0)
+        _state = math.sum(math.stack([_conjugate_state_with(k) for k in kraus]), axis=0)
 
     source_left = list(range(num_ch_wires))
     dest_left = row_wires_list
     source_right = list(range(-num_ch_wires, 0))
     dest_right = col_wires_list
-    result = qml.math.moveaxis(_state, source_left + source_right, dest_left + dest_right)
+    result = math.moveaxis(_state, source_left + source_right, dest_left + dest_right)
 
-    return qml.math.cast_like(result, state)
+    return math.cast_like(result, state)
 
 
 @singledispatch
@@ -276,7 +322,7 @@ def _apply_operation_default(op, state, is_state_batched, debugger, **_):
     if op in diagonal_in_z_basis:
         return apply_diagonal_unitary(op, state, is_state_batched, debugger, **_)
     num_op_wires = len(op.wires)
-    interface = qml.math.get_interface(state)
+    interface = math.get_interface(state)
     if (num_op_wires > 2 and interface in {"autograd", "numpy"}) or num_op_wires > 7:
         return apply_operation_tensordot(op, state, is_state_batched, debugger, **_)
     return apply_operation_einsum(op, state, is_state_batched, debugger, **_)
@@ -306,7 +352,7 @@ def apply_global_phase(
 def apply_paulix(op: qml.X, state, is_state_batched: bool = False, debugger=None, **_):
     """Applies a :class:`~.PauliX` operation by multiplying the state by the Pauli-X matrix."""
     # PauliX is basically a bit flip, so we can just apply the X gate to the state
-    num_wires = int((len(qml.math.shape(state)) - is_state_batched) / 2)
+    num_wires = int((len(math.shape(state)) - is_state_batched) / 2)
     axis_left = op.wires[0] + is_state_batched
     axis_right = axis_left + num_wires
 
@@ -316,25 +362,79 @@ def apply_paulix(op: qml.X, state, is_state_batched: bool = False, debugger=None
 @apply_operation.register
 def apply_pauliz(op: qml.Z, state, is_state_batched: bool = False, debugger=None, **_):
     """Applies a :class:`~.PauliZ` operation by multiplying the state by the Pauli-Z matrix."""
-    num_wires = int((len(qml.math.shape(state)) - is_state_batched) / 2)
+    num_wires = int((len(math.shape(state)) - is_state_batched) / 2)
     n_dim = math.ndim(state)
 
     if n_dim >= 9 and math.get_interface(state) == "tensorflow":
         return apply_operation_tensordot(op, state, is_state_batched=is_state_batched)
 
-    def flip_state(state, axis):
-        sl_0 = _get_slice(0, axis, n_dim)
-        sl_1 = _get_slice(1, axis, n_dim)
-        state_1 = math.multiply(state[sl_1], -1)
-        return math.stack([state[sl_0], state_1], axis=axis)
-
     # First, flip the left side
     axis = op.wires[0] + is_state_batched
-    state = flip_state(state, axis)
+    state = _phase_shift(state, axis)
 
     # Second, flip the right side
     axis = op.wires[0] + is_state_batched + num_wires
-    state = flip_state(state, axis)
+    state = _phase_shift(state, axis)
+
+    return state
+
+
+@apply_operation.register
+def apply_T(op: qml.T, state, is_state_batched: bool = False, debugger=None, **_):
+    """Applies a :class:`~.T` operation by multiplying the state by the T matrix."""
+    num_wires = int((len(math.shape(state)) - is_state_batched) / 2)
+    n_dim = math.ndim(state)
+
+    if n_dim >= 9 and math.get_interface(state) == "tensorflow":
+        return apply_operation_tensordot(op, state, is_state_batched=is_state_batched)
+
+    # First, flip the left side
+    axis = op.wires[0] + is_state_batched
+    state = _phase_shift(state, axis, phase_factor=math.exp(0.25j * np.pi))
+
+    # Second, flip the right side
+    axis = op.wires[0] + is_state_batched + num_wires
+    state = _phase_shift(state, axis, phase_factor=math.exp(-0.25j * np.pi))
+
+    return state
+
+
+@apply_operation.register
+def apply_S(op: qml.S, state, is_state_batched: bool = False, debugger=None, **_):
+    """Applies a :class:`~.S` operation by multiplying the state by the S matrix."""
+    num_wires = int((len(math.shape(state)) - is_state_batched) / 2)
+    n_dim = math.ndim(state)
+
+    if n_dim >= 9 and math.get_interface(state) == "tensorflow":
+        return apply_operation_tensordot(op, state, is_state_batched=is_state_batched)
+
+    # First, flip the left side
+    axis = op.wires[0] + is_state_batched
+    state = _phase_shift(state, axis, phase_factor=1.0j)
+
+    # Second, flip the right side
+    axis = op.wires[0] + is_state_batched + num_wires
+    state = _phase_shift(state, axis, phase_factor=-1.0j)
+
+    return state
+
+
+@apply_operation.register
+def apply_phaseshift(op: qml.PhaseShift, state, is_state_batched: bool = False, debugger=None, **_):
+    """Applies a :class:`~.Phaseshift` operation by multiplying the state by the Phaseshift matrix."""
+    num_wires = int((len(math.shape(state)) - is_state_batched) / 2)
+    n_dim = math.ndim(state)
+
+    if n_dim >= 9 and math.get_interface(state) == "tensorflow":
+        return apply_operation_tensordot(op, state, is_state_batched=is_state_batched)
+    params = math.cast(op.parameters[0], dtype=complex)
+    # First, flip the left side
+    axis = op.wires[0] + is_state_batched
+    state = _phase_shift(state, axis, phase_factor=math.exp(1j * params))
+
+    # Second, flip the right side
+    axis = op.wires[0] + is_state_batched + num_wires
+    state = _phase_shift(state, axis, phase_factor=math.exp(-1j * params))
 
     return state
 
@@ -383,12 +483,12 @@ def apply_diagonal_unitary(op, state, is_state_batched: bool = False, debugger=N
         _type_: _description_
     """
     channel_wires = op.wires
-    num_wires = int((len(qml.math.shape(state)) - is_state_batched) / 2)
+    num_wires = int((len(math.shape(state)) - is_state_batched) / 2)
 
     eigvals = op.eigvals()
-    eigvals = qml.math.stack(eigvals)
-    eigvals = qml.math.reshape(eigvals, [QUDIT_DIM] * len(channel_wires))
-    eigvals = qml.math.cast_like(eigvals, state)
+    eigvals = math.stack(eigvals)
+    eigvals = math.reshape(eigvals, [QUDIT_DIM] * len(channel_wires))
+    eigvals = math.cast_like(eigvals, state)
 
     state_indices = alphabet[: 2 * num_wires]
 
@@ -401,7 +501,7 @@ def apply_diagonal_unitary(op, state, is_state_batched: bool = False, debugger=N
     # Basically, we want to do, lambda_a rho_ab lambda_b
     einsum_indices = f"{row_indices},{state_indices},{col_indices}->{state_indices}"
 
-    return qml.math.einsum(einsum_indices, eigvals, state, eigvals.conj())
+    return math.einsum(einsum_indices, eigvals, state, eigvals.conj())
 
 
 # TODO add special case speedups
