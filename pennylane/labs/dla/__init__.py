@@ -21,6 +21,7 @@ Experimental Lie theory features
     :toctree: api
 
     ~lie_closure_dense
+    ~structure_constants_dense
 
 
 Utility functions
@@ -32,6 +33,7 @@ Utility functions
     :toctree: api
 
     ~pauli_decompose
+    ~pauli_coefficients
 
 
 """
