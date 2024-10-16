@@ -38,8 +38,21 @@ def _givens_matrix(a, b, left=True, tol=1e-8):
     Returns:
         tensor_like: Givens rotation matrix
 
+    Raises:
+        TypeError: if a and b have different interfaces
+
     """
-    abs_a, abs_b, interface = qml.math.abs(a), qml.math.abs(b), qml.math.get_interface(a)
+
+    abs_a, abs_b = qml.math.abs(a), qml.math.abs(b)
+    interface_a, interface_b = qml.math.get_interface(a), qml.math.get_interface(b)
+
+    if interface_a != interface_b:
+        raise TypeError(
+            f"The interfaces of 'a' and 'b' do not match. Got {interface_a} and {interface_b}."
+        )
+
+    interface = interface_a
+
     aprod = qml.math.nan_to_num(abs_b * abs_a)
     hypot = qml.math.hypot(abs_a, abs_b)
 
@@ -69,7 +82,16 @@ def _set_unitary_matrix(unitary_matrix, index, value, like=None):
 
     Returns:
         tensor_like: modified unitary
+
+    Examples:
+        A = np.eye(5)
+        A = _set_unitary_matrix(A, (0, 0), 5)
+        A = _set_unitary_matrix(A, (1, Ellipsis), np.array([1, 2, 3, 4, 5]))
+        A = _set_unitary_matrix(A, (1, [1, 2]), np.array([3, 4]))
     """
+    if like is None:
+        like = qml.math.get_interface(unitary_matrix)
+
     if like == "jax":
         return unitary_matrix.at[index[0], index[1]].set(
             value, indices_are_sorted=True, unique_indices=True

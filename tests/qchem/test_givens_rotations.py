@@ -126,3 +126,15 @@ def test_givens_decomposition_exceptions(unitary_matrix, msg_match):
 
     with pytest.raises(ValueError, match=msg_match):
         givens_decomposition(unitary_matrix)
+
+
+@pytest.mark.jax
+def test_givens_matrix_exceptions():
+    """Test that _givens_matrix throws an exception if the parameters have different interface."""
+    import jax.numpy as jnp
+
+    a = np.array(1.2)
+    b = jnp.array(2.3)
+
+    with pytest.raises(TypeError, match="The interfaces of 'a' and 'b' do not match."):
+        _givens_matrix(a, b)
