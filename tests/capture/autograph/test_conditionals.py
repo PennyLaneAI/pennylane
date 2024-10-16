@@ -16,6 +16,7 @@
 
 # pylint: disable=wrong-import-order, wrong-import-position, ungrouped-imports
 
+import numpy as np
 import pytest
 
 import pennylane as qml
@@ -42,8 +43,7 @@ def enable_disable_plxpr():
 
 
 class TestConditionals:
-    """Test that the autograph transformations produce correct results on conditionals.
-    These tests are adapted from the test_conditionals.TestCond class of tests."""
+    """Test that the autograph transformations produce correct results on conditionals."""
 
     def test_simple_cond(self):
         """Test basic function with conditional."""
@@ -154,42 +154,30 @@ class TestConditionals:
         assert res(3) == 0
         assert res(6) == 1
 
-    def test_branch_return_mismatch(self):
-        """Test that an exception is raised when the true branch returns a value without an else
-        branch.
-        """
-        # pylint: disable=using-constant-test
+    def test_nested_cond(self):
+        """Test that a nested conditional is converted as expected"""
 
-        def circuit():
-            if True:
-                res = measure(wires=0)
+        def inner(x):
+            if x > 3:
+                return x**2
+            return x**3
 
-            return qml.expval(res)
+        def fn(x: int):
+            return inner(x)
 
-        with pytest.raises(
-            AutoGraphError, match="Some branches did not define a value for variable 'res'"
-        ):
-            qml.capture.autograph.run_autograph(circuit)()
+        with pytest.raises(jax.errors.TracerBoolConversionError):
+            jax.make_jaxpr(fn)(4)
 
-    def test_branch_multi_return_mismatch(self):
-        """Test that an exception is raised when the return types of all branches do not match."""
-        # pylint: disable=using-constant-test
+        ag_fn = run_autograph(fn)
+        jaxpr = jax.make_jaxpr(ag_fn)(0)
+        assert "cond" in str(jaxpr)
 
-        @qml.qnode(qml.device("default.qubit", wires=1))
-        def circuit():
-            if True:
-                res = measure(wires=0)
-            elif False:
-                res = 0.0
-            else:
-                res = measure(wires=0)
+        def res(x):
+            return eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)[0]
 
-            return res
-
-        with pytest.raises(
-            TypeError, match="Conditional requires consistent return types across all branches"
-        ):
-            run_autograph(circuit)
+        # pylint: disable=singleton-comparison
+        assert res(5) == 25
+        assert res(2) == 8
 
     def test_multiple_return(self):
         """Test return statements from different branches of an if/else statement
@@ -238,28 +226,7 @@ class TestConditionals:
         # final return is executed
         assert res(0) == 2
 
-    def test_multiple_return_mismatched_type(self):
-        """Test that different observables cannot be used in the return in different branches."""
-
-        # ToDo: I don't see this contraint - should I?
-
-        @qml.qnode(qml.device("default.qubit", wires=1))
-        def f(switch: bool):
-            if switch:
-                return qml.expval(qml.PauliY(0))
-
-            return qml.expval(qml.PauliZ(0))
-
-        with pytest.raises(TypeError, match="requires a consistent return structure"):
-            ag_circuit = run_autograph(f)
-            jaxpr = jax.make_jaxpr(ag_circuit)(0)
-
-            def res(x):
-                return eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)[0]
-
-            res(1)
-
-    def test_cond(self):
+    def test_cond_decorator(self):
         """Test if Autograph works when applied directly to a decorated function with cond"""
 
         n = 6
@@ -276,6 +243,60 @@ class TestConditionals:
         jaxpr = jax.make_jaxpr(ag_fn)()
 
         assert eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)[0] == 36
+
+    def test_branch_return_mismatch(self):
+        """Test that an exception is raised when the true branch defines a value without an else
+        branch.
+        """
+        # pylint: disable=using-constant-test
+
+        def circuit():
+            if True:
+                res = measure(wires=0)
+
+            return qml.expval(res)
+
+        with pytest.raises(
+            AutoGraphError, match="Some branches did not define a value for variable 'res'"
+        ):
+            qml.capture.autograph.run_autograph(circuit)()
+
+    def test_branch_multi_return_type_mismatch(self):
+        """Test that an exception is raised when the return types of all branches do not match."""
+        # pylint: disable=using-constant-test
+
+        def circuit():
+            if True:
+                res = 1
+            elif False:
+                res = 0.0
+            else:
+                res = 2
+
+            return res
+
+        with pytest.raises(ValueError, match="Mismatch in output abstract values"):
+            run_autograph(circuit)()
+
+    def test_multiple_return_different_measurements(self):
+        """Test that different measurements be used in the return in different branches, as
+        they are all represented by the AbstractMeasurement class."""
+
+        @qml.qnode(qml.device("default.qubit", wires=1))
+        def f(switch: bool):
+            if switch:
+                return qml.expval(qml.PauliY(0))
+
+            return qml.expval(qml.PauliZ(0))
+
+        ag_circuit = run_autograph(f)
+        jaxpr = jax.make_jaxpr(ag_circuit)(0)
+
+        def res(x):
+            return eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)[0]
+
+        assert np.allclose(res(True), 0)
+        assert np.allclose(res(False), 1)
 
 
 if __name__ == "__main__":
