@@ -75,6 +75,10 @@ def _process(wires):
         # Note, this is not the same as `isinstance(wires, Iterable)` which would
         # pass for 0-dim numpy arrays that cannot be iterated over.
         tuple_of_wires = tuple(wires)
+
+        if any(qml.math.is_abstract(w) for w in tuple_of_wires):
+            raise WireError(f"Abstract wires are not supported; got {tuple_of_wires}.")
+
     except TypeError:
         # if not iterable, interpret as single wire label
         try:
