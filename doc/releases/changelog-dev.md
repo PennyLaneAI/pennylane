@@ -45,6 +45,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* RTD support for `qml.labs` added to API.
+  [(#6397)](https://github.com/PennyLaneAI/pennylane/pull/6397)
+
 * Module-level sandboxing added to `qml.labs` via pre-commit hooks.
   [(#6369)](https://github.com/PennyLaneAI/pennylane/pull/6369)
 
