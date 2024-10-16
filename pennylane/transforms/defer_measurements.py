@@ -39,7 +39,7 @@ def _check_tape_validity(tape: QuantumScript):
 
     for mp in tape.measurements:
         if isinstance(mp, (CountsMP, ProbabilityMP, SampleMP)) and not (
-            mp.obs or mp._wires or mp.mv
+            mp.obs or mp._wires or mp.mv is not None
         ):
             raise ValueError(
                 f"Cannot use {mp.__class__.__name__} as a measurement without specifying wires "
