@@ -26,8 +26,8 @@ jax = pytest.importorskip("jax")
 
 # must be below jax importorskip
 # pylint: disable=wrong-import-position
+from pennylane.capture.autograph.ag_primitives import AutoGraphError
 from pennylane.capture.autograph.transformer import TRANSFORMER, autograph_source, run_autograph
-from pennylane.capture.autograph.utils import AutoGraphError
 
 check_cache = TRANSFORMER.has_cache
 

@@ -27,12 +27,14 @@ from malt.operators.variables import Undefined
 
 import pennylane as qml
 
-from .utils import AutoGraphError, Patcher
-
 __all__ = [
     "if_stmt",
     "converted_call",
 ]
+
+
+class AutoGraphError(Exception):
+    """Errors related to Catalyst's AutoGraph module."""
 
 
 def assert_results(results, var_names):
@@ -94,9 +96,43 @@ module_allowlist = (
 )
 
 
+class Patcher:
+    """Patcher, a class to replace object attributes.
+
+    Args:
+        patch_data: List of triples. The first element in the triple corresponds to the object
+        whose attribute is to be replaced. The second element is the attribute name. The third
+        element is the new value assigned to the attribute.
+    """
+
+    def __init__(self, *patch_data):
+        self.backup = {}
+        self.patch_data = patch_data
+
+        assert all(len(data) == 3 for data in patch_data)
+
+    def __enter__(self):
+        for obj, attr_name, fn in self.patch_data:
+            self.backup[(obj, attr_name)] = getattr(obj, attr_name)
+            setattr(obj, attr_name, fn)
+
+    def __exit__(self, _type, _value, _traceback):
+        for obj, attr_name, _ in self.patch_data:
+            setattr(obj, attr_name, self.backup[(obj, attr_name)])
+
+
 def converted_call(fn, args, kwargs, caller_fn_scope=None, options=None):
-    """We want AutoGraph to use our own instance of the AST transformer when recursively
-    transforming functions, but otherwise duplicate the same behaviour."""
+    """We want AutoGraph to use its standard behaviour (ag_converted_call) with
+    a few exceptions:
+
+       1. We want to use our own instance of the AST transformer when
+           recursively transforming functions
+       2. We want to ignore certain PennyLane modules and functions when
+           converting (i.e. don't let autograph convert them)
+       3. We want to handle QNodes, while AutoGraph generally only works on
+           functions, and to handle PennyLane wrapper functions like ctrl
+           and adjoint
+    """
 
     # TODO: eliminate the need for patching by improving the autograph interface
     with Patcher(

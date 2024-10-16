@@ -27,9 +27,9 @@ from malt.core import converter
 from malt.impl.api import PyToPy
 
 import pennylane as qml
+from pennylane.capture.autograph.ag_primitives import AutoGraphError
 
 from . import ag_primitives
-from .utils import AutoGraphError
 
 
 class PennyLaneTransformer(PyToPy):
@@ -45,7 +45,7 @@ class PennyLaneTransformer(PyToPy):
         """Launch the transformation process. Typically this only works on function objects.
         Here we also allow QNodes to be transformed."""
 
-        # By default AutoGraph will only convert function or method objects, not arbitrary classes
+        # By default, AutoGraph will only convert function or method objects, not arbitrary classes
         # such as QNode objects. Here we handle them explicitly, but we might need a more general
         # way to handle these in the future.
         # We may also need to check how this interacts with other common function decorators.
@@ -117,7 +117,13 @@ class PennyLaneTransformer(PyToPy):
 
 
 def run_autograph(fn):
-    """Decorator that converts the given function into graph form."""
+    """Decorator that converts the given function into graph form.
+
+    .. warning::
+
+        Nested functions are only lazily converted by AutoGraph. If the input includes nested
+        functions, these won't be converted until the first time the function is traced.
+    """
 
     user_context = converter.ProgramContext(TOPLEVEL_OPTIONS)
 
@@ -134,10 +140,9 @@ def autograph_source(fn):
 
     .. warning::
 
-        Nested functions (those not directly decorated with ``@qjit``) are only lazily converted by
-        AutoGraph. Make sure that the function has been traced at least once before accessing its
-        transformed source code, for example by specifying the signature of the compiled program
-        or by running it at least once.
+        Nested functions are only lazily converted by AutoGraph. Make sure that the function has
+        been traced at least once before accessing its transformed source code, for example by
+        specifying the signature of the compiled program or by running it at least once.
 
     Args:
         fn (Callable): the original function object that was converted
