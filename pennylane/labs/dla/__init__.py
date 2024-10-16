@@ -16,5 +16,11 @@
 from .lie_closure_dense import lie_closure_dense
 from .structure_constants_dense import structure_constants_dense
 from .cartan import cartan_decomposition, even_odd_involution, concurrence_involution
-from .dense_util import pauli_decompose, pauli_coefficients, check_cartan_decomp, check_commutation
+from .dense_util import (
+    pauli_decompose,
+    pauli_coefficients,
+    check_cartan_decomp,
+    check_commutation,
+    project,
+)
 from .involutions import khaneja_glaser_involution, AI, AII, AIII, BDI, CI, CII, DIII
