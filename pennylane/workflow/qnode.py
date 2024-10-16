@@ -131,7 +131,7 @@ def _to_qfunc_output_type(
                 if isinstance(m.base.item(), qml.measurements.MeasurementProcess)
             ]
     else:
-        return results
+        return type(qfunc_output)(results)
 
     return qml.pytrees.unflatten(results, structure)
 
