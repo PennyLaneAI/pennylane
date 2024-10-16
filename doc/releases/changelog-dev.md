@@ -192,7 +192,7 @@
   [(#6227)](https://github.com/PennyLaneAI/pennylane/pull/6227)
 
 * Native folding method `qml.transforms.fold_global` for `qml.transforms.mitiagte_with_zne`
-  transform no longer expands the circuit on their own. Instead, use `qml.transforms.decompose` to
+  transform no longer expands the circuit automatically. Instead, the user should apply `qml.transforms.decompose` to
   decompose a circuit into a target gate set before applying `fold_global` or `mitigate_with_zne`.
   [(#6382)](https://github.com/PennyLaneAI/pennylane/pull/6382)
 

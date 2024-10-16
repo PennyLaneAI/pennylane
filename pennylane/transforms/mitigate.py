@@ -48,7 +48,7 @@ def fold_global(tape: QuantumScript, scale_factor) -> tuple[QuantumScriptBatch, 
     .. note::
 
         This method no longer decomposes the circuit as part of the folding procedure. Users are encouraged to use
-        :func:`~.pennylane.transforms.decompose` to expand the circuit into a target gateset before using this.
+        :func:`~.pennylane.transforms.decompose` to expand the circuit into a target gateset before using this transform.
 
 
     **Example**
@@ -426,9 +426,9 @@ def mitigate_with_zne(
         dev = qml.transforms.insert(dev, qml.AmplitudeDamping, noise_strength)
 
     We can now set up a mitigated ``QNode`` by first decomposing it into a target gate set via :func:`~.pennylane.transforms.decompose`
-    and then applying this transform by passing a ``folding`` and ``extrapolate`` function. PennyLane provides native
-    functions :func:`~.pennylane.transforms.fold_global` and :func:`~.pennylane.transforms.poly_extrapolate` or
-    :func:`~.pennylane.transforms.richardson_extrapolate` that allow for differentiating through them. Custom functions, as well as
+    and then applying this transform by passing ``folding`` and ``extrapolate`` functions. PennyLane provides native
+    functions :func:`~.pennylane.transforms.fold_global` and :func:`~.pennylane.transforms.poly_extrapolate`, or
+    :func:`~.pennylane.transforms.richardson_extrapolate`, that allow for differentiating through them. Custom functions, as well as
     functionalities from the `Mitiq <https://mitiq.readthedocs.io/en/stable/>`__ package are supported as well (see usage details below).
 
     .. code-block:: python3
@@ -474,10 +474,10 @@ def mitigate_with_zne(
 
     .. note::
 
-        As of PennyLane v0.39, native function :func:`~.pennylane.transforms.fold_global` provided
-        by PennyLane no longer decomposes the circuit as part of the folding procedure. Users are
+        As of PennyLane v0.39, the native function :func:`~.pennylane.transforms.fold_global`
+        no longer decomposes the circuit as part of the folding procedure. Users are
         encouraged to use :func:`~.pennylane.transforms.decompose` to unroll the circuit into a target
-        gateset before folding when using this transform.
+        gateset before folding, when using this transform.
 
     .. details::
         :title: Usage Details
