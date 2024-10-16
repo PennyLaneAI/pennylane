@@ -21,6 +21,10 @@ import pytest
 
 import pennylane as qml
 
+pytestmark = pytest.mark.filterwarnings(
+    "ignore:BasisStatePreparation is deprecated:pennylane.PennyLaneDeprecationWarning"
+)
+
 
 def test_standard_validity():
     """Check the operation using the assert_valid function."""
@@ -30,7 +34,13 @@ def test_standard_validity():
 
     op = qml.BasisStatePreparation(basis_state, wires)
 
-    qml.ops.functions.assert_valid(op)
+    qml.ops.functions.assert_valid(op, skip_differentiation=True)
+
+
+def test_BasisStatePreparation_is_deprecated():
+    """Test that BasisStatePreparation is deprecated."""
+    with pytest.warns(qml.PennyLaneDeprecationWarning, match="BasisStatePreparation is deprecated"):
+        _ = qml.BasisStatePreparation([1, 0], wires=[0, 1])
 
 
 class TestDecomposition:

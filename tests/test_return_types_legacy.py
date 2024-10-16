@@ -22,30 +22,12 @@ from pennylane.measurements import MeasurementProcess
 
 test_wires = [2, 3, 4]
 
-devices = ["default.qubit.legacy", "default.mixed"]
+devices = ["default.mixed"]
 
 
 @pytest.mark.parametrize("interface, shots", [["autograd", None], ["auto", 100]])
 class TestSingleReturnExecute:
     """Test that single measurements return behavior does not change."""
-
-    @pytest.mark.parametrize("wires", test_wires)
-    def test_state_default(self, wires, interface, shots):
-        """Return state with default.qubit."""
-        dev = qml.device("default.qubit.legacy", wires=wires, shots=shots)
-
-        def circuit(x):
-            qml.Hadamard(wires=[0])
-            qml.CRX(x, wires=[0, 1])
-            return qml.state()
-
-        qnode = qml.QNode(circuit, dev)
-        qnode.construct([0.5], {})
-
-        res = qml.execute(tapes=[qnode.tape], device=dev, gradient_fn=None, interface=interface)
-
-        assert res[0].shape == (2**wires,)
-        assert isinstance(res[0], np.ndarray)
 
     @pytest.mark.parametrize("wires", test_wires)
     def test_state_mixed(self, wires, interface, shots):
@@ -193,7 +175,7 @@ class TestSingleReturnExecute:
         if shots is None:
             pytest.skip("Sample requires finite shots.")
 
-        dev = qml.device("default.qubit.legacy", wires=2, shots=shots)
+        dev = qml.device("default.mixed", wires=2, shots=shots)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
@@ -214,7 +196,7 @@ class TestSingleReturnExecute:
         if shots is None:
             pytest.skip("Counts requires finite shots.")
 
-        dev = qml.device("default.qubit.legacy", wires=2, shots=shots)
+        dev = qml.device("default.mixed", wires=2, shots=shots)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
@@ -1185,7 +1167,7 @@ class TestQubitDeviceNewUnits:
             DummyMeasurement(obs=qml.PauliZ(0))
 
         tape = qml.tape.QuantumScript.from_queue(q)
-        dev = qml.device("default.qubit.legacy", wires=3)
+        dev = qml.device("default.mixed", wires=3)
 
         with pytest.raises(
             qml.QuantumFunctionError, match="Unsupported return type specified for observable"
@@ -1196,7 +1178,7 @@ class TestQubitDeviceNewUnits:
         """Test that an exception is raised when a state is returned along with another return
         type"""
 
-        dev = qml.device("default.qubit.legacy", wires=2)
+        dev = qml.device("default.mixed", wires=2)
 
         with qml.queuing.AnnotatedQueue() as q:
             qml.PauliX(wires=0)
@@ -1210,10 +1192,10 @@ class TestQubitDeviceNewUnits:
         ):
             qml.execute(tapes=[tape], device=dev, gradient_fn=None)
 
-    def test_entropy_no_custom_wires(self):
-        """Test that entropy cannot be returned with custom wires."""
+    def test_vn_entropy_no_custom_wires(self):
+        """Test that vn_entropy cannot be returned with custom wires."""
 
-        dev = qml.device("default.qubit.legacy", wires=["a", 1])
+        dev = qml.device("default.mixed", wires=["a", 1])
 
         with qml.queuing.AnnotatedQueue() as q:
             qml.PauliX(wires="a")
@@ -1229,7 +1211,7 @@ class TestQubitDeviceNewUnits:
     def test_custom_wire_labels_error(self):
         """Tests that an error is raised when mutual information is measured
         with custom wire labels"""
-        dev = qml.device("default.qubit.legacy", wires=["a", "b"])
+        dev = qml.device("default.mixed", wires=["a", "b"])
 
         with qml.queuing.AnnotatedQueue() as q:
             qml.PauliX(wires="a")

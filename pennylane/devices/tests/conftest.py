@@ -14,7 +14,7 @@
 """Contains shared fixtures for the device tests."""
 import argparse
 import os
-import warnings
+from warnings import warn
 
 import numpy as np
 import pytest
@@ -37,27 +37,6 @@ N_SHOTS = 1e6
 LIST_CORE_DEVICES = {
     "default.qubit",
 }
-
-
-@pytest.fixture(scope="function", autouse=True)
-def capture_legacy_device_deprecation_warnings():
-    """Catches all warnings raised by a test and verifies that any Deprecation
-    warnings released are related to the legacy devices. Otherwise, it re-raises
-    any unrelated warnings"""
-
-    with warnings.catch_warnings(record=True) as recwarn:
-        warnings.simplefilter("always")
-        yield
-
-        for w in recwarn:
-            if isinstance(w, qml.PennyLaneDeprecationWarning):
-                assert "Use of 'default.qubit." in str(w.message)
-                assert "is deprecated" in str(w.message)
-                assert "use 'default.qubit'" in str(w.message)
-
-    for w in recwarn:
-        if "Use of 'default.qubit." not in str(w.message):
-            warnings.warn(message=w.message, category=w.category)
 
 
 @pytest.fixture(scope="function")
@@ -107,6 +86,8 @@ def skip_if():
 @pytest.fixture
 def validate_diff_method(device, diff_method, device_kwargs):
     """Skip tests if a device does not support a diff_method"""
+    if diff_method in {"parameter-shift", "hadamard"}:
+        return
     if diff_method == "backprop" and device_kwargs.get("shots") is not None:
         pytest.skip(reason="test should only be run in analytic mode")
     dev = device(1)
@@ -246,6 +227,12 @@ def disable_opmath_if_requested(request):
     disable_opmath = request.config.getoption("--disable-opmath")
     # value from yaml file is a string, convert to boolean
     if eval(disable_opmath):
+        warn(
+            "Disabling the new Operator arithmetic system for legacy support. "
+            "If you need help troubleshooting your code, please visit "
+            "https://docs.pennylane.ai/en/stable/news/new_opmath.html",
+            UserWarning,
+        )
         qml.operation.disable_new_opmath(warn=False)
 
 

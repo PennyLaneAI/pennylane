@@ -207,10 +207,10 @@ def diff_hamiltonian(mol, cutoff=1.0e-12, core=None, active=None, mapping="jorda
 
     **Example**
 
-    >>> from pennylane import numpy as pnp
+    >>> from pennylane import numpy as np
     >>> symbols  = ['H', 'H']
-    >>> geometry = pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad = False)
-    >>> alpha = pnp.array([[3.42525091, 0.62391373, 0.1688554],
+    >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad = False)
+    >>> alpha = np.array([[3.42525091, 0.62391373, 0.1688554],
     >>>                   [3.42525091, 0.62391373, 0.1688554]], requires_grad=True)
     >>> mol = qml.qchem.Molecule(symbols, geometry, alpha=alpha)
     >>> args = [alpha]

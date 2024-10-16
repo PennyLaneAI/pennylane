@@ -34,7 +34,12 @@ Summary of the update
 
     The opt-in feature ``qml.operation.enable_new_opmath()`` is now the default. Ideally, your code should not break.
     If it still does, it likely only requires some minor changes. For that, see the :ref:`Troubleshooting_opmath` section.
-    You can still opt-out and run legacy code via ``qml.operation.disable_new_opmath()``.
+    You can still opt-out and run legacy code via ``qml.operation.disable_new_opmath()``, though it is deprecated, and thus,
+    not recommended.
+
+.. warning::
+
+    In PennyLane v0.39, legacy operator arithmetic is deprecated and will be removed in v0.40.
 
 
 * The underlying system for performing arithmetic with operators has been changed. Arithmetic can be carried out using
@@ -245,10 +250,10 @@ To help identify a fix, select the option below that describes your situation.
     >>> qml.Hamiltonian([0.5], [X(0) @ X(1)])
     0.5 * (X(0) @ X(1))
 
-    The API of :class:`~.ops.op_math.LinearCombination` is identical to that of :class:`~.Hamiltonian`. We can group observables or simplify upon initialization.
+    The API of :class:`~.ops.op_math.LinearCombination` is identical to that of :class:`~.Hamiltonian`. We can group observables upon initialization.
 
-    >>> H1 = qml.Hamiltonian([0.5, 0.5, 0.5], [X(0) @ X(1), X(0), Y(0)], grouping_type="qwc", simplify=True)
-    >>> H2 = qml.ops.LinearCombination([0.5, 0.5, 0.5], [X(0) @ X(1), X(0), Y(0)], grouping_type="qwc", simplify=True)
+    >>> H1 = qml.Hamiltonian([0.5, 0.5, 0.5], [X(0) @ X(1), X(0), Y(0)], grouping_type="qwc")
+    >>> H2 = qml.ops.LinearCombination([0.5, 0.5, 0.5], [X(0) @ X(1), X(0), Y(0)], grouping_type="qwc")
     >>> H1 == H2
     True
 
