@@ -220,7 +220,6 @@ jobs:
     if: ${{ !contains(fromJSON(needs.setup-ci-load.outputs.jobs-to-skip), 'torch-tests') }}
     uses: ./.github/workflows/unit-test.yml
     with:
-      job_name: torch-tests (${{ matrix.python-version }})
       job_runner_name: ${{ needs.determine_runner.outputs.runner_group }}
       job_name: ${{ inputs.job_name_prefix }}torch-tests (${{ matrix.python-version }})${{ inputs.job_name_suffix }}
       branch: ${{ inputs.branch }}
@@ -256,7 +255,6 @@ jobs:
     if: ${{ !contains(fromJSON(needs.setup-ci-load.outputs.jobs-to-skip), 'autograd-tests') }}
     uses: ./.github/workflows/unit-test.yml
     with:
-      job_name: autograd-tests (${{ matrix.python-version }})
       job_runner_name: ${{ needs.determine_runner.outputs.runner_group }}
       job_name: ${{ inputs.job_name_prefix }}autograd-tests (${{ matrix.python-version }})${{ inputs.job_name_suffix }}
       branch: ${{ inputs.branch }}
