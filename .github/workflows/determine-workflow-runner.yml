@@ -7,10 +7,23 @@ on:
         description: The runner type that is used by the calling workflow by default
         required: true
         type: string
+      force_large_runner:
+        description: Whether to force the use of a large runner
+        required: false
+        type: boolean
+        default: false
     outputs:
       runner_group:
         description: The runner all subsequent jobs within the calling workflow should run on
-        value: ${{ jobs.determine_workflow_runner.outputs.runner_group || inputs.default_runner }}
+        value: >-
+          ${{
+            jobs.determine_workflow_runner.outputs.runner_group ||
+            (
+              inputs.force_large_runner &&
+              env.LARGE_RUNNER_GROUP_NAME ||
+              inputs.default_runner
+            )
+          }}
 
 env:
   LARGE_RUNNER_GROUP_NAME: pl-4-core-large-runner
@@ -22,7 +35,7 @@ jobs:
         (
           github.event_name == 'pull_request'
           && contains(github.event.pull_request.labels.*.name, 'urgent')
-        ) && 'pl-4-core-large-runner' || 'ubuntu-latest'
+        ) && env.LARGE_RUNNER_GROUP_NAME || 'ubuntu-latest'
       }}
 
     outputs:

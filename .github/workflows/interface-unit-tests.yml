@@ -69,6 +69,11 @@ on:
         required: false
         type: boolean
         default: true
+      use_large_runner:
+        description: Indicate if the large runner should be used for the job
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   determine_runner:
