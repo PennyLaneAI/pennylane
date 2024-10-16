@@ -205,7 +205,7 @@
 
 * The `expand_depth` and `max_expansion` arguments for `qml.transforms.compile` and
   `qml.transforms.decompositions.clifford_t_decomposition` respectively have been deprecated.
-  [(#)]()
+  [(#6404)](https://github.com/PennyLaneAI/pennylane/pull/6404)
 
 * Legacy operator arithmetic has been deprecated. This includes `qml.ops.Hamiltonian`, `qml.operation.Tensor`,
   `qml.operation.enable_new_opmath`, `qml.operation.disable_new_opmath`, and `qml.operation.convert_to_legacy_H`.
@@ -327,9 +327,6 @@
 * Fixes a bug where `csc_dot_product` is used during measurement for `Sum`/`Hamiltonian` that contains observables that does not define a sparse matrix.
   [(#6278)](https://github.com/PennyLaneAI/pennylane/pull/6278)
   [(#6310)](https://github.com/PennyLaneAI/pennylane/pull/6310)
-
-* Fixes a bug where `None` was added to the wires in `qml.PhaseAdder`, `qml.Adder` and `qml.OutAdder`.
-  [(#6360)](https://github.com/PennyLaneAI/pennylane/pull/6360)
 
 * Fixes a test after updating to the nightly version of Catalyst.
   [(#6362)](https://github.com/PennyLaneAI/pennylane/pull/6362)
