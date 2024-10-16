@@ -384,15 +384,13 @@ def test_qnode_vmap(input, expected_shape, x64_mode):
         qml.RX(x, 0)
         return qml.expval(qml.Z(0))
 
-    vmap_circuit = jax.vmap(circuit)
-
-    jaxpr = jax.make_jaxpr(vmap_circuit)(input)
+    jaxpr = jax.make_jaxpr(jax.vmap(circuit))(input)
     eqn0 = jaxpr.eqns[0]
 
     assert len(eqn0.outvars) == 1
     assert eqn0.outvars[0].aval == jax.core.ShapedArray((expected_shape,), fdtype)
 
-    res = vmap_circuit(input)
+    res = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, input)
     assert qml.math.allclose(res, jax.numpy.cos(input))
 
     jax.config.update("jax_enable_x64", initial_mode)
@@ -423,7 +421,7 @@ def test_vmap_multiple_measurements(x64_mode):
         (2,), jax.numpy.float64 if x64_mode else jax.numpy.float32
     )
 
-    res1_vmap, res2_vmap, res3_vmap = jax.vmap(circuit)(x)
+    res1_vmap, res2_vmap, res3_vmap = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)
     res1, res2, res3 = circuit(x)
 
     assert qml.math.allclose(res1_vmap, res1)
@@ -449,8 +447,7 @@ def test_qnode_vmap_closure(x64_mode):
         return qml.probs(wires=[0, 1])
 
     x = jax.numpy.array([1.0, 2.0, 3.0])
-    vmap_circuit = jax.vmap(circuit)
-    jaxpr = jax.make_jaxpr(vmap_circuit)(x)
+    jaxpr = jax.make_jaxpr(jax.vmap(circuit))(x)
     eqn0 = jaxpr.eqns[0]
 
     assert len(eqn0.invars) == 2  # one closure variable, one (batched) arg
@@ -466,8 +463,8 @@ def test_qnode_vmap_closure(x64_mode):
         (3, 4), jax.numpy.float64 if x64_mode else jax.numpy.float32
     )
 
-    res = vmap_circuit(x)
-    assert jax.numpy.allclose(res, circuit(x))
+    res = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)
+    assert qml.math.allclose(res, circuit(x))
     jax.config.update("jax_enable_x64", initial_mode)
 
 
@@ -520,3 +517,36 @@ def test_warning_bypass_vmap():
 
     with pytest.warns(UserWarning, match="Argument at index 1 has more"):
         jax.make_jaxpr(vmap_circuit)(param_array, param_array_2)
+
+
+def test_qnode_pytree_input_vmap():
+    """Test that we can capture and execute a qnode with a pytree input and vmap."""
+
+    @qml.qnode(qml.device("default.qubit", wires=2))
+    def circuit(x):
+        qml.RX(x["val"], wires=x["wires"])
+        return qml.expval(qml.Z(wires=x["wires"]))
+
+    x = {"val": jax.numpy.array([0.1, 0.2]), "wires": 0}
+    jaxpr = jax.make_jaxpr(jax.vmap(circuit, in_axes=({"val": 0, "wires": None},)))(x)
+
+    assert len(jaxpr.eqns[0].invars) == 2
+    assert jaxpr.eqns[0].outvars[0].aval.shape == (2,)
+
+    res = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x["val"], x["wires"])
+    assert qml.math.allclose(res, jax.numpy.cos(x["val"]))
+
+
+def test_qnode_pytree_output_vmap():
+    """Test that we can capture and execute a qnode with a pytree output and vmap."""
+
+    @qml.qnode(qml.device("default.qubit", wires=2))
+    def circuit(x):
+        qml.RX(x, 0)
+        return {"a": qml.expval(qml.Z(0)), "b": qml.expval(qml.Y(0))}
+
+    x = jax.numpy.array([1.2, 1.3])
+    out = jax.vmap(circuit)(x)
+    assert qml.math.allclose(out["a"], jax.numpy.cos(x))
+    assert qml.math.allclose(out["b"], -jax.numpy.sin(x))
+    assert list(out.keys()) == ["a", "b"]
