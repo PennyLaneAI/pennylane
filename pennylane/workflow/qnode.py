@@ -118,6 +118,7 @@ def _to_qfunc_output_type(
     if isinstance(qfunc_output, list) and len(qfunc_output) == 1:
         results = [results]
 
+    # If the return type is not tuple (list or ndarray) (Autograd and TF backprop removed)
     if isinstance(qfunc_output, (tuple, qml.measurements.MeasurementProcess)):
         return results
 
