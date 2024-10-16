@@ -97,12 +97,12 @@ use them directly in a PennyLane circuits as follows:
 >>> print(circuit())
 -1.0791430411076344
 
-Viewing Available Datasets
---------------------------
+Viewing Available Dataset Names
+-------------------------------
 
 We can call the 
-:func:`~pennylane.data.list_data_names` function to get a snapshot of the currently available data.
-This function returns a nested dictionary as shown below. 
+:func:`~pennylane.data.list_data_names` function to get a snapshot of the names of the currently available datasets.
+This function returns a list of strings as shown below.
 
 >>> qml.data.list_data_names()
 ["bars-and-stripes",
