@@ -54,7 +54,11 @@ def compile(
             expansion will continue until gates in the specific set are
             reached. If no basis set is specified, a default of
             ``pennylane.ops.__all__`` will be used. This decomposes templates and
-            operator arithmetic.
+            operator arithmetic. If the basis set contains
+            any items that are not strings or subclasses of ``qml.operation.Operator``,
+            a ValueError will be raised. Additionally, if the basis set contains
+            operator types instead of names and results in an empty set, an error
+            will be raised.
         num_passes (int): The number of times to apply the set of transforms in
             ``pipeline``. The default is to perform each transform once;
             however, doing so may produce a new circuit where applying the set
@@ -182,12 +186,27 @@ def compile(
     with QueuingManager.stop_recording():
         basis_set = basis_set or all_ops
 
+        if basis_set:
+            # Handle the case where basis_set becomes equivalent to an empty list due to improper types
+            class_types = tuple(
+                o
+                for o in basis_set
+                if isinstance(o, type) and issubclass(o, qml.operation.Operator)
+            )
+            class_names = set(o for o in basis_set if isinstance(o, str))
+
+            # Convert operator types to their names and merge with string-based names
+            basis_set = class_names.union({op.name for op in class_types})
+
+            if not basis_set:
+                raise ValueError("basis_set contains no valid operation names or types.")
+
         def stop_at(obj):
             if not isinstance(obj, qml.operation.Operator):
                 return True
             if not obj.has_decomposition:
                 return True
-            return obj.name in basis_set and (not getattr(obj, "only_visual", False))
+            return obj.name in class_names or isinstance(obj, class_types)
 
         [expanded_tape], _ = qml.devices.preprocess.decompose(
             tape,
