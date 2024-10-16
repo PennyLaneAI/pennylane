@@ -30,6 +30,35 @@ from .utils import get_einsum_mapping, get_new_state_einsum_indices
 alphabet_array = np.array(list(alphabet))
 
 
+def _get_slice(index, axis, num_axes):
+    """Allows slicing along an arbitrary axis of an array or tensor.
+
+    Args:
+        index (int): the index to access
+        axis (int): the axis to slice into
+        num_axes (int): total number of axes
+
+    Returns:
+        tuple[slice or int]: a tuple that can be used to slice into an array or tensor
+
+    **Example:**
+
+    Accessing the 2 index along axis 1 of a 3-axis array:
+
+    >>> sl = _get_slice(2, 1, 3)
+    >>> sl
+    (slice(None, None, None), 2, slice(None, None, None))
+    >>> a = np.arange(27).reshape((3, 3, 3))
+    >>> a[sl]
+    array([[ 6,  7,  8],
+           [15, 16, 17],
+           [24, 25, 26]])
+    """
+    idx = [slice(None)] * num_axes
+    idx[axis] = index
+    return tuple(idx)
+
+
 def _map_indices_apply_channel(**kwargs):
     """Map indices to einsum string
     Args:
