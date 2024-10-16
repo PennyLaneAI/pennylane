@@ -181,7 +181,6 @@ Devices may define their own transforms following the description in the ``trans
 or can include in-built transforms such as:
 
 .. currentmodule:: pennylane.devices.preprocess
-.. autosummary::
     :toctree: api
 
     decompose
@@ -194,16 +193,15 @@ or can include in-built transforms such as:
 
 
 .. currentmodule:: pennylane
-.. autosummary::
     :toctree: api
 
-    defer_measurements
-    dynamic_one_shot
-    transforms.broadcast_expand
-    transforms.split_non_commuting
-    transforms.transpile
-    transforms.diagonalize_measurements
-    transforms.split_to_single_terms
+    ~pennylane.defer_measurements
+    ~pennylane.dynamic_one_shot
+    ~transforms.broadcast_expand
+    ~transforms.split_non_commuting
+    ~transforms.transpile
+    ~transforms.diagonalize_measurements
+    ~transforms.split_to_single_terms
 
 
 Wires
