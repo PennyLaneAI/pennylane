@@ -34,7 +34,7 @@ requirements = [
     "requests",
     "typing_extensions",
     "packaging",
-    "malt",
+    "diastatic-malt",
 ]
 
 info = {
