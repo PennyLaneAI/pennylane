@@ -181,6 +181,7 @@ Devices may define their own transforms following the description in the ``trans
 or can include in-built transforms such as:
 
 .. currentmodule:: pennylane.devices.preprocess
+.. toctree::
     :toctree: api
 
     decompose
