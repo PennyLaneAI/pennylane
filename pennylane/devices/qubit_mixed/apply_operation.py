@@ -14,6 +14,7 @@
 """Functions to apply operations to a qubit mixed state."""
 # pylint: disable=unused-argument
 
+import warnings
 from functools import singledispatch
 from string import ascii_letters as alphabet
 
@@ -252,6 +253,20 @@ def _apply_operation_default(op, state, is_state_batched, debugger, **_):
 @apply_operation.register
 def apply_identity(op: qml.Identity, state, is_state_batched: bool = False, debugger=None, **_):
     """Applies a :class:`~.Identity` operation by just returning the input state."""
+    return state
+
+
+@apply_operation.register
+def apply_global_phase(
+    op: qml.GlobalPhase, state, is_state_batched: bool = False, debugger=None, **_
+):
+    """Applies a :class:`~.GlobalPhase` operation by multiplying the state by ``exp(1j * op.data[0])``"""
+    # Note: the global phase is a scalar, so we can just multiply the state by it. For density matrix we suppose that the global phase means a phase factor acting on the basis statevectors, which implies that in the final density matrix there will be no effect. Therefore, we would like to warn users that even though an identity operation is applied, the global phase operation will not have any effect on the density matrix.
+    warnings.warn(
+        "The GlobalPhase operation does not have any effect on the density matrix. "
+        "This operation is only meaningful for state vectors.",
+        UserWarning,
+    )
     return state
 
 
