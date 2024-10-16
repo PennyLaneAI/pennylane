@@ -428,6 +428,14 @@ def apply_phaseshift(op: qml.PhaseShift, state, is_state_batched: bool = False, 
     if n_dim >= 9 and math.get_interface(state) == "tensorflow":
         return apply_operation_tensordot(op, state, is_state_batched=is_state_batched)
     params = math.cast(op.parameters[0], dtype=complex)
+    if op.batch_size is not None and len(params) > 1:
+        interface = math.get_interface(state)
+        if interface == "torch":
+            params = math.array(params, like=interface)
+        if is_state_batched:
+            params = math.reshape(params, (-1,) + (1,) * (n_dim - 2))
+        else:
+            params = math.reshape(params, (-1,) + (1,) * (n_dim - 1))
     # First, flip the left side
     axis = op.wires[0] + is_state_batched
     state = _phase_shift(state, axis, phase_factor=math.exp(1j * params))
