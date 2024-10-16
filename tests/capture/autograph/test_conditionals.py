@@ -227,22 +227,25 @@ class TestConditionals:
         assert res(0) == 2
 
     def test_cond_decorator(self):
-        """Test if Autograph works when applied directly to a decorated function with cond"""
+        """Test if Autograph works when applied to a function explicitly decorated with cond"""
 
-        n = 6
+        def f(n):
 
-        @cond(n > 4)
-        def cond_fn():
-            return n**2
+            @cond(n > 4)
+            def cond_fn():
+                return n**2
 
-        @cond_fn.otherwise
-        def else_fn():
-            return n
+            @cond_fn.otherwise
+            def else_fn():
+                return n
 
-        ag_fn = run_autograph(cond_fn)
-        jaxpr = jax.make_jaxpr(ag_fn)()
+            return cond_fn()
 
-        assert eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)[0] == 36
+        ag_fn = run_autograph(f)
+        jaxpr = jax.make_jaxpr(ag_fn)(0)
+
+        assert eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 6)[0] == 36
+        assert eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2)[0] == 2
 
     def test_branch_return_mismatch(self):
         """Test that an exception is raised when the true branch defines a value without an else
