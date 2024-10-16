@@ -235,6 +235,7 @@ class TestConditionals:
             def cond_fn():
                 return n**2
 
+            # pylint: disable=unused-variable
             @cond_fn.otherwise
             def else_fn():
                 return n
