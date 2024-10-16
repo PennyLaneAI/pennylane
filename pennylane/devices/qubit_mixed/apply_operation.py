@@ -22,6 +22,7 @@ import pennylane as qml
 from pennylane import math
 from pennylane import numpy as np
 from pennylane.operation import Channel
+from pennylane.ops.qubit.attributes import diagonal_in_z_basis
 
 from .constants import QUDIT_DIM
 from .utils import get_einsum_mapping, get_new_state_einsum_indices
@@ -243,6 +244,8 @@ def _apply_operation_default(op, state, is_state_batched, debugger, **_):
     """The default behaviour of apply_operation, accessed through the standard dispatch
     of apply_operation, as well as conditionally in other dispatches.
     """
+    if op in diagonal_in_z_basis:
+        return apply_diagonal_unitary(op, state, is_state_batched, debugger, **_)
     num_op_wires = len(op.wires)
     interface = qml.math.get_interface(state)
     if (num_op_wires > 2 and interface in {"autograd", "numpy"}) or num_op_wires > 7:
@@ -268,6 +271,40 @@ def apply_global_phase(
         UserWarning,
     )
     return state
+
+
+def apply_diagonal_unitary(op, state, is_state_batched: bool = False, debugger=None, **_):
+    """_summary_
+
+    Args:
+        op (_type_): _description_
+        state (_type_): _description_
+        is_state_batched (bool, optional): _description_. Defaults to False.
+        debugger (_type_, optional): _description_. Defaults to None.
+
+    Returns:
+        _type_: _description_
+    """
+    channel_wires = op.wires
+    num_wires = int((len(qml.math.shape(state)) - is_state_batched) / 2)
+
+    eigvals = op.eigvals()
+    eigvals = qml.math.stack(eigvals)
+    eigvals = qml.math.reshape(eigvals, [QUDIT_DIM] * len(channel_wires))
+    eigvals = qml.math.cast_like(eigvals, state)
+
+    state_indices = alphabet[: 2 * num_wires]
+
+    row_wires_list = channel_wires.tolist()
+    row_indices = "".join(alphabet_array[row_wires_list].tolist())
+
+    col_wires_list = [w + num_wires for w in row_wires_list]
+    col_indices = "".join(alphabet_array[col_wires_list].tolist())
+
+    # Basically, we want to do, lambda_a rho_ab lambda_b
+    einsum_indices = f"{row_indices},{state_indices},{col_indices}->{state_indices}"
+
+    return qml.math.einsum(einsum_indices, eigvals, state, eigvals.conj())
 
 
 # TODO add special case speedups

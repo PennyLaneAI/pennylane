@@ -74,6 +74,12 @@ class TestOperation:  # pylint: disable=too-few-public-methods
         qml.RY(2 * np.pi / 3, wires=1),
         qml.RZ(np.pi / 6, wires=2),
     ]
+    diagonal_ops = [
+        qml.PauliZ(wires=0),  # Most naive one
+        qml.RZ(np.pi / 6, wires=2),  # single-site op, diagonal but complex eigvals
+        qml.IsingZZ(0.5, wires=[0, 1]),  # two site
+        qml.CCZ(wires=[0, 1, 2]),  # three site
+    ]
     num_qubits = 3
     num_batched = 2
 
@@ -99,6 +105,18 @@ class TestOperation:  # pylint: disable=too-few-public-methods
             return [expand_matrix(mat[i]) for i in range(batch_size)]
         return expand_matrix(mat)
 
+    @classmethod
+    def circuit_matrices(cls, op, batch_size=0):
+        """defines the circuit matrices, an alternative to expand_matrices"""
+
+        def circuit():
+            op(wires=op.wires)
+
+        matrix_fn = qml.matrix(circuit, wire_order=range(cls.num_qubits))
+        if batch_size:
+            return [matrix_fn() for _ in range(batch_size)]
+        return matrix_fn()
+
     @pytest.mark.parametrize("op", unbroadcasted_ops)
     def test_no_broadcasting(self, op, ml_framework, request):
         """
@@ -123,3 +141,22 @@ class TestOperation:  # pylint: disable=too-few-public-methods
         assert qml.math.allclose(
             res_tensordot, expected
         ), f"Tensordot and einsum results do not match. {res_tensordot} != {res_einsum}"
+
+    @pytest.mark.parametrize("op", diagonal_ops)
+    def test_diagonal(self, op, ml_framework, request):
+        """
+        Tests that diagonal operations are applied correctly to an unbatched state.
+
+        Args:
+            op (Operation): Quantum operation to apply.
+            ml_framework (str): The machine learning framework in use (numpy, autograd, etc.).
+            request (FixtureRequest): Pytest fixture request object.
+        """
+        three_qubit_state = request.getfixturevalue("three_qubit_state_fixture")
+        state = qml.math.asarray(three_qubit_state, like=ml_framework)
+        res = apply_operation(op, state)
+
+        expanded_operator = self.expand_matrices(op)
+        expected = self.get_expected_state(expanded_operator, three_qubit_state)
+
+        assert qml.math.allclose(res, expected), f"Operation {op} failed. {res} != {expected}"
