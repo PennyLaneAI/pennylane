@@ -214,7 +214,7 @@ def fold_global_tape(circuit, scale_factor):
 
     # Generate base_circuit without measurements
     # Treat all circuits as lists of operations, build new tape in the end
-    base_ops = circuit.copy(copy_operations=True).operations
+    base_ops = circuit.operations
 
     num_global_folds, fraction_scale = _divmod(scale_factor - 1, 2)
 
