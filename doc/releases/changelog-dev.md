@@ -35,10 +35,6 @@
   [Haldane](https://journals.aps.org/prl/pdf/10.1103/PhysRevLett.61.2015) models on a lattice.
   [(#6201)](https://github.com/PennyLaneAI/pennylane/pull/6201/)
 
-* A new `qml.vn_entanglement_entropy` measurement process has been added which measures the
-  Von Neumann entanglement entropy of a quantum state.
-  [(#5911)](https://github.com/PennyLaneAI/pennylane/pull/5911)
-
 * A `has_sparse_matrix` property is added to `Operator` to indicate whether a sparse matrix is defined.
   [(#6278)](https://github.com/PennyLaneAI/pennylane/pull/6278)
   [(#6310)](https://github.com/PennyLaneAI/pennylane/pull/6310)
@@ -47,6 +43,9 @@
   [(#6406)](https://github.com/PennyLaneAI/pennylane/pull/6406)
 
 <h3>Improvements 🛠</h3>
+
+* RTD support for `qml.labs` added to API.
+  [(#6397)](https://github.com/PennyLaneAI/pennylane/pull/6397)
 
 * Module-level sandboxing added to `qml.labs` via pre-commit hooks.
   [(#6369)](https://github.com/PennyLaneAI/pennylane/pull/6369)
@@ -277,6 +276,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* `MeasurementValue` now raises an error when it is used as a boolean.
+  [(#6386)](https://github.com/PennyLaneAI/pennylane/pull/6386)
+
 * `default.qutrit` now returns integer samples.
   [(#6385)](https://github.com/PennyLaneAI/pennylane/pull/6385)
 
@@ -323,6 +325,9 @@
 * Fixes a bug where `csc_dot_product` is used during measurement for `Sum`/`Hamiltonian` that contains observables that does not define a sparse matrix.
   [(#6278)](https://github.com/PennyLaneAI/pennylane/pull/6278)
   [(#6310)](https://github.com/PennyLaneAI/pennylane/pull/6310)
+
+* Fixes a bug where `None` was added to the wires in `qml.PhaseAdder`, `qml.Adder` and `qml.OutAdder`.
+  [(#6360)](https://github.com/PennyLaneAI/pennylane/pull/6360)
 
 * Fixes a test after updating to the nightly version of Catalyst.
   [(#6362)](https://github.com/PennyLaneAI/pennylane/pull/6362)
