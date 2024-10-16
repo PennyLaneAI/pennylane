@@ -82,15 +82,23 @@ def khaneja_glaser_involution(op: Union[PauliSentence, Operator], wire=None):
 
 
 def J(n):
+    """This is the standard choice for the symplectic transformation operator.
+    For an :math:`N`-qubit system (:math:`n=2^N`), it equals :math:`iY_0`."""
     return np.block([[np.zeros((n, n)), np.eye(n)], [-np.eye(n), np.zeros((n, n))]])
 
 
 def Ipq(p, q):
+    """This is the canonical transformation operator for AIII and BDI Cartan
+    decompositions. For an :math:`N`-qubit system (:math:`n=2^N`) and
+    :math:`p=q=n/2`, it equals :math:`-Z_0`."""
     IIm = np.block([[-np.eye(p), np.zeros((p, p))], [np.zeros((q, q)), np.eye(q)]])
     return IIm
 
 
 def Kpq(p, q):
+    """This is the canonical transformation operator for CII Cartan
+    decompositions. For an :math:`N`-qubit system (:math:`n=2^N`) and
+    :math:`p=q=n/2`, it equals :math:`-Z_1`."""
     KKm = np.block(
         [
             [-np.eye(p), np.zeros((p, p)), np.zeros((p, p)), np.zeros((p, p))],
@@ -102,22 +110,31 @@ def Kpq(p, q):
     return KKm
 
 
-# involution
-# comment on when to use _not_:
-# when complex conjugation is involved -> use ``not``
-# when no complex conjugation is involved -> dont use ``not``
-
-
 def AI(op):
-    return not np.allclose(op, op.conj())
+    """Involution for AI Cartan decomposition.
+    Note that we work with Hermitian matrices internally, so that we need to multiply by
+    ``1j`` to obtain a skew-Hermitian matrix, before applying the involution itself.
+    """
+    op *= 1j
+    return np.allclose(op, op.conj())
 
 
 def AII(op):
+    """Involution for AII Cartan decomposition.
+    Note that we work with Hermitian matrices internally, so that we need to multiply by
+    ``1j`` to obtain a skew-Hermitian matrix, before applying the involution itself.
+    """
+    op *= 1j
     JJ = J(op.shape[-1] // 2)
-    return not np.allclose(op, JJ @ op.conj() @ JJ.T)
+    return np.allclose(op, JJ @ op.conj() @ JJ.T)
 
 
 def AIII(op, p=None, q=None):
+    """Involution for AIII Cartan decomposition.
+    Note that we work with Hermitian matrices internally, so that we need to multiply by
+    ``1j`` to obtain a skew-Hermitian matrix, before applying the involution itself.
+    """
+    op *= 1j
     if p is None or q is None:
         raise ValueError(
             "please specify p and q for the involution via functools.partial(AIII, p=p, q=q)"
@@ -127,19 +144,27 @@ def AIII(op, p=None, q=None):
 
 
 def BDI(op, p=None, q=None):
-    if p is None or q is None:
-        raise ValueError(
-            "please specify p and q for the involution via functools.partial(BDI, p=p, q=q)"
-        )
-    IIm = Ipq(p, q)
-    return np.allclose(op, IIm @ op @ IIm)
+    """Involution for BDI Cartan decomposition.
+    Note that we work with Hermitian matrices internally, so that we need to multiply by
+    ``1j`` to obtain a skew-Hermitian matrix, before applying the involution itself.
+    """
+    return AIII(op, p, q)
 
 
 def CI(op):
-    return not np.allclose(op, op.conj())
+    """Involution for CI Cartan decomposition.
+    Note that we work with Hermitian matrices internally, so that we need to multiply by
+    ``1j`` to obtain a skew-Hermitian matrix, before applying the involution itself.
+    """
+    return AI(op)
 
 
 def CII(op, p=None, q=None):
+    """Involution for CII Cartan decomposition.
+    Note that we work with Hermitian matrices internally, so that we need to multiply by
+    ``1j`` to obtain a skew-Hermitian matrix, before applying the involution itself.
+    """
+    op *= 1j
     if p is None or q is None:
         raise ValueError(
             "please specify p and q for the involution via functools.partial(CII, p=p, q=q)"
@@ -149,5 +174,10 @@ def CII(op, p=None, q=None):
 
 
 def DIII(op):
+    """Involution for DIII Cartan decomposition.
+    Note that we work with Hermitian matrices internally, so that we need to multiply by
+    ``1j`` to obtain a skew-Hermitian matrix, before applying the involution itself.
+    """
+    op *= 1j
     JJ = J(op.shape[-1] // 2)
     return np.allclose(op, JJ @ op @ JJ.T)
