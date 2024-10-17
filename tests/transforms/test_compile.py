@@ -43,7 +43,7 @@ def test_expand_depth_is_deprecated():
         ms = (qml.expval(qml.X(0)), qml.expval(qml.Y(0)))
         tape = qml.tape.QuantumScript(ops, ms, shots=50)
 
-        [_], _ = qml.compile(tape, expand_depth=2)
+        _, _ = qml.compile(tape, expand_depth=2)
 
 
 def build_qfunc(wires):
