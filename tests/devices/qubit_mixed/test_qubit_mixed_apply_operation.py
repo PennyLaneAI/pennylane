@@ -22,6 +22,7 @@ from scipy.stats import unitary_group
 import pennylane as qml
 from pennylane.devices.qubit_mixed import apply_operation
 from pennylane.devices.qubit_mixed.apply_operation import (
+    GLOBALPHASE_WARNING,
     apply_operation_einsum,
     apply_operation_tensordot,
 )
@@ -89,22 +90,22 @@ class TestOperation:  # pylint: disable=too-few-public-methods
         qml.IsingZZ(0.5, wires=[0, 1]),  # two site
         qml.CCZ(wires=[0, 1, 2]),  # three site
     ]
-    num_qubits = 3
+    num_qubits = [3, 9]
     num_batched = 2
 
     @classmethod
-    def get_expected_state(cls, expanded_operator, state):
+    def get_expected_state(cls, expanded_operator, state, num_q):
         """Finds expected state after applying operator"""
-        flattened_state = state.reshape((QUDIT_DIM**cls.num_qubits,) * 2)
+        flattened_state = state.reshape((QUDIT_DIM**num_q,) * 2)
         adjoint_matrix = np.conj(expanded_operator).T
         new_state = expanded_operator @ flattened_state @ adjoint_matrix
-        return new_state.reshape([QUDIT_DIM] * (cls.num_qubits * 2))
+        return new_state.reshape([QUDIT_DIM] * (num_q * 2))
 
     @classmethod
-    def expand_matrices(cls, op, batch_size=0):
+    def expand_matrices(cls, op, num_q, batch_size=0):
         """Find expanded operator matrices, independent of qml implementation"""
         pre_wires_identity = np.eye(QUDIT_DIM ** op.wires[0])
-        post_wires_identity = np.eye(QUDIT_DIM ** ((cls.num_qubits - 1) - op.wires[-1]))
+        post_wires_identity = np.eye(QUDIT_DIM ** ((num_q - 1) - op.wires[-1]))
         mat = op.matrix()
 
         def expand_matrix(matrix):
@@ -115,35 +116,34 @@ class TestOperation:  # pylint: disable=too-few-public-methods
         return expand_matrix(mat)
 
     @classmethod
-    def circuit_matrices(cls, op, batch_size=0):
+    def circuit_matrices(cls, op, num_q, batch_size=0):
         """defines the circuit matrices, an alternative to expand_matrices"""
 
         def circuit():
             op(wires=op.wires)
 
-        matrix_fn = qml.matrix(circuit, wire_order=range(cls.num_qubits))
+        matrix_fn = qml.matrix(circuit, wire_order=range(num_q))
         if batch_size:
             return [matrix_fn() for _ in range(batch_size)]
         return matrix_fn()
 
     @pytest.mark.parametrize("op", unbroadcasted_ops)
-    def test_no_broadcasting(self, op, ml_framework, request):
+    @pytest.mark.parametrize("num_q", num_qubits)
+    def test_no_broadcasting(self, op, num_q, ml_framework):
         """
         Tests that unbatched operations are applied correctly to an unbatched state.
 
         Args:
             op (Operation): Quantum operation to apply.
             ml_framework (str): The machine learning framework in use (numpy, autograd, etc.).
-            request (FixtureRequest): Pytest fixture request object.
         """
-        three_qubit_state = request.getfixturevalue("three_qubit_state_fixture")
-        state = qml.math.asarray(three_qubit_state, like=ml_framework)
+        state = qml.math.asarray(get_random_mixed_state(num_q), like=ml_framework)
         res = apply_operation(op, state)
         res_tensordot = apply_operation_tensordot(op, state)
         res_einsum = apply_operation_einsum(op, state)
 
-        expanded_operator = self.expand_matrices(op)
-        expected = self.get_expected_state(expanded_operator, three_qubit_state)
+        expanded_operator = self.expand_matrices(op, num_q)
+        expected = self.get_expected_state(expanded_operator, np.array(state), num_q)
 
         # assert qml.math.get_interface(res) == ml_framework
         assert qml.math.allclose(res, expected), f"Operation {op} failed. {res} \n != {expected}"
@@ -152,20 +152,41 @@ class TestOperation:  # pylint: disable=too-few-public-methods
         ), f"Tensordot and einsum results do not match. {res_tensordot} != {res_einsum}"
 
     @pytest.mark.parametrize("op", diagonal_ops)
-    def test_diagonal(self, op, ml_framework, request):
+    @pytest.mark.parametrize("num_q", num_qubits)
+    def test_diagonal(self, op, num_q, ml_framework):
         """
         Tests that diagonal operations are applied correctly to an unbatched state.
 
         Args:
             op (Operation): Quantum operation to apply.
             ml_framework (str): The machine learning framework in use (numpy, autograd, etc.).
-            request (FixtureRequest): Pytest fixture request object.
         """
-        three_qubit_state = request.getfixturevalue("three_qubit_state_fixture")
-        state = qml.math.asarray(three_qubit_state, like=ml_framework)
+        state_np = get_random_mixed_state(num_q)
+        state = qml.math.asarray(state_np, like=ml_framework)
         res = apply_operation(op, state)
 
-        expanded_operator = self.expand_matrices(op)
-        expected = self.get_expected_state(expanded_operator, three_qubit_state)
+        expanded_operator = self.expand_matrices(op, num_q)
+        expected = self.get_expected_state(expanded_operator, state_np, num_q)
 
         assert qml.math.allclose(res, expected), f"Operation {op} failed. {res} != {expected}"
+
+    @pytest.mark.parametrize("num_q", num_qubits)
+    def test_identity(self, num_q, ml_framework):
+        """Tests that the identity operation is applied correctly to an unbatched state."""
+        state_np = get_random_mixed_state(num_q)
+        state = qml.math.asarray(state_np, like=ml_framework)
+        op = qml.Identity(wires=0)
+        res = apply_operation(op, state)
+
+        assert qml.math.allclose(res, state), f"Operation {op} failed. {res} != {state}"
+
+    @pytest.mark.parametrize("num_q", num_qubits)
+    def test_globalphase(self, num_q, ml_framework):
+        """Tests that the identity operation is applied correctly to an unbatched state."""
+        state_np = get_random_mixed_state(num_q)
+        state = qml.math.asarray(state_np, like=ml_framework)
+        op = qml.GlobalPhase(np.pi / 7, wires=0)
+        with pytest.warns(UserWarning, match=GLOBALPHASE_WARNING):
+            res = apply_operation(op, state)
+
+        assert qml.math.allclose(res, state), f"Operation {op} failed. {res} != {state}"

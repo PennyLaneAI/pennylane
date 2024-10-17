@@ -27,6 +27,8 @@ from pennylane.ops.qubit.attributes import diagonal_in_z_basis
 from .constants import QUDIT_DIM
 from .utils import get_einsum_mapping, get_new_state_einsum_indices
 
+GLOBALPHASE_WARNING = "The GlobalPhase operation does not have any effect on the density matrix. This operation is only meaningful for state vectors."
+
 alphabet_array = np.array(list(alphabet))
 
 
@@ -346,8 +348,7 @@ def apply_global_phase(
     """Applies a :class:`~.GlobalPhase` operation by multiplying the state by ``exp(1j * op.data[0])``"""
     # Note: the global phase is a scalar, so we can just multiply the state by it. For density matrix we suppose that the global phase means a phase factor acting on the basis statevectors, which implies that in the final density matrix there will be no effect. Therefore, we would like to warn users that even though an identity operation is applied, the global phase operation will not have any effect on the density matrix.
     warnings.warn(
-        "The GlobalPhase operation does not have any effect on the density matrix. "
-        "This operation is only meaningful for state vectors.",
+        GLOBALPHASE_WARNING,
         UserWarning,
     )
     return state
