@@ -246,7 +246,7 @@ class TestCatalyst:
             return qml.expval(qml.PauliZ(0))
 
         mlir_str = str(circuit.mlir)
-        result_header = "func.func private @circuit(%arg0: tensor<f64>) -> tensor<f64>"
+        result_header = "func.func public @circuit(%arg0: tensor<f64>) -> tensor<f64>"
         assert result_header in mlir_str
 
     def test_qjit_adjoint(self):
