@@ -568,12 +568,12 @@ def apply_diagonal_unitary(op, state, is_state_batched: bool = False, debugger=N
     eigvals = math.reshape(eigvals, [QUDIT_DIM] * len(channel_wires))
     eigvals = math.cast_like(eigvals, state)
 
-    state_indices = alphabet[: 2 * num_wires]
+    state_indices = alphabet[: 2 * num_wires + is_state_batched]
 
-    row_wires_list = channel_wires.tolist()
-    row_indices = "".join(alphabet_array[row_wires_list].tolist())
-
+    row_wires_list = [w + is_state_batched for w in channel_wires.tolist()]
     col_wires_list = [w + num_wires for w in row_wires_list]
+
+    row_indices = "".join(alphabet_array[row_wires_list].tolist())
     col_indices = "".join(alphabet_array[col_wires_list].tolist())
 
     # Basically, we want to do, lambda_a rho_ab lambda_b
