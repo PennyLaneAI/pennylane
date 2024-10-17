@@ -210,6 +210,12 @@ def fold_global_tape(circuit, scale_factor):
     # Treat all circuits as lists of operations, build new tape in the end
 
     base_ops = circuit.expand().copy(copy_operations=True).operations
+    if any((isinstance(op, qml.operation.Channel) for op in base_ops)):
+        raise ValueError(
+            "Circuits containing quantum channels cannot be folded with mitigate_with_zne. "
+            "To use zero-noise extrapolation on the circuit with channel noise, "
+            "consider adding the noise on the device rather than the circuit."
+        )
 
     num_global_folds, fraction_scale = _divmod(scale_factor - 1, 2)
 
@@ -409,25 +415,36 @@ def mitigate_with_zne(
     **Example:**
 
     We first create a noisy device using ``default.mixed`` by adding :class:`~.AmplitudeDamping` to
-    each gate of circuits executed on the device using the :func:`~.transforms.insert` transform:
+    each gate of circuits executed on the device using the :func:`~.transforms.add_noise` transform:
 
     .. code-block:: python3
 
         import pennylane as qml
 
-        noise_strength = 0.05
-
         dev = qml.device("default.mixed", wires=2)
-        dev = qml.transforms.insert(dev, qml.AmplitudeDamping, noise_strength)
 
-    We can now set up a mitigated QNode by passing a ``folding`` and ``extrapolate`` function. PennyLane provides native
-    functions :func:`~.pennylane.transforms.fold_global` and :func:`~.pennylane.transforms.poly_extrapolate` or :func:`~.pennylane.transforms.richardson_extrapolate` that
-    allow for differentiating through them. Custom functions, as well as functionalities from the `Mitiq <https://mitiq.readthedocs.io/en/stable/>`__ package
-    are supported as well (see usage details below).
+        fcond = qml.noise.wires_in(dev.wires)
+        noise = qml.noise.partial_wires(qml.AmplitudeDamping, 0.05)
+        noise_model = qml.NoiseModel({fcond: noise})
+
+        noisy_dev = qml.add_noise(dev, noise_model)
+
+    .. note ::
+
+        The :func:`~.transforms.add_noise` transform should be used on the device instead of
+        the circuit if the defined ``noise_model`` contains a :class:`~.operation.Channel`
+        instance. This is to prevent ``mitigate_with_zne`` from computing the adjoint of
+        the channel operation during `folding`, which is currently not supported.
+
+    We can now set up a mitigated ``QNode`` by first decomposing it into a target gate set via :func:`~.pennylane.transforms.compile`
+    and then applying this transform by passing a ``folding`` and ``extrapolate`` function. PennyLane provides native
+    functions :func:`~.pennylane.transforms.fold_global` and :func:`~.pennylane.transforms.poly_extrapolate` or
+    :func:`~.pennylane.transforms.richardson_extrapolate` that allow for differentiating through them. Custom functions, as well as
+    functionalities from the `Mitiq <https://mitiq.readthedocs.io/en/stable/>`__ package are supported as well (see usage details below).
 
     .. code-block:: python3
 
-        import numpy as np
+        import pennylane.numpy as np
         from functools import partial
         from pennylane import qnode
 
@@ -445,8 +462,10 @@ def mitigate_with_zne(
             scale_factors=[1., 2., 3.],
             folding=fold_global,
             extrapolate=poly_extrapolate,
-            extrapolate_kwargs={'order': 2})
-        @qnode(dev)
+            extrapolate_kwargs={'order': 2}
+        )
+        @partial(qml.transforms.decompose, gate_set = ["RY", "CZ"])
+        @qnode(noisy_dev)
         def circuit(w1, w2):
             qml.SimplifiedTwoDesign(w1, w2, wires=range(2))
             return qml.expval(qml.Z(0))
