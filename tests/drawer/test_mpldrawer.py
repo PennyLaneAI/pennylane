@@ -169,6 +169,23 @@ class TestLabels:
 
         plt.close()
 
+    @pytest.mark.parametrize("n_layers", [1, 4])
+    def test_crop_wire_labels(self, n_layers):
+        """Test that cropping wire labels works."""
+        drawer = MPLDrawer(n_layers, 3)
+
+        labels = ("a", "b", "c")
+        drawer.label(labels)
+        old_width = drawer.fig.get_figwidth()
+        assert old_width == n_layers + 3
+        old_xlim = drawer.ax.get_xlim()
+        assert old_xlim == (-2, n_layers + 1)
+        drawer.crop_wire_labels()
+        new_width = drawer.fig.get_figwidth()
+        assert new_width == n_layers + 2
+        new_xlim = drawer.ax.get_xlim()
+        assert new_xlim == (-1, n_layers + 1)
+
 
 def test_erase_wire():
     """Test the erase wire method."""

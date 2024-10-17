@@ -1114,6 +1114,7 @@ class MPLDrawer:
             self._ax.add_line(line)
 
     def crop_wire_labels(self):
+        """Crop away the wire labels and resize figure accordingly."""
         xlim = self._ax.get_xlim()
         self._ax.set_xlim((-1, xlim[1]))
         factor = (self.n_layers + 2) / (self.n_layers + 3)
