@@ -180,21 +180,20 @@ AttributeError: 'DensityMatrixMP' object has no attribute 'process_samples'
 Devices may define their own transforms following the description in the ``transforms`` module,
 or can include in-built transforms such as:
 
-* :function:`pennylane.defer_measurements`
-* :function:`pennylane.dynamic_one_shot`
-* :function:`pennylane.transforms.broadcast_expand`
-* :function:`pennylane.transforms.split_non_commuting`
-* :function:`pennylane.transforms.transpile`
-* :function:`pennylane.transforms.diagonalize_measurements`
-* :function:`pennylane.transforms.split_to_single_terms`
-* :function:`pennylane.devices.preprocess.decompose`
-* :function:`pennylane.devices.preprocess.validate_observables`
-* :function:`pennylane.devices.preprocess.validate_measurements`
-* :function:`pennylane.devices.preprocess.validate_device_wires`
-* :function:`pennylane.devices.preprocess.validate_multiprocessing_workers`
-* :function:`pennylane.devices.preprocess.validate_adjoint_trainable_params`
-* :function:`pennylane.devices.preprocess.no_sampling`
-
+* :func:`pennylane.defer_measurements`
+* :func:`pennylane.dynamic_one_shot`
+* :func:`pennylane.transforms.broadcast_expand`
+* :func:`pennylane.transforms.split_non_commuting`
+* :func:`pennylane.transforms.transpile`
+* :func:`pennylane.transforms.diagonalize_measurements`
+* :func:`pennylane.transforms.split_to_single_terms`
+* :func:`pennylane.devices.preprocess.decompose`
+* :func:`pennylane.devices.preprocess.validate_observables`
+* :func:`pennylane.devices.preprocess.validate_measurements`
+* :func:`pennylane.devices.preprocess.validate_device_wires`
+* :func:`pennylane.devices.preprocess.validate_multiprocessing_workers`
+* :func:`pennylane.devices.preprocess.validate_adjoint_trainable_params`
+* :func:`pennylane.devices.preprocess.no_sampling`
 
 Wires
 -----
