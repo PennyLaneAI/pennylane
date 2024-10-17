@@ -42,6 +42,7 @@
 <h3>Improvements 🛠</h3>
 
 * The device test suite now checks for mid circuit measurement support.
+  [(#6408)](https://github.com/PennyLaneAI/pennylane/pull/6408)
 
 * RTD support for `qml.labs` added to API.
   [(#6397)](https://github.com/PennyLaneAI/pennylane/pull/6397)
@@ -276,6 +277,7 @@
 <h3>Bug fixes 🐛</h3>
 
 * `default.tensor` can now handle mid circuit measurements via the deferred measurement principle.
+  [(#6408)](https://github.com/PennyLaneAI/pennylane/pull/6408)
 
 * `MeasurementValue` now raises an error when it is used as a boolean.
   [(#6386)](https://github.com/PennyLaneAI/pennylane/pull/6386)
