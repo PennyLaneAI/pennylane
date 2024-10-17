@@ -150,15 +150,14 @@ def _get_qnode_prim():
     @qnode_prim.def_abstract_eval
     def _(*args, qnode, shots, device, qnode_kwargs, qfunc_jaxpr, n_consts):
 
-        batch_shape = BatchingManager.get_batch_shape()
-
         mps = qfunc_jaxpr.outvars
 
-        shape = _get_shapes_for(
-            *mps, shots=shots, num_device_wires=len(device.wires), batch_shape=batch_shape
+        return _get_shapes_for(
+            *mps,
+            shots=shots,
+            num_device_wires=len(device.wires),
+            batch_shape=BatchingManager.get_batch_shape(),
         )
-
-        return shape
 
     def make_zero(tan, arg):
         return jax.lax.zeros_like_array(arg) if isinstance(tan, ad.Zero) else tan
