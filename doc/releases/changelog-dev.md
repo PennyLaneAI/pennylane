@@ -273,6 +273,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* The `validate_device_wires` transform now raises an error if abstract wires are provided.
+  [(#6405)](https://github.com/PennyLaneAI/pennylane/pull/6405)
+
 * `MeasurementValue` now raises an error when it is used as a boolean.
   [(#6386)](https://github.com/PennyLaneAI/pennylane/pull/6386)
 

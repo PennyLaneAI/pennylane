@@ -165,7 +165,6 @@ def test_validate_adjoint_trainable_params_state_prep_error():
 
 
 class TestValidateDeviceWires:
-
     def test_error(self):
         """Tests for the error raised by validate_device_wires transform."""
 
@@ -197,7 +196,7 @@ class TestValidateDeviceWires:
 
         import jax
 
-        def jit_wires(wires):
+        def jit_wires_tape(wires):
             tape_with_abstract_wires = QuantumScript([qml.CNOT(wires=qml.wires.Wires(wires))])
             validate_device_wires(tape_with_abstract_wires, name="fictional_device")
 
@@ -205,7 +204,7 @@ class TestValidateDeviceWires:
             qml.wires.WireError,
             match="on fictional_device as abstract wires are present in the tape",
         ):
-            jax.jit(jit_wires)([0, 1])
+            jax.jit(jit_wires_tape)([0, 1])
 
     @pytest.mark.jax
     def test_error_abstract_wires_dev(self):
@@ -213,14 +212,14 @@ class TestValidateDeviceWires:
 
         import jax
 
-        def jit_wires(wires):
+        def jit_wires_dev(wires):
             validate_device_wires(QuantumScript([]), wires=wires, name="fictional_device")
 
         with pytest.raises(
             qml.wires.WireError,
             match="on fictional_device as abstract wires are present in the device",
         ):
-            jax.jit(jit_wires)([0, 1])
+            jax.jit(jit_wires_dev)([0, 1])
 
 
 class TestDecomposeValidation:
