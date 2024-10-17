@@ -72,6 +72,9 @@
   [(#6285)](https://github.com/PennyLaneAI/pennylane/pull/6285)
   [(#6363)](https://github.com/PennyLaneAI/pennylane/pull/6363)
 
+* Datasets are now downloaded via Dataset API.
+  [(#6126)](https://github.com/PennyLaneAI/pennylane/pull/6126)
+
 * The `Hermitian` operator now has a `compute_sparse_matrix` implementation.
   [(#6225)](https://github.com/PennyLaneAI/pennylane/pull/6225)
 
@@ -352,6 +355,7 @@ Diksha Dhawan,
 Lillian M. A. Frederiksen,
 Pietropaolo Frisoni,
 Emiliano Godinez,
+Anthony Hayes,
 Austin Huang,
 Korbinian Kottmann,
 Christina Lee,
