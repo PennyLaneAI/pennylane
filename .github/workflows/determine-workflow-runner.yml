@@ -57,7 +57,7 @@ jobs:
           REPO_FULL_NAME: PennyLaneAI/pennylane
           LARGE_RUNNER_GROUP_NAME: ${{ inputs.large_runner_group_name }}
         run: |
-          if [[ '${{ contains(github.event.pull_request.labels.*.name, 'urgent') }}' == 'true' || ('${{ github.event.pull_request.head.repo.full_name }}' == "$REPO_FULL_NAME" && '${{ github.event.pull_request.head.ref }}' =~ $RC_BRANCH_FORMAT_REGEX) ]]; then
+          if [[ '${{ contains(github.event.pull_request.labels.*.name, 'urgent') }}' == 'true' || ('${{ github.event.pull_request.head.repo.full_name }}' == "$REPO_FULL_NAME" && '${{ github.event.pull_request.base.ref }}' =~ $RC_BRANCH_FORMAT_REGEX) ]]; then
             echo "This job requires usage of the large runner group '$LARGE_RUNNER_GROUP_NAME'";
             echo "runner_group=$LARGE_RUNNER_GROUP_NAME" >> $GITHUB_OUTPUT
           else
