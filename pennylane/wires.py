@@ -71,6 +71,7 @@ def _process(wires):
         # Note, this is not the same as `isinstance(wires, Iterable)` which would
         # pass for 0-dim numpy arrays that cannot be iterated over.
         tuple_of_wires = tuple(wires)
+
     except TypeError:
         # if not iterable, interpret as single wire label
         try:
