@@ -32,7 +32,7 @@ def expand_matrix(mat, wires, wire_order=None, sparse_format="csr"):
     Args:
         mat (tensor_like): matrix to expand
         wires (Iterable): wires determining the subspace that ``mat`` acts on; a matrix of
-            dimension :math:`2^n` acts on a subspace of :math:`n` wires
+            dimension :math:`D^n` acts on a subspace of :math:`n` wires, where :math:`D` is the qudit dimension (2).
         wire_order (Iterable): global wire order, which has to contain all wire labels in ``wires``, but can also
             contain additional labels
         sparse_format (str): if ``mat`` is a SciPy sparse matrix then this is the string representing the
@@ -104,7 +104,8 @@ def expand_matrix(mat, wires, wire_order=None, sparse_format="csr"):
     wires = Wires(wires)
 
     if wires:
-        qudit_dim = int(qml.math.shape(mat)[-1] ** (1 / (len(wires))))
+        float_dim = qml.math.shape(mat)[-1] ** (1 / (len(wires)))
+        qudit_dim = int(qml.math.round(float_dim))
     else:
         qudit_dim = 2  # if no wires, just assume qubit
 

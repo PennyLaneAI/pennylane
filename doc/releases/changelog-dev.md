@@ -273,7 +273,7 @@
 
 <h3>Bug fixes 🐛</h3>
 
-* Fixes the matrices for qutrit operators when expanded to more wires.
+* Fixes `qml.math.expand_matrix` for qutrit and arbitrary qudit operators.
   [(#6398)](https://github.com/PennyLaneAI/pennylane/pull/6398/)
 
 * `MeasurementValue` now raises an error when it is used as a boolean.
