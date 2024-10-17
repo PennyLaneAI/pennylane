@@ -70,7 +70,9 @@ on:
         type: boolean
         default: true
       use_large_runner:
-        description: Indicate if the large runner should be used for the job
+        description: |
+          Indicate if the large runner should be used for the job.
+          If this is true, large runner is used for the build regardless of the context.
         required: false
         type: boolean
         default: false
@@ -82,6 +84,7 @@ jobs:
     uses: ./.github/workflows/determine-workflow-runner.yml
     with:
       default_runner: ubuntu-latest
+      force_large_runner: ${{ inputs.use_large_runner }}
 
   setup-ci-load:
     needs:
