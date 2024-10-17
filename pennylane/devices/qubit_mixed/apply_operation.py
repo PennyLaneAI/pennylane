@@ -508,37 +508,6 @@ def apply_grover(
     return state
 
 
-# pylint: disable=no-cover
-@apply_operation.register
-def apply_snapshot(
-    op: qml.Snapshot, state, is_state_batched: bool = False, debugger=None, **execution_kwargs
-):
-    """Take a snapshot of the state"""
-    if debugger is not None and debugger.active:
-        raise NotImplementedError("Snapshot is not implemented yet for mixed states.")
-        # measurement = op.hyperparameters["measurement"]
-
-        # shots = execution_kwargs.get("tape_shots")
-
-        # if isinstance(measurement, qml.measurements.StateMP) or not shots:
-        #     snapshot = qml.devices.qubit_mixed.measure(measurement, state, is_state_batched)
-        # else:
-        #     snapshot = qml.devices.qubit_mixed.measure_with_samples(
-        #         [measurement],
-        #         state,
-        #         shots,
-        #         is_state_batched,
-        #         execution_kwargs.get("rng"),
-        #         execution_kwargs.get("prng_key"),
-        #     )[0]
-
-        # if op.tag:
-        #     debugger.snapshots[op.tag] = snapshot
-        # else:
-        #     debugger.snapshots[len(debugger.snapshots)] = snapshot
-    return state
-
-
 def apply_diagonal_unitary(op, state, is_state_batched: bool = False, debugger=None, **_):
     """_summary_
 
@@ -571,6 +540,3 @@ def apply_diagonal_unitary(op, state, is_state_batched: bool = False, debugger=N
     einsum_indices = f"{row_indices},{state_indices},{col_indices}->{state_indices}"
 
     return math.einsum(einsum_indices, eigvals, state, eigvals.conj())
-
-
-# TODO add special case speedups
