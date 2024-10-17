@@ -119,6 +119,10 @@ def _to_qfunc_output_type(
     _, results_structure = qml.pytrees.flatten(results)
     num_of_results = len(re.findall(r"Leaf", results_structure.__str__()))
 
+    # Special case of single Measurement in a list
+    if isinstance(qfunc_output, list) and len(qfunc_output) == 1:
+        results = [results]
+
     if num_of_measurements != num_of_results:
         return results
 
