@@ -1112,7 +1112,7 @@
 
 <h3>Documentation</h3>
 
-* Adds a link to https://pennylane.ai/qml/demonstrations.html in the navbar.
+* Adds a link to https://pennylane.ai/qml/demonstrations in the navbar.
   [(#1624)](https://github.com/PennyLaneAI/pennylane/pull/1624)
 
 * Corrects the docstring of `ExpvalCost` by adding `wires` to the signature of

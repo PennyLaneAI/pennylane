@@ -227,7 +227,7 @@
       params, cost = opt.step_and_cost(cost, params)
   ```  
 
-  Check out [our demo](https://pennylane.ai/qml/demos/qnspsa.html) on the QNSPSA optimizer for more information.
+  Check out [our demo](https://pennylane.ai/qml/demos/qnspsa) on the QNSPSA optimizer for more information.
 
 <h4>Operator and parameter broadcasting supplements 📈</h4>
 
@@ -245,11 +245,11 @@
     array([[1.       +0.j        , 0.       +0.j        ,
         1.       +0.j        , 0.       +0.j        ],
        [0.       +0.j        , 0.8156179+0.j        ,
-        1.       +0.57859091j, 0.       +0.j        ],
+        2.       +0.57859091j, 0.       +0.j        ],
        [0.       +0.j        , 0.       +0.57859091j,
         0.8156179+0.j        , 0.       +0.j        ],
        [0.       +0.j        , 0.       +0.j        ,
-        1.       +0.j        , 1.       +0.j        ]]) 
+        3.       +0.j        , 1.       +0.j        ]]) 
     ```
 
   - The `qml.pow` function raises a given operator to a power:
