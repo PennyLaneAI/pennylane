@@ -17,8 +17,8 @@ and help us make quantum computing a welcoming place for all.
 Start by experimenting with PennyLane.  Figure out how to do things and form opinions about what you
 like and dislike about the ecosystem.  What made your life easier? What was a source of
 difficulty and confusion? We can always use more user feedback. You can use our
-[demonstrations](https://pennylane.ai/qml/demonstrations.html) and
-[blog](https://pennylane.ai/blog/) to learn about features and applications.
+[demonstrations](https://pennylane.ai/qml/demonstrations) and
+[blog](https://pennylane.ai/blog) to learn about features and applications.
 
 As you get a feel for the user experience, you can start peeking under the hood and finding out how
 the package accomplishes its tasks.
@@ -33,7 +33,7 @@ Sometimes, it might take us a couple of hours to reply - please be patient!
 It's up to you!
 
 * **Write a Community Demo.** - Show off your PennyLane application on
-  [our community page](https://pennylane.ai/qml/demos_community.html). We take Jupyter notebooks,
+  [our community page](https://pennylane.ai/qml/demos_community). We take Jupyter notebooks,
   scripts with explanations, or entire repositories.  Community demos are a great way to showcase
   research and new papers.
 
@@ -42,7 +42,7 @@ It's up to you!
 
 * **Test the cutting-edge PennyLane releases.** - Clone our GitHub repository, and keep up with
   the latest features. Learn how to install PennyLane from source
-  [here](https://pennylane.ai/install.html?version=preview). If you run into any bugs, make a bug
+  [here](https://pennylane.ai/install). If you run into any bugs, make a bug
   report on our [issue tracker](https://github.com/XanaduAI/pennylane/issues).
 
 * **Report bugs.** - If you come across any bugs or issues, make a bug report. PennyLane has

@@ -89,7 +89,7 @@ instantiated using the :func:`device <pennylane.device>` loader.
 
 PennyLane offers some basic devices such as the ``'default.qubit'``, ``'default.mixed'``, ``lightning.qubit``,
 ``'default.gaussian'``, ``'default.clifford'``, and ``'default.tensor'`` simulators; additional devices can be installed as plugins
-(see `available plugins <https://pennylane.ai/plugins.html>`_ for more details). Note that the
+(see `available plugins <https://pennylane.ai/plugins>`_ for more details). Note that the
 choice of a device significantly determines the speed of your computation, as well as
 the available options that can be passed to the device loader.
 

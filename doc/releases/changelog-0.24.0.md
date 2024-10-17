@@ -66,7 +66,7 @@
     qfim = qml.qinfo.quantum_fisher(circ)(params)
     ```
 
-    These quantities are typically employed in variational optimization schemes to tilt the gradient in a more favourable direction  --- producing what is known as the [natural gradient](https://pennylane.ai/qml/demos/tutorial_quantum_natural_gradient.html). For example:
+    These quantities are typically employed in variational optimization schemes to tilt the gradient in a more favourable direction  --- producing what is known as the [natural gradient](https://pennylane.ai/qml/demos/tutorial_quantum_natural_gradient). For example:
 
     ```pycon
     >>> grad = qml.grad(circ)(params)
