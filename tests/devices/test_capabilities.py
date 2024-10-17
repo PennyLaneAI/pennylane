@@ -30,7 +30,7 @@ from pennylane.devices.capabilities import (
     InvalidCapabilitiesError,
     OperatorProperties,
     ProgramFeatures,
-    _get_compilation_flags,
+    _get_compilation_options,
     _get_measurement_processes,
     _get_observables,
     _get_operations,
@@ -84,7 +84,7 @@ class TestTOML:
             [compilation]
 
             qjit_compatible = false
-            mid_circuit_measurements = false
+            supported_mcm_methods = [ "one-shot" ]
 
             [options]
             
@@ -118,7 +118,7 @@ class TestTOML:
 
         compilation = document.get("compilation")
         assert compilation.get("qjit_compatible") is False
-        assert compilation.get("mid_circuit_measurements") is False
+        assert compilation.get("supported_mcm_methods") == ["one-shot"]
 
         options = document.get("options")
         assert options.get("option_key") == "option_field"
@@ -219,8 +219,8 @@ class TestTOML:
             [compilation]
             
             qjit_compatible = true
-            mid_circuit_measurements = true
             runtime_code_generation = false
+            supported_mcm_methods = [ "one-shot" ]
             """
         ],
         indirect=True,
@@ -229,12 +229,12 @@ class TestTOML:
         """Tests getting compilation flags."""
 
         document = load_toml_file(request.node.toml_file)
-        compilation_flags = _get_compilation_flags(document)
+        compilation_flags = _get_compilation_options(document)
 
         # Tests that specified values are correctly parsed
         assert compilation_flags.get("qjit_compatible") is True
-        assert compilation_flags.get("mid_circuit_measurements") is True
         assert compilation_flags.get("runtime_code_generation") is False
+        assert compilation_flags.get("supported_mcm_methods") == ["one-shot"]
 
         # Tests that default values are correctly populated
         assert compilation_flags.get("dynamic_qubit_management") is False
@@ -448,7 +448,7 @@ class TestTOML:
             InvalidCapabilitiesError,
             match="The compilation section has unknown options: ",
         ):
-            _get_compilation_flags(document)
+            _get_compilation_options(document)
 
     @pytest.mark.usefixtures("create_temporary_toml_file")
     @pytest.mark.parametrize(
@@ -471,7 +471,7 @@ class TestTOML:
             InvalidCapabilitiesError,
             match="When overlapping_observables is False, non_commuting_observables cannot be True.",
         ):
-            _get_compilation_flags(document)
+            _get_compilation_options(document)
 
 
 EXAMPLE_TOML_FILE = """
@@ -508,10 +508,13 @@ CountsMP = { conditions = ["finiteshots"] }
 [compilation]
 
 qjit_compatible = true
-mid_circuit_measurements = false
 overlapping_observables = true
 non_commuting_observables = false
 initial_state_prep = true
+
+[pennylane.compilation]
+
+supported_mcm_methods = ["one-shot"]
 
 [options]
 
@@ -546,7 +549,7 @@ class TestDeviceCapabilities:
             "StateMP": [ExecutionCondition.ANALYTIC_MODE_ONLY],
         }
         assert device_capabilities.qjit_compatible is True
-        assert device_capabilities.mid_circuit_measurements is False
+        assert device_capabilities.supported_mcm_methods == []
         assert device_capabilities.dynamic_qubit_management is False
         assert device_capabilities.runtime_code_generation is False
         assert device_capabilities.overlapping_observables is True
@@ -577,6 +580,7 @@ class TestDeviceCapabilities:
             "StateMP": [ExecutionCondition.ANALYTIC_MODE_ONLY],
             "CountsMP": [ExecutionCondition.FINITE_SHOTS_ONLY],
         }
+        assert capabilities.supported_mcm_methods == ["one-shot"]
 
     @pytest.mark.usefixtures("create_temporary_toml_file")
     @pytest.mark.parametrize("create_temporary_toml_file", [EXAMPLE_TOML_FILE], indirect=True)
