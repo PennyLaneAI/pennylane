@@ -58,6 +58,7 @@ Involutions
     ~CI
     ~CII
     ~DIII
+    ~ClassB
 
 
 """
@@ -77,4 +78,4 @@ from .dense_util import (
     check_commutation,
     apply_basis_change,
 )
-from .involutions import khaneja_glaser_involution, AI, AII, AIII, BDI, CI, CII, DIII
+from .involutions import khaneja_glaser_involution, AI, AII, AIII, BDI, CI, CII, DIII, ClassB

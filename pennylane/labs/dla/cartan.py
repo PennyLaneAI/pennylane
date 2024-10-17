@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Functionality for Cartan decomposition"""
-from functools import singledispatch
+from functools import partial, singledispatch
 from typing import Union
 
 import numpy as np
@@ -176,11 +176,33 @@ def pauli_y_eigenbasis(wire, num_wires):
     return QubitUnitary(V, wire).matrix(wire_order=range(num_wires))
 
 
+def _not_implemented_yet(wire, num_wires, pair):
+    raise NotImplementedError(
+        f"The pair {pair} is a valid pair of involutions conceptually, but the basis change between them has not been implemented yet."
+    )
+
+
 _basis_change_constructors = {
+    ("AI", "BDI"): IDENTITY,
     ("AI", "DIII"): IDENTITY,
     ("AII", "CI"): IDENTITY,
-    ("DIII", "AI"): pauli_y_eigenbasis,
+    ("AII", "CII"): IDENTITY,
+    ("AIII", "ClassB"): IDENTITY,
+    ("BDI", "ClassB"): partial(_not_implemented_yet, pair=("BDI", "BDI")),
+    ("CI", "AI"): pauli_y_eigenbasis,
     ("CI", "AII"): pauli_y_eigenbasis,
+    ("CI", "AIII"): partial(_not_implemented_yet, pair=("CI", "AIII")),
+    ("CII", "ClassB"): partial(_not_implemented_yet, pair=("CII", "CI")),
+    ("DIII", "AI"): pauli_y_eigenbasis,
+    ("DIII", "AII"): partial(_not_implemented_yet, pair=("DIII", "AII")),
+    ("DIII", "AIII"): partial(_not_implemented_yet, pair=("DIII", "AIII")),
+    ("ClassB", "AI"): IDENTITY,
+    ("ClassB", "AII"): partial(_not_implemented_yet, pair=("ClassB", "AII")),
+    ("ClassB", "AIII"): partial(_not_implemented_yet, pair=("ClassB", "AIII")),
+    ("ClassB", "BDI"): partial(_not_implemented_yet, pair=("ClassB", "BDI")),
+    ("ClassB", "DIII"): partial(_not_implemented_yet, pair=("ClassB", "DIII")),
+    ("ClassB", "CI"): partial(_not_implemented_yet, pair=("ClassB", "CI")),
+    ("ClassB", "CII"): partial(_not_implemented_yet, pair=("ClassB", "CII")),
 }
 
 
@@ -223,10 +245,10 @@ def recursive_cartan_decomposition(g, chain, validate=True, verbose=True):
         name = getattr(phi, "func", phi).__name__
         if verbose:
             print(f"Iteration {i}: {len(g):<4} --{name:-<4}--> {len(k)}, {len(m)}")
+        decompositions[i] = (k, m)
         if bc is not IDENTITY:
             k = apply_basis_change(bc, k)
             m = apply_basis_change(bc, m)
-        decompositions[i] = (k, m)
         g = k
 
     return decompositions

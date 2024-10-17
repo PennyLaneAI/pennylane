@@ -206,3 +206,7 @@ def DIII(op, wire=None):
     op = 1j * op
     JJ = J(op.shape[-1] // 2, wire=wire)
     return np.allclose(op, JJ @ op @ JJ.T)
+
+
+def ClassB(op, wire=None):
+    return DIII(op, wire)
