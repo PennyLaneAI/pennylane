@@ -56,11 +56,8 @@ def test_standard_validity_OutPoly():
         y_wires=wires["y"],
         z_wires=wires["z"],
         output_wires=wires["output"],
-        mod=5,
-        work_wires=wires["aux"],
     )
 
-    print(op)
     qml.ops.functions.assert_valid(op)
 
 

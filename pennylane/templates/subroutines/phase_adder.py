@@ -178,7 +178,11 @@ class PhaseAdder(Operation):
 
     def map_wires(self, wire_map: dict):
         new_dict = {
-            key: [wire_map.get(w, w) for w in self.hyperparameters[key]]
+            key: (
+                [wire_map.get(w, w) for w in self.hyperparameters[key]]
+                if self.hyperparameters[key][0] is not None
+                else None
+            )
             for key in ["x_wires", "work_wire"]
         }
 
