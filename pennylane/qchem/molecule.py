@@ -152,7 +152,6 @@ class Molecule:
                 UserWarning,
             )
 
-
         r = list(
             itertools.chain(
                 *[[self.coordinates[i]] * self.n_basis[i] for i in range(len(self.n_basis))]
