@@ -19,7 +19,8 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.ops.qubit.matrix_ops import _walsh_hadamard_transform
-from pennylane.pauli import PauliSentence, PauliWord
+from pennylane.pauli import PauliSentence, PauliVSpace, PauliWord
+from pennylane.typing import TensorLike
 
 
 def _make_phase_mat(n):
@@ -237,3 +238,43 @@ def check_cartan_decomp(k: List[PauliSentence], m: List[PauliSentence], verbose=
         _ = print("[m, m] sub k not fulfilled") if verbose else None
 
     return all([check_kk, check_km, check_mm])
+
+
+def project(ops, basis):
+    """Project a batch of ops onto a given basis"""
+    if isinstance(basis, PauliVSpace):
+        basis = basis.basis
+
+    # PauliSentence branch
+    if all(isinstance(op, PauliSentence) for op in ops) and all(
+        isinstance(op, PauliSentence) for op in basis
+    ):
+        res = []
+        for op in ops:
+            rep = np.zeros((len(basis),), dtype=complex)
+            for i, basis_i in enumerate(basis):
+                # v = ∑ (v · e_j / ||e_j||^2) * e_j
+                value = (basis_i @ op).trace()
+                value = value / (basis_i @ basis_i).trace()
+
+                rep[i] = value
+
+            res.append(rep)
+
+        return res
+
+    # dense branch
+    if all(isinstance(op, TensorLike) for op in ops) and all(
+        isinstance(op, TensorLike) for op in basis
+    ):
+        basis = np.array(basis)
+        if len(ops.shape) == 2:
+            ops = np.array([ops])
+        else:
+            ops = np.array(ops)
+
+        res = np.einsum("bij,cji->bc", ops, basis)
+
+        return res
+
+    return NotImplemented
