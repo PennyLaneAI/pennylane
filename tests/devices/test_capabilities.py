@@ -15,7 +15,7 @@
 This module contains unit tests for device capabilities and the TOML module
 """
 
-# pylint: disable=protected-access
+# pylint: disable=protected-access,trailing-whitespace
 
 from os import path
 from tempfile import TemporaryDirectory
@@ -24,14 +24,14 @@ from textwrap import dedent
 import pytest
 
 from pennylane.devices.capabilities import (
-    load_toml_file,
-    _get_operations,
-    OperatorProperties,
-    _get_observables,
     ExecutionCondition,
-    _get_measurement_processes,
+    OperatorProperties,
     _get_compilation_flags,
+    _get_measurement_processes,
+    _get_observables,
+    _get_operations,
     _get_options,
+    load_toml_file,
 )
 
 
@@ -110,8 +110,8 @@ class TestTOML:
         assert measurement_processes.get("SampleMP") == {}
 
         compilation = document.get("compilation")
-        assert compilation.get("qjit_compatible") == False
-        assert compilation.get("mid_circuit_measurements") == False
+        assert compilation.get("qjit_compatible") is False
+        assert compilation.get("mid_circuit_measurements") is False
 
         options = document.get("options")
         assert options.get("option_key") == "option_field"
@@ -225,14 +225,14 @@ class TestTOML:
         compilation_flags = _get_compilation_flags(document)
 
         # Tests that specified values are correctly parsed
-        assert compilation_flags.get("qjit_compatible") == True
-        assert compilation_flags.get("mid_circuit_measurements") == True
-        assert compilation_flags.get("runtime_code_generation") == False
+        assert compilation_flags.get("qjit_compatible") is True
+        assert compilation_flags.get("mid_circuit_measurements") is True
+        assert compilation_flags.get("runtime_code_generation") is False
 
         # Tests that default values are correctly populated
-        assert compilation_flags.get("dynamic_qubit_management") == False
-        assert compilation_flags.get("overlapping_observables") == True
-        assert compilation_flags.get("non_commuting_observables") == False
+        assert compilation_flags.get("dynamic_qubit_management") is False
+        assert compilation_flags.get("overlapping_observables") is True
+        assert compilation_flags.get("non_commuting_observables") is False
 
     @pytest.mark.usefixtures("create_temporary_toml_file")
     @pytest.mark.parametrize(
@@ -254,4 +254,4 @@ class TestTOML:
         options = _get_options(document)
         assert len(options) == 2
         assert options.get("option_key") == "option_value"
-        assert options.get("option_boolean") == True
+        assert options.get("option_boolean") is True
