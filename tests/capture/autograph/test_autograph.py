@@ -107,6 +107,7 @@ class TestPennyLaneTransformer:
         ag_fn_dict = locals["ag__"].__dict__
 
         assert ag_fn_dict["if_stmt"].__module__ == "pennylane.capture.autograph.ag_primitives"
+        assert ag_fn_dict["while_stmt"].__module__ == "pennylane.capture.autograph.ag_primitives"
         assert (
             ag_fn_dict["converted_call"].__module__ == "pennylane.capture.autograph.ag_primitives"
         )

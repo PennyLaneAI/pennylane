@@ -130,6 +130,7 @@ class TestWhileLoops:
 
         assert eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)[0] == 4
 
+    # ToDo: why doesnt this test fail since for isn't implemented on this branch?
     def test_whileloop_forloop_interop(self):
         """Test for-loop co-existing with while loop."""
 
@@ -187,7 +188,8 @@ class TestWhileLoops:
             return x
 
         with pytest.raises(AutoGraphError, match="'x' is potentially uninitialized"):
-            run_autograph(f)(True)
+            ag_fn = run_autograph(f)
+            jax.make_jaxpr(ag_fn)(False)
 
     def test_init_with_invalid_jax_type(self):
         """Test loop carried values initialized with an invalid JAX type."""
@@ -201,7 +203,8 @@ class TestWhileLoops:
             return x
 
         with pytest.raises(AutoGraphError, match="'x' was initialized with type <class 'str'>"):
-            run_autograph(f)(True)
+            ag_fn = run_autograph(f)
+            jax.make_jaxpr(ag_fn)(False)
 
     def test_init_with_mismatched_type(self):
         """Test loop carried values initialized with a mismatched type compared to the values used
@@ -212,11 +215,13 @@ class TestWhileLoops:
 
             while pred:
                 x = 3
+                pred = False
 
             return x
 
         with pytest.raises(AutoGraphError, match="'x' was initialized with the wrong type"):
-            run_autograph(f)(False)
+            ag_fn = run_autograph(f)
+            jax.make_jaxpr(ag_fn)(False)
 
     def test_while_loop(self):
         """Test if Autograph works when applied directly to a decorated function with while_loop"""

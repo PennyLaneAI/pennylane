@@ -241,8 +241,6 @@ def converted_call(fn, args, kwargs, caller_fn_scope=None, options=None):
             qml.adjoint,
             qml.ctrl,
             qml.grad,
-            qml.grad,
-            qml.jacobian,
             qml.jacobian,
             qml.vjp,
             qml.jvp,
