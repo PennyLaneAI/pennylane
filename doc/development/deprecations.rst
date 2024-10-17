@@ -9,6 +9,12 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
+* The ``QNode.get_best_method``, ``QNode.best_method_str`` and ``QNode.get_gradient_fn`` methods have been deprecated. 
+  Instead, use the ``qml.workflow.get_best_diff_method`` and ``qml.workflow.get_gradient_fn`` functions. 
+
+  - Deprecated in v0.39
+  - Will be removed in v0.40
+
 * The ``'ancilla'`` argument for :func:`~pennylane.iterative_qpe` has been deprecated. Instead, use the ``'aux_wire'``
   argument.
 
