@@ -205,6 +205,10 @@
 * The `max_expansion` argument in `qml.devices.preprocess.decompose` is deprecated.
   [(#6400)](https://github.com/PennyLaneAI/pennylane/pull/6400)
 
+* The `expand_depth` and `max_expansion` arguments for `qml.transforms.compile` and
+  `qml.transforms.decompositions.clifford_t_decomposition` respectively have been deprecated.
+  [(#6404)](https://github.com/PennyLaneAI/pennylane/pull/6404)
+
 * Legacy operator arithmetic has been deprecated. This includes `qml.ops.Hamiltonian`, `qml.operation.Tensor`,
   `qml.operation.enable_new_opmath`, `qml.operation.disable_new_opmath`, and `qml.operation.convert_to_legacy_H`.
   Note that when new operator arithmetic is enabled, ``qml.Hamiltonian`` will continue to dispatch to
