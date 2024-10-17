@@ -91,17 +91,13 @@ and detailed developer guides on [how to write your
 own](https://pennylane.readthedocs.io/en/stable/development/plugins.html) PennyLane-compatible
 quantum device.
 
-## Tutorials and demonstrations
+## Demos
 
-Take a deeper dive into quantum machine learning by exploring cutting-edge algorithms on our [demonstrations
-page](https://pennylane.ai/qml/demonstrations.html).
+Take a deeper dive into quantum computing by exploring cutting-edge algorithms using PennyLane and quantum hardware. [Explore PennyLane demos](https://pennylane.ai/qml/demonstrations.html).
 
 <a href="https://pennylane.ai/qml/demonstrations.html">
   <img src="https://raw.githubusercontent.com/PennyLaneAI/pennylane/master/doc/_static/readme/demos.png" width="900px">
 </a>
-
-All demonstrations are fully executable, and can be downloaded as Jupyter notebooks and Python
-scripts.
 
 If you would like to contribute your own demo, see our [demo submission
 guide](https://pennylane.ai/qml/demos_submission.html).
