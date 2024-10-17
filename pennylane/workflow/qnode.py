@@ -19,6 +19,7 @@ import copy
 import functools
 import inspect
 import logging
+import re
 import warnings
 from collections.abc import Callable
 from typing import Any, Literal, Optional, Union, get_args
@@ -110,36 +111,25 @@ def _to_qfunc_output_type(
     if has_partitioned_shots:
         return tuple(_to_qfunc_output_type(r, qfunc_output, False) for r in results)
 
-    _, structure = qml.pytrees.flatten(
-        qfunc_output, is_leaf=lambda obj: isinstance(obj, qml.measurements.MeasurementProcess)
+    _, qfunc_output_structure = qml.pytrees.flatten(
+        qfunc_output, is_leaf=lambda obj: isinstance(obj, (qml.measurements.MeasurementProcess))
     )
+    num_of_measurements = len(re.findall(r"Leaf", qfunc_output_structure.__str__()))
 
-    # Special case of single Measurement in a list
-    if isinstance(qfunc_output, list) and len(qfunc_output) == 1:
-        results = [results]
+    _, results_structure = qml.pytrees.flatten(results)
+    num_of_results = len(re.findall(r"Leaf", results_structure.__str__()))
 
-    if isinstance(qfunc_output, (tuple)):
-        # If the return type is not tuple (list or ndarray) (Autograd and TF backprop removed)
-        if not any(isinstance(res, qml.numpy.ndarray) for res in results) or isinstance(
-            qfunc_output, qml.measurements.MeasurementProcess
-        ):
-            return results
+    if num_of_measurements != num_of_results:
+        return results
 
-    # Work around for tensor objects coming from qml.math.hstack
-    if not structure.is_leaf:
-        if any(isinstance(element, qml.numpy.tensor) for element in qfunc_output):
-            qfunc_output = [
-                m.base.item()
-                for m in qfunc_output
-                if isinstance(m.base.item(), qml.measurements.MeasurementProcess)
-            ]
-    else:
-        if isinstance(qfunc_output, qml.measurements.MeasurementProcess):
-            return results
+    if isinstance(qfunc_output, qml.measurements.MeasurementProcess):
+        return results
 
+    if qfunc_output_structure.is_leaf:
+        # FIXME: Work around for Autograd and TF backprop
         return type(qfunc_output)(results)
 
-    return qml.pytrees.unflatten(results, structure)
+    return qml.pytrees.unflatten(results, qfunc_output_structure)
 
 
 def _validate_gradient_kwargs(gradient_kwargs: dict) -> None:

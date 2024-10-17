@@ -507,7 +507,6 @@ class TestPyTreeStructure:
                 [qml.probs(wires=1), {"a": qml.probs(wires=0)}, qml.expval(qml.Z(0))],
                 {"probs": qml.probs(wires=0), "exp": qml.expval(qml.X(1))},
             ],
-            lambda: qml.math.hstack([qml.expval(qml.Z(i)) for i in range(2)]),
             lambda: [qml.probs(), {"expval": qml.expval(qml.X(0))}],
             lambda: ({"probs": qml.probs(wires=0), "exp": qml.expval(qml.X(1))}),
         ],
@@ -520,19 +519,34 @@ class TestPyTreeStructure:
         def circuit():
             qml.RX(1, wires=0)
             qml.RY(2, wires=1)
+            qml.measure(0)
             qml.CNOT(wires=[0, 1])
             return measurement()
 
         result = circuit()
 
-        _, result_structure = qml.pytrees.flatten(
-            result, is_leaf=lambda obj: isinstance(obj, qml.numpy.ndarray)
-        )
+        _, result_structure = qml.pytrees.flatten(result)
         _, measurement_structure = qml.pytrees.flatten(
             measurement(), is_leaf=lambda obj: isinstance(obj, qml.measurements.MeasurementProcess)
         )
 
         assert result_structure == measurement_structure
+
+    def test_hstack_measurement(self):
+        """Tests that measurements of tensor type using hstack are handled correctly"""
+        dev = qml.device("default.qubit", wires=2, shots=100)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.RX(1, wires=0)
+            qml.RY(2, wires=1)
+            qml.measure(0)
+            qml.CNOT(wires=[0, 1])
+            return qml.math.hstack([qml.expval(qml.Z(i)) for i in range(2)])
+
+        result = circuit()
+
+        assert len(result) == 2
 
 
 class TestTapeConstruction:
