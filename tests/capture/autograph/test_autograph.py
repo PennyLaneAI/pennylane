@@ -30,6 +30,8 @@ jax = pytest.importorskip("jax")
 # pylint: disable=wrong-import-position
 from pennylane.capture.autograph.ag_primitives import AutoGraphError
 from pennylane.capture.autograph.transformer import (
+    NESTED_OPTIONS,
+    STANDARD_OPTIONS,
     TOPLEVEL_OPTIONS,
     TRANSFORMER,
     PennyLaneTransformer,
@@ -108,6 +110,25 @@ class TestPennyLaneTransformer:
         assert (
             ag_fn_dict["converted_call"].__module__ == "pennylane.capture.autograph.ag_primitives"
         )
+
+    @pytest.mark.parametrize("options", [TOPLEVEL_OPTIONS, NESTED_OPTIONS, STANDARD_OPTIONS])
+    def test_function_caching(self, options):
+        """Test that retrieving the cached function from the transformer works
+        as expected for all options sets"""
+
+        transformer = PennyLaneTransformer()
+        user_context = converter.ProgramContext(options)
+
+        def fn(x):
+            """test"""
+            return 2 * x
+
+        assert transformer.has_cache(fn) is False
+
+        transformer.transform(fn, user_context)
+
+        assert transformer.has_cache(fn) is True
+        assert transformer.get_cached_function(fn)(1.7) == fn(1.7)
 
 
 class TestIntegration:
