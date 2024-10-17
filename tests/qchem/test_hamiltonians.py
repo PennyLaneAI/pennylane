@@ -18,7 +18,7 @@ Unit tests for functions needed for computing the Hamiltonian.
 import pytest
 
 import pennylane as qml
-from pennylane import Identity, PauliX, PauliY, PauliZ
+from pennylane import I, X, Y, Z
 from pennylane import numpy as np
 from pennylane import qchem
 from pennylane.fermi import from_string
@@ -95,10 +95,21 @@ from pennylane.operation import active_new_opmath
         ),
     ],
 )
-def test_electron_integrals(symbols, geometry, core, active, e_core, one_ref, two_ref):
+@pytest.mark.parametrize(
+    "use_jax",
+    [
+        (False),
+        pytest.param(True, marks=pytest.mark.jax),
+    ],
+)
+def test_electron_integrals(symbols, geometry, core, active, e_core, one_ref, two_ref, use_jax):
     r"""Test that electron_integrals returns the correct values."""
+
+    if use_jax:
+        geometry = qml.math.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], like="jax")
+
     mol = qchem.Molecule(symbols, geometry)
-    args = []
+    args = [geometry, mol.coeff, mol.alpha] if use_jax else []
 
     e, one, two = qchem.electron_integrals(mol, core=core, active=active)(*args)
 
@@ -108,135 +119,154 @@ def test_electron_integrals(symbols, geometry, core, active, e_core, one_ref, tw
 
 
 @pytest.mark.parametrize(
-    ("symbols", "geometry", "alpha", "h_ref"),
+    "use_jax",
     [
-        (
-            ["H", "H"],
-            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False),
-            np.array(
-                [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
-                requires_grad=True,
-            ),
-            # Hamiltonian coefficients and operators computed with OpenFermion using
-            # molecule = openfermion.MolecularData(geometry, basis, multiplicity, charge)
-            # molecule = run_pyscf(molecule, run_scf=1)
-            # openfermion.transforms.get_fermion_operator(molecule.get_molecular_hamiltonian())
-            # The "^" symbols in the operators are replaced with "+"
-            1.0000000206358097 * from_string("")
-            + -1.3902192781338518 * from_string("0+ 0")
-            + 0.35721954051077603 * from_string("0+ 0+ 0 0")
-            + 0.08512072166002102 * from_string("0+ 0+ 2 2")
-            + 0.35721954051077603 * from_string("0+ 1+ 1 0")
-            + 0.08512072166002102 * from_string("0+ 1+ 3 2")
-            + 0.08512072166002102 * from_string("0+ 2+ 0 2")
-            + 0.3509265790433101 * from_string("0+ 2+ 2 0")
-            + 0.08512072166002102 * from_string("0+ 3+ 1 2")
-            + 0.3509265790433101 * from_string("0+ 3+ 3 0")
-            + 0.35721954051077603 * from_string("1+ 0+ 0 1")
-            + 0.08512072166002102 * from_string("1+ 0+ 2 3")
-            + -1.3902192781338518 * from_string("1+ 1")
-            + 0.35721954051077603 * from_string("1+ 1+ 1 1")
-            + 0.08512072166002102 * from_string("1+ 1+ 3 3")
-            + 0.08512072166002102 * from_string("1+ 2+ 0 3")
-            + 0.3509265790433101 * from_string("1+ 2+ 2 1")
-            + 0.08512072166002102 * from_string("1+ 3+ 1 3")
-            + 0.3509265790433101 * from_string("1+ 3+ 3 1")
-            + 0.35092657904330926 * from_string("2+ 0+ 0 2")
-            + 0.08512072166002102 * from_string("2+ 0+ 2 0")
-            + 0.35092657904330926 * from_string("2+ 1+ 1 2")
-            + 0.08512072166002102 * from_string("2+ 1+ 3 0")
-            + -0.29165329244211186 * from_string("2+ 2")
-            + 0.08512072166002102 * from_string("2+ 2+ 0 0")
-            + 0.36941834777609744 * from_string("2+ 2+ 2 2")
-            + 0.08512072166002102 * from_string("2+ 3+ 1 0")
-            + 0.36941834777609744 * from_string("2+ 3+ 3 2")
-            + 0.35092657904330926 * from_string("3+ 0+ 0 3")
-            + 0.08512072166002102 * from_string("3+ 0+ 2 1")
-            + 0.35092657904330926 * from_string("3+ 1+ 1 3")
-            + 0.08512072166002102 * from_string("3+ 1+ 3 1")
-            + 0.08512072166002102 * from_string("3+ 2+ 0 1")
-            + 0.36941834777609744 * from_string("3+ 2+ 2 3")
-            + -0.29165329244211186 * from_string("3+ 3")
-            + 0.08512072166002102 * from_string("3+ 3+ 1 1")
-            + 0.36941834777609744 * from_string("3+ 3+ 3 3"),
-        )
+        (False),
+        pytest.param(True, marks=pytest.mark.jax),
     ],
 )
-def test_fermionic_hamiltonian(symbols, geometry, alpha, h_ref):
-    r"""Test that fermionic_hamiltonian returns the correct Hamiltonian."""
+def test_fermionic_hamiltonian(use_jax):
+    r"""Test that using fermionic_hamiltonian returns the correct values."""
+
+    symbols = ["H", "H"]
+
+    geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False)
+    alpha = np.array(
+        [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
+        requires_grad=True,
+    )
+
+    if use_jax:
+        geometry = qml.math.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], like="jax")
+        alpha = qml.math.array(
+            [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]], like="jax"
+        )
+
+    # Hamiltonian coefficients and operators computed with OpenFermion using
+    # molecule = openfermion.MolecularData(geometry, basis, multiplicity, charge)
+    # molecule = run_pyscf(molecule, run_scf=1)
+    # openfermion.transforms.get_fermion_operator(molecule.get_molecular_hamiltonian())
+    # The "^" symbols in the operators are replaced with "+"
+    h_ref = (
+        1.0000000206358097 * from_string("")
+        + -1.3902192781338518 * from_string("0+ 0")
+        + 0.35721954051077603 * from_string("0+ 0+ 0 0")
+        + 0.08512072166002102 * from_string("0+ 0+ 2 2")
+        + 0.35721954051077603 * from_string("0+ 1+ 1 0")
+        + 0.08512072166002102 * from_string("0+ 1+ 3 2")
+        + 0.08512072166002102 * from_string("0+ 2+ 0 2")
+        + 0.3509265790433101 * from_string("0+ 2+ 2 0")
+        + 0.08512072166002102 * from_string("0+ 3+ 1 2")
+        + 0.3509265790433101 * from_string("0+ 3+ 3 0")
+        + 0.35721954051077603 * from_string("1+ 0+ 0 1")
+        + 0.08512072166002102 * from_string("1+ 0+ 2 3")
+        + -1.3902192781338518 * from_string("1+ 1")
+        + 0.35721954051077603 * from_string("1+ 1+ 1 1")
+        + 0.08512072166002102 * from_string("1+ 1+ 3 3")
+        + 0.08512072166002102 * from_string("1+ 2+ 0 3")
+        + 0.3509265790433101 * from_string("1+ 2+ 2 1")
+        + 0.08512072166002102 * from_string("1+ 3+ 1 3")
+        + 0.3509265790433101 * from_string("1+ 3+ 3 1")
+        + 0.35092657904330926 * from_string("2+ 0+ 0 2")
+        + 0.08512072166002102 * from_string("2+ 0+ 2 0")
+        + 0.35092657904330926 * from_string("2+ 1+ 1 2")
+        + 0.08512072166002102 * from_string("2+ 1+ 3 0")
+        + -0.29165329244211186 * from_string("2+ 2")
+        + 0.08512072166002102 * from_string("2+ 2+ 0 0")
+        + 0.36941834777609744 * from_string("2+ 2+ 2 2")
+        + 0.08512072166002102 * from_string("2+ 3+ 1 0")
+        + 0.36941834777609744 * from_string("2+ 3+ 3 2")
+        + 0.35092657904330926 * from_string("3+ 0+ 0 3")
+        + 0.08512072166002102 * from_string("3+ 0+ 2 1")
+        + 0.35092657904330926 * from_string("3+ 1+ 1 3")
+        + 0.08512072166002102 * from_string("3+ 1+ 3 1")
+        + 0.08512072166002102 * from_string("3+ 2+ 0 1")
+        + 0.36941834777609744 * from_string("3+ 2+ 2 3")
+        + -0.29165329244211186 * from_string("3+ 3")
+        + 0.08512072166002102 * from_string("3+ 3+ 1 1")
+        + 0.36941834777609744 * from_string("3+ 3+ 3 3")
+    )
+
     mol = qchem.Molecule(symbols, geometry, alpha=alpha)
-    args = [alpha]
+    args = [geometry, mol.coeff, mol.alpha] if use_jax else [alpha]
     h = qchem.fermionic_hamiltonian(mol)(*args)
+
+    h.simplify(tol=1e-7)
 
     assert np.allclose(list(h.values()), list(h_ref.values()))
     assert h.keys() == h_ref.keys()
 
 
+@pytest.mark.usefixtures("use_legacy_and_new_opmath")
 @pytest.mark.parametrize(
-    ("symbols", "geometry", "h_ref_data"),
+    "use_jax",
     [
-        (
-            ["H", "H"],
-            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False),
-            # computed with qchem.convert_observable and an OpenFermion Hamiltonian; data reordered
-            # h_mol = molecule.get_molecular_hamiltonian()
-            # h_f = openfermion.transforms.get_fermion_operator(h_mol)
-            # h_q = openfermion.transforms.jordan_wigner(h_f)
-            # h_pl = qchem.convert_observable(h_q, wires=[0, 1, 2, 3], tol=(5e-5))
-            (
-                np.array(
-                    [
-                        0.2981788017,
-                        0.2081336485,
-                        0.2081336485,
-                        0.1786097698,
-                        0.042560361,
-                        -0.042560361,
-                        -0.042560361,
-                        0.042560361,
-                        -0.3472487379,
-                        0.1329029281,
-                        -0.3472487379,
-                        0.175463289,
-                        0.175463289,
-                        0.1329029281,
-                        0.1847091733,
-                    ]
-                ),
-                [
-                    Identity(wires=[0]),
-                    PauliZ(wires=[0]),
-                    PauliZ(wires=[1]),
-                    PauliZ(wires=[0]) @ PauliZ(wires=[1]),
-                    PauliY(wires=[0]) @ PauliX(wires=[1]) @ PauliX(wires=[2]) @ PauliY(wires=[3]),
-                    PauliY(wires=[0]) @ PauliY(wires=[1]) @ PauliX(wires=[2]) @ PauliX(wires=[3]),
-                    PauliX(wires=[0]) @ PauliX(wires=[1]) @ PauliY(wires=[2]) @ PauliY(wires=[3]),
-                    PauliX(wires=[0]) @ PauliY(wires=[1]) @ PauliY(wires=[2]) @ PauliX(wires=[3]),
-                    PauliZ(wires=[2]),
-                    PauliZ(wires=[0]) @ PauliZ(wires=[2]),
-                    PauliZ(wires=[3]),
-                    PauliZ(wires=[0]) @ PauliZ(wires=[3]),
-                    PauliZ(wires=[1]) @ PauliZ(wires=[2]),
-                    PauliZ(wires=[1]) @ PauliZ(wires=[3]),
-                    PauliZ(wires=[2]) @ PauliZ(wires=[3]),
-                ],
-            ),
-        )
+        (False),
+        pytest.param(True, marks=pytest.mark.jax),
     ],
 )
-@pytest.mark.usefixtures("use_legacy_and_new_opmath")
-def test_diff_hamiltonian(symbols, geometry, h_ref_data):
+def test_diff_hamiltonian(use_jax):
     r"""Test that diff_hamiltonian returns the correct Hamiltonian."""
 
+    symbols = ["H", "H"]
+
+    geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False)
+
+    # computed with qchem.convert_observable and an OpenFermion Hamiltonian; data reordered
+    # h_mol = molecule.get_molecular_hamiltonian()
+    # h_f = openfermion.transforms.get_fermion_operator(h_mol)
+    # h_q = openfermion.transforms.jordan_wigner(h_f)
+    # h_pl = qchem.convert_observable(h_q, wires=[0, 1, 2, 3], tol=(5e-5))
+    h_ref = (
+        [
+            0.2981788017,
+            0.2081336485,
+            0.2081336485,
+            0.1786097698,
+            0.042560361,
+            -0.042560361,
+            -0.042560361,
+            0.042560361,
+            -0.3472487379,
+            0.1329029281,
+            -0.3472487379,
+            0.175463289,
+            0.175463289,
+            0.1329029281,
+            0.1847091733,
+        ],
+        [
+            I(0),
+            Z(0),
+            Z(1),
+            Z(0) @ Z(1),
+            Y(0) @ X(1) @ X(2) @ Y(3),
+            Y(0) @ Y(1) @ X(2) @ X(3),
+            X(0) @ X(1) @ Y(2) @ Y(3),
+            X(0) @ Y(1) @ Y(2) @ X(3),
+            Z(2),
+            Z(0) @ Z(2),
+            Z(3),
+            Z(0) @ Z(3),
+            Z(1) @ Z(2),
+            Z(1) @ Z(3),
+            Z(2) @ Z(3),
+        ],
+    )
+
+    if use_jax:
+        geometry = qml.math.array(geometry, like="jax")
+
     mol = qchem.Molecule(symbols, geometry)
-    args = []
+    args = [geometry, mol.coeff, mol.alpha] if use_jax else []
+
     h = qchem.diff_hamiltonian(mol)(*args)
 
     ops = [
         qml.operation.Tensor(*op) if isinstance(op, qml.ops.Prod) else op
-        for op in map(qml.simplify, h_ref_data[1])
+        for op in map(qml.simplify, h_ref[1])
     ]
-    h_ref = qml.Hamiltonian(h_ref_data[0], ops)
+    h_ref = qml.Hamiltonian(h_ref[0], ops)
 
     assert np.allclose(np.sort(h.terms()[0]), np.sort(h_ref.terms()[0]))
     assert qml.Hamiltonian(np.ones(len(h.terms()[0])), h.terms()[1]).compare(
@@ -253,14 +283,23 @@ def test_diff_hamiltonian(symbols, geometry, h_ref_data):
 
 
 @pytest.mark.usefixtures("use_legacy_and_new_opmath")
-def test_diff_hamiltonian_active_space():
+@pytest.mark.parametrize(
+    "use_jax",
+    [
+        (False),
+        pytest.param(True, marks=pytest.mark.jax),
+    ],
+)
+def test_diff_hamiltonian_active_space(use_jax):
     r"""Test that diff_hamiltonian works when an active space is defined."""
 
     symbols = ["H", "H", "H"]
     geometry = np.array([[0.0, 0.0, 0.0], [2.0, 0.0, 1.0], [0.0, 2.0, 0.0]])
+    if use_jax:
+        geometry = qml.math.array(geometry, like="jax")
 
     mol = qchem.Molecule(symbols, geometry, charge=1)
-    args = [geometry]
+    args = [geometry, mol.coeff, mol.alpha] if use_jax else [geometry]
 
     h = qchem.diff_hamiltonian(mol, core=[0], active=[1, 2])(*args)
 
@@ -286,11 +325,20 @@ def test_diff_hamiltonian_active_space():
         ),
     ],
 )
-def test_diff_hamiltonian_wire_order(symbols, geometry, core, active, charge):
+@pytest.mark.parametrize(
+    "use_jax",
+    [
+        (False),
+        pytest.param(True, marks=pytest.mark.jax),
+    ],
+)
+def test_diff_hamiltonian_wire_order(symbols, geometry, core, active, charge, use_jax):
     r"""Test that diff_hamiltonian has an ascending wire order."""
+    if use_jax:
+        geometry = qml.math.array(geometry, like="jax")
 
     mol = qchem.Molecule(symbols, geometry, charge)
-    args = [geometry]
+    args = [geometry, mol.coeff, mol.alpha] if use_jax else [geometry]
 
     h = qchem.diff_hamiltonian(mol, core=core, active=active)(*args)
 
@@ -346,25 +394,24 @@ def test_gradient_expvalH():
 
 
 @pytest.mark.usefixtures("use_legacy_and_new_opmath")
+@pytest.mark.jax
 class TestJax:
-    @pytest.mark.jax
-    def test_gradient_expvalH(self):
+    def test_gradient_jax_array(self):
         r"""Test that the gradient of expval(H) computed with ``jax.grad`` is equal to the value
-        obtained with the finite difference method."""
+        obtained with the finite difference method when using ``argnum`` and jax."""
         import jax
 
         symbols = ["H", "H"]
         geometry = (
-            np.array([[0.0, 0.0, -0.3674625962], [0.0, 0.0, 0.3674625962]], requires_grad=False)
+            qml.math.array([[0.0, 0.0, -0.3674625962], [0.0, 0.0, 0.3674625962]], like="jax")
             / 0.529177210903
         )
-        alpha = np.array(
+        alpha = qml.math.array(
             [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
-            requires_grad=True,
+            like="jax",
         )
-
         mol = qchem.Molecule(symbols, geometry, alpha=alpha)
-        args = [jax.numpy.array(alpha)]
+        args = [geometry, mol.coeff, mol.alpha]
         dev = qml.device("default.qubit", wires=4)
 
         def energy(mol):
@@ -378,19 +425,6 @@ class TestJax:
 
             return circuit
 
-        grad_jax = jax.grad(energy(mol), argnums=0)(*args)
+        grad_jax = jax.grad(energy(mol), argnums=2)(*args)
 
-        alpha_1 = np.array(
-            [[3.42425091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
-        )  # alpha[0][0] -= 0.001
-
-        alpha_2 = np.array(
-            [[3.42625091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
-        )  # alpha[0][0] += 0.001
-
-        e_1 = energy(mol)(*[alpha_1])
-        e_2 = energy(mol)(*[alpha_2])
-
-        grad_finitediff = (e_2 - e_1) / 0.002
-
-        assert np.allclose(grad_jax[0][0], grad_finitediff, rtol=1e-02)
+        assert qml.math.allclose(grad_jax[0][0], 0.02461335393055819, rtol=1e-02)
