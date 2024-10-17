@@ -57,10 +57,12 @@ VALID_CONDITION_STRINGS = {condition.value for condition in ExecutionCondition}
 @dataclass
 class OperatorProperties:
     """Information about support for each operation.
+
     Attributes:
         invertible (bool): Whether the adjoint of the operation is also supported.
         controllable (bool): Whether the operation can be controlled.
         differentiable (bool): Whether the operation is supported for device gradients.
+        conditions (list[ExecutionCondition]): Execution conditions that the operation must meet.
     """
 
     invertible: bool = False
@@ -72,6 +74,7 @@ class OperatorProperties:
 @dataclass
 class ProgramFeatures:
     """Program features, obtained from the user.
+
     This is used to filter the device capabilities based on their conditions. Currently, the
     only supported filter is whether the execution mode is finite shots.
     """
@@ -82,6 +85,7 @@ class ProgramFeatures:
 @dataclass
 class DeviceCapabilities:  # pylint: disable=too-many-instance-attributes
     """Capabilities of a quantum device.
+
     Attributes:
         operations: Operations natively supported by the backend device.
         observables: Observables that the device can measure.
@@ -250,6 +254,7 @@ def _get_measurement_processes(
 
 def _get_compilation_flags(document: dict, prefix: str = "") -> dict[str, bool]:
     """Gets the boolean capabilities in the compilation section."""
+
     section = _get_toml_section(document, "compilation", prefix)
     if unknowns := set(section) - VALID_COMPILATION_FLAGS.keys():
         raise InvalidCapabilitiesError(
