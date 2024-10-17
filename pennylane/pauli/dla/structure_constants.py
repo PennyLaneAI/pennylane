@@ -27,6 +27,7 @@ def _all_commutators(ops):
     commutators = {}
     for (j, op1), (k, op2) in combinations(enumerate(ops), r=2):
         res = op1.commutator(op2)
+        res.simplify()
         if res != PauliSentence({}):
             commutators[(j, k)] = res
 
@@ -119,9 +120,11 @@ def structure_constants(
 
     rep = np.zeros((len(g), len(g), len(g)), dtype=float)
     for i, op in enumerate(g):
+        op_norm2 = (op @ op).trace().real
         for (j, k), res in commutators.items():
-            value = (1j * (op @ res).trace()).real
-            value = value / (op @ op).trace()  # v = ∑ (v · e_j / ||e_j||^2) * e_j
+            value = (op @ res).trace()
+            value = value.imag
+            value = value / op_norm2  # v = ∑ (v · e_j / ||e_j||^2) * e_j
             rep[i, j, k] = value
             rep[i, k, j] = -value
 
