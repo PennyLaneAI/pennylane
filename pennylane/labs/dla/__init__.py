@@ -23,6 +23,7 @@ Experimental Lie theory features
     ~lie_closure_dense
     ~structure_constants_dense
     ~cartan_decomposition
+    ~recursive_cartan_decomposition
 
 
 Utility functions
@@ -35,6 +36,9 @@ Utility functions
 
     ~pauli_decompose
     ~pauli_coefficients
+    ~check_cartan_decomp
+    ~check_commutation
+    ~apply_basis_change
 
 Involutions
 ~~~~~~~~~~~
@@ -46,11 +50,32 @@ Involutions
 
     ~even_odd_involution
     ~concurrence_involution
+    ~khaneja_glaser_involutio
+    ~AI
+    ~AII
+    ~AIII
+    ~BDI
+    ~CI
+    ~CII
+    ~DIII
+    ~ClassB
 
 
 """
 
 from .lie_closure_dense import lie_closure_dense
 from .structure_constants_dense import structure_constants_dense
-from .cartan import cartan_decomposition, even_odd_involution, concurrence_involution
-from .dense_util import pauli_decompose, pauli_coefficients
+from .cartan import (
+    cartan_decomposition,
+    even_odd_involution,
+    concurrence_involution,
+    recursive_cartan_decomposition,
+)
+from .dense_util import (
+    pauli_decompose,
+    pauli_coefficients,
+    check_cartan_decomp,
+    check_commutation,
+    apply_basis_change,
+)
+from .involutions import khaneja_glaser_involution, AI, AII, AIII, BDI, CI, CII, DIII, ClassB

@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Utility tools for dense Lie algebra representations"""
-
 from itertools import product
+from typing import List
 
 import numpy as np
 
@@ -188,7 +188,7 @@ def pauli_decompose(H, tol=None, pauli: bool = False):
     if tol is None:
         tol = 1e-10
     coeffs = pauli_coefficients(H)
-    if single_H := (qml.math.ndim(coeffs) == 1):
+    if single_H := qml.math.ndim(coeffs) == 1:
         coeffs = [coeffs]
 
     n = int(np.round(np.log2(qml.math.shape(coeffs)[1]))) // 2
@@ -205,3 +205,48 @@ def pauli_decompose(H, tol=None, pauli: bool = False):
     if single_H:
         return H_ops[0]
     return H_ops
+
+
+def check_commutation(ops1, ops2, vspace):
+    """Helper function to check things like [k, m] subspace m; expensive"""
+    assert_vals = []
+    for o1 in ops1:
+        for o2 in ops2:
+            com = o1.commutator(o2)
+            assert_vals.append(not vspace.is_independent(com))
+
+    return all(assert_vals)
+
+
+def check_cartan_decomp(k: List[PauliSentence], m: List[PauliSentence], verbose=True):
+    """Helper function to check the validity of a Cartan decomposition by checking its commutation relations"""
+    if any(isinstance(op, np.ndarray) for op in k):
+        k = [qml.pauli_decompose(op).pauli_rep for op in k]
+    if any(isinstance(op, np.ndarray) for op in m):
+        m = [qml.pauli_decompose(op).pauli_rep for op in m]
+
+    k_space = qml.pauli.PauliVSpace(k, dtype=complex)
+    m_space = qml.pauli.PauliVSpace(m, dtype=complex)
+
+    # Commutation relations for Cartan pair
+    if not (check_kk := check_commutation(k, k, k_space)):
+        _ = print("[k, k] sub k not fulfilled") if verbose else None
+    if not (check_km := check_commutation(k, m, m_space)):
+        _ = print("[k, m] sub m not fulfilled") if verbose else None
+    if not (check_mm := check_commutation(m, m, k_space)):
+        _ = print("[m, m] sub k not fulfilled") if verbose else None
+
+    return all([check_kk, check_km, check_mm])
+
+
+def apply_basis_change(change_op, targets):
+    if single_target := (np.ndim(targets) == 2):
+        targets = [targets]
+    if isinstance(targets, list):
+        targets = np.array(targets)
+    # Compute x V^\dagger for all x in ``targets``. ``moveaxis`` brings the batch axis to the front
+    out = np.moveaxis(np.tensordot(change_op, targets, axes=[[1], [1]]), 1, 0)
+    out = np.tensordot(out, change_op.conj().T, axes=[[2], [0]])
+    if single_target:
+        return out[0]
+    return out
