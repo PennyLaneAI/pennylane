@@ -34,7 +34,7 @@ __all__ = [
 
 
 class AutoGraphError(Exception):
-    """Errors related to Catalyst's AutoGraph module."""
+    """Errors related to PennyLane's AutoGraph submodule."""
 
 
 def assert_results(results, var_names):
