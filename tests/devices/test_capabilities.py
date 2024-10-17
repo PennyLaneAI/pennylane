@@ -14,27 +14,32 @@
 """
 This module contains unit tests for device capabilities and the TOML module
 """
-import re
 
 # pylint: disable=protected-access,trailing-whitespace
 
+import re
 from os import path
 from tempfile import TemporaryDirectory
 from textwrap import dedent
+from webbrowser import Opera
 
 import pytest
 
 from pennylane.devices.capabilities import (
+    DeviceCapabilities,
     ExecutionCondition,
+    InvalidCapabilitiesError,
     OperatorProperties,
+    ProgramFeatures,
     _get_compilation_flags,
     _get_measurement_processes,
     _get_observables,
     _get_operations,
     _get_options,
-    load_toml_file,
     _get_toml_section,
-    InvalidCapabilitiesError,
+    load_toml_file,
+    parse_toml_document,
+    update_device_capabilities,
 )
 
 
@@ -468,3 +473,141 @@ class TestTOML:
             match="When overlapping_observables is False, non_commuting_observables cannot be True.",
         ):
             _get_compilation_flags(document)
+
+
+EXAMPLE_TOML_FILE = """
+schema = 3
+
+[operators.gates]
+
+RY = { properties = ["controllable", "invertible", "differentiable"] }
+RZ = { properties = ["controllable", "invertible", "differentiable"] }
+CNOT = { properties = ["invertible"] }
+
+[operators.observables]
+
+PauliX = { }
+PauliY = { }
+PauliZ = { }
+
+[pennylane.operators.observables]
+
+SProd = { }
+Prod = { }
+Sum = { conditions = ["terms-commute"] }
+
+[measurement_processes]
+
+ExpectationMP = { }
+SampleMP = { }
+StateMP = { conditions = ["analytic"] }
+
+[pennylane.measurement_processes]
+
+CountsMP = { conditions = ["finiteshots"] }
+
+[compilation]
+
+qjit_compatible = true
+mid_circuit_measurements = false
+overlapping_observables = true
+non_commuting_observables = false
+initial_state_prep = true
+
+[options]
+
+option_key = "option_field"
+"""
+
+
+class TestDeviceCapabilities:
+    """Tests the DeviceCapabilities class."""
+
+    @pytest.mark.usefixtures("create_temporary_toml_file")
+    @pytest.mark.parametrize("create_temporary_toml_file", [EXAMPLE_TOML_FILE], indirect=True)
+    def test_load_from_toml_file(self, request):
+        """Tests loading device capabilities from a TOML file."""
+
+        document = load_toml_file(request.node.toml_file)
+        device_capabilities = parse_toml_document(document)
+        assert isinstance(device_capabilities, DeviceCapabilities)
+        assert device_capabilities.operations == {
+            "RY": OperatorProperties(invertible=True, differentiable=True, controllable=True),
+            "RZ": OperatorProperties(invertible=True, differentiable=True, controllable=True),
+            "CNOT": OperatorProperties(invertible=True),
+        }
+        assert device_capabilities.observables == {
+            "PauliX": OperatorProperties(),
+            "PauliY": OperatorProperties(),
+            "PauliZ": OperatorProperties(),
+        }
+        assert device_capabilities.measurement_processes == {
+            "ExpectationMP": [],
+            "SampleMP": [],
+            "StateMP": [ExecutionCondition.ANALYTIC_MODE_ONLY],
+        }
+        assert device_capabilities.qjit_compatible is True
+        assert device_capabilities.mid_circuit_measurements is False
+        assert device_capabilities.dynamic_qubit_management is False
+        assert device_capabilities.runtime_code_generation is False
+        assert device_capabilities.overlapping_observables is True
+        assert device_capabilities.non_commuting_observables is False
+        assert device_capabilities.initial_state_prep is True
+        assert device_capabilities.options == {"option_key": "option_field"}
+
+    @pytest.mark.usefixtures("create_temporary_toml_file")
+    @pytest.mark.parametrize("create_temporary_toml_file", [EXAMPLE_TOML_FILE], indirect=True)
+    def test_update_capabilities(self, request):
+        """Tests updating device capabilities for runtime interface exclusive support."""
+
+        document = load_toml_file(request.node.toml_file)
+        capabilities = parse_toml_document(document)
+        update_device_capabilities(capabilities, document, "pennylane")
+
+        assert capabilities.observables == {
+            "PauliX": OperatorProperties(),
+            "PauliY": OperatorProperties(),
+            "PauliZ": OperatorProperties(),
+            "SProd": OperatorProperties(),
+            "Prod": OperatorProperties(),
+            "Sum": OperatorProperties(conditions=[ExecutionCondition.TERMS_MUST_COMMUTE]),
+        }
+        assert capabilities.measurement_processes == {
+            "ExpectationMP": [],
+            "SampleMP": [],
+            "StateMP": [ExecutionCondition.ANALYTIC_MODE_ONLY],
+            "CountsMP": [ExecutionCondition.FINITE_SHOTS_ONLY],
+        }
+
+    @pytest.mark.usefixtures("create_temporary_toml_file")
+    @pytest.mark.parametrize("create_temporary_toml_file", [EXAMPLE_TOML_FILE], indirect=True)
+    def test_invalid_runtime_interface(self, request):
+        """Tests updating device capabilities with an invalid runtime interface."""
+
+        document = load_toml_file(request.node.toml_file)
+        capabilities = parse_toml_document(document)
+        with pytest.raises(ValueError, match="Invalid runtime interface:"):
+            update_device_capabilities(capabilities, document, "invalid_interface")
+
+    @pytest.mark.usefixtures("create_temporary_toml_file")
+    @pytest.mark.parametrize("create_temporary_toml_file", [EXAMPLE_TOML_FILE], indirect=True)
+    def test_filter_capabilities(self, request):
+        """Tests filtering device capabilities based on execution method."""
+
+        document = load_toml_file(request.node.toml_file)
+        capabilities = parse_toml_document(document)
+        update_device_capabilities(capabilities, document, "pennylane")
+        shots_capabilities = capabilities.filter(ProgramFeatures(finite_shots=True))
+        analytic_capabilities = capabilities.filter(ProgramFeatures(finite_shots=False))
+
+        assert shots_capabilities.measurement_processes == {
+            "ExpectationMP": [],
+            "SampleMP": [],
+            "CountsMP": [ExecutionCondition.FINITE_SHOTS_ONLY],
+        }
+
+        assert analytic_capabilities.measurement_processes == {
+            "ExpectationMP": [],
+            "SampleMP": [],
+            "StateMP": [ExecutionCondition.ANALYTIC_MODE_ONLY],
+        }
