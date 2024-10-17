@@ -251,6 +251,7 @@ def tape_text(
     max_length=100,
     show_matrices=True,
     cache=None,
+    show_wire_labels=True,
 ):
     """Text based diagram for a Quantum Tape.
 
@@ -456,7 +457,10 @@ def tape_text(
     # classical conditions, and terminal measurements for processing mid-circuit measurements.
     cwire_layers, _ = cwire_connections(layers, bit_map)
 
-    wire_totals = [f"{wire}: " for wire in wire_map]
+    if show_wire_labels:
+        wire_totals = [f"{wire}: " for wire in wire_map]
+    else:
+        wire_totals = ["" for _ in wire_map]
     bit_totals = ["" for _ in range(n_bits)]
     line_length = max(len(s) for s in wire_totals)
 

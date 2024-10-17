@@ -1112,3 +1112,9 @@ class MPLDrawer:
 
         for line in lines:
             self._ax.add_line(line)
+
+    def crop_wire_labels(self):
+        xlim = self._ax.get_xlim()
+        self._ax.set_xlim((-1, xlim[1]))
+        factor = (self.n_layers + 2) / (self.n_layers + 3)
+        self._fig.set_figwidth(self._fig.get_figwidth() * factor)
