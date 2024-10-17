@@ -188,22 +188,34 @@ _basis_change_constructors = {
     ("AII", "CI"): IDENTITY,
     ("AII", "CII"): IDENTITY,
     ("AIII", "ClassB"): IDENTITY,
-    ("BDI", "ClassB"): partial(_not_implemented_yet, pair=("BDI", "BDI")),
+    ("BDI", "ClassB"): IDENTITY,
     ("CI", "AI"): pauli_y_eigenbasis,
     ("CI", "AII"): pauli_y_eigenbasis,
     ("CI", "AIII"): partial(_not_implemented_yet, pair=("CI", "AIII")),
-    ("CII", "ClassB"): partial(_not_implemented_yet, pair=("CII", "CI")),
+    ("CII", "ClassB"): IDENTITY,
     ("DIII", "AI"): pauli_y_eigenbasis,
     ("DIII", "AII"): partial(_not_implemented_yet, pair=("DIII", "AII")),
     ("DIII", "AIII"): partial(_not_implemented_yet, pair=("DIII", "AIII")),
     ("ClassB", "AI"): IDENTITY,
-    ("ClassB", "AII"): partial(_not_implemented_yet, pair=("ClassB", "AII")),
+    ("ClassB", "AII"): IDENTITY,
     ("ClassB", "AIII"): partial(_not_implemented_yet, pair=("ClassB", "AIII")),
     ("ClassB", "BDI"): partial(_not_implemented_yet, pair=("ClassB", "BDI")),
     ("ClassB", "DIII"): partial(_not_implemented_yet, pair=("ClassB", "DIII")),
-    ("ClassB", "CI"): partial(_not_implemented_yet, pair=("ClassB", "CI")),
+    ("ClassB", "CI"): IDENTITY,
     ("ClassB", "CII"): partial(_not_implemented_yet, pair=("ClassB", "CII")),
 }
+
+
+def _check_classb_sequence(before, after):
+    if before == "AIII" and after.startswith("A"):
+        return
+    if before == "BDI" and after in ("BDI", "DIII"):
+        return
+    if before == "CII" and after.startswith("C"):
+        return
+    raise ValueError(
+        f"The 3-sequence ({before}, ClassB, {after}) of involutions is not a valid sequence."
+    )
 
 
 def recursive_cartan_decomposition(g, chain, validate=True, verbose=True):
@@ -226,6 +238,9 @@ def recursive_cartan_decomposition(g, chain, validate=True, verbose=True):
                 f"The specified chain contains the pair {'-->'.join(invol_pair)}, "
                 "which is not a valid pair."
             )
+        # Run specific check for sequence of three involutions where ClassB is the middle one
+        if name == "ClassB" and i > 0:
+            _check_classb_sequence(names[i - 1], names[i + 1])
         bc_constructor = _basis_change_constructors[invol_pair]
         if bc_constructor is IDENTITY:
             bc = bc_constructor
@@ -244,7 +259,7 @@ def recursive_cartan_decomposition(g, chain, validate=True, verbose=True):
             check_cartan_decomp(k, m, verbose=verbose)
         name = getattr(phi, "func", phi).__name__
         if verbose:
-            print(f"Iteration {i}: {len(g):<4} --{name:-<4}--> {len(k)}, {len(m)}")
+            print(f"Iteration {i}: {len(g):>4} -{name:-^10}> {len(k):>4},{len(m):>4}")
         decompositions[i] = (k, m)
         if bc is not IDENTITY:
             k = apply_basis_change(bc, k)
